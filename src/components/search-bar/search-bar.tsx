@@ -11,10 +11,15 @@ import {
     WithStyles,
     Tooltip,
     InputAdornment, Input,
-    List, ListItem, ListItemText, ListItemSecondaryAction
+    List, ListItem, ListItemText, ListItemSecondaryAction, Button
 } from '@material-ui/core';
 import SearchIcon from '@material-ui/icons/Search';
 import { RemoveIcon } from '~/components/icon/icon';
+import { connect } from 'react-redux';
+import { RootState } from '~/store/store';
+import { Dispatch } from 'redux';
+import { goToView } from '~/store/structured-search/structured-search-actions';
+import { SearchView } from '~/store/structured-search/structured-search-reducer';
 
 type CssRules = 'container' | 'input' | 'advanced' | 'searchQueryList' | 'list' | 'searchView' | 'searchBar';
 
@@ -34,7 +39,8 @@ const styles: StyleRulesCallback<CssRules> = theme => {
             justifyContent: 'flex-end',
             paddingRight: theme.spacing.unit * 2,
             paddingBottom: theme.spacing.unit,
-            fontSize: '14px'
+            fontSize: '14px',
+            cursor: 'pointer'
         },
         searchQueryList: {
             padding: `${theme.spacing.unit / 2}px ${theme.spacing.unit}px `,
@@ -55,11 +61,13 @@ const styles: StyleRulesCallback<CssRules> = theme => {
 
 interface SearchBarDataProps {
     value: string;
+    currentView: string;
 }
 
 interface SearchBarActionProps {
     onSearch: (value: string) => any;
     debounce?: number;
+    onSetView: (currentView: string) => void;
 }
 
 type SearchBarProps = SearchBarDataProps & SearchBarActionProps & WithStyles<CssRules>;
@@ -69,9 +77,21 @@ interface SearchBarState {
     isSearchViewOpen: boolean;
 }
 
+const mapStateToProps = ({ structuredSearch }: RootState) => {
+    return {
+        currentView: structuredSearch.currentView
+    };
+};
+
+const mapDispatchToProps = (dispatch: Dispatch) => ({
+    onSetView: (currentView: string) => {
+        dispatch<any>(goToView(currentView));
+    }
+});
+
 export const DEFAULT_SEARCH_DEBOUNCE = 1000;
 
-export const SearchBar = withStyles(styles)(
+export const SearchBar = connect(mapStateToProps, mapDispatchToProps)(withStyles(styles)(
     class extends React.Component<SearchBarProps> {
         state: SearchBarState = {
             value: "",
@@ -81,8 +101,8 @@ export const SearchBar = withStyles(styles)(
         timeout: number;
 
         render() {
-            const { classes } = this.props;
-            return <Paper className={classes.container} onBlur={this.closeSearchView}>
+            const { classes, currentView } = this.props;
+            return <Paper className={classes.container} >
                 <form onSubmit={this.handleSubmit} className={classes.searchBar}>
                     <Input
                         autoComplete={''}
@@ -92,7 +112,7 @@ export const SearchBar = withStyles(styles)(
                         value={this.state.value}
                         fullWidth={true}
                         disableUnderline={true}
-                        onFocus={this.openSearchView}
+                        onClick={this.toggleSearchView}
                         endAdornment={
                             <InputAdornment position="end">
                                 <Tooltip title='Search'>
@@ -102,19 +122,7 @@ export const SearchBar = withStyles(styles)(
                                 </Tooltip>
                             </InputAdornment>
                         } />
-                    {this.state.isSearchViewOpen && <Paper className={classes.searchView}>
-                        <div className={classes.searchQueryList}>Saved search queries</div>
-                        <List component="nav" className={classes.list}>
-                            {this.renderSavedQueries('Test')}
-                            {this.renderSavedQueries('Demo')}
-                        </List>
-                        <div className={classes.searchQueryList}>Recent search queries</div>
-                        <List component="nav" className={classes.list}>
-                            {this.renderRecentQueries('cos')}
-                            {this.renderRecentQueries('testtest')}
-                        </List>
-                        <div className={classes.advanced}>Advanced search</div>
-                    </Paper>}
+                    {this.state.isSearchViewOpen && this.getView(currentView)}
                 </form>
             </Paper>;
         }
@@ -133,13 +141,42 @@ export const SearchBar = withStyles(styles)(
             clearTimeout(this.timeout);
         }
 
-        closeSearchView = () =>
-            this.setState({ isSearchViewOpen: false })
+        toggleSearchView = () =>
+            this.setState({ isSearchViewOpen: !this.state.isSearchViewOpen })
 
-
-        openSearchView = () =>
-            this.setState({ isSearchViewOpen: true })
-
+        getView = (currentView: string) => {
+            switch (currentView) {
+                case SearchView.BASIC:
+                    return <Paper className={this.props.classes.searchView}>
+                        <div className={this.props.classes.searchQueryList}>Saved search queries</div>
+                        <List component="nav" className={this.props.classes.list}>
+                            {this.renderSavedQueries('Test')}
+                            {this.renderSavedQueries('Demo')}
+                        </List>
+                        <div className={this.props.classes.searchQueryList}>Recent search queries</div>
+                        <List component="nav" className={this.props.classes.list}>
+                            {this.renderRecentQueries('cos')}
+                            {this.renderRecentQueries('testtest')}
+                        </List>
+                        <div className={this.props.classes.advanced} onClick={() => this.props.onSetView(SearchView.ADVANCED)}>Advanced search</div>
+                    </Paper>;
+                case SearchView.ADVANCED:
+                    return <Paper>
+                        <List component="nav" className={this.props.classes.list}>
+                            {this.renderRecentQueries('ADVANCED VIEW')}
+                        </List>
+                        <Button onClick={() => this.props.onSetView(SearchView.BASIC)}>Back</Button>
+                    </Paper>;
+                case SearchView.AUTOCOMPLETE:
+                    return <Paper>
+                        <List component="nav" className={this.props.classes.list}>
+                            {this.renderRecentQueries('AUTOCOMPLETE VIEW')}
+                        </List>
+                    </Paper>;
+                default:
+                    return '';
+            }
+        }
 
         renderRecentQueries = (text: string) =>
             <ListItem button>
@@ -171,7 +208,11 @@ export const SearchBar = withStyles(styles)(
                 () => this.props.onSearch(this.state.value),
                 this.props.debounce || DEFAULT_SEARCH_DEBOUNCE
             );
-
+            if (event.target.value.length > 0) {
+                this.props.onSetView(SearchView.AUTOCOMPLETE);
+            } else {
+                this.props.onSetView(SearchView.BASIC);
+            }
         }
     }
-);
+));
