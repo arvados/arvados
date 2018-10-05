@@ -1174,6 +1174,16 @@ EOS
     end
   end
 
+  test 'can get old version collection by uuid' do
+    authorize_with :active
+    get :show, {
+      id: collections(:collection_owned_by_active_past_version_1).uuid,
+    }
+    assert_response :success
+    assert_equal collections(:collection_owned_by_active_past_version_1).name,
+                  json_response['name']
+  end
+
   test 'version and current_version_uuid are ignored at creation time' do
     permit_unsigned_manifests
     authorize_with :active

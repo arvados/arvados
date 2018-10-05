@@ -36,7 +36,7 @@ class Arvados::V1::CollectionsController < ApplicationController
     if params[:include_trash] || ['destroy', 'trash', 'untrash'].include?(action_name)
       opts.update({include_trash: true})
     end
-    if params[:include_old_versions]
+    if params[:include_old_versions] || @include_old_versions
       opts.update({include_old_versions: true})
     end
     @objects = Collection.readable_by(*@read_users, opts) if !opts.empty?
@@ -44,6 +44,8 @@ class Arvados::V1::CollectionsController < ApplicationController
   end
 
   def find_object_by_uuid
+    @include_old_versions = true
+
     if loc = Keep::Locator.parse(params[:id])
       loc.strip_hints!
 
