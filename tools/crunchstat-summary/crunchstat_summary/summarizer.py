@@ -37,6 +37,7 @@ WEBCHART_CLASS = crunchstat_summary.dygraphs.DygraphsChart
 class Task(object):
     def __init__(self):
         self.starttime = None
+        self.finishtime = None
         self.series = collections.defaultdict(list)
 
 
@@ -115,12 +116,14 @@ class Summarizer(object):
                     logger.debug('%s: done %s', self.label, uuid)
                     continue
 
-                m = re.search(r'^(?P<timestamp>[^\s.]+)(\.\d+)? (?P<job_uuid>\S+) \d+ (?P<seq>\d+) stderr crunchstat: (?P<category>\S+) (?P<current>.*?)( -- interval (?P<interval>.*))?\n$', line)
+                # 2017-12-02_17:15:08 e51c5-8i9sb-mfp68stkxnqdd6m 63676 0 stderr crunchstat: keepcalls 0 put 2576 get -- interval 10.0000 seconds 0 put 2576 get
+                m = re.search(r'^(?P<timestamp>[^\s.]+)(\.\d+)? (?P<job_uuid>\S+) \d+ (?P<seq>\d+) stderr (?P<crunchstat>crunchstat: )(?P<category>\S+) (?P<current>.*?)( -- interval (?P<interval>.*))?\n$', line)
                 if not m:
                     continue
             else:
                 # crunch2
-                m = re.search(r'^(?P<timestamp>\S+) (?P<category>\S+) (?P<current>.*?)( -- interval (?P<interval>.*))?\n$', line)
+                # 2017-12-01T16:56:24.723509200Z crunchstat: keepcalls 0 put 3 get -- interval 10.0000 seconds 0 put 3 get
+                m = re.search(r'^(?P<timestamp>\S+) (?P<crunchstat>crunchstat: )?(?P<category>\S+) (?P<current>.*?)( -- interval (?P<interval>.*))?\n$', line)
                 if not m:
                     continue
 
@@ -158,15 +161,24 @@ class Summarizer(object):
                 raise ValueError("Cannot parse timestamp {!r}".format(
                     timestamp))
 
-            if not task.starttime:
-                task.starttime = timestamp
+            if task.starttime is None:
                 logger.debug('%s: task %s starttime %s',
                              self.label, task_id, timestamp)
-            task.finishtime = timestamp
+            if task.starttime is None or timestamp < task.starttime:
+                task.starttime = timestamp
+            if task.finishtime is None or timestamp > task.finishtime:
+                task.finishtime = timestamp
 
-            if not self.starttime:
+            if self.starttime is None or timestamp < task.starttime:
                 self.starttime = timestamp
-            self.finishtime = timestamp
+            if self.finishtime is None or timestamp < task.finishtime:
+                self.finishtime = timestamp
+
+            if (not self.detected_crunch1) and task.starttime is not None and task.finishtime is not None:
+                elapsed = (task.finishtime - task.starttime).seconds
+                self.task_stats[task_id]['time'] = {'elapsed': elapsed}
+                if elapsed > self.stats_max['time']['elapsed']:
+                    self.stats_max['time']['elapsed'] = elapsed
 
             this_interval_s = None
             for group in ['current', 'interval']:
@@ -182,10 +194,16 @@ class Summarizer(object):
                         else:
                             stats[stat] = int(val)
                 except ValueError as e:
-                    logger.warning(
-                        'Error parsing value %r (stat %r, category %r): %r',
-                        val, stat, category, e)
-                    logger.warning('%s', line)
+                    # If the line doesn't start with 'crunchstat:' we
+                    # might have mistaken an error message for a
+                    # structured crunchstat line.
+                    if m.group("crunchstat") is None or m.group("category") == "crunchstat":
+                        logger.warning("%s: log contains message\n  %s", self.label, line)
+                    else:
+                        logger.warning(
+                            '%s: Error parsing value %r (stat %r, category %r): %r',
+                            self.label, val, stat, category, e)
+                        logger.warning('%s', line)
                     continue
                 if 'user' in stats or 'sys' in stats:
                     stats['user+sys'] = stats.get('user', 0) + stats.get('sys', 0)

@@ -1,0 +1,24 @@
+category	metric	task_max	task_max_rate	job_total
+blkio:0:0	read	0	0	0
+blkio:0:0	write	0	0	0
+fuseops	read	0	0	0
+fuseops	write	0	0	0
+keepcache	hit	0	0	0
+keepcache	miss	0	0	0
+keepcalls	get	0	0	0
+keepcalls	put	0	0	0
+net:keep0	rx	0	0	0
+net:keep0	tx	0	0	0
+net:keep0	tx+rx	0	0	0
+time	elapsed	10	-	10
+# Number of tasks: 1
+# Max CPU time spent by a single task: 0s
+# Max CPU usage in a single interval: 0%
+# Overall CPU usage: 0%
+# Max memory used by a single task: 0.00GB
+# Max network traffic in a single task: 0.00GB
+# Max network speed in a single interval: 0.00MB/s
+# Keep cache miss rate 0.00%
+# Keep cache utilization 0.00%
+#!! container max CPU usage was 0% -- try runtime_constraints "vcpus":1
+#!! container max RSS was 0 MiB -- try runtime_constraints "ram":0
