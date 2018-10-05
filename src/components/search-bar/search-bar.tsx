@@ -11,7 +11,7 @@ import {
     WithStyles,
     Tooltip,
     InputAdornment, Input,
-    List, ListItem, ListItemText, ListItemSecondaryAction, Button
+    ListItem, ListItemText, ListItemSecondaryAction
 } from '@material-ui/core';
 import SearchIcon from '@material-ui/icons/Search';
 import { RemoveIcon } from '~/components/icon/icon';
@@ -20,8 +20,11 @@ import { RootState } from '~/store/store';
 import { Dispatch } from 'redux';
 import { goToView } from '~/store/structured-search/structured-search-actions';
 import { SearchView } from '~/store/structured-search/structured-search-reducer';
+import { SearchBarBasicView } from '~/components/search-bar/search-bar-basic-view';
+import { SearchBarAdvancedView } from '~/components/search-bar/search-bar-advanced-view';
+import { SearchBarAutocompleteView } from '~/components/search-bar/search-bar-autocomplete-view';
 
-type CssRules = 'container' | 'input' | 'advanced' | 'searchQueryList' | 'list' | 'searchView' | 'searchBar';
+type CssRules = 'container' | 'input' | 'searchBar';
 
 const styles: StyleRulesCallback<CssRules> = theme => {
     return {
@@ -33,25 +36,6 @@ const styles: StyleRulesCallback<CssRules> = theme => {
         input: {
             border: 'none',
             padding: `0px ${theme.spacing.unit}px`
-        },
-        advanced: {
-            display: 'flex',
-            justifyContent: 'flex-end',
-            paddingRight: theme.spacing.unit * 2,
-            paddingBottom: theme.spacing.unit,
-            fontSize: '14px',
-            cursor: 'pointer'
-        },
-        searchQueryList: {
-            padding: `${theme.spacing.unit / 2}px ${theme.spacing.unit}px `,
-            background: '#f2f2f2',
-            fontSize: '14px'
-        },
-        list: {
-            padding: '0px'
-        },
-        searchView: {
-            color: theme.palette.common.black
         },
         searchBar: {
             height: '30px'
@@ -76,6 +60,26 @@ interface SearchBarState {
     value: string;
     isSearchViewOpen: boolean;
 }
+
+export const renderRecentQueries = (text: string) => {
+    return <ListItem button>
+        <ListItemText secondary={text} />
+    </ListItem>;
+};
+
+
+export const renderSavedQueries = (text: string) => {
+    return <ListItem button>
+        <ListItemText secondary={text} />
+        <ListItemSecondaryAction>
+            <Tooltip title="Remove">
+                <IconButton aria-label="Remove">
+                    <RemoveIcon />
+                </IconButton>
+            </Tooltip>
+        </ListItemSecondaryAction>
+    </ListItem>;
+};
 
 const mapStateToProps = ({ structuredSearch }: RootState) => {
     return {
@@ -147,53 +151,15 @@ export const SearchBar = connect(mapStateToProps, mapDispatchToProps)(withStyles
         getView = (currentView: string) => {
             switch (currentView) {
                 case SearchView.BASIC:
-                    return <Paper className={this.props.classes.searchView}>
-                        <div className={this.props.classes.searchQueryList}>Saved search queries</div>
-                        <List component="nav" className={this.props.classes.list}>
-                            {this.renderSavedQueries('Test')}
-                            {this.renderSavedQueries('Demo')}
-                        </List>
-                        <div className={this.props.classes.searchQueryList}>Recent search queries</div>
-                        <List component="nav" className={this.props.classes.list}>
-                            {this.renderRecentQueries('cos')}
-                            {this.renderRecentQueries('testtest')}
-                        </List>
-                        <div className={this.props.classes.advanced} onClick={() => this.props.onSetView(SearchView.ADVANCED)}>Advanced search</div>
-                    </Paper>;
+                    return <SearchBarBasicView setView={this.props.onSetView} />;
                 case SearchView.ADVANCED:
-                    return <Paper>
-                        <List component="nav" className={this.props.classes.list}>
-                            {this.renderRecentQueries('ADVANCED VIEW')}
-                        </List>
-                        <Button onClick={() => this.props.onSetView(SearchView.BASIC)}>Back</Button>
-                    </Paper>;
+                    return <SearchBarAdvancedView setView={this.props.onSetView} />;
                 case SearchView.AUTOCOMPLETE:
-                    return <Paper>
-                        <List component="nav" className={this.props.classes.list}>
-                            {this.renderRecentQueries('AUTOCOMPLETE VIEW')}
-                        </List>
-                    </Paper>;
+                    return <SearchBarAutocompleteView />;
                 default:
                     return '';
             }
         }
-
-        renderRecentQueries = (text: string) =>
-            <ListItem button>
-                <ListItemText secondary={text} />
-            </ListItem>
-
-        renderSavedQueries = (text: string) =>
-            <ListItem button>
-                <ListItemText secondary={text} />
-                <ListItemSecondaryAction>
-                    <Tooltip title="Remove">
-                        <IconButton aria-label="Remove">
-                            <RemoveIcon />
-                        </IconButton>
-                    </Tooltip>
-                </ListItemSecondaryAction>
-            </ListItem>
 
         handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
             event.preventDefault();
