@@ -11,9 +11,10 @@ import {
     WithStyles,
     Tooltip,
     InputAdornment, Input,
-    List, ListItem, ListItemText
+    List, ListItem, ListItemText, ListItemSecondaryAction
 } from '@material-ui/core';
 import SearchIcon from '@material-ui/icons/Search';
+import { RemoveIcon } from '~/components/icon/icon';
 
 type CssRules = 'container' | 'input' | 'advanced' | 'searchQueryList' | 'list' | 'searchView' | 'searchBar';
 
@@ -44,8 +45,7 @@ const styles: StyleRulesCallback<CssRules> = theme => {
             padding: '0px'
         },
         searchView: {
-            color: '#000',
-            zIndex: 1000
+            color: theme.palette.common.black
         },
         searchBar: {
             height: '30px'
@@ -85,6 +85,7 @@ export const SearchBar = withStyles(styles)(
             return <Paper className={classes.container} onBlur={this.closeSearchView}>
                 <form onSubmit={this.handleSubmit} className={classes.searchBar}>
                     <Input
+                        autoComplete={''}
                         className={classes.input}
                         onChange={this.handleChange}
                         placeholder="Search"
@@ -101,20 +102,19 @@ export const SearchBar = withStyles(styles)(
                                 </Tooltip>
                             </InputAdornment>
                         } />
-                    {this.state.isSearchViewOpen
-                        ? <Paper className={classes.searchView}>
-                            <div className={classes.searchQueryList}>Saved search queries</div>
-                            <List component="nav" className={classes.list}>
-                                {this.renderListItem('Trash')}
-                                {this.renderListItem('Spam')}
-                            </List>
-                            <div className={classes.searchQueryList}>Recent search queries</div>
-                            <List component="nav" className={classes.list}>
-                                {this.renderListItem('Trash')}
-                                {this.renderListItem('Spam')}
-                            </List>
-                            <div className={classes.advanced}>Advanced</div>
-                        </Paper> : null}
+                    {this.state.isSearchViewOpen && <Paper className={classes.searchView}>
+                        <div className={classes.searchQueryList}>Saved search queries</div>
+                        <List component="nav" className={classes.list}>
+                            {this.renderSavedQueries('Test')}
+                            {this.renderSavedQueries('Demo')}
+                        </List>
+                        <div className={classes.searchQueryList}>Recent search queries</div>
+                        <List component="nav" className={classes.list}>
+                            {this.renderRecentQueries('cos')}
+                            {this.renderRecentQueries('testtest')}
+                        </List>
+                        <div className={classes.advanced}>Advanced search</div>
+                    </Paper>}
                 </form>
             </Paper>;
         }
@@ -141,9 +141,21 @@ export const SearchBar = withStyles(styles)(
             this.setState({ isSearchViewOpen: true })
 
 
-        renderListItem = (text: string) =>
+        renderRecentQueries = (text: string) =>
             <ListItem button>
                 <ListItemText secondary={text} />
+            </ListItem>
+
+        renderSavedQueries = (text: string) =>
+            <ListItem button>
+                <ListItemText secondary={text} />
+                <ListItemSecondaryAction>
+                    <Tooltip title="Remove">
+                        <IconButton aria-label="Remove">
+                            <RemoveIcon />
+                        </IconButton>
+                    </Tooltip>
+                </ListItemSecondaryAction>
             </ListItem>
 
         handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
