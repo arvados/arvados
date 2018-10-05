@@ -71,21 +71,19 @@ export class CollectionService extends TrashableResourceService<CollectionResour
     }
 
     update(uuid: string, data: Partial<CollectionResource>) {
-        if (uuid && data) {
+        if (uuid && data && data.properties) {
             const { properties } = data;
-            if (properties) {
-                const mappedData = {
-                    ...TrashableResourceService.mapKeys(snakeCase)(data),
-                    properties,
-                };
-                return TrashableResourceService
-                    .defaultResponse(
-                        this.serverApi
-                            .put<CollectionResource>(this.resourceType + uuid, mappedData),
-                        this.actions,
-                        false
-                    );
-            }
+            const mappedData = {
+                ...TrashableResourceService.mapKeys(snakeCase)(data),
+                properties,
+            };
+            return TrashableResourceService
+                .defaultResponse(
+                    this.serverApi
+                        .put<CollectionResource>(this.resourceType + uuid, mappedData),
+                    this.actions,
+                    false
+                );
         }
         return TrashableResourceService
             .defaultResponse(

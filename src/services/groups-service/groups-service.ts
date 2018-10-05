@@ -48,21 +48,19 @@ export class GroupsService<T extends GroupResource = GroupResource> extends Tras
         const response = await CommonResourceService.defaultResponse(
             this.serverApi
                 .get(this.resourceType + `${uuid}/contents`, {
-                    params: CommonResourceService.mapKeys(_.camelCase)(params)
+                    params: CommonResourceService.mapKeys(_.snakeCase)(params)
                 }),
             this.actions, 
             false
         );
         const { items, ...res } = response;
         const mappedItems = items.map((item: any) => {
+            const mappedItem = TrashableResourceService.mapKeys(_.camelCase)(item);
             if (item.kind === ResourceKind.COLLECTION) {
                 const { properties } = item;
-                return {
-                    ...TrashableResourceService.mapKeys(_.camelCase)(item),
-                    properties,
-                };
+                return { ...mappedItem, properties };
             } else {
-                return TrashableResourceService.mapKeys(_.camelCase)(item);
+                return mappedItem;
             }
         });
         const mappedResponse = { ...TrashableResourceService.mapKeys(_.camelCase)(res) };
