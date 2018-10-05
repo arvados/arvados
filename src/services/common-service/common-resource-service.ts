@@ -62,7 +62,7 @@ export class CommonResourceService<T extends Resource> {
             }
         }
 
-    static defaultResponse<R>(promise: AxiosPromise<R>, actions: ApiActions): Promise<R> {
+    static defaultResponse<R>(promise: AxiosPromise<R>, actions: ApiActions, mapKeys = true): Promise<R> {
         const reqId = uuid();
         actions.progressFn(reqId, true);
         return promise
@@ -70,7 +70,9 @@ export class CommonResourceService<T extends Resource> {
                 actions.progressFn(reqId, false);
                 return data;
             })
-            .then(CommonResourceService.mapResponseKeys)
+            .then((response: { data: any }) => {
+                return mapKeys ? CommonResourceService.mapResponseKeys(response) : response.data;
+            })
             .catch(({ response }) => {
                 actions.progressFn(reqId, false);
                 const errors = CommonResourceService.mapResponseKeys(response) as Errors;
