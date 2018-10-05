@@ -39,6 +39,7 @@ class Container < ArvadosModel
   before_save :update_secret_mounts_md5
   before_save :scrub_secret_mounts
   before_save :clear_runtime_status_when_queued
+  after_save :update_cr_logs
   after_save :handle_completed
   after_save :propagate_priority
   after_commit { UpdatePriority.run_update_thread }
@@ -377,24 +378,11 @@ class Container < ArvadosModel
     current_user.andand.is_admin
   end
 
-  def permission_to_update
-    # Override base permission check to allow auth_uuid to set progress and
-    # output (only).  Whether it is legal to set progress and output in the current
-    # state has already been checked in validate_change.
-    current_user.andand.is_admin ||
-      (!current_api_client_authorization.nil? and
-       [self.auth_uuid, self.locked_by_uuid].include? current_api_client_authorization.uuid)
-  end
-
   def ensure_owner_uuid_is_permitted
-    # Override base permission check to allow auth_uuid to set progress and
-    # output (only).  Whether it is legal to set progress and output in the current
-    # state has already been checked in validate_change.
-    if !current_api_client_authorization.nil? and self.auth_uuid == current_api_client_authorization.uuid
-      check_update_whitelist [:progress, :output]
-    else
-      super
-    end
+    # validate_change ensures owner_uuid can't be changed at all --
+    # except during create, which requires admin privileges. Checking
+    # permission here would be superfluous.
+    true
   end
 
   def set_timestamps
@@ -420,6 +408,8 @@ class Container < ArvadosModel
 
   def validate_change
     permitted = [:state]
+    progress_attrs = [:progress, :runtime_status, :log, :output]
+    final_attrs = [:exit_code, :finished_at]
 
     if self.new_record?
       permitted.push(:owner_uuid, :command, :container_image, :cwd,
@@ -430,26 +420,26 @@ class Container < ArvadosModel
 
     case self.state
     when Locked
-      permitted.push :priority, :runtime_status
+      permitted.push :priority, :runtime_status, :log
 
     when Queued
       permitted.push :priority
 
     when Running
-      permitted.push :priority, :progress, :output, :runtime_status
+      permitted.push :priority, *progress_attrs
       if self.state_changed?
         permitted.push :started_at
       end
 
     when Complete
       if self.state_was == Running
-        permitted.push :finished_at, :output, :log, :exit_code
+        permitted.push *final_attrs, *progress_attrs
       end
 
     when Cancelled
       case self.state_was
       when Running
-        permitted.push :finished_at, :output, :log
+        permitted.push :finished_at, *progress_attrs
       when Queued, Locked
         permitted.push :finished_at, :log
       end
@@ -459,6 +449,15 @@ class Container < ArvadosModel
       return false
     end
 
+    if current_api_client_authorization.andand.uuid.andand == self.auth_uuid
+      # The contained process itself can update progress indicators,
+      # but can't change priority etc.
+      permitted = permitted & (progress_attrs + final_attrs + [:state] - [:log])
+    elsif self.locked_by_uuid && self.locked_by_uuid != current_api_client_authorization.andand.uuid
+      # When locked, progress fields cannot be updated by the wrong
+      # dispatcher, even though it has admin privileges.
+      permitted = permitted - progress_attrs
+    end
     check_update_whitelist permitted
   end
 
@@ -493,6 +492,19 @@ class Container < ArvadosModel
             first
       if !c
         errors.add :output, "collection must exist and be readable by current user."
+      end
+    end
+  end
+
+  def update_cr_logs
+    # If self.final?, this update is superfluous: the final log/output
+    # update will be done when handle_completed calls finalize! on
+    # each requesting CR.
+    return if self.final? || !self.log_changed?
+    leave_modified_by_user_alone do
+      ContainerRequest.where(container_uuid: self.uuid).each do |cr|
+        cr.update_collections(container: self, collections: ['log'])
+        cr.save!
       end
     end
   end

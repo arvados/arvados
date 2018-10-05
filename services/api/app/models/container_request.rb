@@ -123,11 +123,13 @@ class ContainerRequest < ArvadosModel
   # Finalize the container request after the container has
   # finished/cancelled.
   def finalize!
-    out_coll = nil
-    log_coll = nil
-    c = Container.find_by_uuid(container_uuid)
-    ['output', 'log'].each do |out_type|
-      pdh = c.send(out_type)
+    update_collections(container: Container.find_by_uuid(container_uuid))
+    update_attributes!(state: Final)
+  end
+
+  def update_collections(container:, collections: ['log', 'output'])
+    collections.each do |out_type|
+      pdh = container.send(out_type)
       next if pdh.nil?
       coll_name = "Container #{out_type} for request #{uuid}"
       trash_at = nil
@@ -141,24 +143,25 @@ class ContainerRequest < ArvadosModel
       end
       manifest = Collection.where(portable_data_hash: pdh).first.manifest_text
 
-      coll = Collection.new(owner_uuid: owner_uuid,
-                            manifest_text: manifest,
-                            portable_data_hash: pdh,
-                            name: coll_name,
-                            trash_at: trash_at,
-                            delete_at: trash_at,
-                            properties: {
-                              'type' => out_type,
-                              'container_request' => uuid,
-                            })
-      coll.save_with_unique_name!
-      if out_type == 'output'
-        out_coll = coll.uuid
-      else
-        log_coll = coll.uuid
+      coll_uuid = self.send(out_type + '_uuid')
+      coll = coll_uuid.nil? ? nil : Collection.where(uuid: coll_uuid).first
+      if !coll
+        coll = Collection.new(
+          owner_uuid: self.owner_uuid,
+          name: coll_name,
+          properties: {
+            'type' => out_type,
+            'container_request' => uuid,
+          })
       end
+      coll.assign_attributes(
+        portable_data_hash: pdh,
+        manifest_text: manifest,
+        trash_at: trash_at,
+        delete_at: trash_at)
+      coll.save_with_unique_name!
+      self.send(out_type + '_uuid=', coll.uuid)
     end
-    update_attributes!(state: Final, output_uuid: out_coll, log_uuid: log_coll)
   end
 
   def self.full_text_searchable_columns
@@ -310,6 +313,10 @@ class ContainerRequest < ArvadosModel
           self.container_uuid != self.container_uuid_was &&
           self.container_count == 1 + (self.container_count_was || 0))
         permitted.push :container_count
+      end
+
+      if current_user.andand.is_admin
+        permitted.push :log_uuid
       end
 
     when Final

@@ -12,12 +12,11 @@ class CollectionModelPerformanceTest < ActiveSupport::TestCase
   setup do
     # The Collection model needs to have a current token, not just a
     # current user, to sign & verify manifests:
-    Thread.current[:api_client_authorization] =
-      api_client_authorizations(:active)
+    Thread.current[:token] = api_client_authorizations(:active).token
   end
 
   teardown do
-    Thread.current[:api_client_authorization] = nil
+    Thread.current[:token] = nil
   end
 
   # "crrud" == "create read render update delete", not a typo
@@ -27,7 +26,7 @@ class CollectionModelPerformanceTest < ActiveSupport::TestCase
                     files_per_stream: 100,
                     blocks_per_file: 20,
                     bytes_per_block: 2**26,
-                    api_token: api_token(:active))
+                    api_token: api_client_authorizations(:active).token)
     end
     act_as_user users(:active) do
       c = time_block "new (manifest_text is #{bigmanifest.length>>20}MiB)" do
@@ -50,7 +49,7 @@ class CollectionModelPerformanceTest < ActiveSupport::TestCase
         c.as_api_response(nil)
       end
       loc = Blob.sign_locator(Digest::MD5.hexdigest('foo') + '+3',
-                              api_token: api_token(:active))
+                              api_token: api_client_authorizations(:active).token)
       # Note Collection's strip_manifest_text method has now removed
       # the signatures from c.manifest_text, so we have to start from
       # bigmanifest again here instead of just appending with "+=".

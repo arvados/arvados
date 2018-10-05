@@ -28,17 +28,23 @@ var dropHeaders = map[string]bool{
 	"Proxy-Authorization": true,
 	"TE":                true,
 	"Trailer":           true,
-	"Transfer-Encoding": true,
+	"Transfer-Encoding": true, // *-Encoding headers interfer with Go's automatic compression/decompression
+	"Content-Encoding":  true,
+	"Accept-Encoding":   true,
 	"Upgrade":           true,
 }
 
-type ResponseFilter func(*http.Response) (*http.Response, error)
+type ResponseFilter func(*http.Response, error) (*http.Response, error)
 
+// Do sends a request, passes the result to the filter (if provided)
+// and then if the result is not suppressed by the filter, sends the
+// request to the ResponseWriter.  Returns true if a response was written,
+// false if not.
 func (p *proxy) Do(w http.ResponseWriter,
 	reqIn *http.Request,
 	urlOut *url.URL,
 	client *http.Client,
-	filter ResponseFilter) {
+	filter ResponseFilter) bool {
 
 	// Copy headers from incoming request, then add/replace proxy
 	// headers like Via and X-Forwarded-For.
@@ -72,28 +78,34 @@ func (p *proxy) Do(w http.ResponseWriter,
 		Header: hdrOut,
 		Body:   reqIn.Body,
 	}).WithContext(ctx)
+
 	resp, err := client.Do(reqOut)
-	if err != nil {
+	if filter == nil && err != nil {
 		httpserver.Error(w, err.Error(), http.StatusBadGateway)
-		return
+		return true
 	}
 
 	// make sure original response body gets closed
-	originalBody := resp.Body
-	defer originalBody.Close()
+	var originalBody io.ReadCloser
+	if resp != nil {
+		originalBody = resp.Body
+		if originalBody != nil {
+			defer originalBody.Close()
+		}
+	}
 
 	if filter != nil {
-		resp, err = filter(resp)
+		resp, err = filter(resp, err)
 
 		if err != nil {
 			httpserver.Error(w, err.Error(), http.StatusBadGateway)
-			return
+			return true
 		}
 		if resp == nil {
 			// filter() returned a nil response, this means suppress
 			// writing a response, for the case where there might
 			// be multiple response writers.
-			return
+			return false
 		}
 
 		// the filter gave us a new response body, make sure that gets closed too.
@@ -101,6 +113,7 @@ func (p *proxy) Do(w http.ResponseWriter,
 			defer resp.Body.Close()
 		}
 	}
+
 	for k, v := range resp.Header {
 		for _, v := range v {
 			w.Header().Add(k, v)
@@ -111,4 +124,5 @@ func (p *proxy) Do(w http.ResponseWriter,
 	if err != nil {
 		httpserver.Logger(reqIn).WithError(err).WithField("bytesCopied", n).Error("error copying response body")
 	}
+	return true
 }

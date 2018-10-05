@@ -61,7 +61,7 @@ class SummarizeEdgeCases(unittest.TestCase):
 
 class SummarizeContainer(ReportDiff):
     fake_container = {
-        'uuid': '9tee4-dz642-mjfb0i5hzojp16a',
+        'uuid': '9tee4-dz642-lymtndkpy39eibk',
         'created_at': '2017-08-18T14:27:25.371388141',
         'log': '9tee4-4zz18-ihyzym9tcwjwg4r',
     }
@@ -71,8 +71,12 @@ class SummarizeContainer(ReportDiff):
         'created_at': '2017-08-18T14:27:25.242339223Z',
         'container_uuid': fake_container['uuid'],
     }
+    reportfile = os.path.join(
+        TESTS_DIR, 'container_9tee4-dz642-lymtndkpy39eibk.txt.gz')
     logfile = os.path.join(
-        TESTS_DIR, 'container_9tee4-dz642-mjfb0i5hzojp16a-crunchstat.txt.gz')
+        TESTS_DIR, 'container_9tee4-dz642-lymtndkpy39eibk-crunchstat.txt.gz')
+    arvmountlog = os.path.join(
+        TESTS_DIR, 'container_9tee4-dz642-lymtndkpy39eibk-arv-mount.txt.gz')
 
     @mock.patch('arvados.collection.CollectionReader')
     @mock.patch('arvados.api')
@@ -82,13 +86,18 @@ class SummarizeContainer(ReportDiff):
         mock_api().containers().get().execute.return_value = self.fake_container
         mock_cr().__iter__.return_value = [
             'crunch-run.txt', 'stderr.txt', 'node-info.txt',
-            'container.json', 'crunchstat.txt']
-        mock_cr().open.return_value = gzip.open(self.logfile)
+            'container.json', 'crunchstat.txt', 'arv-mount.txt']
+        def _open(n):
+            if n == "crunchstat.txt":
+                return gzip.open(self.logfile)
+            elif n == "arv-mount.txt":
+                return gzip.open(self.arvmountlog)
+        mock_cr().open.side_effect = _open
         args = crunchstat_summary.command.ArgumentParser().parse_args(
             ['--job', self.fake_request['uuid']])
         cmd = crunchstat_summary.command.Command(args)
         cmd.run()
-        self.diff_known_report(self.logfile, cmd)
+        self.diff_known_report(self.reportfile, cmd)
 
 
 class SummarizeJob(ReportDiff):

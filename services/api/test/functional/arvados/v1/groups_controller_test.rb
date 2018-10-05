@@ -776,4 +776,77 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_equal json_response['included'][0]["uuid"], groups(:group_for_sharing_tests).uuid
   end
 
+  ### contents with exclude_home_project
+
+  test 'contents, exclude home owned by another user' do
+    authorize_with :user_bar_in_sharing_group
+
+    act_as_system_user do
+      Link.create!(
+        tail_uuid: users(:user_bar_in_sharing_group).uuid,
+        link_class: 'permission',
+        name: 'can_read',
+        head_uuid: groups(:project_owned_by_foo).uuid)
+      Link.create!(
+        tail_uuid: users(:user_bar_in_sharing_group).uuid,
+        link_class: 'permission',
+        name: 'can_read',
+        head_uuid: collections(:collection_owned_by_foo).uuid)
+    end
+
+    get :contents, {:include => "owner_uuid", :exclude_home_project => true}
+
+    assert_equal 2, json_response['items'].length
+    assert_equal json_response['items'][0]["uuid"], groups(:project_owned_by_foo).uuid
+    assert_equal json_response['items'][1]["uuid"], collections(:collection_owned_by_foo).uuid
+
+    assert_equal 1, json_response['included'].length
+    assert_equal json_response['included'][0]["uuid"], users(:user_foo_in_sharing_group).uuid
+  end
+
+  test 'contents, exclude home, owned by unreadable project' do
+    authorize_with :user_bar_in_sharing_group
+
+    act_as_system_user do
+      Group.find_by_uuid(groups(:project_owned_by_foo).uuid).update!(owner_uuid: groups(:aproject).uuid)
+      Link.create!(
+        tail_uuid: users(:user_bar_in_sharing_group).uuid,
+        link_class: 'permission',
+        name: 'can_read',
+        head_uuid: groups(:project_owned_by_foo).uuid)
+    end
+
+    get :contents, {:include => "owner_uuid", :exclude_home_project => true}
+
+    assert_equal 1, json_response['items'].length
+    assert_equal json_response['items'][0]["uuid"], groups(:project_owned_by_foo).uuid
+
+    assert_equal 0, json_response['included'].length
+  end
+
+  test 'contents, exclude home, owned by non-project' do
+    authorize_with :user_bar_in_sharing_group
+
+    act_as_system_user do
+      Group.find_by_uuid(groups(:project_owned_by_foo).uuid).update!(owner_uuid: groups(:group_for_sharing_tests).uuid)
+    end
+
+    get :contents, {:include => "owner_uuid", :exclude_home_project => true}
+
+    assert_equal 1, json_response['items'].length
+    assert_equal json_response['items'][0]["uuid"], groups(:project_owned_by_foo).uuid
+
+    assert_equal 1, json_response['included'].length
+    assert_equal json_response['included'][0]["uuid"], groups(:group_for_sharing_tests).uuid
+  end
+
+
+  test 'contents, exclude home, with parent specified' do
+    authorize_with :active
+
+    get :contents, {id: groups(:aproject).uuid, :include => "owner_uuid", :exclude_home_project => true}
+
+    assert_response 422
+  end
+
 end

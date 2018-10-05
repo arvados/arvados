@@ -87,7 +87,7 @@ func (this *KeepClient) uploadToKeepServer(host string, hash string, body io.Rea
 	var resp *http.Response
 	if resp, err = this.httpClient().Do(req); err != nil {
 		DebugPrintf("DEBUG: [%s] Upload failed %v error: %v", reqid, url, err.Error())
-		upload_status <- uploadStatus{err, url, 0, 0, ""}
+		upload_status <- uploadStatus{err, url, 0, 0, err.Error()}
 		return
 	}
 

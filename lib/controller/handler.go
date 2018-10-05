@@ -121,11 +121,14 @@ func prepend(next http.Handler, middleware middlewareFunc) http.Handler {
 	})
 }
 
-func (h *Handler) proxyRailsAPI(w http.ResponseWriter, req *http.Request, next http.Handler) {
+// localClusterRequest sets up a request so it can be proxied to the
+// local API server using proxy.Do().  Returns true if a response was
+// written, false if not.
+func (h *Handler) localClusterRequest(w http.ResponseWriter, req *http.Request, filter ResponseFilter) bool {
 	urlOut, insecure, err := findRailsAPI(h.Cluster, h.NodeProfile)
 	if err != nil {
 		httpserver.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return true
 	}
 	urlOut = &url.URL{
 		Scheme:   urlOut.Scheme,
@@ -138,7 +141,13 @@ func (h *Handler) proxyRailsAPI(w http.ResponseWriter, req *http.Request, next h
 	if insecure {
 		client = h.insecureClient
 	}
-	h.proxy.Do(w, req, urlOut, client, nil)
+	return h.proxy.Do(w, req, urlOut, client, filter)
+}
+
+func (h *Handler) proxyRailsAPI(w http.ResponseWriter, req *http.Request, next http.Handler) {
+	if !h.localClusterRequest(w, req, nil) && next != nil {
+		next.ServeHTTP(w, req)
+	}
 }
 
 // For now, findRailsAPI always uses the rails API running on this

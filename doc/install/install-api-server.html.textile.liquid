@@ -158,39 +158,18 @@ Example @application.yml@:
 </code></pre>
 </notextile>
 
-h3(#disable_api_methods). disable_api_methods
+h3(#enable_legacy_jobs_api). enable_legacy_jobs_api
 
-Set the @disable_api_methods@ configuration option to disable the deprecated @jobs@ API.  This will prevent users from accidentally submitting jobs that won't run.  "All new installations should use the containers API.":crunch2-slurm/install-prerequisites.html
+Enable the legacy "Jobs API":install-crunch-dispatch.html .  Note: new installations should use the "Containers API":crunch2-slurm/install-prerequisites.html
+
+Disabling the jobs API means methods involving @jobs@, @job_tasks@, @pipeline_templates@ and @pipeline_instances@ are disabled.  This functionality is superceded by the containers API which consists of @container_requests@, @containers@ and @workflows@.  Arvados clients (such as @arvados-cwl-runner@) detect which APIs are available and adjust behavior accordingly.
+
+* auto -- (default) enable the Jobs API only if it has been used before (i.e., there are job records in the database), otherwise disable jobs API .
+* true -- enable the Jobs API even if there are no existing job records.
+* false -- disable the Jobs API even in the presence of existing job records.
 
 <notextile>
-<pre><code>
-  disable_api_methods:
-    - jobs.create
-    - pipeline_instances.create
-    - pipeline_templates.create
-    - jobs.get
-    - pipeline_instances.get
-    - pipeline_templates.get
-    - jobs.list
-    - pipeline_instances.list
-    - pipeline_templates.list
-    - jobs.index
-    - pipeline_instances.index
-    - pipeline_templates.index
-    - jobs.update
-    - pipeline_instances.update
-    - pipeline_templates.update
-    - jobs.queue
-    - jobs.queue_size
-    - job_tasks.create
-    - job_tasks.get
-    - job_tasks.list
-    - job_tasks.index
-    - job_tasks.update
-    - jobs.show
-    - pipeline_instances.show
-    - pipeline_templates.show
-    - job_tasks.show
+<pre><code>  enable_legacy_jobs_api: <span class="userinput">auto</span>
 </code></pre>
 </notextile>
 

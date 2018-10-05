@@ -8,6 +8,7 @@ package arvadostest
 const (
 	SpectatorToken          = "zw2f4gwx8hw8cjre7yp6v1zylhrhn3m5gvjq73rtpwhmknrybu"
 	ActiveToken             = "3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi"
+	ActiveTokenV2           = "v2/zzzzz-gj3su-077z32aux8dg2s1/3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi"
 	AdminToken              = "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h"
 	AnonymousToken          = "4kg6k6lzmp9kj4cpkcoxie964cmvjahbt4fod9zru44k4jqdmi"
 	DataManagerToken        = "320mkve8qkswstz7ff61glpk3mhgghmg67wmic7elw4z41pke1"
@@ -35,7 +36,8 @@ const (
 	Dispatch1Token    = "kwi8oowusvbutahacwk2geulqewy5oaqmpalczfna4b6bb0hfw"
 	Dispatch1AuthUUID = "zzzzz-gj3su-k9dvestay1plssr"
 
-	QueuedContainerUUID = "zzzzz-dz642-queuedcontainer"
+	QueuedContainerRequestUUID = "zzzzz-xvhdp-cr4queuedcontnr"
+	QueuedContainerUUID        = "zzzzz-dz642-queuedcontainer"
 
 	ArvadosRepoUUID = "zzzzz-s0uqq-arvadosrepo0123"
 	ArvadosRepoName = "arvados"

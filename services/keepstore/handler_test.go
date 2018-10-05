@@ -30,6 +30,10 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 )
 
+var testCluster = &arvados.Cluster{
+	ClusterID: "zzzzz",
+}
+
 // A RequestTester represents the parameters for an HTTP request to
 // be issued on behalf of a unit test.
 type RequestTester struct {
@@ -823,7 +827,7 @@ func IssueRequest(rt *RequestTester) *httptest.ResponseRecorder {
 	if rt.apiToken != "" {
 		req.Header.Set("Authorization", "OAuth2 "+rt.apiToken)
 	}
-	loggingRouter := MakeRESTRouter()
+	loggingRouter := MakeRESTRouter(testCluster)
 	loggingRouter.ServeHTTP(response, req)
 	return response
 }
@@ -835,7 +839,7 @@ func IssueHealthCheckRequest(rt *RequestTester) *httptest.ResponseRecorder {
 	if rt.apiToken != "" {
 		req.Header.Set("Authorization", "Bearer "+rt.apiToken)
 	}
-	loggingRouter := MakeRESTRouter()
+	loggingRouter := MakeRESTRouter(testCluster)
 	loggingRouter.ServeHTTP(response, req)
 	return response
 }
@@ -975,7 +979,7 @@ func TestGetHandlerClientDisconnect(t *testing.T) {
 	ok := make(chan struct{})
 	go func() {
 		req, _ := http.NewRequest("GET", fmt.Sprintf("/%s+%d", TestHash, len(TestBlock)), nil)
-		MakeRESTRouter().ServeHTTP(resp, req)
+		MakeRESTRouter(testCluster).ServeHTTP(resp, req)
 		ok <- struct{}{}
 	}()
 

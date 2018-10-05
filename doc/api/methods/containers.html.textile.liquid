@@ -28,7 +28,7 @@ table(table table-bordered table-condensed).
 |state|string|The allowed states are "Queued", "Locked", "Running", "Cancelled" and "Complete".|See "Container states":#container_states for more details.|
 |started_at|datetime|When this container started running.|Null if container has not yet started.|
 |finished_at|datetime|When this container finished.|Null if container has not yet finished.|
-|log|string|Portable data hash of the collection containing logs from a completed container run.|Null if the container is not yet finished.|
+|log|string|UUID or portable data hash of a collection containing the log messages produced when executing the container.|PDH after the container is finished, otherwise UUID or null.|
 |environment|hash|Environment variables and values that should be set in the container environment (@docker run --env@). This augments and (when conflicts exist) overrides environment variables given in the image's Dockerfile.|Must be equal to a ContainerRequest's environment in order to satisfy the ContainerRequest.|
 |cwd|string|Initial working directory.|Must be equal to a ContainerRequest's cwd in order to satisfy the ContainerRequest|
 |command|array of strings|Command to execute.| Must be equal to a ContainerRequest's command in order to satisfy the ContainerRequest.|
@@ -91,6 +91,8 @@ h2. Methods
 See "Common resource methods":{{site.baseurl}}/api/methods.html for more information about @create@, @delete@, @get@, @list@, and @update@.
 
 Required arguments are displayed in %{background:#ccffcc}green%.
+
+Supports federated @get@ and @list@.
 
 h2(#create). create
 

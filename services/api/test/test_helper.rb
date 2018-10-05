@@ -65,6 +65,7 @@ class ActiveSupport::TestCase
     Thread.current[:api_client_authorization] = nil
     Thread.current[:api_client_uuid] = nil
     Thread.current[:api_client] = nil
+    Thread.current[:token] = nil
     Thread.current[:user] = nil
     restore_configuration
   end
@@ -110,6 +111,7 @@ class ActiveSupport::TestCase
     Thread.current[:api_client_authorization] = client_auth
     Thread.current[:api_client] = client_auth.api_client
     Thread.current[:user] = client_auth.user
+    Thread.current[:token] = client_auth.token
   end
 
   def expect_json
@@ -188,6 +190,7 @@ class ActionDispatch::IntegrationTest
     Thread.current[:api_client_authorization] = nil
     Thread.current[:api_client_uuid] = nil
     Thread.current[:api_client] = nil
+    Thread.current[:token] = nil
     Thread.current[:user] = nil
   end
 end

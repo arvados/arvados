@@ -645,4 +645,32 @@ class JobTest < ActiveSupport::TestCase
     child = Job.find_by_uuid job.components.collect{|_, uuid| uuid}[0]
     assert_equal Job::Cancelled, child.state
   end
+
+  test 'enable legacy api configuration option = true' do
+    Rails.configuration.enable_legacy_jobs_api = true
+    check_enable_legacy_jobs_api
+    assert_equal [], Rails.configuration.disable_api_methods
+  end
+
+  test 'enable legacy api configuration option = false' do
+    Rails.configuration.enable_legacy_jobs_api = false
+    check_enable_legacy_jobs_api
+    assert_equal Disable_jobs_api_method_list, Rails.configuration.disable_api_methods
+  end
+
+  test 'enable legacy api configuration option = auto, has jobs' do
+    Rails.configuration.enable_legacy_jobs_api = "auto"
+    check_enable_legacy_jobs_api
+    assert_equal [], Rails.configuration.disable_api_methods
+  end
+
+  test 'enable legacy api configuration option = auto, no jobs' do
+    Rails.configuration.enable_legacy_jobs_api = "auto"
+    act_as_system_user do
+      Job.destroy_all
+    end
+    puts "ZZZ #{Job.count}"
+    check_enable_legacy_jobs_api
+    assert_equal Disable_jobs_api_method_list, Rails.configuration.disable_api_methods
+  end
 end

@@ -98,7 +98,7 @@ class Collection < ArvadosModel
       # Check permissions on the collection manifest.
       # If any signature cannot be verified, raise PermissionDeniedError
       # which will return 403 Permission denied to the client.
-      api_token = current_api_client_authorization.andand.api_token
+      api_token = Thread.current[:token]
       signing_opts = {
         api_token: api_token,
         now: @validation_timestamp.to_i,
@@ -196,11 +196,16 @@ class Collection < ArvadosModel
   def manifest_files
     return '' if !self.manifest_text
 
+    done = {}
     names = ''
     self.manifest_text.scan(/ \d+:\d+:(\S+)/) do |name|
+      next if done[name]
+      done[name] = true
       names << name.first.gsub('\040',' ') + "\n"
     end
     self.manifest_text.scan(/^\.\/(\S+)/m) do |stream_name|
+      next if done[stream_name]
+      done[stream_name] = true
       names << stream_name.first.gsub('\040',' ') + "\n"
     end
     names
@@ -352,7 +357,7 @@ class Collection < ArvadosModel
     elsif is_trashed
       return manifest_text
     else
-      token = current_api_client_authorization.andand.api_token
+      token = Thread.current[:token]
       exp = [db_current_time.to_i + Rails.configuration.blob_signature_ttl,
              trash_at].compact.map(&:to_i).min
       self.class.sign_manifest manifest_text, token, exp

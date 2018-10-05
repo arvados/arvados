@@ -279,6 +279,17 @@ common:
 
   crunch_log_partial_line_throttle_period: 5
 
+  # Container logs are written to Keep and saved in a collection,
+  # which is updated periodically while the container runs.  This
+  # value sets the interval (given in seconds) between collection
+  # updates.
+  crunch_log_update_period: 1800
+
+  # The log collection is also updated when the specified amount of
+  # log data (given in bytes) is produced in less than one update
+  # period.
+  crunch_log_update_size: 33554432
+
   # Attributes to suppress in events and audit logs.  Notably,
   # specifying ["manifest_text"] here typically makes the database
   # smaller and faster.
@@ -292,6 +303,13 @@ common:
   # discovery document, and respond 404 to all requests.
   # Example: ["jobs.create", "pipeline_instances.create"]
   disable_api_methods: []
+
+  # Enable the legacy Jobs API.
+  # auto -- (default) enable the Jobs API only if it has been used before
+  #         (i.e., there are job records in the database)
+  # true -- enable the Jobs API despite lack of existing records.
+  # false -- disable the Jobs API despite presence of existing records.
+  enable_legacy_jobs_api: auto
 
   ###
   ### Crunch, DNS & compute node management

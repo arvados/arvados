@@ -53,6 +53,8 @@ See "Common resource methods":{{site.baseurl}}/api/methods.html for more informa
 
 Required arguments are displayed in %{background:#ccffcc}green%.
 
+Supports federated @get@ only, which may be called with either a uuid or a portable data hash.  When requesting a portable data hash which is not available on the home cluster, the query is forwarded to all the clusters listed in @RemoteClusters@ and returns the first successful result.
+
 h3. create
 
 Create a new Collection.
@@ -75,7 +77,7 @@ table(table table-bordered table-condensed).
 
 h3. get
 
-Gets a Collection's metadata by UUID.
+Gets a Collection's metadata by UUID or portable data hash.  When making a request by portable data hash, the returned record will only have the @portable_data_hash@ and @manifest_text@.
 
 Arguments:
 
