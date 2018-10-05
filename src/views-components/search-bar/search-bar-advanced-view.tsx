@@ -4,8 +4,8 @@
 
 import * as React from 'react';
 import { Paper, StyleRulesCallback, withStyles, WithStyles, List, Button } from '@material-ui/core';
-import { SearchView } from '~/store/structured-search/structured-search-reducer';
-import { renderRecentQueries } from '~/components/search-bar/search-bar';
+import { SearchView } from '~/store/search-bar/search-bar-reducer';
+import { renderRecentQueries } from '~/views-components/search-bar/search-bar-view';
 
 type CssRules = 'list';
 

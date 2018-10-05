@@ -11,18 +11,15 @@ import {
     WithStyles,
     Tooltip,
     InputAdornment, Input,
-    ListItem, ListItemText, ListItemSecondaryAction
+    ListItem, ListItemText, ListItemSecondaryAction,
+    ClickAwayListener
 } from '@material-ui/core';
 import SearchIcon from '@material-ui/icons/Search';
 import { RemoveIcon } from '~/components/icon/icon';
-import { connect } from 'react-redux';
-import { RootState } from '~/store/store';
-import { Dispatch } from 'redux';
-import { goToView } from '~/store/structured-search/structured-search-actions';
-import { SearchView } from '~/store/structured-search/structured-search-reducer';
-import { SearchBarBasicView } from '~/components/search-bar/search-bar-basic-view';
-import { SearchBarAdvancedView } from '~/components/search-bar/search-bar-advanced-view';
-import { SearchBarAutocompleteView } from '~/components/search-bar/search-bar-autocomplete-view';
+import { SearchView } from '~/store/search-bar/search-bar-reducer';
+import { SearchBarBasicView } from '~/views-components/search-bar/search-bar-basic-view';
+import { SearchBarAdvancedView } from '~/views-components/search-bar/search-bar-advanced-view';
+import { SearchBarAutocompleteView } from '~/views-components/search-bar/search-bar-autocomplete-view';
 
 type CssRules = 'container' | 'input' | 'searchBar';
 
@@ -46,19 +43,21 @@ const styles: StyleRulesCallback<CssRules> = theme => {
 interface SearchBarDataProps {
     value: string;
     currentView: string;
+    open: boolean;
 }
 
 interface SearchBarActionProps {
     onSearch: (value: string) => any;
     debounce?: number;
     onSetView: (currentView: string) => void;
+    openView: () => void;
+    closeView: () => void;
 }
 
 type SearchBarProps = SearchBarDataProps & SearchBarActionProps & WithStyles<CssRules>;
 
 interface SearchBarState {
     value: string;
-    isSearchViewOpen: boolean;
 }
 
 export const renderRecentQueries = (text: string) => {
@@ -81,54 +80,42 @@ export const renderSavedQueries = (text: string) => {
     </ListItem>;
 };
 
-const mapStateToProps = ({ structuredSearch }: RootState) => {
-    return {
-        currentView: structuredSearch.currentView
-    };
-};
-
-const mapDispatchToProps = (dispatch: Dispatch) => ({
-    onSetView: (currentView: string) => {
-        dispatch<any>(goToView(currentView));
-    }
-});
-
 export const DEFAULT_SEARCH_DEBOUNCE = 1000;
 
-export const SearchBar = connect(mapStateToProps, mapDispatchToProps)(withStyles(styles)(
+export const SearchBarView = withStyles(styles)(
     class extends React.Component<SearchBarProps> {
         state: SearchBarState = {
-            value: "",
-            isSearchViewOpen: false
+            value: ""
         };
 
         timeout: number;
 
         render() {
-            const { classes, currentView } = this.props;
-            return <Paper className={classes.container} >
-                <form onSubmit={this.handleSubmit} className={classes.searchBar}>
-                    <Input
-                        autoComplete={''}
-                        className={classes.input}
-                        onChange={this.handleChange}
-                        placeholder="Search"
-                        value={this.state.value}
-                        fullWidth={true}
-                        disableUnderline={true}
-                        onClick={this.toggleSearchView}
-                        endAdornment={
-                            <InputAdornment position="end">
-                                <Tooltip title='Search'>
-                                    <IconButton>
-                                        <SearchIcon />
-                                    </IconButton>
-                                </Tooltip>
-                            </InputAdornment>
-                        } />
-                    {this.state.isSearchViewOpen && this.getView(currentView)}
-                </form>
-            </Paper>;
+            const { classes, currentView, openView, closeView, open } = this.props;
+            return <ClickAwayListener onClickAway={() => closeView()}>
+                <Paper className={classes.container} >
+                    <form onSubmit={this.handleSubmit} className={classes.searchBar}>
+                        <Input
+                            className={classes.input}
+                            onChange={this.handleChange}
+                            placeholder="Search"
+                            value={this.state.value}
+                            fullWidth={true}
+                            disableUnderline={true}
+                            onClick={() => openView()}
+                            endAdornment={
+                                <InputAdornment position="end">
+                                    <Tooltip title='Search'>
+                                        <IconButton>
+                                            <SearchIcon />
+                                        </IconButton>
+                                    </Tooltip>
+                                </InputAdornment>
+                            } />
+                        {open && this.getView(currentView)}
+                    </form>
+                </Paper >
+            </ClickAwayListener>;
         }
 
         componentDidMount() {
@@ -145,9 +132,6 @@ export const SearchBar = connect(mapStateToProps, mapDispatchToProps)(withStyles
             clearTimeout(this.timeout);
         }
 
-        toggleSearchView = () =>
-            this.setState({ isSearchViewOpen: !this.state.isSearchViewOpen })
-
         getView = (currentView: string) => {
             switch (currentView) {
                 case SearchView.BASIC:
@@ -157,7 +141,7 @@ export const SearchBar = connect(mapStateToProps, mapDispatchToProps)(withStyles
                 case SearchView.AUTOCOMPLETE:
                     return <SearchBarAutocompleteView />;
                 default:
-                    return '';
+                    return <SearchBarBasicView setView={this.props.onSetView} />;
             }
         }
 
@@ -181,4 +165,4 @@ export const SearchBar = connect(mapStateToProps, mapDispatchToProps)(withStyles
             }
         }
     }
-));
+);

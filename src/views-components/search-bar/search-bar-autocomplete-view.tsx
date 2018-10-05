@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Paper, StyleRulesCallback, withStyles, WithStyles, List, Button } from '@material-ui/core';
-import { renderRecentQueries } from '~/components/search-bar/search-bar';
+import { Paper, StyleRulesCallback, withStyles, WithStyles, List } from '@material-ui/core';
+import { renderRecentQueries } from '~/views-components/search-bar/search-bar-view';
 
 type CssRules = 'list';
 
