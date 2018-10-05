@@ -157,7 +157,11 @@ window.SessionDB = function() {
             var session = db.loadLocal();
             return db.tokenUUID().then(function(token_uuid) {
                 var shaObj = new jsSHA("SHA-1", "TEXT");
-                shaObj.setHMACKey(session.token, "TEXT");
+                var secret = session.token;
+                if (session.token.startsWith("v2/")) {
+                    secret = session.token.split("/")[2];
+                }
+                shaObj.setHMACKey(secret, "TEXT");
                 shaObj.update(uuid_prefix);
                 var hmac = shaObj.getHMAC("HEX");
                 return 'v2/' + token_uuid + '/' + hmac;
@@ -255,7 +259,14 @@ window.SessionDB = function() {
             var cache = db.tokenUUIDCache;
             if (!cache) {
                 var session = db.loadLocal();
-                return db.request(session, '/arvados/v1/api_client_authorizations', {
+                if (session.token.startsWith("v2/")) {
+                    var uuid = session.token.split("/")[1]
+                    db.tokenUUIDCache = uuid;
+                    return new Promise(function(resolve, reject) {
+                        resolve(uuid);
+                    });
+                }
+                return db.request(session, 'arvados/v1/api_client_authorizations', {
                     data: {
                         filters: JSON.stringify([['api_token', '=', session.token]])
                     }

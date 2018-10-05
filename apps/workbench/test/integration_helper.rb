@@ -244,7 +244,7 @@ class ActionDispatch::IntegrationTest
 end
 
 def upload_data_and_get_collection(data, user, filename, owner_uuid=nil)
-  token = api_fixture('api_client_authorizations')[user]['api_token']
+  token = api_token(user)
   datablock = `echo -n #{data.shellescape} | ARVADOS_API_TOKEN=#{token.shellescape} arv-put --no-progress --raw -`.strip
   assert $?.success?, $?
   col = nil
