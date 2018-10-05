@@ -299,7 +299,8 @@ CREATE TABLE public.container_requests (
     log_uuid character varying(255),
     output_name character varying(255) DEFAULT NULL::character varying,
     output_ttl integer DEFAULT 0 NOT NULL,
-    secret_mounts jsonb DEFAULT '{}'::jsonb
+    secret_mounts jsonb DEFAULT '{}'::jsonb,
+    runtime_token text
 );
 
 
@@ -355,7 +356,9 @@ CREATE TABLE public.containers (
     scheduling_parameters text,
     secret_mounts jsonb DEFAULT '{}'::jsonb,
     secret_mounts_md5 character varying DEFAULT '99914b932bd37a50b983c5e7c90ae93b'::character varying,
-    runtime_status jsonb DEFAULT '{}'::jsonb
+    runtime_status jsonb DEFAULT '{}'::jsonb,
+    runtime_user_uuid text,
+    runtime_auth_scopes jsonb
 );
 
 
@@ -3170,4 +3173,6 @@ INSERT INTO schema_migrations (version) VALUES ('20180824155207');
 INSERT INTO schema_migrations (version) VALUES ('20180904110712');
 
 INSERT INTO schema_migrations (version) VALUES ('20180917205609');
+
+INSERT INTO schema_migrations (version) VALUES ('20181005192222');
 
