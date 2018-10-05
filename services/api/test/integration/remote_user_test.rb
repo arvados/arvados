@@ -251,4 +251,23 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     assert_equal 'barney', json_response['username']
   end
 
+  test "validate unsalted token for remote cluster zbbbb" do
+    auth = api_client_authorizations(:active)
+    token = "v2/#{auth.uuid}/#{auth.api_token}"
+    get '/arvados/v1/users/current', {format: 'json', remote: 'zbbbb'}, {
+          "HTTP_AUTHORIZATION" => "Bearer #{token}"
+        }
+    assert_response 200
+    assert_equal(users(:active).uuid, json_response['uuid'])
+  end
+
+
+  # test 'container request with remote runtime_token' do
+  #   auth = api_client_authorizations(:active)
+  #   token = "v2/#{auth.uuid.sub('zzzzz-', 'zbbbb-')}/#{auth.api_token}"
+
+  #   post '/arvados/v1/container_requests', {"container_request": {}}, {"HTTP_AUTHORIZATION" => "Bearer #{token}"}
+  #   assert_response :success
+  # end
+
 end

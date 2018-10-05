@@ -38,7 +38,8 @@ class ContainerRequest < ArvadosModel
   validate :validate_state_change
   validate :check_update_whitelist
   validate :secret_mounts_key_conflict
-  before_save :scrub_secret_mounts
+  validate :validate_runtime_token
+  before_save :scrub_secrets
   before_create :set_requesting_container_uuid
   before_destroy :set_priority_zero
   after_save :update_priority
@@ -88,7 +89,7 @@ class ContainerRequest < ArvadosModel
   AttrsPermittedAlways = [:owner_uuid, :state, :name, :description, :properties]
   AttrsPermittedBeforeCommit = [:command, :container_count_max,
   :container_image, :cwd, :environment, :filters, :mounts,
-  :output_path, :priority,
+  :output_path, :priority, :runtime_token,
   :runtime_constraints, :state, :container_uuid, :use_existing,
   :scheduling_parameters, :secret_mounts, :output_name, :output_ttl]
 
@@ -97,7 +98,7 @@ class ContainerRequest < ArvadosModel
   end
 
   def logged_attributes
-    super.except('secret_mounts')
+    super.except('secret_mounts', 'runtime_token')
   end
 
   def state_transitions
@@ -165,7 +166,7 @@ class ContainerRequest < ArvadosModel
   end
 
   def self.full_text_searchable_columns
-    super - ["mounts", "secret_mounts", "secret_mounts_md5"]
+    super - ["mounts", "secret_mounts", "secret_mounts_md5", "runtime_token"]
   end
 
   protected
@@ -343,9 +344,22 @@ class ContainerRequest < ArvadosModel
     end
   end
 
-  def scrub_secret_mounts
+  def validate_runtime_token
+    if !self.runtime_token.nil?
+      if !runtime_token[0..2] == "v2/"
+        errors.add :runtime_token, "not a v2 token"
+        return
+      end
+      if ApiClientAuthorization.validate(token: cr.runtime_token).nil?
+        errors.add :runtime_token, "failed validation"
+      end
+    end
+  end
+
+  def scrub_secrets
     if self.state == Final
       self.secret_mounts = {}
+      self.runtime_token = nil
     end
   end
 
