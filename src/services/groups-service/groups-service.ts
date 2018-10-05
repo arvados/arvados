@@ -54,7 +54,7 @@ export class GroupsService<T extends GroupResource = GroupResource> extends Tras
             false
         );
         const { items, ...res } = response;
-        const mappedItems = items.map((item: any) => {
+        const mappedItems = items.map((item: GroupContentsResource) => {
             const mappedItem = TrashableResourceService.mapKeys(_.camelCase)(item);
             if (item.kind === ResourceKind.COLLECTION) {
                 const { properties } = item;
