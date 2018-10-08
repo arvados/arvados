@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -17,6 +16,7 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"github.com/Sirupsen/logrus"
 
 	check "gopkg.in/check.v1"
 )
@@ -282,7 +282,7 @@ type runSuite struct {
 }
 
 // make a log.Logger that writes to the current test's c.Log().
-func (s *runSuite) logger(c *check.C) *log.Logger {
+func (s *runSuite) logger(c *check.C) *logrus.Logger {
 	r, w := io.Pipe()
 	go func() {
 		buf := make([]byte, 10000)
@@ -299,7 +299,9 @@ func (s *runSuite) logger(c *check.C) *log.Logger {
 			}
 		}
 	}()
-	return log.New(w, "", log.LstdFlags)
+	logger := logrus.New()
+	logger.Out = w
+	return logger
 }
 
 func (s *runSuite) SetUpTest(c *check.C) {
@@ -308,7 +310,9 @@ func (s *runSuite) SetUpTest(c *check.C) {
 			AuthToken: "xyzzy",
 			APIHost:   "zzzzz.arvadosapi.com",
 			Client:    s.stub.Start()},
-		KeepServiceTypes: []string{"disk"}}
+		KeepServiceTypes: []string{"disk"},
+		RunPeriod:        arvados.Duration(time.Second),
+	}
 	s.stub.serveDiscoveryDoc()
 	s.stub.logf = c.Logf
 }
@@ -330,7 +334,9 @@ func (s *runSuite) TestRefuseZeroCollections(c *check.C) {
 	s.stub.serveKeepstoreIndexFoo4Bar1()
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
-	_, err := (&Balancer{}).Run(s.config, opts)
+	srv, err := NewServer(s.config, opts)
+	c.Assert(err, check.IsNil)
+	_, err = srv.Run()
 	c.Check(err, check.ErrorMatches, "received zero collections")
 	c.Check(trashReqs.Count(), check.Equals, 4)
 	c.Check(pullReqs.Count(), check.Equals, 0)
@@ -349,7 +355,9 @@ func (s *runSuite) TestServiceTypes(c *check.C) {
 	s.stub.serveKeepstoreMounts()
 	indexReqs := s.stub.serveKeepstoreIndexFoo4Bar1()
 	trashReqs := s.stub.serveKeepstoreTrash()
-	_, err := (&Balancer{}).Run(s.config, opts)
+	srv, err := NewServer(s.config, opts)
+	c.Assert(err, check.IsNil)
+	_, err = srv.Run()
 	c.Check(err, check.IsNil)
 	c.Check(indexReqs.Count(), check.Equals, 0)
 	c.Check(trashReqs.Count(), check.Equals, 0)
@@ -367,7 +375,9 @@ func (s *runSuite) TestRefuseNonAdmin(c *check.C) {
 	s.stub.serveKeepstoreMounts()
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
-	_, err := (&Balancer{}).Run(s.config, opts)
+	srv, err := NewServer(s.config, opts)
+	c.Assert(err, check.IsNil)
+	_, err = srv.Run()
 	c.Check(err, check.ErrorMatches, "current user .* is not .* admin user")
 	c.Check(trashReqs.Count(), check.Equals, 0)
 	c.Check(pullReqs.Count(), check.Equals, 0)
@@ -386,7 +396,9 @@ func (s *runSuite) TestDetectSkippedCollections(c *check.C) {
 	s.stub.serveKeepstoreIndexFoo4Bar1()
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
-	_, err := (&Balancer{}).Run(s.config, opts)
+	srv, err := NewServer(s.config, opts)
+	c.Assert(err, check.IsNil)
+	_, err = srv.Run()
 	c.Check(err, check.ErrorMatches, `Retrieved 2 collections with modtime <= .* but server now reports there are 3 collections.*`)
 	c.Check(trashReqs.Count(), check.Equals, 4)
 	c.Check(pullReqs.Count(), check.Equals, 0)
@@ -405,8 +417,9 @@ func (s *runSuite) TestDryRun(c *check.C) {
 	s.stub.serveKeepstoreIndexFoo4Bar1()
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
-	var bal Balancer
-	_, err := bal.Run(s.config, opts)
+	srv, err := NewServer(s.config, opts)
+	c.Assert(err, check.IsNil)
+	bal, err := srv.Run()
 	c.Check(err, check.IsNil)
 	for _, req := range collReqs.reqs {
 		c.Check(req.Form.Get("include_trash"), check.Equals, "true")
@@ -419,6 +432,7 @@ func (s *runSuite) TestDryRun(c *check.C) {
 }
 
 func (s *runSuite) TestCommit(c *check.C) {
+	s.config.Listen = ":"
 	opts := RunOptions{
 		CommitPulls: true,
 		CommitTrash: true,
@@ -432,8 +446,9 @@ func (s *runSuite) TestCommit(c *check.C) {
 	s.stub.serveKeepstoreIndexFoo4Bar1()
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
-	var bal Balancer
-	_, err := bal.Run(s.config, opts)
+	srv, err := NewServer(s.config, opts)
+	c.Assert(err, check.IsNil)
+	bal, err := srv.Run()
 	c.Check(err, check.IsNil)
 	c.Check(trashReqs.Count(), check.Equals, 8)
 	c.Check(pullReqs.Count(), check.Equals, 4)
@@ -442,9 +457,15 @@ func (s *runSuite) TestCommit(c *check.C) {
 	// "bar" block is underreplicated by 1, and its only copy is
 	// in a poor rendezvous position
 	c.Check(bal.stats.pulls, check.Equals, 2)
+
+	metrics := s.getMetrics(c, srv)
+	c.Check(metrics, check.Matches, `(?ms).*\nkeep_total_bytes 15\n.*`)
+	c.Check(metrics, check.Matches, `(?ms).*\nkeepbalance_changeset_compute_seconds_sum [0-9\.]+\n.*`)
+	c.Check(metrics, check.Matches, `(?ms).*\nkeepbalance_changeset_compute_seconds_count 1\n.*`)
 }
 
 func (s *runSuite) TestRunForever(c *check.C) {
+	s.config.Listen = ":"
 	opts := RunOptions{
 		CommitPulls: true,
 		CommitTrash: true,
@@ -461,7 +482,14 @@ func (s *runSuite) TestRunForever(c *check.C) {
 
 	stop := make(chan interface{})
 	s.config.RunPeriod = arvados.Duration(time.Millisecond)
-	go RunForever(s.config, opts, stop)
+	srv, err := NewServer(s.config, opts)
+	c.Assert(err, check.IsNil)
+
+	done := make(chan bool)
+	go func() {
+		srv.RunForever(stop)
+		close(done)
+	}()
 
 	// Each run should send 4 pull lists + 4 trash lists. The
 	// first run should also send 4 empty trash lists at
@@ -471,6 +499,16 @@ func (s *runSuite) TestRunForever(c *check.C) {
 		time.Sleep(time.Millisecond)
 	}
 	stop <- true
+	<-done
 	c.Check(pullReqs.Count() >= 16, check.Equals, true)
 	c.Check(trashReqs.Count(), check.Equals, pullReqs.Count()+4)
+	c.Check(s.getMetrics(c, srv), check.Matches, `(?ms).*\nkeepbalance_changeset_compute_seconds_count `+fmt.Sprintf("%d", pullReqs.Count()/4)+`\n.*`)
+}
+
+func (s *runSuite) getMetrics(c *check.C, srv *Server) string {
+	resp, err := http.Get("http://" + srv.listening + "/metrics")
+	c.Assert(err, check.IsNil)
+	buf, err := ioutil.ReadAll(resp.Body)
+	c.Check(err, check.IsNil)
+	return string(buf)
 }

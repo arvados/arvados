@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"log"
 	"math"
-	"os"
 	"runtime"
 	"sort"
 	"strings"
@@ -19,19 +18,8 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"github.com/Sirupsen/logrus"
 )
-
-// CheckConfig returns an error if anything is wrong with the given
-// config and runOptions.
-func CheckConfig(config Config, runOptions RunOptions) error {
-	if len(config.KeepServiceList.Items) > 0 && config.KeepServiceTypes != nil {
-		return fmt.Errorf("cannot specify both KeepServiceList and KeepServiceTypes in config")
-	}
-	if !runOptions.Once && config.RunPeriod == arvados.Duration(0) {
-		return fmt.Errorf("you must either use the -once flag, or specify RunPeriod in config")
-	}
-	return nil
-}
 
 // Balancer compares the contents of keepstore servers with the
 // collections stored in Arvados, and issues pull/trash requests
@@ -43,11 +31,13 @@ func CheckConfig(config Config, runOptions RunOptions) error {
 // BlobSignatureTTL; and all N existing replicas of a given data block
 // are in the N best positions in rendezvous probe order.
 type Balancer struct {
+	Logger  *logrus.Logger
+	Dumper  *logrus.Logger
+	Metrics *metrics
+
 	*BlockStateMap
 	KeepServices       map[string]*KeepService
 	DefaultReplication int
-	Logger             *log.Logger
-	Dumper             *log.Logger
 	MinMtime           int64
 
 	classes       []string
@@ -72,13 +62,7 @@ type Balancer struct {
 func (bal *Balancer) Run(config Config, runOptions RunOptions) (nextRunOptions RunOptions, err error) {
 	nextRunOptions = runOptions
 
-	bal.Dumper = runOptions.Dumper
-	bal.Logger = runOptions.Logger
-	if bal.Logger == nil {
-		bal.Logger = log.New(os.Stderr, "", log.LstdFlags)
-	}
-
-	defer timeMe(bal.Logger, "Run")()
+	defer bal.time("sweep", "wall clock time to run one full sweep")()
 
 	if len(config.KeepServiceList.Items) > 0 {
 		err = bal.SetKeepServices(config.KeepServiceList)
@@ -269,7 +253,7 @@ func (bal *Balancer) ClearTrashLists(c *arvados.Client) error {
 //
 // It encodes the resulting information in BlockStateMap.
 func (bal *Balancer) GetCurrentState(c *arvados.Client, pageSize, bufs int) error {
-	defer timeMe(bal.Logger, "GetCurrentState")()
+	defer bal.time("get_state", "wall clock time to get current state")()
 	bal.BlockStateMap = NewBlockStateMap()
 
 	dd, err := c.DiscoveryDocument()
@@ -413,7 +397,7 @@ func (bal *Balancer) addCollection(coll arvados.Collection) error {
 func (bal *Balancer) ComputeChangeSets() {
 	// This just calls balanceBlock() once for each block, using a
 	// pool of worker goroutines.
-	defer timeMe(bal.Logger, "ComputeChangeSets")()
+	defer bal.time("changeset_compute", "wall clock time to compute changesets")()
 	bal.setupLookupTables()
 
 	type balanceTask struct {
@@ -893,6 +877,7 @@ func (bal *Balancer) collectStatistics(results <-chan balanceResult) {
 		s.trashes += len(srv.ChangeSet.Trashes)
 	}
 	bal.stats = s
+	bal.Metrics.UpdateStats(s)
 }
 
 // PrintStatistics writes statistics about the computed changes to
@@ -986,6 +971,7 @@ func (bal *Balancer) CheckSanityLate() error {
 // existing blocks that are either underreplicated or poorly
 // distributed according to rendezvous hashing.
 func (bal *Balancer) CommitPulls(c *arvados.Client) error {
+	defer bal.time("send_pull_lists", "wall clock time to send pull lists")()
 	return bal.commitAsync(c, "send pull list",
 		func(srv *KeepService) error {
 			return srv.CommitPulls(c)
@@ -996,6 +982,7 @@ func (bal *Balancer) CommitPulls(c *arvados.Client) error {
 // keepstore servers. This has the effect of deleting blocks that are
 // overreplicated or unreferenced.
 func (bal *Balancer) CommitTrash(c *arvados.Client) error {
+	defer bal.time("send_trash_lists", "wall clock time to send trash lists")()
 	return bal.commitAsync(c, "send trash list",
 		func(srv *KeepService) error {
 			return srv.CommitTrash(c)
@@ -1009,7 +996,6 @@ func (bal *Balancer) commitAsync(c *arvados.Client, label string, f func(srv *Ke
 			var err error
 			defer func() { errs <- err }()
 			label := fmt.Sprintf("%s: %v", srv, label)
-			defer timeMe(bal.Logger, label)()
 			err = f(srv)
 			if err != nil {
 				err = fmt.Errorf("%s: %v", label, err)
@@ -1030,6 +1016,17 @@ func (bal *Balancer) commitAsync(c *arvados.Client, label string, f func(srv *Ke
 func (bal *Balancer) logf(f string, args ...interface{}) {
 	if bal.Logger != nil {
 		bal.Logger.Printf(f, args...)
+	}
+}
+
+func (bal *Balancer) time(name, help string) func() {
+	observer := bal.Metrics.DurationObserver(name+"_seconds", help)
+	t0 := time.Now()
+	bal.Logger.Printf("%s: start", name)
+	return func() {
+		dur := time.Since(t0)
+		observer.Observe(dur.Seconds())
+		bal.Logger.Printf("%s: took %vs", name, dur.Seconds())
 	}
 }
 

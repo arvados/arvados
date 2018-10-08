@@ -17,11 +17,16 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/config"
+	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	"github.com/Sirupsen/logrus"
 )
 
 var version = "dev"
 
-const defaultConfigPath = "/etc/arvados/keep-balance/keep-balance.yml"
+const (
+	defaultConfigPath = "/etc/arvados/keep-balance/keep-balance.yml"
+	rfc3339NanoFixed  = "2006-01-02T15:04:05.000000000Z07:00"
+)
 
 // Config specifies site configuration, like API credentials and the
 // choice of which servers are to be balanced.
@@ -35,6 +40,9 @@ type Config struct {
 	KeepServiceTypes []string
 
 	KeepServiceList arvados.KeepServiceList
+
+	// address, address:port, or :port for management interface
+	Listen string
 
 	// How often to check
 	RunPeriod arvados.Duration
@@ -62,8 +70,8 @@ type RunOptions struct {
 	Once        bool
 	CommitPulls bool
 	CommitTrash bool
-	Logger      *log.Logger
-	Dumper      *log.Logger
+	Logger      *logrus.Logger
+	Dumper      *logrus.Logger
 
 	// SafeRendezvousState from the most recent balance operation,
 	// or "" if unknown. If this changes from one run to the next,
@@ -130,15 +138,17 @@ func main() {
 		}
 	}
 	if *dumpFlag {
-		runOptions.Dumper = log.New(os.Stdout, "", log.LstdFlags)
+		runOptions.Dumper = logrus.New()
+		runOptions.Dumper.Out = os.Stdout
+		runOptions.Dumper.Formatter = &logrus.TextFormatter{}
 	}
-	err := CheckConfig(cfg, runOptions)
+	srv, err := NewServer(cfg, runOptions)
 	if err != nil {
 		// (don't run)
 	} else if runOptions.Once {
-		_, err = (&Balancer{}).Run(cfg, runOptions)
+		_, err = srv.Run()
 	} else {
-		err = RunForever(cfg, runOptions, nil)
+		err = srv.RunForever(nil)
 	}
 	if err != nil {
 		log.Fatal(err)
@@ -151,32 +161,96 @@ func mustReadConfig(dst interface{}, path string) {
 	}
 }
 
+type Server struct {
+	config     Config
+	runOptions RunOptions
+	metrics    *metrics
+	listening  string // for tests
+
+	Logger *logrus.Logger
+	Dumper *logrus.Logger
+}
+
+// NewServer returns a new Server that runs Balancers using the given
+// config and runOptions.
+func NewServer(config Config, runOptions RunOptions) (*Server, error) {
+	if len(config.KeepServiceList.Items) > 0 && config.KeepServiceTypes != nil {
+		return nil, fmt.Errorf("cannot specify both KeepServiceList and KeepServiceTypes in config")
+	}
+	if !runOptions.Once && config.RunPeriod == arvados.Duration(0) {
+		return nil, fmt.Errorf("you must either use the -once flag, or specify RunPeriod in config")
+	}
+
+	if runOptions.Logger == nil {
+		log := logrus.New()
+		log.Formatter = &logrus.JSONFormatter{
+			TimestampFormat: rfc3339NanoFixed,
+		}
+		log.Out = os.Stderr
+		runOptions.Logger = log
+	}
+
+	srv := &Server{
+		config:     config,
+		runOptions: runOptions,
+		metrics:    newMetrics(),
+		Logger:     runOptions.Logger,
+		Dumper:     runOptions.Dumper,
+	}
+	return srv, srv.start()
+}
+
+func (srv *Server) start() error {
+	if srv.config.Listen == "" {
+		return nil
+	}
+	server := &httpserver.Server{
+		Server: http.Server{
+			Handler: httpserver.LogRequests(srv.Logger, srv.metrics.Handler(srv.Logger)),
+		},
+		Addr: srv.config.Listen,
+	}
+	err := server.Start()
+	if err != nil {
+		return err
+	}
+	srv.Logger.Printf("listening at %s", server.Addr)
+	srv.listening = server.Addr
+	return nil
+}
+
+func (srv *Server) Run() (*Balancer, error) {
+	bal := &Balancer{
+		Logger:  srv.Logger,
+		Dumper:  srv.Dumper,
+		Metrics: srv.metrics,
+	}
+	var err error
+	srv.runOptions, err = bal.Run(srv.config, srv.runOptions)
+	return bal, err
+}
+
 // RunForever runs forever, or (for testing purposes) until the given
 // stop channel is ready to receive.
-func RunForever(config Config, runOptions RunOptions, stop <-chan interface{}) error {
-	if runOptions.Logger == nil {
-		runOptions.Logger = log.New(os.Stderr, "", log.LstdFlags)
-	}
-	logger := runOptions.Logger
+func (srv *Server) RunForever(stop <-chan interface{}) error {
+	logger := srv.runOptions.Logger
 
-	ticker := time.NewTicker(time.Duration(config.RunPeriod))
+	ticker := time.NewTicker(time.Duration(srv.config.RunPeriod))
 
 	// The unbuffered channel here means we only hear SIGUSR1 if
 	// it arrives while we're waiting in select{}.
 	sigUSR1 := make(chan os.Signal)
 	signal.Notify(sigUSR1, syscall.SIGUSR1)
 
-	logger.Printf("starting up: will scan every %v and on SIGUSR1", config.RunPeriod)
+	logger.Printf("starting up: will scan every %v and on SIGUSR1", srv.config.RunPeriod)
 
 	for {
-		if !runOptions.CommitPulls && !runOptions.CommitTrash {
+		if !srv.runOptions.CommitPulls && !srv.runOptions.CommitTrash {
 			logger.Print("WARNING: Will scan periodically, but no changes will be committed.")
 			logger.Print("=======  Consider using -commit-pulls and -commit-trash flags.")
 		}
 
-		bal := &Balancer{}
-		var err error
-		runOptions, err = bal.Run(config, runOptions)
+		_, err := srv.Run()
 		if err != nil {
 			logger.Print("run failed: ", err)
 		} else {
@@ -195,7 +269,7 @@ func RunForever(config Config, runOptions RunOptions, stop <-chan interface{}) e
 			// run too soon after the Nth run is triggered
 			// by SIGUSR1.
 			ticker.Stop()
-			ticker = time.NewTicker(time.Duration(config.RunPeriod))
+			ticker = time.NewTicker(time.Duration(srv.config.RunPeriod))
 		}
 		logger.Print("starting next run")
 	}
