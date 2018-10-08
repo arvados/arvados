@@ -5,6 +5,7 @@
 import * as React from 'react';
 import { Paper, StyleRulesCallback, withStyles, WithStyles, List } from '@material-ui/core';
 import { RenderRecentQueries } from '~/views-components/search-bar/search-bar-view';
+import { GroupContentsResource } from '~/services/groups-service/groups-service';
 
 type CssRules = 'list';
 
@@ -16,14 +17,19 @@ const styles: StyleRulesCallback<CssRules> = theme => {
     };
 };
 
-interface SearchBarAutocompleteViewProps {
+export interface SearchBarAutocompleteViewDataProps {
+    searchResults?: GroupContentsResource[];
 }
 
+type SearchBarAutocompleteViewProps = SearchBarAutocompleteViewDataProps & WithStyles<CssRules>;
+
 export const SearchBarAutocompleteView = withStyles(styles)(
-    ({ classes }: SearchBarAutocompleteViewProps & WithStyles<CssRules>) =>
+    ({ classes, searchResults }: SearchBarAutocompleteViewProps ) =>
         <Paper>
-            <List component="nav" className={classes.list}>
-                <RenderRecentQueries text='AUTOCOMPLETE VIEW' />
-            </List>
+            {searchResults &&  <List component="nav" className={classes.list}>
+                {searchResults.map((item) => {
+                    return <RenderRecentQueries key={item.uuid} text={item.name} />;
+                })}
+            </List>}
         </Paper>
 );

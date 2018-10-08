@@ -19,7 +19,8 @@ import { RemoveIcon } from '~/components/icon/icon';
 import { SearchView } from '~/store/search-bar/search-bar-reducer';
 import { SearchBarBasicView } from '~/views-components/search-bar/search-bar-basic-view';
 import { SearchBarAdvancedView } from '~/views-components/search-bar/search-bar-advanced-view';
-import { SearchBarAutocompleteView } from '~/views-components/search-bar/search-bar-autocomplete-view';
+import { SearchBarAutocompleteView, SearchBarAutocompleteViewDataProps } from '~/views-components/search-bar/search-bar-autocomplete-view';
+import { GroupContentsResource } from '~/services/groups-service/groups-service';
 
 type CssRules = 'container' | 'input' | 'searchBar';
 
@@ -40,11 +41,11 @@ const styles: StyleRulesCallback<CssRules> = theme => {
     };
 };
 
-interface SearchBarDataProps {
+type SearchBarDataProps = {
     value: string;
     currentView: string;
     open: boolean;
-}
+} & SearchBarAutocompleteViewDataProps;
 
 interface SearchBarActionProps {
     onSearch: (value: string) => any;
@@ -143,7 +144,7 @@ export const SearchBarView = withStyles(styles)(
                 case SearchView.ADVANCED:
                     return <SearchBarAdvancedView setView={this.props.onSetView} />;
                 case SearchView.AUTOCOMPLETE:
-                    return <SearchBarAutocompleteView />;
+                    return <SearchBarAutocompleteView searchResults={this.props.searchResults} />;
                 default:
                     return <SearchBarBasicView setView={this.props.onSetView} />;
             }

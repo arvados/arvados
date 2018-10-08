@@ -3,10 +3,12 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { searchBarActions, SearchBarActions } from '~/store/search-bar/search-bar-actions';
+import { GroupContentsResource } from '~/services/groups-service/groups-service';
 
 interface SearchBar {
     currentView: string;
     open: boolean;
+    searchResults: GroupContentsResource[];
 }
 
 export enum SearchView {
@@ -17,7 +19,8 @@ export enum SearchView {
 
 const initialState: SearchBar = {
     currentView: SearchView.BASIC,
-    open: false
+    open: false,
+    searchResults: []
 };
 
 export const searchBarReducer = (state = initialState, action: SearchBarActions): SearchBar =>
@@ -25,5 +28,6 @@ export const searchBarReducer = (state = initialState, action: SearchBarActions)
         SET_CURRENT_VIEW: currentView => ({ ...state, currentView }),
         OPEN_SEARCH_VIEW: () => ({ ...state, open: true }),
         CLOSE_SEARCH_VIEW: () => ({ ...state, open: false }),
+        SET_SEARCH_RESULTS: (searchResults) => ({ ...state, searchResults }),
         default: () => state
     });

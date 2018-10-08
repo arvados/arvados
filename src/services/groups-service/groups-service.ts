@@ -45,14 +45,16 @@ export class GroupsService<T extends GroupResource = GroupResource> extends Tras
             order: order ? order : undefined
         };
 
+        const pathUrl = uuid ? `${uuid}/contents` : 'contents';
         const response = await CommonResourceService.defaultResponse(
-            this.serverApi
-                .get(this.resourceType + `${uuid}/contents`, {
-                    params: CommonResourceService.mapKeys(_.snakeCase)(params)
-                }),
-            this.actions, 
-            false
-        );
+                this.serverApi
+                    .get(this.resourceType + pathUrl, {
+                        params: CommonResourceService.mapKeys(_.snakeCase)(params)
+                    }),
+                this.actions, 
+                false
+            );
+
         const { items, ...res } = response;
         const mappedItems = items.map((item: GroupContentsResource) => {
             const mappedItem = TrashableResourceService.mapKeys(_.camelCase)(item);

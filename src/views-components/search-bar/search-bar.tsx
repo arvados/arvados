@@ -5,7 +5,7 @@
 import { connect } from 'react-redux';
 import { RootState } from '~/store/store';
 import { Dispatch } from 'redux';
-import { goToView, searchBarActions } from '~/store/search-bar/search-bar-actions';
+import { goToView, searchData, searchBarActions } from '~/store/search-bar/search-bar-actions';
 import { SearchBarView } from '~/views-components/search-bar/search-bar-view';
 
 const mapStateToProps = ({ searchBar }: RootState) => {
@@ -13,14 +13,13 @@ const mapStateToProps = ({ searchBar }: RootState) => {
         // ToDo: add value to store
         value: '',
         currentView: searchBar.currentView,
-        open: searchBar.open
+        open: searchBar.open,
+        searchResults: searchBar.searchResults
     };
 };
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
-    onSearch: (terms: string) => {
-        console.log('search: ', terms);
-    },
+    onSearch: (valueSearch: string) => dispatch<any>(searchData(valueSearch)),
     onSetView: (currentView: string) => dispatch(goToView(currentView)),
     openView: () => dispatch<any>(searchBarActions.OPEN_SEARCH_VIEW()),
     closeView: () => dispatch<any>(searchBarActions.CLOSE_SEARCH_VIEW())
