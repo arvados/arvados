@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { createTree, getNodeValue, getNodeChildrenIds, getNode, TreeNodeStatus } from '~/models/tree';
+import { createTree, getNodeChildrenIds, getNode, TreeNodeStatus } from '~/models/tree';
 import { pipe } from 'lodash/fp';
 import { treePickerReducer } from "./tree-picker-reducer";
 import { treePickerActions } from "./tree-picker-actions";
