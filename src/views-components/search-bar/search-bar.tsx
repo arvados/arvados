@@ -10,12 +10,17 @@ import { SearchBarView } from '~/views-components/search-bar/search-bar-view';
 
 const mapStateToProps = ({ searchBar }: RootState) => {
     return {
+        // ToDo: add value to store
+        value: '',
         currentView: searchBar.currentView,
         open: searchBar.open
     };
 };
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
+    onSearch: (terms: string) => {
+        console.log('search: ', terms);
+    },
     onSetView: (currentView: string) => dispatch(goToView(currentView)),
     openView: () => dispatch<any>(searchBarActions.OPEN_SEARCH_VIEW()),
     closeView: () => dispatch<any>(searchBarActions.CLOSE_SEARCH_VIEW())

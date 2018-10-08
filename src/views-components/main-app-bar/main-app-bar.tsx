@@ -58,12 +58,7 @@ export const MainAppBar = withStyles(styles)(
                         xs={6}
                         container
                         alignItems="center">
-                        {/* {props.user && <SearchBar
-                            value={props.searchText}
-                            onSearch={props.onSearch}
-                            debounce={props.searchDebounce}
-                        />
-                        } */}
+                        {props.user && <SearchBar /> }
                     </Grid>
                     <Grid
                         item
