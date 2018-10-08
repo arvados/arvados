@@ -28,7 +28,8 @@ export const searchData = (searchValue: string) =>
         const user = getState().auth.user;
         if (user && searchValue) {
             const filters = getFilters('name', searchValue);
-            const { items } = await services.groupsService.contents(user.uuid, {
+            // set user.uuid search only in Projects, the empty value search by whole app
+            const { items } = await services.groupsService.contents('', {
                 filters, 
                 limit: 5,
                 recursive: true
