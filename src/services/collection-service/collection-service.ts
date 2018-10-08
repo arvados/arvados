@@ -12,6 +12,7 @@ import { parseFilesResponse } from "./collection-service-files-response";
 import { fileToArrayBuffer } from "~/common/file";
 import { TrashableResourceService } from "~/services/common-service/trashable-resource-service";
 import { ApiActions } from "~/services/api/api-actions";
+import { snakeCase } from 'lodash';
 
 export type UploadProgress = (fileId: number, loaded: number, total: number, currentTime: number) => void;
 
@@ -67,5 +68,28 @@ export class CollectionService extends TrashableResourceService<CollectionResour
         };
         return this.webdavClient.put(fileURL, fileContent, requestConfig);
 
+    }
+
+    update(uuid: string, data: Partial<CollectionResource>) {
+        if (uuid && data && data.properties) {
+            const { properties } = data;
+            const mappedData = {
+                ...TrashableResourceService.mapKeys(snakeCase)(data),
+                properties,
+            };
+            return TrashableResourceService
+                .defaultResponse(
+                    this.serverApi
+                        .put<CollectionResource>(this.resourceType + uuid, mappedData),
+                    this.actions,
+                    false
+                );
+        }
+        return TrashableResourceService
+            .defaultResponse(
+                this.serverApi
+                    .put<CollectionResource>(this.resourceType + uuid, data && TrashableResourceService.mapKeys(snakeCase)(data)),
+                this.actions
+            );
     }
 }
