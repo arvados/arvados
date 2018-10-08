@@ -7,11 +7,10 @@ import { AppBar, Toolbar, Typography, Grid } from "@material-ui/core";
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { Link } from "react-router-dom";
 import { User } from "~/models/user";
-import { SearchBar } from "~/components/search-bar/search-bar";
+import { SearchBar } from "~/views-components/search-bar/search-bar";
 import { Routes } from '~/routes/routes';
 import { NotificationsMenu } from "~/views-components/main-app-bar/notifications-menu";
 import { AccountMenu } from "~/views-components/main-app-bar/account-menu";
-import { AnonymousMenu } from "~/views-components/main-app-bar/anonymous-menu";
 import { HelpMenu } from './help-menu';
 import { ReactNode } from "react";
 
