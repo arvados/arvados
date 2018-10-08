@@ -22,28 +22,28 @@ describe("<SearchBar />", () => {
 
     describe("on submit", () => {
         it("calls onSearch with initial value passed via props", () => {
-            const searchBar = mount(<SearchBarView value="initial value" onSearch={onSearch} />);
+            const searchBar = mount(<SearchBarView value="initial value" onSearch={onSearch} currentView='' open={true} onSetView={jest.fn()} openView={jest.fn()} closeView={jest.fn()} />);
             searchBar.find("form").simulate("submit");
             expect(onSearch).toBeCalledWith("initial value");
         });
 
         it("calls onSearch with current value", () => {
-            const searchBar = mount(<SearchBarView value="" onSearch={onSearch} />);
+            const searchBar = mount(<SearchBarView value="" onSearch={onSearch} currentView='' open={true} onSetView={jest.fn()} openView={jest.fn()} closeView={jest.fn()} />);
             searchBar.find("input").simulate("change", { target: { value: "current value" } });
             searchBar.find("form").simulate("submit");
             expect(onSearch).toBeCalledWith("current value");
         });
 
         it("calls onSearch with new value passed via props", () => {
-            const searchBar = mount(<SearchBarView value="" onSearch={onSearch} />);
+            const searchBar = mount(<SearchBarView value="" onSearch={onSearch} currentView='' open={true} onSetView={jest.fn()} openView={jest.fn()} closeView={jest.fn()} />);
             searchBar.find("input").simulate("change", { target: { value: "current value" } });
-            searchBar.setProps({value: "new value"});
+            searchBar.setProps({ value: "new value" });
             searchBar.find("form").simulate("submit");
             expect(onSearch).toBeCalledWith("new value");
         });
 
         it("cancels timeout set on input value change", () => {
-            const searchBar = mount(<SearchBarView value="" onSearch={onSearch} debounce={1000} />);
+            const searchBar = mount(<SearchBarView value="" onSearch={onSearch} debounce={1000} currentView='' open={true} onSetView={jest.fn()} openView={jest.fn()} closeView={jest.fn()} />);
             searchBar.find("input").simulate("change", { target: { value: "current value" } });
             searchBar.find("form").simulate("submit");
             jest.advanceTimersByTime(1000);
@@ -55,7 +55,7 @@ describe("<SearchBar />", () => {
 
     describe("on input value change", () => {
         it("calls onSearch after default timeout", () => {
-            const searchBar = mount(<SearchBarView value="" onSearch={onSearch} />);
+            const searchBar = mount(<SearchBarView value="" onSearch={onSearch} currentView='' open={true} onSetView={jest.fn()} openView={jest.fn()} closeView={jest.fn()} />);
             searchBar.find("input").simulate("change", { target: { value: "current value" } });
             expect(onSearch).not.toBeCalled();
             jest.advanceTimersByTime(DEFAULT_SEARCH_DEBOUNCE);
@@ -63,7 +63,7 @@ describe("<SearchBar />", () => {
         });
 
         it("calls onSearch after the time specified in props has passed", () => {
-            const searchBar = mount(<SearchBarView value="" onSearch={onSearch} debounce={2000}/>);
+            const searchBar = mount(<SearchBarView value="" onSearch={onSearch} debounce={2000} currentView='' open={true} onSetView={jest.fn()} openView={jest.fn()} closeView={jest.fn()} />);
             searchBar.find("input").simulate("change", { target: { value: "current value" } });
             jest.advanceTimersByTime(1000);
             expect(onSearch).not.toBeCalled();
@@ -72,7 +72,7 @@ describe("<SearchBar />", () => {
         });
 
         it("calls onSearch only once after no change happened during the specified time", () => {
-            const searchBar = mount(<SearchBarView value="" onSearch={onSearch} debounce={1000}/>);
+            const searchBar = mount(<SearchBarView value="" onSearch={onSearch} debounce={1000} currentView='' open={true} onSetView={jest.fn()} openView={jest.fn()} closeView={jest.fn()} />);
             searchBar.find("input").simulate("change", { target: { value: "current value" } });
             jest.advanceTimersByTime(500);
             searchBar.find("input").simulate("change", { target: { value: "changed value" } });
@@ -81,7 +81,7 @@ describe("<SearchBar />", () => {
         });
 
         it("calls onSearch again after the specified time has passed since previous call", () => {
-            const searchBar = mount(<SearchBarView value="" onSearch={onSearch} debounce={1000}/>);
+            const searchBar = mount(<SearchBarView value="" onSearch={onSearch} debounce={1000} currentView='' open={true} onSetView={jest.fn()} openView={jest.fn()} closeView={jest.fn()} />);
             searchBar.find("input").simulate("change", { target: { value: "current value" } });
             jest.advanceTimersByTime(500);
             searchBar.find("input").simulate("change", { target: { value: "intermediate value" } });

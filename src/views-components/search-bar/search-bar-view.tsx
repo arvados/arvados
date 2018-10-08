@@ -60,16 +60,20 @@ interface SearchBarState {
     value: string;
 }
 
-export const renderRecentQueries = (text: string) => {
+interface RenderQueriesProps {
+    text: string;
+}
+
+export const RenderRecentQueries = (props: RenderQueriesProps) => {
     return <ListItem button>
-        <ListItemText secondary={text} />
+        <ListItemText secondary={props.text} />
     </ListItem>;
 };
 
 
-export const renderSavedQueries = (text: string) => {
+export const RenderSavedQueries = (props: RenderQueriesProps) => {
     return <ListItem button>
-        <ListItemText secondary={text} />
+        <ListItemText secondary={props.text} />
         <ListItemSecondaryAction>
             <Tooltip title="Remove">
                 <IconButton aria-label="Remove">
