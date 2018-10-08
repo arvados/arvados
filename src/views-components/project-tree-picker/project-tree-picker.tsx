@@ -18,21 +18,21 @@ import { FilterBuilder } from "~/services/api/filter-builder";
 import { WrappedFieldProps } from 'redux-form';
 import { initTreeNode } from '~/models/tree';
 
-type ProjectTreePickerProps = Pick<TreePickerProps, 'onContextMenu' | 'toggleItemActive' | 'toggleItemOpen' | 'toggleItemSelection'>;
+type ProjectTreePickerProps = Pick<TreePickerProps<ProjectResource>, 'onContextMenu' | 'toggleItemActive' | 'toggleItemOpen' | 'toggleItemSelection'>;
 
 const mapDispatchToProps = (dispatch: Dispatch, props: { onChange: (projectUuid: string) => void }): ProjectTreePickerProps => ({
     onContextMenu: () => { return; },
-    toggleItemActive: (id, status, pickerId) => {
+    toggleItemActive: (_, { id }, pickerId) => {
         getNotSelectedTreePickerKind(pickerId)
             .forEach(pickerId => dispatch(treePickerActions.ACTIVATE_TREE_PICKER_NODE({ id: '', pickerId })));
         dispatch(treePickerActions.ACTIVATE_TREE_PICKER_NODE({ id, pickerId }));
 
         props.onChange(id);
     },
-    toggleItemOpen: (id, status, pickerId) => {
+    toggleItemOpen: (_, { id, status }, pickerId) => {
         dispatch<any>(toggleItemOpen(id, status, pickerId));
     },
-    toggleItemSelection: (id, pickerId) => {
+    toggleItemSelection: (_, { id }, pickerId) => {
         dispatch<any>(treePickerActions.TOGGLE_TREE_PICKER_NODE_SELECTION({ id, pickerId }));
     },
 });

@@ -3,8 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { unionize, ofType, UnionOf } from "~/common/unionize";
-import { TreeNode } from '~/models/tree';
-
+import { TreeNode, initTreeNode, getNodeDescendants, getNodeDescendantsIds, getNodeValue, TreeNodeStatus } from '~/models/tree';
+import { Dispatch } from 'redux';
+import { RootState } from '~/store/store';
+import { ServiceRepository } from '~/services/services';
+import { FilterBuilder } from '~/services/api/filter-builder';
+import { pipe } from 'lodash/fp';
+import { ResourceKind } from '~/models/resource';
+import { GroupContentsResource } from '../../services/groups-service/groups-service';
+import { CollectionDirectory, CollectionFile } from '../../models/collection-file';
 
 export const treePickerActions = unionize({
     LOAD_TREE_PICKER_NODE: ofType<{ id: string, pickerId: string }>(),
@@ -17,3 +24,61 @@ export const treePickerActions = unionize({
 });
 
 export type TreePickerAction = UnionOf<typeof treePickerActions>;
+
+interface ReceiveTreePickerDataParams<T> {
+    data: T[];
+    extractNodeData: (value: T) => { id: string, value: T, status?: TreeNodeStatus };
+    id: string;
+    pickerId: string;
+}
+export const receiveTreePickerData = <T>(params: ReceiveTreePickerDataParams<T>) =>
+    (dispatch: Dispatch) => {
+        const { data, extractNodeData, id, pickerId, } = params;
+        dispatch(treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
+            id,
+            nodes: data.map(item => initTreeNode(extractNodeData(item))),
+            pickerId,
+        }));
+        dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ id, pickerId }));
+    };
+
+export const loadProject = (id: string, pickerId: string, include?: ResourceKind[]) =>
+    async (dispatch: Dispatch, _: () => RootState, services: ServiceRepository) => {
+        dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id, pickerId }));
+
+        const filters = pipe(
+            (fb: FilterBuilder) => fb.addEqual('ownerUuid', id),
+            fb => include ? fb.addIsA('uuid', include) : fb,
+            fb => fb.getFilters(),
+        )(new FilterBuilder());
+
+        const { items } = await services.groupsService.contents(id, { filters });
+
+        dispatch<any>(receiveTreePickerData<GroupContentsResource>({
+            id,
+            pickerId,
+            data: items,
+            extractNodeData: item => ({ id: item.uuid, value: item }),
+        }));
+    };
+
+export const loadCollection = (id: string, pickerId: string) =>
+    async (dispatch: Dispatch, _: () => RootState, services: ServiceRepository) => {
+        dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id, pickerId }));
+
+        const files = await services.collectionService.files(id);
+        const data = getNodeDescendants('')(files).map(node => node.value);
+
+        dispatch<any>(receiveTreePickerData<CollectionDirectory | CollectionFile>({
+            id,
+            pickerId,
+            data,
+            extractNodeData: value => {
+                return {
+                    id: value.id,
+                    value,
+                    status: TreeNodeStatus.LOADED,
+                };
+            },
+        }));
+    };

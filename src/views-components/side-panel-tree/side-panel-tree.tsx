@@ -19,18 +19,18 @@ export interface SidePanelTreeProps {
     sidePanelProgress?: boolean;
 }
 
-type SidePanelTreeActionProps = Pick<TreePickerProps, 'onContextMenu' | 'toggleItemActive' | 'toggleItemOpen' | 'toggleItemSelection'>;
+type SidePanelTreeActionProps = Pick<TreePickerProps<ProjectResource | string>, 'onContextMenu' | 'toggleItemActive' | 'toggleItemOpen' | 'toggleItemSelection'>;
 
 const mapDispatchToProps = (dispatch: Dispatch, props: SidePanelTreeProps): SidePanelTreeActionProps => ({
-    onContextMenu: (event, id) => {
+    onContextMenu: (event, { id }) => {
         dispatch<any>(openSidePanelContextMenu(event, id));
     },
-    toggleItemActive: (nodeId) => {
-        dispatch<any>(activateSidePanelTreeItem(nodeId));
-        props.onItemActivation(nodeId);
+    toggleItemActive: (_, { id }) => {
+        dispatch<any>(activateSidePanelTreeItem(id));
+        props.onItemActivation(id);
     },
-    toggleItemOpen: (nodeId) => {
-        dispatch<any>(toggleSidePanelTreeItemCollapse(nodeId));
+    toggleItemOpen: (_, { id }) => {
+        dispatch<any>(toggleSidePanelTreeItemCollapse(id));
     },
     toggleItemSelection: noop,
 });

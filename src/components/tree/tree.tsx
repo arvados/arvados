@@ -82,15 +82,15 @@ export interface TreeItem<T> {
 }
 
 export interface TreeProps<T> {
+    disableRipple?: boolean;
     items?: Array<TreeItem<T>>;
-    render: (item: TreeItem<T>, level?: number) => ReactElement<{}>;
-    toggleItemOpen: (id: string, status: TreeItemStatus) => void;
-    toggleItemActive: (id: string, status: TreeItemStatus) => void;
     level?: number;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
+    render: (item: TreeItem<T>, level?: number) => ReactElement<{}>;
     showSelection?: boolean;
+    toggleItemActive: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
+    toggleItemOpen: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
     toggleItemSelection?: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
-    disableRipple?: boolean;
 }
 
 export const Tree = withStyles(styles)(
@@ -104,11 +104,11 @@ export const Tree = withStyles(styles)(
                     <div key={`item/${level}/${idx}`}>
                         <ListItem button className={listItem} style={{ paddingLeft: (level + 1) * 20 }}
                             disableRipple={disableRipple}
-                            onClick={() => toggleItemActive(it.id, it.status)}
+                            onClick={event => toggleItemActive(event, it)}
                             onContextMenu={this.handleRowContextMenu(it)}>
                             {it.status === TreeItemStatus.PENDING ?
                                 <CircularProgress size={10} className={loader} /> : null}
-                            <i onClick={this.handleToggleItemOpen(it.id, it.status)}
+                            <i onClick={this.handleToggleItemOpen(it)}
                                 className={toggableIconContainer}>
                                 <ListItemIcon className={this.getToggableIconClassNames(it.open, it.active)}>
                                     {this.getProperArrowAnimation(it.status, it.items!)}
@@ -174,9 +174,9 @@ export const Tree = withStyles(styles)(
                 : undefined;
         }
 
-        handleToggleItemOpen = (id: string, status: TreeItemStatus) => (event: React.MouseEvent<HTMLElement>) => {
+        handleToggleItemOpen = (item: TreeItem<T>) => (event: React.MouseEvent<HTMLElement>) => {
             event.stopPropagation();
-            this.props.toggleItemOpen(id, status);
+            this.props.toggleItemOpen(event, item);
         }
     }
 );

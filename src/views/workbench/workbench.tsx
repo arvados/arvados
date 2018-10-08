@@ -41,6 +41,10 @@ import { SharedWithMePanel } from '~/views/shared-with-me-panel/shared-with-me-p
 import { RunProcessPanel } from '~/views/run-process-panel/run-process-panel';
 import SplitterLayout from 'react-splitter-layout';
 import { WorkflowPanel } from '~/views/workflow-panel/workflow-panel';
+import { TreePicker } from '../../views-components/tree-picker/tree-picker';
+import { noop } from 'lodash';
+import { TreeItem } from '~/components/tree/tree';
+import { GroupContentsResource } from '~/services/groups-service/groups-service';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -74,8 +78,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 type WorkbenchPanelProps = WithStyles<CssRules>;
 
-export const WorkbenchPanel = 
-    withStyles(styles)(({ classes }: WorkbenchPanelProps) => 
+export const WorkbenchPanel =
+    withStyles(styles)(({ classes }: WorkbenchPanelProps) =>
         <Grid container item xs className={classes.root}>
             <Grid container item xs className={classes.container}>
                 <SplitterLayout customClassName={classes.splitter} percentage={true}
@@ -88,6 +92,14 @@ export const WorkbenchPanel =
                             <MainContentBar />
                         </Grid>
                         <Grid item xs className={classes.content}>
+                            <TreePicker
+                                render={({ data }: TreeItem<GroupContentsResource>) =>
+                                    <p>{JSON.stringify(data.name)}</p>}
+                                pickerId='testPicker'
+                                onContextMenu={noop}
+                                toggleItemOpen={noop}
+                                toggleItemActive={item => console.log(item)}
+                                toggleItemSelection={noop} />
                             <Switch>
                                 <Route path={Routes.PROJECTS} component={ProjectPanel} />
                                 <Route path={Routes.COLLECTIONS} component={CollectionPanel} />
