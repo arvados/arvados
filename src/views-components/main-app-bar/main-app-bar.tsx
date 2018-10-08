@@ -27,16 +27,10 @@ const styles: StyleRulesCallback<CssRules> = () => ({
 });
 
 interface MainAppBarDataProps {
-    // searchText: string;
-    // searchDebounce?: number;
     user?: User;
     buildInfo?: string;
     children?: ReactNode;
 }
-
-// export interface MainAppBarActionProps {
-//     onSearch: (searchText: string) => void;
-// }
 
 export type MainAppBarProps = MainAppBarDataProps & WithStyles<CssRules>;
 
