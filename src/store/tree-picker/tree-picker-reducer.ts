@@ -6,8 +6,7 @@ import { createTree, TreeNode, setNode, Tree, TreeNodeStatus, setNodeStatus, exp
 import { TreePicker } from "./tree-picker";
 import { treePickerActions, TreePickerAction } from "./tree-picker-actions";
 import { compose } from "redux";
-import { getNode, toggleNodeCollapse, toggleNodeSelection } from '~/models/tree';
-import { activateNode } from '../../models/tree';
+import { activateNode, getNode, toggleNodeCollapse, toggleNodeSelection } from '~/models/tree';
 
 export const treePickerReducer = (state: TreePicker = {}, action: TreePickerAction) =>
     treePickerActions.match(action, {

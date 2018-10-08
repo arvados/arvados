@@ -29,13 +29,12 @@ export const createTree = <T>(): Tree<T> => ({});
 export const getNode = (id: string) => <T>(tree: Tree<T>): TreeNode<T> | undefined => tree[id];
 
 export const setNode = <T>(node: TreeNode<T>) => (tree: Tree<T>): Tree<T> => {
-    console.log(node);
-    const [newTree] = [tree]
-        .map(tree => getNode(node.id)(tree) === node
+    return pipe(
+        (tree: Tree<T>) => getNode(node.id)(tree) === node
             ? tree
-            : { ...tree, [node.id]: node })
-        .map(addChild(node.parent, node.id));
-    return newTree;
+            : { ...tree, [node.id]: node },
+        addChild(node.parent, node.id)
+    )(tree);
 };
 
 export const getNodeValue = (id: string) => <T>(tree: Tree<T>) => {
@@ -138,7 +137,7 @@ export const toggleNodeSelection = (id: string) => <T>(tree: Tree<T>) => {
 
 };
 
-export const initTreeNode = <T>(data: Pick<TreeNode<T>, 'id' | 'value'>): TreeNode<T> => ({
+export const initTreeNode = <T>(data: Pick<TreeNode<T>, 'id' | 'value'> & {parent?: string}): TreeNode<T> => ({
     children: [],
     active: false,
     selected: false,
