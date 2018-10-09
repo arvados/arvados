@@ -27,18 +27,12 @@ const styles: StyleRulesCallback<CssRules> = () => ({
 });
 
 interface MainAppBarDataProps {
-    searchText: string;
-    searchDebounce?: number;
     user?: User;
     buildInfo?: string;
     children?: ReactNode;
 }
 
-export interface MainAppBarActionProps {
-    onSearch: (searchText: string) => void;
-}
-
-export type MainAppBarProps = MainAppBarDataProps & MainAppBarActionProps & WithStyles<CssRules>;
+export type MainAppBarProps = MainAppBarDataProps & WithStyles<CssRules>;
 
 export const MainAppBar = withStyles(styles)(
     (props: MainAppBarProps) => {
@@ -58,11 +52,7 @@ export const MainAppBar = withStyles(styles)(
                         xs={6}
                         container
                         alignItems="center">
-                        {props.user && <SearchBar
-                            value={props.searchText}
-                            onSearch={props.onSearch}
-                            debounce={props.searchDebounce}
-                        />}
+                        {props.user && <SearchBar /> }
                     </Grid>
                     <Grid
                         item

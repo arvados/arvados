@@ -39,6 +39,7 @@ import { runProcessPanelReducer } from '~/store/run-process-panel/run-process-pa
 import { WorkflowMiddlewareService } from './workflow-panel/workflow-middleware-service';
 import { WORKFLOW_PANEL_ID } from './workflow-panel/workflow-panel-actions';
 import { fileTreePickerReducer } from './file-tree-picker/file-tree-picker-reducer';
+import { appInfoReducer } from '~/store/app-info/app-info-reducer';
 import { searchBarReducer } from './search-bar/search-bar-reducer';
 
 const composeEnhancers =
@@ -103,5 +104,6 @@ const createRootReducer = (services: ServiceRepository) => combineReducers({
     progressIndicator: progressIndicatorReducer,
     fileTreePicker: fileTreePickerReducer,
     runProcessPanel: runProcessPanelReducer,
+    appInfo: appInfoReducer,
     searchBar: searchBarReducer
 });

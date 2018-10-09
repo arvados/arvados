@@ -19,11 +19,12 @@ import { RemoveIcon } from '~/components/icon/icon';
 import { SearchView } from '~/store/search-bar/search-bar-reducer';
 import { SearchBarBasicView } from '~/views-components/search-bar/search-bar-basic-view';
 import { SearchBarAdvancedView } from '~/views-components/search-bar/search-bar-advanced-view';
-import { SearchBarAutocompleteView } from '~/views-components/search-bar/search-bar-autocomplete-view';
+import { SearchBarAutocompleteView, SearchBarAutocompleteViewDataProps } from '~/views-components/search-bar/search-bar-autocomplete-view';
+import { ArvadosTheme } from '~/common/custom-theme';
 
 type CssRules = 'container' | 'containerSearchViewOpened' | 'input' | 'searchBar';
 
-const styles: StyleRulesCallback<CssRules> = theme => {
+const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => {
     return {
         container: {
             position: 'relative',
@@ -45,11 +46,11 @@ const styles: StyleRulesCallback<CssRules> = theme => {
     };
 };
 
-interface SearchBarDataProps {
-    value: string;
+type SearchBarDataProps = {
+    searchValue: string;
     currentView: string;
     open: boolean;
-}
+} & SearchBarAutocompleteViewDataProps;
 
 interface SearchBarActionProps {
     onSearch: (value: string) => any;
@@ -68,10 +69,10 @@ interface SearchBarState {
 }
 
 interface RenderQueriesProps {
-    text: string;
+    text: string | JSX.Element;
 }
 
-export const RenderRecentQueries = (props: RenderQueriesProps) => {
+export const RecentQueriesItem = (props: RenderQueriesProps) => {
     return <ListItem button>
         <ListItemText secondary={props.text} />
     </ListItem>;
@@ -130,12 +131,12 @@ export const SearchBarView = withStyles(styles)(
         }
 
         componentDidMount() {
-            this.setState({ value: this.props.value });
+            this.setState({ value: this.props.searchValue });
         }
 
         componentWillReceiveProps(nextProps: SearchBarProps) {
-            if (nextProps.value !== this.props.value) {
-                this.setState({ value: nextProps.value });
+            if (nextProps.searchValue !== this.props.searchValue) {
+                this.setState({ value: nextProps.searchValue });
             }
         }
 
@@ -150,7 +151,9 @@ export const SearchBarView = withStyles(styles)(
                 case SearchView.ADVANCED:
                     return <SearchBarAdvancedView setView={this.props.onSetView} />;
                 case SearchView.AUTOCOMPLETE:
-                    return <SearchBarAutocompleteView />;
+                    return <SearchBarAutocompleteView 
+                                searchResults={this.props.searchResults} 
+                                searchValue={this.props.searchValue} />;
                 default:
                     return <SearchBarBasicView setView={this.props.onSetView} recentQueries={this.props.loadQueries} />;
             }
