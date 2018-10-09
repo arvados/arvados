@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { createTree, TreeNode, setNode, Tree, TreeNodeStatus, setNodeStatus, expandNode } from '~/models/tree';
+import { createTree, TreeNode, setNode, Tree, TreeNodeStatus, setNodeStatus, expandNode, deactivateNode } from '~/models/tree';
 import { TreePicker } from "./tree-picker";
 import { treePickerActions, TreePickerAction } from "./tree-picker-actions";
 import { compose } from "redux";
@@ -18,6 +18,8 @@ export const treePickerReducer = (state: TreePicker = {}, action: TreePickerActi
             updateOrCreatePicker(state, pickerId, toggleNodeCollapse(id)),
         ACTIVATE_TREE_PICKER_NODE: ({ id, pickerId }) =>
             updateOrCreatePicker(state, pickerId, activateNode(id)),
+        DEACTIVATE_TREE_PICKER_NODE: ({ pickerId }) =>
+            updateOrCreatePicker(state, pickerId, deactivateNode),
         TOGGLE_TREE_PICKER_NODE_SELECTION: ({ id, pickerId }) =>
             updateOrCreatePicker(state, pickerId, toggleNodeSelection(id)),
         RESET_TREE_PICKER: ({ pickerId }) =>

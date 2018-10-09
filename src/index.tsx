@@ -43,7 +43,7 @@ import { trashedCollectionActionSet } from '~/views-components/context-menu/acti
 import { ContainerRequestState } from '~/models/container-request';
 import { MountKind } from '~/models/mount-types';
 import { receiveTreePickerData, loadUserProject } from '~/store/tree-picker/tree-picker-actions';
-import { loadProject, loadCollection, initUserProject, initSharedProject, initFavoritesProject } from './store/tree-picker/tree-picker-actions';
+import { loadProject, loadCollection, initUserProject, initSharedProject, initFavoritesProject, initProjectsTreePicker } from './store/tree-picker/tree-picker-actions';
 import { ResourceKind } from '~/models/resource';
 
 const getBuildNumber = () => "BN-" + (process.env.REACT_APP_BUILD_NUMBER || "dev");
@@ -117,15 +117,10 @@ const initListener = (history: History, store: RootStore, services: ServiceRepos
             await store.dispatch(loadWorkbench());
             addRouteChangeHandlers(history, store);
             // createEnumCollectorWorkflow(services);
-            store.dispatch(initUserProject('testPicker1'));
-            store.dispatch(initUserProject('testPicker2'));
-            store.dispatch(initUserProject('testPicker3'));
-            store.dispatch(initSharedProject('testPicker4'));
-            store.dispatch(initSharedProject('testPicker5'));
-            store.dispatch(initSharedProject('testPicker6'));
-            store.dispatch(initFavoritesProject('testPicker7'));
-            store.dispatch(initFavoritesProject('testPicker8'));
-            store.dispatch(initFavoritesProject('testPicker9'));
+            store.dispatch(initProjectsTreePicker('testPicker1'));
+            store.dispatch(initProjectsTreePicker('testPicker2'));
+            store.dispatch(initProjectsTreePicker('testPicker3'));
+            
             // await store.dispatch(loadCollection(
             //     'c97qk-4zz18-9sn8ygaf62chkkd',
             //     'testPicker',

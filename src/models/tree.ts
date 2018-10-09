@@ -109,6 +109,8 @@ export const mapIdsToNodes = (ids: string[]) => <T>(tree: Tree<T>) =>
 export const activateNode = (id: string) => <T>(tree: Tree<T>) =>
     mapTree(node => node.id === id ? { ...node, active: true } : { ...node, active: false })(tree);
 
+export const deactivateNode = <T>(tree: Tree<T>) =>
+    mapTree(node => node.active ? { ...node, active: false } : node)(tree);
 
 export const expandNode = (...ids: string[]) => <T>(tree: Tree<T>) =>
     mapTree(node => ids.some(id => id === node.id) ? { ...node, expanded: true } : node)(tree);

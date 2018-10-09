@@ -41,14 +41,10 @@ import { SharedWithMePanel } from '~/views/shared-with-me-panel/shared-with-me-p
 import { RunProcessPanel } from '~/views/run-process-panel/run-process-panel';
 import SplitterLayout from 'react-splitter-layout';
 import { WorkflowPanel } from '~/views/workflow-panel/workflow-panel';
-import { TreePicker } from '../../views-components/tree-picker/tree-picker';
-import { noop } from 'lodash';
-import { TreeItem } from '~/components/tree/tree';
-import { GroupContentsResource } from '~/services/groups-service/groups-service';
+import { HomeTreePicker } from '~/views-components/projects-tree-picker/home-tree-picker';
+import { SharedTreePicker } from '~/views-components/projects-tree-picker/shared-tree-picker';
+import { FavoritesTreePicker } from '../../views-components/projects-tree-picker/favorites-tree-picker';
 import { ProjectsTreePicker } from '~/views-components/projects-tree-picker/projects-tree-picker';
-import { UserProjectsTreePicker } from '~/views-components/projects-tree-picker/user-projects-tree-picker';
-import { SharedProjectsTreePicker } from '~/views-components/projects-tree-picker/shared-projects-tree-picker';
-import { FavoritesProjectsTreePicker } from '../../views-components/projects-tree-picker/favorites-tree-picker';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -96,15 +92,12 @@ export const WorkbenchPanel =
                             <MainContentBar />
                         </Grid>
                         <Grid item xs className={classes.content}>
-                            <UserProjectsTreePicker pickerId='testPicker1'/>
-                            <UserProjectsTreePicker pickerId='testPicker2' includeCollections/>
-                            <UserProjectsTreePicker pickerId='testPicker3' includeCollections includeFiles/>
-                            <SharedProjectsTreePicker pickerId='testPicker4'/>
-                            <SharedProjectsTreePicker pickerId='testPicker5' includeCollections/>
-                            <SharedProjectsTreePicker pickerId='testPicker6' includeCollections includeFiles/>
-                            <FavoritesProjectsTreePicker pickerId='testPicker7'/>
-                            <FavoritesProjectsTreePicker pickerId='testPicker8' includeCollections/>
-                            <FavoritesProjectsTreePicker pickerId='testPicker9' includeCollections includeFiles/>
+                            <p>Projects only</p>
+                            <ProjectsTreePicker pickerId="testPicker1"/>
+                            <p>Collections included</p>
+                            <ProjectsTreePicker pickerId="testPicker2" includeCollections/>
+                            <p>Files included</p>
+                            <ProjectsTreePicker pickerId="testPicker3" includeCollections includeFiles toggleItemActive={(...args: any[]) => console.log(args)}/>
                             <Switch>
                                 <Route path={Routes.PROJECTS} component={ProjectPanel} />
                                 <Route path={Routes.COLLECTIONS} component={CollectionPanel} />
