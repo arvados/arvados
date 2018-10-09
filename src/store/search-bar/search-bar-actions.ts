@@ -15,7 +15,8 @@ export const searchBarActions = unionize({
     SET_CURRENT_VIEW: ofType<string>(),
     OPEN_SEARCH_VIEW: ofType<{}>(),
     CLOSE_SEARCH_VIEW: ofType<{}>(),
-    SET_SEARCH_RESULTS: ofType<GroupContentsResource[]>()
+    SET_SEARCH_RESULTS: ofType<GroupContentsResource[]>(),
+    SET_SEARCH_VALUE: ofType<string>()
 });
 
 export type SearchBarActions = UnionOf<typeof searchBarActions>;
@@ -24,10 +25,10 @@ export const goToView = (currentView: string) => searchBarActions.SET_CURRENT_VI
 
 export const searchData = (searchValue: string) => 
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(searchBarActions.SET_SEARCH_VALUE(searchValue));
         dispatch(searchBarActions.SET_SEARCH_RESULTS([]));
         if (searchValue) {
             const filters = getFilters('name', searchValue);
-            // set user.uuid search only in Projects, the empty value search by whole app
             const { items } = await services.groupsService.contents('', {
                 filters, 
                 limit: 5,

@@ -20,10 +20,11 @@ import { SearchView } from '~/store/search-bar/search-bar-reducer';
 import { SearchBarBasicView } from '~/views-components/search-bar/search-bar-basic-view';
 import { SearchBarAdvancedView } from '~/views-components/search-bar/search-bar-advanced-view';
 import { SearchBarAutocompleteView, SearchBarAutocompleteViewDataProps } from '~/views-components/search-bar/search-bar-autocomplete-view';
+import { ArvadosTheme } from '~/common/custom-theme';
 
 type CssRules = 'container' | 'input' | 'searchBar';
 
-const styles: StyleRulesCallback<CssRules> = theme => {
+const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => {
     return {
         container: {
             position: 'relative',
@@ -41,7 +42,7 @@ const styles: StyleRulesCallback<CssRules> = theme => {
 };
 
 type SearchBarDataProps = {
-    value: string;
+    searchValue: string;
     currentView: string;
     open: boolean;
 } & SearchBarAutocompleteViewDataProps;
@@ -61,7 +62,7 @@ interface SearchBarState {
 }
 
 interface RenderQueriesProps {
-    text: string;
+    text: string | JSX.Element;
 }
 
 export const RecentQueriesItem = (props: RenderQueriesProps) => {
@@ -123,12 +124,12 @@ export const SearchBarView = withStyles(styles)(
         }
 
         componentDidMount() {
-            this.setState({ value: this.props.value });
+            this.setState({ value: this.props.searchValue });
         }
 
         componentWillReceiveProps(nextProps: SearchBarProps) {
-            if (nextProps.value !== this.props.value) {
-                this.setState({ value: nextProps.value });
+            if (nextProps.searchValue !== this.props.searchValue) {
+                this.setState({ value: nextProps.searchValue });
             }
         }
 
@@ -143,7 +144,9 @@ export const SearchBarView = withStyles(styles)(
                 case SearchView.ADVANCED:
                     return <SearchBarAdvancedView setView={this.props.onSetView} />;
                 case SearchView.AUTOCOMPLETE:
-                    return <SearchBarAutocompleteView searchResults={this.props.searchResults} />;
+                    return <SearchBarAutocompleteView 
+                                searchResults={this.props.searchResults} 
+                                searchValue={this.props.searchValue} />;
                 default:
                     return <SearchBarBasicView setView={this.props.onSetView} />;
             }

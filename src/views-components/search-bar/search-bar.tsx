@@ -10,8 +10,7 @@ import { SearchBarView } from '~/views-components/search-bar/search-bar-view';
 
 const mapStateToProps = ({ searchBar }: RootState) => {
     return {
-        // ToDo: add value to store
-        value: '',
+        searchValue: searchBar.searchValue,
         currentView: searchBar.currentView,
         open: searchBar.open,
         searchResults: searchBar.searchResults
