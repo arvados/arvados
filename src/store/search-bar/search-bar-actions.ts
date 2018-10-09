@@ -25,8 +25,7 @@ export const goToView = (currentView: string) => searchBarActions.SET_CURRENT_VI
 export const searchData = (searchValue: string) => 
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(searchBarActions.SET_SEARCH_RESULTS([]));
-        const user = getState().auth.user;
-        if (user && searchValue) {
+        if (searchValue) {
             const filters = getFilters('name', searchValue);
             // set user.uuid search only in Projects, the empty value search by whole app
             const { items } = await services.groupsService.contents('', {

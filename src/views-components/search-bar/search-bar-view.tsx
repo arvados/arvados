@@ -20,7 +20,6 @@ import { SearchView } from '~/store/search-bar/search-bar-reducer';
 import { SearchBarBasicView } from '~/views-components/search-bar/search-bar-basic-view';
 import { SearchBarAdvancedView } from '~/views-components/search-bar/search-bar-advanced-view';
 import { SearchBarAutocompleteView, SearchBarAutocompleteViewDataProps } from '~/views-components/search-bar/search-bar-autocomplete-view';
-import { GroupContentsResource } from '~/services/groups-service/groups-service';
 
 type CssRules = 'container' | 'input' | 'searchBar';
 
@@ -65,7 +64,7 @@ interface RenderQueriesProps {
     text: string;
 }
 
-export const RenderRecentQueries = (props: RenderQueriesProps) => {
+export const RecentQueriesItem = (props: RenderQueriesProps) => {
     return <ListItem button>
         <ListItemText secondary={props.text} />
     </ListItem>;

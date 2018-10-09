@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { Paper, StyleRulesCallback, withStyles, WithStyles, List } from '@material-ui/core';
-import { RenderRecentQueries } from '~/views-components/search-bar/search-bar-view';
+import { RecentQueriesItem } from '~/views-components/search-bar/search-bar-view';
 import { GroupContentsResource } from '~/services/groups-service/groups-service';
 
 type CssRules = 'list';
@@ -28,7 +28,7 @@ export const SearchBarAutocompleteView = withStyles(styles)(
         <Paper>
             {searchResults &&  <List component="nav" className={classes.list}>
                 {searchResults.map((item) => {
-                    return <RenderRecentQueries key={item.uuid} text={item.name} />;
+                    return <RecentQueriesItem key={item.uuid} text={item.name} />;
                 })}
             </List>}
         </Paper>

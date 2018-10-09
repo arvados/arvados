@@ -5,7 +5,7 @@
 import * as React from 'react';
 import { Paper, StyleRulesCallback, withStyles, WithStyles, List } from '@material-ui/core';
 import { SearchView } from '~/store/search-bar/search-bar-reducer';
-import { RenderRecentQueries, RenderSavedQueries } from '~/views-components/search-bar/search-bar-view';
+import { RecentQueriesItem, RenderSavedQueries } from '~/views-components/search-bar/search-bar-view';
 
 type CssRules = 'advanced' | 'searchQueryList' | 'list' | 'searchView';
 
@@ -47,8 +47,8 @@ export const SearchBarBasicView = withStyles(styles)(
             </List>
             <div className={classes.searchQueryList}>Recent search queries</div>
             <List component="nav" className={classes.list}>
-                <RenderRecentQueries text="cos" />
-                <RenderRecentQueries text="testtest" />
+                <RecentQueriesItem text="cos" />
+                <RecentQueriesItem text="testtest" />
             </List>
             <div className={classes.advanced} onClick={() => setView(SearchView.ADVANCED)}>Advanced search</div>
         </Paper>
