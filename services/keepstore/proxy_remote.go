@@ -174,6 +174,11 @@ func (rrc *remoteResponseCacher) Close() error {
 		return nil
 	}
 	_, err := PutBlock(rrc.Context, rrc.Buffer, rrc.Locator[:32])
+	if rrc.Context.Err() != nil {
+		// If caller hung up, log that instead of subsequent/misleading errors.
+		http.Error(rrc.ResponseWriter, rrc.Context.Err().Error(), http.StatusGatewayTimeout)
+		return err
+	}
 	if err == RequestHashError {
 		http.Error(rrc.ResponseWriter, "checksum mismatch in remote response", http.StatusBadGateway)
 		return err
