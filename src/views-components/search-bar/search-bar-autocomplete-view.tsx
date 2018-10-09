@@ -11,13 +11,11 @@ import Highlighter from "react-highlight-words";
 
 type CssRules = 'list';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => {
-    return {
-        list: {
-            padding: '0px'
-        }
-    };
-};
+const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+    list: {
+        padding: 0
+    }
+});
 
 export interface SearchBarAutocompleteViewDataProps {
     searchResults?: GroupContentsResource[];
@@ -38,8 +36,5 @@ export const SearchBarAutocompleteView = withStyles(styles)(
 );
 
 const getFormattedText = (textToHighlight: string, searchString = '') => {
-    return <Highlighter
-                searchWords={[searchString]}
-                autoEscape={true}
-                textToHighlight={textToHighlight} />;
+    return <Highlighter searchWords={[searchString]} autoEscape={true} textToHighlight={textToHighlight} />;
 };
