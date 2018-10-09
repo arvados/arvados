@@ -33,7 +33,6 @@ func SetupPullWorkerIntegrationTest(t *testing.T, testData PullWorkIntegrationTe
 	// start api and keep servers
 	arvadostest.StartAPI()
 	arvadostest.StartKeep(2, false)
-	keepclient.RefreshServiceDiscovery()
 
 	// make arvadosclient
 	arv, err := arvadosclient.MakeArvadosClient()
@@ -47,6 +46,7 @@ func SetupPullWorkerIntegrationTest(t *testing.T, testData PullWorkIntegrationTe
 		t.Fatalf("error creating KeepClient: %s", err)
 	}
 	keepClient.Want_replicas = 1
+	keepClient.RefreshServiceDiscovery()
 
 	// discover keep services
 	var servers []string

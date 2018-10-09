@@ -20,9 +20,10 @@ import (
 
 // ClearCache clears the Keep service discovery cache.
 func RefreshServiceDiscovery() {
+	var wg sync.WaitGroup
+	defer wg.Wait()
 	svcListCacheMtx.Lock()
 	defer svcListCacheMtx.Unlock()
-	var wg sync.WaitGroup
 	for _, ent := range svcListCache {
 		wg.Add(1)
 		go func() {
@@ -30,7 +31,6 @@ func RefreshServiceDiscovery() {
 			wg.Done()
 		}()
 	}
-	wg.Wait()
 }
 
 // ClearCacheOnSIGHUP installs a signal handler that calls
@@ -151,6 +151,16 @@ func (kc *KeepClient) discoverServices() error {
 	svcListCacheMtx.Unlock()
 
 	return kc.loadKeepServers(<-cacheEnt.latest)
+}
+
+func (kc *KeepClient) RefreshServiceDiscovery() {
+	svcListCacheMtx.Lock()
+	ent, ok := svcListCache[kc.Arvados.ApiServer]
+	svcListCacheMtx.Unlock()
+	if !ok || kc.Arvados.KeepServiceURIs != nil || kc.disableDiscovery {
+		return
+	}
+	ent.clear <- struct{}{}
 }
 
 // LoadKeepServicesFromJSON gets list of available keep services from
