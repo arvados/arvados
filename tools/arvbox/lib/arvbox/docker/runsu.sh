@@ -10,6 +10,8 @@ flock /var/lib/arvados/createusers.lock /usr/local/lib/arvbox/createusers.sh
 
 export HOME=/var/lib/arvados
 
+chown arvbox /dev/stderr
+
 if test -z "$1" ; then
     exec chpst -u arvbox:arvbox:docker $0-service
 else

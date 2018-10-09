@@ -63,7 +63,7 @@ class JobsTest < ActionDispatch::IntegrationTest
   test 'view log via keep-web redirect' do
     use_keep_web_config
 
-    token = api_fixture('api_client_authorizations')['active']['api_token']
+    token = api_token('active')
     logdata = fakepipe_with_log_data.read
     logblock = `echo -n #{logdata.shellescape} | ARVADOS_API_TOKEN=#{token.shellescape} arv-put --no-progress --raw -`.strip
     assert $?.success?, $?

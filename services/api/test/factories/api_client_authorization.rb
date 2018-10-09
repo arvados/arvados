@@ -2,10 +2,10 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-FactoryGirl.define do
+FactoryBot.define do
   factory :api_client_authorization do
     api_client
-    scopes ['all']
+    scopes { ['all'] }
 
     trait :trusted do
       association :api_client, factory: :api_client, is_trusted: true
