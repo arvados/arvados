@@ -48,8 +48,9 @@ func (rp *remoteProxy) Get(ctx context.Context, w http.ResponseWriter, r *http.R
 			Token:          token,
 			Buffer:         buf[:0],
 			ResponseWriter: w,
+			Context:        ctx,
 		}
-		defer rrc.Flush(ctx)
+		defer rrc.Close()
 		w = rrc
 	}
 	var remoteClient *keepclient.KeepClient
@@ -147,6 +148,7 @@ type remoteResponseCacher struct {
 	Locator string
 	Token   string
 	Buffer  []byte
+	Context context.Context
 	http.ResponseWriter
 	statusCode int
 }
@@ -163,35 +165,37 @@ func (rrc *remoteResponseCacher) WriteHeader(statusCode int) {
 	rrc.statusCode = statusCode
 }
 
-func (rrc *remoteResponseCacher) Flush(ctx context.Context) {
+func (rrc *remoteResponseCacher) Close() error {
 	if rrc.statusCode == 0 {
 		rrc.statusCode = http.StatusOK
 	} else if rrc.statusCode != http.StatusOK {
 		rrc.ResponseWriter.WriteHeader(rrc.statusCode)
 		rrc.ResponseWriter.Write(rrc.Buffer)
-		return
+		return nil
 	}
-	_, err := PutBlock(ctx, rrc.Buffer, rrc.Locator[:32])
+	_, err := PutBlock(rrc.Context, rrc.Buffer, rrc.Locator[:32])
 	if err == RequestHashError {
 		http.Error(rrc.ResponseWriter, "checksum mismatch in remote response", http.StatusBadGateway)
-		return
+		return err
 	}
 	if err, ok := err.(*KeepError); ok {
 		http.Error(rrc.ResponseWriter, err.Error(), err.HTTPCode)
-		return
+		return err
 	}
 	if err != nil {
 		http.Error(rrc.ResponseWriter, err.Error(), http.StatusBadGateway)
-		return
+		return err
 	}
 
 	unsigned := localOrRemoteSignature.ReplaceAllLiteralString(rrc.Locator, "")
 	signed := SignLocator(unsigned, rrc.Token, time.Now().Add(theConfig.BlobSignatureTTL.Duration()))
 	if signed == unsigned {
-		http.Error(rrc.ResponseWriter, "could not sign locator", http.StatusInternalServerError)
-		return
+		err = errors.New("could not sign locator")
+		http.Error(rrc.ResponseWriter, err.Error(), http.StatusInternalServerError)
+		return err
 	}
 	rrc.Header().Set("X-Keep-Locator", signed)
 	rrc.ResponseWriter.WriteHeader(rrc.statusCode)
-	rrc.ResponseWriter.Write(rrc.Buffer)
+	_, err = rrc.ResponseWriter.Write(rrc.Buffer)
+	return err
 }
