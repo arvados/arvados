@@ -35,10 +35,11 @@ const styles: StyleRulesCallback<CssRules> = theme => {
 
 interface SearchBarBasicViewProps {
     setView: (currentView: string) => void;
+    recentQueries: () => string[];
 }
 
 export const SearchBarBasicView = withStyles(styles)(
-    ({ classes, setView }: SearchBarBasicViewProps & WithStyles<CssRules>) =>
+    ({ classes, setView, recentQueries }: SearchBarBasicViewProps & WithStyles<CssRules>) =>
         <Paper className={classes.searchView}>
             <div className={classes.searchQueryList}>Saved search queries</div>
             <List component="nav" className={classes.list}>
@@ -47,8 +48,7 @@ export const SearchBarBasicView = withStyles(styles)(
             </List>
             <div className={classes.searchQueryList}>Recent search queries</div>
             <List component="nav" className={classes.list}>
-                <RenderRecentQueries text="cos" />
-                <RenderRecentQueries text="testtest" />
+                {recentQueries().map((query, index) => <RenderRecentQueries key={query + index} text={query} />)}
             </List>
             <div className={classes.advanced} onClick={() => setView(SearchView.ADVANCED)}>Advanced search</div>
         </Paper>

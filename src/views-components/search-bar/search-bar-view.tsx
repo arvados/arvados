@@ -52,6 +52,8 @@ interface SearchBarActionProps {
     onSetView: (currentView: string) => void;
     openView: () => void;
     closeView: () => void;
+    saveQuery: (query: string) => void;
+    loadQueries: () => string[];
 }
 
 type SearchBarProps = SearchBarDataProps & SearchBarActionProps & WithStyles<CssRules>;
@@ -139,21 +141,23 @@ export const SearchBarView = withStyles(styles)(
         getView = (currentView: string) => {
             switch (currentView) {
                 case SearchView.BASIC:
-                    return <SearchBarBasicView setView={this.props.onSetView} />;
+                    return <SearchBarBasicView setView={this.props.onSetView} recentQueries={this.props.loadQueries}/>;
                 case SearchView.ADVANCED:
                     return <SearchBarAdvancedView setView={this.props.onSetView} />;
                 case SearchView.AUTOCOMPLETE:
                     return <SearchBarAutocompleteView />;
                 default:
-                    return <SearchBarBasicView setView={this.props.onSetView} />;
+                    return <SearchBarBasicView setView={this.props.onSetView} recentQueries={this.props.loadQueries}/>;
             }
         }
 
         handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-            event.preventDefault();
-            clearTimeout(this.timeout);
-            this.props.onSearch(this.state.value);
-        }
+                event.preventDefault();
+                clearTimeout(this.timeout);
+                this.props.saveQuery(this.state.value);
+                this.props.onSearch(this.state.value);
+                this.props.loadQueries();
+            }
 
         handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
             clearTimeout(this.timeout);
