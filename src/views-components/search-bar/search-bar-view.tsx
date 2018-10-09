@@ -21,14 +21,19 @@ import { SearchBarBasicView } from '~/views-components/search-bar/search-bar-bas
 import { SearchBarAdvancedView } from '~/views-components/search-bar/search-bar-advanced-view';
 import { SearchBarAutocompleteView } from '~/views-components/search-bar/search-bar-autocomplete-view';
 
-type CssRules = 'container' | 'input' | 'searchBar';
+type CssRules = 'container' | 'containerSearchViewOpened' | 'input' | 'searchBar';
 
 const styles: StyleRulesCallback<CssRules> = theme => {
     return {
         container: {
             position: 'relative',
             width: '100%',
-            borderRadius: '0px'
+            borderRadius: theme.spacing.unit / 4
+        },
+        containerSearchViewOpened: {
+            position: 'relative',
+            width: '100%',
+            borderRadius: `${theme.spacing.unit / 4}px ${theme.spacing.unit / 4}px 0 0`
         },
         input: {
             border: 'none',
@@ -99,7 +104,7 @@ export const SearchBarView = withStyles(styles)(
         render() {
             const { classes, currentView, openView, closeView, open } = this.props;
             return <ClickAwayListener onClickAway={() => closeView()}>
-                <Paper className={classes.container} >
+                <Paper className={open ? classes.containerSearchViewOpened : classes.container} >
                     <form onSubmit={this.handleSubmit} className={classes.searchBar}>
                         <Input
                             className={classes.input}
@@ -141,23 +146,23 @@ export const SearchBarView = withStyles(styles)(
         getView = (currentView: string) => {
             switch (currentView) {
                 case SearchView.BASIC:
-                    return <SearchBarBasicView setView={this.props.onSetView} recentQueries={this.props.loadQueries}/>;
+                    return <SearchBarBasicView setView={this.props.onSetView} recentQueries={this.props.loadQueries} />;
                 case SearchView.ADVANCED:
                     return <SearchBarAdvancedView setView={this.props.onSetView} />;
                 case SearchView.AUTOCOMPLETE:
                     return <SearchBarAutocompleteView />;
                 default:
-                    return <SearchBarBasicView setView={this.props.onSetView} recentQueries={this.props.loadQueries}/>;
+                    return <SearchBarBasicView setView={this.props.onSetView} recentQueries={this.props.loadQueries} />;
             }
         }
 
         handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-                event.preventDefault();
-                clearTimeout(this.timeout);
-                this.props.saveQuery(this.state.value);
-                this.props.onSearch(this.state.value);
-                this.props.loadQueries();
-            }
+            event.preventDefault();
+            clearTimeout(this.timeout);
+            this.props.saveQuery(this.state.value);
+            this.props.onSearch(this.state.value);
+            this.props.loadQueries();
+        }
 
         handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
             clearTimeout(this.timeout);

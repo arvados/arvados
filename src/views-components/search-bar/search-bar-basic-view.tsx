@@ -28,7 +28,8 @@ const styles: StyleRulesCallback<CssRules> = theme => {
             padding: '0px'
         },
         searchView: {
-            color: theme.palette.common.black
+            color: theme.palette.common.black,
+            borderRadius: `0 0 ${theme.spacing.unit / 4}px ${theme.spacing.unit / 4}px`
         }
     };
 };

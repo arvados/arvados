@@ -7,12 +7,15 @@ import { Paper, StyleRulesCallback, withStyles, WithStyles, List, Button } from 
 import { SearchView } from '~/store/search-bar/search-bar-reducer';
 import { RenderRecentQueries } from '~/views-components/search-bar/search-bar-view';
 
-type CssRules = 'list';
+type CssRules = 'list' | 'searchView';
 
 const styles: StyleRulesCallback<CssRules> = theme => {
     return {
         list: {
             padding: '0px'
+        },
+        searchView: {
+            borderRadius: `0 0 ${theme.spacing.unit / 4}px ${theme.spacing.unit / 4}px`
         }
     };
 };
@@ -23,7 +26,7 @@ interface SearchBarAdvancedViewProps {
 
 export const SearchBarAdvancedView = withStyles(styles)(
     ({ classes, setView }: SearchBarAdvancedViewProps & WithStyles<CssRules>) =>
-        <Paper>
+        <Paper className={classes.searchView}>
             <List component="nav" className={classes.list}>
                 <RenderRecentQueries text='ADVANCED VIEW' />
             </List>
