@@ -9,7 +9,7 @@ gem 'responders', '~> 2.0'
 gem 'protected_attributes'
 
 group :test, :development do
-  gem 'factory_girl_rails'
+  gem 'factory_bot_rails'
   gem 'database_cleaner'
   gem 'ruby-prof'
   # Note: "require: false" here tells bunder not to automatically

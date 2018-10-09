@@ -33,7 +33,7 @@ end
 require File.expand_path('../../config/environment', __FILE__)
 require 'rails/test_help'
 require 'mocha'
-require 'mocha/mini_test'
+require 'mocha/minitest'
 
 module ArvadosTestSupport
   def json_response
@@ -54,7 +54,7 @@ module ArvadosTestSupport
 end
 
 class ActiveSupport::TestCase
-  include FactoryGirl::Syntax::Methods
+  include FactoryBot::Syntax::Methods
   fixtures :all
 
   include ArvadosTestSupport
