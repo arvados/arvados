@@ -7,11 +7,10 @@ import { AppBar, Toolbar, Typography, Grid } from "@material-ui/core";
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { Link } from "react-router-dom";
 import { User } from "~/models/user";
-import { SearchBar } from "~/components/search-bar/search-bar";
+import { SearchBar } from "~/views-components/search-bar/search-bar";
 import { Routes } from '~/routes/routes';
 import { NotificationsMenu } from "~/views-components/main-app-bar/notifications-menu";
 import { AccountMenu } from "~/views-components/main-app-bar/account-menu";
-import { AnonymousMenu } from "~/views-components/main-app-bar/anonymous-menu";
 import { HelpMenu } from './help-menu';
 import { ReactNode } from "react";
 
@@ -28,18 +27,12 @@ const styles: StyleRulesCallback<CssRules> = () => ({
 });
 
 interface MainAppBarDataProps {
-    searchText: string;
-    searchDebounce?: number;
     user?: User;
     buildInfo?: string;
     children?: ReactNode;
 }
 
-export interface MainAppBarActionProps {
-    onSearch: (searchText: string) => void;
-}
-
-export type MainAppBarProps = MainAppBarDataProps & MainAppBarActionProps & WithStyles<CssRules>;
+export type MainAppBarProps = MainAppBarDataProps & WithStyles<CssRules>;
 
 export const MainAppBar = withStyles(styles)(
     (props: MainAppBarProps) => {
@@ -59,11 +52,7 @@ export const MainAppBar = withStyles(styles)(
                         xs={6}
                         container
                         alignItems="center">
-                        {props.user && <SearchBar
-                            value={props.searchText}
-                            onSearch={props.onSearch}
-                            debounce={props.searchDebounce}
-                        />}
+                        {props.user && <SearchBar /> }
                     </Grid>
                     <Grid
                         item

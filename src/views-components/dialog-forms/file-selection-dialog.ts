@@ -14,7 +14,6 @@ export const FileSelectionDialog = compose(
     reduxForm({
         form: FILE_SELECTION,
         onSubmit: (data, dispatch) => {
-            console.log(data);
             dispatch(dialogActions.CLOSE_DIALOG({ id: FILE_SELECTION }));
             return data;
         }
