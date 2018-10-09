@@ -47,6 +47,7 @@ import { TreeItem } from '~/components/tree/tree';
 import { GroupContentsResource } from '~/services/groups-service/groups-service';
 import { ProjectsTreePicker } from '~/views-components/projects-tree-picker/projects-tree-picker';
 import { UserProjectsTreePicker } from '~/views-components/projects-tree-picker/user-projects-tree-picker';
+import { SharedProjectsTreePicker } from '~/views-components/projects-tree-picker/shared-projects-tree-picker';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -97,6 +98,9 @@ export const WorkbenchPanel =
                             <UserProjectsTreePicker pickerId='testPicker1'/>
                             <UserProjectsTreePicker pickerId='testPicker2' includeCollections/>
                             <UserProjectsTreePicker pickerId='testPicker3' includeCollections includeFiles/>
+                            <SharedProjectsTreePicker pickerId='testPicker4'/>
+                            <SharedProjectsTreePicker pickerId='testPicker5' includeCollections/>
+                            <SharedProjectsTreePicker pickerId='testPicker6' includeCollections includeFiles/>
                             <Switch>
                                 <Route path={Routes.PROJECTS} component={ProjectPanel} />
                                 <Route path={Routes.COLLECTIONS} component={CollectionPanel} />

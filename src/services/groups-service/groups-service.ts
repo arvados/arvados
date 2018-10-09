@@ -20,6 +20,7 @@ export interface ContentsArguments {
     filters?: string;
     recursive?: boolean;
     includeTrash?: boolean;
+    excludeHomeProject?: boolean;
 }
 
 export interface SharedArguments extends ListArguments {
@@ -45,14 +46,16 @@ export class GroupsService<T extends GroupResource = GroupResource> extends Tras
             order: order ? order : undefined
         };
 
+        const pathUrl = uuid ? `${uuid}/contents` : 'contents';
         const response = await CommonResourceService.defaultResponse(
             this.serverApi
-                .get(this.resourceType + `${uuid}/contents`, {
+                .get(this.resourceType + pathUrl, {
                     params: CommonResourceService.mapKeys(_.snakeCase)(params)
                 }),
-            this.actions, 
+            this.actions,
             false
         );
+        
         const { items, ...res } = response;
         const mappedItems = items.map((item: GroupContentsResource) => {
             const mappedItem = TrashableResourceService.mapKeys(_.camelCase)(item);

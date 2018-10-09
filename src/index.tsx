@@ -43,7 +43,7 @@ import { trashedCollectionActionSet } from '~/views-components/context-menu/acti
 import { ContainerRequestState } from '~/models/container-request';
 import { MountKind } from '~/models/mount-types';
 import { receiveTreePickerData, loadUserProject } from '~/store/tree-picker/tree-picker-actions';
-import { loadProject, loadCollection, initUserProject } from './store/tree-picker/tree-picker-actions';
+import { loadProject, loadCollection, initUserProject, initSharedProject } from './store/tree-picker/tree-picker-actions';
 import { ResourceKind } from '~/models/resource';
 
 const getBuildNumber = () => "BN-" + (process.env.REACT_APP_BUILD_NUMBER || "dev");
@@ -120,6 +120,9 @@ const initListener = (history: History, store: RootStore, services: ServiceRepos
             store.dispatch(initUserProject('testPicker1'));
             store.dispatch(initUserProject('testPicker2'));
             store.dispatch(initUserProject('testPicker3'));
+            store.dispatch(initSharedProject('testPicker4'));
+            store.dispatch(initSharedProject('testPicker5'));
+            store.dispatch(initSharedProject('testPicker6'));
             // await store.dispatch(loadCollection(
             //     'c97qk-4zz18-9sn8ygaf62chkkd',
             //     'testPicker',

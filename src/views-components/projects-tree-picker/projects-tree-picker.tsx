@@ -42,7 +42,7 @@ const mapStateToProps = (_: any, { pickerId, rootItemIcon }: ProjectsTreePickerP
     pickerId,
 });
 
-const mapDispatchToProps = (dispatch: Dispatch, props: ProjectsTreePickerProps): PickedTreePickerProps => ({
+const mapDispatchToProps = (dispatch: Dispatch, { loadRootItem, includeCollections, includeFiles }: ProjectsTreePickerProps): PickedTreePickerProps => ({
     onContextMenu: () => { return; },
     toggleItemActive: (_, { id }, pickerId) => {
         dispatch(treePickerActions.ACTIVATE_TREE_PICKER_NODE({ id, pickerId }));
@@ -54,10 +54,10 @@ const mapDispatchToProps = (dispatch: Dispatch, props: ProjectsTreePickerProps):
                 dispatch<any>(
                     data.kind === ResourceKind.COLLECTION
                         ? loadCollection(id, pickerId)
-                        : loadProject(id, pickerId, props.includeCollections, props.includeFiles)
+                        : loadProject({ id, pickerId, includeCollections, includeFiles })
                 );
-            } else if (!('type' in data) && props.loadRootItem) {
-                props.loadRootItem(item as TreeItem<ProjectsTreePickerRootItem>, pickerId, props.includeCollections, props.includeFiles);
+            } else if (!('type' in data) && loadRootItem) {
+                loadRootItem(item as TreeItem<ProjectsTreePickerRootItem>, pickerId, includeCollections, includeFiles);
             }
         } else if (status === TreeItemStatus.LOADED) {
             dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ id, pickerId }));

@@ -41,20 +41,28 @@ export const receiveTreePickerData = <T>(params: ReceiveTreePickerDataParams<T>)
         }));
         dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ id, pickerId }));
     };
-export const loadProject = (id: string, pickerId: string, includeCollections = false, includeFiles = false) =>
+
+interface LoadProjectParams {
+    id: string;
+    pickerId: string;
+    includeCollections?: boolean;
+    includeFiles?: boolean;
+    loadShared?: boolean;
+}
+export const loadProject = (params: LoadProjectParams) =>
     async (dispatch: Dispatch, _: () => RootState, services: ServiceRepository) => {
+        const { id, pickerId, includeCollections = false, includeFiles = false, loadShared = false } = params;
 
         dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id, pickerId }));
 
         const filters = pipe(
-            (fb: FilterBuilder) => fb.addEqual('ownerUuid', id),
-            fb => includeCollections
+            (fb: FilterBuilder) => includeCollections
                 ? fb.addIsA('uuid', [ResourceKind.PROJECT, ResourceKind.COLLECTION])
                 : fb.addIsA('uuid', [ResourceKind.PROJECT]),
             fb => fb.getFilters(),
         )(new FilterBuilder());
 
-        const { items } = await services.groupsService.contents(id, { filters });
+        const { items } = await services.groupsService.contents(loadShared ? '' : id, { filters, excludeHomeProject: loadShared || undefined });
 
         dispatch<any>(receiveTreePickerData<GroupContentsResource>({
             id,
@@ -112,7 +120,7 @@ export const loadUserProject = (pickerId: string, includeCollections = false, in
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const uuid = services.authService.getUuid();
         if (uuid) {
-            dispatch(loadProject(uuid, pickerId, includeCollections, includeFiles));
+            dispatch(loadProject({id: uuid, pickerId, includeCollections, includeFiles}));
         }
     };
 

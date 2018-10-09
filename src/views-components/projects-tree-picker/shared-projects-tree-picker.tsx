@@ -5,13 +5,13 @@
 import { connect } from 'react-redux';
 import { ProjectsTreePicker, ProjectsTreePickerProps } from '~/views-components/projects-tree-picker/projects-tree-picker';
 import { Dispatch } from 'redux';
-import { loadUserProject } from '~/store/tree-picker/tree-picker-actions';
-import { ShareIcon } from '~/components/icon/icon';
+import { ShareMeIcon } from '~/components/icon/icon';
+import { loadProject } from '../../store/tree-picker/tree-picker-actions';
 
-export const UserProjectsTreePicker = connect(() => ({
-    rootItemIcon: ShareIcon,
+export const SharedProjectsTreePicker = connect(() => ({
+    rootItemIcon: ShareMeIcon,
 }), (dispatch: Dispatch): Pick<ProjectsTreePickerProps, 'loadRootItem'> => ({
     loadRootItem: (_, pickerId, includeCollections, includeFiles) => {
-        dispatch<any>(loadUserProject(pickerId, includeCollections, includeFiles));
+        dispatch<any>(loadProject({ id: 'Shared with me', pickerId, includeCollections, includeFiles, loadShared: true }));
     },
 }))(ProjectsTreePicker);
