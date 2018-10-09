@@ -46,7 +46,7 @@ describe("<SearchInput />", () => {
             const searchInput = mount(<SearchInput value="" onSearch={onSearch} debounce={1000} />);
             searchInput.find("input").simulate("change", { target: { value: "current value" } });
             searchInput.find("form").simulate("submit");
-            jest.advanceTimersByTime(1000);
+            jest.runTimersToTime(1000);
             expect(onSearch).toHaveBeenCalledTimes(1);
             expect(onSearch).toBeCalledWith("current value");
         });
@@ -58,37 +58,37 @@ describe("<SearchInput />", () => {
             const searchInput = mount(<SearchInput value="" onSearch={onSearch} />);
             searchInput.find("input").simulate("change", { target: { value: "current value" } });
             expect(onSearch).not.toBeCalled();
-            jest.advanceTimersByTime(DEFAULT_SEARCH_DEBOUNCE);
+            jest.runTimersToTime(DEFAULT_SEARCH_DEBOUNCE);
             expect(onSearch).toBeCalledWith("current value");
         });
 
         it("calls onSearch after the time specified in props has passed", () => {
             const searchInput = mount(<SearchInput value="" onSearch={onSearch} debounce={2000}/>);
             searchInput.find("input").simulate("change", { target: { value: "current value" } });
-            jest.advanceTimersByTime(1000);
+            jest.runTimersToTime(1000);
             expect(onSearch).not.toBeCalled();
-            jest.advanceTimersByTime(1000);
+            jest.runTimersToTime(1000);
             expect(onSearch).toBeCalledWith("current value");
         });
 
         it("calls onSearch only once after no change happened during the specified time", () => {
             const searchInput = mount(<SearchInput value="" onSearch={onSearch} debounce={1000}/>);
             searchInput.find("input").simulate("change", { target: { value: "current value" } });
-            jest.advanceTimersByTime(500);
+            jest.runTimersToTime(500);
             searchInput.find("input").simulate("change", { target: { value: "changed value" } });
-            jest.advanceTimersByTime(1000);
+            jest.runTimersToTime(1000);
             expect(onSearch).toHaveBeenCalledTimes(1);
         });
 
         it("calls onSearch again after the specified time has passed since previous call", () => {
             const searchInput = mount(<SearchInput value="" onSearch={onSearch} debounce={1000}/>);
             searchInput.find("input").simulate("change", { target: { value: "current value" } });
-            jest.advanceTimersByTime(500);
+            jest.runTimersToTime(500);
             searchInput.find("input").simulate("change", { target: { value: "intermediate value" } });
-            jest.advanceTimersByTime(1000);
+            jest.runTimersToTime(1000);
             expect(onSearch).toBeCalledWith("intermediate value");
             searchInput.find("input").simulate("change", { target: { value: "latest value" } });
-            jest.advanceTimersByTime(1000);
+            jest.runTimersToTime(1000);
             expect(onSearch).toBeCalledWith("latest value");
             expect(onSearch).toHaveBeenCalledTimes(2);
 
