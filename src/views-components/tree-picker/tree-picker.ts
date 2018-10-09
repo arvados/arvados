@@ -20,12 +20,13 @@ export interface TreePickerProps<T> {
 
 const memoizedMapStateToProps = () => {
     let prevTree: Ttree<any>;
-    let mappedProps: Pick<TreeProps<any>, 'items'>;
-    return <T>(state: RootState, props: TreePickerProps<T>): Pick<TreeProps<T>, 'items'> => {
+    let mappedProps: Pick<TreeProps<any>, 'items' | 'disableRipple'>;
+    return <T>(state: RootState, props: TreePickerProps<T>): Pick<TreeProps<T>, 'items' | 'disableRipple'> => {
         const tree = state.treePicker[props.pickerId] || createTree();
         if (tree !== prevTree) {
             prevTree = tree;
             mappedProps = {
+                disableRipple: true,
                 items: getNodeChildrenIds('')(tree)
                     .map(treePickerToTreeItems(tree))
             };

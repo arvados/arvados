@@ -120,7 +120,7 @@ export const loadUserProject = (pickerId: string, includeCollections = false, in
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const uuid = services.authService.getUuid();
         if (uuid) {
-            dispatch(loadProject({id: uuid, pickerId, includeCollections, includeFiles}));
+            dispatch(loadProject({ id: uuid, pickerId, includeCollections, includeFiles }));
         }
     };
 
@@ -137,4 +137,55 @@ export const initSharedProject = (pickerId: string) =>
                 value,
             }),
         }));
+    };
+
+export const initFavoritesProject = (pickerId: string) =>
+    async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(receiveTreePickerData({
+            id: '',
+            pickerId,
+            data: [{ uuid: 'Favorites', name: 'Favorites' }],
+            extractNodeData: value => ({
+                id: value.uuid,
+                status: TreeNodeStatus.INITIAL,
+                value,
+            }),
+        }));
+    };
+
+interface LoadFavoritesProjectParams {
+    pickerId: string;
+    includeCollections?: boolean;
+    includeFiles?: boolean;
+}
+export const loadFavoritesProject = (params: LoadFavoritesProjectParams) =>
+    async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        const { pickerId, includeCollections = false, includeFiles = false } = params;
+        const uuid = services.authService.getUuid();
+        if (uuid) {
+
+            const filters = pipe(
+                (fb: FilterBuilder) => includeCollections
+                    ? fb.addIsA('headUuid', [ResourceKind.PROJECT, ResourceKind.COLLECTION])
+                    : fb.addIsA('headUuid', [ResourceKind.PROJECT]),
+                fb => fb.getFilters(),
+            )(new FilterBuilder());
+
+            const { items } = await services.favoriteService.list(uuid, { filters });
+
+            dispatch<any>(receiveTreePickerData<GroupContentsResource>({
+                id: 'Favorites',
+                pickerId,
+                data: items,
+                extractNodeData: item => ({
+                    id: item.uuid,
+                    value: item,
+                    status: item.kind === ResourceKind.PROJECT
+                        ? TreeNodeStatus.INITIAL
+                        : includeFiles
+                            ? TreeNodeStatus.INITIAL
+                            : TreeNodeStatus.LOADED
+                }),
+            }));
+        }
     };
