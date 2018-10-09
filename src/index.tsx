@@ -42,8 +42,8 @@ import { setUuidPrefix } from '~/store/workflow-panel/workflow-panel-actions';
 import { trashedCollectionActionSet } from '~/views-components/context-menu/action-sets/trashed-collection-action-set';
 import { ContainerRequestState } from '~/models/container-request';
 import { MountKind } from '~/models/mount-types';
-import { receiveTreePickerData } from '~/store/tree-picker/tree-picker-actions';
-import { loadProject, loadCollection } from './store/tree-picker/tree-picker-actions';
+import { receiveTreePickerData, loadUserProject } from '~/store/tree-picker/tree-picker-actions';
+import { loadProject, loadCollection, initUserProject } from './store/tree-picker/tree-picker-actions';
 import { ResourceKind } from '~/models/resource';
 
 const getBuildNumber = () => "BN-" + (process.env.REACT_APP_BUILD_NUMBER || "dev");
@@ -117,21 +117,13 @@ const initListener = (history: History, store: RootStore, services: ServiceRepos
             await store.dispatch(loadWorkbench());
             addRouteChangeHandlers(history, store);
             // createEnumCollectorWorkflow(services);
-            store.dispatch(receiveTreePickerData({
-                id: '',
-                pickerId: 'testPicker',
-                data: [{name: 'Projects', uuid: 'c97qk-tpzed-1k14sp44jonn0n3'}],
-                extractNodeData: value => ({id: value.uuid, value}),
-            }));
-            await store.dispatch(loadProject(
-                'c97qk-tpzed-1k14sp44jonn0n3',
-                'testPicker',
-                [ResourceKind.COLLECTION],
-            ));
-            await store.dispatch(loadCollection(
-                'c97qk-4zz18-9sn8ygaf62chkkd',
-                'testPicker',
-            ));
+            store.dispatch(initUserProject('testPicker1'));
+            store.dispatch(initUserProject('testPicker2'));
+            store.dispatch(initUserProject('testPicker3'));
+            // await store.dispatch(loadCollection(
+            //     'c97qk-4zz18-9sn8ygaf62chkkd',
+            //     'testPicker',
+            // ));
         }
     };
 };

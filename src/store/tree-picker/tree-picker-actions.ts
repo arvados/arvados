@@ -41,14 +41,16 @@ export const receiveTreePickerData = <T>(params: ReceiveTreePickerDataParams<T>)
         }));
         dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ id, pickerId }));
     };
-
-export const loadProject = (id: string, pickerId: string, include?: ResourceKind[]) =>
+export const loadProject = (id: string, pickerId: string, includeCollections = false, includeFiles = false) =>
     async (dispatch: Dispatch, _: () => RootState, services: ServiceRepository) => {
+
         dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id, pickerId }));
 
         const filters = pipe(
             (fb: FilterBuilder) => fb.addEqual('ownerUuid', id),
-            fb => include ? fb.addIsA('uuid', include) : fb,
+            fb => includeCollections
+                ? fb.addIsA('uuid', [ResourceKind.PROJECT, ResourceKind.COLLECTION])
+                : fb.addIsA('uuid', [ResourceKind.PROJECT]),
             fb => fb.getFilters(),
         )(new FilterBuilder());
 
@@ -58,7 +60,15 @@ export const loadProject = (id: string, pickerId: string, include?: ResourceKind
             id,
             pickerId,
             data: items,
-            extractNodeData: item => ({ id: item.uuid, value: item }),
+            extractNodeData: item => ({
+                id: item.uuid,
+                value: item,
+                status: item.kind === ResourceKind.PROJECT
+                    ? TreeNodeStatus.INITIAL
+                    : includeFiles
+                        ? TreeNodeStatus.INITIAL
+                        : TreeNodeStatus.LOADED
+            }),
         }));
     };
 
@@ -73,12 +83,50 @@ export const loadCollection = (id: string, pickerId: string) =>
             id,
             pickerId,
             data,
-            extractNodeData: value => {
-                return {
-                    id: value.id,
+            extractNodeData: value => ({
+                id: value.id,
+                status: TreeNodeStatus.LOADED,
+                value,
+            }),
+        }));
+    };
+
+
+export const initUserProject = (pickerId: string) =>
+    async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        const uuid = services.authService.getUuid();
+        if (uuid) {
+            dispatch(receiveTreePickerData({
+                id: '',
+                pickerId,
+                data: [{ uuid, name: 'Projects' }],
+                extractNodeData: value => ({
+                    id: value.uuid,
+                    status: TreeNodeStatus.INITIAL,
                     value,
-                    status: TreeNodeStatus.LOADED,
-                };
-            },
+                }),
+            }));
+        }
+    };
+export const loadUserProject = (pickerId: string, includeCollections = false, includeFiles = false) =>
+    async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        const uuid = services.authService.getUuid();
+        if (uuid) {
+            dispatch(loadProject(uuid, pickerId, includeCollections, includeFiles));
+        }
+    };
+
+
+export const initSharedProject = (pickerId: string) =>
+    async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(receiveTreePickerData({
+            id: '',
+            pickerId,
+            data: [{ uuid: 'Shared with me', name: 'Shared with me' }],
+            extractNodeData: value => ({
+                id: value.uuid,
+                status: TreeNodeStatus.INITIAL,
+                value,
+            }),
         }));
     };

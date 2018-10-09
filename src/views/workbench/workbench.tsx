@@ -45,6 +45,8 @@ import { TreePicker } from '../../views-components/tree-picker/tree-picker';
 import { noop } from 'lodash';
 import { TreeItem } from '~/components/tree/tree';
 import { GroupContentsResource } from '~/services/groups-service/groups-service';
+import { ProjectsTreePicker } from '~/views-components/projects-tree-picker/projects-tree-picker';
+import { UserProjectsTreePicker } from '~/views-components/projects-tree-picker/user-projects-tree-picker';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -92,14 +94,9 @@ export const WorkbenchPanel =
                             <MainContentBar />
                         </Grid>
                         <Grid item xs className={classes.content}>
-                            <TreePicker
-                                render={({ data }: TreeItem<GroupContentsResource>) =>
-                                    <p>{JSON.stringify(data.name)}</p>}
-                                pickerId='testPicker'
-                                onContextMenu={noop}
-                                toggleItemOpen={noop}
-                                toggleItemActive={item => console.log(item)}
-                                toggleItemSelection={noop} />
+                            <UserProjectsTreePicker pickerId='testPicker1'/>
+                            <UserProjectsTreePicker pickerId='testPicker2' includeCollections/>
+                            <UserProjectsTreePicker pickerId='testPicker3' includeCollections includeFiles/>
                             <Switch>
                                 <Route path={Routes.PROJECTS} component={ProjectPanel} />
                                 <Route path={Routes.COLLECTIONS} component={CollectionPanel} />
