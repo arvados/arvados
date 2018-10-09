@@ -36,7 +36,7 @@ func (rp *remoteProxy) Get(ctx context.Context, w http.ResponseWriter, r *http.R
 		http.Error(w, "no token provided in Authorization header", http.StatusUnauthorized)
 		return
 	}
-	if sign := r.Header.Get("X-Keep-Signature"); sign != "" {
+	if strings.SplitN(r.Header.Get("X-Keep-Signature"), ",", 2)[0] == "local" {
 		buf, err := getBufferWithContext(ctx, bufs, BlockSize)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusServiceUnavailable)
