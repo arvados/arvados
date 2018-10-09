@@ -39,7 +39,7 @@ class ActiveSupport::TestCase
     user_was = Thread.current[:user]
     token_was = Thread.current[:arvados_api_token]
     auth = api_fixture('api_client_authorizations')[token_name.to_s]
-    Thread.current[:arvados_api_token] = auth['api_token']
+    Thread.current[:arvados_api_token] = "v2/#{auth['uuid']}/#{auth['api_token']}"
     if block_given?
       begin
         yield
@@ -92,8 +92,14 @@ module ApiFixtureLoader
       keys.inject(@@api_fixtures[name]) { |hash, key| hash[key] }.deep_dup
     end
   end
+
   def api_fixture(name, *keys)
     self.class.api_fixture(name, *keys)
+  end
+
+  def api_token(name)
+    auth = api_fixture('api_client_authorizations')[name]
+    "v2/#{auth['uuid']}/#{auth['api_token']}"
   end
 
   def find_fixture(object_class, name)
@@ -146,8 +152,9 @@ end
 class ActiveSupport::TestCase
   include ApiFixtureLoader
   def session_for api_client_auth_name
+    auth = api_fixture('api_client_authorizations')[api_client_auth_name.to_s]
     {
-      arvados_api_token: api_fixture('api_client_authorizations')[api_client_auth_name.to_s]['api_token']
+      arvados_api_token: "v2/#{auth['uuid']}/#{auth['api_token']}"
     }
   end
   def json_response
@@ -302,7 +309,7 @@ class ActiveSupport::TestCase
     return unless Rails.env == 'test'
 
     auth = api_fixture('api_client_authorizations')['admin_trustedclient']
-    Thread.current[:arvados_api_token] = auth['api_token']
+    Thread.current[:arvados_api_token] = "v2/#{auth['uuid']}/#{auth['api_token']}"
     ArvadosApiClient.new.api(nil, '../../database/reset', {})
     Thread.current[:arvados_api_token] = nil
   end

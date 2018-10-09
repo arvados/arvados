@@ -159,7 +159,7 @@ class UserSessionsController < ApplicationController
     else
       callback_url += '?'
     end
-    callback_url += 'api_token=' + api_client_auth.api_token
+    callback_url += 'api_token=' + api_client_auth.token
     redirect_to callback_url
   end
 
