@@ -23,11 +23,13 @@ type ProjectTreePickerProps = Pick<TreePickerProps, 'onContextMenu' | 'toggleIte
 const mapDispatchToProps = (dispatch: Dispatch, props: { onChange: (projectUuid: string) => void }): ProjectTreePickerProps => ({
     onContextMenu: () => { return; },
     toggleItemActive: (nodeId, status, pickerId) => {
-        getNotSelectedTreePickerKind(pickerId)
-            .forEach(pickerId => dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_SELECT({ nodeId: '', pickerId })));
-        dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_SELECT({ nodeId, pickerId }));
+        if (nodeId !== TreePickerId.FAVORITES && nodeId !== TreePickerId.SHARED_WITH_ME) {
+            getNotSelectedTreePickerKind(pickerId)
+                .forEach(pickerId => dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_SELECT({ nodeId: '', pickerId })));
+            dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_SELECT({ nodeId, pickerId }));
 
-        props.onChange(nodeId);
+            props.onChange(nodeId);
+        }
     },
     toggleItemOpen: (nodeId, status, pickerId) => {
         dispatch<any>(toggleItemOpen(nodeId, status, pickerId));
