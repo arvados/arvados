@@ -38,16 +38,16 @@ const styles: StyleRulesCallback<CssRules> = theme => {
 interface SearchBarBasicViewProps {
     setView: (currentView: string) => void;
     recentQueries: () => string[];
-    savedQueries: () => string[];
     deleteSavedQuery: (id: number) => void;
+    savedQueries: string[];
 }
 
 export const SearchBarBasicView = withStyles(styles)(
-    ({ classes, setView, recentQueries, savedQueries, deleteSavedQuery }: SearchBarBasicViewProps & WithStyles<CssRules>) =>
+    ({ classes, setView, recentQueries, deleteSavedQuery, savedQueries }: SearchBarBasicViewProps & WithStyles<CssRules>) =>
         <Paper className={classes.searchView}>
             <div className={classes.searchQueryList}>Saved search queries</div>
             <List component="nav" className={classes.list}>
-                {savedQueries().map((query, index) => <RenderSavedQueries key={index} text={query} id={index} deleteSavedQuery={deleteSavedQuery}/>)}
+                {savedQueries.map((query, index) => <RenderSavedQueries key={index} text={query} id={index} deleteSavedQuery={deleteSavedQuery}/>)}
             </List>
             <div className={classes.searchQueryList}>Recent search queries</div>
             <List component="nav" className={classes.list}>

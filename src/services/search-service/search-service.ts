@@ -32,6 +32,5 @@ export class SearchQueriesService {
     deleteSavedQuery(id: number) {
         this.savedQueries.splice(id, 1);
         localStorage.setItem('savedQueries', JSON.stringify(this.savedQueries));
-
     }
 }

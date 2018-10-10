@@ -55,6 +55,7 @@ type SearchBarDataProps = {
     searchValue: string;
     currentView: string;
     isPopoverOpen: boolean;
+    savedQueries: string[];
 } & SearchBarAutocompleteViewDataProps;
 
 interface SearchBarActionProps {
@@ -66,7 +67,6 @@ interface SearchBarActionProps {
     saveRecentQuery: (query: string) => void;
     loadRecentQueries: () => string[];
     saveQuery: (query: string) => void;
-    loadSavedQueries: () => string[];
     deleteSavedQuery: (id: number) => void;
 }
 
@@ -161,17 +161,18 @@ export const SearchBarView = withStyles(styles)(
         }
 
         getView = (currentView: string) => {
+            const { onSetView, loadRecentQueries, savedQueries, deleteSavedQuery, searchValue, searchResults } = this.props;
             switch (currentView) {
                 case SearchView.BASIC:
-                    return <SearchBarBasicView setView={this.props.onSetView} recentQueries={this.props.loadRecentQueries} savedQueries={this.props.loadSavedQueries} deleteSavedQuery={this.props.deleteSavedQuery}/>;
+                    return <SearchBarBasicView setView={onSetView} recentQueries={loadRecentQueries} savedQueries={savedQueries} deleteSavedQuery={deleteSavedQuery} />;
                 case SearchView.ADVANCED:
-                    return <SearchBarAdvancedView setView={this.props.onSetView} />;
+                    return <SearchBarAdvancedView setView={onSetView} />;
                 case SearchView.AUTOCOMPLETE:
                     return <SearchBarAutocompleteView
-                        searchResults={this.props.searchResults}
-                        searchValue={this.props.searchValue} />;
+                        searchResults={searchResults}
+                        searchValue={searchValue} />;
                 default:
-                    return <SearchBarBasicView setView={this.props.onSetView} recentQueries={this.props.loadRecentQueries} savedQueries={this.props.loadSavedQueries} deleteSavedQuery={this.props.deleteSavedQuery}/>;
+                    return <SearchBarBasicView setView={onSetView} recentQueries={loadRecentQueries} savedQueries={savedQueries} deleteSavedQuery={deleteSavedQuery} />;
             }
         }
 
@@ -182,7 +183,6 @@ export const SearchBarView = withStyles(styles)(
             this.props.saveQuery(this.state.value);
             this.props.onSearch(this.state.value);
             this.props.loadRecentQueries();
-            this.props.loadSavedQueries();
         }
 
         handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {

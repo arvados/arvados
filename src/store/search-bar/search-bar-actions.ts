@@ -16,7 +16,8 @@ export const searchBarActions = unionize({
     OPEN_SEARCH_VIEW: ofType<{}>(),
     CLOSE_SEARCH_VIEW: ofType<{}>(),
     SET_SEARCH_RESULTS: ofType<GroupContentsResource[]>(),
-    SET_SEARCH_VALUE: ofType<string>()
+    SET_SEARCH_VALUE: ofType<string>(),
+    SET_SAVED_QUERIES: ofType<string[]>()
 });
 
 export type SearchBarActions = UnionOf<typeof searchBarActions>;
@@ -37,18 +38,14 @@ export const loadRecentQueries = () =>
 export const saveQuery = (query: string) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         services.searchQueriesService.saveQuery(query);
-    };
-
-export const loadSavedQueries = () =>
-    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        const savedSearchQueries = services.searchQueriesService.getSavedQueries();
-        return savedSearchQueries || [];
+        dispatch(searchBarActions.SET_SAVED_QUERIES(services.searchQueriesService.getSavedQueries()));
     };
 
 export const deleteSavedQuery = (id: number) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         services.searchQueriesService.deleteSavedQuery(id);
         const savedSearchQueries = services.searchQueriesService.getSavedQueries();
+        dispatch(searchBarActions.SET_SAVED_QUERIES(services.searchQueriesService.getSavedQueries()));
         return savedSearchQueries || [];
     };
 
