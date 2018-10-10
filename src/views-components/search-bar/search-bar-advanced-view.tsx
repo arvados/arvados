@@ -6,16 +6,15 @@ import * as React from 'react';
 import { Paper, StyleRulesCallback, withStyles, WithStyles, List, Button } from '@material-ui/core';
 import { SearchView } from '~/store/search-bar/search-bar-reducer';
 import { RecentQueriesItem } from '~/views-components/search-bar/search-bar-view';
+import { ArvadosTheme } from '~/common/custom-theme';
 
 type CssRules = 'list';
 
-const styles: StyleRulesCallback<CssRules> = theme => {
-    return {
-        list: {
-            padding: '0px'
-        }
-    };
-};
+const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+    list: {
+        padding: 0
+    }
+});
 
 interface SearchBarAdvancedViewProps {
     setView: (currentView: string) => void;
