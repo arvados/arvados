@@ -1074,4 +1074,22 @@ class ContainerRequestTest < ActiveSupport::TestCase
                                              secret_mounts: sm)
     assert_equal [:secret_mounts], cr.errors.messages.keys
   end
+
+  test "valid runtime_token" do
+    set_user_from_auth :active
+    spec = api_client_authorizations(:spectator)
+    cr = create_minimal_req!(state: "Committed", runtime_token: spec.token)
+    cr.save!
+    c = Container.find_by_uuid cr.container_uuid
+    assert_nil c.auth_uuid
+  end
+
+  test "invalid runtime_token" do
+    set_user_from_auth :active
+    spec = api_client_authorizations(:spectator)
+    assert_raises(ActiveRecord::RecordInvalid) do
+      cr = create_minimal_req!(state: "Committed", runtime_token: "#{spec.token}xx")
+      cr.save!
+    end
+  end
 end

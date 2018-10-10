@@ -350,7 +350,7 @@ class ContainerRequest < ArvadosModel
         errors.add :runtime_token, "not a v2 token"
         return
       end
-      if ApiClientAuthorization.validate(token: cr.runtime_token).nil?
+      if ApiClientAuthorization.validate(token: runtime_token).nil?
         errors.add :runtime_token, "failed validation"
       end
     end

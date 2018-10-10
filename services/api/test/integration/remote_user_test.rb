@@ -251,23 +251,36 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     assert_equal 'barney', json_response['username']
   end
 
-  test "validate unsalted token for remote cluster zbbbb" do
+  test "validate unsalted v2 token for remote cluster zbbbb" do
     auth = api_client_authorizations(:active)
     token = "v2/#{auth.uuid}/#{auth.api_token}"
     get '/arvados/v1/users/current', {format: 'json', remote: 'zbbbb'}, {
           "HTTP_AUTHORIZATION" => "Bearer #{token}"
         }
-    assert_response 200
+    assert_response :success
     assert_equal(users(:active).uuid, json_response['uuid'])
   end
 
-
-  # test 'container request with remote runtime_token' do
-  #   auth = api_client_authorizations(:active)
-  #   token = "v2/#{auth.uuid.sub('zzzzz-', 'zbbbb-')}/#{auth.api_token}"
-
-  #   post '/arvados/v1/container_requests', {"container_request": {}}, {"HTTP_AUTHORIZATION" => "Bearer #{token}"}
-  #   assert_response :success
-  # end
+  test 'container request with runtime_token' do
+    [["valid local", "v2/#{api_client_authorizations(:active).uuid}/#{api_client_authorizations(:active).api_token}"],
+     ["valid remote", "v2/zbbbb-gj3su-000000000000000/abc"],
+     ["invalid local", "v2/#{api_client_authorizations(:active).uuid}/fakefakefake"]
+    ].each do |label, runtime_token|
+      post '/arvados/v1/container_requests', {
+             "container_request" => {
+               "command" => ["echo"],
+               "container_image" => "xyz",
+               "output_path" => "/",
+               "cwd" => "/",
+               "runtime_token" => runtime_token
+             }
+           }, {"HTTP_AUTHORIZATION" => "Bearer #{api_client_authorizations(:active).api_token}"}
+      if label.include? "invalid"
+        assert_response 422
+      else
+        assert_response :success
+      end
+    end
+  end
 
 end

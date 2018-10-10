@@ -19,7 +19,7 @@ class Arvados::V1::ContainersController < ApplicationController
     end
     if @object.auth.nil?
       cr = ContainerRequest.
-             where('container_uuid=? and priority>0', self.uuid).
+             where('container_uuid=? and priority>0', @object.uuid).
              order('priority desc').
              first
       @object = ApiClientAuthorization.validate(token: cr.runtime_token)
