@@ -38,6 +38,7 @@ import { progressIndicatorReducer } from './progress-indicator/progress-indicato
 import { runProcessPanelReducer } from '~/store/run-process-panel/run-process-panel-reducer';
 import { WorkflowMiddlewareService } from './workflow-panel/workflow-middleware-service';
 import { WORKFLOW_PANEL_ID } from './workflow-panel/workflow-panel-actions';
+import { appInfoReducer } from '~/store/app-info/app-info-reducer';
 import { searchBarReducer } from './search-bar/search-bar-reducer';
 
 const composeEnhancers =
@@ -101,5 +102,6 @@ const createRootReducer = (services: ServiceRepository) => combineReducers({
     processPanel: processPanelReducer,
     progressIndicator: progressIndicatorReducer,
     runProcessPanel: runProcessPanelReducer,
+    appInfo: appInfoReducer,
     searchBar: searchBarReducer
 });
