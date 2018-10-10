@@ -70,7 +70,7 @@ yarn-install:
 	yarn install
 
 test: yarn-install
-	yarn test	--no-watchAll --bail --ci
+	yarn test --watchAll --bail --ci
 
 build: test
 	yarn build
