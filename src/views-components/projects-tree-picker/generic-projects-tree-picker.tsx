@@ -25,18 +25,21 @@ export type ProjectsTreePickerItem = ProjectsTreePickerRootItem | GroupContentsR
 type PickedTreePickerProps = Pick<TreePickerProps<ProjectsTreePickerItem>, 'onContextMenu' | 'toggleItemActive' | 'toggleItemOpen' | 'toggleItemSelection'>;
 
 export interface ProjectsTreePickerDataProps {
-    pickerId: string;
     includeCollections?: boolean;
     includeFiles?: boolean;
     rootItemIcon: IconType;
+    rootItemSelection?: boolean;
+    projectsSelection?: boolean;
+    collectionsSelection?: boolean;
+    filesSelection?: boolean;
     loadRootItem: (item: TreeItem<ProjectsTreePickerRootItem>, pickerId: string, includeCollections?: boolean, inlcudeFiles?: boolean) => void;
 }
 
 export type ProjectsTreePickerProps = ProjectsTreePickerDataProps & Partial<PickedTreePickerProps>;
 
-const mapStateToProps = (_: any, { pickerId, rootItemIcon }: ProjectsTreePickerProps) => ({
+const mapStateToProps = (_: any, { rootItemIcon, ...props }: ProjectsTreePickerProps) => ({
     render: renderTreeItem(rootItemIcon),
-    pickerId,
+    showSelection: isSelectionVisible(props),
 });
 
 const mapDispatchToProps = (dispatch: Dispatch, { loadRootItem, includeCollections, includeFiles, ...props }: ProjectsTreePickerProps): PickedTreePickerProps => ({
@@ -89,6 +92,27 @@ const getProjectPickerIcon = ({ data }: TreeItem<ProjectsTreePickerItem>, rootIc
         return rootIcon;
     }
 };
+interface IsSelectionVisibleParams {
+    rootItemSelection?: boolean;
+    projectsSelection?: boolean;
+    collectionsSelection?: boolean;
+    filesSelection?: boolean;
+}
+const isSelectionVisible = (params: IsSelectionVisibleParams) =>
+    ({ data, status }: TreeItem<ProjectsTreePickerItem>) => {
+        if ('kind' in data) {
+            switch (data.kind) {
+                case ResourceKind.COLLECTION:
+                    return !!params.collectionsSelection;
+                default:
+                    return !!params.projectsSelection;
+            }
+        } else if ('type' in data) {
+            return !!params.filesSelection;
+        } else {
+            return !!params.rootItemSelection;
+        }
+    };
 
 const renderTreeItem = (rootItemIcon: IconType) => (item: TreeItem<ProjectResource>) =>
     <ListItemTextIcon

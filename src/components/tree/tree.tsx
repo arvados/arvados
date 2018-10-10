@@ -87,7 +87,7 @@ export interface TreeProps<T> {
     level?: number;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
     render: (item: TreeItem<T>, level?: number) => ReactElement<{}>;
-    showSelection?: boolean;
+    showSelection?: boolean | ((item: TreeItem<T>) => boolean);
     toggleItemActive: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
     toggleItemOpen: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
     toggleItemSelection?: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
@@ -99,6 +99,10 @@ export const Tree = withStyles(styles)(
             const level = this.props.level ? this.props.level : 0;
             const { classes, render, toggleItemOpen, items, toggleItemActive, onContextMenu, disableRipple } = this.props;
             const { list, listItem, loader, toggableIconContainer, renderContainer } = classes;
+            const isCheckboxVisible = typeof this.props.showSelection === 'function'
+                ? this.props.showSelection
+                : () => this.props.showSelection ? true : false;
+
             return <List component="div" className={list}>
                 {items && items.map((it: TreeItem<T>, idx: number) =>
                     <div key={`item/${level}/${idx}`}>
@@ -114,7 +118,7 @@ export const Tree = withStyles(styles)(
                                     {this.getProperArrowAnimation(it.status, it.items!)}
                                 </ListItemIcon>
                             </i>
-                            {this.props.showSelection &&
+                            { isCheckboxVisible(it) &&
                                 <Checkbox
                                     checked={it.selected}
                                     className={classes.checkbox}

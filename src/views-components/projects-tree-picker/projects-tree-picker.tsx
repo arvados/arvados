@@ -16,14 +16,18 @@ export interface ProjectsTreePickerProps {
     pickerId: string;
     includeCollections?: boolean;
     includeFiles?: boolean;
+    rootItemSelection?: boolean;
+    projectsSelection?: boolean;
+    collectionsSelection?: boolean;
+    filesSelection?: boolean;
     toggleItemActive?: (event: React.MouseEvent<HTMLElement>, item: TreeItem<ProjectsTreePickerItem>, pickerId: string) => void;
 }
 
-export const ProjectsTreePicker =  ({ pickerId, ...props }: ProjectsTreePickerProps) => {
+export const ProjectsTreePicker = ({ pickerId, ...props }: ProjectsTreePickerProps) => {
     const { home, shared, favorites } = getProjectsTreePickerIds(pickerId);
     return <div>
         <HomeTreePicker pickerId={home} {...props} />
         <SharedTreePicker pickerId={shared} {...props} />
         <FavoritesTreePicker pickerId={favorites} {...props} />
     </div>;
-    };
+};
