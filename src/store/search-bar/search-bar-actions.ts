@@ -34,6 +34,22 @@ export const loadRecentQueries = () =>
         return recentSearchQueries || [];
     };
 
+export const saveQuery = (query: string) =>
+    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        services.searchQueriesService.saveQuery(query);
+    };
+
+export const loadSavedQueries = () =>
+    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        const savedSearchQueries = services.searchQueriesService.getSavedQueries();
+        return savedSearchQueries || [];
+    };
+
+export const deleteSavedQuery = (id: number) =>
+    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        services.searchQueriesService.deleteSavedQuery(id);
+    };
+
 export const searchData = (searchValue: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(searchBarActions.SET_SEARCH_VALUE(searchValue));
