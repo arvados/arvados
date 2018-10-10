@@ -4,26 +4,41 @@
 
 import * as React from 'react';
 import { Paper, StyleRulesCallback, withStyles, WithStyles, List } from '@material-ui/core';
-import { RenderRecentQueries } from '~/views-components/search-bar/search-bar-view';
+import { RecentQueriesItem } from '~/views-components/search-bar/search-bar-view';
+import { GroupContentsResource } from '~/services/groups-service/groups-service';
+import Highlighter from "react-highlight-words";
 
-type CssRules = 'list';
+type CssRules = 'list' | 'searchView';
 
 const styles: StyleRulesCallback<CssRules> = theme => {
     return {
         list: {
-            padding: '0px'
+            padding: 0
+        },
+        searchView: {
+            borderRadius: `0 0 ${theme.spacing.unit / 4}px ${theme.spacing.unit / 4}px`
         }
     };
 };
 
-interface SearchBarAutocompleteViewProps {
+export interface SearchBarAutocompleteViewDataProps {
+    searchResults?: GroupContentsResource[];
+    searchValue?: string;
 }
 
+type SearchBarAutocompleteViewProps = SearchBarAutocompleteViewDataProps & WithStyles<CssRules>;
+
 export const SearchBarAutocompleteView = withStyles(styles)(
-    ({ classes }: SearchBarAutocompleteViewProps & WithStyles<CssRules>) =>
-        <Paper>
-            <List component="nav" className={classes.list}>
-                <RenderRecentQueries text='AUTOCOMPLETE VIEW' />
-            </List>
+    ({ classes, searchResults, searchValue }: SearchBarAutocompleteViewProps) =>
+        <Paper className={classes.searchView}>
+            {searchResults && <List component="nav" className={classes.list}>
+                {searchResults.map((item: GroupContentsResource) => {
+                    return <RecentQueriesItem key={item.uuid} text={getFormattedText(item.name, searchValue)} />;
+                })}
+            </List>}
         </Paper>
 );
+
+const getFormattedText = (textToHighlight: string, searchString = '') => {
+    return <Highlighter searchWords={[searchString]} autoEscape={true} textToHighlight={textToHighlight} />;
+};

@@ -5,7 +5,7 @@
 import * as React from 'react';
 import { Paper, StyleRulesCallback, withStyles, WithStyles, List } from '@material-ui/core';
 import { SearchView } from '~/store/search-bar/search-bar-reducer';
-import { RenderRecentQueries, RenderSavedQueries } from '~/views-components/search-bar/search-bar-view';
+import { RecentQueriesItem, RenderSavedQueries } from '~/views-components/search-bar/search-bar-view';
 
 type CssRules = 'advanced' | 'searchQueryList' | 'list' | 'searchView';
 
@@ -28,17 +28,19 @@ const styles: StyleRulesCallback<CssRules> = theme => {
             padding: '0px'
         },
         searchView: {
-            color: theme.palette.common.black
+            color: theme.palette.common.black,
+            borderRadius: `0 0 ${theme.spacing.unit / 4}px ${theme.spacing.unit / 4}px`
         }
     };
 };
 
 interface SearchBarBasicViewProps {
     setView: (currentView: string) => void;
+    recentQueries: () => string[];
 }
 
 export const SearchBarBasicView = withStyles(styles)(
-    ({ classes, setView }: SearchBarBasicViewProps & WithStyles<CssRules>) =>
+    ({ classes, setView, recentQueries }: SearchBarBasicViewProps & WithStyles<CssRules>) =>
         <Paper className={classes.searchView}>
             <div className={classes.searchQueryList}>Saved search queries</div>
             <List component="nav" className={classes.list}>
@@ -47,8 +49,7 @@ export const SearchBarBasicView = withStyles(styles)(
             </List>
             <div className={classes.searchQueryList}>Recent search queries</div>
             <List component="nav" className={classes.list}>
-                <RenderRecentQueries text="cos" />
-                <RenderRecentQueries text="testtest" />
+                {recentQueries().map((query, index) => <RecentQueriesItem key={query + index} text={query} />)}
             </List>
             <div className={classes.advanced} onClick={() => setView(SearchView.ADVANCED)}>Advanced search</div>
         </Paper>

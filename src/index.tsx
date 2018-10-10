@@ -42,14 +42,10 @@ import { setUuidPrefix } from '~/store/workflow-panel/workflow-panel-actions';
 import { trashedCollectionActionSet } from '~/views-components/context-menu/action-sets/trashed-collection-action-set';
 import { ContainerRequestState } from '~/models/container-request';
 import { MountKind } from './models/mount-types';
+import { setBuildInfo } from '~/store/app-info/app-info-actions';
+import { getBuildInfo } from '~/common/app-info';
 
-const getBuildNumber = () => "BN-" + (process.env.REACT_APP_BUILD_NUMBER || "dev");
-const getGitCommit = () => "GIT-" + (process.env.REACT_APP_GIT_COMMIT || "latest").substr(0, 7);
-const getBuildInfo = () => getBuildNumber() + " / " + getGitCommit();
-
-const buildInfo = getBuildInfo();
-
-console.log(`Starting arvados [${buildInfo}]`);
+console.log(`Starting arvados [${getBuildInfo()}]`);
 
 addMenuActionSet(ContextMenuKind.ROOT_PROJECT, rootProjectActionSet);
 addMenuActionSet(ContextMenuKind.PROJECT, projectActionSet);
@@ -80,11 +76,12 @@ fetchConfig()
 
         store.subscribe(initListener(history, store, services, config));
         store.dispatch(initAuth());
+        store.dispatch(setBuildInfo());
         store.dispatch(setCurrentTokenDialogApiHost(apiHost));
         store.dispatch(setUuidPrefix(config.uuidPrefix));
 
         const TokenComponent = (props: any) => <ApiToken authService={services.authService} {...props} />;
-        const MainPanelComponent = (props: any) => <MainPanel buildInfo={buildInfo} {...props} />;
+        const MainPanelComponent = (props: any) => <MainPanel {...props} />;
 
         const App = () =>
             <MuiThemeProvider theme={CustomTheme}>
