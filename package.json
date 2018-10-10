@@ -10,7 +10,7 @@
     "@types/react-copy-to-clipboard": "4.2.6",
     "@types/react-dropzone": "4.2.2",
     "@types/react-highlight-words": "0.12.0",
-    "@types/redux-form": "7.4.8",
+    "@types/redux-form": "7.4.5",
     "@types/shell-quote": "1.6.0",
     "axios": "0.18.0",
     "classnames": "2.2.6",
