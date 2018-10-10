@@ -230,10 +230,10 @@ class CollectionTest < ActiveSupport::TestCase
     end
   end
 
-  test "older versions should no be directly updatable" do
+  test "past versions should not be directly updatable" do
     Rails.configuration.collection_versioning = true
     Rails.configuration.preserve_version_if_idle = 0
-    act_as_user users(:active) do
+    act_as_system_user do
       # Set up initial collection
       c = create_collection 'foo', Encoding::US_ASCII
       assert c.valid?

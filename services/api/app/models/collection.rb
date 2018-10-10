@@ -29,6 +29,9 @@ class Collection < ArvadosModel
   validate :ensure_storage_classes_contain_non_empty_strings
   validate :old_versions_cannot_be_updated, on: :update
   before_save :set_file_names
+  around_update :prepare_for_versioning
+  after_update :save_old_version, if: Proc.new { |c| c.should_preserve_version? }
+  after_update :sync_past_versions, if: Proc.new { |c| c.syncable_updates?(self.changes.keys) }
 
   api_accessible :user, extend: :common do |t|
     t.add :name
@@ -223,93 +226,87 @@ class Collection < ArvadosModel
     ['current_version_uuid']
   end
 
-  def save! *args
-    # Skip if feature is disabled or saving a new record
-    if !Rails.configuration.collection_versioning || new_record?
-      return super
-    end
-    # Skip if updating a past version
-    if !self.changes.include?('uuid') && current_version_uuid != uuid
-      return super
-    end
-    # Skip if current version shouldn't (explicitly or implicitly) be preserved
-    if !should_preserve_version?
-      return super
-    end
-
+  def prepare_for_versioning
+    # Put aside the changes because with_lock forces a record reload
     changes = self.changes
-    # Updates that will be synced with older versions
-    synced_updates = ['uuid', 'owner_uuid', 'delete_at', 'trash_at', 'is_trashed',
-                      'replication_desired', 'storage_classes_desired'] & changes.keys
-    # Updates that will produce a new version
-    versionable_updates = ['manifest_text', 'description', 'properties', 'name'] & changes.keys
-
-    if versionable_updates.empty?
-      # Keep preserve_version enabled for the next update, if applicable.
-      self.preserve_version ||= self.preserve_version_was
-      if !self.changes.include?('preserve_version')
-        changes.delete('preserve_version')
-      end
-
-      if synced_updates.empty?
-        # Updates don't include interesting attributes, so don't save a new
-        # snapshot nor sync older versions.
-        return super
-      end
-    end
-
-    # Does row locking (transaction is implicit) because 'version'
-    # may be incremented and the older versions synced.
-    # Note that 'with_lock' reloads the object after locking.
+    @snapshot = nil
     with_lock do
-      # Sync older versions.
-      if !synced_updates.empty?
-        updates = {}
-        synced_updates.each do |attr|
-          if attr == 'uuid'
-            # Point old versions to current version's new UUID
-            updates['current_version_uuid'] = changes[attr].last
-          else
-            updates[attr] = changes[attr].last
-          end
-        end
-        Collection.where('current_version_uuid = ? AND uuid != ?', uuid, uuid).each do |c|
-          c.attributes = updates
-          # Use a different validation context to skip the 'old_versions_cannot_be_updated'
-          # validator, as on this case it is legal to update some fields.
-          leave_modified_by_user_alone do
-            c.save(context: :update_old_versions)
-          end
-        end
-        # Also update current object just in case a new version will be created,
-        # as it has to receive the same values for the synced attributes.
-        self.attributes = updates
+      # Copy the original state to save it as old version
+      if versionable_updates?(changes.keys) && should_preserve_version?
+        @snapshot = self.dup
+        @snapshot.uuid = nil # Reset UUID so it's created as a new record
+        @snapshot.created_at = self.created_at
       end
-      snapshot = nil
-      # Make a new version if applicable.
-      if !versionable_updates.empty?
-        # Create a snapshot of the original collection
-        snapshot = self.dup
-        snapshot.uuid = nil # Reset UUID so it's created as a new record
-        snapshot.created_at = created_at
-        # Update current version number
+
+      # Restore requested changes on the current version
+      changes.keys.each do |attr|
+        if attr == 'version'
+          next
+        elsif attr == 'preserve_version' && changes[attr].last == false
+          next # Ignore false assignment, once true it'll be true until next version
+        end
+        self.attributes = {attr => changes[attr].last}
+        if attr == 'uuid'
+          # Also update the current version reference
+          self.attributes = {'current_version_uuid' => changes[attr].last}
+        end
+      end
+
+      if versionable_updates?(changes.keys) && should_preserve_version?
         self.version += 1
         self.preserve_version = false
       end
-      # Restore requested changes on the current version
-      changes.keys.each do |attr|
-        next if attr == 'version'
-        self.attributes = {attr => changes[attr].last}
+      yield
+    end
+  end
+
+  def syncable_updates
+    updates = {}
+    (syncable_attrs & self.changes.keys).each do |attr|
+      if attr == 'uuid'
+        # Point old versions to current version's new UUID
+        updates['current_version_uuid'] = self.changes[attr].last
+      else
+        updates[attr] = self.changes[attr].last
       end
-      # Save current version first to avoid index collision
-      super
-      # Save the snapshot with previous state (if applicable)
-      snapshot.andand.save!
-      return true
+    end
+    return updates
+  end
+
+  def sync_past_versions
+    updates = self.syncable_updates
+    Collection.where('current_version_uuid = ? AND uuid != ?', self.uuid_was, self.uuid_was).each do |c|
+      c.attributes = updates
+      # Use a different validation context to skip the 'old_versions_cannot_be_updated'
+      # validator, as on this case it is legal to update some fields.
+      leave_modified_by_user_alone do
+        c.save(context: :update_old_versions)
+      end
+    end
+  end
+
+  def versionable_updates?(attrs)
+    (['manifest_text', 'description', 'properties', 'name'] & attrs).any?
+  end
+
+  def syncable_attrs
+    ['uuid', 'owner_uuid', 'delete_at', 'trash_at', 'is_trashed', 'replication_desired', 'storage_classes_desired']
+  end
+
+  def syncable_updates?(attrs)
+    (self.syncable_attrs & attrs).any?
+  end
+
+  def save_old_version
+    if @snapshot && should_preserve_version?
+      @snapshot.attributes = self.syncable_updates
+      @snapshot.save
     end
   end
 
   def should_preserve_version?
+    return false if !Rails.configuration.collection_versioning
+
     idle_threshold = Rails.configuration.preserve_version_if_idle
     if !self.preserve_version_was &&
       (idle_threshold < 0 ||
