@@ -48,6 +48,8 @@ export const loadSavedQueries = () =>
 export const deleteSavedQuery = (id: number) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         services.searchQueriesService.deleteSavedQuery(id);
+        const savedSearchQueries = services.searchQueriesService.getSavedQueries();
+        return savedSearchQueries || [];
     };
 
 export const searchData = (searchValue: string) =>

@@ -30,8 +30,8 @@ export class SearchQueriesService {
     }
 
     deleteSavedQuery(id: number) {
-        const queryToDelete = this.savedQueries[id];
-        const restQueries = this.savedQueries.filter(query => query !== queryToDelete);
-        return localStorage.setItem('savedQueries', JSON.stringify(restQueries));
+        this.savedQueries.splice(id, 1);
+        localStorage.setItem('savedQueries', JSON.stringify(this.savedQueries));
+
     }
 }
