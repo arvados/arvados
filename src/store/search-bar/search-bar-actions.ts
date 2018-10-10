@@ -23,21 +23,31 @@ export type SearchBarActions = UnionOf<typeof searchBarActions>;
 
 export const goToView = (currentView: string) => searchBarActions.SET_CURRENT_VIEW(currentView);
 
-export const searchData = (searchValue: string) => 
+export const saveRecentQuery = (query: string) =>
+    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        services.searchQueriesService.saveRecentQuery(query);
+    };
+
+export const loadRecentQueries = () =>
+    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        const recentSearchQueries = services.searchQueriesService.getRecentQueries();
+        return recentSearchQueries || [];
+    };
+
+export const searchData = (searchValue: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(searchBarActions.SET_SEARCH_VALUE(searchValue));
         dispatch(searchBarActions.SET_SEARCH_RESULTS([]));
         if (searchValue) {
             const filters = getFilters('name', searchValue);
             const { items } = await services.groupsService.contents('', {
-                filters, 
+                filters,
                 limit: 5,
                 recursive: true
             });
             dispatch(searchBarActions.SET_SEARCH_RESULTS(items));
         }
     };
-
 
 const getFilters = (filterName: string, searchValue: string): string => {
     return new FilterBuilder()
