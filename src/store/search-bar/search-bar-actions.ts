@@ -26,8 +26,10 @@ export interface SearchBarAdvanceFormData {
     type?: GroupContentsResource;
     cluster?: string;
     project?: string;
+    inTrash: boolean;
     dataFrom: string;
     dataTo: string;
+    saveQuery: boolean;
     searchQuery: string;
 }
 

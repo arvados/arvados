@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from "react";
-import { Field } from "redux-form";
+import { Field } from 'redux-form';
 import { TextField } from "~/components/text-field/text-field";
-import { Checkbox, FormControlLabel } from '@material-ui/core';
+import { CheckboxField } from '~/components/checkbox-field/checkbox-field';
 
 export const SearchBarTypeField = () =>
     <Field
@@ -26,14 +26,9 @@ export const SearchBarProjectField = () =>
         label="Project name" />;
 
 export const SearchBarTrashField = () => 
-    <FormControlLabel
-        control={
-            <Checkbox
-                checked={false}
-                value="true"
-                color="primary"
-            />
-        }
+    <Field
+        name='inTrash'
+        component={CheckboxField}
         label="In trash" />;
 
 export const SearchBarDataFromField = () => 
@@ -61,14 +56,9 @@ export const SearchBarValueField = () =>
         label="Value" />;
 
 export const SearchBarSaveSearchField = () => 
-    <FormControlLabel
-        control={
-            <Checkbox
-                checked={true}
-                value="true"
-                color="primary"
-            />
-        }
+    <Field
+        name='saveQuery'
+        component={CheckboxField}
         label="Save search query" />;
 
 export const SearchBarQuerySearchField = () => 
