@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { reduxForm, InjectedFormProps } from 'redux-form';
-import { CommandInputParameter, CWLType, IntCommandInputParameter, BooleanCommandInputParameter, FileCommandInputParameter } from '~/models/workflow';
+import { CommandInputParameter, CWLType, IntCommandInputParameter, BooleanCommandInputParameter, FileCommandInputParameter, DirectoryCommandInputParameter } from '~/models/workflow';
 import { IntInput } from '~/views/run-process-panel/inputs/int-input';
 import { StringInput } from '~/views/run-process-panel/inputs/string-input';
 import { StringCommandInputParameter, FloatCommandInputParameter, isPrimitiveOfType, File, Directory, WorkflowInputsData, EnumCommandInputParameter } from '../../models/workflow';
@@ -15,6 +15,7 @@ import { connect } from 'react-redux';
 import { compose } from 'redux';
 import { Grid, StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core';
 import { EnumInput } from './inputs/enum-input';
+import { DirectoryInput } from './inputs/directory-input';
 
 export const RUN_PROCESS_INPUTS_FORM = 'runProcessInputsForm';
 
@@ -71,6 +72,9 @@ const getInputComponent = (input: CommandInputParameter) => {
 
         case isPrimitiveOfType(input, CWLType.FILE):
             return <FileInput input={input as FileCommandInputParameter} />;
+        
+        case isPrimitiveOfType(input, CWLType.DIRECTORY):
+            return <DirectoryInput input={input as DirectoryCommandInputParameter} />;
 
         case typeof input.type === 'object' &&
             !(input.type instanceof Array) &&
