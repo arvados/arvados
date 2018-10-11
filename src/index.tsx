@@ -111,15 +111,6 @@ const initListener = (history: History, store: RootStore, services: ServiceRepos
             initWebSocket(config, services.authService, store);
             await store.dispatch(loadWorkbench());
             addRouteChangeHandlers(history, store);
-            // createEnumCollectorWorkflow(services);
-            store.dispatch(initProjectsTreePicker('testPicker1'));
-            store.dispatch(initProjectsTreePicker('testPicker2'));
-            store.dispatch(initProjectsTreePicker('testPicker3'));
-
-            // await store.dispatch(loadCollection(
-            //     'c97qk-4zz18-9sn8ygaf62chkkd',
-            //     'testPicker',
-            // ));
         }
     };
 };
