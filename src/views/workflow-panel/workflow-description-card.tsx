@@ -9,14 +9,21 @@ import { WorkflowIcon } from '~/components/icon/icon';
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 import { WorkflowResource, parseWorkflowDefinition, getWorkflowInputs, getInputLabel, stringifyInputType } from '~/models/workflow';
 
-export type CssRules = 'root' | 'tab';
+export type CssRules = 'root' | 'tab' | 'inputTab';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
-        height: '100%',
+        height: '100%'
     },
     tab: {
         minWidth: '50%'
+    },
+    inputTab: {
+        overflowX: 'auto',
+        overflowY: 'hidden',
+        '&:last-child': {
+            paddingBottom: theme.spacing.unit / 2,
+        }
     }
 });
 
@@ -53,7 +60,7 @@ export const WorkflowDetailsCard = withStyles(styles)(
                                 messages={['Please select a workflow to see its description.']} />
                         )}
                 </CardContent>}
-                {value === 1 && <CardContent>
+                {value === 1 && <CardContent className={classes.inputTab}>
                     {workflow
                         ? this.renderInputsTable()
                         : <DataTableDefaultView

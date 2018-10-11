@@ -10,6 +10,7 @@ interface SearchBar {
     open: boolean;
     searchResults: GroupContentsResource[];
     searchValue: string;
+    savedQueries: string[];
 }
 
 export enum SearchView {
@@ -22,7 +23,8 @@ const initialState: SearchBar = {
     currentView: SearchView.BASIC,
     open: false,
     searchResults: [],
-    searchValue: ''
+    searchValue: '',
+    savedQueries: ['']
 };
 
 export const searchBarReducer = (state = initialState, action: SearchBarActions): SearchBar =>
@@ -32,5 +34,6 @@ export const searchBarReducer = (state = initialState, action: SearchBarActions)
         CLOSE_SEARCH_VIEW: () => ({ ...state, open: false }),
         SET_SEARCH_RESULTS: (searchResults) => ({ ...state, searchResults }),
         SET_SEARCH_VALUE: (searchValue) => ({ ...state, searchValue }),
+        SET_SAVED_QUERIES: savedQueries => ({ ...state, savedQueries }),
         default: () => state
     });

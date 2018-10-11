@@ -16,7 +16,7 @@ const styles: StyleRulesCallback<CssRules> = theme => {
             padding: 0
         },
         searchView: {
-            borderRadius: `0 0 ${theme.spacing.unit / 4}px ${theme.spacing.unit / 4}px`
+            borderRadius: `0 0 ${theme.spacing.unit / 2}px ${theme.spacing.unit / 2}px`
         }
     };
 };

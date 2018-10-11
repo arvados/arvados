@@ -7,7 +7,7 @@ import { reduxForm, reset, InjectedFormProps } from 'redux-form';
 import { compose, Dispatch } from 'redux';
 import { Paper, StyleRulesCallback, withStyles, WithStyles, Button, Grid, IconButton, CircularProgress } from '@material-ui/core';
 import { SearchView } from '~/store/search-bar/search-bar-reducer';
-import { SEARCH_BAR_ADVANCE_FORM_NAME, SearchBarAdvanceFormData } from '~/store/search-bar/search-bar-actions';
+import { SEARCH_BAR_ADVANCE_FORM_NAME, SearchBarAdvanceFormData, saveQuery } from '~/store/search-bar/search-bar-actions';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { CloseIcon } from '~/components/icon/icon';
 import { 
@@ -16,7 +16,7 @@ import {
     SearchBarSaveSearchField, SearchBarQuerySearchField
 } from '~/views-components/form-fields/search-bar-form-fields';
 
-type CssRules = 'form' | 'container' | 'closeIcon' | 'label' | 'buttonWrapper' | 'button' | 'circularProgress';
+type CssRules = 'form' | 'container' | 'closeIcon' | 'label' | 'buttonWrapper' | 'button' | 'circularProgress' | 'searchView';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     form: {
@@ -50,6 +50,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         left: 0,
         right: 0,
         margin: 'auto'
+    },
+    searchView: {
+        color: theme.palette.common.black,
+        borderRadius: `0 0 ${theme.spacing.unit / 2}px ${theme.spacing.unit / 2}px`
     }
 });
 
@@ -61,6 +65,7 @@ interface SearchBarAdvancedViewDataProps {
 
 interface SearchBarAdvancedViewActionProps {
     setView: (currentView: string) => void;
+    saveQuery: (data: SearchBarAdvanceFormData) => void;
 }
 
 type SearchBarAdvancedViewProps = SearchBarAdvancedViewActionProps & SearchBarAdvancedViewDataProps 
@@ -70,12 +75,13 @@ export const SearchBarAdvancedView = compose(
     reduxForm<SearchBarAdvanceFormData, SearchBarAdvancedViewActionProps>({
         form: SEARCH_BAR_ADVANCE_FORM_NAME,
         onSubmit: (data: SearchBarAdvanceFormData, dispatch: Dispatch) => {
+            dispatch<any>(saveQuery(data));
             dispatch(reset(SEARCH_BAR_ADVANCE_FORM_NAME));
         }
     }),
     withStyles(styles))(
         ({ classes, setView, handleSubmit, invalid, submitting, pristine }: SearchBarAdvancedViewProps) =>
-            <Paper>
+            <Paper className={classes.searchView}>
                 <form onSubmit={handleSubmit} className={classes.form}>
                     <Grid container direction="column" justify="flex-start" alignItems="flex-start">
                         <Grid item xs={12} container className={classes.container}>

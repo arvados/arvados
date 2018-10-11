@@ -22,7 +22,7 @@ import { ContainerService } from './container-service/container-service';
 import { LogService } from './log-service/log-service';
 import { ApiActions } from "~/services/api/api-actions";
 import { WorkflowService } from "~/services/workflow-service/workflow-service";
-import { SearchQueriesService } from '~/services/search-service/search-service';
+import { SearchService } from '~/services/search-service/search-service';
 
 export type ServiceRepository = ReturnType<typeof createServices>;
 
@@ -49,7 +49,7 @@ export const createServices = (config: Config, actions: ApiActions) => {
     const collectionFilesService = new CollectionFilesService(collectionService);
     const favoriteService = new FavoriteService(linkService, groupsService);
     const tagService = new TagService(linkService);
-    const searchQueriesService = new SearchQueriesService();
+    const searchService = new SearchService();
 
     return {
         ancestorsService,
@@ -65,7 +65,7 @@ export const createServices = (config: Config, actions: ApiActions) => {
         linkService,
         logService,
         projectService,
-        searchQueriesService,
+        searchService,
         tagService,
         userService,
         webdavClient,
