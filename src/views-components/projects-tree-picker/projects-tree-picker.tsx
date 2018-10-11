@@ -16,6 +16,7 @@ export interface ProjectsTreePickerProps {
     includeFiles?: boolean;
     showSelection?: boolean;
     toggleItemActive?: (event: React.MouseEvent<HTMLElement>, item: TreeItem<ProjectsTreePickerItem>, pickerId: string) => void;
+    toggleItemSelection?: (event: React.MouseEvent<HTMLElement>, item: TreeItem<ProjectsTreePickerItem>, pickerId: string) => void;
 }
 
 export const ProjectsTreePicker = ({ pickerId, ...props }: ProjectsTreePickerProps) => {
