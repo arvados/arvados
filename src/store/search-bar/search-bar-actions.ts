@@ -16,7 +16,8 @@ export const searchBarActions = unionize({
     OPEN_SEARCH_VIEW: ofType<{}>(),
     CLOSE_SEARCH_VIEW: ofType<{}>(),
     SET_SEARCH_RESULTS: ofType<GroupContentsResource[]>(),
-    SET_SEARCH_VALUE: ofType<string>()
+    SET_SEARCH_VALUE: ofType<string>(),
+    SET_SAVED_QUERIES: ofType<string[]>()
 });
 
 export type SearchBarActions = UnionOf<typeof searchBarActions>;
@@ -25,8 +26,10 @@ export interface SearchBarAdvanceFormData {
     type?: GroupContentsResource;
     cluster?: string;
     project?: string;
+    inTrash: boolean;
     dataFrom: string;
     dataTo: string;
+    saveQuery: boolean;
     searchQuery: string;
 }
 
@@ -35,15 +38,39 @@ export const SEARCH_BAR_ADVANCE_FORM_NAME = 'searchBarAdvanceFormName';
 export const goToView = (currentView: string) => searchBarActions.SET_CURRENT_VIEW(currentView);
 
 export const saveRecentQuery = (query: string) =>
-    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        services.searchQueriesService.saveRecentQuery(query);
-    };
+    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) =>
+        services.searchService.saveRecentQuery(query);
+
 
 export const loadRecentQueries = () =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        const recentSearchQueries = services.searchQueriesService.getRecentQueries();
+        const recentSearchQueries = services.searchService.getRecentQueries();
         return recentSearchQueries || [];
     };
+
+export const saveQuery = (data: SearchBarAdvanceFormData) =>
+    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        if (data.saveQuery && data.searchQuery) {
+            services.searchService.saveQuery(data.searchQuery);
+            dispatch(searchBarActions.SET_SAVED_QUERIES(services.searchService.getSavedQueries()));
+        }
+    };
+
+export const deleteSavedQuery = (id: number) =>
+    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        services.searchService.deleteSavedQuery(id);
+        const savedSearchQueries = services.searchService.getSavedQueries();
+        dispatch(searchBarActions.SET_SAVED_QUERIES(savedSearchQueries));
+        return savedSearchQueries || [];
+    };
+
+export const openSearchView = () =>
+    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(searchBarActions.OPEN_SEARCH_VIEW());
+        const savedSearchQueries = services.searchService.getSavedQueries();
+        dispatch(searchBarActions.SET_SAVED_QUERIES(savedSearchQueries));
+    };
+
 
 export const searchData = (searchValue: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
