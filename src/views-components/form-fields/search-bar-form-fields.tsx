@@ -64,7 +64,7 @@ export const SearchBarSaveSearchField = () =>
     <FormControlLabel
         control={
             <Checkbox
-                checked={false}
+                checked={true}
                 value="true"
                 color="primary"
             />

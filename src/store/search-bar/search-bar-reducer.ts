@@ -24,7 +24,7 @@ const initialState: SearchBar = {
     open: false,
     searchResults: [],
     searchValue: '',
-    savedQueries: JSON.parse(localStorage.getItem('savedQueries') || '[]') as string[]
+    savedQueries: ['']
 };
 
 export const searchBarReducer = (state = initialState, action: SearchBarActions): SearchBar =>

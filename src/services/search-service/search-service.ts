@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-export class SearchQueriesService {
+export class SearchService {
     private recentQueries: string[] = this.getRecentQueries();
     private savedQueries: string[] = this.getSavedQueries();
 

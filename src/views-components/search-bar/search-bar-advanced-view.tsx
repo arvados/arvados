@@ -16,7 +16,7 @@ import {
     SearchBarSaveSearchField, SearchBarQuerySearchField
 } from '~/views-components/form-fields/search-bar-form-fields';
 
-type CssRules = 'form' | 'container' | 'closeIcon' | 'label' | 'buttonWrapper' | 'button' | 'circularProgress';
+type CssRules = 'form' | 'container' | 'closeIcon' | 'label' | 'buttonWrapper' | 'button' | 'circularProgress' | 'searchView';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     form: {
@@ -50,6 +50,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         left: 0,
         right: 0,
         margin: 'auto'
+    },
+    searchView: {
+        color: theme.palette.common.black,
+        borderRadius: `0 0 ${theme.spacing.unit / 4}px ${theme.spacing.unit / 4}px`
     }
 });
 
@@ -75,7 +79,7 @@ export const SearchBarAdvancedView = compose(
     }),
     withStyles(styles))(
         ({ classes, setView, handleSubmit, invalid, submitting, pristine }: SearchBarAdvancedViewProps) =>
-            <Paper>
+            <Paper className={classes.searchView}>
                 <form onSubmit={handleSubmit} className={classes.form}>
                     <Grid container direction="column" justify="flex-start" alignItems="flex-start">
                         <Grid item xs={12} container className={classes.container}>

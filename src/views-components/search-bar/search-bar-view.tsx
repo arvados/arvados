@@ -62,12 +62,12 @@ interface SearchBarActionProps {
     onSearch: (value: string) => any;
     debounce?: number;
     onSetView: (currentView: string) => void;
-    openView: () => void;
     closeView: () => void;
     saveRecentQuery: (query: string) => void;
     loadRecentQueries: () => string[];
     saveQuery: (query: string) => void;
     deleteSavedQuery: (id: number) => void;
+    openSearchView: () => void;
 }
 
 type SearchBarProps = SearchBarDataProps & SearchBarActionProps & WithStyles<CssRules>;
@@ -117,7 +117,7 @@ export const SearchBarView = withStyles(styles)(
         timeout: number;
 
         render() {
-            const { classes, currentView, openView, closeView, isPopoverOpen } = this.props;
+            const { classes, currentView, openSearchView, closeView, isPopoverOpen } = this.props;
             return <ClickAwayListener onClickAway={() => closeView()}>
                 <Paper className={isPopoverOpen ? classes.containerSearchViewOpened : classes.container} >
                     <form onSubmit={this.handleSubmit} className={classes.searchBar}>
@@ -128,7 +128,7 @@ export const SearchBarView = withStyles(styles)(
                             value={this.state.value}
                             fullWidth={true}
                             disableUnderline={true}
-                            onClick={() => openView()}
+                            onClick={() => openSearchView()}
                             endAdornment={
                                 <InputAdornment position="end">
                                     <Tooltip title='Search'>

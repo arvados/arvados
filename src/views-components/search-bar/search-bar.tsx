@@ -12,7 +12,8 @@ import {
     deleteSavedQuery,
     saveRecentQuery,
     loadRecentQueries,
-    saveQuery
+    saveQuery,
+    openSearchView
 } from '~/store/search-bar/search-bar-actions';
 import { SearchBarView } from '~/views-components/search-bar/search-bar-view';
 
@@ -29,12 +30,12 @@ const mapStateToProps = ({ searchBar }: RootState) => {
 const mapDispatchToProps = (dispatch: Dispatch) => ({
     onSearch: (valueSearch: string) => dispatch<any>(searchData(valueSearch)),
     onSetView: (currentView: string) => dispatch(goToView(currentView)),
-    openView: () => dispatch<any>(searchBarActions.OPEN_SEARCH_VIEW()),
     closeView: () => dispatch<any>(searchBarActions.CLOSE_SEARCH_VIEW()),
     saveRecentQuery: (query: string) => dispatch<any>(saveRecentQuery(query)),
     loadRecentQueries: () => dispatch<any>(loadRecentQueries()),
     saveQuery: (query: string) => dispatch<any>(saveQuery(query)),
-    deleteSavedQuery: (id: number) => dispatch<any>(deleteSavedQuery(id))
+    deleteSavedQuery: (id: number) => dispatch<any>(deleteSavedQuery(id)),
+    openSearchView: () => dispatch<any>(openSearchView())
 });
 
 export const SearchBar = connect(mapStateToProps, mapDispatchToProps)(SearchBarView);
