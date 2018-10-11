@@ -30,6 +30,7 @@
     "react-splitter-layout": "3.0.1",
     "react-transition-group": "2.5.0",
     "redux": "4.0.0",
+    "redux-form": "7.4.2",
     "redux-thunk": "2.3.0",
     "reselect": "4.0.0",
     "shell-quote": "1.6.1",
@@ -56,14 +57,12 @@
     "@types/react-router-dom": "4.3.1",
     "@types/react-router-redux": "5.0.16",
     "@types/redux-devtools": "3.0.44",
-    "@types/redux-form": "7.4.8",
     "@types/uuid": "3.4.4",
     "axios-mock-adapter": "1.15.0",
     "enzyme": "3.6.0",
     "enzyme-adapter-react-16": "1.5.0",
     "jest-localstorage-mock": "2.2.0",
     "redux-devtools": "3.4.1",
-    "redux-form": "7.4.2",
     "typescript": "3.1.1"
   },
   "jest": {

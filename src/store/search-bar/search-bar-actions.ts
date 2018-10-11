@@ -21,6 +21,17 @@ export const searchBarActions = unionize({
 
 export type SearchBarActions = UnionOf<typeof searchBarActions>;
 
+export interface SearchBarAdvanceFormData {
+    type?: GroupContentsResource;
+    cluster?: string;
+    project?: string;
+    dataFrom: string;
+    dataTo: string;
+    searchQuery: string;
+}
+
+export const SEARCH_BAR_ADVANCE_FORM_NAME = 'searchBarAdvanceFormName';
+
 export const goToView = (currentView: string) => searchBarActions.SET_CURRENT_VIEW(currentView);
 
 export const saveRecentQuery = (query: string) =>
