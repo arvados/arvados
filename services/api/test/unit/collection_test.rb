@@ -245,25 +245,18 @@ class CollectionTest < ActiveSupport::TestCase
       c_old = Collection.where(current_version_uuid: c.uuid, version: 1).first
       assert_not_nil c_old
       # With collection versioning still being enabled, try to update
-      assert_raises ArvadosModel::PermissionDeniedError do
-        c_old.update_attributes(name: 'this was foo')
-      end
+      c_old.name = 'this was foo'
+      assert c_old.invalid?
       c_old.reload
-      assert_equal 'foo', c_old.name
       # Try to fool the validator attempting to make c_old to look like a
       # current version, it should also fail.
-      assert_raises ArvadosModel::PermissionDeniedError do
-        c_old.update_attributes(current_version_uuid: c_old.uuid)
-      end
+      c_old.current_version_uuid = c_old.uuid
+      assert c_old.invalid?
       c_old.reload
-      assert_equal c.uuid, c_old.current_version_uuid
       # Now disable collection versioning, it should behave the same way
       Rails.configuration.collection_versioning = false
-      assert_raises ArvadosModel::PermissionDeniedError do
-        c_old.update_attributes(name: 'this was foo')
-      end
-      c_old.reload
-      assert_equal 'foo', c_old.name
+      c_old.name = 'this was foo'
+      assert c_old.invalid?
     end
   end
 

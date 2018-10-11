@@ -27,7 +27,7 @@ class Collection < ArvadosModel
   validate :ensure_pdh_matches_manifest_text
   validate :ensure_storage_classes_desired_is_not_empty
   validate :ensure_storage_classes_contain_non_empty_strings
-  validate :old_versions_cannot_be_updated, on: :update
+  validate :past_versions_cannot_be_updated, on: :update
   before_save :set_file_names
   around_update :prepare_for_versioning
   after_update :save_old_version, if: Proc.new { |c| c.should_preserve_version? }
@@ -622,11 +622,12 @@ class Collection < ArvadosModel
     end
   end
 
-  def old_versions_cannot_be_updated
+  def past_versions_cannot_be_updated
     # We check for the '_was' values just in case the update operation
     # includes a change on current_version_uuid or uuid.
     if current_version_uuid_was != uuid_was
-      raise ArvadosModel::PermissionDeniedError.new("previous versions cannot be updated")
+      errors.add(:base, "past versions cannot be updated")
+      false
     end
   end
 
