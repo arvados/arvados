@@ -22,7 +22,7 @@ import { SearchBarAdvancedView } from '~/views-components/search-bar/search-bar-
 import { SearchBarAutocompleteView, SearchBarAutocompleteViewDataProps } from '~/views-components/search-bar/search-bar-autocomplete-view';
 import { ArvadosTheme } from '~/common/custom-theme';
 
-type CssRules = 'container' | 'input' | 'searchBar';
+type CssRules = 'container' | 'input' | 'searchBar' | 'view';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => {
     return {
@@ -37,6 +37,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => {
         },
         searchBar: {
             height: '30px'
+        },
+        view: {
+            position: 'absolute',
+            width: '100%'
         }
     };
 };
@@ -117,9 +121,11 @@ export const SearchBarView = withStyles(styles)(
                                     </Tooltip>
                                 </InputAdornment>
                             } />
-                        {open && this.getView(currentView)}
                     </form>
-                </Paper >
+                    <div className={classes.view}>
+                        {open && this.getView(currentView)}
+                    </div>
+                </Paper>
             </ClickAwayListener>;
         }
 

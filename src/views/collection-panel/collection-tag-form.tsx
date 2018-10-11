@@ -72,21 +72,21 @@ export const CollectionTagForm = compose(
                 const { classes, submitting, pristine, invalid, handleSubmit } = this.props;
                 return (
                     <form onSubmit={handleSubmit} className={classes.root}>
-                        <Typography component='div' className={classes.keyField}>
+                        <div className={classes.keyField}>
                             <Field name="key"
                                 disabled={submitting}
                                 component={TextField}
                                 validate={TAG_KEY_VALIDATION}
                                 label="Key" />
-                        </Typography>
-                        <Typography component='div' className={classes.valueField}>
+                        </div>
+                        <div className={classes.valueField}>
                             <Field name="value"
                                 disabled={submitting}
                                 component={TextField}
                                 validate={TAG_VALUE_VALIDATION}
                                 label="Value" />
-                        </Typography>
-                        <Typography component='div' className={classes.buttonWrapper}>
+                        </div>
+                        <div className={classes.buttonWrapper}>
                             <Button type="submit" className={classes.saveButton}
                                 color="primary"
                                 size='small'
@@ -95,7 +95,7 @@ export const CollectionTagForm = compose(
                                 ADD
                             </Button>
                             {submitting && <CircularProgress size={20} className={classes.circularProgress} />}
-                        </Typography>
+                        </div>
                     </form>
                 );
             }
