@@ -359,7 +359,14 @@ class ContainerRequest < ArvadosModel
   def scrub_secrets
     if self.state == Final
       self.secret_mounts = {}
-      self.runtime_token = nil
+      if !self.runtime_token.nil?
+        _, uuid, secret = self.runtime_token.split('/')
+        tok = ApiClientAuthorization.find_by_uuid(uuid)
+        if !tok.nil?
+          tok.expire_destroy
+        end
+        self.runtime_token = nil
+      end
     end
   end
 

@@ -530,6 +530,7 @@ class Container < ArvadosModel
       return errors.add :auth_uuid, "cannot be assigned because priority <= 0"
     end
     if cr.runtime_token.nil?
+      # generate a new token
       self.auth = ApiClientAuthorization.
                     create!(user_id: User.find_by_uuid(cr.modified_by_user_uuid).id,
                             api_client_id: 0)
@@ -537,12 +538,12 @@ class Container < ArvadosModel
       self.runtime_auth_scopes = self.auth.scopes
     else
       # using cr.runtime_token
-      runtime_auth = ApiClientAuthorization.validate(token: cr.runtime_token)
-      if runtime_auth.nil?
+      self.auth = ApiClientAuthorization.validate(token: cr.runtime_token)
+      if self.auth.nil?
         raise ArgumentError.new "Invalid runtime token"
       end
-      self.runtime_user_uuid = User.find_by_id(runtime_auth.user_id).uuid
-      self.runtime_auth_scopes = runtime_auth.scopes
+      self.runtime_user_uuid = User.find_by_id(self.auth.user_id).uuid
+      self.runtime_auth_scopes = self.auth.scopes
     end
   end
 

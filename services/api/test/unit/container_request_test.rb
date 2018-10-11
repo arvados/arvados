@@ -1075,13 +1075,28 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_equal [:secret_mounts], cr.errors.messages.keys
   end
 
-  test "valid runtime_token" do
+  test "using runtime_token" do
     set_user_from_auth :active
     spec = api_client_authorizations(:spectator)
-    cr = create_minimal_req!(state: "Committed", runtime_token: spec.token)
+    cr = create_minimal_req!(state: "Committed", runtime_token: spec.token, priority: 1)
     cr.save!
     c = Container.find_by_uuid cr.container_uuid
-    assert_nil c.auth_uuid
+    lock_and_run c
+    assert_equal c.auth_uuid, spec.uuid
+
+    assert_not_nil ApiClientAuthorization.find_by_uuid(spec.uuid)
+
+    act_as_system_user do
+      c.update_attributes!(state: Container::Complete,
+                           exit_code: 0,
+                           output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45',
+                           log: 'fa7aeb5140e2848d39b416daeef4ffc5+45')
+    end
+
+    cr.reload
+    c.reload
+    assert_nil cr.runtime_token
+    assert_nil ApiClientAuthorization.find_by_uuid(spec.uuid)
   end
 
   test "invalid runtime_token" do

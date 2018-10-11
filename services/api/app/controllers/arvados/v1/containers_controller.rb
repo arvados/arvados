@@ -17,15 +17,7 @@ class Arvados::V1::ContainersController < ApplicationController
     if @object.locked_by_uuid != Thread.current[:api_client_authorization].uuid
       raise ArvadosModel::PermissionDeniedError.new("Not locked by your token")
     end
-    if @object.auth.nil?
-      cr = ContainerRequest.
-             where('container_uuid=? and priority>0', @object.uuid).
-             order('priority desc').
-             first
-      @object = ApiClientAuthorization.validate(token: cr.runtime_token)
-    else
-      @object = @object.auth
-    end
+    @object = @object.auth
     show
   end
 

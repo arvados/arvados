@@ -92,6 +92,27 @@ class ApiClientAuthorization < ArvadosModel
        uuid_prefix+".arvadosapi.com")
   end
 
+  # Delete token, if remote, attempt to delete on the host as well.
+  def expire_destroy
+      uuid_prefix = self.uuid[0..4]
+      if uuid_prefix != Rails.configuration.uuid_prefix
+        # remote token
+        host = remote_host(uuid_prefix: uuid_prefix)
+        begin
+          clnt = HTTPClient.new
+          if Rails.configuration.sso_insecure
+            clnt.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
+          end
+          result = SafeJSON.load(
+            clnt.delete('https://' + host + '/arvados/v1/users/current',
+                        {'Authorization' => 'Bearer ' + token}))
+        rescue => e
+          Rails.logger.warn "deleting remote token #{self.uuid} failed: #{e}"
+        end
+      end
+      destroy
+  end
+
   def self.validate(token:, remote: nil)
     return nil if !token
     remote ||= Rails.configuration.uuid_prefix
