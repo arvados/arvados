@@ -44,7 +44,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => {
         view: {
             position: 'absolute',
             width: '100%',
-            zIndex: 1001
+            zIndex: 1
         }
     };
 };
