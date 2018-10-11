@@ -29,10 +29,10 @@ export const FileInput = ({ input }: FileInputProps) =>
         name={input.id}
         commandInput={input}
         component={FileInputComponent}
-        format={(value?: File) => value ? value.location : ''}
+        format={(value?: File) => value ? value.basename : ''}
         parse={(file: CollectionFile): File => ({
             class: CWLType.FILE,
-            location: `keep:${getFileFullPath(file)}`,
+            location: `keep:${file.id}`,
             basename: file.name,
         })}
         validate={[

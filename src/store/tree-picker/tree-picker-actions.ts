@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { unionize, ofType, UnionOf } from "~/common/unionize";
-import { TreeNode, initTreeNode, getNodeDescendants, getNodeDescendantsIds, getNodeValue, TreeNodeStatus } from '~/models/tree';
+import { TreeNode, initTreeNode, getNodeDescendants, getNodeDescendantsIds, getNodeValue, TreeNodeStatus, getNode } from '~/models/tree';
 import { Dispatch } from 'redux';
 import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
@@ -12,6 +12,8 @@ import { pipe } from 'lodash/fp';
 import { ResourceKind } from '~/models/resource';
 import { GroupContentsResource } from '../../services/groups-service/groups-service';
 import { CollectionDirectory, CollectionFile } from '../../models/collection-file';
+import { getTreePicker } from './tree-picker';
+import { ProjectsTreePickerItem } from '~/views-components/projects-tree-picker/generic-projects-tree-picker';
 
 export const treePickerActions = unionize({
     LOAD_TREE_PICKER_NODE: ofType<{ id: string, pickerId: string }>(),
@@ -31,13 +33,13 @@ export const getProjectsTreePickerIds = (pickerId: string) => ({
     shared: `${pickerId}_shared`,
     favorites: `${pickerId}_favorites`,
 });
-export const initProjectsTreePicker = (pickerId: string) => 
-async (dispatch: Dispatch, _: () => RootState, services: ServiceRepository) => {
-    const {home, shared, favorites} = getProjectsTreePickerIds(pickerId);
-    dispatch<any>(initUserProject(home));
-    dispatch<any>(initSharedProject(shared));
-    dispatch<any>(initFavoritesProject(favorites));
-};
+export const initProjectsTreePicker = (pickerId: string) =>
+    async (dispatch: Dispatch, _: () => RootState, services: ServiceRepository) => {
+        const { home, shared, favorites } = getProjectsTreePickerIds(pickerId);
+        dispatch<any>(initUserProject(home));
+        dispatch<any>(initSharedProject(shared));
+        dispatch<any>(initFavoritesProject(favorites));
+    };
 
 interface ReceiveTreePickerDataParams<T> {
     data: T[];
@@ -95,22 +97,30 @@ export const loadProject = (params: LoadProjectParams) =>
     };
 
 export const loadCollection = (id: string, pickerId: string) =>
-    async (dispatch: Dispatch, _: () => RootState, services: ServiceRepository) => {
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id, pickerId }));
 
-        const files = await services.collectionService.files(id);
-        const data = getNodeDescendants('')(files).map(node => node.value);
+        const picker = getTreePicker<ProjectsTreePickerItem>(pickerId)(getState().treePicker);
+        if (picker) {
 
-        dispatch<any>(receiveTreePickerData<CollectionDirectory | CollectionFile>({
-            id,
-            pickerId,
-            data,
-            extractNodeData: value => ({
-                id: value.id,
-                status: TreeNodeStatus.LOADED,
-                value,
-            }),
-        }));
+            const node = getNode(id)(picker);
+            if (node && 'kind' in node.value && node.value.kind === ResourceKind.COLLECTION) {
+
+                const files = await services.collectionService.files(node.value.portableDataHash);
+                const data = getNodeDescendants('')(files).map(node => node.value);
+
+                dispatch<any>(receiveTreePickerData<CollectionDirectory | CollectionFile>({
+                    id,
+                    pickerId,
+                    data,
+                    extractNodeData: value => ({
+                        id: value.id,
+                        status: TreeNodeStatus.LOADED,
+                        value,
+                    }),
+                }));
+            }
+        }
     };
 
 
