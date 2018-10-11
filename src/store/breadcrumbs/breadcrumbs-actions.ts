@@ -28,7 +28,7 @@ const getSidePanelTreeBreadcrumbs = (uuid: string) => (treePicker: TreePicker): 
     const nodes = getSidePanelTreeBranch(uuid)(treePicker);
     return nodes.map(node =>
         typeof node.value === 'string'
-            ? { label: node.value, uuid: node.nodeId }
+            ? { label: node.value, uuid: node.id }
             : { label: node.value.name, uuid: node.value.uuid });
 };
 

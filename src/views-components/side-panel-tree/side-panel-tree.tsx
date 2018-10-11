@@ -13,25 +13,26 @@ import { ProjectIcon, FavoriteIcon, ProjectsIcon, ShareMeIcon, TrashIcon } from 
 import { RecentIcon, WorkflowIcon } from '~/components/icon/icon';
 import { activateSidePanelTreeItem, toggleSidePanelTreeItemCollapse, SIDE_PANEL_TREE, SidePanelTreeCategory } from '~/store/side-panel-tree/side-panel-tree-actions';
 import { openSidePanelContextMenu } from '~/store/context-menu/context-menu-actions';
-
+import { noop } from 'lodash';
 export interface SidePanelTreeProps {
     onItemActivation: (id: string) => void;
     sidePanelProgress?: boolean;
 }
 
-type SidePanelTreeActionProps = Pick<TreePickerProps, 'onContextMenu' | 'toggleItemActive' | 'toggleItemOpen'>;
+type SidePanelTreeActionProps = Pick<TreePickerProps<ProjectResource | string>, 'onContextMenu' | 'toggleItemActive' | 'toggleItemOpen' | 'toggleItemSelection'>;
 
 const mapDispatchToProps = (dispatch: Dispatch, props: SidePanelTreeProps): SidePanelTreeActionProps => ({
-    onContextMenu: (event, id) => {
+    onContextMenu: (event, { id }) => {
         dispatch<any>(openSidePanelContextMenu(event, id));
     },
-    toggleItemActive: (nodeId) => {
-        dispatch<any>(activateSidePanelTreeItem(nodeId));
-        props.onItemActivation(nodeId);
+    toggleItemActive: (_, { id }) => {
+        dispatch<any>(activateSidePanelTreeItem(id));
+        props.onItemActivation(id);
     },
-    toggleItemOpen: (nodeId) => {
-        dispatch<any>(toggleSidePanelTreeItemCollapse(nodeId));
-    }
+    toggleItemOpen: (_, { id }) => {
+        dispatch<any>(toggleSidePanelTreeItemCollapse(id));
+    },
+    toggleItemSelection: noop,
 });
 
 export const SidePanelTree = connect(undefined, mapDispatchToProps)(

@@ -5,7 +5,7 @@
 import { collectionPanelFilesReducer } from "./collection-panel-files-reducer";
 import { collectionPanelFilesAction } from "./collection-panel-files-actions";
 import { CollectionFile, CollectionDirectory, createCollectionFile, createCollectionDirectory } from "~/models/collection-file";
-import { createTree, setNode, getNodeValue, mapTreeValues } from "~/models/tree";
+import { createTree, setNode, getNodeValue, mapTreeValues, TreeNodeStatus } from "~/models/tree";
 import { CollectionPanelFile, CollectionPanelDirectory } from "./collection-panel-files-state";
 
 describe('CollectionPanelFilesReducer', () => {
@@ -26,7 +26,11 @@ describe('CollectionPanelFilesReducer', () => {
         children: [],
         id: file.id,
         parent: file.path,
-        value: file
+        value: file,
+        active: false,
+        selected: false,
+        expanded: false,
+        status: TreeNodeStatus.INITIAL,
     })(tree), createTree<CollectionFile | CollectionDirectory>());
 
     const collectionPanelFilesTree = collectionPanelFilesReducer(

@@ -2,72 +2,46 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { createTree, setNodeValueWith, TreeNode, setNode, mapTreeValues, Tree } from "~/models/tree";
-import { TreePicker, TreePickerNode } from "./tree-picker";
+import { createTree, TreeNode, setNode, Tree, TreeNodeStatus, setNodeStatus, expandNode, deactivateNode } from '~/models/tree';
+import { TreePicker } from "./tree-picker";
 import { treePickerActions, TreePickerAction } from "./tree-picker-actions";
-import { TreeItemStatus } from "~/components/tree/tree";
 import { compose } from "redux";
-import { getNode } from '../../models/tree';
+import { activateNode, getNode, toggleNodeCollapse, toggleNodeSelection } from '~/models/tree';
 
 export const treePickerReducer = (state: TreePicker = {}, action: TreePickerAction) =>
     treePickerActions.match(action, {
-        LOAD_TREE_PICKER_NODE: ({ nodeId, pickerId }) =>
-            updateOrCreatePicker(state, pickerId, setNodeValueWith(setPending)(nodeId)),
-        LOAD_TREE_PICKER_NODE_SUCCESS: ({ nodeId, nodes, pickerId }) =>
-            updateOrCreatePicker(state, pickerId, compose(receiveNodes(nodes)(nodeId), setNodeValueWith(setLoaded)(nodeId))),
-        TOGGLE_TREE_PICKER_NODE_COLLAPSE: ({ nodeId, pickerId }) =>
-            updateOrCreatePicker(state, pickerId, setNodeValueWith(toggleCollapse)(nodeId)),
-        TOGGLE_TREE_PICKER_NODE_SELECT: ({ nodeId, pickerId }) =>
-            updateOrCreatePicker(state, pickerId, mapTreeValues(toggleSelect(nodeId))),
+        LOAD_TREE_PICKER_NODE: ({ id, pickerId }) =>
+            updateOrCreatePicker(state, pickerId, setNodeStatus(id)(TreeNodeStatus.PENDING)),
+        LOAD_TREE_PICKER_NODE_SUCCESS: ({ id, nodes, pickerId }) =>
+            updateOrCreatePicker(state, pickerId, compose(receiveNodes(nodes)(id), setNodeStatus(id)(TreeNodeStatus.LOADED))),
+        TOGGLE_TREE_PICKER_NODE_COLLAPSE: ({ id, pickerId }) =>
+            updateOrCreatePicker(state, pickerId, toggleNodeCollapse(id)),
+        ACTIVATE_TREE_PICKER_NODE: ({ id, pickerId }) =>
+            updateOrCreatePicker(state, pickerId, activateNode(id)),
+        DEACTIVATE_TREE_PICKER_NODE: ({ pickerId }) =>
+            updateOrCreatePicker(state, pickerId, deactivateNode),
+        TOGGLE_TREE_PICKER_NODE_SELECTION: ({ id, pickerId }) =>
+            updateOrCreatePicker(state, pickerId, toggleNodeSelection(id)),
         RESET_TREE_PICKER: ({ pickerId }) =>
             updateOrCreatePicker(state, pickerId, createTree),
-        EXPAND_TREE_PICKER_NODES: ({ pickerId, nodeIds }) =>
-            updateOrCreatePicker(state, pickerId, mapTreeValues(expand(nodeIds))),
+        EXPAND_TREE_PICKER_NODES: ({ pickerId, ids }) =>
+            updateOrCreatePicker(state, pickerId, expandNode(...ids)),
         default: () => state
     });
 
-const updateOrCreatePicker = (state: TreePicker, pickerId: string, func: (value: Tree<TreePickerNode>) => Tree<TreePickerNode>) => {
+const updateOrCreatePicker = <V>(state: TreePicker, pickerId: string, func: (value: Tree<V>) => Tree<V>) => {
     const picker = state[pickerId] || createTree();
     const updatedPicker = func(picker);
     return { ...state, [pickerId]: updatedPicker };
 };
 
-const expand = (ids: string[]) => (node: TreePickerNode): TreePickerNode =>
-    ids.some(id => id === node.nodeId)
-        ? { ...node, collapsed: false }
-        : node;
-
-const setPending = (value: TreePickerNode): TreePickerNode =>
-    ({ ...value, status: TreeItemStatus.PENDING });
-
-const setLoaded = (value: TreePickerNode): TreePickerNode =>
-    ({ ...value, status: TreeItemStatus.LOADED });
-
-const toggleCollapse = (value: TreePickerNode): TreePickerNode =>
-    ({ ...value, collapsed: !value.collapsed });
-
-const toggleSelect = (nodeId: string) => (value: TreePickerNode): TreePickerNode =>
-    value.nodeId === nodeId
-        ? ({ ...value, selected: !value.selected })
-        : ({ ...value, selected: false });
-
-const receiveNodes = (nodes: Array<TreePickerNode>) => (parent: string) => (state: Tree<TreePickerNode>) => {
+const receiveNodes = <V>(nodes: Array<TreeNode<V>>) => (parent: string) => (state: Tree<V>) => {
     const parentNode = getNode(parent)(state);
     let newState = state;
     if (parentNode) {
         newState = setNode({ ...parentNode, children: [] })(state);
     }
     return nodes.reduce((tree, node) => {
-        const oldNode = getNode(node.nodeId)(state) || { value: {} };
-        const newNode = createTreeNode(parent)(node);
-        const value = { ...oldNode.value, ...newNode.value };
-        return setNode({ ...newNode, value })(tree);
+        return setNode({ ...node, parent })(tree);
     }, newState);
 };
-
-const createTreeNode = (parent: string) => (node: TreePickerNode): TreeNode<TreePickerNode> => ({
-    children: [],
-    id: node.nodeId,
-    parent,
-    value: node
-});
