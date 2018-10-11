@@ -26,7 +26,7 @@ export const sortFilesTree = (tree: Tree<CollectionDirectory | CollectionFile>) 
 };
 
 export const extractFilesData = (document: Document) => {
-    const collectionUrlPrefix = /\/c=[0-9a-zA-Z\-]*/;
+    const collectionUrlPrefix = /\/c=([0-9a-zA-Z\-]*)/;
     return Array
         .from(document.getElementsByTagName('D:response'))
         .slice(1) // omit first element which is collection itself
@@ -35,13 +35,20 @@ export const extractFilesData = (document: Document) => {
             const size = parseInt(getTagValue(element, 'D:getcontentlength', '0'), 10);
             const url = getTagValue(element, 'D:href', '');
             const nameSuffix = `/${name || ''}`;
+            const collectionUuidMatch = collectionUrlPrefix.exec(url);
+            const collectionUuid = collectionUuidMatch ? collectionUuidMatch.pop() : '';
             const directory = url
                 .replace(collectionUrlPrefix, '')
                 .replace(nameSuffix, '');
 
+
             const data = {
                 url,
-                id: `${directory}/${name}`,
+                id: [
+                    collectionUuid ? collectionUuid : '',
+                    directory ? '/' + directory : '',
+                    '/' + name
+                ].join(''),
                 name,
                 path: directory,
             };
@@ -52,3 +59,6 @@ export const extractFilesData = (document: Document) => {
 
         });
 };
+
+export const getFileFullPath = ({ name, path }: CollectionFile | CollectionDirectory) =>
+    `${path}/${name}`;

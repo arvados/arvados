@@ -13,6 +13,7 @@ import { getNodeValue } from "~/models/tree";
 import { filterCollectionFilesBySelection } from './collection-panel-files-state';
 import { startSubmit, stopSubmit, reset } from 'redux-form';
 import { getDialog } from "~/store/dialog/dialog-reducer";
+import { getFileFullPath } from "~/services/collection-service/collection-service-files-response";
 
 export const collectionPanelFilesAction = unionize({
     SET_COLLECTION_FILES: ofType<CollectionFilesTree>(),
@@ -43,7 +44,8 @@ export const removeCollectionFiles = (filePaths: string[]) =>
 
 export const removeCollectionsSelectedFiles = () =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        const paths = filterCollectionFilesBySelection(getState().collectionPanelFiles, true).map(file => file.id);
+        const paths = filterCollectionFilesBySelection(getState().collectionPanelFiles, true)
+            .map(getFileFullPath);
         dispatch<any>(removeCollectionFiles(paths));
     };
 
@@ -101,16 +103,19 @@ export const renameFile = (newName: string) =>
         const dialog = getDialog<RenameFileDialogData>(getState().dialog, RENAME_FILE_DIALOG);
         const currentCollection = getState().collectionPanel.item;
         if (dialog && currentCollection) {
-            dispatch(startSubmit(RENAME_FILE_DIALOG));
-            const oldPath = dialog.data.id;
-            const newPath = dialog.data.id.replace(dialog.data.name, newName);
-            try {
-                await services.collectionService.moveFile(currentCollection.uuid, oldPath, newPath);
-                dispatch<any>(loadCollectionFiles(currentCollection.uuid));
-                dispatch(dialogActions.CLOSE_DIALOG({ id: RENAME_FILE_DIALOG }));
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'File name changed.', hideDuration: 2000 }));
-            } catch (e) {
-                dispatch(stopSubmit(RENAME_FILE_DIALOG, { name: 'Could not rename the file' }));
+            const file = getNodeValue(dialog.data.id)(getState().collectionPanelFiles);
+            if (file) {
+                dispatch(startSubmit(RENAME_FILE_DIALOG));
+                const oldPath = getFileFullPath(file);
+                const newPath = getFileFullPath({ ...file, name: newName });
+                try {
+                    await services.collectionService.moveFile(currentCollection.uuid, oldPath, newPath);
+                    dispatch<any>(loadCollectionFiles(currentCollection.uuid));
+                    dispatch(dialogActions.CLOSE_DIALOG({ id: RENAME_FILE_DIALOG }));
+                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'File name changed.', hideDuration: 2000 }));
+                } catch (e) {
+                    dispatch(stopSubmit(RENAME_FILE_DIALOG, { name: 'Could not rename the file' }));
+                }
             }
         }
     };
