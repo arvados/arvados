@@ -93,19 +93,21 @@ export const WorkbenchPanel =
                         </Grid>
                         <Grid item xs className={classes.content}>
                             <p>Projects only</p>
-                            <ProjectsTreePicker pickerId="testPicker1" />
+                            <ProjectsTreePicker 
+                                pickerId="testPicker1" 
+                                showSelection/>
                             <p>Collections included</p>
                             <ProjectsTreePicker
                                 pickerId="testPicker2"
                                 includeCollections
-                                collectionsSelection
+                                showSelection
                             />
                             <p>Files included</p>
                             <ProjectsTreePicker
                                 pickerId="testPicker3"
                                 includeCollections
                                 includeFiles
-                                filesSelection
+                                showSelection
                                 toggleItemActive={(...args: any[]) => console.log(args)} />
                             <Switch>
                                 <Route path={Routes.PROJECTS} component={ProjectPanel} />
