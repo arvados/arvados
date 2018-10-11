@@ -44,7 +44,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => {
         view: {
             position: 'absolute',
             width: '100%',
-            zIndex: 10000
+            zIndex: 1001
         }
     };
 };
@@ -126,7 +126,7 @@ export const SearchBarView = withStyles(styles)(
                             value={this.state.value}
                             fullWidth={true}
                             disableUnderline={true}
-                            onClick={() => openSearchView()}
+                            onClick={openSearchView}
                             endAdornment={
                                 <InputAdornment position="end">
                                     <Tooltip title='Search'>
