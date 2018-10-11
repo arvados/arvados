@@ -343,6 +343,31 @@ class CollectionTest < ActiveSupport::TestCase
     end
   end
 
+  test 'current_version_uuid is ignored during update' do
+    Rails.configuration.collection_versioning = true
+    Rails.configuration.preserve_version_if_idle = 0
+    act_as_user users(:active) do
+      # Create 1st collection
+      col1 = create_collection 'foo', Encoding::US_ASCII
+      assert col1.valid?
+      assert_equal 1, col1.version
+
+      # Create 2nd collection, update it so it becomes version:2
+      # (to avoid unique index violation)
+      col2 = create_collection 'bar', Encoding::US_ASCII
+      assert col2.valid?
+      assert_equal 1, col2.version
+      col2.update_attributes({name: 'baz'})
+      assert_equal 2, col2.version
+
+      # Try to make col2 a past version of col1. It shouldn't be possible
+      col2.update_attributes({current_version_uuid: col1.uuid})
+      assert col2.invalid?
+      col2.reload
+      assert_not_equal col1.uuid, col2.current_version_uuid
+    end
+  end
+
   test 'with versioning enabled, simultaneous updates increment version correctly' do
     Rails.configuration.collection_versioning = true
     Rails.configuration.preserve_version_if_idle = 0

@@ -27,11 +27,10 @@ class Collection < ArvadosModel
   validate :ensure_pdh_matches_manifest_text
   validate :ensure_storage_classes_desired_is_not_empty
   validate :ensure_storage_classes_contain_non_empty_strings
+  validate :current_versions_always_point_to_self, on: :update
   validate :past_versions_cannot_be_updated, on: :update
   before_save :set_file_names
-  around_update :prepare_for_versioning
-  after_update :save_old_version, if: Proc.new { |c| c.should_preserve_version? }
-  after_update :sync_past_versions, if: Proc.new { |c| c.syncable_updates?(self.changes.keys) }
+  around_update :manage_versioning
 
   api_accessible :user, extend: :common do |t|
     t.add :name
@@ -226,16 +225,19 @@ class Collection < ArvadosModel
     ['current_version_uuid']
   end
 
-  def prepare_for_versioning
+  def manage_versioning
+    should_preserve_version = should_preserve_version? # Time sensitive, cache value
+    return(yield) unless (should_preserve_version || syncable_updates.any?)
+
     # Put aside the changes because with_lock forces a record reload
     changes = self.changes
-    @snapshot = nil
+    snapshot = nil
     with_lock do
       # Copy the original state to save it as old version
-      if versionable_updates?(changes.keys) && should_preserve_version?
-        @snapshot = self.dup
-        @snapshot.uuid = nil # Reset UUID so it's created as a new record
-        @snapshot.created_at = self.created_at
+      if should_preserve_version
+        snapshot = self.dup
+        snapshot.uuid = nil # Reset UUID so it's created as a new record
+        snapshot.created_at = self.created_at
       end
 
       # Restore requested changes on the current version
@@ -252,11 +254,18 @@ class Collection < ArvadosModel
         end
       end
 
-      if versionable_updates?(changes.keys) && should_preserve_version?
+      if should_preserve_version
         self.version += 1
         self.preserve_version = false
       end
+
       yield
+
+      sync_past_versions if syncable_updates.any?
+      if snapshot
+        snapshot.attributes = self.syncable_updates
+        snapshot.save
+      end
     end
   end
 
@@ -293,19 +302,8 @@ class Collection < ArvadosModel
     ['uuid', 'owner_uuid', 'delete_at', 'trash_at', 'is_trashed', 'replication_desired', 'storage_classes_desired']
   end
 
-  def syncable_updates?(attrs)
-    (self.syncable_attrs & attrs).any?
-  end
-
-  def save_old_version
-    if @snapshot && should_preserve_version?
-      @snapshot.attributes = self.syncable_updates
-      @snapshot.save
-    end
-  end
-
   def should_preserve_version?
-    return false if !Rails.configuration.collection_versioning
+    return false unless (Rails.configuration.collection_versioning && versionable_updates?(self.changes.keys))
 
     idle_threshold = Rails.configuration.preserve_version_if_idle
     if !self.preserve_version_was &&
@@ -627,6 +625,13 @@ class Collection < ArvadosModel
     # includes a change on current_version_uuid or uuid.
     if current_version_uuid_was != uuid_was
       errors.add(:base, "past versions cannot be updated")
+      false
+    end
+  end
+
+  def current_versions_always_point_to_self
+    if (current_version_uuid_was == uuid_was) && current_version_uuid_changed?
+      errors.add(:current_version_uuid, "cannot be updated")
       false
     end
   end
