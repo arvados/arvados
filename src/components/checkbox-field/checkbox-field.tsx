@@ -11,7 +11,7 @@ type CssRules = 'checkboxField';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     checkboxField: {
-        
+
     }
 });
 
@@ -21,6 +21,7 @@ export const CheckboxField = withStyles(styles)((props: WrappedFieldProps & With
             <Checkbox
                 checked={props.input.value}
                 onChange={props.input.onChange}
+                disabled={props.meta.submitting}
                 color="primary" />
         }
         label={props.label} 
