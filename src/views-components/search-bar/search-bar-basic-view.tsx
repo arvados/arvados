@@ -17,7 +17,8 @@ const styles: StyleRulesCallback<CssRules> = theme => {
             paddingRight: theme.spacing.unit * 2,
             paddingBottom: theme.spacing.unit,
             fontSize: '14px',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            color: theme.palette.primary.main
         },
         searchQueryList: {
             padding: `${theme.spacing.unit / 2}px ${theme.spacing.unit}px `,
@@ -29,7 +30,7 @@ const styles: StyleRulesCallback<CssRules> = theme => {
         },
         searchView: {
             color: theme.palette.common.black,
-            borderRadius: `0 0 ${theme.spacing.unit / 4}px ${theme.spacing.unit / 4}px`
+            borderRadius: `0 0 ${theme.spacing.unit / 2}px ${theme.spacing.unit / 2}px`
         }
     };
 };
@@ -37,19 +38,20 @@ const styles: StyleRulesCallback<CssRules> = theme => {
 interface SearchBarBasicViewProps {
     setView: (currentView: string) => void;
     recentQueries: () => string[];
+    deleteSavedQuery: (id: number) => void;
+    savedQueries: string[];
 }
 
 export const SearchBarBasicView = withStyles(styles)(
-    ({ classes, setView, recentQueries }: SearchBarBasicViewProps & WithStyles<CssRules>) =>
+    ({ classes, setView, recentQueries, deleteSavedQuery, savedQueries }: SearchBarBasicViewProps & WithStyles<CssRules>) =>
         <Paper className={classes.searchView}>
-            <div className={classes.searchQueryList}>Saved search queries</div>
-            <List component="nav" className={classes.list}>
-                <RenderSavedQueries text="Test" />
-                <RenderSavedQueries text="Demo" />
-            </List>
             <div className={classes.searchQueryList}>Recent search queries</div>
             <List component="nav" className={classes.list}>
-                {recentQueries().map((query, index) => <RecentQueriesItem key={query + index} text={query} />)}
+                {recentQueries().map((query, index) => <RecentQueriesItem key={index} text={query} />)}
+            </List>
+            <div className={classes.searchQueryList}>Saved search queries</div>
+            <List component="nav" className={classes.list}>
+                {savedQueries.map((query, index) => <RenderSavedQueries key={index} text={query} id={index} deleteSavedQuery={deleteSavedQuery} />)}
             </List>
             <div className={classes.advanced} onClick={() => setView(SearchView.ADVANCED)}>Advanced search</div>
         </Paper>
