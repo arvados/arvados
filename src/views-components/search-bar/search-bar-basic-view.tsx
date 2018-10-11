@@ -30,7 +30,7 @@ const styles: StyleRulesCallback<CssRules> = theme => {
         },
         searchView: {
             color: theme.palette.common.black,
-            borderRadius: `0 0 ${theme.spacing.unit / 4}px ${theme.spacing.unit / 4}px`
+            borderRadius: `0 0 ${theme.spacing.unit / 2}px ${theme.spacing.unit / 2}px`
         }
     };
 };
@@ -45,13 +45,13 @@ interface SearchBarBasicViewProps {
 export const SearchBarBasicView = withStyles(styles)(
     ({ classes, setView, recentQueries, deleteSavedQuery, savedQueries }: SearchBarBasicViewProps & WithStyles<CssRules>) =>
         <Paper className={classes.searchView}>
-            <div className={classes.searchQueryList}>Saved search queries</div>
-            <List component="nav" className={classes.list}>
-                {savedQueries.map((query, index) => <RenderSavedQueries key={index} text={query} id={index} deleteSavedQuery={deleteSavedQuery}/>)}
-            </List>
             <div className={classes.searchQueryList}>Recent search queries</div>
             <List component="nav" className={classes.list}>
                 {recentQueries().map((query, index) => <RecentQueriesItem key={index} text={query} />)}
+            </List>
+            <div className={classes.searchQueryList}>Saved search queries</div>
+            <List component="nav" className={classes.list}>
+                {savedQueries.map((query, index) => <RenderSavedQueries key={index} text={query} id={index} deleteSavedQuery={deleteSavedQuery} />)}
             </List>
             <div className={classes.advanced} onClick={() => setView(SearchView.ADVANCED)}>Advanced search</div>
         </Paper>

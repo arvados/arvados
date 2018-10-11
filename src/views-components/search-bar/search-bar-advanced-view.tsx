@@ -7,7 +7,7 @@ import { reduxForm, reset, InjectedFormProps } from 'redux-form';
 import { compose, Dispatch } from 'redux';
 import { Paper, StyleRulesCallback, withStyles, WithStyles, Button, Grid, IconButton, CircularProgress } from '@material-ui/core';
 import { SearchView } from '~/store/search-bar/search-bar-reducer';
-import { SEARCH_BAR_ADVANCE_FORM_NAME, SearchBarAdvanceFormData } from '~/store/search-bar/search-bar-actions';
+import { SEARCH_BAR_ADVANCE_FORM_NAME, SearchBarAdvanceFormData, saveQuery } from '~/store/search-bar/search-bar-actions';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { CloseIcon } from '~/components/icon/icon';
 import { 
@@ -53,7 +53,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     searchView: {
         color: theme.palette.common.black,
-        borderRadius: `0 0 ${theme.spacing.unit / 4}px ${theme.spacing.unit / 4}px`
+        borderRadius: `0 0 ${theme.spacing.unit / 2}px ${theme.spacing.unit / 2}px`
     }
 });
 
@@ -65,6 +65,7 @@ interface SearchBarAdvancedViewDataProps {
 
 interface SearchBarAdvancedViewActionProps {
     setView: (currentView: string) => void;
+    saveQuery: (data: SearchBarAdvanceFormData) => void;
 }
 
 type SearchBarAdvancedViewProps = SearchBarAdvancedViewActionProps & SearchBarAdvancedViewDataProps 
@@ -74,6 +75,7 @@ export const SearchBarAdvancedView = compose(
     reduxForm<SearchBarAdvanceFormData, SearchBarAdvancedViewActionProps>({
         form: SEARCH_BAR_ADVANCE_FORM_NAME,
         onSubmit: (data: SearchBarAdvanceFormData, dispatch: Dispatch) => {
+            dispatch<any>(saveQuery(data));
             dispatch(reset(SEARCH_BAR_ADVANCE_FORM_NAME));
         }
     }),

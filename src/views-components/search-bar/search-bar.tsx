@@ -16,6 +16,7 @@ import {
     openSearchView
 } from '~/store/search-bar/search-bar-actions';
 import { SearchBarView } from '~/views-components/search-bar/search-bar-view';
+import { SearchBarAdvanceFormData } from '~/store/search-bar/search-bar-actions';
 
 const mapStateToProps = ({ searchBar }: RootState) => {
     return {
@@ -33,7 +34,7 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
     closeView: () => dispatch<any>(searchBarActions.CLOSE_SEARCH_VIEW()),
     saveRecentQuery: (query: string) => dispatch<any>(saveRecentQuery(query)),
     loadRecentQueries: () => dispatch<any>(loadRecentQueries()),
-    saveQuery: (query: string) => dispatch<any>(saveQuery(query)),
+    saveQuery: (data: SearchBarAdvanceFormData) => dispatch<any>(saveQuery(data)),
     deleteSavedQuery: (id: number) => dispatch<any>(deleteSavedQuery(id)),
     openSearchView: () => dispatch<any>(openSearchView())
 });

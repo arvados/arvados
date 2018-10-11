@@ -48,10 +48,12 @@ export const loadRecentQueries = () =>
         return recentSearchQueries || [];
     };
 
-export const saveQuery = (query: string) =>
+export const saveQuery = (data: SearchBarAdvanceFormData) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        services.searchService.saveQuery(query);
-        dispatch(searchBarActions.SET_SAVED_QUERIES(services.searchService.getSavedQueries()));
+        if (data.saveQuery && data.searchQuery) {
+            services.searchService.saveQuery(data.searchQuery);
+            dispatch(searchBarActions.SET_SAVED_QUERIES(services.searchService.getSavedQueries()));
+        }
     };
 
 export const deleteSavedQuery = (id: number) =>
