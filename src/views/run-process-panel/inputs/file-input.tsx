@@ -10,7 +10,7 @@ import {
     CWLType
 } from '~/models/workflow';
 import { Field } from 'redux-form';
-import { require } from '~/validators/require';
+import { ERROR_MESSAGE } from '~/validators/require';
 import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@material-ui/core';
 import { GenericInputProps, GenericInput } from './generic-input';
 import { ProjectsTreePicker } from '~/views-components/projects-tree-picker/projects-tree-picker';
@@ -37,7 +37,7 @@ export const FileInput = ({ input }: FileInputProps) =>
         })}
         validate={[
             isRequiredInput(input)
-                ? require
+                ? (file?: File) => file ? undefined : ERROR_MESSAGE
                 : () => undefined,
         ]} />;
 

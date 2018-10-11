@@ -10,7 +10,6 @@ import {
     Directory
 } from '~/models/workflow';
 import { Field } from 'redux-form';
-import { require } from '~/validators/require';
 import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@material-ui/core';
 import { GenericInputProps, GenericInput } from './generic-input';
 import { ProjectsTreePicker } from '~/views-components/projects-tree-picker/projects-tree-picker';
@@ -20,6 +19,7 @@ import { TreeItem } from '~/components/tree/tree';
 import { ProjectsTreePickerItem } from '~/views-components/projects-tree-picker/generic-projects-tree-picker';
 import { CollectionResource } from '~/models/collection';
 import { ResourceKind } from '~/models/resource';
+import { ERROR_MESSAGE } from '../../../validators/require';
 
 export interface DirectoryInputProps {
     input: DirectoryCommandInputParameter;
@@ -37,7 +37,7 @@ export const DirectoryInput = ({ input }: DirectoryInputProps) =>
         })}
         validate={[
             isRequiredInput(input)
-                ? require
+                ? (directory?: Directory) => directory ? undefined : ERROR_MESSAGE
                 : () => undefined,
         ]} />;
 
