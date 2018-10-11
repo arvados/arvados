@@ -1076,8 +1076,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
   end
 
   test "using runtime_token" do
-    set_user_from_auth :active
-    spec = api_client_authorizations(:spectator)
+    set_user_from_auth :spectator
+    spec = api_client_authorizations(:active)
     cr = create_minimal_req!(state: "Committed", runtime_token: spec.token, priority: 1)
     cr.save!
     c = Container.find_by_uuid cr.container_uuid
@@ -1096,13 +1096,13 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr.reload
     c.reload
     assert_nil cr.runtime_token
-    assert_nil ApiClientAuthorization.find_by_uuid(spec.uuid)
+    assert_nil c.runtime_token
   end
 
   test "invalid runtime_token" do
     set_user_from_auth :active
     spec = api_client_authorizations(:spectator)
-    assert_raises(ActiveRecord::RecordInvalid) do
+    assert_raises(ArgumentError) do
       cr = create_minimal_req!(state: "Committed", runtime_token: "#{spec.token}xx")
       cr.save!
     end

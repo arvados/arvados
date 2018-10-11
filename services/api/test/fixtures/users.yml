@@ -165,6 +165,22 @@ spectator:
       role: Computational biologist
     getting_started_shown: 2015-03-26 12:34:56.789000000 Z
 
+container_runtime_token_user:
+  owner_uuid: zzzzz-tpzed-000000000000000
+  uuid: zzzzz-tpzed-l3skomkti0c4vg4
+  email: spectator@arvados.local
+  first_name: Spect
+  last_name: Ator
+  identity_url: https://spectator.openid.local
+  is_active: true
+  is_admin: false
+  username: containerruntimetokenuser
+  prefs:
+    profile:
+      organization: example.com
+      role: Computational biologist
+    getting_started_shown: 2015-03-26 12:34:56.789000000 Z
+
 inactive_uninvited:
   owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-rf2ec3ryh4vb5ma

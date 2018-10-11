@@ -358,7 +358,8 @@ CREATE TABLE public.containers (
     secret_mounts_md5 character varying DEFAULT '99914b932bd37a50b983c5e7c90ae93b'::character varying,
     runtime_status jsonb DEFAULT '{}'::jsonb,
     runtime_user_uuid text,
-    runtime_auth_scopes jsonb
+    runtime_auth_scopes jsonb,
+    runtime_token text
 );
 
 
@@ -3175,4 +3176,6 @@ INSERT INTO schema_migrations (version) VALUES ('20180904110712');
 INSERT INTO schema_migrations (version) VALUES ('20180917205609');
 
 INSERT INTO schema_migrations (version) VALUES ('20181005192222');
+
+INSERT INTO schema_migrations (version) VALUES ('20181011184200');
 

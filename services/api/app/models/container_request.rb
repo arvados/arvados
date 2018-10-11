@@ -106,7 +106,7 @@ class ContainerRequest < ArvadosModel
   end
 
   def skip_uuid_read_permission_check
-    # XXX temporary until permissions are sorted out.
+  # XXX temporary until permissions are sorted out.
     %w(modified_by_client_uuid container_uuid requesting_container_uuid)
   end
 
@@ -359,14 +359,7 @@ class ContainerRequest < ArvadosModel
   def scrub_secrets
     if self.state == Final
       self.secret_mounts = {}
-      if !self.runtime_token.nil?
-        _, uuid, secret = self.runtime_token.split('/')
-        tok = ApiClientAuthorization.find_by_uuid(uuid)
-        if !tok.nil?
-          tok.expire_destroy
-        end
-        self.runtime_token = nil
-      end
+      self.runtime_token = nil
     end
   end
 

@@ -271,6 +271,9 @@ runtime_token:
   cwd: test
   output_path: test
   command: ["echo", "hello"]
+  runtime_token: v2/zzzzz-gj3su-2nj68s291f50gd9/2d19ue6ofx26o3mm7fs9u6t7hov9um0v92dzwk1o2xed3abprw
+  runtime_user_uuid: zzzzz-tpzed-l3skomkti0c4vg4
+  runtime_auth_scopes: ["all"]
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
