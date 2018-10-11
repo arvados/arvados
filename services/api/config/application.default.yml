@@ -518,6 +518,17 @@ common:
   # keep_web_service_url: https://download.uuid_prefix.arvadosapi.com/
   keep_web_service_url: false
 
+  # If true, enable collection versioning.
+  # When a collection's preserve_version field is true or the current version
+  # is older than the amount of seconds defined on preserve_version_if_idle,
+  # a snapshot of the collection's previous state is created and linked to
+  # the current collection.
+  collection_versioning: false
+  #   0 = auto-create a new version on every update.
+  #  -1 = never auto-create new versions.
+  # > 0 = auto-create a new version when older than the specified number of seconds.
+  preserve_version_if_idle: -1
+
 development:
   force_ssl: false
   cache_classes: false

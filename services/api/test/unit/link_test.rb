@@ -80,4 +80,9 @@ class LinkTest < ActiveSupport::TestCase
   test "link granting project permissions to unreadable user is invalid" do
     refute new_active_link_valid?(tail_uuid: users(:admin).uuid)
   end
+
+  test "permission link can't exist on past collection versions" do
+    refute new_active_link_valid?(tail_uuid: groups(:public).uuid,
+                                  head_uuid: collections(:w_a_z_file_version_1).uuid)
+  end
 end
