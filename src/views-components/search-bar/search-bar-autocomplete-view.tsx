@@ -3,19 +3,23 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Paper, StyleRulesCallback, withStyles, WithStyles, List, ListItem, ListItemText } from '@material-ui/core';
-import { ArvadosTheme } from '~/common/custom-theme';
+import { Paper, StyleRulesCallback, withStyles, WithStyles, List } from '@material-ui/core';
 import { RecentQueriesItem } from '~/views-components/search-bar/search-bar-view';
 import { GroupContentsResource } from '~/services/groups-service/groups-service';
 import Highlighter from "react-highlight-words";
 
-type CssRules = 'list';
+type CssRules = 'list' | 'searchView';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
-    list: {
-        padding: 0
-    }
-});
+const styles: StyleRulesCallback<CssRules> = theme => {
+    return {
+        list: {
+            padding: 0
+        },
+        searchView: {
+            borderRadius: `0 0 ${theme.spacing.unit / 4}px ${theme.spacing.unit / 4}px`
+        }
+    };
+};
 
 export interface SearchBarAutocompleteViewDataProps {
     searchResults?: GroupContentsResource[];
@@ -25,9 +29,9 @@ export interface SearchBarAutocompleteViewDataProps {
 type SearchBarAutocompleteViewProps = SearchBarAutocompleteViewDataProps & WithStyles<CssRules>;
 
 export const SearchBarAutocompleteView = withStyles(styles)(
-    ({ classes, searchResults, searchValue }: SearchBarAutocompleteViewProps ) =>
-        <Paper>
-            {searchResults &&  <List component="nav" className={classes.list}>
+    ({ classes, searchResults, searchValue }: SearchBarAutocompleteViewProps) =>
+        <Paper className={classes.searchView}>
+            {searchResults && <List component="nav" className={classes.list}>
                 {searchResults.map((item: GroupContentsResource) => {
                     return <RecentQueriesItem key={item.uuid} text={getFormattedText(item.name, searchValue)} />;
                 })}

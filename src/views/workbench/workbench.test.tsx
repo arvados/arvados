@@ -12,6 +12,7 @@ import { ConnectedRouter } from "react-router-redux";
 import { MuiThemeProvider } from '@material-ui/core/styles';
 import { CustomTheme } from '~/common/custom-theme';
 import { createServices } from "~/services/services";
+import 'jest-localstorage-mock';
 
 const history = createBrowserHistory();
 
