@@ -4,22 +4,21 @@
 
 import * as React from 'react';
 import { Chip, Grid } from '@material-ui/core';
-import { DragSource, DragSourceSpec, DragSourceCollector, ConnectDragSource, DragDropContextProvider, DropTarget, DropTargetSpec, DropTargetCollector, ConnectDropTarget } from 'react-dnd';
-import HTML5Backend from 'react-dnd-html5-backend';
+import { DragSource, DragSourceSpec, DragSourceCollector, ConnectDragSource, DropTarget, DropTargetSpec, DropTargetCollector, ConnectDropTarget } from 'react-dnd';
 import { compose } from 'lodash/fp';
-interface ChipsFieldProps<Value> {
+interface ChipsProps<Value> {
     values: Value[];
     getLabel?: (value: Value) => string;
+    filler?: React.ReactNode;
     onChange: (value: Value[]) => void;
 }
-export class Chips<Value> extends React.Component<ChipsFieldProps<Value>> {
+export class Chips<Value> extends React.Component<ChipsProps<Value>> {
     render() {
-        const { values } = this.props;
-        return <DragDropContextProvider backend={HTML5Backend}>
-            <Grid container spacing={8}>
-                {values.map(this.renderChip)}
-            </Grid>
-        </DragDropContextProvider>;
+        const { values, filler } = this.props;
+        return <Grid container spacing={8}>
+            {values.map(this.renderChip)}
+            {filler && <Grid item xs>{filler}</Grid>}
+        </Grid>;
     }
 
     renderChip = (value: Value, index: number) =>
@@ -32,13 +31,21 @@ export class Chips<Value> extends React.Component<ChipsFieldProps<Value>> {
     dragSpec: DragSourceSpec<DraggableChipProps<Value>, { value: Value }> = {
         beginDrag: ({ value }) => ({ value }),
         endDrag: ({ value: dragValue }, monitor) => {
-            const { value: dropValue } = monitor.getDropResult();
-            const dragIndex = this.props.values.indexOf(dragValue);
-            const dropIndex = this.props.values.indexOf(dropValue);
-            const newValues = this.props.values.slice(0);
-            newValues.splice(dragIndex, 1, dropValue);
-            newValues.splice(dropIndex, 1, dragValue);
-            this.props.onChange(newValues);
+            const result = monitor.getDropResult();
+            if (result) {
+                const { value: dropValue } = monitor.getDropResult();
+                const dragIndex = this.props.values.indexOf(dragValue);
+                const dropIndex = this.props.values.indexOf(dropValue);
+                const newValues = this.props.values.slice(0);
+                if (dragIndex < dropIndex) {
+                    newValues.splice(dragIndex, 1);
+                    newValues.splice(dropIndex - 1 || 0, 0, dragValue);
+                } else if (dragIndex > dropIndex) {
+                    newValues.splice(dragIndex, 1);
+                    newValues.splice(dropIndex, 0, dragValue);
+                }
+                this.props.onChange(newValues);
+            }
         }
     };
 
@@ -67,7 +74,11 @@ export class Chips<Value> extends React.Component<ChipsFieldProps<Value>> {
                     <Chip
                         color={isOver ? 'primary' : 'default'}
                         onDelete={this.deleteValue(value)}
-                        label={this.props.getLabel ? this.props.getLabel(value) : JSON.stringify(value)} />
+                        label={this.props.getLabel ?
+                            this.props.getLabel(value)
+                            : typeof value === 'object'
+                                ? JSON.stringify(value)
+                                : value} />
                 </span>
             )
     );

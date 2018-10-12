@@ -42,9 +42,10 @@ import { setUuidPrefix } from '~/store/workflow-panel/workflow-panel-actions';
 import { trashedCollectionActionSet } from '~/views-components/context-menu/action-sets/trashed-collection-action-set';
 import { ContainerRequestState } from '~/models/container-request';
 import { MountKind } from '~/models/mount-types';
-import { initProjectsTreePicker } from './store/tree-picker/tree-picker-actions';
 import { setBuildInfo } from '~/store/app-info/app-info-actions';
 import { getBuildInfo } from '~/common/app-info';
+import { DragDropContextProvider } from 'react-dnd';
+import HTML5Backend from 'react-dnd-html5-backend';
 
 console.log(`Starting arvados [${getBuildInfo()}]`);
 
@@ -86,14 +87,16 @@ fetchConfig()
 
         const App = () =>
             <MuiThemeProvider theme={CustomTheme}>
-                <Provider store={store}>
-                    <ConnectedRouter history={history}>
-                        <div>
-                            <Route path={Routes.TOKEN} component={TokenComponent} />
-                            <Route path={Routes.ROOT} component={MainPanelComponent} />
-                        </div>
-                    </ConnectedRouter>
-                </Provider>
+                <DragDropContextProvider backend={HTML5Backend}>
+                    <Provider store={store}>
+                        <ConnectedRouter history={history}>
+                            <div>
+                                <Route path={Routes.TOKEN} component={TokenComponent} />
+                                <Route path={Routes.ROOT} component={MainPanelComponent} />
+                            </div>
+                        </ConnectedRouter>
+                    </Provider>
+                </DragDropContextProvider>
             </MuiThemeProvider>;
 
         ReactDOM.render(
