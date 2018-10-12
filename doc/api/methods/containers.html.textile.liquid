@@ -34,6 +34,7 @@ table(table table-bordered table-condensed).
 |command|array of strings|Command to execute.| Must be equal to a ContainerRequest's command in order to satisfy the ContainerRequest.|
 |output_path|string|Path to a directory or file inside the container that should be preserved as this container's output when it finishes.|Must be equal to a ContainerRequest's output_path in order to satisfy the ContainerRequest.|
 |mounts|hash|Must contain the same keys as the ContainerRequest being satisfied. Each value must be within the range of values described in the ContainerRequest at the time the Container is assigned to the ContainerRequest.|See "Mount types":#mount_types for more details.|
+|secret_mounts|hash|Must contain the same keys as the ContainerRequest being satisfied. Each value must be within the range of values described in the ContainerRequest at the time the Container is assigned to the ContainerRequest.|Not returned in API responses. Reset to empty when state is "Complete" or "Cancelled".|
 |runtime_constraints|hash|Compute resources, and access to the outside world, that are / were available to the container.
 Generally this will contain additional keys that are not present in any corresponding ContainerRequests: for example, even if no ContainerRequests specified constraints on the number of CPU cores, the number of cores actually used will be recorded here.|e.g.,
 <pre><code>{
@@ -53,8 +54,9 @@ Generally this will contain additional keys that are not present in any correspo
 |progress|number|A number between 0.0 and 1.0 describing the fraction of work done.||
 |priority|integer|Range 0-1000.  Indicate scheduling order preference.|Currently assigned by the system as the max() of the priorities of all associated ContainerRequests.  See "container request priority":container_requests.html#priority .|
 |exit_code|integer|Process exit code.|Null if state!="Complete"|
-|auth_uuid|string|UUID of a token to be passed into the container itself, used to access Keep-backed mounts, etc.|Null if state∉{"Locked","Running"}|
+|auth_uuid|string|UUID of a token to be passed into the container itself, used to access Keep-backed mounts, etc.  Automatically assigned.|Null if state∉{"Locked","Running"} or if @runtime_token@ was provided.|
 |locked_by_uuid|string|UUID of a token, indicating which dispatch process changed state to Locked. If null, any token can be used to lock. If not null, only the indicated token can modify this container.|Null if state∉{"Locked","Running"}|
+|runtime_token|string|A v2 token to be passed into the container itself, used to access Keep-backed mounts, etc.|Not returned in API responses.  Reset to null when state is "Complete" or "Cancelled".|
 
 h2(#container_states). Container states
 
