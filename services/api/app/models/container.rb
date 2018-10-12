@@ -390,6 +390,18 @@ class Container < ArvadosModel
     [Complete, Cancelled].include?(self.state)
   end
 
+  def self.for_current_token
+    _, _, _, container_uuid = Thread.current[:token].split('/')
+    if container_uuid.nil?
+      Container.where(auth_uuid: current_api_client_authorization.uuid)
+    else
+      Container.where('auth_uuid=? or (uuid=? and runtime_token=?)',
+                      current_api_client_authorization.uuid,
+                      container_uuid,
+                      current_api_client_authorization.token)
+    end
+  end
+
   protected
 
   def fill_field_defaults

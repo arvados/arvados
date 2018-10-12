@@ -106,8 +106,12 @@ class ContainerRequest < ArvadosModel
   end
 
   def skip_uuid_read_permission_check
-  # XXX temporary until permissions are sorted out.
-    %w(modified_by_client_uuid container_uuid requesting_container_uuid)
+    # The uuid_read_permission_check prevents users from making
+    # references to objects they can't view.  However, in this case we
+    # don't want to do that check since there's a circular dependency
+    # where user can't view the container until the user has
+    # constructed the container request that references the container.
+    %w(container_uuid)
   end
 
   def finalize_if_needed
@@ -345,7 +349,7 @@ class ContainerRequest < ArvadosModel
   end
 
   def validate_runtime_token
-    if !self.runtime_token.nil?
+    if !self.runtime_token.nil? && self.runtime_token_changed?
       if !runtime_token[0..2] == "v2/"
         errors.add :runtime_token, "not a v2 token"
         return
@@ -389,8 +393,9 @@ class ContainerRequest < ArvadosModel
   def get_requesting_container
     return self.requesting_container_uuid if !self.requesting_container_uuid.nil?
     return if !current_api_client_authorization
-    if (c = Container.where('auth_uuid=?', current_api_client_authorization.uuid).select([:uuid, :priority]).first)
-      return c
+    c = Container.for_current_token
+    if !c.nil?
+      c.select([:uuid, :priority]).first
     end
   end
 end

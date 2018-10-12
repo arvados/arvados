@@ -380,7 +380,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   [
     ['running_container_auth', 'zzzzz-dz642-runningcontainr', 501],
-    ['active_no_prefs', nil, 0],
+    ['active_no_prefs', nil, 0]
   ].each do |token, expected, expected_priority|
     test "create as #{token} and expect requesting_container_uuid to be #{expected}" do
       set_user_from_auth token
@@ -389,6 +389,15 @@ class ContainerRequestTest < ActiveSupport::TestCase
       assert_equal expected, cr.requesting_container_uuid
       assert_equal expected_priority, cr.priority
     end
+  end
+
+  test "create as container_runtime_token and expect requesting_container_uuid to be zzzzz-dz642-20isqbkl8xwnsao" do
+    set_user_from_auth :container_runtime_token
+    Thread.current[:token] = "#{Thread.current[:token]}/zzzzz-dz642-20isqbkl8xwnsao"
+    cr = ContainerRequest.create(container_image: "img", output_path: "/tmp", command: ["echo", "foo"])
+    assert_not_nil cr.uuid, 'uuid should be set for newly created container_request'
+    assert_equal 'zzzzz-dz642-20isqbkl8xwnsao', cr.requesting_container_uuid
+    assert_equal 1, cr.priority
   end
 
   [[{"vcpus" => [2, nil]},

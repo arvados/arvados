@@ -58,11 +58,11 @@ class Arvados::V1::ContainersController < ApplicationController
     if Thread.current[:api_client_authorization].nil?
       send_error("Not logged in", status: 401)
     else
-      c = Container.where(auth_uuid: Thread.current[:api_client_authorization].uuid).first
-      if c.nil?
+      c = Container.for_current_token
+      if c.nil? or c.first.nil?
         send_error("Token is not associated with a container.", status: 404)
       else
-        @object = c
+        @object = c.first
         show
       end
     end
