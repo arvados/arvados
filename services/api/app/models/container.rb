@@ -540,7 +540,7 @@ class Container < ArvadosModel
 
   def assign_auth
     if self.auth_uuid_changed?
-      return errors.add :auth_uuid, 'is readonly'
+         return errors.add :auth_uuid, 'is readonly'
     end
     if not [Locked, Running].include? self.state
       # don't need one
@@ -553,6 +553,10 @@ class Container < ArvadosModel
     end
     if self.runtime_token.nil?
       if self.runtime_user_uuid.nil?
+        # legacy behavior, we don't have a runtime_user_uuid so get
+        # the user from the highest priority container request, needed
+        # when performing an upgrade and there are queued containers,
+        # and some tests.
         cr = ContainerRequest.
                where('container_uuid=? and priority>0', self.uuid).
                order('priority desc').
@@ -569,12 +573,6 @@ class Container < ArvadosModel
                     create!(user_id: User.find_by_uuid(self.runtime_user_uuid).id,
                             api_client_id: 0,
                             scopes: self.runtime_auth_scopes)
-    else
-      # using runtime_token
-      self.auth = ApiClientAuthorization.validate(token: self.runtime_token)
-      if self.auth.nil?
-        raise ArgumentError.new "Invalid runtime token"
-      end
     end
   end
 

@@ -17,7 +17,14 @@ class Arvados::V1::ContainersController < ApplicationController
     if @object.locked_by_uuid != Thread.current[:api_client_authorization].uuid
       raise ArvadosModel::PermissionDeniedError.new("Not locked by your token")
     end
-    @object = @object.auth
+    if @object.runtime_token.nil?
+      @object = @object.auth
+    else
+      @object = ApiClientAuthorization.validate(token: @object.runtime_token)
+      if @object.nil?
+        raise ArvadosModel::PermissionDeniedError.new("Invalid runtime_token")
+      end
+    end
     show
   end
 

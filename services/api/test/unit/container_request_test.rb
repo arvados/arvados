@@ -1082,7 +1082,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr.save!
     c = Container.find_by_uuid cr.container_uuid
     lock_and_run c
-    assert_equal c.auth_uuid, spec.uuid
+    assert_nil c.auth_uuid
+    assert_equal c.runtime_token, spec.token
 
     assert_not_nil ApiClientAuthorization.find_by_uuid(spec.uuid)
 
