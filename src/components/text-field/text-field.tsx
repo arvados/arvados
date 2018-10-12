@@ -57,10 +57,10 @@ export const RichEditorTextField = withStyles(styles)(
     }
 );
 
-type DataTextFieldProps = WrappedFieldProps & WithStyles<CssRules>;
+type DateTextFieldProps = WrappedFieldProps & WithStyles<CssRules>;
 
 export const DateTextField = withStyles(styles)
-    ((props: DataTextFieldProps) => 
+    ((props: DateTextFieldProps) => 
         <MaterialTextField
             disabled={props.meta.submitting}
             error={props.meta.touched && !!props.meta.error}
