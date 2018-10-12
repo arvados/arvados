@@ -14,7 +14,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         width: '100%'
     },
     selectWrapper: {
-        backgroundColor: 'white',
+        backgroundColor: theme.palette.common.white,
         '&:before': {
             borderBottomColor: 'rgba(0, 0, 0, 0.42)'
         },
@@ -30,7 +30,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     option: {
         fontSize: '0.875rem',
-        backgroundColor: 'white',
+        backgroundColor: theme.palette.common.white,
         height: '30px'
     }
 });
