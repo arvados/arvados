@@ -116,7 +116,7 @@ export const SearchBarView = withStyles(styles)(
 
         render() {
             const { classes, currentView, openSearchView, closeView, isPopoverOpen } = this.props;
-            return <ClickAwayListener onClickAway={() => closeView()}>
+            return <ClickAwayListener onClickAway={closeView}>
                 <Paper className={isPopoverOpen ? classes.containerSearchViewOpened : classes.container} >
                     <form onSubmit={this.handleSubmit}>
                         <Input

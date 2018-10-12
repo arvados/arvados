@@ -10,6 +10,7 @@ import { ServiceRepository } from '~/services/services';
 import { FilterBuilder } from "~/services/api/filter-builder";
 import { ResourceKind } from '~/models/resource';
 import { GroupClass } from '~/models/group';
+import { SearchView } from '~/store/search-bar/search-bar-reducer';
 
 export const searchBarActions = unionize({
     SET_CURRENT_VIEW: ofType<string>(),
@@ -67,6 +68,7 @@ export const deleteSavedQuery = (id: number) =>
 export const openSearchView = () =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         dispatch(searchBarActions.OPEN_SEARCH_VIEW());
+        dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.BASIC));
         const savedSearchQueries = services.searchService.getSavedQueries();
         dispatch(searchBarActions.SET_SAVED_QUERIES(savedSearchQueries));
     };

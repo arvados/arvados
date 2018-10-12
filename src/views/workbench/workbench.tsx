@@ -41,10 +41,7 @@ import { SharedWithMePanel } from '~/views/shared-with-me-panel/shared-with-me-p
 import { RunProcessPanel } from '~/views/run-process-panel/run-process-panel';
 import SplitterLayout from 'react-splitter-layout';
 import { WorkflowPanel } from '~/views/workflow-panel/workflow-panel';
-import { HomeTreePicker } from '~/views-components/projects-tree-picker/home-tree-picker';
-import { SharedTreePicker } from '~/views-components/projects-tree-picker/shared-tree-picker';
-import { FavoritesTreePicker } from '../../views-components/projects-tree-picker/favorites-tree-picker';
-import { ProjectsTreePicker } from '~/views-components/projects-tree-picker/projects-tree-picker';
+import { SearchResultsPanel } from '~/views/search-results-panel/search-results-panel';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -102,6 +99,7 @@ export const WorkbenchPanel =
                                 <Route path={Routes.SHARED_WITH_ME} component={SharedWithMePanel} />
                                 <Route path={Routes.RUN_PROCESS} component={RunProcessPanel} />
                                 <Route path={Routes.WORKFLOWS} component={WorkflowPanel} />
+                                <Route path={Routes.SEARCH_RESULTS} component={SearchResultsPanel} />
                             </Switch>
                         </Grid>
                     </Grid>

@@ -24,7 +24,7 @@ const initialState: SearchBar = {
     open: false,
     searchResults: [],
     searchValue: '',
-    savedQueries: ['']
+    savedQueries: []
 };
 
 export const searchBarReducer = (state = initialState, action: SearchBarActions): SearchBar =>
