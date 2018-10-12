@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import { Field } from 'redux-form';
-import { TextField, DataTextField } from "~/components/text-field/text-field";
+import { TextField, DateTextField } from "~/components/text-field/text-field";
 import { CheckboxField } from '~/components/checkbox-field/checkbox-field';
 import { NativeSelectField } from '~/components/select-field/select-field';
 import { ResourceKind } from '~/models/resource';
@@ -44,12 +44,12 @@ export const SearchBarTrashField = () =>
 export const SearchBarDataFromField = () => 
     <Field
         name='dateFrom'
-        component={DataTextField} />;
+        component={DateTextField} />;
 
 export const SearchBarDataToField = () =>
     <Field
         name='dateTo'
-        component={DataTextField} />;
+        component={DateTextField} />;
 
 export const SearchBarKeyField = () => 
     <Field
