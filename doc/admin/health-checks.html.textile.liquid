@@ -39,32 +39,33 @@ The healthcheck aggregator uses the @NodeProfile@ section of the cluster-wide @a
 Cluster:
   # The cluster uuid prefix
   zzzzz:
+    ManagementToken: xyzzy
     NodeProfile:
       # For each node, the profile name corresponds to a
       # locally-resolvable hostname, and describes which Arvados
       # services are available on that machine.
       api:
         arvados-controller:
-          Listen: 8000
+          Listen: :8000
         arvados-api-server:
-          Listen: 8001
+          Listen: :8001
       manage:
 	arvados-node-manager:
-	  Listen: 8002
+	  Listen: :8002
       workbench:
 	arvados-workbench:
-	  Listen: 8003
+	  Listen: :8003
 	arvados-ws:
-	  Listen: 8004
+	  Listen: :8004
       keep:
 	keep-web:
-	  Listen: 8005
+	  Listen: :8005
 	keepproxy:
-	  Listen: 8006
+	  Listen: :8006
       keep0:
         keepstore:
-	  Listen: 25701
+	  Listen: :25107
       keep1:
         keepstore:
-	  Listen: 25701
+	  Listen: :25107
 </pre>

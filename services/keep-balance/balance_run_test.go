@@ -433,6 +433,7 @@ func (s *runSuite) TestDryRun(c *check.C) {
 
 func (s *runSuite) TestCommit(c *check.C) {
 	s.config.Listen = ":"
+	s.config.ManagementToken = "xyzzy"
 	opts := RunOptions{
 		CommitPulls: true,
 		CommitTrash: true,
@@ -466,6 +467,7 @@ func (s *runSuite) TestCommit(c *check.C) {
 
 func (s *runSuite) TestRunForever(c *check.C) {
 	s.config.Listen = ":"
+	s.config.ManagementToken = "xyzzy"
 	opts := RunOptions{
 		CommitPulls: true,
 		CommitTrash: true,
@@ -508,6 +510,11 @@ func (s *runSuite) TestRunForever(c *check.C) {
 func (s *runSuite) getMetrics(c *check.C, srv *Server) string {
 	resp, err := http.Get("http://" + srv.listening + "/metrics")
 	c.Assert(err, check.IsNil)
+	c.Check(resp.StatusCode, check.Equals, http.StatusUnauthorized)
+
+	resp, err = http.Get("http://" + srv.listening + "/metrics?api_token=xyzzy")
+	c.Assert(err, check.IsNil)
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
 	buf, err := ioutil.ReadAll(resp.Body)
 	c.Check(err, check.IsNil)
 	return string(buf)

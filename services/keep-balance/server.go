@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/auth"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	"github.com/Sirupsen/logrus"
 )
@@ -39,6 +40,9 @@ type Config struct {
 
 	// address, address:port, or :port for management interface
 	Listen string
+
+	// token for management APIs
+	ManagementToken string
 
 	// How often to check
 	RunPeriod arvados.Duration
@@ -121,7 +125,9 @@ func (srv *Server) start() error {
 	}
 	server := &httpserver.Server{
 		Server: http.Server{
-			Handler: httpserver.LogRequests(srv.Logger, srv.metrics.Handler(srv.Logger)),
+			Handler: httpserver.LogRequests(srv.Logger,
+				auth.RequireLiteralToken(srv.config.ManagementToken,
+					srv.metrics.Handler(srv.Logger))),
 		},
 		Addr: srv.config.Listen,
 	}

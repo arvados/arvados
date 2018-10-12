@@ -21,7 +21,7 @@ func (srv *server) Start() error {
 	reg := prometheus.NewRegistry()
 	h.Config.Cache.registry = reg
 	mh := httpserver.Instrument(reg, nil, httpserver.AddRequestIDs(httpserver.LogRequests(nil, h)))
-	h.MetricsAPI = mh.ServeAPI(http.NotFoundHandler())
+	h.MetricsAPI = mh.ServeAPI(h.Config.ManagementToken, http.NotFoundHandler())
 	srv.Handler = mh
 	srv.Addr = srv.Config.Listen
 	return srv.Server.Start()

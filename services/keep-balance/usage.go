@@ -18,6 +18,7 @@ Client:
 KeepServiceTypes:
     - disk
 Listen: ":9005"
+ManagementToken: xyzzy
 RunPeriod: 600s
 CollectionBatchSize: 100000
 CollectionBuffers: 1000

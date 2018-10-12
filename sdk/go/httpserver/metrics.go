@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"git.curoverse.com/arvados.git/sdk/go/auth"
 	"git.curoverse.com/arvados.git/sdk/go/stats"
 	"github.com/Sirupsen/logrus"
 	"github.com/gogo/protobuf/jsonpb"
@@ -23,7 +24,7 @@ type Handler interface {
 	// Returns an http.Handler that serves the Handler's metrics
 	// data at /metrics and /metrics.json, and passes other
 	// requests through to next.
-	ServeAPI(next http.Handler) http.Handler
+	ServeAPI(token string, next http.Handler) http.Handler
 }
 
 type metrics struct {
@@ -73,19 +74,24 @@ func (m *metrics) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 // metrics API endpoints (currently "GET /metrics(.json)?") and passes
 // other requests through to next.
 //
+// If the given token is not empty, that token must be supplied by a
+// client in order to access the metrics endpoints.
+//
 // Typical example:
 //
 //	m := Instrument(...)
-//	srv := http.Server{Handler: m.ServeAPI(m)}
-func (m *metrics) ServeAPI(next http.Handler) http.Handler {
+//	srv := http.Server{Handler: m.ServeAPI("secrettoken", m)}
+func (m *metrics) ServeAPI(token string, next http.Handler) http.Handler {
+	jsonMetrics := auth.RequireLiteralToken(token, http.HandlerFunc(m.exportJSON))
+	plainMetrics := auth.RequireLiteralToken(token, m.exportProm)
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		switch {
 		case req.Method != "GET" && req.Method != "HEAD":
 			next.ServeHTTP(w, req)
 		case req.URL.Path == "/metrics.json":
-			m.exportJSON(w, req)
+			jsonMetrics.ServeHTTP(w, req)
 		case req.URL.Path == "/metrics":
-			m.exportProm.ServeHTTP(w, req)
+			plainMetrics.ServeHTTP(w, req)
 		default:
 			next.ServeHTTP(w, req)
 		}
