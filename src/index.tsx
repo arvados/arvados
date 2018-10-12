@@ -131,6 +131,22 @@ const createEnumCollectorWorkflow = ({ workflowService }: ServiceRepository) => 
     });
 };
 
+const createFilesCollectorWorkflow = ({ workflowService }: ServiceRepository) => {
+    workflowService.create({
+        name: 'File values collector',
+        description: 'Workflow for collecting file values',
+        definition: "cwlVersion: v1.0\n$graph:\n- class: CommandLineTool\n\n  requirements:\n  - listing:\n    - entryname: input_collector.log\n      entry: |\n        \"single_file\":\n          $(inputs.single_file.basename)\n        \"optional_file\":\n          $(inputs.optional_file.basename)\n\n    class: InitialWorkDirRequirement\n  inputs:\n  - type:\n    - 'null'\n    - File\n    id: '#input_collector.cwl/optional_file'\n  - type:\n    - 'null'\n    - File\n    id: '#input_collector.cwl/optional_file_missing_label'\n  - type: File\n    id: '#input_collector.cwl/single_file'\n  outputs:\n  - type: File\n    outputBinding:\n      glob: '*'\n    id: '#input_collector.cwl/output'\n\n  baseCommand: [echo]\n  id: '#input_collector.cwl'\n- class: Workflow\n  doc: This is the description of the workflow\n  inputs:\n  - type:\n    - 'null'\n    - File\n    label: Single File (Optional)\n    doc: This should allow for single File selection only. Input should be marked\n      as optional and not enforced by form validation.\n    id: '#main/optional_file'\n    default:\n      class: File\n      location: keep:af831660d820bcbb98f473355e6e1b85+67/fileA\n      basename: fileA\n      nameroot: fileA\n      nameext: ''\n  - type:\n    - 'null'\n    - File\n    doc: Label should be the input field name because of missing label.\n    id: '#main/optional_file_missing_label'\n  - type: File\n    label: Single File\n    doc: This should allow for single File selection only.\n    id: '#main/single_file'\n    default:\n      class: File\n      location: keep:af831660d820bcbb98f473355e6e1b85+67/fileA\n      basename: fileA\n      nameroot: fileA\n      nameext: ''\n  outputs:\n  - type: File\n    outputSource: '#main/input_collector/output'\n    id: '#main/log_file'\n  steps:\n  - run: '#input_collector.cwl'\n    in:\n    - source: '#main/optional_file'\n      id: '#main/input_collector/optional_file'\n    - source: '#main/single_file'\n      id: '#main/input_collector/single_file'\n    out: ['#main/input_collector/output']\n    id: '#main/input_collector'\n  id: '#main'\n",
+    });
+};
+
+const createCollectionCollectorWorkflow = ({ workflowService }: ServiceRepository) => {
+    workflowService.create({
+        name: 'Collection value collector',
+        description: 'Workflow for collecting a collecion',
+        definition: "cwlVersion: v1.0\n$graph:\n- class: CommandLineTool\n\n  requirements:\n  - listing:\n    - entryname: input_collector.log\n      entry: |\n        \"collection\":\n          $(inputs.collection.location)\n\n    class: InitialWorkDirRequirement\n  inputs:\n  - type: Directory\n    id: '#input_collector.cwl/collection'\n\n  outputs:\n  - type: File\n    outputBinding:\n      glob: '*'\n    id: '#input_collector.cwl/output'\n\n  baseCommand: [echo]\n  id: '#input_collector.cwl'\n- class: Workflow\n  doc: This is the description of the workflow\n  inputs:\n  - type: Directory\n    label: Single Collection\n    doc: This should allow for single Collection selection only.\n    id: '#main/collection'\n    default:\n      class: Directory\n      location: keep:af831660d820bcbb98f473355e6e1b85+67\n      basename: af831660d820bcbb98f473355e6e1b85+67\n  outputs:\n  - type: File\n    outputSource: '#main/input_collector/output'\n\n    id: '#main/log_file'\n  steps:\n  - run: '#input_collector.cwl'\n    in:\n    - source: '#main/collection'\n      id: '#main/input_collector/collection'\n    out: ['#main/input_collector/output']\n    id: '#main/input_collector'\n  id: '#main'\n",
+    });
+};
+
 const createSampleProcess = ({ containerRequestService }: ServiceRepository) => {
     containerRequestService.create({
         ownerUuid: 'c97qk-j7d0g-s3ngc1z0748hsmf',

@@ -63,8 +63,11 @@ const mapDispatchToProps = (dispatch: Dispatch, { loadRootItem, includeCollectio
             dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ id, pickerId }));
         }
     },
-    toggleItemSelection: (_, { id }, pickerId) => {
-        dispatch<any>(treePickerActions.TOGGLE_TREE_PICKER_NODE_SELECTION({ id, pickerId }));
+    toggleItemSelection: (event, item, pickerId) => {
+        dispatch<any>(treePickerActions.TOGGLE_TREE_PICKER_NODE_SELECTION({ id: item.id, pickerId }));
+        if(props.toggleItemSelection){
+            props.toggleItemSelection(event, item, pickerId);
+        }
     },
 });
 
