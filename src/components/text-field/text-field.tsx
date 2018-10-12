@@ -56,3 +56,21 @@ export const RichEditorTextField = withStyles(styles)(
         }
     }
 );
+
+type DataTextFieldProps = WrappedFieldProps & WithStyles<CssRules>;
+
+export const DataTextField = withStyles(styles)
+    ((props: DataTextFieldProps) => 
+        <MaterialTextField
+            disabled={props.meta.submitting}
+            error={props.meta.touched && !!props.meta.error}
+            type="date"
+            fullWidth={true}
+            name={props.input.name}
+            InputLabelProps={{
+                shrink: true
+            }}
+            onChange={props.input.onChange}
+            value={props.input.value}
+        />    
+    );

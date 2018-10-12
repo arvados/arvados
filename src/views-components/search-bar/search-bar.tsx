@@ -16,7 +16,7 @@ import {
     openSearchView
 } from '~/store/search-bar/search-bar-actions';
 import { SearchBarView } from '~/views-components/search-bar/search-bar-view';
-import { SearchBarAdvanceFormData } from '~/store/search-bar/search-bar-actions';
+import { SearchBarAdvanceFormData } from '~/models/search-bar';
 
 const mapStateToProps = ({ searchBar }: RootState) => {
     return {
