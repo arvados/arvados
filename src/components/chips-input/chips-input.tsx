@@ -42,6 +42,10 @@ export const ChipsInput = withStyles(styles)(
         filler = React.createRef<HTMLDivElement>();
         timeout = -1;
 
+        componentWillUnmount (){
+            clearTimeout(this.timeout);
+        }
+
         setText = (event: React.ChangeEvent<HTMLInputElement>) => {
             this.setState({ text: event.target.value });
         }
