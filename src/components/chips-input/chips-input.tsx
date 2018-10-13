@@ -4,31 +4,34 @@
 
 import * as React from 'react';
 import { Chips } from '~/components/chips/chips';
-import { Input, withStyles, WithStyles } from '@material-ui/core';
+import { Input as MuiInput, withStyles, WithStyles } from '@material-ui/core';
 import { StyleRulesCallback } from '@material-ui/core/styles';
+import { InputProps } from '@material-ui/core/Input';
 
 interface ChipsInputProps<Value> {
-    values: Value[];
+    value: Value[];
     getLabel?: (value: Value) => string;
     onChange: (value: Value[]) => void;
     createNewValue: (value: string) => Value;
+    inputComponent?: React.ComponentType<InputProps>;
+    inputProps?: InputProps;
 }
 
 type CssRules = 'chips' | 'input' | 'inputContainer';
 
-const styles: StyleRulesCallback = () => ({
+const styles: StyleRulesCallback = ({ spacing }) => ({
     chips: {
-        minHeight: '40px',
+        minHeight: spacing.unit * 5,
         zIndex: 1,
         position: 'relative',
     },
     input: {
-        position: 'relative',
-        top: '-5px',
         zIndex: 1,
+        marginBottom: 8,
+        position: 'relative',
     },
     inputContainer: {
-        top: '-24px',
+        marginTop: -34
     },
 });
 
@@ -58,13 +61,13 @@ export const ChipsInput = withStyles(styles)(
             if (this.state.text) {
                 const newValue = this.props.createNewValue(this.state.text);
                 this.setState({ text: '' });
-                this.props.onChange([...this.props.values, newValue]);
+                this.props.onChange([...this.props.value, newValue]);
             }
         }
 
         deleteLastValue = () => {
-            if (this.state.text.length === 0 && this.props.values.length > 0) {
-                this.props.onChange(this.props.values.slice(0, -1));
+            if (this.state.text.length === 0 && this.props.value.length > 0) {
+                this.props.onChange(this.props.value.slice(0, -1));
             }
         }
 
@@ -77,7 +80,7 @@ export const ChipsInput = withStyles(styles)(
 
         getInputStyles = (): React.CSSProperties => ({
             width: this.filler.current
-                ? this.filler.current.offsetWidth + 8
+                ? this.filler.current.offsetWidth
                 : '100%',
             right: this.filler.current
                 ? `calc(${this.filler.current.offsetWidth}px - 100%)`
@@ -91,27 +94,40 @@ export const ChipsInput = withStyles(styles)(
 
         render() {
             return <>
-                <div className={this.props.classes.chips}>
-                    <Chips
-                        {...this.props}
-                        filler={<div ref={this.filler} />}
-                    />
-                </div>
-                <Input
-                    value={this.state.text}
-                    onChange={this.setText}
-                    onKeyDown={this.handleKeyPress}
-                    inputProps={{
-                        className: this.props.classes.input,
-                        style: this.getInputStyles(),
-                    }}
-                    fullWidth
-                    className={this.props.classes.inputContainer} />
+                {this.renderChips()}
+                {this.renderInput()}
             </>;
         }
 
+        renderChips() {
+            const { classes, value, ...props } = this.props;
+            return <div className={classes.chips}>
+                <Chips
+                    {...props}
+                    values={value}
+                    filler={<div ref={this.filler} />}
+                />
+            </div>;
+        }
+
+        renderInput() {
+            const { inputProps: InputProps, inputComponent: Input = MuiInput, classes } = this.props;
+            return <Input
+                {...InputProps}
+                value={this.state.text}
+                onChange={this.setText}
+                onKeyDown={this.handleKeyPress}
+                inputProps={{
+                    ...(InputProps && InputProps.inputProps),
+                    className: classes.input,
+                    style: this.getInputStyles(),
+                }}
+                fullWidth
+                className={classes.inputContainer} />;
+        }
+
         componentDidUpdate(prevProps: ChipsInputProps<Value>) {
-            if (prevProps.values !== this.props.values) {
+            if (prevProps.value !== this.props.value) {
                 this.updateCursorPosition();
             }
         }

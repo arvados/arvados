@@ -10,6 +10,7 @@ import { GenericInputProps, GenericInput } from '~/views/run-process-panel/input
 import { ChipsInput } from '~/components/chips-input/chips-input';
 import { identity } from 'lodash';
 import { createSelector } from 'reselect';
+import { Input } from '@material-ui/core';
 
 export interface StringArrayInputProps {
     input: StringArrayCommandInputParameter;
@@ -36,15 +37,19 @@ const required = (value: string[]) =>
 
 const StringArrayInputComponent = (props: GenericInputProps) =>
     <GenericInput
-        component={Input}
+        component={InputComponent}
         {...props} />;
 
-class Input extends React.PureComponent<GenericInputProps>{
+class InputComponent extends React.PureComponent<GenericInputProps>{
     render() {
         return <ChipsInput
-            values={this.props.input.value}
+            value={this.props.input.value}
             onChange={this.handleChange}
-            createNewValue={identity} />;
+            createNewValue={identity}
+            inputComponent={Input}
+            inputProps={{
+                error: this.props.meta.error,
+            }} />;
     }
 
     handleChange = (values: {}[]) => {
