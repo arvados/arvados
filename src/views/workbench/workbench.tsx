@@ -80,22 +80,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 type WorkbenchPanelProps = WithStyles<CssRules>;
 
-class TestInput extends React.Component {
-    state = {
-        values: ['asd']
-    };
-
-    handleChange = (values: string[]) => {
-        this.setState({ values });
-    }
-    render() {
-        return <ChipsInput
-            onChange={this.handleChange}
-            createNewValue={v => v}
-            values={this.state.values} />;
-    }
-}
-
 export const WorkbenchPanel =
     withStyles(styles)(({ classes }: WorkbenchPanelProps) =>
         <Grid container item xs className={classes.root}>
@@ -110,7 +94,6 @@ export const WorkbenchPanel =
                             <MainContentBar />
                         </Grid>
                         <Grid item xs className={classes.content}>
-                            <TestInput />
                             <Switch>
                                 <Route path={Routes.PROJECTS} component={ProjectPanel} />
                                 <Route path={Routes.COLLECTIONS} component={CollectionPanel} />
