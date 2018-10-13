@@ -42,10 +42,6 @@ export const ChipsInput = withStyles(styles)(
         filler = React.createRef<HTMLDivElement>();
         timeout = -1;
 
-        componentWillUnmount (){
-            clearTimeout(this.timeout);
-        }
-
         setText = (event: React.ChangeEvent<HTMLInputElement>) => {
             this.setState({ text: event.target.value });
         }
@@ -73,17 +69,35 @@ export const ChipsInput = withStyles(styles)(
         }
 
         updateCursorPosition = () => {
+            console.log('cursorPoristion');
             if (this.timeout) {
                 clearTimeout(this.timeout);
             }
             this.timeout = setTimeout(() => this.forceUpdate());
         }
 
-        render() {
+        getInputStyles = (): React.CSSProperties => ({
+            width: this.filler.current
+                ? this.filler.current.offsetWidth + 8
+                : '100%',
+            right: this.filler.current
+                ? `calc(${this.filler.current.offsetWidth}px - 100%)`
+                : 0,
+
+        })
+
+        componentDidMount() {
             this.updateCursorPosition();
+        }
+
+        render() {
+            console.log(`Render: ${this.props.values}`);
             return <>
                 <div className={this.props.classes.chips}>
-                    <Chips {...this.props} filler={<div ref={this.filler} />} />
+                    <Chips
+                        {...this.props}
+                        filler={<div ref={this.filler} />}
+                    />
                 </div>
                 <Input
                     value={this.state.text}
@@ -98,13 +112,13 @@ export const ChipsInput = withStyles(styles)(
             </>;
         }
 
-        getInputStyles = (): React.CSSProperties => ({
-            width: this.filler.current
-                ? this.filler.current.offsetWidth + 8
-                : '100%',
-            right: this.filler.current
-                ? `calc(${this.filler.current.offsetWidth}px - 100%)`
-                : 0,
-
-        })
+        componentDidUpdate(prevProps: ChipsInputProps<Value>) {
+            if (prevProps.values !== this.props.values) {
+                console.log('didUpdate');
+                this.updateCursorPosition();
+            }
+        }
+        componentWillUnmount() {
+            clearTimeout(this.timeout);
+        }
     });
