@@ -42,6 +42,10 @@ export const ChipsInput = withStyles(styles)(
         filler = React.createRef<HTMLDivElement>();
         timeout = -1;
 
+        componentDidMount() {
+            this.updateCursorPosition();
+        }
+
         setText = (event: React.ChangeEvent<HTMLInputElement>) => {
             this.setState({ text: event.target.value });
         }
@@ -75,11 +79,19 @@ export const ChipsInput = withStyles(styles)(
             this.timeout = setTimeout(() => this.forceUpdate());
         }
 
+        componentDidUpdate(prevProps: ChipsInputProps<Value>){
+            if(prevProps.values !== this.props.values){
+                this.updateCursorPosition();
+            }
+        }
+
         render() {
-            this.updateCursorPosition();
             return <>
                 <div className={this.props.classes.chips}>
-                    <Chips {...this.props} filler={<div ref={this.filler} />} />
+                    <Chips
+                        {...this.props}
+                        filler={<div ref={this.filler} />}
+                    />
                 </div>
                 <Input
                     value={this.state.text}
