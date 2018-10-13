@@ -17,6 +17,7 @@ import { Grid, StyleRulesCallback, withStyles, WithStyles } from '@material-ui/c
 import { EnumInput } from './inputs/enum-input';
 import { DirectoryInput } from './inputs/directory-input';
 import { StringArrayInput } from './inputs/string-array-input';
+import { createStructuredSelector, createSelector } from 'reselect';
 
 export const RUN_PROCESS_INPUTS_FORM = 'runProcessInputsForm';
 
@@ -24,12 +25,24 @@ export interface RunProcessInputFormProps {
     inputs: CommandInputParameter[];
 }
 
+const inputsSelector = (props: RunProcessInputFormProps) =>
+    props.inputs;
+
+const initialValuesSelector = createSelector(
+    inputsSelector,
+    inputs => inputs.reduce(
+        (values, input) => ({ ...values, [input.id]: input.default }),
+        {}));
+
+const propsSelector = createStructuredSelector({
+    initialValues: initialValuesSelector,
+});
+
+const mapStateToProps = (_: any, props: RunProcessInputFormProps) =>
+    propsSelector(props);
+
 export const RunProcessInputsForm = compose(
-    connect((_: any, props: RunProcessInputFormProps) => ({
-        initialValues: props.inputs.reduce(
-            (values, input) => ({ ...values, [input.id]: input.default }),
-            {}),
-    })),
+    connect(mapStateToProps),
     reduxForm<WorkflowInputsData, RunProcessInputFormProps>({
         form: RUN_PROCESS_INPUTS_FORM
     }))(

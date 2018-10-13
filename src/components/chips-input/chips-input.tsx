@@ -69,11 +69,10 @@ export const ChipsInput = withStyles(styles)(
         }
 
         updateCursorPosition = () => {
-            console.log('cursorPoristion');
             if (this.timeout) {
                 clearTimeout(this.timeout);
             }
-            this.timeout = setTimeout(() => this.forceUpdate());
+            this.timeout = setTimeout(() => this.setState({ ...this.state }));
         }
 
         getInputStyles = (): React.CSSProperties => ({
@@ -91,7 +90,6 @@ export const ChipsInput = withStyles(styles)(
         }
 
         render() {
-            console.log(`Render: ${this.props.values}`);
             return <>
                 <div className={this.props.classes.chips}>
                     <Chips
@@ -114,7 +112,6 @@ export const ChipsInput = withStyles(styles)(
 
         componentDidUpdate(prevProps: ChipsInputProps<Value>) {
             if (prevProps.values !== this.props.values) {
-                console.log('didUpdate');
                 this.updateCursorPosition();
             }
         }
