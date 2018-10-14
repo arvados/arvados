@@ -15,6 +15,8 @@ interface ChipsInputProps<Value> {
     createNewValue: (value: string) => Value;
     inputComponent?: React.ComponentType<InputProps>;
     inputProps?: InputProps;
+    deletable?: boolean;
+    orderable?: boolean;
 }
 
 type CssRules = 'chips' | 'input' | 'inputContainer';

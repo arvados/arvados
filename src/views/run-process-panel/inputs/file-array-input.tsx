@@ -267,6 +267,8 @@ const FileArrayInputComponent = connect(mapStateToProps)(
                     <div className={classes.chips}>
                         <Typography variant='subheading'>Selected files ({this.state.files.length}):</Typography>
                         <Chips
+                            orderable
+                            deletable
                             values={this.state.files}
                             onChange={this.setFiles}
                             getLabel={(file: CollectionFile) => file.name} />

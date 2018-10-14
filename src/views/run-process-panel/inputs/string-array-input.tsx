@@ -43,6 +43,8 @@ const StringArrayInputComponent = (props: GenericInputProps) =>
 class InputComponent extends React.PureComponent<GenericInputProps>{
     render() {
         return <ChipsInput
+            deletable
+            orderable
             value={this.props.input.value}
             onChange={this.handleChange}
             createNewValue={identity}

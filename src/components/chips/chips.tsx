@@ -5,12 +5,14 @@
 import * as React from 'react';
 import { Chip, Grid, StyleRulesCallback, withStyles } from '@material-ui/core';
 import { DragSource, DragSourceSpec, DragSourceCollector, ConnectDragSource, DropTarget, DropTargetSpec, DropTargetCollector, ConnectDropTarget } from 'react-dnd';
-import { compose } from 'lodash/fp';
+import { compose, noop } from 'lodash/fp';
 import { WithStyles } from '@material-ui/core/styles';
 interface ChipsProps<Value> {
     values: Value[];
     getLabel?: (value: Value) => string;
     filler?: React.ReactNode;
+    deletable?: boolean;
+    orderable?: boolean;
     onChange: (value: Value[]) => void;
 }
 
@@ -75,22 +77,30 @@ export const Chips = withStyles(styles)(
             DragSource(this.type, this.dragSpec, this.dragCollector),
             DropTarget(this.type, this.dropSpec, this.dropCollector),
         )(
-            ({ connectDragSource, connectDropTarget, isOver, value }: DraggableChipProps<Value> & CollectedProps) =>
-                compose(
+            ({ connectDragSource, connectDropTarget, isOver, value }: DraggableChipProps<Value> & CollectedProps) => {
+                const connect = compose(
                     connectDragSource,
                     connectDropTarget,
-                )(
+                );
+
+                const chip =
                     <span>
                         <Chip
                             color={isOver ? 'primary' : 'default'}
-                            onDelete={this.deleteValue(value)}
+                            onDelete={this.props.deletable
+                                ? this.deleteValue(value)
+                                : undefined}
                             label={this.props.getLabel ?
                                 this.props.getLabel(value)
                                 : typeof value === 'object'
                                     ? JSON.stringify(value)
                                     : value} />
-                    </span>
-                )
+                    </span>;
+
+                return this.props.orderable
+                    ? connect(chip)
+                    : chip;
+            }
         );
 
         deleteValue = (value: Value) => () => {
