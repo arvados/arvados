@@ -138,14 +138,12 @@ const FileArrayInputComponent = connect(mapStateToProps)(
             this.setState({ files });
 
             const ids = values(getProjectsTreePickerIds(this.props.commandInput.id));
-            deletedFiles.forEach(({ id }) => {
-                ids.forEach(pickerId => {
-                    this.props.dispatch(
-                        treePickerActions.DESELECT_TREE_PICKER_NODE({
-                            pickerId, id,
-                        })
-                    );
-                });
+            ids.forEach(pickerId => {
+                this.props.dispatch(
+                    treePickerActions.DESELECT_TREE_PICKER_NODE({
+                        pickerId, id: deletedFiles.map(({ id }) => id),
+                    })
+                );
             });
 
         }
@@ -159,18 +157,16 @@ const FileArrayInputComponent = connect(mapStateToProps)(
                         : [...addedFiles, file]
                     , []);
 
-            this.setState({ files });
-
             const ids = values(getProjectsTreePickerIds(this.props.commandInput.id));
-            addedFiles.forEach(({ id }) => {
-                ids.forEach(pickerId => {
-                    this.props.dispatch(
-                        treePickerActions.SELECT_TREE_PICKER_NODE({
-                            pickerId, id,
-                        })
-                    );
-                });
+            ids.forEach(pickerId => {
+                this.props.dispatch(
+                    treePickerActions.SELECT_TREE_PICKER_NODE({
+                        pickerId, id: addedFiles.map(({ id }) => id),
+                    })
+                );
             });
+
+            this.setFiles(files);
 
         }
 
