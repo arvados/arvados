@@ -118,6 +118,14 @@ const initListener = (history: History, store: RootStore, services: ServiceRepos
     };
 };
 
+const createFilesArrayCollectorWorkflow = ({workflowService}: ServiceRepository) => {
+    workflowService.create({
+        name: 'Files array collector',
+        description: 'Workflow for collecting files array',
+        definition: "cwlVersion: v1.0\n$graph:\n- class: CommandLineTool\n\n  requirements:\n  - listing:\n    - entryname: input_collector.log\n      entry: |\n        \"multiple_files\":\n          $(inputs.multiple_files)\n\n    class: InitialWorkDirRequirement\n  inputs:\n  - type:\n      type: array\n      items: File\n    id: '#input_collector.cwl/multiple_files'\n  outputs:\n  - type: File\n    outputBinding:\n      glob: '*'\n    id: '#input_collector.cwl/output'\n\n  baseCommand: [cat]\n  id: '#input_collector.cwl'\n- class: Workflow\n  doc: This is the description of the workflow\n  inputs:\n  - type:\n      type: array\n      items: File\n    label: Multiple Files\n    doc: This should allow for selecting multiple files.\n    id: '#main/multiple_files'\n    default:\n      - class: File\n        location: keep:af831660d820bcbb98f473355e6e1b85+67/fileA\n        basename: fileA\n        nameroot: fileA\n        nameext: ''\n  outputs:\n  - type: File\n    outputSource: '#main/input_collector/output'\n\n    id: '#main/log_file'\n  steps:\n  - run: '#input_collector.cwl'\n    in:\n    - source: '#main/multiple_files'\n      id: '#main/input_collector/multiple_files'\n    out: ['#main/input_collector/output']\n    id: '#main/input_collector'\n  id: '#main'\n",
+    });
+};
+
 const createPrimitivesCollectorWorkflow = ({ workflowService }: ServiceRepository) => {
     workflowService.create({
         name: 'Primitive values collector',
