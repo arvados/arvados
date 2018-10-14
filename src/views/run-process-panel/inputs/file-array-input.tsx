@@ -39,10 +39,10 @@ export const FileArrayInput = ({ input }: FileArrayInputProps) =>
         format={formatFiles}
         validate={validationSelector(input)} />;
 
-const parseFiles = (files: CollectionFile[]) =>
-    files.length > 0
-        ? files.map(parse)
-        : undefined;
+const parseFiles = (files: CollectionFile[] | string) =>
+    typeof files === 'string'
+        ? undefined
+        : files.map(parse);
 
 const parse = (file: CollectionFile): File => ({
     class: CWLType.FILE,
@@ -51,7 +51,8 @@ const parse = (file: CollectionFile): File => ({
     path: file.path,
 });
 
-const formatFiles = (files: File[] = []) => files.map(format);
+const formatFiles = (files: File[] = []) =>
+    files.map(format);
 
 const format = (file: File): CollectionFile => ({
     id: file.location
