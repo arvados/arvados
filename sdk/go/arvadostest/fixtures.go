@@ -23,6 +23,7 @@ const (
 	NonexistentCollection   = "zzzzz-4zz18-totallynotexist"
 	HelloWorldCollection    = "zzzzz-4zz18-4en62shvi99lxd4"
 	FooBarDirCollection     = "zzzzz-4zz18-foonbarfilesdir"
+	WazVersion1Collection   = "zzzzz-4zz18-25k12570yk1ver1"
 	UserAgreementPDH        = "b519d9cb706a29fc7ea24dbea2f05851+93"
 	FooPdh                  = "1f4b0bc7583c2a7f9102c395f4ffc5e3+45"
 	HelloWorldPdh           = "55713e6a34081eb03609e7ad5fcad129+62"
