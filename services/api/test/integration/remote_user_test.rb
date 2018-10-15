@@ -264,7 +264,8 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
   test 'container request with runtime_token' do
     [["valid local", "v2/#{api_client_authorizations(:active).uuid}/#{api_client_authorizations(:active).api_token}"],
      ["valid remote", "v2/zbbbb-gj3su-000000000000000/abc"],
-     ["invalid local", "v2/#{api_client_authorizations(:active).uuid}/fakefakefake"]
+     ["invalid local", "v2/#{api_client_authorizations(:active).uuid}/fakefakefake"],
+     ["invalid remote", "v2/zbork-gj3su-000000000000000/abc"],
     ].each do |label, runtime_token|
       post '/arvados/v1/container_requests', {
              "container_request" => {
