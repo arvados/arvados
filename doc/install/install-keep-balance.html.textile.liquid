@@ -75,11 +75,14 @@ h3. Create a keep-balance configuration file
 On the host running keep-balance, create @/etc/arvados/keep-balance/keep-balance.yml@ using the token you generated above.  Follow this YAML format:
 
 <notextile>
-<pre><code>Client:
+<pre><code>Listen: :9005
+Client:
   APIHost: <span class="userinput">uuid_prefix.your.domain</span>:443
   AuthToken: zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
 KeepServiceTypes:
   - disk
+Listen: :9005
+ManagementToken: <span class="userinput">xyzzy</span>
 RunPeriod: 10m
 CollectionBatchSize: 100000
 CollectionBuffers: 1000

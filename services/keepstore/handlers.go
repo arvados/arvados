@@ -87,9 +87,9 @@ func MakeRESTRouter(cluster *arvados.Cluster) http.Handler {
 
 	rtr.limiter = httpserver.NewRequestLimiter(theConfig.MaxRequests, rtr)
 
-	stack := httpserver.Instrument(nil, nil,
+	instrumented := httpserver.Instrument(nil, nil,
 		httpserver.AddRequestIDs(httpserver.LogRequests(nil, rtr.limiter)))
-	return stack.ServeAPI(stack)
+	return instrumented.ServeAPI(theConfig.ManagementToken, instrumented)
 }
 
 // BadRequestHandler is a HandleFunc to address bad requests.

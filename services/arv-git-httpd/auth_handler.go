@@ -91,7 +91,7 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		httpserver.Log(r.RemoteAddr, passwordToLog, w.WroteStatus(), statusText, repoName, r.Method, r.URL.Path)
 	}()
 
-	creds := auth.NewCredentialsFromHTTPRequest(r)
+	creds := auth.CredentialsFromRequest(r)
 	if len(creds.Tokens) == 0 {
 		statusCode, statusText = http.StatusUnauthorized, "no credentials provided"
 		w.Header().Add("WWW-Authenticate", "Basic realm=\"git\"")

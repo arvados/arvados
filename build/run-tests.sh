@@ -101,6 +101,7 @@ sdk/python:py3
 sdk/ruby
 sdk/go/arvados
 sdk/go/arvadosclient
+sdk/go/auth
 sdk/go/dispatch
 sdk/go/keepclient
 sdk/go/health
@@ -925,6 +926,7 @@ gostuff=(
     lib/dispatchcloud
     sdk/go/arvados
     sdk/go/arvadosclient
+    sdk/go/auth
     sdk/go/blockdigest
     sdk/go/dispatch
     sdk/go/health

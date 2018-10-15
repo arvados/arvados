@@ -217,7 +217,7 @@ func (agg *Aggregator) ping(url string, cluster *arvados.Cluster) (result CheckR
 }
 
 func (agg *Aggregator) checkAuth(req *http.Request, cluster *arvados.Cluster) bool {
-	creds := auth.NewCredentialsFromHTTPRequest(req)
+	creds := auth.CredentialsFromRequest(req)
 	for _, token := range creds.Tokens {
 		if token != "" && token == cluster.ManagementToken {
 			return true

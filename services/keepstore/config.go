@@ -46,8 +46,7 @@ type Config struct {
 	systemAuthToken string
 	debugLogf       func(string, ...interface{})
 
-	ManagementToken string `doc: The secret key that must be provided by monitoring services
-wishing to access the health check endpoint (/_health).`
+	ManagementToken string
 }
 
 var (

@@ -323,6 +323,18 @@ func (s *IntegrationSuite) TestMetrics(c *check.C) {
 	req, _ = http.NewRequest("GET", origin+"/metrics.json", nil)
 	resp, err = http.DefaultClient.Do(req)
 	c.Assert(err, check.IsNil)
+	c.Check(resp.StatusCode, check.Equals, http.StatusUnauthorized)
+
+	req, _ = http.NewRequest("GET", origin+"/metrics.json", nil)
+	req.Header.Set("Authorization", "Bearer badtoken")
+	resp, err = http.DefaultClient.Do(req)
+	c.Assert(err, check.IsNil)
+	c.Check(resp.StatusCode, check.Equals, http.StatusForbidden)
+
+	req, _ = http.NewRequest("GET", origin+"/metrics.json", nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ManagementToken)
+	resp, err = http.DefaultClient.Do(req)
+	c.Assert(err, check.IsNil)
 	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
 	type summary struct {
 		SampleCount string  `json:"sample_count"`
@@ -419,6 +431,7 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 		Insecure: true,
 	}
 	cfg.Listen = "127.0.0.1:0"
+	cfg.ManagementToken = arvadostest.ManagementToken
 	s.testServer = &server{Config: cfg}
 	err := s.testServer.Start()
 	c.Assert(err, check.Equals, nil)

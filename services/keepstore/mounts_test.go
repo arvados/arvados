@@ -27,6 +27,7 @@ func (s *MountsSuite) SetUpTest(c *check.C) {
 	KeepVM = s.vm
 	theConfig = DefaultConfig()
 	theConfig.systemAuthToken = arvadostest.DataManagerToken
+	theConfig.ManagementToken = arvadostest.ManagementToken
 	theConfig.Start()
 	s.rtr = MakeRESTRouter(testCluster)
 }
@@ -104,6 +105,10 @@ func (s *MountsSuite) TestMetrics(c *check.C) {
 	s.call("PUT", "/"+TestHash, "", TestBlock)
 	s.call("PUT", "/"+TestHash2, "", TestBlock2)
 	resp := s.call("GET", "/metrics.json", "", nil)
+	c.Check(resp.Code, check.Equals, http.StatusUnauthorized)
+	resp = s.call("GET", "/metrics.json", "foobar", nil)
+	c.Check(resp.Code, check.Equals, http.StatusForbidden)
+	resp = s.call("GET", "/metrics.json", arvadostest.ManagementToken, nil)
 	c.Check(resp.Code, check.Equals, http.StatusOK)
 	var j []struct {
 		Name   string
@@ -144,7 +149,7 @@ func (s *MountsSuite) call(method, path, tok string, body []byte) *httptest.Resp
 	resp := httptest.NewRecorder()
 	req, _ := http.NewRequest(method, path, bytes.NewReader(body))
 	if tok != "" {
-		req.Header.Set("Authorization", "OAuth2 "+tok)
+		req.Header.Set("Authorization", "Bearer "+tok)
 	}
 	s.rtr.ServeHTTP(resp, req)
 	return resp
