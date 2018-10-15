@@ -21,7 +21,7 @@ import { SearchBarBasicView } from '~/views-components/search-bar/search-bar-bas
 import { SearchBarAdvancedView } from '~/views-components/search-bar/search-bar-advanced-view';
 import { SearchBarAutocompleteView, SearchBarAutocompleteViewDataProps } from '~/views-components/search-bar/search-bar-autocomplete-view';
 import { ArvadosTheme } from '~/common/custom-theme';
-import { SearchBarAdvanceFormData } from '~/store/search-bar/search-bar-actions';
+import { SearchBarAdvanceFormData } from '~/models/search-bar';
 
 type CssRules = 'container' | 'containerSearchViewOpened' | 'input' | 'view';
 

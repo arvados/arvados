@@ -13,6 +13,7 @@ import { GroupClass } from '~/models/group';
 import { SearchView } from '~/store/search-bar/search-bar-reducer';
 import { navigateToSearchResults, navigateTo } from '~/store/navigation/navigation-action';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
+import { SearchBarAdvanceFormData } from '~/models/search-bar';
 
 export const searchBarActions = unionize({
     SET_CURRENT_VIEW: ofType<string>(),
@@ -24,17 +25,6 @@ export const searchBarActions = unionize({
 });
 
 export type SearchBarActions = UnionOf<typeof searchBarActions>;
-
-export interface SearchBarAdvanceFormData {
-    type?: GroupContentsResource;
-    cluster?: string;
-    project?: string;
-    inTrash: boolean;
-    dataFrom: string;
-    dataTo: string;
-    saveQuery: boolean;
-    searchQuery: string;
-}
 
 export const SEARCH_BAR_ADVANCE_FORM_NAME = 'searchBarAdvanceFormName';
 
@@ -75,11 +65,15 @@ export const openSearchView = () =>
         dispatch(searchBarActions.SET_SAVED_QUERIES(savedSearchQueries));
     };
 
-export const closeSearchView = () =>
+export const closeSearchView = () => 
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
-        dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.BASIC));
+        const isOpen = getState().searchBar.open;
+        if(isOpen) {
+            dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
+            dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.BASIC));
+        }
     };
+
 
 export const navigateToItem = (uuid: string) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {

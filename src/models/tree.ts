@@ -139,7 +139,30 @@ export const toggleNodeSelection = (id: string) => <T>(tree: Tree<T>) => {
 
 };
 
-export const initTreeNode = <T>(data: Pick<TreeNode<T>, 'id' | 'value'> & {parent?: string}): TreeNode<T> => ({
+export const selectNode = (id: string) => <T>(tree: Tree<T>) => {
+    const node = getNode(id)(tree);
+    return node && node.selected
+        ? tree
+        : toggleNodeSelection(id)(tree);
+};
+
+export const selectNodes = (id: string | string[]) => <T>(tree: Tree<T>) => {
+    const ids = typeof id === 'string' ? [id] : id;
+    return ids.reduce((tree, id) => selectNode(id)(tree), tree);
+};
+export const deselectNode = (id: string) => <T>(tree: Tree<T>) => {
+    const node = getNode(id)(tree);
+    return node && node.selected
+        ? toggleNodeSelection(id)(tree)
+        : tree;
+};
+
+export const deselectNodes = (id: string | string[]) => <T>(tree: Tree<T>) => {
+    const ids = typeof id === 'string' ? [id] : id;
+    return ids.reduce((tree, id) => deselectNode(id)(tree), tree);
+};
+
+export const initTreeNode = <T>(data: Pick<TreeNode<T>, 'id' | 'value'> & { parent?: string }): TreeNode<T> => ({
     children: [],
     active: false,
     selected: false,

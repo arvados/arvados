@@ -56,3 +56,21 @@ export const RichEditorTextField = withStyles(styles)(
         }
     }
 );
+
+type DateTextFieldProps = WrappedFieldProps & WithStyles<CssRules>;
+
+export const DateTextField = withStyles(styles)
+    ((props: DateTextFieldProps) => 
+        <MaterialTextField
+            disabled={props.meta.submitting}
+            error={props.meta.touched && !!props.meta.error}
+            type="date"
+            fullWidth={true}
+            name={props.input.name}
+            InputLabelProps={{
+                shrink: true
+            }}
+            onChange={props.input.onChange}
+            value={props.input.value}
+        />    
+    );

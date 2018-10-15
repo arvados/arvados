@@ -42,9 +42,10 @@ import { setUuidPrefix } from '~/store/workflow-panel/workflow-panel-actions';
 import { trashedCollectionActionSet } from '~/views-components/context-menu/action-sets/trashed-collection-action-set';
 import { ContainerRequestState } from '~/models/container-request';
 import { MountKind } from '~/models/mount-types';
-import { initProjectsTreePicker } from './store/tree-picker/tree-picker-actions';
 import { setBuildInfo } from '~/store/app-info/app-info-actions';
 import { getBuildInfo } from '~/common/app-info';
+import { DragDropContextProvider } from 'react-dnd';
+import HTML5Backend from 'react-dnd-html5-backend';
 
 console.log(`Starting arvados [${getBuildInfo()}]`);
 
@@ -86,14 +87,16 @@ fetchConfig()
 
         const App = () =>
             <MuiThemeProvider theme={CustomTheme}>
-                <Provider store={store}>
-                    <ConnectedRouter history={history}>
-                        <div>
-                            <Route path={Routes.TOKEN} component={TokenComponent} />
-                            <Route path={Routes.ROOT} component={MainPanelComponent} />
-                        </div>
-                    </ConnectedRouter>
-                </Provider>
+                <DragDropContextProvider backend={HTML5Backend}>
+                    <Provider store={store}>
+                        <ConnectedRouter history={history}>
+                            <div>
+                                <Route path={Routes.TOKEN} component={TokenComponent} />
+                                <Route path={Routes.ROOT} component={MainPanelComponent} />
+                            </div>
+                        </ConnectedRouter>
+                    </Provider>
+                </DragDropContextProvider>
             </MuiThemeProvider>;
 
         ReactDOM.render(
@@ -113,6 +116,22 @@ const initListener = (history: History, store: RootStore, services: ServiceRepos
             addRouteChangeHandlers(history, store);
         }
     };
+};
+
+const createDirectoriesArrayCollectorWorkflow = ({workflowService}: ServiceRepository) => {
+    workflowService.create({
+        name: 'Directories array collector',
+        description: 'Workflow for collecting directories array',
+        definition: "cwlVersion: v1.0\n$graph:\n- class: CommandLineTool\n\n  requirements:\n  - listing:\n    - entryname: input_collector.log\n      entry: |\n        \"multiple_collections\":\n          $(inputs.multiple_collections)\n\n    class: InitialWorkDirRequirement\n  inputs:\n  - type:\n      type: array\n      items: Directory\n    id: '#input_collector.cwl/multiple_collections'\n  outputs:\n  - type: File\n    outputBinding:\n      glob: '*'\n    id: '#input_collector.cwl/output'\n\n  baseCommand: [echo]\n  id: '#input_collector.cwl'\n- class: Workflow\n  doc: This is the description of the workflow\n  inputs:\n  - type:\n      type: array\n      items: Directory\n    label: Multiple Collections\n    doc: This should allow for selecting multiple collections.\n    id: '#main/multiple_collections'\n    default:\n    - class: Directory\n      location: keep:1e1682585d576f031b2d8b4944f989ee+57\n      basename: 1e1682585d576f031b2d8b4944f989ee+57\n    - class: Directory\n      location: keep:326f692370e9e121fcbd013796f7352a+57\n      basename: 326f692370e9e121fcbd013796f7352a+57\n  \n  outputs:\n  - type: File\n    outputSource: '#main/input_collector/output'\n\n    id: '#main/log_file'\n  steps:\n  - run: '#input_collector.cwl'\n    in:\n    - source: '#main/multiple_collections'\n      id: '#main/input_collector/multiple_collections'\n    out: ['#main/input_collector/output']\n    id: '#main/input_collector'\n  id: '#main'\n",
+    });
+};
+
+const createFilesArrayCollectorWorkflow = ({workflowService}: ServiceRepository) => {
+    workflowService.create({
+        name: 'Files array collector',
+        description: 'Workflow for collecting files array',
+        definition: "cwlVersion: v1.0\n$graph:\n- class: CommandLineTool\n\n  requirements:\n  - listing:\n    - entryname: input_collector.log\n      entry: |\n        \"multiple_files\":\n          $(inputs.multiple_files)\n\n    class: InitialWorkDirRequirement\n  inputs:\n  - type:\n      type: array\n      items: File\n    id: '#input_collector.cwl/multiple_files'\n  outputs:\n  - type: File\n    outputBinding:\n      glob: '*'\n    id: '#input_collector.cwl/output'\n\n  baseCommand: [cat]\n  id: '#input_collector.cwl'\n- class: Workflow\n  doc: This is the description of the workflow\n  inputs:\n  - type:\n      type: array\n      items: File\n    label: Multiple Files\n    doc: This should allow for selecting multiple files.\n    id: '#main/multiple_files'\n    default:\n      - class: File\n        location: keep:af831660d820bcbb98f473355e6e1b85+67/fileA\n        basename: fileA\n        nameroot: fileA\n        nameext: ''\n  outputs:\n  - type: File\n    outputSource: '#main/input_collector/output'\n\n    id: '#main/log_file'\n  steps:\n  - run: '#input_collector.cwl'\n    in:\n    - source: '#main/multiple_files'\n      id: '#main/input_collector/multiple_files'\n    out: ['#main/input_collector/output']\n    id: '#main/input_collector'\n  id: '#main'\n",
+    });
 };
 
 const createPrimitivesCollectorWorkflow = ({ workflowService }: ServiceRepository) => {

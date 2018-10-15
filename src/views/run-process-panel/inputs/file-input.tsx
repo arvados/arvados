@@ -19,7 +19,6 @@ import { initProjectsTreePicker } from '~/store/tree-picker/tree-picker-actions'
 import { TreeItem } from '~/components/tree/tree';
 import { ProjectsTreePickerItem } from '~/views-components/projects-tree-picker/generic-projects-tree-picker';
 import { CollectionFile, CollectionFileType } from '~/models/collection-file';
-import { getFileFullPath } from '~/services/collection-service/collection-service-files-response';
 
 export interface FileInputProps {
     input: FileCommandInputParameter;

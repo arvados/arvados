@@ -4,26 +4,36 @@
 
 import * as React from "react";
 import { Field } from 'redux-form';
-import { TextField } from "~/components/text-field/text-field";
+import { TextField, DateTextField } from "~/components/text-field/text-field";
 import { CheckboxField } from '~/components/checkbox-field/checkbox-field';
+import { NativeSelectField } from '~/components/select-field/select-field';
+import { ResourceKind } from '~/models/resource';
+import { ClusterObjectType } from '~/models/search-bar';
 
 export const SearchBarTypeField = () =>
     <Field
         name='type'
-        component={TextField}
-        label="Type"/>;
+        component={NativeSelectField}
+        items={[
+            { key: '', value: 'Any'},
+            { key: ResourceKind.COLLECTION, value: 'Collection'},
+            { key: ResourceKind.PROJECT, value: 'Project' },
+            { key: ResourceKind.PROCESS, value: 'Process' }
+        ]}/>;
 
 export const SearchBarClusterField = () =>
     <Field
         name='cluster'
-        component={TextField}
-        label="Cluster name" />;
+        component={NativeSelectField}
+        items={[
+            { key: '', value: 'Any' },
+            { key: ClusterObjectType.INDIANAPOLIS, value: 'Indianapolis' },
+            { key: ClusterObjectType.KAISERAUGST, value: 'Kaiseraugst' },
+            { key: ClusterObjectType.PENZBERG, value: 'Penzberg' }
+        ]} />;
 
 export const SearchBarProjectField = () => 
-    <Field
-        name='project'
-        component={TextField}
-        label="Project name" />;
+    <div>Box</div>;
 
 export const SearchBarTrashField = () => 
     <Field
@@ -33,15 +43,13 @@ export const SearchBarTrashField = () =>
 
 export const SearchBarDataFromField = () => 
     <Field
-        name='dataFrom'
-        component={TextField}
-        label="From" />;
+        name='dateFrom'
+        component={DateTextField} />;
 
 export const SearchBarDataToField = () =>
     <Field
-        name='dataTo'
-        component={TextField}
-        label="To" />;
+        name='dateTo'
+        component={DateTextField} />;
 
 export const SearchBarKeyField = () => 
     <Field
