@@ -20,6 +20,7 @@ export interface ContentsArguments {
     filters?: string;
     recursive?: boolean;
     includeTrash?: boolean;
+    excludeHomeProject?: boolean;
 }
 
 export interface SharedArguments extends ListArguments {

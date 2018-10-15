@@ -41,7 +41,12 @@ import { SharedWithMePanel } from '~/views/shared-with-me-panel/shared-with-me-p
 import { RunProcessPanel } from '~/views/run-process-panel/run-process-panel';
 import SplitterLayout from 'react-splitter-layout';
 import { WorkflowPanel } from '~/views/workflow-panel/workflow-panel';
-import { FileSelectionDialog } from '~/views-components/dialog-forms/file-selection-dialog';
+import { HomeTreePicker } from '~/views-components/projects-tree-picker/home-tree-picker';
+import { SharedTreePicker } from '~/views-components/projects-tree-picker/shared-tree-picker';
+import { FavoritesTreePicker } from '../../views-components/projects-tree-picker/favorites-tree-picker';
+import { ProjectsTreePicker } from '~/views-components/projects-tree-picker/projects-tree-picker';
+import { Chips } from '~/components/chips/chips';
+import { ChipsInput } from '../../components/chips-input/chips-input';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -75,8 +80,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 type WorkbenchPanelProps = WithStyles<CssRules>;
 
-export const WorkbenchPanel = 
-    withStyles(styles)(({ classes }: WorkbenchPanelProps) => 
+export const WorkbenchPanel =
+    withStyles(styles)(({ classes }: WorkbenchPanelProps) =>
         <Grid container item xs className={classes.root}>
             <Grid container item xs className={classes.container}>
                 <SplitterLayout customClassName={classes.splitter} percentage={true}
@@ -114,8 +119,6 @@ export const WorkbenchPanel =
             <CreateProjectDialog />
             <CurrentTokenDialog />
             <FileRemoveDialog />
-            <FileRemoveDialog />
-            <FileSelectionDialog />
             <FilesUploadCollectionDialog />
             <MoveCollectionDialog />
             <MoveProcessDialog />

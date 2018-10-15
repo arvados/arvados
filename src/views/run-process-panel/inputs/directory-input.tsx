@@ -5,12 +5,11 @@
 import * as React from 'react';
 import {
     isRequiredInput,
-    FileCommandInputParameter,
-    File,
-    CWLType
+    DirectoryCommandInputParameter,
+    CWLType,
+    Directory
 } from '~/models/workflow';
 import { Field } from 'redux-form';
-import { ERROR_MESSAGE } from '~/validators/require';
 import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@material-ui/core';
 import { GenericInputProps, GenericInput } from './generic-input';
 import { ProjectsTreePicker } from '~/views-components/projects-tree-picker/projects-tree-picker';
@@ -18,37 +17,39 @@ import { connect, DispatchProp } from 'react-redux';
 import { initProjectsTreePicker } from '~/store/tree-picker/tree-picker-actions';
 import { TreeItem } from '~/components/tree/tree';
 import { ProjectsTreePickerItem } from '~/views-components/projects-tree-picker/generic-projects-tree-picker';
-import { CollectionFile, CollectionFileType } from '~/models/collection-file';
+import { CollectionResource } from '~/models/collection';
+import { ResourceKind } from '~/models/resource';
+import { ERROR_MESSAGE } from '../../../validators/require';
 
-export interface FileInputProps {
-    input: FileCommandInputParameter;
+export interface DirectoryInputProps {
+    input: DirectoryCommandInputParameter;
 }
-export const FileInput = ({ input }: FileInputProps) =>
+export const DirectoryInput = ({ input }: DirectoryInputProps) =>
     <Field
         name={input.id}
         commandInput={input}
-        component={FileInputComponent}
-        format={(value?: File) => value ? value.basename : ''}
-        parse={(file: CollectionFile): File => ({
-            class: CWLType.FILE,
-            location: `keep:${file.id}`,
-            basename: file.name,
+        component={DirectoryInputComponent}
+        format={(value?: Directory) => value ? value.basename : ''}
+        parse={(directory: CollectionResource): Directory => ({
+            class: CWLType.DIRECTORY,
+            location: `keep:${directory.portableDataHash}`,
+            basename: directory.name,
         })}
         validate={[
             isRequiredInput(input)
-                ? (file?: File) => file ? undefined : ERROR_MESSAGE
+                ? (directory?: Directory) => directory ? undefined : ERROR_MESSAGE
                 : () => undefined,
         ]} />;
 
 
-interface FileInputComponentState {
+interface DirectoryInputComponentState {
     open: boolean;
-    file?: CollectionFile;
+    directory?: CollectionResource;
 }
 
-const FileInputComponent = connect()(
-    class FileInputComponent extends React.Component<GenericInputProps & DispatchProp, FileInputComponentState> {
-        state: FileInputComponentState = {
+const DirectoryInputComponent = connect()(
+    class FileInputComponent extends React.Component<GenericInputProps & DispatchProp, DirectoryInputComponentState> {
+        state: DirectoryInputComponentState = {
             open: false,
         };
 
@@ -74,14 +75,14 @@ const FileInputComponent = connect()(
 
         submit = () => {
             this.closeDialog();
-            this.props.input.onChange(this.state.file);
+            this.props.input.onChange(this.state.directory);
         }
 
-        setFile = (event: React.MouseEvent<HTMLElement>, { data }: TreeItem<ProjectsTreePickerItem>, pickerId: string) => {
-            if ('type' in data && data.type === CollectionFileType.FILE) {
-                this.setState({ file: data });
+        setDirectory = (event: React.MouseEvent<HTMLElement>, { data }: TreeItem<ProjectsTreePickerItem>, pickerId: string) => {
+            if ('kind' in data && data.kind === ResourceKind.COLLECTION) {
+                this.setState({ directory: data });
             } else {
-                this.setState({ file: undefined });
+                this.setState({ directory: undefined });
             }
         }
 
@@ -104,18 +105,17 @@ const FileInputComponent = connect()(
                 onClose={this.closeDialog}
                 fullWidth
                 maxWidth='md'>
-                <DialogTitle>Choose a file</DialogTitle>
+                <DialogTitle>Choose a directory</DialogTitle>
                 <DialogContent>
                     <ProjectsTreePicker
                         pickerId={this.props.commandInput.id}
                         includeCollections
-                        includeFiles
-                        toggleItemActive={this.setFile} />
+                        toggleItemActive={this.setDirectory} />
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={this.closeDialog}>Cancel</Button>
                     <Button
-                        disabled={!this.state.file}
+                        disabled={!this.state.directory}
                         variant='contained'
                         color='primary'
                         onClick={this.submit}>Ok</Button>

@@ -10,6 +10,7 @@ import { ServiceRepository } from '~/services/services';
 import { FilterBuilder } from "~/services/api/filter-builder";
 import { ResourceKind } from '~/models/resource';
 import { GroupClass } from '~/models/group';
+import { SearchBarAdvanceFormData } from '~/models/search-bar';
 
 export const searchBarActions = unionize({
     SET_CURRENT_VIEW: ofType<string>(),
@@ -21,17 +22,6 @@ export const searchBarActions = unionize({
 });
 
 export type SearchBarActions = UnionOf<typeof searchBarActions>;
-
-export interface SearchBarAdvanceFormData {
-    type?: GroupContentsResource;
-    cluster?: string;
-    project?: string;
-    inTrash: boolean;
-    dataFrom: string;
-    dataTo: string;
-    saveQuery: boolean;
-    searchQuery: string;
-}
 
 export const SEARCH_BAR_ADVANCE_FORM_NAME = 'searchBarAdvanceFormName';
 
@@ -69,6 +59,14 @@ export const openSearchView = () =>
         dispatch(searchBarActions.OPEN_SEARCH_VIEW());
         const savedSearchQueries = services.searchService.getSavedQueries();
         dispatch(searchBarActions.SET_SAVED_QUERIES(savedSearchQueries));
+    };
+
+export const closeSearchView = () => 
+    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        const isOpen = getState().searchBar.open;
+        if(isOpen) {
+            dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
+        }
     };
 
 

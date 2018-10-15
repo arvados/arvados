@@ -50,10 +50,15 @@ export class CollectionService extends TrashableResourceService<CollectionResour
         );
     }
 
-    private extendFileURL = (file: CollectionDirectory | CollectionFile) => ({
-        ...file,
-        url: this.webdavClient.defaults.baseURL + file.url + '?api_token=' + this.authService.getApiToken()
-    })
+    private extendFileURL = (file: CollectionDirectory | CollectionFile) => {
+        const baseUrl = this.webdavClient.defaults.baseURL.endsWith('/')
+            ? this.webdavClient.defaults.baseURL.slice(0, -1)
+            : this.webdavClient.defaults.baseURL;
+        return {
+            ...file,
+            url: baseUrl + file.url + '?api_token=' + this.authService.getApiToken()
+        };
+    }
 
     private async uploadFile(collectionUuid: string, file: File, fileId: number, onProgress: UploadProgress = () => { return; }) {
         const fileURL = `c=${collectionUuid}/${file.name}`;

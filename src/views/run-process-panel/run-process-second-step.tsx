@@ -12,6 +12,7 @@ import { RootState } from '~/store/store';
 import { isValid } from 'redux-form';
 import { RUN_PROCESS_INPUTS_FORM } from './run-process-inputs-form';
 import { RunProcessAdvancedForm } from './run-process-advanced-form';
+import { createSelector, createStructuredSelector } from 'reselect';
 
 export interface RunProcessSecondStepFormDataProps {
     inputs: CommandInputParameter[];
@@ -23,10 +24,15 @@ export interface RunProcessSecondStepFormActionProps {
     runProcess: () => void;
 }
 
-const mapStateToProps = (state: RootState): RunProcessSecondStepFormDataProps => ({
-    inputs: state.runProcessPanel.inputs,
-    valid: isValid(RUN_PROCESS_BASIC_FORM)(state) &&
-        isValid(RUN_PROCESS_INPUTS_FORM)(state),
+const inputsSelector = (state: RootState) =>
+    state.runProcessPanel.inputs;
+
+const validSelector = (state: RootState) =>
+    isValid(RUN_PROCESS_BASIC_FORM)(state) && isValid(RUN_PROCESS_INPUTS_FORM)(state);
+
+const mapStateToProps = createStructuredSelector({
+    inputs: inputsSelector,
+    valid: validSelector,
 });
 
 export type RunProcessSecondStepFormProps = RunProcessSecondStepFormDataProps & RunProcessSecondStepFormActionProps;

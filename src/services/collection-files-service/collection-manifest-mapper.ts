@@ -4,7 +4,7 @@
 
 import { uniqBy, groupBy } from 'lodash';
 import { KeepManifestStream, KeepManifestStreamFile, KeepManifest } from "~/models/keep-manifest";
-import { TreeNode, setNode, createTree, getNodeDescendantsIds, getNodeValue } from '~/models/tree';
+import { TreeNode, setNode, createTree, getNodeDescendantsIds, getNodeValue, TreeNodeStatus } from '~/models/tree';
 import { CollectionFilesTree, CollectionFile, CollectionDirectory, createCollectionDirectory, createCollectionFile, CollectionFileType } from '../../models/collection-file';
 
 export const mapCollectionFilesTreeToManifest = (tree: CollectionFilesTree): KeepManifest => {
@@ -30,7 +30,11 @@ export const mapCollectionFileToTreeNode = (file: CollectionFile): TreeNode<Coll
     children: [],
     id: file.id,
     parent: file.path,
-    value: file
+    value: file,
+    active: false,
+    selected: false,
+    expanded: false,
+    status: TreeNodeStatus.INITIAL,
 });
 
 export const manifestToCollectionFiles = (manifest: KeepManifest): Array<CollectionDirectory | CollectionFile> => ([

@@ -4,14 +4,12 @@
 
 import { Dispatch } from 'redux';
 import { treePickerActions } from "~/store/tree-picker/tree-picker-actions";
-import { createTreePickerNode, TreePickerNode } from '~/store/tree-picker/tree-picker';
 import { RootState } from '../store';
 import { ServiceRepository } from '~/services/services';
 import { FilterBuilder } from '~/services/api/filter-builder';
 import { resourcesActions } from '../resources/resources-actions';
 import { getTreePicker, TreePicker } from '../tree-picker/tree-picker';
-import { TreeItemStatus } from "~/components/tree/tree";
-import { getNodeAncestors, getNodeValue, getNodeAncestorsIds, getNode } from '~/models/tree';
+import { getNodeAncestors, getNodeAncestorsIds, getNode, TreeNode, initTreeNode, TreeNodeStatus } from '~/models/tree';
 import { ProjectResource } from '~/models/project';
 import { OrderBuilder } from '../../services/api/order-builder';
 
@@ -29,11 +27,11 @@ export const SIDE_PANEL_TREE = 'sidePanelTree';
 export const getSidePanelTree = (treePicker: TreePicker) =>
     getTreePicker<ProjectResource | string>(SIDE_PANEL_TREE)(treePicker);
 
-export const getSidePanelTreeBranch = (uuid: string) => (treePicker: TreePicker): Array<TreePickerNode<ProjectResource | string>> => {
+export const getSidePanelTreeBranch = (uuid: string) => (treePicker: TreePicker): Array<TreeNode<ProjectResource | string>> => {
     const tree = getSidePanelTree(treePicker);
     if (tree) {
-        const ancestors = getNodeAncestors(uuid)(tree).map(node => node.value);
-        const node = getNodeValue(uuid)(tree);
+        const ancestors = getNodeAncestors(uuid)(tree);
+        const node = getNode(uuid)(tree);
         if (node) {
             return [...ancestors, node];
         }
@@ -54,16 +52,16 @@ export const isSidePanelTreeCategory = (id: string) => SIDE_PANEL_CATEGORIES.som
 export const initSidePanelTree = () =>
     (dispatch: Dispatch, getState: () => RootState, { authService }: ServiceRepository) => {
         const rootProjectUuid = authService.getUuid() || '';
-        const nodes = SIDE_PANEL_CATEGORIES.map(nodeId => createTreePickerNode({ nodeId, value: nodeId }));
-        const projectsNode = createTreePickerNode({ nodeId: rootProjectUuid, value: SidePanelTreeCategory.PROJECTS });
+        const nodes = SIDE_PANEL_CATEGORIES.map(id => initTreeNode({ id, value: id }));
+        const projectsNode = initTreeNode({ id: rootProjectUuid, value: SidePanelTreeCategory.PROJECTS });
         dispatch(treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
-            nodeId: '',
+            id: '',
             pickerId: SIDE_PANEL_TREE,
             nodes: [projectsNode, ...nodes]
         }));
         SIDE_PANEL_CATEGORIES.forEach(category => {
             dispatch(treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
-                nodeId: category,
+                id: category,
                 pickerId: SIDE_PANEL_TREE,
                 nodes: []
             }));
@@ -75,7 +73,7 @@ export const loadSidePanelTreeProjects = (projectUuid: string) =>
         const treePicker = getTreePicker(SIDE_PANEL_TREE)(getState().treePicker);
         const node = treePicker ? getNode(projectUuid)(treePicker) : undefined;
         if (node || projectUuid === '') {
-            dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ nodeId: projectUuid, pickerId: SIDE_PANEL_TREE }));
+            dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id: projectUuid, pickerId: SIDE_PANEL_TREE }));
             const params = {
                 filters: new FilterBuilder()
                     .addEqual('ownerUuid', projectUuid)
@@ -86,81 +84,81 @@ export const loadSidePanelTreeProjects = (projectUuid: string) =>
             };
             const { items } = await services.projectService.list(params);
             dispatch(treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
-                nodeId: projectUuid,
+                id: projectUuid,
                 pickerId: SIDE_PANEL_TREE,
-                nodes: items.map(item => createTreePickerNode({ nodeId: item.uuid, value: item })),
+                nodes: items.map(item => initTreeNode({ id: item.uuid, value: item })),
             }));
             dispatch(resourcesActions.SET_RESOURCES(items));
         }
     };
 
-export const activateSidePanelTreeItem = (nodeId: string) =>
+export const activateSidePanelTreeItem = (id: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const node = getSidePanelTreeNode(nodeId)(getState().treePicker);
-        if (node && !node.selected) {
-            dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_SELECT({ nodeId, pickerId: SIDE_PANEL_TREE }));
+        const node = getSidePanelTreeNode(id)(getState().treePicker);
+        if (node && !node.active) {
+            dispatch(treePickerActions.ACTIVATE_TREE_PICKER_NODE({ id, pickerId: SIDE_PANEL_TREE }));
         }
-        if (!isSidePanelTreeCategory(nodeId)) {
-            await dispatch<any>(activateSidePanelTreeProject(nodeId));
+        if (!isSidePanelTreeCategory(id)) {
+            await dispatch<any>(activateSidePanelTreeProject(id));
         }
     };
 
-export const activateSidePanelTreeProject = (nodeId: string) =>
+export const activateSidePanelTreeProject = (id: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const { treePicker } = getState();
-        const node = getSidePanelTreeNode(nodeId)(treePicker);
-        if (node && node.status !== TreeItemStatus.LOADED) {
-            await dispatch<any>(loadSidePanelTreeProjects(nodeId));
+        const node = getSidePanelTreeNode(id)(treePicker);
+        if (node && node.status !== TreeNodeStatus.LOADED) {
+            await dispatch<any>(loadSidePanelTreeProjects(id));
         } else if (node === undefined) {
-            await dispatch<any>(activateSidePanelTreeBranch(nodeId));
+            await dispatch<any>(activateSidePanelTreeBranch(id));
         }
         dispatch(treePickerActions.EXPAND_TREE_PICKER_NODES({
-            nodeIds: getSidePanelTreeNodeAncestorsIds(nodeId)(treePicker),
+            ids: getSidePanelTreeNodeAncestorsIds(id)(treePicker),
             pickerId: SIDE_PANEL_TREE
         }));
-        dispatch<any>(expandSidePanelTreeItem(nodeId));
+        dispatch<any>(expandSidePanelTreeItem(id));
     };
 
-export const activateSidePanelTreeBranch = (nodeId: string) =>
+export const activateSidePanelTreeBranch = (id: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const ancestors = await services.ancestorsService.ancestors(nodeId, services.authService.getUuid() || '');
+        const ancestors = await services.ancestorsService.ancestors(id, services.authService.getUuid() || '');
         for (const ancestor of ancestors) {
             await dispatch<any>(loadSidePanelTreeProjects(ancestor.uuid));
         }
         dispatch(treePickerActions.EXPAND_TREE_PICKER_NODES({
-            nodeIds: ancestors.map(ancestor => ancestor.uuid),
+            ids: ancestors.map(ancestor => ancestor.uuid),
             pickerId: SIDE_PANEL_TREE
         }));
-        dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_SELECT({ nodeId, pickerId: SIDE_PANEL_TREE }));
+        dispatch(treePickerActions.ACTIVATE_TREE_PICKER_NODE({ id, pickerId: SIDE_PANEL_TREE }));
     };
 
-export const toggleSidePanelTreeItemCollapse = (nodeId: string) =>
+export const toggleSidePanelTreeItemCollapse = (id: string) =>
     async (dispatch: Dispatch, getState: () => RootState) => {
-        const node = getSidePanelTreeNode(nodeId)(getState().treePicker);
-        if (node && node.status === TreeItemStatus.INITIAL) {
-            await dispatch<any>(loadSidePanelTreeProjects(node.nodeId));
+        const node = getSidePanelTreeNode(id)(getState().treePicker);
+        if (node && node.status === TreeNodeStatus.INITIAL) {
+            await dispatch<any>(loadSidePanelTreeProjects(node.id));
         }
-        dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ nodeId, pickerId: SIDE_PANEL_TREE }));
+        dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ id, pickerId: SIDE_PANEL_TREE }));
     };
 
-export const expandSidePanelTreeItem = (nodeId: string) =>
+export const expandSidePanelTreeItem = (id: string) =>
     async (dispatch: Dispatch, getState: () => RootState) => {
-        const node = getSidePanelTreeNode(nodeId)(getState().treePicker);
-        if (node && node.collapsed) {
-            dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ nodeId, pickerId: SIDE_PANEL_TREE }));
+        const node = getSidePanelTreeNode(id)(getState().treePicker);
+        if (node && !node.expanded) {
+            dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ id, pickerId: SIDE_PANEL_TREE }));
         }
     };
 
-export const getSidePanelTreeNode = (nodeId: string) => (treePicker: TreePicker) => {
+export const getSidePanelTreeNode = (id: string) => (treePicker: TreePicker) => {
     const sidePanelTree = getTreePicker(SIDE_PANEL_TREE)(treePicker);
     return sidePanelTree
-        ? getNodeValue(nodeId)(sidePanelTree)
+        ? getNode(id)(sidePanelTree)
         : undefined;
 };
 
-export const getSidePanelTreeNodeAncestorsIds = (nodeId: string) => (treePicker: TreePicker) => {
+export const getSidePanelTreeNodeAncestorsIds = (id: string) => (treePicker: TreePicker) => {
     const sidePanelTree = getTreePicker(SIDE_PANEL_TREE)(treePicker);
     return sidePanelTree
-        ? getNodeAncestorsIds(nodeId)(sidePanelTree)
+        ? getNodeAncestorsIds(id)(sidePanelTree)
         : [];
 };
