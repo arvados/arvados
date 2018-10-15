@@ -16,6 +16,7 @@ import { OrderDirection, OrderBuilder } from '~/services/api/order-builder';
 import { GroupContentsResource, GroupContentsResourcePrefix } from "~/services/groups-service/groups-service";
 import { ListResults } from '~/services/common-service/common-resource-service';
 import { searchResultsPanelActions } from '~/store/search-results-panel/search-results-panel-actions';
+import { getFilters } from '~/store/search-bar/search-bar-actions';
 
 export class SearchResultsMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -26,8 +27,9 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
         const state = api.getState();
         const userUuid = state.auth.user!.uuid;
         const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
+        const searchValue = state.searchBar.searchValue;
         try {
-            const response = await this.services.groupsService.contents(userUuid, getParams(dataExplorer));
+            const response = await this.services.groupsService.contents(userUuid, getParams(dataExplorer, searchValue));
             api.dispatch(updateResources(response.items));
             api.dispatch(setItems(response));
         } catch {
@@ -36,18 +38,11 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
     }
 }
 
-export const getParams = (dataExplorer: DataExplorer) => ({
+export const getParams = (dataExplorer: DataExplorer, searchValue: string) => ({
     ...dataExplorerToListParams(dataExplorer),
-    order: getOrder(dataExplorer),
-    filters: getFilters(dataExplorer)
+    filters: getFilters('name', searchValue)
 });
 
-export const getFilters = (dataExplorer: DataExplorer) => {
-    const filters = new FilterBuilder()
-        .addILike("name", dataExplorer.searchValue)
-        .getFilters();
-    return filters;
-};
 
 export const getOrder = (dataExplorer: DataExplorer) => {
     const sortColumn = dataExplorer.columns.find(c => c.sortDirection !== SortDirection.NONE);

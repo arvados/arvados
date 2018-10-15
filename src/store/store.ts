@@ -40,6 +40,8 @@ import { WorkflowMiddlewareService } from './workflow-panel/workflow-middleware-
 import { WORKFLOW_PANEL_ID } from './workflow-panel/workflow-panel-actions';
 import { appInfoReducer } from '~/store/app-info/app-info-reducer';
 import { searchBarReducer } from './search-bar/search-bar-reducer';
+import { SEARCH_RESULTS_PANEL_ID } from '~/store/search-results-panel/search-results-panel-actions';
+import { SearchResultsMiddlewareService } from './search-results-panel/search-results-middleware-service';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -62,6 +64,9 @@ export function configureStore(history: History, services: ServiceRepository): R
     const trashPanelMiddleware = dataExplorerMiddleware(
         new TrashPanelMiddlewareService(services, TRASH_PANEL_ID)
     );
+    const searchResultsPanelMiddleware = dataExplorerMiddleware(
+        new SearchResultsMiddlewareService(services, SEARCH_RESULTS_PANEL_ID)
+    );
     const sharedWithMePanelMiddleware = dataExplorerMiddleware(
         new SharedWithMeMiddlewareService(services, SHARED_WITH_ME_PANEL_ID)
     );
@@ -75,6 +80,7 @@ export function configureStore(history: History, services: ServiceRepository): R
         projectPanelMiddleware,
         favoritePanelMiddleware,
         trashPanelMiddleware,
+        searchResultsPanelMiddleware,
         sharedWithMePanelMiddleware,
         workflowPanelMiddleware
     ];

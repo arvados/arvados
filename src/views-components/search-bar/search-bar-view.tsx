@@ -66,6 +66,7 @@ interface SearchBarActionProps {
     saveQuery: (data: SearchBarAdvanceFormData) => void;
     deleteSavedQuery: (id: number) => void;
     openSearchView: () => void;
+    navigateTo: (uuid: string) => void;
 }
 
 type SearchBarProps = SearchBarDataProps & SearchBarActionProps & WithStyles<CssRules>;
@@ -74,26 +75,41 @@ interface SearchBarState {
     value: string;
 }
 
+
+
+interface RenderRecentQueriesProps {
+    text: string | JSX.Element;
+    onSearch: (searchValue: string | JSX.Element) => void;
+}
+
+export const RenderRecentQueries = (props: RenderRecentQueriesProps) => {
+    return <ListItem button>
+        <ListItemText secondary={props.text} onClick={() => props.onSearch(props.text)} />
+    </ListItem>;
+};
+
+interface RenderAutocompleteItemsProps {
+    text: string | JSX.Element;
+    navigateTo: (uuid: string) => void;
+    uuid: string;
+}
+
+export const RenderAutocompleteItems = (props: RenderAutocompleteItemsProps) => {
+    return <ListItem button>
+        <ListItemText secondary={props.text} onClick={() => props.navigateTo(props.uuid)} />
+    </ListItem>;
+};
+
 interface RenderSavedQueriesProps {
     text: string | JSX.Element;
     id: number;
     deleteSavedQuery: (id: number) => void;
+    onSearch: (searchValue: string | JSX.Element) => void;
 }
-
-interface RenderRecentQueriesProps {
-    text: string | JSX.Element;
-}
-
-export const RecentQueriesItem = (props: RenderRecentQueriesProps) => {
-    return <ListItem button>
-        <ListItemText secondary={props.text} />
-    </ListItem>;
-};
-
 
 export const RenderSavedQueries = (props: RenderSavedQueriesProps) => {
     return <ListItem button>
-        <ListItemText secondary={props.text} />
+        <ListItemText secondary={props.text} onClick={() => props.onSearch(props.text)} />
         <ListItemSecondaryAction>
             <Tooltip title="Remove">
                 <IconButton aria-label="Remove" onClick={() => props.deleteSavedQuery(props.id)}>
@@ -159,18 +175,19 @@ export const SearchBarView = withStyles(styles)(
         }
 
         getView = (currentView: string) => {
-            const { onSetView, loadRecentQueries, savedQueries, deleteSavedQuery, searchValue, searchResults, saveQuery } = this.props;
+            const { onSetView, loadRecentQueries, savedQueries, deleteSavedQuery, searchValue, searchResults, saveQuery, onSearch, navigateTo } = this.props;
             switch (currentView) {
                 case SearchView.BASIC:
-                    return <SearchBarBasicView setView={onSetView} recentQueries={loadRecentQueries} savedQueries={savedQueries} deleteSavedQuery={deleteSavedQuery} />;
+                    return <SearchBarBasicView setView={onSetView} recentQueries={loadRecentQueries} savedQueries={savedQueries} deleteSavedQuery={deleteSavedQuery} onSearch={onSearch} />;
                 case SearchView.ADVANCED:
-                    return <SearchBarAdvancedView setView={onSetView} saveQuery={saveQuery}/>;
+                    return <SearchBarAdvancedView setView={onSetView} saveQuery={saveQuery} />;
                 case SearchView.AUTOCOMPLETE:
                     return <SearchBarAutocompleteView
+                        navigateTo={navigateTo}
                         searchResults={searchResults}
                         searchValue={searchValue} />;
                 default:
-                    return <SearchBarBasicView setView={onSetView} recentQueries={loadRecentQueries} savedQueries={savedQueries} deleteSavedQuery={deleteSavedQuery} />;
+                    return <SearchBarBasicView setView={onSetView} recentQueries={loadRecentQueries} savedQueries={savedQueries} deleteSavedQuery={deleteSavedQuery} onSearch={onSearch} />;
             }
         }
 

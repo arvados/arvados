@@ -11,6 +11,8 @@ import { FilterBuilder } from "~/services/api/filter-builder";
 import { ResourceKind } from '~/models/resource';
 import { GroupClass } from '~/models/group';
 import { SearchView } from '~/store/search-bar/search-bar-reducer';
+import { navigateToSearchResults, navigateTo } from '~/store/navigation/navigation-action';
+import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 
 export const searchBarActions = unionize({
     SET_CURRENT_VIEW: ofType<string>(),
@@ -54,6 +56,7 @@ export const saveQuery = (data: SearchBarAdvanceFormData) =>
         if (data.saveQuery && data.searchQuery) {
             services.searchService.saveQuery(data.searchQuery);
             dispatch(searchBarActions.SET_SAVED_QUERIES(services.searchService.getSavedQueries()));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Query has been sucessfully saved', kind: SnackbarKind.SUCCESS }));
         }
     };
 
@@ -68,14 +71,28 @@ export const deleteSavedQuery = (id: number) =>
 export const openSearchView = () =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         dispatch(searchBarActions.OPEN_SEARCH_VIEW());
-        dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.BASIC));
         const savedSearchQueries = services.searchService.getSavedQueries();
         dispatch(searchBarActions.SET_SAVED_QUERIES(savedSearchQueries));
     };
 
+export const closeSearchView = () =>
+    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
+        dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.BASIC));
+    };
 
+export const navigateToItem = (uuid: string) =>
+    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
+        dispatch(navigateTo(uuid));
+    };
+    
 export const searchData = (searchValue: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const currentView = getState().searchBar.currentView;
+        if (currentView !== SearchView.AUTOCOMPLETE) {
+            dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
+        }
         dispatch(searchBarActions.SET_SEARCH_VALUE(searchValue));
         dispatch(searchBarActions.SET_SEARCH_RESULTS([]));
         if (searchValue) {
@@ -87,9 +104,10 @@ export const searchData = (searchValue: string) =>
             });
             dispatch(searchBarActions.SET_SEARCH_RESULTS(items));
         }
+        dispatch(navigateToSearchResults);
     };
 
-const getFilters = (filterName: string, searchValue: string): string => {
+export const getFilters = (filterName: string, searchValue: string): string => {
     return new FilterBuilder()
         .addIsA("uuid", [ResourceKind.PROJECT, ResourceKind.COLLECTION, ResourceKind.PROCESS])
         .addILike(filterName, searchValue, GroupContentsResourcePrefix.COLLECTION)

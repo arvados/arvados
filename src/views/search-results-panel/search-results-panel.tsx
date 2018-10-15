@@ -5,22 +5,11 @@
 import { Dispatch } from "redux";
 import { connect } from "react-redux";
 import { navigateTo } from '~/store/navigation/navigation-action';
-import { SearchResultsPanelActionProps, SearchResultsPanelDataProps } from './search-results-panel-view';
-import { RootState } from '~/store/store';
+import { SearchResultsPanelActionProps } from './search-results-panel-view';
 import { openContextMenu, resourceKindToContextMenuKind } from '~/store/context-menu/context-menu-actions';
 import { ResourceKind } from '~/models/resource';
 import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { SearchResultsPanelView } from '~/views/search-results-panel/search-results-panel-view';
-
-const mapStateToProps = (state: RootState): SearchResultsPanelDataProps => ({
-    data: {
-        inTrash: false,
-        dataFrom: '',
-        dataTo: '',
-        saveQuery: false,
-        searchQuery: ''
-    }
-});
 
 const mapDispatchToProps = (dispatch: Dispatch): SearchResultsPanelActionProps => ({
     onContextMenu: (event, resourceUuid) => {
@@ -44,4 +33,4 @@ const mapDispatchToProps = (dispatch: Dispatch): SearchResultsPanelActionProps =
     }
 });
 
-export const SearchResultsPanel = connect(mapStateToProps, mapDispatchToProps)(SearchResultsPanelView);
+export const SearchResultsPanel = connect(null, mapDispatchToProps)(SearchResultsPanelView);

@@ -62,7 +62,7 @@ export const searchResultsPanelColumns: DataColumns<string, WorkflowPanelFilter>
         selected: true,
         configurable: true,
         filters: [],
-        render: uuid => <ResourceName uuid={uuid} />
+        render: uuid => <ResourceFileSize uuid={uuid} />
     },
     {
         name: SearchResultsPanelColumnNames.STATUS,

@@ -5,7 +5,7 @@
 import * as React from 'react';
 import { Paper, StyleRulesCallback, withStyles, WithStyles, List } from '@material-ui/core';
 import { SearchView } from '~/store/search-bar/search-bar-reducer';
-import { RecentQueriesItem, RenderSavedQueries } from '~/views-components/search-bar/search-bar-view';
+import { RenderRecentQueries, RenderSavedQueries } from '~/views-components/search-bar/search-bar-view';
 
 type CssRules = 'advanced' | 'searchQueryList' | 'list' | 'searchView';
 
@@ -40,18 +40,19 @@ interface SearchBarBasicViewProps {
     recentQueries: () => string[];
     deleteSavedQuery: (id: number) => void;
     savedQueries: string[];
+    onSearch: (searchValue: string) => void;
 }
 
 export const SearchBarBasicView = withStyles(styles)(
-    ({ classes, setView, recentQueries, deleteSavedQuery, savedQueries }: SearchBarBasicViewProps & WithStyles<CssRules>) =>
+    ({ classes, setView, recentQueries, deleteSavedQuery, savedQueries, onSearch }: SearchBarBasicViewProps & WithStyles<CssRules>) =>
         <Paper className={classes.searchView}>
             <div className={classes.searchQueryList}>Recent search queries</div>
             <List component="nav" className={classes.list}>
-                {recentQueries().map((query, index) => <RecentQueriesItem key={index} text={query} />)}
+                {recentQueries().map((query, index) => <RenderRecentQueries key={index} text={query} onSearch={onSearch} />)}
             </List>
             <div className={classes.searchQueryList}>Saved search queries</div>
             <List component="nav" className={classes.list}>
-                {savedQueries.map((query, index) => <RenderSavedQueries key={index} text={query} id={index} deleteSavedQuery={deleteSavedQuery} />)}
+                {savedQueries.map((query, index) => <RenderSavedQueries key={index} text={query} id={index} deleteSavedQuery={deleteSavedQuery} onSearch={onSearch} />)}
             </List>
             <div className={classes.advanced} onClick={() => setView(SearchView.ADVANCED)}>Advanced search</div>
         </Paper>
