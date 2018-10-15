@@ -9,7 +9,7 @@ import { DataTableFilterItem } from '~/components/data-table-filters/data-table-
 import { ResourceKind } from '~/models/resource';
 import { ContainerRequestState } from '~/models/container-request';
 import { resourceLabel } from '~/common/labels';
-import { SearchBarAdvanceFormData } from '~/store/search-bar/search-bar-actions';
+import { SearchBarAdvanceFormData } from '~/models/search-bar';
 import { SEARCH_RESULTS_PANEL_ID } from '~/store/search-results-panel/search-results-panel-actions';
 import { DataExplorer } from '~/views-components/data-explorer/data-explorer';
 import {

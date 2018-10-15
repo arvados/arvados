@@ -19,7 +19,7 @@ export const Routes = {
     SHARED_WITH_ME: '/shared-with-me',
     RUN_PROCESS: '/run-process',
     WORKFLOWS: '/workflows',
-    SEARCH_RESULTS: '/search'
+    SEARCH_RESULTS: '/search-results'
 };
 
 export const getResourceUrl = (uuid: string) => {

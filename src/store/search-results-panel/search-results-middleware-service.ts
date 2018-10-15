@@ -9,7 +9,6 @@ import { RootState } from '~/store/store';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { DataExplorer, getDataExplorer } from '~/store/data-explorer/data-explorer-reducer';
 import { updateResources } from '~/store/resources/resources-actions';
-import { FilterBuilder } from '~/services/api/filter-builder';
 import { SortDirection } from '~/components/data-table/data-column';
 import { SearchResultsPanelColumnNames } from '~/views/search-results-panel/search-results-panel-view';
 import { OrderDirection, OrderBuilder } from '~/services/api/order-builder';
@@ -40,27 +39,27 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
 
 export const getParams = (dataExplorer: DataExplorer, searchValue: string) => ({
     ...dataExplorerToListParams(dataExplorer),
-    filters: getFilters('name', searchValue)
+    filters: getFilters('name', searchValue),
+    order: getOrder(dataExplorer)
 });
 
-
-export const getOrder = (dataExplorer: DataExplorer) => {
+const getOrder = (dataExplorer: DataExplorer) => {
     const sortColumn = dataExplorer.columns.find(c => c.sortDirection !== SortDirection.NONE);
     const order = new OrderBuilder<GroupContentsResource>();
     if (sortColumn) {
         const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.ASC
             ? OrderDirection.ASC
             : OrderDirection.DESC;
+
         const columnName = sortColumn && sortColumn.name === SearchResultsPanelColumnNames.NAME ? "name" : "modifiedAt";
         return order
-            .addOrder(sortDirection, columnName)
-            .addOrder(sortDirection, "name", GroupContentsResourcePrefix.COLLECTION)
-            .addOrder(sortDirection, "name", GroupContentsResourcePrefix.PROCESS)
-            .addOrder(sortDirection, "name", GroupContentsResourcePrefix.PROJECT)
+            .addOrder(sortDirection, columnName, GroupContentsResourcePrefix.COLLECTION)
+            .addOrder(sortDirection, columnName, GroupContentsResourcePrefix.PROCESS)
+            .addOrder(sortDirection, columnName, GroupContentsResourcePrefix.PROJECT)
             .getOrder();
     } else {
-    return order.getOrder();
-}
+        return order.getOrder();
+    }
 };
 
 export const setItems = (listResults: ListResults<GroupContentsResource>) =>
