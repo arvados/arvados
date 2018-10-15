@@ -67,6 +67,8 @@ class Container < ArvadosModel
     t.add :state
     t.add :auth_uuid
     t.add :scheduling_parameters
+    t.add :runtime_user_uuid
+    t.add :runtime_auth_scopes
   end
 
   # Supported states for a container
