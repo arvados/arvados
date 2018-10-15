@@ -780,6 +780,26 @@ type balancerStats struct {
 	trashes       int
 	replHistogram []int
 	classStats    map[string]replicationStats
+
+	// collectionBytes / collectionBlockBytes = deduplication ratio
+	collectionBytes      int64 // sum(bytes in referenced blocks) across all collections
+	collectionBlockBytes int64 // sum(block size) across all blocks referenced by collections
+	collectionBlockRefs  int64 // sum(number of blocks referenced) across all collections
+	collectionBlocks     int64 // number of blocks referenced by any collection
+}
+
+func (s *balancerStats) dedupByteRatio() float64 {
+	if s.collectionBlockBytes == 0 {
+		return 0
+	}
+	return float64(s.collectionBytes) / float64(s.collectionBlockBytes)
+}
+
+func (s *balancerStats) dedupBlockRatio() float64 {
+	if s.collectionBlocks == 0 {
+		return 0
+	}
+	return float64(s.collectionBlockRefs) / float64(s.collectionBlocks)
 }
 
 type replicationStats struct {
@@ -802,6 +822,13 @@ func (bal *Balancer) collectStatistics(results <-chan balanceResult) {
 	for result := range results {
 		surplus := result.have - result.want
 		bytes := result.blkid.Size()
+
+		if rc := int64(result.blk.RefCount); rc > 0 {
+			s.collectionBytes += rc * bytes
+			s.collectionBlockBytes += bytes
+			s.collectionBlockRefs += rc
+			s.collectionBlocks++
+		}
 
 		for class, state := range result.classState {
 			cs := s.classStats[class]
