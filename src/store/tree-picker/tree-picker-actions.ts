@@ -8,11 +8,11 @@ import { Dispatch } from 'redux';
 import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
 import { FilterBuilder } from '~/services/api/filter-builder';
-import { pipe } from 'lodash/fp';
+import { pipe, map, values, mapValues } from 'lodash/fp';
 import { ResourceKind } from '~/models/resource';
 import { GroupContentsResource } from '../../services/groups-service/groups-service';
 import { CollectionDirectory, CollectionFile } from '../../models/collection-file';
-import { getTreePicker } from './tree-picker';
+import { getTreePicker, TreePicker } from './tree-picker';
 import { ProjectsTreePickerItem } from '~/views-components/projects-tree-picker/generic-projects-tree-picker';
 
 export const treePickerActions = unionize({
@@ -22,6 +22,8 @@ export const treePickerActions = unionize({
     ACTIVATE_TREE_PICKER_NODE: ofType<{ id: string, pickerId: string }>(),
     DEACTIVATE_TREE_PICKER_NODE: ofType<{ pickerId: string }>(),
     TOGGLE_TREE_PICKER_NODE_SELECTION: ofType<{ id: string, pickerId: string }>(),
+    SELECT_TREE_PICKER_NODE: ofType<{ id: string | string[], pickerId: string }>(),
+    DESELECT_TREE_PICKER_NODE: ofType<{ id: string | string[], pickerId: string }>(),
     EXPAND_TREE_PICKER_NODES: ofType<{ ids: string[], pickerId: string }>(),
     RESET_TREE_PICKER: ofType<{ pickerId: string }>()
 });
@@ -33,6 +35,30 @@ export const getProjectsTreePickerIds = (pickerId: string) => ({
     shared: `${pickerId}_shared`,
     favorites: `${pickerId}_favorites`,
 });
+
+export const getAllNodes = <Value>(pickerId: string, filter = (node: TreeNode<Value>) => true) => (state: TreePicker) =>
+    pipe(
+        () => values(getProjectsTreePickerIds(pickerId)),
+
+        ids => ids
+            .map(id => getTreePicker<Value>(id)(state)),
+
+        trees => trees
+            .map(getNodeDescendants(''))
+            .reduce((allNodes, nodes) => allNodes.concat(nodes), []),
+
+        allNodes => allNodes
+            .reduce((map, node) =>
+                filter(node)
+                    ? map.set(node.id, node)
+                    : map, new Map<string, TreeNode<Value>>())
+            .values(),
+
+        uniqueNodes => Array.from(uniqueNodes),
+    )();
+export const getSelectedNodes = <Value>(pickerId: string) => (state: TreePicker) =>
+    getAllNodes<Value>(pickerId, node => node.selected)(state);
+    
 export const initProjectsTreePicker = (pickerId: string) =>
     async (dispatch: Dispatch, _: () => RootState, services: ServiceRepository) => {
         const { home, shared, favorites } = getProjectsTreePickerIds(pickerId);

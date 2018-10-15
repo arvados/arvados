@@ -206,6 +206,12 @@
     "@types/react" "*"
     redux "^3.6.0 || ^4.0.0"
 
+"@types/reselect@2.2.0":
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/@types/reselect/-/reselect-2.2.0.tgz#c667206cfdc38190e1d379babe08865b2288575f"
+  dependencies:
+    reselect "*"
+
 "@types/shell-quote@1.6.0":
   version "1.6.0"
   resolved "https://registry.yarnpkg.com/@types/shell-quote/-/shell-quote-1.6.0.tgz#537b2949a2ebdcb0d353e448fee45b081021963f"
@@ -6904,7 +6910,7 @@ requires-port@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/requires-port/-/requires-port-1.0.0.tgz#925d2601d39ac485e091cf0da5c6e694dc3dcaff"
 
-reselect@4.0.0:
+reselect@*, reselect@4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/reselect/-/reselect-4.0.0.tgz#f2529830e5d3d0e021408b246a206ef4ea4437f7"
 

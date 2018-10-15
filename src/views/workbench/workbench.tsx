@@ -45,6 +45,8 @@ import { HomeTreePicker } from '~/views-components/projects-tree-picker/home-tre
 import { SharedTreePicker } from '~/views-components/projects-tree-picker/shared-tree-picker';
 import { FavoritesTreePicker } from '../../views-components/projects-tree-picker/favorites-tree-picker';
 import { ProjectsTreePicker } from '~/views-components/projects-tree-picker/projects-tree-picker';
+import { Chips } from '~/components/chips/chips';
+import { ChipsInput } from '../../components/chips-input/chips-input';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
