@@ -61,6 +61,14 @@ export const openSearchView = () =>
         dispatch(searchBarActions.SET_SAVED_QUERIES(savedSearchQueries));
     };
 
+export const closeSearchView = () => 
+    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        const isOpen = getState().searchBar.open;
+        if(isOpen) {
+            dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
+        }
+    };
+
 
 export const searchData = (searchValue: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
