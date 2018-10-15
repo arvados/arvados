@@ -648,7 +648,11 @@ class Container < ArvadosModel
             container_image: self.container_image,
             mounts: self.mounts,
             runtime_constraints: self.runtime_constraints,
-            scheduling_parameters: self.scheduling_parameters
+            scheduling_parameters: self.scheduling_parameters,
+            secret_mounts: self.secret_mounts_was,
+            runtime_token: self.runtime_token_was,
+            runtime_user_uuid: self.runtime_user_uuid,
+            runtime_auth_scopes: self.runtime_auth_scopes
           }
           c = Container.create! c_attrs
           retryable_requests.each do |cr|

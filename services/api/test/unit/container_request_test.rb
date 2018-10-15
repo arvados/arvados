@@ -677,6 +677,49 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_not_equal cr2.container_uuid, cr.container_uuid
   end
 
+  test "Retry on container cancelled with runtime_token" do
+    set_user_from_auth :spectator
+    spec = api_client_authorizations(:active)
+    cr = create_minimal_req!(priority: 1, state: "Committed",
+                             runtime_token: spec.token,
+                             container_count_max: 2)
+    prev_container_uuid = cr.container_uuid
+
+    c = act_as_system_user do
+      c = Container.find_by_uuid(cr.container_uuid)
+      assert_equal spec.token, c.runtime_token
+      c.update_attributes!(state: Container::Locked)
+      c.update_attributes!(state: Container::Running)
+      c
+    end
+
+    cr.reload
+    assert_equal "Committed", cr.state
+    assert_equal prev_container_uuid, cr.container_uuid
+    prev_container_uuid = cr.container_uuid
+
+    act_as_system_user do
+      c.update_attributes!(state: Container::Cancelled)
+    end
+
+    cr.reload
+    assert_equal "Committed", cr.state
+    assert_not_equal prev_container_uuid, cr.container_uuid
+    prev_container_uuid = cr.container_uuid
+
+    c = act_as_system_user do
+      c = Container.find_by_uuid(cr.container_uuid)
+      assert_equal spec.token, c.runtime_token
+      c.update_attributes!(state: Container::Cancelled)
+      c
+    end
+
+    cr.reload
+    assert_equal "Final", cr.state
+    assert_equal prev_container_uuid, cr.container_uuid
+
+  end
+
   test "Output collection name setting using output_name with name collision resolution" do
     set_user_from_auth :active
     output_name = 'unimaginative name'
