@@ -158,6 +158,8 @@ table(table table-bordered table-condensed).
 |arvados_keep_overreplicated_{replicas,blocks,bytes}|gauge|overreplicated data (more replicas exist than are needed)|
 |arvados_keep_underreplicated_{replicas,blocks,bytes}|gauge|underreplicated data (fewer replicas exist than are needed)|
 |arvados_keep_lost_{replicas,blocks,bytes}|gauge|lost data (referenced by collections, but not found on any backend volume)|
+|arvados_keep_dedup_block_ratio|gauge|deduplication ratio (block references in collections &divide; distinct blocks referenced)|
+|arvados_keep_dedup_byte_ratio|gauge|deduplication ratio (block references in collections &divide; distinct blocks referenced, weighted by block size)|
 |arvados_keepbalance_get_state_seconds|summary|time to get all collections and keepstore volume indexes for one iteration|
 |arvados_keepbalance_changeset_compute_seconds|summary|time to compute changesets for one iteration|
 |arvados_keepbalance_send_pull_list_seconds|summary|time to send pull lists to all keepstore servers for one iteration|
