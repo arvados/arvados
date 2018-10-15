@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { reduxForm, InjectedFormProps } from 'redux-form';
-import { CommandInputParameter, CWLType, IntCommandInputParameter, BooleanCommandInputParameter, FileCommandInputParameter, DirectoryCommandInputParameter } from '~/models/workflow';
+import { CommandInputParameter, CWLType, IntCommandInputParameter, BooleanCommandInputParameter, FileCommandInputParameter, DirectoryCommandInputParameter, DirectoryArrayCommandInputParameter } from '~/models/workflow';
 import { IntInput } from '~/views/run-process-panel/inputs/int-input';
 import { StringInput } from '~/views/run-process-panel/inputs/string-input';
 import { StringCommandInputParameter, FloatCommandInputParameter, isPrimitiveOfType, File, Directory, WorkflowInputsData, EnumCommandInputParameter, isArrayOfType, StringArrayCommandInputParameter, FileArrayCommandInputParameter } from '../../models/workflow';
@@ -19,6 +19,7 @@ import { DirectoryInput } from './inputs/directory-input';
 import { StringArrayInput } from './inputs/string-array-input';
 import { createStructuredSelector, createSelector } from 'reselect';
 import { FileArrayInput } from './inputs/file-array-input';
+import { DirectoryArrayInput } from './inputs/directory-array-input';
 
 export const RUN_PROCESS_INPUTS_FORM = 'runProcessInputsForm';
 
@@ -101,6 +102,9 @@ const getInputComponent = (input: CommandInputParameter) => {
 
         case isArrayOfType(input, CWLType.FILE):
             return <FileArrayInput input={input as FileArrayCommandInputParameter} />;
+        
+        case isArrayOfType(input, CWLType.DIRECTORY):
+            return <DirectoryArrayInput input={input as DirectoryArrayCommandInputParameter} />;
 
         default:
             return null;

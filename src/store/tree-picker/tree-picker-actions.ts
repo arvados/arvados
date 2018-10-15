@@ -36,8 +36,8 @@ export const getProjectsTreePickerIds = (pickerId: string) => ({
     favorites: `${pickerId}_favorites`,
 });
 
-export const getSelectedNodes = <Value>(pickerId: string) => (state: TreePicker) => {
-    return pipe(
+export const getAllNodes = <Value>(pickerId: string, filter = (node: TreeNode<Value>) => true) => (state: TreePicker) =>
+    pipe(
         () => values(getProjectsTreePickerIds(pickerId)),
 
         ids => ids
@@ -48,14 +48,17 @@ export const getSelectedNodes = <Value>(pickerId: string) => (state: TreePicker)
             .reduce((allNodes, nodes) => allNodes.concat(nodes), []),
 
         allNodes => allNodes
-            .reduce((map, node) => node.selected
-                ? map.set(node.id, node)
-                : map, new Map<string, TreeNode<Value>>())
+            .reduce((map, node) =>
+                filter(node)
+                    ? map.set(node.id, node)
+                    : map, new Map<string, TreeNode<Value>>())
             .values(),
 
         uniqueNodes => Array.from(uniqueNodes),
     )();
-};
+export const getSelectedNodes = <Value>(pickerId: string) => (state: TreePicker) =>
+    getAllNodes<Value>(pickerId, node => node.selected)(state);
+    
 export const initProjectsTreePicker = (pickerId: string) =>
     async (dispatch: Dispatch, _: () => RootState, services: ServiceRepository) => {
         const { home, shared, favorites } = getProjectsTreePickerIds(pickerId);
