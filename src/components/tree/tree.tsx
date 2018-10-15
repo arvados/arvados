@@ -60,7 +60,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         width: theme.spacing.unit * 3,
         height: theme.spacing.unit * 3,
         margin: `0 ${theme.spacing.unit}px`,
-        color: theme.palette.grey["500"]
+        padding: 0,
+        color: theme.palette.grey["500"],
     }
 });
 
@@ -81,15 +82,15 @@ export interface TreeItem<T> {
 }
 
 export interface TreeProps<T> {
+    disableRipple?: boolean;
     items?: Array<TreeItem<T>>;
-    render: (item: TreeItem<T>, level?: number) => ReactElement<{}>;
-    toggleItemOpen: (id: string, status: TreeItemStatus) => void;
-    toggleItemActive: (id: string, status: TreeItemStatus) => void;
     level?: number;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
-    showSelection?: boolean;
-    onSelectionChange?: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
-    disableRipple?: boolean;
+    render: (item: TreeItem<T>, level?: number) => ReactElement<{}>;
+    showSelection?: boolean | ((item: TreeItem<T>) => boolean);
+    toggleItemActive: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
+    toggleItemOpen: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
+    toggleItemSelection?: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
 }
 
 export const Tree = withStyles(styles)(
@@ -98,22 +99,26 @@ export const Tree = withStyles(styles)(
             const level = this.props.level ? this.props.level : 0;
             const { classes, render, toggleItemOpen, items, toggleItemActive, onContextMenu, disableRipple } = this.props;
             const { list, listItem, loader, toggableIconContainer, renderContainer } = classes;
+            const isCheckboxVisible = typeof this.props.showSelection === 'function'
+                ? this.props.showSelection
+                : () => this.props.showSelection ? true : false;
+
             return <List component="div" className={list}>
                 {items && items.map((it: TreeItem<T>, idx: number) =>
                     <div key={`item/${level}/${idx}`}>
                         <ListItem button className={listItem} style={{ paddingLeft: (level + 1) * 20 }}
                             disableRipple={disableRipple}
-                            onClick={() => toggleItemActive(it.id, it.status)}
+                            onClick={event => toggleItemActive(event, it)}
                             onContextMenu={this.handleRowContextMenu(it)}>
                             {it.status === TreeItemStatus.PENDING ?
                                 <CircularProgress size={10} className={loader} /> : null}
-                            <i onClick={this.handleToggleItemOpen(it.id, it.status)}
+                            <i onClick={this.handleToggleItemOpen(it)}
                                 className={toggableIconContainer}>
                                 <ListItemIcon className={this.getToggableIconClassNames(it.open, it.active)}>
                                     {this.getProperArrowAnimation(it.status, it.items!)}
                                 </ListItemIcon>
                             </i>
-                            {this.props.showSelection &&
+                            { isCheckboxVisible(it) &&
                                 <Checkbox
                                     checked={it.selected}
                                     className={classes.checkbox}
@@ -134,7 +139,7 @@ export const Tree = withStyles(styles)(
                                     toggleItemActive={toggleItemActive}
                                     level={level + 1}
                                     onContextMenu={onContextMenu}
-                                    onSelectionChange={this.props.onSelectionChange} />
+                                    toggleItemSelection={this.props.toggleItemSelection} />
                             </Collapse>}
                     </div>)}
             </List>;
@@ -164,17 +169,18 @@ export const Tree = withStyles(styles)(
                 this.props.onContextMenu(event, item)
 
         handleCheckboxChange = (item: TreeItem<T>) => {
-            const { onSelectionChange } = this.props;
-            return onSelectionChange
+            const { toggleItemSelection } = this.props;
+            return toggleItemSelection
                 ? (event: React.MouseEvent<HTMLElement>) => {
-                    onSelectionChange(event, item);
+                    event.stopPropagation();
+                    toggleItemSelection(event, item);
                 }
                 : undefined;
         }
 
-        handleToggleItemOpen = (id: string, status: TreeItemStatus) => (event: React.MouseEvent<HTMLElement>) => {
+        handleToggleItemOpen = (item: TreeItem<T>) => (event: React.MouseEvent<HTMLElement>) => {
             event.stopPropagation();
-            this.props.toggleItemOpen(id, status);
+            this.props.toggleItemOpen(event, item);
         }
     }
 );

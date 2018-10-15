@@ -19,15 +19,15 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     }
 });
 
-export interface ProjectTreeProps {
+export interface ProjectTreeProps<T> {
     projects: Array<TreeItem<ProjectResource>>;
-    toggleOpen: (id: string, status: TreeItemStatus) => void;
-    toggleActive: (id: string, status: TreeItemStatus) => void;
+    toggleOpen: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
+    toggleActive: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: TreeItem<ProjectResource>) => void;
 }
 
 export const ProjectTree = withStyles(styles)(
-    class ProjectTreeGeneric<T> extends React.Component<ProjectTreeProps & WithStyles<CssRules>> {
+    class ProjectTreeGeneric<T> extends React.Component<ProjectTreeProps<T> & WithStyles<CssRules>> {
         render(): ReactElement<any> {
             const { classes, projects, toggleOpen, toggleActive, onContextMenu } = this.props;
             return (
@@ -42,8 +42,8 @@ export const ProjectTree = withStyles(styles)(
                                     icon={ProjectIcon}
                                     name={project.data.name}
                                     isActive={project.active}
-                                    hasMargin={true}/>
-                        }/>
+                                    hasMargin={true} />
+                        } />
                 </div>
             );
         }

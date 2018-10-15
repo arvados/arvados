@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Tree, createTree, setNode } from './tree';
+import { Tree, createTree, setNode, TreeNodeStatus } from './tree';
 
 export type CollectionFilesTree = Tree<CollectionDirectory | CollectionFile>;
 
@@ -60,6 +60,11 @@ export const createCollectionFilesTree = (data: Array<CollectionDirectory | Coll
             children: [],
             id: item.id,
             parent: item.path,
-            value: item
+            value: item,
+            active: false,
+            selected: false,
+            expanded: false,
+            status: TreeNodeStatus.INITIAL
+
         })(tree), createTree<CollectionDirectory | CollectionFile>());
 };
