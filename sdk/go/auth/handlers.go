@@ -18,7 +18,10 @@ var contextKeyCredentials contextKey = "credentials"
 // CredentialsFromRequest.
 func LoadToken(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), contextKeyCredentials, CredentialsFromRequest(r))))
+		if _, ok := r.Context().Value(contextKeyCredentials).(*Credentials); !ok {
+			r = r.WithContext(context.WithValue(r.Context(), contextKeyCredentials, CredentialsFromRequest(r)))
+		}
+		next.ServeHTTP(w, r)
 	})
 }
 
