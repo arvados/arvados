@@ -7,14 +7,6 @@ require 'test_helper'
 class ContainerAuthTest < ActionDispatch::IntegrationTest
   fixtures :all
 
-  test "container token validate, Queued" do
-    get "/arvados/v1/containers/current", {
-      :format => :json
-        }, {'HTTP_AUTHORIZATION' => "Bearer #{api_client_authorizations(:container_runtime_token).token}/#{containers(:runtime_token).uuid}"}
-    # Container is Queued, token cannot be used
-    assert_response 401
-  end
-
   test "container token validate, Running, regular auth" do
     get "/arvados/v1/containers/current", {
       :format => :json
@@ -25,15 +17,25 @@ class ContainerAuthTest < ActionDispatch::IntegrationTest
   end
 
   test "container token validate, Locked, runtime_token" do
-    post "/arvados/v1/containers/#{containers(:runtime_token).uuid}/lock", {
-      :format => :json
-    }, {'HTTP_AUTHORIZATION' => "Bearer #{api_client_authorizations(:dispatch1).token}"}
     get "/arvados/v1/containers/current", {
       :format => :json
         }, {'HTTP_AUTHORIZATION' => "Bearer #{api_client_authorizations(:container_runtime_token).token}/#{containers(:runtime_token).uuid}"}
     # Container is Running, token can be used
     assert_response :success
     assert_equal containers(:runtime_token).uuid, json_response['uuid']
+  end
+
+  test "container token validate, Cancelled, runtime_token" do
+    put "/arvados/v1/containers/#{containers(:runtime_token).uuid}", {
+          :format => :json,
+          :container => {:state => "Cancelled"}
+        }, {'HTTP_AUTHORIZATION' => "Bearer #{api_client_authorizations(:dispatch1).token}"}
+    assert_response :success
+    get "/arvados/v1/containers/current", {
+      :format => :json
+        }, {'HTTP_AUTHORIZATION' => "Bearer #{api_client_authorizations(:container_runtime_token).token}/#{containers(:runtime_token).uuid}"}
+    # Container is Queued, token cannot be used
+    assert_response 401
   end
 
   test "container token validate, Running, without optional portion" do
@@ -46,9 +48,6 @@ class ContainerAuthTest < ActionDispatch::IntegrationTest
   end
 
   test "container token validate, Locked, runtime_token, without optional portion" do
-    post "/arvados/v1/containers/#{containers(:runtime_token).uuid}/lock", {
-      :format => :json
-    }, {'HTTP_AUTHORIZATION' => "Bearer #{api_client_authorizations(:dispatch1).token}"}
     get "/arvados/v1/containers/current", {
       :format => :json
         }, {'HTTP_AUTHORIZATION' => "Bearer #{api_client_authorizations(:container_runtime_token).token}"}
@@ -57,9 +56,6 @@ class ContainerAuthTest < ActionDispatch::IntegrationTest
   end
 
   test "container token validate, wrong container uuid" do
-    post "/arvados/v1/containers/#{containers(:runtime_token).uuid}/lock", {
-      :format => :json
-    }, {'HTTP_AUTHORIZATION' => "Bearer #{api_client_authorizations(:dispatch1).token}"}
     get "/arvados/v1/containers/current", {
       :format => :json
         }, {'HTTP_AUTHORIZATION' => "Bearer #{api_client_authorizations(:container_runtime_token).token}/#{containers(:running).uuid}"}

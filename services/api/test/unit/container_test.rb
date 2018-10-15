@@ -671,7 +671,7 @@ class ContainerTest < ActiveSupport::TestCase
   end
 
   test "Container queued count" do
-    assert_equal 2, Container.readable_by(users(:active)).where(state: "Queued").count
+    assert_equal 1, Container.readable_by(users(:active)).where(state: "Queued").count
   end
 
   test "Container locked cancel" do
