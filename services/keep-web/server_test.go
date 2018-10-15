@@ -403,6 +403,7 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
 	kc.PutB([]byte("Hello world\n"))
 	kc.PutB([]byte("foo"))
 	kc.PutB([]byte("foobar"))
+	kc.PutB([]byte("waz"))
 }
 
 func (s *IntegrationSuite) TearDownSuite(c *check.C) {

@@ -350,6 +350,28 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenSiteFS(c *check.C) {
 	c.Check(resp.Header().Get("Content-Disposition"), check.Matches, "attachment(;.*)?")
 }
 
+func (s *IntegrationSuite) TestPastCollectionVersionFileAccess(c *check.C) {
+	s.testServer.Config.AttachmentOnlyHost = "download.example.com"
+	resp := s.testVhostRedirectTokenToCookie(c, "GET",
+		"download.example.com/c="+arvadostest.WazVersion1Collection+"/waz",
+		"?api_token="+arvadostest.ActiveToken,
+		"",
+		"",
+		http.StatusOK,
+		"waz",
+	)
+	c.Check(resp.Header().Get("Content-Disposition"), check.Matches, "attachment(;.*)?")
+	resp = s.testVhostRedirectTokenToCookie(c, "GET",
+		"download.example.com/by_id/"+arvadostest.WazVersion1Collection+"/waz",
+		"?api_token="+arvadostest.ActiveToken,
+		"",
+		"",
+		http.StatusOK,
+		"waz",
+	)
+	c.Check(resp.Header().Get("Content-Disposition"), check.Matches, "attachment(;.*)?")
+}
+
 func (s *IntegrationSuite) TestVhostRedirectQueryTokenTrustAllContent(c *check.C) {
 	s.testServer.Config.TrustAllContent = true
 	s.testVhostRedirectTokenToCookie(c, "GET",
@@ -655,6 +677,18 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 			uri:    "collections.example.com/c=" + arvadostest.FooAndBarFilesInDirUUID + "/theperthcountyconspiracydoesnotexist/",
 			header: authHeader,
 			expect: nil,
+		},
+		{
+			uri:     "download.example.com/c=" + arvadostest.WazVersion1Collection,
+			header:  authHeader,
+			expect:  []string{"waz"},
+			cutDirs: 1,
+		},
+		{
+			uri:     "download.example.com/by_id/" + arvadostest.WazVersion1Collection,
+			header:  authHeader,
+			expect:  []string{"waz"},
+			cutDirs: 2,
 		},
 	} {
 		c.Logf("HTML: %q => %q", trial.uri, trial.expect)
