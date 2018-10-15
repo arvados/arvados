@@ -6,7 +6,7 @@
 Description=Arvados Docker Image Cleaner
 Documentation=https://doc.arvados.org/
 After=network.target
-AssertPathExists=/etc/arvados/docker-cleaner/docker-cleaner.json
+#AssertPathExists=/etc/arvados/docker-cleaner/docker-cleaner.json
 
 # systemd==229 (ubuntu:xenial) obeys StartLimitInterval in the [Unit] section
 StartLimitInterval=0
