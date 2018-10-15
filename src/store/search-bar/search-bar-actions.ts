@@ -5,12 +5,14 @@
 import { unionize, ofType, UnionOf } from "~/common/unionize";
 import { GroupContentsResource, GroupContentsResourcePrefix } from '~/services/groups-service/groups-service';
 import { Dispatch } from 'redux';
+import { change, arrayPush } from 'redux-form';
 import { RootState } from '~/store/store';
+import { initUserProject } from '~/store/tree-picker/tree-picker-actions';
 import { ServiceRepository } from '~/services/services';
 import { FilterBuilder } from "~/services/api/filter-builder";
 import { ResourceKind } from '~/models/resource';
 import { GroupClass } from '~/models/group';
-import { SearchBarAdvanceFormData } from '~/models/search-bar';
+import { SearchBarAdvanceFormData, PropertyValues } from '~/models/search-bar';
 
 export const searchBarActions = unionize({
     SET_CURRENT_VIEW: ofType<string>(),
@@ -24,6 +26,8 @@ export const searchBarActions = unionize({
 export type SearchBarActions = UnionOf<typeof searchBarActions>;
 
 export const SEARCH_BAR_ADVANCE_FORM_NAME = 'searchBarAdvanceFormName';
+
+export const SEARCH_BAR_ADVANCE_FORM_PICKER_ID = 'searchBarAdvanceFormPickerId';
 
 export const goToView = (currentView: string) => searchBarActions.SET_CURRENT_VIEW(currentView);
 
@@ -69,7 +73,6 @@ export const closeSearchView = () =>
         }
     };
 
-
 export const searchData = (searchValue: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(searchBarActions.SET_SEARCH_VALUE(searchValue));
@@ -94,3 +97,18 @@ const getFilters = (filterName: string, searchValue: string): string => {
         .addEqual('groupClass', GroupClass.PROJECT, GroupContentsResourcePrefix.PROJECT)
         .getFilters();
 };
+
+export const initAdvanceFormProjectsTree = () => 
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch<any>(initUserProject(SEARCH_BAR_ADVANCE_FORM_PICKER_ID));
+    };
+
+export const changeAdvanceFormProperty = (property: string, value: PropertyValues[] | string = '') => 
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(change(SEARCH_BAR_ADVANCE_FORM_NAME, property, value));
+    };
+
+export const updateAdvanceFormProperties = (propertyValues: PropertyValues) => 
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(arrayPush(SEARCH_BAR_ADVANCE_FORM_NAME, 'properties', propertyValues));
+    };

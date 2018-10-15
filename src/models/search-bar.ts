@@ -4,15 +4,21 @@
 
 import { ResourceKind } from '~/models/resource';
 
-export interface SearchBarAdvanceFormData {
+export type SearchBarAdvanceFormData = {
     type?: ResourceKind;
     cluster?: ClusterObjectType;
-    project?: string;
+    projectUuid?: string;
     inTrash: boolean;
     dateFrom: string;
     dateTo: string;
     saveQuery: boolean;
     searchQuery: string;
+    properties: PropertyValues[];
+} & PropertyValues;
+
+export interface PropertyValues {
+    propertyKey: string;
+    propertyValue: string;
 }
 
 export enum ClusterObjectType {

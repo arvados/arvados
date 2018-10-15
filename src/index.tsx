@@ -46,6 +46,7 @@ import { setBuildInfo } from '~/store/app-info/app-info-actions';
 import { getBuildInfo } from '~/common/app-info';
 import { DragDropContextProvider } from 'react-dnd';
 import HTML5Backend from 'react-dnd-html5-backend';
+import { initAdvanceFormProjectsTree } from '~/store/search-bar/search-bar-actions';
 
 console.log(`Starting arvados [${getBuildInfo()}]`);
 
@@ -114,6 +115,7 @@ const initListener = (history: History, store: RootStore, services: ServiceRepos
             initWebSocket(config, services.authService, store);
             await store.dispatch(loadWorkbench());
             addRouteChangeHandlers(history, store);
+            store.dispatch(initAdvanceFormProjectsTree());
         }
     };
 };
