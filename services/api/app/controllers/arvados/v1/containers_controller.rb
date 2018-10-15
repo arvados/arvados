@@ -70,7 +70,7 @@ class Arvados::V1::ContainersController < ApplicationController
 
   def secret_mounts
     c = Container.for_current_token
-    if @object && c && @object.uuid == c.uuid
+    if @object && c && @object.uuid == c.first.uuid
       send_json({"secret_mounts" => @object.secret_mounts})
     else
       send_error("Token is not associated with this container.", status: 403)
