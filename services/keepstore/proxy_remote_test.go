@@ -99,6 +99,7 @@ func (s *ProxyRemoteSuite) SetUpTest(c *check.C) {
 	KeepVM = s.vm
 	theConfig = DefaultConfig()
 	theConfig.systemAuthToken = arvadostest.DataManagerToken
+	theConfig.blobSigningKey = []byte(knownKey)
 	theConfig.Start()
 	s.rtr = MakeRESTRouter(s.cluster)
 }
@@ -120,30 +121,101 @@ func (s *ProxyRemoteSuite) TestProxyRemote(c *check.C) {
 
 	path := "/" + strings.Replace(s.remoteKeepLocator, "+A", "+R"+s.remoteClusterID+"-", 1)
 
-	var req *http.Request
-	var resp *httptest.ResponseRecorder
-	tryWithToken := func(token string) {
-		req = httptest.NewRequest("GET", path, nil)
-		req.Header.Set("Authorization", "Bearer "+token)
+	for _, trial := range []struct {
+		label            string
+		method           string
+		token            string
+		xKeepSignature   string
+		expectRemoteReqs int64
+		expectCode       int
+		expectSignature  bool
+	}{
+		{
+			label:            "GET only",
+			method:           "GET",
+			token:            arvadostest.ActiveTokenV2,
+			expectRemoteReqs: 1,
+			expectCode:       http.StatusOK,
+		},
+		{
+			label:            "obsolete token",
+			method:           "GET",
+			token:            arvadostest.ActiveToken,
+			expectRemoteReqs: 0,
+			expectCode:       http.StatusBadRequest,
+		},
+		{
+			label:            "bad token",
+			method:           "GET",
+			token:            arvadostest.ActiveTokenV2[:len(arvadostest.ActiveTokenV2)-3] + "xxx",
+			expectRemoteReqs: 1,
+			expectCode:       http.StatusNotFound,
+		},
+		{
+			label:            "HEAD only",
+			method:           "HEAD",
+			token:            arvadostest.ActiveTokenV2,
+			expectRemoteReqs: 1,
+			expectCode:       http.StatusOK,
+		},
+		{
+			label:            "HEAD with local signature",
+			method:           "HEAD",
+			xKeepSignature:   "local, time=" + time.Now().Format(time.RFC3339),
+			token:            arvadostest.ActiveTokenV2,
+			expectRemoteReqs: 1,
+			expectCode:       http.StatusOK,
+			expectSignature:  true,
+		},
+		{
+			label:            "GET with local signature",
+			method:           "GET",
+			xKeepSignature:   "local, time=" + time.Now().Format(time.RFC3339),
+			token:            arvadostest.ActiveTokenV2,
+			expectRemoteReqs: 1,
+			expectCode:       http.StatusOK,
+			expectSignature:  true,
+		},
+	} {
+		c.Logf("trial: %s", trial.label)
+
+		s.remoteKeepRequests = 0
+
+		var req *http.Request
+		var resp *httptest.ResponseRecorder
+		req = httptest.NewRequest(trial.method, path, nil)
+		req.Header.Set("Authorization", "Bearer "+trial.token)
+		if trial.xKeepSignature != "" {
+			req.Header.Set("X-Keep-Signature", trial.xKeepSignature)
+		}
 		resp = httptest.NewRecorder()
 		s.rtr.ServeHTTP(resp, req)
+		c.Check(s.remoteKeepRequests, check.Equals, trial.expectRemoteReqs)
+		c.Check(resp.Code, check.Equals, trial.expectCode)
+		if resp.Code == http.StatusOK {
+			c.Check(resp.Body.String(), check.Equals, string(data))
+		} else {
+			c.Check(resp.Body.String(), check.Not(check.Equals), string(data))
+		}
+
+		c.Check(resp.Header().Get("Vary"), check.Matches, `(.*, )?X-Keep-Signature(, .*)?`)
+
+		locHdr := resp.Header().Get("X-Keep-Locator")
+		if !trial.expectSignature {
+			c.Check(locHdr, check.Equals, "")
+			continue
+		}
+
+		c.Check(locHdr, check.Not(check.Equals), "")
+		c.Check(locHdr, check.Not(check.Matches), `.*\+R.*`)
+		c.Check(VerifySignature(locHdr, trial.token), check.IsNil)
+
+		// Ensure block can be requested using new signature
+		req = httptest.NewRequest("GET", "/"+locHdr, nil)
+		req.Header.Set("Authorization", "Bearer "+trial.token)
+		resp = httptest.NewRecorder()
+		s.rtr.ServeHTTP(resp, req)
+		c.Check(resp.Code, check.Equals, http.StatusOK)
+		c.Check(s.remoteKeepRequests, check.Equals, trial.expectRemoteReqs)
 	}
-
-	// Happy path
-	tryWithToken(arvadostest.ActiveTokenV2)
-	c.Check(s.remoteKeepRequests, check.Equals, int64(1))
-	c.Check(resp.Code, check.Equals, http.StatusOK)
-	c.Check(resp.Body.String(), check.Equals, string(data))
-
-	// Obsolete token
-	tryWithToken(arvadostest.ActiveToken)
-	c.Check(s.remoteKeepRequests, check.Equals, int64(1))
-	c.Check(resp.Code, check.Equals, http.StatusBadRequest)
-	c.Check(resp.Body.String(), check.Not(check.Equals), string(data))
-
-	// Bad token
-	tryWithToken(arvadostest.ActiveTokenV2[:len(arvadostest.ActiveTokenV2)-3] + "xxx")
-	c.Check(s.remoteKeepRequests, check.Equals, int64(2))
-	c.Check(resp.Code, check.Equals, http.StatusNotFound)
-	c.Check(resp.Body.String(), check.Not(check.Equals), string(data))
 }

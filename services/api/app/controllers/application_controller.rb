@@ -189,7 +189,10 @@ class ApplicationController < ActionController::Base
   end
 
   def find_objects_for_index
-    @objects ||= model_class.readable_by(*@read_users, {:include_trash => (params[:include_trash] || 'untrash' == action_name)})
+    @objects ||= model_class.readable_by(*@read_users, {
+      :include_trash => (params[:include_trash] || 'untrash' == action_name),
+      :include_old_versions => params[:include_old_versions]
+    })
     apply_where_limit_order_params
   end
 
@@ -344,13 +347,20 @@ class ApplicationController < ActionController::Base
     # If there are too many reader tokens, assume the request is malicious
     # and ignore it.
     if request.get? and params[:reader_tokens] and
-        params[:reader_tokens].size < 100
+      params[:reader_tokens].size < 100
+      secrets = params[:reader_tokens].map { |t|
+        if t.is_a? String and t.starts_with? "v2/"
+          t.split("/")[2]
+        else
+          t
+        end
+      }
       @read_auths += ApiClientAuthorization
         .includes(:user)
         .where('api_token IN (?) AND
                 (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)',
-               params[:reader_tokens])
-        .all
+               secrets)
+        .to_a
     end
     @read_auths.select! { |auth| auth.scopes_allow_request? request }
     @read_users = @read_auths.map(&:user).uniq

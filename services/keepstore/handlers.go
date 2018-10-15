@@ -103,7 +103,7 @@ func (rtr *router) handleGET(resp http.ResponseWriter, req *http.Request) {
 
 	locator := req.URL.Path[1:]
 	if strings.Contains(locator, "+R") && !strings.Contains(locator, "+A") {
-		rtr.remoteProxy.Get(resp, req, rtr.cluster)
+		rtr.remoteProxy.Get(ctx, resp, req, rtr.cluster)
 		return
 	}
 

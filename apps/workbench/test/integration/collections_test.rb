@@ -57,7 +57,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
   test "can download an entire collection with a reader token" do
     use_keep_web_config
 
-    token = api_fixture('api_client_authorizations')['active']['api_token']
+    token = api_token('active')
     data = "foo\nfile\n"
     datablock = `echo -n #{data.shellescape} | ARVADOS_API_TOKEN=#{token.shellescape} arv-put --no-progress --raw -`.strip
     assert $?.success?, $?

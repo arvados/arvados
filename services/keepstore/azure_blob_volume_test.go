@@ -18,6 +18,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"regexp"
 	"sort"
 	"strconv"
@@ -40,7 +41,10 @@ const (
 	fakeAccountKey  = "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="
 )
 
-var azureTestContainer string
+var (
+	azureTestContainer string
+	azureTestDebug     = os.Getenv("ARVADOS_DEBUG") != ""
+)
 
 func init() {
 	flag.StringVar(
@@ -109,7 +113,9 @@ var rangeRegexp = regexp.MustCompile(`^bytes=(\d+)-(\d+)$`)
 func (h *azStubHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	h.Lock()
 	defer h.Unlock()
-	// defer log.Printf("azStubHandler: %+v", r)
+	if azureTestDebug {
+		defer log.Printf("azStubHandler: %+v", r)
+	}
 
 	path := strings.Split(r.URL.Path, "/")
 	container := path[1]
@@ -340,7 +346,9 @@ var localHostPortRe = regexp.MustCompile(`(127\.0\.0\.1|localhost|\[::1\]):\d+`)
 
 func (d *azStubDialer) Dial(network, address string) (net.Conn, error) {
 	if hp := localHostPortRe.FindString(address); hp != "" {
-		log.Println("azStubDialer: dial", hp, "instead of", address)
+		if azureTestDebug {
+			log.Println("azStubDialer: dial", hp, "instead of", address)
+		}
 		address = hp
 	}
 	return d.Dialer.Dial(network, address)

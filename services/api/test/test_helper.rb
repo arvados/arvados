@@ -33,7 +33,7 @@ end
 require File.expand_path('../../config/environment', __FILE__)
 require 'rails/test_help'
 require 'mocha'
-require 'mocha/mini_test'
+require 'mocha/minitest'
 
 module ArvadosTestSupport
   def json_response
@@ -41,11 +41,11 @@ module ArvadosTestSupport
   end
 
   def api_token(api_client_auth_name)
-    api_client_authorizations(api_client_auth_name).api_token
+    api_client_authorizations(api_client_auth_name).token
   end
 
   def auth(api_client_auth_name)
-    {'HTTP_AUTHORIZATION' => "OAuth2 #{api_token(api_client_auth_name)}"}
+    {'HTTP_AUTHORIZATION' => "Bearer #{api_token(api_client_auth_name)}"}
   end
 
   def show_errors model
@@ -54,7 +54,7 @@ module ArvadosTestSupport
 end
 
 class ActiveSupport::TestCase
-  include FactoryGirl::Syntax::Methods
+  include FactoryBot::Syntax::Methods
   fixtures :all
 
   include ArvadosTestSupport
@@ -119,14 +119,14 @@ class ActiveSupport::TestCase
   end
 
   def authorize_with api_client_auth_name
-    authorize_with_token api_client_authorizations(api_client_auth_name).api_token
+    authorize_with_token api_client_authorizations(api_client_auth_name).token
   end
 
   def authorize_with_token token
     t = token
-    t = t.api_token if t.respond_to? :api_token
+    t = t.token if t.respond_to? :token
     ArvadosApiToken.new.call("rack.input" => "",
-                             "HTTP_AUTHORIZATION" => "OAuth2 #{t}")
+                             "HTTP_AUTHORIZATION" => "Bearer #{t}")
   end
 
   def salt_token(fixture:, remote:)

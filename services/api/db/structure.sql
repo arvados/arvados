@@ -172,7 +172,10 @@ CREATE TABLE public.collections (
     is_trashed boolean DEFAULT false NOT NULL,
     storage_classes_desired jsonb DEFAULT '["default"]'::jsonb,
     storage_classes_confirmed jsonb DEFAULT '[]'::jsonb,
-    storage_classes_confirmed_at timestamp without time zone
+    storage_classes_confirmed_at timestamp without time zone,
+    current_version_uuid character varying,
+    version integer DEFAULT 1 NOT NULL,
+    preserve_version boolean DEFAULT false
 );
 
 
@@ -1631,7 +1634,7 @@ CREATE INDEX collections_full_text_search_idx ON public.collections USING gin (t
 -- Name: collections_search_index; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX collections_search_index ON public.collections USING btree (owner_uuid, modified_by_client_uuid, modified_by_user_uuid, portable_data_hash, uuid, name);
+CREATE INDEX collections_search_index ON public.collections USING btree (owner_uuid, modified_by_client_uuid, modified_by_user_uuid, portable_data_hash, uuid, name, current_version_uuid);
 
 
 --
@@ -1782,6 +1785,13 @@ CREATE INDEX index_collections_on_created_at ON public.collections USING btree (
 
 
 --
+-- Name: index_collections_on_current_version_uuid_and_version; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_collections_on_current_version_uuid_and_version ON public.collections USING btree (current_version_uuid, version);
+
+
+--
 -- Name: index_collections_on_delete_at; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1820,7 +1830,7 @@ CREATE INDEX index_collections_on_owner_uuid ON public.collections USING btree (
 -- Name: index_collections_on_owner_uuid_and_name; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE UNIQUE INDEX index_collections_on_owner_uuid_and_name ON public.collections USING btree (owner_uuid, name) WHERE (is_trashed = false);
+CREATE UNIQUE INDEX index_collections_on_owner_uuid_and_name ON public.collections USING btree (owner_uuid, name) WHERE ((is_trashed = false) AND ((current_version_uuid)::text = (uuid)::text));
 
 
 --
@@ -3169,5 +3179,14 @@ INSERT INTO schema_migrations (version) VALUES ('20180824155207');
 
 INSERT INTO schema_migrations (version) VALUES ('20180904110712');
 
+INSERT INTO schema_migrations (version) VALUES ('20180913175443');
+
+INSERT INTO schema_migrations (version) VALUES ('20180915155335');
+
 INSERT INTO schema_migrations (version) VALUES ('20180917205609');
 
+INSERT INTO schema_migrations (version) VALUES ('20180919001158');
+
+INSERT INTO schema_migrations (version) VALUES ('20181001175023');
+
+INSERT INTO schema_migrations (version) VALUES ('20181004131141');

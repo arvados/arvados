@@ -101,7 +101,7 @@ class Arvados::V1::SchemaControllerTest < ActionController::TestCase
     specimens_index_params = discovery_doc['resources']['specimens']['methods']['index']['parameters']  # no changes from super
     coll_index_params = discovery_doc['resources']['collections']['methods']['index']['parameters']
 
-    assert_equal coll_index_params.keys.sort, (specimens_index_params.keys + ['include_trash']).sort
+    assert_equal (specimens_index_params.keys + ['include_trash', 'include_old_versions']).sort, coll_index_params.keys.sort
 
     include_trash_param = coll_index_params['include_trash']
     assert_equal 'boolean', include_trash_param['type']
