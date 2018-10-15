@@ -118,6 +118,14 @@ const initListener = (history: History, store: RootStore, services: ServiceRepos
     };
 };
 
+const createDirectoriesArrayCollectorWorkflow = ({workflowService}: ServiceRepository) => {
+    workflowService.create({
+        name: 'Directories array collector',
+        description: 'Workflow for collecting directories array',
+        definition: "cwlVersion: v1.0\n$graph:\n- class: CommandLineTool\n\n  requirements:\n  - listing:\n    - entryname: input_collector.log\n      entry: |\n        \"multiple_collections\":\n          $(inputs.multiple_collections)\n\n    class: InitialWorkDirRequirement\n  inputs:\n  - type:\n      type: array\n      items: Directory\n    id: '#input_collector.cwl/multiple_collections'\n  outputs:\n  - type: File\n    outputBinding:\n      glob: '*'\n    id: '#input_collector.cwl/output'\n\n  baseCommand: [echo]\n  id: '#input_collector.cwl'\n- class: Workflow\n  doc: This is the description of the workflow\n  inputs:\n  - type:\n      type: array\n      items: Directory\n    label: Multiple Collections\n    doc: This should allow for selecting multiple collections.\n    id: '#main/multiple_collections'\n    default:\n    - class: Directory\n      location: keep:1e1682585d576f031b2d8b4944f989ee+57\n      basename: 1e1682585d576f031b2d8b4944f989ee+57\n    - class: Directory\n      location: keep:326f692370e9e121fcbd013796f7352a+57\n      basename: 326f692370e9e121fcbd013796f7352a+57\n  \n  outputs:\n  - type: File\n    outputSource: '#main/input_collector/output'\n\n    id: '#main/log_file'\n  steps:\n  - run: '#input_collector.cwl'\n    in:\n    - source: '#main/multiple_collections'\n      id: '#main/input_collector/multiple_collections'\n    out: ['#main/input_collector/output']\n    id: '#main/input_collector'\n  id: '#main'\n",
+    });
+};
+
 const createFilesArrayCollectorWorkflow = ({workflowService}: ServiceRepository) => {
     workflowService.create({
         name: 'Files array collector',

@@ -17,7 +17,6 @@ import { ProjectsTreePicker } from '~/views-components/projects-tree-picker/proj
 import { connect, DispatchProp } from 'react-redux';
 import { initProjectsTreePicker, getSelectedNodes, treePickerActions, getProjectsTreePickerIds, getAllNodes } from '~/store/tree-picker/tree-picker-actions';
 import { ProjectsTreePickerItem } from '~/views-components/projects-tree-picker/generic-projects-tree-picker';
-import { CollectionFile, CollectionFileType } from '~/models/collection-file';
 import { createSelector, createStructuredSelector } from 'reselect';
 import { ChipsInput } from '~/components/chips-input/chips-input';
 import { identity, values, noop } from 'lodash';
