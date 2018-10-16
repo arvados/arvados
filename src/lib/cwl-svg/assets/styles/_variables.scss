@@ -1,0 +1,50 @@
+
+// Colors
+$color-primary: #11a7a7 !default;
+$color-neutral: rgb(154, 154, 154) !default;
+$background-color: white !default;
+
+// Workflow
+$background: $background-color !default;
+
+// Fonts
+$font-color: #333 !default;
+$text-stroke: #fff !default;
+$font-family: sans-serif !default;
+
+// Labels
+$label-stroke-color: $background-color !default;
+$label-stroke-width: 4px !default;
+
+// Edges
+$edge-inner-color: #222 !default;
+$edge-outer-color: #fff !default;
+$edge-inner-hover-color: $color-primary !default;
+$edge-inner-stroke-width: 2px !default;
+$edge-inner-stroke-color: $color-neutral !default;
+$edge-outer-stroke-width: 5px !default;
+$edge-outer-stroke-color: $background-color !default;
+
+// Nodes
+$node-outer-fill-color: $background-color !default;
+$node-outer-stroke-color: $color-neutral !default;
+$node-outer-stroke-width: 2px !default;
+
+$node-input-fill-color: #c3c3c3 !default;
+$node-output-fill-color: #c3c3c3 !default;
+$node-step-fill-color: $color-primary !default;
+
+$node-hover-port-transition: all .1s !default;
+
+// Node Icons
+$node-icon-fill-color: $font-color !default;
+$node-icon-stroke-color: $font-color !default;
+$node-icon-stroke-width: 3px !default;
+
+// Ports
+$port-fill-color: $color-neutral !default;
+$port-hover-stroke-color: darken($port-fill-color, 20%) !default;
+$port-hover-stroke-width: 2px !default;
+$port-label-color: $font-color !default;
+$port-label-size: .9em !default;
+

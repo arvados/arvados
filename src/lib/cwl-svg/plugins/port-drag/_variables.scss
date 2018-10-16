@@ -1,0 +1,9 @@
+@import "../../assets/styles/variables";
+
+$port-suggested-fill: $color-primary !default;
+$port-snap-highlight-stroke: $port-hover-stroke-color !default;
+$port-snap-stroke-width: 2px !default;
+$edge-dragged-stroke: $edge-inner-stroke-color !default;
+$edge-dragged-dasharray: 5 !default;
+$ghost-node-stroke-color: $node-input-fill-color !default;
+$ghost-node-fill-color: $background-color !default;

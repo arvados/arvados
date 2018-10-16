@@ -1,0 +1,14 @@
+$edge-invalid-fill: #f89406;
+
+svg.cwl-workflow.__plugin-validate .workflow {
+
+    .__validate-invalid .inner {
+        stroke: $edge-invalid-fill;
+    }
+
+    &.has-selection {
+        .__validate-invalid:not(.highlighted) .inner {
+            stroke: darken($edge-invalid-fill, 25%);
+        }
+    }
+}
