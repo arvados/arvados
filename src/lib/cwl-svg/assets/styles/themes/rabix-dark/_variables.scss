@@ -1,0 +1,20 @@
+
+
+// Colors
+$background-color: rgb(48, 48, 48) !default;
+
+// Fonts
+$font-color: white !default;
+
+// Edges
+$edge-outer-stroke-width: 7px !default;
+
+// Node Icons
+$node-icon-fill-color: $background-color !default;
+$node-icon-stroke-color: $background-color !default;
+
+// Ports
+$port-hover-stroke-color: white !default;
+$port-fill-color: rgb(195, 195, 195) !default;
+
+@import "../../variables";

@@ -16,6 +16,7 @@
     "@types/shell-quote": "1.6.0",
     "axios": "0.18.0",
     "classnames": "2.2.6",
+    "cwlts": "1.15.29",
     "js-yaml": "3.12.0",
     "lodash": "4.17.11",
     "react": "16.5.2",
@@ -46,7 +47,9 @@
     "build": "REACT_APP_BUILD_NUMBER=$BUILD_NUMBER REACT_APP_GIT_COMMIT=$GIT_COMMIT react-scripts-ts build",
     "test": "CI=true react-scripts-ts test --env=jsdom",
     "eject": "react-scripts-ts eject",
-    "lint": "tslint src/** -t verbose"
+    "lint": "tslint src/** -t verbose",
+    "build-css": "node-sass-chokidar src/ -o src/",
+    "watch-css": "npm run build-css && node-sass-chokidar src/ -o src/ --watch --recursive"
   },
   "devDependencies": {
     "@types/classnames": "2.2.6",
@@ -66,6 +69,8 @@
     "enzyme": "3.6.0",
     "enzyme-adapter-react-16": "1.5.0",
     "jest-localstorage-mock": "2.2.0",
+    "node-sass": "4.9.4",
+    "node-sass-chokidar": "1.3.4",
     "redux-devtools": "3.4.1",
     "typescript": "3.1.1"
   },

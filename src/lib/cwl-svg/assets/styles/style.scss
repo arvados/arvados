@@ -1,0 +1,149 @@
+@import "variables";
+svg.cwl-workflow {
+
+  background: $background;
+  color: $font-color;
+  font-family: $font-family;
+
+  padding: 0;
+  width: 100%;
+  display: block;
+  transform: translateZ(0);
+
+  // We will add tabindex to some elements because they should be focusable, but style should not change
+  [tabindex]:active, [tabindex]:focus {
+    outline: none;
+  }
+
+  .hidden {
+    display: none;
+  }
+
+  .workflow {
+    user-select: none;
+  }
+
+  .pan-handle {
+    // Cannot be “none” because it wouldn't have a clickable zone
+    fill: transparent;
+  }
+
+  .label {
+    fill: $font-color;
+    stroke: $label-stroke-color;
+    stroke-width: $label-stroke-width;
+
+    text-anchor: middle;
+    paint-order: stroke;
+    stroke-linecap: butt;
+    stroke-linejoin: miter;
+
+  }
+
+  .node-icon {
+    fill: $node-icon-fill-color;
+    stroke: $node-icon-stroke-color;
+    stroke-width: $node-icon-stroke-width;
+
+    stroke-linecap: round;
+  }
+
+  .node {
+
+    .outer {
+      fill: $node-outer-fill-color;
+      stroke: $node-outer-stroke-color;
+      stroke-width: $node-outer-stroke-width;
+    }
+
+    .inner {
+      stroke: 0;
+    }
+
+    &.input .inner {
+      fill: $node-input-fill-color;
+    }
+
+    &.output .inner {
+      fill: $node-output-fill-color;
+    }
+
+    &.step .inner {
+      fill: $node-step-fill-color;
+    }
+
+    // Prevent mouseenter/leave events when hovering over nested elements
+    // otherwise, cursor would change while moving the mouse through the node
+    .core {
+      .inner,
+      .node-icon {
+        pointer-events: none;
+      }
+    }
+
+    &:hover {
+      .port .label {
+        transition: $node-hover-port-transition;
+        opacity: 1;
+      }
+    }
+
+    .port {
+      fill: $port-fill-color;
+
+      &:hover {
+        stroke: $port-hover-stroke-color;
+        stroke-width: $port-hover-stroke-width;
+      }
+
+      &.output-port .label {
+        text-anchor: start;
+        transform: translate(10px, 0);
+      }
+
+      &.input-port .label {
+        text-anchor: end;
+        transform: translate(-10px, 0);
+      }
+
+      .label {
+        fill: $port-label-color;
+
+        opacity: 0;
+        font-size: .9em;
+        user-select: none;
+        transition: all .1s;
+        pointer-events: none;
+        alignment-baseline: middle;
+      }
+    }
+  }
+
+  .edge {
+
+    &:hover .inner {
+      stroke: $edge-inner-hover-color;
+    }
+
+    .inner, .outer {
+      fill: none;
+      stroke-linecap: round;
+    }
+
+    .inner {
+      stroke-width: $edge-inner-stroke-width;
+      stroke: $edge-inner-stroke-color;
+    }
+    .outer {
+      stroke-width: $edge-outer-stroke-width;
+      stroke: $edge-outer-stroke-color;
+    }
+
+  }
+
+  .unselectable {
+    user-select: none;
+    cursor: pointer;
+  }
+
+}

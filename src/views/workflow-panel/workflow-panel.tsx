@@ -7,10 +7,10 @@ import { connect } from "react-redux";
 import { navigateTo } from '~/store/navigation/navigation-action';
 import { WorkflowPanelView } from '~/views/workflow-panel/workflow-panel-view';
 import { WorfklowPanelActionProps, WorkflowPanelDataProps } from './workflow-panel-view';
-import { showWorkflowDetails, getWorkflowDetails } from '../../store/workflow-panel/workflow-panel-actions';
+import { showWorkflowDetails, getWorkflowDetails } from '~/store/workflow-panel/workflow-panel-actions';
 import { RootState } from '~/store/store';
 
-const mapStateToProps = (state: RootState): WorkflowPanelDataProps => ({ 
+const mapStateToProps = (state: RootState): WorkflowPanelDataProps => ({
     workflow: getWorkflowDetails(state)
 });
 

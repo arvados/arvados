@@ -1,0 +1,19 @@
+@import "../../assets/styles/themes/rabix-dark/variables";
+
+$color-neutral-faded: #444343 !default;
+$io-faded-fill: #838383 !default;
+
+$node-selected-outer-stroke: $color-primary !default;
+$edge-selected-inner-stroke: $color-primary !default;
+
+$node-faded-outer-stroke-color: $color-neutral-faded !default;
+$node-faded-step-fill-color: #216b6b !default;
+$node-faded-input-fill-color: $io-faded-fill !default;
+$node-faded-output-fill-color: $io-faded-fill !default;
+
+$label-faded-color: #7e7d7d !default;
+$port-faded-fill-color: $color-neutral-faded !default;
+$edge-faded-inner-stroke-color: $color-neutral-faded !default;
+
+@import "variables";
+@import "./style.scss";
