@@ -468,8 +468,9 @@ declare -a PIP_DOWNLOAD_SWITCHES=(--no-deps)
 pip install --no-use-wheel >/dev/null 2>&1
 case "$?" in
     0) PIP_DOWNLOAD_SWITCHES+=(--no-use-wheel) ;;
+    1) ;;
     2) ;;
-    *) echo "WARNING: `pip wheel` test returned unknown exit code $?" ;;
+    *) echo "WARNING: 'pip install --no-use-wheel' test returned unknown exit code $?" ;;
 esac
 
 while read -r line || [[ -n "$line" ]]; do
