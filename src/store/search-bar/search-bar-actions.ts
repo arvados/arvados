@@ -47,21 +47,21 @@ export const loadRecentQueries = () =>
         return recentSearchQueries || [];
     };
 
-    // Todo: create ids for particular searchQuery
+// Todo: create ids for particular searchQuery
 export const saveQuery = (data: SearchBarAdvanceFormData) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const savedSearchQueries = services.searchService.getSavedQueries();
         const filteredQuery = savedSearchQueries.find(query => query.searchQuery === data.searchQuery);
         if (data.saveQuery && data.searchQuery) {
             if (filteredQuery) {
-                services.searchService.editSavedQueries(data);   
+                services.searchService.editSavedQueries(data);
                 dispatch(searchBarActions.UPDATE_SAVED_QUERY(savedSearchQueries));
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Query has been sucessfully updated', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
             } else {
                 services.searchService.saveQuery(data);
                 dispatch(searchBarActions.SET_SAVED_QUERIES(savedSearchQueries));
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Query has been sucessfully saved', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
-            }  
+            }
         }
         dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.BASIC));
         dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
@@ -110,6 +110,26 @@ export const searchData = (searchValue: string) =>
         if (currentView !== SearchView.AUTOCOMPLETE) {
             dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
         }
+        dispatch(searchBarActions.SET_SEARCH_VALUE(searchValue));
+        dispatch(searchBarActions.SET_SEARCH_RESULTS([]));
+        if (searchValue) {
+            const filters = getFilters('name', searchValue);
+            const { items } = await services.groupsService.contents('', {
+                filters,
+                limit: 5,
+                recursive: true
+            });
+            dispatch(searchBarActions.SET_SEARCH_RESULTS(items));
+        }
+        if (currentView !== SearchView.AUTOCOMPLETE) {
+            dispatch(navigateToSearchResults);
+        }
+        
+    };
+
+export const searchDataOnEnter = (searchValue: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
         dispatch(searchBarActions.SET_SEARCH_VALUE(searchValue));
         dispatch(searchBarActions.SET_SEARCH_RESULTS([]));
         if (searchValue) {
