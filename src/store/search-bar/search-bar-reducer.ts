@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { searchBarActions, SearchBarActions, saveQuery } from '~/store/search-bar/search-bar-actions';
+import { searchBarActions, SearchBarActions } from '~/store/search-bar/search-bar-actions';
 import { GroupContentsResource } from '~/services/groups-service/groups-service';
 import { SearchBarAdvanceFormData } from '~/models/search-bar';
 
