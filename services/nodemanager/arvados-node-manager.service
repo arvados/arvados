@@ -1,0 +1,32 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
+[Unit]
+Description=Arvados Node Manager Daemon
+Documentation=https://doc.arvados.org/
+After=network.target
+AssertPathExists=/etc/arvados-node-manager/config.ini
+
+# systemd==229 (ubuntu:xenial) obeys StartLimitInterval in the [Unit] section
+StartLimitInterval=0
+
+# systemd>=230 (debian:9) obeys StartLimitIntervalSec in the [Unit] section
+StartLimitIntervalSec=0
+
+[Service]
+EnvironmentFile=-/etc/default/arvados-node-manager
+LimitDATA=3145728K
+LimitRSS=3145728K
+LimitMEMLOCK=3145728K
+LimitNOFILE=10240
+Type=simple
+ExecStart=/usr/bin/env sh -c '/usr/bin/arvados-node-manager --foreground --config /etc/arvados-node-manager/config.ini 2>&1 | cat'
+Restart=always
+RestartSec=1
+
+# systemd<=219 (centos:7, debian:8, ubuntu:trusty) obeys StartLimitInterval in the [Service] section
+StartLimitInterval=0
+
+[Install]
+WantedBy=multi-user.target

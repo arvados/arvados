@@ -412,9 +412,10 @@ fi
 cd $WORKSPACE/packages/$TARGET
 rm -rf "$WORKSPACE/services/nodemanager/build"
 nodemanager_version=${ARVADOS_BUILDING_VERSION:-$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/nodemanager/arvados_node_manager.egg-info/PKG-INFO)}
-test_package_presence arvados-node-manager "$nodemanager_version" python
+iteration="${ARVADOS_BUILDING_ITERATION:-1}"
+test_package_presence arvados-node-manager "$nodemanager_version" python "$iteration"
 if [[ "$?" == "0" ]]; then
-  fpm_build $WORKSPACE/services/nodemanager arvados-node-manager 'Curoverse, Inc.' 'python' "$nodemanager_version" "--url=https://arvados.org" "--description=The Arvados node manager" --depends "${PYTHON2_PKG_PREFIX}-setuptools"
+  fpm_build $WORKSPACE/services/nodemanager arvados-node-manager 'Curoverse, Inc.' 'python' "$nodemanager_version" "--url=https://arvados.org" "--description=The Arvados node manager" --depends "${PYTHON2_PKG_PREFIX}-setuptools" --iteration "$iteration"
 fi
 
 # The Docker image cleaner
