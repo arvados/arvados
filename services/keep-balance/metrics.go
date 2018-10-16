@@ -58,12 +58,14 @@ func (m *metrics) UpdateStats(s balancerStats) {
 		Help  string
 	}
 	s2g := map[string]gauge{
-		"total":           {s.current, "current backend storage usage"},
-		"garbage":         {s.garbage, "garbage (unreferenced, old)"},
-		"transient":       {s.unref, "transient (unreferenced, new)"},
-		"overreplicated":  {s.overrep, "overreplicated"},
-		"underreplicated": {s.underrep, "underreplicated"},
-		"lost":            {s.lost, "lost"},
+		"total":             {s.current, "current backend storage usage"},
+		"garbage":           {s.garbage, "garbage (unreferenced, old)"},
+		"transient":         {s.unref, "transient (unreferenced, new)"},
+		"overreplicated":    {s.overrep, "overreplicated"},
+		"underreplicated":   {s.underrep, "underreplicated"},
+		"lost":              {s.lost, "lost"},
+		"dedup_byte_ratio":  {s.dedupByteRatio(), "deduplication ratio, bytes referenced / bytes stored"},
+		"dedup_block_ratio": {s.dedupBlockRatio(), "deduplication ratio, blocks referenced / blocks stored"},
 	}
 	m.setupOnce.Do(func() {
 		// Register gauge(s) for each balancerStats field.
@@ -83,7 +85,7 @@ func (m *metrics) UpdateStats(s balancerStats) {
 				for _, sub := range []string{"blocks", "bytes", "replicas"} {
 					addGauge(name+"_"+sub, sub+" of "+gauge.Help)
 				}
-			case int, int64:
+			case int, int64, float64:
 				addGauge(name, gauge.Help)
 			default:
 				panic(fmt.Sprintf("bad gauge type %T", gauge.Value))
@@ -100,6 +102,8 @@ func (m *metrics) UpdateStats(s balancerStats) {
 		case int:
 			m.statsGauges[name].Set(float64(val))
 		case int64:
+			m.statsGauges[name].Set(float64(val))
+		case float64:
 			m.statsGauges[name].Set(float64(val))
 		default:
 			panic(fmt.Sprintf("bad gauge type %T", gauge.Value))
