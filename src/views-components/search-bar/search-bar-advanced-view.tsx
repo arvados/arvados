@@ -79,7 +79,6 @@ export const SearchBarAdvancedView = compose(
     reduxForm<SearchBarAdvanceFormData, SearchBarAdvancedViewActionProps>({
         form: SEARCH_BAR_ADVANCE_FORM_NAME,
         onSubmit: (data: SearchBarAdvanceFormData, dispatch: Dispatch) => {
-            console.log('data: ', data);
             dispatch<any>(saveQuery(data));
             dispatch(reset(SEARCH_BAR_ADVANCE_FORM_NAME));
         }

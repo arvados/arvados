@@ -17,8 +17,8 @@ export type SearchBarAdvanceFormData = {
 } & PropertyValues;
 
 export interface PropertyValues {
-    propertyKey: string;
-    propertyValue: string;
+    key: string;
+    value: string;
 }
 
 export enum ClusterObjectType {

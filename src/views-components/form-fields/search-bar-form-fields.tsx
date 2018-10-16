@@ -62,13 +62,13 @@ export const SearchBarDataToField = () =>
 
 export const SearchBarKeyField = () => 
     <Field
-        name='propertyKey'
+        name='key'
         component={TextField}
         label="Key" />;
 
 export const SearchBarValueField = () => 
     <Field
-        name='propertyValue'
+        name='value'
         component={TextField}
         label="Value" />;
 

@@ -99,16 +99,16 @@ const getFilters = (filterName: string, searchValue: string): string => {
 };
 
 export const initAdvanceFormProjectsTree = () => 
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch<any>(initUserProject(SEARCH_BAR_ADVANCE_FORM_PICKER_ID));
     };
 
 export const changeAdvanceFormProperty = (property: string, value: PropertyValues[] | string = '') => 
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(change(SEARCH_BAR_ADVANCE_FORM_NAME, property, value));
     };
 
 export const updateAdvanceFormProperties = (propertyValues: PropertyValues) => 
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(arrayPush(SEARCH_BAR_ADVANCE_FORM_NAME, 'properties', propertyValues));
     };

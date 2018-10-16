@@ -115,6 +115,7 @@ const initListener = (history: History, store: RootStore, services: ServiceRepos
             initWebSocket(config, services.authService, store);
             await store.dispatch(loadWorkbench());
             addRouteChangeHandlers(history, store);
+            // ToDo: move to searchBar component
             store.dispatch(initAdvanceFormProjectsTree());
         }
     };
