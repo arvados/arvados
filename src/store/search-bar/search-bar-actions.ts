@@ -62,17 +62,7 @@ export const deleteSavedQuery = (id: number) =>
 export const editSavedQuery = (data: SearchBarAdvanceFormData, id: number) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.ADVANCED));
-        const initialData: SearchBarAdvanceFormData = {
-            type: data.type,
-            cluster: data.cluster,
-            project: data.project,
-            inTrash: data.inTrash,
-            dateFrom: data.dateFrom,
-            dateTo: data.dateTo,
-            saveQuery: data.saveQuery,
-            searchQuery: data.searchQuery
-        };
-        dispatch<any>(initialize(SEARCH_BAR_ADVANCE_FORM_NAME, initialData));
+        dispatch<any>(initialize(SEARCH_BAR_ADVANCE_FORM_NAME, data));
     };
 
 export const openSearchView = () =>

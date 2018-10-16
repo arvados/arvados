@@ -23,16 +23,7 @@ export class SearchService {
     }
 
     saveQuery(data: SearchBarAdvanceFormData) {
-        this.savedQueries.push({
-            type: data.type,
-            cluster: data.cluster,
-            project: data.project,
-            inTrash: data.inTrash,
-            dateFrom: data.dateFrom,
-            dateTo: data.dateTo,
-            saveQuery: data.saveQuery,
-            searchQuery: data.searchQuery
-        });
+        this.savedQueries.push({...data});
         localStorage.setItem('savedQueries', JSON.stringify(this.savedQueries));
     }
 

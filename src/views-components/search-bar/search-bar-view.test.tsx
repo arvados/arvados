@@ -102,5 +102,7 @@ const mockSearchProps = () => ({
     loadRecentQueries: () => ['test'],
     saveQuery: jest.fn(),
     deleteSavedQuery: jest.fn(),
-    openSearchView: jest.fn()
+    openSearchView: jest.fn(),
+    editSavedQuery: jest.fn(),
+    navigateTo: jest.fn()
 });

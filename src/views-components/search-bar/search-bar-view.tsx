@@ -77,8 +77,8 @@ interface SearchBarState {
 }
 
 interface RenderRecentQueriesProps {
-    text: string | JSX.Element;
-    onSearch: (searchValue: string | JSX.Element) => void;
+    text: string;
+    onSearch: (searchValue: string) => void;
 }
 
 export const RenderRecentQueries = (props: RenderRecentQueriesProps) => {
@@ -100,10 +100,10 @@ export const RenderAutocompleteItems = (props: RenderAutocompleteItemsProps) => 
 };
 
 interface RenderSavedQueriesProps {
-    text: string | JSX.Element;
+    text: string;
     id: number;
     deleteSavedQuery: (id: number) => void;
-    onSearch: (searchValue: string | JSX.Element) => void;
+    onSearch: (searchValue: string) => void;
     editSavedQuery: (data: SearchBarAdvanceFormData, id: number) => void;
     data: SearchBarAdvanceFormData;
 }
