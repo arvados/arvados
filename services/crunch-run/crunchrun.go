@@ -122,7 +122,7 @@ type ContainerRunner struct {
 	SigChan         chan os.Signal
 	ArvMountExit    chan error
 	SecretMounts    map[string]arvados.Mount
-	MkArvClient     func(token string) (IArvadosClient, error)
+	MkArvClient     func(token string) (IArvadosClient, IKeepClient, error)
 	finalState      string
 	parentTemp      string
 
@@ -237,8 +237,17 @@ func (runner *ContainerRunner) LoadImage() (err error) {
 
 	runner.CrunchLog.Printf("Fetching Docker image from collection '%s'", runner.Container.ContainerImage)
 
+	tok, err := runner.ContainerToken()
+	if err != nil {
+		return fmt.Errorf("While getting container token (LoadImage): %v", err)
+	}
+	arvClient, kc, err := runner.MkArvClient(tok)
+	if err != nil {
+		return fmt.Errorf("While creating arv client (LoadImage): %v", err)
+	}
+
 	var collection arvados.Collection
-	err = runner.ArvClient.Get("collections", runner.Container.ContainerImage, nil, &collection)
+	err = arvClient.Get("collections", runner.Container.ContainerImage, nil, &collection)
 	if err != nil {
 		return fmt.Errorf("While getting container image collection: %v", err)
 	}
@@ -259,7 +268,7 @@ func (runner *ContainerRunner) LoadImage() (err error) {
 		runner.CrunchLog.Print("Loading Docker image from keep")
 
 		var readCloser io.ReadCloser
-		readCloser, err = runner.Kc.ManifestFileReader(manifest, img)
+		readCloser, err = kc.ManifestFileReader(manifest, img)
 		if err != nil {
 			return fmt.Errorf("While creating ManifestFileReader for container image: %v", err)
 		}
@@ -281,7 +290,7 @@ func (runner *ContainerRunner) LoadImage() (err error) {
 
 	runner.ContainerConfig.Image = imageID
 
-	runner.Kc.ClearBlockCache()
+	kc.ClearBlockCache()
 
 	return nil
 }
@@ -1679,7 +1688,7 @@ func (runner *ContainerRunner) fetchContainerRecord() error {
 		return fmt.Errorf("error getting container token: %v", err)
 	}
 
-	containerClient, err := runner.MkArvClient(containerToken)
+	containerClient, _, err := runner.MkArvClient(containerToken)
 	if err != nil {
 		return fmt.Errorf("error creating container API client: %v", err)
 	}
@@ -1719,13 +1728,17 @@ func NewContainerRunner(client *arvados.Client, api IArvadosClient, kc IKeepClie
 		}
 		return ps, nil
 	}
-	cr.MkArvClient = func(token string) (IArvadosClient, error) {
+	cr.MkArvClient = func(token string) (IArvadosClient, IKeepClient, error) {
 		cl, err := arvadosclient.MakeArvadosClient()
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		cl.ApiToken = token
-		return cl, nil
+		kc, err := keepclient.MakeKeepClient(cl)
+		if err != nil {
+			return nil, nil, err
+		}
+		return cl, kc, nil
 	}
 	var err error
 	cr.LogCollection, err = (&arvados.Collection{}).FileSystem(cr.client, cr.Kc)

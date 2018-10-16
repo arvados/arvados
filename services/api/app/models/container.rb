@@ -248,6 +248,12 @@ class Container < ArvadosModel
   def self.resolve_container_image(container_image)
     coll = Collection.for_latest_docker_image(container_image)
     if !coll
+      # Allow bare pdh without any additional checking otherwise
+      # federated container requests won't work.
+      if loc = Keep::Locator.parse(container_image)
+        loc.strip_hints!
+        return loc.to_s
+      end
       raise ArvadosModel::UnresolvableContainerError.new "docker image #{container_image.inspect} not found"
     end
     coll.portable_data_hash
