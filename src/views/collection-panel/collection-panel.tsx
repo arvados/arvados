@@ -22,6 +22,7 @@ import { snackbarActions } from '~/store/snackbar/snackbar-actions';
 import { getResource } from '~/store/resources/resources';
 import { openContextMenu } from '~/store/context-menu/context-menu-actions';
 import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
+import { formatFileSize } from "~/common/formatters";
 
 type CssRules = 'card' | 'iconHeader' | 'tag' | 'copyIcon' | 'label' | 'value';
 
@@ -99,9 +100,9 @@ export const CollectionPanel = withStyles(styles)(
                                             </Tooltip>
                                         </DetailsAttribute>
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                            label='Number of files' value='14' />
+                                            label='Number of files' value={item && item.fileCount} />
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                            label='Content size' value='54 MB' />
+                                            label='Content size' value={item && formatFileSize(item.fileSize)} />
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                                             label='Owner' value={item && item.ownerUuid} />
                                     </Grid>

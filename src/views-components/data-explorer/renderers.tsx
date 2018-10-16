@@ -19,6 +19,7 @@ import { compose } from 'redux';
 import { WorkflowResource } from '~/models/workflow';
 import { ResourceStatus } from '~/views/workflow-panel/workflow-panel-view';
 import { getUuidPrefix } from '~/store/workflow-panel/workflow-panel-actions';
+import { CollectionResource } from "~/models/collection";
 
 export const renderName = (item: { name: string; uuid: string, kind: string }) =>
     <Grid container alignItems="center" wrap="nowrap" spacing={16}>
@@ -149,8 +150,8 @@ export const renderFileSize = (fileSize?: number) =>
 
 export const ResourceFileSize = connect(
     (state: RootState, props: { uuid: string }) => {
-        const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
-        return {};
+        const resource = getResource<CollectionResource>(props.uuid)(state.resources);
+        return { fileSize: resource ? resource.fileSize : 0 };
     })((props: { fileSize?: number }) => renderFileSize(props.fileSize));
 
 export const renderOwner = (owner: string) =>
