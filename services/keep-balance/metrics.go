@@ -39,6 +39,7 @@ func (m *metrics) DurationObserver(name, help string) observer {
 		return obs
 	}
 	summary := prometheus.NewSummary(prometheus.SummaryOpts{
+		Namespace: "arvados",
 		Name:      name,
 		Subsystem: "keepbalance",
 		Help:      help,
@@ -68,6 +69,7 @@ func (m *metrics) UpdateStats(s balancerStats) {
 		// Register gauge(s) for each balancerStats field.
 		addGauge := func(name, help string) {
 			g := prometheus.NewGauge(prometheus.GaugeOpts{
+				Namespace: "arvados",
 				Name:      name,
 				Subsystem: "keep",
 				Help:      help,

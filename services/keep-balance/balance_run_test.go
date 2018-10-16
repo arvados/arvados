@@ -460,9 +460,9 @@ func (s *runSuite) TestCommit(c *check.C) {
 	c.Check(bal.stats.pulls, check.Equals, 2)
 
 	metrics := s.getMetrics(c, srv)
-	c.Check(metrics, check.Matches, `(?ms).*\nkeep_total_bytes 15\n.*`)
-	c.Check(metrics, check.Matches, `(?ms).*\nkeepbalance_changeset_compute_seconds_sum [0-9\.]+\n.*`)
-	c.Check(metrics, check.Matches, `(?ms).*\nkeepbalance_changeset_compute_seconds_count 1\n.*`)
+	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_total_bytes 15\n.*`)
+	c.Check(metrics, check.Matches, `(?ms).*\narvados_keepbalance_changeset_compute_seconds_sum [0-9\.]+\n.*`)
+	c.Check(metrics, check.Matches, `(?ms).*\narvados_keepbalance_changeset_compute_seconds_count 1\n.*`)
 }
 
 func (s *runSuite) TestRunForever(c *check.C) {
@@ -504,7 +504,7 @@ func (s *runSuite) TestRunForever(c *check.C) {
 	<-done
 	c.Check(pullReqs.Count() >= 16, check.Equals, true)
 	c.Check(trashReqs.Count(), check.Equals, pullReqs.Count()+4)
-	c.Check(s.getMetrics(c, srv), check.Matches, `(?ms).*\nkeepbalance_changeset_compute_seconds_count `+fmt.Sprintf("%d", pullReqs.Count()/4)+`\n.*`)
+	c.Check(s.getMetrics(c, srv), check.Matches, `(?ms).*\narvados_keepbalance_changeset_compute_seconds_count `+fmt.Sprintf("%d", pullReqs.Count()/4)+`\n.*`)
 }
 
 func (s *runSuite) getMetrics(c *check.C, srv *Server) string {
