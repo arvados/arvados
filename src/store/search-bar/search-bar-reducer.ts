@@ -36,5 +36,6 @@ export const searchBarReducer = (state = initialState, action: SearchBarActions)
         SET_SEARCH_RESULTS: (searchResults) => ({ ...state, searchResults }),
         SET_SEARCH_VALUE: (searchValue) => ({ ...state, searchValue }),
         SET_SAVED_QUERIES: savedQueries => ({ ...state, savedQueries }),
+        UPDATE_SAVED_QUERY: searchQuery => ({ ...state, savedQueries: searchQuery }),
         default: () => state
     });

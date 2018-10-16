@@ -27,6 +27,12 @@ export class SearchService {
         localStorage.setItem('savedQueries', JSON.stringify(this.savedQueries));
     }
 
+    editSavedQueries(data: SearchBarAdvanceFormData) {
+        const itemIndex = this.savedQueries.findIndex(item => item.searchQuery === data.searchQuery);
+        this.savedQueries[itemIndex] = {...data};
+        localStorage.setItem('savedQueries', JSON.stringify(this.savedQueries));
+    }
+
     getSavedQueries() {
         return JSON.parse(localStorage.getItem('savedQueries') || '[]') as SearchBarAdvanceFormData[];
     }
