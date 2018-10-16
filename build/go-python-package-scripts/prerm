@@ -3,11 +3,11 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+set -e
+
 # Detect rpm-based systems: the exit code of the following command is zero
 # on rpm-based systems
-/usr/bin/rpm -q -f /usr/bin/rpm >/dev/null 2>&1
-
-if [ "$?" = "0" ]; then
+if /usr/bin/rpm -q -f /usr/bin/rpm >/dev/null 2>&1; then
     # Red Hat ("%{...}" is interpolated at package build time)
     pkg="%{name}"
     pkgtype=rpm
@@ -20,7 +20,6 @@ else
     prefix=/usr
 fi
 
-set -e
 case "${pkgtype}-${1}" in
     deb-remove | rpm-0)
         if [ -e /run/systemd/system ]; then
