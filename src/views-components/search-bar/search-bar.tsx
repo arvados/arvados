@@ -40,7 +40,7 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
     deleteSavedQuery: (id: number) => dispatch<any>(deleteSavedQuery(id)),
     openSearchView: () => dispatch<any>(openSearchView()),
     navigateTo: (uuid: string) => dispatch<any>(navigateToItem(uuid)),
-    editSavedQuery: (data: SearchBarAdvanceFormData, id: number) => dispatch<any>(editSavedQuery(data, id))
+    editSavedQuery: (data: SearchBarAdvanceFormData) => dispatch<any>(editSavedQuery(data))
 });
 
 export const SearchBar = connect(mapStateToProps, mapDispatchToProps)(SearchBarView);

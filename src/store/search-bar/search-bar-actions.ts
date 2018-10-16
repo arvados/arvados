@@ -24,7 +24,8 @@ export const searchBarActions = unionize({
     CLOSE_SEARCH_VIEW: ofType<{}>(),
     SET_SEARCH_RESULTS: ofType<GroupContentsResource[]>(),
     SET_SEARCH_VALUE: ofType<string>(),
-    SET_SAVED_QUERIES: ofType<SearchBarAdvanceFormData[]>()
+    SET_SAVED_QUERIES: ofType<SearchBarAdvanceFormData[]>(),
+    UPDATE_SAVED_QUERY: ofType<SearchBarAdvanceFormData[]>()
 });
 
 export type SearchBarActions = UnionOf<typeof searchBarActions>;
@@ -46,13 +47,24 @@ export const loadRecentQueries = () =>
         return recentSearchQueries || [];
     };
 
+    // Todo: create ids for particular searchQuery
 export const saveQuery = (data: SearchBarAdvanceFormData) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        const savedSearchQueries = services.searchService.getSavedQueries();
+        const filteredQuery = savedSearchQueries.find(query => query.searchQuery === data.searchQuery);
         if (data.saveQuery && data.searchQuery) {
-            services.searchService.saveQuery(data);
-            dispatch(searchBarActions.SET_SAVED_QUERIES(services.searchService.getSavedQueries()));
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Query has been sucessfully saved', kind: SnackbarKind.SUCCESS }));
+            if (filteredQuery) {
+                services.searchService.editSavedQueries(data);   
+                dispatch(searchBarActions.UPDATE_SAVED_QUERY(savedSearchQueries));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Query has been sucessfully updated', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+            } else {
+                services.searchService.saveQuery(data);
+                dispatch(searchBarActions.SET_SAVED_QUERIES(savedSearchQueries));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Query has been sucessfully saved', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+            }  
         }
+        dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.BASIC));
+        dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
     };
 
 export const deleteSavedQuery = (id: number) =>
@@ -63,9 +75,10 @@ export const deleteSavedQuery = (id: number) =>
         return savedSearchQueries || [];
     };
 
-export const editSavedQuery = (data: SearchBarAdvanceFormData, id: number) =>
+export const editSavedQuery = (data: SearchBarAdvanceFormData) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.ADVANCED));
+        dispatch(searchBarActions.SET_SEARCH_VALUE(data.searchQuery));
         dispatch<any>(initialize(SEARCH_BAR_ADVANCE_FORM_NAME, data));
     };
 
@@ -121,17 +134,17 @@ export const getFilters = (filterName: string, searchValue: string): string => {
         .getFilters();
 };
 
-export const initAdvanceFormProjectsTree = () => 
+export const initAdvanceFormProjectsTree = () =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch<any>(initUserProject(SEARCH_BAR_ADVANCE_FORM_PICKER_ID));
     };
 
-export const changeAdvanceFormProperty = (property: string, value: PropertyValues[] | string = '') => 
+export const changeAdvanceFormProperty = (property: string, value: PropertyValues[] | string = '') =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(change(SEARCH_BAR_ADVANCE_FORM_NAME, property, value));
     };
 
-export const updateAdvanceFormProperties = (propertyValues: PropertyValues) => 
+export const updateAdvanceFormProperties = (propertyValues: PropertyValues) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(arrayPush(SEARCH_BAR_ADVANCE_FORM_NAME, 'properties', propertyValues));
     };
