@@ -104,5 +104,6 @@ const mockSearchProps = () => ({
     deleteSavedQuery: jest.fn(),
     openSearchView: jest.fn(),
     editSavedQuery: jest.fn(),
-    navigateTo: jest.fn()
+    navigateTo: jest.fn(),
+    searchDataOnEnter: jest.fn()
 });
