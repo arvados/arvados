@@ -1,0 +1,25 @@
+.cwl-workflow.__plugin-port-drag .port.__port-drag-suggestion {
+  fill: #11a7a7; }
+  .cwl-workflow.__plugin-port-drag .port.__port-drag-suggestion .label {
+    opacity: 1; }
+
+.cwl-workflow.__plugin-port-drag .port.__port-drag-snap {
+  stroke: #676767;
+  stroke-width: 2px; }
+
+.cwl-workflow.__plugin-port-drag .node.__port-drag-snap.__port-drag-snap-input .input-port .label,
+.cwl-workflow.__plugin-port-drag .node.__port-drag-snap.__port-drag-snap-output .output-port .label {
+  opacity: 1; }
+
+.cwl-workflow.__plugin-port-drag.__port-drag-dragging {
+  pointer-events: none; }
+
+.cwl-workflow.__plugin-port-drag .edge.__port-drag-dragging .inner {
+  stroke: #9a9a9a !important;
+  stroke-dasharray: 5; }
+
+.cwl-workflow.__plugin-port-drag .ghost {
+  stroke: #c3c3c3;
+  stroke-width: 2px;
+  stroke-dasharray: 5 3;
+  fill: white; }

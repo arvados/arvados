@@ -1,0 +1,33 @@
+.cwl-workflow.__plugin-selection .node,
+.cwl-workflow.__plugin-selection .edge {
+  cursor: pointer; }
+
+.cwl-workflow.__plugin-selection.__selection-plugin-fade .node:not(.__selection-plugin-highlight) .outer {
+  stroke: #444343; }
+
+.cwl-workflow.__plugin-selection.__selection-plugin-fade .node:not(.__selection-plugin-highlight) .inner {
+  fill: #216b6b; }
+
+.cwl-workflow.__plugin-selection.__selection-plugin-fade .node:not(.__selection-plugin-highlight).input .inner {
+  fill: #838383; }
+
+.cwl-workflow.__plugin-selection.__selection-plugin-fade .node:not(.__selection-plugin-highlight).output .inner {
+  fill: #838383; }
+
+.cwl-workflow.__plugin-selection.__selection-plugin-fade .node:not(.__selection-plugin-highlight) .label {
+  fill: #7e7d7d; }
+
+.cwl-workflow.__plugin-selection.__selection-plugin-fade .node:not(.__selection-plugin-highlight) .port {
+  fill: #444343; }
+
+.cwl-workflow.__plugin-selection.__selection-plugin-fade .edge:not(.__selection-plugin-highlight) .inner {
+  stroke: #444343; }
+
+.cwl-workflow.__plugin-selection .port.__selection-plugin-highlight .label {
+  opacity: 1; }
+
+.cwl-workflow.__plugin-selection .__selection-plugin-selected.edge .inner {
+  stroke: #11a7a7; }
+
+.cwl-workflow.__plugin-selection .__selection-plugin-selected.node .outer {
+  stroke: #11a7a7; }

@@ -111,7 +111,7 @@ export const workflowPanelColumns: DataColumns<string, WorkflowPanelFilter> = [
 ];
 
 export const WorkflowPanelView = (props: WorkflowPanelProps) => {
-    return <Grid container spacing={16}>
+    return <Grid container spacing={16} style={{minHeight: '500px'}}>
         <Grid item xs={6}>
             <DataExplorer
                 id={WORKFLOW_PANEL_ID}

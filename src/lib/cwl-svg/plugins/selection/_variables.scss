@@ -1,0 +1,16 @@
+@import "../../assets/styles/variables";
+
+$color-neutral-faded: #e6e6e6 !default;
+$io-faded-fill: #f7f7f7 !default;
+
+$node-selected-outer-stroke: $color-primary !default;
+$edge-selected-inner-stroke: $color-primary !default;
+
+$node-faded-outer-stroke-color: $color-neutral-faded !default;
+$node-faded-step-fill-color: #c1d4d3 !default;
+$node-faded-input-fill-color: $io-faded-fill !default;
+$node-faded-output-fill-color: $io-faded-fill !default;
+
+$label-faded-color: #7e7d7d !default;
+$port-faded-fill-color: $color-neutral-faded !default;
+$edge-faded-inner-stroke-color: $color-neutral-faded !default;
