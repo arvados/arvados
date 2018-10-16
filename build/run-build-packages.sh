@@ -421,7 +421,7 @@ fi
 cd $WORKSPACE/packages/$TARGET
 rm -rf "$WORKSPACE/services/dockercleaner/build"
 dockercleaner_version=${ARVADOS_BUILDING_VERSION:-$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/dockercleaner/arvados_docker_cleaner.egg-info/PKG-INFO)}
-iteration="${ARVADOS_BUILDING_ITERATION:-3}"
+iteration="${ARVADOS_BUILDING_ITERATION:-4}"
 test_package_presence arvados-docker-cleaner "$dockercleaner_version" python "$iteration"
 if [[ "$?" == "0" ]]; then
   fpm_build $WORKSPACE/services/dockercleaner arvados-docker-cleaner 'Curoverse, Inc.' 'python3' "$dockercleaner_version" "--url=https://arvados.org" "--description=The Arvados Docker image cleaner" --depends "${PYTHON3_PKG_PREFIX}-websocket-client = 0.37.0" --iteration "$iteration"
