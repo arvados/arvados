@@ -14,6 +14,7 @@ import { SearchView } from '~/store/search-bar/search-bar-reducer';
 import { navigateToSearchResults, navigateTo } from '~/store/navigation/navigation-action';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { SearchBarAdvanceFormData } from '~/models/search-bar';
+import { initialize } from 'redux-form';
 
 export const searchBarActions = unionize({
     SET_CURRENT_VIEW: ofType<string>(),
@@ -21,7 +22,7 @@ export const searchBarActions = unionize({
     CLOSE_SEARCH_VIEW: ofType<{}>(),
     SET_SEARCH_RESULTS: ofType<GroupContentsResource[]>(),
     SET_SEARCH_VALUE: ofType<string>(),
-    SET_SAVED_QUERIES: ofType<string[]>()
+    SET_SAVED_QUERIES: ofType<SearchBarAdvanceFormData[]>()
 });
 
 export type SearchBarActions = UnionOf<typeof searchBarActions>;
@@ -44,7 +45,7 @@ export const loadRecentQueries = () =>
 export const saveQuery = (data: SearchBarAdvanceFormData) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         if (data.saveQuery && data.searchQuery) {
-            services.searchService.saveQuery(data.searchQuery);
+            services.searchService.saveQuery(data);
             dispatch(searchBarActions.SET_SAVED_QUERIES(services.searchService.getSavedQueries()));
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Query has been sucessfully saved', kind: SnackbarKind.SUCCESS }));
         }
@@ -58,6 +59,22 @@ export const deleteSavedQuery = (id: number) =>
         return savedSearchQueries || [];
     };
 
+export const editSavedQuery = (data: SearchBarAdvanceFormData, id: number) =>
+    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.ADVANCED));
+        const initialData: SearchBarAdvanceFormData = {
+            type: data.type,
+            cluster: data.cluster,
+            project: data.project,
+            inTrash: data.inTrash,
+            dateFrom: data.dateFrom,
+            dateTo: data.dateTo,
+            saveQuery: data.saveQuery,
+            searchQuery: data.searchQuery
+        };
+        dispatch<any>(initialize(SEARCH_BAR_ADVANCE_FORM_NAME, initialData));
+    };
+
 export const openSearchView = () =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         dispatch(searchBarActions.OPEN_SEARCH_VIEW());
@@ -65,22 +82,21 @@ export const openSearchView = () =>
         dispatch(searchBarActions.SET_SAVED_QUERIES(savedSearchQueries));
     };
 
-export const closeSearchView = () => 
+export const closeSearchView = () =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const isOpen = getState().searchBar.open;
-        if(isOpen) {
+        if (isOpen) {
             dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
             dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.BASIC));
         }
     };
-
 
 export const navigateToItem = (uuid: string) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
         dispatch(navigateTo(uuid));
     };
-    
+
 export const searchData = (searchValue: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const currentView = getState().searchBar.currentView;

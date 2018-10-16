@@ -6,6 +6,7 @@ import * as React from 'react';
 import { Paper, StyleRulesCallback, withStyles, WithStyles, List } from '@material-ui/core';
 import { SearchView } from '~/store/search-bar/search-bar-reducer';
 import { RenderRecentQueries, RenderSavedQueries } from '~/views-components/search-bar/search-bar-view';
+import { SearchBarAdvanceFormData } from '~/models/search-bar';
 
 type CssRules = 'advanced' | 'searchQueryList' | 'list' | 'searchView';
 
@@ -39,12 +40,13 @@ interface SearchBarBasicViewProps {
     setView: (currentView: string) => void;
     recentQueries: () => string[];
     deleteSavedQuery: (id: number) => void;
-    savedQueries: string[];
+    savedQueries: SearchBarAdvanceFormData[];
     onSearch: (searchValue: string) => void;
+    editSavedQuery: (data: SearchBarAdvanceFormData, id: number) => void;
 }
 
 export const SearchBarBasicView = withStyles(styles)(
-    ({ classes, setView, recentQueries, deleteSavedQuery, savedQueries, onSearch }: SearchBarBasicViewProps & WithStyles<CssRules>) =>
+    ({ classes, setView, recentQueries, deleteSavedQuery, savedQueries, onSearch, editSavedQuery }: SearchBarBasicViewProps & WithStyles<CssRules>) =>
         <Paper className={classes.searchView}>
             <div className={classes.searchQueryList}>Recent search queries</div>
             <List component="nav" className={classes.list}>
@@ -52,7 +54,7 @@ export const SearchBarBasicView = withStyles(styles)(
             </List>
             <div className={classes.searchQueryList}>Saved search queries</div>
             <List component="nav" className={classes.list}>
-                {savedQueries.map((query, index) => <RenderSavedQueries key={index} text={query} id={index} deleteSavedQuery={deleteSavedQuery} onSearch={onSearch} />)}
+                {savedQueries.map((query, index) => <RenderSavedQueries key={index} text={query.searchQuery} id={index} deleteSavedQuery={deleteSavedQuery} onSearch={onSearch} data={query} editSavedQuery={editSavedQuery}/>)}
             </List>
             <div className={classes.advanced} onClick={() => setView(SearchView.ADVANCED)}>Advanced search</div>
         </Paper>

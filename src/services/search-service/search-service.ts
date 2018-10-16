@@ -2,9 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+import { SearchBarAdvanceFormData } from '~/models/search-bar';
+
 export class SearchService {
     private recentQueries: string[] = this.getRecentQueries();
-    private savedQueries: string[] = this.getSavedQueries();
+    private savedQueries: SearchBarAdvanceFormData[] = this.getSavedQueries();
 
     saveRecentQuery(query: string) {
         if (this.recentQueries.length >= MAX_NUMBER_OF_RECENT_QUERIES) {
@@ -20,13 +22,22 @@ export class SearchService {
         return JSON.parse(localStorage.getItem('recentQueries') || '[]') as string[];
     }
 
-    saveQuery(query: string) {
-        this.savedQueries.push(query);
+    saveQuery(data: SearchBarAdvanceFormData) {
+        this.savedQueries.push({
+            type: data.type,
+            cluster: data.cluster,
+            project: data.project,
+            inTrash: data.inTrash,
+            dateFrom: data.dateFrom,
+            dateTo: data.dateTo,
+            saveQuery: data.saveQuery,
+            searchQuery: data.searchQuery
+        });
         localStorage.setItem('savedQueries', JSON.stringify(this.savedQueries));
     }
 
     getSavedQueries() {
-        return JSON.parse(localStorage.getItem('savedQueries') || '[]') as string[];
+        return JSON.parse(localStorage.getItem('savedQueries') || '[]') as SearchBarAdvanceFormData[];
     }
 
     deleteSavedQuery(id: number) {

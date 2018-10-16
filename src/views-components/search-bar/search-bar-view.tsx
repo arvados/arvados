@@ -15,7 +15,7 @@ import {
     ClickAwayListener
 } from '@material-ui/core';
 import SearchIcon from '@material-ui/icons/Search';
-import { RemoveIcon } from '~/components/icon/icon';
+import { RemoveIcon, EditSavedQueryIcon } from '~/components/icon/icon';
 import { SearchView } from '~/store/search-bar/search-bar-reducer';
 import { SearchBarBasicView } from '~/views-components/search-bar/search-bar-basic-view';
 import { SearchBarAdvancedView } from '~/views-components/search-bar/search-bar-advanced-view';
@@ -53,7 +53,7 @@ type SearchBarDataProps = {
     searchValue: string;
     currentView: string;
     isPopoverOpen: boolean;
-    savedQueries: string[];
+    savedQueries: SearchBarAdvanceFormData[];
 } & SearchBarAutocompleteViewDataProps;
 
 interface SearchBarActionProps {
@@ -67,6 +67,7 @@ interface SearchBarActionProps {
     deleteSavedQuery: (id: number) => void;
     openSearchView: () => void;
     navigateTo: (uuid: string) => void;
+    editSavedQuery: (data: SearchBarAdvanceFormData, id: number) => void;
 }
 
 type SearchBarProps = SearchBarDataProps & SearchBarActionProps & WithStyles<CssRules>;
@@ -74,8 +75,6 @@ type SearchBarProps = SearchBarDataProps & SearchBarActionProps & WithStyles<Css
 interface SearchBarState {
     value: string;
 }
-
-
 
 interface RenderRecentQueriesProps {
     text: string | JSX.Element;
@@ -105,12 +104,19 @@ interface RenderSavedQueriesProps {
     id: number;
     deleteSavedQuery: (id: number) => void;
     onSearch: (searchValue: string | JSX.Element) => void;
+    editSavedQuery: (data: SearchBarAdvanceFormData, id: number) => void;
+    data: SearchBarAdvanceFormData;
 }
 
 export const RenderSavedQueries = (props: RenderSavedQueriesProps) => {
     return <ListItem button>
         <ListItemText secondary={props.text} onClick={() => props.onSearch(props.text)} />
         <ListItemSecondaryAction>
+            <Tooltip title="Edit">
+                <IconButton aria-label="Edit" onClick={() => props.editSavedQuery(props.data, props.id)}>
+                    <EditSavedQueryIcon />
+                </IconButton>
+            </Tooltip>
             <Tooltip title="Remove">
                 <IconButton aria-label="Remove" onClick={() => props.deleteSavedQuery(props.id)}>
                     <RemoveIcon />
@@ -175,10 +181,10 @@ export const SearchBarView = withStyles(styles)(
         }
 
         getView = (currentView: string) => {
-            const { onSetView, loadRecentQueries, savedQueries, deleteSavedQuery, searchValue, searchResults, saveQuery, onSearch, navigateTo } = this.props;
+            const { onSetView, loadRecentQueries, savedQueries, deleteSavedQuery, searchValue, searchResults, saveQuery, onSearch, navigateTo, editSavedQuery } = this.props;
             switch (currentView) {
                 case SearchView.BASIC:
-                    return <SearchBarBasicView setView={onSetView} recentQueries={loadRecentQueries} savedQueries={savedQueries} deleteSavedQuery={deleteSavedQuery} onSearch={onSearch} />;
+                    return <SearchBarBasicView setView={onSetView} recentQueries={loadRecentQueries} savedQueries={savedQueries} deleteSavedQuery={deleteSavedQuery} onSearch={onSearch} editSavedQuery={editSavedQuery} />;
                 case SearchView.ADVANCED:
                     return <SearchBarAdvancedView setView={onSetView} saveQuery={saveQuery} />;
                 case SearchView.AUTOCOMPLETE:
@@ -187,7 +193,7 @@ export const SearchBarView = withStyles(styles)(
                         searchResults={searchResults}
                         searchValue={searchValue} />;
                 default:
-                    return <SearchBarBasicView setView={onSetView} recentQueries={loadRecentQueries} savedQueries={savedQueries} deleteSavedQuery={deleteSavedQuery} onSearch={onSearch} />;
+                    return <SearchBarBasicView setView={onSetView} recentQueries={loadRecentQueries} savedQueries={savedQueries} deleteSavedQuery={deleteSavedQuery} onSearch={onSearch} editSavedQuery={editSavedQuery} />;
             }
         }
 

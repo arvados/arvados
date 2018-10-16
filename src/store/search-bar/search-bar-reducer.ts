@@ -4,13 +4,14 @@
 
 import { searchBarActions, SearchBarActions } from '~/store/search-bar/search-bar-actions';
 import { GroupContentsResource } from '~/services/groups-service/groups-service';
+import { SearchBarAdvanceFormData } from '~/models/search-bar';
 
 interface SearchBar {
     currentView: string;
     open: boolean;
     searchResults: GroupContentsResource[];
     searchValue: string;
-    savedQueries: string[];
+    savedQueries: SearchBarAdvanceFormData[];
 }
 
 export enum SearchView {
