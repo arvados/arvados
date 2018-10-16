@@ -30,7 +30,6 @@ import { navigateTo } from '~/store/navigation/navigation-action';
 import { ContainerRequestState } from "~/models/container-request";
 import { FavoritesState } from '../../store/favorites/favorites-reducer';
 import { RootState } from '~/store/store';
-import { PanelDefaultView } from '~/components/panel-default-view/panel-default-view';
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 
 type CssRules = "toolbar" | "button";

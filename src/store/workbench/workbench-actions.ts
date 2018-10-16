@@ -51,6 +51,8 @@ import { loadCollectionFiles } from '~/store/collection-panel/collection-panel-f
 import { SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { collectionPanelActions } from "~/store/collection-panel/collection-panel-action";
 import { CollectionResource } from "~/models/collection";
+import { searchResultsPanelActions, loadSearchResultsPanel } from '~/store/search-results-panel/search-results-panel-actions';
+import { searchResultsPanelColumns } from '~/views/search-results-panel/search-results-panel-view';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -84,6 +86,7 @@ export const loadWorkbench = () =>
                 dispatch(trashPanelActions.SET_COLUMNS({ columns: trashPanelColumns }));
                 dispatch(sharedWithMePanelActions.SET_COLUMNS({ columns: projectPanelColumns }));
                 dispatch(workflowPanelActions.SET_COLUMNS({ columns: workflowPanelColumns }));
+                dispatch(searchResultsPanelActions.SET_COLUMNS({ columns: searchResultsPanelColumns }));
                 dispatch<any>(initSidePanelTree());
                 if (router.location) {
                     const match = matchRootRoute(router.location.pathname);
@@ -372,6 +375,11 @@ export const loadWorkflow = handleFirstTimeLoad(async (dispatch: Dispatch<any>) 
     await dispatch(loadWorkflowPanel());
     dispatch(setSidePanelBreadcrumbs(SidePanelTreeCategory.WORKFLOWS));
 });
+
+export const loadSearchResults = handleFirstTimeLoad(
+    async (dispatch: Dispatch<any>) => {
+        await dispatch(loadSearchResultsPanel());
+    });
 
 const finishLoadingProject = (project: GroupContentsResource | string) =>
     async (dispatch: Dispatch<any>) => {

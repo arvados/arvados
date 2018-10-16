@@ -18,7 +18,8 @@ export const Routes = {
     PROCESS_LOGS: `/process-logs/:id(${RESOURCE_UUID_PATTERN})`,
     SHARED_WITH_ME: '/shared-with-me',
     RUN_PROCESS: '/run-process',
-    WORKFLOWS: '/workflows'
+    WORKFLOWS: '/workflows',
+    SEARCH_RESULTS: '/search-results'
 };
 
 export const getResourceUrl = (uuid: string) => {
@@ -72,3 +73,6 @@ export const matchRunProcessRoute = (route: string) =>
     
 export const matchWorkflowRoute = (route: string) =>
     matchPath<ResourceRouteParams>(route, { path: Routes.WORKFLOWS });
+
+export const matchSearchResultsRoute = (route: string) =>
+    matchPath<ResourceRouteParams>(route, { path: Routes.SEARCH_RESULTS });

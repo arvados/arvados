@@ -4,10 +4,10 @@
 
 import { History, Location } from 'history';
 import { RootStore } from '~/store/store';
-import { matchProcessRoute, matchProcessLogRoute, matchProjectRoute, matchCollectionRoute, matchFavoritesRoute, matchTrashRoute, matchRootRoute, matchSharedWithMeRoute, matchRunProcessRoute, matchWorkflowRoute } from './routes';
+import { matchProcessRoute, matchProcessLogRoute, matchProjectRoute, matchCollectionRoute, matchFavoritesRoute, matchTrashRoute, matchRootRoute, matchSharedWithMeRoute, matchRunProcessRoute, matchWorkflowRoute, matchSearchResultsRoute } from './routes';
 import { loadProject, loadCollection, loadFavorites, loadTrash, loadProcess, loadProcessLog } from '~/store/workbench/workbench-actions';
 import { navigateToRootProject } from '~/store/navigation/navigation-action';
-import { loadSharedWithMe, loadRunProcess, loadWorkflow } from '../store/workbench/workbench-actions';
+import { loadSharedWithMe, loadRunProcess, loadWorkflow, loadSearchResults } from '~//store/workbench/workbench-actions';
 
 export const addRouteChangeHandlers = (history: History, store: RootStore) => {
     const handler = handleLocationChange(store);
@@ -23,6 +23,7 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
     const trashMatch = matchTrashRoute(pathname);
     const processMatch = matchProcessRoute(pathname);
     const processLogMatch = matchProcessLogRoute(pathname);
+    const searchResultsMatch = matchSearchResultsRoute(pathname);
     const sharedWithMeMatch = matchSharedWithMeRoute(pathname);
     const runProcessMatch = matchRunProcessRoute(pathname);
     const workflowMatch = matchWorkflowRoute(pathname);
@@ -47,5 +48,7 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
         store.dispatch(loadRunProcess);
     } else if (workflowMatch) {
         store.dispatch(loadWorkflow);
+    } else if (searchResultsMatch) {
+        store.dispatch(loadSearchResults);
     }
 };

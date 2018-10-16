@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { Paper, StyleRulesCallback, withStyles, WithStyles, List } from '@material-ui/core';
-import { RecentQueriesItem } from '~/views-components/search-bar/search-bar-view';
+import { RenderAutocompleteItems } from '~/views-components/search-bar/search-bar-view';
 import { GroupContentsResource } from '~/services/groups-service/groups-service';
 import Highlighter from "react-highlight-words";
 
@@ -24,16 +24,17 @@ const styles: StyleRulesCallback<CssRules> = theme => {
 export interface SearchBarAutocompleteViewDataProps {
     searchResults?: GroupContentsResource[];
     searchValue?: string;
+    navigateTo: (uuid: string) => void;
 }
 
 type SearchBarAutocompleteViewProps = SearchBarAutocompleteViewDataProps & WithStyles<CssRules>;
 
 export const SearchBarAutocompleteView = withStyles(styles)(
-    ({ classes, searchResults, searchValue }: SearchBarAutocompleteViewProps) =>
+    ({ classes, searchResults, searchValue, navigateTo }: SearchBarAutocompleteViewProps) =>
         <Paper className={classes.searchView}>
             {searchResults && <List component="nav" className={classes.list}>
                 {searchResults.map((item: GroupContentsResource) => {
-                    return <RecentQueriesItem key={item.uuid} text={getFormattedText(item.name, searchValue)} />;
+                    return <RenderAutocompleteItems key={item.uuid} text={getFormattedText(item.name, searchValue)} navigateTo={navigateTo} uuid={item.uuid} />;
                 })}
             </List>}
         </Paper>

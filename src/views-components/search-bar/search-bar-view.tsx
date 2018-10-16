@@ -15,7 +15,7 @@ import {
     ClickAwayListener
 } from '@material-ui/core';
 import SearchIcon from '@material-ui/icons/Search';
-import { RemoveIcon } from '~/components/icon/icon';
+import { RemoveIcon, EditSavedQueryIcon } from '~/components/icon/icon';
 import { SearchView } from '~/store/search-bar/search-bar-reducer';
 import { SearchBarBasicView } from '~/views-components/search-bar/search-bar-basic-view';
 import { SearchBarAdvancedView } from '~/views-components/search-bar/search-bar-advanced-view';
@@ -53,7 +53,7 @@ type SearchBarDataProps = {
     searchValue: string;
     currentView: string;
     isPopoverOpen: boolean;
-    savedQueries: string[];
+    savedQueries: SearchBarAdvanceFormData[];
 } & SearchBarAutocompleteViewDataProps;
 
 interface SearchBarActionProps {
@@ -66,6 +66,8 @@ interface SearchBarActionProps {
     saveQuery: (data: SearchBarAdvanceFormData) => void;
     deleteSavedQuery: (id: number) => void;
     openSearchView: () => void;
+    navigateTo: (uuid: string) => void;
+    editSavedQuery: (data: SearchBarAdvanceFormData, id: number) => void;
 }
 
 type SearchBarProps = SearchBarDataProps & SearchBarActionProps & WithStyles<CssRules>;
@@ -74,27 +76,47 @@ interface SearchBarState {
     value: string;
 }
 
-interface RenderSavedQueriesProps {
-    text: string | JSX.Element;
-    id: number;
-    deleteSavedQuery: (id: number) => void;
-}
-
 interface RenderRecentQueriesProps {
-    text: string | JSX.Element;
+    text: string;
+    onSearch: (searchValue: string) => void;
 }
 
-export const RecentQueriesItem = (props: RenderRecentQueriesProps) => {
+export const RenderRecentQueries = (props: RenderRecentQueriesProps) => {
     return <ListItem button>
-        <ListItemText secondary={props.text} />
+        <ListItemText secondary={props.text} onClick={() => props.onSearch(props.text)} />
     </ListItem>;
 };
 
+interface RenderAutocompleteItemsProps {
+    text: string | JSX.Element;
+    navigateTo: (uuid: string) => void;
+    uuid: string;
+}
+
+export const RenderAutocompleteItems = (props: RenderAutocompleteItemsProps) => {
+    return <ListItem button>
+        <ListItemText secondary={props.text} onClick={() => props.navigateTo(props.uuid)} />
+    </ListItem>;
+};
+
+interface RenderSavedQueriesProps {
+    text: string;
+    id: number;
+    deleteSavedQuery: (id: number) => void;
+    onSearch: (searchValue: string) => void;
+    editSavedQuery: (data: SearchBarAdvanceFormData, id: number) => void;
+    data: SearchBarAdvanceFormData;
+}
 
 export const RenderSavedQueries = (props: RenderSavedQueriesProps) => {
     return <ListItem button>
-        <ListItemText secondary={props.text} />
+        <ListItemText secondary={props.text} onClick={() => props.onSearch(props.text)} />
         <ListItemSecondaryAction>
+            <Tooltip title="Edit">
+                <IconButton aria-label="Edit" onClick={() => props.editSavedQuery(props.data, props.id)}>
+                    <EditSavedQueryIcon />
+                </IconButton>
+            </Tooltip>
             <Tooltip title="Remove">
                 <IconButton aria-label="Remove" onClick={() => props.deleteSavedQuery(props.id)}>
                     <RemoveIcon />
@@ -116,7 +138,7 @@ export const SearchBarView = withStyles(styles)(
 
         render() {
             const { classes, currentView, openSearchView, closeView, isPopoverOpen } = this.props;
-            return <ClickAwayListener onClickAway={() => closeView()}>
+            return <ClickAwayListener onClickAway={closeView}>
                 <Paper className={isPopoverOpen ? classes.containerSearchViewOpened : classes.container} >
                     <form onSubmit={this.handleSubmit}>
                         <Input
@@ -159,18 +181,19 @@ export const SearchBarView = withStyles(styles)(
         }
 
         getView = (currentView: string) => {
-            const { onSetView, loadRecentQueries, savedQueries, deleteSavedQuery, searchValue, searchResults, saveQuery } = this.props;
+            const { onSetView, loadRecentQueries, savedQueries, deleteSavedQuery, searchValue, searchResults, saveQuery, onSearch, navigateTo, editSavedQuery } = this.props;
             switch (currentView) {
                 case SearchView.BASIC:
-                    return <SearchBarBasicView setView={onSetView} recentQueries={loadRecentQueries} savedQueries={savedQueries} deleteSavedQuery={deleteSavedQuery} />;
+                    return <SearchBarBasicView setView={onSetView} recentQueries={loadRecentQueries} savedQueries={savedQueries} deleteSavedQuery={deleteSavedQuery} onSearch={onSearch} editSavedQuery={editSavedQuery} />;
                 case SearchView.ADVANCED:
-                    return <SearchBarAdvancedView setView={onSetView} saveQuery={saveQuery}/>;
+                    return <SearchBarAdvancedView setView={onSetView} saveQuery={saveQuery} />;
                 case SearchView.AUTOCOMPLETE:
                     return <SearchBarAutocompleteView
+                        navigateTo={navigateTo}
                         searchResults={searchResults}
                         searchValue={searchValue} />;
                 default:
-                    return <SearchBarBasicView setView={onSetView} recentQueries={loadRecentQueries} savedQueries={savedQueries} deleteSavedQuery={deleteSavedQuery} />;
+                    return <SearchBarBasicView setView={onSetView} recentQueries={loadRecentQueries} savedQueries={savedQueries} deleteSavedQuery={deleteSavedQuery} onSearch={onSearch} editSavedQuery={editSavedQuery} />;
             }
         }
 

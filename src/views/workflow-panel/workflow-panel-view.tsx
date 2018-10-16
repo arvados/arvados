@@ -6,7 +6,7 @@ import * as React from 'react';
 import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
 import { WorkflowIcon } from '~/components/icon/icon';
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
-import { WORKFLOW_PANEL_ID, workflowPanelActions } from '~/store/workflow-panel/workflow-panel-actions';
+import { WORKFLOW_PANEL_ID } from '~/store/workflow-panel/workflow-panel-actions';
 import {
     ResourceLastModifiedDate,
     RosurceWorkflowName,

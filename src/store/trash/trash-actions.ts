@@ -10,8 +10,8 @@ import { trashPanelActions } from "~/store/trash-panel/trash-panel-action";
 import { activateSidePanelTreeItem, loadSidePanelTreeProjects } from "~/store/side-panel-tree/side-panel-tree-actions";
 import { projectPanelActions } from "~/store/project-panel/project-panel-action";
 import { ResourceKind } from "~/models/resource";
-import { navigateToTrash } from '../navigation/navigation-action';
-import { matchTrashRoute, matchCollectionRoute } from '../../routes/routes';
+import { navigateToTrash } from '~/store/navigation/navigation-action';
+import { matchCollectionRoute } from '~/routes/routes';
 
 export const toggleProjectTrashed = (uuid: string, ownerUuid: string, isTrashed: boolean) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
