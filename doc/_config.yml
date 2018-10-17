@@ -152,6 +152,7 @@ navbar:
     - Upgrading and migrations:
       - admin/upgrading.html.textile.liquid
       - install/migrate-docker19.html.textile.liquid
+      - admin/upgrade-crunch2.html.textile.liquid
     - Users and Groups:
       - install/cheat_sheet.html.textile.liquid
       - admin/activation.html.textile.liquid
