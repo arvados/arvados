@@ -36,7 +36,12 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 interface SidePanelDataProps {
     currentItemId: string;
-    buttonVisible: boolean;
+    isProjectRoute: boolean;
+    properties: Properties;
+}
+
+interface Properties {
+    breadcrumbs: Array<{uuid: string, label: string}>;
 }
 
 interface SidePanelState {
@@ -50,16 +55,26 @@ const transformOrigin: PopoverOrigin = {
     horizontal: 0
 };
 
-const isButtonVisible = ({ router }: RootState) => {
+const isProjectRoute = ({ router }: RootState) => {
     const pathname = router.location ? router.location.pathname : '';
     const match = matchProjectRoute(pathname);
     return !!match;
 };
 
+const isItemSharedWithMe = (properties: Properties) => {
+    if (properties.breadcrumbs) {
+        const isItemSharedWithMe = properties.breadcrumbs[0].label === 'Shared with me';
+        return isItemSharedWithMe;
+    } else {
+        return false;
+    }
+};
+
 export const SidePanelButton = withStyles(styles)(
     connect((state: RootState) => ({
         currentItemId: getProperty(PROJECT_PANEL_CURRENT_UUID)(state.properties),
-        buttonVisible: isButtonVisible(state)
+        isProjectRoute: isProjectRoute(state),
+        properties: state.properties
     }))(
         class extends React.Component<SidePanelProps> {
 
@@ -68,15 +83,16 @@ export const SidePanelButton = withStyles(styles)(
             };
 
             render() {
-                const { classes, buttonVisible } = this.props;
+                const { classes, isProjectRoute, properties } = this.props;
                 const { anchorEl } = this.state;
                 return <Toolbar>
-                    {buttonVisible && <Grid container>
+                    <Grid container>
                         <Grid container item xs alignItems="center" justify="flex-start">
                             <Button variant="contained" color="primary" size="small" className={classes.button}
                                 aria-owns={anchorEl ? 'aside-menu-list' : undefined}
                                 aria-haspopup="true"
-                                onClick={this.handleOpen}>
+                                onClick={this.handleOpen}
+                                disabled={!isProjectRoute || isItemSharedWithMe(properties)}>
                                 <AddIcon />
                                 New
                             </Button>
@@ -98,7 +114,7 @@ export const SidePanelButton = withStyles(styles)(
                                 </MenuItem>
                             </Menu>
                         </Grid>
-                    </Grid>}
+                    </Grid>
                 </Toolbar>;
             }
 
