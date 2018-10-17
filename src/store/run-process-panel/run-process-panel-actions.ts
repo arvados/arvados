@@ -15,6 +15,7 @@ import { createWorkflowMounts } from '~/models/process';
 import { ContainerRequestState } from '~/models/container-request';
 import { navigateToProcess } from '../navigation/navigation-action';
 import { RunProcessAdvancedFormData, RUN_PROCESS_ADVANCED_FORM } from '~/views/run-process-panel/run-process-advanced-form';
+import { isItemNotInProject, isProjectRoute } from '~/store/projects/project-create-actions';
 
 export const runProcessPanelActions = unionize({
     SET_PROCESS_OWNER_UUID: ofType<string>(),
@@ -55,10 +56,11 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
     const basicForm = getFormValues(RUN_PROCESS_BASIC_FORM)(state) as RunProcessBasicFormData;
     const inputsForm = getFormValues(RUN_PROCESS_INPUTS_FORM)(state) as WorkflowInputsData;
     const advancedForm = getFormValues(RUN_PROCESS_ADVANCED_FORM)(state) as RunProcessAdvancedFormData;
+    const userUuid = getState().auth.user!.uuid;
     const { processOwnerUuid, selectedWorkflow } = state.runProcessPanel;
     if (selectedWorkflow) {
         const newProcessData = {
-            ownerUuid: processOwnerUuid,
+            ownerUuid: isItemNotInProject || !isProjectRoute ? userUuid : processOwnerUuid,
             name: basicForm.name,
             description: basicForm.description,
             state: ContainerRequestState.COMMITTED,

@@ -13,7 +13,6 @@ import { StyleRulesCallback, WithStyles, withStyles, Toolbar, Grid, Button, Menu
 import { AddIcon, CollectionIcon, ProcessIcon, ProjectIcon } from '~/components/icon/icon';
 import { openProjectCreateDialog } from '~/store/projects/project-create-actions';
 import { openCollectionCreateDialog } from '~/store/collections/collection-create-actions';
-import { matchProjectRoute } from '~/routes/routes';
 import { navigateToRunProcess } from '~/store/navigation/navigation-action';
 import { runProcessPanelActions } from '~/store/run-process-panel/run-process-panel-actions';
 
@@ -36,12 +35,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 interface SidePanelDataProps {
     currentItemId: string;
-    isProjectRoute: boolean;
-    properties: Properties;
-}
-
-interface Properties {
-    breadcrumbs: Array<{uuid: string, label: string}>;
 }
 
 interface SidePanelState {
@@ -55,26 +48,9 @@ const transformOrigin: PopoverOrigin = {
     horizontal: 0
 };
 
-const isProjectRoute = ({ router }: RootState) => {
-    const pathname = router.location ? router.location.pathname : '';
-    const match = matchProjectRoute(pathname);
-    return !!match;
-};
-
-const isItemSharedWithMe = (properties: Properties) => {
-    if (properties.breadcrumbs) {
-        const isItemSharedWithMe = properties.breadcrumbs[0].label === 'Shared with me';
-        return isItemSharedWithMe;
-    } else {
-        return false;
-    }
-};
-
 export const SidePanelButton = withStyles(styles)(
     connect((state: RootState) => ({
-        currentItemId: getProperty(PROJECT_PANEL_CURRENT_UUID)(state.properties),
-        isProjectRoute: isProjectRoute(state),
-        properties: state.properties
+        currentItemId: getProperty(PROJECT_PANEL_CURRENT_UUID)(state.properties)
     }))(
         class extends React.Component<SidePanelProps> {
 
@@ -83,7 +59,7 @@ export const SidePanelButton = withStyles(styles)(
             };
 
             render() {
-                const { classes, isProjectRoute, properties } = this.props;
+                const { classes } = this.props;
                 const { anchorEl } = this.state;
                 return <Toolbar>
                     <Grid container>
@@ -91,8 +67,7 @@ export const SidePanelButton = withStyles(styles)(
                             <Button variant="contained" color="primary" size="small" className={classes.button}
                                 aria-owns={anchorEl ? 'aside-menu-list' : undefined}
                                 aria-haspopup="true"
-                                onClick={this.handleOpen}
-                                disabled={!isProjectRoute || isItemSharedWithMe(properties)}>
+                                onClick={this.handleOpen}>
                                 <AddIcon />
                                 New
                             </Button>
