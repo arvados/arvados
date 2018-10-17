@@ -27,7 +27,7 @@ class Collection < ArvadosModel
   validate :ensure_pdh_matches_manifest_text
   validate :ensure_storage_classes_desired_is_not_empty
   validate :ensure_storage_classes_contain_non_empty_strings
-  validate :current_versions_always_point_to_self, on: :update
+  validate :versioning_metadata_updates, on: :update
   validate :past_versions_cannot_be_updated, on: :update
   before_save :set_file_names
   around_update :manage_versioning
@@ -242,9 +242,7 @@ class Collection < ArvadosModel
 
       # Restore requested changes on the current version
       changes.keys.each do |attr|
-        if attr == 'version'
-          next
-        elsif attr == 'preserve_version' && changes[attr].last == false
+        if attr == 'preserve_version' && changes[attr].last == false
           next # Ignore false assignment, once true it'll be true until next version
         end
         self.attributes = {attr => changes[attr].last}
@@ -629,11 +627,17 @@ class Collection < ArvadosModel
     end
   end
 
-  def current_versions_always_point_to_self
+  def versioning_metadata_updates
+    valid = true
     if (current_version_uuid_was == uuid_was) && current_version_uuid_changed?
       errors.add(:current_version_uuid, "cannot be updated")
-      false
+      valid = false
     end
+    if version_changed?
+      errors.add(:version, "cannot be updated")
+      valid = false
+    end
+    valid
   end
 
   def assign_uuid

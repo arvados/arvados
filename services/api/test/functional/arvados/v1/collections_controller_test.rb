@@ -1197,7 +1197,7 @@ EOS
   test 'can get collection with past versions' do
     authorize_with :active
     get :index, {
-      filters: [['uuid','=',collections(:collection_owned_by_active).uuid]],
+      filters: [['current_version_uuid','=',collections(:collection_owned_by_active).uuid]],
       include_old_versions: true
     }
     assert_response :success
