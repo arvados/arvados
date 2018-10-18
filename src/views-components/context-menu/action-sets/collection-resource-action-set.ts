@@ -12,6 +12,7 @@ import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-acti
 import { openMoveCollectionDialog } from '~/store/collections/collection-move-actions';
 import { openCollectionCopyDialog } from '~/store/collections/collection-copy-actions';
 import { toggleCollectionTrashed } from "~/store/trash/trash-actions";
+import { detailsPanelActions } from '~/store/details-panel/details-panel-action';
 
 export const collectionResourceActionSet: ContextMenuActionSet = [[
     {
@@ -57,9 +58,7 @@ export const collectionResourceActionSet: ContextMenuActionSet = [[
     {
         icon: DetailsIcon,
         name: "View details",
-        execute: (dispatch, resource) => {
-            // add code
-        }
+        execute: dispatch => dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL())
     },
     {
         icon: RemoveIcon,

@@ -12,6 +12,7 @@ import { openMoveCollectionDialog } from '~/store/collections/collection-move-ac
 import { openCollectionCopyDialog } from "~/store/collections/collection-copy-actions";
 import { ToggleTrashAction } from "~/views-components/context-menu/actions/trash-action";
 import { toggleCollectionTrashed } from "~/store/trash/trash-actions";
+import { detailsPanelActions } from '~/store/details-panel/details-panel-action';
 
 export const collectionActionSet: ContextMenuActionSet = [[
     {
@@ -57,9 +58,7 @@ export const collectionActionSet: ContextMenuActionSet = [[
     {
         icon: DetailsIcon,
         name: "View details",
-        execute: (dispatch, resource) => {
-            // add code
-        }
+        execute: dispatch => dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL())
     },
     {
         icon: ProvenanceGraphIcon,
