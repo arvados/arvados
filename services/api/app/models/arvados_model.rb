@@ -281,7 +281,7 @@ class ArvadosModel < ActiveRecord::Base
           # Only include records where the owner is not trashed
           sql_conds = "NOT EXISTS(SELECT 1 FROM #{PERMISSION_VIEW} "+
                       "WHERE trashed = 1 AND "+
-                      "(#{sql_table}.owner_uuid = target_uuid)) #{exclude_trashed_records} #{exclude_old_versions}"
+                      "(#{sql_table}.owner_uuid = target_uuid)) #{exclude_trashed_records}"
         end
       end
     else
@@ -318,8 +318,16 @@ class ArvadosModel < ActiveRecord::Base
                        "(#{sql_table}.head_uuid IN (:user_uuids) OR #{sql_table}.tail_uuid IN (:user_uuids)))"
       end
 
-      sql_conds = "(#{direct_check} #{owner_check} #{links_cond}) #{exclude_trashed_records} #{exclude_old_versions}"
+      sql_conds = "(#{direct_check} #{owner_check} #{links_cond}) #{exclude_trashed_records}"
 
+    end
+
+    if exclude_old_versions != ""
+      if sql_conds.nil?
+        sql_conds = exclude_old_versions[4..-1] # Remove "AND "
+      else
+        sql_conds += " #{exclude_old_versions}"
+      end
     end
 
     self.where(sql_conds,
