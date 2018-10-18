@@ -151,4 +151,14 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
       end
     end
   end
+
+  test 'get runtime_token auth' do
+    authorize_with :dispatch2
+    c = containers(:runtime_token)
+    get :auth, id: c.uuid
+    assert_response :success
+    assert_equal "v2/#{json_response['uuid']}/#{json_response['api_token']}", api_client_authorizations(:container_runtime_token).token
+    assert_equal 'arvados#apiClientAuthorization', json_response['kind']
+  end
+
 end

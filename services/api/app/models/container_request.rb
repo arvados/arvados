@@ -38,7 +38,8 @@ class ContainerRequest < ArvadosModel
   validate :validate_state_change
   validate :check_update_whitelist
   validate :secret_mounts_key_conflict
-  before_save :scrub_secret_mounts
+  validate :validate_runtime_token
+  before_save :scrub_secrets
   before_create :set_requesting_container_uuid
   before_destroy :set_priority_zero
   after_save :update_priority
@@ -88,7 +89,7 @@ class ContainerRequest < ArvadosModel
   AttrsPermittedAlways = [:owner_uuid, :state, :name, :description, :properties]
   AttrsPermittedBeforeCommit = [:command, :container_count_max,
   :container_image, :cwd, :environment, :filters, :mounts,
-  :output_path, :priority,
+  :output_path, :priority, :runtime_token,
   :runtime_constraints, :state, :container_uuid, :use_existing,
   :scheduling_parameters, :secret_mounts, :output_name, :output_ttl]
 
@@ -97,7 +98,7 @@ class ContainerRequest < ArvadosModel
   end
 
   def logged_attributes
-    super.except('secret_mounts')
+    super.except('secret_mounts', 'runtime_token')
   end
 
   def state_transitions
@@ -105,8 +106,12 @@ class ContainerRequest < ArvadosModel
   end
 
   def skip_uuid_read_permission_check
-    # XXX temporary until permissions are sorted out.
-    %w(modified_by_client_uuid container_uuid requesting_container_uuid)
+    # The uuid_read_permission_check prevents users from making
+    # references to objects they can't view.  However, in this case we
+    # don't want to do that check since there's a circular dependency
+    # where user can't view the container until the user has
+    # constructed the container request that references the container.
+    %w(container_uuid)
   end
 
   def finalize_if_needed
@@ -165,7 +170,7 @@ class ContainerRequest < ArvadosModel
   end
 
   def self.full_text_searchable_columns
-    super - ["mounts", "secret_mounts", "secret_mounts_md5"]
+    super - ["mounts", "secret_mounts", "secret_mounts_md5", "runtime_token"]
   end
 
   protected
@@ -343,9 +348,22 @@ class ContainerRequest < ArvadosModel
     end
   end
 
-  def scrub_secret_mounts
+  def validate_runtime_token
+    if !self.runtime_token.nil? && self.runtime_token_changed?
+      if !runtime_token[0..2] == "v2/"
+        errors.add :runtime_token, "not a v2 token"
+        return
+      end
+      if ApiClientAuthorization.validate(token: runtime_token).nil?
+        errors.add :runtime_token, "failed validation"
+      end
+    end
+  end
+
+  def scrub_secrets
     if self.state == Final
       self.secret_mounts = {}
+      self.runtime_token = nil
     end
   end
 
@@ -374,9 +392,6 @@ class ContainerRequest < ArvadosModel
 
   def get_requesting_container
     return self.requesting_container_uuid if !self.requesting_container_uuid.nil?
-    return if !current_api_client_authorization
-    if (c = Container.where('auth_uuid=?', current_api_client_authorization.uuid).select([:uuid, :priority]).first)
-      return c
-    end
+    Container.for_current_token
   end
 end

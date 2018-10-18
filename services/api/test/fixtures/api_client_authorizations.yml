@@ -341,3 +341,25 @@ foo_collection_sharing_token:
   - GET /arvados/v1/collections/zzzzz-4zz18-znfnqtbbv4spc3w
   - GET /arvados/v1/collections/zzzzz-4zz18-znfnqtbbv4spc3w/
   - GET /arvados/v1/keep_services/accessible
+
+container_runtime_token:
+  uuid: zzzzz-gj3su-2nj68s291f50gd9
+  api_client: untrusted
+  user: container_runtime_token_user
+  api_token: 2d19ue6ofx26o3mm7fs9u6t7hov9um0v92dzwk1o2xed3abprw
+  expires_at: 2038-01-01 00:00:00
+
+crt_user:
+  uuid: zzzzz-gj3su-3r47qqy5ja5d54v
+  api_client: untrusted
+  user: container_runtime_token_user
+  api_token: 13z1tz9deoryml3twep0vsahi4862097pe5lsmesugnkgpgpwk
+  expires_at: 2038-01-01 00:00:00
+
+runtime_token_limited_scope:
+  uuid: zzzzz-gj3su-2fljvypjrr4yr9m
+  api_client: untrusted
+  user: container_runtime_token_user
+  api_token: 1fwc3be1m13qkypix2gd01i4bq5ju483zjfc0cf4babjseirbm
+  expires_at: 2038-01-01 00:00:00
+  scopes: ["GET /"]

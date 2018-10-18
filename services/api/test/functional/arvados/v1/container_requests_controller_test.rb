@@ -81,4 +81,21 @@ class Arvados::V1::ContainerRequestsControllerTest < ActionController::TestCase
     req.reload
     assert_equal 'bar', req.secret_mounts['/foo']['content']
   end
+
+  test "runtime_token not in #create responses" do
+    authorize_with :active
+
+    post :create, {
+           container_request: minimal_cr.merge(
+             runtime_token: api_client_authorizations(:spectator).token)
+         }
+    assert_response :success
+
+    resp = JSON.parse(@response.body)
+    refute resp.has_key?('runtime_token')
+
+    req = ContainerRequest.where(uuid: resp['uuid']).first
+    assert_equal api_client_authorizations(:spectator).token, req.runtime_token
+  end
+
 end

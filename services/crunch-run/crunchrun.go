@@ -1432,7 +1432,7 @@ func (runner *ContainerRunner) ContainerToken() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	runner.token = auth.APIToken
+	runner.token = fmt.Sprintf("v2/%s/%s/%s", auth.UUID, auth.APIToken, runner.Container.UUID)
 	return runner.token, nil
 }
 

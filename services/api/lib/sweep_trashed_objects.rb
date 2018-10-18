@@ -48,6 +48,11 @@ module SweepTrashedObjects
         where({group_class: 'project'}).
         where('is_trashed = false and trash_at < statement_timestamp()').
         update_all('is_trashed = true')
+
+      # Sweep expired tokens
+      ApiClientAuthorization.
+        where("expires_at <= statement_timestamp()").
+        destroy_all
     end
   end
 

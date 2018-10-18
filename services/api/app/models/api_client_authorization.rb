@@ -98,9 +98,29 @@ class ApiClientAuthorization < ArvadosModel
 
     case token[0..2]
     when 'v2/'
-      _, uuid, secret = token.split('/')
+      _, uuid, secret, optional = token.split('/')
       unless uuid.andand.length == 27 && secret.andand.length.andand > 0
         return nil
+      end
+
+      if !optional.nil?
+        # if "optional" is a container uuid, check that it
+        # matches expections.
+        c = Container.where(uuid: optional).first
+        if !c.nil?
+          if !c.auth_uuid.nil? and c.auth_uuid != uuid
+            # token doesn't match the container's token
+            return nil
+          end
+          if !c.runtime_token.nil? and "v2/#{uuid}/#{secret}" != c.runtime_token
+            # token doesn't match the container's token
+            return nil
+          end
+          if ![Container::Locked, Container::Running].include?(c.state)
+            # container isn't locked or running, token shouldn't be used
+            return nil
+          end
+        end
       end
 
       auth = ApiClientAuthorization.

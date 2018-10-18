@@ -37,7 +37,7 @@ class Container < ArvadosModel
   after_validation :assign_auth
   before_save :sort_serialized_attrs
   before_save :update_secret_mounts_md5
-  before_save :scrub_secret_mounts
+  before_save :scrub_secrets
   before_save :clear_runtime_status_when_queued
   after_save :update_cr_logs
   after_save :handle_completed
@@ -67,6 +67,8 @@ class Container < ArvadosModel
     t.add :state
     t.add :auth_uuid
     t.add :scheduling_parameters
+    t.add :runtime_user_uuid
+    t.add :runtime_auth_scopes
   end
 
   # Supported states for a container
@@ -91,15 +93,15 @@ class Container < ArvadosModel
   end
 
   def self.full_text_searchable_columns
-    super - ["secret_mounts", "secret_mounts_md5"]
+    super - ["secret_mounts", "secret_mounts_md5", "runtime_token"]
   end
 
   def self.searchable_columns *args
-    super - ["secret_mounts_md5"]
+    super - ["secret_mounts_md5", "runtime_token"]
   end
 
   def logged_attributes
-    super.except('secret_mounts')
+    super.except('secret_mounts', 'runtime_token')
   end
 
   def state_transitions
@@ -146,17 +148,37 @@ class Container < ArvadosModel
   # Create a new container (or find an existing one) to satisfy the
   # given container request.
   def self.resolve(req)
-    c_attrs = {
-      command: req.command,
-      cwd: req.cwd,
-      environment: req.environment,
-      output_path: req.output_path,
-      container_image: resolve_container_image(req.container_image),
-      mounts: resolve_mounts(req.mounts),
-      runtime_constraints: resolve_runtime_constraints(req.runtime_constraints),
-      scheduling_parameters: req.scheduling_parameters,
-      secret_mounts: req.secret_mounts,
-    }
+    if req.runtime_token.nil?
+      runtime_user = if req.modified_by_user_uuid.nil?
+                       current_user
+                     else
+                       User.find_by_uuid(req.modified_by_user_uuid)
+                     end
+      runtime_auth_scopes = ["all"]
+    else
+      auth = ApiClientAuthorization.validate(token: req.runtime_token)
+      if auth.nil?
+        raise ArgumentError.new "Invalid runtime token"
+      end
+      runtime_user = User.find_by_id(auth.user_id)
+      runtime_auth_scopes = auth.scopes
+    end
+    c_attrs = act_as_user runtime_user do
+      {
+        command: req.command,
+        cwd: req.cwd,
+        environment: req.environment,
+        output_path: req.output_path,
+        container_image: resolve_container_image(req.container_image),
+        mounts: resolve_mounts(req.mounts),
+        runtime_constraints: resolve_runtime_constraints(req.runtime_constraints),
+        scheduling_parameters: req.scheduling_parameters,
+        secret_mounts: req.secret_mounts,
+        runtime_token: req.runtime_token,
+        runtime_user_uuid: runtime_user.uuid,
+        runtime_auth_scopes: runtime_auth_scopes
+      }
+    end
     act_as_system_user do
       if req.use_existing && (reusable = find_reusable(c_attrs))
         reusable
@@ -258,6 +280,14 @@ class Container < ArvadosModel
 
     candidates = candidates.where_serialized(:runtime_constraints, resolve_runtime_constraints(attrs[:runtime_constraints]), md5: true)
     log_reuse_info(candidates) { "after filtering on runtime_constraints #{attrs[:runtime_constraints].inspect}" }
+
+    candidates = candidates.where('runtime_user_uuid = ? or (runtime_user_uuid is NULL and runtime_auth_scopes is NULL)',
+                                  attrs[:runtime_user_uuid])
+    log_reuse_info(candidates) { "after filtering on runtime_user_uuid #{attrs[:runtime_user_uuid].inspect}" }
+
+    candidates = candidates.where('runtime_auth_scopes = ? or (runtime_user_uuid is NULL and runtime_auth_scopes is NULL)',
+                                  SafeJSON.dump(attrs[:runtime_auth_scopes].sort))
+    log_reuse_info(candidates) { "after filtering on runtime_auth_scopes #{attrs[:runtime_auth_scopes].inspect}" }
 
     log_reuse_info { "checking for state=Complete with readable output and log..." }
 
@@ -362,6 +392,19 @@ class Container < ArvadosModel
     [Complete, Cancelled].include?(self.state)
   end
 
+  def self.for_current_token
+    return if !current_api_client_authorization
+    _, _, _, container_uuid = Thread.current[:token].split('/')
+    if container_uuid.nil?
+      Container.where(auth_uuid: current_api_client_authorization.uuid).first
+    else
+      Container.where('auth_uuid=? or (uuid=? and runtime_token=?)',
+                      current_api_client_authorization.uuid,
+                      container_uuid,
+                      current_api_client_authorization.token).first
+    end
+  end
+
   protected
 
   def fill_field_defaults
@@ -415,7 +458,8 @@ class Container < ArvadosModel
       permitted.push(:owner_uuid, :command, :container_image, :cwd,
                      :environment, :mounts, :output_path, :priority,
                      :runtime_constraints, :scheduling_parameters,
-                     :secret_mounts)
+                     :secret_mounts, :runtime_token,
+                     :runtime_user_uuid, :runtime_auth_scopes)
     end
 
     case self.state
@@ -511,7 +555,7 @@ class Container < ArvadosModel
 
   def assign_auth
     if self.auth_uuid_changed?
-      return errors.add :auth_uuid, 'is readonly'
+         return errors.add :auth_uuid, 'is readonly'
     end
     if not [Locked, Running].include? self.state
       # don't need one
@@ -522,16 +566,29 @@ class Container < ArvadosModel
       # already have one
       return
     end
-    cr = ContainerRequest.
-      where('container_uuid=? and priority>0', self.uuid).
-      order('priority desc').
-      first
-    if !cr
-      return errors.add :auth_uuid, "cannot be assigned because priority <= 0"
+    if self.runtime_token.nil?
+      if self.runtime_user_uuid.nil?
+        # legacy behavior, we don't have a runtime_user_uuid so get
+        # the user from the highest priority container request, needed
+        # when performing an upgrade and there are queued containers,
+        # and some tests.
+        cr = ContainerRequest.
+               where('container_uuid=? and priority>0', self.uuid).
+               order('priority desc').
+               first
+        if !cr
+          return errors.add :auth_uuid, "cannot be assigned because priority <= 0"
+        end
+        self.runtime_user_uuid = cr.modified_by_user_uuid
+        self.runtime_auth_scopes = ["all"]
+      end
+
+      # generate a new token
+      self.auth = ApiClientAuthorization.
+                    create!(user_id: User.find_by_uuid(self.runtime_user_uuid).id,
+                            api_client_id: 0,
+                            scopes: self.runtime_auth_scopes)
     end
-    self.auth = ApiClientAuthorization.
-      create!(user_id: User.find_by_uuid(cr.modified_by_user_uuid).id,
-              api_client_id: 0)
   end
 
   def sort_serialized_attrs
@@ -547,6 +604,9 @@ class Container < ArvadosModel
     if self.scheduling_parameters_changed?
       self.scheduling_parameters = self.class.deep_sort_hash(self.scheduling_parameters)
     end
+    if self.runtime_auth_scopes_changed?
+      self.runtime_auth_scopes = self.runtime_auth_scopes.sort
+    end
   end
 
   def update_secret_mounts_md5
@@ -556,12 +616,13 @@ class Container < ArvadosModel
     end
   end
 
-  def scrub_secret_mounts
+  def scrub_secrets
     # this runs after update_secret_mounts_md5, so the
     # secret_mounts_md5 will still reflect the secrets that are being
     # scrubbed here.
     if self.state_changed? && self.final?
       self.secret_mounts = {}
+      self.runtime_token = nil
     end
   end
 
@@ -593,7 +654,11 @@ class Container < ArvadosModel
             container_image: self.container_image,
             mounts: self.mounts,
             runtime_constraints: self.runtime_constraints,
-            scheduling_parameters: self.scheduling_parameters
+            scheduling_parameters: self.scheduling_parameters,
+            secret_mounts: self.secret_mounts_was,
+            runtime_token: self.runtime_token_was,
+            runtime_user_uuid: self.runtime_user_uuid,
+            runtime_auth_scopes: self.runtime_auth_scopes
           }
           c = Container.create! c_attrs
           retryable_requests.each do |cr|

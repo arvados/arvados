@@ -764,6 +764,26 @@ cr_in_trashed_project:
     vcpus: 1
     ram: 123
 
+runtime_token:
+  uuid: zzzzz-xvhdp-11eklkhy0n4dm86
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  name: queued
+  state: Committed
+  priority: 1
+  created_at: <%= 2.minute.ago.to_s(:db) %>
+  updated_at: <%= 1.minute.ago.to_s(:db) %>
+  modified_at: <%= 1.minute.ago.to_s(:db) %>
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  container_image: test
+  cwd: test
+  output_path: test
+  command: ["echo", "hello"]
+  container_uuid: zzzzz-dz642-20isqbkl8xwnsao
+  runtime_token: v2/zzzzz-gj3su-2nj68s291f50gd9/2d19ue6ofx26o3mm7fs9u6t7hov9um0v92dzwk1o2xed3abprw
+  runtime_constraints:
+    vcpus: 1
+    ram: 123
+
 
 # Test Helper trims the rest of the file
 

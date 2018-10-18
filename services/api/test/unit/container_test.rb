@@ -33,14 +33,18 @@ class ContainerTest < ActiveSupport::TestCase
       "var" => "val",
     },
     secret_mounts: {},
+    runtime_user_uuid: "zzzzz-tpzed-xurymjxw79nv3jz",
+    runtime_auth_scopes: ["all"]
   }
 
+  def request_only attrs
+    attrs.reject {|k| [:runtime_user_uuid, :runtime_auth_scopes].include? k}
+  end
+
   def minimal_new attrs={}
-    cr = ContainerRequest.new DEFAULT_ATTRS.merge(attrs)
+    cr = ContainerRequest.new request_only(DEFAULT_ATTRS.merge(attrs))
     cr.state = ContainerRequest::Committed
-    act_as_user users(:active) do
-      cr.save!
-    end
+    cr.save!
     c = Container.find_by_uuid cr.container_uuid
     assert_not_nil c
     return c, cr
@@ -220,6 +224,7 @@ class ContainerTest < ActiveSupport::TestCase
   end
 
   test "Container serialized hash attributes sorted before save" do
+    set_user_from_auth :active
     env = {"C" => "3", "B" => "2", "A" => "1"}
     m = {"F" => {"kind" => "3"}, "E" => {"kind" => "2"}, "D" => {"kind" => "1"}}
     rc = {"vcpus" => 1, "ram" => 1, "keep_cache_ram" => 1}
@@ -236,6 +241,7 @@ class ContainerTest < ActiveSupport::TestCase
   end
 
   test "find_reusable method should select higher priority queued container" do
+        Rails.configuration.log_reuse_decisions = true
     set_user_from_auth :active
     common_attrs = REUSABLE_COMMON_ATTRS.merge({environment:{"var" => "queued"}})
     c_low_priority, _ = minimal_new(common_attrs.merge({use_existing:false, priority:1}))
@@ -285,13 +291,13 @@ class ContainerTest < ActiveSupport::TestCase
       log: 'ea10d51bcf88862dbcc36eb292017dfd+45',
     }
 
-    cr = ContainerRequest.new common_attrs
+    cr = ContainerRequest.new request_only(common_attrs)
     cr.use_existing = false
     cr.state = ContainerRequest::Committed
     cr.save!
     c_output1 = Container.where(uuid: cr.container_uuid).first
 
-    cr = ContainerRequest.new common_attrs
+    cr = ContainerRequest.new request_only(common_attrs)
     cr.use_existing = false
     cr.state = ContainerRequest::Committed
     cr.save!
@@ -312,7 +318,8 @@ class ContainerTest < ActiveSupport::TestCase
     c_output2.update_attributes!({state: Container::Running})
     c_output2.update_attributes!(completed_attrs.merge({log: log1, output: out2}))
 
-    reused = Container.resolve(ContainerRequest.new(common_attrs))
+    set_user_from_auth :active
+    reused = Container.resolve(ContainerRequest.new(request_only(common_attrs)))
     assert_equal c_output1.uuid, reused.uuid
   end
 
@@ -507,7 +514,73 @@ class ContainerTest < ActiveSupport::TestCase
     Container.find_reusable(REUSABLE_COMMON_ATTRS)
   end
 
+  def runtime_token_attr tok
+    auth = api_client_authorizations(tok)
+    {runtime_user_uuid: User.find_by_id(auth.user_id).uuid,
+     runtime_auth_scopes: auth.scopes,
+     runtime_token: auth.token}
+  end
+
+  test "find_reusable method with same runtime_token" do
+    set_user_from_auth :active
+    common_attrs = REUSABLE_COMMON_ATTRS.merge({use_existing:false, priority:1, environment:{"var" => "queued"}})
+    c1, _ = minimal_new(common_attrs.merge({runtime_token: api_client_authorizations(:container_runtime_token).token}))
+    assert_equal Container::Queued, c1.state
+    reused = Container.find_reusable(common_attrs.merge(runtime_token_attr(:container_runtime_token)))
+    assert_not_nil reused
+    assert_equal reused.uuid, c1.uuid
+  end
+
+  test "find_reusable method with different runtime_token, same user" do
+    set_user_from_auth :active
+    common_attrs = REUSABLE_COMMON_ATTRS.merge({use_existing:false, priority:1, environment:{"var" => "queued"}})
+    c1, _ = minimal_new(common_attrs.merge({runtime_token: api_client_authorizations(:crt_user).token}))
+    assert_equal Container::Queued, c1.state
+    reused = Container.find_reusable(common_attrs.merge(runtime_token_attr(:container_runtime_token)))
+    assert_not_nil reused
+    assert_equal reused.uuid, c1.uuid
+  end
+
+  test "find_reusable method with nil runtime_token, then runtime_token with same user" do
+    set_user_from_auth :crt_user
+    common_attrs = REUSABLE_COMMON_ATTRS.merge({use_existing:false, priority:1, environment:{"var" => "queued"}})
+    c1, _ = minimal_new(common_attrs)
+    assert_equal Container::Queued, c1.state
+    assert_equal users(:container_runtime_token_user).uuid, c1.runtime_user_uuid
+    reused = Container.find_reusable(common_attrs.merge(runtime_token_attr(:container_runtime_token)))
+    assert_not_nil reused
+    assert_equal reused.uuid, c1.uuid
+  end
+
+  test "find_reusable method with different runtime_token, different user" do
+    set_user_from_auth :crt_user
+    common_attrs = REUSABLE_COMMON_ATTRS.merge({use_existing:false, priority:1, environment:{"var" => "queued"}})
+    c1, _ = minimal_new(common_attrs.merge({runtime_token: api_client_authorizations(:active).token}))
+    assert_equal Container::Queued, c1.state
+    reused = Container.find_reusable(common_attrs.merge(runtime_token_attr(:container_runtime_token)))
+    assert_nil reused
+  end
+
+  test "find_reusable method with nil runtime_token, then runtime_token with different user" do
+    set_user_from_auth :active
+    common_attrs = REUSABLE_COMMON_ATTRS.merge({use_existing:false, priority:1, environment:{"var" => "queued"}})
+    c1, _ = minimal_new(common_attrs.merge({runtime_token: nil}))
+    assert_equal Container::Queued, c1.state
+    reused = Container.find_reusable(common_attrs.merge(runtime_token_attr(:container_runtime_token)))
+    assert_nil reused
+  end
+
+  test "find_reusable method with different runtime_token, different scope, same user" do
+    set_user_from_auth :active
+    common_attrs = REUSABLE_COMMON_ATTRS.merge({use_existing:false, priority:1, environment:{"var" => "queued"}})
+    c1, _ = minimal_new(common_attrs.merge({runtime_token: api_client_authorizations(:runtime_token_limited_scope).token}))
+    assert_equal Container::Queued, c1.state
+    reused = Container.find_reusable(common_attrs.merge(runtime_token_attr(:container_runtime_token)))
+    assert_nil reused
+  end
+
   test "Container running" do
+    set_user_from_auth :active
     c, _ = minimal_new priority: 1
 
     set_user_from_auth :dispatch1
@@ -527,6 +600,7 @@ class ContainerTest < ActiveSupport::TestCase
   end
 
   test "Lock and unlock" do
+    set_user_from_auth :active
     c, cr = minimal_new priority: 0
 
     set_user_from_auth :dispatch1
@@ -587,6 +661,7 @@ class ContainerTest < ActiveSupport::TestCase
   end
 
   test "Container queued cancel" do
+    set_user_from_auth :active
     c, cr = minimal_new({container_count_max: 1})
     set_user_from_auth :dispatch1
     assert c.update_attributes(state: Container::Cancelled), show_errors(c)
@@ -600,6 +675,7 @@ class ContainerTest < ActiveSupport::TestCase
   end
 
   test "Container locked cancel" do
+    set_user_from_auth :active
     c, _ = minimal_new
     set_user_from_auth :dispatch1
     assert c.lock, show_errors(c)
@@ -608,6 +684,7 @@ class ContainerTest < ActiveSupport::TestCase
   end
 
   test "Container locked cancel with log" do
+    set_user_from_auth :active
     c, _ = minimal_new
     set_user_from_auth :dispatch1
     assert c.lock, show_errors(c)
@@ -619,6 +696,7 @@ class ContainerTest < ActiveSupport::TestCase
   end
 
   test "Container running cancel" do
+    set_user_from_auth :active
     c, _ = minimal_new
     set_user_from_auth :dispatch1
     c.lock
@@ -641,6 +719,7 @@ class ContainerTest < ActiveSupport::TestCase
   end
 
   test "Container only set exit code on complete" do
+    set_user_from_auth :active
     c, _ = minimal_new
     set_user_from_auth :dispatch1
     c.lock
@@ -653,6 +732,7 @@ class ContainerTest < ActiveSupport::TestCase
   end
 
   test "locked_by_uuid can update log when locked/running, and output when running" do
+    set_user_from_auth :active
     logcoll = collections(:real_log_collection)
     c, cr1 = minimal_new
     cr2 = ContainerRequest.new(DEFAULT_ATTRS)
@@ -698,6 +778,7 @@ class ContainerTest < ActiveSupport::TestCase
   end
 
   test "auth_uuid can set output, progress, runtime_status, state on running container -- but not log" do
+    set_user_from_auth :active
     c, _ = minimal_new
     set_user_from_auth :dispatch1
     c.lock
@@ -718,6 +799,7 @@ class ContainerTest < ActiveSupport::TestCase
   end
 
   test "not allowed to set output that is not readable by current user" do
+    set_user_from_auth :active
     c, _ = minimal_new
     set_user_from_auth :dispatch1
     c.lock
@@ -732,6 +814,7 @@ class ContainerTest < ActiveSupport::TestCase
   end
 
   test "other token cannot set output on running container" do
+    set_user_from_auth :active
     c, _ = minimal_new
     set_user_from_auth :dispatch1
     c.lock
@@ -742,6 +825,7 @@ class ContainerTest < ActiveSupport::TestCase
   end
 
   test "can set trashed output on running container" do
+    set_user_from_auth :active
     c, _ = minimal_new
     set_user_from_auth :dispatch1
     c.lock
@@ -755,6 +839,7 @@ class ContainerTest < ActiveSupport::TestCase
   end
 
   test "not allowed to set trashed output that is not readable by current user" do
+    set_user_from_auth :active
     c, _ = minimal_new
     set_user_from_auth :dispatch1
     c.lock
@@ -774,20 +859,24 @@ class ContainerTest < ActiveSupport::TestCase
     {state: Container::Complete, exit_code: 0, output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'},
     {state: Container::Cancelled},
   ].each do |final_attrs|
-    test "secret_mounts is null after container is #{final_attrs[:state]}" do
+    test "secret_mounts and runtime_token are null after container is #{final_attrs[:state]}" do
+      set_user_from_auth :active
       c, cr = minimal_new(secret_mounts: {'/secret' => {'kind' => 'text', 'content' => 'foo'}},
-                          container_count_max: 1)
+                          container_count_max: 1, runtime_token: api_client_authorizations(:active).token)
       set_user_from_auth :dispatch1
       c.lock
       c.update_attributes!(state: Container::Running)
       c.reload
       assert c.secret_mounts.has_key?('/secret')
+      assert_equal api_client_authorizations(:active).token, c.runtime_token
 
       c.update_attributes!(final_attrs)
       c.reload
       assert_equal({}, c.secret_mounts)
+      assert_nil c.runtime_token
       cr.reload
       assert_equal({}, cr.secret_mounts)
+      assert_nil cr.runtime_token
       assert_no_secrets_logged
     end
   end

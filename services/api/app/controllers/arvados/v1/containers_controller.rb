@@ -17,7 +17,14 @@ class Arvados::V1::ContainersController < ApplicationController
     if @object.locked_by_uuid != Thread.current[:api_client_authorization].uuid
       raise ArvadosModel::PermissionDeniedError.new("Not locked by your token")
     end
-    @object = @object.auth
+    if @object.runtime_token.nil?
+      @object = @object.auth
+    else
+      @object = ApiClientAuthorization.validate(token: @object.runtime_token)
+      if @object.nil?
+        raise ArvadosModel::PermissionDeniedError.new("Invalid runtime_token")
+      end
+    end
     show
   end
 
@@ -51,20 +58,18 @@ class Arvados::V1::ContainersController < ApplicationController
     if Thread.current[:api_client_authorization].nil?
       send_error("Not logged in", status: 401)
     else
-      c = Container.where(auth_uuid: Thread.current[:api_client_authorization].uuid).first
-      if c.nil?
+      @object = Container.for_current_token
+      if @object.nil?
         send_error("Token is not associated with a container.", status: 404)
       else
-        @object = c
         show
       end
     end
   end
 
   def secret_mounts
-    if @object &&
-       @object.auth_uuid &&
-       @object.auth_uuid == Thread.current[:api_client_authorization].uuid
+    c = Container.for_current_token
+    if @object && c && @object.uuid == c.uuid
       send_json({"secret_mounts" => @object.secret_mounts})
     else
       send_error("Token is not associated with this container.", status: 403)

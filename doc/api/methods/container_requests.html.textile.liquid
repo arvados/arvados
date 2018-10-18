@@ -35,6 +35,7 @@ table(table table-bordered table-condensed).
 |container_uuid|string|The uuid of the container that satisfies this container_request. The system may return a preexisting Container that matches the container request criteria. See "Container reuse":#container_reuse for more details.|Container reuse is the default behavior, but may be disabled with @use_existing: false@ to always create a new container.|
 |container_count_max|integer|Maximum number of containers to start, i.e., the maximum number of "attempts" to be made.||
 |mounts|hash|Objects to attach to the container's filesystem and stdin/stdout.|See "Mount types":#mount_types for more details.|
+|secret_mounts|hash|Objects to attach to the container's filesystem.  Only "json" or "text" mount types allowed.|Not returned in API responses. Reset to empty when state is "Complete" or "Cancelled".|
 |runtime_constraints|hash|Restrict the container's access to compute resources and the outside world.|Required when in "Committed" state. e.g.,<pre><code>{
   "ram":12000000000,
   "vcpus":2,
@@ -56,6 +57,9 @@ table(table table-bordered table-condensed).
 |log_uuid|string|Log collection containing log messages provided by the scheduler and crunch processes.|Null if the container has not yet completed.|
 |output_uuid|string|Output collection created when the container finished successfully.|Null if the container has failed or not yet completed.|
 |filters|string|Additional constraints for satisfying the container_request, given in the same form as the filters parameter accepted by the container_requests.list API.|
+|runtime_token|string|A v2 token to be passed into the container itself, used to access Keep-backed mounts, etc.  |Not returned in API responses.  Reset to null when state is "Complete" or "Cancelled".|
+|runtime_user_uuid|string|The user permission that will be granted to this container.||
+|runtime_auth_scopes|array of string|The scopes associated with the auth token used to run this container.||
 
 h2(#priority). Priority
 
@@ -79,7 +83,7 @@ h2(#scheduling_parameters). {% include 'container_scheduling_parameters' %}
 
 h2(#container_reuse). Container reuse
 
-When a container request is "Committed", the system will try to find and reuse an existing Container with the same command, cwd, environment, output_path, container_image, mounts, and runtime_constraints being requested. (Hashes in the serialized fields environment, mounts and runtime_constraints are compared without regard to key order.)
+When a container request is "Committed", the system will try to find and reuse an existing Container with the same command, cwd, environment, output_path, container_image, mounts, secret_mounts, runtime_constraints, runtime_user_uuid, and runtime_auth_scopes being requested. (Hashes in the serialized fields environment, mounts and runtime_constraints use normalized key order.)
 
 In order of preference, the system will use:
 * The first matching container to have finished successfully (i.e., reached state "Complete" with an exit_code of 0) whose log and output collections are still available.

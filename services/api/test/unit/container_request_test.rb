@@ -380,7 +380,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   [
     ['running_container_auth', 'zzzzz-dz642-runningcontainr', 501],
-    ['active_no_prefs', nil, 0],
+    ['active_no_prefs', nil, 0]
   ].each do |token, expected, expected_priority|
     test "create as #{token} and expect requesting_container_uuid to be #{expected}" do
       set_user_from_auth token
@@ -389,6 +389,15 @@ class ContainerRequestTest < ActiveSupport::TestCase
       assert_equal expected, cr.requesting_container_uuid
       assert_equal expected_priority, cr.priority
     end
+  end
+
+  test "create as container_runtime_token and expect requesting_container_uuid to be zzzzz-dz642-20isqbkl8xwnsao" do
+    set_user_from_auth :container_runtime_token
+    Thread.current[:token] = "#{Thread.current[:token]}/zzzzz-dz642-20isqbkl8xwnsao"
+    cr = ContainerRequest.create(container_image: "img", output_path: "/tmp", command: ["echo", "foo"])
+    assert_not_nil cr.uuid, 'uuid should be set for newly created container_request'
+    assert_equal 'zzzzz-dz642-20isqbkl8xwnsao', cr.requesting_container_uuid
+    assert_equal 1, cr.priority
   end
 
   [[{"vcpus" => [2, nil]},
@@ -666,6 +675,49 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_equal "Final", cr.state
     assert_equal prev_container_uuid, cr.container_uuid
     assert_not_equal cr2.container_uuid, cr.container_uuid
+  end
+
+  test "Retry on container cancelled with runtime_token" do
+    set_user_from_auth :spectator
+    spec = api_client_authorizations(:active)
+    cr = create_minimal_req!(priority: 1, state: "Committed",
+                             runtime_token: spec.token,
+                             container_count_max: 2)
+    prev_container_uuid = cr.container_uuid
+
+    c = act_as_system_user do
+      c = Container.find_by_uuid(cr.container_uuid)
+      assert_equal spec.token, c.runtime_token
+      c.update_attributes!(state: Container::Locked)
+      c.update_attributes!(state: Container::Running)
+      c
+    end
+
+    cr.reload
+    assert_equal "Committed", cr.state
+    assert_equal prev_container_uuid, cr.container_uuid
+    prev_container_uuid = cr.container_uuid
+
+    act_as_system_user do
+      c.update_attributes!(state: Container::Cancelled)
+    end
+
+    cr.reload
+    assert_equal "Committed", cr.state
+    assert_not_equal prev_container_uuid, cr.container_uuid
+    prev_container_uuid = cr.container_uuid
+
+    c = act_as_system_user do
+      c = Container.find_by_uuid(cr.container_uuid)
+      assert_equal spec.token, c.runtime_token
+      c.update_attributes!(state: Container::Cancelled)
+      c
+    end
+
+    cr.reload
+    assert_equal "Final", cr.state
+    assert_equal prev_container_uuid, cr.container_uuid
+
   end
 
   test "Output collection name setting using output_name with name collision resolution" do
@@ -1073,5 +1125,39 @@ class ContainerRequestTest < ActiveSupport::TestCase
                                              mounts: cr.mounts.merge(sm),
                                              secret_mounts: sm)
     assert_equal [:secret_mounts], cr.errors.messages.keys
+  end
+
+  test "using runtime_token" do
+    set_user_from_auth :spectator
+    spec = api_client_authorizations(:active)
+    cr = create_minimal_req!(state: "Committed", runtime_token: spec.token, priority: 1)
+    cr.save!
+    c = Container.find_by_uuid cr.container_uuid
+    lock_and_run c
+    assert_nil c.auth_uuid
+    assert_equal c.runtime_token, spec.token
+
+    assert_not_nil ApiClientAuthorization.find_by_uuid(spec.uuid)
+
+    act_as_system_user do
+      c.update_attributes!(state: Container::Complete,
+                           exit_code: 0,
+                           output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45',
+                           log: 'fa7aeb5140e2848d39b416daeef4ffc5+45')
+    end
+
+    cr.reload
+    c.reload
+    assert_nil cr.runtime_token
+    assert_nil c.runtime_token
+  end
+
+  test "invalid runtime_token" do
+    set_user_from_auth :active
+    spec = api_client_authorizations(:spectator)
+    assert_raises(ArgumentError) do
+      cr = create_minimal_req!(state: "Committed", runtime_token: "#{spec.token}xx")
+      cr.save!
+    end
   end
 end
