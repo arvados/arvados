@@ -14,7 +14,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -61,7 +60,7 @@ func (h *Handler) remoteClusterRequest(remoteID string, w http.ResponseWriter, r
 	if scheme == "" {
 		scheme = "https"
 	}
-	req, err := h.saltAuthToken(req, remoteID)
+	saltedReq, err := h.saltAuthToken(req, remoteID)
 	if err != nil {
 		if filter != nil {
 			_, err = filter(nil, err)
@@ -74,15 +73,15 @@ func (h *Handler) remoteClusterRequest(remoteID string, w http.ResponseWriter, r
 	urlOut := &url.URL{
 		Scheme:   scheme,
 		Host:     remote.Host,
-		Path:     req.URL.Path,
-		RawPath:  req.URL.RawPath,
-		RawQuery: req.URL.RawQuery,
+		Path:     saltedReq.URL.Path,
+		RawPath:  saltedReq.URL.RawPath,
+		RawQuery: saltedReq.URL.RawQuery,
 	}
 	client := h.secureClient
 	if remote.Insecure {
 		client = h.insecureClient
 	}
-	h.proxy.Do(w, req, urlOut, client, filter)
+	h.proxy.Do(w, saltedReq, urlOut, client, filter)
 }
 
 // Buffer request body, parse form parameters in request, and then
@@ -777,7 +776,6 @@ func (h *Handler) saltAuthToken(req *http.Request, remote string) (updatedReq *h
 
 	token, err := auth.SaltToken(creds.Tokens[0], remote)
 
-	log.Printf("Salting %q %q to get %q %q", creds.Tokens[0], remote, token, err)
 	if err == auth.ErrObsoleteToken {
 		// If the token exists in our own database, salt it
 		// for the remote. Otherwise, assume it was issued by
@@ -801,14 +799,11 @@ func (h *Handler) saltAuthToken(req *http.Request, remote string) (updatedReq *h
 	}
 	updatedReq.Header = http.Header{}
 	for k, v := range req.Header {
-		if k == "Authorization" {
-			updatedReq.Header[k] = []string{"Bearer " + token}
-		} else {
+		if k != "Authorization" {
 			updatedReq.Header[k] = v
 		}
 	}
-
-	log.Printf("Salted %q %q to get %q", creds.Tokens[0], remote, token)
+	updatedReq.Header.Set("Authorization", "Bearer "+token)
 
 	// Remove api_token=... from the the query string, in case we
 	// end up forwarding the request.
