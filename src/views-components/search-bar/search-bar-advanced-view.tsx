@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { reduxForm, reset, InjectedFormProps, FieldArray } from 'redux-form';
+import { reduxForm, reset, InjectedFormProps } from 'redux-form';
 import { compose, Dispatch } from 'redux';
 import { Paper, StyleRulesCallback, withStyles, WithStyles, Button, Grid, IconButton, CircularProgress } from '@material-ui/core';
 import { SearchView } from '~/store/search-bar/search-bar-reducer';
@@ -11,10 +11,9 @@ import { SEARCH_BAR_ADVANCE_FORM_NAME, saveQuery } from '~/store/search-bar/sear
 import { ArvadosTheme } from '~/common/custom-theme';
 import { CloseIcon } from '~/components/icon/icon';
 import { SearchBarAdvanceFormData } from '~/models/search-bar';
-import { SearchBarAdvancedPropertiesView } from './search-bar-advanced-properties-view';
 import { 
     SearchBarTypeField, SearchBarClusterField, SearchBarProjectField, SearchBarTrashField, 
-    SearchBarDataFromField, SearchBarDataToField,
+    SearchBarDateFromField, SearchBarDateToField, SearchBarPropertiesField,
     SearchBarSaveSearchField, SearchBarQuerySearchField
 } from '~/views-components/form-fields/search-bar-form-fields';
 
@@ -75,16 +74,29 @@ interface SearchBarAdvancedViewActionProps {
 type SearchBarAdvancedViewProps = SearchBarAdvancedViewActionProps & SearchBarAdvancedViewDataProps 
     & InjectedFormProps & WithStyles<CssRules>;
 
+const validate = (values: any) => {
+    const errors: any = {};
+
+    if (values.dateFrom && values.dateTo ) {
+        if (new Date(values.dateFrom).getTime() > new Date(values.dateTo).getTime()) {
+            errors.dateFrom = 'Invalid date';
+        }
+    } 
+
+    return errors;
+};
+
 export const SearchBarAdvancedView = compose(
     reduxForm<SearchBarAdvanceFormData, SearchBarAdvancedViewActionProps>({
         form: SEARCH_BAR_ADVANCE_FORM_NAME,
+        validate,
         onSubmit: (data: SearchBarAdvanceFormData, dispatch: Dispatch) => {
             dispatch<any>(saveQuery(data));
             dispatch(reset(SEARCH_BAR_ADVANCE_FORM_NAME));
         }
     }),
     withStyles(styles))(
-        ({ classes, setView, handleSubmit, submitting }: SearchBarAdvancedViewProps) =>
+        ({ classes, setView, handleSubmit, submitting, invalid, pristine }: SearchBarAdvancedViewProps) =>
             <Paper className={classes.searchView}>
                 <form onSubmit={handleSubmit}>
                     <Grid container direction="column" justify="flex-start" alignItems="flex-start">
@@ -118,16 +130,16 @@ export const SearchBarAdvancedView = compose(
                             </IconButton>
                         </Grid>
                         <Grid container item xs={12} className={classes.container} spacing={16}>
-                            <Grid item xs={2} className={classes.label}>Data modified</Grid>
+                            <Grid item xs={2} className={classes.label}>Date modified</Grid>
                             <Grid item xs={4}>
-                                <SearchBarDataFromField />
+                                <SearchBarDateFromField />
                             </Grid>
                             <Grid item xs={4}>
-                                <SearchBarDataToField />
+                                <SearchBarDateToField />
                             </Grid>
                         </Grid>
                         <Grid container item xs={12} className={classes.container}>
-                            <FieldArray name="properties" component={SearchBarAdvancedPropertiesView} />
+                            <SearchBarPropertiesField />
                             <Grid container item xs={12} justify="flex-start" alignItems="center" spacing={16}>
                                 <Grid item xs={2} className={classes.label} />
                                 <Grid item xs={4}>
@@ -140,6 +152,7 @@ export const SearchBarAdvancedView = compose(
                             <Grid container item xs={12} justify='flex-end'>
                                 <div className={classes.buttonWrapper}>
                                     <Button type="submit" className={classes.button}
+                                        disabled={invalid || submitting || pristine}
                                         color="primary"
                                         size='small'
                                         variant="contained">
@@ -151,4 +164,5 @@ export const SearchBarAdvancedView = compose(
                         </Grid>
                     </Grid>
                 </form>
-            </Paper>);
+        </Paper>
+    );
