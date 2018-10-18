@@ -38,9 +38,13 @@ export const isItemNotInProject = (properties: Properties) => {
     }
 };
 
+export const isNotProjectItem = () => {
+    return isItemNotInProject || !isProjectRoute;
+};
+
 export const openProjectCreateDialog = (ownerUuid: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        if (isItemNotInProject || !isProjectRoute) {
+        if (isNotProjectItem) {
             const userUuid = getState().auth.user!.uuid;
             dispatch(initialize(PROJECT_CREATE_FORM_NAME, { userUuid }));
         } else {
