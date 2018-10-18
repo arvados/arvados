@@ -44,17 +44,10 @@ type collectionFederatedRequestHandler struct {
 	handler *Handler
 }
 
-func (h *Handler) remoteClusterRequest(remoteID string, w http.ResponseWriter, req *http.Request, filter ResponseFilter) {
+func (h *Handler) remoteClusterRequest(remoteID string, req *http.Request) (*http.Response, error) {
 	remote, ok := h.Cluster.RemoteClusters[remoteID]
 	if !ok {
-		err := fmt.Errorf("no proxy available for cluster %v", remoteID)
-		if filter != nil {
-			_, err = filter(nil, err)
-		}
-		if err != nil {
-			httpserver.Error(w, err.Error(), http.StatusNotFound)
-		}
-		return
+		return nil, HTTPError{fmt.Sprintf("no proxy available for cluster %v", remoteID), http.StatusNotFound}
 	}
 	scheme := remote.Scheme
 	if scheme == "" {
@@ -62,13 +55,7 @@ func (h *Handler) remoteClusterRequest(remoteID string, w http.ResponseWriter, r
 	}
 	saltedReq, err := h.saltAuthToken(req, remoteID)
 	if err != nil {
-		if filter != nil {
-			_, err = filter(nil, err)
-		}
-		if err != nil {
-			httpserver.Error(w, err.Error(), http.StatusBadRequest)
-		}
-		return
+		return nil, err
 	}
 	urlOut := &url.URL{
 		Scheme:   scheme,
@@ -81,7 +68,7 @@ func (h *Handler) remoteClusterRequest(remoteID string, w http.ResponseWriter, r
 	if remote.Insecure {
 		client = h.insecureClient
 	}
-	h.proxy.Do(w, saltedReq, urlOut, client, filter)
+	return h.proxy.ForwardRequest(saltedReq, urlOut, client)
 }
 
 // Buffer request body, parse form parameters in request, and then
@@ -179,13 +166,14 @@ func (h *genericFederatedRequestHandler) remoteQueryUUIDs(w http.ResponseWriter,
 
 		rc := multiClusterQueryResponseCollector{clusterID: clusterID}
 
+		var resp *http.Response
 		if clusterID == h.handler.Cluster.ClusterID {
-			h.handler.localClusterRequest(w, &remoteReq,
-				rc.collectResponse)
+			resp, err = h.handler.localClusterRequest(&remoteReq)
 		} else {
-			h.handler.remoteClusterRequest(clusterID, w, &remoteReq,
-				rc.collectResponse)
+			resp, err = h.handler.remoteClusterRequest(clusterID, &remoteReq)
 		}
+		rc.collectResponse(resp, err)
+
 		if rc.error != nil {
 			return nil, "", rc.error
 		}
@@ -412,16 +400,14 @@ func (h *genericFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *h
 	if clusterId == "" || clusterId == h.handler.Cluster.ClusterID {
 		h.next.ServeHTTP(w, req)
 	} else {
-		h.handler.remoteClusterRequest(clusterId, w, req, nil)
+		resp, err := h.handler.remoteClusterRequest(clusterId, req)
+		h.handler.proxy.ForwardResponse(w, resp, err)
 	}
 }
 
-type rewriteSignaturesClusterId struct {
-	clusterID  string
-	expectHash string
-}
+func rewriteSignatures(clusterID string, expectHash string,
+	resp *http.Response, requestError error) (newResponse *http.Response, err error) {
 
-func (rw rewriteSignaturesClusterId) rewriteSignatures(resp *http.Response, requestError error) (newResponse *http.Response, err error) {
 	if requestError != nil {
 		return resp, requestError
 	}
@@ -471,7 +457,7 @@ func (rw rewriteSignaturesClusterId) rewriteSignatures(resp *http.Response, requ
 			m := keepclient.SignedLocatorRe.FindStringSubmatch(token)
 			if m != nil {
 				// Rewrite the block signature to be a remote signature
-				_, err = fmt.Fprintf(updatedManifest, "%s%s%s+R%s-%s%s", m[1], m[2], m[3], rw.clusterID, m[5][2:], m[8])
+				_, err = fmt.Fprintf(updatedManifest, "%s%s%s+R%s-%s%s", m[1], m[2], m[3], clusterID, m[5][2:], m[8])
 				if err != nil {
 					return nil, fmt.Errorf("Error updating manifest: %v", err)
 				}
@@ -499,17 +485,17 @@ func (rw rewriteSignaturesClusterId) rewriteSignatures(resp *http.Response, requ
 
 	// Check that expected hash is consistent with
 	// portable_data_hash field of the returned record
-	if rw.expectHash == "" {
-		rw.expectHash = col.PortableDataHash
-	} else if rw.expectHash != col.PortableDataHash {
-		return nil, fmt.Errorf("portable_data_hash %q on returned record did not match expected hash %q ", rw.expectHash, col.PortableDataHash)
+	if expectHash == "" {
+		expectHash = col.PortableDataHash
+	} else if expectHash != col.PortableDataHash {
+		return nil, fmt.Errorf("portable_data_hash %q on returned record did not match expected hash %q ", expectHash, col.PortableDataHash)
 	}
 
 	// Certify that the computed hash of the manifest_text matches our expectation
 	sum := hasher.Sum(nil)
 	computedHash := fmt.Sprintf("%x+%v", sum, sz)
-	if computedHash != rw.expectHash {
-		return nil, fmt.Errorf("Computed manifest_text hash %q did not match expected hash %q", computedHash, rw.expectHash)
+	if computedHash != expectHash {
+		return nil, fmt.Errorf("Computed manifest_text hash %q did not match expected hash %q", computedHash, expectHash)
 	}
 
 	col.ManifestText = updatedManifest.String()
@@ -585,7 +571,7 @@ func (s *searchRemoteClusterForPDH) filterRemoteClusterResponse(resp *http.Respo
 	// also have made it to this point, and we don't want a
 	// slow response holding the lock to block a faster response
 	// that is waiting on the lock.
-	newResponse, err = rewriteSignaturesClusterId{s.remoteID, s.pdh}.rewriteSignatures(resp, nil)
+	newResponse, err = rewriteSignatures(s.remoteID, s.pdh, resp, nil)
 
 	s.mtx.Lock()
 
@@ -628,8 +614,9 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 
 		if clusterId != "" && clusterId != h.handler.Cluster.ClusterID {
 			// request for remote collection by uuid
-			h.handler.remoteClusterRequest(clusterId, w, req,
-				rewriteSignaturesClusterId{clusterId, ""}.rewriteSignatures)
+			resp, err := h.handler.remoteClusterRequest(clusterId, req)
+			newResponse, err := rewriteSignatures(clusterId, "", resp, err)
+			h.handler.proxy.ForwardResponse(w, newResponse, err)
 			return
 		}
 		// not a collection UUID request, or it is a request
@@ -642,7 +629,10 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 	// Request for collection by PDH.  Search the federation.
 
 	// First, query the local cluster.
-	if h.handler.localClusterRequest(w, req, filterLocalClusterResponse) {
+	resp, err := h.handler.localClusterRequest(req)
+	newResp, err := filterLocalClusterResponse(resp, err)
+	if newResp != nil || err != nil {
+		h.handler.proxy.ForwardResponse(w, newResp, err)
 		return
 	}
 
@@ -680,7 +670,11 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 			&sharedContext, cancelFunc, &errors, &errorCode}
 		wg.Add(1)
 		go func() {
-			h.handler.remoteClusterRequest(search.remoteID, w, req, search.filterRemoteClusterResponse)
+			resp, err := h.handler.remoteClusterRequest(search.remoteID, req)
+			newResp, err := search.filterRemoteClusterResponse(resp, err)
+			if newResp != nil || err != nil {
+				h.handler.proxy.ForwardResponse(w, newResp, err)
+			}
 			wg.Done()
 			<-sem
 		}()

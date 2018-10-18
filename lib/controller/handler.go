@@ -121,14 +121,10 @@ func prepend(next http.Handler, middleware middlewareFunc) http.Handler {
 	})
 }
 
-// localClusterRequest sets up a request so it can be proxied to the
-// local API server using proxy.Do().  Returns true if a response was
-// written, false if not.
-func (h *Handler) localClusterRequest(w http.ResponseWriter, req *http.Request, filter ResponseFilter) bool {
+func (h *Handler) localClusterRequest(req *http.Request) (*http.Response, error) {
 	urlOut, insecure, err := findRailsAPI(h.Cluster, h.NodeProfile)
 	if err != nil {
-		httpserver.Error(w, err.Error(), http.StatusInternalServerError)
-		return true
+		return nil, err
 	}
 	urlOut = &url.URL{
 		Scheme:   urlOut.Scheme,
@@ -141,12 +137,14 @@ func (h *Handler) localClusterRequest(w http.ResponseWriter, req *http.Request, 
 	if insecure {
 		client = h.insecureClient
 	}
-	return h.proxy.Do(w, req, urlOut, client, filter)
+	return h.proxy.ForwardRequest(req, urlOut, client)
 }
 
 func (h *Handler) proxyRailsAPI(w http.ResponseWriter, req *http.Request, next http.Handler) {
-	if !h.localClusterRequest(w, req, nil) && next != nil {
-		next.ServeHTTP(w, req)
+	resp, err := h.localClusterRequest(req)
+	n, err := h.proxy.ForwardResponse(w, resp, err)
+	if err != nil {
+		httpserver.Logger(req).WithError(err).WithField("bytesCopied", n).Error("error copying response body")
 	}
 }
 

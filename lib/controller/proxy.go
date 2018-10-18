@@ -19,6 +19,15 @@ type proxy struct {
 	RequestTimeout time.Duration
 }
 
+type HTTPError struct {
+	Message string
+	Code    int
+}
+
+func (h HTTPError) Error() string {
+	return h.Message
+}
+
 // headers that shouldn't be forwarded when proxying. See
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers
 var dropHeaders = map[string]bool{
@@ -36,15 +45,11 @@ var dropHeaders = map[string]bool{
 
 type ResponseFilter func(*http.Response, error) (*http.Response, error)
 
-// Do sends a request, passes the result to the filter (if provided)
-// and then if the result is not suppressed by the filter, sends the
-// request to the ResponseWriter.  Returns true if a response was written,
-// false if not.
-func (p *proxy) Do(w http.ResponseWriter,
+// Forward a request to downstream service, and return response or error.
+func (p *proxy) ForwardRequest(
 	reqIn *http.Request,
 	urlOut *url.URL,
-	client *http.Client,
-	filter ResponseFilter) bool {
+	client *http.Client) (*http.Response, error) {
 
 	// Copy headers from incoming request, then add/replace proxy
 	// headers like Via and X-Forwarded-For.
@@ -79,50 +84,26 @@ func (p *proxy) Do(w http.ResponseWriter,
 		Body:   reqIn.Body,
 	}).WithContext(ctx)
 
-	resp, err := client.Do(reqOut)
-	if filter == nil && err != nil {
-		httpserver.Error(w, err.Error(), http.StatusBadGateway)
-		return true
-	}
+	return client.Do(reqOut)
+}
 
-	// make sure original response body gets closed
-	var originalBody io.ReadCloser
-	if resp != nil {
-		originalBody = resp.Body
-		if originalBody != nil {
-			defer originalBody.Close()
-		}
-	}
-
-	if filter != nil {
-		resp, err = filter(resp, err)
-
-		if err != nil {
+// Copy a response (or error) to the upstream client
+func (p *proxy) ForwardResponse(w http.ResponseWriter, resp *http.Response, err error) (int64, error) {
+	if err != nil {
+		if he, ok := err.(HTTPError); ok {
+			httpserver.Error(w, he.Message, he.Code)
+		} else {
 			httpserver.Error(w, err.Error(), http.StatusBadGateway)
-			return true
 		}
-		if resp == nil {
-			// filter() returned a nil response, this means suppress
-			// writing a response, for the case where there might
-			// be multiple response writers.
-			return false
-		}
-
-		// the filter gave us a new response body, make sure that gets closed too.
-		if resp.Body != originalBody {
-			defer resp.Body.Close()
-		}
+		return 0, nil
 	}
 
+	defer resp.Body.Close()
 	for k, v := range resp.Header {
 		for _, v := range v {
 			w.Header().Add(k, v)
 		}
 	}
 	w.WriteHeader(resp.StatusCode)
-	n, err := io.Copy(w, resp.Body)
-	if err != nil {
-		httpserver.Logger(reqIn).WithError(err).WithField("bytesCopied", n).Error("error copying response body")
-	}
-	return true
+	return io.Copy(w, resp.Body)
 }
