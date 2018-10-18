@@ -269,11 +269,6 @@ class ArvadosModel < ActiveRecord::Base
       exclude_trashed_records = "AND #{sql_table}.is_trashed = false"
     end
 
-    exclude_old_versions = ""
-    if !include_old_versions && sql_table == "collections"
-      exclude_old_versions = "AND #{sql_table}.uuid = #{sql_table}.current_version_uuid"
-    end
-
     if users_list.select { |u| u.is_admin }.any?
       # Admin skips most permission checks, but still want to filter on trashed items.
       if !include_trash
@@ -322,11 +317,12 @@ class ArvadosModel < ActiveRecord::Base
 
     end
 
-    if exclude_old_versions != ""
+    if !include_old_versions && sql_table == "collections"
+      exclude_old_versions = "#{sql_table}.uuid = #{sql_table}.current_version_uuid"
       if sql_conds.nil?
-        sql_conds = exclude_old_versions[4..-1] # Remove "AND "
+        sql_conds = exclude_old_versions
       else
-        sql_conds += " #{exclude_old_versions}"
+        sql_conds += " AND #{exclude_old_versions}"
       end
     end
 
