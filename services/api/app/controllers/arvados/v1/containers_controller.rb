@@ -58,11 +58,10 @@ class Arvados::V1::ContainersController < ApplicationController
     if Thread.current[:api_client_authorization].nil?
       send_error("Not logged in", status: 401)
     else
-      c = Container.for_current_token
-      if c.nil? or c.first.nil?
+      @object = Container.for_current_token
+      if @object.nil?
         send_error("Token is not associated with a container.", status: 404)
       else
-        @object = c.first
         show
       end
     end
@@ -70,7 +69,7 @@ class Arvados::V1::ContainersController < ApplicationController
 
   def secret_mounts
     c = Container.for_current_token
-    if @object && c && @object.uuid == c.first.uuid
+    if @object && c && @object.uuid == c.uuid
       send_json({"secret_mounts" => @object.secret_mounts})
     else
       send_error("Token is not associated with this container.", status: 403)

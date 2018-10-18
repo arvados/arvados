@@ -392,10 +392,6 @@ class ContainerRequest < ArvadosModel
 
   def get_requesting_container
     return self.requesting_container_uuid if !self.requesting_container_uuid.nil?
-    return if !current_api_client_authorization
-    c = Container.for_current_token
-    if !c.nil?
-      c.select([:uuid, :priority]).first
-    end
+    Container.for_current_token
   end
 end

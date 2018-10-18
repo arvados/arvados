@@ -286,7 +286,7 @@ class Container < ArvadosModel
     log_reuse_info(candidates) { "after filtering on runtime_user_uuid #{attrs[:runtime_user_uuid].inspect}" }
 
     candidates = candidates.where('runtime_auth_scopes = ? or (runtime_user_uuid is NULL and runtime_auth_scopes is NULL)',
-                                  SafeJSON.dump(attrs[:runtime_auth_scopes]))
+                                  SafeJSON.dump(attrs[:runtime_auth_scopes].sort))
     log_reuse_info(candidates) { "after filtering on runtime_auth_scopes #{attrs[:runtime_auth_scopes].inspect}" }
 
     log_reuse_info { "checking for state=Complete with readable output and log..." }
@@ -393,14 +393,15 @@ class Container < ArvadosModel
   end
 
   def self.for_current_token
+    return if !current_api_client_authorization
     _, _, _, container_uuid = Thread.current[:token].split('/')
     if container_uuid.nil?
-      Container.where(auth_uuid: current_api_client_authorization.uuid)
+      Container.where(auth_uuid: current_api_client_authorization.uuid).first
     else
       Container.where('auth_uuid=? or (uuid=? and runtime_token=?)',
                       current_api_client_authorization.uuid,
                       container_uuid,
-                      current_api_client_authorization.token)
+                      current_api_client_authorization.token).first
     end
   end
 
@@ -602,6 +603,9 @@ class Container < ArvadosModel
     end
     if self.scheduling_parameters_changed?
       self.scheduling_parameters = self.class.deep_sort_hash(self.scheduling_parameters)
+    end
+    if self.runtime_auth_scopes_changed?
+      self.runtime_auth_scopes = self.runtime_auth_scopes.sort
     end
   end
 
