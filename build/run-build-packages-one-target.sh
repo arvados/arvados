@@ -154,6 +154,7 @@ JENKINS_DIR=$(dirname "$(readlink -e "$0")")
 
 if [[ -n "$test_packages" ]]; then
     pushd "$JENKINS_DIR/package-test-dockerfiles"
+    make "$TARGET/generated"
 else
     pushd "$JENKINS_DIR/package-build-dockerfiles"
     make "$TARGET/generated"

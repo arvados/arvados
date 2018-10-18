@@ -88,9 +88,9 @@ Listen: :25107
 # Format of request/response and error logs: "json" or "text".
 LogFormat: json
 
-# The secret key that must be provided by monitoring services
-# wishing to access the health check endpoint (/_health).
-ManagementToken: ""
+# The secret key that must be provided by monitoring services when
+# using the health check and metrics endpoints (/_health, /metrics).
+ManagementToken: xyzzy
 
 # Maximum RAM to use for data buffers, given in multiples of block
 # size (64 MiB). When this limit is reached, HTTP requests requiring
@@ -200,7 +200,7 @@ h3. Tell the API server about the Keepstore servers
 
 The API server needs to be informed about the presence of your Keepstore servers.
 
-First, if you don't already have an admin token, create a superuser token:
+First, if you don't already have an admin token, create a superuser token.
 
 {% include 'create_superuser_token' %}
 

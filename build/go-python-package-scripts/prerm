@@ -5,7 +5,9 @@
 
 set -e
 
-if [ "%{name}" != "%\{name\}" ]; then
+# Detect rpm-based systems: the exit code of the following command is zero
+# on rpm-based systems
+if /usr/bin/rpm -q -f /usr/bin/rpm >/dev/null 2>&1; then
     # Red Hat ("%{...}" is interpolated at package build time)
     pkg="%{name}"
     pkgtype=rpm

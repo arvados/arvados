@@ -161,6 +161,7 @@ func (cc *Cluster) GetNodeProfile(node string) (*NodeProfile, error) {
 type NodeProfile struct {
 	Controller  SystemServiceInstance `json:"arvados-controller"`
 	Health      SystemServiceInstance `json:"arvados-health"`
+	Keepbalance SystemServiceInstance `json:"keep-balance"`
 	Keepproxy   SystemServiceInstance `json:"keepproxy"`
 	Keepstore   SystemServiceInstance `json:"keepstore"`
 	Keepweb     SystemServiceInstance `json:"keep-web"`
@@ -178,6 +179,7 @@ const (
 	ServiceNameNodemanager ServiceName = "arvados-node-manager"
 	ServiceNameWorkbench   ServiceName = "arvados-workbench"
 	ServiceNameWebsocket   ServiceName = "arvados-ws"
+	ServiceNameKeepbalance ServiceName = "keep-balance"
 	ServiceNameKeepweb     ServiceName = "keep-web"
 	ServiceNameKeepproxy   ServiceName = "keepproxy"
 	ServiceNameKeepstore   ServiceName = "keepstore"
@@ -192,6 +194,7 @@ func (np *NodeProfile) ServicePorts() map[ServiceName]string {
 		ServiceNameNodemanager: np.Nodemanager.Listen,
 		ServiceNameWorkbench:   np.Workbench.Listen,
 		ServiceNameWebsocket:   np.Websocket.Listen,
+		ServiceNameKeepbalance: np.Keepbalance.Listen,
 		ServiceNameKeepweb:     np.Keepweb.Listen,
 		ServiceNameKeepproxy:   np.Keepproxy.Listen,
 		ServiceNameKeepstore:   np.Keepstore.Listen,

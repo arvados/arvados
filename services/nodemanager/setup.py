@@ -32,7 +32,7 @@ setup(name='arvados-node-manager',
       packages=find_packages(),
       scripts=['bin/arvados-node-manager'],
       data_files=[
-          ('share/doc/arvados-node-manager', ['agpl-3.0.txt', 'README.rst']),
+          ('share/doc/arvados-node-manager', ['agpl-3.0.txt', 'README.rst', 'arvados-node-manager.service']),
       ],
       install_requires=[
           'apache-libcloud>=2.3.1.dev1',

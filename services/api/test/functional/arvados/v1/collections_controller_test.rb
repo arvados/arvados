@@ -51,6 +51,19 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
     assert(assigns(:objects).andand.any?, "no Collections returned in index")
     refute(json_response["items"].any? { |c| c.has_key?("manifest_text") },
            "basic Collections index included manifest_text")
+    refute(json_response["items"].any? { |c| c["uuid"] == collections(:collection_owned_by_active_past_version_1).uuid },
+           "basic Collections index included past version")
+  end
+
+  test "get index with include_old_versions" do
+    authorize_with :active
+    get :index, {
+      include_old_versions: true
+    }
+    assert_response :success
+    assert(assigns(:objects).andand.any?, "no Collections returned in index")
+    assert(json_response["items"].any? { |c| c["uuid"] == collections(:collection_owned_by_active_past_version_1).uuid },
+           "past version not included on index")
   end
 
   test "collections.get returns signed locators, and no unsigned_manifest_text" do
@@ -1179,5 +1192,51 @@ EOS
       item['uuid']
     end
     assert_includes(item_uuids, collections(:collection_in_trashed_subproject).uuid)
+  end
+
+  test 'can get collection with past versions' do
+    authorize_with :active
+    get :index, {
+      filters: [['current_version_uuid','=',collections(:collection_owned_by_active).uuid]],
+      include_old_versions: true
+    }
+    assert_response :success
+    assert_equal 2, assigns(:objects).length
+    assert_equal 2, json_response['items_available']
+    assert_equal 2, json_response['items'].count
+    json_response['items'].each do |c|
+      assert_equal collections(:collection_owned_by_active).uuid,
+                   c['current_version_uuid'],
+                   'response includes a version from a different collection'
+    end
+  end
+
+  test 'can get old version collection by uuid' do
+    authorize_with :active
+    get :show, {
+      id: collections(:collection_owned_by_active_past_version_1).uuid,
+    }
+    assert_response :success
+    assert_equal collections(:collection_owned_by_active_past_version_1).name,
+                  json_response['name']
+  end
+
+  test 'version and current_version_uuid are ignored at creation time' do
+    permit_unsigned_manifests
+    authorize_with :active
+    manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
+    post :create, {
+      collection: {
+        name: 'Test collection',
+        version: 42,
+        current_version_uuid: collections(:collection_owned_by_active).uuid,
+        manifest_text: manifest_text,
+        # portable_data_hash: "d30fe8ae534397864cb96c544f4cf102+47"
+      }
+    }
+    assert_response :success
+    resp = JSON.parse(@response.body)
+    assert_equal 1, resp['version']
+    assert_equal resp['uuid'], resp['current_version_uuid']
   end
 end

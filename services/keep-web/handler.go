@@ -320,7 +320,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 
 	if useSiteFS {
 		if tokens == nil {
-			tokens = auth.NewCredentialsFromHTTPRequest(r).Tokens
+			tokens = auth.CredentialsFromRequest(r).Tokens
 		}
 		h.serveSiteFS(w, r, tokens, credentialsOK, attachment)
 		return
@@ -342,7 +342,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 
 	if tokens == nil {
 		if credentialsOK {
-			reqTokens = auth.NewCredentialsFromHTTPRequest(r).Tokens
+			reqTokens = auth.CredentialsFromRequest(r).Tokens
 		}
 		tokens = append(reqTokens, h.Config.AnonymousTokens...)
 	}

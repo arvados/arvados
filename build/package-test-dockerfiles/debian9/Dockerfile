@@ -3,15 +3,17 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 FROM debian:stretch
-MAINTAINER Nico Cesar <nico@curoverse.com>
+MAINTAINER Ward Vandewege <wvandewege@veritasgenetics.com>
 
 ENV DEBIAN_FRONTEND noninteractive
 
-# Install RVM
-COPY D39DC0E3.asc /tmp
+# Install dependencies
 RUN apt-get update && \
-    apt-get -y install --no-install-recommends curl ca-certificates gpg procps && \
-    gpg --import /tmp/D39DC0E3.asc && \
+    apt-get -y install --no-install-recommends curl ca-certificates gpg procps
+
+# Install RVM
+ADD generated/rvm.asc /tmp/
+RUN gpg --import /tmp/rvm.asc && \
     curl -L https://get.rvm.io | bash -s stable && \
     /usr/local/rvm/bin/rvm install 2.3 && \
     /usr/local/rvm/bin/rvm alias create default ruby-2.3

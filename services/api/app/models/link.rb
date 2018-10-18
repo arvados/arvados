@@ -48,8 +48,12 @@ class Link < ArvadosModel
     # Administrators can grant permissions
     return true if current_user.is_admin
 
-    # All users can grant permissions on objects they own or can manage
     head_obj = ArvadosModel.find_by_uuid(head_uuid)
+
+    # No permission links can be pointed to past collection versions
+    return false if head_obj.is_a?(Collection) && head_obj.current_version_uuid != head_uuid
+
+    # All users can grant permissions on objects they own or can manage
     return true if current_user.can?(manage: head_obj)
 
     # Default = deny.

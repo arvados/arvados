@@ -11,66 +11,12 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/config"
+	"github.com/Sirupsen/logrus"
 )
-
-var version = "dev"
-
-const defaultConfigPath = "/etc/arvados/keep-balance/keep-balance.yml"
-
-// Config specifies site configuration, like API credentials and the
-// choice of which servers are to be balanced.
-//
-// Config is loaded from a JSON config file (see usage()).
-type Config struct {
-	// Arvados API endpoint and credentials.
-	Client arvados.Client
-
-	// List of service types (e.g., "disk") to balance.
-	KeepServiceTypes []string
-
-	KeepServiceList arvados.KeepServiceList
-
-	// How often to check
-	RunPeriod arvados.Duration
-
-	// Number of collections to request in each API call
-	CollectionBatchSize int
-
-	// Max collections to buffer in memory (bigger values consume
-	// more memory, but can reduce store-and-forward latency when
-	// fetching pages)
-	CollectionBuffers int
-
-	// Timeout for outgoing http request/response cycle.
-	RequestTimeout arvados.Duration
-}
-
-// RunOptions controls runtime behavior. The flags/options that belong
-// here are the ones that are useful for interactive use. For example,
-// "CommitTrash" is a runtime option rather than a config item because
-// it invokes a troubleshooting feature rather than expressing how
-// balancing is meant to be done at a given site.
-//
-// RunOptions fields are controlled by command line flags.
-type RunOptions struct {
-	Once        bool
-	CommitPulls bool
-	CommitTrash bool
-	Logger      *log.Logger
-	Dumper      *log.Logger
-
-	// SafeRendezvousState from the most recent balance operation,
-	// or "" if unknown. If this changes from one run to the next,
-	// we need to watch out for races. See
-	// (*Balancer)ClearTrashLists.
-	SafeRendezvousState string
-}
 
 var debugf = func(string, ...interface{}) {}
 
@@ -130,15 +76,17 @@ func main() {
 		}
 	}
 	if *dumpFlag {
-		runOptions.Dumper = log.New(os.Stdout, "", log.LstdFlags)
+		runOptions.Dumper = logrus.New()
+		runOptions.Dumper.Out = os.Stdout
+		runOptions.Dumper.Formatter = &logrus.TextFormatter{}
 	}
-	err := CheckConfig(cfg, runOptions)
+	srv, err := NewServer(cfg, runOptions)
 	if err != nil {
 		// (don't run)
 	} else if runOptions.Once {
-		_, err = (&Balancer{}).Run(cfg, runOptions)
+		_, err = srv.Run()
 	} else {
-		err = RunForever(cfg, runOptions, nil)
+		err = srv.RunForever(nil)
 	}
 	if err != nil {
 		log.Fatal(err)
@@ -148,55 +96,5 @@ func main() {
 func mustReadConfig(dst interface{}, path string) {
 	if err := config.LoadFile(dst, path); err != nil {
 		log.Fatal(err)
-	}
-}
-
-// RunForever runs forever, or (for testing purposes) until the given
-// stop channel is ready to receive.
-func RunForever(config Config, runOptions RunOptions, stop <-chan interface{}) error {
-	if runOptions.Logger == nil {
-		runOptions.Logger = log.New(os.Stderr, "", log.LstdFlags)
-	}
-	logger := runOptions.Logger
-
-	ticker := time.NewTicker(time.Duration(config.RunPeriod))
-
-	// The unbuffered channel here means we only hear SIGUSR1 if
-	// it arrives while we're waiting in select{}.
-	sigUSR1 := make(chan os.Signal)
-	signal.Notify(sigUSR1, syscall.SIGUSR1)
-
-	logger.Printf("starting up: will scan every %v and on SIGUSR1", config.RunPeriod)
-
-	for {
-		if !runOptions.CommitPulls && !runOptions.CommitTrash {
-			logger.Print("WARNING: Will scan periodically, but no changes will be committed.")
-			logger.Print("=======  Consider using -commit-pulls and -commit-trash flags.")
-		}
-
-		bal := &Balancer{}
-		var err error
-		runOptions, err = bal.Run(config, runOptions)
-		if err != nil {
-			logger.Print("run failed: ", err)
-		} else {
-			logger.Print("run succeeded")
-		}
-
-		select {
-		case <-stop:
-			signal.Stop(sigUSR1)
-			return nil
-		case <-ticker.C:
-			logger.Print("timer went off")
-		case <-sigUSR1:
-			logger.Print("received SIGUSR1, resetting timer")
-			// Reset the timer so we don't start the N+1st
-			// run too soon after the Nth run is triggered
-			// by SIGUSR1.
-			ticker.Stop()
-			ticker = time.NewTicker(time.Duration(config.RunPeriod))
-		}
-		logger.Print("starting next run")
 	}
 }

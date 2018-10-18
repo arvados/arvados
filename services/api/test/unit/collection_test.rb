@@ -11,7 +11,7 @@ class CollectionTest < ActiveSupport::TestCase
   def create_collection name, enc=nil
     txt = ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:#{name}.txt\n"
     txt.force_encoding(enc) if enc
-    return Collection.create(manifest_text: txt)
+    return Collection.create(manifest_text: txt, name: name)
   end
 
   test 'accept ASCII manifest_text' do
@@ -103,6 +103,312 @@ class CollectionTest < ActiveSupport::TestCase
         c.update_attribute 'manifest_text', manifest_text
         assert c.valid?
       end
+    end
+  end
+
+  test "auto-create version after idle setting" do
+    Rails.configuration.collection_versioning = true
+    Rails.configuration.preserve_version_if_idle = 600 # 10 minutes
+    act_as_user users(:active) do
+      # Set up initial collection
+      c = create_collection 'foo', Encoding::US_ASCII
+      assert c.valid?
+      assert_equal 1, c.version
+      assert_equal false, c.preserve_version
+      # Make a versionable update, it shouldn't create a new version yet
+      c.update_attributes!({'name' => 'bar'})
+      c.reload
+      assert_equal 'bar', c.name
+      assert_equal 1, c.version
+      # Update modified_at to trigger a version auto-creation
+      fifteen_min_ago = Time.now - 15.minutes
+      c.update_column('modified_at', fifteen_min_ago) # Update without validations/callbacks
+      c.reload
+      assert_equal fifteen_min_ago.to_i, c.modified_at.to_i
+      c.update_attributes!({'name' => 'baz'})
+      c.reload
+      assert_equal 'baz', c.name
+      assert_equal 2, c.version
+      # Make another update, no new version should be created
+      c.update_attributes!({'name' => 'foobar'})
+      c.reload
+      assert_equal 'foobar', c.name
+      assert_equal 2, c.version
+    end
+  end
+
+  test "preserve_version=false assignment is ignored while being true and not producing a new version" do
+    Rails.configuration.collection_versioning = true
+    Rails.configuration.preserve_version_if_idle = 3600
+    act_as_user users(:active) do
+      # Set up initial collection
+      c = create_collection 'foo', Encoding::US_ASCII
+      assert c.valid?
+      assert_equal 1, c.version
+      assert_equal false, c.preserve_version
+      # This update shouldn't produce a new version, as the idle time is not up
+      c.update_attributes!({
+        'name' => 'bar',
+        'preserve_version' => true
+      })
+      c.reload
+      assert_equal 1, c.version
+      assert_equal 'bar', c.name
+      assert_equal true, c.preserve_version
+      # Make sure preserve_version is not disabled after being enabled, unless
+      # a new version is created.
+      c.update_attributes!({
+        'preserve_version' => false,
+        'replication_desired' => 2
+      })
+      c.reload
+      assert_equal 1, c.version
+      assert_equal 2, c.replication_desired
+      assert_equal true, c.preserve_version
+      c.update_attributes!({'name' => 'foobar'})
+      c.reload
+      assert_equal 2, c.version
+      assert_equal false, c.preserve_version
+      assert_equal 'foobar', c.name
+    end
+  end
+
+  [
+    ['version', 10],
+    ['current_version_uuid', 'zzzzz-4zz18-bv31uwvy3neko21'],
+  ].each do |name, new_value|
+    test "'#{name}' updates on current version collections are not allowed" do
+      act_as_user users(:active) do
+        # Set up initial collection
+        c = create_collection 'foo', Encoding::US_ASCII
+        assert c.valid?
+        assert_equal 1, c.version
+
+        assert_raises(ActiveRecord::RecordInvalid) do
+          c.update_attributes!({
+            name => new_value
+          })
+        end
+      end
+    end
+  end
+
+  test "uuid updates on current version make older versions update their pointers" do
+    Rails.configuration.collection_versioning = true
+    Rails.configuration.preserve_version_if_idle = 0
+    act_as_system_user do
+      # Set up initial collection
+      c = create_collection 'foo', Encoding::US_ASCII
+      assert c.valid?
+      assert_equal 1, c.version
+      # Make changes so that a new version is created
+      c.update_attributes!({'name' => 'bar'})
+      c.reload
+      assert_equal 2, c.version
+      assert_equal 2, Collection.where(current_version_uuid: c.uuid).count
+      new_uuid = 'zzzzz-4zz18-somefakeuuidnow'
+      assert_empty Collection.where(uuid: new_uuid)
+      # Update UUID on current version, check that both collections point to it
+      c.update_attributes!({'uuid' => new_uuid})
+      c.reload
+      assert_equal new_uuid, c.uuid
+      assert_equal 2, Collection.where(current_version_uuid: new_uuid).count
+    end
+  end
+
+  test "older versions' modified_at indicate when they're created" do
+    Rails.configuration.collection_versioning = true
+    Rails.configuration.preserve_version_if_idle = 0
+    act_as_user users(:active) do
+      # Set up initial collection
+      c = create_collection 'foo', Encoding::US_ASCII
+      assert c.valid?
+      # Make changes so that a new version is created
+      c.update_attributes!({'name' => 'bar'})
+      c.reload
+      assert_equal 2, c.version
+      # Get the old version
+      c_old = Collection.where(current_version_uuid: c.uuid, version: 1).first
+      assert_not_nil c_old
+
+      version_creation_datetime = c_old.modified_at.to_f
+      assert_equal c.created_at.to_f, c_old.created_at.to_f
+      # Current version is updated just a few milliseconds before the version is
+      # saved on the database.
+      assert_operator c.modified_at.to_f, :<, version_creation_datetime
+
+      # Make update on current version so old version get the attribute synced;
+      # its modified_at should not change.
+      new_replication = 3
+      c.update_attributes!({'replication_desired' => new_replication})
+      c.reload
+      assert_equal new_replication, c.replication_desired
+      c_old.reload
+      assert_equal new_replication, c_old.replication_desired
+      assert_equal version_creation_datetime, c_old.modified_at.to_f
+      assert_operator c.modified_at.to_f, :>, c_old.modified_at.to_f
+    end
+  end
+
+  test "past versions should not be directly updatable" do
+    Rails.configuration.collection_versioning = true
+    Rails.configuration.preserve_version_if_idle = 0
+    act_as_system_user do
+      # Set up initial collection
+      c = create_collection 'foo', Encoding::US_ASCII
+      assert c.valid?
+      # Make changes so that a new version is created
+      c.update_attributes!({'name' => 'bar'})
+      c.reload
+      assert_equal 2, c.version
+      # Get the old version
+      c_old = Collection.where(current_version_uuid: c.uuid, version: 1).first
+      assert_not_nil c_old
+      # With collection versioning still being enabled, try to update
+      c_old.name = 'this was foo'
+      assert c_old.invalid?
+      c_old.reload
+      # Try to fool the validator attempting to make c_old to look like a
+      # current version, it should also fail.
+      c_old.current_version_uuid = c_old.uuid
+      assert c_old.invalid?
+      c_old.reload
+      # Now disable collection versioning, it should behave the same way
+      Rails.configuration.collection_versioning = false
+      c_old.name = 'this was foo'
+      assert c_old.invalid?
+    end
+  end
+
+  [
+    ['owner_uuid', 'zzzzz-tpzed-d9tiejq69daie8f', 'zzzzz-tpzed-xurymjxw79nv3jz'],
+    ['replication_desired', 2, 3],
+    ['storage_classes_desired', ['hot'], ['archive']],
+    ['is_trashed', true, false],
+  ].each do |attr, first_val, second_val|
+    test "sync #{attr} with older versions" do
+      Rails.configuration.collection_versioning = true
+      Rails.configuration.preserve_version_if_idle = 0
+      act_as_system_user do
+        # Set up initial collection
+        c = create_collection 'foo', Encoding::US_ASCII
+        assert c.valid?
+        assert_equal 1, c.version
+        assert_not_equal first_val, c.attributes[attr]
+        # Make changes so that a new version is created and a synced field is
+        # updated on both
+        c.update_attributes!({'name' => 'bar', attr => first_val})
+        c.reload
+        assert_equal 2, c.version
+        assert_equal first_val, c.attributes[attr]
+        assert_equal 2, Collection.where(current_version_uuid: c.uuid).count
+        assert_equal first_val, Collection.where(current_version_uuid: c.uuid, version: 1).first.attributes[attr]
+        # Only make an update on the same synced field & check that the previously
+        # created version also gets it.
+        c.update_attributes!({attr => second_val})
+        c.reload
+        assert_equal 2, c.version
+        assert_equal second_val, c.attributes[attr]
+        assert_equal 2, Collection.where(current_version_uuid: c.uuid).count
+        assert_equal second_val, Collection.where(current_version_uuid: c.uuid, version: 1).first.attributes[attr]
+      end
+    end
+  end
+
+  [
+    [false, 'name', 'bar', false],
+    [false, 'description', 'The quick brown fox jumps over the lazy dog', false],
+    [false, 'properties', {'new_version' => true}, false],
+    [false, 'manifest_text', ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n", false],
+    [true, 'name', 'bar', true],
+    [true, 'description', 'The quick brown fox jumps over the lazy dog', true],
+    [true, 'properties', {'new_version' => true}, true],
+    [true, 'manifest_text', ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n", true],
+    # Non-versionable attribute updates shouldn't create new versions
+    [true, 'replication_desired', 5, false],
+    [false, 'replication_desired', 5, false],
+  ].each do |versioning, attr, val, new_version_expected|
+    test "update #{attr} with versioning #{versioning ? '' : 'not '}enabled should #{new_version_expected ? '' : 'not '}create a new version" do
+      Rails.configuration.collection_versioning = versioning
+      Rails.configuration.preserve_version_if_idle = 0
+      act_as_user users(:active) do
+        # Create initial collection
+        c = create_collection 'foo', Encoding::US_ASCII
+        assert c.valid?
+        assert_equal 'foo', c.name
+
+        # Check current version attributes
+        assert_equal 1, c.version
+        assert_equal c.uuid, c.current_version_uuid
+
+        # Update attribute and check if version number should be incremented
+        old_value = c.attributes[attr]
+        c.update_attributes!({attr => val})
+        assert_equal new_version_expected, c.version == 2
+        assert_equal val, c.attributes[attr]
+
+        if versioning && new_version_expected
+          # Search for the snapshot & previous value
+          assert_equal 2, Collection.where(current_version_uuid: c.uuid).count
+          s = Collection.where(current_version_uuid: c.uuid, version: 1).first
+          assert_not_nil s
+          assert_equal old_value, s.attributes[attr]
+        else
+          # If versioning is disabled or no versionable attribute was updated,
+          # only the current version should exist
+          assert_equal 1, Collection.where(current_version_uuid: c.uuid).count
+          assert_equal c, Collection.where(current_version_uuid: c.uuid).first
+        end
+      end
+    end
+  end
+
+  test 'current_version_uuid is ignored during update' do
+    Rails.configuration.collection_versioning = true
+    Rails.configuration.preserve_version_if_idle = 0
+    act_as_user users(:active) do
+      # Create 1st collection
+      col1 = create_collection 'foo', Encoding::US_ASCII
+      assert col1.valid?
+      assert_equal 1, col1.version
+
+      # Create 2nd collection, update it so it becomes version:2
+      # (to avoid unique index violation)
+      col2 = create_collection 'bar', Encoding::US_ASCII
+      assert col2.valid?
+      assert_equal 1, col2.version
+      col2.update_attributes({name: 'baz'})
+      assert_equal 2, col2.version
+
+      # Try to make col2 a past version of col1. It shouldn't be possible
+      col2.update_attributes({current_version_uuid: col1.uuid})
+      assert col2.invalid?
+      col2.reload
+      assert_not_equal col1.uuid, col2.current_version_uuid
+    end
+  end
+
+  test 'with versioning enabled, simultaneous updates increment version correctly' do
+    Rails.configuration.collection_versioning = true
+    Rails.configuration.preserve_version_if_idle = 0
+    act_as_user users(:active) do
+      # Create initial collection
+      col = create_collection 'foo', Encoding::US_ASCII
+      assert col.valid?
+      assert_equal 1, col.version
+
+      # Simulate simultaneous updates
+      c1 = Collection.where(uuid: col.uuid).first
+      assert_equal 1, c1.version
+      c1.name = 'bar'
+      c2 = Collection.where(uuid: col.uuid).first
+      c2.description = 'foo collection'
+      c1.save!
+      assert_equal 1, c2.version
+      # with_lock forces a reload, so this shouldn't produce an unique violation error
+      c2.save!
+      assert_equal 3, c2.version
+      assert_equal 'foo collection', c2.description
     end
   end
 

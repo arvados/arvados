@@ -27,7 +27,10 @@ class Collection < ArvadosModel
   validate :ensure_pdh_matches_manifest_text
   validate :ensure_storage_classes_desired_is_not_empty
   validate :ensure_storage_classes_contain_non_empty_strings
+  validate :versioning_metadata_updates, on: :update
+  validate :past_versions_cannot_be_updated, on: :update
   before_save :set_file_names
+  around_update :manage_versioning
 
   api_accessible :user, extend: :common do |t|
     t.add :name
@@ -45,6 +48,9 @@ class Collection < ArvadosModel
     t.add :delete_at
     t.add :trash_at
     t.add :is_trashed
+    t.add :version
+    t.add :current_version_uuid
+    t.add :preserve_version
   end
 
   after_initialize do
@@ -209,6 +215,101 @@ class Collection < ArvadosModel
 
   def default_empty_manifest
     self.manifest_text ||= ''
+  end
+
+  def skip_uuid_existence_check
+    # Avoid checking the existence of current_version_uuid, as it's
+    # assigned on creation of a new 'current version' collection, so
+    # the collection's UUID only lives on memory when the validation check
+    # is performed.
+    ['current_version_uuid']
+  end
+
+  def manage_versioning
+    should_preserve_version = should_preserve_version? # Time sensitive, cache value
+    return(yield) unless (should_preserve_version || syncable_updates.any?)
+
+    # Put aside the changes because with_lock forces a record reload
+    changes = self.changes
+    snapshot = nil
+    with_lock do
+      # Copy the original state to save it as old version
+      if should_preserve_version
+        snapshot = self.dup
+        snapshot.uuid = nil # Reset UUID so it's created as a new record
+        snapshot.created_at = self.created_at
+      end
+
+      # Restore requested changes on the current version
+      changes.keys.each do |attr|
+        if attr == 'preserve_version' && changes[attr].last == false
+          next # Ignore false assignment, once true it'll be true until next version
+        end
+        self.attributes = {attr => changes[attr].last}
+        if attr == 'uuid'
+          # Also update the current version reference
+          self.attributes = {'current_version_uuid' => changes[attr].last}
+        end
+      end
+
+      if should_preserve_version
+        self.version += 1
+        self.preserve_version = false
+      end
+
+      yield
+
+      sync_past_versions if syncable_updates.any?
+      if snapshot
+        snapshot.attributes = self.syncable_updates
+        snapshot.save
+      end
+    end
+  end
+
+  def syncable_updates
+    updates = {}
+    (syncable_attrs & self.changes.keys).each do |attr|
+      if attr == 'uuid'
+        # Point old versions to current version's new UUID
+        updates['current_version_uuid'] = self.changes[attr].last
+      else
+        updates[attr] = self.changes[attr].last
+      end
+    end
+    return updates
+  end
+
+  def sync_past_versions
+    updates = self.syncable_updates
+    Collection.where('current_version_uuid = ? AND uuid != ?', self.uuid_was, self.uuid_was).each do |c|
+      c.attributes = updates
+      # Use a different validation context to skip the 'old_versions_cannot_be_updated'
+      # validator, as on this case it is legal to update some fields.
+      leave_modified_by_user_alone do
+        c.save(context: :update_old_versions)
+      end
+    end
+  end
+
+  def versionable_updates?(attrs)
+    (['manifest_text', 'description', 'properties', 'name'] & attrs).any?
+  end
+
+  def syncable_attrs
+    ['uuid', 'owner_uuid', 'delete_at', 'trash_at', 'is_trashed', 'replication_desired', 'storage_classes_desired']
+  end
+
+  def should_preserve_version?
+    return false unless (Rails.configuration.collection_versioning && versionable_updates?(self.changes.keys))
+
+    idle_threshold = Rails.configuration.preserve_version_if_idle
+    if !self.preserve_version_was &&
+      (idle_threshold < 0 ||
+        (idle_threshold > 0 && self.modified_at_was > db_current_time-idle_threshold.seconds))
+      return false
+    end
+    return true
   end
 
   def check_encoding
@@ -443,7 +544,7 @@ class Collection < ArvadosModel
   end
 
   def self.full_text_searchable_columns
-    super - ["manifest_text", "storage_classes_desired", "storage_classes_confirmed"]
+    super - ["manifest_text", "storage_classes_desired", "storage_classes_confirmed", "current_version_uuid"]
   end
 
   def self.where *args
@@ -515,5 +616,33 @@ class Collection < ArvadosModel
         raise ArvadosModel::InvalidStateTransitionError.new("storage classes should only be non-empty strings")
       end
     end
+  end
+
+  def past_versions_cannot_be_updated
+    # We check for the '_was' values just in case the update operation
+    # includes a change on current_version_uuid or uuid.
+    if current_version_uuid_was != uuid_was
+      errors.add(:base, "past versions cannot be updated")
+      false
+    end
+  end
+
+  def versioning_metadata_updates
+    valid = true
+    if (current_version_uuid_was == uuid_was) && current_version_uuid_changed?
+      errors.add(:current_version_uuid, "cannot be updated")
+      valid = false
+    end
+    if version_changed?
+      errors.add(:version, "cannot be updated")
+      valid = false
+    end
+    valid
+  end
+
+  def assign_uuid
+    super
+    self.current_version_uuid ||= self.uuid
+    true
   end
 end

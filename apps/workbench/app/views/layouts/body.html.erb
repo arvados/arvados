@@ -87,7 +87,9 @@ SPDX-License-Identifier: AGPL-3.0 %>
                     <i class="fa fa-lg fa-terminal fa-fw"></i> Virtual machines
                   <% end %>
                 </li>
+                <% if Rails.configuration.repositories %>
                 <li role="menuitem"><a href="/repositories" role="menuitem"><i class="fa fa-lg fa-code-fork fa-fw"></i> Repositories </a></li>
+                <% end -%>
                 <li role="menuitem"><a href="/current_token" role="menuitem"><i class="fa fa-lg fa-ticket fa-fw"></i> Current token</a></li>
                 <li role="menuitem">
                   <%= link_to ssh_keys_user_path(current_user), role: 'menu-item' do %>
@@ -121,9 +123,11 @@ SPDX-License-Identifier: AGPL-3.0 %>
                   <li role="presentation" class="dropdown-header">
                     Admin Settings
                   </li>
+                  <% if Rails.configuration.repositories %>
                   <li role="menuitem"><a href="/repositories">
                       <i class="fa fa-lg fa-code-fork fa-fw"></i> Repositories
                   </a></li>
+                  <% end -%>
                   <li role="menuitem"><a href="/virtual_machines">
                       <i class="fa fa-lg fa-terminal fa-fw"></i> Virtual machines
                   </a></li>

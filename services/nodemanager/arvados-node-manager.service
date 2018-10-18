@@ -3,10 +3,10 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 [Unit]
-Description=Arvados Docker Image Cleaner
+Description=Arvados Node Manager Daemon
 Documentation=https://doc.arvados.org/
 After=network.target
-#AssertPathExists=/etc/arvados/docker-cleaner/docker-cleaner.json
+AssertPathExists=/etc/arvados-node-manager/config.ini
 
 # systemd==229 (ubuntu:xenial) obeys StartLimitInterval in the [Unit] section
 StartLimitInterval=0
@@ -15,15 +15,15 @@ StartLimitInterval=0
 StartLimitIntervalSec=0
 
 [Service]
+EnvironmentFile=-/etc/default/arvados-node-manager
+LimitDATA=3145728K
+LimitRSS=3145728K
+LimitMEMLOCK=3145728K
+LimitNOFILE=10240
 Type=simple
+ExecStart=/usr/bin/env sh -c '/usr/bin/arvados-node-manager --foreground --config /etc/arvados-node-manager/config.ini 2>&1 | cat'
 Restart=always
-RestartSec=10s
-RestartPreventExitStatus=2
-#
-# This unwieldy ExecStart command detects at runtime whether
-# arvados-docker-cleaner is installed with the Python 3.3 Software
-# Collection, and if so, invokes it with the "scl" wrapper.
-ExecStart=/bin/sh -c 'if [ -e /opt/rh/python33/root/bin/arvados-docker-cleaner ]; then exec scl enable python33 arvados-docker-cleaner; else exec arvados-docker-cleaner; fi'
+RestartSec=1
 
 # systemd<=219 (centos:7, debian:8, ubuntu:trusty) obeys StartLimitInterval in the [Service] section
 StartLimitInterval=0

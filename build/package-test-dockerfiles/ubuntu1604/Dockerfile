@@ -3,14 +3,17 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 FROM ubuntu:xenial
-MAINTAINER Ward Vandewege <ward@curoverse.com>
+MAINTAINER Ward Vandewege <wvandewege@veritasgenetics.com>
 
 ENV DEBIAN_FRONTEND noninteractive
 
-# Install RVM
+# Install dependencies
 RUN apt-get update && \
-    apt-get -y install --no-install-recommends curl ca-certificates && \
-    gpg --keyserver ha.pool.sks-keyservers.net --recv-keys D39DC0E3 && \
+    apt-get -y install --no-install-recommends curl ca-certificates
+
+# Install RVM
+ADD generated/rvm.asc /tmp/
+RUN gpg --import /tmp/rvm.asc && \
     curl -L https://get.rvm.io | bash -s stable && \
     /usr/local/rvm/bin/rvm install 2.3 && \
     /usr/local/rvm/bin/rvm alias create default ruby-2.3

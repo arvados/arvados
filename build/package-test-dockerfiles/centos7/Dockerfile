@@ -3,13 +3,15 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 FROM centos:7
-MAINTAINER Ward Vandewege <ward@curoverse.com>
+MAINTAINER Ward Vandewege <wvandewege@veritasgenetics.com>
 
+# Install dependencies.
 RUN yum -q -y install scl-utils centos-release-scl which tar
 
 # Install RVM
+ADD generated/rvm.asc /tmp/
 RUN touch /var/lib/rpm/* && \
-    gpg --keyserver ha.pool.sks-keyservers.net --recv-keys D39DC0E3 && \
+    gpg --import /tmp/rvm.asc && \
     curl -L https://get.rvm.io | bash -s stable && \
     /usr/local/rvm/bin/rvm install 2.3 && \
     /usr/local/rvm/bin/rvm alias create default ruby-2.3 && \
