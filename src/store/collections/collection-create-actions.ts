@@ -11,6 +11,7 @@ import { getCommonResourceServiceError, CommonResourceServiceError } from "~/ser
 import { uploadCollectionFiles } from './collection-upload-actions';
 import { fileUploaderActions } from '~/store/file-uploader/file-uploader-actions';
 import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
+import { isNotProjectItem } from '~/store/projects/project-create-actions';
 
 export interface CollectionCreateFormDialogData {
     ownerUuid: string;
@@ -21,8 +22,13 @@ export interface CollectionCreateFormDialogData {
 export const COLLECTION_CREATE_FORM_NAME = "collectionCreateFormName";
 
 export const openCollectionCreateDialog = (ownerUuid: string) =>
-    (dispatch: Dispatch) => {
-        dispatch(initialize(COLLECTION_CREATE_FORM_NAME, { ownerUuid }));
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        if (isNotProjectItem) {
+            const userUuid = getState().auth.user!.uuid;
+            dispatch(initialize(COLLECTION_CREATE_FORM_NAME, { userUuid }));
+        } else {
+            dispatch(initialize(COLLECTION_CREATE_FORM_NAME, { ownerUuid }));
+        }
         dispatch(fileUploaderActions.CLEAR_UPLOAD());
         dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_CREATE_FORM_NAME, data: { ownerUuid } }));
     };

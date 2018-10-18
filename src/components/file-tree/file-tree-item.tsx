@@ -10,7 +10,7 @@ import { formatFileSize } from "~/common/formatters";
 import { ListItemTextIcon } from "../list-item-text-icon/list-item-text-icon";
 import { FileTreeData } from "./file-tree-data";
 
-type CssRules = "root" | "spacer" | "sizeInfo" | "button";
+type CssRules = "root" | "spacer" | "sizeInfo" | "button" | "moreOptions";
 
 const fileTreeItemStyle: StyleRulesCallback<CssRules> = theme => ({
     root: {
@@ -27,7 +27,10 @@ const fileTreeItemStyle: StyleRulesCallback<CssRules> = theme => ({
     button: {
         width: theme.spacing.unit * 3,
         height: theme.spacing.unit * 3,
-        marginRight: theme.spacing.unit
+        marginRight: theme.spacing.unit,
+    },
+    moreOptions: {
+        position: 'absolute'
     }
 });
 
@@ -51,7 +54,7 @@ export const FileTreeItem = withStyles(fileTreeItemStyle)(
                     <IconButton
                         className={classes.button}
                         onClick={this.handleClick}>
-                        <MoreOptionsIcon />
+                        <MoreOptionsIcon className={classes.moreOptions}/>
                     </IconButton>
                 </Tooltip>
             </div >;

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from "react";
-import { Field, WrappedFieldProps } from 'redux-form';
+import { Field, WrappedFieldProps, FieldArray } from 'redux-form';
 import { TextField, DateTextField } from "~/components/text-field/text-field";
 import { CheckboxField } from '~/components/checkbox-field/checkbox-field';
 import { NativeSelectField } from '~/components/select-field/select-field';
@@ -11,17 +11,18 @@ import { ResourceKind } from '~/models/resource';
 import { ClusterObjectType } from '~/models/search-bar';
 import { HomeTreePicker } from '~/views-components/projects-tree-picker/home-tree-picker';
 import { SEARCH_BAR_ADVANCE_FORM_PICKER_ID } from '~/store/search-bar/search-bar-actions';
+import { SearchBarAdvancedPropertiesView } from '~/views-components/search-bar/search-bar-advanced-properties-view';
 
 export const SearchBarTypeField = () =>
     <Field
         name='type'
         component={NativeSelectField}
         items={[
-            { key: '', value: 'Any'},
-            { key: ResourceKind.COLLECTION, value: 'Collection'},
+            { key: '', value: 'Any' },
+            { key: ResourceKind.COLLECTION, value: 'Collection' },
             { key: ResourceKind.PROJECT, value: 'Project' },
             { key: ResourceKind.PROCESS, value: 'Process' }
-        ]}/>;
+        ]} />;
 
 export const SearchBarClusterField = () =>
     <Field
@@ -34,7 +35,7 @@ export const SearchBarClusterField = () =>
             { key: ClusterObjectType.PENZBERG, value: 'Penzberg' }
         ]} />;
 
-export const SearchBarProjectField = () => 
+export const SearchBarProjectField = () =>
     <Field
         name='projectUuid'
         component={ProjectsPicker} />;
@@ -44,41 +45,46 @@ const ProjectsPicker = (props: WrappedFieldProps) =>
         <HomeTreePicker pickerId={SEARCH_BAR_ADVANCE_FORM_PICKER_ID} />
     </div>;
 
-export const SearchBarTrashField = () => 
+export const SearchBarTrashField = () =>
     <Field
         name='inTrash'
         component={CheckboxField}
         label="In trash" />;
 
-export const SearchBarDataFromField = () => 
+export const SearchBarDateFromField = () =>
     <Field
         name='dateFrom'
         component={DateTextField} />;
 
-export const SearchBarDataToField = () =>
+export const SearchBarDateToField = () =>
     <Field
         name='dateTo'
         component={DateTextField} />;
 
-export const SearchBarKeyField = () => 
+export const SearchBarPropertiesField = () =>
+    <FieldArray
+        name="properties"
+        component={SearchBarAdvancedPropertiesView} />;
+
+export const SearchBarKeyField = () =>
     <Field
         name='key'
         component={TextField}
         label="Key" />;
 
-export const SearchBarValueField = () => 
+export const SearchBarValueField = () =>
     <Field
         name='value'
         component={TextField}
         label="Value" />;
 
-export const SearchBarSaveSearchField = () => 
+export const SearchBarSaveSearchField = () =>
     <Field
         name='saveQuery'
         component={CheckboxField}
         label="Save search query" />;
 
-export const SearchBarQuerySearchField = () => 
+export const SearchBarQuerySearchField = () =>
     <Field
         name='searchQuery'
         component={TextField}
