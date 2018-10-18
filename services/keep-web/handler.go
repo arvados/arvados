@@ -143,20 +143,24 @@ var (
 	writeMethod = map[string]bool{
 		"COPY":   true,
 		"DELETE": true,
+		"LOCK":   true,
 		"MKCOL":  true,
 		"MOVE":   true,
 		"PUT":    true,
 		"RMCOL":  true,
+		"UNLOCK": true,
 	}
 	webdavMethod = map[string]bool{
 		"COPY":     true,
 		"DELETE":   true,
+		"LOCK":     true,
 		"MKCOL":    true,
 		"MOVE":     true,
 		"OPTIONS":  true,
 		"PROPFIND": true,
 		"PUT":      true,
 		"RMCOL":    true,
+		"UNLOCK":   true,
 	}
 	browserMethod = map[string]bool{
 		"GET":  true,
