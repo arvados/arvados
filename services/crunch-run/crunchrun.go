@@ -79,6 +79,7 @@ type ThinDockerClient interface {
 	ContainerStart(ctx context.Context, container string, options dockertypes.ContainerStartOptions) error
 	ContainerRemove(ctx context.Context, container string, options dockertypes.ContainerRemoveOptions) error
 	ContainerWait(ctx context.Context, container string, condition dockercontainer.WaitCondition) (<-chan dockercontainer.ContainerWaitOKBody, <-chan error)
+	ContainerList(ctx context.Context, opts dockertypes.ContainerListOptions) ([]dockertypes.Container, error)
 	ImageInspectWithRaw(ctx context.Context, image string) (dockertypes.ImageInspect, []byte, error)
 	ImageLoad(ctx context.Context, input io.Reader, quiet bool) (dockertypes.ImageLoadResponse, error)
 	ImageRemove(ctx context.Context, image string, options dockertypes.ImageRemoveOptions) ([]dockertypes.ImageDeleteResponseItem, error)
@@ -149,11 +150,14 @@ type ContainerRunner struct {
 
 	cStateLock sync.Mutex
 	cCancelled bool // StopContainer() invoked
+	cRemoved   bool // docker confirmed the container no longer exists
 
 	enableNetwork   string // one of "default" or "always"
 	networkMode     string // passed through to HostConfig.NetworkMode
 	arvMountLog     *ThrottledLogger
 	checkContainerd time.Duration
+
+	containerWaitGracePeriod time.Duration
 }
 
 // setupSignals sets up signal handling to gracefully terminate the underlying
@@ -186,6 +190,9 @@ func (runner *ContainerRunner) stop(sig os.Signal) {
 	err := runner.Docker.ContainerRemove(context.TODO(), runner.ContainerID, dockertypes.ContainerRemoveOptions{Force: true})
 	if err != nil {
 		runner.CrunchLog.Printf("error removing container: %s", err)
+	}
+	if err == nil || strings.Contains(err.Error(), "No such container: "+runner.ContainerID) {
+		runner.cRemoved = true
 	}
 }
 
@@ -1124,6 +1131,43 @@ func (runner *ContainerRunner) WaitFinish() error {
 		runTimeExceeded = time.After(time.Duration(timeout) * time.Second)
 	}
 
+	containerGone := make(chan struct{})
+	go func() {
+		defer close(containerGone)
+		if runner.containerWaitGracePeriod < 1 {
+			runner.containerWaitGracePeriod = 30 * time.Second
+		}
+		found := time.Now()
+	polling:
+		for range time.NewTicker(runner.containerWaitGracePeriod / 30).C {
+			ctrs, err := runner.Docker.ContainerList(context.Background(), dockertypes.ContainerListOptions{})
+			if err != nil {
+				runner.CrunchLog.Printf("error checking container list: %s", err)
+				continue polling
+			}
+			for _, ctr := range ctrs {
+				if ctr.ID == runner.ContainerID {
+					found = time.Now()
+					continue polling
+				}
+			}
+			runner.cStateLock.Lock()
+			done := runner.cRemoved || runner.ExitCode != nil
+			runner.cStateLock.Unlock()
+			if done {
+				// Skip the grace period and warning
+				// log if the container disappeared
+				// because it finished, or we removed
+				// it ourselves.
+				return
+			}
+			if time.Since(found) > runner.containerWaitGracePeriod {
+				runner.CrunchLog.Printf("container %s no longer exists", runner.ContainerID)
+				return
+			}
+		}
+	}()
+
 	containerdGone := make(chan error)
 	defer close(containerdGone)
 	if runner.checkContainerd > 0 {
@@ -1170,6 +1214,9 @@ func (runner *ContainerRunner) WaitFinish() error {
 			runner.CrunchLog.Printf("maximum run time exceeded. Stopping container.")
 			runner.stop(nil)
 			runTimeExceeded = nil
+
+		case <-containerGone:
+			return errors.New("docker client never returned status")
 
 		case err := <-containerdGone:
 			return err
