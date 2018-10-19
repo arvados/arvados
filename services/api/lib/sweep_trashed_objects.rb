@@ -50,9 +50,7 @@ module SweepTrashedObjects
         update_all('is_trashed = true')
 
       # Sweep expired tokens
-      ApiClientAuthorization.
-        where("expires_at <= statement_timestamp()").
-        destroy_all
+      ActiveRecord::Base.connection.execute("DELETE from api_client_authorizations where expires_at <= statement_timestamp()")
     end
   end
 
