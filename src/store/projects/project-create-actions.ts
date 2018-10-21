@@ -9,6 +9,7 @@ import { dialogActions } from "~/store/dialog/dialog-actions";
 import { getCommonResourceServiceError, CommonResourceServiceError } from '~/services/common-service/common-resource-service';
 import { ProjectResource } from '~/models/project';
 import { ServiceRepository } from '~/services/services';
+import { matchProjectRoute } from '~/routes/routes';
 
 export interface ProjectCreateFormDialogData {
     ownerUuid: string;
@@ -18,9 +19,37 @@ export interface ProjectCreateFormDialogData {
 
 export const PROJECT_CREATE_FORM_NAME = 'projectCreateFormName';
 
+export const isProjectRoute = ({ router }: RootState) => {
+    const pathname = router.location ? router.location.pathname : '';
+    const match = matchProjectRoute(pathname);
+    return !!match;
+};
+
+interface Properties {
+    breadcrumbs: Array<{ uuid: string, label: string }>;
+}
+
+export const isItemNotInProject = (properties: Properties) => {
+    if (properties.breadcrumbs) {
+        const isItemSharedWithMe = properties.breadcrumbs[0].label !== 'Projects';
+        return isItemSharedWithMe;
+    } else {
+        return false;
+    }
+};
+
+export const isNotProjectItem = () => {
+    return isItemNotInProject || !isProjectRoute;
+};
+
 export const openProjectCreateDialog = (ownerUuid: string) =>
-    (dispatch: Dispatch) => {
-        dispatch(initialize(PROJECT_CREATE_FORM_NAME, { ownerUuid }));
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        if (isNotProjectItem) {
+            const userUuid = getState().auth.user!.uuid;
+            dispatch(initialize(PROJECT_CREATE_FORM_NAME, { userUuid }));
+        } else {
+            dispatch(initialize(PROJECT_CREATE_FORM_NAME, { ownerUuid }));
+        }        
         dispatch(dialogActions.OPEN_DIALOG({ id: PROJECT_CREATE_FORM_NAME, data: {} }));
     };
 

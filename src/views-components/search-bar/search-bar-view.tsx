@@ -58,6 +58,7 @@ type SearchBarDataProps = {
 
 interface SearchBarActionProps {
     onSearch: (value: string) => any;
+    searchDataOnEnter: (value: string) => void;
     debounce?: number;
     onSetView: (currentView: string) => void;
     closeView: () => void;
@@ -201,7 +202,7 @@ export const SearchBarView = withStyles(styles)(
             event.preventDefault();
             clearTimeout(this.timeout);
             this.props.saveRecentQuery(this.state.value);
-            this.props.onSearch(this.state.value);
+            this.props.searchDataOnEnter(this.state.value);
             this.props.loadRecentQueries();
         }
 

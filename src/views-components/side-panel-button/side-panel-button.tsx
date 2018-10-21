@@ -13,7 +13,6 @@ import { StyleRulesCallback, WithStyles, withStyles, Toolbar, Grid, Button, Menu
 import { AddIcon, CollectionIcon, ProcessIcon, ProjectIcon } from '~/components/icon/icon';
 import { openProjectCreateDialog } from '~/store/projects/project-create-actions';
 import { openCollectionCreateDialog } from '~/store/collections/collection-create-actions';
-import { matchProjectRoute } from '~/routes/routes';
 import { navigateToRunProcess } from '~/store/navigation/navigation-action';
 import { runProcessPanelActions } from '~/store/run-process-panel/run-process-panel-actions';
 
@@ -36,7 +35,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 interface SidePanelDataProps {
     currentItemId: string;
-    buttonVisible: boolean;
 }
 
 interface SidePanelState {
@@ -50,16 +48,9 @@ const transformOrigin: PopoverOrigin = {
     horizontal: 0
 };
 
-const isButtonVisible = ({ router }: RootState) => {
-    const pathname = router.location ? router.location.pathname : '';
-    const match = matchProjectRoute(pathname);
-    return !!match;
-};
-
 export const SidePanelButton = withStyles(styles)(
     connect((state: RootState) => ({
-        currentItemId: getProperty(PROJECT_PANEL_CURRENT_UUID)(state.properties),
-        buttonVisible: isButtonVisible(state)
+        currentItemId: getProperty(PROJECT_PANEL_CURRENT_UUID)(state.properties)
     }))(
         class extends React.Component<SidePanelProps> {
 
@@ -68,10 +59,10 @@ export const SidePanelButton = withStyles(styles)(
             };
 
             render() {
-                const { classes, buttonVisible } = this.props;
+                const { classes } = this.props;
                 const { anchorEl } = this.state;
                 return <Toolbar>
-                    {buttonVisible && <Grid container>
+                    <Grid container>
                         <Grid container item xs alignItems="center" justify="flex-start">
                             <Button variant="contained" color="primary" size="small" className={classes.button}
                                 aria-owns={anchorEl ? 'aside-menu-list' : undefined}
@@ -98,7 +89,7 @@ export const SidePanelButton = withStyles(styles)(
                                 </MenuItem>
                             </Menu>
                         </Grid>
-                    </Grid>}
+                    </Grid>
                 </Toolbar>;
             }
 

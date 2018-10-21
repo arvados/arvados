@@ -21,33 +21,6 @@ describe("<SearchBarView />", () => {
         onSearch = jest.fn();
     });
 
-    describe("on submit", () => {
-        it("calls onSearch with current value", () => {
-            const searchBar = mount(<SearchBarView onSearch={onSearch} value="current value" {...mockSearchProps()} />);
-            searchBar.find("input").simulate("change", { target: { value: "current value" } });
-            searchBar.find("form").simulate("submit");
-            expect(onSearch).toBeCalledWith("current value");
-        });
-
-        it("calls onSearch with new value passed via props", () => {
-            const searchBar = mount(<SearchBarView onSearch={onSearch} value="current value" {...mockSearchProps()} />);
-            searchBar.find("input").simulate("change", { target: { value: "new value" } });
-            searchBar.setProps({ value: "new value" });
-            searchBar.find("form").simulate("submit");
-            expect(onSearch).toBeCalledWith("new value");
-        });
-
-        it("cancels timeout set on input value change", () => {
-            const searchBar = mount(<SearchBarView onSearch={onSearch} debounce={1000} value="current value" {...mockSearchProps()} />);
-            searchBar.find("input").simulate("change", { target: { value: "current value" } });
-            searchBar.find("form").simulate("submit");
-            jest.runTimersToTime(1000);
-            expect(onSearch).toHaveBeenCalledTimes(1);
-            expect(onSearch).toBeCalledWith("current value");
-        });
-
-    });
-
     describe("on input value change", () => {
         it("calls onSearch after default timeout", () => {
             const searchBar = mount(<SearchBarView onSearch={onSearch} value="current value" {...mockSearchProps()} />);
@@ -104,5 +77,6 @@ const mockSearchProps = () => ({
     deleteSavedQuery: jest.fn(),
     openSearchView: jest.fn(),
     editSavedQuery: jest.fn(),
-    navigateTo: jest.fn()
+    navigateTo: jest.fn(),
+    searchDataOnEnter: jest.fn()
 });

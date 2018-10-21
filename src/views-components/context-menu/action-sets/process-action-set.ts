@@ -15,6 +15,7 @@ import { openMoveProcessDialog } from '~/store/processes/process-move-actions';
 import { openProcessUpdateDialog } from "~/store/processes/process-update-actions";
 import { openCopyProcessDialog } from '~/store/processes/process-copy-actions';
 import { openProcessCommandDialog } from '../../../store/processes/process-command-actions';
+import { detailsPanelActions } from '~/store/details-panel/details-panel-action';
 
 export const processActionSet: ContextMenuActionSet = [[
     {
@@ -78,9 +79,7 @@ export const processActionSet: ContextMenuActionSet = [[
     {
         icon: DetailsIcon,
         name: "View details",
-        execute: (dispatch, resource) => {
-            // add code
-        }
+        execute: dispatch => dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL())
     },
     {
         icon: LogIcon,
