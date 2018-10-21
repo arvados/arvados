@@ -6,9 +6,8 @@ import * as React from 'react';
 import { FloatCommandInputParameter, isRequiredInput } from '~/models/workflow';
 import { Field } from 'redux-form';
 import { isNumber } from '~/validators/is-number';
-import { GenericInput } from '~/views/run-process-panel/inputs/generic-input';
-import { Input as MaterialInput } from '@material-ui/core';
-import { GenericInputProps } from './generic-input';
+import { GenericInputProps, GenericInput } from './generic-input';
+import { FloatInput as FloatInputComponent } from '~/components/float-input/float-input';
 export interface FloatInputProps {
     input: FloatCommandInputParameter;
 }
@@ -16,7 +15,7 @@ export const FloatInput = ({ input }: FloatInputProps) =>
     <Field
         name={input.id}
         commandInput={input}
-        component={FloatInputComponent}
+        component={Input}
         parse={parseFloat}
         format={value => isNaN(value) ? '' : JSON.stringify(value)}
         validate={[
@@ -24,31 +23,11 @@ export const FloatInput = ({ input }: FloatInputProps) =>
                 ? isNumber
                 : () => undefined,]} />;
 
-class FloatInputComponent extends React.Component<GenericInputProps> {
-    state = {
-        endsWithDecimalSeparator: false,
-    };
-
-    handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const [base, fraction] = event.target.value.split('.');
-        this.setState({ endsWithDecimalSeparator: fraction === '' });
-        this.props.input.onChange(event);
-    }
-
-    render() {
-        const props = {
-            ...this.props,
-            input: {
-                ...this.props.input,
-                value: this.props.input.value + (this.state.endsWithDecimalSeparator ? '.' : ''),
-                onChange: this.handleChange,
-            },
-        };
-        return <GenericInput
-            component={Input}
-            {...props} />;
-    }
-}
-
 const Input = (props: GenericInputProps) =>
-    <MaterialInput fullWidth {...props.input} error={props.meta.touched && !!props.meta.error} />;
+    <GenericInput
+        component={InputComponent}
+        {...props} />;
+
+const InputComponent = ({ input, meta }: GenericInputProps) =>
+    <FloatInputComponent fullWidth {...input} error={meta.touched && !!meta.error} />;
+
