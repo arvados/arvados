@@ -15,13 +15,17 @@ export class FloatInput extends React.Component<InputProps> {
         const { onChange = () => { return; } } = this.props;
         const [, fraction] = event.target.value.split('.');
         this.setState({ endsWithDecimalSeparator: fraction === '' });
+        const parsedValue = parseFloat(event.target.value).toString();
+        event.target.value = parsedValue;
         onChange(event);
     }
 
     render() {
+        const parsedValue = parseFloat(typeof this.props.value === 'string' ? this.props.value : '');
+        const value = isNaN(parsedValue) ? '' : parsedValue.toString();
         const props = {
             ...this.props,
-            value: this.props.value + (this.state.endsWithDecimalSeparator ? '.' : ''),
+            value: value + (this.state.endsWithDecimalSeparator ? '.' : ''),
             onChange: this.handleChange,
         };
         return <Input {...props} />;
