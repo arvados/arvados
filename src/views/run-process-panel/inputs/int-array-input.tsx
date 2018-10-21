@@ -47,7 +47,7 @@ class InputComponent extends React.PureComponent<GenericInputProps>{
             orderable
             value={this.props.input.value}
             onChange={this.handleChange}
-            createNewValue={identity}
+            createNewValue={value => parseInt(value, 10)}
             inputComponent={IntInput}
             inputProps={{
                 error: this.props.meta.error,
