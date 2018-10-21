@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { reduxForm, InjectedFormProps } from 'redux-form';
-import { CommandInputParameter, CWLType, IntCommandInputParameter, BooleanCommandInputParameter, FileCommandInputParameter, DirectoryCommandInputParameter, DirectoryArrayCommandInputParameter, FloatArrayCommandInputParameter } from '~/models/workflow';
+import { CommandInputParameter, CWLType, IntCommandInputParameter, BooleanCommandInputParameter, FileCommandInputParameter, DirectoryCommandInputParameter, DirectoryArrayCommandInputParameter, FloatArrayCommandInputParameter, IntArrayCommandInputParameter } from '~/models/workflow';
 import { IntInput } from '~/views/run-process-panel/inputs/int-input';
 import { StringInput } from '~/views/run-process-panel/inputs/string-input';
 import { StringCommandInputParameter, FloatCommandInputParameter, isPrimitiveOfType, File, Directory, WorkflowInputsData, EnumCommandInputParameter, isArrayOfType, StringArrayCommandInputParameter, FileArrayCommandInputParameter } from '../../models/workflow';
@@ -21,6 +21,7 @@ import { createStructuredSelector, createSelector } from 'reselect';
 import { FileArrayInput } from './inputs/file-array-input';
 import { DirectoryArrayInput } from './inputs/directory-array-input';
 import { FloatArrayInput } from './inputs/float-array-input';
+import { IntArrayInput } from './inputs/int-array-input';
 
 export const RUN_PROCESS_INPUTS_FORM = 'runProcessInputsForm';
 
@@ -100,13 +101,18 @@ const getInputComponent = (input: CommandInputParameter) => {
 
         case isArrayOfType(input, CWLType.STRING):
             return <StringArrayInput input={input as StringArrayCommandInputParameter} />;
-        
+
+        case isArrayOfType(input, CWLType.INT):
+        case isArrayOfType(input, CWLType.LONG):
+            return <IntArrayInput input={input as IntArrayCommandInputParameter} />;
+
         case isArrayOfType(input, CWLType.FLOAT):
+        case isArrayOfType(input, CWLType.DOUBLE):
             return <FloatArrayInput input={input as FloatArrayCommandInputParameter} />;
 
         case isArrayOfType(input, CWLType.FILE):
             return <FileArrayInput input={input as FileArrayCommandInputParameter} />;
-        
+
         case isArrayOfType(input, CWLType.DIRECTORY):
             return <DirectoryArrayInput input={input as DirectoryArrayCommandInputParameter} />;
 
