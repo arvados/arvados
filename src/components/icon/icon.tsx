@@ -48,6 +48,7 @@ import SettingsApplications from '@material-ui/icons/SettingsApplications';
 import SettingsEthernet from '@material-ui/icons/SettingsEthernet';
 import Star from '@material-ui/icons/Star';
 import StarBorder from '@material-ui/icons/StarBorder';
+import Warning from '@material-ui/icons/Warning';
 
 export type IconType = React.SFC<{ className?: string }>;
 
@@ -99,3 +100,4 @@ export const TrashIcon: IconType = (props) => <Delete {...props} />;
 export const UserPanelIcon: IconType = (props) => <Person {...props} />;
 export const UsedByIcon: IconType = (props) => <Folder {...props} />;
 export const WorkflowIcon: IconType = (props) => <Code {...props} />;
+export const WarningIcon: IconType = (props) => <Warning style={{ color: '#fbc02d', height: '30px', width: '30px' }} {...props} />;

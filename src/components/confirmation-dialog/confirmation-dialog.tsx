@@ -5,6 +5,7 @@
 import * as React from "react";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, DialogContentText } from "@material-ui/core";
 import { WithDialogProps } from "~/store/dialog/with-dialog";
+import { WarningIcon } from '~/components/icon/icon';
 
 export interface ConfirmationDialogDataProps {
     title: string;
@@ -20,9 +21,12 @@ export interface ConfirmationDialogProps {
 export const ConfirmationDialog = (props: ConfirmationDialogProps & WithDialogProps<ConfirmationDialogDataProps>) =>
     <Dialog open={props.open}>
         <DialogTitle>{props.data.title}</DialogTitle>
-        <DialogContent>
-            <DialogContentText>
+        <DialogContent style={{ display: 'flex', alignItems: 'center' }}>
+            <WarningIcon />
+            <DialogContentText style={{ paddingLeft: '8px' }}>
                 {props.data.text}
+                <br />
+                {props.data.title === 'Removing file' ? 'Removing a file will change content adress.' : 'Removing files will change content adress.'}
             </DialogContentText>
         </DialogContent>
         <DialogActions>
