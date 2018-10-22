@@ -20,18 +20,17 @@ import { updateFavorites } from "../favorites/favorites-actions";
 import { PROJECT_PANEL_CURRENT_UUID, projectPanelActions } from './project-panel-action';
 import { Dispatch, MiddlewareAPI } from "redux";
 import { ProjectResource } from "~/models/project";
-import { resourcesActions, updateResources } from "~/store/resources/resources-actions";
+import { updateResources } from "~/store/resources/resources-actions";
 import { getProperty } from "~/store/properties/properties";
 import { snackbarActions, SnackbarKind } from '../snackbar/snackbar-actions';
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions.ts';
 import { DataExplorer, getDataExplorer } from '../data-explorer/data-explorer-reducer';
 import { ListResults } from '~/services/common-service/common-resource-service';
 import { loadContainers } from '../processes/processes-actions';
-import { Resource, ResourceKind } from '~/models/resource';
+import { ResourceKind } from '~/models/resource';
 import { getResource } from "~/store/resources/resources";
 import { CollectionResource } from "~/models/collection";
-import { getNode, getNodeDescendantsIds, TreeNode } from "~/models/tree";
-import { CollectionDirectory, CollectionFile, CollectionFileType } from "~/models/collection-file";
+import { resourcesDataActions } from "~/store/resources-data/resources-data-actions";
 
 export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -54,7 +53,7 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
                 const resourceUuids = response.items.map(item => item.uuid);
                 api.dispatch<any>(updateFavorites(resourceUuids));
                 api.dispatch(updateResources(response.items));
-                api.dispatch<any>(updateFilesInfo(resourceUuids));
+                api.dispatch<any>(updateResourceData(resourceUuids));
                 await api.dispatch<any>(loadMissingProcessesInformation(response.items));
                 api.dispatch(setItems(response));
             } catch (e) {
@@ -87,28 +86,17 @@ export const loadMissingProcessesInformation = (resources: GroupContentsResource
         }
     };
 
-export const updateFilesInfo = (resourceUuids: string[]) =>
+export const updateResourceData = (resourceUuids: string[]) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const resources = await Promise.all(resourceUuids.map(async uuid => {
+        resourceUuids.map(async uuid => {
             const resource = getResource<CollectionResource>(uuid)(getState().resources);
             if (resource && resource.kind === ResourceKind.COLLECTION) {
                 const files = await services.collectionService.files(uuid);
-                const flattenFiles: (TreeNode<CollectionFile | CollectionDirectory> | undefined)[] = getNodeDescendantsIds('')(files).map(id => getNode(id)(files));
-                let fileSize = 0;
-                let fileCount = 0;
-                if (flattenFiles) {
-                    fileCount = flattenFiles.length;
-                    fileSize = flattenFiles.reduce((acc, f) => {
-                        return acc + (f && f.value.type === CollectionFileType.FILE ? f.value.size : 0);
-                    }, 0);
+                if (files) {
+                    dispatch(resourcesDataActions.SET_FILES({ uuid, files }));
                 }
-
-                resource.fileCount = fileCount;
-                resource.fileSize = fileSize;
             }
-            return resource;
-        }));
-        dispatch(resourcesActions.SET_RESOURCES(resources.filter(res => res) as Resource[]));
+        });
     };
 
 export const setItems = (listResults: ListResults<GroupContentsResource>) =>
