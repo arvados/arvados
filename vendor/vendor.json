@@ -313,6 +313,12 @@
 			"revisionTime": "2015-07-11T00:45:18Z"
 		},
 		{
+			"checksumSHA1": "khL6oKjx81rAZKW+36050b7f5As=",
+			"path": "github.com/jmcvetta/randutil",
+			"revision": "2bb1b664bcff821e02b2a0644cd29c7e824d54f8",
+			"revisionTime": "2015-08-17T12:26:01Z"
+		},
+		{
 			"checksumSHA1": "oX6jFQD74oOApvDIhOzW2dXpg5Q=",
 			"path": "github.com/kevinburke/ssh_config",
 			"revision": "802051befeb51da415c46972b5caf36e7c33c53d",

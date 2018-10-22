@@ -7,6 +7,7 @@ package controller
 import (
 	"bytes"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -17,6 +18,7 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/auth"
+	"github.com/jmcvetta/randutil"
 )
 
 var pathPattern = `^/arvados/v1/%s(/([0-9a-z]{5})-%s-[0-9a-z]{15})?(.*)$`
@@ -82,12 +84,18 @@ func loadParamsFromForm(req *http.Request) error {
 
 func (h *Handler) setupProxyRemoteCluster(next http.Handler) http.Handler {
 	mux := http.NewServeMux()
-	mux.Handle("/arvados/v1/workflows", &genericFederatedRequestHandler{next, h, wfRe})
-	mux.Handle("/arvados/v1/workflows/", &genericFederatedRequestHandler{next, h, wfRe})
-	mux.Handle("/arvados/v1/containers", &genericFederatedRequestHandler{next, h, containersRe})
-	mux.Handle("/arvados/v1/containers/", &genericFederatedRequestHandler{next, h, containersRe})
-	mux.Handle("/arvados/v1/container_requests", &genericFederatedRequestHandler{next, h, containerRequestsRe})
-	mux.Handle("/arvados/v1/container_requests/", &genericFederatedRequestHandler{next, h, containerRequestsRe})
+
+	wfHandler := &genericFederatedRequestHandler{next, h, wfRe, nil}
+	containersHandler := &genericFederatedRequestHandler{next, h, containersRe, nil}
+	containerRequestsHandler := &genericFederatedRequestHandler{next, h, containerRequestsRe,
+		[]federatedRequestDelegate{remoteContainerRequestCreate}}
+
+	mux.Handle("/arvados/v1/workflows", wfHandler)
+	mux.Handle("/arvados/v1/workflows/", wfHandler)
+	mux.Handle("/arvados/v1/containers", containersHandler)
+	mux.Handle("/arvados/v1/containers/", containersHandler)
+	mux.Handle("/arvados/v1/container_requests", containerRequestsHandler)
+	mux.Handle("/arvados/v1/container_requests/", containerRequestsHandler)
 	mux.Handle("/arvados/v1/collections", next)
 	mux.Handle("/arvados/v1/collections/", &collectionFederatedRequestHandler{next, h})
 	mux.Handle("/", next)
@@ -118,12 +126,79 @@ type CurrentUser struct {
 	UUID          string
 }
 
-func (h *Handler) validateAPItoken(req *http.Request, user *CurrentUser) error {
+// validateAPItoken extracts the token from the provided http request,
+// checks it again api_client_authorizations table in the database,
+// and fills in the token scope and user UUID.  Does not handle remote
+// tokens unless they are already in the database and not expired.
+func (h *Handler) validateAPItoken(req *http.Request, token string) (*CurrentUser, error) {
+	user := CurrentUser{Authorization: arvados.APIClientAuthorization{APIToken: token}}
 	db, err := h.db(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return db.QueryRowContext(req.Context(), `SELECT api_client_authorizations.uuid, users.uuid FROM api_client_authorizations JOIN users on api_client_authorizations.user_id=users.id WHERE api_token=$1 AND (expires_at IS NULL OR expires_at > current_timestamp) LIMIT 1`, user.Authorization.APIToken).Scan(&user.Authorization.UUID, &user.UUID)
+
+	var uuid string
+	if strings.HasPrefix(token, "v2/") {
+		sp := strings.Split(token, "/")
+		uuid = sp[1]
+		token = sp[2]
+	}
+	user.Authorization.APIToken = token
+	var scopes string
+	err = db.QueryRowContext(req.Context(), `SELECT api_client_authorizations.uuid, api_client_authorizations.scopes, users.uuid FROM api_client_authorizations JOIN users on api_client_authorizations.user_id=users.id WHERE api_token=$1 AND (expires_at IS NULL OR expires_at > current_timestamp) LIMIT 1`, token).Scan(&user.Authorization.UUID, &scopes, &user.UUID)
+	if err != nil {
+		return nil, err
+	}
+	if uuid != "" && user.Authorization.UUID != uuid {
+		return nil, fmt.Errorf("UUID embedded in v2 token did not match record")
+	}
+	err = json.Unmarshal([]byte(scopes), &user.Authorization.Scopes)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (h *Handler) createAPItoken(req *http.Request, userUUID string, scopes []string) (*arvados.APIClientAuthorization, error) {
+	db, err := h.db(req)
+	if err != nil {
+		return nil, err
+	}
+	rd, err := randutil.String(15, "abcdefghijklmnopqrstuvwxyz0123456789")
+	if err != nil {
+		return nil, err
+	}
+	uuid := fmt.Sprintf("%v-gj3su-%v", h.Cluster.ClusterID, rd)
+	token, err := randutil.String(50, "abcdefghijklmnopqrstuvwxyz0123456789")
+	if err != nil {
+		return nil, err
+	}
+	if len(scopes) == 0 {
+		scopes = append(scopes, "all")
+	}
+	scopesjson, err := json.Marshal(scopes)
+	if err != nil {
+		return nil, err
+	}
+	_, err = db.ExecContext(req.Context(),
+		`INSERT INTO api_client_authorizations
+(uuid, api_token, expires_at, scopes,
+user_id,
+api_client_id, created_at, updated_at)
+VALUES ($1, $2, now() + INTERVAL '2 weeks', $3,
+(SELECT id FROM users WHERE users.uuid=$4 LIMIT 1),
+0, now(), now())`,
+		uuid, token, string(scopesjson), userUUID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &arvados.APIClientAuthorization{
+		UUID:      uuid,
+		APIToken:  token,
+		ExpiresAt: "",
+		Scopes:    scopes}, nil
 }
 
 // Extract the auth token supplied in req, and replace it with a
@@ -165,11 +240,10 @@ func (h *Handler) saltAuthToken(req *http.Request, remote string) (updatedReq *h
 		// If the token exists in our own database, salt it
 		// for the remote. Otherwise, assume it was issued by
 		// the remote, and pass it through unmodified.
-		currentUser := CurrentUser{Authorization: arvados.APIClientAuthorization{APIToken: creds.Tokens[0]}}
-		err = h.validateAPItoken(req, &currentUser)
+		currentUser, err := h.validateAPItoken(req, creds.Tokens[0])
 		if err == sql.ErrNoRows {
 			// Not ours; pass through unmodified.
-			token = currentUser.Authorization.APIToken
+			token = creds.Tokens[0]
 		} else if err != nil {
 			return nil, err
 		} else {

@@ -6,8 +6,10 @@ package arvados
 
 // APIClientAuthorization is an arvados#apiClientAuthorization resource.
 type APIClientAuthorization struct {
-	UUID     string `json:"uuid"`
-	APIToken string `json:"api_token"`
+	UUID      string   `json:"uuid,omitempty"`
+	APIToken  string   `json:"api_token,omitempty"`
+	ExpiresAt string   `json:"expires_at,omitempty"`
+	Scopes    []string `json:"scopes,omitempty"`
 }
 
 // APIClientAuthorizationList is an arvados#apiClientAuthorizationList resource.

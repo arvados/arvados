@@ -17,10 +17,20 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 )
 
+type federatedRequestDelegate func(
+	h *genericFederatedRequestHandler,
+	effectiveMethod string,
+	clusterId *string,
+	uuid string,
+	remainder string,
+	w http.ResponseWriter,
+	req *http.Request) bool
+
 type genericFederatedRequestHandler struct {
-	next    http.Handler
-	handler *Handler
-	matcher *regexp.Regexp
+	next      http.Handler
+	handler   *Handler
+	matcher   *regexp.Regexp
+	delegates []federatedRequestDelegate
 }
 
 func (h *genericFederatedRequestHandler) remoteQueryUUIDs(w http.ResponseWriter,
@@ -283,6 +293,12 @@ func (h *genericFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *h
 		req.Form.Get("filters") != "" &&
 		h.handleMultiClusterQuery(w, req, &clusterId) {
 		return
+	}
+
+	for _, d := range h.delegates {
+		if d(h, effectiveMethod, &clusterId, m[1], m[3], w, req) {
+			return
+		}
 	}
 
 	if clusterId == "" || clusterId == h.handler.Cluster.ClusterID {
