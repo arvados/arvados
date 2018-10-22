@@ -103,7 +103,7 @@ var reqIDGen = httpserver.IDGenerator{Prefix: "req-"}
 // (*http.Client)Do().
 func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	if c.AuthToken != "" {
-		req.Header.Add("Authorization", "OAuth2 "+c.AuthToken)
+		req.Header.Set("Authorization", "OAuth2 "+c.AuthToken)
 	}
 
 	if req.Header.Get("X-Request-Id") == "" {
@@ -215,7 +215,7 @@ func (c *Client) MakeRequest(method, path string, body io.Reader, params interfa
 	req.Header.Set("Content-type", "application/x-www-form-urlencoded")
 
 	if c.AuthToken != "" {
-		req.Header.Add("Authorization", "OAuth2 "+c.AuthToken)
+		req.Header.Set("Authorization", "OAuth2 "+c.AuthToken)
 	}
 
 	if req.Header.Get("X-Request-Id") == "" {

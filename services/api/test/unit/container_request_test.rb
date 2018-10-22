@@ -500,8 +500,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     end
   end
 
-  ['acbd18db4cc2f85cedef654fccc4a4d8+3',
-   'ENOEXIST',
+  ['ENOEXIST',
    'arvados/apitestfixture:ENOEXIST',
   ].each do |img|
     test "container_image_for_container(#{img.inspect}) => 422" do

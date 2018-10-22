@@ -71,9 +71,7 @@ func (p *proxy) ForwardRequest(
 
 	ctx := reqIn.Context()
 	if p.RequestTimeout > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithDeadline(ctx, time.Now().Add(time.Duration(p.RequestTimeout)))
-		defer cancel()
+		ctx, _ = context.WithDeadline(ctx, time.Now().Add(time.Duration(p.RequestTimeout)))
 	}
 
 	reqOut := (&http.Request{
