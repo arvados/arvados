@@ -12,26 +12,28 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 When collection versioning is enabled, updating certain collection attributes (@name@, @description@, @properties@, @manifest_text@) will save a copy of the collection state, previous to the update. This copy (a new collection record) will have its own @uuid@, and a @current_version_uuid@ attribute pointing to the current version's @uuid@.
 
-Every collection has a @version@ attribute that indicates its version number, starting from 1 on new collections and incrementing by 1 with every versionable update. All collections point to their most current version via the @current_version_uuid@ attribute, being @uuid@ and @current_version_uuid@ equal on those collection records that are the the current version of themselves.
-Note that the "current version" collection record doesn't change its @uuid@, "past versions" are saved as new records every time it's needed, pointing to the current collection record.
+Every collection has a @version@ attribute that indicates its version number, starting from 1 on new collections and incrementing by 1 with every versionable update. All collections point to their most current version via the @current_version_uuid@ attribute, being @uuid@ and @current_version_uuid@ equal on those collection records that are the the current version of themselves. Note that the "current version" collection record doesn't change its @uuid@, "past versions" are saved as new records every time it's needed, pointing to the current collection record.
 
-The are two ways that this feature works: one is by "configuring (system-wide) the collection's idle time":{{site.baseurl}}/admin/collection-versioning.html. This idle time is checked against the @modified_at@ attribute so that the version is saved when one or more of the previously enumerated attributes get updated and the @modified_at@ is at least at the configured idle time in the past. This way, a frequently updated collection won't create lots of version records that may not be useful.
+There are two ways that this feature works:
+
+One is by "configuring (system-wide) the collection's idle time":{{site.baseurl}}/admin/collection-versioning.html. This idle time is checked against the @modified_at@ attribute so that the version is saved when one or more of the previously enumerated attributes get updated and the @modified_at@ is at least at the configured idle time in the past. This way, a frequently updated collection won't create lots of version records that may not be useful.
+
 The other way to trigger a version save, is by setting @preserve_version@ to @true@ on the current version collection record: this ensures that the current state will be preserved as a version the next time it gets updated.
 
 h3. Collection's past versions behavior & limitations
 
 Past version collection records are read-only, if you need to make changes to one of them, the suggested approach is to copy it into a new collection before updating.
 
-Some attributes are automatically synced when they change on the current version: @owner_uuid@, @delete_at@, @trash_at@, @is_trashed@, @replication_desired@ and @storage_classes_desired@. This way, old versions follow the current one on several configurations. In the special case that a current version's @uuid@ gets updated, their past versions get also updated to point to the newer UUID.
+Some attributes are automatically synced when they change on the current version: @owner_uuid@, @delete_at@, @trash_at@, @is_trashed@, @replication_desired@ and @storage_classes_desired@. This way, old versions follow the current one on several configurations. In the special case that a current version's @uuid@ gets updated, their past versions get also updated to point to the newer UUID. When a collection's current version is deleted, its past versions will follow it.
 
 Permissions on past versions are the same as their current version, the system does not allow attaching permission links to old versions. If you need to give special access to someone to a particular old version, the correct procedure is by copying it as a new collection.
 
 h3. Example: Accessing past versions of a collection
 
-To request a particular collection with all its versions you should request a list with filters including the collection's UUID and passing the @include_old_versions@ query parameter. For example, using the @arv@ command line client:
+To request a particular collection with all its versions you should request a list filtering the current version's UUID and passing the @include_old_versions@ query parameter. For example, using the @arv@ command line client:
 
 <pre>
-$ arv collection index --filters '[["uuid", "=", "o967z-4zz18-ynmlhyjbg1arnr2"]]' --include-old-versions
+$ arv collection index --filters '[["current_version_uuid", "=", "o967z-4zz18-ynmlhyjbg1arnr2"]]' --include-old-versions
 {
  "items":[
   {
@@ -53,7 +55,25 @@ $ arv collection index --filters '[["uuid", "=", "o967z-4zz18-ynmlhyjbg1arnr2"]]
 }
 </pre>
 
-You can also access a past version directly by its UUID:
+To access a specific collection version using filters:
+
+<pre>
+$ arv collection index --filters '[["current_version_uuid", "=", "o967z-4zz18-ynmlhyjbg1arnr2"], ["version", "=", 1]]' --include-old-versions
+{
+ "items":[
+  {
+   "uuid":"o967z-4zz18-i3ucessyo6xxadt",
+   "created_at":"2018-10-05T14:43:38.916885000Z",
+   "modified_at":"2018-10-05T14:44:31.098019000Z",
+   "version":1,
+   "current_version_uuid":"o967z-4zz18-ynmlhyjbg1arnr2"
+  }
+ ],
+ "items_available":1
+}
+</pre>
+
+You can also access it directly via a GET request using its UUID:
 
 <pre>
 $ arv collection get --uuid o967z-4zz18-i3ucessyo6xxadt
