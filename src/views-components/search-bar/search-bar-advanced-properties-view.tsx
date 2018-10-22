@@ -8,10 +8,10 @@ import { connect } from 'react-redux';
 import { InjectedFormProps, formValueSelector } from 'redux-form';
 import { Grid, withStyles, StyleRulesCallback, WithStyles, Button } from '@material-ui/core';
 import { RootState } from '~/store/store';
-import { 
-    SEARCH_BAR_ADVANCE_FORM_NAME, 
-    changeAdvanceFormProperty, 
-    updateAdvanceFormProperties 
+import {
+    SEARCH_BAR_ADVANCE_FORM_NAME,
+    changeAdvanceFormProperty,
+    updateAdvanceFormProperties
 } from '~/store/search-bar/search-bar-actions';
 import { PropertyValues } from '~/models/search-bar';
 import { ArvadosTheme } from '~/common/custom-theme';
@@ -45,8 +45,8 @@ interface SearchBarAdvancedPropertiesViewActionProps {
     getAllFields: (propertyValues: PropertyValues[]) => PropertyValues[] | [];
 }
 
-type SearchBarAdvancedPropertiesViewProps = SearchBarAdvancedPropertiesViewDataProps 
-    & SearchBarAdvancedPropertiesViewActionProps 
+type SearchBarAdvancedPropertiesViewProps = SearchBarAdvancedPropertiesViewDataProps
+    & SearchBarAdvancedPropertiesViewActionProps
     & InjectedFormProps & WithStyles<CssRules>;
 
 const selector = formValueSelector(SEARCH_BAR_ADVANCE_FORM_NAME);
@@ -85,15 +85,16 @@ export const SearchBarAdvancedPropertiesView = connect(mapStateToProps, mapDispa
                     <Button className={classes.button} onClick={() => addProp(propertyValues)}
                         color="primary"
                         size='small'
-                        variant="contained">
+                        variant="contained"
+                        disabled={!Boolean(propertyValues.key && propertyValues.value)}>
                         Add
                     </Button>
                 </Grid>
                 <Grid item xs={2} />
                 <Grid container item xs={10} spacing={8}>
-                    <Chips values={getAllFields(fields)} 
+                    <Chips values={getAllFields(fields)}
                         deletable
-                        onChange={setProps} 
+                        onChange={setProps}
                         getLabel={(field: PropertyValues) => `${field.key}: ${field.value}`} />
                 </Grid>
             </Grid>
