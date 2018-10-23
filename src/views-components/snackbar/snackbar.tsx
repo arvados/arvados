@@ -3,19 +3,18 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from "react";
+import { Dispatch } from "redux";
 import { connect } from "react-redux";
 import { RootState } from "~/store/store";
+import { Button, IconButton, StyleRulesCallback, WithStyles, withStyles, SnackbarContent } from '@material-ui/core';
 import MaterialSnackbar, { SnackbarOrigin } from "@material-ui/core/Snackbar";
-import { Dispatch } from "redux";
 import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
-import IconButton from '@material-ui/core/IconButton';
-import SnackbarContent from '@material-ui/core/SnackbarContent';
+import { navigateToProject } from '~/store/navigation/navigation-action';
 import WarningIcon from '@material-ui/icons/Warning';
 import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 import ErrorIcon from '@material-ui/icons/Error';
 import InfoIcon from '@material-ui/icons/Info';
 import CloseIcon from '@material-ui/icons/Close';
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from "~/common/custom-theme";
 import { amber, green } from "@material-ui/core/colors";
 import * as classNames from 'classnames';
@@ -26,11 +25,13 @@ interface SnackbarDataProps {
     open: boolean;
     message?: React.ReactElement<any>;
     kind: SnackbarKind;
+    link?: string;
 }
 
 interface SnackbarEventProps {
     onClose?: (event: React.SyntheticEvent<any>, reason: string) => void;
     onExited: () => void;
+    onClick: (uuid: string) => void;
 }
 
 const mapStateToProps = (state: RootState): SnackbarDataProps => {
@@ -40,7 +41,8 @@ const mapStateToProps = (state: RootState): SnackbarDataProps => {
         open: state.snackbar.open,
         message: <span>{messages.length > 0 ? messages[0].message : ""}</span>,
         autoHideDuration: messages.length > 0 ? messages[0].hideDuration : 0,
-        kind: messages.length > 0 ? messages[0].kind : SnackbarKind.INFO
+        kind: messages.length > 0 ? messages[0].kind : SnackbarKind.INFO,
+        link: messages.length > 0 ? messages[0].link : ''
     };
 };
 
@@ -52,10 +54,13 @@ const mapDispatchToProps = (dispatch: Dispatch): SnackbarEventProps => ({
     },
     onExited: () => {
         dispatch(snackbarActions.SHIFT_MESSAGES());
+    },
+    onClick: (uuid: string) => {
+        dispatch(navigateToProject(uuid));
     }
 });
 
-type CssRules = "success" | "error" | "info" | "warning" | "icon" | "iconVariant" | "message";
+type CssRules = "success" | "error" | "info" | "warning" | "icon" | "iconVariant" | "message" | "linkButton";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     success: {
@@ -81,10 +86,15 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         display: 'flex',
         alignItems: 'center'
     },
+    linkButton: {
+        fontWeight: 'bolder'
+    }
 });
 
+type SnackbarProps = SnackbarDataProps & SnackbarEventProps & WithStyles<CssRules>;
+
 export const Snackbar = withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(
-    (props: SnackbarDataProps & SnackbarEventProps & WithStyles<CssRules>) => {
+    (props: SnackbarProps) => {
         const { classes } = props;
 
         const variants = {
@@ -95,6 +105,8 @@ export const Snackbar = withStyles(styles)(connect(mapStateToProps, mapDispatchT
         };
 
         const [Icon, cssClass] = variants[props.kind];
+
+
 
         return (
             <MaterialSnackbar
@@ -113,17 +125,35 @@ export const Snackbar = withStyles(styles)(connect(mapStateToProps, mapDispatchT
                             {props.message}
                         </span>
                     }
-                    action={
-                        <IconButton
-                            key="close"
-                            aria-label="Close"
-                            color="inherit"
-                            onClick={e => props.onClose && props.onClose(e, '')}>
-                            <CloseIcon className={classes.icon}/>
-                        </IconButton>
-                    }
+                    action={actions(props)}
                 />
             </MaterialSnackbar>
         );
     }
 ));
+
+const actions = (props: SnackbarProps) => {
+    const { link, onClose, onClick, classes } = props;
+    const actions = [
+        <IconButton
+            key="close"
+            aria-label="Close"
+            color="inherit"
+            onClick={e => onClose && onClose(e, '')}>
+            <CloseIcon className={classes.icon} />
+        </IconButton>
+    ];
+    if (link) {
+        actions.splice(0, 0,
+            <Button key="goTo"
+                aria-label="goTo"
+                size="small"
+                color="inherit"
+                className={classes.linkButton}
+                onClick={() => onClick(link) }>
+                Go To
+            </Button>
+        );
+    }
+    return actions;
+};

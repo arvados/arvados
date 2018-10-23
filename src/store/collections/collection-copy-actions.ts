@@ -30,10 +30,10 @@ export const copyCollection = (resource: CopyFormDialogData) =>
             const collection = await services.collectionService.get(resource.uuid);
             const uuidKey = 'uuid';
             delete collection[uuidKey];
-            await services.collectionService.create({ ...collection, ownerUuid: resource.ownerUuid, name: resource.name });
+            const newCollection = await services.collectionService.create({ ...collection, ownerUuid: resource.ownerUuid, name: resource.name });
             dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_COPY_FORM_NAME }));
             dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_COPY_FORM_NAME));
-            return collection;
+            return newCollection;
         } catch (e) {
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {

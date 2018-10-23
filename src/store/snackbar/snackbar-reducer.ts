@@ -24,7 +24,8 @@ export const snackbarReducer = (state = initialState, action: SnackbarAction) =>
                 messages: state.messages.concat({
                     message: data.message,
                     hideDuration: data.hideDuration ? data.hideDuration : DEFAULT_HIDE_DURATION,
-                    kind: data.kind ? data.kind : SnackbarKind.INFO
+                    kind: data.kind ? data.kind : SnackbarKind.INFO, 
+                    link: data.link
                 })
             };
         },
