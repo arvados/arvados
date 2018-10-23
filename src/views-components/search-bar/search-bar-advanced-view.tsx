@@ -69,6 +69,8 @@ interface SearchBarAdvancedViewDataProps {
 export interface Tags {
     values?: {
         properties?: { key: string, value: string },
+        value?: string;
+        key?: string;
     };
 }
 
@@ -159,7 +161,7 @@ export const SearchBarAdvancedView = compose(
                             <Grid container item xs={12} justify='flex-end'>
                                 <div className={classes.buttonWrapper}>
                                     <Button type="submit" className={classes.button}
-                                        disabled={invalid || submitting || pristine || !!(tags && !tags.values!.properties)}
+                                        disabled={invalid || submitting || pristine || !!((tags.values!.key || tags.values!.value) && !tags.values!.properties)}
                                         color="primary"
                                         size='small'
                                         variant="contained">
