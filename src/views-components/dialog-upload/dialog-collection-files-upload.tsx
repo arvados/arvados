@@ -9,9 +9,7 @@ import { CollectionCreateFormDialogData } from '~/store/collections/collection-c
 import { FormDialog } from '~/components/form-dialog/form-dialog';
 import { require } from '~/validators/require';
 import { FileUploaderField } from '~/views-components/file-uploader/file-uploader';
-import { WarningIcon } from '~/components/icon/icon';
-import { DialogContentText } from '@material-ui/core';
-
+import { WarningCollection } from '~/components/warning-collection/warning-collection';
 
 type DialogCollectionFilesUploadProps = WithDialogProps<{}> & InjectedFormProps<CollectionCreateFormDialogData>;
 
@@ -28,12 +26,8 @@ const UploadCollectionFilesFields = () => <>
         name='files'
         validate={FILES_FIELD_VALIDATION}
         component={FileUploaderField} />
-    <span style={{ display: 'flex', alignItems: 'center', marginTop: '8px' }}>
-        <WarningIcon />
-        <DialogContentText style={{ paddingLeft: '8px' }}>Uploading new files will change content address.</DialogContentText>
-    </span>
+    <WarningCollection text="Uploading new files will change content address." />
 </>;
-
 
 const FILES_FIELD_VALIDATION = [require];
 
