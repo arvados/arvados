@@ -257,11 +257,10 @@ export const updateCollection = (data: collectionUpdateActions.CollectionUpdateF
 export const copyCollection = (data: CopyFormDialogData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         try {
-            const oldProject = getResource(data.ownerUuid)(getState().resources);
+            const copyToProject = getResource(data.ownerUuid)(getState().resources);
             const collection = await dispatch<any>(collectionCopyActions.copyCollection(data));
-            // dispatch<any>(updateResources([collection]));
-            if (oldProject && collection) {
-                dispatch<any>(reloadProjectMatchingUuid([oldProject.uuid]));
+            if (copyToProject && collection) {
+                dispatch<any>(reloadProjectMatchingUuid([copyToProject.uuid]));
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'Collection has been copied.',
                     hideDuration: 3000,
