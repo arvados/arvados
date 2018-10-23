@@ -66,18 +66,10 @@ interface SearchBarAdvancedViewDataProps {
     pristine: boolean;
 }
 
-export interface Tags {
-    values?: {
-        properties?: { key: string, value: string },
-        value?: string;
-        key?: string;
-    };
-}
-
 interface SearchBarAdvancedViewActionProps {
     setView: (currentView: string) => void;
     saveQuery: (data: SearchBarAdvanceFormData) => void;
-    tags: Tags;
+    tags: any;
 }
 
 type SearchBarAdvancedViewProps = SearchBarAdvancedViewActionProps & SearchBarAdvancedViewDataProps
@@ -161,7 +153,8 @@ export const SearchBarAdvancedView = compose(
                             <Grid container item xs={12} justify='flex-end'>
                                 <div className={classes.buttonWrapper}>
                                     <Button type="submit" className={classes.button}
-                                        disabled={invalid || submitting || pristine || !!((tags.values!.key || tags.values!.value) && !tags.values!.properties)}
+                                    // ToDo: create easier condition
+                                        disabled={invalid || submitting || pristine || !!(tags && tags.values && ((tags.values.key) || (tags.values.value)) && !Object.keys(tags.values).find(el => el !== 'value' && el !== 'key'))}
                                         color="primary"
                                         size='small'
                                         variant="contained">

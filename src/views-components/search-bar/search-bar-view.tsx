@@ -18,7 +18,7 @@ import SearchIcon from '@material-ui/icons/Search';
 import { RemoveIcon, EditSavedQueryIcon } from '~/components/icon/icon';
 import { SearchView } from '~/store/search-bar/search-bar-reducer';
 import { SearchBarBasicView } from '~/views-components/search-bar/search-bar-basic-view';
-import { SearchBarAdvancedView, Tags } from '~/views-components/search-bar/search-bar-advanced-view';
+import { SearchBarAdvancedView } from '~/views-components/search-bar/search-bar-advanced-view';
 import { SearchBarAutocompleteView, SearchBarAutocompleteViewDataProps } from '~/views-components/search-bar/search-bar-autocomplete-view';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { SearchBarAdvanceFormData } from '~/models/search-bar';
@@ -54,7 +54,7 @@ type SearchBarDataProps = {
     currentView: string;
     isPopoverOpen: boolean;
     savedQueries: SearchBarAdvanceFormData[];
-    tags: Tags;
+    tags: any;
 } & SearchBarAutocompleteViewDataProps;
 
 interface SearchBarActionProps {
