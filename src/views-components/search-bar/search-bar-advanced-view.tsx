@@ -11,20 +11,20 @@ import { SEARCH_BAR_ADVANCE_FORM_NAME, saveQuery } from '~/store/search-bar/sear
 import { ArvadosTheme } from '~/common/custom-theme';
 import { CloseIcon } from '~/components/icon/icon';
 import { SearchBarAdvanceFormData } from '~/models/search-bar';
-import { 
-    SearchBarTypeField, SearchBarClusterField, SearchBarProjectField, SearchBarTrashField, 
+import {
+    SearchBarTypeField, SearchBarClusterField, SearchBarProjectField, SearchBarTrashField,
     SearchBarDateFromField, SearchBarDateToField, SearchBarPropertiesField,
     SearchBarSaveSearchField, SearchBarQuerySearchField
 } from '~/views-components/form-fields/search-bar-form-fields';
 
-type CssRules = 'container' | 'closeIcon' | 'label' | 'buttonWrapper' 
+type CssRules = 'container' | 'closeIcon' | 'label' | 'buttonWrapper'
     | 'button' | 'circularProgress' | 'searchView' | 'selectGrid';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     container: {
         padding: theme.spacing.unit * 2,
         borderBottom: `1px solid ${theme.palette.grey["200"]}`
-    }, 
+    },
     closeIcon: {
         position: 'absolute',
         top: '12px',
@@ -66,22 +66,29 @@ interface SearchBarAdvancedViewDataProps {
     pristine: boolean;
 }
 
+export interface Tags {
+    values?: {
+        properties?: { key: string, value: string },
+    };
+}
+
 interface SearchBarAdvancedViewActionProps {
     setView: (currentView: string) => void;
     saveQuery: (data: SearchBarAdvanceFormData) => void;
+    tags: Tags;
 }
 
-type SearchBarAdvancedViewProps = SearchBarAdvancedViewActionProps & SearchBarAdvancedViewDataProps 
+type SearchBarAdvancedViewProps = SearchBarAdvancedViewActionProps & SearchBarAdvancedViewDataProps
     & InjectedFormProps & WithStyles<CssRules>;
 
 const validate = (values: any) => {
     const errors: any = {};
 
-    if (values.dateFrom && values.dateTo ) {
+    if (values.dateFrom && values.dateTo) {
         if (new Date(values.dateFrom).getTime() > new Date(values.dateTo).getTime()) {
             errors.dateFrom = 'Invalid date';
         }
-    } 
+    }
 
     return errors;
 };
@@ -96,7 +103,7 @@ export const SearchBarAdvancedView = compose(
         }
     }),
     withStyles(styles))(
-        ({ classes, setView, handleSubmit, submitting, invalid, pristine }: SearchBarAdvancedViewProps) =>
+        ({ classes, setView, handleSubmit, submitting, invalid, pristine, tags }: SearchBarAdvancedViewProps) =>
             <Paper className={classes.searchView}>
                 <form onSubmit={handleSubmit}>
                     <Grid container direction="column" justify="flex-start" alignItems="flex-start">
@@ -152,7 +159,7 @@ export const SearchBarAdvancedView = compose(
                             <Grid container item xs={12} justify='flex-end'>
                                 <div className={classes.buttonWrapper}>
                                     <Button type="submit" className={classes.button}
-                                        disabled={invalid || submitting || pristine}
+                                        disabled={invalid || submitting || pristine || !!(tags && !tags.values!.properties)}
                                         color="primary"
                                         size='small'
                                         variant="contained">
@@ -164,5 +171,5 @@ export const SearchBarAdvancedView = compose(
                         </Grid>
                     </Grid>
                 </form>
-        </Paper>
+            </Paper>
     );
