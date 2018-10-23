@@ -421,6 +421,10 @@ class KeepClient(object):
                 _logger.info("HEAD %s: %s bytes",
                          self._result['status_code'],
                          self._result.get('content-length'))
+                if self._result['headers'].get('x-keep-locator'):
+                    # This is a response to a remote block copy request, return
+                    # the local copy block locator.
+                    return self._result['headers'].get('x-keep-locator')
                 return True
 
             _logger.info("GET %s: %s bytes in %s msec (%.3f MiB/sec)",
@@ -975,6 +979,11 @@ class KeepClient(object):
         else:
             return None
 
+    def refresh_signature(self, loc):
+        """Ask Keep to get the remote block and return its local signature"""
+        now = datetime.datetime.utcnow().isoformat("T") + 'Z'
+        return self.head(loc, headers={'X-Keep-Signature': 'local, {}'.format(now)})
+
     @retry.retry_method
     def head(self, loc_s, **kwargs):
         return self._get_or_head(loc_s, method="HEAD", **kwargs)
@@ -983,7 +992,7 @@ class KeepClient(object):
     def get(self, loc_s, **kwargs):
         return self._get_or_head(loc_s, method="GET", **kwargs)
 
-    def _get_or_head(self, loc_s, method="GET", num_retries=None, request_id=None):
+    def _get_or_head(self, loc_s, method="GET", num_retries=None, request_id=None, headers=None):
         """Get data from Keep.
 
         This method fetches one or more blocks of data from Keep.  It
@@ -1024,11 +1033,11 @@ class KeepClient(object):
 
             self.misses_counter.add(1)
 
-            headers = {
-                'X-Request-Id': (request_id or
-                                 (hasattr(self, 'api_client') and self.api_client.request_id) or
-                                 arvados.util.new_request_id()),
-            }
+            if headers is None:
+                headers = {}
+            headers['X-Request-Id'] = (request_id or
+                                        (hasattr(self, 'api_client') and self.api_client.request_id) or
+                                        arvados.util.new_request_id())
 
             # If the locator has hints specifying a prefix (indicating a
             # remote keepproxy) or the UUID of a local gateway service,
@@ -1086,7 +1095,7 @@ class KeepClient(object):
             # Always cache the result, then return it if we succeeded.
             if loop.success():
                 if method == "HEAD":
-                    return True
+                    return blob or True
                 else:
                     return blob
         finally:

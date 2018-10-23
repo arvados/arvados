@@ -935,6 +935,16 @@ class KeepClientGatewayTestCase(unittest.TestCase, tutil.ApiClientMock):
         self.assertEqual(True, self.keepClient.head(locator))
 
     @mock.patch('pycurl.Curl')
+    def test_refresh_signature(self, MockCurl):
+        blk_digest = '6f5902ac237024bdd0c176cb93063dc4+11'
+        blk_sig = 'da39a3ee5e6b4b0d3255bfef95601890afd80709@53bed294'
+        MockCurl.return_value = tutil.FakeCurl.make(
+            code=200, body='', headers={'X-Keep-Locator':blk_digest+'+A'+blk_sig})
+        self.mock_disks_and_gateways()
+        locator = blk_digest+'+R'+blk_sig
+        self.assertEqual(blk_digest+'+A'+blk_sig, self.keepClient.refresh_signature(locator))
+
+    @mock.patch('pycurl.Curl')
     def test_get_with_gateway_hints_in_order(self, MockCurl):
         gateways = 4
         disks = 3
