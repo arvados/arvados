@@ -23,7 +23,7 @@ import { DataTableDefaultView } from '~/components/data-table-default-view/data-
 import { WorkflowResource, parseWorkflowDefinition, getWorkflowInputs, getInputLabel, stringifyInputType } from '~/models/workflow';
 import { WorkflowGraph } from "~/views/workflow-panel/workflow-graph";
 
-export type CssRules = 'root' | 'tab' | 'inputTab';
+export type CssRules = 'root' | 'tab' | 'inputTab' | 'descriptionTab' | 'inputsTable';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -33,13 +33,21 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         minWidth: '33%'
     },
     inputTab: {
-        height: 'calc(100% - 48px - 16px * 2)',
-        overflowX: 'auto',
-        overflowY: 'hidden',
+        overflow: 'auto',
+        maxHeight: '300px',
+        marginTop: theme.spacing.unit,
         '&:last-child': {
             paddingBottom: theme.spacing.unit / 2,
         }
-    }
+    },
+    descriptionTab: {
+        overflow: 'auto',
+        maxHeight: '300px',
+        marginTop: theme.spacing.unit,
+    },
+    inputsTable: {
+        tableLayout: 'fixed',
+    },
 });
 
 interface WorkflowDetailsCardDataProps {
@@ -67,7 +75,7 @@ export const WorkflowDetailsCard = withStyles(styles)(
                     <Tab className={classes.tab} label="Inputs" />
                     <Tab className={classes.tab} label="Graph" />
                 </Tabs>
-                {value === 0 && <CardContent>
+                {value === 0 && <CardContent className={classes.descriptionTab}>
                     {workflow ? <div>
                         {workflow.description}
                     </div> : (
@@ -86,7 +94,7 @@ export const WorkflowDetailsCard = withStyles(styles)(
                 </CardContent>}
                 {value === 2 && <CardContent className={classes.inputTab}>
                     {workflow
-                        ? <WorkflowGraph workflow={workflow}/>
+                        ? <WorkflowGraph workflow={workflow} />
                         : <DataTableDefaultView
                             icon={WorkflowIcon}
                             messages={['Please select a workflow to see its visualisation.']} />
@@ -106,7 +114,7 @@ export const WorkflowDetailsCard = withStyles(styles)(
         }
 
         renderInputsTable() {
-            return <Table>
+            return <Table className={this.props.classes.inputsTable}>
                 <TableHead>
                     <TableRow>
                         <TableCell>Label</TableCell>

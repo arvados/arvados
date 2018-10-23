@@ -32,7 +32,8 @@ export const runProcessPanelReducer = (state = initialState, action: RunProcessP
             selectedWorkflow,
             inputs: getWorkflowInputs(parseWorkflowDefinition(selectedWorkflow)) || [],
         }),
-        SET_WORKFLOWS: workflows => ({ ...state, workflows, searchWorkflows: workflows }), 
+        SET_WORKFLOWS: workflows => ({ ...state, workflows, searchWorkflows: workflows }),
         SEARCH_WORKFLOWS: term => ({ ...state, searchWorkflows: state.workflows.filter(workflow => workflow.name.includes(term)) }),
+        RESET_RUN_PROCESS_PANEL: () => ({ ...initialState, processOwnerUuid: state.processOwnerUuid }),
         default: () => state
     });
