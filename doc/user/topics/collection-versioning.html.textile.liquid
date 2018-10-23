@@ -14,7 +14,7 @@ When collection versioning is enabled, updating certain collection attributes (@
 
 Every collection has a @version@ attribute that indicates its version number, starting from 1 on new collections and incrementing by 1 with every versionable update. All collections point to their most current version via the @current_version_uuid@ attribute, being @uuid@ and @current_version_uuid@ equal on those collection records that are the the current version of themselves. Note that the "current version" collection record doesn't change its @uuid@, "past versions" are saved as new records every time it's needed, pointing to the current collection record.
 
-There are two ways that this feature works:
+A version will be saved when one of the following conditions is true:
 
 One is by "configuring (system-wide) the collection's idle time":{{site.baseurl}}/admin/collection-versioning.html. This idle time is checked against the @modified_at@ attribute so that the version is saved when one or more of the previously enumerated attributes get updated and the @modified_at@ is at least at the configured idle time in the past. This way, a frequently updated collection won't create lots of version records that may not be useful.
 
@@ -24,7 +24,7 @@ h3. Collection's past versions behavior & limitations
 
 Past version collection records are read-only, if you need to make changes to one of them, the suggested approach is to copy it into a new collection before updating.
 
-Some attributes are automatically synced when they change on the current version: @owner_uuid@, @delete_at@, @trash_at@, @is_trashed@, @replication_desired@ and @storage_classes_desired@. This way, old versions follow the current one on several configurations. In the special case that a current version's @uuid@ gets updated, their past versions get also updated to point to the newer UUID. When a collection's current version is deleted, its past versions will follow it.
+Some attributes are automatically synced when they change on the current version: @owner_uuid@, @delete_at@, @trash_at@, @is_trashed@, @replication_desired@ and @storage_classes_desired@. This way, old versions follow the current one on several configurations. In the special case that a current version's @uuid@ gets updated, their past versions get also updated to point to the newer UUID. When a collection is deleted, any past versions are deleted along with it.
 
 Permissions on past versions are the same as their current version, the system does not allow attaching permission links to old versions. If you need to give special access to someone to a particular old version, the correct procedure is by copying it as a new collection.
 
