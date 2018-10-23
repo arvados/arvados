@@ -1143,6 +1143,9 @@ func (runner *ContainerRunner) WaitFinish() error {
 			ctrs, err := runner.Docker.ContainerList(context.Background(), dockertypes.ContainerListOptions{})
 			if err != nil {
 				runner.CrunchLog.Printf("error checking container list: %s", err)
+				if runner.checkBrokenNode(err) {
+					return
+				}
 				continue polling
 			}
 			for _, ctr := range ctrs {
