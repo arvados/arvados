@@ -72,7 +72,7 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
                 vcpus: 1,
                 ram: 1073741824,
             },
-            containerImage: 'arvados/jobs:1.1.4.20180618144723',
+            containerImage: 'arvados/jobs',
             cwd: '/var/spool/cwl',
             command: [
                 'arvados-cwl-runner',
