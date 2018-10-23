@@ -2,8 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { unionize } from "src/common/unionize";
-import { ofType, UnionOf } from "unionize";
+import { unionize, ofType, UnionOf } from "~/common/unionize";
 import { CollectionDirectory, CollectionFile } from "~/models/collection-file";
 import { Tree } from "~/models/tree";
 
