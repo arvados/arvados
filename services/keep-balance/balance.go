@@ -568,14 +568,14 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 				// Prefer a mount that satisfies the
 				// desired class.
 				return bal.mountsByClass[class][si.mnt]
-			} else if wanti, wantj := si.want, si.want; wanti != wantj {
+			} else if si.want != sj.want {
 				// Prefer a mount that will have a
 				// replica no matter what we do here
 				// -- either because it already has an
 				// untrashable replica, or because we
 				// already need it to satisfy a
 				// different storage class.
-				return slots[i].want
+				return si.want
 			} else if orderi, orderj := srvRendezvous[si.mnt.KeepService], srvRendezvous[sj.mnt.KeepService]; orderi != orderj {
 				// Prefer a better rendezvous
 				// position.
