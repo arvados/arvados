@@ -9,7 +9,7 @@ import { CollectionCreateFormDialogData } from '~/store/collections/collection-c
 import { FormDialog } from '~/components/form-dialog/form-dialog';
 import { require } from '~/validators/require';
 import { FileUploaderField } from '~/views-components/file-uploader/file-uploader';
-
+import { WarningCollection } from '~/components/warning-collection/warning-collection';
 
 type DialogCollectionFilesUploadProps = WithDialogProps<{}> & InjectedFormProps<CollectionCreateFormDialogData>;
 
@@ -21,11 +21,13 @@ export const DialogCollectionFilesUpload = (props: DialogCollectionFilesUploadPr
         {...props}
     />;
 
-const UploadCollectionFilesFields = () =>
+const UploadCollectionFilesFields = () => <>
     <Field
         name='files'
         validate={FILES_FIELD_VALIDATION}
-        component={FileUploaderField} />;
+        component={FileUploaderField} />
+    <WarningCollection text="Uploading new files will change content address." />
+</>;
 
 const FILES_FIELD_VALIDATION = [require];
 

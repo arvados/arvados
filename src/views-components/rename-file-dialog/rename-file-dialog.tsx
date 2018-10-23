@@ -10,6 +10,7 @@ import { FormDialog } from '~/components/form-dialog/form-dialog';
 import { DialogContentText } from '@material-ui/core';
 import { TextField } from '~/components/text-field/text-field';
 import { RENAME_FILE_DIALOG, RenameFileDialogData, renameFile } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
+import { WarningCollection } from '~/components/warning-collection/warning-collection';
 
 export const RenameFileDialog = compose(
     withDialog(RENAME_FILE_DIALOG),
@@ -35,4 +36,5 @@ const RenameDialogFormFields = (props: WithDialogProps<RenameFileDialogData>) =>
         name='name'
         component={TextField}
     />
+    <WarningCollection text="Renaming a file will change content adress." />
 </>;
