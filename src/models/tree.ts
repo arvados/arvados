@@ -86,7 +86,7 @@ export const getNodeDescendantsIds = (id: string, limit = Infinity) => <T>(tree:
     const node = getNode(id)(tree);
     const children = node ? node.children :
         id === TREE_ROOT_ID
-            ? getRootNodeChildren(tree)
+            ? getRootNodeChildrenIds(tree)
             : [];
 
     return children
@@ -207,10 +207,11 @@ const toggleParentNodeSelection = (id: string) => <T>(tree: Tree<T>) => {
 const mapNodeValue = <T, R>(mapFn: (value: T) => R) => (node: TreeNode<T>): TreeNode<R> =>
     ({ ...node, value: mapFn(node.value) });
 
-const getRootNodeChildren = <T>(tree: Tree<T>) =>
+const getRootNodeChildrenIds = <T>(tree: Tree<T>) =>
     Object
         .keys(tree)
         .filter(id => getNode(id)(tree)!.parent === TREE_ROOT_ID);
+
 
 const addChild = (parentId: string, childId: string) => <T>(tree: Tree<T>): Tree<T> => {
     const node = getNode(parentId)(tree);

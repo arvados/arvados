@@ -22,6 +22,8 @@ import { EmptyDetails } from "./empty-details";
 import { DetailsData } from "./details-data";
 import { DetailsResource } from "~/models/details";
 import { getResource } from '~/store/resources/resources';
+import { ResourceData } from "~/store/resources-data/resources-data-reducer";
+import { getResourceData } from "~/store/resources-data/resources-data";
 
 type CssRules = 'root' | 'container' | 'opened' | 'headerContainer' | 'headerIcon' | 'tabContainer';
 
@@ -57,13 +59,13 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-const getItem = (resource: DetailsResource): DetailsData => {
+const getItem = (resource: DetailsResource, resourceData?: ResourceData): DetailsData => {
     const res = resource || { kind: undefined, name: 'Projects' };
     switch (res.kind) {
         case ResourceKind.PROJECT:
             return new ProjectDetails(res);
         case ResourceKind.COLLECTION:
-            return new CollectionDetails(res);
+            return new CollectionDetails(res, resourceData);
         case ResourceKind.PROCESS:
             return new ProcessDetails(res);
         default:
@@ -71,11 +73,12 @@ const getItem = (resource: DetailsResource): DetailsData => {
     }
 };
 
-const mapStateToProps = ({ detailsPanel, resources }: RootState) => {
+const mapStateToProps = ({ detailsPanel, resources, resourcesData }: RootState) => {
     const resource = getResource(detailsPanel.resourceUuid)(resources) as DetailsResource;
+    const resourceData = getResourceData(detailsPanel.resourceUuid)(resourcesData);
     return {
         isOpened: detailsPanel.isOpened,
-        item: getItem(resource)
+        item: getItem(resource, resourceData)
     };
 };
 
