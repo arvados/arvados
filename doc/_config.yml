@@ -39,6 +39,7 @@ navbar:
       - user/topics/keep.html.textile.liquid
       - user/topics/arv-copy.html.textile.liquid
       - user/topics/storage-classes.html.textile.liquid
+      - user/topics/collection-versioning.html.textile.liquid
     - Running workflows at the command line:
       - user/cwl/cwl-runner.html.textile.liquid
       - user/cwl/cwl-run-options.html.textile.liquid
@@ -166,6 +167,8 @@ navbar:
     - Cloud:
       - admin/storage-classes.html.textile.liquid
       - admin/spot-instances.html.textile.liquid
+    - Other:
+      - admin/collection-versioning.html.textile.liquid
   installguide:
     - Overview:
       - install/index.html.textile.liquid
