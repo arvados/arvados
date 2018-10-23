@@ -22,7 +22,8 @@ export const runProcessPanelActions = unionize({
     SET_CURRENT_STEP: ofType<number>(),
     SET_WORKFLOWS: ofType<WorkflowResource[]>(),
     SET_SELECTED_WORKFLOW: ofType<WorkflowResource>(),
-    SEARCH_WORKFLOWS: ofType<string>()
+    SEARCH_WORKFLOWS: ofType<string>(),
+    RESET_RUN_PROCESS_PANEL: ofType<{}>(),
 });
 
 export interface RunProcessSecondStepDataFormProps {
@@ -37,6 +38,7 @@ export type RunProcessPanelAction = UnionOf<typeof runProcessPanelActions>;
 export const loadRunProcessPanel = () =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         try {
+            dispatch(runProcessPanelActions.RESET_RUN_PROCESS_PANEL());
             const response = await services.workflowService.list();
             dispatch(runProcessPanelActions.SET_WORKFLOWS(response.items));
         } catch (e) {

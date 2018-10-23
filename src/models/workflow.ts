@@ -41,6 +41,8 @@ export type CommandInputParameter =
     FileCommandInputParameter |
     DirectoryCommandInputParameter |
     StringArrayCommandInputParameter |
+    IntArrayCommandInputParameter |
+    FloatArrayCommandInputParameter |
     FileArrayCommandInputParameter |
     DirectoryArrayCommandInputParameter |
     EnumCommandInputParameter;
@@ -104,6 +106,8 @@ export type DirectoryCommandInputParameter = GenericCommandInputParameter<CWLTyp
 export type EnumCommandInputParameter = GenericCommandInputParameter<CommandInputEnumSchema, string>;
 
 export type StringArrayCommandInputParameter = GenericArrayCommandInputParameter<CWLType.STRING, string>;
+export type IntArrayCommandInputParameter = GenericArrayCommandInputParameter<CWLType.INT, string>;
+export type FloatArrayCommandInputParameter = GenericArrayCommandInputParameter<CWLType.FLOAT, string>;
 export type FileArrayCommandInputParameter = GenericArrayCommandInputParameter<CWLType.FILE, File>;
 export type DirectoryArrayCommandInputParameter = GenericArrayCommandInputParameter<CWLType.DIRECTORY, Directory>;
 

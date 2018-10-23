@@ -4,5 +4,5 @@
 
 export const getTagValue = (document: Document | Element, tagName: string, defaultValue: string) => {
     const [el] = Array.from(document.getElementsByTagName(tagName));
-    return el ? el.innerHTML : defaultValue;
+    return decodeURI(el ? el.innerHTML : defaultValue);
 };
