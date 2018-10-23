@@ -308,9 +308,9 @@ func (bal *Balancer) GetCurrentState(c *arvados.Client, pageSize, bufs int) erro
 				return
 			}
 			for _, mount := range mounts {
-				bal.logf("%s: add %d replicas to map", mount, len(idx))
+				bal.logf("%s: add %d entries to map", mount, len(idx))
 				bal.BlockStateMap.AddReplicas(mount, idx)
-				bal.logf("%s: added %d replicas", mount, len(idx))
+				bal.logf("%s: added %d entries to map at %dx (%d replicas)", mount, len(idx), mount.Replication, len(idx)*mount.Replication)
 			}
 			bal.logf("mount %s: index done", mounts[0])
 		}(mounts)
