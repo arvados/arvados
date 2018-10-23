@@ -520,7 +520,7 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 			slots = append(slots, slot{
 				mnt:  mnt,
 				repl: repl,
-				want: repl != nil && (mnt.ReadOnly || repl.Mtime >= bal.MinMtime),
+				want: repl != nil && mnt.ReadOnly,
 			})
 		}
 	}
@@ -716,7 +716,7 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 		// TODO: request a Touch if Mtime is duplicated.
 		var change int
 		switch {
-		case !underreplicated && slot.repl != nil && !slot.want && !unsafeToDelete[slot.repl.Mtime]:
+		case !underreplicated && !slot.want && slot.repl != nil && slot.repl.Mtime < bal.MinMtime && !unsafeToDelete[slot.repl.Mtime]:
 			slot.mnt.KeepService.AddTrash(Trash{
 				SizedDigest: blkid,
 				Mtime:       slot.repl.Mtime,
