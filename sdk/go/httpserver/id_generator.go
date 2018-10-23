@@ -53,3 +53,7 @@ func AddRequestIDs(h http.Handler) http.Handler {
 		h.ServeHTTP(w, req)
 	})
 }
+
+func GetRequestID(h http.Header) string {
+	return h.Get("X-Request-Id")
+}

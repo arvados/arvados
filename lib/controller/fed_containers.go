@@ -33,10 +33,23 @@ func remoteContainerRequestCreate(
 	defer req.Body.Close()
 	var request map[string]interface{}
 	err := json.NewDecoder(req.Body).Decode(&request)
+	if err != nil {
+		return false
+	}
+
+	crString, ok := request["container_request"].(string)
+	if ok {
+		var crJson map[string]interface{}
+		err := json.Unmarshal([]byte(crString), &crJson)
+		if err != nil {
+			return false
+		}
+
+		request["container_request"] = crJson
+	}
 
 	containerRequest, ok := request["container_request"].(map[string]interface{})
 	if !ok {
-		log.Printf("wah wah")
 		return false
 	}
 

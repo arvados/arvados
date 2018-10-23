@@ -178,7 +178,7 @@ func (s *searchRemoteClusterForPDH) filterRemoteClusterResponse(resp *http.Respo
 		// Suppress returning unsuccessful result.  Maybe
 		// another request will find it.
 		// TODO collect and return error responses.
-		*s.errors = append(*s.errors, fmt.Sprintf("Response from %q: %v", s.remoteID, resp.Status))
+		*s.errors = append(*s.errors, fmt.Sprintf("Response to %q from %q: %v", httpserver.GetRequestID(resp.Header), s.remoteID, resp.Status))
 		if resp.StatusCode != 404 {
 			// Got a non-404 error response, convert into BadGateway
 			*s.statusCode = http.StatusBadGateway
