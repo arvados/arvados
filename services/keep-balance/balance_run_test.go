@@ -17,7 +17,6 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"github.com/Sirupsen/logrus"
-
 	check "gopkg.in/check.v1"
 )
 
@@ -424,6 +423,7 @@ func (s *runSuite) TestDryRun(c *check.C) {
 	c.Check(err, check.IsNil)
 	for _, req := range collReqs.reqs {
 		c.Check(req.Form.Get("include_trash"), check.Equals, "true")
+		c.Check(req.Form.Get("include_old_versions"), check.Equals, "true")
 	}
 	c.Check(trashReqs.Count(), check.Equals, 0)
 	c.Check(pullReqs.Count(), check.Equals, 0)
