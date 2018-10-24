@@ -33,6 +33,8 @@ export const navigateTo = (uuid: string) =>
         }
     };
 
+export const navigateToRoot = push(Routes.ROOT);
+
 export const navigateToFavorites = push(Routes.FAVORITES);
 
 export const navigateToTrash = push(Routes.TRASH);

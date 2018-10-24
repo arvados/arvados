@@ -7,7 +7,7 @@ import * as ReactDOM from 'react-dom';
 import { Provider } from "react-redux";
 import { MainPanel } from './views/main-panel/main-panel';
 import './index.css';
-import { Route } from 'react-router';
+import { Route, Switch } from 'react-router';
 import createBrowserHistory from "history/createBrowserHistory";
 import { History } from "history";
 import { configureStore, RootStore } from './store/store';
@@ -91,10 +91,10 @@ fetchConfig()
                 <DragDropContextProvider backend={HTML5Backend}>
                     <Provider store={store}>
                         <ConnectedRouter history={history}>
-                            <div>
+                            <Switch>
                                 <Route path={Routes.TOKEN} component={TokenComponent} />
                                 <Route path={Routes.ROOT} component={MainPanelComponent} />
-                            </div>
+                            </Switch>
                         </ConnectedRouter>
                     </Provider>
                 </DragDropContextProvider>
