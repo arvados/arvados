@@ -30,11 +30,18 @@ func remoteContainerRequestCreate(
 		return false
 	}
 
-	defer req.Body.Close()
+	if req.Header.Get("Content-Type") != "application/json" {
+		httpserver.Error(w, "Expected Content-Type: application/json, got "+req.Header.Get("Content-Type"), http.StatusBadRequest)
+		return true
+	}
+
+	originalBody := req.Body
+	defer originalBody.Close()
 	var request map[string]interface{}
 	err := json.NewDecoder(req.Body).Decode(&request)
 	if err != nil {
-		return false
+		httpserver.Error(w, err.Error(), http.StatusBadRequest)
+		return true
 	}
 
 	crString, ok := request["container_request"].(string)
@@ -42,7 +49,8 @@ func remoteContainerRequestCreate(
 		var crJson map[string]interface{}
 		err := json.Unmarshal([]byte(crString), &crJson)
 		if err != nil {
-			return false
+			httpserver.Error(w, err.Error(), http.StatusBadRequest)
+			return true
 		}
 
 		request["container_request"] = crJson
@@ -50,7 +58,8 @@ func remoteContainerRequestCreate(
 
 	containerRequest, ok := request["container_request"].(map[string]interface{})
 	if !ok {
-		return false
+		// Use toplevel object as the container_request object
+		containerRequest = request
 	}
 
 	// If runtime_token is not set, create a new token
@@ -68,7 +77,8 @@ func remoteContainerRequestCreate(
 		}
 
 		if len(currentUser.Authorization.Scopes) != 1 || currentUser.Authorization.Scopes[0] != "all" {
-			return false
+			httpserver.Error(w, "Token scope is not [all]", http.StatusForbidden)
+			return true
 		}
 
 		newtok, err := h.handler.createAPItoken(req, currentUser.UUID, nil)
