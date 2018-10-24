@@ -11,17 +11,26 @@ import {
     WithStyles,
     Tooltip,
     InputAdornment, Input,
-    ListItem, ListItemText, ListItemSecondaryAction,
     ClickAwayListener
 } from '@material-ui/core';
 import SearchIcon from '@material-ui/icons/Search';
-import { RemoveIcon, EditSavedQueryIcon } from '~/components/icon/icon';
-import { SearchView } from '~/store/search-bar/search-bar-reducer';
-import { SearchBarBasicView } from '~/views-components/search-bar/search-bar-basic-view';
-import { SearchBarAdvancedView } from '~/views-components/search-bar/search-bar-advanced-view';
-import { SearchBarAutocompleteView, SearchBarAutocompleteViewDataProps } from '~/views-components/search-bar/search-bar-autocomplete-view';
 import { ArvadosTheme } from '~/common/custom-theme';
-import { SearchBarAdvanceFormData } from '~/models/search-bar';
+import { SearchView } from '~/store/search-bar/search-bar-reducer';
+import {
+    SearchBarBasicView,
+    SearchBarBasicViewDataProps,
+    SearchBarBasicViewActionProps
+} from '~/views-components/search-bar/search-bar-basic-view';
+import {
+    SearchBarAutocompleteView,
+    SearchBarAutocompleteViewDataProps,
+    SearchBarAutocompleteViewActionProps
+} from '~/views-components/search-bar/search-bar-autocomplete-view';
+import {
+    SearchBarAdvancedView,
+    SearchBarAdvancedViewDataProps,
+    SearchBarAdvancedViewActionProps
+} from '~/views-components/search-bar/search-bar-advanced-view';
 
 type CssRules = 'container' | 'containerSearchViewOpened' | 'input' | 'view';
 
@@ -49,89 +58,42 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => {
     };
 };
 
-type SearchBarDataProps = {
-    searchValue: string;
+export type SearchBarDataProps = SearchBarViewDataProps
+    & SearchBarAutocompleteViewDataProps
+    & SearchBarAdvancedViewDataProps
+    & SearchBarBasicViewDataProps;
+
+interface SearchBarViewDataProps {
     currentView: string;
     isPopoverOpen: boolean;
-    savedQueries: SearchBarAdvanceFormData[];
-    tags: any;
-} & SearchBarAutocompleteViewDataProps;
-
-interface SearchBarActionProps {
-    onSearch: (value: string) => any;
-    searchDataOnEnter: (value: string) => void;
     debounce?: number;
-    onSetView: (currentView: string) => void;
-    closeView: () => void;
-    saveRecentQuery: (query: string) => void;
-    loadRecentQueries: () => string[];
-    saveQuery: (data: SearchBarAdvanceFormData) => void;
-    deleteSavedQuery: (id: number) => void;
-    openSearchView: () => void;
-    navigateTo: (uuid: string) => void;
-    editSavedQuery: (data: SearchBarAdvanceFormData, id: number) => void;
 }
 
-type SearchBarProps = SearchBarDataProps & SearchBarActionProps & WithStyles<CssRules>;
+export type SearchBarActionProps = SearchBarViewActionProps
+    & SearchBarAutocompleteViewActionProps
+    & SearchBarAdvancedViewActionProps
+    & SearchBarBasicViewActionProps;
+
+interface SearchBarViewActionProps {
+    onSearch: (value: string) => any;
+    searchDataOnEnter: (value: string) => void;
+    onSetView: (currentView: string) => void;
+    closeView: () => void;
+    openSearchView: () => void;
+    saveRecentQuery: (query: string) => void;
+    loadRecentQueries: () => string[];
+}
+
+type SearchBarViewProps = SearchBarDataProps & SearchBarActionProps & WithStyles<CssRules>;
 
 interface SearchBarState {
     value: string;
 }
 
-interface RenderRecentQueriesProps {
-    text: string;
-    onSearch: (searchValue: string) => void;
-}
-
-export const RenderRecentQueries = (props: RenderRecentQueriesProps) => {
-    return <ListItem button>
-        <ListItemText secondary={props.text} onClick={() => props.onSearch(props.text)} />
-    </ListItem>;
-};
-
-interface RenderAutocompleteItemsProps {
-    text: string | JSX.Element;
-    navigateTo: (uuid: string) => void;
-    uuid: string;
-}
-
-export const RenderAutocompleteItems = (props: RenderAutocompleteItemsProps) => {
-    return <ListItem button>
-        <ListItemText secondary={props.text} onClick={() => props.navigateTo(props.uuid)} />
-    </ListItem>;
-};
-
-interface RenderSavedQueriesProps {
-    text: string;
-    id: number;
-    deleteSavedQuery: (id: number) => void;
-    onSearch: (searchValue: string) => void;
-    editSavedQuery: (data: SearchBarAdvanceFormData, id: number) => void;
-    data: SearchBarAdvanceFormData;
-}
-
-export const RenderSavedQueries = (props: RenderSavedQueriesProps) => {
-    return <ListItem button>
-        <ListItemText secondary={props.text} onClick={() => props.onSearch(props.text)} />
-        <ListItemSecondaryAction>
-            <Tooltip title="Edit">
-                <IconButton aria-label="Edit" onClick={() => props.editSavedQuery(props.data, props.id)}>
-                    <EditSavedQueryIcon />
-                </IconButton>
-            </Tooltip>
-            <Tooltip title="Remove">
-                <IconButton aria-label="Remove" onClick={() => props.deleteSavedQuery(props.id)}>
-                    <RemoveIcon />
-                </IconButton>
-            </Tooltip>
-        </ListItemSecondaryAction>
-    </ListItem>;
-};
-
 export const DEFAULT_SEARCH_DEBOUNCE = 1000;
 
 export const SearchBarView = withStyles(styles)(
-    class extends React.Component<SearchBarProps> {
+    class extends React.Component<SearchBarViewProps> {
         state: SearchBarState = {
             value: ""
         };
@@ -172,7 +134,7 @@ export const SearchBarView = withStyles(styles)(
             this.setState({ value: this.props.searchValue });
         }
 
-        componentWillReceiveProps(nextProps: SearchBarProps) {
+        componentWillReceiveProps(nextProps: SearchBarViewProps) {
             if (nextProps.searchValue !== this.props.searchValue) {
                 this.setState({ value: nextProps.searchValue });
             }
@@ -183,19 +145,27 @@ export const SearchBarView = withStyles(styles)(
         }
 
         getView = (currentView: string) => {
-            const { onSetView, loadRecentQueries, savedQueries, deleteSavedQuery, searchValue, searchResults, saveQuery, onSearch, navigateTo, editSavedQuery, tags } = this.props;
+            const { onSetView, loadRecentQueries, savedQueries, deleteSavedQuery, searchValue, 
+                searchResults, saveQuery, onSearch, navigateTo, editSavedQuery, tags } = this.props;
             switch (currentView) {
-                case SearchView.BASIC:
-                    return <SearchBarBasicView setView={onSetView} recentQueries={loadRecentQueries} savedQueries={savedQueries} deleteSavedQuery={deleteSavedQuery} onSearch={onSearch} editSavedQuery={editSavedQuery} />;
-                case SearchView.ADVANCED:
-                    return <SearchBarAdvancedView setView={onSetView} saveQuery={saveQuery} tags={tags} />;
                 case SearchView.AUTOCOMPLETE:
                     return <SearchBarAutocompleteView
                         navigateTo={navigateTo}
                         searchResults={searchResults}
                         searchValue={searchValue} />;
+                case SearchView.ADVANCED:
+                    return <SearchBarAdvancedView
+                        onSetView={onSetView}
+                        saveQuery={saveQuery}
+                        tags={tags} />;
                 default:
-                    return <SearchBarBasicView setView={onSetView} recentQueries={loadRecentQueries} savedQueries={savedQueries} deleteSavedQuery={deleteSavedQuery} onSearch={onSearch} editSavedQuery={editSavedQuery} />;
+                    return <SearchBarBasicView
+                        onSetView={onSetView}
+                        onSearch={onSearch}
+                        loadRecentQueries={loadRecentQueries}
+                        savedQueries={savedQueries}
+                        deleteSavedQuery={deleteSavedQuery}
+                        editSavedQuery={editSavedQuery} />;
             }
         }
 
@@ -207,6 +177,8 @@ export const SearchBarView = withStyles(styles)(
             this.props.loadRecentQueries();
         }
 
+        // ToDo: nie pokazywac autocomplete jezeli jestesmy w advance
+        // currentView ze state.searchBar.currentView
         handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
             clearTimeout(this.timeout);
             this.setState({ value: event.target.value });
