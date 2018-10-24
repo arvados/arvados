@@ -898,7 +898,8 @@ def add_arv_hints():
         "http://arvados.org/cwl#APIRequirement",
         "http://commonwl.org/cwltool#LoadListingRequirement",
         "http://arvados.org/cwl#IntermediateOutput",
-        "http://arvados.org/cwl#ReuseRequirement"
+        "http://arvados.org/cwl#ReuseRequirement",
+        "http://arvados.org/cwl#ClusterTarget"
     ])
 
 def exit_signal_handler(sigcode, frame):
