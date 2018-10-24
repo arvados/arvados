@@ -53,6 +53,7 @@ import { collectionPanelActions } from "~/store/collection-panel/collection-pane
 import { CollectionResource } from "~/models/collection";
 import { searchResultsPanelActions, loadSearchResultsPanel } from '~/store/search-results-panel/search-results-panel-actions';
 import { searchResultsPanelColumns } from '~/views/search-results-panel/search-results-panel-view';
+import * as uuid from 'uuid/v4';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -256,12 +257,19 @@ export const updateCollection = (data: collectionUpdateActions.CollectionUpdateF
 export const copyCollection = (data: CopyFormDialogData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         try {
+            const copyToProject = getResource(data.ownerUuid)(getState().resources);
             const collection = await dispatch<any>(collectionCopyActions.copyCollection(data));
-            dispatch<any>(updateResources([collection]));
-            dispatch<any>(reloadProjectMatchingUuid([collection.ownerUuid]));
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been copied.', hideDuration: 2000 }));
+            if (copyToProject && collection) {
+                dispatch<any>(reloadProjectMatchingUuid([copyToProject.uuid]));
+                dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: 'Collection has been copied.',
+                    hideDuration: 3000,
+                    kind: SnackbarKind.SUCCESS,
+                    link: collection.ownerUuid
+                }));
+            }
         } catch (e) {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000 }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000, kind: SnackbarKind.ERROR }));
         }
     };
 

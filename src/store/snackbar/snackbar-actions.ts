@@ -8,6 +8,7 @@ export interface SnackbarMessage {
     message: string;
     hideDuration: number;
     kind: SnackbarKind;
+    link?: string;
 }
 
 export enum SnackbarKind {
@@ -18,7 +19,7 @@ export enum SnackbarKind {
 }
 
 export const snackbarActions = unionize({
-    OPEN_SNACKBAR: ofType<{message: string; hideDuration?: number, kind?: SnackbarKind}>(),
+    OPEN_SNACKBAR: ofType<{message: string; hideDuration?: number, kind?: SnackbarKind, link?: string}>(),
     CLOSE_SNACKBAR: ofType<{}>(),
     SHIFT_MESSAGES: ofType<{}>()
 });

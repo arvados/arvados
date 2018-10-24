@@ -54,6 +54,7 @@ type SearchBarDataProps = {
     currentView: string;
     isPopoverOpen: boolean;
     savedQueries: SearchBarAdvanceFormData[];
+    tags: any;
 } & SearchBarAutocompleteViewDataProps;
 
 interface SearchBarActionProps {
@@ -182,12 +183,12 @@ export const SearchBarView = withStyles(styles)(
         }
 
         getView = (currentView: string) => {
-            const { onSetView, loadRecentQueries, savedQueries, deleteSavedQuery, searchValue, searchResults, saveQuery, onSearch, navigateTo, editSavedQuery } = this.props;
+            const { onSetView, loadRecentQueries, savedQueries, deleteSavedQuery, searchValue, searchResults, saveQuery, onSearch, navigateTo, editSavedQuery, tags } = this.props;
             switch (currentView) {
                 case SearchView.BASIC:
                     return <SearchBarBasicView setView={onSetView} recentQueries={loadRecentQueries} savedQueries={savedQueries} deleteSavedQuery={deleteSavedQuery} onSearch={onSearch} editSavedQuery={editSavedQuery} />;
                 case SearchView.ADVANCED:
-                    return <SearchBarAdvancedView setView={onSetView} saveQuery={saveQuery} />;
+                    return <SearchBarAdvancedView setView={onSetView} saveQuery={saveQuery} tags={tags} />;
                 case SearchView.AUTOCOMPLETE:
                     return <SearchBarAutocompleteView
                         navigateTo={navigateTo}

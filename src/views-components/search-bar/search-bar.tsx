@@ -15,19 +15,20 @@ import {
     openSearchView,
     closeSearchView,
     navigateToItem,
-    editSavedQuery
+    editSavedQuery,
+    searchDataOnEnter
 } from '~/store/search-bar/search-bar-actions';
 import { SearchBarView } from '~/views-components/search-bar/search-bar-view';
 import { SearchBarAdvanceFormData } from '~/models/search-bar';
-import { searchDataOnEnter } from '../../store/search-bar/search-bar-actions';
 
-const mapStateToProps = ({ searchBar }: RootState) => {
+const mapStateToProps = ({ searchBar, form }: RootState) => {
     return {
         searchValue: searchBar.searchValue,
         currentView: searchBar.currentView,
         isPopoverOpen: searchBar.open,
         searchResults: searchBar.searchResults,
-        savedQueries: searchBar.savedQueries
+        savedQueries: searchBar.savedQueries,
+        tags: form.searchBarAdvanceFormName
     };
 };
 

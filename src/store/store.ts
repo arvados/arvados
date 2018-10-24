@@ -42,6 +42,7 @@ import { appInfoReducer } from '~/store/app-info/app-info-reducer';
 import { searchBarReducer } from './search-bar/search-bar-reducer';
 import { SEARCH_RESULTS_PANEL_ID } from '~/store/search-results-panel/search-results-panel-actions';
 import { SearchResultsMiddlewareService } from './search-results-panel/search-results-middleware-service';
+import { resourcesDataReducer } from "~/store/resources-data/resources-data-reducer";
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -101,6 +102,7 @@ const createRootReducer = (services: ServiceRepository) => combineReducers({
     processLogsPanel: processLogsPanelReducer,
     properties: propertiesReducer,
     resources: resourcesReducer,
+    resourcesData: resourcesDataReducer,
     router: routerReducer,
     snackbar: snackbarReducer,
     treePicker: treePickerReducer,
