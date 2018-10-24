@@ -250,7 +250,7 @@ class Container < ArvadosModel
     if !coll
       if loc = Keep::Locator.parse(container_image)
         loc.strip_hints!
-        if !Collection.where(portable_data_hash: loc.to_s).any?
+        if !Collection.readable_by(current_user).where(portable_data_hash: loc.to_s).any?
           # Allow bare pdh that doesn't exist in the local database so
           # that federated container requests which refer to remotely
           # stored containers will validate.
