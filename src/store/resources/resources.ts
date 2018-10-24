@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Resource } from "~/models/resource";
-import { ResourceKind } from '../../models/resource';
+import { ResourceKind } from '~/models/resource';
 
 export type ResourcesState = { [key: string]: Resource };
 

@@ -5,7 +5,7 @@
 import * as React from 'react';
 import { CollectionIcon } from '~/components/icon/icon';
 import { CollectionResource } from '~/models/collection';
-import { formatDate } from '~/common/formatters';
+import { formatDate, formatFileSize } from '~/common/formatters';
 import { resourceLabel } from '~/common/labels';
 import { ResourceKind } from '~/models/resource';
 import { DetailsData } from "./details-data";
@@ -28,8 +28,8 @@ export class CollectionDetails extends DetailsData<CollectionResource> {
             <DetailsAttribute label='Collection UUID' link={this.item.uuid} value={this.item.uuid} />
             <DetailsAttribute label='Content address' link={this.item.portableDataHash} value={this.item.portableDataHash} />
             {/* Missing attrs */}
-            <DetailsAttribute label='Number of files' value='20' />
-            <DetailsAttribute label='Content size' value='54 MB' />
+            <DetailsAttribute label='Number of files' value={this.data && this.data.fileCount} />
+            <DetailsAttribute label='Content size' value={formatFileSize(this.data && this.data.fileSize)} />
         </div>;
     }
 }

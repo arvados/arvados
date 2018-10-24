@@ -22,6 +22,9 @@ import { snackbarActions } from '~/store/snackbar/snackbar-actions';
 import { getResource } from '~/store/resources/resources';
 import { openContextMenu } from '~/store/context-menu/context-menu-actions';
 import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
+import { formatFileSize } from "~/common/formatters";
+import { getResourceData } from "~/store/resources-data/resources-data";
+import { ResourceData } from "~/store/resources-data/resources-data-reducer";
 
 type CssRules = 'card' | 'iconHeader' | 'tag' | 'copyIcon' | 'label' | 'value';
 
@@ -54,6 +57,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 interface CollectionPanelDataProps {
     item: CollectionResource;
+    data: ResourceData;
 }
 
 type CollectionPanelProps = CollectionPanelDataProps & DispatchProp
@@ -62,14 +66,13 @@ type CollectionPanelProps = CollectionPanelDataProps & DispatchProp
 
 export const CollectionPanel = withStyles(styles)(
     connect((state: RootState, props: RouteComponentProps<{ id: string }>) => {
-        const collection = getResource(props.match.params.id)(state.resources);
-        return {
-            item: collection
-        };
+        const item = getResource(props.match.params.id)(state.resources);
+        const data = getResourceData(props.match.params.id)(state.resourcesData);
+        return { item, data };
     })(
         class extends React.Component<CollectionPanelProps> {
             render() {
-                const { classes, item } = this.props;
+                const { classes, item, data } = this.props;
                 return item
                     ? <>
                         <Card className={classes.card}>
@@ -99,9 +102,9 @@ export const CollectionPanel = withStyles(styles)(
                                             </Tooltip>
                                         </DetailsAttribute>
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                            label='Number of files' value='14' />
+                                            label='Number of files' value={data && data.fileCount} />
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                            label='Content size' value='54 MB' />
+                                            label='Content size' value={data && formatFileSize(data.fileSize)} />
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                                             label='Owner' value={item && item.ownerUuid} />
                                     </Grid>

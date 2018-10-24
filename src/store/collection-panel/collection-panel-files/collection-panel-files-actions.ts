@@ -14,6 +14,7 @@ import { filterCollectionFilesBySelection } from './collection-panel-files-state
 import { startSubmit, stopSubmit, reset } from 'redux-form';
 import { getDialog } from "~/store/dialog/dialog-reducer";
 import { getFileFullPath } from "~/services/collection-service/collection-service-files-response";
+import { resourcesDataActions } from "~/store/resources-data/resources-data-actions";
 
 export const collectionPanelFilesAction = unionize({
     SET_COLLECTION_FILES: ofType<CollectionFilesTree>(),
@@ -29,6 +30,7 @@ export const loadCollectionFiles = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const files = await services.collectionService.files(uuid);
         dispatch(collectionPanelFilesAction.SET_COLLECTION_FILES(files));
+        dispatch(resourcesDataActions.SET_FILES({ uuid, files }));
     };
 
 export const removeCollectionFiles = (filePaths: string[]) =>

@@ -27,12 +27,12 @@ export class ProjectDetails extends DetailsData<ProjectResource> {
             <DetailsAttribute label='Last modified' value={formatDate(this.item.modifiedAt)} />
             <DetailsAttribute label='Created at' value={formatDate(this.item.createdAt)} />
             {/* Missing attr */}
-            <DetailsAttribute label='File size' value='1.4 GB' />
+            {/*<DetailsAttribute label='File size' value='1.4 GB' />*/}
             <DetailsAttribute label='Description'>
-                {this.item.description ? 
+                {this.item.description ?
                     <RichTextEditorLink
                         title={`Description of ${this.item.name}`}
-                        content={this.item.description} 
+                        content={this.item.description}
                         label='Show full description' />
                     : '---'
                 }
