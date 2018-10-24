@@ -250,6 +250,15 @@ class ArvadosContainer(JobBase):
         if self.timelimit is not None:
             scheduling_parameters["max_run_time"] = self.timelimit
 
+        extra_submit_params = {}
+        cluster_target_req, _ = self.get_requirement("http://arvados.org/cwl#ClusterTarget")
+        if cluster_target_req:
+            cluster_id = cluster_target_req.get("clusterID")
+            if cluster_id:
+                extra_submit_params["cluster_id"] = cluster_id
+            if cluster_target_req.get("ownerUUID"):
+                container_request["owner_uuid"] = cluster_target_req.get("ownerUUID")
+
         container_request["output_name"] = "Output for step %s" % (self.name)
         container_request["output_ttl"] = self.output_ttl
         container_request["mounts"] = mounts
@@ -277,11 +286,13 @@ class ArvadosContainer(JobBase):
             if runtimeContext.submit_request_uuid:
                 response = self.arvrunner.api.container_requests().update(
                     uuid=runtimeContext.submit_request_uuid,
-                    body=container_request
+                    body=container_request,
+                    **extra_submit_params
                 ).execute(num_retries=self.arvrunner.num_retries)
             else:
                 response = self.arvrunner.api.container_requests().create(
-                    body=container_request
+                    body=container_request,
+                    **extra_submit_params
                 ).execute(num_retries=self.arvrunner.num_retries)
 
             self.uuid = response["uuid"]
