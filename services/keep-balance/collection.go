@@ -36,7 +36,8 @@ func EachCollection(c *arvados.Client, pageSize int, f func(arvados.Collection) 
 	}
 
 	expectCount, err := countCollections(c, arvados.ResourceListParams{
-		IncludeTrash: true,
+		IncludeTrash:       true,
+		IncludeOldVersions: true,
 	})
 	if err != nil {
 		return err
@@ -48,11 +49,12 @@ func EachCollection(c *arvados.Client, pageSize int, f func(arvados.Collection) 
 		limit = 1<<31 - 1
 	}
 	params := arvados.ResourceListParams{
-		Limit:        &limit,
-		Order:        "modified_at, uuid",
-		Count:        "none",
-		Select:       []string{"uuid", "unsigned_manifest_text", "modified_at", "portable_data_hash", "replication_desired"},
-		IncludeTrash: true,
+		Limit:              &limit,
+		Order:              "modified_at, uuid",
+		Count:              "none",
+		Select:             []string{"uuid", "unsigned_manifest_text", "modified_at", "portable_data_hash", "replication_desired"},
+		IncludeTrash:       true,
+		IncludeOldVersions: true,
 	}
 	var last arvados.Collection
 	var filterTime time.Time
@@ -140,7 +142,8 @@ func EachCollection(c *arvados.Client, pageSize int, f func(arvados.Collection) 
 			Attr:     "modified_at",
 			Operator: "<=",
 			Operand:  filterTime}},
-		IncludeTrash: true,
+		IncludeTrash:       true,
+		IncludeOldVersions: true,
 	}); err != nil {
 		return err
 	} else if callCount < checkCount {
