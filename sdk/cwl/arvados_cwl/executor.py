@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 import argparse
 import logging
 import os
@@ -618,7 +622,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
             return (runnerjob.uuid, "success")
 
         current_container = get_current_container(self.api, self.num_retries, logger)
-        if current:
+        if current_container:
             logger.info("Running inside container %s", current_container.get("uuid"))
 
         self.poll_api = arvados.api('v1', timeout=runtimeContext.http_timeout)
