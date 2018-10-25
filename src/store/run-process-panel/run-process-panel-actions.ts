@@ -15,7 +15,8 @@ import { createWorkflowMounts } from '~/models/process';
 import { ContainerRequestState } from '~/models/container-request';
 import { navigateToProcess } from '../navigation/navigation-action';
 import { RunProcessAdvancedFormData, RUN_PROCESS_ADVANCED_FORM } from '~/views/run-process-panel/run-process-advanced-form';
-import { isNotProjectItem } from '~/store/projects/project-create-actions';
+import { isItemNotInProject, isProjectOrRunProcessRoute } from '~/store/projects/project-create-actions';
+import { matchProjectRoute } from '~/routes/routes';
 
 export const runProcessPanelActions = unionize({
     SET_PROCESS_OWNER_UUID: ofType<string>(),
@@ -53,16 +54,24 @@ export const setWorkflow = (workflow: WorkflowResource) =>
 
 export const goToStep = (step: number) => runProcessPanelActions.SET_CURRENT_STEP(step);
 
+const isRunProcessRoute = ({ router }: RootState) => {
+    const pathname = router.location ? router.location.pathname : '';
+    const match = matchProjectRoute(pathname);
+    return !!match;
+};
+
 export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
     const state = getState();
     const basicForm = getFormValues(RUN_PROCESS_BASIC_FORM)(state) as RunProcessBasicFormData;
     const inputsForm = getFormValues(RUN_PROCESS_INPUTS_FORM)(state) as WorkflowInputsData;
     const advancedForm = getFormValues(RUN_PROCESS_ADVANCED_FORM)(state) as RunProcessAdvancedFormData;
     const userUuid = getState().auth.user!.uuid;
+    const router = getState();
+    const properties = getState().properties;
     const { processOwnerUuid, selectedWorkflow } = state.runProcessPanel;
     if (selectedWorkflow) {
         const newProcessData = {
-            ownerUuid: isNotProjectItem ? userUuid : processOwnerUuid,
+            ownerUuid: isItemNotInProject(properties) || !isProjectOrRunProcessRoute(router) ? userUuid : processOwnerUuid,
             name: basicForm.name,
             description: basicForm.description,
             state: ContainerRequestState.COMMITTED,
