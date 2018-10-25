@@ -29,6 +29,9 @@ end
 def selenium_opts
   {
     port: available_port('selenium'),
+    desired_capabilities: Selenium::WebDriver::Remote::Capabilities.firefox(
+      acceptInsecureCerts: true,
+    ),
   }
 end
 
