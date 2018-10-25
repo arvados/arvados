@@ -342,6 +342,25 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
                 mock.responses[0].getopt(pycurl.SSL_VERIFYPEER),
                 None)
 
+    def test_refresh_signature(self):
+        blk_digest = '6f5902ac237024bdd0c176cb93063dc4+11'
+        blk_sig = 'da39a3ee5e6b4b0d3255bfef95601890afd80709@53bed294'
+        local_loc = blk_digest+'+A'+blk_sig
+        remote_loc = blk_digest+'+R'+blk_sig
+        api_client = self.mock_keep_services(count=1)
+        headers = {'X-Keep-Locator':local_loc}
+        with tutil.mock_keep_responses('', 200, **headers):
+            # Check that the translated locator gets returned
+            keep_client = arvados.KeepClient(api_client=api_client)
+            self.assertEqual(local_loc, keep_client.refresh_signature(remote_loc))
+            # Check that refresh_signature() uses the correct method and headers
+            keep_client._get_or_head = mock.MagicMock()
+            keep_client.refresh_signature(remote_loc)
+            args, kwargs = keep_client._get_or_head.call_args_list[0]
+            self.assertIn(remote_loc, args)
+            self.assertEqual("HEAD", kwargs['method'])
+            self.assertIn('X-Keep-Signature', kwargs['headers'])
+
     # test_*_timeout verify that KeepClient instructs pycurl to use
     # the appropriate connection and read timeouts. They don't care
     # whether pycurl actually exhibits the expected timeout behavior
@@ -933,16 +952,6 @@ class KeepClientGatewayTestCase(unittest.TestCase, tutil.ApiClientMock):
         self.assertEqual(self.gateway_roots[0]+locator,
                          MockCurl.return_value.getopt(pycurl.URL).decode())
         self.assertEqual(True, self.keepClient.head(locator))
-
-    @mock.patch('pycurl.Curl')
-    def test_refresh_signature(self, MockCurl):
-        blk_digest = '6f5902ac237024bdd0c176cb93063dc4+11'
-        blk_sig = 'da39a3ee5e6b4b0d3255bfef95601890afd80709@53bed294'
-        MockCurl.return_value = tutil.FakeCurl.make(
-            code=200, body='', headers={'X-Keep-Locator':blk_digest+'+A'+blk_sig})
-        self.mock_disks_and_gateways()
-        locator = blk_digest+'+R'+blk_sig
-        self.assertEqual(blk_digest+'+A'+blk_sig, self.keepClient.refresh_signature(locator))
 
     @mock.patch('pycurl.Curl')
     def test_get_with_gateway_hints_in_order(self, MockCurl):
