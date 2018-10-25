@@ -116,11 +116,9 @@ export const DataTableFilters = withStyles(styles)(
                         <List dense>
                             {this.state.filters.map((filter, index) =>
                                 <ListItem
-                                    button
-                                    key={index}
-                                    onClick={this.toggleFilter(filter)}>
+                                    key={index}>
                                     <Checkbox
-                                        disableRipple
+                                        onClick={this.toggleFilter(filter)}
                                         color="primary"
                                         checked={filter.selected}
                                         className={classes.checkbox} />
