@@ -9,7 +9,7 @@ import { dialogActions } from "~/store/dialog/dialog-actions";
 import { getCommonResourceServiceError, CommonResourceServiceError } from '~/services/common-service/common-resource-service';
 import { ProjectResource } from '~/models/project';
 import { ServiceRepository } from '~/services/services';
-import { matchProjectRoute } from '~/routes/routes';
+import { matchProjectRoute, matchRunProcessRoute } from '~/routes/routes';
 
 export interface ProjectCreateFormDialogData {
     ownerUuid: string;
@@ -19,32 +19,26 @@ export interface ProjectCreateFormDialogData {
 
 export const PROJECT_CREATE_FORM_NAME = 'projectCreateFormName';
 
-export const isProjectRoute = ({ router }: RootState) => {
+export const isProjectOrRunProcessRoute = ({ router }: RootState) => {
     const pathname = router.location ? router.location.pathname : '';
-    const match = matchProjectRoute(pathname);
-    return !!match;
+    const matchProject = matchProjectRoute(pathname);
+    const matchRunProcess = matchRunProcessRoute(pathname);
+    return Boolean(matchProject || matchRunProcess);
 };
 
-interface Properties {
-    breadcrumbs: Array<{ uuid: string, label: string }>;
-}
-
-export const isItemNotInProject = (properties: Properties) => {
+export const isItemNotInProject = (properties: any) => {
     if (properties.breadcrumbs) {
-        const isItemSharedWithMe = properties.breadcrumbs[0].label !== 'Projects';
-        return isItemSharedWithMe;
+        return Boolean(properties.breadcrumbs[0].label !== 'Projects');
     } else {
-        return false;
+        return ;
     }
-};
-
-export const isNotProjectItem = () => {
-    return isItemNotInProject || !isProjectRoute;
 };
 
 export const openProjectCreateDialog = (ownerUuid: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        if (isNotProjectItem) {
+        const router = getState();
+        const properties = getState().properties;
+        if (isItemNotInProject(properties) || !isProjectOrRunProcessRoute(router)) {
             const userUuid = getState().auth.user!.uuid;
             dispatch(initialize(PROJECT_CREATE_FORM_NAME, { userUuid }));
         } else {
