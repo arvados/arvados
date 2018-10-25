@@ -621,6 +621,10 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
             runnerjob.run(submitargs)
             return (runnerjob.uuid, "success")
 
+        current_container = get_current_container(self.api, self.num_retries, logger)
+        if current:
+            logger.info("Running inside container %s", current_container.get("uuid"))
+
         self.poll_api = arvados.api('v1', timeout=runtimeContext.http_timeout)
         self.polling_thread = threading.Thread(target=self.poll_states)
         self.polling_thread.start()
