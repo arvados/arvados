@@ -263,7 +263,7 @@ func (bal *Balancer) GetCurrentState(c *arvados.Client, pageSize, bufs int) erro
 	bal.DefaultReplication = dd.DefaultCollectionReplication
 	bal.MinMtime = time.Now().UnixNano() - dd.BlobSignatureTTL*1e9
 
-	errs := make(chan error, 2+len(bal.KeepServices))
+	errs := make(chan error, 1)
 	wg := sync.WaitGroup{}
 
 	// When a device is mounted more than once, we will get its
@@ -298,7 +298,10 @@ func (bal *Balancer) GetCurrentState(c *arvados.Client, pageSize, bufs int) erro
 			bal.logf("mount %s: retrieve index from %s", mounts[0], mounts[0].KeepService)
 			idx, err := mounts[0].KeepService.IndexMount(c, mounts[0].UUID, "")
 			if err != nil {
-				errs <- fmt.Errorf("%s: retrieve index: %v", mounts[0], err)
+				select {
+				case errs <- fmt.Errorf("%s: retrieve index: %v", mounts[0], err):
+				default:
+				}
 				return
 			}
 			if len(errs) > 0 {
@@ -330,7 +333,10 @@ func (bal *Balancer) GetCurrentState(c *arvados.Client, pageSize, bufs int) erro
 		for coll := range collQ {
 			err := bal.addCollection(coll)
 			if err != nil {
-				errs <- err
+				select {
+				case errs <- err:
+				default:
+				}
 				for range collQ {
 				}
 				return
@@ -360,7 +366,10 @@ func (bal *Balancer) GetCurrentState(c *arvados.Client, pageSize, bufs int) erro
 			})
 		close(collQ)
 		if err != nil {
-			errs <- err
+			select {
+			case errs <- err:
+			default:
+			}
 		}
 	}()
 
