@@ -3,10 +3,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from cwltool.context import LoadingContext, RuntimeContext
+from collections import namedtuple
 
 class ArvLoadingContext(LoadingContext):
     def __init__(self, kwargs=None):
         super(ArvLoadingContext, self).__init__(kwargs)
+
+ClusterTarget = namedtuple("ClusterTarget", ("instance", "cluster_id", "owner_uuid"))
 
 class ArvRuntimeContext(RuntimeContext):
     def __init__(self, kwargs=None):
@@ -31,6 +34,7 @@ class ArvRuntimeContext(RuntimeContext):
         self.current_container = None
         self.http_timeout = 300
         self.submit_runner_cluster = None
+        self.cluster_target = None
 
         super(ArvRuntimeContext, self).__init__(kwargs)
 

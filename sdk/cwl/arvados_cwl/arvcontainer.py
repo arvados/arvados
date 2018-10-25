@@ -36,7 +36,7 @@ metrics = logging.getLogger('arvados.cwl-runner.metrics')
 class ArvadosContainer(JobBase):
     """Submit and manage a Crunch container request for executing a CWL CommandLineTool."""
 
-    def __init__(self, runner,
+    def __init__(self, runner, cluster_target,
                  builder,   # type: Builder
                  joborder,  # type: Dict[Text, Union[Dict[Text, Any], List, Text]]
                  make_path_mapper,  # type: Callable[..., PathMapper]
@@ -46,6 +46,7 @@ class ArvadosContainer(JobBase):
     ):
         super(ArvadosContainer, self).__init__(builder, joborder, make_path_mapper, requirements, hints, name)
         self.arvrunner = runner
+        self.cluster_target = cluster_target
         self.running = False
         self.uuid = None
 
@@ -251,13 +252,11 @@ class ArvadosContainer(JobBase):
             scheduling_parameters["max_run_time"] = self.timelimit
 
         extra_submit_params = {}
-        cluster_target_req, _ = self.get_requirement("http://arvados.org/cwl#ClusterTarget")
-        if cluster_target_req:
-            cluster_id = cluster_target_req.get("clusterID")
-            if cluster_id:
-                extra_submit_params["cluster_id"] = cluster_id
-            if cluster_target_req.get("ownerUUID"):
-                container_request["owner_uuid"] = cluster_target_req.get("ownerUUID")
+        if self.cluster_target is not None:
+            if self.cluster_target.cluster_id:
+                extra_submit_params["cluster_id"] = self.cluster_target.cluster_id
+            if self.cluster_target.owner_uuid:
+                container_request["owner_uuid"] = self.cluster_target.owner_uuid
 
         container_request["output_name"] = "Output for step %s" % (self.name)
         container_request["output_ttl"] = self.output_ttl
