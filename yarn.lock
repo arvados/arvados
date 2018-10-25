@@ -69,6 +69,10 @@
   version "2.2.6"
   resolved "https://registry.yarnpkg.com/@types/classnames/-/classnames-2.2.6.tgz#dbe8a666156d556ed018e15a4c65f08937c3f628"
 
+"@types/debounce@3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@types/debounce/-/debounce-3.0.0.tgz#ea4290f6e2d7ab99464c93b4a69b843d0993b181"
+
 "@types/enzyme-adapter-react-16@1.0.3":
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/@types/enzyme-adapter-react-16/-/enzyme-adapter-react-16-1.0.3.tgz#0cf7025b036694ca8d596fe38f24162e7117acf1"
@@ -2215,7 +2219,7 @@ date-now@^0.1.4:
   version "0.1.4"
   resolved "https://registry.yarnpkg.com/date-now/-/date-now-0.1.4.tgz#eaf439fd4d4848ad74e5cc7dbef200672b9e345b"
 
-debounce@^1.1.0:
+debounce@1.2.0, debounce@^1.1.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/debounce/-/debounce-1.2.0.tgz#44a540abc0ea9943018dc0eaa95cce87f65cd131"
 

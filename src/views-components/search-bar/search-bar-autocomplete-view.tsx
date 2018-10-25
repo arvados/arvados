@@ -7,16 +7,21 @@ import { Paper, StyleRulesCallback, withStyles, WithStyles, List, ListItem, List
 import { GroupContentsResource } from '~/services/groups-service/groups-service';
 import Highlighter from "react-highlight-words";
 
-type CssRules = 'list' | 'searchView';
+type CssRules = 'searchView' | 'list' | 'listItem';
 
 const styles: StyleRulesCallback<CssRules> = theme => {
     return {
+        searchView: {
+            borderRadius: `0 0 ${theme.spacing.unit / 2}px ${theme.spacing.unit / 2}px`
+        },
         list: {
             padding: 0
         },
-        searchView: {
-            borderRadius: `0 0 ${theme.spacing.unit / 2}px ${theme.spacing.unit / 2}px`
-        }
+        listItem: {
+            paddingLeft: theme.spacing.unit,
+            paddingRight: theme.spacing.unit * 2,
+        },
+        
     };
 };
 
@@ -36,7 +41,7 @@ export const SearchBarAutocompleteView = withStyles(styles)(
         <Paper className={classes.searchView}>
             {searchResults && <List component="nav" className={classes.list}>
                 {searchResults.map((item: GroupContentsResource) =>
-                    <ListItem button key={item.uuid}>
+                    <ListItem button key={item.uuid} className={classes.listItem}>
                         <ListItemText secondary={getFormattedText(item.name, searchValue)} onClick={() => navigateTo(item.uuid)} />
                     </ListItem>
                 )}

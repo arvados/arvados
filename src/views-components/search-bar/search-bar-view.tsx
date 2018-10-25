@@ -64,6 +64,7 @@ export type SearchBarDataProps = SearchBarViewDataProps
     & SearchBarBasicViewDataProps;
 
 interface SearchBarViewDataProps {
+    searchValue: string;
     currentView: string;
     isPopoverOpen: boolean;
     debounce?: number;
@@ -75,41 +76,28 @@ export type SearchBarActionProps = SearchBarViewActionProps
     & SearchBarBasicViewActionProps;
 
 interface SearchBarViewActionProps {
-    onSearch: (value: string) => any;
-    searchDataOnEnter: (value: string) => void;
+    onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+    onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
     onSetView: (currentView: string) => void;
     closeView: () => void;
     openSearchView: () => void;
-    saveRecentQuery: (query: string) => void;
     loadRecentQueries: () => string[];
 }
 
 type SearchBarViewProps = SearchBarDataProps & SearchBarActionProps & WithStyles<CssRules>;
 
-interface SearchBarState {
-    value: string;
-}
-
-export const DEFAULT_SEARCH_DEBOUNCE = 1000;
-
 export const SearchBarView = withStyles(styles)(
-    class extends React.Component<SearchBarViewProps> {
-        state: SearchBarState = {
-            value: ""
-        };
-
-        timeout: number;
-
-        render() {
-            const { classes, currentView, openSearchView, closeView, isPopoverOpen } = this.props;
-            return <ClickAwayListener onClickAway={closeView}>
+    (props : SearchBarViewProps) => {
+        const { classes, isPopoverOpen, closeView, searchValue, openSearchView, onChange, onSubmit } = props;
+        return (
+            <ClickAwayListener onClickAway={closeView}>
                 <Paper className={isPopoverOpen ? classes.containerSearchViewOpened : classes.container} >
-                    <form onSubmit={this.handleSubmit}>
+                    <form onSubmit={onSubmit}>
                         <Input
                             className={classes.input}
-                            onChange={this.handleChange}
+                            onChange={onChange}
                             placeholder="Search"
-                            value={this.state.value}
+                            value={searchValue}
                             fullWidth={true}
                             disableUnderline={true}
                             onClick={openSearchView}
@@ -124,73 +112,35 @@ export const SearchBarView = withStyles(styles)(
                             } />
                     </form>
                     <div className={classes.view}>
-                        {isPopoverOpen && this.getView(currentView)}
+                        {isPopoverOpen && getView({...props})}
                     </div>
                 </Paper >
-            </ClickAwayListener>;
-        }
-
-        componentDidMount() {
-            this.setState({ value: this.props.searchValue });
-        }
-
-        componentWillReceiveProps(nextProps: SearchBarViewProps) {
-            if (nextProps.searchValue !== this.props.searchValue) {
-                this.setState({ value: nextProps.searchValue });
-            }
-        }
-
-        componentWillUnmount() {
-            clearTimeout(this.timeout);
-        }
-
-        getView = (currentView: string) => {
-            const { onSetView, loadRecentQueries, savedQueries, deleteSavedQuery, searchValue, 
-                searchResults, saveQuery, onSearch, navigateTo, editSavedQuery, tags } = this.props;
-            switch (currentView) {
-                case SearchView.AUTOCOMPLETE:
-                    return <SearchBarAutocompleteView
-                        navigateTo={navigateTo}
-                        searchResults={searchResults}
-                        searchValue={searchValue} />;
-                case SearchView.ADVANCED:
-                    return <SearchBarAdvancedView
-                        onSetView={onSetView}
-                        saveQuery={saveQuery}
-                        tags={tags} />;
-                default:
-                    return <SearchBarBasicView
-                        onSetView={onSetView}
-                        onSearch={onSearch}
-                        loadRecentQueries={loadRecentQueries}
-                        savedQueries={savedQueries}
-                        deleteSavedQuery={deleteSavedQuery}
-                        editSavedQuery={editSavedQuery} />;
-            }
-        }
-
-        handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-            event.preventDefault();
-            clearTimeout(this.timeout);
-            this.props.saveRecentQuery(this.state.value);
-            this.props.searchDataOnEnter(this.state.value);
-            this.props.loadRecentQueries();
-        }
-
-        // ToDo: nie pokazywac autocomplete jezeli jestesmy w advance
-        // currentView ze state.searchBar.currentView
-        handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-            clearTimeout(this.timeout);
-            this.setState({ value: event.target.value });
-            this.timeout = window.setTimeout(
-                () => this.props.onSearch(this.state.value),
-                this.props.debounce || DEFAULT_SEARCH_DEBOUNCE
-            );
-            if (event.target.value.length > 0) {
-                this.props.onSetView(SearchView.AUTOCOMPLETE);
-            } else {
-                this.props.onSetView(SearchView.BASIC);
-            }
-        }
+            </ClickAwayListener>
+        );
     }
 );
+
+const getView = (props: SearchBarViewProps) => {
+    const { onSetView, loadRecentQueries, savedQueries, deleteSavedQuery, searchValue,
+        searchResults, saveQuery, onSearch, navigateTo, editSavedQuery, tags, currentView } = props;
+    switch (currentView) {
+        case SearchView.AUTOCOMPLETE:
+            return <SearchBarAutocompleteView
+                navigateTo={navigateTo}
+                searchResults={searchResults}
+                searchValue={searchValue} />;
+        case SearchView.ADVANCED:
+            return <SearchBarAdvancedView
+                onSetView={onSetView}
+                saveQuery={saveQuery}
+                tags={tags} />;
+        default:
+            return <SearchBarBasicView
+                onSetView={onSetView}
+                onSearch={onSearch}
+                loadRecentQueries={loadRecentQueries}
+                savedQueries={savedQueries}
+                deleteSavedQuery={deleteSavedQuery}
+                editSavedQuery={editSavedQuery} />;
+    }
+};

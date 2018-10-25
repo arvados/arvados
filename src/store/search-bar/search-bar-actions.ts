@@ -17,6 +17,7 @@ import { navigateToSearchResults, navigateTo } from '~/store/navigation/navigati
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { initialize } from 'redux-form';
 import { SearchBarAdvanceFormData, PropertyValues } from '~/models/search-bar';
+import { debounce } from 'debounce';
 
 export const searchBarActions = unionize({
     SET_CURRENT_VIEW: ofType<string>(),
@@ -33,6 +34,8 @@ export type SearchBarActions = UnionOf<typeof searchBarActions>;
 export const SEARCH_BAR_ADVANCE_FORM_NAME = 'searchBarAdvanceFormName';
 
 export const SEARCH_BAR_ADVANCE_FORM_PICKER_ID = 'searchBarAdvanceFormPickerId';
+
+export const DEFAULT_SEARCH_DEBOUNCE = 1000;
 
 export const goToView = (currentView: string) => searchBarActions.SET_CURRENT_VIEW(currentView);
 
@@ -125,6 +128,39 @@ export const searchData = (searchValue: string) =>
             dispatch(navigateToSearchResults);
         }
         
+    };
+
+export const changeData = (searchValue: string) => 
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(searchBarActions.SET_SEARCH_VALUE(searchValue));
+        if (searchValue.length > 0) {
+            dispatch<any>(goToView(SearchView.AUTOCOMPLETE));
+        } else {
+            dispatch<any>(goToView(SearchView.BASIC));
+        }
+        debounceStartSearch(dispatch);
+    };
+
+const debounceStartSearch = debounce((dispatch: Dispatch) => dispatch<any>(startSearch()), DEFAULT_SEARCH_DEBOUNCE);
+
+const startSearch = () => 
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const searchValue = getState().searchBar.searchValue;
+        if (searchValue.length > 0) {
+            dispatch<any>(searchData(searchValue));
+        } else {
+            dispatch(searchBarActions.SET_SEARCH_VALUE(searchValue));
+            dispatch(searchBarActions.SET_SEARCH_RESULTS([]));
+        }
+    };
+
+export const submitData = (event: React.FormEvent<HTMLFormElement>) => 
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        event.preventDefault();
+        const searchValue = getState().searchBar.searchValue;
+        dispatch<any>(saveRecentQuery(searchValue));
+        dispatch<any>(searchDataOnEnter(searchValue));
+        dispatch<any>(loadRecentQueries());
     };
 
 export const searchDataOnEnter = (searchValue: string) =>
