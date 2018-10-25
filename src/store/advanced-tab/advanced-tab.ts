@@ -13,7 +13,6 @@ import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions
 export const ADVANCED_TAB_DIALOG = 'advancedTabDialog';
 
 export interface AdvancedTabDialogData {
-    kind: string;
     pythonHeader: string;
     pythonExample: string;
     CLIGetHeader: string;
@@ -47,7 +46,6 @@ export const openAdvancedTabDialog = (uuid: string) =>
         if (data) {
             if (kind === ResourceKind.COLLECTION) {
                 const dataCollection: AdvancedTabDialogData = {
-                    kind,
                     pythonHeader: pythonHeader(CollectionData.COLLECTION),
                     pythonExample: pythonExample(data.uuid, GroupContentsResourcePrefix.COLLECTION),
                     CLIGetHeader: CLIGetHeader(CollectionData.COLLECTION),
@@ -60,7 +58,6 @@ export const openAdvancedTabDialog = (uuid: string) =>
                 dispatch(dialogActions.OPEN_DIALOG({ id: ADVANCED_TAB_DIALOG, data: dataCollection }));
             } else if (kind === ResourceKind.PROCESS) {
                 const dataProcess: AdvancedTabDialogData = {
-                    kind,
                     pythonHeader: pythonHeader(ProcessData.CONTAINER_REQUEST),
                     pythonExample: pythonExample(data.uuid, GroupContentsResourcePrefix.PROCESS),
                     CLIGetHeader: CLIGetHeader(ProcessData.CONTAINER_REQUEST),
@@ -73,7 +70,6 @@ export const openAdvancedTabDialog = (uuid: string) =>
                 dispatch(dialogActions.OPEN_DIALOG({ id: ADVANCED_TAB_DIALOG, data: dataProcess }));
             } else if (kind === ResourceKind.PROJECT) {
                 const dataProject: AdvancedTabDialogData = {
-                    kind,
                     pythonHeader: pythonHeader(ProjectData.GROUP),
                     pythonExample: pythonExample(data.uuid, GroupContentsResourcePrefix.PROJECT),
                     CLIGetHeader: CLIGetHeader(ProjectData.GROUP),
