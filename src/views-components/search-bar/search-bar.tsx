@@ -9,14 +9,12 @@ import {
     goToView,
     searchData,
     deleteSavedQuery,
-    saveRecentQuery,
     loadRecentQueries,
     saveQuery,
     openSearchView,
     closeSearchView,
     navigateToItem,
     editSavedQuery,
-    searchDataOnEnter,
     changeData,
     submitData
 } from '~/store/search-bar/search-bar-actions';

@@ -6,14 +6,14 @@ import * as React from 'react';
 import { Paper, StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core';
 import { SearchView } from '~/store/search-bar/search-bar-reducer';
 import {
-    SearchBarRenderRecentQueries,
-    SearchBarRenderRecentQueriesActionProps 
-} from '~/views-components/search-bar/search-bar-render-recent-queries';
+    SearchBarRecentQueries,
+    SearchBarRecentQueriesActionProps 
+} from '~/views-components/search-bar/search-bar-recent-queries';
 import {
-    SearchBarRenderSavedQueries,
-    SearchBarRenderSavedQueriesDataProps,
-    SearchBarRenderSavedQueriesActionProps
-} from '~/views-components/search-bar/search-bar-render-save-queries';
+    SearchBarSavedQueries,
+    SearchBarSavedQueriesDataProps,
+    SearchBarSavedQueriesActionProps
+} from '~/views-components/search-bar/search-bar-save-queries';
 
 type CssRules = 'advanced' | 'label' | 'root';
 
@@ -40,12 +40,12 @@ const styles: StyleRulesCallback<CssRules> = theme => {
     };
 };
 
-export type SearchBarBasicViewDataProps = SearchBarRenderSavedQueriesDataProps;
+export type SearchBarBasicViewDataProps = SearchBarSavedQueriesDataProps;
 
 export type SearchBarBasicViewActionProps = {
     onSetView: (currentView: string) => void;
     onSearch: (searchValue: string) => void;
-} & SearchBarRenderRecentQueriesActionProps & SearchBarRenderSavedQueriesActionProps;
+} & SearchBarRecentQueriesActionProps & SearchBarSavedQueriesActionProps;
 
 type SearchBarBasicViewProps = SearchBarBasicViewDataProps & SearchBarBasicViewActionProps & WithStyles<CssRules>;
 
@@ -53,11 +53,11 @@ export const SearchBarBasicView = withStyles(styles)(
     ({ classes, onSetView, loadRecentQueries, deleteSavedQuery, savedQueries, onSearch, editSavedQuery }: SearchBarBasicViewProps) =>
         <Paper className={classes.root}>
             <div className={classes.label}>Recent search queries</div>
-            <SearchBarRenderRecentQueries
+            <SearchBarRecentQueries
                 onSearch={onSearch}
                 loadRecentQueries={loadRecentQueries} />
             <div className={classes.label}>Saved search queries</div>
-            <SearchBarRenderSavedQueries
+            <SearchBarSavedQueries
                 onSearch={onSearch}
                 savedQueries={savedQueries}
                 editSavedQuery={editSavedQuery}

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { withStyles, WithStyles, StyleRulesCallback, List, ListItem, ListItemText, ListItemSecondaryAction, Tooltip, IconButton, Button } from '@material-ui/core';
+import { withStyles, WithStyles, StyleRulesCallback, List, ListItem, ListItemText, ListItemSecondaryAction, Tooltip, IconButton } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { RemoveIcon, EditSavedQueryIcon } from '~/components/icon/icon';
 import { SearchBarAdvanceFormData } from '~/models/search-bar';
@@ -28,22 +28,22 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     }
 });
 
-export interface SearchBarRenderSavedQueriesDataProps {
+export interface SearchBarSavedQueriesDataProps {
     savedQueries: SearchBarAdvanceFormData[];
 }
 
-export interface SearchBarRenderSavedQueriesActionProps {
+export interface SearchBarSavedQueriesActionProps {
     onSearch: (searchValue: string) => void;
     deleteSavedQuery: (id: number) => void;
     editSavedQuery: (data: SearchBarAdvanceFormData, id: number) => void;
 }
 
-type SearchBarRenderSavedQueriesProps = SearchBarRenderSavedQueriesDataProps 
-    & SearchBarRenderSavedQueriesActionProps 
+type SearchBarSavedQueriesProps = SearchBarSavedQueriesDataProps 
+    & SearchBarSavedQueriesActionProps 
     & WithStyles<CssRules>;
 
-export const SearchBarRenderSavedQueries = withStyles(styles)(
-    ({ classes, savedQueries, onSearch, editSavedQuery, deleteSavedQuery }: SearchBarRenderSavedQueriesProps) =>
+export const SearchBarSavedQueries = withStyles(styles)(
+    ({ classes, savedQueries, onSearch, editSavedQuery, deleteSavedQuery }: SearchBarSavedQueriesProps) =>
         <List component="nav" className={classes.root}>
             {savedQueries.map((query, index) => 
                 <ListItem button key={index} className={classes.listItem}>

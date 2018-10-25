@@ -22,15 +22,15 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     }
 });
 
-export interface SearchBarRenderRecentQueriesActionProps {
+export interface SearchBarRecentQueriesActionProps {
     onSearch: (searchValue: string) => void;
     loadRecentQueries: () => string[];
 }
 
-type SearchBarRenderRecentQueriesProps = SearchBarRenderRecentQueriesActionProps & WithStyles<CssRules>;
+type SearchBarRecentQueriesProps = SearchBarRecentQueriesActionProps & WithStyles<CssRules>;
 
-export const SearchBarRenderRecentQueries = withStyles(styles)(
-    ({ classes, onSearch, loadRecentQueries }: SearchBarRenderRecentQueriesProps) =>
+export const SearchBarRecentQueries = withStyles(styles)(
+    ({ classes, onSearch, loadRecentQueries }: SearchBarRecentQueriesProps) =>
         <List component="nav" className={classes.root}>
             {loadRecentQueries().map((query, index) =>
                 <ListItem button key={index} className={classes.listItem}>
