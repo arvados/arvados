@@ -29,6 +29,9 @@ end
 def selenium_opts
   {
     port: available_port('selenium'),
+    desired_capabilities: Selenium::WebDriver::Remote::Capabilities.firefox(
+      acceptInsecureCerts: true,
+    ),
   }
 end
 
@@ -100,14 +103,14 @@ module AssertDomEvent
   # DOM element.
   def assert_triggers_dom_event events, target='body'
     magic = 'received-dom-event-' + rand(2**30).to_s(36)
-    page.evaluate_script <<eos
+    page.execute_script <<eos
       $('#{target}').one('#{events}', function() {
         $('body').addClass('#{magic}');
       });
 eos
     yield
     assert_selector "body.#{magic}"
-    page.evaluate_script "$('body').removeClass('#{magic}');";
+    page.execute_script "$('body').removeClass('#{magic}');";
   end
 end
 
