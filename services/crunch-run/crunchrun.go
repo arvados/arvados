@@ -79,7 +79,7 @@ type ThinDockerClient interface {
 	ContainerStart(ctx context.Context, container string, options dockertypes.ContainerStartOptions) error
 	ContainerRemove(ctx context.Context, container string, options dockertypes.ContainerRemoveOptions) error
 	ContainerWait(ctx context.Context, container string, condition dockercontainer.WaitCondition) (<-chan dockercontainer.ContainerWaitOKBody, <-chan error)
-	ContainerList(ctx context.Context, opts dockertypes.ContainerListOptions) ([]dockertypes.Container, error)
+	ContainerInspect(ctx context.Context, id string) (dockertypes.ContainerJSON, error)
 	ImageInspectWithRaw(ctx context.Context, image string) (dockertypes.ImageInspect, []byte, error)
 	ImageLoad(ctx context.Context, input io.Reader, quiet bool) (dockertypes.ImageLoadResponse, error)
 	ImageRemove(ctx context.Context, image string, options dockertypes.ImageRemoveOptions) ([]dockertypes.ImageDeleteResponseItem, error)
@@ -157,7 +157,7 @@ type ContainerRunner struct {
 	arvMountLog     *ThrottledLogger
 	checkContainerd time.Duration
 
-	containerWaitGracePeriod time.Duration
+	containerWatchdogInterval time.Duration
 }
 
 // setupSignals sets up signal handling to gracefully terminate the underlying
@@ -1134,38 +1134,24 @@ func (runner *ContainerRunner) WaitFinish() error {
 	containerGone := make(chan struct{})
 	go func() {
 		defer close(containerGone)
-		if runner.containerWaitGracePeriod < 1 {
-			runner.containerWaitGracePeriod = 30 * time.Second
+		if runner.containerWatchdogInterval < 1 {
+			runner.containerWatchdogInterval = time.Minute
 		}
-		found := time.Now()
-	polling:
-		for range time.NewTicker(runner.containerWaitGracePeriod / 30).C {
-			ctrs, err := runner.Docker.ContainerList(context.Background(), dockertypes.ContainerListOptions{})
-			if err != nil {
-				runner.CrunchLog.Printf("error checking container list: %s", err)
-				if runner.checkBrokenNode(err) {
-					return
-				}
-				continue polling
-			}
-			for _, ctr := range ctrs {
-				if ctr.ID == runner.ContainerID {
-					found = time.Now()
-					continue polling
-				}
-			}
+		for range time.NewTicker(runner.containerWatchdogInterval).C {
+			ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(runner.containerWatchdogInterval))
+			ctr, err := runner.Docker.ContainerInspect(ctx, runner.ContainerID)
+			cancel()
 			runner.cStateLock.Lock()
 			done := runner.cRemoved || runner.ExitCode != nil
 			runner.cStateLock.Unlock()
 			if done {
-				// Skip the grace period and warning
-				// log if the container disappeared
-				// because it finished, or we removed
-				// it ourselves.
 				return
-			}
-			if time.Since(found) > runner.containerWaitGracePeriod {
-				runner.CrunchLog.Printf("container %s no longer exists", runner.ContainerID)
+			} else if err != nil {
+				runner.CrunchLog.Printf("Error inspecting container: %s", err)
+				runner.checkBrokenNode(err)
+				return
+			} else if ctr.State == nil || !(ctr.State.Running || ctr.State.Status == "created") {
+				runner.CrunchLog.Printf("Container is not running: State=%v", ctr.State)
 				return
 			}
 		}

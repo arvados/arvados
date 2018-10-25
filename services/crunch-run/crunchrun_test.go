@@ -178,12 +178,15 @@ func (t *TestDockerClient) ContainerWait(ctx context.Context, container string, 
 	return body, err
 }
 
-func (t *TestDockerClient) ContainerList(ctx context.Context, options dockertypes.ContainerListOptions) ([]dockertypes.Container, error) {
+func (t *TestDockerClient) ContainerInspect(ctx context.Context, id string) (c dockertypes.ContainerJSON, err error) {
+	c.ContainerJSONBase = &dockertypes.ContainerJSONBase{}
+	c.ID = "abcde"
 	if t.ctrExited {
-		return nil, nil
+		c.State = &dockertypes.ContainerState{Status: "exited", Dead: true}
 	} else {
-		return []dockertypes.Container{{ID: "abcde"}}, nil
+		c.State = &dockertypes.ContainerState{Status: "running", Pid: 1234, Running: true}
 	}
+	return
 }
 
 func (t *TestDockerClient) ImageInspectWithRaw(ctx context.Context, image string) (dockertypes.ImageInspect, []byte, error) {
@@ -748,6 +751,7 @@ func (s *TestSuite) fullRunHelper(c *C, record string, extraMounts []string, exi
 	c.Assert(err, IsNil)
 	s.runner = cr
 	cr.statInterval = 100 * time.Millisecond
+	cr.containerWatchdogInterval = time.Second
 	am := &ArvMountCmdLine{}
 	cr.RunArvMount = am.ArvMountTest
 
@@ -850,15 +854,13 @@ func (s *TestSuite) TestContainerWaitFails(c *C) {
     "output_path": "/tmp",
     "priority": 1
 }`, nil, 0, func(t *TestDockerClient) {
-		s.runner.containerWaitGracePeriod = time.Second
 		t.ctrExited = true
 		time.Sleep(10 * time.Second)
 		t.logWriter.Close()
 	})
 
 	c.Check(api.CalledWith("container.state", "Cancelled"), NotNil)
-	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*container.*no longer exists.*")
-	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*docker client never returned status.*")
+	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*Container is not running.*")
 }
 
 func (s *TestSuite) TestCrunchstat(c *C) {
