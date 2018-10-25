@@ -324,10 +324,10 @@ def arvados_jobs_image(arvrunner, img):
     """Determine if the right arvados/jobs image version is available.  If not, try to pull and upload it."""
 
     try:
-        arv_docker_get_image(arvrunner.api, {"dockerPull": img}, True, arvrunner.project_uuid)
+        return arv_docker_get_image(arvrunner.api, {"dockerPull": img}, True, arvrunner.project_uuid)
     except Exception as e:
         raise Exception("Docker image %s is not available\n%s" % (img, e) )
-    return img
+
 
 def upload_workflow_collection(arvrunner, name, packed):
     collection = arvados.collection.Collection(api_client=arvrunner.api,

@@ -212,9 +212,10 @@ class ArvadosContainer(JobBase):
             docker_req = {"dockerImageId": "arvados/jobs"}
 
         container_request["container_image"] = arv_docker_get_image(self.arvrunner.api,
-                                                                     docker_req,
-                                                                     runtimeContext.pull_image,
-                                                                     self.arvrunner.project_uuid)
+                                                                    docker_req,
+                                                                    runtimeContext.pull_image,
+                                                                    self.arvrunner.project_uuid,
+                                                                    runtimeContext.submit_runner_cluster)
 
         api_req, _ = self.get_requirement("http://arvados.org/cwl#APIRequirement")
         if api_req:
@@ -490,14 +491,20 @@ class RunnerContainer(Runner):
         if self.arvrunner.project_uuid:
             job_spec["owner_uuid"] = self.arvrunner.project_uuid
 
+        extra_submit_params = {}
+        if runtimeContext.submit_runner_cluster:
+            extra_submit_params["cluster_id"] = runtimeContext.submit_runner_cluster
+
         if runtimeContext.submit_request_uuid:
             response = self.arvrunner.api.container_requests().update(
                 uuid=runtimeContext.submit_request_uuid,
-                body=job_spec
+                body=job_spec,
+                **extra_submit_params
             ).execute(num_retries=self.arvrunner.num_retries)
         else:
             response = self.arvrunner.api.container_requests().create(
-                body=job_spec
+                body=job_spec,
+                **extra_submit_params
             ).execute(num_retries=self.arvrunner.num_retries)
 
         self.uuid = response["uuid"]
