@@ -48,6 +48,7 @@ import { FavoritesTreePicker } from '../../views-components/projects-tree-picker
 import { ProjectsTreePicker } from '~/views-components/projects-tree-picker/projects-tree-picker';
 import { Chips } from '~/components/chips/chips';
 import { ChipsInput } from '../../components/chips-input/chips-input';
+import { SharingDialog } from '~/views-components/sharing-dialog/sharing-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -130,6 +131,7 @@ export const WorkbenchPanel =
             <ProcessCommandDialog />
             <RenameFileDialog />
             <RichTextEditorDialog />
+            <SharingDialog />
             <Snackbar />
             <UpdateCollectionDialog />
             <UpdateProcessDialog />
