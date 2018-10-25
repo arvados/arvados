@@ -308,9 +308,9 @@ func (bal *Balancer) GetCurrentState(c *arvados.Client, pageSize, bufs int) erro
 				return
 			}
 			for _, mount := range mounts {
-				bal.logf("%s: add %d replicas to map", mount, len(idx))
+				bal.logf("%s: add %d entries to map", mount, len(idx))
 				bal.BlockStateMap.AddReplicas(mount, idx)
-				bal.logf("%s: added %d replicas", mount, len(idx))
+				bal.logf("%s: added %d entries to map at %dx (%d replicas)", mount, len(idx), mount.Replication, len(idx)*mount.Replication)
 			}
 			bal.logf("mount %s: index done", mounts[0])
 		}(mounts)
@@ -520,7 +520,7 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 			slots = append(slots, slot{
 				mnt:  mnt,
 				repl: repl,
-				want: repl != nil && (mnt.ReadOnly || repl.Mtime >= bal.MinMtime),
+				want: repl != nil && mnt.ReadOnly,
 			})
 		}
 	}
@@ -568,14 +568,14 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 				// Prefer a mount that satisfies the
 				// desired class.
 				return bal.mountsByClass[class][si.mnt]
-			} else if wanti, wantj := si.want, si.want; wanti != wantj {
+			} else if si.want != sj.want {
 				// Prefer a mount that will have a
 				// replica no matter what we do here
 				// -- either because it already has an
 				// untrashable replica, or because we
 				// already need it to satisfy a
 				// different storage class.
-				return slots[i].want
+				return si.want
 			} else if orderi, orderj := srvRendezvous[si.mnt.KeepService], srvRendezvous[sj.mnt.KeepService]; orderi != orderj {
 				// Prefer a better rendezvous
 				// position.
@@ -716,7 +716,7 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 		// TODO: request a Touch if Mtime is duplicated.
 		var change int
 		switch {
-		case !underreplicated && slot.repl != nil && !slot.want && !unsafeToDelete[slot.repl.Mtime]:
+		case !underreplicated && !slot.want && slot.repl != nil && slot.repl.Mtime < bal.MinMtime && !unsafeToDelete[slot.repl.Mtime]:
 			slot.mnt.KeepService.AddTrash(Trash{
 				SizedDigest: blkid,
 				Mtime:       slot.repl.Mtime,

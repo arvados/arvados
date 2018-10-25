@@ -238,7 +238,14 @@ func (bal *balancerSuite) TestDecreaseReplBlockTooNew(c *check.C) {
 	bal.try(c, tester{
 		desired:    map[string]int{"default": 2},
 		current:    slots{0, 1, 2},
-		timestamps: []int64{oldTime, newTime, newTime + 1}})
+		timestamps: []int64{oldTime, newTime, newTime + 1},
+		expectResult: balanceResult{
+			have: 3,
+			want: 2,
+			classState: map[string]balancedBlockState{"default": {
+				desired:      2,
+				surplus:      1,
+				unachievable: false}}}})
 	// The best replicas are too new to delete, but the excess
 	// replica is old enough.
 	bal.try(c, tester{
