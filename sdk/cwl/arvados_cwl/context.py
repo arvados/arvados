@@ -30,5 +30,9 @@ class ArvRuntimeContext(RuntimeContext):
         self.storage_classes = "default"
         self.current_container = None
         self.http_timeout = 300
+        self.submit_runner_cluster = None
 
         super(ArvRuntimeContext, self).__init__(kwargs)
+
+        if self.submit_request_uuid:
+            self.submit_runner_cluster = self.submit_request_uuid[0:5]
