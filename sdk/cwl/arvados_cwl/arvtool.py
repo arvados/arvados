@@ -6,6 +6,7 @@ from cwltool.command_line_tool import CommandLineTool
 from .arvjob import ArvadosJob
 from .arvcontainer import ArvadosContainer
 from .pathmapper import ArvPathMapper
+from .context import ClusterTarget
 from functools import partial
 
 class ArvadosCommandTool(CommandLineTool):
@@ -17,7 +18,7 @@ class ArvadosCommandTool(CommandLineTool):
 
     def make_job_runner(self, runtimeContext):
         if runtimeContext.work_api == "containers":
-            return partial(ArvadosContainer, self.arvrunner)
+            return partial(ArvadosContainer, self.arvrunner, runtimeContext.cluster_target)
         elif runtimeContext.work_api == "jobs":
             return partial(ArvadosJob, self.arvrunner)
         else:
@@ -43,6 +44,12 @@ class ArvadosCommandTool(CommandLineTool):
         joborder = builder.job
 
         runtimeContext = runtimeContext.copy()
+
+        cluster_target_req, _ = self.get_requirement("http://arvados.org/cwl#ClusterTarget")
+        if runtimeContext.cluster_target is None or runtimeContext.cluster_target.instance != id(cluster_target_req):
+            runtimeContext.cluster_target = ClusterTarget(id(cluster_target_req),
+                                                          builder.do_eval(cluster_target_req.get("clusterID")),
+                                                          builder.do_eval(cluster_target_req.get("ownerUUID")))
 
         if runtimeContext.work_api == "containers":
             dockerReq, is_req = self.get_requirement("DockerRequirement")

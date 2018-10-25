@@ -131,158 +131,167 @@ class ArvadosWorkflow(Workflow):
         self.loadingContext = loadingContext
 
     def job(self, joborder, output_callback, runtimeContext):
+
+        cluster_target_req, _ = self.get_requirement("http://arvados.org/cwl#ClusterTarget")
+        if runtimeContext.cluster_target is None or runtimeContext.cluster_target.instance != id(cluster_target_req):
+            runtimeContext.cluster_target = ClusterTarget(id(cluster_target_req),
+                                                          builder.do_eval(cluster_target_req.get("clusterID")),
+                                                          builder.do_eval(cluster_target_req.get("ownerUUID")))
+
         req, _ = self.get_requirement("http://arvados.org/cwl#RunInSingleContainer")
-        if req:
-            with SourceLine(self.tool, None, WorkflowException, logger.isEnabledFor(logging.DEBUG)):
-                if "id" not in self.tool:
-                    raise WorkflowException("%s object must have 'id'" % (self.tool["class"]))
-            document_loader, workflowobj, uri = (self.doc_loader, self.doc_loader.fetch(self.tool["id"]), self.tool["id"])
+        if not req:
+            return super(ArvadosWorkflow, self).job(joborder, output_callback, runtimeContext)
 
-            discover_secondary_files(self.tool["inputs"], joborder)
+        # RunInSingleContainer is true
 
-            with Perf(metrics, "subworkflow upload_deps"):
-                upload_dependencies(self.arvrunner,
-                                    os.path.basename(joborder.get("id", "#")),
-                                    document_loader,
-                                    joborder,
-                                    joborder.get("id", "#"),
-                                    False)
+        with SourceLine(self.tool, None, WorkflowException, logger.isEnabledFor(logging.DEBUG)):
+            if "id" not in self.tool:
+                raise WorkflowException("%s object must have 'id'" % (self.tool["class"]))
+        document_loader, workflowobj, uri = (self.doc_loader, self.doc_loader.fetch(self.tool["id"]), self.tool["id"])
 
-                if self.wf_pdh is None:
-                    workflowobj["requirements"] = dedup_reqs(self.requirements)
-                    workflowobj["hints"] = dedup_reqs(self.hints)
+        discover_secondary_files(self.tool["inputs"], joborder)
 
-                    packed = pack(document_loader, workflowobj, uri, self.metadata)
+        with Perf(metrics, "subworkflow upload_deps"):
+            upload_dependencies(self.arvrunner,
+                                os.path.basename(joborder.get("id", "#")),
+                                document_loader,
+                                joborder,
+                                joborder.get("id", "#"),
+                                False)
 
-                    builder = Builder(joborder,
-                                      requirements=workflowobj["requirements"],
-                                      hints=workflowobj["hints"],
-                                      resources={})
+            if self.wf_pdh is None:
+                workflowobj["requirements"] = dedup_reqs(self.requirements)
+                workflowobj["hints"] = dedup_reqs(self.hints)
 
-                    def visit(item):
-                        for t in ("hints", "requirements"):
-                            if t not in item:
-                                continue
-                            for req in item[t]:
-                                if req["class"] == "ResourceRequirement":
-                                    dyn = False
-                                    for k in max_res_pars + sum_res_pars:
-                                        if k in req:
-                                            if isinstance(req[k], basestring):
-                                                if item["id"] == "#main":
-                                                    # only the top-level requirements/hints may contain expressions
-                                                    self.dynamic_resource_req.append(req)
-                                                    dyn = True
-                                                    break
-                                                else:
-                                                    with SourceLine(req, k, WorkflowException):
-                                                        raise WorkflowException("Non-top-level ResourceRequirement in single container cannot have expressions")
-                                    if not dyn:
-                                        self.static_resource_req.append(req)
+                packed = pack(document_loader, workflowobj, uri, self.metadata)
 
-                    visit_class(packed["$graph"], ("Workflow", "CommandLineTool"), visit)
-
-                    if self.static_resource_req:
-                        self.static_resource_req = [get_overall_res_req(self.static_resource_req)]
-
-                    upload_dependencies(self.arvrunner,
-                                        runtimeContext.name,
-                                        document_loader,
-                                        packed,
-                                        uri,
-                                        False)
-
-                    # Discover files/directories referenced by the
-                    # workflow (mainly "default" values)
-                    visit_class(packed, ("File", "Directory"), self.wf_reffiles.append)
-
-
-            if self.dynamic_resource_req:
                 builder = Builder(joborder,
-                                  requirements=self.requirements,
-                                  hints=self.hints,
+                                  requirements=workflowobj["requirements"],
+                                  hints=workflowobj["hints"],
                                   resources={})
 
-                # Evaluate dynamic resource requirements using current builder
-                rs = copy.copy(self.static_resource_req)
-                for dyn_rs in self.dynamic_resource_req:
-                    eval_req = {"class": "ResourceRequirement"}
-                    for a in max_res_pars + sum_res_pars:
-                        if a in dyn_rs:
-                            eval_req[a] = builder.do_eval(dyn_rs[a])
-                    rs.append(eval_req)
-                job_res_reqs = [get_overall_res_req(rs)]
-            else:
-                job_res_reqs = self.static_resource_req
+                def visit(item):
+                    for t in ("hints", "requirements"):
+                        if t not in item:
+                            continue
+                        for req in item[t]:
+                            if req["class"] == "ResourceRequirement":
+                                dyn = False
+                                for k in max_res_pars + sum_res_pars:
+                                    if k in req:
+                                        if isinstance(req[k], basestring):
+                                            if item["id"] == "#main":
+                                                # only the top-level requirements/hints may contain expressions
+                                                self.dynamic_resource_req.append(req)
+                                                dyn = True
+                                                break
+                                            else:
+                                                with SourceLine(req, k, WorkflowException):
+                                                    raise WorkflowException("Non-top-level ResourceRequirement in single container cannot have expressions")
+                                if not dyn:
+                                    self.static_resource_req.append(req)
 
-            with Perf(metrics, "subworkflow adjust"):
-                joborder_resolved = copy.deepcopy(joborder)
-                joborder_keepmount = copy.deepcopy(joborder)
+                visit_class(packed["$graph"], ("Workflow", "CommandLineTool"), visit)
 
-                reffiles = []
-                visit_class(joborder_keepmount, ("File", "Directory"), reffiles.append)
+                if self.static_resource_req:
+                    self.static_resource_req = [get_overall_res_req(self.static_resource_req)]
 
-                mapper = ArvPathMapper(self.arvrunner, reffiles+self.wf_reffiles, runtimeContext.basedir,
-                                       "/keep/%s",
-                                       "/keep/%s/%s")
+                upload_dependencies(self.arvrunner,
+                                    runtimeContext.name,
+                                    document_loader,
+                                    packed,
+                                    uri,
+                                    False)
 
-                # For containers API, we need to make sure any extra
-                # referenced files (ie referenced by the workflow but
-                # not in the inputs) are included in the mounts.
-                if self.wf_reffiles:
-                    runtimeContext = runtimeContext.copy()
-                    runtimeContext.extra_reffiles = copy.deepcopy(self.wf_reffiles)
+                # Discover files/directories referenced by the
+                # workflow (mainly "default" values)
+                visit_class(packed, ("File", "Directory"), self.wf_reffiles.append)
 
-                def keepmount(obj):
-                    remove_redundant_fields(obj)
-                    with SourceLine(obj, None, WorkflowException, logger.isEnabledFor(logging.DEBUG)):
-                        if "location" not in obj:
-                            raise WorkflowException("%s object is missing required 'location' field: %s" % (obj["class"], obj))
-                    with SourceLine(obj, "location", WorkflowException, logger.isEnabledFor(logging.DEBUG)):
-                        if obj["location"].startswith("keep:"):
-                            obj["location"] = mapper.mapper(obj["location"]).target
-                            if "listing" in obj:
-                                del obj["listing"]
-                        elif obj["location"].startswith("_:"):
-                            del obj["location"]
-                        else:
-                            raise WorkflowException("Location is not a keep reference or a literal: '%s'" % obj["location"])
 
-                visit_class(joborder_keepmount, ("File", "Directory"), keepmount)
+        if self.dynamic_resource_req:
+            builder = Builder(joborder,
+                              requirements=self.requirements,
+                              hints=self.hints,
+                              resources={})
 
-                def resolved(obj):
-                    if obj["location"].startswith("keep:"):
-                        obj["location"] = mapper.mapper(obj["location"]).resolved
-
-                visit_class(joborder_resolved, ("File", "Directory"), resolved)
-
-                if self.wf_pdh is None:
-                    adjustFileObjs(packed, keepmount)
-                    adjustDirObjs(packed, keepmount)
-                    self.wf_pdh = upload_workflow_collection(self.arvrunner, shortname(self.tool["id"]), packed)
-
-            wf_runner = cmap({
-                "class": "CommandLineTool",
-                "baseCommand": "cwltool",
-                "inputs": self.tool["inputs"],
-                "outputs": self.tool["outputs"],
-                "stdout": "cwl.output.json",
-                "requirements": self.requirements+job_res_reqs+[
-                    {"class": "InlineJavascriptRequirement"},
-                    {
-                    "class": "InitialWorkDirRequirement",
-                    "listing": [{
-                            "entryname": "workflow.cwl",
-                            "entry": '$({"class": "File", "location": "keep:%s/workflow.cwl"})' % self.wf_pdh
-                        }, {
-                            "entryname": "cwl.input.yml",
-                            "entry": json.dumps(joborder_keepmount, indent=2, sort_keys=True, separators=(',',': ')).replace("\\", "\\\\").replace('$(', '\$(').replace('${', '\${')
-                        }]
-                }],
-                "hints": self.hints,
-                "arguments": ["--no-container", "--move-outputs", "--preserve-entire-environment", "workflow.cwl#main", "cwl.input.yml"],
-                "id": "#"
-            })
-            return ArvadosCommandTool(self.arvrunner, wf_runner, self.loadingContext).job(joborder_resolved, output_callback, runtimeContext)
+            # Evaluate dynamic resource requirements using current builder
+            rs = copy.copy(self.static_resource_req)
+            for dyn_rs in self.dynamic_resource_req:
+                eval_req = {"class": "ResourceRequirement"}
+                for a in max_res_pars + sum_res_pars:
+                    if a in dyn_rs:
+                        eval_req[a] = builder.do_eval(dyn_rs[a])
+                rs.append(eval_req)
+            job_res_reqs = [get_overall_res_req(rs)]
         else:
-            return super(ArvadosWorkflow, self).job(joborder, output_callback, runtimeContext)
+            job_res_reqs = self.static_resource_req
+
+        with Perf(metrics, "subworkflow adjust"):
+            joborder_resolved = copy.deepcopy(joborder)
+            joborder_keepmount = copy.deepcopy(joborder)
+
+            reffiles = []
+            visit_class(joborder_keepmount, ("File", "Directory"), reffiles.append)
+
+            mapper = ArvPathMapper(self.arvrunner, reffiles+self.wf_reffiles, runtimeContext.basedir,
+                                   "/keep/%s",
+                                   "/keep/%s/%s")
+
+            # For containers API, we need to make sure any extra
+            # referenced files (ie referenced by the workflow but
+            # not in the inputs) are included in the mounts.
+            if self.wf_reffiles:
+                runtimeContext = runtimeContext.copy()
+                runtimeContext.extra_reffiles = copy.deepcopy(self.wf_reffiles)
+
+            def keepmount(obj):
+                remove_redundant_fields(obj)
+                with SourceLine(obj, None, WorkflowException, logger.isEnabledFor(logging.DEBUG)):
+                    if "location" not in obj:
+                        raise WorkflowException("%s object is missing required 'location' field: %s" % (obj["class"], obj))
+                with SourceLine(obj, "location", WorkflowException, logger.isEnabledFor(logging.DEBUG)):
+                    if obj["location"].startswith("keep:"):
+                        obj["location"] = mapper.mapper(obj["location"]).target
+                        if "listing" in obj:
+                            del obj["listing"]
+                    elif obj["location"].startswith("_:"):
+                        del obj["location"]
+                    else:
+                        raise WorkflowException("Location is not a keep reference or a literal: '%s'" % obj["location"])
+
+            visit_class(joborder_keepmount, ("File", "Directory"), keepmount)
+
+            def resolved(obj):
+                if obj["location"].startswith("keep:"):
+                    obj["location"] = mapper.mapper(obj["location"]).resolved
+
+            visit_class(joborder_resolved, ("File", "Directory"), resolved)
+
+            if self.wf_pdh is None:
+                adjustFileObjs(packed, keepmount)
+                adjustDirObjs(packed, keepmount)
+                self.wf_pdh = upload_workflow_collection(self.arvrunner, shortname(self.tool["id"]), packed)
+
+        wf_runner = cmap({
+            "class": "CommandLineTool",
+            "baseCommand": "cwltool",
+            "inputs": self.tool["inputs"],
+            "outputs": self.tool["outputs"],
+            "stdout": "cwl.output.json",
+            "requirements": self.requirements+job_res_reqs+[
+                {"class": "InlineJavascriptRequirement"},
+                {
+                "class": "InitialWorkDirRequirement",
+                "listing": [{
+                        "entryname": "workflow.cwl",
+                        "entry": '$({"class": "File", "location": "keep:%s/workflow.cwl"})' % self.wf_pdh
+                    }, {
+                        "entryname": "cwl.input.yml",
+                        "entry": json.dumps(joborder_keepmount, indent=2, sort_keys=True, separators=(',',': ')).replace("\\", "\\\\").replace('$(', '\$(').replace('${', '\${')
+                    }]
+            }],
+            "hints": self.hints,
+            "arguments": ["--no-container", "--move-outputs", "--preserve-entire-environment", "workflow.cwl#main", "cwl.input.yml"],
+            "id": "#"
+        })
+        return ArvadosCommandTool(self.arvrunner, wf_runner, self.loadingContext).job(joborder_resolved, output_callback, runtimeContext)
