@@ -26,7 +26,7 @@ from cwltool.pack import pack
 import arvados.collection
 import ruamel.yaml as yaml
 
-from .arvdocker import arv_docker_get_image
+import arvdocker
 from .pathmapper import ArvPathMapper, trim_listing
 from ._version import __version__
 from . import done
@@ -215,9 +215,9 @@ def upload_docker(arvrunner, tool):
                 # TODO: can be supported by containers API, but not jobs API.
                 raise SourceLine(docker_req, "dockerOutputDirectory", UnsupportedRequirement).makeError(
                     "Option 'dockerOutputDirectory' of DockerRequirement not supported.")
-            arv_docker_get_image(arvrunner.api, docker_req, True, arvrunner.project_uuid)
+            arvdocker.arv_docker_get_image(arvrunner.api, docker_req, True, arvrunner.project_uuid)
         else:
-            arv_docker_get_image(arvrunner.api, {"dockerPull": "arvados/jobs"}, True, arvrunner.project_uuid)
+            arvdocker.arv_docker_get_image(arvrunner.api, {"dockerPull": "arvados/jobs"}, True, arvrunner.project_uuid)
     elif isinstance(tool, cwltool.workflow.Workflow):
         for s in tool.steps:
             upload_docker(arvrunner, s.embedded_tool)
@@ -244,6 +244,9 @@ def packed_workflow(arvrunner, tool, merged_map):
                 v["location"] = merged_map[cur_id].resolved[v["location"]]
             if "location" in v and v["location"] in merged_map[cur_id].secondaryFiles:
                 v["secondaryFiles"] = merged_map[cur_id].secondaryFiles[v["location"]]
+            if v.get("class") == "DockerRequirement":
+                img = v.get("dockerImageId") or v.get("dockerPull")
+                v["http://arvados.org/cwl#dockerCollectionPDH"] = arvdocker.cached_lookups[img]
             for l in v:
                 visit(v[l], cur_id)
         if isinstance(v, list):
@@ -324,7 +327,7 @@ def arvados_jobs_image(arvrunner, img):
     """Determine if the right arvados/jobs image version is available.  If not, try to pull and upload it."""
 
     try:
-        return arv_docker_get_image(arvrunner.api, {"dockerPull": img}, True, arvrunner.project_uuid)
+        return arvdocker.arv_docker_get_image(arvrunner.api, {"dockerPull": img}, True, arvrunner.project_uuid)
     except Exception as e:
         raise Exception("Docker image %s is not available\n%s" % (img, e) )
 

@@ -21,6 +21,9 @@ cached_lookups_lock = threading.Lock()
 def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid):
     """Check if a Docker image is available in Keep, if not, upload it using arv-keepdocker."""
 
+    if "http://arvados.org/cwl#dockerCollectionPDH" in dockerRequirement:
+        return dockerRequirement["http://arvados.org/cwl#dockerCollectionPDH"]
+
     if "dockerImageId" not in dockerRequirement and "dockerPull" in dockerRequirement:
         dockerRequirement = copy.deepcopy(dockerRequirement)
         dockerRequirement["dockerImageId"] = dockerRequirement["dockerPull"]
