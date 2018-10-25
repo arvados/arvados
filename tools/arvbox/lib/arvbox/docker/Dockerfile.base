@@ -71,6 +71,10 @@ RUN set -e && \
  curl -L -f ${PJSURL} | tar -C /usr/local -xjf - && \
  ln -s ../phantomjs-${PJSVERSION}-linux-x86_64/bin/phantomjs /usr/local/bin
 
+ENV GDVERSION=v0.23.0
+ENV GDURL=https://github.com/mozilla/geckodriver/releases/download/$GDVERSION/geckodriver-$GDVERSION-linux64.tar.gz
+RUN set -e && curl -L -f ${GDURL} | tar -C /usr/local/bin -xzf - geckodriver
+
 RUN pip install -U setuptools
 
 ENV NODEVERSION v6.11.4
