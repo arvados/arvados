@@ -15,10 +15,9 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 )
 
-var (
-	ErrInstanceTypesNotConfigured = errors.New("site configuration does not list any instance types")
-	discountConfiguredRAMPercent  = 5
-)
+var ErrInstanceTypesNotConfigured = errors.New("site configuration does not list any instance types")
+
+var discountConfiguredRAMPercent = 5
 
 // ConstraintsNotSatisfiableError includes a list of available instance types
 // to be reported back to the user.

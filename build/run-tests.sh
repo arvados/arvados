@@ -77,6 +77,10 @@ lib/cmd
 lib/controller
 lib/crunchstat
 lib/dispatchcloud
+lib/dispatchcloud/container
+lib/dispatchcloud/scheduler
+lib/dispatchcloud/ssh_executor
+lib/dispatchcloud/worker
 services/api
 services/arv-git-httpd
 services/crunchstat
@@ -926,6 +930,10 @@ gostuff=(
     lib/controller
     lib/crunchstat
     lib/dispatchcloud
+    lib/dispatchcloud/container
+    lib/dispatchcloud/scheduler
+    lib/dispatchcloud/ssh_executor
+    lib/dispatchcloud/worker
     sdk/go/arvados
     sdk/go/arvadosclient
     sdk/go/auth

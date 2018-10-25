@@ -69,3 +69,4 @@ sdk/R/NAMESPACE
 sdk/R/.Rbuildignore
 sdk/R/ArvadosR.Rproj
 *.Rd
+lib/dispatchcloud/test/sshkey_*
