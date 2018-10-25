@@ -2,12 +2,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Redirect, RouteProps } from "react-router";
+import { RouteProps } from "react-router";
 import * as React from "react";
 import { connect, DispatchProp } from "react-redux";
 import { getUserDetails, saveApiToken } from "~/store/auth/auth-action";
 import { getUrlParameter } from "~/common/url";
 import { AuthService } from "~/services/auth-service/auth-service";
+import { navigateToRootProject } from "~/store/navigation/navigation-action";
 
 interface ApiTokenProps {
     authService: AuthService;
@@ -19,10 +20,12 @@ export const ApiToken = connect()(
             const search = this.props.location ? this.props.location.search : "";
             const apiToken = getUrlParameter(search, 'api_token');
             this.props.dispatch(saveApiToken(apiToken));
-            this.props.dispatch<any>(getUserDetails());
+            this.props.dispatch<any>(getUserDetails()).finally(() => {
+                this.props.dispatch(navigateToRootProject);
+            });
         }
         render() {
-            return <Redirect to="/"/>;
+            return <div/>;
         }
     }
 );

@@ -3,59 +3,65 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Paper, StyleRulesCallback, withStyles, WithStyles, List } from '@material-ui/core';
+import { Paper, StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core';
 import { SearchView } from '~/store/search-bar/search-bar-reducer';
-import { RenderRecentQueries, RenderSavedQueries } from '~/views-components/search-bar/search-bar-view';
-import { SearchBarAdvanceFormData } from '~/models/search-bar';
+import {
+    SearchBarRecentQueries,
+    SearchBarRecentQueriesActionProps 
+} from '~/views-components/search-bar/search-bar-recent-queries';
+import {
+    SearchBarSavedQueries,
+    SearchBarSavedQueriesDataProps,
+    SearchBarSavedQueriesActionProps
+} from '~/views-components/search-bar/search-bar-save-queries';
 
-type CssRules = 'advanced' | 'searchQueryList' | 'list' | 'searchView';
+type CssRules = 'advanced' | 'label' | 'root';
 
 const styles: StyleRulesCallback<CssRules> = theme => {
     return {
+        root: {
+            color: theme.palette.common.black,
+            borderRadius: `0 0 ${theme.spacing.unit / 2}px ${theme.spacing.unit / 2}px`
+        },
         advanced: {
             display: 'flex',
             justifyContent: 'flex-end',
-            paddingRight: theme.spacing.unit * 2,
-            paddingBottom: theme.spacing.unit,
-            fontSize: '14px',
+            padding: theme.spacing.unit,
+            fontSize: '0.875rem',
             cursor: 'pointer',
             color: theme.palette.primary.main
         },
-        searchQueryList: {
+        label: {
+            fontSize: '0.875rem',
             padding: `${theme.spacing.unit / 2}px ${theme.spacing.unit}px `,
-            background: '#f2f2f2',
-            fontSize: '14px'
-        },
-        list: {
-            padding: '0px'
-        },
-        searchView: {
-            color: theme.palette.common.black,
-            borderRadius: `0 0 ${theme.spacing.unit / 2}px ${theme.spacing.unit / 2}px`
+            color: theme.palette.grey["900"],
+            background: theme.palette.grey["200"]
         }
     };
 };
 
-interface SearchBarBasicViewProps {
-    setView: (currentView: string) => void;
-    recentQueries: () => string[];
-    deleteSavedQuery: (id: number) => void;
-    savedQueries: SearchBarAdvanceFormData[];
+export type SearchBarBasicViewDataProps = SearchBarSavedQueriesDataProps;
+
+export type SearchBarBasicViewActionProps = {
+    onSetView: (currentView: string) => void;
     onSearch: (searchValue: string) => void;
-    editSavedQuery: (data: SearchBarAdvanceFormData, id: number) => void;
-}
+} & SearchBarRecentQueriesActionProps & SearchBarSavedQueriesActionProps;
+
+type SearchBarBasicViewProps = SearchBarBasicViewDataProps & SearchBarBasicViewActionProps & WithStyles<CssRules>;
 
 export const SearchBarBasicView = withStyles(styles)(
-    ({ classes, setView, recentQueries, deleteSavedQuery, savedQueries, onSearch, editSavedQuery }: SearchBarBasicViewProps & WithStyles<CssRules>) =>
-        <Paper className={classes.searchView}>
-            <div className={classes.searchQueryList}>Recent search queries</div>
-            <List component="nav" className={classes.list}>
-                {recentQueries().map((query, index) => <RenderRecentQueries key={index} text={query} onSearch={onSearch} />)}
-            </List>
-            <div className={classes.searchQueryList}>Saved search queries</div>
-            <List component="nav" className={classes.list}>
-                {savedQueries.map((query, index) => <RenderSavedQueries key={index} text={query.searchQuery} id={index} deleteSavedQuery={deleteSavedQuery} onSearch={onSearch} data={query} editSavedQuery={editSavedQuery}/>)}
-            </List>
-            <div className={classes.advanced} onClick={() => setView(SearchView.ADVANCED)}>Advanced search</div>
+    ({ classes, onSetView, loadRecentQueries, deleteSavedQuery, savedQueries, onSearch, editSavedQuery }: SearchBarBasicViewProps) =>
+        <Paper className={classes.root}>
+            <div className={classes.label}>Recent search queries</div>
+            <SearchBarRecentQueries
+                onSearch={onSearch}
+                loadRecentQueries={loadRecentQueries} />
+            <div className={classes.label}>Saved search queries</div>
+            <SearchBarSavedQueries
+                onSearch={onSearch}
+                savedQueries={savedQueries}
+                editSavedQuery={editSavedQuery}
+                deleteSavedQuery={deleteSavedQuery} />
+            <div className={classes.advanced} onClick={() => onSetView(SearchView.ADVANCED)}>Advanced search</div>
         </Paper>
 );

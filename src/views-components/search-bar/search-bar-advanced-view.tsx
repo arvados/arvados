@@ -60,19 +60,24 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     }
 });
 
-interface SearchBarAdvancedViewDataProps {
+interface SearchBarAdvancedViewFormDataProps {
     submitting: boolean;
     invalid: boolean;
     pristine: boolean;
 }
 
-interface SearchBarAdvancedViewActionProps {
-    setView: (currentView: string) => void;
-    saveQuery: (data: SearchBarAdvanceFormData) => void;
+export interface SearchBarAdvancedViewDataProps {
     tags: any;
 }
 
-type SearchBarAdvancedViewProps = SearchBarAdvancedViewActionProps & SearchBarAdvancedViewDataProps
+export interface SearchBarAdvancedViewActionProps {
+    onSetView: (currentView: string) => void;
+    saveQuery: (data: SearchBarAdvanceFormData) => void;
+}
+
+type SearchBarAdvancedViewProps = SearchBarAdvancedViewActionProps & SearchBarAdvancedViewDataProps;
+
+type SearchBarAdvancedViewFormProps = SearchBarAdvancedViewProps & SearchBarAdvancedViewFormDataProps
     & InjectedFormProps & WithStyles<CssRules>;
 
 const validate = (values: any) => {
@@ -88,7 +93,7 @@ const validate = (values: any) => {
 };
 
 export const SearchBarAdvancedView = compose(
-    reduxForm<SearchBarAdvanceFormData, SearchBarAdvancedViewActionProps>({
+    reduxForm<SearchBarAdvanceFormData, SearchBarAdvancedViewProps>({
         form: SEARCH_BAR_ADVANCE_FORM_NAME,
         validate,
         onSubmit: (data: SearchBarAdvanceFormData, dispatch: Dispatch) => {
@@ -97,7 +102,7 @@ export const SearchBarAdvancedView = compose(
         }
     }),
     withStyles(styles))(
-        ({ classes, setView, handleSubmit, submitting, invalid, pristine, tags }: SearchBarAdvancedViewProps) =>
+        ({ classes, onSetView, handleSubmit, submitting, invalid, pristine, tags }: SearchBarAdvancedViewFormProps) =>
             <Paper className={classes.searchView}>
                 <form onSubmit={handleSubmit}>
                     <Grid container direction="column" justify="flex-start" alignItems="flex-start">
@@ -126,7 +131,7 @@ export const SearchBarAdvancedView = compose(
                                     <SearchBarTrashField />
                                 </Grid>
                             </Grid>
-                            <IconButton onClick={() => setView(SearchView.BASIC)} className={classes.closeIcon}>
+                            <IconButton onClick={() => onSetView(SearchView.BASIC)} className={classes.closeIcon}>
                                 <CloseIcon />
                             </IconButton>
                         </Grid>
