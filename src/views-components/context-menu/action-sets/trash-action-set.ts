@@ -9,8 +9,6 @@ import { toggleTrashed } from "~/store/trash/trash-actions";
 export const trashActionSet: ContextMenuActionSet = [[
     {
         component: ToggleTrashAction,
-        execute: (dispatch, resource) => {
-            dispatch<any>(toggleTrashed(resource.kind, resource.uuid, resource.ownerUuid, resource.isTrashed!!));
-        }
+        execute: (dispatch, resource) => dispatch<any>(toggleTrashed(resource.kind, resource.uuid, resource.ownerUuid, resource.isTrashed!!))
     },
 ]];

@@ -11,16 +11,12 @@ import { openFileRemoveDialog, openRenameFileDialog } from '~/store/collection-p
 export const collectionFilesItemActionSet: ContextMenuActionSet = [[{
     name: "Rename",
     icon: RenameIcon,
-    execute: (dispatch, resource) => {
-        dispatch<any>(openRenameFileDialog({ name: resource.name, id: resource.uuid }));
-    }
+    execute: (dispatch, resource) => dispatch<any>(openRenameFileDialog({ name: resource.name, id: resource.uuid }))
 }, {
     component: DownloadCollectionFileAction,
     execute: () => { return; }
 }, {
     name: "Remove",
     icon: RemoveIcon,
-    execute: (dispatch, resource) => {
-        dispatch<any>(openFileRemoveDialog(resource.uuid));
-    }
+    execute: (dispatch, resource) => dispatch<any>(openFileRemoveDialog(resource.uuid))
 }]];

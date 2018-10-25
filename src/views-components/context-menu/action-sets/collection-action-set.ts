@@ -13,14 +13,13 @@ import { openCollectionCopyDialog } from "~/store/collections/collection-copy-ac
 import { ToggleTrashAction } from "~/views-components/context-menu/actions/trash-action";
 import { toggleCollectionTrashed } from "~/store/trash/trash-actions";
 import { detailsPanelActions } from '~/store/details-panel/details-panel-action';
+import { openAdvancedTabDialog } from "~/store/advanced-tab/advanced-tab";
 
 export const collectionActionSet: ContextMenuActionSet = [[
     {
         icon: RenameIcon,
         name: "Edit collection",
-        execute: (dispatch, resource) => {
-            dispatch<any>(openCollectionUpdateDialog(resource));
-        }
+        execute: (dispatch, resource) => dispatch<any>(openCollectionUpdateDialog(resource))
     },
     {
         icon: ShareIcon,
@@ -44,16 +43,13 @@ export const collectionActionSet: ContextMenuActionSet = [[
     },
     {
         component: ToggleTrashAction,
-        execute: (dispatch, resource) => {
-            dispatch<any>(toggleCollectionTrashed(resource.uuid, resource.isTrashed!!));
-        }
+        execute: (dispatch, resource) => dispatch<any>(toggleCollectionTrashed(resource.uuid, resource.isTrashed!!))
     },
     {
         icon: CopyIcon,
         name: "Copy to project",
-        execute: (dispatch, resource) => {
-            dispatch<any>(openCollectionCopyDialog(resource));
-        }
+        execute: (dispatch, resource) => dispatch<any>(openCollectionCopyDialog(resource))
+
     },
     {
         icon: DetailsIcon,
@@ -70,9 +66,7 @@ export const collectionActionSet: ContextMenuActionSet = [[
     {
         icon: AdvancedIcon,
         name: "Advanced",
-        execute: (dispatch, resource) => {
-            // add code
-        }
+        execute: (dispatch, resource) => dispatch<any>(openAdvancedTabDialog(resource.uuid))
     },
     {
         icon: RemoveIcon,

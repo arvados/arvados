@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { ContextMenuActionSet } from "../context-menu-action-set";
-import { NewProjectIcon, RenameIcon, CopyIcon, MoveToIcon, DetailsIcon } from '~/components/icon/icon';
+import { NewProjectIcon, RenameIcon, CopyIcon, MoveToIcon, DetailsIcon, AdvancedIcon } from '~/components/icon/icon';
 import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "~/store/favorites/favorites-actions";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
@@ -13,21 +13,18 @@ import { openProjectUpdateDialog } from '~/store/projects/project-update-actions
 import { ToggleTrashAction } from "~/views-components/context-menu/actions/trash-action";
 import { toggleProjectTrashed } from "~/store/trash/trash-actions";
 import { detailsPanelActions } from '~/store/details-panel/details-panel-action';
+import { openAdvancedTabDialog } from "~/store/advanced-tab/advanced-tab";
 
 export const projectActionSet: ContextMenuActionSet = [[
     {
         icon: NewProjectIcon,
         name: "New project",
-        execute: (dispatch, resource) => {
-            dispatch<any>(openProjectCreateDialog(resource.uuid));
-        }
+        execute: (dispatch, resource) => dispatch<any>(openProjectCreateDialog(resource.uuid))
     },
     {
         icon: RenameIcon,
         name: "Edit project",
-        execute: (dispatch, resource) => {
-            dispatch<any>(openProjectUpdateDialog(resource));
-        }
+        execute: (dispatch, resource) => dispatch<any>(openProjectUpdateDialog(resource))
     },
     {
         component: ToggleFavoriteAction,
@@ -39,9 +36,7 @@ export const projectActionSet: ContextMenuActionSet = [[
     },
     {
         component: ToggleTrashAction,
-        execute: (dispatch, resource) => {
-            dispatch<any>(toggleProjectTrashed(resource.uuid, resource.ownerUuid, resource.isTrashed!!));
-        }
+        execute: (dispatch, resource) => dispatch<any>(toggleProjectTrashed(resource.uuid, resource.ownerUuid, resource.isTrashed!!))
     },
     {
         icon: MoveToIcon,
@@ -59,5 +54,10 @@ export const projectActionSet: ContextMenuActionSet = [[
         icon: DetailsIcon,
         name: "View details",
         execute: dispatch => dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL())
-    }
+    },
+    {
+        icon: AdvancedIcon,
+        name: "Advanced",
+        execute: (dispatch, resource) => dispatch<any>(openAdvancedTabDialog(resource.uuid))
+    },
 ]];
