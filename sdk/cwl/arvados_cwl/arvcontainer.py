@@ -214,8 +214,7 @@ class ArvadosContainer(JobBase):
         container_request["container_image"] = arv_docker_get_image(self.arvrunner.api,
                                                                     docker_req,
                                                                     runtimeContext.pull_image,
-                                                                    self.arvrunner.project_uuid,
-                                                                    runtimeContext.submit_runner_cluster)
+                                                                    self.arvrunner.project_uuid)
 
         api_req, _ = self.get_requirement("http://arvados.org/cwl#APIRequirement")
         if api_req:

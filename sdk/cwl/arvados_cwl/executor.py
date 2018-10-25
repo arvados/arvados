@@ -41,6 +41,7 @@ from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, get_listing
 from cwltool.command_line_tool import compute_checksums
 
 logger = logging.getLogger('arvados.cwl-runner')
+metrics = logging.getLogger('arvados.cwl-runner.metrics')
 
 class RuntimeStatusLoggingHandler(logging.Handler):
     """
