@@ -11,6 +11,7 @@ import { GroupContentsResourcePrefix } from '~/services/groups-service/groups-se
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { ContainerRequestResource } from '~/models/container-request';
 import { CollectionResource } from '~/models/collection';
+import { ProjectResource } from '~/models/project';
 
 export const ADVANCED_TAB_DIALOG = 'advancedTabDialog';
 
@@ -39,12 +40,6 @@ enum ProcessData {
 enum ProjectData {
     GROUP = 'group',
     DELETE_AT = 'delete_at'
-}
-
-interface AdvancedData extends Resource {
-    storageClassesConfirmed: string[];
-    outputName: string;
-    deleteAt: string;
 }
 
 export const openAdvancedTabDialog = (uuid: string) =>
@@ -82,7 +77,7 @@ export const openAdvancedTabDialog = (uuid: string) =>
                 dispatch(dialogActions.OPEN_DIALOG({ id: ADVANCED_TAB_DIALOG, data: dataProcess }));
             } else if (kind === ResourceKind.PROJECT) {
                 const dataProject: AdvancedTabDialogData = {
-                    apiResponse: `'${data}'`,
+                    apiResponse: groupRequestApiResponse(data),
                     pythonHeader: pythonHeader(ProjectData.GROUP),
                     pythonExample: pythonExample(data.uuid, GroupContentsResourcePrefix.PROJECT),
                     cliGetHeader: cliGetHeader(ProjectData.GROUP),
@@ -149,103 +144,113 @@ EOF`;
 };
 
 const containerRequestApiResponse = (apiResponse: ContainerRequestResource) => {
+    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name, description, properties, state, requestingContainerUuid, containerUuid,
+        containerCountMax, mounts, runtimeConstraints, containerImage, environment, cwd, command, outputPath, priority, expiresAt, filters, updatedAt, containerCount,
+        useExisting, schedulingParameters, outputUuid, logUuid, outputName, outputTtl } = apiResponse;
     const response = `{
-    "uuid": "${apiResponse.uuid}",
-    "owner_uuid": "${apiResponse.ownerUuid}",
-    "created_at": "${apiResponse.createdAt}",
-    "modified_at": "${apiResponse.modifiedAt}",
-    "modified_by_client_uuid": "${apiResponse.modifiedByClientUuid}",
-    "modified_by_user_uuid": "${apiResponse.modifiedByUserUuid}",
-    "name": "${apiResponse.name}",
-    "description": "${apiResponse.description}",
-    "properties": "${apiResponse.properties}",
-    "state": "${apiResponse.state}",
-    "requesting_container_uuid": "${apiResponse.requestingContainerUuid}",
-    "container_uuid": "${apiResponse.containerUuid}",
-    "container_count_max": "${apiResponse.containerCountMax}",
-    "mounts": "${apiResponse.mounts}",
-    "runtime_constraints": "${apiResponse.runtimeConstraints}",
-    "container_image": "${apiResponse.containerImage}",
-    "environment": "${apiResponse.environment}",
-    "cwd": "${apiResponse.cwd}",
-    "command": "${apiResponse.command}",
-    "output_path": "${apiResponse.outputPath}",
-    "priority": "${apiResponse.priority}",
-    "expires_at": "${apiResponse.expiresAt}",
-    "filters": "${apiResponse.filters}"
-    "use_existing": "${apiResponse.useExisting}",
-    "output_uuid": "${apiResponse.outputUuid}",
-    "scheduling_parameters": "${apiResponse.schedulingParameters}",
-    "kind": "${apiResponse.kind}",
-    "log_uuid": "${apiResponse.logUuid}",
-    "output_name": "${apiResponse.outputName}",
-    "output_ttl": "${apiResponse.outputTtl}",
+  "uuid": "${uuid}",
+  "owner_uuid": "${ownerUuid}",
+  "created_at": "${createdAt}",
+  "modified_at": "${modifiedAt}",
+  "modified_by_client_uuid": "${modifiedByClientUuid}",
+  "modified_by_user_uuid": "${modifiedByUserUuid}",
+  "name": "${name}",
+  "description": "${description}",
+  "properties": {
+    "?"
+  },
+  "state": "${state}",
+  "requesting_container_uuid": "${requestingContainerUuid}",
+  "container_uuid": "${containerUuid}",
+  "container_count_max": "${containerCountMax}",
+  "mounts": {
+    "?"
+  },
+  "runtime_constraints": { ${runtimeConstraints.API ? `\n    "API": "${runtimeConstraints.API}",` : ''} ${runtimeConstraints.vcpus ? `\n    "vcpus": "${runtimeConstraints.vcpus}",` : ''} ${runtimeConstraints.ram ? `\n    "ram": "${runtimeConstraints.ram}"` : ''} ${runtimeConstraints.keepCacheRam ? `\n    "keep_cache_ram": "${runtimeConstraints.keepCacheRam}"` : ''}
+  },
+  "container_image": "${containerImage}",
+  "environment": {
+    "?"
+  },
+  "cwd": "${cwd}",
+  "command": [
+    "${command.join(`", \n    "`)}"
+  ],
+  "output_path": "${outputPath}",
+  "priority": "${priority}",
+  "expires_at": "${expiresAt}",
+  "filters": "${filters}"
+  "updated_at": "${updatedAt || null}"
+  "container_count": "${containerCount}"
+  "use_existing": "${useExisting}",
+  "scheduling_parameters": { ${schedulingParameters.maxRunTime ? `\n    "max_runtime": "${schedulingParameters.maxRunTime}",` : ''} ${schedulingParameters.partitions ? `\n    "partitions": "${schedulingParameters.partitions}",` : ''} ${schedulingParameters.preemptible ? `\n    "preemptible": "${schedulingParameters.preemptible}"` : ''}
+  },
+  "output_uuid": "${outputUuid}",
+  "log_uuid": "${logUuid}",
+  "output_name": "${outputName}",
+  "output_ttl": "${outputTtl}"
 }`;
 
     return response;
 };
 
 const collectionApiResponse = (apiResponse: CollectionResource) => {
+    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name, description, properties, portableDataHash, replicationDesired,
+        replicationConfirmedAt, replicationConfirmed, updatedAt, manifestText, deleteAt, fileNames, trashAt, isTrashed, storageClassesDesired,
+        storageClassesConfirmed, storageClassesConfirmedAt } = apiResponse;
     const response = `{
-    "uuid": "${apiResponse.uuid}",
-    "owner_uuid": "${apiResponse.ownerUuid}",
-    "created_at": "${apiResponse.createdAt}",
-    "modified_at": "${apiResponse.modifiedAt}",
-    "modified_by_client_uuid": "${apiResponse.modifiedByClientUuid}",
-    "modified_by_user_uuid": "${apiResponse.modifiedByUserUuid}",
-    "portable_data_hash": "${apiResponse.portableDataHash}",
-    "replication_desired": "${apiResponse.replicationDesired}",
-    "replication_confirmed_at": "${apiResponse.replicationConfirmedAt}",
-    "replication_confirmed": "${apiResponse.replicationConfirmed}",
-
-    "manifest_text": "${apiResponse.manifestText}",
-    "name": "${apiResponse.name}",
-    "description": "${apiResponse.description}",
-    "properties": "${apiResponse.properties}",
-    "delete_at": "${apiResponse.deleteAt}",
-    
-    "trash_at": "${apiResponse.trashAt}",
-    "is_trashed": "${apiResponse.isTrashed}",
-    
-
-    
+  "uuid": "${uuid}",
+  "owner_uuid": "${ownerUuid}",
+  "created_at": "${createdAt}",
+  "modified_by_client_uuid": "${modifiedByClientUuid}",
+  "modified_by_user_uuid": "${modifiedByUserUuid}",
+  "modified_at": "${modifiedAt}",
+  "portable_data_hash": "${portableDataHash}",
+  "replication_desired": "${replicationDesired}",
+  "replication_confirmed_at": "${replicationConfirmedAt}",
+  "replication_confirmed": "${replicationConfirmed}",
+  "updated_at": "${updatedAt || null}"
+  "manifest_text": "${manifestText || null}",
+  "name": "${name}",
+  "description": "${description}",
+  "properties": { 
+    "?"
+  },
+  "delete_at": "${deleteAt}",
+  "file_names": "${fileNames || null}",
+  "trash_at": "${trashAt}",
+  "is_trashed": "${isTrashed}",
+  "storage_classes_desired": [
+    ${storageClassesDesired.length > 0 ? `"${storageClassesDesired.join(`", \n    "`)}"` : ''}
+  ],
+  "storage_classes_confirmed": [
+    ${storageClassesConfirmed.length > 0 ? `"${storageClassesConfirmed.join(`", \n    "`)}"` : ''}
+  ],
+  "storage_classes_confirmed_at": "${storageClassesConfirmedAt}"  
 }`;
 
     return response;
 };
 
-const groupRequestApiResponse = (apiResponse: ContainerRequestResource) => {
+const groupRequestApiResponse = (apiResponse: ProjectResource) => {
+    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name, description, updatedAt, groupClass, trashAt, isTrashed, deleteAt } = apiResponse;
     const response = `{
-    "uuid": "${apiResponse.uuid}",
-    "owner_uuid": "${apiResponse.ownerUuid}",
-    "created_at": "${apiResponse.createdAt}",
-    "modified_at": "${apiResponse.modifiedAt}",
-    "modified_by_client_uuid": "${apiResponse.modifiedByClientUuid}",
-    "modified_by_user_uuid": "${apiResponse.modifiedByUserUuid}",
-    "name": "${apiResponse.name}",
-    "description": "${apiResponse.description}",
-    "properties": "${apiResponse.properties}",
-    "state": "${apiResponse.state}",
-    "requesting_container_uuid": "${apiResponse.requestingContainerUuid}",
-    "container_uuid": "${apiResponse.containerUuid}",
-    "container_count_max": "${apiResponse.containerCountMax}",
-    "mounts": "${apiResponse.mounts}",
-    "runtime_constraints": "${apiResponse.runtimeConstraints}",
-    "container_image": "${apiResponse.containerImage}",
-    "environment": "${apiResponse.environment}",
-    "cwd": "${apiResponse.cwd}",
-    "command": "${apiResponse.command}",
-    "output_path": "${apiResponse.outputPath}",
-    "priority": "${apiResponse.priority}",
-    "expires_at": "${apiResponse.expiresAt}",
-    "filters": "${apiResponse.filters}"
-    "use_existing": "${apiResponse.useExisting}",
-    "output_uuid": "${apiResponse.outputUuid}",
-    "scheduling_parameters": "${apiResponse.schedulingParameters}",
-    "kind": "${apiResponse.kind}",
-    "log_uuid": "${apiResponse.logUuid}",
-    "output_name": "${apiResponse.outputName}",
-    "output_ttl": "${apiResponse.outputTtl}",
+  "uuid": "${uuid}",
+  "owner_uuid": "${ownerUuid}",
+  "created_at": "${createdAt}",
+  "modified_by_client_uuid": "${modifiedByClientUuid}",
+  "modified_by_user_uuid": "${modifiedByUserUuid}",
+  "modified_at": "${modifiedAt}",
+  "name": "${name}",
+  "description": "${description}",
+  "updated_at": "${updatedAt || null}"
+  "group_class": "${groupClass}",
+  "trash_at": "${trashAt}",
+  "is_trashed": "${isTrashed}",
+  "delete_at": "${deleteAt}",
+  "properties": {
+    "?"
+  }
 }`;
 
     return response;
