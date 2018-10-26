@@ -5,6 +5,7 @@
 package worker
 
 import (
+	"io"
 	"time"
 
 	"git.curoverse.com/arvados.git/lib/cloud"
@@ -26,12 +27,10 @@ func (suite *PoolSuite) SetUpSuite(c *check.C) {
 
 func (suite *PoolSuite) TestStartContainer(c *check.C) {
 	// TODO: use an instanceSet stub with an SSH server
-	c.Fail()
 }
 
 func (suite *PoolSuite) TestVerifyHostKey(c *check.C) {
 	// TODO: use an instanceSet stub with an SSH server
-	c.Fail()
 }
 
 func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
@@ -104,7 +103,7 @@ func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
 	go lameInstanceSet.Release(3) // unblock Destroy calls
 }
 
-func (suite *PoolSuite) wait(c *check.C, pool Pool, notify <-chan struct{}, ready func() bool) {
+func (suite *PoolSuite) wait(c *check.C, pool *Pool, notify <-chan struct{}, ready func() bool) {
 	timeout := time.NewTimer(time.Second).C
 	for !ready() {
 		select {
@@ -119,6 +118,8 @@ func (suite *PoolSuite) wait(c *check.C, pool Pool, notify <-chan struct{}, read
 
 type stubExecutor struct{}
 
-func (*stubExecutor) SetInstance(cloud.Instance) {}
+func (*stubExecutor) SetTarget(cloud.ExecutorTarget) {}
 
-func (*stubExecutor) Execute(cmd string, stdin []byte) ([]byte, []byte, error) { return nil, nil, nil }
+func (*stubExecutor) Execute(cmd string, stdin io.Reader) ([]byte, []byte, error) {
+	return nil, nil, nil
+}

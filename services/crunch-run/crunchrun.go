@@ -1749,9 +1749,9 @@ func main() {
 	case *detach && !detached:
 		os.Exit(Detach(flag.Arg(0), os.Args, os.Stdout, os.Stderr))
 	case *kill >= 0:
-		os.Exit(Kill(flag.Arg(0), syscall.Signal(*kill), os.Stdout, os.Stderr))
+		os.Exit(KillProcess(flag.Arg(0), syscall.Signal(*kill), os.Stdout, os.Stderr))
 	case *list:
-		os.Exit(List(os.Stdout, os.Stderr))
+		os.Exit(ListProcesses(os.Stdout, os.Stderr))
 	}
 
 	// Print version information if requested

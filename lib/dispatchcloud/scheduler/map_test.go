@@ -7,6 +7,7 @@ package scheduler
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"git.curoverse.com/arvados.git/lib/dispatchcloud/container"
 	"git.curoverse.com/arvados.git/lib/dispatchcloud/test"
@@ -40,14 +41,19 @@ type stubQueue struct {
 	ents map[string]container.QueueEnt
 }
 
-func (q *stubQueue) Entries() map[string]container.QueueEnt {
-	return q.ents
+func (q *stubQueue) Entries() (map[string]container.QueueEnt, time.Time) {
+	return q.ents, time.Now()
 }
 func (q *stubQueue) Lock(uuid string) error {
 	return q.setState(uuid, arvados.ContainerStateLocked)
 }
 func (q *stubQueue) Unlock(uuid string) error {
 	return q.setState(uuid, arvados.ContainerStateQueued)
+}
+func (q *stubQueue) Cancel(uuid string) error {
+	return q.setState(uuid, arvados.ContainerStateCancelled)
+}
+func (q *stubQueue) Forget(uuid string) {
 }
 func (q *stubQueue) Get(uuid string) (arvados.Container, bool) {
 	ent, ok := q.ents[uuid]
@@ -73,7 +79,7 @@ type stubPool struct {
 	notify    <-chan struct{}
 	unalloc   map[arvados.InstanceType]int // idle+booting+unknown
 	idle      map[arvados.InstanceType]int
-	running   map[string]bool
+	running   map[string]time.Time
 	atQuota   bool
 	canCreate int
 	creates   []arvados.InstanceType
@@ -81,10 +87,10 @@ type stubPool struct {
 	shutdowns int
 }
 
-func (p *stubPool) AtQuota() bool               { return p.atQuota }
-func (p *stubPool) Subscribe() <-chan struct{}  { return p.notify }
-func (p *stubPool) Unsubscribe(<-chan struct{}) {}
-func (p *stubPool) Running() map[string]bool    { return p.running }
+func (p *stubPool) AtQuota() bool                 { return p.atQuota }
+func (p *stubPool) Subscribe() <-chan struct{}    { return p.notify }
+func (p *stubPool) Unsubscribe(<-chan struct{})   {}
+func (p *stubPool) Running() map[string]time.Time { return p.running }
 func (p *stubPool) Unallocated() map[arvados.InstanceType]int {
 	r := map[arvados.InstanceType]int{}
 	for it, n := range p.unalloc {
@@ -100,6 +106,9 @@ func (p *stubPool) Create(it arvados.InstanceType) error {
 	p.canCreate--
 	p.unalloc[it]++
 	return nil
+}
+func (p *stubPool) KillContainer(uuid string) {
+	p.running[uuid] = time.Now()
 }
 func (p *stubPool) Shutdown(arvados.InstanceType) bool {
 	p.shutdowns++
@@ -118,7 +127,7 @@ func (p *stubPool) StartContainer(it arvados.InstanceType, ctr arvados.Container
 	}
 	p.idle[it]--
 	p.unalloc[it]--
-	p.running[ctr.UUID] = true
+	p.running[ctr.UUID] = time.Time{}
 	return true
 }
 
@@ -161,13 +170,16 @@ func (*SchedulerSuite) TestMapIdle(c *check.C) {
 			types[1]: 1,
 			types[2]: 2,
 		},
-		running:   map[string]bool{},
+		running:   map[string]time.Time{},
 		canCreate: 1,
 	}
 	Map(logger, &queue, &pool)
 	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{types[1]})
 	c.Check(pool.starts, check.DeepEquals, []string{uuids[4], uuids[3]})
-	c.Check(pool.running, check.DeepEquals, map[string]bool{uuids[4]: true})
+	c.Check(pool.running, check.HasLen, 1)
+	for uuid := range pool.running {
+		c.Check(uuid, check.Equals, uuids[4])
+	}
 }
 
 // Shutdown some nodes if Create() fails -- and without even calling
@@ -191,7 +203,7 @@ func (*SchedulerSuite) TestMapShutdownAtQuota(c *check.C) {
 			idle: map[arvados.InstanceType]int{
 				types[2]: 2,
 			},
-			running:   map[string]bool{},
+			running:   map[string]time.Time{},
 			creates:   []arvados.InstanceType{},
 			starts:    []string{},
 			canCreate: 0,
@@ -215,7 +227,7 @@ func (*SchedulerSuite) TestMapStartWhileCreating(c *check.C) {
 			types[1]: 1,
 			types[2]: 1,
 		},
-		running:   map[string]bool{},
+		running:   map[string]time.Time{},
 		canCreate: 2,
 	}
 	queue := stubQueue{
@@ -255,5 +267,13 @@ func (*SchedulerSuite) TestMapStartWhileCreating(c *check.C) {
 	Map(logger, &queue, &pool)
 	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{types[2], types[1]})
 	c.Check(pool.starts, check.DeepEquals, []string{uuids[6], uuids[5], uuids[3], uuids[2]})
-	c.Check(pool.running, check.DeepEquals, map[string]bool{uuids[3]: true, uuids[6]: true})
+	running := map[string]bool{}
+	for uuid, t := range pool.running {
+		if t.IsZero() {
+			running[uuid] = false
+		} else {
+			running[uuid] = true
+		}
+	}
+	c.Check(running, check.DeepEquals, map[string]bool{uuids[3]: false, uuids[6]: false})
 }

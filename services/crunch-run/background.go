@@ -87,11 +87,11 @@ func detach(uuid string, args []string, stdout, stderr io.Writer) error {
 	return nil
 }
 
-// Kill finds the crunch-run process corresponding to the given uuid,
-// and sends the given signal to it. It then waits up to 1 second for
-// the process to die. It returns 0 if the process is successfully
-// killed or didn't exist in the first place.
-func Kill(uuid string, signal syscall.Signal, stdout, stderr io.Writer) int {
+// KillProcess finds the crunch-run process corresponding to the given
+// uuid, and sends the given signal to it. It then waits up to 1
+// second for the process to die. It returns 0 if the process is
+// successfully killed or didn't exist in the first place.
+func KillProcess(uuid string, signal syscall.Signal, stdout, stderr io.Writer) int {
 	return exitcode(stderr, kill(uuid, signal, stdout, stderr))
 }
 
@@ -127,12 +127,12 @@ func kill(uuid string, signal syscall.Signal, stdout, stderr io.Writer) error {
 	if err == nil {
 		return fmt.Errorf("pid %d: sent signal %d (%s) but process is still alive", pi.PID, signal, signal)
 	}
-	fmt.Fprintln(stderr, "pid %d: %s", pi.PID, err)
+	fmt.Fprintf(stderr, "pid %d: %s\n", pi.PID, err)
 	return nil
 }
 
 // List UUIDs of active crunch-run processes.
-func List(stdout, stderr io.Writer) int {
+func ListProcesses(stdout, stderr io.Writer) int {
 	return exitcode(stderr, filepath.Walk(lockdir, func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() {
 			return filepath.SkipDir
