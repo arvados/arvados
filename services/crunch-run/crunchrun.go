@@ -79,6 +79,7 @@ type ThinDockerClient interface {
 	ContainerStart(ctx context.Context, container string, options dockertypes.ContainerStartOptions) error
 	ContainerRemove(ctx context.Context, container string, options dockertypes.ContainerRemoveOptions) error
 	ContainerWait(ctx context.Context, container string, condition dockercontainer.WaitCondition) (<-chan dockercontainer.ContainerWaitOKBody, <-chan error)
+	ContainerInspect(ctx context.Context, id string) (dockertypes.ContainerJSON, error)
 	ImageInspectWithRaw(ctx context.Context, image string) (dockertypes.ImageInspect, []byte, error)
 	ImageLoad(ctx context.Context, input io.Reader, quiet bool) (dockertypes.ImageLoadResponse, error)
 	ImageRemove(ctx context.Context, image string, options dockertypes.ImageRemoveOptions) ([]dockertypes.ImageDeleteResponseItem, error)
@@ -149,11 +150,14 @@ type ContainerRunner struct {
 
 	cStateLock sync.Mutex
 	cCancelled bool // StopContainer() invoked
+	cRemoved   bool // docker confirmed the container no longer exists
 
 	enableNetwork   string // one of "default" or "always"
 	networkMode     string // passed through to HostConfig.NetworkMode
 	arvMountLog     *ThrottledLogger
 	checkContainerd time.Duration
+
+	containerWatchdogInterval time.Duration
 }
 
 // setupSignals sets up signal handling to gracefully terminate the underlying
@@ -186,6 +190,9 @@ func (runner *ContainerRunner) stop(sig os.Signal) {
 	err := runner.Docker.ContainerRemove(context.TODO(), runner.ContainerID, dockertypes.ContainerRemoveOptions{Force: true})
 	if err != nil {
 		runner.CrunchLog.Printf("error removing container: %s", err)
+	}
+	if err == nil || strings.Contains(err.Error(), "No such container: "+runner.ContainerID) {
+		runner.cRemoved = true
 	}
 }
 
@@ -1124,6 +1131,32 @@ func (runner *ContainerRunner) WaitFinish() error {
 		runTimeExceeded = time.After(time.Duration(timeout) * time.Second)
 	}
 
+	containerGone := make(chan struct{})
+	go func() {
+		defer close(containerGone)
+		if runner.containerWatchdogInterval < 1 {
+			runner.containerWatchdogInterval = time.Minute
+		}
+		for range time.NewTicker(runner.containerWatchdogInterval).C {
+			ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(runner.containerWatchdogInterval))
+			ctr, err := runner.Docker.ContainerInspect(ctx, runner.ContainerID)
+			cancel()
+			runner.cStateLock.Lock()
+			done := runner.cRemoved || runner.ExitCode != nil
+			runner.cStateLock.Unlock()
+			if done {
+				return
+			} else if err != nil {
+				runner.CrunchLog.Printf("Error inspecting container: %s", err)
+				runner.checkBrokenNode(err)
+				return
+			} else if ctr.State == nil || !(ctr.State.Running || ctr.State.Status == "created") {
+				runner.CrunchLog.Printf("Container is not running: State=%v", ctr.State)
+				return
+			}
+		}
+	}()
+
 	containerdGone := make(chan error)
 	defer close(containerdGone)
 	if runner.checkContainerd > 0 {
@@ -1170,6 +1203,9 @@ func (runner *ContainerRunner) WaitFinish() error {
 			runner.CrunchLog.Printf("maximum run time exceeded. Stopping container.")
 			runner.stop(nil)
 			runTimeExceeded = nil
+
+		case <-containerGone:
+			return errors.New("docker client never returned status")
 
 		case err := <-containerdGone:
 			return err

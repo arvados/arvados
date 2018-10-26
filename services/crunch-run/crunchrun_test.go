@@ -47,6 +47,7 @@ var _ = Suite(&TestSuite{})
 type TestSuite struct {
 	client *arvados.Client
 	docker *TestDockerClient
+	runner *ContainerRunner
 }
 
 func (s *TestSuite) SetUpTest(c *C) {
@@ -103,6 +104,7 @@ type TestDockerClient struct {
 	api         *ArvTestClient
 	realTemp    string
 	calledWait  bool
+	ctrExited   bool
 }
 
 func NewTestDockerClient() *TestDockerClient {
@@ -174,6 +176,17 @@ func (t *TestDockerClient) ContainerWait(ctx context.Context, container string, 
 		body <- dockercontainer.ContainerWaitOKBody{StatusCode: int64(t.exitCode)}
 	}()
 	return body, err
+}
+
+func (t *TestDockerClient) ContainerInspect(ctx context.Context, id string) (c dockertypes.ContainerJSON, err error) {
+	c.ContainerJSONBase = &dockertypes.ContainerJSONBase{}
+	c.ID = "abcde"
+	if t.ctrExited {
+		c.State = &dockertypes.ContainerState{Status: "exited", Dead: true}
+	} else {
+		c.State = &dockertypes.ContainerState{Status: "running", Pid: 1234, Running: true}
+	}
+	return
 }
 
 func (t *TestDockerClient) ImageInspectWithRaw(ctx context.Context, image string) (dockertypes.ImageInspect, []byte, error) {
@@ -736,7 +749,9 @@ func (s *TestSuite) fullRunHelper(c *C, record string, extraMounts []string, exi
 	defer kc.Close()
 	cr, err = NewContainerRunner(s.client, api, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
+	s.runner = cr
 	cr.statInterval = 100 * time.Millisecond
+	cr.containerWatchdogInterval = time.Second
 	am := &ArvMountCmdLine{}
 	cr.RunArvMount = am.ArvMountTest
 
@@ -828,6 +843,24 @@ func (s *TestSuite) TestRunTimeExceeded(c *C) {
 
 	c.Check(api.CalledWith("container.state", "Cancelled"), NotNil)
 	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*maximum run time exceeded.*")
+}
+
+func (s *TestSuite) TestContainerWaitFails(c *C) {
+	api, _, _ := s.fullRunHelper(c, `{
+    "command": ["sleep", "3"],
+    "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+    "cwd": ".",
+    "mounts": {"/tmp": {"kind": "tmp"} },
+    "output_path": "/tmp",
+    "priority": 1
+}`, nil, 0, func(t *TestDockerClient) {
+		t.ctrExited = true
+		time.Sleep(10 * time.Second)
+		t.logWriter.Close()
+	})
+
+	c.Check(api.CalledWith("container.state", "Cancelled"), NotNil)
+	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*Container is not running.*")
 }
 
 func (s *TestSuite) TestCrunchstat(c *C) {
