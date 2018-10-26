@@ -50,8 +50,31 @@ export const loadRecentQueries = () =>
         return recentSearchQueries || [];
     };
 
+export const searchData = (searchValue: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const currentView = getState().searchBar.currentView;
+        dispatch(searchBarActions.SET_SEARCH_VALUE(searchValue));
+        dispatch(searchBarActions.SET_SEARCH_RESULTS([]));
+        dispatch<any>(searchGroups(searchValue));
+        if (currentView === SearchView.BASIC) {
+            dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
+            dispatch(navigateToSearchResults);
+        }
+
+    };
+
+export const searchAdvanceData = (data: SearchBarAdvanceFormData) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const searchValue = getState().searchBar.searchValue;
+        dispatch<any>(saveQuery(data));
+        dispatch<any>(searchGroups(searchValue, 100, data.type));
+        dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.BASIC));
+        dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
+        dispatch(navigateToSearchResults);
+    };
+
 // Todo: create ids for particular searchQuery
-export const saveQuery = (data: SearchBarAdvanceFormData) =>
+const saveQuery = (data: SearchBarAdvanceFormData) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const savedSearchQueries = services.searchService.getSavedQueries();
         const filteredQuery = savedSearchQueries.find(query => query.searchQuery === data.searchQuery);
@@ -66,8 +89,6 @@ export const saveQuery = (data: SearchBarAdvanceFormData) =>
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Query has been sucessfully saved', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
             }
         }
-        dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.BASIC));
-        dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
     };
 
 export const deleteSavedQuery = (id: number) =>
@@ -101,60 +122,37 @@ export const closeSearchView = () =>
         }
     };
 
+export const closeAdvanceView = () => 
+    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(searchBarActions.SET_SEARCH_VALUE(''));
+        dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.BASIC));
+    };
+
 export const navigateToItem = (uuid: string) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
         dispatch(navigateTo(uuid));
     };
 
-export const searchData = (searchValue: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const currentView = getState().searchBar.currentView;
-        if (currentView !== SearchView.AUTOCOMPLETE) {
-            dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
-        }
-        dispatch(searchBarActions.SET_SEARCH_VALUE(searchValue));
-        dispatch(searchBarActions.SET_SEARCH_RESULTS([]));
-        if (searchValue) {
-            const filters = getFilters('name', searchValue);
-            const { items } = await services.groupsService.contents('', {
-                filters,
-                limit: 5,
-                recursive: true
-            });
-            dispatch(searchBarActions.SET_SEARCH_RESULTS(items));
-        }
-        if (currentView !== SearchView.AUTOCOMPLETE) {
-            dispatch(navigateToSearchResults);
-        }
-        
-    };
-
 export const changeData = (searchValue: string) => 
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(searchBarActions.SET_SEARCH_VALUE(searchValue));
-        if (searchValue.length > 0) {
+        const currentView = getState().searchBar.currentView;
+        const searchValuePresent = searchValue.length > 0;
+
+        if (currentView === SearchView.ADVANCED) {
+
+        } else if (searchValuePresent) {
             dispatch<any>(goToView(SearchView.AUTOCOMPLETE));
+            debounceStartSearch(dispatch);
         } else {
             dispatch<any>(goToView(SearchView.BASIC));
-        }
-        debounceStartSearch(dispatch);
-    };
-
-const debounceStartSearch = debounce((dispatch: Dispatch) => dispatch<any>(startSearch()), DEFAULT_SEARCH_DEBOUNCE);
-
-const startSearch = () => 
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const searchValue = getState().searchBar.searchValue;
-        if (searchValue.length > 0) {
-            dispatch<any>(searchData(searchValue));
-        } else {
             dispatch(searchBarActions.SET_SEARCH_VALUE(searchValue));
             dispatch(searchBarActions.SET_SEARCH_RESULTS([]));
         }
     };
 
-export const submitData = (event: React.FormEvent<HTMLFormElement>) => 
+export const submitData = (event: React.FormEvent<HTMLFormElement>) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         event.preventDefault();
         const searchValue = getState().searchBar.searchValue;
@@ -163,31 +161,50 @@ export const submitData = (event: React.FormEvent<HTMLFormElement>) =>
         dispatch<any>(loadRecentQueries());
     };
 
-export const searchDataOnEnter = (searchValue: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+const searchDataOnEnter = (searchValue: string) =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
         dispatch(searchBarActions.SET_SEARCH_VALUE(searchValue));
         dispatch(searchBarActions.SET_SEARCH_RESULTS([]));
-        if (searchValue) {
-            const filters = getFilters('name', searchValue);
+        dispatch<any>(searchGroups(searchValue, 100));
+        dispatch(navigateToSearchResults);
+    };
+
+const debounceStartSearch = debounce((dispatch: Dispatch) => dispatch<any>(startSearch()), DEFAULT_SEARCH_DEBOUNCE);
+
+const startSearch = () => 
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const searchValue = getState().searchBar.searchValue;
+        dispatch<any>(searchData(searchValue));
+    };
+
+const searchGroups = (searchValue: string, limit = 5, resourceKind?: ResourceKind) => 
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const currentView = getState().searchBar.currentView;
+        
+        if (searchValue || currentView === SearchView.ADVANCED) {
+            const filters = getFilters('name', searchValue, resourceKind);
             const { items } = await services.groupsService.contents('', {
                 filters,
-                limit: 5,
+                limit,
                 recursive: true
             });
             dispatch(searchBarActions.SET_SEARCH_RESULTS(items));
         }
-        dispatch(navigateToSearchResults);
     };
 
-export const getFilters = (filterName: string, searchValue: string): string => {
+export const getFilters = (filterName: string, searchValue: string, resourceKind?: ResourceKind): string => {
     return new FilterBuilder()
-        .addIsA("uuid", [ResourceKind.PROJECT, ResourceKind.COLLECTION, ResourceKind.PROCESS])
+        .addIsA("uuid", buildUuidFilter(resourceKind))
         .addILike(filterName, searchValue, GroupContentsResourcePrefix.COLLECTION)
         .addILike(filterName, searchValue, GroupContentsResourcePrefix.PROCESS)
         .addILike(filterName, searchValue, GroupContentsResourcePrefix.PROJECT)
         .addEqual('groupClass', GroupClass.PROJECT, GroupContentsResourcePrefix.PROJECT)
         .getFilters();
+};
+
+const buildUuidFilter = (type?: ResourceKind): ResourceKind[] => {
+    return type ? [type] : [ResourceKind.PROJECT, ResourceKind.COLLECTION, ResourceKind.PROCESS];
 };
 
 export const initAdvanceFormProjectsTree = () =>
