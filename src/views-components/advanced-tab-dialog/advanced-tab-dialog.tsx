@@ -10,20 +10,23 @@ import { compose } from 'redux';
 import { ADVANCED_TAB_DIALOG } from "~/store/advanced-tab/advanced-tab";
 import { DefaultCodeSnippet } from "~/components/default-code-snippet/default-code-snippet";
 
-type CssRules = 'content' | 'codeSnippet' | 'secondContentText';
+type CssRules = 'content' | 'codeSnippet' | 'spacing';
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     content: {
-        paddingTop: theme.spacing.unit * 3
+        paddingTop: theme.spacing.unit * 3,
+        minHeight: '400px',
+        minWidth: '1232px'
     },
     codeSnippet: {
         borderRadius: theme.spacing.unit * 0.5,
         border: '1px solid',
-        borderColor: theme.palette.grey["400"]
+        borderColor: theme.palette.grey["400"],
+        maxHeight: '400px'
     },
-    secondContentText: {
-        paddingTop: theme.spacing.unit * 2
-    }
+    spacing: {
+        paddingBottom: theme.spacing.unit * 2
+    },
 });
 
 export const AdvancedTabDialog = compose(
@@ -46,22 +49,23 @@ export const AdvancedTabDialog = compose(
             const { classes, open, closeDialog } = this.props;
             const { value } = this.state;
             const {
+                apiResponse,
                 pythonHeader,
                 pythonExample,
-                CLIGetHeader,
-                CLIGetExample,
-                CLIUpdateHeader,
-                CLIUpdateExample,
+                cliGetHeader,
+                cliGetExample,
+                cliUpdateHeader,
+                cliUpdateExample,
                 curlHeader,
                 curlExample
             } = this.props.data;
             return <Dialog
                 open={open}
-                maxWidth="md"
+                maxWidth="lg"
                 onClose={closeDialog}
                 onExit={() => this.setState({ value: 0 })} >
                 <DialogTitle>Advanced</DialogTitle>
-                <Tabs value={value} onChange={this.handleChange}>
+                <Tabs value={value} onChange={this.handleChange} fullWidth>
                     <Tab label="API RESPONSE" />
                     <Tab label="METADATA" />
                     <Tab label="PYTHON EXAMPLE" />
@@ -69,34 +73,14 @@ export const AdvancedTabDialog = compose(
                     <Tab label="CURL EXAMPLE" />
                 </Tabs>
                 <DialogContent className={classes.content}>
-                    {value === 0 && <div>
-                        API CONTENT
-                    </div>}
-                    {value === 1 && <div>
-                        METADATA CONTENT
-                    </div>}
-                    {value === 2 && <div>
-                        <DialogContentText>{pythonHeader}</DialogContentText>
-                        <DefaultCodeSnippet
-                            className={classes.codeSnippet}
-                            lines={[pythonExample]} />
-                    </div>}
+                    {value === 0 && <div>{dialogContentExample(apiResponse, classes)}</div>}
+                    {value === 1 && <div>{dialogContentHeader('(No metadata links found)')}</div>}
+                    {value === 2 && dialogContent(pythonHeader, pythonExample, classes)}
                     {value === 3 && <div>
-                        <DialogContentText>{CLIGetHeader}</DialogContentText>
-                        <DefaultCodeSnippet
-                            className={classes.codeSnippet}
-                            lines={[CLIGetExample]} />
-                        <DialogContentText className={classes.secondContentText}>{CLIUpdateHeader}</DialogContentText>
-                        <DefaultCodeSnippet
-                            className={classes.codeSnippet}
-                            lines={[CLIUpdateExample]} />
+                        {dialogContent(cliGetHeader, cliGetExample, classes)}
+                        {dialogContent(cliUpdateHeader, cliUpdateExample, classes)}
                     </div>}
-                    {value === 4 && <div>
-                        <DialogContentText>{curlHeader}</DialogContentText>
-                        <DefaultCodeSnippet
-                            className={classes.codeSnippet}
-                            lines={[curlExample]} />
-                    </div>}
+                    {value === 4 && dialogContent(curlHeader, curlExample, classes)}
                 </DialogContent>
                 <DialogActions>
                     <Button variant='flat' color='primary' onClick={closeDialog}>
@@ -107,3 +91,19 @@ export const AdvancedTabDialog = compose(
         }
     }
 );
+
+const dialogContent = (header: string, example: string, classes: any) =>
+    <div className={classes.spacing}>
+        {dialogContentHeader(header)}
+        {dialogContentExample(example, classes)}
+    </div>;
+
+const dialogContentHeader = (header: string) =>
+    <DialogContentText>
+        {header}
+    </DialogContentText>;
+
+const dialogContentExample = (example: string, classes: any) =>
+    <DefaultCodeSnippet
+        className={classes.codeSnippet}
+        lines={[example]} />;

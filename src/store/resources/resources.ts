@@ -7,7 +7,7 @@ import { ResourceKind } from '~/models/resource';
 
 export type ResourcesState = { [key: string]: Resource };
 
-export const getResource = <T extends Resource = any>(id: string) =>
+export const getResource = <T extends Resource = Resource>(id: string) =>
     (state: ResourcesState): T | undefined =>
         state[id] as T;
 
