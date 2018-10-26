@@ -246,7 +246,7 @@ sanity_checks() {
     echo -n 'graphviz: '
     dot -V || fatal "No graphviz. Try: apt-get install graphviz"
     echo -n 'geckodriver: '
-    geckodriver --version | grep ^geckodriver || fatal "No geckodriver. Try: wget -O- https://github.com/mozilla/geckodriver/releases/download/v0.23.0/geckodriver-v0.23.0-linux64.tar.gz | sudo tar -C /usr/local/bin -xzf - geckodriver"
+    geckodriver --version | grep ^geckodriver || echo "No geckodriver. Try: wget -O- https://github.com/mozilla/geckodriver/releases/download/v0.23.0/geckodriver-v0.23.0-linux64.tar.gz | sudo tar -C /usr/local/bin -xzf - geckodriver"
 
     if [[ "$NEED_SDK_R" = true ]]; then
       # R SDK stuff
