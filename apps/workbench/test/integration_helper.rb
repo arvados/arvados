@@ -223,6 +223,17 @@ class ActionDispatch::IntegrationTest
       screenshot
     end
     if Capybara.current_driver == :selenium
+      # Clearing localStorage crashes on a page where JS isn't
+      # executed. We also need to make sure we're clearing
+      # localStorage for the test server's origin, even if we finished
+      # the test on a different origin.
+      host = Capybara.current_session.server.host
+      port = Capybara.current_session.server.port
+      base = "http://#{host}:#{port}"
+      if page.evaluate_script("window.document.contentType") != "text/html" ||
+         !page.evaluate_script("window.location.toString()").start_with?(base)
+        visit "#{base}/404"
+      end
       page.execute_script("window.localStorage.clear()")
     else
       page.driver.restart if defined?(page.driver.restart)
