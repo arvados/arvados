@@ -44,32 +44,38 @@ export const PermissionSelect = withStyles(PermissionSelectStyles)(
 const renderPermissionItem = (value: string) =>
     <PermissionItem {...{ value }} />;
 
-type PermissionItemClasses = 'value';
+type PermissionItemClasses = 'value' | 'icon';
 
 const permissionItemStyles: StyleRulesCallback<PermissionItemClasses> = theme => ({
     value: {
         marginLeft: theme.spacing.unit,
+    },
+    icon: {
+       margin: `-${theme.spacing.unit / 2}px 0`,
     }
 });
 
 const PermissionItem = withStyles(permissionItemStyles)(
-    ({ value, classes }: { value: string } & WithStyles<PermissionItemClasses>) =>
-        <Grid container alignItems='center'>
-            {renderPermissionIcon(value)}
-            <span className={classes.value}>
-                {value}
-            </span>
-        </Grid>);
+    ({ value, classes }: { value: string } & WithStyles<PermissionItemClasses>) => {
+        const Icon = getIcon(value);
+        return (
+            <Grid container alignItems='center'>
+                <Icon className={classes.icon} />
+                <span className={classes.value}>
+                    {value}
+                </span>
+            </Grid>);
+    });
 
-const renderPermissionIcon = (value: string) => {
+const getIcon = (value: string) => {
     switch (value) {
         case PermissionSelectValue.READ:
-            return <RemoveRedEye />;
+            return RemoveRedEye;
         case PermissionSelectValue.WRITE:
-            return <Edit />;
+            return Edit;
         case PermissionSelectValue.MANAGE:
-            return <Computer />;
+            return Computer;
         default:
-            return null;
+            return Computer;
     }
 };
