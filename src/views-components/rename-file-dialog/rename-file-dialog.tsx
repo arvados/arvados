@@ -35,6 +35,7 @@ const RenameDialogFormFields = (props: WithDialogProps<RenameFileDialogData>) =>
     <Field
         name='name'
         component={TextField}
+        autoFocus={true}
     />
     <WarningCollection text="Renaming a file will change content adress." />
 </>;
