@@ -18,7 +18,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 type TextFieldProps = WrappedFieldProps & WithStyles<CssRules>;
 
-export const TextField = withStyles(styles)((props: TextFieldProps & { label?: string, autoFocus?: boolean, required?: boolean }) =>
+export const TextField = withStyles(styles)((props: TextFieldProps & { 
+    label?: string, autoFocus?: boolean, required?: boolean, select?: boolean, children: React.ReactNode
+}) =>
     <MaterialTextField
         helperText={props.meta.touched && props.meta.error}
         className={props.classes.textField}
@@ -29,6 +31,8 @@ export const TextField = withStyles(styles)((props: TextFieldProps & { label?: s
         autoFocus={props.autoFocus}
         fullWidth={true}
         required={props.required}
+        select={props.select}
+        children={props.children}
         {...props.input}
     />);
 
@@ -51,7 +55,7 @@ export const RichEditorTextField = withStyles(styles)(
         }
 
         render() {
-            return <RichTextEditor 
+            return <RichTextEditor
                 value={this.state.value}
                 onChange={this.onChange}
                 placeholder={this.props.label} />;
@@ -60,7 +64,7 @@ export const RichEditorTextField = withStyles(styles)(
 );
 
 export const DateTextField = withStyles(styles)
-    ((props: TextFieldProps) => 
+    ((props: TextFieldProps) =>
         <MaterialTextField
             type="date"
             disabled={props.meta.submitting}
@@ -73,5 +77,5 @@ export const DateTextField = withStyles(styles)
             name={props.input.name}
             onChange={props.input.onChange}
             value={props.input.value}
-        />    
+        />
     );

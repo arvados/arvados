@@ -5,7 +5,7 @@
 import * as React from 'react';
 import { WrappedFieldProps } from 'redux-form';
 import { ArvadosTheme } from '~/common/custom-theme';
-import { StyleRulesCallback, WithStyles, withStyles, FormControl, InputLabel, Select, MenuItem } from '@material-ui/core';
+import { StyleRulesCallback, WithStyles, withStyles, FormControl, InputLabel, Select, MenuItem, FormHelperText } from '@material-ui/core';
 
 type CssRules = 'formControl' | 'selectWrapper' | 'select' | 'option';
 
@@ -56,3 +56,29 @@ export const NativeSelectField = withStyles(styles)
             </Select>
         </FormControl>
     );
+
+interface SelectFieldProps {
+    children: React.ReactNode;
+    label: string;
+}
+
+type SelectFieldCssRules = 'formControl';
+
+const selectFieldStyles: StyleRulesCallback<SelectFieldCssRules> = (theme: ArvadosTheme) => ({
+    formControl: {
+        marginBottom: theme.spacing.unit * 3
+    },
+});
+export const SelectField = withStyles(selectFieldStyles)(
+    (props: WrappedFieldProps & SelectFieldProps &  WithStyles<SelectFieldCssRules>) =>
+        <FormControl error={props.meta.invalid} className={props.classes.formControl}>
+            <InputLabel>
+                {props.label}
+            </InputLabel>
+            <Select
+                {...props.input}>
+                {props.children}
+            </Select>
+            <FormHelperText>{props.meta.error}</FormHelperText>
+        </FormControl>
+);
