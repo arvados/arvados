@@ -382,9 +382,12 @@ func (wp *Pool) StartContainer(it arvados.InstanceType, ctr arvados.Container) b
 		stdout, stderr, err := wkr.executor.Execute("crunch-run --detach '"+ctr.UUID+"'", nil)
 		wp.mtx.Lock()
 		defer wp.mtx.Unlock()
-		wkr.updated = time.Now()
+		now := time.Now()
+		wkr.updated = now
+		wkr.busy = now
 		delete(wkr.starting, ctr.UUID)
 		wkr.running[ctr.UUID] = struct{}{}
+		wkr.lastUUID = ctr.UUID
 		if err != nil {
 			logger.WithField("stdout", string(stdout)).
 				WithField("stderr", string(stderr)).
@@ -789,10 +792,6 @@ func (wp *Pool) probeAndUpdate(wkr *worker) {
 
 	updateTime := time.Now()
 	wkr.probed = updateTime
-	if len(ctrUUIDs) > 0 {
-		wkr.busy = updateTime
-		wkr.lastUUID = ctrUUIDs[0]
-	}
 	if wkr.state == StateShutdown || wkr.state == StateHold {
 	} else if booted {
 		if wkr.state != StateRunning {
@@ -804,13 +803,18 @@ func (wp *Pool) probeAndUpdate(wkr *worker) {
 	}
 
 	if updated != wkr.updated {
-		// Worker was updated (e.g., by starting a new
-		// container) after the probe began. Avoid clobbering
-		// those changes with the probe results.
+		// Worker was updated after the probe began, so
+		// wkr.running might have a container UUID that was
+		// not yet running when ctrUUIDs was generated. Leave
+		// wkr.running alone and wait for the next probe to
+		// catch up on any changes.
 		return
 	}
 
-	if len(ctrUUIDs) == 0 && len(wkr.running) > 0 {
+	if len(ctrUUIDs) > 0 {
+		wkr.busy = updateTime
+		wkr.lastUUID = ctrUUIDs[0]
+	} else if len(wkr.running) > 0 {
 		wkr.unallocated = updateTime
 	}
 	running := map[string]struct{}{}
