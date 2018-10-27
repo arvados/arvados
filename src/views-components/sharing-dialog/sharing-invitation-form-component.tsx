@@ -4,12 +4,9 @@
 
 import * as React from 'react';
 import { Field, WrappedFieldProps } from 'redux-form';
-import { Grid, Input, FormControl, FormHelperText, FormLabel, InputLabel, Chip } from '@material-ui/core';
-import { ChipsInput } from '~/components/chips-input/chips-input';
-import { identity } from 'lodash';
+import { Grid, FormControl, InputLabel } from '@material-ui/core';
 import { PermissionSelect } from './permission-select';
 import { PeopleSelect } from './people-select';
-import ChipInput from 'material-ui-chip-input';
 
 export default () =>
     <Grid container spacing={8}>
@@ -28,7 +25,7 @@ const InvitedPeopleField = () =>
 
 
 const InvitedPeopleFieldComponent = (props: WrappedFieldProps) =>
-    <PeopleSelect suggestedPeople={[]} />;
+    <PeopleSelect />;
 
 const PermissionSelectField = () =>
     <Field
