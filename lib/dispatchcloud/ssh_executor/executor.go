@@ -90,6 +90,19 @@ func (exr *Executor) Execute(cmd string, stdin io.Reader) ([]byte, []byte, error
 	return stdout.Bytes(), stderr.Bytes(), err
 }
 
+// Close shuts down any active connections.
+func (exr *Executor) Close() {
+	// Ensure exr is initialized
+	exr.sshClient(false)
+
+	exr.clientSetup <- true
+	if exr.client != nil {
+		defer exr.client.Close()
+	}
+	exr.client, exr.clientErr = nil, errors.New("closed")
+	<-exr.clientSetup
+}
+
 // Create a new SSH session. If session setup fails or the SSH client
 // hasn't been setup yet, setup a new SSH client and try again.
 func (exr *Executor) newSession() (*ssh.Session, error) {
@@ -121,6 +134,11 @@ func (exr *Executor) sshClient(create bool) (*ssh.Client, error) {
 		if create {
 			client, err := exr.setupSSHClient()
 			if err == nil || exr.client == nil {
+				if exr.client != nil {
+					// Hang up the previous
+					// (non-working) client
+					go exr.client.Close()
+				}
 				exr.client, exr.clientErr = client, err
 			}
 			if err != nil {

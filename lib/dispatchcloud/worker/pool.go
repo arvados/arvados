@@ -45,6 +45,8 @@ type Executor interface {
 	//
 	// SetTarget must not block on concurrent Execute calls.
 	SetTarget(cloud.ExecutorTarget)
+
+	Close()
 }
 
 const (
@@ -688,6 +690,7 @@ func (wp *Pool) sync(threshold time.Time, instances []cloud.Instance) {
 		})
 		logger.Info("instance disappeared in cloud")
 		delete(wp.workers, id)
+		go wkr.executor.Close()
 		go wp.notify()
 	}
 

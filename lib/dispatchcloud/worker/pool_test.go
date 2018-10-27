@@ -123,3 +123,5 @@ func (*stubExecutor) SetTarget(cloud.ExecutorTarget) {}
 func (*stubExecutor) Execute(cmd string, stdin io.Reader) ([]byte, []byte, error) {
 	return nil, nil, nil
 }
+
+func (*stubExecutor) Close() {}
