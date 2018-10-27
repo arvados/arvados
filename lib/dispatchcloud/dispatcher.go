@@ -58,22 +58,28 @@ type dispatcher struct {
 	stop      chan struct{}
 }
 
+// Start starts the dispatcher. Start can be called multiple times
+// with no ill effect.
+func (disp *dispatcher) Start() {
+	disp.setupOnce.Do(disp.setup)
+}
+
 // ServeHTTP implements service.Handler.
 func (disp *dispatcher) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	disp.setupOnce.Do(disp.setup)
+	disp.Start()
 	disp.httpHandler.ServeHTTP(w, r)
 }
 
 // CheckHealth implements service.Handler.
 func (disp *dispatcher) CheckHealth() error {
-	disp.setupOnce.Do(disp.setup)
+	disp.Start()
 	return nil
 }
 
 // Stop dispatching containers and release resources. Typically used
 // in tests.
 func (disp *dispatcher) Close() {
-	disp.setupOnce.Do(disp.setup)
+	disp.Start()
 	select {
 	case disp.stop <- struct{}{}:
 	default:

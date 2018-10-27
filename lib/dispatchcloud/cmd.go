@@ -13,5 +13,7 @@ import (
 var Command cmd.Handler = service.Command(arvados.ServiceNameDispatchCloud, newHandler)
 
 func newHandler(cluster *arvados.Cluster, _ *arvados.NodeProfile) service.Handler {
-	return &dispatcher{Cluster: cluster}
+	d := &dispatcher{Cluster: cluster}
+	go d.Start()
+	return d
 }
