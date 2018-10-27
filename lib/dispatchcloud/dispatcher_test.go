@@ -318,10 +318,8 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 }
 
 func (s *DispatcherSuite) TestInstancesAPI(c *check.C) {
-	var lameSet test.LameInstanceSet
-	drivers["test"] = cloud.DriverFunc(func(params map[string]interface{}, id cloud.InstanceSetID) (cloud.InstanceSet, error) {
-		return &lameSet, nil
-	})
+	s.cluster.CloudVMs.TimeoutBooting = arvados.Duration(time.Second)
+	drivers["test"] = s.stubDriver
 
 	type instance struct {
 		Instance             string
@@ -349,22 +347,16 @@ func (s *DispatcherSuite) TestInstancesAPI(c *check.C) {
 
 	ch := s.disp.pool.Subscribe()
 	defer s.disp.pool.Unsubscribe(ch)
-	err := s.disp.pool.Create(arvados.InstanceType{
-		Name:         "a1.small-1",
-		ProviderType: "a1.small",
-		VCPUs:        1,
-		RAM:          1 << 30,
-		Price:        0.12,
-	})
+	err := s.disp.pool.Create(test.InstanceType(1))
 	c.Check(err, check.IsNil)
 	<-ch
 
 	sr = getInstances()
 	c.Assert(len(sr.Items), check.Equals, 1)
-	c.Check(sr.Items[0].Instance, check.Matches, "lame-.*")
+	c.Check(sr.Items[0].Instance, check.Matches, "stub.*")
 	c.Check(sr.Items[0].WorkerState, check.Equals, "booting")
-	c.Check(sr.Items[0].Price, check.Equals, 0.12)
+	c.Check(sr.Items[0].Price, check.Equals, 0.123)
 	c.Check(sr.Items[0].LastContainerUUID, check.Equals, "")
-	c.Check(sr.Items[0].ProviderInstanceType, check.Equals, "a1.small")
-	c.Check(sr.Items[0].ArvadosInstanceType, check.Equals, "a1.small-1")
+	c.Check(sr.Items[0].ProviderInstanceType, check.Equals, test.InstanceType(1).ProviderType)
+	c.Check(sr.Items[0].ArvadosInstanceType, check.Equals, test.InstanceType(1).Name)
 }

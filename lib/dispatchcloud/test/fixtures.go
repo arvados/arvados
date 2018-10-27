@@ -23,5 +23,6 @@ func InstanceType(i int) arvados.InstanceType {
 		ProviderType: fmt.Sprintf("providertype%d", i),
 		VCPUs:        i,
 		RAM:          arvados.ByteSize(i) << 30,
+		Price:        float64(i) * 0.123,
 	}
 }
