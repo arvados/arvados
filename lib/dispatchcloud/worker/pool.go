@@ -18,6 +18,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	tagKeyInstanceType = "InstanceType"
+	tagKeyHold         = "Hold"
+)
+
 // A View shows a worker's current state and recent activity.
 type View struct {
 	Instance             string
@@ -200,7 +205,7 @@ func (wp *Pool) Create(it arvados.InstanceType) error {
 	wp.setupOnce.Do(wp.setup)
 	wp.mtx.Lock()
 	defer wp.mtx.Unlock()
-	tags := cloud.InstanceTags{"InstanceType": it.Name}
+	tags := cloud.InstanceTags{tagKeyInstanceType: it.Name}
 	wp.creating[it]++
 	go func() {
 		inst, err := wp.instanceSet.Create(it, wp.imageID, tags, nil)
@@ -239,7 +244,7 @@ func (wp *Pool) updateWorker(inst cloud.Instance, it arvados.InstanceType, initi
 		}
 		return
 	}
-	if initialState == StateUnknown && inst.Tags()["hold"] != "" {
+	if initialState == StateUnknown && inst.Tags()[tagKeyHold] != "" {
 		initialState = StateHold
 	}
 	wp.logger.WithFields(logrus.Fields{
@@ -671,7 +676,7 @@ func (wp *Pool) sync(threshold time.Time, instances []cloud.Instance) {
 	wp.logger.WithField("Instances", len(instances)).Debug("sync instances")
 
 	for _, inst := range instances {
-		itTag := inst.Tags()["InstanceType"]
+		itTag := inst.Tags()[tagKeyInstanceType]
 		it, ok := wp.instanceTypes[itTag]
 		if !ok {
 			wp.logger.WithField("Instance", inst).Errorf("unknown InstanceType tag %q --- ignoring", itTag)
