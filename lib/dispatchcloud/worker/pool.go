@@ -311,7 +311,7 @@ func (wp *Pool) shutdown(wkr *worker, logger logrus.FieldLogger) {
 	go func() {
 		err := wkr.instance.Destroy()
 		if err != nil {
-			logger.WithError(err).Warn("shutdown failed")
+			logger.WithError(err).WithField("Instance", wkr.instance).Warn("shutdown failed")
 			return
 		}
 		wp.mtx.Lock()
@@ -542,7 +542,7 @@ func (wp *Pool) runProbes() {
 		workers = workers[:0]
 		wp.mtx.Lock()
 		for id, wkr := range wp.workers {
-			if wkr.state == StateShutdown || wp.autoShutdown(wkr) {
+			if wkr.state == StateShutdown || wp.shutdownIfIdle(wkr) {
 				continue
 			}
 			workers = append(workers, id)
@@ -596,7 +596,28 @@ func (wp *Pool) runSync() {
 }
 
 // caller must have lock.
-func (wp *Pool) autoShutdown(wkr *worker) bool {
+func (wp *Pool) shutdownIfBroken(wkr *worker, dur time.Duration) {
+	if wkr.state == StateHold {
+		return
+	}
+	label, threshold := "", wp.timeoutProbe
+	if wkr.state == StateBooting {
+		label, threshold = "new ", wp.timeoutBooting
+	}
+	if dur < threshold {
+		return
+	}
+	wp.logger.WithFields(logrus.Fields{
+		"Instance": wkr.instance,
+		"Duration": dur,
+		"Since":    wkr.probed,
+		"State":    wkr.state,
+	}).Warnf("%sinstance unresponsive, shutting down", label)
+	wp.shutdown(wkr, wp.logger)
+}
+
+// caller must have lock.
+func (wp *Pool) shutdownIfIdle(wkr *worker) bool {
 	if len(wkr.running)+len(wkr.starting) > 0 || wkr.state != StateRunning {
 		return false
 	}
@@ -762,19 +783,7 @@ func (wp *Pool) probeAndUpdate(wkr *worker) {
 		} else {
 			logger.Info("instance not responding")
 		}
-
-		if wkr.state == StateHold {
-			return
-		}
-
-		label, threshold := "", wp.timeoutProbe
-		if wkr.state == StateBooting {
-			label, threshold = "new ", wp.timeoutBooting
-		}
-		if dur > threshold {
-			logger.WithField("Since", wkr.probed).Warnf("%sinstance unresponsive, shutting down", label)
-			wp.shutdown(wkr, logger)
-		}
+		wp.shutdownIfBroken(wkr, dur)
 		return
 	}
 
