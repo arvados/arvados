@@ -564,24 +564,17 @@ func (wp *Pool) run() {
 		}
 	}()
 
-	timer := time.NewTimer(time.Nanosecond)
+	// sync once immediately, then wait syncInterval, sync again,
+	// etc.
+	timer := time.NewTimer(1)
 	for {
-		err := wp.getInstancesAndSync()
-		if err != nil {
-			wp.logger.WithError(err).Warn("sync failed")
-		}
-
-		// Reset timer to desired interval, and ignore the
-		// tick that might have already arrived.
-		timer.Stop()
 		select {
 		case <-timer.C:
-		default:
-		}
-		timer.Reset(wp.syncInterval)
-
-		select {
-		case <-timer.C:
+			err := wp.getInstancesAndSync()
+			if err != nil {
+				wp.logger.WithError(err).Warn("sync failed")
+			}
+			timer.Reset(wp.syncInterval)
 		case <-wp.stop:
 			wp.logger.Debug("worker.Pool stopped")
 			return
