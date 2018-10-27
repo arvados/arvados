@@ -257,15 +257,16 @@ func (wp *Pool) updateWorker(inst cloud.Instance, it arvados.InstanceType, initi
 		"Instance":     inst,
 		"State":        initialState,
 	}).Infof("instance appeared in cloud")
+	now := time.Now()
 	wp.workers[id] = &worker{
 		executor:    wp.newExecutor(inst),
 		state:       initialState,
 		instance:    inst,
 		instType:    it,
-		probed:      time.Now(),
-		busy:        time.Now(),
-		updated:     time.Now(),
-		unallocated: time.Now(),
+		probed:      now,
+		busy:        now,
+		updated:     now,
+		unallocated: now,
 		running:     make(map[string]struct{}),
 		starting:    make(map[string]struct{}),
 		probing:     make(chan struct{}, 1),
