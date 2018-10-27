@@ -56,11 +56,19 @@ type Queue struct {
 	chooseType typeChooser
 	client     APIClient
 
-	auth      *arvados.APIClientAuthorization
-	current   map[string]QueueEnt
-	updated   time.Time
-	mtx       sync.Mutex
-	keeplocal map[string]struct{}
+	auth    *arvados.APIClientAuthorization
+	current map[string]QueueEnt
+	updated time.Time
+	mtx     sync.Mutex
+
+	// Methods that modify the Queue (like Lock) add the affected
+	// container UUIDs to dontupdate. When applying a batch of
+	// updates received from the network, anything appearing in
+	// dontupdate is skipped, in case the received update has
+	// already been superseded by the locally initiated change.
+	// When no network update is in progress, this protection is
+	// not needed, and dontupdate is nil.
+	dontupdate map[string]struct{}
 }
 
 // NewQueue returns a new Queue. When a new container appears in the
@@ -126,7 +134,7 @@ func (cq *Queue) Entries() (entries map[string]QueueEnt, threshold time.Time) {
 // containers.
 func (cq *Queue) Update() error {
 	cq.mtx.Lock()
-	cq.keeplocal = map[string]struct{}{}
+	cq.dontupdate = map[string]struct{}{}
 	updateStarted := time.Now()
 	cq.mtx.Unlock()
 
@@ -138,7 +146,7 @@ func (cq *Queue) Update() error {
 	cq.mtx.Lock()
 	defer cq.mtx.Unlock()
 	for uuid, ctr := range next {
-		if _, keep := cq.keeplocal[uuid]; keep {
+		if _, keep := cq.dontupdate[uuid]; keep {
 			continue
 		}
 		if cur, ok := cq.current[uuid]; !ok {
@@ -149,7 +157,7 @@ func (cq *Queue) Update() error {
 		}
 	}
 	for uuid := range cq.current {
-		if _, keep := cq.keeplocal[uuid]; keep {
+		if _, keep := cq.dontupdate[uuid]; keep {
 			continue
 		} else if _, keep = next[uuid]; keep {
 			continue
@@ -157,7 +165,7 @@ func (cq *Queue) Update() error {
 			delete(cq.current, uuid)
 		}
 	}
-	cq.keeplocal = nil
+	cq.dontupdate = nil
 	cq.updated = updateStarted
 	return nil
 }
@@ -198,8 +206,8 @@ func (cq *Queue) apiUpdate(uuid, action string) error {
 
 	cq.mtx.Lock()
 	defer cq.mtx.Unlock()
-	if cq.keeplocal != nil {
-		cq.keeplocal[uuid] = struct{}{}
+	if cq.dontupdate != nil {
+		cq.dontupdate[uuid] = struct{}{}
 	}
 	if ent, ok := cq.current[uuid]; !ok {
 		cq.addEnt(uuid, resp)
