@@ -8,11 +8,15 @@ import { SharingInvitationForm } from './sharing-invitation-form';
 import { SharingManagementForm } from './sharing-management-form';
 import { Grid } from '@material-ui/core';
 
-export const SharingDialogContent = () =>
+export const SharingDialogContent = (props: { advancedViewOpen: boolean }) =>
     <Grid container direction='column' spacing={24}>
-        <Grid item>
-            <SharingManagementForm />
-        </Grid>
+        {props.advancedViewOpen &&
+            <>
+                <Grid item>
+                    <SharingManagementForm />
+                </Grid>
+            </>
+        }
         <Grid item>
             <SharingInvitationForm />
         </Grid>

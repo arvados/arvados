@@ -10,6 +10,7 @@ import { DialogActions } from '~/components/dialog-actions/dialog-actions';
 export interface SharingDialogDataProps {
     open: boolean;
     saveEnabled: boolean;
+    advancedEnabled: boolean;
     children: React.ReactNode;
 }
 export interface SharingDialogActionProps {
@@ -18,7 +19,7 @@ export interface SharingDialogActionProps {
     onAdvanced: () => void;
 }
 export default (props: SharingDialogDataProps & SharingDialogActionProps) => {
-    const { children, open, saveEnabled, onAdvanced, onClose, onSave } = props;
+    const { children, open, advancedEnabled, saveEnabled, onAdvanced, onClose, onSave } = props;
     return <Dialog
         {...{ open, onClose }}
         fullWidth
@@ -31,13 +32,15 @@ export default (props: SharingDialogDataProps & SharingDialogActionProps) => {
         </DialogContent>
         <DialogActions>
             <Grid container spacing={8}>
-                <Grid item>
-                    <Button
-                        color='primary'
-                        onClick={onAdvanced}>
-                        Advanced
+                {advancedEnabled &&
+                    <Grid item>
+                        <Button
+                            color='primary'
+                            onClick={onAdvanced}>
+                            Advanced
                     </Button>
-                </Grid>
+                    </Grid>
+                }
                 <Grid item xs />
                 <Grid item>
                     <Button onClick={onClose}>
