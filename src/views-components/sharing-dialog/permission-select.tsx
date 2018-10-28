@@ -44,12 +44,15 @@ export const PermissionSelect = withStyles(PermissionSelectStyles)(
 const renderPermissionItem = (value: string) =>
     <PermissionItem {...{ value }} />;
 
-type PermissionItemClasses = 'value';
+type PermissionItemClasses = 'value' | 'icon';
 
 const permissionItemStyles: StyleRulesCallback<PermissionItemClasses> = theme => ({
     value: {
         marginLeft: theme.spacing.unit,
     },
+    icon: {
+        margin: `-${theme.spacing.unit / 2}px 0`
+    }
 });
 
 const PermissionItem = withStyles(permissionItemStyles)(
@@ -57,7 +60,7 @@ const PermissionItem = withStyles(permissionItemStyles)(
         const Icon = getIcon(value);
         return (
             <Grid container alignItems='center'>
-                <Icon />
+                <Icon className={classes.icon} />
                 <span className={classes.value}>
                     {value}
                 </span>
