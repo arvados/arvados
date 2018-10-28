@@ -100,7 +100,7 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
 
     handleKeyPress = ({ key }: React.KeyboardEvent<HTMLInputElement>) => {
         const { onCreate = noop } = this.props;
-        if (key === 'Enter') {
+        if (key === 'Enter' && this.props.value.length > 0) {
             onCreate();
         }
     }

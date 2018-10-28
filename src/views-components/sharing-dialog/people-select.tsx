@@ -4,20 +4,33 @@
 
 import * as React from 'react';
 import { Autocomplete } from '~/components/autocomplete/autocomplete';
-import { UserResource, User } from '~/models/user';
+import { UserResource } from '~/models/user';
 import { connect, DispatchProp } from 'react-redux';
 import { ServiceRepository } from '~/services/services';
 import { FilterBuilder } from '../../services/api/filter-builder';
 import { debounce } from 'debounce';
 import { ListItemText } from '@material-ui/core';
+import { noop } from 'lodash/fp';
 
+export interface Person {
+    name: string;
+    email: string;
+    uuid: string;
+}
 export interface PeopleSelectProps {
+
+    items: Person[];
+
+    onBlur?: (event: React.FocusEvent<HTMLInputElement>) => void;
+    onFocus?: (event: React.FocusEvent<HTMLInputElement>) => void;
+    onCreate?: (person: Person) => void;
+    onDelete?: (index: number) => void;
+    onSelect?: (person: Person) => void;
 
 }
 
 export interface PeopleSelectState {
     value: string;
-    items: UserResource[];
     suggestions: UserResource[];
 }
 
@@ -26,7 +39,6 @@ export const PeopleSelect = connect()(
 
         state: PeopleSelectState = {
             value: '',
-            items: [],
             suggestions: []
         };
 
@@ -35,17 +47,21 @@ export const PeopleSelect = connect()(
                 <Autocomplete
                     label='Invite people'
                     value={this.state.value}
-                    items={this.state.items}
+                    items={this.props.items}
                     suggestions={this.state.suggestions}
                     onChange={this.handleChange}
+                    onCreate={this.handleCreate}
                     onSelect={this.handleSelect}
+                    onDelete={this.handleDelete}
+                    onFocus={this.props.onFocus}
+                    onBlur={this.props.onBlur}
                     renderChipValue={this.renderChipValue}
                     renderSuggestion={this.renderSuggestion} />
             );
         }
 
-        renderChipValue({ firstName, lastName }: UserResource) {
-            return `${firstName} ${lastName}`;
+        renderChipValue({ name, uuid }: Person) {
+            return name ? name : uuid;
         }
 
         renderSuggestion({ firstName, lastName, email }: UserResource) {
@@ -56,9 +72,29 @@ export const PeopleSelect = connect()(
             );
         }
 
-        handleSelect = (user: UserResource) => {
-            const { items } = this.state;
-            this.setState({ items: [...items, user], suggestions: [], value: '' });
+        handleDelete = (_: Person, index: number) => {
+            const { onDelete = noop } = this.props;
+            onDelete(index);
+        }
+
+        handleCreate = () => {
+            const { onCreate = noop } = this.props;
+            this.setState({ value: '', suggestions: [] });
+            onCreate({
+                email: '',
+                name: '',
+                uuid: this.state.value,
+            });
+        }
+
+        handleSelect = ({ email, firstName, lastName, uuid }: UserResource) => {
+            const { onSelect = noop } = this.props;
+            this.setState({ value: '', suggestions: [] });
+            onSelect({
+                email,
+                name: `${firstName} ${lastName}`,
+                uuid,
+            });
         }
 
         handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -72,8 +108,7 @@ export const PeopleSelect = connect()(
             const filters = new FilterBuilder()
                 .addILike('email', value)
                 .getFilters();
-            const { items } = await userService.list();
-            // const { items } = await userService.list({ filters, limit: 5 });
+            const { items } = await userService.list({ filters, limit: 5 });
             this.setState({ suggestions: items });
         }
 

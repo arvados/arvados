@@ -3,10 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Field, WrappedFieldProps } from 'redux-form';
+import { Field, WrappedFieldProps, FieldArray, WrappedFieldArrayProps } from 'redux-form';
 import { Grid, FormControl, InputLabel } from '@material-ui/core';
 import { PermissionSelect } from './permission-select';
-import { PeopleSelect } from './people-select';
+import { PeopleSelect, Person } from './people-select';
 
 export default () =>
     <Grid container spacing={8}>
@@ -19,13 +19,17 @@ export default () =>
     </Grid>;
 
 const InvitedPeopleField = () =>
-    <Field
+    <FieldArray
         name='invitedPeople'
         component={InvitedPeopleFieldComponent} />;
 
 
-const InvitedPeopleFieldComponent = (props: WrappedFieldProps) =>
-    <PeopleSelect />;
+const InvitedPeopleFieldComponent = ({ fields }: WrappedFieldArrayProps<Person>) =>
+    <PeopleSelect
+        items={fields.getAll() || []}
+        onCreate={fields.push}
+        onSelect={fields.push}
+        onDelete={fields.remove} />;
 
 const PermissionSelectField = () =>
     <Field
