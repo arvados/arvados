@@ -24,6 +24,7 @@ const mapStateToProps = (_: RootState, { advancedViewOpen, ...props }: WithDialo
 const mapDispatchToProps = (_: Dispatch, { toggleAdvancedView, ...props }: WithDialogProps<string> & AdvancedViewSwitchInjectedProps): SharingDialogActionProps => ({
     ...props,
     onClose: props.closeDialog,
+    onExited: toggleAdvancedView,
     onSave: () => { console.log('save'); },
     onAdvanced: toggleAdvancedView,
 });

@@ -15,13 +15,14 @@ export interface SharingDialogDataProps {
 }
 export interface SharingDialogActionProps {
     onClose: () => void;
+    onExited: () => void;
     onSave: () => void;
     onAdvanced: () => void;
 }
 export default (props: SharingDialogDataProps & SharingDialogActionProps) => {
-    const { children, open, advancedEnabled, saveEnabled, onAdvanced, onClose, onSave } = props;
+    const { children, open, advancedEnabled, saveEnabled, onAdvanced, onClose, onExited, onSave } = props;
     return <Dialog
-        {...{ open, onClose }}
+        {...{ open, onClose, onExited }}
         fullWidth
         maxWidth='sm'>
         <DialogTitle>
