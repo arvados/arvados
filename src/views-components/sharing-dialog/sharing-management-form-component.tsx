@@ -3,11 +3,12 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Grid, StyleRulesCallback, Divider } from '@material-ui/core';
+import { Grid, StyleRulesCallback, Divider, IconButton, Typography } from '@material-ui/core';
 import { Field, WrappedFieldProps, WrappedFieldArrayProps, FieldArray, FieldsProps } from 'redux-form';
 import { PermissionSelect } from './permission-select';
 import { WithStyles } from '@material-ui/core/styles';
 import withStyles from '@material-ui/core/styles/withStyles';
+import { CloseIcon } from '~/components/icon/icon';
 
 
 export default () =>
@@ -31,12 +32,15 @@ const PermissionManagementRow = withStyles(permissionManagementRowStyles)(
     ({ field, index, fields, classes }: { field: string, index: number, fields: FieldsProps<{ email: string }> } & WithStyles<'root'>) =>
         <>
             <Divider />
-            <Grid container alignItems='center' spacing={8} className={classes.root}>
+            <Grid container alignItems='center' spacing={8} wrap='nowrap' className={classes.root}>
                 <Grid item xs={8}>
-                    {fields.get(index).email}
+                    <Typography noWrap variant='subheading'>{fields.get(index).email}</Typography>
                 </Grid>
-                <Grid item xs={4}>
+                <Grid item xs={4} container wrap='nowrap'>
                     <Field name={`${field}.permissions`} component={PermissionSelectComponent} />
+                    <IconButton onClick={() => fields.remove(index)}>
+                        <CloseIcon />
+                    </IconButton>
                 </Grid>
             </Grid>
         </>

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Grid, StyleRulesCallback, Divider, Switch } from '@material-ui/core';
+import { Grid, StyleRulesCallback, Divider, Switch, Typography } from '@material-ui/core';
 import { Field, WrappedFieldProps, formValues, formValueSelector } from 'redux-form';
 import { PermissionSelect } from './permission-select';
 import { WithStyles } from '@material-ui/core/styles';
@@ -21,14 +21,12 @@ const SharingPublicAccessForm = withStyles(sharingPublicAccessStyles)(
         <>
             <Divider />
             <Grid container alignItems='center' spacing={8} className={classes.root}>
-                <Grid item xs={6}>
-                    Public access
+                <Grid item xs={8}>
+                    <Typography variant='subheading'>Public access</Typography>
                 </Grid>
-                <Grid item xs={2}>
-                    <Field name='enabled' component={PublicAccessSwitch} />
-                </Grid>
-                <Grid item xs={4}>
+                <Grid item xs={4} container wrap='nowrap'>
                     <Field name='permissions' component={PermissionSelectComponent} />
+                    <Field name='enabled' component={PublicAccessSwitch} />
                 </Grid>
             </Grid>
         </>
@@ -41,7 +39,7 @@ const PublicAccessSwitch = (props: WrappedFieldProps) =>
 
 const publicAccessSwitchStyles: StyleRulesCallback<'root'> = theme => ({
     root: {
-        margin: `-${theme.spacing.unit * 2}px auto`,
+        margin: `0 -7px`,
     }
 });
 
