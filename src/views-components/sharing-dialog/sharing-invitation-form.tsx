@@ -8,7 +8,7 @@ import { compose } from 'redux';
 import SharingInvitationFormComponent from './sharing-invitation-form-component';
 import { PermissionSelectValue } from './permission-select';
 
-export const SharingSimpleForm = compose(
+export const SharingInvitationForm = compose(
     connect(() => ({
         initialValues: {
             permission: PermissionSelectValue.READ

@@ -11,12 +11,12 @@ import { WithDialogProps } from '~/store/dialog/with-dialog';
 import { RootState } from '~/store/store';
 
 import SharingDialogComponent, { SharingDialogDataProps, SharingDialogActionProps } from './sharing-dialog-component';
-import { SharingSimpleForm } from './sharing-simple-form';
+import { SharingDialogContent } from './sharing-dialog-content';
 
 const mapStateToProps = (_: RootState, props: WithDialogProps<string>): SharingDialogDataProps => ({
     ...props,
     saveEnabled: false,
-    children: <SharingSimpleForm />,
+    children: <SharingDialogContent />,
 });
 
 const mapDispatchToProps = (_: Dispatch, props: WithDialogProps<string>): SharingDialogActionProps => ({
