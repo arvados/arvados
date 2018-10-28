@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Input as MuiInput, Chip as MuiChip, Popper as MuiPopper, Paper, FormControl, InputLabel, StyleRulesCallback, withStyles, RootRef, Menu, MenuItem, ListItemText, ListItem, List } from '@material-ui/core';
+import { Input as MuiInput, Chip as MuiChip, Popper as MuiPopper, Paper, FormControl, InputLabel, StyleRulesCallback, withStyles, RootRef, ListItemText, ListItem, List } from '@material-ui/core';
 import { PopperProps } from '@material-ui/core/Popper';
 import { WithStyles } from '@material-ui/core/styles';
 import { noop } from 'lodash';
@@ -34,6 +34,7 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
 
     containerRef = React.createRef<HTMLDivElement>();
     inputRef = React.createRef<HTMLInputElement>();
+
     render() {
         return (
             <RootRef rootRef={this.containerRef}>
@@ -63,6 +64,26 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
         />;
     }
 
+    renderSuggestions() {
+        const { suggestions = [] } = this.props;
+        return (
+            <Popper
+                open={this.state.suggestionsOpen && suggestions.length > 0}
+                anchorEl={this.containerRef.current}>
+                <Paper onMouseDown={this.preventBlur}>
+                    <List dense style={{ width: this.getSuggestionsWidth() }}>
+                        {suggestions.map(
+                            (suggestion, index) =>
+                                <ListItem button key={index} onClick={this.handleSelect(suggestion)}>
+                                    {this.renderSuggestion(suggestion)}
+                                </ListItem>
+                        )}
+                    </List>
+                </Paper>
+            </Popper>
+        );
+    }
+
     handleFocus = (event: React.FocusEvent<HTMLInputElement>) => {
         const { onFocus = noop } = this.props;
         this.setState({ suggestionsOpen: true });
@@ -70,9 +91,11 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
     }
 
     handleBlur = (event: React.FocusEvent<HTMLInputElement>) => {
-        const { onBlur = noop } = this.props;
-        this.setState({ suggestionsOpen: true });
-        onBlur(event);
+        setTimeout(() => {
+            const { onBlur = noop } = this.props;
+            this.setState({ suggestionsOpen: false });
+            onBlur(event);
+        });
     }
 
     handleKeyPress = ({ key }: React.KeyboardEvent<HTMLInputElement>) => {
@@ -98,24 +121,14 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
         return renderChipValue ? renderChipValue(value) : JSON.stringify(value);
     }
 
-    renderSuggestions() {
-        const { suggestions } = this.props;
-        return suggestions && suggestions.length > 0
-            ? <Popper
-                open={this.state.suggestionsOpen}
-                anchorEl={this.containerRef.current}>
-                <Paper>
-                    <List dense style={{ width: this.getSuggestionsWidth() }}>
-                        {suggestions.map(
-                            (suggestion, index) =>
-                                <ListItem button key={index} onClick={this.handleSelect(suggestion)}>
-                                    {this.renderSuggestion(suggestion)}
-                                </ListItem>
-                        )}
-                    </List>
-                </Paper>
-            </Popper>
-            : null;
+    preventBlur = (event: React.MouseEvent<HTMLElement>) => {
+        event.preventDefault();
+    }
+
+    handleClickAway = (event: React.MouseEvent<HTMLElement>) => {
+        if (event.target !== this.inputRef.current) {
+            this.setState({ suggestionsOpen: false });
+        }
     }
 
     handleSelect(suggestion: Suggestion) {
