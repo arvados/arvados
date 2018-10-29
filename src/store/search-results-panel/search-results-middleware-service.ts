@@ -39,7 +39,7 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
 
 export const getParams = (dataExplorer: DataExplorer, searchValue: string) => ({
     ...dataExplorerToListParams(dataExplorer),
-    filters: getFilters('name', searchValue),
+    filters: getFilters('name', searchValue, {}),
     order: getOrder(dataExplorer)
 });
 

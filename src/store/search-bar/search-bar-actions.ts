@@ -55,7 +55,7 @@ export const searchData = (searchValue: string) =>
         const currentView = getState().searchBar.currentView;
         dispatch(searchBarActions.SET_SEARCH_VALUE(searchValue));
         dispatch(searchBarActions.SET_SEARCH_RESULTS([]));
-        dispatch<any>(searchGroups(searchValue));
+        dispatch<any>(searchGroups(searchValue, 5, {}));
         if (currentView === SearchView.BASIC) {
             dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
             dispatch(navigateToSearchResults);
@@ -67,7 +67,7 @@ export const searchAdvanceData = (data: SearchBarAdvanceFormData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const searchValue = getState().searchBar.searchValue;
         dispatch<any>(saveQuery(data));
-        dispatch<any>(searchGroups(searchValue, 100, data.type));
+        dispatch<any>(searchGroups(searchValue, 100, data));
         dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.BASIC));
         dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
         dispatch(navigateToSearchResults);
@@ -122,7 +122,7 @@ export const closeSearchView = () =>
         }
     };
 
-export const closeAdvanceView = () => 
+export const closeAdvanceView = () =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         dispatch(searchBarActions.SET_SEARCH_VALUE(''));
         dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.BASIC));
@@ -134,7 +134,7 @@ export const navigateToItem = (uuid: string) =>
         dispatch(navigateTo(uuid));
     };
 
-export const changeData = (searchValue: string) => 
+export const changeData = (searchValue: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(searchBarActions.SET_SEARCH_VALUE(searchValue));
         const currentView = getState().searchBar.currentView;
@@ -166,24 +166,24 @@ const searchDataOnEnter = (searchValue: string) =>
         dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
         dispatch(searchBarActions.SET_SEARCH_VALUE(searchValue));
         dispatch(searchBarActions.SET_SEARCH_RESULTS([]));
-        dispatch<any>(searchGroups(searchValue, 100));
+        dispatch<any>(searchGroups(searchValue, 100, {}));
         dispatch(navigateToSearchResults);
     };
 
 const debounceStartSearch = debounce((dispatch: Dispatch) => dispatch<any>(startSearch()), DEFAULT_SEARCH_DEBOUNCE);
 
-const startSearch = () => 
+const startSearch = () =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const searchValue = getState().searchBar.searchValue;
         dispatch<any>(searchData(searchValue));
     };
 
-const searchGroups = (searchValue: string, limit = 5, resourceKind?: ResourceKind) => 
+const searchGroups = (searchValue: string, limit: number, {...props}) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const currentView = getState().searchBar.currentView;
-        
+
         if (searchValue || currentView === SearchView.ADVANCED) {
-            const filters = getFilters('name', searchValue, resourceKind);
+            const filters = getFilters('name', searchValue, props);
             const { items } = await services.groupsService.contents('', {
                 filters,
                 limit,
@@ -193,18 +193,25 @@ const searchGroups = (searchValue: string, limit = 5, resourceKind?: ResourceKin
         }
     };
 
-export const getFilters = (filterName: string, searchValue: string, resourceKind?: ResourceKind): string => {
+export const getFilters = (filterName: string, searchValue: string, {...props}): string => {
+    const { resourceKind, dateTo, dateFrom } = props;
     return new FilterBuilder()
         .addIsA("uuid", buildUuidFilter(resourceKind))
         .addILike(filterName, searchValue, GroupContentsResourcePrefix.COLLECTION)
         .addILike(filterName, searchValue, GroupContentsResourcePrefix.PROCESS)
         .addILike(filterName, searchValue, GroupContentsResourcePrefix.PROJECT)
+        .addLte('created_at', buildDateFilter(dateTo))
+        .addGte('created_at', buildDateFilter(dateFrom))
         .addEqual('groupClass', GroupClass.PROJECT, GroupContentsResourcePrefix.PROJECT)
         .getFilters();
 };
 
 const buildUuidFilter = (type?: ResourceKind): ResourceKind[] => {
     return type ? [type] : [ResourceKind.PROJECT, ResourceKind.COLLECTION, ResourceKind.PROCESS];
+};
+
+const buildDateFilter = (date?: string): string => {
+    return date ? date : '';
 };
 
 export const initAdvanceFormProjectsTree = () =>

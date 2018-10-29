@@ -31,6 +31,22 @@ export class FilterBuilder {
         return this.addCondition(field, "in", value, "", "", resourcePrefix);
     }
 
+    public addGt(field: string, value?: string, resourcePrefix?: string) {
+        return this.addCondition(field, ">", value, "", "", resourcePrefix);
+    }
+
+    public addGte(field: string, value?: string, resourcePrefix?: string) {
+        return this.addCondition(field, ">=", value, "", "", resourcePrefix);
+    }
+
+    public addLt(field: string, value?: string, resourcePrefix?: string) {
+        return this.addCondition(field, "<", value, "", "", resourcePrefix);
+    }
+
+    public addLte(field: string, value?: string, resourcePrefix?: string) {
+        return this.addCondition(field, "<=", value, "", "", resourcePrefix);
+    }
+
     public getFilters() {
         return this.filters;
     }
