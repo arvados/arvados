@@ -38,7 +38,7 @@ type containerQueue interface {
 
 type pool interface {
 	scheduler.WorkerPool
-	View() []worker.View
+	Instances() []worker.InstanceView
 }
 
 type dispatcher struct {
@@ -198,8 +198,8 @@ func (disp *dispatcher) apiInstances(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var resp struct {
-		Items []worker.View
+		Items []worker.InstanceView
 	}
-	resp.Items = disp.pool.View()
+	resp.Items = disp.pool.Instances()
 	json.NewEncoder(w).Encode(resp)
 }

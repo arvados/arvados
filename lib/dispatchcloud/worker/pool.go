@@ -23,8 +23,8 @@ const (
 	tagKeyHold         = "Hold"
 )
 
-// A View shows a worker's current state and recent activity.
-type View struct {
+// An InstanceView shows a worker's current state and recent activity.
+type InstanceView struct {
 	Instance             string
 	Price                float64
 	ArvadosInstanceType  string
@@ -643,13 +643,14 @@ func (wp *Pool) Stop() {
 	close(wp.stop)
 }
 
-// View reports status information for every worker in the pool.
-func (wp *Pool) View() []View {
-	var r []View
+// Instances returns an InstanceView for each worker in the pool,
+// summarizing its current state and recent activity.
+func (wp *Pool) Instances() []InstanceView {
+	var r []InstanceView
 	wp.setupOnce.Do(wp.setup)
 	wp.mtx.Lock()
 	for _, w := range wp.workers {
-		r = append(r, View{
+		r = append(r, InstanceView{
 			Instance:             w.instance.String(),
 			Price:                w.instType.Price,
 			ArvadosInstanceType:  w.instType.Name,
