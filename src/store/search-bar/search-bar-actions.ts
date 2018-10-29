@@ -200,8 +200,8 @@ export const getFilters = (filterName: string, searchValue: string, {...props}):
         .addILike(filterName, searchValue, GroupContentsResourcePrefix.COLLECTION)
         .addILike(filterName, searchValue, GroupContentsResourcePrefix.PROCESS)
         .addILike(filterName, searchValue, GroupContentsResourcePrefix.PROJECT)
-        .addLte('created_at', buildDateFilter(dateTo))
-        .addGte('created_at', buildDateFilter(dateFrom))
+        .addLte('modified_at', buildDateFilter(dateTo))
+        .addGte('modified_at', buildDateFilter(dateFrom))
         .addEqual('groupClass', GroupClass.PROJECT, GroupContentsResourcePrefix.PROJECT)
         .getFilters();
 };
