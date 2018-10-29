@@ -21,13 +21,14 @@ const styles: StyleRulesCallback<CssRules> = theme => {
             paddingLeft: theme.spacing.unit,
             paddingRight: theme.spacing.unit * 2,
         },
-        
+
     };
 };
 
 export interface SearchBarAutocompleteViewDataProps {
-    searchResults?: GroupContentsResource[];
+    searchResults: GroupContentsResource[];
     searchValue?: string;
+    selectedItem: string;
 }
 
 export interface SearchBarAutocompleteViewActionProps {
@@ -37,17 +38,22 @@ export interface SearchBarAutocompleteViewActionProps {
 type SearchBarAutocompleteViewProps = SearchBarAutocompleteViewDataProps & SearchBarAutocompleteViewActionProps & WithStyles<CssRules>;
 
 export const SearchBarAutocompleteView = withStyles(styles)(
-    ({ classes, searchResults, searchValue, navigateTo }: SearchBarAutocompleteViewProps) =>
-        <Paper className={classes.searchView}>
-            {searchResults && <List component="nav" className={classes.list}>
+    ({ classes, searchResults, searchValue, navigateTo, selectedItem }: SearchBarAutocompleteViewProps) => {
+        console.log(searchValue, selectedItem);
+        return <Paper className={classes.searchView}>
+            <List component="nav" className={classes.list}>
+                <ListItem button className={classes.listItem} selected={!selectedItem || searchValue === selectedItem}>
+                    <ListItemText secondary={searchValue}/>
+                </ListItem>
                 {searchResults.map((item: GroupContentsResource) =>
-                    <ListItem button key={item.uuid} className={classes.listItem}>
-                        <ListItemText secondary={getFormattedText(item.name, searchValue)} onClick={() => navigateTo(item.uuid)} />
+                    <ListItem button key={item.uuid} className={classes.listItem} selected={item.uuid === selectedItem}>
+                        <ListItemText secondary={getFormattedText(item.name, searchValue)}
+                                      onClick={() => navigateTo(item.uuid)}/>
                     </ListItem>
                 )}
-            </List>}
-        </Paper>
-);
+            </List>
+        </Paper>;
+    });
 
 const getFormattedText = (textToHighlight: string, searchString = '') => {
     return <Highlighter searchWords={[searchString]} autoEscape={true} textToHighlight={textToHighlight} />;

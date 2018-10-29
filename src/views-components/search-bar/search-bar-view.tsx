@@ -31,6 +31,7 @@ import {
     SearchBarAdvancedViewDataProps,
     SearchBarAdvancedViewActionProps
 } from '~/views-components/search-bar/search-bar-advanced-view';
+import { KEY_CODE_DOWN, KEY_CODE_ESC, KEY_CODE_UP, KEY_ENTER } from "~/common/codes";
 
 type CssRules = 'container' | 'containerSearchViewOpened' | 'input' | 'view';
 
@@ -82,25 +83,47 @@ interface SearchBarViewActionProps {
     closeView: () => void;
     openSearchView: () => void;
     loadRecentQueries: () => string[];
+    moveUp: () => void;
+    moveDown: () => void;
 }
 
 type SearchBarViewProps = SearchBarDataProps & SearchBarActionProps & WithStyles<CssRules>;
 
 export const SearchBarView = withStyles(styles)(
     (props : SearchBarViewProps) => {
-        const { classes, isPopoverOpen, closeView, searchValue, openSearchView, onChange, onSubmit } = props;
+        const { classes, isPopoverOpen } = props;
         return (
-            <ClickAwayListener onClickAway={closeView}>
+            <ClickAwayListener onClickAway={props.closeView}>
                 <Paper className={isPopoverOpen ? classes.containerSearchViewOpened : classes.container} >
-                    <form onSubmit={onSubmit}>
+                    <form onSubmit={props.onSubmit}>
                         <Input
                             className={classes.input}
-                            onChange={onChange}
+                            onChange={props.onChange}
                             placeholder="Search"
-                            value={searchValue}
+                            value={props.searchValue}
                             fullWidth={true}
                             disableUnderline={true}
-                            onClick={openSearchView}
+                            onClick={props.openSearchView}
+                            onKeyDown={e => {
+                                if (e.keyCode === KEY_CODE_DOWN) {
+                                    e.preventDefault();
+                                    if (!isPopoverOpen) {
+                                        props.openSearchView();
+                                    } else {
+                                        props.moveDown();
+                                    }
+                                } else if (e.keyCode === KEY_CODE_UP) {
+                                    e.preventDefault();
+                                    props.moveUp();
+                                } else if (e.keyCode === KEY_CODE_ESC) {
+                                    props.closeView();
+                                } else if (e.keyCode === KEY_ENTER) {
+                                    if (props.selectedItem !== props.searchValue) {
+                                        e.preventDefault();
+                                        props.navigateTo(props.selectedItem);
+                                    }
+                                }
+                            }}
                             endAdornment={
                                 <InputAdornment position="end">
                                     <Tooltip title='Search'>
@@ -121,25 +144,24 @@ export const SearchBarView = withStyles(styles)(
 );
 
 const getView = (props: SearchBarViewProps) => {
-    const { onSetView, closeAdvanceView, loadRecentQueries, savedQueries, deleteSavedQuery, searchValue,
-        searchResults, onSearch, navigateTo, editSavedQuery, tags, currentView } = props;
-    switch (currentView) {
+    switch (props.currentView) {
         case SearchView.AUTOCOMPLETE:
             return <SearchBarAutocompleteView
-                navigateTo={navigateTo}
-                searchResults={searchResults}
-                searchValue={searchValue} />;
+                navigateTo={props.navigateTo}
+                searchResults={props.searchResults}
+                searchValue={props.searchValue}
+                selectedItem={props.selectedItem} />;
         case SearchView.ADVANCED:
             return <SearchBarAdvancedView
-                closeAdvanceView={closeAdvanceView}
-                tags={tags} />;
+                closeAdvanceView={props.closeAdvanceView}
+                tags={props.tags} />;
         default:
             return <SearchBarBasicView
-                onSetView={onSetView}
-                onSearch={onSearch}
-                loadRecentQueries={loadRecentQueries}
-                savedQueries={savedQueries}
-                deleteSavedQuery={deleteSavedQuery}
-                editSavedQuery={editSavedQuery} />;
+                onSetView={props.onSetView}
+                onSearch={props.onSearch}
+                loadRecentQueries={props.loadRecentQueries}
+                savedQueries={props.savedQueries}
+                deleteSavedQuery={props.deleteSavedQuery}
+                editSavedQuery={props.editSavedQuery} />;
     }
 };

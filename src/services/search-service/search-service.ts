@@ -11,10 +11,8 @@ export class SearchService {
     saveRecentQuery(query: string) {
         if (this.recentQueries.length >= MAX_NUMBER_OF_RECENT_QUERIES) {
             this.recentQueries.shift();
-            this.recentQueries.push(query);
-        } else {
-            this.recentQueries.push(query);
         }
+        this.recentQueries.push(query);
         localStorage.setItem('recentQueries', JSON.stringify(this.recentQueries));
     }
 
