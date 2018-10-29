@@ -500,7 +500,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
     end
   end
 
-  ['ENOEXIST',
+  ['acbd18db4cc2f85cedef654fccc4a4d8+3',
+   'ENOEXIST',
    'arvados/apitestfixture:ENOEXIST',
   ].each do |img|
     test "container_image_for_container(#{img.inspect}) => 422" do
@@ -509,6 +510,12 @@ class ContainerRequestTest < ActiveSupport::TestCase
         Container.resolve_container_image(img)
       end
     end
+  end
+
+  test "allow unrecognized container when there are remote_hosts" do
+    set_user_from_auth :active
+    Rails.configuration.remote_hosts = {"foooo" => "bar.com"}
+    Container.resolve_container_image('acbd18db4cc2f85cedef654fccc4a4d8+3')
   end
 
   test "migrated docker image" do
