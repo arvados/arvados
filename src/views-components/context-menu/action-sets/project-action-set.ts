@@ -13,6 +13,8 @@ import { openProjectUpdateDialog } from '~/store/projects/project-update-actions
 import { ToggleTrashAction } from "~/views-components/context-menu/actions/trash-action";
 import { toggleProjectTrashed } from "~/store/trash/trash-actions";
 import { detailsPanelActions } from '~/store/details-panel/details-panel-action';
+import { ShareIcon } from '~/components/icon/icon';
+import { openSharingDialog } from "~/store/sharing-dialog/sharing-dialog-actions";
 
 export const projectActionSet: ContextMenuActionSet = [[
     {
@@ -27,6 +29,13 @@ export const projectActionSet: ContextMenuActionSet = [[
         name: "Edit project",
         execute: (dispatch, resource) => {
             dispatch<any>(openProjectUpdateDialog(resource));
+        }
+    },
+    {
+        icon: ShareIcon,
+        name: "Share",
+        execute: (dispatch, { uuid }) => {
+            dispatch<any>(openSharingDialog(uuid));
         }
     },
     {

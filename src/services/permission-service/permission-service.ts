@@ -4,20 +4,20 @@
 
 import { LinkService } from "~/services/link-service/link-service";
 import { PermissionResource } from "~/models/permission";
-import { ListArguments, ListResults } from '~/services/common-service/common-resource-service';
+import { ListArguments, ListResults, CommonResourceService } from '~/services/common-service/common-resource-service';
 import { joinFilters, FilterBuilder } from '../api/filter-builder';
 import { LinkClass } from '../../models/link';
 
 export class PermissionService extends LinkService<PermissionResource> {
 
-    list(args: ListArguments = {}): Promise<ListResults<PermissionResource>> {
-        const { filters, ...other } = args;
-        const classFilter = new FilterBuilder().addEqual('class', LinkClass.PERMISSION).getFilters();
-        const newArgs = {
-            ...other,
-            filters: joinFilters(filters, classFilter),
-        };
-        return super.list(newArgs);
+    permissionListService = new CommonResourceService(this.serverApi, 'permissions', this.actions);
+    create(data?: Partial<PermissionResource>) {
+        return super.create({ ...data, linkClass: LinkClass.PERMISSION });
+    }
+
+    listResourcePermissions(uuid: string, args: ListArguments = {}): Promise<ListResults<PermissionResource>> {
+        const service = new CommonResourceService<PermissionResource>(this.serverApi, `permissions/${uuid}`, this.actions);
+        return service.list(args);
     }
 
 }

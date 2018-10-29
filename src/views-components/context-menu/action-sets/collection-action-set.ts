@@ -27,7 +27,7 @@ export const collectionActionSet: ContextMenuActionSet = [[
         icon: ShareIcon,
         name: "Share",
         execute: (dispatch, { uuid }) => {
-            dispatch(openSharingDialog(uuid));
+            dispatch<any>(openSharingDialog(uuid));
         }
     },
     {

@@ -10,6 +10,7 @@ import { propertiesActions } from '~/store/properties/properties-actions';
 import { getResource } from '../resources/resources';
 import { getProperty } from '~/store/properties/properties';
 import { WorkflowResource } from '../../models/workflow';
+import { ResourceObjectType } from '~/models/resource';
 
 export const WORKFLOW_PANEL_ID = "workflowPanel";
 const UUID_PREFIX_PROPERTY_NAME = 'uuidPrefix';
@@ -26,6 +27,15 @@ export const setUuidPrefix = (uuidPrefix: string) =>
 
 export const getUuidPrefix = (state: RootState) => {
     return state.properties.uuidPrefix;
+};
+
+export const getPublicUserUuid = (state: RootState) => {
+    const prefix = getProperty<string>(UUID_PREFIX_PROPERTY_NAME)(state.properties);
+    return `${prefix}-tpzed-anonymouspublic`;
+};
+export const getPublicGroupUuid = (state: RootState) => {
+    const prefix = getProperty<string>(UUID_PREFIX_PROPERTY_NAME)(state.properties);
+    return `${prefix}-j7d0g-anonymouspublic`;
 };
 
 export const showWorkflowDetails = (uuid: string) =>

@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { PermissionLevel } from '~/models/permission';
-import { SharingManagementForm } from '../../views-components/sharing-dialog/sharing-management-form';
 
 export const SHARING_DIALOG_NAME = 'SHARING_DIALOG_NAME';
 export const SHARING_PUBLIC_ACCESS_FORM_NAME = 'SHARING_PUBLIC_ACCESS_FORM_NAME';
@@ -12,7 +11,7 @@ export const SHARING_INVITATION_FORM_NAME = 'SHARING_INVITATION_FORM_NAME';
 
 export interface SharingPublicAccessFormData {
     enabled: boolean;
-    permission: PermissionLevel;
+    permissions: PermissionLevel;
 }
 
 export interface SharingManagementFormData {
@@ -21,7 +20,7 @@ export interface SharingManagementFormData {
 
 export interface SharingManagementFormDataRow {
     email: string;
-    permission: PermissionLevel;
+    permissions: PermissionLevel;
 }
 
 export interface SharingInvitationFormData {
