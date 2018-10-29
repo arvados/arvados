@@ -94,8 +94,8 @@ func (s *FederationSuite) SetUpTest(c *check.C) {
 func (s *FederationSuite) remoteMockHandler(w http.ResponseWriter, req *http.Request) {
 	b := &bytes.Buffer{}
 	io.Copy(b, req.Body)
-	req.Body = ioutil.NopCloser(b)
 	req.Body.Close()
+	req.Body = ioutil.NopCloser(b)
 	s.remoteMockRequests = append(s.remoteMockRequests, *req)
 }
 

@@ -6,6 +6,7 @@ package controller
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -28,10 +29,10 @@ var containerRequestsRe = regexp.MustCompile(fmt.Sprintf(pathPattern, "container
 var collectionRe = regexp.MustCompile(fmt.Sprintf(pathPattern, "collections", "4zz18"))
 var collectionByPDHRe = regexp.MustCompile(`^/arvados/v1/collections/([0-9a-fA-F]{32}\+[0-9]+)+$`)
 
-func (h *Handler) remoteClusterRequest(remoteID string, req *http.Request) (*http.Response, error) {
+func (h *Handler) remoteClusterRequest(remoteID string, req *http.Request) (*http.Response, context.CancelFunc, error) {
 	remote, ok := h.Cluster.RemoteClusters[remoteID]
 	if !ok {
-		return nil, HTTPError{fmt.Sprintf("no proxy available for cluster %v", remoteID), http.StatusNotFound}
+		return nil, nil, HTTPError{fmt.Sprintf("no proxy available for cluster %v", remoteID), http.StatusNotFound}
 	}
 	scheme := remote.Scheme
 	if scheme == "" {
@@ -39,7 +40,7 @@ func (h *Handler) remoteClusterRequest(remoteID string, req *http.Request) (*htt
 	}
 	saltedReq, err := h.saltAuthToken(req, remoteID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	urlOut := &url.URL{
 		Scheme:   scheme,
@@ -52,7 +53,7 @@ func (h *Handler) remoteClusterRequest(remoteID string, req *http.Request) (*htt
 	if remote.Insecure {
 		client = h.insecureClient
 	}
-	return h.proxy.ForwardRequest(saltedReq, urlOut, client)
+	return h.proxy.Do(saltedReq, urlOut, client)
 }
 
 // Buffer request body, parse form parameters in request, and then

@@ -95,7 +95,10 @@ func remoteContainerRequestCreate(
 	req.ContentLength = int64(buf.Len())
 	req.Header.Set("Content-Length", fmt.Sprintf("%v", buf.Len()))
 
-	resp, err := h.handler.remoteClusterRequest(*clusterId, req)
+	resp, cancel, err := h.handler.remoteClusterRequest(*clusterId, req)
+	if cancel != nil {
+		defer cancel()
+	}
 	h.handler.proxy.ForwardResponse(w, resp, err)
 	return true
 }

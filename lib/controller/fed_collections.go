@@ -34,7 +34,7 @@ func rewriteSignatures(clusterID string, expectHash string,
 		return resp, requestError
 	}
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return resp, nil
 	}
 
@@ -140,7 +140,7 @@ func filterLocalClusterResponse(resp *http.Response, requestError error) (newRes
 		return resp, requestError
 	}
 
-	if resp.StatusCode == 404 {
+	if resp.StatusCode == http.StatusNotFound {
 		// Suppress returning this result, because we want to
 		// search the federation.
 		return nil, nil
@@ -174,12 +174,11 @@ func (s *searchRemoteClusterForPDH) filterRemoteClusterResponse(resp *http.Respo
 		return nil, nil
 	}
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		// Suppress returning unsuccessful result.  Maybe
 		// another request will find it.
-		// TODO collect and return error responses.
-		*s.errors = append(*s.errors, fmt.Sprintf("Response to %q from %q: %v", httpserver.GetRequestID(resp.Header), s.remoteID, resp.Status))
-		if resp.StatusCode != 404 {
+		*s.errors = append(*s.errors, fmt.Sprintf("Response to %q from %q: %v", resp.Header.Get(httpserver.HeaderRequestID), s.remoteID, resp.Status))
+		if resp.StatusCode != http.StatusNotFound {
 			// Got a non-404 error response, convert into BadGateway
 			*s.statusCode = http.StatusBadGateway
 		}
@@ -236,7 +235,10 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 
 		if clusterId != "" && clusterId != h.handler.Cluster.ClusterID {
 			// request for remote collection by uuid
-			resp, err := h.handler.remoteClusterRequest(clusterId, req)
+			resp, cancel, err := h.handler.remoteClusterRequest(clusterId, req)
+			if cancel != nil {
+				defer cancel()
+			}
 			newResponse, err := rewriteSignatures(clusterId, "", resp, err)
 			h.handler.proxy.ForwardResponse(w, newResponse, err)
 			return
@@ -251,7 +253,10 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 	// Request for collection by PDH.  Search the federation.
 
 	// First, query the local cluster.
-	resp, err := h.handler.localClusterRequest(req)
+	resp, localClusterRequestCancel, err := h.handler.localClusterRequest(req)
+	if localClusterRequestCancel != nil {
+		defer localClusterRequestCancel()
+	}
 	newResp, err := filterLocalClusterResponse(resp, err)
 	if newResp != nil || err != nil {
 		h.handler.proxy.ForwardResponse(w, newResp, err)
@@ -271,7 +276,7 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 	mtx := sync.Mutex{}
 	wg := sync.WaitGroup{}
 	var errors []string
-	var errorCode int = 404
+	var errorCode int = http.StatusNotFound
 
 	// use channel as a semaphore to limit the number of concurrent
 	// requests at a time
@@ -292,7 +297,10 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 			&sharedContext, cancelFunc, &errors, &errorCode}
 		wg.Add(1)
 		go func() {
-			resp, err := h.handler.remoteClusterRequest(search.remoteID, req)
+			resp, cancel, err := h.handler.remoteClusterRequest(search.remoteID, req)
+			if cancel != nil {
+				defer cancel()
+			}
 			newResp, err := search.filterRemoteClusterResponse(resp, err)
 			if newResp != nil || err != nil {
 				h.handler.proxy.ForwardResponse(w, newResp, err)

@@ -45,11 +45,11 @@ var dropHeaders = map[string]bool{
 
 type ResponseFilter func(*http.Response, error) (*http.Response, error)
 
-// Forward a request to downstream service, and return response or error.
-func (p *proxy) ForwardRequest(
+// Forward a request to upstream service, and return response or error.
+func (p *proxy) Do(
 	reqIn *http.Request,
 	urlOut *url.URL,
-	client *http.Client) (*http.Response, error) {
+	client *http.Client) (*http.Response, context.CancelFunc, error) {
 
 	// Copy headers from incoming request, then add/replace proxy
 	// headers like Via and X-Forwarded-For.
@@ -70,8 +70,9 @@ func (p *proxy) ForwardRequest(
 	hdrOut.Add("Via", reqIn.Proto+" arvados-controller")
 
 	ctx := reqIn.Context()
+	var cancel context.CancelFunc
 	if p.RequestTimeout > 0 {
-		ctx, _ = context.WithDeadline(ctx, time.Now().Add(time.Duration(p.RequestTimeout)))
+		ctx, cancel = context.WithDeadline(ctx, time.Now().Add(time.Duration(p.RequestTimeout)))
 	}
 
 	reqOut := (&http.Request{
@@ -82,10 +83,11 @@ func (p *proxy) ForwardRequest(
 		Body:   reqIn.Body,
 	}).WithContext(ctx)
 
-	return client.Do(reqOut)
+	resp, err := client.Do(reqOut)
+	return resp, cancel, err
 }
 
-// Copy a response (or error) to the upstream client
+// Copy a response (or error) to the downstream client
 func (p *proxy) ForwardResponse(w http.ResponseWriter, resp *http.Response, err error) (int64, error) {
 	if err != nil {
 		if he, ok := err.(HTTPError); ok {

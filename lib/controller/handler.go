@@ -5,6 +5,7 @@
 package controller
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"net"
@@ -121,10 +122,10 @@ func prepend(next http.Handler, middleware middlewareFunc) http.Handler {
 	})
 }
 
-func (h *Handler) localClusterRequest(req *http.Request) (*http.Response, error) {
+func (h *Handler) localClusterRequest(req *http.Request) (*http.Response, context.CancelFunc, error) {
 	urlOut, insecure, err := findRailsAPI(h.Cluster, h.NodeProfile)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	urlOut = &url.URL{
 		Scheme:   urlOut.Scheme,
@@ -137,11 +138,14 @@ func (h *Handler) localClusterRequest(req *http.Request) (*http.Response, error)
 	if insecure {
 		client = h.insecureClient
 	}
-	return h.proxy.ForwardRequest(req, urlOut, client)
+	return h.proxy.Do(req, urlOut, client)
 }
 
 func (h *Handler) proxyRailsAPI(w http.ResponseWriter, req *http.Request, next http.Handler) {
-	resp, err := h.localClusterRequest(req)
+	resp, cancel, err := h.localClusterRequest(req)
+	if cancel != nil {
+		defer cancel()
+	}
 	n, err := h.proxy.ForwardResponse(w, resp, err)
 	if err != nil {
 		httpserver.Logger(req).WithError(err).WithField("bytesCopied", n).Error("error copying response body")
