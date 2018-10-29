@@ -5,18 +5,21 @@
 import { dialogActions } from '~/store/dialog/dialog-actions';
 import { RootState } from '~/store/store';
 import { Dispatch } from 'redux';
-import { ResourceKind, extractUuidKind, Resource } from '~/models/resource';
+import { ResourceKind, extractUuidKind } from '~/models/resource';
 import { getResource } from '~/store/resources/resources';
 import { GroupContentsResourcePrefix } from '~/services/groups-service/groups-service';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { ContainerRequestResource } from '~/models/container-request';
 import { CollectionResource } from '~/models/collection';
 import { ProjectResource } from '~/models/project';
+import { ServiceRepository } from '~/services/services';
+import { FilterBuilder } from '~/services/api/filter-builder';
 
 export const ADVANCED_TAB_DIALOG = 'advancedTabDialog';
 
 export interface AdvancedTabDialogData {
     apiResponse: any;
+    metadata: any;
     pythonHeader: string;
     pythonExample: string;
     cliGetHeader: string;
@@ -43,15 +46,20 @@ enum ProjectData {
 }
 
 export const openAdvancedTabDialog = (uuid: string) =>
-    (dispatch: Dispatch<any>, getState: () => RootState) => {
+    async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const { resources } = getState();
         const kind = extractUuidKind(uuid);
         const data = getResource<any>(uuid)(resources);
+        const metadata = await services.linkService.list({
+            filters: new FilterBuilder()
+                .addEqual('headUuid', uuid)
+                .getFilters()
+        });
         if (data) {
-            console.log(data);
             if (kind === ResourceKind.COLLECTION) {
                 const dataCollection: AdvancedTabDialogData = {
                     apiResponse: collectionApiResponse(data),
+                    metadata,
                     pythonHeader: pythonHeader(CollectionData.COLLECTION),
                     pythonExample: pythonExample(data.uuid, GroupContentsResourcePrefix.COLLECTION),
                     cliGetHeader: cliGetHeader(CollectionData.COLLECTION),
@@ -65,6 +73,7 @@ export const openAdvancedTabDialog = (uuid: string) =>
             } else if (kind === ResourceKind.PROCESS) {
                 const dataProcess: AdvancedTabDialogData = {
                     apiResponse: containerRequestApiResponse(data),
+                    metadata,
                     pythonHeader: pythonHeader(ProcessData.CONTAINER_REQUEST),
                     pythonExample: pythonExample(data.uuid, GroupContentsResourcePrefix.PROCESS),
                     cliGetHeader: cliGetHeader(ProcessData.CONTAINER_REQUEST),
@@ -78,6 +87,7 @@ export const openAdvancedTabDialog = (uuid: string) =>
             } else if (kind === ResourceKind.PROJECT) {
                 const dataProject: AdvancedTabDialogData = {
                     apiResponse: groupRequestApiResponse(data),
+                    metadata,
                     pythonHeader: pythonHeader(ProjectData.GROUP),
                     pythonExample: pythonExample(data.uuid, GroupContentsResourcePrefix.PROJECT),
                     cliGetHeader: cliGetHeader(ProjectData.GROUP),
@@ -143,115 +153,94 @@ EOF`;
     return curlExample;
 };
 
+const stringify = (item: string | null | number | boolean) =>
+    JSON.stringify(item) || 'null';
+
+const stringifyObject = (item: any) =>
+    JSON.stringify(item, null, 2) || 'null';
+
 const containerRequestApiResponse = (apiResponse: ContainerRequestResource) => {
     const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name, description, properties, state, requestingContainerUuid, containerUuid,
-        containerCountMax, mounts, runtimeConstraints, containerImage, environment, cwd, command, outputPath, priority, expiresAt, filters, updatedAt, containerCount,
+        containerCountMax, mounts, runtimeConstraints, containerImage, environment, cwd, command, outputPath, priority, expiresAt, filters, containerCount,
         useExisting, schedulingParameters, outputUuid, logUuid, outputName, outputTtl } = apiResponse;
-    const response = `{
-  "uuid": "${uuid}",
-  "owner_uuid": "${ownerUuid}",
-  "created_at": "${createdAt}",
-  "modified_at": "${modifiedAt}",
-  "modified_by_client_uuid": "${modifiedByClientUuid}",
-  "modified_by_user_uuid": "${modifiedByUserUuid}",
-  "name": "${name}",
-  "description": "${description}",
-  "properties": {
-    "?"
-  },
-  "state": "${state}",
-  "requesting_container_uuid": "${requestingContainerUuid}",
-  "container_uuid": "${containerUuid}",
-  "container_count_max": "${containerCountMax}",
-  "mounts": {
-    "?"
-  },
-  "runtime_constraints": { ${runtimeConstraints.API ? `\n    "API": "${runtimeConstraints.API}",` : ''} ${runtimeConstraints.vcpus ? `\n    "vcpus": "${runtimeConstraints.vcpus}",` : ''} ${runtimeConstraints.ram ? `\n    "ram": "${runtimeConstraints.ram}"` : ''} ${runtimeConstraints.keepCacheRam ? `\n    "keep_cache_ram": "${runtimeConstraints.keepCacheRam}"` : ''}
-  },
-  "container_image": "${containerImage}",
-  "environment": {
-    "?"
-  },
-  "cwd": "${cwd}",
-  "command": [
-    "${command.join(`", \n    "`)}"
-  ],
-  "output_path": "${outputPath}",
-  "priority": "${priority}",
-  "expires_at": "${expiresAt}",
-  "filters": "${filters}"
-  "updated_at": "${updatedAt || null}"
-  "container_count": "${containerCount}"
-  "use_existing": "${useExisting}",
-  "scheduling_parameters": { ${schedulingParameters.maxRunTime ? `\n    "max_runtime": "${schedulingParameters.maxRunTime}",` : ''} ${schedulingParameters.partitions ? `\n    "partitions": "${schedulingParameters.partitions}",` : ''} ${schedulingParameters.preemptible ? `\n    "preemptible": "${schedulingParameters.preemptible}"` : ''}
-  },
-  "output_uuid": "${outputUuid}",
-  "log_uuid": "${logUuid}",
-  "output_name": "${outputName}",
-  "output_ttl": "${outputTtl}"
-}`;
+    const response = `"uuid": "${uuid}",
+"owner_uuid": "${ownerUuid}",
+"created_at": "${createdAt}",
+"modified_at": ${stringify(modifiedAt)},
+"modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
+"modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
+"name": ${stringify(name)},
+"description": ${stringify(description)},
+"properties": ${stringifyObject(properties)},
+"state": ${stringify(state)},
+"requesting_container_uuid": ${stringify(requestingContainerUuid)},
+"container_uuid": ${stringify(containerUuid)},
+"container_count_max": ${stringify(containerCountMax)},
+"mounts": ${stringifyObject(mounts)},
+"runtime_constraints": ${stringifyObject(runtimeConstraints)},
+"container_image": "${stringify(containerImage)}",
+"environment": ${stringifyObject(environment)},
+"cwd": ${stringify(cwd)},
+"command": ${stringifyObject(command)},
+"output_path": ${stringify(outputPath)},
+"priority": ${stringify(priority)},
+"expires_at": ${stringify(expiresAt)},
+"filters": ${stringify(filters)},
+"container_count": ${stringify(containerCount)},
+"use_existing": ${stringify(useExisting)},
+"scheduling_parameters": ${stringifyObject(schedulingParameters)},
+"output_uuid": ${stringify(outputUuid)},
+"log_uuid": ${stringify(logUuid)},
+"output_name": ${stringify(outputName)},
+"output_ttl": ${stringify(outputTtl)}`;
 
     return response;
 };
 
 const collectionApiResponse = (apiResponse: CollectionResource) => {
     const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name, description, properties, portableDataHash, replicationDesired,
-        replicationConfirmedAt, replicationConfirmed, updatedAt, manifestText, deleteAt, fileNames, trashAt, isTrashed, storageClassesDesired,
+        replicationConfirmedAt, replicationConfirmed, manifestText, deleteAt, fileNames, trashAt, isTrashed, storageClassesDesired,
         storageClassesConfirmed, storageClassesConfirmedAt } = apiResponse;
-    const response = `{
-  "uuid": "${uuid}",
-  "owner_uuid": "${ownerUuid}",
-  "created_at": "${createdAt}",
-  "modified_by_client_uuid": "${modifiedByClientUuid}",
-  "modified_by_user_uuid": "${modifiedByUserUuid}",
-  "modified_at": "${modifiedAt}",
-  "portable_data_hash": "${portableDataHash}",
-  "replication_desired": "${replicationDesired}",
-  "replication_confirmed_at": "${replicationConfirmedAt}",
-  "replication_confirmed": "${replicationConfirmed}",
-  "updated_at": "${updatedAt || null}"
-  "manifest_text": "${manifestText || null}",
-  "name": "${name}",
-  "description": "${description}",
-  "properties": { 
-    "?"
-  },
-  "delete_at": "${deleteAt}",
-  "file_names": "${fileNames || null}",
-  "trash_at": "${trashAt}",
-  "is_trashed": "${isTrashed}",
-  "storage_classes_desired": [
-    ${storageClassesDesired.length > 0 ? `"${storageClassesDesired.join(`", \n    "`)}"` : ''}
-  ],
-  "storage_classes_confirmed": [
-    ${storageClassesConfirmed.length > 0 ? `"${storageClassesConfirmed.join(`", \n    "`)}"` : ''}
-  ],
-  "storage_classes_confirmed_at": "${storageClassesConfirmedAt}"  
-}`;
+    const response = `"uuid": "${uuid}",
+"owner_uuid": "${ownerUuid}",
+"created_at": "${createdAt}",
+"modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
+"modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
+"modified_at": ${stringify(modifiedAt)},
+"portable_data_hash": ${stringify(portableDataHash)},
+"replication_desired": ${stringify(replicationDesired)},
+"replication_confirmed_at": ${stringify(replicationConfirmedAt)},
+"replication_confirmed": ${stringify(replicationConfirmed)},
+"manifest_text": ${stringify(manifestText)},
+"name": ${stringify(name)},
+"description": ${stringify(description)},
+"properties": ${stringifyObject(properties)},
+"delete_at": ${stringify(deleteAt)},
+"file_names": ${stringify(fileNames)},
+"trash_at": ${stringify(trashAt)},
+"is_trashed": ${stringify(isTrashed)},
+"storage_classes_desired": ${JSON.stringify(storageClassesDesired, null, 2)},
+"storage_classes_confirmed": ${JSON.stringify(storageClassesConfirmed, null, 2)},
+"storage_classes_confirmed_at": ${stringify(storageClassesConfirmedAt)}`;
 
     return response;
 };
 
 const groupRequestApiResponse = (apiResponse: ProjectResource) => {
-    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name, description, updatedAt, groupClass, trashAt, isTrashed, deleteAt } = apiResponse;
-    const response = `{
-  "uuid": "${uuid}",
-  "owner_uuid": "${ownerUuid}",
-  "created_at": "${createdAt}",
-  "modified_by_client_uuid": "${modifiedByClientUuid}",
-  "modified_by_user_uuid": "${modifiedByUserUuid}",
-  "modified_at": "${modifiedAt}",
-  "name": "${name}",
-  "description": "${description}",
-  "updated_at": "${updatedAt || null}"
-  "group_class": "${groupClass}",
-  "trash_at": "${trashAt}",
-  "is_trashed": "${isTrashed}",
-  "delete_at": "${deleteAt}",
-  "properties": {
-    "?"
-  }
-}`;
+    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name, description, groupClass, trashAt, isTrashed, deleteAt, properties } = apiResponse;
+    const response = `"uuid": "${uuid}",
+"owner_uuid": "${ownerUuid}",
+"created_at": "${createdAt}",
+"modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
+"modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
+"modified_at": ${stringify(modifiedAt)},
+"name": ${stringify(name)},
+"description": ${stringify(description)},
+"group_class": ${stringify(groupClass)},
+"trash_at": ${stringify(trashAt)},
+"is_trashed": ${stringify(isTrashed)},
+"delete_at": ${stringify(deleteAt)},
+"properties": ${stringifyObject(properties)}`;
 
     return response;
 };

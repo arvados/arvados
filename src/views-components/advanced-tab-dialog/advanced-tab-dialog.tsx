@@ -9,6 +9,7 @@ import { withDialog } from "~/store/dialog/with-dialog";
 import { compose } from 'redux';
 import { ADVANCED_TAB_DIALOG } from "~/store/advanced-tab/advanced-tab";
 import { DefaultCodeSnippet } from "~/components/default-code-snippet/default-code-snippet";
+import { MetadataTab } from '~/views-components/advanced-tab-dialog/metadataTab';
 
 type CssRules = 'content' | 'codeSnippet' | 'spacing';
 
@@ -50,6 +51,7 @@ export const AdvancedTabDialog = compose(
             const { value } = this.state;
             const {
                 apiResponse,
+                metadata,
                 pythonHeader,
                 pythonExample,
                 cliGetHeader,
@@ -74,7 +76,7 @@ export const AdvancedTabDialog = compose(
                 </Tabs>
                 <DialogContent className={classes.content}>
                     {value === 0 && <div>{dialogContentExample(apiResponse, classes)}</div>}
-                    {value === 1 && <div>{dialogContentHeader('(No metadata links found)')}</div>}
+                    {value === 1 && <div>{metadata.items.length > 0 ? <MetadataTab items={metadata.items}/>: dialogContentHeader('(No metadata links found)')}</div>}
                     {value === 2 && dialogContent(pythonHeader, pythonExample, classes)}
                     {value === 3 && <div>
                         {dialogContent(cliGetHeader, cliGetExample, classes)}

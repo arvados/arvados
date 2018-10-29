@@ -12,7 +12,6 @@ export interface Resource {
     href: string;
     kind: ResourceKind;
     etag: string;
-    updatedAt?: string;
 }
 
 export interface TrashableResource extends Resource {
