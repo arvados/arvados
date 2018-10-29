@@ -5,7 +5,7 @@
 import * as React from 'react';
 import { Field, WrappedFieldProps, FieldArray, WrappedFieldArrayProps } from 'redux-form';
 import { Grid, FormControl, InputLabel } from '@material-ui/core';
-import { PermissionSelect } from './permission-select';
+import { PermissionSelect, parsePermissionLevel, formatPermissionLevel } from './permission-select';
 import { PeopleSelect, Person } from './people-select';
 
 export default () =>
@@ -33,8 +33,10 @@ const InvitedPeopleFieldComponent = ({ fields }: WrappedFieldArrayProps<Person>)
 
 const PermissionSelectField = () =>
     <Field
-        name='permission'
-        component={PermissionSelectComponent} />;
+        name='permissions'
+        component={PermissionSelectComponent}
+        format={formatPermissionLevel}
+        parse={parsePermissionLevel} />;
 
 const PermissionSelectComponent = ({ input }: WrappedFieldProps) =>
     <FormControl fullWidth>

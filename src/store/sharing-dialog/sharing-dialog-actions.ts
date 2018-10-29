@@ -4,8 +4,7 @@
 
 import { dialogActions } from "~/store/dialog/dialog-actions";
 import { withDialog } from "~/store/dialog/with-dialog";
-
-export const SHARING_DIALOG_NAME = 'SHARING_DIALOG_NAME';
+import { SHARING_DIALOG_NAME } from "./sharing-dialog-types";
 
 export const openSharingDialog = (resourceUuid: string) =>
     dialogActions.OPEN_DIALOG({ id: SHARING_DIALOG_NAME, data: resourceUuid });

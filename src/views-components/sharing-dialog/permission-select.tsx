@@ -10,12 +10,39 @@ import Computer from '@material-ui/icons/Computer';
 import { WithStyles } from '@material-ui/core/styles';
 import { SelectProps } from '@material-ui/core/Select';
 import { SelectItem } from './select-item';
+import { PermissionLevel } from '../../models/permission';
 
 export enum PermissionSelectValue {
     READ = 'Read',
     WRITE = 'Write',
     MANAGE = 'Manage',
 }
+
+export const parsePermissionLevel = (value: PermissionSelectValue) => {
+    switch (value) {
+        case PermissionSelectValue.READ:
+            return PermissionLevel.CAN_READ;
+        case PermissionSelectValue.WRITE:
+            return PermissionLevel.CAN_WRITE;
+        case PermissionSelectValue.MANAGE:
+            return PermissionLevel.CAN_MANAGE;
+        default:
+            return PermissionLevel.NONE;
+    }
+};
+
+export const formatPermissionLevel = (value: PermissionLevel) => {
+    switch (value) {
+        case PermissionLevel.CAN_READ:
+            return PermissionSelectValue.READ;
+        case PermissionLevel.CAN_WRITE:
+            return PermissionSelectValue.WRITE;
+        case PermissionLevel.CAN_MANAGE:
+            return PermissionSelectValue.MANAGE;
+        default:
+            return PermissionSelectValue.READ;
+    }
+};
 
 type PermissionSelectClasses = 'value';
 

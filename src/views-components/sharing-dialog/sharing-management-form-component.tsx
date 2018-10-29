@@ -5,7 +5,7 @@
 import * as React from 'react';
 import { Grid, StyleRulesCallback, Divider, IconButton, Typography } from '@material-ui/core';
 import { Field, WrappedFieldProps, WrappedFieldArrayProps, FieldArray, FieldsProps } from 'redux-form';
-import { PermissionSelect } from './permission-select';
+import { PermissionSelect, formatPermissionLevel, parsePermissionLevel } from './permission-select';
 import { WithStyles } from '@material-ui/core/styles';
 import withStyles from '@material-ui/core/styles/withStyles';
 import { CloseIcon } from '~/components/icon/icon';
@@ -37,7 +37,11 @@ const PermissionManagementRow = withStyles(permissionManagementRowStyles)(
                     <Typography noWrap variant='subheading'>{fields.get(index).email}</Typography>
                 </Grid>
                 <Grid item xs={4} container wrap='nowrap'>
-                    <Field name={`${field}.permissions`} component={PermissionSelectComponent} />
+                    <Field
+                        name={`${field}.permissions`}
+                        component={PermissionSelectComponent}
+                        format={formatPermissionLevel}
+                        parse={parsePermissionLevel} />
                     <IconButton onClick={() => fields.remove(index)}>
                         <CloseIcon />
                     </IconButton>

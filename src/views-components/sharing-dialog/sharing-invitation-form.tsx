@@ -6,13 +6,15 @@ import { reduxForm } from 'redux-form';
 import { connect } from 'react-redux';
 import { compose } from 'redux';
 import SharingInvitationFormComponent from './sharing-invitation-form-component';
-import { PermissionSelectValue } from './permission-select';
+import { SHARING_INVITATION_FORM_NAME } from '~/store/sharing-dialog/sharing-dialog-types';
+import { PermissionLevel } from '~/models/permission';
 
 export const SharingInvitationForm = compose(
     connect(() => ({
         initialValues: {
-            permission: PermissionSelectValue.READ
+            permissions: PermissionLevel.CAN_READ,
+            invitedPeople: [],
         }
     })),
-    reduxForm({ form: 'SIMPLE_SHARING_FORM' })
+    reduxForm({ form: SHARING_INVITATION_FORM_NAME })
 )(SharingInvitationFormComponent);

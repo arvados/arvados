@@ -7,7 +7,7 @@ import { LinkResource } from "~/models/link";
 import { AxiosInstance } from "axios";
 import { ApiActions } from "~/services/api/api-actions";
 
-export class LinkService extends CommonResourceService<LinkResource> {
+export class LinkService<Resource extends LinkResource = LinkResource> extends CommonResourceService<Resource> {
     constructor(serverApi: AxiosInstance, actions: ApiActions) {
         super(serverApi, "links", actions);
     }

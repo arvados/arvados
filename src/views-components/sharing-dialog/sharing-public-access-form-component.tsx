@@ -5,7 +5,7 @@
 import * as React from 'react';
 import { Grid, StyleRulesCallback, Divider, Switch, Typography } from '@material-ui/core';
 import { Field, WrappedFieldProps, formValues, formValueSelector } from 'redux-form';
-import { PermissionSelect } from './permission-select';
+import { PermissionSelect, formatPermissionLevel, parsePermissionLevel } from './permission-select';
 import { WithStyles } from '@material-ui/core/styles';
 import withStyles from '@material-ui/core/styles/withStyles';
 import { connect } from 'react-redux';
@@ -25,7 +25,12 @@ const SharingPublicAccessForm = withStyles(sharingPublicAccessStyles)(
                     <Typography variant='subheading'>Public access</Typography>
                 </Grid>
                 <Grid item xs={4} container wrap='nowrap'>
-                    <Field name='permissions' component={PermissionSelectComponent} />
+                    <Field
+                        name='permissions'
+                        component={PermissionSelectComponent}
+                        format={formatPermissionLevel}
+                        parse={parsePermissionLevel}
+                    />
                     <Field name='enabled' component={PublicAccessSwitch} />
                 </Grid>
             </Grid>

@@ -13,10 +13,13 @@ import { RootState } from '~/store/store';
 import SharingDialogComponent, { SharingDialogDataProps, SharingDialogActionProps } from './sharing-dialog-component';
 import { SharingDialogContent } from './sharing-dialog-content';
 import { connectAdvancedViewSwitch, AdvancedViewSwitchInjectedProps } from './advanced-view-switch';
+import { isDirty } from 'redux-form';
 
-const mapStateToProps = (_: RootState, { advancedViewOpen, ...props }: WithDialogProps<string> & AdvancedViewSwitchInjectedProps): SharingDialogDataProps => ({
+const mapStateToProps = (state: RootState, { advancedViewOpen, ...props }: WithDialogProps<string> & AdvancedViewSwitchInjectedProps): SharingDialogDataProps => ({
     ...props,
-    saveEnabled: false,
+    saveEnabled: isDirty('SHARING_PUBLIC_ACCESS_FORM')(state) ||
+        isDirty('SHARING_MANAGEMENT_FORM')(state) ||
+        isDirty('SHARING_INVITATION_FORM')(state),
     advancedEnabled: !advancedViewOpen,
     children: <SharingDialogContent {...{ advancedViewOpen }} />,
 });
