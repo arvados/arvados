@@ -54,6 +54,14 @@ func Sync(logger logrus.FieldLogger, queue ContainerQueue, pool WorkerPool) {
 			}
 		case arvados.ContainerStateComplete, arvados.ContainerStateCancelled:
 			if running {
+				// Kill crunch-run in case it's stuck;
+				// nothing it does now will matter
+				// anyway. If crunch-run has already
+				// exited and we just haven't found
+				// out about it yet, the only effect
+				// of kill() will be to make the
+				// worker available for the next
+				// container.
 				kill(ent)
 			} else {
 				logger.WithFields(logrus.Fields{
@@ -64,6 +72,10 @@ func Sync(logger logrus.FieldLogger, queue ContainerQueue, pool WorkerPool) {
 			}
 		case arvados.ContainerStateQueued:
 			if running {
+				// Can happen if a worker returns from
+				// a network outage and is still
+				// preparing to run a container that
+				// has already been unlocked/requeued.
 				kill(ent)
 			}
 		case arvados.ContainerStateLocked:

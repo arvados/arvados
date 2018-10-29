@@ -409,6 +409,9 @@ func (wp *Pool) StartContainer(it arvados.InstanceType, ctr arvados.Container) b
 
 // KillContainer kills the crunch-run process for the given container
 // UUID, if it's running on any worker.
+//
+// KillContainer returns immediately; the act of killing the container
+// takes some time, and runs in the background.
 func (wp *Pool) KillContainer(uuid string) {
 	wp.mtx.Lock()
 	defer wp.mtx.Unlock()

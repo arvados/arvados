@@ -32,6 +32,12 @@ import (
 // idle workers, in case they are consuming quota.
 //
 // Map should not be called without first calling FixStaleLocks.
+//
+//	FixStaleLocks()
+//	for {
+//		Map()
+//		Sync()
+//	}
 func Map(logger logrus.FieldLogger, queue ContainerQueue, pool WorkerPool) {
 	unsorted, _ := queue.Entries()
 	sorted := make([]container.QueueEnt, 0, len(unsorted))
