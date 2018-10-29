@@ -233,6 +233,8 @@ func (wp *Pool) Create(it arvados.InstanceType) error {
 // AtQuota returns true if Create is not expected to work at the
 // moment.
 func (wp *Pool) AtQuota() bool {
+	wp.mtx.Lock()
+	defer wp.mtx.Unlock()
 	return time.Now().Before(wp.atQuotaUntil)
 }
 
