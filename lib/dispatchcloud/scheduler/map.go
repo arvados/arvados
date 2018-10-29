@@ -87,7 +87,7 @@ func Map(logger logrus.FieldLogger, queue ContainerQueue, pool WorkerPool) {
 				continue
 			}
 			if ctr.State != arvados.ContainerStateLocked {
-				logger.Debugf("(race?) container has state=%q after Lock succeeded", ctr.State)
+				logger.Warnf("(race?) container has state=%q after Lock succeeded", ctr.State)
 			}
 		}
 		if ctr.State != arvados.ContainerStateLocked {
