@@ -48,9 +48,9 @@ func Sync(logger logrus.FieldLogger, queue ContainerQueue, pool WorkerPool) {
 		switch ent.Container.State {
 		case arvados.ContainerStateRunning:
 			if !running {
-				cancel(ent, "not running on any worker")
+				go cancel(ent, "not running on any worker")
 			} else if !exited.IsZero() && qUpdated.After(exited) {
-				cancel(ent, "state=\"Running\" after crunch-run exited")
+				go cancel(ent, "state=\"Running\" after crunch-run exited")
 			}
 		case arvados.ContainerStateComplete, arvados.ContainerStateCancelled:
 			if running {
@@ -62,7 +62,7 @@ func Sync(logger logrus.FieldLogger, queue ContainerQueue, pool WorkerPool) {
 				// of kill() will be to make the
 				// worker available for the next
 				// container.
-				kill(ent)
+				go kill(ent)
 			} else {
 				logger.WithFields(logrus.Fields{
 					"ContainerUUID": uuid,
@@ -76,7 +76,7 @@ func Sync(logger logrus.FieldLogger, queue ContainerQueue, pool WorkerPool) {
 				// a network outage and is still
 				// preparing to run a container that
 				// has already been unlocked/requeued.
-				kill(ent)
+				go kill(ent)
 			}
 		case arvados.ContainerStateLocked:
 			if running && !exited.IsZero() && qUpdated.After(exited) {
