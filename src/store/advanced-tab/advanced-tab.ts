@@ -199,7 +199,7 @@ const containerRequestApiResponse = (apiResponse: ContainerRequestResource) => {
 
 const collectionApiResponse = (apiResponse: CollectionResource) => {
     const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name, description, properties, portableDataHash, replicationDesired,
-        replicationConfirmedAt, replicationConfirmed, manifestText, deleteAt, fileNames, trashAt, isTrashed, storageClassesDesired,
+        replicationConfirmedAt, replicationConfirmed, manifestText, deleteAt, trashAt, isTrashed, storageClassesDesired,
         storageClassesConfirmed, storageClassesConfirmedAt } = apiResponse;
     const response = `"uuid": "${uuid}",
 "owner_uuid": "${ownerUuid}",
@@ -216,7 +216,6 @@ const collectionApiResponse = (apiResponse: CollectionResource) => {
 "description": ${stringify(description)},
 "properties": ${stringifyObject(properties)},
 "delete_at": ${stringify(deleteAt)},
-"file_names": ${stringify(fileNames)},
 "trash_at": ${stringify(trashAt)},
 "is_trashed": ${stringify(isTrashed)},
 "storage_classes_desired": ${JSON.stringify(storageClassesDesired, null, 2)},
