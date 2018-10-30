@@ -18,6 +18,7 @@ import { PermissionResource } from '~/models/permission';
 import { differenceWith } from "lodash";
 import { withProgress } from "~/store/progress-indicator/with-progress";
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions.ts';
+import { snackbarActions, SnackbarKind } from "../snackbar/snackbar-actions";
 
 export const openSharingDialog = (resourceUuid: string) =>
     (dispatch: Dispatch) => {
@@ -39,6 +40,16 @@ export const saveSharingDialogChanges = async (dispatch: Dispatch) => {
     await dispatch<any>(sendInvitations);
     dispatch(reset(SHARING_INVITATION_FORM_NAME));
     await dispatch<any>(loadSharingDialog);
+};
+
+export const sendSharingInvitations = async (dispatch: Dispatch) => {
+    dispatch(progressIndicatorActions.START_WORKING(SHARING_DIALOG_NAME));
+    await dispatch<any>(sendInvitations);
+    dispatch(closeSharingDialog());
+    dispatch(snackbarActions.OPEN_SNACKBAR({
+        message: 'New permissions created',
+        kind: SnackbarKind.SUCCESS,
+    }));
 };
 
 const loadSharingDialog = async (dispatch: Dispatch, getState: () => RootState, { permissionService }: ServiceRepository) => {

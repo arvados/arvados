@@ -6,7 +6,7 @@ import { compose, Dispatch } from 'redux';
 import { connect } from 'react-redux';
 
 import * as React from 'react';
-import { connectSharingDialog, saveSharingDialogChanges, connectSharingDialogProgress } from '~/store/sharing-dialog/sharing-dialog-actions';
+import { connectSharingDialog, saveSharingDialogChanges, connectSharingDialogProgress, sendSharingInvitations } from '~/store/sharing-dialog/sharing-dialog-actions';
 import { WithDialogProps } from '~/store/dialog/with-dialog';
 import { RootState } from '~/store/store';
 
@@ -26,12 +26,20 @@ const mapStateToProps = (state: RootState, { advancedViewOpen, working, ...props
     children: <SharingDialogContent {...{ advancedViewOpen }} />,
 });
 
-const mapDispatchToProps = (dispatch: Dispatch, { toggleAdvancedView, ...props }: Props): SharingDialogActionProps => ({
+const mapDispatchToProps = (dispatch: Dispatch, { toggleAdvancedView, advancedViewOpen, ...props }: Props): SharingDialogActionProps => ({
     ...props,
     onClose: props.closeDialog,
-    onExited: toggleAdvancedView,
+    onExited: () => {
+        if (advancedViewOpen) {
+            toggleAdvancedView();
+        }
+    },
     onSave: () => {
-        dispatch<any>(saveSharingDialogChanges);
+        if (advancedViewOpen) {
+            dispatch<any>(saveSharingDialogChanges);
+        } else {
+            dispatch<any>(sendSharingInvitations);
+        }
     },
     onAdvanced: toggleAdvancedView,
 });
