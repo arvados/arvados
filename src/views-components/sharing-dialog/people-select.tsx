@@ -9,7 +9,7 @@ import { connect, DispatchProp } from 'react-redux';
 import { ServiceRepository } from '~/services/services';
 import { FilterBuilder } from '../../services/api/filter-builder';
 import { debounce } from 'debounce';
-import { ListItemText } from '@material-ui/core';
+import { ListItemText, Typography } from '@material-ui/core';
 import { noop } from 'lodash/fp';
 
 export interface Person {
@@ -67,7 +67,7 @@ export const PeopleSelect = connect()(
         renderSuggestion({ firstName, lastName, email }: UserResource) {
             return (
                 <ListItemText>
-                    {`${firstName} ${lastName} <<${email}>>`}
+                    <Typography noWrap>{`${firstName} ${lastName} <<${email}>>`}</Typography>
                 </ListItemText>
             );
         }
@@ -78,13 +78,15 @@ export const PeopleSelect = connect()(
         }
 
         handleCreate = () => {
-            const { onCreate = noop } = this.props;
-            this.setState({ value: '', suggestions: [] });
-            onCreate({
-                email: '',
-                name: '',
-                uuid: this.state.value,
-            });
+            const { onCreate } = this.props;
+            if (onCreate) {
+                this.setState({ value: '', suggestions: [] });
+                onCreate({
+                    email: '',
+                    name: '',
+                    uuid: this.state.value,
+                });
+            }
         }
 
         handleSelect = ({ email, firstName, lastName, uuid }: UserResource) => {

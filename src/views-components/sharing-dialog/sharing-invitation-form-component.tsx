@@ -27,7 +27,6 @@ const InvitedPeopleField = () =>
 const InvitedPeopleFieldComponent = ({ fields }: WrappedFieldArrayProps<Person>) =>
     <PeopleSelect
         items={fields.getAll() || []}
-        onCreate={fields.push}
         onSelect={fields.push}
         onDelete={fields.remove} />;
 
