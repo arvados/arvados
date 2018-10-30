@@ -89,6 +89,32 @@ interface SearchBarViewActionProps {
 
 type SearchBarViewProps = SearchBarDataProps & SearchBarActionProps & WithStyles<CssRules>;
 
+const handleKeyDown = (e: React.KeyboardEvent, props: SearchBarViewProps) => {
+    if (e.keyCode === KEY_CODE_DOWN) {
+        e.preventDefault();
+        if (!props.isPopoverOpen) {
+            props.openSearchView();
+        } else {
+            props.moveDown();
+        }
+    } else if (e.keyCode === KEY_CODE_UP) {
+        e.preventDefault();
+        props.moveUp();
+    } else if (e.keyCode === KEY_CODE_ESC) {
+        props.closeView();
+    } else if (e.keyCode === KEY_ENTER) {
+        if (props.currentView === SearchView.BASIC) {
+            e.preventDefault();
+            props.onSearch(props.selectedItem.query);
+        } else if (props.currentView === SearchView.AUTOCOMPLETE) {
+            if (props.selectedItem.id !== props.searchValue) {
+                e.preventDefault();
+                props.navigateTo(props.selectedItem.id);
+            }
+        }
+    }
+};
+
 export const SearchBarView = withStyles(styles)(
     (props : SearchBarViewProps) => {
         const { classes, isPopoverOpen } = props;
@@ -104,26 +130,7 @@ export const SearchBarView = withStyles(styles)(
                             fullWidth={true}
                             disableUnderline={true}
                             onClick={props.openSearchView}
-                            onKeyDown={e => {
-                                if (e.keyCode === KEY_CODE_DOWN) {
-                                    e.preventDefault();
-                                    if (!isPopoverOpen) {
-                                        props.openSearchView();
-                                    } else {
-                                        props.moveDown();
-                                    }
-                                } else if (e.keyCode === KEY_CODE_UP) {
-                                    e.preventDefault();
-                                    props.moveUp();
-                                } else if (e.keyCode === KEY_CODE_ESC) {
-                                    props.closeView();
-                                } else if (e.keyCode === KEY_ENTER) {
-                                    if (props.selectedItem !== props.searchValue) {
-                                        e.preventDefault();
-                                        props.navigateTo(props.selectedItem);
-                                    }
-                                }
-                            }}
+                            onKeyDown={e => handleKeyDown(e, props)}
                             endAdornment={
                                 <InputAdornment position="end">
                                     <Tooltip title='Search'>
@@ -162,6 +169,7 @@ const getView = (props: SearchBarViewProps) => {
                 loadRecentQueries={props.loadRecentQueries}
                 savedQueries={props.savedQueries}
                 deleteSavedQuery={props.deleteSavedQuery}
-                editSavedQuery={props.editSavedQuery} />;
+                editSavedQuery={props.editSavedQuery}
+                selectedItem={props.selectedItem} />;
     }
 };

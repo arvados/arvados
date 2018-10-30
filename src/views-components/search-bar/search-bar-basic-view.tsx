@@ -7,7 +7,7 @@ import { Paper, StyleRulesCallback, withStyles, WithStyles } from '@material-ui/
 import { SearchView } from '~/store/search-bar/search-bar-reducer';
 import {
     SearchBarRecentQueries,
-    SearchBarRecentQueriesActionProps 
+    SearchBarRecentQueriesActionProps
 } from '~/views-components/search-bar/search-bar-recent-queries';
 import {
     SearchBarSavedQueries,
@@ -33,7 +33,7 @@ const styles: StyleRulesCallback<CssRules> = theme => {
         },
         label: {
             fontSize: '0.875rem',
-            padding: `${theme.spacing.unit / 2}px ${theme.spacing.unit}px `,
+            padding: `${theme.spacing.unit}px ${theme.spacing.unit}px `,
             color: theme.palette.grey["900"],
             background: theme.palette.grey["200"]
         }
@@ -50,18 +50,20 @@ export type SearchBarBasicViewActionProps = {
 type SearchBarBasicViewProps = SearchBarBasicViewDataProps & SearchBarBasicViewActionProps & WithStyles<CssRules>;
 
 export const SearchBarBasicView = withStyles(styles)(
-    ({ classes, onSetView, loadRecentQueries, deleteSavedQuery, savedQueries, onSearch, editSavedQuery }: SearchBarBasicViewProps) =>
+    ({ classes, onSetView, loadRecentQueries, deleteSavedQuery, savedQueries, onSearch, editSavedQuery, selectedItem }: SearchBarBasicViewProps) =>
         <Paper className={classes.root}>
             <div className={classes.label}>Recent search queries</div>
             <SearchBarRecentQueries
                 onSearch={onSearch}
-                loadRecentQueries={loadRecentQueries} />
+                loadRecentQueries={loadRecentQueries}
+                selectedItem={selectedItem} />
             <div className={classes.label}>Saved search queries</div>
             <SearchBarSavedQueries
                 onSearch={onSearch}
                 savedQueries={savedQueries}
                 editSavedQuery={editSavedQuery}
-                deleteSavedQuery={deleteSavedQuery} />
+                deleteSavedQuery={deleteSavedQuery}
+                selectedItem={selectedItem} />
             <div className={classes.advanced} onClick={() => onSetView(SearchView.ADVANCED)}>Advanced search</div>
         </Paper>
 );

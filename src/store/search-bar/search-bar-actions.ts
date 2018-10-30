@@ -26,6 +26,7 @@ export const searchBarActions = unionize({
     SET_SEARCH_RESULTS: ofType<GroupContentsResource[]>(),
     SET_SEARCH_VALUE: ofType<string>(),
     SET_SAVED_QUERIES: ofType<SearchBarAdvanceFormData[]>(),
+    SET_RECENT_QUERIES: ofType<string[]>(),
     UPDATE_SAVED_QUERY: ofType<SearchBarAdvanceFormData[]>(),
     SET_SELECTED_ITEM: ofType<string>(),
     MOVE_UP: ofType<{}>(),
@@ -49,8 +50,9 @@ export const saveRecentQuery = (query: string) =>
 
 export const loadRecentQueries = () =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        const recentSearchQueries = services.searchService.getRecentQueries();
-        return recentSearchQueries || [];
+        const recentQueries = services.searchService.getRecentQueries() || [];
+        dispatch(searchBarActions.SET_RECENT_QUERIES(recentQueries));
+        return recentQueries;
     };
 
 export const searchData = (searchValue: string) =>
@@ -75,19 +77,18 @@ export const searchAdvanceData = (data: SearchBarAdvanceFormData) =>
         dispatch(navigateToSearchResults);
     };
 
-// Todo: create ids for particular searchQuery
 const saveQuery = (data: SearchBarAdvanceFormData) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        const savedSearchQueries = services.searchService.getSavedQueries();
-        const filteredQuery = savedSearchQueries.find(query => query.searchQuery === data.searchQuery);
+        const savedQueries = services.searchService.getSavedQueries();
         if (data.saveQuery && data.searchQuery) {
+            const filteredQuery = savedQueries.find(query => query.searchQuery === data.searchQuery);
             if (filteredQuery) {
                 services.searchService.editSavedQueries(data);
-                dispatch(searchBarActions.UPDATE_SAVED_QUERY(savedSearchQueries));
+                dispatch(searchBarActions.UPDATE_SAVED_QUERY(savedQueries));
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Query has been successfully updated', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
             } else {
                 services.searchService.saveQuery(data);
-                dispatch(searchBarActions.SET_SAVED_QUERIES(savedSearchQueries));
+                dispatch(searchBarActions.SET_SAVED_QUERIES(savedQueries));
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Query has been successfully saved', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
             }
         }

@@ -7,6 +7,7 @@ import { withStyles, WithStyles, StyleRulesCallback, List, ListItem, ListItemTex
 import { ArvadosTheme } from '~/common/custom-theme';
 import { RemoveIcon, EditSavedQueryIcon } from '~/components/icon/icon';
 import { SearchBarAdvanceFormData } from '~/models/search-bar';
+import { SearchBarSelectedItem } from "~/store/search-bar/search-bar-reducer";
 
 type CssRules = 'root' | 'listItem' | 'listItemText' | 'button';
 
@@ -30,6 +31,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 export interface SearchBarSavedQueriesDataProps {
     savedQueries: SearchBarAdvanceFormData[];
+    selectedItem: SearchBarSelectedItem;
 }
 
 export interface SearchBarSavedQueriesActionProps {
@@ -38,18 +40,18 @@ export interface SearchBarSavedQueriesActionProps {
     editSavedQuery: (data: SearchBarAdvanceFormData, id: number) => void;
 }
 
-type SearchBarSavedQueriesProps = SearchBarSavedQueriesDataProps 
-    & SearchBarSavedQueriesActionProps 
+type SearchBarSavedQueriesProps = SearchBarSavedQueriesDataProps
+    & SearchBarSavedQueriesActionProps
     & WithStyles<CssRules>;
 
 export const SearchBarSavedQueries = withStyles(styles)(
-    ({ classes, savedQueries, onSearch, editSavedQuery, deleteSavedQuery }: SearchBarSavedQueriesProps) =>
+    ({ classes, savedQueries, onSearch, editSavedQuery, deleteSavedQuery, selectedItem }: SearchBarSavedQueriesProps) =>
         <List component="nav" className={classes.root}>
-            {savedQueries.map((query, index) => 
-                <ListItem button key={index} className={classes.listItem}>
-                    <ListItemText disableTypography 
-                        secondary={query.searchQuery} 
-                        onClick={() => onSearch(query.searchQuery)} 
+            {savedQueries.map((query, index) =>
+                <ListItem button key={index} className={classes.listItem} selected={`SQ-${index}-${query.searchQuery}` === selectedItem.id}>
+                    <ListItemText disableTypography
+                        secondary={query.searchQuery}
+                        onClick={() => onSearch(query.searchQuery)}
                         className={classes.listItemText} />
                     <ListItemSecondaryAction>
                         <Tooltip title="Edit">

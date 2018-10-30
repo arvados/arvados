@@ -7,6 +7,10 @@ import { GroupContentsResource } from '~/services/groups-service/groups-service'
 import { SearchBarAdvanceFormData } from '~/models/search-bar';
 
 type SearchResult = GroupContentsResource;
+export type SearchBarSelectedItem = {
+    id: string,
+    query: string
+};
 
 interface SearchBar {
     currentView: string;
@@ -14,7 +18,8 @@ interface SearchBar {
     searchResults: SearchResult[];
     searchValue: string;
     savedQueries: SearchBarAdvanceFormData[];
-    selectedItem: string;
+    recentQueries: string[];
+    selectedItem: SearchBarSelectedItem;
 }
 
 export enum SearchView {
@@ -29,7 +34,19 @@ const initialState: SearchBar = {
     searchResults: [],
     searchValue: '',
     savedQueries: [],
-    selectedItem: ''
+    recentQueries: [],
+    selectedItem: {
+        id: '',
+        query: ''
+    }
+};
+
+const makeSelectedItem = (id: string, query?: string): SearchBarSelectedItem => ({ id, query: query ? query : id });
+
+const makeQueryList = (recentQueries: string[], savedQueries: SearchBarAdvanceFormData[]) => {
+    const recentIds = recentQueries.map((q, idx) => makeSelectedItem(`RQ-${idx}-${q}`, q));
+    const savedIds = savedQueries.map((q, idx) => makeSelectedItem(`SQ-${idx}-${q.searchQuery}`, q.searchQuery));
+    return recentIds.concat(savedIds);
 };
 
 export const searchBarReducer = (state = initialState, action: SearchBarActions): SearchBar =>
@@ -44,30 +61,39 @@ export const searchBarReducer = (state = initialState, action: SearchBarActions)
         SET_SEARCH_RESULTS: searchResults => ({
             ...state,
             searchResults,
-            selectedItem: searchResults.length > 0
-                ? searchResults.findIndex(r => r.uuid === state.selectedItem) >= 0
-                    ? state.selectedItem
+            selectedItem: makeSelectedItem(searchResults.length > 0
+                ? searchResults.findIndex(r => r.uuid === state.selectedItem.id) >= 0
+                    ? state.selectedItem.id
                     : state.searchValue
                 : state.searchValue
+            )
         }),
         SET_SEARCH_VALUE: searchValue => ({
             ...state,
             searchValue,
-            selectedItem: state.searchValue === state.selectedItem
+            selectedItem: makeSelectedItem(state.searchValue === state.selectedItem.id
                 ? searchValue
-                : state.selectedItem
+                : state.selectedItem.id)
         }),
         SET_SAVED_QUERIES: savedQueries => ({ ...state, savedQueries }),
+        SET_RECENT_QUERIES: recentQueries => ({ ...state, recentQueries }),
         UPDATE_SAVED_QUERY: searchQuery => ({ ...state, savedQueries: searchQuery }),
-        SET_SELECTED_ITEM: item => ({ ...state, selectedItem: item }),
+        SET_SELECTED_ITEM: item => ({ ...state, selectedItem: makeSelectedItem(item) }),
         MOVE_UP: () => {
             let selectedItem = state.selectedItem;
             if (state.currentView === SearchView.AUTOCOMPLETE) {
-                const idx = state.searchResults.findIndex(r => r.uuid === selectedItem);
+                const idx = state.searchResults.findIndex(r => r.uuid === selectedItem.id);
                 if (idx > 0) {
-                    selectedItem = state.searchResults[idx - 1].uuid;
+                    selectedItem = makeSelectedItem(state.searchResults[idx - 1].uuid);
                 } else {
-                    selectedItem = state.searchValue;
+                    selectedItem = makeSelectedItem(state.searchValue);
+                }
+            } else if (state.currentView === SearchView.BASIC) {
+                const items = makeQueryList(state.recentQueries, state.savedQueries);
+
+                const idx = items.findIndex(i => i.id === selectedItem.id);
+                if (idx > 0) {
+                    selectedItem = items[idx - 1];
                 }
             }
             return {
@@ -78,11 +104,22 @@ export const searchBarReducer = (state = initialState, action: SearchBarActions)
         MOVE_DOWN: () => {
             let selectedItem = state.selectedItem;
             if (state.currentView === SearchView.AUTOCOMPLETE) {
-                const idx = state.searchResults.findIndex(r => r.uuid === selectedItem);
+                const idx = state.searchResults.findIndex(r => r.uuid === selectedItem.id);
                 if (idx >= 0 && idx < state.searchResults.length - 1) {
-                    selectedItem = state.searchResults[idx + 1].uuid;
+                    selectedItem = makeSelectedItem(state.searchResults[idx + 1].uuid);
                 } else if (idx < 0 && state.searchResults.length > 0) {
-                    selectedItem = state.searchResults[0].uuid;
+                    selectedItem = makeSelectedItem(state.searchResults[0].uuid);
+                }
+            } else if (state.currentView === SearchView.BASIC) {
+                const items = makeQueryList(state.recentQueries, state.savedQueries);
+
+                const idx = items.findIndex(i => i.id === selectedItem.id);
+                if (idx >= 0 && idx < items.length - 1) {
+                    selectedItem = items[idx + 1];
+                }
+
+                if (idx < 0 && items.length > 0) {
+                    selectedItem = items[0];
                 }
             }
             return {
