@@ -143,7 +143,6 @@ type worker struct {
 	instType    arvados.InstanceType
 	vcpus       int64
 	memory      int64
-	booted      bool
 	probed      time.Time
 	updated     time.Time
 	busy        time.Time
@@ -753,26 +752,31 @@ func (wp *Pool) probeAndUpdate(wkr *worker) {
 	logger := wp.logger.WithField("Instance", wkr.instance)
 	wp.mtx.Lock()
 	updated := wkr.updated
-	booted := wkr.booted
+	needProbeRunning := wkr.state == StateRunning
+	needProbeBooted := wkr.state == StateUnknown || wkr.state == StateBooting
 	wp.mtx.Unlock()
+	if !needProbeBooted && !needProbeRunning {
+		return
+	}
 
 	var (
 		ctrUUIDs []string
 		ok       bool
 		stderr   []byte
 	)
-	if !booted {
-		booted, stderr = wp.probeBooted(wkr)
+	if needProbeBooted {
+		ok, stderr = wp.probeBooted(wkr)
 		wp.mtx.Lock()
-		if booted && !wkr.booted {
-			wkr.booted = booted
+		if ok && (wkr.state == StateUnknown || wkr.state == StateBooting) {
+			wkr.state = StateRunning
+			wkr.probed = time.Now()
 			logger.Info("instance booted")
-		} else {
-			booted = wkr.booted
+			go wp.notify()
 		}
+		needProbeRunning = wkr.state == StateRunning
 		wp.mtx.Unlock()
 	}
-	if booted {
+	if needProbeRunning {
 		ctrUUIDs, ok, stderr = wp.probeRunning(wkr)
 	}
 	logger = logger.WithField("stderr", string(stderr))
@@ -780,6 +784,8 @@ func (wp *Pool) probeAndUpdate(wkr *worker) {
 	defer wp.mtx.Unlock()
 	if !ok {
 		if wkr.state == StateShutdown {
+			// Skip the logging noise if shutdown was
+			// initiated during probe.
 			return
 		}
 		dur := time.Since(wkr.probed)
@@ -798,15 +804,6 @@ func (wp *Pool) probeAndUpdate(wkr *worker) {
 
 	updateTime := time.Now()
 	wkr.probed = updateTime
-	if wkr.state == StateShutdown || wkr.state == StateHold {
-	} else if booted {
-		if wkr.state != StateRunning {
-			wkr.state = StateRunning
-			go wp.notify()
-		}
-	} else {
-		wkr.state = StateBooting
-	}
 
 	if updated != wkr.updated {
 		// Worker was updated after the probe began, so
