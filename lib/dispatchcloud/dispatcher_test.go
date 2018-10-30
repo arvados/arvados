@@ -199,6 +199,7 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 			PrivateKey:         dispatchprivraw,
 			PollInterval:       arvados.Duration(5 * time.Millisecond),
 			ProbeInterval:      arvados.Duration(5 * time.Millisecond),
+			StaleLockTimeout:   arvados.Duration(5 * time.Millisecond),
 			MaxProbesPerSecond: 1000,
 		},
 		InstanceTypes: arvados.InstanceTypeMap{

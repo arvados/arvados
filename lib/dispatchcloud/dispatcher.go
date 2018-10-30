@@ -28,13 +28,9 @@ import (
 )
 
 const (
-	defaultPollInterval = time.Second
+	defaultPollInterval     = time.Second
+	defaultStaleLockTimeout = time.Minute
 )
-
-type containerQueue interface {
-	scheduler.ContainerQueue
-	Update() error
-}
 
 type pool interface {
 	scheduler.WorkerPool
@@ -45,14 +41,13 @@ type dispatcher struct {
 	Cluster       *arvados.Cluster
 	InstanceSetID cloud.InstanceSetID
 
-	logger       logrus.FieldLogger
-	reg          *prometheus.Registry
-	instanceSet  cloud.InstanceSet
-	pool         pool
-	queue        containerQueue
-	httpHandler  http.Handler
-	pollInterval time.Duration
-	sshKey       ssh.Signer
+	logger      logrus.FieldLogger
+	reg         *prometheus.Registry
+	instanceSet cloud.InstanceSet
+	pool        pool
+	queue       scheduler.ContainerQueue
+	httpHandler http.Handler
+	sshKey      ssh.Signer
 
 	setupOnce sync.Once
 	stop      chan struct{}
@@ -140,39 +135,24 @@ func (disp *dispatcher) initialize() {
 	mux.Handle("/metrics", metricsH)
 	mux.Handle("/metrics.json", metricsH)
 	disp.httpHandler = auth.RequireLiteralToken(disp.Cluster.ManagementToken, mux)
-
-	if d := disp.Cluster.Dispatch.PollInterval; d > 0 {
-		disp.pollInterval = time.Duration(d)
-	} else {
-		disp.pollInterval = defaultPollInterval
-	}
 }
 
 func (disp *dispatcher) run() {
 	defer disp.instanceSet.Stop()
 
-	t0 := time.Now()
-	disp.logger.Infof("FixStaleLocks starting.")
-	scheduler.FixStaleLocks(disp.logger, disp.queue, disp.pool, time.Duration(disp.Cluster.Dispatch.StaleLockTimeout))
-	disp.logger.Infof("FixStaleLocks finished (%s), starting scheduling.", time.Since(t0))
-
-	wp := disp.pool.Subscribe()
-	defer disp.pool.Unsubscribe(wp)
-	poll := time.NewTicker(disp.pollInterval)
-	for {
-		scheduler.Map(disp.logger, disp.queue, disp.pool)
-		scheduler.Sync(disp.logger, disp.queue, disp.pool)
-		select {
-		case <-disp.stop:
-			return
-		case <-wp:
-		case <-poll.C:
-			err := disp.queue.Update()
-			if err != nil {
-				disp.logger.Errorf("error updating queue: %s", err)
-			}
-		}
+	staleLockTimeout := time.Duration(disp.Cluster.Dispatch.StaleLockTimeout)
+	if staleLockTimeout == 0 {
+		staleLockTimeout = defaultStaleLockTimeout
 	}
+	pollInterval := time.Duration(disp.Cluster.Dispatch.PollInterval)
+	if pollInterval <= 0 {
+		pollInterval = defaultPollInterval
+	}
+	sched := scheduler.New(disp.logger, disp.queue, disp.pool, staleLockTimeout, pollInterval)
+	sched.Start()
+	defer sched.Stop()
+
+	<-disp.stop
 }
 
 // Management API: all active and queued containers.

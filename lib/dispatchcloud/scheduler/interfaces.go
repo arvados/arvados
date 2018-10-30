@@ -21,6 +21,9 @@ type ContainerQueue interface {
 	Cancel(uuid string) error
 	Forget(uuid string)
 	Get(uuid string) (arvados.Container, bool)
+	Subscribe() <-chan struct{}
+	Unsubscribe(<-chan struct{})
+	Update() error
 }
 
 // A WorkerPool asynchronously starts and stops worker VMs, and starts
