@@ -4,7 +4,6 @@
 
 import * as React from "react";
 import { Table, TableHead, TableCell, TableRow, TableBody, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
-import { navigateTo } from "~/store/navigation/navigation-action";
 
 type CssRules = 'cell';
 
@@ -40,18 +39,16 @@ export const MetadataTab = withStyles(styles)((props: MetadataProps & WithStyles
             </TableRow>
         </TableHead>
         <TableBody>
-            {props.items.map((it, index) => {
-                return (
-                    <TableRow key={index}>
-                        <TableCell className={props.classes.cell}>{it.uuid}</TableCell>
-                        <TableCell className={props.classes.cell}>{it.linkClass}</TableCell>
-                        <TableCell className={props.classes.cell}>{it.name}</TableCell>
-                        <TableCell className={props.classes.cell}>{it.tailUuid}</TableCell>
-                        <TableCell className={props.classes.cell}>{it.headUuid}</TableCell>
-                        <TableCell className={props.classes.cell}>{JSON.stringify(it.properties, null, 2)}</TableCell>
-                    </TableRow>
-                );
-            })}
+            {props.items.map((it, index) =>
+                <TableRow key={index}>
+                    <TableCell className={props.classes.cell}>{it.uuid}</TableCell>
+                    <TableCell className={props.classes.cell}>{it.linkClass}</TableCell>
+                    <TableCell className={props.classes.cell}>{it.name}</TableCell>
+                    <TableCell className={props.classes.cell}>{it.tailUuid}</TableCell>
+                    <TableCell className={props.classes.cell}>{it.headUuid}</TableCell>
+                    <TableCell className={props.classes.cell}>{JSON.stringify(it.properties, null, 2)}</TableCell>
+                </TableRow>
+            )}
         </TableBody>
     </Table>
 );
