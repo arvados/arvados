@@ -14,8 +14,7 @@ import {
     TableHead,
     TableCell,
     TableBody,
-    TableRow,
-    Divider
+    TableRow
 } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { WorkflowIcon } from '~/components/icon/icon';
