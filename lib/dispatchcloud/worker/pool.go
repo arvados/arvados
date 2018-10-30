@@ -30,7 +30,7 @@ type InstanceView struct {
 	ArvadosInstanceType  string
 	ProviderInstanceType string
 	LastContainerUUID    string
-	Unallocated          time.Time
+	LastBusy             time.Time
 	WorkerState          string
 }
 
@@ -137,20 +137,19 @@ type Pool struct {
 }
 
 type worker struct {
-	state       State
-	instance    cloud.Instance
-	executor    Executor
-	instType    arvados.InstanceType
-	vcpus       int64
-	memory      int64
-	probed      time.Time
-	updated     time.Time
-	busy        time.Time
-	unallocated time.Time
-	lastUUID    string
-	running     map[string]struct{}
-	starting    map[string]struct{}
-	probing     chan struct{}
+	state    State
+	instance cloud.Instance
+	executor Executor
+	instType arvados.InstanceType
+	vcpus    int64
+	memory   int64
+	probed   time.Time
+	updated  time.Time
+	busy     time.Time
+	lastUUID string
+	running  map[string]struct{}
+	starting map[string]struct{}
+	probing  chan struct{}
 }
 
 // Subscribe returns a channel that becomes ready whenever a worker's
@@ -262,17 +261,16 @@ func (wp *Pool) updateWorker(inst cloud.Instance, it arvados.InstanceType, initi
 	}).Infof("instance appeared in cloud")
 	now := time.Now()
 	wp.workers[id] = &worker{
-		executor:    wp.newExecutor(inst),
-		state:       initialState,
-		instance:    inst,
-		instType:    it,
-		probed:      now,
-		busy:        now,
-		updated:     now,
-		unallocated: now,
-		running:     make(map[string]struct{}),
-		starting:    make(map[string]struct{}),
-		probing:     make(chan struct{}, 1),
+		executor: wp.newExecutor(inst),
+		state:    initialState,
+		instance: inst,
+		instType: it,
+		probed:   now,
+		busy:     now,
+		updated:  now,
+		running:  make(map[string]struct{}),
+		starting: make(map[string]struct{}),
+		probing:  make(chan struct{}, 1),
 	}
 	return true
 }
@@ -628,7 +626,7 @@ func (wp *Pool) shutdownIfIdle(wkr *worker) bool {
 	if len(wkr.running)+len(wkr.starting) > 0 || wkr.state != StateRunning {
 		return false
 	}
-	age := time.Since(wkr.unallocated)
+	age := time.Since(wkr.busy)
 	if age < wp.timeoutIdle {
 		return false
 	}
@@ -660,7 +658,7 @@ func (wp *Pool) Instances() []InstanceView {
 			ArvadosInstanceType:  w.instType.Name,
 			ProviderInstanceType: w.instType.ProviderType,
 			LastContainerUUID:    w.lastUUID,
-			Unallocated:          w.unallocated,
+			LastBusy:             w.busy,
 			WorkerState:          w.state.String(),
 		})
 	}
@@ -818,7 +816,10 @@ func (wp *Pool) probeAndUpdate(wkr *worker) {
 		wkr.busy = updateTime
 		wkr.lastUUID = ctrUUIDs[0]
 	} else if len(wkr.running) > 0 {
-		wkr.unallocated = updateTime
+		// Actual last-busy time was sometime between wkr.busy
+		// and now. Now is the earliest opportunity to take
+		// advantage of the non-busy state, though.
+		wkr.busy = updateTime
 	}
 	running := map[string]struct{}{}
 	changed := false
