@@ -61,14 +61,20 @@ func (q *Queue) Forget(uuid string) {
 }
 
 func (q *Queue) Lock(uuid string) error {
+	q.mtx.Lock()
+	defer q.mtx.Unlock()
 	return q.changeState(uuid, arvados.ContainerStateQueued, arvados.ContainerStateLocked)
 }
 
 func (q *Queue) Unlock(uuid string) error {
+	q.mtx.Lock()
+	defer q.mtx.Unlock()
 	return q.changeState(uuid, arvados.ContainerStateLocked, arvados.ContainerStateQueued)
 }
 
 func (q *Queue) Cancel(uuid string) error {
+	q.mtx.Lock()
+	defer q.mtx.Unlock()
 	return q.changeState(uuid, q.entries[uuid].Container.State, arvados.ContainerStateCancelled)
 }
 
@@ -98,9 +104,8 @@ func (q *Queue) notify() {
 	}
 }
 
+// caller must have lock.
 func (q *Queue) changeState(uuid string, from, to arvados.ContainerState) error {
-	q.mtx.Lock()
-	defer q.mtx.Unlock()
 	ent := q.entries[uuid]
 	if ent.Container.State != from {
 		return fmt.Errorf("lock failed: state=%q", ent.Container.State)
