@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuActionSet } from "../context-menu-action-set";
-import { ToggleFavoriteAction } from "../actions/favorite-action";
+import { ContextMenuActionSet } from "~/views-components/context-menu/context-menu-action-set";
+import { ToggleFavoriteAction } from "~/views-components/context-menu/actions/favorite-action";
 import { toggleFavorite } from "~/store/favorites/favorites-actions";
 import {
     RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, ProvenanceGraphIcon,
@@ -14,15 +14,18 @@ import { navigateToProcessLogs } from '~/store/navigation/navigation-action';
 import { openMoveProcessDialog } from '~/store/processes/process-move-actions';
 import { openProcessUpdateDialog } from "~/store/processes/process-update-actions";
 import { openCopyProcessDialog } from '~/store/processes/process-copy-actions';
-import { openProcessCommandDialog } from '../../../store/processes/process-command-actions';
+import { openProcessCommandDialog } from '~/store/processes/process-command-actions';
 import { detailsPanelActions } from '~/store/details-panel/details-panel-action';
 import { openSharingDialog } from "~/store/sharing-dialog/sharing-dialog-actions";
+import { openAdvancedTabDialog } from "~/store/advanced-tab/advanced-tab";
 
 export const processActionSet: ContextMenuActionSet = [[
     {
         icon: RenameIcon,
         name: "Edit process",
-        execute: (dispatch, resource) => dispatch<any>(openProcessUpdateDialog(resource))
+        execute: (dispatch, resource) => {
+            dispatch<any>(openProcessUpdateDialog(resource));
+        }
     },
     {
         icon: ShareIcon,
@@ -34,7 +37,9 @@ export const processActionSet: ContextMenuActionSet = [[
     {
         icon: MoveToIcon,
         name: "Move to",
-        execute: (dispatch, resource) => dispatch<any>(openMoveProcessDialog(resource))
+        execute: (dispatch, resource) => {
+            dispatch<any>(openMoveProcessDialog(resource));
+        }
     },
     {
         component: ToggleFavoriteAction,
@@ -47,7 +52,9 @@ export const processActionSet: ContextMenuActionSet = [[
     {
         icon: CopyIcon,
         name: "Copy to project",
-        execute: (dispatch, resource) => dispatch<any>(openCopyProcessDialog(resource))
+        execute: (dispatch, resource) => {
+            dispatch<any>(openCopyProcessDialog(resource));
+        }
     },
     {
         icon: ReRunProcessIcon,
@@ -80,7 +87,9 @@ export const processActionSet: ContextMenuActionSet = [[
     {
         icon: DetailsIcon,
         name: "View details",
-        execute: dispatch => dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL())
+        execute: dispatch => {
+            dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
+        }
     },
     {
         icon: LogIcon,
@@ -100,7 +109,7 @@ export const processActionSet: ContextMenuActionSet = [[
         icon: AdvancedIcon,
         name: "Advanced",
         execute: (dispatch, resource) => {
-            // add code
+            dispatch<any>(openAdvancedTabDialog(resource.uuid));
         }
     },
     {

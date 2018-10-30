@@ -38,4 +38,5 @@ export interface ContainerRequestResource extends Resource {
     logUuid: string | null;
     outputUuid: string | null;
     filters: string;
+    containerCount: number;
 }

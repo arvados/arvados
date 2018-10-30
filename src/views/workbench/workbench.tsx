@@ -42,13 +42,8 @@ import { RunProcessPanel } from '~/views/run-process-panel/run-process-panel';
 import SplitterLayout from 'react-splitter-layout';
 import { WorkflowPanel } from '~/views/workflow-panel/workflow-panel';
 import { SearchResultsPanel } from '~/views/search-results-panel/search-results-panel';
-import { HomeTreePicker } from '~/views-components/projects-tree-picker/home-tree-picker';
-import { SharedTreePicker } from '~/views-components/projects-tree-picker/shared-tree-picker';
-import { FavoritesTreePicker } from '../../views-components/projects-tree-picker/favorites-tree-picker';
-import { ProjectsTreePicker } from '~/views-components/projects-tree-picker/projects-tree-picker';
-import { Chips } from '~/components/chips/chips';
-import { ChipsInput } from '../../components/chips-input/chips-input';
 import { SharingDialog } from '~/views-components/sharing-dialog/sharing-dialog';
+import { AdvancedTabDialog } from '~/views-components/advanced-tab-dialog/advanced-tab-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -115,6 +110,7 @@ export const WorkbenchPanel =
             <Grid item>
                 <DetailsPanel />
             </Grid>
+            <AdvancedTabDialog />
             <ContextMenu />
             <CopyCollectionDialog />
             <CopyProcessDialog />

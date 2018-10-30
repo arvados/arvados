@@ -28,7 +28,7 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
         const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
         const searchValue = state.searchBar.searchValue;
         try {
-            const response = await this.services.groupsService.contents(userUuid, getParams(dataExplorer, searchValue));
+            const response = await this.services.groupsService.contents('', getParams(dataExplorer, searchValue));
             api.dispatch(updateResources(response.items));
             api.dispatch(setItems(response));
         } catch {
@@ -39,7 +39,7 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
 
 export const getParams = (dataExplorer: DataExplorer, searchValue: string) => ({
     ...dataExplorerToListParams(dataExplorer),
-    filters: getFilters('name', searchValue),
+    filters: getFilters('name', searchValue, {}),
     order: getOrder(dataExplorer)
 });
 

@@ -2,33 +2,31 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuActionSet } from "../context-menu-action-set";
+import { ContextMenuActionSet } from "~/views-components/context-menu/context-menu-action-set";
 import { collectionPanelFilesAction, openMultipleFilesRemoveDialog } from "~/store/collection-panel/collection-panel-files/collection-panel-files-actions";
 import { openCollectionPartialCopyDialog } from '~/store/collections/collection-partial-copy-actions';
 
 export const collectionFilesActionSet: ContextMenuActionSet = [[{
     name: "Select all",
-    execute: (dispatch) => {
+    execute: dispatch => {
         dispatch(collectionPanelFilesAction.SELECT_ALL_COLLECTION_FILES());
     }
 }, {
     name: "Unselect all",
-    execute: (dispatch) => {
+    execute: dispatch => {
         dispatch(collectionPanelFilesAction.UNSELECT_ALL_COLLECTION_FILES());
     }
 }, {
     name: "Remove selected",
-    execute: (dispatch) => {
+    execute: dispatch => {
         dispatch(openMultipleFilesRemoveDialog());
     }
 }, {
     name: "Download selected",
-    execute: (dispatch, resource) => {
-        return;
-    }
+    execute: () => { return; }
 }, {
     name: "Create a new collection with selected",
-    execute: (dispatch) => {
+    execute: dispatch => { 
         dispatch<any>(openCollectionPartialCopyDialog());
     }
 }]];
