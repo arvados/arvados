@@ -11,11 +11,15 @@ export const rootProjectActionSet: ContextMenuActionSet =  [[
     {
         icon: NewProjectIcon,
         name: "New project",
-        execute: (dispatch, resource) =>  dispatch<any>(openProjectCreateDialog(resource.uuid))
+        execute: (dispatch, resource) => {
+            dispatch<any>(openProjectCreateDialog(resource.uuid));
+        }
     },
     {
         icon: CollectionIcon,
         name: "New Collection",
-        execute: (dispatch, resource) => dispatch<any>(openCollectionCreateDialog(resource.uuid))
+        execute: (dispatch, resource) => {
+            dispatch<any>(openCollectionCreateDialog(resource.uuid));
+        }
     }
 ]];

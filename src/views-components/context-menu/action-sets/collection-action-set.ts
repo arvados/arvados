@@ -19,7 +19,9 @@ export const collectionActionSet: ContextMenuActionSet = [[
     {
         icon: RenameIcon,
         name: "Edit collection",
-        execute: (dispatch, resource) => dispatch<any>(openCollectionUpdateDialog(resource))
+        execute: (dispatch, resource) => {
+            dispatch<any>(openCollectionUpdateDialog(resource));
+        }
     },
     {
         icon: ShareIcon,
@@ -43,18 +45,24 @@ export const collectionActionSet: ContextMenuActionSet = [[
     },
     {
         component: ToggleTrashAction,
-        execute: (dispatch, resource) => dispatch<any>(toggleCollectionTrashed(resource.uuid, resource.isTrashed!!))
+        execute: (dispatch, resource) => {
+            dispatch<any>(toggleCollectionTrashed(resource.uuid, resource.isTrashed!!));
+        }
     },
     {
         icon: CopyIcon,
         name: "Copy to project",
-        execute: (dispatch, resource) => dispatch<any>(openCollectionCopyDialog(resource))
+        execute: (dispatch, resource) => {
+            dispatch<any>(openCollectionCopyDialog(resource));
+        }
 
     },
     {
         icon: DetailsIcon,
         name: "View details",
-        execute: dispatch => dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL())
+        execute: dispatch => {
+            dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
+        }
     },
     {
         icon: ProvenanceGraphIcon,
@@ -66,7 +74,9 @@ export const collectionActionSet: ContextMenuActionSet = [[
     {
         icon: AdvancedIcon,
         name: "Advanced",
-        execute: (dispatch, resource) => dispatch<any>(openAdvancedTabDialog(resource.uuid))
+        execute: (dispatch, resource) => {
+            dispatch<any>(openAdvancedTabDialog(resource.uuid));
+        }
     },
     {
         icon: RemoveIcon,

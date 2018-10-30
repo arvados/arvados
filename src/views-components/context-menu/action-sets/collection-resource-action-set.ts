@@ -18,7 +18,9 @@ export const collectionResourceActionSet: ContextMenuActionSet = [[
     {
         icon: RenameIcon,
         name: "Edit collection",
-        execute: (dispatch, resource) => dispatch<any>(openCollectionUpdateDialog(resource))
+        execute: (dispatch, resource) => {
+            dispatch<any>(openCollectionUpdateDialog(resource));
+        }
     },
     {
         icon: ShareIcon,
@@ -30,7 +32,9 @@ export const collectionResourceActionSet: ContextMenuActionSet = [[
     {
         icon: MoveToIcon,
         name: "Move to",
-        execute: (dispatch, resource) => dispatch<any>(openMoveCollectionDialog(resource))
+        execute: (dispatch, resource) => {
+            dispatch<any>(openMoveCollectionDialog(resource));
+        }
     },
     {
         component: ToggleFavoriteAction,
@@ -42,17 +46,23 @@ export const collectionResourceActionSet: ContextMenuActionSet = [[
     },
     {
         component: ToggleTrashAction,
-        execute: (dispatch, resource) => dispatch<any>(toggleCollectionTrashed(resource.uuid, resource.isTrashed!!))
+        execute: (dispatch, resource) => {
+            dispatch<any>(toggleCollectionTrashed(resource.uuid, resource.isTrashed!!));
+        }
     },
     {
         icon: CopyIcon,
         name: "Copy to project",
-        execute: (dispatch, resource) => dispatch<any>(openCollectionCopyDialog(resource))
+        execute: (dispatch, resource) => {
+            dispatch<any>(openCollectionCopyDialog(resource));
+        }
     },
     {
         icon: DetailsIcon,
         name: "View details",
-        execute: dispatch => dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL())
+        execute: dispatch => {
+            dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
+        }
     },
     {
         icon: RemoveIcon,

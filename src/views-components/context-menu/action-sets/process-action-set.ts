@@ -22,7 +22,9 @@ export const processActionSet: ContextMenuActionSet = [[
     {
         icon: RenameIcon,
         name: "Edit process",
-        execute: (dispatch, resource) => dispatch<any>(openProcessUpdateDialog(resource))
+        execute: (dispatch, resource) => {
+            dispatch<any>(openProcessUpdateDialog(resource));
+        }
     },
     {
         icon: ShareIcon,
@@ -34,7 +36,9 @@ export const processActionSet: ContextMenuActionSet = [[
     {
         icon: MoveToIcon,
         name: "Move to",
-        execute: (dispatch, resource) => dispatch<any>(openMoveProcessDialog(resource))
+        execute: (dispatch, resource) => {
+            dispatch<any>(openMoveProcessDialog(resource));
+        }
     },
     {
         component: ToggleFavoriteAction,
@@ -47,7 +51,9 @@ export const processActionSet: ContextMenuActionSet = [[
     {
         icon: CopyIcon,
         name: "Copy to project",
-        execute: (dispatch, resource) => dispatch<any>(openCopyProcessDialog(resource))
+        execute: (dispatch, resource) => {
+            dispatch<any>(openCopyProcessDialog(resource));
+        }
     },
     {
         icon: ReRunProcessIcon,
@@ -73,17 +79,23 @@ export const processActionSet: ContextMenuActionSet = [[
     {
         icon: CommandIcon,
         name: "Command",
-        execute: (dispatch, resource) => dispatch<any>(openProcessCommandDialog(resource.uuid))
+        execute: (dispatch, resource) => {
+            dispatch<any>(openProcessCommandDialog(resource.uuid));
+        }
     },
     {
         icon: DetailsIcon,
         name: "View details",
-        execute: dispatch => dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL())
+        execute: dispatch => {
+            dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
+        }
     },
     {
         icon: LogIcon,
         name: "Log",
-        execute: (dispatch, resource) => dispatch<any>(navigateToProcessLogs(resource.uuid))
+        execute: (dispatch, resource) => {
+            dispatch<any>(navigateToProcessLogs(resource.uuid));
+        }
     },
     {
         icon: ProvenanceGraphIcon,
@@ -95,7 +107,9 @@ export const processActionSet: ContextMenuActionSet = [[
     {
         icon: AdvancedIcon,
         name: "Advanced",
-        execute: (dispatch, resource) => dispatch<any>(openAdvancedTabDialog(resource.uuid))
+        execute: (dispatch, resource) => {
+            dispatch<any>(openAdvancedTabDialog(resource.uuid));
+        }
     },
     {
         icon: RemoveIcon,

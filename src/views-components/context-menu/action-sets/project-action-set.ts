@@ -19,12 +19,16 @@ export const projectActionSet: ContextMenuActionSet = [[
     {
         icon: NewProjectIcon,
         name: "New project",
-        execute: (dispatch, resource) => dispatch<any>(openProjectCreateDialog(resource.uuid))
+        execute: (dispatch, resource) => {
+            dispatch<any>(openProjectCreateDialog(resource.uuid));
+        }
     },
     {
         icon: RenameIcon,
         name: "Edit project",
-        execute: (dispatch, resource) => dispatch<any>(openProjectUpdateDialog(resource))
+        execute: (dispatch, resource) => {
+            dispatch<any>(openProjectUpdateDialog(resource));
+        }
     },
     {
         component: ToggleFavoriteAction,
@@ -36,12 +40,16 @@ export const projectActionSet: ContextMenuActionSet = [[
     },
     {
         component: ToggleTrashAction,
-        execute: (dispatch, resource) => dispatch<any>(toggleProjectTrashed(resource.uuid, resource.ownerUuid, resource.isTrashed!!))
+        execute: (dispatch, resource) => {
+            dispatch<any>(toggleProjectTrashed(resource.uuid, resource.ownerUuid, resource.isTrashed!!));
+        }
     },
     {
         icon: MoveToIcon,
         name: "Move to",
-        execute: (dispatch, resource) => dispatch<any>(openMoveProjectDialog(resource))
+        execute: (dispatch, resource) => {
+            dispatch<any>(openMoveProjectDialog(resource));
+        }
     },
     {
         icon: CopyIcon,
@@ -53,11 +61,15 @@ export const projectActionSet: ContextMenuActionSet = [[
     {
         icon: DetailsIcon,
         name: "View details",
-        execute: dispatch => dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL())
+        execute: dispatch => {
+            dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
+        }
     },
     {
         icon: AdvancedIcon,
         name: "Advanced",
-        execute: (dispatch, resource) => dispatch<any>(openAdvancedTabDialog(resource.uuid))
+        execute: (dispatch, resource) => {
+            dispatch<any>(openAdvancedTabDialog(resource.uuid));
+        }
     },
 ]];

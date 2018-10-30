@@ -12,7 +12,9 @@ export const trashedCollectionActionSet: ContextMenuActionSet = [[
     {
         icon: DetailsIcon,
         name: "View details",
-        execute: dispatch => dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL())
+        execute: dispatch => {
+            dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
+        }
     },
     {
         icon: ProvenanceGraphIcon,
@@ -24,11 +26,15 @@ export const trashedCollectionActionSet: ContextMenuActionSet = [[
     {
         icon: AdvancedIcon,
         name: "Advanced",
-        execute: (dispatch, resource) => dispatch<any>(openAdvancedTabDialog(resource.uuid))
+        execute: (dispatch, resource) => {
+            dispatch<any>(openAdvancedTabDialog(resource.uuid));
+        }
     },
     {
         icon: RestoreFromTrashIcon,
         name: "Restore",
-        execute: (dispatch, resource) => dispatch<any>(toggleCollectionTrashed(resource.uuid, true))
+        execute: (dispatch, resource) => {
+            dispatch<any>(toggleCollectionTrashed(resource.uuid, true));
+        }
     },
 ]];
