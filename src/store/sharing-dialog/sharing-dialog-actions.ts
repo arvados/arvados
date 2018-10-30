@@ -47,7 +47,7 @@ export const sendSharingInvitations = async (dispatch: Dispatch) => {
     await dispatch<any>(sendInvitations);
     dispatch(closeSharingDialog());
     dispatch(snackbarActions.OPEN_SNACKBAR({
-        message: 'New permissions created',
+        message: 'Resource has been shared',
         kind: SnackbarKind.SUCCESS,
     }));
 };
