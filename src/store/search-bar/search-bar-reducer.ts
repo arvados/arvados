@@ -70,10 +70,7 @@ export const searchBarReducer = (state = initialState, action: SearchBarActions)
         }),
         SET_SEARCH_VALUE: searchValue => ({
             ...state,
-            searchValue,
-            selectedItem: makeSelectedItem(state.searchValue === state.selectedItem.id
-                ? searchValue
-                : state.selectedItem.id)
+            searchValue
         }),
         SET_SAVED_QUERIES: savedQueries => ({ ...state, savedQueries }),
         SET_RECENT_QUERIES: recentQueries => ({ ...state, recentQueries }),
@@ -119,6 +116,23 @@ export const searchBarReducer = (state = initialState, action: SearchBarActions)
                 }
 
                 if (idx < 0 && items.length > 0) {
+                    selectedItem = items[0];
+                }
+            }
+            return {
+                ...state,
+                selectedItem
+            };
+        },
+        SELECT_FIRST_ITEM: () => {
+            let selectedItem = state.selectedItem;
+            if (state.currentView === SearchView.AUTOCOMPLETE) {
+                if (state.searchResults.length > 0) {
+                    selectedItem = makeSelectedItem(state.searchResults[0].uuid);
+                }
+            } else if (state.currentView === SearchView.BASIC) {
+                const items = makeQueryList(state.recentQueries, state.savedQueries);
+                if (items.length > 0) {
                     selectedItem = items[0];
                 }
             }

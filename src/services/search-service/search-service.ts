@@ -5,7 +5,7 @@
 import { SearchBarAdvanceFormData } from '~/models/search-bar';
 
 export class SearchService {
-    private recentQueries: string[] = this.getRecentQueries();
+    private recentQueries = this.getRecentQueries();
     private savedQueries: SearchBarAdvanceFormData[] = this.getSavedQueries();
 
     saveRecentQuery(query: string) {
@@ -16,8 +16,8 @@ export class SearchService {
         localStorage.setItem('recentQueries', JSON.stringify(this.recentQueries));
     }
 
-    getRecentQueries() {
-        return JSON.parse(localStorage.getItem('recentQueries') || '[]') as string[];
+    getRecentQueries(): string[] {
+        return JSON.parse(localStorage.getItem('recentQueries') || '[]');
     }
 
     saveQuery(data: SearchBarAdvanceFormData) {

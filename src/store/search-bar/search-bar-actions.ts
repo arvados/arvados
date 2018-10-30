@@ -30,7 +30,8 @@ export const searchBarActions = unionize({
     UPDATE_SAVED_QUERY: ofType<SearchBarAdvanceFormData[]>(),
     SET_SELECTED_ITEM: ofType<string>(),
     MOVE_UP: ofType<{}>(),
-    MOVE_DOWN: ofType<{}>()
+    MOVE_DOWN: ofType<{}>(),
+    SELECT_FIRST_ITEM: ofType<{}>()
 });
 
 export type SearchBarActions = UnionOf<typeof searchBarActions>;
@@ -50,7 +51,7 @@ export const saveRecentQuery = (query: string) =>
 
 export const loadRecentQueries = () =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        const recentQueries = services.searchService.getRecentQueries() || [];
+        const recentQueries = services.searchService.getRecentQueries();
         dispatch(searchBarActions.SET_RECENT_QUERIES(recentQueries));
         return recentQueries;
     };
@@ -59,7 +60,6 @@ export const searchData = (searchValue: string) =>
     async (dispatch: Dispatch, getState: () => RootState) => {
         const currentView = getState().searchBar.currentView;
         dispatch(searchBarActions.SET_SEARCH_VALUE(searchValue));
-        // dispatch(searchBarActions.SET_SEARCH_RESULTS([]));
         if (searchValue.length > 0) {
             dispatch<any>(searchGroups(searchValue));
             if (currentView === SearchView.BASIC) {
@@ -111,18 +111,17 @@ export const editSavedQuery = (data: SearchBarAdvanceFormData) =>
 
 export const openSearchView = () =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(searchBarActions.OPEN_SEARCH_VIEW());
         const savedSearchQueries = services.searchService.getSavedQueries();
         dispatch(searchBarActions.SET_SAVED_QUERIES(savedSearchQueries));
+        dispatch(loadRecentQueries());
+        dispatch(searchBarActions.OPEN_SEARCH_VIEW());
+        dispatch(searchBarActions.SELECT_FIRST_ITEM());
     };
 
 export const closeSearchView = () =>
-    (dispatch: Dispatch<any>, getState: () => RootState) => {
-        const isOpen = getState().searchBar.open;
-        if (isOpen) {
-            dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
-            dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.BASIC));
-        }
+    (dispatch: Dispatch<any>) => {
+        dispatch(searchBarActions.SET_SELECTED_ITEM(''));
+        dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
     };
 
 export const closeAdvanceView = () =>
@@ -133,6 +132,7 @@ export const closeAdvanceView = () =>
 
 export const navigateToItem = (uuid: string) =>
     (dispatch: Dispatch<any>) => {
+        dispatch(searchBarActions.SET_SELECTED_ITEM(''));
         dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
         dispatch(navigateTo(uuid));
     };
@@ -146,12 +146,13 @@ export const changeData = (searchValue: string) =>
         if (currentView === SearchView.ADVANCED) {
 
         } else if (searchValuePresent) {
-            dispatch<any>(goToView(SearchView.AUTOCOMPLETE));
+            dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.AUTOCOMPLETE));
+            dispatch(searchBarActions.SET_SELECTED_ITEM(searchValue));
             debounceStartSearch(dispatch);
         } else {
-            dispatch<any>(goToView(SearchView.BASIC));
-            dispatch(searchBarActions.SET_SEARCH_VALUE(searchValue));
+            dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.BASIC));
             dispatch(searchBarActions.SET_SEARCH_RESULTS([]));
+            dispatch(searchBarActions.SELECT_FIRST_ITEM());
         }
     };
 

@@ -101,6 +101,7 @@ const handleKeyDown = (e: React.KeyboardEvent, props: SearchBarViewProps) => {
         e.preventDefault();
         props.moveUp();
     } else if (e.keyCode === KEY_CODE_ESC) {
+        e.preventDefault();
         props.closeView();
     } else if (e.keyCode === KEY_ENTER) {
         if (props.currentView === SearchView.BASIC) {
