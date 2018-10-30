@@ -13,7 +13,7 @@ import { loadMissingProcessesInformation } from '~/store/project-panel/project-p
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
 import { sharedWithMePanelActions } from './shared-with-me-panel-actions';
 import { ListResults } from '~/services/common-service/common-resource-service';
-import { GroupContentsResource } from '~/services/groups-service/groups-service';
+import { GroupContentsResource, GroupContentsResourcePrefix } from '~/services/groups-service/groups-service';
 import { SortDirection } from '~/components/data-table/data-column';
 import { OrderBuilder, OrderDirection } from '~/services/api/order-builder';
 import { ProjectResource } from '~/models/project';
@@ -29,7 +29,11 @@ export class SharedWithMeMiddlewareService extends DataExplorerMiddlewareService
         const state = api.getState();
         const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
         try {
-            const response = await this.services.groupsService.shared(getParams(dataExplorer));
+            const response = await this.services.groupsService
+                .contents('', {
+                    ...getParams(dataExplorer),
+                    excludeHomeProject: true,
+                });
             api.dispatch<any>(updateFavorites(response.items.map(item => item.uuid)));
             api.dispatch(updateResources(response.items));
             await api.dispatch<any>(loadMissingProcessesInformation(response.items));
@@ -47,10 +51,11 @@ export const getParams = (dataExplorer: DataExplorer) => ({
 });
 
 export const getFilters = (dataExplorer: DataExplorer) => {
-    const filters = new FilterBuilder()
-        .addILike("name", dataExplorer.searchValue)
+    return new FilterBuilder()
+        .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.COLLECTION)
+        .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROCESS)
+        .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROJECT)
         .getFilters();
-    return `[${filters}]`;
 };
 
 export const getOrder = (dataExplorer: DataExplorer) => {
@@ -61,9 +66,17 @@ export const getOrder = (dataExplorer: DataExplorer) => {
             ? OrderDirection.ASC
             : OrderDirection.DESC;
         const columnName = sortColumn && sortColumn.name === ProjectPanelColumnNames.NAME ? "name" : "createdAt";
-        return order
-            .addOrder(sortDirection, columnName)
-            .getOrder();
+        if (columnName === 'name') {
+            return order
+                .addOrder(sortDirection, columnName, GroupContentsResourcePrefix.COLLECTION)
+                .addOrder(sortDirection, columnName, GroupContentsResourcePrefix.PROCESS)
+                .addOrder(sortDirection, columnName, GroupContentsResourcePrefix.PROJECT)
+                .getOrder();
+        } else {
+            return order
+                .addOrder(sortDirection, columnName)
+                .getOrder();
+        }
     } else {
         return order.getOrder();
     }
