@@ -11,7 +11,7 @@ import { snackbarActions } from "../../snackbar/snackbar-actions";
 import { dialogActions } from '../../dialog/dialog-actions';
 import { getNodeValue } from "~/models/tree";
 import { filterCollectionFilesBySelection } from './collection-panel-files-state';
-import { startSubmit, stopSubmit, reset } from 'redux-form';
+import { startSubmit, stopSubmit, reset, initialize } from 'redux-form';
 import { getDialog } from "~/store/dialog/dialog-reducer";
 import { getFileFullPath } from "~/services/collection-service/collection-service-files-response";
 import { resourcesDataActions } from "~/store/resources-data/resources-data-actions";
@@ -96,7 +96,7 @@ export interface RenameFileDialogData {
 
 export const openRenameFileDialog = (data: RenameFileDialogData) =>
     (dispatch: Dispatch) => {
-        dispatch(reset(RENAME_FILE_DIALOG));
+        dispatch(initialize(RENAME_FILE_DIALOG, data));
         dispatch(dialogActions.OPEN_DIALOG({ id: RENAME_FILE_DIALOG, data }));
     };
 

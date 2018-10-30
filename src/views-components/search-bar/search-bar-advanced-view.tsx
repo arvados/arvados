@@ -3,11 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { reduxForm, reset, InjectedFormProps } from 'redux-form';
+import { reduxForm, InjectedFormProps, reset } from 'redux-form';
 import { compose, Dispatch } from 'redux';
 import { Paper, StyleRulesCallback, withStyles, WithStyles, Button, Grid, IconButton, CircularProgress } from '@material-ui/core';
-import { SearchView } from '~/store/search-bar/search-bar-reducer';
-import { SEARCH_BAR_ADVANCE_FORM_NAME, saveQuery } from '~/store/search-bar/search-bar-actions';
+import { SEARCH_BAR_ADVANCE_FORM_NAME, searchAdvanceData } from '~/store/search-bar/search-bar-actions';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { CloseIcon } from '~/components/icon/icon';
 import { SearchBarAdvanceFormData } from '~/models/search-bar';
@@ -36,8 +35,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         alignSelf: 'center'
     },
     buttonWrapper: {
-        paddingRight: '14px',
-        paddingTop: '14px',
+        marginRight: '14px',
+        marginTop: '14px',
         position: 'relative',
     },
     button: {
@@ -45,7 +44,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     circularProgress: {
         position: 'absolute',
-        top: -9,
+        top: 0,
         bottom: 0,
         left: 0,
         right: 0,
@@ -60,19 +59,20 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     }
 });
 
+// ToDo: maybe we should remove invalid and prostine
 interface SearchBarAdvancedViewFormDataProps {
     submitting: boolean;
     invalid: boolean;
     pristine: boolean;
 }
 
+// ToDo: maybe we should remove tags
 export interface SearchBarAdvancedViewDataProps {
     tags: any;
 }
 
 export interface SearchBarAdvancedViewActionProps {
-    onSetView: (currentView: string) => void;
-    saveQuery: (data: SearchBarAdvanceFormData) => void;
+    closeAdvanceView: () => void;
 }
 
 type SearchBarAdvancedViewProps = SearchBarAdvancedViewActionProps & SearchBarAdvancedViewDataProps;
@@ -97,12 +97,12 @@ export const SearchBarAdvancedView = compose(
         form: SEARCH_BAR_ADVANCE_FORM_NAME,
         validate,
         onSubmit: (data: SearchBarAdvanceFormData, dispatch: Dispatch) => {
-            dispatch<any>(saveQuery(data));
+            dispatch<any>(searchAdvanceData(data));
             dispatch(reset(SEARCH_BAR_ADVANCE_FORM_NAME));
         }
     }),
     withStyles(styles))(
-        ({ classes, onSetView, handleSubmit, submitting, invalid, pristine, tags }: SearchBarAdvancedViewFormProps) =>
+        ({ classes, closeAdvanceView, handleSubmit, submitting, invalid, pristine, tags }: SearchBarAdvancedViewFormProps) =>
             <Paper className={classes.searchView}>
                 <form onSubmit={handleSubmit}>
                     <Grid container direction="column" justify="flex-start" alignItems="flex-start">
@@ -131,7 +131,7 @@ export const SearchBarAdvancedView = compose(
                                     <SearchBarTrashField />
                                 </Grid>
                             </Grid>
-                            <IconButton onClick={() => onSetView(SearchView.BASIC)} className={classes.closeIcon}>
+                            <IconButton onClick={closeAdvanceView} className={classes.closeIcon}>
                                 <CloseIcon />
                             </IconButton>
                         </Grid>
@@ -158,8 +158,9 @@ export const SearchBarAdvancedView = compose(
                             <Grid container item xs={12} justify='flex-end'>
                                 <div className={classes.buttonWrapper}>
                                     <Button type="submit" className={classes.button}
-                                    // ToDo: create easier condition
-                                        disabled={invalid || submitting || pristine || !!(tags && tags.values && ((tags.values.key) || (tags.values.value)) && !Object.keys(tags.values).find(el => el !== 'value' && el !== 'key'))}
+                                        // ToDo: create easier condition
+                                        // Question: do we need this condition?
+                                        // disabled={invalid || submitting || pristine || !!(tags && tags.values && ((tags.values.key) || (tags.values.value)) && !Object.keys(tags.values).find(el => el !== 'value' && el !== 'key'))}
                                         color="primary"
                                         size='small'
                                         variant="contained">

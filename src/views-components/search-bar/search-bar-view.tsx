@@ -104,7 +104,7 @@ export const SearchBarView = withStyles(styles)(
                             endAdornment={
                                 <InputAdornment position="end">
                                     <Tooltip title='Search'>
-                                        <IconButton>
+                                        <IconButton type="submit">
                                             <SearchIcon />
                                         </IconButton>
                                     </Tooltip>
@@ -121,8 +121,8 @@ export const SearchBarView = withStyles(styles)(
 );
 
 const getView = (props: SearchBarViewProps) => {
-    const { onSetView, loadRecentQueries, savedQueries, deleteSavedQuery, searchValue,
-        searchResults, saveQuery, onSearch, navigateTo, editSavedQuery, tags, currentView } = props;
+    const { onSetView, closeAdvanceView, loadRecentQueries, savedQueries, deleteSavedQuery, searchValue,
+        searchResults, onSearch, navigateTo, editSavedQuery, tags, currentView } = props;
     switch (currentView) {
         case SearchView.AUTOCOMPLETE:
             return <SearchBarAutocompleteView
@@ -131,8 +131,7 @@ const getView = (props: SearchBarViewProps) => {
                 searchValue={searchValue} />;
         case SearchView.ADVANCED:
             return <SearchBarAdvancedView
-                onSetView={onSetView}
-                saveQuery={saveQuery}
+                closeAdvanceView={closeAdvanceView}
                 tags={tags} />;
         default:
             return <SearchBarBasicView
