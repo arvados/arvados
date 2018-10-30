@@ -127,9 +127,7 @@ export const searchBarReducer = (state = initialState, action: SearchBarActions)
         SELECT_FIRST_ITEM: () => {
             let selectedItem = state.selectedItem;
             if (state.currentView === SearchView.AUTOCOMPLETE) {
-                if (state.searchResults.length > 0) {
-                    selectedItem = makeSelectedItem(state.searchResults[0].uuid);
-                }
+                selectedItem = makeSelectedItem(state.searchValue);
             } else if (state.currentView === SearchView.BASIC) {
                 const items = makeQueryList(state.recentQueries, state.savedQueries);
                 if (items.length > 0) {

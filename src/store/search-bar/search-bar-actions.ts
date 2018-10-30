@@ -32,7 +32,7 @@ export const searchBarActions = unionize({
     MOVE_UP: ofType<{}>(),
     MOVE_DOWN: ofType<{}>(),
     SELECT_FIRST_ITEM: ofType<{}>()
-}); 
+});
 
 export type SearchBarActions = UnionOf<typeof searchBarActions>;
 
