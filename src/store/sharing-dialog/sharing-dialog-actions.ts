@@ -176,19 +176,16 @@ const sendInvitations = async (_: Dispatch, getState: () => RootState, { permiss
     if (dialog && user) {
 
         const invitations = getFormValues(SHARING_INVITATION_FORM_NAME)(state) as SharingInvitationFormData;
-        const { visibility } = getSharingPublicAccessFormData(state);
 
-        if (visibility !== VisibilityLevel.PRIVATE) {
-            const promises = invitations.invitedPeople
-                .map(person => ({
-                    ownerUuid: user.uuid,
-                    headUuid: dialog.data,
-                    tailUuid: person.uuid,
-                    name: invitations.permissions
-                }))
-                .map(data => permissionService.create(data));
+        const promises = invitations.invitedPeople
+            .map(person => ({
+                ownerUuid: user.uuid,
+                headUuid: dialog.data,
+                tailUuid: person.uuid,
+                name: invitations.permissions
+            }))
+            .map(data => permissionService.create(data));
 
-            await Promise.all(promises);
-        }
+        await Promise.all(promises);
     }
 };

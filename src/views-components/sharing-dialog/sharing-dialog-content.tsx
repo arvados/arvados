@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Grid } from '@material-ui/core';
+import { Grid, Typography } from '@material-ui/core';
 
 import { SharingInvitationForm } from './sharing-invitation-form';
 import { SharingManagementForm } from './sharing-management-form';
@@ -14,6 +14,9 @@ export const SharingDialogContent = (props: { advancedViewOpen: boolean }) =>
         {props.advancedViewOpen &&
             <>
                 <Grid item>
+                    <Typography variant='subheading'>
+                        Who can access
+                    </Typography>
                     <SharingPublicAccessForm />
                     <SharingManagementForm />
                 </Grid>

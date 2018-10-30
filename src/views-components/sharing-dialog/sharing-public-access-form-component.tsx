@@ -8,6 +8,7 @@ import { Field, WrappedFieldProps } from 'redux-form';
 import { WithStyles } from '@material-ui/core/styles';
 import withStyles from '@material-ui/core/styles/withStyles';
 import { VisibilityLevelSelect } from './visibility-level-select';
+import { VisibilityLevel } from '~/store/sharing-dialog/sharing-dialog-types';
 
 const sharingPublicAccessStyles: StyleRulesCallback<'root'> = theme => ({
     root: {
@@ -16,12 +17,14 @@ const sharingPublicAccessStyles: StyleRulesCallback<'root'> = theme => ({
 });
 
 const SharingPublicAccessForm = withStyles(sharingPublicAccessStyles)(
-    ({ classes }: WithStyles<'root'>) =>
+    ({ classes, visibility }: WithStyles<'root'> & { visibility: VisibilityLevel }) =>
         <>
             <Divider />
             <Grid container alignItems='center' spacing={8} className={classes.root}>
                 <Grid item xs={8}>
-                    <Typography variant='subheading'>Public visibility</Typography>
+                    <Typography variant='subheading'>
+                        {renderVisibilityInfo(visibility)}
+                    </Typography>
                 </Grid>
                 <Grid item xs={4} container wrap='nowrap'>
                     <Field name='visibility' component={VisibilityLevelSelectComponent} />
@@ -30,7 +33,21 @@ const SharingPublicAccessForm = withStyles(sharingPublicAccessStyles)(
         </>
 );
 
-export default () => <SharingPublicAccessForm />;
+const renderVisibilityInfo = (visibility: VisibilityLevel) => {
+    switch (visibility) {
+        case VisibilityLevel.PUBLIC:
+            return 'Anyone can access';
+        case VisibilityLevel.SHARED:
+            return 'Specific people can access';
+        case VisibilityLevel.PRIVATE:
+            return 'Only you can access';
+        default:
+            return '';
+    }
+};
+
+export default ({ visibility }: { visibility: VisibilityLevel }) =>
+    <SharingPublicAccessForm {...{ visibility }} />;
 
 const VisibilityLevelSelectComponent = ({ input }: WrappedFieldProps) =>
     <VisibilityLevelSelect fullWidth disableUnderline {...input} />;
