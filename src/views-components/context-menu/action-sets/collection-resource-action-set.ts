@@ -13,6 +13,7 @@ import { openMoveCollectionDialog } from '~/store/collections/collection-move-ac
 import { openCollectionCopyDialog } from '~/store/collections/collection-copy-actions';
 import { toggleCollectionTrashed } from "~/store/trash/trash-actions";
 import { detailsPanelActions } from '~/store/details-panel/details-panel-action';
+import { openSharingDialog } from "~/store/sharing-dialog/sharing-dialog-actions";
 
 export const collectionResourceActionSet: ContextMenuActionSet = [[
     {
@@ -25,8 +26,8 @@ export const collectionResourceActionSet: ContextMenuActionSet = [[
     {
         icon: ShareIcon,
         name: "Share",
-        execute: (dispatch, resource) => {
-            // add code
+        execute: (dispatch, { uuid }) => {
+            dispatch<any>(openSharingDialog(uuid));
         }
     },
     {

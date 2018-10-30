@@ -11,6 +11,7 @@ import { openMoveProcessDialog } from '~/store/processes/process-move-actions';
 import { openProcessUpdateDialog } from "~/store/processes/process-update-actions";
 import { openCopyProcessDialog } from '~/store/processes/process-copy-actions';
 import { detailsPanelActions } from '~/store/details-panel/details-panel-action';
+import { openSharingDialog } from "~/store/sharing-dialog/sharing-dialog-actions";
 
 export const processResourceActionSet: ContextMenuActionSet = [[
     {
@@ -21,8 +22,8 @@ export const processResourceActionSet: ContextMenuActionSet = [[
     {
         icon: ShareIcon,
         name: "Share",
-        execute: (dispatch, resource) => {
-            // add code
+        execute: (dispatch, { uuid }) => {
+            dispatch<any>(openSharingDialog(uuid));
         }
     },
     {
