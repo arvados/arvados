@@ -40,7 +40,7 @@ export const MetadataTab = withStyles(styles)((props: MetadataProps & WithStyles
             </TableRow>
         </TableHead>
         <TableBody>
-            {props.items.map((it: MetadataTable, index: number) => {
+            {props.items.map((it, index) => {
                 return (
                     <TableRow key={index}>
                         <TableCell className={props.classes.cell}>{it.uuid}</TableCell>
