@@ -1162,11 +1162,14 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
 class NewCollectionTestCaseWithServersAndTokens(run_test_server.TestCaseWithServers):
     MAIN_SERVER = {}
     KEEP_SERVER = {}
+    local_locator_re = r"[0-9a-f]{32}\+\d+\+A[a-f0-9]{40}@[a-f0-9]{8}"
+    remote_locator_re = r"[0-9a-f]{32}\+\d+\+R[a-z]{5}-[a-f0-9]{40}@[a-f0-9]{8}"
 
     def setUp(self):
         self.keep_put = getattr(arvados.keep.KeepClient, 'put')
 
-    def test_repacked_block_submission_get_permission_token(self):
+    @mock.patch('arvados.keep.KeepClient.put', autospec=True)
+    def test_repacked_block_submission_get_permission_token(self, mocked_put):
         '''
         Make sure that those blocks that are committed after repacking small ones,
         get their permission tokens assigned on the collection manifest.
@@ -1176,19 +1179,58 @@ class NewCollectionTestCaseWithServersAndTokens(run_test_server.TestCaseWithServ
             time.sleep(1)
             return self.keep_put(*args, **kwargs)
 
-        re_locator = "[0-9a-f]{32}\+\d+\+A[a-f0-9]{40}@[a-f0-9]{8}"
+        mocked_put.side_effect = wrapped_keep_put
+        c = Collection()
+        # Write 70 files ~1MiB each so we force to produce 1 big block by repacking
+        # small ones before finishing the upload.
+        for i in range(70):
+            f = c.open("file_{}.txt".format(i), 'wb')
+            f.write(random.choice('abcdefghijklmnopqrstuvwxyz') * (2**20+i))
+            f.close(flush=False)
+        # We should get 2 blocks with their tokens
+        self.assertEqual(len(re.findall(self.local_locator_re, c.manifest_text())), 2)
 
-        with mock.patch('arvados.keep.KeepClient.put', autospec=True) as mocked_put:
-            mocked_put.side_effect = wrapped_keep_put
-            c = Collection()
-            # Write 70 files ~1MiB each so we force to produce 1 big block by repacking
-            # small ones before finishing the upload.
-            for i in range(70):
-                f = c.open("file_{}.txt".format(i), 'wb')
-                f.write(random.choice('abcdefghijklmnopqrstuvwxyz') * (2**20+i))
-                f.close(flush=False)
-            # We should get 2 blocks with their tokens
-            self.assertEqual(len(re.findall(re_locator, c.manifest_text())), 2)
+    @mock.patch('arvados.keep.KeepClient.refresh_signature')
+    def test_copy_remote_blocks_on_save_new(self, rs_mock):
+        remote_block_loc = "acbd18db4cc2f85cedef654fccc4a4d8+3+Remote-" + "a" * 40 + "@abcdef01"
+        local_block_loc = "acbd18db4cc2f85cedef654fccc4a4d8+3+A" + "b" * 40 + "@abcdef01"
+        rs_mock.return_value = local_block_loc
+        c = Collection(". " + remote_block_loc + " 0:3:foofile.txt\n")
+        self.assertEqual(
+            len(re.findall(self.remote_locator_re, c.manifest_text())), 1)
+        c.save_new()
+        rs_mock.assert_called()
+        self.assertEqual(
+            len(re.findall(self.local_locator_re, c.manifest_text())), 1)
+
+    @mock.patch('arvados.keep.KeepClient.refresh_signature')
+    def test_copy_remote_blocks_on_save(self, rs_mock):
+        remote_block_loc = "acbd18db4cc2f85cedef654fccc4a4d8+3+Remote-" + "a" * 40 + "@abcdef01"
+        local_block_loc = "acbd18db4cc2f85cedef654fccc4a4d8+3+A" + "b" * 40 + "@abcdef01"
+        rs_mock.return_value = local_block_loc
+        # Remote collection
+        remote_c = Collection(". " + remote_block_loc + " 0:3:foofile.txt\n")
+        self.assertEqual(
+            len(re.findall(self.remote_locator_re, remote_c.manifest_text())), 1)
+        # Local collection
+        local_c = Collection()
+        with local_c.open('barfile.txt', 'wb') as f:
+            f.write('bar')
+        local_c.save_new()
+        self.assertEqual(
+            len(re.findall(self.local_locator_re, local_c.manifest_text())), 1)
+        self.assertEqual(
+            len(re.findall(self.remote_locator_re, local_c.manifest_text())), 0)
+        # Copy remote file to local collection
+        local_c.copy('./foofile.txt', './copied/foofile.txt', remote_c)
+        self.assertEqual(
+            len(re.findall(self.remote_locator_re, local_c.manifest_text())), 1)
+        # Save local collection: remote block should be copied
+        local_c.save()
+        self.assertEqual(
+            len(re.findall(self.local_locator_re, local_c.manifest_text())), 2)
+        self.assertEqual(
+            len(re.findall(self.remote_locator_re, local_c.manifest_text())), 0)
 
 
 class NewCollectionTestCaseWithServers(run_test_server.TestCaseWithServers):

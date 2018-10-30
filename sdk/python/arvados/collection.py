@@ -1024,6 +1024,34 @@ class RichCollectionBase(CollectionBase):
                 return self._manifest_text
 
     @synchronized
+    def _copy_remote_blocks(self, remote_blocks={}):
+        """Scan through the entire collection and ask Keep to copy remote blocks.
+
+        When accessing a remote collection, blocks will have a remote signature
+        (+R instead of +A). Collect these signatures and request Keep to copy the
+        blocks to the local cluster, returning local (+A) signatures.
+
+        :remote_blocks:
+          Shared cache of remote to local block mappings. This is used to avoid
+          doing extra work when blocks are shared by more than one file in
+          different subdirectories.
+
+        """
+        for filename in [f for f in self.keys() if isinstance(self[f], ArvadosFile)]:
+            for s in self[filename].segments():
+                if '+R' in s.locator:
+                    try:
+                        loc = remote_blocks[s.locator]
+                    except KeyError:
+                        loc = self._my_keep().refresh_signature(s.locator)
+                        remote_blocks[s.locator] = loc
+                    s.locator = loc
+                    self.set_committed(False)
+        for dirname in [d for d in self.keys() if isinstance(self[d], RichCollectionBase)]:
+            remote_blocks = self[dirname]._copy_remote_blocks(remote_blocks)
+        return remote_blocks
+
+    @synchronized
     def diff(self, end_collection, prefix=".", holding_collection=None):
         """Generate list of add/modify/delete actions.
 
@@ -1376,6 +1404,10 @@ class Collection(RichCollectionBase):
     def _has_collection_uuid(self):
         return self._manifest_locator is not None and re.match(arvados.util.collection_uuid_pattern, self._manifest_locator)
 
+    def _has_local_collection_uuid(self):
+        return self._has_collection_uuid and \
+            self._my_api()._rootDesc['uuidPrefix'] == self._manifest_locator.split('-')[0]
+
     def __enter__(self):
         return self
 
@@ -1504,9 +1536,14 @@ class Collection(RichCollectionBase):
             t = trash_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
             body["trash_at"] = t
 
+        # Copy any remote blocks to the local cluster.
+        self._copy_remote_blocks(remote_blocks={})
+
         if not self.committed():
             if not self._has_collection_uuid():
                 raise AssertionError("Collection manifest_locator is not a collection uuid.  Use save_new() for new collections.")
+            elif not self._has_local_collection_uuid():
+                raise AssertionError("Collection manifest_locator is from a remote cluster. Use save_new() to save it on the local cluster.")
 
             self._my_block_manager().commit_all()
 
@@ -1590,6 +1627,9 @@ class Collection(RichCollectionBase):
 
         if trash_at and type(trash_at) is not datetime.datetime:
             raise errors.ArgumentError("trash_at must be datetime type.")
+
+        # Copy any remote blocks to the local cluster.
+        self._copy_remote_blocks(remote_blocks={})
 
         self._my_block_manager().commit_all()
         text = self.manifest_text(strip=False)
