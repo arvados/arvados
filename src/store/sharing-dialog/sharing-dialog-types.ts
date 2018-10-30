@@ -12,15 +12,18 @@ export const SHARING_INVITATION_FORM_NAME = 'SHARING_INVITATION_FORM_NAME';
 export interface SharingPublicAccessFormData {
     enabled: boolean;
     permissions: PermissionLevel;
+    permissionUuid: string;
 }
 
 export interface SharingManagementFormData {
     permissions: SharingManagementFormDataRow[];
+    initialPermissions: SharingManagementFormDataRow[];
 }
 
 export interface SharingManagementFormDataRow {
     email: string;
     permissions: PermissionLevel;
+    permissionUuid: string;
 }
 
 export interface SharingInvitationFormData {
