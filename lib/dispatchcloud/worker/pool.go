@@ -124,6 +124,7 @@ type Pool struct {
 	loaded       bool                 // loaded list of instances from InstanceSet at least once
 	exited       map[string]time.Time // containers whose crunch-run proc has exited, but KillContainer has not been called
 	atQuotaUntil time.Time
+	atQuotaErr   cloud.QuotaError
 	stop         chan bool
 	mtx          sync.RWMutex
 	setupOnce    sync.Once
@@ -208,6 +209,9 @@ func (wp *Pool) Create(it arvados.InstanceType) error {
 	wp.setupOnce.Do(wp.setup)
 	wp.mtx.Lock()
 	defer wp.mtx.Unlock()
+	if time.Now().Before(wp.atQuotaUntil) {
+		return wp.atQuotaErr
+	}
 	tags := cloud.InstanceTags{tagKeyInstanceType: it.Name}
 	wp.creating[it]++
 	go func() {
@@ -217,6 +221,7 @@ func (wp *Pool) Create(it arvados.InstanceType) error {
 		defer wp.mtx.Unlock()
 		wp.creating[it]--
 		if err, ok := err.(cloud.QuotaError); ok && err.IsQuotaError() {
+			wp.atQuotaErr = err
 			wp.atQuotaUntil = time.Now().Add(time.Minute)
 		}
 		if err != nil {
