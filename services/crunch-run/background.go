@@ -65,7 +65,12 @@ func detach(uuid string, args []string, stdout, stderr io.Writer) error {
 	cmd := exec.Command(args[0], append([]string{"-detached"}, args[1:]...)...)
 	cmd.Stdout = outfile
 	cmd.Stderr = errfile
+	// Child inherits lockfile.
 	cmd.ExtraFiles = []*os.File{lockfile}
+	// Ensure child isn't interrupted even if we receive signals
+	// from parent (sshd) while sending lockfile content to
+	// caller.
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	err = cmd.Start()
 	if err != nil {
 		os.Remove(outfile.Name())
