@@ -4,7 +4,7 @@
 
 import { dialogActions } from "~/store/dialog/dialog-actions";
 import { withDialog } from "~/store/dialog/with-dialog";
-import { SHARING_DIALOG_NAME, SharingPublicAccessFormData, SHARING_PUBLIC_ACCESS_FORM_NAME, SHARING_INVITATION_FORM_NAME, SharingManagementFormData, SharingInvitationFormData } from './sharing-dialog-types';
+import { SHARING_DIALOG_NAME, SharingPublicAccessFormData, SHARING_PUBLIC_ACCESS_FORM_NAME, SHARING_INVITATION_FORM_NAME, SharingManagementFormData, SharingInvitationFormData, VisibilityLevel } from './sharing-dialog-types';
 import { Dispatch } from 'redux';
 import { ServiceRepository } from "~/services/services";
 import { FilterBuilder } from '~/services/api/filter-builder';
@@ -95,13 +95,13 @@ const initializePublicAccessForm = (permissionLinks: PermissionResource[]) =>
 
         const publicAccessFormData: SharingPublicAccessFormData = publicPermission
             ? {
-                enabled: publicPermission.name !== PermissionLevel.NONE,
-                permissions: publicPermission.name as PermissionLevel,
+                visibility: VisibilityLevel.PUBLIC,
                 permissionUuid: publicPermission.uuid,
             }
             : {
-                enabled: false,
-                permissions: PermissionLevel.CAN_READ,
+                visibility: permissionLinks.length > 0
+                    ? VisibilityLevel.SHARED
+                    : VisibilityLevel.PRIVATE,
                 permissionUuid: '',
             };
 
@@ -113,24 +113,24 @@ const savePublicPermissionChanges = async (_: Dispatch, getState: () => RootStat
     const { user } = state.auth;
     const dialog = getDialog<string>(state.dialog, SHARING_DIALOG_NAME);
     if (dialog && user) {
-        const { permissionUuid, enabled, permissions } = getFormValues(SHARING_PUBLIC_ACCESS_FORM_NAME)(state) as SharingPublicAccessFormData;
+        const { permissionUuid, visibility } = getFormValues(SHARING_PUBLIC_ACCESS_FORM_NAME)(state) as SharingPublicAccessFormData;
 
         if (permissionUuid) {
-            if (enabled) {
+            if (visibility === VisibilityLevel.PUBLIC) {
                 await permissionService.update(permissionUuid, {
-                    name: enabled ? permissions : PermissionLevel.NONE
+                    name: PermissionLevel.CAN_READ
                 });
             } else {
                 await permissionService.delete(permissionUuid);
             }
 
-        } else if (enabled) {
+        } else if (visibility === VisibilityLevel.PUBLIC) {
 
             await permissionService.create({
                 ownerUuid: user.uuid,
                 headUuid: dialog.data,
                 tailUuid: getPublicGroupUuid(state),
-                name: permissions,
+                name: PermissionLevel.CAN_READ,
             });
         }
     }

@@ -44,30 +44,21 @@ export const formatPermissionLevel = (value: PermissionLevel) => {
     }
 };
 
-type PermissionSelectClasses = 'value';
 
-const PermissionSelectStyles: StyleRulesCallback<PermissionSelectClasses> = theme => ({
-    value: {
-        marginLeft: theme.spacing.unit,
-    }
-});
-
-export const PermissionSelect = withStyles(PermissionSelectStyles)(
-    ({ classes, ...props }: SelectProps & WithStyles<PermissionSelectClasses>) =>
-        <Select
-            {...props}
-            renderValue={renderPermissionItem}
-            inputProps={{ classes }}>
-            <MenuItem value={PermissionSelectValue.READ}>
-                {renderPermissionItem(PermissionSelectValue.READ)}
-            </MenuItem>
-            <MenuItem value={PermissionSelectValue.WRITE}>
-                {renderPermissionItem(PermissionSelectValue.WRITE)}
-            </MenuItem>
-            <MenuItem value={PermissionSelectValue.MANAGE}>
-                {renderPermissionItem(PermissionSelectValue.MANAGE)}
-            </MenuItem>
-        </Select>);
+export const PermissionSelect = (props: SelectProps) =>
+    <Select
+        {...props}
+        renderValue={renderPermissionItem}>
+        <MenuItem value={PermissionSelectValue.READ}>
+            {renderPermissionItem(PermissionSelectValue.READ)}
+        </MenuItem>
+        <MenuItem value={PermissionSelectValue.WRITE}>
+            {renderPermissionItem(PermissionSelectValue.WRITE)}
+        </MenuItem>
+        <MenuItem value={PermissionSelectValue.MANAGE}>
+            {renderPermissionItem(PermissionSelectValue.MANAGE)}
+        </MenuItem>
+    </Select>;
 
 const renderPermissionItem = (value: string) =>
     <SelectItem {...{ value, icon: getIcon(value) }} />;

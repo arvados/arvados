@@ -9,9 +9,14 @@ export const SHARING_PUBLIC_ACCESS_FORM_NAME = 'SHARING_PUBLIC_ACCESS_FORM_NAME'
 export const SHARING_MANAGEMENT_FORM_NAME = 'SHARING_MANAGEMENT_FORM_NAME';
 export const SHARING_INVITATION_FORM_NAME = 'SHARING_INVITATION_FORM_NAME';
 
+export enum VisibilityLevel {
+    PRIVATE = 'Private',
+    SHARED = 'Shared',
+    PUBLIC = 'Public',
+}
+
 export interface SharingPublicAccessFormData {
-    enabled: boolean;
-    permissions: PermissionLevel;
+    visibility: VisibilityLevel;
     permissionUuid: string;
 }
 
