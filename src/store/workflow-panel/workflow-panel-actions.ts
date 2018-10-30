@@ -28,6 +28,15 @@ export const getUuidPrefix = (state: RootState) => {
     return state.properties.uuidPrefix;
 };
 
+export const getPublicUserUuid = (state: RootState) => {
+    const prefix = getProperty<string>(UUID_PREFIX_PROPERTY_NAME)(state.properties);
+    return `${prefix}-tpzed-anonymouspublic`;
+};
+export const getPublicGroupUuid = (state: RootState) => {
+    const prefix = getProperty<string>(UUID_PREFIX_PROPERTY_NAME)(state.properties);
+    return `${prefix}-j7d0g-anonymouspublic`;
+};
+
 export const showWorkflowDetails = (uuid: string) =>
     propertiesActions.SET_PROPERTY({ key: WORKFLOW_PANEL_DETAILS_UUID, value: uuid });
 

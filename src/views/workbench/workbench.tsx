@@ -42,6 +42,7 @@ import { RunProcessPanel } from '~/views/run-process-panel/run-process-panel';
 import SplitterLayout from 'react-splitter-layout';
 import { WorkflowPanel } from '~/views/workflow-panel/workflow-panel';
 import { SearchResultsPanel } from '~/views/search-results-panel/search-results-panel';
+import { SharingDialog } from '~/views-components/sharing-dialog/sharing-dialog';
 import { AdvancedTabDialog } from '~/views-components/advanced-tab-dialog/advanced-tab-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
@@ -126,6 +127,7 @@ export const WorkbenchPanel =
             <ProcessCommandDialog />
             <RenameFileDialog />
             <RichTextEditorDialog />
+            <SharingDialog />
             <Snackbar />
             <UpdateCollectionDialog />
             <UpdateProcessDialog />
