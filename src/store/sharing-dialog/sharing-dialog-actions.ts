@@ -4,7 +4,7 @@
 
 import { dialogActions } from "~/store/dialog/dialog-actions";
 import { withDialog } from "~/store/dialog/with-dialog";
-import { SHARING_DIALOG_NAME, SharingPublicAccessFormData, SHARING_PUBLIC_ACCESS_FORM_NAME, SHARING_INVITATION_FORM_NAME, SharingManagementFormData, SharingInvitationFormData, VisibilityLevel } from './sharing-dialog-types';
+import { SHARING_DIALOG_NAME, SharingPublicAccessFormData, SHARING_PUBLIC_ACCESS_FORM_NAME, SHARING_INVITATION_FORM_NAME, SharingManagementFormData, SharingInvitationFormData, VisibilityLevel, getSharingMangementFormData, getSharingPublicAccessFormData } from './sharing-dialog-types';
 import { Dispatch } from 'redux';
 import { ServiceRepository } from "~/services/services";
 import { FilterBuilder } from '~/services/api/filter-builder';
@@ -29,11 +29,9 @@ export const closeSharingDialog = () =>
 export const connectSharingDialog = withDialog(SHARING_DIALOG_NAME);
 
 export const saveSharingDialogChanges = async (dispatch: Dispatch) => {
-    await Promise.all([
-        dispatch<any>(savePublicPermissionChanges),
-        dispatch<any>(saveManagementChanges),
-        dispatch<any>(sendInvitations),
-    ]);
+    await dispatch<any>(savePublicPermissionChanges);
+    await dispatch<any>(saveManagementChanges);
+    await dispatch<any>(sendInvitations);
     dispatch(reset(SHARING_INVITATION_FORM_NAME));
     await dispatch<any>(loadSharingDialog);
 };
@@ -113,7 +111,7 @@ const savePublicPermissionChanges = async (_: Dispatch, getState: () => RootStat
     const { user } = state.auth;
     const dialog = getDialog<string>(state.dialog, SHARING_DIALOG_NAME);
     if (dialog && user) {
-        const { permissionUuid, visibility } = getFormValues(SHARING_PUBLIC_ACCESS_FORM_NAME)(state) as SharingPublicAccessFormData;
+        const { permissionUuid, visibility } = getSharingPublicAccessFormData(state);
 
         if (permissionUuid) {
             if (visibility === VisibilityLevel.PUBLIC) {
@@ -142,22 +140,32 @@ const saveManagementChanges = async (_: Dispatch, getState: () => RootState, { p
     const dialog = getDialog<string>(state.dialog, SHARING_DIALOG_NAME);
     if (dialog && user) {
 
-        const { initialPermissions, permissions } = getFormValues(SHARING_MANAGEMENT_FORM_NAME)(state) as SharingManagementFormData;
+        const { initialPermissions, permissions } = getSharingMangementFormData(state);
+        const { visibility } = getSharingPublicAccessFormData(state);
 
-        const cancelledPermissions = differenceWith(
-            initialPermissions,
-            permissions,
-            (a, b) => a.permissionUuid === b.permissionUuid
-        );
 
-        await Promise.all(cancelledPermissions.map(({ permissionUuid }) =>
-            permissionService.delete(permissionUuid)
-        ));
+        if (visibility === VisibilityLevel.PRIVATE) {
 
-        await Promise.all(permissions.map(({ permissionUuid, permissions }) =>
-            permissionService.update(permissionUuid, { name: permissions })
-        ));
+            await Promise.all(initialPermissions.map(({ permissionUuid, permissions }) =>
+                permissionService.delete(permissionUuid)
+            ));
 
+        } else {
+
+            const cancelledPermissions = differenceWith(
+                initialPermissions,
+                permissions,
+                (a, b) => a.permissionUuid === b.permissionUuid
+            );
+
+            await Promise.all(cancelledPermissions.map(({ permissionUuid }) =>
+                permissionService.delete(permissionUuid)
+            ));
+
+            await Promise.all(permissions.map(({ permissionUuid, permissions }) =>
+                permissionService.update(permissionUuid, { name: permissions })
+            ));
+        }
     }
 };
 
@@ -168,16 +176,19 @@ const sendInvitations = async (_: Dispatch, getState: () => RootState, { permiss
     if (dialog && user) {
 
         const invitations = getFormValues(SHARING_INVITATION_FORM_NAME)(state) as SharingInvitationFormData;
+        const { visibility } = getSharingPublicAccessFormData(state);
 
-        const promises = invitations.invitedPeople
-            .map(person => ({
-                ownerUuid: user.uuid,
-                headUuid: dialog.data,
-                tailUuid: person.uuid,
-                name: invitations.permissions
-            }))
-            .map(data => permissionService.create(data));
+        if (visibility !== VisibilityLevel.PRIVATE) {
+            const promises = invitations.invitedPeople
+                .map(person => ({
+                    ownerUuid: user.uuid,
+                    headUuid: dialog.data,
+                    tailUuid: person.uuid,
+                    name: invitations.permissions
+                }))
+                .map(data => permissionService.create(data));
 
-        await Promise.all(promises);
+            await Promise.all(promises);
+        }
     }
 };

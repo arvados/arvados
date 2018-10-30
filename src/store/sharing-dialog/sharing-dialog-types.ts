@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { PermissionLevel } from '~/models/permission';
+import { getFormValues } from 'redux-form';
 
 export const SHARING_DIALOG_NAME = 'SHARING_DIALOG_NAME';
 export const SHARING_PUBLIC_ACCESS_FORM_NAME = 'SHARING_PUBLIC_ACCESS_FORM_NAME';
@@ -41,3 +42,9 @@ export interface SharingInvitationFormPersonData {
     name: string;
     uuid: string;
 }
+
+export const getSharingMangementFormData = (state: any) =>
+    getFormValues(SHARING_MANAGEMENT_FORM_NAME)(state) as SharingManagementFormData;
+
+export const getSharingPublicAccessFormData = (state: any) =>
+    getFormValues(SHARING_PUBLIC_ACCESS_FORM_NAME)(state) as SharingPublicAccessFormData;

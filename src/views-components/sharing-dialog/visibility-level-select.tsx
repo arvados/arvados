@@ -20,7 +20,6 @@ const VisibilityLevelSelectStyles: StyleRulesCallback<VisibilityLevelSelectClass
         marginLeft: theme.spacing.unit,
     }
 });
-
 export const VisibilityLevelSelect = withStyles(VisibilityLevelSelectStyles)(
     ({ classes, ...props }: SelectProps & WithStyles<VisibilityLevelSelectClasses>) =>
         <Select
