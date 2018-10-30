@@ -32,7 +32,7 @@ export const searchBarActions = unionize({
     MOVE_UP: ofType<{}>(),
     MOVE_DOWN: ofType<{}>(),
     SELECT_FIRST_ITEM: ofType<{}>()
-});
+}); 
 
 export type SearchBarActions = UnionOf<typeof searchBarActions>;
 
@@ -61,7 +61,7 @@ export const searchData = (searchValue: string) =>
         const currentView = getState().searchBar.currentView;
         dispatch(searchBarActions.SET_SEARCH_VALUE(searchValue));
         if (searchValue.length > 0) {
-            dispatch<any>(searchGroups(searchValue));
+            dispatch<any>(searchGroups(searchValue, 5, {}));
             if (currentView === SearchView.BASIC) {
                 dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
                 dispatch(navigateToSearchResults);
@@ -176,12 +176,12 @@ const startSearch = () =>
         dispatch<any>(searchData(searchValue));
     };
 
-const searchGroups = (searchValue: string, limit = 5, resourceKind?: ResourceKind) =>
+const searchGroups = (searchValue: string, limit: number, {...props}) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const currentView = getState().searchBar.currentView;
 
         if (searchValue || currentView === SearchView.ADVANCED) {
-            const filters = getFilters('name', searchValue, resourceKind);
+            const filters = getFilters('name', searchValue, props);
             const { items } = await services.groupsService.contents('', {
                 filters,
                 limit,
@@ -191,18 +191,25 @@ const searchGroups = (searchValue: string, limit = 5, resourceKind?: ResourceKin
         }
     };
 
-export const getFilters = (filterName: string, searchValue: string, resourceKind?: ResourceKind): string => {
+export const getFilters = (filterName: string, searchValue: string, props: any): string => {
+    const { resourceKind, dateTo, dateFrom } = props;
     return new FilterBuilder()
         .addIsA("uuid", buildUuidFilter(resourceKind))
         .addILike(filterName, searchValue, GroupContentsResourcePrefix.COLLECTION)
         .addILike(filterName, searchValue, GroupContentsResourcePrefix.PROCESS)
         .addILike(filterName, searchValue, GroupContentsResourcePrefix.PROJECT)
+        .addLte('modified_at', buildDateFilter(dateTo))
+        .addGte('modified_at', buildDateFilter(dateFrom))
         .addEqual('groupClass', GroupClass.PROJECT, GroupContentsResourcePrefix.PROJECT)
         .getFilters();
 };
 
 const buildUuidFilter = (type?: ResourceKind): ResourceKind[] => {
     return type ? [type] : [ResourceKind.PROJECT, ResourceKind.COLLECTION, ResourceKind.PROCESS];
+};
+
+const buildDateFilter = (date?: string): string => {
+    return date ? date : '';
 };
 
 export const initAdvanceFormProjectsTree = () =>
