@@ -197,7 +197,7 @@ func (disp *Dispatcher) run() error {
 	defer disp.sqCheck.Stop()
 
 	if disp.cluster != nil && len(disp.cluster.InstanceTypes) > 0 {
-		go dispatchcloud.SlurmNodeTypeFeatureKludge(disp.cluster)
+		go SlurmNodeTypeFeatureKludge(disp.cluster)
 	}
 
 	if _, err := daemon.SdNotify(false, "READY=1"); err != nil {
