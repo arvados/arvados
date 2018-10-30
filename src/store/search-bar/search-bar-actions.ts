@@ -193,7 +193,7 @@ const searchGroups = (searchValue: string, limit: number, {...props}) =>
         }
     };
 
-export const getFilters = (filterName: string, searchValue: string, {...props}): string => {
+export const getFilters = (filterName: string, searchValue: string, props: any): string => {
     const { resourceKind, dateTo, dateFrom } = props;
     return new FilterBuilder()
         .addIsA("uuid", buildUuidFilter(resourceKind))
