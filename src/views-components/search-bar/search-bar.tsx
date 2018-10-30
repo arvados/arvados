@@ -16,7 +16,7 @@ import {
     navigateToItem,
     editSavedQuery,
     changeData,
-    submitData
+    submitData, moveUp, moveDown
 } from '~/store/search-bar/search-bar-actions';
 import { SearchBarView, SearchBarActionProps, SearchBarDataProps } from '~/views-components/search-bar/search-bar-view';
 import { SearchBarAdvanceFormData } from '~/models/search-bar';
@@ -27,6 +27,7 @@ const mapStateToProps = ({ searchBar, form }: RootState): SearchBarDataProps => 
         currentView: searchBar.currentView,
         isPopoverOpen: searchBar.open,
         searchResults: searchBar.searchResults,
+        selectedItem: searchBar.selectedItem,
         savedQueries: searchBar.savedQueries,
         tags: form.searchBarAdvanceFormName
     };
@@ -43,7 +44,9 @@ const mapDispatchToProps = (dispatch: Dispatch): SearchBarActionProps => ({
     deleteSavedQuery: (id: number) => dispatch<any>(deleteSavedQuery(id)),
     openSearchView: () => dispatch<any>(openSearchView()),
     navigateTo: (uuid: string) => dispatch<any>(navigateToItem(uuid)),
-    editSavedQuery: (data: SearchBarAdvanceFormData) => dispatch<any>(editSavedQuery(data))
+    editSavedQuery: (data: SearchBarAdvanceFormData) => dispatch<any>(editSavedQuery(data)),
+    moveUp: () => dispatch<any>(moveUp()),
+    moveDown: () => dispatch<any>(moveDown())
 });
 
 export const SearchBar = connect(mapStateToProps, mapDispatchToProps)(SearchBarView);

@@ -26,7 +26,12 @@ export const searchBarActions = unionize({
     SET_SEARCH_RESULTS: ofType<GroupContentsResource[]>(),
     SET_SEARCH_VALUE: ofType<string>(),
     SET_SAVED_QUERIES: ofType<SearchBarAdvanceFormData[]>(),
-    UPDATE_SAVED_QUERY: ofType<SearchBarAdvanceFormData[]>()
+    SET_RECENT_QUERIES: ofType<string[]>(),
+    UPDATE_SAVED_QUERY: ofType<SearchBarAdvanceFormData[]>(),
+    SET_SELECTED_ITEM: ofType<string>(),
+    MOVE_UP: ofType<{}>(),
+    MOVE_DOWN: ofType<{}>(),
+    SELECT_FIRST_ITEM: ofType<{}>()
 });
 
 export type SearchBarActions = UnionOf<typeof searchBarActions>;
@@ -46,47 +51,45 @@ export const saveRecentQuery = (query: string) =>
 
 export const loadRecentQueries = () =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        const recentSearchQueries = services.searchService.getRecentQueries();
-        return recentSearchQueries || [];
+        const recentQueries = services.searchService.getRecentQueries();
+        dispatch(searchBarActions.SET_RECENT_QUERIES(recentQueries));
+        return recentQueries;
     };
 
 export const searchData = (searchValue: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    async (dispatch: Dispatch, getState: () => RootState) => {
         const currentView = getState().searchBar.currentView;
         dispatch(searchBarActions.SET_SEARCH_VALUE(searchValue));
-        dispatch(searchBarActions.SET_SEARCH_RESULTS([]));
-        dispatch<any>(searchGroups(searchValue, 5, {}));
-        if (currentView === SearchView.BASIC) {
-            dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
-            dispatch(navigateToSearchResults);
+        if (searchValue.length > 0) {
+            dispatch<any>(searchGroups(searchValue, 5, {}));
+            if (currentView === SearchView.BASIC) {
+                dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
+                dispatch(navigateToSearchResults);
+            }
         }
-
     };
 
 export const searchAdvanceData = (data: SearchBarAdvanceFormData) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const searchValue = getState().searchBar.searchValue;
+    async (dispatch: Dispatch) => {
         dispatch<any>(saveQuery(data));
-        dispatch<any>(searchGroups(searchValue, 100, data));
         dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.BASIC));
         dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
         dispatch(navigateToSearchResults);
     };
 
-// Todo: create ids for particular searchQuery
 const saveQuery = (data: SearchBarAdvanceFormData) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        const savedSearchQueries = services.searchService.getSavedQueries();
-        const filteredQuery = savedSearchQueries.find(query => query.searchQuery === data.searchQuery);
+        const savedQueries = services.searchService.getSavedQueries();
         if (data.saveQuery && data.searchQuery) {
+            const filteredQuery = savedQueries.find(query => query.searchQuery === data.searchQuery);
             if (filteredQuery) {
                 services.searchService.editSavedQueries(data);
-                dispatch(searchBarActions.UPDATE_SAVED_QUERY(savedSearchQueries));
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Query has been sucessfully updated', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+                dispatch(searchBarActions.UPDATE_SAVED_QUERY(savedQueries));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Query has been successfully updated', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
             } else {
                 services.searchService.saveQuery(data);
-                dispatch(searchBarActions.SET_SAVED_QUERIES(savedSearchQueries));
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Query has been sucessfully saved', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+                dispatch(searchBarActions.SET_SAVED_QUERIES(savedQueries));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Query has been successfully saved', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
             }
         }
     };
@@ -100,7 +103,7 @@ export const deleteSavedQuery = (id: number) =>
     };
 
 export const editSavedQuery = (data: SearchBarAdvanceFormData) =>
-    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+    (dispatch: Dispatch<any>) => {
         dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.ADVANCED));
         dispatch(searchBarActions.SET_SEARCH_VALUE(data.searchQuery));
         dispatch<any>(initialize(SEARCH_BAR_ADVANCE_FORM_NAME, data));
@@ -108,34 +111,34 @@ export const editSavedQuery = (data: SearchBarAdvanceFormData) =>
 
 export const openSearchView = () =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(searchBarActions.OPEN_SEARCH_VIEW());
         const savedSearchQueries = services.searchService.getSavedQueries();
         dispatch(searchBarActions.SET_SAVED_QUERIES(savedSearchQueries));
+        dispatch(loadRecentQueries());
+        dispatch(searchBarActions.OPEN_SEARCH_VIEW());
+        dispatch(searchBarActions.SELECT_FIRST_ITEM());
     };
 
 export const closeSearchView = () =>
-    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        const isOpen = getState().searchBar.open;
-        if (isOpen) {
-            dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
-            dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.BASIC));
-        }
+    (dispatch: Dispatch<any>) => {
+        dispatch(searchBarActions.SET_SELECTED_ITEM(''));
+        dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
     };
 
 export const closeAdvanceView = () =>
-    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+    (dispatch: Dispatch<any>) => {
         dispatch(searchBarActions.SET_SEARCH_VALUE(''));
         dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.BASIC));
     };
 
 export const navigateToItem = (uuid: string) =>
-    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+    (dispatch: Dispatch<any>) => {
+        dispatch(searchBarActions.SET_SELECTED_ITEM(''));
         dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
         dispatch(navigateTo(uuid));
     };
 
 export const changeData = (searchValue: string) =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    (dispatch: Dispatch, getState: () => RootState) => {
         dispatch(searchBarActions.SET_SEARCH_VALUE(searchValue));
         const currentView = getState().searchBar.currentView;
         const searchValuePresent = searchValue.length > 0;
@@ -143,37 +146,32 @@ export const changeData = (searchValue: string) =>
         if (currentView === SearchView.ADVANCED) {
 
         } else if (searchValuePresent) {
-            dispatch<any>(goToView(SearchView.AUTOCOMPLETE));
+            dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.AUTOCOMPLETE));
+            dispatch(searchBarActions.SET_SELECTED_ITEM(searchValue));
             debounceStartSearch(dispatch);
         } else {
-            dispatch<any>(goToView(SearchView.BASIC));
-            dispatch(searchBarActions.SET_SEARCH_VALUE(searchValue));
+            dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.BASIC));
             dispatch(searchBarActions.SET_SEARCH_RESULTS([]));
+            dispatch(searchBarActions.SELECT_FIRST_ITEM());
         }
     };
 
 export const submitData = (event: React.FormEvent<HTMLFormElement>) =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    (dispatch: Dispatch, getState: () => RootState) => {
         event.preventDefault();
         const searchValue = getState().searchBar.searchValue;
         dispatch<any>(saveRecentQuery(searchValue));
-        dispatch<any>(searchDataOnEnter(searchValue));
         dispatch<any>(loadRecentQueries());
-    };
-
-const searchDataOnEnter = (searchValue: string) =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
         dispatch(searchBarActions.SET_SEARCH_VALUE(searchValue));
         dispatch(searchBarActions.SET_SEARCH_RESULTS([]));
-        dispatch<any>(searchGroups(searchValue, 100, {}));
         dispatch(navigateToSearchResults);
     };
 
 const debounceStartSearch = debounce((dispatch: Dispatch) => dispatch<any>(startSearch()), DEFAULT_SEARCH_DEBOUNCE);
 
 const startSearch = () =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    (dispatch: Dispatch, getState: () => RootState) => {
         const searchValue = getState().searchBar.searchValue;
         dispatch<any>(searchData(searchValue));
     };
@@ -215,16 +213,26 @@ const buildDateFilter = (date?: string): string => {
 };
 
 export const initAdvanceFormProjectsTree = () =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    (dispatch: Dispatch) => {
         dispatch<any>(initUserProject(SEARCH_BAR_ADVANCE_FORM_PICKER_ID));
     };
 
 export const changeAdvanceFormProperty = (property: string, value: PropertyValues[] | string = '') =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    (dispatch: Dispatch) => {
         dispatch(change(SEARCH_BAR_ADVANCE_FORM_NAME, property, value));
     };
 
 export const updateAdvanceFormProperties = (propertyValues: PropertyValues) =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    (dispatch: Dispatch) => {
         dispatch(arrayPush(SEARCH_BAR_ADVANCE_FORM_NAME, 'properties', propertyValues));
+    };
+
+export const moveUp = () =>
+    (dispatch: Dispatch) => {
+        dispatch(searchBarActions.MOVE_UP());
+    };
+
+export const moveDown = () =>
+    (dispatch: Dispatch) => {
+        dispatch(searchBarActions.MOVE_DOWN());
     };

@@ -5,21 +5,19 @@
 import { SearchBarAdvanceFormData } from '~/models/search-bar';
 
 export class SearchService {
-    private recentQueries: string[] = this.getRecentQueries();
+    private recentQueries = this.getRecentQueries();
     private savedQueries: SearchBarAdvanceFormData[] = this.getSavedQueries();
 
     saveRecentQuery(query: string) {
         if (this.recentQueries.length >= MAX_NUMBER_OF_RECENT_QUERIES) {
             this.recentQueries.shift();
-            this.recentQueries.push(query);
-        } else {
-            this.recentQueries.push(query);
         }
+        this.recentQueries.push(query);
         localStorage.setItem('recentQueries', JSON.stringify(this.recentQueries));
     }
 
-    getRecentQueries() {
-        return JSON.parse(localStorage.getItem('recentQueries') || '[]') as string[];
+    getRecentQueries(): string[] {
+        return JSON.parse(localStorage.getItem('recentQueries') || '[]');
     }
 
     saveQuery(data: SearchBarAdvanceFormData) {
