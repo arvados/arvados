@@ -8,7 +8,7 @@ import { SHARING_DIALOG_NAME, SharingPublicAccessFormData, SHARING_PUBLIC_ACCESS
 import { Dispatch } from 'redux';
 import { ServiceRepository } from "~/services/services";
 import { FilterBuilder } from '~/services/api/filter-builder';
-import { initialize, getFormValues, isDirty, reset } from 'redux-form';
+import { initialize, getFormValues, reset } from 'redux-form';
 import { SHARING_MANAGEMENT_FORM_NAME } from '~/store/sharing-dialog/sharing-dialog-types';
 import { RootState } from '~/store/store';
 import { getDialog } from '~/store/dialog/dialog-reducer';
@@ -16,6 +16,8 @@ import { PermissionLevel } from '~/models/permission';
 import { getPublicGroupUuid } from "~/store/workflow-panel/workflow-panel-actions";
 import { PermissionResource } from '~/models/permission';
 import { differenceWith } from "lodash";
+import { withProgress } from "~/store/progress-indicator/with-progress";
+import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions.ts';
 
 export const openSharingDialog = (resourceUuid: string) =>
     (dispatch: Dispatch) => {
@@ -27,8 +29,11 @@ export const closeSharingDialog = () =>
     dialogActions.CLOSE_DIALOG({ id: SHARING_DIALOG_NAME });
 
 export const connectSharingDialog = withDialog(SHARING_DIALOG_NAME);
+export const connectSharingDialogProgress = withProgress(SHARING_DIALOG_NAME);
+
 
 export const saveSharingDialogChanges = async (dispatch: Dispatch) => {
+    dispatch(progressIndicatorActions.START_WORKING(SHARING_DIALOG_NAME));
     await dispatch<any>(savePublicPermissionChanges);
     await dispatch<any>(saveManagementChanges);
     await dispatch<any>(sendInvitations);
@@ -36,19 +41,16 @@ export const saveSharingDialogChanges = async (dispatch: Dispatch) => {
     await dispatch<any>(loadSharingDialog);
 };
 
-export const hasChanges = (state: RootState) =>
-    isDirty(SHARING_PUBLIC_ACCESS_FORM_NAME)(state) ||
-    isDirty(SHARING_MANAGEMENT_FORM_NAME)(state) ||
-    isDirty(SHARING_INVITATION_FORM_NAME)(state);
-
 const loadSharingDialog = async (dispatch: Dispatch, getState: () => RootState, { permissionService }: ServiceRepository) => {
 
     const dialog = getDialog<string>(getState().dialog, SHARING_DIALOG_NAME);
 
     if (dialog) {
+        dispatch(progressIndicatorActions.START_WORKING(SHARING_DIALOG_NAME));
         const { items } = await permissionService.listResourcePermissions(dialog.data);
         dispatch<any>(initializePublicAccessForm(items));
         await dispatch<any>(initializeManagementForm(items));
+        dispatch(progressIndicatorActions.STOP_WORKING(SHARING_DIALOG_NAME));
     }
 };
 
@@ -146,9 +148,9 @@ const saveManagementChanges = async (_: Dispatch, getState: () => RootState, { p
 
         if (visibility === VisibilityLevel.PRIVATE) {
 
-            await Promise.all(initialPermissions.map(({ permissionUuid, permissions }) =>
-                permissionService.delete(permissionUuid)
-            ));
+            for (const permission of initialPermissions) {
+                await permissionService.delete(permission.permissionUuid);
+            }
 
         } else {
 
@@ -158,13 +160,14 @@ const saveManagementChanges = async (_: Dispatch, getState: () => RootState, { p
                 (a, b) => a.permissionUuid === b.permissionUuid
             );
 
-            await Promise.all(cancelledPermissions.map(({ permissionUuid }) =>
-                permissionService.delete(permissionUuid)
-            ));
+            for (const { permissionUuid } of cancelledPermissions) {
+                await permissionService.delete(permissionUuid);
+            }
 
-            await Promise.all(permissions.map(({ permissionUuid, permissions }) =>
-                permissionService.update(permissionUuid, { name: permissions })
-            ));
+            for (const permission of permissions) {
+                await permissionService.update(permission.permissionUuid, { name: permission.permissions });
+            }
+
         }
     }
 };
@@ -177,15 +180,17 @@ const sendInvitations = async (_: Dispatch, getState: () => RootState, { permiss
 
         const invitations = getFormValues(SHARING_INVITATION_FORM_NAME)(state) as SharingInvitationFormData;
 
-        const promises = invitations.invitedPeople
+        const invitationData = invitations.invitedPeople
             .map(person => ({
                 ownerUuid: user.uuid,
                 headUuid: dialog.data,
                 tailUuid: person.uuid,
                 name: invitations.permissions
-            }))
-            .map(data => permissionService.create(data));
+            }));
 
-        await Promise.all(promises);
+        for (const invitation of invitationData) {
+            await permissionService.create(invitation);
+        }
+
     }
 };

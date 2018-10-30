@@ -6,22 +6,27 @@ import { compose, Dispatch } from 'redux';
 import { connect } from 'react-redux';
 
 import * as React from 'react';
-import { connectSharingDialog, saveSharingDialogChanges, hasChanges } from '~/store/sharing-dialog/sharing-dialog-actions';
+import { connectSharingDialog, saveSharingDialogChanges, connectSharingDialogProgress } from '~/store/sharing-dialog/sharing-dialog-actions';
 import { WithDialogProps } from '~/store/dialog/with-dialog';
 import { RootState } from '~/store/store';
 
 import SharingDialogComponent, { SharingDialogDataProps, SharingDialogActionProps } from './sharing-dialog-component';
 import { SharingDialogContent } from './sharing-dialog-content';
 import { connectAdvancedViewSwitch, AdvancedViewSwitchInjectedProps } from './advanced-view-switch';
+import { hasChanges } from '~/store/sharing-dialog/sharing-dialog-types';
+import { WithProgressStateProps } from '~/store/progress-indicator/with-progress';
 
-const mapStateToProps = (state: RootState, { advancedViewOpen, ...props }: WithDialogProps<string> & AdvancedViewSwitchInjectedProps): SharingDialogDataProps => ({
+type Props = WithDialogProps<string> & AdvancedViewSwitchInjectedProps & WithProgressStateProps;
+
+const mapStateToProps = (state: RootState, { advancedViewOpen, working, ...props }: Props): SharingDialogDataProps => ({
     ...props,
     saveEnabled: hasChanges(state),
+    loading: working,
     advancedEnabled: !advancedViewOpen,
     children: <SharingDialogContent {...{ advancedViewOpen }} />,
 });
 
-const mapDispatchToProps = (dispatch: Dispatch, { toggleAdvancedView, ...props }: WithDialogProps<string> & AdvancedViewSwitchInjectedProps): SharingDialogActionProps => ({
+const mapDispatchToProps = (dispatch: Dispatch, { toggleAdvancedView, ...props }: Props): SharingDialogActionProps => ({
     ...props,
     onClose: props.closeDialog,
     onExited: toggleAdvancedView,
@@ -34,6 +39,7 @@ const mapDispatchToProps = (dispatch: Dispatch, { toggleAdvancedView, ...props }
 export const SharingDialog = compose(
     connectAdvancedViewSwitch,
     connectSharingDialog,
+    connectSharingDialogProgress,
     connect(mapStateToProps, mapDispatchToProps)
 )(SharingDialogComponent);
 

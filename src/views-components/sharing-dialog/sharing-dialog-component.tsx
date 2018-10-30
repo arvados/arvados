@@ -3,12 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Dialog, DialogTitle, Button, Grid, DialogContent } from '@material-ui/core';
+import { Dialog, DialogTitle, Button, Grid, DialogContent, CircularProgress, Paper } from '@material-ui/core';
 import { DialogActions } from '~/components/dialog-actions/dialog-actions';
+import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 
 
 export interface SharingDialogDataProps {
     open: boolean;
+    loading: boolean;
     saveEnabled: boolean;
     advancedEnabled: boolean;
     children: React.ReactNode;
@@ -20,11 +22,13 @@ export interface SharingDialogActionProps {
     onAdvanced: () => void;
 }
 export default (props: SharingDialogDataProps & SharingDialogActionProps) => {
-    const { children, open, advancedEnabled, saveEnabled, onAdvanced, onClose, onExited, onSave } = props;
+    const { children, open, loading, advancedEnabled, saveEnabled, onAdvanced, onClose, onExited, onSave } = props;
     return <Dialog
         {...{ open, onClose, onExited }}
         fullWidth
-        maxWidth='sm'>
+        maxWidth='sm'
+        disableBackdropClick
+        disableEscapeKeyDown>
         <DialogTitle>
             Sharing settings
             </DialogTitle>
@@ -59,5 +63,29 @@ export default (props: SharingDialogDataProps & SharingDialogActionProps) => {
                 </Grid>
             </Grid>
         </DialogActions>
+        {
+            loading && <LoadingIndicator />
+        }
     </Dialog>;
 };
+
+const loadingIndicatorStyles: StyleRulesCallback<'root'> = theme => ({
+    root: {
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    },
+});
+
+const LoadingIndicator = withStyles(loadingIndicatorStyles)(
+    (props: WithStyles<'root'>) =>
+        <Paper classes={props.classes}>
+            <CircularProgress />
+        </Paper>
+);

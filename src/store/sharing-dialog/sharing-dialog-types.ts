@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { PermissionLevel } from '~/models/permission';
-import { getFormValues } from 'redux-form';
+import { getFormValues, isDirty } from 'redux-form';
+import { RootState } from '~/store/store';
 
 export const SHARING_DIALOG_NAME = 'SHARING_DIALOG_NAME';
 export const SHARING_PUBLIC_ACCESS_FORM_NAME = 'SHARING_PUBLIC_ACCESS_FORM_NAME';
@@ -48,3 +49,8 @@ export const getSharingMangementFormData = (state: any) =>
 
 export const getSharingPublicAccessFormData = (state: any) =>
     getFormValues(SHARING_PUBLIC_ACCESS_FORM_NAME)(state) as SharingPublicAccessFormData;
+
+export const hasChanges = (state: RootState) =>
+    isDirty(SHARING_PUBLIC_ACCESS_FORM_NAME)(state) ||
+    isDirty(SHARING_MANAGEMENT_FORM_NAME)(state) ||
+    isDirty(SHARING_INVITATION_FORM_NAME)(state);
