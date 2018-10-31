@@ -1037,18 +1037,19 @@ class RichCollectionBase(CollectionBase):
           different subdirectories.
 
         """
-        for filename in [f for f in self.keys() if isinstance(self[f], ArvadosFile)]:
-            for s in self[filename].segments():
-                if '+R' in s.locator:
-                    try:
-                        loc = remote_blocks[s.locator]
-                    except KeyError:
-                        loc = self._my_keep().refresh_signature(s.locator)
-                        remote_blocks[s.locator] = loc
-                    s.locator = loc
-                    self.set_committed(False)
-        for dirname in [d for d in self.keys() if isinstance(self[d], RichCollectionBase)]:
-            remote_blocks = self[dirname]._copy_remote_blocks(remote_blocks)
+        for item in self:
+            if isinstance(self[item], ArvadosFile):
+                for s in self[item].segments():
+                    if '+R' in s.locator:
+                        try:
+                            loc = remote_blocks[s.locator]
+                        except KeyError:
+                            loc = self._my_keep().refresh_signature(s.locator)
+                            remote_blocks[s.locator] = loc
+                        s.locator = loc
+                        self.set_committed(False)
+            elif isinstance(self[item], RichCollectionBase):
+                remote_blocks = self[item]._copy_remote_blocks(remote_blocks)
         return remote_blocks
 
     @synchronized
