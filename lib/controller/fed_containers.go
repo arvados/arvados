@@ -81,12 +81,15 @@ func remoteContainerRequestCreate(
 			return true
 		}
 
-		newtok, err := h.handler.createAPItoken(req, currentUser.UUID, nil)
-		if err != nil {
-			httpserver.Error(w, err.Error(), http.StatusForbidden)
-			return true
+		// Must be home cluster for this authorization
+		if currentUser.Authorization.UUID[0:5] == h.handler.Cluster.ClusterID {
+			newtok, err := h.handler.createAPItoken(req, currentUser.UUID, nil)
+			if err != nil {
+				httpserver.Error(w, err.Error(), http.StatusForbidden)
+				return true
+			}
+			containerRequest["runtime_token"] = newtok.TokenV2()
 		}
-		containerRequest["runtime_token"] = newtok.TokenV2()
 	}
 
 	newbody, err := json.Marshal(request)
