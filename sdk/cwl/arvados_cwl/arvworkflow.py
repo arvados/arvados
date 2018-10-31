@@ -133,10 +133,10 @@ class ArvadosWorkflow(Workflow):
     def job(self, joborder, output_callback, runtimeContext):
 
         cluster_target_req, _ = self.get_requirement("http://arvados.org/cwl#ClusterTarget")
-        if runtimeContext.cluster_target is None or runtimeContext.cluster_target.instance != id(cluster_target_req):
-            runtimeContext.cluster_target = ClusterTarget(id(cluster_target_req),
-                                                          builder.do_eval(cluster_target_req.get("clusterID")),
-                                                          builder.do_eval(cluster_target_req.get("ownerUUID")))
+        if cluster_target_req and runtimeContext.cluster_target_id != id(cluster_target_req):
+            runtimeContext.cluster_target_id = id(cluster_target_req)
+            runtimeContext.submit_runner_cluster = builder.do_eval(cluster_target_req.get("clusterID")) or runtimeContext.submit_runner_cluster
+            runtimeContext.project_uuid = builder.do_eval(cluster_target_req.get("ownerUUID")) or runtimeContext.project_uuid
 
         req, _ = self.get_requirement("http://arvados.org/cwl#RunInSingleContainer")
         if not req:
