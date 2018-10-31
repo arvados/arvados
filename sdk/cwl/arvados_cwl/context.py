@@ -34,7 +34,7 @@ class ArvRuntimeContext(RuntimeContext):
         self.current_container = None
         self.http_timeout = 300
         self.submit_runner_cluster = None
-        self.cluster_target = None
+        self.cluster_target_id = 0
 
         super(ArvRuntimeContext, self).__init__(kwargs)
 

@@ -18,7 +18,7 @@ class ArvadosCommandTool(CommandLineTool):
 
     def make_job_runner(self, runtimeContext):
         if runtimeContext.work_api == "containers":
-            return partial(ArvadosContainer, self.arvrunner, runtimeContext.cluster_target)
+            return partial(ArvadosContainer, self.arvrunner, runtimeContext)
         elif runtimeContext.work_api == "jobs":
             return partial(ArvadosJob, self.arvrunner)
         else:
@@ -46,10 +46,10 @@ class ArvadosCommandTool(CommandLineTool):
         runtimeContext = runtimeContext.copy()
 
         cluster_target_req, _ = self.get_requirement("http://arvados.org/cwl#ClusterTarget")
-        if runtimeContext.cluster_target is None or runtimeContext.cluster_target.instance != id(cluster_target_req):
-            runtimeContext.cluster_target = ClusterTarget(id(cluster_target_req),
-                                                          builder.do_eval(cluster_target_req.get("clusterID")),
-                                                          builder.do_eval(cluster_target_req.get("ownerUUID")))
+        if cluster_target_req and runtimeContext.cluster_target_id != id(cluster_target_req):
+            runtimeContext.cluster_target_id = id(cluster_target_req)
+            runtimeContext.submit_runner_cluster = builder.do_eval(cluster_target_req.get("clusterID")) or runtimeContext.submit_runner_cluster
+            runtimeContext.project_uuid = builder.do_eval(cluster_target_req.get("ownerUUID")) or runtimeContext.project_uuid
 
         if runtimeContext.work_api == "containers":
             dockerReq, is_req = self.get_requirement("DockerRequirement")
