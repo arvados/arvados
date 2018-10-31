@@ -506,6 +506,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
   ].each do |img|
     test "container_image_for_container(#{img.inspect}) => 422" do
       set_user_from_auth :active
+      Rails.configuration.remote_hosts = {}
       assert_raises(ArvadosModel::UnresolvableContainerError) do
         Container.resolve_container_image(img)
       end
@@ -514,8 +515,12 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   test "allow unrecognized container when there are remote_hosts" do
     set_user_from_auth :active
-    Rails.configuration.remote_hosts = {"foooo" => "bar.com"}
-    Container.resolve_container_image('acbd18db4cc2f85cedef654fccc4a4d8+3')
+    begin
+      Rails.configuration.remote_hosts = {"foooo" => "bar.com"}
+      Container.resolve_container_image('acbd18db4cc2f85cedef654fccc4a4d8+3')
+    ensure
+      Rails.configuration.remote_hosts = {}
+    end
   end
 
   test "migrated docker image" do
