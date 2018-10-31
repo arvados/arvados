@@ -70,7 +70,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         backgroundColor: theme.palette.error.dark
     },
     info: {
-        backgroundColor: theme.palette.primary.dark
+        backgroundColor: theme.palette.primary.main
     },
     warning: {
         backgroundColor: amber[700]
