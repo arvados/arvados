@@ -512,6 +512,12 @@ class ContainerRequestTest < ActiveSupport::TestCase
     end
   end
 
+  test "allow unrecognized container when there are remote_hosts" do
+    set_user_from_auth :active
+    Rails.configuration.remote_hosts = {"foooo" => "bar.com"}
+    Container.resolve_container_image('acbd18db4cc2f85cedef654fccc4a4d8+3')
+  end
+
   test "migrated docker image" do
     Rails.configuration.docker_image_formats = ['v2']
     add_docker19_migration_link
