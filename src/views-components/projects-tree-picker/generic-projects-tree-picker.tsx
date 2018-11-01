@@ -29,6 +29,7 @@ export interface ProjectsTreePickerDataProps {
     includeFiles?: boolean;
     rootItemIcon: IconType;
     showSelection?: boolean;
+    relatedTreePickers?: string[];
     loadRootItem: (item: TreeItem<ProjectsTreePickerRootItem>, pickerId: string, includeCollections?: boolean, inlcudeFiles?: boolean) => void;
 }
 
@@ -39,10 +40,10 @@ const mapStateToProps = (_: any, { rootItemIcon, showSelection }: ProjectsTreePi
     showSelection: isSelectionVisible(showSelection),
 });
 
-const mapDispatchToProps = (dispatch: Dispatch, { loadRootItem, includeCollections, includeFiles, ...props }: ProjectsTreePickerProps): PickedTreePickerProps => ({
+const mapDispatchToProps = (dispatch: Dispatch, { loadRootItem, includeCollections, includeFiles, relatedTreePickers, ...props }: ProjectsTreePickerProps): PickedTreePickerProps => ({
     onContextMenu: () => { return; },
     toggleItemActive: (event, item, pickerId) => {
-        dispatch(treePickerActions.ACTIVATE_TREE_PICKER_NODE({ id: item.id, pickerId }));
+        dispatch(treePickerActions.ACTIVATE_TREE_PICKER_NODE({ id: item.id, pickerId, relatedTreePickers }));
         if (props.toggleItemActive) {
             props.toggleItemActive(event, item, pickerId);
         }
@@ -65,7 +66,7 @@ const mapDispatchToProps = (dispatch: Dispatch, { loadRootItem, includeCollectio
     },
     toggleItemSelection: (event, item, pickerId) => {
         dispatch<any>(treePickerActions.TOGGLE_TREE_PICKER_NODE_SELECTION({ id: item.id, pickerId }));
-        if(props.toggleItemSelection){
+        if (props.toggleItemSelection) {
             props.toggleItemSelection(event, item, pickerId);
         }
     },
