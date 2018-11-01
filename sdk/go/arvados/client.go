@@ -103,7 +103,7 @@ var reqIDGen = httpserver.IDGenerator{Prefix: "req-"}
 // (*http.Client)Do().
 func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	if c.AuthToken != "" {
-		req.Header.Set("Authorization", "OAuth2 "+c.AuthToken)
+		req.Header.Add("Authorization", "OAuth2 "+c.AuthToken)
 	}
 
 	if req.Header.Get("X-Request-Id") == "" {
@@ -193,46 +193,6 @@ func anythingToValues(params interface{}) (url.Values, error) {
 	return urlValues, nil
 }
 
-func (c *Client) MakeRequest(method, path string, body io.Reader, params interface{}) (*http.Request, error) {
-	urlString := c.apiURL(path)
-	urlValues, err := anythingToValues(params)
-	if err != nil {
-		return nil, err
-	}
-	if (method == "GET" || body != nil) && urlValues != nil {
-		// FIXME: what if params don't fit in URL
-		u, err := url.Parse(urlString)
-		if err != nil {
-			return nil, err
-		}
-		u.RawQuery = urlValues.Encode()
-		urlString = u.String()
-	}
-	req, err := http.NewRequest(method, urlString, body)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-type", "application/x-www-form-urlencoded")
-
-	if c.AuthToken != "" {
-		req.Header.Set("Authorization", "OAuth2 "+c.AuthToken)
-	}
-
-	if req.Header.Get("X-Request-Id") == "" {
-		reqid, _ := c.context().Value(contextKeyRequestID).(string)
-		if reqid == "" {
-			reqid = reqIDGen.Next()
-		}
-		if req.Header == nil {
-			req.Header = http.Header{"X-Request-Id": {reqid}}
-		} else {
-			req.Header.Set("X-Request-Id", reqid)
-		}
-	}
-
-	return req, nil
-}
-
 // RequestAndDecode performs an API request and unmarshals the
 // response (which must be JSON) into dst. Method and body arguments
 // are the same as for http.NewRequest(). The given path is added to
@@ -245,10 +205,25 @@ func (c *Client) RequestAndDecode(dst interface{}, method, path string, body io.
 		// Ensure body is closed even if we error out early
 		defer body.Close()
 	}
-	req, err := c.MakeRequest(method, path, body, params)
+	urlString := c.apiURL(path)
+	urlValues, err := anythingToValues(params)
 	if err != nil {
 		return err
 	}
+	if (method == "GET" || body != nil) && urlValues != nil {
+		// FIXME: what if params don't fit in URL
+		u, err := url.Parse(urlString)
+		if err != nil {
+			return err
+		}
+		u.RawQuery = urlValues.Encode()
+		urlString = u.String()
+	}
+	req, err := http.NewRequest(method, urlString, body)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-type", "application/x-www-form-urlencoded")
 	return c.DoAndDecode(dst, req)
 }
 
