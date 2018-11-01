@@ -618,7 +618,7 @@ func (dn *dirnode) sync(names []string) error {
 	return flush(pending)
 }
 
-// caller must have read lock.
+// caller must have write lock.
 func (dn *dirnode) marshalManifest(prefix string) (string, error) {
 	var streamLen int64
 	type filepart struct {
