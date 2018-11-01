@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path"
 	"regexp"
@@ -116,14 +115,12 @@ func (fs *collectionFileSystem) newNode(name string, perm os.FileMode, modTime t
 }
 
 func (fs *collectionFileSystem) Sync() error {
-	log.Printf("cfs.Sync()")
 	if fs.uuid == "" {
 		return nil
 	}
 	txt, err := fs.MarshalManifest(".")
 	if err != nil {
-		log.Printf("WARNING: (collectionFileSystem)Sync() failed: %s", err)
-		return err
+		return fmt.Errorf("sync failed: %s", err)
 	}
 	coll := &Collection{
 		UUID:         fs.uuid,
@@ -131,9 +128,9 @@ func (fs *collectionFileSystem) Sync() error {
 	}
 	err = fs.RequestAndDecode(nil, "PUT", "arvados/v1/collections/"+fs.uuid, fs.UpdateBody(coll), map[string]interface{}{"select": []string{"uuid"}})
 	if err != nil {
-		log.Printf("WARNING: (collectionFileSystem)Sync() failed: %s", err)
+		return fmt.Errorf("sync failed: update %s: %s", fs.uuid, err)
 	}
-	return err
+	return nil
 }
 
 func (fs *collectionFileSystem) MarshalManifest(prefix string) (string, error) {
