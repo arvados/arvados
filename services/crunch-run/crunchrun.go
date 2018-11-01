@@ -1293,6 +1293,17 @@ func (runner *ContainerRunner) CaptureOutput() error {
 	if err != nil {
 		return err
 	}
+	if n := len(regexp.MustCompile(` [0-9a-f]+\+\S*\+R`).FindAllStringIndex(txt, -1)); n > 0 {
+		runner.CrunchLog.Printf("Copying %d data blocks from remote input collections...", n)
+		fs, err := (&arvados.Collection{ManifestText: txt}).FileSystem(runner.client, runner.Kc)
+		if err != nil {
+			return err
+		}
+		txt, err = fs.MarshalManifest(".")
+		if err != nil {
+			return err
+		}
+	}
 	var resp arvados.Collection
 	err = runner.ArvClient.Create("collections", arvadosclient.Dict{
 		"ensure_unique_name": true,
