@@ -490,7 +490,7 @@ func (s *CollectionFSSuite) TestConcurrentWriters(c *check.C) {
 			f, err := s.fs.OpenFile("/dir1/foo", os.O_RDWR, 0)
 			c.Assert(err, check.IsNil)
 			defer f.Close()
-			for i := 0; i < 6502; i++ {
+			for i := 0; i < 1024; i++ {
 				r := rand.Uint32()
 				switch {
 				case r%11 == 0:
