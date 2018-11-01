@@ -326,21 +326,26 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                 elif self.work_api == "jobs":
                     table = self.poll_api.jobs()
 
-                try:
-                    proc_states = table.list(filters=[["uuid", "in", keys]]).execute(num_retries=self.num_retries)
-                except Exception as e:
-                    logger.warn("Error checking states on API server: %s", e)
-                    remain_wait = self.poll_interval
-                    continue
+                pageSize = self.poll_api._rootDesc.get('maxItemsPerResponse', 1000)
 
-                for p in proc_states["items"]:
-                    self.on_message({
-                        "object_uuid": p["uuid"],
-                        "event_type": "update",
-                        "properties": {
-                            "new_attributes": p
-                        }
-                    })
+                while keys:
+                    page = keys[:pageSize]
+                    keys = keys[pageSize:]
+                    try:
+                        proc_states = table.list(filters=[["uuid", "in", page]]).execute(num_retries=self.num_retries)
+                    except Exception as e:
+                        logger.warn("Error checking states on API server: %s", e)
+                        remain_wait = self.poll_interval
+                        continue
+
+                    for p in proc_states["items"]:
+                        self.on_message({
+                            "object_uuid": p["uuid"],
+                            "event_type": "update",
+                            "properties": {
+                                "new_attributes": p
+                            }
+                        })
                 finish_poll = time.time()
                 remain_wait = self.poll_interval - (finish_poll - begin_poll)
         except:
@@ -631,17 +636,17 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
 
         self.task_queue = TaskQueue(self.workflow_eval_lock, self.thread_count)
 
-        if runnerjob:
-            jobiter = iter((runnerjob,))
-        else:
-            if runtimeContext.cwl_runner_job is not None:
-                self.uuid = runtimeContext.cwl_runner_job.get('uuid')
-            jobiter = tool.job(job_order,
-                               self.output_callback,
-                               runtimeContext)
-
         try:
             self.workflow_eval_lock.acquire()
+            if runnerjob:
+                jobiter = iter((runnerjob,))
+            else:
+                if runtimeContext.cwl_runner_job is not None:
+                    self.uuid = runtimeContext.cwl_runner_job.get('uuid')
+                jobiter = tool.job(job_order,
+                                   self.output_callback,
+                                   runtimeContext)
+
             # Holds the lock while this code runs and releases it when
             # it is safe to do so in self.workflow_eval_lock.wait(),
             # at which point on_message can update job state and
@@ -681,7 +686,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
             if sys.exc_info()[0] is KeyboardInterrupt or sys.exc_info()[0] is SystemExit:
                 logger.error("Interrupted, workflow will be cancelled")
             else:
-                logger.error("Execution failed: %s", sys.exc_info()[1], exc_info=(sys.exc_info()[1] if self.debug else False))
+                logger.error("Execution failed:\n%s", sys.exc_info()[1], exc_info=(sys.exc_info()[1] if self.debug else False))
             if self.pipeline:
                 self.api.pipeline_instances().update(uuid=self.pipeline["uuid"],
                                                      body={"state": "Failed"}).execute(num_retries=self.num_retries)

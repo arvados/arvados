@@ -247,9 +247,9 @@ $graph:
       jsonldPredicate:
         _id: "@type"
         _type: "@vocab"
-    clusterID:
+    cluster_id:
       type: string?
       doc: The cluster to run the container
-    ownerUUID:
+    project_uuid:
       type: string?
       doc: The project that will own the container requests and intermediate collections
