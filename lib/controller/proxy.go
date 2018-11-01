@@ -5,18 +5,15 @@
 package controller
 
 import (
-	"context"
 	"io"
 	"net/http"
 	"net/url"
-	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 )
 
 type proxy struct {
-	Name           string // to use in Via header
-	RequestTimeout time.Duration
+	Name string // to use in Via header
 }
 
 type HTTPError struct {
@@ -49,7 +46,7 @@ type ResponseFilter func(*http.Response, error) (*http.Response, error)
 func (p *proxy) Do(
 	reqIn *http.Request,
 	urlOut *url.URL,
-	client *http.Client) (*http.Response, context.CancelFunc, error) {
+	client *http.Client) (*http.Response, error) {
 
 	// Copy headers from incoming request, then add/replace proxy
 	// headers like Via and X-Forwarded-For.
@@ -69,22 +66,16 @@ func (p *proxy) Do(
 	}
 	hdrOut.Add("Via", reqIn.Proto+" arvados-controller")
 
-	ctx := reqIn.Context()
-	var cancel context.CancelFunc
-	if p.RequestTimeout > 0 {
-		ctx, cancel = context.WithDeadline(ctx, time.Now().Add(time.Duration(p.RequestTimeout)))
-	}
-
 	reqOut := (&http.Request{
 		Method: reqIn.Method,
 		URL:    urlOut,
 		Host:   reqIn.Host,
 		Header: hdrOut,
 		Body:   reqIn.Body,
-	}).WithContext(ctx)
+	}).WithContext(reqIn.Context())
 
 	resp, err := client.Do(reqOut)
-	return resp, cancel, err
+	return resp, err
 }
 
 // Copy a response (or error) to the downstream client

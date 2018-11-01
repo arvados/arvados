@@ -6,7 +6,6 @@ package controller
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -66,16 +65,12 @@ func (h *genericFederatedRequestHandler) remoteQueryUUIDs(w http.ResponseWriter,
 		rc := multiClusterQueryResponseCollector{clusterID: clusterID}
 
 		var resp *http.Response
-		var cancel context.CancelFunc
 		if clusterID == h.handler.Cluster.ClusterID {
-			resp, cancel, err = h.handler.localClusterRequest(&remoteReq)
+			resp, err = h.handler.localClusterRequest(&remoteReq)
 		} else {
-			resp, cancel, err = h.handler.remoteClusterRequest(clusterID, &remoteReq)
+			resp, err = h.handler.remoteClusterRequest(clusterID, &remoteReq)
 		}
 		rc.collectResponse(resp, err)
-		if cancel != nil {
-			cancel()
-		}
 
 		if rc.error != nil {
 			return nil, "", rc.error
@@ -309,10 +304,7 @@ func (h *genericFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *h
 	if clusterId == "" || clusterId == h.handler.Cluster.ClusterID {
 		h.next.ServeHTTP(w, req)
 	} else {
-		resp, cancel, err := h.handler.remoteClusterRequest(clusterId, req)
-		if cancel != nil {
-			defer cancel()
-		}
+		resp, err := h.handler.remoteClusterRequest(clusterId, req)
 		h.handler.proxy.ForwardResponse(w, resp, err)
 	}
 }

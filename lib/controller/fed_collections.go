@@ -178,10 +178,7 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 
 		if clusterId != "" && clusterId != h.handler.Cluster.ClusterID {
 			// request for remote collection by uuid
-			resp, cancel, err := h.handler.remoteClusterRequest(clusterId, req)
-			if cancel != nil {
-				defer cancel()
-			}
+			resp, err := h.handler.remoteClusterRequest(clusterId, req)
 			newResponse, err := rewriteSignatures(clusterId, "", resp, err)
 			h.handler.proxy.ForwardResponse(w, newResponse, err)
 			return
@@ -196,10 +193,7 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 	// Request for collection by PDH.  Search the federation.
 
 	// First, query the local cluster.
-	resp, localClusterRequestCancel, err := h.handler.localClusterRequest(req)
-	if localClusterRequestCancel != nil {
-		defer localClusterRequestCancel()
-	}
+	resp, err := h.handler.localClusterRequest(req)
 	newResp, err := filterLocalClusterResponse(resp, err)
 	if newResp != nil || err != nil {
 		h.handler.proxy.ForwardResponse(w, newResp, err)
@@ -244,19 +238,13 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 			default:
 			}
 
-			resp, _, err := h.handler.remoteClusterRequest(remote, req)
+			resp, err := h.handler.remoteClusterRequest(remote, req)
 			wasSuccess := false
 			defer func() {
 				if resp != nil && !wasSuccess {
 					resp.Body.Close()
 				}
 			}()
-			// Don't need to do anything with the cancel
-			// function returned by remoteClusterRequest
-			// because the context inherits from
-			// sharedContext, so when sharedContext is
-			// cancelled it should cancel that one as
-			// well.
 			if err != nil {
 				errorChan <- err
 				return

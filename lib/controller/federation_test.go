@@ -594,6 +594,15 @@ func (s *FederationSuite) TestCreateRemoteContainerRequestCheckRuntimeToken(c *c
 `))
 	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
 	req.Header.Set("Content-type", "application/json")
+
+	np := arvados.NodeProfile{
+		Controller: arvados.SystemServiceInstance{Listen: ":"},
+		RailsAPI: arvados.SystemServiceInstance{Listen: os.Getenv("ARVADOS_TEST_API_HOST"),
+			TLS: true, Insecure: true}}
+	s.testHandler.Cluster.ClusterID = "zzzzz"
+	s.testHandler.Cluster.NodeProfiles["*"] = np
+	s.testHandler.NodeProfile = &np
+
 	resp := s.testRequest(req)
 	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
 	var cr struct {

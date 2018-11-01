@@ -6,7 +6,6 @@ package controller
 
 import (
 	"bytes"
-	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -29,10 +28,10 @@ var containerRequestsRe = regexp.MustCompile(fmt.Sprintf(pathPattern, "container
 var collectionRe = regexp.MustCompile(fmt.Sprintf(pathPattern, "collections", "4zz18"))
 var collectionByPDHRe = regexp.MustCompile(`^/arvados/v1/collections/([0-9a-fA-F]{32}\+[0-9]+)+$`)
 
-func (h *Handler) remoteClusterRequest(remoteID string, req *http.Request) (*http.Response, context.CancelFunc, error) {
+func (h *Handler) remoteClusterRequest(remoteID string, req *http.Request) (*http.Response, error) {
 	remote, ok := h.Cluster.RemoteClusters[remoteID]
 	if !ok {
-		return nil, nil, HTTPError{fmt.Sprintf("no proxy available for cluster %v", remoteID), http.StatusNotFound}
+		return nil, HTTPError{fmt.Sprintf("no proxy available for cluster %v", remoteID), http.StatusNotFound}
 	}
 	scheme := remote.Scheme
 	if scheme == "" {
@@ -40,7 +39,7 @@ func (h *Handler) remoteClusterRequest(remoteID string, req *http.Request) (*htt
 	}
 	saltedReq, err := h.saltAuthToken(req, remoteID)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	urlOut := &url.URL{
 		Scheme:   scheme,

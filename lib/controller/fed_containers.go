@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 
 	"git.curoverse.com/arvados.git/sdk/go/auth"
@@ -64,8 +63,6 @@ func remoteContainerRequestCreate(
 
 	// If runtime_token is not set, create a new token
 	if _, ok := containerRequest["runtime_token"]; !ok {
-		log.Printf("ok %v", ok)
-
 		// First make sure supplied token is valid.
 		creds := auth.NewCredentials()
 		creds.LoadTokensFromHTTPRequest(req)
@@ -98,10 +95,7 @@ func remoteContainerRequestCreate(
 	req.ContentLength = int64(buf.Len())
 	req.Header.Set("Content-Length", fmt.Sprintf("%v", buf.Len()))
 
-	resp, cancel, err := h.handler.remoteClusterRequest(*clusterId, req)
-	if cancel != nil {
-		defer cancel()
-	}
+	resp, err := h.handler.remoteClusterRequest(*clusterId, req)
 	h.handler.proxy.ForwardResponse(w, resp, err)
 	return true
 }

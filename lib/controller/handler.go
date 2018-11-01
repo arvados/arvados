@@ -50,6 +50,12 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			req.URL.Path = strings.Replace(req.URL.Path, "//", "/", -1)
 		}
 	}
+	if h.Cluster.HTTPRequestTimeout > 0 {
+		ctx, cancel := context.WithDeadline(req.Context(), time.Now().Add(time.Duration(h.Cluster.HTTPRequestTimeout)))
+		req = req.WithContext(ctx)
+		defer cancel()
+	}
+
 	h.handlerStack.ServeHTTP(w, req)
 }
 
@@ -84,8 +90,7 @@ func (h *Handler) setup() {
 	h.insecureClient = &ic
 
 	h.proxy = &proxy{
-		Name:           "arvados-controller",
-		RequestTimeout: time.Duration(h.Cluster.HTTPRequestTimeout),
+		Name: "arvados-controller",
 	}
 }
 
@@ -122,10 +127,10 @@ func prepend(next http.Handler, middleware middlewareFunc) http.Handler {
 	})
 }
 
-func (h *Handler) localClusterRequest(req *http.Request) (*http.Response, context.CancelFunc, error) {
+func (h *Handler) localClusterRequest(req *http.Request) (*http.Response, error) {
 	urlOut, insecure, err := findRailsAPI(h.Cluster, h.NodeProfile)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	urlOut = &url.URL{
 		Scheme:   urlOut.Scheme,
@@ -142,10 +147,7 @@ func (h *Handler) localClusterRequest(req *http.Request) (*http.Response, contex
 }
 
 func (h *Handler) proxyRailsAPI(w http.ResponseWriter, req *http.Request, next http.Handler) {
-	resp, cancel, err := h.localClusterRequest(req)
-	if cancel != nil {
-		defer cancel()
-	}
+	resp, err := h.localClusterRequest(req)
 	n, err := h.proxy.ForwardResponse(w, resp, err)
 	if err != nil {
 		httpserver.Logger(req).WithError(err).WithField("bytesCopied", n).Error("error copying response body")
