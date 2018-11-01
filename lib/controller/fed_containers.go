@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"git.curoverse.com/arvados.git/sdk/go/auth"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
@@ -79,7 +80,7 @@ func remoteContainerRequestCreate(
 		}
 
 		// Must be home cluster for this authorization
-		if currentUser.Authorization.UUID[0:5] == h.handler.Cluster.ClusterID {
+		if strings.HasPrefix(currentUser.Authorization.UUID, h.handler.Cluster.ClusterID) {
 			newtok, err := h.handler.createAPItoken(req, currentUser.UUID, nil)
 			if err != nil {
 				httpserver.Error(w, err.Error(), http.StatusForbidden)

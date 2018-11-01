@@ -140,7 +140,7 @@ func (h *genericFederatedRequestHandler) handleMultiClusterQuery(w http.Response
 		if op == "in" {
 			if rhs, ok := filter[2].([]interface{}); ok {
 				for _, i := range rhs {
-					if u, ok := i.(string); ok {
+					if u, ok := i.(string); ok && len(u) == 27 {
 						*clusterId = u[0:5]
 						queryClusters[u[0:5]] = append(queryClusters[u[0:5]], u)
 						expectCount += 1
@@ -148,7 +148,7 @@ func (h *genericFederatedRequestHandler) handleMultiClusterQuery(w http.Response
 				}
 			}
 		} else if op == "=" {
-			if u, ok := filter[2].(string); ok {
+			if u, ok := filter[2].(string); ok && len(u) == 27 {
 				*clusterId = u[0:5]
 				queryClusters[u[0:5]] = append(queryClusters[u[0:5]], u)
 				expectCount += 1
