@@ -50,6 +50,7 @@ class Arvados::V1::SchemaController < ApplicationController
         defaultTrashLifetime: Rails.application.config.default_trash_lifetime,
         blobSignatureTtl: Rails.application.config.blob_signature_ttl,
         maxRequestSize: Rails.application.config.max_request_size,
+        maxItemsPerResponse: Rails.application.config.max_items_per_response,
         dockerImageFormats: Rails.application.config.docker_image_formats,
         crunchLogBytesPerEvent: Rails.application.config.crunch_log_bytes_per_event,
         crunchLogSecondsBetweenEvents: Rails.application.config.crunch_log_seconds_between_events,

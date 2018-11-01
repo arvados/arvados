@@ -8,6 +8,19 @@ from .arvcontainer import ArvadosContainer
 from .pathmapper import ArvPathMapper
 from .context import ClusterTarget
 from functools import partial
+from schema_salad.sourceline import SourceLine
+from cwltool.errors import WorkflowException
+
+def check_cluster_target(self, builder, runtimeContext):
+    cluster_target_req, _ = self.get_requirement("http://arvados.org/cwl#ClusterTarget")
+    if cluster_target_req and runtimeContext.cluster_target_id != id(cluster_target_req):
+        with SourceLine(cluster_target_req, None, WorkflowException, runtimeContext.debug):
+            runtimeContext.cluster_target_id = id(cluster_target_req)
+            runtimeContext.submit_runner_cluster = builder.do_eval(cluster_target_req.get("cluster_id")) or runtimeContext.submit_runner_cluster
+            runtimeContext.project_uuid = builder.do_eval(cluster_target_req.get("project_uuid")) or runtimeContext.project_uuid
+            if runtimeContext.submit_runner_cluster and runtimeContext.submit_runner_cluster not in self.arvrunner.api._rootDesc["remoteHosts"]:
+                raise WorkflowException("Unknown or invalid cluster id '%s' known clusters are %s" % (runtimeContext.submit_runner_cluster,
+                                                                                                      ", ".join(self.arvrunner.api._rootDesc["remoteHosts"].keys())))
 
 class ArvadosCommandTool(CommandLineTool):
     """Wrap cwltool CommandLineTool to override selected methods."""
@@ -45,11 +58,7 @@ class ArvadosCommandTool(CommandLineTool):
 
         runtimeContext = runtimeContext.copy()
 
-        cluster_target_req, _ = self.get_requirement("http://arvados.org/cwl#ClusterTarget")
-        if cluster_target_req and runtimeContext.cluster_target_id != id(cluster_target_req):
-            runtimeContext.cluster_target_id = id(cluster_target_req)
-            runtimeContext.submit_runner_cluster = builder.do_eval(cluster_target_req.get("clusterID")) or runtimeContext.submit_runner_cluster
-            runtimeContext.project_uuid = builder.do_eval(cluster_target_req.get("ownerUUID")) or runtimeContext.project_uuid
+        check_cluster_target(self, builder, runtimeContext)
 
         if runtimeContext.work_api == "containers":
             dockerReq, is_req = self.get_requirement("DockerRequirement")
