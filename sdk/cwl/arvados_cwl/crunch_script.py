@@ -104,7 +104,7 @@ def run():
         arvargs.output_tags = output_tags
         arvargs.thread_count = 1
 
-        runner = arvados_cwl.ArvCwlRunner(api_client=arvados.safeapi.ThreadSafeApiCache(
+        runner = arvados_cwl.ArvCwlExecutor(api_client=arvados.safeapi.ThreadSafeApiCache(
             api_params={"model": OrderedJsonModel()}, keep_params={"num_retries": 4}),
                                           arvargs=arvargs)
 

@@ -12,6 +12,7 @@ import unittest
 
 import arvados
 import arvados_cwl
+import arvados_cwl.executor
 from .mock_discovery import get_rootDesc
 
 class TestMakeOutput(unittest.TestCase):
@@ -23,7 +24,7 @@ class TestMakeOutput(unittest.TestCase):
     @mock.patch("arvados.collection.CollectionReader")
     def test_make_output_collection(self, reader, col):
         keep_client = mock.MagicMock()
-        runner = arvados_cwl.ArvCwlRunner(self.api, keep_client=keep_client)
+        runner = arvados_cwl.executor.ArvCwlExecutor(self.api, keep_client=keep_client)
         runner.project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
 
         final = mock.MagicMock()

@@ -12,7 +12,7 @@ import ciso8601
 import uuid
 import math
 
-from arvados_cwl.util import get_current_container, get_intermediate_collection_info
+import arvados_cwl.util
 import ruamel.yaml as yaml
 
 from cwltool.errors import WorkflowException
@@ -171,8 +171,8 @@ class ArvadosContainer(JobBase):
                 keepemptydirs(vwd)
 
                 if not runtimeContext.current_container:
-                    runtimeContext.current_container = get_current_container(self.arvrunner.api, self.arvrunner.num_retries, logger)
-                info = get_intermediate_collection_info(self.name, runtimeContext.current_container, runtimeContext.intermediate_output_ttl)
+                    runtimeContext.current_container = arvados_cwl.util.get_current_container(self.arvrunner.api, self.arvrunner.num_retries, logger)
+                info = arvados_cwl.util.get_intermediate_collection_info(self.name, runtimeContext.current_container, runtimeContext.intermediate_output_ttl)
                 vwd.save_new(name=info["name"],
                              owner_uuid=self.arvrunner.project_uuid,
                              ensure_unique_name=True,

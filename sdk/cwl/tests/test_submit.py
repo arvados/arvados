@@ -15,6 +15,7 @@ import unittest
 import arvados
 import arvados.collection
 import arvados_cwl
+import arvados_cwl.executor
 import arvados_cwl.runner
 import arvados.keep
 
@@ -46,7 +47,15 @@ def stubs(func):
         keep_client2.put.side_effect = putstub
 
         stubs.keep_client = keep_client2
-        stubs.keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
+        stubs.docker_images = {
+            "arvados/jobs:"+arvados_cwl.__version__: [("zzzzz-4zz18-zzzzzzzzzzzzzd3", "")],
+            "debian:8": [("zzzzz-4zz18-zzzzzzzzzzzzzd4", "")],
+            "arvados/jobs:123": [("zzzzz-4zz18-zzzzzzzzzzzzzd5", "")]
+        }
+        def kd(a, b, image_name=None, image_tag=None):
+            return stubs.docker_images.get("%s:%s" % (image_name, image_tag), [])
+        stubs.keepdocker.side_effect = kd
+
         stubs.fake_user_uuid = "zzzzz-tpzed-zzzzzzzzzzzzzzz"
         stubs.fake_container_uuid = "zzzzz-dz642-zzzzzzzzzzzzzzz"
 
@@ -69,7 +78,7 @@ def stubs(func):
 
         def collection_createstub(created_collections, body, ensure_unique_name=None):
             mt = body["manifest_text"]
-            uuid = "zzzzz-4zz18-zzzzzzzzzzzzzz%d" % len(created_collections)
+            uuid = "zzzzz-4zz18-zzzzzzzzzzzzzx%d" % len(created_collections)
             pdh = "%s+%i" % (hashlib.md5(mt).hexdigest(), len(mt))
             created_collections[uuid] = {
                 "uuid": uuid,
@@ -93,6 +102,21 @@ def stubs(func):
                 "uuid": "",
                 "portable_data_hash": "99999999999999999999999999999994+99",
                 "manifest_text": ". 99999999999999999999999999999994+99 0:0:expect_arvworkflow.cwl"
+            },
+            "zzzzz-4zz18-zzzzzzzzzzzzzd3": {
+                "uuid": "zzzzz-4zz18-zzzzzzzzzzzzzd3",
+                "portable_data_hash": "999999999999999999999999999999d3+99",
+                "manifest_text": ""
+            },
+            "zzzzz-4zz18-zzzzzzzzzzzzzd4": {
+                "uuid": "zzzzz-4zz18-zzzzzzzzzzzzzd4",
+                "portable_data_hash": "999999999999999999999999999999d4+99",
+                "manifest_text": ""
+            },
+            "zzzzz-4zz18-zzzzzzzzzzzzzd5": {
+                "uuid": "zzzzz-4zz18-zzzzzzzzzzzzzd5",
+                "portable_data_hash": "999999999999999999999999999999d5+99",
+                "manifest_text": ""
             }
         }
         stubs.api.collections().create.side_effect = functools.partial(collection_createstub, created_collections)
@@ -117,7 +141,7 @@ def stubs(func):
         }
         stubs.expect_job_spec = {
             'runtime_constraints': {
-                'docker_image': 'arvados/jobs:'+arvados_cwl.__version__,
+                'docker_image': '999999999999999999999999999999d3+99',
                 'min_ram_mb_per_node': 1024
             },
             'script_parameters': {
@@ -141,7 +165,7 @@ def stubs(func):
                     }],
                     'class': 'Directory'
                 },
-                'cwl:tool': '3fffdeaa75e018172e1b583425f4ebff+60/workflow.cwl#main'
+                'cwl:tool': '57ad063d64c60dbddc027791f0649211+60/workflow.cwl#main'
             },
             'repository': 'arvados',
             'script_version': 'master',
@@ -155,7 +179,7 @@ def stubs(func):
             'owner_uuid': None,
             "components": {
                 "cwl-runner": {
-                    'runtime_constraints': {'docker_image': 'arvados/jobs:'+arvados_cwl.__version__, 'min_ram_mb_per_node': 1024},
+                    'runtime_constraints': {'docker_image': '999999999999999999999999999999d3+99', 'min_ram_mb_per_node': 1024},
                     'script_parameters': {
                         'y': {"value": {'basename': '99999999999999999999999999999998+99', 'location': 'keep:99999999999999999999999999999998+99', 'class': 'Directory'}},
                         'x': {"value": {
@@ -173,7 +197,7 @@ def stubs(func):
                                       'size': 0
                                   }
                               ]}},
-                        'cwl:tool': '3fffdeaa75e018172e1b583425f4ebff+60/workflow.cwl#main',
+                        'cwl:tool': '57ad063d64c60dbddc027791f0649211+60/workflow.cwl#main',
                         'arv:debug': True,
                         'arv:enable_reuse': True,
                         'arv:on_error': 'continue'
@@ -247,7 +271,7 @@ def stubs(func):
                         '--enable-reuse', '--debug', '--on-error=continue',
                         '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json'],
             'name': 'submit_wf.cwl',
-            'container_image': 'arvados/jobs:'+arvados_cwl.__version__,
+            'container_image': '999999999999999999999999999999d3+99',
             'output_path': '/var/spool/cwl',
             'cwd': '/var/spool/cwl',
             'runtime_constraints': {
@@ -277,10 +301,17 @@ def stubs(func):
 
 
 class TestSubmit(unittest.TestCase):
-    @mock.patch("arvados_cwl.runner.arv_docker_get_image")
+    @mock.patch("arvados_cwl.arvdocker.arv_docker_get_image")
     @mock.patch("time.sleep")
     @stubs
     def test_submit(self, stubs, tm, arvdock):
+        def get_image(api_client, dockerRequirement, pull_image, project_uuid):
+            if dockerRequirement["dockerPull"] == 'arvados/jobs:'+arvados_cwl.__version__:
+                return '999999999999999999999999999999d3+99'
+            elif dockerRequirement["dockerPull"] == "debian:8":
+                return '999999999999999999999999999999d4+99'
+        arvdock.side_effect = get_image
+
         capture_stdout = cStringIO.StringIO()
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=jobs", "--debug",
@@ -303,13 +334,14 @@ class TestSubmit(unittest.TestCase):
             }), ensure_unique_name=False),
             mock.call(body=JsonDiffMatcher({
                 'manifest_text':
-                '. 61df2ed9ee3eb7dd9b799e5ca35305fa+1217 0:1217:workflow.cwl\n',
+                ". 68089141fbf7e020ac90a9d6a575bc8f+1312 0:1312:workflow.cwl\n",
                 'replication_desired': None,
                 'name': 'submit_wf.cwl',
             }), ensure_unique_name=True)        ])
 
         arvdock.assert_has_calls([
             mock.call(stubs.api, {"class": "DockerRequirement", "dockerPull": "debian:8"}, True, None),
+            mock.call(stubs.api, {"class": "DockerRequirement", "dockerPull": "debian:8", 'http://arvados.org/cwl#dockerCollectionPDH': '999999999999999999999999999999d4+99'}, True, None),
             mock.call(stubs.api, {'dockerPull': 'arvados/jobs:'+arvados_cwl.__version__}, True, None)
         ])
 
@@ -646,7 +678,7 @@ class TestSubmit(unittest.TestCase):
 
     @mock.patch("arvados_cwl.task_queue.TaskQueue")
     @mock.patch("arvados_cwl.arvworkflow.ArvadosWorkflow.job")
-    @mock.patch("arvados_cwl.ArvCwlRunner.make_output_collection", return_value = (None, None))
+    @mock.patch("arvados_cwl.executor.ArvCwlExecutor.make_output_collection", return_value = (None, None))
     @stubs
     def test_storage_classes_correctly_propagate_to_make_output_collection(self, stubs, make_output, job, tq):
         def set_final_output(job_order, output_callback, runtimeContext):
@@ -667,7 +699,7 @@ class TestSubmit(unittest.TestCase):
 
     @mock.patch("arvados_cwl.task_queue.TaskQueue")
     @mock.patch("arvados_cwl.arvworkflow.ArvadosWorkflow.job")
-    @mock.patch("arvados_cwl.ArvCwlRunner.make_output_collection", return_value = (None, None))
+    @mock.patch("arvados_cwl.executor.ArvCwlExecutor.make_output_collection", return_value = (None, None))
     @stubs
     def test_default_storage_classes_correctly_propagate_to_make_output_collection(self, stubs, make_output, job, tq):
         def set_final_output(job_order, output_callback, runtimeContext):
@@ -835,7 +867,7 @@ class TestSubmit(unittest.TestCase):
             }, 'state': 'Committed',
             'output_path': '/var/spool/cwl',
             'name': 'expect_arvworkflow.cwl#main',
-            'container_image': 'arvados/jobs:'+arvados_cwl.__version__,
+            'container_image': '999999999999999999999999999999d3+99',
             'command': ['arvados-cwl-runner', '--local', '--api=containers',
                         '--no-log-timestamps', '--disable-validate',
                         '--eval-timeout=20', '--thread-count=4',
@@ -934,7 +966,11 @@ class TestSubmit(unittest.TestCase):
                                         'id': '#submit_tool.cwl/x'}
                                 ],
                                 'requirements': [
-                                    {'dockerPull': 'debian:8', 'class': 'DockerRequirement'}
+                                    {
+                                        'dockerPull': 'debian:8',
+                                        'class': 'DockerRequirement',
+                                        "http://arvados.org/cwl#dockerCollectionPDH": "999999999999999999999999999999d4+99"
+                                    }
                                 ],
                                 'id': '#submit_tool.cwl',
                                 'outputs': [],
@@ -953,7 +989,7 @@ class TestSubmit(unittest.TestCase):
             }, 'state': 'Committed',
             'output_path': '/var/spool/cwl',
             'name': 'a test workflow',
-            'container_image': 'arvados/jobs:'+arvados_cwl.__version__,
+            'container_image': "999999999999999999999999999999d3+99",
             'command': ['arvados-cwl-runner', '--local', '--api=containers',
                         '--no-log-timestamps', '--disable-validate',
                         '--eval-timeout=20', '--thread-count=4',
@@ -1090,7 +1126,7 @@ class TestSubmit(unittest.TestCase):
         except:
             logging.exception("")
 
-        stubs.expect_pipeline_instance["components"]["cwl-runner"]["runtime_constraints"]["docker_image"] = "arvados/jobs:123"
+        stubs.expect_pipeline_instance["components"]["cwl-runner"]["runtime_constraints"]["docker_image"] = "999999999999999999999999999999d5+99"
 
         expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
         stubs.api.pipeline_instances().create.assert_called_with(
@@ -1110,7 +1146,7 @@ class TestSubmit(unittest.TestCase):
         except:
             logging.exception("")
 
-        stubs.expect_container_spec["container_image"] = "arvados/jobs:123"
+        stubs.expect_container_spec["container_image"] = "999999999999999999999999999999d5+99"
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         stubs.api.container_requests().create.assert_called_with(
@@ -1179,33 +1215,38 @@ class TestSubmit(unittest.TestCase):
     @mock.patch("cwltool.docker.DockerCommandLineJob.get_image")
     @mock.patch("arvados.api")
     def test_arvados_jobs_image(self, api, get_image, find_one_image_hash):
-        arvrunner = mock.MagicMock()
-        arvrunner.project_uuid = ""
-        api.return_value = mock.MagicMock()
-        arvrunner.api = api.return_value
-        arvrunner.api.links().list().execute.side_effect = ({"items": [{"created_at": "",
-                                                                        "head_uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzb",
-                                                                        "link_class": "docker_image_repo+tag",
-                                                                        "name": "arvados/jobs:"+arvados_cwl.__version__,
-                                                                        "owner_uuid": "",
-                                                                        "properties": {"image_timestamp": ""}}], "items_available": 1, "offset": 0},
-                                                            {"items": [{"created_at": "",
-                                                                        "head_uuid": "",
-                                                                        "link_class": "docker_image_hash",
-                                                                        "name": "123456",
-                                                                        "owner_uuid": "",
-                                                                        "properties": {"image_timestamp": ""}}], "items_available": 1, "offset": 0}
-        )
-        find_one_image_hash.return_value = "123456"
+        try:
+            arvrunner = mock.MagicMock()
+            arvrunner.project_uuid = ""
+            api.return_value = mock.MagicMock()
+            arvrunner.api = api.return_value
+            arvrunner.api.links().list().execute.side_effect = ({"items": [{"created_at": "",
+                                                                            "head_uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzb",
+                                                                            "link_class": "docker_image_repo+tag",
+                                                                            "name": "arvados/jobs:"+arvados_cwl.__version__,
+                                                                            "owner_uuid": "",
+                                                                            "properties": {"image_timestamp": ""}}], "items_available": 1, "offset": 0},
+                                                                {"items": [{"created_at": "",
+                                                                            "head_uuid": "",
+                                                                            "link_class": "docker_image_hash",
+                                                                            "name": "123456",
+                                                                            "owner_uuid": "",
+                                                                            "properties": {"image_timestamp": ""}}], "items_available": 1, "offset": 0}
+            )
+            find_one_image_hash.return_value = "123456"
 
-        arvrunner.api.collections().list().execute.side_effect = ({"items": [{"uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzb",
-                                                                              "owner_uuid": "",
-                                                                              "manifest_text": "",
-                                                                              "properties": ""
-                                                                          }], "items_available": 1, "offset": 0},)
-        arvrunner.api.collections().create().execute.return_value = {"uuid": ""}
-        self.assertEqual("arvados/jobs:"+arvados_cwl.__version__,
-                         arvados_cwl.runner.arvados_jobs_image(arvrunner, "arvados/jobs:"+arvados_cwl.__version__))
+            arvrunner.api.collections().list().execute.side_effect = ({"items": [{"uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzb",
+                                                                                  "owner_uuid": "",
+                                                                                  "manifest_text": "",
+                                                                                  "properties": ""
+                                                                              }], "items_available": 1, "offset": 0},)
+            arvrunner.api.collections().create().execute.return_value = {"uuid": ""}
+            arvrunner.api.collections().get().execute.return_value = {"uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzb",
+                                                                      "portable_data_hash": "9999999999999999999999999999999b+99"}
+            self.assertEqual("9999999999999999999999999999999b+99",
+                             arvados_cwl.runner.arvados_jobs_image(arvrunner, "arvados/jobs:"+arvados_cwl.__version__))
+        finally:
+            arvados_cwl.arvdocker.arv_docker_clear_cache()
 
     @stubs
     def test_submit_secrets(self, stubs):
@@ -1235,7 +1276,7 @@ class TestSubmit(unittest.TestCase):
                 "/var/lib/cwl/workflow.json#main",
                 "/var/lib/cwl/cwl.input.json"
             ],
-            "container_image": "arvados/jobs:"+arvados_cwl.__version__,
+            "container_image": "999999999999999999999999999999d3+99",
             "cwd": "/var/spool/cwl",
             "mounts": {
                 "/var/lib/cwl/cwl.input.json": {
@@ -1297,7 +1338,8 @@ class TestSubmit(unittest.TestCase):
                                 "hints": [
                                     {
                                         "class": "DockerRequirement",
-                                        "dockerPull": "debian:8"
+                                        "dockerPull": "debian:8",
+                                        "http://arvados.org/cwl#dockerCollectionPDH": "999999999999999999999999999999d4+99"
                                     },
                                     {
                                         "class": "http://commonwl.org/cwltool#Secrets",
@@ -1395,7 +1437,7 @@ class TestSubmit(unittest.TestCase):
             logging.exception("")
 
         stubs.api.container_requests().update.assert_called_with(
-            uuid="zzzzz-xvhdp-yyyyyyyyyyyyyyy", body=JsonDiffMatcher(stubs.expect_container_spec))
+            uuid="zzzzz-xvhdp-yyyyyyyyyyyyyyy", body=JsonDiffMatcher(stubs.expect_container_spec), cluster_id="zzzzz")
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 

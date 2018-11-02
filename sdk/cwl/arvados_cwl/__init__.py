@@ -13,27 +13,33 @@ import sys
 import re
 import pkg_resources  # part of setuptools
 
+from schema_salad.sourceline import SourceLine
+import schema_salad.validate as validate
 import cwltool.main
 import cwltool.workflow
 import cwltool.process
-from schema_salad.sourceline import SourceLine
-import schema_salad.validate as validate
 import cwltool.argparser
+from cwltool.process import shortname, UnsupportedRequirement, use_custom_schema
+from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, get_listing
 
 import arvados
 import arvados.config
 from arvados.keep import KeepClient
 from arvados.errors import ApiError
 import arvados.commands._util as arv_cmd
+from arvados.api import OrderedJsonModel
 
 from .perf import Perf
 from ._version import __version__
 from .executor import ArvCwlExecutor
 
-from cwltool.process import shortname, UnsupportedRequirement, use_custom_schema
-from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, get_listing
-
-from arvados.api import OrderedJsonModel
+# These arn't used directly in this file but
+# other code expects to import them from here
+from .arvcontainer import ArvadosContainer
+from .arvtool import ArvadosCommandTool
+from .fsaccess import CollectionFsAccess, CollectionCache
+from .util import get_current_container
+from .executor import RuntimeStatusLoggingHandler, DEFAULT_PRIORITY
 
 logger = logging.getLogger('arvados.cwl-runner')
 metrics = logging.getLogger('arvados.cwl-runner.metrics')
@@ -42,8 +48,6 @@ logger.setLevel(logging.INFO)
 arvados.log_handler.setFormatter(logging.Formatter(
         '%(asctime)s %(name)s %(levelname)s: %(message)s',
         '%Y-%m-%d %H:%M:%S'))
-
-DEFAULT_PRIORITY = 500
 
 def versionstring():
     """Print version string of key packages for provenance and debugging."""

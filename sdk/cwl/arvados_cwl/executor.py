@@ -23,6 +23,7 @@ import arvados.config
 from arvados.keep import KeepClient
 from arvados.errors import ApiError
 
+import arvados_cwl.util
 from .arvcontainer import RunnerContainer
 from .arvjob import RunnerJob, RunnerTemplate
 from .runner import Runner, upload_docker, upload_job_order, upload_workflow_deps
@@ -33,7 +34,6 @@ from .perf import Perf
 from .pathmapper import NoFollowPathMapper
 from .task_queue import TaskQueue
 from .context import ArvLoadingContext, ArvRuntimeContext
-from .util import get_current_container
 from ._version import __version__
 
 from cwltool.process import shortname, UnsupportedRequirement, use_custom_schema
@@ -42,6 +42,8 @@ from cwltool.command_line_tool import compute_checksums
 
 logger = logging.getLogger('arvados.cwl-runner')
 metrics = logging.getLogger('arvados.cwl-runner.metrics')
+
+DEFAULT_PRIORITY = 500
 
 class RuntimeStatusLoggingHandler(logging.Handler):
     """
@@ -167,7 +169,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
 
         # Add a custom logging handler to the root logger for runtime status reporting
         # if running inside a container
-        if get_current_container(self.api, self.num_retries, logger):
+        if arvados_cwl.util.get_current_container(self.api, self.num_retries, logger):
             root_logger = logging.getLogger('')
             handler = RuntimeStatusLoggingHandler(self.runtime_status_update)
             root_logger.addHandler(handler)
@@ -222,7 +224,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
         activity statuses, for example in the RuntimeStatusLoggingHandler.
         """
         with self.workflow_eval_lock:
-            current = get_current_container(self.api, self.num_retries, logger)
+            current = arvados_cwl.util.get_current_container(self.api, self.num_retries, logger)
             if current is None:
                 return
             runtime_status = current.get('runtime_status', {})
@@ -465,7 +467,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
 
     def set_crunch_output(self):
         if self.work_api == "containers":
-            current = get_current_container(self.api, self.num_retries, logger)
+            current = arvados_cwl.util.get_current_container(self.api, self.num_retries, logger)
             if current is None:
                 return
             try:
@@ -626,7 +628,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
             runnerjob.run(submitargs)
             return (runnerjob.uuid, "success")
 
-        current_container = get_current_container(self.api, self.num_retries, logger)
+        current_container = arvados_cwl.util.get_current_container(self.api, self.num_retries, logger)
         if current_container:
             logger.info("Running inside container %s", current_container.get("uuid"))
 

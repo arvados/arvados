@@ -13,6 +13,7 @@ import StringIO
 
 import arvados
 import arvados_cwl
+import arvados_cwl.executor
 import cwltool.process
 from arvados.errors import ApiError
 from schema_salad.ref_resolver import Loader
@@ -373,7 +374,7 @@ class TestWorkflow(unittest.TestCase):
         api = mock.MagicMock()
         api._rootDesc = get_rootDesc()
 
-        runner = arvados_cwl.ArvCwlRunner(api)
+        runner = arvados_cwl.executor.ArvCwlExecutor(api)
         self.assertEqual(runner.work_api, 'jobs')
 
         list_images_in_arv.return_value = [["zzzzz-4zz18-zzzzzzzzzzzzzzz"]]
@@ -455,7 +456,7 @@ class TestWorkflow(unittest.TestCase):
         api = mock.MagicMock()
         api._rootDesc = get_rootDesc()
 
-        runner = arvados_cwl.ArvCwlRunner(api)
+        runner = arvados_cwl.executor.ArvCwlExecutor(api)
         self.assertEqual(runner.work_api, 'jobs')
 
         list_images_in_arv.return_value = [["zzzzz-4zz18-zzzzzzzzzzzzzzz"]]
@@ -517,5 +518,5 @@ class TestWorkflow(unittest.TestCase):
         api = mock.MagicMock()
         api._rootDesc = copy.deepcopy(get_rootDesc())
         del api._rootDesc.get('resources')['jobs']['methods']['create']
-        runner = arvados_cwl.ArvCwlRunner(api)
+        runner = arvados_cwl.executor.ArvCwlExecutor(api)
         self.assertEqual(runner.work_api, 'containers')
