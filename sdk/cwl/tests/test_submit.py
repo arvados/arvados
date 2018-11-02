@@ -1216,43 +1216,45 @@ class TestSubmit(unittest.TestCase):
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
+    def tearDown(self):
+        arvados_cwl.arvdocker.arv_docker_clear_cache()
 
     @mock.patch("arvados.commands.keepdocker.find_one_image_hash")
     @mock.patch("cwltool.docker.DockerCommandLineJob.get_image")
     @mock.patch("arvados.api")
     def test_arvados_jobs_image(self, api, get_image, find_one_image_hash):
-        try:
-            arvrunner = mock.MagicMock()
-            arvrunner.project_uuid = ""
-            api.return_value = mock.MagicMock()
-            arvrunner.api = api.return_value
-            arvrunner.api.links().list().execute.side_effect = ({"items": [{"created_at": "",
-                                                                            "head_uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzb",
-                                                                            "link_class": "docker_image_repo+tag",
-                                                                            "name": "arvados/jobs:"+arvados_cwl.__version__,
-                                                                            "owner_uuid": "",
-                                                                            "properties": {"image_timestamp": ""}}], "items_available": 1, "offset": 0},
-                                                                {"items": [{"created_at": "",
-                                                                            "head_uuid": "",
-                                                                            "link_class": "docker_image_hash",
-                                                                            "name": "123456",
-                                                                            "owner_uuid": "",
-                                                                            "properties": {"image_timestamp": ""}}], "items_available": 1, "offset": 0}
-            )
-            find_one_image_hash.return_value = "123456"
+        arvados_cwl.arvdocker.arv_docker_clear_cache()
 
-            arvrunner.api.collections().list().execute.side_effect = ({"items": [{"uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzb",
-                                                                                  "owner_uuid": "",
-                                                                                  "manifest_text": "",
-                                                                                  "properties": ""
-                                                                              }], "items_available": 1, "offset": 0},)
-            arvrunner.api.collections().create().execute.return_value = {"uuid": ""}
-            arvrunner.api.collections().get().execute.return_value = {"uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzb",
-                                                                      "portable_data_hash": "9999999999999999999999999999999b+99"}
-            self.assertEqual("9999999999999999999999999999999b+99",
-                             arvados_cwl.runner.arvados_jobs_image(arvrunner, "arvados/jobs:"+arvados_cwl.__version__))
-        finally:
-            arvados_cwl.arvdocker.arv_docker_clear_cache()
+        arvrunner = mock.MagicMock()
+        arvrunner.project_uuid = ""
+        api.return_value = mock.MagicMock()
+        arvrunner.api = api.return_value
+        arvrunner.api.links().list().execute.side_effect = ({"items": [{"created_at": "",
+                                                                        "head_uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzb",
+                                                                        "link_class": "docker_image_repo+tag",
+                                                                        "name": "arvados/jobs:"+arvados_cwl.__version__,
+                                                                        "owner_uuid": "",
+                                                                        "properties": {"image_timestamp": ""}}], "items_available": 1, "offset": 0},
+                                                            {"items": [{"created_at": "",
+                                                                        "head_uuid": "",
+                                                                        "link_class": "docker_image_hash",
+                                                                        "name": "123456",
+                                                                        "owner_uuid": "",
+                                                                        "properties": {"image_timestamp": ""}}], "items_available": 1, "offset": 0}
+        )
+        find_one_image_hash.return_value = "123456"
+
+        arvrunner.api.collections().list().execute.side_effect = ({"items": [{"uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzb",
+                                                                              "owner_uuid": "",
+                                                                              "manifest_text": "",
+                                                                              "properties": ""
+                                                                          }], "items_available": 1, "offset": 0},)
+        arvrunner.api.collections().create().execute.return_value = {"uuid": ""}
+        arvrunner.api.collections().get().execute.return_value = {"uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzb",
+                                                                  "portable_data_hash": "9999999999999999999999999999999b+99"}
+        self.assertEqual("9999999999999999999999999999999b+99",
+                         arvados_cwl.runner.arvados_jobs_image(arvrunner, "arvados/jobs:"+arvados_cwl.__version__))
+
 
     @stubs
     def test_submit_secrets(self, stubs):
