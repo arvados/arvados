@@ -50,7 +50,8 @@ def stubs(func):
         stubs.docker_images = {
             "arvados/jobs:"+arvados_cwl.__version__: [("zzzzz-4zz18-zzzzzzzzzzzzzd3", "")],
             "debian:8": [("zzzzz-4zz18-zzzzzzzzzzzzzd4", "")],
-            "arvados/jobs:123": [("zzzzz-4zz18-zzzzzzzzzzzzzd5", "")]
+            "arvados/jobs:123": [("zzzzz-4zz18-zzzzzzzzzzzzzd5", "")],
+            "arvados/jobs:latest": [("zzzzz-4zz18-zzzzzzzzzzzzzd6", "")],
         }
         def kd(a, b, image_name=None, image_tag=None):
             return stubs.docker_images.get("%s:%s" % (image_name, image_tag), [])
@@ -116,6 +117,11 @@ def stubs(func):
             "zzzzz-4zz18-zzzzzzzzzzzzzd5": {
                 "uuid": "zzzzz-4zz18-zzzzzzzzzzzzzd5",
                 "portable_data_hash": "999999999999999999999999999999d5+99",
+                "manifest_text": ""
+            },
+            "zzzzz-4zz18-zzzzzzzzzzzzzd6": {
+                "uuid": "zzzzz-4zz18-zzzzzzzzzzzzzd6",
+                "portable_data_hash": "999999999999999999999999999999d6+99",
                 "manifest_text": ""
             }
         }
@@ -1739,12 +1745,12 @@ class TestTemplateInputs(unittest.TestCase):
         "components": {
             "inputs_test.cwl": {
                 'runtime_constraints': {
-                    'docker_image': 'arvados/jobs:'+arvados_cwl.__version__,
+                    'docker_image': '999999999999999999999999999999d3+99',
                     'min_ram_mb_per_node': 1024
                 },
                 'script_parameters': {
                     'cwl:tool':
-                    '6c5ee1cd606088106d9f28367cde1e41+60/workflow.cwl#main',
+                    'a2de777156fb700f1363b1f2e370adca+60/workflow.cwl#main',
                     'optionalFloatInput': None,
                     'fileInput': {
                         'type': 'File',
@@ -1805,7 +1811,7 @@ class TestTemplateInputs(unittest.TestCase):
         params = expect_template[
             "components"]["inputs_test.cwl"]["script_parameters"]
         params["fileInput"]["value"] = '169f39d466a5438ac4a90e779bf750c7+53/blorp.txt'
-        params["cwl:tool"] = '6c5ee1cd606088106d9f28367cde1e41+60/workflow.cwl#main'
+        params["cwl:tool"] = 'a2de777156fb700f1363b1f2e370adca+60/workflow.cwl#main'
         params["floatInput"]["value"] = 1.234
         params["boolInput"]["value"] = True
 
