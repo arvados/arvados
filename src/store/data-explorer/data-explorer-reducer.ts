@@ -50,7 +50,7 @@ export const dataExplorerReducer = (state: DataExplorerState = {}, action: DataE
         SET_ROWS_PER_PAGE: ({ id, rowsPerPage }) =>
             update(state, id, explorer => ({ ...explorer, rowsPerPage })),
 
-        SET_SEARCH_VALUE: ({ id, searchValue }) =>
+        SET_EXPLORER_SEARCH_VALUE: ({ id, searchValue }) =>
             update(state, id, explorer => ({ ...explorer, searchValue })),
 
         TOGGLE_SORT: ({ id, columnName }) =>
