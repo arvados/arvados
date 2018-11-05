@@ -1,0 +1,22 @@
+Things to test.
+
+Single step --submit --no-wait workflow, matrix of:
+
+Runner on home/remote cluster
+Docker image on home/remote cluster
+Step on home/remote cluster
+
+Two step workflow, matrix of:
+
+Step1 on home cluster -> Step2 on remote cluster
+Step1 on remote cluster -> Step2 on home cluster
+
+Three step workflow:
+
+(Step1 on remoteA cluster, Step2 on remoteB cluster) -> Step3 on home cluster
+Step1 on remoteA cluster -> Step2 on remoteB cluster -> Step3 on home cluster
+
+Workflow which has a remote collection in InitialWorkDir, which is captured in output.
+
+Workflow with file input that has a secondary file in a separate
+collection, which is remote.
