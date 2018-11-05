@@ -9,7 +9,7 @@ import { ListItemIcon, ListItemText, Typography } from '@material-ui/core';
 import { IconType } from '../icon/icon';
 import * as classnames from "classnames";
 
-type CssRules = 'root' | 'listItemText' | 'hasMargin' | 'active';
+type CssRules = 'root' | 'listItemText' | 'hasMargin' | 'active' | 'fixFontSize';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -25,6 +25,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     hasMargin: {
         marginLeft: `${theme.spacing.unit}px`,
     },
+    fixFontSize: {
+        fontSize: '1.25rem'
+    }
 });
 
 export interface ListItemTextIconDataProps {
@@ -32,6 +35,7 @@ export interface ListItemTextIconDataProps {
     name: string;
     isActive?: boolean;
     hasMargin?: boolean;
+    fixFontSize?: boolean;
 }
 
 type ListItemTextIconProps = ListItemTextIconDataProps & WithStyles<CssRules>;
@@ -39,14 +43,16 @@ type ListItemTextIconProps = ListItemTextIconDataProps & WithStyles<CssRules>;
 export const ListItemTextIcon = withStyles(styles)(
     class extends React.Component<ListItemTextIconProps, {}> {
         render() {
-            const { classes, isActive, hasMargin, name, icon: Icon } = this.props;
+            const { classes, isActive, hasMargin, name, icon: Icon, fixFontSize } = this.props;
             return (
                 <Typography component='span' className={classes.root}>
                     <ListItemIcon className={classnames({
                             [classes.hasMargin]: hasMargin,
                             [classes.active]: isActive
                         })}>
-                        <Icon />
+                        <Icon className={classnames({
+                            [classes.fixFontSize]: fixFontSize
+                        })}/>
                     </ListItemIcon>
                     <ListItemText primary={
                         <Typography variant='body1' className={classnames(classes.listItemText, {
