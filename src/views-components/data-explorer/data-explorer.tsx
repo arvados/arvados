@@ -33,7 +33,7 @@ const mapDispatchToProps = () => {
         },
 
         onSearch: (searchValue: string) => {
-            dispatch(dataExplorerActions.SET_SEARCH_VALUE({ id, searchValue }));
+            dispatch(dataExplorerActions.SET_EXPLORER_SEARCH_VALUE({ id, searchValue }));
         },
 
         onColumnToggle: (column: DataColumn<any>) => {
