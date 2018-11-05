@@ -786,11 +786,11 @@ func (s *CollectionFSSuite) TestPersist(c *check.C) {
 	}
 }
 
-func (s *CollectionFSSuite) TestPersistEmptyFiles(c *check.C) {
+func (s *CollectionFSSuite) TestPersistEmptyFilesAndDirs(c *check.C) {
 	var err error
 	s.fs, err = (&Collection{}).FileSystem(s.client, s.kc)
 	c.Assert(err, check.IsNil)
-	for _, name := range []string{"dir", "dir/zerodir", "zero", "zero/zero"} {
+	for _, name := range []string{"dir", "dir/zerodir", "empty", "not empty", "not empty/empty", "zero", "zero/zero"} {
 		err = s.fs.Mkdir(name, 0755)
 		c.Assert(err, check.IsNil)
 	}
@@ -835,6 +835,23 @@ func (s *CollectionFSSuite) TestPersistEmptyFiles(c *check.C) {
 		buf, err := ioutil.ReadAll(f)
 		c.Check(err, check.IsNil)
 		c.Check(buf, check.DeepEquals, data)
+	}
+
+	expectDir := map[string]int{
+		"empty":           0,
+		"not empty":       1,
+		"not empty/empty": 0,
+	}
+	for name, expectLen := range expectDir {
+		_, err := persisted.Open(name + "/bogus")
+		c.Check(err, check.NotNil)
+
+		d, err := persisted.Open(name)
+		defer d.Close()
+		c.Check(err, check.IsNil)
+		fi, err := d.Readdir(-1)
+		c.Check(err, check.IsNil)
+		c.Check(fi, check.HasLen, expectLen)
 	}
 }
 
@@ -987,6 +1004,12 @@ func (s *CollectionFSSuite) TestBrokenManifests(c *check.C) {
 		". d41d8cd98f00b204e9800998ecf8427e+0 foo:0:foo\n",
 		". d41d8cd98f00b204e9800998ecf8427e+0 0:foo:foo\n",
 		". d41d8cd98f00b204e9800998ecf8427e+1 0:1:foo 1:1:bar\n",
+		". d41d8cd98f00b204e9800998ecf8427e+1 0:1:\\056\n",
+		". d41d8cd98f00b204e9800998ecf8427e+1 0:1:\\056\\057\\056\n",
+		". d41d8cd98f00b204e9800998ecf8427e+1 0:1:.\n",
+		". d41d8cd98f00b204e9800998ecf8427e+1 0:1:..\n",
+		". d41d8cd98f00b204e9800998ecf8427e+0 0:0:..\n",
+		". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo/..\n",
 		". d41d8cd98f00b204e9800998ecf8427e+1 0:0:foo\n./foo d41d8cd98f00b204e9800998ecf8427e+1 0:0:bar\n",
 		"./foo d41d8cd98f00b204e9800998ecf8427e+1 0:0:bar\n. d41d8cd98f00b204e9800998ecf8427e+1 0:0:foo\n",
 	} {
@@ -1002,7 +1025,9 @@ func (s *CollectionFSSuite) TestEdgeCaseManifests(c *check.C) {
 	for _, txt := range []string{
 		"",
 		". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo\n",
-		". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo 0:0:foo 0:0:bar\n",
+		". d41d8cd98f00b204e9800998ecf8427e+0 0:0:...\n",
+		". d41d8cd98f00b204e9800998ecf8427e+0 0:0:. 0:0:. 0:0:\\056 0:0:\\056\n",
+		". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo/. 0:0:. 0:0:foo\\057bar\\057\\056\n",
 		". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo 0:0:foo 0:0:bar\n",
 		". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo/bar\n./foo d41d8cd98f00b204e9800998ecf8427e+0 0:0:bar\n",
 	} {
