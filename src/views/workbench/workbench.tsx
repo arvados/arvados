@@ -79,12 +79,12 @@ type WorkbenchPanelProps = WithStyles<CssRules>;
 
 const defaultSplitterSize = 90;
 
-const getSecondaryInitialSize = () => {
+const getSplitterInitialSize = () => {
     const splitterSize = localStorage.getItem('splitterSize');
     return splitterSize ? Number(splitterSize) : defaultSplitterSize;
 };
 
-const onPaneSizeChange = (size: number) => localStorage.setItem('splitterSize', size.toString());
+const saveSplitterSize = (size: number) => localStorage.setItem('splitterSize', size.toString());
 
 export const WorkbenchPanel =
     withStyles(styles)(({ classes }: WorkbenchPanelProps) =>
@@ -92,8 +92,8 @@ export const WorkbenchPanel =
             <Grid container item xs className={classes.container}>
                 <SplitterLayout customClassName={classes.splitter} percentage={true}
                                 primaryIndex={0} primaryMinSize={10}
-                                secondaryInitialSize={getSecondaryInitialSize()} secondaryMinSize={40}
-                                onSecondaryPaneSizeChange={onPaneSizeChange}>
+                                secondaryInitialSize={getSplitterInitialSize()} secondaryMinSize={40}
+                                onSecondaryPaneSizeChange={saveSplitterSize}>
                     <Grid container item xs component='aside' direction='column' className={classes.asidePanel}>
                         <SidePanel />
                     </Grid>
