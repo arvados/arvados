@@ -4,6 +4,7 @@
 
 import * as React from "react";
 import { Table, TableHead, TableCell, TableRow, TableBody, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
+import { UserResource } from "~/models/user";
 
 type CssRules = 'cell';
 
@@ -24,6 +25,8 @@ interface MetadataTable {
 
 interface MetadataProps {
     items: MetadataTable[];
+    user: UserResource[];
+    uuid: string;
 }
 
 export const MetadataTab = withStyles(styles)((props: MetadataProps & WithStyles<CssRules>) =>
@@ -44,8 +47,8 @@ export const MetadataTab = withStyles(styles)((props: MetadataProps & WithStyles
                     <TableCell className={props.classes.cell}>{it.uuid}</TableCell>
                     <TableCell className={props.classes.cell}>{it.linkClass}</TableCell>
                     <TableCell className={props.classes.cell}>{it.name}</TableCell>
-                    <TableCell className={props.classes.cell}>{it.tailUuid}</TableCell>
-                    <TableCell className={props.classes.cell}>{it.headUuid}</TableCell>
+                    <TableCell className={props.classes.cell}>{props.user.length > 0 ? `User: ${props.user[0].firstName} ${props.user[0].lastName}` : it.tailUuid}</TableCell>
+                    <TableCell className={props.classes.cell}>{it.headUuid === props.uuid ? 'this' : it.headUuid}</TableCell>
                     <TableCell className={props.classes.cell}>{JSON.stringify(it.properties, null, 2)}</TableCell>
                 </TableRow>
             )}

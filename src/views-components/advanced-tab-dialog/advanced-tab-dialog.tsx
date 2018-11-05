@@ -59,7 +59,8 @@ export const AdvancedTabDialog = compose(
                 cliUpdateHeader,
                 cliUpdateExample,
                 curlHeader,
-                curlExample
+                curlExample,
+                uuid
             } = this.props.data;
             return <Dialog
                 open={open}
@@ -76,7 +77,7 @@ export const AdvancedTabDialog = compose(
                 </Tabs>
                 <DialogContent className={classes.content}>
                     {value === 0 && <div>{dialogContentExample(apiResponse, classes)}</div>}
-                    {value === 1 && <div>{metadata.items.length > 0 ? <MetadataTab items={metadata.items}/>: dialogContentHeader('(No metadata links found)')}</div>}
+                    {value === 1 && <div>{metadata.items.length > 0 ? <MetadataTab items={metadata.items} uuid={uuid} user={metadata.user.items}/>: dialogContentHeader('(No metadata links found)')}</div>}
                     {value === 2 && dialogContent(pythonHeader, pythonExample, classes)}
                     {value === 3 && <div>
                         {dialogContent(cliGetHeader, cliGetExample, classes)}

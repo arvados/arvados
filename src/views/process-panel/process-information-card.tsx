@@ -75,7 +75,6 @@ type ProcessInformationCardProps = ProcessInformationCardDataProps & WithStyles<
 export const ProcessInformationCard = withStyles(styles, { withTheme: true })(
     ({ classes, process, onContextMenu, theme }: ProcessInformationCardProps) =>
         <Card className={classes.card}>
-        {console.log(process)}
             <CardHeader
                 classes={{
                     content: classes.title,
