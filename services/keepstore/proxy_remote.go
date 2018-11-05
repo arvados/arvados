@@ -66,7 +66,7 @@ func (rp *remoteProxy) Get(ctx context.Context, w http.ResponseWriter, r *http.R
 			remoteID := part[1:6]
 			remote, ok := cluster.RemoteClusters[remoteID]
 			if !ok {
-				http.Error(w, "remote cluster not configured", http.StatusBadGateway)
+				http.Error(w, "remote cluster not configured", http.StatusBadRequest)
 				return
 			}
 			kc, err := rp.remoteClient(remoteID, remote, token)

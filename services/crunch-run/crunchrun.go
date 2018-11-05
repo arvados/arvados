@@ -61,6 +61,7 @@ type IKeepClient interface {
 	PutB(buf []byte) (string, int, error)
 	ReadAt(locator string, p []byte, off int) (int, error)
 	ManifestFileReader(m manifest.Manifest, filename string) (arvados.File, error)
+	LocalLocator(locator string) (string, error)
 	ClearBlockCache()
 }
 

@@ -546,9 +546,10 @@ func (dn *dirnode) Child(name string, replace func(inode) (inode, error)) (inode
 	return dn.treenode.Child(name, replace)
 }
 
-// sync flushes in-memory data (for the children with the given names,
-// which must be children of dn) to persistent storage. Caller must
-// have write lock on dn and the named children.
+// sync flushes in-memory data and remote block references (for the
+// children with the given names, which must be children of dn) to
+// local persistent storage. Caller must have write lock on dn and the
+// named children.
 func (dn *dirnode) sync(names []string) error {
 	type shortBlock struct {
 		fn  *filenode
@@ -591,25 +592,33 @@ func (dn *dirnode) sync(names []string) error {
 			continue
 		}
 		for idx, seg := range fn.segments {
-			seg, ok := seg.(*memSegment)
-			if !ok {
-				continue
-			}
-			if seg.Len() > maxBlockSize/2 {
-				if err := flush([]shortBlock{{fn, idx}}); err != nil {
+			switch seg := seg.(type) {
+			case storedSegment:
+				loc, err := dn.fs.LocalLocator(seg.locator)
+				if err != nil {
 					return err
 				}
-				continue
-			}
-			if pendingLen+seg.Len() > maxBlockSize {
-				if err := flush(pending); err != nil {
-					return err
+				seg.locator = loc
+				fn.segments[idx] = seg
+			case *memSegment:
+				if seg.Len() > maxBlockSize/2 {
+					if err := flush([]shortBlock{{fn, idx}}); err != nil {
+						return err
+					}
+					continue
 				}
-				pending = nil
-				pendingLen = 0
+				if pendingLen+seg.Len() > maxBlockSize {
+					if err := flush(pending); err != nil {
+						return err
+					}
+					pending = nil
+					pendingLen = 0
+				}
+				pending = append(pending, shortBlock{fn, idx})
+				pendingLen += seg.Len()
+			default:
+				panic(fmt.Sprintf("can't sync segment type %T", seg))
 			}
-			pending = append(pending, shortBlock{fn, idx})
-			pendingLen += seg.Len()
 		}
 	}
 	return flush(pending)

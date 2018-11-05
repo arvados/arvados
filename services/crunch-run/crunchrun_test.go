@@ -375,6 +375,10 @@ call:
 	return nil
 }
 
+func (client *KeepTestClient) LocalLocator(locator string) (string, error) {
+	return locator, nil
+}
+
 func (client *KeepTestClient) PutB(buf []byte) (string, int, error) {
 	client.Content = buf
 	return fmt.Sprintf("%x+%d", md5.Sum(buf), len(buf)), len(buf), nil
@@ -518,6 +522,10 @@ func (*KeepErrorTestClient) ManifestFileReader(manifest.Manifest, string) (arvad
 
 func (*KeepErrorTestClient) PutB(buf []byte) (string, int, error) {
 	return "", 0, errors.New("KeepError")
+}
+
+func (*KeepErrorTestClient) LocalLocator(string) (string, error) {
+	return "", errors.New("KeepError")
 }
 
 type KeepReadErrorTestClient struct {

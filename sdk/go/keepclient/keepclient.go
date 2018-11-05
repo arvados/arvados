@@ -198,9 +198,9 @@ func (kc *KeepClient) PutR(r io.Reader) (locator string, replicas int, err error
 	}
 }
 
-func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, int64, string, error) {
+func (kc *KeepClient) getOrHead(method string, locator string, header http.Header) (io.ReadCloser, int64, string, http.Header, error) {
 	if strings.HasPrefix(locator, "d41d8cd98f00b204e9800998ecf8427e+0") {
-		return ioutil.NopCloser(bytes.NewReader(nil)), 0, "", nil
+		return ioutil.NopCloser(bytes.NewReader(nil)), 0, "", nil, nil
 	}
 
 	reqid := kc.getRequestID()
@@ -237,8 +237,15 @@ func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, i
 				errs = append(errs, fmt.Sprintf("%s: %v", url, err))
 				continue
 			}
-			req.Header.Add("Authorization", "OAuth2 "+kc.Arvados.ApiToken)
-			req.Header.Add("X-Request-Id", reqid)
+			for k, v := range header {
+				req.Header[k] = append([]string(nil), v...)
+			}
+			if req.Header.Get("Authorization") == "" {
+				req.Header.Set("Authorization", "OAuth2 "+kc.Arvados.ApiToken)
+			}
+			if req.Header.Get("X-Request-Id") == "" {
+				req.Header.Set("X-Request-Id", reqid)
+			}
 			resp, err := kc.httpClient().Do(req)
 			if err != nil {
 				// Probably a network error, may be transient,
@@ -269,12 +276,12 @@ func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, i
 			if expectLength < 0 {
 				if resp.ContentLength < 0 {
 					resp.Body.Close()
-					return nil, 0, "", fmt.Errorf("error reading %q: no size hint, no Content-Length header in response", locator)
+					return nil, 0, "", nil, fmt.Errorf("error reading %q: no size hint, no Content-Length header in response", locator)
 				}
 				expectLength = resp.ContentLength
 			} else if resp.ContentLength >= 0 && expectLength != resp.ContentLength {
 				resp.Body.Close()
-				return nil, 0, "", fmt.Errorf("error reading %q: size hint %d != Content-Length %d", locator, expectLength, resp.ContentLength)
+				return nil, 0, "", nil, fmt.Errorf("error reading %q: size hint %d != Content-Length %d", locator, expectLength, resp.ContentLength)
 			}
 			// Success
 			if method == "GET" {
@@ -282,10 +289,10 @@ func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, i
 					Reader: resp.Body,
 					Hash:   md5.New(),
 					Check:  locator[0:32],
-				}, expectLength, url, nil
+				}, expectLength, url, resp.Header, nil
 			} else {
 				resp.Body.Close()
-				return nil, expectLength, url, nil
+				return nil, expectLength, url, resp.Header, nil
 			}
 		}
 		serversToTry = retryList
@@ -301,7 +308,29 @@ func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, i
 			isTemp: len(serversToTry) > 0,
 		}}
 	}
-	return nil, 0, "", err
+	return nil, 0, "", nil, err
+}
+
+// LocalLocator returns a locator equivalent to the one supplied, but
+// with a valid signature from the local cluster. If the given locator
+// already has a local signature, it is returned unchanged.
+func (kc *KeepClient) LocalLocator(locator string) (string, error) {
+	if !strings.Contains(locator, "+R") {
+		// Either it has +A, or it's unsigned and we assume
+		// it's a local locator on a site with signatures
+		// disabled.
+		return locator, nil
+	}
+	sighdr := fmt.Sprintf("local, time=%s", time.Now().UTC().Format(time.RFC3339))
+	_, _, url, hdr, err := kc.getOrHead("HEAD", locator, http.Header{"X-Keep-Signature": []string{sighdr}})
+	if err != nil {
+		return "", err
+	}
+	loc := hdr.Get("X-Keep-Locator")
+	if loc == "" {
+		return "", fmt.Errorf("missing X-Keep-Locator header in HEAD response from %s", url)
+	}
+	return loc, nil
 }
 
 // Get() retrieves a block, given a locator. Returns a reader, the
@@ -312,7 +341,8 @@ func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, i
 // reader returned by this method will return a BadChecksum error
 // instead of EOF.
 func (kc *KeepClient) Get(locator string) (io.ReadCloser, int64, string, error) {
-	return kc.getOrHead("GET", locator)
+	rdr, size, url, _, err := kc.getOrHead("GET", locator, nil)
+	return rdr, size, url, err
 }
 
 // ReadAt() retrieves a portion of block from the cache if it's
@@ -329,7 +359,7 @@ func (kc *KeepClient) ReadAt(locator string, p []byte, off int) (int, error) {
 // Returns the data size (content length) reported by the Keep service
 // and the URI reporting the data size.
 func (kc *KeepClient) Ask(locator string) (int64, string, error) {
-	_, size, url, err := kc.getOrHead("HEAD", locator)
+	_, size, url, _, err := kc.getOrHead("HEAD", locator, nil)
 	return size, url, err
 }
 

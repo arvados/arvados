@@ -7,6 +7,7 @@ package arvados
 import (
 	"bytes"
 	"crypto/md5"
+	"crypto/sha1"
 	"errors"
 	"fmt"
 	"io"
@@ -16,6 +17,7 @@ import (
 	"os"
 	"regexp"
 	"runtime"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -27,7 +29,8 @@ import (
 var _ = check.Suite(&CollectionFSSuite{})
 
 type keepClientStub struct {
-	blocks map[string][]byte
+	blocks      map[string][]byte
+	refreshable map[string]bool
 	sync.RWMutex
 }
 
@@ -53,11 +56,28 @@ func (kcs *keepClientStub) PutB(p []byte) (string, int, error) {
 	return locator, 1, nil
 }
 
+var localOrRemoteSignature = regexp.MustCompile(`\+[AR][^+]*`)
+
+func (kcs *keepClientStub) LocalLocator(locator string) (string, error) {
+	kcs.Lock()
+	defer kcs.Unlock()
+	if strings.Contains(locator, "+R") {
+		if len(locator) < 32 {
+			return "", fmt.Errorf("bad locator: %q", locator)
+		}
+		if _, ok := kcs.blocks[locator[:32]]; !ok && !kcs.refreshable[locator[:32]] {
+			return "", fmt.Errorf("kcs.refreshable[%q]==false", locator)
+		}
+	}
+	fakeSig := fmt.Sprintf("+A%x@%x", sha1.Sum(nil), time.Now().Add(time.Hour*24*14).Unix())
+	return localOrRemoteSignature.ReplaceAllLiteralString(locator, fakeSig), nil
+}
+
 type CollectionFSSuite struct {
 	client *Client
 	coll   Collection
 	fs     CollectionFileSystem
-	kc     keepClient
+	kc     *keepClientStub
 }
 
 func (s *CollectionFSSuite) SetUpTest(c *check.C) {
@@ -397,6 +417,37 @@ func (s *CollectionFSSuite) TestSeekSparse(c *check.C) {
 	checkSize(5)
 	f.Write([]byte{1, 2, 3})
 	checkSize(11)
+}
+
+func (s *CollectionFSSuite) TestMarshalCopiesRemoteBlocks(c *check.C) {
+	foo := "foo"
+	bar := "bar"
+	hash := map[string]string{
+		foo: fmt.Sprintf("%x", md5.Sum([]byte(foo))),
+		bar: fmt.Sprintf("%x", md5.Sum([]byte(bar))),
+	}
+
+	fs, err := (&Collection{
+		ManifestText: ". " + hash[foo] + "+3+Rzaaaa-foo@bab " + hash[bar] + "+3+A12345@ffffff 0:2:fo.txt 2:4:obar.txt\n",
+	}).FileSystem(s.client, s.kc)
+	c.Assert(err, check.IsNil)
+	manifest, err := fs.MarshalManifest(".")
+	c.Check(manifest, check.Equals, "")
+	c.Check(err, check.NotNil)
+
+	s.kc.refreshable = map[string]bool{hash[bar]: true}
+
+	for _, sigIn := range []string{"Rzaaaa-foo@bab", "A12345@abcde"} {
+		fs, err = (&Collection{
+			ManifestText: ". " + hash[foo] + "+3+A12345@fffff " + hash[bar] + "+3+" + sigIn + " 0:2:fo.txt 2:4:obar.txt\n",
+		}).FileSystem(s.client, s.kc)
+		c.Assert(err, check.IsNil)
+		manifest, err := fs.MarshalManifest(".")
+		c.Check(err, check.IsNil)
+		// Both blocks should now have +A signatures.
+		c.Check(manifest, check.Matches, `.*\+A.* .*\+A.*\n`)
+		c.Check(manifest, check.Not(check.Matches), `.*\+R.*\n`)
+	}
 }
 
 func (s *CollectionFSSuite) TestMarshalSmallBlocks(c *check.C) {
