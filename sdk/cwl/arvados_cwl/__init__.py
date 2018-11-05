@@ -36,10 +36,12 @@ from .executor import ArvCwlExecutor
 # These arn't used directly in this file but
 # other code expects to import them from here
 from .arvcontainer import ArvadosContainer
+from .arvjob import ArvadosJob
 from .arvtool import ArvadosCommandTool
-from .fsaccess import CollectionFsAccess, CollectionCache
+from .fsaccess import CollectionFsAccess, CollectionCache, CollectionFetcher
 from .util import get_current_container
 from .executor import RuntimeStatusLoggingHandler, DEFAULT_PRIORITY
+from .arvworkflow import ArvadosWorkflow
 
 logger = logging.getLogger('arvados.cwl-runner')
 metrics = logging.getLogger('arvados.cwl-runner.metrics')

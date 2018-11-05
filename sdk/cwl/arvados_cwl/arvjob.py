@@ -30,6 +30,7 @@ from .pathmapper import VwdPathMapper, trim_listing
 from .perf import Perf
 from . import done
 from ._version import __version__
+from .util import get_intermediate_collection_info
 
 logger = logging.getLogger('arvados.cwl-runner')
 metrics = logging.getLogger('arvados.cwl-runner.metrics')
