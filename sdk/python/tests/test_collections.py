@@ -1198,8 +1198,12 @@ class NewCollectionTestCaseWithServersAndTokens(run_test_server.TestCaseWithServ
         c = Collection(". " + remote_block_loc + " 0:3:foofile.txt\n")
         self.assertEqual(
             len(re.findall(self.remote_locator_re, c.manifest_text())), 1)
+        self.assertEqual(
+            len(re.findall(self.local_locator_re, c.manifest_text())), 0)
         c.save_new()
         rs_mock.assert_called()
+        self.assertEqual(
+            len(re.findall(self.remote_locator_re, c.manifest_text())), 0)
         self.assertEqual(
             len(re.findall(self.local_locator_re, c.manifest_text())), 1)
 
@@ -1224,9 +1228,12 @@ class NewCollectionTestCaseWithServersAndTokens(run_test_server.TestCaseWithServ
         # Copy remote file to local collection
         local_c.copy('./foofile.txt', './copied/foofile.txt', remote_c)
         self.assertEqual(
+            len(re.findall(self.local_locator_re, local_c.manifest_text())), 1)
+        self.assertEqual(
             len(re.findall(self.remote_locator_re, local_c.manifest_text())), 1)
         # Save local collection: remote block should be copied
         local_c.save()
+        rs_mock.assert_called()
         self.assertEqual(
             len(re.findall(self.local_locator_re, local_c.manifest_text())), 2)
         self.assertEqual(

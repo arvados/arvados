@@ -901,6 +901,14 @@ class ArvadosFile(object):
         return False
 
     @synchronized
+    def has_remote_blocks(self):
+        """Returns True if any of the segment's locators has a +R signature"""
+        for s in self._segments:
+            if '+R' in s.locator:
+                return True
+        return False
+
+    @synchronized
     def segments(self):
         return copy.copy(self._segments)
 
