@@ -19,7 +19,11 @@ func NewCredentials() *Credentials {
 	return &Credentials{Tokens: []string{}}
 }
 
-func NewCredentialsFromHTTPRequest(r *http.Request) *Credentials {
+func CredentialsFromRequest(r *http.Request) *Credentials {
+	if c, ok := r.Context().Value(contextKeyCredentials).(*Credentials); ok {
+		// preloaded by middleware
+		return c
+	}
 	c := NewCredentials()
 	c.LoadTokensFromHTTPRequest(r)
 	return c

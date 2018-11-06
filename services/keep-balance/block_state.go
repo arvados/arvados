@@ -23,6 +23,7 @@ type Replica struct {
 // replicas actually stored (according to the keepstore indexes we
 // know about).
 type BlockState struct {
+	RefCount int
 	Replicas []Replica
 	Desired  map[string]int
 	// TODO: Support combinations of classes ("private + durable")
@@ -42,6 +43,7 @@ func (bs *BlockState) addReplica(r Replica) {
 }
 
 func (bs *BlockState) increaseDesired(classes []string, n int) {
+	bs.RefCount++
 	if len(classes) == 0 {
 		classes = defaultClasses
 	}

@@ -6,7 +6,6 @@ package main
 
 import (
 	"bytes"
-	"log"
 	"os"
 	"strings"
 	"testing"
@@ -16,7 +15,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
-
+	"github.com/Sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
 
@@ -67,6 +66,7 @@ func (s *integrationSuite) SetUpTest(c *check.C) {
 			Insecure:  true,
 		},
 		KeepServiceTypes: []string{"disk"},
+		RunPeriod:        arvados.Duration(time.Second),
 	}
 }
 
@@ -74,12 +74,19 @@ func (s *integrationSuite) TestBalanceAPIFixtures(c *check.C) {
 	var logBuf *bytes.Buffer
 	for iter := 0; iter < 20; iter++ {
 		logBuf := &bytes.Buffer{}
+		logger := logrus.New()
+		logger.Out = logBuf
 		opts := RunOptions{
 			CommitPulls: true,
 			CommitTrash: true,
-			Logger:      log.New(logBuf, "", log.LstdFlags),
+			Logger:      logger,
 		}
-		nextOpts, err := (&Balancer{}).Run(s.config, opts)
+
+		bal := &Balancer{
+			Logger:  logger,
+			Metrics: newMetrics(),
+		}
+		nextOpts, err := bal.Run(s.config, opts)
 		c.Check(err, check.IsNil)
 		c.Check(nextOpts.SafeRendezvousState, check.Not(check.Equals), "")
 		c.Check(nextOpts.CommitPulls, check.Equals, true)

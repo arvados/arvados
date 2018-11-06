@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
 <%
     container_uuid = if @object.is_a?(Container) then @object.uuid elsif @object.is_a?(ContainerRequest) then @object.container_uuid end
     if container_uuid
-      cols = ContainerRequest.columns.map(&:name) - %w(id updated_at mounts)
+      cols = ContainerRequest.columns.map(&:name) - %w(id updated_at mounts runtime_token)
       reqs = ContainerRequest.select(cols).where(requesting_container_uuid: container_uuid).results
       load_preloaded_objects(reqs)
 

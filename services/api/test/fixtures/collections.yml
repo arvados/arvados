@@ -99,14 +99,14 @@ w_a_z_file:
 w_a_z_file_version_1:
   uuid: zzzzz-4zz18-25k12570yk1ver1
   current_version_uuid: zzzzz-4zz18-25k12570yk134b3
-  portable_data_hash: 8706aadd12a0ebc07d74cae88762ba9e+56
+  portable_data_hash: ba4ba4c7b99a58806b1ed70ea1263afe+45
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2015-02-09T10:53:38Z
   modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2015-02-09T10:53:38Z
   updated_at: 2015-02-09T10:53:38Z
-  manifest_text: ". 4c6c2c0ac8aa0696edd7316a3be5ca3c+5 0:5:w\\040\\141\\040z\n"
+  manifest_text: ". 4d20280d5e516a0109768d49ab0f3318+3 0:3:waz\n"
   name: "waz file"
   version: 1
 
@@ -291,6 +291,24 @@ expired_collection:
   delete_at: 2038-01-01T00:00:00Z
   manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:expired\n"
   name: expired_collection
+  version: 2
+
+expired_collection_past_version:
+  uuid: zzzzz-4zz18-mto52zx1s7oldie
+  current_version_uuid: zzzzz-4zz18-mto52zx1s7sn3ih
+  portable_data_hash: 0b21a217243bfce5617fb9224b95bcb9+49
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-02-03T17:12:54Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2014-02-03T17:17:54Z
+  updated_at: 2014-02-03T17:17:54Z
+  is_trashed: true
+  trash_at: 2001-01-01T00:00:00Z
+  delete_at: 2038-01-01T00:00:00Z
+  manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:expired\n"
+  name: expired_collection original
+  version: 1
 
 trashed_on_next_sweep:
   uuid: zzzzz-4zz18-4guozfh77ewd2f0

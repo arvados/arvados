@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"log"
 	"math"
-	"os"
 	"runtime"
 	"sort"
 	"strings"
@@ -19,19 +18,8 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"github.com/Sirupsen/logrus"
 )
-
-// CheckConfig returns an error if anything is wrong with the given
-// config and runOptions.
-func CheckConfig(config Config, runOptions RunOptions) error {
-	if len(config.KeepServiceList.Items) > 0 && config.KeepServiceTypes != nil {
-		return fmt.Errorf("cannot specify both KeepServiceList and KeepServiceTypes in config")
-	}
-	if !runOptions.Once && config.RunPeriod == arvados.Duration(0) {
-		return fmt.Errorf("you must either use the -once flag, or specify RunPeriod in config")
-	}
-	return nil
-}
 
 // Balancer compares the contents of keepstore servers with the
 // collections stored in Arvados, and issues pull/trash requests
@@ -43,11 +31,13 @@ func CheckConfig(config Config, runOptions RunOptions) error {
 // BlobSignatureTTL; and all N existing replicas of a given data block
 // are in the N best positions in rendezvous probe order.
 type Balancer struct {
+	Logger  *logrus.Logger
+	Dumper  *logrus.Logger
+	Metrics *metrics
+
 	*BlockStateMap
 	KeepServices       map[string]*KeepService
 	DefaultReplication int
-	Logger             *log.Logger
-	Dumper             *log.Logger
 	MinMtime           int64
 
 	classes       []string
@@ -72,13 +62,7 @@ type Balancer struct {
 func (bal *Balancer) Run(config Config, runOptions RunOptions) (nextRunOptions RunOptions, err error) {
 	nextRunOptions = runOptions
 
-	bal.Dumper = runOptions.Dumper
-	bal.Logger = runOptions.Logger
-	if bal.Logger == nil {
-		bal.Logger = log.New(os.Stderr, "", log.LstdFlags)
-	}
-
-	defer timeMe(bal.Logger, "Run")()
+	defer bal.time("sweep", "wall clock time to run one full sweep")()
 
 	if len(config.KeepServiceList.Items) > 0 {
 		err = bal.SetKeepServices(config.KeepServiceList)
@@ -269,7 +253,7 @@ func (bal *Balancer) ClearTrashLists(c *arvados.Client) error {
 //
 // It encodes the resulting information in BlockStateMap.
 func (bal *Balancer) GetCurrentState(c *arvados.Client, pageSize, bufs int) error {
-	defer timeMe(bal.Logger, "GetCurrentState")()
+	defer bal.time("get_state", "wall clock time to get current state")()
 	bal.BlockStateMap = NewBlockStateMap()
 
 	dd, err := c.DiscoveryDocument()
@@ -279,7 +263,7 @@ func (bal *Balancer) GetCurrentState(c *arvados.Client, pageSize, bufs int) erro
 	bal.DefaultReplication = dd.DefaultCollectionReplication
 	bal.MinMtime = time.Now().UnixNano() - dd.BlobSignatureTTL*1e9
 
-	errs := make(chan error, 2+len(bal.KeepServices))
+	errs := make(chan error, 1)
 	wg := sync.WaitGroup{}
 
 	// When a device is mounted more than once, we will get its
@@ -314,7 +298,10 @@ func (bal *Balancer) GetCurrentState(c *arvados.Client, pageSize, bufs int) erro
 			bal.logf("mount %s: retrieve index from %s", mounts[0], mounts[0].KeepService)
 			idx, err := mounts[0].KeepService.IndexMount(c, mounts[0].UUID, "")
 			if err != nil {
-				errs <- fmt.Errorf("%s: retrieve index: %v", mounts[0], err)
+				select {
+				case errs <- fmt.Errorf("%s: retrieve index: %v", mounts[0], err):
+				default:
+				}
 				return
 			}
 			if len(errs) > 0 {
@@ -324,9 +311,9 @@ func (bal *Balancer) GetCurrentState(c *arvados.Client, pageSize, bufs int) erro
 				return
 			}
 			for _, mount := range mounts {
-				bal.logf("%s: add %d replicas to map", mount, len(idx))
+				bal.logf("%s: add %d entries to map", mount, len(idx))
 				bal.BlockStateMap.AddReplicas(mount, idx)
-				bal.logf("%s: added %d replicas", mount, len(idx))
+				bal.logf("%s: added %d entries to map at %dx (%d replicas)", mount, len(idx), mount.Replication, len(idx)*mount.Replication)
 			}
 			bal.logf("mount %s: index done", mounts[0])
 		}(mounts)
@@ -346,7 +333,10 @@ func (bal *Balancer) GetCurrentState(c *arvados.Client, pageSize, bufs int) erro
 		for coll := range collQ {
 			err := bal.addCollection(coll)
 			if err != nil {
-				errs <- err
+				select {
+				case errs <- err:
+				default:
+				}
 				for range collQ {
 				}
 				return
@@ -376,7 +366,10 @@ func (bal *Balancer) GetCurrentState(c *arvados.Client, pageSize, bufs int) erro
 			})
 		close(collQ)
 		if err != nil {
-			errs <- err
+			select {
+			case errs <- err:
+			default:
+			}
 		}
 	}()
 
@@ -413,7 +406,7 @@ func (bal *Balancer) addCollection(coll arvados.Collection) error {
 func (bal *Balancer) ComputeChangeSets() {
 	// This just calls balanceBlock() once for each block, using a
 	// pool of worker goroutines.
-	defer timeMe(bal.Logger, "ComputeChangeSets")()
+	defer bal.time("changeset_compute", "wall clock time to compute changesets")()
 	bal.setupLookupTables()
 
 	type balanceTask struct {
@@ -536,7 +529,7 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 			slots = append(slots, slot{
 				mnt:  mnt,
 				repl: repl,
-				want: repl != nil && (mnt.ReadOnly || repl.Mtime >= bal.MinMtime),
+				want: repl != nil && mnt.ReadOnly,
 			})
 		}
 	}
@@ -584,14 +577,14 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 				// Prefer a mount that satisfies the
 				// desired class.
 				return bal.mountsByClass[class][si.mnt]
-			} else if wanti, wantj := si.want, si.want; wanti != wantj {
+			} else if si.want != sj.want {
 				// Prefer a mount that will have a
 				// replica no matter what we do here
 				// -- either because it already has an
 				// untrashable replica, or because we
 				// already need it to satisfy a
 				// different storage class.
-				return slots[i].want
+				return si.want
 			} else if orderi, orderj := srvRendezvous[si.mnt.KeepService], srvRendezvous[sj.mnt.KeepService]; orderi != orderj {
 				// Prefer a better rendezvous
 				// position.
@@ -732,7 +725,7 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 		// TODO: request a Touch if Mtime is duplicated.
 		var change int
 		switch {
-		case !underreplicated && slot.repl != nil && !slot.want && !unsafeToDelete[slot.repl.Mtime]:
+		case !underreplicated && !slot.want && slot.repl != nil && slot.repl.Mtime < bal.MinMtime && !unsafeToDelete[slot.repl.Mtime]:
 			slot.mnt.KeepService.AddTrash(Trash{
 				SizedDigest: blkid,
 				Mtime:       slot.repl.Mtime,
@@ -796,6 +789,26 @@ type balancerStats struct {
 	trashes       int
 	replHistogram []int
 	classStats    map[string]replicationStats
+
+	// collectionBytes / collectionBlockBytes = deduplication ratio
+	collectionBytes      int64 // sum(bytes in referenced blocks) across all collections
+	collectionBlockBytes int64 // sum(block size) across all blocks referenced by collections
+	collectionBlockRefs  int64 // sum(number of blocks referenced) across all collections
+	collectionBlocks     int64 // number of blocks referenced by any collection
+}
+
+func (s *balancerStats) dedupByteRatio() float64 {
+	if s.collectionBlockBytes == 0 {
+		return 0
+	}
+	return float64(s.collectionBytes) / float64(s.collectionBlockBytes)
+}
+
+func (s *balancerStats) dedupBlockRatio() float64 {
+	if s.collectionBlocks == 0 {
+		return 0
+	}
+	return float64(s.collectionBlockRefs) / float64(s.collectionBlocks)
 }
 
 type replicationStats struct {
@@ -818,6 +831,13 @@ func (bal *Balancer) collectStatistics(results <-chan balanceResult) {
 	for result := range results {
 		surplus := result.have - result.want
 		bytes := result.blkid.Size()
+
+		if rc := int64(result.blk.RefCount); rc > 0 {
+			s.collectionBytes += rc * bytes
+			s.collectionBlockBytes += bytes
+			s.collectionBlockRefs += rc
+			s.collectionBlocks++
+		}
 
 		for class, state := range result.classState {
 			cs := s.classStats[class]
@@ -893,6 +913,7 @@ func (bal *Balancer) collectStatistics(results <-chan balanceResult) {
 		s.trashes += len(srv.ChangeSet.Trashes)
 	}
 	bal.stats = s
+	bal.Metrics.UpdateStats(s)
 }
 
 // PrintStatistics writes statistics about the computed changes to
@@ -986,6 +1007,7 @@ func (bal *Balancer) CheckSanityLate() error {
 // existing blocks that are either underreplicated or poorly
 // distributed according to rendezvous hashing.
 func (bal *Balancer) CommitPulls(c *arvados.Client) error {
+	defer bal.time("send_pull_lists", "wall clock time to send pull lists")()
 	return bal.commitAsync(c, "send pull list",
 		func(srv *KeepService) error {
 			return srv.CommitPulls(c)
@@ -996,6 +1018,7 @@ func (bal *Balancer) CommitPulls(c *arvados.Client) error {
 // keepstore servers. This has the effect of deleting blocks that are
 // overreplicated or unreferenced.
 func (bal *Balancer) CommitTrash(c *arvados.Client) error {
+	defer bal.time("send_trash_lists", "wall clock time to send trash lists")()
 	return bal.commitAsync(c, "send trash list",
 		func(srv *KeepService) error {
 			return srv.CommitTrash(c)
@@ -1009,7 +1032,6 @@ func (bal *Balancer) commitAsync(c *arvados.Client, label string, f func(srv *Ke
 			var err error
 			defer func() { errs <- err }()
 			label := fmt.Sprintf("%s: %v", srv, label)
-			defer timeMe(bal.Logger, label)()
 			err = f(srv)
 			if err != nil {
 				err = fmt.Errorf("%s: %v", label, err)
@@ -1030,6 +1052,17 @@ func (bal *Balancer) commitAsync(c *arvados.Client, label string, f func(srv *Ke
 func (bal *Balancer) logf(f string, args ...interface{}) {
 	if bal.Logger != nil {
 		bal.Logger.Printf(f, args...)
+	}
+}
+
+func (bal *Balancer) time(name, help string) func() {
+	observer := bal.Metrics.DurationObserver(name+"_seconds", help)
+	t0 := time.Now()
+	bal.Logger.Printf("%s: start", name)
+	return func() {
+		dur := time.Since(t0)
+		observer.Observe(dur.Seconds())
+		bal.Logger.Printf("%s: took %vs", name, dur.Seconds())
 	}
 }
 

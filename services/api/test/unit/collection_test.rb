@@ -173,6 +173,26 @@ class CollectionTest < ActiveSupport::TestCase
     end
   end
 
+  [
+    ['version', 10],
+    ['current_version_uuid', 'zzzzz-4zz18-bv31uwvy3neko21'],
+  ].each do |name, new_value|
+    test "'#{name}' updates on current version collections are not allowed" do
+      act_as_user users(:active) do
+        # Set up initial collection
+        c = create_collection 'foo', Encoding::US_ASCII
+        assert c.valid?
+        assert_equal 1, c.version
+
+        assert_raises(ActiveRecord::RecordInvalid) do
+          c.update_attributes!({
+            name => new_value
+          })
+        end
+      end
+    end
+  end
+
   test "uuid updates on current version make older versions update their pointers" do
     Rails.configuration.collection_versioning = true
     Rails.configuration.preserve_version_if_idle = 0

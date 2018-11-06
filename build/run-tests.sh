@@ -101,6 +101,7 @@ sdk/python:py3
 sdk/ruby
 sdk/go/arvados
 sdk/go/arvadosclient
+sdk/go/auth
 sdk/go/dispatch
 sdk/go/keepclient
 sdk/go/health
@@ -244,6 +245,8 @@ sanity_checks() {
     which Xvfb || fatal "No xvfb. Try: apt-get install xvfb"
     echo -n 'graphviz: '
     dot -V || fatal "No graphviz. Try: apt-get install graphviz"
+    echo -n 'geckodriver: '
+    geckodriver --version | grep ^geckodriver || echo "No geckodriver. Try: wget -O- https://github.com/mozilla/geckodriver/releases/download/v0.23.0/geckodriver-v0.23.0-linux64.tar.gz | sudo tar -C /usr/local/bin -xzf - geckodriver"
 
     if [[ "$NEED_SDK_R" = true ]]; then
       # R SDK stuff
@@ -925,6 +928,7 @@ gostuff=(
     lib/dispatchcloud
     sdk/go/arvados
     sdk/go/arvadosclient
+    sdk/go/auth
     sdk/go/blockdigest
     sdk/go/dispatch
     sdk/go/health

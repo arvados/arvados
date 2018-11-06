@@ -235,17 +235,4 @@ class Arvados::V1::CollectionsController < ApplicationController
       @select ||= model_class.selectable_attributes - ["manifest_text", "unsigned_manifest_text"]
     end
   end
-
-  def load_filters_param
-    super
-    return if !params[:include_old_versions]
-    @filters = @filters.map do |col, operator, operand|
-      # Replace uuid filters when including past versions
-      if col == 'uuid'
-        ['current_version_uuid', operator, operand]
-      else
-        [col, operator, operand]
-      end
-    end
-  end
 end

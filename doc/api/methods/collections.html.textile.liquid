@@ -35,7 +35,10 @@ table(table table-bordered table-condensed).
 |replication_confirmed_at|datetime|When replication_confirmed was confirmed. If replication_confirmed is null, this field is also null.||
 |trash_at|datetime|If @trash_at@ is non-null and in the past, this collection will be hidden from API calls.  May be untrashed.||
 |delete_at|datetime|If @delete_at@ is non-null and in the past, the collection may be permanently deleted.||
-|is_trashed|datetime|True if @trash_at@ is in the past, false if not.||
+|is_trashed|boolean|True if @trash_at@ is in the past, false if not.||
+|current_version_uuid|string|UUID of the collection's current version. On new collections, it'll be equal to the @uuid@ attribute.||
+|version|number|Version number, starting at 1 on new collections. This attribute is read-only.||
+|preserve_version|boolean|When set to true on a current version, it will be saved on the next versionable update.||
 
 h3. Conditions of creating a Collection
 
@@ -67,7 +70,7 @@ table(table table-bordered table-condensed).
 
 h3. delete
 
-Put a Collection in the trash.  This sets the @trash_at@ field to @now@ and @delete_at@ field to @now@ + token TTL.  A trashed group is invisible to most API calls unless the @include_trash@ parameter is true.
+Put a Collection in the trash.  This sets the @trash_at@ field to @now@ and @delete_at@ field to @now@ + token TTL.  A trashed collection is invisible to most API calls unless the @include_trash@ parameter is true.
 
 Arguments:
 
@@ -90,6 +93,11 @@ h3. list
 List collections.
 
 See "common resource list method.":{{site.baseurl}}/api/methods.html#index
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+|include_trash|boolean (default false)|Include trashed collections.|query||
+|include_old_versions|boolean (default false)|Include past versions of the collection(s) being listed, if any.|query||
 
 Note: Because adding access tokens to manifests can be computationally expensive, the @manifest_text@ field is not included in results by default.  If you need it, pass a @select@ parameter that includes @manifest_text@.
 

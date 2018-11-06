@@ -1025,6 +1025,54 @@ EOS
     assert_response 200
   end
 
+  [:admin, :active].each do |user|
+    test "get trashed collection via filters and #{user} user" do
+      uuid = 'zzzzz-4zz18-mto52zx1s7sn3ih' # expired_collection
+      authorize_with user
+      get :index, {
+        filters: [["current_version_uuid", "=", uuid]],
+        include_trash: true,
+      }
+      assert_response 200
+      # Only the current version is returned
+      assert_equal 1, json_response["items"].size
+    end
+  end
+
+  [:admin, :active].each do |user|
+    test "get trashed collection via filters and #{user} user, including its past versions" do
+      uuid = 'zzzzz-4zz18-mto52zx1s7sn3ih' # expired_collection
+      authorize_with :admin
+      get :index, {
+        filters: [["current_version_uuid", "=", uuid]],
+        include_trash: true,
+        include_old_versions: true,
+      }
+      assert_response 200
+      # Both current & past version are returned
+      assert_equal 2, json_response["items"].size
+    end
+  end
+
+  test "trash collection also trash its past versions" do
+    uuid = collections(:collection_owned_by_active).uuid
+    authorize_with :active
+    versions = Collection.where(current_version_uuid: uuid)
+    assert_equal 2, versions.size
+    versions.each do |col|
+      refute col.is_trashed
+    end
+    post :trash, {
+      id: uuid,
+    }
+    assert_response 200
+    versions = Collection.where(current_version_uuid: uuid)
+    assert_equal 2, versions.size
+    versions.each do |col|
+      assert col.is_trashed
+    end
+  end
+
   test 'get trashed collection without include_trash' do
     uuid = 'zzzzz-4zz18-mto52zx1s7sn3ih' # expired_collection
     authorize_with :active
@@ -1197,7 +1245,7 @@ EOS
   test 'can get collection with past versions' do
     authorize_with :active
     get :index, {
-      filters: [['uuid','=',collections(:collection_owned_by_active).uuid]],
+      filters: [['current_version_uuid','=',collections(:collection_owned_by_active).uuid]],
       include_old_versions: true
     }
     assert_response :success

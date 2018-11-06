@@ -269,11 +269,6 @@ class ArvadosModel < ActiveRecord::Base
       exclude_trashed_records = "AND #{sql_table}.is_trashed = false"
     end
 
-    exclude_old_versions = ""
-    if !include_old_versions && sql_table == "collections"
-      exclude_old_versions = "AND #{sql_table}.uuid = #{sql_table}.current_version_uuid"
-    end
-
     if users_list.select { |u| u.is_admin }.any?
       # Admin skips most permission checks, but still want to filter on trashed items.
       if !include_trash
@@ -281,7 +276,7 @@ class ArvadosModel < ActiveRecord::Base
           # Only include records where the owner is not trashed
           sql_conds = "NOT EXISTS(SELECT 1 FROM #{PERMISSION_VIEW} "+
                       "WHERE trashed = 1 AND "+
-                      "(#{sql_table}.owner_uuid = target_uuid)) #{exclude_trashed_records} #{exclude_old_versions}"
+                      "(#{sql_table}.owner_uuid = target_uuid)) #{exclude_trashed_records}"
         end
       end
     else
@@ -318,8 +313,17 @@ class ArvadosModel < ActiveRecord::Base
                        "(#{sql_table}.head_uuid IN (:user_uuids) OR #{sql_table}.tail_uuid IN (:user_uuids)))"
       end
 
-      sql_conds = "(#{direct_check} #{owner_check} #{links_cond}) #{exclude_trashed_records} #{exclude_old_versions}"
+      sql_conds = "(#{direct_check} #{owner_check} #{links_cond}) #{exclude_trashed_records}"
 
+    end
+
+    if !include_old_versions && sql_table == "collections"
+      exclude_old_versions = "#{sql_table}.uuid = #{sql_table}.current_version_uuid"
+      if sql_conds.nil?
+        sql_conds = exclude_old_versions
+      else
+        sql_conds += " AND #{exclude_old_versions}"
+      end
     end
 
     self.where(sql_conds,

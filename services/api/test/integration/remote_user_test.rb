@@ -63,8 +63,8 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     ready.pop
     @remote_server = srv
     @remote_host = "127.0.0.1:#{srv.config[:Port]}"
-    Rails.configuration.remote_hosts['zbbbb'] = @remote_host
-    Rails.configuration.remote_hosts['zbork'] = @remote_host
+    Rails.configuration.remote_hosts = Rails.configuration.remote_hosts.merge({'zbbbb' => @remote_host,
+                                                                               'zbork' => @remote_host})
     Arvados::V1::SchemaController.any_instance.stubs(:root_url).returns "https://#{@remote_host}"
     @stub_status = 200
     @stub_content = {
@@ -249,6 +249,39 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     assert_equal true, json_response['is_active']
     assert_equal 'foo@example.com', json_response['email']
     assert_equal 'barney', json_response['username']
+  end
+
+  test "validate unsalted v2 token for remote cluster zbbbb" do
+    auth = api_client_authorizations(:active)
+    token = "v2/#{auth.uuid}/#{auth.api_token}"
+    get '/arvados/v1/users/current', {format: 'json', remote: 'zbbbb'}, {
+          "HTTP_AUTHORIZATION" => "Bearer #{token}"
+        }
+    assert_response :success
+    assert_equal(users(:active).uuid, json_response['uuid'])
+  end
+
+  test 'container request with runtime_token' do
+    [["valid local", "v2/#{api_client_authorizations(:active).uuid}/#{api_client_authorizations(:active).api_token}"],
+     ["valid remote", "v2/zbbbb-gj3su-000000000000000/abc"],
+     ["invalid local", "v2/#{api_client_authorizations(:active).uuid}/fakefakefake"],
+     ["invalid remote", "v2/zbork-gj3su-000000000000000/abc"],
+    ].each do |label, runtime_token|
+      post '/arvados/v1/container_requests', {
+             "container_request" => {
+               "command" => ["echo"],
+               "container_image" => "xyz",
+               "output_path" => "/",
+               "cwd" => "/",
+               "runtime_token" => runtime_token
+             }
+           }, {"HTTP_AUTHORIZATION" => "Bearer #{api_client_authorizations(:active).api_token}"}
+      if label.include? "invalid"
+        assert_response 422
+      else
+        assert_response :success
+      end
+    end
   end
 
 end

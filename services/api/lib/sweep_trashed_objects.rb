@@ -48,6 +48,9 @@ module SweepTrashedObjects
         where({group_class: 'project'}).
         where('is_trashed = false and trash_at < statement_timestamp()').
         update_all('is_trashed = true')
+
+      # Sweep expired tokens
+      ActiveRecord::Base.connection.execute("DELETE from api_client_authorizations where expires_at <= statement_timestamp()")
     end
   end
 

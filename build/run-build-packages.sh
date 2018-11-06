@@ -412,16 +412,17 @@ fi
 cd $WORKSPACE/packages/$TARGET
 rm -rf "$WORKSPACE/services/nodemanager/build"
 nodemanager_version=${ARVADOS_BUILDING_VERSION:-$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/nodemanager/arvados_node_manager.egg-info/PKG-INFO)}
-test_package_presence arvados-node-manager "$nodemanager_version" python
+iteration="${ARVADOS_BUILDING_ITERATION:-1}"
+test_package_presence arvados-node-manager "$nodemanager_version" python "$iteration"
 if [[ "$?" == "0" ]]; then
-  fpm_build $WORKSPACE/services/nodemanager arvados-node-manager 'Curoverse, Inc.' 'python' "$nodemanager_version" "--url=https://arvados.org" "--description=The Arvados node manager" --depends "${PYTHON2_PKG_PREFIX}-setuptools"
+  fpm_build $WORKSPACE/services/nodemanager arvados-node-manager 'Curoverse, Inc.' 'python' "$nodemanager_version" "--url=https://arvados.org" "--description=The Arvados node manager" --depends "${PYTHON2_PKG_PREFIX}-setuptools" --iteration "$iteration"
 fi
 
 # The Docker image cleaner
 cd $WORKSPACE/packages/$TARGET
 rm -rf "$WORKSPACE/services/dockercleaner/build"
 dockercleaner_version=${ARVADOS_BUILDING_VERSION:-$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/dockercleaner/arvados_docker_cleaner.egg-info/PKG-INFO)}
-iteration="${ARVADOS_BUILDING_ITERATION:-3}"
+iteration="${ARVADOS_BUILDING_ITERATION:-4}"
 test_package_presence arvados-docker-cleaner "$dockercleaner_version" python "$iteration"
 if [[ "$?" == "0" ]]; then
   fpm_build $WORKSPACE/services/dockercleaner arvados-docker-cleaner 'Curoverse, Inc.' 'python3' "$dockercleaner_version" "--url=https://arvados.org" "--description=The Arvados Docker image cleaner" --depends "${PYTHON3_PKG_PREFIX}-websocket-client = 0.37.0" --iteration "$iteration"
@@ -468,8 +469,9 @@ declare -a PIP_DOWNLOAD_SWITCHES=(--no-deps)
 pip install --no-use-wheel >/dev/null 2>&1
 case "$?" in
     0) PIP_DOWNLOAD_SWITCHES+=(--no-use-wheel) ;;
+    1) ;;
     2) ;;
-    *) echo "WARNING: `pip wheel` test returned unknown exit code $?" ;;
+    *) echo "WARNING: 'pip install --no-use-wheel' test returned unknown exit code $?" ;;
 esac
 
 while read -r line || [[ -n "$line" ]]; do
