@@ -12,7 +12,7 @@ import { DataTableFilterItem } from '../data-table-filters/data-table-filters';
 import { SearchInput } from '../search-input/search-input';
 import { ArvadosTheme } from "~/common/custom-theme";
 
-type CssRules = 'searchBox' | "toolbar" | "footer" | "root";
+type CssRules = 'searchBox' | "toolbar" | "footer" | "root" | 'moreOptionsButton';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     searchBox: {
@@ -26,6 +26,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     root: {
         height: '100%'
+    },
+    moreOptionsButton: {
+        padding: 0
     }
 });
 
@@ -121,9 +124,9 @@ export const DataExplorer = withStyles(styles)(
         }
 
         renderContextMenuTrigger = (item: T) =>
-            <Grid container justify="flex-end">
+            <Grid container justify="center">
                 <Tooltip title="More options">
-                    <IconButton onClick={event => this.props.onContextMenu(event, item)}>
+                    <IconButton className={this.props.classes.moreOptionsButton} onClick={event => this.props.onContextMenu(event, item)}>
                         <MoreVertIcon />
                     </IconButton>
                 </Tooltip>

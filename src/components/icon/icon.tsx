@@ -50,7 +50,7 @@ import Star from '@material-ui/icons/Star';
 import StarBorder from '@material-ui/icons/StarBorder';
 import Warning from '@material-ui/icons/Warning';
 
-export type IconType = React.SFC<{ className?: string }>;
+export type IconType = React.SFC<{ className?: string, style?: object }>;
 
 export const AddIcon: IconType = (props) => <Add {...props} />;
 export const AddFavoriteIcon: IconType = (props) => <StarBorder {...props} />;
