@@ -496,7 +496,14 @@ class Collection < ArvadosModel
     if loc = Keep::Locator.parse(search_term)
       loc.strip_hints!
       coll_match = readable_by(*readers).where(portable_data_hash: loc.to_s).limit(1)
-      return get_compatible_images(readers, pattern, coll_match)
+      if coll_match.any? or Rails.configuration.remote_hosts.length == 0
+        return get_compatible_images(readers, pattern, coll_match)
+      else
+        # Allow bare pdh that doesn't exist in the local database so
+        # that federated container requests which refer to remotely
+        # stored containers will validate.
+        return [Collection.new(portable_data_hash: loc.to_s)]
+      end
     end
 
     if search_tag.nil? and (n = search_term.index(":"))

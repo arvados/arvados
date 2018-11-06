@@ -5,18 +5,24 @@
 package controller
 
 import (
-	"context"
 	"io"
 	"net/http"
 	"net/url"
-	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 )
 
 type proxy struct {
-	Name           string // to use in Via header
-	RequestTimeout time.Duration
+	Name string // to use in Via header
+}
+
+type HTTPError struct {
+	Message string
+	Code    int
+}
+
+func (h HTTPError) Error() string {
+	return h.Message
 }
 
 // headers that shouldn't be forwarded when proxying. See
@@ -36,15 +42,11 @@ var dropHeaders = map[string]bool{
 
 type ResponseFilter func(*http.Response, error) (*http.Response, error)
 
-// Do sends a request, passes the result to the filter (if provided)
-// and then if the result is not suppressed by the filter, sends the
-// request to the ResponseWriter.  Returns true if a response was written,
-// false if not.
-func (p *proxy) Do(w http.ResponseWriter,
+// Forward a request to upstream service, and return response or error.
+func (p *proxy) Do(
 	reqIn *http.Request,
 	urlOut *url.URL,
-	client *http.Client,
-	filter ResponseFilter) bool {
+	client *http.Client) (*http.Response, error) {
 
 	// Copy headers from incoming request, then add/replace proxy
 	// headers like Via and X-Forwarded-For.
@@ -64,65 +66,35 @@ func (p *proxy) Do(w http.ResponseWriter,
 	}
 	hdrOut.Add("Via", reqIn.Proto+" arvados-controller")
 
-	ctx := reqIn.Context()
-	if p.RequestTimeout > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithDeadline(ctx, time.Now().Add(time.Duration(p.RequestTimeout)))
-		defer cancel()
-	}
-
 	reqOut := (&http.Request{
 		Method: reqIn.Method,
 		URL:    urlOut,
 		Host:   reqIn.Host,
 		Header: hdrOut,
 		Body:   reqIn.Body,
-	}).WithContext(ctx)
+	}).WithContext(reqIn.Context())
 
 	resp, err := client.Do(reqOut)
-	if filter == nil && err != nil {
-		httpserver.Error(w, err.Error(), http.StatusBadGateway)
-		return true
-	}
+	return resp, err
+}
 
-	// make sure original response body gets closed
-	var originalBody io.ReadCloser
-	if resp != nil {
-		originalBody = resp.Body
-		if originalBody != nil {
-			defer originalBody.Close()
-		}
-	}
-
-	if filter != nil {
-		resp, err = filter(resp, err)
-
-		if err != nil {
+// Copy a response (or error) to the downstream client
+func (p *proxy) ForwardResponse(w http.ResponseWriter, resp *http.Response, err error) (int64, error) {
+	if err != nil {
+		if he, ok := err.(HTTPError); ok {
+			httpserver.Error(w, he.Message, he.Code)
+		} else {
 			httpserver.Error(w, err.Error(), http.StatusBadGateway)
-			return true
 		}
-		if resp == nil {
-			// filter() returned a nil response, this means suppress
-			// writing a response, for the case where there might
-			// be multiple response writers.
-			return false
-		}
-
-		// the filter gave us a new response body, make sure that gets closed too.
-		if resp.Body != originalBody {
-			defer resp.Body.Close()
-		}
+		return 0, nil
 	}
 
+	defer resp.Body.Close()
 	for k, v := range resp.Header {
 		for _, v := range v {
 			w.Header().Add(k, v)
 		}
 	}
 	w.WriteHeader(resp.StatusCode)
-	n, err := io.Copy(w, resp.Body)
-	if err != nil {
-		httpserver.Logger(reqIn).WithError(err).WithField("bytesCopied", n).Error("error copying response body")
-	}
-	return true
+	return io.Copy(w, resp.Body)
 }

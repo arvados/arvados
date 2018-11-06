@@ -493,10 +493,14 @@ class Container < ArvadosModel
       return false
     end
 
-    if current_api_client_authorization.andand.uuid.andand == self.auth_uuid
-      # The contained process itself can update progress indicators,
-      # but can't change priority etc.
-      permitted = permitted & (progress_attrs + final_attrs + [:state] - [:log])
+    if self.state == Running &&
+       !current_api_client_authorization.nil? &&
+       (current_api_client_authorization.uuid == self.auth_uuid ||
+        current_api_client_authorization.token == self.runtime_token)
+      # The contained process itself can write final attrs but can't
+      # change priority or log.
+      permitted.push *final_attrs
+      permitted = permitted - [:log, :priority]
     elsif self.locked_by_uuid && self.locked_by_uuid != current_api_client_authorization.andand.uuid
       # When locked, progress fields cannot be updated by the wrong
       # dispatcher, even though it has admin privileges.

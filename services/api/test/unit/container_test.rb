@@ -777,25 +777,41 @@ class ContainerTest < ActiveSupport::TestCase
     assert_equal [logpdh_time2], Collection.where(uuid: [cr1log_uuid, cr2log_uuid]).to_a.collect(&:portable_data_hash).uniq
   end
 
-  test "auth_uuid can set output, progress, runtime_status, state on running container -- but not log" do
-    set_user_from_auth :active
-    c, _ = minimal_new
-    set_user_from_auth :dispatch1
-    c.lock
-    c.update_attributes! state: Container::Running
+  ["auth_uuid", "runtime_token"].each do |tok|
+    test "#{tok} can set output, progress, runtime_status, state on running container -- but not log" do
+      if tok == "runtime_token"
+        set_user_from_auth :spectator
+        c, _ = minimal_new(container_image: "9ae44d5792468c58bcf85ce7353c7027+124",
+                           runtime_token: api_client_authorizations(:active).token)
+      else
+        set_user_from_auth :active
+        c, _ = minimal_new
+      end
+      set_user_from_auth :dispatch1
+      c.lock
+      c.update_attributes! state: Container::Running
 
-    auth = ApiClientAuthorization.find_by_uuid(c.auth_uuid)
-    Thread.current[:api_client_authorization] = auth
-    Thread.current[:api_client] = auth.api_client
-    Thread.current[:token] = auth.token
-    Thread.current[:user] = auth.user
+      if tok == "runtime_token"
+        auth = ApiClientAuthorization.validate(token: c.runtime_token)
+        Thread.current[:api_client_authorization] = auth
+        Thread.current[:api_client] = auth.api_client
+        Thread.current[:token] = auth.token
+        Thread.current[:user] = auth.user
+      else
+        auth = ApiClientAuthorization.find_by_uuid(c.auth_uuid)
+        Thread.current[:api_client_authorization] = auth
+        Thread.current[:api_client] = auth.api_client
+        Thread.current[:token] = auth.token
+        Thread.current[:user] = auth.user
+      end
 
-    assert c.update_attributes(output: collections(:collection_owned_by_active).portable_data_hash)
-    assert c.update_attributes(runtime_status: {'warning' => 'something happened'})
-    assert c.update_attributes(progress: 0.5)
-    refute c.update_attributes(log: collections(:real_log_collection).portable_data_hash)
-    c.reload
-    assert c.update_attributes(state: Container::Complete, exit_code: 0)
+      assert c.update_attributes(output: collections(:collection_owned_by_active).portable_data_hash)
+      assert c.update_attributes(runtime_status: {'warning' => 'something happened'})
+      assert c.update_attributes(progress: 0.5)
+      refute c.update_attributes(log: collections(:real_log_collection).portable_data_hash)
+      c.reload
+      assert c.update_attributes(state: Container::Complete, exit_code: 0)
+    end
   end
 
   test "not allowed to set output that is not readable by current user" do
