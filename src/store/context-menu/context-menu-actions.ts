@@ -48,6 +48,18 @@ export const openContextMenu = (event: React.MouseEvent<HTMLElement>, resource: 
         );
     };
 
+export const openCollectionFilesContextMenu = (event: React.MouseEvent<HTMLElement>) =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        const isCollectionFileSelected = JSON.stringify(getState().collectionPanelFiles).includes('"selected":true');
+        dispatch<any>(openContextMenu(event, {
+            name: '',
+            uuid: '',
+            ownerUuid: '',
+            kind: ResourceKind.COLLECTION,
+            menuKind: isCollectionFileSelected ? ContextMenuKind.COLLECTION_FILES : ContextMenuKind.COLLECTION_FILES_NOT_SELECTED
+        }));
+    };
+
 export const openRootProjectContextMenu = (event: React.MouseEvent<HTMLElement>, projectUuid: string) =>
     (dispatch: Dispatch, getState: () => RootState) => {
         const res = getResource<UserResource>(projectUuid)(getState().resources);

@@ -62,6 +62,7 @@ export enum ContextMenuKind {
     TRASH = "Trash",
     COLLECTION_FILES = "CollectionFiles",
     COLLECTION_FILES_ITEM = "CollectionFilesItem",
+    COLLECTION_FILES_NOT_SELECTED = "CollectionFilesNotSelected",
     COLLECTION = 'Collection',
     COLLECTION_RESOURCE = 'CollectionResource',
     TRASHED_COLLECTION = 'TrashedCollection',
