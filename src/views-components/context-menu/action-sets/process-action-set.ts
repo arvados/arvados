@@ -35,18 +35,18 @@ export const processActionSet: ContextMenuActionSet = [[
         }
     },
     {
-        icon: MoveToIcon,
-        name: "Move to",
-        execute: (dispatch, resource) => {
-            dispatch<any>(openMoveProcessDialog(resource));
-        }
-    },
-    {
         component: ToggleFavoriteAction,
         execute: (dispatch, resource) => {
             dispatch<any>(toggleFavorite(resource)).then(() => {
                 dispatch<any>(favoritePanelActions.REQUEST_ITEMS());
             });
+        }
+    },
+    {
+        icon: MoveToIcon,
+        name: "Move to",
+        execute: (dispatch, resource) => {
+            dispatch<any>(openMoveProcessDialog(resource));
         }
     },
     {
@@ -85,13 +85,6 @@ export const processActionSet: ContextMenuActionSet = [[
         }
     },
     {
-        icon: DetailsIcon,
-        name: "View details",
-        execute: dispatch => {
-            dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
-        }
-    },
-    {
         icon: LogIcon,
         name: "Log",
         execute: (dispatch, resource) => {
@@ -99,24 +92,31 @@ export const processActionSet: ContextMenuActionSet = [[
         }
     },
     {
-        icon: ProvenanceGraphIcon,
-        name: "Provenance graph",
-        execute: (dispatch, resource) => {
-            // add code
+        icon: DetailsIcon,
+        name: "View details",
+        execute: dispatch => {
+            dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
         }
     },
+    // {
+    //     icon: ProvenanceGraphIcon,
+    //     name: "Provenance graph",
+    //     execute: (dispatch, resource) => {
+    //         // add code
+    //     }
+    // },
     {
         icon: AdvancedIcon,
         name: "Advanced",
         execute: (dispatch, resource) => {
             dispatch<any>(openAdvancedTabDialog(resource.uuid));
         }
-    },
-    {
-        icon: RemoveIcon,
-        name: "Remove",
-        execute: (dispatch, resource) => {
-            // add code
-        }
     }
+    // {
+    //     icon: RemoveIcon,
+    //     name: "Remove",
+    //     execute: (dispatch, resource) => {
+    //         // add code
+    //     }
+    // }
 ]];

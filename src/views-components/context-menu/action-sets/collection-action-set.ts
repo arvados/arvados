@@ -32,11 +32,6 @@ export const collectionActionSet: ContextMenuActionSet = [[
         }
     },
     {
-        icon: MoveToIcon,
-        name: "Move to",
-        execute: (dispatch, resource) => dispatch<any>(openMoveCollectionDialog(resource))
-    },
-    {
         component: ToggleFavoriteAction,
         execute: (dispatch, resource) => {
             dispatch<any>(toggleFavorite(resource)).then(() => {
@@ -49,6 +44,11 @@ export const collectionActionSet: ContextMenuActionSet = [[
         execute: (dispatch, resource) => {
             dispatch<any>(toggleCollectionTrashed(resource.uuid, resource.isTrashed!!));
         }
+    },
+    {
+        icon: MoveToIcon,
+        name: "Move to",
+        execute: (dispatch, resource) => dispatch<any>(openMoveCollectionDialog(resource))
     },
     {
         icon: CopyIcon,
@@ -65,25 +65,25 @@ export const collectionActionSet: ContextMenuActionSet = [[
             dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
         }
     },
-    {
-        icon: ProvenanceGraphIcon,
-        name: "Provenance graph",
-        execute: (dispatch, resource) => {
-            // add code
-        }
-    },
+    // {
+    //     icon: ProvenanceGraphIcon,
+    //     name: "Provenance graph",
+    //     execute: (dispatch, resource) => {
+    //         // add code
+    //     }
+    // },
     {
         icon: AdvancedIcon,
         name: "Advanced",
         execute: (dispatch, resource) => {
             dispatch<any>(openAdvancedTabDialog(resource.uuid));
         }
-    },
-    {
-        icon: RemoveIcon,
-        name: "Remove",
-        execute: (dispatch, resource) => {
-            // add code
-        }
     }
+    // {
+    //     icon: RemoveIcon,
+    //     name: "Remove",
+    //     execute: (dispatch, resource) => {
+    //         // add code
+    //     }
+    // }
 ]];

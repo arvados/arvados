@@ -31,13 +31,6 @@ export const collectionResourceActionSet: ContextMenuActionSet = [[
         }
     },
     {
-        icon: MoveToIcon,
-        name: "Move to",
-        execute: (dispatch, resource) => {
-            dispatch<any>(openMoveCollectionDialog(resource));
-        }
-    },
-    {
         component: ToggleFavoriteAction,
         execute: (dispatch, resource) => {
             dispatch<any>(toggleFavorite(resource)).then(() => {
@@ -49,6 +42,13 @@ export const collectionResourceActionSet: ContextMenuActionSet = [[
         component: ToggleTrashAction,
         execute: (dispatch, resource) => {
             dispatch<any>(toggleCollectionTrashed(resource.uuid, resource.isTrashed!!));
+        }
+    },
+    {
+        icon: MoveToIcon,
+        name: "Move to",
+        execute: (dispatch, resource) => {
+            dispatch<any>(openMoveCollectionDialog(resource));
         }
     },
     {
@@ -64,12 +64,12 @@ export const collectionResourceActionSet: ContextMenuActionSet = [[
         execute: dispatch => {
             dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
         }
-    },
-    {
-        icon: RemoveIcon,
-        name: "Remove",
-        execute: (dispatch, resource) => {
-            // add code
-        }
     }
+    // {
+    //     icon: RemoveIcon,
+    //     name: "Remove",
+    //     execute: (dispatch, resource) => {
+    //         // add code
+    //     }
+    // }
 ]];

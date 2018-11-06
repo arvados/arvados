@@ -29,18 +29,18 @@ export const processResourceActionSet: ContextMenuActionSet = [[
         }
     },
     {
-        icon: MoveToIcon,
-        name: "Move to",
-        execute: (dispatch, resource) => {
-            dispatch<any>(openMoveProcessDialog(resource));
-        }
-    },
-    {
         component: ToggleFavoriteAction,
         execute: (dispatch, resource) => {
             dispatch<any>(toggleFavorite(resource)).then(() => {
                 dispatch<any>(favoritePanelActions.REQUEST_ITEMS());
             });
+        }
+    },
+    {
+        icon: MoveToIcon,
+        name: "Move to",
+        execute: (dispatch, resource) => {
+            dispatch<any>(openMoveProcessDialog(resource));
         }
     },
     {
@@ -56,12 +56,12 @@ export const processResourceActionSet: ContextMenuActionSet = [[
         execute: dispatch => {
             dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
         }
-    },
-    {
-        icon: RemoveIcon,
-        name: "Remove",
-        execute: (dispatch, resource) => {
-            // add code
-        }
     }
+    // {
+    //     icon: RemoveIcon,
+    //     name: "Remove",
+    //     execute: (dispatch, resource) => {
+    //         // add code
+    //     }
+    // }
 ]];
