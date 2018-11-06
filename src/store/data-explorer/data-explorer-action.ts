@@ -16,7 +16,7 @@ export const dataExplorerActions = unionize({
     SET_ROWS_PER_PAGE: ofType<{ id: string, rowsPerPage: number }>(),
     TOGGLE_COLUMN: ofType<{ id: string, columnName: string }>(),
     TOGGLE_SORT: ofType<{ id: string, columnName: string }>(),
-    SET_SEARCH_VALUE: ofType<{ id: string, searchValue: string }>(),
+    SET_EXPLORER_SEARCH_VALUE: ofType<{ id: string, searchValue: string }>(),
 });
 
 export type DataExplorerAction = UnionOf<typeof dataExplorerActions>;
@@ -40,6 +40,6 @@ export const bindDataExplorerActions = (id: string) => ({
         dataExplorerActions.TOGGLE_COLUMN({ ...payload, id }),
     TOGGLE_SORT: (payload: { columnName: string }) =>
         dataExplorerActions.TOGGLE_SORT({ ...payload, id }),
-    SET_SEARCH_VALUE: (payload: { searchValue: string }) =>
-        dataExplorerActions.SET_SEARCH_VALUE({ ...payload, id }),
+    SET_EXPLORER_SEARCH_VALUE: (payload: { searchValue: string }) =>
+        dataExplorerActions.SET_EXPLORER_SEARCH_VALUE({ ...payload, id }),
 });

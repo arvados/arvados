@@ -180,6 +180,7 @@ export const TrashPanel = withStyles(styles)(
                         menuKind: ContextMenuKind.TRASH
                     }));
                 }
+                this.props.dispatch<any>(loadDetailsPanel(resourceUuid));
             }
 
             handleRowDoubleClick = (uuid: string) => {

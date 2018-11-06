@@ -3,17 +3,19 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { unionize, ofType, UnionOf } from "~/common/unionize";
-import { TreeNode, initTreeNode, getNodeDescendants, getNodeDescendantsIds, getNodeValue, TreeNodeStatus, getNode } from '~/models/tree';
+import { TreeNode, initTreeNode, getNodeDescendants, TreeNodeStatus, getNode, TreePickerId } from '~/models/tree';
 import { Dispatch } from 'redux';
 import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
 import { FilterBuilder } from '~/services/api/filter-builder';
-import { pipe, map, values, mapValues } from 'lodash/fp';
+import { pipe, values } from 'lodash/fp';
 import { ResourceKind } from '~/models/resource';
-import { GroupContentsResource } from '../../services/groups-service/groups-service';
-import { CollectionDirectory, CollectionFile } from '../../models/collection-file';
+import { GroupContentsResource } from '~/services/groups-service/groups-service';
+import { CollectionDirectory, CollectionFile } from '~/models/collection-file';
 import { getTreePicker, TreePicker } from './tree-picker';
 import { ProjectsTreePickerItem } from '~/views-components/projects-tree-picker/generic-projects-tree-picker';
+import { OrderBuilder } from '~/services/api/order-builder';
+import { ProjectResource } from '~/models/project';
 
 export const treePickerActions = unionize({
     LOAD_TREE_PICKER_NODE: ofType<{ id: string, pickerId: string }>(),
@@ -73,6 +75,7 @@ interface ReceiveTreePickerDataParams<T> {
     id: string;
     pickerId: string;
 }
+
 export const receiveTreePickerData = <T>(params: ReceiveTreePickerDataParams<T>) =>
     (dispatch: Dispatch) => {
         const { data, extractNodeData, id, pickerId, } = params;
@@ -208,6 +211,7 @@ interface LoadFavoritesProjectParams {
     includeCollections?: boolean;
     includeFiles?: boolean;
 }
+
 export const loadFavoritesProject = (params: LoadFavoritesProjectParams) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const { pickerId, includeCollections = false, includeFiles = false } = params;
@@ -239,3 +243,51 @@ export const loadFavoritesProject = (params: LoadFavoritesProjectParams) =>
             }));
         }
     };
+
+export const receiveTreePickerProjectsData = (id: string, projects: ProjectResource[], pickerId: string) =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
+            id,
+            nodes: projects.map(project => initTreeNode({ id: project.uuid, value: project })),
+            pickerId,
+        }));
+
+        dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ id, pickerId }));
+    };
+
+export const loadProjectTreePickerProjects = (id: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id, pickerId: TreePickerId.PROJECTS }));
+
+        const ownerUuid = id.length === 0 ? services.authService.getUuid() || '' : id;
+        const { items } = await services.projectService.list(buildParams(ownerUuid));
+
+        dispatch<any>(receiveTreePickerProjectsData(id, items, TreePickerId.PROJECTS));
+    };
+
+export const loadFavoriteTreePickerProjects = (id: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const parentId = services.authService.getUuid() || '';
+
+        if (id === '') {
+            dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id: parentId, pickerId: TreePickerId.FAVORITES }));
+            const { items } = await services.favoriteService.list(parentId);
+            dispatch<any>(receiveTreePickerProjectsData(parentId, items as ProjectResource[], TreePickerId.FAVORITES));
+        } else {
+            dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id, pickerId: TreePickerId.FAVORITES }));
+            const { items } = await services.projectService.list(buildParams(id));
+            dispatch<any>(receiveTreePickerProjectsData(id, items, TreePickerId.FAVORITES));
+        }
+
+    };
+
+const buildParams = (ownerUuid: string) => {
+    return {
+        filters: new FilterBuilder()
+            .addEqual('ownerUuid', ownerUuid)
+            .getFilters(),
+        order: new OrderBuilder<ProjectResource>()
+            .addAsc('name')
+            .getOrder()
+    };
+};

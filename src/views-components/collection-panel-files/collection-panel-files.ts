@@ -20,7 +20,7 @@ import { collectionPanelFilesAction } from "~/store/collection-panel/collection-
 import { ContextMenuKind } from "../context-menu/context-menu";
 import { getNode, getNodeChildrenIds, Tree } from "~/models/tree";
 import { CollectionFileType } from "~/models/collection-file";
-import { openContextMenu } from '~/store/context-menu/context-menu-actions';
+import { openContextMenu, openCollectionFilesContextMenu } from '~/store/context-menu/context-menu-actions';
 import { openUploadCollectionFilesDialog } from '~/store/collections/collection-upload-actions';
 import { ResourceKind } from "~/models/resource";
 
@@ -54,7 +54,7 @@ const mapDispatchToProps = (dispatch: Dispatch): Pick<CollectionPanelFilesProps,
         dispatch<any>(openContextMenu(event, { menuKind: ContextMenuKind.COLLECTION_FILES_ITEM, kind: ResourceKind.COLLECTION, name: item.data.name, uuid: item.id, ownerUuid: '' }));
     },
     onOptionsMenuOpen: (event) => {
-        dispatch<any>(openContextMenu(event, { menuKind: ContextMenuKind.COLLECTION_FILES, kind: ResourceKind.COLLECTION, name: '', uuid: '', ownerUuid: '' }));
+        dispatch<any>(openCollectionFilesContextMenu(event));
     },
 });
 

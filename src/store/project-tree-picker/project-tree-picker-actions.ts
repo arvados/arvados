@@ -5,9 +5,9 @@
 import { Dispatch } from "redux";
 import { RootState } from "~/store/store";
 import { ServiceRepository } from "~/services/services";
-import { TreePickerId, receiveTreePickerData } from "~/views-components/project-tree-picker/project-tree-picker";
 import { mockProjectResource } from "~/models/test-utils";
-import { treePickerActions } from "~/store/tree-picker/tree-picker-actions";
+import { treePickerActions, receiveTreePickerProjectsData } from "~/store/tree-picker/tree-picker-actions";
+import { TreePickerId } from '~/models/tree';
 
 export const resetPickerProjectTree = () => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     dispatch<any>(treePickerActions.RESET_TREE_PICKER({pickerId: TreePickerId.PROJECTS}));
@@ -38,7 +38,7 @@ const getFavoritesProjectsPickerTree = (uuid: string = '') => {
 };
 
 const getProjectsPickerTree = (uuid: string, kind: string) => {
-    return receiveTreePickerData(
+    return receiveTreePickerProjectsData(
         '',
         [mockProjectResource({ uuid, name: kind })],
         kind

@@ -146,6 +146,7 @@ const mapDispatchToProps = (dispatch: Dispatch): FavoritePanelActionProps => ({
                 menuKind: kind
             }));
         }
+        dispatch<any>(loadDetailsPanel(resourceUuid));
     },
     onDialogOpen: (ownerUuid: string) => { return; },
     onItemClick: (resourceUuid: string) => {

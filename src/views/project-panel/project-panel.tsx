@@ -170,6 +170,7 @@ export const ProjectPanel = withStyles(styles)(
                         menuKind
                     }));
                 }
+                this.props.dispatch<any>(loadDetailsPanel(resourceUuid));
             }
 
             handleRowDoubleClick = (uuid: string) => {
