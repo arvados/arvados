@@ -35,6 +35,10 @@ outputs:
           }
         }
         }
+  arvbox_data:
+    type: Directory
+    outputBinding:
+      outputEval: $(inputs.arvbox_data)
 requirements:
   EnvVarRequirement:
     envDef:

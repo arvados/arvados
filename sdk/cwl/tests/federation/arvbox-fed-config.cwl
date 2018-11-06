@@ -1,36 +1,52 @@
 cwlVersion: v1.0
 class: CommandLineTool
+$namespaces:
+  arv: "http://arvados.org/cwl#"
+  cwltool: "http://commonwl.org/cwltool#"
 inputs:
   container_name: string
-  this_cluster: string
+  this_cluster_id: string
   cluster_ids: string[]
   cluster_hosts: string[]
-  arvbox_base: Directory
+  arvbox_data: Directory
 outputs: []
 requirements:
   EnvVarRequirement:
     envDef:
       ARVBOX_CONTAINER: $(inputs.container_name)
-      ARVBOX_BASE: $(inputs.arvbox_base.path)
+      ARVBOX_DATA: $(inputs.arvbox_data.path)
   InitialWorkDirRequirement:
     listing:
-      cluster_config.yml.override: |
-        ${
-        var remoteClusters = {};
-        for (var i = 0; i < cluster_ids.length; i++) {
-          remoteClusters[inputs.cluster_ids[i]] = inputs.cluster_hosts[i];
-        }
-        return JSON.stringify({"Cluster": {inputs.this_cluster: {"RemoteClusters": remoteClusters}}});
-        }
-      application.yml.override: |
-        ${
-        var remoteClusters = {};
-        for (var i = 0; i < cluster_ids.length; i++) {
-          remoteClusters[inputs.cluster_ids[i]] = inputs.cluster_hosts[i];
-        }
-        return JSON.stringify({"development": {"remote_hosts": remoteClusters}});
-        }
+      - entryname: cluster_config.yml.override
+        entry: >-
+          ${
+          var remoteClusters = {};
+          for (var i = 0; i < inputs.cluster_ids.length; i++) {
+            remoteClusters[inputs.cluster_ids[i]] = {
+              "Host": inputs.cluster_hosts[i]+":8000",
+              "Proxy": true,
+              "Insecure": true
+            };
+          }
+          var r = {"Clusters": {}};
+          r["Clusters"][inputs.this_cluster_id] = {"RemoteClusters": remoteClusters};
+          return JSON.stringify(r);
+          }
+      - entryname: application.yml.override
+        entry: >-
+          ${
+          var remoteClusters = {};
+          for (var i = 0; i < inputs.cluster_ids.length; i++) {
+            remoteClusters[inputs.cluster_ids[i]] = inputs.cluster_hosts[i];
+          }
+          return JSON.stringify({"development": {"remote_hosts": remoteClusters}});
+          }
+  cwltool:LoadListingRequirement:
+    loadListing: no_listing
   ShellCommandRequirement: {}
+  InlineJavascriptRequirement: {}
+  cwltool:InplaceUpdateRequirement:
+    inplaceUpdate: true
 arguments:
   - shellQuote: false
     valueFrom: |

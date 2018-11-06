@@ -28,7 +28,18 @@ steps:
     in:
       container_name: containers
       arvbox_data: mkdir/arvbox_data
-    out: [cluster_id, container_ip]
+    out: [cluster_id, container_ip, arvbox_data]
     scatter: [container_name, arvbox_data]
     scatterMethod: dotproduct
     run: arvbox-start.cwl
+  fed-config:
+    in:
+      container_name: containers
+      this_cluster_id: start/cluster_id
+      cluster_ids: start/cluster_id
+      cluster_hosts: start/container_ip
+      arvbox_data: start/arvbox_data
+    out: []
+    scatter: [container_name, this_cluster_id, arvbox_data]
+    scatterMethod: dotproduct
+    run: arvbox-fed-config.cwl
