@@ -148,8 +148,8 @@ type worker struct {
 	updated  time.Time
 	busy     time.Time
 	lastUUID string
-	running  map[string]struct{}
-	starting map[string]struct{}
+	running  map[string]struct{} // remember to update state idle<->running when this changes
+	starting map[string]struct{} // remember to update state idle<->running when this changes
 	probing  chan struct{}
 }
 
@@ -194,7 +194,7 @@ func (wp *Pool) Unallocated() map[arvados.InstanceType]int {
 		u[it] = c
 	}
 	for _, wkr := range wp.workers {
-		if len(wkr.running)+len(wkr.starting) == 0 && (wkr.state == StateRunning || wkr.state == StateBooting || wkr.state == StateUnknown) {
+		if wkr.state == StateIdle || wkr.state == StateBooting || wkr.state == StateUnknown {
 			u[wkr.instType]++
 		}
 	}
@@ -288,21 +288,16 @@ func (wp *Pool) Shutdown(it arvados.InstanceType) bool {
 	defer wp.mtx.Unlock()
 	logger := wp.logger.WithField("InstanceType", it.Name)
 	logger.Info("shutdown requested")
-	for _, tryState := range []State{StateBooting, StateRunning} {
+	for _, tryState := range []State{StateBooting, StateIdle} {
 		// TODO: shutdown the worker with the longest idle
-		// time (Running) or the earliest create time
-		// (Booting)
+		// time (Idle) or the earliest create time (Booting)
 		for _, wkr := range wp.workers {
-			if wkr.state != tryState || len(wkr.running)+len(wkr.starting) > 0 {
-				continue
+			if wkr.state == tryState && wkr.instType == it {
+				logger = logger.WithField("Instance", wkr.instance)
+				logger.Info("shutting down")
+				wp.shutdown(wkr, logger)
+				return true
 			}
-			if wkr.instType != it {
-				continue
-			}
-			logger = logger.WithField("Instance", wkr.instance)
-			logger.Info("shutting down")
-			wp.shutdown(wkr, logger)
-			return true
 		}
 	}
 	return false
@@ -370,7 +365,7 @@ func (wp *Pool) StartContainer(it arvados.InstanceType, ctr arvados.Container) b
 	defer wp.mtx.Unlock()
 	var wkr *worker
 	for _, w := range wp.workers {
-		if w.instType == it && w.state == StateRunning && len(w.running)+len(w.starting) == 0 {
+		if w.instType == it && w.state == StateIdle {
 			if wkr == nil || w.busy.After(wkr.busy) {
 				wkr = w
 			}
@@ -382,6 +377,7 @@ func (wp *Pool) StartContainer(it arvados.InstanceType, ctr arvados.Container) b
 	logger = logger.WithField("Instance", wkr.instance)
 	logger.Debug("starting container")
 	wkr.starting[ctr.UUID] = struct{}{}
+	wkr.state = StateRunning
 	go func() {
 		stdout, stderr, err := wkr.executor.Execute("crunch-run --detach '"+ctr.UUID+"'", nil)
 		wp.mtx.Lock()
@@ -451,6 +447,9 @@ func (wp *Pool) kill(wkr *worker, uuid string) {
 	defer wp.mtx.Unlock()
 	if _, ok := wkr.running[uuid]; ok {
 		delete(wkr.running, uuid)
+		if wkr.state == StateRunning && len(wkr.running)+len(wkr.starting) == 0 {
+			wkr.state = StateIdle
+		}
 		wkr.updated = time.Now()
 		go wp.notify()
 	}
@@ -628,7 +627,7 @@ func (wp *Pool) shutdownIfBroken(wkr *worker, dur time.Duration) {
 
 // caller must have lock.
 func (wp *Pool) shutdownIfIdle(wkr *worker) bool {
-	if len(wkr.running)+len(wkr.starting) > 0 || wkr.state != StateRunning {
+	if wkr.state != StateIdle {
 		return false
 	}
 	age := time.Since(wkr.busy)
@@ -755,7 +754,7 @@ func (wp *Pool) probeAndUpdate(wkr *worker) {
 	logger := wp.logger.WithField("Instance", wkr.instance)
 	wp.mtx.Lock()
 	updated := wkr.updated
-	needProbeRunning := wkr.state == StateRunning
+	needProbeRunning := wkr.state == StateRunning || wkr.state == StateIdle
 	needProbeBooted := wkr.state == StateUnknown || wkr.state == StateBooting
 	wp.mtx.Unlock()
 	if !needProbeBooted && !needProbeRunning {
@@ -770,13 +769,10 @@ func (wp *Pool) probeAndUpdate(wkr *worker) {
 	if needProbeBooted {
 		ok, stderr = wp.probeBooted(wkr)
 		wp.mtx.Lock()
-		if ok && (wkr.state == StateUnknown || wkr.state == StateBooting) {
-			wkr.state = StateRunning
-			wkr.probed = time.Now()
-			logger.Info("instance booted")
-			go wp.notify()
+		if ok || wkr.state == StateRunning || wkr.state == StateIdle {
+			logger.Info("instance booted; will try probeRunning")
+			needProbeRunning = true
 		}
-		needProbeRunning = wkr.state == StateRunning
 		wp.mtx.Unlock()
 	}
 	if needProbeRunning {
@@ -786,7 +782,7 @@ func (wp *Pool) probeAndUpdate(wkr *worker) {
 	wp.mtx.Lock()
 	defer wp.mtx.Unlock()
 	if !ok {
-		if wkr.state == StateShutdown {
+		if wkr.state == StateShutdown && wkr.updated.After(updated) {
 			// Skip the logging noise if shutdown was
 			// initiated during probe.
 			return
@@ -841,8 +837,17 @@ func (wp *Pool) probeAndUpdate(wkr *worker) {
 			changed = true
 		}
 	}
+	if wkr.state == StateUnknown || wkr.state == StateBooting {
+		wkr.state = StateIdle
+		changed = true
+	}
 	if changed {
 		wkr.running = running
+		if wkr.state == StateIdle && len(wkr.starting)+len(wkr.running) > 0 {
+			wkr.state = StateRunning
+		} else if wkr.state == StateRunning && len(wkr.starting)+len(wkr.running) == 0 {
+			wkr.state = StateIdle
+		}
 		wkr.updated = updateTime
 		go wp.notify()
 	}

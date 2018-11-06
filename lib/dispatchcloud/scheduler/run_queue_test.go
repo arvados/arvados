@@ -75,7 +75,8 @@ func (p *stubPool) Shutdown(arvados.InstanceType) bool {
 func (p *stubPool) Workers() map[worker.State]int {
 	return map[worker.State]int{
 		worker.StateBooting: len(p.unalloc) - len(p.idle),
-		worker.StateRunning: len(p.idle) - len(p.running),
+		worker.StateIdle:    len(p.idle),
+		worker.StateRunning: len(p.running),
 	}
 }
 func (p *stubPool) StartContainer(it arvados.InstanceType, ctr arvados.Container) bool {

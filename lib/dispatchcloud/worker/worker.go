@@ -15,7 +15,8 @@ type State int
 const (
 	StateUnknown  State = iota // might be running a container already
 	StateBooting               // instance is booting
-	StateRunning               // instance is running
+	StateIdle                  // instance booted, no containers are running
+	StateRunning               // instance is running one or more containers
 	StateShutdown              // worker has stopped monitoring the instance
 	StateHold                  // running, but not available to run new containers
 )
@@ -28,6 +29,7 @@ const (
 var stateString = map[State]string{
 	StateUnknown:  "unknown",
 	StateBooting:  "booting",
+	StateIdle:     "idle",
 	StateRunning:  "running",
 	StateShutdown: "shutdown",
 	StateHold:     "hold",
