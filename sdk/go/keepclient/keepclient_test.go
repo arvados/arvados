@@ -884,6 +884,19 @@ func (s *ServerRequiredSuite) TestPutGetHead(c *C) {
 		c.Check(n, Equals, int64(len(content)))
 		c.Check(url2, Matches, fmt.Sprintf("http://localhost:\\d+/%s", hash))
 	}
+	{
+		loc, err := kc.LocalLocator(hash)
+		c.Check(err, Equals, nil)
+		c.Assert(len(loc) >= 32, Equals, true)
+		c.Check(loc[:32], Equals, hash[:32])
+	}
+	{
+		content := []byte("the perth county conspiracy")
+		loc, err := kc.LocalLocator(fmt.Sprintf("%x+%d+Rzaaaa-abcde@12345", md5.Sum(content), len(content)))
+		c.Check(loc, Equals, "")
+		c.Check(err, ErrorMatches, `.*HEAD .*\+R.*`)
+		c.Check(err, ErrorMatches, `.*HTTP 400.*`)
+	}
 }
 
 type StubProxyHandler struct {

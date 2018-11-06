@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path"
 	"regexp"
@@ -116,14 +115,12 @@ func (fs *collectionFileSystem) newNode(name string, perm os.FileMode, modTime t
 }
 
 func (fs *collectionFileSystem) Sync() error {
-	log.Printf("cfs.Sync()")
 	if fs.uuid == "" {
 		return nil
 	}
 	txt, err := fs.MarshalManifest(".")
 	if err != nil {
-		log.Printf("WARNING: (collectionFileSystem)Sync() failed: %s", err)
-		return err
+		return fmt.Errorf("sync failed: %s", err)
 	}
 	coll := &Collection{
 		UUID:         fs.uuid,
@@ -131,9 +128,9 @@ func (fs *collectionFileSystem) Sync() error {
 	}
 	err = fs.RequestAndDecode(nil, "PUT", "arvados/v1/collections/"+fs.uuid, fs.UpdateBody(coll), map[string]interface{}{"select": []string{"uuid"}})
 	if err != nil {
-		log.Printf("WARNING: (collectionFileSystem)Sync() failed: %s", err)
+		return fmt.Errorf("sync failed: update %s: %s", fs.uuid, err)
 	}
-	return err
+	return nil
 }
 
 func (fs *collectionFileSystem) MarshalManifest(prefix string) (string, error) {
@@ -549,9 +546,10 @@ func (dn *dirnode) Child(name string, replace func(inode) (inode, error)) (inode
 	return dn.treenode.Child(name, replace)
 }
 
-// sync flushes in-memory data (for the children with the given names,
-// which must be children of dn) to persistent storage. Caller must
-// have write lock on dn and the named children.
+// sync flushes in-memory data and remote block references (for the
+// children with the given names, which must be children of dn) to
+// local persistent storage. Caller must have write lock on dn and the
+// named children.
 func (dn *dirnode) sync(names []string) error {
 	type shortBlock struct {
 		fn  *filenode
@@ -588,37 +586,51 @@ func (dn *dirnode) sync(names []string) error {
 		return nil
 	}
 
+	localLocator := map[string]string{}
 	for _, name := range names {
 		fn, ok := dn.inodes[name].(*filenode)
 		if !ok {
 			continue
 		}
 		for idx, seg := range fn.segments {
-			seg, ok := seg.(*memSegment)
-			if !ok {
-				continue
-			}
-			if seg.Len() > maxBlockSize/2 {
-				if err := flush([]shortBlock{{fn, idx}}); err != nil {
-					return err
+			switch seg := seg.(type) {
+			case storedSegment:
+				loc, ok := localLocator[seg.locator]
+				if !ok {
+					var err error
+					loc, err = dn.fs.LocalLocator(seg.locator)
+					if err != nil {
+						return err
+					}
+					localLocator[seg.locator] = loc
 				}
-				continue
-			}
-			if pendingLen+seg.Len() > maxBlockSize {
-				if err := flush(pending); err != nil {
-					return err
+				seg.locator = loc
+				fn.segments[idx] = seg
+			case *memSegment:
+				if seg.Len() > maxBlockSize/2 {
+					if err := flush([]shortBlock{{fn, idx}}); err != nil {
+						return err
+					}
+					continue
 				}
-				pending = nil
-				pendingLen = 0
+				if pendingLen+seg.Len() > maxBlockSize {
+					if err := flush(pending); err != nil {
+						return err
+					}
+					pending = nil
+					pendingLen = 0
+				}
+				pending = append(pending, shortBlock{fn, idx})
+				pendingLen += seg.Len()
+			default:
+				panic(fmt.Sprintf("can't sync segment type %T", seg))
 			}
-			pending = append(pending, shortBlock{fn, idx})
-			pendingLen += seg.Len()
 		}
 	}
 	return flush(pending)
 }
 
-// caller must have read lock.
+// caller must have write lock.
 func (dn *dirnode) marshalManifest(prefix string) (string, error) {
 	var streamLen int64
 	type filepart struct {
