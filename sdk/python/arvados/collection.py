@@ -1717,12 +1717,17 @@ class Collection(RichCollectionBase):
                     pos = int(file_segment.group(1))
                     size = int(file_segment.group(2))
                     name = self._unescape_manifest_path(file_segment.group(3))
-                    filepath = os.path.join(stream_name, name)
-                    afile = self.find_or_create(filepath, FILE)
-                    if isinstance(afile, ArvadosFile):
-                        afile.add_segment(blocks, pos, size)
+                    if name.split('/')[-1] == '.':
+                        # placeholder for persisting an empty directory, not a real file
+                        if len(name) > 2:
+                            self.find_or_create(os.path.join(stream_name, name[:-2]), COLLECTION)
                     else:
-                        raise errors.SyntaxError("File %s conflicts with stream of the same name.", filepath)
+                        filepath = os.path.join(stream_name, name)
+                        afile = self.find_or_create(filepath, FILE)
+                        if isinstance(afile, ArvadosFile):
+                            afile.add_segment(blocks, pos, size)
+                        else:
+                            raise errors.SyntaxError("File %s conflicts with stream of the same name.", filepath)
                 else:
                     # error!
                     raise errors.SyntaxError("Invalid manifest format, expected file segment but did not match format: '%s'" % tok)
