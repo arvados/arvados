@@ -39,7 +39,6 @@ type SearchBarAutocompleteViewProps = SearchBarAutocompleteViewDataProps & Searc
 
 export const SearchBarAutocompleteView = withStyles(styles)(
     ({ classes, searchResults, searchValue, navigateTo, selectedItem }: SearchBarAutocompleteViewProps) => {
-        console.log(searchValue, selectedItem);
         return <Paper className={classes.searchView}>
             <List component="nav" className={classes.list}>
                 <ListItem button className={classes.listItem} selected={!selectedItem || searchValue === selectedItem.id}>

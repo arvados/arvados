@@ -169,7 +169,7 @@ describe("DataExplorerMiddleware", () => {
         };
         const next = jest.fn();
         const middleware = dataExplorerMiddleware(service)(api)(next);
-        middleware(dataExplorerActions.SET_SEARCH_VALUE({ id: service.getId(), searchValue: "" }));
+        middleware(dataExplorerActions.SET_EXPLORER_SEARCH_VALUE({ id: service.getId(), searchValue: "" }));
         expect(api.dispatch).toHaveBeenCalledTimes(2);
     });
 

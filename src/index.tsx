@@ -25,6 +25,7 @@ import { resourceActionSet } from './views-components/context-menu/action-sets/r
 import { favoriteActionSet } from "./views-components/context-menu/action-sets/favorite-action-set";
 import { collectionFilesActionSet } from './views-components/context-menu/action-sets/collection-files-action-set';
 import { collectionFilesItemActionSet } from './views-components/context-menu/action-sets/collection-files-item-action-set';
+import { collectionFilesNotSelectedActionSet } from './views-components/context-menu/action-sets/collection-files-not-selected-action-set';
 import { collectionActionSet } from './views-components/context-menu/action-sets/collection-action-set';
 import { collectionResourceActionSet } from './views-components/context-menu/action-sets/collection-resource-action-set';
 import { processActionSet } from './views-components/context-menu/action-sets/process-action-set';
@@ -55,6 +56,7 @@ addMenuActionSet(ContextMenuKind.PROJECT, projectActionSet);
 addMenuActionSet(ContextMenuKind.RESOURCE, resourceActionSet);
 addMenuActionSet(ContextMenuKind.FAVORITE, favoriteActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_FILES, collectionFilesActionSet);
+addMenuActionSet(ContextMenuKind.COLLECTION_FILES_NOT_SELECTED, collectionFilesNotSelectedActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_FILES_ITEM, collectionFilesItemActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION, collectionActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_RESOURCE, collectionResourceActionSet);
