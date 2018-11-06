@@ -692,6 +692,25 @@ func (s *CollectionFSSuite) TestRenameError(c *check.C) {
 	c.Check(data, check.DeepEquals, []byte{1, 2, 3, 4, 5})
 }
 
+func (s *CollectionFSSuite) TestRenameDirectory(c *check.C) {
+	fs, err := (&Collection{}).FileSystem(s.client, s.kc)
+	c.Assert(err, check.IsNil)
+	err = fs.Mkdir("foo", 0755)
+	c.Assert(err, check.IsNil)
+	err = fs.Mkdir("bar", 0755)
+	c.Assert(err, check.IsNil)
+	err = fs.Rename("bar", "baz")
+	c.Check(err, check.IsNil)
+	err = fs.Rename("foo", "baz")
+	c.Check(err, check.NotNil)
+	err = fs.Rename("foo", "baz/")
+	c.Check(err, check.IsNil)
+	err = fs.Rename("baz/foo", ".")
+	c.Check(err, check.Equals, ErrInvalidArgument)
+	err = fs.Rename("baz/foo/", ".")
+	c.Check(err, check.Equals, ErrInvalidArgument)
+}
+
 func (s *CollectionFSSuite) TestRename(c *check.C) {
 	fs, err := (&Collection{}).FileSystem(s.client, s.kc)
 	c.Assert(err, check.IsNil)
