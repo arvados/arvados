@@ -586,6 +586,7 @@ func (dn *dirnode) sync(names []string) error {
 		return nil
 	}
 
+	localLocator := map[string]string{}
 	for _, name := range names {
 		fn, ok := dn.inodes[name].(*filenode)
 		if !ok {
@@ -594,9 +595,14 @@ func (dn *dirnode) sync(names []string) error {
 		for idx, seg := range fn.segments {
 			switch seg := seg.(type) {
 			case storedSegment:
-				loc, err := dn.fs.LocalLocator(seg.locator)
-				if err != nil {
-					return err
+				loc, ok := localLocator[seg.locator]
+				if !ok {
+					var err error
+					loc, err = dn.fs.LocalLocator(seg.locator)
+					if err != nil {
+						return err
+					}
+					localLocator[seg.locator] = loc
 				}
 				seg.locator = loc
 				fn.segments[idx] = seg
