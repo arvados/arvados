@@ -9,7 +9,11 @@ inputs:
   cluster_ids: string[]
   cluster_hosts: string[]
   arvbox_data: Directory
-outputs: []
+outputs:
+  arvbox_data_out:
+    type: Directory
+    outputBinding:
+      outputEval: $(inputs.arvbox_data)
 requirements:
   EnvVarRequirement:
     envDef:
@@ -23,7 +27,7 @@ requirements:
           var remoteClusters = {};
           for (var i = 0; i < inputs.cluster_ids.length; i++) {
             remoteClusters[inputs.cluster_ids[i]] = {
-              "Host": inputs.cluster_hosts[i]+":8000",
+              "Host": inputs.cluster_hosts[i],
               "Proxy": true,
               "Insecure": true
             };

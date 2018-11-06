@@ -21,7 +21,7 @@ outputs:
           }
         }
         }
-  container_ip:
+  container_host:
     type: string
     outputBinding:
       glob: status.txt
@@ -31,11 +31,17 @@ outputs:
         var sp = self[0].contents.split("\n");
         for (var i = 0; i < sp.length; i++) {
           if (sp[i].startsWith("Container IP: ")) {
-            return sp[i].substr(14);
+            return sp[i].substr(14)+":8000";
           }
         }
         }
-  arvbox_data:
+  superuser_token:
+    type: string
+    outputBinding:
+      glob: superuser_token.txt
+      loadContents: true
+      outputEval: $(self[0].contents.trim())
+  arvbox_data_out:
     type: Directory
     outputBinding:
       outputEval: $(inputs.arvbox_data)
@@ -56,4 +62,7 @@ requirements:
 arguments:
   - shellQuote: false
     valueFrom: |
-      arvbox start dev && arvbox status > status.txt
+      set -e
+      arvbox start dev
+      arvbox status > status.txt
+      arvbox cat /var/lib/arvados/superuser_token > superuser_token.txt
