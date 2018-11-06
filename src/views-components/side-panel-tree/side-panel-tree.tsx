@@ -45,7 +45,7 @@ const renderSidePanelItem = (item: TreeItem<ProjectResource>) =>
         name={typeof item.data === 'string' ? item.data : item.data.name}
         isActive={item.active}
         hasMargin={true}
-        fixFontSize={true}
+        iconSize={1.25}
     />;
 
 const getProjectPickerIcon = (item: TreeItem<ProjectResource | string>) =>
