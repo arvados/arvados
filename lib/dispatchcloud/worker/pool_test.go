@@ -19,6 +19,16 @@ const GiB arvados.ByteSize = 1 << 30
 
 var _ = check.Suite(&PoolSuite{})
 
+type lessChecker struct {
+	*check.CheckerInfo
+}
+
+func (*lessChecker) Check(params []interface{}, names []string) (result bool, error string) {
+	return params[0].(int) < params[1].(int), ""
+}
+
+var less = &lessChecker{&check.CheckerInfo{Name: "less", Params: []string{"obtained", "expected"}}}
+
 type PoolSuite struct{}
 
 func (suite *PoolSuite) SetUpSuite(c *check.C) {
@@ -69,8 +79,13 @@ func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
 	c.Check(pool.Unallocated()[type1], check.Equals, 1)
 	c.Check(pool.Unallocated()[type2], check.Equals, 2)
 	pool.getInstancesAndSync()
-	c.Check(pool.Unallocated()[type1], check.Equals, 1)
-	c.Check(pool.Unallocated()[type2], check.Equals, 2)
+	// Returned counts can be temporarily higher than 1 and 2 if
+	// poll ran before Create() returned.
+	c.Check(pool.Unallocated()[type1], check.Not(less), 1)
+	c.Check(pool.Unallocated()[type2], check.Not(less), 2)
+	suite.wait(c, pool, notify, func() bool {
+		return pool.Unallocated()[type1] == 1 && pool.Unallocated()[type2] == 2
+	})
 
 	c.Check(pool.Shutdown(type2), check.Equals, true)
 	suite.wait(c, pool, notify, func() bool {

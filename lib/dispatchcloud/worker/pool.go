@@ -185,6 +185,11 @@ func (wp *Pool) Unsubscribe(ch <-chan struct{}) {
 
 // Unallocated returns the number of unallocated (creating + booting +
 // idle + unknown) workers for each instance type.
+//
+// The returned counts should be interpreted as upper bounds, rather
+// than exact counts: they are sometimes artificially high when a
+// newly created instance appears in the driver's Instances() list
+// before the Create() call returns.
 func (wp *Pool) Unallocated() map[arvados.InstanceType]int {
 	wp.setupOnce.Do(wp.setup)
 	wp.mtx.RLock()
