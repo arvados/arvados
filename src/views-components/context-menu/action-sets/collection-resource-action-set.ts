@@ -6,7 +6,7 @@ import { ContextMenuActionSet } from "../context-menu-action-set";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { ToggleTrashAction } from "~/views-components/context-menu/actions/trash-action";
 import { toggleFavorite } from "~/store/favorites/favorites-actions";
-import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, RemoveIcon } from "~/components/icon/icon";
+import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, RemoveIcon, AdvancedIcon } from '~/components/icon/icon';
 import { openCollectionUpdateDialog } from "~/store/collections/collection-update-actions";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
 import { openMoveCollectionDialog } from '~/store/collections/collection-move-actions';
@@ -14,6 +14,7 @@ import { openCollectionCopyDialog } from '~/store/collections/collection-copy-ac
 import { toggleCollectionTrashed } from "~/store/trash/trash-actions";
 import { detailsPanelActions } from '~/store/details-panel/details-panel-action';
 import { openSharingDialog } from "~/store/sharing-dialog/sharing-dialog-actions";
+import { openAdvancedTabDialog } from '~/store/advanced-tab/advanced-tab';
 
 export const collectionResourceActionSet: ContextMenuActionSet = [[
     {
@@ -63,6 +64,13 @@ export const collectionResourceActionSet: ContextMenuActionSet = [[
         name: "View details",
         execute: dispatch => {
             dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
+        }
+    },
+    {
+        icon: AdvancedIcon,
+        name: "Advanced",
+        execute: (dispatch, resource) => {
+            dispatch<any>(openAdvancedTabDialog(resource.uuid));
         }
     }
     // {
