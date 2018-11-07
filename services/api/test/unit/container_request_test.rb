@@ -425,6 +425,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     lambda do |resolved|
       resolved["/out"] == {
         "portable_data_hash" => "1f4b0bc7583c2a7f9102c395f4ffc5e3+45",
+        "uuid" => "zzzzz-4zz18-znfnqtbbv4spc3w",
         "kind" => "collection",
         "path" => "/foo",
       }
@@ -437,11 +438,23 @@ class ContainerRequestTest < ActiveSupport::TestCase
     lambda do |resolved|
       resolved["/out"] == {
         "portable_data_hash" => "1f4b0bc7583c2a7f9102c395f4ffc5e3+45",
+        "uuid" => "zzzzz-4zz18-znfnqtbbv4spc3w",
         "kind" => "collection",
         "path" => "/foo",
       }
     end],
-  ].each do |mounts, okfunc|
+    [{"/out" => {
+      "kind" => "collection",
+      "portable_data_hash" => "1f4b0bc7583c2a7f9102c395f4ffc5e3+45",
+      "path" => "/foo"}},
+  lambda do |resolved|
+    resolved["/out"] == {
+      "portable_data_hash" => "1f4b0bc7583c2a7f9102c395f4ffc5e3+45",
+      "kind" => "collection",
+      "path" => "/foo",
+    }
+  end],
+].each do |mounts, okfunc|
     test "resolve mounts #{mounts.inspect} to values" do
       set_user_from_auth :active
       resolved = Container.resolve_mounts(mounts)
