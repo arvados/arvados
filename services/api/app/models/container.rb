@@ -224,26 +224,10 @@ class Container < ArvadosModel
         next
       end
 
-      pdh = mount['portable_data_hash']
-      uuid = mount['uuid']
+      uuid = mount.delete 'uuid'
 
-      # Prioritize PDH over UUID for mount selection
-      if not pdh.nil?
-        c = Collection.
-          readable_by(current_user).
-          where(portable_data_hash: pdh)
-        if c.count > 0
-          if uuid && c.where(uuid: uuid).count == 0
-            raise ArgumentError.new "cannot mount collection #{uuid.inspect}: current portable_data_hash #{pdh.inspect} does not match #{c.first.portable_data_hash.inspect} in request"
-          end
-          # mount.delete 'uuid'
-          next
-        end
-        raise ArgumentError.new "cannot mount collection #{pdh.inspect}: not found"
-      end
-
-      # PDH not supplied, try by UUID
-      if uuid
+      if mount['portable_data_hash'].nil?
+        # PDH not supplied, try by UUID
         c = Collection.
           readable_by(current_user).
           where(uuid: uuid).
