@@ -8,6 +8,7 @@ import { Dispatch } from 'redux';
 import { ServiceRepository } from "~/services/services";
 import { RootState } from '~/store/store';
 import { getProperty } from "~/store/properties/properties";
+
 export const PROJECT_PANEL_ID = "projectPanel";
 export const PROJECT_PANEL_CURRENT_UUID = "projectPanelCurrentUuid";
 export const IS_PROJECT_PANEL_TRASHED = 'isProjectPanelTrashed';
@@ -21,7 +22,5 @@ export const openProjectPanel = (projectUuid: string) =>
 
 export const getProjectPanelCurrentUuid = (state: RootState) => getProperty<string>(PROJECT_PANEL_CURRENT_UUID)(state.properties);
 
-export const setIsProjectPanelTrashed = (isTrashed: boolean) =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(propertiesActions.SET_PROPERTY({ key: IS_PROJECT_PANEL_TRASHED, value: isTrashed }));
-    };
+export const setIsProjectPanelTrashed = (isTrashed: boolean) => 
+    propertiesActions.SET_PROPERTY({ key: IS_PROJECT_PANEL_TRASHED, value: isTrashed });
