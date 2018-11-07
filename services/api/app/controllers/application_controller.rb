@@ -597,6 +597,12 @@ class ApplicationController < ActionController::Base
       limit: { type: 'integer', required: false, default: DEFAULT_LIMIT },
       offset: { type: 'integer', required: false, default: 0 },
       count: { type: 'string', required: false, default: 'exact' },
+      cluster_id: {
+        type: 'string',
+        description: "List objects on a remote federated cluster instead of the current one.",
+        location: "query",
+        required: false,
+      },
     }
   end
 
