@@ -8,22 +8,32 @@ requirements:
   StepInputExpressionRequirement: {}
   cwltool:LoadListingRequirement:
     loadListing: no_listing
+  InlineJavascriptRequirement: {}
 inputs:
-  containers: string[]
+  containers:
+    type: string[]
+    default: [fedbox1, fedbox2, fedbox3]
   arvbox_base: Directory
+  in_acr: string?
+  insecure:
+    type: boolean
+    default: true
 outputs:
-  cluster_ids:
-    type: string[]
-    outputSource: start/cluster_id
-  container_hosts:
-    type: string[]
-    outputSource: start/container_host
-  test_user_uuid:
-    type: string
-    outputSource: setup-user/test_user_uuid
-  test_user_token:
+  arvados_api_token:
     type: string
     outputSource: setup-user/test_user_token
+  arvados_api_hosts:
+    type: string[]
+    outputSource: start/container_host
+  arvados_cluster_ids:
+    type: string[]
+    outputSource: start/cluster_id
+  acr:
+    type: string?
+    outputSource: in_acr
+  arvado_api_host_insecure:
+    type: boolean
+    outputSource: insecure
 steps:
   mkdir:
     in:
