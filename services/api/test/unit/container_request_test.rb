@@ -452,7 +452,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
         "path" => "/foo",
       }
     end],
-].each do |mounts, okfunc|
+  ].each do |mounts, okfunc|
     test "resolve mounts #{mounts.inspect} to values" do
       set_user_from_auth :active
       resolved = Container.resolve_mounts(mounts)
