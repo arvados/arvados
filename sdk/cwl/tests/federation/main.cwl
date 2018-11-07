@@ -1,4 +1,8 @@
 #!/usr/bin/env cwl-runner
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 cwlVersion: v1.0
 class: Workflow
 $namespaces:
@@ -70,6 +74,31 @@ steps:
           self["runOnCluster"] = inputs.arvados_cluster_ids[1];
           return self;
           }
+      runner_cluster: { valueFrom: "$(inputs.arvados_cluster_ids[0])" }
+      scrub_images: {default: ["debian:9"]}
+      scrub_collections: {default: ["cba47aefe5eb3a014a26ec00316b30c1+57", "67beab1cda8fe7d7e623323dc4287b5b+51"]}
+    out: [out]
+    run: testcase.cwl
+
+  runner-remote-step-home:
+    in:
+      arvados_api_token: arvados_api_token
+      arvado_api_host_insecure: arvado_api_host_insecure
+      arvados_api_hosts: arvados_api_hosts
+      arvados_cluster_ids: arvados_cluster_ids
+      acr: acr
+      wf: {default: {class: File, location: md5sum.cwl}}
+      obj:
+        default:
+          inp:
+            class: File
+            location: whale.txt
+        valueFrom: |-
+          ${
+          self["runOnCluster"] = inputs.arvados_cluster_ids[0];
+          return self;
+          }
+      runner_cluster: { valueFrom: "$(inputs.arvados_cluster_ids[1])" }
       scrub_images: {default: ["debian:9"]}
       scrub_collections: {default: ["cba47aefe5eb3a014a26ec00316b30c1+57", "67beab1cda8fe7d7e623323dc4287b5b+51"]}
     out: [out]

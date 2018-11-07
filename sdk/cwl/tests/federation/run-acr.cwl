@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 cwlVersion: v1.0
 class: CommandLineTool
 inputs:
@@ -11,7 +15,7 @@ inputs:
   arvado_api_host_insecure:
     type: boolean
     default: false
-  runner_remote_host:
+  runner_cluster:
     type: string?
     inputBinding:
       prefix: --submit-runner-cluster

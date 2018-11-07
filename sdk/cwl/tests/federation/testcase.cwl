@@ -1,4 +1,8 @@
 #!/usr/bin/env cwl-runner
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 cwlVersion: v1.0
 class: Workflow
 $namespaces:
@@ -23,6 +27,7 @@ inputs:
   obj: Any
   scrub_images: string[]
   scrub_collections: string[]
+  runner_cluster: string?
 outputs:
   out:
     type: Any
@@ -46,6 +51,7 @@ steps:
       arvados_api_token: arvados_api_token
       arvado_api_host_insecure: arvado_api_host_insecure
       arvados_api_host: {source: arvados_api_hosts, valueFrom: "$(self[0])"}
+      runner_cluster: runner_cluster
       acr: acr
       wf: wf
       obj: obj
