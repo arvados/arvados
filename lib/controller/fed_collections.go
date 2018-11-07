@@ -209,15 +209,12 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 	wg := sync.WaitGroup{}
 	pdh := m[1]
 	success := make(chan *http.Response)
-	errorChan := make(chan error)
+	errorChan := make(chan error, h.handler.Cluster.RequestLimits.GetMultiClusterRequestConcurrency())
 
 	// use channel as a semaphore to limit the number of concurrent
 	// requests at a time
 	sem := make(chan bool, h.handler.Cluster.RequestLimits.GetMultiClusterRequestConcurrency())
 
-	defer close(errorChan)
-	defer close(success)
-	defer close(sem)
 	defer cancelFunc()
 
 	for remoteID := range h.handler.Cluster.RemoteClusters {
