@@ -21,6 +21,8 @@ inputs:
   acr: string?
   wf: File
   obj: Any
+  scrub_images: string[]
+  scrub_collections: string[]
 outputs:
   out:
     type: Any
@@ -34,6 +36,8 @@ steps:
       arvados_cluster_ids: arvados_cluster_ids
       wf: wf
       obj: obj
+      scrub_images: scrub_images
+      scrub_collections: scrub_collections
     out: [done]
     run: prepare.cwl
   run-acr:

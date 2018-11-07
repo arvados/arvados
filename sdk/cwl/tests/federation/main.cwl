@@ -47,6 +47,8 @@ steps:
           self["runOnCluster"] = inputs.arvados_cluster_ids[0];
           return self;
           }
+      scrub_images: {default: ["debian:9"]}
+      scrub_collections: {default: ["cba47aefe5eb3a014a26ec00316b30c1+57"]}
     out: [out]
     run: testcase.cwl
 
@@ -68,5 +70,7 @@ steps:
           self["runOnCluster"] = inputs.arvados_cluster_ids[1];
           return self;
           }
+      scrub_images: {default: ["debian:9"]}
+      scrub_collections: {default: ["cba47aefe5eb3a014a26ec00316b30c1+57"]}
     out: [out]
     run: testcase.cwl

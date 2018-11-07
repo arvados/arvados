@@ -5,8 +5,15 @@ requirements:
     listing:
       - entryname: input.json
         entry: $(JSON.stringify(inputs.obj))
-      - entryname: clusters.json
-        entry: $(JSON.stringify(inputs.arvados_cluster_ids))
+      - entryname: config.json
+        entry: |-
+          ${
+          return JSON.stringify({
+            arvados_cluster_ids: inputs.arvados_cluster_ids,
+            scrub_images: inputs.scrub_images,
+            scrub_collections: inputs.scrub_collections
+          });
+          }
   EnvVarRequirement:
     envDef:
       ARVADOS_API_HOST: $(inputs.arvados_api_host)
@@ -20,6 +27,8 @@ inputs:
   arvados_cluster_ids: string[]
   wf: File
   obj: Any
+  scrub_images: string[]
+  scrub_collections: string[]
   preparescript:
     type: File
     default:
