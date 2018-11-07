@@ -586,7 +586,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
         if runtimeContext.submit:
             # Submit a runner job to run the workflow for us.
             if self.work_api == "containers":
-                if tool.tool["class"] == "CommandLineTool" and runtimeContext.wait:
+                if tool.tool["class"] == "CommandLineTool" and runtimeContext.wait and (not runtimeContext.always_submit_runner):
                     runtimeContext.runnerjob = tool.tool["id"]
                     runnerjob = tool.job(job_order,
                                          self.output_callback,

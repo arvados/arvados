@@ -145,6 +145,10 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         help="Docker image for workflow runner job, default arvados/jobs:%s" % __version__,
                         default=None)
 
+    parser.add_argument("--always-submit-runner", action="store_true",
+                        help="Always submit a runner to manage the workflow, even when running only a single CommandLineTool",
+                        default=False)
+
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--submit-request-uuid", type=str,
                         default=None,
