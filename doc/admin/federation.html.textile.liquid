@@ -1,0 +1,74 @@
+---
+layout: default
+navsection: admin
+title: Configuring federation
+...
+
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+This page describes how to enable and configure federation capabilities between clusters.
+
+An overview on how this feature works is discussed in the "architecture section":{{site.baseurl}}/architecture/federation.html
+
+h3. API Server configuration
+
+To accept users from remote clusters, some settings need to be added to the @application.yml@ file. There are two ways in which a remote cluster can be identified: either explictly by listing its prefix-to-hostname mapping, or implicitly by assuming the given remote cluster is public and belongs to the @.arvadosapi.com@ subdomain.
+
+For example, if you want to set up a private cluster federation, the following configuration will only allow access to users from @clsr2@ & @clsr3@:
+
+<pre>
+production:
+  remote_hosts:
+    clsr2: api.cluster2.com
+    clsr3: api.cluster3.com
+  remote_hosts_via_dns: false
+  auto_activate_users_from: []
+</pre>
+
+The additional @auto_activate_users_from@ setting can be used to allow users from the clusters in the federation to not only read but also create & update objects on the local cluster. This feature is covered in more detail in the "user activation section":{{site.baseurl}}/admin/activation.html. In the current example, only manually activated remote users would have full access to the local cluster.
+
+h3. Arvados controller & keepstores configuration
+
+Both @arvados-controller@ and @keepstore@ services also need to be configured, as they proxy requests to remote clusters when needed.
+
+Continuing the previous example, the necessary settings should be added to the @/etc/arvados/config.yml@ file as follows:
+
+<pre>
+Clusters:
+  clsr1:
+    RemoteClusters:
+      clsr2:
+        Host: api.cluster2.com
+        Proxy: true
+      clsr3:
+        Host: api.cluster3.com
+        Proxy: true
+</pre>
+
+Similar settings should be added to @clsr2@ & @clsr3@ hosts, so that all clusters in the federation can talk to each other.
+
+h3. Testing
+
+Following the above example, let's suppose @clsr1@ is our "home cluster", that is to say, we use our @clsr1@ user account as our federated identity and both @clsr2@ and @clsr3@ remote clusters are set up to allow users from @clsr1@ and to auto-activate them. The first thing to do would be to log into a remote workbench using the local user token. This can be done following these steps:
+
+1. Log into the local workbench and get the user token
+2. Visit the remote workbench specifying the local user token by URL: @https://workbench.cluster2.com?api_token=token_from_clsr1@
+3. You should now be logged into @clsr2@ with your account from @clsr1@
+
+To further test the federation setup, you can create a collection on @clsr2@, uploading some files and copying its UUID. Next, logged into a shell node on your home cluster you should be able to get that collection by running:
+
+<pre>
+user@clsr1:~$ arv collection get --uuid clsr2-xvhdp-xxxxxxxxxxxxxxx
+</pre>
+
+The returned collection metadata should show the local user's uuid on the @owner_uuid@ field. This tests that the @arvados-controller@ service is proxying requests correctly.
+
+One last test may be performed, to confirm that the @keepstore@ services also recognize remote cluster prefixes and proxy the requests. You can ask for the previously created collection using any of the usual tools, for example:
+
+<pre>
+user@clsr1:~$ arv-get clsr2-xvhdp-xxxxxxxxxxxxxxx/uploaded_file .
+</pre>
