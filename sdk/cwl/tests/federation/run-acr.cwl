@@ -43,5 +43,7 @@ stdout: output.json
 arguments:
   - valueFrom: --disable-reuse
     position: 2
+  - valueFrom: --always-submit-runner
+    position: 2
   - valueFrom: input.json
     position: 4

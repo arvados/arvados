@@ -48,7 +48,7 @@ steps:
           return self;
           }
       scrub_images: {default: ["debian:9"]}
-      scrub_collections: {default: ["cba47aefe5eb3a014a26ec00316b30c1+57"]}
+      scrub_collections: {default: ["cba47aefe5eb3a014a26ec00316b30c1+57", "67beab1cda8fe7d7e623323dc4287b5b+51"]}
     out: [out]
     run: testcase.cwl
 
@@ -71,6 +71,6 @@ steps:
           return self;
           }
       scrub_images: {default: ["debian:9"]}
-      scrub_collections: {default: ["cba47aefe5eb3a014a26ec00316b30c1+57"]}
+      scrub_collections: {default: ["cba47aefe5eb3a014a26ec00316b30c1+57", "67beab1cda8fe7d7e623323dc4287b5b+51"]}
     out: [out]
     run: testcase.cwl
