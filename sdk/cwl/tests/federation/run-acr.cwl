@@ -6,9 +6,9 @@ inputs:
     default: arvados-cwl-runner
     inputBinding:
       position: 1
-  arv_host: string
-  arv_token: string
-  arv_insecure:
+  arvados_api_host: string
+  arvados_api_token: string
+  arvado_api_host_insecure:
     type: boolean
     default: false
   runner_remote_host:
@@ -28,9 +28,9 @@ requirements:
         entry: $(JSON.stringify(inputs.obj))
   EnvVarRequirement:
     envDef:
-      ARVADOS_API_HOST: $(inputs.arv_host)
-      ARVADOS_API_TOKEN: $(inputs.arv_token)
-      ARVADOS_API_HOST_INSECURE: $(""+inputs.arv_insecure)
+      ARVADOS_API_HOST: $(inputs.arvados_api_host)
+      ARVADOS_API_TOKEN: $(inputs.arvados_api_token)
+      ARVADOS_API_HOST_INSECURE: $(""+inputs.arvado_api_host_insecure)
   InlineJavascriptRequirement: {}
 outputs:
   out:

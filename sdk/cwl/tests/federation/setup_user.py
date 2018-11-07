@@ -18,16 +18,19 @@ else:
     u = api.users().create(body={
         'first_name': 'Test',
         'last_name': 'User',
-        'email': 'test@example.com'
+        'email': 'test@example.com',
+        'is_admin': False
     }).execute()
     api.users().activate(uuid=u["uuid"]).execute()
 
 tok = api.api_client_authorizations().create(body={
-    "owner_uuid": u["uuid"]
+    "api_client_authorization": {
+        "owner_uuid": u["uuid"]
+    }
 }).execute()
 
 with open("cwl.output.json", "w") as f:
     json.dump({
         "test_user_uuid": u["uuid"],
-        "test_user_token": tok["api_token"]
+        "test_user_token": "v2/%s/%s" % (tok["uuid"], tok["api_token"])
     }, f)

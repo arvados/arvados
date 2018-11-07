@@ -26,11 +26,22 @@ outputs:
     type: Any
     outputSource: run-acr/out
 steps:
+  prepare:
+    in:
+      arvados_api_token: arvados_api_token
+      arvado_api_host_insecure: arvado_api_host_insecure
+      arvados_api_host: {source: arvados_api_hosts, valueFrom: "$(self[0])"}
+      arvados_cluster_ids: arvados_cluster_ids
+      wf: wf
+      obj: obj
+    out: [done]
+    run: prepare.cwl
   run-acr:
     in:
-      arv_token: arvados_api_token
-      arv_insecure: arvado_api_host_insecure
-      arv_host: {source: arvados_api_hosts, valueFrom: "$(self[0])"}
+      prepare: prepare/done
+      arvados_api_token: arvados_api_token
+      arvado_api_host_insecure: arvado_api_host_insecure
+      arvados_api_host: {source: arvados_api_hosts, valueFrom: "$(self[0])"}
       acr: acr
       wf: wf
       obj: obj
