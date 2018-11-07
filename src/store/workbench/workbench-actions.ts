@@ -7,7 +7,7 @@ import { RootState } from "../store";
 import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { snackbarActions } from '../snackbar/snackbar-actions';
 import { loadFavoritePanel } from '../favorite-panel/favorite-panel-action';
-import { openProjectPanel, projectPanelActions } from '~/store/project-panel/project-panel-action';
+import { openProjectPanel, projectPanelActions, setIsProjectPanelTrashed } from '~/store/project-panel/project-panel-action';
 import { activateSidePanelTreeItem, initSidePanelTree, SidePanelTreeCategory, loadSidePanelTreeProjects } from '../side-panel-tree/side-panel-tree-actions';
 import { loadResource, updateResources } from '../resources/resources-actions';
 import { favoritePanelActions } from '~/store/favorite-panel/favorite-panel-action';
@@ -53,7 +53,6 @@ import { collectionPanelActions } from "~/store/collection-panel/collection-pane
 import { CollectionResource } from "~/models/collection";
 import { searchResultsPanelActions, loadSearchResultsPanel } from '~/store/search-results-panel/search-results-panel-actions';
 import { searchResultsPanelColumns } from '~/views/search-results-panel/search-results-panel-view';
-import * as uuid from 'uuid/v4';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -123,6 +122,7 @@ export const loadProject = (uuid: string) =>
     handleFirstTimeLoad(
         async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
             const userUuid = services.authService.getUuid();
+            dispatch(setIsProjectPanelTrashed(false));
             if (userUuid) {
                 if (userUuid !== uuid) {
                     const match = await loadGroupContentsResource({ uuid, userUuid, services });
@@ -139,6 +139,7 @@ export const loadProject = (uuid: string) =>
                         },
                         TRASHED: project => {
                             dispatch<any>(setTrashBreadcrumbs(uuid));
+                            dispatch(setIsProjectPanelTrashed(true));
                             dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.TRASH));
                             dispatch(finishLoadingProject(project));
                         }

@@ -125,7 +125,7 @@ export const DataExplorer = withStyles(styles)(
 
         renderContextMenuTrigger = (item: T) =>
             <Grid container justify="center">
-                <Tooltip title="More options">
+                <Tooltip title="More options" disableFocusListener>
                     <IconButton className={this.props.classes.moreOptionsButton} onClick={event => this.props.onContextMenu(event, item)}>
                         <MoreVertIcon />
                     </IconButton>
