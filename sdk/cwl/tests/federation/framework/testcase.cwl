@@ -25,14 +25,22 @@ inputs:
   acr: string?
   wf: File
   obj: Any
-  scrub_images: string[]
+  scrub_image: string
   scrub_collections: string[]
   runner_cluster: string?
 outputs:
   out:
     type: Any
     outputSource: run-acr/out
+  success:
+    type: boolean
+    outputSource: check-result/success
 steps:
+  dockerbuild:
+    in:
+      testcase: scrub_image
+    out: [imagename]
+    run: dockerbuild.cwl
   prepare:
     in:
       arvados_api_token: arvados_api_token
@@ -41,13 +49,14 @@ steps:
       arvados_cluster_ids: arvados_cluster_ids
       wf: wf
       obj: obj
-      scrub_images: scrub_images
+      scrub_image: scrub_image
       scrub_collections: scrub_collections
     out: [done]
     run: prepare.cwl
   run-acr:
     in:
       prepare: prepare/done
+      image-ready: dockerbuild/imagename
       arvados_api_token: arvados_api_token
       arvado_api_host_insecure: arvado_api_host_insecure
       arvados_api_host: {source: arvados_api_hosts, valueFrom: "$(self[0])"}
@@ -57,3 +66,12 @@ steps:
       obj: obj
     out: [out]
     run: run-acr.cwl
+  check-result:
+    in:
+      acr-done: run-acr/out
+      arvados_api_token: arvados_api_token
+      arvado_api_host_insecure: arvado_api_host_insecure
+      arvados_api_host: {source: arvados_api_hosts, valueFrom: "$(self[0])"}
+      check_collections: scrub_collections
+    out: [success]
+    run: check-exist.cwl

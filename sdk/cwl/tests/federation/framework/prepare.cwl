@@ -14,7 +14,7 @@ requirements:
           ${
           return JSON.stringify({
             arvados_cluster_ids: inputs.arvados_cluster_ids,
-            scrub_images: inputs.scrub_images,
+            scrub_images: [inputs.scrub_image],
             scrub_collections: inputs.scrub_collections
           });
           }
@@ -31,7 +31,7 @@ inputs:
   arvados_cluster_ids: string[]
   wf: File
   obj: Any
-  scrub_images: string[]
+  scrub_image: string
   scrub_collections: string[]
   preparescript:
     type: File

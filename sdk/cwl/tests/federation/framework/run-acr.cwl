@@ -42,7 +42,8 @@ outputs:
     outputBinding:
       glob: output.json
       loadContents: true
-      outputEval: $(JSON.parse(self[0].contents))
+      #outputEval: $(JSON.parse(self[0].contents))
+      outputEval: $(self[0].contents)
 stdout: output.json
 arguments:
   - valueFrom: --disable-reuse
