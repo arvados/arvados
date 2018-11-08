@@ -284,7 +284,7 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 		case <-sharedContext.Done():
 			var errors []string
 			for len(errorChan) > 0 {
-				err <- errorChan
+				err := <-errorChan
 				if httperr, ok := err.(HTTPError); ok {
 					if httperr.Code != http.StatusNotFound {
 						errorCode = http.StatusBadGateway
