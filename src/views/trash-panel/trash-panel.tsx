@@ -64,7 +64,7 @@ export const ResourceRestore =
         return { resource, dispatch: props.dispatch };
     })((props: { resource?: TrashableResource, dispatch?: Dispatch<any> }) =>
         <Tooltip title="Restore">
-            <IconButton onClick={() => {
+            <IconButton style={{ padding: '0' }} onClick={() => {
                 if (props.resource && props.dispatch) {
                     props.dispatch(toggleTrashed(
                         props.resource.kind,
@@ -72,8 +72,8 @@ export const ResourceRestore =
                         props.resource.ownerUuid,
                         props.resource.isTrashed
                     ));
-                }
-            }}>
+                }}}
+            >
                 <RestoreFromTrashIcon />
             </IconButton>
         </Tooltip>
@@ -180,6 +180,7 @@ export const TrashPanel = withStyles(styles)(
                         menuKind: ContextMenuKind.TRASH
                     }));
                 }
+                this.props.dispatch<any>(loadDetailsPanel(resourceUuid));
             }
 
             handleRowDoubleClick = (uuid: string) => {

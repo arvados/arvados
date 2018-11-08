@@ -50,7 +50,7 @@ export const FileTreeItem = withStyles(fileTreeItemStyle)(
                 <Typography
                     className={classes.sizeInfo}
                     variant="caption">{formatFileSize(item.data.size)}</Typography>
-                <Tooltip title="More options">
+                <Tooltip title="More options" disableFocusListener>
                     <IconButton
                         className={classes.button}
                         onClick={this.handleClick}>

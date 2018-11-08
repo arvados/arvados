@@ -32,7 +32,7 @@ export const dataExplorerMiddleware = (service: DataExplorerMiddlewareService): 
             TOGGLE_SORT: handleAction(() => {
                 api.dispatch(actions.REQUEST_ITEMS());
             }),
-            SET_SEARCH_VALUE: handleAction(() => {
+            SET_EXPLORER_SEARCH_VALUE: handleAction(() => {
                 api.dispatch(actions.RESET_PAGINATION());
                 api.dispatch(actions.REQUEST_ITEMS());
             }),
