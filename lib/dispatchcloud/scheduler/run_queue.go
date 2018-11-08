@@ -34,6 +34,7 @@ func (sch *Scheduler) runQueue() {
 	dontstart := map[arvados.InstanceType]bool{}
 	var overquota []container.QueueEnt // entries that are unmappable because of worker pool quota
 
+tryrun:
 	for i, ctr := range sorted {
 		ctr, it := ctr.Container, ctr.InstanceType
 		logger := sch.logger.WithFields(logrus.Fields{
@@ -43,60 +44,53 @@ func (sch *Scheduler) runQueue() {
 		if _, running := running[ctr.UUID]; running || ctr.Priority < 1 {
 			continue
 		}
-		if ctr.State == arvados.ContainerStateQueued {
+		switch ctr.State {
+		case arvados.ContainerStateQueued:
 			if unalloc[it] < 1 && sch.pool.AtQuota() {
-				logger.Debugf("not locking: AtQuota and no unalloc workers")
+				logger.Debug("not locking: AtQuota and no unalloc workers")
 				overquota = sorted[i:]
-				break
+				break tryrun
 			}
-			logger.Debugf("locking")
-			err := sch.queue.Lock(ctr.UUID)
-			if err != nil {
-				logger.WithError(err).Warnf("lock error")
-				unalloc[it]++
-				continue
-			}
-			var ok bool
-			ctr, ok = sch.queue.Get(ctr.UUID)
-			if !ok {
-				logger.Error("(BUG?) container disappeared from queue after Lock succeeded")
-				continue
-			}
-			if ctr.State != arvados.ContainerStateLocked {
-				logger.Warnf("(race?) container has state=%q after Lock succeeded", ctr.State)
-			}
-		}
-		if ctr.State != arvados.ContainerStateLocked {
-			continue
-		}
-		if unalloc[it] < 1 {
-			logger.Info("creating new instance")
-			err := sch.pool.Create(it)
-			if err != nil {
-				if _, ok := err.(cloud.QuotaError); !ok {
-					logger.WithError(err).Warn("error creating worker")
-				}
-				sch.queue.Unlock(ctr.UUID)
-				// Don't let lower-priority containers
-				// starve this one by using keeping
-				// idle workers alive on different
-				// instance types.  TODO: avoid
-				// getting starved here if instances
-				// of a specific type always fail.
-				overquota = sorted[i:]
-				break
-			}
-			unalloc[it]++
-		}
-		if dontstart[it] {
-			// We already tried & failed to start a
-			// higher-priority container on the same
-			// instance type. Don't let this one sneak in
-			// ahead of it.
-		} else if sch.pool.StartContainer(it, ctr) {
+			sch.bgLock(logger, ctr.UUID)
 			unalloc[it]--
-		} else {
-			dontstart[it] = true
+		case arvados.ContainerStateLocked:
+			if unalloc[it] < 1 {
+				if sch.pool.AtQuota() {
+					logger.Debug("not starting: AtQuota and no unalloc workers")
+					overquota = sorted[i:]
+					break tryrun
+				}
+				logger.Info("creating new instance")
+				err := sch.pool.Create(it)
+				if err != nil {
+					if _, ok := err.(cloud.QuotaError); !ok {
+						logger.WithError(err).Warn("error creating worker")
+					}
+					sch.queue.Unlock(ctr.UUID)
+					// Don't let lower-priority
+					// containers starve this one
+					// by using keeping idle
+					// workers alive on different
+					// instance types.  TODO:
+					// avoid getting starved here
+					// if instances of a specific
+					// type always fail.
+					overquota = sorted[i:]
+					break tryrun
+				}
+				unalloc[it]++
+			}
+
+			if dontstart[it] {
+				// We already tried & failed to start
+				// a higher-priority container on the
+				// same instance type. Don't let this
+				// one sneak in ahead of it.
+			} else if sch.pool.StartContainer(it, ctr) {
+				unalloc[it]--
+			} else {
+				dontstart[it] = true
+			}
 		}
 	}
 
@@ -123,4 +117,37 @@ func (sch *Scheduler) runQueue() {
 			sch.pool.Shutdown(it)
 		}
 	}
+}
+
+// Start an API call to lock the given container, and return
+// immediately while waiting for the response in a new goroutine. Do
+// nothing if a lock request is already in progress for this
+// container.
+func (sch *Scheduler) bgLock(logger logrus.FieldLogger, uuid string) {
+	logger.Debug("locking")
+	sch.mtx.Lock()
+	defer sch.mtx.Unlock()
+	if sch.locking[uuid] {
+		logger.Debug("locking in progress, doing nothing")
+		return
+	}
+	sch.locking[uuid] = true
+	go func() {
+		defer func() {
+			sch.mtx.Lock()
+			defer sch.mtx.Unlock()
+			delete(sch.locking, uuid)
+		}()
+		err := sch.queue.Lock(uuid)
+		if err != nil {
+			logger.WithError(err).Warn("error locking container")
+			return
+		}
+		ctr, ok := sch.queue.Get(uuid)
+		if !ok {
+			logger.Error("(BUG?) container disappeared from queue after Lock succeeded")
+		} else if ctr.State != arvados.ContainerStateLocked {
+			logger.Warnf("(race?) container has state=%q after Lock succeeded", ctr.State)
+		}
+	}()
 }

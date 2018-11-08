@@ -108,7 +108,7 @@ func (q *Queue) notify() {
 func (q *Queue) changeState(uuid string, from, to arvados.ContainerState) error {
 	ent := q.entries[uuid]
 	if ent.Container.State != from {
-		return fmt.Errorf("lock failed: state=%q", ent.Container.State)
+		return fmt.Errorf("changeState failed: state=%q", ent.Container.State)
 	}
 	ent.Container.State = to
 	q.entries[uuid] = ent

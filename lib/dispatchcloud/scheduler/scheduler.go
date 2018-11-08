@@ -32,6 +32,9 @@ type Scheduler struct {
 	staleLockTimeout    time.Duration
 	queueUpdateInterval time.Duration
 
+	locking map[string]bool
+	mtx     sync.Mutex
+
 	runOnce sync.Once
 	stop    chan struct{}
 }
@@ -48,6 +51,7 @@ func New(logger logrus.FieldLogger, queue ContainerQueue, pool WorkerPool, stale
 		staleLockTimeout:    staleLockTimeout,
 		queueUpdateInterval: queueUpdateInterval,
 		stop:                make(chan struct{}),
+		locking:             map[string]bool{},
 	}
 }
 

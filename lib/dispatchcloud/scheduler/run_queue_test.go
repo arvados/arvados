@@ -108,7 +108,7 @@ func (*SchedulerSuite) TestUseIdleWorkers(c *check.C) {
 			{
 				UUID:     test.ContainerUUID(1),
 				Priority: 1,
-				State:    arvados.ContainerStateQueued,
+				State:    arvados.ContainerStateLocked,
 				RuntimeConstraints: arvados.RuntimeConstraints{
 					VCPUs: 1,
 					RAM:   1 << 30,
@@ -117,7 +117,7 @@ func (*SchedulerSuite) TestUseIdleWorkers(c *check.C) {
 			{
 				UUID:     test.ContainerUUID(2),
 				Priority: 2,
-				State:    arvados.ContainerStateQueued,
+				State:    arvados.ContainerStateLocked,
 				RuntimeConstraints: arvados.RuntimeConstraints{
 					VCPUs: 1,
 					RAM:   1 << 30,
@@ -126,7 +126,7 @@ func (*SchedulerSuite) TestUseIdleWorkers(c *check.C) {
 			{
 				UUID:     test.ContainerUUID(3),
 				Priority: 3,
-				State:    arvados.ContainerStateQueued,
+				State:    arvados.ContainerStateLocked,
 				RuntimeConstraints: arvados.RuntimeConstraints{
 					VCPUs: 1,
 					RAM:   1 << 30,
@@ -135,7 +135,7 @@ func (*SchedulerSuite) TestUseIdleWorkers(c *check.C) {
 			{
 				UUID:     test.ContainerUUID(4),
 				Priority: 4,
-				State:    arvados.ContainerStateQueued,
+				State:    arvados.ContainerStateLocked,
 				RuntimeConstraints: arvados.RuntimeConstraints{
 					VCPUs: 1,
 					RAM:   1 << 30,
@@ -154,11 +154,11 @@ func (*SchedulerSuite) TestUseIdleWorkers(c *check.C) {
 			test.InstanceType(2): 2,
 		},
 		running:   map[string]time.Time{},
-		canCreate: 1,
+		canCreate: 0,
 	}
 	New(logger, &queue, &pool, time.Millisecond, time.Millisecond).runQueue()
 	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{test.InstanceType(1)})
-	c.Check(pool.starts, check.DeepEquals, []string{test.ContainerUUID(4), test.ContainerUUID(3)})
+	c.Check(pool.starts, check.DeepEquals, []string{test.ContainerUUID(4)})
 	c.Check(pool.running, check.HasLen, 1)
 	for uuid := range pool.running {
 		c.Check(uuid, check.Equals, uuids[4])
@@ -169,9 +169,10 @@ func (*SchedulerSuite) TestUseIdleWorkers(c *check.C) {
 // Create(), if AtQuota() is true.
 func (*SchedulerSuite) TestShutdownAtQuota(c *check.C) {
 	for quota := 0; quota < 2; quota++ {
+		c.Logf("quota=%d", quota)
 		shouldCreate := []arvados.InstanceType{}
-		for i := 1; i < 1+quota; i++ {
-			shouldCreate = append(shouldCreate, test.InstanceType(i))
+		for i := 0; i < quota; i++ {
+			shouldCreate = append(shouldCreate, test.InstanceType(1))
 		}
 		queue := test.Queue{
 			ChooseType: func(ctr *arvados.Container) (arvados.InstanceType, error) {
@@ -181,7 +182,7 @@ func (*SchedulerSuite) TestShutdownAtQuota(c *check.C) {
 				{
 					UUID:     test.ContainerUUID(1),
 					Priority: 1,
-					State:    arvados.ContainerStateQueued,
+					State:    arvados.ContainerStateLocked,
 					RuntimeConstraints: arvados.RuntimeConstraints{
 						VCPUs: 1,
 						RAM:   1 << 30,
@@ -223,7 +224,7 @@ func (*SchedulerSuite) TestStartWhileCreating(c *check.C) {
 			test.InstanceType(2): 1,
 		},
 		running:   map[string]time.Time{},
-		canCreate: 2,
+		canCreate: 4,
 	}
 	queue := test.Queue{
 		ChooseType: func(ctr *arvados.Container) (arvados.InstanceType, error) {
@@ -234,7 +235,7 @@ func (*SchedulerSuite) TestStartWhileCreating(c *check.C) {
 				// create a new worker
 				UUID:     test.ContainerUUID(1),
 				Priority: 1,
-				State:    arvados.ContainerStateQueued,
+				State:    arvados.ContainerStateLocked,
 				RuntimeConstraints: arvados.RuntimeConstraints{
 					VCPUs: 1,
 					RAM:   1 << 30,
@@ -244,7 +245,7 @@ func (*SchedulerSuite) TestStartWhileCreating(c *check.C) {
 				// tentatively map to unalloc worker
 				UUID:     test.ContainerUUID(2),
 				Priority: 2,
-				State:    arvados.ContainerStateQueued,
+				State:    arvados.ContainerStateLocked,
 				RuntimeConstraints: arvados.RuntimeConstraints{
 					VCPUs: 1,
 					RAM:   1 << 30,
@@ -254,7 +255,7 @@ func (*SchedulerSuite) TestStartWhileCreating(c *check.C) {
 				// start now on idle worker
 				UUID:     test.ContainerUUID(3),
 				Priority: 3,
-				State:    arvados.ContainerStateQueued,
+				State:    arvados.ContainerStateLocked,
 				RuntimeConstraints: arvados.RuntimeConstraints{
 					VCPUs: 1,
 					RAM:   1 << 30,
@@ -264,7 +265,7 @@ func (*SchedulerSuite) TestStartWhileCreating(c *check.C) {
 				// create a new worker
 				UUID:     test.ContainerUUID(4),
 				Priority: 4,
-				State:    arvados.ContainerStateQueued,
+				State:    arvados.ContainerStateLocked,
 				RuntimeConstraints: arvados.RuntimeConstraints{
 					VCPUs: 2,
 					RAM:   2 << 30,
@@ -274,7 +275,7 @@ func (*SchedulerSuite) TestStartWhileCreating(c *check.C) {
 				// tentatively map to unalloc worker
 				UUID:     test.ContainerUUID(5),
 				Priority: 5,
-				State:    arvados.ContainerStateQueued,
+				State:    arvados.ContainerStateLocked,
 				RuntimeConstraints: arvados.RuntimeConstraints{
 					VCPUs: 2,
 					RAM:   2 << 30,
@@ -284,7 +285,7 @@ func (*SchedulerSuite) TestStartWhileCreating(c *check.C) {
 				// start now on idle worker
 				UUID:     test.ContainerUUID(6),
 				Priority: 6,
-				State:    arvados.ContainerStateQueued,
+				State:    arvados.ContainerStateLocked,
 				RuntimeConstraints: arvados.RuntimeConstraints{
 					VCPUs: 2,
 					RAM:   2 << 30,
