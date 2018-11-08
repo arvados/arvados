@@ -75,6 +75,10 @@ gethost() {
     fi
 }
 
+getclusterid() {
+    docker exec $ARVBOX_CONTAINER cat /var/lib/arvados/api_uuid_prefix
+}
+
 updateconf() {
     if test -f ~/.config/arvados/$ARVBOX_CONTAINER.conf ; then
         sed "s/ARVADOS_API_HOST=.*/ARVADOS_API_HOST=$(gethost):8000/" <$HOME/.config/arvados/$ARVBOX_CONTAINER.conf >$HOME/.config/arvados/$ARVBOX_CONTAINER.conf.tmp
@@ -382,8 +386,9 @@ case "$subcmd" in
         ;;
 
     status)
-        echo "Selected: $ARVBOX_CONTAINER"
+        echo "Container: $ARVBOX_CONTAINER"
         if docker ps -a --filter "status=running" | grep -E "$ARVBOX_CONTAINER$" -q ; then
+	    echo "Cluster id: $(getclusterid)"
             echo "Status: running"
             echo "Container IP: $(getip)"
             echo "Published host: $(gethost)"
@@ -453,11 +458,11 @@ case "$subcmd" in
 
     sv)
         if test -n "$1" -a -n "$2" ; then
-            exec docker exec -ti $ARVBOX_CONTAINER sv "$@"
+            exec docker exec $ARVBOX_CONTAINER sv "$@"
         else
             echo "Usage: $0 $subcmd <start|stop|restart> <service>"
             echo "Available services:"
-            exec docker exec -ti $ARVBOX_CONTAINER ls /etc/service
+            exec docker execa $ARVBOX_CONTAINER ls /etc/service
         fi
         ;;
 
