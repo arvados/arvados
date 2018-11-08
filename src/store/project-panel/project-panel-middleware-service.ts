@@ -17,7 +17,7 @@ import { OrderBuilder, OrderDirection } from "~/services/api/order-builder";
 import { FilterBuilder } from "~/services/api/filter-builder";
 import { GroupContentsResource, GroupContentsResourcePrefix } from "~/services/groups-service/groups-service";
 import { updateFavorites } from "../favorites/favorites-actions";
-import { PROJECT_PANEL_CURRENT_UUID, projectPanelActions } from './project-panel-action';
+import { PROJECT_PANEL_CURRENT_UUID, IS_PROJECT_PANEL_TRASHED, projectPanelActions } from './project-panel-action';
 import { Dispatch, MiddlewareAPI } from "redux";
 import { ProjectResource } from "~/models/project";
 import { updateResources } from "~/store/resources/resources-actions";
@@ -41,6 +41,7 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
         const state = api.getState();
         const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
         const projectUuid = getProperty<string>(PROJECT_PANEL_CURRENT_UUID)(state.properties);
+        const isProjectTrashed = getProperty<string>(IS_PROJECT_PANEL_TRASHED)(state.properties);
         if (!projectUuid) {
             api.dispatch(projectPanelCurrentUuidIsNotSet());
         } else if (!dataExplorer) {
@@ -48,7 +49,7 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
         } else {
             try {
                 api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
-                const response = await this.services.groupsService.contents(projectUuid, getParams(dataExplorer));
+                const response = await this.services.groupsService.contents(projectUuid, getParams(dataExplorer, !!isProjectTrashed));
                 api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
                 const resourceUuids = response.items.map(item => item.uuid);
                 api.dispatch<any>(updateFavorites(resourceUuids));
@@ -105,10 +106,11 @@ export const setItems = (listResults: ListResults<GroupContentsResource>) =>
         items: listResults.items.map(resource => resource.uuid),
     });
 
-export const getParams = (dataExplorer: DataExplorer) => ({
+export const getParams = (dataExplorer: DataExplorer, isProjectTrashed: boolean) => ({
     ...dataExplorerToListParams(dataExplorer),
     order: getOrder(dataExplorer),
     filters: getFilters(dataExplorer),
+    includeTrash: isProjectTrashed
 });
 
 export const getFilters = (dataExplorer: DataExplorer) => {

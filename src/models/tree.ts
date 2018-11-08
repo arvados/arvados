@@ -24,6 +24,12 @@ export enum TreeNodeStatus {
     LOADED = 'LOADED',
 }
 
+export enum TreePickerId {
+    PROJECTS = 'Projects',
+    SHARED_WITH_ME = 'Shared with me',
+    FAVORITES = 'Favorites'
+}
+
 export const createTree = <T>(): Tree<T> => ({});
 
 export const getNode = (id: string) => <T>(tree: Tree<T>): TreeNode<T> | undefined => tree[id];

@@ -79,7 +79,7 @@ export const CollectionPanel = withStyles(styles)(
                             <CardHeader
                                 avatar={<CollectionIcon className={classes.iconHeader} />}
                                 action={
-                                    <Tooltip title="More options">
+                                    <Tooltip title="More options" disableFocusListener>
                                         <IconButton
                                             aria-label="More options"
                                             onClick={this.handleContextMenu}>
