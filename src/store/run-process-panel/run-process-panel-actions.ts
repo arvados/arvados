@@ -16,9 +16,7 @@ import { ContainerRequestState } from '~/models/container-request';
 import { navigateToProcess } from '../navigation/navigation-action';
 import { RunProcessAdvancedFormData, RUN_PROCESS_ADVANCED_FORM } from '~/views/run-process-panel/run-process-advanced-form';
 import { isItemNotInProject, isProjectOrRunProcessRoute } from '~/store/projects/project-create-actions';
-import { matchProjectRoute } from '~/routes/routes';
 import { dialogActions } from '~/store/dialog/dialog-actions';
-import * as uuid from 'uuid/v4';
 
 export const runProcessPanelActions = unionize({
     SET_PROCESS_OWNER_UUID: ofType<string>(),
