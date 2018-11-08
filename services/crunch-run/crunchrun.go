@@ -32,7 +32,6 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
-	"github.com/shirou/gopsutil/process"
 	"golang.org/x/net/context"
 
 	dockertypes "github.com/docker/docker/api/types"
@@ -127,8 +126,6 @@ type ContainerRunner struct {
 	finalState      string
 	parentTemp      string
 
-	ListProcesses func() ([]PsProcess, error)
-
 	statLogger       io.WriteCloser
 	statReporter     *crunchstat.Reporter
 	hoststatLogger   io.WriteCloser
@@ -153,10 +150,9 @@ type ContainerRunner struct {
 	cCancelled bool // StopContainer() invoked
 	cRemoved   bool // docker confirmed the container no longer exists
 
-	enableNetwork   string // one of "default" or "always"
-	networkMode     string // passed through to HostConfig.NetworkMode
-	arvMountLog     *ThrottledLogger
-	checkContainerd time.Duration
+	enableNetwork string // one of "default" or "always"
+	networkMode   string // passed through to HostConfig.NetworkMode
+	arvMountLog   *ThrottledLogger
 
 	containerWatchdogInterval time.Duration
 }
@@ -1108,27 +1104,6 @@ func (runner *ContainerRunner) StartContainer() error {
 	return nil
 }
 
-// checkContainerd checks if "containerd" is present in the process list.
-func (runner *ContainerRunner) CheckContainerd() error {
-	if runner.checkContainerd == 0 {
-		return nil
-	}
-	p, _ := runner.ListProcesses()
-	for _, i := range p {
-		e, _ := i.CmdlineSlice()
-		if len(e) > 0 {
-			if strings.Index(e[0], "containerd") > -1 {
-				return nil
-			}
-		}
-	}
-
-	// Not found
-	runner.runBrokenNodeHook()
-	runner.stop(nil)
-	return fmt.Errorf("'containerd' not found in process list.")
-}
-
 // WaitFinish waits for the container to terminate, capture the exit code, and
 // close the stdout/stderr logging.
 func (runner *ContainerRunner) WaitFinish() error {
@@ -1167,27 +1142,6 @@ func (runner *ContainerRunner) WaitFinish() error {
 		}
 	}()
 
-	containerdGone := make(chan error)
-	defer close(containerdGone)
-	if runner.checkContainerd > 0 {
-		go func() {
-			ticker := time.NewTicker(time.Duration(runner.checkContainerd))
-			defer ticker.Stop()
-			for {
-				select {
-				case <-ticker.C:
-					if ck := runner.CheckContainerd(); ck != nil {
-						containerdGone <- ck
-						return
-					}
-				case <-containerdGone:
-					// Channel closed, quit goroutine
-					return
-				}
-			}
-		}()
-	}
-
 	for {
 		select {
 		case waitBody := <-waitOk:
@@ -1216,9 +1170,6 @@ func (runner *ContainerRunner) WaitFinish() error {
 
 		case <-containerGone:
 			return errors.New("docker client never returned status")
-
-		case err := <-containerdGone:
-			return err
 		}
 	}
 }
@@ -1604,12 +1555,6 @@ func (runner *ContainerRunner) Run() (err error) {
 		return
 	}
 
-	// Sanity check that containerd is running.
-	err = runner.CheckContainerd()
-	if err != nil {
-		return
-	}
-
 	// check for and/or load image
 	err = runner.LoadImage()
 	if err != nil {
@@ -1729,17 +1674,6 @@ func NewContainerRunner(client *arvados.Client, api IArvadosClient, kc IKeepClie
 	cr.NewLogWriter = cr.NewArvLogWriter
 	cr.RunArvMount = cr.ArvMountCmd
 	cr.MkTempDir = ioutil.TempDir
-	cr.ListProcesses = func() ([]PsProcess, error) {
-		pr, err := process.Processes()
-		if err != nil {
-			return nil, err
-		}
-		ps := make([]PsProcess, len(pr))
-		for i, j := range pr {
-			ps[i] = j
-		}
-		return ps, nil
-	}
 	cr.MkArvClient = func(token string) (IArvadosClient, IKeepClient, error) {
 		cl, err := arvadosclient.MakeArvadosClient()
 		if err != nil {
@@ -1787,7 +1721,7 @@ func main() {
     	`)
 	memprofile := flag.String("memprofile", "", "write memory profile to `file` after running container")
 	getVersion := flag.Bool("version", false, "Print version information and exit.")
-	checkContainerd := flag.Duration("check-containerd", 60*time.Second, "Periodic check if (docker-)containerd is running (use 0s to disable).")
+	flag.Duration("check-containerd", 0, "Ignored. Exists for compatibility with older versions.")
 	flag.Parse()
 
 	// Print version information if requested
@@ -1843,7 +1777,6 @@ func main() {
 	cr.expectCgroupParent = *cgroupParent
 	cr.enableNetwork = *enableNetwork
 	cr.networkMode = *networkMode
-	cr.checkContainerd = *checkContainerd
 	if *cgroupParentSubsystem != "" {
 		p := findCgroup(*cgroupParentSubsystem)
 		cr.setCgroupParent = p
