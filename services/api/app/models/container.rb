@@ -226,7 +226,7 @@ class Container < ArvadosModel
 
       uuid = mount.delete 'uuid'
 
-      if mount['portable_data_hash'].nil?
+      if mount['portable_data_hash'].nil? and !uuid.nil?
         # PDH not supplied, try by UUID
         c = Collection.
           readable_by(current_user).
