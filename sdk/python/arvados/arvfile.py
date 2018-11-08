@@ -903,10 +903,34 @@ class ArvadosFile(object):
     @synchronized
     def has_remote_blocks(self):
         """Returns True if any of the segment's locators has a +R signature"""
+
         for s in self._segments:
             if '+R' in s.locator:
                 return True
         return False
+
+    @synchronized
+    def _copy_remote_blocks(self, remote_blocks={}):
+        """Ask Keep to copy remote blocks and point to their local copies.
+
+        This is called from the parent Collection.
+
+        :remote_blocks:
+            Shared cache of remote to local block mappings. This is used to avoid
+            doing extra work when blocks are shared by more than one file in
+            different subdirectories.
+        """
+
+        for s in self._segments:
+            if '+R' in s.locator:
+                try:
+                    loc = remote_blocks[s.locator]
+                except KeyError:
+                    loc = self.parent._my_keep().refresh_signature(s.locator)
+                    remote_blocks[s.locator] = loc
+                s.locator = loc
+                self.parent.set_committed(False)
+        return remote_blocks
 
     @synchronized
     def segments(self):

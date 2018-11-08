@@ -549,10 +549,18 @@ class RichCollectionBase(CollectionBase):
     def has_remote_blocks(self):
         """Recursively check for a +R segment locator signature."""
 
+        if self._has_remote_blocks:
+            return True
         for item in self:
             if self[item].has_remote_blocks():
                 return True
         return False
+
+    @synchronized
+    def set_has_remote_blocks(self, val):
+        self._has_remote_blocks = val
+        if self.parent:
+            self.parent.set_has_remote_blocks(val)
 
     @must_be_writable
     @synchronized
@@ -842,6 +850,8 @@ class RichCollectionBase(CollectionBase):
 
         self._items[target_name] = item
         self.set_committed(False)
+        if not self._has_remote_blocks and source_obj.has_remote_blocks():
+            self.set_has_remote_blocks(True)
 
         if modified_from:
             self.notify(MOD, self, target_name, (modified_from, item))
@@ -911,8 +921,6 @@ class RichCollectionBase(CollectionBase):
 
         source_obj, target_dir, target_name = self._get_src_target(source, target_path, source_collection, True)
         target_dir.add(source_obj, target_name, overwrite, False)
-        if not self._has_remote_blocks and source_obj.has_remote_blocks():
-            self._has_remote_blocks = True
 
     @must_be_writable
     @synchronized
@@ -939,8 +947,6 @@ class RichCollectionBase(CollectionBase):
         if not source_obj.writable():
             raise IOError(errno.EROFS, "Source collection is read only", source)
         target_dir.add(source_obj, target_name, overwrite, True)
-        if not self._has_remote_blocks and source_obj.has_remote_blocks():
-            self._has_remote_blocks = True
 
     def portable_manifest_text(self, stream_name="."):
         """Get the manifest text for this collection, sub collections and files.
@@ -1052,18 +1058,7 @@ class RichCollectionBase(CollectionBase):
 
         """
         for item in self:
-            if isinstance(self[item], ArvadosFile):
-                for s in self[item].segments():
-                    if '+R' in s.locator:
-                        try:
-                            loc = remote_blocks[s.locator]
-                        except KeyError:
-                            loc = self._my_keep().refresh_signature(s.locator)
-                            remote_blocks[s.locator] = loc
-                        s.locator = loc
-                        self.set_committed(False)
-            elif isinstance(self[item], RichCollectionBase):
-                remote_blocks = self[item]._copy_remote_blocks(remote_blocks)
+            remote_blocks = self[item]._copy_remote_blocks(remote_blocks)
         return remote_blocks
 
     @synchronized
