@@ -209,7 +209,7 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 	wg := sync.WaitGroup{}
 	pdh := m[1]
 	success := make(chan *http.Response)
-	errorChan := make(chan error, h.handler.Cluster.RequestLimits.GetMultiClusterRequestConcurrency())
+	errorChan := make(chan error, len(h.handler.Cluster.RemoteClusters))
 
 	// use channel as a semaphore to limit the number of concurrent
 	// requests at a time
@@ -271,10 +271,10 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 	}
 	go func() {
 		wg.Wait()
+		close(errorChan)
 		cancelFunc()
 	}()
 
-	var errors []string
 	errorCode := http.StatusNotFound
 
 	for {
@@ -282,14 +282,16 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 		case newResp = <-success:
 			h.handler.proxy.ForwardResponse(w, newResp, nil)
 			return
-		case err := <-errorChan:
-			if httperr, ok := err.(HTTPError); ok {
-				if httperr.Code != http.StatusNotFound {
-					errorCode = http.StatusBadGateway
-				}
-			}
-			errors = append(errors, err.Error())
 		case <-sharedContext.Done():
+			var errors []string
+			for err := range errorChan {
+				if httperr, ok := err.(HTTPError); ok {
+					if httperr.Code != http.StatusNotFound {
+						errorCode = http.StatusBadGateway
+					}
+				}
+				errors = append(errors, err.Error())
+			}
 			httpserver.Errors(w, errors, errorCode)
 			return
 		}
