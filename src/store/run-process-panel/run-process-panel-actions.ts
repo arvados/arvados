@@ -17,10 +17,13 @@ import { navigateToProcess } from '../navigation/navigation-action';
 import { RunProcessAdvancedFormData, RUN_PROCESS_ADVANCED_FORM } from '~/views/run-process-panel/run-process-advanced-form';
 import { isItemNotInProject, isProjectOrRunProcessRoute } from '~/store/projects/project-create-actions';
 import { matchProjectRoute } from '~/routes/routes';
+import { dialogActions } from '~/store/dialog/dialog-actions';
+import * as uuid from 'uuid/v4';
 
 export const runProcessPanelActions = unionize({
     SET_PROCESS_OWNER_UUID: ofType<string>(),
     SET_CURRENT_STEP: ofType<number>(),
+    SET_STEP_CHANGED: ofType<boolean>(),
     SET_WORKFLOWS: ofType<WorkflowResource[]>(),
     SET_SELECTED_WORKFLOW: ofType<WorkflowResource>(),
     SEARCH_WORKFLOWS: ofType<string>(),
@@ -32,6 +35,7 @@ export interface RunProcessSecondStepDataFormProps {
     description: string;
 }
 
+export const SET_WORKFLOW_DIALOG = 'setWorkflowDialog';
 export const RUN_PROCESS_SECOND_STEP_FORM_NAME = 'runProcessSecondStepFormName';
 
 export type RunProcessPanelAction = UnionOf<typeof runProcessPanelActions>;
@@ -47,18 +51,44 @@ export const loadRunProcessPanel = () =>
         }
     };
 
-export const setWorkflow = (workflow: WorkflowResource) =>
-    async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(runProcessPanelActions.SET_SELECTED_WORKFLOW(workflow));
+export const openSetWorkflowDialog = (workflow: WorkflowResource) =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        const selectedWorkflow = getState().runProcessPanel.selectedWorkflow;
+        const isStepChanged = getState().runProcessPanel.isStepChanged;
+        if (isStepChanged && selectedWorkflow && selectedWorkflow.uuid !== workflow.uuid) {
+            dispatch(dialogActions.OPEN_DIALOG({
+                id: SET_WORKFLOW_DIALOG,
+                data: {
+                    title: 'Data loss warning',
+                    text: 'Changing a workflow will clean all input fields in next step.',
+                    confirmButtonLabel: 'Change Workflow',
+                    workflow
+                }
+            }));
+        } else {
+            dispatch<any>(setWorkflow(workflow, false));
+        }
     };
 
-export const goToStep = (step: number) => runProcessPanelActions.SET_CURRENT_STEP(step);
+export const setWorkflow = (workflow: WorkflowResource, isWorkflowChanged = true) =>
+    (dispatch: Dispatch<any>, getState: () => RootState) => {
+        const isStepChanged = getState().runProcessPanel.isStepChanged;
+        if (isStepChanged && isWorkflowChanged) {
+            dispatch(runProcessPanelActions.SET_STEP_CHANGED(false));
+            dispatch(runProcessPanelActions.SET_SELECTED_WORKFLOW(workflow));
+        }
+        if (!isWorkflowChanged) {
+            dispatch(runProcessPanelActions.SET_SELECTED_WORKFLOW(workflow));
+        }
+    };
 
-const isRunProcessRoute = ({ router }: RootState) => {
-    const pathname = router.location ? router.location.pathname : '';
-    const match = matchProjectRoute(pathname);
-    return !!match;
-};
+export const goToStep = (step: number) =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        if (step === 1) {
+            dispatch(runProcessPanelActions.SET_STEP_CHANGED(true));
+        }
+        dispatch(runProcessPanelActions.SET_CURRENT_STEP(step));
+    };
 
 export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
     const state = getState();
