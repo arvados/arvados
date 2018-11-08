@@ -35,7 +35,7 @@ const inputsSelector = (props: RunProcessInputFormProps) =>
 const initialValuesSelector = createSelector(
     inputsSelector,
     inputs => inputs.reduce(
-        (values, input) => ({ ...values, [input.id]: input.default }),
+        (values, input) => ({ ...values, [input.id]: input.value || input.default }),
         {}));
 
 const propsSelector = createStructuredSelector({

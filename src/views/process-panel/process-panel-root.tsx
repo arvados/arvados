@@ -27,13 +27,13 @@ export interface ProcessPanelRootActionProps {
 
 export type ProcessPanelRootProps = ProcessPanelRootDataProps & ProcessPanelRootActionProps;
 
-export const ProcessPanelRoot = ({process, ...props}: ProcessPanelRootProps) =>
+export const ProcessPanelRoot = ({ process, ...props }: ProcessPanelRootProps) =>
     process
         ? <Grid container spacing={16} alignItems="stretch">
             <Grid item sm={12} md={7}>
                 <ProcessInformationCard
                     process={process}
-                    onContextMenu={event => props.onContextMenu(event, process)} 
+                    onContextMenu={event => props.onContextMenu(event, process)}
                     openProcessInputDialog={props.openProcessInputDialog} />
             </Grid>
             <Grid item sm={12} md={5}>
