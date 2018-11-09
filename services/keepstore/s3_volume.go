@@ -624,8 +624,10 @@ func (v *S3Volume) safeCopy(dst, src string) error {
 		MetadataDirective: "REPLACE",
 	}, v.bucket.Name+"/"+src)
 	err = v.translateError(err)
-	if err != nil {
+	if os.IsNotExist(err) {
 		return err
+	} else if err != nil {
+		return fmt.Errorf("PutCopy(%q ← %q): %s", dst, v.bucket.Name+"/"+src, err)
 	}
 	if t, err := time.Parse(time.RFC3339Nano, resp.LastModified); err != nil {
 		return fmt.Errorf("PutCopy succeeded but did not return a timestamp: %q: %s", resp.LastModified, err)
