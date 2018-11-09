@@ -51,11 +51,7 @@ export const openAdvancedTabDialog = (uuid: string) =>
         const { resources } = getState();
         const kind = extractUuidKind(uuid);
         const data = getResource<any>(uuid)(resources);
-        const user = await services.userService.list({
-            filters: new FilterBuilder()
-                .addEqual('uuid', data.ownerUuid)
-                .getFilters()
-        });
+        const user = await services.userService.get(data.ownerUuid);
         const metadata = await services.linkService.list({
             filters: new FilterBuilder()
                 .addEqual('headUuid', uuid)
@@ -80,7 +76,8 @@ export const openAdvancedTabDialog = (uuid: string) =>
 const advancedTabData = (uuid: string, metadata: any, user: any, apiResponseKind: any, data: any, resourceKind: CollectionData | ProcessData | ProjectData, resourcePrefix: GroupContentsResourcePrefix, resourceKindProperty: CollectionData | ProcessData | ProjectData, property: any) => {
     return {
         uuid,
-        metadata: { ...metadata, user },
+        user,
+        metadata,
         apiResponse: apiResponseKind(data),
         pythonHeader: pythonHeader(resourceKind),
         pythonExample: pythonExample(uuid, resourcePrefix),
