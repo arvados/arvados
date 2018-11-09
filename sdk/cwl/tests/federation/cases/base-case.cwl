@@ -10,8 +10,6 @@ requirements:
   InlineJavascriptRequirement: {}
   DockerRequirement:
     dockerPull: arvados/fed-test:base-case
-  arv:ClusterTarget:
-    cluster_id: $(inputs.runOnCluster)
 inputs:
   inp:
     type: File
@@ -25,5 +23,6 @@ steps:
   md5sum:
     in:
       inp: inp
+      runOnCluster: runOnCluster
     out: [hash]
     run: md5sum.cwl
