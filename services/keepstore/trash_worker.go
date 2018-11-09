@@ -51,24 +51,24 @@ func TrashItem(trashRequest TrashRequest) {
 	for _, volume := range volumes {
 		mtime, err := volume.Mtime(trashRequest.Locator)
 		if err != nil {
-			log.Printf("%v Delete(%v): %v", volume, trashRequest.Locator, err)
+			log.Printf("%v Trash(%v): %v", volume, trashRequest.Locator, err)
 			continue
 		}
 		if trashRequest.BlockMtime != mtime.UnixNano() {
-			log.Printf("%v Delete(%v): stored mtime %v does not match trash list value %v", volume, trashRequest.Locator, mtime.UnixNano(), trashRequest.BlockMtime)
+			log.Printf("%v Trash(%v): stored mtime %v does not match trash list value %v", volume, trashRequest.Locator, mtime.UnixNano(), trashRequest.BlockMtime)
 			continue
 		}
 
 		if !theConfig.EnableDelete {
-			err = errors.New("did not delete block because EnableDelete is false")
+			err = errors.New("skipping because EnableDelete is false")
 		} else {
 			err = volume.Trash(trashRequest.Locator)
 		}
 
 		if err != nil {
-			log.Printf("%v Delete(%v): %v", volume, trashRequest.Locator, err)
+			log.Printf("%v Trash(%v): %v", volume, trashRequest.Locator, err)
 		} else {
-			log.Printf("%v Delete(%v) OK", volume, trashRequest.Locator)
+			log.Printf("%v Trash(%v) OK", volume, trashRequest.Locator)
 		}
 	}
 }
