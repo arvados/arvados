@@ -54,6 +54,9 @@ outputs:
 
 steps:
   base-case:
+    doc: |
+      Base case (no federation), single step workflow with both the
+      runner and step on the same cluster.
     in:
       arvados_api_token: arvados_api_token
       arvado_api_host_insecure: arvado_api_host_insecure
@@ -87,6 +90,9 @@ steps:
     run: framework/testcase.cwl
 
   runner-home-step-remote:
+    doc: |
+      Single step workflow with the runner on the home cluster and the
+      step on the remote cluster.
     in:
       arvados_api_token: arvados_api_token
       arvado_api_host_insecure: arvado_api_host_insecure
@@ -121,6 +127,9 @@ steps:
     run: framework/testcase.cwl
 
   runner-remote-step-home:
+    doc: |
+      Single step workflow with the runner on the remote cluster and the
+      step on the home cluster.
     in:
       arvados_api_token: arvados_api_token
       arvado_api_host_insecure: arvado_api_host_insecure
@@ -155,6 +164,9 @@ steps:
     run: framework/testcase.cwl
 
   remote-case:
+    doc: |
+      Single step workflow with both the runner and the step on the
+      remote cluster.
     in:
       arvados_api_token: arvados_api_token
       arvado_api_host_insecure: arvado_api_host_insecure
@@ -189,6 +201,10 @@ steps:
     run: framework/testcase.cwl
 
   twostep-home-to-remote:
+    doc: |
+      Two step workflow.  The runner is on the home cluster, the first
+      step is on the home cluster, the second step is on the remote
+      cluster.
     in:
       arvados_api_token: arvados_api_token
       arvado_api_host_insecure: arvado_api_host_insecure
@@ -227,6 +243,10 @@ steps:
     run: framework/testcase.cwl
 
   twostep-remote-to-home:
+    doc: |
+      Two step workflow.  The runner is on the home cluster, the first
+      step is on the remote cluster, the second step is on the home
+      cluster.
     in:
       arvados_api_token: arvados_api_token
       arvado_api_host_insecure: arvado_api_host_insecure
@@ -265,6 +285,9 @@ steps:
     run: framework/testcase.cwl
 
   twostep-both-remote:
+    doc: |
+      Two step workflow.  The runner is on the home cluster, both steps are
+      on the remote cluster.
     in:
       arvados_api_token: arvados_api_token
       arvado_api_host_insecure: arvado_api_host_insecure
