@@ -442,14 +442,14 @@ func (client *KeepTestClient) ManifestFileReader(m manifest.Manifest, filename s
 }
 
 func (s *TestSuite) TestLoadImage(c *C) {
-	kc := &KeepTestClient{}
-	defer kc.Close()
-	cr, err := NewContainerRunner(s.client, &ArvTestClient{}, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, &ArvTestClient{},
+		&KeepTestClient{}, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
 
-	cr.MkArvClient = func(token string) (IArvadosClient, IKeepClient, error) {
-		return &ArvTestClient{}, kc, nil
-	}
+	kc := &KeepTestClient{}
+	defer kc.Close()
+	cr.ContainerArvClient = &ArvTestClient{}
+	cr.ContainerKeepClient = kc
 
 	_, err = cr.Docker.ImageRemove(nil, hwImageId, dockertypes.ImageRemoveOptions{})
 	c.Check(err, IsNil)
@@ -566,10 +566,10 @@ func (s *TestSuite) TestLoadImageArvError(c *C) {
 	cr, err := NewContainerRunner(s.client, &ArvErrorTestClient{}, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
 
+	cr.ContainerArvClient = &ArvErrorTestClient{}
+	cr.ContainerKeepClient = &KeepTestClient{}
+
 	cr.Container.ContainerImage = hwPDH
-	cr.MkArvClient = func(token string) (IArvadosClient, IKeepClient, error) {
-		return &ArvErrorTestClient{}, &KeepTestClient{}, nil
-	}
 
 	err = cr.LoadImage()
 	c.Check(err.Error(), Equals, "While getting container image collection: ArvError")
@@ -580,10 +580,11 @@ func (s *TestSuite) TestLoadImageKeepError(c *C) {
 	kc := &KeepErrorTestClient{}
 	cr, err := NewContainerRunner(s.client, &ArvTestClient{}, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
+
+	cr.ContainerArvClient = &ArvTestClient{}
+	cr.ContainerKeepClient = &KeepErrorTestClient{}
+
 	cr.Container.ContainerImage = hwPDH
-	cr.MkArvClient = func(token string) (IArvadosClient, IKeepClient, error) {
-		return &ArvTestClient{}, kc, nil
-	}
 
 	err = cr.LoadImage()
 	c.Assert(err, NotNil)
@@ -596,9 +597,9 @@ func (s *TestSuite) TestLoadImageCollectionError(c *C) {
 	cr, err := NewContainerRunner(s.client, &ArvTestClient{}, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
 	cr.Container.ContainerImage = otherPDH
-	cr.MkArvClient = func(token string) (IArvadosClient, IKeepClient, error) {
-		return &ArvTestClient{}, kc, nil
-	}
+
+	cr.ContainerArvClient = &ArvTestClient{}
+	cr.ContainerKeepClient = &KeepReadErrorTestClient{}
 
 	err = cr.LoadImage()
 	c.Check(err.Error(), Equals, "First file in the container image collection does not end in .tar")
@@ -610,9 +611,8 @@ func (s *TestSuite) TestLoadImageKeepReadError(c *C) {
 	cr, err := NewContainerRunner(s.client, &ArvTestClient{}, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
 	cr.Container.ContainerImage = hwPDH
-	cr.MkArvClient = func(token string) (IArvadosClient, IKeepClient, error) {
-		return &ArvTestClient{}, kc, nil
-	}
+	cr.ContainerArvClient = &ArvTestClient{}
+	cr.ContainerKeepClient = &KeepReadErrorTestClient{}
 
 	err = cr.LoadImage()
 	c.Check(err, NotNil)
@@ -660,9 +660,8 @@ func (s *TestSuite) TestRunContainer(c *C) {
 	cr, err := NewContainerRunner(s.client, &ArvTestClient{}, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
 
-	cr.MkArvClient = func(token string) (IArvadosClient, IKeepClient, error) {
-		return &ArvTestClient{}, kc, nil
-	}
+	cr.ContainerArvClient = &ArvTestClient{}
+	cr.ContainerKeepClient = &KeepTestClient{}
 
 	var logs TestLogs
 	cr.NewLogWriter = logs.NewTestLoggingWriter
@@ -807,8 +806,8 @@ func (s *TestSuite) fullRunHelper(c *C, record string, extraMounts []string, exi
 		}
 		return d, err
 	}
-	cr.MkArvClient = func(token string) (IArvadosClient, IKeepClient, error) {
-		return &ArvTestClient{secretMounts: secretMounts}, &KeepTestClient{}, nil
+	cr.MkArvClient = func(token string) (IArvadosClient, IKeepClient, *arvados.Client, error) {
+		return &ArvTestClient{secretMounts: secretMounts}, &KeepTestClient{}, nil, nil
 	}
 
 	if extraMounts != nil && len(extraMounts) > 0 {
@@ -1104,8 +1103,8 @@ func (s *TestSuite) testStopContainer(c *C, setup func(cr *ContainerRunner)) {
 	cr, err := NewContainerRunner(s.client, api, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
 	cr.RunArvMount = func([]string, string) (*exec.Cmd, error) { return nil, nil }
-	cr.MkArvClient = func(token string) (IArvadosClient, IKeepClient, error) {
-		return &ArvTestClient{}, &KeepTestClient{}, nil
+	cr.MkArvClient = func(token string) (IArvadosClient, IKeepClient, *arvados.Client, error) {
+		return &ArvTestClient{}, &KeepTestClient{}, nil, nil
 	}
 	setup(cr)
 
@@ -1177,6 +1176,8 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 	c.Assert(err, IsNil)
 	am := &ArvMountCmdLine{}
 	cr.RunArvMount = am.ArvMountTest
+	cr.ContainerArvClient = &ArvTestClient{}
+	cr.ContainerKeepClient = &KeepTestClient{}
 
 	realTemp, err := ioutil.TempDir("", "crunchrun_test1-")
 	c.Assert(err, IsNil)
@@ -1562,14 +1563,14 @@ func (s *TestSuite) TestStdout(c *C) {
 		"runtime_constraints": {}
 	}`
 
-	api, _, _ := s.fullRunHelper(c, helperRecord, nil, 0, func(t *TestDockerClient) {
+	api, cr, _ := s.fullRunHelper(c, helperRecord, nil, 0, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
 		t.logWriter.Close()
 	})
 
 	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
-	c.Check(api.CalledWith("collection.manifest_text", "./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out\n"), NotNil)
+	c.Check(cr.ContainerArvClient.(*ArvTestClient).CalledWith("collection.manifest_text", "./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out\n"), NotNil)
 }
 
 // Used by the TestStdoutWithWrongPath*()
@@ -1588,8 +1589,8 @@ func (s *TestSuite) stdoutErrorRunHelper(c *C, record string, fn func(t *TestDoc
 	c.Assert(err, IsNil)
 	am := &ArvMountCmdLine{}
 	cr.RunArvMount = am.ArvMountTest
-	cr.MkArvClient = func(token string) (IArvadosClient, IKeepClient, error) {
-		return &ArvTestClient{}, &KeepTestClient{}, nil
+	cr.MkArvClient = func(token string) (IArvadosClient, IKeepClient, *arvados.Client, error) {
+		return &ArvTestClient{}, &KeepTestClient{}, nil, nil
 	}
 
 	err = cr.Run()
@@ -1692,14 +1693,14 @@ func (s *TestSuite) TestStdoutWithExcludeFromOutputMountPointUnderOutputDir(c *C
 
 	extraMounts := []string{"a3e8f74c6f101eae01fa08bfb4e49b3a+54"}
 
-	api, _, _ := s.fullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
+	api, cr, _ := s.fullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
 		t.logWriter.Close()
 	})
 
 	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
-	c.Check(api.CalledWith("collection.manifest_text", "./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out\n"), NotNil)
+	c.Check(cr.ContainerArvClient.(*ArvTestClient).CalledWith("collection.manifest_text", "./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out\n"), NotNil)
 }
 
 func (s *TestSuite) TestStdoutWithMultipleMountPointsUnderOutputDir(c *C) {
@@ -1899,7 +1900,7 @@ func (s *TestSuite) TestStdinJsonMountPoint(c *C) {
 }
 
 func (s *TestSuite) TestStderrMount(c *C) {
-	api, _, _ := s.fullRunHelper(c, `{
+	api, cr, _ := s.fullRunHelper(c, `{
     "command": ["/bin/sh", "-c", "echo hello;exit 1"],
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": ".",
@@ -1921,7 +1922,7 @@ func (s *TestSuite) TestStderrMount(c *C) {
 	c.Check(final["container"].(arvadosclient.Dict)["exit_code"], Equals, 1)
 	c.Check(final["container"].(arvadosclient.Dict)["log"], NotNil)
 
-	c.Check(api.CalledWith("collection.manifest_text", "./a b1946ac92492d2347c6235b4d2611184+6 0:6:out.txt\n./b 38af5c54926b620264ab1501150cf189+5 0:5:err.txt\n"), NotNil)
+	c.Check(cr.ContainerArvClient.(*ArvTestClient).CalledWith("collection.manifest_text", "./a b1946ac92492d2347c6235b4d2611184+6 0:6:out.txt\n./b 38af5c54926b620264ab1501150cf189+5 0:5:err.txt\n"), NotNil)
 }
 
 func (s *TestSuite) TestNumberRoundTrip(c *C) {
@@ -2100,7 +2101,7 @@ func (s *TestSuite) TestSecretTextMountPoint(c *C) {
 		"runtime_constraints": {}
 	}`
 
-	api, _, _ := s.fullRunHelper(c, helperRecord, nil, 0, func(t *TestDockerClient) {
+	api, cr, _ := s.fullRunHelper(c, helperRecord, nil, 0, func(t *TestDockerClient) {
 		content, err := ioutil.ReadFile(t.realTemp + "/tmp2/secret.conf")
 		c.Check(err, IsNil)
 		c.Check(content, DeepEquals, []byte("mypassword"))
@@ -2109,8 +2110,8 @@ func (s *TestSuite) TestSecretTextMountPoint(c *C) {
 
 	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
-	c.Check(api.CalledWith("collection.manifest_text", ". 34819d7beeabb9260a5c854bc85b3e44+10 0:10:secret.conf\n"), NotNil)
-	c.Check(api.CalledWith("collection.manifest_text", ""), IsNil)
+	c.Check(cr.ContainerArvClient.(*ArvTestClient).CalledWith("collection.manifest_text", ". 34819d7beeabb9260a5c854bc85b3e44+10 0:10:secret.conf\n"), NotNil)
+	c.Check(cr.ContainerArvClient.(*ArvTestClient).CalledWith("collection.manifest_text", ""), IsNil)
 
 	// under secret mounts, not captured in output
 	helperRecord = `{
@@ -2128,7 +2129,7 @@ func (s *TestSuite) TestSecretTextMountPoint(c *C) {
 		"runtime_constraints": {}
 	}`
 
-	api, _, _ = s.fullRunHelper(c, helperRecord, nil, 0, func(t *TestDockerClient) {
+	api, cr, _ = s.fullRunHelper(c, helperRecord, nil, 0, func(t *TestDockerClient) {
 		content, err := ioutil.ReadFile(t.realTemp + "/tmp2/secret.conf")
 		c.Check(err, IsNil)
 		c.Check(content, DeepEquals, []byte("mypassword"))
@@ -2137,8 +2138,8 @@ func (s *TestSuite) TestSecretTextMountPoint(c *C) {
 
 	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
-	c.Check(api.CalledWith("collection.manifest_text", ". 34819d7beeabb9260a5c854bc85b3e44+10 0:10:secret.conf\n"), IsNil)
-	c.Check(api.CalledWith("collection.manifest_text", ""), NotNil)
+	c.Check(cr.ContainerArvClient.(*ArvTestClient).CalledWith("collection.manifest_text", ". 34819d7beeabb9260a5c854bc85b3e44+10 0:10:secret.conf\n"), IsNil)
+	c.Check(cr.ContainerArvClient.(*ArvTestClient).CalledWith("collection.manifest_text", ""), NotNil)
 }
 
 type FakeProcess struct {
