@@ -42,6 +42,12 @@ outputs:
   twostep-home-to-remote-success:
     type: Any
     outputSource: twostep-home-to-remote/success
+  twostep-remote-to-home-success:
+    type: Any
+    outputSource: twostep-remote-to-home/success
+  twostep-both-remote:
+    type: Any
+    outputSource: twostep-both-remote/success
 
 steps:
   base-case:
@@ -180,6 +186,82 @@ steps:
           - 400f03b8c5d2dc3dcb513a21b626ef88+51   # md5sum output collection
           - 3738166916ca5f6f6ad12bf7e06b4a21+51   # rev output collection
           - bc37c17a37aa25229e5de1339b27fbcc+112  # runner output json
+    out: [out, success]
+    run: framework/testcase.cwl
+
+  twostep-remote-to-home:
+    in:
+      arvados_api_token: arvados_api_token
+      arvado_api_host_insecure: arvado_api_host_insecure
+      arvados_api_hosts: arvados_api_hosts
+      arvados_cluster_ids: arvados_cluster_ids
+      acr: acr
+      wf:
+        default:
+          class: File
+          location: cases/twostep-remote-to-home.cwl
+          secondaryFiles:
+            - class: File
+              location: cases/md5sum.cwl
+            - class: File
+              location: cases/rev.cwl
+      obj:
+        default:
+          inp:
+            class: File
+            location: data/twostep-remote-to-home.txt
+        valueFrom: |-
+          ${
+          self["md5sumCluster"] = inputs.arvados_cluster_ids[1];
+          self["revCluster"] = inputs.arvados_cluster_ids[0];
+          return self;
+          }
+      runner_cluster: { valueFrom: "$(inputs.arvados_cluster_ids[0])" }
+      scrub_image: {default: "arvados/fed-test:twostep-remote-to-home"}
+      scrub_collections:
+        default:
+          - cce89b9f7b6e163978144051ce5f071a+74   # input collection
+          - 0c358c3af63644c6343766feff1b7238+51   # md5sum output collection
+          - 33fb7d512bf21f04847eca58cea46e74+51   # rev output collection
+          - 912e04aa3db04aba008cf5cd46c277b2+112  # runner output json
+    out: [out, success]
+    run: framework/testcase.cwl
+
+  twostep-both-remote:
+    in:
+      arvados_api_token: arvados_api_token
+      arvado_api_host_insecure: arvado_api_host_insecure
+      arvados_api_hosts: arvados_api_hosts
+      arvados_cluster_ids: arvados_cluster_ids
+      acr: acr
+      wf:
+        default:
+          class: File
+          location: cases/twostep-both-remote.cwl
+          secondaryFiles:
+            - class: File
+              location: cases/md5sum.cwl
+            - class: File
+              location: cases/rev.cwl
+      obj:
+        default:
+          inp:
+            class: File
+            location: data/twostep-both-remote.txt
+        valueFrom: |-
+          ${
+          self["md5sumCluster"] = inputs.arvados_cluster_ids[1];
+          self["revCluster"] = inputs.arvados_cluster_ids[1];
+          return self;
+          }
+      runner_cluster: { valueFrom: "$(inputs.arvados_cluster_ids[0])" }
+      scrub_image: {default: "arvados/fed-test:twostep-both-remote"}
+      scrub_collections:
+        default:
+          - 3c5e39939cf197d304ac1eac20841238+71   # input collection
+          - 3edb99aa607731593969cdab663d65b4+51   # md5sum output collection
+          - a91625b7139e60fe61a88cae42fbee13+51   # rev output collection
+          - ddfa58a81953dad08436d571615dd584+112  # runner output json
     out: [out, success]
     run: framework/testcase.cwl
 
