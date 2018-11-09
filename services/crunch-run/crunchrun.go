@@ -93,42 +93,59 @@ type PsProcess interface {
 // ContainerRunner is the main stateful struct used for a single execution of a
 // container.
 type ContainerRunner struct {
-	Docker               ThinDockerClient
+	Docker ThinDockerClient
+
+	// Dispatcher client is initialized with the Dispatcher token.
+	// This is a priviledged token used to manage container status
+	// and logs.
+	//
+	// We have both dispatcherClient and DispatcherArvClient
+	// because there are two different incompatible Arvados Go
+	// SDKs and we have to use both (hopefully this gets fixed in
+	// #14467)
 	dispatcherClient     *arvados.Client
-	containerClient      *arvados.Client
 	DispatcherArvClient  IArvadosClient
 	DispatcherKeepClient IKeepClient
-	ContainerArvClient   IArvadosClient
-	ContainerKeepClient  IKeepClient
-	Container            arvados.Container
-	ContainerConfig      dockercontainer.Config
-	HostConfig           dockercontainer.HostConfig
-	token                string
-	ContainerID          string
-	ExitCode             *int
-	NewLogWriter         NewLogWriter
-	loggingDone          chan bool
-	CrunchLog            *ThrottledLogger
-	Stdout               io.WriteCloser
-	Stderr               io.WriteCloser
-	logUUID              string
-	logMtx               sync.Mutex
-	LogCollection        arvados.CollectionFileSystem
-	LogsPDH              *string
-	RunArvMount          RunArvMount
-	MkTempDir            MkTempDir
-	ArvMount             *exec.Cmd
-	ArvMountPoint        string
-	HostOutputDir        string
-	Binds                []string
-	Volumes              map[string]struct{}
-	OutputPDH            *string
-	SigChan              chan os.Signal
-	ArvMountExit         chan error
-	SecretMounts         map[string]arvados.Mount
-	MkArvClient          func(token string) (IArvadosClient, IKeepClient, *arvados.Client, error)
-	finalState           string
-	parentTemp           string
+
+	// Container client is initialized with the Container token
+	// This token controls the permissions of the container, and
+	// must be used for operations such as reading collections.
+	//
+	// Same comment as above applies to
+	// containerClient/ContainerArvClient.
+	containerClient     *arvados.Client
+	ContainerArvClient  IArvadosClient
+	ContainerKeepClient IKeepClient
+
+	Container       arvados.Container
+	ContainerConfig dockercontainer.Config
+	HostConfig      dockercontainer.HostConfig
+	token           string
+	ContainerID     string
+	ExitCode        *int
+	NewLogWriter    NewLogWriter
+	loggingDone     chan bool
+	CrunchLog       *ThrottledLogger
+	Stdout          io.WriteCloser
+	Stderr          io.WriteCloser
+	logUUID         string
+	logMtx          sync.Mutex
+	LogCollection   arvados.CollectionFileSystem
+	LogsPDH         *string
+	RunArvMount     RunArvMount
+	MkTempDir       MkTempDir
+	ArvMount        *exec.Cmd
+	ArvMountPoint   string
+	HostOutputDir   string
+	Binds           []string
+	Volumes         map[string]struct{}
+	OutputPDH       *string
+	SigChan         chan os.Signal
+	ArvMountExit    chan error
+	SecretMounts    map[string]arvados.Mount
+	MkArvClient     func(token string) (IArvadosClient, IKeepClient, *arvados.Client, error)
+	finalState      string
+	parentTemp      string
 
 	ListProcesses func() ([]PsProcess, error)
 
