@@ -825,7 +825,15 @@ func (s *TestSuite) fullRunHelper(c *C, record string, extraMounts []string, exi
 	}
 	if exitCode != 2 {
 		c.Check(api.WasSetRunning, Equals, true)
-		c.Check(api.Content[api.Calls-2]["container"].(arvadosclient.Dict)["log"], NotNil)
+		var lastupdate arvadosclient.Dict
+		for _, content := range api.Content {
+			if content["container"] != nil {
+				lastupdate = content["container"].(arvadosclient.Dict)
+			}
+		}
+		if lastupdate["log"] == nil {
+			c.Errorf("no container update with non-nil log -- updates were: %v", api.Content)
+		}
 	}
 
 	if err != nil {
@@ -2148,42 +2156,4 @@ type FakeProcess struct {
 
 func (fp FakeProcess) CmdlineSlice() ([]string, error) {
 	return fp.cmdLine, nil
-}
-
-func (s *TestSuite) helpCheckContainerd(c *C, lp func() ([]PsProcess, error)) error {
-	kc := &KeepTestClient{}
-	defer kc.Close()
-	cr, err := NewContainerRunner(s.client, &ArvTestClient{callraw: true}, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
-	cr.checkContainerd = time.Duration(100 * time.Millisecond)
-	c.Assert(err, IsNil)
-	cr.ListProcesses = lp
-
-	s.docker.fn = func(t *TestDockerClient) {
-		time.Sleep(1 * time.Second)
-		t.logWriter.Close()
-	}
-
-	err = cr.CreateContainer()
-	c.Check(err, IsNil)
-
-	err = cr.StartContainer()
-	c.Check(err, IsNil)
-
-	err = cr.WaitFinish()
-	return err
-
-}
-
-func (s *TestSuite) TestCheckContainerdPresent(c *C) {
-	err := s.helpCheckContainerd(c, func() ([]PsProcess, error) {
-		return []PsProcess{FakeProcess{[]string{"docker-containerd"}}}, nil
-	})
-	c.Check(err, IsNil)
-}
-
-func (s *TestSuite) TestCheckContainerdMissing(c *C) {
-	err := s.helpCheckContainerd(c, func() ([]PsProcess, error) {
-		return []PsProcess{FakeProcess{[]string{"abc"}}}, nil
-	})
-	c.Check(err, ErrorMatches, `'containerd' not found in process list.`)
 }
