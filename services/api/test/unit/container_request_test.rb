@@ -452,6 +452,16 @@ class ContainerRequestTest < ActiveSupport::TestCase
         "path" => "/foo",
       }
     end],
+    # Empty collection
+    [{"/out" => {
+      "kind" => "collection",
+      "path" => "/foo"}},
+    lambda do |resolved|
+      resolved["/out"] == {
+        "kind" => "collection",
+        "path" => "/foo",
+      }
+    end],
   ].each do |mounts, okfunc|
     test "resolve mounts #{mounts.inspect} to values" do
       set_user_from_auth :active
