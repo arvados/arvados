@@ -33,10 +33,10 @@ export const ProcessInputDialog = withDialog(PROCESS_INPUT_DIALOG_NAME)(
 
 const getInputs = (data: any) =>
     data && data.mounts.varLibCwlWorkflowJson ? data.mounts.varLibCwlWorkflowJson.content.graph[1].inputs.map((it: any) => (
-        { type: it.type, id: it.id, label: it.label, value: getValue(it.id, data.mounts.varLibCwlCwlInputJson.content), disabled: true }
+        { type: it.type, id: it.id, label: it.label, value: getInputValue(it.id, data.mounts.varLibCwlCwlInputJson.content), disabled: true }
     )) : [];
 
-const getValue = (id: string, data: any) => {
+const getInputValue = (id: string, data: any) => {
     switch (id) {
         case "#main/example_flag":
             return data.exampleFlag;
