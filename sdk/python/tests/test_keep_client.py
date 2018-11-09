@@ -412,10 +412,10 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
                 int(arvados.KeepClient.DEFAULT_TIMEOUT[0]*1000))
             self.assertEqual(
                 mock.responses[0].getopt(pycurl.LOW_SPEED_TIME),
-                int(arvados.KeepClient.DEFAULT_TIMEOUT[1]))
+                None)
             self.assertEqual(
                 mock.responses[0].getopt(pycurl.LOW_SPEED_LIMIT),
-                int(arvados.KeepClient.DEFAULT_TIMEOUT[2]))
+                None)
 
     def test_proxy_get_timeout(self):
         api_client = self.mock_keep_services(service_type='proxy', count=1)
@@ -446,10 +446,10 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
                 int(arvados.KeepClient.DEFAULT_PROXY_TIMEOUT[0]*1000))
             self.assertEqual(
                 mock.responses[0].getopt(pycurl.LOW_SPEED_TIME),
-                int(arvados.KeepClient.DEFAULT_PROXY_TIMEOUT[1]))
+                None)
             self.assertEqual(
                 mock.responses[0].getopt(pycurl.LOW_SPEED_LIMIT),
-                int(arvados.KeepClient.DEFAULT_PROXY_TIMEOUT[2]))
+                None)
 
     def test_proxy_put_timeout(self):
         api_client = self.mock_keep_services(service_type='proxy', count=1)
@@ -558,6 +558,43 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
             actual = keep_client.put(body, copies=2)
         self.assertEqual(pdh, actual)
         self.assertEqual(1, req_mock.call_count)
+
+
+@tutil.skip_sleep
+class KeepClientCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
+    def setUp(self):
+        self.api_client = self.mock_keep_services(count=2)
+        self.keep_client = arvados.KeepClient(api_client=self.api_client)
+        self.data = b'xyzzy'
+        self.locator = '1271ed5ef305aadabc605b1609e24c52'
+
+    @mock.patch('arvados.KeepClient.KeepService.get')
+    def test_get_request_cache(self, get_mock):
+        with tutil.mock_keep_responses(self.data, 200, 200):
+            self.keep_client.get(self.locator)
+            self.keep_client.get(self.locator)
+        # Request already cached, don't require more than one request
+        get_mock.assert_called_once()
+
+    @mock.patch('arvados.KeepClient.KeepService.get')
+    def test_head_request_cache(self, get_mock):
+        with tutil.mock_keep_responses(self.data, 200, 200):
+            self.keep_client.head(self.locator)
+            self.keep_client.head(self.locator)
+        # Don't cache HEAD requests so that they're not confused with GET reqs
+        self.assertEqual(2, get_mock.call_count)
+
+    @mock.patch('arvados.KeepClient.KeepService.get')
+    def test_head_and_then_get_return_different_responses(self, get_mock):
+        head_resp = None
+        get_resp = None
+        get_mock.side_effect = ['first response', 'second response']
+        with tutil.mock_keep_responses(self.data, 200, 200):
+            head_resp = self.keep_client.head(self.locator)
+            get_resp = self.keep_client.get(self.locator)
+        self.assertEqual('first response', head_resp)
+        # First reponse was not cached because it was from a HEAD request.
+        self.assertNotEqual(head_resp, get_resp)
 
 
 @tutil.skip_sleep
@@ -849,7 +886,7 @@ class KeepClientTimeout(keepstub.StubKeepServers, unittest.TestCase):
         loc = kc.put(self.DATA, copies=1, num_retries=0)
         self.server.setbandwidth(0.5*self.BANDWIDTH_LOW_LIM)
         with self.assertTakesGreater(self.TIMEOUT_TIME):
-            with self.assertRaises(arvados.errors.KeepReadError) as e:
+            with self.assertRaises(arvados.errors.KeepReadError):
                 kc.get(loc, num_retries=0)
         with self.assertTakesGreater(self.TIMEOUT_TIME):
             with self.assertRaises(arvados.errors.KeepWriteError):
@@ -861,14 +898,13 @@ class KeepClientTimeout(keepstub.StubKeepServers, unittest.TestCase):
         self.server.setbandwidth(self.BANDWIDTH_LOW_LIM)
         self.server.setdelays(response=self.TIMEOUT_TIME)
         with self.assertTakesGreater(self.TIMEOUT_TIME):
-            with self.assertRaises(arvados.errors.KeepReadError) as e:
+            with self.assertRaises(arvados.errors.KeepReadError):
                 kc.get(loc, num_retries=0)
         with self.assertTakesGreater(self.TIMEOUT_TIME):
             with self.assertRaises(arvados.errors.KeepWriteError):
                 kc.put(self.DATA, copies=1, num_retries=0)
         with self.assertTakesGreater(self.TIMEOUT_TIME):
-            with self.assertRaises(arvados.errors.KeepReadError) as e:
-                kc.head(loc, num_retries=0)
+            kc.head(loc, num_retries=0)
 
     def test_low_bandwidth_with_server_mid_delay_failure(self):
         kc = self.keepClient()

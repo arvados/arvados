@@ -223,7 +223,11 @@ class Container < ArvadosModel
       if mount['kind'] != 'collection'
         next
       end
-      if (uuid = mount.delete 'uuid')
+
+      uuid = mount.delete 'uuid'
+
+      if mount['portable_data_hash'].nil? and !uuid.nil?
+        # PDH not supplied, try by UUID
         c = Collection.
           readable_by(current_user).
           where(uuid: uuid).
@@ -232,13 +236,7 @@ class Container < ArvadosModel
         if !c
           raise ArvadosModel::UnresolvableContainerError.new "cannot mount collection #{uuid.inspect}: not found"
         end
-        if mount['portable_data_hash'].nil?
-          # PDH not supplied by client
-          mount['portable_data_hash'] = c.portable_data_hash
-        elsif mount['portable_data_hash'] != c.portable_data_hash
-          # UUID and PDH supplied by client, but they don't agree
-          raise ArgumentError.new "cannot mount collection #{uuid.inspect}: current portable_data_hash #{c.portable_data_hash.inspect} does not match #{c['portable_data_hash'].inspect} in request"
-        end
+        mount['portable_data_hash'] = c.portable_data_hash
       end
     end
     return c_mounts

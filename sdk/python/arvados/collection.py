@@ -520,6 +520,7 @@ class RichCollectionBase(CollectionBase):
     def __init__(self, parent=None):
         self.parent = parent
         self._committed = False
+        self._has_remote_blocks = False
         self._callback = None
         self._items = {}
 
@@ -543,6 +544,23 @@ class RichCollectionBase(CollectionBase):
 
     def stream_name(self):
         raise NotImplementedError()
+
+    @synchronized
+    def has_remote_blocks(self):
+        """Recursively check for a +R segment locator signature."""
+
+        if self._has_remote_blocks:
+            return True
+        for item in self:
+            if self[item].has_remote_blocks():
+                return True
+        return False
+
+    @synchronized
+    def set_has_remote_blocks(self, val):
+        self._has_remote_blocks = val
+        if self.parent:
+            self.parent.set_has_remote_blocks(val)
 
     @must_be_writable
     @synchronized
@@ -832,6 +850,8 @@ class RichCollectionBase(CollectionBase):
 
         self._items[target_name] = item
         self.set_committed(False)
+        if not self._has_remote_blocks and source_obj.has_remote_blocks():
+            self.set_has_remote_blocks(True)
 
         if modified_from:
             self.notify(MOD, self, target_name, (modified_from, item))
@@ -1037,18 +1057,8 @@ class RichCollectionBase(CollectionBase):
           different subdirectories.
 
         """
-        for filename in [f for f in self.keys() if isinstance(self[f], ArvadosFile)]:
-            for s in self[filename].segments():
-                if '+R' in s.locator:
-                    try:
-                        loc = remote_blocks[s.locator]
-                    except KeyError:
-                        loc = self._my_keep().refresh_signature(s.locator)
-                        remote_blocks[s.locator] = loc
-                    s.locator = loc
-                    self.set_committed(False)
-        for dirname in [d for d in self.keys() if isinstance(self[d], RichCollectionBase)]:
-            remote_blocks = self[dirname]._copy_remote_blocks(remote_blocks)
+        for item in self:
+            remote_blocks = self[item]._copy_remote_blocks(remote_blocks)
         return remote_blocks
 
     @synchronized
@@ -1285,8 +1295,12 @@ class Collection(RichCollectionBase):
                 self._manifest_locator = manifest_locator_or_text
             elif re.match(arvados.util.collection_uuid_pattern, manifest_locator_or_text):
                 self._manifest_locator = manifest_locator_or_text
+                if not self._has_local_collection_uuid():
+                    self._has_remote_blocks = True
             elif re.match(arvados.util.manifest_pattern, manifest_locator_or_text):
                 self._manifest_text = manifest_locator_or_text
+                if '+R' in self._manifest_text:
+                    self._has_remote_blocks = True
             else:
                 raise errors.ArgumentError(
                     "Argument to CollectionReader is not a manifest or a collection UUID")
@@ -1536,10 +1550,11 @@ class Collection(RichCollectionBase):
             t = trash_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
             body["trash_at"] = t
 
-        # Copy any remote blocks to the local cluster.
-        self._copy_remote_blocks(remote_blocks={})
-
         if not self.committed():
+            if self._has_remote_blocks:
+                # Copy any remote blocks to the local cluster.
+                self._copy_remote_blocks(remote_blocks={})
+                self._has_remote_blocks = False
             if not self._has_collection_uuid():
                 raise AssertionError("Collection manifest_locator is not a collection uuid.  Use save_new() for new collections.")
             elif not self._has_local_collection_uuid():
@@ -1628,8 +1643,10 @@ class Collection(RichCollectionBase):
         if trash_at and type(trash_at) is not datetime.datetime:
             raise errors.ArgumentError("trash_at must be datetime type.")
 
-        # Copy any remote blocks to the local cluster.
-        self._copy_remote_blocks(remote_blocks={})
+        if self._has_remote_blocks:
+            # Copy any remote blocks to the local cluster.
+            self._copy_remote_blocks(remote_blocks={})
+            self._has_remote_blocks = False
 
         self._my_block_manager().commit_all()
         text = self.manifest_text(strip=False)
