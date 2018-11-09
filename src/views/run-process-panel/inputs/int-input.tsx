@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { IntCommandInputParameter, getInputLabel, isRequiredInput } from '~/models/workflow';
+import { IntCommandInputParameter, isRequiredInput } from '~/models/workflow';
 import { Field } from 'redux-form';
 import { isInteger } from '~/validators/is-integer';
 import { GenericInputProps, GenericInput } from '~/views/run-process-panel/inputs/generic-input';
@@ -32,5 +32,10 @@ const InputComponent = (props: GenericInputProps) =>
 
 
 const Input = (props: GenericInputProps) =>
-    <IntInputComponent fullWidth type='number' {...props.input} error={props.meta.touched && !!props.meta.error} />;
+    <IntInputComponent
+        fullWidth
+        type='number'
+        error={props.meta.touched && !!props.meta.error}
+        disabled={props.commandInput.disabled}
+        {...props.input} />;
 

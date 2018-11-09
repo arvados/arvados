@@ -5,7 +5,7 @@
 import * as React from 'react';
 import { Chip, Grid, StyleRulesCallback, withStyles } from '@material-ui/core';
 import { DragSource, DragSourceSpec, DragSourceCollector, ConnectDragSource, DropTarget, DropTargetSpec, DropTargetCollector, ConnectDropTarget } from 'react-dnd';
-import { compose, noop } from 'lodash/fp';
+import { compose } from 'lodash/fp';
 import { WithStyles } from '@material-ui/core/styles';
 interface ChipsProps<Value> {
     values: Value[];
@@ -14,6 +14,7 @@ interface ChipsProps<Value> {
     deletable?: boolean;
     orderable?: boolean;
     onChange: (value: Value[]) => void;
+    clickable?: boolean;
 }
 
 type CssRules = 'root';
@@ -90,6 +91,7 @@ export const Chips = withStyles(styles)(
                             onDelete={this.props.deletable
                                 ? this.deleteValue(value)
                                 : undefined}
+                            clickable={this.props.clickable}
                             label={this.props.getLabel ?
                                 this.props.getLabel(value)
                                 : typeof value === 'object'

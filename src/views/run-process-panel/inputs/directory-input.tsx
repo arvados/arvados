@@ -94,8 +94,9 @@ const DirectoryInputComponent = connect()(
                         fullWidth
                         value={props.input.value}
                         error={props.meta.touched && !!props.meta.error}
-                        onClick={this.openDialog}
-                        onKeyPress={this.openDialog} />}
+                        disabled={props.commandInput.disabled}
+                        onClick={!this.props.commandInput.disabled ? this.openDialog : undefined}
+                        onKeyPress={!this.props.commandInput.disabled ? this.openDialog : undefined} />}
                 {...this.props} />;
         }
 

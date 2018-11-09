@@ -92,6 +92,8 @@ export interface GenericCommandInputParameter<Type, Value> {
     doc?: string | string[];
     default?: Value;
     type?: Type | Array<Type | CWLType.NULL>;
+    value?: Value;
+    disabled?: boolean;
 }
 export type GenericArrayCommandInputParameter<Type, Value> = GenericCommandInputParameter<CommandInputArraySchema<Type>, Value[]>;
 

@@ -119,7 +119,6 @@ const DirectoryArrayInputComponent = connect(mapStateToProps)(
             this.setState({ open: true });
         }
 
-
         closeDialog = () => {
             this.setState({ open: false });
         }
@@ -214,6 +213,7 @@ const DirectoryArrayInputComponent = connect(mapStateToProps)(
             <ChipsInput
                 value={this.props.input.value}
                 onChange={noop}
+                disabled={this.props.commandInput.disabled}
                 createNewValue={identity}
                 getLabel={(data: FormattedDirectory) => data.name}
                 inputComponent={this.textInput} />
@@ -223,9 +223,10 @@ const DirectoryArrayInputComponent = connect(mapStateToProps)(
                 {...props}
                 error={this.props.meta.touched && !!this.props.meta.error}
                 readOnly
-                onClick={this.openDialog}
-                onKeyPress={this.openDialog}
-                onBlur={this.props.input.onBlur} />
+                onClick={!this.props.commandInput.disabled ? this.openDialog : undefined}
+                onKeyPress={!this.props.commandInput.disabled ? this.openDialog : undefined}
+                onBlur={this.props.input.onBlur}
+                disabled={this.props.commandInput.disabled} />
 
         dialog = () =>
             <Dialog

@@ -21,6 +21,7 @@ import { Routes } from '~/routes/routes';
 import { SidePanel } from '~/views-components/side-panel/side-panel';
 import { ProcessPanel } from '~/views/process-panel/process-panel';
 import { ProcessLogPanel } from '~/views/process-log-panel/process-log-panel';
+import { ChangeWorkflowDialog } from '~/views-components/run-process-dialog/change-workflow-dialog';
 import { CreateProjectDialog } from '~/views-components/dialog-forms/create-project-dialog';
 import { CreateCollectionDialog } from '~/views-components/dialog-forms/create-collection-dialog';
 import { CopyCollectionDialog } from '~/views-components/dialog-forms/copy-collection-dialog';
@@ -44,6 +45,7 @@ import { WorkflowPanel } from '~/views/workflow-panel/workflow-panel';
 import { SearchResultsPanel } from '~/views/search-results-panel/search-results-panel';
 import { SharingDialog } from '~/views-components/sharing-dialog/sharing-dialog';
 import { AdvancedTabDialog } from '~/views-components/advanced-tab-dialog/advanced-tab-dialog';
+import { ProcessInputDialog } from '~/views-components/process-input-dialog/process-input-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -122,6 +124,7 @@ export const WorkbenchPanel =
                 <DetailsPanel />
             </Grid>
             <AdvancedTabDialog />
+            <ChangeWorkflowDialog />
             <ContextMenu />
             <CopyCollectionDialog />
             <CopyProcessDialog />
@@ -136,6 +139,7 @@ export const WorkbenchPanel =
             <MultipleFilesRemoveDialog />
             <PartialCopyCollectionDialog />
             <ProcessCommandDialog />
+            <ProcessInputDialog />
             <RenameFileDialog />
             <RichTextEditorDialog />
             <SharingDialog />
