@@ -39,13 +39,16 @@ outputs:
   runner-remote-step-home-success:
     type: Any
     outputSource: runner-remote-step-home/success
+  remote-case-success:
+    type: Any
+    outputSource: remote-case/success
   twostep-home-to-remote-success:
     type: Any
     outputSource: twostep-home-to-remote/success
   twostep-remote-to-home-success:
     type: Any
     outputSource: twostep-remote-to-home/success
-  twostep-both-remote:
+  twostep-both-remote-success:
     type: Any
     outputSource: twostep-both-remote/success
 
@@ -148,6 +151,40 @@ steps:
           - 25fe10d8e8530329a738de69d9bc8ab5+81   # input collection
           - 7f052d1a04b851b6f73fba77c7802e1d+51   # md5sum output collection
           - ecb639201f454b6493757f5117f540df+112  # runner output json
+    out: [out, success]
+    run: framework/testcase.cwl
+
+  remote-case:
+    in:
+      arvados_api_token: arvados_api_token
+      arvado_api_host_insecure: arvado_api_host_insecure
+      arvados_api_hosts: arvados_api_hosts
+      arvados_cluster_ids: arvados_cluster_ids
+      acr: acr
+      wf:
+        default:
+          class: File
+          location: cases/remote-case.cwl
+          secondaryFiles:
+            - class: File
+              location: cases/md5sum.cwl
+      obj:
+        default:
+          inp:
+            class: File
+            location: data/remote-case-input.txt
+        valueFrom: |-
+          ${
+          self["runOnCluster"] = inputs.arvados_cluster_ids[1];
+          return self;
+          }
+      runner_cluster: { valueFrom: "$(inputs.arvados_cluster_ids[1])" }
+      scrub_image: {default: "arvados/fed-test:remote-case"}
+      scrub_collections:
+        default:
+          - 031a4ced0aa99de90fb630568afc6e9b+67   # input collection
+          - eb93a6718eb1a1a8ee9f66ee7d683472+51   # md5sum output collection
+          - f654d4048612135f4a5e7707ec0fcf3e+112  # final output json
     out: [out, success]
     run: framework/testcase.cwl
 
@@ -264,5 +301,3 @@ steps:
           - ddfa58a81953dad08436d571615dd584+112  # runner output json
     out: [out, success]
     run: framework/testcase.cwl
-
-  # also: twostep-all-remote
