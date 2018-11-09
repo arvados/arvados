@@ -3,26 +3,21 @@
 # SPDX-License-Identifier: Apache-2.0
 
 cwlVersion: v1.0
-class: Workflow
+class: CommandLineTool
 $namespaces:
   arv: "http://arvados.org/cwl#"
 requirements:
   InlineJavascriptRequirement: {}
-  DockerRequirement:
-    dockerPull: arvados/fed-test:runner-home-step-remote
+  arv:ClusterTarget:
+    cluster_id: $(inputs.runOnCluster)
 inputs:
   inp:
     type: File
-    inputBinding: {}
   runOnCluster: string
 outputs:
-  hash:
+  revhash:
     type: File
-    outputSource: md5sum/hash
-steps:
-  md5sum:
-    in:
-      inp: inp
-      runOnCluster: runOnCluster
-    out: [hash]
-    run: md5sum.cwl
+    outputBinding:
+      glob: out.txt
+stdout: out.txt
+arguments: [rev, $(inputs.inp)]

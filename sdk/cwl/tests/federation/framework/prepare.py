@@ -33,10 +33,10 @@ for cluster_id in config["arvados_cluster_ids"]:
     for lk in search_links["items"]:
         api.links().delete(uuid=lk["uuid"]).execute()
 
-
 for cluster_id in config["arvados_cluster_ids"]:
     matches = api.collections().list(filters=[["portable_data_hash", "in", list(scrub_collections)]],
                                      select=["uuid", "portable_data_hash"], cluster_id=cluster_id).execute()
+    print("matches from %s was %s" % (cluster_id, matches))
     for m in matches["items"]:
         api.collections().delete(uuid=m["uuid"]).execute()
         print("Scrubbed %s (%s)" % (m["uuid"], m["portable_data_hash"]))

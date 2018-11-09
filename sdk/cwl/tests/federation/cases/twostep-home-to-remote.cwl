@@ -9,12 +9,13 @@ $namespaces:
 requirements:
   InlineJavascriptRequirement: {}
   DockerRequirement:
-    dockerPull: arvados/fed-test:runner-home-step-remote
+    dockerPull: arvados/fed-test:twostep-home-to-remote
 inputs:
   inp:
     type: File
     inputBinding: {}
-  runOnCluster: string
+  md5sumCluster: string
+  revCluster: string
 outputs:
   hash:
     type: File
@@ -23,6 +24,15 @@ steps:
   md5sum:
     in:
       inp: inp
-      runOnCluster: runOnCluster
+      runOnCluster: md5sumCluster
     out: [hash]
     run: md5sum.cwl
+  rev:
+    in:
+      inp: md5sum/hash
+      runOnCluster: revCluster
+    out: [revhash]
+    run: rev.cwl
+    requirements:
+      arv:ClusterTarget:
+        cluster_id: $(inputs.runOnCluster)

@@ -8,9 +8,12 @@ $namespaces:
   arv: "http://arvados.org/cwl#"
 requirements:
   InlineJavascriptRequirement: {}
+  arv:ClusterTarget:
+    cluster_id: $(inputs.runOnCluster)
 inputs:
   inp:
     type: File
+  runOnCluster: string
 outputs:
   hash:
     type: File
