@@ -6,7 +6,7 @@ import { ContextMenuActionSet } from "../context-menu-action-set";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { ToggleTrashAction } from "~/views-components/context-menu/actions/trash-action";
 import { toggleFavorite } from "~/store/favorites/favorites-actions";
-import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, RemoveIcon } from "~/components/icon/icon";
+import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, RemoveIcon, AdvancedIcon } from '~/components/icon/icon';
 import { openCollectionUpdateDialog } from "~/store/collections/collection-update-actions";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
 import { openMoveCollectionDialog } from '~/store/collections/collection-move-actions';
@@ -14,6 +14,7 @@ import { openCollectionCopyDialog } from '~/store/collections/collection-copy-ac
 import { toggleCollectionTrashed } from "~/store/trash/trash-actions";
 import { detailsPanelActions } from '~/store/details-panel/details-panel-action';
 import { openSharingDialog } from "~/store/sharing-dialog/sharing-dialog-actions";
+import { openAdvancedTabDialog } from '~/store/advanced-tab/advanced-tab';
 
 export const collectionResourceActionSet: ContextMenuActionSet = [[
     {
@@ -31,13 +32,6 @@ export const collectionResourceActionSet: ContextMenuActionSet = [[
         }
     },
     {
-        icon: MoveToIcon,
-        name: "Move to",
-        execute: (dispatch, resource) => {
-            dispatch<any>(openMoveCollectionDialog(resource));
-        }
-    },
-    {
         component: ToggleFavoriteAction,
         execute: (dispatch, resource) => {
             dispatch<any>(toggleFavorite(resource)).then(() => {
@@ -49,6 +43,13 @@ export const collectionResourceActionSet: ContextMenuActionSet = [[
         component: ToggleTrashAction,
         execute: (dispatch, resource) => {
             dispatch<any>(toggleCollectionTrashed(resource.uuid, resource.isTrashed!!));
+        }
+    },
+    {
+        icon: MoveToIcon,
+        name: "Move to",
+        execute: (dispatch, resource) => {
+            dispatch<any>(openMoveCollectionDialog(resource));
         }
     },
     {
@@ -66,10 +67,17 @@ export const collectionResourceActionSet: ContextMenuActionSet = [[
         }
     },
     {
-        icon: RemoveIcon,
-        name: "Remove",
+        icon: AdvancedIcon,
+        name: "Advanced",
         execute: (dispatch, resource) => {
-            // add code
+            dispatch<any>(openAdvancedTabDialog(resource.uuid));
         }
     }
+    // {
+    //     icon: RemoveIcon,
+    //     name: "Remove",
+    //     execute: (dispatch, resource) => {
+    //         // add code
+    //     }
+    // }
 ]];

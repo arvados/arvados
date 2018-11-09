@@ -63,7 +63,7 @@ export const CollectionPanelFiles =
                 <CardHeader
                     className={classes.cardSubheader}
                     action={
-                        <Tooltip title="More options">
+                        <Tooltip title="More options" disableFocusListener>
                             <IconButton onClick={onOptionsMenuOpen}>
                                 <CustomizeTableIcon />
                             </IconButton>
