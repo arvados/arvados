@@ -22,11 +22,6 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 )
 
-type collectionFederatedRequestHandler struct {
-	next    http.Handler
-	handler *Handler
-}
-
 func rewriteSignatures(clusterID string, expectHash string,
 	resp *http.Response, requestError error) (newResponse *http.Response, err error) {
 
@@ -159,35 +154,52 @@ type searchRemoteClusterForPDH struct {
 	statusCode    *int
 }
 
-func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	if req.Method != "GET" {
+func fetchRemoteCollectionByUUID(
+	h *genericFederatedRequestHandler,
+	effectiveMethod string,
+	clusterId *string,
+	uuid string,
+	remainder string,
+	w http.ResponseWriter,
+	req *http.Request) bool {
+
+	if effectiveMethod != "GET" {
 		// Only handle GET requests right now
-		h.next.ServeHTTP(w, req)
-		return
+		return false
 	}
 
-	m := collectionByPDHRe.FindStringSubmatch(req.URL.Path)
-	if len(m) != 2 {
-		// Not a collection PDH GET request
-		m = collectionRe.FindStringSubmatch(req.URL.Path)
-		clusterId := ""
-
-		if len(m) > 0 {
-			clusterId = m[2]
-		}
-
-		if clusterId != "" && clusterId != h.handler.Cluster.ClusterID {
+	if uuid != "" {
+		// Collection UUID GET request
+		*clusterId = uuid[0:5]
+		if *clusterId != "" && *clusterId != h.handler.Cluster.ClusterID {
 			// request for remote collection by uuid
-			resp, err := h.handler.remoteClusterRequest(clusterId, req)
-			newResponse, err := rewriteSignatures(clusterId, "", resp, err)
+			resp, err := h.handler.remoteClusterRequest(*clusterId, req)
+			newResponse, err := rewriteSignatures(*clusterId, "", resp, err)
 			h.handler.proxy.ForwardResponse(w, newResponse, err)
-			return
+			return true
 		}
-		// not a collection UUID request, or it is a request
-		// for a local UUID, either way, continue down the
-		// handler stack.
-		h.next.ServeHTTP(w, req)
-		return
+	}
+
+	return false
+}
+
+func fetchRemoteCollectionByPDH(
+	h *genericFederatedRequestHandler,
+	effectiveMethod string,
+	clusterId *string,
+	uuid string,
+	remainder string,
+	w http.ResponseWriter,
+	req *http.Request) bool {
+
+	if effectiveMethod != "GET" {
+		// Only handle GET requests right now
+		return false
+	}
+
+	m := collectionsByPDHRe.FindStringSubmatch(req.URL.Path)
+	if len(m) != 2 {
+		return false
 	}
 
 	// Request for collection by PDH.  Search the federation.
@@ -197,7 +209,7 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 	newResp, err := filterLocalClusterResponse(resp, err)
 	if newResp != nil || err != nil {
 		h.handler.proxy.ForwardResponse(w, newResp, err)
-		return
+		return true
 	}
 
 	// Create a goroutine for each cluster in the
@@ -280,7 +292,7 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 		select {
 		case newResp = <-success:
 			h.handler.proxy.ForwardResponse(w, newResp, nil)
-			return
+			return true
 		case <-sharedContext.Done():
 			var errors []string
 			for len(errorChan) > 0 {
@@ -293,7 +305,10 @@ func (h *collectionFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req
 				errors = append(errors, err.Error())
 			}
 			httpserver.Errors(w, errors, errorCode)
-			return
+			return true
 		}
 	}
+
+	// shouldn't ever get here
+	return true
 }

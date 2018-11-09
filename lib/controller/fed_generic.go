@@ -295,8 +295,13 @@ func (h *genericFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *h
 		return
 	}
 
+	var uuid string
+	if len(m[1]) > 0 {
+		// trim leading slash
+		uuid = m[1][1:]
+	}
 	for _, d := range h.delegates {
-		if d(h, effectiveMethod, &clusterId, m[1], m[3], w, req) {
+		if d(h, effectiveMethod, &clusterId, uuid, m[3], w, req) {
 			return
 		}
 	}
