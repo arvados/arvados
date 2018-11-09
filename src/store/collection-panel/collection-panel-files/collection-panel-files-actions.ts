@@ -57,18 +57,23 @@ export const openFileRemoveDialog = (filePath: string) =>
     (dispatch: Dispatch, getState: () => RootState) => {
         const file = getNodeValue(filePath)(getState().collectionPanelFiles);
         if (file) {
-            const title = file.type === CollectionFileType.DIRECTORY
+            const isDirectory = file.type === CollectionFileType.DIRECTORY;
+            const title = isDirectory
                 ? 'Removing directory'
                 : 'Removing file';
-            const text = file.type === CollectionFileType.DIRECTORY
+            const text = isDirectory
                 ? 'Are you sure you want to remove this directory?'
                 : 'Are you sure you want to remove this file?';
+            const info = isDirectory
+                ? 'Removing files will change content adress.'
+                : 'Removing a file will change content adress.';
 
             dispatch(dialogActions.OPEN_DIALOG({
                 id: FILE_REMOVE_DIALOG,
                 data: {
                     title,
                     text,
+                    info,
                     confirmButtonLabel: 'Remove',
                     filePath
                 }
@@ -84,6 +89,7 @@ export const openMultipleFilesRemoveDialog = () =>
         data: {
             title: 'Removing files',
             text: 'Are you sure you want to remove selected files?',
+            info: 'Removing files will change content adress.',
             confirmButtonLabel: 'Remove'
         }
     });

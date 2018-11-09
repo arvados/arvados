@@ -12,6 +12,8 @@ import { getTreePicker, TreePicker } from '../tree-picker/tree-picker';
 import { getNodeAncestors, getNodeAncestorsIds, getNode, TreeNode, initTreeNode, TreeNodeStatus } from '~/models/tree';
 import { ProjectResource } from '~/models/project';
 import { OrderBuilder } from '../../services/api/order-builder';
+import { ResourceKind } from '~/models/resource';
+import { GroupContentsResourcePrefix } from '../../services/groups-service/groups-service';
 
 export enum SidePanelTreeCategory {
     PROJECTS = 'Projects',
@@ -40,7 +42,6 @@ export const getSidePanelTreeBranch = (uuid: string) => (treePicker: TreePicker)
 };
 
 const SIDE_PANEL_CATEGORIES = [
-    SidePanelTreeCategory.SHARED_WITH_ME,
     SidePanelTreeCategory.WORKFLOWS,
     SidePanelTreeCategory.RECENT_OPEN,
     SidePanelTreeCategory.FAVORITES,
@@ -50,14 +51,15 @@ const SIDE_PANEL_CATEGORIES = [
 export const isSidePanelTreeCategory = (id: string) => SIDE_PANEL_CATEGORIES.some(category => category === id);
 
 export const initSidePanelTree = () =>
-    (dispatch: Dispatch, getState: () => RootState, { authService }: ServiceRepository) => {
+    (dispatch: Dispatch, _: () => RootState, { authService }: ServiceRepository) => {
         const rootProjectUuid = authService.getUuid() || '';
         const nodes = SIDE_PANEL_CATEGORIES.map(id => initTreeNode({ id, value: id }));
         const projectsNode = initTreeNode({ id: rootProjectUuid, value: SidePanelTreeCategory.PROJECTS });
+        const sharedNode = initTreeNode({ id: SidePanelTreeCategory.SHARED_WITH_ME, value: SidePanelTreeCategory.SHARED_WITH_ME });
         dispatch(treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
             id: '',
             pickerId: SIDE_PANEL_TREE,
-            nodes: [projectsNode, ...nodes]
+            nodes: [projectsNode, sharedNode, ...nodes]
         }));
         SIDE_PANEL_CATEGORIES.forEach(category => {
             dispatch(treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
@@ -72,28 +74,59 @@ export const loadSidePanelTreeProjects = (projectUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const treePicker = getTreePicker(SIDE_PANEL_TREE)(getState().treePicker);
         const node = treePicker ? getNode(projectUuid)(treePicker) : undefined;
-        if (node || projectUuid === '') {
-            dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id: projectUuid, pickerId: SIDE_PANEL_TREE }));
-            const params = {
-                filters: new FilterBuilder()
-                    .addEqual('ownerUuid', projectUuid)
-                    .getFilters(),
-                order: new OrderBuilder<ProjectResource>()
-                    .addAsc('name')
-                    .getOrder()
-            };
-            const { items } = await services.projectService.list(params);
-            dispatch(treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
-                id: projectUuid,
-                pickerId: SIDE_PANEL_TREE,
-                nodes: items.map(item => initTreeNode({ id: item.uuid, value: item })),
-            }));
-            dispatch(resourcesActions.SET_RESOURCES(items));
+        if (projectUuid === SidePanelTreeCategory.SHARED_WITH_ME) {
+            await dispatch<any>(loadSharedRoot);
+        } else if (node || projectUuid === '') {
+            await dispatch<any>(loadProject(projectUuid));
         }
     };
 
+const loadProject = (projectUuid: string) =>
+    async (dispatch: Dispatch, _: () => RootState, services: ServiceRepository) => {
+        dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id: projectUuid, pickerId: SIDE_PANEL_TREE }));
+        const params = {
+            filters: new FilterBuilder()
+                .addEqual('ownerUuid', projectUuid)
+                .getFilters(),
+            order: new OrderBuilder<ProjectResource>()
+                .addAsc('name')
+                .getOrder()
+        };
+        const { items } = await services.projectService.list(params);
+        dispatch(treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
+            id: projectUuid,
+            pickerId: SIDE_PANEL_TREE,
+            nodes: items.map(item => initTreeNode({ id: item.uuid, value: item })),
+        }));
+        dispatch(resourcesActions.SET_RESOURCES(items));
+    };
+
+const loadSharedRoot = async (dispatch: Dispatch, _: () => RootState, services: ServiceRepository) => {
+    dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id: SidePanelTreeCategory.SHARED_WITH_ME, pickerId: SIDE_PANEL_TREE }));
+
+    const params = {
+        filters: new FilterBuilder()
+            .addIsA('uuid', ResourceKind.PROJECT)
+            .getFilters(),
+        order: new OrderBuilder<ProjectResource>()
+            .addAsc('name', GroupContentsResourcePrefix.PROJECT)
+            .getOrder(),
+        excludeHomeProject: true,
+    };
+
+    const { items } = await services.groupsService.contents('', params);
+
+    dispatch(treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
+        id: SidePanelTreeCategory.SHARED_WITH_ME,
+        pickerId: SIDE_PANEL_TREE,
+        nodes: items.map(item => initTreeNode({ id: item.uuid, value: item })),
+    }));
+
+    dispatch(resourcesActions.SET_RESOURCES(items));
+};
+
 export const activateSidePanelTreeItem = (id: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    async (dispatch: Dispatch, getState: () => RootState) => {
         const node = getSidePanelTreeNode(id)(getState().treePicker);
         if (node && !node.active) {
             dispatch(treePickerActions.ACTIVATE_TREE_PICKER_NODE({ id, pickerId: SIDE_PANEL_TREE }));
@@ -104,7 +137,7 @@ export const activateSidePanelTreeItem = (id: string) =>
     };
 
 export const activateSidePanelTreeProject = (id: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    async (dispatch: Dispatch, getState: () => RootState) => {
         const { treePicker } = getState();
         const node = getSidePanelTreeNode(id)(treePicker);
         if (node && node.status !== TreeNodeStatus.LOADED) {
@@ -120,13 +153,20 @@ export const activateSidePanelTreeProject = (id: string) =>
     };
 
 export const activateSidePanelTreeBranch = (id: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    async (dispatch: Dispatch, _: void, services: ServiceRepository) => {
         const ancestors = await services.ancestorsService.ancestors(id, services.authService.getUuid() || '');
+        const isShared = ancestors.every(({ uuid }) => uuid !== services.authService.getUuid());
+        if (isShared) {
+            await dispatch<any>(loadSidePanelTreeProjects(SidePanelTreeCategory.SHARED_WITH_ME));
+        }
         for (const ancestor of ancestors) {
             await dispatch<any>(loadSidePanelTreeProjects(ancestor.uuid));
         }
         dispatch(treePickerActions.EXPAND_TREE_PICKER_NODES({
-            ids: ancestors.map(ancestor => ancestor.uuid),
+            ids: [
+                ...(isShared ? [SidePanelTreeCategory.SHARED_WITH_ME] : []),
+                ...ancestors.map(ancestor => ancestor.uuid)
+            ],
             pickerId: SIDE_PANEL_TREE
         }));
         dispatch(treePickerActions.ACTIVATE_TREE_PICKER_NODE({ id, pickerId: SIDE_PANEL_TREE }));

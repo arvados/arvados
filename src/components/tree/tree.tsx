@@ -146,7 +146,7 @@ export const Tree = withStyles(styles)(
         }
 
         getProperArrowAnimation = (status: string, items: Array<TreeItem<T>>) => {
-            return this.isSidePanelIconNotNeeded(status, items) ? <span /> : <SidePanelRightArrowIcon />;
+            return this.isSidePanelIconNotNeeded(status, items) ? <span /> : <SidePanelRightArrowIcon style={{ fontSize: '14px' }} />;
         }
 
         isSidePanelIconNotNeeded = (status: string, items: Array<TreeItem<T>>) => {
