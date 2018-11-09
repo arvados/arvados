@@ -826,7 +826,15 @@ func (s *TestSuite) fullRunHelper(c *C, record string, extraMounts []string, exi
 	}
 	if exitCode != 2 {
 		c.Check(api.WasSetRunning, Equals, true)
-		c.Check(api.Content[api.Calls-2]["container"].(arvadosclient.Dict)["log"], NotNil)
+		var lastupdate arvadosclient.Dict
+		for _, content := range api.Content {
+			if content["container"] != nil {
+				lastupdate = content["container"].(arvadosclient.Dict)
+			}
+		}
+		if lastupdate["log"] == nil {
+			c.Errorf("no container update with non-nil log -- updates were: %v", api.Content)
+		}
 	}
 
 	if err != nil {
