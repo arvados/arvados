@@ -45,6 +45,7 @@ import { WorkflowPanel } from '~/views/workflow-panel/workflow-panel';
 import { SearchResultsPanel } from '~/views/search-results-panel/search-results-panel';
 import { SharingDialog } from '~/views-components/sharing-dialog/sharing-dialog';
 import { AdvancedTabDialog } from '~/views-components/advanced-tab-dialog/advanced-tab-dialog';
+import { ProcessInputDialog } from '~/views-components/process-input-dialog/process-input-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -138,6 +139,7 @@ export const WorkbenchPanel =
             <MultipleFilesRemoveDialog />
             <PartialCopyCollectionDialog />
             <ProcessCommandDialog />
+            <ProcessInputDialog />
             <RenameFileDialog />
             <RichTextEditorDialog />
             <SharingDialog />
