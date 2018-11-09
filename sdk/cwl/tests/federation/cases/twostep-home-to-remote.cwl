@@ -33,6 +33,3 @@ steps:
       runOnCluster: revCluster
     out: [revhash]
     run: rev.cwl
-    requirements:
-      arv:ClusterTarget:
-        cluster_id: $(inputs.runOnCluster)
