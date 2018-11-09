@@ -44,7 +44,7 @@ steps:
       containers: containers
       arvbox_base: arvbox_base
     out: [arvbox_data]
-    run: arvbox-mkdir.cwl
+    run: arvbox/mkdir.cwl
   start:
     in:
       container_name: containers
@@ -52,7 +52,7 @@ steps:
     out: [cluster_id, container_host, arvbox_data_out, superuser_token]
     scatter: [container_name, arvbox_data]
     scatterMethod: dotproduct
-    run: arvbox-start.cwl
+    run: arvbox/start.cwl
   fed-config:
     in:
       container_name: containers
@@ -63,10 +63,10 @@ steps:
     out: []
     scatter: [container_name, this_cluster_id, arvbox_data]
     scatterMethod: dotproduct
-    run: arvbox-fed-config.cwl
+    run: arvbox/fed-config.cwl
   setup-user:
     in:
       container_host: {source: start/container_host, valueFrom: "$(self[0])"}
       superuser_token: {source: start/superuser_token, valueFrom: "$(self[0])"}
     out: [test_user_uuid, test_user_token]
-    run: arvbox-setup-user.cwl
+    run: arvbox/setup-user.cwl
