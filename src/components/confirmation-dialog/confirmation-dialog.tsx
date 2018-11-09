@@ -29,7 +29,7 @@ export const ConfirmationDialog = (props: ConfirmationDialogProps & WithDialogPr
                 <div>{props.data.info}</div>
             </DialogContentText>
         </DialogContent>
-        <DialogActions>
+        <DialogActions style={{ margin: '0px 24px 24px' }}>
             <Button
                 variant='flat'
                 color='primary'
