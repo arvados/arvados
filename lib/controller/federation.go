@@ -25,8 +25,9 @@ var pathPattern = `^/arvados/v1/%s(/([0-9a-z]{5})-%s-[0-9a-z]{15})?(.*)$`
 var wfRe = regexp.MustCompile(fmt.Sprintf(pathPattern, "workflows", "7fd4e"))
 var containersRe = regexp.MustCompile(fmt.Sprintf(pathPattern, "containers", "dz642"))
 var containerRequestsRe = regexp.MustCompile(fmt.Sprintf(pathPattern, "container_requests", "xvhdp"))
-var collectionRe = regexp.MustCompile(fmt.Sprintf(pathPattern, "collections", "4zz18"))
-var collectionByPDHRe = regexp.MustCompile(`^/arvados/v1/collections/([0-9a-fA-F]{32}\+[0-9]+)+$`)
+var collectionsRe = regexp.MustCompile(fmt.Sprintf(pathPattern, "collections", "4zz18"))
+var collectionsByPDHRe = regexp.MustCompile(`^/arvados/v1/collections/([0-9a-fA-F]{32}\+[0-9]+)+$`)
+var linksRe = regexp.MustCompile(fmt.Sprintf(pathPattern, "links", "o0j2j"))
 
 func (h *Handler) remoteClusterRequest(remoteID string, req *http.Request) (*http.Response, error) {
 	remote, ok := h.Cluster.RemoteClusters[remoteID]
@@ -89,6 +90,9 @@ func (h *Handler) setupProxyRemoteCluster(next http.Handler) http.Handler {
 	containersHandler := &genericFederatedRequestHandler{next, h, containersRe, nil}
 	containerRequestsHandler := &genericFederatedRequestHandler{next, h, containerRequestsRe,
 		[]federatedRequestDelegate{remoteContainerRequestCreate}}
+	collectionsRequestsHandler := &genericFederatedRequestHandler{next, h, collectionsRe,
+		[]federatedRequestDelegate{fetchRemoteCollectionByUUID, fetchRemoteCollectionByPDH}}
+	linksRequestsHandler := &genericFederatedRequestHandler{next, h, linksRe, nil}
 
 	mux.Handle("/arvados/v1/workflows", wfHandler)
 	mux.Handle("/arvados/v1/workflows/", wfHandler)
@@ -96,8 +100,10 @@ func (h *Handler) setupProxyRemoteCluster(next http.Handler) http.Handler {
 	mux.Handle("/arvados/v1/containers/", containersHandler)
 	mux.Handle("/arvados/v1/container_requests", containerRequestsHandler)
 	mux.Handle("/arvados/v1/container_requests/", containerRequestsHandler)
-	mux.Handle("/arvados/v1/collections", next)
-	mux.Handle("/arvados/v1/collections/", &collectionFederatedRequestHandler{next, h})
+	mux.Handle("/arvados/v1/collections", collectionsRequestsHandler)
+	mux.Handle("/arvados/v1/collections/", collectionsRequestsHandler)
+	mux.Handle("/arvados/v1/links", linksRequestsHandler)
+	mux.Handle("/arvados/v1/links/", linksRequestsHandler)
 	mux.Handle("/", next)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
