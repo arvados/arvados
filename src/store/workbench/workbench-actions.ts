@@ -134,7 +134,7 @@ export const loadProject = (uuid: string) =>
                         },
                         SHARED: project => {
                             dispatch<any>(setSharedWithMeBreadcrumbs(uuid));
-                            dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.SHARED_WITH_ME));
+                            dispatch(activateSidePanelTreeItem(uuid));
                             dispatch(finishLoadingProject(project));
                         },
                         TRASHED: project => {
@@ -214,7 +214,7 @@ export const loadCollection = (uuid: string) =>
                         dispatch(collectionPanelActions.SET_COLLECTION(collection as CollectionResource));
                         dispatch(updateResources([collection]));
                         dispatch<any>(setSharedWithMeBreadcrumbs(collection.ownerUuid));
-                        dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.SHARED_WITH_ME));
+                        dispatch(activateSidePanelTreeItem(collection.ownerUuid));
                         dispatch(loadCollectionFiles(collection.uuid));
                     },
                     TRASHED: collection => {
