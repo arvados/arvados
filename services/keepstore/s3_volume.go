@@ -509,8 +509,7 @@ func (v *S3Volume) IndexTo(prefix string, writer io.Writer) error {
 		PageSize: v.IndexPageSize,
 		Stats:    &v.bucket.stats,
 	}
-	for data, recent := dataL.First(), recentL.First(); data != nil; data = dataL.Next() {
-		v.bucket.stats.Tick(&v.bucket.stats.Ops, &v.bucket.stats.ListOps)
+	for data, recent := dataL.First(), recentL.First(); data != nil && dataL.Error() == nil; data = dataL.Next() {
 		if data.Key >= "g" {
 			// Conveniently, "recent/*" and "trash/*" are
 			// lexically greater than all hex-encoded data
@@ -529,7 +528,7 @@ func (v *S3Volume) IndexTo(prefix string, writer io.Writer) error {
 		stamp := data
 
 		// Advance to the corresponding recent/X marker, if any
-		for recent != nil {
+		for recent != nil && recentL.Error() == nil {
 			if cmp := strings.Compare(recent.Key[7:], data.Key); cmp < 0 {
 				recent = recentL.Next()
 				continue
@@ -544,13 +543,16 @@ func (v *S3Volume) IndexTo(prefix string, writer io.Writer) error {
 				break
 			}
 		}
+		if err := recentL.Error(); err != nil {
+			return err
+		}
 		t, err := time.Parse(time.RFC3339, stamp.LastModified)
 		if err != nil {
 			return err
 		}
 		fmt.Fprintf(writer, "%s+%d %d\n", data.Key, data.Size, t.UnixNano())
 	}
-	return nil
+	return dataL.Error()
 }
 
 // Trash a Keep block.
