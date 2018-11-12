@@ -7,6 +7,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
 	"flag"
@@ -402,6 +403,7 @@ func (v *S3Volume) Put(ctx context.Context, loc string, block []byte) error {
 			return err
 		}
 		opts.ContentMD5 = base64.StdEncoding.EncodeToString(md5)
+		opts.ContentSHA256 = fmt.Sprintf("%x", sha256.Sum256(block))
 	}
 
 	// Send the block data through a pipe, so that (if we need to)
