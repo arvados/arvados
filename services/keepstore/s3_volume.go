@@ -501,14 +501,14 @@ func (v *S3Volume) IndexTo(prefix string, writer io.Writer) error {
 		Bucket:   v.bucket.Bucket,
 		Prefix:   prefix,
 		PageSize: v.IndexPageSize,
+		Stats:    &v.bucket.stats,
 	}
 	recentL := s3Lister{
 		Bucket:   v.bucket.Bucket,
 		Prefix:   "recent/" + prefix,
 		PageSize: v.IndexPageSize,
+		Stats:    &v.bucket.stats,
 	}
-	v.bucket.stats.Tick(&v.bucket.stats.Ops, &v.bucket.stats.ListOps)
-	v.bucket.stats.Tick(&v.bucket.stats.Ops, &v.bucket.stats.ListOps)
 	for data, recent := dataL.First(), recentL.First(); data != nil; data = dataL.Next() {
 		v.bucket.stats.Tick(&v.bucket.stats.Ops, &v.bucket.stats.ListOps)
 		if data.Key >= "g" {
@@ -532,12 +532,10 @@ func (v *S3Volume) IndexTo(prefix string, writer io.Writer) error {
 		for recent != nil {
 			if cmp := strings.Compare(recent.Key[7:], data.Key); cmp < 0 {
 				recent = recentL.Next()
-				v.bucket.stats.Tick(&v.bucket.stats.Ops, &v.bucket.stats.ListOps)
 				continue
 			} else if cmp == 0 {
 				stamp = recent
 				recent = recentL.Next()
-				v.bucket.stats.Tick(&v.bucket.stats.Ops, &v.bucket.stats.ListOps)
 				break
 			} else {
 				// recent/X marker is missing: we'll
@@ -873,6 +871,7 @@ func (v *S3Volume) EmptyTrash() {
 		Bucket:   v.bucket.Bucket,
 		Prefix:   "trash/",
 		PageSize: v.IndexPageSize,
+		Stats:    &v.bucket.stats,
 	}
 	for trash := trashL.First(); trash != nil; trash = trashL.Next() {
 		todo <- trash
@@ -890,6 +889,7 @@ type s3Lister struct {
 	Bucket     *s3.Bucket
 	Prefix     string
 	PageSize   int
+	Stats      *s3bucketStats
 	nextMarker string
 	buf        []s3.Key
 	err        error
@@ -918,6 +918,7 @@ func (lister *s3Lister) Error() error {
 }
 
 func (lister *s3Lister) getPage() {
+	lister.Stats.Tick(&lister.Stats.Ops, &lister.Stats.ListOps)
 	resp, err := lister.Bucket.List(lister.Prefix, "", lister.nextMarker, lister.PageSize)
 	lister.nextMarker = ""
 	if err != nil {
