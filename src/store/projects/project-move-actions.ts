@@ -4,7 +4,7 @@
 
 import { Dispatch } from "redux";
 import { dialogActions } from "~/store/dialog/dialog-actions";
-import { startSubmit, stopSubmit, initialize } from 'redux-form';
+import { startSubmit, stopSubmit, initialize, FormErrors } from 'redux-form';
 import { ServiceRepository } from '~/services/services';
 import { RootState } from '~/store/store';
 import { getCommonResourceServiceError, CommonResourceServiceError } from "~/services/common-service/common-resource-service";
@@ -31,9 +31,9 @@ export const moveProject = (resource: MoveToFormDialogData) =>
         } catch (e) {
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {
-                dispatch(stopSubmit(PROJECT_MOVE_FORM_NAME, { ownerUuid: 'A project with the same name already exists in the target project.' }));
+                dispatch(stopSubmit(PROJECT_MOVE_FORM_NAME, { ownerUuid: 'A project with the same name already exists in the target project.' } as FormErrors));
             } else if (error === CommonResourceServiceError.OWNERSHIP_CYCLE) {
-                dispatch(stopSubmit(PROJECT_MOVE_FORM_NAME, { ownerUuid: 'Cannot move a project into itself.' }));
+                dispatch(stopSubmit(PROJECT_MOVE_FORM_NAME, { ownerUuid: 'Cannot move a project into itself.' } as FormErrors));
             } else {
                 dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_MOVE_FORM_NAME }));
                 throw new Error('Could not move the project.');

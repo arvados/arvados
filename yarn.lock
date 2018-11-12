@@ -252,10 +252,10 @@
     "@types/react" "*"
     redux "^3.6.0"
 
-"@types/redux-form@7.4.5":
-  version "7.4.5"
-  resolved "https://registry.yarnpkg.com/@types/redux-form/-/redux-form-7.4.5.tgz#fae0fa6cfbc613867093d1e0f6a84db17177305e"
-  integrity sha512-PY74tuDamNhStB+87TQJXAKoa7uf5Ue/MJvnIrQowgjyRUo2Ky/THUfDec9U7IKRGzLnX7vWVTsoN1EvLnwAEQ==
+"@types/redux-form@7.4.12":
+  version "7.4.12"
+  resolved "https://registry.yarnpkg.com/@types/redux-form/-/redux-form-7.4.12.tgz#2afb0615e3b7417d460ab14a4802ede4a98f9c79"
+  integrity sha512-qHRkJcgdc5MntQHrkYCg5o6oySh+OdVKA90yELTdi9XlNvSGRxd6K230aTckVrwdUjdxtwZ31UqFgLoU5SiWYQ==
   dependencies:
     "@types/react" "*"
     redux "^3.6.0 || ^4.0.0"

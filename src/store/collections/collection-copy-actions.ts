@@ -4,7 +4,7 @@
 
 import { Dispatch } from "redux";
 import { dialogActions } from "~/store/dialog/dialog-actions";
-import { initialize, startSubmit, stopSubmit } from 'redux-form';
+import { FormErrors, initialize, startSubmit, stopSubmit } from 'redux-form';
 import { resetPickerProjectTree } from '~/store/project-tree-picker/project-tree-picker-actions';
 import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
@@ -37,7 +37,10 @@ export const copyCollection = (resource: CopyFormDialogData) =>
         } catch (e) {
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {
-                dispatch(stopSubmit(COLLECTION_COPY_FORM_NAME, { ownerUuid: 'A collection with the same name already exists in the target project.' }));
+                dispatch(stopSubmit(
+                    COLLECTION_COPY_FORM_NAME,
+                    { ownerUuid: 'A collection with the same name already exists in the target project.' } as FormErrors
+                ));
             } else {
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_COPY_FORM_NAME }));
                 throw new Error('Could not copy the collection.');

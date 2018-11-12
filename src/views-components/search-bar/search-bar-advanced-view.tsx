@@ -6,7 +6,11 @@ import * as React from 'react';
 import { reduxForm, InjectedFormProps, reset } from 'redux-form';
 import { compose, Dispatch } from 'redux';
 import { Paper, StyleRulesCallback, withStyles, WithStyles, Button, Grid, IconButton, CircularProgress } from '@material-ui/core';
-import { SEARCH_BAR_ADVANCE_FORM_NAME, searchAdvanceData } from '~/store/search-bar/search-bar-actions';
+import {
+    SEARCH_BAR_ADVANCE_FORM_NAME,
+    searchAdvanceData,
+    setSearchValueFromAdvancedData
+} from '~/store/search-bar/search-bar-actions';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { CloseIcon } from '~/components/icon/icon';
 import { SearchBarAdvanceFormData } from '~/models/search-bar';
@@ -99,6 +103,9 @@ export const SearchBarAdvancedView = compose(
         onSubmit: (data: SearchBarAdvanceFormData, dispatch: Dispatch) => {
             dispatch<any>(searchAdvanceData(data));
             dispatch(reset(SEARCH_BAR_ADVANCE_FORM_NAME));
+        },
+        onChange: (data: SearchBarAdvanceFormData, dispatch: Dispatch, props: any, prevData: SearchBarAdvanceFormData) => {
+            dispatch<any>(setSearchValueFromAdvancedData(data, prevData));
         }
     }),
     withStyles(styles))(

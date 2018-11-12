@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { initialize, startSubmit, stopSubmit } from 'redux-form';
+import { FormErrors, initialize, startSubmit, stopSubmit } from 'redux-form';
 import { RootState } from "~/store/store";
 import { dialogActions } from "~/store/dialog/dialog-actions";
 import { getCommonResourceServiceError, CommonResourceServiceError } from "~/services/common-service/common-resource-service";
@@ -42,9 +42,9 @@ export const updateProcess = (resource: ProcessUpdateFormDialogData) =>
         } catch (e) {
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {
-                dispatch(stopSubmit(PROCESS_UPDATE_FORM_NAME, { name: 'Process with the same name already exists.' }));
+                dispatch(stopSubmit(PROCESS_UPDATE_FORM_NAME, { name: 'Process with the same name already exists.' } as FormErrors));
             } else if (error === CommonResourceServiceError.MODIFYING_CONTAINER_REQUEST_FINAL_STATE) {
-                dispatch(stopSubmit(PROCESS_UPDATE_FORM_NAME, { name: 'You cannot modified in "Final" state.' }));
+                dispatch(stopSubmit(PROCESS_UPDATE_FORM_NAME, { name: 'You cannot modified in "Final" state.' } as FormErrors));
             } else {
                 dispatch(dialogActions.CLOSE_DIALOG({ id: PROCESS_UPDATE_FORM_NAME }));
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not update the process.', hideDuration: 2000 }));

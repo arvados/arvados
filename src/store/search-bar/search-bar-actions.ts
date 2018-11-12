@@ -16,8 +16,9 @@ import { SearchView } from '~/store/search-bar/search-bar-reducer';
 import { navigateToSearchResults, navigateTo } from '~/store/navigation/navigation-action';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { initialize } from 'redux-form';
-import { SearchBarAdvanceFormData, PropertyValues } from '~/models/search-bar';
+import { SearchBarAdvanceFormData, PropertyValues, ClusterObjectType } from '~/models/search-bar';
 import { debounce } from 'debounce';
+import * as _ from "lodash";
 
 export const searchBarActions = unionize({
     SET_CURRENT_VIEW: ofType<string>(),
@@ -61,7 +62,7 @@ export const searchData = (searchValue: string) =>
         const currentView = getState().searchBar.currentView;
         dispatch(searchBarActions.SET_SEARCH_VALUE(searchValue));
         if (searchValue.length > 0) {
-            dispatch<any>(searchGroups(searchValue, 5, {}));
+            dispatch<any>(searchGroups(searchValue, 5));
             if (currentView === SearchView.BASIC) {
                 dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
                 dispatch(navigateToSearchResults);
@@ -75,6 +76,31 @@ export const searchAdvanceData = (data: SearchBarAdvanceFormData) =>
         dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.BASIC));
         dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
         dispatch(navigateToSearchResults);
+    };
+
+export const setSearchValueFromAdvancedData = (data: SearchBarAdvanceFormData, prevData: SearchBarAdvanceFormData) =>
+    (dispatch: Dispatch) => {
+        let value = '';
+        if (data.type) {
+            value += ` type:${data.type}`;
+        }
+        if (data.cluster) {
+            value += ` cluster:${data.cluster}`;
+        }
+        if (data.projectUuid) {
+            value += ` project:${data.projectUuid}`;
+        }
+        if (data.inTrash) {
+            value += ` is:trashed`;
+        }
+        if (data.dateFrom) {
+            value += ` from:${data.dateFrom}`;
+        }
+        if (data.dateTo) {
+            value += ` from:${data.dateTo}`;
+        }
+        value = value.substr(1) + data.searchQuery;
+        dispatch(searchBarActions.SET_SEARCH_VALUE(value));
     };
 
 const saveQuery = (data: SearchBarAdvanceFormData) =>
@@ -176,12 +202,12 @@ const startSearch = () =>
         dispatch<any>(searchData(searchValue));
     };
 
-const searchGroups = (searchValue: string, limit: number, {...props}) =>
+const searchGroups = (searchValue: string, limit: number) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const currentView = getState().searchBar.currentView;
 
         if (searchValue || currentView === SearchView.ADVANCED) {
-            const filters = getFilters('name', searchValue, props);
+            const filters = getFilters('name', searchValue);
             const { items } = await services.groupsService.contents('', {
                 filters,
                 limit,
@@ -191,15 +217,118 @@ const searchGroups = (searchValue: string, limit: number, {...props}) =>
         }
     };
 
-export const getFilters = (filterName: string, searchValue: string, props: any): string => {
-    const { resourceKind, dateTo, dateFrom } = props;
-    return new FilterBuilder()
-        .addIsA("uuid", buildUuidFilter(resourceKind))
-        .addILike(filterName, searchValue, GroupContentsResourcePrefix.COLLECTION)
-        .addILike(filterName, searchValue, GroupContentsResourcePrefix.PROCESS)
-        .addILike(filterName, searchValue, GroupContentsResourcePrefix.PROJECT)
-        .addLte('modified_at', buildDateFilter(dateTo))
-        .addGte('modified_at', buildDateFilter(dateFrom))
+export const parseQuery: (searchValue: string) => { hasKeywords: boolean; values: string[]; properties: any } = (searchValue: string) => {
+    const keywords = [
+        'type:',
+        'cluster:',
+        'project:',
+        'is:',
+        'from:',
+        'to:'
+    ];
+
+    const hasKeywords = (search: string) => keywords.reduce((acc, keyword) => acc + search.indexOf(keyword) >= 0 ? 1 : 0, 0);
+    let keywordsCnt = 0;
+
+    const properties = {};
+
+    keywords.forEach(k => {
+        const p = searchValue.indexOf(k);
+        const l = searchValue.length;
+        if (p >= 0) {
+            keywordsCnt += 1;
+
+            let v = '';
+            let i = p + k.length;
+            while (i < l && searchValue[i] === ' ') {
+                ++i;
+            }
+            const vp = i;
+            while (i < l && searchValue[i] !== ' ') {
+                v += searchValue[i];
+                ++i;
+            }
+
+            if (hasKeywords(v)) {
+                searchValue = searchValue.substr(0, p) + searchValue.substr(vp);
+            } else {
+                if (v !== '') {
+                    properties[k.substr(0, k.length - 1)] = v;
+                }
+                searchValue = searchValue.substr(0, p) + searchValue.substr(i);
+            }
+        }
+    });
+
+    const values = _.uniq(searchValue.split(' ').filter(v => v.length > 0));
+
+    return { hasKeywords: keywordsCnt > 0, values, properties };
+};
+
+export const getFilters = (filterName: string, searchValue: string): string => {
+    const filter = new FilterBuilder();
+
+    const pq = parseQuery(searchValue);
+
+    if (!pq.hasKeywords) {
+        filter
+            .addILike(filterName, searchValue, GroupContentsResourcePrefix.COLLECTION)
+            .addILike(filterName, searchValue, GroupContentsResourcePrefix.PROCESS)
+            .addILike(filterName, searchValue, GroupContentsResourcePrefix.PROJECT);
+    } else {
+
+        if (pq.properties.type) {
+            pq.values.forEach(v => {
+                let prefix = '';
+                switch (ResourceKind[pq.properties.type]) {
+                    case ResourceKind.PROJECT:
+                        prefix = GroupContentsResourcePrefix.PROJECT;
+                        break;
+                    case ResourceKind.COLLECTION:
+                        prefix = GroupContentsResourcePrefix.COLLECTION;
+                        break;
+                    case ResourceKind.PROCESS:
+                        prefix = GroupContentsResourcePrefix.PROCESS;
+                        break;
+                }
+                if (prefix !== '') {
+                    filter.addILike(filterName, v, prefix);
+                }
+            });
+        } else {
+            pq.values.forEach(v => {
+                filter
+                    .addILike(filterName, v, GroupContentsResourcePrefix.COLLECTION)
+                    .addILike(filterName, v, GroupContentsResourcePrefix.PROCESS)
+                    .addILike(filterName, v, GroupContentsResourcePrefix.PROJECT);
+            });
+        }
+
+        if (pq.properties.is && pq.properties.is === 'trashed') {
+        }
+
+        if (pq.properties.project) {
+            filter.addEqual('owner_uuid', pq.properties.project, GroupContentsResourcePrefix.PROJECT);
+        }
+
+        if (pq.properties.from) {
+            filter.addGte('modified_at', buildDateFilter(pq.properties.from));
+        }
+
+        if (pq.properties.to) {
+            filter.addLte('modified_at', buildDateFilter(pq.properties.to));
+        }
+        // filter
+        //     .addIsA("uuid", buildUuidFilter(resourceKind))
+        //     .addILike(filterName, searchValue, GroupContentsResourcePrefix.COLLECTION)
+        //     .addILike(filterName, searchValue, GroupContentsResourcePrefix.PROCESS)
+        //     .addILike(filterName, searchValue, GroupContentsResourcePrefix.PROJECT)
+        //     .addLte('modified_at', buildDateFilter(dateTo))
+        //     .addGte('modified_at', buildDateFilter(dateFrom))
+        //     .addEqual('groupClass', GroupClass.PROJECT, GroupContentsResourcePrefix.PROJECT)
+    }
+
+    return filter
         .addEqual('groupClass', GroupClass.PROJECT, GroupContentsResourcePrefix.PROJECT)
         .getFilters();
 };

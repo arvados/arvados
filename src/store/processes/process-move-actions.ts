@@ -4,7 +4,7 @@
 
 import { Dispatch } from "redux";
 import { dialogActions } from "~/store/dialog/dialog-actions";
-import { startSubmit, stopSubmit, initialize } from 'redux-form';
+import { startSubmit, stopSubmit, initialize, FormErrors } from 'redux-form';
 import { ServiceRepository } from '~/services/services';
 import { RootState } from '~/store/store';
 import { getCommonResourceServiceError, CommonResourceServiceError } from "~/services/common-service/common-resource-service";
@@ -45,9 +45,9 @@ export const moveProcess = (resource: MoveToFormDialogData) =>
         } catch (e) {
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {
-                dispatch(stopSubmit(PROCESS_MOVE_FORM_NAME, { ownerUuid: 'A process with the same name already exists in the target project.' }));
+                dispatch(stopSubmit(PROCESS_MOVE_FORM_NAME, { ownerUuid: 'A process with the same name already exists in the target project.' } as FormErrors));
             } else if (error === CommonResourceServiceError.MODIFYING_CONTAINER_REQUEST_FINAL_STATE) {
-                dispatch(stopSubmit(PROCESS_MOVE_FORM_NAME, { ownerUuid: 'You can move only draft processes.' }));
+                dispatch(stopSubmit(PROCESS_MOVE_FORM_NAME, { ownerUuid: 'You can move only draft processes.' } as FormErrors));
             } else {
                 dispatch(dialogActions.CLOSE_DIALOG({ id: PROCESS_MOVE_FORM_NAME }));
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not move the process.', hideDuration: 2000 }));
