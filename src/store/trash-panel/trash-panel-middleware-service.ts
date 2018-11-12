@@ -31,7 +31,7 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
     async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
         const dataExplorer = api.getState().dataExplorer[this.getId()];
         const columns = dataExplorer.columns as DataColumns<string, TrashPanelFilter>;
-        const sortColumn = dataExplorer.columns.find(c => c.sortDirection !== SortDirection.NONE);
+        const sortColumn = dataExplorer.columns.find(c => !!c.sortDirection && c.sortDirection !== SortDirection.NONE);
         const typeFilters = this.getColumnFilters(columns, TrashPanelColumnNames.TYPE);
 
         const order = new OrderBuilder<ProjectResource>();

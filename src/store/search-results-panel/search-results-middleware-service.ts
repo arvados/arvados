@@ -44,7 +44,7 @@ export const getParams = (dataExplorer: DataExplorer, searchValue: string) => ({
 });
 
 const getOrder = (dataExplorer: DataExplorer) => {
-    const sortColumn = dataExplorer.columns.find(c => c.sortDirection !== SortDirection.NONE);
+    const sortColumn = dataExplorer.columns.find(c => !!c.sortDirection && c.sortDirection !== SortDirection.NONE);
     const order = new OrderBuilder<GroupContentsResource>();
     if (sortColumn) {
         const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.ASC

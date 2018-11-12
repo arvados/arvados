@@ -49,7 +49,7 @@ export const getFilters = (dataExplorer: DataExplorer) => {
 };
 
 export const getOrder = (dataExplorer: DataExplorer) => {
-    const sortColumn = dataExplorer.columns.find(c => c.sortDirection !== SortDirection.NONE);
+    const sortColumn = dataExplorer.columns.find(c => !!c.sortDirection && c.sortDirection !== SortDirection.NONE);
     const order = new OrderBuilder<WorkflowResource>();
     if (sortColumn) {
         const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.ASC

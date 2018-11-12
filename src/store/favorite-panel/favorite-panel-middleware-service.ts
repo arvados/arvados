@@ -32,7 +32,7 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
             api.dispatch(favoritesPanelDataExplorerIsNotSet());
         } else {
             const columns = dataExplorer.columns as DataColumns<string, FavoritePanelFilter>;
-            const sortColumn = dataExplorer.columns.find(c => c.sortDirection !== SortDirection.NONE);
+            const sortColumn = dataExplorer.columns.find(c => !!c.sortDirection && c.sortDirection !== SortDirection.NONE);
             const typeFilters = this.getColumnFilters(columns, FavoritePanelColumnNames.TYPE);
 
             const linkOrder = new OrderBuilder<LinkResource>();
