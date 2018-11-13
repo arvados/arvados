@@ -99,8 +99,14 @@ func remoteContainerRequestCreate(
 			containerRequest["runtime_token"] = newtok.TokenV2()
 		} else {
 			// Remote user. Container request will use the
-			// current token.
-			containerRequest["runtime_token"] = creds.Tokens[0]
+			// current token, minus the trailing portion
+			// (optional container uuid).
+			sp := strings.Split(creds.Tokens[0], "/")
+			if len(sp) >= 3 {
+				containerRequest["runtime_token"] = strings.Join(sp[0:3], "/")
+			} else {
+				containerRequest["runtime_token"] = creds.Tokens[0]
+			}
 		}
 	}
 
