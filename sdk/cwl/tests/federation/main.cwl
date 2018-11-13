@@ -324,3 +324,48 @@ steps:
           - ddfa58a81953dad08436d571615dd584+112  # runner output json
     out: [out, success]
     run: framework/testcase.cwl
+
+  twostep-remote-copy-to-home:
+    doc: |
+      Two step workflow.  The runner is on the home cluster, the first
+      step is on the remote cluster, the second step is on the home
+      cluster, and propagates its input file directly from input to
+      output by symlinking the input file in the output directory.
+      Tests that crunch-run will copy blocks from remote to local
+      when preparing output collection.
+    in:
+      arvados_api_token: arvados_api_token
+      arvado_api_host_insecure: arvado_api_host_insecure
+      arvados_api_hosts: arvados_api_hosts
+      arvados_cluster_ids: arvados_cluster_ids
+      acr: acr
+      wf:
+        default:
+          class: File
+          location: cases/twostep-remote-copy-to-home.cwl
+          secondaryFiles:
+            - class: File
+              location: cases/md5sum.cwl
+            - class: File
+              location: cases/rev-input-to-output.cwl
+      obj:
+        default:
+          inp:
+            class: File
+            location: data/twostep-remote-copy-to-home.txt
+        valueFrom: |-
+          ${
+          self["md5sumCluster"] = inputs.arvados_cluster_ids[1];
+          self["revCluster"] = inputs.arvados_cluster_ids[0];
+          return self;
+          }
+      runner_cluster: { valueFrom: "$(inputs.arvados_cluster_ids[0])" }
+      scrub_image: {default: "arvados/fed-test:twostep-remote-copy-to-home"}
+      scrub_collections:
+        default:
+          - 538887bc29a3098bf79abdb8536d17bd+79   # input collection
+          - 14da0e0d52d7ab2945427074b275e9ee+51   # md5sum output collection
+          - 2d3a4a840077390a0d7788f169eaba89+112  # rev output collection
+          - 2d3a4a840077390a0d7788f169eaba89+112  # runner output json
+    out: [out, success]
+    run: framework/testcase.cwl
