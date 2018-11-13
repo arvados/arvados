@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Tree, createTree, setNode, TreeNodeStatus } from './tree';
+import { head, split, pipe, join } from 'lodash/fp';
 
 export type CollectionFilesTree = Tree<CollectionDirectory | CollectionFile>;
 
@@ -59,7 +60,7 @@ export const createCollectionFilesTree = (data: Array<CollectionDirectory | Coll
         .reduce((tree, item) => setNode({
             children: [],
             id: item.id,
-            parent: item.path,
+            parent: getParentId(item),
             value: item,
             active: false,
             selected: false,
@@ -68,3 +69,13 @@ export const createCollectionFilesTree = (data: Array<CollectionDirectory | Coll
 
         })(tree), createTree<CollectionDirectory | CollectionFile>());
 };
+
+const getParentId = (item: CollectionDirectory | CollectionFile) =>
+    item.path
+        ? join('', [getCollectionId(item.id), item.path])
+        : item.path;
+
+const getCollectionId = pipe(
+    split('/'),
+    head,
+);
