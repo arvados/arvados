@@ -26,7 +26,7 @@ export class SearchService {
     }
 
     editSavedQueries(data: SearchBarAdvanceFormData) {
-        const itemIndex = this.savedQueries.findIndex(item => item.searchQuery === data.searchQuery);
+        const itemIndex = this.savedQueries.findIndex(item => item.queryName === data.queryName);
         this.savedQueries[itemIndex] = {...data};
         localStorage.setItem('savedQueries', JSON.stringify(this.savedQueries));
     }

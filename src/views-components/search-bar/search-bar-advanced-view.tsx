@@ -128,7 +128,7 @@ export const SearchBarAdvancedView = compose(
                             </Grid>
                             <Grid item container xs={12}>
                                 <Grid item xs={2} className={classes.label}>Project</Grid>
-                                <Grid item xs={5}>
+                                <Grid item xs={10}>
                                     <SearchBarProjectField />
                                 </Grid>
                             </Grid>

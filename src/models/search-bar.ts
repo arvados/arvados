@@ -12,9 +12,10 @@ export type SearchBarAdvanceFormData = {
     dateFrom: string;
     dateTo: string;
     saveQuery: boolean;
-    searchQuery: string;
+    queryName: string;
+    searchValue: string;
     properties: PropertyValues[];
-} & PropertyValues;
+};
 
 export interface PropertyValues {
     key: string;
@@ -26,3 +27,16 @@ export enum ClusterObjectType {
     KAISERAUGST = "kaiseraugst",
     PENZBERG = "penzberg"
 }
+
+export const getClusterObjectType = (cluster?: string) => {
+    switch (cluster) {
+        case "indianapolis":
+            return ClusterObjectType.INDIANAPOLIS;
+        case "kaiseraugst":
+            return ClusterObjectType.KAISERAUGST;
+        case "penzberg":
+            return ClusterObjectType.PENZBERG;
+        default:
+            return undefined;
+    }
+};

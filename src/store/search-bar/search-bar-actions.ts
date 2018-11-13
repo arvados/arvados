@@ -2,23 +2,23 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { unionize, ofType, UnionOf } from "~/common/unionize";
+import { ofType, unionize, UnionOf } from "~/common/unionize";
 import { GroupContentsResource, GroupContentsResourcePrefix } from '~/services/groups-service/groups-service';
 import { Dispatch } from 'redux';
-import { change, arrayPush } from 'redux-form';
+import { arrayPush, change, initialize } from 'redux-form';
 import { RootState } from '~/store/store';
 import { initUserProject } from '~/store/tree-picker/tree-picker-actions';
 import { ServiceRepository } from '~/services/services';
 import { FilterBuilder } from "~/services/api/filter-builder";
-import { ResourceKind } from '~/models/resource';
+import { getResourceKind, ResourceKind } from '~/models/resource';
 import { GroupClass } from '~/models/group';
 import { SearchView } from '~/store/search-bar/search-bar-reducer';
-import { navigateToSearchResults, navigateTo } from '~/store/navigation/navigation-action';
+import { navigateTo, navigateToSearchResults } from '~/store/navigation/navigation-action';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { initialize } from 'redux-form';
-import { SearchBarAdvanceFormData, PropertyValues, ClusterObjectType } from '~/models/search-bar';
+import { ClusterObjectType, getClusterObjectType, PropertyValues, SearchBarAdvanceFormData } from '~/models/search-bar';
 import { debounce } from 'debounce';
 import * as _ from "lodash";
+import { getModifiedKeysValues } from "~/common/objects";
 
 export const searchBarActions = unionize({
     SET_CURRENT_VIEW: ofType<string>(),
@@ -78,36 +78,21 @@ export const searchAdvanceData = (data: SearchBarAdvanceFormData) =>
         dispatch(navigateToSearchResults);
     };
 
-export const setSearchValueFromAdvancedData = (data: SearchBarAdvanceFormData, prevData: SearchBarAdvanceFormData) =>
-    (dispatch: Dispatch) => {
-        let value = '';
-        if (data.type) {
-            value += ` type:${data.type}`;
-        }
-        if (data.cluster) {
-            value += ` cluster:${data.cluster}`;
-        }
-        if (data.projectUuid) {
-            value += ` project:${data.projectUuid}`;
-        }
-        if (data.inTrash) {
-            value += ` is:trashed`;
-        }
-        if (data.dateFrom) {
-            value += ` from:${data.dateFrom}`;
-        }
-        if (data.dateTo) {
-            value += ` from:${data.dateTo}`;
-        }
-        value = value.substr(1) + data.searchQuery;
+export const setSearchValueFromAdvancedData = (data: SearchBarAdvanceFormData, prevData?: SearchBarAdvanceFormData) =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        const value = getQueryFromAdvancedData({
+            searchValue: getState().searchBar.searchValue,
+            ...data
+        }, prevData);
         dispatch(searchBarActions.SET_SEARCH_VALUE(value));
     };
 
 const saveQuery = (data: SearchBarAdvanceFormData) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const savedQueries = services.searchService.getSavedQueries();
-        if (data.saveQuery && data.searchQuery) {
-            const filteredQuery = savedQueries.find(query => query.searchQuery === data.searchQuery);
+        if (data.saveQuery && data.queryName) {
+            const filteredQuery = savedQueries.find(query => query.queryName === data.queryName);
+            data.searchValue = getState().searchBar.searchValue;
             if (filteredQuery) {
                 services.searchService.editSavedQueries(data);
                 dispatch(searchBarActions.UPDATE_SAVED_QUERY(savedQueries));
@@ -131,7 +116,7 @@ export const deleteSavedQuery = (id: number) =>
 export const editSavedQuery = (data: SearchBarAdvanceFormData) =>
     (dispatch: Dispatch<any>) => {
         dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.ADVANCED));
-        dispatch(searchBarActions.SET_SEARCH_VALUE(data.searchQuery));
+        dispatch(searchBarActions.SET_SEARCH_VALUE(getQueryFromAdvancedData(data)));
         dispatch<any>(initialize(SEARCH_BAR_ADVANCE_FORM_NAME, data));
     };
 
@@ -217,14 +202,86 @@ const searchGroups = (searchValue: string, limit: number) =>
         }
     };
 
-export const parseQuery: (searchValue: string) => { hasKeywords: boolean; values: string[]; properties: any } = (searchValue: string) => {
+const buildQueryFromKeyMap = (data: any, keyMap: string[][], mode: 'rebuild' | 'reuse') => {
+    let value = data.searchValue;
+
+    const addRem = (field: string, key: string) => {
+        const v = data[key];
+        if (v) {
+            const nv = v === true
+                ? `${field}`
+                : `${field}:${v}`;
+
+            if (mode === 'rebuild') {
+                value = value + ' ' + nv;
+            } else {
+                value = nv + ' ' + value;
+            }
+        } else if (data.hasOwnProperty(key) && (v === undefined || v === false)) {
+            const pattern = v === false
+                ? `${field.replace(':', '\\:\\s*')}\\s*`
+                : `${field.replace(':', '\\:\\s*')}\\:\\s*[\\w|\\#|\\-|\\/]*`;
+            value = value.replace(new RegExp(pattern), '');
+        }
+    };
+
+    keyMap.forEach(km => addRem(km[0], km[1]));
+
+    return value;
+};
+
+export const getQueryFromAdvancedData = (data: SearchBarAdvanceFormData, prevData?: SearchBarAdvanceFormData) => {
+    let value = '';
+
+    const flatData = (data: SearchBarAdvanceFormData) => {
+        const fo = {
+            searchValue: data.searchValue,
+            type: data.type,
+            cluster: data.cluster,
+            projectUuid: data.projectUuid,
+            inTrash: data.inTrash,
+            dateFrom: data.dateFrom,
+            dateTo: data.dateTo,
+        };
+        (data.properties || []).forEach(p => fo[`prop-${p.key}`] = p.value);
+        return fo;
+    };
+
+    const keyMap = [
+        ['type', 'type'],
+        ['cluster', 'cluster'],
+        ['project', 'projectUuid'],
+        ['is:trashed', 'inTrash'],
+        ['from', 'dateFrom'],
+        ['to', 'dateTo']
+    ];
+    _.union(data.properties, prevData ? prevData.properties : [])
+        .forEach(p => keyMap.push([`has:${p.key}`, `prop-${p.key}`]));
+
+    if (prevData) {
+        const obj = getModifiedKeysValues(flatData(data), flatData(prevData));
+        console.log(obj);
+        value = buildQueryFromKeyMap({
+            searchValue: data.searchValue,
+            ...obj
+        } as SearchBarAdvanceFormData, keyMap, "reuse");
+    } else {
+        value = buildQueryFromKeyMap(flatData(data), keyMap, "rebuild");
+    }
+
+    value = value.trim();
+    return value;
+};
+
+export const parseQuery: (query: string) => { hasKeywords: boolean; values: string[]; properties: any } = (searchValue: string) => {
     const keywords = [
         'type:',
         'cluster:',
         'project:',
         'is:',
         'from:',
-        'to:'
+        'to:',
+        'has:'
     ];
 
     const hasKeywords = (search: string) => keywords.reduce((acc, keyword) => acc + search.indexOf(keyword) >= 0 ? 1 : 0, 0);
@@ -233,9 +290,11 @@ export const parseQuery: (searchValue: string) => { hasKeywords: boolean; values
     const properties = {};
 
     keywords.forEach(k => {
-        const p = searchValue.indexOf(k);
-        const l = searchValue.length;
-        if (p >= 0) {
+        let p = searchValue.indexOf(k);
+        const key = k.substr(0, k.length - 1);
+
+        while (p >= 0) {
+            const l = searchValue.length;
             keywordsCnt += 1;
 
             let v = '';
@@ -253,16 +312,52 @@ export const parseQuery: (searchValue: string) => { hasKeywords: boolean; values
                 searchValue = searchValue.substr(0, p) + searchValue.substr(vp);
             } else {
                 if (v !== '') {
-                    properties[k.substr(0, k.length - 1)] = v;
+                    if (!properties[key]) {
+                        properties[key] = [];
+                    }
+                    properties[key].push(v);
                 }
                 searchValue = searchValue.substr(0, p) + searchValue.substr(i);
             }
+            p = searchValue.indexOf(k);
         }
     });
 
     const values = _.uniq(searchValue.split(' ').filter(v => v.length > 0));
 
     return { hasKeywords: keywordsCnt > 0, values, properties };
+};
+
+export const getAdvancedDataFromQuery = (query: string): SearchBarAdvanceFormData => {
+    const r = parseQuery(query);
+
+    const getFirstProp = (name: string) => r.properties[name] && r.properties[name][0];
+    const getPropValue = (name: string, value: string) => r.properties[name] && r.properties[name].find((v: string) => v === value);
+    const getProperties = () => {
+        if (r.properties['has']) {
+            return r.properties['has'].map((value: string) => {
+                const v = value.split(':');
+                return {
+                    key: v[0],
+                    value: v[1]
+                }
+            })
+        }
+        return [];
+    };
+
+    return {
+        searchValue: r.values.join(' '),
+        type: getResourceKind(getFirstProp('type')),
+        cluster: getClusterObjectType(getFirstProp('cluster')),
+        projectUuid: getFirstProp('project'),
+        inTrash: getPropValue('is', 'trashed') !== undefined,
+        dateFrom: getFirstProp('from'),
+        dateTo: getFirstProp('to'),
+        properties: getProperties(),
+        saveQuery: false,
+        queryName: '',
+    }
 };
 
 export const getFilters = (filterName: string, searchValue: string): string => {

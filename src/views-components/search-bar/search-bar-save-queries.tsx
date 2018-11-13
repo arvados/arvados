@@ -8,6 +8,7 @@ import { ArvadosTheme } from '~/common/custom-theme';
 import { RemoveIcon, EditSavedQueryIcon } from '~/components/icon/icon';
 import { SearchBarAdvanceFormData } from '~/models/search-bar';
 import { SearchBarSelectedItem } from "~/store/search-bar/search-bar-reducer";
+import { getQueryFromAdvancedData } from "~/store/search-bar/search-bar-actions";
 
 type CssRules = 'root' | 'listItem' | 'listItemText' | 'button';
 
@@ -48,10 +49,10 @@ export const SearchBarSavedQueries = withStyles(styles)(
     ({ classes, savedQueries, onSearch, editSavedQuery, deleteSavedQuery, selectedItem }: SearchBarSavedQueriesProps) =>
         <List component="nav" className={classes.root}>
             {savedQueries.map((query, index) =>
-                <ListItem button key={index} className={classes.listItem} selected={`SQ-${index}-${query.searchQuery}` === selectedItem.id}>
+                <ListItem button key={index} className={classes.listItem} selected={`SQ-${index}-${query.queryName}` === selectedItem.id}>
                     <ListItemText disableTypography
-                        secondary={query.searchQuery}
-                        onClick={() => onSearch(query.searchQuery)}
+                        secondary={query.queryName}
+                        onClick={() => onSearch(getQueryFromAdvancedData(query))}
                         className={classes.listItemText} />
                     <ListItemSecondaryAction>
                         <Tooltip title="Edit">

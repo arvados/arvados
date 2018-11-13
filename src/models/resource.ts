@@ -77,3 +77,22 @@ export const extractUuidKind = (uuid: string = '') => {
             return undefined;
     }
 };
+
+export const getResourceKind = (kind?: string) => {
+    switch (kind) {
+        case "arvados#collection":
+            return ResourceKind.COLLECTION;
+        case "arvados#container":
+            return ResourceKind.CONTAINER;
+        case "arvados#containerRequest":
+            return ResourceKind.CONTAINER_REQUEST;
+        case "arvados#group":
+            return ResourceKind.GROUP;
+        case "arvados#log":
+            return ResourceKind.LOG;
+        case "arvados#workflow":
+            return ResourceKind.WORKFLOW;
+        default:
+            return undefined;
+    }
+}

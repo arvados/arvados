@@ -14,6 +14,7 @@ import {
     ClickAwayListener
 } from '@material-ui/core';
 import SearchIcon from '@material-ui/icons/Search';
+import ArrowDropDownIcon from '@material-ui/icons/ArrowDropDown';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { SearchView } from '~/store/search-bar/search-bar-reducer';
 import {
@@ -49,7 +50,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => {
         },
         input: {
             border: 'none',
-            padding: `0px ${theme.spacing.unit}px`
+            padding: `0`
         },
         view: {
             position: 'absolute',
@@ -132,11 +133,20 @@ export const SearchBarView = withStyles(styles)(
                             disableUnderline={true}
                             onClick={props.openSearchView}
                             onKeyDown={e => handleKeyDown(e, props)}
-                            endAdornment={
-                                <InputAdornment position="end">
+                            startAdornment={
+                                <InputAdornment position="start">
                                     <Tooltip title='Search'>
                                         <IconButton type="submit">
                                             <SearchIcon />
+                                        </IconButton>
+                                    </Tooltip>
+                                </InputAdornment>
+                            }
+                            endAdornment={
+                                <InputAdornment position="end">
+                                    <Tooltip title='Advanced search'>
+                                        <IconButton onClick={() => props.onSetView(SearchView.ADVANCED)}>
+                                            <ArrowDropDownIcon />
                                         </IconButton>
                                     </Tooltip>
                                 </InputAdornment>

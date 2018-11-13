@@ -82,10 +82,10 @@ export const SearchBarSaveSearchField = () =>
     <Field
         name='saveQuery'
         component={CheckboxField}
-        label="Save search query" />;
+        label="Save query" />;
 
 export const SearchBarQuerySearchField = () =>
     <Field
-        name='searchQuery'
+        name='queryName'
         component={TextField}
-        label="Search query name" />;
+        label="Query name" />;

@@ -66,6 +66,5 @@ export const SearchBarBasicView = withStyles(styles)(
                 editSavedQuery={editSavedQuery}
                 deleteSavedQuery={deleteSavedQuery}
                 selectedItem={selectedItem} />
-            <div className={classes.advanced} onClick={() => onSetView(SearchView.ADVANCED)}>Advanced search</div>
         </Paper>
 );
