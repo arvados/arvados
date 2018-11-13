@@ -31,7 +31,7 @@ import { ResourceKind } from '~/models/resource';
 import { getResource } from "~/store/resources/resources";
 import { CollectionResource } from "~/models/collection";
 import { resourcesDataActions } from "~/store/resources-data/resources-data-actions";
-import { getSortColumns } from "~/store/data-explorer/data-explorer-reducer";
+import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
 
 export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -127,7 +127,7 @@ export const getFilters = (dataExplorer: DataExplorer) => {
 };
 
 export const getOrder = (dataExplorer: DataExplorer) => {
-    const sortColumn = getSortColumns(dataExplorer);
+    const sortColumn = getSortColumn(dataExplorer);
     const order = new OrderBuilder<ProjectResource>();
     if (sortColumn) {
         const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.ASC

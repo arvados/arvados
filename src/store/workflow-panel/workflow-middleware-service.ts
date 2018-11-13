@@ -16,7 +16,7 @@ import { OrderDirection, OrderBuilder } from '~/services/api/order-builder';
 import { WorkflowResource } from '~/models/workflow';
 import { ListResults } from '~/services/common-service/common-resource-service';
 import { workflowPanelActions } from './workflow-panel-actions';
-import { getSortColumns } from "~/store/data-explorer/data-explorer-reducer";
+import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
 
 export class WorkflowMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -50,7 +50,7 @@ export const getFilters = (dataExplorer: DataExplorer) => {
 };
 
 export const getOrder = (dataExplorer: DataExplorer) => {
-    const sortColumn = getSortColumns(dataExplorer);
+    const sortColumn = getSortColumn(dataExplorer);
     const order = new OrderBuilder<WorkflowResource>();
     if (sortColumn) {
         const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.ASC

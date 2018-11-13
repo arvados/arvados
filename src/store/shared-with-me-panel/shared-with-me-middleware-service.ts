@@ -19,7 +19,7 @@ import { OrderBuilder, OrderDirection } from '~/services/api/order-builder';
 import { ProjectResource } from '~/models/project';
 import { ProjectPanelColumnNames } from '~/views/project-panel/project-panel';
 import { FilterBuilder } from '~/services/api/filter-builder';
-import { getSortColumns } from "~/store/data-explorer/data-explorer-reducer";
+import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
 
 export class SharedWithMeMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -60,7 +60,7 @@ export const getFilters = (dataExplorer: DataExplorer) => {
 };
 
 export const getOrder = (dataExplorer: DataExplorer) => {
-    const sortColumn = getSortColumns(dataExplorer);
+    const sortColumn = getSortColumn(dataExplorer);
     const order = new OrderBuilder<ProjectResource>();
     if (sortColumn) {
         const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.ASC

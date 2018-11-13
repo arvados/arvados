@@ -65,7 +65,7 @@ export const dataExplorerReducer = (state: DataExplorerState = {}, action: DataE
 export const getDataExplorer = (state: DataExplorerState, id: string) =>
     state[id] || initialDataExplorer;
 
-export const getSortColumns = (dataExplorer: DataExplorer) => dataExplorer.columns.find((c: any) =>
+export const getSortColumn = (dataExplorer: DataExplorer) => dataExplorer.columns.find((c: any) =>
     !!c.sortDirection && c.sortDirection !== SortDirection.NONE);
 
 const update = (state: DataExplorerState, id: string, updateFn: (dataExplorer: DataExplorer) => DataExplorer) =>
