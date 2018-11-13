@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"mime"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -61,7 +62,11 @@ func (h *Handler) remoteClusterRequest(remoteID string, req *http.Request) (*htt
 // downstream proxy steps.
 func loadParamsFromForm(req *http.Request) error {
 	var postBody *bytes.Buffer
-	if req.Body != nil && req.Header.Get("Content-Type") == "application/x-www-form-urlencoded" {
+	if ct := req.Header.Get("Content-Type"); ct == "" {
+		// Assume application/octet-stream, i.e., no form to parse.
+	} else if ct, _, err := mime.ParseMediaType(ct); err != nil {
+		return err
+	} else if ct == "application/x-www-form-urlencoded" && req.Body != nil {
 		var cl int64
 		if req.ContentLength > 0 {
 			cl = req.ContentLength
