@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { DataColumn, toggleSortDirection, resetSortDirection } from "~/components/data-table/data-column";
+import { DataColumn, toggleSortDirection, resetSortDirection, SortDirection } from "~/components/data-table/data-column";
 import { dataExplorerActions, DataExplorerAction } from "./data-explorer-action";
 import { DataTableFilterItem } from "~/components/data-table-filters/data-table-filters";
 import { DataColumns } from "~/components/data-table/data-table";
@@ -64,6 +64,9 @@ export const dataExplorerReducer = (state: DataExplorerState = {}, action: DataE
 
 export const getDataExplorer = (state: DataExplorerState, id: string) =>
     state[id] || initialDataExplorer;
+
+export const getSortColumns = (dataExplorer: DataExplorer) => dataExplorer.columns.find((c: any) =>
+    !!c.sortDirection && c.sortDirection !== SortDirection.NONE);
 
 const update = (state: DataExplorerState, id: string, updateFn: (dataExplorer: DataExplorer) => DataExplorer) =>
     ({ ...state, [id]: updateFn(getDataExplorer(state, id)) });

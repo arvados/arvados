@@ -16,6 +16,7 @@ import { GroupContentsResource, GroupContentsResourcePrefix } from "~/services/g
 import { ListResults } from '~/services/common-service/common-resource-service';
 import { searchResultsPanelActions } from '~/store/search-results-panel/search-results-panel-actions';
 import { getFilters } from '~/store/search-bar/search-bar-actions';
+import { getSortColumns } from "~/store/data-explorer/data-explorer-reducer";
 
 export class SearchResultsMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -44,7 +45,7 @@ export const getParams = (dataExplorer: DataExplorer, searchValue: string) => ({
 });
 
 const getOrder = (dataExplorer: DataExplorer) => {
-    const sortColumn = dataExplorer.columns.find(c => !!c.sortDirection && c.sortDirection !== SortDirection.NONE);
+    const sortColumn = getSortColumns(dataExplorer);
     const order = new OrderBuilder<GroupContentsResource>();
     if (sortColumn) {
         const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.ASC
