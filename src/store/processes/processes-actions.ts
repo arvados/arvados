@@ -7,8 +7,11 @@ import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
 import { updateResources } from '~/store/resources/resources-actions';
 import { FilterBuilder } from '~/services/api/filter-builder';
-import { ContainerRequestResource } from '../../models/container-request';
+import { ContainerRequestResource } from '~/models/container-request';
 import { Process } from './process';
+import { dialogActions } from '~/store/dialog/dialog-actions';
+import { snackbarActions } from '~/store/snackbar/snackbar-actions';
+import { projectPanelActions } from '~/store/project-panel/project-panel-action';
 
 export const loadProcess = (containerRequestUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<Process> => {
@@ -54,3 +57,28 @@ export const loadContainers = (filters: string) =>
         dispatch<any>(updateResources(items));
         return items;
     };
+
+export const openRemoveProcessDialog = (uuid: string) =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(dialogActions.OPEN_DIALOG({
+            id: REMOVE_PROCESS_DIALOG,
+            data: {
+                title: 'Remove process permanently',
+                text: 'Are you sure you want to remove this process?',
+                confirmButtonLabel: 'Remove',
+                uuid
+            }
+        }));
+    };
+
+export const REMOVE_PROCESS_DIALOG = 'removeProcessDialog';
+
+export const removeProcessPermanently = (uuid: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) =>{
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...' }));
+        await services.containerRequestService.delete(uuid);
+        dispatch(projectPanelActions.REQUEST_ITEMS());
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000 }));
+    };
+        
+
