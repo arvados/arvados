@@ -403,6 +403,13 @@ func (v *S3Volume) Put(ctx context.Context, loc string, block []byte) error {
 			return err
 		}
 		opts.ContentMD5 = base64.StdEncoding.EncodeToString(md5)
+		// In AWS regions that use V4 signatures, we need to
+		// provide ContentSHA256 up front. Otherwise, the S3
+		// library reads the request body (from our buffer)
+		// into another new buffer in order to compute the
+		// SHA256 before sending the request -- which would
+		// mean consuming 128 MiB of memory for the duration
+		// of a 64 MiB write.
 		opts.ContentSHA256 = fmt.Sprintf("%x", sha256.Sum256(block))
 	}
 
