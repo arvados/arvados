@@ -20,6 +20,7 @@ import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions.ts';
 import { getDataExplorer } from "~/store/data-explorer/data-explorer-reducer";
 import { loadMissingProcessesInformation } from "~/store/project-panel/project-panel-middleware-service";
+import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
 
 export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -32,7 +33,7 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
             api.dispatch(favoritesPanelDataExplorerIsNotSet());
         } else {
             const columns = dataExplorer.columns as DataColumns<string, FavoritePanelFilter>;
-            const sortColumn = dataExplorer.columns.find(c => c.sortDirection !== SortDirection.NONE);
+            const sortColumn = getSortColumn(dataExplorer);
             const typeFilters = this.getColumnFilters(columns, FavoritePanelColumnNames.TYPE);
 
             const linkOrder = new OrderBuilder<LinkResource>();
