@@ -347,12 +347,31 @@ func (s *FederationSuite) TestGetLocalCollection(c *check.C) {
 	s.testHandler.Cluster.NodeProfiles["*"] = np
 	s.testHandler.NodeProfile = &np
 
+	// HTTP GET
+
 	req := httptest.NewRequest("GET", "/arvados/v1/collections/"+arvadostest.UserAgreementCollection, nil)
 	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
 	resp := s.testRequest(req)
 
 	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
 	var col arvados.Collection
+	c.Check(json.NewDecoder(resp.Body).Decode(&col), check.IsNil)
+	c.Check(col.UUID, check.Equals, arvadostest.UserAgreementCollection)
+	c.Check(col.ManifestText, check.Matches,
+		`\. 6a4ff0499484c6c79c95cd8c566bd25f\+249025\+A[0-9a-f]{40}@[0-9a-f]{8} 0:249025:GNU_General_Public_License,_version_3.pdf
+`)
+
+	// HTTP POST with _method=GET as a form parameter
+
+	req = httptest.NewRequest("POST", "/arvados/v1/collections/"+arvadostest.UserAgreementCollection, bytes.NewBufferString((url.Values{
+		"_method": {"GET"},
+	}).Encode()))
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
+	resp = s.testRequest(req)
+
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	col = arvados.Collection{}
 	c.Check(json.NewDecoder(resp.Body).Decode(&col), check.IsNil)
 	c.Check(col.UUID, check.Equals, arvadostest.UserAgreementCollection)
 	c.Check(col.ManifestText, check.Matches,
