@@ -3,24 +3,24 @@
 	"ignore": "test",
 	"package": [
 		{
-			"checksumSHA1": "jf7K+UTQNIzRdlG5F4zX/8b++/E=",
+			"checksumSHA1": "j4je0EzPGzjb6INLY1BHZ+hyMjc=",
 			"origin": "github.com/curoverse/goamz/aws",
 			"path": "github.com/AdRoll/goamz/aws",
-			"revision": "21e563311c2dc5ac53464a2c31cb91fb833c6cb9",
+			"revision": "888b4804f2653cd35ebcc95f046079e63b5b2799",
 			"revisionTime": "2017-07-27T13:52:37Z"
 		},
 		{
-			"checksumSHA1": "9nUwQXI+pNxZo6bnR7NslpMpfPI=",
+			"checksumSHA1": "0+n3cT6e7sQCCbBAH8zg6neiHTk=",
 			"origin": "github.com/curoverse/goamz/s3",
 			"path": "github.com/AdRoll/goamz/s3",
-			"revision": "21e563311c2dc5ac53464a2c31cb91fb833c6cb9",
+			"revision": "888b4804f2653cd35ebcc95f046079e63b5b2799",
 			"revisionTime": "2017-07-27T13:52:37Z"
 		},
 		{
 			"checksumSHA1": "tvxbsTkdjB0C/uxEglqD6JfVnMg=",
 			"origin": "github.com/curoverse/goamz/s3/s3test",
 			"path": "github.com/AdRoll/goamz/s3/s3test",
-			"revision": "21e563311c2dc5ac53464a2c31cb91fb833c6cb9",
+			"revision": "888b4804f2653cd35ebcc95f046079e63b5b2799",
 			"revisionTime": "2017-07-27T13:52:37Z"
 		},
 		{
