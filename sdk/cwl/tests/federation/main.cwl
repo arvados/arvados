@@ -194,9 +194,9 @@ steps:
       scrub_image: {default: "arvados/fed-test:remote-case"}
       scrub_collections:
         default:
-          - 031a4ced0aa99de90fb630568afc6e9b+67   # input collection
-          - eb93a6718eb1a1a8ee9f66ee7d683472+51   # md5sum output collection
-          - f654d4048612135f4a5e7707ec0fcf3e+112  # final output json
+          - fccd49fdef8e452295f718208abafd88+69   # input collection
+          - 58c0e8ea6b148134ef8577ee11307eec+51   # md5sum output collection
+          - 1fd679c5ab64c123b9764024dbf560f0+112  # final output json
     out: [out, success]
     run: framework/testcase.cwl
 
