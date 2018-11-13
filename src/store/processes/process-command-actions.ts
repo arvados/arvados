@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { dialogActions } from '~/store/dialog/dialog-actions';
-import { RootState } from '../store';
+import { RootState } from '~/store/store';
 import { Dispatch } from 'redux';
 import { getProcess } from '~/store/processes/process';
 import { quote } from 'shell-quote';

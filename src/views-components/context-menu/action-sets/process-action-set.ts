@@ -18,6 +18,7 @@ import { openProcessCommandDialog } from '~/store/processes/process-command-acti
 import { detailsPanelActions } from '~/store/details-panel/details-panel-action';
 import { openSharingDialog } from "~/store/sharing-dialog/sharing-dialog-actions";
 import { openAdvancedTabDialog } from "~/store/advanced-tab/advanced-tab";
+import { openProcessInputDialog } from "~/store/processes/process-input-actions";
 
 export const processActionSet: ContextMenuActionSet = [[
     {
@@ -67,7 +68,7 @@ export const processActionSet: ContextMenuActionSet = [[
         icon: InputIcon,
         name: "Inputs",
         execute: (dispatch, resource) => {
-            // add code
+            dispatch<any>(openProcessInputDialog(resource.uuid));
         }
     },
     {

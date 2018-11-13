@@ -27,7 +27,8 @@ const Input = (props: GenericInputProps) => {
     const type = props.commandInput.type as CommandInputEnumSchema;
     return <Select
         value={props.input.value}
-        onChange={props.input.onChange}>
+        onChange={props.input.onChange}
+        disabled={props.commandInput.disabled} >
         {type.symbols.map(symbol =>
             <MenuItem key={symbol} value={symbol.split('/').pop()}>
                 {symbol.split('/').pop()}

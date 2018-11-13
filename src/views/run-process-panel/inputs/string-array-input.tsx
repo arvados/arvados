@@ -42,15 +42,17 @@ const StringArrayInputComponent = (props: GenericInputProps) =>
 
 class InputComponent extends React.PureComponent<GenericInputProps>{
     render() {
+        const { commandInput, input, meta } = this.props;
         return <ChipsInput
-            deletable
-            orderable
-            value={this.props.input.value}
+            deletable={!commandInput.disabled}
+            orderable={!commandInput.disabled}
+            disabled={commandInput.disabled}
+            value={input.value}
             onChange={this.handleChange}
             createNewValue={identity}
             inputComponent={Input}
             inputProps={{
-                error: this.props.meta.error,
+                error: meta.error
             }} />;
     }
 

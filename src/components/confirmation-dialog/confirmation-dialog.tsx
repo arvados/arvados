@@ -10,6 +10,7 @@ import { WarningIcon } from '~/components/icon/icon';
 export interface ConfirmationDialogDataProps {
     title: string;
     text: string;
+    info?: string; 
     cancelButtonLabel?: string;
     confirmButtonLabel?: string;
 }
@@ -24,12 +25,11 @@ export const ConfirmationDialog = (props: ConfirmationDialogProps & WithDialogPr
         <DialogContent style={{ display: 'flex', alignItems: 'center' }}>
             <WarningIcon />
             <DialogContentText style={{ paddingLeft: '8px' }}>
-                {props.data.text}
-                <br />
-                {props.data.title === 'Removing file' ? 'Removing a file will change content adress.' : 'Removing files will change content adress.'}
+                <div>{props.data.text}</div>
+                <div>{props.data.info}</div>
             </DialogContentText>
         </DialogContent>
-        <DialogActions>
+        <DialogActions style={{ margin: '0px 24px 24px' }}>
             <Button
                 variant='flat'
                 color='primary'

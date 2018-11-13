@@ -28,4 +28,5 @@ const Input = (props: GenericInputProps) =>
     <Switch
         color='primary'
         checked={props.input.value}
-        onChange={() => props.input.onChange(props.input.value)} />;
+        onChange={() => props.input.onChange(props.input.value)} 
+        disabled={props.commandInput.disabled} />;

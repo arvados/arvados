@@ -117,7 +117,6 @@ const FileArrayInputComponent = connect(mapStateToProps)(
             this.setState({ open: true });
         }
 
-
         closeDialog = () => {
             this.setState({ open: false });
         }
@@ -195,6 +194,7 @@ const FileArrayInputComponent = connect(mapStateToProps)(
         chipsInput = () =>
             <ChipsInput
                 value={this.props.input.value}
+                disabled={this.props.commandInput.disabled}
                 onChange={noop}
                 createNewValue={identity}
                 getLabel={(file: CollectionFile) => file.name}
@@ -205,8 +205,9 @@ const FileArrayInputComponent = connect(mapStateToProps)(
                 {...props}
                 error={this.props.meta.touched && !!this.props.meta.error}
                 readOnly
-                onClick={this.openDialog}
-                onKeyPress={this.openDialog}
+                disabled={this.props.commandInput.disabled}
+                onClick={!this.props.commandInput.disabled ? this.openDialog : undefined}
+                onKeyPress={!this.props.commandInput.disabled ? this.openDialog : undefined}
                 onBlur={this.props.input.onBlur} />
 
         dialog = () =>
