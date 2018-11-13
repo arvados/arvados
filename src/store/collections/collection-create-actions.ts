@@ -13,6 +13,7 @@ import { fileUploaderActions } from '~/store/file-uploader/file-uploader-actions
 import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
 import { isItemNotInProject, isProjectOrRunProcessRoute } from '~/store/projects/project-create-actions';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
+import { CollectionResource } from "~/models/collection";
 
 export interface CollectionCreateFormDialogData {
     ownerUuid: string;
@@ -39,9 +40,10 @@ export const openCollectionCreateDialog = (ownerUuid: string) =>
 export const createCollection = (data: CollectionCreateFormDialogData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(startSubmit(COLLECTION_CREATE_FORM_NAME));
-        const newCollection = await services.collectionService.create(data);
-        try {            
-            dispatch(progressIndicatorActions.START_WORKING(COLLECTION_CREATE_FORM_NAME));    
+        let newCollection: CollectionResource | null = null;
+        try {
+            dispatch(progressIndicatorActions.START_WORKING(COLLECTION_CREATE_FORM_NAME));
+            newCollection = await services.collectionService.create(data);
             await dispatch<any>(uploadCollectionFiles(newCollection.uuid));
             dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_CREATE_FORM_NAME }));
             dispatch(reset(COLLECTION_CREATE_FORM_NAME));
@@ -58,11 +60,10 @@ export const createCollection = (data: CollectionCreateFormDialogData) =>
                     message: 'Collection has not been created.',
                     hideDuration: 2000,
                     kind: SnackbarKind.ERROR
-                }));       
-            await services.collectionService.delete(newCollection.uuid);
+                }));
+                await services.collectionService.delete(newCollection!.uuid);
             }
             dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_CREATE_FORM_NAME));
             return;
         }
     };
-    
