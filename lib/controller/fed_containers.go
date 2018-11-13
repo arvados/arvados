@@ -57,7 +57,7 @@ func remoteContainerRequestCreate(
 	originalBody := req.Body
 	defer originalBody.Close()
 	var request map[string]interface{}
-	err := json.NewDecoder(req.Body).Decode(&request)
+	err = json.NewDecoder(req.Body).Decode(&request)
 	if err != nil {
 		httpserver.Error(w, err.Error(), http.StatusBadRequest)
 		return true
@@ -89,27 +89,18 @@ func remoteContainerRequestCreate(
 		}
 
 		if strings.HasPrefix(currentUser.Authorization.UUID, h.handler.Cluster.ClusterID) {
-			// Local user, so create a new token
+			// Local user, submitting to a remote cluster.
+			// Create a new time-limited token.
 			newtok, err := h.handler.createAPItoken(req, currentUser.UUID, nil)
 			if err != nil {
 				httpserver.Error(w, err.Error(), http.StatusForbidden)
 				return true
 			}
 			containerRequest["runtime_token"] = newtok.TokenV2()
-		} else if strings.HasPrefix(currentUser.Authorization.UUID, *cluster_id) {
-			// Remote user from the cluster that we want
-			// to send work to.  Submit container to run
-			// using current token.
-			containerRequest["runtime_token"] = creds.Tokens[0]
 		} else {
-			// Remote user.  Submit container to run with current token,
-			// salted for the target cluster.
-			saltedToken, err := auth.SaltToken(creds.Tokens[0], *clusterId)
-			if err != nil {
-				httpserver.Error(w, err.Error(), http.StatusForbidden)
-				return true
-			}
-			containerRequest["runtime_token"] = saltedToken
+			// Remote user. Container request will use the
+			// current token.
+			containerRequest["runtime_token"] = creds.Tokens[0]
 		}
 	}
 
