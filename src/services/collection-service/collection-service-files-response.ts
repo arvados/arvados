@@ -46,7 +46,7 @@ export const extractFilesData = (document: Document) => {
                 url,
                 id: [
                     collectionUuid ? collectionUuid : '',
-                    directory ? '/' + directory : '',
+                    directory ? '/' + directory.replace(/^\//, '') : '',
                     '/' + name
                 ].join(''),
                 name,
