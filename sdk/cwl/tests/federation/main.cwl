@@ -51,6 +51,15 @@ outputs:
   twostep-both-remote-success:
     type: Any
     outputSource: twostep-both-remote/success
+  twostep-remote-copy-to-home-success:
+    type: Any
+    outputSource: twostep-remote-copy-to-home/success
+  scatter-gather-success:
+    type: Any
+    outputSource: scatter-gather/success
+  threestep-remote-success:
+    type: Any
+    outputSource: threestep-remote/success
 
 steps:
   base-case:
