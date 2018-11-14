@@ -374,7 +374,7 @@ class RunnerContainer(Runner):
             "kind": "text",
             "content": json.dumps(self.job_order)
         }
-        if len(cwl_input_json_mount.content) > 1024 * 1024: # save to collection if more than 1MB of input JSON                                                                       
+        if len(cwl_input_json_mount["content"]) > 1024 * 1024: # save to collection if more than 1MB of input JSON                                                                       
             path = "cwl.input.json"
             c = arvados.collection.Collection(api_client=self.arvrunner.api,
                                               keep_client=self.arvrunner.keep_client,
