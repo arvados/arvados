@@ -22,6 +22,7 @@ import { updateFavorites } from "~/store/favorites/favorites-actions";
 import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
 import { updateResources } from "~/store/resources/resources-actions";
 import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
+import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
 
 export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -31,7 +32,7 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
     async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
         const dataExplorer = api.getState().dataExplorer[this.getId()];
         const columns = dataExplorer.columns as DataColumns<string, TrashPanelFilter>;
-        const sortColumn = dataExplorer.columns.find(c => c.sortDirection !== SortDirection.NONE);
+        const sortColumn = getSortColumn(dataExplorer);
         const typeFilters = this.getColumnFilters(columns, TrashPanelColumnNames.TYPE);
 
         const order = new OrderBuilder<ProjectResource>();
