@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { pipe } from 'lodash/fp';
+import { pipe, map, reduce } from 'lodash/fp';
 export type Tree<T> = Record<string, TreeNode<T>>;
 
 export const TREE_ROOT_ID = '';
@@ -33,6 +33,13 @@ export enum TreePickerId {
 export const createTree = <T>(): Tree<T> => ({});
 
 export const getNode = (id: string) => <T>(tree: Tree<T>): TreeNode<T> | undefined => tree[id];
+
+export const appendSubtree = <T>(id: string, subtree: Tree<T>) => (tree: Tree<T>) =>
+    pipe(
+        getNodeDescendants(''),
+        map(node => node.parent === '' ? { ...node, parent: id } : node),
+        reduce((newTree, node) => setNode(node)(newTree), tree)
+    )(subtree) as Tree<T>;
 
 export const setNode = <T>(node: TreeNode<T>) => (tree: Tree<T>): Tree<T> => {
     return pipe(
