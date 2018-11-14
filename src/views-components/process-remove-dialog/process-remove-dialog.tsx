@@ -8,10 +8,6 @@ import { ConfirmationDialog } from "~/components/confirmation-dialog/confirmatio
 import { withDialog, WithDialogProps } from "~/store/dialog/with-dialog";
 import { removeProcessPermanently, REMOVE_PROCESS_DIALOG } from '~/store/processes/processes-actions';
 
-const mapStateToProps = (props: WithDialogProps<string>) => ({
-    ...props,
-});
-
 const mapDispatchToProps = (dispatch: Dispatch, props: WithDialogProps<any>) => ({
     onConfirm: () => {
         props.closeDialog();
@@ -21,5 +17,5 @@ const mapDispatchToProps = (dispatch: Dispatch, props: WithDialogProps<any>) => 
 
 export const RemoveProcessDialog = compose(
     withDialog(REMOVE_PROCESS_DIALOG),
-    connect(mapStateToProps, mapDispatchToProps)
+    connect(null, mapDispatchToProps)
 )(ConfirmationDialog);
