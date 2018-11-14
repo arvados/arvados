@@ -369,3 +369,47 @@ steps:
           - 2d3a4a840077390a0d7788f169eaba89+112  # runner output json
     out: [out, success]
     run: framework/testcase.cwl
+
+  scatter-gather:
+    doc: ""
+    in:
+      arvados_api_token: arvados_api_token
+      arvado_api_host_insecure: arvado_api_host_insecure
+      arvados_api_hosts: arvados_api_hosts
+      arvados_cluster_ids: arvados_cluster_ids
+      acr: acr
+      wf:
+        default:
+          class: File
+          location: cases/scatter-gather.cwl
+          secondaryFiles:
+            - class: File
+              location: cases/md5sum.cwl
+            - class: File
+              location: cases/cat.cwl
+      obj:
+        default:
+          shards:
+            - class: File
+              location: data/scatter-gather-s1.txt
+            - class: File
+              location: data/scatter-gather-s2.txt
+            - class: File
+              location: data/scatter-gather-s3.txt
+        valueFrom: |-
+          ${
+          self["clusters"] = inputs.arvados_cluster_ids;
+          return self;
+          }
+      runner_cluster: { valueFrom: "$(inputs.arvados_cluster_ids[0])" }
+      scrub_image: {default: "arvados/fed-test:scatter-gather"}
+      scrub_collections:
+        default:
+          - 99cc18329bce1b4a5fe6c4cf60477668+209  # input collection
+          - 2e570e844e03c7027baad148642d726f+51   # s1 md5sum output collection
+          - 61c88ee7811d0b849b5c06376eb065a6+51   # s2 md5sum output collection
+          - 85aaf18d638045fe609e025d3a319b2a+51   # s3 md5sum output collection
+          - ec44bcba77e65128f1a8f843d881ede4+56   # cat output collection
+          - 89de265942800ae36549109969940363+117  # runner output json
+    out: [out, success]
+    run: framework/testcase.cwl
