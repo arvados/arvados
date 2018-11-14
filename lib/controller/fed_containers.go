@@ -25,8 +25,27 @@ func remoteContainerRequestCreate(
 	w http.ResponseWriter,
 	req *http.Request) bool {
 
-	if effectiveMethod != "POST" || uuid != "" || remainder != "" ||
-		*clusterId == "" || *clusterId == h.handler.Cluster.ClusterID {
+	if effectiveMethod != "POST" || uuid != "" || remainder != "" {
+		return false
+	}
+
+	// First make sure supplied token is valid.
+	creds := auth.NewCredentials()
+	creds.LoadTokensFromHTTPRequest(req)
+
+	currentUser, err := h.handler.validateAPItoken(req, creds.Tokens[0])
+	if err != nil {
+		httpserver.Error(w, err.Error(), http.StatusForbidden)
+		return true
+	}
+
+	if *clusterId == "" {
+		*clusterId = h.handler.Cluster.ClusterID
+	}
+
+	if strings.HasPrefix(currentUser.Authorization.UUID, h.handler.Cluster.ClusterID) &&
+		*clusterId == h.handler.Cluster.ClusterID {
+		// local user submitting container request to local cluster
 		return false
 	}
 
@@ -38,7 +57,7 @@ func remoteContainerRequestCreate(
 	originalBody := req.Body
 	defer originalBody.Close()
 	var request map[string]interface{}
-	err := json.NewDecoder(req.Body).Decode(&request)
+	err = json.NewDecoder(req.Body).Decode(&request)
 	if err != nil {
 		httpserver.Error(w, err.Error(), http.StatusBadRequest)
 		return true
@@ -64,29 +83,30 @@ func remoteContainerRequestCreate(
 
 	// If runtime_token is not set, create a new token
 	if _, ok := containerRequest["runtime_token"]; !ok {
-		// First make sure supplied token is valid.
-		creds := auth.NewCredentials()
-		creds.LoadTokensFromHTTPRequest(req)
-
-		currentUser, err := h.handler.validateAPItoken(req, creds.Tokens[0])
-		if err != nil {
-			httpserver.Error(w, err.Error(), http.StatusForbidden)
-			return true
-		}
-
 		if len(currentUser.Authorization.Scopes) != 1 || currentUser.Authorization.Scopes[0] != "all" {
 			httpserver.Error(w, "Token scope is not [all]", http.StatusForbidden)
 			return true
 		}
 
-		// Must be home cluster for this authorization
 		if strings.HasPrefix(currentUser.Authorization.UUID, h.handler.Cluster.ClusterID) {
+			// Local user, submitting to a remote cluster.
+			// Create a new time-limited token.
 			newtok, err := h.handler.createAPItoken(req, currentUser.UUID, nil)
 			if err != nil {
 				httpserver.Error(w, err.Error(), http.StatusForbidden)
 				return true
 			}
 			containerRequest["runtime_token"] = newtok.TokenV2()
+		} else {
+			// Remote user. Container request will use the
+			// current token, minus the trailing portion
+			// (optional container uuid).
+			sp := strings.Split(creds.Tokens[0], "/")
+			if len(sp) >= 3 {
+				containerRequest["runtime_token"] = strings.Join(sp[0:3], "/")
+			} else {
+				containerRequest["runtime_token"] = creds.Tokens[0]
+			}
 		}
 	}
 
