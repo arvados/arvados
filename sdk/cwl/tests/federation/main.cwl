@@ -413,3 +413,44 @@ steps:
           - 89de265942800ae36549109969940363+117  # runner output json
     out: [out, success]
     run: framework/testcase.cwl
+
+  threestep-remote:
+    doc: ""
+    in:
+      arvados_api_token: arvados_api_token
+      arvado_api_host_insecure: arvado_api_host_insecure
+      arvados_api_hosts: arvados_api_hosts
+      arvados_cluster_ids: arvados_cluster_ids
+      acr: acr
+      wf:
+        default:
+          class: File
+          location: cases/threestep-remote.cwl
+          secondaryFiles:
+            - class: File
+              location: cases/md5sum.cwl
+            - class: File
+              location: cases/rev-input-to-output.cwl
+      obj:
+        default:
+          inp:
+            class: File
+            location: data/threestep-remote.txt
+        valueFrom: |-
+          ${
+          self["clusterA"] = inputs.arvados_cluster_ids[0];
+          self["clusterB"] = inputs.arvados_cluster_ids[1];
+          self["clusterC"] = inputs.arvados_cluster_ids[2];
+          return self;
+          }
+      runner_cluster: { valueFrom: "$(inputs.arvados_cluster_ids[0])" }
+      scrub_image: {default: "arvados/fed-test:threestep-remote"}
+      scrub_collections:
+        default:
+          - 9fbf33e62876357fe134f619865cc5a5+68   # input collection
+          - 210c5f2a716f6689b04316acd4928c10+51   # md5sum output collection
+          - 3abea7506269d5ebf61fb17c78bbd2af+105  # revB output
+          - 9e1b3acb28949759ad07e4c9740bbaa5+113  # revC output
+          - 8c86dbec7de7948871b5e168ede417e1+120  # runner output json
+    out: [out, success]
+    run: framework/testcase.cwl
