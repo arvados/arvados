@@ -546,31 +546,26 @@ func (kc *KeepClient) httpClient() HTTPClient {
 		keepAlive = DefaultKeepAlive
 	}
 
-	transport, ok := http.DefaultTransport.(*http.Transport)
-	if ok {
-		copy := *transport
-		transport = &copy
-	} else {
-		// Evidently the application has replaced
-		// http.DefaultTransport with a different type, so we
-		// need to build our own from scratch using the Go 1.8
-		// defaults.
-		transport = &http.Transport{
+	c := &http.Client{
+		Timeout: requestTimeout,
+		// It's not safe to copy *http.DefaultTransport
+		// because it has a mutex (which might be locked)
+		// protecting a private map (which might not be nil).
+		// So we build our own, using the Go 1.10 default
+		// values, ignoring any changes the application has
+		// made to http.DefaultTransport.
+		Transport: &http.Transport{
+			DialContext: (&net.Dialer{
+				Timeout:   connectTimeout,
+				KeepAlive: keepAlive,
+				DualStack: true,
+			}).DialContext,
 			MaxIdleConns:          100,
 			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   tlsTimeout,
 			ExpectContinueTimeout: time.Second,
-		}
-	}
-	transport.DialContext = (&net.Dialer{
-		Timeout:   connectTimeout,
-		KeepAlive: keepAlive,
-		DualStack: true,
-	}).DialContext
-	transport.TLSHandshakeTimeout = tlsTimeout
-	transport.TLSClientConfig = arvadosclient.MakeTLSConfig(kc.Arvados.ApiInsecure)
-	c := &http.Client{
-		Timeout:   requestTimeout,
-		Transport: transport,
+			TLSClientConfig:       arvadosclient.MakeTLSConfig(kc.Arvados.ApiInsecure),
+		},
 	}
 	defaultClient[kc.Arvados.ApiInsecure][kc.foundNonDiskSvc] = c
 	return c
