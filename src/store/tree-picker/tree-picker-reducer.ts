@@ -8,6 +8,7 @@ import { treePickerActions, TreePickerAction } from "./tree-picker-actions";
 import { compose } from "redux";
 import { activateNode, getNode, toggleNodeCollapse, toggleNodeSelection } from '~/models/tree';
 import { pipe } from 'lodash/fp';
+import { appendSubtree } from '~/models/tree';
 
 export const treePickerReducer = (state: TreePicker = {}, action: TreePickerAction) =>
     treePickerActions.match(action, {
@@ -16,6 +17,9 @@ export const treePickerReducer = (state: TreePicker = {}, action: TreePickerActi
 
         LOAD_TREE_PICKER_NODE_SUCCESS: ({ id, nodes, pickerId }) =>
             updateOrCreatePicker(state, pickerId, compose(receiveNodes(nodes)(id), setNodeStatus(id)(TreeNodeStatus.LOADED))),
+
+        APPEND_TREE_PICKER_NODE_SUBTREE: ({ id, subtree, pickerId}) =>
+            updateOrCreatePicker(state, pickerId, compose(appendSubtree(id, subtree), setNodeStatus(id)(TreeNodeStatus.LOADED))),
 
         TOGGLE_TREE_PICKER_NODE_COLLAPSE: ({ id, pickerId }) =>
             updateOrCreatePicker(state, pickerId, toggleNodeCollapse(id)),
