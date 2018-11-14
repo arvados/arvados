@@ -132,7 +132,8 @@ class ArvadosWorkflow(Workflow):
 
     def job(self, joborder, output_callback, runtimeContext):
 
-        check_cluster_target(self, self._init_job(joborder, runtimeContext), runtimeContext)
+        builder = self._init_job(joborder, runtimeContext)
+        check_cluster_target(self, builder, runtimeContext)
 
         req, _ = self.get_requirement("http://arvados.org/cwl#RunInSingleContainer")
         if not req:
@@ -160,11 +161,6 @@ class ArvadosWorkflow(Workflow):
                 workflowobj["hints"] = dedup_reqs(self.hints)
 
                 packed = pack(document_loader, workflowobj, uri, self.metadata)
-
-                builder = Builder(joborder,
-                                  requirements=workflowobj["requirements"],
-                                  hints=workflowobj["hints"],
-                                  resources={})
 
                 def visit(item):
                     for t in ("hints", "requirements"):
@@ -205,11 +201,6 @@ class ArvadosWorkflow(Workflow):
 
 
         if self.dynamic_resource_req:
-            builder = Builder(joborder,
-                              requirements=self.requirements,
-                              hints=self.hints,
-                              resources={})
-
             # Evaluate dynamic resource requirements using current builder
             rs = copy.copy(self.static_resource_req)
             for dyn_rs in self.dynamic_resource_req:
