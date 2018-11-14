@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
+import { values, memoize, pipe } from 'lodash/fp';
 import { HomeTreePicker } from '~/views-components/projects-tree-picker/home-tree-picker';
 import { SharedTreePicker } from '~/views-components/projects-tree-picker/shared-tree-picker';
 import { FavoritesTreePicker } from '~/views-components/projects-tree-picker/favorites-tree-picker';
@@ -21,9 +22,12 @@ export interface ProjectsTreePickerProps {
 
 export const ProjectsTreePicker = ({ pickerId, ...props }: ProjectsTreePickerProps) => {
     const { home, shared, favorites } = getProjectsTreePickerIds(pickerId);
+    const relatedTreePickers = getRelatedTreePickers(pickerId);
     return <div>
-        <HomeTreePicker pickerId={home} {...props} />
-        <SharedTreePicker pickerId={shared} {...props} />
-        <FavoritesTreePicker pickerId={favorites} {...props} />
+        <HomeTreePicker pickerId={home} {...props} {...{ relatedTreePickers }} />
+        <SharedTreePicker pickerId={shared} {...props} {...{ relatedTreePickers }} />
+        <FavoritesTreePicker pickerId={favorites} {...props} {...{ relatedTreePickers }} />
     </div>;
 };
+
+const getRelatedTreePickers = memoize(pipe(getProjectsTreePickerIds, values));
