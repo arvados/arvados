@@ -4,17 +4,17 @@
 
 import { Dispatch } from 'redux';
 import { treePickerActions } from "~/store/tree-picker/tree-picker-actions";
-import { RootState } from '../store';
+import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
-import { FilterBuilder, joinFilters } from '~/services/api/filter-builder';
-import { resourcesActions } from '../resources/resources-actions';
-import { getTreePicker, TreePicker } from '../tree-picker/tree-picker';
+import { FilterBuilder } from '~/services/api/filter-builder';
+import { resourcesActions } from '~/store/resources/resources-actions';
+import { getTreePicker, TreePicker } from '~/store/tree-picker/tree-picker';
 import { getNodeAncestors, getNodeAncestorsIds, getNode, TreeNode, initTreeNode, TreeNodeStatus } from '~/models/tree';
 import { ProjectResource } from '~/models/project';
-import { OrderBuilder } from '../../services/api/order-builder';
+import { OrderBuilder } from '~/services/api/order-builder';
 import { ResourceKind } from '~/models/resource';
-import { GroupContentsResourcePrefix } from '../../services/groups-service/groups-service';
-import { GroupClass } from '../../models/group';
+import { GroupContentsResourcePrefix } from '~/services/groups-service/groups-service';
+import { GroupClass } from '~/models/group';
 
 export enum SidePanelTreeCategory {
     PROJECTS = 'Projects',
