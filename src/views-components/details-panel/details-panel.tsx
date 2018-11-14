@@ -24,6 +24,7 @@ import { DetailsResource } from "~/models/details";
 import { getResource } from '~/store/resources/resources';
 import { ResourceData } from "~/store/resources-data/resources-data-reducer";
 import { getResourceData } from "~/store/resources-data/resources-data";
+import { toggleDetailsPanel } from '~/store/details-panel/details-panel-action';
 
 type CssRules = 'root' | 'container' | 'opened' | 'headerContainer' | 'headerIcon' | 'tabContainer';
 
@@ -84,7 +85,7 @@ const mapStateToProps = ({ detailsPanel, resources, resourcesData }: RootState) 
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
     onCloseDrawer: () => {
-        dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
+        dispatch<any>(toggleDetailsPanel());
     }
 });
 

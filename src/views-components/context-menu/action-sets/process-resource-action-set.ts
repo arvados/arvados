@@ -12,6 +12,7 @@ import { openProcessUpdateDialog } from "~/store/processes/process-update-action
 import { openCopyProcessDialog } from '~/store/processes/process-copy-actions';
 import { detailsPanelActions } from '~/store/details-panel/details-panel-action';
 import { openSharingDialog } from "~/store/sharing-dialog/sharing-dialog-actions";
+import { toggleDetailsPanel } from '~/store/details-panel/details-panel-action';
 
 export const processResourceActionSet: ContextMenuActionSet = [[
     {
@@ -54,7 +55,7 @@ export const processResourceActionSet: ContextMenuActionSet = [[
         icon: DetailsIcon,
         name: "View details",
         execute: dispatch => {
-            dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
+            dispatch<any>(toggleDetailsPanel());
         }
     }
     // {
