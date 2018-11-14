@@ -10,8 +10,8 @@ import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-acti
 import { openMoveProcessDialog } from '~/store/processes/process-move-actions';
 import { openProcessUpdateDialog } from "~/store/processes/process-update-actions";
 import { openCopyProcessDialog } from '~/store/processes/process-copy-actions';
-import { detailsPanelActions } from '~/store/details-panel/details-panel-action';
 import { openSharingDialog } from "~/store/sharing-dialog/sharing-dialog-actions";
+import { openRemoveProcessDialog } from "~/store/processes/processes-actions";
 import { toggleDetailsPanel } from '~/store/details-panel/details-panel-action';
 
 export const processResourceActionSet: ContextMenuActionSet = [[
@@ -57,12 +57,12 @@ export const processResourceActionSet: ContextMenuActionSet = [[
         execute: dispatch => {
             dispatch<any>(toggleDetailsPanel());
         }
+    },
+    {
+        name: "Remove",
+        icon: RemoveIcon,
+        execute: (dispatch, resource) => {
+            dispatch<any>(openRemoveProcessDialog(resource.uuid));
+        }
     }
-    // {
-    //     icon: RemoveIcon,
-    //     name: "Remove",
-    //     execute: (dispatch, resource) => {
-    //         // add code
-    //     }
-    // }
 ]];
