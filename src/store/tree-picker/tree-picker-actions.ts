@@ -21,7 +21,7 @@ export const treePickerActions = unionize({
     LOAD_TREE_PICKER_NODE: ofType<{ id: string, pickerId: string }>(),
     LOAD_TREE_PICKER_NODE_SUCCESS: ofType<{ id: string, nodes: Array<TreeNode<any>>, pickerId: string }>(),
     TOGGLE_TREE_PICKER_NODE_COLLAPSE: ofType<{ id: string, pickerId: string }>(),
-    ACTIVATE_TREE_PICKER_NODE: ofType<{ id: string, pickerId: string }>(),
+    ACTIVATE_TREE_PICKER_NODE: ofType<{ id: string, pickerId: string, relatedTreePickers?: string[] }>(),
     DEACTIVATE_TREE_PICKER_NODE: ofType<{ pickerId: string }>(),
     TOGGLE_TREE_PICKER_NODE_SELECTION: ofType<{ id: string, pickerId: string }>(),
     SELECT_TREE_PICKER_NODE: ofType<{ id: string | string[], pickerId: string }>(),

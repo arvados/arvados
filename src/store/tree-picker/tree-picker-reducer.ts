@@ -7,29 +7,46 @@ import { TreePicker } from "./tree-picker";
 import { treePickerActions, TreePickerAction } from "./tree-picker-actions";
 import { compose } from "redux";
 import { activateNode, getNode, toggleNodeCollapse, toggleNodeSelection } from '~/models/tree';
+import { pipe } from 'lodash/fp';
 
 export const treePickerReducer = (state: TreePicker = {}, action: TreePickerAction) =>
     treePickerActions.match(action, {
         LOAD_TREE_PICKER_NODE: ({ id, pickerId }) =>
             updateOrCreatePicker(state, pickerId, setNodeStatus(id)(TreeNodeStatus.PENDING)),
+
         LOAD_TREE_PICKER_NODE_SUCCESS: ({ id, nodes, pickerId }) =>
             updateOrCreatePicker(state, pickerId, compose(receiveNodes(nodes)(id), setNodeStatus(id)(TreeNodeStatus.LOADED))),
+
         TOGGLE_TREE_PICKER_NODE_COLLAPSE: ({ id, pickerId }) =>
             updateOrCreatePicker(state, pickerId, toggleNodeCollapse(id)),
-        ACTIVATE_TREE_PICKER_NODE: ({ id, pickerId }) =>
-            updateOrCreatePicker(state, pickerId, activateNode(id)),
+
+        ACTIVATE_TREE_PICKER_NODE: ({ id, pickerId, relatedTreePickers = [] }) =>
+            pipe(
+                () => relatedTreePickers.reduce(
+                    (state, relatedPickerId) => updateOrCreatePicker(state, relatedPickerId, deactivateNode),
+                    state
+                ),
+                state => updateOrCreatePicker(state, pickerId, activateNode(id))
+            )(),
+
         DEACTIVATE_TREE_PICKER_NODE: ({ pickerId }) =>
             updateOrCreatePicker(state, pickerId, deactivateNode),
+
         TOGGLE_TREE_PICKER_NODE_SELECTION: ({ id, pickerId }) =>
             updateOrCreatePicker(state, pickerId, toggleNodeSelection(id)),
+
         SELECT_TREE_PICKER_NODE: ({ id, pickerId }) =>
             updateOrCreatePicker(state, pickerId, selectNodes(id)),
+
         DESELECT_TREE_PICKER_NODE: ({ id, pickerId }) =>
             updateOrCreatePicker(state, pickerId, deselectNodes(id)),
+
         RESET_TREE_PICKER: ({ pickerId }) =>
             updateOrCreatePicker(state, pickerId, createTree),
+
         EXPAND_TREE_PICKER_NODES: ({ pickerId, ids }) =>
             updateOrCreatePicker(state, pickerId, expandNode(...ids)),
+
         default: () => state
     });
 
