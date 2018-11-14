@@ -10,12 +10,14 @@ import { RootState } from '~/store/store';
 import { getCommonResourceServiceError, CommonResourceServiceError } from "~/services/common-service/common-resource-service";
 import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
 import { resetPickerProjectTree } from '~/store/project-tree-picker/project-tree-picker-actions';
+import { initProjectsTreePicker } from '../tree-picker/tree-picker-actions';
 
 export const PROJECT_MOVE_FORM_NAME = 'projectMoveFormName';
 
 export const openMoveProjectDialog = (resource: { name: string, uuid: string }) =>
     (dispatch: Dispatch) => {
         dispatch<any>(resetPickerProjectTree());
+        dispatch<any>(initProjectsTreePicker(PROJECT_MOVE_FORM_NAME));
         dispatch(initialize(PROJECT_MOVE_FORM_NAME, resource));
         dispatch(dialogActions.OPEN_DIALOG({ id: PROJECT_MOVE_FORM_NAME, data: {} }));
     };

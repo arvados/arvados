@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+import * as React from 'react';
 import { compose } from "redux";
 import { withDialog } from "~/store/dialog/with-dialog";
 import { reduxForm } from 'redux-form';
@@ -17,6 +18,9 @@ export const MoveProjectDialog = compose(
         onSubmit: (data, dispatch) => {
             dispatch(moveProject(data));
         }
-    })
-)(DialogMoveTo);
+    }),
+)(
+    (...params: Parameters<typeof DialogMoveTo>) =>
+        <DialogMoveTo {...params[0]} pickerId={PROJECT_MOVE_FORM_NAME} />
+);
 
