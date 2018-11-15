@@ -13,12 +13,14 @@ import { projectPanelActions } from '~/store/project-panel/project-panel-action'
 import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
 import { resetPickerProjectTree } from '~/store/project-tree-picker/project-tree-picker-actions';
 import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
+import { initProjectsTreePicker } from '../tree-picker/tree-picker-actions';
 
 export const COLLECTION_MOVE_FORM_NAME = 'collectionMoveFormName';
 
 export const openMoveCollectionDialog = (resource: { name: string, uuid: string }) =>
     (dispatch: Dispatch) => {
         dispatch<any>(resetPickerProjectTree());
+        dispatch<any>(initProjectsTreePicker(COLLECTION_MOVE_FORM_NAME));
         dispatch(initialize(COLLECTION_MOVE_FORM_NAME, resource));
         dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_MOVE_FORM_NAME, data: {} }));
     };
