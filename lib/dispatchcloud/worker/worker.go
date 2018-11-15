@@ -58,19 +58,20 @@ type worker struct {
 	executor Executor
 	wp       *Pool
 
-	mtx      sync.Locker // must be wp's Locker.
-	state    State
-	instance cloud.Instance
-	instType arvados.InstanceType
-	vcpus    int64
-	memory   int64
-	probed   time.Time
-	updated  time.Time
-	busy     time.Time
-	lastUUID string
-	running  map[string]struct{} // remember to update state idle<->running when this changes
-	starting map[string]struct{} // remember to update state idle<->running when this changes
-	probing  chan struct{}
+	mtx       sync.Locker // must be wp's Locker.
+	state     State
+	instance  cloud.Instance
+	instType  arvados.InstanceType
+	vcpus     int64
+	memory    int64
+	probed    time.Time
+	updated   time.Time
+	busy      time.Time
+	destroyed time.Time
+	lastUUID  string
+	running   map[string]struct{} // remember to update state idle<->running when this changes
+	starting  map[string]struct{} // remember to update state idle<->running when this changes
+	probing   chan struct{}
 }
 
 // caller must have lock.
@@ -300,7 +301,9 @@ func (wkr *worker) shutdownIfIdle() bool {
 
 // caller must have lock
 func (wkr *worker) shutdown() {
-	wkr.updated = time.Now()
+	now := time.Now()
+	wkr.updated = now
+	wkr.destroyed = now
 	wkr.state = StateShutdown
 	go func() {
 		err := wkr.instance.Destroy()

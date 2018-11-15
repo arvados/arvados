@@ -60,6 +60,7 @@ const (
 	defaultTimeoutIdle        = time.Minute
 	defaultTimeoutBooting     = time.Minute * 10
 	defaultTimeoutProbe       = time.Minute * 10
+	defaultTimeoutShutdown    = time.Second * 10
 )
 
 func duration(conf arvados.Duration, def time.Duration) time.Duration {
@@ -88,6 +89,7 @@ func NewPool(logger logrus.FieldLogger, reg *prometheus.Registry, instanceSet cl
 		timeoutIdle:        duration(cluster.CloudVMs.TimeoutIdle, defaultTimeoutIdle),
 		timeoutBooting:     duration(cluster.CloudVMs.TimeoutBooting, defaultTimeoutBooting),
 		timeoutProbe:       duration(cluster.CloudVMs.TimeoutProbe, defaultTimeoutProbe),
+		timeoutShutdown:    duration(cluster.CloudVMs.TimeoutShutdown, defaultTimeoutShutdown),
 	}
 	wp.registerMetrics(reg)
 	go func() {
@@ -115,6 +117,7 @@ type Pool struct {
 	timeoutIdle        time.Duration
 	timeoutBooting     time.Duration
 	timeoutProbe       time.Duration
+	timeoutShutdown    time.Duration
 
 	// private state
 	subscribers  map[<-chan struct{}]chan<- struct{}
@@ -230,19 +233,21 @@ func (wp *Pool) AtQuota() bool {
 }
 
 // Add or update worker attached to the given instance. Use
-// initialState if a new worker is created. Caller must have lock.
+// initialState if a new worker is created.
 //
-// Returns true when a new worker is created.
-func (wp *Pool) updateWorker(inst cloud.Instance, it arvados.InstanceType, initialState State) bool {
+// The second return value is true if a new worker is created.
+//
+// Caller must have lock.
+func (wp *Pool) updateWorker(inst cloud.Instance, it arvados.InstanceType, initialState State) (*worker, bool) {
 	id := inst.ID()
-	if wp.workers[id] != nil {
-		wp.workers[id].executor.SetTarget(inst)
-		wp.workers[id].instance = inst
-		wp.workers[id].updated = time.Now()
-		if initialState == StateBooting && wp.workers[id].state == StateUnknown {
-			wp.workers[id].state = StateBooting
+	if wkr := wp.workers[id]; wkr != nil {
+		wkr.executor.SetTarget(inst)
+		wkr.instance = inst
+		wkr.updated = time.Now()
+		if initialState == StateBooting && wkr.state == StateUnknown {
+			wkr.state = StateBooting
 		}
-		return false
+		return wkr, false
 	}
 	if initialState == StateUnknown && inst.Tags()[tagKeyHold] != "" {
 		initialState = StateHold
@@ -253,7 +258,7 @@ func (wp *Pool) updateWorker(inst cloud.Instance, it arvados.InstanceType, initi
 	})
 	logger.WithField("State", initialState).Infof("instance appeared in cloud")
 	now := time.Now()
-	wp.workers[id] = &worker{
+	wkr := &worker{
 		mtx:      &wp.mtx,
 		wp:       wp,
 		logger:   logger,
@@ -268,7 +273,8 @@ func (wp *Pool) updateWorker(inst cloud.Instance, it arvados.InstanceType, initi
 		starting: make(map[string]struct{}),
 		probing:  make(chan struct{}, 1),
 	}
-	return true
+	wp.workers[id] = wkr
+	return wkr, true
 }
 
 // caller must have lock.
@@ -619,8 +625,11 @@ func (wp *Pool) sync(threshold time.Time, instances []cloud.Instance) {
 			wp.logger.WithField("Instance", inst).Errorf("unknown InstanceType tag %q --- ignoring", itTag)
 			continue
 		}
-		if wp.updateWorker(inst, it, StateUnknown) {
+		if wkr, isNew := wp.updateWorker(inst, it, StateUnknown); isNew {
 			notify = true
+		} else if wkr.state == StateShutdown && time.Since(wkr.destroyed) > wp.timeoutShutdown {
+			wp.logger.WithField("Instance", inst).Info("worker still listed after shutdown; retrying")
+			wkr.shutdown()
 		}
 	}
 

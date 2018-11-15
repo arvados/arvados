@@ -27,7 +27,10 @@ type StubDriver struct {
 	Exec           StubExecFunc
 	HostKey        ssh.Signer
 	AuthorizedKeys []ssh.PublicKey
-	instanceSets   []*StubInstanceSet
+
+	ErrorRateDestroy float64
+
+	instanceSets []*StubInstanceSet
 }
 
 // InstanceSet returns a new *StubInstanceSet.
@@ -142,6 +145,9 @@ func (si stubInstance) Address() string {
 }
 
 func (si stubInstance) Destroy() error {
+	if math_rand.Float64() < si.ss.sis.driver.ErrorRateDestroy {
+		return errors.New("instance could not be destroyed")
+	}
 	si.ss.SSHService.Close()
 	sis := si.ss.sis
 	sis.mtx.Lock()

@@ -188,6 +188,8 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 		},
 		HostKey:        hostpriv,
 		AuthorizedKeys: []ssh.PublicKey{dispatchpub},
+
+		ErrorRateDestroy: 0.1,
 	}
 
 	s.cluster = &arvados.Cluster{
