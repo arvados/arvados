@@ -130,3 +130,39 @@ func (s *HandlerSuite) TestProxyRedirect(c *check.C) {
 	c.Check(resp.Code, check.Equals, http.StatusFound)
 	c.Check(resp.Header().Get("Location"), check.Matches, `https://0.0.0.0:1/auth/joshid\?return_to=foo&?`)
 }
+
+func (s *HandlerSuite) TestValidateV1APIToken(c *check.C) {
+	req := httptest.NewRequest("GET", "/arvados/v1/users/current", nil)
+	user, err := s.handler.(*Handler).validateAPItoken(req, arvadostest.ActiveToken)
+	c.Assert(err, check.IsNil)
+	c.Check(user.Authorization.UUID, check.Equals, arvadostest.ActiveTokenUUID)
+	c.Check(user.Authorization.APIToken, check.Equals, arvadostest.ActiveToken)
+	c.Check(user.Authorization.Scopes, check.DeepEquals, []string{"all"})
+	c.Check(user.UUID, check.Equals, arvadostest.ActiveUserUUID)
+}
+
+func (s *HandlerSuite) TestValidateV2APIToken(c *check.C) {
+	req := httptest.NewRequest("GET", "/arvados/v1/users/current", nil)
+	user, err := s.handler.(*Handler).validateAPItoken(req, arvadostest.ActiveTokenV2)
+	c.Assert(err, check.IsNil)
+	c.Check(user.Authorization.UUID, check.Equals, arvadostest.ActiveTokenUUID)
+	c.Check(user.Authorization.APIToken, check.Equals, arvadostest.ActiveToken)
+	c.Check(user.Authorization.Scopes, check.DeepEquals, []string{"all"})
+	c.Check(user.UUID, check.Equals, arvadostest.ActiveUserUUID)
+	c.Check(user.Authorization.TokenV2(), check.Equals, arvadostest.ActiveTokenV2)
+}
+
+func (s *HandlerSuite) TestCreateAPIToken(c *check.C) {
+	req := httptest.NewRequest("GET", "/arvados/v1/users/current", nil)
+	auth, err := s.handler.(*Handler).createAPItoken(req, arvadostest.ActiveUserUUID, nil)
+	c.Assert(err, check.IsNil)
+	c.Check(auth.Scopes, check.DeepEquals, []string{"all"})
+
+	user, err := s.handler.(*Handler).validateAPItoken(req, auth.TokenV2())
+	c.Assert(err, check.IsNil)
+	c.Check(user.Authorization.UUID, check.Equals, auth.UUID)
+	c.Check(user.Authorization.APIToken, check.Equals, auth.APIToken)
+	c.Check(user.Authorization.Scopes, check.DeepEquals, []string{"all"})
+	c.Check(user.UUID, check.Equals, arvadostest.ActiveUserUUID)
+	c.Check(user.Authorization.TokenV2(), check.Equals, auth.TokenV2())
+}

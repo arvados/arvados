@@ -147,6 +147,16 @@ func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc fun
 		},
 		{
 			path:  writePath,
+			cmd:   "lock newdir0/testfile\n",
+			match: `(?ms).*Locking .* succeeded.*`,
+		},
+		{
+			path:  writePath,
+			cmd:   "unlock newdir0/testfile\nasdf\n",
+			match: `(?ms).*Unlocking .* succeeded.*`,
+		},
+		{
+			path:  writePath,
 			cmd:   "ls\n",
 			match: `(?ms).*newdir0.* 0 +` + matchToday + ` \d+:\d+\n.*`,
 		},
@@ -159,6 +169,16 @@ func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc fun
 			path:  writePath,
 			cmd:   "mkcol newdir1\n",
 			match: `(?ms).*Creating .* succeeded.*`,
+		},
+		{
+			path:  writePath,
+			cmd:   "move newdir1/ newdir1x/\n",
+			match: `(?ms).*Moving .* succeeded.*`,
+		},
+		{
+			path:  writePath,
+			cmd:   "move newdir1x newdir1\n",
+			match: `(?ms).*Moving .* succeeded.*`,
 		},
 		{
 			path:  writePath,
@@ -242,6 +262,11 @@ func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc fun
 			path:  pdhPath,
 			cmd:   "delete foo\n",
 			match: `(?ms).*Deleting .* failed:.*405 Method Not Allowed.*`,
+		},
+		{
+			path:  pdhPath,
+			cmd:   "lock foo\n",
+			match: `(?ms).*Locking .* failed:.*405 Method Not Allowed.*`,
 		},
 	} {
 		c.Logf("%s %+v", "http://"+s.testServer.Addr, trial)

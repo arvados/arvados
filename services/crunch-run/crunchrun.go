@@ -32,7 +32,6 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
-	"github.com/shirou/gopsutil/process"
 	"golang.org/x/net/context"
 
 	dockertypes "github.com/docker/docker/api/types"
@@ -61,6 +60,7 @@ type IKeepClient interface {
 	PutB(buf []byte) (string, int, error)
 	ReadAt(locator string, p []byte, off int) (int, error)
 	ManifestFileReader(m manifest.Manifest, filename string) (arvados.File, error)
+	LocalLocator(locator string) (string, error)
 	ClearBlockCache()
 }
 
@@ -79,6 +79,7 @@ type ThinDockerClient interface {
 	ContainerStart(ctx context.Context, container string, options dockertypes.ContainerStartOptions) error
 	ContainerRemove(ctx context.Context, container string, options dockertypes.ContainerRemoveOptions) error
 	ContainerWait(ctx context.Context, container string, condition dockercontainer.WaitCondition) (<-chan dockercontainer.ContainerWaitOKBody, <-chan error)
+	ContainerInspect(ctx context.Context, id string) (dockertypes.ContainerJSON, error)
 	ImageInspectWithRaw(ctx context.Context, image string) (dockertypes.ImageInspect, []byte, error)
 	ImageLoad(ctx context.Context, input io.Reader, quiet bool) (dockertypes.ImageLoadResponse, error)
 	ImageRemove(ctx context.Context, image string, options dockertypes.ImageRemoveOptions) ([]dockertypes.ImageDeleteResponseItem, error)
@@ -91,10 +92,30 @@ type PsProcess interface {
 // ContainerRunner is the main stateful struct used for a single execution of a
 // container.
 type ContainerRunner struct {
-	Docker          ThinDockerClient
-	client          *arvados.Client
-	ArvClient       IArvadosClient
-	Kc              IKeepClient
+	Docker ThinDockerClient
+
+	// Dispatcher client is initialized with the Dispatcher token.
+	// This is a priviledged token used to manage container status
+	// and logs.
+	//
+	// We have both dispatcherClient and DispatcherArvClient
+	// because there are two different incompatible Arvados Go
+	// SDKs and we have to use both (hopefully this gets fixed in
+	// #14467)
+	dispatcherClient     *arvados.Client
+	DispatcherArvClient  IArvadosClient
+	DispatcherKeepClient IKeepClient
+
+	// Container client is initialized with the Container token
+	// This token controls the permissions of the container, and
+	// must be used for operations such as reading collections.
+	//
+	// Same comment as above applies to
+	// containerClient/ContainerArvClient.
+	containerClient     *arvados.Client
+	ContainerArvClient  IArvadosClient
+	ContainerKeepClient IKeepClient
+
 	Container       arvados.Container
 	ContainerConfig dockercontainer.Config
 	HostConfig      dockercontainer.HostConfig
@@ -121,11 +142,9 @@ type ContainerRunner struct {
 	SigChan         chan os.Signal
 	ArvMountExit    chan error
 	SecretMounts    map[string]arvados.Mount
-	MkArvClient     func(token string) (IArvadosClient, error)
+	MkArvClient     func(token string) (IArvadosClient, IKeepClient, *arvados.Client, error)
 	finalState      string
 	parentTemp      string
-
-	ListProcesses func() ([]PsProcess, error)
 
 	statLogger       io.WriteCloser
 	statReporter     *crunchstat.Reporter
@@ -149,11 +168,13 @@ type ContainerRunner struct {
 
 	cStateLock sync.Mutex
 	cCancelled bool // StopContainer() invoked
+	cRemoved   bool // docker confirmed the container no longer exists
 
-	enableNetwork   string // one of "default" or "always"
-	networkMode     string // passed through to HostConfig.NetworkMode
-	arvMountLog     *ThrottledLogger
-	checkContainerd time.Duration
+	enableNetwork string // one of "default" or "always"
+	networkMode   string // passed through to HostConfig.NetworkMode
+	arvMountLog   *ThrottledLogger
+
+	containerWatchdogInterval time.Duration
 }
 
 // setupSignals sets up signal handling to gracefully terminate the underlying
@@ -186,6 +207,9 @@ func (runner *ContainerRunner) stop(sig os.Signal) {
 	err := runner.Docker.ContainerRemove(context.TODO(), runner.ContainerID, dockertypes.ContainerRemoveOptions{Force: true})
 	if err != nil {
 		runner.CrunchLog.Printf("error removing container: %s", err)
+	}
+	if err == nil || strings.Contains(err.Error(), "No such container: "+runner.ContainerID) {
+		runner.cRemoved = true
 	}
 }
 
@@ -231,7 +255,7 @@ func (runner *ContainerRunner) LoadImage() (err error) {
 	runner.CrunchLog.Printf("Fetching Docker image from collection '%s'", runner.Container.ContainerImage)
 
 	var collection arvados.Collection
-	err = runner.ArvClient.Get("collections", runner.Container.ContainerImage, nil, &collection)
+	err = runner.ContainerArvClient.Get("collections", runner.Container.ContainerImage, nil, &collection)
 	if err != nil {
 		return fmt.Errorf("While getting container image collection: %v", err)
 	}
@@ -252,7 +276,7 @@ func (runner *ContainerRunner) LoadImage() (err error) {
 		runner.CrunchLog.Print("Loading Docker image from keep")
 
 		var readCloser io.ReadCloser
-		readCloser, err = runner.Kc.ManifestFileReader(manifest, img)
+		readCloser, err = runner.ContainerKeepClient.ManifestFileReader(manifest, img)
 		if err != nil {
 			return fmt.Errorf("While creating ManifestFileReader for container image: %v", err)
 		}
@@ -274,7 +298,7 @@ func (runner *ContainerRunner) LoadImage() (err error) {
 
 	runner.ContainerConfig.Image = imageID
 
-	runner.Kc.ClearBlockCache()
+	runner.ContainerKeepClient.ClearBlockCache()
 
 	return nil
 }
@@ -575,7 +599,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 			if err != nil {
 				return fmt.Errorf("creating temp dir: %v", err)
 			}
-			err = gitMount(mnt).extractTree(runner.ArvClient, tmpdir, token)
+			err = gitMount(mnt).extractTree(runner.ContainerArvClient, tmpdir, token)
 			if err != nil {
 				return err
 			}
@@ -842,13 +866,13 @@ func (runner *ContainerRunner) logAPIResponse(label, path string, params map[str
 		return false, err
 	}
 	w := &ArvLogWriter{
-		ArvClient:     runner.ArvClient,
+		ArvClient:     runner.DispatcherArvClient,
 		UUID:          runner.Container.UUID,
 		loggingStream: label,
 		writeCloser:   writer,
 	}
 
-	reader, err := runner.ArvClient.CallRaw("GET", path, "", "", arvadosclient.Dict(params))
+	reader, err := runner.DispatcherArvClient.CallRaw("GET", path, "", "", arvadosclient.Dict(params))
 	if err != nil {
 		return false, fmt.Errorf("error getting %s record: %v", label, err)
 	}
@@ -898,12 +922,14 @@ func (runner *ContainerRunner) AttachStreams() (err error) {
 			if collId == "" {
 				collId = stdinMnt.PortableDataHash
 			}
-			err = runner.ArvClient.Get("collections", collId, nil, &stdinColl)
+			err = runner.ContainerArvClient.Get("collections", collId, nil, &stdinColl)
 			if err != nil {
-				return fmt.Errorf("While getting stding collection: %v", err)
+				return fmt.Errorf("While getting stdin collection: %v", err)
 			}
 
-			stdinRdr, err = runner.Kc.ManifestFileReader(manifest.Manifest{Text: stdinColl.ManifestText}, stdinMnt.Path)
+			stdinRdr, err = runner.ContainerKeepClient.ManifestFileReader(
+				manifest.Manifest{Text: stdinColl.ManifestText},
+				stdinMnt.Path)
 			if os.IsNotExist(err) {
 				return fmt.Errorf("stdin collection path not found: %v", stdinMnt.Path)
 			} else if err != nil {
@@ -1091,27 +1117,6 @@ func (runner *ContainerRunner) StartContainer() error {
 	return nil
 }
 
-// checkContainerd checks if "containerd" is present in the process list.
-func (runner *ContainerRunner) CheckContainerd() error {
-	if runner.checkContainerd == 0 {
-		return nil
-	}
-	p, _ := runner.ListProcesses()
-	for _, i := range p {
-		e, _ := i.CmdlineSlice()
-		if len(e) > 0 {
-			if strings.Index(e[0], "containerd") > -1 {
-				return nil
-			}
-		}
-	}
-
-	// Not found
-	runner.runBrokenNodeHook()
-	runner.stop(nil)
-	return fmt.Errorf("'containerd' not found in process list.")
-}
-
 // WaitFinish waits for the container to terminate, capture the exit code, and
 // close the stdout/stderr logging.
 func (runner *ContainerRunner) WaitFinish() error {
@@ -1124,26 +1129,31 @@ func (runner *ContainerRunner) WaitFinish() error {
 		runTimeExceeded = time.After(time.Duration(timeout) * time.Second)
 	}
 
-	containerdGone := make(chan error)
-	defer close(containerdGone)
-	if runner.checkContainerd > 0 {
-		go func() {
-			ticker := time.NewTicker(time.Duration(runner.checkContainerd))
-			defer ticker.Stop()
-			for {
-				select {
-				case <-ticker.C:
-					if ck := runner.CheckContainerd(); ck != nil {
-						containerdGone <- ck
-						return
-					}
-				case <-containerdGone:
-					// Channel closed, quit goroutine
-					return
-				}
+	containerGone := make(chan struct{})
+	go func() {
+		defer close(containerGone)
+		if runner.containerWatchdogInterval < 1 {
+			runner.containerWatchdogInterval = time.Minute
+		}
+		for range time.NewTicker(runner.containerWatchdogInterval).C {
+			ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(runner.containerWatchdogInterval))
+			ctr, err := runner.Docker.ContainerInspect(ctx, runner.ContainerID)
+			cancel()
+			runner.cStateLock.Lock()
+			done := runner.cRemoved || runner.ExitCode != nil
+			runner.cStateLock.Unlock()
+			if done {
+				return
+			} else if err != nil {
+				runner.CrunchLog.Printf("Error inspecting container: %s", err)
+				runner.checkBrokenNode(err)
+				return
+			} else if ctr.State == nil || !(ctr.State.Running || ctr.State.Status == "created") {
+				runner.CrunchLog.Printf("Container is not running: State=%v", ctr.State)
+				return
 			}
-		}()
-	}
+		}
+	}()
 
 	for {
 		select {
@@ -1171,8 +1181,8 @@ func (runner *ContainerRunner) WaitFinish() error {
 			runner.stop(nil)
 			runTimeExceeded = nil
 
-		case err := <-containerdGone:
-			return err
+		case <-containerGone:
+			return errors.New("docker client never returned status")
 		}
 	}
 }
@@ -1213,7 +1223,7 @@ func (runner *ContainerRunner) updateLogs() {
 		}
 
 		var updated arvados.Container
-		err = runner.ArvClient.Update("containers", runner.Container.UUID, arvadosclient.Dict{
+		err = runner.DispatcherArvClient.Update("containers", runner.Container.UUID, arvadosclient.Dict{
 			"container": arvadosclient.Dict{"log": saved.PortableDataHash},
 		}, &updated)
 		if err != nil {
@@ -1231,7 +1241,7 @@ func (runner *ContainerRunner) CaptureOutput() error {
 	if wantAPI := runner.Container.RuntimeConstraints.API; wantAPI != nil && *wantAPI {
 		// Output may have been set directly by the container, so
 		// refresh the container record to check.
-		err := runner.ArvClient.Get("containers", runner.Container.UUID,
+		err := runner.DispatcherArvClient.Get("containers", runner.Container.UUID,
 			nil, &runner.Container)
 		if err != nil {
 			return err
@@ -1244,9 +1254,9 @@ func (runner *ContainerRunner) CaptureOutput() error {
 	}
 
 	txt, err := (&copier{
-		client:        runner.client,
-		arvClient:     runner.ArvClient,
-		keepClient:    runner.Kc,
+		client:        runner.containerClient,
+		arvClient:     runner.ContainerArvClient,
+		keepClient:    runner.ContainerKeepClient,
 		hostOutputDir: runner.HostOutputDir,
 		ctrOutputDir:  runner.Container.OutputPath,
 		binds:         runner.Binds,
@@ -1257,8 +1267,19 @@ func (runner *ContainerRunner) CaptureOutput() error {
 	if err != nil {
 		return err
 	}
+	if n := len(regexp.MustCompile(` [0-9a-f]+\+\S*\+R`).FindAllStringIndex(txt, -1)); n > 0 {
+		runner.CrunchLog.Printf("Copying %d data blocks from remote input collections...", n)
+		fs, err := (&arvados.Collection{ManifestText: txt}).FileSystem(runner.containerClient, runner.ContainerKeepClient)
+		if err != nil {
+			return err
+		}
+		txt, err = fs.MarshalManifest(".")
+		if err != nil {
+			return err
+		}
+	}
 	var resp arvados.Collection
-	err = runner.ArvClient.Create("collections", arvadosclient.Dict{
+	err = runner.ContainerArvClient.Create("collections", arvadosclient.Dict{
 		"ensure_unique_name": true,
 		"collection": arvadosclient.Dict{
 			"is_trashed":    true,
@@ -1346,7 +1367,7 @@ func (runner *ContainerRunner) CommitLogs() error {
 		// other further errors (such as failing to write the log to Keep!)
 		// while shutting down
 		runner.CrunchLog = NewThrottledLogger(&ArvLogWriter{
-			ArvClient:     runner.ArvClient,
+			ArvClient:     runner.DispatcherArvClient,
 			UUID:          runner.Container.UUID,
 			loggingStream: "crunch-run",
 			writeCloser:   nil,
@@ -1398,9 +1419,9 @@ func (runner *ContainerRunner) saveLogCollection(final bool) (response arvados.C
 	reqBody := arvadosclient.Dict{"collection": updates}
 	if runner.logUUID == "" {
 		reqBody["ensure_unique_name"] = true
-		err = runner.ArvClient.Create("collections", reqBody, &response)
+		err = runner.DispatcherArvClient.Create("collections", reqBody, &response)
 	} else {
-		err = runner.ArvClient.Update("collections", runner.logUUID, reqBody, &response)
+		err = runner.DispatcherArvClient.Update("collections", runner.logUUID, reqBody, &response)
 	}
 	if err != nil {
 		return
@@ -1416,7 +1437,7 @@ func (runner *ContainerRunner) UpdateContainerRunning() error {
 	if runner.cCancelled {
 		return ErrCancelled
 	}
-	return runner.ArvClient.Update("containers", runner.Container.UUID,
+	return runner.DispatcherArvClient.Update("containers", runner.Container.UUID,
 		arvadosclient.Dict{"container": arvadosclient.Dict{"state": "Running"}}, nil)
 }
 
@@ -1428,7 +1449,7 @@ func (runner *ContainerRunner) ContainerToken() (string, error) {
 	}
 
 	var auth arvados.APIClientAuthorization
-	err := runner.ArvClient.Call("GET", "containers", runner.Container.UUID, "auth", nil, &auth)
+	err := runner.DispatcherArvClient.Call("GET", "containers", runner.Container.UUID, "auth", nil, &auth)
 	if err != nil {
 		return "", err
 	}
@@ -1452,7 +1473,7 @@ func (runner *ContainerRunner) UpdateContainerFinal() error {
 			update["output"] = *runner.OutputPDH
 		}
 	}
-	return runner.ArvClient.Update("containers", runner.Container.UUID, arvadosclient.Dict{"container": update}, nil)
+	return runner.DispatcherArvClient.Update("containers", runner.Container.UUID, arvadosclient.Dict{"container": update}, nil)
 }
 
 // IsCancelled returns the value of Cancelled, with goroutine safety.
@@ -1469,7 +1490,7 @@ func (runner *ContainerRunner) NewArvLogWriter(name string) (io.WriteCloser, err
 		return nil, err
 	}
 	return &ArvLogWriter{
-		ArvClient:     runner.ArvClient,
+		ArvClient:     runner.DispatcherArvClient,
 		UUID:          runner.Container.UUID,
 		loggingStream: name,
 		writeCloser:   writer,
@@ -1547,12 +1568,6 @@ func (runner *ContainerRunner) Run() (err error) {
 		return
 	}
 
-	// Sanity check that containerd is running.
-	err = runner.CheckContainerd()
-	if err != nil {
-		return
-	}
-
 	// check for and/or load image
 	err = runner.LoadImage()
 	if err != nil {
@@ -1621,7 +1636,7 @@ func (runner *ContainerRunner) Run() (err error) {
 // Fetch the current container record (uuid = runner.Container.UUID)
 // into runner.Container.
 func (runner *ContainerRunner) fetchContainerRecord() error {
-	reader, err := runner.ArvClient.CallRaw("GET", "containers", runner.Container.UUID, "", nil)
+	reader, err := runner.DispatcherArvClient.CallRaw("GET", "containers", runner.Container.UUID, "", nil)
 	if err != nil {
 		return fmt.Errorf("error fetching container record: %v", err)
 	}
@@ -1643,12 +1658,13 @@ func (runner *ContainerRunner) fetchContainerRecord() error {
 		return fmt.Errorf("error getting container token: %v", err)
 	}
 
-	containerClient, err := runner.MkArvClient(containerToken)
+	runner.ContainerArvClient, runner.ContainerKeepClient,
+		runner.containerClient, err = runner.MkArvClient(containerToken)
 	if err != nil {
 		return fmt.Errorf("error creating container API client: %v", err)
 	}
 
-	err = containerClient.Call("GET", "containers", runner.Container.UUID, "secret_mounts", nil, &sm)
+	err = runner.ContainerArvClient.Call("GET", "containers", runner.Container.UUID, "secret_mounts", nil, &sm)
 	if err != nil {
 		if apierr, ok := err.(arvadosclient.APIServerError); !ok || apierr.HttpStatusCode != 404 {
 			return fmt.Errorf("error fetching secret_mounts: %v", err)
@@ -1662,37 +1678,37 @@ func (runner *ContainerRunner) fetchContainerRecord() error {
 }
 
 // NewContainerRunner creates a new container runner.
-func NewContainerRunner(client *arvados.Client, api IArvadosClient, kc IKeepClient, docker ThinDockerClient, containerUUID string) (*ContainerRunner, error) {
+func NewContainerRunner(dispatcherClient *arvados.Client,
+	dispatcherArvClient IArvadosClient,
+	dispatcherKeepClient IKeepClient,
+	docker ThinDockerClient,
+	containerUUID string) (*ContainerRunner, error) {
+
 	cr := &ContainerRunner{
-		client:    client,
-		ArvClient: api,
-		Kc:        kc,
-		Docker:    docker,
+		dispatcherClient:     dispatcherClient,
+		DispatcherArvClient:  dispatcherArvClient,
+		DispatcherKeepClient: dispatcherKeepClient,
+		Docker:               docker,
 	}
 	cr.NewLogWriter = cr.NewArvLogWriter
 	cr.RunArvMount = cr.ArvMountCmd
 	cr.MkTempDir = ioutil.TempDir
-	cr.ListProcesses = func() ([]PsProcess, error) {
-		pr, err := process.Processes()
-		if err != nil {
-			return nil, err
-		}
-		ps := make([]PsProcess, len(pr))
-		for i, j := range pr {
-			ps[i] = j
-		}
-		return ps, nil
-	}
-	cr.MkArvClient = func(token string) (IArvadosClient, error) {
+	cr.MkArvClient = func(token string) (IArvadosClient, IKeepClient, *arvados.Client, error) {
 		cl, err := arvadosclient.MakeArvadosClient()
 		if err != nil {
-			return nil, err
+			return nil, nil, nil, err
 		}
 		cl.ApiToken = token
-		return cl, nil
+		kc, err := keepclient.MakeKeepClient(cl)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		c2 := arvados.NewClientFromEnv()
+		c2.AuthToken = token
+		return cl, kc, c2, nil
 	}
 	var err error
-	cr.LogCollection, err = (&arvados.Collection{}).FileSystem(cr.client, cr.Kc)
+	cr.LogCollection, err = (&arvados.Collection{}).FileSystem(cr.dispatcherClient, cr.DispatcherKeepClient)
 	if err != nil {
 		return nil, err
 	}
@@ -1704,7 +1720,7 @@ func NewContainerRunner(client *arvados.Client, api IArvadosClient, kc IKeepClie
 	cr.CrunchLog = NewThrottledLogger(w)
 	cr.CrunchLog.Immediate = log.New(os.Stderr, containerUUID+" ", 0)
 
-	loadLogThrottleParams(api)
+	loadLogThrottleParams(dispatcherArvClient)
 	go cr.updateLogs()
 
 	return cr, nil
@@ -1730,7 +1746,7 @@ func main() {
     	`)
 	memprofile := flag.String("memprofile", "", "write memory profile to `file` after running container")
 	getVersion := flag.Bool("version", false, "Print version information and exit.")
-	checkContainerd := flag.Duration("check-containerd", 60*time.Second, "Periodic check if (docker-)containerd is running (use 0s to disable).")
+	flag.Duration("check-containerd", 0, "Ignored. Exists for compatibility with older versions.")
 
 	detached := false
 	if len(os.Args) > 1 && os.Args[1] == "-detached" {
@@ -1743,6 +1759,7 @@ func main() {
 		os.Args = append([]string{os.Args[0]}, os.Args[2:]...)
 		detached = true
 	}
+
 	flag.Parse()
 
 	switch {
@@ -1808,7 +1825,6 @@ func main() {
 	cr.expectCgroupParent = *cgroupParent
 	cr.enableNetwork = *enableNetwork
 	cr.networkMode = *networkMode
-	cr.checkContainerd = *checkContainerd
 	if *cgroupParentSubsystem != "" {
 		p := findCgroup(*cgroupParentSubsystem)
 		cr.setCgroupParent = p

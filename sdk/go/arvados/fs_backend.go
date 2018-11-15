@@ -21,6 +21,7 @@ type keepBackend struct {
 type keepClient interface {
 	ReadAt(locator string, p []byte, off int) (int, error)
 	PutB(p []byte) (string, int, error)
+	LocalLocator(locator string) (string, error)
 }
 
 type apiClient interface {

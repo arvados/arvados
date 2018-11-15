@@ -57,6 +57,7 @@ type ContainerRequest struct {
 	UseExisting             bool                   `json:"use_existing"`
 	LogUUID                 string                 `json:"log_uuid"`
 	OutputUUID              string                 `json:"output_uuid"`
+	RuntimeToken            string                 `json:"runtime_token"`
 }
 
 // Mount is special behavior to attach to a filesystem path or device.

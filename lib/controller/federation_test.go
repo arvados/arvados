@@ -5,8 +5,10 @@
 package controller
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -90,6 +92,10 @@ func (s *FederationSuite) SetUpTest(c *check.C) {
 }
 
 func (s *FederationSuite) remoteMockHandler(w http.ResponseWriter, req *http.Request) {
+	b := &bytes.Buffer{}
+	io.Copy(b, req.Body)
+	req.Body.Close()
+	req.Body = ioutil.NopCloser(b)
 	s.remoteMockRequests = append(s.remoteMockRequests, *req)
 }
 
@@ -341,12 +347,31 @@ func (s *FederationSuite) TestGetLocalCollection(c *check.C) {
 	s.testHandler.Cluster.NodeProfiles["*"] = np
 	s.testHandler.NodeProfile = &np
 
+	// HTTP GET
+
 	req := httptest.NewRequest("GET", "/arvados/v1/collections/"+arvadostest.UserAgreementCollection, nil)
 	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
 	resp := s.testRequest(req)
 
 	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
 	var col arvados.Collection
+	c.Check(json.NewDecoder(resp.Body).Decode(&col), check.IsNil)
+	c.Check(col.UUID, check.Equals, arvadostest.UserAgreementCollection)
+	c.Check(col.ManifestText, check.Matches,
+		`\. 6a4ff0499484c6c79c95cd8c566bd25f\+249025\+A[0-9a-f]{40}@[0-9a-f]{8} 0:249025:GNU_General_Public_License,_version_3.pdf
+`)
+
+	// HTTP POST with _method=GET as a form parameter
+
+	req = httptest.NewRequest("POST", "/arvados/v1/collections/"+arvadostest.UserAgreementCollection, bytes.NewBufferString((url.Values{
+		"_method": {"GET"},
+	}).Encode()))
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
+	resp = s.testRequest(req)
+
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	col = arvados.Collection{}
 	c.Check(json.NewDecoder(resp.Body).Decode(&col), check.IsNil)
 	c.Check(col.UUID, check.Equals, arvadostest.UserAgreementCollection)
 	c.Check(col.ManifestText, check.Matches,
@@ -565,6 +590,104 @@ func (s *FederationSuite) TestCreateRemoteContainerRequest(c *check.C) {
 	c.Check(json.NewDecoder(resp.Body).Decode(&cr), check.IsNil)
 	c.Check(cr.Name, check.Equals, "hello world")
 	c.Check(strings.HasPrefix(cr.UUID, "zzzzz-"), check.Equals, true)
+}
+
+func (s *FederationSuite) TestCreateRemoteContainerRequestCheckRuntimeToken(c *check.C) {
+	// Send request to zmock and check that outgoing request has
+	// runtime_token set with a new random v2 token.
+
+	defer s.localServiceReturns404(c).Close()
+	// pass cluster_id via query parameter, this allows arvados-controller
+	// to avoid parsing the body
+	req := httptest.NewRequest("POST", "/arvados/v1/container_requests?cluster_id=zmock",
+		strings.NewReader(`{
+  "container_request": {
+    "name": "hello world",
+    "state": "Uncommitted",
+    "output_path": "/",
+    "container_image": "123",
+    "command": ["abc"]
+  }
+}
+`))
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveTokenV2)
+	req.Header.Set("Content-type", "application/json")
+
+	np := arvados.NodeProfile{
+		Controller: arvados.SystemServiceInstance{Listen: ":"},
+		RailsAPI: arvados.SystemServiceInstance{Listen: os.Getenv("ARVADOS_TEST_API_HOST"),
+			TLS: true, Insecure: true}}
+	s.testHandler.Cluster.ClusterID = "zzzzz"
+	s.testHandler.Cluster.NodeProfiles["*"] = np
+	s.testHandler.NodeProfile = &np
+
+	resp := s.testRequest(req)
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	var cr struct {
+		arvados.ContainerRequest `json:"container_request"`
+	}
+	c.Check(json.NewDecoder(s.remoteMockRequests[0].Body).Decode(&cr), check.IsNil)
+	c.Check(strings.HasPrefix(cr.ContainerRequest.RuntimeToken, "v2/zzzzz-gj3su-"), check.Equals, true)
+	c.Check(cr.ContainerRequest.RuntimeToken, check.Not(check.Equals), arvadostest.ActiveTokenV2)
+}
+
+func (s *FederationSuite) TestCreateRemoteContainerRequestCheckSetRuntimeToken(c *check.C) {
+	// Send request to zmock and check that outgoing request has
+	// runtime_token set with the explicitly provided token.
+
+	defer s.localServiceReturns404(c).Close()
+	// pass cluster_id via query parameter, this allows arvados-controller
+	// to avoid parsing the body
+	req := httptest.NewRequest("POST", "/arvados/v1/container_requests?cluster_id=zmock",
+		strings.NewReader(`{
+  "container_request": {
+    "name": "hello world",
+    "state": "Uncommitted",
+    "output_path": "/",
+    "container_image": "123",
+    "command": ["abc"],
+    "runtime_token": "xyz"
+  }
+}
+`))
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	req.Header.Set("Content-type", "application/json")
+	resp := s.testRequest(req)
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	var cr struct {
+		arvados.ContainerRequest `json:"container_request"`
+	}
+	c.Check(json.NewDecoder(s.remoteMockRequests[0].Body).Decode(&cr), check.IsNil)
+	c.Check(cr.ContainerRequest.RuntimeToken, check.Equals, "xyz")
+}
+
+func (s *FederationSuite) TestCreateRemoteContainerRequestRuntimeTokenFromAuth(c *check.C) {
+	// Send request to zmock and check that outgoing request has
+	// runtime_token set using the Auth token because the user is remote.
+
+	defer s.localServiceReturns404(c).Close()
+	// pass cluster_id via query parameter, this allows arvados-controller
+	// to avoid parsing the body
+	req := httptest.NewRequest("POST", "/arvados/v1/container_requests?cluster_id=zmock",
+		strings.NewReader(`{
+  "container_request": {
+    "name": "hello world",
+    "state": "Uncommitted",
+    "output_path": "/",
+    "container_image": "123",
+    "command": ["abc"]
+  }
+}
+`))
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveTokenV2+"/zzzzz-dz642-parentcontainer")
+	req.Header.Set("Content-type", "application/json")
+	resp := s.testRequest(req)
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	var cr struct {
+		arvados.ContainerRequest `json:"container_request"`
+	}
+	c.Check(json.NewDecoder(s.remoteMockRequests[0].Body).Decode(&cr), check.IsNil)
+	c.Check(cr.ContainerRequest.RuntimeToken, check.Equals, arvadostest.ActiveTokenV2)
 }
 
 func (s *FederationSuite) TestCreateRemoteContainerRequestError(c *check.C) {

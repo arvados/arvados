@@ -223,7 +223,11 @@ class Container < ArvadosModel
       if mount['kind'] != 'collection'
         next
       end
-      if (uuid = mount.delete 'uuid')
+
+      uuid = mount.delete 'uuid'
+
+      if mount['portable_data_hash'].nil? and !uuid.nil?
+        # PDH not supplied, try by UUID
         c = Collection.
           readable_by(current_user).
           where(uuid: uuid).
@@ -232,13 +236,7 @@ class Container < ArvadosModel
         if !c
           raise ArvadosModel::UnresolvableContainerError.new "cannot mount collection #{uuid.inspect}: not found"
         end
-        if mount['portable_data_hash'].nil?
-          # PDH not supplied by client
-          mount['portable_data_hash'] = c.portable_data_hash
-        elsif mount['portable_data_hash'] != c.portable_data_hash
-          # UUID and PDH supplied by client, but they don't agree
-          raise ArgumentError.new "cannot mount collection #{uuid.inspect}: current portable_data_hash #{c.portable_data_hash.inspect} does not match #{c['portable_data_hash'].inspect} in request"
-        end
+        mount['portable_data_hash'] = c.portable_data_hash
       end
     end
     return c_mounts
@@ -493,10 +491,14 @@ class Container < ArvadosModel
       return false
     end
 
-    if current_api_client_authorization.andand.uuid.andand == self.auth_uuid
-      # The contained process itself can update progress indicators,
-      # but can't change priority etc.
-      permitted = permitted & (progress_attrs + final_attrs + [:state] - [:log])
+    if self.state == Running &&
+       !current_api_client_authorization.nil? &&
+       (current_api_client_authorization.uuid == self.auth_uuid ||
+        current_api_client_authorization.token == self.runtime_token)
+      # The contained process itself can write final attrs but can't
+      # change priority or log.
+      permitted.push *final_attrs
+      permitted = permitted - [:log, :priority]
     elsif self.locked_by_uuid && self.locked_by_uuid != current_api_client_authorization.andand.uuid
       # When locked, progress fields cannot be updated by the wrong
       # dispatcher, even though it has admin privileges.

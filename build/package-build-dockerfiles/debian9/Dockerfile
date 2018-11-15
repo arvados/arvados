@@ -13,7 +13,7 @@ RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python2.7-dev pyth
 
 # Install RVM
 ADD generated/rvm.asc /tmp/
-RUN gpg --import /tmp/rvm.asc && \
+RUN gpg --no-tty --import /tmp/rvm.asc && \
     curl -L https://get.rvm.io | bash -s stable && \
     /usr/local/rvm/bin/rvm install 2.3 && \
     /usr/local/rvm/bin/rvm alias create default ruby-2.3 && \

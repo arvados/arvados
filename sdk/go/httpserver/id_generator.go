@@ -12,6 +12,10 @@ import (
 	"time"
 )
 
+const (
+	HeaderRequestID = "X-Request-Id"
+)
+
 // IDGenerator generates alphanumeric strings suitable for use as
 // unique IDs (a given IDGenerator will never return the same ID
 // twice).
@@ -44,11 +48,11 @@ func (g *IDGenerator) Next() string {
 func AddRequestIDs(h http.Handler) http.Handler {
 	gen := &IDGenerator{Prefix: "req-"}
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		if req.Header.Get("X-Request-Id") == "" {
+		if req.Header.Get(HeaderRequestID) == "" {
 			if req.Header == nil {
 				req.Header = http.Header{}
 			}
-			req.Header.Set("X-Request-Id", gen.Next())
+			req.Header.Set(HeaderRequestID, gen.Next())
 		}
 		h.ServeHTTP(w, req)
 	})

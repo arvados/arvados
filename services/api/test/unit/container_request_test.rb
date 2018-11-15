@@ -441,6 +441,27 @@ class ContainerRequestTest < ActiveSupport::TestCase
         "path" => "/foo",
       }
     end],
+   [{"/out" => {
+      "kind" => "collection",
+      "portable_data_hash" => "1f4b0bc7583c2a7f9102c395f4ffc5e3+45",
+      "path" => "/foo"}},
+    lambda do |resolved|
+      resolved["/out"] == {
+        "portable_data_hash" => "1f4b0bc7583c2a7f9102c395f4ffc5e3+45",
+        "kind" => "collection",
+        "path" => "/foo",
+      }
+    end],
+    # Empty collection
+    [{"/out" => {
+      "kind" => "collection",
+      "path" => "/foo"}},
+    lambda do |resolved|
+      resolved["/out"] == {
+        "kind" => "collection",
+        "path" => "/foo",
+      }
+    end],
   ].each do |mounts, okfunc|
     test "resolve mounts #{mounts.inspect} to values" do
       set_user_from_auth :active
@@ -474,9 +495,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
         "path" => "/foo",
       },
     }
-    assert_raises(ArgumentError) do
-      Container.resolve_mounts(m)
-    end
+    resolved_mounts = Container.resolve_mounts(m)
+    assert_equal m['portable_data_hash'], resolved_mounts['portable_data_hash']
   end
 
   ['arvados/apitestfixture:latest',
@@ -510,6 +530,12 @@ class ContainerRequestTest < ActiveSupport::TestCase
         Container.resolve_container_image(img)
       end
     end
+  end
+
+  test "allow unrecognized container when there are remote_hosts" do
+    set_user_from_auth :active
+    Rails.configuration.remote_hosts = {"foooo" => "bar.com"}
+    Container.resolve_container_image('acbd18db4cc2f85cedef654fccc4a4d8+3')
   end
 
   test "migrated docker image" do
