@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { unionize, ofType, UnionOf } from "~/common/unionize";
-import { TreeNode, initTreeNode, getNodeDescendants, TreeNodeStatus, getNode, TreePickerId } from '~/models/tree';
+import { TreeNode, initTreeNode, getNodeDescendants, TreeNodeStatus, getNode, TreePickerId, Tree } from '~/models/tree';
 import { Dispatch } from 'redux';
 import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
@@ -11,15 +11,16 @@ import { FilterBuilder } from '~/services/api/filter-builder';
 import { pipe, values } from 'lodash/fp';
 import { ResourceKind } from '~/models/resource';
 import { GroupContentsResource } from '~/services/groups-service/groups-service';
-import { CollectionDirectory, CollectionFile } from '~/models/collection-file';
 import { getTreePicker, TreePicker } from './tree-picker';
 import { ProjectsTreePickerItem } from '~/views-components/projects-tree-picker/generic-projects-tree-picker';
 import { OrderBuilder } from '~/services/api/order-builder';
 import { ProjectResource } from '~/models/project';
+import { mapTree } from '../../models/tree';
 
 export const treePickerActions = unionize({
     LOAD_TREE_PICKER_NODE: ofType<{ id: string, pickerId: string }>(),
     LOAD_TREE_PICKER_NODE_SUCCESS: ofType<{ id: string, nodes: Array<TreeNode<any>>, pickerId: string }>(),
+    APPEND_TREE_PICKER_NODE_SUBTREE: ofType<{ id: string, subtree: Tree<any>, pickerId: string }>(),
     TOGGLE_TREE_PICKER_NODE_COLLAPSE: ofType<{ id: string, pickerId: string }>(),
     ACTIVATE_TREE_PICKER_NODE: ofType<{ id: string, pickerId: string, relatedTreePickers?: string[] }>(),
     DEACTIVATE_TREE_PICKER_NODE: ofType<{ pickerId: string }>(),
@@ -60,7 +61,7 @@ export const getAllNodes = <Value>(pickerId: string, filter = (node: TreeNode<Va
     )();
 export const getSelectedNodes = <Value>(pickerId: string) => (state: TreePicker) =>
     getAllNodes<Value>(pickerId, node => node.selected)(state);
-    
+
 export const initProjectsTreePicker = (pickerId: string) =>
     async (dispatch: Dispatch, _: () => RootState, services: ServiceRepository) => {
         const { home, shared, favorites } = getProjectsTreePickerIds(pickerId);
@@ -135,19 +136,16 @@ export const loadCollection = (id: string, pickerId: string) =>
             const node = getNode(id)(picker);
             if (node && 'kind' in node.value && node.value.kind === ResourceKind.COLLECTION) {
 
-                const files = await services.collectionService.files(node.value.portableDataHash);
-                const data = getNodeDescendants('')(files).map(node => node.value);
+                const filesTree = await services.collectionService.files(node.value.portableDataHash);
+                
+                dispatch(
+                    treePickerActions.APPEND_TREE_PICKER_NODE_SUBTREE({
+                        id,
+                        pickerId,
+                        subtree: mapTree(node => ({ ...node, status: TreeNodeStatus.LOADED }))(filesTree)
+                    }));
 
-                dispatch<any>(receiveTreePickerData<CollectionDirectory | CollectionFile>({
-                    id,
-                    pickerId,
-                    data,
-                    extractNodeData: value => ({
-                        id: value.id,
-                        status: TreeNodeStatus.LOADED,
-                        value,
-                    }),
-                }));
+                dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ id, pickerId }));
             }
         }
     };
