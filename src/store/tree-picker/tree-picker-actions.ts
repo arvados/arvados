@@ -137,7 +137,7 @@ export const loadCollection = (id: string, pickerId: string) =>
             if (node && 'kind' in node.value && node.value.kind === ResourceKind.COLLECTION) {
 
                 const filesTree = await services.collectionService.files(node.value.portableDataHash);
-                
+
                 dispatch(
                     treePickerActions.APPEND_TREE_PICKER_NODE_SUBTREE({
                         id,
@@ -175,13 +175,13 @@ export const loadUserProject = (pickerId: string, includeCollections = false, in
         }
     };
 
-
+export const SHARED_PROJECT_ID = 'Shared with me';
 export const initSharedProject = (pickerId: string) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         dispatch(receiveTreePickerData({
             id: '',
             pickerId,
-            data: [{ uuid: 'Shared with me', name: 'Shared with me' }],
+            data: [{ uuid: SHARED_PROJECT_ID, name: SHARED_PROJECT_ID }],
             extractNodeData: value => ({
                 id: value.uuid,
                 status: TreeNodeStatus.INITIAL,
@@ -190,12 +190,13 @@ export const initSharedProject = (pickerId: string) =>
         }));
     };
 
+export const FAVORITES_PROJECT_ID = 'Favorites';
 export const initFavoritesProject = (pickerId: string) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         dispatch(receiveTreePickerData({
             id: '',
             pickerId,
-            data: [{ uuid: 'Favorites', name: 'Favorites' }],
+            data: [{ uuid: FAVORITES_PROJECT_ID, name: FAVORITES_PROJECT_ID }],
             extractNodeData: value => ({
                 id: value.uuid,
                 status: TreeNodeStatus.INITIAL,

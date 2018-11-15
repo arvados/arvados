@@ -9,6 +9,7 @@ import { PROCESS_MOVE_FORM_NAME } from '~/store/processes/process-move-actions';
 import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
 import { DialogMoveTo } from '~/views-components/dialog-move/dialog-move-to';
 import { moveProcess } from '~/store/workbench/workbench-actions';
+import { pickerId } from '~/store/tree-picker/picker-id';
 
 export const MoveProcessDialog = compose(
     withDialog(PROCESS_MOVE_FORM_NAME),
@@ -17,5 +18,6 @@ export const MoveProcessDialog = compose(
         onSubmit: (data, dispatch) => {
             dispatch(moveProcess(data));
         }
-    })
+    }),
+    pickerId(PROCESS_MOVE_FORM_NAME),
 )(DialogMoveTo);
