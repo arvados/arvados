@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	lockdir    = "/var/run"
+	lockdir    = "/var/lock"
 	lockprefix = "crunch-run-"
 	locksuffix = ".lock"
 )
