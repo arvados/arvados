@@ -46,6 +46,7 @@ import { SearchResultsPanel } from '~/views/search-results-panel/search-results-
 import { SharingDialog } from '~/views-components/sharing-dialog/sharing-dialog';
 import { AdvancedTabDialog } from '~/views-components/advanced-tab-dialog/advanced-tab-dialog';
 import { ProcessInputDialog } from '~/views-components/process-input-dialog/process-input-dialog';
+import { ProjectPropertiesDialog } from '~/views-components/project-properties-dialog/project-properties-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -140,6 +141,7 @@ export const WorkbenchPanel =
             <PartialCopyCollectionDialog />
             <ProcessCommandDialog />
             <ProcessInputDialog />
+            <ProjectPropertiesDialog />
             <RenameFileDialog />
             <RichTextEditorDialog />
             <SharingDialog />
