@@ -9,8 +9,6 @@ class ArvLoadingContext(LoadingContext):
     def __init__(self, kwargs=None):
         super(ArvLoadingContext, self).__init__(kwargs)
 
-ClusterTarget = namedtuple("ClusterTarget", ("instance", "cluster_id", "owner_uuid"))
-
 class ArvRuntimeContext(RuntimeContext):
     def __init__(self, kwargs=None):
         self.work_api = None
