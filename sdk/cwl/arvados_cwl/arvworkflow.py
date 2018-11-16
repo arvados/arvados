@@ -120,7 +120,7 @@ def get_overall_res_req(res_reqs):
 
 class ArvadosWorkflowStep(WorkflowStep):
     def job(self, joborder, output_callback, runtimeContext):
-        builder = self._init_job(joborder, runtimeContext)
+        builder = self._init_job({shortname(k): v for k,v in joborder.items()}, runtimeContext)
         check_cluster_target(self, builder, runtimeContext)
         return super(ArvadosWorkflowStep, self).job(joborder, output_callback, runtimeContext)
 
