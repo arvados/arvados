@@ -13,7 +13,7 @@ import { projectPanelActions } from '~/store/project-panel/project-panel-action'
 import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
 import { resetPickerProjectTree } from '~/store/project-tree-picker/project-tree-picker-actions';
 import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
-import { initProjectsTreePicker } from '../tree-picker/tree-picker-actions';
+import { initProjectsTreePicker } from '~/store/tree-picker/tree-picker-actions';
 
 export const COLLECTION_MOVE_FORM_NAME = 'collectionMoveFormName';
 

@@ -11,10 +11,11 @@ import { ProjectTreePickerField } from '~/views-components/project-tree-picker/p
 import { COPY_NAME_VALIDATION, COPY_FILE_VALIDATION } from '~/validators/validators';
 import { TextField } from "~/components/text-field/text-field";
 import { CopyFormDialogData } from '~/store/copy-dialog/copy-dialog';
+import { PickerIdProp } from '~/store/tree-picker/picker-id';
 
 type CopyFormDialogProps = WithDialogProps<string> & InjectedFormProps<CopyFormDialogData>;
 
-export const DialogCopy = (props: CopyFormDialogProps & { pickerId: string }) =>
+export const DialogCopy = (props: CopyFormDialogProps & PickerIdProp) =>
     <FormDialog
         dialogTitle='Make a copy'
         formFields={CopyDialogFields(props.pickerId)}
