@@ -9,30 +9,40 @@ import { navigateToVirtualMachines } from "../navigation/navigation-action";
 import { bindDataExplorerActions } from '~/store/data-explorer/data-explorer-action';
 import { formatDate } from "~/common/formatters";
 import { unionize, ofType, UnionOf } from "~/common/unionize";
+import { VirtualMachinesLoginsResource } from '~/models/virtual-machines';
 
-export const virtualMachinesAction = unionize({
+export const virtualMachinesActions = unionize({
     SET_REQUESTED_DATE: ofType<string>(),
+    SET_VIRTUAL_MACHINES: ofType<any>(),
+    SET_LOGINS: ofType<VirtualMachinesLoginsResource[]>()
 });
 
-export type VirtualMachineActions = UnionOf<typeof virtualMachinesAction>;
+export type VirtualMachineActions = UnionOf<typeof virtualMachinesActions>;
 
 export const VIRTUAL_MACHINES_PANEL = 'virtualMachinesPanel';
 
 export const openVirtualMachines = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const virtualMachines = await services.virtualMachineService.list();
-        // const logins = await services.virtualMachineService.logins(virtualMachines.items[0].uuid);
-        // const getAllLogins = await services.virtualMachineService.getAllLogins();
-        console.log(virtualMachines);
-        // console.log(logins);
-        // console.log(getAllLogins);      
         dispatch<any>(navigateToVirtualMachines);
     };
 
-export const loadRequestedDate = () =>
+const loadRequestedDate = () =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const date = services.virtualMachineService.getRequestedDate();
-        dispatch(virtualMachinesAction.SET_REQUESTED_DATE(date));
+        dispatch(virtualMachinesActions.SET_REQUESTED_DATE(date));
+    };
+
+
+export const loadVirtualMachinesData = () =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch<any>(loadRequestedDate());
+        const virtualMachines = await services.virtualMachineService.list();
+        dispatch(virtualMachinesActions.SET_VIRTUAL_MACHINES(virtualMachines));
+        // const logins = await services.virtualMachineService.logins(virtualMachines.items[0].uuid);
+        // console.log(logins);
+        // const getAllLogins = await services.virtualMachineService.getAllLogins();
+        // console.log(getAllLogins);  
+        // dispatch(virtualMachinesActions.SET_LOGINS(getAllLogins));
     };
 
 export const saveRequestedDate = () =>
@@ -42,9 +52,9 @@ export const saveRequestedDate = () =>
         dispatch<any>(loadRequestedDate());
     };
 
-const virtualMachinesActions = bindDataExplorerActions(VIRTUAL_MACHINES_PANEL);
+const virtualMachinesBindedActions = bindDataExplorerActions(VIRTUAL_MACHINES_PANEL);
 
 export const loadVirtualMachinesPanel = () =>
     (dispatch: Dispatch) => {
-        dispatch(virtualMachinesActions.REQUEST_ITEMS());
+        dispatch(virtualMachinesBindedActions.REQUEST_ITEMS());
     };

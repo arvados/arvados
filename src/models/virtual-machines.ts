@@ -8,7 +8,7 @@ export interface VirtualMachinesResource extends Resource {
     hostname: string;
 }
 
-export interface ViruatlMachinesLoginsResource {
+export interface VirtualMachinesLoginsResource {
     hostname: string;
     username: string;
     public_key: string;

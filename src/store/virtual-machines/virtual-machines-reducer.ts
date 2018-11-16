@@ -2,18 +2,32 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { virtualMachinesAction, VirtualMachineActions } from '~/store/virtual-machines/virtual-machines-actions';
+import { virtualMachinesActions, VirtualMachineActions } from '~/store/virtual-machines/virtual-machines-actions';
+import { ListResults } from '~/services/common-service/common-resource-service';
+import { VirtualMachinesLoginsResource } from '~/models/virtual-machines';
 
 interface VirtualMachines {
     date: string;
+    virtualMachines: ListResults<any>;
+    logins: VirtualMachinesLoginsResource[];
 }
 
 const initialState: VirtualMachines = {
-    date: ''
+    date: '',
+    virtualMachines: {
+        kind: '',
+        offset: 0,
+        limit: 0,
+        itemsAvailable: 0,
+        items: []
+    },
+    logins: []
 };
 
 export const virtualMachinesReducer = (state = initialState, action: VirtualMachineActions): VirtualMachines =>
-    virtualMachinesAction.match(action, {
+    virtualMachinesActions.match(action, {
         SET_REQUESTED_DATE: date => ({ ...state, date }),
+        SET_VIRTUAL_MACHINES: virtualMachines => ({ ...state, virtualMachines }),
+        SET_LOGINS: logins => ({ ...state, logins }),
         default: () => state
     });
