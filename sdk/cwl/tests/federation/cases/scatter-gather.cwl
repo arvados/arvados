@@ -26,6 +26,9 @@ steps:
     scatter: [inp, runOnCluster]
     scatterMethod: dotproduct
     out: [hash]
+    hints:
+      arv:ClusterTarget:
+        cluster_id: $(inputs.runOnCluster)
     run: md5sum.cwl
   cat:
     in:

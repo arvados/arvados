@@ -24,5 +24,8 @@ steps:
     in:
       inp: inp
       runOnCluster: runOnCluster
+    hints:
+      arv:ClusterTarget:
+        cluster_id: $(inputs.runOnCluster)
     out: [hash]
     run: md5sum.cwl

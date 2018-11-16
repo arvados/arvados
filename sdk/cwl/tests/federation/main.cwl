@@ -101,7 +101,7 @@ steps:
   runner-home-step-remote:
     doc: |
       Single step workflow with the runner on the home cluster and the
-      step on the remote cluster.
+      step on the remote cluster.  ClusterTarget hint is on the workflow step.
     in:
       arvados_api_token: arvados_api_token
       arvado_api_host_insecure: arvado_api_host_insecure
@@ -461,5 +461,79 @@ steps:
           - 3abea7506269d5ebf61fb17c78bbd2af+105  # revB output
           - 9e1b3acb28949759ad07e4c9740bbaa5+113  # revC output
           - 8c86dbec7de7948871b5e168ede417e1+120  # runner output json
+    out: [out, success]
+    run: framework/testcase.cwl
+
+  hint-on-wf:
+    doc: |
+      Single step workflow with the runner on the home cluster and the
+      step on the remote cluster.  ClusterTarget hint is at the workflow level.
+    in:
+      arvados_api_token: arvados_api_token
+      arvado_api_host_insecure: arvado_api_host_insecure
+      arvados_api_hosts: arvados_api_hosts
+      arvados_cluster_ids: arvados_cluster_ids
+      acr: acr
+      wf:
+        default:
+          class: File
+          location: cases/hint-on-wf.cwl
+          secondaryFiles:
+            - class: File
+              location: cases/md5sum.cwl
+      obj:
+        default:
+          inp:
+            class: File
+            location: data/hint-on-wf.txt
+        valueFrom: |-
+          ${
+          self["runOnCluster"] = inputs.arvados_cluster_ids[1];
+          return self;
+          }
+      runner_cluster: { valueFrom: "$(inputs.arvados_cluster_ids[0])" }
+      scrub_image: {default: "arvados/fed-test:hint-on-wf"}
+      scrub_collections:
+        default:
+          - 3bc373e38751fe13dcbd62778d583242+81   # input collection
+          - 428e6d91e41a3af3ae287b453949e7fd+51   # md5sum output collection
+          - a4b0ddd866525655e8480f83a1ca83c6+112  # runner output json
+    out: [out, success]
+    run: framework/testcase.cwl
+
+  hint-on-tool:
+    doc: |
+      Single step workflow with the runner on the home cluster and the
+      step on the remote cluster.  ClusterTarget hint is at the tool level.
+    in:
+      arvados_api_token: arvados_api_token
+      arvado_api_host_insecure: arvado_api_host_insecure
+      arvados_api_hosts: arvados_api_hosts
+      arvados_cluster_ids: arvados_cluster_ids
+      acr: acr
+      wf:
+        default:
+          class: File
+          location: cases/hint-on-tool.cwl
+          secondaryFiles:
+            - class: File
+              location: cases/md5sum-tool-hint.cwl
+      obj:
+        default:
+          inp:
+            class: File
+            location: data/hint-on-tool.txt
+        valueFrom: |-
+          ${
+          self["runOnCluster"] = inputs.arvados_cluster_ids[1];
+          return self;
+          }
+      runner_cluster: { valueFrom: "$(inputs.arvados_cluster_ids[0])" }
+      scrub_image: {default: "arvados/fed-test:hint-on-tool"}
+      scrub_collections:
+        default:
+          - 3bc373e38751fe13dcbd62778d583242+81   # input collection
+          - 428e6d91e41a3af3ae287b453949e7fd+51   # md5sum output collection
+          - a4b0ddd866525655e8480f83a1ca83c6+112  # runner output json
     out: [out, success]
     run: framework/testcase.cwl
