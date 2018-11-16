@@ -12,7 +12,7 @@ import { filterCollectionFilesBySelection } from '../collection-panel/collection
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { getCommonResourceServiceError, CommonResourceServiceError } from '~/services/common-service/common-resource-service';
 import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
-import { initProjectsTreePicker } from '../tree-picker/tree-picker-actions';
+import { initProjectsTreePicker } from '~/store/tree-picker/tree-picker-actions';
 
 export const COLLECTION_PARTIAL_COPY_FORM_NAME = 'COLLECTION_PARTIAL_COPY_DIALOG';
 
