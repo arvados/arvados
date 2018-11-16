@@ -103,6 +103,4 @@ export const ProjectTreePickerField = (props: WrappedFieldProps & PickerIdProp) 
 
 const handleChange = (props: WrappedFieldProps) =>
     (_: any, { id }: TreeItem<ProjectsTreePickerItem>) =>
-        props.input.value === id
-            ? props.input.onChange('')
-            : props.input.onChange(id);
+        props.input.onChange(id);
