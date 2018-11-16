@@ -22,7 +22,7 @@ import ruamel.yaml as yaml
 from .runner import (upload_dependencies, packed_workflow, upload_workflow_collection,
                      trim_anonymous_location, remove_redundant_fields, discover_secondary_files)
 from .pathmapper import ArvPathMapper, trim_listing
-from .arvtool import ArvadosCommandTool, check_cluster_target
+from .arvtool import ArvadosCommandTool, set_cluster_target
 from .perf import Perf
 
 logger = logging.getLogger('arvados.cwl-runner')
@@ -134,8 +134,9 @@ class ArvadosWorkflowStep(WorkflowStep):
 
     def job(self, joborder, output_callback, runtimeContext):
         builder = self._init_job({shortname(k): v for k,v in joborder.items()}, runtimeContext)
-        check_cluster_target(self, builder, runtimeContext)
+        runtimeContext = set_cluster_target(self.tool, self.arvrunner, builder, runtimeContext)
         return super(ArvadosWorkflowStep, self).job(joborder, output_callback, runtimeContext)
+
 
 class ArvadosWorkflow(Workflow):
     """Wrap cwltool Workflow to override selected methods."""
@@ -148,11 +149,12 @@ class ArvadosWorkflow(Workflow):
         self.wf_reffiles = []
         self.loadingContext = loadingContext
         super(ArvadosWorkflow, self).__init__(toolpath_object, loadingContext)
+        self.cluster_target_req, _ = self.get_requirement("http://arvados.org/cwl#ClusterTarget")
 
     def job(self, joborder, output_callback, runtimeContext):
 
         builder = self._init_job(joborder, runtimeContext)
-        check_cluster_target(self, builder, runtimeContext)
+        runtimeContext = set_cluster_target(self.tool, self.arvrunner, builder, runtimeContext)
 
         req, _ = self.get_requirement("http://arvados.org/cwl#RunInSingleContainer")
         if not req:

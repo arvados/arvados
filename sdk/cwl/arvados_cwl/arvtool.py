@@ -10,16 +10,26 @@ from functools import partial
 from schema_salad.sourceline import SourceLine
 from cwltool.errors import WorkflowException
 
-def check_cluster_target(self, builder, runtimeContext):
-    cluster_target_req, _ = self.get_requirement("http://arvados.org/cwl#ClusterTarget")
-    if cluster_target_req and runtimeContext.cluster_target_id != id(cluster_target_req):
-        with SourceLine(cluster_target_req, None, WorkflowException, runtimeContext.debug):
-            runtimeContext.cluster_target_id = id(cluster_target_req)
-            runtimeContext.submit_runner_cluster = builder.do_eval(cluster_target_req.get("cluster_id")) or runtimeContext.submit_runner_cluster
-            runtimeContext.project_uuid = builder.do_eval(cluster_target_req.get("project_uuid")) or runtimeContext.project_uuid
-            if runtimeContext.submit_runner_cluster and runtimeContext.submit_runner_cluster not in self.arvrunner.api._rootDesc["remoteHosts"]:
-                raise WorkflowException("Unknown or invalid cluster id '%s' known clusters are %s" % (runtimeContext.submit_runner_cluster,
-                                                                                                      ", ".join(self.arvrunner.api._rootDesc["remoteHosts"].keys())))
+def set_cluster_target(tool, arvrunner, builder, runtimeContext):
+    cluster_target_req = None
+    for field in ("hints", "requirements"):
+        if field not in tool:
+            continue
+        for item in tool[field]:
+            if item["class"] == "http://arvados.org/cwl#ClusterTarget":
+                cluster_target_req = item
+
+    if cluster_target_req is None:
+        return runtimeContext
+
+    with SourceLine(cluster_target_req, None, WorkflowException, runtimeContext.debug):
+        runtimeContext = runtimeContext.copy()
+        runtimeContext.submit_runner_cluster = builder.do_eval(cluster_target_req.get("cluster_id")) or runtimeContext.submit_runner_cluster
+        runtimeContext.project_uuid = builder.do_eval(cluster_target_req.get("project_uuid")) or runtimeContext.project_uuid
+        if runtimeContext.submit_runner_cluster and runtimeContext.submit_runner_cluster not in arvrunner.api._rootDesc["remoteHosts"]:
+            raise WorkflowException("Unknown or invalid cluster id '%s' known clusters are %s" % (runtimeContext.submit_runner_cluster,
+                                                                                                      ", ".join(arvrunner.api._rootDesc["remoteHosts"].keys())))
+    return runtimeContext
 
 class ArvadosCommandTool(CommandLineTool):
     """Wrap cwltool CommandLineTool to override selected methods."""
@@ -56,8 +66,7 @@ class ArvadosCommandTool(CommandLineTool):
         joborder = builder.job
 
         runtimeContext = runtimeContext.copy()
-
-        check_cluster_target(self, builder, runtimeContext)
+        runtimeContext = set_cluster_target(self.tool, self.arvrunner, builder, runtimeContext)
 
         if runtimeContext.work_api == "containers":
             dockerReq, is_req = self.get_requirement("DockerRequirement")
