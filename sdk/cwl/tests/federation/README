@@ -1,0 +1,55 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+Things to test.
+
+Single step --submit --no-wait workflow, matrix of:
+
+Runner on home/remote cluster
+Docker image on home/remote cluster
+Step on home/remote cluster
+
+Two step workflow, matrix of:
+
+Step1 on home cluster -> Step2 on remote cluster
+Step1 on remote cluster -> Step2 on home cluster
+
+Three step workflow:
+
+(Step1 on remoteA cluster, Step2 on remoteB cluster) -> Step3 on home cluster
+Step1 on remoteA cluster -> Step2 on remoteB cluster -> Step3 on home cluster
+
+Workflow which has a remote collection in InitialWorkDir, which is captured in output.
+
+Workflow with file input that has a secondary file in a separate
+collection, which is remote.
+
+
+Need to pull Docker image
+Can't run in container because it doesn't have access to Docker from inside -> how can we workaround?
+Turns out we also can't run in container because cwltool doesn't pathmap inside "Any" (this is a bug -> fix this)
+Try setting up a virtualenv -> annoying because you need C dependencies to build
+Virtualenv sets up shop in /tmp instead of the real directory
+--relocatable ???
+
+
+arvados/jobs doesn't have the docker client
+arvbox has docker client
+
+- Still need venv or something to run cwltool to manage all this.
+- Unless we run cwltool in docker as well.
+
+Can use cwl-docker.sh to run cwltool in docker
+
+- arvbox needs Docker.  This will *probably* work launched from container if base dir is under PWD
+- want to run arvados-cwl-runner.  this needs Docker to pull images.
+
+For a-c-r solutions are one of:
+
+1) Don't run in Docker, use virtualenv instead.
+2) Access to Docker from inside Docker to pull images.
+2a) Docker-in-Docker
+2b) Bind mount Docker socket
+2c) Communicate to Docker daemon over TCP
+3) Arvados feature to pull images
