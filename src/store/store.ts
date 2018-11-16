@@ -43,6 +43,7 @@ import { searchBarReducer } from './search-bar/search-bar-reducer';
 import { SEARCH_RESULTS_PANEL_ID } from '~/store/search-results-panel/search-results-panel-actions';
 import { SearchResultsMiddlewareService } from './search-results-panel/search-results-middleware-service';
 import { resourcesDataReducer } from "~/store/resources-data/resources-data-reducer";
+import { virtualMachinesReducer } from "~/store/virtual-machines/virtual-machines-reducer";
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -111,5 +112,6 @@ const createRootReducer = (services: ServiceRepository) => combineReducers({
     progressIndicator: progressIndicatorReducer,
     runProcessPanel: runProcessPanelReducer,
     appInfo: appInfoReducer,
-    searchBar: searchBarReducer
+    searchBar: searchBarReducer,
+    virtualMachines: virtualMachinesReducer
 });

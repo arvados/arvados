@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import AccessTime from '@material-ui/icons/AccessTime';
 import Add from '@material-ui/icons/Add';
 import ArrowBack from '@material-ui/icons/ArrowBack';
 import ArrowDropDown from '@material-ui/icons/ArrowDropDown';
@@ -86,7 +85,6 @@ export const ProcessIcon: IconType = (props) => <BubbleChart {...props} />;
 export const ProjectIcon: IconType = (props) => <Folder {...props} />;
 export const ProjectsIcon: IconType = (props) => <Inbox {...props} />;
 export const ProvenanceGraphIcon: IconType = (props) => <DeviceHub {...props} />;
-export const RecentIcon: IconType = (props) => <AccessTime {...props} />;
 export const RemoveIcon: IconType = (props) => <Delete {...props} />;
 export const RemoveFavoriteIcon: IconType = (props) => <Star {...props} />;
 export const RenameIcon: IconType = (props) => <Edit {...props} />;

@@ -47,6 +47,7 @@ import { SearchResultsPanel } from '~/views/search-results-panel/search-results-
 import { SharingDialog } from '~/views-components/sharing-dialog/sharing-dialog';
 import { AdvancedTabDialog } from '~/views-components/advanced-tab-dialog/advanced-tab-dialog';
 import { ProcessInputDialog } from '~/views-components/process-input-dialog/process-input-dialog';
+import { VirtualMachinePanel } from '~/views/virtual-machine-panel/virtual-machine-panel';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -116,6 +117,7 @@ export const WorkbenchPanel =
                                 <Route path={Routes.RUN_PROCESS} component={RunProcessPanel} />
                                 <Route path={Routes.WORKFLOWS} component={WorkflowPanel} />
                                 <Route path={Routes.SEARCH_RESULTS} component={SearchResultsPanel} />
+                                <Route path={Routes.VIRTUAL_MACHINES} component={VirtualMachinePanel} />
                             </Switch>
                         </Grid>
                     </Grid>

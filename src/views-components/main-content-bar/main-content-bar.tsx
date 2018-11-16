@@ -10,6 +10,7 @@ import { detailsPanelActions } from "~/store/details-panel/details-panel-action"
 import { connect } from 'react-redux';
 import { RootState } from '~/store/store';
 import { matchWorkflowRoute } from '~/routes/routes';
+import { matchVirtualMachineRoute } from '~/routes/routes';
 
 interface MainContentBarProps {
     onDetailsPanelToggle: () => void;
@@ -22,8 +23,14 @@ const isWorkflowPath = ({ router }: RootState) => {
     return !!match;
 };
 
+const isVirtualMachinePath = ({ router }: RootState) => {
+    const pathname = router.location ? router.location.pathname : '';
+    const match = matchVirtualMachineRoute(pathname);
+    return !!match;
+};
+
 export const MainContentBar = connect((state: RootState) => ({
-    buttonVisible: !isWorkflowPath(state)
+    buttonVisible: !isWorkflowPath(state) && !isVirtualMachinePath(state)
 }), {
         onDetailsPanelToggle: detailsPanelActions.TOGGLE_DETAILS_PANEL
     })((props: MainContentBarProps) =>
@@ -33,11 +40,11 @@ export const MainContentBar = connect((state: RootState) => ({
                     <Breadcrumbs />
                 </Grid>
                 <Grid item>
-                    {props.buttonVisible ? <Tooltip title="Additional Info">
+                    {props.buttonVisible && <Tooltip title="Additional Info">
                         <IconButton color="inherit" onClick={props.onDetailsPanelToggle}>
                             <DetailsIcon />
                         </IconButton>
-                    </Tooltip> : null}
+                    </Tooltip>}
                 </Grid>
             </Grid>
         </Toolbar>);

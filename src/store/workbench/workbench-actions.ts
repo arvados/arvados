@@ -14,7 +14,7 @@ import { favoritePanelActions } from '~/store/favorite-panel/favorite-panel-acti
 import { projectPanelColumns } from '~/views/project-panel/project-panel';
 import { favoritePanelColumns } from '~/views/favorite-panel/favorite-panel';
 import { matchRootRoute } from '~/routes/routes';
-import { setSidePanelBreadcrumbs, setProcessBreadcrumbs, setSharedWithMeBreadcrumbs, setTrashBreadcrumbs } from '../breadcrumbs/breadcrumbs-actions';
+import { setSidePanelBreadcrumbs, setProcessBreadcrumbs, setSharedWithMeBreadcrumbs, setTrashBreadcrumbs, setBreadcrumbs } from '../breadcrumbs/breadcrumbs-actions';
 import { navigateToProject } from '../navigation/navigation-action';
 import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
 import { ServiceRepository } from '~/services/services';
@@ -53,6 +53,7 @@ import { collectionPanelActions } from "~/store/collection-panel/collection-pane
 import { CollectionResource } from "~/models/collection";
 import { searchResultsPanelActions, loadSearchResultsPanel } from '~/store/search-results-panel/search-results-panel-actions';
 import { searchResultsPanelColumns } from '~/views/search-results-panel/search-results-panel-view';
+import { loadVirtualMachinesPanel } from '~/store/virtual-machines/virtual-machines-actions';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -388,6 +389,12 @@ export const loadWorkflow = handleFirstTimeLoad(async (dispatch: Dispatch<any>) 
 export const loadSearchResults = handleFirstTimeLoad(
     async (dispatch: Dispatch<any>) => {
         await dispatch(loadSearchResultsPanel());
+    });
+
+export const loadVirtualMachines = handleFirstTimeLoad(
+    async (dispatch: Dispatch<any>) => {
+        await dispatch(loadVirtualMachinesPanel());
+        dispatch(setBreadcrumbs([{ label: 'Virtual Machines' }]));
     });
 
 const finishLoadingProject = (project: GroupContentsResource | string) =>
