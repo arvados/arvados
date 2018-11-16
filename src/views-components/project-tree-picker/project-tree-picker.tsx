@@ -18,6 +18,7 @@ import { WrappedFieldProps } from 'redux-form';
 import { TreePickerId } from '~/models/tree';
 import { ProjectsTreePicker } from '~/views-components/projects-tree-picker/projects-tree-picker';
 import { ProjectsTreePickerItem } from '~/views-components/projects-tree-picker/generic-projects-tree-picker';
+import { PickerIdProp } from '~/store/tree-picker/picker-id';
 
 type ProjectTreePickerProps = Pick<TreePickerProps<ProjectResource>, 'onContextMenu' | 'toggleItemActive' | 'toggleItemOpen' | 'toggleItemSelection'>;
 
@@ -89,7 +90,7 @@ const renderTreeItem = (item: TreeItem<ProjectResource>) =>
         isActive={item.active}
         hasMargin={true} />;
 
-export const ProjectTreePickerField = (props: WrappedFieldProps & { pickerId: string }) =>
+export const ProjectTreePickerField = (props: WrappedFieldProps & PickerIdProp) =>
     <div style={{ height: '200px', display: 'flex', flexDirection: 'column' }}>
         <ProjectsTreePicker
             pickerId={props.pickerId}

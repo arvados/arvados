@@ -4,9 +4,13 @@
 
 import * as React from 'react';
 
+export interface PickerIdProp {
+    pickerId: string;
+}
+
 export const pickerId =
     (id: string) =>
-        <P extends { pickerId: string }>(Component: React.ComponentType<P>) =>
+        <P extends PickerIdProp>(Component: React.ComponentType<P>) =>
             (props: P) =>
                 <Component {...props} pickerId={id} />;
                 

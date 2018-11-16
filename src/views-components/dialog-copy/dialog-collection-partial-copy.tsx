@@ -9,10 +9,11 @@ import { CollectionNameField, CollectionDescriptionField, CollectionProjectPicke
 import { WithDialogProps } from '~/store/dialog/with-dialog';
 import { InjectedFormProps } from 'redux-form';
 import { CollectionPartialCopyFormData } from '~/store/collections/collection-partial-copy-actions';
+import { PickerIdProp } from "~/store/tree-picker/picker-id";
 
 type DialogCollectionPartialCopyProps = WithDialogProps<string> & InjectedFormProps<CollectionPartialCopyFormData>;
 
-export const DialogCollectionPartialCopy = (props: DialogCollectionPartialCopyProps & { pickerId: string }) =>
+export const DialogCollectionPartialCopy = (props: DialogCollectionPartialCopyProps & PickerIdProp) =>
     <FormDialog
         dialogTitle='Create a collection'
         formFields={CollectionPartialCopyFields(props.pickerId)}
