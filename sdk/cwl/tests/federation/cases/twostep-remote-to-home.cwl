@@ -26,10 +26,16 @@ steps:
       inp: inp
       runOnCluster: md5sumCluster
     out: [hash]
+    hints:
+      arv:ClusterTarget:
+        cluster_id: $(inputs.runOnCluster)
     run: md5sum.cwl
   rev:
     in:
       inp: md5sum/hash
       runOnCluster: revCluster
     out: [revhash]
+    hints:
+      arv:ClusterTarget:
+        cluster_id: $(inputs.runOnCluster)
     run: rev.cwl

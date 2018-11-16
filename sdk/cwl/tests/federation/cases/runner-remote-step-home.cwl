@@ -14,7 +14,6 @@ inputs:
   inp:
     type: File
     inputBinding: {}
-  runOnCluster: string
 outputs:
   hash:
     type: File
@@ -23,6 +22,8 @@ steps:
   md5sum:
     in:
       inp: inp
-      runOnCluster: runOnCluster
     out: [hash]
+    hints:
+      arv:ClusterTarget:
+        cluster_id: $(inputs.runOnCluster)
     run: md5sum.cwl
