@@ -9,6 +9,7 @@ import { COLLECTION_COPY_FORM_NAME } from '~/store/collections/collection-copy-a
 import { DialogCopy } from "~/views-components/dialog-copy/dialog-copy";
 import { copyCollection } from '~/store/workbench/workbench-actions';
 import { CopyFormDialogData } from '~/store/copy-dialog/copy-dialog';
+import { pickerId } from '~/store/tree-picker/picker-id';
 
 export const CopyCollectionDialog = compose(
     withDialog(COLLECTION_COPY_FORM_NAME),
@@ -17,5 +18,6 @@ export const CopyCollectionDialog = compose(
         onSubmit: (data, dispatch) => {
             dispatch(copyCollection(data));
         }
-    })
+    }),
+    pickerId(COLLECTION_COPY_FORM_NAME),
 )(DialogCopy);
