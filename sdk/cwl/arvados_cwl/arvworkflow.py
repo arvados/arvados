@@ -296,4 +296,4 @@ class ArvadosWorkflow(Workflow):
                            parentworkflowProv=None  # type: Optional[CreateProvProfile]
     ):
         # (...) -> WorkflowStep
-        return WorkflowStep(toolpath_object, pos, loadingContext, parentworkflowProv)
+        return ArvadosWorkflowStep(toolpath_object, pos, loadingContext, parentworkflowProv)
