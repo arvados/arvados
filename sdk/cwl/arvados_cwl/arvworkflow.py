@@ -12,7 +12,7 @@ from schema_salad.sourceline import SourceLine, cmap
 from cwltool.pack import pack
 from cwltool.load_tool import fetch_document
 from cwltool.process import shortname
-from cwltool.workflow import Workflow, WorkflowException
+from cwltool.workflow import Workflow, WorkflowException, WorkflowStep
 from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, visit_class
 from cwltool.builder import Builder
 from cwltool.context import LoadingContext
@@ -117,6 +117,12 @@ def get_overall_res_req(res_reqs):
         if overall_res_req:
             overall_res_req["class"] = "ResourceRequirement"
         return cmap(overall_res_req)
+
+class ArvadosWorkflowStep(WorkflowStep):
+    def job(self, joborder, output_callback, runtimeContext):
+        builder = self._init_job(joborder, runtimeContext)
+        check_cluster_target(self, builder, runtimeContext)
+        return super(ArvadosWorkflowStep, self).job(joborder, output_callback, runtimeContext)
 
 class ArvadosWorkflow(Workflow):
     """Wrap cwltool Workflow to override selected methods."""
@@ -282,3 +288,12 @@ class ArvadosWorkflow(Workflow):
             "id": "#"
         })
         return ArvadosCommandTool(self.arvrunner, wf_runner, self.loadingContext).job(joborder_resolved, output_callback, runtimeContext)
+
+    def make_workflow_step(self,
+                           toolpath_object,      # type: Dict[Text, Any]
+                           pos,                  # type: int
+                           loadingContext,       # type: LoadingContext
+                           parentworkflowProv=None  # type: Optional[CreateProvProfile]
+    ):
+        # (...) -> WorkflowStep
+        return WorkflowStep(toolpath_object, pos, loadingContext, parentworkflowProv)

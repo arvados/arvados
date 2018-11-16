@@ -33,12 +33,10 @@ setup(name='arvados-cwl-runner',
       # Note that arvados/build/run-build-packages.sh looks at this
       # file to determine what version of cwltool and schema-salad to build.
       install_requires=[
-          'cwltool==1.0.20181114114354',
-          'schema-salad==2.7.20181017120439',
+          'cwltool==1.0.20181116032456',
+          'schema-salad==2.7.20181116024232',
           'typing >= 3.6.4',
-          # Need to limit ruamel.yaml version to 0.15.26 because of bug
-          # https://bitbucket.org/ruamel/yaml/issues/227/regression-parsing-flow-mapping
-          'ruamel.yaml >=0.13.11, <= 0.15.26',
+          'ruamel.yaml >=0.13.11, <= 0.15.77',
           'arvados-python-client>=1.1.4.20180607143841',
           'setuptools',
           'ciso8601 >=1.0.6, <2.0.0',
