@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Dispatch } from 'redux';
+import { compose } from 'redux';
 import { connect } from 'react-redux';
 import { openProjectPropertiesDialog } from '~/store/details-panel/details-panel-action';
 import { ProjectIcon, RenameIcon } from '~/components/icon/icon';
@@ -49,9 +49,7 @@ interface ProjectDetailsComponentActionProps {
     onClick: () => void;
 }
 
-const mapDispatchToProps = (dispatch: Dispatch): ProjectDetailsComponentActionProps => ({
-    onClick: () => dispatch<any>(openProjectPropertiesDialog())
-});
+const mapDispatchToProps = ({ onClick: openProjectPropertiesDialog });
 
 type ProjectDetailsComponentProps = ProjectDetailsComponentDataProps & ProjectDetailsComponentActionProps & WithStyles<CssRules>;
 

@@ -42,7 +42,6 @@ export const deleteProjectProperty = (key: string) =>
                 dispatch(resourcesActions.SET_RESOURCES([updatedProject]));
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Property has been successfully deleted.", hideDuration: 2000 }));
             }
-            return;
         } catch (e) {
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_PROPERTIES_FORM_NAME }));
             throw new Error('Could not remove property from the project.');
