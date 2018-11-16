@@ -7,6 +7,7 @@ import { Field, WrappedFieldProps } from "redux-form";
 import { TextField } from "~/components/text-field/text-field";
 import { COLLECTION_NAME_VALIDATION, COLLECTION_DESCRIPTION_VALIDATION, COLLECTION_PROJECT_VALIDATION } from "~/validators/validators";
 import { ProjectTreePicker, ProjectTreePickerField } from "~/views-components/project-tree-picker/project-tree-picker";
+import { PickerIdProp } from '../../store/tree-picker/picker-id';
 
 export const CollectionNameField = () =>
     <Field
@@ -23,7 +24,7 @@ export const CollectionDescriptionField = () =>
         validate={COLLECTION_DESCRIPTION_VALIDATION}
         label="Description - optional" />;
 
-export const CollectionProjectPickerField = (props: { pickerId: string }) =>
+export const CollectionProjectPickerField = (props: PickerIdProp) =>
     <Field
         name="projectUuid"
         pickerId={props.pickerId}
