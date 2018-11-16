@@ -265,6 +265,12 @@ class CollectionFetcher(DefaultFetcher):
 
         return super(CollectionFetcher, self).urljoin(base_url, url)
 
+    schemes = [u"file", u"http", u"https", u"mailto", u"keep"]
+
+    def supported_schemes(self):  # type: () -> List[Text]
+        return self.schemes
+
+
 workflow_uuid_pattern = re.compile(r'[a-z0-9]{5}-7fd4e-[a-z0-9]{15}')
 pipeline_template_uuid_pattern = re.compile(r'[a-z0-9]{5}-p5p6p-[a-z0-9]{15}')
 
