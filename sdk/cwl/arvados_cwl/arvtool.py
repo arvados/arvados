@@ -6,7 +6,6 @@ from cwltool.command_line_tool import CommandLineTool
 from .arvjob import ArvadosJob
 from .arvcontainer import ArvadosContainer
 from .pathmapper import ArvPathMapper
-from .context import ClusterTarget
 from functools import partial
 from schema_salad.sourceline import SourceLine
 from cwltool.errors import WorkflowException

@@ -123,12 +123,14 @@ class ArvadosWorkflowStep(WorkflowStep):
                  toolpath_object,      # type: Dict[Text, Any]
                  pos,                  # type: int
                  loadingContext,       # type: LoadingContext
+                 arvrunner,
                  *argc,
                  **argv
                 ):  # type: (...) -> None
 
         super(ArvadosWorkflowStep, self).__init__(toolpath_object, pos, loadingContext, *argc, **argv)
         self.tool["class"] = "WorkflowStep"
+        self.arvrunner = arvrunner
 
     def job(self, joborder, output_callback, runtimeContext):
         builder = self._init_job({shortname(k): v for k,v in joborder.items()}, runtimeContext)
@@ -308,4 +310,4 @@ class ArvadosWorkflow(Workflow):
                            **argv
     ):
         # (...) -> WorkflowStep
-        return ArvadosWorkflowStep(toolpath_object, pos, loadingContext, *argc, **argv)
+        return ArvadosWorkflowStep(toolpath_object, pos, loadingContext, self.arvrunner, *argc, **argv)
