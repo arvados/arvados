@@ -11,9 +11,8 @@ requirements:
   DockerRequirement:
     dockerPull: arvados/fed-test:runner-remote-step-home
 inputs:
-  inp:
-    type: File
-    inputBinding: {}
+  inp: File
+  runOnCluster: string
 outputs:
   hash:
     type: File
@@ -22,6 +21,7 @@ steps:
   md5sum:
     in:
       inp: inp
+      runOnCluster: runOnCluster
     out: [hash]
     hints:
       arv:ClusterTarget:

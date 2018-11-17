@@ -60,6 +60,12 @@ outputs:
   threestep-remote-success:
     type: Any
     outputSource: threestep-remote/success
+  hint-on-wf-success:
+    type: Any
+    outputSource: hint-on-wf/success
+  hint-on-tool-success:
+    type: Any
+    outputSource: hint-on-tool/success
 
 steps:
   base-case:
@@ -495,9 +501,9 @@ steps:
       scrub_image: {default: "arvados/fed-test:hint-on-wf"}
       scrub_collections:
         default:
-          - 3bc373e38751fe13dcbd62778d583242+81   # input collection
-          - 428e6d91e41a3af3ae287b453949e7fd+51   # md5sum output collection
-          - a4b0ddd866525655e8480f83a1ca83c6+112  # runner output json
+          - 862433f328041b2525c90b1dc3c462fd+62   # input collection
+          - 9a68b0b9720977faba8a28e75a4398b7+51   # md5sum output collection
+          - 6a601cddb36ee2f766783b1aa9ff8d66+112  # runner output json
     out: [out, success]
     run: framework/testcase.cwl
 
@@ -532,8 +538,8 @@ steps:
       scrub_image: {default: "arvados/fed-test:hint-on-tool"}
       scrub_collections:
         default:
-          - 3bc373e38751fe13dcbd62778d583242+81   # input collection
-          - 428e6d91e41a3af3ae287b453949e7fd+51   # md5sum output collection
-          - a4b0ddd866525655e8480f83a1ca83c6+112  # runner output json
+          - 6803004a4f8db9f8d1d54f6229851599+64   # input collection
+          - cacb0d56235564b5ff485c5b31215ab5+51   # md5sum output collection
+          - 2b50af43fdd84a9e906be2d54b92cddf+112  # runner output json
     out: [out, success]
     run: framework/testcase.cwl
