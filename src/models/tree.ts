@@ -120,19 +120,19 @@ export const mapIdsToNodes = (ids: string[]) => <T>(tree: Tree<T>) =>
     ids.map(id => getNode(id)(tree)).filter((node): node is TreeNode<T> => node !== undefined);
 
 export const activateNode = (id: string) => <T>(tree: Tree<T>) =>
-    mapTree(node => node.id === id ? { ...node, active: true } : { ...node, active: false })(tree);
+    mapTree((node: TreeNode<T>) => node.id === id ? { ...node, active: true } : { ...node, active: false })(tree);
 
 export const deactivateNode = <T>(tree: Tree<T>) =>
-    mapTree(node => node.active ? { ...node, active: false } : node)(tree);
+    mapTree((node: TreeNode<T>) => node.active ? { ...node, active: false } : node)(tree);
 
 export const expandNode = (...ids: string[]) => <T>(tree: Tree<T>) =>
-    mapTree(node => ids.some(id => id === node.id) ? { ...node, expanded: true } : node)(tree);
+    mapTree((node: TreeNode<T>) => ids.some(id => id === node.id) ? { ...node, expanded: true } : node)(tree);
 
 export const collapseNode = (...ids: string[]) => <T>(tree: Tree<T>) =>
-    mapTree(node => ids.some(id => id === node.id) ? { ...node, expanded: false } : node)(tree);
+    mapTree((node: TreeNode<T>) => ids.some(id => id === node.id) ? { ...node, expanded: false } : node)(tree);
 
 export const toggleNodeCollapse = (...ids: string[]) => <T>(tree: Tree<T>) =>
-    mapTree(node => ids.some(id => id === node.id) ? { ...node, expanded: !node.expanded } : node)(tree);
+    mapTree((node: TreeNode<T>) => ids.some(id => id === node.id) ? { ...node, expanded: !node.expanded } : node)(tree);
 
 export const setNodeStatus = (id: string) => (status: TreeNodeStatus) => <T>(tree: Tree<T>) => {
     const node = getNode(id)(tree);
