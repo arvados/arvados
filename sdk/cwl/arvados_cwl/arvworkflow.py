@@ -133,6 +133,9 @@ class ArvadosWorkflowStep(WorkflowStep):
         self.arvrunner = arvrunner
 
     def job(self, joborder, output_callback, runtimeContext):
+        runtimeContext = runtimeContext.copy()
+        runtimeContext.toplevel = True  # Preserve behavior for #13365
+
         builder = self._init_job({shortname(k): v for k,v in joborder.items()}, runtimeContext)
         runtimeContext = set_cluster_target(self.tool, self.arvrunner, builder, runtimeContext)
         return super(ArvadosWorkflowStep, self).job(joborder, output_callback, runtimeContext)

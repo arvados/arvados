@@ -57,15 +57,7 @@ class ArvadosCommandTool(CommandLineTool):
                                  "$(task.keep)/%s/%s")
 
     def job(self, joborder, output_callback, runtimeContext):
-
-        # Workaround for #13365
-        builderargs = runtimeContext.copy()
-        builderargs.toplevel = True
-        builderargs.tmp_outdir_prefix = ""
-        builder = self._init_job(joborder, builderargs)
-        joborder = builder.job
-
-        runtimeContext = runtimeContext.copy()
+        builder = self._init_job(joborder, runtimeContext)
         runtimeContext = set_cluster_target(self.tool, self.arvrunner, builder, runtimeContext)
 
         if runtimeContext.work_api == "containers":
