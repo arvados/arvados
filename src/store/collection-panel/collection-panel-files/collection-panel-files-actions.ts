@@ -39,7 +39,7 @@ export const removeCollectionFiles = (filePaths: string[]) =>
         if (currentCollection) {
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing...' }));
             try {
-                await services.collectionService.deleteFiles(currentCollection.uuid, filePaths);
+                await services.collectionService.deleteFiles('', filePaths);
                 dispatch<any>(loadCollectionFiles(currentCollection.uuid));
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000 }));
             } catch (e) {
