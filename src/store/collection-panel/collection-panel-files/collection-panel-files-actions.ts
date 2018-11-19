@@ -7,7 +7,7 @@ import { Dispatch } from "redux";
 import { CollectionFilesTree, CollectionFileType } from "~/models/collection-file";
 import { ServiceRepository } from "~/services/services";
 import { RootState } from "../../store";
-import { snackbarActions } from "../../snackbar/snackbar-actions";
+import { snackbarActions, SnackbarKind } from "../../snackbar/snackbar-actions";
 import { dialogActions } from '../../dialog/dialog-actions';
 import { getNodeValue } from "~/models/tree";
 import { filterCollectionFilesBySelection } from './collection-panel-files-state';
@@ -37,10 +37,18 @@ export const removeCollectionFiles = (filePaths: string[]) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const currentCollection = getState().collectionPanel.item;
         if (currentCollection) {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...' }));
-            await services.collectionService.deleteFiles(currentCollection.uuid, filePaths);
-            dispatch<any>(loadCollectionFiles(currentCollection.uuid));
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000 }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing...' }));
+            try {
+                await services.collectionService.deleteFiles(currentCollection.uuid, filePaths);
+                dispatch<any>(loadCollectionFiles(currentCollection.uuid));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000 }));
+            } catch (e) {
+                dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: 'Could not remove file.',
+                    hideDuration: 2000,
+                    kind: SnackbarKind.ERROR
+                }));
+            }
         }
     };
 

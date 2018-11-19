@@ -52,7 +52,7 @@ export const submitCollectionFiles = () =>
                     hideDuration: 2000,
                     kind: SnackbarKind.ERROR
                 }));
-                dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_UPLOAD_FILES_DIALOG));                
+                dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_UPLOAD_FILES_DIALOG));
             }
         }
     };

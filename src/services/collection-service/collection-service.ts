@@ -62,7 +62,6 @@ export class CollectionService extends TrashableResourceService<CollectionResour
 
     private async uploadFile(collectionUuid: string, file: File, fileId: number, onProgress: UploadProgress = () => { return; }) {
         const fileURL = `c=${collectionUuid}/${file.name}`;
-        const fileContent = await fileToArrayBuffer(file);
         const requestConfig = {
             headers: {
                 'Content-Type': 'text/octet-stream'
@@ -71,8 +70,7 @@ export class CollectionService extends TrashableResourceService<CollectionResour
                 onProgress(fileId, e.loaded, e.total, Date.now());
             }
         };
-        return this.webdavClient.put(fileURL, fileContent, requestConfig);
-
+        return this.webdavClient.upload(fileURL, '', [file], requestConfig);
     }
 
     update(uuid: string, data: Partial<CollectionResource>) {
