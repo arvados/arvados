@@ -48,6 +48,7 @@ import { SharingDialog } from '~/views-components/sharing-dialog/sharing-dialog'
 import { AdvancedTabDialog } from '~/views-components/advanced-tab-dialog/advanced-tab-dialog';
 import { ProcessInputDialog } from '~/views-components/process-input-dialog/process-input-dialog';
 import { ProjectPropertiesDialog } from '~/views-components/project-properties-dialog/project-properties-dialog';
+import { RepositoriesPanel } from '~/views/repositories-panel/repositories-panel';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -117,6 +118,7 @@ export const WorkbenchPanel =
                                 <Route path={Routes.RUN_PROCESS} component={RunProcessPanel} />
                                 <Route path={Routes.WORKFLOWS} component={WorkflowPanel} />
                                 <Route path={Routes.SEARCH_RESULTS} component={SearchResultsPanel} />
+                                <Route path={Routes.REPOSITORIES} component={RepositoriesPanel} />
                             </Switch>
                         </Grid>
                     </Grid>

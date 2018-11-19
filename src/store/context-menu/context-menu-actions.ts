@@ -12,7 +12,6 @@ import { ProjectResource } from '~/models/project';
 import { UserResource } from '~/models/user';
 import { isSidePanelTreeCategory } from '~/store/side-panel-tree/side-panel-tree-actions';
 import { extractUuidKind, ResourceKind } from '~/models/resource';
-import { matchProcessRoute } from '~/routes/routes';
 import { Process } from '~/store/processes/process';
 
 export const contextMenuActions = unionize({
@@ -57,6 +56,17 @@ export const openCollectionFilesContextMenu = (event: React.MouseEvent<HTMLEleme
             ownerUuid: '',
             kind: ResourceKind.COLLECTION,
             menuKind: isCollectionFileSelected ? ContextMenuKind.COLLECTION_FILES : ContextMenuKind.COLLECTION_FILES_NOT_SELECTED
+        }));
+    };
+
+export const openRepositoryContextMenu = (event: React.MouseEvent<HTMLElement>) =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        dispatch<any>(openContextMenu(event, {
+            name: '',
+            uuid: '',
+            ownerUuid: '',
+            kind: ResourceKind.REPOSITORY,
+            menuKind: ContextMenuKind.REPOSITORY
         }));
     };
 

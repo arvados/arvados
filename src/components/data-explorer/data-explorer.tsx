@@ -4,13 +4,13 @@
 
 import * as React from 'react';
 import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, WithStyles, TablePagination, IconButton, Tooltip } from '@material-ui/core';
-import MoreVertIcon from "@material-ui/icons/MoreVert";
 import { ColumnSelector } from "../column-selector/column-selector";
 import { DataTable, DataColumns } from "../data-table/data-table";
 import { DataColumn, SortDirection } from "../data-table/data-column";
 import { DataTableFilterItem } from '../data-table-filters/data-table-filters';
 import { SearchInput } from '../search-input/search-input';
 import { ArvadosTheme } from "~/common/custom-theme";
+import { MoreOptionsIcon } from '~/components/icon/icon';
 
 type CssRules = 'searchBox' | "toolbar" | "footer" | "root" | 'moreOptionsButton';
 
@@ -127,7 +127,7 @@ export const DataExplorer = withStyles(styles)(
             <Grid container justify="center">
                 <Tooltip title="More options" disableFocusListener>
                     <IconButton className={this.props.classes.moreOptionsButton} onClick={event => this.props.onContextMenu(event, item)}>
-                        <MoreVertIcon />
+                        <MoreOptionsIcon />
                     </IconButton>
                 </Tooltip>
             </Grid>

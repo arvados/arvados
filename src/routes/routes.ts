@@ -16,6 +16,7 @@ export const Routes = {
     FAVORITES: '/favorites',
     TRASH: '/trash',
     PROCESS_LOGS: `/process-logs/:id(${RESOURCE_UUID_PATTERN})`,
+    REPOSITORIES: '/repositories',
     SHARED_WITH_ME: '/shared-with-me',
     RUN_PROCESS: '/run-process',
     WORKFLOWS: '/workflows',
@@ -70,9 +71,12 @@ export const matchSharedWithMeRoute = (route: string) =>
 
 export const matchRunProcessRoute = (route: string) =>
     matchPath(route, { path: Routes.RUN_PROCESS });
-    
+
 export const matchWorkflowRoute = (route: string) =>
     matchPath<ResourceRouteParams>(route, { path: Routes.WORKFLOWS });
 
 export const matchSearchResultsRoute = (route: string) =>
     matchPath<ResourceRouteParams>(route, { path: Routes.SEARCH_RESULTS });
+
+export const matchRepositoriesRoute = (route: string) =>
+    matchPath<ResourceRouteParams>(route, { path: Routes.REPOSITORIES });

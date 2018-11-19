@@ -10,7 +10,8 @@ import { UserPanelIcon } from "~/components/icon/icon";
 import { DispatchProp, connect } from 'react-redux';
 import { logout } from "~/store/auth/auth-action";
 import { RootState } from "~/store/store";
-import { openCurrentTokenDialog } from '../../store/current-token-dialog/current-token-dialog-actions';
+import { openCurrentTokenDialog } from '~/store/current-token-dialog/current-token-dialog-actions';
+import { openRepositoriesPanel } from "~/store/repositories/repositories-actions";
 
 interface AccountMenuProps {
     user?: User;
@@ -30,6 +31,7 @@ export const AccountMenu = connect(mapStateToProps)(
                 <MenuItem>
                     {getUserFullname(user)}
                 </MenuItem>
+                <MenuItem onClick={() => dispatch(openRepositoriesPanel())}>Repositories</MenuItem>
                 <MenuItem onClick={() => dispatch(openCurrentTokenDialog)}>Current token</MenuItem>
                 <MenuItem>My account</MenuItem>
                 <MenuItem onClick={() => dispatch(logout())}>Logout</MenuItem>
