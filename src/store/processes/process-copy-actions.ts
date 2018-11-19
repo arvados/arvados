@@ -11,6 +11,7 @@ import { ServiceRepository } from '~/services/services';
 import { CopyFormDialogData } from '~/store/copy-dialog/copy-dialog';
 import { getProcess, ProcessStatus, getProcessStatus } from '~/store/processes/process';
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
+import { initProjectsTreePicker } from '~/store/tree-picker/tree-picker-actions';
 
 export const PROCESS_COPY_FORM_NAME = 'processCopyFormName';
 
@@ -21,6 +22,7 @@ export const openCopyProcessDialog = (resource: { name: string, uuid: string }) 
             const processStatus = getProcessStatus(process);
             if (processStatus === ProcessStatus.DRAFT) {
                 dispatch<any>(resetPickerProjectTree());
+                dispatch<any>(initProjectsTreePicker(PROCESS_COPY_FORM_NAME));
                 const initialData: CopyFormDialogData = { name: `Copy of: ${resource.name}`, uuid: resource.uuid, ownerUuid: '' };
                 dispatch<any>(initialize(PROCESS_COPY_FORM_NAME, initialData));
                 dispatch(dialogActions.OPEN_DIALOG({ id: PROCESS_COPY_FORM_NAME, data: {} }));

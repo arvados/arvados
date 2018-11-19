@@ -10,6 +10,7 @@ import { detailsPanelActions } from "~/store/details-panel/details-panel-action"
 import { connect } from 'react-redux';
 import { RootState } from '~/store/store';
 import { matchWorkflowRoute } from '~/routes/routes';
+import { toggleDetailsPanel } from '~/store/details-panel/details-panel-action';
 
 interface MainContentBarProps {
     onDetailsPanelToggle: () => void;
@@ -25,7 +26,7 @@ const isWorkflowPath = ({ router }: RootState) => {
 export const MainContentBar = connect((state: RootState) => ({
     buttonVisible: !isWorkflowPath(state)
 }), {
-        onDetailsPanelToggle: detailsPanelActions.TOGGLE_DETAILS_PANEL
+        onDetailsPanelToggle: toggleDetailsPanel
     })((props: MainContentBarProps) =>
         <Toolbar>
             <Grid container>

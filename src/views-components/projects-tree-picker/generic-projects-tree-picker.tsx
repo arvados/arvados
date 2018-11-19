@@ -5,6 +5,7 @@
 import * as React from "react";
 import { Dispatch } from "redux";
 import { connect } from "react-redux";
+import { isEqual } from 'lodash/fp';
 import { TreeItem, TreeItemStatus } from '~/components/tree/tree';
 import { ProjectResource } from "~/models/project";
 import { treePickerActions } from "~/store/tree-picker/tree-picker-actions";
@@ -29,6 +30,8 @@ export interface ProjectsTreePickerDataProps {
     includeFiles?: boolean;
     rootItemIcon: IconType;
     showSelection?: boolean;
+    relatedTreePickers?: string[];
+    disableActivation?: string[];
     loadRootItem: (item: TreeItem<ProjectsTreePickerRootItem>, pickerId: string, includeCollections?: boolean, inlcudeFiles?: boolean) => void;
 }
 
@@ -39,10 +42,16 @@ const mapStateToProps = (_: any, { rootItemIcon, showSelection }: ProjectsTreePi
     showSelection: isSelectionVisible(showSelection),
 });
 
-const mapDispatchToProps = (dispatch: Dispatch, { loadRootItem, includeCollections, includeFiles, ...props }: ProjectsTreePickerProps): PickedTreePickerProps => ({
+const mapDispatchToProps = (dispatch: Dispatch, { loadRootItem, includeCollections, includeFiles, relatedTreePickers, ...props }: ProjectsTreePickerProps): PickedTreePickerProps => ({
     onContextMenu: () => { return; },
     toggleItemActive: (event, item, pickerId) => {
-        dispatch(treePickerActions.ACTIVATE_TREE_PICKER_NODE({ id: item.id, pickerId }));
+        
+        const { disableActivation = [] } = props;
+        if(disableActivation.some(isEqual(item.id))){
+            return;
+        }
+
+        dispatch(treePickerActions.ACTIVATE_TREE_PICKER_NODE({ id: item.id, pickerId, relatedTreePickers }));
         if (props.toggleItemActive) {
             props.toggleItemActive(event, item, pickerId);
         }
@@ -65,7 +74,7 @@ const mapDispatchToProps = (dispatch: Dispatch, { loadRootItem, includeCollectio
     },
     toggleItemSelection: (event, item, pickerId) => {
         dispatch<any>(treePickerActions.TOGGLE_TREE_PICKER_NODE_SELECTION({ id: item.id, pickerId }));
-        if(props.toggleItemSelection){
+        if (props.toggleItemSelection) {
             props.toggleItemSelection(event, item, pickerId);
         }
     },

@@ -35,6 +35,7 @@ import { MoveCollectionDialog } from '~/views-components/dialog-forms/move-colle
 import { FilesUploadCollectionDialog } from '~/views-components/dialog-forms/files-upload-collection-dialog';
 import { PartialCopyCollectionDialog } from '~/views-components/dialog-forms/partial-copy-collection-dialog';
 import { ProcessCommandDialog } from '~/views-components/process-command-dialog/process-command-dialog';
+import { RemoveProcessDialog } from '~/views-components/process-remove-dialog/process-remove-dialog';
 import { MainContentBar } from '~/views-components/main-content-bar/main-content-bar';
 import { Grid } from '@material-ui/core';
 import { TrashPanel } from "~/views/trash-panel/trash-panel";
@@ -46,6 +47,7 @@ import { SearchResultsPanel } from '~/views/search-results-panel/search-results-
 import { SharingDialog } from '~/views-components/sharing-dialog/sharing-dialog';
 import { AdvancedTabDialog } from '~/views-components/advanced-tab-dialog/advanced-tab-dialog';
 import { ProcessInputDialog } from '~/views-components/process-input-dialog/process-input-dialog';
+import { ProjectPropertiesDialog } from '~/views-components/project-properties-dialog/project-properties-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -140,6 +142,8 @@ export const WorkbenchPanel =
             <PartialCopyCollectionDialog />
             <ProcessCommandDialog />
             <ProcessInputDialog />
+            <ProjectPropertiesDialog />
+            <RemoveProcessDialog />
             <RenameFileDialog />
             <RichTextEditorDialog />
             <SharingDialog />
