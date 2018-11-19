@@ -33,10 +33,6 @@ export class DataTableFiltersTree extends React.Component<DataTableFilterProps> 
         />;
     }
 
-    renderItem(item: TreeItem<DataTableFilterItem>) {
-        return <span>{item.data.name}</span>;
-    }
-
     toggleFilter = (_: React.MouseEvent, item: TreeItem<DataTableFilterItem>) => {
         const { onChange = noop } = this.props;
         onChange(toggleNodeSelection(item.id)(this.props.filters));
