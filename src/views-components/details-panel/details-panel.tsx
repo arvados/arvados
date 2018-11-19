@@ -10,7 +10,6 @@ import { ArvadosTheme } from '~/common/custom-theme';
 import * as classnames from "classnames";
 import { connect } from 'react-redux';
 import { RootState } from '~/store/store';
-import { detailsPanelActions } from "~/store/details-panel/details-panel-action";
 import { CloseIcon } from '~/components/icon/icon';
 import { EmptyResource } from '~/models/empty';
 import { Dispatch } from "redux";
@@ -24,11 +23,11 @@ import { DetailsResource } from "~/models/details";
 import { getResource } from '~/store/resources/resources';
 import { ResourceData } from "~/store/resources-data/resources-data-reducer";
 import { getResourceData } from "~/store/resources-data/resources-data";
+import { toggleDetailsPanel, SLIDE_TIMEOUT } from '~/store/details-panel/details-panel-action';
 
 type CssRules = 'root' | 'container' | 'opened' | 'headerContainer' | 'headerIcon' | 'tabContainer';
 
 const DRAWER_WIDTH = 320;
-const SLIDE_TIMEOUT = 500;
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         background: theme.palette.background.paper,
@@ -84,7 +83,7 @@ const mapStateToProps = ({ detailsPanel, resources, resourcesData }: RootState) 
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
     onCloseDrawer: () => {
-        dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
+        dispatch<any>(toggleDetailsPanel());
     }
 });
 

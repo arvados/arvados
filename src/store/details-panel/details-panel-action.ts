@@ -14,6 +14,8 @@ import { startSubmit, stopSubmit } from 'redux-form';
 import { resourcesActions } from '~/store/resources/resources-actions';
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
 
+export const SLIDE_TIMEOUT = 500;
+
 export const detailsPanelActions = unionize({
     TOGGLE_DETAILS_PANEL: ofType<{}>(),
     LOAD_DETAILS_PANEL: ofType<string>()
@@ -67,3 +69,11 @@ export const createProjectProperty = (data: TagProperty) =>
             throw new Error('Could not add property to the project.');
         }
     };
+export const toggleDetailsPanel = () => (dispatch: Dispatch) => {
+    // because of material-ui issue resizing details panel breaks tabs.
+    // triggering window resize event fixes that.
+    setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+    }, SLIDE_TIMEOUT);
+    dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
+};

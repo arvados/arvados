@@ -13,6 +13,7 @@ import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
 import { resetPickerProjectTree } from '~/store/project-tree-picker/project-tree-picker-actions';
 import { projectPanelActions } from '~/store/project-panel/project-panel-action';
 import { getProcess, getProcessStatus, ProcessStatus } from '~/store/processes/process';
+import { initProjectsTreePicker } from '~/store/tree-picker/tree-picker-actions';
 
 export const PROCESS_MOVE_FORM_NAME = 'processMoveFormName';
 
@@ -23,6 +24,7 @@ export const openMoveProcessDialog = (resource: { name: string, uuid: string }) 
             const processStatus = getProcessStatus(process);
             if (processStatus === ProcessStatus.DRAFT) {
                 dispatch<any>(resetPickerProjectTree());
+                dispatch<any>(initProjectsTreePicker(PROCESS_MOVE_FORM_NAME));
                 dispatch(initialize(PROCESS_MOVE_FORM_NAME, resource));
                 dispatch(dialogActions.OPEN_DIALOG({ id: PROCESS_MOVE_FORM_NAME, data: {} }));
             } else {
