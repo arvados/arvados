@@ -26,8 +26,10 @@ def set_cluster_target(tool, arvrunner, builder, runtimeContext):
         runtimeContext = runtimeContext.copy()
         runtimeContext.submit_runner_cluster = builder.do_eval(cluster_target_req.get("cluster_id")) or runtimeContext.submit_runner_cluster
         runtimeContext.project_uuid = builder.do_eval(cluster_target_req.get("project_uuid")) or runtimeContext.project_uuid
-        if runtimeContext.submit_runner_cluster and runtimeContext.submit_runner_cluster not in arvrunner.api._rootDesc["remoteHosts"]:
-            raise WorkflowException("Unknown or invalid cluster id '%s' known clusters are %s" % (runtimeContext.submit_runner_cluster,
+        if (runtimeContext.submit_runner_cluster and
+            runtimeContext.submit_runner_cluster not in arvrunner.api._rootDesc["remoteHosts"] and
+            runtimeContext.submit_runner_cluster != arvrunner.api._rootDesc["uuidPrefix"]):
+            raise WorkflowException("Unknown or invalid cluster id '%s' known remote clusters are %s" % (runtimeContext.submit_runner_cluster,
                                                                                                       ", ".join(arvrunner.api._rootDesc["remoteHosts"].keys())))
     return runtimeContext
 
