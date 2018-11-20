@@ -159,6 +159,10 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                          default=None,
                          metavar="CLUSTER_ID")
 
+    parser.add_argument("--collection-cache", type=int,
+                        default=256*1024*1024,
+                        help="Collection caches size.")
+
     parser.add_argument("--name", type=str,
                         help="Name to use for workflow execution instance.",
                         default=None)
