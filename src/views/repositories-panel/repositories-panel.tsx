@@ -11,7 +11,7 @@ import { Link } from 'react-router-dom';
 import { Dispatch, compose } from 'redux';
 import { RootState } from '~/store/store';
 import { HelpIcon, AddIcon, MoreOptionsIcon } from '~/components/icon/icon';
-import { loadRepositoriesData } from '~/store/repositories/repositories-actions';
+import { loadRepositoriesData, openRepositoriesSampleGitDialog } from '~/store/repositories/repositories-actions';
 import { RepositoriesResource } from '~/models/repositories';
 import { openRepositoryContextMenu } from '~/store/context-menu/context-menu-actions';
 
@@ -63,16 +63,18 @@ const mapStateToProps = (state: RootState) => {
     };
 };
 
-const mapDispatchToProps = (dispatch: Dispatch): Pick<RepositoriesActionProps, 'onOptionsMenuOpen' | 'loadRepositories'> => ({
+const mapDispatchToProps = (dispatch: Dispatch): Pick<RepositoriesActionProps, 'onOptionsMenuOpen' | 'loadRepositories' | 'openRepositoriesSampleGitDialog'> => ({
     loadRepositories: () => dispatch<any>(loadRepositoriesData()),
-    onOptionsMenuOpen: (event) => {
-        dispatch<any>(openRepositoryContextMenu(event));
+    onOptionsMenuOpen: (event, index, repository) => {
+        dispatch<any>(openRepositoryContextMenu(event, index, repository));
     },
+    openRepositoriesSampleGitDialog: () => dispatch<any>(openRepositoriesSampleGitDialog())
 });
 
 interface RepositoriesActionProps {
     loadRepositories: () => void;
-    onOptionsMenuOpen: (event: React.MouseEvent<HTMLElement>) => void;
+    onOptionsMenuOpen: (event: React.MouseEvent<HTMLElement>, index: number, repository: RepositoriesResource) => void;
+    openRepositoriesSampleGitDialog: () => void;
 }
 
 interface RepositoriesDataProps {
@@ -90,7 +92,7 @@ export const RepositoriesPanel = compose(
                 this.props.loadRepositories();
             }
             render() {
-                const { classes, repositories, onOptionsMenuOpen } = this.props;
+                const { classes, repositories, onOptionsMenuOpen, openRepositoriesSampleGitDialog } = this.props;
                 console.log(repositories);
                 return (
                     <Card>
@@ -111,7 +113,7 @@ export const RepositoriesPanel = compose(
                             <Grid item xs={12}>
                                 <div className={classes.iconRow}>
                                     <Tooltip title="Sample git quick start">
-                                        <IconButton className={classes.moreOptionsButton}>
+                                        <IconButton className={classes.moreOptionsButton} onClick={openRepositoriesSampleGitDialog}>
                                             <HelpIcon className={classes.icon} />
                                         </IconButton>
                                     </Tooltip>
@@ -133,7 +135,7 @@ export const RepositoriesPanel = compose(
                                                 <TableCell className={classes.cloneUrls}>{repository.cloneUrls.join("\n")}</TableCell>
                                                 <TableCell className={classes.moreOptions}>
                                                     <Tooltip title="More options" disableFocusListener>
-                                                        <IconButton onClick={onOptionsMenuOpen} className={classes.moreOptionsButton}>
+                                                        <IconButton onClick={event => onOptionsMenuOpen(event, index, repository)} className={classes.moreOptionsButton}>
                                                             <MoreOptionsIcon />
                                                         </IconButton>
                                                     </Tooltip>

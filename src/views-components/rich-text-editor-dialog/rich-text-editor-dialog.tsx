@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from "react";
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, DialogContentText } from "@material-ui/core";
-import { WithDialogProps } from "../../store/dialog/with-dialog";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@material-ui/core";
+import { WithDialogProps } from "~/store/dialog/with-dialog";
 import { withDialog } from '~/store/dialog/with-dialog';
 import { RICH_TEXT_EDITOR_DIALOG_NAME } from "~/store/rich-text-editor-dialog/rich-text-editor-dialog-actions";
 import RichTextEditor from 'react-rte';

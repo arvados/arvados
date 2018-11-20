@@ -8,14 +8,22 @@ import { RootState } from '~/store/store';
 import { ServiceRepository } from "~/services/services";
 import { navigateToRepositories } from "~/store/navigation/navigation-action";
 import { unionize, ofType, UnionOf } from "~/common/unionize";
+import { dialogActions } from '~/store/dialog/dialog-actions';
 
 export const repositoriesActions = unionize({
     SET_REPOSITORIES: ofType<any>(),
 });
 
- export type RepositoriesActions = UnionOf<typeof repositoriesActions>;
+export type RepositoriesActions = UnionOf<typeof repositoriesActions>;
 
 export const REPOSITORIES_PANEL = 'repositoriesPanel';
+export const REPOSITORIES_SAMPLE_GIT_NAME = 'repositoriesSampleGit';
+
+export const openRepositoriesSampleGitDialog = () =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const uuidPrefix = getState().properties.uuidPrefix;
+        dispatch(dialogActions.OPEN_DIALOG({ id: REPOSITORIES_SAMPLE_GIT_NAME, data: { uuidPrefix } }));
+    };
 
 const repositoriesBindedActions = bindDataExplorerActions(REPOSITORIES_PANEL);
 

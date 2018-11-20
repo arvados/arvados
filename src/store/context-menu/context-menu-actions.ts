@@ -13,6 +13,7 @@ import { UserResource } from '~/models/user';
 import { isSidePanelTreeCategory } from '~/store/side-panel-tree/side-panel-tree-actions';
 import { extractUuidKind, ResourceKind } from '~/models/resource';
 import { Process } from '~/store/processes/process';
+import { RepositoriesResource } from '~/models/repositories';
 
 export const contextMenuActions = unionize({
     OPEN_CONTEXT_MENU: ofType<{ position: ContextMenuPosition, resource: ContextMenuResource }>(),
@@ -29,6 +30,7 @@ export type ContextMenuResource = {
     kind: ResourceKind,
     menuKind: ContextMenuKind;
     isTrashed?: boolean;
+    index?: number
 };
 export const isKeyboardClick = (event: React.MouseEvent<HTMLElement>) =>
     event.nativeEvent.detail === 0;
@@ -59,15 +61,16 @@ export const openCollectionFilesContextMenu = (event: React.MouseEvent<HTMLEleme
         }));
     };
 
-export const openRepositoryContextMenu = (event: React.MouseEvent<HTMLElement>) =>
+export const openRepositoryContextMenu = (event: React.MouseEvent<HTMLElement>, index: number, repository: RepositoriesResource) =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        dispatch<any>(openContextMenu(event, {
-            name: '',
-            uuid: '',
-            ownerUuid: '',
-            kind: ResourceKind.REPOSITORY,
-            menuKind: ContextMenuKind.REPOSITORY
-        }));
+            dispatch<any>(openContextMenu(event, {
+                name: '',
+                uuid: repository.uuid,
+                ownerUuid: repository.ownerUuid,
+                kind: ResourceKind.REPOSITORY,
+                menuKind: ContextMenuKind.REPOSITORY,
+                index
+            }));
     };
 
 export const openRootProjectContextMenu = (event: React.MouseEvent<HTMLElement>, projectUuid: string) =>

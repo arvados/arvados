@@ -14,6 +14,7 @@ import { CollectionResource } from '~/models/collection';
 import { ProjectResource } from '~/models/project';
 import { ServiceRepository } from '~/services/services';
 import { FilterBuilder } from '~/services/api/filter-builder';
+import { RepositoriesResource } from '~/models/repositories';
 
 export const ADVANCED_TAB_DIALOG = 'advancedTabDialog';
 
@@ -46,34 +47,46 @@ enum ProjectData {
     DELETE_AT = 'delete_at'
 }
 
-export const openAdvancedTabDialog = (uuid: string) =>
+enum RepositoryData {
+    REPOSITORY = 'repository',
+    CREATED_AT = 'created_at'
+}
+
+export const openAdvancedTabDialog = (uuid: string, index?: number) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const { resources } = getState();
         const kind = extractUuidKind(uuid);
         const data = getResource<any>(uuid)(resources);
-        const user = await services.userService.get(data.ownerUuid);
-        const metadata = await services.linkService.list({
-            filters: new FilterBuilder()
-                .addEqual('headUuid', uuid)
-                .getFilters()
-        });
-        if (data) {
-            if (kind === ResourceKind.COLLECTION) {
-                const dataCollection: AdvancedTabDialogData = advancedTabData(uuid, metadata, user, collectionApiResponse, data, CollectionData.COLLECTION, GroupContentsResourcePrefix.COLLECTION, CollectionData.STORAGE_CLASSES_CONFIRMED, data.storageClassesConfirmed);
-                dispatch(dialogActions.OPEN_DIALOG({ id: ADVANCED_TAB_DIALOG, data: dataCollection }));
-            } else if (kind === ResourceKind.PROCESS) {
-                const dataProcess: AdvancedTabDialogData = advancedTabData(uuid, metadata, user, containerRequestApiResponse, data, ProcessData.CONTAINER_REQUEST, GroupContentsResourcePrefix.PROCESS, ProcessData.OUTPUT_NAME, data.outputName);
-                dispatch(dialogActions.OPEN_DIALOG({ id: ADVANCED_TAB_DIALOG, data: dataProcess }));
-            } else if (kind === ResourceKind.PROJECT) {
-                const dataProject: AdvancedTabDialogData = advancedTabData(uuid, metadata, user, groupRequestApiResponse, data, ProjectData.GROUP, GroupContentsResourcePrefix.PROJECT, ProjectData.DELETE_AT, data.deleteAt);
-                dispatch(dialogActions.OPEN_DIALOG({ id: ADVANCED_TAB_DIALOG, data: dataProject }));
+        const repositoryData = getState().repositories.items[index!];
+        if (data || repositoryData) {
+            if (data) {
+                const user = await services.userService.get(data.ownerUuid);
+                const metadata = await services.linkService.list({
+                    filters: new FilterBuilder()
+                        .addEqual('headUuid', uuid)
+                        .getFilters()
+                });
+                if (kind === ResourceKind.COLLECTION) {
+                    const dataCollection: AdvancedTabDialogData = advancedTabData(uuid, metadata, user, collectionApiResponse, data, CollectionData.COLLECTION, GroupContentsResourcePrefix.COLLECTION, CollectionData.STORAGE_CLASSES_CONFIRMED, data.storageClassesConfirmed);
+                    dispatch(dialogActions.OPEN_DIALOG({ id: ADVANCED_TAB_DIALOG, data: dataCollection }));
+                } else if (kind === ResourceKind.PROCESS) {
+                    const dataProcess: AdvancedTabDialogData = advancedTabData(uuid, metadata, user, containerRequestApiResponse, data, ProcessData.CONTAINER_REQUEST, GroupContentsResourcePrefix.PROCESS, ProcessData.OUTPUT_NAME, data.outputName);
+                    dispatch(dialogActions.OPEN_DIALOG({ id: ADVANCED_TAB_DIALOG, data: dataProcess }));
+                } else if (kind === ResourceKind.PROJECT) {
+                    const dataProject: AdvancedTabDialogData = advancedTabData(uuid, metadata, user, groupRequestApiResponse, data, ProjectData.GROUP, GroupContentsResourcePrefix.PROJECT, ProjectData.DELETE_AT, data.deleteAt);
+                    dispatch(dialogActions.OPEN_DIALOG({ id: ADVANCED_TAB_DIALOG, data: dataProject }));
+                }
+
+            } else if (kind === ResourceKind.REPOSITORY) {
+                const dataRepository: AdvancedTabDialogData = advancedTabData(uuid, '', '', repositoryApiResponse, repositoryData, RepositoryData.REPOSITORY, 'repositories', RepositoryData.CREATED_AT, repositoryData.createdAt);
+                dispatch(dialogActions.OPEN_DIALOG({ id: ADVANCED_TAB_DIALOG, data: dataRepository }));
             }
         } else {
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Could not open advanced tab for this resource.", hideDuration: 2000, kind: SnackbarKind.ERROR }));
         }
     };
 
-const advancedTabData = (uuid: string, metadata: any, user: any, apiResponseKind: any, data: any, resourceKind: CollectionData | ProcessData | ProjectData, resourcePrefix: GroupContentsResourcePrefix, resourceKindProperty: CollectionData | ProcessData | ProjectData, property: any) => {
+const advancedTabData = (uuid: string, metadata: any, user: any, apiResponseKind: any, data: any, resourceKind: CollectionData | ProcessData | ProjectData | RepositoryData, resourcePrefix: GroupContentsResourcePrefix | 'repositories', resourceKindProperty: CollectionData | ProcessData | ProjectData | RepositoryData, property: any) => {
     return {
         uuid,
         user,
@@ -82,9 +95,9 @@ const advancedTabData = (uuid: string, metadata: any, user: any, apiResponseKind
         pythonHeader: pythonHeader(resourceKind),
         pythonExample: pythonExample(uuid, resourcePrefix),
         cliGetHeader: cliGetHeader(resourceKind),
-        cliGetExample: cliGetExample(uuid, resourcePrefix),
+        cliGetExample: cliGetExample(uuid, resourceKind),
         cliUpdateHeader: cliUpdateHeader(resourceKind, resourceKindProperty),
-        cliUpdateExample: cliUpdateExample(uuid, resourceKind, property, resourceKind),
+        cliUpdateExample: cliUpdateExample(uuid, resourceKind, property, resourceKindProperty),
         curlHeader: curlHeader(resourceKind, resourceKindProperty),
         curlExample: curlExample(uuid, resourcePrefix, property, resourceKind, resourceKindProperty),
     };
@@ -104,8 +117,8 @@ const pythonExample = (uuid: string, resourcePrefix: string) => {
 const cliGetHeader = (resourceKind: string) =>
     `An example arv command to get a ${resourceKind} using its uuid:`;
 
-const cliGetExample = (uuid: string, resourcePrefix: string) => {
-    const cliGetExample = `arv ${resourcePrefix} get \\
+const cliGetExample = (uuid: string, resourceKind: string) => {
+    const cliGetExample = `arv ${resourceKind} get \\
  --uuid ${uuid}`;
 
     return cliGetExample;
@@ -226,6 +239,19 @@ const groupRequestApiResponse = (apiResponse: ProjectResource) => {
 "is_trashed": ${stringify(isTrashed)},
 "delete_at": ${stringify(deleteAt)},
 "properties": ${stringifyObject(properties)}`;
+
+    return response;
+};
+
+const repositoryApiResponse = (apiResponse: RepositoriesResource) => {
+    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name } = apiResponse;
+    const response = `"uuid": "${uuid}",
+"owner_uuid": "${ownerUuid}",
+"modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
+"modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
+"modified_at": ${stringify(modifiedAt)},
+"name": ${stringify(name)},
+"created_at": "${createdAt}"`;
 
     return response;
 };

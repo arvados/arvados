@@ -49,6 +49,7 @@ import { AdvancedTabDialog } from '~/views-components/advanced-tab-dialog/advanc
 import { ProcessInputDialog } from '~/views-components/process-input-dialog/process-input-dialog';
 import { ProjectPropertiesDialog } from '~/views-components/project-properties-dialog/project-properties-dialog';
 import { RepositoriesPanel } from '~/views/repositories-panel/repositories-panel';
+import { RepositoriesSampleGitDialog } from '~/views-components/repositories-sample-git-dialog/repositories-sample-git-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -147,6 +148,7 @@ export const WorkbenchPanel =
             <ProjectPropertiesDialog />
             <RemoveProcessDialog />
             <RenameFileDialog />
+            <RepositoriesSampleGitDialog />
             <RichTextEditorDialog />
             <SharingDialog />
             <Snackbar />

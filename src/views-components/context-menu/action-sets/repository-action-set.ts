@@ -5,6 +5,7 @@
 import { ContextMenuActionSet } from "~/views-components/context-menu/context-menu-action-set";
 import { AdvancedIcon, RemoveIcon, ShareIcon } from "~/components/icon/icon";
 import { openFileRemoveDialog, openRenameFileDialog } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
+import { openAdvancedTabDialog } from "~/store/advanced-tab/advanced-tab";
 
 export const repositoryActionSet: ContextMenuActionSet = [[{
     name: "Attributes",
@@ -22,10 +23,9 @@ export const repositoryActionSet: ContextMenuActionSet = [[{
     name: "Advanced",
     icon: AdvancedIcon,
     execute: (dispatch, resource) => {
-        dispatch<any>(openFileRemoveDialog(resource.uuid));
+        dispatch<any>(openAdvancedTabDialog(resource.uuid, resource.index));
     }
-},
-{
+}, {
     name: "Remove",
     icon: RemoveIcon,
     execute: (dispatch, resource) => {
