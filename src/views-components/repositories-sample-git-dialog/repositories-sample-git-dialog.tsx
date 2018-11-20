@@ -6,7 +6,7 @@ import * as React from "react";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography } from "@material-ui/core";
 import { WithDialogProps } from "~/store/dialog/with-dialog";
 import { withDialog } from '~/store/dialog/with-dialog';
-import { REPOSITORIES_SAMPLE_GIT_NAME } from "~/store/repositories/repositories-actions";
+import { REPOSITORIES_SAMPLE_GIT_DIALOG } from "~/store/repositories/repositories-actions";
 import { DefaultCodeSnippet } from '~/components/default-code-snippet/default-code-snippet';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from '~/common/custom-theme';
@@ -40,7 +40,7 @@ interface RepositoriesSampleGitDataProps {
 type RepositoriesSampleGitProps = RepositoriesSampleGitDataProps & WithStyles<CssRules>;
 
 export const RepositoriesSampleGitDialog = compose(
-    withDialog(REPOSITORIES_SAMPLE_GIT_NAME),
+    withDialog(REPOSITORIES_SAMPLE_GIT_DIALOG),
     withStyles(styles))(
         (props: WithDialogProps<RepositoriesSampleGitProps> & RepositoriesSampleGitProps) =>
             <Dialog open={props.open}

@@ -13,7 +13,7 @@ import { UserResource } from '~/models/user';
 import { isSidePanelTreeCategory } from '~/store/side-panel-tree/side-panel-tree-actions';
 import { extractUuidKind, ResourceKind } from '~/models/resource';
 import { Process } from '~/store/processes/process';
-import { RepositoriesResource } from '~/models/repositories';
+import { RepositoryResource } from '~/models/repositories';
 
 export const contextMenuActions = unionize({
     OPEN_CONTEXT_MENU: ofType<{ position: ContextMenuPosition, resource: ContextMenuResource }>(),
@@ -61,7 +61,7 @@ export const openCollectionFilesContextMenu = (event: React.MouseEvent<HTMLEleme
         }));
     };
 
-export const openRepositoryContextMenu = (event: React.MouseEvent<HTMLElement>, index: number, repository: RepositoriesResource) =>
+export const openRepositoryContextMenu = (event: React.MouseEvent<HTMLElement>, index: number, repository: RepositoryResource) =>
     (dispatch: Dispatch, getState: () => RootState) => {
             dispatch<any>(openContextMenu(event, {
                 name: '',

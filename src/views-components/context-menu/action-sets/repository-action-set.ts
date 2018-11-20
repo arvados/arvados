@@ -3,15 +3,16 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { ContextMenuActionSet } from "~/views-components/context-menu/context-menu-action-set";
-import { AdvancedIcon, RemoveIcon, ShareIcon } from "~/components/icon/icon";
+import { AdvancedIcon, RemoveIcon, ShareIcon, AttributesIcon } from "~/components/icon/icon";
 import { openFileRemoveDialog, openRenameFileDialog } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
 import { openAdvancedTabDialog } from "~/store/advanced-tab/advanced-tab";
+import { openRepositoryAttributes } from "~/store/repositories/repositories-actions";
 
 export const repositoryActionSet: ContextMenuActionSet = [[{
     name: "Attributes",
-    icon: AdvancedIcon,
+    icon: AttributesIcon,
     execute: (dispatch, resource) => {
-        dispatch<any>(openRenameFileDialog({ name: resource.name, id: resource.uuid }));
+        dispatch<any>(openRepositoryAttributes(resource.index!));
     }
 }, {
     name: "Share",

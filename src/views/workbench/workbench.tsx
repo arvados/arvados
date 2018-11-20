@@ -50,6 +50,8 @@ import { ProcessInputDialog } from '~/views-components/process-input-dialog/proc
 import { ProjectPropertiesDialog } from '~/views-components/project-properties-dialog/project-properties-dialog';
 import { RepositoriesPanel } from '~/views/repositories-panel/repositories-panel';
 import { RepositoriesSampleGitDialog } from '~/views-components/repositories-sample-git-dialog/repositories-sample-git-dialog';
+import { RepositoryAttributesDialog } from '~/views-components/repository-attributes-dialog/repository-attributes-dialog';
+import { CreateRepositoryDialog } from '~/views-components/dialog-forms/create-repository-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -135,6 +137,7 @@ export const WorkbenchPanel =
             <CopyProcessDialog />
             <CreateCollectionDialog />
             <CreateProjectDialog />
+            <CreateRepositoryDialog />
             <CurrentTokenDialog />
             <FileRemoveDialog />
             <FilesUploadCollectionDialog />
@@ -148,6 +151,7 @@ export const WorkbenchPanel =
             <ProjectPropertiesDialog />
             <RemoveProcessDialog />
             <RenameFileDialog />
+            <RepositoryAttributesDialog />
             <RepositoriesSampleGitDialog />
             <RichTextEditorDialog />
             <SharingDialog />

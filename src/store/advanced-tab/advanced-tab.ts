@@ -14,7 +14,7 @@ import { CollectionResource } from '~/models/collection';
 import { ProjectResource } from '~/models/project';
 import { ServiceRepository } from '~/services/services';
 import { FilterBuilder } from '~/services/api/filter-builder';
-import { RepositoriesResource } from '~/models/repositories';
+import { RepositoryResource } from '~/models/repositories';
 
 export const ADVANCED_TAB_DIALOG = 'advancedTabDialog';
 
@@ -243,7 +243,7 @@ const groupRequestApiResponse = (apiResponse: ProjectResource) => {
     return response;
 };
 
-const repositoryApiResponse = (apiResponse: RepositoriesResource) => {
+const repositoryApiResponse = (apiResponse: RepositoryResource) => {
     const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name } = apiResponse;
     const response = `"uuid": "${uuid}",
 "owner_uuid": "${ownerUuid}",

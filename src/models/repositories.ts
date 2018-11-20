@@ -4,7 +4,7 @@
 
 import { Resource } from "~/models/resource";
 
-export interface RepositoriesResource extends Resource {
+export interface RepositoryResource extends Resource {
     name: string;
     cloneUrls: string[];
 }

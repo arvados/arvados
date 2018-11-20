@@ -11,8 +11,8 @@ import { Link } from 'react-router-dom';
 import { Dispatch, compose } from 'redux';
 import { RootState } from '~/store/store';
 import { HelpIcon, AddIcon, MoreOptionsIcon } from '~/components/icon/icon';
-import { loadRepositoriesData, openRepositoriesSampleGitDialog } from '~/store/repositories/repositories-actions';
-import { RepositoriesResource } from '~/models/repositories';
+import { loadRepositoriesData, openRepositoriesSampleGitDialog, openRepositoryCreateDialog } from '~/store/repositories/repositories-actions';
+import { RepositoryResource } from '~/models/repositories';
 import { openRepositoryContextMenu } from '~/store/context-menu/context-menu-actions';
 
 
@@ -63,22 +63,24 @@ const mapStateToProps = (state: RootState) => {
     };
 };
 
-const mapDispatchToProps = (dispatch: Dispatch): Pick<RepositoriesActionProps, 'onOptionsMenuOpen' | 'loadRepositories' | 'openRepositoriesSampleGitDialog'> => ({
+const mapDispatchToProps = (dispatch: Dispatch): Pick<RepositoriesActionProps, 'onOptionsMenuOpen' | 'loadRepositories' | 'openRepositoriesSampleGitDialog' | 'openRepositoryCreateDialog'> => ({
     loadRepositories: () => dispatch<any>(loadRepositoriesData()),
     onOptionsMenuOpen: (event, index, repository) => {
         dispatch<any>(openRepositoryContextMenu(event, index, repository));
     },
-    openRepositoriesSampleGitDialog: () => dispatch<any>(openRepositoriesSampleGitDialog())
+    openRepositoriesSampleGitDialog: () => dispatch<any>(openRepositoriesSampleGitDialog()),
+    openRepositoryCreateDialog: () => dispatch<any>(openRepositoryCreateDialog())
 });
 
 interface RepositoriesActionProps {
     loadRepositories: () => void;
-    onOptionsMenuOpen: (event: React.MouseEvent<HTMLElement>, index: number, repository: RepositoriesResource) => void;
+    onOptionsMenuOpen: (event: React.MouseEvent<HTMLElement>, index: number, repository: RepositoryResource) => void;
     openRepositoriesSampleGitDialog: () => void;
+    openRepositoryCreateDialog: () => void;
 }
 
 interface RepositoriesDataProps {
-    repositories: RepositoriesResource[];
+    repositories: RepositoryResource[];
 }
 
 
@@ -92,8 +94,7 @@ export const RepositoriesPanel = compose(
                 this.props.loadRepositories();
             }
             render() {
-                const { classes, repositories, onOptionsMenuOpen, openRepositoriesSampleGitDialog } = this.props;
-                console.log(repositories);
+                const { classes, repositories, onOptionsMenuOpen, openRepositoriesSampleGitDialog, openRepositoryCreateDialog } = this.props;
                 return (
                     <Card>
                         <CardContent>
@@ -105,7 +106,7 @@ export const RepositoriesPanel = compose(
                                     </Typography>
                                 </Grid>
                                 <Grid item xs={4} className={classes.button}>
-                                    <Button variant="contained" color="primary">
+                                    <Button variant="contained" color="primary" onClick={openRepositoryCreateDialog}>
                                         <AddIcon /> NEW REPOSITORY
                                     </Button>
                                 </Grid>

@@ -4,10 +4,10 @@
 
 import { AxiosInstance } from "axios";
 import { CommonResourceService } from "~/services/common-service/common-resource-service";
-import { RepositoriesResource } from '~/models/repositories';
+import { RepositoryResource } from '~/models/repositories';
 import { ApiActions } from '~/services/api/api-actions';
 
- export class RepositoriesService extends CommonResourceService<RepositoriesResource> {
+ export class RepositoriesService extends CommonResourceService<RepositoryResource> {
     constructor(serverApi: AxiosInstance, actions: ApiActions) {
         super(serverApi, "repositories", actions);
     }
