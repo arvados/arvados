@@ -1,0 +1,13 @@
+shards:
+  - cluster: clsr1
+    file:
+      class: File
+      location: file-on-clsr1.dat
+  - cluster: clsr2
+    file:
+      class: File
+      location: file-on-clsr2.dat
+  - cluster: clsr3
+    file:
+      class: File
+      location: file-on-clsr3.dat
