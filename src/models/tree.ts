@@ -95,6 +95,9 @@ export const getNodeAncestorsIds = (id: string) => <T>(tree: Tree<T>): string[] 
 export const getNodeDescendants = (id: string, limit = Infinity) => <T>(tree: Tree<T>) =>
     mapIdsToNodes(getNodeDescendantsIds(id, limit)(tree))(tree);
 
+export const countNodes = <T>(tree: Tree<T>) =>
+    getNodeDescendantsIds('')(tree).length;
+
 export const getNodeDescendantsIds = (id: string, limit = Infinity) => <T>(tree: Tree<T>): string[] => {
     const node = getNode(id)(tree);
     const children = node ? node.children :
