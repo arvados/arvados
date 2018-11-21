@@ -27,7 +27,9 @@ import { DataTableDefaultView } from '~/components/data-table-default-view/data-
 import { StyleRulesCallback, WithStyles } from "@material-ui/core";
 import { ArvadosTheme } from "~/common/custom-theme";
 import withStyles from "@material-ui/core/styles/withStyles";
-
+import { createTree } from '~/models/tree';
+import { getInitialResourceTypeFilters } from '../../store/resource-type-filters/resource-type-filters';
+// TODO: code cleanup
 type CssRules = 'root' | "button";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
@@ -54,57 +56,41 @@ export interface ProjectPanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
 }
 
-export const projectPanelColumns: DataColumns<string, ProjectPanelFilter> = [
+export const projectPanelColumns: DataColumns<string> = [
     {
         name: ProjectPanelColumnNames.NAME,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.ASC,
-        filters: [],
+        filters: createTree(),
         render: uuid => <ResourceName uuid={uuid} />
     },
     {
         name: "Status",
         selected: true,
         configurable: true,
-        filters: [],
+        filters: createTree(),
         render: uuid => <ProcessStatus uuid={uuid} />,
     },
     {
         name: ProjectPanelColumnNames.TYPE,
         selected: true,
         configurable: true,
-        filters: [
-            {
-                name: resourceLabel(ResourceKind.COLLECTION),
-                selected: true,
-                type: ResourceKind.COLLECTION
-            },
-            {
-                name: resourceLabel(ResourceKind.PROCESS),
-                selected: true,
-                type: ResourceKind.PROCESS
-            },
-            {
-                name: resourceLabel(ResourceKind.PROJECT),
-                selected: true,
-                type: ResourceKind.PROJECT
-            }
-        ],
+        filters: getInitialResourceTypeFilters(),
         render: uuid => <ResourceType uuid={uuid} />
     },
     {
         name: ProjectPanelColumnNames.OWNER,
         selected: true,
         configurable: true,
-        filters: [],
+        filters: createTree(),
         render: uuid => <ResourceOwner uuid={uuid} />
     },
     {
         name: ProjectPanelColumnNames.FILE_SIZE,
         selected: true,
         configurable: true,
-        filters: [],
+        filters: createTree(),
         render: uuid => <ResourceFileSize uuid={uuid} />
     },
     {
@@ -112,7 +98,7 @@ export const projectPanelColumns: DataColumns<string, ProjectPanelFilter> = [
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
-        filters: [],
+        filters: createTree(),
         render: uuid => <ResourceLastModifiedDate uuid={uuid} />
     }
 ];

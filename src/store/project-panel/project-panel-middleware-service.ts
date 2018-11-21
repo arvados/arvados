@@ -115,11 +115,12 @@ export const getParams = (dataExplorer: DataExplorer, isProjectTrashed: boolean)
 });
 
 export const getFilters = (dataExplorer: DataExplorer) => {
-    const columns = dataExplorer.columns as DataColumns<string, ProjectPanelFilter>;
+    const columns = dataExplorer.columns as DataColumns<string>;
     const typeFilters = getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.TYPE);
     const statusFilters = getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.STATUS);
     return new FilterBuilder()
-        .addIsA("uuid", typeFilters.map(f => f.type))
+        // TODO: update filters
+        // .addIsA("uuid", typeFilters.map(f => f.type))
         .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.COLLECTION)
         .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROCESS)
         .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROJECT)
