@@ -35,8 +35,6 @@ export enum CommonResourceServiceError {
     UNIQUE_VIOLATION = 'UniqueViolation',
     OWNERSHIP_CYCLE = 'OwnershipCycle',
     MODIFYING_CONTAINER_REQUEST_FINAL_STATE = 'ModifyingContainerRequestFinalState',
-    UNIQUE_PUBLIC_KEY = 'UniquePublicKey',
-    INVALID_PUBLIC_KEY = 'InvalidPublicKey',
     UNKNOWN = 'Unknown',
     NONE = 'None'
 }
@@ -152,10 +150,6 @@ export const getCommonResourceServiceError = (errorResponse: any) => {
                 return CommonResourceServiceError.OWNERSHIP_CYCLE;
             case /Mounts cannot be modified in state 'Final'/.test(error):
                 return CommonResourceServiceError.MODIFYING_CONTAINER_REQUEST_FINAL_STATE;
-            case /Public key does not appear to be a valid ssh-rsa or dsa public key/.test(error):
-                return CommonResourceServiceError.INVALID_PUBLIC_KEY;
-            case /Public key already exists in the database, use a different key./.test(error):
-                return CommonResourceServiceError.UNIQUE_PUBLIC_KEY;
             default:
                 return CommonResourceServiceError.UNKNOWN;
         }

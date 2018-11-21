@@ -5,15 +5,15 @@
 import { ofType, unionize, UnionOf } from '~/common/unionize';
 import { Dispatch } from "redux";
 import { reset, stopSubmit } from 'redux-form';
-import { User } from "~/models/user";
-import { RootState } from "../store";
-import { ServiceRepository } from "~/services/services";
-import { getCommonResourceServiceError, CommonResourceServiceError } from '~/services/common-service/common-resource-service';
 import { AxiosInstance } from "axios";
+import { RootState } from "../store";
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
 import { dialogActions } from '~/store/dialog/dialog-actions';
+import { setBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions';
+import { ServiceRepository } from "~/services/services";
+import { getAuthorizedKeysServiceError, AuthorizedKeysServiceError } from '~/services/authorized-keys-service/authorized-keys-service';
 import { SshKeyCreateFormDialogData, KeyType, SshKeyResource } from '~/models/ssh-key';
-import { setBreadcrumbs } from '../breadcrumbs/breadcrumbs-actions';
+import { User } from "~/models/user";
 
 export const authActions = unionize({
     SAVE_API_TOKEN: ofType<string>(),
@@ -101,10 +101,10 @@ export const createSshKey = (data: SshKeyCreateFormDialogData) =>
                 hideDuration: 2000
             }));
         } catch (e) {
-            const error = getCommonResourceServiceError(e);
-            if (error === CommonResourceServiceError.UNIQUE_PUBLIC_KEY) {
+            const error = getAuthorizedKeysServiceError(e);
+            if (error === AuthorizedKeysServiceError.UNIQUE_PUBLIC_KEY) {
                 dispatch(stopSubmit(SSH_KEY_CREATE_FORM_NAME, { publicKey: 'Public key already exists.' }));
-            } else if (error === CommonResourceServiceError.INVALID_PUBLIC_KEY) {
+            } else if (error === AuthorizedKeysServiceError.INVALID_PUBLIC_KEY) {
                 dispatch(stopSubmit(SSH_KEY_CREATE_FORM_NAME, { publicKey: 'Public key is invalid' }));
             }
         }
