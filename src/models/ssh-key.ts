@@ -4,14 +4,6 @@
 
 import { Resource } from '~/models/resource';
 
-export interface SshKey {
-    name: string;
-    keyType: KeyType;
-    authorizedUserUuid: string;
-    publicKey: string;
-    expiresAt: string;
-}
-
 export interface SshKeyCreateFormDialogData {
     publicKey: string;
     name: string;

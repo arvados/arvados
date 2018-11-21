@@ -5,7 +5,7 @@
 import * as React from 'react';
 import { StyleRulesCallback, WithStyles, withStyles, Card, CardContent, Button, Typography } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
-import { SshKey } from '~/models/ssh-key';
+import { SshKeyResource } from '~/models/ssh-key';
 
 
 type CssRules = 'root' | 'link';
@@ -26,7 +26,7 @@ export interface SshKeyPanelRootActionProps {
 }
 
 export interface SshKeyPanelRootDataProps {
-    sshKeys?: SshKey[];
+    sshKeys?: SshKeyResource[];
 }
 
 type SshKeyPanelRootProps = SshKeyPanelRootDataProps & SshKeyPanelRootActionProps & WithStyles<CssRules>;

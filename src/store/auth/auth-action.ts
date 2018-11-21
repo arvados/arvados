@@ -12,7 +12,7 @@ import { getCommonResourceServiceError, CommonResourceServiceError } from '~/ser
 import { AxiosInstance } from "axios";
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
 import { dialogActions } from '~/store/dialog/dialog-actions';
-import { SshKeyCreateFormDialogData, SshKey, KeyType } from '~/models/ssh-key';
+import { SshKeyCreateFormDialogData, KeyType, SshKeyResource } from '~/models/ssh-key';
 import { setBreadcrumbs } from '../breadcrumbs/breadcrumbs-actions';
 
 export const authActions = unionize({
@@ -22,8 +22,8 @@ export const authActions = unionize({
     INIT: ofType<{ user: User, token: string }>(),
     USER_DETAILS_REQUEST: {},
     USER_DETAILS_SUCCESS: ofType<User>(),
-    SET_SSH_KEYS: ofType<SshKey[]>(),
-    ADD_SSH_KEY: ofType<SshKey>()
+    SET_SSH_KEYS: ofType<SshKeyResource[]>(),
+    ADD_SSH_KEY: ofType<SshKeyResource>()
 });
 
 export const SSH_KEY_CREATE_FORM_NAME = 'sshKeyCreateFormName';

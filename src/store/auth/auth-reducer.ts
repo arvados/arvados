@@ -5,12 +5,12 @@
 import { authActions, AuthAction } from "./auth-action";
 import { User } from "~/models/user";
 import { ServiceRepository } from "~/services/services";
-import { SshKey } from '~/models/ssh-key';
+import { SshKeyResource } from '~/models/ssh-key';
 
 export interface AuthState {
     user?: User;
     apiToken?: string;
-    sshKeys?: SshKey[];
+    sshKeys?: SshKeyResource[];
 }
 
 const initialState: AuthState = {
@@ -36,10 +36,10 @@ export const authReducer = (services: ServiceRepository) => (state: AuthState = 
         USER_DETAILS_SUCCESS: (user: User) => {
             return {...state, user};
         },
-        SET_SSH_KEYS: (sshKeys: SshKey[]) => {
+        SET_SSH_KEYS: (sshKeys: SshKeyResource[]) => {
             return {...state, sshKeys};
         },
-        ADD_SSH_KEY: (sshKey: SshKey) => {
+        ADD_SSH_KEY: (sshKey: SshKeyResource) => {
             return { ...state, sshKeys: state.sshKeys!.concat(sshKey) };
         },
         default: () => state
