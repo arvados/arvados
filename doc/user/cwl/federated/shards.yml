@@ -1,15 +1,18 @@
 shards:
   - cluster: clsr1
+    project: clsr1-j7d0g-qxc4jcji7n4lafx
     file:
       class: File
       location: keep:485df2c5cec3207a32f49c42f1cdcca9+61/file-on-clsr1.dat
 
   - cluster: clsr2
+    project: clsr2-j7d0g-ivdrm1hyym21vkq
     file:
       class: File
       location: keep:ae6e9c3e9bfa52a0122ecb489d8198ff+61/file-on-clsr2.dat
 
   - cluster: clsr3
+    project: clsr3-j7d0g-e3njz2s53lyb0ka
     file:
       class: File
       location: keep:0b43a0ef9ea592d5d7b299978dfa8643+61/file-on-clsr3.dat

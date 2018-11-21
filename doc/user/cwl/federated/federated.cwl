@@ -33,6 +33,7 @@ steps:
     hints:
       arv:ClusterTarget:
         cluster_id: $(inputs.shards.cluster)
+        project_uuid: $(inputs.shards.project)
     out: [out]
     run: md5sum.cwl
   gather-results:
