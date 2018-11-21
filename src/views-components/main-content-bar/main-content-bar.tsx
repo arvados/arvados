@@ -8,7 +8,7 @@ import { DetailsIcon } from "~/components/icon/icon";
 import { Breadcrumbs } from "~/views-components/breadcrumbs/breadcrumbs";
 import { connect } from 'react-redux';
 import { RootState } from '~/store/store';
-import { matchWorkflowRoute, matchRepositoriesRoute } from '~/routes/routes';
+import { matchWorkflowRoute, matchSshKeysRoute, matchRepositoriesRoute } from '~/routes/routes';
 import { toggleDetailsPanel } from '~/store/details-panel/details-panel-action';
 
 interface MainContentBarProps {
@@ -28,8 +28,14 @@ const isRepositoriesPath = ({ router }: RootState) => {
     return !!match;
 };
 
+const isSshKeysPath = ({ router }: RootState) => {
+    const pathname = router.location ? router.location.pathname : '';
+    const match = matchSshKeysRoute(pathname);
+    return !!match;
+};
+
 export const MainContentBar = connect((state: RootState) => ({
-    buttonVisible: !isWorkflowPath(state) && !isRepositoriesPath(state)
+    buttonVisible: !isWorkflowPath(state) && !isSshKeysPath(state) && !isRepositoriesPath(state)
 }), {
         onDetailsPanelToggle: toggleDetailsPanel
     })((props: MainContentBarProps) =>
