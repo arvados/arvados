@@ -28,6 +28,7 @@ export enum ResourceKind {
     LOG = "arvados#log",
     PROCESS = "arvados#containerRequest",
     PROJECT = "arvados#group",
+    REPOSITORY = "arvados#repository",
     USER = "arvados#user",
     VIRTUAL_MACHINE = "arvados#virtualMachine",
     WORKFLOW = "arvados#workflow",
@@ -40,6 +41,7 @@ export enum ResourceObjectType {
     CONTAINER_REQUEST = 'xvhdp',
     GROUP = 'j7d0g',
     LOG = '57u5n',
+    REPOSITORY = 's0uqq',
     USER = 'tpzed',
     VIRTUAL_MACHINE = '2x53u',
     WORKFLOW = '7fd4e',
@@ -77,6 +79,8 @@ export const extractUuidKind = (uuid: string = '') => {
             return ResourceKind.WORKFLOW;
         case ResourceObjectType.VIRTUAL_MACHINE:
             return ResourceKind.VIRTUAL_MACHINE;
+        case ResourceObjectType.REPOSITORY:
+            return ResourceKind.REPOSITORY;
         default:
             return undefined;
     }

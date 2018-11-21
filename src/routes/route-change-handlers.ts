@@ -4,8 +4,8 @@
 
 import { History, Location } from 'history';
 import { RootStore } from '~/store/store';
-import { matchProcessRoute, matchProcessLogRoute, matchProjectRoute, matchCollectionRoute, matchFavoritesRoute, matchTrashRoute, matchRootRoute, matchSharedWithMeRoute, matchRunProcessRoute, matchWorkflowRoute, matchSearchResultsRoute, matchVirtualMachineRoute } from './routes';
-import { loadProject, loadCollection, loadFavorites, loadTrash, loadProcess, loadProcessLog, loadVirtualMachines } from '~/store/workbench/workbench-actions';
+import { matchProcessRoute, matchProcessLogRoute, matchProjectRoute, matchCollectionRoute, matchFavoritesRoute, matchTrashRoute, matchRootRoute, matchSharedWithMeRoute, matchRunProcessRoute, matchWorkflowRoute, matchSearchResultsRoute, matchSshKeysRoute, matchRepositoriesRoute, matchVirtualMachineRoute } from './routes';
+import { loadProject, loadCollection, loadFavorites, loadTrash, loadProcess, loadProcessLog, loadSshKeys, loadRepositories, loadVirtualMachines } from '~/store/workbench/workbench-actions';
 import { navigateToRootProject } from '~/store/navigation/navigation-action';
 import { loadSharedWithMe, loadRunProcess, loadWorkflow, loadSearchResults } from '~//store/workbench/workbench-actions';
 
@@ -23,11 +23,13 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
     const trashMatch = matchTrashRoute(pathname);
     const processMatch = matchProcessRoute(pathname);
     const processLogMatch = matchProcessLogRoute(pathname);
+    const repositoryMatch = matchRepositoriesRoute(pathname); 
     const searchResultsMatch = matchSearchResultsRoute(pathname);
     const sharedWithMeMatch = matchSharedWithMeRoute(pathname);
     const runProcessMatch = matchRunProcessRoute(pathname);
     const virtualMachineMatch = matchVirtualMachineRoute(pathname);
     const workflowMatch = matchWorkflowRoute(pathname);
+    const sshKeysMatch = matchSshKeysRoute(pathname);
 
     if (projectMatch) {
         store.dispatch(loadProject(projectMatch.params.id));
@@ -53,5 +55,9 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
         store.dispatch(loadSearchResults);
     } else if (virtualMachineMatch) {
         store.dispatch(loadVirtualMachines);
+    } else if(repositoryMatch) {
+        store.dispatch(loadRepositories);
+    } else if (sshKeysMatch) {
+        store.dispatch(loadSshKeys);
     }
 };

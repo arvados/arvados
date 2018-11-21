@@ -25,6 +25,8 @@ import { WorkflowService } from "~/services/workflow-service/workflow-service";
 import { SearchService } from '~/services/search-service/search-service';
 import { PermissionService } from "~/services/permission-service/permission-service";
 import { VirtualMachinesService } from "~/services/virtual-machines-service/virtual-machines-service";
+import { RepositoriesService } from '~/services/repositories-service/repositories-service';
+import { AuthorizedKeysService } from '~/services/authorized-keys-service/authorized-keys-service';
 
 export type ServiceRepository = ReturnType<typeof createServices>;
 
@@ -35,6 +37,7 @@ export const createServices = (config: Config, actions: ApiActions) => {
     const webdavClient = new WebDAV();
     webdavClient.defaults.baseURL = config.keepWebServiceUrl;
 
+    const authorizedKeysService = new AuthorizedKeysService(apiClient, actions);
     const containerRequestService = new ContainerRequestService(apiClient, actions);
     const containerService = new ContainerService(apiClient, actions);
     const groupsService = new GroupsService(apiClient, actions);
@@ -43,6 +46,7 @@ export const createServices = (config: Config, actions: ApiActions) => {
     const logService = new LogService(apiClient, actions);
     const permissionService = new PermissionService(apiClient, actions);
     const projectService = new ProjectService(apiClient, actions);
+    const repositoriesService = new RepositoriesService(apiClient, actions);
     const userService = new UserService(apiClient, actions);
     const virtualMachineService = new VirtualMachinesService(apiClient, actions);
     const workflowService = new WorkflowService(apiClient, actions);
@@ -59,6 +63,7 @@ export const createServices = (config: Config, actions: ApiActions) => {
         ancestorsService,
         apiClient,
         authService,
+        authorizedKeysService,
         collectionFilesService,
         collectionService,
         containerRequestService,
@@ -70,6 +75,7 @@ export const createServices = (config: Config, actions: ApiActions) => {
         logService,
         permissionService,
         projectService,
+        repositoriesService,
         searchService,
         tagService,
         userService,

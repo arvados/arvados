@@ -6,11 +6,10 @@ import * as React from "react";
 import { Toolbar, IconButton, Tooltip, Grid } from "@material-ui/core";
 import { DetailsIcon } from "~/components/icon/icon";
 import { Breadcrumbs } from "~/views-components/breadcrumbs/breadcrumbs";
-import { detailsPanelActions } from "~/store/details-panel/details-panel-action";
 import { connect } from 'react-redux';
 import { RootState } from '~/store/store';
-import { matchWorkflowRoute } from '~/routes/routes';
-import { matchVirtualMachineRoute } from '~/routes/routes';
+import { matchWorkflowRoute, matchSshKeysRoute, matchRepositoriesRoute, matchVirtualMachineRoute } from '~/routes/routes';
+import { toggleDetailsPanel } from '~/store/details-panel/details-panel-action';
 
 interface MainContentBarProps {
     onDetailsPanelToggle: () => void;
@@ -29,10 +28,22 @@ const isVirtualMachinePath = ({ router }: RootState) => {
     return !!match;
 };
 
+const isRepositoriesPath = ({ router }: RootState) => {
+    const pathname = router.location ? router.location.pathname : '';
+    const match = matchRepositoriesRoute(pathname);
+    return !!match;
+};
+
+const isSshKeysPath = ({ router }: RootState) => {
+    const pathname = router.location ? router.location.pathname : '';
+    const match = matchSshKeysRoute(pathname);
+    return !!match;
+};
+
 export const MainContentBar = connect((state: RootState) => ({
-    buttonVisible: !isWorkflowPath(state) && !isVirtualMachinePath(state)
+    buttonVisible: !isWorkflowPath(state) && !isSshKeysPath(state) && !isRepositoriesPath(state) && !isVirtualMachinePath(state)
 }), {
-        onDetailsPanelToggle: detailsPanelActions.TOGGLE_DETAILS_PANEL
+        onDetailsPanelToggle: toggleDetailsPanel
     })((props: MainContentBarProps) =>
         <Toolbar>
             <Grid container>

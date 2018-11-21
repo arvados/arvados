@@ -57,7 +57,7 @@ export const openSetWorkflowDialog = (workflow: WorkflowResource) =>
             dispatch(dialogActions.OPEN_DIALOG({
                 id: SET_WORKFLOW_DIALOG,
                 data: {
-                    title: 'Data loss warning',
+                    title: 'Form will be cleared',
                     text: 'Changing a workflow will clean all input fields in next step.',
                     confirmButtonLabel: 'Change Workflow',
                     workflow

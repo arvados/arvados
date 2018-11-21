@@ -5,6 +5,7 @@
 import * as React from "react";
 import { Dispatch } from "redux";
 import { connect } from "react-redux";
+import { isEqual } from 'lodash/fp';
 import { TreeItem, TreeItemStatus } from '~/components/tree/tree';
 import { ProjectResource } from "~/models/project";
 import { treePickerActions } from "~/store/tree-picker/tree-picker-actions";
@@ -30,6 +31,7 @@ export interface ProjectsTreePickerDataProps {
     rootItemIcon: IconType;
     showSelection?: boolean;
     relatedTreePickers?: string[];
+    disableActivation?: string[];
     loadRootItem: (item: TreeItem<ProjectsTreePickerRootItem>, pickerId: string, includeCollections?: boolean, inlcudeFiles?: boolean) => void;
 }
 
@@ -43,6 +45,12 @@ const mapStateToProps = (_: any, { rootItemIcon, showSelection }: ProjectsTreePi
 const mapDispatchToProps = (dispatch: Dispatch, { loadRootItem, includeCollections, includeFiles, relatedTreePickers, ...props }: ProjectsTreePickerProps): PickedTreePickerProps => ({
     onContextMenu: () => { return; },
     toggleItemActive: (event, item, pickerId) => {
+        
+        const { disableActivation = [] } = props;
+        if(disableActivation.some(isEqual(item.id))){
+            return;
+        }
+
         dispatch(treePickerActions.ACTIVATE_TREE_PICKER_NODE({ id: item.id, pickerId, relatedTreePickers }));
         if (props.toggleItemActive) {
             props.toggleItemActive(event, item, pickerId);

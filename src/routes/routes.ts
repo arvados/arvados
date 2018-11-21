@@ -16,11 +16,13 @@ export const Routes = {
     FAVORITES: '/favorites',
     TRASH: '/trash',
     PROCESS_LOGS: `/process-logs/:id(${RESOURCE_UUID_PATTERN})`,
+    REPOSITORIES: '/repositories',
     SHARED_WITH_ME: '/shared-with-me',
     RUN_PROCESS: '/run-process',
     VIRTUAL_MACHINES: '/virtual-machines',
     WORKFLOWS: '/workflows',
-    SEARCH_RESULTS: '/search-results'
+    SEARCH_RESULTS: '/search-results',
+    SSH_KEYS: `/ssh-keys`
 };
 
 export const getResourceUrl = (uuid: string) => {
@@ -80,3 +82,9 @@ export const matchSearchResultsRoute = (route: string) =>
 
 export const matchVirtualMachineRoute = (route: string) =>
     matchPath<ResourceRouteParams>(route, { path: Routes.VIRTUAL_MACHINES });
+    
+export const matchRepositoriesRoute = (route: string) =>
+    matchPath<ResourceRouteParams>(route, { path: Routes.REPOSITORIES });
+    
+export const matchSshKeysRoute = (route: string) =>
+    matchPath(route, { path: Routes.SSH_KEYS });
