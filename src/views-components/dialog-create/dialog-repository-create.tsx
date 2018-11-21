@@ -13,11 +13,9 @@ type DialogRepositoryProps = WithDialogProps<{}> & InjectedFormProps<any>;
 export const DialogRepositoryCreate = (props: DialogRepositoryProps) =>
     <FormDialog
         dialogTitle='Add new repository'
-        formFields={RepositoryAddField}
+        formFields={RepositoryNameField}
         submitLabel='CREATE REPOSITORY'
         {...props}
     />;
 
-const RepositoryAddField = () =>
-    <RepositoryNameField />;
 

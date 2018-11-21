@@ -52,6 +52,7 @@ import { RepositoriesPanel } from '~/views/repositories-panel/repositories-panel
 import { RepositoriesSampleGitDialog } from '~/views-components/repositories-sample-git-dialog/repositories-sample-git-dialog';
 import { RepositoryAttributesDialog } from '~/views-components/repository-attributes-dialog/repository-attributes-dialog';
 import { CreateRepositoryDialog } from '~/views-components/dialog-forms/create-repository-dialog';
+import { RemoveRepositoryDialog } from '~/views-components/repository-remove-dialog/repository-remove-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -150,6 +151,7 @@ export const WorkbenchPanel =
             <ProcessInputDialog />
             <ProjectPropertiesDialog />
             <RemoveProcessDialog />
+            <RemoveRepositoryDialog />
             <RenameFileDialog />
             <RepositoryAttributesDialog />
             <RepositoriesSampleGitDialog />

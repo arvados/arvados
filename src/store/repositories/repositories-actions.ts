@@ -10,6 +10,10 @@ import { navigateToRepositories } from "~/store/navigation/navigation-action";
 import { unionize, ofType, UnionOf } from "~/common/unionize";
 import { dialogActions } from '~/store/dialog/dialog-actions';
 import { RepositoryResource } from "~/models/repositories";
+import { startSubmit, reset, stopSubmit } from "redux-form";
+import { getCommonResourceServiceError, CommonResourceServiceError } from "~/services/common-service/common-resource-service";
+import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
+import { projectPanelActions } from '~/store/project-panel/project-panel-action';
 
 export const repositoriesActions = unionize({
     SET_REPOSITORIES: ofType<any>(),
@@ -21,6 +25,7 @@ export const REPOSITORIES_PANEL = 'repositoriesPanel';
 export const REPOSITORIES_SAMPLE_GIT_DIALOG = 'repositoriesSampleGitDialog';
 export const REPOSITORY_ATTRIBUTES_DIALOG = 'repositoryAttributesDialog';
 export const REPOSITORY_CREATE_FORM_NAME = 'repositoryCreateFormName';
+export const REPOSITORY_REMOVE_DIALOG = 'repositoryRemoveDialog';
 
 export const openRepositoriesSampleGitDialog = () =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -36,14 +41,52 @@ export const openRepositoryAttributes = (index: number) =>
 
 export const openRepositoryCreateDialog = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(dialogActions.OPEN_DIALOG({ id: REPOSITORY_CREATE_FORM_NAME, data: {} }));
+        const userUuid = await services.authService.getUuid();
+        const user = await services.userService.get(userUuid!);
+        dispatch(reset(REPOSITORY_CREATE_FORM_NAME));
+        dispatch(dialogActions.OPEN_DIALOG({ id: REPOSITORY_CREATE_FORM_NAME, data: { user } }));
     };
 
 export const createRepository = (repository: RepositoryResource) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const userUuid = await services.authService.getUuid();
         const user = await services.userService.get(userUuid!);
-        await services.repositoriesService.create({ name: `${user.username}/${repository.name}` });
+        dispatch(startSubmit(REPOSITORY_CREATE_FORM_NAME));
+        try {
+            const newRepository = await services.repositoriesService.create({ name: `${user.username}/${repository.name}` });
+            dispatch(dialogActions.CLOSE_DIALOG({ id: REPOSITORY_CREATE_FORM_NAME }));
+            dispatch(reset(REPOSITORY_CREATE_FORM_NAME));
+            dispatch<any>(loadRepositoriesData());
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Repository has been successfully created.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));      
+            return newRepository;
+        } catch (e) {
+            const error = getCommonResourceServiceError(e);
+            if (error === CommonResourceServiceError.NAME_HAS_ALREADY_BEEN_TAKEN) {
+                dispatch(stopSubmit(REPOSITORY_CREATE_FORM_NAME, { name: 'Repository with the same name already exists.' }));
+            }
+            return undefined;
+        }
+    };
+
+export const openRemoveRepositoryDialog = (uuid: string) =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(dialogActions.OPEN_DIALOG({
+            id: REPOSITORY_REMOVE_DIALOG,
+            data: {
+                title: 'Remove repository',
+                text: 'Are you sure you want to remove this repository?',
+                confirmButtonLabel: 'Remove',
+                uuid
+            }
+        }));
+    };
+
+export const removeRepository = (uuid: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...' }));
+        await services.repositoriesService.delete(uuid);
+        dispatch<any>(loadRepositoriesData());
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000 }));
     };
 
 const repositoriesBindedActions = bindDataExplorerActions(REPOSITORIES_PANEL);
