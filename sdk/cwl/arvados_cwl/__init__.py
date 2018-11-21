@@ -146,16 +146,18 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         default=None)
 
     parser.add_argument("--always-submit-runner", action="store_true",
-                        help="Always submit a runner to manage the workflow, even when running only a single CommandLineTool",
+                        help="When invoked with --submit --wait, always submit a runner to manage the workflow, even when only running a single CommandLineTool",
                         default=False)
 
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--submit-request-uuid", type=str,
-                        default=None,
-                        help="Update and commit to supplied container request instead of creating a new one (containers API only).")
+                         default=None,
+                         help="Update and commit to supplied container request instead of creating a new one (containers API only).",
+                         metavar="UUID")
     exgroup.add_argument("--submit-runner-cluster", type=str,
-                        help="Submit toplevel runner to a remote cluster (containers API only)",
-                        default=None)
+                         help="Submit workflow runner to a remote cluster (containers API only)",
+                         default=None,
+                         metavar="CLUSTER_ID")
 
     parser.add_argument("--name", type=str,
                         help="Name to use for workflow execution instance.",
