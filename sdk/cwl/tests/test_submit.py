@@ -1452,6 +1452,7 @@ class TestSubmit(unittest.TestCase):
     @stubs
     def test_submit_container_cluster_id(self, stubs):
         capture_stdout = cStringIO.StringIO()
+        stubs.api._rootDesc["remoteHosts"]["zbbbb"] = "123"
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug", "--submit-runner-cluster=zbbbb",
@@ -1467,6 +1468,17 @@ class TestSubmit(unittest.TestCase):
             body=JsonDiffMatcher(expect_container), cluster_id="zbbbb")
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
+
+
+    @stubs
+    def test_submit_validate_cluster_id(self, stubs):
+        capture_stdout = cStringIO.StringIO()
+        stubs.api._rootDesc["remoteHosts"]["zbbbb"] = "123"
+        exited = arvados_cwl.main(
+            ["--submit", "--no-wait", "--api=containers", "--debug", "--submit-runner-cluster=zcccc",
+             "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
+            capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+        self.assertEqual(exited, 1)
 
 
 class TestCreateTemplate(unittest.TestCase):
