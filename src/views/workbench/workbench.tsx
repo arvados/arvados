@@ -44,6 +44,7 @@ import { RunProcessPanel } from '~/views/run-process-panel/run-process-panel';
 import SplitterLayout from 'react-splitter-layout';
 import { WorkflowPanel } from '~/views/workflow-panel/workflow-panel';
 import { SearchResultsPanel } from '~/views/search-results-panel/search-results-panel';
+import { SshKeyPanel } from '~/views/ssh-key-panel/ssh-key-panel';
 import { SharingDialog } from '~/views-components/sharing-dialog/sharing-dialog';
 import { AdvancedTabDialog } from '~/views-components/advanced-tab-dialog/advanced-tab-dialog';
 import { ProcessInputDialog } from '~/views-components/process-input-dialog/process-input-dialog';
@@ -53,6 +54,7 @@ import { RepositoriesSampleGitDialog } from '~/views-components/repositories-sam
 import { RepositoryAttributesDialog } from '~/views-components/repository-attributes-dialog/repository-attributes-dialog';
 import { CreateRepositoryDialog } from '~/views-components/dialog-forms/create-repository-dialog';
 import { RemoveRepositoryDialog } from '~/views-components/repository-remove-dialog/repository-remove-dialog';
+import { CreateSshKeyDialog } from '~/views-components/dialog-forms/create-ssh-key-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -123,6 +125,7 @@ export const WorkbenchPanel =
                                 <Route path={Routes.WORKFLOWS} component={WorkflowPanel} />
                                 <Route path={Routes.SEARCH_RESULTS} component={SearchResultsPanel} />
                                 <Route path={Routes.REPOSITORIES} component={RepositoriesPanel} />
+                                <Route path={Routes.SSH_KEYS} component={SshKeyPanel} />
                             </Switch>
                         </Grid>
                     </Grid>
@@ -139,6 +142,7 @@ export const WorkbenchPanel =
             <CreateCollectionDialog />
             <CreateProjectDialog />
             <CreateRepositoryDialog />
+            <CreateSshKeyDialog />
             <CurrentTokenDialog />
             <FileRemoveDialog />
             <FilesUploadCollectionDialog />
