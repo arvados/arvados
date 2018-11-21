@@ -39,6 +39,7 @@ import { sharedWithMePanelActions } from '~/store/shared-with-me-panel/shared-wi
 import { loadSharedWithMePanel } from '../shared-with-me-panel/shared-with-me-panel-actions';
 import { CopyFormDialogData } from '~/store/copy-dialog/copy-dialog';
 import { loadWorkflowPanel, workflowPanelActions } from '~/store/workflow-panel/workflow-panel-actions';
+import { loadSshKeysPanel } from '~/store/auth/auth-action';
 import { workflowPanelColumns } from '~/views/workflow-panel/workflow-panel-view';
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions';
 import { getProgressIndicator } from '../progress-indicator/progress-indicator-reducer';
@@ -388,6 +389,11 @@ export const loadWorkflow = handleFirstTimeLoad(async (dispatch: Dispatch<any>) 
 export const loadSearchResults = handleFirstTimeLoad(
     async (dispatch: Dispatch<any>) => {
         await dispatch(loadSearchResultsPanel());
+    });
+
+export const loadSshKeys = handleFirstTimeLoad(
+    async (dispatch: Dispatch<any>) => {
+        await dispatch(loadSshKeysPanel());
     });
 
 const finishLoadingProject = (project: GroupContentsResource | string) =>

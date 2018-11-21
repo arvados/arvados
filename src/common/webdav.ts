@@ -25,8 +25,22 @@ export class WebDAV {
         this.request({
             ...config, url,
             method: 'PUT',
-            data,
+            data
         })
+
+    upload = (url: string, path: string, files: File[], config: WebDAVRequestConfig = {}) => {
+        const fd = new FormData();
+        fd.append('path', path);
+        files.forEach((f, idx) => {
+            fd.append(`file-${idx}`, f);
+        });
+
+        return this.request({
+            ...config, url,
+            method: 'PUT',
+            data: fd
+        });
+    }
 
     copy = (url: string, destination: string, config: WebDAVRequestConfig = {}) =>
         this.request({
@@ -62,13 +76,27 @@ export class WebDAV {
                 r.upload.addEventListener('progress', config.onUploadProgress);
             }
 
-            r.addEventListener('load', () => resolve(r));
-            r.addEventListener('error', () => reject(r));
+            r.addEventListener('load', () => {
+                if (r.status === 404) {
+                    return reject(r);
+                } else {
+                    return resolve(r);
+                }
+            });
+
+            r.addEventListener('error', () => {
+                return reject(r);
+            });
+
+            r.upload.addEventListener('error', () => {
+                return reject(r);
+            });
 
             r.send(config.data);
         });
     }
 }
+
 export interface WebDAVRequestConfig {
     headers?: {
         [key: string]: string;

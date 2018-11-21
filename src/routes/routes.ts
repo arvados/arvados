@@ -19,7 +19,8 @@ export const Routes = {
     SHARED_WITH_ME: '/shared-with-me',
     RUN_PROCESS: '/run-process',
     WORKFLOWS: '/workflows',
-    SEARCH_RESULTS: '/search-results'
+    SEARCH_RESULTS: '/search-results',
+    SSH_KEYS: `/ssh-keys`
 };
 
 export const getResourceUrl = (uuid: string) => {
@@ -76,3 +77,6 @@ export const matchWorkflowRoute = (route: string) =>
 
 export const matchSearchResultsRoute = (route: string) =>
     matchPath<ResourceRouteParams>(route, { path: Routes.SEARCH_RESULTS });
+
+export const matchSshKeysRoute = (route: string) =>
+    matchPath(route, { path: Routes.SSH_KEYS });
