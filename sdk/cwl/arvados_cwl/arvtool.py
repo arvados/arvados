@@ -7,6 +7,34 @@ from .arvjob import ArvadosJob
 from .arvcontainer import ArvadosContainer
 from .pathmapper import ArvPathMapper
 from functools import partial
+from schema_salad.sourceline import SourceLine
+from cwltool.errors import WorkflowException
+
+def validate_cluster_target(arvrunner, runtimeContext):
+    if (runtimeContext.submit_runner_cluster and
+        runtimeContext.submit_runner_cluster not in arvrunner.api._rootDesc["remoteHosts"] and
+        runtimeContext.submit_runner_cluster != arvrunner.api._rootDesc["uuidPrefix"]):
+        raise WorkflowException("Unknown or invalid cluster id '%s' known remote clusters are %s" % (runtimeContext.submit_runner_cluster,
+                                                                                                  ", ".join(arvrunner.api._rootDesc["remoteHosts"].keys())))
+def set_cluster_target(tool, arvrunner, builder, runtimeContext):
+    cluster_target_req = None
+    for field in ("hints", "requirements"):
+        if field not in tool:
+            continue
+        for item in tool[field]:
+            if item["class"] == "http://arvados.org/cwl#ClusterTarget":
+                cluster_target_req = item
+
+    if cluster_target_req is None:
+        return runtimeContext
+
+    with SourceLine(cluster_target_req, None, WorkflowException, runtimeContext.debug):
+        runtimeContext = runtimeContext.copy()
+        runtimeContext.submit_runner_cluster = builder.do_eval(cluster_target_req.get("cluster_id")) or runtimeContext.submit_runner_cluster
+        runtimeContext.project_uuid = builder.do_eval(cluster_target_req.get("project_uuid")) or runtimeContext.project_uuid
+        validate_cluster_target(arvrunner, runtimeContext)
+
+    return runtimeContext
 
 class ArvadosCommandTool(CommandLineTool):
     """Wrap cwltool CommandLineTool to override selected methods."""
@@ -17,7 +45,7 @@ class ArvadosCommandTool(CommandLineTool):
 
     def make_job_runner(self, runtimeContext):
         if runtimeContext.work_api == "containers":
-            return partial(ArvadosContainer, self.arvrunner)
+            return partial(ArvadosContainer, self.arvrunner, runtimeContext)
         elif runtimeContext.work_api == "jobs":
             return partial(ArvadosJob, self.arvrunner)
         else:
@@ -34,15 +62,8 @@ class ArvadosCommandTool(CommandLineTool):
                                  "$(task.keep)/%s/%s")
 
     def job(self, joborder, output_callback, runtimeContext):
-
-        # Workaround for #13365
-        builderargs = runtimeContext.copy()
-        builderargs.toplevel = True
-        builderargs.tmp_outdir_prefix = ""
-        builder = self._init_job(joborder, builderargs)
-        joborder = builder.job
-
-        runtimeContext = runtimeContext.copy()
+        builder = self._init_job(joborder, runtimeContext)
+        runtimeContext = set_cluster_target(self.tool, self.arvrunner, builder, runtimeContext)
 
         if runtimeContext.work_api == "containers":
             dockerReq, is_req = self.get_requirement("DockerRequirement")

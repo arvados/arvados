@@ -233,3 +233,23 @@ $graph:
       type: int?
       doc: Minimum cores allocated to cwl-runner
       jsonldPredicate: "https://w3id.org/cwl/cwl#ResourceRequirement/coresMin"
+
+- name: ClusterTarget
+  type: record
+  extends: cwl:ProcessRequirement
+  inVocab: false
+  doc: |
+    Specify where a workflow step should run
+  fields:
+    class:
+      type: string
+      doc: "Always 'arv:ClusterTarget'"
+      jsonldPredicate:
+        _id: "@type"
+        _type: "@vocab"
+    cluster_id:
+      type: string?
+      doc: The cluster to run the container
+    project_uuid:
+      type: string?
+      doc: The project that will own the container requests and intermediate collections

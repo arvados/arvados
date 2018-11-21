@@ -4,6 +4,7 @@
 
 import arvados_cwl
 import arvados_cwl.context
+import arvados_cwl.util
 from arvados_cwl.arvdocker import arv_docker_clear_cache
 import copy
 import arvados.config
@@ -132,7 +133,7 @@ class TestContainer(unittest.TestCase):
                         'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                         'output_path': '/var/spool/cwl',
                         'output_ttl': 0,
-                        'container_image': 'arvados/jobs',
+                        'container_image': '99999999999999999999999999999993+99',
                         'command': ['ls', '/var/spool/cwl'],
                         'cwd': '/var/spool/cwl',
                         'scheduling_parameters': {},
@@ -219,7 +220,7 @@ class TestContainer(unittest.TestCase):
             'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
             'output_path': '/var/spool/cwl',
             'output_ttl': 7200,
-            'container_image': 'arvados/jobs',
+            'container_image': '99999999999999999999999999999993+99',
             'command': ['ls'],
             'cwd': '/var/spool/cwl',
             'scheduling_parameters': {
@@ -351,7 +352,7 @@ class TestContainer(unittest.TestCase):
             'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
             'output_path': '/var/spool/cwl',
             'output_ttl': 0,
-            'container_image': 'arvados/jobs',
+            'container_image': '99999999999999999999999999999993+99',
             'command': ['ls'],
             'cwd': '/var/spool/cwl',
             'scheduling_parameters': {
@@ -439,7 +440,7 @@ class TestContainer(unittest.TestCase):
                     'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                     'output_path': '/var/spool/cwl',
                     'output_ttl': 0,
-                    'container_image': 'arvados/jobs',
+                    'container_image': '99999999999999999999999999999993+99',
                     'command': ['ls', '/var/spool/cwl'],
                     'cwd': '/var/spool/cwl',
                     'scheduling_parameters': {},
@@ -465,7 +466,10 @@ class TestContainer(unittest.TestCase):
 
         col().open.return_value = []
 
+        loadingContext, runtimeContext = self.helper(runner)
+
         arvjob = arvados_cwl.ArvadosContainer(runner,
+                                              runtimeContext,
                                               mock.MagicMock(),
                                               {},
                                               None,
@@ -496,7 +500,7 @@ class TestContainer(unittest.TestCase):
         arvjob.output_callback.assert_called_with({"out": "stuff"}, "success")
         runner.add_intermediate_output.assert_called_with("zzzzz-4zz18-zzzzzzzzzzzzzz2")
 
-    @mock.patch("arvados_cwl.get_current_container")
+    @mock.patch("arvados_cwl.util.get_current_container")
     @mock.patch("arvados.collection.CollectionReader")
     @mock.patch("arvados.collection.Collection")
     def test_child_failure(self, col, reader, gcc_mock):
@@ -507,11 +511,11 @@ class TestContainer(unittest.TestCase):
         # Set up runner with mocked runtime_status_update()
         self.assertFalse(gcc_mock.called)
         runtime_status_update = mock.MagicMock()
-        arvados_cwl.ArvCwlRunner.runtime_status_update = runtime_status_update
-        runner = arvados_cwl.ArvCwlRunner(api)
+        arvados_cwl.ArvCwlExecutor.runtime_status_update = runtime_status_update
+        runner = arvados_cwl.ArvCwlExecutor(api)
         self.assertEqual(runner.work_api, 'containers')
 
-        # Make sure ArvCwlRunner thinks it's running inside a container so it
+        # Make sure ArvCwlExecutor thinks it's running inside a container so it
         # adds the logging handler that will call runtime_status_update() mock
         gcc_mock.return_value = {"uuid" : "zzzzz-dz642-zzzzzzzzzzzzzzz"}
         self.assertTrue(gcc_mock.called)
@@ -536,7 +540,10 @@ class TestContainer(unittest.TestCase):
 
         col().open.return_value = []
 
+        loadingContext, runtimeContext = self.helper(runner)
+
         arvjob = arvados_cwl.ArvadosContainer(runner,
+                                              runtimeContext,
                                               mock.MagicMock(),
                                               {},
                                               None,
@@ -648,7 +655,7 @@ class TestContainer(unittest.TestCase):
                     'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                     'output_path': '/var/spool/cwl',
                     'output_ttl': 0,
-                    'container_image': 'arvados/jobs',
+                    'container_image': '99999999999999999999999999999994+99',
                     'command': ['ls', '/var/spool/cwl'],
                     'cwd': '/var/spool/cwl',
                     'scheduling_parameters': {},
@@ -741,7 +748,7 @@ class TestContainer(unittest.TestCase):
                     'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                     'output_path': '/var/spool/cwl',
                     'output_ttl': 0,
-                    'container_image': 'arvados/jobs',
+                    'container_image': '99999999999999999999999999999993+99',
                     'command': ['md5sum', 'example.conf'],
                     'cwd': '/var/spool/cwl',
                     'scheduling_parameters': {},
