@@ -12,7 +12,7 @@ import { dialogActions } from '~/store/dialog/dialog-actions';
 import { setBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions';
 import { ServiceRepository } from "~/services/services";
 import { getAuthorizedKeysServiceError, AuthorizedKeysServiceError } from '~/services/authorized-keys-service/authorized-keys-service';
-import { SshKeyCreateFormDialogData, KeyType, SshKeyResource } from '~/models/ssh-key';
+import { KeyType, SshKeyResource } from '~/models/ssh-key';
 import { User } from "~/models/user";
 
 export const authActions = unionize({
@@ -27,6 +27,11 @@ export const authActions = unionize({
 });
 
 export const SSH_KEY_CREATE_FORM_NAME = 'sshKeyCreateFormName';
+
+export interface SshKeyCreateFormDialogData {
+    publicKey: string;
+    name: string;
+}
 
 function setAuthorizationHeader(services: ServiceRepository, token: string) {
     services.apiClient.defaults.headers.common = {

@@ -4,11 +4,6 @@
 
 import { Resource } from '~/models/resource';
 
-export interface SshKeyCreateFormDialogData {
-    publicKey: string;
-    name: string;
-}
-
 export enum KeyType {
     SSH = 'SSH'
 }
