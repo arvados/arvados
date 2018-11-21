@@ -35,6 +35,7 @@ export enum CommonResourceServiceError {
     UNIQUE_VIOLATION = 'UniqueViolation',
     OWNERSHIP_CYCLE = 'OwnershipCycle',
     MODIFYING_CONTAINER_REQUEST_FINAL_STATE = 'ModifyingContainerRequestFinalState',
+    NAME_HAS_ALREADY_BEEN_TAKEN = 'NameHasAlreadyBeenTaken',
     UNKNOWN = 'Unknown',
     NONE = 'None'
 }
@@ -150,6 +151,8 @@ export const getCommonResourceServiceError = (errorResponse: any) => {
                 return CommonResourceServiceError.OWNERSHIP_CYCLE;
             case /Mounts cannot be modified in state 'Final'/.test(error):
                 return CommonResourceServiceError.MODIFYING_CONTAINER_REQUEST_FINAL_STATE;
+            case /Name has already been taken/.test(error):
+                return CommonResourceServiceError.NAME_HAS_ALREADY_BEEN_TAKEN;
             default:
                 return CommonResourceServiceError.UNKNOWN;
         }

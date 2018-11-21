@@ -22,5 +22,7 @@ export const MOVE_TO_VALIDATION = [require];
 
 export const PROCESS_NAME_VALIDATION = [require, maxLength(255)];
 
+export const REPOSITORY_NAME_VALIDATION = [require, maxLength(255)];
+
 export const SSH_KEY_PUBLIC_VALIDATION = [require, isRsaKey, maxLength(1024)];
 export const SSH_KEY_NAME_VALIDATION = [require, maxLength(255)];

@@ -49,6 +49,11 @@ import { SharingDialog } from '~/views-components/sharing-dialog/sharing-dialog'
 import { AdvancedTabDialog } from '~/views-components/advanced-tab-dialog/advanced-tab-dialog';
 import { ProcessInputDialog } from '~/views-components/process-input-dialog/process-input-dialog';
 import { ProjectPropertiesDialog } from '~/views-components/project-properties-dialog/project-properties-dialog';
+import { RepositoriesPanel } from '~/views/repositories-panel/repositories-panel';
+import { RepositoriesSampleGitDialog } from '~/views-components/repositories-sample-git-dialog/repositories-sample-git-dialog';
+import { RepositoryAttributesDialog } from '~/views-components/repository-attributes-dialog/repository-attributes-dialog';
+import { CreateRepositoryDialog } from '~/views-components/dialog-forms/create-repository-dialog';
+import { RemoveRepositoryDialog } from '~/views-components/repository-remove-dialog/repository-remove-dialog';
 import { CreateSshKeyDialog } from '~/views-components/dialog-forms/create-ssh-key-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
@@ -119,6 +124,7 @@ export const WorkbenchPanel =
                                 <Route path={Routes.RUN_PROCESS} component={RunProcessPanel} />
                                 <Route path={Routes.WORKFLOWS} component={WorkflowPanel} />
                                 <Route path={Routes.SEARCH_RESULTS} component={SearchResultsPanel} />
+                                <Route path={Routes.REPOSITORIES} component={RepositoriesPanel} />
                                 <Route path={Routes.SSH_KEYS} component={SshKeyPanel} />
                             </Switch>
                         </Grid>
@@ -135,6 +141,7 @@ export const WorkbenchPanel =
             <CopyProcessDialog />
             <CreateCollectionDialog />
             <CreateProjectDialog />
+            <CreateRepositoryDialog />
             <CreateSshKeyDialog />
             <CurrentTokenDialog />
             <FileRemoveDialog />
@@ -148,7 +155,10 @@ export const WorkbenchPanel =
             <ProcessInputDialog />
             <ProjectPropertiesDialog />
             <RemoveProcessDialog />
+            <RemoveRepositoryDialog />
             <RenameFileDialog />
+            <RepositoryAttributesDialog />
+            <RepositoriesSampleGitDialog />
             <RichTextEditorDialog />
             <SharingDialog />
             <Snackbar />
