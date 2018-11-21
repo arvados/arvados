@@ -15,6 +15,7 @@ requirements:
         fields:
           file: File
           cluster: string
+          project: string
 inputs:
   shards:
     type:
