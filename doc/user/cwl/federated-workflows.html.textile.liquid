@@ -9,15 +9,29 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-To support running analysis on geographically dispersed data (avoiding expensive data transfers by sending the computation to the data) and "hybrid cloud" configurations where an on-premise cluster can expand its capabilities by delegating work to a cloud-base cluster, Arvados supports federated workflows.  In a federated workflow, different steps of a workflow may execute on different clusters.  Arvados manages data transfer and delegation of credentials, so this as easy as simply adding cluster target hints to your existing workflow.
+To support running analysis on geographically dispersed data (avoiding expensive data transfers by sending the computation to the data) and "hybrid cloud" configurations where an on-premise cluster can expand its capabilities by delegating work to a cloud-base cluster, Arvados supports federated workflows.  In a federated workflow, different steps of a workflow may execute on different clusters.  Arvados manages data transfer and delegation of credentials, all that is required is adding "arv:ClusterTarget":cwl-extensions.html#clustertarget hints to your existing workflow.
+
+!(full-width)federated-workflow.svg!
+
+h2. Get the example files
+
+The tutorial files are located in the "documentation section of the Arvados source repository:":https://github.com/curoverse/arvados/tree/master/doc/user/cwl/federated
+
+<notextile>
+<pre><code>~$ <span class="userinput">git clone https://github.com/curoverse/arvados</span>
+~$ <span class="userinput">cd arvados/doc/user/cwl/federated</span>
+</code></pre>
+</notextile>
 
 h2. Federated scatter/gather example
 
-
+In this following example, an analysis task is executed on three different clusters with different data, then the results are combined to produce the final output.
 
 {% codeblock as yaml %}
 {% include 'federated_cwl' %}
 {% endcodeblock %}
+
+Example input document:
 
 {% codeblock as yaml %}
 {% include 'shards_yml' %}
