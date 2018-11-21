@@ -16,7 +16,8 @@ module ApplicationHelper
   end
 
   def render_markup(markup)
-    sanitize(raw(RedCloth.new(markup.to_s).to_html(:refs_arvados, :textile))) if markup
+    allowed_tags = Rails::Html::Sanitizer.white_list_sanitizer.allowed_tags + %w(table tbody th tr td)
+    sanitize(raw(RedCloth.new(markup.to_s).to_html(:refs_arvados, :textile)), tags: allowed_tags)
   end
 
   def human_readable_bytes_html(n)
