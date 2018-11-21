@@ -13,7 +13,6 @@ import { RepositoryResource } from "~/models/repositories";
 import { startSubmit, reset, stopSubmit } from "redux-form";
 import { getCommonResourceServiceError, CommonResourceServiceError } from "~/services/common-service/common-resource-service";
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { projectPanelActions } from '~/store/project-panel/project-panel-action';
 
 export const repositoriesActions = unionize({
     SET_REPOSITORIES: ofType<any>(),
@@ -56,8 +55,8 @@ export const createRepository = (repository: RepositoryResource) =>
             const newRepository = await services.repositoriesService.create({ name: `${user.username}/${repository.name}` });
             dispatch(dialogActions.CLOSE_DIALOG({ id: REPOSITORY_CREATE_FORM_NAME }));
             dispatch(reset(REPOSITORY_CREATE_FORM_NAME));
-            dispatch<any>(loadRepositoriesData());
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Repository has been successfully created.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));      
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Repository has been successfully created.", hideDuration: 2000, kind: SnackbarKind.SUCCESS })); 
+            dispatch<any>(loadRepositoriesData());     
             return newRepository;
         } catch (e) {
             const error = getCommonResourceServiceError(e);
@@ -85,8 +84,8 @@ export const removeRepository = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...' }));
         await services.repositoriesService.delete(uuid);
-        dispatch<any>(loadRepositoriesData());
         dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000 }));
+        dispatch<any>(loadRepositoriesData());
     };
 
 const repositoriesBindedActions = bindDataExplorerActions(REPOSITORIES_PANEL);
