@@ -141,26 +141,28 @@ var (
 		"Depth", "Destination", "If", "Lock-Token", "Overwrite", "Timeout",
 	}, ", ")
 	writeMethod = map[string]bool{
-		"COPY":   true,
-		"DELETE": true,
-		"LOCK":   true,
-		"MKCOL":  true,
-		"MOVE":   true,
-		"PUT":    true,
-		"RMCOL":  true,
-		"UNLOCK": true,
+		"COPY":      true,
+		"DELETE":    true,
+		"LOCK":      true,
+		"MKCOL":     true,
+		"MOVE":      true,
+		"PROPPATCH": true,
+		"PUT":       true,
+		"RMCOL":     true,
+		"UNLOCK":    true,
 	}
 	webdavMethod = map[string]bool{
-		"COPY":     true,
-		"DELETE":   true,
-		"LOCK":     true,
-		"MKCOL":    true,
-		"MOVE":     true,
-		"OPTIONS":  true,
-		"PROPFIND": true,
-		"PUT":      true,
-		"RMCOL":    true,
-		"UNLOCK":   true,
+		"COPY":      true,
+		"DELETE":    true,
+		"LOCK":      true,
+		"MKCOL":     true,
+		"MOVE":      true,
+		"OPTIONS":   true,
+		"PROPFIND":  true,
+		"PROPPATCH": true,
+		"PUT":       true,
+		"RMCOL":     true,
+		"UNLOCK":    true,
 	}
 	browserMethod = map[string]bool{
 		"GET":  true,
@@ -216,7 +218,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Header().Set("Access-Control-Allow-Headers", corsAllowHeadersHeader)
-		w.Header().Set("Access-Control-Allow-Methods", "COPY, DELETE, GET, MKCOL, MOVE, OPTIONS, POST, PROPFIND, PUT, RMCOL")
+		w.Header().Set("Access-Control-Allow-Methods", "COPY, DELETE, GET, LOCK, MKCOL, MOVE, OPTIONS, POST, PROPFIND, PROPPATCH, PUT, RMCOL, UNLOCK")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Max-Age", "86400")
 		statusCode = http.StatusOK
