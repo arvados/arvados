@@ -27,7 +27,7 @@ import arvados_cwl.util
 from .arvcontainer import RunnerContainer
 from .arvjob import RunnerJob, RunnerTemplate
 from .runner import Runner, upload_docker, upload_job_order, upload_workflow_deps
-from .arvtool import ArvadosCommandTool
+from .arvtool import ArvadosCommandTool, validate_cluster_target
 from .arvworkflow import ArvadosWorkflow, upload_workflow
 from .fsaccess import CollectionFsAccess, CollectionFetcher, collectionResolver, CollectionCache
 from .perf import Perf
@@ -177,6 +177,8 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
         self.runtimeContext = ArvRuntimeContext(vars(arvargs))
         self.runtimeContext.make_fs_access = partial(CollectionFsAccess,
                                                      collection_cache=self.collection_cache)
+
+        validate_cluster_target(self, self.runtimeContext)
 
 
     def arv_make_tool(self, toolpath_object, loadingContext):
