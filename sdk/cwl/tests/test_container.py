@@ -71,7 +71,9 @@ class TestContainer(unittest.TestCase):
              "make_fs_access": make_fs_access,
              "tmpdir": "/tmp",
              "enable_reuse": enable_reuse,
-             "priority": 500})
+             "priority": 500,
+             "project_uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
+            })
 
         return loadingContext, runtimeContext
 
@@ -83,7 +85,6 @@ class TestContainer(unittest.TestCase):
             arv_docker_clear_cache()
 
             runner = mock.MagicMock()
-            runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
             runner.ignore_docker_for_reuse = False
             runner.intermediate_output_ttl = 0
             runner.secret_store = cwltool.secrets.SecretStore()
@@ -147,7 +148,6 @@ class TestContainer(unittest.TestCase):
     def test_resource_requirements(self, keepdocker):
         arv_docker_clear_cache()
         runner = mock.MagicMock()
-        runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 3600
         runner.secret_store = cwltool.secrets.SecretStore()
@@ -243,7 +243,6 @@ class TestContainer(unittest.TestCase):
     def test_initial_work_dir(self, collection_mock, keepdocker):
         arv_docker_clear_cache()
         runner = mock.MagicMock()
-        runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 0
         runner.secret_store = cwltool.secrets.SecretStore()
@@ -373,7 +372,6 @@ class TestContainer(unittest.TestCase):
         arv_docker_clear_cache()
 
         runner = mock.MagicMock()
-        runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 0
         runner.secret_store = cwltool.secrets.SecretStore()
@@ -454,7 +452,6 @@ class TestContainer(unittest.TestCase):
 
         runner = mock.MagicMock()
         runner.api = api
-        runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.num_retries = 0
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 0
@@ -523,7 +520,6 @@ class TestContainer(unittest.TestCase):
         handlerClasses = [h.__class__ for h in root_logger.handlers]
         self.assertTrue(arvados_cwl.RuntimeStatusLoggingHandler in handlerClasses)
 
-        runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.num_retries = 0
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 0
@@ -580,7 +576,6 @@ class TestContainer(unittest.TestCase):
         arv_docker_clear_cache()
 
         runner = mock.MagicMock()
-        runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 0
         runner.secret_store = cwltool.secrets.SecretStore()
@@ -670,7 +665,6 @@ class TestContainer(unittest.TestCase):
         arv_docker_clear_cache()
 
         runner = mock.MagicMock()
-        runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 0
         runner.secret_store = cwltool.secrets.SecretStore()
@@ -768,7 +762,6 @@ class TestContainer(unittest.TestCase):
         arv_docker_clear_cache()
 
         runner = mock.MagicMock()
-        runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 0
         runner.secret_store = cwltool.secrets.SecretStore()

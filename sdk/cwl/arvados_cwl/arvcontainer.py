@@ -174,7 +174,7 @@ class ArvadosContainer(JobBase):
                     runtimeContext.current_container = arvados_cwl.util.get_current_container(self.arvrunner.api, self.arvrunner.num_retries, logger)
                 info = arvados_cwl.util.get_intermediate_collection_info(self.name, runtimeContext.current_container, runtimeContext.intermediate_output_ttl)
                 vwd.save_new(name=info["name"],
-                             owner_uuid=self.arvrunner.project_uuid,
+                             owner_uuid=runtimeContext.project_uuid,
                              ensure_unique_name=True,
                              trash_at=info["trash_at"],
                              properties=info["properties"])
@@ -217,7 +217,7 @@ class ArvadosContainer(JobBase):
         container_request["container_image"] = arv_docker_get_image(self.arvrunner.api,
                                                                     docker_req,
                                                                     runtimeContext.pull_image,
-                                                                    self.arvrunner.project_uuid)
+                                                                    runtimeContext.project_uuid)
 
         api_req, _ = self.get_requirement("http://arvados.org/cwl#APIRequirement")
         if api_req:
