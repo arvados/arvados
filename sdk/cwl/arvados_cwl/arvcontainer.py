@@ -74,8 +74,8 @@ class ArvadosContainer(JobBase):
         }
         runtime_constraints = {}
 
-        if self.arvrunner.project_uuid:
-            container_request["owner_uuid"] = self.arvrunner.project_uuid
+        if runtimeContext.project_uuid:
+            container_request["owner_uuid"] = runtimeContext.project_uuid
 
         if self.arvrunner.secret_store.has_secret(self.command_line):
             raise WorkflowException("Secret material leaked on command line, only file literals may contain secrets")
