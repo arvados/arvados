@@ -23,6 +23,10 @@ import {
 } from "@material-ui/core";
 import * as classnames from "classnames";
 import { DefaultTransformOrigin } from "../popover/helpers";
+import { createTree, initTreeNode, mapTree } from '~/models/tree';
+import { DataTableFilters as DataTableFiltersModel, DataTableFiltersTree } from "./data-table-filters-tree";
+import { pipe } from 'lodash/fp';
+import { setNode } from '~/models/tree';
 
 export type CssRules = "root" | "icon" | "active" | "checkbox";
 
@@ -74,14 +78,27 @@ interface DataTableFilterState {
     anchorEl?: HTMLElement;
     filters: DataTableFilterItem[];
     prevFilters: DataTableFilterItem[];
+    filtersTree: DataTableFiltersModel;
 }
+
+const filters: DataTableFiltersModel = pipe(
+    createTree,
+    setNode(initTreeNode({ id: 'Project', value: { name: 'Project' } })),
+    setNode(initTreeNode({ id: 'Process', value: { name: 'Process' } })),
+    setNode(initTreeNode({ id: 'Data collection', value: { name: 'Data collection' } })),
+    setNode(initTreeNode({ id: 'General', parent: 'Data collection', value: { name: 'General' } })),
+    setNode(initTreeNode({ id: 'Output', parent: 'Data collection', value: { name: 'Output' } })),
+    setNode(initTreeNode({ id: 'Log', parent: 'Data collection', value: { name: 'Log' } })),
+    mapTree(node => ({...node, selected: true})),
+)();
 
 export const DataTableFilters = withStyles(styles)(
     class extends React.Component<DataTableFilterProps & WithStyles<CssRules>, DataTableFilterState> {
         state: DataTableFilterState = {
             anchorEl: undefined,
             filters: [],
-            prevFilters: []
+            prevFilters: [],
+            filtersTree: filters,
         };
         icon = React.createRef<HTMLElement>();
 
@@ -128,6 +145,9 @@ export const DataTableFilters = withStyles(styles)(
                                 </ListItem>
                             )}
                         </List>
+                        <DataTableFiltersTree
+                            filters={this.state.filtersTree}
+                            onChange={filtersTree => this.setState({ filtersTree })} />
                         <CardActions>
                             <Button
                                 color="primary"
