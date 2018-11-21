@@ -62,7 +62,7 @@ export class FilterBuilder {
             }
 
             const resPrefix = resourcePrefix
-                ? _.snakeCase(resourcePrefix) + "."
+                ? resourcePrefix + "."
                 : "";
 
             this.filters += `${this.filters ? "," : ""}["${resPrefix}${_.snakeCase(field)}","${cond}",${value}]`;
