@@ -7,6 +7,7 @@ requirements:
   DockerRequirement:
     dockerPull: arvados/fed-test:scatter-gather
   ScatterFeatureRequirement: {}
+  StepInputExpressionRequirement: {}
   SchemaDefRequirement:
     types:
       - name: FileOnCluster

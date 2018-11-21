@@ -2,12 +2,14 @@ shards:
   - cluster: clsr1
     file:
       class: File
-      location: file-on-clsr1.dat
+      location: keep:485df2c5cec3207a32f49c42f1cdcca9+61/file-on-clsr1.dat
+
   - cluster: clsr2
     file:
       class: File
-      location: file-on-clsr2.dat
+      location: keep:ae6e9c3e9bfa52a0122ecb489d8198ff+61/file-on-clsr2.dat
+
   - cluster: clsr3
     file:
       class: File
-      location: file-on-clsr3.dat
+      location: keep:0b43a0ef9ea592d5d7b299978dfa8643+61/file-on-clsr3.dat
