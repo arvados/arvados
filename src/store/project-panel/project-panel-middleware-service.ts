@@ -32,6 +32,7 @@ import { getResource } from "~/store/resources/resources";
 import { CollectionResource } from "~/models/collection";
 import { resourcesDataActions } from "~/store/resources-data/resources-data-actions";
 import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
+import { serializeResourceTypeFilters } from '../resource-type-filters/resource-type-filters';
 
 export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -116,15 +117,16 @@ export const getParams = (dataExplorer: DataExplorer, isProjectTrashed: boolean)
 
 export const getFilters = (dataExplorer: DataExplorer) => {
     const columns = dataExplorer.columns as DataColumns<string>;
-    const typeFilters = getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.TYPE);
-    const statusFilters = getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.STATUS);
-    return new FilterBuilder()
-        // TODO: update filters
-        // .addIsA("uuid", typeFilters.map(f => f.type))
-        .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.COLLECTION)
-        .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROCESS)
-        .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROJECT)
-        .getFilters();
+    const typeFilters = serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.TYPE));
+    return typeFilters;
+    // const statusFilters = getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.STATUS);
+    // return new FilterBuilder()
+    //     // TODO: update filters
+    //     // .addIsA("uuid", typeFilters.map(f => f.type))
+    //     .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.COLLECTION)
+    //     .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROCESS)
+    //     .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROJECT)
+    //     .getFilters();
 };
 
 export const getOrder = (dataExplorer: DataExplorer) => {
