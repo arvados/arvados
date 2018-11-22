@@ -86,13 +86,20 @@ const getPublicUuid = (uuidPrefix: string) => {
     return `${uuidPrefix}-tpzed-anonymouspublic`;
 };
 
-// do share onClick
+// ToDo: share onClick
 export const resourceShare = (uuidPrefix: string, ownerUuid?: string) => {
-    return <Tooltip title="Share">
-        <IconButton onClick={() => undefined}>
-            {ownerUuid === getPublicUuid(uuidPrefix) ? <ShareIcon /> : null}
-        </IconButton>
-    </Tooltip>;
+    const isPublic = ownerUuid === getPublicUuid(uuidPrefix);
+    return (
+        <div>
+            { isPublic &&
+                <Tooltip title="Share">
+                    <IconButton onClick={() => undefined}>
+                        <ShareIcon />
+                    </IconButton>
+                </Tooltip>
+            }
+        </div>
+    );
 };
 
 export const ResourceShare = connect(
