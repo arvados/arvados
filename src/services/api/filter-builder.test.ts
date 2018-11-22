@@ -60,6 +60,12 @@ describe("FilterBuilder", () => {
         ).toEqual(`["etag","in",["etagValue1","etagValue2"]]`);
     });
 
+    it("should add 'not in' rule for set", () => {
+        expect(
+            filters.addIn("etag", ["etagValue1", "etagValue2"]).getFilters()
+        ).toEqual(`["etag","not in",["etagValue1","etagValue2"]]`);
+    });
+
     it("should add multiple rules", () => {
         expect(
             filters
