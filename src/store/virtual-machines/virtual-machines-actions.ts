@@ -10,11 +10,14 @@ import { bindDataExplorerActions } from '~/store/data-explorer/data-explorer-act
 import { formatDate } from "~/common/formatters";
 import { unionize, ofType, UnionOf } from "~/common/unionize";
 import { VirtualMachinesLoginsResource } from '~/models/virtual-machines';
+import { FilterBuilder } from "~/services/api/filter-builder";
+import { ListResults } from "~/services/common-service/common-resource-service";
 
 export const virtualMachinesActions = unionize({
     SET_REQUESTED_DATE: ofType<string>(),
-    SET_VIRTUAL_MACHINES: ofType<any>(),
-    SET_LOGINS: ofType<VirtualMachinesLoginsResource[]>()
+    SET_VIRTUAL_MACHINES: ofType<ListResults<any>>(),
+    SET_LOGINS: ofType<VirtualMachinesLoginsResource[]>(),
+    SET_LINKS: ofType<ListResults<any>>()
 });
 
 export type VirtualMachineActions = UnionOf<typeof virtualMachinesActions>;
@@ -37,7 +40,14 @@ export const loadVirtualMachinesData = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch<any>(loadRequestedDate());
         const virtualMachines = await services.virtualMachineService.list();
+        const virtualMachinesUuids = virtualMachines.items.map(it => it.uuid);
+        const links = await services.linkService.list({
+            filters: new FilterBuilder()
+                .addIn("headUuid", virtualMachinesUuids)
+                .getFilters()
+        });
         dispatch(virtualMachinesActions.SET_VIRTUAL_MACHINES(virtualMachines));
+        dispatch(virtualMachinesActions.SET_LINKS(links));
         // const logins = await services.virtualMachineService.logins(virtualMachines.items[0].uuid);
         // console.log(logins);
         // const getAllLogins = await services.virtualMachineService.getAllLogins();

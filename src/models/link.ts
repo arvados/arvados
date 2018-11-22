@@ -9,7 +9,7 @@ export interface LinkResource extends Resource {
     tailUuid: string;
     linkClass: string;
     name: string;
-    properties: {};
+    properties: any;
 }
 
 export enum LinkClass {

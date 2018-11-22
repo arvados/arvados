@@ -10,6 +10,7 @@ interface VirtualMachines {
     date: string;
     virtualMachines: ListResults<any>;
     logins: VirtualMachinesLoginsResource[];
+    links: ListResults<any>;
 }
 
 const initialState: VirtualMachines = {
@@ -21,7 +22,14 @@ const initialState: VirtualMachines = {
         itemsAvailable: 0,
         items: []
     },
-    logins: []
+    logins: [],
+    links: {
+        kind: '',
+        offset: 0,
+        limit: 0,
+        itemsAvailable: 0,
+        items: []
+    }
 };
 
 export const virtualMachinesReducer = (state = initialState, action: VirtualMachineActions): VirtualMachines =>
@@ -29,5 +37,6 @@ export const virtualMachinesReducer = (state = initialState, action: VirtualMach
         SET_REQUESTED_DATE: date => ({ ...state, date }),
         SET_VIRTUAL_MACHINES: virtualMachines => ({ ...state, virtualMachines }),
         SET_LOGINS: logins => ({ ...state, logins }),
+        SET_LINKS: links => ({ ...state, links }),
         default: () => state
     });

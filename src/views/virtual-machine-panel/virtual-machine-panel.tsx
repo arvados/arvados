@@ -15,6 +15,7 @@ import { RootState } from '~/store/store';
 import { ListResults } from '~/services/common-service/common-resource-service';
 import { HelpIcon } from '~/components/icon/icon';
 import { VirtualMachinesLoginsResource } from '~/models/virtual-machines';
+import { Routes } from '~/routes/routes';
 
 type CssRules = 'button' | 'codeSnippet' | 'link' | 'linkIcon' | 'icon';
 
@@ -54,7 +55,8 @@ const mapStateToProps = (state: RootState) => {
     return {
         requestedDate: state.virtualMachines.date,
         virtualMachines: state.virtualMachines.virtualMachines,
-        logins: state.virtualMachines.logins
+        logins: state.virtualMachines.logins,
+        links: state.virtualMachines.links
     };
 };
 
@@ -67,6 +69,7 @@ interface VirtualMachinesPanelDataProps {
     requestedDate: string;
     virtualMachines: ListResults<any>;
     logins: VirtualMachinesLoginsResource[];
+    links: ListResults<any>;
 }
 
 interface VirtualMachinesPanelActionProps {
@@ -85,11 +88,11 @@ export const VirtualMachinePanel = compose(
             }
 
             render() {
-                const { classes, saveRequestedDate, requestedDate, virtualMachines, logins } = this.props;
+                const { classes, saveRequestedDate, requestedDate, virtualMachines, logins, links } = this.props;
                 return (
                     <Grid container spacing={16}>
                         {cardContentWithNoVirtualMachines(requestedDate, saveRequestedDate, classes)}
-                        {virtualMachines.itemsAvailable > 0 && cardContentWithVirtualMachines(virtualMachines, classes)}
+                        {virtualMachines.itemsAvailable > 0 && links.itemsAvailable > 0 && cardContentWithVirtualMachines(virtualMachines, links, classes)}
                         {cardSSHSection(classes)}
                     </Grid>
                 );
@@ -117,7 +120,7 @@ const cardContentWithNoVirtualMachines = (requestedDate: string, saveRequestedDa
 
 const login = 'pawelkowalczyk';
 
-const cardContentWithVirtualMachines = (virtualMachines: ListResults<any>, classes: any) =>
+const cardContentWithVirtualMachines = (virtualMachines: ListResults<any>, links: ListResults<any>, classes: any) =>
     <Grid item xs={12}>
         <Card>
             <CardContent>
@@ -141,11 +144,11 @@ const cardContentWithVirtualMachines = (virtualMachines: ListResults<any>, class
                         {virtualMachines.items.map((it, index) =>
                             <TableRow key={index}>
                                 <TableCell>{it.hostname}</TableCell>
-                                <TableCell>{login}</TableCell>
-                                <TableCell>ssh {login}@shell.arvados</TableCell>
+                                <TableCell>{getUsername(links, it)}</TableCell>
+                                <TableCell>ssh {getUsername(links, it)}@shell.arvados</TableCell>
                                 <TableCell>
-                                    <a href={`https://workbench.c97qk.arvadosapi.com${it.href}/webshell/${login}`} target="_blank" className={classes.link}>
-                                        Log in as {login}
+                                    <a href={`https://workbench.c97qk.arvadosapi.com${it.href}/webshell/${getUsername(links, it)}`} target="_blank" className={classes.link}>
+                                        Log in as {getUsername(links, it)}
                                     </a>
                                 </TableCell>
                             </TableRow>
@@ -156,13 +159,17 @@ const cardContentWithVirtualMachines = (virtualMachines: ListResults<any>, class
         </Card>
     </Grid>;
 
-// dodac link do ssh panelu jak juz bedzie
+const getUsername = (links: ListResults<any>, virtualMachine: any) => {
+    const link = links.items.find((item: any) => item.headUuid === virtualMachine.uuid);
+    return link.properties.username || undefined;
+};
+
 const cardSSHSection = (classes: any) =>
     <Grid item xs={12}>
         <Card>
             <CardContent>
                 <Typography variant="body2">
-                    In order to access virtual machines using SSH, <Link to='' className={classes.link}>add an SSH key to your account</Link> and add a section like this to your SSH configuration file ( ~/.ssh/config):
+                    In order to access virtual machines using SSH, <Link to={Routes.SSH_KEYS} className={classes.link}>add an SSH key to your account</Link> and add a section like this to your SSH configuration file ( ~/.ssh/config):
                 </Typography>
                 <DefaultCodeSnippet
                     className={classes.codeSnippet}
