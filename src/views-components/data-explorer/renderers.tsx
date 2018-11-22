@@ -9,18 +9,19 @@ import { ResourceKind, TrashableResource } from '~/models/resource';
 import { ProjectIcon, CollectionIcon, ProcessIcon, DefaultIcon, WorkflowIcon, ShareIcon } from '~/components/icon/icon';
 import { formatDate, formatFileSize } from '~/common/formatters';
 import { resourceLabel } from '~/common/labels';
-import { connect } from 'react-redux';
+import { connect, DispatchProp } from 'react-redux';
 import { RootState } from '~/store/store';
 import { getResource } from '~/store/resources/resources';
 import { GroupContentsResource } from '~/services/groups-service/groups-service';
 import { getProcess, Process, getProcessStatus, getProcessStatusColor } from '~/store/processes/process';
 import { ArvadosTheme } from '~/common/custom-theme';
-import { compose } from 'redux';
+import { compose, Dispatch } from 'redux';
 import { WorkflowResource } from '~/models/workflow';
 import { ResourceStatus } from '~/views/workflow-panel/workflow-panel-view';
 import { getUuidPrefix } from '~/store/workflow-panel/workflow-panel-actions';
 import { CollectionResource } from "~/models/collection";
 import { getResourceData } from "~/store/resources-data/resources-data";
+import { openSharingDialog } from '~/store/sharing-dialog/sharing-dialog-actions';
 
 export const renderName = (item: { name: string; uuid: string, kind: string }) =>
     <Grid container alignItems="center" wrap="nowrap" spacing={16}>
@@ -87,13 +88,13 @@ const getPublicUuid = (uuidPrefix: string) => {
 };
 
 // ToDo: share onClick
-export const resourceShare = (uuidPrefix: string, ownerUuid?: string) => {
+export const resourceShare = (dispatch: Dispatch, uuidPrefix: string, ownerUuid?: string, uuid?: string) => {
     const isPublic = ownerUuid === getPublicUuid(uuidPrefix);
     return (
         <div>
-            { isPublic &&
+            { !isPublic && uuid &&
                 <Tooltip title="Share">
-                    <IconButton onClick={() => undefined}>
+                    <IconButton onClick={() => dispatch<any>(openSharingDialog(uuid))}>
                         <ShareIcon />
                     </IconButton>
                 </Tooltip>
@@ -107,10 +108,12 @@ export const ResourceShare = connect(
         const resource = getResource<WorkflowResource>(props.uuid)(state.resources);
         const uuidPrefix = getUuidPrefix(state);
         return {
+            uuid: resource ? resource.uuid : '',
             ownerUuid: resource ? resource.ownerUuid : '',
             uuidPrefix
         };
-    })((props: { ownerUuid?: string, uuidPrefix: string }) => resourceShare(props.uuidPrefix, props.ownerUuid));
+    })((props: { ownerUuid?: string, uuidPrefix: string, uuid?: string } & DispatchProp<any>) =>
+        resourceShare(props.dispatch, props.uuidPrefix, props.ownerUuid, props.uuid));
 
 export const renderWorkflowStatus = (uuidPrefix: string, ownerUuid?: string) => {
     if (ownerUuid === getPublicUuid(uuidPrefix)) {
