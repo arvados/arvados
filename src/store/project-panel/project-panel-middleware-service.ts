@@ -118,6 +118,8 @@ export const getParams = (dataExplorer: DataExplorer, isProjectTrashed: boolean)
 export const getFilters = (dataExplorer: DataExplorer) => {
     const columns = dataExplorer.columns as DataColumns<string>;
     const typeFilters = serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.TYPE));
+
+    // TODO: Extract group contents name filter
     const nameFilters = new FilterBuilder()
         .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.COLLECTION)
         .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROCESS)
