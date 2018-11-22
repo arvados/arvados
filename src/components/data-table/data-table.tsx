@@ -5,10 +5,12 @@
 import * as React from 'react';
 import { Table, TableBody, TableRow, TableCell, TableHead, TableSortLabel, StyleRulesCallback, Theme, WithStyles, withStyles } from '@material-ui/core';
 import { DataColumn, SortDirection } from './data-column';
-import { DataTableFilters, DataTableFilterItem } from "../data-table-filters/data-table-filters";
 import { DataTableDefaultView } from '../data-table-default-view/data-table-default-view';
+import { DataTableFilters } from '../data-table-filters/data-table-filters-tree';
+import { DataTableFiltersPopover } from '../data-table-filters/data-table-filters-popover';
+import { countNodes } from '~/models/tree';
 
-export type DataColumns<T, F extends DataTableFilterItem = DataTableFilterItem> = Array<DataColumn<T, F>>;
+export type DataColumns<T> = Array<DataColumn<T>>;
 
 export interface DataTableDataProps<T> {
     items: T[];
@@ -17,7 +19,7 @@ export interface DataTableDataProps<T> {
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: T) => void;
     onRowDoubleClick: (event: React.MouseEvent<HTMLTableRowElement>, item: T) => void;
     onSortToggle: (column: DataColumn<T>) => void;
-    onFiltersChange: (filters: DataTableFilterItem[], column: DataColumn<T>) => void;
+    onFiltersChange: (filters: DataTableFilters, column: DataColumn<T>) => void;
     extractKey?: (item: T) => React.Key;
     working?: boolean;
     defaultView?: React.ReactNode;
@@ -81,15 +83,15 @@ export const DataTable = withStyles(styles)(
             return <TableCell key={key || index}>
                 {renderHeader ?
                     renderHeader() :
-                    filters.length > 0
-                        ? <DataTableFilters
+                    countNodes(filters) > 0
+                        ? <DataTableFiltersPopover
                             name={`${name} filters`}
                             onChange={filters =>
                                 onFiltersChange &&
                                 onFiltersChange(filters, column)}
                             filters={filters}>
                             {name}
-                        </DataTableFilters>
+                        </DataTableFiltersPopover>
                         : sortDirection
                             ? <TableSortLabel
                                 active={sortDirection !== SortDirection.NONE}
