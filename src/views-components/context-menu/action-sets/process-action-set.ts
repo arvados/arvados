@@ -110,8 +110,8 @@ export const processActionSet: ContextMenuActionSet = [[
     {
         icon: AdvancedIcon,
         name: "Advanced",
-        execute: (dispatch, resource) => {
-            dispatch<any>(openAdvancedTabDialog(resource.uuid));
+        execute: (dispatch, { uuid, ownerUuid }) => {
+            dispatch<any>(openAdvancedTabDialog(uuid, ownerUuid));
         }
     }
     // {

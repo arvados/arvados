@@ -52,7 +52,7 @@ enum RepositoryData {
     CREATED_AT = 'created_at'
 }
 
-export const openAdvancedTabDialog = (uuid: string, index?: number) =>
+export const openAdvancedTabDialog = (uuid: string, ownerUuid: string, index?: number) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const { resources } = getState();
         const kind = extractUuidKind(uuid);
@@ -60,7 +60,7 @@ export const openAdvancedTabDialog = (uuid: string, index?: number) =>
         const repositoryData = getState().repositories.items[index!];
         if (data || repositoryData) {
             if (data) {
-                const user = await services.userService.get(data.ownerUuid);
+                const user = await services.userService.get(ownerUuid);
                 const metadata = await services.linkService.list({
                     filters: new FilterBuilder()
                         .addEqual('headUuid', uuid)

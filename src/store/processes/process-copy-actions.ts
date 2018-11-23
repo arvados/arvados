@@ -20,7 +20,7 @@ export const openCopyProcessDialog = (resource: { name: string, uuid: string }) 
         const process = getProcess(resource.uuid)(getState().resources);
         if (process) {
             const processStatus = getProcessStatus(process);
-            if (processStatus === ProcessStatus.DRAFT) {
+            if (processStatus) {
                 dispatch<any>(resetPickerProjectTree());
                 dispatch<any>(initProjectsTreePicker(PROCESS_COPY_FORM_NAME));
                 const initialData: CopyFormDialogData = { name: `Copy of: ${resource.name}`, uuid: resource.uuid, ownerUuid: '' };
@@ -39,9 +39,9 @@ export const copyProcess = (resource: CopyFormDialogData) =>
         dispatch(startSubmit(PROCESS_COPY_FORM_NAME));
         try {
             const process = await services.containerRequestService.get(resource.uuid);
-            const uuidKey = 'uuid';
-            delete process[uuidKey];
-            await services.containerRequestService.create({ ...process, ownerUuid: resource.ownerUuid, name: resource.name });
+            const uuidKey = '';
+            process.uuid = uuidKey;
+            await services.containerRequestService.create({ command: process.command, containerImage: process.containerImage, outputPath: process.outputPath, ownerUuid: resource.ownerUuid, name: resource.name });
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROCESS_COPY_FORM_NAME }));
             return process;
         } catch (e) {
