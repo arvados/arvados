@@ -55,6 +55,9 @@ import { RepositoryAttributesDialog } from '~/views-components/repository-attrib
 import { CreateRepositoryDialog } from '~/views-components/dialog-forms/create-repository-dialog';
 import { RemoveRepositoryDialog } from '~/views-components/repository-remove-dialog/repository-remove-dialog';
 import { CreateSshKeyDialog } from '~/views-components/dialog-forms/create-ssh-key-dialog';
+import { PublicKeyDialog } from '~/views-components/ssh-keys-dialog/public-key-dialog';
+import { RemoveSshKeyDialog } from '~/views-components/ssh-keys-dialog/remove-dialog';
+import { AttributesSshKeyDialog } from '~/views-components/ssh-keys-dialog/attributes-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -135,6 +138,7 @@ export const WorkbenchPanel =
                 <DetailsPanel />
             </Grid>
             <AdvancedTabDialog />
+            <AttributesSshKeyDialog />
             <ChangeWorkflowDialog />
             <ContextMenu />
             <CopyCollectionDialog />
@@ -150,12 +154,14 @@ export const WorkbenchPanel =
             <MoveProcessDialog />
             <MoveProjectDialog />
             <MultipleFilesRemoveDialog />
+            <PublicKeyDialog />
             <PartialCopyCollectionDialog />
             <ProcessCommandDialog />
             <ProcessInputDialog />
             <ProjectPropertiesDialog />
             <RemoveProcessDialog />
             <RemoveRepositoryDialog />
+            <RemoveSshKeyDialog />
             <RenameFileDialog />
             <RepositoryAttributesDialog />
             <RepositoriesSampleGitDialog />

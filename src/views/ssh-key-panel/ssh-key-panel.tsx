@@ -5,18 +5,26 @@
 import { RootState } from '~/store/store';
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
+import { openSshKeyCreateDialog, openPublicKeyDialog } from '~/store/auth/auth-action';
+import { openSshKeyContextMenu } from '~/store/context-menu/context-menu-actions';
 import { SshKeyPanelRoot, SshKeyPanelRootDataProps, SshKeyPanelRootActionProps } from '~/views/ssh-key-panel/ssh-key-panel-root';
-import { openSshKeyCreateDialog } from '~/store/auth/auth-action';
 
 const mapStateToProps = (state: RootState): SshKeyPanelRootDataProps => {
     return {
-        sshKeys: state.auth.sshKeys
+        sshKeys: state.auth.sshKeys,
+        hasKeys: state.auth.sshKeys!.length > 0
     };
 };
 
 const mapDispatchToProps = (dispatch: Dispatch): SshKeyPanelRootActionProps => ({
-    onClick: () => {
-        dispatch(openSshKeyCreateDialog());
+    openSshKeyCreateDialog: () => {
+        dispatch<any>(openSshKeyCreateDialog());
+    },
+    openRowOptions: (event, index, sshKey) => {
+        dispatch<any>(openSshKeyContextMenu(event, index, sshKey));
+    },
+    openPublicKeyDialog: (name: string, publicKey: string) => {
+        dispatch<any>(openPublicKeyDialog(name, publicKey));
     }
 });
 

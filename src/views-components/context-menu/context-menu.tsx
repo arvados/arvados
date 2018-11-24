@@ -69,5 +69,6 @@ export enum ContextMenuKind {
     PROCESS = "Process",
     PROCESS_RESOURCE = 'ProcessResource',
     PROCESS_LOGS = "ProcessLogs",
-    REPOSITORY = "Repository"
+    REPOSITORY = "Repository",
+    SSH_KEY = "SshKey"
 }
