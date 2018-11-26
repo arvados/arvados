@@ -21,7 +21,7 @@ export const ADVANCED_TAB_DIALOG = 'advancedTabDialog';
 export interface AdvancedTabDialogData {
     apiResponse: any;
     metadata: any;
-    uuid: string;
+    user: string;
     pythonHeader: string;
     pythonExample: string;
     cliGetHeader: string;
@@ -60,12 +60,12 @@ export const openAdvancedTabDialog = (uuid: string, index?: number) =>
         const repositoryData = getState().repositories.items[index!];
         if (data || repositoryData) {
             if (data) {
-                const user = await services.userService.get(data.ownerUuid);
                 const metadata = await services.linkService.list({
                     filters: new FilterBuilder()
                         .addEqual('headUuid', uuid)
                         .getFilters()
                 });
+                const user = metadata.itemsAvailable && await services.userService.get(metadata.items[0].tailUuid);
                 if (kind === ResourceKind.COLLECTION) {
                     const dataCollection: AdvancedTabDialogData = advancedTabData(uuid, metadata, user, collectionApiResponse, data, CollectionData.COLLECTION, GroupContentsResourcePrefix.COLLECTION, CollectionData.STORAGE_CLASSES_CONFIRMED, data.storageClassesConfirmed);
                     dispatch(dialogActions.OPEN_DIALOG({ id: ADVANCED_TAB_DIALOG, data: dataCollection }));
@@ -76,7 +76,6 @@ export const openAdvancedTabDialog = (uuid: string, index?: number) =>
                     const dataProject: AdvancedTabDialogData = advancedTabData(uuid, metadata, user, groupRequestApiResponse, data, ProjectData.GROUP, GroupContentsResourcePrefix.PROJECT, ProjectData.DELETE_AT, data.deleteAt);
                     dispatch(dialogActions.OPEN_DIALOG({ id: ADVANCED_TAB_DIALOG, data: dataProject }));
                 }
-
             } else if (kind === ResourceKind.REPOSITORY) {
                 const dataRepository: AdvancedTabDialogData = advancedTabData(uuid, '', '', repositoryApiResponse, repositoryData, RepositoryData.REPOSITORY, 'repositories', RepositoryData.CREATED_AT, repositoryData.createdAt);
                 dispatch(dialogActions.OPEN_DIALOG({ id: ADVANCED_TAB_DIALOG, data: dataRepository }));
