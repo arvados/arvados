@@ -60,6 +60,12 @@ describe("FilterBuilder", () => {
         ).toEqual(`["etag","in",["etagValue1","etagValue2"]]`);
     });
 
+    it("should add 'not in' rule for set", () => {
+        expect(
+            filters.addNotIn("etag", ["etagValue1", "etagValue2"]).getFilters()
+        ).toEqual(`["etag","not in",["etagValue1","etagValue2"]]`);
+    });
+
     it("should add multiple rules", () => {
         expect(
             filters
@@ -73,6 +79,6 @@ describe("FilterBuilder", () => {
         expect(new FilterBuilder()
             .addIn("etag", ["etagValue1", "etagValue2"], "myPrefix")
             .getFilters())
-            .toEqual(`["my_prefix.etag","in",["etagValue1","etagValue2"]]`);
+            .toEqual(`["myPrefix.etag","in",["etagValue1","etagValue2"]]`);
     });
 });

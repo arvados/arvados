@@ -8,6 +8,8 @@ import { MiddlewareAPI } from "redux";
 import { DataColumns } from "~/components/data-table/data-table";
 import { dataExplorerActions } from "./data-explorer-action";
 import { SortDirection } from "~/components/data-table/data-column";
+import { createTree } from '~/models/tree';
+import { DataTableFilterItem } from "~/components/data-table-filters/data-table-filters-tree";
 
 
 describe("DataExplorerMiddleware", () => {
@@ -20,7 +22,7 @@ describe("DataExplorerMiddleware", () => {
                 selected: true,
                 configurable: false,
                 sortDirection: SortDirection.NONE,
-                filters: [],
+                filters: createTree<DataTableFilterItem>(),
                 render: jest.fn()
             }],
             requestItems: jest.fn(),
@@ -48,7 +50,7 @@ describe("DataExplorerMiddleware", () => {
                 selected: true,
                 configurable: false,
                 sortDirection: SortDirection.NONE,
-                filters: [],
+                filters: createTree<DataTableFilterItem>(),
                 render: jest.fn()
             }],
             requestItems: jest.fn(),
@@ -115,7 +117,7 @@ describe("DataExplorerMiddleware", () => {
         };
         const next = jest.fn();
         const middleware = dataExplorerMiddleware(service)(api)(next);
-        middleware(dataExplorerActions.SET_FILTERS({ id: service.getId(), columnName: "", filters: [] }));
+        middleware(dataExplorerActions.SET_FILTERS({ id: service.getId(), columnName: "", filters: createTree() }));
         expect(api.dispatch).toHaveBeenCalledTimes(2);
     });
 
