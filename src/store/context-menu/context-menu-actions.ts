@@ -14,6 +14,7 @@ import { isSidePanelTreeCategory } from '~/store/side-panel-tree/side-panel-tree
 import { extractUuidKind, ResourceKind } from '~/models/resource';
 import { Process } from '~/store/processes/process';
 import { RepositoryResource } from '~/models/repositories';
+import { SshKeyResource } from '~/models/ssh-key';
 
 export const contextMenuActions = unionize({
     OPEN_CONTEXT_MENU: ofType<{ position: ContextMenuPosition, resource: ContextMenuResource }>(),
@@ -71,6 +72,18 @@ export const openRepositoryContextMenu = (event: React.MouseEvent<HTMLElement>, 
                 menuKind: ContextMenuKind.REPOSITORY,
                 index
             }));
+    };
+
+export const openSshKeyContextMenu = (event: React.MouseEvent<HTMLElement>, index: number, sshKey: SshKeyResource) =>
+    (dispatch: Dispatch) => {
+        dispatch<any>(openContextMenu(event, {
+            name: '',
+            uuid: sshKey.uuid,
+            ownerUuid: sshKey.ownerUuid,
+            kind: ResourceKind.SSH_KEY,
+            menuKind: ContextMenuKind.SSH_KEY,
+            index
+        }));
     };
 
 export const openRootProjectContextMenu = (event: React.MouseEvent<HTMLElement>, projectUuid: string) =>
