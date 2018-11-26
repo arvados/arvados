@@ -49,6 +49,7 @@ import SettingsEthernet from '@material-ui/icons/SettingsEthernet';
 import Star from '@material-ui/icons/Star';
 import StarBorder from '@material-ui/icons/StarBorder';
 import Warning from '@material-ui/icons/Warning';
+import VpnKey from '@material-ui/icons/VpnKey';
 
 export type IconType = React.SFC<{ className?: string, style?: object }>;
 
@@ -73,6 +74,7 @@ export const HelpIcon: IconType = (props) => <Help {...props} />;
 export const HelpOutlineIcon: IconType = (props) => <HelpOutline {...props} />;
 export const ImportContactsIcon: IconType = (props) => <ImportContacts {...props} />;
 export const InputIcon: IconType = (props) => <InsertDriveFile {...props} />;
+export const KeyIcon: IconType = (props) => <VpnKey {...props} />;
 export const LogIcon: IconType = (props) => <SettingsEthernet {...props} />;
 export const MailIcon: IconType = (props) => <Mail {...props} />;
 export const MoreOptionsIcon: IconType = (props) => <MoreVert {...props} />;

@@ -50,6 +50,7 @@ export const sendSharingInvitations = async (dispatch: Dispatch) => {
         message: 'Resource has been shared',
         kind: SnackbarKind.SUCCESS,
     }));
+    dispatch(progressIndicatorActions.STOP_WORKING(SHARING_DIALOG_NAME));
 };
 
 const loadSharingDialog = async (dispatch: Dispatch, getState: () => RootState, { permissionService }: ServiceRepository) => {

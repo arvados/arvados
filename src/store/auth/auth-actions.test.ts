@@ -47,6 +47,7 @@ describe('auth-actions', () => {
 
         expect(store.getState().auth).toEqual({
             apiToken: "token",
+            sshKeys: [],
             user: {
                 email: "test@test.com",
                 firstName: "John",
