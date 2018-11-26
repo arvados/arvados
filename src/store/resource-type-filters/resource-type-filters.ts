@@ -116,8 +116,8 @@ const NON_GENERAL_COLLECTION_TYPES = difference(COLLECTION_TYPES, [CollectionTyp
 
 const COLLECTION_PROPERTIES_PREFIX = `${GroupContentsResourcePrefix.COLLECTION}.properties`;
 
-const buildCollectiomTypeFilters = ({ fb, filters}: { fb: FilterBuilder, filters: CollectionType[] }) => {
-    switch(true){
+const buildCollectiomTypeFilters = ({ fb, filters }: { fb: FilterBuilder, filters: CollectionType[] }) => {
+    switch (true) {
         case filters.length === 0 || filters.length === COLLECTION_TYPES.length:
             return fb;
         case includes(CollectionType.GENERAL, filters):
