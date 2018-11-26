@@ -5,7 +5,7 @@
 import { dialogActions } from '~/store/dialog/dialog-actions';
 import { RootState } from '~/store/store';
 import { Dispatch } from 'redux';
-import { ResourceKind, extractUuidKind } from '~/models/resource';
+import { ResourceKind, extractUuidKind, ResourceObjectType, extractUuidObjectType } from '~/models/resource';
 import { getResource } from '~/store/resources/resources';
 import { GroupContentsResourcePrefix } from '~/services/groups-service/groups-service';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
@@ -21,7 +21,7 @@ export const ADVANCED_TAB_DIALOG = 'advancedTabDialog';
 export interface AdvancedTabDialogData {
     apiResponse: any;
     metadata: any;
-    uuid: string;
+    tail: string;
     pythonHeader: string;
     pythonExample: string;
     cliGetHeader: string;
@@ -52,7 +52,7 @@ enum RepositoryData {
     CREATED_AT = 'created_at'
 }
 
-export const openAdvancedTabDialog = (uuid: string, ownerUuid: string, index?: number) =>
+export const openAdvancedTabDialog = (uuid: string, index?: number) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const { resources } = getState();
         const kind = extractUuidKind(uuid);
@@ -60,23 +60,23 @@ export const openAdvancedTabDialog = (uuid: string, ownerUuid: string, index?: n
         const repositoryData = getState().repositories.items[index!];
         if (data || repositoryData) {
             if (data) {
-                const user = await services.userService.get(ownerUuid);
+                const type = extractUuidObjectType(data.ownerUuid);
                 const metadata = await services.linkService.list({
                     filters: new FilterBuilder()
                         .addEqual('headUuid', uuid)
                         .getFilters()
                 });
+                const tail = metadata.itemsAvailable && type !== ResourceObjectType.GROUP ? await services.userService.get(data.ownerUuid) : data.ownerUuid;
                 if (kind === ResourceKind.COLLECTION) {
-                    const dataCollection: AdvancedTabDialogData = advancedTabData(uuid, metadata, user, collectionApiResponse, data, CollectionData.COLLECTION, GroupContentsResourcePrefix.COLLECTION, CollectionData.STORAGE_CLASSES_CONFIRMED, data.storageClassesConfirmed);
+                    const dataCollection: AdvancedTabDialogData = advancedTabData(uuid, metadata, tail, collectionApiResponse, data, CollectionData.COLLECTION, GroupContentsResourcePrefix.COLLECTION, CollectionData.STORAGE_CLASSES_CONFIRMED, data.storageClassesConfirmed);
                     dispatch(dialogActions.OPEN_DIALOG({ id: ADVANCED_TAB_DIALOG, data: dataCollection }));
                 } else if (kind === ResourceKind.PROCESS) {
-                    const dataProcess: AdvancedTabDialogData = advancedTabData(uuid, metadata, user, containerRequestApiResponse, data, ProcessData.CONTAINER_REQUEST, GroupContentsResourcePrefix.PROCESS, ProcessData.OUTPUT_NAME, data.outputName);
+                    const dataProcess: AdvancedTabDialogData = advancedTabData(uuid, metadata, tail, containerRequestApiResponse, data, ProcessData.CONTAINER_REQUEST, GroupContentsResourcePrefix.PROCESS, ProcessData.OUTPUT_NAME, data.outputName);
                     dispatch(dialogActions.OPEN_DIALOG({ id: ADVANCED_TAB_DIALOG, data: dataProcess }));
                 } else if (kind === ResourceKind.PROJECT) {
-                    const dataProject: AdvancedTabDialogData = advancedTabData(uuid, metadata, user, groupRequestApiResponse, data, ProjectData.GROUP, GroupContentsResourcePrefix.PROJECT, ProjectData.DELETE_AT, data.deleteAt);
+                    const dataProject: AdvancedTabDialogData = advancedTabData(uuid, metadata, tail, groupRequestApiResponse, data, ProjectData.GROUP, GroupContentsResourcePrefix.PROJECT, ProjectData.DELETE_AT, data.deleteAt);
                     dispatch(dialogActions.OPEN_DIALOG({ id: ADVANCED_TAB_DIALOG, data: dataProject }));
                 }
-
             } else if (kind === ResourceKind.REPOSITORY) {
                 const dataRepository: AdvancedTabDialogData = advancedTabData(uuid, '', '', repositoryApiResponse, repositoryData, RepositoryData.REPOSITORY, 'repositories', RepositoryData.CREATED_AT, repositoryData.createdAt);
                 dispatch(dialogActions.OPEN_DIALOG({ id: ADVANCED_TAB_DIALOG, data: dataRepository }));
@@ -86,10 +86,10 @@ export const openAdvancedTabDialog = (uuid: string, ownerUuid: string, index?: n
         }
     };
 
-const advancedTabData = (uuid: string, metadata: any, user: any, apiResponseKind: any, data: any, resourceKind: CollectionData | ProcessData | ProjectData | RepositoryData, resourcePrefix: GroupContentsResourcePrefix | 'repositories', resourceKindProperty: CollectionData | ProcessData | ProjectData | RepositoryData, property: any) => {
+const advancedTabData = (uuid: string, metadata: any, tail: any, apiResponseKind: any, data: any, resourceKind: CollectionData | ProcessData | ProjectData | RepositoryData, resourcePrefix: GroupContentsResourcePrefix | 'repositories', resourceKindProperty: CollectionData | ProcessData | ProjectData | RepositoryData, property: any) => {
     return {
         uuid,
-        user,
+        tail,
         metadata,
         apiResponse: apiResponseKind(data),
         pythonHeader: pythonHeader(resourceKind),

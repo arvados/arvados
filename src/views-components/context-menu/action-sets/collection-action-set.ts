@@ -76,8 +76,8 @@ export const collectionActionSet: ContextMenuActionSet = [[
     {
         icon: AdvancedIcon,
         name: "Advanced",
-        execute: (dispatch, { uuid, ownerUuid }) => {
-            dispatch<any>(openAdvancedTabDialog(uuid, ownerUuid));
+        execute: (dispatch, { uuid }) => {
+            dispatch<any>(openAdvancedTabDialog(uuid));
         }
     }
     // {
