@@ -26,7 +26,8 @@ export class DataTableFiltersTree extends React.Component<DataTableFilterProps> 
         const { filters } = this.props;
         const hasSubfilters = countNodes(filters) !== countChildren('')(filters);
         return <TreeComponent
-            levelIndentation={hasSubfilters ? undefined : 0}
+            levelIndentation={hasSubfilters ? 20 : 0}
+            itemRightPadding={20}
             items={filtersToTree(filters)}
             render={renderItem}
             showSelection
