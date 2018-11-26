@@ -59,6 +59,19 @@ You can also download individual files:
 </code></pre>
 </notextile>
 
+h3. Federated downloads
+
+If your cluster is "configured to be part of a federation":{{site.baseurl}}/admin/federation.html you can also download collections hosted on other clusters (with appropriate permissions).
+
+If you request a collection by portable data hash, it will first search the home cluster, then search federated clusters.
+
+You may also request a collection by UUID.  In this case, it will contact the cluster named in the UUID prefix (in this example, @qr1hi@).
+
+<notextile>
+<pre><code>~$ <span class="userinput">arv-get qr1hi-4zz18-fw6dnjxtkvzdewt/ .</span>
+</code></pre>
+</notextile>
+
 h2(#download-using-workbench). Downloading using Workbench
 
 You can also download Arvados data collections using the Workbench.

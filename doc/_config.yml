@@ -49,9 +49,9 @@ navbar:
     - Develop an Arvados workflow:
       - user/tutorials/intro-crunch.html.textile.liquid
       - user/tutorials/writing-cwl-workflow.html.textile.liquid
+      - user/cwl/federated-workflows.html.textile.liquid
       - user/cwl/cwl-style.html.textile.liquid
       - user/cwl/cwl-extensions.html.textile.liquid
-      - user/cwl/federated-workflows.html.textile.liquid
       - user/topics/arv-docker.html.textile.liquid
     - Reference:
       - user/topics/link-accounts.html.textile.liquid
