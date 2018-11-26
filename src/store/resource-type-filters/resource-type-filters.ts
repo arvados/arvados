@@ -35,6 +35,13 @@ const initFilter = (name: string, parent = '') =>
         status: TreeNodeStatus.LOADED,
     });
 
+export const getSimpleObjectTypeFilters = pipe(
+    (): DataTableFilters => createTree<DataTableFilterItem>(),
+    initFilter(ObjectTypeFilter.PROJECT),
+    initFilter(ObjectTypeFilter.PROCESS),
+    initFilter(ObjectTypeFilter.COLLECTION),
+);
+
 export const getInitialResourceTypeFilters = pipe(
     (): DataTableFilters => createTree<DataTableFilterItem>(),
     initFilter(ObjectTypeFilter.PROJECT),
