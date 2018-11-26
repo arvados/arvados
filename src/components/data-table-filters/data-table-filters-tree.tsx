@@ -31,6 +31,7 @@ export class DataTableFiltersTree extends React.Component<DataTableFilterProps> 
             items={filtersToTree(filters)}
             render={renderItem}
             showSelection
+            disableRipple
             onContextMenu={noop}
             toggleItemActive={noop}
             toggleItemOpen={this.toggleOpen}
