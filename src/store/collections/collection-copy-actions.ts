@@ -11,12 +11,14 @@ import { ServiceRepository } from '~/services/services';
 import { getCommonResourceServiceError, CommonResourceServiceError } from '~/services/common-service/common-resource-service';
 import { CopyFormDialogData } from '~/store/copy-dialog/copy-dialog';
 import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
+import { initProjectsTreePicker } from '~/store/tree-picker/tree-picker-actions';
 
 export const COLLECTION_COPY_FORM_NAME = 'collectionCopyFormName';
 
 export const openCollectionCopyDialog = (resource: { name: string, uuid: string }) =>
     (dispatch: Dispatch) => {
         dispatch<any>(resetPickerProjectTree());
+        dispatch<any>(initProjectsTreePicker(COLLECTION_COPY_FORM_NAME));
         const initialData: CopyFormDialogData = { name: `Copy of: ${resource.name}`, ownerUuid: '', uuid: resource.uuid };
         dispatch<any>(initialize(COLLECTION_COPY_FORM_NAME, initialData));
         dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_COPY_FORM_NAME, data: {} }));

@@ -16,6 +16,9 @@ import { RootState } from "~/store/store";
 import { ServiceRepository } from "~/services/services";
 import { WrappedFieldProps } from 'redux-form';
 import { TreePickerId } from '~/models/tree';
+import { ProjectsTreePicker } from '~/views-components/projects-tree-picker/projects-tree-picker';
+import { ProjectsTreePickerItem } from '~/views-components/projects-tree-picker/generic-projects-tree-picker';
+import { PickerIdProp } from '~/store/tree-picker/picker-id';
 
 type ProjectTreePickerProps = Pick<TreePickerProps<ProjectResource>, 'onContextMenu' | 'toggleItemActive' | 'toggleItemOpen' | 'toggleItemSelection'>;
 
@@ -87,17 +90,17 @@ const renderTreeItem = (item: TreeItem<ProjectResource>) =>
         isActive={item.active}
         hasMargin={true} />;
 
-export const ProjectTreePickerField = (props: WrappedFieldProps) =>
+export const ProjectTreePickerField = (props: WrappedFieldProps & PickerIdProp) =>
     <div style={{ height: '200px', display: 'flex', flexDirection: 'column' }}>
-        <ProjectTreePicker onChange={handleChange(props)} />
+        <ProjectsTreePicker
+            pickerId={props.pickerId}
+            toggleItemActive={handleChange(props)} />
         {props.meta.dirty && props.meta.error &&
             <Typography variant='caption' color='error'>
                 {props.meta.error}
             </Typography>}
     </div>;
 
-const handleChange = (props: WrappedFieldProps) => (value: string) =>
-    props.input.value === value
-        ? props.input.onChange('')
-        : props.input.onChange(value);
-
+const handleChange = (props: WrappedFieldProps) =>
+    (_: any, { id }: TreeItem<ProjectsTreePickerItem>) =>
+        props.input.onChange(id);

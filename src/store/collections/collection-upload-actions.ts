@@ -9,7 +9,7 @@ import { dialogActions } from '~/store/dialog/dialog-actions';
 import { loadCollectionFiles } from '../collection-panel/collection-panel-files/collection-panel-files-actions';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { fileUploaderActions } from '~/store/file-uploader/file-uploader-actions';
-import { reset, startSubmit } from 'redux-form';
+import { reset, startSubmit, stopSubmit } from 'redux-form';
 import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
 
 export const uploadCollectionFiles = (collectionUuid: string) =>
@@ -45,6 +45,13 @@ export const submitCollectionFiles = () =>
                 }));
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_UPLOAD_FILES_DIALOG));
             } catch (e) {
+                dispatch(stopSubmit(COLLECTION_UPLOAD_FILES_DIALOG));
+                dispatch(closeUploadCollectionFilesDialog());
+                dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: 'Data has not been uploaded. Too large file',
+                    hideDuration: 2000,
+                    kind: SnackbarKind.ERROR
+                }));
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_UPLOAD_FILES_DIALOG));
             }
         }

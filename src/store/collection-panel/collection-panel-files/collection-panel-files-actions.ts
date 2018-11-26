@@ -7,7 +7,7 @@ import { Dispatch } from "redux";
 import { CollectionFilesTree, CollectionFileType } from "~/models/collection-file";
 import { ServiceRepository } from "~/services/services";
 import { RootState } from "../../store";
-import { snackbarActions } from "../../snackbar/snackbar-actions";
+import { snackbarActions, SnackbarKind } from "../../snackbar/snackbar-actions";
 import { dialogActions } from '../../dialog/dialog-actions';
 import { getNodeValue } from "~/models/tree";
 import { filterCollectionFilesBySelection } from './collection-panel-files-state';
@@ -37,10 +37,18 @@ export const removeCollectionFiles = (filePaths: string[]) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const currentCollection = getState().collectionPanel.item;
         if (currentCollection) {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...' }));
-            await services.collectionService.deleteFiles(currentCollection.uuid, filePaths);
-            dispatch<any>(loadCollectionFiles(currentCollection.uuid));
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000 }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing...' }));
+            try {
+                await services.collectionService.deleteFiles('', filePaths);
+                dispatch<any>(loadCollectionFiles(currentCollection.uuid));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000 }));
+            } catch (e) {
+                dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: 'Could not remove file.',
+                    hideDuration: 2000,
+                    kind: SnackbarKind.ERROR
+                }));
+            }
         }
     };
 
@@ -57,18 +65,23 @@ export const openFileRemoveDialog = (filePath: string) =>
     (dispatch: Dispatch, getState: () => RootState) => {
         const file = getNodeValue(filePath)(getState().collectionPanelFiles);
         if (file) {
-            const title = file.type === CollectionFileType.DIRECTORY
+            const isDirectory = file.type === CollectionFileType.DIRECTORY;
+            const title = isDirectory
                 ? 'Removing directory'
                 : 'Removing file';
-            const text = file.type === CollectionFileType.DIRECTORY
+            const text = isDirectory
                 ? 'Are you sure you want to remove this directory?'
                 : 'Are you sure you want to remove this file?';
+            const info = isDirectory
+                ? 'Removing files will change content adress.'
+                : 'Removing a file will change content adress.';
 
             dispatch(dialogActions.OPEN_DIALOG({
                 id: FILE_REMOVE_DIALOG,
                 data: {
                     title,
                     text,
+                    info,
                     confirmButtonLabel: 'Remove',
                     filePath
                 }
@@ -84,6 +97,7 @@ export const openMultipleFilesRemoveDialog = () =>
         data: {
             title: 'Removing files',
             text: 'Are you sure you want to remove selected files?',
+            info: 'Removing files will change content adress.',
             confirmButtonLabel: 'Remove'
         }
     });

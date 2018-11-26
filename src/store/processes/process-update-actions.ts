@@ -34,8 +34,7 @@ export const updateProcess = (resource: ProcessUpdateFormDialogData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(startSubmit(PROCESS_UPDATE_FORM_NAME));
         try {
-            const process = await services.containerRequestService.get(resource.uuid);
-            const updatedProcess = await services.containerRequestService.update(resource.uuid, { ...process, name: resource.name });
+            const updatedProcess = await services.containerRequestService.update(resource.uuid, { name: resource.name });
             dispatch(projectPanelActions.REQUEST_ITEMS());
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROCESS_UPDATE_FORM_NAME }));
             return updatedProcess;
@@ -43,8 +42,6 @@ export const updateProcess = (resource: ProcessUpdateFormDialogData) =>
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {
                 dispatch(stopSubmit(PROCESS_UPDATE_FORM_NAME, { name: 'Process with the same name already exists.' } as FormErrors));
-            } else if (error === CommonResourceServiceError.MODIFYING_CONTAINER_REQUEST_FINAL_STATE) {
-                dispatch(stopSubmit(PROCESS_UPDATE_FORM_NAME, { name: 'You cannot modified in "Final" state.' } as FormErrors));
             } else {
                 dispatch(dialogActions.CLOSE_DIALOG({ id: PROCESS_UPDATE_FORM_NAME }));
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not update the process.', hideDuration: 2000 }));

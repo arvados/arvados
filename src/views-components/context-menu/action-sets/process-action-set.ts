@@ -18,6 +18,8 @@ import { openProcessCommandDialog } from '~/store/processes/process-command-acti
 import { detailsPanelActions } from '~/store/details-panel/details-panel-action';
 import { openSharingDialog } from "~/store/sharing-dialog/sharing-dialog-actions";
 import { openAdvancedTabDialog } from "~/store/advanced-tab/advanced-tab";
+import { openProcessInputDialog } from "~/store/processes/process-input-actions";
+import { toggleDetailsPanel } from '~/store/details-panel/details-panel-action';
 
 export const processActionSet: ContextMenuActionSet = [[
     {
@@ -67,7 +69,7 @@ export const processActionSet: ContextMenuActionSet = [[
         icon: InputIcon,
         name: "Inputs",
         execute: (dispatch, resource) => {
-            // add code
+            dispatch<any>(openProcessInputDialog(resource.uuid));
         }
     },
     {
@@ -95,7 +97,7 @@ export const processActionSet: ContextMenuActionSet = [[
         icon: DetailsIcon,
         name: "View details",
         execute: dispatch => {
-            dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
+            dispatch<any>(toggleDetailsPanel());
         }
     },
     // {

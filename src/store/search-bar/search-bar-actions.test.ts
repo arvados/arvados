@@ -91,7 +91,7 @@ describe('search-bar-actions', () => {
                 }],
                 saveQuery: false,
                 queryName: ''
-            })
+            });
         });
 
         it('should correctly build advanced data record from query #2', () => {
@@ -110,7 +110,7 @@ describe('search-bar-actions', () => {
                 }],
                 saveQuery: false,
                 queryName: ''
-            })
+            });
         });
     });
 
@@ -132,6 +132,6 @@ describe('search-bar-actions', () => {
                 queryName: ''
             });
             expect(q).toBe('document pdf type:arvados#collection cluster:indianapolis is:trashed from:2017-08-01 has:filesize:101mb');
-        })
+        });
     });
 });

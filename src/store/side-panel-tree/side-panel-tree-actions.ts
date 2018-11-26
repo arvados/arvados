@@ -4,16 +4,17 @@
 
 import { Dispatch } from 'redux';
 import { treePickerActions } from "~/store/tree-picker/tree-picker-actions";
-import { RootState } from '../store';
+import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
 import { FilterBuilder } from '~/services/api/filter-builder';
-import { resourcesActions } from '../resources/resources-actions';
-import { getTreePicker, TreePicker } from '../tree-picker/tree-picker';
+import { resourcesActions } from '~/store/resources/resources-actions';
+import { getTreePicker, TreePicker } from '~/store/tree-picker/tree-picker';
 import { getNodeAncestors, getNodeAncestorsIds, getNode, TreeNode, initTreeNode, TreeNodeStatus } from '~/models/tree';
 import { ProjectResource } from '~/models/project';
-import { OrderBuilder } from '../../services/api/order-builder';
+import { OrderBuilder } from '~/services/api/order-builder';
 import { ResourceKind } from '~/models/resource';
-import { GroupContentsResourcePrefix } from '../../services/groups-service/groups-service';
+import { GroupContentsResourcePrefix } from '~/services/groups-service/groups-service';
+import { GroupClass } from '~/models/group';
 
 export enum SidePanelTreeCategory {
     PROJECTS = 'Projects',
@@ -105,16 +106,16 @@ const loadSharedRoot = async (dispatch: Dispatch, _: () => RootState, services: 
     dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id: SidePanelTreeCategory.SHARED_WITH_ME, pickerId: SIDE_PANEL_TREE }));
 
     const params = {
-        filters: new FilterBuilder()
+        filters:  `[${new FilterBuilder()
             .addIsA('uuid', ResourceKind.PROJECT)
-            .getFilters(),
+            .addEqual('groupClass', GroupClass.PROJECT)
+            .getFilters()}]`,
         order: new OrderBuilder<ProjectResource>()
             .addAsc('name', GroupContentsResourcePrefix.PROJECT)
             .getOrder(),
-        excludeHomeProject: true,
     };
 
-    const { items } = await services.groupsService.contents('', params);
+    const { items } = await services.groupsService.shared(params);
 
     dispatch(treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
         id: SidePanelTreeCategory.SHARED_WITH_ME,

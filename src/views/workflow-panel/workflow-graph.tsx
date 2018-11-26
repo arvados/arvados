@@ -20,7 +20,7 @@ interface WorkflowGraphProps {
 export class WorkflowGraph extends React.Component<WorkflowGraphProps, {}> {
     private svgRoot: React.RefObject<SVGSVGElement> = React.createRef();
 
-    componentDidMount(): void {
+    setGraph() {
         const graphs = yaml.safeLoad(this.props.workflow.definition, { json: true });
 
         let workflowGraph = graphs;
@@ -37,7 +37,7 @@ export class WorkflowGraph extends React.Component<WorkflowGraphProps, {}> {
                 new SVGArrangePlugin(),
                 new SVGEdgeHoverPlugin(),
                 new SVGNodeMovePlugin({
-                    movementSpeed: 10
+                    movementSpeed: 2
                 }),
                 new SVGPortDragPlugin(),
                 new SelectionPlugin(),
@@ -45,6 +45,14 @@ export class WorkflowGraph extends React.Component<WorkflowGraphProps, {}> {
             ]
         });
         workflow.draw();
+    }
+
+    componentDidMount() {
+        this.setGraph();
+    }
+
+    componentDidUpdate() {
+        this.setGraph();
     }
 
     render() {

@@ -21,6 +21,7 @@ import { Routes } from '~/routes/routes';
 import { SidePanel } from '~/views-components/side-panel/side-panel';
 import { ProcessPanel } from '~/views/process-panel/process-panel';
 import { ProcessLogPanel } from '~/views/process-log-panel/process-log-panel';
+import { ChangeWorkflowDialog } from '~/views-components/run-process-dialog/change-workflow-dialog';
 import { CreateProjectDialog } from '~/views-components/dialog-forms/create-project-dialog';
 import { CreateCollectionDialog } from '~/views-components/dialog-forms/create-collection-dialog';
 import { CopyCollectionDialog } from '~/views-components/dialog-forms/copy-collection-dialog';
@@ -34,6 +35,7 @@ import { MoveCollectionDialog } from '~/views-components/dialog-forms/move-colle
 import { FilesUploadCollectionDialog } from '~/views-components/dialog-forms/files-upload-collection-dialog';
 import { PartialCopyCollectionDialog } from '~/views-components/dialog-forms/partial-copy-collection-dialog';
 import { ProcessCommandDialog } from '~/views-components/process-command-dialog/process-command-dialog';
+import { RemoveProcessDialog } from '~/views-components/process-remove-dialog/process-remove-dialog';
 import { MainContentBar } from '~/views-components/main-content-bar/main-content-bar';
 import { Grid } from '@material-ui/core';
 import { TrashPanel } from "~/views/trash-panel/trash-panel";
@@ -42,8 +44,20 @@ import { RunProcessPanel } from '~/views/run-process-panel/run-process-panel';
 import SplitterLayout from 'react-splitter-layout';
 import { WorkflowPanel } from '~/views/workflow-panel/workflow-panel';
 import { SearchResultsPanel } from '~/views/search-results-panel/search-results-panel';
+import { SshKeyPanel } from '~/views/ssh-key-panel/ssh-key-panel';
 import { SharingDialog } from '~/views-components/sharing-dialog/sharing-dialog';
 import { AdvancedTabDialog } from '~/views-components/advanced-tab-dialog/advanced-tab-dialog';
+import { ProcessInputDialog } from '~/views-components/process-input-dialog/process-input-dialog';
+import { ProjectPropertiesDialog } from '~/views-components/project-properties-dialog/project-properties-dialog';
+import { RepositoriesPanel } from '~/views/repositories-panel/repositories-panel';
+import { RepositoriesSampleGitDialog } from '~/views-components/repositories-sample-git-dialog/repositories-sample-git-dialog';
+import { RepositoryAttributesDialog } from '~/views-components/repository-attributes-dialog/repository-attributes-dialog';
+import { CreateRepositoryDialog } from '~/views-components/dialog-forms/create-repository-dialog';
+import { RemoveRepositoryDialog } from '~/views-components/repository-remove-dialog/repository-remove-dialog';
+import { CreateSshKeyDialog } from '~/views-components/dialog-forms/create-ssh-key-dialog';
+import { PublicKeyDialog } from '~/views-components/ssh-keys-dialog/public-key-dialog';
+import { RemoveSshKeyDialog } from '~/views-components/ssh-keys-dialog/remove-dialog';
+import { AttributesSshKeyDialog } from '~/views-components/ssh-keys-dialog/attributes-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -113,6 +127,8 @@ export const WorkbenchPanel =
                                 <Route path={Routes.RUN_PROCESS} component={RunProcessPanel} />
                                 <Route path={Routes.WORKFLOWS} component={WorkflowPanel} />
                                 <Route path={Routes.SEARCH_RESULTS} component={SearchResultsPanel} />
+                                <Route path={Routes.REPOSITORIES} component={RepositoriesPanel} />
+                                <Route path={Routes.SSH_KEYS} component={SshKeyPanel} />
                             </Switch>
                         </Grid>
                     </Grid>
@@ -122,11 +138,15 @@ export const WorkbenchPanel =
                 <DetailsPanel />
             </Grid>
             <AdvancedTabDialog />
+            <AttributesSshKeyDialog />
+            <ChangeWorkflowDialog />
             <ContextMenu />
             <CopyCollectionDialog />
             <CopyProcessDialog />
             <CreateCollectionDialog />
             <CreateProjectDialog />
+            <CreateRepositoryDialog />
+            <CreateSshKeyDialog />
             <CurrentTokenDialog />
             <FileRemoveDialog />
             <FilesUploadCollectionDialog />
@@ -134,9 +154,17 @@ export const WorkbenchPanel =
             <MoveProcessDialog />
             <MoveProjectDialog />
             <MultipleFilesRemoveDialog />
+            <PublicKeyDialog />
             <PartialCopyCollectionDialog />
             <ProcessCommandDialog />
+            <ProcessInputDialog />
+            <ProjectPropertiesDialog />
+            <RemoveProcessDialog />
+            <RemoveRepositoryDialog />
+            <RemoveSshKeyDialog />
             <RenameFileDialog />
+            <RepositoryAttributesDialog />
+            <RepositoriesSampleGitDialog />
             <RichTextEditorDialog />
             <SharingDialog />
             <Snackbar />

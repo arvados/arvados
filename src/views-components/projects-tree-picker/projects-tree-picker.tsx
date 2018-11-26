@@ -3,10 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
+import { values, memoize, pipe, pick } from 'lodash/fp';
 import { HomeTreePicker } from '~/views-components/projects-tree-picker/home-tree-picker';
 import { SharedTreePicker } from '~/views-components/projects-tree-picker/shared-tree-picker';
 import { FavoritesTreePicker } from '~/views-components/projects-tree-picker/favorites-tree-picker';
-import { getProjectsTreePickerIds } from '~/store/tree-picker/tree-picker-actions';
+import { getProjectsTreePickerIds, SHARED_PROJECT_ID, FAVORITES_PROJECT_ID } from '~/store/tree-picker/tree-picker-actions';
 import { TreeItem } from '~/components/tree/tree';
 import { ProjectsTreePickerItem } from './generic-projects-tree-picker';
 
@@ -21,9 +22,18 @@ export interface ProjectsTreePickerProps {
 
 export const ProjectsTreePicker = ({ pickerId, ...props }: ProjectsTreePickerProps) => {
     const { home, shared, favorites } = getProjectsTreePickerIds(pickerId);
+    const relatedTreePickers = getRelatedTreePickers(pickerId);
+    const p = {
+        ...props,
+        relatedTreePickers,
+        disableActivation
+    };
     return <div>
-        <HomeTreePicker pickerId={home} {...props} />
-        <SharedTreePicker pickerId={shared} {...props} />
-        <FavoritesTreePicker pickerId={favorites} {...props} />
+        <HomeTreePicker pickerId={home} {...p} />
+        <SharedTreePicker pickerId={shared} {...p} />
+        <FavoritesTreePicker pickerId={favorites} {...p} />
     </div>;
 };
+
+const getRelatedTreePickers = memoize(pipe(getProjectsTreePickerIds, values));
+const disableActivation = [SHARED_PROJECT_ID, FAVORITES_PROJECT_ID];

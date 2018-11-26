@@ -5,15 +5,15 @@
 import { ContextMenuActionSet } from "../context-menu-action-set";
 import { DetailsIcon, ProvenanceGraphIcon, AdvancedIcon, RestoreFromTrashIcon } from '~/components/icon/icon';
 import { toggleCollectionTrashed } from "~/store/trash/trash-actions";
-import { detailsPanelActions } from "~/store/details-panel/details-panel-action";
 import { openAdvancedTabDialog } from "~/store/advanced-tab/advanced-tab";
+import { toggleDetailsPanel } from '~/store/details-panel/details-panel-action';
 
 export const trashedCollectionActionSet: ContextMenuActionSet = [[
     {
         icon: DetailsIcon,
         name: "View details",
         execute: dispatch => {
-            dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
+            dispatch<any>(toggleDetailsPanel());
         }
     },
     {

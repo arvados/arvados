@@ -17,6 +17,7 @@ interface ChipsInputProps<Value> {
     inputProps?: InputProps;
     deletable?: boolean;
     orderable?: boolean;
+    disabled?: boolean;
 }
 
 type CssRules = 'chips' | 'input' | 'inputContainer';
@@ -106,6 +107,7 @@ export const ChipsInput = withStyles(styles)(
             return <div className={classes.chips}>
                 <Chips
                     {...props}
+                    clickable={!props.disabled}
                     values={value}
                     filler={<div ref={this.filler} />}
                 />
@@ -118,6 +120,7 @@ export const ChipsInput = withStyles(styles)(
                 {...InputProps}
                 value={this.state.text}
                 onChange={this.setText}
+                disabled={this.props.disabled}
                 onKeyDown={this.handleKeyPress}
                 inputProps={{
                     ...(InputProps && InputProps.inputProps),

@@ -28,6 +28,10 @@ const Input = (props: GenericInputProps) =>
         component={InputComponent}
         {...props} />;
 
-const InputComponent = ({ input, meta }: GenericInputProps) =>
-    <FloatInputComponent fullWidth {...input} error={meta.touched && !!meta.error} />;
+const InputComponent = ({ input, meta, commandInput }: GenericInputProps) =>
+    <FloatInputComponent
+        fullWidth
+        error={meta.touched && !!meta.error}
+        disabled={commandInput.disabled}
+        {...input} />;
 

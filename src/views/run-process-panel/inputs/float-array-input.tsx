@@ -8,7 +8,6 @@ import { Field } from 'redux-form';
 import { ERROR_MESSAGE } from '~/validators/require';
 import { GenericInputProps, GenericInput } from '~/views/run-process-panel/inputs/generic-input';
 import { ChipsInput } from '~/components/chips-input/chips-input';
-import { identity } from 'lodash';
 import { createSelector } from 'reselect';
 import { FloatInput } from '~/components/float-input/float-input';
 
@@ -42,15 +41,17 @@ const FloatArrayInputComponent = (props: GenericInputProps) =>
 
 class InputComponent extends React.PureComponent<GenericInputProps>{
     render() {
+        const { commandInput, input, meta } = this.props;
         return <ChipsInput
-            deletable
-            orderable
-            value={this.props.input.value}
+            deletable={!commandInput.disabled}
+            orderable={!commandInput.disabled}
+            disabled={commandInput.disabled}
+            value={input.value}
             onChange={this.handleChange}
             createNewValue={parseFloat}
             inputComponent={FloatInput}
             inputProps={{
-                error: this.props.meta.error,
+                error: meta.error,
             }} />;
     }
 

@@ -91,10 +91,11 @@ const FileInputComponent = connect()(
                     <Input
                         readOnly
                         fullWidth
+                        disabled={props.commandInput.disabled}
                         value={props.input.value}
                         error={props.meta.touched && !!props.meta.error}
-                        onClick={this.openDialog}
-                        onKeyPress={this.openDialog} />}
+                        onClick={!props.commandInput.disabled ? this.openDialog : undefined}
+                        onKeyPress={!props.commandInput.disabled ? this.openDialog : undefined} />}
                 {...this.props} />;
         }
 

@@ -15,7 +15,7 @@ import { GroupClass } from '~/models/group';
 import { SearchView } from '~/store/search-bar/search-bar-reducer';
 import { navigateTo, navigateToSearchResults } from '~/store/navigation/navigation-action';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { ClusterObjectType, getClusterObjectType, PropertyValues, SearchBarAdvanceFormData } from '~/models/search-bar';
+import { getClusterObjectType, PropertyValues, SearchBarAdvanceFormData } from '~/models/search-bar';
 import { debounce } from 'debounce';
 import * as _ from "lodash";
 import { getModifiedKeysValues } from "~/common/objects";
@@ -334,14 +334,14 @@ export const getAdvancedDataFromQuery = (query: string): SearchBarAdvanceFormDat
     const getFirstProp = (name: string) => r.properties[name] && r.properties[name][0];
     const getPropValue = (name: string, value: string) => r.properties[name] && r.properties[name].find((v: string) => v === value);
     const getProperties = () => {
-        if (r.properties['has']) {
-            return r.properties['has'].map((value: string) => {
+        if (r.properties.has) {
+            return r.properties.has.map((value: string) => {
                 const v = value.split(':');
                 return {
                     key: v[0],
                     value: v[1]
-                }
-            })
+                };
+            });
         }
         return [];
     };
@@ -356,8 +356,8 @@ export const getAdvancedDataFromQuery = (query: string): SearchBarAdvanceFormDat
         dateTo: getFirstProp('to'),
         properties: getProperties(),
         saveQuery: false,
-        queryName: '',
-    }
+        queryName: ''
+    };
 };
 
 export const getFilters = (filterName: string, searchValue: string): string => {

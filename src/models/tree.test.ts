@@ -18,6 +18,14 @@ describe('Tree', () => {
         expect(Tree.getNode('Node 1')(newTree)).toEqual(initTreeNode({ id: 'Node 1', value: 'Value 1' }));
     });
 
+    it('appends a subtree', () => {
+        const newTree = Tree.setNode(initTreeNode({ id: 'Node 1', value: 'Value 1' }))(tree);
+        const subtree = Tree.setNode(initTreeNode({ id: 'Node 2', value: 'Value 2' }))(Tree.createTree());
+        const mergedTree = Tree.appendSubtree('Node 1', subtree)(newTree);
+        expect(Tree.getNode('Node 1')(mergedTree)).toBeDefined();
+        expect(Tree.getNode('Node 2')(mergedTree)).toBeDefined();
+    });
+
     it('adds new node reference to parent children', () => {
         const newTree = pipe(
             Tree.setNode(initTreeNode({ id: 'Node 1', parent: '', value: 'Value 1' })),
@@ -89,6 +97,6 @@ describe('Tree', () => {
             initTreeNode({ id: 'Node 2', parent: 'Node 1', value: 'Value 2' }),
         ].reduce((tree, node) => Tree.setNode(node)(tree), tree);
         const mappedTree = Tree.mapTreeValues<string, number>(value => parseInt(value.split(' ')[1], 10))(newTree);
-        expect(Tree.getNode('Node 2')(mappedTree)).toEqual(initTreeNode({id: 'Node 2', parent: 'Node 1', value: 2 }));
+        expect(Tree.getNode('Node 2')(mappedTree)).toEqual(initTreeNode({ id: 'Node 2', parent: 'Node 1', value: 2 }));
     });
 });
