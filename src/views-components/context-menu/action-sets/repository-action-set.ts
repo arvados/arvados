@@ -23,8 +23,8 @@ export const repositoryActionSet: ContextMenuActionSet = [[{
 }, {
     name: "Advanced",
     icon: AdvancedIcon,
-    execute: (dispatch, { uuid, index }) => {
-        dispatch<any>(openAdvancedTabDialog(uuid, index));
+    execute: (dispatch, resource) => {
+        dispatch<any>(openAdvancedTabDialog(resource.uuid, resource.index));
     }
 }, {
     name: "Remove",
