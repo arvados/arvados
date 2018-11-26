@@ -34,7 +34,8 @@ describe('auth-reducer', () => {
         const state = reducer(initialState, authActions.INIT({ user, token: "token" }));
         expect(state).toEqual({
             apiToken: "token",
-            user
+            user,
+            sshKeys: []
         });
     });
 
