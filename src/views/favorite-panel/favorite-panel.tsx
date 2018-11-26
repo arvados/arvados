@@ -11,7 +11,6 @@ import { RouteComponentProps } from 'react-router';
 import { DataTableFilterItem } from '~/components/data-table-filters/data-table-filters';
 import { SortDirection } from '~/components/data-table/data-column';
 import { ResourceKind } from '~/models/resource';
-import { resourceLabel } from '~/common/labels';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { FAVORITE_PANEL_ID } from "~/store/favorite-panel/favorite-panel-action";
 import {
@@ -28,12 +27,12 @@ import { openContextMenu, resourceKindToContextMenuKind } from '~/store/context-
 import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { navigateTo } from '~/store/navigation/navigation-action';
 import { ContainerRequestState } from "~/models/container-request";
-import { FavoritesState } from '../../store/favorites/favorites-reducer';
+import { FavoritesState } from '~/store/favorites/favorites-reducer';
 import { RootState } from '~/store/store';
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 import { createTree } from '~/models/tree';
-import { getInitialResourceTypeFilters } from '../../store/resource-type-filters/resource-type-filters';
-// TODO: clean up code
+import { getSimpleObjectTypeFilters } from '~/store/resource-type-filters/resource-type-filters';
+
 type CssRules = "toolbar" | "button";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
@@ -79,7 +78,7 @@ export const favoritePanelColumns: DataColumns<string> = [
         name: FavoritePanelColumnNames.TYPE,
         selected: true,
         configurable: true,
-        filters: getInitialResourceTypeFilters(),
+        filters: getSimpleObjectTypeFilters(),
         render: uuid => <ResourceType uuid={uuid} />
     },
     {
