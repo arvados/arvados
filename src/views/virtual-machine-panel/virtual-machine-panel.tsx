@@ -17,12 +17,12 @@ import { HelpIcon } from '~/components/icon/icon';
 import { VirtualMachinesLoginsResource } from '~/models/virtual-machines';
 import { Routes } from '~/routes/routes';
 
-type CssRules = 'button' | 'codeSnippet' | 'link' | 'linkIcon' | 'icon';
+type CssRules = 'button' | 'codeSnippet' | 'link' | 'linkIcon' | 'rightAlign' | 'cardWithoutMachines';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     button: {
         marginTop: theme.spacing.unit,
-        marginBottom: theme.spacing.unit * 2
+        marginBottom: theme.spacing.unit
     },
     codeSnippet: {
         borderRadius: theme.spacing.unit * 0.5,
@@ -46,8 +46,15 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
             transition: 'all 0.5s ease'
         }
     },
-    icon: {
+    rightAlign: {
         textAlign: "right"
+    },
+    cardWithoutMachines: {
+        display: 'flex'
+    },
+    icon: {
+        textAlign: "right",
+        marginTop: theme.spacing.unit
     }
 });
 
@@ -88,11 +95,11 @@ export const VirtualMachinePanel = compose(
             }
 
             render() {
-                const { classes, saveRequestedDate, requestedDate, virtualMachines, logins, links } = this.props;
+                const { classes, saveRequestedDate, requestedDate, virtualMachines, links } = this.props;
                 return (
                     <Grid container spacing={16}>
-                        {cardContentWithNoVirtualMachines(requestedDate, saveRequestedDate, classes)}
-                        {virtualMachines.itemsAvailable > 0 && links.itemsAvailable > 0 && cardContentWithVirtualMachines(virtualMachines, links, classes)}
+                        {virtualMachines.itemsAvailable === 0 && cardContentWithNoVirtualMachines(requestedDate, saveRequestedDate, classes)}
+                        {virtualMachines.itemsAvailable > 0 && links.itemsAvailable > 0 && cardContentWithVirtualMachines(requestedDate, saveRequestedDate, virtualMachines, links, classes)}
                         {cardSSHSection(classes)}
                     </Grid>
                 );
@@ -103,27 +110,38 @@ export const VirtualMachinePanel = compose(
 const cardContentWithNoVirtualMachines = (requestedDate: string, saveRequestedDate: () => void, classes: any) =>
     <Grid item xs={12}>
         <Card>
-            <CardContent>
-                <Typography variant="body2">
-                    You do not have access to any virtual machines. Some Arvados features require using the command line. You may request access to a hosted virtual machine with the command line shell.
-                </Typography>
-                <Button variant="contained" color="primary" className={classes.button} onClick={saveRequestedDate}>
-                    SEND REQUEST FOR SHELL ACCESS
-                </Button>
-                {requestedDate &&
-                    <Typography variant="body1">
-                        A request for shell access was sent on {requestedDate}
-                    </Typography>}
+            <CardContent className={classes.cardWithoutMachines}>
+                <Grid item xs={6}>
+                    <Typography variant="body2">
+                        You do not have access to any virtual machines. Some Arvados features require using the command line. You may request access to a hosted virtual machine with the command line shell.
+                    </Typography>
+                </Grid>
+                <Grid item xs={6} className={classes.rightAlign}>
+                    <Button variant="contained" color="primary" className={classes.button} onClick={saveRequestedDate}>
+                        SEND REQUEST FOR SHELL ACCESS
+                    </Button>
+                    {requestedDate &&
+                        <Typography variant="body1">
+                            A request for shell access was sent on {requestedDate}
+                        </Typography>}
+                </Grid>
             </CardContent>
         </Card>
     </Grid>;
 
-const login = 'pawelkowalczyk';
-
-const cardContentWithVirtualMachines = (virtualMachines: ListResults<any>, links: ListResults<any>, classes: any) =>
+const cardContentWithVirtualMachines = (requestedDate: string, saveRequestedDate: () => void, virtualMachines: ListResults<any>, links: ListResults<any>, classes: any) =>
     <Grid item xs={12}>
         <Card>
             <CardContent>
+                <div className={classes.rightAlign}>
+                    <Button variant="contained" color="primary" className={classes.button} onClick={saveRequestedDate}>
+                        SEND REQUEST FOR SHELL ACCESS
+                    </Button>
+                    {requestedDate &&
+                        <Typography variant="body1">
+                            A request for shell access was sent on {requestedDate}
+                        </Typography>}
+                </div>
                 <div className={classes.icon}>
                     <a href="https://doc.arvados.org/user/getting_started/vm-login-with-webshell.html" target="_blank" className={classes.linkIcon}>
                         <Tooltip title="Access VM using webshell">
@@ -160,6 +178,7 @@ const cardContentWithVirtualMachines = (virtualMachines: ListResults<any>, links
     </Grid>;
 
 const getUsername = (links: ListResults<any>, virtualMachine: any) => {
+    console.log(links);
     const link = links.items.find((item: any) => item.headUuid === virtualMachine.uuid);
     return link.properties.username || undefined;
 };
