@@ -98,6 +98,9 @@ export const getNodeDescendants = (id: string, limit = Infinity) => <T>(tree: Tr
 export const countNodes = <T>(tree: Tree<T>) =>
     getNodeDescendantsIds('')(tree).length;
 
+export const countChildren = (id: string) => <T>(tree: Tree<T>) =>
+    getNodeChildren('')(tree).length;
+
 export const getNodeDescendantsIds = (id: string, limit = Infinity) => <T>(tree: Tree<T>): string[] => {
     const node = getNode(id)(tree);
     const children = node ? node.children :
