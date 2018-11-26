@@ -9,8 +9,8 @@ import { getDataExplorer } from "~/store/data-explorer/data-explorer-reducer";
 import { Dispatch } from "redux";
 import { dataExplorerActions } from "~/store/data-explorer/data-explorer-action";
 import { DataColumn } from "~/components/data-table/data-column";
-import { DataTableFilterItem } from "~/components/data-table-filters/data-table-filters";
 import { DataColumns } from "~/components/data-table/data-table";
+import { DataTableFilters } from '~/components/data-table-filters/data-table-filters-tree';
 
 interface Props {
     id: string;
@@ -44,7 +44,7 @@ const mapDispatchToProps = () => {
             dispatch(dataExplorerActions.TOGGLE_SORT({ id, columnName: column.name }));
         },
 
-        onFiltersChange: (filters: DataTableFilterItem[], column: DataColumn<any>) => {
+        onFiltersChange: (filters: DataTableFilters, column: DataColumn<any>) => {
             dispatch(dataExplorerActions.SET_FILTERS({ id, columnName: column.name, filters }));
         },
 

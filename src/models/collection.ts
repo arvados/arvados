@@ -22,3 +22,9 @@ export interface CollectionResource extends TrashableResource {
 export const getCollectionUrl = (uuid: string) => {
     return `/collections/${uuid}`;
 };
+
+export enum CollectionType {
+    GENERAL = 'nil',
+    OUTPUT = 'output',
+    LOG = 'log',
+}

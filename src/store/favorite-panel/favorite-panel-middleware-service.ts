@@ -32,7 +32,7 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
         if (!dataExplorer) {
             api.dispatch(favoritesPanelDataExplorerIsNotSet());
         } else {
-            const columns = dataExplorer.columns as DataColumns<string, FavoritePanelFilter>;
+            const columns = dataExplorer.columns as DataColumns<string>;
             const sortColumn = getSortColumn(dataExplorer);
             const typeFilters = this.getColumnFilters(columns, FavoritePanelColumnNames.TYPE);
 
@@ -59,7 +59,8 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
                         linkOrder: linkOrder.getOrder(),
                         contentOrder: contentOrder.getOrder(),
                         filters: new FilterBuilder()
-                            .addIsA("headUuid", typeFilters.map(filter => filter.type))
+                            // TODO: update filters
+                            // .addIsA("headUuid", typeFilters.map(filter => filter.type))
                             .addILike("name", dataExplorer.searchValue)
                             .getFilters()
                     });

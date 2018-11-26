@@ -178,6 +178,10 @@ export const deselectNodes = (id: string | string[]) => <T>(tree: Tree<T>) => {
     return ids.reduce((tree, id) => deselectNode(id)(tree), tree);
 };
 
+export const getSelectedNodes = <T>(tree: Tree<T>) =>
+    getNodeDescendants('')(tree)
+        .filter(node => node.selected);
+
 export const initTreeNode = <T>(data: Pick<TreeNode<T>, 'id' | 'value'> & { parent?: string }): TreeNode<T> => ({
     children: [],
     active: false,

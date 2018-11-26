@@ -73,6 +73,6 @@ describe("FilterBuilder", () => {
         expect(new FilterBuilder()
             .addIn("etag", ["etagValue1", "etagValue2"], "myPrefix")
             .getFilters())
-            .toEqual(`["my_prefix.etag","in",["etagValue1","etagValue2"]]`);
+            .toEqual(`["myPrefix.etag","in",["etagValue1","etagValue2"]]`);
     });
 });

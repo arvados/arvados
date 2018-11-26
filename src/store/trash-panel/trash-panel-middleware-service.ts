@@ -31,7 +31,7 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
 
     async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
         const dataExplorer = api.getState().dataExplorer[this.getId()];
-        const columns = dataExplorer.columns as DataColumns<string, TrashPanelFilter>;
+        const columns = dataExplorer.columns as DataColumns<string>;
         const sortColumn = getSortColumn(dataExplorer);
         const typeFilters = this.getColumnFilters(columns, TrashPanelColumnNames.TYPE);
 
@@ -56,7 +56,8 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
                     ...dataExplorerToListParams(dataExplorer),
                     order: order.getOrder(),
                     filters: new FilterBuilder()
-                        .addIsA("uuid", typeFilters.map(f => f.type))
+                        // TODO: update filters
+                        // .addIsA("uuid", typeFilters.map(f => f.type))
                         .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.COLLECTION)
                         .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROJECT)
                         .addEqual("is_trashed", true)
