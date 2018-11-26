@@ -39,18 +39,22 @@ export const AttributesSshKeyDialog = compose(
                     {data.sshKey && <Grid container direction="row" spacing={16} className={classes.root}>
                         <Grid item xs={5}>Name</Grid>
                         <Grid item xs={7}>{data.sshKey.name}</Grid>
+                        <Grid item xs={5}>uuid</Grid>
+                        <Grid item xs={7}>{data.sshKey.uuid}</Grid>
                         <Grid item xs={5}>Owner uuid</Grid>
                         <Grid item xs={7}>{data.sshKey.ownerUuid}</Grid>
+                        <Grid item xs={5}>Authorized user uuid</Grid>
+                        <Grid item xs={7}>{data.sshKey.authorizedUserUuid}</Grid>
                         <Grid item xs={5}>Created at</Grid>
                         <Grid item xs={7}>{data.sshKey.createdAt}</Grid>
                         <Grid item xs={5}>Modified at</Grid>
                         <Grid item xs={7}>{data.sshKey.modifiedAt}</Grid>
+                        <Grid item xs={5}>Expires at</Grid>
+                        <Grid item xs={7}>{data.sshKey.expiresAt}</Grid>
                         <Grid item xs={5}>Modified by user uuid</Grid>
                         <Grid item xs={7}>{data.sshKey.modifiedByUserUuid}</Grid>
                         <Grid item xs={5}>Modified by client uuid</Grid>
                         <Grid item xs={7}>{data.sshKey.modifiedByClientUuid}</Grid>
-                        <Grid item xs={5}>uuid</Grid>
-                        <Grid item xs={7}>{data.sshKey.uuid}</Grid>
                     </Grid>}
                 </DialogContent>
                 <DialogActions>
