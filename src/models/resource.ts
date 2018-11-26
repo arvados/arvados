@@ -29,6 +29,7 @@ export enum ResourceKind {
     PROCESS = "arvados#containerRequest",
     PROJECT = "arvados#group",
     REPOSITORY = "arvados#repository",
+    SSH_KEY = "arvados#authorizedKeys",
     USER = "arvados#user",
     WORKFLOW = "arvados#workflow",
     NONE = "arvados#none"

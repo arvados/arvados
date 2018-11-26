@@ -10,7 +10,7 @@ import { SshKeyResource } from '~/models/ssh-key';
 export interface AuthState {
     user?: User;
     apiToken?: string;
-    sshKeys?: SshKeyResource[];
+    sshKeys: SshKeyResource[];
 }
 
 const initialState: AuthState = {
@@ -19,13 +19,13 @@ const initialState: AuthState = {
     sshKeys: []
 };
 
-export const authReducer = (services: ServiceRepository) => (state: AuthState = initialState, action: AuthAction) => {
+export const authReducer = (services: ServiceRepository) => (state = initialState, action: AuthAction) => {
     return authActions.match(action, {
         SAVE_API_TOKEN: (token: string) => {
             return {...state, apiToken: token};
         },
         INIT: ({ user, token }) => {
-            return { user, apiToken: token };
+            return { ...state, user, apiToken: token };
         },
         LOGIN: () => {
             return state;
@@ -40,7 +40,10 @@ export const authReducer = (services: ServiceRepository) => (state: AuthState = 
             return {...state, sshKeys};
         },
         ADD_SSH_KEY: (sshKey: SshKeyResource) => {
-            return { ...state, sshKeys: state.sshKeys!.concat(sshKey) };
+            return { ...state, sshKeys: state.sshKeys.concat(sshKey) };
+        },
+        REMOVE_SSH_KEY: (uuid: string) => {
+            return { ...state, sshKeys: state.sshKeys.filter((sshKey) => sshKey.uuid !== uuid )};
         },
         default: () => state
     });
