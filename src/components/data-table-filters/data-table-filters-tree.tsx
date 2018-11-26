@@ -7,6 +7,7 @@ import { Tree, toggleNodeSelection, getNode, initTreeNode, getNodeChildrenIds } 
 import { Tree as TreeComponent, TreeItem, TreeItemStatus } from '~/components/tree/tree';
 import { noop, map } from "lodash/fp";
 import { toggleNodeCollapse } from '~/models/tree';
+import { countNodes, countChildren } from '~/models/tree';
 
 export interface DataTableFilterItem {
     name: string;
@@ -22,8 +23,11 @@ export interface DataTableFilterProps {
 export class DataTableFiltersTree extends React.Component<DataTableFilterProps> {
 
     render() {
+        const { filters } = this.props;
+        const hasSubfilters = countNodes(filters) !== countChildren('')(filters);
         return <TreeComponent
-            items={filtersToTree(this.props.filters)}
+            levelIndentation={hasSubfilters ? undefined : 0}
+            items={filtersToTree(filters)}
             render={renderItem}
             showSelection
             onContextMenu={noop}
