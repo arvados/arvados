@@ -58,34 +58,37 @@ enum SshKeyData {
     CREATED_AT = 'created_at'
 }
 
+type AdvanceResourceKind = CollectionData | ProcessData | ProjectData | RepositoryData | SshKeyData;
+type AdvanceResourcePrefix = GroupContentsResourcePrefix | 'repositories' | 'authorized_keys';
+
 export const openAdvancedTabDialog = (uuid: string, index?: number) =>
-    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+    async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const kind = extractUuidKind(uuid);
         switch (kind) {
             case ResourceKind.COLLECTION:
-                const { data: dataCollection, metadata: metaCollection, user: userCollection } = dispatch<any>(getDataForAdvancedTab(uuid));
+                const { data: dataCollection, metadata: metaCollection, user: userCollection } = await dispatch<any>(getDataForAdvancedTab(uuid));
                 const advanceDataCollection: AdvancedTabDialogData = advancedTabData(uuid, metaCollection, userCollection, collectionApiResponse, dataCollection, CollectionData.COLLECTION, GroupContentsResourcePrefix.COLLECTION, CollectionData.STORAGE_CLASSES_CONFIRMED, dataCollection.storageClassesConfirmed);
-                dispatch<any>(dialogActions.OPEN_DIALOG({ id: ADVANCED_TAB_DIALOG, data: advanceDataCollection }));
+                dispatch<any>(initAdvancedTabDialog(advanceDataCollection));
                 break;
             case ResourceKind.PROCESS:
-                const { data: dataProcess, metadata: metaProcess, user: userProcess } = dispatch<any>(getDataForAdvancedTab(uuid));
+                const { data: dataProcess, metadata: metaProcess, user: userProcess } = await dispatch<any>(getDataForAdvancedTab(uuid));
                 const advancedDataProcess: AdvancedTabDialogData = advancedTabData(uuid, metaProcess, userProcess, containerRequestApiResponse, dataProcess, ProcessData.CONTAINER_REQUEST, GroupContentsResourcePrefix.PROCESS, ProcessData.OUTPUT_NAME, dataProcess.outputName);
-                dispatch<any>(dialogActions.OPEN_DIALOG({ id: ADVANCED_TAB_DIALOG, data: advancedDataProcess }));
+                dispatch<any>(initAdvancedTabDialog(advancedDataProcess));
                 break;
             case ResourceKind.PROJECT:
-                const { data: dataProject, metadata: metaProject, user: userProject } = dispatch<any>(getDataForAdvancedTab(uuid));
+                const { data: dataProject, metadata: metaProject, user: userProject } = await dispatch<any>(getDataForAdvancedTab(uuid));
                 const advanceDataProject: AdvancedTabDialogData = advancedTabData(uuid, metaProject, userProject, groupRequestApiResponse, dataProject, ProjectData.GROUP, GroupContentsResourcePrefix.PROJECT, ProjectData.DELETE_AT, dataProject.deleteAt);
-                dispatch<any>(dialogActions.OPEN_DIALOG({ id: ADVANCED_TAB_DIALOG, data: advanceDataProject }));
+                dispatch<any>(initAdvancedTabDialog(advanceDataProject));
                 break;
             case ResourceKind.REPOSITORY:
                 const dataRepository = getState().repositories.items[index!];
                 const advanceDataRepository: AdvancedTabDialogData = advancedTabData(uuid, '', '', repositoryApiResponse, dataRepository, RepositoryData.REPOSITORY, 'repositories', RepositoryData.CREATED_AT, dataRepository.createdAt);
-                dispatch<any>(dialogActions.OPEN_DIALOG({ id: ADVANCED_TAB_DIALOG, data: advanceDataRepository }));
+                dispatch<any>(initAdvancedTabDialog(advanceDataRepository));
                 break;
             case ResourceKind.SSH_KEY:
                 const dataSshKey = getState().auth.sshKeys[index!];
                 const advanceDataSshKey: AdvancedTabDialogData = advancedTabData(uuid, '', '', sshKeyApiResponse, dataSshKey, SshKeyData.SSH_KEY, 'authorized_keys', SshKeyData.CREATED_AT, dataSshKey.createdAt);
-                dispatch<any>(dialogActions.OPEN_DIALOG({ id: ADVANCED_TAB_DIALOG, data: advanceDataSshKey }));
+                dispatch<any>(initAdvancedTabDialog(advanceDataSshKey));
                 break;
             default:
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Could not open advanced tab for this resource.", hideDuration: 2000, kind: SnackbarKind.ERROR }));
@@ -101,14 +104,14 @@ const getDataForAdvancedTab = (uuid: string) =>
                 .addEqual('headUuid', uuid)
                 .getFilters()
         });
-        const user = metadata.itemsAvailable && await services.userService.get(metadata.items[0].tailUuid);
+        const user = metadata.itemsAvailable && await services.userService.get(metadata.items[0].tailUuid || '');
         return { data, metadata, user };
     };
 
-type AdvanceResourceKind = CollectionData | ProcessData | ProjectData | RepositoryData | SshKeyData;
-type AdvanceResourcePrefix = GroupContentsResourcePrefix | 'repositories' | 'authorized_keys';
+const initAdvancedTabDialog = (data: AdvancedTabDialogData) => dialogActions.OPEN_DIALOG({ id: ADVANCED_TAB_DIALOG, data });
 
-const advancedTabData = (uuid: string, metadata: any, user: any, apiResponseKind: any, data: any, resourceKind: AdvanceResourceKind, resourcePrefix: AdvanceResourcePrefix, resourceKindProperty: AdvanceResourceKind, property: any) => {
+const advancedTabData = (uuid: string, metadata: any, user: any, apiResponseKind: any, data: any, resourceKind: AdvanceResourceKind, 
+    resourcePrefix: AdvanceResourcePrefix, resourceKindProperty: AdvanceResourceKind, property: any) => {
     return {
         uuid,
         user,
