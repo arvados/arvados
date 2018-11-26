@@ -24,7 +24,6 @@ export const getCollectionUrl = (uuid: string) => {
 };
 
 export enum CollectionType {
-    GENERAL = 'nil',
     OUTPUT = 'output',
     LOG = 'log',
 }
