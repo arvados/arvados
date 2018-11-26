@@ -132,10 +132,10 @@ export const openProcessContextMenu = (event: React.MouseEvent<HTMLElement>, pro
     (dispatch: Dispatch, getState: () => RootState) => {
         const resource = {
             uuid: process.containerRequest.uuid,
-            ownerUuid: '',
+            ownerUuid: process.containerRequest.ownerUuid,
             kind: ResourceKind.PROCESS,
-            name: '',
-            description: '',
+            name: process.containerRequest.name,
+            description: process.containerRequest.description,
             menuKind: ContextMenuKind.PROCESS
         };
         dispatch<any>(openContextMenu(event, resource));
