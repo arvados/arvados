@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { difference, pipe, values, includes, __ } from 'lodash/fp';
-import { createTree, setNode, TreeNodeStatus, TreeNode } from '~/models/tree';
+import { createTree, setNode, TreeNodeStatus, TreeNode, Tree } from '~/models/tree';
 import { DataTableFilterItem, DataTableFilters } from '~/components/data-table-filters/data-table-filters-tree';
 import { ResourceKind } from '~/models/resource';
 import { FilterBuilder } from '~/services/api/filter-builder';
@@ -133,3 +133,9 @@ export const serializeResourceTypeFilters = pipe(
     serializeCollectionTypeFilters,
     ({ fb }) => fb.getFilters(),
 );
+
+export const serializeSimpleObjectTypeFilters = (filters: Tree<DataTableFilterItem>) => {
+    return getSelectedNodes(filters)
+        .map(f => f.id)
+        .map(objectTypeToResourceKind);
+};
