@@ -5,19 +5,27 @@
 import { authActions, AuthAction } from "./auth-action";
 import { User } from "~/models/user";
 import { ServiceRepository } from "~/services/services";
+import { SshKeyResource } from '~/models/ssh-key';
 
 export interface AuthState {
     user?: User;
     apiToken?: string;
+    sshKeys: SshKeyResource[];
 }
 
-export const authReducer = (services: ServiceRepository) => (state: AuthState = {}, action: AuthAction) => {
+const initialState: AuthState = {
+    user: undefined,
+    apiToken: undefined,
+    sshKeys: []
+};
+
+export const authReducer = (services: ServiceRepository) => (state = initialState, action: AuthAction) => {
     return authActions.match(action, {
         SAVE_API_TOKEN: (token: string) => {
             return {...state, apiToken: token};
         },
         INIT: ({ user, token }) => {
-            return { user, apiToken: token };
+            return { ...state, user, apiToken: token };
         },
         LOGIN: () => {
             return state;
@@ -27,6 +35,15 @@ export const authReducer = (services: ServiceRepository) => (state: AuthState = 
         },
         USER_DETAILS_SUCCESS: (user: User) => {
             return {...state, user};
+        },
+        SET_SSH_KEYS: (sshKeys: SshKeyResource[]) => {
+            return {...state, sshKeys};
+        },
+        ADD_SSH_KEY: (sshKey: SshKeyResource) => {
+            return { ...state, sshKeys: state.sshKeys.concat(sshKey) };
+        },
+        REMOVE_SSH_KEY: (uuid: string) => {
+            return { ...state, sshKeys: state.sshKeys.filter((sshKey) => sshKey.uuid !== uuid )};
         },
         default: () => state
     });

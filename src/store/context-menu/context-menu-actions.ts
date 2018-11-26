@@ -12,8 +12,9 @@ import { ProjectResource } from '~/models/project';
 import { UserResource } from '~/models/user';
 import { isSidePanelTreeCategory } from '~/store/side-panel-tree/side-panel-tree-actions';
 import { extractUuidKind, ResourceKind } from '~/models/resource';
-import { matchProcessRoute } from '~/routes/routes';
 import { Process } from '~/store/processes/process';
+import { RepositoryResource } from '~/models/repositories';
+import { SshKeyResource } from '~/models/ssh-key';
 
 export const contextMenuActions = unionize({
     OPEN_CONTEXT_MENU: ofType<{ position: ContextMenuPosition, resource: ContextMenuResource }>(),
@@ -30,6 +31,7 @@ export type ContextMenuResource = {
     kind: ResourceKind,
     menuKind: ContextMenuKind;
     isTrashed?: boolean;
+    index?: number
 };
 export const isKeyboardClick = (event: React.MouseEvent<HTMLElement>) =>
     event.nativeEvent.detail === 0;
@@ -57,6 +59,30 @@ export const openCollectionFilesContextMenu = (event: React.MouseEvent<HTMLEleme
             ownerUuid: '',
             kind: ResourceKind.COLLECTION,
             menuKind: isCollectionFileSelected ? ContextMenuKind.COLLECTION_FILES : ContextMenuKind.COLLECTION_FILES_NOT_SELECTED
+        }));
+    };
+
+export const openRepositoryContextMenu = (event: React.MouseEvent<HTMLElement>, index: number, repository: RepositoryResource) =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+            dispatch<any>(openContextMenu(event, {
+                name: '',
+                uuid: repository.uuid,
+                ownerUuid: repository.ownerUuid,
+                kind: ResourceKind.REPOSITORY,
+                menuKind: ContextMenuKind.REPOSITORY,
+                index
+            }));
+    };
+
+export const openSshKeyContextMenu = (event: React.MouseEvent<HTMLElement>, index: number, sshKey: SshKeyResource) =>
+    (dispatch: Dispatch) => {
+        dispatch<any>(openContextMenu(event, {
+            name: '',
+            uuid: sshKey.uuid,
+            ownerUuid: sshKey.ownerUuid,
+            kind: ResourceKind.SSH_KEY,
+            menuKind: ContextMenuKind.SSH_KEY,
+            index
         }));
     };
 

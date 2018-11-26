@@ -3,23 +3,23 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from 'redux';
-import { RootState } from "../store";
+import { RootState } from "~/store/store";
 import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
-import { snackbarActions } from '../snackbar/snackbar-actions';
-import { loadFavoritePanel } from '../favorite-panel/favorite-panel-action';
+import { snackbarActions } from '~/store/snackbar/snackbar-actions';
+import { loadFavoritePanel } from '~/store/favorite-panel/favorite-panel-action';
 import { openProjectPanel, projectPanelActions, setIsProjectPanelTrashed } from '~/store/project-panel/project-panel-action';
-import { activateSidePanelTreeItem, initSidePanelTree, SidePanelTreeCategory, loadSidePanelTreeProjects } from '../side-panel-tree/side-panel-tree-actions';
-import { loadResource, updateResources } from '../resources/resources-actions';
+import { activateSidePanelTreeItem, initSidePanelTree, SidePanelTreeCategory, loadSidePanelTreeProjects } from '~/store/side-panel-tree/side-panel-tree-actions';
+import { loadResource, updateResources } from '~/store/resources/resources-actions';
 import { favoritePanelActions } from '~/store/favorite-panel/favorite-panel-action';
 import { projectPanelColumns } from '~/views/project-panel/project-panel';
 import { favoritePanelColumns } from '~/views/favorite-panel/favorite-panel';
 import { matchRootRoute } from '~/routes/routes';
-import { setSidePanelBreadcrumbs, setProcessBreadcrumbs, setSharedWithMeBreadcrumbs, setTrashBreadcrumbs } from '../breadcrumbs/breadcrumbs-actions';
-import { navigateToProject } from '../navigation/navigation-action';
+import { setSidePanelBreadcrumbs, setProcessBreadcrumbs, setSharedWithMeBreadcrumbs, setTrashBreadcrumbs, setBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions';
+import { navigateToProject } from '~/store/navigation/navigation-action';
 import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
 import { ServiceRepository } from '~/services/services';
-import { getResource } from '../resources/resources';
-import { getProjectPanelCurrentUuid } from '../project-panel/project-panel-action';
+import { getResource } from '~/store/resources/resources';
+import { getProjectPanelCurrentUuid } from '~/store/project-panel/project-panel-action';
 import * as projectCreateActions from '~/store/projects/project-create-actions';
 import * as projectMoveActions from '~/store/projects/project-move-actions';
 import * as projectUpdateActions from '~/store/projects/project-update-actions';
@@ -27,21 +27,22 @@ import * as collectionCreateActions from '~/store/collections/collection-create-
 import * as collectionCopyActions from '~/store/collections/collection-copy-actions';
 import * as collectionUpdateActions from '~/store/collections/collection-update-actions';
 import * as collectionMoveActions from '~/store/collections/collection-move-actions';
-import * as processesActions from '../processes/processes-actions';
+import * as processesActions from '~/store/processes/processes-actions';
 import * as processMoveActions from '~/store/processes/process-move-actions';
 import * as processUpdateActions from '~/store/processes/process-update-actions';
 import * as processCopyActions from '~/store/processes/process-copy-actions';
 import { trashPanelColumns } from "~/views/trash-panel/trash-panel";
 import { loadTrashPanel, trashPanelActions } from "~/store/trash-panel/trash-panel-action";
-import { initProcessLogsPanel } from '../process-logs-panel/process-logs-panel-actions';
+import { initProcessLogsPanel } from '~/store/process-logs-panel/process-logs-panel-actions';
 import { loadProcessPanel } from '~/store/process-panel/process-panel-actions';
 import { sharedWithMePanelActions } from '~/store/shared-with-me-panel/shared-with-me-panel-actions';
-import { loadSharedWithMePanel } from '../shared-with-me-panel/shared-with-me-panel-actions';
+import { loadSharedWithMePanel } from '~/store/shared-with-me-panel/shared-with-me-panel-actions';
 import { CopyFormDialogData } from '~/store/copy-dialog/copy-dialog';
 import { loadWorkflowPanel, workflowPanelActions } from '~/store/workflow-panel/workflow-panel-actions';
+import { loadSshKeysPanel } from '~/store/auth/auth-action';
 import { workflowPanelColumns } from '~/views/workflow-panel/workflow-panel-view';
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions';
-import { getProgressIndicator } from '../progress-indicator/progress-indicator-reducer';
+import { getProgressIndicator } from '~/store/progress-indicator/progress-indicator-reducer';
 import { ResourceKind, extractUuidKind } from '~/models/resource';
 import { FilterBuilder } from '~/services/api/filter-builder';
 import { GroupContentsResource } from '~/services/groups-service/groups-service';
@@ -53,6 +54,7 @@ import { collectionPanelActions } from "~/store/collection-panel/collection-pane
 import { CollectionResource } from "~/models/collection";
 import { searchResultsPanelActions, loadSearchResultsPanel } from '~/store/search-results-panel/search-results-panel-actions';
 import { searchResultsPanelColumns } from '~/views/search-results-panel/search-results-panel-view';
+import { loadRepositoriesPanel } from '~/store/repositories/repositories-actions';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -388,6 +390,17 @@ export const loadWorkflow = handleFirstTimeLoad(async (dispatch: Dispatch<any>) 
 export const loadSearchResults = handleFirstTimeLoad(
     async (dispatch: Dispatch<any>) => {
         await dispatch(loadSearchResultsPanel());
+    });
+
+export const loadRepositories = handleFirstTimeLoad(
+    async (dispatch: Dispatch<any>) => {
+        await dispatch(loadRepositoriesPanel());
+        dispatch(setBreadcrumbs([{ label: 'Repositories' }]));
+    });
+
+export const loadSshKeys = handleFirstTimeLoad(
+    async (dispatch: Dispatch<any>) => {
+        await dispatch(loadSshKeysPanel());
     });
 
 const finishLoadingProject = (project: GroupContentsResource | string) =>

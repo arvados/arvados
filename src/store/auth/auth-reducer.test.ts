@@ -34,7 +34,8 @@ describe('auth-reducer', () => {
         const state = reducer(initialState, authActions.INIT({ user, token: "token" }));
         expect(state).toEqual({
             apiToken: "token",
-            user
+            user,
+            sshKeys: []
         });
     });
 
@@ -44,7 +45,8 @@ describe('auth-reducer', () => {
         const state = reducer(initialState, authActions.SAVE_API_TOKEN("token"));
         expect(state).toEqual({
             apiToken: "token",
-            user: undefined
+            user: undefined,
+            sshKeys: []
         });
     });
 
@@ -62,6 +64,7 @@ describe('auth-reducer', () => {
         const state = reducer(initialState, authActions.USER_DETAILS_SUCCESS(user));
         expect(state).toEqual({
             apiToken: undefined,
+            sshKeys: [],
             user: {
                 email: "test@test.com",
                 firstName: "John",

@@ -17,6 +17,7 @@ import { navigateToProcess } from '../navigation/navigation-action';
 import { RunProcessAdvancedFormData, RUN_PROCESS_ADVANCED_FORM } from '~/views/run-process-panel/run-process-advanced-form';
 import { isItemNotInProject, isProjectOrRunProcessRoute } from '~/store/projects/project-create-actions';
 import { dialogActions } from '~/store/dialog/dialog-actions';
+import { setBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions';
 
 export const runProcessPanelActions = unionize({
     SET_PROCESS_OWNER_UUID: ofType<string>(),
@@ -41,6 +42,7 @@ export type RunProcessPanelAction = UnionOf<typeof runProcessPanelActions>;
 export const loadRunProcessPanel = () =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         try {
+            dispatch(setBreadcrumbs([{ label: 'Run Process' }]));
             dispatch(runProcessPanelActions.RESET_RUN_PROCESS_PANEL());
             const response = await services.workflowService.list();
             dispatch(runProcessPanelActions.SET_WORKFLOWS(response.items));
@@ -57,7 +59,7 @@ export const openSetWorkflowDialog = (workflow: WorkflowResource) =>
             dispatch(dialogActions.OPEN_DIALOG({
                 id: SET_WORKFLOW_DIALOG,
                 data: {
-                    title: 'Data loss warning',
+                    title: 'Form will be cleared',
                     text: 'Changing a workflow will clean all input fields in next step.',
                     confirmButtonLabel: 'Change Workflow',
                     workflow

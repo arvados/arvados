@@ -48,6 +48,8 @@ import { getBuildInfo } from '~/common/app-info';
 import { DragDropContextProvider } from 'react-dnd';
 import HTML5Backend from 'react-dnd-html5-backend';
 import { initAdvanceFormProjectsTree } from '~/store/search-bar/search-bar-actions';
+import { repositoryActionSet } from '~/views-components/context-menu/action-sets/repository-action-set';
+import { sshKeyActionSet } from '~/views-components/context-menu/action-sets/ssh-key-action-set';
 
 console.log(`Starting arvados [${getBuildInfo()}]`);
 
@@ -64,6 +66,8 @@ addMenuActionSet(ContextMenuKind.TRASHED_COLLECTION, trashedCollectionActionSet)
 addMenuActionSet(ContextMenuKind.PROCESS, processActionSet);
 addMenuActionSet(ContextMenuKind.PROCESS_RESOURCE, processResourceActionSet);
 addMenuActionSet(ContextMenuKind.TRASH, trashActionSet);
+addMenuActionSet(ContextMenuKind.REPOSITORY, repositoryActionSet);
+addMenuActionSet(ContextMenuKind.SSH_KEY, sshKeyActionSet);
 
 fetchConfig()
     .then(({ config, apiHost }) => {

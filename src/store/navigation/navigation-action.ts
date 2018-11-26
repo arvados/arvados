@@ -61,3 +61,7 @@ export const navigateToSharedWithMe = push(Routes.SHARED_WITH_ME);
 export const navigateToRunProcess = push(Routes.RUN_PROCESS);
 
 export const navigateToSearchResults = push(Routes.SEARCH_RESULTS);
+
+export const navigateToRepositories = push(Routes.REPOSITORIES);
+
+export const navigateToSshKeys= push(Routes.SSH_KEYS);
