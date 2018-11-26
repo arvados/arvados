@@ -5,6 +5,7 @@
 import { ContextMenuActionSet } from "~/views-components/context-menu/context-menu-action-set";
 import { AdvancedIcon, RemoveIcon, AttributesIcon } from "~/components/icon/icon";
 import { openSshKeyRemoveDialog, openSshKeyAttributesDialog } from '~/store/auth/auth-action';
+import { openAdvancedTabDialog } from '~/store/advanced-tab/advanced-tab';
 
 export const sshKeyActionSet: ContextMenuActionSet = [[{
     name: "Attributes",
@@ -16,7 +17,7 @@ export const sshKeyActionSet: ContextMenuActionSet = [[{
     name: "Advanced",
     icon: AdvancedIcon,
     execute: (dispatch, { uuid, index }) => {
-        // ToDo
+        dispatch<any>(openAdvancedTabDialog(uuid, index));
     }
 }, {
     name: "Remove",

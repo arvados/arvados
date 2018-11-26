@@ -44,6 +44,7 @@ export enum ResourceObjectType {
     REPOSITORY = 's0uqq',
     USER = 'tpzed',
     WORKFLOW = '7fd4e',
+    SSH_KEY = 'fngyi'
 }
 
 export const RESOURCE_UUID_PATTERN = '.{5}-.{5}-.{15}';
@@ -78,6 +79,8 @@ export const extractUuidKind = (uuid: string = '') => {
             return ResourceKind.WORKFLOW;
         case ResourceObjectType.REPOSITORY:
             return ResourceKind.REPOSITORY;
+        case ResourceObjectType.SSH_KEY:
+            return ResourceKind.SSH_KEY;
         default:
             return undefined;
     }
