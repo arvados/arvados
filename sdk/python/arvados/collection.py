@@ -1627,6 +1627,9 @@ class Collection(RichCollectionBase):
     _block_re = re.compile(r'[0-9a-f]{32}\+(\d+)(\+\S+)*')
     _segment_re = re.compile(r'(\d+):(\d+):(\S+)')
 
+    def _unescape_manifest_path(self, path):
+        return re.sub('\\\\([0-3][0-7][0-7])', lambda m: chr(int(m.group(1), 8)), path)
+
     @synchronized
     def _import_manifest(self, manifest_text):
         """Import a manifest into a `Collection`.
@@ -1651,7 +1654,7 @@ class Collection(RichCollectionBase):
 
             if state == STREAM_NAME:
                 # starting a new stream
-                stream_name = tok.replace('\\040', ' ')
+                stream_name = self._unescape_manifest_path(tok)
                 blocks = []
                 segments = []
                 streamoffset = 0
@@ -1673,13 +1676,18 @@ class Collection(RichCollectionBase):
                 if file_segment:
                     pos = int(file_segment.group(1))
                     size = int(file_segment.group(2))
-                    name = file_segment.group(3).replace('\\040', ' ')
-                    filepath = os.path.join(stream_name, name)
-                    afile = self.find_or_create(filepath, FILE)
-                    if isinstance(afile, ArvadosFile):
-                        afile.add_segment(blocks, pos, size)
+                    name = self._unescape_manifest_path(file_segment.group(3))
+                    if name.split('/')[-1] == '.':
+                        # placeholder for persisting an empty directory, not a real file
+                        if len(name) > 2:
+                            self.find_or_create(os.path.join(stream_name, name[:-2]), COLLECTION)
                     else:
-                        raise errors.SyntaxError("File %s conflicts with stream of the same name.", filepath)
+                        filepath = os.path.join(stream_name, name)
+                        afile = self.find_or_create(filepath, FILE)
+                        if isinstance(afile, ArvadosFile):
+                            afile.add_segment(blocks, pos, size)
+                        else:
+                            raise errors.SyntaxError("File %s conflicts with stream of the same name.", filepath)
                 else:
                     # error!
                     raise errors.SyntaxError("Invalid manifest format, expected file segment but did not match format: '%s'" % tok)

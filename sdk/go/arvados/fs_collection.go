@@ -633,6 +633,16 @@ func (dn *dirnode) marshalManifest(prefix string) (string, error) {
 	if err := dn.sync(); err != nil {
 		return "", err
 	}
+	if len(dn.inodes) == 0 {
+		if prefix == "." {
+			return "", nil
+		}
+		// Express the existence of an empty directory by
+		// adding an empty file named `\056`, which (unlike
+		// the more obvious spelling `.`) is accepted by the
+		// API's manifest validator.
+		return manifestEscape(prefix) + " d41d8cd98f00b204e9800998ecf8427e+0 0:0:\\056\n", nil
+	}
 
 	names := make([]string, 0, len(dn.inodes))
 	for name, node := range dn.inodes {
@@ -757,8 +767,14 @@ func (dn *dirnode) loadManifest(txt string) error {
 			}
 			name := dirname + "/" + manifestUnescape(toks[2])
 			fnode, err := dn.createFileAndParents(name)
-			if err != nil {
-				return fmt.Errorf("line %d: cannot use path %q: %s", lineno, name, err)
+			if fnode == nil && err == nil && length == 0 {
+				// Special case: an empty file used as
+				// a marker to preserve an otherwise
+				// empty directory in a manifest.
+				continue
+			}
+			if err != nil || (fnode == nil && length != 0) {
+				return fmt.Errorf("line %d: cannot use path %q with length %d: %s", lineno, name, length, err)
 			}
 			// Map the stream offset/range coordinates to
 			// block/offset/range coordinates and add
@@ -816,15 +832,14 @@ func (dn *dirnode) loadManifest(txt string) error {
 	return nil
 }
 
-// only safe to call from loadManifest -- no locking
+// only safe to call from loadManifest -- no locking.
+//
+// If path is a "parent directory exists" marker (the last path
+// component is "."), the returned values are both nil.
 func (dn *dirnode) createFileAndParents(path string) (fn *filenode, err error) {
 	var node inode = dn
 	names := strings.Split(path, "/")
 	basename := names[len(names)-1]
-	if !permittedName(basename) {
-		err = fmt.Errorf("invalid file part %q in path %q", basename, path)
-		return
-	}
 	for _, name := range names[:len(names)-1] {
 		switch name {
 		case "", ".":
@@ -854,6 +869,12 @@ func (dn *dirnode) createFileAndParents(path string) (fn *filenode, err error) {
 		if err != nil {
 			return
 		}
+	}
+	if basename == "." {
+		return
+	} else if !permittedName(basename) {
+		err = fmt.Errorf("invalid file part %q in path %q", basename, path)
+		return
 	}
 	_, err = node.Child(basename, func(child inode) (inode, error) {
 		switch child := child.(type) {

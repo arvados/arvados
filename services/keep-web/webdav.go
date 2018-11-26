@@ -100,6 +100,11 @@ func (fs *webdavFS) Rename(ctx context.Context, oldName, newName string) error {
 	if !fs.writing {
 		return errReadOnly
 	}
+	if strings.HasSuffix(oldName, "/") {
+		// WebDAV "MOVE foo/ bar/" means rename foo to bar.
+		oldName = oldName[:len(oldName)-1]
+		newName = strings.TrimSuffix(newName, "/")
+	}
 	fs.makeparents(newName)
 	return fs.collfs.Rename(oldName, newName)
 }
