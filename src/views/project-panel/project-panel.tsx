@@ -3,16 +3,18 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
+import withStyles from "@material-ui/core/styles/withStyles";
 import { DispatchProp, connect } from 'react-redux';
-import { DataColumns } from '~/components/data-table/data-table';
 import { RouteComponentProps } from 'react-router';
+import { StyleRulesCallback, WithStyles } from "@material-ui/core";
+
+import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
+import { DataColumns } from '~/components/data-table/data-table';
 import { RootState } from '~/store/store';
 import { DataTableFilterItem } from '~/components/data-table-filters/data-table-filters';
 import { ContainerRequestState } from '~/models/container-request';
 import { SortDirection } from '~/components/data-table/data-column';
 import { ResourceKind, Resource } from '~/models/resource';
-import { resourceLabel } from '~/common/labels';
 import { ResourceFileSize, ResourceLastModifiedDate, ProcessStatus, ResourceType, ResourceOwner } from '~/views-components/data-explorer/renderers';
 import { ProjectIcon } from '~/components/icon/icon';
 import { ResourceName } from '~/views-components/data-explorer/renderers';
@@ -24,12 +26,10 @@ import { navigateTo } from '~/store/navigation/navigation-action';
 import { getProperty } from '~/store/properties/properties';
 import { PROJECT_PANEL_CURRENT_UUID } from '~/store/project-panel/project-panel-action';
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
-import { StyleRulesCallback, WithStyles } from "@material-ui/core";
 import { ArvadosTheme } from "~/common/custom-theme";
-import withStyles from "@material-ui/core/styles/withStyles";
 import { createTree } from '~/models/tree';
-import { getInitialResourceTypeFilters } from '../../store/resource-type-filters/resource-type-filters';
-// TODO: code cleanup
+import { getInitialResourceTypeFilters } from '~/store/resource-type-filters/resource-type-filters';
+
 type CssRules = 'root' | "button";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
@@ -105,6 +105,11 @@ export const projectPanelColumns: DataColumns<string> = [
 
 export const PROJECT_PANEL_ID = "projectPanel";
 
+const DEFAUL_VIEW_MESSAGES = [
+    'Your project is empty.',
+    'Please create a project or create a collection and upload a data.',
+];
+
 interface ProjectPanelDataProps {
     currentItemId: string;
     resources: ResourcesState;
@@ -131,11 +136,8 @@ export const ProjectPanel = withStyles(styles)(
                         dataTableDefaultView={
                             <DataTableDefaultView
                                 icon={ProjectIcon}
-                                messages={[
-                                    'Your project is empty.',
-                                    'Please create a project or create a collection and upload a data.'
-                                ]}/>
-                        }/>
+                                messages={DEFAUL_VIEW_MESSAGES} />
+                        } />
                 </div>;
             }
 

@@ -31,6 +31,10 @@ export class FilterBuilder {
         return this.addCondition(field, "in", value, "", "", resourcePrefix);
     }
 
+    public addNotIn(field: string, value?: string | string[], resourcePrefix?: string) {
+        return this.addCondition(field, "not in", value, "", "", resourcePrefix);
+    }
+
     public addGt(field: string, value?: string, resourcePrefix?: string) {
         return this.addCondition(field, ">", value, "", "", resourcePrefix);
     }

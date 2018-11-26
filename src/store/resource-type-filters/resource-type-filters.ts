@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { pipe, values, includes, __ } from 'lodash/fp';
-import { createTree, setNode, TreeNodeStatus, TreeNode } from '~/models/tree';
+import { difference, pipe, values, includes, __ } from 'lodash/fp';
+import { createTree, setNode, TreeNodeStatus, TreeNode, Tree } from '~/models/tree';
 import { DataTableFilterItem, DataTableFilters } from '~/components/data-table-filters/data-table-filters-tree';
 import { ResourceKind } from '~/models/resource';
 import { FilterBuilder } from '~/services/api/filter-builder';
@@ -34,6 +34,13 @@ const initFilter = (name: string, parent = '') =>
         expanded: false,
         status: TreeNodeStatus.LOADED,
     });
+
+export const getSimpleObjectTypeFilters = pipe(
+    (): DataTableFilters => createTree<DataTableFilterItem>(),
+    initFilter(ObjectTypeFilter.PROJECT),
+    initFilter(ObjectTypeFilter.PROCESS),
+    initFilter(ObjectTypeFilter.COLLECTION),
+);
 
 export const getInitialResourceTypeFilters = pipe(
     (): DataTableFilters => createTree<DataTableFilterItem>(),
@@ -98,12 +105,27 @@ const serializeCollectionTypeFilters = ({ fb, selectedFilters }: ReturnType<type
     () => getMatchingFilters(values(CollectionTypeFilter), selectedFilters),
     filters => filters.map(collectionTypeToPropertyValue),
     mappedFilters => ({
-        fb: mappedFilters.length > 0
-            ? fb.addIn('type', mappedFilters, `${GroupContentsResourcePrefix.COLLECTION}.properties`)
-            : fb,
+        fb: buildCollectiomTypeFilters({ fb, filters: mappedFilters }),
         selectedFilters
     })
 )();
+
+const COLLECTION_TYPES = values(CollectionType);
+
+const NON_GENERAL_COLLECTION_TYPES = difference(COLLECTION_TYPES, [CollectionType.GENERAL]);
+
+const COLLECTION_PROPERTIES_PREFIX = `${GroupContentsResourcePrefix.COLLECTION}.properties`;
+
+const buildCollectiomTypeFilters = ({ fb, filters }: { fb: FilterBuilder, filters: CollectionType[] }) => {
+    switch (true) {
+        case filters.length === 0 || filters.length === COLLECTION_TYPES.length:
+            return fb;
+        case includes(CollectionType.GENERAL, filters):
+            return fb.addNotIn('type', difference(NON_GENERAL_COLLECTION_TYPES, filters), COLLECTION_PROPERTIES_PREFIX);
+        default:
+            return fb.addIn('type', filters, COLLECTION_PROPERTIES_PREFIX);
+    }
+};
 
 export const serializeResourceTypeFilters = pipe(
     createFiltersBuilder,
@@ -111,3 +133,9 @@ export const serializeResourceTypeFilters = pipe(
     serializeCollectionTypeFilters,
     ({ fb }) => fb.getFilters(),
 );
+
+export const serializeSimpleObjectTypeFilters = (filters: Tree<DataTableFilterItem>) => {
+    return getSelectedNodes(filters)
+        .map(f => f.id)
+        .map(objectTypeToResourceKind);
+};
