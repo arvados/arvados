@@ -75,7 +75,7 @@ const isStrictTag = (tagName: string, vocabulary: Vocabulary) => {
 
 const getTagValues = (tagName: string, vocabulary: Vocabulary) => {
     const tag = vocabulary.tags[tagName];
-    return tag ? tag.values : [];
+    return tag && tag.values ? tag.values : [];
 };
 
 const ITEMS_PLACEHOLDER: string[] = [];
