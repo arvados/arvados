@@ -95,6 +95,7 @@ class ArvCwlExecutor(object):
             arvargs.output_name = None
             arvargs.output_tags = None
             arvargs.thread_count = 1
+            arvargs.collection_cache_size = None
 
         self.api = api_client
         self.processes = {}

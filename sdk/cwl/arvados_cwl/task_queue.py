@@ -23,36 +23,36 @@ class TaskQueue(object):
             t.start()
 
     def task_queue_func(self):
+        while True:
+            task = self.task_queue.get()
+            if task is None:
+                return
+            try:
+                task()
+            except Exception as e:
+                logger.exception("Unhandled exception running task")
+                self.error = e
 
-            while True:
-                task = self.task_queue.get()
-                if task is None:
-                    return
-                try:
-                    task()
-                except Exception as e:
-                    logger.exception("Unhandled exception running task")
-                    self.error = e
-
-                with self.lock:
-                    self.in_flight -= 1
+            with self.lock:
+                self.in_flight -= 1
 
     def add(self, task, unlock, check_done):
-        with self.lock:
-            if self.thread_count > 1:
+        if self.thread_count > 1:
+            with self.lock:
                 self.in_flight += 1
-            else:
-                task()
-                return
+        else:
+            task()
+            return
 
         while True:
             try:
                 unlock.release()
+                if check_done.is_set():
+                    return
                 self.task_queue.put(task, block=True, timeout=3)
                 return
             except Queue.Full:
-                if check_done.is_set():
-                    return
+                pass
             finally:
                 unlock.acquire()
 
