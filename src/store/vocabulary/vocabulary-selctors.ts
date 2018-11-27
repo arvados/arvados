@@ -9,7 +9,7 @@ export const VOCABULARY_PROPERTY_NAME = 'vocabulary';
 
 export const DEFAULT_VOCABULARY: Vocabulary = {
     strict: false,
-    tags: [],
+    tags: {},
 };
 
 export const getVocabulary = (state: PropertiesState) =>

@@ -6,7 +6,7 @@ import { isObject, has, every } from 'lodash/fp';
 
 export interface Vocabulary {
     strict: boolean;
-    tags: Tag[];
+    tags: Record<string, Tag>;
 }
 
 export interface Tag {
