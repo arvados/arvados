@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Input as MuiInput, Chip as MuiChip, Popper as MuiPopper, Paper, FormControl, InputLabel, StyleRulesCallback, withStyles, RootRef, ListItemText, ListItem, List } from '@material-ui/core';
+import { Input as MuiInput, Chip as MuiChip, Popper as MuiPopper, Paper, FormControl, InputLabel, StyleRulesCallback, withStyles, RootRef, ListItemText, ListItem, List, FormHelperText } from '@material-ui/core';
 import { PopperProps } from '@material-ui/core/Popper';
 import { WithStyles } from '@material-ui/core/styles';
 import { noop } from 'lodash';
@@ -13,6 +13,8 @@ export interface AutocompleteProps<Item, Suggestion> {
     value: string;
     items: Item[];
     suggestions?: Suggestion[];
+    error?: boolean;
+    helperText?: string;
     onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
     onBlur?: (event: React.FocusEvent<HTMLInputElement>) => void;
     onFocus?: (event: React.FocusEvent<HTMLInputElement>) => void;
@@ -38,9 +40,10 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
     render() {
         return (
             <RootRef rootRef={this.containerRef}>
-                <FormControl fullWidth>
+                <FormControl fullWidth error={this.props.error}>
                     {this.renderLabel()}
                     {this.renderInput()}
+                    {this.renderHelperText()}
                     {this.renderSuggestions()}
                 </FormControl>
             </RootRef>
@@ -62,6 +65,10 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
             onChange={this.props.onChange}
             onKeyPress={this.handleKeyPress}
         />;
+    }
+
+    renderHelperText(){
+        return <FormHelperText>{this.props.helperText}</FormHelperText>;
     }
 
     renderSuggestions() {
