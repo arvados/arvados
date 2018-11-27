@@ -285,7 +285,15 @@ export const getQueryFromAdvancedData = (data: SearchBarAdvanceFormData, prevDat
     return value;
 };
 
-export const parseQuery: (query: string) => { hasKeywords: boolean; values: string[]; properties: any } = (searchValue: string) => {
+export interface ParsedSearchQuery {
+    hasKeywords: boolean;
+    values: string[];
+    properties: {
+        [key: string]: string
+    };
+}
+
+export const parseSearchQuery: (query: string) => { hasKeywords: boolean; values: string[]; properties: any } = (searchValue: string): ParsedSearchQuery => {
     const keywords = [
         'type:',
         'cluster:',
@@ -341,7 +349,7 @@ export const parseQuery: (query: string) => { hasKeywords: boolean; values: stri
 };
 
 export const getAdvancedDataFromQuery = (query: string): SearchBarAdvanceFormData => {
-    const r = parseQuery(query);
+    const r = parseSearchQuery(query);
 
     const getFirstProp = (name: string) => r.properties[name] && r.properties[name][0];
     const getPropValue = (name: string, value: string) => r.properties[name] && r.properties[name].find((v: string) => v === value);
@@ -375,7 +383,7 @@ export const getAdvancedDataFromQuery = (query: string): SearchBarAdvanceFormDat
 export const getFilters = (filterName: string, searchValue: string): string => {
     const filter = new FilterBuilder();
 
-    const pq = parseQuery(searchValue);
+    const pq = parseSearchQuery(searchValue);
 
     if (!pq.hasKeywords) {
         filter

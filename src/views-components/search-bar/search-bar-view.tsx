@@ -198,7 +198,8 @@ const getView = (props: SearchBarViewProps) => {
         case SearchView.ADVANCED:
             return <SearchBarAdvancedView
                 closeAdvanceView={props.closeAdvanceView}
-                tags={props.tags} />;
+                tags={props.tags}
+                saveQuery={props.saveQuery} />;
         default:
             return <SearchBarBasicView
                 onSetView={props.onSetView}

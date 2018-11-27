@@ -29,7 +29,10 @@ const mapStateToProps = ({ searchBar, form }: RootState): SearchBarDataProps => 
         searchResults: searchBar.searchResults,
         selectedItem: searchBar.selectedItem,
         savedQueries: searchBar.savedQueries,
-        tags: form.searchBarAdvanceFormName
+        tags: form.searchBarAdvanceFormName,
+        saveQuery: form.searchBarAdvanceFormName &&
+            form.searchBarAdvanceFormName.values &&
+            form.searchBarAdvanceFormName.values.saveQuery
     };
 };
 

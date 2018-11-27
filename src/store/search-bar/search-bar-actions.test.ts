@@ -2,15 +2,15 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { getAdvancedDataFromQuery, getQueryFromAdvancedData, parseQuery } from "~/store/search-bar/search-bar-actions";
+import { getAdvancedDataFromQuery, getQueryFromAdvancedData, parseSearchQuery } from "~/store/search-bar/search-bar-actions";
 import { ResourceKind } from "~/models/resource";
 import { ClusterObjectType } from "~/models/search-bar";
 
 describe('search-bar-actions', () => {
-    describe('parseQuery', () => {
+    describe('parseSearchQuery', () => {
         it('should correctly parse query #1', () => {
             const q = 'val0 is:trashed val1';
-            const r = parseQuery(q);
+            const r = parseSearchQuery(q);
             expect(r.hasKeywords).toBeTruthy();
             expect(r.values).toEqual(['val0', 'val1']);
             expect(r.properties).toEqual({
@@ -20,7 +20,7 @@ describe('search-bar-actions', () => {
 
         it('should correctly parse query #2 (value with keyword should be ignored)', () => {
             const q = 'val0 is:from:trashed val1';
-            const r = parseQuery(q);
+            const r = parseSearchQuery(q);
             expect(r.hasKeywords).toBeTruthy();
             expect(r.values).toEqual(['val0', 'val1']);
             expect(r.properties).toEqual({
@@ -30,7 +30,7 @@ describe('search-bar-actions', () => {
 
         it('should correctly parse query #3 (many keywords)', () => {
             const q = 'val0 is:trashed val2 from:2017-04-01 val1';
-            const r = parseQuery(q);
+            const r = parseSearchQuery(q);
             expect(r.hasKeywords).toBeTruthy();
             expect(r.values).toEqual(['val0', 'val2', 'val1']);
             expect(r.properties).toEqual({
@@ -41,7 +41,7 @@ describe('search-bar-actions', () => {
 
         it('should correctly parse query #4 (no duplicated values)', () => {
             const q = 'val0 is:trashed val2 val2 val0';
-            const r = parseQuery(q);
+            const r = parseSearchQuery(q);
             expect(r.hasKeywords).toBeTruthy();
             expect(r.values).toEqual(['val0', 'val2']);
             expect(r.properties).toEqual({
@@ -51,7 +51,7 @@ describe('search-bar-actions', () => {
 
         it('should correctly parse query #5 (properties)', () => {
             const q = 'val0 has:filesize:100mb val2 val2 val0';
-            const r = parseQuery(q);
+            const r = parseSearchQuery(q);
             expect(r.hasKeywords).toBeTruthy();
             expect(r.values).toEqual(['val0', 'val2']);
             expect(r.properties).toEqual({
@@ -61,7 +61,7 @@ describe('search-bar-actions', () => {
 
         it('should correctly parse query #6 (multiple properties, multiple is)', () => {
             const q = 'val0 has:filesize:100mb val2 has:user:daniel is:starred val2 val0 is:trashed';
-            const r = parseQuery(q);
+            const r = parseSearchQuery(q);
             expect(r.hasKeywords).toBeTruthy();
             expect(r.values).toEqual(['val0', 'val2']);
             expect(r.properties).toEqual({
