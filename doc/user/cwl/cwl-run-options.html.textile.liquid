@@ -24,7 +24,7 @@ table(table table-bordered table-condensed).
 |_. Option |_. Description |
 |==--basedir== BASEDIR|     Base directory used to resolve relative references in the input, default to directory of input object file or current directory (if inputs piped/provided on command line).|
 |==--eval-timeout EVAL_TIMEOUT==|Time to wait for a Javascript expression to evaluate before giving an error, default 20s.|
-|==--print-dot==|           Print workflow visualization in graphviz format and exit
+|==--print-dot==|           Print workflow visualization in graphviz format and exit|
 |==--version==|             Print version and exit|
 |==--validate==|            Validate CWL document only.|
 |==--verbose==|             Default logging|
@@ -48,14 +48,14 @@ table(table table-bordered table-condensed).
 |==--log-timestamps==|      Prefix logging lines with timestamp|
 |==--no-log-timestamps==|   No timestamp on logging lines|
 |==--api== {jobs,containers}|Select work submission API. Default is 'jobs' if that API is available, otherwise 'containers'.|
-|==compute-checksum==|    Compute checksum of contents while collecting outputs|
-|==submit-runner-ram== SUBMIT_RUNNER_RAM|RAM (in MiB) required for the workflow runner job (default 1024)
-|==submit-runner-image== SUBMIT_RUNNER_IMAGE|Docker image for workflow runner job|
-|==always-submit-runner==|When invoked with --submit --wait, always submit a runner to manage the workflow, even when only running a single CommandLineTool|
-|==--submit-request-uuid== UUID|Update and commit to supplied container request instead of creating a new one (containers API only).
-|==--submit-runner-cluster== CLUSTER_ID|Submit workflow runner to a remote cluster (containers API only)
-|==--name NAME==|Name to use for workflow execution instance.
-|==--on-error== {stop,continue}|Desired workflow behavior when a step fails. One of 'stop' or 'continue'. Default is 'continue'.
+|==--compute-checksum==|    Compute checksum of contents while collecting outputs|
+|==--submit-runner-ram== SUBMIT_RUNNER_RAM|RAM (in MiB) required for the workflow runner job (default 1024)|
+|==--submit-runner-image== SUBMIT_RUNNER_IMAGE|Docker image for workflow runner job|
+|==--always-submit-runner==|When invoked with --submit --wait, always submit a runner to manage the workflow, even when only running a single CommandLineTool|
+|==--submit-request-uuid== UUID|Update and commit to supplied container request instead of creating a new one (containers API only).|
+|==--submit-runner-cluster== CLUSTER_ID|Submit workflow runner to a remote cluster (containers API only)|
+|==--name NAME==|Name to use for workflow execution instance.|
+|==--on-error== {stop,continue}|Desired workflow behavior when a step fails.  One of 'stop' (do not submit any more steps) or 'continue' (may submit other steps that are not downstream from the error). Default is 'stop'.|
 |==--enable-dev==|Enable loading and running development versions of CWL spec.|
 |==--storage-classes== STORAGE_CLASSES|Specify comma separated list of storage classes to be used when saving workflow output to Keep.|
 |==--intermediate-output-ttl== N|If N > 0, intermediate output collections will be trashed N seconds after creation. Default is 0 (don't trash).|
