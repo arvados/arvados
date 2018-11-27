@@ -28,13 +28,15 @@ const mapStateToProps = (state: RootState): VocabularyProp => ({
     vocabulary: getVocabulary(state.properties),
 });
 
+export const PROPERTY_VALUE_FIELD_NAME = 'value';
+
 export const PropertyValueField = compose(
     connect(mapStateToProps),
     formValues({ propertyKey: PROPERTY_KEY_FIELD_NAME })
 )(
     (props: PropertyValueFieldProps) =>
         <Field
-            name='value'
+            name={PROPERTY_VALUE_FIELD_NAME}
             component={PropertyValueInput}
             validate={getValidation(props)}
             {...props} />);
