@@ -26,6 +26,7 @@ import { SearchService } from '~/services/search-service/search-service';
 import { PermissionService } from "~/services/permission-service/permission-service";
 import { RepositoriesService } from '~/services/repositories-service/repositories-service';
 import { AuthorizedKeysService } from '~/services/authorized-keys-service/authorized-keys-service';
+import { VocabularyService } from '~/services/vocabulary-service/vocabulary-service';
 
 export type ServiceRepository = ReturnType<typeof createServices>;
 
@@ -56,6 +57,7 @@ export const createServices = (config: Config, actions: ApiActions) => {
     const favoriteService = new FavoriteService(linkService, groupsService);
     const tagService = new TagService(linkService);
     const searchService = new SearchService();
+    const vocabularyService = new VocabularyService(config.vocabularyUrl);
 
     return {
         ancestorsService,
@@ -79,6 +81,7 @@ export const createServices = (config: Config, actions: ApiActions) => {
         userService,
         webdavClient,
         workflowService,
+        vocabularyService,
     };
 };
 
