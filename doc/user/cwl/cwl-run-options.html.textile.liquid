@@ -9,43 +9,64 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
+# "*Command line options*":#options
+# "*Specify workflow and output names*":#names
+# "*Submit a workflow without waiting for the result*":#nowait
+# "*Control a workflow locally*":#local
+# "*Automatically delete intermediate outputs*":#delete
+# "*Run workflow on a remote federated cluster*":#federation
+
+h3(#options). Command line options
+
 The following command line options are available for @arvados-cwl-runner@:
 
 table(table table-bordered table-condensed).
 |_. Option |_. Description |
 |==--basedir== BASEDIR|     Base directory used to resolve relative references in the input, default to directory of input object file or current directory (if inputs piped/provided on command line).|
+|==--eval-timeout EVAL_TIMEOUT==|Time to wait for a Javascript expression to evaluate before giving an error, default 20s.|
+|==--print-dot==|           Print workflow visualization in graphviz format and exit
 |==--version==|             Print version and exit|
 |==--validate==|            Validate CWL document only.|
 |==--verbose==|             Default logging|
 |==--quiet==|               Only print warnings and errors.|
 |==--debug==|               Print even more logging|
+|==--metrics==|             Print timing metrics|
 |==--tool-help==|           Print command line help for tool|
-|==--enable-reuse==|Enable job reuse (default)|
-|==--disable-reuse==|Disable job reuse (always run new jobs).|
+|==--enable-reuse==|        Enable job or container reuse (default)|
+|==--disable-reuse==|       Disable job or container reuse|
 |==--project-uuid UUID==|   Project that will own the workflow jobs, if not provided, will go to home project.|
 |==--output-name OUTPUT_NAME==|Name to use for collection that stores the final output.|
 |==--output-tags OUTPUT_TAGS==|Tags for the final output collection separated by commas, e.g., =='--output-tags tag0,tag1,tag2'==.|
 |==--ignore-docker-for-reuse==|Ignore Docker image version when deciding whether to reuse past jobs.|
-|==--submit==|              Submit workflow to run on Arvados.|
-|==--local==|               Control workflow from local host (submits jobs to Arvados).|
-|==--create-template==|     (Deprecated) synonym for ==--create-workflow.==|
-|==--create-workflow==|     Create an Arvados workflow (if using the 'containers' API) or pipeline template (if using the 'jobs' API). See ==--api==.|
+|==--submit==|              Submit workflow runner to Arvados to manage the workflow (default).|
+|==--local==|               Run workflow on local host (still submits jobs to Arvados).|
+|==--create-template==|     (Deprecated) synonym for --create-workflow.|
+|==--create-workflow==|     Create an Arvados workflow (if using the 'containers' API) or pipeline template (if using the 'jobs' API). See --api.|
 |==--update-workflow== UUID|Update an existing Arvados workflow or pipeline template with the given UUID.|
 |==--wait==|                After submitting workflow runner job, wait for completion.|
 |==--no-wait==|             Submit workflow runner job and exit.|
-|==--api== WORK_API|        Select work submission API, one of 'jobs' or 'containers'. Default is 'jobs' if that API is available, otherwise 'containers'.|
-|==--compute-checksum==|    Compute checksum of contents while collecting outputs|
-|==--submit-runner-ram== SUBMIT_RUNNER_RAM|RAM (in MiB) required for the workflow runner job (default 1024)|
-|==--submit-runner-image== SUBMIT_RUNNER_IMAGE|Docker image for workflow runner job, default arvados/jobs|
-|==--name== NAME|           Name to use for workflow execution instance.|
-|==--on-error {stop,continue}==|Desired workflow behavior when a step fails. One of 'stop' or 'continue'. Default is 'continue'.|
-|==--enable-dev==|          Enable loading and running development versions of CWL spec.|
+|==--log-timestamps==|      Prefix logging lines with timestamp|
+|==--no-log-timestamps==|   No timestamp on logging lines|
+|==--api== {jobs,containers}|Select work submission API. Default is 'jobs' if that API is available, otherwise 'containers'.|
+|==compute-checksum==|    Compute checksum of contents while collecting outputs|
+|==submit-runner-ram== SUBMIT_RUNNER_RAM|RAM (in MiB) required for the workflow runner job (default 1024)
+|==submit-runner-image== SUBMIT_RUNNER_IMAGE|Docker image for workflow runner job|
+|==always-submit-runner==|When invoked with --submit --wait, always submit a runner to manage the workflow, even when only running a single CommandLineTool|
+|==--submit-request-uuid== UUID|Update and commit to supplied container request instead of creating a new one (containers API only).
+|==--submit-runner-cluster== CLUSTER_ID|Submit workflow runner to a remote cluster (containers API only)
+|==--name NAME==|Name to use for workflow execution instance.
+|==--on-error== {stop,continue}|Desired workflow behavior when a step fails. One of 'stop' or 'continue'. Default is 'continue'.
+|==--enable-dev==|Enable loading and running development versions of CWL spec.|
+|==--storage-classes== STORAGE_CLASSES|Specify comma separated list of storage classes to be used when saving workflow output to Keep.|
 |==--intermediate-output-ttl== N|If N > 0, intermediate output collections will be trashed N seconds after creation. Default is 0 (don't trash).|
-|==--trash-intermediate==|  Immediately trash intermediate outputs on workflow success.|
+|==--priority== PRIORITY|Workflow priority (range 1..1000, higher has precedence over lower, containers api only)|
+|==--thread-count== THREAD_COUNT|Number of threads to use for job submit and output collection.|
+|==--http-timeout== HTTP_TIMEOUT|API request timeout in seconds. Default is 300 seconds (5 minutes).|
+|==--trash-intermediate==|Immediately trash intermediate outputs on workflow success.|
 |==--no-trash-intermediate==|Do not trash intermediate outputs (default).|
 
 
-h3. Specify workflow and output names
+h3(#names). Specify workflow and output names
 
 Use the @--name@ and @--output-name@ options to specify the name of the workflow and name of the output collection.
 
@@ -69,7 +90,7 @@ arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107,
 </code></pre>
 </notextile>
 
-h3. Submit a workflow with no waiting
+h3(#nowait). Submit a workflow without waiting for the result
 
 To submit a workflow and exit immediately, use the @--no-wait@ option.  This will submit the workflow to Arvados, print out the UUID of the job that was submitted to standard output, and exit.
 
@@ -83,7 +104,7 @@ qr1hi-8i9sb-fm2n3b1w0l6bskg
 </code></pre>
 </notextile>
 
-h3. Control a workflow locally
+h3(#local). Control a workflow locally
 
 To run a workflow with local control, use @--local@.  This means that the host where you run @arvados-cwl-runner@ will be responsible for submitting jobs, however, the jobs themselves will still run on the Arvados cluster.  With @--local@, if you interrupt @arvados-cwl-runner@ or log out, the workflow will be terminated.
 
@@ -106,7 +127,7 @@ arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107,
 </code></pre>
 </notextile>
 
-h3. Automatically delete intermediate outputs
+h3(#delete). Automatically delete intermediate outputs
 
 Use the @--intermediate-output-ttl@ and @--trash-intermediate@ options to specify how long intermediate outputs should be kept (in seconds) and whether to trash them immediately upon successful workflow completion.
 
@@ -117,3 +138,7 @@ Note: arvados-cwl-runner currently does not take workflow dependencies into acco
 Using @--trash-intermediate@ without @--intermediate-output-ttl@ means that intermediate files will be trashed on successful completion, but will remain on workflow failure.
 
 Using @--intermediate-output-ttl@ without @--trash-intermediate@ means that intermediate files will be trashed only after the TTL expires (regardless of workflow success or failure).
+
+h3(#federation). Run workflow on a remote federated cluster
+
+By default, the workflow runner will run on the local (home) cluster.  Using @--submit-runner-cluster@ you can specify that the runner should be submitted to a remote federated cluster.  When doing this, @--project-uuid@ should specify a project on that cluster.  Steps making up the workflow will be submitted to the remote federated cluster by default, but the behavior of @arv:ClusterTarget@ is unchanged.  Note: when using this option, any resources that need to be uploaded in order to run the workflow (such as files or Docker images) will be uploaded to the local (home) cluster, and streamed to the federated cluster on demand.

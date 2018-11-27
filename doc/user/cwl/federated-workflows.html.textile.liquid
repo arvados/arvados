@@ -17,7 +17,7 @@ For more information, visit the "architecture":{{site.baseurl}}/architecture/fed
 
 h2. Get the example files
 
-The tutorial files are located in the "documentation section of the Arvados source repository:":https://github.com/curoverse/arvados/tree/master/doc/user/cwl/federated
+The tutorial files are located in the "documentation section of the Arvados source repository:":https://github.com/curoverse/arvados/tree/master/doc/user/cwl/federated or "see below":#fed-example
 
 <notextile>
 <pre><code>~$ <span class="userinput">git clone https://github.com/curoverse/arvados</span>
@@ -25,7 +25,24 @@ The tutorial files are located in the "documentation section of the Arvados sour
 </code></pre>
 </notextile>
 
-h2. Federated scatter/gather example
+h2. Run example
+
+{% include 'notebox_begin' %}
+
+At this time, remote steps of a workflow on Workbench are not displayed.  As a workaround, you can find the UUIDs of the remote steps in the live logs of the workflow runner (the "Logs" tab).  You may visit the remote cluster's workbench and enter the UUID into the search box to view the details of the remote step.  This will be fixed in a future version of workbench.
+
+{% include 'notebox_end' %}
+
+Run it like any other workflow:
+
+<notextile>
+<pre><code>~$ <span class="userinput">arvados-cwl-runner federated.cwl shards.cwl</span>
+</code></pre>
+</notextile>
+
+You can also "run a workflow on a remote federated cluster":cwl-run-options.html#federation .
+
+h2(#fed-example). Federated scatter/gather example
 
 In this following example, an analysis task is executed on three different clusters with different data, then the results are combined to produce the final output.
 
