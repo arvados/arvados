@@ -90,7 +90,7 @@ export const resourceShare = (dispatch: Dispatch, uuidPrefix: string, ownerUuid?
     const isPublic = ownerUuid === getPublicUuid(uuidPrefix);
     return (
         <div>
-            {isPublic && uuid &&
+            {!isPublic && uuid &&
                 <Tooltip title="Share">
                     <IconButton onClick={() => dispatch<any>(openSharingDialog(uuid))}>
                         <ShareIcon />
