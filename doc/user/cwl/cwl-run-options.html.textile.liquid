@@ -55,7 +55,7 @@ table(table table-bordered table-condensed).
 |==--submit-request-uuid== UUID|Update and commit to supplied container request instead of creating a new one (containers API only).|
 |==--submit-runner-cluster== CLUSTER_ID|Submit workflow runner to a remote cluster (containers API only)|
 |==--name NAME==|Name to use for workflow execution instance.|
-|==--on-error== {stop,continue}|Desired workflow behavior when a step fails.  One of 'stop' (do not submit any more steps) or 'continue' (may submit other steps that are not downstream from the error). Default is 'stop'.|
+|==--on-error== {stop,continue}|Desired workflow behavior when a step fails.  One of 'stop' (do not submit any more steps) or 'continue' (may submit other steps that are not downstream from the error). Default is 'continue'.|
 |==--enable-dev==|Enable loading and running development versions of CWL spec.|
 |==--storage-classes== STORAGE_CLASSES|Specify comma separated list of storage classes to be used when saving workflow output to Keep.|
 |==--intermediate-output-ttl== N|If N > 0, intermediate output collections will be trashed N seconds after creation. Default is 0 (don't trash).|

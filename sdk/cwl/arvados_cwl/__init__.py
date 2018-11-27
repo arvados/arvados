@@ -165,8 +165,8 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
 
     parser.add_argument("--on-error",
                         help="Desired workflow behavior when a step fails.  One of 'stop' (do not submit any more steps) or "
-                        "'continue' (may submit other steps that are not downstream from the error). Default is 'stop'.",
-                        default="stop", choices=("stop", "continue"))
+                        "'continue' (may submit other steps that are not downstream from the error). Default is 'continue'.",
+                        default="continue", choices=("stop", "continue"))
 
     parser.add_argument("--enable-dev", action="store_true",
                         help="Enable loading and running development versions "
