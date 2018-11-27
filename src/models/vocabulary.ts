@@ -10,8 +10,8 @@ export interface Vocabulary {
 }
 
 export interface Tag {
-    strict: boolean;
-    values: string[];
+    strict?: boolean;
+    values?: string[];
 }
 
 const VOCABULARY_VALIDATORS = [
