@@ -18,8 +18,7 @@ import { ArvadosTheme } from '~/common/custom-theme';
 import { compose, Dispatch } from 'redux';
 import { WorkflowResource } from '~/models/workflow';
 import { ResourceStatus } from '~/views/workflow-panel/workflow-panel-view';
-import { getUuidPrefix } from '~/store/workflow-panel/workflow-panel-actions';
-import { CollectionResource } from "~/models/collection";
+import { getUuidPrefix, openRunProcess } from '~/store/workflow-panel/workflow-panel-actions';
 import { getResourceData } from "~/store/resources-data/resources-data";
 import { openSharingDialog } from '~/store/sharing-dialog/sharing-dialog-actions';
 
@@ -87,12 +86,11 @@ const getPublicUuid = (uuidPrefix: string) => {
     return `${uuidPrefix}-tpzed-anonymouspublic`;
 };
 
-// ToDo: share onClick
 export const resourceShare = (dispatch: Dispatch, uuidPrefix: string, ownerUuid?: string, uuid?: string) => {
     const isPublic = ownerUuid === getPublicUuid(uuidPrefix);
     return (
         <div>
-            { !isPublic && uuid &&
+            {!isPublic && uuid &&
                 <Tooltip title="Share">
                     <IconButton onClick={() => dispatch<any>(openSharingDialog(uuid))}>
                         <ShareIcon />
@@ -114,6 +112,28 @@ export const ResourceShare = connect(
         };
     })((props: { ownerUuid?: string, uuidPrefix: string, uuid?: string } & DispatchProp<any>) =>
         resourceShare(props.dispatch, props.uuidPrefix, props.ownerUuid, props.uuid));
+
+export const resourceRunProcess = (dispatch: Dispatch, uuid: string) => {
+    return (
+        <div>
+            {uuid &&
+                <Tooltip title="Run process">
+                    <IconButton onClick={() => dispatch<any>(openRunProcess(uuid))}>
+                        <ProcessIcon />
+                    </IconButton>
+                </Tooltip>}
+        </div>
+    );
+};
+
+export const ResourceRunProcess = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<WorkflowResource>(props.uuid)(state.resources);
+        return {
+            uuid: resource ? resource.uuid : ''
+        };
+    })((props: { uuid: string } & DispatchProp<any>) =>
+        resourceRunProcess(props.dispatch, props.uuid));
 
 export const renderWorkflowStatus = (uuidPrefix: string, ownerUuid?: string) => {
     if (ownerUuid === getPublicUuid(uuidPrefix)) {
