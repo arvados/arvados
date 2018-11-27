@@ -80,11 +80,18 @@ export const searchAdvanceData = (data: SearchBarAdvanceFormData) =>
 
 export const setSearchValueFromAdvancedData = (data: SearchBarAdvanceFormData, prevData?: SearchBarAdvanceFormData) =>
     (dispatch: Dispatch, getState: () => RootState) => {
+        const searchValue = getState().searchBar.searchValue;
         const value = getQueryFromAdvancedData({
-            searchValue: getState().searchBar.searchValue,
-            ...data
+            ...data,
+            searchValue
         }, prevData);
         dispatch(searchBarActions.SET_SEARCH_VALUE(value));
+    };
+
+export const setAdvancedDataFromSearchValue = (search: string) =>
+    (dispatch: Dispatch) => {
+        const data = getAdvancedDataFromQuery(search);
+        dispatch<any>(initialize(SEARCH_BAR_ADVANCE_FORM_NAME, data));
     };
 
 const saveQuery = (data: SearchBarAdvanceFormData) =>
@@ -155,7 +162,7 @@ export const changeData = (searchValue: string) =>
         const searchValuePresent = searchValue.length > 0;
 
         if (currentView === SearchView.ADVANCED) {
-
+            dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.AUTOCOMPLETE));
         } else if (searchValuePresent) {
             dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.AUTOCOMPLETE));
             dispatch(searchBarActions.SET_SELECTED_ITEM(searchValue));
@@ -205,8 +212,19 @@ const searchGroups = (searchValue: string, limit: number) =>
 const buildQueryFromKeyMap = (data: any, keyMap: string[][], mode: 'rebuild' | 'reuse') => {
     let value = data.searchValue;
 
+    const rem = (field: string, fieldValue: any, value: string) => {
+    };
+
     const addRem = (field: string, key: string) => {
         const v = data[key];
+
+        if (data.hasOwnProperty(key)) {
+            const pattern = v === false
+                ? `${field.replace(':', '\\:\\s*')}\\s*`
+                : `${field.replace(':', '\\:\\s*')}\\:\\s*[\\w|\\#|\\-|\\/]*\\s*`;
+            value = value.replace(new RegExp(pattern), '');
+        }
+
         if (v) {
             const nv = v === true
                 ? `${field}`
@@ -217,11 +235,6 @@ const buildQueryFromKeyMap = (data: any, keyMap: string[][], mode: 'rebuild' | '
             } else {
                 value = nv + ' ' + value;
             }
-        } else if (data.hasOwnProperty(key) && (v === undefined || v === false)) {
-            const pattern = v === false
-                ? `${field.replace(':', '\\:\\s*')}\\s*`
-                : `${field.replace(':', '\\:\\s*')}\\:\\s*[\\w|\\#|\\-|\\/]*`;
-            value = value.replace(new RegExp(pattern), '');
         }
     };
 
@@ -260,7 +273,6 @@ export const getQueryFromAdvancedData = (data: SearchBarAdvanceFormData, prevDat
 
     if (prevData) {
         const obj = getModifiedKeysValues(flatData(data), flatData(prevData));
-        console.log(obj);
         value = buildQueryFromKeyMap({
             searchValue: data.searchValue,
             ...obj

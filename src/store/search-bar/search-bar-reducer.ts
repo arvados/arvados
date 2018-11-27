@@ -5,8 +5,7 @@
 import {
     getQueryFromAdvancedData,
     searchBarActions,
-    SearchBarActions,
-    setSearchValueFromAdvancedData
+    SearchBarActions
 } from '~/store/search-bar/search-bar-actions';
 import { GroupContentsResource } from '~/services/groups-service/groups-service';
 import { SearchBarAdvanceFormData } from '~/models/search-bar';

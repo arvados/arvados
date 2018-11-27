@@ -86,6 +86,7 @@ interface SearchBarViewActionProps {
     loadRecentQueries: () => string[];
     moveUp: () => void;
     moveDown: () => void;
+    setAdvancedDataFromSearchValue: (search: string) => void;
 }
 
 type SearchBarViewProps = SearchBarDataProps & SearchBarActionProps & WithStyles<CssRules>;
@@ -94,6 +95,7 @@ const handleKeyDown = (e: React.KeyboardEvent, props: SearchBarViewProps) => {
     if (e.keyCode === KEY_CODE_DOWN) {
         e.preventDefault();
         if (!props.isPopoverOpen) {
+            props.onSetView(SearchView.AUTOCOMPLETE);
             props.openSearchView();
         } else {
             props.moveDown();
@@ -117,6 +119,30 @@ const handleKeyDown = (e: React.KeyboardEvent, props: SearchBarViewProps) => {
     }
 };
 
+const handleInputClick = (e: React.MouseEvent, props: SearchBarViewProps) => {
+    if (props.searchValue) {
+        props.onSetView(SearchView.AUTOCOMPLETE);
+        props.openSearchView();
+    } else {
+        props.closeView();
+    }
+};
+
+const handleDropdownClick = (e: React.MouseEvent, props: SearchBarViewProps) => {
+    e.stopPropagation();
+    if (props.isPopoverOpen) {
+        if (props.currentView === SearchView.ADVANCED) {
+            props.closeView();
+        } else {
+            props.setAdvancedDataFromSearchValue(props.searchValue);
+            props.onSetView(SearchView.ADVANCED);
+        }
+    } else {
+        props.setAdvancedDataFromSearchValue(props.searchValue);
+        props.onSetView(SearchView.ADVANCED);
+    }
+};
+
 export const SearchBarView = withStyles(styles)(
     (props : SearchBarViewProps) => {
         const { classes, isPopoverOpen } = props;
@@ -131,7 +157,7 @@ export const SearchBarView = withStyles(styles)(
                             value={props.searchValue}
                             fullWidth={true}
                             disableUnderline={true}
-                            onClick={props.openSearchView}
+                            onClick={e => handleInputClick(e, props)}
                             onKeyDown={e => handleKeyDown(e, props)}
                             startAdornment={
                                 <InputAdornment position="start">
@@ -145,7 +171,7 @@ export const SearchBarView = withStyles(styles)(
                             endAdornment={
                                 <InputAdornment position="end">
                                     <Tooltip title='Advanced search'>
-                                        <IconButton onClick={() => props.onSetView(SearchView.ADVANCED)}>
+                                        <IconButton onClick={e => handleDropdownClick(e, props)}>
                                             <ArrowDropDownIcon />
                                         </IconButton>
                                     </Tooltip>
