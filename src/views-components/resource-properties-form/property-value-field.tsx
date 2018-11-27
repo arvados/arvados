@@ -12,6 +12,7 @@ import { getVocabulary } from '~/store/vocabulary/vocabulary-selctors';
 import { Autocomplete } from '~/components/autocomplete/autocomplete';
 import { Vocabulary } from '~/models/vocabulary';
 import { require } from '~/validators/require';
+import { PROPERTY_KEY_FIELD_NAME } from '~/views-components/resource-properties-form/property-key-field';
 
 interface VocabularyProp {
     vocabulary: Vocabulary;
@@ -29,7 +30,7 @@ const mapStateToProps = (state: RootState): VocabularyProp => ({
 
 export const PropertyValueField = compose(
     connect(mapStateToProps),
-    formValues({ propertyKey: 'key' })
+    formValues({ propertyKey: PROPERTY_KEY_FIELD_NAME })
 )(
     (props: PropertyValueFieldProps) =>
         <Field

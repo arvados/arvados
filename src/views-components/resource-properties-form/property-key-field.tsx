@@ -20,10 +20,12 @@ const mapStateToProps = (state: RootState): VocabularyProp => ({
     vocabulary: getVocabulary(state.properties),
 });
 
+export const PROPERTY_KEY_FIELD_NAME = 'key';
+
 export const PropertyKeyField = connect(mapStateToProps)(
     ({ vocabulary }: VocabularyProp) =>
         <Field
-            name='key'
+            name={PROPERTY_KEY_FIELD_NAME}
             component={PropertyKeyInput}
             vocabulary={vocabulary}
             validate={getValidation(vocabulary)} />);
@@ -53,7 +55,7 @@ const matchTags = (vocabulary: Vocabulary) =>
             ? undefined
             : 'Incorrect key';
 
-const getSuggestions = (value: string, vocabulary: Vocabulary) => 
+const getSuggestions = (value: string, vocabulary: Vocabulary) =>
     getTagsList(vocabulary).filter(tag => tag.includes(value) && tag !== value);
 
 const getTagsList = ({ tags }: Vocabulary) =>
