@@ -31,6 +31,7 @@ export enum ResourceKind {
     REPOSITORY = "arvados#repository",
     SSH_KEY = "arvados#authorizedKeys",
     USER = "arvados#user",
+    VIRTUAL_MACHINE = "arvados#virtualMachine",
     WORKFLOW = "arvados#workflow",
     NONE = "arvados#none"
 }
@@ -43,6 +44,7 @@ export enum ResourceObjectType {
     LOG = '57u5n',
     REPOSITORY = 's0uqq',
     USER = 'tpzed',
+    VIRTUAL_MACHINE = '2x53u',
     WORKFLOW = '7fd4e',
     SSH_KEY = 'fngyi'
 }
@@ -77,6 +79,8 @@ export const extractUuidKind = (uuid: string = '') => {
             return ResourceKind.LOG;
         case ResourceObjectType.WORKFLOW:
             return ResourceKind.WORKFLOW;
+        case ResourceObjectType.VIRTUAL_MACHINE:
+            return ResourceKind.VIRTUAL_MACHINE;
         case ResourceObjectType.REPOSITORY:
             return ResourceKind.REPOSITORY;
         case ResourceObjectType.SSH_KEY:
