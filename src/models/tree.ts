@@ -95,6 +95,12 @@ export const getNodeAncestorsIds = (id: string) => <T>(tree: Tree<T>): string[] 
 export const getNodeDescendants = (id: string, limit = Infinity) => <T>(tree: Tree<T>) =>
     mapIdsToNodes(getNodeDescendantsIds(id, limit)(tree))(tree);
 
+export const countNodes = <T>(tree: Tree<T>) =>
+    getNodeDescendantsIds('')(tree).length;
+
+export const countChildren = (id: string) => <T>(tree: Tree<T>) =>
+    getNodeChildren('')(tree).length;
+
 export const getNodeDescendantsIds = (id: string, limit = Infinity) => <T>(tree: Tree<T>): string[] => {
     const node = getNode(id)(tree);
     const children = node ? node.children :
@@ -120,19 +126,19 @@ export const mapIdsToNodes = (ids: string[]) => <T>(tree: Tree<T>) =>
     ids.map(id => getNode(id)(tree)).filter((node): node is TreeNode<T> => node !== undefined);
 
 export const activateNode = (id: string) => <T>(tree: Tree<T>) =>
-    mapTree(node => node.id === id ? { ...node, active: true } : { ...node, active: false })(tree);
+    mapTree((node: TreeNode<T>) => node.id === id ? { ...node, active: true } : { ...node, active: false })(tree);
 
 export const deactivateNode = <T>(tree: Tree<T>) =>
-    mapTree(node => node.active ? { ...node, active: false } : node)(tree);
+    mapTree((node: TreeNode<T>) => node.active ? { ...node, active: false } : node)(tree);
 
 export const expandNode = (...ids: string[]) => <T>(tree: Tree<T>) =>
-    mapTree(node => ids.some(id => id === node.id) ? { ...node, expanded: true } : node)(tree);
+    mapTree((node: TreeNode<T>) => ids.some(id => id === node.id) ? { ...node, expanded: true } : node)(tree);
 
 export const collapseNode = (...ids: string[]) => <T>(tree: Tree<T>) =>
-    mapTree(node => ids.some(id => id === node.id) ? { ...node, expanded: false } : node)(tree);
+    mapTree((node: TreeNode<T>) => ids.some(id => id === node.id) ? { ...node, expanded: false } : node)(tree);
 
 export const toggleNodeCollapse = (...ids: string[]) => <T>(tree: Tree<T>) =>
-    mapTree(node => ids.some(id => id === node.id) ? { ...node, expanded: !node.expanded } : node)(tree);
+    mapTree((node: TreeNode<T>) => ids.some(id => id === node.id) ? { ...node, expanded: !node.expanded } : node)(tree);
 
 export const setNodeStatus = (id: string) => (status: TreeNodeStatus) => <T>(tree: Tree<T>) => {
     const node = getNode(id)(tree);
@@ -174,6 +180,10 @@ export const deselectNodes = (id: string | string[]) => <T>(tree: Tree<T>) => {
     const ids = typeof id === 'string' ? [id] : id;
     return ids.reduce((tree, id) => deselectNode(id)(tree), tree);
 };
+
+export const getSelectedNodes = <T>(tree: Tree<T>) =>
+    getNodeDescendants('')(tree)
+        .filter(node => node.selected);
 
 export const initTreeNode = <T>(data: Pick<TreeNode<T>, 'id' | 'value'> & { parent?: string }): TreeNode<T> => ({
     children: [],

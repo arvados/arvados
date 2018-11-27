@@ -33,7 +33,9 @@ import { ContextMenuKind } from "~/views-components/context-menu/context-menu";
 import { Dispatch } from "redux";
 import { PanelDefaultView } from '~/components/panel-default-view/panel-default-view';
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
-
+import { createTree } from '~/models/tree';
+import { getInitialResourceTypeFilters } from '../../store/resource-type-filters/resource-type-filters';
+// TODO: code clean up
 type CssRules = "toolbar" | "button";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
@@ -79,13 +81,13 @@ export const ResourceRestore =
         </Tooltip>
     );
 
-export const trashPanelColumns: DataColumns<string, TrashPanelFilter> = [
+export const trashPanelColumns: DataColumns<string> = [
     {
         name: TrashPanelColumnNames.NAME,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.ASC,
-        filters: [],
+        filters: createTree(),
         render: uuid => <ResourceName uuid={uuid} />
     },
     {
@@ -93,18 +95,7 @@ export const trashPanelColumns: DataColumns<string, TrashPanelFilter> = [
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
-        filters: [
-            {
-                name: resourceLabel(ResourceKind.COLLECTION),
-                selected: true,
-                type: ResourceKind.COLLECTION
-            },
-            {
-                name: resourceLabel(ResourceKind.PROJECT),
-                selected: true,
-                type: ResourceKind.PROJECT
-            }
-        ],
+        filters: getInitialResourceTypeFilters(),
         render: uuid => <ResourceType uuid={uuid} />,
     },
     {
@@ -112,7 +103,7 @@ export const trashPanelColumns: DataColumns<string, TrashPanelFilter> = [
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
-        filters: [],
+        filters: createTree(),
         render: uuid => <ResourceFileSize uuid={uuid} />
     },
     {
@@ -120,7 +111,7 @@ export const trashPanelColumns: DataColumns<string, TrashPanelFilter> = [
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
-        filters: [],
+        filters: createTree(),
         render: uuid => <ResourceTrashDate uuid={uuid} />
     },
     {
@@ -128,7 +119,7 @@ export const trashPanelColumns: DataColumns<string, TrashPanelFilter> = [
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
-        filters: [],
+        filters: createTree(),
         render: uuid => <ResourceDeleteDate uuid={uuid} />
     },
     {
@@ -136,7 +127,7 @@ export const trashPanelColumns: DataColumns<string, TrashPanelFilter> = [
         selected: true,
         configurable: false,
         sortDirection: SortDirection.NONE,
-        filters: [],
+        filters: createTree(),
         render: uuid => <ResourceRestore uuid={uuid} />
     }
 ];
