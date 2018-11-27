@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+import { Dispatch } from 'redux';
 import { dialogActions } from '~/store/dialog/dialog-actions';
 import { RootState } from '~/store/store';
-import { Dispatch } from 'redux';
 import { ResourceKind, extractUuidKind } from '~/models/resource';
 import { getResource } from '~/store/resources/resources';
 import { GroupContentsResourcePrefix } from '~/services/groups-service/groups-service';
@@ -15,7 +15,7 @@ import { ProjectResource } from '~/models/project';
 import { ServiceRepository } from '~/services/services';
 import { FilterBuilder } from '~/services/api/filter-builder';
 import { RepositoryResource } from '~/models/repositories';
-import { SshKeyResource } from '../../models/ssh-key';
+import { SshKeyResource } from '~/models/ssh-key';
 
 export const ADVANCED_TAB_DIALOG = 'advancedTabDialog';
 
