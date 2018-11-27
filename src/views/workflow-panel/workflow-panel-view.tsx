@@ -19,6 +19,7 @@ import { DataTableFilterItem } from '~/components/data-table-filters/data-table-
 import { Grid, Paper } from '@material-ui/core';
 import { WorkflowDetailsCard } from './workflow-description-card';
 import { WorkflowResource } from '../../models/workflow';
+import { createTree } from '~/models/tree';
 
 export enum WorkflowPanelColumnNames {
     NAME = "Name",
@@ -61,36 +62,38 @@ const resourceStatus = (type: string) => {
     }
 };
 
-export const workflowPanelColumns: DataColumns<string, WorkflowPanelFilter> = [
+export const workflowPanelColumns: DataColumns<string> = [
     {
         name: WorkflowPanelColumnNames.NAME,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.ASC,
-        filters: [],
+        filters: createTree(),
         render: (uuid: string) => <RosurceWorkflowName uuid={uuid} />
     },
     {
         name: WorkflowPanelColumnNames.AUTHORISATION,
         selected: true,
         configurable: true,
-        filters: [
-            {
-                name: resourceStatus(ResourceStatus.PUBLIC),
-                selected: true,
-                type: ResourceStatus.PUBLIC
-            },
-            {
-                name: resourceStatus(ResourceStatus.PRIVATE),
-                selected: true,
-                type: ResourceStatus.PRIVATE
-            },
-            {
-                name: resourceStatus(ResourceStatus.SHARED),
-                selected: true,
-                type: ResourceStatus.SHARED
-            }
-        ],
+        filters: createTree(),
+        // TODO: restore filters
+        // filters: [
+        //     {
+        //         name: resourceStatus(ResourceStatus.PUBLIC),
+        //         selected: true,
+        //         type: ResourceStatus.PUBLIC
+        //     },
+        //     {
+        //         name: resourceStatus(ResourceStatus.PRIVATE),
+        //         selected: true,
+        //         type: ResourceStatus.PRIVATE
+        //     },
+        //     {
+        //         name: resourceStatus(ResourceStatus.SHARED),
+        //         selected: true,
+        //         type: ResourceStatus.SHARED
+        //     }
+        // ],
         render: (uuid: string) => <ResourceWorkflowStatus uuid={uuid} />,
     },
     {
@@ -98,14 +101,14 @@ export const workflowPanelColumns: DataColumns<string, WorkflowPanelFilter> = [
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
-        filters: [],
+        filters: createTree(),
         render: (uuid: string) => <ResourceLastModifiedDate uuid={uuid} />
     },
     {
         name: '',
         selected: true,
         configurable: false,
-        filters: [],
+        filters: createTree(),
         render: (uuid: string) => <ResourceShare uuid={uuid} />
     }
 ];

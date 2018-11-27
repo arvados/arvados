@@ -4,8 +4,8 @@
 
 import { DataColumn, toggleSortDirection, resetSortDirection, SortDirection } from "~/components/data-table/data-column";
 import { dataExplorerActions, DataExplorerAction } from "./data-explorer-action";
-import { DataTableFilterItem } from "~/components/data-table-filters/data-table-filters";
 import { DataColumns } from "~/components/data-table/data-table";
+import { DataTableFilters } from "~/components/data-table-filters/data-table-filters-tree";
 
 export interface DataExplorer {
     columns: DataColumns<any>;
@@ -103,7 +103,7 @@ const toggleColumn = (columnName: string) =>
         ? { ...column, selected: !column.selected }
         : column;
 
-const setFilters = (columnName: string, filters: DataTableFilterItem[]) =>
+const setFilters = (columnName: string, filters: DataTableFilters) =>
     (column: DataColumn<any>) => column.name === columnName
         ? { ...column, filters }
         : column;

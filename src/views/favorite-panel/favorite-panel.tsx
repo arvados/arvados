@@ -11,7 +11,6 @@ import { RouteComponentProps } from 'react-router';
 import { DataTableFilterItem } from '~/components/data-table-filters/data-table-filters';
 import { SortDirection } from '~/components/data-table/data-column';
 import { ResourceKind } from '~/models/resource';
-import { resourceLabel } from '~/common/labels';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { FAVORITE_PANEL_ID } from "~/store/favorite-panel/favorite-panel-action";
 import {
@@ -28,9 +27,11 @@ import { openContextMenu, resourceKindToContextMenuKind } from '~/store/context-
 import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { navigateTo } from '~/store/navigation/navigation-action';
 import { ContainerRequestState } from "~/models/container-request";
-import { FavoritesState } from '../../store/favorites/favorites-reducer';
+import { FavoritesState } from '~/store/favorites/favorites-reducer';
 import { RootState } from '~/store/store';
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
+import { createTree } from '~/models/tree';
+import { getSimpleObjectTypeFilters } from '~/store/resource-type-filters/resource-type-filters';
 
 type CssRules = "toolbar" | "button";
 
@@ -57,57 +58,41 @@ export interface FavoritePanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
 }
 
-export const favoritePanelColumns: DataColumns<string, FavoritePanelFilter> = [
+export const favoritePanelColumns: DataColumns<string> = [
     {
         name: FavoritePanelColumnNames.NAME,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.ASC,
-        filters: [],
+        filters: createTree(),
         render: uuid => <ResourceName uuid={uuid} />
     },
     {
         name: "Status",
         selected: true,
         configurable: true,
-        filters: [],
+        filters: createTree(),
         render: uuid => <ProcessStatus uuid={uuid} />
     },
     {
         name: FavoritePanelColumnNames.TYPE,
         selected: true,
         configurable: true,
-        filters: [
-            {
-                name: resourceLabel(ResourceKind.COLLECTION),
-                selected: true,
-                type: ResourceKind.COLLECTION
-            },
-            {
-                name: resourceLabel(ResourceKind.PROCESS),
-                selected: true,
-                type: ResourceKind.PROCESS
-            },
-            {
-                name: resourceLabel(ResourceKind.PROJECT),
-                selected: true,
-                type: ResourceKind.PROJECT
-            }
-        ],
+        filters: getSimpleObjectTypeFilters(),
         render: uuid => <ResourceType uuid={uuid} />
     },
     {
         name: FavoritePanelColumnNames.OWNER,
         selected: true,
         configurable: true,
-        filters: [],
+        filters: createTree(),
         render: uuid => <ResourceOwner uuid={uuid} />
     },
     {
         name: FavoritePanelColumnNames.FILE_SIZE,
         selected: true,
         configurable: true,
-        filters: [],
+        filters: createTree(),
         render: uuid => <ResourceFileSize uuid={uuid} />
     },
     {
@@ -115,7 +100,7 @@ export const favoritePanelColumns: DataColumns<string, FavoritePanelFilter> = [
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
-        filters: [],
+        filters: createTree(),
         render: uuid => <ResourceLastModifiedDate uuid={uuid} />
     }
 ];

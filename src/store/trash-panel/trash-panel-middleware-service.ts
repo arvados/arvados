@@ -23,6 +23,9 @@ import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions
 import { updateResources } from "~/store/resources/resources-actions";
 import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
 import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
+import { serializeResourceTypeFilters } from '~/store//resource-type-filters/resource-type-filters';
+import { getDataExplorerColumnFilters } from '~/store/data-explorer/data-explorer-middleware-service';
+import { joinFilters } from '../../services/api/filter-builder';
 
 export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -31,9 +34,22 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
 
     async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
         const dataExplorer = api.getState().dataExplorer[this.getId()];
-        const columns = dataExplorer.columns as DataColumns<string, TrashPanelFilter>;
+        const columns = dataExplorer.columns as DataColumns<string>;
         const sortColumn = getSortColumn(dataExplorer);
-        const typeFilters = this.getColumnFilters(columns, TrashPanelColumnNames.TYPE);
+
+        const typeFilters = serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.TYPE));
+
+        const otherFilters = new FilterBuilder()
+            .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.COLLECTION)
+            .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROCESS)
+            .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROJECT)
+            .addEqual("is_trashed", true)
+            .getFilters();
+
+        const filters = joinFilters(
+            typeFilters,
+            otherFilters,
+        );
 
         const order = new OrderBuilder<ProjectResource>();
 
@@ -55,12 +71,7 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
                 .contents(userUuid, {
                     ...dataExplorerToListParams(dataExplorer),
                     order: order.getOrder(),
-                    filters: new FilterBuilder()
-                        .addIsA("uuid", typeFilters.map(f => f.type))
-                        .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.COLLECTION)
-                        .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROJECT)
-                        .addEqual("is_trashed", true)
-                        .getFilters(),
+                    filters,
                     recursive: true,
                     includeTrash: true
                 });

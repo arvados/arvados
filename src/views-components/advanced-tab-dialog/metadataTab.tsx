@@ -47,7 +47,7 @@ export const MetadataTab = withStyles(styles)((props: MetadataProps & WithStyles
                     <TableCell className={props.classes.cell}>{it.uuid}</TableCell>
                     <TableCell className={props.classes.cell}>{it.linkClass}</TableCell>
                     <TableCell className={props.classes.cell}>{it.name}</TableCell>
-                    <TableCell className={props.classes.cell}>{props.user ? `User: ${props.user.firstName} ${props.user.lastName}` : it.tailUuid}</TableCell>
+                    <TableCell className={props.classes.cell}>{props.user && `User: ${props.user.firstName} ${props.user.lastName}`}</TableCell>
                     <TableCell className={props.classes.cell}>{it.headUuid === props.uuid ? 'this' : it.headUuid}</TableCell>
                     <TableCell className={props.classes.cell}>{JSON.stringify(it.properties)}</TableCell>
                 </TableRow>
