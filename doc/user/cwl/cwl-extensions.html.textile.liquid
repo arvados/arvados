@@ -43,6 +43,7 @@ hints:
   arv:WorkflowRunnerResources:
     ramMin: 2048
     coresMin: 2
+    keep_cache: 512
   arv:ClusterTarget:
     cluster_id: clsr1
     project_uuid: clsr1-j7d0g-qxc4jcji7n4lafx
@@ -137,7 +138,7 @@ table(table table-bordered table-condensed).
 |_. Field |_. Type |_. Description |
 |ramMin|int|RAM, in mebibytes, to reserve for the arvados-cwl-runner process. Default 1 GiB|
 |coresMin|int|Number of cores to reserve to the arvados-cwl-runner process. Default 1 core.|
-
+|keep_cache|int|RAM, in mebibytes, to reserve for caching keep collection metadata. Default 256 MiB|
 h2(#clustertarget). arv:ClusterTarget
 
 Specify which Arvados cluster should execute a container or subworkflow, and the parent project for the container request.

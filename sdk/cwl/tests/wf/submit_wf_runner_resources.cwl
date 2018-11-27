@@ -15,6 +15,7 @@ hints:
   arv:WorkflowRunnerResources:
     ramMin: 2000
     coresMin: 2
+    keep_cache: 512
 inputs:
   - id: x
     type: File

@@ -122,8 +122,13 @@ class ArvCwlExecutor(object):
         else:
             self.keep_client = arvados.keep.KeepClient(api_client=self.api, num_retries=self.num_retries)
 
+        if arvargs.collection_cache_size:
+            collection_cache_size = arvargs.collection_cache_size*1024*1024
+        else:
+            collection_cache_size = 256*1024*1024
+
         self.collection_cache = CollectionCache(self.api, self.keep_client, self.num_retries,
-                                                cap=arvargs.collection_cache)
+                                                cap=collection_cache_size)
 
         self.fetcher_constructor = partial(CollectionFetcher,
                                            api_client=self.api,
@@ -607,7 +612,8 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                                                 intermediate_output_ttl=runtimeContext.intermediate_output_ttl,
                                                 merged_map=merged_map,
                                                 priority=runtimeContext.priority,
-                                                secret_store=self.secret_store)
+                                                secret_store=self.secret_store,
+                                                collection_cache_size=runtimeContext.collection_cache_size)
             elif self.work_api == "jobs":
                 runnerjob = RunnerJob(self, tool, job_order, runtimeContext.enable_reuse,
                                       self.output_name,

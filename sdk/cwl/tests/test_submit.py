@@ -1204,7 +1204,8 @@ class TestSubmit(unittest.TestCase):
             {
                 "class": "http://arvados.org/cwl#WorkflowRunnerResources",
                 "coresMin": 2,
-                "ramMin": 2000
+                "ramMin": 2000,
+                "keep_cache": 512
             }
         ]
         expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][0]["$namespaces"] = {

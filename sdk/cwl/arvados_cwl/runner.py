@@ -364,7 +364,7 @@ class Runner(object):
                  output_name, output_tags, submit_runner_ram=0,
                  name=None, on_error=None, submit_runner_image=None,
                  intermediate_output_ttl=0, merged_map=None,
-                 priority=None, secret_store=None):
+                 priority=None, secret_store=None, collection_cache_size=None):
         self.arvrunner = runner
         self.tool = tool
         self.job_order = job_order
@@ -389,6 +389,7 @@ class Runner(object):
 
         self.submit_runner_cores = 1
         self.submit_runner_ram = 1024  # defaut 1 GiB
+        self.collection_cache_size = 256
 
         runner_resource_req, _ = self.tool.get_requirement("http://arvados.org/cwl#WorkflowRunnerResources")
         if runner_resource_req:
@@ -396,10 +397,16 @@ class Runner(object):
                 self.submit_runner_cores = runner_resource_req["coresMin"]
             if runner_resource_req.get("ramMin"):
                 self.submit_runner_ram = runner_resource_req["ramMin"]
+            if runner_resource_req.get("keep_cache"):
+                self.collection_cache_size = runner_resource_req["keep_cache"]
 
         if submit_runner_ram:
             # Command line / initializer overrides default and/or spec from workflow
             self.submit_runner_ram = submit_runner_ram
+
+        if collection_cache_size:
+            # Command line / initializer overrides default and/or spec from workflow
+            self.collection_cache_size = collection_cache_size
 
         if self.submit_runner_ram <= 0:
             raise Exception("Value of submit-runner-ram must be greater than zero")
