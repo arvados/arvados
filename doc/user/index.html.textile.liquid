@@ -9,11 +9,12 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-This guide provides a reference for using Arvados to solve big data bioinformatics problems, including:
+This guide provides a reference for using Arvados to solve scientific big data problems, including:
 
 * Robust storage of very large files, such as whole genome sequences, using the "Arvados Keep":{{site.baseurl}}/user/tutorials/tutorial-keep.html content-addressable cluster file system.
-* Running compute-intensive genomic analysis pipelines, such as alignment and variant calls using the "Arvados Crunch":{{site.baseurl}}/user/tutorials/intro-crunch.html cluster compute engine.
-* Accessing, organizing, and sharing data, pipelines and results using the "Arvados Workbench":{{site.baseurl}}/user/getting_started/workbench.html web application.
+* Running compute-intensive scientific analysis pipelines, such as genomic alignment and variant calls using the "Arvados Crunch":{{site.baseurl}}/user/tutorials/intro-crunch.html cluster compute engine.
+* Accessing, organizing, and sharing data, workflows and results using the "Arvados Workbench":{{site.baseurl}}/user/getting_started/workbench.html web application.
+* Running an analysis using multiple clusters (HPC, cloud, or hybrid) with "Federated Multi-Cluster Workflows":{{site.baseurl}}/user/cwl/federated-workflows.html .
 
 The examples in this guide use the public Arvados instance located at <a href="{{site.arvados_workbench_host}}/" target="_blank">{{site.arvados_workbench_host}}</a>.  If you are using a different Arvados instance replace @{{ site.arvados_workbench_host }}@ with your private instance in all of the examples in this guide.
 
