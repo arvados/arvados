@@ -48,11 +48,6 @@ export const loadVirtualMachinesData = () =>
         });
         dispatch(virtualMachinesActions.SET_VIRTUAL_MACHINES(virtualMachines));
         dispatch(virtualMachinesActions.SET_LINKS(links));
-        // const logins = await services.virtualMachineService.logins(virtualMachines.items[0].uuid);
-        // console.log(logins);
-        // const getAllLogins = await services.virtualMachineService.getAllLogins();
-        // console.log(getAllLogins);  
-        // dispatch(virtualMachinesActions.SET_LOGINS(getAllLogins));
     };
 
 export const saveRequestedDate = () =>

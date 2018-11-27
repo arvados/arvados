@@ -14,10 +14,10 @@ import { saveRequestedDate, loadVirtualMachinesData } from '~/store/virtual-mach
 import { RootState } from '~/store/store';
 import { ListResults } from '~/services/common-service/common-resource-service';
 import { HelpIcon } from '~/components/icon/icon';
-import { VirtualMachinesLoginsResource } from '~/models/virtual-machines';
+import { VirtualMachinesLoginsResource, VirtualMachinesResource } from '~/models/virtual-machines';
 import { Routes } from '~/routes/routes';
 
-type CssRules = 'button' | 'codeSnippet' | 'link' | 'linkIcon' | 'rightAlign' | 'cardWithoutMachines';
+type CssRules = 'button' | 'codeSnippet' | 'link' | 'linkIcon' | 'rightAlign' | 'cardWithoutMachines' | 'icon';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     button: {
@@ -58,19 +58,17 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     }
 });
 
-const mapStateToProps = (state: RootState) => {
+const mapStateToProps = ({ virtualMachines }: RootState) => {
     return {
-        requestedDate: state.virtualMachines.date,
-        virtualMachines: state.virtualMachines.virtualMachines,
-        logins: state.virtualMachines.logins,
-        links: state.virtualMachines.links
+        requestedDate: virtualMachines.date,
+        ...virtualMachines
     };
 };
 
-const mapDispatchToProps = (dispatch: Dispatch) => ({
-    saveRequestedDate: () => dispatch<any>(saveRequestedDate()),
-    loadVirtualMachinesData: () => dispatch<any>(loadVirtualMachinesData())
-});
+const mapDispatchToProps = {
+    saveRequestedDate,
+    loadVirtualMachinesData
+};
 
 interface VirtualMachinesPanelDataProps {
     requestedDate: string;
@@ -95,55 +93,55 @@ export const VirtualMachinePanel = compose(
             }
 
             render() {
-                const { classes, saveRequestedDate, requestedDate, virtualMachines, links } = this.props;
+                const { virtualMachines, links } = this.props;
                 return (
                     <Grid container spacing={16}>
-                        {virtualMachines.itemsAvailable === 0 && cardContentWithNoVirtualMachines(requestedDate, saveRequestedDate, classes)}
-                        {virtualMachines.itemsAvailable > 0 && links.itemsAvailable > 0 && cardContentWithVirtualMachines(requestedDate, saveRequestedDate, virtualMachines, links, classes)}
-                        {cardSSHSection(classes)}
+                        {virtualMachines.itemsAvailable === 0 && <CardContentWithNoVirtualMachines {...this.props} />}
+                        {virtualMachines.itemsAvailable > 0 && links.itemsAvailable > 0 && <CardContentWithVirtualMachines {...this.props} />}
+                        {<CardSSHSection {...this.props} />}
                     </Grid>
                 );
             }
         }
     );
 
-const cardContentWithNoVirtualMachines = (requestedDate: string, saveRequestedDate: () => void, classes: any) =>
+const CardContentWithNoVirtualMachines = (props: VirtualMachineProps) =>
     <Grid item xs={12}>
         <Card>
-            <CardContent className={classes.cardWithoutMachines}>
+            <CardContent className={props.classes.cardWithoutMachines}>
                 <Grid item xs={6}>
                     <Typography variant="body2">
                         You do not have access to any virtual machines. Some Arvados features require using the command line. You may request access to a hosted virtual machine with the command line shell.
                     </Typography>
                 </Grid>
-                <Grid item xs={6} className={classes.rightAlign}>
-                    <Button variant="contained" color="primary" className={classes.button} onClick={saveRequestedDate}>
+                <Grid item xs={6} className={props.classes.rightAlign}>
+                    <Button variant="contained" color="primary" className={props.classes.button} onClick={props.saveRequestedDate}>
                         SEND REQUEST FOR SHELL ACCESS
                     </Button>
-                    {requestedDate &&
+                    {props.requestedDate &&
                         <Typography variant="body1">
-                            A request for shell access was sent on {requestedDate}
+                            A request for shell access was sent on {props.requestedDate}
                         </Typography>}
                 </Grid>
             </CardContent>
         </Card>
     </Grid>;
 
-const cardContentWithVirtualMachines = (requestedDate: string, saveRequestedDate: () => void, virtualMachines: ListResults<any>, links: ListResults<any>, classes: any) =>
+const CardContentWithVirtualMachines = (props: VirtualMachineProps) =>
     <Grid item xs={12}>
         <Card>
             <CardContent>
-                <div className={classes.rightAlign}>
-                    <Button variant="contained" color="primary" className={classes.button} onClick={saveRequestedDate}>
+                <div className={props.classes.rightAlign}>
+                    <Button variant="contained" color="primary" className={props.classes.button} onClick={props.saveRequestedDate}>
                         SEND REQUEST FOR SHELL ACCESS
                     </Button>
-                    {requestedDate &&
+                    {props.requestedDate &&
                         <Typography variant="body1">
-                            A request for shell access was sent on {requestedDate}
+                            A request for shell access was sent on {props.requestedDate}
                         </Typography>}
                 </div>
-                <div className={classes.icon}>
-                    <a href="https://doc.arvados.org/user/getting_started/vm-login-with-webshell.html" target="_blank" className={classes.linkIcon}>
+                <div className={props.classes.icon}>
+                    <a href="https://doc.arvados.org/user/getting_started/vm-login-with-webshell.html" target="_blank" className={props.classes.linkIcon}>
                         <Tooltip title="Access VM using webshell">
                             <HelpIcon />
                         </Tooltip>
@@ -159,14 +157,14 @@ const cardContentWithVirtualMachines = (requestedDate: string, saveRequestedDate
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {virtualMachines.items.map((it, index) =>
+                        {props.virtualMachines.items.map((it, index) =>
                             <TableRow key={index}>
                                 <TableCell>{it.hostname}</TableCell>
-                                <TableCell>{getUsername(links, it)}</TableCell>
-                                <TableCell>ssh {getUsername(links, it)}@shell.arvados</TableCell>
+                                <TableCell>{getUsername(props.links, it)}</TableCell>
+                                <TableCell>ssh {getUsername(props.links, it)}@shell.arvados</TableCell>
                                 <TableCell>
-                                    <a href={`https://workbench.c97qk.arvadosapi.com${it.href}/webshell/${getUsername(links, it)}`} target="_blank" className={classes.link}>
-                                        Log in as {getUsername(links, it)}
+                                    <a href={`https://workbench.c97qk.arvadosapi.com${it.href}/webshell/${getUsername(props.links, it)}`} target="_blank" className={props.classes.link}>
+                                        Log in as {getUsername(props.links, it)}
                                     </a>
                                 </TableCell>
                             </TableRow>
@@ -177,21 +175,20 @@ const cardContentWithVirtualMachines = (requestedDate: string, saveRequestedDate
         </Card>
     </Grid>;
 
-const getUsername = (links: ListResults<any>, virtualMachine: any) => {
-    console.log(links);
+const getUsername = (links: ListResults<any>, virtualMachine: VirtualMachinesResource) => {
     const link = links.items.find((item: any) => item.headUuid === virtualMachine.uuid);
     return link.properties.username || undefined;
 };
 
-const cardSSHSection = (classes: any) =>
+const CardSSHSection = (props: VirtualMachineProps) =>
     <Grid item xs={12}>
         <Card>
             <CardContent>
                 <Typography variant="body2">
-                    In order to access virtual machines using SSH, <Link to={Routes.SSH_KEYS} className={classes.link}>add an SSH key to your account</Link> and add a section like this to your SSH configuration file ( ~/.ssh/config):
+                    In order to access virtual machines using SSH, <Link to={Routes.SSH_KEYS} className={props.classes.link}>add an SSH key to your account</Link> and add a section like this to your SSH configuration file ( ~/.ssh/config):
                 </Typography>
                 <DefaultCodeSnippet
-                    className={classes.codeSnippet}
+                    className={props.classes.codeSnippet}
                     lines={[textSSH]} />
             </CardContent>
         </Card>
