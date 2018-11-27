@@ -3,9 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { WrappedFieldProps, Field } from 'redux-form';
+import { WrappedFieldProps, Field, formValues } from 'redux-form';
 import { connect } from 'react-redux';
 import { identity } from 'lodash';
+import { compose } from 'redux';
 import { RootState } from '~/store/store';
 import { getVocabulary } from '~/store/vocabulary/vocabulary-selctors';
 import { Autocomplete } from '~/components/autocomplete/autocomplete';
@@ -26,7 +27,10 @@ const mapStateToProps = (state: RootState): VocabularyProp => ({
     vocabulary: getVocabulary(state.properties),
 });
 
-export const PropertyValueField = connect(mapStateToProps)(
+export const PropertyValueField = compose(
+    connect(mapStateToProps),
+    formValues({ propertyKey: 'key' })
+)(
     (props: PropertyValueFieldProps) =>
         <Field
             name='value'
