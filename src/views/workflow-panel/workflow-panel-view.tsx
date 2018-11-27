@@ -11,14 +11,15 @@ import {
     ResourceLastModifiedDate,
     RosurceWorkflowName,
     ResourceWorkflowStatus,
-    ResourceShare
+    ResourceShare,
+    ResourceRunProcess
 } from "~/views-components/data-explorer/renderers";
 import { SortDirection } from '~/components/data-table/data-column';
 import { DataColumns } from '~/components/data-table/data-table';
 import { DataTableFilterItem } from '~/components/data-table-filters/data-table-filters';
 import { Grid, Paper } from '@material-ui/core';
 import { WorkflowDetailsCard } from './workflow-description-card';
-import { WorkflowResource } from '../../models/workflow';
+import { WorkflowResource } from '~/models/workflow';
 import { createTree } from '~/models/tree';
 
 export enum WorkflowPanelColumnNames {
@@ -110,11 +111,18 @@ export const workflowPanelColumns: DataColumns<string> = [
         configurable: false,
         filters: createTree(),
         render: (uuid: string) => <ResourceShare uuid={uuid} />
+    },
+    {
+        name: '',
+        selected: true,
+        configurable: false,
+        filters: createTree(),
+        render: (uuid: string) => <ResourceRunProcess uuid={uuid} />
     }
 ];
 
 export const WorkflowPanelView = (props: WorkflowPanelProps) => {
-    return <Grid container spacing={16} style={{minHeight: '500px'}}>
+    return <Grid container spacing={16} style={{ minHeight: '500px' }}>
         <Grid item xs={6}>
             <DataExplorer
                 id={WORKFLOW_PANEL_ID}
