@@ -4,12 +4,15 @@
 
 import * as React from "react";
 import { mount, configure } from "enzyme";
+import { pipe } from 'lodash/fp';
 import { TableHead, TableCell, Typography, TableBody, Button, TableSortLabel } from "@material-ui/core";
 import * as Adapter from "enzyme-adapter-react-16";
 import { DataTable, DataColumns } from "./data-table";
-import { DataTableFilters } from "../data-table-filters/data-table-filters";
+import { DataTableFilters } from "~/components/data-table-filters/data-table-filters";
 import { SortDirection, createDataColumn } from "./data-column";
-import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
+import { DataTableFiltersPopover } from '~/components/data-table-filters/data-table-filters-popover';
+import { createTree, setNode, initTreeNode } from '~/models/tree';
+import { DataTableFilterItem } from "~/components/data-table-filters/data-table-filters-tree";
 
 configure({ adapter: new Adapter() });
 
@@ -139,12 +142,12 @@ describe("<DataTable />", () => {
     it("passes sorting props to <TableSortLabel />", () => {
         const columns: DataColumns<string> = [
             createDataColumn({
-            name: "Column 1",
-            sortDirection: SortDirection.ASC,
-            selected: true,
-            configurable: true,
-            render: (item) => <Typography>{item}</Typography>
-        })];
+                name: "Column 1",
+                sortDirection: SortDirection.ASC,
+                selected: true,
+                configurable: true,
+                render: (item) => <Typography>{item}</Typography>
+            })];
         const onSortToggle = jest.fn();
         const dataTable = mount(<DataTable
             columns={columns}
@@ -180,13 +183,17 @@ describe("<DataTable />", () => {
         expect(dataTable.find(DataTableFilters)).toHaveLength(0);
     });
 
-    it("passes filter props to <DataTableFilter />", () => {
+    it("passes filter props to <DataTableFiltersPopover />", () => {
+        const filters = pipe(
+            () => createTree<DataTableFilterItem>(),
+            setNode(initTreeNode({ id: 'filter', value: { name: 'filter' } }))
+        );
         const columns: DataColumns<string> = [{
             name: "Column 1",
             sortDirection: SortDirection.ASC,
             selected: true,
             configurable: true,
-            filters: [{ name: "Filter 1", selected: true }],
+            filters: filters(),
             render: (item) => <Typography>{item}</Typography>
         }];
         const onFiltersChange = jest.fn();
@@ -198,8 +205,8 @@ describe("<DataTable />", () => {
             onRowDoubleClick={jest.fn()}
             onSortToggle={jest.fn()}
             onContextMenu={jest.fn()} />);
-        expect(dataTable.find(DataTableFilters).prop("filters")).toBe(columns[0].filters);
-        dataTable.find(DataTableFilters).prop("onChange")([]);
+        expect(dataTable.find(DataTableFiltersPopover).prop("filters")).toBe(columns[0].filters);
+        dataTable.find(DataTableFiltersPopover).prop("onChange")([]);
         expect(onFiltersChange).toHaveBeenCalledWith([], columns[0]);
     });
 

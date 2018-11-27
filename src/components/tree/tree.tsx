@@ -88,6 +88,8 @@ export interface TreeProps<T> {
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
     render: (item: TreeItem<T>, level?: number) => ReactElement<{}>;
     showSelection?: boolean | ((item: TreeItem<T>) => boolean);
+    levelIndentation?: number;
+    itemRightPadding?: number;
     toggleItemActive: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
     toggleItemOpen: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
     toggleItemSelection?: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
@@ -103,10 +105,16 @@ export const Tree = withStyles(styles)(
                 ? this.props.showSelection
                 : () => this.props.showSelection ? true : false;
 
+            const { levelIndentation = 20, itemRightPadding = 20 } = this.props;
+
             return <List component="div" className={list}>
                 {items && items.map((it: TreeItem<T>, idx: number) =>
                     <div key={`item/${level}/${idx}`}>
-                        <ListItem button className={listItem} style={{ paddingLeft: (level + 1) * 20 }}
+                        <ListItem button className={listItem} 
+                            style={{ 
+                                paddingLeft: (level + 1) * levelIndentation,
+                                paddingRight: itemRightPadding,
+                            }}
                             disableRipple={disableRipple}
                             onClick={event => toggleItemActive(event, it)}
                             onContextMenu={this.handleRowContextMenu(it)}>
