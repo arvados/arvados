@@ -10,7 +10,7 @@ import { TreeItem } from "~/components/tree/tree";
 import { ProjectResource } from "~/models/project";
 import { ListItemTextIcon } from "~/components/list-item-text-icon/list-item-text-icon";
 import { ProjectIcon, FavoriteIcon, ProjectsIcon, ShareMeIcon, TrashIcon } from '~/components/icon/icon';
-import { RecentIcon, WorkflowIcon } from '~/components/icon/icon';
+import { WorkflowIcon } from '~/components/icon/icon';
 import { activateSidePanelTreeItem, toggleSidePanelTreeItemCollapse, SIDE_PANEL_TREE, SidePanelTreeCategory } from '~/store/side-panel-tree/side-panel-tree-actions';
 import { openSidePanelContextMenu } from '~/store/context-menu/context-menu-actions';
 import { noop } from 'lodash';
@@ -59,8 +59,6 @@ const getSidePanelIcon = (category: string) => {
             return FavoriteIcon;
         case SidePanelTreeCategory.PROJECTS:
             return ProjectsIcon;
-        case SidePanelTreeCategory.RECENT_OPEN:
-            return RecentIcon;
         case SidePanelTreeCategory.SHARED_WITH_ME:
             return ShareMeIcon;
         case SidePanelTreeCategory.TRASH:

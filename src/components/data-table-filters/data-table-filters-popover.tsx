@@ -10,10 +10,6 @@ import {
     StyleRulesCallback,
     Theme,
     Popover,
-    List,
-    ListItem,
-    Checkbox,
-    ListItemText,
     Button,
     Card,
     CardActions,
@@ -22,11 +18,10 @@ import {
     Tooltip
 } from "@material-ui/core";
 import * as classnames from "classnames";
-import { DefaultTransformOrigin } from "../popover/helpers";
-import { createTree, initTreeNode, mapTree } from '~/models/tree';
-import { DataTableFilters as DataTableFiltersModel, DataTableFiltersTree } from "./data-table-filters-tree";
-import { pipe } from 'lodash/fp';
-import { setNode } from '~/models/tree';
+import { DefaultTransformOrigin } from "~/components/popover/helpers";
+import { createTree } from '~/models/tree';
+import { DataTableFilters, DataTableFiltersTree } from "./data-table-filters-tree";
+import { getNodeDescendants } from '~/models/tree';
 
 export type CssRules = "root" | "icon" | "active" | "checkbox";
 
@@ -63,48 +58,30 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     }
 });
 
-export interface DataTableFilterItem {
-    name: string;
-    selected: boolean;
-}
-
 export interface DataTableFilterProps {
     name: string;
-    filters: DataTableFilterItem[];
-    onChange?: (filters: DataTableFilterItem[]) => void;
+    filters: DataTableFilters;
+    onChange?: (filters: DataTableFilters) => void;
 }
 
 interface DataTableFilterState {
     anchorEl?: HTMLElement;
-    filters: DataTableFilterItem[];
-    prevFilters: DataTableFilterItem[];
-    filtersTree: DataTableFiltersModel;
+    filters: DataTableFilters;
+    prevFilters: DataTableFilters;
 }
 
-const filters: DataTableFiltersModel = pipe(
-    createTree,
-    setNode(initTreeNode({ id: 'Project', value: { name: 'Project' } })),
-    setNode(initTreeNode({ id: 'Process', value: { name: 'Process' } })),
-    setNode(initTreeNode({ id: 'Data collection', value: { name: 'Data collection' } })),
-    setNode(initTreeNode({ id: 'General', parent: 'Data collection', value: { name: 'General' } })),
-    setNode(initTreeNode({ id: 'Output', parent: 'Data collection', value: { name: 'Output' } })),
-    setNode(initTreeNode({ id: 'Log', parent: 'Data collection', value: { name: 'Log' } })),
-    mapTree(node => ({...node, selected: true})),
-)();
-
-export const DataTableFilters = withStyles(styles)(
+export const DataTableFiltersPopover = withStyles(styles)(
     class extends React.Component<DataTableFilterProps & WithStyles<CssRules>, DataTableFilterState> {
         state: DataTableFilterState = {
             anchorEl: undefined,
-            filters: [],
-            prevFilters: [],
-            filtersTree: filters,
+            filters: createTree(),
+            prevFilters: createTree(),
         };
         icon = React.createRef<HTMLElement>();
 
         render() {
             const { name, classes, children } = this.props;
-            const isActive = this.state.filters.some(f => f.selected);
+            const isActive = getNodeDescendants('')(this.state.filters).some(f => f.selected);
             return <>
                 <Tooltip title='Filters'>
                     <ButtonBase
@@ -130,24 +107,9 @@ export const DataTableFilters = withStyles(styles)(
                                 {name}
                             </Typography>
                         </CardContent>
-                        <List dense>
-                            {this.state.filters.map((filter, index) =>
-                                <ListItem
-                                    key={index}>
-                                    <Checkbox
-                                        onClick={this.toggleFilter(filter)}
-                                        color="primary"
-                                        checked={filter.selected}
-                                        className={classes.checkbox} />
-                                    <ListItemText>
-                                        {filter.name}
-                                    </ListItemText>
-                                </ListItem>
-                            )}
-                        </List>
                         <DataTableFiltersTree
-                            filters={this.state.filtersTree}
-                            onChange={filtersTree => this.setState({ filtersTree })} />
+                            filters={this.state.filters}
+                            onChange={filters => this.setState({ filters })} />
                         <CardActions>
                             <Button
                                 color="primary"
@@ -195,14 +157,9 @@ export const DataTableFilters = withStyles(styles)(
             }));
         }
 
-        toggleFilter = (toggledFilter: DataTableFilterItem) => () => {
-            this.setState(prev => ({
-                ...prev,
-                filters: prev.filters.map(filter =>
-                    filter === toggledFilter
-                        ? { ...filter, selected: !filter.selected }
-                        : filter)
-            }));
+        setFilters = (filters: DataTableFilters) => {
+            this.setState({ filters });
         }
+
     }
 );

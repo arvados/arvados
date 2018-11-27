@@ -3,12 +3,12 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Dialog, DialogActions, DialogTitle, DialogContent, WithStyles, withStyles, StyleRulesCallback, Button, Typography, Paper } from '@material-ui/core';
+import { Dialog, DialogActions, DialogTitle, DialogContent, WithStyles, withStyles, StyleRulesCallback, Button, Typography } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { withDialog } from '~/store/dialog/with-dialog';
 import { WithDialogProps } from '~/store/dialog/with-dialog';
 import { connect } from 'react-redux';
-import { CurrentTokenDialogData, getCurrentTokenDialogData } from '~/store/current-token-dialog/current-token-dialog-actions';
+import { CurrentTokenDialogData, getCurrentTokenDialogData, CURRENT_TOKEN_DIALOG_NAME } from '~/store/current-token-dialog/current-token-dialog-actions';
 import { DefaultCodeSnippet } from '~/components/default-code-snippet/default-code-snippet';
 
 type CssRules = 'link' | 'paper' | 'button';
@@ -36,7 +36,7 @@ type CurrentTokenProps = CurrentTokenDialogData & WithDialogProps<{}> & WithStyl
 export const CurrentTokenDialog =
     withStyles(styles)(
     connect(getCurrentTokenDialogData)(
-    withDialog('currentTokenDialog')(
+    withDialog(CURRENT_TOKEN_DIALOG_NAME)(
     class extends React.Component<CurrentTokenProps> {
         render() {
             const { classes, open, closeDialog, ...data } = this.props;

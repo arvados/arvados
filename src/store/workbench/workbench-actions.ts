@@ -54,6 +54,7 @@ import { collectionPanelActions } from "~/store/collection-panel/collection-pane
 import { CollectionResource } from "~/models/collection";
 import { searchResultsPanelActions, loadSearchResultsPanel } from '~/store/search-results-panel/search-results-panel-actions';
 import { searchResultsPanelColumns } from '~/views/search-results-panel/search-results-panel-view';
+import { loadVirtualMachinesPanel } from '~/store/virtual-machines/virtual-machines-actions';
 import { loadRepositoriesPanel } from '~/store/repositories/repositories-actions';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
@@ -392,6 +393,12 @@ export const loadSearchResults = handleFirstTimeLoad(
         await dispatch(loadSearchResultsPanel());
     });
 
+export const loadVirtualMachines = handleFirstTimeLoad(
+    async (dispatch: Dispatch<any>) => {
+        await dispatch(loadVirtualMachinesPanel());
+        dispatch(setBreadcrumbs([{ label: 'Virtual Machines' }]));
+    });
+    
 export const loadRepositories = handleFirstTimeLoad(
     async (dispatch: Dispatch<any>) => {
         await dispatch(loadRepositoriesPanel());

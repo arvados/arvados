@@ -4,8 +4,8 @@
 
 import { History, Location } from 'history';
 import { RootStore } from '~/store/store';
-import { matchProcessRoute, matchProcessLogRoute, matchProjectRoute, matchCollectionRoute, matchFavoritesRoute, matchTrashRoute, matchRootRoute, matchSharedWithMeRoute, matchRunProcessRoute, matchWorkflowRoute, matchSearchResultsRoute, matchSshKeysRoute, matchRepositoriesRoute } from './routes';
-import { loadProject, loadCollection, loadFavorites, loadTrash, loadProcess, loadProcessLog, loadSshKeys, loadRepositories } from '~/store/workbench/workbench-actions';
+import { matchProcessRoute, matchProcessLogRoute, matchProjectRoute, matchCollectionRoute, matchFavoritesRoute, matchTrashRoute, matchRootRoute, matchSharedWithMeRoute, matchRunProcessRoute, matchWorkflowRoute, matchSearchResultsRoute, matchSshKeysRoute, matchRepositoriesRoute, matchVirtualMachineRoute } from './routes';
+import { loadProject, loadCollection, loadFavorites, loadTrash, loadProcess, loadProcessLog, loadSshKeys, loadRepositories, loadVirtualMachines } from '~/store/workbench/workbench-actions';
 import { navigateToRootProject } from '~/store/navigation/navigation-action';
 import { loadSharedWithMe, loadRunProcess, loadWorkflow, loadSearchResults } from '~//store/workbench/workbench-actions';
 
@@ -27,6 +27,7 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
     const searchResultsMatch = matchSearchResultsRoute(pathname);
     const sharedWithMeMatch = matchSharedWithMeRoute(pathname);
     const runProcessMatch = matchRunProcessRoute(pathname);
+    const virtualMachineMatch = matchVirtualMachineRoute(pathname);
     const workflowMatch = matchWorkflowRoute(pathname);
     const sshKeysMatch = matchSshKeysRoute(pathname);
 
@@ -52,6 +53,8 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
         store.dispatch(loadWorkflow);
     } else if (searchResultsMatch) {
         store.dispatch(loadSearchResults);
+    } else if (virtualMachineMatch) {
+        store.dispatch(loadVirtualMachines);
     } else if(repositoryMatch) {
         store.dispatch(loadRepositories);
     } else if (sshKeysMatch) {

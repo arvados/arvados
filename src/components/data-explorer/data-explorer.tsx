@@ -7,9 +7,10 @@ import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, WithStyles, Table
 import { ColumnSelector } from "../column-selector/column-selector";
 import { DataTable, DataColumns } from "../data-table/data-table";
 import { DataColumn, SortDirection } from "../data-table/data-column";
-import { DataTableFilterItem } from '../data-table-filters/data-table-filters';
 import { SearchInput } from '../search-input/search-input';
 import { ArvadosTheme } from "~/common/custom-theme";
+import { createTree } from '~/models/tree';
+import { DataTableFilters } from '../data-table-filters/data-table-filters-tree';
 import { MoreOptionsIcon } from '~/components/icon/icon';
 
 type CssRules = 'searchBox' | "toolbar" | "footer" | "root" | 'moreOptionsButton';
@@ -53,7 +54,7 @@ interface DataExplorerActionProps<T> {
     onColumnToggle: (column: DataColumn<T>) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: T) => void;
     onSortToggle: (column: DataColumn<T>) => void;
-    onFiltersChange: (filters: DataTableFilterItem[], column: DataColumn<T>) => void;
+    onFiltersChange: (filters: DataTableFilters, column: DataColumn<T>) => void;
     onChangePage: (page: number) => void;
     onChangeRowsPerPage: (rowsPerPage: number) => void;
     extractKey?: (item: T) => React.Key;
@@ -137,7 +138,7 @@ export const DataExplorer = withStyles(styles)(
             selected: true,
             configurable: false,
             sortDirection: SortDirection.NONE,
-            filters: [],
+            filters: createTree(),
             key: "context-actions",
             render: this.renderContextMenuTrigger
         };
