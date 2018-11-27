@@ -13,18 +13,17 @@ export interface ResourcePropertiesFormData {
     [PROPERTY_VALUE_FIELD_NAME]: string;
 }
 
-export const ResourcePropertiesForm = reduxForm({ form: 'rpform' })(
-    ({ handleSubmit }: InjectedFormProps) =>
-        <form onSubmit={handleSubmit}>
-            <Grid container spacing={16}>
-                <Grid item xs>
-                    <PropertyKeyField />
-                </Grid>
-                <Grid item xs>
-                    <PropertyValueField />
-                </Grid>
-                <Grid item xs>
-                    <Button variant='contained'>Add</Button>
-                </Grid>
+export const ResourcePropertiesForm = ({ handleSubmit }: InjectedFormProps<ResourcePropertiesFormData>) =>
+    <form onSubmit={handleSubmit}>
+        <Grid container spacing={16}>
+            <Grid item xs>
+                <PropertyKeyField />
             </Grid>
-        </form>);
+            <Grid item xs>
+                <PropertyValueField />
+            </Grid>
+            <Grid item xs>
+                <Button variant='contained' type='submit'>Add</Button>
+            </Grid>
+        </Grid>
+    </form>;
