@@ -4,25 +4,15 @@
 
 import * as React from 'react';
 import { WrappedFieldProps, Field } from 'redux-form';
-import { connect } from 'react-redux';
 import { identity, memoize } from 'lodash';
-import { RootState } from '~/store/store';
-import { getVocabulary } from '~/store/vocabulary/vocabulary-selctors';
 import { Autocomplete } from '~/components/autocomplete/autocomplete';
 import { Vocabulary } from '~/models/vocabulary';
 import { require } from '~/validators/require';
-
-interface VocabularyProp {
-    vocabulary: Vocabulary;
-}
-
-const mapStateToProps = (state: RootState): VocabularyProp => ({
-    vocabulary: getVocabulary(state.properties),
-});
+import { ITEMS_PLACEHOLDER, connectVocabulary, VocabularyProp } from '~/views-components/resource-properties-form/property-field-common';
 
 export const PROPERTY_KEY_FIELD_NAME = 'key';
 
-export const PropertyKeyField = connect(mapStateToProps)(
+export const PropertyKeyField = connectVocabulary(
     ({ vocabulary }: VocabularyProp) =>
         <Field
             name={PROPERTY_KEY_FIELD_NAME}
@@ -60,5 +50,3 @@ const getSuggestions = (value: string, vocabulary: Vocabulary) =>
 
 const getTagsList = ({ tags }: Vocabulary) =>
     Object.keys(tags);
-
-const ITEMS_PLACEHOLDER: string[] = [];

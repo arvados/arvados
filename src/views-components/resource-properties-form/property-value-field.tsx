@@ -4,19 +4,13 @@
 
 import * as React from 'react';
 import { WrappedFieldProps, Field, formValues } from 'redux-form';
-import { connect } from 'react-redux';
 import { identity } from 'lodash';
 import { compose } from 'redux';
-import { RootState } from '~/store/store';
-import { getVocabulary } from '~/store/vocabulary/vocabulary-selctors';
 import { Autocomplete } from '~/components/autocomplete/autocomplete';
 import { Vocabulary } from '~/models/vocabulary';
 import { require } from '~/validators/require';
 import { PROPERTY_KEY_FIELD_NAME } from '~/views-components/resource-properties-form/property-key-field';
-
-interface VocabularyProp {
-    vocabulary: Vocabulary;
-}
+import { ITEMS_PLACEHOLDER, VocabularyProp, connectVocabulary } from '~/views-components/resource-properties-form/property-field-common';
 
 interface PropertyKeyProp {
     propertyKey: string;
@@ -24,14 +18,10 @@ interface PropertyKeyProp {
 
 type PropertyValueFieldProps = VocabularyProp & PropertyKeyProp;
 
-const mapStateToProps = (state: RootState): VocabularyProp => ({
-    vocabulary: getVocabulary(state.properties),
-});
-
 export const PROPERTY_VALUE_FIELD_NAME = 'value';
 
 export const PropertyValueField = compose(
-    connect(mapStateToProps),
+    connectVocabulary,
     formValues({ propertyKey: PROPERTY_KEY_FIELD_NAME })
 )(
     (props: PropertyValueFieldProps) =>
@@ -77,5 +67,3 @@ const getTagValues = (tagName: string, vocabulary: Vocabulary) => {
     const tag = vocabulary.tags[tagName];
     return tag && tag.values ? tag.values : [];
 };
-
-const ITEMS_PLACEHOLDER: string[] = [];
