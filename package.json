@@ -47,6 +47,7 @@
   "scripts": {
     "start": "react-scripts-ts start",
     "build": "REACT_APP_BUILD_NUMBER=$BUILD_NUMBER REACT_APP_GIT_COMMIT=$GIT_COMMIT react-scripts-ts build",
+    "build-local": "react-scripts-ts build",
     "test": "CI=true react-scripts-ts test --env=jsdom",
     "eject": "react-scripts-ts eject",
     "lint": "tslint src/** -t verbose",
