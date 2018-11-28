@@ -10,7 +10,7 @@ import { Autocomplete } from '~/components/autocomplete/autocomplete';
 import { Vocabulary } from '~/models/vocabulary';
 import { require } from '~/validators/require';
 import { PROPERTY_KEY_FIELD_NAME } from '~/views-components/resource-properties-form/property-key-field';
-import { ITEMS_PLACEHOLDER, VocabularyProp, connectVocabulary } from '~/views-components/resource-properties-form/property-field-common';
+import { ITEMS_PLACEHOLDER, VocabularyProp, connectVocabulary, hasError, getErrorMsg, handleBlur } from '~/views-components/resource-properties-form/property-field-common';
 
 interface PropertyKeyProp {
     propertyKey: string;
@@ -35,13 +35,14 @@ const PropertyValueInput = ({ input, meta, vocabulary, propertyKey }: WrappedFie
     <Autocomplete
         value={input.value}
         onChange={input.onChange}
+        onBlur={handleBlur(input)}
         label='Value'
         suggestions={getSuggestions(input.value, propertyKey, vocabulary)}
         items={ITEMS_PLACEHOLDER}
         onSelect={input.onChange}
         renderSuggestion={identity}
-        error={meta.invalid}
-        helperText={meta.error}
+        error={hasError(meta)}
+        helperText={getErrorMsg(meta)}
     />;
 
 const getValidation = (props: PropertyValueFieldProps) =>

@@ -8,7 +8,7 @@ import { identity, memoize } from 'lodash';
 import { Autocomplete } from '~/components/autocomplete/autocomplete';
 import { Vocabulary } from '~/models/vocabulary';
 import { require } from '~/validators/require';
-import { ITEMS_PLACEHOLDER, connectVocabulary, VocabularyProp } from '~/views-components/resource-properties-form/property-field-common';
+import { ITEMS_PLACEHOLDER, connectVocabulary, VocabularyProp, hasError, getErrorMsg, handleBlur } from '~/views-components/resource-properties-form/property-field-common';
 
 export const PROPERTY_KEY_FIELD_NAME = 'key';
 
@@ -24,13 +24,14 @@ const PropertyKeyInput = ({ input, meta, vocabulary }: WrappedFieldProps & Vocab
     <Autocomplete
         value={input.value}
         onChange={input.onChange}
+        onBlur={handleBlur(input)}
         label='Key'
         suggestions={getSuggestions(input.value, vocabulary)}
         items={ITEMS_PLACEHOLDER}
         onSelect={input.onChange}
         renderSuggestion={identity}
-        error={meta.invalid}
-        helperText={meta.error}
+        error={hasError(meta)}
+        helperText={getErrorMsg(meta)}
     />;
 
 const getValidation = memoize(
