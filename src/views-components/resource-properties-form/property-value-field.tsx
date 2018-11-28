@@ -7,9 +7,9 @@ import { WrappedFieldProps, Field, formValues } from 'redux-form';
 import { compose } from 'redux';
 import { Autocomplete } from '~/components/autocomplete/autocomplete';
 import { Vocabulary } from '~/models/vocabulary';
-import { require } from '~/validators/require';
 import { PROPERTY_KEY_FIELD_NAME } from '~/views-components/resource-properties-form/property-key-field';
 import { VocabularyProp, connectVocabulary, buildProps } from '~/views-components/resource-properties-form/property-field-common';
+import { TAG_VALUE_VALIDATION } from '~/validators/validators';
 
 interface PropertyKeyProp {
     propertyKey: string;
@@ -39,8 +39,8 @@ const PropertyValueInput = ({ vocabulary, propertyKey, ...props }: WrappedFieldP
 
 const getValidation = (props: PropertyValueFieldProps) =>
     isStrictTag(props.propertyKey, props.vocabulary)
-        ? [require, matchTagValues(props)]
-        : [require];
+        ? [...TAG_VALUE_VALIDATION, matchTagValues(props)]
+        : TAG_VALUE_VALIDATION;
 
 const matchTagValues = ({ vocabulary, propertyKey }: PropertyValueFieldProps) =>
     (value: string) =>
