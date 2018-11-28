@@ -105,11 +105,11 @@ export const SearchBarAdvancedView = compose(
         onSubmit: (data: SearchBarAdvanceFormData, dispatch: Dispatch) => {
             dispatch<any>(searchAdvanceData(data));
             dispatch(reset(SEARCH_BAR_ADVANCE_FORM_NAME));
-            dispatch(treePickerActions.ACTIVATE_TREE_PICKER_NODE({ pickerId: SEARCH_BAR_ADVANCE_FORM_PICKER_ID, id: "" }));
+            dispatch(treePickerActions.DEACTIVATE_TREE_PICKER_NODE({ pickerId: SEARCH_BAR_ADVANCE_FORM_PICKER_ID }));
         },
         onChange: (data: SearchBarAdvanceFormData, dispatch: Dispatch, props: any, prevData: SearchBarAdvanceFormData) => {
             dispatch<any>(setSearchValueFromAdvancedData(data, prevData));
-        }
+        },
     }),
     withStyles(styles))(
         ({ classes, closeAdvanceView, handleSubmit, submitting, invalid, pristine, tags, saveQuery }: SearchBarAdvancedViewFormProps) =>

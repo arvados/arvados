@@ -7,7 +7,7 @@ import { GroupContentsResource, GroupContentsResourcePrefix } from '~/services/g
 import { Dispatch } from 'redux';
 import { arrayPush, change, initialize } from 'redux-form';
 import { RootState } from '~/store/store';
-import { initUserProject } from '~/store/tree-picker/tree-picker-actions';
+import { initUserProject, treePickerActions } from '~/store/tree-picker/tree-picker-actions';
 import { ServiceRepository } from '~/services/services';
 import { FilterBuilder } from "~/services/api/filter-builder";
 import { getResourceKind, ResourceKind } from '~/models/resource';
@@ -19,6 +19,7 @@ import { getClusterObjectType, PropertyValues, SearchBarAdvanceFormData } from '
 import { debounce } from 'debounce';
 import * as _ from "lodash";
 import { getModifiedKeysValues } from "~/common/objects";
+import { activateSearchBarProject } from "~/store/search-bar/search-bar-tree-actions";
 
 export const searchBarActions = unionize({
     SET_CURRENT_VIEW: ofType<string>(),
@@ -89,9 +90,13 @@ export const setSearchValueFromAdvancedData = (data: SearchBarAdvanceFormData, p
     };
 
 export const setAdvancedDataFromSearchValue = (search: string) =>
-    (dispatch: Dispatch) => {
+    async (dispatch: Dispatch) => {
         const data = getAdvancedDataFromQuery(search);
         dispatch<any>(initialize(SEARCH_BAR_ADVANCE_FORM_NAME, data));
+        if (data.projectUuid) {
+            await dispatch<any>(activateSearchBarProject(data.projectUuid));
+            dispatch(treePickerActions.ACTIVATE_TREE_PICKER_NODE({ pickerId: SEARCH_BAR_ADVANCE_FORM_PICKER_ID, id: data.projectUuid }));
+        }
     };
 
 const saveQuery = (data: SearchBarAdvanceFormData) =>
@@ -145,6 +150,7 @@ export const closeSearchView = () =>
 export const closeAdvanceView = () =>
     (dispatch: Dispatch<any>) => {
         dispatch(searchBarActions.SET_SEARCH_VALUE(''));
+        dispatch(treePickerActions.DEACTIVATE_TREE_PICKER_NODE({ pickerId: SEARCH_BAR_ADVANCE_FORM_PICKER_ID }));
         dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.BASIC));
     };
 
@@ -211,9 +217,6 @@ const searchGroups = (searchValue: string, limit: number) =>
 
 const buildQueryFromKeyMap = (data: any, keyMap: string[][], mode: 'rebuild' | 'reuse') => {
     let value = data.searchValue;
-
-    const rem = (field: string, fieldValue: any, value: string) => {
-    };
 
     const addRem = (field: string, key: string) => {
         const v = data[key];
@@ -285,7 +288,7 @@ export const getQueryFromAdvancedData = (data: SearchBarAdvanceFormData, prevDat
     return value;
 };
 
-export interface ParsedSearchQuery {
+export interface ParseSearchQuery {
     hasKeywords: boolean;
     values: string[];
     properties: {
@@ -293,7 +296,7 @@ export interface ParsedSearchQuery {
     };
 }
 
-export const parseSearchQuery: (query: string) => { hasKeywords: boolean; values: string[]; properties: any } = (searchValue: string): ParsedSearchQuery => {
+export const parseSearchQuery: (query: string) => { hasKeywords: boolean; values: string[]; properties: any } = (searchValue: string): ParseSearchQuery => {
     const keywords = [
         'type:',
         'cluster:',
