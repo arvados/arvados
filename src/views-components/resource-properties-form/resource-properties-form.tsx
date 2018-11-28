@@ -4,19 +4,22 @@
 
 import * as React from 'react';
 import { InjectedFormProps } from 'redux-form';
-import { Grid, withStyles } from '@material-ui/core';
+import { Grid, withStyles, WithStyles } from '@material-ui/core';
 import { PropertyKeyField, PROPERTY_KEY_FIELD_NAME } from './property-key-field';
 import { PropertyValueField, PROPERTY_VALUE_FIELD_NAME } from './property-value-field';
 import { ProgressButton } from '~/components/progress-button/progress-button';
+import { GridClassKey } from '@material-ui/core/Grid';
 
 export interface ResourcePropertiesFormData {
     [PROPERTY_KEY_FIELD_NAME]: string;
     [PROPERTY_VALUE_FIELD_NAME]: string;
 }
 
-export const ResourcePropertiesForm = ({ handleSubmit, submitting, invalid }: InjectedFormProps<ResourcePropertiesFormData>) =>
+export type ResourcePropertiesFormProps = InjectedFormProps<ResourcePropertiesFormData> & WithStyles<GridClassKey>;
+
+export const ResourcePropertiesForm = ({ handleSubmit, submitting, invalid, classes }: ResourcePropertiesFormProps ) =>
     <form onSubmit={handleSubmit}>
-        <Grid container spacing={16}>
+        <Grid container spacing={16} classes={classes}>
             <Grid item xs>
                 <PropertyKeyField />
             </Grid>
