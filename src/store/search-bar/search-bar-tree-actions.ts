@@ -98,4 +98,4 @@ const loadSearchBarProject = (projectUuid: string) =>
         }));
         dispatch(resourcesActions.SET_RESOURCES(items));
     };
-// project:c97qk-j7d0g-ib8mwrhxirrfhma
+
