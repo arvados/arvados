@@ -292,11 +292,11 @@ export interface ParseSearchQuery {
     hasKeywords: boolean;
     values: string[];
     properties: {
-        [key: string]: string
+        [key: string]: string[]
     };
 }
 
-export const parseSearchQuery: (query: string) => { hasKeywords: boolean; values: string[]; properties: any } = (searchValue: string): ParseSearchQuery => {
+export const parseSearchQuery: (query: string) => ParseSearchQuery = (searchValue: string) => {
     const keywords = [
         'type:',
         'cluster:',
@@ -351,33 +351,33 @@ export const parseSearchQuery: (query: string) => { hasKeywords: boolean; values
     return { hasKeywords: keywordsCnt > 0, values, properties };
 };
 
-export const getAdvancedDataFromQuery = (query: string): SearchBarAdvanceFormData => {
-    const r = parseSearchQuery(query);
+const getFirstProp = (sq: ParseSearchQuery, name: string) => sq.properties[name] && sq.properties[name][0];
+const getPropValue = (sq: ParseSearchQuery, name: string, value: string) => sq.properties[name] && sq.properties[name].find((v: string) => v === value);
+const getProperties = (sq: ParseSearchQuery) => {
+    if (sq.properties.has) {
+        return sq.properties.has.map((value: string) => {
+            const v = value.split(':');
+            return {
+                key: v[0],
+                value: v[1]
+            };
+        });
+    }
+    return [];
+};
 
-    const getFirstProp = (name: string) => r.properties[name] && r.properties[name][0];
-    const getPropValue = (name: string, value: string) => r.properties[name] && r.properties[name].find((v: string) => v === value);
-    const getProperties = () => {
-        if (r.properties.has) {
-            return r.properties.has.map((value: string) => {
-                const v = value.split(':');
-                return {
-                    key: v[0],
-                    value: v[1]
-                };
-            });
-        }
-        return [];
-    };
+export const getAdvancedDataFromQuery = (query: string): SearchBarAdvanceFormData => {
+    const sq = parseSearchQuery(query);
 
     return {
-        searchValue: r.values.join(' '),
-        type: getResourceKind(getFirstProp('type')),
-        cluster: getClusterObjectType(getFirstProp('cluster')),
-        projectUuid: getFirstProp('project'),
-        inTrash: getPropValue('is', 'trashed') !== undefined,
-        dateFrom: getFirstProp('from'),
-        dateTo: getFirstProp('to'),
-        properties: getProperties(),
+        searchValue: sq.values.join(' '),
+        type: getResourceKind(getFirstProp(sq, 'type')),
+        cluster: getClusterObjectType(getFirstProp(sq, 'cluster')),
+        projectUuid: getFirstProp(sq, 'project'),
+        inTrash: getPropValue(sq, 'is', 'trashed') !== undefined,
+        dateFrom: getFirstProp(sq, 'from'),
+        dateTo: getFirstProp(sq, 'to'),
+        properties: getProperties(sq),
         saveQuery: false,
         queryName: ''
     };
@@ -385,36 +385,35 @@ export const getAdvancedDataFromQuery = (query: string): SearchBarAdvanceFormDat
 
 export const getFilters = (filterName: string, searchValue: string): string => {
     const filter = new FilterBuilder();
+    const sq = parseSearchQuery(searchValue);
 
-    const pq = parseSearchQuery(searchValue);
+    const resourceKind = getResourceKind(getFirstProp(sq, 'type'));
 
-    if (!pq.hasKeywords) {
+    let prefix = '';
+    switch (resourceKind) {
+        case ResourceKind.COLLECTION:
+            prefix = GroupContentsResourcePrefix.COLLECTION;
+            break;
+        case ResourceKind.PROCESS:
+            prefix = GroupContentsResourcePrefix.PROCESS;
+            break;
+        default:
+            prefix = GroupContentsResourcePrefix.PROJECT;
+            break;
+    }
+
+    if (!sq.hasKeywords) {
         filter
             .addILike(filterName, searchValue, GroupContentsResourcePrefix.COLLECTION)
             .addILike(filterName, searchValue, GroupContentsResourcePrefix.PROCESS)
             .addILike(filterName, searchValue, GroupContentsResourcePrefix.PROJECT);
     } else {
-
-        if (pq.properties.type) {
-            pq.values.forEach(v => {
-                let prefix = '';
-                switch (ResourceKind[pq.properties.type]) {
-                    case ResourceKind.PROJECT:
-                        prefix = GroupContentsResourcePrefix.PROJECT;
-                        break;
-                    case ResourceKind.COLLECTION:
-                        prefix = GroupContentsResourcePrefix.COLLECTION;
-                        break;
-                    case ResourceKind.PROCESS:
-                        prefix = GroupContentsResourcePrefix.PROCESS;
-                        break;
-                }
-                if (prefix !== '') {
-                    filter.addILike(filterName, v, prefix);
-                }
-            });
+        if (prefix) {
+            sq.values.forEach(v =>
+                filter.addILike(filterName, v, prefix)
+            );
         } else {
-            pq.values.forEach(v => {
+            sq.values.forEach(v => {
                 filter
                     .addILike(filterName, v, GroupContentsResourcePrefix.COLLECTION)
                     .addILike(filterName, v, GroupContentsResourcePrefix.PROCESS)
@@ -422,32 +421,31 @@ export const getFilters = (filterName: string, searchValue: string): string => {
             });
         }
 
-        if (pq.properties.is && pq.properties.is === 'trashed') {
+        if (getPropValue(sq, 'is', 'trashed')) {
+            filter.addEqual("is_trashed", true);
         }
 
-        if (pq.properties.project) {
-            filter.addEqual('owner_uuid', pq.properties.project, GroupContentsResourcePrefix.PROJECT);
+        const projectUuid = getFirstProp(sq, 'project');
+        if (projectUuid) {
+            filter.addEqual('uuid', projectUuid, prefix);
         }
 
-        if (pq.properties.from) {
-            filter.addGte('modified_at', buildDateFilter(pq.properties.from));
+        const dateFrom = getFirstProp(sq, 'from');
+        if (dateFrom) {
+            filter.addGte('modified_at', buildDateFilter(dateFrom));
         }
 
-        if (pq.properties.to) {
-            filter.addLte('modified_at', buildDateFilter(pq.properties.to));
+        const dateTo = getFirstProp(sq, 'to');
+        if (dateTo) {
+            filter.addLte('modified_at', buildDateFilter(dateTo));
         }
-        // filter
-        //     .addIsA("uuid", buildUuidFilter(resourceKind))
-        //     .addILike(filterName, searchValue, GroupContentsResourcePrefix.COLLECTION)
-        //     .addILike(filterName, searchValue, GroupContentsResourcePrefix.PROCESS)
-        //     .addILike(filterName, searchValue, GroupContentsResourcePrefix.PROJECT)
-        //     .addLte('modified_at', buildDateFilter(dateTo))
-        //     .addGte('modified_at', buildDateFilter(dateFrom))
-        //     .addEqual('groupClass', GroupClass.PROJECT, GroupContentsResourcePrefix.PROJECT)
     }
+
+    // TODO: has props
 
     return filter
         .addEqual('groupClass', GroupClass.PROJECT, GroupContentsResourcePrefix.PROJECT)
+        .addIsA("uuid", buildUuidFilter(resourceKind))
         .getFilters();
 };
 
