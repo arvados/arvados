@@ -1046,7 +1046,6 @@ func (s *CollectionFSSuite) TestFlushFullBlocks(c *check.C) {
 		c.Assert(n, check.Equals, len(data))
 		c.Assert(err, check.IsNil)
 	}
-	f.(*filehandle).inode.(*filenode).waitPrune()
 
 	currentMemExtents := func() (memExtents []int) {
 		for idx, e := range f.(*filehandle).inode.(*filenode).segments {
@@ -1057,6 +1056,9 @@ func (s *CollectionFSSuite) TestFlushFullBlocks(c *check.C) {
 		}
 		return
 	}
+
+	c.Check(len(currentMemExtents()) <= concurrentWriters, check.Equals, true)
+	f.(*filehandle).inode.(*filenode).waitPrune()
 	c.Check(currentMemExtents(), check.HasLen, 1)
 
 	m, err := fs.MarshalManifest(".")
