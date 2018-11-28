@@ -53,7 +53,7 @@ class CollectionCache(object):
             if available >= required or len(self.collections) < self.min_entries:
                 return
             # cut it loose
-            logger.debug("Evicting collection reader %s from cache", pdh)
+            logger.debug("Evicting collection reader %s from cache (cap %s total %s required %s)", pdh, self.cap, self.total, required)
             del self.collections[pdh]
             self.total -= v[1]
 
