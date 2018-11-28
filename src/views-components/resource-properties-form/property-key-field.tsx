@@ -4,11 +4,11 @@
 
 import * as React from 'react';
 import { WrappedFieldProps, Field } from 'redux-form';
-import { identity, memoize } from 'lodash';
+import { memoize } from 'lodash';
 import { Autocomplete } from '~/components/autocomplete/autocomplete';
 import { Vocabulary } from '~/models/vocabulary';
 import { require } from '~/validators/require';
-import { ITEMS_PLACEHOLDER, connectVocabulary, VocabularyProp, hasError, getErrorMsg, handleBlur, buildProps } from '~/views-components/resource-properties-form/property-field-common';
+import { connectVocabulary, VocabularyProp, buildProps } from '~/views-components/resource-properties-form/property-field-common';
 
 export const PROPERTY_KEY_FIELD_NAME = 'key';
 

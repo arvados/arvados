@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { InjectedFormProps, reduxForm } from 'redux-form';
+import { InjectedFormProps } from 'redux-form';
 import { Grid, withStyles } from '@material-ui/core';
 import { PropertyKeyField, PROPERTY_KEY_FIELD_NAME } from './property-key-field';
 import { PropertyValueField, PROPERTY_VALUE_FIELD_NAME } from './property-value-field';

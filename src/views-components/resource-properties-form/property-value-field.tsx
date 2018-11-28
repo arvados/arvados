@@ -4,13 +4,12 @@
 
 import * as React from 'react';
 import { WrappedFieldProps, Field, formValues } from 'redux-form';
-import { identity } from 'lodash';
 import { compose } from 'redux';
 import { Autocomplete } from '~/components/autocomplete/autocomplete';
 import { Vocabulary } from '~/models/vocabulary';
 import { require } from '~/validators/require';
 import { PROPERTY_KEY_FIELD_NAME } from '~/views-components/resource-properties-form/property-key-field';
-import { ITEMS_PLACEHOLDER, VocabularyProp, connectVocabulary, hasError, getErrorMsg, handleBlur, buildProps } from '~/views-components/resource-properties-form/property-field-common';
+import { VocabularyProp, connectVocabulary, buildProps } from '~/views-components/resource-properties-form/property-field-common';
 
 interface PropertyKeyProp {
     propertyKey: string;
