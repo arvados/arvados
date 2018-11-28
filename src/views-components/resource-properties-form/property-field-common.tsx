@@ -3,10 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { connect } from 'react-redux';
+import { WrappedFieldMetaProps, WrappedFieldInputProps, WrappedFieldProps } from 'redux-form';
+import { identity } from 'lodash';
 import { Vocabulary } from '~/models/vocabulary';
 import { RootState } from '~/store/store';
 import { getVocabulary } from '~/store/vocabulary/vocabulary-selctors';
-import { WrappedFieldMetaProps, WrappedFieldInputProps } from 'redux-form';
 
 export interface VocabularyProp {
     vocabulary: Vocabulary;
@@ -31,3 +32,14 @@ export const getErrorMsg = (meta: WrappedFieldMetaProps) =>
 export const handleBlur = ({ onBlur, value }: WrappedFieldInputProps) =>
     () =>
         onBlur(value);
+
+export const buildProps = ({ input, meta }: WrappedFieldProps) => ({
+    value: input.value,
+    onChange: input.onChange,
+    onBlur: handleBlur(input),
+    items: ITEMS_PLACEHOLDER,
+    onSelect: input.onChange,
+    renderSuggestion: identity,
+    error: hasError(meta),
+    helperText: getErrorMsg(meta),
+});

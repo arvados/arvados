@@ -10,7 +10,7 @@ import { Autocomplete } from '~/components/autocomplete/autocomplete';
 import { Vocabulary } from '~/models/vocabulary';
 import { require } from '~/validators/require';
 import { PROPERTY_KEY_FIELD_NAME } from '~/views-components/resource-properties-form/property-key-field';
-import { ITEMS_PLACEHOLDER, VocabularyProp, connectVocabulary, hasError, getErrorMsg, handleBlur } from '~/views-components/resource-properties-form/property-field-common';
+import { ITEMS_PLACEHOLDER, VocabularyProp, connectVocabulary, hasError, getErrorMsg, handleBlur, buildProps } from '~/views-components/resource-properties-form/property-field-common';
 
 interface PropertyKeyProp {
     propertyKey: string;
@@ -31,18 +31,11 @@ export const PropertyValueField = compose(
             validate={getValidation(props)}
             {...props} />);
 
-const PropertyValueInput = ({ input, meta, vocabulary, propertyKey }: WrappedFieldProps & PropertyValueFieldProps) =>
+const PropertyValueInput = ({ vocabulary, propertyKey, ...props }: WrappedFieldProps & PropertyValueFieldProps) =>
     <Autocomplete
-        value={input.value}
-        onChange={input.onChange}
-        onBlur={handleBlur(input)}
         label='Value'
-        suggestions={getSuggestions(input.value, propertyKey, vocabulary)}
-        items={ITEMS_PLACEHOLDER}
-        onSelect={input.onChange}
-        renderSuggestion={identity}
-        error={hasError(meta)}
-        helperText={getErrorMsg(meta)}
+        suggestions={getSuggestions(props.input.value, propertyKey, vocabulary)}
+        {...buildProps(props)}
     />;
 
 const getValidation = (props: PropertyValueFieldProps) =>
