@@ -583,7 +583,7 @@ func (s *CollectionFSSuite) TestRandomWrites(c *check.C) {
 	const ngoroutines = 256
 
 	var wg sync.WaitGroup
-	for n := 0; n < nfiles; n++ {
+	for n := 0; n < ngoroutines; n++ {
 		wg.Add(1)
 		go func(n int) {
 			defer wg.Done()
@@ -592,7 +592,7 @@ func (s *CollectionFSSuite) TestRandomWrites(c *check.C) {
 			f, err := s.fs.OpenFile(fmt.Sprintf("random-%d", n), os.O_RDWR|os.O_CREATE|os.O_EXCL, 0)
 			c.Assert(err, check.IsNil)
 			defer f.Close()
-			for i := 0; i < ngoroutines; i++ {
+			for i := 0; i < nfiles; i++ {
 				trunc := rand.Intn(65)
 				woff := rand.Intn(trunc + 1)
 				wbytes = wbytes[:rand.Intn(64-woff+1)]
@@ -1046,6 +1046,7 @@ func (s *CollectionFSSuite) TestFlushFullBlocks(c *check.C) {
 		c.Assert(n, check.Equals, len(data))
 		c.Assert(err, check.IsNil)
 	}
+	f.(*filehandle).inode.(*filenode).waitPrune()
 
 	currentMemExtents := func() (memExtents []int) {
 		for idx, e := range f.(*filehandle).inode.(*filenode).segments {
