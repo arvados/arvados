@@ -163,9 +163,10 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         help="Name to use for workflow execution instance.",
                         default=None)
 
-    parser.add_argument("--on-error", type=str,
-                        help="Desired workflow behavior when a step fails.  One of 'stop' or 'continue'. "
-                        "Default is 'continue'.", default="continue", choices=("stop", "continue"))
+    parser.add_argument("--on-error",
+                        help="Desired workflow behavior when a step fails.  One of 'stop' (do not submit any more steps) or "
+                        "'continue' (may submit other steps that are not downstream from the error). Default is 'continue'.",
+                        default="continue", choices=("stop", "continue"))
 
     parser.add_argument("--enable-dev", action="store_true",
                         help="Enable loading and running development versions "

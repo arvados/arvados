@@ -17,7 +17,7 @@ The methods are relative to the base URI, e.g., @/arvados/v1/resource_type@.  Fo
 
 Arguments specifying a *Location* of "query" are incorporated into the query portion of the URI or request body.  For example, @/arvados/v1/resource_type?count=none@.
 
-Certain method calls on certain object types support "federation":{{site.baseurl}}/architecture/federation.html , that is, the ability to operate on objects owned by different clusters.   API pages for specific object types list which federated operations are supported for that type (if any) in the "Methods" section.
+Certain method calls on certain object types support "federation":{{site.baseurl}}/architecture/federation.html , that is, the ability to operate on objects owned by different clusters.   API pages for specific object types list which federated operations are supported for that type (if any) in the "Methods" section.  Methods which implicitly include a cluster id (such as @GET@ on a specific uuid, using the uuid prefix) will be directed to the appropriate cluster.  Methods that don't implicitly include the cluster id (such as @create@) use the @cluster_id@ query parameter to specify which cluster to direct the request.
 
 h2. create
 
@@ -35,8 +35,8 @@ Arguments:
 
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |
-|{resource_type}|object|Name is the singular form of the resource type, e.g., for the "collections" resource, this argument is "collection"|body||
-|{cluster_id}|string|Optional, the cluster on which to create the object if not the current cluster.|query||
+|{resource_type}|object|Name is the singular form of the resource type, e.g., for the "collections" resource, this argument is "collection"|body|
+|{cluster_id}|string|Optional, the cluster on which to create the object if not the current cluster.|query|
 
 h2. delete
 
