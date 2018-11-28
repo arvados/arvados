@@ -7,8 +7,8 @@ import { WrappedFieldProps, Field } from 'redux-form';
 import { memoize } from 'lodash';
 import { Autocomplete } from '~/components/autocomplete/autocomplete';
 import { Vocabulary } from '~/models/vocabulary';
-import { require } from '~/validators/require';
 import { connectVocabulary, VocabularyProp, buildProps } from '~/views-components/resource-properties-form/property-field-common';
+import { TAG_KEY_VALIDATION } from '~/validators/validators';
 
 export const PROPERTY_KEY_FIELD_NAME = 'key';
 
@@ -30,8 +30,8 @@ const PropertyKeyInput = ({ vocabulary, ...props }: WrappedFieldProps & Vocabula
 const getValidation = memoize(
     (vocabulary: Vocabulary) =>
         vocabulary.strict
-            ? [require, matchTags(vocabulary)]
-            : [require]);
+            ? [...TAG_KEY_VALIDATION, matchTags(vocabulary)]
+            : TAG_KEY_VALIDATION);
 
 const matchTags = (vocabulary: Vocabulary) =>
     (value: string) =>
