@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
+import { memoize } from 'lodash/fp';
 import {
     isRequiredInput,
     DirectoryCommandInputParameter,
@@ -31,11 +32,7 @@ export const DirectoryInput = ({ input }: DirectoryInputProps) =>
         component={DirectoryInputComponent}
         format={format}
         parse={parse}
-        validate={[
-            isRequiredInput(input)
-                ? (directory?: Directory) => directory ? undefined : ERROR_MESSAGE
-                : () => undefined,
-        ]} />;
+        validate={getValidation(input)} />;
 
 const format = (value?: Directory) => value ? value.basename : '';
 
@@ -45,6 +42,13 @@ const parse = (directory: CollectionResource): Directory => ({
     basename: directory.name,
 });
 
+const getValidation = memoize(
+    (input: DirectoryCommandInputParameter) => ([
+        isRequiredInput(input)
+            ? (directory?: Directory) => directory ? undefined : ERROR_MESSAGE
+            : () => undefined,
+    ])
+);
 
 interface DirectoryInputComponentState {
     open: boolean;
