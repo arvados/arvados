@@ -502,7 +502,7 @@ func (fn *filenode) pruneMemSegments() {
 	}
 	for idx, seg := range fn.segments {
 		seg, ok := seg.(*memSegment)
-		if !ok || seg.Len() < maxBlockSize || seg.Len() == 0 || seg.flushing != nil {
+		if !ok || seg.Len() < maxBlockSize || seg.flushing != nil {
 			continue
 		}
 		// Setting seg.flushing guarantees seg.buf will not be
