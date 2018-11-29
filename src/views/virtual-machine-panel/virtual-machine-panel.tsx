@@ -76,7 +76,7 @@ interface VirtualMachinesPanelDataProps {
     virtualMachines: ListResults<any>;
     logins: VirtualMachinesLoginsResource[];
     links: ListResults<any>;
-    isAdmin: string;
+    isAdmin: boolean;
 }
 
 interface VirtualMachinesPanelActionProps {
@@ -93,12 +93,12 @@ export const VirtualMachinePanel = compose(
             componentDidMount() {
                 this.props.loadVirtualMachinesData();
             }
-            
+
             render() {
-                const { virtualMachines, links, isAdmin } = this.props;
+                const { virtualMachines, links } = this.props;
                 return (
                     <Grid container spacing={16}>
-                        {isAdmin && <CardContentWithNoVirtualMachines {...this.props} />}
+                        {virtualMachines.itemsAvailable === 0 && <CardContentWithNoVirtualMachines {...this.props} />}
                         {virtualMachines.itemsAvailable > 0 && links.itemsAvailable > 0 && <CardContentWithVirtualMachines {...this.props} />}
                         {<CardSSHSection {...this.props} />}
                     </Grid>
@@ -149,33 +149,63 @@ const CardContentWithVirtualMachines = (props: VirtualMachineProps) =>
                         </Tooltip>
                     </a>
                 </div>
-                <Table>
-                    <TableHead>
-                        <TableRow>
-                            <TableCell>Host name</TableCell>
-                            <TableCell>Login name</TableCell>
-                            <TableCell>Command line</TableCell>
-                            <TableCell>Web shell</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {props.virtualMachines.items.map((it, index) =>
-                            <TableRow key={index}>
-                                <TableCell>{it.hostname}</TableCell>
-                                <TableCell>{getUsername(props.links, it)}</TableCell>
-                                <TableCell>ssh {getUsername(props.links, it)}@shell.arvados</TableCell>
-                                <TableCell>
-                                    <a href={`https://workbench.c97qk.arvadosapi.com${it.href}/webshell/${getUsername(props.links, it)}`} target="_blank" className={props.classes.link}>
-                                        Log in as {getUsername(props.links, it)}
-                                    </a>
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
+                {console.log(props.isAdmin)}
+                {props.isAdmin ? adminVirtualMachinesTable(props) : userVirtualMachinesTable(props)}
             </CardContent>
         </Card>
     </Grid>;
+
+const userVirtualMachinesTable = (props: VirtualMachineProps) =>
+    <Table>
+        <TableHead>
+            <TableRow>
+                <TableCell>Host name</TableCell>
+                <TableCell>Login name</TableCell>
+                <TableCell>Command line</TableCell>
+                <TableCell>Web shell</TableCell>
+            </TableRow>
+        </TableHead>
+        <TableBody>
+            {props.virtualMachines.items.map((it, index) =>
+                <TableRow key={index}>
+                    <TableCell>{it.hostname}</TableCell>
+                    <TableCell>{getUsername(props.links, it)}</TableCell>
+                    <TableCell>ssh {getUsername(props.links, it)}@shell.arvados</TableCell>
+                    <TableCell>
+                        <a href={`https://workbench.c97qk.arvadosapi.com${it.href}/webshell/${getUsername(props.links, it)}`} target="_blank" className={props.classes.link}>
+                            Log in as {getUsername(props.links, it)}
+                        </a>
+                    </TableCell>
+                </TableRow>
+            )}
+        </TableBody>
+    </Table>;
+
+const adminVirtualMachinesTable = (props: VirtualMachineProps) =>
+    <Table>
+        <TableHead>
+            <TableRow>
+                <TableCell>Uuid</TableCell>
+                <TableCell>Host name</TableCell>
+                <TableCell>Logins</TableCell>
+                <TableCell/>
+            </TableRow>
+        </TableHead>
+        <TableBody>
+            {props.virtualMachines.items.map((it, index) =>
+                <TableRow key={index}>
+                    <TableCell>{it.uuid}</TableCell>
+                    <TableCell>shell</TableCell>
+                    <TableCell>ssh {getUsername(props.links, it)}@shell.arvados</TableCell>
+                    <TableCell>
+                        <a href={`https://workbench.c97qk.arvadosapi.com${it.href}/webshell/${getUsername(props.links, it)}`} target="_blank" className={props.classes.link}>
+                            Log in as {getUsername(props.links, it)}
+                        </a>
+                    </TableCell>
+                </TableRow>
+            )}
+        </TableBody>
+    </Table>;
 
 const getUsername = (links: ListResults<any>, virtualMachine: VirtualMachinesResource) => {
     const link = links.items.find((item: any) => item.headUuid === virtualMachine.uuid);

@@ -4,7 +4,7 @@
 
 import { User } from "~/models/user";
 import { AxiosInstance } from "axios";
-import { ApiActions, ProgressFn } from "~/services/api/api-actions";
+import { ApiActions } from "~/services/api/api-actions";
 import * as uuid from "uuid/v4";
 
 export const API_TOKEN_KEY = 'apiToken';
@@ -13,7 +13,7 @@ export const USER_FIRST_NAME_KEY = 'userFirstName';
 export const USER_LAST_NAME_KEY = 'userLastName';
 export const USER_UUID_KEY = 'userUuid';
 export const USER_OWNER_UUID_KEY = 'userOwnerUuid';
-export const USER_IS_ADMIN = 'userIsAdmin';
+export const USER_IS_ADMIN = 'isAdmin';
 
 export interface UserDetailsResponse {
     email: string;
@@ -51,15 +51,20 @@ export class AuthService {
         return localStorage.getItem(USER_OWNER_UUID_KEY) || undefined;
     }
 
+    public getIsAdmin(): boolean {
+        return !!localStorage.getItem(USER_IS_ADMIN);
+    }
+
     public getUser(): User | undefined {
         const email = localStorage.getItem(USER_EMAIL_KEY);
         const firstName = localStorage.getItem(USER_FIRST_NAME_KEY);
         const lastName = localStorage.getItem(USER_LAST_NAME_KEY);
         const uuid = localStorage.getItem(USER_UUID_KEY);
         const ownerUuid = localStorage.getItem(USER_OWNER_UUID_KEY);
-        const isAdmin = Boolean(localStorage.getItem(USER_IS_ADMIN));
+        const isAdmin = this.getIsAdmin();
+        console.log(isAdmin);
 
-        return email && firstName && lastName && uuid && ownerUuid && isAdmin
+        return email && firstName && lastName && uuid && ownerUuid
             ? { email, firstName, lastName, uuid, ownerUuid, isAdmin }
             : undefined;
     }
@@ -79,6 +84,7 @@ export class AuthService {
         localStorage.removeItem(USER_LAST_NAME_KEY);
         localStorage.removeItem(USER_UUID_KEY);
         localStorage.removeItem(USER_OWNER_UUID_KEY);
+        localStorage.removeItem(USER_IS_ADMIN);
     }
 
     public login() {
