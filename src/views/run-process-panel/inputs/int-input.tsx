@@ -17,13 +17,15 @@ export const IntInput = ({ input }: IntInputProps) =>
         name={input.id}
         commandInput={input}
         component={InputComponent}
-        parse={value => parseInt(value, 10)}
+        parse={parse}
         format={value => isNaN(value) ? '' : JSON.stringify(value)}
         validate={[
             isRequiredInput(input)
                 ? isInteger
                 : () => undefined,
         ]} />;
+
+const parse = (value: any) => parseInt(value, 10);
 
 const InputComponent = (props: GenericInputProps) =>
     <GenericInput
