@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
+import { memoize } from 'lodash/fp';
 import {
     isRequiredInput,
     FileCommandInputParameter,
@@ -30,11 +31,7 @@ export const FileInput = ({ input }: FileInputProps) =>
         component={FileInputComponent}
         format={format}
         parse={parse}
-        validate={[
-            isRequiredInput(input)
-                ? (file?: File) => file ? undefined : ERROR_MESSAGE
-                : () => undefined,
-        ]} />;
+        validate={getValidation(input)} />;
 
 const format = (value?: File) => value ? value.basename : '';
 
@@ -43,6 +40,13 @@ const parse = (file: CollectionFile): File => ({
     location: `keep:${file.id}`,
     basename: file.name,
 });
+
+const getValidation = memoize(
+    (input: FileCommandInputParameter) => ([
+        isRequiredInput(input)
+            ? (file?: File) => file ? undefined : ERROR_MESSAGE
+            : () => undefined,
+    ]));
 
 interface FileInputComponentState {
     open: boolean;
