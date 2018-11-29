@@ -16,8 +16,10 @@ export const BooleanInput = ({ input }: BooleanInputProps) =>
         name={input.id}
         commandInput={input}
         component={BooleanInputComponent}
-        normalize={(value, prevValue) => !prevValue}
+        normalize={normalize}
     />;
+
+const normalize = (_: any, prevValue: boolean) => !prevValue;
 
 const BooleanInputComponent = (props: GenericInputProps) =>
     <GenericInput
