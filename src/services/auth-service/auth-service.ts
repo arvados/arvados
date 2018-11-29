@@ -59,8 +59,8 @@ export class AuthService {
         const email = localStorage.getItem(USER_EMAIL_KEY);
         const firstName = localStorage.getItem(USER_FIRST_NAME_KEY);
         const lastName = localStorage.getItem(USER_LAST_NAME_KEY);
-        const uuid = localStorage.getItem(USER_UUID_KEY);
-        const ownerUuid = localStorage.getItem(USER_OWNER_UUID_KEY);
+        const uuid = this.getUuid();
+        const ownerUuid = this.getOwnerUuid();
         const isAdmin = this.getIsAdmin();
         console.log(isAdmin);
 
