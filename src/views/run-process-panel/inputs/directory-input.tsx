@@ -30,11 +30,7 @@ export const DirectoryInput = ({ input }: DirectoryInputProps) =>
         commandInput={input}
         component={DirectoryInputComponent}
         format={format}
-        parse={(directory: CollectionResource): Directory => ({
-            class: CWLType.DIRECTORY,
-            location: `keep:${directory.portableDataHash}`,
-            basename: directory.name,
-        })}
+        parse={parse}
         validate={[
             isRequiredInput(input)
                 ? (directory?: Directory) => directory ? undefined : ERROR_MESSAGE
@@ -42,6 +38,12 @@ export const DirectoryInput = ({ input }: DirectoryInputProps) =>
         ]} />;
 
 const format = (value?: Directory) => value ? value.basename : '';
+
+const parse = (directory: CollectionResource): Directory => ({
+    class: CWLType.DIRECTORY,
+    location: `keep:${directory.portableDataHash}`,
+    basename: directory.name,
+});
 
 
 interface DirectoryInputComponentState {
