@@ -21,7 +21,8 @@ export const Routes = {
     RUN_PROCESS: '/run-process',
     WORKFLOWS: '/workflows',
     SEARCH_RESULTS: '/search-results',
-    SSH_KEYS: `/ssh-keys`
+    SSH_KEYS: `/ssh-keys`,
+    MY_ACCOUNT: '/my-account'
 };
 
 export const getResourceUrl = (uuid: string) => {
@@ -84,3 +85,6 @@ export const matchRepositoriesRoute = (route: string) =>
     
 export const matchSshKeysRoute = (route: string) =>
     matchPath(route, { path: Routes.SSH_KEYS });
+
+export const matchMyAccountRoute = (route: string) =>
+    matchPath(route, { path: Routes.MY_ACCOUNT });

@@ -4,12 +4,24 @@
 
 import { Resource, ResourceKind } from '~/models/resource';
 
+export type userPrefs = {
+    profile?: {
+        organization?: string,
+        organization_email?: string,
+        lab?: string,
+        website_url?: string,
+        role?: string
+    }
+};
+
 export interface User {
     email: string;
     firstName: string;
     lastName: string;
     uuid: string;
     ownerUuid: string;
+    identityUrl: string;
+    prefs: userPrefs;
 }
 
 export const getUserFullname = (user?: User) => {
