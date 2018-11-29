@@ -13,6 +13,7 @@ build/package-test-dockerfiles/ubuntu1604/etc-apt-preferences.d-arvados
 *by-sa-3.0.txt
 *COPYING
 doc/fonts/*
+doc/user/cwl/federated/*
 */docker_image
 docker/jobs/apt.arvados.org.list
 */en.bootstrap.yml
@@ -70,3 +71,4 @@ sdk/R/NAMESPACE
 sdk/R/.Rbuildignore
 sdk/R/ArvadosR.Rproj
 *.Rd
+*.asc

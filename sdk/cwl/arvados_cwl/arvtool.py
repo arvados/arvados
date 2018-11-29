@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from cwltool.command_line_tool import CommandLineTool
+from cwltool.builder import Builder
 from .arvjob import ArvadosJob
 from .arvcontainer import ArvadosContainer
 from .pathmapper import ArvPathMapper
@@ -36,6 +37,31 @@ def set_cluster_target(tool, arvrunner, builder, runtimeContext):
 
     return runtimeContext
 
+def make_builder(joborder, hints, requirements, runtimeContext):
+    return Builder(
+                 job=joborder,
+                 files=[],               # type: List[Dict[Text, Text]]
+                 bindings=[],            # type: List[Dict[Text, Any]]
+                 schemaDefs={},          # type: Dict[Text, Dict[Text, Any]]
+                 names=None,               # type: Names
+                 requirements=requirements,        # type: List[Dict[Text, Any]]
+                 hints=hints,               # type: List[Dict[Text, Any]]
+                 resources={},           # type: Dict[str, int]
+                 mutation_manager=None,    # type: Optional[MutationManager]
+                 formatgraph=None,         # type: Optional[Graph]
+                 make_fs_access=None,      # type: Type[StdFsAccess]
+                 fs_access=None,           # type: StdFsAccess
+                 job_script_provider=runtimeContext.job_script_provider, # type: Optional[Any]
+                 timeout=runtimeContext.eval_timeout,             # type: float
+                 debug=runtimeContext.debug,               # type: bool
+                 js_console=runtimeContext.js_console,          # type: bool
+                 force_docker_pull=runtimeContext.force_docker_pull,   # type: bool
+                 loadListing="",         # type: Text
+                 outdir="",              # type: Text
+                 tmpdir="",              # type: Text
+                 stagedir="",            # type: Text
+                )
+
 class ArvadosCommandTool(CommandLineTool):
     """Wrap cwltool CommandLineTool to override selected methods."""
 
@@ -62,7 +88,7 @@ class ArvadosCommandTool(CommandLineTool):
                                  "$(task.keep)/%s/%s")
 
     def job(self, joborder, output_callback, runtimeContext):
-        builder = self._init_job(joborder, runtimeContext)
+        builder = make_builder(joborder, self.hints, self.requirements, runtimeContext)
         runtimeContext = set_cluster_target(self.tool, self.arvrunner, builder, runtimeContext)
 
         if runtimeContext.work_api == "containers":

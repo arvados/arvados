@@ -1,0 +1,57 @@
+---
+layout: default
+navsection: userguide
+title: Federated Multi-Cluster Workflows
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+To support running analysis on geographically dispersed data (avoiding expensive data transfers by sending the computation to the data), and "hybrid cloud" configurations where an on-premise cluster can expand its capabilities by delegating work to a cloud-hosted cluster, Arvados supports federated workflows.  In a federated workflow, different steps of a workflow may execute on different clusters.  Arvados manages data transfer and delegation of credentials, so that all that is required is adding "arv:ClusterTarget":cwl-extensions.html#clustertarget hints to your existing workflow.
+
+!(full-width)federated-workflow.svg!
+
+For more information, visit the "architecture":{{site.baseurl}}/architecture/federation.html and "admin":{{site.baseurl}}/admin/federation.html sections about Arvados federation.
+
+h2. Get the example files
+
+The tutorial files are located in the "documentation section of the Arvados source repository:":https://github.com/curoverse/arvados/tree/master/doc/user/cwl/federated or "see below":#fed-example
+
+<notextile>
+<pre><code>~$ <span class="userinput">git clone https://github.com/curoverse/arvados</span>
+~$ <span class="userinput">cd arvados/doc/user/cwl/federated</span>
+</code></pre>
+</notextile>
+
+h2. Run example
+
+{% include 'notebox_begin' %}
+
+At this time, remote steps of a workflow on Workbench are not displayed.  As a workaround, you can find the UUIDs of the remote steps in the live logs of the workflow runner (the "Logs" tab).  You may visit the remote cluster's workbench and enter the UUID into the search box to view the details of the remote step.  This will be fixed in a future version of workbench.
+
+{% include 'notebox_end' %}
+
+Run it like any other workflow:
+
+<notextile>
+<pre><code>~$ <span class="userinput">arvados-cwl-runner federated.cwl shards.cwl</span>
+</code></pre>
+</notextile>
+
+You can also "run a workflow on a remote federated cluster":cwl-run-options.html#federation .
+
+h2(#fed-example). Federated scatter/gather example
+
+In this following example, an analysis task is executed on three different clusters with different data, then the results are combined to produce the final output.
+
+{% codeblock as yaml %}
+{% include 'federated_cwl' %}
+{% endcodeblock %}
+
+Example input document:
+
+{% codeblock as yaml %}
+{% include 'shards_yml' %}
+{% endcodeblock %}

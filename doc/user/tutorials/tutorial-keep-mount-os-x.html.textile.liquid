@@ -1,0 +1,24 @@
+---
+layout: default
+navsection: userguide
+title: "Accessing Keep from OS X"
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+OS X users can browse Keep read-only via WebDAV. Specific collections can also be accessed read-write via WebDAV.
+
+h3. Browsing Keep (read-only)
+
+In Finder, use "Connect to Server..." under the "Go" menu and enter @https://collections.uuid_prefix.your.domain/@ in popup dialog. When prompted for credentials, put a valid Arvados token in the @Password@ field and anything in the Name field (it will be ignored by Arvados).
+
+This mount is read-only. Write support for the @/users/@ directory is planned for a future release.
+
+h3. Accessing a specific collection in Keep (read-write)
+
+In Finder, use "Connect to Server..." under the "Go" menu and enter @https://collections.uuid_prefix.your.domain/@ in popup dialog. When prompted for credentials, put a valid Arvados token in the @Password@ field and anything in the Name field (it will be ignored by Arvados).
+
+This collection is now accessible read/write.

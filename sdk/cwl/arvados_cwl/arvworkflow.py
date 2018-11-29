@@ -14,7 +14,6 @@ from cwltool.load_tool import fetch_document
 from cwltool.process import shortname
 from cwltool.workflow import Workflow, WorkflowException, WorkflowStep
 from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, visit_class
-from cwltool.builder import Builder
 from cwltool.context import LoadingContext
 
 import ruamel.yaml as yaml
@@ -22,7 +21,7 @@ import ruamel.yaml as yaml
 from .runner import (upload_dependencies, packed_workflow, upload_workflow_collection,
                      trim_anonymous_location, remove_redundant_fields, discover_secondary_files)
 from .pathmapper import ArvPathMapper, trim_listing
-from .arvtool import ArvadosCommandTool, set_cluster_target
+from .arvtool import ArvadosCommandTool, set_cluster_target, make_builder
 from .perf import Perf
 
 logger = logging.getLogger('arvados.cwl-runner')
@@ -136,7 +135,7 @@ class ArvadosWorkflowStep(WorkflowStep):
         runtimeContext = runtimeContext.copy()
         runtimeContext.toplevel = True  # Preserve behavior for #13365
 
-        builder = self._init_job({shortname(k): v for k,v in joborder.items()}, runtimeContext)
+        builder = make_builder({shortname(k): v for k,v in joborder.items()}, self.hints, self.requirements, runtimeContext)
         runtimeContext = set_cluster_target(self.tool, self.arvrunner, builder, runtimeContext)
         return super(ArvadosWorkflowStep, self).job(joborder, output_callback, runtimeContext)
 
