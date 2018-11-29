@@ -17,11 +17,13 @@ export const FloatInput = ({ input }: FloatInputProps) =>
         commandInput={input}
         component={Input}
         parse={parseFloat}
-        format={value => isNaN(value) ? '' : JSON.stringify(value)}
+        format={format}
         validate={[
             isRequiredInput(input)
                 ? isNumber
                 : () => undefined,]} />;
+
+const format = (value: any) => isNaN(value) ? '' : JSON.stringify(value);
 
 const Input = (props: GenericInputProps) =>
     <GenericInput
