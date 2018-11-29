@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { EnumCommandInputParameter, CommandInputEnumSchema } from '~/models/workflow';
 import { Field } from 'redux-form';
 import { Select, MenuItem } from '@material-ui/core';
+import { EnumCommandInputParameter, CommandInputEnumSchema } from '~/models/workflow';
 import { GenericInputProps, GenericInput } from './generic-input';
 
 export interface EnumInputProps {
