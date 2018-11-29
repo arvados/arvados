@@ -35,7 +35,6 @@ const loadRequestedDate = () =>
         dispatch(virtualMachinesActions.SET_REQUESTED_DATE(date));
     };
 
-
 export const loadVirtualMachinesData = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch<any>(loadRequestedDate());

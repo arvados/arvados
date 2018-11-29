@@ -13,6 +13,7 @@ export const USER_FIRST_NAME_KEY = 'userFirstName';
 export const USER_LAST_NAME_KEY = 'userLastName';
 export const USER_UUID_KEY = 'userUuid';
 export const USER_OWNER_UUID_KEY = 'userOwnerUuid';
+export const USER_IS_ADMIN = 'userIsAdmin';
 
 export interface UserDetailsResponse {
     email: string;
@@ -56,9 +57,10 @@ export class AuthService {
         const lastName = localStorage.getItem(USER_LAST_NAME_KEY);
         const uuid = localStorage.getItem(USER_UUID_KEY);
         const ownerUuid = localStorage.getItem(USER_OWNER_UUID_KEY);
+        const isAdmin = Boolean(localStorage.getItem(USER_IS_ADMIN));
 
-        return email && firstName && lastName && uuid && ownerUuid
-            ? { email, firstName, lastName, uuid, ownerUuid }
+        return email && firstName && lastName && uuid && ownerUuid && isAdmin
+            ? { email, firstName, lastName, uuid, ownerUuid, isAdmin }
             : undefined;
     }
 
@@ -68,6 +70,7 @@ export class AuthService {
         localStorage.setItem(USER_LAST_NAME_KEY, user.lastName);
         localStorage.setItem(USER_UUID_KEY, user.uuid);
         localStorage.setItem(USER_OWNER_UUID_KEY, user.ownerUuid);
+        localStorage.setItem(USER_IS_ADMIN, JSON.stringify(user.isAdmin));
     }
 
     public removeUser() {
@@ -100,7 +103,8 @@ export class AuthService {
                     firstName: resp.data.first_name,
                     lastName: resp.data.last_name,
                     uuid: resp.data.uuid,
-                    ownerUuid: resp.data.owner_uuid
+                    ownerUuid: resp.data.owner_uuid,
+                    isAdmin: resp.data.is_admin
                 };
             })
             .catch(e => {

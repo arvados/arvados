@@ -10,7 +10,8 @@ import {
     USER_FIRST_NAME_KEY,
     USER_LAST_NAME_KEY,
     USER_OWNER_UUID_KEY,
-    USER_UUID_KEY
+    USER_UUID_KEY,
+    USER_IS_ADMIN
 } from "~/services/auth-service/auth-service";
 
 import 'jest-localstorage-mock';
@@ -42,6 +43,7 @@ describe('auth-actions', () => {
         localStorage.setItem(USER_LAST_NAME_KEY, "Doe");
         localStorage.setItem(USER_UUID_KEY, "uuid");
         localStorage.setItem(USER_OWNER_UUID_KEY, "ownerUuid");
+        localStorage.setItem(USER_IS_ADMIN, "isAdmin");
 
         store.dispatch(initAuth());
 
@@ -53,7 +55,8 @@ describe('auth-actions', () => {
                 firstName: "John",
                 lastName: "Doe",
                 uuid: "uuid",
-                ownerUuid: "ownerUuid"
+                ownerUuid: "ownerUuid",
+                isAdmin: true
             }
         });
     });

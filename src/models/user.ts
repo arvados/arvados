@@ -10,6 +10,7 @@ export interface User {
     lastName: string;
     uuid: string;
     ownerUuid: string;
+    isAdmin: boolean;
 }
 
 export const getUserFullname = (user?: User) => {

@@ -9,7 +9,7 @@ import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/st
 import { ArvadosTheme } from '~/common/custom-theme';
 import { DefaultCodeSnippet } from '~/components/default-code-snippet/default-code-snippet';
 import { Link } from 'react-router-dom';
-import { Dispatch, compose } from 'redux';
+import { compose } from 'redux';
 import { saveRequestedDate, loadVirtualMachinesData } from '~/store/virtual-machines/virtual-machines-actions';
 import { RootState } from '~/store/store';
 import { ListResults } from '~/services/common-service/common-resource-service';
@@ -58,9 +58,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     }
 });
 
-const mapStateToProps = ({ virtualMachines }: RootState) => {
+const mapStateToProps = ({ virtualMachines, auth }: RootState) => {
     return {
         requestedDate: virtualMachines.date,
+        isAdmin: auth.user!.isAdmin,
         ...virtualMachines
     };
 };
@@ -75,6 +76,7 @@ interface VirtualMachinesPanelDataProps {
     virtualMachines: ListResults<any>;
     logins: VirtualMachinesLoginsResource[];
     links: ListResults<any>;
+    isAdmin: string;
 }
 
 interface VirtualMachinesPanelActionProps {
@@ -91,12 +93,12 @@ export const VirtualMachinePanel = compose(
             componentDidMount() {
                 this.props.loadVirtualMachinesData();
             }
-
+            
             render() {
-                const { virtualMachines, links } = this.props;
+                const { virtualMachines, links, isAdmin } = this.props;
                 return (
                     <Grid container spacing={16}>
-                        {virtualMachines.itemsAvailable === 0 && <CardContentWithNoVirtualMachines {...this.props} />}
+                        {isAdmin && <CardContentWithNoVirtualMachines {...this.props} />}
                         {virtualMachines.itemsAvailable > 0 && links.itemsAvailable > 0 && <CardContentWithVirtualMachines {...this.props} />}
                         {<CardSSHSection {...this.props} />}
                     </Grid>
