@@ -30,8 +30,20 @@ const Input = (props: GenericInputProps) => {
         onChange={props.input.onChange}
         disabled={props.commandInput.disabled} >
         {type.symbols.map(symbol =>
-            <MenuItem key={symbol} value={symbol.split('/').pop()}>
-                {symbol.split('/').pop()}
+            <MenuItem key={symbol} value={extractValue(symbol)}>
+                {extractValue(symbol)}
             </MenuItem>)}
     </Select>;
 };
+
+/**
+ * Values in workflow definition have an absolute form, for example: 
+ * 
+ * ```#input_collector.cwl/enum_type/Pathway table```
+ * 
+ * We want a value that is in form accepted by backend.
+ * According to the example above, the correct value is:
+ * 
+ * ```Pathway table```
+ */
+const extractValue = (symbol: string) => symbol.split('/').pop();
