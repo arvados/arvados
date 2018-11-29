@@ -28,7 +28,7 @@ export const FileInput = ({ input }: FileInputProps) =>
         name={input.id}
         commandInput={input}
         component={FileInputComponent}
-        format={(value?: File) => value ? value.basename : ''}
+        format={format}
         parse={(file: CollectionFile): File => ({
             class: CWLType.FILE,
             location: `keep:${file.id}`,
@@ -40,6 +40,7 @@ export const FileInput = ({ input }: FileInputProps) =>
                 : () => undefined,
         ]} />;
 
+const format = (value?: File) => value ? value.basename : '';
 
 interface FileInputComponentState {
     open: boolean;
