@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
+import { memoize } from 'lodash/fp';
 import { FloatCommandInputParameter, isRequiredInput } from '~/models/workflow';
 import { Field } from 'redux-form';
 import { isNumber } from '~/validators/is-number';
@@ -17,11 +18,17 @@ export const FloatInput = ({ input }: FloatInputProps) =>
         commandInput={input}
         component={Input}
         parse={parseFloat}
-        format={value => isNaN(value) ? '' : JSON.stringify(value)}
-        validate={[
-            isRequiredInput(input)
-                ? isNumber
-                : () => undefined,]} />;
+        format={format}
+        validate={getValidation(input)} />;
+
+const format = (value: any) => isNaN(value) ? '' : JSON.stringify(value);
+
+const getValidation = memoize(
+    (input: FloatCommandInputParameter) => ([
+        isRequiredInput(input)
+            ? isNumber
+            : () => undefined,])
+);
 
 const Input = (props: GenericInputProps) =>
     <GenericInput

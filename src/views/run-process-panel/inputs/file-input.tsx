@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
+import { memoize } from 'lodash/fp';
 import {
     isRequiredInput,
     FileCommandInputParameter,
@@ -28,18 +29,24 @@ export const FileInput = ({ input }: FileInputProps) =>
         name={input.id}
         commandInput={input}
         component={FileInputComponent}
-        format={(value?: File) => value ? value.basename : ''}
-        parse={(file: CollectionFile): File => ({
-            class: CWLType.FILE,
-            location: `keep:${file.id}`,
-            basename: file.name,
-        })}
-        validate={[
-            isRequiredInput(input)
-                ? (file?: File) => file ? undefined : ERROR_MESSAGE
-                : () => undefined,
-        ]} />;
+        format={format}
+        parse={parse}
+        validate={getValidation(input)} />;
 
+const format = (value?: File) => value ? value.basename : '';
+
+const parse = (file: CollectionFile): File => ({
+    class: CWLType.FILE,
+    location: `keep:${file.id}`,
+    basename: file.name,
+});
+
+const getValidation = memoize(
+    (input: FileCommandInputParameter) => ([
+        isRequiredInput(input)
+            ? (file?: File) => file ? undefined : ERROR_MESSAGE
+            : () => undefined,
+    ]));
 
 interface FileInputComponentState {
     open: boolean;
@@ -77,7 +84,7 @@ const FileInputComponent = connect()(
             this.props.input.onChange(this.state.file);
         }
 
-        setFile = (event: React.MouseEvent<HTMLElement>, { data }: TreeItem<ProjectsTreePickerItem>, pickerId: string) => {
+        setFile = (_: {}, { data }: TreeItem<ProjectsTreePickerItem>) => {
             if ('type' in data && data.type === CollectionFileType.FILE) {
                 this.setState({ file: data });
             } else {
