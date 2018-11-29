@@ -29,11 +29,7 @@ export const FileInput = ({ input }: FileInputProps) =>
         commandInput={input}
         component={FileInputComponent}
         format={format}
-        parse={(file: CollectionFile): File => ({
-            class: CWLType.FILE,
-            location: `keep:${file.id}`,
-            basename: file.name,
-        })}
+        parse={parse}
         validate={[
             isRequiredInput(input)
                 ? (file?: File) => file ? undefined : ERROR_MESSAGE
@@ -41,6 +37,12 @@ export const FileInput = ({ input }: FileInputProps) =>
         ]} />;
 
 const format = (value?: File) => value ? value.basename : '';
+
+const parse = (file: CollectionFile): File => ({
+    class: CWLType.FILE,
+    location: `keep:${file.id}`,
+    basename: file.name,
+});
 
 interface FileInputComponentState {
     open: boolean;
