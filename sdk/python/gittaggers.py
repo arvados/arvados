@@ -13,9 +13,9 @@ class EggInfoFromGit(egg_info):
     from source package), leave it alone.
     """
     def git_latest_tag(self):
-        gitinfo = subprocess.check_output(
-            ['git', 'describe', '--abbrev=0']).strip()
-        return str(gitinfo.decode('utf-8'))
+        gittags = subprocess.check_output(['git', 'tag', '-l']).split()
+        gittags.sort(key=lambda s: map(int, s.split('.')),reverse=True)
+        return str(next(iter(gittags)).decode('utf-8'))
 
     def git_timestamp_tag(self):
         gitinfo = subprocess.check_output(
