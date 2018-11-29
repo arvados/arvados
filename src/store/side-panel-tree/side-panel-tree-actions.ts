@@ -20,7 +20,6 @@ export enum SidePanelTreeCategory {
     PROJECTS = 'Projects',
     SHARED_WITH_ME = 'Shared with me',
     WORKFLOWS = 'Workflows',
-    RECENT_OPEN = 'Recently open',
     FAVORITES = 'Favorites',
     TRASH = 'Trash'
 }
@@ -44,7 +43,6 @@ export const getSidePanelTreeBranch = (uuid: string) => (treePicker: TreePicker)
 
 const SIDE_PANEL_CATEGORIES = [
     SidePanelTreeCategory.WORKFLOWS,
-    SidePanelTreeCategory.RECENT_OPEN,
     SidePanelTreeCategory.FAVORITES,
     SidePanelTreeCategory.TRASH,
 ];

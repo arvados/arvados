@@ -15,7 +15,6 @@ const mapStateToProps = (state: RootState): WorkflowPanelDataProps => ({
 });
 
 const mapDispatchToProps = (dispatch: Dispatch): WorfklowPanelActionProps => ({
-
     handleRowDoubleClick: (uuid: string) => {
         dispatch<any>(navigateTo(uuid));
     },
