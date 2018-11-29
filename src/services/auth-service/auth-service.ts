@@ -103,7 +103,6 @@ export class AuthService {
             .get<UserDetailsResponse>('/users/current')
             .then(resp => {
                 this.actions.progressFn(reqId, false);
-                console.log('user:', resp.data);
                 return {
                     email: resp.data.email,
                     firstName: resp.data.first_name,
