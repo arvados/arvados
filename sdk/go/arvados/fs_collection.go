@@ -19,9 +19,11 @@ import (
 	"time"
 )
 
-var maxBlockSize = 1 << 26
-
-var concurrentWriters = 4
+var (
+	maxBlockSize      = 1 << 26
+	concurrentWriters = 4 // max goroutines writing to Keep during sync()
+	writeAheadBlocks  = 1 // max background jobs flushing to Keep before blocking writes
+)
 
 // A CollectionFileSystem is a FileSystem that can be serialized as a
 // manifest and stored as a collection.
@@ -498,7 +500,7 @@ func (fn *filenode) pruneMemSegments() {
 	// TODO: pack/flush small blocks too, when fragmented
 	if fn.throttle == nil {
 		// TODO: share a throttle with filesystem
-		fn.throttle = newThrottle(concurrentWriters)
+		fn.throttle = newThrottle(writeAheadBlocks)
 	}
 	for idx, seg := range fn.segments {
 		seg, ok := seg.(*memSegment)
