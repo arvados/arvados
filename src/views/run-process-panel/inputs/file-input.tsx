@@ -84,7 +84,7 @@ const FileInputComponent = connect()(
             this.props.input.onChange(this.state.file);
         }
 
-        setFile = (event: React.MouseEvent<HTMLElement>, { data }: TreeItem<ProjectsTreePickerItem>, pickerId: string) => {
+        setFile = (_: {}, { data }: TreeItem<ProjectsTreePickerItem>) => {
             if ('type' in data && data.type === CollectionFileType.FILE) {
                 this.setState({ file: data });
             } else {
