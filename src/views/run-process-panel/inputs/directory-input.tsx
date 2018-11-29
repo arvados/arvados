@@ -29,7 +29,7 @@ export const DirectoryInput = ({ input }: DirectoryInputProps) =>
         name={input.id}
         commandInput={input}
         component={DirectoryInputComponent}
-        format={(value?: Directory) => value ? value.basename : ''}
+        format={format}
         parse={(directory: CollectionResource): Directory => ({
             class: CWLType.DIRECTORY,
             location: `keep:${directory.portableDataHash}`,
@@ -40,6 +40,8 @@ export const DirectoryInput = ({ input }: DirectoryInputProps) =>
                 ? (directory?: Directory) => directory ? undefined : ERROR_MESSAGE
                 : () => undefined,
         ]} />;
+
+const format = (value?: Directory) => value ? value.basename : '';
 
 
 interface DirectoryInputComponentState {
