@@ -27,12 +27,12 @@ const BooleanInputComponent = (props: GenericInputProps) =>
         component={Input}
         {...props} />;
 
-const Input = (props: GenericInputProps) =>
+const Input = ({ input, commandInput }: GenericInputProps) =>
     <Switch
         color='primary'
-        checked={props.input.value}
-        onChange={handleChange(props.input.onChange, props.input.value)}
-        disabled={props.commandInput.disabled} />;
+        checked={input.value}
+        onChange={handleChange(input.onChange, input.value)}
+        disabled={commandInput.disabled} />;
 
 const handleChange = memoize(
     (onChange: (value: string) => void, value: string) => () => onChange(value)
