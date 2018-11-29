@@ -50,6 +50,7 @@ import HTML5Backend from 'react-dnd-html5-backend';
 import { initAdvanceFormProjectsTree } from '~/store/search-bar/search-bar-actions';
 import { repositoryActionSet } from '~/views-components/context-menu/action-sets/repository-action-set';
 import { sshKeyActionSet } from '~/views-components/context-menu/action-sets/ssh-key-action-set';
+import { loadVocabulary } from '~/store/vocabulary/vocabulary-actions';
 
 console.log(`Starting arvados [${getBuildInfo()}]`);
 
@@ -88,6 +89,7 @@ fetchConfig()
         store.dispatch(setBuildInfo());
         store.dispatch(setCurrentTokenDialogApiHost(apiHost));
         store.dispatch(setUuidPrefix(config.uuidPrefix));
+        store.dispatch(loadVocabulary);
 
         const TokenComponent = (props: any) => <ApiToken authService={services.authService} {...props} />;
         const MainPanelComponent = (props: any) => <MainPanel {...props} />;
