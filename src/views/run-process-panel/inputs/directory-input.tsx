@@ -86,7 +86,7 @@ const DirectoryInputComponent = connect()(
             this.props.input.onChange(this.state.directory);
         }
 
-        setDirectory = (event: React.MouseEvent<HTMLElement>, { data }: TreeItem<ProjectsTreePickerItem>, pickerId: string) => {
+        setDirectory = (_: {}, { data }: TreeItem<ProjectsTreePickerItem>) => {
             if ('kind' in data && data.kind === ResourceKind.COLLECTION) {
                 this.setState({ directory: data });
             } else {
