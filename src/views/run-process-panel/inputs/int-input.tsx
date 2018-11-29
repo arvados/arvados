@@ -18,7 +18,7 @@ export const IntInput = ({ input }: IntInputProps) =>
         commandInput={input}
         component={InputComponent}
         parse={parse}
-        format={value => isNaN(value) ? '' : JSON.stringify(value)}
+        format={format}
         validate={[
             isRequiredInput(input)
                 ? isInteger
@@ -26,6 +26,8 @@ export const IntInput = ({ input }: IntInputProps) =>
         ]} />;
 
 const parse = (value: any) => parseInt(value, 10);
+
+const format = (value: any) => isNaN(value) ? '' : JSON.stringify(value);
 
 const InputComponent = (props: GenericInputProps) =>
     <GenericInput
