@@ -1057,7 +1057,7 @@ func (s *CollectionFSSuite) TestFlushFullBlocks(c *check.C) {
 		return
 	}
 
-	c.Check(len(currentMemExtents()) <= concurrentWriters, check.Equals, true)
+	c.Check(len(currentMemExtents()) <= concurrentWriters+1, check.Equals, true)
 	f.(*filehandle).inode.(*filenode).waitPrune()
 	c.Check(currentMemExtents(), check.HasLen, 1)
 
