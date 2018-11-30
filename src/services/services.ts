@@ -27,6 +27,7 @@ import { PermissionService } from "~/services/permission-service/permission-serv
 import { VirtualMachinesService } from "~/services/virtual-machines-service/virtual-machines-service";
 import { RepositoriesService } from '~/services/repositories-service/repositories-service';
 import { AuthorizedKeysService } from '~/services/authorized-keys-service/authorized-keys-service';
+import { VocabularyService } from '~/services/vocabulary-service/vocabulary-service';
 
 export type ServiceRepository = ReturnType<typeof createServices>;
 
@@ -58,6 +59,7 @@ export const createServices = (config: Config, actions: ApiActions) => {
     const favoriteService = new FavoriteService(linkService, groupsService);
     const tagService = new TagService(linkService);
     const searchService = new SearchService();
+    const vocabularyService = new VocabularyService(config.vocabularyUrl);
 
     return {
         ancestorsService,
@@ -82,6 +84,7 @@ export const createServices = (config: Config, actions: ApiActions) => {
         virtualMachineService,
         webdavClient,
         workflowService,
+        vocabularyService,
     };
 };
 

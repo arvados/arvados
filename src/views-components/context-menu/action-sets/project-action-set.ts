@@ -60,13 +60,13 @@ export const projectActionSet: ContextMenuActionSet = [[
             dispatch<any>(openMoveProjectDialog(resource));
         }
     },
-    {
-        icon: CopyIcon,
-        name: "Copy to project",
-        execute: (dispatch, resource) => {
-            // add code
-        }
-    },
+    // {
+    //     icon: CopyIcon,
+    //     name: "Copy to project",
+    //     execute: (dispatch, resource) => {
+    //         // add code
+    //     }
+    // },
     {
         icon: DetailsIcon,
         name: "View details",
