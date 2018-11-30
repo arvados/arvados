@@ -16,6 +16,7 @@ import { ServiceRepository } from '~/services/services';
 import { FilterBuilder } from '~/services/api/filter-builder';
 import { RepositoryResource } from '~/models/repositories';
 import { SshKeyResource } from '~/models/ssh-key';
+import { VirtualMachinesResource } from '~/models/virtual-machines';
 
 export const ADVANCED_TAB_DIALOG = 'advancedTabDialog';
 
@@ -54,12 +55,17 @@ enum RepositoryData {
 }
 
 enum SshKeyData {
-    SSH_KEY = 'authorized_keys',
+    SSH_KEY = 'authorized_key',
     CREATED_AT = 'created_at'
 }
 
-type AdvanceResourceKind = CollectionData | ProcessData | ProjectData | RepositoryData | SshKeyData;
-type AdvanceResourcePrefix = GroupContentsResourcePrefix | 'repositories' | 'authorized_keys';
+enum VirtualMachineData {
+    VIRTUAL_MACHINE = 'virtual_machine',
+    CREATED_AT = 'created_at'
+}
+
+type AdvanceResourceKind = CollectionData | ProcessData | ProjectData | RepositoryData | SshKeyData | VirtualMachineData;
+type AdvanceResourcePrefix = GroupContentsResourcePrefix | 'repositories' | 'authorized_keys' | 'virtual_machines';
 
 export const openAdvancedTabDialog = (uuid: string, index?: number) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
@@ -90,6 +96,11 @@ export const openAdvancedTabDialog = (uuid: string, index?: number) =>
                 const advanceDataSshKey: AdvancedTabDialogData = advancedTabData(uuid, '', '', sshKeyApiResponse, dataSshKey, SshKeyData.SSH_KEY, 'authorized_keys', SshKeyData.CREATED_AT, dataSshKey.createdAt);
                 dispatch<any>(initAdvancedTabDialog(advanceDataSshKey));
                 break;
+            case ResourceKind.VIRTUAL_MACHINE:
+                const dataVirtualMachine = getState().virtualMachines.virtualMachines.items[index!];
+                const advanceDataVirtualMachine: AdvancedTabDialogData = advancedTabData(uuid, '', '', virtualMachineApiResponse, dataVirtualMachine, VirtualMachineData.VIRTUAL_MACHINE, 'virtual_machines', VirtualMachineData.CREATED_AT, dataVirtualMachine.createdAt);
+                dispatch<any>(initAdvancedTabDialog(advanceDataVirtualMachine));
+                break;
             default:
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Could not open advanced tab for this resource.", hideDuration: 2000, kind: SnackbarKind.ERROR }));
         }
@@ -110,7 +121,7 @@ const getDataForAdvancedTab = (uuid: string) =>
 
 const initAdvancedTabDialog = (data: AdvancedTabDialogData) => dialogActions.OPEN_DIALOG({ id: ADVANCED_TAB_DIALOG, data });
 
-const advancedTabData = (uuid: string, metadata: any, user: any, apiResponseKind: any, data: any, resourceKind: AdvanceResourceKind, 
+const advancedTabData = (uuid: string, metadata: any, user: any, apiResponseKind: any, data: any, resourceKind: AdvanceResourceKind,
     resourcePrefix: AdvanceResourcePrefix, resourceKindProperty: AdvanceResourceKind, property: any) => {
     return {
         uuid,
@@ -292,5 +303,17 @@ const sshKeyApiResponse = (apiResponse: SshKeyResource) => {
 "name": ${stringify(name)},
 "created_at": "${createdAt}",
 "expires_at": "${expiresAt}"`;
+    return response;
+};
+
+const virtualMachineApiResponse = (apiResponse: VirtualMachinesResource) => {
+    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, hostname } = apiResponse;
+    const response = `"uuid": "${uuid}",
+"owner_uuid": "${ownerUuid}",
+"modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
+"modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
+"modified_at": ${stringify(modifiedAt)},
+"hostname": ${stringify(hostname)},
+"created_at": "${createdAt}"`;
     return response;
 };

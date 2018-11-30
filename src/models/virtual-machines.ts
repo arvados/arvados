@@ -8,11 +8,16 @@ export interface VirtualMachinesResource extends Resource {
     hostname: string;
 }
 
-export interface VirtualMachinesLoginsResource {
+export interface VirtualMachinesLoginsItems {
     hostname: string;
     username: string;
     public_key: string;
     user_uuid: string;
     virtual_machine_uuid: string;
     authorized_key_uuid: string;
+}
+
+export interface VirtualMachineLogins {
+    kind: string;
+    items: VirtualMachinesLoginsItems[];
 }

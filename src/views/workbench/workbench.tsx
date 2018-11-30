@@ -59,6 +59,8 @@ import { CreateSshKeyDialog } from '~/views-components/dialog-forms/create-ssh-k
 import { PublicKeyDialog } from '~/views-components/ssh-keys-dialog/public-key-dialog';
 import { RemoveSshKeyDialog } from '~/views-components/ssh-keys-dialog/remove-dialog';
 import { AttributesSshKeyDialog } from '~/views-components/ssh-keys-dialog/attributes-dialog';
+import { VirtualMachineAttributesDialog } from '~/views-components/virtual-machines-dialog/attributes-dialog';
+import { RemoveVirtualMachineDialog } from '~/views-components/virtual-machines-dialog/remove-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -164,6 +166,7 @@ export const WorkbenchPanel =
             <RemoveProcessDialog />
             <RemoveRepositoryDialog />
             <RemoveSshKeyDialog />
+            <RemoveVirtualMachineDialog />
             <RenameFileDialog />
             <RepositoryAttributesDialog />
             <RepositoriesSampleGitDialog />
@@ -173,5 +176,6 @@ export const WorkbenchPanel =
             <UpdateCollectionDialog />
             <UpdateProcessDialog />
             <UpdateProjectDialog />
+            <VirtualMachineAttributesDialog />
         </Grid>
     );

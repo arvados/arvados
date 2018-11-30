@@ -15,6 +15,7 @@ import { extractUuidKind, ResourceKind } from '~/models/resource';
 import { Process } from '~/store/processes/process';
 import { RepositoryResource } from '~/models/repositories';
 import { SshKeyResource } from '~/models/ssh-key';
+import { VirtualMachinesResource } from '~/models/virtual-machines';
 
 export const contextMenuActions = unionize({
     OPEN_CONTEXT_MENU: ofType<{ position: ContextMenuPosition, resource: ContextMenuResource }>(),
@@ -64,14 +65,26 @@ export const openCollectionFilesContextMenu = (event: React.MouseEvent<HTMLEleme
 
 export const openRepositoryContextMenu = (event: React.MouseEvent<HTMLElement>, index: number, repository: RepositoryResource) =>
     (dispatch: Dispatch, getState: () => RootState) => {
-            dispatch<any>(openContextMenu(event, {
-                name: '',
-                uuid: repository.uuid,
-                ownerUuid: repository.ownerUuid,
-                kind: ResourceKind.REPOSITORY,
-                menuKind: ContextMenuKind.REPOSITORY,
-                index
-            }));
+        dispatch<any>(openContextMenu(event, {
+            name: '',
+            uuid: repository.uuid,
+            ownerUuid: repository.ownerUuid,
+            kind: ResourceKind.REPOSITORY,
+            menuKind: ContextMenuKind.REPOSITORY,
+            index
+        }));
+    };
+
+export const openVirtualMachinesContextMenu = (event: React.MouseEvent<HTMLElement>, index: number, repository: VirtualMachinesResource) =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        dispatch<any>(openContextMenu(event, {
+            name: '',
+            uuid: repository.uuid,
+            ownerUuid: repository.ownerUuid,
+            kind: ResourceKind.VIRTUAL_MACHINE,
+            menuKind: ContextMenuKind.VIRTUAL_MACHINE,
+            index
+        }));
     };
 
 export const openSshKeyContextMenu = (event: React.MouseEvent<HTMLElement>, index: number, sshKey: SshKeyResource) =>
