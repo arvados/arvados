@@ -12,9 +12,9 @@ export interface VirtualMachinesLoginsItems {
     hostname: string;
     username: string;
     public_key: string;
-    user_uuid: string;
-    virtual_machine_uuid: string;
-    authorized_key_uuid: string;
+    userUuid: string;
+    virtualMachineUuid: string;
+    authorizedKeyUuid: string;
 }
 
 export interface VirtualMachineLogins {

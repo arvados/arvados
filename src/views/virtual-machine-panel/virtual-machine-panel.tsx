@@ -113,7 +113,7 @@ export const VirtualMachinePanel = compose(
                 const { virtualMachines, links, isAdmin } = this.props;
                 return (
                     <Grid container spacing={16}>
-                        {virtualMachines.itemsAvailable === 0 && <CardContentWithNoVirtualMachines {...this.props} />}
+                        {!isAdmin && virtualMachines.itemsAvailable > 0 && <CardContentWithNoVirtualMachines {...this.props} />}
                         {virtualMachines.itemsAvailable > 0 && links.itemsAvailable > 0 && <CardContentWithVirtualMachines {...this.props} />}
                         {!isAdmin && <CardSSHSection {...this.props} />}
                     </Grid>
@@ -148,16 +148,8 @@ const CardContentWithVirtualMachines = (props: VirtualMachineProps) =>
     <Grid item xs={12}>
         <Card>
             <CardContent>
-                {props.isAdmin ?
-                    <span>
-                        <div className={props.classes.rightAlign}>
-                            <Button variant="contained" color="primary" className={props.classes.button} onClick={props.saveRequestedDate}>
-                                <AddIcon /> NEW VIRTUAL MACHINE
-                            </Button>
-                        </div>
-                        {adminVirtualMachinesTable(props)}
-                    </span> :
-                    <span>
+                {props.isAdmin ? <span>{adminVirtualMachinesTable(props)}</span>
+                    : <span>
                         <div className={props.classes.rightAlign}>
                             <Button variant="contained" color="primary" className={props.classes.button} onClick={props.saveRequestedDate}>
                                 SEND REQUEST FOR SHELL ACCESS
@@ -195,11 +187,11 @@ const userVirtualMachinesTable = (props: VirtualMachineProps) =>
             {props.virtualMachines.items.map((it, index) =>
                 <TableRow key={index}>
                     <TableCell>{it.hostname}</TableCell>
-                    <TableCell>{getUsername(props.links, it)}</TableCell>
-                    <TableCell>ssh {getUsername(props.links, it)}@shell.arvados</TableCell>
+                    <TableCell>{getUsername(props.links)}</TableCell>
+                    <TableCell>ssh {getUsername(props.links)}@{it.hostname}.arvados</TableCell>
                     <TableCell>
-                        <a href={`https://workbench.c97qk.arvadosapi.com${it.href}/webshell/${getUsername(props.links, it)}`} target="_blank" className={props.classes.link}>
-                            Log in as {getUsername(props.links, it)}
+                        <a href={`https://workbench.c97qk.arvadosapi.com${it.href}/webshell/${getUsername(props.links)}`} target="_blank" className={props.classes.link}>
+                            Log in as {getUsername(props.links)}
                         </a>
                     </TableCell>
                 </TableRow>
@@ -221,7 +213,7 @@ const adminVirtualMachinesTable = (props: VirtualMachineProps) =>
             {props.logins.items.length > 0 && props.virtualMachines.items.map((it, index) =>
                 <TableRow key={index}>
                     <TableCell>{it.uuid}</TableCell>
-                    <TableCell>{props.logins.items[0].hostname}</TableCell>
+                    <TableCell>{it.hostname}</TableCell>
                     <TableCell>["{props.logins.items[0].username}"]</TableCell>
                     <TableCell className={props.classes.moreOptions}>
                         <Tooltip title="More options" disableFocusListener>
@@ -235,9 +227,8 @@ const adminVirtualMachinesTable = (props: VirtualMachineProps) =>
         </TableBody>
     </Table>;
 
-const getUsername = (links: ListResults<any>, virtualMachine: VirtualMachinesResource) => {
-    const link = links.items.find((item: any) => item.headUuid === virtualMachine.uuid);
-    return link.properties.username || undefined;
+const getUsername = (links: ListResults<any>) => {
+    return links.items[0].properties.username;
 };
 
 const CardSSHSection = (props: VirtualMachineProps) =>
