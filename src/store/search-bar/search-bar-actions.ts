@@ -353,7 +353,7 @@ export const parseSearchQuery: (query: string) => ParseSearchQuery = (searchValu
 
 const getFirstProp = (sq: ParseSearchQuery, name: string) => sq.properties[name] && sq.properties[name][0];
 const getPropValue = (sq: ParseSearchQuery, name: string, value: string) => sq.properties[name] && sq.properties[name].find((v: string) => v === value);
-const getProperties = (sq: ParseSearchQuery) => {
+const getProperties = (sq: ParseSearchQuery): PropertyValues[] => {
     if (sq.properties.has) {
         return sq.properties.has.map((value: string) => {
             const v = value.split(':');
@@ -439,9 +439,13 @@ export const getFilters = (filterName: string, searchValue: string): string => {
         if (dateTo) {
             filter.addLte('modified_at', buildDateFilter(dateTo));
         }
-    }
 
-    // TODO: has props
+        const props = getProperties(sq);
+        props.forEach(p => {
+            // filter.addILike(`properties.${p.key}`, p.value);
+            filter.addExists(p.key);
+        });
+    }
 
     return filter
         .addEqual('groupClass', GroupClass.PROJECT, GroupContentsResourcePrefix.PROJECT)

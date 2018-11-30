@@ -51,6 +51,10 @@ export class FilterBuilder {
         return this.addCondition(field, "<=", value, "", "", resourcePrefix);
     }
 
+    public addExists(value?: string, resourcePrefix?: string) {
+        return this.addCondition("properties", "exists", value, "", "", resourcePrefix);
+    }
+
     public getFilters() {
         return this.filters;
     }
@@ -69,7 +73,9 @@ export class FilterBuilder {
                 ? resourcePrefix + "."
                 : "";
 
-            this.filters += `${this.filters ? "," : ""}["${resPrefix}${_.snakeCase(field)}","${cond}",${value}]`;
+            const fld = field.indexOf('properties.') < 0 ? _.snakeCase(field) : field;
+
+            this.filters += `${this.filters ? "," : ""}["${resPrefix}${fld}","${cond}",${value}]`;
         }
         return this;
     }
