@@ -29,7 +29,7 @@ from .arvjob import RunnerJob, RunnerTemplate
 from .runner import Runner, upload_docker, upload_job_order, upload_workflow_deps
 from .arvtool import ArvadosCommandTool, validate_cluster_target
 from .arvworkflow import ArvadosWorkflow, upload_workflow
-from .fsaccess import CollectionFsAccess, CollectionFetcher, collectionResolver, CollectionCache
+from .fsaccess import CollectionFsAccess, CollectionFetcher, collectionResolver, CollectionCache, pdh_size
 from .perf import Perf
 from .pathmapper import NoFollowPathMapper
 from .task_queue import TaskQueue
@@ -37,7 +37,7 @@ from .context import ArvLoadingContext, ArvRuntimeContext
 from ._version import __version__
 
 from cwltool.process import shortname, UnsupportedRequirement, use_custom_schema
-from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, get_listing
+from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, get_listing, visit_class
 from cwltool.command_line_tool import compute_checksums
 
 logger = logging.getLogger('arvados.cwl-runner')
@@ -95,6 +95,7 @@ class ArvCwlExecutor(object):
             arvargs.output_name = None
             arvargs.output_tags = None
             arvargs.thread_count = 1
+            arvargs.collection_cache_size = None
 
         self.api = api_client
         self.processes = {}
@@ -116,13 +117,21 @@ class ArvCwlExecutor(object):
         self.thread_count = arvargs.thread_count
         self.poll_interval = 12
         self.loadingContext = None
+        self.should_estimate_cache_size = True
 
         if keep_client is not None:
             self.keep_client = keep_client
         else:
             self.keep_client = arvados.keep.KeepClient(api_client=self.api, num_retries=self.num_retries)
 
-        self.collection_cache = CollectionCache(self.api, self.keep_client, self.num_retries)
+        if arvargs.collection_cache_size:
+            collection_cache_size = arvargs.collection_cache_size*1024*1024
+            self.should_estimate_cache_size = False
+        else:
+            collection_cache_size = 256*1024*1024
+
+        self.collection_cache = CollectionCache(self.api, self.keep_client, self.num_retries,
+                                                cap=collection_cache_size)
 
         self.fetcher_constructor = partial(CollectionFetcher,
                                            api_client=self.api,
@@ -206,7 +215,8 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
 
 
     def start_run(self, runnable, runtimeContext):
-        self.task_queue.add(partial(runnable.run, runtimeContext))
+        self.task_queue.add(partial(runnable.run, runtimeContext),
+                            self.workflow_eval_lock, self.stop_polling)
 
     def process_submitted(self, container):
         with self.workflow_eval_lock:
@@ -216,7 +226,8 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
         with self.workflow_eval_lock:
             j = self.processes[uuid]
             logger.info("%s %s is %s", self.label(j), uuid, record["state"])
-            self.task_queue.add(partial(j.done, record))
+            self.task_queue.add(partial(j.done, record),
+                                self.workflow_eval_lock, self.stop_polling)
             del self.processes[uuid]
 
     def runtime_status_update(self, kind, message, detail=None):
@@ -584,6 +595,21 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
         if runtimeContext.priority < 1 or runtimeContext.priority > 1000:
             raise Exception("--priority must be in the range 1..1000.")
 
+        if self.should_estimate_cache_size:
+            visited = set()
+            estimated_size = [0]
+            def estimate_collection_cache(obj):
+                if obj.get("location", "").startswith("keep:"):
+                    m = pdh_size.match(obj["location"][5:])
+                    if m and m.group(1) not in visited:
+                        visited.add(m.group(1))
+                        estimated_size[0] += int(m.group(2))
+            visit_class(job_order, ("File", "Directory"), estimate_collection_cache)
+            runtimeContext.collection_cache_size = max(((estimated_size[0]*192) / (1024*1024))+1, 256)
+            self.collection_cache.set_cap(runtimeContext.collection_cache_size*1024*1024)
+
+        logger.info("Using collection cache size %s MiB", runtimeContext.collection_cache_size)
+
         runnerjob = None
         if runtimeContext.submit:
             # Submit a runner job to run the workflow for us.
@@ -604,7 +630,9 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                                                 intermediate_output_ttl=runtimeContext.intermediate_output_ttl,
                                                 merged_map=merged_map,
                                                 priority=runtimeContext.priority,
-                                                secret_store=self.secret_store)
+                                                secret_store=self.secret_store,
+                                                collection_cache_size=runtimeContext.collection_cache_size,
+                                                collection_cache_is_default=self.should_estimate_cache_size)
             elif self.work_api == "jobs":
                 runnerjob = RunnerJob(self, tool, job_order, runtimeContext.enable_reuse,
                                       self.output_name,
@@ -676,6 +704,10 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                     else:
                         logger.error("Workflow is deadlocked, no runnable processes and not waiting on any pending processes.")
                         break
+
+                if self.stop_polling.is_set():
+                    break
+
                 loopperf.__enter__()
             loopperf.__exit__()
 
