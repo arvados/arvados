@@ -631,7 +631,8 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                                                 merged_map=merged_map,
                                                 priority=runtimeContext.priority,
                                                 secret_store=self.secret_store,
-                                                collection_cache_size=runtimeContext.collection_cache_size)
+                                                collection_cache_size=runtimeContext.collection_cache_size,
+                                                collection_cache_is_default=self.should_estimate_cache_size)
             elif self.work_api == "jobs":
                 runnerjob = RunnerJob(self, tool, job_order, runtimeContext.enable_reuse,
                                       self.output_name,

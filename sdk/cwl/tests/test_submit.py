@@ -1115,10 +1115,11 @@ class TestSubmit(unittest.TestCase):
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
                                        '--no-log-timestamps', '--disable-validate',
-                                       '--eval-timeout=60.0', '--thread-count=4',
+                                       '--eval-timeout=20', '--thread-count=4',
                                        '--enable-reuse', "--collection-cache-size=500",
                                        '--debug', '--on-error=continue',
                                        '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
+        expect_container["runtime_constraints"]["ram"] = (1024+500)*1024*1024
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
