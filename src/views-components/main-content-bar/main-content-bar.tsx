@@ -8,7 +8,7 @@ import { DetailsIcon } from "~/components/icon/icon";
 import { Breadcrumbs } from "~/views-components/breadcrumbs/breadcrumbs";
 import { connect } from 'react-redux';
 import { RootState } from '~/store/store';
-import { matchWorkflowRoute, matchSshKeysRoute, matchRepositoriesRoute, matchVirtualMachineRoute } from '~/routes/routes';
+import { matchWorkflowRoute, matchSshKeysRoute, matchRepositoriesRoute, matchVirtualMachineRoute, matchKeepServicesRoute } from '~/routes/routes';
 import { toggleDetailsPanel } from '~/store/details-panel/details-panel-action';
 
 interface MainContentBarProps {
@@ -16,32 +16,14 @@ interface MainContentBarProps {
     buttonVisible: boolean;
 }
 
-const isWorkflowPath = ({ router }: RootState) => {
+const isButtonVisible = ({ router }: RootState) => {
     const pathname = router.location ? router.location.pathname : '';
-    const match = matchWorkflowRoute(pathname);
-    return !!match;
-};
-
-const isVirtualMachinePath = ({ router }: RootState) => {
-    const pathname = router.location ? router.location.pathname : '';
-    const match = matchVirtualMachineRoute(pathname);
-    return !!match;
-};
-
-const isRepositoriesPath = ({ router }: RootState) => {
-    const pathname = router.location ? router.location.pathname : '';
-    const match = matchRepositoriesRoute(pathname);
-    return !!match;
-};
-
-const isSshKeysPath = ({ router }: RootState) => {
-    const pathname = router.location ? router.location.pathname : '';
-    const match = matchSshKeysRoute(pathname);
-    return !!match;
+    return !matchWorkflowRoute(pathname) && !matchVirtualMachineRoute(pathname) &&
+        !matchRepositoriesRoute(pathname) && !matchSshKeysRoute(pathname) && !matchKeepServicesRoute(pathname);
 };
 
 export const MainContentBar = connect((state: RootState) => ({
-    buttonVisible: !isWorkflowPath(state) && !isSshKeysPath(state) && !isRepositoriesPath(state) && !isVirtualMachinePath(state)
+    buttonVisible: isButtonVisible(state)
 }), {
         onDetailsPanelToggle: toggleDetailsPanel
     })((props: MainContentBarProps) =>
