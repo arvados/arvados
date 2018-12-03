@@ -22,6 +22,7 @@ export interface User {
     ownerUuid: string;
     identityUrl: string;
     prefs: userPrefs;
+    isAdmin: boolean;
 }
 
 export const getUserFullname = (user?: User) => {

@@ -31,12 +31,14 @@ describe('auth-reducer', () => {
             uuid: "uuid",
             ownerUuid: "ownerUuid",
             identityUrl: "identityUrl",
-            prefs: {}
+            prefs: {},
+            isAdmin: false
         };
         const state = reducer(initialState, authActions.INIT({ user, token: "token" }));
         expect(state).toEqual({
             apiToken: "token",
-            user
+            user,
+            sshKeys: []
         });
     });
 
@@ -61,7 +63,8 @@ describe('auth-reducer', () => {
             uuid: "uuid",
             ownerUuid: "ownerUuid",
             identityUrl: "identityUrl",
-            prefs: {}
+            prefs: {},
+            isAdmin: false
         };
 
         const state = reducer(initialState, authActions.USER_DETAILS_SUCCESS(user));
@@ -74,6 +77,7 @@ describe('auth-reducer', () => {
                 lastName: "Doe",
                 uuid: "uuid",
                 ownerUuid: "ownerUuid",
+                isAdmin: false
             }
         });
     });

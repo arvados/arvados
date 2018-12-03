@@ -49,6 +49,7 @@ import { MyAccountPanel } from '~/views/my-account-panel/my-account-panel';
 import { SharingDialog } from '~/views-components/sharing-dialog/sharing-dialog';
 import { AdvancedTabDialog } from '~/views-components/advanced-tab-dialog/advanced-tab-dialog';
 import { ProcessInputDialog } from '~/views-components/process-input-dialog/process-input-dialog';
+import { VirtualMachinePanel } from '~/views/virtual-machine-panel/virtual-machine-panel';
 import { ProjectPropertiesDialog } from '~/views-components/project-properties-dialog/project-properties-dialog';
 import { RepositoriesPanel } from '~/views/repositories-panel/repositories-panel';
 import { RepositoriesSampleGitDialog } from '~/views-components/repositories-sample-git-dialog/repositories-sample-git-dialog';
@@ -128,6 +129,7 @@ export const WorkbenchPanel =
                                 <Route path={Routes.RUN_PROCESS} component={RunProcessPanel} />
                                 <Route path={Routes.WORKFLOWS} component={WorkflowPanel} />
                                 <Route path={Routes.SEARCH_RESULTS} component={SearchResultsPanel} />
+                                <Route path={Routes.VIRTUAL_MACHINES} component={VirtualMachinePanel} />
                                 <Route path={Routes.REPOSITORIES} component={RepositoriesPanel} />
                                 <Route path={Routes.SSH_KEYS} component={SshKeyPanel} />
                                 <Route path={Routes.MY_ACCOUNT} component={MyAccountPanel} />

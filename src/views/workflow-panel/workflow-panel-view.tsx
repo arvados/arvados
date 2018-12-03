@@ -11,14 +11,16 @@ import {
     ResourceLastModifiedDate,
     RosurceWorkflowName,
     ResourceWorkflowStatus,
-    ResourceShare
+    ResourceShare,
+    ResourceRunProcess
 } from "~/views-components/data-explorer/renderers";
 import { SortDirection } from '~/components/data-table/data-column';
 import { DataColumns } from '~/components/data-table/data-table';
 import { DataTableFilterItem } from '~/components/data-table-filters/data-table-filters';
 import { Grid, Paper } from '@material-ui/core';
 import { WorkflowDetailsCard } from './workflow-description-card';
-import { WorkflowResource } from '../../models/workflow';
+import { WorkflowResource } from '~/models/workflow';
+import { createTree } from '~/models/tree';
 
 export enum WorkflowPanelColumnNames {
     NAME = "Name",
@@ -61,36 +63,38 @@ const resourceStatus = (type: string) => {
     }
 };
 
-export const workflowPanelColumns: DataColumns<string, WorkflowPanelFilter> = [
+export const workflowPanelColumns: DataColumns<string> = [
     {
         name: WorkflowPanelColumnNames.NAME,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.ASC,
-        filters: [],
+        filters: createTree(),
         render: (uuid: string) => <RosurceWorkflowName uuid={uuid} />
     },
     {
         name: WorkflowPanelColumnNames.AUTHORISATION,
         selected: true,
         configurable: true,
-        filters: [
-            {
-                name: resourceStatus(ResourceStatus.PUBLIC),
-                selected: true,
-                type: ResourceStatus.PUBLIC
-            },
-            {
-                name: resourceStatus(ResourceStatus.PRIVATE),
-                selected: true,
-                type: ResourceStatus.PRIVATE
-            },
-            {
-                name: resourceStatus(ResourceStatus.SHARED),
-                selected: true,
-                type: ResourceStatus.SHARED
-            }
-        ],
+        filters: createTree(),
+        // TODO: restore filters
+        // filters: [
+        //     {
+        //         name: resourceStatus(ResourceStatus.PUBLIC),
+        //         selected: true,
+        //         type: ResourceStatus.PUBLIC
+        //     },
+        //     {
+        //         name: resourceStatus(ResourceStatus.PRIVATE),
+        //         selected: true,
+        //         type: ResourceStatus.PRIVATE
+        //     },
+        //     {
+        //         name: resourceStatus(ResourceStatus.SHARED),
+        //         selected: true,
+        //         type: ResourceStatus.SHARED
+        //     }
+        // ],
         render: (uuid: string) => <ResourceWorkflowStatus uuid={uuid} />,
     },
     {
@@ -98,20 +102,27 @@ export const workflowPanelColumns: DataColumns<string, WorkflowPanelFilter> = [
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
-        filters: [],
+        filters: createTree(),
         render: (uuid: string) => <ResourceLastModifiedDate uuid={uuid} />
     },
     {
         name: '',
         selected: true,
         configurable: false,
-        filters: [],
+        filters: createTree(),
         render: (uuid: string) => <ResourceShare uuid={uuid} />
+    },
+    {
+        name: '',
+        selected: true,
+        configurable: false,
+        filters: createTree(),
+        render: (uuid: string) => <ResourceRunProcess uuid={uuid} />
     }
 ];
 
 export const WorkflowPanelView = (props: WorkflowPanelProps) => {
-    return <Grid container spacing={16} style={{minHeight: '500px'}}>
+    return <Grid container spacing={16} style={{ minHeight: '500px' }}>
         <Grid item xs={6}>
             <DataExplorer
                 id={WORKFLOW_PANEL_ID}

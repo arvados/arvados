@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+import { Dispatch } from 'redux';
 import { dialogActions } from '~/store/dialog/dialog-actions';
 import { RootState } from '~/store/store';
-import { Dispatch } from 'redux';
 import { ResourceKind, extractUuidKind } from '~/models/resource';
 import { getResource } from '~/store/resources/resources';
 import { GroupContentsResourcePrefix } from '~/services/groups-service/groups-service';
@@ -15,13 +15,14 @@ import { ProjectResource } from '~/models/project';
 import { ServiceRepository } from '~/services/services';
 import { FilterBuilder } from '~/services/api/filter-builder';
 import { RepositoryResource } from '~/models/repositories';
+import { SshKeyResource } from '~/models/ssh-key';
 
 export const ADVANCED_TAB_DIALOG = 'advancedTabDialog';
 
-export interface AdvancedTabDialogData {
+interface AdvancedTabDialogData {
     apiResponse: any;
     metadata: any;
-    uuid: string;
+    user: string;
     pythonHeader: string;
     pythonExample: string;
     cliGetHeader: string;
@@ -52,41 +53,65 @@ enum RepositoryData {
     CREATED_AT = 'created_at'
 }
 
+enum SshKeyData {
+    SSH_KEY = 'authorized_keys',
+    CREATED_AT = 'created_at'
+}
+
+type AdvanceResourceKind = CollectionData | ProcessData | ProjectData | RepositoryData | SshKeyData;
+type AdvanceResourcePrefix = GroupContentsResourcePrefix | 'repositories' | 'authorized_keys';
+
 export const openAdvancedTabDialog = (uuid: string, index?: number) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        const { resources } = getState();
         const kind = extractUuidKind(uuid);
-        const data = getResource<any>(uuid)(resources);
-        const repositoryData = getState().repositories.items[index!];
-        if (data || repositoryData) {
-            if (data) {
-                const user = await services.userService.get(data.ownerUuid);
-                const metadata = await services.linkService.list({
-                    filters: new FilterBuilder()
-                        .addEqual('headUuid', uuid)
-                        .getFilters()
-                });
-                if (kind === ResourceKind.COLLECTION) {
-                    const dataCollection: AdvancedTabDialogData = advancedTabData(uuid, metadata, user, collectionApiResponse, data, CollectionData.COLLECTION, GroupContentsResourcePrefix.COLLECTION, CollectionData.STORAGE_CLASSES_CONFIRMED, data.storageClassesConfirmed);
-                    dispatch(dialogActions.OPEN_DIALOG({ id: ADVANCED_TAB_DIALOG, data: dataCollection }));
-                } else if (kind === ResourceKind.PROCESS) {
-                    const dataProcess: AdvancedTabDialogData = advancedTabData(uuid, metadata, user, containerRequestApiResponse, data, ProcessData.CONTAINER_REQUEST, GroupContentsResourcePrefix.PROCESS, ProcessData.OUTPUT_NAME, data.outputName);
-                    dispatch(dialogActions.OPEN_DIALOG({ id: ADVANCED_TAB_DIALOG, data: dataProcess }));
-                } else if (kind === ResourceKind.PROJECT) {
-                    const dataProject: AdvancedTabDialogData = advancedTabData(uuid, metadata, user, groupRequestApiResponse, data, ProjectData.GROUP, GroupContentsResourcePrefix.PROJECT, ProjectData.DELETE_AT, data.deleteAt);
-                    dispatch(dialogActions.OPEN_DIALOG({ id: ADVANCED_TAB_DIALOG, data: dataProject }));
-                }
-
-            } else if (kind === ResourceKind.REPOSITORY) {
-                const dataRepository: AdvancedTabDialogData = advancedTabData(uuid, '', '', repositoryApiResponse, repositoryData, RepositoryData.REPOSITORY, 'repositories', RepositoryData.CREATED_AT, repositoryData.createdAt);
-                dispatch(dialogActions.OPEN_DIALOG({ id: ADVANCED_TAB_DIALOG, data: dataRepository }));
-            }
-        } else {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Could not open advanced tab for this resource.", hideDuration: 2000, kind: SnackbarKind.ERROR }));
+        switch (kind) {
+            case ResourceKind.COLLECTION:
+                const { data: dataCollection, metadata: metaCollection, user: userCollection } = await dispatch<any>(getDataForAdvancedTab(uuid));
+                const advanceDataCollection: AdvancedTabDialogData = advancedTabData(uuid, metaCollection, userCollection, collectionApiResponse, dataCollection, CollectionData.COLLECTION, GroupContentsResourcePrefix.COLLECTION, CollectionData.STORAGE_CLASSES_CONFIRMED, dataCollection.storageClassesConfirmed);
+                dispatch<any>(initAdvancedTabDialog(advanceDataCollection));
+                break;
+            case ResourceKind.PROCESS:
+                const { data: dataProcess, metadata: metaProcess, user: userProcess } = await dispatch<any>(getDataForAdvancedTab(uuid));
+                const advancedDataProcess: AdvancedTabDialogData = advancedTabData(uuid, metaProcess, userProcess, containerRequestApiResponse, dataProcess, ProcessData.CONTAINER_REQUEST, GroupContentsResourcePrefix.PROCESS, ProcessData.OUTPUT_NAME, dataProcess.outputName);
+                dispatch<any>(initAdvancedTabDialog(advancedDataProcess));
+                break;
+            case ResourceKind.PROJECT:
+                const { data: dataProject, metadata: metaProject, user: userProject } = await dispatch<any>(getDataForAdvancedTab(uuid));
+                const advanceDataProject: AdvancedTabDialogData = advancedTabData(uuid, metaProject, userProject, groupRequestApiResponse, dataProject, ProjectData.GROUP, GroupContentsResourcePrefix.PROJECT, ProjectData.DELETE_AT, dataProject.deleteAt);
+                dispatch<any>(initAdvancedTabDialog(advanceDataProject));
+                break;
+            case ResourceKind.REPOSITORY:
+                const dataRepository = getState().repositories.items[index!];
+                const advanceDataRepository: AdvancedTabDialogData = advancedTabData(uuid, '', '', repositoryApiResponse, dataRepository, RepositoryData.REPOSITORY, 'repositories', RepositoryData.CREATED_AT, dataRepository.createdAt);
+                dispatch<any>(initAdvancedTabDialog(advanceDataRepository));
+                break;
+            case ResourceKind.SSH_KEY:
+                const dataSshKey = getState().auth.sshKeys[index!];
+                const advanceDataSshKey: AdvancedTabDialogData = advancedTabData(uuid, '', '', sshKeyApiResponse, dataSshKey, SshKeyData.SSH_KEY, 'authorized_keys', SshKeyData.CREATED_AT, dataSshKey.createdAt);
+                dispatch<any>(initAdvancedTabDialog(advanceDataSshKey));
+                break;
+            default:
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Could not open advanced tab for this resource.", hideDuration: 2000, kind: SnackbarKind.ERROR }));
         }
     };
 
-const advancedTabData = (uuid: string, metadata: any, user: any, apiResponseKind: any, data: any, resourceKind: CollectionData | ProcessData | ProjectData | RepositoryData, resourcePrefix: GroupContentsResourcePrefix | 'repositories', resourceKindProperty: CollectionData | ProcessData | ProjectData | RepositoryData, property: any) => {
+const getDataForAdvancedTab = (uuid: string) =>
+    async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        const { resources } = getState();
+        const data = getResource<any>(uuid)(resources);
+        const metadata = await services.linkService.list({
+            filters: new FilterBuilder()
+                .addEqual('headUuid', uuid)
+                .getFilters()
+        });
+        const user = metadata.itemsAvailable && await services.userService.get(metadata.items[0].tailUuid || '');
+        return { data, metadata, user };
+    };
+
+const initAdvancedTabDialog = (data: AdvancedTabDialogData) => dialogActions.OPEN_DIALOG({ id: ADVANCED_TAB_DIALOG, data });
+
+const advancedTabData = (uuid: string, metadata: any, user: any, apiResponseKind: any, data: any, resourceKind: AdvanceResourceKind, 
+    resourcePrefix: AdvanceResourcePrefix, resourceKindProperty: AdvanceResourceKind, property: any) => {
     return {
         uuid,
         user,
@@ -109,7 +134,7 @@ const pythonHeader = (resourceKind: string) =>
 const pythonExample = (uuid: string, resourcePrefix: string) => {
     const pythonExample = `import arvados
 
- x = arvados.api().${resourcePrefix}().get(uuid='${uuid}').execute()`;
+x = arvados.api().${resourcePrefix}().get(uuid='${uuid}').execute()`;
 
     return pythonExample;
 };
@@ -119,7 +144,7 @@ const cliGetHeader = (resourceKind: string) =>
 
 const cliGetExample = (uuid: string, resourceKind: string) => {
     const cliGetExample = `arv ${resourceKind} get \\
- --uuid ${uuid}`;
+  --uuid ${uuid}`;
 
     return cliGetExample;
 };
@@ -128,9 +153,9 @@ const cliUpdateHeader = (resourceKind: string, resourceName: string) =>
     `An example arv command to update the "${resourceName}" attribute for the current ${resourceKind}:`;
 
 const cliUpdateExample = (uuid: string, resourceKind: string, resource: string | string[], resourceName: string) => {
-    const CLIUpdateCollectionExample = `arv ${resourceKind} update \\ 
- --uuid ${uuid} \\
- --${resourceKind} '{"${resourceName}":${resource}}'`;
+    const CLIUpdateCollectionExample = `arv ${resourceKind} update \\
+  --uuid ${uuid} \\
+  --${resourceKind} '{"${resourceName}":${resource}}'`;
 
     return CLIUpdateCollectionExample;
 };
@@ -140,10 +165,10 @@ const curlHeader = (resourceKind: string, resource: string) =>
 
 const curlExample = (uuid: string, resourcePrefix: string, resource: string | string[], resourceKind: string, resourceName: string) => {
     const curlExample = `curl -X PUT \\
- -H "Authorization: OAuth2 $ARVADOS_API_TOKEN" \\
- --data-urlencode ${resourceKind}@/dev/stdin \\
- https://$ARVADOS_API_HOST/arvados/v1/${resourcePrefix}/${uuid} \\
- <<EOF
+  -H "Authorization: OAuth2 $ARVADOS_API_TOKEN" \\
+  --data-urlencode ${resourceKind}@/dev/stdin \\
+  https://$ARVADOS_API_HOST/arvados/v1/${resourcePrefix}/${uuid} \\
+  <<EOF
 {
   "${resourceName}": ${resource}
 }
@@ -253,5 +278,19 @@ const repositoryApiResponse = (apiResponse: RepositoryResource) => {
 "name": ${stringify(name)},
 "created_at": "${createdAt}"`;
 
+    return response;
+};
+
+const sshKeyApiResponse = (apiResponse: SshKeyResource) => {
+    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name, authorizedUserUuid, expiresAt } = apiResponse;
+    const response = `"uuid": "${uuid}",
+"owner_uuid": "${ownerUuid}",
+"authorized_user_uuid": "${authorizedUserUuid}",
+"modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
+"modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
+"modified_at": ${stringify(modifiedAt)},
+"name": ${stringify(name)},
+"created_at": "${createdAt}",
+"expires_at": "${expiresAt}"`;
     return response;
 };

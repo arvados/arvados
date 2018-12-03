@@ -24,8 +24,10 @@ import { ApiActions } from "~/services/api/api-actions";
 import { WorkflowService } from "~/services/workflow-service/workflow-service";
 import { SearchService } from '~/services/search-service/search-service';
 import { PermissionService } from "~/services/permission-service/permission-service";
+import { VirtualMachinesService } from "~/services/virtual-machines-service/virtual-machines-service";
 import { RepositoriesService } from '~/services/repositories-service/repositories-service';
 import { AuthorizedKeysService } from '~/services/authorized-keys-service/authorized-keys-service';
+import { VocabularyService } from '~/services/vocabulary-service/vocabulary-service';
 
 export type ServiceRepository = ReturnType<typeof createServices>;
 
@@ -47,6 +49,7 @@ export const createServices = (config: Config, actions: ApiActions) => {
     const projectService = new ProjectService(apiClient, actions);
     const repositoriesService = new RepositoriesService(apiClient, actions);
     const userService = new UserService(apiClient, actions);
+    const virtualMachineService = new VirtualMachinesService(apiClient, actions);
     const workflowService = new WorkflowService(apiClient, actions);
 
     const ancestorsService = new AncestorService(groupsService, userService);
@@ -56,6 +59,7 @@ export const createServices = (config: Config, actions: ApiActions) => {
     const favoriteService = new FavoriteService(linkService, groupsService);
     const tagService = new TagService(linkService);
     const searchService = new SearchService();
+    const vocabularyService = new VocabularyService(config.vocabularyUrl);
 
     return {
         ancestorsService,
@@ -77,8 +81,10 @@ export const createServices = (config: Config, actions: ApiActions) => {
         searchService,
         tagService,
         userService,
+        virtualMachineService,
         webdavClient,
         workflowService,
+        vocabularyService,
     };
 };
 

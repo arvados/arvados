@@ -3,15 +3,16 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from "react";
-import { DataTableFilterItem } from "../data-table-filters/data-table-filters";
+import { DataTableFilters } from "../data-table-filters/data-table-filters-tree";
+import { createTree } from '~/models/tree';
 
-export interface DataColumn<T, F extends DataTableFilterItem = DataTableFilterItem> {
+export interface DataColumn<T> {
     key?: React.Key;
     name: string;
     selected: boolean;
     configurable: boolean;
     sortDirection?: SortDirection;
-    filters: F[];
+    filters: DataTableFilters;
     render: (item: T) => React.ReactElement<any>;
     renderHeader?: () => React.ReactElement<any>;
 }
@@ -34,13 +35,13 @@ export const resetSortDirection = <T>(column: DataColumn<T>): DataColumn<T> => {
     return column.sortDirection ? { ...column, sortDirection: SortDirection.NONE } : column;
 };
 
-export const createDataColumn = <T, F extends DataTableFilterItem>(dataColumn: Partial<DataColumn<T, F>>): DataColumn<T, F> => ({
+export const createDataColumn = <T>(dataColumn: Partial<DataColumn<T>>): DataColumn<T> => ({
     key: '',
     name: '',
     selected: true,
     configurable: true,
     sortDirection: SortDirection.NONE,
-    filters: [],
+    filters: createTree(),
     render: () => React.createElement('span'),
     ...dataColumn,
 });

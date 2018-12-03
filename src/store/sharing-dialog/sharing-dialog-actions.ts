@@ -56,13 +56,18 @@ export const sendSharingInvitations = async (dispatch: Dispatch) => {
 const loadSharingDialog = async (dispatch: Dispatch, getState: () => RootState, { permissionService }: ServiceRepository) => {
 
     const dialog = getDialog<string>(getState().dialog, SHARING_DIALOG_NAME);
-
     if (dialog) {
         dispatch(progressIndicatorActions.START_WORKING(SHARING_DIALOG_NAME));
-        const { items } = await permissionService.listResourcePermissions(dialog.data);
-        dispatch<any>(initializePublicAccessForm(items));
-        await dispatch<any>(initializeManagementForm(items));
-        dispatch(progressIndicatorActions.STOP_WORKING(SHARING_DIALOG_NAME));
+        try {
+            const { items } = await permissionService.listResourcePermissions(dialog.data);
+            dispatch<any>(initializePublicAccessForm(items));
+            await dispatch<any>(initializeManagementForm(items));
+            dispatch(progressIndicatorActions.STOP_WORKING(SHARING_DIALOG_NAME));
+        } catch (e) {
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'You do not have access to share this item', hideDuration: 2000, kind: SnackbarKind.ERROR }));
+            dispatch(dialogActions.CLOSE_DIALOG({ id: SHARING_DIALOG_NAME }));
+            dispatch(progressIndicatorActions.STOP_WORKING(SHARING_DIALOG_NAME));
+        }
     }
 };
 

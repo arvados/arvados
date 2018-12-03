@@ -13,6 +13,7 @@ import { RootState } from "~/store/store";
 import { openCurrentTokenDialog } from '~/store/current-token-dialog/current-token-dialog-actions';
 import { openRepositoriesPanel } from "~/store/repositories/repositories-actions";
 import { navigateToSshKeys, navigateToMyAccount } from '~/store/navigation/navigation-action';
+import { openVirtualMachines } from "~/store/virtual-machines/virtual-machines-actions";
 
 interface AccountMenuProps {
     user?: User;
@@ -32,6 +33,7 @@ export const AccountMenu = connect(mapStateToProps)(
                 <MenuItem>
                     {getUserFullname(user)}
                 </MenuItem>
+                <MenuItem onClick={() => dispatch(openVirtualMachines())}>Virtual Machines</MenuItem>
                 <MenuItem onClick={() => dispatch(openRepositoriesPanel())}>Repositories</MenuItem>
                 <MenuItem onClick={() => dispatch(openCurrentTokenDialog)}>Current token</MenuItem>
                 <MenuItem onClick={() => dispatch(navigateToSshKeys)}>Ssh Keys</MenuItem>

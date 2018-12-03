@@ -5,9 +5,10 @@
 import { Dispatch, MiddlewareAPI } from "redux";
 import { RootState } from "../store";
 import { DataColumns } from "~/components/data-table/data-table";
-import { DataTableFilterItem } from "~/components/data-table-filters/data-table-filters";
 import { DataExplorer } from './data-explorer-reducer';
 import { ListResults } from '~/services/common-service/common-resource-service';
+import { createTree } from "~/models/tree";
+import { DataTableFilters } from "~/components/data-table-filters/data-table-filters-tree";
 
 export abstract class DataExplorerMiddlewareService {
     protected readonly id: string;
@@ -20,20 +21,19 @@ export abstract class DataExplorerMiddlewareService {
         return this.id;
     }
 
-    public getColumnFilters<T, F extends DataTableFilterItem>(columns: DataColumns<T, F>, columnName: string): F[] {
-        const column = columns.find(c => c.name === columnName);
-        return column ? column.filters.filter(f => f.selected) : [];
+    public getColumnFilters<T>(columns: DataColumns<T>, columnName: string): DataTableFilters {
+        return getDataExplorerColumnFilters(columns, columnName);
     }
 
     abstract requestItems(api: MiddlewareAPI<Dispatch, RootState>): void;
 }
 
-export const getDataExplorerColumnFilters = <T, F extends DataTableFilterItem>(columns: DataColumns<T, F>, columnName: string): F[] => {
+export const getDataExplorerColumnFilters = <T>(columns: DataColumns<T>, columnName: string): DataTableFilters => {
     const column = columns.find(c => c.name === columnName);
-    return column ? column.filters.filter(f => f.selected) : [];
+    return column ? column.filters : createTree();
 };
 
-export const dataExplorerToListParams = <R>(dataExplorer: DataExplorer) => ({
+export const dataExplorerToListParams = (dataExplorer: DataExplorer) => ({
     limit: dataExplorer.rowsPerPage,
     offset: dataExplorer.page * dataExplorer.rowsPerPage,
 });

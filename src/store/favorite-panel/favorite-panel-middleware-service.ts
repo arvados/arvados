@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { DataExplorerMiddlewareService } from "../data-explorer/data-explorer-middleware-service";
-import { FavoritePanelColumnNames, FavoritePanelFilter } from "~/views/favorite-panel/favorite-panel";
+import { DataExplorerMiddlewareService } from "~/store/data-explorer/data-explorer-middleware-service";
+import { FavoritePanelColumnNames } from "~/views/favorite-panel/favorite-panel";
 import { RootState } from "../store";
 import { DataColumns } from "~/components/data-table/data-table";
 import { ServiceRepository } from "~/services/services";
@@ -21,6 +21,8 @@ import { progressIndicatorActions } from '~/store/progress-indicator/progress-in
 import { getDataExplorer } from "~/store/data-explorer/data-explorer-reducer";
 import { loadMissingProcessesInformation } from "~/store/project-panel/project-panel-middleware-service";
 import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
+import { getDataExplorerColumnFilters } from '~/store/data-explorer/data-explorer-middleware-service';
+import { serializeSimpleObjectTypeFilters } from '../resource-type-filters/resource-type-filters';
 
 export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -32,9 +34,10 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
         if (!dataExplorer) {
             api.dispatch(favoritesPanelDataExplorerIsNotSet());
         } else {
-            const columns = dataExplorer.columns as DataColumns<string, FavoritePanelFilter>;
+            const columns = dataExplorer.columns as DataColumns<string>;
             const sortColumn = getSortColumn(dataExplorer);
-            const typeFilters = this.getColumnFilters(columns, FavoritePanelColumnNames.TYPE);
+            const typeFilters = serializeSimpleObjectTypeFilters(getDataExplorerColumnFilters(columns, FavoritePanelColumnNames.TYPE));
+
 
             const linkOrder = new OrderBuilder<LinkResource>();
             const contentOrder = new OrderBuilder<GroupContentsResource>();
@@ -59,9 +62,10 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
                         linkOrder: linkOrder.getOrder(),
                         contentOrder: contentOrder.getOrder(),
                         filters: new FilterBuilder()
-                            .addIsA("headUuid", typeFilters.map(filter => filter.type))
                             .addILike("name", dataExplorer.searchValue)
-                            .getFilters()
+                            .addIsA("headUuid", typeFilters)
+                            .getFilters(),
+
                     });
                 api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
                 api.dispatch(resourcesActions.SET_RESOURCES(response.items));
