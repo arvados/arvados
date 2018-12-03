@@ -31,6 +31,7 @@ import traceback
 
 from apiclient import errors as apiclient_errors
 from arvados._version import __version__
+from arvados.util import keep_locator_pattern
 
 import arvados.commands._util as arv_cmd
 
@@ -289,6 +290,9 @@ class ResumeCacheConflict(Exception):
     pass
 
 
+class ResumeCacheInvalidError(Exception):
+    pass
+
 class ArvPutArgumentConflict(Exception):
     pass
 
@@ -387,7 +391,7 @@ class ResumeCache(object):
             new_cache = os.fdopen(new_cache_fd, 'r+')
             json.dump(data, new_cache)
             os.rename(new_cache_name, self.filename)
-        except (IOError, OSError, ResumeCacheConflict) as error:
+        except (IOError, OSError, ResumeCacheConflict):
             try:
                 os.unlink(new_cache_name)
             except NameError:  # mkstemp failed.
@@ -482,8 +486,8 @@ class ArvPutUploadJob(object):
 
     def _build_upload_list(self):
         """
-        Scan the requested paths to count file sizes, excluding files & dirs if requested
-        and building the upload file list.
+        Scan the requested paths to count file sizes, excluding requested files
+        and dirs and building the upload file list.
         """
         # If there aren't special files to be read, reset total bytes count to zero
         # to start counting.
@@ -735,12 +739,6 @@ class ArvPutUploadJob(object):
             if not file_in_local_collection:
                 # File not uploaded yet, upload it completely
                 should_upload = True
-            elif file_in_local_collection.permission_expired():
-                # Permission token expired, re-upload file. This will change whenever
-                # we have a API for refreshing tokens.
-                self.logger.warning("Uploaded file '{}' access token expired, will re-upload it from scratch".format(filename))
-                should_upload = True
-                self._local_collection.remove(filename)
             elif cached_file_data['size'] == file_in_local_collection.size():
                 # File already there, skip it.
                 self.bytes_skipped += cached_file_data['size']
@@ -850,12 +848,38 @@ class ArvPutUploadJob(object):
                 self.logger.info("No cache usage requested for this run.")
                 # No cache file, set empty state
                 self._state = copy.deepcopy(self.EMPTY_STATE)
+            if not self._cached_manifest_valid():
+                raise ResumeCacheInvalidError()
             # Load the previous manifest so we can check if files were modified remotely.
             self._local_collection = arvados.collection.Collection(
                 self._state['manifest'],
                 replication_desired=self.replication_desired,
                 put_threads=self.put_threads,
                 api_client=self._api_client)
+
+    def _cached_manifest_valid(self):
+        """
+        Validate first block's signature to check if cached manifest is usable.
+        Cached manifest could be invalid because:
+        * Block signature expiration
+        * Block signatures belonging to a different user
+        """
+        if self._state.get('manifest', None) is None:
+            # No cached manifest yet, all good.
+            return True
+        m = keep_locator_pattern.search(self._state['manifest'])
+        if m is None:
+            # No blocks found, no invalid block signatures.
+            return True
+        loc = self._state['manifest'][m.start():m.end()]
+        kc = arvados.KeepClient(api_client=self._api_client,
+                                num_retries=self.num_retries)
+        try:
+            kc.head(loc)
+        except arvados.errors.KeepRequestError:
+            # Something is wrong, cached manifest is not valid.
+            return False
+        return True
 
     def collection_file_paths(self, col, path_prefix='.'):
         """Return a list of file paths by recursively go through the entire collection `col`"""
@@ -1130,6 +1154,13 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
         logger.error("\n".join([
             "arv-put: Another process is already uploading this data.",
             "         Use --no-cache if this is really what you want."]))
+        sys.exit(1)
+    except ResumeCacheInvalidError:
+        logger.error("\n".join([
+            "arv-put: Cache seems to contain invalid data: it may have expired",
+            "         or been created with another arvados user's credentials.",
+            "         Use --no-resume to start a new cache file.",
+            "         Use --no-cache to skip current cache file usage."]))
         sys.exit(1)
     except CollectionUpdateError as error:
         logger.error("\n".join([

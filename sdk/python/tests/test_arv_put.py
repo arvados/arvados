@@ -549,7 +549,7 @@ class ArvadosExpectedBytesTest(ArvadosBaseTestCase):
                          writer.bytes_expected)
 
     def test_expected_bytes_for_device(self):
-        writer = arv_put.ArvPutUploadJob(['/dev/null'])
+        writer = arv_put.ArvPutUploadJob(['/dev/null'], use_cache=False, resume=False)
         self.assertIsNone(writer.bytes_expected)
         writer = arv_put.ArvPutUploadJob([__file__, '/dev/null'])
         self.assertIsNone(writer.bytes_expected)
@@ -974,12 +974,8 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
         (out, err) = p.communicate()
         self.assertRegex(
             err.decode(),
-            r'WARNING: Uploaded file .* access token expired, will re-upload it from scratch')
-        self.assertEqual(p.returncode, 0)
-        # Confirm that the resulting cache is different from the last run.
-        with open(cache_filepath, 'r') as c2:
-            new_cache = json.load(c2)
-        self.assertNotEqual(cache['manifest'], new_cache['manifest'])
+            r'ERROR: arv-put: Cache seems to contain invalid data.*')
+        self.assertEqual(p.returncode, 1)
 
     def test_put_collection_with_later_update(self):
         tmpdir = self.make_tmpdir()
