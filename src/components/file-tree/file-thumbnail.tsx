@@ -32,5 +32,6 @@ const ImageFileThumbnail = imageFileThumbnailStyle(
             ? null
             : <img
                 className={classes.thumbnail}
-                alt={file.name} />
+                alt={file.name}
+                src={file.url} />
 );
