@@ -17,13 +17,16 @@ import { FilterBuilder } from '~/services/api/filter-builder';
 import { RepositoryResource } from '~/models/repositories';
 import { SshKeyResource } from '~/models/ssh-key';
 import { VirtualMachinesResource } from '~/models/virtual-machines';
+import { UserResource } from '~/models/user';
+import { ListResults } from '~/services/common-service/common-resource-service';
+import { LinkResource } from '~/models/link';
 
 export const ADVANCED_TAB_DIALOG = 'advancedTabDialog';
 
 interface AdvancedTabDialogData {
     apiResponse: any;
-    metadata: any;
-    user: string;
+    metadata: ListResults<LinkResource> | string;
+    user: UserResource | string;
     pythonHeader: string;
     pythonExample: string;
     cliGetHeader: string;
@@ -64,41 +67,107 @@ enum VirtualMachineData {
     CREATED_AT = 'created_at'
 }
 
-type AdvanceResourceKind = CollectionData | ProcessData | ProjectData | RepositoryData | SshKeyData | VirtualMachineData;
-type AdvanceResourcePrefix = GroupContentsResourcePrefix | 'repositories' | 'authorized_keys' | 'virtual_machines';
+enum ResourcePrefix {
+    REPOSITORIES = 'repositories',
+    AUTORIZED_KEYS = 'authorized_keys',
+    VIRTUAL_MACHINES = 'virtual_machines'
+}
 
-export const openAdvancedTabDialog = (uuid: string, index?: number) =>
+type AdvanceResourceKind = CollectionData | ProcessData | ProjectData | RepositoryData | SshKeyData | VirtualMachineData;
+type AdvanceResourcePrefix = GroupContentsResourcePrefix | ResourcePrefix;
+
+export const openAdvancedTabDialog = (uuid: string) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const kind = extractUuidKind(uuid);
         switch (kind) {
             case ResourceKind.COLLECTION:
                 const { data: dataCollection, metadata: metaCollection, user: userCollection } = await dispatch<any>(getDataForAdvancedTab(uuid));
-                const advanceDataCollection: AdvancedTabDialogData = advancedTabData(uuid, metaCollection, userCollection, collectionApiResponse, dataCollection, CollectionData.COLLECTION, GroupContentsResourcePrefix.COLLECTION, CollectionData.STORAGE_CLASSES_CONFIRMED, dataCollection.storageClassesConfirmed);
+                const advanceDataCollection: AdvancedTabDialogData = advancedTabData({
+                    uuid,
+                    metadata: metaCollection,
+                    user: userCollection,
+                    apiResponseKind: collectionApiResponse,
+                    data: dataCollection,
+                    resourceKind: CollectionData.COLLECTION,
+                    resourcePrefix: GroupContentsResourcePrefix.COLLECTION,
+                    resourceKindProperty: CollectionData.STORAGE_CLASSES_CONFIRMED,
+                    property: dataCollection.storageClassesConfirmed
+                });
                 dispatch<any>(initAdvancedTabDialog(advanceDataCollection));
                 break;
             case ResourceKind.PROCESS:
                 const { data: dataProcess, metadata: metaProcess, user: userProcess } = await dispatch<any>(getDataForAdvancedTab(uuid));
-                const advancedDataProcess: AdvancedTabDialogData = advancedTabData(uuid, metaProcess, userProcess, containerRequestApiResponse, dataProcess, ProcessData.CONTAINER_REQUEST, GroupContentsResourcePrefix.PROCESS, ProcessData.OUTPUT_NAME, dataProcess.outputName);
+                const advancedDataProcess: AdvancedTabDialogData = advancedTabData({
+                    uuid,
+                    metadata: metaProcess,
+                    user: userProcess,
+                    apiResponseKind: containerRequestApiResponse,
+                    data: dataProcess,
+                    resourceKind: ProcessData.CONTAINER_REQUEST,
+                    resourcePrefix: GroupContentsResourcePrefix.PROCESS,
+                    resourceKindProperty: ProcessData.OUTPUT_NAME,
+                    property: dataProcess.outputName
+                });
                 dispatch<any>(initAdvancedTabDialog(advancedDataProcess));
                 break;
             case ResourceKind.PROJECT:
                 const { data: dataProject, metadata: metaProject, user: userProject } = await dispatch<any>(getDataForAdvancedTab(uuid));
-                const advanceDataProject: AdvancedTabDialogData = advancedTabData(uuid, metaProject, userProject, groupRequestApiResponse, dataProject, ProjectData.GROUP, GroupContentsResourcePrefix.PROJECT, ProjectData.DELETE_AT, dataProject.deleteAt);
+                const advanceDataProject: AdvancedTabDialogData = advancedTabData({
+                    uuid,
+                    metadata: metaProject,
+                    user: userProject,
+                    apiResponseKind: groupRequestApiResponse,
+                    data: dataProject,
+                    resourceKind: ProjectData.GROUP,
+                    resourcePrefix: GroupContentsResourcePrefix.PROJECT,
+                    resourceKindProperty: ProjectData.DELETE_AT,
+                    property: dataProject.deleteAt
+                });
                 dispatch<any>(initAdvancedTabDialog(advanceDataProject));
                 break;
             case ResourceKind.REPOSITORY:
-                const dataRepository = getState().repositories.items[index!];
-                const advanceDataRepository: AdvancedTabDialogData = advancedTabData(uuid, '', '', repositoryApiResponse, dataRepository, RepositoryData.REPOSITORY, 'repositories', RepositoryData.CREATED_AT, dataRepository.createdAt);
+                const dataRepository = getState().repositories.items.find(it => it.uuid === uuid);
+                const advanceDataRepository: AdvancedTabDialogData = advancedTabData({
+                    uuid,
+                    metadata: '',
+                    user: '',
+                    apiResponseKind: repositoryApiResponse,
+                    data: dataRepository,
+                    resourceKind: RepositoryData.REPOSITORY,
+                    resourcePrefix: ResourcePrefix.REPOSITORIES,
+                    resourceKindProperty: RepositoryData.CREATED_AT,
+                    property: dataRepository!.createdAt
+                });
                 dispatch<any>(initAdvancedTabDialog(advanceDataRepository));
                 break;
             case ResourceKind.SSH_KEY:
-                const dataSshKey = getState().auth.sshKeys[index!];
-                const advanceDataSshKey: AdvancedTabDialogData = advancedTabData(uuid, '', '', sshKeyApiResponse, dataSshKey, SshKeyData.SSH_KEY, 'authorized_keys', SshKeyData.CREATED_AT, dataSshKey.createdAt);
+                const dataSshKey = getState().auth.sshKeys.find(it => it.uuid === uuid);
+                const advanceDataSshKey: AdvancedTabDialogData = advancedTabData({
+                    uuid,
+                    metadata: '',
+                    user: '',
+                    apiResponseKind: sshKeyApiResponse,
+                    data: dataSshKey,
+                    resourceKind: SshKeyData.SSH_KEY,
+                    resourcePrefix: ResourcePrefix.AUTORIZED_KEYS,
+                    resourceKindProperty: SshKeyData.CREATED_AT,
+                    property: dataSshKey!.createdAt
+                });
                 dispatch<any>(initAdvancedTabDialog(advanceDataSshKey));
                 break;
             case ResourceKind.VIRTUAL_MACHINE:
-                const dataVirtualMachine = getState().virtualMachines.virtualMachines.items[index!];
-                const advanceDataVirtualMachine: AdvancedTabDialogData = advancedTabData(uuid, '', '', virtualMachineApiResponse, dataVirtualMachine, VirtualMachineData.VIRTUAL_MACHINE, 'virtual_machines', VirtualMachineData.CREATED_AT, dataVirtualMachine.createdAt);
+                const dataVirtualMachine = getState().virtualMachines.virtualMachines.items.find(it => it.uuid === uuid);
+                const advanceDataVirtualMachine: AdvancedTabDialogData = advancedTabData({
+                    uuid,
+                    metadata: '',
+                    user: '',
+                    apiResponseKind: virtualMachineApiResponse,
+                    data: dataVirtualMachine,
+                    resourceKind: VirtualMachineData.VIRTUAL_MACHINE,
+                    resourcePrefix: ResourcePrefix.VIRTUAL_MACHINES,
+                    resourceKindProperty: VirtualMachineData.CREATED_AT,
+                    property: dataVirtualMachine.createdAt
+                });
                 dispatch<any>(initAdvancedTabDialog(advanceDataVirtualMachine));
                 break;
             default:
@@ -121,21 +190,23 @@ const getDataForAdvancedTab = (uuid: string) =>
 
 const initAdvancedTabDialog = (data: AdvancedTabDialogData) => dialogActions.OPEN_DIALOG({ id: ADVANCED_TAB_DIALOG, data });
 
-const advancedTabData = (uuid: string, metadata: any, user: any, apiResponseKind: any, data: any, resourceKind: AdvanceResourceKind,
-    resourcePrefix: AdvanceResourcePrefix, resourceKindProperty: AdvanceResourceKind, property: any) => {
+const advancedTabData = (args: {
+    uuid: string, metadata: ListResults<LinkResource> | string, user: UserResource | string, apiResponseKind: any, data: any, resourceKind: AdvanceResourceKind,
+    resourcePrefix: AdvanceResourcePrefix, resourceKindProperty: AdvanceResourceKind, property: any
+}) => {
     return {
-        uuid,
-        user,
-        metadata,
-        apiResponse: apiResponseKind(data),
-        pythonHeader: pythonHeader(resourceKind),
-        pythonExample: pythonExample(uuid, resourcePrefix),
-        cliGetHeader: cliGetHeader(resourceKind),
-        cliGetExample: cliGetExample(uuid, resourceKind),
-        cliUpdateHeader: cliUpdateHeader(resourceKind, resourceKindProperty),
-        cliUpdateExample: cliUpdateExample(uuid, resourceKind, property, resourceKindProperty),
-        curlHeader: curlHeader(resourceKind, resourceKindProperty),
-        curlExample: curlExample(uuid, resourcePrefix, property, resourceKind, resourceKindProperty),
+        uuid: args.uuid,
+        user: args.user,
+        metadata: args.metadata,
+        apiResponse: args.apiResponseKind(args.data),
+        pythonHeader: pythonHeader(args.resourceKind),
+        pythonExample: pythonExample(args.uuid, args.resourcePrefix),
+        cliGetHeader: cliGetHeader(args.resourceKind),
+        cliGetExample: cliGetExample(args.uuid, args.resourceKind),
+        cliUpdateHeader: cliUpdateHeader(args.resourceKind, args.resourceKindProperty),
+        cliUpdateExample: cliUpdateExample(args.uuid, args.resourceKind, args.property, args.resourceKindProperty),
+        curlHeader: curlHeader(args.resourceKind, args.resourceKindProperty),
+        curlExample: curlExample(args.uuid, args.resourcePrefix, args.property, args.resourceKind, args.resourceKindProperty),
     };
 };
 

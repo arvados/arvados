@@ -32,9 +32,9 @@ export const openRepositoriesSampleGitDialog = () =>
         dispatch(dialogActions.OPEN_DIALOG({ id: REPOSITORIES_SAMPLE_GIT_DIALOG, data: { uuidPrefix } }));
     };
 
-export const openRepositoryAttributes = (index: number) =>
+export const openRepositoryAttributes = (uuid: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const repositoryData = getState().repositories.items[index];
+        const repositoryData = getState().repositories.items.find(it => it.uuid === uuid);
         dispatch(dialogActions.OPEN_DIALOG({ id: REPOSITORY_ATTRIBUTES_DIALOG, data: { repositoryData } }));
     };
 

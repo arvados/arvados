@@ -13,7 +13,7 @@ import { compose, Dispatch } from 'redux';
 import { saveRequestedDate, loadVirtualMachinesData } from '~/store/virtual-machines/virtual-machines-actions';
 import { RootState } from '~/store/store';
 import { ListResults } from '~/services/common-service/common-resource-service';
-import { HelpIcon, MoreOptionsIcon, AddIcon } from '~/components/icon/icon';
+import { HelpIcon, MoreOptionsIcon } from '~/components/icon/icon';
 import { VirtualMachineLogins, VirtualMachinesResource } from '~/models/virtual-machines';
 import { Routes } from '~/routes/routes';
 import { openVirtualMachinesContextMenu } from '~/store/context-menu/context-menu-actions';
@@ -80,8 +80,8 @@ const mapStateToProps = ({ virtualMachines, auth }: RootState) => {
 const mapDispatchToProps = (dispatch: Dispatch): Pick<VirtualMachinesPanelActionProps, 'loadVirtualMachinesData' | 'saveRequestedDate' | 'onOptionsMenuOpen'> => ({
     saveRequestedDate: () => dispatch<any>(saveRequestedDate()),
     loadVirtualMachinesData: () => dispatch<any>(loadVirtualMachinesData()),
-    onOptionsMenuOpen: (event, index, virtualMachine) => {
-        dispatch<any>(openVirtualMachinesContextMenu(event, index, virtualMachine));
+    onOptionsMenuOpen: (event, virtualMachine) => {
+        dispatch<any>(openVirtualMachinesContextMenu(event, virtualMachine));
     },
 });
 
@@ -96,7 +96,7 @@ interface VirtualMachinesPanelDataProps {
 interface VirtualMachinesPanelActionProps {
     saveRequestedDate: () => void;
     loadVirtualMachinesData: () => string;
-    onOptionsMenuOpen: (event: React.MouseEvent<HTMLElement>, index: number, virtualMachine: VirtualMachinesResource) => void;
+    onOptionsMenuOpen: (event: React.MouseEvent<HTMLElement>, virtualMachine: VirtualMachinesResource) => void;
 }
 
 type VirtualMachineProps = VirtualMachinesPanelActionProps & VirtualMachinesPanelDataProps & WithStyles<CssRules>;
@@ -217,7 +217,7 @@ const adminVirtualMachinesTable = (props: VirtualMachineProps) =>
                     <TableCell>["{props.logins.items[0].username}"]</TableCell>
                     <TableCell className={props.classes.moreOptions}>
                         <Tooltip title="More options" disableFocusListener>
-                            <IconButton onClick={event => props.onOptionsMenuOpen(event, index, it)} className={props.classes.moreOptionsButton}>
+                            <IconButton onClick={event => props.onOptionsMenuOpen(event, it)} className={props.classes.moreOptionsButton}>
                                 <MoreOptionsIcon />
                             </IconButton>
                         </Tooltip>

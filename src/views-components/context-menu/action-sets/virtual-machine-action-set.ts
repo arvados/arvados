@@ -10,14 +10,14 @@ import { openVirtualMachineAttributes, openRemoveVirtualMachineDialog } from "~/
 export const virtualMachineActionSet: ContextMenuActionSet = [[{
     name: "Attributes",
     icon: AttributesIcon,
-    execute: (dispatch, { index }) => {
-        dispatch<any>(openVirtualMachineAttributes(index!));
+    execute: (dispatch, { uuid }) => {
+        dispatch<any>(openVirtualMachineAttributes(uuid));
     }
 }, {
     name: "Advanced",
     icon: AdvancedIcon,
-    execute: (dispatch, { uuid, index }) => {
-        dispatch<any>(openAdvancedTabDialog(uuid, index));
+    execute: (dispatch, { uuid }) => {
+        dispatch<any>(openAdvancedTabDialog(uuid));
     }
 }, {
     name: "Remove",

@@ -33,9 +33,9 @@ export const openVirtualMachines = () =>
         dispatch<any>(navigateToVirtualMachines);
     };
 
-export const openVirtualMachineAttributes = (index: number) =>
+export const openVirtualMachineAttributes = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const virtualMachineData = getState().virtualMachines.virtualMachines.items[index];
+        const virtualMachineData = getState().virtualMachines.virtualMachines.items.find(it => it.uuid === uuid);
         dispatch(dialogActions.OPEN_DIALOG({ id: VIRTUAL_MACHINE_ATTRIBUTES_DIALOG, data: { virtualMachineData } }));
     };
 

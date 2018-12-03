@@ -10,14 +10,14 @@ import { openAdvancedTabDialog } from '~/store/advanced-tab/advanced-tab';
 export const sshKeyActionSet: ContextMenuActionSet = [[{
     name: "Attributes",
     icon: AttributesIcon,
-    execute: (dispatch, { index }) => {
-        dispatch<any>(openSshKeyAttributesDialog(index!));
+    execute: (dispatch, { uuid }) => {
+        dispatch<any>(openSshKeyAttributesDialog(uuid));
     }
 }, {
     name: "Advanced",
     icon: AdvancedIcon,
-    execute: (dispatch, { uuid, index }) => {
-        dispatch<any>(openAdvancedTabDialog(uuid, index));
+    execute: (dispatch, { uuid }) => {
+        dispatch<any>(openAdvancedTabDialog(uuid));
     }
 }, {
     name: "Remove",
