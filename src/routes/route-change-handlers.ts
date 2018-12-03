@@ -4,10 +4,8 @@
 
 import { History, Location } from 'history';
 import { RootStore } from '~/store/store';
-import { matchProcessRoute, matchProcessLogRoute, matchProjectRoute, matchCollectionRoute, matchFavoritesRoute, matchTrashRoute, matchRootRoute, matchSharedWithMeRoute, matchRunProcessRoute, matchWorkflowRoute, matchSearchResultsRoute, matchSshKeysRoute, matchRepositoriesRoute, matchMyAccountRoute } from './routes';
-import { loadProject, loadCollection, loadFavorites, loadTrash, loadProcess, loadProcessLog, loadSshKeys, loadRepositories, loadMyAccount } from '~/store/workbench/workbench-actions';
-import { matchProcessRoute, matchProcessLogRoute, matchProjectRoute, matchCollectionRoute, matchFavoritesRoute, matchTrashRoute, matchRootRoute, matchSharedWithMeRoute, matchRunProcessRoute, matchWorkflowRoute, matchSearchResultsRoute, matchSshKeysRoute, matchRepositoriesRoute, matchVirtualMachineRoute } from './routes';
-import { loadProject, loadCollection, loadFavorites, loadTrash, loadProcess, loadProcessLog, loadSshKeys, loadRepositories, loadVirtualMachines } from '~/store/workbench/workbench-actions';
+import { matchProcessRoute, matchProcessLogRoute, matchProjectRoute, matchCollectionRoute, matchFavoritesRoute, matchTrashRoute, matchRootRoute, matchSharedWithMeRoute, matchRunProcessRoute, matchWorkflowRoute, matchSearchResultsRoute, matchSshKeysRoute, matchRepositoriesRoute, matchMyAccountRoute, matchVirtualMachineRoute } from './routes';
+import { loadProject, loadCollection, loadFavorites, loadTrash, loadProcess, loadProcessLog, loadSshKeys, loadRepositories, loadMyAccount, loadVirtualMachines } from '~/store/workbench/workbench-actions';
 import { navigateToRootProject } from '~/store/navigation/navigation-action';
 import { loadSharedWithMe, loadRunProcess, loadWorkflow, loadSearchResults } from '~//store/workbench/workbench-actions';
 

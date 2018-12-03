@@ -3,7 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { StyleRulesCallback, WithStyles, withStyles, Card, CardContent, TextField, Button, Typography, Grid, Table, TableHead, TableRow, TableCell, TableBody, Tooltip, IconButton } from '@material-ui/core';
+import { Field, InjectedFormProps } from "redux-form";
+import { TextField } from "~/components/text-field/text-field";
+import { StyleRulesCallback, WithStyles, withStyles, Card, CardContent, Button, Typography, Grid, Table, TableHead, TableRow, TableCell, TableBody, Tooltip, IconButton } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { User } from "~/models/user";
 
@@ -15,7 +17,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         overflow: 'auto'
     },
     gridItem: {
-        minHeight: 45,
+        height: 45,
         marginBottom: 20
     },
     title: {
@@ -30,7 +32,9 @@ export interface MyAccountPanelRootDataProps {
     user?: User;
 }
 
-type MyAccountPanelRootProps = MyAccountPanelRootActionProps & MyAccountPanelRootDataProps & WithStyles<CssRules>;
+export const MY_ACCOUNT_FORM = 'myAccountForm';
+
+type MyAccountPanelRootProps = InjectedFormProps<MyAccountPanelRootActionProps> & MyAccountPanelRootDataProps & WithStyles<CssRules>;
 
 export const MyAccountPanelRoot = withStyles(styles)(
     ({ classes, user }: MyAccountPanelRootProps) => {
@@ -41,75 +45,75 @@ export const MyAccountPanelRoot = withStyles(styles)(
                 <Grid container direction="row" spacing={24}>
                     <Grid item xs={6}>
                         <Grid item className={classes.gridItem}>
-                            <TextField
+                            <Field
                                 label="E-mail"
                                 name="email"
-                                fullWidth
+                                component={TextField}
                                 value={user!.email}
                                 disabled
                             />
                         </Grid>
                         <Grid item className={classes.gridItem}>
-                            <TextField
+                            <Field
                                 label="First name"
                                 name="firstName"
-                                fullWidth
+                                component={TextField}
                                 value={user!.firstName}
                                 disabled
                             />
                         </Grid>
                         <Grid item className={classes.gridItem}>
-                            <TextField
+                            <Field
                                 label="Identity URL"
                                 name="identityUrl"
-                                fullWidth
+                                component={TextField}
                                 value={user!.identityUrl}
                                 disabled
                             />
                         </Grid>
                         <Grid item className={classes.gridItem}>
-                            <TextField
+                            <Field
                                 label="Organization"
                                 name="organization"
                                 value={user!.prefs.profile!.organization}
-                                fullWidth
+                                component={TextField}
                             />
                         </Grid>
                         <Grid item className={classes.gridItem}>
-                            <TextField
+                            <Field
                                 label="Website"
                                 name="website"
                                 value={user!.prefs.profile!.website_url}
-                                fullWidth
+                                component={TextField}
                             />
                         </Grid>
                         <Grid item className={classes.gridItem}>
-                            <TextField
+                            <Field
                                 label="Role"
                                 name="role"
                                 value={user!.prefs.profile!.role}
-                                fullWidth
+                                component={TextField}
                             />
                         </Grid>
                     </Grid>
                     <Grid item xs={6}>
                         <Grid item className={classes.gridItem} />
                         <Grid item className={classes.gridItem}>
-                            <TextField
+                            <Field
                                 label="Last name"
                                 name="lastName"
-                                fullWidth
+                                component={TextField}
                                 value={user!.lastName}
                                 disabled
                             />
                         </Grid>
                         <Grid item className={classes.gridItem} />
                         <Grid item className={classes.gridItem}>
-                            <TextField
+                            <Field
                                 label="E-mail at Organization"
                                 name="organizationEmail"
                                 value={user!.prefs.profile!.organization_email}
-                                fullWidth
+                                component={TextField}
                             />
                         </Grid>
                     </Grid>
