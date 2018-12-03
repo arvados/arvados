@@ -28,6 +28,8 @@ from schema_salad.ref_resolver import DefaultFetcher
 
 logger = logging.getLogger('arvados.cwl-runner')
 
+pdh_size = re.compile(r'([0-9a-f]{32})\+(\d+)(\+\S+)*')
+
 class CollectionCache(object):
     def __init__(self, api_client, keep_client, num_retries,
                  cap=256*1024*1024,
@@ -41,20 +43,26 @@ class CollectionCache(object):
         self.cap = cap
         self.min_entries = min_entries
 
-    def cap_cache(self):
-        if self.total > self.cap:
-            # ordered list iterates from oldest to newest
-            for pdh, v in self.collections.items():
-                if self.total < self.cap or len(self.collections) < self.min_entries:
-                    break
-                # cut it loose
-                logger.debug("Evicting collection reader %s from cache", pdh)
-                del self.collections[pdh]
-                self.total -= v[1]
+    def set_cap(self, cap):
+        self.cap = cap
+
+    def cap_cache(self, required):
+        # ordered dict iterates from oldest to newest
+        for pdh, v in self.collections.items():
+            available = self.cap - self.total
+            if available >= required or len(self.collections) < self.min_entries:
+                return
+            # cut it loose
+            logger.debug("Evicting collection reader %s from cache (cap %s total %s required %s)", pdh, self.cap, self.total, required)
+            del self.collections[pdh]
+            self.total -= v[1]
 
     def get(self, pdh):
         with self.lock:
             if pdh not in self.collections:
+                m = pdh_size.match(pdh)
+                if m:
+                    self.cap_cache(int(m.group(2)) * 128)
                 logger.debug("Creating collection reader for %s", pdh)
                 cr = arvados.collection.CollectionReader(pdh, api_client=self.api_client,
                                                          keep_client=self.keep_client,
@@ -62,7 +70,6 @@ class CollectionCache(object):
                 sz = len(cr.manifest_text()) * 128
                 self.collections[pdh] = (cr, sz)
                 self.total += sz
-                self.cap_cache()
             else:
                 cr, sz = self.collections[pdh]
                 # bump it to the back

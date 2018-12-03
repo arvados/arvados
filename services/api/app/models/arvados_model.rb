@@ -403,7 +403,7 @@ class ArvadosModel < ActiveRecord::Base
       cast = serialized_attributes[column] ? '::text' : ''
       "coalesce(#{column}#{cast},'')"
     end
-    "to_tsvector('english', #{parts.join(" || ' ' || ")})"
+    "to_tsvector('english', substr(#{parts.join(" || ' ' || ")}, 0, 8000))"
   end
 
   def self.apply_filters query, filters

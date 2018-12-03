@@ -407,7 +407,7 @@ class RunnerContainer(Runner):
             "secret_mounts": secret_mounts,
             "runtime_constraints": {
                 "vcpus": math.ceil(self.submit_runner_cores),
-                "ram": math.ceil(1024*1024 * self.submit_runner_ram),
+                "ram": 1024*1024 * (math.ceil(self.submit_runner_ram) + math.ceil(self.collection_cache_size)),
                 "API": True
             },
             "use_existing": self.enable_reuse,
@@ -441,6 +441,7 @@ class RunnerContainer(Runner):
         # --eval-timeout is the timeout for javascript invocation
         # --parallel-task-count is the number of threads to use for job submission
         # --enable/disable-reuse sets desired job reuse
+        # --collection-cache-size sets aside memory to store collections
         command = ["arvados-cwl-runner",
                    "--local",
                    "--api=containers",
@@ -448,7 +449,8 @@ class RunnerContainer(Runner):
                    "--disable-validate",
                    "--eval-timeout=%s" % self.arvrunner.eval_timeout,
                    "--thread-count=%s" % self.arvrunner.thread_count,
-                   "--enable-reuse" if self.enable_reuse else "--disable-reuse"]
+                   "--enable-reuse" if self.enable_reuse else "--disable-reuse",
+                   "--collection-cache-size=%s" % self.collection_cache_size]
 
         if self.output_name:
             command.append("--output-name=" + self.output_name)

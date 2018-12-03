@@ -30,7 +30,7 @@ class EggInfoFromGit(egg_info):
     """
     def git_latest_tag(self):
         gittags = subprocess.check_output(['git', 'tag', '-l']).split()
-        gittags.sort(key=lambda s: map(int, s.split('.')),reverse=True)
+        gittags.sort(key=lambda s: [int(u) for u in s.split(b'.')],reverse=True)
         return str(next(iter(gittags)).decode('utf-8'))
 
     def git_timestamp_tag(self):
