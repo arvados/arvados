@@ -20,11 +20,12 @@ export const FileThumbnail =
 
 type ImageFileThumbnailCssRules = 'thumbnail';
 
-const imageFileThumbnailStyle = withStyles<ImageFileThumbnailCssRules>({
+const imageFileThumbnailStyle = withStyles<ImageFileThumbnailCssRules>(theme => ({
     thumbnail: {
         maxWidth: 250,
+        margin: `${theme.spacing.unit}px 0`,
     }
-});
+}));
 
 const ImageFileThumbnail = imageFileThumbnailStyle(
     ({ classes, file }: WithStyles<ImageFileThumbnailCssRules> & FileThumbnailProps) =>
