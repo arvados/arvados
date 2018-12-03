@@ -10,11 +10,11 @@ import { ServiceRepository } from "~/services/services";
 import { KeepServiceResource } from '~/models/keep-services';
 import { dialogActions } from '~/store/dialog/dialog-actions';
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
+import { navigateToRootProject } from '~/store/navigation/navigation-action';
 
 export const keepServicesActions = unionize({
     SET_KEEP_SERVICES: ofType<KeepServiceResource[]>(),
-    REMOVE_KEEP_SERVICE: ofType<string>(),
-    RESET_KEEP_SERVICES: ofType<{}>()
+    REMOVE_KEEP_SERVICE: ofType<string>()
 });
 
 export type KeepServicesActions = UnionOf<typeof keepServicesActions>;
@@ -22,15 +22,20 @@ export type KeepServicesActions = UnionOf<typeof keepServicesActions>;
 export const KEEP_SERVICE_REMOVE_DIALOG = 'keepServiceRemoveDialog';
 export const KEEP_SERVICE_ATTRIBUTES_DIALOG = 'keepServiceAttributesDialog';
 
-// ToDo: access denied for loading keepService and reset data and redirect
 export const loadKeepServicesPanel = () =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        try {
-            dispatch(setBreadcrumbs([{ label: 'Keep Services' }]));
-            const response = await services.keepService.list();
-            dispatch(keepServicesActions.SET_KEEP_SERVICES(response.items));
-        } catch (e) {
-            return;
+        const user = getState().auth.user;
+        if(user && user.isAdmin) {
+            try {
+                dispatch(setBreadcrumbs([{ label: 'Keep Services' }]));
+                const response = await services.keepService.list();
+                dispatch(keepServicesActions.SET_KEEP_SERVICES(response.items));
+            } catch (e) {
+                return;
+            }
+        } else {
+            dispatch(navigateToRootProject);
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "You don't have permissions to view this page", hideDuration: 2000 }));
         }
     };
 
@@ -53,7 +58,6 @@ export const openKeepServiceRemoveDialog = (uuid: string) =>
         }));
     };
 
-// ToDo: access denied for removing keepService and reset data and redirect
 export const removeKeepService = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...' }));

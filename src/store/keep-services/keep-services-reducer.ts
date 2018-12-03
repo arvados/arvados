@@ -13,6 +13,5 @@ export const keepServicesReducer = (state: KeepSericesState = initialState, acti
     keepServicesActions.match(action, {
         SET_KEEP_SERVICES: items => items,
         REMOVE_KEEP_SERVICE: (uuid: string) => state.filter((keepService) => keepService.uuid !== uuid),
-        RESET_KEEP_SERVICES: () => [],
         default: () => state
     });
