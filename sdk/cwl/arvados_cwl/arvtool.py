@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from cwltool.command_line_tool import CommandLineTool
+from cwltool.command_line_tool import CommandLineTool, ExpressionTool
 from cwltool.builder import Builder
 from .arvjob import ArvadosJob
 from .arvcontainer import ArvadosContainer
@@ -105,3 +105,15 @@ class ArvadosCommandTool(CommandLineTool):
             runtimeContext.tmpdir = "$(task.tmpdir)"
             runtimeContext.docker_tmpdir = "$(task.tmpdir)"
         return super(ArvadosCommandTool, self).job(joborder, output_callback, runtimeContext)
+
+class ArvadosExpressionTool(ExpressionTool):
+    def __init__(self, arvrunner, toolpath_object, loadingContext):
+        super(ArvadosExpressionTool, self).__init__(toolpath_object, loadingContext)
+        self.arvrunner = arvrunner
+
+    def job(self,
+            job_order,         # type: Mapping[Text, Text]
+            output_callback,  # type: Callable[[Any, Any], Any]
+            runtimeContext     # type: RuntimeContext
+           ):
+        return super(ArvadosExpressionTool, self).job(job_order, self.arvrunner.get_wrapped_callback(output_callback), runtimeContext)

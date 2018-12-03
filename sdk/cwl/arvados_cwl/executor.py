@@ -27,7 +27,7 @@ import arvados_cwl.util
 from .arvcontainer import RunnerContainer
 from .arvjob import RunnerJob, RunnerTemplate
 from .runner import Runner, upload_docker, upload_job_order, upload_workflow_deps
-from .arvtool import ArvadosCommandTool, validate_cluster_target
+from .arvtool import ArvadosCommandTool, validate_cluster_target, ArvadosExpressionTool
 from .arvworkflow import ArvadosWorkflow, upload_workflow
 from .fsaccess import CollectionFsAccess, CollectionFetcher, collectionResolver, CollectionCache, pdh_size
 from .perf import Perf
@@ -195,8 +195,10 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
             return ArvadosCommandTool(self, toolpath_object, loadingContext)
         elif "class" in toolpath_object and toolpath_object["class"] == "Workflow":
             return ArvadosWorkflow(self, toolpath_object, loadingContext)
+        elif "class" in toolpath_object and toolpath_object["class"] == "ExpressionTool":
+            return ArvadosExpressionTool(self, toolpath_object, loadingContext)
         else:
-            return cwltool.workflow.default_make_tool(toolpath_object, loadingContext)
+            raise Exception("Unknown tool %s" % toolpath_object.get("class"))
 
     def output_callback(self, out, processStatus):
         with self.workflow_eval_lock:
