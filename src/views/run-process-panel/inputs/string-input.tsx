@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
+import { memoize } from 'lodash/fp';
 import { isRequiredInput, StringCommandInputParameter } from '~/models/workflow';
 import { Field } from 'redux-form';
 import { require } from '~/validators/require';
@@ -17,11 +18,14 @@ export const StringInput = ({ input }: StringInputProps) =>
         name={input.id}
         commandInput={input}
         component={StringInputComponent}
-        validate={[
-            isRequiredInput(input)
-                ? require
-                : () => undefined,
-        ]} />;
+        validate={getValidation(input)} />;
+
+const getValidation = memoize(
+    (input: StringCommandInputParameter) => ([
+        isRequiredInput(input)
+            ? require
+            : () => undefined,
+    ]));
 
 const StringInputComponent = (props: GenericInputProps) =>
     <GenericInput

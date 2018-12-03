@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
+import { memoize } from 'lodash/fp';
 import { IntCommandInputParameter, isRequiredInput } from '~/models/workflow';
 import { Field } from 'redux-form';
 import { isInteger } from '~/validators/is-integer';
@@ -17,13 +18,20 @@ export const IntInput = ({ input }: IntInputProps) =>
         name={input.id}
         commandInput={input}
         component={InputComponent}
-        parse={value => parseInt(value, 10)}
-        format={value => isNaN(value) ? '' : JSON.stringify(value)}
-        validate={[
-            isRequiredInput(input)
-                ? isInteger
-                : () => undefined,
-        ]} />;
+        parse={parse}
+        format={format}
+        validate={getValidation(input)} />;
+
+const parse = (value: any) => parseInt(value, 10);
+
+const format = (value: any) => isNaN(value) ? '' : JSON.stringify(value);
+
+const getValidation = memoize(
+    (input: IntCommandInputParameter) => ([
+        isRequiredInput(input)
+            ? isInteger
+            : () => undefined,
+    ]));
 
 const InputComponent = (props: GenericInputProps) =>
     <GenericInput
