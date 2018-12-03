@@ -15,6 +15,7 @@ import { extractUuidKind, ResourceKind } from '~/models/resource';
 import { Process } from '~/store/processes/process';
 import { RepositoryResource } from '~/models/repositories';
 import { SshKeyResource } from '~/models/ssh-key';
+import { KeepServiceResource } from '../../models/keep-services';
 
 export const contextMenuActions = unionize({
     OPEN_CONTEXT_MENU: ofType<{ position: ContextMenuPosition, resource: ContextMenuResource }>(),
@@ -33,8 +34,9 @@ export type ContextMenuResource = {
     isTrashed?: boolean;
     index?: number
 };
-export const isKeyboardClick = (event: React.MouseEvent<HTMLElement>) =>
-    event.nativeEvent.detail === 0;
+
+export const isKeyboardClick = (event: React.MouseEvent<HTMLElement>) => event.nativeEvent.detail === 0;
+
 export const openContextMenu = (event: React.MouseEvent<HTMLElement>, resource: ContextMenuResource) =>
     (dispatch: Dispatch) => {
         event.preventDefault();
@@ -82,6 +84,18 @@ export const openSshKeyContextMenu = (event: React.MouseEvent<HTMLElement>, inde
             ownerUuid: sshKey.ownerUuid,
             kind: ResourceKind.SSH_KEY,
             menuKind: ContextMenuKind.SSH_KEY,
+            index
+        }));
+    };
+
+export const openKeepServiceContextMenu = (event: React.MouseEvent<HTMLElement>, index: number, keepService: KeepServiceResource) =>
+    (dispatch: Dispatch) => {
+        dispatch<any>(openContextMenu(event, {
+            name: '',
+            uuid: keepService.uuid,
+            ownerUuid: keepService.ownerUuid,
+            kind: ResourceKind.KEEP_SERVICE,
+            menuKind: ContextMenuKind.KEEP_SERVICE,
             index
         }));
     };

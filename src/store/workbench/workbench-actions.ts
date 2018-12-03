@@ -56,6 +56,7 @@ import { searchResultsPanelActions, loadSearchResultsPanel } from '~/store/searc
 import { searchResultsPanelColumns } from '~/views/search-results-panel/search-results-panel-view';
 import { loadVirtualMachinesPanel } from '~/store/virtual-machines/virtual-machines-actions';
 import { loadRepositoriesPanel } from '~/store/repositories/repositories-actions';
+import { loadKeepServicesPanel } from '~/store/keep-services/keep-services-actions';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -408,6 +409,11 @@ export const loadRepositories = handleFirstTimeLoad(
 export const loadSshKeys = handleFirstTimeLoad(
     async (dispatch: Dispatch<any>) => {
         await dispatch(loadSshKeysPanel());
+    });
+
+export const loadKeepServices = handleFirstTimeLoad(
+    async (dispatch: Dispatch<any>) => {
+        await dispatch(loadKeepServicesPanel());
     });
 
 const finishLoadingProject = (project: GroupContentsResource | string) =>

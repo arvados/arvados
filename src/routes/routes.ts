@@ -22,7 +22,8 @@ export const Routes = {
     VIRTUAL_MACHINES: '/virtual-machines',
     WORKFLOWS: '/workflows',
     SEARCH_RESULTS: '/search-results',
-    SSH_KEYS: `/ssh-keys`
+    SSH_KEYS: `/ssh-keys`,
+    KEEP_SERVICES: `/keep-services`
 };
 
 export const getResourceUrl = (uuid: string) => {
@@ -88,3 +89,6 @@ export const matchRepositoriesRoute = (route: string) =>
     
 export const matchSshKeysRoute = (route: string) =>
     matchPath(route, { path: Routes.SSH_KEYS });
+
+export const matchKeepServicesRoute = (route: string) =>
+    matchPath(route, { path: Routes.KEEP_SERVICES });
