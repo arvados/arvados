@@ -71,5 +71,6 @@ export enum ContextMenuKind {
     PROCESS_LOGS = "ProcessLogs",
     REPOSITORY = "Repository",
     SSH_KEY = "SshKey",
-    VIRTUAL_MACHINE = "VirtualMachine"
+    VIRTUAL_MACHINE = "VirtualMachine",
+    KEEP_SERVICE = "KeepService"
 }

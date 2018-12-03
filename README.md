@@ -45,6 +45,10 @@ Currently this configuration schema is supported:
 }
 ```
 
+#### VOCABULARY_URL
+Local path, or any URL that allows cross-origin requests. See 
+[Vocabulary JSON file example](public/vocabulary-example.json).
+
 ### Licensing
 
 Arvados is Free Software. See COPYING for information about Arvados Free

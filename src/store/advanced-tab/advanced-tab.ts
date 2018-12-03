@@ -20,6 +20,7 @@ import { VirtualMachinesResource } from '~/models/virtual-machines';
 import { UserResource } from '~/models/user';
 import { ListResults } from '~/services/common-service/common-resource-service';
 import { LinkResource } from '~/models/link';
+import { KeepServiceResource } from '~/models/keep-services';
 
 export const ADVANCED_TAB_DIALOG = 'advancedTabDialog';
 
@@ -70,10 +71,16 @@ enum VirtualMachineData {
 enum ResourcePrefix {
     REPOSITORIES = 'repositories',
     AUTORIZED_KEYS = 'authorized_keys',
-    VIRTUAL_MACHINES = 'virtual_machines'
+    VIRTUAL_MACHINES = 'virtual_machines',
+    KEEP_SERVICES = 'keep_services'
 }
 
-type AdvanceResourceKind = CollectionData | ProcessData | ProjectData | RepositoryData | SshKeyData | VirtualMachineData;
+enum KeepServiceData {
+    KEEP_SERVICE = 'keep_services',
+    CREATED_AT = 'created_at'
+}
+
+type AdvanceResourceKind = CollectionData | ProcessData | ProjectData | RepositoryData | SshKeyData | VirtualMachineData | KeepServiceData;
 type AdvanceResourcePrefix = GroupContentsResourcePrefix | ResourcePrefix;
 
 export const openAdvancedTabDialog = (uuid: string) =>
@@ -169,6 +176,21 @@ export const openAdvancedTabDialog = (uuid: string) =>
                     property: dataVirtualMachine.createdAt
                 });
                 dispatch<any>(initAdvancedTabDialog(advanceDataVirtualMachine));
+                break;
+            case ResourceKind.KEEP_SERVICE:
+                const dataKeepService = getState().keepServices.find(it => it.uuid === uuid);
+                const advanceDataKeepService: AdvancedTabDialogData = advancedTabData({
+                    uuid,
+                    metadata: '',
+                    user: '',
+                    apiResponseKind: keepServiceApiResponse,
+                    data: dataKeepService,
+                    resourceKind: KeepServiceData.KEEP_SERVICE,
+                    resourcePrefix: ResourcePrefix.KEEP_SERVICES,
+                    resourceKindProperty: KeepServiceData.CREATED_AT,
+                    property: dataKeepService!.createdAt
+                });
+                dispatch<any>(initAdvancedTabDialog(advanceDataKeepService));
                 break;
             default:
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Could not open advanced tab for this resource.", hideDuration: 2000, kind: SnackbarKind.ERROR }));
@@ -379,12 +401,34 @@ const sshKeyApiResponse = (apiResponse: SshKeyResource) => {
 
 const virtualMachineApiResponse = (apiResponse: VirtualMachinesResource) => {
     const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, hostname } = apiResponse;
+    const response = `"hostname": ${stringify(hostname)},
+"uuid": "${uuid}",
+"owner_uuid": "${ownerUuid}",
+"modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
+"modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
+"modified_at": ${stringify(modifiedAt)},
+"modified_at": ${stringify(modifiedAt)},
+"created_at": "${createdAt}"`;
+
+    return response;
+};
+
+const keepServiceApiResponse = (apiResponse: KeepServiceResource) => {
+    const {
+        uuid, readOnly, serviceHost, servicePort, serviceSslFlag, serviceType,
+        ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid
+    } = apiResponse;
     const response = `"uuid": "${uuid}",
 "owner_uuid": "${ownerUuid}",
 "modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
 "modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
 "modified_at": ${stringify(modifiedAt)},
-"hostname": ${stringify(hostname)},
-"created_at": "${createdAt}"`;
+"service_host": "${serviceHost}",
+"service_port": "${servicePort}",
+"service_ssl_flag": "${stringify(serviceSslFlag)}",
+"service_type": "${serviceType}",
+"created_at": "${createdAt}",
+"read_only": "${stringify(readOnly)}"`;
+
     return response;
 };

@@ -43,7 +43,7 @@ describe('auth-actions', () => {
         localStorage.setItem(USER_LAST_NAME_KEY, "Doe");
         localStorage.setItem(USER_UUID_KEY, "uuid");
         localStorage.setItem(USER_OWNER_UUID_KEY, "ownerUuid");
-        localStorage.setItem(USER_IS_ADMIN, JSON.stringify(false));
+        localStorage.setItem(USER_IS_ADMIN, JSON.stringify("false"));
 
         store.dispatch(initAuth());
 
@@ -56,7 +56,7 @@ describe('auth-actions', () => {
                 lastName: "Doe",
                 uuid: "uuid",
                 ownerUuid: "ownerUuid",
-                isAdmin: false
+                isAdmin: true
             }
         });
     });

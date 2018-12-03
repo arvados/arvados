@@ -52,7 +52,7 @@ export class AuthService {
     }
 
     public getIsAdmin(): boolean {
-        return !!localStorage.getItem(USER_IS_ADMIN);
+        return localStorage.getItem(USER_IS_ADMIN) === 'true';
     }
 
     public getUser(): User | undefined {

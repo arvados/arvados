@@ -51,13 +51,16 @@ import { ProcessInputDialog } from '~/views-components/process-input-dialog/proc
 import { VirtualMachinePanel } from '~/views/virtual-machine-panel/virtual-machine-panel';
 import { ProjectPropertiesDialog } from '~/views-components/project-properties-dialog/project-properties-dialog';
 import { RepositoriesPanel } from '~/views/repositories-panel/repositories-panel';
+import { KeepServicePanel } from '~/views/keep-service-panel/keep-service-panel';
 import { RepositoriesSampleGitDialog } from '~/views-components/repositories-sample-git-dialog/repositories-sample-git-dialog';
 import { RepositoryAttributesDialog } from '~/views-components/repository-attributes-dialog/repository-attributes-dialog';
 import { CreateRepositoryDialog } from '~/views-components/dialog-forms/create-repository-dialog';
 import { RemoveRepositoryDialog } from '~/views-components/repository-remove-dialog/repository-remove-dialog';
 import { CreateSshKeyDialog } from '~/views-components/dialog-forms/create-ssh-key-dialog';
 import { PublicKeyDialog } from '~/views-components/ssh-keys-dialog/public-key-dialog';
+import { RemoveKeepServiceDialog } from '~/views-components/keep-services-dialog/remove-dialog';
 import { RemoveSshKeyDialog } from '~/views-components/ssh-keys-dialog/remove-dialog';
+import { AttributesKeepServiceDialog } from '~/views-components/keep-services-dialog/attributes-dialog';
 import { AttributesSshKeyDialog } from '~/views-components/ssh-keys-dialog/attributes-dialog';
 import { VirtualMachineAttributesDialog } from '~/views-components/virtual-machines-dialog/attributes-dialog';
 import { RemoveVirtualMachineDialog } from '~/views-components/virtual-machines-dialog/remove-dialog';
@@ -133,6 +136,7 @@ export const WorkbenchPanel =
                                 <Route path={Routes.VIRTUAL_MACHINES} component={VirtualMachinePanel} />
                                 <Route path={Routes.REPOSITORIES} component={RepositoriesPanel} />
                                 <Route path={Routes.SSH_KEYS} component={SshKeyPanel} />
+                                <Route path={Routes.KEEP_SERVICES} component={KeepServicePanel} />
                             </Switch>
                         </Grid>
                     </Grid>
@@ -142,6 +146,7 @@ export const WorkbenchPanel =
                 <DetailsPanel />
             </Grid>
             <AdvancedTabDialog />
+            <AttributesKeepServiceDialog />
             <AttributesSshKeyDialog />
             <ChangeWorkflowDialog />
             <ContextMenu />
@@ -163,6 +168,7 @@ export const WorkbenchPanel =
             <ProcessCommandDialog />
             <ProcessInputDialog />
             <ProjectPropertiesDialog />
+            <RemoveKeepServiceDialog />
             <RemoveProcessDialog />
             <RemoveRepositoryDialog />
             <RemoveSshKeyDialog />

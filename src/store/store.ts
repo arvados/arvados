@@ -45,6 +45,7 @@ import { SearchResultsMiddlewareService } from './search-results-panel/search-re
 import { resourcesDataReducer } from "~/store/resources-data/resources-data-reducer";
 import { virtualMachinesReducer } from "~/store/virtual-machines/virtual-machines-reducer";
 import { repositoriesReducer } from '~/store/repositories/repositories-reducer';
+import { keepServicesReducer } from '~/store/keep-services/keep-services-reducer';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -115,5 +116,6 @@ const createRootReducer = (services: ServiceRepository) => combineReducers({
     appInfo: appInfoReducer,
     searchBar: searchBarReducer,
     virtualMachines: virtualMachinesReducer,
-    repositories: repositoriesReducer
+    repositories: repositoriesReducer,
+    keepServices: keepServicesReducer
 });
