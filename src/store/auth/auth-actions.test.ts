@@ -56,7 +56,7 @@ describe('auth-actions', () => {
                 lastName: "Doe",
                 uuid: "uuid",
                 ownerUuid: "ownerUuid",
-                isAdmin: true
+                isAdmin: false
             }
         });
     });
