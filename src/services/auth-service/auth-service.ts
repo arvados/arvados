@@ -4,7 +4,7 @@
 
 import { User } from "~/models/user";
 import { AxiosInstance } from "axios";
-import { ApiActions, ProgressFn } from "~/services/api/api-actions";
+import { ApiActions } from "~/services/api/api-actions";
 import * as uuid from "uuid/v4";
 
 export const API_TOKEN_KEY = 'apiToken';
@@ -61,7 +61,7 @@ export class AuthService {
         const lastName = localStorage.getItem(USER_LAST_NAME_KEY);
         const uuid = this.getUuid();
         const ownerUuid = this.getOwnerUuid();
-        const isAdmin = this.getIsAdmin();
+        const isAdmin = this.getIsAdmin();   
 
         return email && firstName && lastName && uuid && ownerUuid
             ? { email, firstName, lastName, uuid, ownerUuid, isAdmin }

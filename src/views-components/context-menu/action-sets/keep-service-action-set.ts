@@ -10,14 +10,14 @@ import { AdvancedIcon, RemoveIcon, AttributesIcon } from "~/components/icon/icon
 export const keepServiceActionSet: ContextMenuActionSet = [[{
     name: "Attributes",
     icon: AttributesIcon,
-    execute: (dispatch, { index }) => {
-        dispatch<any>(openKeepServiceAttributesDialog(index!));
+    execute: (dispatch, { uuid }) => {
+        dispatch<any>(openKeepServiceAttributesDialog(uuid));
     }
 }, {
     name: "Advanced",
     icon: AdvancedIcon,
-    execute: (dispatch, { uuid, index }) => {
-        dispatch<any>(openAdvancedTabDialog(uuid, index));
+    execute: (dispatch, { uuid }) => {
+        dispatch<any>(openAdvancedTabDialog(uuid));
     }
 }, {
     name: "Remove",

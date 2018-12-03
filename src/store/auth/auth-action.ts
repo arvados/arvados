@@ -94,9 +94,9 @@ export const openSshKeyCreateDialog = () => dialogActions.OPEN_DIALOG({ id: SSH_
 export const openPublicKeyDialog = (name: string, publicKey: string) =>
     dialogActions.OPEN_DIALOG({ id: SSH_KEY_PUBLIC_KEY_DIALOG, data: { name, publicKey } });
 
-export const openSshKeyAttributesDialog = (index: number) =>
+export const openSshKeyAttributesDialog = (uuid: string) =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        const sshKey = getState().auth.sshKeys[index];
+        const sshKey = getState().auth.sshKeys.find(it => it.uuid === uuid);
         dispatch(dialogActions.OPEN_DIALOG({ id: SSH_KEY_ATTRIBUTES_DIALOG, data: { sshKey } }));
     };
 

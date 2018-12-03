@@ -66,8 +66,8 @@ const mapStateToProps = (state: RootState) => {
 
 const mapDispatchToProps = (dispatch: Dispatch): Pick<RepositoriesActionProps, 'onOptionsMenuOpen' | 'loadRepositories' | 'openRepositoriesSampleGitDialog' | 'openRepositoryCreateDialog'> => ({
     loadRepositories: () => dispatch<any>(loadRepositoriesData()),
-    onOptionsMenuOpen: (event, index, repository) => {
-        dispatch<any>(openRepositoryContextMenu(event, index, repository));
+    onOptionsMenuOpen: (event, repository) => {
+        dispatch<any>(openRepositoryContextMenu(event, repository));
     },
     openRepositoriesSampleGitDialog: () => dispatch<any>(openRepositoriesSampleGitDialog()),
     openRepositoryCreateDialog: () => dispatch<any>(openRepositoryCreateDialog())
@@ -75,7 +75,7 @@ const mapDispatchToProps = (dispatch: Dispatch): Pick<RepositoriesActionProps, '
 
 interface RepositoriesActionProps {
     loadRepositories: () => void;
-    onOptionsMenuOpen: (event: React.MouseEvent<HTMLElement>, index: number, repository: RepositoryResource) => void;
+    onOptionsMenuOpen: (event: React.MouseEvent<HTMLElement>, repository: RepositoryResource) => void;
     openRepositoriesSampleGitDialog: () => void;
     openRepositoryCreateDialog: () => void;
 }
@@ -137,7 +137,7 @@ export const RepositoriesPanel = compose(
                                                 <TableCell className={classes.cloneUrls}>{repository.cloneUrls.join("\n")}</TableCell>
                                                 <TableCell className={classes.moreOptions}>
                                                     <Tooltip title="More options" disableFocusListener>
-                                                        <IconButton onClick={event => onOptionsMenuOpen(event, index, repository)} className={classes.moreOptionsButton}>
+                                                        <IconButton onClick={event => onOptionsMenuOpen(event, repository)} className={classes.moreOptionsButton}>
                                                             <MoreOptionsIcon />
                                                         </IconButton>
                                                     </Tooltip>

@@ -20,8 +20,8 @@ const mapDispatchToProps = (dispatch: Dispatch): SshKeyPanelRootActionProps => (
     openSshKeyCreateDialog: () => {
         dispatch<any>(openSshKeyCreateDialog());
     },
-    openRowOptions: (event, index, sshKey) => {
-        dispatch<any>(openSshKeyContextMenu(event, index, sshKey));
+    openRowOptions: (event, sshKey) => {
+        dispatch<any>(openSshKeyContextMenu(event, sshKey));
     },
     openPublicKeyDialog: (name: string, publicKey: string) => {
         dispatch<any>(openPublicKeyDialog(name, publicKey));

@@ -21,8 +21,8 @@ const mapStateToProps = (state: RootState): KeepServicePanelRootDataProps => {
 };
 
 const mapDispatchToProps = (dispatch: Dispatch): KeepServicePanelRootActionProps => ({
-    openRowOptions: (event, index, keepService) => {
-        dispatch<any>(openKeepServiceContextMenu(event, index, keepService));
+    openRowOptions: (event, keepService) => {
+        dispatch<any>(openKeepServiceContextMenu(event, keepService));
     }
 });
 

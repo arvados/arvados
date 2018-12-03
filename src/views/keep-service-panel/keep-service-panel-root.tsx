@@ -23,7 +23,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 export interface KeepServicePanelRootActionProps {
-    openRowOptions: (event: React.MouseEvent<HTMLElement>, index: number, keepService: KeepServiceResource) => void;
+    openRowOptions: (event: React.MouseEvent<HTMLElement>, keepService: KeepServiceResource) => void;
 }
 
 export interface KeepServicePanelRootDataProps {
@@ -72,7 +72,7 @@ export const KeepServicePanelRoot = withStyles(styles)(
                                         <TableCell>{keepService.serviceType}</TableCell>
                                         <TableCell>
                                             <Tooltip title="More options" disableFocusListener>
-                                                <IconButton onClick={event => openRowOptions(event, index, keepService)}>
+                                                <IconButton onClick={event => openRowOptions(event, keepService)}>
                                                     <MoreOptionsIcon />
                                                 </IconButton>
                                             </Tooltip>

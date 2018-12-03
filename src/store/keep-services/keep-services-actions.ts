@@ -39,9 +39,9 @@ export const loadKeepServicesPanel = () =>
         }
     };
 
-export const openKeepServiceAttributesDialog = (index: number) =>
+export const openKeepServiceAttributesDialog = (uuid: string) =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        const keepService = getState().keepServices[index];
+        const keepService = getState().keepServices.find(it => it.uuid === uuid);
         dispatch(dialogActions.OPEN_DIALOG({ id: KEEP_SERVICE_ATTRIBUTES_DIALOG, data: { keepService } }));
     };
 

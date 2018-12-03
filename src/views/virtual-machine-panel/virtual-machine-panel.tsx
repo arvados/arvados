@@ -4,20 +4,21 @@
 
 import * as React from 'react';
 import { connect } from 'react-redux';
-import { Grid, Typography, Button, Card, CardContent, TableBody, TableCell, TableHead, TableRow, Table, Tooltip } from '@material-ui/core';
+import { Grid, Typography, Button, Card, CardContent, TableBody, TableCell, TableHead, TableRow, Table, Tooltip, IconButton } from '@material-ui/core';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { DefaultCodeSnippet } from '~/components/default-code-snippet/default-code-snippet';
 import { Link } from 'react-router-dom';
-import { Dispatch, compose } from 'redux';
+import { compose, Dispatch } from 'redux';
 import { saveRequestedDate, loadVirtualMachinesData } from '~/store/virtual-machines/virtual-machines-actions';
 import { RootState } from '~/store/store';
 import { ListResults } from '~/services/common-service/common-resource-service';
-import { HelpIcon } from '~/components/icon/icon';
-import { VirtualMachinesLoginsResource, VirtualMachinesResource } from '~/models/virtual-machines';
+import { HelpIcon, MoreOptionsIcon } from '~/components/icon/icon';
+import { VirtualMachineLogins, VirtualMachinesResource } from '~/models/virtual-machines';
 import { Routes } from '~/routes/routes';
+import { openVirtualMachinesContextMenu } from '~/store/context-menu/context-menu-actions';
 
-type CssRules = 'button' | 'codeSnippet' | 'link' | 'linkIcon' | 'rightAlign' | 'cardWithoutMachines' | 'icon';
+type CssRules = 'button' | 'codeSnippet' | 'link' | 'linkIcon' | 'rightAlign' | 'cardWithoutMachines' | 'icon' | 'moreOptionsButton' | 'moreOptions';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     button: {
@@ -55,31 +56,47 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     icon: {
         textAlign: "right",
         marginTop: theme.spacing.unit
-    }
+    },
+    moreOptionsButton: {
+        padding: 0
+    },
+    moreOptions: {
+        textAlign: 'right',
+        '&:last-child': {
+            paddingRight: 0
+        }
+    },
 });
 
-const mapStateToProps = ({ virtualMachines }: RootState) => {
+const mapStateToProps = ({ virtualMachines, auth }: RootState) => {
     return {
         requestedDate: virtualMachines.date,
+        isAdmin: auth.user!.isAdmin,
+        logins: virtualMachines.logins,
         ...virtualMachines
     };
 };
 
-const mapDispatchToProps = {
-    saveRequestedDate,
-    loadVirtualMachinesData
-};
+const mapDispatchToProps = (dispatch: Dispatch): Pick<VirtualMachinesPanelActionProps, 'loadVirtualMachinesData' | 'saveRequestedDate' | 'onOptionsMenuOpen'> => ({
+    saveRequestedDate: () => dispatch<any>(saveRequestedDate()),
+    loadVirtualMachinesData: () => dispatch<any>(loadVirtualMachinesData()),
+    onOptionsMenuOpen: (event, virtualMachine) => {
+        dispatch<any>(openVirtualMachinesContextMenu(event, virtualMachine));
+    },
+});
 
 interface VirtualMachinesPanelDataProps {
     requestedDate: string;
     virtualMachines: ListResults<any>;
-    logins: VirtualMachinesLoginsResource[];
+    logins: VirtualMachineLogins;
     links: ListResults<any>;
+    isAdmin: boolean;
 }
 
 interface VirtualMachinesPanelActionProps {
     saveRequestedDate: () => void;
     loadVirtualMachinesData: () => string;
+    onOptionsMenuOpen: (event: React.MouseEvent<HTMLElement>, virtualMachine: VirtualMachinesResource) => void;
 }
 
 type VirtualMachineProps = VirtualMachinesPanelActionProps & VirtualMachinesPanelDataProps & WithStyles<CssRules>;
@@ -93,12 +110,12 @@ export const VirtualMachinePanel = compose(
             }
 
             render() {
-                const { virtualMachines, links } = this.props;
+                const { virtualMachines, links, isAdmin } = this.props;
                 return (
                     <Grid container spacing={16}>
-                        {virtualMachines.itemsAvailable === 0 && <CardContentWithNoVirtualMachines {...this.props} />}
+                        {!isAdmin && virtualMachines.itemsAvailable > 0 && <CardContentWithNoVirtualMachines {...this.props} />}
                         {virtualMachines.itemsAvailable > 0 && links.itemsAvailable > 0 && <CardContentWithVirtualMachines {...this.props} />}
-                        {<CardSSHSection {...this.props} />}
+                        {!isAdmin && <CardSSHSection {...this.props} />}
                     </Grid>
                 );
             }
@@ -131,53 +148,87 @@ const CardContentWithVirtualMachines = (props: VirtualMachineProps) =>
     <Grid item xs={12}>
         <Card>
             <CardContent>
-                <div className={props.classes.rightAlign}>
-                    <Button variant="contained" color="primary" className={props.classes.button} onClick={props.saveRequestedDate}>
-                        SEND REQUEST FOR SHELL ACCESS
-                    </Button>
-                    {props.requestedDate &&
-                        <Typography variant="body1">
-                            A request for shell access was sent on {props.requestedDate}
-                        </Typography>}
-                </div>
-                <div className={props.classes.icon}>
-                    <a href="https://doc.arvados.org/user/getting_started/vm-login-with-webshell.html" target="_blank" className={props.classes.linkIcon}>
-                        <Tooltip title="Access VM using webshell">
-                            <HelpIcon />
-                        </Tooltip>
-                    </a>
-                </div>
-                <Table>
-                    <TableHead>
-                        <TableRow>
-                            <TableCell>Host name</TableCell>
-                            <TableCell>Login name</TableCell>
-                            <TableCell>Command line</TableCell>
-                            <TableCell>Web shell</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {props.virtualMachines.items.map((it, index) =>
-                            <TableRow key={index}>
-                                <TableCell>{it.hostname}</TableCell>
-                                <TableCell>{getUsername(props.links, it)}</TableCell>
-                                <TableCell>ssh {getUsername(props.links, it)}@shell.arvados</TableCell>
-                                <TableCell>
-                                    <a href={`https://workbench.c97qk.arvadosapi.com${it.href}/webshell/${getUsername(props.links, it)}`} target="_blank" className={props.classes.link}>
-                                        Log in as {getUsername(props.links, it)}
-                                    </a>
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
+                {props.isAdmin ? <span>{adminVirtualMachinesTable(props)}</span>
+                    : <span>
+                        <div className={props.classes.rightAlign}>
+                            <Button variant="contained" color="primary" className={props.classes.button} onClick={props.saveRequestedDate}>
+                                SEND REQUEST FOR SHELL ACCESS
+                                </Button>
+                            {props.requestedDate &&
+                                <Typography variant="body1">
+                                    A request for shell access was sent on {props.requestedDate}
+                                </Typography>}
+                        </div>
+                        <div className={props.classes.icon}>
+                            <a href="https://doc.arvados.org/user/getting_started/vm-login-with-webshell.html" target="_blank" className={props.classes.linkIcon}>
+                                <Tooltip title="Access VM using webshell">
+                                    <HelpIcon />
+                                </Tooltip>
+                            </a>
+                        </div>
+                        {userVirtualMachinesTable(props)}
+                    </span>
+                }
             </CardContent>
         </Card>
     </Grid>;
 
-const getUsername = (links: ListResults<any>, virtualMachine: VirtualMachinesResource) => {
-    const link = links.items.find((item: any) => item.headUuid === virtualMachine.uuid);
-    return link.properties.username || undefined;
+const userVirtualMachinesTable = (props: VirtualMachineProps) =>
+    <Table>
+        <TableHead>
+            <TableRow>
+                <TableCell>Host name</TableCell>
+                <TableCell>Login name</TableCell>
+                <TableCell>Command line</TableCell>
+                <TableCell>Web shell</TableCell>
+            </TableRow>
+        </TableHead>
+        <TableBody>
+            {props.virtualMachines.items.map((it, index) =>
+                <TableRow key={index}>
+                    <TableCell>{it.hostname}</TableCell>
+                    <TableCell>{getUsername(props.links)}</TableCell>
+                    <TableCell>ssh {getUsername(props.links)}@{it.hostname}.arvados</TableCell>
+                    <TableCell>
+                        <a href={`https://workbench.c97qk.arvadosapi.com${it.href}/webshell/${getUsername(props.links)}`} target="_blank" className={props.classes.link}>
+                            Log in as {getUsername(props.links)}
+                        </a>
+                    </TableCell>
+                </TableRow>
+            )}
+        </TableBody>
+    </Table>;
+
+const adminVirtualMachinesTable = (props: VirtualMachineProps) =>
+    <Table>
+        <TableHead>
+            <TableRow>
+                <TableCell>Uuid</TableCell>
+                <TableCell>Host name</TableCell>
+                <TableCell>Logins</TableCell>
+                <TableCell />
+            </TableRow>
+        </TableHead>
+        <TableBody>
+            {props.logins.items.length > 0 && props.virtualMachines.items.map((it, index) =>
+                <TableRow key={index}>
+                    <TableCell>{it.uuid}</TableCell>
+                    <TableCell>{it.hostname}</TableCell>
+                    <TableCell>["{props.logins.items[0].username}"]</TableCell>
+                    <TableCell className={props.classes.moreOptions}>
+                        <Tooltip title="More options" disableFocusListener>
+                            <IconButton onClick={event => props.onOptionsMenuOpen(event, it)} className={props.classes.moreOptionsButton}>
+                                <MoreOptionsIcon />
+                            </IconButton>
+                        </Tooltip>
+                    </TableCell>
+                </TableRow>
+            )}
+        </TableBody>
+    </Table>;
+
+const getUsername = (links: ListResults<any>) => {
+    return links.items[0].properties.username;
 };
 
 const CardSSHSection = (props: VirtualMachineProps) =>

@@ -11,8 +11,8 @@ import { openSharingDialog } from "~/store/sharing-dialog/sharing-dialog-actions
 export const repositoryActionSet: ContextMenuActionSet = [[{
     name: "Attributes",
     icon: AttributesIcon,
-    execute: (dispatch, { index }) => {
-        dispatch<any>(openRepositoryAttributes(index!));
+    execute: (dispatch, { uuid }) => {
+        dispatch<any>(openRepositoryAttributes(uuid));
     }
 }, {
     name: "Share",
@@ -24,7 +24,7 @@ export const repositoryActionSet: ContextMenuActionSet = [[{
     name: "Advanced",
     icon: AdvancedIcon,
     execute: (dispatch, resource) => {
-        dispatch<any>(openAdvancedTabDialog(resource.uuid, resource.index));
+        dispatch<any>(openAdvancedTabDialog(resource.uuid));
     }
 }, {
     name: "Remove",

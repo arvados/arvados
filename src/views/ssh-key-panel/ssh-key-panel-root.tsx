@@ -38,7 +38,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 export interface SshKeyPanelRootActionProps {
     openSshKeyCreateDialog: () => void;
-    openRowOptions: (event: React.MouseEvent<HTMLElement>, index: number, sshKey: SshKeyResource) => void;
+    openRowOptions: (event: React.MouseEvent<HTMLElement>, sshKey: SshKeyResource) => void;
     openPublicKeyDialog: (name: string, publicKey: string) => void;
 }
 
@@ -102,7 +102,7 @@ export const SshKeyPanelRoot = withStyles(styles)(
                                     </TableCell>
                                     <TableCell>
                                         <Tooltip title="More options" disableFocusListener>
-                                            <IconButton onClick={event => openRowOptions(event, index, sshKey)}>
+                                            <IconButton onClick={event => openRowOptions(event, sshKey)}>
                                                 <MoreOptionsIcon />
                                             </IconButton>
                                         </Tooltip>

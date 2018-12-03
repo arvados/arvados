@@ -15,6 +15,7 @@ import { extractUuidKind, ResourceKind } from '~/models/resource';
 import { Process } from '~/store/processes/process';
 import { RepositoryResource } from '~/models/repositories';
 import { SshKeyResource } from '~/models/ssh-key';
+import { VirtualMachinesResource } from '~/models/virtual-machines';
 import { KeepServiceResource } from '~/models/keep-services';
 
 export const contextMenuActions = unionize({
@@ -64,39 +65,47 @@ export const openCollectionFilesContextMenu = (event: React.MouseEvent<HTMLEleme
         }));
     };
 
-export const openRepositoryContextMenu = (event: React.MouseEvent<HTMLElement>, index: number, repository: RepositoryResource) =>
+export const openRepositoryContextMenu = (event: React.MouseEvent<HTMLElement>, repository: RepositoryResource) =>
     (dispatch: Dispatch, getState: () => RootState) => {
-            dispatch<any>(openContextMenu(event, {
-                name: '',
-                uuid: repository.uuid,
-                ownerUuid: repository.ownerUuid,
-                kind: ResourceKind.REPOSITORY,
-                menuKind: ContextMenuKind.REPOSITORY,
-                index
-            }));
+        dispatch<any>(openContextMenu(event, {
+            name: '',
+            uuid: repository.uuid,
+            ownerUuid: repository.ownerUuid,
+            kind: ResourceKind.REPOSITORY,
+            menuKind: ContextMenuKind.REPOSITORY
+        }));
     };
 
-export const openSshKeyContextMenu = (event: React.MouseEvent<HTMLElement>, index: number, sshKey: SshKeyResource) =>
+export const openVirtualMachinesContextMenu = (event: React.MouseEvent<HTMLElement>, repository: VirtualMachinesResource) =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        dispatch<any>(openContextMenu(event, {
+            name: '',
+            uuid: repository.uuid,
+            ownerUuid: repository.ownerUuid,
+            kind: ResourceKind.VIRTUAL_MACHINE,
+            menuKind: ContextMenuKind.VIRTUAL_MACHINE
+        }));
+    };
+
+export const openSshKeyContextMenu = (event: React.MouseEvent<HTMLElement>, sshKey: SshKeyResource) =>
     (dispatch: Dispatch) => {
         dispatch<any>(openContextMenu(event, {
             name: '',
             uuid: sshKey.uuid,
             ownerUuid: sshKey.ownerUuid,
             kind: ResourceKind.SSH_KEY,
-            menuKind: ContextMenuKind.SSH_KEY,
-            index
+            menuKind: ContextMenuKind.SSH_KEY
         }));
     };
 
-export const openKeepServiceContextMenu = (event: React.MouseEvent<HTMLElement>, index: number, keepService: KeepServiceResource) =>
+export const openKeepServiceContextMenu = (event: React.MouseEvent<HTMLElement>, keepService: KeepServiceResource) =>
     (dispatch: Dispatch) => {
         dispatch<any>(openContextMenu(event, {
             name: '',
             uuid: keepService.uuid,
             ownerUuid: keepService.ownerUuid,
             kind: ResourceKind.KEEP_SERVICE,
-            menuKind: ContextMenuKind.KEEP_SERVICE,
-            index
+            menuKind: ContextMenuKind.KEEP_SERVICE
         }));
     };
 

@@ -62,6 +62,8 @@ import { RemoveKeepServiceDialog } from '~/views-components/keep-services-dialog
 import { RemoveSshKeyDialog } from '~/views-components/ssh-keys-dialog/remove-dialog';
 import { AttributesKeepServiceDialog } from '~/views-components/keep-services-dialog/attributes-dialog';
 import { AttributesSshKeyDialog } from '~/views-components/ssh-keys-dialog/attributes-dialog';
+import { VirtualMachineAttributesDialog } from '~/views-components/virtual-machines-dialog/attributes-dialog';
+import { RemoveVirtualMachineDialog } from '~/views-components/virtual-machines-dialog/remove-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -170,6 +172,7 @@ export const WorkbenchPanel =
             <RemoveProcessDialog />
             <RemoveRepositoryDialog />
             <RemoveSshKeyDialog />
+            <RemoveVirtualMachineDialog />
             <RenameFileDialog />
             <RepositoryAttributesDialog />
             <RepositoriesSampleGitDialog />
@@ -179,5 +182,6 @@ export const WorkbenchPanel =
             <UpdateCollectionDialog />
             <UpdateProcessDialog />
             <UpdateProjectDialog />
+            <VirtualMachineAttributesDialog />
         </Grid>
     );
