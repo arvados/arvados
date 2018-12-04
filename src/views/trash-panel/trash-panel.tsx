@@ -11,7 +11,6 @@ import { RootState } from '~/store/store';
 import { DataTableFilterItem } from '~/components/data-table-filters/data-table-filters';
 import { SortDirection } from '~/components/data-table/data-column';
 import { ResourceKind, TrashableResource } from '~/models/resource';
-import { resourceLabel } from '~/common/labels';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { RestoreFromTrashIcon, TrashIcon } from '~/components/icon/icon';
 import { TRASH_PANEL_ID } from "~/store/trash-panel/trash-panel-action";
@@ -31,11 +30,10 @@ import { loadDetailsPanel } from "~/store/details-panel/details-panel-action";
 import { toggleTrashed } from "~/store/trash/trash-actions";
 import { ContextMenuKind } from "~/views-components/context-menu/context-menu";
 import { Dispatch } from "redux";
-import { PanelDefaultView } from '~/components/panel-default-view/panel-default-view';
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 import { createTree } from '~/models/tree';
-import { getInitialResourceTypeFilters } from '../../store/resource-type-filters/resource-type-filters';
-// TODO: code clean up
+import { getInitialResourceTypeFilters } from '~/store/resource-type-filters/resource-type-filters';
+
 type CssRules = "toolbar" | "button";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({

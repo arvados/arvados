@@ -57,6 +57,8 @@ import { searchResultsPanelColumns } from '~/views/search-results-panel/search-r
 import { loadVirtualMachinesPanel } from '~/store/virtual-machines/virtual-machines-actions';
 import { loadRepositoriesPanel } from '~/store/repositories/repositories-actions';
 import { loadKeepServicesPanel } from '~/store/keep-services/keep-services-actions';
+import { loadUsersPanel, userBindedActions } from '~/store/users/users-actions';
+import { userPanelColumns } from '~/views/user-panel/user-panel';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -76,7 +78,6 @@ const handleFirstTimeLoad = (action: any) =>
         }
     };
 
-
 export const loadWorkbench = () =>
     async (dispatch: Dispatch, getState: () => RootState) => {
         dispatch(progressIndicatorActions.START_WORKING(WORKBENCH_LOADING_SCREEN));
@@ -91,6 +92,7 @@ export const loadWorkbench = () =>
                 dispatch(sharedWithMePanelActions.SET_COLUMNS({ columns: projectPanelColumns }));
                 dispatch(workflowPanelActions.SET_COLUMNS({ columns: workflowPanelColumns }));
                 dispatch(searchResultsPanelActions.SET_COLUMNS({ columns: searchResultsPanelColumns }));
+                dispatch(userBindedActions.SET_COLUMNS({ columns: userPanelColumns }));
                 dispatch<any>(initSidePanelTree());
                 if (router.location) {
                     const match = matchRootRoute(router.location.pathname);
@@ -399,7 +401,7 @@ export const loadVirtualMachines = handleFirstTimeLoad(
         await dispatch(loadVirtualMachinesPanel());
         dispatch(setBreadcrumbs([{ label: 'Virtual Machines' }]));
     });
-    
+
 export const loadRepositories = handleFirstTimeLoad(
     async (dispatch: Dispatch<any>) => {
         await dispatch(loadRepositoriesPanel());
@@ -414,6 +416,12 @@ export const loadSshKeys = handleFirstTimeLoad(
 export const loadKeepServices = handleFirstTimeLoad(
     async (dispatch: Dispatch<any>) => {
         await dispatch(loadKeepServicesPanel());
+    });
+
+export const loadUsers = handleFirstTimeLoad(
+    async (dispatch: Dispatch<any>) => {
+        await dispatch(loadUsersPanel());
+        dispatch(setBreadcrumbs([{ label: 'Users' }]));
     });
 
 const finishLoadingProject = (project: GroupContentsResource | string) =>

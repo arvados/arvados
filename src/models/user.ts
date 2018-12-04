@@ -25,8 +25,18 @@ export interface UserResource extends Resource {
     lastName: string;
     identityUrl: string;
     isAdmin: boolean;
-    prefs: string;
+    prefs: UserPrefs;
     defaultOwnerUuid: string;
     isActive: boolean;
     writableBy: string[];
+}
+
+export interface UserPrefs {
+    profile: {
+        lab: string;
+        organization: string;
+        organizationEmail: string;
+        role: string;
+        websiteUrl: string;
+    };
 }

@@ -8,12 +8,12 @@ import {
     matchProcessRoute, matchProcessLogRoute, matchProjectRoute, matchCollectionRoute, matchFavoritesRoute,
     matchTrashRoute, matchRootRoute, matchSharedWithMeRoute, matchRunProcessRoute, matchWorkflowRoute,
     matchSearchResultsRoute, matchSshKeysRoute, matchRepositoriesRoute, matchVirtualMachineRoute,
-    matchKeepServicesRoute
+    matchKeepServicesRoute, matchUsersRoute
 } from './routes';
 import {
     loadSharedWithMe, loadRunProcess, loadWorkflow, loadSearchResults,
     loadProject, loadCollection, loadFavorites, loadTrash, loadProcess, loadProcessLog,
-    loadSshKeys, loadRepositories, loadVirtualMachines, loadKeepServices
+    loadSshKeys, loadRepositories, loadVirtualMachines, loadKeepServices, loadUsers
 } from '~/store/workbench/workbench-actions';
 import { navigateToRootProject } from '~/store/navigation/navigation-action';
 
@@ -39,6 +39,7 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
     const workflowMatch = matchWorkflowRoute(pathname);
     const sshKeysMatch = matchSshKeysRoute(pathname);
     const keepServicesMatch = matchKeepServicesRoute(pathname);
+    const userMatch = matchUsersRoute(pathname);
 
     if (projectMatch) {
         store.dispatch(loadProject(projectMatch.params.id));
@@ -70,5 +71,7 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
         store.dispatch(loadSshKeys);
     } else if (keepServicesMatch) {
         store.dispatch(loadKeepServices);
+    } else if (userMatch) {
+        store.dispatch(loadUsers);
     }
 };

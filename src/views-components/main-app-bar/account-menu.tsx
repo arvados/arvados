@@ -14,6 +14,7 @@ import { openCurrentTokenDialog } from '~/store/current-token-dialog/current-tok
 import { openRepositoriesPanel } from "~/store/repositories/repositories-actions";
 import { navigateToSshKeys, navigateToKeepServices } from '~/store/navigation/navigation-action';
 import { openVirtualMachines } from "~/store/virtual-machines/virtual-machines-actions";
+import { navigateToUsers } from '~/store/navigation/navigation-action';
 
 interface AccountMenuProps {
     user?: User;
@@ -37,7 +38,8 @@ export const AccountMenu = connect(mapStateToProps)(
                 <MenuItem onClick={() => dispatch(openRepositoriesPanel())}>Repositories</MenuItem>
                 <MenuItem onClick={() => dispatch(openCurrentTokenDialog)}>Current token</MenuItem>
                 <MenuItem onClick={() => dispatch(navigateToSshKeys)}>Ssh Keys</MenuItem>
-                { user.isAdmin && <MenuItem onClick={() => dispatch(navigateToKeepServices)}>Keep Services</MenuItem> }
+                <MenuItem onClick={() => dispatch(navigateToUsers)}>Users</MenuItem>
+                {user.isAdmin && <MenuItem onClick={() => dispatch(navigateToKeepServices)}>Keep Services</MenuItem>}
                 <MenuItem>My account</MenuItem>
                 <MenuItem onClick={() => dispatch(logout())}>Logout</MenuItem>
             </DropdownMenu>

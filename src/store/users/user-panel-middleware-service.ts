@@ -11,14 +11,14 @@ import { DataExplorer, getDataExplorer } from '~/store/data-explorer/data-explor
 import { updateResources } from '~/store/resources/resources-actions';
 import { FilterBuilder } from '~/services/api/filter-builder';
 import { SortDirection } from '~/components/data-table/data-column';
-import { WorkflowPanelColumnNames } from '~/views/workflow-panel/workflow-panel-view';
 import { OrderDirection, OrderBuilder } from '~/services/api/order-builder';
-import { WorkflowResource } from '~/models/workflow';
 import { ListResults } from '~/services/common-service/common-resource-service';
-import { workflowPanelActions } from '~/store/workflow-panel/workflow-panel-actions';
+import { userBindedActions } from '~/store/users/users-actions';
 import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
+import { UserResource } from '~/models/user';
+import { UserPanelColumnNames } from '~/views/user-panel/user-panel';
 
-export class WorkflowMiddlewareService extends DataExplorerMiddlewareService {
+export class UserMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
         super(id);
     }
@@ -27,11 +27,11 @@ export class WorkflowMiddlewareService extends DataExplorerMiddlewareService {
         const state = api.getState();
         const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
         try {
-            const response = await this.services.workflowService.list(getParams(dataExplorer));
+            const response = await this.services.userService.list(getParams(dataExplorer));
             api.dispatch(updateResources(response.items));
             api.dispatch(setItems(response));
         } catch {
-            api.dispatch(couldNotFetchWorkflows());
+            api.dispatch(couldNotFetchUsers());
         }
     }
 }
@@ -44,19 +44,19 @@ export const getParams = (dataExplorer: DataExplorer) => ({
 
 export const getFilters = (dataExplorer: DataExplorer) => {
     const filters = new FilterBuilder()
-        .addILike("name", dataExplorer.searchValue)
+        .addILike("firstName", dataExplorer.searchValue)
         .getFilters();
     return filters;
 };
 
 export const getOrder = (dataExplorer: DataExplorer) => {
     const sortColumn = getSortColumn(dataExplorer);
-    const order = new OrderBuilder<WorkflowResource>();
+    const order = new OrderBuilder<UserResource>();
     if (sortColumn) {
         const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.ASC
             ? OrderDirection.ASC
             : OrderDirection.DESC;
-        const columnName = sortColumn && sortColumn.name === WorkflowPanelColumnNames.NAME ? "name" : "modifiedAt";
+        const columnName = sortColumn && sortColumn.name === UserPanelColumnNames.LAST_NAME ? "lastName" : "firstName";
         return order
             .addOrder(sortDirection, columnName)
             .getOrder();
@@ -65,14 +65,14 @@ export const getOrder = (dataExplorer: DataExplorer) => {
     }
 };
 
-export const setItems = (listResults: ListResults<WorkflowResource>) =>
-    workflowPanelActions.SET_ITEMS({
+export const setItems = (listResults: ListResults<UserResource>) =>
+    userBindedActions.SET_ITEMS({
         ...listResultsToDataExplorerItemsMeta(listResults),
         items: listResults.items.map(resource => resource.uuid),
     });
 
-const couldNotFetchWorkflows = () =>
+const couldNotFetchUsers = () =>
     snackbarActions.OPEN_SNACKBAR({
-        message: 'Could not fetch workflows.',
+        message: 'Could not fetch users.',
         kind: SnackbarKind.ERROR
     });

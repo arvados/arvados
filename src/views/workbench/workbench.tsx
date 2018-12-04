@@ -64,6 +64,7 @@ import { AttributesKeepServiceDialog } from '~/views-components/keep-services-di
 import { AttributesSshKeyDialog } from '~/views-components/ssh-keys-dialog/attributes-dialog';
 import { VirtualMachineAttributesDialog } from '~/views-components/virtual-machines-dialog/attributes-dialog';
 import { RemoveVirtualMachineDialog } from '~/views-components/virtual-machines-dialog/remove-dialog';
+import { UserPanel } from '~/views/user-panel/user-panel';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -137,6 +138,7 @@ export const WorkbenchPanel =
                                 <Route path={Routes.REPOSITORIES} component={RepositoriesPanel} />
                                 <Route path={Routes.SSH_KEYS} component={SshKeyPanel} />
                                 <Route path={Routes.KEEP_SERVICES} component={KeepServicePanel} />
+                                <Route path={Routes.USERS} component={UserPanel} />
                             </Switch>
                         </Grid>
                     </Grid>

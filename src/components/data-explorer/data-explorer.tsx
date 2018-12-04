@@ -44,6 +44,7 @@ interface DataExplorerDataProps<T> {
     contextMenuColumn: boolean;
     dataTableDefaultView?: React.ReactNode;
     working?: boolean;
+    isColumnSelectorHidden?: boolean;
 }
 
 interface DataExplorerActionProps<T> {
@@ -74,7 +75,7 @@ export const DataExplorer = withStyles(styles)(
                 columns, onContextMenu, onFiltersChange, onSortToggle, working, extractKey,
                 rowsPerPage, rowsPerPageOptions, onColumnToggle, searchValue, onSearch,
                 items, itemsAvailable, onRowClick, onRowDoubleClick, classes,
-                dataTableDefaultView
+                dataTableDefaultView, isColumnSelectorHidden
             } = this.props;
             return <Paper className={classes.root}>
                 <Toolbar className={classes.toolbar}>
@@ -84,9 +85,9 @@ export const DataExplorer = withStyles(styles)(
                                 value={searchValue}
                                 onSearch={onSearch} />
                         </div>
-                        <ColumnSelector
+                        {!isColumnSelectorHidden && <ColumnSelector
                             columns={columns}
-                            onColumnToggle={onColumnToggle} />
+                            onColumnToggle={onColumnToggle} />}
                     </Grid>
                 </Toolbar>
                 <DataTable
