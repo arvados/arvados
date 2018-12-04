@@ -273,7 +273,7 @@ def stubs(func):
             'state': 'Committed',
             'command': ['arvados-cwl-runner', '--local', '--api=containers',
                         '--no-log-timestamps', '--disable-validate',
-                        '--eval-timeout=20', '--thread-count=4',
+                        '--eval-timeout=20', '--thread-count=1',
                         '--enable-reuse', "--collection-cache-size=256", '--debug', '--on-error=continue',
                         '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json'],
             'name': 'submit_wf.cwl',
@@ -558,7 +558,7 @@ class TestSubmit(unittest.TestCase):
         expect_container["command"] = [
             'arvados-cwl-runner', '--local', '--api=containers',
             '--no-log-timestamps', '--disable-validate',
-            '--eval-timeout=20', '--thread-count=4',
+            '--eval-timeout=20', '--thread-count=1',
             '--disable-reuse', "--collection-cache-size=256",
             '--debug', '--on-error=continue',
             '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
@@ -584,7 +584,7 @@ class TestSubmit(unittest.TestCase):
         expect_container["command"] = [
             'arvados-cwl-runner', '--local', '--api=containers',
             '--no-log-timestamps', '--disable-validate',
-            '--eval-timeout=20', '--thread-count=4',
+            '--eval-timeout=20', '--thread-count=1',
             '--disable-reuse', "--collection-cache-size=256", '--debug', '--on-error=continue',
             '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
         expect_container["use_existing"] = False
@@ -621,7 +621,7 @@ class TestSubmit(unittest.TestCase):
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
                                        '--no-log-timestamps', '--disable-validate',
-                                       '--eval-timeout=20', '--thread-count=4',
+                                       '--eval-timeout=20', '--thread-count=1',
                                        '--enable-reuse', "--collection-cache-size=256",
                                        '--debug', '--on-error=stop',
                                        '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
@@ -648,7 +648,7 @@ class TestSubmit(unittest.TestCase):
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
                                        '--no-log-timestamps', '--disable-validate',
-                                       '--eval-timeout=20', '--thread-count=4',
+                                       '--eval-timeout=20', '--thread-count=1',
                                        '--enable-reuse', "--collection-cache-size=256",
                                        "--output-name="+output_name, '--debug', '--on-error=continue',
                                        '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
@@ -674,7 +674,7 @@ class TestSubmit(unittest.TestCase):
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
                                        '--no-log-timestamps', '--disable-validate',
-                                       '--eval-timeout=20', '--thread-count=4',
+                                       '--eval-timeout=20', '--thread-count=1',
                                        '--enable-reuse', "--collection-cache-size=256", "--debug",
                                        "--storage-classes=foo", '--on-error=continue',
                                        '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
@@ -741,7 +741,7 @@ class TestSubmit(unittest.TestCase):
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
                                        '--no-log-timestamps', '--disable-validate',
-                                       '--eval-timeout=20', '--thread-count=4',
+                                       '--eval-timeout=20', '--thread-count=1',
                                        '--enable-reuse', "--collection-cache-size=256", '--debug',
                                        '--on-error=continue',
                                        "--intermediate-output-ttl=3600",
@@ -767,7 +767,7 @@ class TestSubmit(unittest.TestCase):
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
                                        '--no-log-timestamps', '--disable-validate',
-                                       '--eval-timeout=20', '--thread-count=4',
+                                       '--eval-timeout=20', '--thread-count=1',
                                        '--enable-reuse', "--collection-cache-size=256",
                                        '--debug', '--on-error=continue',
                                        "--trash-intermediate",
@@ -795,7 +795,7 @@ class TestSubmit(unittest.TestCase):
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
                                        '--no-log-timestamps', '--disable-validate',
-                                       '--eval-timeout=20', '--thread-count=4',
+                                       '--eval-timeout=20', '--thread-count=1',
                                        '--enable-reuse', "--collection-cache-size=256",
                                        "--output-tags="+output_tags, '--debug', '--on-error=continue',
                                        '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
@@ -880,7 +880,7 @@ class TestSubmit(unittest.TestCase):
             'container_image': '999999999999999999999999999999d3+99',
             'command': ['arvados-cwl-runner', '--local', '--api=containers',
                         '--no-log-timestamps', '--disable-validate',
-                        '--eval-timeout=20', '--thread-count=4',
+                        '--eval-timeout=20', '--thread-count=1',
                         '--enable-reuse', "--collection-cache-size=256", '--debug', '--on-error=continue',
                         '/var/lib/cwl/workflow/expect_arvworkflow.cwl#main', '/var/lib/cwl/cwl.input.json'],
             'cwd': '/var/spool/cwl',
@@ -1002,7 +1002,7 @@ class TestSubmit(unittest.TestCase):
             'container_image': "999999999999999999999999999999d3+99",
             'command': ['arvados-cwl-runner', '--local', '--api=containers',
                         '--no-log-timestamps', '--disable-validate',
-                        '--eval-timeout=20', '--thread-count=4',
+                        '--eval-timeout=20', '--thread-count=1',
                         '--enable-reuse', "--collection-cache-size=256", '--debug', '--on-error=continue',
                         '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json'],
             'cwd': '/var/spool/cwl',
@@ -1062,7 +1062,7 @@ class TestSubmit(unittest.TestCase):
         expect_container["owner_uuid"] = project_uuid
         expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
                                        '--no-log-timestamps', '--disable-validate',
-                                       "--eval-timeout=20", "--thread-count=4",
+                                       "--eval-timeout=20", "--thread-count=1",
                                        '--enable-reuse', "--collection-cache-size=256", '--debug',
                                        '--on-error=continue',
                                        '--project-uuid='+project_uuid,
@@ -1089,7 +1089,7 @@ class TestSubmit(unittest.TestCase):
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
                                        '--no-log-timestamps', '--disable-validate',
-                                       '--eval-timeout=60.0', '--thread-count=4',
+                                       '--eval-timeout=60.0', '--thread-count=1',
                                        '--enable-reuse', "--collection-cache-size=256",
                                        '--debug', '--on-error=continue',
                                        '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
@@ -1115,7 +1115,7 @@ class TestSubmit(unittest.TestCase):
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
                                        '--no-log-timestamps', '--disable-validate',
-                                       '--eval-timeout=20', '--thread-count=4',
+                                       '--eval-timeout=20', '--thread-count=1',
                                        '--enable-reuse', "--collection-cache-size=500",
                                        '--debug', '--on-error=continue',
                                        '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
@@ -1247,7 +1247,7 @@ class TestSubmit(unittest.TestCase):
         }
         expect_container['command'] = ['arvados-cwl-runner', '--local', '--api=containers',
                         '--no-log-timestamps', '--disable-validate',
-                        '--eval-timeout=20', '--thread-count=4',
+                        '--eval-timeout=20', '--thread-count=1',
                         '--enable-reuse', "--collection-cache-size=512", '--debug', '--on-error=continue',
                         '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
 
@@ -1317,7 +1317,7 @@ class TestSubmit(unittest.TestCase):
                 "--no-log-timestamps",
                 "--disable-validate",
                 "--eval-timeout=20",
-                '--thread-count=4',
+                '--thread-count=1',
                 "--enable-reuse",
                 "--collection-cache-size=256",
                 '--debug',
