@@ -14,10 +14,10 @@ export type SearchBarAdvanceFormData = {
     saveQuery: boolean;
     queryName: string;
     searchValue: string;
-    properties: PropertyValues[];
+    properties: PropertyValue[];
 };
 
-export interface PropertyValues {
+export interface PropertyValue {
     key: string;
     value: string;
 }

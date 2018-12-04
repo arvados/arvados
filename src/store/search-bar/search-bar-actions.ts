@@ -15,7 +15,7 @@ import { GroupClass } from '~/models/group';
 import { SearchView } from '~/store/search-bar/search-bar-reducer';
 import { navigateTo, navigateToSearchResults } from '~/store/navigation/navigation-action';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { ClusterObjectType, PropertyValues, SearchBarAdvanceFormData } from '~/models/search-bar';
+import { ClusterObjectType, PropertyValue, SearchBarAdvanceFormData } from '~/models/search-bar';
 import { debounce } from 'debounce';
 import * as _ from "lodash";
 import { getModifiedKeysValues } from "~/common/objects";
@@ -353,7 +353,7 @@ export const parseSearchQuery: (query: string) => ParseSearchQuery = (searchValu
 
 const getFirstProp = (sq: ParseSearchQuery, name: string) => sq.properties[name] && sq.properties[name][0];
 const getPropValue = (sq: ParseSearchQuery, name: string, value: string) => sq.properties[name] && sq.properties[name].find((v: string) => v === value);
-const getProperties = (sq: ParseSearchQuery): PropertyValues[] => {
+const getProperties = (sq: ParseSearchQuery): PropertyValue[] => {
     if (sq.properties.has) {
         return sq.properties.has.map((value: string) => {
             const v = value.split(':');
@@ -466,12 +466,12 @@ export const initAdvanceFormProjectsTree = () =>
         dispatch<any>(initUserProject(SEARCH_BAR_ADVANCE_FORM_PICKER_ID));
     };
 
-export const changeAdvanceFormProperty = (property: string, value: PropertyValues[] | string = '') =>
+export const changeAdvanceFormProperty = (property: string, value: PropertyValue[] | string = '') =>
     (dispatch: Dispatch) => {
         dispatch(change(SEARCH_BAR_ADVANCE_FORM_NAME, property, value));
     };
 
-export const updateAdvanceFormProperties = (propertyValues: PropertyValues) =>
+export const updateAdvanceFormProperties = (propertyValues: PropertyValue) =>
     (dispatch: Dispatch) => {
         dispatch(arrayPush(SEARCH_BAR_ADVANCE_FORM_NAME, 'properties', propertyValues));
     };
