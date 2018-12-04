@@ -9,6 +9,7 @@ import { Typography, IconButton, StyleRulesCallback, withStyles, WithStyles, Too
 import { formatFileSize } from "~/common/formatters";
 import { ListItemTextIcon } from "../list-item-text-icon/list-item-text-icon";
 import { FileTreeData } from "./file-tree-data";
+import { FileThumbnail } from '~/components/file-tree/file-thumbnail';
 
 type CssRules = "root" | "spacer" | "sizeInfo" | "button" | "moreOptions";
 
@@ -42,22 +43,25 @@ export const FileTreeItem = withStyles(fileTreeItemStyle)(
     class extends React.Component<FileTreeItemProps & WithStyles<CssRules>> {
         render() {
             const { classes, item } = this.props;
-            return <div className={classes.root}>
-                <ListItemTextIcon
-                    icon={getIcon(item)}
-                    name={item.data.name} />
-                <div className={classes.spacer} />
-                <Typography
-                    className={classes.sizeInfo}
-                    variant="caption">{formatFileSize(item.data.size)}</Typography>
-                <Tooltip title="More options" disableFocusListener>
-                    <IconButton
-                        className={classes.button}
-                        onClick={this.handleClick}>
-                        <MoreOptionsIcon className={classes.moreOptions}/>
-                    </IconButton>
-                </Tooltip>
-            </div >;
+            return <>
+                <div className={classes.root}>
+                    <ListItemTextIcon
+                        icon={getIcon(item)}
+                        name={item.data.name} />
+                    <div className={classes.spacer} />
+                    <Typography
+                        className={classes.sizeInfo}
+                        variant="caption">{formatFileSize(item.data.size)}</Typography>
+                    <Tooltip title="More options" disableFocusListener>
+                        <IconButton
+                            className={classes.button}
+                            onClick={this.handleClick}>
+                            <MoreOptionsIcon className={classes.moreOptions} />
+                        </IconButton>
+                    </Tooltip>
+                </div >
+                <FileThumbnail file={item.data} />
+            </>;
         }
 
         handleClick = (event: React.MouseEvent<any>) => {

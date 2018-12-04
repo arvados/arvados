@@ -18,8 +18,8 @@ import { FileTreeData } from "~/components/file-tree/file-tree-data";
 import { Dispatch } from "redux";
 import { collectionPanelFilesAction } from "~/store/collection-panel/collection-panel-files/collection-panel-files-actions";
 import { ContextMenuKind } from "../context-menu/context-menu";
-import { getNode, getNodeChildrenIds, Tree } from "~/models/tree";
-import { CollectionFileType } from "~/models/collection-file";
+import { getNode, getNodeChildrenIds, Tree, TreeNode, initTreeNode } from "~/models/tree";
+import { CollectionFileType, createCollectionDirectory } from "~/models/collection-file";
 import { openContextMenu, openCollectionFilesContextMenu } from '~/store/context-menu/context-menu-actions';
 import { openUploadCollectionFilesDialog } from '~/store/collections/collection-upload-actions';
 import { ResourceKind } from "~/models/resource";
@@ -63,23 +63,22 @@ export const CollectionPanelFiles = connect(memoizedMapStateToProps(), mapDispat
 
 const collectionItemToTreeItem = (tree: Tree<CollectionPanelDirectory | CollectionPanelFile>) =>
     (id: string): TreeItem<FileTreeData> => {
-        const node = getNode(id)(tree) || {
+        const node: TreeNode<CollectionPanelDirectory | CollectionPanelFile> = getNode(id)(tree) || initTreeNode({
             id: '',
-            children: [],
             parent: '',
             value: {
-                name: 'Invalid node',
-                type: CollectionFileType.DIRECTORY,
+                ...createCollectionDirectory({ name: 'Invalid file' }),
                 selected: false,
                 collapsed: true
             }
-        };
+        });
         return {
             active: false,
             data: {
                 name: node.value.name,
                 size: node.value.type === CollectionFileType.FILE ? node.value.size : undefined,
-                type: node.value.type
+                type: node.value.type,
+                url: node.value.url,
             },
             id: node.id,
             items: getNodeChildrenIds(node.id)(tree)
