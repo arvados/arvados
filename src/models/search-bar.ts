@@ -27,16 +27,3 @@ export enum ClusterObjectType {
     KAISERAUGST = "kaiseraugst",
     PENZBERG = "penzberg"
 }
-
-export const getClusterObjectType = (cluster?: string) => {
-    switch (cluster) {
-        case "indianapolis":
-            return ClusterObjectType.INDIANAPOLIS;
-        case "kaiseraugst":
-            return ClusterObjectType.KAISERAUGST;
-        case "penzberg":
-            return ClusterObjectType.PENZBERG;
-        default:
-            return undefined;
-    }
-};

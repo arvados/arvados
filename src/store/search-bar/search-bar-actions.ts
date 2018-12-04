@@ -10,12 +10,12 @@ import { RootState } from '~/store/store';
 import { initUserProject, treePickerActions } from '~/store/tree-picker/tree-picker-actions';
 import { ServiceRepository } from '~/services/services';
 import { FilterBuilder } from "~/services/api/filter-builder";
-import { getResourceKind, ResourceKind } from '~/models/resource';
+import { ResourceKind } from '~/models/resource';
 import { GroupClass } from '~/models/group';
 import { SearchView } from '~/store/search-bar/search-bar-reducer';
 import { navigateTo, navigateToSearchResults } from '~/store/navigation/navigation-action';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { getClusterObjectType, PropertyValues, SearchBarAdvanceFormData } from '~/models/search-bar';
+import { ClusterObjectType, PropertyValues, SearchBarAdvanceFormData } from '~/models/search-bar';
 import { debounce } from 'debounce';
 import * as _ from "lodash";
 import { getModifiedKeysValues } from "~/common/objects";
@@ -371,8 +371,8 @@ export const getAdvancedDataFromQuery = (query: string): SearchBarAdvanceFormDat
 
     return {
         searchValue: sq.values.join(' '),
-        type: getResourceKind(getFirstProp(sq, 'type')),
-        cluster: getClusterObjectType(getFirstProp(sq, 'cluster')),
+        type: getFirstProp(sq, 'type') as ResourceKind,
+        cluster: getFirstProp(sq, 'cluster') as ClusterObjectType,
         projectUuid: getFirstProp(sq, 'project'),
         inTrash: getPropValue(sq, 'is', 'trashed') !== undefined,
         dateFrom: getFirstProp(sq, 'from'),
@@ -387,7 +387,7 @@ export const getFilters = (filterName: string, searchValue: string): string => {
     const filter = new FilterBuilder();
     const sq = parseSearchQuery(searchValue);
 
-    const resourceKind = getResourceKind(getFirstProp(sq, 'type'));
+    const resourceKind = getFirstProp(sq, 'type') as ResourceKind;
 
     let prefix = '';
     switch (resourceKind) {
