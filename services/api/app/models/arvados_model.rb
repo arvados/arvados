@@ -274,9 +274,8 @@ class ArvadosModel < ActiveRecord::Base
       if !include_trash
         if sql_table != "api_client_authorizations"
           # Only include records where the owner is not trashed
-          sql_conds = "NOT EXISTS(SELECT 1 FROM #{PERMISSION_VIEW} "+
-                      "WHERE trashed = 1 AND "+
-                      "(#{sql_table}.owner_uuid = target_uuid)) #{exclude_trashed_records}"
+          sql_conds = "#{sql_table}.owner_uuid NOT IN (SELECT target_uuid FROM #{PERMISSION_VIEW} "+
+                      "WHERE trashed = 1) #{exclude_trashed_records}"
         end
       end
     else
