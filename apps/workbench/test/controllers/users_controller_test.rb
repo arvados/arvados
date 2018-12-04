@@ -35,6 +35,14 @@ class UsersControllerTest < ActionController::TestCase
     assert_match /\/users\/welcome/, @response.redirect_url
   end
 
+  test "'log in as user' feature uses a v2 token" do
+    post :sudo, {
+      id: api_fixture('users')['active']['uuid']
+    }, session_for('admin_trustedclient')
+    assert_response :redirect
+    assert_match /api_token=v2%2F/, @response.redirect_url
+  end
+
   test "request shell access" do
     user = api_fixture('users')['spectator']
 
