@@ -34,6 +34,8 @@ h3. v1.3.0 (2018-12-04)
 
 Workflows may intermittently fail with the error "Workflow is deadlocked, no runnable processes and not waiting on any pending processes.".  If this occurs, the recommended workaround is to invoke @arvados-cwl-runner@ with @--thread-count=1@.
 
+The @arvados-controller@ component now requires the /etc/arvados/config.yml file to be present. See <a href="{{ site.baseurl }}/install/install-controller.html#configuration">the @arvados-controller@ installation instructions</a>.
+
 h3. v1.2.1 (2018-11-26)
 
 There are no special upgrade notes for this release.
