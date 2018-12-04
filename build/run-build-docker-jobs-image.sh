@@ -204,7 +204,7 @@ else
         if ! [[ -z "$version_tag" ]]; then
             docker_push arvados/jobs:"$version_tag"
         else
-           docker_push arvados/jobs:$cwl_runner_version
+           docker_push arvados/jobs:$cwl_runner_version_orig
            docker_push arvados/jobs:latest
         fi
         title "upload arvados images finished (`timer`)"
