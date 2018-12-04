@@ -293,14 +293,14 @@ class ArvadosModel < ActiveRecord::Base
       # see issue 13208 for details.
 
       # Match a direct read permission link from the user to the record uuid
-      direct_check = "EXISTS(SELECT 1 FROM #{PERMISSION_VIEW} "+
-                     "WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 #{trashed_check} AND target_uuid = #{sql_table}.uuid)"
+      direct_check = "#{sql_table}.uuid IN (SELECT target_uuid FROM #{PERMISSION_VIEW} "+
+                     "WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 #{trashed_check})"
 
       # Match a read permission link from the user to the record's owner_uuid
       owner_check = ""
       if sql_table != "api_client_authorizations" and sql_table != "groups" then
-        owner_check = "OR EXISTS(SELECT 1 FROM #{PERMISSION_VIEW} "+
-          "WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 #{trashed_check} AND target_uuid = #{sql_table}.owner_uuid AND target_owner_uuid IS NOT NULL) "
+        owner_check = "OR #{sql_table}.owner_uuid IN (SELECT target_uuid FROM #{PERMISSION_VIEW} "+
+          "WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 #{trashed_check} AND target_owner_uuid IS NOT NULL) "
       end
 
       links_cond = ""
