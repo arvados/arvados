@@ -5,5 +5,6 @@
 export interface FileTreeData {
     name: string;
     type: string;
+    url: string;
     size?: number;
 }
