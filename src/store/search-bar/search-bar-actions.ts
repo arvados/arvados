@@ -307,7 +307,7 @@ export const parseSearchQuery: (query: string) => ParseSearchQuery = (searchValu
         'has:'
     ];
 
-    const hasKeywords = (search: string) => keywords.reduce((acc, keyword) => acc + search.indexOf(keyword) >= 0 ? 1 : 0, 0);
+    const hasKeywords = (search: string) => keywords.reduce((acc, keyword) => acc + (search.includes(keyword) ? 1 : 0), 0);
     let keywordsCnt = 0;
 
     const properties = {};
