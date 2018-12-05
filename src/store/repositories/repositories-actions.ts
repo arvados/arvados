@@ -32,9 +32,9 @@ export const openRepositoriesSampleGitDialog = () =>
         dispatch(dialogActions.OPEN_DIALOG({ id: REPOSITORIES_SAMPLE_GIT_DIALOG, data: { uuidPrefix } }));
     };
 
-export const openRepositoryAttributes = (index: number) =>
+export const openRepositoryAttributes = (uuid: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const repositoryData = getState().repositories.items[index];
+        const repositoryData = getState().repositories.items.find(it => it.uuid === uuid);
         dispatch(dialogActions.OPEN_DIALOG({ id: REPOSITORY_ATTRIBUTES_DIALOG, data: { repositoryData } }));
     };
 
@@ -84,7 +84,7 @@ export const removeRepository = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...' }));
         await services.repositoriesService.delete(uuid);
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000 }));
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
         dispatch<any>(loadRepositoriesData());
     };
 

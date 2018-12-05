@@ -4,12 +4,12 @@
 
 import { virtualMachinesActions, VirtualMachineActions } from '~/store/virtual-machines/virtual-machines-actions';
 import { ListResults } from '~/services/common-service/common-resource-service';
-import { VirtualMachinesLoginsResource } from '~/models/virtual-machines';
+import { VirtualMachineLogins } from '~/models/virtual-machines';
 
 interface VirtualMachines {
     date: string;
     virtualMachines: ListResults<any>;
-    logins: VirtualMachinesLoginsResource[];
+    logins: VirtualMachineLogins;
     links: ListResults<any>;
 }
 
@@ -22,7 +22,10 @@ const initialState: VirtualMachines = {
         itemsAvailable: 0,
         items: []
     },
-    logins: [],
+    logins: {
+        kind: '',
+        items: []
+    },
     links: {
         kind: '',
         offset: 0,

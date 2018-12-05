@@ -4,7 +4,7 @@
 
 import { User, userPrefs } from "~/models/user";
 import { AxiosInstance } from "axios";
-import { ApiActions, ProgressFn } from "~/services/api/api-actions";
+import { ApiActions } from "~/services/api/api-actions";
 import * as uuid from "uuid/v4";
 
 export const API_TOKEN_KEY = 'apiToken';
@@ -56,7 +56,7 @@ export class AuthService {
     }
 
     public getIsAdmin(): boolean {
-        return !!localStorage.getItem(USER_IS_ADMIN);
+        return localStorage.getItem(USER_IS_ADMIN) === 'true';
     }
 
     public getUser(): User | undefined {

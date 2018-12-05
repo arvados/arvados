@@ -14,3 +14,7 @@ declare var System: System;
 
 declare module 'react-splitter-layout';
 declare module 'react-rte';
+
+declare module 'is-image' {
+  export default function isImage(value: string): boolean;
+}

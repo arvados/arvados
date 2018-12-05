@@ -28,6 +28,7 @@ import { VirtualMachinesService } from "~/services/virtual-machines-service/virt
 import { RepositoriesService } from '~/services/repositories-service/repositories-service';
 import { AuthorizedKeysService } from '~/services/authorized-keys-service/authorized-keys-service';
 import { VocabularyService } from '~/services/vocabulary-service/vocabulary-service';
+import { NodeService } from '~/services/node-service/node-service';
 
 export type ServiceRepository = ReturnType<typeof createServices>;
 
@@ -45,6 +46,7 @@ export const createServices = (config: Config, actions: ApiActions) => {
     const keepService = new KeepService(apiClient, actions);
     const linkService = new LinkService(apiClient, actions);
     const logService = new LogService(apiClient, actions);
+    const nodeService = new NodeService(apiClient, actions);
     const permissionService = new PermissionService(apiClient, actions);
     const projectService = new ProjectService(apiClient, actions);
     const repositoriesService = new RepositoriesService(apiClient, actions);
@@ -75,6 +77,7 @@ export const createServices = (config: Config, actions: ApiActions) => {
         keepService,
         linkService,
         logService,
+        nodeService,
         permissionService,
         projectService,
         repositoriesService,
