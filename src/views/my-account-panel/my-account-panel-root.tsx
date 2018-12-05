@@ -5,11 +5,23 @@
 import * as React from 'react';
 import { Field, InjectedFormProps } from "redux-form";
 import { TextField } from "~/components/text-field/text-field";
-import { StyleRulesCallback, WithStyles, withStyles, Card, CardContent, Button, Typography, Grid, Table, TableHead, TableRow, TableCell, TableBody, Tooltip, IconButton } from '@material-ui/core';
+import { NativeSelectField } from "~/components/select-field/select-field";
+import {
+    StyleRulesCallback,
+    WithStyles,
+    withStyles,
+    Card,
+    CardContent,
+    Button,
+    Typography,
+    Grid,
+    InputLabel
+} from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { User } from "~/models/user";
+import { require } from "~/validators/require";
 
-type CssRules = 'root' | 'gridItem' | 'title';
+type CssRules = 'root' | 'gridItem' | 'label' | 'title' | 'actions';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -20,104 +32,124 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         height: 45,
         marginBottom: 20
     },
+    label: {
+        fontSize: '0.675rem'
+    },
     title: {
         marginBottom: theme.spacing.unit * 3,
         color: theme.palette.grey["600"]
+    },
+    actions: {
+        display: 'flex',
+        justifyContent: 'flex-end'
     }
 });
 
 export interface MyAccountPanelRootActionProps {}
 
 export interface MyAccountPanelRootDataProps {
-    user?: User;
+    isPristine: boolean;
+    isValid: boolean;
+    initialValues?: User;
 }
 
 export const MY_ACCOUNT_FORM = 'myAccountForm';
 
+const FILES_FIELD_VALIDATION = [require];
+
 type MyAccountPanelRootProps = InjectedFormProps<MyAccountPanelRootActionProps> & MyAccountPanelRootDataProps & WithStyles<CssRules>;
 
 export const MyAccountPanelRoot = withStyles(styles)(
-    ({ classes, user }: MyAccountPanelRootProps) => {
-        console.log(user);
+    ({ classes, isValid, handleSubmit, reset, isPristine, invalid, submitting }: MyAccountPanelRootProps) => {
         return <Card className={classes.root}>
             <CardContent>
                 <Typography variant="title" className={classes.title}>User profile</Typography>
-                <Grid container direction="row" spacing={24}>
-                    <Grid item xs={6}>
-                        <Grid item className={classes.gridItem}>
-                            <Field
-                                label="E-mail"
-                                name="email"
-                                component={TextField}
-                                value={user!.email}
-                                disabled
-                            />
+                <form onSubmit={handleSubmit}>
+                    <Grid container direction="row" spacing={24}>
+                        <Grid item xs={6}>
+                            <Grid item className={classes.gridItem}>
+                                <Field
+                                    label="E-mail"
+                                    name="email"
+                                    component={TextField}
+                                    disabled
+                                />
+                            </Grid>
+                            <Grid item className={classes.gridItem}>
+                                <Field
+                                    label="First name"
+                                    name="firstName"
+                                    component={TextField}
+                                    disabled
+                                />
+                            </Grid>
+                            <Grid item className={classes.gridItem}>
+                                <Field
+                                    label="Identity URL"
+                                    name="identityUrl"
+                                    component={TextField}
+                                    disabled
+                                />
+                            </Grid>
+                            <Grid item className={classes.gridItem}>
+                                <Field
+                                    label="*Organization"
+                                    name="prefs.profile.organization"
+                                    component={TextField}
+                                    validate={FILES_FIELD_VALIDATION}
+                                />
+                            </Grid>
+                            <Grid item className={classes.gridItem}>
+                                <Field
+                                    label="Website"
+                                    name="prefs.profile.website_url"
+                                    component={TextField}
+                                />
+                            </Grid>
+                            <Grid item className={classes.gridItem}>
+                                <InputLabel className={classes.label} htmlFor="prefs.profile.role">Organization</InputLabel>
+                                <Field
+                                    id="prefs.profile.role"
+                                    name="prefs.profile.role"
+                                    component={NativeSelectField}
+                                    items={[
+                                        {key: 'Bio-informatician', value: 'Bio-informatician'},
+                                        {key: 'Data Scientist', value: 'Data Scientist'},
+                                        {key: 'Analyst', value: 'Analyst'},
+                                        {key: 'Researcher', value: 'Researcher'},
+                                        {key: 'Software Developer', value: 'Software Developer'},
+                                        {key: 'System Administrator', value: 'System Administrator'},
+                                        {key: 'Other', value: 'Other'}
+                                    ]}
+                                />
+                            </Grid>
                         </Grid>
-                        <Grid item className={classes.gridItem}>
-                            <Field
-                                label="First name"
-                                name="firstName"
-                                component={TextField}
-                                value={user!.firstName}
-                                disabled
-                            />
+                        <Grid item xs={6}>
+                            <Grid item className={classes.gridItem} />
+                            <Grid item className={classes.gridItem}>
+                                <Field
+                                    label="Last name"
+                                    name="lastName"
+                                    component={TextField}
+                                    disabled
+                                />
+                            </Grid>
+                            <Grid item className={classes.gridItem} />
+                            <Grid item className={classes.gridItem}>
+                                <Field
+                                    label="*E-mail at Organization"
+                                    name="prefs.profile.organization_email"
+                                    component={TextField}
+                                    validate={FILES_FIELD_VALIDATION}
+                                />
+                            </Grid>
                         </Grid>
-                        <Grid item className={classes.gridItem}>
-                            <Field
-                                label="Identity URL"
-                                name="identityUrl"
-                                component={TextField}
-                                value={user!.identityUrl}
-                                disabled
-                            />
-                        </Grid>
-                        <Grid item className={classes.gridItem}>
-                            <Field
-                                label="Organization"
-                                name="organization"
-                                value={user!.prefs.profile!.organization}
-                                component={TextField}
-                            />
-                        </Grid>
-                        <Grid item className={classes.gridItem}>
-                            <Field
-                                label="Website"
-                                name="website"
-                                value={user!.prefs.profile!.website_url}
-                                component={TextField}
-                            />
-                        </Grid>
-                        <Grid item className={classes.gridItem}>
-                            <Field
-                                label="Role"
-                                name="role"
-                                value={user!.prefs.profile!.role}
-                                component={TextField}
-                            />
+                        <Grid item xs={12} className={classes.actions}>
+                            <Button color="primary" onClick={reset} disabled={isPristine}>Discard changes</Button>
+                            <Button color="primary" variant="contained" type="submit" disabled={isPristine || invalid || submitting}>Save changes</Button>
                         </Grid>
                     </Grid>
-                    <Grid item xs={6}>
-                        <Grid item className={classes.gridItem} />
-                        <Grid item className={classes.gridItem}>
-                            <Field
-                                label="Last name"
-                                name="lastName"
-                                component={TextField}
-                                value={user!.lastName}
-                                disabled
-                            />
-                        </Grid>
-                        <Grid item className={classes.gridItem} />
-                        <Grid item className={classes.gridItem}>
-                            <Field
-                                label="E-mail at Organization"
-                                name="organizationEmail"
-                                value={user!.prefs.profile!.organization_email}
-                                component={TextField}
-                            />
-                        </Grid>
-                    </Grid>
-                </Grid>
+                </form>
             </CardContent>
         </Card>;}
 );

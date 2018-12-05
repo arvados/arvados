@@ -3,23 +3,23 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { RootState } from '~/store/store';
-import { Dispatch, compose } from 'redux';
-import { reduxForm, reset } from 'redux-form';
+import { compose } from 'redux';
+import { reduxForm, isPristine, isValid } from 'redux-form';
 import { connect } from 'react-redux';
-import { MyAccountPanelRoot, MyAccountPanelRootDataProps, MyAccountPanelRootActionProps, MY_ACCOUNT_FORM } from '~/views/my-account-panel/my-account-panel-root';
+import { saveEditedUser } from '~/store/my-account/my-account-panel-actions';
+import { MyAccountPanelRoot, MyAccountPanelRootDataProps, MY_ACCOUNT_FORM } from '~/views/my-account-panel/my-account-panel-root';
 
 const mapStateToProps = (state: RootState): MyAccountPanelRootDataProps => ({
-    user: state.auth.user
+    isPristine: isPristine(MY_ACCOUNT_FORM)(state),
+    isValid: isValid(MY_ACCOUNT_FORM)(state),
+    initialValues: state.auth.user
 });
 
-const mapDispatchToProps = (dispatch: Dispatch): MyAccountPanelRootActionProps => ({
-
-});
-
-export const MyAccountPanel = compose(connect(mapStateToProps, mapDispatchToProps), reduxForm({
+export const MyAccountPanel = compose(
+    connect(mapStateToProps),
+    reduxForm({
     form: MY_ACCOUNT_FORM,
     onSubmit: (data, dispatch) => {
-        // dispatch(moveProject(data));
-
+        dispatch(saveEditedUser(data));
     }
 }))(MyAccountPanelRoot);
