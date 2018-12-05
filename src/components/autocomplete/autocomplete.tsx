@@ -76,7 +76,8 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
         return (
             <Popper
                 open={this.state.suggestionsOpen && suggestions.length > 0}
-                anchorEl={this.inputRef.current}>
+                anchorEl={this.inputRef.current}
+                key={suggestions.length}>
                 <Paper onMouseDown={this.preventBlur}>
                     <List dense style={{ width: this.getSuggestionsWidth() }}>
                         {suggestions.map(
