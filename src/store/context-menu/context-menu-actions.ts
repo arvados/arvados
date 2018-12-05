@@ -17,6 +17,7 @@ import { RepositoryResource } from '~/models/repositories';
 import { SshKeyResource } from '~/models/ssh-key';
 import { VirtualMachinesResource } from '~/models/virtual-machines';
 import { KeepServiceResource } from '~/models/keep-services';
+import { NodeResource } from '~/models/node';
 
 export const contextMenuActions = unionize({
     OPEN_CONTEXT_MENU: ofType<{ position: ContextMenuPosition, resource: ContextMenuResource }>(),
@@ -106,6 +107,17 @@ export const openKeepServiceContextMenu = (event: React.MouseEvent<HTMLElement>,
             ownerUuid: keepService.ownerUuid,
             kind: ResourceKind.KEEP_SERVICE,
             menuKind: ContextMenuKind.KEEP_SERVICE
+        }));
+    };
+
+export const openComputeNodeContextMenu = (event: React.MouseEvent<HTMLElement>, computeNode: NodeResource) =>
+    (dispatch: Dispatch) => {
+        dispatch<any>(openContextMenu(event, {
+            name: '',
+            uuid: computeNode.uuid,
+            ownerUuid: computeNode.ownerUuid,
+            kind: ResourceKind.NODE,
+            menuKind: ContextMenuKind.NODE
         }));
     };
 

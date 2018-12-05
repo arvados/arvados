@@ -8,7 +8,7 @@ import { DetailsIcon } from "~/components/icon/icon";
 import { Breadcrumbs } from "~/views-components/breadcrumbs/breadcrumbs";
 import { connect } from 'react-redux';
 import { RootState } from '~/store/store';
-import { matchWorkflowRoute, matchSshKeysRoute, matchRepositoriesRoute, matchVirtualMachineRoute, matchKeepServicesRoute } from '~/routes/routes';
+import * as Routes from '~/routes/routes';
 import { toggleDetailsPanel } from '~/store/details-panel/details-panel-action';
 
 interface MainContentBarProps {
@@ -18,8 +18,9 @@ interface MainContentBarProps {
 
 const isButtonVisible = ({ router }: RootState) => {
     const pathname = router.location ? router.location.pathname : '';
-    return !matchWorkflowRoute(pathname) && !matchVirtualMachineRoute(pathname) &&
-        !matchRepositoriesRoute(pathname) && !matchSshKeysRoute(pathname) && !matchKeepServicesRoute(pathname);
+    return !Routes.matchWorkflowRoute(pathname) && !Routes.matchVirtualMachineRoute(pathname) &&
+        !Routes.matchRepositoriesRoute(pathname) && !Routes.matchSshKeysRoute(pathname) &&
+        !Routes.matchKeepServicesRoute(pathname) && !Routes.matchComputeNodesRoute(pathname);
 };
 
 export const MainContentBar = connect((state: RootState) => ({
