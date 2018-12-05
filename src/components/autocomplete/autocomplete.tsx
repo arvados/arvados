@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Input as MuiInput, Chip as MuiChip, Popper as MuiPopper, Paper, FormControl, InputLabel, StyleRulesCallback, withStyles, RootRef, ListItemText, ListItem, List, FormHelperText } from '@material-ui/core';
+import { Input as MuiInput, Chip as MuiChip, Popper as MuiPopper, Paper as MuiPaper, FormControl, InputLabel, StyleRulesCallback, withStyles, RootRef, ListItemText, ListItem, List, FormHelperText } from '@material-ui/core';
 import { PopperProps } from '@material-ui/core/Popper';
 import { WithStyles } from '@material-ui/core/styles';
 import { noop } from 'lodash';
@@ -199,3 +199,10 @@ const inputStyles: StyleRulesCallback<InputClasses> = () => ({
 });
 
 const Input = withStyles(inputStyles)(MuiInput);
+
+const Paper = withStyles({
+    root: {
+        maxHeight: '80vh',
+        overflowY: 'auto',
+    }
+})(MuiPaper);
