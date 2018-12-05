@@ -582,6 +582,26 @@ class ContainerTest < ActiveSupport::TestCase
     assert_equal c1.uuid, reused.uuid
   end
 
+  test "find_reusable method with different runtime_token, different user, unreadable output" do
+    set_user_from_auth :crt_user
+    common_attrs = REUSABLE_COMMON_ATTRS.merge({use_existing:false, priority:1, environment:{"var" => "queued"}})
+    completed_attrs = {
+      state: Container::Complete,
+      exit_code: 0,
+      log: 'b6701533bf043971f4750a777cf5e4e6+47',
+      output: '08504d4f1ad35c690f09150d0590eb9b+49'
+    }
+    c1, _ = minimal_new(common_attrs.merge({runtime_token: api_client_authorizations(:active).token}))
+    c1.update_attributes!({state: Container::Locked})
+    c1.update_attributes!({state: Container::Running})
+    c1.update_attributes!(completed_attrs)
+    assert_equal Container::Complete, c1.state
+
+    reused = Container.find_reusable(common_attrs.merge(runtime_token_attr(:container_runtime_token)))
+    # "active" user can't read the log and output, should not reuse.
+    assert_nil reused
+  end
+
   test "Container running" do
     set_user_from_auth :active
     c, _ = minimal_new priority: 1

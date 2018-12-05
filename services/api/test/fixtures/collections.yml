@@ -971,6 +971,22 @@ collection_with_uri_prop:
   properties:
     "http://schema.org/example": "value1"
 
+crt1_output:
+  uuid: zzzzz-4zz18-ayre2yoeb4kivlr
+  owner_uuid: zzzzz-tpzed-l3skomkti0c4vg4
+  portable_data_hash: 08504d4f1ad35c690f09150d0590eb9b+49
+  manifest_text: ". 3c4a71133b1e998cdd256614c1d2c33d+12+A642aee8b814b339e29a479a6130201f3f5a1c327@5c1ab0c6 0:12:stdin\n"
+  name: Saved at 2018-12-05 20:57:31 UTC by peter@petervg
+  current_version_uuid: zzzzz-4zz18-ayre2yoeb4kivlr
+
+crt1_log:
+  uuid: zzzzz-4zz18-eo9rz91s06aqs9v
+  owner_uuid: zzzzz-tpzed-l3skomkti0c4vg4
+  portable_data_hash: b6701533bf043971f4750a777cf5e4e6+47
+  manifest_text: ". 7c97df88c87074bdf3f585b49b180c40+9+A0bd0fab88d81313fa97fdbfeafb6e82325064a1b@5c1ab0f9 0:9:stdin\n"
+  name: Saved at 2018-12-05 20:58:23 UTC by peter@petervg
+  current_version_uuid: zzzzz-4zz18-eo9rz91s06aqs9v
+
 # Test Helper trims the rest of the file
 
 # Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper
