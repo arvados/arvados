@@ -27,11 +27,13 @@ export interface AutocompleteProps<Item, Suggestion> {
 
 export interface AutocompleteState {
     suggestionsOpen: boolean;
+    selectedSuggestionIndex: number;
 }
 export class Autocomplete<Value, Suggestion> extends React.Component<AutocompleteProps<Value, Suggestion>, AutocompleteState> {
 
     state = {
         suggestionsOpen: false,
+        selectedSuggestionIndex: 0,
     };
 
     containerRef = React.createRef<HTMLDivElement>();
@@ -64,10 +66,11 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
             onBlur={this.handleBlur}
             onChange={this.props.onChange}
             onKeyPress={this.handleKeyPress}
+            onKeyDown={this.handleNavigationKeyPress}
         />;
     }
 
-    renderHelperText(){
+    renderHelperText() {
         return <FormHelperText>{this.props.helperText}</FormHelperText>;
     }
 
@@ -75,14 +78,18 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
         const { suggestions = [] } = this.props;
         return (
             <Popper
-                open={this.state.suggestionsOpen && suggestions.length > 0}
+                open={this.isSuggestionBoxOpen()}
                 anchorEl={this.inputRef.current}
                 key={suggestions.length}>
                 <Paper onMouseDown={this.preventBlur}>
                     <List dense style={{ width: this.getSuggestionsWidth() }}>
                         {suggestions.map(
                             (suggestion, index) =>
-                                <ListItem button key={index} onClick={this.handleSelect(suggestion)}>
+                                <ListItem
+                                    button
+                                    key={index}
+                                    onClick={this.handleSelect(suggestion)}
+                                    selected={index === this.state.selectedSuggestionIndex}>
                                     {this.renderSuggestion(suggestion)}
                                 </ListItem>
                         )}
@@ -90,6 +97,11 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
                 </Paper>
             </Popper>
         );
+    }
+
+    isSuggestionBoxOpen() {
+        const { suggestions = [] } = this.props;
+        return this.state.suggestionsOpen && suggestions.length > 0;
     }
 
     handleFocus = (event: React.FocusEvent<HTMLInputElement>) => {
@@ -106,11 +118,33 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
         });
     }
 
-    handleKeyPress = ({ key }: React.KeyboardEvent<HTMLInputElement>) => {
-        const { onCreate = noop } = this.props;
-        if (key === 'Enter' && this.props.value.length > 0) {
-            onCreate();
+    handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
+        const { onCreate = noop, onSelect = noop, suggestions = [] } = this.props;
+        const { selectedSuggestionIndex } = this.state;
+        if (event.key === 'Enter') {
+            if (this.isSuggestionBoxOpen() && selectedSuggestionIndex < suggestions.length) {
+                // prevent form submissions when selecting a suggestion
+                event.preventDefault(); 
+                onSelect(suggestions[selectedSuggestionIndex]);
+            } else if (this.props.value.length > 0) {
+                onCreate();
+            }
         }
+    }
+
+    handleNavigationKeyPress = ({ key }: React.KeyboardEvent<HTMLInputElement>) => {
+        if (key === 'ArrowUp') {
+            this.updateSelectedSuggestionIndex(-1);
+        } else if (key === 'ArrowDown') {
+            this.updateSelectedSuggestionIndex(1);
+        }
+    }
+
+    updateSelectedSuggestionIndex(value: -1 | 1) {
+        const { suggestions = [] } = this.props;
+        this.setState(({ selectedSuggestionIndex }) => ({
+            selectedSuggestionIndex: (selectedSuggestionIndex + value) % suggestions.length
+        }));
     }
 
     renderChips() {
