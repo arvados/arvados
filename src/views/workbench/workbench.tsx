@@ -66,6 +66,7 @@ import { VirtualMachineAttributesDialog } from '~/views-components/virtual-machi
 import { RemoveVirtualMachineDialog } from '~/views-components/virtual-machines-dialog/remove-dialog';
 import { UserPanel } from '~/views/user-panel/user-panel';
 import { UserAttributesDialog } from '~/views-components/user-dialog/attributes-dialog';
+import { CreateUserDialog } from '~/views-components/dialog-forms/create-user-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -159,6 +160,7 @@ export const WorkbenchPanel =
             <CreateProjectDialog />
             <CreateRepositoryDialog />
             <CreateSshKeyDialog />
+            <CreateUserDialog />
             <CurrentTokenDialog />
             <FileRemoveDialog />
             <FilesUploadCollectionDialog />

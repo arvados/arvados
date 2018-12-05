@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { ContextMenuActionSet } from "~/views-components/context-menu/context-menu-action-set";
-import { AdvancedIcon, ProjectIcon, AttributesIcon, ShareIcon } from "~/components/icon/icon";
+import { AdvancedIcon, ProjectIcon, AttributesIcon, UserPanelIcon } from "~/components/icon/icon";
 import { openAdvancedTabDialog } from '~/store/advanced-tab/advanced-tab';
 import { openUserAttributes } from "~/store/users/users-actions";
 
@@ -28,7 +28,7 @@ export const userActionSet: ContextMenuActionSet = [[{
 },
 {
     name: "Manage",
-    icon: ShareIcon,
+    icon: UserPanelIcon,
     execute: (dispatch, { uuid }) => {
         dispatch<any>(openAdvancedTabDialog(uuid));
     }

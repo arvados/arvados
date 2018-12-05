@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { WithStyles, withStyles, Typography } from '@material-ui/core';
+import { WithStyles, withStyles, Typography, Tabs, Tab, Paper, Button } from '@material-ui/core';
 import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
 import { connect, DispatchProp } from 'react-redux';
 import { DataColumns } from '~/components/data-table/data-table';
@@ -21,24 +21,22 @@ import {
     ResourceUsername
 } from "~/views-components/data-explorer/renderers";
 import { navigateTo } from "~/store/navigation/navigation-action";
-import { loadDetailsPanel } from "~/store/details-panel/details-panel-action";
 import { ContextMenuKind } from "~/views-components/context-menu/context-menu";
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 import { createTree } from '~/models/tree';
-import { compose } from 'redux';
+import { compose, Dispatch } from 'redux';
 import { UserResource } from '~/models/user';
-import { ShareMeIcon } from '~/components/icon/icon';
-import { USERS_PANEL_ID } from '~/store/users/users-actions';
+import { ShareMeIcon, AddIcon } from '~/components/icon/icon';
+import { USERS_PANEL_ID, openUserCreateDialog } from '~/store/users/users-actions';
 
-type UserPanelRules = "toolbar" | "button";
+type UserPanelRules = "button";
 
 const styles = withStyles<UserPanelRules>(theme => ({
-    toolbar: {
-        paddingBottom: theme.spacing.unit * 3,
-        textAlign: "right"
-    },
     button: {
-        marginLeft: theme.spacing.unit
+        marginTop: theme.spacing.unit,
+        marginRight: theme.spacing.unit * 2,
+        textAlign: 'right',
+        alignSelf: 'center'
     },
 }));
 
@@ -124,48 +122,91 @@ interface UserPanelDataProps {
     resources: ResourcesState;
 }
 
-type UserPanelProps = UserPanelDataProps & DispatchProp & WithStyles<UserPanelRules>;
+interface UserPanelActionProps {
+    openUserCreateDialog: () => void;
+    handleRowDoubleClick: (uuid: string) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: any) => void;
+}
+
+const mapStateToProps = (state: RootState) => {
+    return {
+        resources: state.resources
+    };
+};
+
+const mapDispatchToProps = (dispatch: Dispatch) => ({
+    openUserCreateDialog: () => dispatch<any>(openUserCreateDialog()),
+    handleRowDoubleClick: (uuid: string) => dispatch<any>(navigateTo(uuid)),
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: any) => dispatch<any>(openContextMenu(event, item))
+});
+
+type UserPanelProps = UserPanelDataProps & UserPanelActionProps & DispatchProp & WithStyles<UserPanelRules>;
 
 export const UserPanel = compose(
     styles,
-    connect((state: RootState) => ({
-        resources: state.resources
-    })))(
+    connect(mapStateToProps, mapDispatchToProps))(
         class extends React.Component<UserPanelProps> {
+            state = {
+                value: 0,
+            };
+
+            componentDidMount() {
+                this.setState({ value: 0 });
+            }
+
             render() {
-                return <DataExplorer
-                    id={USERS_PANEL_ID}
-                    onRowClick={this.handleRowClick}
-                    onRowDoubleClick={this.handleRowDoubleClick}
-                    onContextMenu={this.handleContextMenu}
-                    contextMenuColumn={true}
-                    isColumnSelectorHidden={true}
-                    dataTableDefaultView={
-                        <DataTableDefaultView
-                            icon={ShareMeIcon}
-                            messages={['Your user list is empty.']} />
-                    } />;
+                const { value } = this.state;
+                return <Paper>
+                    <Tabs value={value} onChange={this.handleChange} fullWidth>
+                        <Tab label="USERS" />
+                        <Tab label="ACTIVITY" />
+                    </Tabs>
+                    {value === 0 &&
+                        <span>
+                            <div className={this.props.classes.button}>
+                                <Button variant="contained" color="primary" onClick={this.props.openUserCreateDialog}>
+                                    <AddIcon /> NEW USER
+                                </Button>
+                            </div>
+                            <DataExplorer
+                                id={USERS_PANEL_ID}
+                                onRowClick={this.handleRowClick}
+                                onRowDoubleClick={this.handleRowDoubleClick}
+                                onContextMenu={this.handleContextMenu}
+                                contextMenuColumn={true}
+                                isUserPanel={true}
+                                dataTableDefaultView={
+                                    <DataTableDefaultView
+                                        icon={ShareMeIcon}
+                                        messages={['Your user list is empty.']} />
+                                } />
+                        </span>}
+                </Paper>;
+            }
+
+            handleChange = (event: React.MouseEvent<HTMLElement>, value: number) => {
+                this.setState({ value });
             }
 
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
                 const resource = getResource<UserResource>(resourceUuid)(this.props.resources);
                 if (resource) {
-                    this.props.dispatch<any>(openContextMenu(event, {
+                    this.props.onContextMenu(event, {
                         name: '',
                         uuid: resource.uuid,
                         ownerUuid: resource.ownerUuid,
                         kind: resource.kind,
                         menuKind: ContextMenuKind.USER
-                    }));
+                    });
                 }
             }
 
             handleRowDoubleClick = (uuid: string) => {
-                this.props.dispatch<any>(navigateTo(uuid));
+                this.props.handleRowDoubleClick(uuid);
             }
 
-            handleRowClick = (uuid: string) => {
-                this.props.dispatch(loadDetailsPanel(uuid));
+            handleRowClick = () => {
+                return;
             }
         }
     );

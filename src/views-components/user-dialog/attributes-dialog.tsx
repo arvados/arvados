@@ -66,17 +66,17 @@ const attributes = (user: UserResource, classes: any) => {
         <span>
             <Grid container direction="row">
                 <Grid item xs={5} className={classes.rightContainer}>
-                    <Grid item>First name</Grid>
-                    <Grid item>Last name</Grid>
-                    <Grid item>Owner uuid</Grid>
-                    <Grid item>Created at</Grid>
-                    <Grid item>Modified at</Grid>
-                    <Grid item>Modified by user uuid</Grid>
-                    <Grid item>Modified by client uuid</Grid>
-                    <Grid item>uuid</Grid>
-                    <Grid item>Href</Grid>
-                    <Grid item>Identity url</Grid>
-                    <Grid item>Username</Grid>
+                    {firstName && <Grid item>First name</Grid>}
+                    {lastName && <Grid item>Last name</Grid>}
+                    {ownerUuid && <Grid item>Owner uuid</Grid>}
+                    {createdAt && <Grid item>Created at</Grid>}
+                    {modifiedAt && <Grid item>Modified at</Grid>}
+                    {modifiedByUserUuid && <Grid item>Modified by user uuid</Grid>}
+                    {modifiedByClientUuid && <Grid item>Modified by client uuid</Grid>}
+                    {uuid && <Grid item>uuid</Grid>}
+                    {href && <Grid item>Href</Grid>}
+                    {identityUrl && <Grid item>Identity url</Grid>}
+                    {username && <Grid item>Username</Grid>}
                 </Grid>
                 <Grid item xs={7} className={classes.leftContainer}>
                     <Grid item>{firstName}</Grid>

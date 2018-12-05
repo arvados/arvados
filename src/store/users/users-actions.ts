@@ -24,7 +24,15 @@ export type UsersActions = UnionOf<typeof usersPanelActions>;
 export const USERS_PANEL_ID = 'usersPanel';
 export const USER_ATTRIBUTES_DIALOG = 'userAttributesDialog';
 export const USER_CREATE_FORM_NAME = 'repositoryCreateFormName';
-export const USER_REMOVE_DIALOG = 'repositoryRemoveDialog';
+
+export interface UserCreateFormDialogData {
+    firstName: string;
+    lastName: string;
+    email: string;
+    identityUrl: string;
+    virtualMachineName: string;
+    groupVirtualMachine: string;
+}
 
 export const openUserAttributes = (uuid: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -41,19 +49,17 @@ export const openUserCreateDialog = () =>
         dispatch(dialogActions.OPEN_DIALOG({ id: USER_CREATE_FORM_NAME, data: { user } }));
     };
 
-export const createUser = (user: UserResource) =>
+export const createUser = (user: UserCreateFormDialogData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const userUuid = await services.authService.getUuid();
-        const user = await services.userService.get(userUuid!);
         dispatch(startSubmit(USER_CREATE_FORM_NAME));
         try {
-            // const newUser = await services.repositoriesService.create({ name: `${user.username}/${repository.name}` });
+            const newUser = await services.userService.create({ ...user });
             dispatch(dialogActions.CLOSE_DIALOG({ id: USER_CREATE_FORM_NAME }));
             dispatch(reset(USER_CREATE_FORM_NAME));
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: "User has been successfully created.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
             dispatch<any>(loadUsersData());
-            // return newUser;
-            return;
+            dispatch(userBindedActions.REQUEST_ITEMS());
+            return newUser;
         } catch (e) {
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.NAME_HAS_ALREADY_BEEN_TAKEN) {
@@ -61,27 +67,6 @@ export const createUser = (user: UserResource) =>
             }
             return undefined;
         }
-    };
-
-export const openRemoveUsersDialog = (uuid: string) =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(dialogActions.OPEN_DIALOG({
-            id: USER_REMOVE_DIALOG,
-            data: {
-                title: 'Remove user',
-                text: 'Are you sure you want to remove this user?',
-                confirmButtonLabel: 'Remove',
-                uuid
-            }
-        }));
-    };
-
-export const removeUser = (uuid: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...' }));
-        await services.userService.delete(uuid);
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
-        dispatch<any>(loadUsersData());
     };
 
 export const userBindedActions = bindDataExplorerActions(USERS_PANEL_ID);
