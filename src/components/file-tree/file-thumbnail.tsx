@@ -29,10 +29,8 @@ const imageFileThumbnailStyle = withStyles<ImageFileThumbnailCssRules>(theme => 
 
 const ImageFileThumbnail = imageFileThumbnailStyle(
     ({ classes, file }: WithStyles<ImageFileThumbnailCssRules> & FileThumbnailProps) =>
-        file.type === CollectionFileType.DIRECTORY
-            ? null
-            : <img
-                className={classes.thumbnail}
-                alt={file.name}
-                src={file.url} />
+        <img
+            className={classes.thumbnail}
+            alt={file.name}
+            src={file.url} />
 );
