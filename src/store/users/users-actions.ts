@@ -13,6 +13,7 @@ import { startSubmit, reset, stopSubmit } from "redux-form";
 import { getCommonResourceServiceError, CommonResourceServiceError } from "~/services/common-service/common-resource-service";
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { UserResource } from "~/models/user";
+import { getResource } from '~/store/resources/resources';
 
 export const usersPanelActions = unionize({
     SET_USERS: ofType<any>(),
@@ -27,8 +28,9 @@ export const USER_REMOVE_DIALOG = 'repositoryRemoveDialog';
 
 export const openUserAttributes = (uuid: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const repositoryData = getState().repositories.items.find(it => it.uuid === uuid);
-        dispatch(dialogActions.OPEN_DIALOG({ id: USER_ATTRIBUTES_DIALOG, data: { repositoryData } }));
+        const { resources } = getState();
+        const data = getResource<UserResource>(uuid)(resources);
+        dispatch(dialogActions.OPEN_DIALOG({ id: USER_ATTRIBUTES_DIALOG, data }));
     };
 
 export const openUserCreateDialog = () =>

@@ -72,7 +72,8 @@ enum ResourcePrefix {
     REPOSITORIES = 'repositories',
     AUTORIZED_KEYS = 'authorized_keys',
     VIRTUAL_MACHINES = 'virtual_machines',
-    KEEP_SERVICES = 'keep_services'
+    KEEP_SERVICES = 'keep_services',
+    USERS = 'users'
 }
 
 enum KeepServiceData {
@@ -80,9 +81,14 @@ enum KeepServiceData {
     CREATED_AT = 'created_at'
 }
 
-type AdvanceResourceKind = CollectionData | ProcessData | ProjectData | RepositoryData | SshKeyData | VirtualMachineData | KeepServiceData;
+enum UserData {
+    USER = 'user',
+    USERNAME = 'username'
+}
+
+type AdvanceResourceKind = CollectionData | ProcessData | ProjectData | RepositoryData | SshKeyData | VirtualMachineData | KeepServiceData | UserData;
 type AdvanceResourcePrefix = GroupContentsResourcePrefix | ResourcePrefix;
-type AdvanceResponseData = ContainerRequestResource | ProjectResource | CollectionResource | RepositoryResource | SshKeyResource | VirtualMachinesResource | KeepServiceResource | undefined;
+type AdvanceResponseData = ContainerRequestResource | ProjectResource | CollectionResource | RepositoryResource | SshKeyResource | VirtualMachinesResource | KeepServiceResource | UserResource | undefined;
 
 export const openAdvancedTabDialog = (uuid: string) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
@@ -192,6 +198,27 @@ export const openAdvancedTabDialog = (uuid: string) =>
                     property: dataKeepService!.createdAt
                 });
                 dispatch<any>(initAdvancedTabDialog(advanceDataKeepService));
+                break;
+            case ResourceKind.USER:
+                const { resources } = getState();
+                const data = getResource<UserResource>(uuid)(resources);
+                const metadata = await services.linkService.list({
+                    filters: new FilterBuilder()
+                        .addEqual('headUuid', uuid)
+                        .getFilters()
+                });
+                const advanceDataUser = advancedTabData({
+                    uuid,
+                    metadata,
+                    user: '',
+                    apiResponseKind: userApiResponse,
+                    data,
+                    resourceKind: UserData.USER,
+                    resourcePrefix: ResourcePrefix.USERS,
+                    resourceKindProperty: UserData.USERNAME,
+                    property: data!.username
+                });
+                dispatch<any>(initAdvancedTabDialog(advanceDataUser));
                 break;
             default:
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Could not open advanced tab for this resource.", hideDuration: 2000, kind: SnackbarKind.ERROR }));
@@ -439,6 +466,30 @@ const keepServiceApiResponse = (apiResponse: KeepServiceResource) => {
 "service_type": "${serviceType}",
 "created_at": "${createdAt}",
 "read_only": "${stringify(readOnly)}"`;
+
+    return response;
+};
+
+const userApiResponse = (apiResponse: UserResource) => {
+    const {
+        uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid,
+        email, firstName, lastName, identityUrl, isActive, isAdmin, prefs, defaultOwnerUuid, username
+    } = apiResponse;
+    const response = `"uuid": "${uuid}",
+"owner_uuid": "${ownerUuid}",
+"created_at": "${createdAt}",
+"modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
+"modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
+"modified_at": ${stringify(modifiedAt)},
+"email": "${email}",
+"first_name": "${firstName}",
+"last_name": "${stringify(lastName)}",
+"identity_url": "${identityUrl}",
+"is_active": "${isActive},
+"is_admin": "${isAdmin},
+"prefs": "${stringifyObject(prefs)},
+"default_owner_uuid": "${defaultOwnerUuid},
+"username": "${username}"`;
 
     return response;
 };

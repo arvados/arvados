@@ -133,7 +133,6 @@ export const UserPanel = compose(
     })))(
         class extends React.Component<UserPanelProps> {
             render() {
-                console.log(this.props.resources);
                 return <DataExplorer
                     id={USERS_PANEL_ID}
                     onRowClick={this.handleRowClick}
@@ -156,7 +155,7 @@ export const UserPanel = compose(
                         uuid: resource.uuid,
                         ownerUuid: resource.ownerUuid,
                         kind: resource.kind,
-                        menuKind: ContextMenuKind.TRASH
+                        menuKind: ContextMenuKind.USER
                     }));
                 }
             }

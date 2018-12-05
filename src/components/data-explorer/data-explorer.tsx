@@ -4,13 +4,13 @@
 
 import * as React from 'react';
 import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, WithStyles, TablePagination, IconButton, Tooltip } from '@material-ui/core';
-import { ColumnSelector } from "../column-selector/column-selector";
-import { DataTable, DataColumns } from "../data-table/data-table";
-import { DataColumn, SortDirection } from "../data-table/data-column";
-import { SearchInput } from '../search-input/search-input';
+import { ColumnSelector } from "~/components/column-selector/column-selector";
+import { DataTable, DataColumns } from "~/components/data-table/data-table";
+import { DataColumn, SortDirection } from "~/components/data-table/data-column";
+import { SearchInput } from '~/components/search-input/search-input';
 import { ArvadosTheme } from "~/common/custom-theme";
 import { createTree } from '~/models/tree';
-import { DataTableFilters } from '../data-table-filters/data-table-filters-tree';
+import { DataTableFilters } from '~/components/data-table-filters/data-table-filters-tree';
 import { MoreOptionsIcon } from '~/components/icon/icon';
 
 type CssRules = 'searchBox' | "toolbar" | "footer" | "root" | 'moreOptionsButton';

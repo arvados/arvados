@@ -65,6 +65,7 @@ import { AttributesSshKeyDialog } from '~/views-components/ssh-keys-dialog/attri
 import { VirtualMachineAttributesDialog } from '~/views-components/virtual-machines-dialog/attributes-dialog';
 import { RemoveVirtualMachineDialog } from '~/views-components/virtual-machines-dialog/remove-dialog';
 import { UserPanel } from '~/views/user-panel/user-panel';
+import { UserAttributesDialog } from '~/views-components/user-dialog/attributes-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -184,6 +185,7 @@ export const WorkbenchPanel =
             <UpdateCollectionDialog />
             <UpdateProcessDialog />
             <UpdateProjectDialog />
+            <UserAttributesDialog />
             <VirtualMachineAttributesDialog />
         </Grid>
     );
