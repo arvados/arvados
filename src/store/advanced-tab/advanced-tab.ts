@@ -21,6 +21,7 @@ import { UserResource } from '~/models/user';
 import { ListResults } from '~/services/common-service/common-resource-service';
 import { LinkResource } from '~/models/link';
 import { KeepServiceResource } from '~/models/keep-services';
+import { NodeResource } from '~/models/node';
 
 export const ADVANCED_TAB_DIALOG = 'advancedTabDialog';
 
@@ -72,7 +73,8 @@ enum ResourcePrefix {
     REPOSITORIES = 'repositories',
     AUTORIZED_KEYS = 'authorized_keys',
     VIRTUAL_MACHINES = 'virtual_machines',
-    KEEP_SERVICES = 'keep_services'
+    KEEP_SERVICES = 'keep_services',
+    COMPUTE_NODES = 'nodes'
 }
 
 enum KeepServiceData {
@@ -80,9 +82,14 @@ enum KeepServiceData {
     CREATED_AT = 'created_at'
 }
 
-type AdvanceResourceKind = CollectionData | ProcessData | ProjectData | RepositoryData | SshKeyData | VirtualMachineData | KeepServiceData;
+enum ComputeNodeData {
+    COMPUTE_NODE = 'node',
+    PROPERTIES = 'properties'
+}
+
+type AdvanceResourceKind = CollectionData | ProcessData | ProjectData | RepositoryData | SshKeyData | VirtualMachineData | KeepServiceData | ComputeNodeData;
 type AdvanceResourcePrefix = GroupContentsResourcePrefix | ResourcePrefix;
-type AdvanceResponseData = ContainerRequestResource | ProjectResource | CollectionResource | RepositoryResource | SshKeyResource | VirtualMachinesResource | KeepServiceResource | undefined;
+type AdvanceResponseData = ContainerRequestResource | ProjectResource | CollectionResource | RepositoryResource | SshKeyResource | VirtualMachinesResource | KeepServiceResource | NodeResource | undefined;
 
 export const openAdvancedTabDialog = (uuid: string) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
@@ -193,6 +200,21 @@ export const openAdvancedTabDialog = (uuid: string) =>
                 });
                 dispatch<any>(initAdvancedTabDialog(advanceDataKeepService));
                 break;
+            case ResourceKind.NODE:
+                const dataComputeNode = getState().computeNodes.find(node => node.uuid === uuid);
+                const advanceDataComputeNode = advancedTabData({
+                    uuid,
+                    metadata: '',
+                    user: '',
+                    apiResponseKind: computeNodeApiResponse,
+                    data: dataComputeNode,
+                    resourceKind: ComputeNodeData.COMPUTE_NODE,
+                    resourcePrefix: ResourcePrefix.COMPUTE_NODES,
+                    resourceKindProperty: ComputeNodeData.PROPERTIES,
+                    property: dataComputeNode!.properties
+                });
+                dispatch<any>(initAdvancedTabDialog(advanceDataComputeNode));
+                break;
             default:
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Could not open advanced tab for this resource.", hideDuration: 2000, kind: SnackbarKind.ERROR }));
         }
@@ -269,7 +291,7 @@ const cliUpdateHeader = (resourceKind: string, resourceName: string) =>
 const cliUpdateExample = (uuid: string, resourceKind: string, resource: string | string[], resourceName: string) => {
     const CLIUpdateCollectionExample = `arv ${resourceKind} update \\
   --uuid ${uuid} \\
-  --${resourceKind} '{"${resourceName}":${resource}}'`;
+  --${resourceKind} '{"${resourceName}":${JSON.stringify(resource)}}'`;
 
     return CLIUpdateCollectionExample;
 };
@@ -284,7 +306,7 @@ const curlExample = (uuid: string, resourcePrefix: string, resource: string | st
   https://$ARVADOS_API_HOST/arvados/v1/${resourcePrefix}/${uuid} \\
   <<EOF
 {
-  "${resourceName}": ${resource}
+  "${resourceName}": ${JSON.stringify(resource, null, 4)}
 }
 EOF`;
 
@@ -439,6 +461,31 @@ const keepServiceApiResponse = (apiResponse: KeepServiceResource) => {
 "service_type": "${serviceType}",
 "created_at": "${createdAt}",
 "read_only": "${stringify(readOnly)}"`;
+
+    return response;
+};
+
+const computeNodeApiResponse = (apiResponse: NodeResource) => {
+    const {
+        uuid, slotNumber, hostname, domain, ipAddress, firstPingAt, lastPingAt, jobUuid,
+        ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid,
+        properties, info
+    } = apiResponse;
+    const response = `"uuid": "${uuid}",
+"owner_uuid": "${ownerUuid}",
+"modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
+"modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
+"modified_at": ${stringify(modifiedAt)},
+"created_at": "${createdAt}",
+"slot_number": "${stringify(slotNumber)}",
+"hostname": "${stringify(hostname)}",
+"domain": "${stringify(domain)}",
+"ip_address": "${stringify(ipAddress)}",
+"first_ping_at": "${stringify(firstPingAt)}",
+"last_ping_at": "${stringify(lastPingAt)}",
+"job_uuid": "${stringify(jobUuid)}",
+"properties": "${JSON.stringify(properties, null, 4)}",
+"info": "${JSON.stringify(info, null, 4)}"`;
 
     return response;
 };

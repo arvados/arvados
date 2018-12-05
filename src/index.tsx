@@ -53,6 +53,7 @@ import { sshKeyActionSet } from '~/views-components/context-menu/action-sets/ssh
 import { keepServiceActionSet } from '~/views-components/context-menu/action-sets/keep-service-action-set';
 import { loadVocabulary } from '~/store/vocabulary/vocabulary-actions';
 import { virtualMachineActionSet } from '~/views-components/context-menu/action-sets/virtual-machine-action-set';
+import { computeNodeActionSet } from '~/views-components/context-menu/action-sets/compute-node-action-set';
 
 console.log(`Starting arvados [${getBuildInfo()}]`);
 
@@ -73,6 +74,7 @@ addMenuActionSet(ContextMenuKind.REPOSITORY, repositoryActionSet);
 addMenuActionSet(ContextMenuKind.SSH_KEY, sshKeyActionSet);
 addMenuActionSet(ContextMenuKind.VIRTUAL_MACHINE, virtualMachineActionSet);
 addMenuActionSet(ContextMenuKind.KEEP_SERVICE, keepServiceActionSet);
+addMenuActionSet(ContextMenuKind.NODE, computeNodeActionSet);
 
 fetchConfig()
     .then(({ config, apiHost }) => {

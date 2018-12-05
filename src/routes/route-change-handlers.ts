@@ -4,17 +4,8 @@
 
 import { History, Location } from 'history';
 import { RootStore } from '~/store/store';
-import {
-    matchProcessRoute, matchProcessLogRoute, matchProjectRoute, matchCollectionRoute, matchFavoritesRoute,
-    matchTrashRoute, matchRootRoute, matchSharedWithMeRoute, matchRunProcessRoute, matchWorkflowRoute,
-    matchSearchResultsRoute, matchSshKeysRoute, matchRepositoriesRoute, matchVirtualMachineRoute,
-    matchKeepServicesRoute
-} from './routes';
-import {
-    loadSharedWithMe, loadRunProcess, loadWorkflow, loadSearchResults,
-    loadProject, loadCollection, loadFavorites, loadTrash, loadProcess, loadProcessLog,
-    loadSshKeys, loadRepositories, loadVirtualMachines, loadKeepServices
-} from '~/store/workbench/workbench-actions';
+import * as Routes from '~/routes/routes';
+import * as WorkbenchActions from '~/store/workbench/workbench-actions';
 import { navigateToRootProject } from '~/store/navigation/navigation-action';
 
 export const addRouteChangeHandlers = (history: History, store: RootStore) => {
@@ -24,51 +15,54 @@ export const addRouteChangeHandlers = (history: History, store: RootStore) => {
 };
 
 const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
-    const rootMatch = matchRootRoute(pathname);
-    const projectMatch = matchProjectRoute(pathname);
-    const collectionMatch = matchCollectionRoute(pathname);
-    const favoriteMatch = matchFavoritesRoute(pathname);
-    const trashMatch = matchTrashRoute(pathname);
-    const processMatch = matchProcessRoute(pathname);
-    const processLogMatch = matchProcessLogRoute(pathname);
-    const repositoryMatch = matchRepositoriesRoute(pathname);
-    const searchResultsMatch = matchSearchResultsRoute(pathname);
-    const sharedWithMeMatch = matchSharedWithMeRoute(pathname);
-    const runProcessMatch = matchRunProcessRoute(pathname);
-    const virtualMachineMatch = matchVirtualMachineRoute(pathname);
-    const workflowMatch = matchWorkflowRoute(pathname);
-    const sshKeysMatch = matchSshKeysRoute(pathname);
-    const keepServicesMatch = matchKeepServicesRoute(pathname);
+    const rootMatch = Routes.matchRootRoute(pathname);
+    const projectMatch = Routes.matchProjectRoute(pathname);
+    const collectionMatch = Routes.matchCollectionRoute(pathname);
+    const favoriteMatch = Routes.matchFavoritesRoute(pathname);
+    const trashMatch = Routes.matchTrashRoute(pathname);
+    const processMatch = Routes.matchProcessRoute(pathname);
+    const processLogMatch = Routes.matchProcessLogRoute(pathname);
+    const repositoryMatch = Routes.matchRepositoriesRoute(pathname);
+    const searchResultsMatch = Routes.matchSearchResultsRoute(pathname);
+    const sharedWithMeMatch = Routes.matchSharedWithMeRoute(pathname);
+    const runProcessMatch = Routes.matchRunProcessRoute(pathname);
+    const virtualMachineMatch = Routes.matchVirtualMachineRoute(pathname);
+    const workflowMatch = Routes.matchWorkflowRoute(pathname);
+    const sshKeysMatch = Routes.matchSshKeysRoute(pathname);
+    const keepServicesMatch = Routes.matchKeepServicesRoute(pathname);
+    const computeNodesMatch = Routes.matchComputeNodesRoute(pathname);
 
     if (projectMatch) {
-        store.dispatch(loadProject(projectMatch.params.id));
+        store.dispatch(WorkbenchActions.loadProject(projectMatch.params.id));
     } else if (collectionMatch) {
-        store.dispatch(loadCollection(collectionMatch.params.id));
+        store.dispatch(WorkbenchActions.loadCollection(collectionMatch.params.id));
     } else if (favoriteMatch) {
-        store.dispatch(loadFavorites());
+        store.dispatch(WorkbenchActions.loadFavorites());
     } else if (trashMatch) {
-        store.dispatch(loadTrash());
+        store.dispatch(WorkbenchActions.loadTrash());
     } else if (processMatch) {
-        store.dispatch(loadProcess(processMatch.params.id));
+        store.dispatch(WorkbenchActions.loadProcess(processMatch.params.id));
     } else if (processLogMatch) {
-        store.dispatch(loadProcessLog(processLogMatch.params.id));
+        store.dispatch(WorkbenchActions.loadProcessLog(processLogMatch.params.id));
     } else if (rootMatch) {
         store.dispatch(navigateToRootProject);
     } else if (sharedWithMeMatch) {
-        store.dispatch(loadSharedWithMe);
+        store.dispatch(WorkbenchActions.loadSharedWithMe);
     } else if (runProcessMatch) {
-        store.dispatch(loadRunProcess);
+        store.dispatch(WorkbenchActions.loadRunProcess);
     } else if (workflowMatch) {
-        store.dispatch(loadWorkflow);
+        store.dispatch(WorkbenchActions.loadWorkflow);
     } else if (searchResultsMatch) {
-        store.dispatch(loadSearchResults);
+        store.dispatch(WorkbenchActions.loadSearchResults);
     } else if (virtualMachineMatch) {
-        store.dispatch(loadVirtualMachines);
+        store.dispatch(WorkbenchActions.loadVirtualMachines);
     } else if(repositoryMatch) {
-        store.dispatch(loadRepositories);
+        store.dispatch(WorkbenchActions.loadRepositories);
     } else if (sshKeysMatch) {
-        store.dispatch(loadSshKeys);
+        store.dispatch(WorkbenchActions.loadSshKeys);
     } else if (keepServicesMatch) {
-        store.dispatch(loadKeepServices);
+        store.dispatch(WorkbenchActions.loadKeepServices);
+    } else if (computeNodesMatch) {
+        store.dispatch(WorkbenchActions.loadComputeNodes);
     }
 };

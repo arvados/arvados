@@ -69,3 +69,5 @@ export const navigateToRepositories = push(Routes.REPOSITORIES);
 export const navigateToSshKeys= push(Routes.SSH_KEYS);
 
 export const navigateToKeepServices = push(Routes.KEEP_SERVICES);
+
+export const navigateToComputeNodes = push(Routes.COMPUTE_NODES);
