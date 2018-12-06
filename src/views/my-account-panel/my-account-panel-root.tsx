@@ -99,10 +99,11 @@ export const MyAccountPanelRoot = withStyles(styles)(
                             </Grid>
                             <Grid item className={classes.gridItem}>
                                 <Field
-                                    label="*Organization"
+                                    label="Organization"
                                     name="prefs.profile.organization"
                                     component={TextField}
                                     validate={MY_ACCOUNT_VALIDATION}
+                                    required
                                 />
                             </Grid>
                             <Grid item className={classes.gridItem}>
@@ -135,10 +136,11 @@ export const MyAccountPanelRoot = withStyles(styles)(
                             <Grid item className={classes.gridItem} />
                             <Grid item className={classes.gridItem}>
                                 <Field
-                                    label="*E-mail at Organization"
+                                    label="E-mail at Organization"
                                     name="prefs.profile.organization_email"
                                     component={TextField}
                                     validate={MY_ACCOUNT_VALIDATION}
+                                    required
                                 />
                             </Grid>
                         </Grid>
