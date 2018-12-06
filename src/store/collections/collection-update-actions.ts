@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { initialize, startSubmit, stopSubmit } from 'redux-form';
+import { FormErrors, initialize, startSubmit, stopSubmit } from 'redux-form';
 import { RootState } from "~/store/store";
 import { collectionPanelActions } from "~/store/collection-panel/collection-panel-action";
 import { dialogActions } from "~/store/dialog/dialog-actions";
@@ -41,7 +41,7 @@ export const updateCollection = (collection: Partial<CollectionResource>) =>
         } catch (e) {
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {
-                dispatch(stopSubmit(COLLECTION_UPDATE_FORM_NAME, { name: 'Collection with the same name already exists.' }));
+                dispatch(stopSubmit(COLLECTION_UPDATE_FORM_NAME, { name: 'Collection with the same name already exists.' } as FormErrors));
             }
             dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_UPDATE_FORM_NAME));
             return;

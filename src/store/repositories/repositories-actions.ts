@@ -10,7 +10,7 @@ import { navigateToRepositories } from "~/store/navigation/navigation-action";
 import { unionize, ofType, UnionOf } from "~/common/unionize";
 import { dialogActions } from '~/store/dialog/dialog-actions';
 import { RepositoryResource } from "~/models/repositories";
-import { startSubmit, reset, stopSubmit } from "redux-form";
+import { startSubmit, reset, stopSubmit, FormErrors } from "redux-form";
 import { getCommonResourceServiceError, CommonResourceServiceError } from "~/services/common-service/common-resource-service";
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 
@@ -55,13 +55,13 @@ export const createRepository = (repository: RepositoryResource) =>
             const newRepository = await services.repositoriesService.create({ name: `${user.username}/${repository.name}` });
             dispatch(dialogActions.CLOSE_DIALOG({ id: REPOSITORY_CREATE_FORM_NAME }));
             dispatch(reset(REPOSITORY_CREATE_FORM_NAME));
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Repository has been successfully created.", hideDuration: 2000, kind: SnackbarKind.SUCCESS })); 
-            dispatch<any>(loadRepositoriesData());     
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Repository has been successfully created.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+            dispatch<any>(loadRepositoriesData());
             return newRepository;
         } catch (e) {
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.NAME_HAS_ALREADY_BEEN_TAKEN) {
-                dispatch(stopSubmit(REPOSITORY_CREATE_FORM_NAME, { name: 'Repository with the same name already exists.' }));
+                dispatch(stopSubmit(REPOSITORY_CREATE_FORM_NAME, { name: 'Repository with the same name already exists.' } as FormErrors));
             }
             return undefined;
         }

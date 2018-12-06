@@ -12,6 +12,8 @@ import { ClusterObjectType } from '~/models/search-bar';
 import { HomeTreePicker } from '~/views-components/projects-tree-picker/home-tree-picker';
 import { SEARCH_BAR_ADVANCE_FORM_PICKER_ID } from '~/store/search-bar/search-bar-actions';
 import { SearchBarAdvancedPropertiesView } from '~/views-components/search-bar/search-bar-advanced-properties-view';
+import { TreeItem } from "~/components/tree/tree";
+import { ProjectsTreePickerItem } from "~/views-components/projects-tree-picker/generic-projects-tree-picker";
 
 export const SearchBarTypeField = () =>
     <Field
@@ -42,7 +44,13 @@ export const SearchBarProjectField = () =>
 
 const ProjectsPicker = (props: WrappedFieldProps) =>
     <div style={{ height: '100px', display: 'flex', flexDirection: 'column', overflow: 'overlay' }}>
-        <HomeTreePicker pickerId={SEARCH_BAR_ADVANCE_FORM_PICKER_ID} />
+        <HomeTreePicker
+            pickerId={SEARCH_BAR_ADVANCE_FORM_PICKER_ID}
+            toggleItemActive={
+                (_: any, { id }: TreeItem<ProjectsTreePickerItem>) => {
+                    props.input.onChange(id);
+                }
+            }/>
     </div>;
 
 export const SearchBarTrashField = () =>
@@ -82,10 +90,10 @@ export const SearchBarSaveSearchField = () =>
     <Field
         name='saveQuery'
         component={CheckboxField}
-        label="Save search query" />;
+        label="Save query" />;
 
 export const SearchBarQuerySearchField = () =>
     <Field
-        name='searchQuery'
+        name='queryName'
         component={TextField}
-        label="Search query name" />;
+        label="Query name" />;

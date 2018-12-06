@@ -4,7 +4,7 @@
 
 import { ofType, unionize, UnionOf } from '~/common/unionize';
 import { Dispatch } from "redux";
-import { reset, stopSubmit, startSubmit } from 'redux-form';
+import { reset, stopSubmit, startSubmit, FormErrors } from 'redux-form';
 import { AxiosInstance } from "axios";
 import { RootState } from "../store";
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
@@ -143,9 +143,9 @@ export const createSshKey = (data: SshKeyCreateFormDialogData) =>
         } catch (e) {
             const error = getAuthorizedKeysServiceError(e);
             if (error === AuthorizedKeysServiceError.UNIQUE_PUBLIC_KEY) {
-                dispatch(stopSubmit(SSH_KEY_CREATE_FORM_NAME, { publicKey: 'Public key already exists.' }));
+                dispatch(stopSubmit(SSH_KEY_CREATE_FORM_NAME, { publicKey: 'Public key already exists.' } as FormErrors));
             } else if (error === AuthorizedKeysServiceError.INVALID_PUBLIC_KEY) {
-                dispatch(stopSubmit(SSH_KEY_CREATE_FORM_NAME, { publicKey: 'Public key is invalid' }));
+                dispatch(stopSubmit(SSH_KEY_CREATE_FORM_NAME, { publicKey: 'Public key is invalid' } as FormErrors));
             }
         }
     };
