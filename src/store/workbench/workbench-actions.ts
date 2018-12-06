@@ -130,7 +130,10 @@ export const loadProject = (uuid: string) =>
             const userUuid = services.authService.getUuid();
             dispatch(setIsProjectPanelTrashed(false));
             if (userUuid) {
-                if (userUuid !== uuid) {
+                if (extractUuidKind(uuid) === ResourceKind.USER && userUuid!==uuid) {
+                    // Load another users home projects
+                    dispatch(finishLoadingProject(uuid));
+                } else if (userUuid !== uuid) {
                     const match = await loadGroupContentsResource({ uuid, userUuid, services });
                     match({
                         OWNED: async project => {

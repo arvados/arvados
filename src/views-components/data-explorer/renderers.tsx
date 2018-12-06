@@ -22,6 +22,7 @@ import { getUuidPrefix, openRunProcess } from '~/store/workflow-panel/workflow-p
 import { getResourceData } from "~/store/resources-data/resources-data";
 import { openSharingDialog } from '~/store/sharing-dialog/sharing-dialog-actions';
 import { UserResource } from '~/models/user';
+import { toggleIsActive, toggleIsAdmin } from '~/store/users/users-actions';
 
 const renderName = (item: { name: string; uuid: string, kind: string }) =>
     <Grid container alignItems="center" wrap="nowrap" spacing={16}>
@@ -151,29 +152,31 @@ export const ResourceEmail = connect(
         return resource || { email: '' };
     })(renderEmail);
 
-const renderIsActive = (item: { isActive: boolean }) =>
+const renderIsActive = (props: { uuid: string, isActive: boolean, toggleIsActive: (uuid: string) => void }) =>
     <Checkbox
-        disableRipple
         color="primary"
-        checked={item.isActive} />;
+        checked={props.isActive}
+        onClick={() => props.toggleIsActive(props.uuid)} />;
 
 export const ResourceIsActive = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<UserResource>(props.uuid)(state.resources);
         return resource || { isActive: false };
-    })(renderIsActive);
+    }, { toggleIsActive }
+)(renderIsActive);
 
-const renderIsAdmin = (item: { isAdmin: boolean }) =>
+const renderIsAdmin = (props: { uuid: string, isAdmin: boolean, toggleIsAdmin: (uuid: string) => void }) =>
     <Checkbox
-        disableRipple
         color="primary"
-        checked={item.isAdmin} />;
+        checked={props.isAdmin}
+        onClick={() => props.toggleIsAdmin(props.uuid)} />;
 
 export const ResourceIsAdmin = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<UserResource>(props.uuid)(state.resources);
         return resource || { isAdmin: false };
-    })(renderIsAdmin);
+    }, { toggleIsAdmin }
+)(renderIsAdmin);
 
 const renderUsername = (item: { username: string }) =>
     <Typography noWrap>{item.username}</Typography>;

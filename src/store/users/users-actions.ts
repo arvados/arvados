@@ -6,20 +6,13 @@ import { Dispatch } from "redux";
 import { bindDataExplorerActions } from '~/store/data-explorer/data-explorer-action';
 import { RootState } from '~/store/store';
 import { ServiceRepository } from "~/services/services";
-import { navigateToUsers } from "~/store/navigation/navigation-action";
-import { unionize, ofType, UnionOf } from "~/common/unionize";
 import { dialogActions } from '~/store/dialog/dialog-actions';
 import { startSubmit, reset, stopSubmit } from "redux-form";
 import { getCommonResourceServiceError, CommonResourceServiceError } from "~/services/common-service/common-resource-service";
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { UserResource } from "~/models/user";
 import { getResource } from '~/store/resources/resources';
-
-export const usersPanelActions = unionize({
-    SET_USERS: ofType<any>(),
-});
-
-export type UsersActions = UnionOf<typeof usersPanelActions>;
+import { navigateToProject } from "~/store/navigation/navigation-action";
 
 export const USERS_PANEL_ID = 'usersPanel';
 export const USER_ATTRIBUTES_DIALOG = 'userAttributesDialog';
@@ -45,9 +38,16 @@ export const openUserCreateDialog = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const userUuid = await services.authService.getUuid();
         const user = await services.userService.get(userUuid!);
+        const virtualMachines = await services.virtualMachineService.list();
         dispatch(reset(USER_CREATE_FORM_NAME));
-        dispatch(dialogActions.OPEN_DIALOG({ id: USER_CREATE_FORM_NAME, data: { user } }));
+        dispatch(dialogActions.OPEN_DIALOG({ id: USER_CREATE_FORM_NAME, data: { user, ...virtualMachines } }));
     };
+
+export const openUserProjects = (uuid: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch<any>(navigateToProject(uuid));
+    };
+
 
 export const createUser = (user: UserCreateFormDialogData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -57,7 +57,7 @@ export const createUser = (user: UserCreateFormDialogData) =>
             dispatch(dialogActions.CLOSE_DIALOG({ id: USER_CREATE_FORM_NAME }));
             dispatch(reset(USER_CREATE_FORM_NAME));
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: "User has been successfully created.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
-            dispatch<any>(loadUsersData());
+            dispatch<any>(loadUsersPanel());
             dispatch(userBindedActions.REQUEST_ITEMS());
             return newUser;
         } catch (e) {
@@ -69,17 +69,31 @@ export const createUser = (user: UserCreateFormDialogData) =>
         }
     };
 
-export const userBindedActions = bindDataExplorerActions(USERS_PANEL_ID);
-
-export const openUsersPanel = () =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch<any>(navigateToUsers);
+export const toggleIsActive = (uuid: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const { resources } = getState();
+        const data = getResource<UserResource>(uuid)(resources);
+        const isActive = data!.isActive;
+        const newActivity = await services.userService.update(uuid, { ...data, isActive: !isActive });
+        dispatch<any>(loadUsersPanel());
+        return newActivity;
     };
+
+export const toggleIsAdmin = (uuid: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const { resources } = getState();
+        const data = getResource<UserResource>(uuid)(resources);
+        const isAdmin = data!.isAdmin;
+        const newActivity = await services.userService.update(uuid, { ...data, isAdmin: !isAdmin });
+        dispatch<any>(loadUsersPanel());
+        return newActivity;
+    };
+
+export const userBindedActions = bindDataExplorerActions(USERS_PANEL_ID);
 
 export const loadUsersData = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const users = await services.userService.list();
-        dispatch(usersPanelActions.SET_USERS(users.items));
+        await services.userService.list();
     };
 
 export const loadUsersPanel = () =>

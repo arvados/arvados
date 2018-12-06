@@ -8,7 +8,7 @@ import { WithDialogProps } from '~/store/dialog/with-dialog';
 import { FormDialog } from '~/components/form-dialog/form-dialog';
 import { UserFirstNameField, UserLastNameField, UserEmailField, UserIdentityUrlField, UserVirtualMachineField, UserGroupsVirtualMachineField } from '~/views-components/form-fields/user-form-fields';
 
-type DialogUserProps = WithDialogProps<{}> & InjectedFormProps<any>;
+export type DialogUserProps = WithDialogProps<{}> & InjectedFormProps<any>;
 
 export const UserRepositoryCreate = (props: DialogUserProps) =>
     <FormDialog
@@ -18,11 +18,11 @@ export const UserRepositoryCreate = (props: DialogUserProps) =>
         {...props}
     />;
 
-const UserAddFields = () => <span>
+const UserAddFields = (props: DialogUserProps) => <span>
     <UserFirstNameField />
     <UserLastNameField />
     <UserEmailField />
     <UserIdentityUrlField />
-    <UserVirtualMachineField />
+    <UserVirtualMachineField data={props.data}/>
     <UserGroupsVirtualMachineField />
 </span>;

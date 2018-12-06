@@ -44,7 +44,7 @@ export const getParams = (dataExplorer: DataExplorer) => ({
 
 export const getFilters = (dataExplorer: DataExplorer) => {
     const filters = new FilterBuilder()
-        .addILike("firstName", dataExplorer.searchValue)
+        .addILike("username", dataExplorer.searchValue)
         .getFilters();
     return filters;
 };

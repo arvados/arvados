@@ -159,7 +159,7 @@ export const UserPanel = compose(
                 return <Paper>
                     <Tabs value={value} onChange={this.handleChange} fullWidth>
                         <Tab label="USERS" />
-                        <Tab label="ACTIVITY" />
+                        <Tab label="ACTIVITY" disabled />
                     </Tabs>
                     {value === 0 &&
                         <span>
