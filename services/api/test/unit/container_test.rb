@@ -25,6 +25,7 @@ class ContainerTest < ActiveSupport::TestCase
     runtime_constraints: {
       "ram" => 12000000000,
       "vcpus" => 4,
+      "keep_cache_ram" => Rails.configuration.container_default_keep_cache_ram,
     },
     mounts: {
       "test" => {"kind" => "json"},
@@ -241,7 +242,6 @@ class ContainerTest < ActiveSupport::TestCase
   end
 
   test "find_reusable method should select higher priority queued container" do
-        Rails.configuration.log_reuse_decisions = true
     set_user_from_auth :active
     common_attrs = REUSABLE_COMMON_ATTRS.merge({environment:{"var" => "queued"}})
     c_low_priority, _ = minimal_new(common_attrs.merge({use_existing:false, priority:1}))
@@ -249,7 +249,7 @@ class ContainerTest < ActiveSupport::TestCase
     assert_not_equal c_low_priority.uuid, c_high_priority.uuid
     assert_equal Container::Queued, c_low_priority.state
     assert_equal Container::Queued, c_high_priority.state
-    reused = Container.find_reusable(common_attrs)
+    reused = Container.find_reusable(common_attrs, users(:active))
     assert_not_nil reused
     assert_equal reused.uuid, c_high_priority.uuid
   end
@@ -277,7 +277,7 @@ class ContainerTest < ActiveSupport::TestCase
     c_recent.update_attributes!({state: Container::Running})
     c_recent.update_attributes!(completed_attrs)
 
-    reused = Container.find_reusable(common_attrs)
+    reused = Container.find_reusable(common_attrs, users(:active))
     assert_not_nil reused
     assert_equal reused.uuid, c_older.uuid
   end
@@ -341,7 +341,8 @@ class ContainerTest < ActiveSupport::TestCase
     c_faster_started_second.update_attributes!({state: Container::Locked})
     c_faster_started_second.update_attributes!({state: Container::Running,
                                                 progress: 0.15})
-    reused = Container.find_reusable(common_attrs)
+
+    reused = Container.find_reusable(common_attrs, users(:active))
     assert_not_nil reused
     # Selected container is the one that started first
     assert_equal reused.uuid, c_faster_started_first.uuid
@@ -365,7 +366,8 @@ class ContainerTest < ActiveSupport::TestCase
     c_faster_started_second.update_attributes!({state: Container::Locked})
     c_faster_started_second.update_attributes!({state: Container::Running,
                                                 progress: 0.2})
-    reused = Container.find_reusable(common_attrs)
+
+    reused = Container.find_reusable(common_attrs, users(:active))
     assert_not_nil reused
     # Selected container is the one with most progress done
     assert_equal reused.uuid, c_faster_started_second.uuid
@@ -391,7 +393,8 @@ class ContainerTest < ActiveSupport::TestCase
     c_faster_started_second.update_attributes!({state: Container::Running,
                                                 runtime_status: {'error' => 'Something bad happened'},
                                                 progress: 0.2})
-    reused = Container.find_reusable(common_attrs)
+
+    reused = Container.find_reusable(common_attrs, users(:active))
     assert_not_nil reused
     # Selected the non-failing container even if it's the one with less progress done
     assert_equal reused.uuid, c_faster_started_first.uuid
@@ -412,7 +415,8 @@ class ContainerTest < ActiveSupport::TestCase
                                               priority: 2})
     c_high_priority_newer.update_attributes!({state: Container::Locked,
                                               priority: 2})
-    reused = Container.find_reusable(common_attrs)
+
+    reused = Container.find_reusable(common_attrs, users(:active))
     assert_not_nil reused
     assert_equal reused.uuid, c_high_priority_older.uuid
   end
@@ -433,7 +437,8 @@ class ContainerTest < ActiveSupport::TestCase
     c_running.update_attributes!({state: Container::Locked})
     c_running.update_attributes!({state: Container::Running,
                                   progress: 0.15})
-    reused = Container.find_reusable(common_attrs)
+
+    reused = Container.find_reusable(common_attrs, users(:active))
     assert_not_nil reused
     assert_equal reused.uuid, c_running.uuid
   end
@@ -454,7 +459,8 @@ class ContainerTest < ActiveSupport::TestCase
     c_running.update_attributes!({state: Container::Locked})
     c_running.update_attributes!({state: Container::Running,
                                   progress: 0.15})
-    reused = Container.find_reusable(common_attrs)
+
+    reused = Container.find_reusable(common_attrs, users(:active))
     assert_not_nil reused
     assert_equal c_completed.uuid, reused.uuid
   end
@@ -470,7 +476,8 @@ class ContainerTest < ActiveSupport::TestCase
     c_running.update_attributes!({state: Container::Locked})
     c_running.update_attributes!({state: Container::Running,
                                   progress: 0.15})
-    reused = Container.find_reusable(common_attrs)
+
+    reused = Container.find_reusable(common_attrs, users(:active))
     assert_not_nil reused
     assert_equal reused.uuid, c_running.uuid
   end
@@ -483,7 +490,8 @@ class ContainerTest < ActiveSupport::TestCase
     assert_not_equal c_queued.uuid, c_locked.uuid
     set_user_from_auth :dispatch1
     c_locked.update_attributes!({state: Container::Locked})
-    reused = Container.find_reusable(common_attrs)
+
+    reused = Container.find_reusable(common_attrs, users(:active))
     assert_not_nil reused
     assert_equal reused.uuid, c_locked.uuid
   end
@@ -497,7 +505,8 @@ class ContainerTest < ActiveSupport::TestCase
     c.update_attributes!({state: Container::Running})
     c.update_attributes!({state: Container::Complete,
                           exit_code: 33})
-    reused = Container.find_reusable(attrs)
+
+    reused = Container.find_reusable(attrs, users(:active))
     assert_nil reused
   end
 
@@ -591,15 +600,56 @@ class ContainerTest < ActiveSupport::TestCase
       log: 'b6701533bf043971f4750a777cf5e4e6+47',
       output: '08504d4f1ad35c690f09150d0590eb9b+49'
     }
-    c1, _ = minimal_new(common_attrs.merge({runtime_token: api_client_authorizations(:active).token}))
+    c1, cr1 = minimal_new(common_attrs.merge(runtime_token_attr(:container_runtime_token)))
     c1.update_attributes!({state: Container::Locked})
     c1.update_attributes!({state: Container::Running})
     c1.update_attributes!(completed_attrs)
     assert_equal Container::Complete, c1.state
 
-    reused = Container.find_reusable(common_attrs.merge(runtime_token_attr(:container_runtime_token)))
-    # "active" user can't read the log and output, should not reuse.
+    reused = Container.find_reusable(common_attrs.merge({runtime_token: api_client_authorizations(:active).token}),
+                                     users(:active))
+    # "active" alone can't see the container request, output, or log
     assert_nil reused
+
+    reused = Container.find_reusable(common_attrs.merge({runtime_token: api_client_authorizations(:active).token}),
+                                     users(:container_runtime_token_user), users(:active))
+    # Can find it if we check both user permissions at once
+    assert_not_nil reused
+    assert_equal reused.uuid, c1.uuid
+
+    col_out, col_log = act_as_system_user do
+      cr1.update_attributes!(owner_uuid: users(:active).uuid)
+      col_out = Collection.find_by_uuid(collections(:crt1_output).uuid)
+      col_out.update_attributes!(owner_uuid: users(:active).uuid)
+      col_log = Collection.find_by_uuid(collections(:crt1_log).uuid)
+      col_log.update_attributes!(owner_uuid: users(:active).uuid)
+      [col_out, col_log]
+    end
+    reused = Container.find_reusable(common_attrs.merge({runtime_token: api_client_authorizations(:active).token}),
+                                     users(:active))
+    # update ownership of CR, log and output should allow "active" user to reuse
+    assert_not_nil reused
+    assert_equal reused.uuid, c1.uuid
+
+    # test each field individually
+    [cr1, col_out, col_log].each do |item|
+      act_as_system_user do
+        item.update_attributes!(owner_uuid: users(:container_runtime_token_user).uuid)
+      end
+      reused = Container.find_reusable(common_attrs.merge({runtime_token: api_client_authorizations(:active).token}),
+                                       users(:active))
+      # update ownership to "container runtime token user" should prevent reuse by "active"
+      assert_nil reused
+
+      act_as_system_user do
+        item.update_attributes!(owner_uuid: users(:active).uuid)
+      end
+      reused = Container.find_reusable(common_attrs.merge({runtime_token: api_client_authorizations(:active).token}),
+                                       users(:active))
+      # update ownership to "active" should allow reuse
+      assert_not_nil reused
+      assert_equal reused.uuid, c1.uuid
+    end
   end
 
   test "Container running" do

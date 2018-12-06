@@ -179,10 +179,11 @@ class Container < ArvadosModel
         runtime_auth_scopes: runtime_auth_scopes
       }
     end
-    act_as_system_user do
-      if req.use_existing && (reusable = find_reusable(c_attrs))
-        reusable
-      else
+
+    if req.use_existing && (reusable = find_reusable(c_attrs, current_user, runtime_user))
+      reusable
+    else
+      act_as_system_user do
         Container.create!(c_attrs)
       end
     end
@@ -251,9 +252,15 @@ class Container < ArvadosModel
     coll.portable_data_hash
   end
 
-  def self.find_reusable(attrs)
-    log_reuse_info { "starting with #{Container.all.count} container records in database" }
-    candidates = Container.where_serialized(:command, attrs[:command], md5: true)
+  def self.find_reusable(attrs, *users_list)
+    users_list.compact!
+    if users_list.length == 0
+      users_list = [current_user]
+    end
+    candidates = Container.readable_by(*users_list)
+
+    log_reuse_info { "starting with #{candidates.count} container records readable by this user" }
+    candidates = candidates.where_serialized(:command, attrs[:command], md5: true)
     log_reuse_info(candidates) { "after filtering on command #{attrs[:command].inspect}" }
 
     candidates = candidates.where('cwd = ?', attrs[:cwd])
@@ -265,24 +272,23 @@ class Container < ArvadosModel
     candidates = candidates.where('output_path = ?', attrs[:output_path])
     log_reuse_info(candidates) { "after filtering on output_path #{attrs[:output_path].inspect}" }
 
-    image = resolve_container_image(attrs[:container_image])
-    candidates = candidates.where('container_image = ?', image)
-    log_reuse_info(candidates) { "after filtering on container_image #{image.inspect} (resolved from #{attrs[:container_image].inspect})" }
+    candidates = candidates.where('container_image = ?', attrs[:container_image])
+    log_reuse_info(candidates) { "after filtering on container_image #{attrs[:container_image].inspect}" }
 
-    candidates = candidates.where_serialized(:mounts, resolve_mounts(attrs[:mounts]), md5: true)
+    candidates = candidates.where_serialized(:mounts, attrs[:mounts], md5: true)
     log_reuse_info(candidates) { "after filtering on mounts #{attrs[:mounts].inspect}" }
 
     secret_mounts_md5 = Digest::MD5.hexdigest(SafeJSON.dump(self.deep_sort_hash(attrs[:secret_mounts])))
     candidates = candidates.where('secret_mounts_md5 = ?', secret_mounts_md5)
     log_reuse_info(candidates) { "after filtering on secret_mounts_md5 #{secret_mounts_md5.inspect}" }
 
-    candidates = candidates.where_serialized(:runtime_constraints, resolve_runtime_constraints(attrs[:runtime_constraints]), md5: true)
+    candidates = candidates.where_serialized(:runtime_constraints, attrs[:runtime_constraints], md5: true)
     log_reuse_info(candidates) { "after filtering on runtime_constraints #{attrs[:runtime_constraints].inspect}" }
 
     log_reuse_info { "checking for state=Complete with readable output and log..." }
 
     select_readable_pdh = Collection.
-      readable_by(current_user).
+      readable_by(*users_list).
       select(:portable_data_hash).
       to_sql
 
