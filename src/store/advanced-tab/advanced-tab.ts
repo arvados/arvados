@@ -14,14 +14,15 @@ import { CollectionResource } from '~/models/collection';
 import { ProjectResource } from '~/models/project';
 import { ServiceRepository } from '~/services/services';
 import { FilterBuilder } from '~/services/api/filter-builder';
+import { ListResults } from '~/services/common-service/common-service';
 import { RepositoryResource } from '~/models/repositories';
 import { SshKeyResource } from '~/models/ssh-key';
 import { VirtualMachinesResource } from '~/models/virtual-machines';
 import { UserResource } from '~/models/user';
-import { ListResults } from '~/services/common-service/common-resource-service';
 import { LinkResource } from '~/models/link';
 import { KeepServiceResource } from '~/models/keep-services';
 import { NodeResource } from '~/models/node';
+import { ApiClientAuthorization } from '~/models/api-client-authorization';
 
 export const ADVANCED_TAB_DIALOG = 'advancedTabDialog';
 
@@ -74,7 +75,8 @@ enum ResourcePrefix {
     AUTORIZED_KEYS = 'authorized_keys',
     VIRTUAL_MACHINES = 'virtual_machines',
     KEEP_SERVICES = 'keep_services',
-    COMPUTE_NODES = 'nodes'
+    COMPUTE_NODES = 'nodes',
+    API_CLIENT_AUTHORIZATIONS = 'api_client_authorizations'
 }
 
 enum KeepServiceData {
@@ -87,9 +89,14 @@ enum ComputeNodeData {
     PROPERTIES = 'properties'
 }
 
-type AdvanceResourceKind = CollectionData | ProcessData | ProjectData | RepositoryData | SshKeyData | VirtualMachineData | KeepServiceData | ComputeNodeData;
+enum ApiClientAuthorizationsData {
+    API_CLIENT_AUTHORIZATION = 'api_client_authorization',
+    DEFAULT_OWNER_UUID = 'default_owner_uuid'
+}
+
+type AdvanceResourceKind = CollectionData | ProcessData | ProjectData | RepositoryData | SshKeyData | VirtualMachineData | KeepServiceData | ComputeNodeData | ApiClientAuthorizationsData;
 type AdvanceResourcePrefix = GroupContentsResourcePrefix | ResourcePrefix;
-type AdvanceResponseData = ContainerRequestResource | ProjectResource | CollectionResource | RepositoryResource | SshKeyResource | VirtualMachinesResource | KeepServiceResource | NodeResource | undefined;
+type AdvanceResponseData = ContainerRequestResource | ProjectResource | CollectionResource | RepositoryResource | SshKeyResource | VirtualMachinesResource | KeepServiceResource | NodeResource | ApiClientAuthorization | undefined;
 
 export const openAdvancedTabDialog = (uuid: string) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
@@ -214,6 +221,21 @@ export const openAdvancedTabDialog = (uuid: string) =>
                     property: dataComputeNode!.properties
                 });
                 dispatch<any>(initAdvancedTabDialog(advanceDataComputeNode));
+                break;
+            case ResourceKind.API_CLIENT_AUTHORIZATION:
+                const dataApiClientAuthorization = getState().apiClientAuthorizations.find(item => item.uuid === uuid);
+                const advanceDataApiClientAuthorization = advancedTabData({
+                    uuid,
+                    metadata: '',
+                    user: '',
+                    apiResponseKind: apiClientAuthorizationApiResponse,
+                    data: dataApiClientAuthorization,
+                    resourceKind: ApiClientAuthorizationsData.API_CLIENT_AUTHORIZATION,
+                    resourcePrefix: ResourcePrefix.API_CLIENT_AUTHORIZATIONS,
+                    resourceKindProperty: ApiClientAuthorizationsData.DEFAULT_OWNER_UUID,
+                    property: dataApiClientAuthorization!.defaultOwnerUuid
+                });
+                dispatch<any>(initAdvancedTabDialog(advanceDataApiClientAuthorization));
                 break;
             default:
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Could not open advanced tab for this resource.", hideDuration: 2000, kind: SnackbarKind.ERROR }));
@@ -486,6 +508,28 @@ const computeNodeApiResponse = (apiResponse: NodeResource) => {
 "job_uuid": "${stringify(jobUuid)}",
 "properties": "${JSON.stringify(properties, null, 4)}",
 "info": "${JSON.stringify(info, null, 4)}"`;
+
+    return response;
+};
+
+const apiClientAuthorizationApiResponse = (apiResponse: ApiClientAuthorization) => {
+    const {
+        uuid, ownerUuid, apiToken, apiClientId, userId, createdByIpAddress, lastUsedByIpAddress, 
+        lastUsedAt, expiresAt, defaultOwnerUuid, scopes, updatedAt, createdAt
+    } = apiResponse;
+    const response = `"uuid": "${uuid}",
+"owner_uuid": "${ownerUuid}",
+"api_token": "${stringify(apiToken)}",
+"api_client_id": "${stringify(apiClientId)}",
+"user_id": "${stringify(userId)}",
+"created_by_ip_address": "${stringify(createdByIpAddress)}",
+"last_used_by_ip_address": "${stringify(lastUsedByIpAddress)}",
+"last_used_at": "${stringify(lastUsedAt)}",
+"expires_at": "${stringify(expiresAt)}",
+"created_at": "${stringify(createdAt)}",
+"updated_at": "${stringify(updatedAt)}",
+"default_owner_uuid": "${stringify(defaultOwnerUuid)}",
+"scopes": "${JSON.stringify(scopes, null, 4)}"`;
 
     return response;
 };

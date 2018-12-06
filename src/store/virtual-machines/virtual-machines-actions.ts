@@ -11,7 +11,7 @@ import { formatDate } from "~/common/formatters";
 import { unionize, ofType, UnionOf } from "~/common/unionize";
 import { VirtualMachineLogins } from '~/models/virtual-machines';
 import { FilterBuilder } from "~/services/api/filter-builder";
-import { ListResults } from "~/services/common-service/common-resource-service";
+import { ListResults } from "~/services/common-service/common-service";
 import { dialogActions } from '~/store/dialog/dialog-actions';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 

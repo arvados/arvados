@@ -24,7 +24,8 @@ export const Routes = {
     SEARCH_RESULTS: '/search-results',
     SSH_KEYS: `/ssh-keys`,
     KEEP_SERVICES: `/keep-services`,
-    COMPUTE_NODES: `/nodes`
+    COMPUTE_NODES: `/nodes`,
+    API_CLIENT_AUTHORIZATIONS: `/api_client_authorizations`
 };
 
 export const getResourceUrl = (uuid: string) => {
@@ -96,3 +97,6 @@ export const matchKeepServicesRoute = (route: string) =>
 
 export const matchComputeNodesRoute = (route: string) =>
     matchPath(route, { path: Routes.COMPUTE_NODES });
+
+export const matchApiClientAuthorizationsRoute = (route: string) =>
+    matchPath(route, { path: Routes.API_CLIENT_AUTHORIZATIONS });

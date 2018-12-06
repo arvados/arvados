@@ -21,6 +21,7 @@ export interface TrashableResource extends Resource {
 }
 
 export enum ResourceKind {
+    API_CLIENT_AUTHORIZATION = "arvados#apiClientAuthorization",
     COLLECTION = "arvados#collection",
     CONTAINER = "arvados#container",
     CONTAINER_REQUEST = "arvados#containerRequest",
@@ -39,6 +40,7 @@ export enum ResourceKind {
 }
 
 export enum ResourceObjectType {
+    API_CLIENT_AUTHORIZATION = 'gj3su',
     COLLECTION = '4zz18',
     CONTAINER = 'dz642',
     CONTAINER_REQUEST = 'xvhdp',
@@ -93,6 +95,8 @@ export const extractUuidKind = (uuid: string = '') => {
             return ResourceKind.KEEP_SERVICE;
         case ResourceObjectType.NODE:
             return ResourceKind.NODE;
+        case ResourceObjectType.API_CLIENT_AUTHORIZATION:
+            return ResourceKind.API_CLIENT_AUTHORIZATION;
         default:
             return undefined;
     }

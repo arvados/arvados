@@ -47,6 +47,7 @@ import { virtualMachinesReducer } from "~/store/virtual-machines/virtual-machine
 import { repositoriesReducer } from '~/store/repositories/repositories-reducer';
 import { keepServicesReducer } from '~/store/keep-services/keep-services-reducer';
 import { computeNodesReducer } from '~/store/compute-nodes/compute-nodes-reducer';
+import { apiClientAuthorizationsReducer } from '~/store/api-client-authorizations/api-client-authorizations-reducer';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -119,5 +120,6 @@ const createRootReducer = (services: ServiceRepository) => combineReducers({
     virtualMachines: virtualMachinesReducer,
     repositories: repositoriesReducer,
     keepServices: keepServicesReducer,
-    computeNodes: computeNodesReducer
+    computeNodes: computeNodesReducer,
+    apiClientAuthorizations: apiClientAuthorizationsReducer
 });

@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import Axios from "axios";
+import { ApiClientAuthorizationService } from '~/services/api-client-authorization-service/api-client-authorization-service';
 import { AuthService } from "./auth-service/auth-service";
 import { GroupsService } from "./groups-service/groups-service";
 import { ProjectService } from "./project-service/project-service";
@@ -39,6 +40,7 @@ export const createServices = (config: Config, actions: ApiActions) => {
     const webdavClient = new WebDAV();
     webdavClient.defaults.baseURL = config.keepWebServiceUrl;
 
+    const apiClientAuthorizationService = new ApiClientAuthorizationService(apiClient, actions);
     const authorizedKeysService = new AuthorizedKeysService(apiClient, actions);
     const containerRequestService = new ContainerRequestService(apiClient, actions);
     const containerService = new ContainerService(apiClient, actions);
@@ -66,6 +68,7 @@ export const createServices = (config: Config, actions: ApiActions) => {
     return {
         ancestorsService,
         apiClient,
+        apiClientAuthorizationService,
         authService,
         authorizedKeysService,
         collectionFilesService,

@@ -4,8 +4,9 @@
 
 import { LinkService } from "~/services/link-service/link-service";
 import { PermissionResource } from "~/models/permission";
-import { ListArguments, ListResults, CommonResourceService } from '~/services/common-service/common-resource-service';
+import { CommonResourceService } from '~/services/common-service/common-resource-service';
 import { LinkClass } from '../../models/link';
+import { ListArguments, ListResults } from '~/services/common-service/common-service';
 
 export class PermissionService extends LinkService<PermissionResource> {
 

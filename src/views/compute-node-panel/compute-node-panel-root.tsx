@@ -60,7 +60,7 @@ export const ComputeNodePanelRoot = withStyles(styles)(
                             <TableBody>
                                 {computeNodes.map((computeNode, index) =>
                                     <TableRow key={index} className={classes.tableRow}>
-                                        <TableCell>{computeNode.uuid}</TableCell>
+                                        <TableCell>{JSON.stringify(computeNode.info, null, 4)}</TableCell>
                                         <TableCell>{computeNode.uuid}</TableCell>
                                         <TableCell>{computeNode.domain}</TableCell>
                                         <TableCell>{formatDate(computeNode.firstPingAt) || '(none)'}</TableCell>

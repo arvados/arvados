@@ -58,6 +58,7 @@ import { loadVirtualMachinesPanel } from '~/store/virtual-machines/virtual-machi
 import { loadRepositoriesPanel } from '~/store/repositories/repositories-actions';
 import { loadKeepServicesPanel } from '~/store/keep-services/keep-services-actions';
 import { loadComputeNodesPanel } from '~/store/compute-nodes/compute-nodes-actions';
+import { loadApiClientAuthorizationsPanel } from '~/store/api-client-authorizations/api-client-authorizations-actions';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -420,6 +421,11 @@ export const loadKeepServices = handleFirstTimeLoad(
 export const loadComputeNodes = handleFirstTimeLoad(
     async (dispatch: Dispatch<any>) => {
         await dispatch(loadComputeNodesPanel());
+    });
+
+export const loadApiClientAuthorizations = handleFirstTimeLoad(
+    async (dispatch: Dispatch<any>) => {
+        await dispatch(loadApiClientAuthorizationsPanel());
     });
 
 const finishLoadingProject = (project: GroupContentsResource | string) =>
