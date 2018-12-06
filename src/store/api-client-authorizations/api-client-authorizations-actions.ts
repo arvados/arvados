@@ -21,6 +21,7 @@ export type ApiClientAuthorizationsActions = UnionOf<typeof apiClientAuthorizati
 
 export const API_CLIENT_AUTHORIZATION_REMOVE_DIALOG = 'apiClientAuthorizationRemoveDialog';
 export const API_CLIENT_AUTHORIZATION_ATTRIBUTES_DIALOG = 'apiClientAuthorizationAttributesDialog';
+export const API_CLIENT_AUTHORIZATION_HELP_DIALOG = 'apiClientAuthorizationHelpDialog';
 
 export const loadApiClientAuthorizationsPanel = () =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
@@ -69,4 +70,13 @@ export const removeApiClientAuthorization = (uuid: string) =>
         } catch (e) {
             return;
         }
+    };
+
+export const openApiClientAuthorizationsHelpDialog = () =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        const apiHost = getState().properties.apiHost;
+        const user = getState().auth.user;
+        const email = user ? user.email : '';
+        const apiToken = getState().auth.apiToken;
+        dispatch(dialogActions.OPEN_DIALOG({ id: API_CLIENT_AUTHORIZATION_HELP_DIALOG, data: { apiHost, apiToken, email } }));
     };

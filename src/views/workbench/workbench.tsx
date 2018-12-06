@@ -70,6 +70,7 @@ import { AttributesComputeNodeDialog } from '~/views-components/compute-nodes-di
 import { AttributesKeepServiceDialog } from '~/views-components/keep-services-dialog/attributes-dialog';
 import { AttributesSshKeyDialog } from '~/views-components/ssh-keys-dialog/attributes-dialog';
 import { VirtualMachineAttributesDialog } from '~/views-components/virtual-machines-dialog/attributes-dialog';
+import { HelpApiClientAuthorizationDialog } from '~/views-components/api-client-authorizations-dialog/help-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -169,6 +170,7 @@ export const WorkbenchPanel =
             <CurrentTokenDialog />
             <FileRemoveDialog />
             <FilesUploadCollectionDialog />
+            <HelpApiClientAuthorizationDialog />
             <MoveCollectionDialog />
             <MoveProcessDialog />
             <MoveProjectDialog />

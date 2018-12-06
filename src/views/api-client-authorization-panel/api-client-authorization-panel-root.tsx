@@ -8,15 +8,22 @@ import {
     Table, TableHead, TableRow, TableCell, TableBody, Tooltip, IconButton
 } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
-import { MoreOptionsIcon } from '~/components/icon/icon';
+import { MoreOptionsIcon, HelpIcon } from '~/components/icon/icon';
 import { ApiClientAuthorization } from '~/models/api-client-authorization';
+import { formatDate } from '~/common/formatters';
 
-type CssRules = 'root' | 'tableRow';
+type CssRules = 'root' | 'tableRow' | 'helpIconGrid' | 'tableGrid';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
         overflow: 'auto'
+    },
+    helpIconGrid: {
+        textAlign: 'right'
+    },
+    tableGrid: {
+        marginTop: theme.spacing.unit
     },
     tableRow: {
         '& td, th': {
@@ -27,6 +34,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 export interface ApiClientAuthorizationPanelRootActionProps {
     openRowOptions: (event: React.MouseEvent<HTMLElement>, keepService: ApiClientAuthorization) => void;
+    openHelpDialog: () => void;
 }
 
 export interface ApiClientAuthorizationPanelRootDataProps {
@@ -38,10 +46,17 @@ type ApiClientAuthorizationPanelRootProps = ApiClientAuthorizationPanelRootActio
     & ApiClientAuthorizationPanelRootDataProps & WithStyles<CssRules>;
 
 export const ApiClientAuthorizationPanelRoot = withStyles(styles)(
-    ({ classes, hasApiClientAuthorizations, apiClientAuthorizations, openRowOptions }: ApiClientAuthorizationPanelRootProps) =>
+    ({ classes, hasApiClientAuthorizations, apiClientAuthorizations, openRowOptions, openHelpDialog }: ApiClientAuthorizationPanelRootProps) =>
         <Card className={classes.root}>
             <CardContent>
-                {hasApiClientAuthorizations && <Grid container direction="row">
+                {hasApiClientAuthorizations && <Grid container direction="row" justify="flex-end">
+                    <Grid item xs={12} className={classes.helpIconGrid}>
+                        <Tooltip title="Api token - help">
+                            <IconButton onClick={openHelpDialog}>
+                                <HelpIcon />
+                            </IconButton>
+                        </Tooltip>
+                    </Grid>
                     <Grid item xs={12}>
                         <Table>
                             <TableHead>
@@ -67,8 +82,8 @@ export const ApiClientAuthorizationPanelRoot = withStyles(styles)(
                                         <TableCell>{apiClientAuthorizatio.apiToken}</TableCell>
                                         <TableCell>{apiClientAuthorizatio.createdByIpAddress || '(none)'}</TableCell>
                                         <TableCell>{apiClientAuthorizatio.defaultOwnerUuid || '(none)'}</TableCell>
-                                        <TableCell>{apiClientAuthorizatio.expiresAt || '(none)'}</TableCell>
-                                        <TableCell>{apiClientAuthorizatio.lastUsedAt || '(none)'}</TableCell>
+                                        <TableCell>{formatDate(apiClientAuthorizatio.expiresAt) || '(none)'}</TableCell>
+                                        <TableCell>{formatDate(apiClientAuthorizatio.lastUsedAt) || '(none)'}</TableCell>
                                         <TableCell>{apiClientAuthorizatio.lastUsedByIpAddress || '(none)'}</TableCell>
                                         <TableCell>{JSON.stringify(apiClientAuthorizatio.scopes)}</TableCell>
                                         <TableCell>{apiClientAuthorizatio.userId}</TableCell>
