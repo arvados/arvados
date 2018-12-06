@@ -2,7 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { searchBarActions, SearchBarActions } from '~/store/search-bar/search-bar-actions';
+import {
+    getQueryFromAdvancedData,
+    searchBarActions,
+    SearchBarActions
+} from '~/store/search-bar/search-bar-actions';
 import { GroupContentsResource } from '~/services/groups-service/groups-service';
 import { SearchBarAdvanceFormData } from '~/models/search-bar';
 
@@ -45,7 +49,7 @@ const makeSelectedItem = (id: string, query?: string): SearchBarSelectedItem => 
 
 const makeQueryList = (recentQueries: string[], savedQueries: SearchBarAdvanceFormData[]) => {
     const recentIds = recentQueries.map((q, idx) => makeSelectedItem(`RQ-${idx}-${q}`, q));
-    const savedIds = savedQueries.map((q, idx) => makeSelectedItem(`SQ-${idx}-${q.searchQuery}`, q.searchQuery));
+    const savedIds = savedQueries.map((q, idx) => makeSelectedItem(`SQ-${idx}-${q.queryName}`, getQueryFromAdvancedData(q)));
     return recentIds.concat(savedIds);
 };
 

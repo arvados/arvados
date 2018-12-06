@@ -4,7 +4,7 @@
 
 import { Dispatch } from "redux";
 import { dialogActions } from "~/store/dialog/dialog-actions";
-import { startSubmit, stopSubmit, initialize } from 'redux-form';
+import { startSubmit, stopSubmit, initialize, FormErrors } from 'redux-form';
 import { ServiceRepository } from '~/services/services';
 import { RootState } from '~/store/store';
 import { getCommonResourceServiceError, CommonResourceServiceError } from "~/services/common-service/common-resource-service";
@@ -39,7 +39,7 @@ export const moveCollection = (resource: MoveToFormDialogData) =>
         } catch (e) {
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {
-                dispatch(stopSubmit(COLLECTION_MOVE_FORM_NAME, { ownerUuid: 'A collection with the same name already exists in the target project.' }));
+                dispatch(stopSubmit(COLLECTION_MOVE_FORM_NAME, { ownerUuid: 'A collection with the same name already exists in the target project.' } as FormErrors));
             } else {
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_MOVE_FORM_NAME }));
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not move the collection.', hideDuration: 2000 }));

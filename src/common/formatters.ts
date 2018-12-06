@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+import { PropertyValue } from "~/models/search-bar";
+
 export const formatDate = (isoDate?: string) => {
     if (isoDate) {
         const date = new Date(isoDate);
@@ -67,3 +69,12 @@ const FILE_SIZES = [
         unit: "B"
     }
 ];
+
+export const formatPropertyValue = (pv: PropertyValue) => {
+    if (pv.key) {
+        return pv.value
+            ? `${pv.key}: ${pv.value}`
+            : pv.key;
+    }
+    return "";
+};

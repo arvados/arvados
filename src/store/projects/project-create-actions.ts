@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { reset, startSubmit, stopSubmit, initialize } from 'redux-form';
+import { reset, startSubmit, stopSubmit, initialize, FormErrors } from 'redux-form';
 import { RootState } from '~/store/store';
 import { dialogActions } from "~/store/dialog/dialog-actions";
 import { getCommonResourceServiceError, CommonResourceServiceError } from '~/services/common-service/common-resource-service';
@@ -43,7 +43,7 @@ export const openProjectCreateDialog = (ownerUuid: string) =>
             dispatch(initialize(PROJECT_CREATE_FORM_NAME, { userUuid }));
         } else {
             dispatch(initialize(PROJECT_CREATE_FORM_NAME, { ownerUuid }));
-        }        
+        }
         dispatch(dialogActions.OPEN_DIALOG({ id: PROJECT_CREATE_FORM_NAME, data: {} }));
     };
 
@@ -58,7 +58,7 @@ export const createProject = (project: Partial<ProjectResource>) =>
         } catch (e) {
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {
-                dispatch(stopSubmit(PROJECT_CREATE_FORM_NAME, { name: 'Project with the same name already exists.' }));
+                dispatch(stopSubmit(PROJECT_CREATE_FORM_NAME, { name: 'Project with the same name already exists.' } as FormErrors));
             }
             return undefined;
         }

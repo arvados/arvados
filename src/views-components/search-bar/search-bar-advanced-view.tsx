@@ -6,7 +6,11 @@ import * as React from 'react';
 import { reduxForm, InjectedFormProps, reset } from 'redux-form';
 import { compose, Dispatch } from 'redux';
 import { Paper, StyleRulesCallback, withStyles, WithStyles, Button, Grid, IconButton, CircularProgress } from '@material-ui/core';
-import { SEARCH_BAR_ADVANCE_FORM_NAME, searchAdvanceData } from '~/store/search-bar/search-bar-actions';
+import {
+    SEARCH_BAR_ADVANCE_FORM_NAME, SEARCH_BAR_ADVANCE_FORM_PICKER_ID,
+    searchAdvanceData,
+    setSearchValueFromAdvancedData
+} from '~/store/search-bar/search-bar-actions';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { CloseIcon } from '~/components/icon/icon';
 import { SearchBarAdvanceFormData } from '~/models/search-bar';
@@ -15,6 +19,7 @@ import {
     SearchBarDateFromField, SearchBarDateToField, SearchBarPropertiesField,
     SearchBarSaveSearchField, SearchBarQuerySearchField
 } from '~/views-components/form-fields/search-bar-form-fields';
+import { treePickerActions } from "~/store/tree-picker/tree-picker-actions";
 
 type CssRules = 'container' | 'closeIcon' | 'label' | 'buttonWrapper'
     | 'button' | 'circularProgress' | 'searchView' | 'selectGrid';
@@ -69,6 +74,7 @@ interface SearchBarAdvancedViewFormDataProps {
 // ToDo: maybe we should remove tags
 export interface SearchBarAdvancedViewDataProps {
     tags: any;
+    saveQuery: boolean;
 }
 
 export interface SearchBarAdvancedViewActionProps {
@@ -99,10 +105,14 @@ export const SearchBarAdvancedView = compose(
         onSubmit: (data: SearchBarAdvanceFormData, dispatch: Dispatch) => {
             dispatch<any>(searchAdvanceData(data));
             dispatch(reset(SEARCH_BAR_ADVANCE_FORM_NAME));
-        }
+            dispatch(treePickerActions.DEACTIVATE_TREE_PICKER_NODE({ pickerId: SEARCH_BAR_ADVANCE_FORM_PICKER_ID }));
+        },
+        onChange: (data: SearchBarAdvanceFormData, dispatch: Dispatch, props: any, prevData: SearchBarAdvanceFormData) => {
+            dispatch<any>(setSearchValueFromAdvancedData(data, prevData));
+        },
     }),
     withStyles(styles))(
-        ({ classes, closeAdvanceView, handleSubmit, submitting, invalid, pristine, tags }: SearchBarAdvancedViewFormProps) =>
+        ({ classes, closeAdvanceView, handleSubmit, submitting, invalid, pristine, tags, saveQuery }: SearchBarAdvancedViewFormProps) =>
             <Paper className={classes.searchView}>
                 <form onSubmit={handleSubmit}>
                     <Grid container direction="column" justify="flex-start" alignItems="flex-start">
@@ -121,7 +131,7 @@ export const SearchBarAdvancedView = compose(
                             </Grid>
                             <Grid item container xs={12}>
                                 <Grid item xs={2} className={classes.label}>Project</Grid>
-                                <Grid item xs={5}>
+                                <Grid item xs={10}>
                                     <SearchBarProjectField />
                                 </Grid>
                             </Grid>
@@ -152,7 +162,7 @@ export const SearchBarAdvancedView = compose(
                                     <SearchBarSaveSearchField />
                                 </Grid>
                                 <Grid item xs={4}>
-                                    <SearchBarQuerySearchField />
+                                    {saveQuery && <SearchBarQuerySearchField />}
                                 </Grid>
                             </Grid>
                             <Grid container item xs={12} justify='flex-end'>

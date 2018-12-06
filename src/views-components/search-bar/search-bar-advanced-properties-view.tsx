@@ -13,10 +13,11 @@ import {
     changeAdvanceFormProperty,
     updateAdvanceFormProperties
 } from '~/store/search-bar/search-bar-actions';
-import { PropertyValues } from '~/models/search-bar';
+import { PropertyValue } from '~/models/search-bar';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { SearchBarKeyField, SearchBarValueField } from '~/views-components/form-fields/search-bar-form-fields';
 import { Chips } from '~/components/chips/chips';
+import { formatPropertyValue } from "~/common/formatters";
 
 type CssRules = 'label' | 'button';
 
@@ -35,14 +36,14 @@ interface SearchBarAdvancedPropertiesViewDataProps {
     submitting: boolean;
     invalid: boolean;
     pristine: boolean;
-    propertyValues: PropertyValues;
-    fields: PropertyValues[];
+    propertyValues: PropertyValue;
+    fields: PropertyValue[];
 }
 
 interface SearchBarAdvancedPropertiesViewActionProps {
     setProps: () => void;
-    addProp: (propertyValues: PropertyValues) => void;
-    getAllFields: (propertyValues: PropertyValues[]) => PropertyValues[] | [];
+    addProp: (propertyValues: PropertyValue) => void;
+    getAllFields: (propertyValues: PropertyValue[]) => PropertyValue[] | [];
 }
 
 type SearchBarAdvancedPropertiesViewProps = SearchBarAdvancedPropertiesViewDataProps
@@ -57,10 +58,10 @@ const mapStateToProps = (state: RootState) => {
 };
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
-    setProps: (propertyValues: PropertyValues[]) => {
+    setProps: (propertyValues: PropertyValue[]) => {
         dispatch<any>(changeAdvanceFormProperty('properties', propertyValues));
     },
-    addProp: (propertyValues: PropertyValues) => {
+    addProp: (propertyValues: PropertyValue) => {
         dispatch<any>(updateAdvanceFormProperties(propertyValues));
         dispatch<any>(changeAdvanceFormProperty('key'));
         dispatch<any>(changeAdvanceFormProperty('value'));
@@ -95,7 +96,7 @@ export const SearchBarAdvancedPropertiesView = connect(mapStateToProps, mapDispa
                     <Chips values={getAllFields(fields)}
                         deletable
                         onChange={setProps}
-                        getLabel={(field: PropertyValues) => `${field.key}: ${field.value}`} />
+                        getLabel={(field: PropertyValue) => formatPropertyValue(field)} />
                 </Grid>
             </Grid>
     )

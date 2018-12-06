@@ -14,6 +14,7 @@ import {
     ClickAwayListener
 } from '@material-ui/core';
 import SearchIcon from '@material-ui/icons/Search';
+import ArrowDropDownIcon from '@material-ui/icons/ArrowDropDown';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { SearchView } from '~/store/search-bar/search-bar-reducer';
 import {
@@ -49,7 +50,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => {
         },
         input: {
             border: 'none',
-            padding: `0px ${theme.spacing.unit}px`
+            padding: `0`
         },
         view: {
             position: 'absolute',
@@ -85,6 +86,7 @@ interface SearchBarViewActionProps {
     loadRecentQueries: () => string[];
     moveUp: () => void;
     moveDown: () => void;
+    setAdvancedDataFromSearchValue: (search: string) => void;
 }
 
 type SearchBarViewProps = SearchBarDataProps & SearchBarActionProps & WithStyles<CssRules>;
@@ -93,6 +95,7 @@ const handleKeyDown = (e: React.KeyboardEvent, props: SearchBarViewProps) => {
     if (e.keyCode === KEY_CODE_DOWN) {
         e.preventDefault();
         if (!props.isPopoverOpen) {
+            props.onSetView(SearchView.AUTOCOMPLETE);
             props.openSearchView();
         } else {
             props.moveDown();
@@ -116,6 +119,30 @@ const handleKeyDown = (e: React.KeyboardEvent, props: SearchBarViewProps) => {
     }
 };
 
+const handleInputClick = (e: React.MouseEvent, props: SearchBarViewProps) => {
+    if (props.searchValue) {
+        props.onSetView(SearchView.AUTOCOMPLETE);
+        props.openSearchView();
+    } else {
+        props.closeView();
+    }
+};
+
+const handleDropdownClick = (e: React.MouseEvent, props: SearchBarViewProps) => {
+    e.stopPropagation();
+    if (props.isPopoverOpen) {
+        if (props.currentView === SearchView.ADVANCED) {
+            props.closeView();
+        } else {
+            props.setAdvancedDataFromSearchValue(props.searchValue);
+            props.onSetView(SearchView.ADVANCED);
+        }
+    } else {
+        props.setAdvancedDataFromSearchValue(props.searchValue);
+        props.onSetView(SearchView.ADVANCED);
+    }
+};
+
 export const SearchBarView = withStyles(styles)(
     (props : SearchBarViewProps) => {
         const { classes, isPopoverOpen } = props;
@@ -130,13 +157,22 @@ export const SearchBarView = withStyles(styles)(
                             value={props.searchValue}
                             fullWidth={true}
                             disableUnderline={true}
-                            onClick={props.openSearchView}
+                            onClick={e => handleInputClick(e, props)}
                             onKeyDown={e => handleKeyDown(e, props)}
-                            endAdornment={
-                                <InputAdornment position="end">
+                            startAdornment={
+                                <InputAdornment position="start">
                                     <Tooltip title='Search'>
                                         <IconButton type="submit">
                                             <SearchIcon />
+                                        </IconButton>
+                                    </Tooltip>
+                                </InputAdornment>
+                            }
+                            endAdornment={
+                                <InputAdornment position="end">
+                                    <Tooltip title='Advanced search'>
+                                        <IconButton onClick={e => handleDropdownClick(e, props)}>
+                                            <ArrowDropDownIcon />
                                         </IconButton>
                                     </Tooltip>
                                 </InputAdornment>
@@ -162,7 +198,8 @@ const getView = (props: SearchBarViewProps) => {
         case SearchView.ADVANCED:
             return <SearchBarAdvancedView
                 closeAdvanceView={props.closeAdvanceView}
-                tags={props.tags} />;
+                tags={props.tags}
+                saveQuery={props.saveQuery} />;
         default:
             return <SearchBarBasicView
                 onSetView={props.onSetView}
