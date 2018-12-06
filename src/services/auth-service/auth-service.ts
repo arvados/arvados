@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { User, userPrefs } from "~/models/user";
+import { User, UserPrefs } from "~/models/user";
 import { AxiosInstance } from "axios";
 import { ApiActions } from "~/services/api/api-actions";
 import * as uuid from "uuid/v4";
@@ -25,7 +25,7 @@ export interface UserDetailsResponse {
     owner_uuid: string;
     is_admin: boolean;
     identity_url: string;
-    prefs: userPrefs;
+    prefs: UserPrefs;
 }
 
 export class AuthService {
@@ -114,7 +114,6 @@ export class AuthService {
             .then(resp => {
                 this.actions.progressFn(reqId, false);
                 const prefs = resp.data.prefs.profile ? resp.data.prefs : { profile: {}};
-                console.log(resp.data);
                 return {
                     email: resp.data.email,
                     firstName: resp.data.first_name,

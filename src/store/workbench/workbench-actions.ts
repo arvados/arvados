@@ -414,8 +414,8 @@ export const loadSshKeys = handleFirstTimeLoad(
     });
 
 export const loadMyAccount = handleFirstTimeLoad(
-    async (dispatch: Dispatch<any>) => {
-        await dispatch(loadMyAccountPanel());
+    (dispatch: Dispatch<any>) => {
+        dispatch(loadMyAccountPanel());
     });
 
 export const loadKeepServices = handleFirstTimeLoad(

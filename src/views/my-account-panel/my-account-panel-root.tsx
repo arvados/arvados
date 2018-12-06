@@ -19,7 +19,7 @@ import {
 } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { User } from "~/models/user";
-import { require } from "~/validators/require";
+import { MY_ACCOUNT_VALIDATION} from "~/validators/validators";
 
 type CssRules = 'root' | 'gridItem' | 'label' | 'title' | 'actions';
 
@@ -53,9 +53,15 @@ export interface MyAccountPanelRootDataProps {
     initialValues?: User;
 }
 
-export const MY_ACCOUNT_FORM = 'myAccountForm';
-
-const FILES_FIELD_VALIDATION = [require];
+const RoleTypes = [
+    {key: 'Bio-informatician', value: 'Bio-informatician'},
+    {key: 'Data Scientist', value: 'Data Scientist'},
+    {key: 'Analyst', value: 'Analyst'},
+    {key: 'Researcher', value: 'Researcher'},
+    {key: 'Software Developer', value: 'Software Developer'},
+    {key: 'System Administrator', value: 'System Administrator'},
+    {key: 'Other', value: 'Other'}
+];
 
 type MyAccountPanelRootProps = InjectedFormProps<MyAccountPanelRootActionProps> & MyAccountPanelRootDataProps & WithStyles<CssRules>;
 
@@ -96,7 +102,7 @@ export const MyAccountPanelRoot = withStyles(styles)(
                                     label="*Organization"
                                     name="prefs.profile.organization"
                                     component={TextField}
-                                    validate={FILES_FIELD_VALIDATION}
+                                    validate={MY_ACCOUNT_VALIDATION}
                                 />
                             </Grid>
                             <Grid item className={classes.gridItem}>
@@ -112,15 +118,7 @@ export const MyAccountPanelRoot = withStyles(styles)(
                                     id="prefs.profile.role"
                                     name="prefs.profile.role"
                                     component={NativeSelectField}
-                                    items={[
-                                        {key: 'Bio-informatician', value: 'Bio-informatician'},
-                                        {key: 'Data Scientist', value: 'Data Scientist'},
-                                        {key: 'Analyst', value: 'Analyst'},
-                                        {key: 'Researcher', value: 'Researcher'},
-                                        {key: 'Software Developer', value: 'Software Developer'},
-                                        {key: 'System Administrator', value: 'System Administrator'},
-                                        {key: 'Other', value: 'Other'}
-                                    ]}
+                                    items={RoleTypes}
                                 />
                             </Grid>
                         </Grid>
@@ -140,13 +138,19 @@ export const MyAccountPanelRoot = withStyles(styles)(
                                     label="*E-mail at Organization"
                                     name="prefs.profile.organization_email"
                                     component={TextField}
-                                    validate={FILES_FIELD_VALIDATION}
+                                    validate={MY_ACCOUNT_VALIDATION}
                                 />
                             </Grid>
                         </Grid>
                         <Grid item xs={12} className={classes.actions}>
                             <Button color="primary" onClick={reset} disabled={isPristine}>Discard changes</Button>
-                            <Button color="primary" variant="contained" type="submit" disabled={isPristine || invalid || submitting}>Save changes</Button>
+                            <Button
+                                color="primary"
+                                variant="contained"
+                                type="submit"
+                                disabled={isPristine || invalid || submitting}>
+                                    Save changes
+                            </Button>
                         </Grid>
                     </Grid>
                 </form>

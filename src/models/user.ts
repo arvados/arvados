@@ -4,7 +4,7 @@
 
 import { Resource, ResourceKind } from '~/models/resource';
 
-export type userPrefs = {
+export type UserPrefs = {
     profile?: {
         organization?: string,
         organization_email?: string,
@@ -21,7 +21,7 @@ export interface User {
     uuid: string;
     ownerUuid: string;
     identityUrl: string;
-    prefs: userPrefs;
+    prefs: UserPrefs;
     isAdmin: boolean;
 }
 

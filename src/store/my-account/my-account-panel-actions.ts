@@ -8,16 +8,13 @@ import { initialize } from "redux-form";
 import { ServiceRepository } from "~/services/services";
 import { setBreadcrumbs } from "~/store/breadcrumbs/breadcrumbs-actions";
 import { authActions } from "~/store/auth/auth-action";
-import { snackbarActions } from "~/store/snackbar/snackbar-actions";
-import { MY_ACCOUNT_FORM } from "~/views/my-account-panel/my-account-panel-root";
+import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
+
+export const MY_ACCOUNT_FORM = 'myAccountForm';
 
 export const loadMyAccountPanel = () =>
-    async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        try {
-            dispatch(setBreadcrumbs([{ label: 'User profile'}]));
-        } catch (e) {
-            return;
-        }
+    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(setBreadcrumbs([{ label: 'User profile'}]));
     };
 
 export const saveEditedUser = (resource: any) =>
@@ -27,7 +24,7 @@ export const saveEditedUser = (resource: any) =>
             services.authService.saveUser(resource);
             dispatch(authActions.USER_DETAILS_SUCCESS(resource));
             dispatch(initialize(MY_ACCOUNT_FORM, resource));
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Profile has been updated." }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Profile has been updated.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
         } catch(e) {
             return;
         }
