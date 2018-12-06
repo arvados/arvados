@@ -938,7 +938,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
         self.assertEqual(1, len(collection_list))
         return collection_list[0]
 
-    def test_expired_token_invalidates_cache(self):
+    def test_all_expired_signatures_invalidates_cache(self):
         self.authorize_with('active')
         tmpdir = self.make_tmpdir()
         with open(os.path.join(tmpdir, 'somefile.txt'), 'w') as f:
@@ -974,8 +974,94 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
         (out, err) = p.communicate()
         self.assertRegex(
             err.decode(),
+            r'INFO: Cache expired, starting from scratch.*')
+        self.assertEqual(p.returncode, 0)
+
+    def test_invalid_signature_invalidates_cache(self):
+        self.authorize_with('active')
+        tmpdir = self.make_tmpdir()
+        with open(os.path.join(tmpdir, 'somefile.txt'), 'w') as f:
+            f.write('foo')
+        # Upload a directory and get the cache file name
+        p = subprocess.Popen([sys.executable, arv_put.__file__, tmpdir],
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
+                             env=self.ENVIRON)
+        (out, err) = p.communicate()
+        self.assertRegex(err.decode(), r'INFO: Creating new cache file at ')
+        self.assertEqual(p.returncode, 0)
+        cache_filepath = re.search(r'INFO: Creating new cache file at (.*)',
+                                   err.decode()).groups()[0]
+        self.assertTrue(os.path.isfile(cache_filepath))
+        # Load the cache file contents and modify the manifest to simulate
+        # an invalid access token
+        with open(cache_filepath, 'r') as c:
+            cache = json.load(c)
+        self.assertRegex(cache['manifest'], r'\+A\S+\@')
+        cache['manifest'] = re.sub(
+            r'\+A.*\@',
+            "+Aabcdef0123456789abcdef0123456789abcdef01@",
+            cache['manifest'])
+        with open(cache_filepath, 'w') as c:
+            c.write(json.dumps(cache))
+        # Re-run the upload and expect to get an invalid cache message
+        p = subprocess.Popen([sys.executable, arv_put.__file__, tmpdir],
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
+                             env=self.ENVIRON)
+        (out, err) = p.communicate()
+        self.assertRegex(
+            err.decode(),
             r'ERROR: arv-put: Cache seems to contain invalid data.*')
         self.assertEqual(p.returncode, 1)
+
+    def test_single_expired_signature_reuploads_file(self):
+        self.authorize_with('active')
+        tmpdir = self.make_tmpdir()
+        with open(os.path.join(tmpdir, 'foofile.txt'), 'w') as f:
+            f.write('foo')
+        # Write a second file on its own subdir to force a new stream
+        os.mkdir(os.path.join(tmpdir, 'bar'))
+        with open(os.path.join(tmpdir, 'bar', 'barfile.txt'), 'w') as f:
+            f.write('bar')
+        # Upload a directory and get the cache file name
+        p = subprocess.Popen([sys.executable, arv_put.__file__, tmpdir],
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
+                             env=self.ENVIRON)
+        (out, err) = p.communicate()
+        self.assertRegex(err.decode(), r'INFO: Creating new cache file at ')
+        self.assertEqual(p.returncode, 0)
+        cache_filepath = re.search(r'INFO: Creating new cache file at (.*)',
+                                   err.decode()).groups()[0]
+        self.assertTrue(os.path.isfile(cache_filepath))
+        # Load the cache file contents and modify the manifest to simulate
+        # an expired access token
+        with open(cache_filepath, 'r') as c:
+            cache = json.load(c)
+        self.assertRegex(cache['manifest'], r'\+A\S+\@')
+        a_month_ago = datetime.datetime.now() - datetime.timedelta(days=30)
+        # Make one of the signatures appear to have expired
+        cache['manifest'] = re.sub(
+            r'\@.*? 3:3:barfile.txt',
+            "@{} 3:3:barfile.txt".format(self.datetime_to_hex(a_month_ago)),
+            cache['manifest'])
+        with open(cache_filepath, 'w') as c:
+            c.write(json.dumps(cache))
+        # Re-run the upload and expect to get an invalid cache message
+        p = subprocess.Popen([sys.executable, arv_put.__file__, tmpdir],
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
+                             env=self.ENVIRON)
+        (out, err) = p.communicate()
+        self.assertRegex(
+            err.decode(),
+            r'WARNING: Uploaded file \'.*barfile.txt\' access token expired, will re-upload it from scratch')
+        self.assertEqual(p.returncode, 0)
+        # Confirm that the resulting cache is different from the last run.
+        with open(cache_filepath, 'r') as c2:
+            new_cache = json.load(c2)
+        self.assertNotEqual(cache['manifest'], new_cache['manifest'])
 
     def test_put_collection_with_later_update(self):
         tmpdir = self.make_tmpdir()

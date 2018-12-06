@@ -739,6 +739,12 @@ class ArvPutUploadJob(object):
             if not file_in_local_collection:
                 # File not uploaded yet, upload it completely
                 should_upload = True
+            elif file_in_local_collection.permission_expired():
+                # Permission token expired, re-upload file. This will change whenever
+                # we have a API for refreshing tokens.
+                self.logger.warning("Uploaded file '{}' access token expired, will re-upload it from scratch".format(filename))
+                should_upload = True
+                self._local_collection.remove(filename)
             elif cached_file_data['size'] == file_in_local_collection.size():
                 # File already there, skip it.
                 self.bytes_skipped += cached_file_data['size']
@@ -859,23 +865,41 @@ class ArvPutUploadJob(object):
 
     def _cached_manifest_valid(self):
         """
-        Validate first block's signature to check if cached manifest is usable.
-        Cached manifest could be invalid because:
-        * Block signature expiration
-        * Block signatures belonging to a different user
+        Validate the oldest non-expired block signature to check if cached manifest
+        is usable: checking if the cached manifest was not created with a different
+        arvados account.
         """
         if self._state.get('manifest', None) is None:
             # No cached manifest yet, all good.
             return True
-        m = keep_locator_pattern.search(self._state['manifest'])
-        if m is None:
-            # No blocks found, no invalid block signatures.
+        now = datetime.datetime.utcnow()
+        oldest_exp = None
+        oldest_loc = None
+        block_found = False
+        for m in keep_locator_pattern.finditer(self._state['manifest']):
+            loc = m.group(0)
+            try:
+                exp = datetime.datetime.utcfromtimestamp(int(loc.split('@')[1], 16))
+            except IndexError:
+                # Locator without signature
+                continue
+            block_found = True
+            if exp > now and (oldest_exp is None or exp < oldest_exp):
+                oldest_exp = exp
+                oldest_loc = loc
+        if not block_found:
+            # No block signatures found => no invalid block signatures.
             return True
-        loc = self._state['manifest'][m.start():m.end()]
+        if oldest_loc is None:
+            # Locator signatures found, but all have expired.
+            # Reset the cache and move on.
+            self.logger.info('Cache expired, starting from scratch.')
+            self._state['manifest'] = ''
+            return True
         kc = arvados.KeepClient(api_client=self._api_client,
                                 num_retries=self.num_retries)
         try:
-            kc.head(loc)
+            kc.head(oldest_loc)
         except arvados.errors.KeepRequestError:
             # Something is wrong, cached manifest is not valid.
             return False
