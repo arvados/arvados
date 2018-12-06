@@ -20,7 +20,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         overflow: 'auto'
     },
     tableRow: {
-        '& td, th': {
+        '& th': {
             whiteSpace: 'nowrap'
         }
     }
