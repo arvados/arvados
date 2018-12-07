@@ -160,7 +160,7 @@ func ListProcesses(stdout, stderr io.Writer) int {
 		// acquisition during races, e.g., by connecting to a
 		// unix socket or checking /proc/$pid/fd/$n ->
 		// lockfile.
-		err = syscall.Flock(int(f.Fd()), syscall.LOCK_SH)
+		err = syscall.Flock(int(f.Fd()), syscall.LOCK_SH|syscall.LOCK_NB)
 		if err == nil {
 			// lockfile is stale
 			err := os.Remove(path)
