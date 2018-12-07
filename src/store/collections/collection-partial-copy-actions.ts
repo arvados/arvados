@@ -4,7 +4,7 @@
 
 import { Dispatch } from 'redux';
 import { RootState } from '~/store/store';
-import { initialize, startSubmit, stopSubmit } from 'redux-form';
+import { FormErrors, initialize, startSubmit, stopSubmit } from 'redux-form';
 import { resetPickerProjectTree } from '~/store/project-tree-picker/project-tree-picker-actions';
 import { dialogActions } from '~/store/dialog/dialog-actions';
 import { ServiceRepository } from '~/services/services';
@@ -67,7 +67,7 @@ export const copyCollectionPartial = ({ name, description, projectUuid }: Collec
             } catch (e) {
                 const error = getCommonResourceServiceError(e);
                 if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {
-                    dispatch(stopSubmit(COLLECTION_PARTIAL_COPY_FORM_NAME, { name: 'Collection with this name already exists.' }));
+                    dispatch(stopSubmit(COLLECTION_PARTIAL_COPY_FORM_NAME, { name: 'Collection with this name already exists.' } as FormErrors));
                 } else if (error === CommonResourceServiceError.UNKNOWN) {
                     dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_FORM_NAME }));
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not create a copy of collection', hideDuration: 2000 }));

@@ -48,6 +48,7 @@ import { repositoriesReducer } from '~/store/repositories/repositories-reducer';
 import { keepServicesReducer } from '~/store/keep-services/keep-services-reducer';
 import { UserMiddlewareService } from '~/store/users/user-panel-middleware-service';
 import { USERS_PANEL_ID } from '~/store/users/users-actions';
+import { computeNodesReducer } from '~/store/compute-nodes/compute-nodes-reducer';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -123,5 +124,6 @@ const createRootReducer = (services: ServiceRepository) => combineReducers({
     searchBar: searchBarReducer,
     virtualMachines: virtualMachinesReducer,
     repositories: repositoriesReducer,
-    keepServices: keepServicesReducer
+    keepServices: keepServicesReducer,
+    computeNodes: computeNodesReducer
 });

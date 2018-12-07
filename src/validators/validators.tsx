@@ -29,3 +29,5 @@ export const USER_LENGTH_VALIDATION = [maxLength(255)];
 
 export const SSH_KEY_PUBLIC_VALIDATION = [require, isRsaKey, maxLength(1024)];
 export const SSH_KEY_NAME_VALIDATION = [require, maxLength(255)];
+
+export const MY_ACCOUNT_VALIDATION = [require];

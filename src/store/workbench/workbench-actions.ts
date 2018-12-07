@@ -40,6 +40,7 @@ import { loadSharedWithMePanel } from '~/store/shared-with-me-panel/shared-with-
 import { CopyFormDialogData } from '~/store/copy-dialog/copy-dialog';
 import { loadWorkflowPanel, workflowPanelActions } from '~/store/workflow-panel/workflow-panel-actions';
 import { loadSshKeysPanel } from '~/store/auth/auth-action';
+import { loadMyAccountPanel } from '~/store/my-account/my-account-panel-actions';
 import { workflowPanelColumns } from '~/views/workflow-panel/workflow-panel-view';
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions';
 import { getProgressIndicator } from '~/store/progress-indicator/progress-indicator-reducer';
@@ -59,6 +60,7 @@ import { loadRepositoriesPanel } from '~/store/repositories/repositories-actions
 import { loadKeepServicesPanel } from '~/store/keep-services/keep-services-actions';
 import { loadUsersPanel, userBindedActions } from '~/store/users/users-actions';
 import { userPanelColumns } from '~/views/user-panel/user-panel';
+import { loadComputeNodesPanel } from '~/store/compute-nodes/compute-nodes-actions';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -130,7 +132,7 @@ export const loadProject = (uuid: string) =>
             const userUuid = services.authService.getUuid();
             dispatch(setIsProjectPanelTrashed(false));
             if (userUuid) {
-                if (extractUuidKind(uuid) === ResourceKind.USER && userUuid!==uuid) {
+                if (extractUuidKind(uuid) === ResourceKind.USER && userUuid !== uuid) {
                     // Load another users home projects
                     dispatch(finishLoadingProject(uuid));
                 } else if (userUuid !== uuid) {
@@ -416,6 +418,11 @@ export const loadSshKeys = handleFirstTimeLoad(
         await dispatch(loadSshKeysPanel());
     });
 
+export const loadMyAccount = handleFirstTimeLoad(
+    (dispatch: Dispatch<any>) => {
+        dispatch(loadMyAccountPanel());
+    });
+
 export const loadKeepServices = handleFirstTimeLoad(
     async (dispatch: Dispatch<any>) => {
         await dispatch(loadKeepServicesPanel());
@@ -425,6 +432,11 @@ export const loadUsers = handleFirstTimeLoad(
     async (dispatch: Dispatch<any>) => {
         await dispatch(loadUsersPanel());
         dispatch(setBreadcrumbs([{ label: 'Users' }]));
+    });
+
+export const loadComputeNodes = handleFirstTimeLoad(
+    async (dispatch: Dispatch<any>) => {
+        await dispatch(loadComputeNodesPanel());
     });
 
 const finishLoadingProject = (project: GroupContentsResource | string) =>

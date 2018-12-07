@@ -4,12 +4,24 @@
 
 import { Resource, ResourceKind } from '~/models/resource';
 
+export type UserPrefs = {
+    profile?: {
+        organization?: string,
+        organization_email?: string,
+        lab?: string,
+        website_url?: string,
+        role?: string
+    }
+};
+
 export interface User {
     email: string;
     firstName: string;
     lastName: string;
     uuid: string;
     ownerUuid: string;
+    identityUrl: string;
+    prefs: UserPrefs;
     isAdmin: boolean;
 }
 
@@ -29,14 +41,4 @@ export interface UserResource extends Resource {
     defaultOwnerUuid: string;
     isActive: boolean;
     writableBy: string[];
-}
-
-export interface UserPrefs {
-    profile: {
-        lab: string;
-        organization: string;
-        organizationEmail: string;
-        role: string;
-        websiteUrl: string;
-    };
 }

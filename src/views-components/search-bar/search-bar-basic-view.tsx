@@ -32,10 +32,12 @@ const styles: StyleRulesCallback<CssRules> = theme => {
             color: theme.palette.primary.main
         },
         label: {
-            fontSize: '0.875rem',
+            fontSize: '0.775rem',
             padding: `${theme.spacing.unit}px ${theme.spacing.unit}px `,
             color: theme.palette.grey["900"],
-            background: theme.palette.grey["200"]
+            background: 'white',
+            textAlign: 'right',
+            fontWeight: 'bold'
         }
     };
 };
@@ -52,18 +54,17 @@ type SearchBarBasicViewProps = SearchBarBasicViewDataProps & SearchBarBasicViewA
 export const SearchBarBasicView = withStyles(styles)(
     ({ classes, onSetView, loadRecentQueries, deleteSavedQuery, savedQueries, onSearch, editSavedQuery, selectedItem }: SearchBarBasicViewProps) =>
         <Paper className={classes.root}>
-            <div className={classes.label}>Recent search queries</div>
+            <div className={classes.label}>{"Recent queries"}</div>
             <SearchBarRecentQueries
                 onSearch={onSearch}
                 loadRecentQueries={loadRecentQueries}
                 selectedItem={selectedItem} />
-            <div className={classes.label}>Saved search queries</div>
+            <div className={classes.label}>{"Saved queries"}</div>
             <SearchBarSavedQueries
                 onSearch={onSearch}
                 savedQueries={savedQueries}
                 editSavedQuery={editSavedQuery}
                 deleteSavedQuery={deleteSavedQuery}
                 selectedItem={selectedItem} />
-            <div className={classes.advanced} onClick={() => onSetView(SearchView.ADVANCED)}>Advanced search</div>
         </Paper>
 );

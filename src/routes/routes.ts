@@ -23,7 +23,9 @@ export const Routes = {
     WORKFLOWS: '/workflows',
     SEARCH_RESULTS: '/search-results',
     SSH_KEYS: `/ssh-keys`,
+    MY_ACCOUNT: '/my-account',
     KEEP_SERVICES: `/keep-services`,
+    COMPUTE_NODES: `/nodes`,
     USERS: '/users'
 };
 
@@ -91,8 +93,14 @@ export const matchRepositoriesRoute = (route: string) =>
 export const matchSshKeysRoute = (route: string) =>
     matchPath(route, { path: Routes.SSH_KEYS });
 
+export const matchMyAccountRoute = (route: string) =>
+    matchPath(route, { path: Routes.MY_ACCOUNT });
+
 export const matchKeepServicesRoute = (route: string) =>
     matchPath(route, { path: Routes.KEEP_SERVICES });
 
 export const matchUsersRoute = (route: string) =>
     matchPath(route, { path: Routes.USERS });
+
+export const matchComputeNodesRoute = (route: string) =>
+    matchPath(route, { path: Routes.COMPUTE_NODES });

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { initialize, startSubmit, stopSubmit } from 'redux-form';
+import { FormErrors, initialize, startSubmit, stopSubmit } from 'redux-form';
 import { RootState } from "~/store/store";
 import { dialogActions } from "~/store/dialog/dialog-actions";
 import { getCommonResourceServiceError, CommonResourceServiceError } from "~/services/common-service/common-resource-service";
@@ -38,7 +38,7 @@ export const updateProject = (project: Partial<ProjectResource>) =>
         } catch (e) {
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {
-                dispatch(stopSubmit(PROJECT_UPDATE_FORM_NAME, { name: 'Project with the same name already exists.' }));
+                dispatch(stopSubmit(PROJECT_UPDATE_FORM_NAME, { name: 'Project with the same name already exists.' } as FormErrors));
             }
             return ;
         }
