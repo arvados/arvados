@@ -126,15 +126,21 @@ func (disp *dispatcher) initialize() {
 	disp.pool = worker.NewPool(disp.logger, disp.reg, disp.instanceSet, disp.newExecutor, disp.Cluster)
 	disp.queue = container.NewQueue(disp.logger, disp.reg, disp.typeChooser, arvClient)
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/arvados/v1/dispatch/containers", disp.apiContainers)
-	mux.HandleFunc("/arvados/v1/dispatch/instances", disp.apiInstances)
-	metricsH := promhttp.HandlerFor(disp.reg, promhttp.HandlerOpts{
-		ErrorLog: disp.logger,
-	})
-	mux.Handle("/metrics", metricsH)
-	mux.Handle("/metrics.json", metricsH)
-	disp.httpHandler = auth.RequireLiteralToken(disp.Cluster.ManagementToken, mux)
+	if disp.Cluster.ManagementToken == "" {
+		disp.httpHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			http.Error(w, "Management API authentication is not configured", http.StatusForbidden)
+		})
+	} else {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/arvados/v1/dispatch/containers", disp.apiContainers)
+		mux.HandleFunc("/arvados/v1/dispatch/instances", disp.apiInstances)
+		metricsH := promhttp.HandlerFor(disp.reg, promhttp.HandlerOpts{
+			ErrorLog: disp.logger,
+		})
+		mux.Handle("/metrics", metricsH)
+		mux.Handle("/metrics.json", metricsH)
+		disp.httpHandler = auth.RequireLiteralToken(disp.Cluster.ManagementToken, mux)
+	}
 }
 
 func (disp *dispatcher) run() {

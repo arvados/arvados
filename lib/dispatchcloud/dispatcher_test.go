@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/ioutil"
 	"math/rand"
+	"net/http"
 	"net/http/httptest"
 	"os"
 	"regexp"
@@ -324,7 +325,40 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 	}
 }
 
+func (s *DispatcherSuite) TestAPIPermissions(c *check.C) {
+	drivers["test"] = s.stubDriver
+	s.cluster.ManagementToken = "abcdefgh"
+	for _, token := range []string{"abc", ""} {
+		req := httptest.NewRequest("GET", "/arvados/v1/dispatch/instances", nil)
+		if token != "" {
+			req.Header.Set("Authorization", "Bearer "+token)
+		}
+		resp := httptest.NewRecorder()
+		s.disp.ServeHTTP(resp, req)
+		if token == "" {
+			c.Check(resp.Code, check.Equals, http.StatusUnauthorized)
+		} else {
+			c.Check(resp.Code, check.Equals, http.StatusForbidden)
+		}
+	}
+}
+
+func (s *DispatcherSuite) TestAPIDisabled(c *check.C) {
+	drivers["test"] = s.stubDriver
+	s.cluster.ManagementToken = ""
+	for _, token := range []string{"abc", ""} {
+		req := httptest.NewRequest("GET", "/arvados/v1/dispatch/instances", nil)
+		if token != "" {
+			req.Header.Set("Authorization", "Bearer "+token)
+		}
+		resp := httptest.NewRecorder()
+		s.disp.ServeHTTP(resp, req)
+		c.Check(resp.Code, check.Equals, http.StatusForbidden)
+	}
+}
+
 func (s *DispatcherSuite) TestInstancesAPI(c *check.C) {
+	s.cluster.ManagementToken = "abcdefgh"
 	s.cluster.CloudVMs.TimeoutBooting = arvados.Duration(time.Second)
 	drivers["test"] = s.stubDriver
 
@@ -341,9 +375,11 @@ func (s *DispatcherSuite) TestInstancesAPI(c *check.C) {
 	}
 	getInstances := func() instancesResponse {
 		req := httptest.NewRequest("GET", "/arvados/v1/dispatch/instances", nil)
+		req.Header.Set("Authorization", "Bearer abcdefgh")
 		resp := httptest.NewRecorder()
 		s.disp.ServeHTTP(resp, req)
 		var sr instancesResponse
+		c.Check(resp.Code, check.Equals, http.StatusOK)
 		err := json.Unmarshal(resp.Body.Bytes(), &sr)
 		c.Check(err, check.IsNil)
 		return sr
