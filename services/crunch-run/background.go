@@ -80,6 +80,7 @@ func detach(uuid string, args []string, stdout, stderr io.Writer) error {
 
 	w := io.MultiWriter(stdout, lockfile)
 	err = json.NewEncoder(w).Encode(procinfo{
+		UUID:   uuid,
 		PID:    cmd.Process.Pid,
 		Stdout: outfile.Name(),
 		Stderr: errfile.Name(),
