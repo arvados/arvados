@@ -559,7 +559,8 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                                       uuid=existing_uuid,
                                       submit_runner_ram=runtimeContext.submit_runner_ram,
                                       name=runtimeContext.name,
-                                      merged_map=merged_map)
+                                      merged_map=merged_map,
+                                      loadingContext=loadingContext)
                 tmpl.save()
                 # cwltool.main will write our return value to stdout.
                 return (tmpl.uuid, "success")

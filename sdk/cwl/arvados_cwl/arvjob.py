@@ -386,19 +386,21 @@ class RunnerTemplate(object):
     }
 
     def __init__(self, runner, tool, job_order, enable_reuse, uuid,
-                 submit_runner_ram=0, name=None, merged_map=None):
+                 submit_runner_ram=0, name=None, merged_map=None,
+                 loadingContext=None):
         self.runner = runner
         self.embedded_tool = tool
         self.job = RunnerJob(
             runner=runner,
             tool=tool,
-            job_order=job_order,
             enable_reuse=enable_reuse,
             output_name=None,
             output_tags=None,
             submit_runner_ram=submit_runner_ram,
             name=name,
-            merged_map=merged_map)
+            merged_map=merged_map,
+            loadingContext=loadingContext)
+        self.job.job_order = job_order
         self.uuid = uuid
 
     def pipeline_component_spec(self):
