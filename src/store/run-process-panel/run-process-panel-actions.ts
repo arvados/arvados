@@ -6,8 +6,8 @@ import { Dispatch } from 'redux';
 import { unionize, ofType, UnionOf } from "~/common/unionize";
 import { ServiceRepository } from "~/services/services";
 import { RootState } from '~/store/store';
-import { WorkflowResource } from '~/models/workflow';
-import { getFormValues } from 'redux-form';
+import { WorkflowResource, getWorkflowInputs, parseWorkflowDefinition } from '~/models/workflow';
+import { getFormValues, initialize } from 'redux-form';
 import { RUN_PROCESS_BASIC_FORM, RunProcessBasicFormData } from '~/views/run-process-panel/run-process-basic-form';
 import { RUN_PROCESS_INPUTS_FORM } from '~/views/run-process-panel/run-process-inputs-form';
 import { WorkflowInputsData } from '~/models/workflow';
@@ -92,6 +92,16 @@ const loadPresets = (workflowUuid: string) =>
         dispatch(runProcessPanelActions.SET_WORKFLOW_PRESETS(items));
     };
 
+export const selectPreset = (preset: WorkflowResource) =>
+    (dispatch: Dispatch<any>, getState: () => RootState) => {
+        dispatch(runProcessPanelActions.SELECT_WORKFLOW_PRESET(preset));
+        const inputs = getWorkflowInputs(parseWorkflowDefinition(preset)) || [];
+        const values = inputs.reduce((values, input) => ({
+            ...values,
+            [input.id]: input.default,
+        }), {});
+        dispatch(initialize(RUN_PROCESS_INPUTS_FORM, values));
+    };
 
 export const goToStep = (step: number) =>
     (dispatch: Dispatch, getState: () => RootState) => {
