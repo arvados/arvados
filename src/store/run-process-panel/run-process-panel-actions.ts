@@ -26,6 +26,7 @@ export const runProcessPanelActions = unionize({
     SET_WORKFLOWS: ofType<WorkflowResource[]>(),
     SET_SELECTED_WORKFLOW: ofType<WorkflowResource>(),
     SET_WORKFLOW_PRESETS: ofType<WorkflowResource[]>(),
+    SELECT_WORKFLOW_PRESET: ofType<WorkflowResource>(),
     SEARCH_WORKFLOWS: ofType<string>(),
     RESET_RUN_PROCESS_PANEL: ofType<{}>(),
 });
@@ -81,6 +82,7 @@ export const setWorkflow = (workflow: WorkflowResource, isWorkflowChanged = true
         }
         if (!isWorkflowChanged) {
             dispatch(runProcessPanelActions.SET_SELECTED_WORKFLOW(workflow));
+            dispatch<any>(loadPresets(workflow.uuid));
         }
     };
 
