@@ -45,6 +45,7 @@ import SplitterLayout from 'react-splitter-layout';
 import { WorkflowPanel } from '~/views/workflow-panel/workflow-panel';
 import { SearchResultsPanel } from '~/views/search-results-panel/search-results-panel';
 import { SshKeyPanel } from '~/views/ssh-key-panel/ssh-key-panel';
+import { MyAccountPanel } from '~/views/my-account-panel/my-account-panel';
 import { SharingDialog } from '~/views-components/sharing-dialog/sharing-dialog';
 import { AdvancedTabDialog } from '~/views-components/advanced-tab-dialog/advanced-tab-dialog';
 import { ProcessInputDialog } from '~/views-components/process-input-dialog/process-input-dialog';
@@ -146,6 +147,7 @@ export const WorkbenchPanel =
                                 <Route path={Routes.KEEP_SERVICES} component={KeepServicePanel} />
                                 <Route path={Routes.COMPUTE_NODES} component={ComputeNodePanel} />
                                 <Route path={Routes.API_CLIENT_AUTHORIZATIONS} component={ApiClientAuthorizationPanel} />
+                                <Route path={Routes.MY_ACCOUNT} component={MyAccountPanel} />
                             </Switch>
                         </Grid>
                     </Grid>

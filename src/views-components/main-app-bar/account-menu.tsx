@@ -14,7 +14,7 @@ import { openCurrentTokenDialog } from '~/store/current-token-dialog/current-tok
 import { openRepositoriesPanel } from "~/store/repositories/repositories-actions";
 import { 
     navigateToSshKeys, navigateToKeepServices, navigateToComputeNodes,
-    navigateToApiClientAuthorizations
+    navigateToApiClientAuthorizations, navigateToMyAccount
 } from '~/store/navigation/navigation-action';
 import { openVirtualMachines } from "~/store/virtual-machines/virtual-machines-actions";
 
@@ -43,7 +43,7 @@ export const AccountMenu = connect(mapStateToProps)(
                 { user.isAdmin && <MenuItem onClick={() => dispatch(navigateToApiClientAuthorizations)}>Api Tokens</MenuItem> }
                 { user.isAdmin && <MenuItem onClick={() => dispatch(navigateToKeepServices)}>Keep Services</MenuItem> }
                 { user.isAdmin && <MenuItem onClick={() => dispatch(navigateToComputeNodes)}>Compute Nodes</MenuItem> }
-                <MenuItem>My account</MenuItem>
+                <MenuItem onClick={() => dispatch(navigateToMyAccount)}>My account</MenuItem>
                 <MenuItem onClick={() => dispatch(logout())}>Logout</MenuItem>
             </DropdownMenu>
             : null);

@@ -161,5 +161,4 @@ export const loadSshKeysPanel = () =>
         }
     };
 
-
 export type AuthAction = UnionOf<typeof authActions>;
