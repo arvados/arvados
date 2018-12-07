@@ -305,6 +305,7 @@ func (wkr *worker) shutdown() {
 	wkr.updated = now
 	wkr.destroyed = now
 	wkr.state = StateShutdown
+	go wkr.wp.notify()
 	go func() {
 		err := wkr.instance.Destroy()
 		if err != nil {
