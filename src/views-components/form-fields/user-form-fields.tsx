@@ -10,22 +10,6 @@ import { NativeSelectField } from "~/components/select-field/select-field";
 import { InputLabel } from "@material-ui/core";
 import { VirtualMachinesResource } from "~/models/virtual-machines";
 
-export const UserFirstNameField = () =>
-    <Field
-        name='firstName'
-        component={TextField}
-        validate={USER_LENGTH_VALIDATION}
-        autoFocus={true}
-        label="First name" />;
-
-export const UserLastNameField = () =>
-    <Field
-        name='lastName'
-        component={TextField}
-        validate={USER_LENGTH_VALIDATION}
-        autoFocus={true}
-        label="Last name" />;
-
 export const UserEmailField = () =>
     <Field
         name='email'

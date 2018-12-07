@@ -6,7 +6,7 @@ import * as React from 'react';
 import { InjectedFormProps } from 'redux-form';
 import { WithDialogProps } from '~/store/dialog/with-dialog';
 import { FormDialog } from '~/components/form-dialog/form-dialog';
-import { UserFirstNameField, UserLastNameField, UserEmailField, UserIdentityUrlField, UserVirtualMachineField, UserGroupsVirtualMachineField } from '~/views-components/form-fields/user-form-fields';
+import { UserEmailField, UserIdentityUrlField, UserVirtualMachineField, UserGroupsVirtualMachineField } from '~/views-components/form-fields/user-form-fields';
 
 export type DialogUserProps = WithDialogProps<{}> & InjectedFormProps<any>;
 
@@ -19,8 +19,6 @@ export const UserRepositoryCreate = (props: DialogUserProps) =>
     />;
 
 const UserAddFields = (props: DialogUserProps) => <span>
-    <UserFirstNameField />
-    <UserLastNameField />
     <UserEmailField />
     <UserIdentityUrlField />
     <UserVirtualMachineField data={props.data}/>

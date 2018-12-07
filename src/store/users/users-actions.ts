@@ -19,8 +19,6 @@ export const USER_ATTRIBUTES_DIALOG = 'userAttributesDialog';
 export const USER_CREATE_FORM_NAME = 'repositoryCreateFormName';
 
 export interface UserCreateFormDialogData {
-    firstName: string;
-    lastName: string;
     email: string;
     identityUrl: string;
     virtualMachineName: string;
