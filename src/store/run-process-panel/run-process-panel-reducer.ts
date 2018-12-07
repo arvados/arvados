@@ -12,6 +12,7 @@ interface RunProcessPanel {
     workflows: WorkflowResource[];
     searchWorkflows: WorkflowResource[];
     selectedWorkflow: WorkflowResource | undefined;
+    presets?: WorkflowResource[];
     inputs: CommandInputParameter[];
 }
 
@@ -33,7 +34,12 @@ export const runProcessPanelReducer = (state = initialState, action: RunProcessP
         SET_SELECTED_WORKFLOW: selectedWorkflow => ({
             ...state,
             selectedWorkflow,
+            presets: undefined,
             inputs: getWorkflowInputs(parseWorkflowDefinition(selectedWorkflow)) || [],
+        }),
+        SET_WORKFLOW_PRESETS: presets => ({
+            ...state,
+            presets,
         }),
         SET_WORKFLOWS: workflows => ({ ...state, workflows, searchWorkflows: workflows }),
         SEARCH_WORKFLOWS: term => {
