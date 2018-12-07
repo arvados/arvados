@@ -385,7 +385,7 @@ func (wp *Pool) kill(wkr *worker, uuid string) {
 		"Instance":      wkr.instance,
 	})
 	logger.Debug("killing process")
-	stdout, stderr, err := wkr.executor.Execute("crunch-run --kill "+uuid, nil)
+	stdout, stderr, err := wkr.executor.Execute("crunch-run --kill 15 "+uuid, nil)
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"stderr": string(stderr),
