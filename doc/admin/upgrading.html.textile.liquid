@@ -36,6 +36,8 @@ This release includes several database migrations, which will be executed automa
 
 The @arvados-controller@ component now requires the /etc/arvados/config.yml file to be present. See <a href="{{ site.baseurl }}/install/install-controller.html#configuration">the @arvados-controller@ installation instructions</a>.
 
+Support for the deprecated "jobs" API is broken in this release.  Users who rely on it should not upgrade.  This will be fixed in an upcoming 1.3.1 patch release, however users are "encouraged to migrate":upgrade-crunch2.html as support for the "jobs" API will be dropped in an upcoming release.  Users who are already using the "containers" API are not affected.
+
 h3. v1.2.1 (2018-11-26)
 
 There are no special upgrade notes for this release.
