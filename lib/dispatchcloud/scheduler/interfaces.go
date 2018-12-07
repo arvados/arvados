@@ -32,7 +32,7 @@ type ContainerQueue interface {
 type WorkerPool interface {
 	Running() map[string]time.Time
 	Unallocated() map[arvados.InstanceType]int
-	Workers() map[worker.State]int
+	CountWorkers() map[worker.State]int
 	AtQuota() bool
 	Create(arvados.InstanceType) error
 	Shutdown(arvados.InstanceType) bool

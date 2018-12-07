@@ -72,7 +72,7 @@ func (p *stubPool) Shutdown(arvados.InstanceType) bool {
 	p.shutdowns++
 	return false
 }
-func (p *stubPool) Workers() map[worker.State]int {
+func (p *stubPool) CountWorkers() map[worker.State]int {
 	return map[worker.State]int{
 		worker.StateBooting: len(p.unalloc) - len(p.idle),
 		worker.StateIdle:    len(p.idle),

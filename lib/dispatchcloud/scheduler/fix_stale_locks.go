@@ -28,7 +28,7 @@ waiting:
 			// If all workers have been contacted, unlock
 			// containers that aren't claimed by any
 			// worker.
-			unlock = sch.pool.Workers()[worker.StateUnknown] == 0
+			unlock = sch.pool.CountWorkers()[worker.StateUnknown] == 0
 		case <-timeout.C:
 			// Give up and unlock the containers, even
 			// though they might be working.

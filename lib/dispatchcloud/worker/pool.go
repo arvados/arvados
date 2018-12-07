@@ -304,8 +304,8 @@ func (wp *Pool) Shutdown(it arvados.InstanceType) bool {
 	return false
 }
 
-// Workers returns the current number of workers in each state.
-func (wp *Pool) Workers() map[State]int {
+// CountWorkers returns the current number of workers in each state.
+func (wp *Pool) CountWorkers() map[State]int {
 	wp.setupOnce.Do(wp.setup)
 	wp.mtx.Lock()
 	defer wp.mtx.Unlock()
