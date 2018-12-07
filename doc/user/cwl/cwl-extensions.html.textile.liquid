@@ -43,6 +43,10 @@ hints:
   arv:WorkflowRunnerResources:
     ramMin: 2048
     coresMin: 2
+    keep_cache: 512
+  arv:ClusterTarget:
+    cluster_id: clsr1
+    project_uuid: clsr1-j7d0g-qxc4jcji7n4lafx
 </pre>
 
 The one exception to this is @arv:APIRequirement@, see note below.
@@ -134,3 +138,24 @@ table(table table-bordered table-condensed).
 |_. Field |_. Type |_. Description |
 |ramMin|int|RAM, in mebibytes, to reserve for the arvados-cwl-runner process. Default 1 GiB|
 |coresMin|int|Number of cores to reserve to the arvados-cwl-runner process. Default 1 core.|
+|keep_cache|int|Size of collection metadata cache for the workflow runner, in MiB.  Default 256 MiB.  Will be added on to the RAM request when determining node size to request.|
+
+h2(#clustertarget). arv:ClusterTarget
+
+Specify which Arvados cluster should execute a container or subworkflow, and the parent project for the container request.
+
+table(table table-bordered table-condensed).
+|_. Field |_. Type |_. Description |
+|cluster_id|string|The five-character alphanumeric cluster id (uuid prefix) where a container or subworkflow will execute.  May be an expression.|
+|project_uuid|string|The uuid of the project which will own container request and output of the container.  May be an expression.|
+
+h2. arv:dockerCollectionPDH
+
+This is an optional extension field appearing on the standard @DockerRequirement@.  It specifies the portable data hash of the Arvados collection containing the Docker image.  If present, it takes precedence over @dockerPull@ or @dockerImageId@.
+
+<pre>
+requirements:
+  DockerRequirement:
+    dockerPull: "debian:8"
+    arv:dockerCollectionPDH: "feaf1fc916103d7cdab6489e1f8c3a2b+174"
+</pre>

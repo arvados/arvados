@@ -233,3 +233,30 @@ $graph:
       type: int?
       doc: Minimum cores allocated to cwl-runner
       jsonldPredicate: "https://w3id.org/cwl/cwl#ResourceRequirement/coresMin"
+    keep_cache:
+      type: int?
+      doc: |
+        Size of collection metadata cache for the workflow runner, in
+        MiB.  Default 256 MiB.  Will be added on to the RAM request
+        when determining node size to request.
+      jsonldPredicate: "http://arvados.org/cwl#RuntimeConstraints/keep_cache"
+
+- name: ClusterTarget
+  type: record
+  extends: cwl:ProcessRequirement
+  inVocab: false
+  doc: |
+    Specify where a workflow step should run
+  fields:
+    class:
+      type: string
+      doc: "Always 'arv:ClusterTarget'"
+      jsonldPredicate:
+        _id: "@type"
+        _type: "@vocab"
+    cluster_id:
+      type: string?
+      doc: The cluster to run the container
+    project_uuid:
+      type: string?
+      doc: The project that will own the container requests and intermediate collections

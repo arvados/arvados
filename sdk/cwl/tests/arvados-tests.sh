@@ -16,4 +16,4 @@ if ! arv-get 20850f01122e860fb878758ac1320877+71 > /dev/null ; then
     arv-put --portable-data-hash samples/sample1_S01_R1_001.fastq.gz
 fi
 
-exec cwltest --test arvados-tests.yml --tool arvados-cwl-runner $@ -- --disable-reuse --compute-checksum
+exec cwltest --test arvados-tests.yml --tool arvados-cwl-runner $@ -- --disable-reuse --compute-checksum --api=containers

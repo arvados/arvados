@@ -392,7 +392,7 @@ class User < ArvadosModel
     end
     0.upto(6).each do |suffix_len|
       pattern = "%s%s" % [quoted_name, "_" * suffix_len]
-      self.class.
+      self.class.unscoped.
           where("username like '#{pattern}'").
           select(:username).
           order('username asc').

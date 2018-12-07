@@ -8,7 +8,7 @@ import uuid
 import os
 import urllib
 
-from arvados_cwl.util import get_current_container, get_intermediate_collection_info
+import arvados_cwl.util
 import arvados.commands.run
 import arvados.collection
 
@@ -155,8 +155,8 @@ class ArvPathMapper(PathMapper):
                 for l in srcobj.get("listing", []):
                     self.addentry(l, c, ".", remap)
 
-                container = get_current_container(self.arvrunner.api, self.arvrunner.num_retries, logger)
-                info = get_intermediate_collection_info(None, container, self.arvrunner.intermediate_output_ttl)
+                container = arvados_cwl.util.get_current_container(self.arvrunner.api, self.arvrunner.num_retries, logger)
+                info = arvados_cwl.util.get_intermediate_collection_info(None, container, self.arvrunner.intermediate_output_ttl)
 
                 c.save_new(name=info["name"],
                            owner_uuid=self.arvrunner.project_uuid,
@@ -174,8 +174,8 @@ class ArvPathMapper(PathMapper):
                                                   num_retries=self.arvrunner.num_retries                                                  )
                 self.addentry(srcobj, c, ".", remap)
 
-                container = get_current_container(self.arvrunner.api, self.arvrunner.num_retries, logger)
-                info = get_intermediate_collection_info(None, container, self.arvrunner.intermediate_output_ttl)
+                container = arvados_cwl.util.get_current_container(self.arvrunner.api, self.arvrunner.num_retries, logger)
+                info = arvados_cwl.util.get_intermediate_collection_info(None, container, self.arvrunner.intermediate_output_ttl)
 
                 c.save_new(name=info["name"],
                            owner_uuid=self.arvrunner.project_uuid,

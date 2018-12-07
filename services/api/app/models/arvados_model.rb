@@ -274,9 +274,8 @@ class ArvadosModel < ActiveRecord::Base
       if !include_trash
         if sql_table != "api_client_authorizations"
           # Only include records where the owner is not trashed
-          sql_conds = "NOT EXISTS(SELECT 1 FROM #{PERMISSION_VIEW} "+
-                      "WHERE trashed = 1 AND "+
-                      "(#{sql_table}.owner_uuid = target_uuid)) #{exclude_trashed_records}"
+          sql_conds = "#{sql_table}.owner_uuid NOT IN (SELECT target_uuid FROM #{PERMISSION_VIEW} "+
+                      "WHERE trashed = 1) #{exclude_trashed_records}"
         end
       end
     else
@@ -294,14 +293,14 @@ class ArvadosModel < ActiveRecord::Base
       # see issue 13208 for details.
 
       # Match a direct read permission link from the user to the record uuid
-      direct_check = "EXISTS(SELECT 1 FROM #{PERMISSION_VIEW} "+
-                     "WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 #{trashed_check} AND target_uuid = #{sql_table}.uuid)"
+      direct_check = "#{sql_table}.uuid IN (SELECT target_uuid FROM #{PERMISSION_VIEW} "+
+                     "WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 #{trashed_check})"
 
       # Match a read permission link from the user to the record's owner_uuid
       owner_check = ""
       if sql_table != "api_client_authorizations" and sql_table != "groups" then
-        owner_check = "OR EXISTS(SELECT 1 FROM #{PERMISSION_VIEW} "+
-          "WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 #{trashed_check} AND target_uuid = #{sql_table}.owner_uuid AND target_owner_uuid IS NOT NULL) "
+        owner_check = "OR #{sql_table}.owner_uuid IN (SELECT target_uuid FROM #{PERMISSION_VIEW} "+
+          "WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 #{trashed_check} AND target_owner_uuid IS NOT NULL) "
       end
 
       links_cond = ""
@@ -403,7 +402,7 @@ class ArvadosModel < ActiveRecord::Base
       cast = serialized_attributes[column] ? '::text' : ''
       "coalesce(#{column}#{cast},'')"
     end
-    "to_tsvector('english', #{parts.join(" || ' ' || ")})"
+    "to_tsvector('english', substr(#{parts.join(" || ' ' || ")}, 0, 8000))"
   end
 
   def self.apply_filters query, filters

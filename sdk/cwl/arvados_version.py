@@ -10,9 +10,9 @@ import re
 SETUP_DIR = os.path.dirname(__file__) or '.'
 
 def git_latest_tag():
-    gitinfo = subprocess.check_output(
-        ['git', 'describe', '--abbrev=0']).strip()
-    return str(gitinfo.decode('utf-8'))
+    gittags = subprocess.check_output(['git', 'tag', '-l']).split()
+    gittags.sort(key=lambda s: [int(u) for u in s.split(b'.')],reverse=True)
+    return str(next(iter(gittags)).decode('utf-8'))
 
 def choose_version_from():
     sdk_ts = subprocess.check_output(

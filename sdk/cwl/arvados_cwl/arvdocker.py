@@ -21,6 +21,9 @@ cached_lookups_lock = threading.Lock()
 def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid):
     """Check if a Docker image is available in Keep, if not, upload it using arv-keepdocker."""
 
+    if "http://arvados.org/cwl#dockerCollectionPDH" in dockerRequirement:
+        return dockerRequirement["http://arvados.org/cwl#dockerCollectionPDH"]
+
     if "dockerImageId" not in dockerRequirement and "dockerPull" in dockerRequirement:
         dockerRequirement = copy.deepcopy(dockerRequirement)
         dockerRequirement["dockerImageId"] = dockerRequirement["dockerPull"]
@@ -31,7 +34,7 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid
     global cached_lookups_lock
     with cached_lookups_lock:
         if dockerRequirement["dockerImageId"] in cached_lookups:
-            return dockerRequirement["dockerImageId"]
+            return cached_lookups[dockerRequirement["dockerImageId"]]
 
     with SourceLine(dockerRequirement, "dockerImageId", WorkflowException, logger.isEnabledFor(logging.DEBUG)):
         sp = dockerRequirement["dockerImageId"].split(":")
@@ -70,10 +73,12 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid
         if not images:
             raise WorkflowException("Could not find Docker image %s:%s" % (image_name, image_tag))
 
-        with cached_lookups_lock:
-            cached_lookups[dockerRequirement["dockerImageId"]] = True
+        pdh = api_client.collections().get(uuid=images[0][0]).execute()["portable_data_hash"]
 
-    return dockerRequirement["dockerImageId"]
+        with cached_lookups_lock:
+            cached_lookups[dockerRequirement["dockerImageId"]] = pdh
+
+    return pdh
 
 def arv_docker_clear_cache():
     global cached_lookups

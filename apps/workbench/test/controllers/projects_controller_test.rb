@@ -351,6 +351,24 @@ class ProjectsControllerTest < ActionController::TestCase
     assert_includes @response.body, 'Textile description with unsafe script tag alert("Hello there").'
   end
 
+  # Tests #14519
+  test "textile table on description renders as table html markup" do
+    use_token :active
+    project = api_fixture('groups')['aproject']
+    textile_table = <<EOT
+table(table table-striped table-condensed).
+|_. First Header |_. Second Header |
+|Content Cell |Content Cell |
+|Content Cell |Content Cell |
+EOT
+    found = Group.find(project['uuid'])
+    found.description = textile_table
+    found.save!
+    get(:show, {id: project['uuid']}, session_for(:active))
+    assert_includes @response.body, '<th>First Header'
+    assert_includes @response.body, '<td>Content Cell'
+  end
+
   test "find a project and edit description to textile description with link to object" do
     project = api_fixture('groups')['aproject']
     use_token :active

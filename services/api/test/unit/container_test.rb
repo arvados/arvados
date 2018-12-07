@@ -558,7 +558,8 @@ class ContainerTest < ActiveSupport::TestCase
     c1, _ = minimal_new(common_attrs.merge({runtime_token: api_client_authorizations(:active).token}))
     assert_equal Container::Queued, c1.state
     reused = Container.find_reusable(common_attrs.merge(runtime_token_attr(:container_runtime_token)))
-    assert_nil reused
+    # See #14584
+    assert_equal c1.uuid, reused.uuid
   end
 
   test "find_reusable method with nil runtime_token, then runtime_token with different user" do
@@ -567,7 +568,8 @@ class ContainerTest < ActiveSupport::TestCase
     c1, _ = minimal_new(common_attrs.merge({runtime_token: nil}))
     assert_equal Container::Queued, c1.state
     reused = Container.find_reusable(common_attrs.merge(runtime_token_attr(:container_runtime_token)))
-    assert_nil reused
+    # See #14584
+    assert_equal c1.uuid, reused.uuid
   end
 
   test "find_reusable method with different runtime_token, different scope, same user" do
@@ -576,7 +578,8 @@ class ContainerTest < ActiveSupport::TestCase
     c1, _ = minimal_new(common_attrs.merge({runtime_token: api_client_authorizations(:runtime_token_limited_scope).token}))
     assert_equal Container::Queued, c1.state
     reused = Container.find_reusable(common_attrs.merge(runtime_token_attr(:container_runtime_token)))
-    assert_nil reused
+    # See #14584
+    assert_equal c1.uuid, reused.uuid
   end
 
   test "Container running" do

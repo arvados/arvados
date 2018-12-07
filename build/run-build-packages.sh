@@ -330,6 +330,28 @@ package_go_binary tools/keep-rsync keep-rsync \
 package_go_binary tools/keep-exercise keep-exercise \
     "Performance testing tool for Arvados Keep"
 
+
+# we need explicit debian_revision values in the dependencies for ruamel.yaml, because we have a package iteration
+# greater than zero. So we parse setup.py, get the ruamel.yaml dependencies, tell fpm not to automatically include
+# them in the package being built, and re-add them manually with an appropriate debian_revision value.
+# See #14552 for the reason for this (nasty) workaround. We use ${ruamel_depends[@]} in a few places further down
+# in this script.
+# Ward, 2018-11-28
+IFS=', ' read -r -a deps <<< `grep ruamel.yaml $WORKSPACE/sdk/python/setup.py |cut -f 3 -dl |sed -e "s/'//g"`
+declare -a ruamel_depends=()
+for i in ${deps[@]}; do
+  i=`echo "$i" | sed -e 's!\([0-9]\)! \1!'`
+  if [[ $i =~ .*\>.* ]]; then
+    ruamel_depends+=(--depends "python-ruamel.yaml $i-1")
+  elif [[ $i =~ .*\<.* ]]; then
+    ruamel_depends+=(--depends "python-ruamel.yaml $i-9")
+  else
+    echo "Encountered ruamel dependency that I can't parse. Aborting..."
+    exit 1
+  fi
+done
+
+
 # The Python SDK
 # Please resist the temptation to add --no-python-fix-name to the fpm call here
 # (which would remove the python- prefix from the package name), because this
@@ -342,7 +364,8 @@ rm -rf "$WORKSPACE/sdk/python/build"
 arvados_python_client_version=${ARVADOS_BUILDING_VERSION:-$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/python/arvados_python_client.egg-info/PKG-INFO)}
 test_package_presence ${PYTHON2_PKG_PREFIX}-arvados-python-client "$arvados_python_client_version" python
 if [[ "$?" == "0" ]]; then
-  fpm_build $WORKSPACE/sdk/python "${PYTHON2_PKG_PREFIX}-arvados-python-client" 'Curoverse, Inc.' 'python' "$arvados_python_client_version" "--url=https://arvados.org" "--description=The Arvados Python SDK" --depends "${PYTHON2_PKG_PREFIX}-setuptools" --deb-recommends=git
+
+  fpm_build $WORKSPACE/sdk/python "${PYTHON2_PKG_PREFIX}-arvados-python-client" 'Curoverse, Inc.' 'python' "$arvados_python_client_version" "--url=https://arvados.org" "--description=The Arvados Python SDK" --depends "${PYTHON2_PKG_PREFIX}-setuptools" --deb-recommends=git  --python-disable-dependency ruamel.yaml "${ruamel_depends[@]}"
 fi
 
 # cwl-runner
@@ -358,7 +381,7 @@ else
 fi
 test_package_presence ${PYTHON2_PKG_PREFIX}-arvados-cwl-runner "$arvados_cwl_runner_version" python "$arvados_cwl_runner_iteration"
 if [[ "$?" == "0" ]]; then
-  fpm_build $WORKSPACE/sdk/cwl "${PYTHON2_PKG_PREFIX}-arvados-cwl-runner" 'Curoverse, Inc.' 'python' "$arvados_cwl_runner_version" "--url=https://arvados.org" "--description=The Arvados CWL runner" --depends "${PYTHON2_PKG_PREFIX}-setuptools" --depends "${PYTHON2_PKG_PREFIX}-subprocess32 >= 3.5.0" --depends "${PYTHON2_PKG_PREFIX}-pathlib2" --depends "${PYTHON2_PKG_PREFIX}-scandir" "${iterargs[@]}"
+  fpm_build $WORKSPACE/sdk/cwl "${PYTHON2_PKG_PREFIX}-arvados-cwl-runner" 'Curoverse, Inc.' 'python' "$arvados_cwl_runner_version" "--url=https://arvados.org" "--description=The Arvados CWL runner" --depends "${PYTHON2_PKG_PREFIX}-setuptools" --depends "${PYTHON2_PKG_PREFIX}-subprocess32 >= 3.5.0" --depends "${PYTHON2_PKG_PREFIX}-pathlib2" --depends "${PYTHON2_PKG_PREFIX}-scandir" --python-disable-dependency ruamel.yaml "${ruamel_depends[@]}" "${iterargs[@]}"
 fi
 
 # schema_salad. This is a python dependency of arvados-cwl-runner,
@@ -384,9 +407,9 @@ fi
 
 # And for cwltool we have the same problem as for schema_salad. Ward, 2016-03-17
 cwltoolversion=$(cat "$WORKSPACE/sdk/cwl/setup.py" | grep cwltool== | sed "s/.*==\(.*\)'.*/\1/")
-test_package_presence python-cwltool "$cwltoolversion" python 2
+test_package_presence python-cwltool "$cwltoolversion" python 3
 if [[ "$?" == "0" ]]; then
-  fpm_build cwltool "" "" python $cwltoolversion --iteration 2
+  fpm_build cwltool "" "" python $cwltoolversion --iteration 3 --python-disable-dependency ruamel.yaml "${ruamel_depends[@]}"
 fi
 
 # The PAM module

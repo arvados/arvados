@@ -30,6 +30,16 @@ Note to developers: Add new items at the top. Include the date, issue number, co
 TODO: extract this information based on git commit messages and generate changelogs / release notes automatically.
 {% endcomment %}
 
+h3. v1.3.0 (2018-12-05)
+
+This release includes several database migrations, which will be executed automatically as part of the API server upgrade. On large Arvados installations, these migrations will take a while. We've seen the upgrade take 30 minutes or more on installations with a lot of collections.
+
+The @arvados-controller@ component now requires the /etc/arvados/config.yml file to be present. See <a href="{{ site.baseurl }}/install/install-controller.html#configuration">the @arvados-controller@ installation instructions</a>.
+
+h3. v1.2.1 (2018-11-26)
+
+There are no special upgrade notes for this release.
+
 h3. v1.2.0 (2018-09-05)
 
 h4. Regenerate Postgres table statistics

@@ -25,7 +25,8 @@
             "requirements": [
                 {
                     "class": "DockerRequirement",
-                    "dockerPull": "debian:8"
+                    "dockerPull": "debian:8",
+                    "http://arvados.org/cwl#dockerCollectionPDH": "999999999999999999999999999999d4+99"
                 }
             ]
         },

@@ -118,6 +118,11 @@ timer_reset
 # clean up the docker build environment
 cd "$WORKSPACE"
 
+if [[ -z "$ARVADOS_BUILDING_VERSION" ]] && ! [[ -z "$version_tag" ]]; then
+	ARVADOS_BUILDING_VERSION="$version_tag"
+	ARVADOS_BUILDING_ITERATION="1"
+fi
+
 python_sdk_ts=$(cd sdk/python && timestamp_from_git)
 cwl_runner_ts=$(cd sdk/cwl && timestamp_from_git)
 
@@ -130,11 +135,25 @@ fi
 
 echo cwl_runner_version $cwl_runner_version python_sdk_version $python_sdk_version
 
+if [[ "${python_sdk_version}" != "${ARVADOS_BUILDING_VERSION}" ]]; then
+	python_sdk_version="${python_sdk_version}-2"
+else
+	python_sdk_version="${ARVADOS_BUILDING_VERSION}-${ARVADOS_BUILDING_ITERATION}"
+fi
+
+cwl_runner_version_orig=$cwl_runner_version
+
+if [[ "${cwl_runner_version}" != "${ARVADOS_BUILDING_VERSION}" ]]; then
+	cwl_runner_version="${cwl_runner_version}-4"
+else
+	cwl_runner_version="${ARVADOS_BUILDING_VERSION}-${ARVADOS_BUILDING_ITERATION}"
+fi
+
 cd docker/jobs
 docker build $NOCACHE \
-       --build-arg python_sdk_version=${python_sdk_version}-2 \
-       --build-arg cwl_runner_version=${cwl_runner_version}-4 \
-       -t arvados/jobs:$cwl_runner_version .
+       --build-arg python_sdk_version=${python_sdk_version} \
+       --build-arg cwl_runner_version=${cwl_runner_version} \
+       -t arvados/jobs:$cwl_runner_version_orig .
 
 ECODE=$?
 
@@ -157,9 +176,9 @@ if docker --version |grep " 1\.[0-9]\." ; then
     FORCE=-f
 fi
 if ! [[ -z "$version_tag" ]]; then
-    docker tag $FORCE arvados/jobs:$cwl_runner_version arvados/jobs:"$version_tag"
+    docker tag $FORCE arvados/jobs:$cwl_runner_version_orig arvados/jobs:"$version_tag"
 else
-    docker tag $FORCE arvados/jobs:$cwl_runner_version arvados/jobs:latest
+    docker tag $FORCE arvados/jobs:$cwl_runner_version_orig arvados/jobs:latest
 fi
 
 ECODE=$?
@@ -185,7 +204,7 @@ else
         if ! [[ -z "$version_tag" ]]; then
             docker_push arvados/jobs:"$version_tag"
         else
-           docker_push arvados/jobs:$cwl_runner_version
+           docker_push arvados/jobs:$cwl_runner_version_orig
            docker_push arvados/jobs:latest
         fi
         title "upload arvados images finished (`timer`)"

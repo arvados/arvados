@@ -1,0 +1,44 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+Arvados federated workflow testing
+
+Requires cwltool 1.0.20181109150732 or later
+
+Create main-test.json:
+
+{
+    "acr": "/path/to/arvados-cwl-runner",
+    "arvado_api_host_insecure": false,
+    "arvados_api_hosts": [
+        "c97qk.arvadosapi.com",
+        "4xphq.arvadosapi.com",
+        "9tee4.arvadosapi.com"
+    ],
+    "arvados_api_token": "...",
+    "arvados_cluster_ids": [
+        "c97qk",
+        "4xphq",
+        "9tee4"
+    ]
+}
+
+Or create an arvbox test cluster:
+
+$ cwltool --enable-ext arvbox-make-federation.cwl --arvbox_base ~/.arvbox/ --in_acr /path/to/arvados-cwl-runner > main-test.json
+
+
+Run tests:
+
+$ cwltool main.cwl main-test.json
+
+
+List test cases:
+
+$ cwltool --print-targets main.cwl
+
+
+Run a specific test case:
+
+$ cwltool -t twostep-remote-copy-to-home main.cwl main-test.json

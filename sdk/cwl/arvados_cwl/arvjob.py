@@ -18,7 +18,7 @@ from cwltool.job import JobBase
 
 from schema_salad.sourceline import SourceLine
 
-from arvados_cwl.util import get_current_container, get_intermediate_collection_info
+import arvados_cwl.util
 import ruamel.yaml as yaml
 
 import arvados.collection
@@ -30,6 +30,7 @@ from .pathmapper import VwdPathMapper, trim_listing
 from .perf import Perf
 from . import done
 from ._version import __version__
+from .util import get_intermediate_collection_info
 
 logger = logging.getLogger('arvados.cwl-runner')
 metrics = logging.getLogger('arvados.cwl-runner.metrics')
@@ -77,9 +78,7 @@ class ArvadosJob(JobBase):
 
                 if vwd:
                     with Perf(metrics, "generatefiles.save_new %s" % self.name):
-                        if not runtimeContext.current_container:
-                            runtimeContext.current_container = get_current_container(self.arvrunner.api, self.arvrunner.num_retries, logger)
-                        info = get_intermediate_collection_info(self.name, runtimeContext.current_container, runtimeContext.intermediate_output_ttl)
+                        info = get_intermediate_collection_info(self.name, None, runtimeContext.intermediate_output_ttl)
                         vwd.save_new(name=info["name"],
                                      owner_uuid=self.arvrunner.project_uuid,
                                      ensure_unique_name=True,

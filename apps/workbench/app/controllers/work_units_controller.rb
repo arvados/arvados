@@ -85,12 +85,6 @@ class WorkUnitsController < ApplicationController
       attrs['state'] = "Uncommitted"
 
       # required
-      attrs['command'] = ["arvados-cwl-runner",
-                          "--local",
-                          "--api=containers",
-                          "--project-uuid=#{params['work_unit']['owner_uuid']}",
-                          "/var/lib/cwl/workflow.json#main",
-                          "/var/lib/cwl/cwl.input.json"]
       attrs['container_image'] = "arvados/jobs"
       attrs['cwd'] = "/var/spool/cwl"
       attrs['output_path'] = "/var/spool/cwl"
@@ -102,6 +96,7 @@ class WorkUnitsController < ApplicationController
         "API" => true
       }
 
+      keep_cache = 256
       input_defaults = {}
       if wf_json
         main = get_cwl_main(wf_json)
@@ -119,10 +114,21 @@ class WorkUnitsController < ApplicationController
               if hint[:ramMin]
                 runtime_constraints["ram"] = hint[:ramMin] * 1024 * 1024
               end
+              if hint[:keep_cache]
+                keep_cache = hint[:keep_cache]
+              end
             end
           end
         end
       end
+
+      attrs['command'] = ["arvados-cwl-runner",
+                          "--local",
+                          "--api=containers",
+                          "--project-uuid=#{params['work_unit']['owner_uuid']}",
+                          "--collection-keep-cache=#{keep_cache}",
+                          "/var/lib/cwl/workflow.json#main",
+                          "/var/lib/cwl/cwl.input.json"]
 
       # mounts
       mounts = {

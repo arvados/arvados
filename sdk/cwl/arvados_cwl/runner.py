@@ -26,7 +26,7 @@ from cwltool.pack import pack
 import arvados.collection
 import ruamel.yaml as yaml
 
-from .arvdocker import arv_docker_get_image
+import arvados_cwl.arvdocker
 from .pathmapper import ArvPathMapper, trim_listing
 from ._version import __version__
 from . import done
@@ -215,9 +215,9 @@ def upload_docker(arvrunner, tool):
                 # TODO: can be supported by containers API, but not jobs API.
                 raise SourceLine(docker_req, "dockerOutputDirectory", UnsupportedRequirement).makeError(
                     "Option 'dockerOutputDirectory' of DockerRequirement not supported.")
-            arv_docker_get_image(arvrunner.api, docker_req, True, arvrunner.project_uuid)
+            arvados_cwl.arvdocker.arv_docker_get_image(arvrunner.api, docker_req, True, arvrunner.project_uuid)
         else:
-            arv_docker_get_image(arvrunner.api, {"dockerPull": "arvados/jobs"}, True, arvrunner.project_uuid)
+            arvados_cwl.arvdocker.arv_docker_get_image(arvrunner.api, {"dockerPull": "arvados/jobs"}, True, arvrunner.project_uuid)
     elif isinstance(tool, cwltool.workflow.Workflow):
         for s in tool.steps:
             upload_docker(arvrunner, s.embedded_tool)
@@ -244,6 +244,8 @@ def packed_workflow(arvrunner, tool, merged_map):
                 v["location"] = merged_map[cur_id].resolved[v["location"]]
             if "location" in v and v["location"] in merged_map[cur_id].secondaryFiles:
                 v["secondaryFiles"] = merged_map[cur_id].secondaryFiles[v["location"]]
+            if v.get("class") == "DockerRequirement":
+                v["http://arvados.org/cwl#dockerCollectionPDH"] = arvados_cwl.arvdocker.arv_docker_get_image(arvrunner.api, v, True, arvrunner.project_uuid)
             for l in v:
                 visit(v[l], cur_id)
         if isinstance(v, list):
@@ -324,10 +326,10 @@ def arvados_jobs_image(arvrunner, img):
     """Determine if the right arvados/jobs image version is available.  If not, try to pull and upload it."""
 
     try:
-        arv_docker_get_image(arvrunner.api, {"dockerPull": img}, True, arvrunner.project_uuid)
+        return arvados_cwl.arvdocker.arv_docker_get_image(arvrunner.api, {"dockerPull": img}, True, arvrunner.project_uuid)
     except Exception as e:
         raise Exception("Docker image %s is not available\n%s" % (img, e) )
-    return img
+
 
 def upload_workflow_collection(arvrunner, name, packed):
     collection = arvados.collection.Collection(api_client=arvrunner.api,
@@ -362,7 +364,9 @@ class Runner(object):
                  output_name, output_tags, submit_runner_ram=0,
                  name=None, on_error=None, submit_runner_image=None,
                  intermediate_output_ttl=0, merged_map=None,
-                 priority=None, secret_store=None):
+                 priority=None, secret_store=None,
+                 collection_cache_size=256,
+                 collection_cache_is_default=True):
         self.arvrunner = runner
         self.tool = tool
         self.job_order = job_order
@@ -387,6 +391,7 @@ class Runner(object):
 
         self.submit_runner_cores = 1
         self.submit_runner_ram = 1024  # defaut 1 GiB
+        self.collection_cache_size = collection_cache_size
 
         runner_resource_req, _ = self.tool.get_requirement("http://arvados.org/cwl#WorkflowRunnerResources")
         if runner_resource_req:
@@ -394,6 +399,8 @@ class Runner(object):
                 self.submit_runner_cores = runner_resource_req["coresMin"]
             if runner_resource_req.get("ramMin"):
                 self.submit_runner_ram = runner_resource_req["ramMin"]
+            if runner_resource_req.get("keep_cache") and collection_cache_is_default:
+                self.collection_cache_size = runner_resource_req["keep_cache"]
 
         if submit_runner_ram:
             # Command line / initializer overrides default and/or spec from workflow

@@ -14,6 +14,7 @@ import arvados
 import arvados.keep
 import arvados.collection
 import arvados_cwl
+import arvados_cwl.executor
 
 from cwltool.pathmapper import MapperEnt
 from .mock_discovery import get_rootDesc
@@ -34,7 +35,7 @@ class TestPathmap(unittest.TestCase):
     def test_keepref(self):
         """Test direct keep references."""
 
-        arvrunner = arvados_cwl.ArvCwlRunner(self.api)
+        arvrunner = arvados_cwl.executor.ArvCwlExecutor(self.api)
 
         p = ArvPathMapper(arvrunner, [{
             "class": "File",
@@ -49,7 +50,7 @@ class TestPathmap(unittest.TestCase):
     def test_upload(self, statfile, upl):
         """Test pathmapper uploading files."""
 
-        arvrunner = arvados_cwl.ArvCwlRunner(self.api)
+        arvrunner = arvados_cwl.executor.ArvCwlExecutor(self.api)
 
         def statfile_mock(prefix, fn, fnPattern="$(file %s/%s)", dirPattern="$(dir %s/%s/)", raiseOSError=False):
             st = arvados.commands.run.UploadFile("", "tests/hw.py")
@@ -70,7 +71,7 @@ class TestPathmap(unittest.TestCase):
     @mock.patch("arvados.commands.run.statfile")
     def test_statfile(self, statfile, upl):
         """Test pathmapper handling ArvFile references."""
-        arvrunner = arvados_cwl.ArvCwlRunner(self.api)
+        arvrunner = arvados_cwl.executor.ArvCwlExecutor(self.api)
 
         # An ArvFile object returned from arvados.commands.run.statfile means the file is located on a
         # keep mount, so we can construct a direct reference directly without upload.
@@ -92,7 +93,7 @@ class TestPathmap(unittest.TestCase):
     @mock.patch("os.stat")
     def test_missing_file(self, stat):
         """Test pathmapper handling missing references."""
-        arvrunner = arvados_cwl.ArvCwlRunner(self.api)
+        arvrunner = arvados_cwl.executor.ArvCwlExecutor(self.api)
 
         stat.side_effect = OSError(2, "No such file or directory")
 
