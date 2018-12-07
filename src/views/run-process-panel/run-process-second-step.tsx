@@ -14,7 +14,7 @@ import { RUN_PROCESS_INPUTS_FORM } from './run-process-inputs-form';
 import { RunProcessAdvancedForm } from './run-process-advanced-form';
 import { createSelector, createStructuredSelector } from 'reselect';
 import { WorkflowPresetSelect } from '~/views/run-process-panel/workflow-preset-select';
-import { runProcessPanelActions } from '~/store/run-process-panel/run-process-panel-actions';
+import { selectPreset } from '~/store/run-process-panel/run-process-panel-actions';
 
 export interface RunProcessSecondStepFormDataProps {
     inputs: CommandInputParameter[];
@@ -54,7 +54,7 @@ const mapStateToProps = createStructuredSelector({
 });
 
 export type RunProcessSecondStepFormProps = RunProcessSecondStepFormDataProps & RunProcessSecondStepFormActionProps;
-export const RunProcessSecondStepForm = connect(mapStateToProps, { onPresetChange: runProcessPanelActions.SELECT_WORKFLOW_PRESET })(
+export const RunProcessSecondStepForm = connect(mapStateToProps, { onPresetChange: selectPreset })(
     ({ inputs, workflow, selectedPreset, presets, onPresetChange, valid, goBack, runProcess }: RunProcessSecondStepFormProps) =>
         <Grid container spacing={16}>
             <Grid item xs={12}>
