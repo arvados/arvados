@@ -91,7 +91,7 @@ export const removeRepository = (uuid: string) =>
 const repositoriesBindedActions = bindDataExplorerActions(REPOSITORIES_PANEL);
 
 export const openRepositoriesPanel = () =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch<any>(navigateToRepositories);
     };
 

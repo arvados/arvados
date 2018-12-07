@@ -4,16 +4,16 @@
 
 import * as React from 'react';
 import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, WithStyles, TablePagination, IconButton, Tooltip } from '@material-ui/core';
-import { ColumnSelector } from "../column-selector/column-selector";
-import { DataTable, DataColumns } from "../data-table/data-table";
-import { DataColumn, SortDirection } from "../data-table/data-column";
-import { SearchInput } from '../search-input/search-input';
+import { ColumnSelector } from "~/components/column-selector/column-selector";
+import { DataTable, DataColumns } from "~/components/data-table/data-table";
+import { DataColumn, SortDirection } from "~/components/data-table/data-column";
+import { SearchInput } from '~/components/search-input/search-input';
 import { ArvadosTheme } from "~/common/custom-theme";
 import { createTree } from '~/models/tree';
-import { DataTableFilters } from '../data-table-filters/data-table-filters-tree';
+import { DataTableFilters } from '~/components/data-table-filters/data-table-filters-tree';
 import { MoreOptionsIcon } from '~/components/icon/icon';
 
-type CssRules = 'searchBox' | "toolbar" | "footer" | "root" | 'moreOptionsButton';
+type CssRules = 'searchBox' | "toolbar" | "footer" | "root" | 'moreOptionsButton' | 'rootUserPanel';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     searchBox: {
@@ -27,6 +27,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     root: {
         height: '100%'
+    },
+    rootUserPanel: {
+        height: '100%',
+        boxShadow: 'none'
     },
     moreOptionsButton: {
         padding: 0
@@ -44,6 +48,7 @@ interface DataExplorerDataProps<T> {
     contextMenuColumn: boolean;
     dataTableDefaultView?: React.ReactNode;
     working?: boolean;
+    isUserPanel?: boolean;
 }
 
 interface DataExplorerActionProps<T> {
@@ -74,19 +79,19 @@ export const DataExplorer = withStyles(styles)(
                 columns, onContextMenu, onFiltersChange, onSortToggle, working, extractKey,
                 rowsPerPage, rowsPerPageOptions, onColumnToggle, searchValue, onSearch,
                 items, itemsAvailable, onRowClick, onRowDoubleClick, classes,
-                dataTableDefaultView
+                dataTableDefaultView, isUserPanel
             } = this.props;
-            return <Paper className={classes.root}>
-                <Toolbar className={classes.toolbar}>
+            return <Paper className={!isUserPanel ? classes.root : classes.rootUserPanel}>
+                <Toolbar className={!isUserPanel ? classes.toolbar : ''}>
                     <Grid container justify="space-between" wrap="nowrap" alignItems="center">
                         <div className={classes.searchBox}>
                             <SearchInput
                                 value={searchValue}
                                 onSearch={onSearch} />
                         </div>
-                        <ColumnSelector
+                        {!isUserPanel && <ColumnSelector
                             columns={columns}
-                            onColumnToggle={onColumnToggle} />
+                            onColumnToggle={onColumnToggle} />}
                     </Grid>
                 </Toolbar>
                 <DataTable

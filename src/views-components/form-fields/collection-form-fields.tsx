@@ -3,11 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from "react";
-import { Field, WrappedFieldProps } from "redux-form";
+import { Field } from "redux-form";
 import { TextField } from "~/components/text-field/text-field";
 import { COLLECTION_NAME_VALIDATION, COLLECTION_DESCRIPTION_VALIDATION, COLLECTION_PROJECT_VALIDATION } from "~/validators/validators";
-import { ProjectTreePicker, ProjectTreePickerField } from "~/views-components/project-tree-picker/project-tree-picker";
-import { PickerIdProp } from '../../store/tree-picker/picker-id';
+import { ProjectTreePickerField } from "~/views-components/project-tree-picker/project-tree-picker";
+import { PickerIdProp } from '~/store/tree-picker/picker-id';
 
 export const CollectionNameField = () =>
     <Field

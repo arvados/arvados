@@ -71,6 +71,9 @@ import { AttributesComputeNodeDialog } from '~/views-components/compute-nodes-di
 import { AttributesKeepServiceDialog } from '~/views-components/keep-services-dialog/attributes-dialog';
 import { AttributesSshKeyDialog } from '~/views-components/ssh-keys-dialog/attributes-dialog';
 import { VirtualMachineAttributesDialog } from '~/views-components/virtual-machines-dialog/attributes-dialog';
+import { UserPanel } from '~/views/user-panel/user-panel';
+import { UserAttributesDialog } from '~/views-components/user-dialog/attributes-dialog';
+import { CreateUserDialog } from '~/views-components/dialog-forms/create-user-dialog';
 import { HelpApiClientAuthorizationDialog } from '~/views-components/api-client-authorizations-dialog/help-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
@@ -145,6 +148,7 @@ export const WorkbenchPanel =
                                 <Route path={Routes.REPOSITORIES} component={RepositoriesPanel} />
                                 <Route path={Routes.SSH_KEYS} component={SshKeyPanel} />
                                 <Route path={Routes.KEEP_SERVICES} component={KeepServicePanel} />
+                                <Route path={Routes.USERS} component={UserPanel} />
                                 <Route path={Routes.COMPUTE_NODES} component={ComputeNodePanel} />
                                 <Route path={Routes.API_CLIENT_AUTHORIZATIONS} component={ApiClientAuthorizationPanel} />
                                 <Route path={Routes.MY_ACCOUNT} component={MyAccountPanel} />
@@ -169,6 +173,7 @@ export const WorkbenchPanel =
             <CreateProjectDialog />
             <CreateRepositoryDialog />
             <CreateSshKeyDialog />
+            <CreateUserDialog />
             <CurrentTokenDialog />
             <FileRemoveDialog />
             <FilesUploadCollectionDialog />
@@ -198,6 +203,7 @@ export const WorkbenchPanel =
             <UpdateCollectionDialog />
             <UpdateProcessDialog />
             <UpdateProjectDialog />
+            <UserAttributesDialog />
             <VirtualMachineAttributesDialog />
         </Grid>
     );

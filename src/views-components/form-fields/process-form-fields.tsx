@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from "react";
-import { Field, WrappedFieldProps } from "redux-form";
+import { Field } from "redux-form";
 import { TextField } from "~/components/text-field/text-field";
 import { PROCESS_NAME_VALIDATION } from "~/validators/validators";
 
