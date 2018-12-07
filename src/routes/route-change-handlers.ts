@@ -26,7 +26,8 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
     const searchResultsMatch = Routes.matchSearchResultsRoute(pathname);
     const sharedWithMeMatch = Routes.matchSharedWithMeRoute(pathname);
     const runProcessMatch = Routes.matchRunProcessRoute(pathname);
-    const virtualMachineMatch = Routes.matchVirtualMachineRoute(pathname);
+    const virtualMachineUserMatch = Routes.matchUserVirtualMachineRoute(pathname);
+    const virtualMachineAdminMatch = Routes.matchAdminVirtualMachineRoute(pathname);
     const workflowMatch = Routes.matchWorkflowRoute(pathname);
     const sshKeysMatch = Routes.matchSshKeysRoute(pathname);
     const keepServicesMatch = Routes.matchKeepServicesRoute(pathname);
@@ -57,9 +58,11 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
         store.dispatch(WorkbenchActions.loadWorkflow);
     } else if (searchResultsMatch) {
         store.dispatch(WorkbenchActions.loadSearchResults);
-    } else if (virtualMachineMatch) {
+    } else if (virtualMachineUserMatch) {
         store.dispatch(WorkbenchActions.loadVirtualMachines);
-    } else if(repositoryMatch) {
+    } else if (virtualMachineAdminMatch) {
+        store.dispatch(WorkbenchActions.loadVirtualMachines);
+    } else if (repositoryMatch) {
         store.dispatch(WorkbenchActions.loadRepositories);
     } else if (sshKeysMatch) {
         store.dispatch(WorkbenchActions.loadSshKeys);
@@ -71,7 +74,7 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
         store.dispatch(WorkbenchActions.loadApiClientAuthorizations);
     } else if (myAccountMatch) {
         store.dispatch(WorkbenchActions.loadMyAccount);
-    }else if (userMatch) {
+    } else if (userMatch) {
         store.dispatch(WorkbenchActions.loadUsers);
     }
 };

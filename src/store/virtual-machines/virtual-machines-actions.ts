@@ -5,7 +5,7 @@
 import { Dispatch } from "redux";
 import { RootState } from '~/store/store';
 import { ServiceRepository } from "~/services/services";
-import { navigateToVirtualMachines } from "../navigation/navigation-action";
+import { navigateToUserVirtualMachines, navigateToAdminVirtualMachines } from "~/store/navigation/navigation-action";
 import { bindDataExplorerActions } from '~/store/data-explorer/data-explorer-action';
 import { formatDate } from "~/common/formatters";
 import { unionize, ofType, UnionOf } from "~/common/unionize";
@@ -28,9 +28,14 @@ export const VIRTUAL_MACHINES_PANEL = 'virtualMachinesPanel';
 export const VIRTUAL_MACHINE_ATTRIBUTES_DIALOG = 'virtualMachineAttributesDialog';
 export const VIRTUAL_MACHINE_REMOVE_DIALOG = 'virtualMachineRemoveDialog';
 
-export const openVirtualMachines = () =>
+export const openUserVirtualMachines = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch<any>(navigateToVirtualMachines);
+        dispatch<any>(navigateToUserVirtualMachines);
+    };
+
+export const openAdminVirtualMachines = () =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch<any>(navigateToAdminVirtualMachines);
     };
 
 export const openVirtualMachineAttributes = (uuid: string) =>
@@ -45,7 +50,16 @@ const loadRequestedDate = () =>
         dispatch(virtualMachinesActions.SET_REQUESTED_DATE(date));
     };
 
-export const loadVirtualMachinesData = () =>
+export const loadVirtualMachinesAdminData = () =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch<any>(loadRequestedDate());
+        const virtualMachines = await services.virtualMachineService.list();
+        dispatch(virtualMachinesActions.SET_VIRTUAL_MACHINES(virtualMachines));
+        const getAllLogins = await services.virtualMachineService.getAllLogins();
+        dispatch(virtualMachinesActions.SET_LOGINS(getAllLogins));
+    };
+
+export const loadVirtualMachinesUserData = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch<any>(loadRequestedDate());
         const virtualMachines = await services.virtualMachineService.list();
@@ -57,8 +71,6 @@ export const loadVirtualMachinesData = () =>
         });
         dispatch(virtualMachinesActions.SET_VIRTUAL_MACHINES(virtualMachines));
         dispatch(virtualMachinesActions.SET_LINKS(links));
-        const getAllLogins = await services.virtualMachineService.getAllLogins();
-        dispatch(virtualMachinesActions.SET_LOGINS(getAllLogins));
     };
 
 export const saveRequestedDate = () =>
@@ -86,7 +98,7 @@ export const removeVirtualMachine = (uuid: string) =>
         dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...' }));
         await services.virtualMachineService.delete(uuid);
         dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
-        dispatch<any>(loadVirtualMachinesData());
+        dispatch<any>(loadVirtualMachinesAdminData());
     };
 
 const virtualMachinesBindedActions = bindDataExplorerActions(VIRTUAL_MACHINES_PANEL);
