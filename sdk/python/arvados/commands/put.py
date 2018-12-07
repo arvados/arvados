@@ -1181,10 +1181,11 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
         sys.exit(1)
     except ResumeCacheInvalidError:
         logger.error("\n".join([
-            "arv-put: Cache seems to contain invalid data: it may have expired",
-            "         or been created with another arvados user's credentials.",
-            "         Use --no-resume to start a new cache file.",
-            "         Use --no-cache to skip current cache file usage."]))
+            "arv-put: Resume cache contains invalid signature: it may have expired",
+            "         or been created with another Arvados user's credentials.",
+            "         Switch user or use one of the following options to restart upload:",
+            "         --no-resume to start a new resume cache.",
+            "         --no-cache to disable resume cache."]))
         sys.exit(1)
     except CollectionUpdateError as error:
         logger.error("\n".join([
