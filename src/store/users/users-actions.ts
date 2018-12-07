@@ -59,11 +59,7 @@ export const createUser = (user: UserCreateFormDialogData) =>
             dispatch(userBindedActions.REQUEST_ITEMS());
             return newUser;
         } catch (e) {
-            const error = getCommonResourceServiceError(e);
-            if (error === CommonResourceServiceError.NAME_HAS_ALREADY_BEEN_TAKEN) {
-                dispatch(stopSubmit(USER_CREATE_FORM_NAME, { name: 'User with the same name already exists.' }));
-            }
-            return undefined;
+            return ;
         }
     };
 
