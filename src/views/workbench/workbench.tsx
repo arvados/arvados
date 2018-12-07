@@ -45,6 +45,7 @@ import SplitterLayout from 'react-splitter-layout';
 import { WorkflowPanel } from '~/views/workflow-panel/workflow-panel';
 import { SearchResultsPanel } from '~/views/search-results-panel/search-results-panel';
 import { SshKeyPanel } from '~/views/ssh-key-panel/ssh-key-panel';
+import { MyAccountPanel } from '~/views/my-account-panel/my-account-panel';
 import { SharingDialog } from '~/views-components/sharing-dialog/sharing-dialog';
 import { AdvancedTabDialog } from '~/views-components/advanced-tab-dialog/advanced-tab-dialog';
 import { ProcessInputDialog } from '~/views-components/process-input-dialog/process-input-dialog';
@@ -53,20 +54,24 @@ import { ProjectPropertiesDialog } from '~/views-components/project-properties-d
 import { RepositoriesPanel } from '~/views/repositories-panel/repositories-panel';
 import { KeepServicePanel } from '~/views/keep-service-panel/keep-service-panel';
 import { ComputeNodePanel } from '~/views/compute-node-panel/compute-node-panel';
+import { ApiClientAuthorizationPanel } from '~/views/api-client-authorization-panel/api-client-authorization-panel';
 import { RepositoriesSampleGitDialog } from '~/views-components/repositories-sample-git-dialog/repositories-sample-git-dialog';
 import { RepositoryAttributesDialog } from '~/views-components/repository-attributes-dialog/repository-attributes-dialog';
 import { CreateRepositoryDialog } from '~/views-components/dialog-forms/create-repository-dialog';
 import { RemoveRepositoryDialog } from '~/views-components/repository-remove-dialog/repository-remove-dialog';
 import { CreateSshKeyDialog } from '~/views-components/dialog-forms/create-ssh-key-dialog';
 import { PublicKeyDialog } from '~/views-components/ssh-keys-dialog/public-key-dialog';
+import { RemoveApiClientAuthorizationDialog } from '~/views-components/api-client-authorizations-dialog/remove-dialog';
 import { RemoveComputeNodeDialog } from '~/views-components/compute-nodes-dialog/remove-dialog';
 import { RemoveKeepServiceDialog } from '~/views-components/keep-services-dialog/remove-dialog';
 import { RemoveSshKeyDialog } from '~/views-components/ssh-keys-dialog/remove-dialog';
 import { RemoveVirtualMachineDialog } from '~/views-components/virtual-machines-dialog/remove-dialog';
+import { AttributesApiClientAuthorizationDialog } from '~/views-components/api-client-authorizations-dialog/attributes-dialog';
 import { AttributesComputeNodeDialog } from '~/views-components/compute-nodes-dialog/attributes-dialog';
 import { AttributesKeepServiceDialog } from '~/views-components/keep-services-dialog/attributes-dialog';
 import { AttributesSshKeyDialog } from '~/views-components/ssh-keys-dialog/attributes-dialog';
 import { VirtualMachineAttributesDialog } from '~/views-components/virtual-machines-dialog/attributes-dialog';
+import { HelpApiClientAuthorizationDialog } from '~/views-components/api-client-authorizations-dialog/help-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -141,6 +146,8 @@ export const WorkbenchPanel =
                                 <Route path={Routes.SSH_KEYS} component={SshKeyPanel} />
                                 <Route path={Routes.KEEP_SERVICES} component={KeepServicePanel} />
                                 <Route path={Routes.COMPUTE_NODES} component={ComputeNodePanel} />
+                                <Route path={Routes.API_CLIENT_AUTHORIZATIONS} component={ApiClientAuthorizationPanel} />
+                                <Route path={Routes.MY_ACCOUNT} component={MyAccountPanel} />
                             </Switch>
                         </Grid>
                     </Grid>
@@ -150,6 +157,7 @@ export const WorkbenchPanel =
                 <DetailsPanel />
             </Grid>
             <AdvancedTabDialog />
+            <AttributesApiClientAuthorizationDialog />
             <AttributesComputeNodeDialog />
             <AttributesKeepServiceDialog />
             <AttributesSshKeyDialog />
@@ -164,6 +172,7 @@ export const WorkbenchPanel =
             <CurrentTokenDialog />
             <FileRemoveDialog />
             <FilesUploadCollectionDialog />
+            <HelpApiClientAuthorizationDialog />
             <MoveCollectionDialog />
             <MoveProcessDialog />
             <MoveProjectDialog />
@@ -173,6 +182,7 @@ export const WorkbenchPanel =
             <ProcessCommandDialog />
             <ProcessInputDialog />
             <ProjectPropertiesDialog />
+            <RemoveApiClientAuthorizationDialog />
             <RemoveComputeNodeDialog />
             <RemoveKeepServiceDialog />
             <RemoveProcessDialog />

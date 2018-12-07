@@ -40,6 +40,7 @@ import { loadSharedWithMePanel } from '~/store/shared-with-me-panel/shared-with-
 import { CopyFormDialogData } from '~/store/copy-dialog/copy-dialog';
 import { loadWorkflowPanel, workflowPanelActions } from '~/store/workflow-panel/workflow-panel-actions';
 import { loadSshKeysPanel } from '~/store/auth/auth-action';
+import { loadMyAccountPanel } from '~/store/my-account/my-account-panel-actions';
 import { workflowPanelColumns } from '~/views/workflow-panel/workflow-panel-view';
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions';
 import { getProgressIndicator } from '~/store/progress-indicator/progress-indicator-reducer';
@@ -58,6 +59,7 @@ import { loadVirtualMachinesPanel } from '~/store/virtual-machines/virtual-machi
 import { loadRepositoriesPanel } from '~/store/repositories/repositories-actions';
 import { loadKeepServicesPanel } from '~/store/keep-services/keep-services-actions';
 import { loadComputeNodesPanel } from '~/store/compute-nodes/compute-nodes-actions';
+import { loadApiClientAuthorizationsPanel } from '~/store/api-client-authorizations/api-client-authorizations-actions';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -412,6 +414,11 @@ export const loadSshKeys = handleFirstTimeLoad(
         await dispatch(loadSshKeysPanel());
     });
 
+export const loadMyAccount = handleFirstTimeLoad(
+    (dispatch: Dispatch<any>) => {
+        dispatch(loadMyAccountPanel());
+    });
+
 export const loadKeepServices = handleFirstTimeLoad(
     async (dispatch: Dispatch<any>) => {
         await dispatch(loadKeepServicesPanel());
@@ -420,6 +427,11 @@ export const loadKeepServices = handleFirstTimeLoad(
 export const loadComputeNodes = handleFirstTimeLoad(
     async (dispatch: Dispatch<any>) => {
         await dispatch(loadComputeNodesPanel());
+    });
+
+export const loadApiClientAuthorizations = handleFirstTimeLoad(
+    async (dispatch: Dispatch<any>) => {
+        await dispatch(loadApiClientAuthorizationsPanel());
     });
 
 const finishLoadingProject = (project: GroupContentsResource | string) =>

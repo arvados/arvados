@@ -18,6 +18,7 @@ import { SshKeyResource } from '~/models/ssh-key';
 import { VirtualMachinesResource } from '~/models/virtual-machines';
 import { KeepServiceResource } from '~/models/keep-services';
 import { NodeResource } from '~/models/node';
+import { ApiClientAuthorization } from '~/models/api-client-authorization';
 
 export const contextMenuActions = unionize({
     OPEN_CONTEXT_MENU: ofType<{ position: ContextMenuPosition, resource: ContextMenuResource }>(),
@@ -120,6 +121,18 @@ export const openComputeNodeContextMenu = (event: React.MouseEvent<HTMLElement>,
             menuKind: ContextMenuKind.NODE
         }));
     };
+
+export const openApiClientAuthorizationContextMenu = 
+    (event: React.MouseEvent<HTMLElement>, apiClientAuthorization: ApiClientAuthorization) =>
+        (dispatch: Dispatch) => {
+            dispatch<any>(openContextMenu(event, {
+                name: '',
+                uuid: apiClientAuthorization.uuid,
+                ownerUuid: apiClientAuthorization.ownerUuid,
+                kind: ResourceKind.API_CLIENT_AUTHORIZATION,
+                menuKind: ContextMenuKind.API_CLIENT_AUTHORIZATION
+            }));
+        };
 
 export const openRootProjectContextMenu = (event: React.MouseEvent<HTMLElement>, projectUuid: string) =>
     (dispatch: Dispatch, getState: () => RootState) => {

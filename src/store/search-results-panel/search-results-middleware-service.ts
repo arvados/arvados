@@ -13,7 +13,7 @@ import { SortDirection } from '~/components/data-table/data-column';
 import { SearchResultsPanelColumnNames } from '~/views/search-results-panel/search-results-panel-view';
 import { OrderDirection, OrderBuilder } from '~/services/api/order-builder';
 import { GroupContentsResource, GroupContentsResourcePrefix } from "~/services/groups-service/groups-service";
-import { ListResults } from '~/services/common-service/common-resource-service';
+import { ListResults } from '~/services/common-service/common-service';
 import { searchResultsPanelActions } from '~/store/search-results-panel/search-results-panel-actions';
 import { getFilters } from '~/store/search-bar/search-bar-actions';
 import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";

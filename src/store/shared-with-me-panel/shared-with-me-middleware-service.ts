@@ -12,7 +12,7 @@ import { updateResources } from '~/store/resources/resources-actions';
 import { loadMissingProcessesInformation, getFilters } from '~/store/project-panel/project-panel-middleware-service';
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
 import { sharedWithMePanelActions } from './shared-with-me-panel-actions';
-import { ListResults } from '~/services/common-service/common-resource-service';
+import { ListResults } from '~/services/common-service/common-service';
 import { GroupContentsResource, GroupContentsResourcePrefix } from '~/services/groups-service/groups-service';
 import { SortDirection } from '~/components/data-table/data-column';
 import { OrderBuilder, OrderDirection } from '~/services/api/order-builder';
