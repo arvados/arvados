@@ -296,10 +296,10 @@ class RunnerJob(Runner):
         a pipeline template or pipeline instance.
         """
 
-        if self.tool.tool["id"].startswith("keep:"):
-            self.job_order["cwl:tool"] = self.tool.tool["id"][5:]
+        if self.embedded_tool.tool["id"].startswith("keep:"):
+            self.job_order["cwl:tool"] = self.embedded_tool.tool["id"][5:]
         else:
-            packed = packed_workflow(self.arvrunner, self.tool, self.merged_map)
+            packed = packed_workflow(self.arvrunner, self.embedded_tool, self.merged_map)
             wf_pdh = upload_workflow_collection(self.arvrunner, self.name, packed)
             self.job_order["cwl:tool"] = "%s/workflow.cwl#main" % wf_pdh
 
@@ -388,7 +388,7 @@ class RunnerTemplate(object):
     def __init__(self, runner, tool, job_order, enable_reuse, uuid,
                  submit_runner_ram=0, name=None, merged_map=None):
         self.runner = runner
-        self.tool = tool
+        self.embedded_tool = tool
         self.job = RunnerJob(
             runner=runner,
             tool=tool,
@@ -420,7 +420,7 @@ class RunnerTemplate(object):
         job_params = spec['script_parameters']
         spec['script_parameters'] = {}
 
-        for param in self.tool.tool['inputs']:
+        for param in self.embedded_tool.tool['inputs']:
             param = copy.deepcopy(param)
 
             # Data type and "required" flag...
