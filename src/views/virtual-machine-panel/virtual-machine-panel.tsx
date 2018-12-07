@@ -12,7 +12,7 @@ import { Link } from 'react-router-dom';
 import { compose, Dispatch } from 'redux';
 import { saveRequestedDate, loadVirtualMachinesData } from '~/store/virtual-machines/virtual-machines-actions';
 import { RootState } from '~/store/store';
-import { ListResults } from '~/services/common-service/common-resource-service';
+import { ListResults } from '~/services/common-service/common-service';
 import { HelpIcon, MoreOptionsIcon } from '~/components/icon/icon';
 import { VirtualMachineLogins, VirtualMachinesResource } from '~/models/virtual-machines';
 import { Routes } from '~/routes/routes';

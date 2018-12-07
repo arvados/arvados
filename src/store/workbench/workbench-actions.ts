@@ -61,6 +61,7 @@ import { loadKeepServicesPanel } from '~/store/keep-services/keep-services-actio
 import { loadUsersPanel, userBindedActions } from '~/store/users/users-actions';
 import { userPanelColumns } from '~/views/user-panel/user-panel';
 import { loadComputeNodesPanel } from '~/store/compute-nodes/compute-nodes-actions';
+import { loadApiClientAuthorizationsPanel } from '~/store/api-client-authorizations/api-client-authorizations-actions';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -437,6 +438,11 @@ export const loadUsers = handleFirstTimeLoad(
 export const loadComputeNodes = handleFirstTimeLoad(
     async (dispatch: Dispatch<any>) => {
         await dispatch(loadComputeNodesPanel());
+    });
+
+export const loadApiClientAuthorizations = handleFirstTimeLoad(
+    async (dispatch: Dispatch<any>) => {
+        await dispatch(loadApiClientAuthorizationsPanel());
     });
 
 const finishLoadingProject = (project: GroupContentsResource | string) =>

@@ -5,7 +5,7 @@
 import { GroupsService } from "../groups-service/groups-service";
 import { ProjectResource } from "~/models/project";
 import { GroupClass } from "~/models/group";
-import { ListArguments } from "~/services/common-service/common-resource-service";
+import { ListArguments } from "~/services/common-service/common-service";
 import { FilterBuilder, joinFilters } from "~/services/api/filter-builder";
 import { TrashableResourceService } from '~/services/common-service/trashable-resource-service';
 import { snakeCase } from 'lodash';

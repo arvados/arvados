@@ -12,7 +12,7 @@ import { updateResources } from '~/store/resources/resources-actions';
 import { FilterBuilder } from '~/services/api/filter-builder';
 import { SortDirection } from '~/components/data-table/data-column';
 import { OrderDirection, OrderBuilder } from '~/services/api/order-builder';
-import { ListResults } from '~/services/common-service/common-resource-service';
+import { ListResults } from '~/services/common-service/common-service';
 import { userBindedActions } from '~/store/users/users-actions';
 import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
 import { UserResource } from '~/models/user';

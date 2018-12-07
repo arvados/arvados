@@ -12,7 +12,10 @@ import { logout } from '~/store/auth/auth-action';
 import { RootState } from "~/store/store";
 import { openCurrentTokenDialog } from '~/store/current-token-dialog/current-token-dialog-actions';
 import { openRepositoriesPanel } from "~/store/repositories/repositories-actions";
-import { navigateToSshKeys, navigateToKeepServices, navigateToComputeNodes, navigateToMyAccount } from '~/store/navigation/navigation-action';
+import { 
+    navigateToSshKeys, navigateToKeepServices, navigateToComputeNodes,
+    navigateToApiClientAuthorizations, navigateToMyAccount
+} from '~/store/navigation/navigation-action';
 import { openVirtualMachines } from "~/store/virtual-machines/virtual-machines-actions";
 import { navigateToUsers } from '~/store/navigation/navigation-action';
 
@@ -39,6 +42,7 @@ export const AccountMenu = connect(mapStateToProps)(
                 <MenuItem onClick={() => dispatch(openCurrentTokenDialog)}>Current token</MenuItem>
                 <MenuItem onClick={() => dispatch(navigateToSshKeys)}>Ssh Keys</MenuItem>
                 <MenuItem onClick={() => dispatch(navigateToUsers)}>Users</MenuItem>
+                { user.isAdmin && <MenuItem onClick={() => dispatch(navigateToApiClientAuthorizations)}>Api Tokens</MenuItem> }
                 { user.isAdmin && <MenuItem onClick={() => dispatch(navigateToKeepServices)}>Keep Services</MenuItem> }
                 { user.isAdmin && <MenuItem onClick={() => dispatch(navigateToComputeNodes)}>Compute Nodes</MenuItem> }
                 <MenuItem onClick={() => dispatch(navigateToMyAccount)}>My account</MenuItem>

@@ -31,6 +31,7 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
     const sshKeysMatch = Routes.matchSshKeysRoute(pathname);
     const keepServicesMatch = Routes.matchKeepServicesRoute(pathname);
     const computeNodesMatch = Routes.matchComputeNodesRoute(pathname);
+    const apiClientAuthorizationsMatch = Routes.matchApiClientAuthorizationsRoute(pathname);
     const myAccountMatch = Routes.matchMyAccountRoute(pathname);
     const userMatch = Routes.matchUsersRoute(pathname);
 
@@ -66,6 +67,8 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
         store.dispatch(WorkbenchActions.loadKeepServices);
     } else if (computeNodesMatch) {
         store.dispatch(WorkbenchActions.loadComputeNodes);
+    } else if (apiClientAuthorizationsMatch) {
+        store.dispatch(WorkbenchActions.loadApiClientAuthorizations);
     } else if (myAccountMatch) {
         store.dispatch(WorkbenchActions.loadMyAccount);
     }else if (userMatch) {
