@@ -1748,22 +1748,22 @@ func main() {
 	getVersion := flag.Bool("version", false, "Print version information and exit.")
 	flag.Duration("check-containerd", 0, "Ignored. Exists for compatibility with older versions.")
 
-	detached := false
-	if len(os.Args) > 1 && os.Args[1] == "-detached" {
+	ignoreDetachFlag := false
+	if len(os.Args) > 1 && os.Args[1] == "-no-detach" {
 		// This process was invoked by a parent process, which
 		// has passed along its own arguments, including
-		// -detach, after the leading -detached flag.  Strip
-		// the leading -detached flag (it's not recognized by
-		// flag.Parse()) ... and remember not to detach all
-		// over again in this process.
+		// -detach, after the leading -no-detach flag.  Strip
+		// the leading -no-detach flag (it's not recognized by
+		// flag.Parse()) and ignore the -detach flag that
+		// comes later.
 		os.Args = append([]string{os.Args[0]}, os.Args[2:]...)
-		detached = true
+		ignoreDetachFlag = true
 	}
 
 	flag.Parse()
 
 	switch {
-	case *detach && !detached:
+	case *detach && !ignoreDetachFlag:
 		os.Exit(Detach(flag.Arg(0), os.Args, os.Stdout, os.Stderr))
 	case *kill >= 0:
 		os.Exit(KillProcess(flag.Arg(0), syscall.Signal(*kill), os.Stdout, os.Stderr))

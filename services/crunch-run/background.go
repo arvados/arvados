@@ -32,7 +32,7 @@ type procinfo struct {
 }
 
 // Detach acquires a lock for the given uuid, and starts the current
-// program as a child process (with -detached prepended to the given
+// program as a child process (with -no-detach prepended to the given
 // arguments so the child knows not to detach again). The lock is
 // passed along to the child process.
 func Detach(uuid string, args []string, stdout, stderr io.Writer) int {
@@ -62,7 +62,7 @@ func detach(uuid string, args []string, stdout, stderr io.Writer) error {
 	}
 	defer errfile.Close()
 
-	cmd := exec.Command(args[0], append([]string{"-detached"}, args[1:]...)...)
+	cmd := exec.Command(args[0], append([]string{"-no-detach"}, args[1:]...)...)
 	cmd.Stdout = outfile
 	cmd.Stderr = errfile
 	// Child inherits lockfile.
