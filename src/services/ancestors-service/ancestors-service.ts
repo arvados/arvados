@@ -14,7 +14,12 @@ export class AncestorService {
         private userService: UserService
     ) { }
 
-    async ancestors(uuid: string, rootUuid: string): Promise<Array<UserResource | GroupResource>> {
+    async ancestors(uuid: string, rootUuid: string, previousUuid = ''): Promise<Array<UserResource | GroupResource>> {
+
+        if (uuid === previousUuid) {
+            return [];
+        }
+
         const service = this.getService(extractUuidObjectType(uuid));
         if (service) {
             try {
@@ -23,7 +28,7 @@ export class AncestorService {
                     return [resource];
                 } else {
                     return [
-                        ...await this.ancestors(resource.ownerUuid, rootUuid),
+                        ...await this.ancestors(resource.ownerUuid, rootUuid, uuid),
                         resource
                     ];
                 }
