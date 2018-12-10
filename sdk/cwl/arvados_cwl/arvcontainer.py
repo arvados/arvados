@@ -414,8 +414,8 @@ class RunnerContainer(Runner):
             "properties": {}
         }
 
-        if self.tool.tool.get("id", "").startswith("keep:"):
-            sp = self.tool.tool["id"].split('/')
+        if self.embedded_tool.tool.get("id", "").startswith("keep:"):
+            sp = self.embedded_tool.tool["id"].split('/')
             workflowcollection = sp[0][5:]
             workflowname = "/".join(sp[1:])
             workflowpath = "/var/lib/cwl/workflow/%s" % workflowname
@@ -424,14 +424,14 @@ class RunnerContainer(Runner):
                 "portable_data_hash": "%s" % workflowcollection
             }
         else:
-            packed = packed_workflow(self.arvrunner, self.tool, self.merged_map)
+            packed = packed_workflow(self.arvrunner, self.embedded_tool, self.merged_map)
             workflowpath = "/var/lib/cwl/workflow.json#main"
             container_req["mounts"]["/var/lib/cwl/workflow.json"] = {
                 "kind": "json",
                 "content": packed
             }
-            if self.tool.tool.get("id", "").startswith("arvwf:"):
-                container_req["properties"]["template_uuid"] = self.tool.tool["id"][6:33]
+            if self.embedded_tool.tool.get("id", "").startswith("arvwf:"):
+                container_req["properties"]["template_uuid"] = self.embedded_tool.tool["id"][6:33]
 
 
         # --local means execute the workflow instead of submitting a container request
