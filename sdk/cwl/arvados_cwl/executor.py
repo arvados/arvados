@@ -726,7 +726,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                                                      body={"state": "Failed"}).execute(num_retries=self.num_retries)
             if runtimeContext.submit and isinstance(tool, Runner):
                 runnerjob = tool
-                if runnerjob and runnerjob.uuid and self.work_api == "containers":
+                if runnerjob.uuid and self.work_api == "containers":
                     self.api.container_requests().update(uuid=runnerjob.uuid,
                                                      body={"priority": "0"}).execute(num_retries=self.num_retries)
         finally:
