@@ -1012,7 +1012,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
         (out, err) = p.communicate()
         self.assertRegex(
             err.decode(),
-            r'ERROR: arv-put: Cache seems to contain invalid data.*')
+            r'ERROR: arv-put: Resume cache contains invalid signature.*')
         self.assertEqual(p.returncode, 1)
 
     def test_single_expired_signature_reuploads_file(self):
