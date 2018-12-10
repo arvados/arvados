@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Select, FormControl, InputLabel, MenuItem, Tooltip, Grid, withStyles, WithStyles } from '@material-ui/core';
+import { Select, FormControl, InputLabel, MenuItem, Tooltip, withStyles, WithStyles } from '@material-ui/core';
 import { WorkflowResource } from '~/models/workflow';
 import { DetailsIcon } from '~/components/icon/icon';
 
@@ -14,57 +14,55 @@ export interface WorkflowPresetSelectProps {
     onChange: (preset: WorkflowResource) => void;
 }
 
-export class WorkflowPresetSelect extends React.Component<WorkflowPresetSelectProps> {
+type CssRules = 'root' | 'icon';
 
-    render() {
-
-        const { selectedPreset, workflow, presets } = this.props;
-
-        return (
-            <Grid container wrap='nowrap' spacing={32}>
-                <Grid item xs container>
-                    <Grid item xs>
-                        <FormControl fullWidth>
-                            <InputLabel htmlFor="age-simple">Preset</InputLabel>
-                            <Select
-                                value={selectedPreset.uuid}
-                                onChange={this.handleChange}>
-                                <MenuItem value={workflow.uuid}>
-                                    <em>Default</em>
-                                </MenuItem>
-                                {presets.map(
-                                    ({ uuid, name }) => <MenuItem key={uuid} value={uuid}>{name}</MenuItem>
-                                )}
-                            </Select>
-                        </FormControl>
-                    </Grid>
-                    <WorkflowPresetSelectInfo />
-                </Grid>
-            </Grid>
-        );
-    }
-
-    handleChange = ({ target }: React.ChangeEvent<HTMLSelectElement>) => {
-
-        const { workflow, presets, onChange } = this.props;
-
-        const selectedPreset = [workflow, ...presets]
-            .find(({ uuid }) => uuid === target.value);
-
-        if (selectedPreset) {
-            onChange(selectedPreset);
-        }
-    }
-}
-
-const WorkflowPresetSelectInfo = withStyles<'icon'>(theme => ({
+export const WorkflowPresetSelect = withStyles<CssRules>(theme => ({
+    root: {
+        display: 'flex',
+    },
     icon: {
+        color: theme.palette.text.hint,
         marginTop: 18,
         marginLeft: 8,
     },
 }))(
-    ({ classes }: WithStyles<'icon'>) =>
-        <Tooltip title='List of already defined set of inputs to run a workflow'>
-            <DetailsIcon className={classes.icon} />
-        </Tooltip>
-);
+    class extends React.Component<WorkflowPresetSelectProps & WithStyles<CssRules>> {
+
+        render() {
+
+            const { selectedPreset, workflow, presets, classes } = this.props;
+
+            return (
+                <div className={classes.root}>
+                    <FormControl fullWidth>
+                        <InputLabel htmlFor="age-simple">Preset</InputLabel>
+                        <Select
+                            value={selectedPreset.uuid}
+                            onChange={this.handleChange}>
+                            <MenuItem value={workflow.uuid}>
+                                <em>Default</em>
+                            </MenuItem>
+                            {presets.map(
+                                ({ uuid, name }) => <MenuItem key={uuid} value={uuid}>{name}</MenuItem>
+                            )}
+                        </Select>
+                    </FormControl>
+                    <Tooltip title='List of already defined set of inputs to run a workflow'>
+                        <DetailsIcon className={classes.icon} />
+                    </Tooltip>
+                </div >
+            );
+        }
+
+        handleChange = ({ target }: React.ChangeEvent<HTMLSelectElement>) => {
+
+            const { workflow, presets, onChange } = this.props;
+
+            const selectedPreset = [workflow, ...presets]
+                .find(({ uuid }) => uuid === target.value);
+
+            if (selectedPreset) {
+                onChange(selectedPreset);
+            }
+        }
+    });
