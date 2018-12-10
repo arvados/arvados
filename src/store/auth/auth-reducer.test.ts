@@ -77,6 +77,8 @@ describe('auth-reducer', () => {
                 lastName: "Doe",
                 uuid: "uuid",
                 ownerUuid: "ownerUuid",
+                identityUrl: "identityUrl",
+                prefs: {},
                 isAdmin: false
             }
         });
