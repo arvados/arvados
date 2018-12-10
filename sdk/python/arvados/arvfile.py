@@ -88,9 +88,6 @@ class _FileLikeObjectBase(object):
 class ArvadosFileReaderBase(_FileLikeObjectBase):
     def __init__(self, name, mode, num_retries=None):
         super(ArvadosFileReaderBase, self).__init__(name, mode)
-        self._binary = 'b' in mode
-        if sys.version_info >= (3, 0) and not self._binary:
-            raise NotImplementedError("text mode {!r} is not implemented".format(mode))
         self._filepos = 0
         self.num_retries = num_retries
         self._readline_cache = (None, None)
@@ -1278,6 +1275,11 @@ class ArvadosFileReader(ArvadosFileReaderBase):
     def stream_name(self):
         return self.arvadosfile.parent.stream_name()
 
+    def readinto(self, b):
+        data = self.read(len(b))
+        b[:len(data)] = data
+        return len(data)
+
     @_FileLikeObjectBase._before_close
     @retry_method
     def read(self, size=None, num_retries=None):
@@ -1356,3 +1358,33 @@ class ArvadosFileWriter(ArvadosFileReader):
         if not self.closed:
             self.arvadosfile.remove_writer(self, flush)
             super(ArvadosFileWriter, self).close()
+
+
+class WrappableFile(object):
+    """An interface to an Arvados file that's compatible with io wrappers.
+
+    """
+    def __init__(self, f):
+        self.f = f
+        self.closed = False
+    def close(self):
+        self.closed = True
+        return self.f.close()
+    def flush(self):
+        return self.f.flush()
+    def read(self, *args, **kwargs):
+        return self.f.read(*args, **kwargs)
+    def readable(self):
+        return self.f.readable()
+    def readinto(self, *args, **kwargs):
+        return self.f.readinto(*args, **kwargs)
+    def seek(self, *args, **kwargs):
+        return self.f.seek(*args, **kwargs)
+    def seekable(self):
+        return self.f.seekable()
+    def tell(self):
+        return self.f.tell()
+    def writable(self):
+        return self.f.writable()
+    def write(self, *args, **kwargs):
+        return self.f.write(*args, **kwargs)
