@@ -32,6 +32,7 @@ export class GroupsPanelMiddlewareService extends DataExplorerMiddlewareService 
 
                 const filters = new FilterBuilder()
                     .addEqual('groupClass', null)
+                    .addILike('name', dataExplorer.searchValue)
                     .getFilters();
 
                 const response = await this.services.groupsService
