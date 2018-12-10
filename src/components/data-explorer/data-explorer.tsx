@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, WithStyles, TablePagination, IconButton, Tooltip } from '@material-ui/core';
+import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, WithStyles, TablePagination, IconButton, Tooltip, Button } from '@material-ui/core';
 import { ColumnSelector } from "~/components/column-selector/column-selector";
 import { DataTable, DataColumns } from "~/components/data-table/data-table";
 import { DataColumn, SortDirection } from "~/components/data-table/data-column";
@@ -12,8 +12,9 @@ import { ArvadosTheme } from "~/common/custom-theme";
 import { createTree } from '~/models/tree';
 import { DataTableFilters } from '~/components/data-table-filters/data-table-filters-tree';
 import { MoreOptionsIcon } from '~/components/icon/icon';
+import { PaperProps } from '@material-ui/core/Paper';
 
-type CssRules = 'searchBox' | "toolbar" | "footer" | "root" | 'moreOptionsButton' | 'rootUserPanel';
+type CssRules = 'searchBox' | "toolbar" | "footer" | "root" | 'moreOptionsButton';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     searchBox: {
@@ -27,10 +28,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     root: {
         height: '100%'
-    },
-    rootUserPanel: {
-        height: '100%',
-        boxShadow: 'none'
     },
     moreOptionsButton: {
         padding: 0
@@ -48,7 +45,9 @@ interface DataExplorerDataProps<T> {
     contextMenuColumn: boolean;
     dataTableDefaultView?: React.ReactNode;
     working?: boolean;
-    isUserPanel?: boolean;
+    hideColumnSelector?: boolean;
+    paperProps?: PaperProps;
+    actions?: React.ReactNode;
 }
 
 interface DataExplorerActionProps<T> {
@@ -79,17 +78,18 @@ export const DataExplorer = withStyles(styles)(
                 columns, onContextMenu, onFiltersChange, onSortToggle, working, extractKey,
                 rowsPerPage, rowsPerPageOptions, onColumnToggle, searchValue, onSearch,
                 items, itemsAvailable, onRowClick, onRowDoubleClick, classes,
-                dataTableDefaultView, isUserPanel
+                dataTableDefaultView, hideColumnSelector, actions, paperProps,
             } = this.props;
-            return <Paper className={!isUserPanel ? classes.root : classes.rootUserPanel}>
-                <Toolbar className={!isUserPanel ? classes.toolbar : ''}>
+            return <Paper className={classes.root} {...paperProps}>
+                <Toolbar className={classes.toolbar}>
                     <Grid container justify="space-between" wrap="nowrap" alignItems="center">
                         <div className={classes.searchBox}>
                             <SearchInput
                                 value={searchValue}
                                 onSearch={onSearch} />
                         </div>
-                        {!isUserPanel && <ColumnSelector
+                        {actions}
+                        {!hideColumnSelector && <ColumnSelector
                             columns={columns}
                             onColumnToggle={onColumnToggle} />}
                     </Grid>
