@@ -6,7 +6,7 @@ import * as React from 'react';
 import withStyles from "@material-ui/core/styles/withStyles";
 import { DispatchProp, connect } from 'react-redux';
 import { RouteComponentProps } from 'react-router';
-import { StyleRulesCallback, WithStyles, Typography } from "@material-ui/core";
+import { StyleRulesCallback, WithStyles, Typography, Grid, Button } from "@material-ui/core";
 
 import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
 import { DataColumns } from '~/components/data-table/data-table';
@@ -16,7 +16,7 @@ import { ContainerRequestState } from '~/models/container-request';
 import { SortDirection } from '~/components/data-table/data-column';
 import { ResourceKind, Resource } from '~/models/resource';
 import { ResourceFileSize, ResourceLastModifiedDate, ProcessStatus, ResourceType, ResourceOwner } from '~/views-components/data-explorer/renderers';
-import { ProjectIcon } from '~/components/icon/icon';
+import { ProjectIcon, AddIcon } from '~/components/icon/icon';
 import { ResourceName } from '~/views-components/data-explorer/renderers';
 import { ResourcesState, getResource } from '~/store/resources/resources';
 import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
@@ -64,7 +64,11 @@ export const groupsPanelColumns: DataColumns<string> = [
     },
 ];
 
-export class GroupsPanel extends React.Component {
+export interface GroupsPanelProps {
+    onNewGroup: () => void;
+}
+
+export class GroupsPanel extends React.Component<GroupsPanelProps> {
 
     render() {
         return (
@@ -73,7 +77,18 @@ export class GroupsPanel extends React.Component {
                 onRowClick={noop}
                 onRowDoubleClick={noop}
                 onContextMenu={noop}
-                contextMenuColumn={true} />
+                contextMenuColumn={true}
+                hideColumnSelector
+                actions={
+                    <Grid container justify='flex-end'>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={this.props.onNewGroup}>
+                            <AddIcon /> New group
+                        </Button>
+                    </Grid>
+                } />
         );
     }
 }
