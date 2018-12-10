@@ -13,6 +13,8 @@ import { TagProperty } from "~/models/tag";
 import { snackbarActions } from "../snackbar/snackbar-actions";
 import { resourcesActions } from "~/store/resources/resources-actions";
 import { unionize, ofType, UnionOf } from '~/common/unionize';
+import { SnackbarKind } from '~/store/snackbar/snackbar-actions';
+import { navigateTo } from '~/store/navigation/navigation-action';
 
 export const collectionPanelActions = unionize({
     SET_COLLECTION: ofType<CollectionResource>(),
@@ -50,6 +52,16 @@ export const createCollectionTag = (data: TagProperty) =>
             return;
         } catch (e) {
             return;
+        }
+    };
+
+export const navigateToProcess = (uuid: string) =>
+    async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        try {
+            await services.containerRequestService.get(uuid);
+            dispatch<any>(navigateTo(uuid));
+        } catch {
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'This process does not exists!', hideDuration: 2000, kind: SnackbarKind.ERROR }));
         }
     };
 
