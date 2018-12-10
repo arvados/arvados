@@ -155,7 +155,7 @@ class ArvadosWorkflow(Workflow):
 
     def job(self, joborder, output_callback, runtimeContext):
 
-        builder = self._init_job(joborder, runtimeContext)
+        builder = make_builder(joborder, self.hints, self.requirements, runtimeContext)
         runtimeContext = set_cluster_target(self.tool, self.arvrunner, builder, runtimeContext)
 
         req, _ = self.get_requirement("http://arvados.org/cwl#RunInSingleContainer")
@@ -205,6 +205,9 @@ class ArvadosWorkflow(Workflow):
                                                     raise WorkflowException("Non-top-level ResourceRequirement in single container cannot have expressions")
                                 if not dyn:
                                     self.static_resource_req.append(req)
+                            if req["class"] == "DockerRequirement":
+                                if "http://arvados.org/cwl#dockerCollectionPDH" in req:
+                                    del req["http://arvados.org/cwl#dockerCollectionPDH"]
 
                 visit_class(packed["$graph"], ("Workflow", "CommandLineTool"), visit)
 

@@ -279,14 +279,6 @@ class Container < ArvadosModel
     candidates = candidates.where_serialized(:runtime_constraints, resolve_runtime_constraints(attrs[:runtime_constraints]), md5: true)
     log_reuse_info(candidates) { "after filtering on runtime_constraints #{attrs[:runtime_constraints].inspect}" }
 
-    candidates = candidates.where('runtime_user_uuid = ? or (runtime_user_uuid is NULL and runtime_auth_scopes is NULL)',
-                                  attrs[:runtime_user_uuid])
-    log_reuse_info(candidates) { "after filtering on runtime_user_uuid #{attrs[:runtime_user_uuid].inspect}" }
-
-    candidates = candidates.where('runtime_auth_scopes = ? or (runtime_user_uuid is NULL and runtime_auth_scopes is NULL)',
-                                  SafeJSON.dump(attrs[:runtime_auth_scopes].sort))
-    log_reuse_info(candidates) { "after filtering on runtime_auth_scopes #{attrs[:runtime_auth_scopes].inspect}" }
-
     log_reuse_info { "checking for state=Complete with readable output and log..." }
 
     select_readable_pdh = Collection.

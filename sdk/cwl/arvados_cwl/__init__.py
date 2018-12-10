@@ -159,6 +159,10 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                          default=None,
                          metavar="CLUSTER_ID")
 
+    parser.add_argument("--collection-cache-size", type=int,
+                        default=None,
+                        help="Collection cache size (in MiB, default 256).")
+
     parser.add_argument("--name", type=str,
                         help="Name to use for workflow execution instance.",
                         default=None)
@@ -191,7 +195,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         help=argparse.SUPPRESS)
 
     parser.add_argument("--thread-count", type=int,
-                        default=4, help="Number of threads to use for job submit and output collection.")
+                        default=1, help="Number of threads to use for job submit and output collection.")
 
     parser.add_argument("--http-timeout", type=int,
                         default=5*60, dest="http_timeout", help="API request timeout in seconds. Default is 300 seconds (5 minutes).")

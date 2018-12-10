@@ -407,15 +407,15 @@ class RunnerContainer(Runner):
             "secret_mounts": secret_mounts,
             "runtime_constraints": {
                 "vcpus": math.ceil(self.submit_runner_cores),
-                "ram": math.ceil(1024*1024 * self.submit_runner_ram),
+                "ram": 1024*1024 * (math.ceil(self.submit_runner_ram) + math.ceil(self.collection_cache_size)),
                 "API": True
             },
             "use_existing": self.enable_reuse,
             "properties": {}
         }
 
-        if self.tool.tool.get("id", "").startswith("keep:"):
-            sp = self.tool.tool["id"].split('/')
+        if self.embedded_tool.tool.get("id", "").startswith("keep:"):
+            sp = self.embedded_tool.tool["id"].split('/')
             workflowcollection = sp[0][5:]
             workflowname = "/".join(sp[1:])
             workflowpath = "/var/lib/cwl/workflow/%s" % workflowname
@@ -424,14 +424,14 @@ class RunnerContainer(Runner):
                 "portable_data_hash": "%s" % workflowcollection
             }
         else:
-            packed = packed_workflow(self.arvrunner, self.tool, self.merged_map)
+            packed = packed_workflow(self.arvrunner, self.embedded_tool, self.merged_map)
             workflowpath = "/var/lib/cwl/workflow.json#main"
             container_req["mounts"]["/var/lib/cwl/workflow.json"] = {
                 "kind": "json",
                 "content": packed
             }
-            if self.tool.tool.get("id", "").startswith("arvwf:"):
-                container_req["properties"]["template_uuid"] = self.tool.tool["id"][6:33]
+            if self.embedded_tool.tool.get("id", "").startswith("arvwf:"):
+                container_req["properties"]["template_uuid"] = self.embedded_tool.tool["id"][6:33]
 
 
         # --local means execute the workflow instead of submitting a container request
@@ -441,6 +441,7 @@ class RunnerContainer(Runner):
         # --eval-timeout is the timeout for javascript invocation
         # --parallel-task-count is the number of threads to use for job submission
         # --enable/disable-reuse sets desired job reuse
+        # --collection-cache-size sets aside memory to store collections
         command = ["arvados-cwl-runner",
                    "--local",
                    "--api=containers",
@@ -448,7 +449,8 @@ class RunnerContainer(Runner):
                    "--disable-validate",
                    "--eval-timeout=%s" % self.arvrunner.eval_timeout,
                    "--thread-count=%s" % self.arvrunner.thread_count,
-                   "--enable-reuse" if self.enable_reuse else "--disable-reuse"]
+                   "--enable-reuse" if self.enable_reuse else "--disable-reuse",
+                   "--collection-cache-size=%s" % self.collection_cache_size]
 
         if self.output_name:
             command.append("--output-name=" + self.output_name)
