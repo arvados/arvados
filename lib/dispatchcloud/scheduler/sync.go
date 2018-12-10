@@ -5,6 +5,7 @@
 package scheduler
 
 import (
+	"fmt"
 	"time"
 
 	"git.curoverse.com/arvados.git/lib/dispatchcloud/container"
@@ -33,10 +34,10 @@ func (sch *Scheduler) sync() {
 			logger.WithError(err).Print("error cancelling container")
 		}
 	}
-	kill := func(ent container.QueueEnt) {
+	kill := func(ent container.QueueEnt, reason string) {
 		uuid := ent.Container.UUID
 		logger := sch.logger.WithField("ContainerUUID", uuid)
-		logger.Debugf("killing crunch-run process because state=%q", ent.Container.State)
+		logger.Debugf("killing crunch-run process because %s", reason)
 		sch.pool.KillContainer(uuid)
 	}
 	qEntries, qUpdated := sch.queue.Entries()
@@ -48,6 +49,8 @@ func (sch *Scheduler) sync() {
 				go cancel(ent, "not running on any worker")
 			} else if !exited.IsZero() && qUpdated.After(exited) {
 				go cancel(ent, "state=\"Running\" after crunch-run exited")
+			} else if ent.Container.Priority == 0 {
+				go kill(ent, fmt.Sprintf("priority=%d", ent.Container.Priority))
 			}
 		case arvados.ContainerStateComplete, arvados.ContainerStateCancelled:
 			if running {
@@ -59,7 +62,7 @@ func (sch *Scheduler) sync() {
 				// of kill() will be to make the
 				// worker available for the next
 				// container.
-				go kill(ent)
+				go kill(ent, fmt.Sprintf("state=%q", ent.Container.State))
 			} else {
 				sch.logger.WithFields(logrus.Fields{
 					"ContainerUUID": uuid,
@@ -73,7 +76,7 @@ func (sch *Scheduler) sync() {
 				// a network outage and is still
 				// preparing to run a container that
 				// has already been unlocked/requeued.
-				go kill(ent)
+				go kill(ent, fmt.Sprintf("state=%q", ent.Container.State))
 			}
 		case arvados.ContainerStateLocked:
 			if running && !exited.IsZero() && qUpdated.After(exited) {
