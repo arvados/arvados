@@ -58,11 +58,13 @@ export const RunProcessSecondStepForm = connect(mapStateToProps, { onPresetChang
     ({ inputs, workflow, selectedPreset, presets, onPresetChange, valid, goBack, runProcess }: RunProcessSecondStepFormProps) =>
         <Grid container spacing={16}>
             <Grid item xs={12}>
-                <Grid item xs={6}>
-                    {workflow && selectedPreset && presets &&
-                        < WorkflowPresetSelect
-                            {...{ workflow, selectedPreset, presets, onChange: onPresetChange }} />
-                    }
+                <Grid container spacing={32}>
+                    <Grid item xs={12} md={6}>
+                        {workflow && selectedPreset && presets &&
+                            < WorkflowPresetSelect
+                                {...{ workflow, selectedPreset, presets, onChange: onPresetChange }} />
+                        }
+                    </Grid>
                 </Grid>
                 <RunProcessBasicForm />
                 <RunProcessInputsForm inputs={inputs} />
