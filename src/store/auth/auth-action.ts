@@ -14,6 +14,7 @@ import { ServiceRepository } from "~/services/services";
 import { getAuthorizedKeysServiceError, AuthorizedKeysServiceError } from '~/services/authorized-keys-service/authorized-keys-service';
 import { KeyType, SshKeyResource } from '~/models/ssh-key';
 import { User } from "~/models/user";
+import * as Routes from '~/routes/routes';
 
 export const authActions = unionize({
     SAVE_API_TOKEN: ofType<string>(),
@@ -153,9 +154,13 @@ export const createSshKey = (data: SshKeyCreateFormDialogData) =>
 export const loadSshKeysPanel = () =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         try {
-            dispatch(setBreadcrumbs([{ label: 'SSH Keys'}]));
+            const userUuid = getState().auth.user!.uuid;
+            const { router } = getState();
+            const pathname = router.location ? router.location.pathname : '';
+            dispatch(setBreadcrumbs([{ label: 'SSH Keys' }]));
             const response = await services.authorizedKeysService.list();
-            dispatch(authActions.SET_SSH_KEYS(response.items));
+            const userSshKeys = response.items.find(it => it.ownerUuid === userUuid);
+            return Routes.matchSshKeysAdminRoute(pathname) ? dispatch(authActions.SET_SSH_KEYS(response.items)) : dispatch(authActions.SET_SSH_KEYS([userSshKeys!]));
         } catch (e) {
             return;
         }

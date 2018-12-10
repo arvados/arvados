@@ -6,13 +6,13 @@ import * as React from "react";
 import { MenuItem } from "@material-ui/core";
 import { User } from "~/models/user";
 import { DropdownMenu } from "~/components/dropdown-menu/dropdown-menu";
-import { ShareMeIcon } from "~/components/icon/icon";
+import { AdminMenuIcon } from "~/components/icon/icon";
 import { DispatchProp, connect } from 'react-redux';
 import { logout } from '~/store/auth/auth-action';
 import { RootState } from "~/store/store";
 import { openRepositoriesPanel } from "~/store/repositories/repositories-actions";
 import { 
-    navigateToSshKeys, navigateToKeepServices, navigateToComputeNodes,
+    navigateToSshKeysAdmin, navigateToKeepServices, navigateToComputeNodes,
     navigateToApiClientAuthorizations
 } from '~/store/navigation/navigation-action';
 import { openAdminVirtualMachines } from "~/store/virtual-machines/virtual-machines-actions";
@@ -30,12 +30,12 @@ export const AdminMenu = connect(mapStateToProps)(
     ({ user, dispatch }: AdminMenuProps & DispatchProp<any>) =>
         user
             ? <DropdownMenu
-                icon={<ShareMeIcon />}
+                icon={<AdminMenuIcon />}
                 id="admin-menu"
                 title="Admin Panel">
                 <MenuItem onClick={() => dispatch(openRepositoriesPanel())}>Repositories</MenuItem>
                 <MenuItem onClick={() => dispatch(openAdminVirtualMachines())}>Virtual Machines</MenuItem>
-                <MenuItem onClick={() => dispatch(navigateToSshKeys)}>Ssh Keys</MenuItem>
+                <MenuItem onClick={() => dispatch(navigateToSshKeysAdmin)}>Ssh Keys</MenuItem>
                 <MenuItem onClick={() => dispatch(navigateToApiClientAuthorizations)}>Api Tokens</MenuItem>
                 <MenuItem onClick={() => dispatch(navigateToUsers)}>Users</MenuItem>
                 <MenuItem onClick={() => dispatch(navigateToComputeNodes)}>Compute Nodes</MenuItem>

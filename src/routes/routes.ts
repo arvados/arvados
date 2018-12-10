@@ -19,11 +19,12 @@ export const Routes = {
     REPOSITORIES: '/repositories',
     SHARED_WITH_ME: '/shared-with-me',
     RUN_PROCESS: '/run-process',
-    VIRTUAL_MACHINES_USER: '/virtual-machines-user',
     VIRTUAL_MACHINES_ADMIN: '/virtual-machines-admin',
+    VIRTUAL_MACHINES_USER: '/virtual-machines-user',
     WORKFLOWS: '/workflows',
     SEARCH_RESULTS: '/search-results',
-    SSH_KEYS: `/ssh-keys`,
+    SSH_KEYS_ADMIN: `/ssh-keys-admin`,
+    SSH_KEYS_USER: `/ssh-keys-user`,
     MY_ACCOUNT: '/my-account',
     KEEP_SERVICES: `/keep-services`,
     COMPUTE_NODES: `/nodes`,
@@ -95,8 +96,11 @@ export const matchAdminVirtualMachineRoute = (route: string) =>
 export const matchRepositoriesRoute = (route: string) =>
     matchPath<ResourceRouteParams>(route, { path: Routes.REPOSITORIES });
 
-export const matchSshKeysRoute = (route: string) =>
-    matchPath(route, { path: Routes.SSH_KEYS });
+export const matchSshKeysUserRoute = (route: string) =>
+    matchPath(route, { path: Routes.SSH_KEYS_USER });
+
+export const matchSshKeysAdminRoute = (route: string) =>
+    matchPath(route, { path: Routes.SSH_KEYS_ADMIN });
 
 export const matchMyAccountRoute = (route: string) =>
     matchPath(route, { path: Routes.MY_ACCOUNT });

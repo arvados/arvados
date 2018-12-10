@@ -68,7 +68,9 @@ export const navigateToAdminVirtualMachines = push(Routes.VIRTUAL_MACHINES_ADMIN
 
 export const navigateToRepositories = push(Routes.REPOSITORIES);
 
-export const navigateToSshKeys= push(Routes.SSH_KEYS);
+export const navigateToSshKeysAdmin= push(Routes.SSH_KEYS_ADMIN);
+
+export const navigateToSshKeysUser= push(Routes.SSH_KEYS_USER);
 
 export const navigateToMyAccount = push(Routes.MY_ACCOUNT);
 

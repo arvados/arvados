@@ -29,7 +29,8 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
     const virtualMachineUserMatch = Routes.matchUserVirtualMachineRoute(pathname);
     const virtualMachineAdminMatch = Routes.matchAdminVirtualMachineRoute(pathname);
     const workflowMatch = Routes.matchWorkflowRoute(pathname);
-    const sshKeysMatch = Routes.matchSshKeysRoute(pathname);
+    const sshKeysUserMatch = Routes.matchSshKeysUserRoute(pathname);
+    const sshKeysAdminMatch = Routes.matchSshKeysAdminRoute(pathname);
     const keepServicesMatch = Routes.matchKeepServicesRoute(pathname);
     const computeNodesMatch = Routes.matchComputeNodesRoute(pathname);
     const apiClientAuthorizationsMatch = Routes.matchApiClientAuthorizationsRoute(pathname);
@@ -64,7 +65,9 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
         store.dispatch(WorkbenchActions.loadVirtualMachines);
     } else if (repositoryMatch) {
         store.dispatch(WorkbenchActions.loadRepositories);
-    } else if (sshKeysMatch) {
+    } else if (sshKeysUserMatch) {
+        store.dispatch(WorkbenchActions.loadSshKeys);
+    } else if (sshKeysAdminMatch) {
         store.dispatch(WorkbenchActions.loadSshKeys);
     } else if (keepServicesMatch) {
         store.dispatch(WorkbenchActions.loadKeepServices);

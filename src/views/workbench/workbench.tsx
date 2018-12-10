@@ -148,7 +148,8 @@ export const WorkbenchPanel =
                                 <Route path={Routes.VIRTUAL_MACHINES_USER} component={VirtualMachineUserPanel} />
                                 <Route path={Routes.VIRTUAL_MACHINES_ADMIN} component={VirtualMachineAdminPanel} />
                                 <Route path={Routes.REPOSITORIES} component={RepositoriesPanel} />
-                                <Route path={Routes.SSH_KEYS} component={SshKeyPanel} />
+                                <Route path={Routes.SSH_KEYS_USER} component={SshKeyPanel} />
+                                <Route path={Routes.SSH_KEYS_ADMIN} component={SshKeyPanel} />
                                 <Route path={Routes.KEEP_SERVICES} component={KeepServicePanel} />
                                 <Route path={Routes.USERS} component={UserPanel} />
                                 <Route path={Routes.COMPUTE_NODES} component={ComputeNodePanel} />

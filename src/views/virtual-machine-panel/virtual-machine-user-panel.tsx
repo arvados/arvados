@@ -187,7 +187,7 @@ const CardSSHSection = (props: VirtualMachineProps) =>
         <Card>
             <CardContent>
                 <Typography variant="body2">
-                    In order to access virtual machines using SSH, <Link to={Routes.SSH_KEYS} className={props.classes.link}>add an SSH key to your account</Link> and add a section like this to your SSH configuration file ( ~/.ssh/config):
+                    In order to access virtual machines using SSH, <Link to={Routes.SSH_KEYS_USER} className={props.classes.link}>add an SSH key to your account</Link> and add a section like this to your SSH configuration file ( ~/.ssh/config):
                 </Typography>
                 <DefaultCodeSnippet
                     className={props.classes.codeSnippet}
