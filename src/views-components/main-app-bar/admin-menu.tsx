@@ -16,7 +16,7 @@ import {
     navigateToApiClientAuthorizations
 } from '~/store/navigation/navigation-action';
 import { openAdminVirtualMachines } from "~/store/virtual-machines/virtual-machines-actions";
-import { navigateToUsers } from '~/store/navigation/navigation-action';
+import { openUserPanel } from "~/store/users/users-actions";
 
 interface AdminMenuProps {
     user?: User;
@@ -37,7 +37,7 @@ export const AdminMenu = connect(mapStateToProps)(
                 <MenuItem onClick={() => dispatch(openAdminVirtualMachines())}>Virtual Machines</MenuItem>
                 <MenuItem onClick={() => dispatch(navigateToSshKeysAdmin)}>Ssh Keys</MenuItem>
                 <MenuItem onClick={() => dispatch(navigateToApiClientAuthorizations)}>Api Tokens</MenuItem>
-                <MenuItem onClick={() => dispatch(navigateToUsers)}>Users</MenuItem>
+                <MenuItem onClick={() => dispatch(openUserPanel())}>Users</MenuItem>
                 <MenuItem onClick={() => dispatch(navigateToComputeNodes)}>Compute Nodes</MenuItem>
                 <MenuItem onClick={() => dispatch(navigateToKeepServices)}>Keep Services</MenuItem>
                 <MenuItem onClick={() => dispatch(logout())}>Logout</MenuItem>

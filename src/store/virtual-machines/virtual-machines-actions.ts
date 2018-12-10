@@ -5,7 +5,7 @@
 import { Dispatch } from "redux";
 import { RootState } from '~/store/store';
 import { ServiceRepository } from "~/services/services";
-import { navigateToUserVirtualMachines, navigateToAdminVirtualMachines } from "~/store/navigation/navigation-action";
+import { navigateToUserVirtualMachines, navigateToAdminVirtualMachines, navigateToRootProject } from "~/store/navigation/navigation-action";
 import { bindDataExplorerActions } from '~/store/data-explorer/data-explorer-action';
 import { formatDate } from "~/common/formatters";
 import { unionize, ofType, UnionOf } from "~/common/unionize";
@@ -35,7 +35,13 @@ export const openUserVirtualMachines = () =>
 
 export const openAdminVirtualMachines = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch<any>(navigateToAdminVirtualMachines);
+        const user = getState().auth.user;
+        if (user && user.isAdmin) {
+            dispatch<any>(navigateToAdminVirtualMachines);
+        } else {
+            dispatch<any>(navigateToRootProject);
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "You don't have permissions to view this page", hideDuration: 2000 }));
+        }
     };
 
 export const openVirtualMachineAttributes = (uuid: string) =>
