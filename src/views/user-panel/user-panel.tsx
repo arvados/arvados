@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { WithStyles, withStyles, Typography, Tabs, Tab, Paper, Button } from '@material-ui/core';
+import { WithStyles, withStyles, Typography, Tabs, Tab, Paper, Button, Grid } from '@material-ui/core';
 import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
 import { connect, DispatchProp } from 'react-redux';
 import { DataColumns } from '~/components/data-table/data-table';
@@ -163,18 +163,23 @@ export const UserPanel = compose(
                     </Tabs>
                     {value === 0 &&
                         <span>
-                            <div className={this.props.classes.button}>
-                                <Button variant="contained" color="primary" onClick={this.props.openUserCreateDialog}>
-                                    <AddIcon /> NEW USER
-                                </Button>
-                            </div>
                             <DataExplorer
                                 id={USERS_PANEL_ID}
                                 onRowClick={this.handleRowClick}
                                 onRowDoubleClick={this.handleRowDoubleClick}
                                 onContextMenu={this.handleContextMenu}
                                 contextMenuColumn={true}
-                                isUserPanel={true}
+                                hideColumnSelector
+                                actions={
+                                    <Grid container justify='flex-end'>
+                                        <Button variant="contained" color="primary" onClick={this.props.openUserCreateDialog}>
+                                            <AddIcon /> NEW USER
+                                        </Button>
+                                    </Grid>
+                                }
+                                paperProps={{
+                                    elevation: 0,
+                                }}
                                 dataTableDefaultView={
                                     <DataTableDefaultView
                                         icon={ShareMeIcon}
