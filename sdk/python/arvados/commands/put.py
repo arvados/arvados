@@ -799,6 +799,20 @@ class ArvPutUploadJob(object):
     def _my_collection(self):
         return self._remote_collection if self.update else self._local_collection
 
+    def _get_cache_filepath(self):
+        # Set up cache file name from input paths.
+        md5 = hashlib.md5()
+        md5.update(arvados.config.get('ARVADOS_API_HOST', '!nohost').encode())
+        realpaths = sorted(os.path.realpath(path) for path in self.paths)
+        md5.update(b'\0'.join([p.encode() for p in realpaths]))
+        if self.filename:
+            md5.update(self.filename.encode())
+        cache_filename = md5.hexdigest()
+        cache_filepath = os.path.join(
+            arv_cmd.make_home_conf_dir(self.CACHE_DIR, 0o700, 'raise'),
+            cache_filename)
+        return cache_filepath
+
     def _setup_state(self, update_collection):
         """
         Create a new cache file or load a previously existing one.
@@ -818,17 +832,7 @@ class ArvPutUploadJob(object):
             raise CollectionUpdateError("Collection locator unknown: '{}'".format(update_collection))
 
         if self.use_cache:
-            # Set up cache file name from input paths.
-            md5 = hashlib.md5()
-            md5.update(arvados.config.get('ARVADOS_API_HOST', '!nohost').encode())
-            realpaths = sorted(os.path.realpath(path) for path in self.paths)
-            md5.update(b'\0'.join([p.encode() for p in realpaths]))
-            if self.filename:
-                md5.update(self.filename.encode())
-            cache_filename = md5.hexdigest()
-            cache_filepath = os.path.join(
-                arv_cmd.make_home_conf_dir(self.CACHE_DIR, 0o700, 'raise'),
-                cache_filename)
+            cache_filepath = self._get_cache_filepath()
             if self.resume and os.path.exists(cache_filepath):
                 self.logger.info("Resuming upload from cache file {}".format(cache_filepath))
                 self._cache_file = open(cache_filepath, 'a+')
