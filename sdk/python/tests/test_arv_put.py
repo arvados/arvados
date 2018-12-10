@@ -8,6 +8,7 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import str
 from builtins import range
+from functools import partial
 import apiclient
 import datetime
 import hashlib
@@ -527,6 +528,85 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
                                     dry_run=True,
                                     resume=False)
         del(self.writer)
+
+class CachedManifestValidationTest(ArvadosBaseTestCase):
+    class MockedPut(arv_put.ArvPutUploadJob):
+        def __init__(self, cached_manifest=None):
+            self._state = arv_put.ArvPutUploadJob.EMPTY_STATE
+            self._state['manifest'] = cached_manifest
+            self._api_client = mock.MagicMock()
+            self.logger = mock.MagicMock()
+            self.num_retries = 1
+
+    def datetime_to_hex(self, dt):
+        return hex(int(time.mktime(dt.timetuple())))[2:]
+
+    def setUp(self):
+        super(CachedManifestValidationTest, self).setUp()
+        self.block1 = "fdba98970961edb29f88241b9d99d890" # foo
+        self.block2 = "37b51d194a7513e45b56f6524f2d51f2" # bar
+        self.template = ". "+self.block1+"+3+Asignature@%s "+self.block2+"+3+Anothersignature@%s 0:3:foofile.txt 3:6:barfile.txt\n"
+
+    def test_empty_cached_manifest_is_valid(self):
+        put_mock = self.MockedPut()
+        self.assertEqual(None, put_mock._state.get('manifest'))
+        self.assertTrue(put_mock._cached_manifest_valid())
+        put_mock._state['manifest'] = ''
+        self.assertTrue(put_mock._cached_manifest_valid())
+
+    def test_signature_cases(self):
+        now = datetime.datetime.utcnow()
+        yesterday = now - datetime.timedelta(days=1)
+        lastweek = now - datetime.timedelta(days=7)
+        tomorrow = now + datetime.timedelta(days=1)
+        nextweek = now + datetime.timedelta(days=7)
+
+        def mocked_head(blocks={}, loc=None):
+            blk = loc.split('+', 1)[0]
+            if blocks.get(blk):
+                return True
+            raise arvados.errors.KeepRequestError("mocked error - block invalid")
+
+        # Block1_expiration, Block2_expiration, Block1_HEAD, Block2_HEAD, Expectation
+        cases = [
+            # All expired, reset cache - OK
+            (yesterday, lastweek, False, False, True),
+            (lastweek, yesterday, False, False, True),
+            # All non-expired valid blocks - OK
+            (tomorrow, nextweek, True, True, True),
+            (nextweek, tomorrow, True, True, True),
+            # All non-expired invalid blocks - Not OK
+            (tomorrow, nextweek, False, False, False),
+            (nextweek, tomorrow, False, False, False),
+            # One non-expired valid block - OK
+            (tomorrow, yesterday, True, False, True),
+            (yesterday, tomorrow, False, True, True),
+            # One non-expired invalid block - Not OK
+            (tomorrow, yesterday, False, False, False),
+            (yesterday, tomorrow, False, False, False),
+        ]
+        for case in cases:
+            b1_expiration, b2_expiration, b1_valid, b2_valid, outcome = case
+            head_responses = {
+                self.block1: b1_valid,
+                self.block2: b2_valid,
+            }
+            cached_manifest = self.template % (
+                self.datetime_to_hex(b1_expiration),
+                self.datetime_to_hex(b2_expiration),
+            )
+            arvput = self.MockedPut(cached_manifest)
+            with mock.patch('arvados.collection.KeepClient.head') as head_mock:
+                head_mock.side_effect = partial(mocked_head, head_responses)
+                self.assertEqual(outcome, arvput._cached_manifest_valid(),
+                    "Case '%s' should have produced outcome '%s'" % (case, outcome)
+                )
+                if b1_expiration > now or b2_expiration > now:
+                    # A HEAD request should have been done
+                    head_mock.assert_called_once()
+                else:
+                    head_mock.assert_not_called()
+
 
 class ArvadosExpectedBytesTest(ArvadosBaseTestCase):
     TEST_SIZE = os.path.getsize(__file__)
