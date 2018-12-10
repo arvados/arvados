@@ -14,21 +14,25 @@ export class AncestorService {
         private userService: UserService
     ) { }
 
-    async ancestors(uuid: string, rootUuid: string, previousUuid = ''): Promise<Array<UserResource | GroupResource>> {
+    async ancestors(startUuid: string, endUuid: string): Promise<Array<UserResource | GroupResource>> {
+        return this._ancestors(startUuid, endUuid);
+    }
 
-        if (uuid === previousUuid) {
+    private async _ancestors(startUuid: string, endUuid: string, previousUuid = ''): Promise<Array<UserResource | GroupResource>> {
+
+        if (startUuid === previousUuid) {
             return [];
         }
 
-        const service = this.getService(extractUuidObjectType(uuid));
+        const service = this.getService(extractUuidObjectType(startUuid));
         if (service) {
             try {
-                const resource = await service.get(uuid);
-                if (uuid === rootUuid) {
+                const resource = await service.get(startUuid);
+                if (startUuid === endUuid) {
                     return [resource];
                 } else {
                     return [
-                        ...await this.ancestors(resource.ownerUuid, rootUuid, uuid),
+                        ...await this._ancestors(resource.ownerUuid, endUuid, startUuid),
                         resource
                     ];
                 }
