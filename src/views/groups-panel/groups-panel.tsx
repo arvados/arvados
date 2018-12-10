@@ -33,7 +33,7 @@ import { GROUPS_PANEL_ID } from '~/store/groups-panel/groups-panel-actions';
 import { noop } from 'lodash/fp';
 import { GroupResource } from '~/models/group';
 
-export enum ProjectPanelColumnNames {
+export enum GroupsPanelColumnNames {
     GROUP = "Name",
     OWNER = "Owner",
     MEMBERS = "Members",
@@ -41,7 +41,7 @@ export enum ProjectPanelColumnNames {
 
 export const groupsPanelColumns: DataColumns<string> = [
     {
-        name: ProjectPanelColumnNames.GROUP,
+        name: GroupsPanelColumnNames.GROUP,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.ASC,
@@ -49,14 +49,14 @@ export const groupsPanelColumns: DataColumns<string> = [
         render: uuid => <ResourceName uuid={uuid} />
     },
     {
-        name: ProjectPanelColumnNames.OWNER,
+        name: GroupsPanelColumnNames.OWNER,
         selected: true,
         configurable: true,
         filters: createTree(),
         render: uuid => <ResourceOwner uuid={uuid} />,
     },
     {
-        name: ProjectPanelColumnNames.MEMBERS,
+        name: GroupsPanelColumnNames.MEMBERS,
         selected: true,
         configurable: true,
         filters: createTree(),
