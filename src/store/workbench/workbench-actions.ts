@@ -62,6 +62,8 @@ import { loadUsersPanel, userBindedActions } from '~/store/users/users-actions';
 import { userPanelColumns } from '~/views/user-panel/user-panel';
 import { loadComputeNodesPanel } from '~/store/compute-nodes/compute-nodes-actions';
 import { loadApiClientAuthorizationsPanel } from '~/store/api-client-authorizations/api-client-authorizations-actions';
+import * as groupPanelActions from '~/store/groups-panel/groups-panel-actions';
+import { groupsPanelColumns } from '~/views/groups-panel/groups-panel';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -96,6 +98,7 @@ export const loadWorkbench = () =>
                 dispatch(workflowPanelActions.SET_COLUMNS({ columns: workflowPanelColumns }));
                 dispatch(searchResultsPanelActions.SET_COLUMNS({ columns: searchResultsPanelColumns }));
                 dispatch(userBindedActions.SET_COLUMNS({ columns: userPanelColumns }));
+                dispatch(groupPanelActions.GroupsPanelActions.SET_COLUMNS({ columns: groupsPanelColumns }));
                 dispatch<any>(initSidePanelTree());
                 if (router.location) {
                     const match = matchRootRoute(router.location.pathname);
@@ -448,6 +451,7 @@ export const loadApiClientAuthorizations = handleFirstTimeLoad(
 export const loadGroupsPanel = handleFirstTimeLoad(
     (dispatch: Dispatch<any>) => {
         dispatch(setBreadcrumbs([{ label: 'Groups' }]));
+        dispatch(groupPanelActions.loadGroupsPanel());
     });
 
 const finishLoadingProject = (project: GroupContentsResource | string) =>

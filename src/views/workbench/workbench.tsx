@@ -75,6 +75,7 @@ import { UserPanel } from '~/views/user-panel/user-panel';
 import { UserAttributesDialog } from '~/views-components/user-dialog/attributes-dialog';
 import { CreateUserDialog } from '~/views-components/dialog-forms/create-user-dialog';
 import { HelpApiClientAuthorizationDialog } from '~/views-components/api-client-authorizations-dialog/help-dialog';
+import { GroupsPanel } from '~/views/groups-panel/groups-panel';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -152,7 +153,7 @@ export const WorkbenchPanel =
                                 <Route path={Routes.COMPUTE_NODES} component={ComputeNodePanel} />
                                 <Route path={Routes.API_CLIENT_AUTHORIZATIONS} component={ApiClientAuthorizationPanel} />
                                 <Route path={Routes.MY_ACCOUNT} component={MyAccountPanel} />
-                                <Route path={Routes.GROUPS} component={() => <h1>Groups panel</h1>} />
+                                <Route path={Routes.GROUPS} component={GroupsPanel} />
                             </Switch>
                         </Grid>
                     </Grid>
