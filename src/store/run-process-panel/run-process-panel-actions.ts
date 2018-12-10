@@ -93,7 +93,7 @@ const loadPresets = (workflowUuid: string) =>
     };
 
 export const selectPreset = (preset: WorkflowResource) =>
-    (dispatch: Dispatch<any>, getState: () => RootState) => {
+    (dispatch: Dispatch<any>) => {
         dispatch(runProcessPanelActions.SELECT_WORKFLOW_PRESET(preset));
         const inputs = getWorkflowInputs(parseWorkflowDefinition(preset)) || [];
         const values = inputs.reduce((values, input) => ({
@@ -104,7 +104,7 @@ export const selectPreset = (preset: WorkflowResource) =>
     };
 
 export const goToStep = (step: number) =>
-    (dispatch: Dispatch, getState: () => RootState) => {
+    (dispatch: Dispatch) => {
         if (step === 1) {
             dispatch(runProcessPanelActions.SET_STEP_CHANGED(true));
         }
