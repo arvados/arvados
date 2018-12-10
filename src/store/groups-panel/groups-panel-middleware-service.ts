@@ -7,10 +7,14 @@ import { DataExplorerMiddlewareService, listResultsToDataExplorerItemsMeta, data
 import { RootState } from "~/store/store";
 import { ServiceRepository } from "~/services/services";
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { getDataExplorer } from "~/store/data-explorer/data-explorer-reducer";
+import { getDataExplorer, DataExplorer, getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
 import { GroupsPanelActions } from '~/store/groups-panel/groups-panel-actions';
 import { FilterBuilder } from '~/services/api/filter-builder';
 import { updateResources } from '~/store/resources/resources-actions';
+import { OrderBuilder, OrderDirection } from '~/services/api/order-builder';
+import { GroupResource } from '~/models/group';
+import { SortDirection } from '~/components/data-table/data-column';
+import { GroupsPanelColumnNames } from '~/views/groups-panel/groups-panel';
 
 export class GroupsPanelMiddlewareService extends DataExplorerMiddlewareService {
 
@@ -30,6 +34,17 @@ export class GroupsPanelMiddlewareService extends DataExplorerMiddlewareService 
 
             try {
 
+                const order = new OrderBuilder<GroupResource>();
+                const sortColumn = getSortColumn(dataExplorer);
+                if (sortColumn) {
+                    const direction =
+                        sortColumn.sortDirection === SortDirection.ASC && sortColumn.name === GroupsPanelColumnNames.GROUP
+                            ? OrderDirection.ASC
+                            : OrderDirection.DESC;
+
+                    order.addOrder(direction, 'name');
+                }
+
                 const filters = new FilterBuilder()
                     .addEqual('groupClass', null)
                     .addILike('name', dataExplorer.searchValue)
@@ -39,6 +54,7 @@ export class GroupsPanelMiddlewareService extends DataExplorerMiddlewareService 
                     .list({
                         ...dataExplorerToListParams(dataExplorer),
                         filters,
+                        order: order.getOrder(),
                     });
 
                 api.dispatch(updateResources(response.items));
@@ -68,3 +84,4 @@ const couldNotFetchFavoritesContents = () =>
         message: 'Could not fetch groups.',
         kind: SnackbarKind.ERROR
     });
+
