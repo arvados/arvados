@@ -34,6 +34,7 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
     const apiClientAuthorizationsMatch = Routes.matchApiClientAuthorizationsRoute(pathname);
     const myAccountMatch = Routes.matchMyAccountRoute(pathname);
     const userMatch = Routes.matchUsersRoute(pathname);
+    const groupsMatch = Routes.matchGroupsRoute(pathname);
 
     if (projectMatch) {
         store.dispatch(WorkbenchActions.loadProject(projectMatch.params.id));
@@ -73,5 +74,7 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
         store.dispatch(WorkbenchActions.loadMyAccount);
     }else if (userMatch) {
         store.dispatch(WorkbenchActions.loadUsers);
+    } else if (groupsMatch) {
+        store.dispatch(WorkbenchActions.loadGroupsPanel);
     }
 };

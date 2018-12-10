@@ -445,6 +445,11 @@ export const loadApiClientAuthorizations = handleFirstTimeLoad(
         await dispatch(loadApiClientAuthorizationsPanel());
     });
 
+export const loadGroupsPanel = handleFirstTimeLoad(
+    (dispatch: Dispatch<any>) => {
+        dispatch(setBreadcrumbs([{ label: 'Groups' }]));
+    });
+
 const finishLoadingProject = (project: GroupContentsResource | string) =>
     async (dispatch: Dispatch<any>) => {
         const uuid = typeof project === 'string' ? project : project.uuid;

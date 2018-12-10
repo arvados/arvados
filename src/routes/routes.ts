@@ -27,7 +27,8 @@ export const Routes = {
     KEEP_SERVICES: `/keep-services`,
     COMPUTE_NODES: `/nodes`,
     USERS: '/users',
-    API_CLIENT_AUTHORIZATIONS: `/api_client_authorizations`
+    API_CLIENT_AUTHORIZATIONS: `/api_client_authorizations`,
+    GROUPS: '/groups',
 };
 
 export const getResourceUrl = (uuid: string) => {
@@ -108,3 +109,6 @@ export const matchComputeNodesRoute = (route: string) =>
 
 export const matchApiClientAuthorizationsRoute = (route: string) =>
     matchPath(route, { path: Routes.API_CLIENT_AUTHORIZATIONS });
+
+export const matchGroupsRoute = (route: string) =>
+    matchPath(route, { path: Routes.GROUPS });

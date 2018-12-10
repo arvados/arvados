@@ -14,7 +14,7 @@ import { openCurrentTokenDialog } from '~/store/current-token-dialog/current-tok
 import { openRepositoriesPanel } from "~/store/repositories/repositories-actions";
 import { 
     navigateToSshKeys, navigateToKeepServices, navigateToComputeNodes,
-    navigateToApiClientAuthorizations, navigateToMyAccount
+    navigateToApiClientAuthorizations, navigateToMyAccount, navigateToGroups
 } from '~/store/navigation/navigation-action';
 import { openVirtualMachines } from "~/store/virtual-machines/virtual-machines-actions";
 import { navigateToUsers } from '~/store/navigation/navigation-action';
@@ -42,6 +42,7 @@ export const AccountMenu = connect(mapStateToProps)(
                 <MenuItem onClick={() => dispatch(openCurrentTokenDialog)}>Current token</MenuItem>
                 <MenuItem onClick={() => dispatch(navigateToSshKeys)}>Ssh Keys</MenuItem>
                 <MenuItem onClick={() => dispatch(navigateToUsers)}>Users</MenuItem>
+                { user.isAdmin && <MenuItem onClick={() => dispatch(navigateToGroups)}>Groups</MenuItem> }
                 { user.isAdmin && <MenuItem onClick={() => dispatch(navigateToApiClientAuthorizations)}>Api Tokens</MenuItem> }
                 { user.isAdmin && <MenuItem onClick={() => dispatch(navigateToKeepServices)}>Keep Services</MenuItem> }
                 { user.isAdmin && <MenuItem onClick={() => dispatch(navigateToComputeNodes)}>Compute Nodes</MenuItem> }
