@@ -35,7 +35,7 @@ export const WorkflowPresetSelect = withStyles<CssRules>(theme => ({
             return (
                 <div className={classes.root}>
                     <FormControl fullWidth>
-                        <InputLabel htmlFor="age-simple">Preset</InputLabel>
+                        <InputLabel>Preset</InputLabel>
                         <Select
                             value={selectedPreset.uuid}
                             onChange={this.handleChange}>
