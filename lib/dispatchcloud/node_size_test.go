@@ -119,3 +119,13 @@ func (*NodeSizeSuite) TestChoosePreemptable(c *check.C) {
 	c.Check(best.Scratch >= 2*GiB, check.Equals, true)
 	c.Check(best.Preemptible, check.Equals, true)
 }
+
+func (*NodeSizeSuite) TestScratchForDockerImage(c *check.C) {
+	n := EstimateScratchSpace(&arvados.Container{
+		ContainerImage: "d5025c0f29f6eef304a7358afa82a822+342",
+	})
+	// Actual image is 371.1 MiB (according to workbench)
+	// Estimated size is 384 MiB (402653184 bytes)
+	// Want to reserve 2x the estimated size, so 805306368 bytes
+	c.Check(n, check.Equals, int64(805306368))
+}
