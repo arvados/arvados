@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
+import { connect } from 'react-redux';
 import { Grid, Button } from "@material-ui/core";
 
 import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
@@ -12,7 +13,7 @@ import { ResourceOwner } from '~/views-components/data-explorer/renderers';
 import { AddIcon } from '~/components/icon/icon';
 import { ResourceName } from '~/views-components/data-explorer/renderers';
 import { createTree } from '~/models/tree';
-import { GROUPS_PANEL_ID } from '~/store/groups-panel/groups-panel-actions';
+import { GROUPS_PANEL_ID, openCreateGroupDialog } from '~/store/groups-panel/groups-panel-actions';
 import { noop } from 'lodash/fp';
 
 export enum GroupsPanelColumnNames {
@@ -50,27 +51,33 @@ export interface GroupsPanelProps {
     onNewGroup: () => void;
 }
 
-export class GroupsPanel extends React.Component<GroupsPanelProps> {
-
-    render() {
-        return (
-            <DataExplorer
-                id={GROUPS_PANEL_ID}
-                onRowClick={noop}
-                onRowDoubleClick={noop}
-                onContextMenu={noop}
-                contextMenuColumn={true}
-                hideColumnSelector
-                actions={
-                    <Grid container justify='flex-end'>
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={this.props.onNewGroup}>
-                            <AddIcon /> New group
-                        </Button>
-                    </Grid>
-                } />
-        );
+export const GroupsPanel = connect(
+    null,
+    {
+        onNewGroup: openCreateGroupDialog
     }
-}
+)(
+    class GroupsPanel extends React.Component<GroupsPanelProps> {
+
+        render() {
+            return (
+                <DataExplorer
+                    id={GROUPS_PANEL_ID}
+                    onRowClick={noop}
+                    onRowDoubleClick={noop}
+                    onContextMenu={noop}
+                    contextMenuColumn={true}
+                    hideColumnSelector
+                    actions={
+                        <Grid container justify='flex-end'>
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                onClick={this.props.onNewGroup}>
+                                <AddIcon /> New group
+                        </Button>
+                        </Grid>
+                    } />
+            );
+        }
+    });

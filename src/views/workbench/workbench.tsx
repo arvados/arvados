@@ -76,6 +76,7 @@ import { UserAttributesDialog } from '~/views-components/user-dialog/attributes-
 import { CreateUserDialog } from '~/views-components/dialog-forms/create-user-dialog';
 import { HelpApiClientAuthorizationDialog } from '~/views-components/api-client-authorizations-dialog/help-dialog';
 import { GroupsPanel } from '~/views/groups-panel/groups-panel';
+import { CreateGroupDialog } from '~/views-components/dialog-forms/create-group-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -172,6 +173,7 @@ export const WorkbenchPanel =
             <CopyCollectionDialog />
             <CopyProcessDialog />
             <CreateCollectionDialog />
+            <CreateGroupDialog />
             <CreateProjectDialog />
             <CreateRepositoryDialog />
             <CreateSshKeyDialog />
