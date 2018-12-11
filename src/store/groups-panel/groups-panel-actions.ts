@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from 'redux';
-import { reset } from 'redux-form';
+import { reset, startSubmit, stopSubmit, FormErrors } from 'redux-form';
 import { bindDataExplorerActions } from "~/store/data-explorer/data-explorer-action";
 import { dialogActions } from '~/store/dialog/dialog-actions';
 import { Person } from '~/views-components/sharing-dialog/people-select';
@@ -11,6 +11,7 @@ import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
 import { getResource } from '~/store/resources/resources';
 import { GroupResource } from '~/models/group';
+import { getCommonResourceServiceError, CommonResourceServiceError } from '~/services/common-service/common-resource-service';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 
 export const GROUPS_PANEL_ID = "groupsPanel";
@@ -61,10 +62,36 @@ export const openRemoveGroupDialog = (uuid: string) =>
 
 export interface CreateGroupFormData {
     [CREATE_GROUP_NAME_FIELD_NAME]: string;
-    [CREATE_GROUP_USERS_FIELD_NAME]: Person[];
+    [CREATE_GROUP_USERS_FIELD_NAME]?: Person[];
 }
 
-export const createGroup = (data: CreateGroupFormData) =>
-    (dispatch: Dispatch) => {
-        console.log(data);
+export const createGroup = ({ name }: CreateGroupFormData) =>
+    async (dispatch: Dispatch, _: {}, { groupsService }: ServiceRepository) => {
+
+        dispatch(startSubmit(CREATE_GROUP_FORM));
+
+        try {
+
+            const newGroup = await groupsService.create({ name });
+
+            dispatch(dialogActions.CLOSE_DIALOG({ id: CREATE_GROUP_DIALOG }));
+            dispatch(reset(CREATE_GROUP_FORM));
+            dispatch(loadGroupsPanel());
+            dispatch(snackbarActions.OPEN_SNACKBAR({
+                message: `${newGroup.name} group has been created`,
+                kind: SnackbarKind.SUCCESS
+            }));
+
+            return newGroup;
+
+        } catch (e) {
+
+            const error = getCommonResourceServiceError(e);
+            if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {
+                dispatch(stopSubmit(CREATE_GROUP_FORM, { name: 'Group with the same name already exists.' } as FormErrors));
+            }
+
+            return;
+
+        }
     };
