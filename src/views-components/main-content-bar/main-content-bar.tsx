@@ -18,10 +18,12 @@ interface MainContentBarProps {
 
 const isButtonVisible = ({ router }: RootState) => {
     const pathname = router.location ? router.location.pathname : '';
-    return !Routes.matchWorkflowRoute(pathname) && !Routes.matchVirtualMachineRoute(pathname) &&
-        !Routes.matchRepositoriesRoute(pathname) && !Routes.matchSshKeysRoute(pathname) &&
+    return !Routes.matchWorkflowRoute(pathname) && !Routes.matchUserVirtualMachineRoute(pathname) &&
+        !Routes.matchAdminVirtualMachineRoute(pathname) && !Routes.matchRepositoriesRoute(pathname) &&
+        !Routes.matchSshKeysAdminRoute(pathname) && !Routes.matchSshKeysUserRoute(pathname) &&
         !Routes.matchKeepServicesRoute(pathname) && !Routes.matchComputeNodesRoute(pathname) &&
-        !Routes.matchApiClientAuthorizationsRoute(pathname) && !Routes.matchUsersRoute(pathname);
+        !Routes.matchApiClientAuthorizationsRoute(pathname) && !Routes.matchUsersRoute(pathname) &&
+        !Routes.matchMyAccountRoute(pathname);
 };
 
 export const MainContentBar = connect((state: RootState) => ({

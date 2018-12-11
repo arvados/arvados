@@ -62,11 +62,15 @@ export const navigateToRunProcess = push(Routes.RUN_PROCESS);
 
 export const navigateToSearchResults = push(Routes.SEARCH_RESULTS);
 
-export const navigateToVirtualMachines = push(Routes.VIRTUAL_MACHINES);
+export const navigateToUserVirtualMachines = push(Routes.VIRTUAL_MACHINES_USER);
+
+export const navigateToAdminVirtualMachines = push(Routes.VIRTUAL_MACHINES_ADMIN);
 
 export const navigateToRepositories = push(Routes.REPOSITORIES);
 
-export const navigateToSshKeys= push(Routes.SSH_KEYS);
+export const navigateToSshKeysAdmin= push(Routes.SSH_KEYS_ADMIN);
+
+export const navigateToSshKeysUser= push(Routes.SSH_KEYS_USER);
 
 export const navigateToMyAccount = push(Routes.MY_ACCOUNT);
 
