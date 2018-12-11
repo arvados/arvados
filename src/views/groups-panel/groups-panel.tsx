@@ -61,7 +61,7 @@ const mapStateToProps = (state: RootState) => {
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: any) => dispatch<any>(openContextMenu(event, item)),
-    onNewGroup: openCreateGroupDialog
+    onNewGroup: () => dispatch<any>(openCreateGroupDialog()),
 });
 
 export interface GroupsPanelProps {
