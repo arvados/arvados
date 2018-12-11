@@ -64,7 +64,8 @@ const mapStateToProps = (state: RootState) => {
 
 const mapDispatchToProps = {
     onContextMenu: openContextMenu,
-    onRowDoubleClick: navigateToGroupDetails,
+    onRowDoubleClick: (uuid: string) =>
+        navigateToGroupDetails(uuid),
     onNewGroup: openCreateGroupDialog,
 };
 
