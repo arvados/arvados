@@ -11,8 +11,9 @@ import { SearchBar } from "~/views-components/search-bar/search-bar";
 import { Routes } from '~/routes/routes';
 import { NotificationsMenu } from "~/views-components/main-app-bar/notifications-menu";
 import { AccountMenu } from "~/views-components/main-app-bar/account-menu";
-import { HelpMenu } from './help-menu';
+import { HelpMenu } from '~/views-components/main-app-bar/help-menu';
 import { ReactNode } from "react";
+import { AdminMenu } from "~/views-components/main-app-bar/admin-menu";
 
 type CssRules = 'toolbar' | 'link';
 
@@ -65,6 +66,7 @@ export const MainAppBar = withStyles(styles)(
                             ? <>
                                 <NotificationsMenu />
                                 <AccountMenu />
+                                {props.user.isAdmin && <AdminMenu />}
                                 <HelpMenu />
                             </>
                             : <HelpMenu />}
