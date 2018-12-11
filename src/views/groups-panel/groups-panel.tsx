@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { connect } from 'react-redux';
-import { Grid, Button } from "@material-ui/core";
+import { Grid, Button, Typography } from "@material-ui/core";
 
 import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
 import { DataColumns } from '~/components/data-table/data-table';
@@ -16,11 +16,13 @@ import { createTree } from '~/models/tree';
 import { GROUPS_PANEL_ID, openCreateGroupDialog } from '~/store/groups-panel/groups-panel-actions';
 import { noop } from 'lodash/fp';
 import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
-import { getResource, ResourcesState } from '~/store/resources/resources';
+import { getResource, ResourcesState, filterResources } from '~/store/resources/resources';
 import { GroupResource } from '~/models/group';
 import { RootState } from '~/store/store';
 import { Dispatch } from 'redux';
 import { openContextMenu } from '~/store/context-menu/context-menu-actions';
+import { ResourceKind } from '~/models/resource';
+import { LinkClass, LinkResource } from '~/models/link';
 
 export enum GroupsPanelColumnNames {
     GROUP = "Name",
@@ -49,7 +51,7 @@ export const groupsPanelColumns: DataColumns<string> = [
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <span>0</span>,
+        render: uuid => <GroupMembersCount uuid={uuid} />,
     },
 ];
 
@@ -96,7 +98,7 @@ export const GroupsPanel = connect(
                     } />
             );
         }
-        
+
         handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
             const resource = getResource<GroupResource>(resourceUuid)(this.props.resources);
             if (resource) {
@@ -110,3 +112,20 @@ export const GroupsPanel = connect(
             }
         }
     });
+
+
+const GroupMembersCount = connect(
+    (state: RootState, props: { uuid: string }) => {
+
+        const permissions = filterResources((resource: LinkResource) =>
+            resource.kind === ResourceKind.LINK &&
+            resource.linkClass === LinkClass.PERMISSION &&
+            resource.headUuid === props.uuid
+        )(state.resources);
+
+        return {
+            children: permissions.length,
+        };
+
+    }
+)(Typography);
