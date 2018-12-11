@@ -64,6 +64,16 @@ export class GroupsPanelMiddlewareService extends DataExplorerMiddlewareService 
                     items: response.items.map(item => item.uuid),
                 }));
 
+                const permissions = await this.services.permissionService.list({
+
+                    filters: new FilterBuilder()
+                        .addIn('headUuid', response.items.map(item => item.uuid))
+                        .getFilters()
+
+                });
+
+                api.dispatch(updateResources(permissions.items));
+
 
             } catch (e) {
 
