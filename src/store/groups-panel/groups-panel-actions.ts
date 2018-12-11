@@ -13,6 +13,8 @@ import { getResource } from '~/store/resources/resources';
 import { GroupResource } from '~/models/group';
 import { getCommonResourceServiceError, CommonResourceServiceError } from '~/services/common-service/common-resource-service';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
+import { PermissionLevel } from '~/models/permission';
+import { PermissionService } from '~/services/permission-service/permission-service';
 
 export const GROUPS_PANEL_ID = "groupsPanel";
 export const CREATE_GROUP_DIALOG = "createGroupDialog";
@@ -65,14 +67,34 @@ export interface CreateGroupFormData {
     [CREATE_GROUP_USERS_FIELD_NAME]?: Person[];
 }
 
-export const createGroup = ({ name }: CreateGroupFormData) =>
-    async (dispatch: Dispatch, _: {}, { groupsService }: ServiceRepository) => {
+export const createGroup = ({ name, users = [] }: CreateGroupFormData) =>
+    async (dispatch: Dispatch, _: {}, { groupsService, permissionService }: ServiceRepository) => {
 
         dispatch(startSubmit(CREATE_GROUP_FORM));
 
         try {
 
             const newGroup = await groupsService.create({ name });
+
+            for (const user of users) {
+
+                await createPermissionLink({
+                    head: { ...newGroup },
+                    tail: { ...user },
+                    permissionLevel: PermissionLevel.CAN_READ,
+                    dispatch,
+                    permissionService,
+                });
+
+                await createPermissionLink({
+                    head: { ...user },
+                    tail: { ...newGroup },
+                    permissionLevel: PermissionLevel.CAN_READ,
+                    dispatch,
+                    permissionService,
+                });
+
+            }
 
             dispatch(dialogActions.CLOSE_DIALOG({ id: CREATE_GROUP_DIALOG }));
             dispatch(reset(CREATE_GROUP_FORM));
@@ -95,3 +117,33 @@ export const createGroup = ({ name }: CreateGroupFormData) =>
 
         }
     };
+
+
+interface CreatePermissionLinkArgs {
+    head: { uuid: string, name: string };
+    tail: { uuid: string, name: string };
+    permissionLevel: PermissionLevel;
+    dispatch: Dispatch;
+    permissionService: PermissionService;
+}
+
+const createPermissionLink = async ({ head, tail, permissionLevel, dispatch, permissionService }: CreatePermissionLinkArgs) => {
+
+    try {
+
+        await permissionService.create({
+            tailUuid: tail.uuid,
+            headUuid: head.uuid,
+            name: permissionLevel,
+        });
+
+    } catch (e) {
+
+        dispatch(snackbarActions.OPEN_SNACKBAR({
+            message: `Could not add ${tail.name} -> ${head.name} relation`,
+            kind: SnackbarKind.ERROR,
+        }));
+
+    }
+
+};
