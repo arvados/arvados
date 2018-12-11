@@ -11,7 +11,7 @@ import { matchProcessRoute } from '~/routes/routes';
 import { ProcessPanelRootDataProps, ProcessPanelRootActionProps, ProcessPanelRoot } from './process-panel-root';
 import { ProcessPanel as ProcessPanelState} from '~/store/process-panel/process-panel';
 import { groupBy } from 'lodash';
-import { toggleProcessPanelFilter } from '~/store/process-panel/process-panel-actions';
+import { toggleProcessPanelFilter, navigateToOutput } from '~/store/process-panel/process-panel-actions';
 import { openProcessInputDialog } from '~/store/processes/process-input-actions';
 
 const mapStateToProps = ({ router, resources, processPanel }: RootState): ProcessPanelRootDataProps => {
@@ -34,7 +34,8 @@ const mapDispatchToProps = (dispatch: Dispatch): ProcessPanelRootActionProps => 
     onToggle: status => {
         dispatch<any>(toggleProcessPanelFilter(status));
     },
-    openProcessInputDialog: (uuid) => dispatch<any>(openProcessInputDialog(uuid))
+    openProcessInputDialog: (uuid) => dispatch<any>(openProcessInputDialog(uuid)),
+    navigateToOutput: (uuid) => dispatch<any>(navigateToOutput(uuid))
 });
 
 export const ProcessPanel = connect(mapStateToProps, mapDispatchToProps)(ProcessPanelRoot);

@@ -49,7 +49,8 @@ import { MyAccountPanel } from '~/views/my-account-panel/my-account-panel';
 import { SharingDialog } from '~/views-components/sharing-dialog/sharing-dialog';
 import { AdvancedTabDialog } from '~/views-components/advanced-tab-dialog/advanced-tab-dialog';
 import { ProcessInputDialog } from '~/views-components/process-input-dialog/process-input-dialog';
-import { VirtualMachinePanel } from '~/views/virtual-machine-panel/virtual-machine-panel';
+import { VirtualMachineUserPanel } from '~/views/virtual-machine-panel/virtual-machine-user-panel';
+import { VirtualMachineAdminPanel } from '~/views/virtual-machine-panel/virtual-machine-admin-panel';
 import { ProjectPropertiesDialog } from '~/views-components/project-properties-dialog/project-properties-dialog';
 import { RepositoriesPanel } from '~/views/repositories-panel/repositories-panel';
 import { KeepServicePanel } from '~/views/keep-service-panel/keep-service-panel';
@@ -144,9 +145,11 @@ export const WorkbenchPanel =
                                 <Route path={Routes.RUN_PROCESS} component={RunProcessPanel} />
                                 <Route path={Routes.WORKFLOWS} component={WorkflowPanel} />
                                 <Route path={Routes.SEARCH_RESULTS} component={SearchResultsPanel} />
-                                <Route path={Routes.VIRTUAL_MACHINES} component={VirtualMachinePanel} />
+                                <Route path={Routes.VIRTUAL_MACHINES_USER} component={VirtualMachineUserPanel} />
+                                <Route path={Routes.VIRTUAL_MACHINES_ADMIN} component={VirtualMachineAdminPanel} />
                                 <Route path={Routes.REPOSITORIES} component={RepositoriesPanel} />
-                                <Route path={Routes.SSH_KEYS} component={SshKeyPanel} />
+                                <Route path={Routes.SSH_KEYS_USER} component={SshKeyPanel} />
+                                <Route path={Routes.SSH_KEYS_ADMIN} component={SshKeyPanel} />
                                 <Route path={Routes.KEEP_SERVICES} component={KeepServicePanel} />
                                 <Route path={Routes.USERS} component={UserPanel} />
                                 <Route path={Routes.COMPUTE_NODES} component={ComputeNodePanel} />
