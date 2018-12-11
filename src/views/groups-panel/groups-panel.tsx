@@ -23,6 +23,7 @@ import { Dispatch } from 'redux';
 import { openContextMenu } from '~/store/context-menu/context-menu-actions';
 import { ResourceKind } from '~/models/resource';
 import { LinkClass, LinkResource } from '~/models/link';
+import { navigateToGroupDetails } from '~/store/navigation/navigation-action';
 
 export enum GroupsPanelColumnNames {
     GROUP = "Name",
@@ -61,14 +62,16 @@ const mapStateToProps = (state: RootState) => {
     };
 };
 
-const mapDispatchToProps = (dispatch: Dispatch) => ({
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: any) => dispatch<any>(openContextMenu(event, item)),
-    onNewGroup: () => dispatch<any>(openCreateGroupDialog()),
-});
+const mapDispatchToProps = {
+    onContextMenu: openContextMenu,
+    onRowDoubleClick: navigateToGroupDetails,
+    onNewGroup: openCreateGroupDialog,
+};
 
 export interface GroupsPanelProps {
     onNewGroup: () => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: any) => void;
+    onRowDoubleClick: (item: string) => void;
     resources: ResourcesState;
 }
 
@@ -82,7 +85,7 @@ export const GroupsPanel = connect(
                 <DataExplorer
                     id={GROUPS_PANEL_ID}
                     onRowClick={noop}
-                    onRowDoubleClick={noop}
+                    onRowDoubleClick={this.props.onRowDoubleClick}
                     onContextMenu={this.handleContextMenu}
                     contextMenuColumn={true}
                     hideColumnSelector

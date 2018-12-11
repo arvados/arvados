@@ -157,6 +157,7 @@ export const WorkbenchPanel =
                                 <Route path={Routes.API_CLIENT_AUTHORIZATIONS} component={ApiClientAuthorizationPanel} />
                                 <Route path={Routes.MY_ACCOUNT} component={MyAccountPanel} />
                                 <Route path={Routes.GROUPS} component={GroupsPanel} />
+                                <Route path={Routes.GROUP_DETAILS} render={() => <h1>Group details</h1>} />
                             </Switch>
                         </Grid>
                     </Grid>

@@ -8,7 +8,7 @@ import { ResourceKind, extractUuidKind } from '~/models/resource';
 import { getCollectionUrl } from "~/models/collection";
 import { getProjectUrl } from "~/models/project";
 import { SidePanelTreeCategory } from '../side-panel-tree/side-panel-tree-actions';
-import { Routes, getProcessUrl, getProcessLogUrl } from '~/routes/routes';
+import { Routes, getProcessUrl, getProcessLogUrl, getGroupUrl } from '~/routes/routes';
 import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
 
@@ -79,3 +79,5 @@ export const navigateToUsers = push(Routes.USERS);
 export const navigateToApiClientAuthorizations = push(Routes.API_CLIENT_AUTHORIZATIONS);
 
 export const navigateToGroups = push(Routes.GROUPS);
+
+export const navigateToGroupDetails = compose(push, getGroupUrl);
