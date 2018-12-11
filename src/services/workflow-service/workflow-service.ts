@@ -9,6 +9,7 @@ import { ApiActions } from '~/services/api/api-actions';
 import { LinkService } from '~/services/link-service/link-service';
 import { FilterBuilder } from '~/services/api/filter-builder';
 import { LinkClass } from '~/models/link';
+import { OrderBuilder } from '~/services/api/order-builder';
 
 export class WorkflowService extends CommonResourceService<WorkflowResource> {
 
@@ -35,7 +36,11 @@ export class WorkflowService extends CommonResourceService<WorkflowResource> {
 
             filters: new FilterBuilder()
                 .addIn('uuid', presetUuids)
-                .getFilters()
+                .getFilters(),
+
+            order: new OrderBuilder<WorkflowResource>()
+                .addAsc('name')
+                .getOrder(),
 
         });
 
