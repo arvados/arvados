@@ -7,8 +7,7 @@ import { bindDataExplorerActions } from '~/store/data-explorer/data-explorer-act
 import { RootState } from '~/store/store';
 import { ServiceRepository } from "~/services/services";
 import { dialogActions } from '~/store/dialog/dialog-actions';
-import { startSubmit, reset, stopSubmit } from "redux-form";
-import { getCommonResourceServiceError, CommonResourceServiceError } from "~/services/common-service/common-resource-service";
+import { startSubmit, reset } from "redux-form";
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { UserResource } from "~/models/user";
 import { getResource } from '~/store/resources/resources';

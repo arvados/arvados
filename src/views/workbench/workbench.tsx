@@ -77,6 +77,8 @@ import { CreateUserDialog } from '~/views-components/dialog-forms/create-user-di
 import { HelpApiClientAuthorizationDialog } from '~/views-components/api-client-authorizations-dialog/help-dialog';
 import { GroupsPanel } from '~/views/groups-panel/groups-panel';
 import { CreateGroupDialog } from '~/views-components/dialog-forms/create-group-dialog';
+import { RemoveGroupDialog } from '~/views-components/groups-dialog/remove-dialog';
+import { GroupAttributesDialog } from '~/views-components/groups-dialog/attributes-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -181,6 +183,7 @@ export const WorkbenchPanel =
             <CurrentTokenDialog />
             <FileRemoveDialog />
             <FilesUploadCollectionDialog />
+            <GroupAttributesDialog />
             <HelpApiClientAuthorizationDialog />
             <MoveCollectionDialog />
             <MoveProcessDialog />
@@ -193,6 +196,7 @@ export const WorkbenchPanel =
             <ProjectPropertiesDialog />
             <RemoveApiClientAuthorizationDialog />
             <RemoveComputeNodeDialog />
+            <RemoveGroupDialog />
             <RemoveKeepServiceDialog />
             <RemoveProcessDialog />
             <RemoveRepositoryDialog />

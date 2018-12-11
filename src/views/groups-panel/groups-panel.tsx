@@ -15,6 +15,12 @@ import { ResourceName } from '~/views-components/data-explorer/renderers';
 import { createTree } from '~/models/tree';
 import { GROUPS_PANEL_ID, openCreateGroupDialog } from '~/store/groups-panel/groups-panel-actions';
 import { noop } from 'lodash/fp';
+import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
+import { getResource, ResourcesState } from '~/store/resources/resources';
+import { GroupResource } from '~/models/group';
+import { RootState } from '~/store/store';
+import { Dispatch } from 'redux';
+import { openContextMenu } from '~/store/context-menu/context-menu-actions';
 
 export enum GroupsPanelColumnNames {
     GROUP = "Name",
@@ -47,15 +53,25 @@ export const groupsPanelColumns: DataColumns<string> = [
     },
 ];
 
+const mapStateToProps = (state: RootState) => {
+    return {
+        resources: state.resources
+    };
+};
+
+const mapDispatchToProps = (dispatch: Dispatch) => ({
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: any) => dispatch<any>(openContextMenu(event, item)),
+    onNewGroup: openCreateGroupDialog
+});
+
 export interface GroupsPanelProps {
     onNewGroup: () => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: any) => void;
+    resources: ResourcesState;
 }
 
 export const GroupsPanel = connect(
-    null,
-    {
-        onNewGroup: openCreateGroupDialog
-    }
+    mapStateToProps, mapDispatchToProps
 )(
     class GroupsPanel extends React.Component<GroupsPanelProps> {
 
@@ -65,7 +81,7 @@ export const GroupsPanel = connect(
                     id={GROUPS_PANEL_ID}
                     onRowClick={noop}
                     onRowDoubleClick={noop}
-                    onContextMenu={noop}
+                    onContextMenu={this.handleContextMenu}
                     contextMenuColumn={true}
                     hideColumnSelector
                     actions={
@@ -79,5 +95,18 @@ export const GroupsPanel = connect(
                         </Grid>
                     } />
             );
+        }
+        
+        handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
+            const resource = getResource<GroupResource>(resourceUuid)(this.props.resources);
+            if (resource) {
+                this.props.onContextMenu(event, {
+                    name: '',
+                    uuid: resource.uuid,
+                    ownerUuid: resource.ownerUuid,
+                    kind: resource.kind,
+                    menuKind: ContextMenuKind.GROUPS
+                });
+            }
         }
     });
