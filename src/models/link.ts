@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Resource } from "./resource";
+import { Resource, ResourceKind } from "./resource";
 import { TagProperty } from "~/models/tag";
 
 export interface LinkResource extends Resource {
@@ -11,6 +11,7 @@ export interface LinkResource extends Resource {
     linkClass: string;
     name: string;
     properties: TagProperty;
+    kind: ResourceKind.LINK;
 }
 
 export enum LinkClass {

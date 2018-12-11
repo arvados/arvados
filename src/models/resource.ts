@@ -26,6 +26,7 @@ export enum ResourceKind {
     CONTAINER = "arvados#container",
     CONTAINER_REQUEST = "arvados#containerRequest",
     GROUP = "arvados#group",
+    LINK = "arvados#link",
     LOG = "arvados#log",
     NODE = "arvados#node",
     PROCESS = "arvados#containerRequest",
