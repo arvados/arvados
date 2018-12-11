@@ -12,7 +12,7 @@ import { GroupsPanelActions } from '~/store/groups-panel/groups-panel-actions';
 import { FilterBuilder } from '~/services/api/filter-builder';
 import { updateResources } from '~/store/resources/resources-actions';
 import { OrderBuilder, OrderDirection } from '~/services/api/order-builder';
-import { GroupResource } from '~/models/group';
+import { GroupResource, GroupClass } from '~/models/group';
 import { SortDirection } from '~/components/data-table/data-column';
 import { GroupsPanelColumnNames } from '~/views/groups-panel/groups-panel';
 
@@ -46,7 +46,7 @@ export class GroupsPanelMiddlewareService extends DataExplorerMiddlewareService 
                 }
 
                 const filters = new FilterBuilder()
-                    .addEqual('groupClass', null)
+                    .addNotIn('groupClass', [GroupClass.PROJECT])
                     .addILike('name', dataExplorer.searchValue)
                     .getFilters();
 
