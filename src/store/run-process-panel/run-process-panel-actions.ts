@@ -6,8 +6,8 @@ import { Dispatch } from 'redux';
 import { unionize, ofType, UnionOf } from "~/common/unionize";
 import { ServiceRepository } from "~/services/services";
 import { RootState } from '~/store/store';
-import { WorkflowResource } from '~/models/workflow';
-import { getFormValues } from 'redux-form';
+import { WorkflowResource, getWorkflowInputs, parseWorkflowDefinition } from '~/models/workflow';
+import { getFormValues, initialize } from 'redux-form';
 import { RUN_PROCESS_BASIC_FORM, RunProcessBasicFormData } from '~/views/run-process-panel/run-process-basic-form';
 import { RUN_PROCESS_INPUTS_FORM } from '~/views/run-process-panel/run-process-inputs-form';
 import { WorkflowInputsData } from '~/models/workflow';
@@ -25,6 +25,8 @@ export const runProcessPanelActions = unionize({
     SET_STEP_CHANGED: ofType<boolean>(),
     SET_WORKFLOWS: ofType<WorkflowResource[]>(),
     SET_SELECTED_WORKFLOW: ofType<WorkflowResource>(),
+    SET_WORKFLOW_PRESETS: ofType<WorkflowResource[]>(),
+    SELECT_WORKFLOW_PRESET: ofType<WorkflowResource>(),
     SEARCH_WORKFLOWS: ofType<string>(),
     RESET_RUN_PROCESS_PANEL: ofType<{}>(),
 });
@@ -76,14 +78,33 @@ export const setWorkflow = (workflow: WorkflowResource, isWorkflowChanged = true
         if (isStepChanged && isWorkflowChanged) {
             dispatch(runProcessPanelActions.SET_STEP_CHANGED(false));
             dispatch(runProcessPanelActions.SET_SELECTED_WORKFLOW(workflow));
+            dispatch<any>(loadPresets(workflow.uuid));
         }
         if (!isWorkflowChanged) {
             dispatch(runProcessPanelActions.SET_SELECTED_WORKFLOW(workflow));
+            dispatch<any>(loadPresets(workflow.uuid));
         }
     };
 
+const loadPresets = (workflowUuid: string) =>
+    async (dispatch: Dispatch<any>, _: () => RootState, { workflowService }: ServiceRepository) => {
+        const { items } = await workflowService.presets(workflowUuid);
+        dispatch(runProcessPanelActions.SET_WORKFLOW_PRESETS(items));
+    };
+
+export const selectPreset = (preset: WorkflowResource) =>
+    (dispatch: Dispatch<any>) => {
+        dispatch(runProcessPanelActions.SELECT_WORKFLOW_PRESET(preset));
+        const inputs = getWorkflowInputs(parseWorkflowDefinition(preset)) || [];
+        const values = inputs.reduce((values, input) => ({
+            ...values,
+            [input.id]: input.default,
+        }), {});
+        dispatch(initialize(RUN_PROCESS_INPUTS_FORM, values));
+    };
+
 export const goToStep = (step: number) =>
-    (dispatch: Dispatch, getState: () => RootState) => {
+    (dispatch: Dispatch) => {
         if (step === 1) {
             dispatch(runProcessPanelActions.SET_STEP_CHANGED(true));
         }

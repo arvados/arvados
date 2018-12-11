@@ -17,4 +17,5 @@ export enum LinkClass {
     STAR = 'star',
     TAG = 'tag',
     PERMISSION = 'permission',
+    PRESET = 'preset',
 }
