@@ -23,6 +23,7 @@ export interface ProcessPanelRootActionProps {
     onContextMenu: (event: React.MouseEvent<HTMLElement>, process: Process) => void;
     onToggle: (status: string) => void;
     openProcessInputDialog: (uuid: string) => void;
+    navigateToOutput: (uuid: string) => void;
 }
 
 export type ProcessPanelRootProps = ProcessPanelRootDataProps & ProcessPanelRootActionProps;
@@ -34,7 +35,8 @@ export const ProcessPanelRoot = ({ process, ...props }: ProcessPanelRootProps) =
                 <ProcessInformationCard
                     process={process}
                     onContextMenu={event => props.onContextMenu(event, process)}
-                    openProcessInputDialog={props.openProcessInputDialog} />
+                    openProcessInputDialog={props.openProcessInputDialog}
+                    navigateToOutput={props.navigateToOutput} />
             </Grid>
             <Grid item sm={12} md={5}>
                 <SubprocessesCard
