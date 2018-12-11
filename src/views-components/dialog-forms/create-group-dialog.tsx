@@ -4,16 +4,22 @@
 
 import * as React from 'react';
 import { compose } from "redux";
-import { reduxForm, InjectedFormProps } from 'redux-form';
+import { reduxForm, InjectedFormProps, Field, WrappedFieldArrayProps, FieldArray } from 'redux-form';
 import { withDialog, WithDialogProps } from "~/store/dialog/with-dialog";
 import { FormDialog } from '~/components/form-dialog/form-dialog';
-import { CREATE_GROUP_DIALOG, CREATE_GROUP_FORM } from '~/store/groups-panel/groups-panel-actions';
+import { CREATE_GROUP_DIALOG, CREATE_GROUP_FORM, createGroup, CreateGroupFormData, CREATE_GROUP_NAME_FIELD_NAME, CREATE_GROUP_USERS_FIELD_NAME } from '~/store/groups-panel/groups-panel-actions';
+import { TextField } from '~/components/text-field/text-field';
+import { maxLength } from '~/validators/max-length';
+import { require } from '~/validators/require';
+import { PeopleSelect, Person } from '~/views-components/sharing-dialog/people-select';
 
 export const CreateGroupDialog = compose(
     withDialog(CREATE_GROUP_DIALOG),
-    reduxForm<{}>({
+    reduxForm<CreateGroupFormData>({
         form: CREATE_GROUP_FORM,
-        onSubmit: (data, dispatch) => { return; }
+        onSubmit: (data, dispatch) => {
+            dispatch(createGroup(data));
+        }
     })
 )(
     (props: CreateGroupDialogComponentProps) =>
@@ -25,8 +31,32 @@ export const CreateGroupDialog = compose(
         />
 );
 
-type CreateGroupDialogComponentProps = WithDialogProps<{}> & InjectedFormProps<{}>;
+type CreateGroupDialogComponentProps = WithDialogProps<{}> & InjectedFormProps<CreateGroupFormData>;
 
-const CreateGroupFormFields = (props: CreateGroupDialogComponentProps) => <span>
-    CreateGroupFormFields
-</span>;
+const CreateGroupFormFields = () =>
+    <>
+        <GroupNameField />
+        <UsersField />
+    </>;
+
+const GroupNameField = () =>
+    <Field
+        name={CREATE_GROUP_NAME_FIELD_NAME}
+        component={TextField}
+        validate={GROUP_NAME_VALIDATION}
+        label="Name"
+        autoFocus={true} />;
+
+const GROUP_NAME_VALIDATION = [require, maxLength(255)];
+
+const UsersField = () =>
+    <FieldArray
+        name={CREATE_GROUP_USERS_FIELD_NAME}
+        component={UsersSelect} />;
+
+const UsersSelect = ({ fields }: WrappedFieldArrayProps<Person>) =>
+    <PeopleSelect
+        label='Enter email adresses '
+        items={fields.getAll() || []}
+        onSelect={fields.push}
+        onDelete={fields.remove} />;
