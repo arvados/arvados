@@ -35,6 +35,7 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
     const myAccountMatch = Routes.matchMyAccountRoute(pathname);
     const userMatch = Routes.matchUsersRoute(pathname);
     const groupsMatch = Routes.matchGroupsRoute(pathname);
+    const groupDetailsMatch = Routes.matchGroupDetailsRoute(pathname);
 
     if (projectMatch) {
         store.dispatch(WorkbenchActions.loadProject(projectMatch.params.id));
@@ -76,5 +77,7 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
         store.dispatch(WorkbenchActions.loadUsers);
     } else if (groupsMatch) {
         store.dispatch(WorkbenchActions.loadGroupsPanel);
+    } else if (groupDetailsMatch) {
+        store.dispatch(WorkbenchActions.loadGroupDetailsPanel(groupDetailsMatch.params.id));
     }
 };

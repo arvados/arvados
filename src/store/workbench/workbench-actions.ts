@@ -64,6 +64,7 @@ import { loadComputeNodesPanel } from '~/store/compute-nodes/compute-nodes-actio
 import { loadApiClientAuthorizationsPanel } from '~/store/api-client-authorizations/api-client-authorizations-actions';
 import * as groupPanelActions from '~/store/groups-panel/groups-panel-actions';
 import { groupsPanelColumns } from '~/views/groups-panel/groups-panel';
+import * as groupDetailsPanelActions from '~/store/group-details-panel/group-details-panel-actions';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -453,6 +454,13 @@ export const loadGroupsPanel = handleFirstTimeLoad(
         dispatch(setBreadcrumbs([{ label: 'Groups' }]));
         dispatch(groupPanelActions.loadGroupsPanel());
     });
+
+export const loadGroupDetailsPanel = (groupUuid: string) =>
+    handleFirstTimeLoad(
+        (dispatch: Dispatch<any>) => {
+            dispatch(setBreadcrumbs([{ label: 'Groups' }, { label: groupUuid }]));
+            dispatch(groupDetailsPanelActions.loadGroupDetailsPanel(groupUuid));
+        });
 
 const finishLoadingProject = (project: GroupContentsResource | string) =>
     async (dispatch: Dispatch<any>) => {
