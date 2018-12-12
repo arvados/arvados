@@ -12,12 +12,8 @@ import { logout } from '~/store/auth/auth-action';
 import { RootState } from "~/store/store";
 import { openCurrentTokenDialog } from '~/store/current-token-dialog/current-token-dialog-actions';
 import { openRepositoriesPanel } from "~/store/repositories/repositories-actions";
-import { 
-    navigateToSshKeys, navigateToKeepServices, navigateToComputeNodes,
-    navigateToApiClientAuthorizations, navigateToMyAccount
-} from '~/store/navigation/navigation-action';
+import * as NavigationAction from '~/store/navigation/navigation-action';
 import { openVirtualMachines } from "~/store/virtual-machines/virtual-machines-actions";
-import { navigateToUsers } from '~/store/navigation/navigation-action';
 
 interface AccountMenuProps {
     user?: User;
@@ -40,12 +36,13 @@ export const AccountMenu = connect(mapStateToProps)(
                 <MenuItem onClick={() => dispatch(openVirtualMachines())}>Virtual Machines</MenuItem>
                 <MenuItem onClick={() => dispatch(openRepositoriesPanel())}>Repositories</MenuItem>
                 <MenuItem onClick={() => dispatch(openCurrentTokenDialog)}>Current token</MenuItem>
-                <MenuItem onClick={() => dispatch(navigateToSshKeys)}>Ssh Keys</MenuItem>
-                <MenuItem onClick={() => dispatch(navigateToUsers)}>Users</MenuItem>
-                { user.isAdmin && <MenuItem onClick={() => dispatch(navigateToApiClientAuthorizations)}>Api Tokens</MenuItem> }
-                { user.isAdmin && <MenuItem onClick={() => dispatch(navigateToKeepServices)}>Keep Services</MenuItem> }
-                { user.isAdmin && <MenuItem onClick={() => dispatch(navigateToComputeNodes)}>Compute Nodes</MenuItem> }
-                <MenuItem onClick={() => dispatch(navigateToMyAccount)}>My account</MenuItem>
+                <MenuItem onClick={() => dispatch(NavigationAction.navigateToSshKeys)}>Ssh Keys</MenuItem>
+                <MenuItem onClick={() => dispatch(NavigationAction.navigateToUsers)}>Users</MenuItem>
+                { user.isAdmin && <MenuItem onClick={() => dispatch(NavigationAction.navigateToApiClientAuthorizations)}>Api Tokens</MenuItem> }
+                { user.isAdmin && <MenuItem onClick={() => dispatch(NavigationAction.navigateToKeepServices)}>Keep Services</MenuItem> }
+                { user.isAdmin && <MenuItem onClick={() => dispatch(NavigationAction.navigateToComputeNodes)}>Compute Nodes</MenuItem> }
+                { user.isAdmin && <MenuItem onClick={() => dispatch(NavigationAction.navigateToLinks)}>Links</MenuItem> }
+                <MenuItem onClick={() => dispatch(NavigationAction.navigateToMyAccount)}>My account</MenuItem>
                 <MenuItem onClick={() => dispatch(logout())}>Logout</MenuItem>
             </DropdownMenu>
             : null);

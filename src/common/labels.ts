@@ -12,6 +12,10 @@ export const resourceLabel = (type: string) => {
             return "Project";
         case ResourceKind.PROCESS:
             return "Process";
+        case ResourceKind.USER:
+            return "User";
+        case ResourceKind.GROUP:
+            return "Group";
         default:
             return "Unknown";
     }

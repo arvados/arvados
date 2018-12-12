@@ -55,6 +55,7 @@ import { RepositoriesPanel } from '~/views/repositories-panel/repositories-panel
 import { KeepServicePanel } from '~/views/keep-service-panel/keep-service-panel';
 import { ComputeNodePanel } from '~/views/compute-node-panel/compute-node-panel';
 import { ApiClientAuthorizationPanel } from '~/views/api-client-authorization-panel/api-client-authorization-panel';
+import { LinkPanel } from '~/views/link-panel/link-panel';
 import { RepositoriesSampleGitDialog } from '~/views-components/repositories-sample-git-dialog/repositories-sample-git-dialog';
 import { RepositoryAttributesDialog } from '~/views-components/repository-attributes-dialog/repository-attributes-dialog';
 import { CreateRepositoryDialog } from '~/views-components/dialog-forms/create-repository-dialog';
@@ -64,11 +65,13 @@ import { PublicKeyDialog } from '~/views-components/ssh-keys-dialog/public-key-d
 import { RemoveApiClientAuthorizationDialog } from '~/views-components/api-client-authorizations-dialog/remove-dialog';
 import { RemoveComputeNodeDialog } from '~/views-components/compute-nodes-dialog/remove-dialog';
 import { RemoveKeepServiceDialog } from '~/views-components/keep-services-dialog/remove-dialog';
+import { RemoveLinkDialog } from '~/views-components/links-dialog/remove-dialog';
 import { RemoveSshKeyDialog } from '~/views-components/ssh-keys-dialog/remove-dialog';
 import { RemoveVirtualMachineDialog } from '~/views-components/virtual-machines-dialog/remove-dialog';
 import { AttributesApiClientAuthorizationDialog } from '~/views-components/api-client-authorizations-dialog/attributes-dialog';
 import { AttributesComputeNodeDialog } from '~/views-components/compute-nodes-dialog/attributes-dialog';
 import { AttributesKeepServiceDialog } from '~/views-components/keep-services-dialog/attributes-dialog';
+import { AttributesLinkDialog } from '~/views-components/links-dialog/attributes-dialog';
 import { AttributesSshKeyDialog } from '~/views-components/ssh-keys-dialog/attributes-dialog';
 import { VirtualMachineAttributesDialog } from '~/views-components/virtual-machines-dialog/attributes-dialog';
 import { UserPanel } from '~/views/user-panel/user-panel';
@@ -152,6 +155,7 @@ export const WorkbenchPanel =
                                 <Route path={Routes.COMPUTE_NODES} component={ComputeNodePanel} />
                                 <Route path={Routes.API_CLIENT_AUTHORIZATIONS} component={ApiClientAuthorizationPanel} />
                                 <Route path={Routes.MY_ACCOUNT} component={MyAccountPanel} />
+                                <Route path={Routes.LINKS} component={LinkPanel} />
                             </Switch>
                         </Grid>
                     </Grid>
@@ -164,6 +168,7 @@ export const WorkbenchPanel =
             <AttributesApiClientAuthorizationDialog />
             <AttributesComputeNodeDialog />
             <AttributesKeepServiceDialog />
+            <AttributesLinkDialog />
             <AttributesSshKeyDialog />
             <ChangeWorkflowDialog />
             <ContextMenu />
@@ -190,6 +195,7 @@ export const WorkbenchPanel =
             <RemoveApiClientAuthorizationDialog />
             <RemoveComputeNodeDialog />
             <RemoveKeepServiceDialog />
+            <RemoveLinkDialog />
             <RemoveProcessDialog />
             <RemoveRepositoryDialog />
             <RemoveSshKeyDialog />

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Grid, Typography, withStyles, Tooltip, IconButton, Checkbox } from '@material-ui/core';
+import { Grid, Typography, withStyles, Tooltip, IconButton, Checkbox, Button } from '@material-ui/core';
 import { FavoriteStar } from '../favorite-star/favorite-star';
 import { ResourceKind, TrashableResource } from '~/models/resource';
 import { ProjectIcon, CollectionIcon, ProcessIcon, DefaultIcon, WorkflowIcon, ShareIcon } from '~/components/icon/icon';
@@ -23,6 +23,9 @@ import { getResourceData } from "~/store/resources-data/resources-data";
 import { openSharingDialog } from '~/store/sharing-dialog/sharing-dialog-actions';
 import { UserResource } from '~/models/user';
 import { toggleIsActive, toggleIsAdmin } from '~/store/users/users-actions';
+import { LinkResource } from '~/models/link';
+import { navigateTo } from '~/store/navigation/navigation-action';
+import { Link } from 'react-router-dom';
 
 const renderName = (item: { name: string; uuid: string, kind: string }) =>
     <Grid container alignItems="center" wrap="nowrap" spacing={16}>
@@ -119,6 +122,7 @@ const renderFirstName = (item: { firstName: string }) => {
     return <Typography noWrap>{item.firstName}</Typography>;
 };
 
+// User Resources
 export const ResourceFirstName = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<UserResource>(props.uuid)(state.resources);
@@ -187,6 +191,60 @@ export const ResourceUsername = connect(
         return resource || { username: '' };
     })(renderUsername);
 
+// Links Resources
+const renderLinkName = (item: { name: string }) =>
+    <Typography noWrap>{item.name || '(none)'}</Typography>;
+
+export const ResourceLinkName = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<LinkResource>(props.uuid)(state.resources);
+        return resource || { name: '' };
+    })(renderLinkName);
+
+const renderLinkClass = (item: { linkClass: string }) =>
+    <Typography noWrap>{item.linkClass}</Typography>;
+
+export const ResourceLinkClass = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<LinkResource>(props.uuid)(state.resources);
+        return resource || { linkClass: '' };
+    })(renderLinkClass);
+
+const renderLinkTail = (dispatch: Dispatch, item: { uuid: string, tailUuid: string, tailKind: string }) =>
+    <Typography noWrap color="primary" onClick={() => dispatch<any>(navigateTo(item.uuid))}>
+        {resourceLabel(item.tailKind)}: {item.tailUuid}
+    </Typography>;
+
+export const ResourceLinkTail = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<LinkResource>(props.uuid)(state.resources);
+        return {
+            item: resource || { uuid: '', tailUuid: '', tailKind: ResourceKind.NONE }
+        };
+    })((props: { item: any } & DispatchProp<any>) =>
+        renderLinkTail(props.dispatch, props.item));
+
+const renderLinkHead = (dispatch: Dispatch, item: { uuid: string, headUuid: string, headKind: ResourceKind }) =>
+    <Typography noWrap color="primary" onClick={() => dispatch<any>(navigateTo(item.uuid))}>
+        {resourceLabel(item.headKind)}: {item.headUuid}
+    </Typography>;
+
+export const ResourceLinkHead = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<LinkResource>(props.uuid)(state.resources);
+        return {
+            item: resource || { uuid: '', headUuid: '', headKind: ResourceKind.NONE }
+        };
+    })((props: { item: any } & DispatchProp<any>) =>
+        renderLinkHead(props.dispatch, props.item));
+
+export const ResourceLinkUuid = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<LinkResource>(props.uuid)(state.resources);
+        return resource || { uuid: '' };
+    })(renderUuid);
+
+// Process Resources
 const resourceRunProcess = (dispatch: Dispatch, uuid: string) => {
     return (
         <div>

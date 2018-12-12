@@ -21,7 +21,8 @@ const isButtonVisible = ({ router }: RootState) => {
     return !Routes.matchWorkflowRoute(pathname) && !Routes.matchVirtualMachineRoute(pathname) &&
         !Routes.matchRepositoriesRoute(pathname) && !Routes.matchSshKeysRoute(pathname) &&
         !Routes.matchKeepServicesRoute(pathname) && !Routes.matchComputeNodesRoute(pathname) &&
-        !Routes.matchApiClientAuthorizationsRoute(pathname) && !Routes.matchUsersRoute(pathname);
+        !Routes.matchApiClientAuthorizationsRoute(pathname) && !Routes.matchUsersRoute(pathname) && 
+        !Routes.matchLinksRoute(pathname);
 };
 
 export const MainContentBar = connect((state: RootState) => ({

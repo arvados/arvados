@@ -77,3 +77,5 @@ export const navigateToComputeNodes = push(Routes.COMPUTE_NODES);
 export const navigateToUsers = push(Routes.USERS);
 
 export const navigateToApiClientAuthorizations = push(Routes.API_CLIENT_AUTHORIZATIONS);
+
+export const navigateToLinks = push(Routes.LINKS);
