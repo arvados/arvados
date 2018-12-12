@@ -39,15 +39,31 @@ func Detach(uuid string, args []string, stdout, stderr io.Writer) int {
 	return exitcode(stderr, detach(uuid, args, stdout, stderr))
 }
 func detach(uuid string, args []string, stdout, stderr io.Writer) error {
-	lockfile, err := os.OpenFile(filepath.Join(lockdir, lockprefix+uuid+locksuffix), os.O_CREATE|os.O_RDWR, 0700)
+	lockfile, err := func() (*os.File, error) {
+		// We must hold the dir-level lock between
+		// opening/creating the lockfile and acquiring LOCK_EX
+		// on it, to avoid racing with the ListProcess's
+		// alive-checking and garbage collection.
+		dirlock, err := lockall()
+		if err != nil {
+			return nil, err
+		}
+		defer dirlock.Close()
+		lockfile, err := os.OpenFile(filepath.Join(lockdir, lockprefix+uuid+locksuffix), os.O_CREATE|os.O_RDWR, 0700)
+		if err != nil {
+			return nil, err
+		}
+		err = syscall.Flock(int(lockfile.Fd()), syscall.LOCK_EX|syscall.LOCK_NB)
+		if err != nil {
+			lockfile.Close()
+			return nil, err
+		}
+		return lockfile, nil
+	}()
 	if err != nil {
 		return err
 	}
 	defer lockfile.Close()
-	err = syscall.Flock(int(lockfile.Fd()), syscall.LOCK_EX|syscall.LOCK_NB)
-	if err != nil {
-		return err
-	}
 	lockfile.Truncate(0)
 
 	outfile, err := ioutil.TempFile("", "crunch-run-"+uuid+"-stdout-")
@@ -157,19 +173,24 @@ func ListProcesses(stdout, stderr io.Writer) int {
 		}
 		defer f.Close()
 
-		// TODO: Do this check without risk of disrupting lock
-		// acquisition during races, e.g., by connecting to a
-		// unix socket or checking /proc/$pid/fd/$n ->
-		// lockfile.
+		// Ensure other processes don't acquire this lockfile
+		// after we have decided it is abandoned but before we
+		// have deleted it.
+		dirlock, err := lockall()
+		if err != nil {
+			return err
+		}
 		err = syscall.Flock(int(f.Fd()), syscall.LOCK_SH|syscall.LOCK_NB)
 		if err == nil {
 			// lockfile is stale
 			err := os.Remove(path)
+			dirlock.Close()
 			if err != nil {
 				fmt.Fprintln(stderr, err)
 			}
 			return nil
 		}
+		dirlock.Close()
 
 		var pi procinfo
 		err = json.NewDecoder(f).Decode(&pi)
@@ -195,4 +216,22 @@ func exitcode(stderr io.Writer, err error) int {
 		return 1
 	}
 	return 0
+}
+
+// Acquire a dir-level lock. Must be held while creating or deleting
+// container-specific lockfiles, to avoid races during the intervals
+// when those container-specific lockfiles are open but not locked.
+//
+// Caller releases the lock by closing the returned file.
+func lockall() (*os.File, error) {
+	f, err := os.OpenFile(filepath.Join(lockdir, lockprefix+"all"+locksuffix), os.O_CREATE|os.O_RDWR, 0700)
+	if err != nil {
+		return nil, err
+	}
+	err = syscall.Flock(int(f.Fd()), syscall.LOCK_EX)
+	if err != nil {
+		f.Close()
+		return nil, err
+	}
+	return f, nil
 }
