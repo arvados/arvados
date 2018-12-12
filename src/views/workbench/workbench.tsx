@@ -79,6 +79,7 @@ import { GroupsPanel } from '~/views/groups-panel/groups-panel';
 import { CreateGroupDialog } from '~/views-components/dialog-forms/create-group-dialog';
 import { RemoveGroupDialog } from '~/views-components/groups-dialog/remove-dialog';
 import { GroupAttributesDialog } from '~/views-components/groups-dialog/attributes-dialog';
+import { GroupDetailsPanel } from '~/views/group-details-panel/group-details-panel';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -157,7 +158,7 @@ export const WorkbenchPanel =
                                 <Route path={Routes.API_CLIENT_AUTHORIZATIONS} component={ApiClientAuthorizationPanel} />
                                 <Route path={Routes.MY_ACCOUNT} component={MyAccountPanel} />
                                 <Route path={Routes.GROUPS} component={GroupsPanel} />
-                                <Route path={Routes.GROUP_DETAILS} render={() => <h1>Group details</h1>} />
+                                <Route path={Routes.GROUP_DETAILS} component={GroupDetailsPanel} />
                             </Switch>
                         </Grid>
                     </Grid>

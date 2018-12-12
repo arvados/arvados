@@ -65,6 +65,7 @@ import { loadApiClientAuthorizationsPanel } from '~/store/api-client-authorizati
 import * as groupPanelActions from '~/store/groups-panel/groups-panel-actions';
 import { groupsPanelColumns } from '~/views/groups-panel/groups-panel';
 import * as groupDetailsPanelActions from '~/store/group-details-panel/group-details-panel-actions';
+import { groupDetailsPanelColumns } from '~/views/group-details-panel/group-details-panel';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -100,6 +101,7 @@ export const loadWorkbench = () =>
                 dispatch(searchResultsPanelActions.SET_COLUMNS({ columns: searchResultsPanelColumns }));
                 dispatch(userBindedActions.SET_COLUMNS({ columns: userPanelColumns }));
                 dispatch(groupPanelActions.GroupsPanelActions.SET_COLUMNS({ columns: groupsPanelColumns }));
+                dispatch(groupDetailsPanelActions.GroupDetailsPanelActions.SET_COLUMNS({columns: groupDetailsPanelColumns}));
                 dispatch<any>(initSidePanelTree());
                 if (router.location) {
                     const match = matchRootRoute(router.location.pathname);
