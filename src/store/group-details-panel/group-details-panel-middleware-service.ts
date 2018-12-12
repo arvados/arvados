@@ -43,11 +43,6 @@ export class GroupDetailsPanelMiddlewareService extends DataExplorerMiddlewareSe
 
                 api.dispatch(updateResources(permissions.items));
 
-                api.dispatch(GroupDetailsPanelActions.SET_ITEMS({
-                    ...listResultsToDataExplorerItemsMeta(permissions),
-                    items: permissions.items.map(item => item.uuid),
-                }));
-
                 const users = await this.services.userService.list({
 
                     filters: new FilterBuilder()
@@ -55,6 +50,11 @@ export class GroupDetailsPanelMiddlewareService extends DataExplorerMiddlewareSe
                         .getFilters()
 
                 });
+
+                api.dispatch(GroupDetailsPanelActions.SET_ITEMS({
+                    ...listResultsToDataExplorerItemsMeta(permissions),
+                    items: users.items.map(item => item.uuid),
+                }));
 
                 api.dispatch(updateResources(users.items));
 
