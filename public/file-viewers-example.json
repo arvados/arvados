@@ -1,0 +1,24 @@
+[
+    {
+        "name": "File browser",
+        "extensions": [
+            ".txt",
+            ".zip"
+        ],
+        "url": "https://doc.arvados.org",
+        "filePathParam": "filePath"
+    },
+    {
+        "name": "Collection browser",
+        "extensions": [],
+        "collections": true,
+        "url": "https://doc.arvados.org",
+        "filePathParam": "collectionPath"
+    },
+    {
+        "name": "Universal browser",
+        "collections": true,
+        "url": "https://doc.arvados.org",
+        "filePathParam": "filePath"
+    }
+]
