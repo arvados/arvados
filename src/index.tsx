@@ -56,6 +56,7 @@ import { virtualMachineActionSet } from '~/views-components/context-menu/action-
 import { userActionSet } from '~/views-components/context-menu/action-sets/user-action-set';
 import { computeNodeActionSet } from '~/views-components/context-menu/action-sets/compute-node-action-set';
 import { apiClientAuthorizationActionSet } from '~/views-components/context-menu/action-sets/api-client-authorization-action-set';
+import { linkActionSet } from '~/views-components/context-menu/action-sets/link-action-set';
 
 console.log(`Starting arvados [${getBuildInfo()}]`);
 
@@ -77,6 +78,7 @@ addMenuActionSet(ContextMenuKind.SSH_KEY, sshKeyActionSet);
 addMenuActionSet(ContextMenuKind.VIRTUAL_MACHINE, virtualMachineActionSet);
 addMenuActionSet(ContextMenuKind.KEEP_SERVICE, keepServiceActionSet);
 addMenuActionSet(ContextMenuKind.USER, userActionSet);
+addMenuActionSet(ContextMenuKind.LINK, linkActionSet);
 addMenuActionSet(ContextMenuKind.NODE, computeNodeActionSet);
 addMenuActionSet(ContextMenuKind.API_CLIENT_AUTHORIZATION, apiClientAuthorizationActionSet);
 

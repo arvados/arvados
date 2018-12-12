@@ -200,6 +200,8 @@ export const resourceKindToContextMenuKind = (uuid: string) => {
             return ContextMenuKind.PROCESS_RESOURCE;
         case ResourceKind.USER:
             return ContextMenuKind.ROOT_PROJECT;
+        case ResourceKind.LINK:
+            return ContextMenuKind.LINK;
         default:
             return;
     }

@@ -50,6 +50,8 @@ import { UserMiddlewareService } from '~/store/users/user-panel-middleware-servi
 import { USERS_PANEL_ID } from '~/store/users/users-actions';
 import { computeNodesReducer } from '~/store/compute-nodes/compute-nodes-reducer';
 import { apiClientAuthorizationsReducer } from '~/store/api-client-authorizations/api-client-authorizations-reducer';
+import { LINK_PANEL_ID } from '~/store/link-panel/link-panel-actions';
+import { LinkMiddlewareService } from '~/store/link-panel/link-panel-middleware-service';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -84,7 +86,9 @@ export function configureStore(history: History, services: ServiceRepository): R
     const userPanelMiddleware = dataExplorerMiddleware(
         new UserMiddlewareService(services, USERS_PANEL_ID)
     );
-
+    const linkPanelMiddleware = dataExplorerMiddleware(
+        new LinkMiddlewareService(services, LINK_PANEL_ID)
+    );
     const middlewares: Middleware[] = [
         routerMiddleware(history),
         thunkMiddleware.withExtraArgument(services),
@@ -94,7 +98,8 @@ export function configureStore(history: History, services: ServiceRepository): R
         searchResultsPanelMiddleware,
         sharedWithMePanelMiddleware,
         workflowPanelMiddleware,
-        userPanelMiddleware
+        userPanelMiddleware,
+        linkPanelMiddleware
     ];
     const enhancer = composeEnhancers(applyMiddleware(...middlewares));
     return createStore(rootReducer, enhancer);

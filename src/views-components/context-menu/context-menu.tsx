@@ -75,5 +75,6 @@ export enum ContextMenuKind {
     VIRTUAL_MACHINE = "VirtualMachine",
     KEEP_SERVICE = "KeepService",
     USER = "User",
+    LINK = "Link",
     NODE = "Node"
 }

@@ -77,7 +77,8 @@ enum ResourcePrefix {
     KEEP_SERVICES = 'keep_services',
     COMPUTE_NODES = 'nodes',
     USERS = 'users',
-    API_CLIENT_AUTHORIZATIONS = 'api_client_authorizations'
+    API_CLIENT_AUTHORIZATIONS = 'api_client_authorizations',
+    LINKS = 'links'
 }
 
 enum KeepServiceData {
@@ -100,9 +101,14 @@ enum ApiClientAuthorizationsData {
     DEFAULT_OWNER_UUID = 'default_owner_uuid'
 }
 
-type AdvanceResourceKind = CollectionData | ProcessData | ProjectData | RepositoryData | SshKeyData | VirtualMachineData | KeepServiceData | ComputeNodeData | ApiClientAuthorizationsData | UserData;
+enum LinkData {
+    LINK = 'link',
+    PROPERTIES = 'properties'
+}
+
+type AdvanceResourceKind = CollectionData | ProcessData | ProjectData | RepositoryData | SshKeyData | VirtualMachineData | KeepServiceData | ComputeNodeData | ApiClientAuthorizationsData | UserData | LinkData;
 type AdvanceResourcePrefix = GroupContentsResourcePrefix | ResourcePrefix;
-type AdvanceResponseData = ContainerRequestResource | ProjectResource | CollectionResource | RepositoryResource | SshKeyResource | VirtualMachinesResource | KeepServiceResource | NodeResource | ApiClientAuthorization | UserResource | undefined;
+type AdvanceResponseData = ContainerRequestResource | ProjectResource | CollectionResource | RepositoryResource | SshKeyResource | VirtualMachinesResource | KeepServiceResource | NodeResource | ApiClientAuthorization | UserResource | LinkResource | undefined;
 
 export const openAdvancedTabDialog = (uuid: string) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
@@ -263,6 +269,22 @@ export const openAdvancedTabDialog = (uuid: string) =>
                     property: dataApiClientAuthorization!.defaultOwnerUuid
                 });
                 dispatch<any>(initAdvancedTabDialog(advanceDataApiClientAuthorization));
+                break;
+            case ResourceKind.LINK:
+                const linkResources = getState().resources;
+                const dataLink = getResource<LinkResource>(uuid)(linkResources);
+                const advanceDataLink = advancedTabData({
+                    uuid,
+                    metadata: '',
+                    user: '',
+                    apiResponseKind: linkApiResponse,
+                    data: dataLink,
+                    resourceKind: LinkData.LINK,
+                    resourcePrefix: ResourcePrefix.LINKS,
+                    resourceKindProperty: LinkData.PROPERTIES,
+                    property: dataLink!.properties
+                });
+                dispatch<any>(initAdvancedTabDialog(advanceDataLink));
                 break;
             default:
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Could not open advanced tab for this resource.", hideDuration: 2000, kind: SnackbarKind.ERROR }));
@@ -581,6 +603,28 @@ const apiClientAuthorizationApiResponse = (apiResponse: ApiClientAuthorization) 
 "updated_at": "${stringify(updatedAt)}",
 "default_owner_uuid": "${stringify(defaultOwnerUuid)}",
 "scopes": "${JSON.stringify(scopes, null, 4)}"`;
+
+    return response;
+};
+
+const linkApiResponse = (apiResponse: LinkResource) => {
+    const {
+        uuid, name, headUuid, properties, headKind, tailUuid, tailKind, linkClass,
+        ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid
+    } = apiResponse;
+    const response = `"uuid": "${uuid}",
+"name": "${name}",
+"head_uuid": "${headUuid}",
+"head_kind": "${headKind}",
+"tail_uuid": "${tailUuid}",
+"tail_kind": "${tailKind}",
+"link_class": "${linkClass}",
+"owner_uuid": "${ownerUuid}",
+"created_at": "${stringify(createdAt)}",
+"modified_at": ${stringify(modifiedAt)},
+"modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
+"modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
+"properties": "${JSON.stringify(properties, null, 4)}"`;
 
     return response;
 };
