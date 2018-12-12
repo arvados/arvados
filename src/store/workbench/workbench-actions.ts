@@ -14,7 +14,7 @@ import { favoritePanelActions } from '~/store/favorite-panel/favorite-panel-acti
 import { projectPanelColumns } from '~/views/project-panel/project-panel';
 import { favoritePanelColumns } from '~/views/favorite-panel/favorite-panel';
 import { matchRootRoute } from '~/routes/routes';
-import { setSidePanelBreadcrumbs, setProcessBreadcrumbs, setSharedWithMeBreadcrumbs, setTrashBreadcrumbs, setBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions';
+import { setSidePanelBreadcrumbs, setProcessBreadcrumbs, setSharedWithMeBreadcrumbs, setTrashBreadcrumbs, setBreadcrumbs, setGroupDetailsBreadcrumbs, setGroupsBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions';
 import { navigateToProject } from '~/store/navigation/navigation-action';
 import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
 import { ServiceRepository } from '~/services/services';
@@ -451,14 +451,15 @@ export const loadApiClientAuthorizations = handleFirstTimeLoad(
 
 export const loadGroupsPanel = handleFirstTimeLoad(
     (dispatch: Dispatch<any>) => {
-        dispatch(setBreadcrumbs([{ label: 'Groups' }]));
+        dispatch(setGroupsBreadcrumbs());
         dispatch(groupPanelActions.loadGroupsPanel());
     });
+
 
 export const loadGroupDetailsPanel = (groupUuid: string) =>
     handleFirstTimeLoad(
         (dispatch: Dispatch<any>) => {
-            dispatch(setBreadcrumbs([{ label: 'Groups' }, { label: groupUuid }]));
+            dispatch(setGroupDetailsBreadcrumbs(groupUuid));
             dispatch(groupDetailsPanelActions.loadGroupDetailsPanel(groupUuid));
         });
 

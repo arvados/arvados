@@ -11,6 +11,7 @@ import { SidePanelTreeCategory } from '../side-panel-tree/side-panel-tree-action
 import { Routes, getProcessUrl, getProcessLogUrl, getGroupUrl } from '~/routes/routes';
 import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
+import { GROUPS_PANEL_LABEL } from '~/store/breadcrumbs/breadcrumbs-actions';
 
 export const navigateTo = (uuid: string) =>
     async (dispatch: Dispatch) => {
@@ -30,6 +31,8 @@ export const navigateTo = (uuid: string) =>
             dispatch(navigateToWorkflows);
         } else if (uuid === SidePanelTreeCategory.TRASH) {
             dispatch(navigateToTrash);
+        } else if (uuid === GROUPS_PANEL_LABEL) {
+            dispatch(navigateToGroups);
         }
     };
 
