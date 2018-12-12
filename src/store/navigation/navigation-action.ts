@@ -21,6 +21,8 @@ export const navigateTo = (uuid: string) =>
             dispatch<any>(navigateToCollection(uuid));
         } else if (kind === ResourceKind.CONTAINER_REQUEST) {
             dispatch<any>(navigateToProcess(uuid));
+        } else if (kind === ResourceKind.VIRTUAL_MACHINE) {
+            dispatch<any>(navigateToAdminVirtualMachines);
         }
         if (uuid === SidePanelTreeCategory.FAVORITES) {
             dispatch<any>(navigateToFavorites);

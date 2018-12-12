@@ -37,7 +37,6 @@ export const linkPanelColumns: DataColumns<string> = [
         name: LinkPanelColumnNames.LINK_CLASS,
         selected: true,
         configurable: true,
-        // sortDirection: SortDirection.NONE,
         filters: createTree(),
         render: uuid => <ResourceLinkClass uuid={uuid} />
     },
@@ -45,7 +44,6 @@ export const linkPanelColumns: DataColumns<string> = [
         name: LinkPanelColumnNames.TAIL,
         selected: true,
         configurable: true,
-        // sortDirection: SortDirection.NONE,
         filters: createTree(),
         render: uuid => <ResourceLinkTail uuid={uuid} />
     },
@@ -53,7 +51,6 @@ export const linkPanelColumns: DataColumns<string> = [
         name: LinkPanelColumnNames.HEAD,
         selected: true,
         configurable: true,
-        // sortDirection: SortDirection.NONE,
         filters: createTree(),
         render: uuid => <ResourceLinkHead uuid={uuid} />
     },
@@ -61,7 +58,6 @@ export const linkPanelColumns: DataColumns<string> = [
         name: LinkPanelColumnNames.UUID,
         selected: true,
         configurable: true,
-        // sortDirection: SortDirection.NONE,
         filters: createTree(),
         render: uuid => <ResourceLinkUuid uuid={uuid} />
     }

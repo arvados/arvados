@@ -16,6 +16,8 @@ export const resourceLabel = (type: string) => {
             return "User";
         case ResourceKind.GROUP:
             return "Group";
+        case ResourceKind.VIRTUAL_MACHINE:
+            return "Virtual Machine";
         default:
             return "Unknown";
     }

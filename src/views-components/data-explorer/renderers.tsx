@@ -210,9 +210,23 @@ export const ResourceLinkClass = connect(
         return resource || { linkClass: '' };
     })(renderLinkClass);
 
-const renderLinkTail = (dispatch: Dispatch, item: { uuid: string, tailUuid: string, tailKind: string }) =>
-    <Typography noWrap color="primary" onClick={() => dispatch<any>(navigateTo(item.uuid))}>
-        {resourceLabel(item.tailKind)}: {item.tailUuid}
+const renderLinkTail = (dispatch: Dispatch, item: { uuid: string, tailUuid: string, tailKind: string }) => {
+    const currentLabel = resourceLabel(item.tailKind);
+    const isUnknow = currentLabel === "Unknown";
+    return (<div>
+        { !isUnknow  ? (
+                renderLink(dispatch, item.tailUuid, currentLabel)
+            ) : (
+                <Typography noWrap color="default">
+                    {item.tailUuid}
+                </Typography>
+        )}
+    </div>);
+};
+
+const renderLink = (dispatch: Dispatch, uuid: string, label: string) =>
+    <Typography noWrap color="primary" style={{ 'cursor': 'pointer' }} onClick={() => dispatch<any>(navigateTo(uuid))}>
+        {label}: {uuid}
     </Typography>;
 
 export const ResourceLinkTail = connect(
@@ -225,9 +239,7 @@ export const ResourceLinkTail = connect(
         renderLinkTail(props.dispatch, props.item));
 
 const renderLinkHead = (dispatch: Dispatch, item: { uuid: string, headUuid: string, headKind: ResourceKind }) =>
-    <Typography noWrap color="primary" onClick={() => dispatch<any>(navigateTo(item.uuid))}>
-        {resourceLabel(item.headKind)}: {item.headUuid}
-    </Typography>;
+    renderLink(dispatch, item.headUuid, resourceLabel(item.headKind));
 
 export const ResourceLinkHead = connect(
     (state: RootState, props: { uuid: string }) => {
