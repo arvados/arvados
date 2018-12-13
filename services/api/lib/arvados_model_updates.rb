@@ -18,4 +18,21 @@ module ArvadosModelUpdates
       Thread.current[:anonymous_updater] = anonymous_updater_was
     end
   end
+
+  # ArvadosModel checks this to decide whether it should update the
+  # 'modified_at_uuid' field.
+  def timeless_updater
+    Thread.current[:timeless_updater] || false
+  end
+
+  def leave_modified_at_alone
+    timeless_updater_was = timeless_updater
+    begin
+      Thread.current[:timeless_updater] = true
+      yield
+    ensure
+      Thread.current[:timeless_updater] = timeless_updater_was
+    end
+  end
+
 end
