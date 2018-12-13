@@ -56,20 +56,20 @@ export const FileViewerActions = connect(mapStateToProps)(
     ({ fileUrl, viewers, onClick }: FileViewerActionProps & { onClick: () => void }) =>
         <>
             {viewers.map(viewer =>
-                <a
+                <ListItem
+                    button
+                    component='a'
                     key={viewer.name}
                     style={{ textDecoration: 'none' }}
                     href={fillViewerUrl(fileUrl, viewer)}
                     onClick={onClick}
                     target='_blank'>
-                    <ListItem button>
-                        <ListItemIcon>
-                            <OpenIcon />
-                        </ListItemIcon>
-                        <ListItemText>
-                            {viewer.name}
-                        </ListItemText>
-                    </ListItem>
-                </a>
+                    <ListItemIcon>
+                        <OpenIcon />
+                    </ListItemIcon>
+                    <ListItemText>
+                        {viewer.name}
+                    </ListItemText>
+                </ListItem>
             )}
         </>);
