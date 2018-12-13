@@ -39,4 +39,9 @@ export interface FileViewer {
      * `https://bam-viewer.com?filePath=/path/to/file`
      */
     filePathParam: string;
+
+    /**
+     * Icon that will display next to a label
+     */
+    iconUrl?: string;
 }

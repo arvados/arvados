@@ -6,7 +6,8 @@
             ".zip"
         ],
         "url": "https://doc.arvados.org",
-        "filePathParam": "filePath"
+        "filePathParam": "filePath",
+        "iconUrl": "https://material.io/tools/icons/static/icons/baseline-next_week-24px.svg"
     },
     {
         "name": "Collection browser",
