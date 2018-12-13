@@ -53,7 +53,11 @@ export class ContextMenu extends React.PureComponent<ContextMenuProps> {
                                             {item.name}
                                         </ListItemText>}
                                 </ListItem>)}
-                        {groupIndex < items.length - 1 && <Divider />}
+                        {
+                            items[groupIndex + 1] &&
+                            items[groupIndex + 1].length > 0 &&
+                            <Divider />
+                        }
                     </React.Fragment>)}
             </List>
         </Popover>;
