@@ -144,6 +144,23 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     assert_equal found.count, (found.select { |f| f.tail_uuid.match User.uuid_regex }).count
   end
 
+  test "filter links with 'is_a' operator includes remote objects" do
+    authorize_with :admin
+    get :index, {
+      filters: [
+        ['tail_uuid', 'is_a', 'arvados#user'],
+        ['link_class', '=', 'permission'],
+        ['name', '=', 'can_read'],
+        ['head_uuid', '=', collections(:foo_file).uuid],
+      ]
+    }
+    assert_response :success
+    found = assigns(:objects)
+    assert_not_equal 0, found.count
+    assert_includes(found.map(&:tail_uuid),
+                    users(:federated_active).uuid)
+  end
+
   test "filter links with 'is_a' operator with more than one" do
     authorize_with :admin
     get :index, {
