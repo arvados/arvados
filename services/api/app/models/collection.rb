@@ -287,7 +287,9 @@ class Collection < ArvadosModel
       # Use a different validation context to skip the 'old_versions_cannot_be_updated'
       # validator, as on this case it is legal to update some fields.
       leave_modified_by_user_alone do
-        c.save(context: :update_old_versions)
+        leave_modified_at_alone do
+          c.save(context: :update_old_versions)
+        end
       end
     end
   end
