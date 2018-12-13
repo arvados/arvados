@@ -8,7 +8,9 @@ import (
 	"errors"
 	"log"
 	"os/exec"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -27,6 +29,67 @@ type ConstraintsNotSatisfiableError struct {
 	AvailableTypes []arvados.InstanceType
 }
 
+var pdhRegexp = regexp.MustCompile(`^[0-9a-f]{32}\+(\d+)$`)
+
+// estimateDockerImageSize estimates how much disk space will be used
+// by a Docker image, given the PDH of a collection containing a
+// Docker image that was created by "arv-keepdocker".  Returns
+// estimated number of bytes of disk space that should be reserved.
+func estimateDockerImageSize(collectionPDH string) int64 {
+	m := pdhRegexp.FindStringSubmatch(collectionPDH)
+	if m == nil {
+		log.Printf("estimateDockerImageSize: '%v' did not match pdhRegexp, returning 0", collectionPDH)
+		return 0
+	}
+	n, err := strconv.ParseInt(m[1], 10, 64)
+	if err != nil || n < 122 {
+		log.Printf("estimateDockerImageSize: short manifest %v or error (%v), returning 0", n, err)
+		return 0
+	}
+	// To avoid having to fetch the collection, take advantage of
+	// the fact that the manifest storing a container image
+	// uploaded by arv-keepdocker has a predictable format, which
+	// allows us to estimate the size of the image based on just
+	// the size of the manifest.
+	//
+	// Use the following heuristic:
+	// - Start with the length of the mainfest (n)
+	// - Subtract 80 characters for the filename and file segment
+	// - Divide by 42 to get the number of block identifiers ('hash\+size\ ' is 32+1+8+1)
+	// - Assume each block is full, multiply by 64 MiB
+	return ((n - 80) / 42) * (64 * 1024 * 1024)
+}
+
+// EstimateScratchSpace estimates how much available disk space (in
+// bytes) is needed to run the container by summing the capacity
+// requested by 'tmp' mounts plus disk space required to load the
+// Docker image.
+func EstimateScratchSpace(ctr *arvados.Container) (needScratch int64) {
+	for _, m := range ctr.Mounts {
+		if m.Kind == "tmp" {
+			needScratch += m.Capacity
+		}
+	}
+
+	// Account for disk space usage by Docker, assumes the following behavior:
+	// - Layer tarballs are buffered to disk during "docker load".
+	// - Individual layer tarballs are extracted from buffered
+	// copy to the filesystem
+	dockerImageSize := estimateDockerImageSize(ctr.ContainerImage)
+
+	// The buffer is only needed during image load, so make sure
+	// the baseline scratch space at least covers dockerImageSize,
+	// and assume it will be released to the job afterwards.
+	if needScratch < dockerImageSize {
+		needScratch = dockerImageSize
+	}
+
+	// Now reserve space for the extracted image on disk.
+	needScratch += dockerImageSize
+
+	return
+}
+
 // ChooseInstanceType returns the cheapest available
 // arvados.InstanceType big enough to run ctr.
 func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) (best arvados.InstanceType, err error) {
@@ -35,12 +98,7 @@ func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) (best arvad
 		return
 	}
 
-	needScratch := int64(0)
-	for _, m := range ctr.Mounts {
-		if m.Kind == "tmp" {
-			needScratch += m.Capacity
-		}
-	}
+	needScratch := EstimateScratchSpace(ctr)
 
 	needVCPUs := ctr.RuntimeConstraints.VCPUs
 

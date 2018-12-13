@@ -229,12 +229,7 @@ func (disp *Dispatcher) checkSqueueForOrphans() {
 func (disp *Dispatcher) slurmConstraintArgs(container arvados.Container) []string {
 	mem := int64(math.Ceil(float64(container.RuntimeConstraints.RAM+container.RuntimeConstraints.KeepCacheRAM+disp.ReserveExtraRAM) / float64(1048576)))
 
-	var disk int64
-	for _, m := range container.Mounts {
-		if m.Kind == "tmp" {
-			disk += m.Capacity
-		}
-	}
+	disk := dispatchcloud.EstimateScratchSpace(&container)
 	disk = int64(math.Ceil(float64(disk) / float64(1048576)))
 	return []string{
 		fmt.Sprintf("--mem=%d", mem),
