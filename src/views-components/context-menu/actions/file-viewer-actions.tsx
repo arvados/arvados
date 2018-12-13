@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from "react";
-import { ListItemText, ListItem, ListItemIcon } from "@material-ui/core";
+import { ListItemText, ListItem, ListItemIcon, Icon } from "@material-ui/core";
 import { RootState } from '~/store/store';
 import { getNodeValue } from '~/models/tree';
 import { CollectionDirectory, CollectionFile, CollectionFileType } from '~/models/collection-file';
@@ -62,6 +62,9 @@ export const FileViewerActions = connect(mapStateToProps)(
                     onClick={onClick}
                     target='_blank'>
                     <ListItem button>
+                        <ListItemIcon>
+                            <Icon />
+                        </ListItemIcon>
                         <ListItemText>
                             {viewer.name}
                         </ListItemText>
