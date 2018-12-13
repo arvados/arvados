@@ -557,6 +557,8 @@ class ArvadosModel < ActiveRecord::Base
     self.owner_uuid ||= current_default_owner if self.respond_to? :owner_uuid=
     if !anonymous_updater
       self.modified_by_user_uuid = current_user ? current_user.uuid : nil
+    end
+    if !timeless_updater
       self.modified_at = current_time
     end
     self.modified_by_client_uuid = current_api_client ? current_api_client.uuid : nil
