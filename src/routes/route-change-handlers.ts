@@ -7,6 +7,7 @@ import { RootStore } from '~/store/store';
 import * as Routes from '~/routes/routes';
 import * as WorkbenchActions from '~/store/workbench/workbench-actions';
 import { navigateToRootProject } from '~/store/navigation/navigation-action';
+import { dialogActions } from '~/store/dialog/dialog-actions';
 
 export const addRouteChangeHandlers = (history: History, store: RootStore) => {
     const handler = handleLocationChange(store);
@@ -37,6 +38,8 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
     const myAccountMatch = Routes.matchMyAccountRoute(pathname);
     const userMatch = Routes.matchUsersRoute(pathname);
     const linksMatch = Routes.matchLinksRoute(pathname);
+
+    store.dispatch(dialogActions.CLOSE_ALL_DIALOGS());
 
     if (projectMatch) {
         store.dispatch(WorkbenchActions.loadProject(projectMatch.params.id));
