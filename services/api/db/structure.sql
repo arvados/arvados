@@ -2279,6 +2279,20 @@ CREATE INDEX index_links_on_owner_uuid ON public.links USING btree (owner_uuid);
 
 
 --
+-- Name: index_links_on_substring_head_uuid; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_links_on_substring_head_uuid ON public.links USING btree ("substring"((head_uuid)::text, 7, 5));
+
+
+--
+-- Name: index_links_on_substring_tail_uuid; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_links_on_substring_tail_uuid ON public.links USING btree ("substring"((tail_uuid)::text, 7, 5));
+
+
+--
 -- Name: index_links_on_tail_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3200,4 +3214,6 @@ INSERT INTO schema_migrations (version) VALUES ('20181004131141');
 INSERT INTO schema_migrations (version) VALUES ('20181005192222');
 
 INSERT INTO schema_migrations (version) VALUES ('20181011184200');
+
+INSERT INTO schema_migrations (version) VALUES ('20181213183234');
 
