@@ -241,7 +241,7 @@ func (disp *Dispatcher) slurmConstraintArgs(container arvados.Container) []strin
 func (disp *Dispatcher) sbatchArgs(container arvados.Container) ([]string, error) {
 	var args []string
 	args = append(args, disp.SbatchArguments...)
-	args = append(args, "--job-name="+container.UUID, fmt.Sprintf("--nice=%d", initialNiceValue))
+	args = append(args, "--job-name="+container.UUID, fmt.Sprintf("--nice=%d", initialNiceValue), "--no-requeue")
 
 	if disp.cluster == nil {
 		// no instance types configured
