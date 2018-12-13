@@ -76,5 +76,6 @@ export enum ContextMenuKind {
     KEEP_SERVICE = "KeepService",
     USER = "User",
     NODE = "Node",
-    GROUPS = "Group"
+    GROUPS = "Group",
+    GROUP_MEMBER = "GroupMember"
 }

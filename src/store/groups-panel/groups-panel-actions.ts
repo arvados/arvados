@@ -13,7 +13,7 @@ import { getResource } from '~/store/resources/resources';
 import { GroupResource } from '~/models/group';
 import { getCommonResourceServiceError, CommonResourceServiceError } from '~/services/common-service/common-resource-service';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { PermissionLevel } from '~/models/permission';
+import { PermissionLevel, PermissionResource } from '~/models/permission';
 import { PermissionService } from '~/services/permission-service/permission-service';
 
 export const GROUPS_PANEL_ID = "groupsPanel";
@@ -23,6 +23,8 @@ export const CREATE_GROUP_NAME_FIELD_NAME = 'name';
 export const CREATE_GROUP_USERS_FIELD_NAME = 'users';
 export const GROUP_ATTRIBUTES_DIALOG = 'groupAttributesDialog';
 export const GROUP_REMOVE_DIALOG = 'groupRemoveDialog';
+export const MEMBER_ATTRIBUTES_DIALOG = 'memberAttributesDialog';
+export const MEMBER_REMOVE_DIALOG = 'memberRemoveDialog';
 
 export const GroupsPanelActions = bindDataExplorerActions(GROUPS_PANEL_ID);
 
@@ -41,6 +43,13 @@ export const openGroupAttributes = (uuid: string) =>
         dispatch(dialogActions.OPEN_DIALOG({ id: GROUP_ATTRIBUTES_DIALOG, data }));
     };
 
+export const openGroupMemberAttributes = (uuid: string) =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const { resources } = getState();
+        const data = getResource<PermissionResource>(uuid)(resources);
+        dispatch(dialogActions.OPEN_DIALOG({ id: MEMBER_ATTRIBUTES_DIALOG, data }));
+    };
+
 export const removeGroup = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...' }));
@@ -56,6 +65,27 @@ export const openRemoveGroupDialog = (uuid: string) =>
             data: {
                 title: 'Remove group',
                 text: 'Are you sure you want to remove this group?',
+                confirmButtonLabel: 'Remove',
+                uuid
+            }
+        }));
+    };
+
+export const removeGroupMember = (uuid: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...' }));
+        await services.permissionService.delete(uuid);
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+        dispatch<any>(loadGroupsPanel());
+    };
+
+export const openRemoveGroupMemberDialog = (uuid: string) =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(dialogActions.OPEN_DIALOG({
+            id: MEMBER_REMOVE_DIALOG,
+            data: {
+                title: 'Remove member',
+                text: 'Are you sure you want to remove this member from this group?',
                 confirmButtonLabel: 'Remove',
                 uuid
             }
