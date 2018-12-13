@@ -20,7 +20,7 @@ module ArvadosModelUpdates
   end
 
   # ArvadosModel checks this to decide whether it should update the
-  # 'modified_at_uuid' field.
+  # 'modified_at' field.
   def timeless_updater
     Thread.current[:timeless_updater] || false
   end
