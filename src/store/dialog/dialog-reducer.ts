@@ -11,9 +11,7 @@ export interface Dialog<T> {
     data: T;
 }
 
-const initialState: DialogState = {};
-
-export const dialogReducer = (state: DialogState = initialState, action: DialogAction) =>
+export const dialogReducer = (state: DialogState = {}, action: DialogAction) =>
 
     dialogActions.match(action, {
         OPEN_DIALOG: ({ id, data }) => ({ ...state, [id]: { open: true, data } }),
@@ -21,7 +19,7 @@ export const dialogReducer = (state: DialogState = initialState, action: DialogA
             ...state,
             [id]: state[id] ? { ...state[id], open: false } : { open: false, data: {} }
         }),
-        CLOSE_ALL_DIALOGS: () => ({ ...initialState }),
+        CLOSE_ALL_DIALOGS: () => ({ }),
         default: () => state,
     });
 
