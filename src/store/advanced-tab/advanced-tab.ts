@@ -241,7 +241,8 @@ export const openAdvancedTabDialog = (uuid: string) =>
                 dispatch<any>(initAdvancedTabDialog(advanceDataUser));
                 break;
             case ResourceKind.NODE:
-                const dataComputeNode = getState().computeNodes.find(node => node.uuid === uuid);
+                const computeNodeResources = getState().resources;
+                const dataComputeNode = getResource<NodeResource>(uuid)(computeNodeResources);
                 const advanceDataComputeNode = advancedTabData({
                     uuid,
                     metadata: '',

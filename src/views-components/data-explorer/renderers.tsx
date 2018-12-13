@@ -26,6 +26,8 @@ import { toggleIsActive, toggleIsAdmin } from '~/store/users/users-actions';
 import { LinkResource } from '~/models/link';
 import { navigateTo } from '~/store/navigation/navigation-action';
 import { Link } from 'react-router-dom';
+import { NodeResource } from '../../models/node';
+import { NodeInfo } from '~/models/node';
 
 const renderName = (item: { name: string; uuid: string, kind: string }) =>
     <Grid container alignItems="center" wrap="nowrap" spacing={16}>
@@ -190,6 +192,60 @@ export const ResourceUsername = connect(
         const resource = getResource<UserResource>(props.uuid)(state.resources);
         return resource || { username: '' };
     })(renderUsername);
+
+// Compute Node Resources
+const renderNodeDate = (date?: string) =>
+    <Typography noWrap>{formatDate(date) || '(none)'}</Typography>;
+
+const renderNodeData = (property?: string) => 
+    <Typography noWrap>{property || '(none)'}</Typography>;
+
+const renderNodeInfo = (item: { info: NodeInfo }) =>
+    <Typography>
+        {JSON.stringify(item.info, null, 4)}
+    </Typography>;
+
+export const ResourceNodeInfo = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<NodeResource>(props.uuid)(state.resources);
+        return resource || { info: {} };
+    })(renderNodeInfo);
+
+export const ResourceNodeDomain = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<NodeResource>(props.uuid)(state.resources);
+        return { property: resource ? resource.domain : '' };
+    })((props: { property: string }) => renderNodeData(props.property));
+
+export const ResourceNodeFirstPingAt = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<NodeResource>(props.uuid)(state.resources);
+        return { date: resource ? resource.firstPingAt : '' };
+    })((props: { date: string }) => renderNodeDate(props.date));
+
+export const ResourceNodeHostname = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<NodeResource>(props.uuid)(state.resources);
+        return { property: resource ? resource.hostname : '' };
+    })((props: { property: string }) => renderNodeData(props.property));
+
+export const ResourceNodeIpAddress = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<NodeResource>(props.uuid)(state.resources);
+        return { property: resource ? resource.ipAddress : '' };
+    })((props: { property: string }) => renderNodeData(props.property));
+
+export const ResourceNodeJobUuid = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<NodeResource>(props.uuid)(state.resources);
+        return { property: resource ? resource.jobUuid : '' };
+    })((props: { property: string }) => renderNodeData(props.property));
+
+export const ResourceNodeLastPingAt = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<NodeResource>(props.uuid)(state.resources);
+        return { date: resource ? resource.lastPingAt : '' };
+    })((props: { date: string }) => renderNodeDate(props.date));
 
 // Links Resources
 const renderLinkName = (item: { name: string }) =>
