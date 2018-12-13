@@ -128,4 +128,16 @@ func (*NodeSizeSuite) TestScratchForDockerImage(c *check.C) {
 	// Estimated size is 384 MiB (402653184 bytes)
 	// Want to reserve 2x the estimated size, so 805306368 bytes
 	c.Check(n, check.Equals, int64(805306368))
+
+	n = EstimateScratchSpace(&arvados.Container{
+		ContainerImage: "d5025c0f29f6eef304a7358afa82a822+-342",
+	})
+	// Parse error will return 0
+	c.Check(n, check.Equals, int64(0))
+
+	n = EstimateScratchSpace(&arvados.Container{
+		ContainerImage: "d5025c0f29f6eef304a7358afa82a822+34",
+	})
+	// Short manifest will return 0
+	c.Check(n, check.Equals, int64(0))
 }

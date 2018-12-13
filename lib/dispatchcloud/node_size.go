@@ -38,10 +38,12 @@ var pdhRegexp = regexp.MustCompile(`^[0-9a-f]{32}\+(\d+)$`)
 func estimateDockerImageSize(collectionPDH string) int64 {
 	m := pdhRegexp.FindStringSubmatch(collectionPDH)
 	if m == nil {
+		log.Printf("estimateDockerImageSize: '%v' did not match pdhRegexp, returning 0", collectionPDH)
 		return 0
 	}
 	n, err := strconv.ParseInt(m[1], 10, 64)
 	if err != nil || n < 122 {
+		log.Printf("estimateDockerImageSize: short manifest %v or error (%v), returning 0", n, err)
 		return 0
 	}
 	// To avoid having to fetch the collection, take advantage of
