@@ -60,10 +60,15 @@ export const fetchConfig = () => {
         .catch(() => Promise.resolve(getDefaultConfig()))
         .then(config => Axios
             .get<Config>(getDiscoveryURL(config.API_HOST))
-            .then(response => ({ 
+            .then(response => ({
                 // TODO: After tests delete `|| '/vocabulary-example.json'`
-                config: {...response.data, vocabularyUrl: config.VOCABULARY_URL || '/vocabulary-example.json' }, 
-                apiHost: config.API_HOST, 
+                // TODO: After tests delete `|| '/file-viewers-example.json'`
+                config: {
+                    ...response.data,
+                    vocabularyUrl: config.VOCABULARY_URL || '/vocabulary-example.json',
+                    fileViewersConfigUrl: config.FILE_VIEWERS_CONFIG_URL || '/file-viewers-example.json'
+                },
+                apiHost: config.API_HOST,
             })));
 
 };
