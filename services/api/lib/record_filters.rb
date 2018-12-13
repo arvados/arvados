@@ -197,9 +197,14 @@ module RecordFilters
             operand.each do |op|
               cl = ArvadosModel::kind_class op
               if cl
-                if attr == 'uuid' and model_class.uuid_prefix == cl.uuid_prefix
-                  cond << "1=1"
+                if attr == 'uuid'
+                  if model_class.uuid_prefix == cl.uuid_prefix
+                    cond << "1=1"
+                  else
+                    cond << "1=0"
+                  end
                 else
+                  # Use a substring query to support remote uuids
                   cond << "substring(#{ar_table_name}.#{attr}, 7, 5) = ?"
                   param_out << cl.uuid_prefix
                 end
