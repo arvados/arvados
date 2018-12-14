@@ -1518,6 +1518,14 @@ func (runner *ContainerRunner) Run() (err error) {
 		runner.CrunchLog.Close()
 	}()
 
+	err = runner.fetchContainerRecord()
+	if err != nil {
+		return
+	}
+	if runner.Container.State != "Locked" {
+		return fmt.Errorf("dispatch error detected: container %q has state %q", runner.Container.UUID, runner.Container.State)
+	}
+
 	defer func() {
 		// checkErr prints e (unless it's nil) and sets err to
 		// e (unless err is already non-nil). Thus, if err
@@ -1558,10 +1566,6 @@ func (runner *ContainerRunner) Run() (err error) {
 		checkErr("UpdateContainerFinal", runner.UpdateContainerFinal())
 	}()
 
-	err = runner.fetchContainerRecord()
-	if err != nil {
-		return
-	}
 	runner.setupSignals()
 	err = runner.startHoststat()
 	if err != nil {
