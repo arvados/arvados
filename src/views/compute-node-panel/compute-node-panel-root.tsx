@@ -11,8 +11,8 @@ import { DataColumns } from '~/components/data-table/data-table';
 import { SortDirection } from '~/components/data-table/data-column';
 import { createTree } from '~/models/tree';
 import { 
-    ResourceUuid, ResourceNodeInfo, ResourceNodeDomain, ResourceNodeHostname, ResourceNodeJobUuid,
-    ResourceNodeFirstPingAt, ResourceNodeLastPingAt, ResourceNodeIpAddress
+    ComputeNodeUuid, ComputeNodeInfo, ComputeNodeDomain, ComputeNodeHostname, ComputeNodeJobUuid,
+    ComputeNodeFirstPingAt, ComputeNodeLastPingAt, ComputeNodeIpAddress
 } from '~/views-components/data-explorer/renderers';
 import { ResourcesState } from '~/store/resources/resources';
 
@@ -33,7 +33,7 @@ export const computeNodePanelColumns: DataColumns<string> = [
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceNodeInfo uuid={uuid} />
+        render: uuid => <ComputeNodeInfo uuid={uuid} />
     },
     {
         name: ComputeNodePanelColumnNames.UUID,
@@ -41,51 +41,53 @@ export const computeNodePanelColumns: DataColumns<string> = [
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: createTree(),
-        render: uuid => <ResourceUuid uuid={uuid} />
+        render: uuid => <ComputeNodeUuid uuid={uuid} />
     },
     {
         name: ComputeNodePanelColumnNames.DOMAIN,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceNodeDomain uuid={uuid} />
+        render: uuid => <ComputeNodeDomain uuid={uuid} />
     },
     {
         name: ComputeNodePanelColumnNames.FIRST_PING_AT,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceNodeFirstPingAt uuid={uuid} />
+        render: uuid => <ComputeNodeFirstPingAt uuid={uuid} />
     },
     {
         name: ComputeNodePanelColumnNames.HOSTNAME,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceNodeHostname uuid={uuid} />
+        render: uuid => <ComputeNodeHostname uuid={uuid} />
     },
     {
         name: ComputeNodePanelColumnNames.IP_ADDRESS,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceNodeIpAddress uuid={uuid} />
+        render: uuid => <ComputeNodeIpAddress uuid={uuid} />
     },
     {
         name: ComputeNodePanelColumnNames.JOB,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceNodeJobUuid uuid={uuid} />
+        render: uuid => <ComputeNodeJobUuid uuid={uuid} />
     },
     {
         name: ComputeNodePanelColumnNames.LAST_PING_AT,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceNodeLastPingAt uuid={uuid} />
+        render: uuid => <ComputeNodeLastPingAt uuid={uuid} />
     }
 ];
+
+const DEFAULT_MESSAGE = 'Your compute node list is empty.';
 
 export interface ComputeNodePanelRootActionProps {
     onItemClick: (item: string) => void;
@@ -111,6 +113,6 @@ export const ComputeNodePanelRoot = (props: ComputeNodePanelRootProps) => {
         dataTableDefaultView={
             <DataTableDefaultView
                 icon={ShareMeIcon}
-                messages={['Your compute node list is empty.']} />
+                messages={[DEFAULT_MESSAGE]} />
         } />;
 };

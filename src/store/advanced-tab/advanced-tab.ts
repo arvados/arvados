@@ -252,7 +252,7 @@ export const openAdvancedTabDialog = (uuid: string) =>
                     resourceKind: ComputeNodeData.COMPUTE_NODE,
                     resourcePrefix: ResourcePrefix.COMPUTE_NODES,
                     resourceKindProperty: ComputeNodeData.PROPERTIES,
-                    property: dataComputeNode!.properties
+                    property: dataComputeNode ? dataComputeNode.properties : {}
                 });
                 dispatch<any>(initAdvancedTabDialog(advanceDataComputeNode));
                 break;

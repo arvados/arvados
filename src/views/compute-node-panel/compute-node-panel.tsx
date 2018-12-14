@@ -10,7 +10,7 @@ import {
     ComputeNodePanelRootDataProps,
     ComputeNodePanelRootActionProps
 } from '~/views/compute-node-panel/compute-node-panel-root';
-import { openComputeNodeContextMenu, resourceKindToContextMenuKind } from '~/store/context-menu/context-menu-actions';
+import { openComputeNodeContextMenu } from '~/store/context-menu/context-menu-actions';
 
 const mapStateToProps = (state: RootState): ComputeNodePanelRootDataProps => {
     return {
