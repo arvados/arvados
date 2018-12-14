@@ -113,7 +113,7 @@ export const CollectionPanel = withStyles(styles)(
                                             label='Content size' value={data && formatFileSize(data.fileSize)} />
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                                             label='Owner' value={item && item.ownerUuid} />
-                                        <span onClick={() => dispatch<any>(navigateToProcess(item.properties.container_request))}>
+                                        <span onClick={() => dispatch<any>(navigateToProcess(item.properties.container_request  || item.properties.containerRequest))}>
                                             <DetailsAttribute classLabel={classes.link} label='Link to process' />
                                         </span>
                                     </Grid>
