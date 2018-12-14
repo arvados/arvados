@@ -33,7 +33,7 @@ RVMKEY=rvm.asc
 common-generated-all: common-generated/$(RVMKEY)
 
 common-generated/$(RVMKEY): common-generated
-	wget -cqO common-generated/$(RVMKEY) https://rvm.io/mpapis.asc
+	wget -cqO common-generated/$(RVMKEY) https://rvm.io/pkuczynski.asc
 
 common-generated:
 	mkdir common-generated
