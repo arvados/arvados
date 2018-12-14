@@ -74,7 +74,7 @@ module RecordFilters
             subproperty[1] = subproperty[1][1..-2]
           end
 
-        # jsonb search
+          # jsonb search
           case operator.downcase
           when '=', '!='
             not_in = if operator.downcase == "!=" then "NOT " else "" end
@@ -109,14 +109,14 @@ module RecordFilters
                                       "for '#{operator}' operator in filters")
             end
           when 'exists'
-          if operand == true
-            cond_out << "jsonb_exists(#{ar_table_name}.#{subproperty[0]}, ?)"
-          elsif operand == false
-            cond_out << "(NOT jsonb_exists(#{ar_table_name}.#{subproperty[0]}, ?)) OR #{ar_table_name}.#{subproperty[0]} is NULL"
-          else
-            raise ArgumentError.new("Invalid operand '#{operand}' for '#{operator}' must be true or false")
-          end
-          param_out << subproperty[1]
+            if operand == true
+              cond_out << "jsonb_exists(#{ar_table_name}.#{subproperty[0]}, ?)"
+            elsif operand == false
+              cond_out << "(NOT jsonb_exists(#{ar_table_name}.#{subproperty[0]}, ?)) OR #{ar_table_name}.#{subproperty[0]} is NULL"
+            else
+              raise ArgumentError.new("Invalid operand '#{operand}' for '#{operator}' must be true or false")
+            end
+            param_out << subproperty[1]
           else
             raise ArgumentError.new("Invalid operator for subproperty search '#{operator}'")
           end
@@ -197,8 +197,17 @@ module RecordFilters
             operand.each do |op|
               cl = ArvadosModel::kind_class op
               if cl
-                cond << "#{ar_table_name}.#{attr} like ?"
-                param_out << cl.uuid_like_pattern
+                if attr == 'uuid'
+                  if model_class.uuid_prefix == cl.uuid_prefix
+                    cond << "1=1"
+                  else
+                    cond << "1=0"
+                  end
+                else
+                  # Use a substring query to support remote uuids
+                  cond << "substring(#{ar_table_name}.#{attr}, 7, 5) = ?"
+                  param_out << cl.uuid_prefix
+                end
               else
                 cond << "1=0"
               end
