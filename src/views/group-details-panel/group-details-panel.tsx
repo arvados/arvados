@@ -16,6 +16,8 @@ import { openContextMenu } from '~/store/context-menu/context-menu-actions';
 import { ResourcesState, getResource } from '~/store/resources/resources';
 import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
 import { PermissionResource } from '~/models/permission';
+import { Grid, Button } from '@material-ui/core';
+import { AddIcon } from '~/components/icon/icon';
 
 export enum GroupDetailsPanelColumnNames {
     FIRST_NAME = "First name",
@@ -73,8 +75,9 @@ const mapDispatchToProps = {
     onContextMenu: openContextMenu,
 };
 
-export interface GroupDetailsPanelProps { 
+export interface GroupDetailsPanelProps {
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: any) => void;
+    onAddUser: () => void;
     resources: ResourcesState;
 }
 
@@ -91,7 +94,17 @@ export const GroupDetailsPanel = connect(
                     onRowDoubleClick={noop}
                     onContextMenu={this.handleContextMenu}
                     contextMenuColumn={true}
-                    hideColumnSelector />
+                    hideColumnSelector
+                    actions={
+                        <Grid container justify='flex-end'>
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                onClick={this.props.onAddUser}>
+                                <AddIcon /> Add user
+                        </Button>
+                        </Grid>
+                    } />
             );
         }
 
