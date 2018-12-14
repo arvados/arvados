@@ -461,7 +461,7 @@ class Runner(Process):
                                                        keep_client=self.arvrunner.keep_client,
                                                        num_retries=self.arvrunner.num_retries)
             if "cwl.output.json" in outc:
-                with outc.open("cwl.output.json") as f:
+                with outc.open("cwl.output.json", "rb") as f:
                     if f.size() > 0:
                         outputs = json.load(f)
             def keepify(fileobj):
