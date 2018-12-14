@@ -80,6 +80,8 @@ import { CreateGroupDialog } from '~/views-components/dialog-forms/create-group-
 import { RemoveGroupDialog } from '~/views-components/groups-dialog/remove-dialog';
 import { GroupAttributesDialog } from '~/views-components/groups-dialog/attributes-dialog';
 import { GroupDetailsPanel } from '~/views/group-details-panel/group-details-panel';
+import { RemoveGroupMemberDialog } from '~/views-components/groups-dialog/member-remove-dialog';
+import { GroupMemberAttributesDialog } from '~/views-components/groups-dialog/member-attributes-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -186,6 +188,7 @@ export const WorkbenchPanel =
             <FileRemoveDialog />
             <FilesUploadCollectionDialog />
             <GroupAttributesDialog />
+            <GroupMemberAttributesDialog />
             <HelpApiClientAuthorizationDialog />
             <MoveCollectionDialog />
             <MoveProcessDialog />
@@ -199,6 +202,7 @@ export const WorkbenchPanel =
             <RemoveApiClientAuthorizationDialog />
             <RemoveComputeNodeDialog />
             <RemoveGroupDialog />
+            <RemoveGroupMemberDialog />
             <RemoveKeepServiceDialog />
             <RemoveProcessDialog />
             <RemoveRepositoryDialog />

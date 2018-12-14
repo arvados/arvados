@@ -12,6 +12,10 @@ import { createTree } from '~/models/tree';
 import { noop } from 'lodash/fp';
 import { RootState } from '~/store/store';
 import { GROUP_DETAILS_PANEL_ID } from '~/store/group-details-panel/group-details-panel-actions';
+import { openContextMenu } from '~/store/context-menu/context-menu-actions';
+import { ResourcesState, getResource } from '~/store/resources/resources';
+import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
+import { PermissionResource } from '~/models/permission';
 
 export enum GroupDetailsPanelColumnNames {
     FIRST_NAME = "First name",
@@ -65,9 +69,14 @@ const mapStateToProps = (state: RootState) => {
     };
 };
 
-const mapDispatchToProps = {};
+const mapDispatchToProps = {
+    onContextMenu: openContextMenu,
+};
 
-export interface GroupDetailsPanelProps { }
+export interface GroupDetailsPanelProps { 
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: any) => void;
+    resources: ResourcesState;
+}
 
 export const GroupDetailsPanel = connect(
     mapStateToProps, mapDispatchToProps
@@ -80,10 +89,23 @@ export const GroupDetailsPanel = connect(
                     id={GROUP_DETAILS_PANEL_ID}
                     onRowClick={noop}
                     onRowDoubleClick={noop}
-                    onContextMenu={noop}
+                    onContextMenu={this.handleContextMenu}
                     contextMenuColumn={true}
                     hideColumnSelector />
             );
+        }
+
+        handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
+            const resource = getResource<PermissionResource>(resourceUuid)(this.props.resources);
+            if (resource) {
+                this.props.onContextMenu(event, {
+                    name: '',
+                    uuid: resource.uuid,
+                    ownerUuid: resource.ownerUuid,
+                    kind: resource.kind,
+                    menuKind: ContextMenuKind.GROUP_MEMBER
+                });
+            }
         }
     });
 
