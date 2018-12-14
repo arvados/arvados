@@ -156,6 +156,20 @@ foo_file_readable_by_active:
   head_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
   properties: {}
 
+foo_file_readable_by_federated_active:
+  uuid: zzzzz-o0j2j-dp1d8395ldqw23r
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2014-01-24 20:42:26 -0800
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2014-01-24 20:42:26 -0800
+  updated_at: 2014-01-24 20:42:26 -0800
+  tail_uuid: zbbbb-tpzed-xurymjxw79nv3jz
+  link_class: permission
+  name: can_read
+  head_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
+  properties: {}
+
 foo_file_readable_by_active_duplicate_permission:
   uuid: zzzzz-o0j2j-2qlmhgothiur55r
   owner_uuid: zzzzz-tpzed-000000000000000
