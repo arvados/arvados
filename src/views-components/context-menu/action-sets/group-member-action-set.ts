@@ -5,7 +5,7 @@
 import { ContextMenuActionSet } from "~/views-components/context-menu/context-menu-action-set";
 import { AdvancedIcon, RemoveIcon, AttributesIcon } from "~/components/icon/icon";
 import { openAdvancedTabDialog } from "~/store/advanced-tab/advanced-tab";
-import { openGroupMemberAttributes, openRemoveGroupMemberDialog } from "~/store/groups-panel/groups-panel-actions";
+import { openGroupMemberAttributes, openRemoveGroupMemberDialog } from '~/store/group-details-panel/group-details-panel-actions';
 
 export const groupMemberActionSet: ContextMenuActionSet = [[{
     name: "Attributes",

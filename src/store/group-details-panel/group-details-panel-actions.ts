@@ -14,11 +14,16 @@ import { getResource } from '~/store/resources/resources';
 import { GroupResource } from '~/models/group';
 import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
+import { PermissionResource } from '~/models/permission';
+import { GroupDetailsPanel } from '~/views/group-details-panel/group-details-panel';
+import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 
 export const GROUP_DETAILS_PANEL_ID = 'groupDetailsPanel';
 export const ADD_GROUP_MEMBERS_DIALOG = 'addGrupMembers';
 export const ADD_GROUP_MEMBERS_FORM = 'addGrupMembers';
 export const ADD_GROUP_MEMBERS_USERS_FIELD_NAME = 'users';
+export const MEMBER_ATTRIBUTES_DIALOG = 'memberAttributesDialog';
+export const MEMBER_REMOVE_DIALOG = 'memberRemoveDialog';
 
 export const GroupDetailsPanelActions = bindDataExplorerActions(GROUP_DETAILS_PANEL_ID);
 
@@ -70,4 +75,32 @@ export const addGroupMembers = ({ users }: AddGroupMembersFormData) =>
             dispatch(GroupDetailsPanelActions.REQUEST_ITEMS());
 
         }
+    };
+
+export const openGroupMemberAttributes = (uuid: string) =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const { resources } = getState();
+        const data = getResource<PermissionResource>(uuid)(resources);
+        dispatch(dialogActions.OPEN_DIALOG({ id: MEMBER_ATTRIBUTES_DIALOG, data }));
+    };
+
+export const openRemoveGroupMemberDialog = (uuid: string) =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(dialogActions.OPEN_DIALOG({
+            id: MEMBER_REMOVE_DIALOG,
+            data: {
+                title: 'Remove member',
+                text: 'Are you sure you want to remove this member from this group?',
+                confirmButtonLabel: 'Remove',
+                uuid
+            }
+        }));
+    };
+
+export const removeGroupMember = (uuid: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...' }));
+        await services.permissionService.delete(uuid);
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+        dispatch(GroupDetailsPanelActions.REQUEST_ITEMS());
     };

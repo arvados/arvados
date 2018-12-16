@@ -10,8 +10,7 @@ import { WithStyles, withStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { compose } from "redux";
 import { PermissionResource } from "~/models/permission";
-import { MEMBER_ATTRIBUTES_DIALOG } from "~/store/groups-panel/groups-panel-actions";
-import { UserResource } from "~/models/user";
+import { MEMBER_ATTRIBUTES_DIALOG } from '~/store/group-details-panel/group-details-panel-actions';
 
 type CssRules = 'rightContainer' | 'leftContainer' | 'spacing';
 
