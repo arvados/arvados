@@ -9,7 +9,7 @@ import { getProperty } from '~/store/properties/properties';
 import { Person } from '~/views-components/sharing-dialog/people-select';
 import { dialogActions } from '~/store/dialog/dialog-actions';
 import { reset, startSubmit } from 'redux-form';
-import { addGroupMember } from '~/store/groups-panel/groups-panel-actions';
+import { addGroupMember, deleteGroupMember } from '~/store/groups-panel/groups-panel-actions';
 import { getResource } from '~/store/resources/resources';
 import { GroupResource } from '~/models/group';
 import { RootState } from '~/store/store';
@@ -17,6 +17,7 @@ import { ServiceRepository } from '~/services/services';
 import { PermissionResource } from '~/models/permission';
 import { GroupDetailsPanel } from '~/views/group-details-panel/group-details-panel';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
+import { UserResource, getUserFullname } from '~/models/user';
 
 export const GROUP_DETAILS_PANEL_ID = 'groupDetailsPanel';
 export const ADD_GROUP_MEMBERS_DIALOG = 'addGrupMembers';
@@ -98,9 +99,34 @@ export const openRemoveGroupMemberDialog = (uuid: string) =>
     };
 
 export const removeGroupMember = (uuid: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...' }));
-        await services.permissionService.delete(uuid);
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
-        dispatch(GroupDetailsPanelActions.REQUEST_ITEMS());
+
+    async (dispatch: Dispatch, getState: () => RootState, { permissionService }: ServiceRepository) => {
+
+        const groupUuid = getCurrentGroupDetailsPanelUuid(getState().properties);
+
+        if (groupUuid) {
+
+            const group = getResource<GroupResource>(groupUuid)(getState().resources);
+            const user = getResource<UserResource>(groupUuid)(getState().resources);
+
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...' }));
+
+            await deleteGroupMember({
+                user: {
+                    uuid,
+                    name: user ? getUserFullname(user) : uuid,
+                },
+                group: {
+                    uuid: groupUuid,
+                    name: group ? group.name : groupUuid,
+                },
+                permissionService,
+                dispatch,
+            });
+
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+            dispatch(GroupDetailsPanelActions.REQUEST_ITEMS());
+
+        }
+
     };

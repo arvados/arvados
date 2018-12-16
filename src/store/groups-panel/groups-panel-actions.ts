@@ -15,6 +15,7 @@ import { getCommonResourceServiceError, CommonResourceServiceError } from '~/ser
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { PermissionLevel, PermissionResource } from '~/models/permission';
 import { PermissionService } from '~/services/permission-service/permission-service';
+import { FilterBuilder } from '~/services/api/filter-builder';
 
 export const GROUPS_PANEL_ID = "groupsPanel";
 export const CREATE_GROUP_DIALOG = "createGroupDialog";
@@ -109,6 +110,29 @@ export const createGroup = ({ name, users = [] }: CreateGroupFormData) =>
         }
     };
 
+interface DeleteGroupMemberArgs {
+    user: { uuid: string, name: string };
+    group: { uuid: string, name: string };
+    dispatch: Dispatch;
+    permissionService: PermissionService;
+}
+
+export const deleteGroupMember = async ({ user, group, ...args }: DeleteGroupMemberArgs) => {
+
+    await deletePermission({
+        tail: user,
+        head: group,
+        ...args,
+    });
+
+    await deletePermission({
+        tail: group,
+        head: user,
+        ...args,
+    });
+
+};
+
 interface AddGroupMemberArgs {
     user: { uuid: string, name: string };
     group: { uuid: string, name: string };
@@ -158,6 +182,50 @@ const createPermission = async ({ head, tail, permissionLevel, dispatch, permiss
 
         dispatch(snackbarActions.OPEN_SNACKBAR({
             message: `Could not add ${tail.name} -> ${head.name} relation`,
+            kind: SnackbarKind.ERROR,
+        }));
+
+    }
+
+};
+
+interface DeletePermissionLinkArgs {
+    head: { uuid: string, name: string };
+    tail: { uuid: string, name: string };
+    dispatch: Dispatch;
+    permissionService: PermissionService;
+}
+
+export const deletePermission = async ({ head, tail, dispatch, permissionService }: DeletePermissionLinkArgs) => {
+
+    try {
+
+        const permissionsResponse = await permissionService.list({
+
+            filters: new FilterBuilder()
+                .addEqual('tailUuid', tail.uuid)
+                .addEqual('headUuid', head.uuid)
+                .getFilters()
+
+        });
+
+        const [permission] = permissionsResponse.items;
+
+        if (permission) {
+
+            await permissionService.delete(permission.uuid);
+
+        } else {
+
+            throw new Error('Permission not found');
+
+        }
+
+
+    } catch (e) {
+
+        dispatch(snackbarActions.OPEN_SNACKBAR({
+            message: `Could not delete ${tail.name} -> ${head.name} relation`,
             kind: SnackbarKind.ERROR,
         }));
 
