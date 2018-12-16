@@ -110,29 +110,6 @@ export const createGroup = ({ name, users = [] }: CreateGroupFormData) =>
         }
     };
 
-interface DeleteGroupMemberArgs {
-    user: { uuid: string, name: string };
-    group: { uuid: string, name: string };
-    dispatch: Dispatch;
-    permissionService: PermissionService;
-}
-
-export const deleteGroupMember = async ({ user, group, ...args }: DeleteGroupMemberArgs) => {
-
-    await deletePermission({
-        tail: user,
-        head: group,
-        ...args,
-    });
-
-    await deletePermission({
-        tail: group,
-        head: user,
-        ...args,
-    });
-
-};
-
 interface AddGroupMemberArgs {
     user: { uuid: string, name: string };
     group: { uuid: string, name: string };
@@ -140,16 +117,13 @@ interface AddGroupMemberArgs {
     permissionService: PermissionService;
 }
 
+/**
+ * Group membership is determined by whether the group has can_read permission on an object. 
+ * If a group G can_read an object A, then we say A is a member of G.
+ * 
+ * [Permission model docs](https://doc.arvados.org/api/permission-model.html)
+ */
 export const addGroupMember = async ({ user, group, ...args }: AddGroupMemberArgs) => {
-
-
-
-    await createPermission({
-        head: { ...group },
-        tail: { ...user },
-        permissionLevel: PermissionLevel.CAN_MANAGE,
-        ...args,
-    });
 
     await createPermission({
         head: { ...user },
@@ -186,6 +160,23 @@ const createPermission = async ({ head, tail, permissionLevel, dispatch, permiss
         }));
 
     }
+
+};
+
+interface DeleteGroupMemberArgs {
+    user: { uuid: string, name: string };
+    group: { uuid: string, name: string };
+    dispatch: Dispatch;
+    permissionService: PermissionService;
+}
+
+export const deleteGroupMember = async ({ user, group, ...args }: DeleteGroupMemberArgs) => {
+
+    await deletePermission({
+        tail: group,
+        head: user,
+        ...args,
+    });
 
 };
 

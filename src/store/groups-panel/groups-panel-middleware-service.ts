@@ -67,7 +67,7 @@ export class GroupsPanelMiddlewareService extends DataExplorerMiddlewareService 
                 const permissions = await this.services.permissionService.list({
 
                     filters: new FilterBuilder()
-                        .addIn('headUuid', response.items.map(item => item.uuid))
+                        .addIn('tailUuid', response.items.map(item => item.uuid))
                         .getFilters()
 
                 });

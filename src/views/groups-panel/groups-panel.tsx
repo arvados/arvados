@@ -124,7 +124,7 @@ const GroupMembersCount = connect(
         const permissions = filterResources((resource: LinkResource) =>
             resource.kind === ResourceKind.LINK &&
             resource.linkClass === LinkClass.PERMISSION &&
-            resource.headUuid === props.uuid
+            resource.tailUuid === props.uuid
         )(state.resources);
 
         return {
