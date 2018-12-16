@@ -108,18 +108,9 @@ export const createGroup = ({ name, users = [] }: CreateGroupFormData) =>
 
             for (const user of users) {
 
-                await createPermissionLink({
-                    head: { ...newGroup },
-                    tail: { ...user },
-                    permissionLevel: PermissionLevel.CAN_READ,
-                    dispatch,
-                    permissionService,
-                });
-
-                await createPermissionLink({
-                    head: { ...user },
-                    tail: { ...newGroup },
-                    permissionLevel: PermissionLevel.CAN_READ,
+                await addGroupMember({
+                    user,
+                    group: newGroup,
                     dispatch,
                     permissionService,
                 });
@@ -148,6 +139,30 @@ export const createGroup = ({ name, users = [] }: CreateGroupFormData) =>
         }
     };
 
+interface AddGroupMemberArgs {
+    user: { uuid: string, name: string };
+    group: { uuid: string, name: string };
+    dispatch: Dispatch;
+    permissionService: PermissionService;
+}
+
+const addGroupMember = async ({ user, group, ...args }: AddGroupMemberArgs) => {
+
+    await createPermissionLink({
+        head: { ...group },
+        tail: { ...user },
+        permissionLevel: PermissionLevel.CAN_MANAGE,
+        ...args,
+    });
+
+    await createPermissionLink({
+        head: { ...user },
+        tail: { ...group },
+        permissionLevel: PermissionLevel.CAN_READ,
+        ...args,
+    });
+
+};
 
 interface CreatePermissionLinkArgs {
     head: { uuid: string, name: string };
