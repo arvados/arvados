@@ -8,13 +8,16 @@ import { reduxForm, InjectedFormProps, WrappedFieldArrayProps, FieldArray } from
 import { withDialog, WithDialogProps } from "~/store/dialog/with-dialog";
 import { FormDialog } from '~/components/form-dialog/form-dialog';
 import { PeopleSelect, Person } from '~/views-components/sharing-dialog/people-select';
-import { ADD_GROUP_MEMBERS_DIALOG, ADD_GROUP_MEMBERS_FORM, AddGroupMembersFormData, ADD_GROUP_MEMBERS_USERS_FIELD_NAME } from '~/store/group-details-panel/group-details-panel-actions';
+import { ADD_GROUP_MEMBERS_DIALOG, ADD_GROUP_MEMBERS_FORM, AddGroupMembersFormData, ADD_GROUP_MEMBERS_USERS_FIELD_NAME, addGroupMembers } from '~/store/group-details-panel/group-details-panel-actions';
 import { minLength } from '~/validators/min-length';
 
 export const AddGroupMembersDialog = compose(
     withDialog(ADD_GROUP_MEMBERS_DIALOG),
     reduxForm<AddGroupMembersFormData>({
         form: ADD_GROUP_MEMBERS_FORM,
+        onSubmit: (data, dispatch) => {
+            dispatch(addGroupMembers(data));
+        },
     })
 )(
     (props: AddGroupMembersDialogProps) =>
