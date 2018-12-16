@@ -148,14 +148,16 @@ interface AddGroupMemberArgs {
 
 const addGroupMember = async ({ user, group, ...args }: AddGroupMemberArgs) => {
 
-    await createPermissionLink({
+
+
+    await createPermission({
         head: { ...group },
         tail: { ...user },
         permissionLevel: PermissionLevel.CAN_MANAGE,
         ...args,
     });
 
-    await createPermissionLink({
+    await createPermission({
         head: { ...user },
         tail: { ...group },
         permissionLevel: PermissionLevel.CAN_READ,
@@ -172,7 +174,7 @@ interface CreatePermissionLinkArgs {
     permissionService: PermissionService;
 }
 
-const createPermissionLink = async ({ head, tail, permissionLevel, dispatch, permissionService }: CreatePermissionLinkArgs) => {
+const createPermission = async ({ head, tail, permissionLevel, dispatch, permissionService }: CreatePermissionLinkArgs) => {
 
     try {
 
