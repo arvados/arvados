@@ -96,6 +96,7 @@ export const GroupDetailsPanel = connect(
                     onContextMenu={this.handleContextMenu}
                     contextMenuColumn={true}
                     hideColumnSelector
+                    hideSearchInput
                     actions={
                         <Grid container justify='flex-end'>
                             <Button
