@@ -41,6 +41,7 @@ const UsersFieldValidation = [minLength(1, () => 'Select at least one user')];
 
 const UsersSelect = ({ fields }: WrappedFieldArrayProps<Person>) =>
     <PeopleSelect
+        autofocus
         label='Enter email adresses '
         items={fields.getAll() || []}
         onSelect={fields.push}
