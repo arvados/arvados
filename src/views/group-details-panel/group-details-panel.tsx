@@ -11,7 +11,7 @@ import { ResourceUuid, ResourceFirstName, ResourceLastName, ResourceEmail, Resou
 import { createTree } from '~/models/tree';
 import { noop } from 'lodash/fp';
 import { RootState } from '~/store/store';
-import { GROUP_DETAILS_PANEL_ID } from '~/store/group-details-panel/group-details-panel-actions';
+import { GROUP_DETAILS_PANEL_ID, openAddGroupMembersDialog } from '~/store/group-details-panel/group-details-panel-actions';
 import { openContextMenu } from '~/store/context-menu/context-menu-actions';
 import { ResourcesState, getResource } from '~/store/resources/resources';
 import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
@@ -73,6 +73,7 @@ const mapStateToProps = (state: RootState) => {
 
 const mapDispatchToProps = {
     onContextMenu: openContextMenu,
+    onAddUser: openAddGroupMembersDialog,
 };
 
 export interface GroupDetailsPanelProps {

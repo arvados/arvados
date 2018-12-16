@@ -82,6 +82,7 @@ import { GroupAttributesDialog } from '~/views-components/groups-dialog/attribut
 import { GroupDetailsPanel } from '~/views/group-details-panel/group-details-panel';
 import { RemoveGroupMemberDialog } from '~/views-components/groups-dialog/member-remove-dialog';
 import { GroupMemberAttributesDialog } from '~/views-components/groups-dialog/member-attributes-dialog';
+import { AddGroupMembersDialog } from '~/views-components/dialog-forms/add-group-member-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -169,6 +170,7 @@ export const WorkbenchPanel =
             <Grid item>
                 <DetailsPanel />
             </Grid>
+            <AddGroupMembersDialog />
             <AdvancedTabDialog />
             <AttributesApiClientAuthorizationDialog />
             <AttributesComputeNodeDialog />
