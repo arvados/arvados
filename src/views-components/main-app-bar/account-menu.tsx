@@ -11,11 +11,6 @@ import { DispatchProp, connect } from 'react-redux';
 import { logout } from '~/store/auth/auth-action';
 import { RootState } from "~/store/store";
 import { openCurrentTokenDialog } from '~/store/current-token-dialog/current-token-dialog-actions';
-import { openRepositoriesPanel } from "~/store/repositories/repositories-actions";
-import {
-    navigateToKeepServices, navigateToComputeNodes,
-    navigateToApiClientAuthorizations, navigateToGroups
-} from '~/store/navigation/navigation-action';
 import { navigateToUsers } from '~/store/navigation/navigation-action';
 import { navigateToSshKeysUser, navigateToMyAccount } from '~/store/navigation/navigation-action';
 import { openUserVirtualMachines } from "~/store/virtual-machines/virtual-machines-actions";
@@ -39,13 +34,7 @@ export const AccountMenu = connect(mapStateToProps)(
                     {getUserFullname(user)}
                 </MenuItem>
                 <MenuItem onClick={() => dispatch(openUserVirtualMachines())}>Virtual Machines</MenuItem>
-                {!user.isAdmin && <MenuItem onClick={() => dispatch(openRepositoriesPanel())}>Repositories</MenuItem>}
                 <MenuItem onClick={() => dispatch(openCurrentTokenDialog)}>Current token</MenuItem>
-                <MenuItem onClick={() => dispatch(navigateToUsers)}>Users</MenuItem>
-                {user.isAdmin && <MenuItem onClick={() => dispatch(navigateToGroups)}>Groups</MenuItem>}
-                {user.isAdmin && <MenuItem onClick={() => dispatch(navigateToApiClientAuthorizations)}>Api Tokens</MenuItem>}
-                {user.isAdmin && <MenuItem onClick={() => dispatch(navigateToKeepServices)}>Keep Services</MenuItem>}
-                {user.isAdmin && <MenuItem onClick={() => dispatch(navigateToComputeNodes)}>Compute Nodes</MenuItem>}
                 <MenuItem onClick={() => dispatch(navigateToSshKeysUser)}>Ssh Keys</MenuItem>
                 <MenuItem onClick={() => dispatch(navigateToMyAccount)}>My account</MenuItem>
                 <MenuItem onClick={() => dispatch(logout())}>Logout</MenuItem>
