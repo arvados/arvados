@@ -59,6 +59,8 @@ import { loadVirtualMachinesPanel } from '~/store/virtual-machines/virtual-machi
 import { loadRepositoriesPanel } from '~/store/repositories/repositories-actions';
 import { loadKeepServicesPanel } from '~/store/keep-services/keep-services-actions';
 import { loadUsersPanel, userBindedActions } from '~/store/users/users-actions';
+import { loadLinkPanel, linkPanelActions } from '~/store/link-panel/link-panel-actions';
+import { linkPanelColumns } from '~/views/link-panel/link-panel-root';
 import { userPanelColumns } from '~/views/user-panel/user-panel';
 import { loadComputeNodesPanel } from '~/store/compute-nodes/compute-nodes-actions';
 import { loadApiClientAuthorizationsPanel } from '~/store/api-client-authorizations/api-client-authorizations-actions';
@@ -102,6 +104,7 @@ export const loadWorkbench = () =>
                 dispatch(userBindedActions.SET_COLUMNS({ columns: userPanelColumns }));
                 dispatch(groupPanelActions.GroupsPanelActions.SET_COLUMNS({ columns: groupsPanelColumns }));
                 dispatch(groupDetailsPanelActions.GroupDetailsPanelActions.SET_COLUMNS({columns: groupDetailsPanelColumns}));
+                dispatch(linkPanelActions.SET_COLUMNS({ columns: linkPanelColumns }));
                 dispatch<any>(initSidePanelTree());
                 if (router.location) {
                     const match = matchRootRoute(router.location.pathname);
@@ -406,6 +409,11 @@ export const loadWorkflow = handleFirstTimeLoad(async (dispatch: Dispatch<any>) 
 export const loadSearchResults = handleFirstTimeLoad(
     async (dispatch: Dispatch<any>) => {
         await dispatch(loadSearchResultsPanel());
+    });
+
+export const loadLinks = handleFirstTimeLoad(
+    async (dispatch: Dispatch<any>) => {
+        await dispatch(loadLinkPanel());
     });
 
 export const loadVirtualMachines = handleFirstTimeLoad(

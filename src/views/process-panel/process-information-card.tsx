@@ -11,7 +11,7 @@ import { ArvadosTheme } from '~/common/custom-theme';
 import { MoreOptionsIcon, ProcessIcon } from '~/components/icon/icon';
 import { DetailsAttribute } from '~/components/details-attribute/details-attribute';
 import { Process } from '~/store/processes/process';
-import { getProcessStatus, getProcessStatusColor } from '../../store/processes/process';
+import { getProcessStatus, getProcessStatusColor } from '~/store/processes/process';
 import { formatDate } from '~/common/formatters';
 
 
@@ -69,12 +69,13 @@ export interface ProcessInformationCardDataProps {
     process: Process;
     onContextMenu: (event: React.MouseEvent<HTMLElement>) => void;
     openProcessInputDialog: (uuid: string) => void;
+    navigateToOutput: (uuid: string) => void;
 }
 
 type ProcessInformationCardProps = ProcessInformationCardDataProps & WithStyles<CssRules, true>;
 
 export const ProcessInformationCard = withStyles(styles, { withTheme: true })(
-    ({ classes, process, onContextMenu, theme, openProcessInputDialog }: ProcessInformationCardProps) =>
+    ({ classes, process, onContextMenu, theme, openProcessInputDialog, navigateToOutput }: ProcessInformationCardProps) =>
         <Card className={classes.card}>
             <CardHeader
                 classes={{
@@ -120,7 +121,9 @@ export const ProcessInformationCard = withStyles(styles, { withTheme: true })(
                             label='Workflow' value='???' />
                     </Grid>
                     <Grid item xs={6}>
-                        <DetailsAttribute classLabel={classes.link} label='Outputs' />
+                        <span onClick={() => navigateToOutput(process.containerRequest.outputUuid!)}>
+                            <DetailsAttribute classLabel={classes.link} label='Outputs' />
+                        </span>
                         <span onClick={() => openProcessInputDialog(process.containerRequest.uuid)}>
                             <DetailsAttribute classLabel={classes.link} label='Inputs' />
                         </span>

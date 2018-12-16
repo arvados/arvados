@@ -48,6 +48,7 @@ interface DataExplorerDataProps<T> {
     hideColumnSelector?: boolean;
     paperProps?: PaperProps;
     actions?: React.ReactNode;
+    hideSearchInput?: boolean;
 }
 
 interface DataExplorerActionProps<T> {
@@ -78,16 +79,16 @@ export const DataExplorer = withStyles(styles)(
                 columns, onContextMenu, onFiltersChange, onSortToggle, working, extractKey,
                 rowsPerPage, rowsPerPageOptions, onColumnToggle, searchValue, onSearch,
                 items, itemsAvailable, onRowClick, onRowDoubleClick, classes,
-                dataTableDefaultView, hideColumnSelector, actions, paperProps,
+                dataTableDefaultView, hideColumnSelector, actions, paperProps, hideSearchInput
             } = this.props;
             return <Paper className={classes.root} {...paperProps}>
                 <Toolbar className={classes.toolbar}>
                     <Grid container justify="space-between" wrap="nowrap" alignItems="center">
-                        <div className={classes.searchBox}>
+                        {!hideSearchInput && <div className={classes.searchBox}>
                             <SearchInput
                                 value={searchValue}
                                 onSearch={onSearch} />
-                        </div>
+                        </div>}
                         {actions}
                         {!hideColumnSelector && <ColumnSelector
                             columns={columns}

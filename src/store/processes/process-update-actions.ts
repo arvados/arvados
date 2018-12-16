@@ -15,6 +15,7 @@ import { snackbarActions } from '~/store/snackbar/snackbar-actions';
 export interface ProcessUpdateFormDialogData {
     uuid: string;
     name: string;
+    description?: string;
 }
 
 export const PROCESS_UPDATE_FORM_NAME = 'processUpdateFormName';
@@ -34,7 +35,7 @@ export const updateProcess = (resource: ProcessUpdateFormDialogData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(startSubmit(PROCESS_UPDATE_FORM_NAME));
         try {
-            const updatedProcess = await services.containerRequestService.update(resource.uuid, { name: resource.name });
+            const updatedProcess = await services.containerRequestService.update(resource.uuid, { name: resource.name, description: resource.description });
             dispatch(projectPanelActions.REQUEST_ITEMS());
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROCESS_UPDATE_FORM_NAME }));
             return updatedProcess;

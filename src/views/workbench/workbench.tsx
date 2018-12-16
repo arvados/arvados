@@ -49,12 +49,14 @@ import { MyAccountPanel } from '~/views/my-account-panel/my-account-panel';
 import { SharingDialog } from '~/views-components/sharing-dialog/sharing-dialog';
 import { AdvancedTabDialog } from '~/views-components/advanced-tab-dialog/advanced-tab-dialog';
 import { ProcessInputDialog } from '~/views-components/process-input-dialog/process-input-dialog';
-import { VirtualMachinePanel } from '~/views/virtual-machine-panel/virtual-machine-panel';
+import { VirtualMachineUserPanel } from '~/views/virtual-machine-panel/virtual-machine-user-panel';
+import { VirtualMachineAdminPanel } from '~/views/virtual-machine-panel/virtual-machine-admin-panel';
 import { ProjectPropertiesDialog } from '~/views-components/project-properties-dialog/project-properties-dialog';
 import { RepositoriesPanel } from '~/views/repositories-panel/repositories-panel';
 import { KeepServicePanel } from '~/views/keep-service-panel/keep-service-panel';
 import { ComputeNodePanel } from '~/views/compute-node-panel/compute-node-panel';
 import { ApiClientAuthorizationPanel } from '~/views/api-client-authorization-panel/api-client-authorization-panel';
+import { LinkPanel } from '~/views/link-panel/link-panel';
 import { RepositoriesSampleGitDialog } from '~/views-components/repositories-sample-git-dialog/repositories-sample-git-dialog';
 import { RepositoryAttributesDialog } from '~/views-components/repository-attributes-dialog/repository-attributes-dialog';
 import { CreateRepositoryDialog } from '~/views-components/dialog-forms/create-repository-dialog';
@@ -64,11 +66,13 @@ import { PublicKeyDialog } from '~/views-components/ssh-keys-dialog/public-key-d
 import { RemoveApiClientAuthorizationDialog } from '~/views-components/api-client-authorizations-dialog/remove-dialog';
 import { RemoveComputeNodeDialog } from '~/views-components/compute-nodes-dialog/remove-dialog';
 import { RemoveKeepServiceDialog } from '~/views-components/keep-services-dialog/remove-dialog';
+import { RemoveLinkDialog } from '~/views-components/links-dialog/remove-dialog';
 import { RemoveSshKeyDialog } from '~/views-components/ssh-keys-dialog/remove-dialog';
 import { RemoveVirtualMachineDialog } from '~/views-components/virtual-machines-dialog/remove-dialog';
 import { AttributesApiClientAuthorizationDialog } from '~/views-components/api-client-authorizations-dialog/attributes-dialog';
 import { AttributesComputeNodeDialog } from '~/views-components/compute-nodes-dialog/attributes-dialog';
 import { AttributesKeepServiceDialog } from '~/views-components/keep-services-dialog/attributes-dialog';
+import { AttributesLinkDialog } from '~/views-components/links-dialog/attributes-dialog';
 import { AttributesSshKeyDialog } from '~/views-components/ssh-keys-dialog/attributes-dialog';
 import { VirtualMachineAttributesDialog } from '~/views-components/virtual-machines-dialog/attributes-dialog';
 import { UserPanel } from '~/views/user-panel/user-panel';
@@ -152,9 +156,11 @@ export const WorkbenchPanel =
                                 <Route path={Routes.RUN_PROCESS} component={RunProcessPanel} />
                                 <Route path={Routes.WORKFLOWS} component={WorkflowPanel} />
                                 <Route path={Routes.SEARCH_RESULTS} component={SearchResultsPanel} />
-                                <Route path={Routes.VIRTUAL_MACHINES} component={VirtualMachinePanel} />
+                                <Route path={Routes.VIRTUAL_MACHINES_USER} component={VirtualMachineUserPanel} />
+                                <Route path={Routes.VIRTUAL_MACHINES_ADMIN} component={VirtualMachineAdminPanel} />
                                 <Route path={Routes.REPOSITORIES} component={RepositoriesPanel} />
-                                <Route path={Routes.SSH_KEYS} component={SshKeyPanel} />
+                                <Route path={Routes.SSH_KEYS_USER} component={SshKeyPanel} />
+                                <Route path={Routes.SSH_KEYS_ADMIN} component={SshKeyPanel} />
                                 <Route path={Routes.KEEP_SERVICES} component={KeepServicePanel} />
                                 <Route path={Routes.USERS} component={UserPanel} />
                                 <Route path={Routes.COMPUTE_NODES} component={ComputeNodePanel} />
@@ -162,6 +168,7 @@ export const WorkbenchPanel =
                                 <Route path={Routes.MY_ACCOUNT} component={MyAccountPanel} />
                                 <Route path={Routes.GROUPS} component={GroupsPanel} />
                                 <Route path={Routes.GROUP_DETAILS} component={GroupDetailsPanel} />
+                                <Route path={Routes.LINKS} component={LinkPanel} />
                             </Switch>
                         </Grid>
                     </Grid>
@@ -175,6 +182,7 @@ export const WorkbenchPanel =
             <AttributesApiClientAuthorizationDialog />
             <AttributesComputeNodeDialog />
             <AttributesKeepServiceDialog />
+            <AttributesLinkDialog />
             <AttributesSshKeyDialog />
             <ChangeWorkflowDialog />
             <ContextMenu />
@@ -206,6 +214,7 @@ export const WorkbenchPanel =
             <RemoveGroupDialog />
             <RemoveGroupMemberDialog />
             <RemoveKeepServiceDialog />
+            <RemoveLinkDialog />
             <RemoveProcessDialog />
             <RemoveRepositoryDialog />
             <RemoveSshKeyDialog />

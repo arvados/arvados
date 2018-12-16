@@ -54,6 +54,8 @@ import { GroupsPanelMiddlewareService } from '~/store/groups-panel/groups-panel-
 import { GROUPS_PANEL_ID } from '~/store/groups-panel/groups-panel-actions';
 import { GroupDetailsPanelMiddlewareService } from '~/store/group-details-panel/group-details-panel-middleware-service';
 import { GROUP_DETAILS_PANEL_ID } from '~/store/group-details-panel/group-details-panel-actions';
+import { LINK_PANEL_ID } from '~/store/link-panel/link-panel-actions';
+import { LinkMiddlewareService } from '~/store/link-panel/link-panel-middleware-service';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -95,6 +97,9 @@ export function configureStore(history: History, services: ServiceRepository): R
         new GroupDetailsPanelMiddlewareService(services, GROUP_DETAILS_PANEL_ID)
     );
 
+    const linkPanelMiddleware = dataExplorerMiddleware(
+        new LinkMiddlewareService(services, LINK_PANEL_ID)
+    );
     const middlewares: Middleware[] = [
         routerMiddleware(history),
         thunkMiddleware.withExtraArgument(services),
@@ -107,6 +112,7 @@ export function configureStore(history: History, services: ServiceRepository): R
         userPanelMiddleware,
         groupsPanelMiddleware,
         groupDetailsPanelMiddleware,
+        linkPanelMiddleware
     ];
     const enhancer = composeEnhancers(applyMiddleware(...middlewares));
     return createStore(rootReducer, enhancer);

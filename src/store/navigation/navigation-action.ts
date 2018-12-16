@@ -22,6 +22,8 @@ export const navigateTo = (uuid: string) =>
             dispatch<any>(navigateToCollection(uuid));
         } else if (kind === ResourceKind.CONTAINER_REQUEST) {
             dispatch<any>(navigateToProcess(uuid));
+        } else if (kind === ResourceKind.VIRTUAL_MACHINE) {
+            dispatch<any>(navigateToAdminVirtualMachines);
         }
         if (uuid === SidePanelTreeCategory.FAVORITES) {
             dispatch<any>(navigateToFavorites);
@@ -65,11 +67,15 @@ export const navigateToRunProcess = push(Routes.RUN_PROCESS);
 
 export const navigateToSearchResults = push(Routes.SEARCH_RESULTS);
 
-export const navigateToVirtualMachines = push(Routes.VIRTUAL_MACHINES);
+export const navigateToUserVirtualMachines = push(Routes.VIRTUAL_MACHINES_USER);
+
+export const navigateToAdminVirtualMachines = push(Routes.VIRTUAL_MACHINES_ADMIN);
 
 export const navigateToRepositories = push(Routes.REPOSITORIES);
 
-export const navigateToSshKeys= push(Routes.SSH_KEYS);
+export const navigateToSshKeysAdmin= push(Routes.SSH_KEYS_ADMIN);
+
+export const navigateToSshKeysUser= push(Routes.SSH_KEYS_USER);
 
 export const navigateToMyAccount = push(Routes.MY_ACCOUNT);
 
@@ -84,3 +90,5 @@ export const navigateToApiClientAuthorizations = push(Routes.API_CLIENT_AUTHORIZ
 export const navigateToGroups = push(Routes.GROUPS);
 
 export const navigateToGroupDetails = compose(push, getGroupUrl);
+
+export const navigateToLinks = push(Routes.LINKS);

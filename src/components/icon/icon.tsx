@@ -7,6 +7,7 @@ import Add from '@material-ui/icons/Add';
 import ArrowBack from '@material-ui/icons/ArrowBack';
 import ArrowDropDown from '@material-ui/icons/ArrowDropDown';
 import BubbleChart from '@material-ui/icons/BubbleChart';
+import Build from '@material-ui/icons/Build';
 import Cached from '@material-ui/icons/Cached';
 import ChevronLeft from '@material-ui/icons/ChevronLeft';
 import CloudUpload from '@material-ui/icons/CloudUpload';
@@ -55,6 +56,7 @@ export type IconType = React.SFC<{ className?: string, style?: object }>;
 
 export const AddIcon: IconType = (props) => <Add {...props} />;
 export const AddFavoriteIcon: IconType = (props) => <StarBorder {...props} />;
+export const AdminMenuIcon: IconType = (props) => <Build {...props} />;
 export const AdvancedIcon: IconType = (props) => <SettingsApplications {...props} />;
 export const AttributesIcon: IconType = (props) => <ListAlt {...props} />;
 export const BackIcon: IconType = (props) => <ArrowBack {...props} />;

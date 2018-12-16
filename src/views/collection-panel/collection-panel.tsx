@@ -17,7 +17,7 @@ import { CollectionResource } from '~/models/collection';
 import { CollectionPanelFiles } from '~/views-components/collection-panel-files/collection-panel-files';
 import * as CopyToClipboard from 'react-copy-to-clipboard';
 import { CollectionTagForm } from './collection-tag-form';
-import { deleteCollectionTag } from '~/store/collection-panel/collection-panel-action';
+import { deleteCollectionTag, navigateToProcess } from '~/store/collection-panel/collection-panel-action';
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
 import { getResource } from '~/store/resources/resources';
 import { openContextMenu } from '~/store/context-menu/context-menu-actions';
@@ -26,7 +26,7 @@ import { formatFileSize } from "~/common/formatters";
 import { getResourceData } from "~/store/resources-data/resources-data";
 import { ResourceData } from "~/store/resources-data/resources-data-reducer";
 
-type CssRules = 'card' | 'iconHeader' | 'tag' | 'copyIcon' | 'label' | 'value';
+type CssRules = 'card' | 'iconHeader' | 'tag' | 'copyIcon' | 'label' | 'value' | 'link';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
@@ -52,6 +52,13 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     value: {
         textTransform: 'none',
         fontSize: '0.875rem'
+    },
+    link: {
+        fontSize: '0.875rem',
+        color: theme.palette.primary.main,
+        '&:hover': {
+            cursor: 'pointer'
+        }
     }
 });
 
@@ -63,7 +70,6 @@ interface CollectionPanelDataProps {
 type CollectionPanelProps = CollectionPanelDataProps & DispatchProp
     & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
 
-
 export const CollectionPanel = withStyles(styles)(
     connect((state: RootState, props: RouteComponentProps<{ id: string }>) => {
         const item = getResource(props.match.params.id)(state.resources);
@@ -72,7 +78,7 @@ export const CollectionPanel = withStyles(styles)(
     })(
         class extends React.Component<CollectionPanelProps> {
             render() {
-                const { classes, item, data } = this.props;
+                const { classes, item, data, dispatch } = this.props;
                 return item
                     ? <>
                         <Card className={classes.card}>
@@ -107,6 +113,9 @@ export const CollectionPanel = withStyles(styles)(
                                             label='Content size' value={data && formatFileSize(data.fileSize)} />
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                                             label='Owner' value={item && item.ownerUuid} />
+                                        <span onClick={() => dispatch<any>(navigateToProcess(item.properties.container_request  || item.properties.containerRequest))}>
+                                            <DetailsAttribute classLabel={classes.link} label='Link to process' />
+                                        </span>
                                     </Grid>
                                 </Grid>
                             </CardContent>

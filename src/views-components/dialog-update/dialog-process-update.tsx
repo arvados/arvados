@@ -7,7 +7,7 @@ import { InjectedFormProps } from 'redux-form';
 import { WithDialogProps } from '~/store/dialog/with-dialog';
 import { ProcessUpdateFormDialogData } from '~/store/processes/process-update-actions';
 import { FormDialog } from '~/components/form-dialog/form-dialog';
-import { ProcessNameField } from '~/views-components/form-fields/process-form-fields';
+import { ProcessNameField, ProcessDescriptionField } from '~/views-components/form-fields/process-form-fields';
 
 type DialogProcessProps = WithDialogProps<{}> & InjectedFormProps<ProcessUpdateFormDialogData>;
 
@@ -21,4 +21,5 @@ export const DialogProcessUpdate = (props: DialogProcessProps) =>
 
 const ProcessEditFields = () => <span>
     <ProcessNameField />
+    <ProcessDescriptionField />
 </span>;

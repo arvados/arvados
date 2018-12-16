@@ -77,5 +77,6 @@ export enum ContextMenuKind {
     USER = "User",
     NODE = "Node",
     GROUPS = "Group",
-    GROUP_MEMBER = "GroupMember"
+    GROUP_MEMBER = "GroupMember",
+    LINK = "Link",
 }

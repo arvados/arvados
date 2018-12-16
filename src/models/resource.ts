@@ -46,6 +46,7 @@ export enum ResourceObjectType {
     CONTAINER = 'dz642',
     CONTAINER_REQUEST = 'xvhdp',
     GROUP = 'j7d0g',
+    LINK = 'o0j2j',
     LOG = '57u5n',
     REPOSITORY = 's0uqq',
     USER = 'tpzed',
@@ -98,6 +99,8 @@ export const extractUuidKind = (uuid: string = '') => {
             return ResourceKind.NODE;
         case ResourceObjectType.API_CLIENT_AUTHORIZATION:
             return ResourceKind.API_CLIENT_AUTHORIZATION;
+        case ResourceObjectType.LINK:
+            return ResourceKind.LINK;
         default:
             return undefined;
     }

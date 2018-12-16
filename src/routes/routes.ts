@@ -19,10 +19,12 @@ export const Routes = {
     REPOSITORIES: '/repositories',
     SHARED_WITH_ME: '/shared-with-me',
     RUN_PROCESS: '/run-process',
-    VIRTUAL_MACHINES: '/virtual-machines',
+    VIRTUAL_MACHINES_ADMIN: '/virtual-machines-admin',
+    VIRTUAL_MACHINES_USER: '/virtual-machines-user',
     WORKFLOWS: '/workflows',
     SEARCH_RESULTS: '/search-results',
-    SSH_KEYS: `/ssh-keys`,
+    SSH_KEYS_ADMIN: `/ssh-keys-admin`,
+    SSH_KEYS_USER: `/ssh-keys-user`,
     MY_ACCOUNT: '/my-account',
     KEEP_SERVICES: `/keep-services`,
     COMPUTE_NODES: `/nodes`,
@@ -30,6 +32,7 @@ export const Routes = {
     API_CLIENT_AUTHORIZATIONS: `/api_client_authorizations`,
     GROUPS: '/groups',
     GROUP_DETAILS: `/group/:id(${RESOURCE_UUID_PATTERN})`,
+    LINKS: '/links'
 };
 
 export const getResourceUrl = (uuid: string) => {
@@ -89,14 +92,20 @@ export const matchWorkflowRoute = (route: string) =>
 export const matchSearchResultsRoute = (route: string) =>
     matchPath<ResourceRouteParams>(route, { path: Routes.SEARCH_RESULTS });
 
-export const matchVirtualMachineRoute = (route: string) =>
-    matchPath<ResourceRouteParams>(route, { path: Routes.VIRTUAL_MACHINES });
+export const matchUserVirtualMachineRoute = (route: string) =>
+    matchPath<ResourceRouteParams>(route, { path: Routes.VIRTUAL_MACHINES_USER });
+
+export const matchAdminVirtualMachineRoute = (route: string) =>
+    matchPath<ResourceRouteParams>(route, { path: Routes.VIRTUAL_MACHINES_ADMIN });
 
 export const matchRepositoriesRoute = (route: string) =>
     matchPath<ResourceRouteParams>(route, { path: Routes.REPOSITORIES });
 
-export const matchSshKeysRoute = (route: string) =>
-    matchPath(route, { path: Routes.SSH_KEYS });
+export const matchSshKeysUserRoute = (route: string) =>
+    matchPath(route, { path: Routes.SSH_KEYS_USER });
+
+export const matchSshKeysAdminRoute = (route: string) =>
+    matchPath(route, { path: Routes.SSH_KEYS_ADMIN });
 
 export const matchMyAccountRoute = (route: string) =>
     matchPath(route, { path: Routes.MY_ACCOUNT });
@@ -118,3 +127,6 @@ export const matchGroupsRoute = (route: string) =>
 
 export const matchGroupDetailsRoute = (route: string) =>
     matchPath<ResourceRouteParams>(route, { path: Routes.GROUP_DETAILS });
+    
+export const matchLinksRoute = (route: string) =>
+    matchPath(route, { path: Routes.LINKS });

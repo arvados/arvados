@@ -7,6 +7,7 @@ import { RootStore } from '~/store/store';
 import * as Routes from '~/routes/routes';
 import * as WorkbenchActions from '~/store/workbench/workbench-actions';
 import { navigateToRootProject } from '~/store/navigation/navigation-action';
+import { dialogActions } from '~/store/dialog/dialog-actions';
 
 export const addRouteChangeHandlers = (history: History, store: RootStore) => {
     const handler = handleLocationChange(store);
@@ -26,9 +27,11 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
     const searchResultsMatch = Routes.matchSearchResultsRoute(pathname);
     const sharedWithMeMatch = Routes.matchSharedWithMeRoute(pathname);
     const runProcessMatch = Routes.matchRunProcessRoute(pathname);
-    const virtualMachineMatch = Routes.matchVirtualMachineRoute(pathname);
+    const virtualMachineUserMatch = Routes.matchUserVirtualMachineRoute(pathname);
+    const virtualMachineAdminMatch = Routes.matchAdminVirtualMachineRoute(pathname);
     const workflowMatch = Routes.matchWorkflowRoute(pathname);
-    const sshKeysMatch = Routes.matchSshKeysRoute(pathname);
+    const sshKeysUserMatch = Routes.matchSshKeysUserRoute(pathname);
+    const sshKeysAdminMatch = Routes.matchSshKeysAdminRoute(pathname);
     const keepServicesMatch = Routes.matchKeepServicesRoute(pathname);
     const computeNodesMatch = Routes.matchComputeNodesRoute(pathname);
     const apiClientAuthorizationsMatch = Routes.matchApiClientAuthorizationsRoute(pathname);
@@ -36,6 +39,9 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
     const userMatch = Routes.matchUsersRoute(pathname);
     const groupsMatch = Routes.matchGroupsRoute(pathname);
     const groupDetailsMatch = Routes.matchGroupDetailsRoute(pathname);
+    const linksMatch = Routes.matchLinksRoute(pathname);
+
+    store.dispatch(dialogActions.CLOSE_ALL_DIALOGS());
 
     if (projectMatch) {
         store.dispatch(WorkbenchActions.loadProject(projectMatch.params.id));
@@ -59,11 +65,15 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
         store.dispatch(WorkbenchActions.loadWorkflow);
     } else if (searchResultsMatch) {
         store.dispatch(WorkbenchActions.loadSearchResults);
-    } else if (virtualMachineMatch) {
+    } else if (virtualMachineUserMatch) {
         store.dispatch(WorkbenchActions.loadVirtualMachines);
-    } else if(repositoryMatch) {
+    } else if (virtualMachineAdminMatch) {
+        store.dispatch(WorkbenchActions.loadVirtualMachines);
+    } else if (repositoryMatch) {
         store.dispatch(WorkbenchActions.loadRepositories);
-    } else if (sshKeysMatch) {
+    } else if (sshKeysUserMatch) {
+        store.dispatch(WorkbenchActions.loadSshKeys);
+    } else if (sshKeysAdminMatch) {
         store.dispatch(WorkbenchActions.loadSshKeys);
     } else if (keepServicesMatch) {
         store.dispatch(WorkbenchActions.loadKeepServices);
@@ -73,11 +83,13 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
         store.dispatch(WorkbenchActions.loadApiClientAuthorizations);
     } else if (myAccountMatch) {
         store.dispatch(WorkbenchActions.loadMyAccount);
-    }else if (userMatch) {
+    } else if (userMatch) {
         store.dispatch(WorkbenchActions.loadUsers);
     } else if (groupsMatch) {
         store.dispatch(WorkbenchActions.loadGroupsPanel);
     } else if (groupDetailsMatch) {
         store.dispatch(WorkbenchActions.loadGroupDetailsPanel(groupDetailsMatch.params.id));
+    } else if (linksMatch) {
+        store.dispatch(WorkbenchActions.loadLinks);
     }
 };
