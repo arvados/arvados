@@ -29,6 +29,7 @@ import { RepositoriesService } from '~/services/repositories-service/repositorie
 import { AuthorizedKeysService } from '~/services/authorized-keys-service/authorized-keys-service';
 import { VocabularyService } from '~/services/vocabulary-service/vocabulary-service';
 import { NodeService } from '~/services/node-service/node-service';
+import { ClientAuthorizationsService } from "~/services/client-authorizations-service/client-authorizations-service";
 
 export type ServiceRepository = ReturnType<typeof createServices>;
 
@@ -40,6 +41,7 @@ export const createServices = (config: Config, actions: ApiActions) => {
     webdavClient.defaults.baseURL = config.keepWebServiceUrl;
 
     const authorizedKeysService = new AuthorizedKeysService(apiClient, actions);
+    const clientAuthorizationsService = new ClientAuthorizationsService(apiClient, actions);
     const containerRequestService = new ContainerRequestService(apiClient, actions);
     const containerService = new ContainerService(apiClient, actions);
     const groupsService = new GroupsService(apiClient, actions);
@@ -68,6 +70,7 @@ export const createServices = (config: Config, actions: ApiActions) => {
         apiClient,
         authService,
         authorizedKeysService,
+        clientAuthorizationsService,
         collectionFilesService,
         collectionService,
         containerRequestService,

@@ -39,7 +39,8 @@ import { sharedWithMePanelActions } from '~/store/shared-with-me-panel/shared-wi
 import { loadSharedWithMePanel } from '~/store/shared-with-me-panel/shared-with-me-panel-actions';
 import { CopyFormDialogData } from '~/store/copy-dialog/copy-dialog';
 import { loadWorkflowPanel, workflowPanelActions } from '~/store/workflow-panel/workflow-panel-actions';
-import { loadSshKeysPanel } from '~/store/auth/auth-action';
+import { loadSshKeysPanel } from '~/store/auth/auth-action-ssh';
+import { loadSiteManagerPanel } from '~/store/auth/auth-action-session';
 import { workflowPanelColumns } from '~/views/workflow-panel/workflow-panel-view';
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions';
 import { getProgressIndicator } from '~/store/progress-indicator/progress-indicator-reducer';
@@ -400,7 +401,7 @@ export const loadVirtualMachines = handleFirstTimeLoad(
         await dispatch(loadVirtualMachinesPanel());
         dispatch(setBreadcrumbs([{ label: 'Virtual Machines' }]));
     });
-    
+
 export const loadRepositories = handleFirstTimeLoad(
     async (dispatch: Dispatch<any>) => {
         await dispatch(loadRepositoriesPanel());
@@ -410,6 +411,11 @@ export const loadRepositories = handleFirstTimeLoad(
 export const loadSshKeys = handleFirstTimeLoad(
     async (dispatch: Dispatch<any>) => {
         await dispatch(loadSshKeysPanel());
+    });
+
+export const loadSiteManager = handleFirstTimeLoad(
+    async (dispatch: Dispatch<any>) => {
+        await dispatch(loadSiteManagerPanel());
     });
 
 export const loadKeepServices = handleFirstTimeLoad(

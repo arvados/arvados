@@ -45,6 +45,7 @@ import SplitterLayout from 'react-splitter-layout';
 import { WorkflowPanel } from '~/views/workflow-panel/workflow-panel';
 import { SearchResultsPanel } from '~/views/search-results-panel/search-results-panel';
 import { SshKeyPanel } from '~/views/ssh-key-panel/ssh-key-panel';
+import { SiteManagerPanel } from "~/views/site-manager-panel/site-manager-panel";
 import { SharingDialog } from '~/views-components/sharing-dialog/sharing-dialog';
 import { AdvancedTabDialog } from '~/views-components/advanced-tab-dialog/advanced-tab-dialog';
 import { ProcessInputDialog } from '~/views-components/process-input-dialog/process-input-dialog';
@@ -139,6 +140,7 @@ export const WorkbenchPanel =
                                 <Route path={Routes.VIRTUAL_MACHINES} component={VirtualMachinePanel} />
                                 <Route path={Routes.REPOSITORIES} component={RepositoriesPanel} />
                                 <Route path={Routes.SSH_KEYS} component={SshKeyPanel} />
+                                <Route path={Routes.SITE_MANAGER} component={SiteManagerPanel} />
                                 <Route path={Routes.KEEP_SERVICES} component={KeepServicePanel} />
                                 <Route path={Routes.COMPUTE_NODES} component={ComputeNodePanel} />
                             </Switch>

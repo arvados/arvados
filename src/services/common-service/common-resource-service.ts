@@ -4,7 +4,6 @@
 
 import * as _ from "lodash";
 import { AxiosInstance, AxiosPromise } from "axios";
-import { Resource } from "src/models/resource";
 import * as uuid from "uuid/v4";
 import { ApiActions } from "~/services/api/api-actions";
 
@@ -40,7 +39,7 @@ export enum CommonResourceServiceError {
     NONE = 'None'
 }
 
-export class CommonResourceService<T extends Resource> {
+export class CommonResourceService<T> {
 
     static mapResponseKeys = (response: { data: any }) =>
         CommonResourceService.mapKeys(_.camelCase)(response.data)

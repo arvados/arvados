@@ -5,8 +5,15 @@
 import * as React from 'react';
 import { WrappedFieldProps } from 'redux-form';
 import { ArvadosTheme } from '~/common/custom-theme';
-import { TextField as MaterialTextField, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
+import {
+    TextField as MaterialTextField,
+    StyleRulesCallback,
+    WithStyles,
+    withStyles,
+    PropTypes
+} from '@material-ui/core';
 import RichTextEditor from 'react-rte';
+import Margin = PropTypes.Margin;
 
 type CssRules = 'textField';
 
@@ -18,8 +25,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 type TextFieldProps = WrappedFieldProps & WithStyles<CssRules>;
 
-export const TextField = withStyles(styles)((props: TextFieldProps & { 
-    label?: string, autoFocus?: boolean, required?: boolean, select?: boolean, children: React.ReactNode
+export const TextField = withStyles(styles)((props: TextFieldProps & {
+    label?: string, autoFocus?: boolean, required?: boolean, select?: boolean, children: React.ReactNode, margin?: Margin
 }) =>
     <MaterialTextField
         helperText={props.meta.touched && props.meta.error}
@@ -33,6 +40,7 @@ export const TextField = withStyles(styles)((props: TextFieldProps & {
         required={props.required}
         select={props.select}
         children={props.children}
+        margin={props.margin}
         {...props.input}
     />);
 

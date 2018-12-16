@@ -5,6 +5,7 @@
 import { require } from './require';
 import { maxLength } from './max-length';
 import { isRsaKey } from './is-rsa-key';
+import { isRemoteHost } from "./is-remote-host";
 
 export const TAG_KEY_VALIDATION = [require, maxLength(255)];
 export const TAG_VALUE_VALIDATION = [require, maxLength(255)];
@@ -26,3 +27,5 @@ export const REPOSITORY_NAME_VALIDATION = [require, maxLength(255)];
 
 export const SSH_KEY_PUBLIC_VALIDATION = [require, isRsaKey, maxLength(1024)];
 export const SSH_KEY_NAME_VALIDATION = [require, maxLength(255)];
+
+export const SITE_MANAGER_REMOTE_HOST_VALIDATION = [require, isRemoteHost, maxLength(255)];

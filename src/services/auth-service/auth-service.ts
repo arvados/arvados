@@ -2,10 +2,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { User } from "~/models/user";
+import { getUserFullname, User } from "~/models/user";
 import { AxiosInstance } from "axios";
 import { ApiActions } from "~/services/api/api-actions";
 import * as uuid from "uuid/v4";
+import { Session } from "~/models/session";
+import { Config } from "~/common/config";
+import { merge, uniqWith, uniqBy } from "lodash";
 
 export const API_TOKEN_KEY = 'apiToken';
 export const USER_EMAIL_KEY = 'userEmail';
@@ -61,7 +64,7 @@ export class AuthService {
         const lastName = localStorage.getItem(USER_LAST_NAME_KEY);
         const uuid = this.getUuid();
         const ownerUuid = this.getOwnerUuid();
-        const isAdmin = this.getIsAdmin();   
+        const isAdmin = this.getIsAdmin();
 
         return email && firstName && lastName && uuid && ownerUuid
             ? { email, firstName, lastName, uuid, ownerUuid, isAdmin }
@@ -123,5 +126,48 @@ export class AuthService {
         const uuid = this.getOwnerUuid();
         const uuidParts = uuid ? uuid.split('-') : [];
         return uuidParts.length > 1 ? `${uuidParts[0]}-${uuidParts[1]}` : undefined;
+    }
+
+    public getSessions(): Session[] {
+        try {
+            const sessions = JSON.parse(localStorage.getItem("sessions") || '');
+            return sessions;
+        } catch {
+            return [];
+        }
+    }
+
+    public saveSessions(sessions: Session[]) {
+        localStorage.setItem("sessions", JSON.stringify(sessions));
+    }
+
+    public buildSessions(cfg: Config, user?: User) {
+        const currentSession = {
+            clusterId: cfg.uuidPrefix,
+            remoteHost: cfg.baseUrl,
+            username: getUserFullname(user),
+            email: user ? user.email : '',
+            token: this.getApiToken(),
+            loggedIn: true
+        } as Session;
+        const localSessions = this.getSessions();
+        const cfgSessions = Object.keys(cfg.remoteHosts).map(clusterId => {
+            const remoteHost = cfg.remoteHosts[clusterId];
+            return {
+                clusterId,
+                remoteHost,
+                username: '',
+                email: '',
+                token: '',
+                loggedIn: false
+            } as Session;
+        });
+        const sessions = [currentSession]
+            .concat(cfgSessions)
+            .concat(localSessions);
+
+        const uniqSessions = uniqBy(sessions, 'clusterId');
+
+        return uniqSessions;
     }
 }

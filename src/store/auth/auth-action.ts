@@ -4,16 +4,13 @@
 
 import { ofType, unionize, UnionOf } from '~/common/unionize';
 import { Dispatch } from "redux";
-import { reset, stopSubmit, startSubmit, FormErrors } from 'redux-form';
 import { AxiosInstance } from "axios";
 import { RootState } from "../store";
-import { snackbarActions } from '~/store/snackbar/snackbar-actions';
-import { dialogActions } from '~/store/dialog/dialog-actions';
-import { setBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions';
 import { ServiceRepository } from "~/services/services";
-import { getAuthorizedKeysServiceError, AuthorizedKeysServiceError } from '~/services/authorized-keys-service/authorized-keys-service';
-import { KeyType, SshKeyResource } from '~/models/ssh-key';
+import { SshKeyResource } from '~/models/ssh-key';
 import { User } from "~/models/user";
+import { Session } from "~/models/session";
+import { Config } from '~/common/config';
 
 export const authActions = unionize({
     SAVE_API_TOKEN: ofType<string>(),
@@ -24,18 +21,11 @@ export const authActions = unionize({
     USER_DETAILS_SUCCESS: ofType<User>(),
     SET_SSH_KEYS: ofType<SshKeyResource[]>(),
     ADD_SSH_KEY: ofType<SshKeyResource>(),
-    REMOVE_SSH_KEY: ofType<string>()
+    REMOVE_SSH_KEY: ofType<string>(),
+    SET_SESSIONS: ofType<Session[]>(),
+    ADD_SESSION: ofType<Session>(),
+    REMOVE_SESSION: ofType<string>()
 });
-
-export const SSH_KEY_CREATE_FORM_NAME = 'sshKeyCreateFormName';
-export const SSH_KEY_PUBLIC_KEY_DIALOG = 'sshKeyPublicKeyDialog';
-export const SSH_KEY_REMOVE_DIALOG = 'sshKeyRemoveDialog';
-export const SSH_KEY_ATTRIBUTES_DIALOG = 'sshKeyAttributesDialog';
-
-export interface SshKeyCreateFormDialogData {
-    publicKey: string;
-    name: string;
-}
 
 function setAuthorizationHeader(services: ServiceRepository, token: string) {
     services.apiClient.defaults.headers.common = {
@@ -50,7 +40,7 @@ function removeAuthorizationHeader(client: AxiosInstance) {
     delete client.defaults.headers.common.Authorization;
 }
 
-export const initAuth = () => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+export const initAuth = (config: Config) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     const user = services.authService.getUser();
     const token = services.authService.getApiToken();
     if (token) {
@@ -59,6 +49,9 @@ export const initAuth = () => (dispatch: Dispatch, getState: () => RootState, se
     if (token && user) {
         dispatch(authActions.INIT({ user, token }));
     }
+    const sessions = services.authService.buildSessions(config, user);
+    services.authService.saveSessions(sessions);
+    dispatch(authActions.SET_SESSIONS(sessions));
 };
 
 export const saveApiToken = (token: string) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -88,78 +81,5 @@ export const getUserDetails = () => (dispatch: Dispatch, getState: () => RootSta
         return user;
     });
 };
-
-export const openSshKeyCreateDialog = () => dialogActions.OPEN_DIALOG({ id: SSH_KEY_CREATE_FORM_NAME, data: {} });
-
-export const openPublicKeyDialog = (name: string, publicKey: string) =>
-    dialogActions.OPEN_DIALOG({ id: SSH_KEY_PUBLIC_KEY_DIALOG, data: { name, publicKey } });
-
-export const openSshKeyAttributesDialog = (uuid: string) =>
-    (dispatch: Dispatch, getState: () => RootState) => {
-        const sshKey = getState().auth.sshKeys.find(it => it.uuid === uuid);
-        dispatch(dialogActions.OPEN_DIALOG({ id: SSH_KEY_ATTRIBUTES_DIALOG, data: { sshKey } }));
-    };
-
-export const openSshKeyRemoveDialog = (uuid: string) =>
-    (dispatch: Dispatch, getState: () => RootState) => {
-        dispatch(dialogActions.OPEN_DIALOG({
-            id: SSH_KEY_REMOVE_DIALOG,
-            data: {
-                title: 'Remove public key',
-                text: 'Are you sure you want to remove this public key?',
-                confirmButtonLabel: 'Remove',
-                uuid
-            }
-        }));
-    };
-
-export const removeSshKey = (uuid: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...' }));
-        await services.authorizedKeysService.delete(uuid);
-        dispatch(authActions.REMOVE_SSH_KEY(uuid));
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Public Key has been successfully removed.', hideDuration: 2000 }));
-    };
-
-export const createSshKey = (data: SshKeyCreateFormDialogData) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const userUuid = getState().auth.user!.uuid;
-        const { name, publicKey } = data;
-        dispatch(startSubmit(SSH_KEY_CREATE_FORM_NAME));
-        try {
-            const newSshKey = await services.authorizedKeysService.create({
-                name,
-                publicKey,
-                keyType: KeyType.SSH,
-                authorizedUserUuid: userUuid
-            });
-            dispatch(authActions.ADD_SSH_KEY(newSshKey));
-            dispatch(dialogActions.CLOSE_DIALOG({ id: SSH_KEY_CREATE_FORM_NAME }));
-            dispatch(reset(SSH_KEY_CREATE_FORM_NAME));
-            dispatch(snackbarActions.OPEN_SNACKBAR({
-                message: "Public key has been successfully created.",
-                hideDuration: 2000
-            }));
-        } catch (e) {
-            const error = getAuthorizedKeysServiceError(e);
-            if (error === AuthorizedKeysServiceError.UNIQUE_PUBLIC_KEY) {
-                dispatch(stopSubmit(SSH_KEY_CREATE_FORM_NAME, { publicKey: 'Public key already exists.' } as FormErrors));
-            } else if (error === AuthorizedKeysServiceError.INVALID_PUBLIC_KEY) {
-                dispatch(stopSubmit(SSH_KEY_CREATE_FORM_NAME, { publicKey: 'Public key is invalid' } as FormErrors));
-            }
-        }
-    };
-
-export const loadSshKeysPanel = () =>
-    async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        try {
-            dispatch(setBreadcrumbs([{ label: 'SSH Keys'}]));
-            const response = await services.authorizedKeysService.list();
-            dispatch(authActions.SET_SSH_KEYS(response.items));
-        } catch (e) {
-            return;
-        }
-    };
-
 
 export type AuthAction = UnionOf<typeof authActions>;

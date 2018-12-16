@@ -91,7 +91,7 @@ fetchConfig()
         const store = configureStore(history, services);
 
         store.subscribe(initListener(history, store, services, config));
-        store.dispatch(initAuth());
+        store.dispatch(initAuth(config));
         store.dispatch(setBuildInfo());
         store.dispatch(setCurrentTokenDialogApiHost(apiHost));
         store.dispatch(setUuidPrefix(config.uuidPrefix));
