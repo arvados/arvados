@@ -146,7 +146,7 @@ interface AddGroupMemberArgs {
     permissionService: PermissionService;
 }
 
-const addGroupMember = async ({ user, group, ...args }: AddGroupMemberArgs) => {
+export const addGroupMember = async ({ user, group, ...args }: AddGroupMemberArgs) => {
 
 
 
