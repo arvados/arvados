@@ -5,7 +5,6 @@
 import * as React from 'react';
 import { connect } from 'react-redux';
 import { Grid, Button, Typography } from "@material-ui/core";
-
 import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
 import { DataColumns } from '~/components/data-table/data-table';
 import { SortDirection } from '~/components/data-table/data-column';
@@ -19,7 +18,6 @@ import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
 import { getResource, ResourcesState, filterResources } from '~/store/resources/resources';
 import { GroupResource } from '~/models/group';
 import { RootState } from '~/store/store';
-import { Dispatch } from 'redux';
 import { openContextMenu } from '~/store/context-menu/context-menu-actions';
 import { ResourceKind } from '~/models/resource';
 import { LinkClass, LinkResource } from '~/models/link';
