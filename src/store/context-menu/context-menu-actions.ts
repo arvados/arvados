@@ -17,8 +17,8 @@ import { RepositoryResource } from '~/models/repositories';
 import { SshKeyResource } from '~/models/ssh-key';
 import { VirtualMachinesResource } from '~/models/virtual-machines';
 import { KeepServiceResource } from '~/models/keep-services';
-import { NodeResource } from '~/models/node';
 import { ApiClientAuthorization } from '~/models/api-client-authorization';
+import { ProcessResource } from '~/models/process';
 
 export const contextMenuActions = unionize({
     OPEN_CONTEXT_MENU: ofType<{ position: ContextMenuPosition, resource: ContextMenuResource }>(),
@@ -35,7 +35,7 @@ export type ContextMenuResource = {
     kind: ResourceKind,
     menuKind: ContextMenuKind;
     isTrashed?: boolean;
-    index?: number
+    outputUuid?: string;
 };
 
 export const isKeyboardClick = (event: React.MouseEvent<HTMLElement>) => event.nativeEvent.detail === 0;
@@ -111,18 +111,18 @@ export const openKeepServiceContextMenu = (event: React.MouseEvent<HTMLElement>,
         }));
     };
 
-export const openComputeNodeContextMenu = (event: React.MouseEvent<HTMLElement>, computeNode: NodeResource) =>
+export const openComputeNodeContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) =>
     (dispatch: Dispatch) => {
         dispatch<any>(openContextMenu(event, {
             name: '',
-            uuid: computeNode.uuid,
-            ownerUuid: computeNode.ownerUuid,
+            uuid: resourceUuid,
+            ownerUuid: '',
             kind: ResourceKind.NODE,
             menuKind: ContextMenuKind.NODE
         }));
     };
 
-export const openApiClientAuthorizationContextMenu = 
+export const openApiClientAuthorizationContextMenu =
     (event: React.MouseEvent<HTMLElement>, apiClientAuthorization: ApiClientAuthorization) =>
         (dispatch: Dispatch) => {
             dispatch<any>(openContextMenu(event, {
@@ -178,15 +178,18 @@ export const openSidePanelContextMenu = (event: React.MouseEvent<HTMLElement>, i
 
 export const openProcessContextMenu = (event: React.MouseEvent<HTMLElement>, process: Process) =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        const resource = {
-            uuid: process.containerRequest.uuid,
-            ownerUuid: process.containerRequest.ownerUuid,
-            kind: ResourceKind.PROCESS,
-            name: process.containerRequest.name,
-            description: process.containerRequest.description,
-            menuKind: ContextMenuKind.PROCESS
-        };
-        dispatch<any>(openContextMenu(event, resource));
+        const res = getResource<ProcessResource>(process.containerRequest.uuid)(getState().resources);
+        if (res) {
+            dispatch<any>(openContextMenu(event, {
+                uuid: res.uuid,
+                ownerUuid: res.ownerUuid,
+                kind: ResourceKind.PROCESS,
+                name: res.name,
+                description: res.description,
+                outputUuid: res.outputUuid || '',
+                menuKind: ContextMenuKind.PROCESS
+            }));
+        }
     };
 
 export const resourceKindToContextMenuKind = (uuid: string) => {

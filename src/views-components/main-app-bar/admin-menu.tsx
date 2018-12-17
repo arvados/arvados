@@ -17,19 +17,22 @@ import { openUserPanel } from "~/store/users/users-actions";
 
 interface AdminMenuProps {
     user?: User;
+    currentRoute: string;
 }
 
 const mapStateToProps = (state: RootState): AdminMenuProps => ({
-    user: state.auth.user
+    user: state.auth.user,
+    currentRoute: state.router.location ? state.router.location.pathname : ''
 });
 
 export const AdminMenu = connect(mapStateToProps)(
-    ({ user, dispatch }: AdminMenuProps & DispatchProp<any>) =>
+    ({ user, dispatch, currentRoute }: AdminMenuProps & DispatchProp<any>) =>
         user
             ? <DropdownMenu
                 icon={<AdminMenuIcon />}
                 id="admin-menu"
-                title="Admin Panel">
+                title="Admin Panel"
+                key={currentRoute}>
                 <MenuItem onClick={() => dispatch(openRepositoriesPanel())}>Repositories</MenuItem>
                 <MenuItem onClick={() => dispatch(openAdminVirtualMachines())}>Virtual Machines</MenuItem>
                 <MenuItem onClick={() => dispatch(NavigationAction.navigateToSshKeysAdmin)}>Ssh Keys</MenuItem>
