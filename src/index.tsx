@@ -56,6 +56,8 @@ import { virtualMachineActionSet } from '~/views-components/context-menu/action-
 import { userActionSet } from '~/views-components/context-menu/action-sets/user-action-set';
 import { computeNodeActionSet } from '~/views-components/context-menu/action-sets/compute-node-action-set';
 import { apiClientAuthorizationActionSet } from '~/views-components/context-menu/action-sets/api-client-authorization-action-set';
+import { groupActionSet } from '~/views-components/context-menu/action-sets/group-action-set';
+import { groupMemberActionSet } from '~/views-components/context-menu/action-sets/group-member-action-set';
 import { linkActionSet } from '~/views-components/context-menu/action-sets/link-action-set';
 
 console.log(`Starting arvados [${getBuildInfo()}]`);
@@ -81,6 +83,8 @@ addMenuActionSet(ContextMenuKind.USER, userActionSet);
 addMenuActionSet(ContextMenuKind.LINK, linkActionSet);
 addMenuActionSet(ContextMenuKind.NODE, computeNodeActionSet);
 addMenuActionSet(ContextMenuKind.API_CLIENT_AUTHORIZATION, apiClientAuthorizationActionSet);
+addMenuActionSet(ContextMenuKind.GROUPS, groupActionSet);
+addMenuActionSet(ContextMenuKind.GROUP_MEMBER, groupMemberActionSet);
 
 fetchConfig()
     .then(({ config, apiHost }) => {

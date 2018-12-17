@@ -39,6 +39,8 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
     const apiClientAuthorizationsMatch = Routes.matchApiClientAuthorizationsRoute(pathname);
     const myAccountMatch = Routes.matchMyAccountRoute(pathname);
     const userMatch = Routes.matchUsersRoute(pathname);
+    const groupsMatch = Routes.matchGroupsRoute(pathname);
+    const groupDetailsMatch = Routes.matchGroupDetailsRoute(pathname);
     const linksMatch = Routes.matchLinksRoute(pathname);
 
     store.dispatch(dialogActions.CLOSE_ALL_DIALOGS());
@@ -87,6 +89,10 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
         store.dispatch(WorkbenchActions.loadMyAccount);
     } else if (userMatch) {
         store.dispatch(WorkbenchActions.loadUsers);
+    } else if (groupsMatch) {
+        store.dispatch(WorkbenchActions.loadGroupsPanel);
+    } else if (groupDetailsMatch) {
+        store.dispatch(WorkbenchActions.loadGroupDetailsPanel(groupDetailsMatch.params.id));
     } else if (linksMatch) {
         store.dispatch(WorkbenchActions.loadLinks);
     }

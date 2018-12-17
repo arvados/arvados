@@ -14,7 +14,7 @@ import { favoritePanelActions } from '~/store/favorite-panel/favorite-panel-acti
 import { projectPanelColumns } from '~/views/project-panel/project-panel';
 import { favoritePanelColumns } from '~/views/favorite-panel/favorite-panel';
 import { matchRootRoute } from '~/routes/routes';
-import { setSidePanelBreadcrumbs, setProcessBreadcrumbs, setSharedWithMeBreadcrumbs, setTrashBreadcrumbs, setBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions';
+import { setSidePanelBreadcrumbs, setProcessBreadcrumbs, setSharedWithMeBreadcrumbs, setTrashBreadcrumbs, setBreadcrumbs, setGroupDetailsBreadcrumbs, setGroupsBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions';
 import { navigateToProject } from '~/store/navigation/navigation-action';
 import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
 import { ServiceRepository } from '~/services/services';
@@ -65,6 +65,10 @@ import { linkPanelColumns } from '~/views/link-panel/link-panel-root';
 import { userPanelColumns } from '~/views/user-panel/user-panel';
 import { computeNodePanelColumns } from '~/views/compute-node-panel/compute-node-panel-root';
 import { loadApiClientAuthorizationsPanel } from '~/store/api-client-authorizations/api-client-authorizations-actions';
+import * as groupPanelActions from '~/store/groups-panel/groups-panel-actions';
+import { groupsPanelColumns } from '~/views/groups-panel/groups-panel';
+import * as groupDetailsPanelActions from '~/store/group-details-panel/group-details-panel-actions';
+import { groupDetailsPanelColumns } from '~/views/group-details-panel/group-details-panel';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -99,6 +103,8 @@ export const loadWorkbench = () =>
                 dispatch(workflowPanelActions.SET_COLUMNS({ columns: workflowPanelColumns }));
                 dispatch(searchResultsPanelActions.SET_COLUMNS({ columns: searchResultsPanelColumns }));
                 dispatch(userBindedActions.SET_COLUMNS({ columns: userPanelColumns }));
+                dispatch(groupPanelActions.GroupsPanelActions.SET_COLUMNS({ columns: groupsPanelColumns }));
+                dispatch(groupDetailsPanelActions.GroupDetailsPanelActions.SET_COLUMNS({columns: groupDetailsPanelColumns}));
                 dispatch(linkPanelActions.SET_COLUMNS({ columns: linkPanelColumns }));
                 dispatch(computeNodesActions.SET_COLUMNS({ columns: computeNodePanelColumns }));
                 dispatch<any>(initSidePanelTree());
@@ -454,6 +460,20 @@ export const loadApiClientAuthorizations = handleFirstTimeLoad(
     async (dispatch: Dispatch<any>) => {
         await dispatch(loadApiClientAuthorizationsPanel());
     });
+
+export const loadGroupsPanel = handleFirstTimeLoad(
+    (dispatch: Dispatch<any>) => {
+        dispatch(setGroupsBreadcrumbs());
+        dispatch(groupPanelActions.loadGroupsPanel());
+    });
+
+
+export const loadGroupDetailsPanel = (groupUuid: string) =>
+    handleFirstTimeLoad(
+        (dispatch: Dispatch<any>) => {
+            dispatch(setGroupDetailsBreadcrumbs(groupUuid));
+            dispatch(groupDetailsPanelActions.loadGroupDetailsPanel(groupUuid));
+        });
 
 const finishLoadingProject = (project: GroupContentsResource | string) =>
     async (dispatch: Dispatch<any>) => {

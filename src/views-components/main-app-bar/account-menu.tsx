@@ -11,9 +11,9 @@ import { DispatchProp, connect } from 'react-redux';
 import { logout } from '~/store/auth/auth-action';
 import { RootState } from "~/store/store";
 import { openCurrentTokenDialog } from '~/store/current-token-dialog/current-token-dialog-actions';
-import { openRepositoriesPanel } from "~/store/repositories/repositories-actions";
 import { navigateToSshKeysUser, navigateToMyAccount } from '~/store/navigation/navigation-action';
 import { openUserVirtualMachines } from "~/store/virtual-machines/virtual-machines-actions";
+import { openRepositoriesPanel } from '~/store/repositories/repositories-actions';
 
 interface AccountMenuProps {
     user?: User;
