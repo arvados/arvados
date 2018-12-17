@@ -80,6 +80,7 @@ import { UserAttributesDialog } from '~/views-components/user-dialog/attributes-
 import { CreateUserDialog } from '~/views-components/dialog-forms/create-user-dialog';
 import { HelpApiClientAuthorizationDialog } from '~/views-components/api-client-authorizations-dialog/help-dialog';
 import { UserManageDialog } from '~/views-components/user-dialog/manage-dialog';
+import { SetupShellAccountDialog } from '~/views-components/dialog-forms/setup-shell-account-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -208,6 +209,7 @@ export const WorkbenchPanel =
             <RepositoryAttributesDialog />
             <RepositoriesSampleGitDialog />
             <RichTextEditorDialog />
+            <SetupShellAccountDialog />
             <SharingDialog />
             <Snackbar />
             <UpdateCollectionDialog />

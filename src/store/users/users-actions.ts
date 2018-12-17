@@ -17,10 +17,10 @@ export const USERS_PANEL_ID = 'usersPanel';
 export const USER_ATTRIBUTES_DIALOG = 'userAttributesDialog';
 export const USER_CREATE_FORM_NAME = 'userCreateFormName';
 export const USER_MANAGE_DIALOG = 'userManageDialog';
+export const SETUP_SHELL_ACCOUNT_DIALOG = 'setupShellAccountDialog';
 
 export interface UserCreateFormDialogData {
     email: string;
-    identityUrl: string;
     virtualMachineName: string;
     groupVirtualMachine: string;
 }
@@ -37,6 +37,13 @@ export const openUserManage = (uuid: string) =>
         const { resources } = getState();
         const data = getResource<UserResource>(uuid)(resources);
         dispatch(dialogActions.OPEN_DIALOG({ id: USER_MANAGE_DIALOG, data }));
+    };
+
+export const openSetupShellAccount = (uuid: string) =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const { resources } = getState();
+        const data = getResource<UserResource>(uuid)(resources);
+        dispatch(dialogActions.OPEN_DIALOG({ id: SETUP_SHELL_ACCOUNT_DIALOG, data }));
     };
 
 export const openUserCreateDialog = () =>
