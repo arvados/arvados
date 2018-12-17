@@ -105,6 +105,14 @@ func (sis *StubInstanceSet) Stop() {
 	sis.stopped = true
 }
 
+// stubServer is a fake server that runs an SSH service. It represents
+// a VM running in a fake cloud.
+//
+// Note this is distinct from a stubInstance, which is a snapshot of
+// the VM's metadata. As with a VM in a real cloud, the stubServer
+// keeps running (and might change IP addresses, shut down, etc.)
+// without updating any stubInstances that have been returned to
+// callers.
 type stubServer struct {
 	sis          *StubInstanceSet
 	id           cloud.InstanceID
