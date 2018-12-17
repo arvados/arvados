@@ -119,6 +119,32 @@ class ArvPathMapper(PathMapper):
         else:
             raise SourceLine(obj, "location", WorkflowException).makeError("Don't know what to do with '%s'" % obj["location"])
 
+    def needs_new_collection(self, srcobj, prefix=""):
+        loc = srcobj["location"]
+        if loc.startswith("_:"):
+            return True
+        if prefix:
+            if loc != prefix+srcobj["basename"]:
+                return True
+        else:
+            i = loc.rfind("/")
+            if i > -1:
+                prefix = loc[:i+1]
+            else:
+                prefix = loc+"/"
+        if srcobj["class"] == "File" and loc not in self._pathmap:
+            return True
+        if srcobj.get("secondaryFiles"):
+            for s in srcobj["secondaryFiles"]:
+                if self.needs_new_collection(s, prefix):
+                    return True
+        if srcobj.get("listing"):
+            prefix = "%s%s/" % (prefix, srcobj["basename"])
+            for l in srcobj["listing"]:
+                if self.needs_new_collection(l, prefix):
+                    return True
+        return False
+
     def setup(self, referenced_files, basedir):
         # type: (List[Any], unicode) -> None
         uploadfiles = set()
@@ -168,6 +194,9 @@ class ArvPathMapper(PathMapper):
                 self._pathmap[srcobj["location"]] = MapperEnt("keep:"+c.portable_data_hash(), ab, "Directory", True)
             elif srcobj["class"] == "File" and (srcobj.get("secondaryFiles") or
                 (srcobj["location"].startswith("_:") and "contents" in srcobj)):
+
+                if not self.needs_new_collection(srcobj):
+                    continue
 
                 c = arvados.collection.Collection(api_client=self.arvrunner.api,
                                                   keep_client=self.arvrunner.keep_client,
