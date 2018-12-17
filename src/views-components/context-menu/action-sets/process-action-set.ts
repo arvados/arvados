@@ -15,11 +15,12 @@ import { openMoveProcessDialog } from '~/store/processes/process-move-actions';
 import { openProcessUpdateDialog } from "~/store/processes/process-update-actions";
 import { openCopyProcessDialog } from '~/store/processes/process-copy-actions';
 import { openProcessCommandDialog } from '~/store/processes/process-command-actions';
-import { detailsPanelActions } from '~/store/details-panel/details-panel-action';
 import { openSharingDialog } from "~/store/sharing-dialog/sharing-dialog-actions";
 import { openAdvancedTabDialog } from "~/store/advanced-tab/advanced-tab";
 import { openProcessInputDialog } from "~/store/processes/process-input-actions";
 import { toggleDetailsPanel } from '~/store/details-panel/details-panel-action';
+import { openRemoveProcessDialog } from "~/store/processes/processes-actions";
+import { navigateToOutput } from "~/store/process-panel/process-panel-actions";
 
 export const processActionSet: ContextMenuActionSet = [[
     {
@@ -76,7 +77,9 @@ export const processActionSet: ContextMenuActionSet = [[
         icon: OutputIcon,
         name: "Outputs",
         execute: (dispatch, resource) => {
-            // add code
+            if(resource.outputUuid){
+                dispatch<any>(navigateToOutput(resource.outputUuid));
+            }
         }
     },
     {
@@ -113,12 +116,12 @@ export const processActionSet: ContextMenuActionSet = [[
         execute: (dispatch, resource) => {
             dispatch<any>(openAdvancedTabDialog(resource.uuid));
         }
+    },
+    {
+        name: "Remove",
+        icon: RemoveIcon,
+        execute: (dispatch, resource) => {
+            dispatch<any>(openRemoveProcessDialog(resource.uuid));
+        }
     }
-    // {
-    //     icon: RemoveIcon,
-    //     name: "Remove",
-    //     execute: (dispatch, resource) => {
-    //         // add code
-    //     }
-    // }
 ]];

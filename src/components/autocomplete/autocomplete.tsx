@@ -15,6 +15,7 @@ export interface AutocompleteProps<Item, Suggestion> {
     suggestions?: Suggestion[];
     error?: boolean;
     helperText?: string;
+    autofocus?: boolean;
     onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
     onBlur?: (event: React.FocusEvent<HTMLInputElement>) => void;
     onFocus?: (event: React.FocusEvent<HTMLInputElement>) => void;
@@ -29,6 +30,7 @@ export interface AutocompleteState {
     suggestionsOpen: boolean;
     selectedSuggestionIndex: number;
 }
+
 export class Autocomplete<Value, Suggestion> extends React.Component<AutocompleteProps<Value, Suggestion>, AutocompleteState> {
 
     state = {
@@ -59,6 +61,7 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
 
     renderInput() {
         return <Input
+            autoFocus={this.props.autofocus}
             inputRef={this.inputRef}
             value={this.props.value}
             startAdornment={this.renderChips()}

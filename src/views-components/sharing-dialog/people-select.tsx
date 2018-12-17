@@ -17,9 +17,12 @@ export interface Person {
     email: string;
     uuid: string;
 }
+
 export interface PeopleSelectProps {
 
     items: Person[];
+    label?: string;
+    autofocus?: boolean;
 
     onBlur?: (event: React.FocusEvent<HTMLInputElement>) => void;
     onFocus?: (event: React.FocusEvent<HTMLInputElement>) => void;
@@ -43,12 +46,16 @@ export const PeopleSelect = connect()(
         };
 
         render() {
+
+            const { label = 'Invite people' } = this.props;
+
             return (
                 <Autocomplete
-                    label='Invite people'
+                    label={label}
                     value={this.state.value}
                     items={this.props.items}
                     suggestions={this.state.suggestions}
+                    autofocus={this.props.autofocus}
                     onChange={this.handleChange}
                     onCreate={this.handleCreate}
                     onSelect={this.handleSelect}

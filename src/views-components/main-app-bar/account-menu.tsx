@@ -11,25 +11,28 @@ import { DispatchProp, connect } from 'react-redux';
 import { logout } from '~/store/auth/auth-action';
 import { RootState } from "~/store/store";
 import { openCurrentTokenDialog } from '~/store/current-token-dialog/current-token-dialog-actions';
-import { openRepositoriesPanel } from "~/store/repositories/repositories-actions";
 import { navigateToSshKeysUser, navigateToMyAccount } from '~/store/navigation/navigation-action';
 import { openUserVirtualMachines } from "~/store/virtual-machines/virtual-machines-actions";
+import { openRepositoriesPanel } from '~/store/repositories/repositories-actions';
 
 interface AccountMenuProps {
     user?: User;
+    currentRoute: string;
 }
 
 const mapStateToProps = (state: RootState): AccountMenuProps => ({
-    user: state.auth.user
+    user: state.auth.user,
+    currentRoute: state.router.location ? state.router.location.pathname : ''
 });
 
 export const AccountMenu = connect(mapStateToProps)(
-    ({ user, dispatch }: AccountMenuProps & DispatchProp<any>) =>
+    ({ user, dispatch, currentRoute }: AccountMenuProps & DispatchProp<any>) =>
         user
             ? <DropdownMenu
                 icon={<UserPanelIcon />}
                 id="account-menu"
-                title="Account Management">
+                title="Account Management"
+                key={currentRoute}>
                 <MenuItem>
                     {getUserFullname(user)}
                 </MenuItem>

@@ -6,16 +6,16 @@ import { Dispatch } from "redux";
 import { connect } from "react-redux";
 import { RootState } from '~/store/store';
 import { openContextMenu, resourceKindToContextMenuKind } from '~/store/context-menu/context-menu-actions';
-import { LinkPanelRoot, LinkPanelActionProps } from '~/views/link-panel/link-panel-root';
+import { LinkPanelRoot, LinkPanelRootActionProps, LinkPanelRootDataProps } from '~/views/link-panel/link-panel-root';
 import { ResourceKind } from '~/models/resource';
 
-const mapStateToProps = (state: RootState) => {
+const mapStateToProps = (state: RootState): LinkPanelRootDataProps => {
     return {
         resources: state.resources
     };
 };
 
-const mapDispatchToProps = (dispatch: Dispatch): LinkPanelActionProps => ({
+const mapDispatchToProps = (dispatch: Dispatch): LinkPanelRootActionProps => ({
     onContextMenu: (event, resourceUuid) => {
         const kind = resourceKindToContextMenuKind(resourceUuid);
         if (kind) {

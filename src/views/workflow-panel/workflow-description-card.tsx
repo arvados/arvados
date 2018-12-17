@@ -22,7 +22,7 @@ import { DataTableDefaultView } from '~/components/data-table-default-view/data-
 import { WorkflowResource, parseWorkflowDefinition, getWorkflowInputs, getInputLabel, stringifyInputType } from '~/models/workflow';
 import { WorkflowGraph } from "~/views/workflow-panel/workflow-graph";
 
-export type CssRules = 'root' | 'tab' | 'inputTab' | 'graphTab' | 'descriptionTab' | 'inputsTable';
+export type CssRules = 'root' | 'tab' | 'inputTab' | 'graphTab' | 'graphTabWithChosenWorkflow' | 'descriptionTab' | 'inputsTable';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -34,12 +34,12 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     inputTab: {
         overflow: 'auto',
         maxHeight: '300px',
-        marginTop: theme.spacing.unit,
-        '&:last-child': {
-            paddingBottom: theme.spacing.unit / 2,
-        }
+        marginTop: theme.spacing.unit
     },
     graphTab: {
+        marginTop: theme.spacing.unit,
+    },
+    graphTabWithChosenWorkflow: {
         overflow: 'auto',
         height: '450px',
         marginTop: theme.spacing.unit,
@@ -99,7 +99,7 @@ export const WorkflowDetailsCard = withStyles(styles)(
                             messages={['Please select a workflow to see its inputs.']} />
                     }
                 </CardContent>}
-                {value === 2 && <CardContent className={classes.graphTab}>
+                {value === 2 && <CardContent className={workflow ? classes.graphTabWithChosenWorkflow : classes.graphTab}>
                     {workflow
                         ? <WorkflowGraph workflow={workflow} />
                         : <DataTableDefaultView
