@@ -63,19 +63,19 @@ export const linkPanelColumns: DataColumns<string> = [
     }
 ];
 
-export interface LinkPanelDataProps {
+export interface LinkPanelRootDataProps {
     resources: ResourcesState;
 }
 
-export interface LinkPanelActionProps {
+export interface LinkPanelRootActionProps {
     onItemClick: (item: string) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: string) => void;
     onItemDoubleClick: (item: string) => void;
 }
 
-export type LinkPanelProps = LinkPanelDataProps & LinkPanelActionProps;
+export type LinkPanelRootProps = LinkPanelRootDataProps & LinkPanelRootActionProps;
 
-export const LinkPanelRoot = (props: LinkPanelProps) => {
+export const LinkPanelRoot = (props: LinkPanelRootProps) => {
     return <DataExplorer
         id={LINK_PANEL_ID}
         onRowClick={props.onItemClick}
