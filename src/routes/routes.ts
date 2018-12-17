@@ -30,6 +30,8 @@ export const Routes = {
     COMPUTE_NODES: `/nodes`,
     USERS: '/users',
     API_CLIENT_AUTHORIZATIONS: `/api_client_authorizations`,
+    GROUPS: '/groups',
+    GROUP_DETAILS: `/group/:id(${RESOURCE_UUID_PATTERN})`,
     LINKS: '/links'
 };
 
@@ -50,6 +52,8 @@ export const getResourceUrl = (uuid: string) => {
 export const getProcessUrl = (uuid: string) => `/processes/${uuid}`;
 
 export const getProcessLogUrl = (uuid: string) => `/process-logs/${uuid}`;
+
+export const getGroupUrl = (uuid: string) => `/group/${uuid}`;
 
 export interface ResourceRouteParams {
     id: string;
@@ -118,5 +122,11 @@ export const matchComputeNodesRoute = (route: string) =>
 export const matchApiClientAuthorizationsRoute = (route: string) =>
     matchPath(route, { path: Routes.API_CLIENT_AUTHORIZATIONS });
 
+export const matchGroupsRoute = (route: string) =>
+    matchPath(route, { path: Routes.GROUPS });
+
+export const matchGroupDetailsRoute = (route: string) =>
+    matchPath<ResourceRouteParams>(route, { path: Routes.GROUP_DETAILS });
+    
 export const matchLinksRoute = (route: string) =>
     matchPath(route, { path: Routes.LINKS });

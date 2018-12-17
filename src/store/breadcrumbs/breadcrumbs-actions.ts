@@ -14,6 +14,7 @@ import { ServiceRepository } from '~/services/services';
 import { SidePanelTreeCategory, activateSidePanelTreeItem } from '~/store/side-panel-tree/side-panel-tree-actions';
 import { updateResources } from '../resources/resources-actions';
 import { ResourceKind } from '~/models/resource';
+import { GroupResource } from '~/models/group';
 
 export const BREADCRUMBS = 'breadcrumbs';
 
@@ -88,4 +89,23 @@ export const setProcessBreadcrumbs = (processUuid: string) =>
         if (process) {
             dispatch<any>(setProjectBreadcrumbs(process.containerRequest.ownerUuid));
         }
+    };
+
+export const GROUPS_PANEL_LABEL = 'Groups';
+
+export const setGroupsBreadcrumbs = () =>
+    setBreadcrumbs([{ label: GROUPS_PANEL_LABEL }]);
+
+export const setGroupDetailsBreadcrumbs = (groupUuid: string) =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+
+        const group = getResource<GroupResource>(groupUuid)(getState().resources);
+
+        const breadcrumbs: ResourceBreadcrumb[] = [
+            { label: GROUPS_PANEL_LABEL, uuid: GROUPS_PANEL_LABEL },
+            { label: group ? group.name : groupUuid, uuid: groupUuid },
+        ];
+
+        dispatch(setBreadcrumbs(breadcrumbs));
+
     };
