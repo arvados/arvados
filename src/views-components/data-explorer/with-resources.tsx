@@ -22,3 +22,6 @@ export const withResource = (component: React.ComponentType<WithResourceProps & 
 export const getDataFromResource = (property: string, resource?: Resource) => {
     return resource && resource[property] ? resource[property] : '(none)';
 };
+
+export const withResourceData = (property: string, render: (data: any) => React.ReactElement<any>) =>
+    withResource(({ resource }) => render(getDataFromResource(property, resource)));
