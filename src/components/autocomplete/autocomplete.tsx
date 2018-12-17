@@ -124,7 +124,7 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
         if (event.key === 'Enter') {
             if (this.isSuggestionBoxOpen() && selectedSuggestionIndex < suggestions.length) {
                 // prevent form submissions when selecting a suggestion
-                event.preventDefault(); 
+                event.preventDefault();
                 onSelect(suggestions[selectedSuggestionIndex]);
             } else if (this.props.value.length > 0) {
                 onCreate();
@@ -149,6 +149,15 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
 
     renderChips() {
         const { items, onDelete } = this.props;
+
+        /**
+         * If input startAdornment prop is not undefined, input's label will stay above the input.
+         * If there is not items, we want the label to go back to placeholder position.
+         */
+        if (items.length === 0) {
+            return;
+        }
+
         return items.map(
             (item, index) =>
                 <Chip
