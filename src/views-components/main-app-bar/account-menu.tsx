@@ -17,19 +17,22 @@ import { openUserVirtualMachines } from "~/store/virtual-machines/virtual-machin
 
 interface AccountMenuProps {
     user?: User;
+    currentRoute: string;
 }
 
 const mapStateToProps = (state: RootState): AccountMenuProps => ({
-    user: state.auth.user
+    user: state.auth.user,
+    currentRoute: state.router.location ? state.router.location.pathname : ''
 });
 
 export const AccountMenu = connect(mapStateToProps)(
-    ({ user, dispatch }: AccountMenuProps & DispatchProp<any>) =>
+    ({ user, dispatch, currentRoute }: AccountMenuProps & DispatchProp<any>) =>
         user
             ? <DropdownMenu
                 icon={<UserPanelIcon />}
                 id="account-menu"
-                title="Account Management">
+                title="Account Management"
+                key={currentRoute}>
                 <MenuItem>
                     {getUserFullname(user)}
                 </MenuItem>
