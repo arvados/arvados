@@ -131,6 +131,17 @@ func (sch *Scheduler) bgLock(logger logrus.FieldLogger, uuid string) {
 		logger.Debug("locking in progress, doing nothing")
 		return
 	}
+	if ctr, ok := sch.queue.Get(uuid); !ok || ctr.State != arvados.ContainerStateQueued {
+		// This happens if the container has been cancelled or
+		// locked since runQueue called sch.queue.Entries(),
+		// possibly by a bgLock() call from a previous
+		// runQueue iteration. In any case, we will respond
+		// appropriately on the next runQueue iteration, which
+		// will have already been triggered by the queue
+		// update.
+		logger.WithField("State", ctr.State).Debug("container no longer queued by the time we decided to lock it, doing nothing")
+		return
+	}
 	sch.locking[uuid] = true
 	go func() {
 		defer func() {
