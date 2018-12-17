@@ -59,6 +59,7 @@ import { apiClientAuthorizationActionSet } from '~/views-components/context-menu
 import { groupActionSet } from '~/views-components/context-menu/action-sets/group-action-set';
 import { groupMemberActionSet } from '~/views-components/context-menu/action-sets/group-member-action-set';
 import { linkActionSet } from '~/views-components/context-menu/action-sets/link-action-set';
+import { loadFileViewersConfig } from '~/store/file-viewers/file-viewers-actions';
 
 console.log(`Starting arvados [${getBuildInfo()}]`);
 
@@ -106,6 +107,7 @@ fetchConfig()
         store.dispatch(setCurrentTokenDialogApiHost(apiHost));
         store.dispatch(setUuidPrefix(config.uuidPrefix));
         store.dispatch(loadVocabulary);
+        store.dispatch(loadFileViewersConfig);
 
         const TokenComponent = (props: any) => <ApiToken authService={services.authService} {...props} />;
         const MainPanelComponent = (props: any) => <MainPanel {...props} />;

@@ -50,6 +50,7 @@ export interface Config {
     websocketUrl: string;
     workbenchUrl: string;
     vocabularyUrl: string;
+    fileViewersConfigUrl: string;
 }
 
 export const fetchConfig = () => {
@@ -59,10 +60,15 @@ export const fetchConfig = () => {
         .catch(() => Promise.resolve(getDefaultConfig()))
         .then(config => Axios
             .get<Config>(getDiscoveryURL(config.API_HOST))
-            .then(response => ({ 
+            .then(response => ({
                 // TODO: After tests delete `|| '/vocabulary-example.json'`
-                config: {...response.data, vocabularyUrl: config.VOCABULARY_URL || '/vocabulary-example.json' }, 
-                apiHost: config.API_HOST, 
+                // TODO: After tests delete `|| '/file-viewers-example.json'`
+                config: {
+                    ...response.data,
+                    vocabularyUrl: config.VOCABULARY_URL || '/vocabulary-example.json',
+                    fileViewersConfigUrl: config.FILE_VIEWERS_CONFIG_URL || '/file-viewers-example.json'
+                },
+                apiHost: config.API_HOST,
             })));
 
 };
@@ -111,17 +117,20 @@ export const mockConfig = (config: Partial<Config>): Config => ({
     websocketUrl: '',
     workbenchUrl: '',
     vocabularyUrl: '',
+    fileViewersConfigUrl: '',
     ...config
 });
 
 interface ConfigJSON {
     API_HOST: string;
     VOCABULARY_URL: string;
+    FILE_VIEWERS_CONFIG_URL: string;
 }
 
 const getDefaultConfig = (): ConfigJSON => ({
     API_HOST: process.env.REACT_APP_ARVADOS_API_HOST || "",
     VOCABULARY_URL: "",
+    FILE_VIEWERS_CONFIG_URL: "",
 });
 
 const getDiscoveryURL = (apiHost: string) => `${window.location.protocol}//${apiHost}/discovery/v1/apis/arvados/v1/rest`;
