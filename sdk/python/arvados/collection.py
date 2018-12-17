@@ -600,6 +600,9 @@ class RichCollectionBase(CollectionBase):
 
         pathcomponents = path.split("/", 1)
         if pathcomponents[0]:
+            # Don't allow naming files/dirs \\056
+            if pathcomponents[0] == "\\056":
+                raise IOError(errno.EINVAL, "Invalid name", pathcomponents[0])
             item = self._items.get(pathcomponents[0])
             if len(pathcomponents) == 1:
                 if item is None:
@@ -1058,7 +1061,9 @@ class RichCollectionBase(CollectionBase):
             if stream:
                 buf.append(" ".join(normalize_stream(stream_name, stream)) + "\n")
             for dirname in [s for s in sorted_keys if isinstance(self[s], RichCollectionBase)]:
-                buf.append(self[dirname].manifest_text(stream_name=os.path.join(stream_name, dirname), strip=strip, normalize=True, only_committed=only_committed))
+                buf.append(self[dirname].manifest_text(
+                    stream_name=os.path.join(stream_name, dirname),
+                    strip=strip, normalize=True, only_committed=only_committed))
             return "".join(buf)
         else:
             if strip:
@@ -1832,6 +1837,15 @@ class Subcollection(RichCollectionBase):
         self.parent = newparent
         self.name = newname
         self.lock = self.parent.root_collection().lock
+
+    @synchronized
+    def _get_manifest_text(self, stream_name, strip, normalize, only_committed=False):
+        """Encode empty directories by using an \056-named (".") empty file"""
+        if len(self._items) == 0:
+            return "%s %s 0:0:\\056\n" % (stream_name, config.EMPTY_BLOCK_LOCATOR)
+        return super(Subcollection, self)._get_manifest_text(stream_name,
+                                                             strip, normalize,
+                                                             only_committed)
 
 
 class CollectionReader(Collection):
