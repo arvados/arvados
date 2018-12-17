@@ -24,6 +24,7 @@ export interface ProcessPanelRootActionProps {
     onToggle: (status: string) => void;
     openProcessInputDialog: (uuid: string) => void;
     navigateToOutput: (uuid: string) => void;
+    navigateToWorkflow: (uuid: string) => void;
 }
 
 export type ProcessPanelRootProps = ProcessPanelRootDataProps & ProcessPanelRootActionProps;
@@ -36,7 +37,9 @@ export const ProcessPanelRoot = ({ process, ...props }: ProcessPanelRootProps) =
                     process={process}
                     onContextMenu={event => props.onContextMenu(event, process)}
                     openProcessInputDialog={props.openProcessInputDialog}
-                    navigateToOutput={props.navigateToOutput} />
+                    navigateToOutput={props.navigateToOutput}
+                    navigateToWorkflow={props.navigateToWorkflow}
+            />
             </Grid>
             <Grid item sm={12} md={5}>
                 <SubprocessesCard
