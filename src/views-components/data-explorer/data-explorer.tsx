@@ -24,7 +24,7 @@ const mapStateToProps = (state: RootState, { id }: Props) => {
     const progress = state.progressIndicator.find(p => p.id === id);
     const working = progress && progress.working;
     const currentRoute = state.router.location ? state.router.location.pathname : '';
-    return { ...getDataExplorer(state.dataExplorer, id), working, currentRoute };
+    return { ...getDataExplorer(state.dataExplorer, id), working, paperKey: currentRoute };
 };
 
 const mapDispatchToProps = () => {
