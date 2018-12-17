@@ -3,11 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from "react";
-import { MenuItem, Typography, ListSubheader } from "@material-ui/core";
+import { MenuItem, Typography } from "@material-ui/core";
 import { DropdownMenu } from "~/components/dropdown-menu/dropdown-menu";
 import { ImportContactsIcon, HelpIcon } from "~/components/icon/icon";
 import { ArvadosTheme } from '~/common/custom-theme';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { RootState } from "~/store/store";
+import { compose } from "redux";
+import { connect } from "react-redux";
 
 type CssRules = 'link' | 'icon' | 'title' | 'linkTitle';
 
@@ -52,22 +55,33 @@ const links = [
     },
 ];
 
-export const HelpMenu = withStyles(styles)(
-    ({ classes }: WithStyles<CssRules>) =>
-        <DropdownMenu
-            icon={<HelpIcon />}
-            id="help-menu"
-            title="Help">
-            <MenuItem disabled>Help</MenuItem>
-            {
-                links.map(link =>
-                    <MenuItem key={link.title}>
-                        <a href={link.link} target="_blank" className={classes.link}>
-                            <ImportContactsIcon className={classes.icon} />
-                            <Typography variant="body1" className={classes.linkTitle}>{link.title}</Typography>
-                        </a>
-                    </MenuItem>
-                )
-            }
-        </DropdownMenu>
-);
+interface HelpMenuProps {
+    currentRoute: string;
+}
+
+const mapStateToProps = ({ router }: RootState) => ({
+    currentRoute: router.location ? router.location.pathname : '',
+});
+
+export const HelpMenu = compose(
+    connect(mapStateToProps),
+    withStyles(styles))(
+        ({ classes, currentRoute }: HelpMenuProps & WithStyles<CssRules>) =>
+            <DropdownMenu
+                icon={<HelpIcon />}
+                id="help-menu"
+                title="Help"
+                key={currentRoute}>
+                <MenuItem disabled>Help</MenuItem>
+                {
+                    links.map(link =>
+                        <MenuItem key={link.title}>
+                            <a href={link.link} target="_blank" className={classes.link}>
+                                <ImportContactsIcon className={classes.icon} />
+                                <Typography variant="body1" className={classes.linkTitle}>{link.title}</Typography>
+                            </a>
+                        </MenuItem>
+                    )
+                }
+            </DropdownMenu>
+    );
