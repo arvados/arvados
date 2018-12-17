@@ -235,6 +235,10 @@ func (s *DispatcherSuite) TearDownTest(c *check.C) {
 	s.disp.Close()
 }
 
+// DispatchToStubDriver checks that the dispatcher wires everything
+// together effectively. It uses a real scheduler and worker pool with
+// a fake queue and cloud driver. The fake cloud driver injects
+// artificial errors in order to exercise a variety of code paths.
 func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 	drivers["test"] = s.stubDriver
 	s.disp.setupOnce.Do(s.disp.initialize)
