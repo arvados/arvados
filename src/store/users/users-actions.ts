@@ -16,6 +16,7 @@ import { navigateToProject, navigateToUsers, navigateToRootProject } from "~/sto
 export const USERS_PANEL_ID = 'usersPanel';
 export const USER_ATTRIBUTES_DIALOG = 'userAttributesDialog';
 export const USER_CREATE_FORM_NAME = 'userCreateFormName';
+export const USER_MANAGE_DIALOG = 'userManageDialog';
 
 export interface UserCreateFormDialogData {
     email: string;
@@ -29,6 +30,13 @@ export const openUserAttributes = (uuid: string) =>
         const { resources } = getState();
         const data = getResource<UserResource>(uuid)(resources);
         dispatch(dialogActions.OPEN_DIALOG({ id: USER_ATTRIBUTES_DIALOG, data }));
+    };
+
+export const openUserManage = (uuid: string) =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const { resources } = getState();
+        const data = getResource<UserResource>(uuid)(resources);
+        dispatch(dialogActions.OPEN_DIALOG({ id: USER_MANAGE_DIALOG, data }));
     };
 
 export const openUserCreateDialog = () =>

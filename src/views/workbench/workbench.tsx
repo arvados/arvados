@@ -79,6 +79,7 @@ import { UserPanel } from '~/views/user-panel/user-panel';
 import { UserAttributesDialog } from '~/views-components/user-dialog/attributes-dialog';
 import { CreateUserDialog } from '~/views-components/dialog-forms/create-user-dialog';
 import { HelpApiClientAuthorizationDialog } from '~/views-components/api-client-authorizations-dialog/help-dialog';
+import { UserManageDialog } from '~/views-components/user-dialog/manage-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -213,6 +214,7 @@ export const WorkbenchPanel =
             <UpdateProcessDialog />
             <UpdateProjectDialog />
             <UserAttributesDialog />
+            <UserManageDialog />
             <VirtualMachineAttributesDialog />
         </Grid>
     );
