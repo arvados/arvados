@@ -957,6 +957,18 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         c.remove("foo/count2.txt")
         self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo d41d8cd98f00b204e9800998ecf8427e+0 0:0:\\056\n", c.portable_manifest_text())
 
+    def test_create_dot_file(self):
+        c = Collection()
+        with self.assertRaises(IOError):
+            with c.open("./dir/\\056", "wb") as f:
+                f.write("Should not be allowed")
+
+    def test_create_file_inside_dot_dir(self):
+        c = Collection()
+        with self.assertRaises(IOError):
+            with c.open("./dir/\\056/foo", "wb") as f:
+                f.write("Should not be allowed")
+
     def test_remove_empty_subdir(self):
         c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')
         c.remove("foo/count2.txt")
