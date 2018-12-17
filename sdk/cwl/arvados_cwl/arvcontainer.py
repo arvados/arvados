@@ -133,7 +133,7 @@ class ArvadosContainer(JobBase):
                 vwd = arvados.collection.Collection(api_client=self.arvrunner.api,
                                                     keep_client=self.arvrunner.keep_client,
                                                     num_retries=self.arvrunner.num_retries)
-                generatemapper = NoFollowPathMapper([self.generatefiles], "", "",
+                generatemapper = NoFollowPathMapper(self.generatefiles["listing"], "", "",
                                                     separateDirs=False)
 
                 sorteditems = sorted(generatemapper.items(), None, key=lambda n: n[1].target)
