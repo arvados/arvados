@@ -8,9 +8,9 @@ export const formatDate = (isoDate?: string) => {
     if (isoDate) {
         const date = new Date(isoDate);
         const text = date.toLocaleString();
-        return text === 'Invalid Date' ? "" : text;
+        return text === 'Invalid Date' ? "(none)" : text;
     }
-    return "";
+    return "(none)";
 };
 
 export const formatFileSize = (size?: number) => {

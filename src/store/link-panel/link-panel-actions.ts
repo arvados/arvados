@@ -18,6 +18,12 @@ export const linkPanelActions = bindDataExplorerActions(LINK_PANEL_ID);
 export const LINK_REMOVE_DIALOG = 'linkRemoveDialog';
 export const LINK_ATTRIBUTES_DIALOG = 'linkAttributesDialog';
 
+export const loadLinkPanel = () =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(setBreadcrumbs([{ label: 'Links' }]));
+        dispatch(linkPanelActions.REQUEST_ITEMS());
+    };
+
 export const openLinkAttributesDialog = (uuid: string) =>
     (dispatch: Dispatch, getState: () => RootState) => {
         const { resources } = getState();
@@ -36,12 +42,6 @@ export const openLinkRemoveDialog = (uuid: string) =>
                 uuid
             }
         }));
-    };
-
-export const loadLinkPanel = () =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(setBreadcrumbs([{ label: 'Links' }]));
-        dispatch(linkPanelActions.REQUEST_ITEMS());
     };
 
 export const removeLink = (uuid: string) =>

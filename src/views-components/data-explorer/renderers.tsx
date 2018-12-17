@@ -25,7 +25,7 @@ import { UserResource } from '~/models/user';
 import { toggleIsActive, toggleIsAdmin } from '~/store/users/users-actions';
 import { LinkResource } from '~/models/link';
 import { navigateTo } from '~/store/navigation/navigation-action';
-import { Link } from 'react-router-dom';
+import { withResource, getDataFromResource, withResourceData } from '~/views-components/data-explorer/with-resources';
 
 const renderName = (item: { name: string; uuid: string, kind: string }) =>
     <Grid container alignItems="center" wrap="nowrap" spacing={16}>
@@ -190,6 +190,34 @@ export const ResourceUsername = connect(
         const resource = getResource<UserResource>(props.uuid)(state.resources);
         return resource || { username: '' };
     })(renderUsername);
+
+// Compute Node Resources
+const renderNodeDate = (date: string) =>
+    <Typography noWrap>{formatDate(date)}</Typography>;
+
+const renderNodeData = (data: string) => {
+    return <Typography noWrap>{data}</Typography>;
+};
+
+const renderNodeInfo = (data: string) => {
+    return <Typography>{JSON.stringify(data, null, 4)}</Typography>;
+};
+
+export const ComputeNodeInfo = withResourceData('info', renderNodeInfo);
+
+export const ComputeNodeUuid = withResourceData('uuid', renderNodeData);
+
+export const ComputeNodeDomain = withResourceData('domain', renderNodeData);
+
+export const ComputeNodeFirstPingAt = withResourceData('firstPingAt', renderNodeDate);
+
+export const ComputeNodeHostname = withResourceData('hostname', renderNodeData);
+
+export const ComputeNodeIpAddress = withResourceData('ipAddress', renderNodeData);
+
+export const ComputeNodeJobUuid = withResourceData('jobUuid', renderNodeData);
+
+export const ComputeNodeLastPingAt = withResourceData('lastPingAt', renderNodeDate);
 
 // Links Resources
 const renderLinkName = (item: { name: string }) =>
