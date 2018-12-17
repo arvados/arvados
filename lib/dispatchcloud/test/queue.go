@@ -95,6 +95,7 @@ func (q *Queue) Unsubscribe(ch <-chan struct{}) {
 	delete(q.subscribers, ch)
 }
 
+// caller must have lock.
 func (q *Queue) notify() {
 	for _, ch := range q.subscribers {
 		select {
