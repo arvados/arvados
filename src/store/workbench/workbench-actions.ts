@@ -60,9 +60,10 @@ import { loadRepositoriesPanel } from '~/store/repositories/repositories-actions
 import { loadKeepServicesPanel } from '~/store/keep-services/keep-services-actions';
 import { loadUsersPanel, userBindedActions } from '~/store/users/users-actions';
 import { loadLinkPanel, linkPanelActions } from '~/store/link-panel/link-panel-actions';
+import { loadComputeNodesPanel, computeNodesActions } from '~/store/compute-nodes/compute-nodes-actions';
 import { linkPanelColumns } from '~/views/link-panel/link-panel-root';
 import { userPanelColumns } from '~/views/user-panel/user-panel';
-import { loadComputeNodesPanel } from '~/store/compute-nodes/compute-nodes-actions';
+import { computeNodePanelColumns } from '~/views/compute-node-panel/compute-node-panel-root';
 import { loadApiClientAuthorizationsPanel } from '~/store/api-client-authorizations/api-client-authorizations-actions';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
@@ -99,6 +100,7 @@ export const loadWorkbench = () =>
                 dispatch(searchResultsPanelActions.SET_COLUMNS({ columns: searchResultsPanelColumns }));
                 dispatch(userBindedActions.SET_COLUMNS({ columns: userPanelColumns }));
                 dispatch(linkPanelActions.SET_COLUMNS({ columns: linkPanelColumns }));
+                dispatch(computeNodesActions.SET_COLUMNS({ columns: computeNodePanelColumns }));
                 dispatch<any>(initSidePanelTree());
                 if (router.location) {
                     const match = matchRootRoute(router.location.pathname);

@@ -3,83 +3,116 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
+import { ShareMeIcon } from '~/components/icon/icon';
+import { DataExplorer } from '~/views-components/data-explorer/data-explorer';
+import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
+import { COMPUTE_NODE_PANEL_ID } from '~/store/compute-nodes/compute-nodes-actions';
+import { DataColumns } from '~/components/data-table/data-table';
+import { SortDirection } from '~/components/data-table/data-column';
+import { createTree } from '~/models/tree';
 import { 
-    StyleRulesCallback, WithStyles, withStyles, Card, CardContent, Grid, Table, 
-    TableHead, TableRow, TableCell, TableBody, Tooltip, IconButton 
-} from '@material-ui/core';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { MoreOptionsIcon } from '~/components/icon/icon';
-import { NodeResource } from '~/models/node';
-import { formatDate } from '~/common/formatters';
+    ComputeNodeUuid, ComputeNodeInfo, ComputeNodeDomain, ComputeNodeHostname, ComputeNodeJobUuid,
+    ComputeNodeFirstPingAt, ComputeNodeLastPingAt, ComputeNodeIpAddress
+} from '~/views-components/data-explorer/renderers';
+import { ResourcesState } from '~/store/resources/resources';
 
-type CssRules = 'root' | 'tableRow';
+export enum ComputeNodePanelColumnNames {
+    INFO = 'Info',
+    UUID = 'UUID',
+    DOMAIN = 'Domain',
+    FIRST_PING_AT = 'First ping at',
+    HOSTNAME = 'Hostname',
+    IP_ADDRESS = 'IP Address',
+    JOB = 'Job',
+    LAST_PING_AT = 'Last ping at'
+}
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
-    root: {
-        width: '100%',
-        overflow: 'auto'
+export const computeNodePanelColumns: DataColumns<string> = [
+    {
+        name: ComputeNodePanelColumnNames.INFO,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ComputeNodeInfo uuid={uuid} />
     },
-    tableRow: {
-        '& th': {
-            whiteSpace: 'nowrap'
-        }
+    {
+        name: ComputeNodePanelColumnNames.UUID,
+        selected: true,
+        configurable: true,
+        sortDirection: SortDirection.NONE,
+        filters: createTree(),
+        render: uuid => <ComputeNodeUuid uuid={uuid} />
+    },
+    {
+        name: ComputeNodePanelColumnNames.DOMAIN,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ComputeNodeDomain uuid={uuid} />
+    },
+    {
+        name: ComputeNodePanelColumnNames.FIRST_PING_AT,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ComputeNodeFirstPingAt uuid={uuid} />
+    },
+    {
+        name: ComputeNodePanelColumnNames.HOSTNAME,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ComputeNodeHostname uuid={uuid} />
+    },
+    {
+        name: ComputeNodePanelColumnNames.IP_ADDRESS,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ComputeNodeIpAddress uuid={uuid} />
+    },
+    {
+        name: ComputeNodePanelColumnNames.JOB,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ComputeNodeJobUuid uuid={uuid} />
+    },
+    {
+        name: ComputeNodePanelColumnNames.LAST_PING_AT,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ComputeNodeLastPingAt uuid={uuid} />
     }
-});
+];
+
+const DEFAULT_MESSAGE = 'Your compute node list is empty.';
 
 export interface ComputeNodePanelRootActionProps {
-    openRowOptions: (event: React.MouseEvent<HTMLElement>, computeNode: NodeResource) => void;
+    onItemClick: (item: string) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: string) => void;
+    onItemDoubleClick: (item: string) => void;
 }
 
 export interface ComputeNodePanelRootDataProps {
-    computeNodes: NodeResource[];
-    hasComputeNodes: boolean;
+    resources: ResourcesState;
 }
 
-type ComputeNodePanelRootProps = ComputeNodePanelRootActionProps & ComputeNodePanelRootDataProps & WithStyles<CssRules>;
+type ComputeNodePanelRootProps = ComputeNodePanelRootActionProps & ComputeNodePanelRootDataProps;
 
-export const ComputeNodePanelRoot = withStyles(styles)(
-    ({ classes, hasComputeNodes, computeNodes, openRowOptions }: ComputeNodePanelRootProps) =>
-        <Card className={classes.root}>
-            <CardContent>
-                {hasComputeNodes && <Grid container direction="row">
-                    <Grid item xs={12}>
-                        <Table>
-                            <TableHead>
-                                <TableRow className={classes.tableRow}>
-                                    <TableCell>Info</TableCell>
-                                    <TableCell>UUID</TableCell>
-                                    <TableCell>Domain</TableCell>
-                                    <TableCell>First ping at</TableCell>
-                                    <TableCell>Hostname</TableCell>
-                                    <TableCell>IP Address</TableCell>
-                                    <TableCell>Job</TableCell>
-                                    <TableCell>Last ping at</TableCell>
-                                    <TableCell />
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {computeNodes.map((computeNode, index) =>
-                                    <TableRow key={index} className={classes.tableRow}>
-                                        <TableCell>{JSON.stringify(computeNode.info, null, 4)}</TableCell>
-                                        <TableCell>{computeNode.uuid}</TableCell>
-                                        <TableCell>{computeNode.domain}</TableCell>
-                                        <TableCell>{formatDate(computeNode.firstPingAt) || '(none)'}</TableCell>
-                                        <TableCell>{computeNode.hostname || '(none)'}</TableCell>
-                                        <TableCell>{computeNode.ipAddress || '(none)'}</TableCell>
-                                        <TableCell>{computeNode.jobUuid || '(none)'}</TableCell>
-                                        <TableCell>{formatDate(computeNode.lastPingAt) || '(none)'}</TableCell>
-                                        <TableCell>
-                                            <Tooltip title="More options" disableFocusListener>
-                                                <IconButton onClick={event => openRowOptions(event, computeNode)}>
-                                                    <MoreOptionsIcon />
-                                                </IconButton>
-                                            </Tooltip>
-                                        </TableCell>
-                                    </TableRow>)}
-                            </TableBody>
-                        </Table>
-                    </Grid>
-                </Grid>}
-            </CardContent>
-        </Card>
-);
+export const ComputeNodePanelRoot = (props: ComputeNodePanelRootProps) => {
+    return <DataExplorer
+        id={COMPUTE_NODE_PANEL_ID}
+        onRowClick={props.onItemClick}
+        onRowDoubleClick={props.onItemDoubleClick}
+        onContextMenu={props.onContextMenu}
+        contextMenuColumn={true}
+        hideColumnSelector
+        hideSearchInput
+        dataTableDefaultView={
+            <DataTableDefaultView
+                icon={ShareMeIcon}
+                messages={[DEFAULT_MESSAGE]} />
+        } />;
+};
