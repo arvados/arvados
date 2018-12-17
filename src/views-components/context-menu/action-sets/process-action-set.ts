@@ -77,7 +77,9 @@ export const processActionSet: ContextMenuActionSet = [[
         icon: OutputIcon,
         name: "Outputs",
         execute: (dispatch, resource) => {
-            dispatch<any>(navigateToOutput(resource.outputUuid || ''));
+            if(resource.outputUuid){
+                dispatch<any>(navigateToOutput(resource.outputUuid));
+            }
         }
     },
     {
