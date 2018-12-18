@@ -11,6 +11,7 @@ import { SshKeyResource } from '~/models/ssh-key';
 import { User } from "~/models/user";
 import { Session } from "~/models/session";
 import { Config } from '~/common/config';
+import { initSessions } from "~/store/auth/auth-action-session";
 
 export const authActions = unionize({
     SAVE_API_TOKEN: ofType<string>(),
@@ -49,10 +50,8 @@ export const initAuth = (config: Config) => (dispatch: Dispatch, getState: () =>
     }
     if (token && user) {
         dispatch(authActions.INIT({ user, token }));
+        dispatch<any>(initSessions(services.authService, config, user));
     }
-    const sessions = services.authService.buildSessions(config, user);
-    services.authService.saveSessions(sessions);
-    dispatch(authActions.SET_SESSIONS(sessions));
 };
 
 export const saveApiToken = (token: string) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {

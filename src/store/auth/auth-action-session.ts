@@ -12,7 +12,7 @@ import { authActions } from "~/store/auth/auth-action";
 import { Config, DISCOVERY_URL } from "~/common/config";
 import { Session, SessionStatus } from "~/models/session";
 import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
-import { UserDetailsResponse } from "~/services/auth-service/auth-service";
+import { AuthService, UserDetailsResponse } from "~/services/auth-service/auth-service";
 import * as jsSHA from "jssha";
 
 const getRemoteHostBaseUrl = async (remoteHost: string): Promise<string | null> => {
@@ -195,6 +195,13 @@ export const toggleSession = (session: Session) =>
 
         dispatch(authActions.UPDATE_SESSION(s));
         services.authService.saveSessions(getState().auth.sessions);
+    };
+
+export const initSessions = (authService: AuthService, config: Config, user: User) =>
+    (dispatch: Dispatch<any>) => {
+        const sessions = authService.buildSessions(config, user);
+        authService.saveSessions(sessions);
+        dispatch(authActions.SET_SESSIONS(sessions));
     };
 
 export const loadSiteManagerPanel = () =>
