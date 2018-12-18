@@ -127,7 +127,7 @@ func (disp *dispatcher) initialize() {
 	}
 	disp.instanceSet = &instanceSetProxy{instanceSet}
 	disp.reg = prometheus.NewRegistry()
-	disp.pool = worker.NewPool(disp.logger, disp.reg, disp.instanceSet, disp.newExecutor, disp.Cluster)
+	disp.pool = worker.NewPool(disp.logger, arvClient, disp.reg, disp.instanceSet, disp.newExecutor, disp.Cluster)
 	disp.queue = container.NewQueue(disp.logger, disp.reg, disp.typeChooser, arvClient)
 
 	if disp.Cluster.ManagementToken == "" {

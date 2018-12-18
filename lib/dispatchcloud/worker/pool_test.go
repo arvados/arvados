@@ -128,7 +128,7 @@ type stubExecutor struct{}
 
 func (*stubExecutor) SetTarget(cloud.ExecutorTarget) {}
 
-func (*stubExecutor) Execute(cmd string, stdin io.Reader) ([]byte, []byte, error) {
+func (*stubExecutor) Execute(env map[string]string, cmd string, stdin io.Reader) ([]byte, []byte, error) {
 	return nil, nil, nil
 }
 

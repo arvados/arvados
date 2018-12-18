@@ -157,7 +157,7 @@ func (svm *StubVM) Instance() stubInstance {
 	}
 }
 
-func (svm *StubVM) Exec(command string, stdin io.Reader, stdout, stderr io.Writer) uint32 {
+func (svm *StubVM) Exec(env map[string]string, command string, stdin io.Reader, stdout, stderr io.Writer) uint32 {
 	queue := svm.sis.driver.Queue
 	uuid := regexp.MustCompile(`.{5}-dz642-.{15}`).FindString(command)
 	if eta := svm.Boot.Sub(time.Now()); eta > 0 {
@@ -173,6 +173,12 @@ func (svm *StubVM) Exec(command string, stdin io.Reader, stdout, stderr io.Write
 		return 1
 	}
 	if strings.HasPrefix(command, "crunch-run --detach ") {
+		for _, name := range []string{"ARVADOS_API_HOST", "ARVADOS_API_TOKEN"} {
+			if env[name] == "" {
+				fmt.Fprintf(stderr, "%s missing from environment %q\n", name, env)
+				return 1
+			}
+		}
 		svm.Lock()
 		if svm.running == nil {
 			svm.running = map[string]bool{}

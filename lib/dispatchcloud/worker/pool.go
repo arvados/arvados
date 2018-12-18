@@ -36,7 +36,7 @@ type InstanceView struct {
 // An Executor executes shell commands on a remote host.
 type Executor interface {
 	// Run cmd on the current target.
-	Execute(cmd string, stdin io.Reader) (stdout, stderr []byte, err error)
+	Execute(env map[string]string, cmd string, stdin io.Reader) (stdout, stderr []byte, err error)
 
 	// Use the given target for subsequent operations. The new
 	// target is the same host as the previous target, but it
@@ -75,9 +75,10 @@ func duration(conf arvados.Duration, def time.Duration) time.Duration {
 //
 // New instances are configured and set up according to the given
 // cluster configuration.
-func NewPool(logger logrus.FieldLogger, reg *prometheus.Registry, instanceSet cloud.InstanceSet, newExecutor func(cloud.Instance) Executor, cluster *arvados.Cluster) *Pool {
+func NewPool(logger logrus.FieldLogger, arvClient *arvados.Client, reg *prometheus.Registry, instanceSet cloud.InstanceSet, newExecutor func(cloud.Instance) Executor, cluster *arvados.Cluster) *Pool {
 	wp := &Pool{
 		logger:             logger,
+		arvClient:          arvClient,
 		instanceSet:        instanceSet,
 		newExecutor:        newExecutor,
 		bootProbeCommand:   cluster.CloudVMs.BootProbeCommand,
@@ -107,6 +108,7 @@ func NewPool(logger logrus.FieldLogger, reg *prometheus.Registry, instanceSet cl
 type Pool struct {
 	// configuration
 	logger             logrus.FieldLogger
+	arvClient          *arvados.Client
 	instanceSet        cloud.InstanceSet
 	newExecutor        func(cloud.Instance) Executor
 	bootProbeCommand   string
@@ -411,7 +413,7 @@ func (wp *Pool) kill(wkr *worker, uuid string) {
 		"Instance":      wkr.instance,
 	})
 	logger.Debug("killing process")
-	stdout, stderr, err := wkr.executor.Execute("crunch-run --kill 15 "+uuid, nil)
+	stdout, stderr, err := wkr.executor.Execute(nil, "crunch-run --kill 15 "+uuid, nil)
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"stderr": string(stderr),

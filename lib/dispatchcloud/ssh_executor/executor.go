@@ -76,12 +76,18 @@ func (exr *Executor) Target() cloud.ExecutorTarget {
 
 // Execute runs cmd on the target. If an existing connection is not
 // usable, it sets up a new connection to the current target.
-func (exr *Executor) Execute(cmd string, stdin io.Reader) ([]byte, []byte, error) {
+func (exr *Executor) Execute(env map[string]string, cmd string, stdin io.Reader) ([]byte, []byte, error) {
 	session, err := exr.newSession()
 	if err != nil {
 		return nil, nil, err
 	}
 	defer session.Close()
+	for k, v := range env {
+		err = session.Setenv(k, v)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
 	var stdout, stderr bytes.Buffer
 	session.Stdin = stdin
 	session.Stdout = &stdout

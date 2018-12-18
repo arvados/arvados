@@ -86,7 +86,11 @@ func (wkr *worker) startContainer(ctr arvados.Container) {
 	wkr.starting[ctr.UUID] = struct{}{}
 	wkr.state = StateRunning
 	go func() {
-		stdout, stderr, err := wkr.executor.Execute("crunch-run --detach '"+ctr.UUID+"'", nil)
+		env := map[string]string{
+			"ARVADOS_API_HOST":  wkr.wp.arvClient.APIHost,
+			"ARVADOS_API_TOKEN": wkr.wp.arvClient.AuthToken,
+		}
+		stdout, stderr, err := wkr.executor.Execute(env, "crunch-run --detach '"+ctr.UUID+"'", nil)
 		wkr.mtx.Lock()
 		defer wkr.mtx.Unlock()
 		now := time.Now()
@@ -234,7 +238,7 @@ func (wkr *worker) probeAndUpdate() {
 
 func (wkr *worker) probeRunning() (running []string, ok bool, stderr []byte) {
 	cmd := "crunch-run --list"
-	stdout, stderr, err := wkr.executor.Execute(cmd, nil)
+	stdout, stderr, err := wkr.executor.Execute(nil, cmd, nil)
 	if err != nil {
 		wkr.logger.WithFields(logrus.Fields{
 			"Command": cmd,
@@ -255,7 +259,7 @@ func (wkr *worker) probeBooted() (ok bool, stderr []byte) {
 	if cmd == "" {
 		cmd = "true"
 	}
-	stdout, stderr, err := wkr.executor.Execute(cmd, nil)
+	stdout, stderr, err := wkr.executor.Execute(nil, cmd, nil)
 	logger := wkr.logger.WithFields(logrus.Fields{
 		"Command": cmd,
 		"stdout":  string(stdout),

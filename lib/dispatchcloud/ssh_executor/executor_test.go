@@ -42,7 +42,8 @@ func (s *ExecutorSuite) TestExecute(c *check.C) {
 	for _, exitcode := range []int{0, 1, 2} {
 		srv := &testTarget{
 			SSHService: test.SSHService{
-				Exec: func(cmd string, stdin io.Reader, stdout, stderr io.Writer) uint32 {
+				Exec: func(env map[string]string, cmd string, stdin io.Reader, stdout, stderr io.Writer) uint32 {
+					c.Check(env["TESTVAR"], check.Equals, "test value")
 					c.Check(cmd, check.Equals, command)
 					var wg sync.WaitGroup
 					wg.Add(2)
@@ -78,7 +79,7 @@ func (s *ExecutorSuite) TestExecute(c *check.C) {
 
 		done := make(chan bool)
 		go func() {
-			stdout, stderr, err := exr.Execute(command, bytes.NewBufferString(stdinData))
+			stdout, stderr, err := exr.Execute(map[string]string{"TESTVAR": "test value"}, command, bytes.NewBufferString(stdinData))
 			if exitcode == 0 {
 				c.Check(err, check.IsNil)
 			} else {
