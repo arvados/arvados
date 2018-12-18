@@ -48,17 +48,22 @@ interface DetailsAttributeDataProps {
     lowercaseValue?: boolean;
     link?: string;
     children?: React.ReactNode;
+    onValueClick?: () => void;
 }
 
 type DetailsAttributeProps = DetailsAttributeDataProps & WithStyles<CssRules>;
 
 export const DetailsAttribute = withStyles(styles)(
-    ({ label, link, value, children, classes, classLabel, classValue, lowercaseValue }: DetailsAttributeProps) =>
+    ({ label, link, value, children, classes, classLabel, classValue, lowercaseValue, onValueClick }: DetailsAttributeProps) =>
         <Typography component="div" className={classes.attribute}>
             <Typography component="span" className={classnames([classes.label, classLabel])}>{label}</Typography>
             { link
                 ? <a href={link} className={classes.link} target='_blank'>{value}</a>
-                : <Typography component="span" className={classnames([classes.value, classValue, { [classes.lowercaseValue]: lowercaseValue }])}>
+                : <Typography
+                    onClick={onValueClick}
+                    component="span"
+                    className={classnames([classes.value, classValue, { [classes.lowercaseValue]: lowercaseValue }])}
+                >
                     {value}
                     {children}
                 </Typography> }
