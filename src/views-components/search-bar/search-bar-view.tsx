@@ -156,56 +156,17 @@ export const SearchBarView = withStyles(styles)(
                     className={isPopoverOpen ? classes.containerSearchViewOpened : classes.container}>
                     <div ref={this.viewAnchorRef}>
                         <form onSubmit={props.onSubmit}>
-                            <Input
-                                className={classes.input}
-                                onChange={props.onChange}
-                                placeholder="Search"
-                                value={props.searchValue}
-                                fullWidth={true}
-                                disableUnderline={true}
-                                onClick={e => handleInputClick(e, props)}
-                                onKeyDown={e => handleKeyDown(e, props)}
-                                startAdornment={
-                                    <InputAdornment position="start">
-                                        <Tooltip title='Search'>
-                                            <IconButton type="submit">
-                                                <SearchIcon />
-                                            </IconButton>
-                                        </Tooltip>
-                                    </InputAdornment>
-                                }
-                                endAdornment={
-                                    <InputAdornment position="end">
-                                        <Tooltip title='Advanced search'>
-                                            <IconButton onClick={e => handleDropdownClick(e, props)}>
-                                                <ArrowDropDownIcon />
-                                            </IconButton>
-                                        </Tooltip>
-                                    </InputAdornment>
-                                } />
+                            <SearchInput {...props} />
                         </form>
                     </div>
-                    <Popover
-                        PaperProps={{
-                            style: {
-                                width: this.getViewWidth(),
-                                borderRadius: '0 0 4px 4px',
-                            }
-                        }}
-                        anchorEl={this.viewAnchorRef.current}
-                        anchorOrigin={{
-                            vertical: 'bottom',
-                            horizontal: 'center',
-                        }}
-                        transformOrigin={{
-                            vertical: 'top',
-                            horizontal: 'center',
-                        }}
-                        disableAutoFocus
-                        open={isPopoverOpen}
-                        onClose={props.closeView}>
-                        {getView({ ...props })}
-                    </Popover>
+                    <SearchViewContainer
+                        {...props}
+                        width={this.getViewWidth()}
+                        anchorEl={this.viewAnchorRef.current}>
+                        {
+                            getView({ ...props })
+                        }
+                    </SearchViewContainer>
                 </Paper >
             );
         }
@@ -217,6 +178,63 @@ export const SearchBarView = withStyles(styles)(
     }
 
 );
+
+const SearchInput = (props: SearchBarViewProps) => {
+    const { classes } = props;
+    return <Input
+        className={classes.input}
+        onChange={props.onChange}
+        placeholder="Search"
+        value={props.searchValue}
+        fullWidth={true}
+        disableUnderline={true}
+        onClick={e => handleInputClick(e, props)}
+        onKeyDown={e => handleKeyDown(e, props)}
+        startAdornment={
+            <InputAdornment position="start">
+                <Tooltip title='Search'>
+                    <IconButton type="submit">
+                        <SearchIcon />
+                    </IconButton>
+                </Tooltip>
+            </InputAdornment>
+        }
+        endAdornment={
+            <InputAdornment position="end">
+                <Tooltip title='Advanced search'>
+                    <IconButton onClick={e => handleDropdownClick(e, props)}>
+                        <ArrowDropDownIcon />
+                    </IconButton>
+                </Tooltip>
+            </InputAdornment>
+        } />;
+};
+
+const SearchViewContainer = (props: SearchBarViewProps & { width: number, anchorEl: HTMLElement | null, children: React.ReactNode }) =>
+    <Popover
+        PaperProps={{
+            style: {
+                width: props.width,
+                borderRadius: '0 0 4px 4px',
+            }
+        }}
+        anchorEl={props.anchorEl}
+        anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'center',
+        }}
+        transformOrigin={{
+            vertical: 'top',
+            horizontal: 'center',
+        }}
+        disableAutoFocus
+        open={props.isPopoverOpen}
+        onClose={props.closeView}>
+        {
+            props.children
+        }
+    </Popover>;
+
 
 const getView = (props: SearchBarViewProps) => {
     switch (props.currentView) {
