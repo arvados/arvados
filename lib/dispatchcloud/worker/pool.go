@@ -121,7 +121,7 @@ type Pool struct {
 
 	// private state
 	subscribers  map[<-chan struct{}]chan<- struct{}
-	creating     map[arvados.InstanceType]int // goroutines waiting for (InstanceSet)Create to return
+	creating     map[arvados.InstanceType][]time.Time // start times of unfinished (InstanceSet)Create calls
 	workers      map[cloud.InstanceID]*worker
 	loaded       bool                 // loaded list of instances from InstanceSet at least once
 	exited       map[string]time.Time // containers whose crunch-run proc has exited, but KillContainer has not been called
@@ -171,25 +171,41 @@ func (wp *Pool) Unsubscribe(ch <-chan struct{}) {
 
 // Unallocated returns the number of unallocated (creating + booting +
 // idle + unknown) workers for each instance type.
-//
-// The returned counts should be interpreted as upper bounds, rather
-// than exact counts: they are sometimes artificially high when a
-// newly created instance appears in the driver's Instances() list
-// before the Create() call returns.
 func (wp *Pool) Unallocated() map[arvados.InstanceType]int {
 	wp.setupOnce.Do(wp.setup)
 	wp.mtx.RLock()
 	defer wp.mtx.RUnlock()
-	u := map[arvados.InstanceType]int{}
-	for it, c := range wp.creating {
-		u[it] = c
+	unalloc := map[arvados.InstanceType]int{}
+	creating := map[arvados.InstanceType]int{}
+	for it, times := range wp.creating {
+		creating[it] = len(times)
 	}
 	for _, wkr := range wp.workers {
-		if wkr.state == StateIdle || wkr.state == StateBooting || wkr.state == StateUnknown {
-			u[wkr.instType]++
+		if !(wkr.state == StateIdle || wkr.state == StateBooting || wkr.state == StateUnknown) {
+			continue
+		}
+		it := wkr.instType
+		unalloc[it]++
+		if wkr.state == StateUnknown && creating[it] > 0 && wkr.appeared.After(wp.creating[it][0]) {
+			// If up to N new workers appear in
+			// Instances() while we are waiting for N
+			// Create() calls to complete, we assume we're
+			// just seeing a race between Instances() and
+			// Create() responses.
+			//
+			// The other common reason why nodes have
+			// state==Unknown is that they appeared at
+			// startup, before any Create calls. They
+			// don't match the above timing condition, so
+			// we never mistakenly attribute them to
+			// pending Create calls.
+			creating[it]--
 		}
 	}
-	return u
+	for it, c := range creating {
+		unalloc[it] += c
+	}
+	return unalloc
 }
 
 // Create a new instance with the given type, and add it to the worker
@@ -204,13 +220,21 @@ func (wp *Pool) Create(it arvados.InstanceType) error {
 		return wp.atQuotaErr
 	}
 	tags := cloud.InstanceTags{tagKeyInstanceType: it.Name}
-	wp.creating[it]++
+	now := time.Now()
+	wp.creating[it] = append(wp.creating[it], now)
 	go func() {
 		defer wp.notify()
 		inst, err := wp.instanceSet.Create(it, wp.imageID, tags, nil)
 		wp.mtx.Lock()
 		defer wp.mtx.Unlock()
-		wp.creating[it]--
+		// Remove our timestamp marker from wp.creating
+		for i, t := range wp.creating[it] {
+			if t == now {
+				copy(wp.creating[it][i:], wp.creating[it][i+1:])
+				wp.creating[it] = wp.creating[it][:len(wp.creating[it])-1]
+				break
+			}
+		}
 		if err, ok := err.(cloud.QuotaError); ok && err.IsQuotaError() {
 			wp.atQuotaErr = err
 			wp.atQuotaUntil = time.Now().Add(time.Minute)
@@ -266,6 +290,7 @@ func (wp *Pool) updateWorker(inst cloud.Instance, it arvados.InstanceType, initi
 		state:    initialState,
 		instance: inst,
 		instType: it,
+		appeared: now,
 		probed:   now,
 		busy:     now,
 		updated:  now,
@@ -579,7 +604,7 @@ func (wp *Pool) Instances() []InstanceView {
 }
 
 func (wp *Pool) setup() {
-	wp.creating = map[arvados.InstanceType]int{}
+	wp.creating = map[arvados.InstanceType][]time.Time{}
 	wp.exited = map[string]time.Time{}
 	wp.workers = map[cloud.InstanceID]*worker{}
 	wp.subscribers = map[<-chan struct{}]chan<- struct{}{}

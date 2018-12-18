@@ -64,6 +64,7 @@ type worker struct {
 	instType  arvados.InstanceType
 	vcpus     int64
 	memory    int64
+	appeared  time.Time
 	probed    time.Time
 	updated   time.Time
 	busy      time.Time

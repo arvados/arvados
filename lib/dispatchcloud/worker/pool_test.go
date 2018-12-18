@@ -68,23 +68,16 @@ func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
 	pool.Create(type2)
 	c.Check(pool.Unallocated()[type1], check.Equals, 1)
 	c.Check(pool.Unallocated()[type2], check.Equals, 2)
-	// Unblock the pending Create calls and (before calling Sync!)
-	// wait for the pool to process the returned instances.
-	go lameInstanceSet.Release(3)
-	suite.wait(c, pool, notify, func() bool {
-		list, err := lameInstanceSet.Instances(nil)
-		return err == nil && len(list) == 3
-	})
 
-	c.Check(pool.Unallocated()[type1], check.Equals, 1)
-	c.Check(pool.Unallocated()[type2], check.Equals, 2)
-	pool.getInstancesAndSync()
-	// Returned counts can be temporarily higher than 1 and 2 if
-	// poll ran before Create() returned.
-	c.Check(pool.Unallocated()[type1], check.Not(less), 1)
-	c.Check(pool.Unallocated()[type2], check.Not(less), 2)
+	// Unblock the pending Create calls.
+	go lameInstanceSet.Release(3)
+
+	// Wait for each instance to either return from its Create
+	// call, or show up in a poll.
 	suite.wait(c, pool, notify, func() bool {
-		return pool.Unallocated()[type1] == 1 && pool.Unallocated()[type2] == 2
+		pool.mtx.RLock()
+		defer pool.mtx.RUnlock()
+		return len(pool.workers) == 3
 	})
 
 	c.Check(pool.Shutdown(type2), check.Equals, true)
