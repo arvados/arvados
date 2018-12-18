@@ -38,7 +38,8 @@ describe('auth-reducer', () => {
         expect(state).toEqual({
             apiToken: "token",
             user,
-            sshKeys: []
+            sshKeys: [],
+            sessions: []
         });
     });
 
@@ -49,7 +50,8 @@ describe('auth-reducer', () => {
         expect(state).toEqual({
             apiToken: "token",
             user: undefined,
-            sshKeys: []
+            sshKeys: [],
+            sessions: []
         });
     });
 
@@ -71,6 +73,7 @@ describe('auth-reducer', () => {
         expect(state).toEqual({
             apiToken: undefined,
             sshKeys: [],
+            sessions: [],
             user: {
                 email: "test@test.com",
                 firstName: "John",

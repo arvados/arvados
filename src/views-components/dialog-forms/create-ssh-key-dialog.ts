@@ -5,7 +5,11 @@
 import { compose } from "redux";
 import { reduxForm } from 'redux-form';
 import { withDialog } from "~/store/dialog/with-dialog";
-import { SSH_KEY_CREATE_FORM_NAME, createSshKey, SshKeyCreateFormDialogData } from '~/store/auth/auth-action';
+import {
+    SSH_KEY_CREATE_FORM_NAME,
+    createSshKey,
+    SshKeyCreateFormDialogData
+} from '~/store/auth/auth-action-ssh';
 import { DialogSshKeyCreate } from '~/views-components/dialog-create/dialog-ssh-key-create';
 
 export const CreateSshKeyDialog = compose(

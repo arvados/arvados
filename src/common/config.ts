@@ -35,7 +35,9 @@ export interface Config {
     packageVersion: string;
     parameters: {};
     protocol: string;
-    remoteHosts: string;
+    remoteHosts: {
+        [key: string]: string
+    };
     remoteHostsViaDNS: boolean;
     resources: {};
     revision: string;
@@ -102,7 +104,7 @@ export const mockConfig = (config: Partial<Config>): Config => ({
     packageVersion: '',
     parameters: {},
     protocol: '',
-    remoteHosts: '',
+    remoteHosts: {},
     remoteHostsViaDNS: false,
     resources: {},
     revision: '',
@@ -133,4 +135,5 @@ const getDefaultConfig = (): ConfigJSON => ({
     FILE_VIEWERS_CONFIG_URL: "",
 });
 
-const getDiscoveryURL = (apiHost: string) => `${window.location.protocol}//${apiHost}/discovery/v1/apis/arvados/v1/rest`;
+export const DISCOVERY_URL = 'discovery/v1/apis/arvados/v1/rest';
+const getDiscoveryURL = (apiHost: string) => `${window.location.protocol}//${apiHost}/${DISCOVERY_URL}`;

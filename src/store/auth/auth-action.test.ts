@@ -18,7 +18,7 @@ import 'jest-localstorage-mock';
 import { createServices } from "~/services/services";
 import { configureStore, RootStore } from "../store";
 import createBrowserHistory from "history/createBrowserHistory";
-import { mockConfig } from '~/common/config';
+import { Config, mockConfig } from '~/common/config';
 import { ApiActions } from "~/services/api/api-actions";
 
 describe('auth-actions', () => {
@@ -47,11 +47,36 @@ describe('auth-actions', () => {
         localStorage.setItem(USER_OWNER_UUID_KEY, "ownerUuid");
         localStorage.setItem(USER_IS_ADMIN, JSON.stringify("false"));
 
-        store.dispatch(initAuth());
+        const config: any = {
+            remoteHosts: { "xc59": "xc59.api.arvados.com" }
+        };
+
+        store.dispatch(initAuth(config));
 
         expect(store.getState().auth).toEqual({
             apiToken: "token",
             sshKeys: [],
+            sessions: [{
+                "active": true,
+                "baseUrl": undefined,
+                "clusterId": undefined,
+                "email": "test@test.com",
+                "loggedIn": true,
+                "remoteHost": undefined,
+                "status": 2,
+                "token": "token",
+                "username": "John Doe"
+            }, {
+                "active": false,
+                "baseUrl": "",
+                "clusterId": "xc59",
+                "email": "",
+                "loggedIn": false,
+                "remoteHost": "xc59.api.arvados.com",
+                "status": 0,
+                "token": "",
+                "username": ""
+            }],
             user: {
                 email: "test@test.com",
                 firstName: "John",

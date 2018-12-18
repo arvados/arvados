@@ -15,7 +15,7 @@ interface PropertyKeyProp {
     propertyKey: string;
 }
 
-type PropertyValueFieldProps = VocabularyProp & PropertyKeyProp;
+export type PropertyValueFieldProps = VocabularyProp & PropertyKeyProp;
 
 export const PROPERTY_VALUE_FIELD_NAME = 'value';
 
@@ -30,7 +30,7 @@ export const PropertyValueField = compose(
             validate={getValidation(props)}
             {...props} />);
 
-const PropertyValueInput = ({ vocabulary, propertyKey, ...props }: WrappedFieldProps & PropertyValueFieldProps) =>
+export const PropertyValueInput = ({ vocabulary, propertyKey, ...props }: WrappedFieldProps & PropertyValueFieldProps) =>
     <Autocomplete
         label='Value'
         suggestions={getSuggestions(props.input.value, propertyKey, vocabulary)}

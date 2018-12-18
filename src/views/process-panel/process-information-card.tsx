@@ -13,7 +13,7 @@ import { DetailsAttribute } from '~/components/details-attribute/details-attribu
 import { Process } from '~/store/processes/process';
 import { getProcessStatus, getProcessStatusColor } from '~/store/processes/process';
 import { formatDate } from '~/common/formatters';
-
+import { openWorkflow } from "~/store/process-panel/process-panel-actions";
 
 type CssRules = 'card' | 'iconHeader' | 'label' | 'value' | 'chip' | 'link' | 'content' | 'title' | 'avatar';
 
@@ -70,29 +70,33 @@ export interface ProcessInformationCardDataProps {
     onContextMenu: (event: React.MouseEvent<HTMLElement>) => void;
     openProcessInputDialog: (uuid: string) => void;
     navigateToOutput: (uuid: string) => void;
+    navigateToWorkflow: (uuid: string) => void;
 }
 
 type ProcessInformationCardProps = ProcessInformationCardDataProps & WithStyles<CssRules, true>;
 
 export const ProcessInformationCard = withStyles(styles, { withTheme: true })(
-    ({ classes, process, onContextMenu, theme, openProcessInputDialog, navigateToOutput }: ProcessInformationCardProps) =>
-        <Card className={classes.card}>
+    ({ classes, process, onContextMenu, theme, openProcessInputDialog, navigateToOutput, navigateToWorkflow }: ProcessInformationCardProps) => {
+        const { container } = process;
+        const startedAt = container ? formatDate(container.startedAt) : 'N/A';
+        const finishedAt = container ? formatDate(container.finishedAt) : 'N/A';
+        return <Card className={classes.card}>
             <CardHeader
                 classes={{
                     content: classes.title,
                     avatar: classes.avatar
                 }}
-                avatar={<ProcessIcon className={classes.iconHeader} />}
+                avatar={<ProcessIcon className={classes.iconHeader}/>}
                 action={
                     <div>
                         <Chip label={getProcessStatus(process)}
-                            className={classes.chip}
-                            style={{ backgroundColor: getProcessStatusColor(getProcessStatus(process), theme as ArvadosTheme) }} />
+                              className={classes.chip}
+                              style={{backgroundColor: getProcessStatusColor(getProcessStatus(process), theme as ArvadosTheme)}}/>
                         <Tooltip title="More options" disableFocusListener>
                             <IconButton
                                 aria-label="More options"
                                 onClick={event => onContextMenu(event)}>
-                                <MoreOptionsIcon />
+                                <MoreOptionsIcon/>
                             </IconButton>
                         </Tooltip>
                     </div>
@@ -109,28 +113,34 @@ export const ProcessInformationCard = withStyles(styles, { withTheme: true })(
                         <Typography noWrap variant="body2" color='inherit'>
                             {getDescription(process)}
                         </Typography>
-                    </Tooltip>} />
+                    </Tooltip>}/>
             <CardContent className={classes.content}>
                 <Grid container>
                     <Grid item xs={6}>
                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                            label='From' value={process.container ? formatDate(process.container.startedAt!) : 'N/A'} />
+                                          label='From'
+                                          value={process.container ? formatDate(startedAt) : 'N/A'}/>
                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                            label='To' value={process.container ? formatDate(process.container.finishedAt!) : 'N/A'} />
-                        <DetailsAttribute classLabel={classes.label} classValue={classes.link}
-                            label='Workflow' value='???' />
+                                          label='To'
+                                          value={process.container ? formatDate(finishedAt) : 'N/A'}/>
+                        {process.containerRequest.properties.templateUuid &&
+                        <DetailsAttribute label='Workflow' classLabel={classes.label} classValue={classes.link}
+                                          value={process.containerRequest.properties.templateUuid}
+                                          onValueClick={() => navigateToWorkflow(process.containerRequest.properties.templateUuid)}
+                        />}
                     </Grid>
                     <Grid item xs={6}>
                         <span onClick={() => navigateToOutput(process.containerRequest.outputUuid!)}>
-                            <DetailsAttribute classLabel={classes.link} label='Outputs' />
+                            <DetailsAttribute classLabel={classes.link} label='Outputs'/>
                         </span>
                         <span onClick={() => openProcessInputDialog(process.containerRequest.uuid)}>
-                            <DetailsAttribute classLabel={classes.link} label='Inputs' />
+                            <DetailsAttribute classLabel={classes.link} label='Inputs'/>
                         </span>
                     </Grid>
                 </Grid>
             </CardContent>
-        </Card>
+        </Card>;
+    }
 );
 
 const getDescription = (process: Process) =>

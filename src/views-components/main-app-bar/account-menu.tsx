@@ -11,9 +11,13 @@ import { DispatchProp, connect } from 'react-redux';
 import { logout } from '~/store/auth/auth-action';
 import { RootState } from "~/store/store";
 import { openCurrentTokenDialog } from '~/store/current-token-dialog/current-token-dialog-actions';
-import { navigateToSshKeysUser, navigateToMyAccount } from '~/store/navigation/navigation-action';
+import { openRepositoriesPanel } from "~/store/repositories/repositories-actions";
+import {
+    navigateToSiteManager,
+    navigateToSshKeysUser,
+    navigateToMyAccount
+} from '~/store/navigation/navigation-action';
 import { openUserVirtualMachines } from "~/store/virtual-machines/virtual-machines-actions";
-import { openRepositoriesPanel } from '~/store/repositories/repositories-actions';
 
 interface AccountMenuProps {
     user?: User;
@@ -40,6 +44,7 @@ export const AccountMenu = connect(mapStateToProps)(
                 {!user.isAdmin && <MenuItem onClick={() => dispatch(openRepositoriesPanel())}>Repositories</MenuItem>}
                 <MenuItem onClick={() => dispatch(openCurrentTokenDialog)}>Current token</MenuItem>
                 <MenuItem onClick={() => dispatch(navigateToSshKeysUser)}>Ssh Keys</MenuItem>
+                <MenuItem onClick={() => dispatch(navigateToSiteManager)}>Site Manager</MenuItem>
                 <MenuItem onClick={() => dispatch(navigateToMyAccount)}>My account</MenuItem>
                 <MenuItem onClick={() => dispatch(logout())}>Logout</MenuItem>
             </DropdownMenu>

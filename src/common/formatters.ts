@@ -4,7 +4,7 @@
 
 import { PropertyValue } from "~/models/search-bar";
 
-export const formatDate = (isoDate?: string) => {
+export const formatDate = (isoDate?: string | null) => {
     if (isoDate) {
         const date = new Date(isoDate);
         const text = date.toLocaleString();

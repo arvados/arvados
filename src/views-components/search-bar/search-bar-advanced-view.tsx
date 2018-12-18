@@ -27,7 +27,8 @@ type CssRules = 'container' | 'closeIcon' | 'label' | 'buttonWrapper'
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     container: {
         padding: theme.spacing.unit * 2,
-        borderBottom: `1px solid ${theme.palette.grey["200"]}`
+        borderBottom: `1px solid ${theme.palette.grey["200"]}`,
+        position: 'relative',
     },
     closeIcon: {
         position: 'absolute',
