@@ -121,16 +121,17 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 	for _, ctr := range queue.Containers {
 		waiting[ctr.UUID] = struct{}{}
 	}
-	onComplete := func(uuid string) {
+	executeContainer := func(ctr arvados.Container) int {
 		mtx.Lock()
 		defer mtx.Unlock()
-		if _, ok := waiting[uuid]; !ok {
-			c.Logf("container completed twice: %s -- perhaps completed after stub instance was killed?", uuid)
+		if _, ok := waiting[ctr.UUID]; !ok {
+			c.Logf("container completed twice: %s -- perhaps completed after stub instance was killed?", ctr.UUID)
 		}
-		delete(waiting, uuid)
+		delete(waiting, ctr.UUID)
 		if len(waiting) == 0 {
 			close(done)
 		}
+		return int(rand.Uint32() & 0x3)
 	}
 	n := 0
 	s.stubDriver.Queue = queue
@@ -138,7 +139,7 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 		n++
 		stubvm.Boot = time.Now().Add(time.Duration(rand.Int63n(int64(5 * time.Millisecond))))
 		stubvm.CrunchRunDetachDelay = time.Duration(rand.Int63n(int64(10 * time.Millisecond)))
-		stubvm.CtrExit = int(rand.Uint32() & 0x3)
+		stubvm.ExecuteContainer = executeContainer
 		switch n % 7 {
 		case 0:
 			stubvm.Broken = time.Now().Add(time.Duration(rand.Int63n(90)) * time.Millisecond)
@@ -147,8 +148,6 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 		default:
 			stubvm.CrunchRunCrashRate = 0.1
 		}
-		stubvm.OnComplete = onComplete
-		stubvm.OnCancel = onComplete
 	}
 
 	start := time.Now()

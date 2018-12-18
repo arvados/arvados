@@ -28,10 +28,18 @@ type StubDriver struct {
 	HostKey        ssh.Signer
 	AuthorizedKeys []ssh.PublicKey
 
-	// SetupVM, if set, is called upon creation of each new VM.
-	SetupVM          func(*StubVM)
+	// SetupVM, if set, is called upon creation of each new
+	// StubVM. This is the caller's opportunity to customize the
+	// VM's error rate and other behaviors.
+	SetupVM func(*StubVM)
+
+	// StubVM's fake crunch-run uses this Queue to read and update
+	// container state.
+	Queue *Queue
+
+	// Frequency of artificially introduced errors on calls to
+	// Destroy. 0=always succeed, 1=always fail.
 	ErrorRateDestroy float64
-	Queue            *Queue
 
 	instanceSets []*StubInstanceSet
 }
@@ -120,9 +128,7 @@ type StubVM struct {
 	CrunchRunMissing     bool
 	CrunchRunCrashRate   float64
 	CrunchRunDetachDelay time.Duration
-	CtrExit              int
-	OnCancel             func(string)
-	OnComplete           func(string)
+	ExecuteContainer     func(arvados.Container) int
 
 	sis          *StubInstanceSet
 	id           cloud.InstanceID
@@ -196,22 +202,18 @@ func (svm *StubVM) Exec(command string, stdin io.Reader, stdout, stderr io.Write
 				logger.Print("[test] container was killed")
 				return
 			}
+			if svm.ExecuteContainer != nil {
+				ctr.ExitCode = svm.ExecuteContainer(ctr)
+			}
 			// TODO: Check whether the stub instance has
 			// been destroyed, and if so, don't call
-			// onComplete. Then "container finished twice"
-			// can be classified as a bug.
+			// queue.Notify. Then "container finished
+			// twice" can be classified as a bug.
 			if crashluck < svm.CrunchRunCrashRate {
 				logger.Print("[test] crashing crunch-run stub")
-				if svm.OnCancel != nil && ctr.State == arvados.ContainerStateRunning {
-					svm.OnCancel(uuid)
-				}
 			} else {
 				ctr.State = arvados.ContainerStateComplete
-				ctr.ExitCode = svm.CtrExit
 				queue.Notify(ctr)
-				if svm.OnComplete != nil {
-					svm.OnComplete(uuid)
-				}
 			}
 			logger.Print("[test] exiting crunch-run stub")
 			svm.Lock()
