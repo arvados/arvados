@@ -179,8 +179,12 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 }
 
 func (s *DispatcherSuite) TestAPIPermissions(c *check.C) {
-	drivers["test"] = s.stubDriver
 	s.cluster.ManagementToken = "abcdefgh"
+	drivers["test"] = s.stubDriver
+	s.disp.setupOnce.Do(s.disp.initialize)
+	s.disp.queue = &test.Queue{}
+	go s.disp.run()
+
 	for _, token := range []string{"abc", ""} {
 		req := httptest.NewRequest("GET", "/arvados/v1/dispatch/instances", nil)
 		if token != "" {
@@ -197,8 +201,12 @@ func (s *DispatcherSuite) TestAPIPermissions(c *check.C) {
 }
 
 func (s *DispatcherSuite) TestAPIDisabled(c *check.C) {
-	drivers["test"] = s.stubDriver
 	s.cluster.ManagementToken = ""
+	drivers["test"] = s.stubDriver
+	s.disp.setupOnce.Do(s.disp.initialize)
+	s.disp.queue = &test.Queue{}
+	go s.disp.run()
+
 	for _, token := range []string{"abc", ""} {
 		req := httptest.NewRequest("GET", "/arvados/v1/dispatch/instances", nil)
 		if token != "" {
@@ -214,6 +222,9 @@ func (s *DispatcherSuite) TestInstancesAPI(c *check.C) {
 	s.cluster.ManagementToken = "abcdefgh"
 	s.cluster.CloudVMs.TimeoutBooting = arvados.Duration(time.Second)
 	drivers["test"] = s.stubDriver
+	s.disp.setupOnce.Do(s.disp.initialize)
+	s.disp.queue = &test.Queue{}
+	go s.disp.run()
 
 	type instance struct {
 		Instance             string

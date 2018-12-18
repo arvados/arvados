@@ -51,6 +51,7 @@ type dispatcher struct {
 
 	setupOnce sync.Once
 	stop      chan struct{}
+	stopped   chan struct{}
 }
 
 // Start starts the dispatcher. Start can be called multiple times
@@ -79,6 +80,7 @@ func (disp *dispatcher) Close() {
 	case disp.stop <- struct{}{}:
 	default:
 	}
+	<-disp.stopped
 }
 
 // Make a worker.Executor for the given instance.
@@ -109,6 +111,7 @@ func (disp *dispatcher) initialize() {
 		}
 	}
 	disp.stop = make(chan struct{}, 1)
+	disp.stopped = make(chan struct{})
 	disp.logger = logrus.StandardLogger()
 
 	if key, err := ssh.ParsePrivateKey(disp.Cluster.Dispatch.PrivateKey); err != nil {
@@ -144,6 +147,7 @@ func (disp *dispatcher) initialize() {
 }
 
 func (disp *dispatcher) run() {
+	defer close(disp.stopped)
 	defer disp.instanceSet.Stop()
 
 	staleLockTimeout := time.Duration(disp.Cluster.Dispatch.StaleLockTimeout)

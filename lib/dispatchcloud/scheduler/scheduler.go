@@ -37,6 +37,7 @@ type Scheduler struct {
 
 	runOnce sync.Once
 	stop    chan struct{}
+	stopped chan struct{}
 }
 
 // New returns a new unstarted Scheduler.
@@ -51,6 +52,7 @@ func New(logger logrus.FieldLogger, queue ContainerQueue, pool WorkerPool, stale
 		staleLockTimeout:    staleLockTimeout,
 		queueUpdateInterval: queueUpdateInterval,
 		stop:                make(chan struct{}),
+		stopped:             make(chan struct{}),
 		locking:             map[string]bool{},
 	}
 }
@@ -64,9 +66,12 @@ func (sch *Scheduler) Start() {
 // Stop.
 func (sch *Scheduler) Stop() {
 	close(sch.stop)
+	<-sch.stopped
 }
 
 func (sch *Scheduler) run() {
+	defer close(sch.stopped)
+
 	// Ensure the queue is fetched once before attempting anything.
 	for err := sch.queue.Update(); err != nil; err = sch.queue.Update() {
 		sch.logger.Errorf("error updating queue: %s", err)
