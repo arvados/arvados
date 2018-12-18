@@ -105,6 +105,8 @@ class TestPathmap(unittest.TestCase):
 
     def test_needs_new_collection(self):
         arvrunner = arvados_cwl.executor.ArvCwlExecutor(self.api)
+
+        # Plain file.  Don't need a new collection.
         a = {
             "class": "File",
             "location": "keep:99999999999999999999999999999991+99/hw.py",
@@ -114,9 +116,12 @@ class TestPathmap(unittest.TestCase):
         p._pathmap["keep:99999999999999999999999999999991+99/hw.py"] = True
         self.assertFalse(p.needs_new_collection(a))
 
+        # A file that isn't in the pathmap (for some reason).  Need a new collection.
         p = ArvPathMapper(arvrunner, [], "", "%s", "%s/%s")
         self.assertTrue(p.needs_new_collection(a))
 
+        # A file with a secondary file in the same collection.  Don't need
+        # a new collection.
         a = {
             "class": "File",
             "location": "keep:99999999999999999999999999999991+99/hw.py",
@@ -132,6 +137,8 @@ class TestPathmap(unittest.TestCase):
         p._pathmap["keep:99999999999999999999999999999991+99/hw.pyc"] = True
         self.assertFalse(p.needs_new_collection(a))
 
+        # Secondary file is in a different collection from the
+        # a new collectionprimary.  Need a new collection.
         a = {
             "class": "File",
             "location": "keep:99999999999999999999999999999991+99/hw.py",
@@ -147,6 +154,8 @@ class TestPathmap(unittest.TestCase):
         p._pathmap["keep:99999999999999999999999999999992+99/hw.pyc"] = True
         self.assertTrue(p.needs_new_collection(a))
 
+        # Secondary file should be staged to a different name than
+        # path in location.  Need a new collection.
         a = {
             "class": "File",
             "location": "keep:99999999999999999999999999999991+99/hw.py",
@@ -162,6 +171,7 @@ class TestPathmap(unittest.TestCase):
         p._pathmap["keep:99999999999999999999999999999991+99/hw.pyc"] = True
         self.assertTrue(p.needs_new_collection(a))
 
+        # Secondary file is a directory.  Do not need a new collection.
         a = {
             "class": "File",
             "location": "keep:99999999999999999999999999999991+99/hw.py",
@@ -183,6 +193,7 @@ class TestPathmap(unittest.TestCase):
         p._pathmap["keep:99999999999999999999999999999991+99/hw/h2"] = True
         self.assertFalse(p.needs_new_collection(a))
 
+        # Secondary file is a renamed directory.  Need a new collection.
         a = {
             "class": "File",
             "location": "keep:99999999999999999999999999999991+99/hw.py",
@@ -204,6 +215,7 @@ class TestPathmap(unittest.TestCase):
         p._pathmap["keep:99999999999999999999999999999991+99/hw/h2"] = True
         self.assertTrue(p.needs_new_collection(a))
 
+        # Secondary file is a file literal.  Need a new collection.
         a = {
             "class": "File",
             "location": "keep:99999999999999999999999999999991+99/hw.py",
