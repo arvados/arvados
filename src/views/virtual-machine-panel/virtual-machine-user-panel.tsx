@@ -57,10 +57,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     }
 });
 
-const mapStateToProps = ({ virtualMachines }: RootState) => {
+const mapStateToProps = (state: RootState) => {
     return {
-        requestedDate: virtualMachines.date,
-        ...virtualMachines
+        requestedDate: state.virtualMachines.date,
+        userUuid: state.auth.user!.uuid,
+        ...state.virtualMachines
     };
 };
 
@@ -72,6 +73,7 @@ const mapDispatchToProps = (dispatch: Dispatch): Pick<VirtualMachinesPanelAction
 interface VirtualMachinesPanelDataProps {
     requestedDate: string;
     virtualMachines: ListResults<any>;
+    userUuid: string;
     links: ListResults<any>;
 }
 
@@ -166,11 +168,11 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
             {props.virtualMachines.items.map((it, index) =>
                 <TableRow key={index}>
                     <TableCell>{it.hostname}</TableCell>
-                    <TableCell>{getUsername(props.links)}</TableCell>
-                    <TableCell>ssh {getUsername(props.links)}@{it.hostname}.arvados</TableCell>
+                    <TableCell>{getUsername(props.links, props.userUuid)}</TableCell>
+                    <TableCell>ssh {getUsername(props.links, props.userUuid)}@{it.hostname}.arvados</TableCell>
                     <TableCell>
-                        <a href={`https://workbench.c97qk.arvadosapi.com${it.href}/webshell/${getUsername(props.links)}`} target="_blank" className={props.classes.link}>
-                            Log in as {getUsername(props.links)}
+                        <a href={`https://workbench.c97qk.arvadosapi.com${it.href}/webshell/${getUsername(props.links, props.userUuid)}`} target="_blank" className={props.classes.link}>
+                            Log in as {getUsername(props.links, props.userUuid)}
                         </a>
                     </TableCell>
                 </TableRow>
@@ -178,8 +180,8 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
         </TableBody>
     </Table>;
 
-const getUsername = (links: ListResults<any>) => {
-    return links.items[0].properties.username;
+const getUsername = (links: ListResults<any>, userUuid: string) => {
+    return links.items.map(it => it.tailUuid === userUuid ? it.properties.username : '');
 };
 
 const CardSSHSection = (props: VirtualMachineProps) =>
