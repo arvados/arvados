@@ -20,6 +20,12 @@ fi
 uuid_prefix=$(cat /var/lib/arvados/api_uuid_prefix)
 database_pw=$(cat /var/lib/arvados/api_database_pw)
 
+if test -s /var/lib/arvados/api_rails_env ; then
+  database_env=$(cat /var/lib/arvados/api_rails_env)
+else
+  database_env=development
+fi
+
 mkdir -p /etc/arvados
 
 cat >/var/lib/arvados/cluster_config.yml <<EOF
@@ -39,7 +45,7 @@ Clusters:
         Host: localhost
         User: arvados
         Password: ${database_pw}
-        DBName: arvados_development
+        DBName: arvados_${database_env}
         client_encoding: utf8
 EOF
 

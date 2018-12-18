@@ -41,7 +41,7 @@ common-generated/$(NODETARBALL): common-generated
 	wget -cqO common-generated/$(NODETARBALL) https://nodejs.org/dist/v6.11.2/$(NODETARBALL)
 
 common-generated/$(RVMKEY): common-generated
-	wget -cqO common-generated/$(RVMKEY) https://rvm.io/mpapis.asc
+	wget -cqO common-generated/$(RVMKEY) https://rvm.io/pkuczynski.asc
 
 common-generated:
 	mkdir common-generated

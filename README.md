@@ -44,11 +44,11 @@ doc/README.textile for instructions.
 
 ## Community
 
-The [#arvados](irc://irc.oftc.net:6667/#arvados) IRC (Internet Relay Chat)
-channel at the
-[Open and Free Technology Community (irc.oftc.net)](http://www.oftc.net/oftc/)
-is available for live discussion and support.  You can use a traditional IRC
-client or [join OFTC over the web.](https://webchat.oftc.net/?channels=arvados)
+[![Join the chat at https://gitter.im/curoverse/arvados](https://badges.gitter.im/curoverse/arvados.svg)](https://gitter.im/curoverse/arvados?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
+The [curoverse/arvados channel](https://gitter.im/curoverse/arvados)
+channel at [gitter.im](https://gitter.im) is available for live
+discussion and support.
 
 The
 [Arvados user mailing list](http://lists.arvados.org/mailman/listinfo/arvados)

@@ -67,7 +67,7 @@ class ArvadosJob(JobBase):
                                                     keep_client=self.arvrunner.keep_client,
                                                     num_retries=self.arvrunner.num_retries)
                 script_parameters["task.vwd"] = {}
-                generatemapper = VwdPathMapper([self.generatefiles], "", "",
+                generatemapper = VwdPathMapper(self.generatefiles["listing"], "", "",
                                                separateDirs=False)
 
                 with Perf(metrics, "createfiles %s" % self.name):

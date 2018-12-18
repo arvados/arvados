@@ -151,8 +151,8 @@ def statfile(prefix, fn, fnPattern="$(file %s/%s)", dirPattern="$(dir %s/%s/)", 
     return prefix+fn
 
 def write_file(collection, pathprefix, fn, flush=False):
-    with open(os.path.join(pathprefix, fn)) as src:
-        dst = collection.open(fn, "w")
+    with open(os.path.join(pathprefix, fn), "rb") as src:
+        dst = collection.open(fn, "wb")
         r = src.read(1024*128)
         while r:
             dst.write(r)

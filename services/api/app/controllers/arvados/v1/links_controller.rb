@@ -66,7 +66,7 @@ class Arvados::V1::LinksController < ApplicationController
     super
 
     # head_kind and tail_kind columns are now virtual,
-    # equivilent functionality is now provided by
+    # equivalent functionality is now provided by
     # 'is_a', so fix up any old-style 'where' clauses.
     if @where
       @filters ||= []
@@ -86,7 +86,7 @@ class Arvados::V1::LinksController < ApplicationController
     super
 
     # head_kind and tail_kind columns are now virtual,
-    # equivilent functionality is now provided by
+    # equivalent functionality is now provided by
     # 'is_a', so fix up any old-style 'filter' clauses.
     @filters = @filters.map do |k|
       if k[0] == 'head_kind' and k[1] == '='

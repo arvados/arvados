@@ -855,7 +855,8 @@ func (s *TestSuite) TestFullRunHello(c *C) {
     "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
-	"runtime_constraints": {}
+    "runtime_constraints": {},
+    "state": "Locked"
 }`, nil, 0, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, "hello world\n"))
 		t.logWriter.Close()
@@ -867,6 +868,28 @@ func (s *TestSuite) TestFullRunHello(c *C) {
 
 }
 
+func (s *TestSuite) TestRunAlreadyRunning(c *C) {
+	var ran bool
+	api, _, _ := s.fullRunHelper(c, `{
+    "command": ["sleep", "3"],
+    "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+    "cwd": ".",
+    "environment": {},
+    "mounts": {"/tmp": {"kind": "tmp"} },
+    "output_path": "/tmp",
+    "priority": 1,
+    "runtime_constraints": {},
+    "scheduling_parameters":{"max_run_time": 1},
+    "state": "Running"
+}`, nil, 2, func(t *TestDockerClient) {
+		ran = true
+	})
+
+	c.Check(api.CalledWith("container.state", "Cancelled"), IsNil)
+	c.Check(api.CalledWith("container.state", "Complete"), IsNil)
+	c.Check(ran, Equals, false)
+}
+
 func (s *TestSuite) TestRunTimeExceeded(c *C) {
 	api, _, _ := s.fullRunHelper(c, `{
     "command": ["sleep", "3"],
@@ -876,8 +899,9 @@ func (s *TestSuite) TestRunTimeExceeded(c *C) {
     "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
-	"runtime_constraints": {},
-	"scheduling_parameters":{"max_run_time": 1}
+    "runtime_constraints": {},
+    "scheduling_parameters":{"max_run_time": 1},
+    "state": "Locked"
 }`, nil, 0, func(t *TestDockerClient) {
 		time.Sleep(3 * time.Second)
 		t.logWriter.Close()
@@ -894,7 +918,8 @@ func (s *TestSuite) TestContainerWaitFails(c *C) {
     "cwd": ".",
     "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
-    "priority": 1
+    "priority": 1,
+    "state": "Locked"
 }`, nil, 0, func(t *TestDockerClient) {
 		t.ctrExited = true
 		time.Sleep(10 * time.Second)
@@ -914,7 +939,8 @@ func (s *TestSuite) TestCrunchstat(c *C) {
 		"mounts": {"/tmp": {"kind": "tmp"} },
 		"output_path": "/tmp",
 		"priority": 1,
-		"runtime_constraints": {}
+		"runtime_constraints": {},
+		"state": "Locked"
 	}`, nil, 0, func(t *TestDockerClient) {
 		time.Sleep(time.Second)
 		t.logWriter.Close()
@@ -947,7 +973,8 @@ func (s *TestSuite) TestNodeInfoLog(c *C) {
 		"mounts": {"/tmp": {"kind": "tmp"} },
 		"output_path": "/tmp",
 		"priority": 1,
-		"runtime_constraints": {}
+		"runtime_constraints": {},
+		"state": "Locked"
 	}`, nil, 0,
 		func(t *TestDockerClient) {
 			time.Sleep(time.Second)
@@ -981,7 +1008,8 @@ func (s *TestSuite) TestContainerRecordLog(c *C) {
 		"mounts": {"/tmp": {"kind": "tmp"} },
 		"output_path": "/tmp",
 		"priority": 1,
-		"runtime_constraints": {}
+		"runtime_constraints": {},
+		"state": "Locked"
 	}`, nil, 0,
 		func(t *TestDockerClient) {
 			time.Sleep(time.Second)
@@ -1004,7 +1032,8 @@ func (s *TestSuite) TestFullRunStderr(c *C) {
     "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
-    "runtime_constraints": {}
+    "runtime_constraints": {},
+    "state": "Locked"
 }`, nil, 1, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, "hello\n"))
 		t.logWriter.Write(dockerLog(2, "world\n"))
@@ -1029,7 +1058,8 @@ func (s *TestSuite) TestFullRunDefaultCwd(c *C) {
     "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
-    "runtime_constraints": {}
+    "runtime_constraints": {},
+    "state": "Locked"
 }`, nil, 0, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.cwd+"\n"))
 		t.logWriter.Close()
@@ -1050,7 +1080,8 @@ func (s *TestSuite) TestFullRunSetCwd(c *C) {
     "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
-    "runtime_constraints": {}
+    "runtime_constraints": {},
+    "state": "Locked"
 }`, nil, 0, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.cwd+"\n"))
 		t.logWriter.Close()
@@ -1091,7 +1122,8 @@ func (s *TestSuite) testStopContainer(c *C, setup func(cr *ContainerRunner)) {
     "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
-    "runtime_constraints": {}
+    "runtime_constraints": {},
+    "state": "Locked"
 }`
 
 	rec := arvados.Container{}
@@ -1146,7 +1178,8 @@ func (s *TestSuite) TestFullRunSetEnv(c *C) {
     "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
-    "runtime_constraints": {}
+    "runtime_constraints": {},
+    "state": "Locked"
 }`, nil, 0, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
 		t.logWriter.Close()
@@ -1568,7 +1601,8 @@ func (s *TestSuite) TestStdout(c *C) {
 		"mounts": {"/tmp": {"kind": "tmp"}, "stdout": {"kind": "file", "path": "/tmp/a/b/c.out"} },
 		"output_path": "/tmp",
 		"priority": 1,
-		"runtime_constraints": {}
+		"runtime_constraints": {},
+		"state": "Locked"
 	}`
 
 	api, cr, _ := s.fullRunHelper(c, helperRecord, nil, 0, func(t *TestDockerClient) {
@@ -1608,7 +1642,8 @@ func (s *TestSuite) stdoutErrorRunHelper(c *C, record string, fn func(t *TestDoc
 func (s *TestSuite) TestStdoutWithWrongPath(c *C) {
 	_, _, err := s.stdoutErrorRunHelper(c, `{
     "mounts": {"/tmp": {"kind": "tmp"}, "stdout": {"kind": "file", "path":"/tmpa.out"} },
-    "output_path": "/tmp"
+    "output_path": "/tmp",
+    "state": "Locked"
 }`, func(t *TestDockerClient) {})
 
 	c.Check(err, NotNil)
@@ -1618,7 +1653,8 @@ func (s *TestSuite) TestStdoutWithWrongPath(c *C) {
 func (s *TestSuite) TestStdoutWithWrongKindTmp(c *C) {
 	_, _, err := s.stdoutErrorRunHelper(c, `{
     "mounts": {"/tmp": {"kind": "tmp"}, "stdout": {"kind": "tmp", "path":"/tmp/a.out"} },
-    "output_path": "/tmp"
+    "output_path": "/tmp",
+    "state": "Locked"
 }`, func(t *TestDockerClient) {})
 
 	c.Check(err, NotNil)
@@ -1628,7 +1664,8 @@ func (s *TestSuite) TestStdoutWithWrongKindTmp(c *C) {
 func (s *TestSuite) TestStdoutWithWrongKindCollection(c *C) {
 	_, _, err := s.stdoutErrorRunHelper(c, `{
     "mounts": {"/tmp": {"kind": "tmp"}, "stdout": {"kind": "collection", "path":"/tmp/a.out"} },
-    "output_path": "/tmp"
+    "output_path": "/tmp",
+    "state": "Locked"
 }`, func(t *TestDockerClient) {})
 
 	c.Check(err, NotNil)
@@ -1646,7 +1683,8 @@ func (s *TestSuite) TestFullRunWithAPI(c *C) {
     "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
-    "runtime_constraints": {"API": true}
+    "runtime_constraints": {"API": true},
+    "state": "Locked"
 }`, nil, 0, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.env[1][17:]+"\n"))
 		t.logWriter.Close()
@@ -1669,7 +1707,8 @@ func (s *TestSuite) TestFullRunSetOutput(c *C) {
     "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
-    "runtime_constraints": {"API": true}
+    "runtime_constraints": {"API": true},
+    "state": "Locked"
 }`, nil, 0, func(t *TestDockerClient) {
 		t.api.Container.Output = "d4ab34d3d4f8a72f5c4973051ae69fab+122"
 		t.logWriter.Close()
@@ -1696,7 +1735,8 @@ func (s *TestSuite) TestStdoutWithExcludeFromOutputMountPointUnderOutputDir(c *C
     },
 		"output_path": "/tmp",
 		"priority": 1,
-		"runtime_constraints": {}
+		"runtime_constraints": {},
+		"state": "Locked"
 	}`
 
 	extraMounts := []string{"a3e8f74c6f101eae01fa08bfb4e49b3a+54"}
@@ -1727,7 +1767,8 @@ func (s *TestSuite) TestStdoutWithMultipleMountPointsUnderOutputDir(c *C) {
     },
 		"output_path": "/tmp",
 		"priority": 1,
-		"runtime_constraints": {}
+		"runtime_constraints": {},
+		"state": "Locked"
 	}`
 
 	extraMounts := []string{
@@ -1781,7 +1822,8 @@ func (s *TestSuite) TestStdoutWithMountPointsUnderOutputDirDenormalizedManifest(
     },
 		"output_path": "/tmp",
 		"priority": 1,
-		"runtime_constraints": {}
+		"runtime_constraints": {},
+		"state": "Locked"
 	}`
 
 	extraMounts := []string{
@@ -1816,11 +1858,12 @@ func (s *TestSuite) TestOutputError(c *C) {
 		"cwd": "/bin",
 		"environment": {"FROBIZ": "bilbo"},
 		"mounts": {
-        "/tmp": {"kind": "tmp"}
-    },
+			"/tmp": {"kind": "tmp"}
+		},
 		"output_path": "/tmp",
 		"priority": 1,
-		"runtime_constraints": {}
+		"runtime_constraints": {},
+		"state": "Locked"
 	}`
 
 	extraMounts := []string{}
@@ -1846,7 +1889,8 @@ func (s *TestSuite) TestStdinCollectionMountPoint(c *C) {
     },
 		"output_path": "/tmp",
 		"priority": 1,
-		"runtime_constraints": {}
+		"runtime_constraints": {},
+		"state": "Locked"
 	}`
 
 	extraMounts := []string{
@@ -1885,7 +1929,8 @@ func (s *TestSuite) TestStdinJsonMountPoint(c *C) {
     },
 		"output_path": "/tmp",
 		"priority": 1,
-		"runtime_constraints": {}
+		"runtime_constraints": {},
+		"state": "Locked"
 	}`
 
 	api, _, _ := s.fullRunHelper(c, helperRecord, nil, 0, func(t *TestDockerClient) {
@@ -1918,7 +1963,8 @@ func (s *TestSuite) TestStderrMount(c *C) {
                "stderr": {"kind": "file", "path": "/tmp/b/err.txt"}},
     "output_path": "/tmp",
     "priority": 1,
-    "runtime_constraints": {}
+    "runtime_constraints": {},
+    "state": "Locked"
 }`, nil, 1, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, "hello\n"))
 		t.logWriter.Write(dockerLog(2, "oops\n"))
@@ -1968,7 +2014,8 @@ exec echo killme
     "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
-    "runtime_constraints": {}
+    "runtime_constraints": {},
+    "state": "Locked"
 }`, nil, 2, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, "hello world\n"))
 		t.logWriter.Close()
@@ -1993,7 +2040,8 @@ func (s *TestSuite) TestFullBrokenDocker2(c *C) {
     "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
-    "runtime_constraints": {}
+    "runtime_constraints": {},
+    "state": "Locked"
 }`, nil, 2, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, "hello world\n"))
 		t.logWriter.Close()
@@ -2016,7 +2064,8 @@ func (s *TestSuite) TestFullBrokenDocker3(c *C) {
     "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
-    "runtime_constraints": {}
+    "runtime_constraints": {},
+    "state": "Locked"
 }`, nil, 3, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, "hello world\n"))
 		t.logWriter.Close()
@@ -2038,7 +2087,8 @@ func (s *TestSuite) TestBadCommand1(c *C) {
     "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
-    "runtime_constraints": {}
+    "runtime_constraints": {},
+    "state": "Locked"
 }`, nil, 4, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, "hello world\n"))
 		t.logWriter.Close()
@@ -2060,7 +2110,8 @@ func (s *TestSuite) TestBadCommand2(c *C) {
     "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
-    "runtime_constraints": {}
+    "runtime_constraints": {},
+    "state": "Locked"
 }`, nil, 5, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, "hello world\n"))
 		t.logWriter.Close()
@@ -2082,7 +2133,8 @@ func (s *TestSuite) TestBadCommand3(c *C) {
     "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
-    "runtime_constraints": {}
+    "runtime_constraints": {},
+    "state": "Locked"
 }`, nil, 6, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, "hello world\n"))
 		t.logWriter.Close()
@@ -2106,7 +2158,8 @@ func (s *TestSuite) TestSecretTextMountPoint(c *C) {
                 },
 		"output_path": "/tmp",
 		"priority": 1,
-		"runtime_constraints": {}
+		"runtime_constraints": {},
+		"state": "Locked"
 	}`
 
 	api, cr, _ := s.fullRunHelper(c, helperRecord, nil, 0, func(t *TestDockerClient) {
@@ -2134,7 +2187,8 @@ func (s *TestSuite) TestSecretTextMountPoint(c *C) {
                 },
 		"output_path": "/tmp",
 		"priority": 1,
-		"runtime_constraints": {}
+		"runtime_constraints": {},
+		"state": "Locked"
 	}`
 
 	api, cr, _ = s.fullRunHelper(c, helperRecord, nil, 0, func(t *TestDockerClient) {
