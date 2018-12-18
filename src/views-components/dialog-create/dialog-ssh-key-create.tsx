@@ -7,7 +7,7 @@ import { InjectedFormProps } from 'redux-form';
 import { WithDialogProps } from '~/store/dialog/with-dialog';
 import { FormDialog } from '~/components/form-dialog/form-dialog';
 import { SshKeyPublicField, SshKeyNameField } from '~/views-components/form-fields/ssh-key-form-fields';
-import { SshKeyCreateFormDialogData } from '~/store/auth/auth-action';
+import { SshKeyCreateFormDialogData } from '~/store/auth/auth-action-ssh';
 
 type DialogSshKeyProps = WithDialogProps<{}> & InjectedFormProps<SshKeyCreateFormDialogData>;
 

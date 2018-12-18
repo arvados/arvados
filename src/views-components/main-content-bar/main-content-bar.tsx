@@ -21,6 +21,7 @@ const isButtonVisible = ({ router }: RootState) => {
     return !Routes.matchWorkflowRoute(pathname) && !Routes.matchUserVirtualMachineRoute(pathname) &&
         !Routes.matchAdminVirtualMachineRoute(pathname) && !Routes.matchRepositoriesRoute(pathname) &&
         !Routes.matchSshKeysAdminRoute(pathname) && !Routes.matchSshKeysUserRoute(pathname) &&
+        !Routes.matchSiteManagerRoute(pathname) &&
         !Routes.matchKeepServicesRoute(pathname) && !Routes.matchComputeNodesRoute(pathname) &&
         !Routes.matchApiClientAuthorizationsRoute(pathname) && !Routes.matchUsersRoute(pathname) &&
         !Routes.matchMyAccountRoute(pathname) && !Routes.matchLinksRoute(pathname);
