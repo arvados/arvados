@@ -119,6 +119,39 @@ class ArvPathMapper(PathMapper):
         else:
             raise SourceLine(obj, "location", WorkflowException).makeError("Don't know what to do with '%s'" % obj["location"])
 
+    def needs_new_collection(self, srcobj, prefix=""):
+        """Check if files need to be staged into a new collection.
+
+        If all the files are in the same collection and in the same
+        paths they would be staged to, return False.  Otherwise, a new
+        collection is needed with files copied/created in the
+        appropriate places.
+        """
+
+        loc = srcobj["location"]
+        if loc.startswith("_:"):
+            return True
+        if prefix:
+            if loc != prefix+srcobj["basename"]:
+                return True
+        else:
+            i = loc.rfind("/")
+            if i > -1:
+                prefix = loc[:i+1]
+            else:
+                prefix = loc+"/"
+        if srcobj["class"] == "File" and loc not in self._pathmap:
+            return True
+        for s in srcobj.get("secondaryFiles", []):
+            if self.needs_new_collection(s, prefix):
+                return True
+        if srcobj.get("listing"):
+            prefix = "%s%s/" % (prefix, srcobj["basename"])
+            for l in srcobj["listing"]:
+                if self.needs_new_collection(l, prefix):
+                    return True
+        return False
+
     def setup(self, referenced_files, basedir):
         # type: (List[Any], unicode) -> None
         uploadfiles = set()
@@ -168,6 +201,13 @@ class ArvPathMapper(PathMapper):
                 self._pathmap[srcobj["location"]] = MapperEnt("keep:"+c.portable_data_hash(), ab, "Directory", True)
             elif srcobj["class"] == "File" and (srcobj.get("secondaryFiles") or
                 (srcobj["location"].startswith("_:") and "contents" in srcobj)):
+
+                # If all secondary files/directories are located in
+                # the same collection as the primary file and the
+                # paths and names that are consistent with staging,
+                # don't create a new collection.
+                if not self.needs_new_collection(srcobj):
+                    continue
 
                 c = arvados.collection.Collection(api_client=self.arvrunner.api,
                                                   keep_client=self.arvrunner.keep_client,
