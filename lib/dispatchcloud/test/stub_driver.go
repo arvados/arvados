@@ -10,25 +10,28 @@ import (
 	"fmt"
 	"io"
 	math_rand "math/rand"
+	"regexp"
+	"strings"
 	"sync"
+	"time"
 
 	"git.curoverse.com/arvados.git/lib/cloud"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"github.com/Sirupsen/logrus"
 	"github.com/mitchellh/mapstructure"
 	"golang.org/x/crypto/ssh"
 )
 
-type StubExecFunc func(instance cloud.Instance, command string, stdin io.Reader, stdout, stderr io.Writer) uint32
-
 // A StubDriver implements cloud.Driver by setting up local SSH
-// servers that pass their command execution requests to the provided
-// SSHExecFunc.
+// servers that do fake command executions.
 type StubDriver struct {
-	Exec           StubExecFunc
 	HostKey        ssh.Signer
 	AuthorizedKeys []ssh.PublicKey
 
+	// SetupVM, if set, is called upon creation of each new VM.
+	SetupVM          func(*StubVM)
 	ErrorRateDestroy float64
+	Queue            *Queue
 
 	instanceSets []*StubInstanceSet
 }
@@ -37,7 +40,7 @@ type StubDriver struct {
 func (sd *StubDriver) InstanceSet(params map[string]interface{}, id cloud.InstanceSetID) (cloud.InstanceSet, error) {
 	sis := StubInstanceSet{
 		driver:  sd,
-		servers: map[cloud.InstanceID]*stubServer{},
+		servers: map[cloud.InstanceID]*StubVM{},
 	}
 	sd.instanceSets = append(sd.instanceSets, &sis)
 	return &sis, mapstructure.Decode(params, &sis)
@@ -52,7 +55,7 @@ func (sd *StubDriver) InstanceSets() []*StubInstanceSet {
 
 type StubInstanceSet struct {
 	driver  *StubDriver
-	servers map[cloud.InstanceID]*stubServer
+	servers map[cloud.InstanceID]*StubVM
 	mtx     sync.RWMutex
 	stopped bool
 }
@@ -67,23 +70,22 @@ func (sis *StubInstanceSet) Create(it arvados.InstanceType, image cloud.ImageID,
 	if authKey != nil {
 		ak = append([]ssh.PublicKey{authKey}, ak...)
 	}
-	var ss *stubServer
-	ss = &stubServer{
+	svm := &StubVM{
 		sis:          sis,
 		id:           cloud.InstanceID(fmt.Sprintf("stub-%s-%x", it.ProviderType, math_rand.Int63())),
 		tags:         copyTags(tags),
 		providerType: it.ProviderType,
-		SSHService: SSHService{
-			HostKey:        sis.driver.HostKey,
-			AuthorizedKeys: ak,
-			Exec: func(command string, stdin io.Reader, stdout, stderr io.Writer) uint32 {
-				return sis.driver.Exec(ss.Instance(), command, stdin, stdout, stderr)
-			},
-		},
 	}
-
-	sis.servers[ss.id] = ss
-	return ss.Instance(), nil
+	svm.SSHService = SSHService{
+		HostKey:        sis.driver.HostKey,
+		AuthorizedKeys: ak,
+		Exec:           svm.Exec,
+	}
+	if setup := sis.driver.SetupVM; setup != nil {
+		setup(svm)
+	}
+	sis.servers[svm.id] = svm
+	return svm.Instance(), nil
 }
 
 func (sis *StubInstanceSet) Instances(cloud.InstanceTags) ([]cloud.Instance, error) {
@@ -105,47 +107,152 @@ func (sis *StubInstanceSet) Stop() {
 	sis.stopped = true
 }
 
-// stubServer is a fake server that runs an SSH service. It represents
-// a VM running in a fake cloud.
+// StubVM is a fake server that runs an SSH service. It represents a
+// VM running in a fake cloud.
 //
 // Note this is distinct from a stubInstance, which is a snapshot of
-// the VM's metadata. As with a VM in a real cloud, the stubServer
-// keeps running (and might change IP addresses, shut down, etc.)
-// without updating any stubInstances that have been returned to
-// callers.
-type stubServer struct {
+// the VM's metadata. Like a VM in a real cloud, a StubVM keeps
+// running (and might change IP addresses, shut down, etc.)  without
+// updating any stubInstances that have been returned to callers.
+type StubVM struct {
+	Boot                 time.Time
+	Broken               time.Time
+	CrunchRunMissing     bool
+	CrunchRunCrashRate   float64
+	CrunchRunDetachDelay time.Duration
+	CtrExit              int
+	OnCancel             func(string)
+	OnComplete           func(string)
+
 	sis          *StubInstanceSet
 	id           cloud.InstanceID
 	tags         cloud.InstanceTags
 	providerType string
 	SSHService   SSHService
+	running      map[string]bool
 	sync.Mutex
 }
 
-func (ss *stubServer) Instance() stubInstance {
-	ss.Lock()
-	defer ss.Unlock()
+func (svm *StubVM) Instance() stubInstance {
+	svm.Lock()
+	defer svm.Unlock()
 	return stubInstance{
-		ss:   ss,
-		addr: ss.SSHService.Address(),
+		svm:  svm,
+		addr: svm.SSHService.Address(),
 		// We deliberately return a cached/stale copy of the
 		// real tags here, so that (Instance)Tags() sometimes
 		// returns old data after a call to
 		// (Instance)SetTags().  This is permitted by the
 		// driver interface, and this might help remind
 		// callers that they need to tolerate it.
-		tags: copyTags(ss.tags),
+		tags: copyTags(svm.tags),
 	}
 }
 
+func (svm *StubVM) Exec(command string, stdin io.Reader, stdout, stderr io.Writer) uint32 {
+	queue := svm.sis.driver.Queue
+	uuid := regexp.MustCompile(`.{5}-dz642-.{15}`).FindString(command)
+	if eta := svm.Boot.Sub(time.Now()); eta > 0 {
+		fmt.Fprintf(stderr, "stub is booting, ETA %s\n", eta)
+		return 1
+	}
+	if !svm.Broken.IsZero() && svm.Broken.Before(time.Now()) {
+		fmt.Fprintf(stderr, "cannot fork\n")
+		return 2
+	}
+	if svm.CrunchRunMissing && strings.Contains(command, "crunch-run") {
+		fmt.Fprint(stderr, "crunch-run: command not found\n")
+		return 1
+	}
+	if strings.HasPrefix(command, "crunch-run --detach ") {
+		svm.Lock()
+		if svm.running == nil {
+			svm.running = map[string]bool{}
+		}
+		svm.running[uuid] = true
+		svm.Unlock()
+		time.Sleep(svm.CrunchRunDetachDelay)
+		fmt.Fprintf(stderr, "starting %s\n", uuid)
+		logger := logrus.WithField("ContainerUUID", uuid)
+		logger.Printf("[test] starting crunch-run stub")
+		go func() {
+			crashluck := math_rand.Float64()
+			ctr, ok := queue.Get(uuid)
+			if !ok {
+				logger.Print("[test] container not in queue")
+				return
+			}
+			if crashluck > svm.CrunchRunCrashRate/2 {
+				time.Sleep(time.Duration(math_rand.Float64()*20) * time.Millisecond)
+				ctr.State = arvados.ContainerStateRunning
+				queue.Notify(ctr)
+			}
+
+			time.Sleep(time.Duration(math_rand.Float64()*20) * time.Millisecond)
+			svm.Lock()
+			_, running := svm.running[uuid]
+			svm.Unlock()
+			if !running {
+				logger.Print("[test] container was killed")
+				return
+			}
+			// TODO: Check whether the stub instance has
+			// been destroyed, and if so, don't call
+			// onComplete. Then "container finished twice"
+			// can be classified as a bug.
+			if crashluck < svm.CrunchRunCrashRate {
+				logger.Print("[test] crashing crunch-run stub")
+				if svm.OnCancel != nil && ctr.State == arvados.ContainerStateRunning {
+					svm.OnCancel(uuid)
+				}
+			} else {
+				ctr.State = arvados.ContainerStateComplete
+				ctr.ExitCode = svm.CtrExit
+				queue.Notify(ctr)
+				if svm.OnComplete != nil {
+					svm.OnComplete(uuid)
+				}
+			}
+			logger.Print("[test] exiting crunch-run stub")
+			svm.Lock()
+			defer svm.Unlock()
+			delete(svm.running, uuid)
+		}()
+		return 0
+	}
+	if command == "crunch-run --list" {
+		svm.Lock()
+		defer svm.Unlock()
+		for uuid := range svm.running {
+			fmt.Fprintf(stdout, "%s\n", uuid)
+		}
+		return 0
+	}
+	if strings.HasPrefix(command, "crunch-run --kill ") {
+		svm.Lock()
+		defer svm.Unlock()
+		if svm.running[uuid] {
+			delete(svm.running, uuid)
+		} else {
+			fmt.Fprintf(stderr, "%s: container is not running\n", uuid)
+		}
+		return 0
+	}
+	if command == "true" {
+		return 0
+	}
+	fmt.Fprintf(stderr, "%q: command not found", command)
+	return 1
+}
+
 type stubInstance struct {
-	ss   *stubServer
+	svm  *StubVM
 	addr string
 	tags cloud.InstanceTags
 }
 
 func (si stubInstance) ID() cloud.InstanceID {
-	return si.ss.id
+	return si.svm.id
 }
 
 func (si stubInstance) Address() string {
@@ -153,28 +260,28 @@ func (si stubInstance) Address() string {
 }
 
 func (si stubInstance) Destroy() error {
-	if math_rand.Float64() < si.ss.sis.driver.ErrorRateDestroy {
+	if math_rand.Float64() < si.svm.sis.driver.ErrorRateDestroy {
 		return errors.New("instance could not be destroyed")
 	}
-	si.ss.SSHService.Close()
-	sis := si.ss.sis
+	si.svm.SSHService.Close()
+	sis := si.svm.sis
 	sis.mtx.Lock()
 	defer sis.mtx.Unlock()
-	delete(sis.servers, si.ss.id)
+	delete(sis.servers, si.svm.id)
 	return nil
 }
 
 func (si stubInstance) ProviderType() string {
-	return si.ss.providerType
+	return si.svm.providerType
 }
 
 func (si stubInstance) SetTags(tags cloud.InstanceTags) error {
 	tags = copyTags(tags)
-	ss := si.ss
+	svm := si.svm
 	go func() {
-		ss.Lock()
-		defer ss.Unlock()
-		ss.tags = tags
+		svm.Lock()
+		defer svm.Unlock()
+		svm.tags = tags
 	}()
 	return nil
 }
@@ -184,7 +291,7 @@ func (si stubInstance) Tags() cloud.InstanceTags {
 }
 
 func (si stubInstance) String() string {
-	return string(si.ss.id)
+	return string(si.svm.id)
 }
 
 func (si stubInstance) VerifyHostKey(key ssh.PublicKey, client *ssh.Client) error {
@@ -193,7 +300,7 @@ func (si stubInstance) VerifyHostKey(key ssh.PublicKey, client *ssh.Client) erro
 	if err != nil {
 		return err
 	}
-	sig, err := si.ss.sis.driver.HostKey.Sign(rand.Reader, buf)
+	sig, err := si.svm.sis.driver.HostKey.Sign(rand.Reader, buf)
 	if err != nil {
 		return err
 	}
