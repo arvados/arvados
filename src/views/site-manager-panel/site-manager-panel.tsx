@@ -14,8 +14,7 @@ import { toggleSession } from "~/store/auth/auth-action-session";
 
 const mapStateToProps = (state: RootState): SiteManagerPanelRootDataProps => {
     return {
-        sessions: state.auth.sessions,
-        user: state.auth.user!!
+        sessions: state.auth.sessions
     };
 };
 

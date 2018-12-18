@@ -21,7 +21,6 @@ import {
 import { ArvadosTheme } from '~/common/custom-theme';
 import { Session, SessionStatus } from "~/models/session";
 import Button from "@material-ui/core/Button";
-import { User } from "~/models/user";
 import { compose } from "redux";
 import { Field, FormErrors, InjectedFormProps, reduxForm, reset, stopSubmit } from "redux-form";
 import { TextField } from "~/components/text-field/text-field";
@@ -89,7 +88,6 @@ export interface SiteManagerPanelRootActionProps {
 
 export interface SiteManagerPanelRootDataProps {
     sessions: Session[];
-    user: User;
 }
 
 type SiteManagerPanelRootProps = SiteManagerPanelRootDataProps & SiteManagerPanelRootActionProps & WithStyles<CssRules> & InjectedFormProps;
