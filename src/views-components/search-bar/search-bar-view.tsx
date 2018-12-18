@@ -150,10 +150,9 @@ export const SearchBarView = withStyles(styles)(
 
         render() {
             const { children, ...props } = this.props;
-            const { classes, isPopoverOpen } = props;
+            const { classes } = props;
             return (
-                <Paper
-                    className={isPopoverOpen ? classes.containerSearchViewOpened : classes.container}>
+                <Paper className={classes.container}>
                     <div ref={this.viewAnchorRef}>
                         <form onSubmit={props.onSubmit}>
                             <SearchInput {...props} />
@@ -163,9 +162,13 @@ export const SearchBarView = withStyles(styles)(
                         {...props}
                         width={this.getViewWidth()}
                         anchorEl={this.viewAnchorRef.current}>
-                        {
-                            getView({ ...props })
-                        }
+                        <form onSubmit={props.onSubmit}>
+                            <SearchInput
+                                {...props}
+                                autoFocus
+                                disableClickHandler />
+                        </form>
+                        {getView({ ...props })}
                     </SearchViewContainer>
                 </Paper >
             );
@@ -179,16 +182,17 @@ export const SearchBarView = withStyles(styles)(
 
 );
 
-const SearchInput = (props: SearchBarViewProps) => {
+const SearchInput = (props: SearchBarViewProps & { disableClickHandler?: boolean; autoFocus?: boolean }) => {
     const { classes } = props;
     return <Input
+        autoFocus={props.autoFocus}
         className={classes.input}
         onChange={props.onChange}
         placeholder="Search"
         value={props.searchValue}
         fullWidth={true}
         disableUnderline={true}
-        onClick={e => handleInputClick(e, props)}
+        onClick={e => !props.disableClickHandler && handleInputClick(e, props)}
         onKeyDown={e => handleKeyDown(e, props)}
         startAdornment={
             <InputAdornment position="start">
@@ -213,14 +217,11 @@ const SearchInput = (props: SearchBarViewProps) => {
 const SearchViewContainer = (props: SearchBarViewProps & { width: number, anchorEl: HTMLElement | null, children: React.ReactNode }) =>
     <Popover
         PaperProps={{
-            style: {
-                width: props.width,
-                borderRadius: '0 0 4px 4px',
-            }
+            style: { width: props.width }
         }}
         anchorEl={props.anchorEl}
         anchorOrigin={{
-            vertical: 'bottom',
+            vertical: 'top',
             horizontal: 'center',
         }}
         transformOrigin={{
