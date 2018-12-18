@@ -6,9 +6,9 @@ import { getUserFullname, User } from "~/models/user";
 import { AxiosInstance } from "axios";
 import { ApiActions } from "~/services/api/api-actions";
 import * as uuid from "uuid/v4";
-import { Session } from "~/models/session";
+import { Session, SessionStatus } from "~/models/session";
 import { Config } from "~/common/config";
-import { merge, uniqWith, uniqBy } from "lodash";
+import { uniqBy } from "lodash";
 
 export const API_TOKEN_KEY = 'apiToken';
 export const USER_EMAIL_KEY = 'userEmail';
@@ -144,11 +144,14 @@ export class AuthService {
     public buildSessions(cfg: Config, user?: User) {
         const currentSession = {
             clusterId: cfg.uuidPrefix,
-            remoteHost: cfg.baseUrl,
+            remoteHost: cfg.rootUrl,
+            baseUrl: cfg.baseUrl,
             username: getUserFullname(user),
             email: user ? user.email : '',
             token: this.getApiToken(),
-            loggedIn: true
+            loggedIn: true,
+            active: true,
+            status: SessionStatus.VALIDATED
         } as Session;
         const localSessions = this.getSessions();
         const cfgSessions = Object.keys(cfg.remoteHosts).map(clusterId => {
@@ -156,15 +159,18 @@ export class AuthService {
             return {
                 clusterId,
                 remoteHost,
+                baseUrl: '',
                 username: '',
                 email: '',
                 token: '',
-                loggedIn: false
+                loggedIn: false,
+                active: false,
+                status: SessionStatus.INVALIDATED
             } as Session;
         });
         const sessions = [currentSession]
-            .concat(cfgSessions)
-            .concat(localSessions);
+            .concat(localSessions)
+            .concat(cfgSessions);
 
         const uniqSessions = uniqBy(sessions, 'clusterId');
 

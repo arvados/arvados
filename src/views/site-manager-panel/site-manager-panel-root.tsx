@@ -5,7 +5,7 @@
 import * as React from 'react';
 import {
     Card,
-    CardContent,
+    CardContent, CircularProgress,
     Grid,
     StyleRulesCallback,
     Table,
@@ -18,14 +18,18 @@ import {
     withStyles
 } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
-import { Session } from "~/models/session";
+import { Session, SessionStatus } from "~/models/session";
 import Button from "@material-ui/core/Button";
 import { User } from "~/models/user";
 import { compose } from "redux";
-import { Field, InjectedFormProps, reduxForm, reset } from "redux-form";
+import { Field, FormErrors, InjectedFormProps, reduxForm, reset, stopSubmit } from "redux-form";
 import { TextField } from "~/components/text-field/text-field";
 import { addSession } from "~/store/auth/auth-action-session";
 import { SITE_MANAGER_REMOTE_HOST_VALIDATION } from "~/validators/validators";
+import {
+    RENAME_FILE_DIALOG,
+    RenameFileDialogData
+} from "~/store/collection-panel/collection-panel-files/collection-panel-files-actions";
 
 type CssRules = 'root' | 'link' | 'buttonContainer' | 'table' | 'tableRow' | 'status' | 'remoteSiteInfo' | 'buttonAdd';
 
@@ -80,9 +84,17 @@ const SITE_MANAGER_FORM_NAME = 'siteManagerForm';
 export const SiteManagerPanelRoot = compose(
     reduxForm<{remoteHost: string}>({
         form: SITE_MANAGER_FORM_NAME,
-        onSubmit: (data, dispatch) => {
-            dispatch(addSession(data.remoteHost));
-            dispatch(reset(SITE_MANAGER_FORM_NAME));
+        onSubmit: async (data, dispatch) => {
+            try {
+                await dispatch(addSession(data.remoteHost));
+                dispatch(reset(SITE_MANAGER_FORM_NAME));
+            } catch (e) {
+                const errors = {
+                    remoteHost: e
+                } as FormErrors;
+                dispatch(stopSubmit(SITE_MANAGER_FORM_NAME, errors));
+            }
+
         }
     }),
     withStyles(styles))
@@ -107,11 +119,12 @@ export const SiteManagerPanelRoot = compose(
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {sessions.map((session, index) =>
-                                <TableRow key={index} className={classes.tableRow}>
+                            {sessions.map((session, index) => {
+                                const validating = session.status === SessionStatus.BEING_VALIDATED;
+                                return <TableRow key={index} className={classes.tableRow}>
                                     <TableCell>{session.clusterId}</TableCell>
-                                    <TableCell>{session.username}</TableCell>
-                                    <TableCell>{session.email}</TableCell>
+                                    <TableCell>{validating ? <CircularProgress size={20}/> : session.username}</TableCell>
+                                    <TableCell>{validating ? <CircularProgress size={20}/> : session.email}</TableCell>
                                     <TableCell>
                                         <div className={classes.status} style={{
                                             color: session.loggedIn ? '#fff' : '#000',
@@ -120,7 +133,8 @@ export const SiteManagerPanelRoot = compose(
                                             {session.loggedIn ? "Logged in" : "Logged out"}
                                         </div>
                                     </TableCell>
-                                </TableRow>)}
+                                </TableRow>;
+                            })}
                         </TableBody>
                     </Table>}
                 </Grid>
@@ -138,7 +152,8 @@ export const SiteManagerPanelRoot = compose(
                                 component={TextField}
                                 placeholder="zzzz.arvadosapi.com"
                                 margin="normal"
-                                label="New cluster"/>
+                                label="New cluster"
+                                autoFocus/>
                         </Grid>
                         <Grid item xs={3}>
                             <Button type="submit" variant="contained" color="primary"

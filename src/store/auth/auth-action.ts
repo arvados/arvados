@@ -24,7 +24,8 @@ export const authActions = unionize({
     REMOVE_SSH_KEY: ofType<string>(),
     SET_SESSIONS: ofType<Session[]>(),
     ADD_SESSION: ofType<Session>(),
-    REMOVE_SESSION: ofType<string>()
+    REMOVE_SESSION: ofType<string>(),
+    UPDATE_SESSION: ofType<Session>()
 });
 
 function setAuthorizationHeader(services: ServiceRepository, token: string) {

@@ -61,6 +61,13 @@ export const authReducer = (services: ServiceRepository) => (state = initialStat
                     session => session.clusterId !== clusterId
                 )};
         },
+        UPDATE_SESSION: (session: Session) => {
+            return {
+                ...state,
+                sessions: state.sessions.map(
+                    s => s.clusterId === session.clusterId ? session : s
+                )};
+        },
         default: () => state
     });
 };

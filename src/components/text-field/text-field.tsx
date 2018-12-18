@@ -26,7 +26,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 type TextFieldProps = WrappedFieldProps & WithStyles<CssRules>;
 
 export const TextField = withStyles(styles)((props: TextFieldProps & {
-    label?: string, autoFocus?: boolean, required?: boolean, select?: boolean, children: React.ReactNode, margin?: Margin
+    label?: string, autoFocus?: boolean, required?: boolean, select?: boolean, children: React.ReactNode, margin?: Margin, placeholder?: string
 }) =>
     <MaterialTextField
         helperText={props.meta.touched && props.meta.error}
@@ -41,6 +41,7 @@ export const TextField = withStyles(styles)((props: TextFieldProps & {
         select={props.select}
         children={props.children}
         margin={props.margin}
+        placeholder={props.placeholder}
         {...props.input}
     />);
 
