@@ -21,7 +21,7 @@ import {
 import { ArvadosTheme } from '~/common/custom-theme';
 import { Session, SessionStatus } from "~/models/session";
 import Button from "@material-ui/core/Button";
-import { compose } from "redux";
+import { compose, Dispatch } from "redux";
 import { Field, FormErrors, InjectedFormProps, reduxForm, reset, stopSubmit } from "redux-form";
 import { TextField } from "~/components/text-field/text-field";
 import { addSession } from "~/store/auth/auth-action-session";
@@ -93,19 +93,24 @@ export interface SiteManagerPanelRootDataProps {
 type SiteManagerPanelRootProps = SiteManagerPanelRootDataProps & SiteManagerPanelRootActionProps & WithStyles<CssRules> & InjectedFormProps;
 const SITE_MANAGER_FORM_NAME = 'siteManagerForm';
 
+const submitSession = (remoteHost: string) =>
+    (dispatch: Dispatch) => {
+        dispatch<any>(addSession(remoteHost)).then(() => {
+            dispatch(reset(SITE_MANAGER_FORM_NAME));
+        }).catch((e: any) => {
+            const errors = {
+                remoteHost: e
+            } as FormErrors;
+            dispatch(stopSubmit(SITE_MANAGER_FORM_NAME, errors));
+        });
+    };
+
 export const SiteManagerPanelRoot = compose(
     reduxForm<{remoteHost: string}>({
         form: SITE_MANAGER_FORM_NAME,
         touchOnBlur: false,
         onSubmit: (data, dispatch) => {
-            dispatch<any>(addSession(data.remoteHost)).then(() => {
-                dispatch(reset(SITE_MANAGER_FORM_NAME));
-            }).catch((e: any) => {
-                const errors = {
-                    remoteHost: e
-                } as FormErrors;
-                dispatch(stopSubmit(SITE_MANAGER_FORM_NAME, errors));
-            });
+            dispatch(submitSession(data.remoteHost));
         }
     }),
     withStyles(styles))
