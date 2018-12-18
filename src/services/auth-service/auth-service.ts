@@ -2,10 +2,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { User, UserPrefs } from "~/models/user";
+import { getUserFullname, User, UserPrefs } from "~/models/user";
 import { AxiosInstance } from "axios";
 import { ApiActions } from "~/services/api/api-actions";
 import * as uuid from "uuid/v4";
+import { Session, SessionStatus } from "~/models/session";
+import { Config } from "~/common/config";
+import { uniqBy } from "lodash";
 
 export const API_TOKEN_KEY = 'apiToken';
 export const USER_EMAIL_KEY = 'userEmail';
@@ -136,5 +139,54 @@ export class AuthService {
         const uuid = this.getOwnerUuid();
         const uuidParts = uuid ? uuid.split('-') : [];
         return uuidParts.length > 1 ? `${uuidParts[0]}-${uuidParts[1]}` : undefined;
+    }
+
+    public getSessions(): Session[] {
+        try {
+            const sessions = JSON.parse(localStorage.getItem("sessions") || '');
+            return sessions;
+        } catch {
+            return [];
+        }
+    }
+
+    public saveSessions(sessions: Session[]) {
+        localStorage.setItem("sessions", JSON.stringify(sessions));
+    }
+
+    public buildSessions(cfg: Config, user?: User) {
+        const currentSession = {
+            clusterId: cfg.uuidPrefix,
+            remoteHost: cfg.rootUrl,
+            baseUrl: cfg.baseUrl,
+            username: getUserFullname(user),
+            email: user ? user.email : '',
+            token: this.getApiToken(),
+            loggedIn: true,
+            active: true,
+            status: SessionStatus.VALIDATED
+        } as Session;
+        const localSessions = this.getSessions();
+        const cfgSessions = Object.keys(cfg.remoteHosts).map(clusterId => {
+            const remoteHost = cfg.remoteHosts[clusterId];
+            return {
+                clusterId,
+                remoteHost,
+                baseUrl: '',
+                username: '',
+                email: '',
+                token: '',
+                loggedIn: false,
+                active: false,
+                status: SessionStatus.INVALIDATED
+            } as Session;
+        });
+        const sessions = [currentSession]
+            .concat(localSessions)
+            .concat(cfgSessions);
+
+        const uniqSessions = uniqBy(sessions, 'clusterId');
+
+        return uniqSessions;
     }
 }

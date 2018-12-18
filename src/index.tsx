@@ -102,14 +102,14 @@ fetchConfig()
         const store = configureStore(history, services);
 
         store.subscribe(initListener(history, store, services, config));
-        store.dispatch(initAuth());
+        store.dispatch(initAuth(config));
         store.dispatch(setBuildInfo());
         store.dispatch(setCurrentTokenDialogApiHost(apiHost));
         store.dispatch(setUuidPrefix(config.uuidPrefix));
         store.dispatch(loadVocabulary);
         store.dispatch(loadFileViewersConfig);
 
-        const TokenComponent = (props: any) => <ApiToken authService={services.authService} {...props} />;
+        const TokenComponent = (props: any) => <ApiToken authService={services.authService} config={config} {...props} />;
         const MainPanelComponent = (props: any) => <MainPanel {...props} />;
 
         const App = () =>
