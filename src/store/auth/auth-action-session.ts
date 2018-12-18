@@ -82,9 +82,7 @@ const getSaltedToken = (clusterId: string, tokenUuid: string, token: string) => 
 
 const clusterLogin = async (clusterId: string, baseUrl: string, activeSession: Session): Promise<{user: User, token: string}> => {
     const tokenUuid = await getTokenUuid(activeSession.baseUrl, activeSession.token);
-    console.log(">> Cluster", clusterId);
     const saltedToken = getSaltedToken(clusterId, tokenUuid, activeSession.token);
-    console.log(">> Salted token", saltedToken);
     const user = await getUserDetails(baseUrl, saltedToken);
     return {
         user: {
@@ -111,7 +109,7 @@ export const validateCluster = async (remoteHost: string, clusterId: string, act
 };
 
 export const validateSession = (session: Session, activeSession: Session) =>
-    async (dispatch: Dispatch) => {
+    async (dispatch: Dispatch): Promise<Session> => {
         dispatch(authActions.UPDATE_SESSION({ ...session, status: SessionStatus.BEING_VALIDATED }));
         session.loggedIn = false;
         try {
@@ -156,9 +154,9 @@ export const addSession = (remoteHost: string) =>
                 return Promise.reject("Cluster already exists");
             }
             try {
-                const { baseUrl, user, token } = await dispatch(validateCluster(remoteHost, clusterId, activeSession));
+                const { baseUrl, user, token } = await validateCluster(remoteHost, clusterId, activeSession);
                 const session = {
-                    loggedIn: false,
+                    loggedIn: true,
                     status: SessionStatus.VALIDATED,
                     active: false,
                     email: user.email,
@@ -174,11 +172,27 @@ export const addSession = (remoteHost: string) =>
 
                 return session;
             } catch (e) {
-                console.error(e);
             }
         }
-        debugger;
         return Promise.reject("Could not validate cluster");
+    };
+
+export const toggleSession = (session: Session) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        let s = { ...session };
+
+        if (session.loggedIn) {
+            s.loggedIn = false;
+        } else {
+            const sessions = getState().auth.sessions;
+            const activeSession = getActiveSession(sessions);
+            if (activeSession) {
+                s = await dispatch<any>(validateSession(s, activeSession)) as Session;
+            }
+        }
+
+        dispatch(authActions.UPDATE_SESSION(s));
+        services.authService.saveSessions(getState().auth.sessions);
     };
 
 export const loadSiteManagerPanel = () =>

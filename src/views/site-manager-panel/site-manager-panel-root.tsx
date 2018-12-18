@@ -5,7 +5,8 @@
 import * as React from 'react';
 import {
     Card,
-    CardContent, CircularProgress,
+    CardContent,
+    CircularProgress,
     Grid,
     StyleRulesCallback,
     Table,
@@ -26,12 +27,10 @@ import { Field, FormErrors, InjectedFormProps, reduxForm, reset, stopSubmit } fr
 import { TextField } from "~/components/text-field/text-field";
 import { addSession } from "~/store/auth/auth-action-session";
 import { SITE_MANAGER_REMOTE_HOST_VALIDATION } from "~/validators/validators";
-import {
-    RENAME_FILE_DIALOG,
-    RenameFileDialogData
-} from "~/store/collection-panel/collection-panel-files/collection-panel-files-actions";
 
-type CssRules = 'root' | 'link' | 'buttonContainer' | 'table' | 'tableRow' | 'status' | 'remoteSiteInfo' | 'buttonAdd';
+type CssRules = 'root' | 'link' | 'buttonContainer' | 'table' | 'tableRow' |
+    'remoteSiteInfo' | 'buttonAdd' | 'buttonLoggedIn' | 'buttonLoggedOut' |
+    'statusCell';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -54,12 +53,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
             whiteSpace: 'nowrap'
         }
     },
-    status: {
-        width: 100,
-        padding: 5,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        borderRadius: 4
+    statusCell: {
+        minWidth: 160
     },
     remoteSiteInfo: {
         marginTop: 20
@@ -67,10 +62,29 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     buttonAdd: {
         marginLeft: 10,
         marginTop: theme.spacing.unit * 3
+    },
+    buttonLoggedIn: {
+        minHeight: theme.spacing.unit,
+        padding: 5,
+        color: '#fff',
+        backgroundColor: '#009966',
+        '&:hover': {
+            backgroundColor: '#008450',
+        }
+    },
+    buttonLoggedOut: {
+        minHeight: theme.spacing.unit,
+        padding: 5,
+        color: '#000',
+        backgroundColor: '#FFC414',
+        '&:hover': {
+            backgroundColor: '#eaaf14',
+        }
     }
 });
 
 export interface SiteManagerPanelRootActionProps {
+    toggleSession: (session: Session) => void;
 }
 
 export interface SiteManagerPanelRootDataProps {
@@ -84,21 +98,20 @@ const SITE_MANAGER_FORM_NAME = 'siteManagerForm';
 export const SiteManagerPanelRoot = compose(
     reduxForm<{remoteHost: string}>({
         form: SITE_MANAGER_FORM_NAME,
-        onSubmit: async (data, dispatch) => {
-            try {
-                await dispatch(addSession(data.remoteHost));
+        touchOnBlur: false,
+        onSubmit: (data, dispatch) => {
+            dispatch<any>(addSession(data.remoteHost)).then(() => {
                 dispatch(reset(SITE_MANAGER_FORM_NAME));
-            } catch (e) {
+            }).catch((e: any) => {
                 const errors = {
                     remoteHost: e
                 } as FormErrors;
                 dispatch(stopSubmit(SITE_MANAGER_FORM_NAME, errors));
-            }
-
+            });
         }
     }),
     withStyles(styles))
-    (({ classes, sessions, handleSubmit }: SiteManagerPanelRootProps) =>
+    (({ classes, sessions, handleSubmit, toggleSession }: SiteManagerPanelRootProps) =>
         <Card className={classes.root}>
             <CardContent>
                 <Grid container direction="row">
@@ -125,13 +138,13 @@ export const SiteManagerPanelRoot = compose(
                                     <TableCell>{session.clusterId}</TableCell>
                                     <TableCell>{validating ? <CircularProgress size={20}/> : session.username}</TableCell>
                                     <TableCell>{validating ? <CircularProgress size={20}/> : session.email}</TableCell>
-                                    <TableCell>
-                                        <div className={classes.status} style={{
-                                            color: session.loggedIn ? '#fff' : '#000',
-                                            backgroundColor: session.loggedIn ? '#009966' : '#FFC414'
-                                        }}>
-                                            {session.loggedIn ? "Logged in" : "Logged out"}
-                                        </div>
+                                    <TableCell className={classes.statusCell}>
+                                        <Button fullWidth
+                                            disabled={validating || session.status === SessionStatus.INVALIDATED || session.active}
+                                            className={session.loggedIn ? classes.buttonLoggedIn : classes.buttonLoggedOut}
+                                            onClick={() => toggleSession(session)}>
+                                            {validating ? "Validating" : (session.loggedIn ? "Logged in" : "Logged out")}
+                                        </Button>
                                     </TableCell>
                                 </TableRow>;
                             })}
