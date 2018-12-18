@@ -6,17 +6,20 @@ import { authActions, AuthAction } from "./auth-action";
 import { User } from "~/models/user";
 import { ServiceRepository } from "~/services/services";
 import { SshKeyResource } from '~/models/ssh-key';
+import { Session } from "~/models/session";
 
 export interface AuthState {
     user?: User;
     apiToken?: string;
     sshKeys: SshKeyResource[];
+    sessions: Session[];
 }
 
 const initialState: AuthState = {
     user: undefined,
     apiToken: undefined,
-    sshKeys: []
+    sshKeys: [],
+    sessions: []
 };
 
 export const authReducer = (services: ServiceRepository) => (state = initialState, action: AuthAction) => {
@@ -44,6 +47,26 @@ export const authReducer = (services: ServiceRepository) => (state = initialStat
         },
         REMOVE_SSH_KEY: (uuid: string) => {
             return { ...state, sshKeys: state.sshKeys.filter((sshKey) => sshKey.uuid !== uuid )};
+        },
+        SET_SESSIONS: (sessions: Session[]) => {
+            return { ...state, sessions };
+        },
+        ADD_SESSION: (session: Session) => {
+            return { ...state, sessions: state.sessions.concat(session) };
+        },
+        REMOVE_SESSION: (clusterId: string) => {
+            return {
+                ...state,
+                sessions: state.sessions.filter(
+                    session => session.clusterId !== clusterId
+                )};
+        },
+        UPDATE_SESSION: (session: Session) => {
+            return {
+                ...state,
+                sessions: state.sessions.map(
+                    s => s.clusterId === session.clusterId ? session : s
+                )};
         },
         default: () => state
     });

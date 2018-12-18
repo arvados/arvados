@@ -77,6 +77,8 @@ export const navigateToSshKeysAdmin= push(Routes.SSH_KEYS_ADMIN);
 
 export const navigateToSshKeysUser= push(Routes.SSH_KEYS_USER);
 
+export const navigateToSiteManager= push(Routes.SITE_MANAGER);
+
 export const navigateToMyAccount = push(Routes.MY_ACCOUNT);
 
 export const navigateToKeepServices = push(Routes.KEEP_SERVICES);

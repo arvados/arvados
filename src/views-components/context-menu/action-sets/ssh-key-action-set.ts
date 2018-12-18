@@ -4,7 +4,7 @@
 
 import { ContextMenuActionSet } from "~/views-components/context-menu/context-menu-action-set";
 import { AdvancedIcon, RemoveIcon, AttributesIcon } from "~/components/icon/icon";
-import { openSshKeyRemoveDialog, openSshKeyAttributesDialog } from '~/store/auth/auth-action';
+import { openSshKeyRemoveDialog, openSshKeyAttributesDialog } from '~/store/auth/auth-action-ssh';
 import { openAdvancedTabDialog } from '~/store/advanced-tab/advanced-tab';
 
 export const sshKeyActionSet: ContextMenuActionSet = [[{
