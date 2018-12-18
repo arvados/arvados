@@ -11,7 +11,7 @@ import {
     WithStyles,
     Tooltip,
     InputAdornment, Input,
-    Popover
+    Popover,
 } from '@material-ui/core';
 import SearchIcon from '@material-ui/icons/Search';
 import ArrowDropDownIcon from '@material-ui/icons/ArrowDropDown';
@@ -195,7 +195,11 @@ export const SearchBarView = withStyles(styles)(
                         anchorEl={this.viewAnchorRef.current}
                         anchorOrigin={{
                             vertical: 'bottom',
-                            horizontal: 'left',
+                            horizontal: 'center',
+                        }}
+                        transformOrigin={{
+                            vertical: 'top',
+                            horizontal: 'center',
                         }}
                         disableAutoFocus
                         open={isPopoverOpen}
