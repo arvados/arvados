@@ -156,6 +156,7 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
         /**
          * If input startAdornment prop is not undefined, input's label will stay above the input.
          * If there is not items, we want the label to go back to placeholder position.
+         * That why we return without a value instead of returning a result of a _map_ which is an empty array.
          */
         if (items.length === 0) {
             return;
