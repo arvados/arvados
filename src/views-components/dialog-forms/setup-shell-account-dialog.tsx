@@ -42,7 +42,17 @@ const UserEmailField = ({ data }: any) =>
         name='email'
         component={TextField}
         disabled
-        label={data.email} />;
+        label={data.user.email} />;
+
+const UserVirtualMachineField = ({ data }: any) =>
+    <div style={{ marginBottom: '21px' }}>
+        <InputLabel>Virtual Machine</InputLabel>
+        <Field
+            name='virtualMachine'
+            component={NativeSelectField}
+            validate={USER_LENGTH_VALIDATION}
+            items={getVirtualMachinesList(data.items)} />
+    </div>;
 
 const UserGroupsVirtualMachineField = () =>
     <Field
@@ -51,11 +61,17 @@ const UserGroupsVirtualMachineField = () =>
         validate={USER_LENGTH_VALIDATION}
         label="Groups for virtual machine (comma separated list)" />;
 
+const getVirtualMachinesList = (virtualMachines: VirtualMachinesResource[]) => {
+    const mappedVirtualMachines = virtualMachines.map(it => ({ key: it.hostname, value: it.hostname }));
+    return mappedVirtualMachines;
+};
+
 type SetupShellAccountDialogComponentProps = WithDialogProps<{}> & InjectedFormProps<SetupShellAccountFormDialogData>;
 
 const SetupShellAccountFormFields = (props: SetupShellAccountDialogComponentProps) =>
     <>
         <UserEmailField data={props.data}/>
+        <UserVirtualMachineField data={props.data} />
         <UserGroupsVirtualMachineField />
     </>;
 

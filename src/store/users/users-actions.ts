@@ -40,10 +40,11 @@ export const openUserManage = (uuid: string) =>
     };
 
 export const openSetupShellAccount = (uuid: string) =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const { resources } = getState();
-        const data = getResource<UserResource>(uuid)(resources);
-        dispatch(dialogActions.OPEN_DIALOG({ id: SETUP_SHELL_ACCOUNT_DIALOG, data }));
+        const user = getResource<UserResource>(uuid)(resources);
+        const virtualMachines = await services.virtualMachineService.list();
+        dispatch(dialogActions.OPEN_DIALOG({ id: SETUP_SHELL_ACCOUNT_DIALOG, data: { user, ...virtualMachines } }));
     };
 
 export const openUserCreateDialog = () =>

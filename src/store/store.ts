@@ -49,6 +49,10 @@ import { keepServicesReducer } from '~/store/keep-services/keep-services-reducer
 import { UserMiddlewareService } from '~/store/users/user-panel-middleware-service';
 import { USERS_PANEL_ID } from '~/store/users/users-actions';
 import { apiClientAuthorizationsReducer } from '~/store/api-client-authorizations/api-client-authorizations-reducer';
+import { GroupsPanelMiddlewareService } from '~/store/groups-panel/groups-panel-middleware-service';
+import { GROUPS_PANEL_ID } from '~/store/groups-panel/groups-panel-actions';
+import { GroupDetailsPanelMiddlewareService } from '~/store/group-details-panel/group-details-panel-middleware-service';
+import { GROUP_DETAILS_PANEL_ID } from '~/store/group-details-panel/group-details-panel-actions';
 import { LINK_PANEL_ID } from '~/store/link-panel/link-panel-actions';
 import { LinkMiddlewareService } from '~/store/link-panel/link-panel-middleware-service';
 import { COMPUTE_NODE_PANEL_ID } from '~/store/compute-nodes/compute-nodes-actions';
@@ -87,6 +91,13 @@ export function configureStore(history: History, services: ServiceRepository): R
     const userPanelMiddleware = dataExplorerMiddleware(
         new UserMiddlewareService(services, USERS_PANEL_ID)
     );
+    const groupsPanelMiddleware = dataExplorerMiddleware(
+        new GroupsPanelMiddlewareService(services, GROUPS_PANEL_ID)
+    );
+    const groupDetailsPanelMiddleware = dataExplorerMiddleware(
+        new GroupDetailsPanelMiddlewareService(services, GROUP_DETAILS_PANEL_ID)
+    );
+
     const linkPanelMiddleware = dataExplorerMiddleware(
         new LinkMiddlewareService(services, LINK_PANEL_ID)
     );
@@ -103,8 +114,10 @@ export function configureStore(history: History, services: ServiceRepository): R
         sharedWithMePanelMiddleware,
         workflowPanelMiddleware,
         userPanelMiddleware,
+        groupsPanelMiddleware,
+        groupDetailsPanelMiddleware,
         linkPanelMiddleware,
-        computeNodeMiddleware
+        computeNodeMiddleware,
     ];
     const enhancer = composeEnhancers(applyMiddleware(...middlewares));
     return createStore(rootReducer, enhancer);
