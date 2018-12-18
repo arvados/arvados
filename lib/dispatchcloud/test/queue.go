@@ -134,10 +134,15 @@ func (q *Queue) Update() error {
 		if !exists && (ctr.State == arvados.ContainerStateComplete || ctr.State == arvados.ContainerStateCancelled) {
 			continue
 		}
-		it, _ := q.ChooseType(&ctr)
-		upd[ctr.UUID] = container.QueueEnt{
-			Container:    ctr,
-			InstanceType: it,
+		if ent, ok := upd[ctr.UUID]; ok {
+			ent.Container = ctr
+			upd[ctr.UUID] = ent
+		} else {
+			it, _ := q.ChooseType(&ctr)
+			upd[ctr.UUID] = container.QueueEnt{
+				Container:    ctr,
+				InstanceType: it,
+			}
 		}
 	}
 	q.entries = upd
