@@ -46,7 +46,17 @@ import { resourcesDataReducer } from "~/store/resources-data/resources-data-redu
 import { virtualMachinesReducer } from "~/store/virtual-machines/virtual-machines-reducer";
 import { repositoriesReducer } from '~/store/repositories/repositories-reducer';
 import { keepServicesReducer } from '~/store/keep-services/keep-services-reducer';
-import { computeNodesReducer } from '~/store/compute-nodes/compute-nodes-reducer';
+import { UserMiddlewareService } from '~/store/users/user-panel-middleware-service';
+import { USERS_PANEL_ID } from '~/store/users/users-actions';
+import { apiClientAuthorizationsReducer } from '~/store/api-client-authorizations/api-client-authorizations-reducer';
+import { GroupsPanelMiddlewareService } from '~/store/groups-panel/groups-panel-middleware-service';
+import { GROUPS_PANEL_ID } from '~/store/groups-panel/groups-panel-actions';
+import { GroupDetailsPanelMiddlewareService } from '~/store/group-details-panel/group-details-panel-middleware-service';
+import { GROUP_DETAILS_PANEL_ID } from '~/store/group-details-panel/group-details-panel-actions';
+import { LINK_PANEL_ID } from '~/store/link-panel/link-panel-actions';
+import { LinkMiddlewareService } from '~/store/link-panel/link-panel-middleware-service';
+import { COMPUTE_NODE_PANEL_ID } from '~/store/compute-nodes/compute-nodes-actions';
+import { ComputeNodeMiddlewareService } from '~/store/compute-nodes/compute-nodes-middleware-service';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -78,7 +88,22 @@ export function configureStore(history: History, services: ServiceRepository): R
     const workflowPanelMiddleware = dataExplorerMiddleware(
         new WorkflowMiddlewareService(services, WORKFLOW_PANEL_ID)
     );
+    const userPanelMiddleware = dataExplorerMiddleware(
+        new UserMiddlewareService(services, USERS_PANEL_ID)
+    );
+    const groupsPanelMiddleware = dataExplorerMiddleware(
+        new GroupsPanelMiddlewareService(services, GROUPS_PANEL_ID)
+    );
+    const groupDetailsPanelMiddleware = dataExplorerMiddleware(
+        new GroupDetailsPanelMiddlewareService(services, GROUP_DETAILS_PANEL_ID)
+    );
 
+    const linkPanelMiddleware = dataExplorerMiddleware(
+        new LinkMiddlewareService(services, LINK_PANEL_ID)
+    );
+    const computeNodeMiddleware = dataExplorerMiddleware(
+        new ComputeNodeMiddlewareService(services, COMPUTE_NODE_PANEL_ID)
+    );
     const middlewares: Middleware[] = [
         routerMiddleware(history),
         thunkMiddleware.withExtraArgument(services),
@@ -87,7 +112,12 @@ export function configureStore(history: History, services: ServiceRepository): R
         trashPanelMiddleware,
         searchResultsPanelMiddleware,
         sharedWithMePanelMiddleware,
-        workflowPanelMiddleware
+        workflowPanelMiddleware,
+        userPanelMiddleware,
+        groupsPanelMiddleware,
+        groupDetailsPanelMiddleware,
+        linkPanelMiddleware,
+        computeNodeMiddleware,
     ];
     const enhancer = composeEnhancers(applyMiddleware(...middlewares));
     return createStore(rootReducer, enhancer);
@@ -119,5 +149,5 @@ const createRootReducer = (services: ServiceRepository) => combineReducers({
     virtualMachines: virtualMachinesReducer,
     repositories: repositoriesReducer,
     keepServices: keepServicesReducer,
-    computeNodes: computeNodesReducer
+    apiClientAuthorizations: apiClientAuthorizationsReducer
 });

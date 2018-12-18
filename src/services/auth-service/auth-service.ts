@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { getUserFullname, User } from "~/models/user";
+import { getUserFullname, User, UserPrefs } from "~/models/user";
 import { AxiosInstance } from "axios";
 import { ApiActions } from "~/services/api/api-actions";
 import * as uuid from "uuid/v4";
@@ -17,6 +17,8 @@ export const USER_LAST_NAME_KEY = 'userLastName';
 export const USER_UUID_KEY = 'userUuid';
 export const USER_OWNER_UUID_KEY = 'userOwnerUuid';
 export const USER_IS_ADMIN = 'isAdmin';
+export const USER_IDENTITY_URL = 'identityUrl';
+export const USER_PREFS = 'prefs';
 
 export interface UserDetailsResponse {
     email: string;
@@ -25,6 +27,8 @@ export interface UserDetailsResponse {
     uuid: string;
     owner_uuid: string;
     is_admin: boolean;
+    identity_url: string;
+    prefs: UserPrefs;
 }
 
 export class AuthService {
@@ -65,9 +69,11 @@ export class AuthService {
         const uuid = this.getUuid();
         const ownerUuid = this.getOwnerUuid();
         const isAdmin = this.getIsAdmin();
+        const identityUrl = localStorage.getItem(USER_IDENTITY_URL);
+        const prefs = JSON.parse(localStorage.getItem(USER_PREFS) || '{"profile": {}}');
 
-        return email && firstName && lastName && uuid && ownerUuid
-            ? { email, firstName, lastName, uuid, ownerUuid, isAdmin }
+        return email && firstName && lastName && uuid && ownerUuid && identityUrl && prefs
+            ? { email, firstName, lastName, uuid, ownerUuid, isAdmin, identityUrl, prefs }
             : undefined;
     }
 
@@ -78,6 +84,8 @@ export class AuthService {
         localStorage.setItem(USER_UUID_KEY, user.uuid);
         localStorage.setItem(USER_OWNER_UUID_KEY, user.ownerUuid);
         localStorage.setItem(USER_IS_ADMIN, JSON.stringify(user.isAdmin));
+        localStorage.setItem(USER_IDENTITY_URL, user.identityUrl);
+        localStorage.setItem(USER_PREFS, JSON.stringify(user.prefs));
     }
 
     public removeUser() {
@@ -87,6 +95,8 @@ export class AuthService {
         localStorage.removeItem(USER_UUID_KEY);
         localStorage.removeItem(USER_OWNER_UUID_KEY);
         localStorage.removeItem(USER_IS_ADMIN);
+        localStorage.removeItem(USER_IDENTITY_URL);
+        localStorage.removeItem(USER_PREFS);
     }
 
     public login() {
@@ -106,13 +116,16 @@ export class AuthService {
             .get<UserDetailsResponse>('/users/current')
             .then(resp => {
                 this.actions.progressFn(reqId, false);
+                const prefs = resp.data.prefs.profile ? resp.data.prefs : { profile: {}};
                 return {
                     email: resp.data.email,
                     firstName: resp.data.first_name,
                     lastName: resp.data.last_name,
                     uuid: resp.data.uuid,
                     ownerUuid: resp.data.owner_uuid,
-                    isAdmin: resp.data.is_admin
+                    isAdmin: resp.data.is_admin,
+                    identityUrl: resp.data.identity_url,
+                    prefs
                 };
             })
             .catch(e => {

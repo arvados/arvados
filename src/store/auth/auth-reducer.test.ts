@@ -30,6 +30,8 @@ describe('auth-reducer', () => {
             lastName: "Doe",
             uuid: "uuid",
             ownerUuid: "ownerUuid",
+            identityUrl: "identityUrl",
+            prefs: {},
             isAdmin: false
         };
         const state = reducer(initialState, authActions.INIT({ user, token: "token" }));
@@ -60,6 +62,8 @@ describe('auth-reducer', () => {
             lastName: "Doe",
             uuid: "uuid",
             ownerUuid: "ownerUuid",
+            identityUrl: "identityUrl",
+            prefs: {},
             isAdmin: false
         };
 
@@ -73,6 +77,8 @@ describe('auth-reducer', () => {
                 lastName: "Doe",
                 uuid: "uuid",
                 ownerUuid: "ownerUuid",
+                identityUrl: "identityUrl",
+                prefs: {},
                 isAdmin: false
             }
         });

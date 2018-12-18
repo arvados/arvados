@@ -14,14 +14,15 @@ import { CollectionResource } from '~/models/collection';
 import { ProjectResource } from '~/models/project';
 import { ServiceRepository } from '~/services/services';
 import { FilterBuilder } from '~/services/api/filter-builder';
+import { ListResults } from '~/services/common-service/common-service';
 import { RepositoryResource } from '~/models/repositories';
 import { SshKeyResource } from '~/models/ssh-key';
 import { VirtualMachinesResource } from '~/models/virtual-machines';
 import { UserResource } from '~/models/user';
-import { ListResults } from '~/services/common-service/common-resource-service';
 import { LinkResource } from '~/models/link';
 import { KeepServiceResource } from '~/models/keep-services';
 import { NodeResource } from '~/models/node';
+import { ApiClientAuthorization } from '~/models/api-client-authorization';
 
 export const ADVANCED_TAB_DIALOG = 'advancedTabDialog';
 
@@ -74,7 +75,10 @@ enum ResourcePrefix {
     AUTORIZED_KEYS = 'authorized_keys',
     VIRTUAL_MACHINES = 'virtual_machines',
     KEEP_SERVICES = 'keep_services',
-    COMPUTE_NODES = 'nodes'
+    COMPUTE_NODES = 'nodes',
+    USERS = 'users',
+    API_CLIENT_AUTHORIZATIONS = 'api_client_authorizations',
+    LINKS = 'links'
 }
 
 enum KeepServiceData {
@@ -82,14 +86,29 @@ enum KeepServiceData {
     CREATED_AT = 'created_at'
 }
 
+enum UserData {
+    USER = 'user',
+    USERNAME = 'username'
+}
+
 enum ComputeNodeData {
     COMPUTE_NODE = 'node',
     PROPERTIES = 'properties'
 }
 
-type AdvanceResourceKind = CollectionData | ProcessData | ProjectData | RepositoryData | SshKeyData | VirtualMachineData | KeepServiceData | ComputeNodeData;
+enum ApiClientAuthorizationsData {
+    API_CLIENT_AUTHORIZATION = 'api_client_authorization',
+    DEFAULT_OWNER_UUID = 'default_owner_uuid'
+}
+
+enum LinkData {
+    LINK = 'link',
+    PROPERTIES = 'properties'
+}
+
+type AdvanceResourceKind = CollectionData | ProcessData | ProjectData | RepositoryData | SshKeyData | VirtualMachineData | KeepServiceData | ComputeNodeData | ApiClientAuthorizationsData | UserData | LinkData;
 type AdvanceResourcePrefix = GroupContentsResourcePrefix | ResourcePrefix;
-type AdvanceResponseData = ContainerRequestResource | ProjectResource | CollectionResource | RepositoryResource | SshKeyResource | VirtualMachinesResource | KeepServiceResource | NodeResource | undefined;
+type AdvanceResponseData = ContainerRequestResource | ProjectResource | CollectionResource | RepositoryResource | SshKeyResource | VirtualMachinesResource | KeepServiceResource | NodeResource | ApiClientAuthorization | UserResource | LinkResource | undefined;
 
 export const openAdvancedTabDialog = (uuid: string) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
@@ -200,8 +219,30 @@ export const openAdvancedTabDialog = (uuid: string) =>
                 });
                 dispatch<any>(initAdvancedTabDialog(advanceDataKeepService));
                 break;
+            case ResourceKind.USER:
+                const { resources } = getState();
+                const data = getResource<UserResource>(uuid)(resources);
+                const metadata = await services.linkService.list({
+                    filters: new FilterBuilder()
+                        .addEqual('headUuid', uuid)
+                        .getFilters()
+                });
+                const advanceDataUser = advancedTabData({
+                    uuid,
+                    metadata,
+                    user: '',
+                    apiResponseKind: userApiResponse,
+                    data,
+                    resourceKind: UserData.USER,
+                    resourcePrefix: ResourcePrefix.USERS,
+                    resourceKindProperty: UserData.USERNAME,
+                    property: data!.username
+                });
+                dispatch<any>(initAdvancedTabDialog(advanceDataUser));
+                break;
             case ResourceKind.NODE:
-                const dataComputeNode = getState().computeNodes.find(node => node.uuid === uuid);
+                const computeNodeResources = getState().resources;
+                const dataComputeNode = getResource<NodeResource>(uuid)(computeNodeResources);
                 const advanceDataComputeNode = advancedTabData({
                     uuid,
                     metadata: '',
@@ -211,9 +252,40 @@ export const openAdvancedTabDialog = (uuid: string) =>
                     resourceKind: ComputeNodeData.COMPUTE_NODE,
                     resourcePrefix: ResourcePrefix.COMPUTE_NODES,
                     resourceKindProperty: ComputeNodeData.PROPERTIES,
-                    property: dataComputeNode!.properties
+                    property: dataComputeNode ? dataComputeNode.properties : {}
                 });
                 dispatch<any>(initAdvancedTabDialog(advanceDataComputeNode));
+                break;
+            case ResourceKind.API_CLIENT_AUTHORIZATION:
+                const dataApiClientAuthorization = getState().apiClientAuthorizations.find(item => item.uuid === uuid);
+                const advanceDataApiClientAuthorization = advancedTabData({
+                    uuid,
+                    metadata: '',
+                    user: '',
+                    apiResponseKind: apiClientAuthorizationApiResponse,
+                    data: dataApiClientAuthorization,
+                    resourceKind: ApiClientAuthorizationsData.API_CLIENT_AUTHORIZATION,
+                    resourcePrefix: ResourcePrefix.API_CLIENT_AUTHORIZATIONS,
+                    resourceKindProperty: ApiClientAuthorizationsData.DEFAULT_OWNER_UUID,
+                    property: dataApiClientAuthorization!.defaultOwnerUuid
+                });
+                dispatch<any>(initAdvancedTabDialog(advanceDataApiClientAuthorization));
+                break;
+            case ResourceKind.LINK:
+                const linkResources = getState().resources;
+                const dataLink = getResource<LinkResource>(uuid)(linkResources);
+                const advanceDataLink = advancedTabData({
+                    uuid,
+                    metadata: '',
+                    user: '',
+                    apiResponseKind: linkApiResponse,
+                    data: dataLink,
+                    resourceKind: LinkData.LINK,
+                    resourcePrefix: ResourcePrefix.LINKS,
+                    resourceKindProperty: LinkData.PROPERTIES,
+                    property: dataLink!.properties
+                });
+                dispatch<any>(initAdvancedTabDialog(advanceDataLink));
                 break;
             default:
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Could not open advanced tab for this resource.", hideDuration: 2000, kind: SnackbarKind.ERROR }));
@@ -465,6 +537,30 @@ const keepServiceApiResponse = (apiResponse: KeepServiceResource) => {
     return response;
 };
 
+const userApiResponse = (apiResponse: UserResource) => {
+    const {
+        uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid,
+        email, firstName, lastName, identityUrl, isActive, isAdmin, prefs, defaultOwnerUuid, username
+    } = apiResponse;
+    const response = `"uuid": "${uuid}",
+"owner_uuid": "${ownerUuid}",
+"created_at": "${createdAt}",
+"modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
+"modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
+"modified_at": ${stringify(modifiedAt)},
+"email": "${email}",
+"first_name": "${firstName}",
+"last_name": "${stringify(lastName)}",
+"identity_url": "${identityUrl}",
+"is_active": "${isActive},
+"is_admin": "${isAdmin},
+"prefs": "${stringifyObject(prefs)},
+"default_owner_uuid": "${defaultOwnerUuid},
+"username": "${username}"`;
+
+    return response;
+};
+
 const computeNodeApiResponse = (apiResponse: NodeResource) => {
     const {
         uuid, slotNumber, hostname, domain, ipAddress, firstPingAt, lastPingAt, jobUuid,
@@ -486,6 +582,50 @@ const computeNodeApiResponse = (apiResponse: NodeResource) => {
 "job_uuid": "${stringify(jobUuid)}",
 "properties": "${JSON.stringify(properties, null, 4)}",
 "info": "${JSON.stringify(info, null, 4)}"`;
+
+    return response;
+};
+
+const apiClientAuthorizationApiResponse = (apiResponse: ApiClientAuthorization) => {
+    const {
+        uuid, ownerUuid, apiToken, apiClientId, userId, createdByIpAddress, lastUsedByIpAddress,
+        lastUsedAt, expiresAt, defaultOwnerUuid, scopes, updatedAt, createdAt
+    } = apiResponse;
+    const response = `"uuid": "${uuid}",
+"owner_uuid": "${ownerUuid}",
+"api_token": "${stringify(apiToken)}",
+"api_client_id": "${stringify(apiClientId)}",
+"user_id": "${stringify(userId)}",
+"created_by_ip_address": "${stringify(createdByIpAddress)}",
+"last_used_by_ip_address": "${stringify(lastUsedByIpAddress)}",
+"last_used_at": "${stringify(lastUsedAt)}",
+"expires_at": "${stringify(expiresAt)}",
+"created_at": "${stringify(createdAt)}",
+"updated_at": "${stringify(updatedAt)}",
+"default_owner_uuid": "${stringify(defaultOwnerUuid)}",
+"scopes": "${JSON.stringify(scopes, null, 4)}"`;
+
+    return response;
+};
+
+const linkApiResponse = (apiResponse: LinkResource) => {
+    const {
+        uuid, name, headUuid, properties, headKind, tailUuid, tailKind, linkClass,
+        ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid
+    } = apiResponse;
+    const response = `"uuid": "${uuid}",
+"name": "${name}",
+"head_uuid": "${headUuid}",
+"head_kind": "${headKind}",
+"tail_uuid": "${tailUuid}",
+"tail_kind": "${tailKind}",
+"link_class": "${linkClass}",
+"owner_uuid": "${ownerUuid}",
+"created_at": "${stringify(createdAt)}",
+"modified_at": ${stringify(modifiedAt)},
+"modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
+"modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
+"properties": "${JSON.stringify(properties, null, 4)}"`;
 
     return response;
 };

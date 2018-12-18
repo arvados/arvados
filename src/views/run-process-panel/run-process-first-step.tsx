@@ -3,11 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { StyleRulesCallback, withStyles, Grid, Button, WithStyles, List, ListItem, ListItemText, ListItemIcon, Tabs, Tab } from '@material-ui/core';
+import { StyleRulesCallback, withStyles, Grid, Button, WithStyles, List, ListItem, ListItemText, ListItemIcon } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { WorkflowResource } from '~/models/workflow';
 import { WorkflowIcon } from '~/components/icon/icon';
-import { WorkflowDetailsCard } from '../workflow-panel/workflow-description-card';
+import { WorkflowDetailsCard } from '~/views/workflow-panel/workflow-description-card';
 import { SearchInput } from '~/components/search-input/search-input';
 
 type CssRules = 'root' | 'searchGrid' | 'workflowDetailsGrid' | 'list' | 'listItem' | 'itemSelected' | 'listItemText' | 'listItemIcon';

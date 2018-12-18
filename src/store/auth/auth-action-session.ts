@@ -91,7 +91,9 @@ const clusterLogin = async (clusterId: string, baseUrl: string, activeSession: S
             uuid: user.uuid,
             ownerUuid: user.owner_uuid,
             email: user.email,
-            isAdmin: user.is_admin
+            isAdmin: user.is_admin,
+            identityUrl: user.identity_url,
+            prefs: user.prefs
         },
         token: saltedToken
     };

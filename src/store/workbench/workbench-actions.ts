@@ -14,7 +14,7 @@ import { favoritePanelActions } from '~/store/favorite-panel/favorite-panel-acti
 import { projectPanelColumns } from '~/views/project-panel/project-panel';
 import { favoritePanelColumns } from '~/views/favorite-panel/favorite-panel';
 import { matchRootRoute } from '~/routes/routes';
-import { setSidePanelBreadcrumbs, setProcessBreadcrumbs, setSharedWithMeBreadcrumbs, setTrashBreadcrumbs, setBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions';
+import { setSidePanelBreadcrumbs, setProcessBreadcrumbs, setSharedWithMeBreadcrumbs, setTrashBreadcrumbs, setBreadcrumbs, setGroupDetailsBreadcrumbs, setGroupsBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions';
 import { navigateToProject } from '~/store/navigation/navigation-action';
 import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
 import { ServiceRepository } from '~/services/services';
@@ -40,6 +40,7 @@ import { loadSharedWithMePanel } from '~/store/shared-with-me-panel/shared-with-
 import { CopyFormDialogData } from '~/store/copy-dialog/copy-dialog';
 import { loadWorkflowPanel, workflowPanelActions } from '~/store/workflow-panel/workflow-panel-actions';
 import { loadSshKeysPanel } from '~/store/auth/auth-action-ssh';
+import { loadMyAccountPanel } from '~/store/my-account/my-account-panel-actions';
 import { loadSiteManagerPanel } from '~/store/auth/auth-action-session';
 import { workflowPanelColumns } from '~/views/workflow-panel/workflow-panel-view';
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions';
@@ -58,7 +59,17 @@ import { searchResultsPanelColumns } from '~/views/search-results-panel/search-r
 import { loadVirtualMachinesPanel } from '~/store/virtual-machines/virtual-machines-actions';
 import { loadRepositoriesPanel } from '~/store/repositories/repositories-actions';
 import { loadKeepServicesPanel } from '~/store/keep-services/keep-services-actions';
-import { loadComputeNodesPanel } from '~/store/compute-nodes/compute-nodes-actions';
+import { loadUsersPanel, userBindedActions } from '~/store/users/users-actions';
+import { loadLinkPanel, linkPanelActions } from '~/store/link-panel/link-panel-actions';
+import { loadComputeNodesPanel, computeNodesActions } from '~/store/compute-nodes/compute-nodes-actions';
+import { linkPanelColumns } from '~/views/link-panel/link-panel-root';
+import { userPanelColumns } from '~/views/user-panel/user-panel';
+import { computeNodePanelColumns } from '~/views/compute-node-panel/compute-node-panel-root';
+import { loadApiClientAuthorizationsPanel } from '~/store/api-client-authorizations/api-client-authorizations-actions';
+import * as groupPanelActions from '~/store/groups-panel/groups-panel-actions';
+import { groupsPanelColumns } from '~/views/groups-panel/groups-panel';
+import * as groupDetailsPanelActions from '~/store/group-details-panel/group-details-panel-actions';
+import { groupDetailsPanelColumns } from '~/views/group-details-panel/group-details-panel';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -78,7 +89,6 @@ const handleFirstTimeLoad = (action: any) =>
         }
     };
 
-
 export const loadWorkbench = () =>
     async (dispatch: Dispatch, getState: () => RootState) => {
         dispatch(progressIndicatorActions.START_WORKING(WORKBENCH_LOADING_SCREEN));
@@ -93,6 +103,11 @@ export const loadWorkbench = () =>
                 dispatch(sharedWithMePanelActions.SET_COLUMNS({ columns: projectPanelColumns }));
                 dispatch(workflowPanelActions.SET_COLUMNS({ columns: workflowPanelColumns }));
                 dispatch(searchResultsPanelActions.SET_COLUMNS({ columns: searchResultsPanelColumns }));
+                dispatch(userBindedActions.SET_COLUMNS({ columns: userPanelColumns }));
+                dispatch(groupPanelActions.GroupsPanelActions.SET_COLUMNS({ columns: groupsPanelColumns }));
+                dispatch(groupDetailsPanelActions.GroupDetailsPanelActions.SET_COLUMNS({columns: groupDetailsPanelColumns}));
+                dispatch(linkPanelActions.SET_COLUMNS({ columns: linkPanelColumns }));
+                dispatch(computeNodesActions.SET_COLUMNS({ columns: computeNodePanelColumns }));
                 dispatch<any>(initSidePanelTree());
                 if (router.location) {
                     const match = matchRootRoute(router.location.pathname);
@@ -130,7 +145,10 @@ export const loadProject = (uuid: string) =>
             const userUuid = services.authService.getUuid();
             dispatch(setIsProjectPanelTrashed(false));
             if (userUuid) {
-                if (userUuid !== uuid) {
+                if (extractUuidKind(uuid) === ResourceKind.USER && userUuid !== uuid) {
+                    // Load another users home projects
+                    dispatch(finishLoadingProject(uuid));
+                } else if (userUuid !== uuid) {
                     const match = await loadGroupContentsResource({ uuid, userUuid, services });
                     match({
                         OWNED: async project => {
@@ -396,6 +414,11 @@ export const loadSearchResults = handleFirstTimeLoad(
         await dispatch(loadSearchResultsPanel());
     });
 
+export const loadLinks = handleFirstTimeLoad(
+    async (dispatch: Dispatch<any>) => {
+        await dispatch(loadLinkPanel());
+    });
+
 export const loadVirtualMachines = handleFirstTimeLoad(
     async (dispatch: Dispatch<any>) => {
         await dispatch(loadVirtualMachinesPanel());
@@ -414,8 +437,13 @@ export const loadSshKeys = handleFirstTimeLoad(
     });
 
 export const loadSiteManager = handleFirstTimeLoad(
-    async (dispatch: Dispatch<any>) => {
-        await dispatch(loadSiteManagerPanel());
+async (dispatch: Dispatch<any>) => {
+    await dispatch(loadSiteManagerPanel());
+});
+
+export const loadMyAccount = handleFirstTimeLoad(
+    (dispatch: Dispatch<any>) => {
+        dispatch(loadMyAccountPanel());
     });
 
 export const loadKeepServices = handleFirstTimeLoad(
@@ -423,10 +451,35 @@ export const loadKeepServices = handleFirstTimeLoad(
         await dispatch(loadKeepServicesPanel());
     });
 
+export const loadUsers = handleFirstTimeLoad(
+    async (dispatch: Dispatch<any>) => {
+        await dispatch(loadUsersPanel());
+        dispatch(setBreadcrumbs([{ label: 'Users' }]));
+    });
+
 export const loadComputeNodes = handleFirstTimeLoad(
     async (dispatch: Dispatch<any>) => {
         await dispatch(loadComputeNodesPanel());
     });
+
+export const loadApiClientAuthorizations = handleFirstTimeLoad(
+    async (dispatch: Dispatch<any>) => {
+        await dispatch(loadApiClientAuthorizationsPanel());
+    });
+
+export const loadGroupsPanel = handleFirstTimeLoad(
+    (dispatch: Dispatch<any>) => {
+        dispatch(setGroupsBreadcrumbs());
+        dispatch(groupPanelActions.loadGroupsPanel());
+    });
+
+
+export const loadGroupDetailsPanel = (groupUuid: string) =>
+    handleFirstTimeLoad(
+        (dispatch: Dispatch<any>) => {
+            dispatch(setGroupDetailsBreadcrumbs(groupUuid));
+            dispatch(groupDetailsPanelActions.loadGroupDetailsPanel(groupUuid));
+        });
 
 const finishLoadingProject = (project: GroupContentsResource | string) =>
     async (dispatch: Dispatch<any>) => {

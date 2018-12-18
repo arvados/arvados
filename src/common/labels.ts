@@ -12,6 +12,12 @@ export const resourceLabel = (type: string) => {
             return "Project";
         case ResourceKind.PROCESS:
             return "Process";
+        case ResourceKind.USER:
+            return "User";
+        case ResourceKind.GROUP:
+            return "Group";
+        case ResourceKind.VIRTUAL_MACHINE:
+            return "Virtual Machine";
         default:
             return "Unknown";
     }

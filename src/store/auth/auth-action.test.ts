@@ -11,7 +11,7 @@ import {
     USER_LAST_NAME_KEY,
     USER_OWNER_UUID_KEY,
     USER_UUID_KEY,
-    USER_IS_ADMIN
+    USER_IS_ADMIN, USER_IDENTITY_URL, USER_PREFS
 } from "~/services/auth-service/auth-service";
 
 import 'jest-localstorage-mock';
@@ -42,6 +42,8 @@ describe('auth-actions', () => {
         localStorage.setItem(USER_FIRST_NAME_KEY, "John");
         localStorage.setItem(USER_LAST_NAME_KEY, "Doe");
         localStorage.setItem(USER_UUID_KEY, "uuid");
+        localStorage.setItem(USER_IDENTITY_URL, "identityUrl");
+        localStorage.setItem(USER_PREFS, JSON.stringify({}));
         localStorage.setItem(USER_OWNER_UUID_KEY, "ownerUuid");
         localStorage.setItem(USER_IS_ADMIN, JSON.stringify("false"));
 
@@ -60,6 +62,8 @@ describe('auth-actions', () => {
                 lastName: "Doe",
                 uuid: "uuid",
                 ownerUuid: "ownerUuid",
+                identityUrl: "identityUrl",
+                prefs: {},
                 isAdmin: false
             }
         });

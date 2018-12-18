@@ -2,8 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { bindDataExplorerActions } from "../data-explorer/data-explorer-action";
-import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
+import { bindDataExplorerActions } from "~/store/data-explorer/data-explorer-action";
 
 export const TRASH_PANEL_ID = "trashPanel";
 export const trashPanelActions = bindDataExplorerActions(TRASH_PANEL_ID);

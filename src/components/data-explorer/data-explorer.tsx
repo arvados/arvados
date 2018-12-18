@@ -3,15 +3,16 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, WithStyles, TablePagination, IconButton, Tooltip } from '@material-ui/core';
-import { ColumnSelector } from "../column-selector/column-selector";
-import { DataTable, DataColumns } from "../data-table/data-table";
-import { DataColumn, SortDirection } from "../data-table/data-column";
-import { SearchInput } from '../search-input/search-input';
+import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, WithStyles, TablePagination, IconButton, Tooltip, Button } from '@material-ui/core';
+import { ColumnSelector } from "~/components/column-selector/column-selector";
+import { DataTable, DataColumns } from "~/components/data-table/data-table";
+import { DataColumn, SortDirection } from "~/components/data-table/data-column";
+import { SearchInput } from '~/components/search-input/search-input';
 import { ArvadosTheme } from "~/common/custom-theme";
 import { createTree } from '~/models/tree';
-import { DataTableFilters } from '../data-table-filters/data-table-filters-tree';
+import { DataTableFilters } from '~/components/data-table-filters/data-table-filters-tree';
 import { MoreOptionsIcon } from '~/components/icon/icon';
+import { PaperProps } from '@material-ui/core/Paper';
 
 type CssRules = 'searchBox' | "toolbar" | "footer" | "root" | 'moreOptionsButton';
 
@@ -44,6 +45,11 @@ interface DataExplorerDataProps<T> {
     contextMenuColumn: boolean;
     dataTableDefaultView?: React.ReactNode;
     working?: boolean;
+    hideColumnSelector?: boolean;
+    paperProps?: PaperProps;
+    actions?: React.ReactNode;
+    hideSearchInput?: boolean;
+    paperKey?: string;
 }
 
 interface DataExplorerActionProps<T> {
@@ -74,19 +80,21 @@ export const DataExplorer = withStyles(styles)(
                 columns, onContextMenu, onFiltersChange, onSortToggle, working, extractKey,
                 rowsPerPage, rowsPerPageOptions, onColumnToggle, searchValue, onSearch,
                 items, itemsAvailable, onRowClick, onRowDoubleClick, classes,
-                dataTableDefaultView
+                dataTableDefaultView, hideColumnSelector, actions, paperProps, hideSearchInput,
+                paperKey
             } = this.props;
-            return <Paper className={classes.root}>
+            return <Paper className={classes.root} {...paperProps} key={paperKey}>
                 <Toolbar className={classes.toolbar}>
                     <Grid container justify="space-between" wrap="nowrap" alignItems="center">
-                        <div className={classes.searchBox}>
+                        {!hideSearchInput && <div className={classes.searchBox}>
                             <SearchInput
                                 value={searchValue}
                                 onSearch={onSearch} />
-                        </div>
-                        <ColumnSelector
+                        </div>}
+                        {actions}
+                        {!hideColumnSelector && <ColumnSelector
                             columns={columns}
-                            onColumnToggle={onColumnToggle} />
+                            onColumnToggle={onColumnToggle} />}
                     </Grid>
                 </Toolbar>
                 <DataTable
@@ -99,8 +107,7 @@ export const DataExplorer = withStyles(styles)(
                     onSortToggle={onSortToggle}
                     extractKey={extractKey}
                     working={working}
-                    defaultView={dataTableDefaultView}
-                />
+                    defaultView={dataTableDefaultView} />
                 <Toolbar className={classes.footer}>
                     <Grid container justify="flex-end">
                         <TablePagination

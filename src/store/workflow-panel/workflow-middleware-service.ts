@@ -14,8 +14,8 @@ import { SortDirection } from '~/components/data-table/data-column';
 import { WorkflowPanelColumnNames } from '~/views/workflow-panel/workflow-panel-view';
 import { OrderDirection, OrderBuilder } from '~/services/api/order-builder';
 import { WorkflowResource } from '~/models/workflow';
-import { ListResults } from '~/services/common-service/common-resource-service';
-import { workflowPanelActions } from './workflow-panel-actions';
+import { ListResults } from '~/services/common-service/common-service';
+import { workflowPanelActions } from '~/store/workflow-panel/workflow-panel-actions';
 import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
 
 export class WorkflowMiddlewareService extends DataExplorerMiddlewareService {

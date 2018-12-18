@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import Axios from "axios";
+import { ApiClientAuthorizationService } from '~/services/api-client-authorization-service/api-client-authorization-service';
 import { AuthService } from "./auth-service/auth-service";
 import { GroupsService } from "./groups-service/groups-service";
 import { ProjectService } from "./project-service/project-service";
@@ -29,7 +30,7 @@ import { RepositoriesService } from '~/services/repositories-service/repositorie
 import { AuthorizedKeysService } from '~/services/authorized-keys-service/authorized-keys-service';
 import { VocabularyService } from '~/services/vocabulary-service/vocabulary-service';
 import { NodeService } from '~/services/node-service/node-service';
-import { ClientAuthorizationsService } from "~/services/client-authorizations-service/client-authorizations-service";
+import { FileViewersConfigService } from '~/services/file-viewers-config-service/file-viewers-config-service';
 
 export type ServiceRepository = ReturnType<typeof createServices>;
 
@@ -40,8 +41,8 @@ export const createServices = (config: Config, actions: ApiActions) => {
     const webdavClient = new WebDAV();
     webdavClient.defaults.baseURL = config.keepWebServiceUrl;
 
+    const apiClientAuthorizationService = new ApiClientAuthorizationService(apiClient, actions);
     const authorizedKeysService = new AuthorizedKeysService(apiClient, actions);
-    const clientAuthorizationsService = new ClientAuthorizationsService(apiClient, actions);
     const containerRequestService = new ContainerRequestService(apiClient, actions);
     const containerService = new ContainerService(apiClient, actions);
     const groupsService = new GroupsService(apiClient, actions);
@@ -64,18 +65,20 @@ export const createServices = (config: Config, actions: ApiActions) => {
     const tagService = new TagService(linkService);
     const searchService = new SearchService();
     const vocabularyService = new VocabularyService(config.vocabularyUrl);
+    const fileViewersConfig = new FileViewersConfigService(config.fileViewersConfigUrl);
 
     return {
         ancestorsService,
         apiClient,
+        apiClientAuthorizationService,
         authService,
         authorizedKeysService,
-        clientAuthorizationsService,
         collectionFilesService,
         collectionService,
         containerRequestService,
         containerService,
         favoriteService,
+        fileViewersConfig,
         groupsService,
         keepService,
         linkService,

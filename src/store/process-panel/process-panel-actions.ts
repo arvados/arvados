@@ -6,6 +6,11 @@ import { unionize, ofType, UnionOf } from "~/common/unionize";
 import { loadProcess } from '~/store/processes/processes-actions';
 import { Dispatch } from 'redux';
 import { ProcessStatus } from '~/store/processes/process';
+import { RootState } from '~/store/store';
+import { ServiceRepository } from "~/services/services";
+import { navigateToCollection } from '~/store/navigation/navigation-action';
+import { snackbarActions } from '~/store/snackbar/snackbar-actions';
+import { SnackbarKind } from '../snackbar/snackbar-actions';
 
 export const procesPanelActions = unionize({
     SET_PROCESS_PANEL_FILTERS: ofType<string[]>(),
@@ -20,6 +25,16 @@ export const loadProcessPanel = (uuid: string) =>
     (dispatch: Dispatch) => {
         dispatch<any>(loadProcess(uuid));
         dispatch(initProcessPanelFilters);
+    };
+
+export const navigateToOutput = (uuid: string) =>
+    async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        try {
+            await services.collectionService.get(uuid);
+            dispatch<any>(navigateToCollection(uuid));
+        } catch {
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'This collection does not exists!', hideDuration: 2000, kind: SnackbarKind.ERROR }));
+        }
     };
 
 export const initProcessPanelFilters = procesPanelActions.SET_PROCESS_PANEL_FILTERS([
