@@ -33,7 +33,7 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
             api.dispatch(updateResources(response.items));
             api.dispatch(setItems(response));
         } catch {
-            api.dispatch(couldNotFetchWorkflows());
+            api.dispatch(couldNotFetchSearchResults());
         }
     }
 }
@@ -69,8 +69,8 @@ export const setItems = (listResults: ListResults<GroupContentsResource>) =>
         items: listResults.items.map(resource => resource.uuid),
     });
 
-const couldNotFetchWorkflows = () =>
+const couldNotFetchSearchResults = () =>
     snackbarActions.OPEN_SNACKBAR({
-        message: 'Could not fetch workflows.',
+        message: 'Could not fetch search results.',
         kind: SnackbarKind.ERROR
     });
