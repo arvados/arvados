@@ -107,15 +107,16 @@ func (s *AggregatorSuite) TestHealthy(c *check.C) {
 	srv, listen := s.stubServer(&healthyHandler{})
 	defer srv.Close()
 	s.handler.Config.Clusters["zzzzz"].NodeProfiles["localhost"] = arvados.NodeProfile{
-		Controller:  arvados.SystemServiceInstance{Listen: listen},
-		Keepbalance: arvados.SystemServiceInstance{Listen: listen},
-		Keepproxy:   arvados.SystemServiceInstance{Listen: listen},
-		Keepstore:   arvados.SystemServiceInstance{Listen: listen},
-		Keepweb:     arvados.SystemServiceInstance{Listen: listen},
-		Nodemanager: arvados.SystemServiceInstance{Listen: listen},
-		RailsAPI:    arvados.SystemServiceInstance{Listen: listen},
-		Websocket:   arvados.SystemServiceInstance{Listen: listen},
-		Workbench:   arvados.SystemServiceInstance{Listen: listen},
+		Controller:    arvados.SystemServiceInstance{Listen: listen},
+		DispatchCloud: arvados.SystemServiceInstance{Listen: listen},
+		Keepbalance:   arvados.SystemServiceInstance{Listen: listen},
+		Keepproxy:     arvados.SystemServiceInstance{Listen: listen},
+		Keepstore:     arvados.SystemServiceInstance{Listen: listen},
+		Keepweb:       arvados.SystemServiceInstance{Listen: listen},
+		Nodemanager:   arvados.SystemServiceInstance{Listen: listen},
+		RailsAPI:      arvados.SystemServiceInstance{Listen: listen},
+		Websocket:     arvados.SystemServiceInstance{Listen: listen},
+		Workbench:     arvados.SystemServiceInstance{Listen: listen},
 	}
 	s.handler.ServeHTTP(s.resp, s.req)
 	resp := s.checkOK(c)
@@ -132,15 +133,16 @@ func (s *AggregatorSuite) TestHealthyAndUnhealthy(c *check.C) {
 	srvU, listenU := s.stubServer(&unhealthyHandler{})
 	defer srvU.Close()
 	s.handler.Config.Clusters["zzzzz"].NodeProfiles["localhost"] = arvados.NodeProfile{
-		Controller:  arvados.SystemServiceInstance{Listen: listenH},
-		Keepbalance: arvados.SystemServiceInstance{Listen: listenH},
-		Keepproxy:   arvados.SystemServiceInstance{Listen: listenH},
-		Keepstore:   arvados.SystemServiceInstance{Listen: listenH},
-		Keepweb:     arvados.SystemServiceInstance{Listen: listenH},
-		Nodemanager: arvados.SystemServiceInstance{Listen: listenH},
-		RailsAPI:    arvados.SystemServiceInstance{Listen: listenH},
-		Websocket:   arvados.SystemServiceInstance{Listen: listenH},
-		Workbench:   arvados.SystemServiceInstance{Listen: listenH},
+		Controller:    arvados.SystemServiceInstance{Listen: listenH},
+		DispatchCloud: arvados.SystemServiceInstance{Listen: listenH},
+		Keepbalance:   arvados.SystemServiceInstance{Listen: listenH},
+		Keepproxy:     arvados.SystemServiceInstance{Listen: listenH},
+		Keepstore:     arvados.SystemServiceInstance{Listen: listenH},
+		Keepweb:       arvados.SystemServiceInstance{Listen: listenH},
+		Nodemanager:   arvados.SystemServiceInstance{Listen: listenH},
+		RailsAPI:      arvados.SystemServiceInstance{Listen: listenH},
+		Websocket:     arvados.SystemServiceInstance{Listen: listenH},
+		Workbench:     arvados.SystemServiceInstance{Listen: listenH},
 	}
 	s.handler.Config.Clusters["zzzzz"].NodeProfiles["127.0.0.1"] = arvados.NodeProfile{
 		Keepstore: arvados.SystemServiceInstance{Listen: listenU},
