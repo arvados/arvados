@@ -126,6 +126,7 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 		defer mtx.Unlock()
 		if _, ok := waiting[ctr.UUID]; !ok {
 			c.Logf("container completed twice: %s -- perhaps completed after stub instance was killed?", ctr.UUID)
+			return 1
 		}
 		delete(waiting, ctr.UUID)
 		if len(waiting) == 0 {
