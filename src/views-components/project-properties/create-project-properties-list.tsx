@@ -41,15 +41,16 @@ const mapDispatchToProps = (dispatch: Dispatch): CreateProjectPropertiesListActi
 type CreateProjectPropertiesListProps = CreateProjectPropertiesListDataProps & 
     CreateProjectPropertiesListActionProps & WithStyles<CssRules>;
 
-export const CreateProjectPropertiesList = connect(mapStateToProps, mapDispatchToProps)(
-    withStyles(styles)(
-        ({ classes, handleDelete, properties }: CreateProjectPropertiesListProps) =>
-            <div>
-                { properties &&
-                    Object.keys(properties).map(k => {
-                        return <Chip key={k} className={classes.tag}
-                            onDelete={() => handleDelete(k)}
-                            label={`${k}: ${properties[k]}`} />;
+const List = withStyles(styles)(
+    ({ classes, handleDelete, properties }: CreateProjectPropertiesListProps) =>
+        <div>
+            {properties &&
+                Object.keys(properties).map(k => {
+                    return <Chip key={k} className={classes.tag}
+                        onDelete={() => handleDelete(k)}
+                        label={`${k}: ${properties[k]}`} />;
                 })}
-            </div>
-        ));
+        </div>
+);
+
+export const CreateProjectPropertiesList = connect(mapStateToProps, mapDispatchToProps)(List);

@@ -21,7 +21,7 @@ export const DialogProjectCreate = (props: DialogProjectProps) =>
         {...props}
     />;
 
-const ProjectAddFields = (props: any) => <span>
+const ProjectAddFields = () => <span>
     <ProjectNameField />
     <ProjectDescriptionField />
     <CreateProjectPropertiesForm />

@@ -11,6 +11,7 @@ import { ProjectResource } from '~/models/project';
 import { ServiceRepository } from '~/services/services';
 import { matchProjectRoute, matchRunProcessRoute } from '~/routes/routes';
 import { ResourcePropertiesFormData } from '~/views-components/resource-properties-form/resource-properties-form';
+import { GraphChange } from '../../lib/cwl-svg/plugins/plugin';
 
 export interface ProjectCreateFormDialogData {
     ownerUuid: string;
@@ -69,12 +70,16 @@ export const createProject = (project: Partial<ProjectResource>) =>
 
 export const addPropertyToCreateProjectForm = (data: ResourcePropertiesFormData) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        console.log('addPropertyToCreateProjectForm: ', data);
-        dispatch(change(PROJECT_CREATE_FORM_NAME, 'properties',  data));
-        // dispatch(arrayPush(PROJECT_CREATE_FORM_NAME, 'properties', data));
+        const selector = formValueSelector(PROJECT_CREATE_FORM_NAME);
+        const properties = selector(getState(), 'properties') || {};
+        properties[data.key] = data.value;
+        dispatch(change(PROJECT_CREATE_FORM_NAME, 'properties', {...properties } ));
     };
 
 export const removePropertyFromCreateProjectForm = (key: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        console.log('removePropertyFromCreateProjectForm: ', key);
+        const selector = formValueSelector(PROJECT_CREATE_FORM_NAME);
+        const properties = selector(getState(), 'properties');
+        delete properties[key];
+        dispatch(change(PROJECT_CREATE_FORM_NAME, 'properties', { ...properties } ));
     };
