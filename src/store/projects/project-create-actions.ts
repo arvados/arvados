@@ -3,21 +3,24 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { reset, startSubmit, stopSubmit, initialize, FormErrors } from 'redux-form';
+import { reset, startSubmit, stopSubmit, initialize, FormErrors, formValueSelector, change, arrayPush } from 'redux-form';
 import { RootState } from '~/store/store';
 import { dialogActions } from "~/store/dialog/dialog-actions";
 import { getCommonResourceServiceError, CommonResourceServiceError } from '~/services/common-service/common-resource-service';
 import { ProjectResource } from '~/models/project';
 import { ServiceRepository } from '~/services/services';
 import { matchProjectRoute, matchRunProcessRoute } from '~/routes/routes';
+import { ResourcePropertiesFormData } from '~/views-components/resource-properties-form/resource-properties-form';
 
 export interface ProjectCreateFormDialogData {
     ownerUuid: string;
     name: string;
     description: string;
+    properties: any;
 }
 
 export const PROJECT_CREATE_FORM_NAME = 'projectCreateFormName';
+export const PROJECT_CREATE_PROPERTIES_FORM_NAME = 'projectCreatePropertiesFormName';
 
 export const isProjectOrRunProcessRoute = ({ router }: RootState) => {
     const pathname = router.location ? router.location.pathname : '';
@@ -62,4 +65,16 @@ export const createProject = (project: Partial<ProjectResource>) =>
             }
             return undefined;
         }
+    };
+
+export const addPropertyToCreateProjectForm = (data: ResourcePropertiesFormData) =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        console.log('addPropertyToCreateProjectForm: ', data);
+        dispatch(change(PROJECT_CREATE_FORM_NAME, 'properties',  data));
+        // dispatch(arrayPush(PROJECT_CREATE_FORM_NAME, 'properties', data));
+    };
+
+export const removePropertyFromCreateProjectForm = (key: string) =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        console.log('removePropertyFromCreateProjectForm: ', key);
     };
