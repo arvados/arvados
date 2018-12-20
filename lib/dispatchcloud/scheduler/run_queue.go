@@ -54,12 +54,13 @@ tryrun:
 			sch.bgLock(logger, ctr.UUID)
 			unalloc[it]--
 		case arvados.ContainerStateLocked:
-			if unalloc[it] < 1 {
-				if sch.pool.AtQuota() {
-					logger.Debug("not starting: AtQuota and no unalloc workers")
-					overquota = sorted[i:]
-					break tryrun
-				}
+			if unalloc[it] > 0 {
+				unalloc[it]--
+			} else if sch.pool.AtQuota() {
+				logger.Debug("not starting: AtQuota and no unalloc workers")
+				overquota = sorted[i:]
+				break tryrun
+			} else {
 				logger.Info("creating new instance")
 				err := sch.pool.Create(it)
 				if err != nil {
@@ -78,7 +79,6 @@ tryrun:
 					overquota = sorted[i:]
 					break tryrun
 				}
-				unalloc[it]++
 			}
 
 			if dontstart[it] {
@@ -87,7 +87,7 @@ tryrun:
 				// same instance type. Don't let this
 				// one sneak in ahead of it.
 			} else if sch.pool.StartContainer(it, ctr) {
-				unalloc[it]--
+				// Success.
 			} else {
 				dontstart[it] = true
 			}
