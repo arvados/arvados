@@ -168,7 +168,10 @@ func (wkr *worker) probeAndUpdate() {
 			"Duration": dur,
 			"State":    wkr.state,
 		})
-		if wkr.state == StateBooting {
+		if wkr.state == StateBooting && !needProbeRunning {
+			// If we know the instance has never passed a
+			// boot probe, it's not noteworthy that it
+			// hasn't passed this probe.
 			logger.Debug("new instance not responding")
 		} else {
 			logger.Info("instance not responding")
