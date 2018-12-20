@@ -216,8 +216,8 @@ func (*SchedulerSuite) TestShutdownAtQuota(c *check.C) {
 func (*SchedulerSuite) TestStartWhileCreating(c *check.C) {
 	pool := stubPool{
 		unalloc: map[arvados.InstanceType]int{
-			test.InstanceType(1): 1,
-			test.InstanceType(2): 1,
+			test.InstanceType(1): 2,
+			test.InstanceType(2): 2,
 		},
 		idle: map[arvados.InstanceType]int{
 			test.InstanceType(1): 1,
