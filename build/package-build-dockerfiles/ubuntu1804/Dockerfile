@@ -8,7 +8,7 @@ MAINTAINER Ward Vandewege <ward@curoverse.com>
 ENV DEBIAN_FRONTEND noninteractive
 
 # Install dependencies.
-RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python2.7-dev python3 python-setuptools python3-pip libcurl4-gnutls-dev libgnutls28-dev curl git libattr1-dev libfuse-dev libpq-dev python-pip unzip tzdata
+RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python2.7-dev python3 python-setuptools python3-pip libcurl4-gnutls-dev libgnutls28-dev curl git libattr1-dev libfuse-dev libpq-dev python-pip unzip tzdata python3-venv python3-dev
 
 # Install RVM
 ADD generated/rvm.asc /tmp/

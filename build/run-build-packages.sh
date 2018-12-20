@@ -348,38 +348,12 @@ for i in ${deps[@]}; do
   fi
 done
 
-
 # The Python SDK
-# Please resist the temptation to add --no-python-fix-name to the fpm call here
-# (which would remove the python- prefix from the package name), because this
-# package is a dependency of arvados-fuse, and fpm can not omit the python-
-# prefix from only one of the dependencies of a package...  Maybe I could
-# whip up a patch and send it upstream, but that will be for another day. Ward,
-# 2014-05-15
-cd $WORKSPACE/packages/$TARGET
-rm -rf "$WORKSPACE/sdk/python/build"
-arvados_python_client_version=${ARVADOS_BUILDING_VERSION:-$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/python/arvados_python_client.egg-info/PKG-INFO)}
-test_package_presence ${PYTHON2_PKG_PREFIX}-arvados-python-client "$arvados_python_client_version" python
-if [[ "$?" == "0" ]]; then
+fpm_build_virtualenv "arvados-python-client" "sdk/python"
+fpm_build_virtualenv "arvados-python-client" "sdk/python" "python3"
 
-  fpm_build $WORKSPACE/sdk/python "${PYTHON2_PKG_PREFIX}-arvados-python-client" 'Curoverse, Inc.' 'python' "$arvados_python_client_version" "--url=https://arvados.org" "--description=The Arvados Python SDK" --depends "${PYTHON2_PKG_PREFIX}-setuptools" --deb-recommends=git  --python-disable-dependency ruamel.yaml "${ruamel_depends[@]}"
-fi
-
-# cwl-runner
-cd $WORKSPACE/packages/$TARGET
-rm -rf "$WORKSPACE/sdk/cwl/build"
-arvados_cwl_runner_version=${ARVADOS_BUILDING_VERSION:-$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/cwl/arvados_cwl_runner.egg-info/PKG-INFO)}
-declare -a iterargs=()
-if [[ -z "$ARVADOS_BUILDING_VERSION" ]]; then
-    arvados_cwl_runner_iteration=4
-    iterargs+=(--iteration $arvados_cwl_runner_iteration)
-else
-    arvados_cwl_runner_iteration=
-fi
-test_package_presence ${PYTHON2_PKG_PREFIX}-arvados-cwl-runner "$arvados_cwl_runner_version" python "$arvados_cwl_runner_iteration"
-if [[ "$?" == "0" ]]; then
-  fpm_build $WORKSPACE/sdk/cwl "${PYTHON2_PKG_PREFIX}-arvados-cwl-runner" 'Curoverse, Inc.' 'python' "$arvados_cwl_runner_version" "--url=https://arvados.org" "--description=The Arvados CWL runner" --depends "${PYTHON2_PKG_PREFIX}-setuptools" --depends "${PYTHON2_PKG_PREFIX}-subprocess32 >= 3.5.0" --depends "${PYTHON2_PKG_PREFIX}-pathlib2" --depends "${PYTHON2_PKG_PREFIX}-scandir" --python-disable-dependency ruamel.yaml "${ruamel_depends[@]}" "${iterargs[@]}"
-fi
+# Arvadow cwl runner
+fpm_build_virtualenv "arvados-cwl-runner" "sdk/cwl"
 
 # schema_salad. This is a python dependency of arvados-cwl-runner,
 # but we can't use the usual PYTHONPACKAGES way to build this package due to the
@@ -421,15 +395,7 @@ if [[ $TARGET =~ debian|ubuntu ]]; then
 fi
 
 # The FUSE driver
-# Please see comment about --no-python-fix-name above; we stay consistent and do
-# not omit the python- prefix first.
-cd $WORKSPACE/packages/$TARGET
-rm -rf "$WORKSPACE/services/fuse/build"
-arvados_fuse_version=${ARVADOS_BUILDING_VERSION:-$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/fuse/arvados_fuse.egg-info/PKG-INFO)}
-test_package_presence "${PYTHON2_PKG_PREFIX}-arvados-fuse" "$arvados_fuse_version" python
-if [[ "$?" == "0" ]]; then
-  fpm_build $WORKSPACE/services/fuse "${PYTHON2_PKG_PREFIX}-arvados-fuse" 'Curoverse, Inc.' 'python' "$arvados_fuse_version" "--url=https://arvados.org" "--description=The Keep FUSE driver" --depends "${PYTHON2_PKG_PREFIX}-setuptools"
-fi
+fpm_build_virtualenv "arvados-fuse" "services/fuse"
 
 # The node manager
 cd $WORKSPACE/packages/$TARGET
