@@ -154,6 +154,7 @@ func (sch *Scheduler) bgLock(logger logrus.FieldLogger, uuid string) {
 			logger.WithError(err).Warn("error locking container")
 			return
 		}
+		logger.Debug("lock succeeded")
 		ctr, ok := sch.queue.Get(uuid)
 		if !ok {
 			logger.Error("(BUG?) container disappeared from queue after Lock succeeded")
