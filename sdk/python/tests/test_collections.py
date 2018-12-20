@@ -952,22 +952,35 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         self.assertIs(c.find("./nonexistant.txt"), None)
         self.assertIs(c.find("./nonexistantsubdir/nonexistant.txt"), None)
 
+    def test_escaped_paths_dont_get_unescaped_on_manifest(self):
+        # Dir & file names are literally '\056' (escaped form: \134056)
+        manifest = './\\134056\\040Test d41d8cd98f00b204e9800998ecf8427e+0 0:0:\\134056\n'
+        c = Collection(manifest)
+        self.assertEqual(c.portable_manifest_text(), manifest)
+
+    def test_escaped_paths_do_get_unescaped_on_listing(self):
+        # Dir & file names are literally '\056' (escaped form: \134056)
+        manifest = './\\134056\\040Test d41d8cd98f00b204e9800998ecf8427e+0 0:0:\\134056\n'
+        c = Collection(manifest)
+        self.assertIn('\\056 Test', c.keys())
+        self.assertIn('\\056', c['\\056 Test'].keys())
+
+    def test_make_empty_dir_with_escaped_chars(self):
+        c = Collection()
+        c.mkdirs('./Empty\\056Dir')
+        self.assertEqual(c.portable_manifest_text(),
+                         './Empty\\134056Dir d41d8cd98f00b204e9800998ecf8427e+0 0:0:\\056\n')
+
+    def test_make_empty_dir_with_spaces(self):
+        c = Collection()
+        c.mkdirs('./foo bar/baz waz')
+        self.assertEqual(c.portable_manifest_text(),
+                         './foo\\040bar/baz\\040waz d41d8cd98f00b204e9800998ecf8427e+0 0:0:\\056\n')
+
     def test_remove_in_subdir(self):
         c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')
         c.remove("foo/count2.txt")
         self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo d41d8cd98f00b204e9800998ecf8427e+0 0:0:\\056\n", c.portable_manifest_text())
-
-    def test_create_dot_file(self):
-        c = Collection()
-        with self.assertRaises(IOError):
-            with c.open("./dir/\\056", "wb") as f:
-                f.write("Should not be allowed")
-
-    def test_create_file_inside_dot_dir(self):
-        c = Collection()
-        with self.assertRaises(IOError):
-            with c.open("./dir/\\056/foo", "wb") as f:
-                f.write("Should not be allowed")
 
     def test_remove_empty_subdir(self):
         c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')

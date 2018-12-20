@@ -26,7 +26,7 @@ from stat import *
 from .arvfile import split, _FileLikeObjectBase, ArvadosFile, ArvadosFileWriter, ArvadosFileReader, WrappableFile, _BlockManager, synchronized, must_be_writable, NoopLock
 from .keep import KeepLocator, KeepClient
 from .stream import StreamReader
-from ._normalize_stream import normalize_stream
+from ._normalize_stream import normalize_stream, escape
 from ._ranges import Range, LocatorAndRange
 from .safeapi import ThreadSafeApiCache
 import arvados.config as config
@@ -562,6 +562,7 @@ class RichCollectionBase(CollectionBase):
     def stream_name(self):
         raise NotImplementedError()
 
+
     @synchronized
     def has_remote_blocks(self):
         """Recursively check for a +R segment locator signature."""
@@ -600,9 +601,6 @@ class RichCollectionBase(CollectionBase):
 
         pathcomponents = path.split("/", 1)
         if pathcomponents[0]:
-            # Don't allow naming files/dirs \\056
-            if pathcomponents[0] == "\\056":
-                raise IOError(errno.EINVAL, "Invalid name", pathcomponents[0])
             item = self._items.get(pathcomponents[0])
             if len(pathcomponents) == 1:
                 if item is None:
@@ -1842,7 +1840,8 @@ class Subcollection(RichCollectionBase):
     def _get_manifest_text(self, stream_name, strip, normalize, only_committed=False):
         """Encode empty directories by using an \056-named (".") empty file"""
         if len(self._items) == 0:
-            return "%s %s 0:0:\\056\n" % (stream_name, config.EMPTY_BLOCK_LOCATOR)
+            return "%s %s 0:0:\\056\n" % (
+                escape(stream_name), config.EMPTY_BLOCK_LOCATOR)
         return super(Subcollection, self)._get_manifest_text(stream_name,
                                                              strip, normalize,
                                                              only_committed)
