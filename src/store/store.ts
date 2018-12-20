@@ -60,7 +60,7 @@ import { ComputeNodeMiddlewareService } from '~/store/compute-nodes/compute-node
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
-        window && window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__) ||
+        window && window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__({trace: true, traceLimit: 25})) ||
     compose;
 
 export type RootState = ReturnType<ReturnType<typeof createRootReducer>>;
