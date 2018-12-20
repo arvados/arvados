@@ -165,14 +165,14 @@ func (*SchedulerSuite) TestUseIdleWorkers(c *check.C) {
 	}
 }
 
-// Shutdown some nodes if Create() fails -- and without even calling
-// Create(), if AtQuota() is true.
+// If Create() fails, shutdown some nodes, and don't call Create()
+// again.  Don't call Create() at all if AtQuota() is true.
 func (*SchedulerSuite) TestShutdownAtQuota(c *check.C) {
 	for quota := 0; quota < 2; quota++ {
 		c.Logf("quota=%d", quota)
 		shouldCreate := []arvados.InstanceType{}
 		for i := 0; i < quota; i++ {
-			shouldCreate = append(shouldCreate, test.InstanceType(1))
+			shouldCreate = append(shouldCreate, test.InstanceType(3))
 		}
 		queue := test.Queue{
 			ChooseType: func(ctr *arvados.Container) (arvados.InstanceType, error) {
@@ -180,12 +180,21 @@ func (*SchedulerSuite) TestShutdownAtQuota(c *check.C) {
 			},
 			Containers: []arvados.Container{
 				{
-					UUID:     test.ContainerUUID(1),
-					Priority: 1,
+					UUID:     test.ContainerUUID(2),
+					Priority: 2,
 					State:    arvados.ContainerStateLocked,
 					RuntimeConstraints: arvados.RuntimeConstraints{
-						VCPUs: 1,
-						RAM:   1 << 30,
+						VCPUs: 2,
+						RAM:   2 << 30,
+					},
+				},
+				{
+					UUID:     test.ContainerUUID(3),
+					Priority: 3,
+					State:    arvados.ContainerStateLocked,
+					RuntimeConstraints: arvados.RuntimeConstraints{
+						VCPUs: 3,
+						RAM:   3 << 30,
 					},
 				},
 			},
