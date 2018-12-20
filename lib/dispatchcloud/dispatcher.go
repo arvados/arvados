@@ -35,6 +35,7 @@ const (
 type pool interface {
 	scheduler.WorkerPool
 	Instances() []worker.InstanceView
+	Stop()
 }
 
 type dispatcher struct {
@@ -149,6 +150,7 @@ func (disp *dispatcher) initialize() {
 func (disp *dispatcher) run() {
 	defer close(disp.stopped)
 	defer disp.instanceSet.Stop()
+	defer disp.pool.Stop()
 
 	staleLockTimeout := time.Duration(disp.Cluster.Dispatch.StaleLockTimeout)
 	if staleLockTimeout == 0 {
