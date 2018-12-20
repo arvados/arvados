@@ -52,6 +52,14 @@ export const getInitialResourceTypeFilters = pipe(
     initFilter(CollectionTypeFilter.LOG_COLLECTION, ObjectTypeFilter.COLLECTION),
 );
 
+export const getTrashPanelTypeFilters = pipe(
+    (): DataTableFilters => createTree<DataTableFilterItem>(),
+    initFilter(ObjectTypeFilter.PROJECT),
+    initFilter(ObjectTypeFilter.COLLECTION),
+    initFilter(CollectionTypeFilter.GENERAL_COLLECTION, ObjectTypeFilter.COLLECTION),
+    initFilter(CollectionTypeFilter.OUTPUT_COLLECTION, ObjectTypeFilter.COLLECTION),
+    initFilter(CollectionTypeFilter.LOG_COLLECTION, ObjectTypeFilter.COLLECTION),
+);
 
 const createFiltersBuilder = (filters: DataTableFilters) =>
     ({ fb: new FilterBuilder(), selectedFilters: getSelectedNodes(filters) });

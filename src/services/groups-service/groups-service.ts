@@ -53,7 +53,7 @@ export class GroupsService<T extends GroupResource = GroupResource> extends Tras
                     .get(this.resourceType + pathUrl, {
                         params: CommonResourceService.mapKeys(_.snakeCase)(params)
                     }),
-                this.actions, 
+                this.actions,
                 false
             );
 

@@ -18,6 +18,8 @@ import { PropertyKeyInput } from '~/views-components/resource-properties-form/pr
 import { PropertyValueInput, PropertyValueFieldProps } from '~/views-components/resource-properties-form/property-value-field';
 import { VocabularyProp, connectVocabulary } from '~/views-components/resource-properties-form/property-field-common';
 import { compose } from 'redux';
+import { connect } from "react-redux";
+import { RootState } from "~/store/store";
 
 export const SearchBarTypeField = () =>
     <Field
@@ -30,16 +32,22 @@ export const SearchBarTypeField = () =>
             { key: ResourceKind.PROCESS, value: 'Process' }
         ]} />;
 
-export const SearchBarClusterField = () =>
-    <Field
+
+interface SearchBarClusterFieldProps {
+    clusters: { key: string, value: string }[];
+}
+
+export const SearchBarClusterField = connect(
+    (state: RootState) => ({
+        clusters: [{key: '', value: 'Any'}].concat(state.auth.sessions.map(s => ({
+            key: s.clusterId,
+            value: s.clusterId
+        })))
+    }))((props: SearchBarClusterFieldProps) => <Field
         name='cluster'
         component={NativeSelectField}
-        items={[
-            { key: '', value: 'Any' },
-            { key: ClusterObjectType.INDIANAPOLIS, value: 'Indianapolis' },
-            { key: ClusterObjectType.KAISERAUGST, value: 'Kaiseraugst' },
-            { key: ClusterObjectType.PENZBERG, value: 'Penzberg' }
-        ]} />;
+        items={props.clusters}/>
+    );
 
 export const SearchBarProjectField = () =>
     <Field
