@@ -5,10 +5,9 @@
 import * as React from 'react';
 import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
-import { formValueSelector } from 'redux-form';
 import { withStyles, StyleRulesCallback, WithStyles, Chip } from '@material-ui/core';
 import { RootState } from '~/store/store';
-import { removePropertyFromCreateProjectForm, CREATE_FORM_SELECTOR } from '~/store/projects/project-create-actions';
+import { removePropertyFromCreateProjectForm, CREATE_FORM_SELECTOR, ProjectProperties } from '~/store/projects/project-create-actions';
 import { ArvadosTheme } from '~/common/custom-theme';
 
 type CssRules = 'tag';
@@ -21,7 +20,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 interface CreateProjectPropertiesListDataProps {
-    properties: { [key: string]: string };
+    properties: ProjectProperties;
 }
 
 interface CreateProjectPropertiesListActionProps {

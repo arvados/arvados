@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { reset, startSubmit, stopSubmit, initialize, FormErrors, formValueSelector, change, arrayPush } from 'redux-form';
+import { reset, startSubmit, stopSubmit, initialize, FormErrors, formValueSelector, change } from 'redux-form';
 import { RootState } from '~/store/store';
 import { dialogActions } from "~/store/dialog/dialog-actions";
 import { getCommonResourceServiceError, CommonResourceServiceError } from '~/services/common-service/common-resource-service';
@@ -16,7 +16,11 @@ export interface ProjectCreateFormDialogData {
     ownerUuid: string;
     name: string;
     description: string;
-    properties: { [key: string]: string };
+    properties: ProjectProperties;
+}
+
+export interface ProjectProperties {
+    [key: string]: string;
 }
 
 export const PROJECT_CREATE_FORM_NAME = 'projectCreateFormName';
