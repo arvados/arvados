@@ -11,7 +11,6 @@ import { ProjectResource } from '~/models/project';
 import { ServiceRepository } from '~/services/services';
 import { matchProjectRoute, matchRunProcessRoute } from '~/routes/routes';
 import { ResourcePropertiesFormData } from '~/views-components/resource-properties-form/resource-properties-form';
-import { GraphChange } from '../../lib/cwl-svg/plugins/plugin';
 
 export interface ProjectCreateFormDialogData {
     ownerUuid: string;
