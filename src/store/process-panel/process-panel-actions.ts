@@ -8,9 +8,10 @@ import { Dispatch } from 'redux';
 import { ProcessStatus } from '~/store/processes/process';
 import { RootState } from '~/store/store';
 import { ServiceRepository } from "~/services/services";
-import { navigateToCollection } from '~/store/navigation/navigation-action';
+import { navigateToCollection, navigateToWorkflows } from '~/store/navigation/navigation-action';
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
 import { SnackbarKind } from '../snackbar/snackbar-actions';
+import { showWorkflowDetails } from '~/store/workflow-panel/workflow-panel-actions';
 
 export const procesPanelActions = unionize({
     SET_PROCESS_PANEL_FILTERS: ofType<string[]>(),
@@ -35,6 +36,12 @@ export const navigateToOutput = (uuid: string) =>
         } catch {
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'This collection does not exists!', hideDuration: 2000, kind: SnackbarKind.ERROR }));
         }
+    };
+
+export const openWorkflow = (uuid: string) =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch<any>(navigateToWorkflows);
+        dispatch<any>(showWorkflowDetails(uuid));
     };
 
 export const initProcessPanelFilters = procesPanelActions.SET_PROCESS_PANEL_FILTERS([

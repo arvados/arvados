@@ -56,7 +56,7 @@ export class CollectionService extends TrashableResourceService<CollectionResour
             : this.webdavClient.defaults.baseURL;
         return {
             ...file,
-            url: baseUrl + file.url + '?api_token=' + this.authService.getApiToken()
+            url: baseUrl + file.url
         };
     }
 

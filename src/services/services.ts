@@ -30,6 +30,7 @@ import { RepositoriesService } from '~/services/repositories-service/repositorie
 import { AuthorizedKeysService } from '~/services/authorized-keys-service/authorized-keys-service';
 import { VocabularyService } from '~/services/vocabulary-service/vocabulary-service';
 import { NodeService } from '~/services/node-service/node-service';
+import { FileViewersConfigService } from '~/services/file-viewers-config-service/file-viewers-config-service';
 
 export type ServiceRepository = ReturnType<typeof createServices>;
 
@@ -64,6 +65,7 @@ export const createServices = (config: Config, actions: ApiActions) => {
     const tagService = new TagService(linkService);
     const searchService = new SearchService();
     const vocabularyService = new VocabularyService(config.vocabularyUrl);
+    const fileViewersConfig = new FileViewersConfigService(config.fileViewersConfigUrl);
 
     return {
         ancestorsService,
@@ -76,6 +78,7 @@ export const createServices = (config: Config, actions: ApiActions) => {
         containerRequestService,
         containerService,
         favoriteService,
+        fileViewersConfig,
         groupsService,
         keepService,
         linkService,

@@ -45,6 +45,7 @@ import SplitterLayout from 'react-splitter-layout';
 import { WorkflowPanel } from '~/views/workflow-panel/workflow-panel';
 import { SearchResultsPanel } from '~/views/search-results-panel/search-results-panel';
 import { SshKeyPanel } from '~/views/ssh-key-panel/ssh-key-panel';
+import { SiteManagerPanel } from "~/views/site-manager-panel/site-manager-panel";
 import { MyAccountPanel } from '~/views/my-account-panel/my-account-panel';
 import { SharingDialog } from '~/views-components/sharing-dialog/sharing-dialog';
 import { AdvancedTabDialog } from '~/views-components/advanced-tab-dialog/advanced-tab-dialog';
@@ -79,6 +80,14 @@ import { UserPanel } from '~/views/user-panel/user-panel';
 import { UserAttributesDialog } from '~/views-components/user-dialog/attributes-dialog';
 import { CreateUserDialog } from '~/views-components/dialog-forms/create-user-dialog';
 import { HelpApiClientAuthorizationDialog } from '~/views-components/api-client-authorizations-dialog/help-dialog';
+import { GroupsPanel } from '~/views/groups-panel/groups-panel';
+import { CreateGroupDialog } from '~/views-components/dialog-forms/create-group-dialog';
+import { RemoveGroupDialog } from '~/views-components/groups-dialog/remove-dialog';
+import { GroupAttributesDialog } from '~/views-components/groups-dialog/attributes-dialog';
+import { GroupDetailsPanel } from '~/views/group-details-panel/group-details-panel';
+import { RemoveGroupMemberDialog } from '~/views-components/groups-dialog/member-remove-dialog';
+import { GroupMemberAttributesDialog } from '~/views-components/groups-dialog/member-attributes-dialog';
+import { AddGroupMembersDialog } from '~/views-components/dialog-forms/add-group-member-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -153,11 +162,14 @@ export const WorkbenchPanel =
                                 <Route path={Routes.REPOSITORIES} component={RepositoriesPanel} />
                                 <Route path={Routes.SSH_KEYS_USER} component={SshKeyPanel} />
                                 <Route path={Routes.SSH_KEYS_ADMIN} component={SshKeyPanel} />
+                                <Route path={Routes.SITE_MANAGER} component={SiteManagerPanel} />
                                 <Route path={Routes.KEEP_SERVICES} component={KeepServicePanel} />
                                 <Route path={Routes.USERS} component={UserPanel} />
                                 <Route path={Routes.COMPUTE_NODES} component={ComputeNodePanel} />
                                 <Route path={Routes.API_CLIENT_AUTHORIZATIONS} component={ApiClientAuthorizationPanel} />
                                 <Route path={Routes.MY_ACCOUNT} component={MyAccountPanel} />
+                                <Route path={Routes.GROUPS} component={GroupsPanel} />
+                                <Route path={Routes.GROUP_DETAILS} component={GroupDetailsPanel} />
                                 <Route path={Routes.LINKS} component={LinkPanel} />
                             </Switch>
                         </Grid>
@@ -167,6 +179,7 @@ export const WorkbenchPanel =
             <Grid item>
                 <DetailsPanel />
             </Grid>
+            <AddGroupMembersDialog />
             <AdvancedTabDialog />
             <AttributesApiClientAuthorizationDialog />
             <AttributesComputeNodeDialog />
@@ -178,6 +191,7 @@ export const WorkbenchPanel =
             <CopyCollectionDialog />
             <CopyProcessDialog />
             <CreateCollectionDialog />
+            <CreateGroupDialog />
             <CreateProjectDialog />
             <CreateRepositoryDialog />
             <CreateSshKeyDialog />
@@ -185,6 +199,8 @@ export const WorkbenchPanel =
             <CurrentTokenDialog />
             <FileRemoveDialog />
             <FilesUploadCollectionDialog />
+            <GroupAttributesDialog />
+            <GroupMemberAttributesDialog />
             <HelpApiClientAuthorizationDialog />
             <MoveCollectionDialog />
             <MoveProcessDialog />
@@ -197,6 +213,8 @@ export const WorkbenchPanel =
             <ProjectPropertiesDialog />
             <RemoveApiClientAuthorizationDialog />
             <RemoveComputeNodeDialog />
+            <RemoveGroupDialog />
+            <RemoveGroupMemberDialog />
             <RemoveKeepServiceDialog />
             <RemoveLinkDialog />
             <RemoveProcessDialog />
