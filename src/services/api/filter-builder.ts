@@ -11,8 +11,8 @@ export function joinFilters(filters0?: string, filters1?: string) {
 export class FilterBuilder {
     constructor(private filters = "") { }
 
-    public addEqual(field: string, value?: string | boolean, resourcePrefix?: string) {
-        return this.addCondition(field, "=", value, "", "", resourcePrefix );
+    public addEqual(field: string, value?: string | boolean | null, resourcePrefix?: string) {
+        return this.addCondition(field, "=", value, "", "", resourcePrefix);
     }
 
     public addLike(field: string, value?: string, resourcePrefix?: string) {
@@ -59,13 +59,13 @@ export class FilterBuilder {
         return this.filters;
     }
 
-    private addCondition(field: string, cond: string, value?: string | string[] | boolean, prefix: string = "", postfix: string = "", resourcePrefix?: string) {
-        if (value) {
+    private addCondition(field: string, cond: string, value?: string | string[] | boolean | null, prefix: string = "", postfix: string = "", resourcePrefix?: string) {
+        if (value !== undefined) {
             if (typeof value === "string") {
                 value = `"${prefix}${value}${postfix}"`;
             } else if (Array.isArray(value)) {
                 value = `["${value.join(`","`)}"]`;
-            } else {
+            } else if (value !== null) {
                 value = value ? "true" : "false";
             }
 

@@ -29,10 +29,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-const mapStateToProps = ({ virtualMachines }: RootState) => {
+const mapStateToProps = (state: RootState) => {
     return {
-        logins: virtualMachines.logins,
-        ...virtualMachines
+        logins: state.virtualMachines.logins,
+        userUuid: state.auth.user!.uuid,
+        ...state.virtualMachines
     };
 };
 
@@ -46,6 +47,7 @@ const mapDispatchToProps = (dispatch: Dispatch): Pick<VirtualMachinesPanelAction
 interface VirtualMachinesPanelDataProps {
     virtualMachines: ListResults<any>;
     logins: VirtualMachineLogins;
+    userUuid: string;
 }
 
 interface VirtualMachinesPanelActionProps {
@@ -98,7 +100,7 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
                 <TableRow key={index}>
                     <TableCell>{it.uuid}</TableCell>
                     <TableCell>{it.hostname}</TableCell>
-                    <TableCell>["{props.logins.items[0].username}"]</TableCell>
+                    <TableCell>["{props.logins.items.map(it => it.userUuid === props.userUuid ? it.username : '')}"]</TableCell>
                     <TableCell className={props.classes.moreOptions}>
                         <Tooltip title="More options" disableFocusListener>
                             <IconButton onClick={event => props.onOptionsMenuOpen(event, it)} className={props.classes.moreOptionsButton}>

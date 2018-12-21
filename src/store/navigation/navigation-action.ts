@@ -8,9 +8,10 @@ import { ResourceKind, extractUuidKind } from '~/models/resource';
 import { getCollectionUrl } from "~/models/collection";
 import { getProjectUrl } from "~/models/project";
 import { SidePanelTreeCategory } from '../side-panel-tree/side-panel-tree-actions';
-import { Routes, getProcessUrl, getProcessLogUrl } from '~/routes/routes';
+import { Routes, getProcessUrl, getProcessLogUrl, getGroupUrl } from '~/routes/routes';
 import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
+import { GROUPS_PANEL_LABEL } from '~/store/breadcrumbs/breadcrumbs-actions';
 
 export const navigateTo = (uuid: string) =>
     async (dispatch: Dispatch) => {
@@ -32,6 +33,8 @@ export const navigateTo = (uuid: string) =>
             dispatch(navigateToWorkflows);
         } else if (uuid === SidePanelTreeCategory.TRASH) {
             dispatch(navigateToTrash);
+        } else if (uuid === GROUPS_PANEL_LABEL) {
+            dispatch(navigateToGroups);
         }
     };
 
@@ -74,6 +77,8 @@ export const navigateToSshKeysAdmin= push(Routes.SSH_KEYS_ADMIN);
 
 export const navigateToSshKeysUser= push(Routes.SSH_KEYS_USER);
 
+export const navigateToSiteManager= push(Routes.SITE_MANAGER);
+
 export const navigateToMyAccount = push(Routes.MY_ACCOUNT);
 
 export const navigateToKeepServices = push(Routes.KEEP_SERVICES);
@@ -83,5 +88,9 @@ export const navigateToComputeNodes = push(Routes.COMPUTE_NODES);
 export const navigateToUsers = push(Routes.USERS);
 
 export const navigateToApiClientAuthorizations = push(Routes.API_CLIENT_AUTHORIZATIONS);
+
+export const navigateToGroups = push(Routes.GROUPS);
+
+export const navigateToGroupDetails = compose(push, getGroupUrl);
 
 export const navigateToLinks = push(Routes.LINKS);

@@ -39,6 +39,6 @@ export const ResourcePropertiesForm = ({ handleSubmit, submitting, invalid, clas
         </Grid>
     </form>;
 
-const Button = withStyles(theme => ({
+export const Button = withStyles(theme => ({
     root: { marginTop: theme.spacing.unit }
 }))(ProgressButton);

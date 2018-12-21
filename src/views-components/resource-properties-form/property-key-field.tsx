@@ -20,7 +20,7 @@ export const PropertyKeyField = connectVocabulary(
             vocabulary={vocabulary}
             validate={getValidation(vocabulary)} />);
 
-const PropertyKeyInput = ({ vocabulary, ...props }: WrappedFieldProps & VocabularyProp) =>
+export const PropertyKeyInput = ({ vocabulary, ...props }: WrappedFieldProps & VocabularyProp) =>
     <Autocomplete
         label='Key'
         suggestions={getSuggestions(props.input.value, vocabulary)}
