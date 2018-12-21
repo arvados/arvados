@@ -8,7 +8,7 @@ import { Dispatch } from 'redux';
 import { formValueSelector } from 'redux-form';
 import { withStyles, StyleRulesCallback, WithStyles, Chip } from '@material-ui/core';
 import { RootState } from '~/store/store';
-import { removePropertyFromCreateProjectForm, PROJECT_CREATE_FORM_NAME } from '~/store/projects/project-create-actions';
+import { removePropertyFromCreateProjectForm, CREATE_FORM_SELECTOR } from '~/store/projects/project-create-actions';
 import { ArvadosTheme } from '~/common/custom-theme';
 
 type CssRules = 'tag';
@@ -21,16 +21,15 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 interface CreateProjectPropertiesListDataProps {
-    properties: any;
+    properties: { [key: string]: string };
 }
 
 interface CreateProjectPropertiesListActionProps {
     handleDelete: (key: string) => void;
 }
 
-const selector = formValueSelector(PROJECT_CREATE_FORM_NAME);
 const mapStateToProps = (state: RootState): CreateProjectPropertiesListDataProps => {
-    const properties = selector(state, 'properties');
+    const properties = CREATE_FORM_SELECTOR(state, 'properties');
     return { properties };
 };
 
