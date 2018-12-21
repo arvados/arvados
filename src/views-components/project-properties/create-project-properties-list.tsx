@@ -7,7 +7,7 @@ import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
 import { withStyles, StyleRulesCallback, WithStyles, Chip } from '@material-ui/core';
 import { RootState } from '~/store/store';
-import { removePropertyFromCreateProjectForm, CREATE_FORM_SELECTOR, ProjectProperties } from '~/store/projects/project-create-actions';
+import { removePropertyFromCreateProjectForm, PROJECT_CREATE_FORM_SELECTOR, ProjectProperties } from '~/store/projects/project-create-actions';
 import { ArvadosTheme } from '~/common/custom-theme';
 
 type CssRules = 'tag';
@@ -28,7 +28,7 @@ interface CreateProjectPropertiesListActionProps {
 }
 
 const mapStateToProps = (state: RootState): CreateProjectPropertiesListDataProps => {
-    const properties = CREATE_FORM_SELECTOR(state, 'properties');
+    const properties = PROJECT_CREATE_FORM_SELECTOR(state, 'properties');
     return { properties };
 };
 
