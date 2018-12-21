@@ -74,14 +74,14 @@ export const createProject = (project: Partial<ProjectResource>) =>
 
 export const addPropertyToCreateProjectForm = (data: ResourcePropertiesFormData) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const properties = CREATE_FORM_SELECTOR(getState(), 'properties') || {};
+        const properties = { ...CREATE_FORM_SELECTOR(getState(), 'properties') };
         properties[data.key] = data.value;
-        dispatch(change(PROJECT_CREATE_FORM_NAME, 'properties', { ...properties } ));
+        dispatch(change(PROJECT_CREATE_FORM_NAME, 'properties', properties ));
     };
 
 export const removePropertyFromCreateProjectForm = (key: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const properties = CREATE_FORM_SELECTOR(getState(), 'properties');
+        const properties = { ...CREATE_FORM_SELECTOR(getState(), 'properties') };
         delete properties[key];
-        dispatch(change(PROJECT_CREATE_FORM_NAME, 'properties', { ...properties } ));
+        dispatch(change(PROJECT_CREATE_FORM_NAME, 'properties', properties ));
     };
