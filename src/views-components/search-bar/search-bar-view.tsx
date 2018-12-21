@@ -11,7 +11,6 @@ import {
     WithStyles,
     Tooltip,
     InputAdornment, Input,
-    ClickAwayListener
 } from '@material-ui/core';
 import SearchIcon from '@material-ui/icons/Search';
 import ArrowDropDownIcon from '@material-ui/icons/ArrowDropDown';
@@ -41,12 +40,14 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => {
         container: {
             position: 'relative',
             width: '100%',
-            borderRadius: theme.spacing.unit / 2
+            borderRadius: theme.spacing.unit / 2,
+            zIndex: theme.zIndex.modal,
         },
         containerSearchViewOpened: {
             position: 'relative',
             width: '100%',
-            borderRadius: `${theme.spacing.unit / 2}px ${theme.spacing.unit / 2}px 0 0`
+            borderRadius: `${theme.spacing.unit / 2}px ${theme.spacing.unit / 2}px 0 0`,
+            zIndex: theme.zIndex.modal,
         },
         input: {
             border: 'none',
@@ -144,10 +145,14 @@ const handleDropdownClick = (e: React.MouseEvent, props: SearchBarViewProps) => 
 };
 
 export const SearchBarView = withStyles(styles)(
-    (props : SearchBarViewProps) => {
+    (props: SearchBarViewProps) => {
         const { classes, isPopoverOpen } = props;
         return (
-            <ClickAwayListener onClickAway={props.closeView}>
+            <>
+
+                {isPopoverOpen &&
+                    <Backdrop onClick={props.closeView} />}
+
                 <Paper className={isPopoverOpen ? classes.containerSearchViewOpened : classes.container} >
                     <form onSubmit={props.onSubmit}>
                         <Input
@@ -179,10 +184,10 @@ export const SearchBarView = withStyles(styles)(
                             } />
                     </form>
                     <div className={classes.view}>
-                        {isPopoverOpen && getView({...props})}
+                        {isPopoverOpen && getView({ ...props })}
                     </div>
                 </Paper >
-            </ClickAwayListener>
+            </>
         );
     }
 );
@@ -211,3 +216,16 @@ const getView = (props: SearchBarViewProps) => {
                 selectedItem={props.selectedItem} />;
     }
 };
+
+const Backdrop = withStyles<'backdrop'>(theme => ({
+    backdrop: {
+        position: 'fixed',
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
+        zIndex: theme.zIndex.modal
+    }
+}))(
+    ({ classes, ...props }: WithStyles<'backdrop'> & React.HTMLProps<HTMLDivElement>) =>
+        <div className={classes.backdrop} {...props} />);
