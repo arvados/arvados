@@ -15,8 +15,14 @@ import { OrderDirection, OrderBuilder } from '~/services/api/order-builder';
 import { GroupContentsResource, GroupContentsResourcePrefix } from "~/services/groups-service/groups-service";
 import { ListResults } from '~/services/common-service/common-service';
 import { searchResultsPanelActions } from '~/store/search-results-panel/search-results-panel-actions';
-import { getFilters } from '~/store/search-bar/search-bar-actions';
+import {
+    getFilters,
+    getSearchQueryFirstProp,
+    getSearchSessions, ParseSearchQuery,
+    parseSearchQuery
+} from '~/store/search-bar/search-bar-actions';
 import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
+import { Session } from "~/models/session";
 
 export class SearchResultsMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -28,19 +34,24 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
         const userUuid = state.auth.user!.uuid;
         const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
         const searchValue = state.searchBar.searchValue;
-        try {
-            const response = await this.services.groupsService.contents('', getParams(dataExplorer, searchValue));
-            api.dispatch(updateResources(response.items));
-            api.dispatch(setItems(response));
-        } catch {
-            api.dispatch(couldNotFetchSearchResults());
-        }
+        const sq = parseSearchQuery(searchValue);
+        const clusterId = getSearchQueryFirstProp(sq, 'cluster');
+        const sessions = getSearchSessions(clusterId, state.auth.sessions);
+        sessions.forEach(async session => {
+            try {
+                const response = await this.services.groupsService.contents(userUuid, getParams(dataExplorer, searchValue, sq), session);
+                api.dispatch(updateResources(response.items));
+                api.dispatch(setItems(response));
+            } catch {
+                api.dispatch(couldNotFetchSearchResults(session));
+            }
+        });
     }
 }
 
-export const getParams = (dataExplorer: DataExplorer, searchValue: string) => ({
+export const getParams = (dataExplorer: DataExplorer, searchValue: string, sq: ParseSearchQuery) => ({
     ...dataExplorerToListParams(dataExplorer),
-    filters: getFilters('name', searchValue),
+    filters: getFilters('name', searchValue, sq),
     order: getOrder(dataExplorer)
 });
 
@@ -69,8 +80,8 @@ export const setItems = (listResults: ListResults<GroupContentsResource>) =>
         items: listResults.items.map(resource => resource.uuid),
     });
 
-const couldNotFetchSearchResults = () =>
+const couldNotFetchSearchResults = (session: Session) =>
     snackbarActions.OPEN_SNACKBAR({
-        message: 'Could not fetch search results.',
+        message: `Could not fetch search results for ${session.clusterId}.`,
         kind: SnackbarKind.ERROR
     });

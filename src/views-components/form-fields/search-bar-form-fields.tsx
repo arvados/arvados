@@ -8,7 +8,6 @@ import { TextField, DateTextField } from "~/components/text-field/text-field";
 import { CheckboxField } from '~/components/checkbox-field/checkbox-field';
 import { NativeSelectField } from '~/components/select-field/select-field';
 import { ResourceKind } from '~/models/resource';
-import { ClusterObjectType } from '~/models/search-bar';
 import { HomeTreePicker } from '~/views-components/projects-tree-picker/home-tree-picker';
 import { SEARCH_BAR_ADVANCE_FORM_PICKER_ID } from '~/store/search-bar/search-bar-actions';
 import { SearchBarAdvancedPropertiesView } from '~/views-components/search-bar/search-bar-advanced-properties-view';
@@ -39,10 +38,13 @@ interface SearchBarClusterFieldProps {
 
 export const SearchBarClusterField = connect(
     (state: RootState) => ({
-        clusters: [{key: '', value: 'Any'}].concat(state.auth.sessions.map(s => ({
-            key: s.clusterId,
-            value: s.clusterId
-        })))
+        clusters: [{key: '', value: 'Any'}].concat(
+            state.auth.sessions
+                .filter(s => s.loggedIn)
+                .map(s => ({
+                    key: s.clusterId,
+                    value: s.clusterId
+                })))
     }))((props: SearchBarClusterFieldProps) => <Field
         name='cluster'
         component={NativeSelectField}

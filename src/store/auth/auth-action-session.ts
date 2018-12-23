@@ -99,7 +99,7 @@ const clusterLogin = async (clusterId: string, baseUrl: string, activeSession: S
     };
 };
 
-const getActiveSession = (sessions: Session[]): Session | undefined => sessions.find(s => s.active);
+export const getActiveSession = (sessions: Session[]): Session | undefined => sessions.find(s => s.active);
 
 export const validateCluster = async (remoteHost: string, clusterId: string, activeSession: Session): Promise<{ user: User; token: string, baseUrl: string }> => {
     const baseUrl = await getRemoteHostBaseUrl(remoteHost);
