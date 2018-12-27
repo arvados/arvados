@@ -8,8 +8,8 @@ describe("OrderBuilder", () => {
     it("should build correct order query", () => {
         const order = new OrderBuilder()
             .addAsc("kind")
-            .addDesc("modifiedAt")
+            .addDesc("createdAt")
             .getOrder();
-        expect(order).toEqual("kind asc,modified_at desc");
+        expect(order).toEqual("kind asc,created_at desc");
     });
 });
