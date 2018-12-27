@@ -80,6 +80,8 @@ import { UserPanel } from '~/views/user-panel/user-panel';
 import { UserAttributesDialog } from '~/views-components/user-dialog/attributes-dialog';
 import { CreateUserDialog } from '~/views-components/dialog-forms/create-user-dialog';
 import { HelpApiClientAuthorizationDialog } from '~/views-components/api-client-authorizations-dialog/help-dialog';
+import { UserManageDialog } from '~/views-components/user-dialog/manage-dialog';
+import { SetupShellAccountDialog } from '~/views-components/dialog-forms/setup-shell-account-dialog';
 import { GroupsPanel } from '~/views/groups-panel/groups-panel';
 import { CreateGroupDialog } from '~/views-components/dialog-forms/create-group-dialog';
 import { RemoveGroupDialog } from '~/views-components/groups-dialog/remove-dialog';
@@ -225,12 +227,14 @@ export const WorkbenchPanel =
             <RepositoryAttributesDialog />
             <RepositoriesSampleGitDialog />
             <RichTextEditorDialog />
+            <SetupShellAccountDialog />
             <SharingDialog />
             <Snackbar />
             <UpdateCollectionDialog />
             <UpdateProcessDialog />
             <UpdateProjectDialog />
             <UserAttributesDialog />
+            <UserManageDialog />
             <VirtualMachineAttributesDialog />
         </Grid>
     );
