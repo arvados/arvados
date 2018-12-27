@@ -158,6 +158,7 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
 export const DEFAULT_ADVANCED_FORM_VALUES: Partial<RunProcessAdvancedFormData> = {
     [VCPUS_FIELD]: 1,
     [RAM_FIELD]: 1073741824,
+    [API_FIELD]: true,
 };
 
 const normalizeInputKeys = (inputs: WorkflowInputsData): WorkflowInputsData =>
