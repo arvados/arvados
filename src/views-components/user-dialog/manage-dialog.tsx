@@ -52,7 +52,7 @@ export const UserManageDialog = compose(
                     <Typography variant="body2" className={props.classes.spacing}>
                         As an admin, you can log in as this user. When you’ve finished, you will need to log out and log in again with your own account.
                     </Typography>
-                    <Button variant="contained" color="primary" onClick={() => props.loginAs(props.data.uuid)}>
+                    <Button variant="contained" color="primary" onClick={() => props.loginAs(props.data.createdAt)}>
                         {`LOG IN AS ${props.data.firstName} ${props.data.lastName}`}
                     </Button>
                     <Typography variant="body2" className={props.classes.spacing}>

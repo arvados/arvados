@@ -49,10 +49,10 @@ export const openSetupShellAccount = (uuid: string) =>
         dispatch(dialogActions.OPEN_DIALOG({ id: SETUP_SHELL_ACCOUNT_DIALOG, data: { user, ...virtualMachines } }));
     };
 
-export const loginAs = (uuid: string) =>
+export const loginAs = (createdAt: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const clients = await services.apiClientAuthorizationService.list();
-        const client = clients.items.find(it => it.uuid === uuid);
+        const client = clients.items.find(it => it.createdAt === createdAt);
         dispatch<any>(saveApiToken(client!.apiToken));
         dispatch<any>(getUserDetails()).then(() => {
             location.reload();
