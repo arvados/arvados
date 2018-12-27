@@ -9,6 +9,6 @@ import { SwitchProps } from '@material-ui/core/Switch';
 
 export const SwitchField = ({ switchProps, ...props }: FormFieldProps & { switchProps: SwitchProps }) =>
     <FormField {...props}>
-        {input => <Switch {...switchProps} checked={input.checked} onChange={input.onChange} />}
+        {input => <Switch {...switchProps} checked={input.value} onChange={input.onChange} />}
     </FormField>;
 
