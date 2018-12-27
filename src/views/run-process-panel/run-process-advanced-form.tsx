@@ -50,7 +50,12 @@ export const RunProcessAdvancedForm =
                             <Field
                                 name={RUNTIME_FIELD}
                                 component={TextField}
-                                label="Runtime limit (hh)" />
+                                helperText="Maximum running time (in seconds) that this container will be allowed to run before being cancelled."
+                                label="Runtime limit"
+                                parse={IntInput.parse}
+                                format={IntInput.format}
+                                type='number'
+                                validate={runtimeValidation} />
                         </Grid>
                         <Grid item xs={12} md={6}>
                             <Field
@@ -95,3 +100,4 @@ export const RunProcessAdvancedForm =
 const ramValidation = [min(0)];
 const vcpusValidation = [min(1)];
 const keepCacheRamValdation = [optional(min(0))];
+const runtimeValidation = [optional(min(1))];
