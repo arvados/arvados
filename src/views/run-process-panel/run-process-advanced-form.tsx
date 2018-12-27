@@ -15,11 +15,11 @@ import { optional } from '~/validators/optional';
 
 export const RUN_PROCESS_ADVANCED_FORM = 'runProcessAdvancedForm';
 
-const OUTPUT_FIELD = 'output';
-const RUNTIME_FIELD = 'runtime';
-const RAM_FIELD = 'ram';
-const VCPUS_FIELD = 'vcpus';
-const KEEP_CACHE_RAM_FIELD = 'keepCacheRam';
+export const OUTPUT_FIELD = 'output';
+export const RUNTIME_FIELD = 'runtime';
+export const RAM_FIELD = 'ram';
+export const VCPUS_FIELD = 'vcpus';
+export const KEEP_CACHE_RAM_FIELD = 'keepCacheRam';
 
 export interface RunProcessAdvancedFormData {
     [OUTPUT_FIELD]?: string;
