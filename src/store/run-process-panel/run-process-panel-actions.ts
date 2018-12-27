@@ -14,7 +14,7 @@ import { WorkflowInputsData } from '~/models/workflow';
 import { createWorkflowMounts } from '~/models/process';
 import { ContainerRequestState } from '~/models/container-request';
 import { navigateToProcess } from '../navigation/navigation-action';
-import { RunProcessAdvancedFormData, RUN_PROCESS_ADVANCED_FORM } from '~/views/run-process-panel/run-process-advanced-form';
+import { RunProcessAdvancedFormData, RUN_PROCESS_ADVANCED_FORM, VCPUS_FIELD, RAM_FIELD, RUNTIME_FIELD, OUTPUT_FIELD } from '~/views/run-process-panel/run-process-advanced-form';
 import { isItemNotInProject, isProjectOrRunProcessRoute } from '~/store/projects/project-create-actions';
 import { dialogActions } from '~/store/dialog/dialog-actions';
 import { setBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions';
@@ -117,7 +117,7 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
     const state = getState();
     const basicForm = getFormValues(RUN_PROCESS_BASIC_FORM)(state) as RunProcessBasicFormData;
     const inputsForm = getFormValues(RUN_PROCESS_INPUTS_FORM)(state) as WorkflowInputsData;
-    const advancedForm = getFormValues(RUN_PROCESS_ADVANCED_FORM)(state) as RunProcessAdvancedFormData;
+    const advancedForm = getFormValues(RUN_PROCESS_ADVANCED_FORM)(state) as RunProcessAdvancedFormData || DEFAULT_ADVANCED_FORM_VALUES;
     const userUuid = getState().auth.user!.uuid;
     const router = getState();
     const properties = getState().properties;
@@ -131,22 +131,22 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
             mounts: createWorkflowMounts(selectedWorkflow, normalizeInputKeys(inputsForm)),
             runtimeConstraints: {
                 API: true,
-                vcpus: 1,
-                ram: 1073741824,
+                vcpus: advancedForm[VCPUS_FIELD],
+                ram: advancedForm[RAM_FIELD],
+            },
+            schedulingParameters: {
+                maxRunTime: advancedForm[RUNTIME_FIELD]
             },
             containerImage: 'arvados/jobs',
             cwd: '/var/spool/cwl',
             command: [
                 'arvados-cwl-runner',
-                '--local',
-                '--api=containers',
-                `--project-uuid=${processOwnerUuid}`,
                 '/var/lib/cwl/workflow.json#main',
                 '/var/lib/cwl/cwl.input.json'
             ],
             outputPath: '/var/spool/cwl',
             priority: 1,
-            outputName: advancedForm && advancedForm.output ? advancedForm.output : undefined,
+            outputName: advancedForm[OUTPUT_FIELD] ? advancedForm[OUTPUT_FIELD] : undefined,
         };
         const newProcess = await services.containerRequestService.create(newProcessData);
         dispatch(navigateToProcess(newProcess.uuid));
