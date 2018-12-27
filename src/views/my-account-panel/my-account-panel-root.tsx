@@ -114,7 +114,7 @@ export const MyAccountPanelRoot = withStyles(styles)(
                                 />
                             </Grid>
                             <Grid item className={classes.gridItem}>
-                                <InputLabel className={classes.label} htmlFor="prefs.profile.role">Organization</InputLabel>
+                                <InputLabel className={classes.label} htmlFor="prefs.profile.role">Role</InputLabel>
                                 <Field
                                     id="prefs.profile.role"
                                     name="prefs.profile.role"
