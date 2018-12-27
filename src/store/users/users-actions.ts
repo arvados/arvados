@@ -51,9 +51,8 @@ export const openSetupShellAccount = (uuid: string) =>
 
 export const loginAs = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const userUuid = getState().auth.user!.uuid;
         const clients = await services.apiClientAuthorizationService.list();
-        const client = clients.items.find(it => it.uuid === userUuid);
+        const client = clients.items.find(it => it.uuid === uuid);
         dispatch<any>(saveApiToken(client!.apiToken));
         dispatch<any>(getUserDetails()).then(() => {
             location.reload();
