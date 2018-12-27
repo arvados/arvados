@@ -12,6 +12,7 @@ import { USER_LENGTH_VALIDATION } from '~/validators/validators';
 import { InputLabel } from '@material-ui/core';
 import { NativeSelectField } from '~/components/select-field/select-field';
 import { SETUP_SHELL_ACCOUNT_DIALOG, createUser } from '~/store/users/users-actions';
+import { UserResource } from '~/models/user';
 
 interface SetupShellAccountFormDialogData {
     email: string;
@@ -37,14 +38,31 @@ export const SetupShellAccountDialog = compose(
         />
 );
 
-const UserEmailField = ({ data }: any) =>
-    <Field
-        name='email'
-        component={TextField}
-        disabled
-        label={data.user.email} />;
+interface UserProps {
+    data: {
+        user: UserResource;
+    };
+}
 
-const UserVirtualMachineField = ({ data }: any) =>
+interface VirtualMachinesProps {
+    data: {
+        items: VirtualMachinesResource[];
+    };
+}
+interface DataProps {
+    user: UserResource;
+    items: VirtualMachinesResource[];
+}
+
+const UserEmailField = ({ data }: UserProps) =>
+    <span>
+        <Field
+            name='email'
+            component={TextField}
+            disabled
+            label={data.user.email} /></span>;
+
+const UserVirtualMachineField = ({ data }: VirtualMachinesProps) =>
     <div style={{ marginBottom: '21px' }}>
         <InputLabel>Virtual Machine</InputLabel>
         <Field
@@ -61,17 +79,15 @@ const UserGroupsVirtualMachineField = () =>
         validate={USER_LENGTH_VALIDATION}
         label="Groups for virtual machine (comma separated list)" />;
 
-const getVirtualMachinesList = (virtualMachines: VirtualMachinesResource[]) => {
-    const mappedVirtualMachines = virtualMachines.map(it => ({ key: it.hostname, value: it.hostname }));
-    return mappedVirtualMachines;
-};
+const getVirtualMachinesList = (virtualMachines: VirtualMachinesResource[]) =>
+    virtualMachines.map(it => ({ key: it.hostname, value: it.hostname }));
 
 type SetupShellAccountDialogComponentProps = WithDialogProps<{}> & InjectedFormProps<SetupShellAccountFormDialogData>;
 
 const SetupShellAccountFormFields = (props: SetupShellAccountDialogComponentProps) =>
     <>
-        <UserEmailField data={props.data}/>
-        <UserVirtualMachineField data={props.data} />
+        <UserEmailField data={props.data as DataProps} />
+        <UserVirtualMachineField data={props.data as DataProps} />
         <UserGroupsVirtualMachineField />
     </>;
 
