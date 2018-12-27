@@ -79,10 +79,12 @@ export const setWorkflow = (workflow: WorkflowResource, isWorkflowChanged = true
             dispatch(runProcessPanelActions.SET_STEP_CHANGED(false));
             dispatch(runProcessPanelActions.SET_SELECTED_WORKFLOW(workflow));
             dispatch<any>(loadPresets(workflow.uuid));
+            dispatch(initialize(RUN_PROCESS_ADVANCED_FORM, DEFAULT_ADVANCED_FORM_VALUES));
         }
         if (!isWorkflowChanged) {
             dispatch(runProcessPanelActions.SET_SELECTED_WORKFLOW(workflow));
             dispatch<any>(loadPresets(workflow.uuid));
+            dispatch(initialize(RUN_PROCESS_ADVANCED_FORM, DEFAULT_ADVANCED_FORM_VALUES));
         }
     };
 
@@ -149,6 +151,11 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
         const newProcess = await services.containerRequestService.create(newProcessData);
         dispatch(navigateToProcess(newProcess.uuid));
     }
+};
+
+export const DEFAULT_ADVANCED_FORM_VALUES: Partial<RunProcessAdvancedFormData> = {
+    [VCPUS_FIELD]: 1,
+    [RAM_FIELD]: 1073741824,
 };
 
 const normalizeInputKeys = (inputs: WorkflowInputsData): WorkflowInputsData =>
