@@ -38,7 +38,9 @@ export const openUserManagement = (uuid: string) =>
         const { resources } = getState();
         const user = getResource<UserResource>(uuid)(resources);
         const clients = await services.apiClientAuthorizationService.list();
-        dispatch(dialogActions.OPEN_DIALOG({ id: USER_MANAGEMENT_DIALOG, data: { user, ...clients } }));
+        const client = clients.items.find(it => it.ownerUuid === uuid);
+        console.log(client);
+        dispatch(dialogActions.OPEN_DIALOG({ id: USER_MANAGEMENT_DIALOG, data: { user, client } }));
     };
 
 export const openSetupShellAccount = (uuid: string) =>
@@ -133,4 +135,3 @@ export const loadUsersPanel = () =>
     (dispatch: Dispatch) => {
         dispatch(userBindedActions.REQUEST_ITEMS());
     };
-    

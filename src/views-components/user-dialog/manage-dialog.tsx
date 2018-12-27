@@ -23,7 +23,7 @@ const styles = withStyles<CssRules>((theme: ArvadosTheme) => ({
 }));
 
 interface UserManageDataProps {
-    data: UserResource;
+    data: any;
 }
 
 interface UserManageActionProps {
@@ -47,21 +47,24 @@ export const UserManageDialog = compose(
                 onClose={props.closeDialog}
                 fullWidth
                 maxWidth="md">
-                <DialogTitle>{`Manage - ${props.data.firstName} ${props.data.lastName}`}</DialogTitle>
-                <DialogContent>
-                    <Typography variant="body2" className={props.classes.spacing}>
-                        As an admin, you can log in as this user. When you’ve finished, you will need to log out and log in again with your own account.
+                {props.data.user &&
+                    <span>
+                        <DialogTitle>{`Manage - ${props.data.user.firstName} ${props.data.user.lastName}`}</DialogTitle>
+                        <DialogContent>
+                            <Typography variant="body2" className={props.classes.spacing}>
+                                As an admin, you can log in as this user. When you’ve finished, you will need to log out and log in again with your own account.
                     </Typography>
-                    <Button variant="contained" color="primary" onClick={() => props.loginAs(props.data.createdAt)}>
-                        {`LOG IN AS ${props.data.firstName} ${props.data.lastName}`}
-                    </Button>
-                    <Typography variant="body2" className={props.classes.spacing}>
-                        As an admin, you can setup a shell account for this user. The login name is automatically generated from the user's e-mail address.
+                            <Button variant="contained" color="primary" onClick={() => props.loginAs(props.data.client.uuid)}>
+                                {`LOG IN AS ${props.data.user.firstName} ${props.data.user.lastName}`}
+                            </Button>
+                            <Typography variant="body2" className={props.classes.spacing}>
+                                As an admin, you can setup a shell account for this user. The login name is automatically generated from the user's e-mail address.
                     </Typography>
-                    <Button variant="contained" color="primary" onClick={() => props.openSetupShellAccount(props.data.uuid)}>
-                        {`SETUP SHELL ACCOUNT FOR ${props.data.firstName} ${props.data.lastName}`}
-                    </Button>
-                </DialogContent>
+                            <Button variant="contained" color="primary" onClick={() => props.openSetupShellAccount(props.data.uuid)}>
+                                {`SETUP SHELL ACCOUNT FOR ${props.data.user.firstName} ${props.data.user.lastName}`}
+                            </Button>
+                        </DialogContent></span>}
+
                 <DialogActions>
                     <Button
                         variant='flat'
