@@ -12,6 +12,7 @@ import * as IntInput from './inputs/int-input';
 import { require } from '~/validators/require';
 import { min } from '~/validators/min';
 import { optional } from '~/validators/optional';
+import { SwitchField } from '~/components/switch-field/switch-field';
 
 export const RUN_PROCESS_ADVANCED_FORM = 'runProcessAdvancedForm';
 
@@ -20,6 +21,7 @@ export const RUNTIME_FIELD = 'runtime';
 export const RAM_FIELD = 'ram';
 export const VCPUS_FIELD = 'vcpus';
 export const KEEP_CACHE_RAM_FIELD = 'keepCacheRam';
+export const API_FIELD = 'api';
 
 export interface RunProcessAdvancedFormData {
     [OUTPUT_FIELD]?: string;
@@ -27,6 +29,7 @@ export interface RunProcessAdvancedFormData {
     [RAM_FIELD]: number;
     [VCPUS_FIELD]: number;
     [KEEP_CACHE_RAM_FIELD]?: number;
+    [API_FIELD]?: boolean;
 }
 
 export const RunProcessAdvancedForm =
@@ -91,6 +94,16 @@ export const RunProcessAdvancedForm =
                                 format={IntInput.format}
                                 type='number'
                                 validate={keepCacheRamValdation} />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <Field
+                                name={API_FIELD}
+                                component={SwitchField}
+                                switchProps={{
+                                    color: 'primary'
+                                }}
+                                label='API'
+                                helperText='When set, ARVADOS_API_HOST and ARVADOS_API_TOKEN will be set, and process will have networking enabled to access the Arvados API server.' />
                         </Grid>
                     </Grid>
                 </ExpansionPanelDetails>
