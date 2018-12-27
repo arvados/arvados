@@ -65,7 +65,8 @@ import { loadComputeNodesPanel, computeNodesActions } from '~/store/compute-node
 import { linkPanelColumns } from '~/views/link-panel/link-panel-root';
 import { userPanelColumns } from '~/views/user-panel/user-panel';
 import { computeNodePanelColumns } from '~/views/compute-node-panel/compute-node-panel-root';
-import { loadApiClientAuthorizationsPanel } from '~/store/api-client-authorizations/api-client-authorizations-actions';
+import { loadApiClientAuthorizationsPanel, apiClientAuthorizationsActions } from '~/store/api-client-authorizations/api-client-authorizations-actions';
+import { apiClientAuthorizationPanelColumns } from '~/views/api-client-authorization-panel/api-client-authorization-panel-root';
 import * as groupPanelActions from '~/store/groups-panel/groups-panel-actions';
 import { groupsPanelColumns } from '~/views/groups-panel/groups-panel';
 import * as groupDetailsPanelActions from '~/store/group-details-panel/group-details-panel-actions';
@@ -108,6 +109,8 @@ export const loadWorkbench = () =>
                 dispatch(groupDetailsPanelActions.GroupDetailsPanelActions.SET_COLUMNS({columns: groupDetailsPanelColumns}));
                 dispatch(linkPanelActions.SET_COLUMNS({ columns: linkPanelColumns }));
                 dispatch(computeNodesActions.SET_COLUMNS({ columns: computeNodePanelColumns }));
+                dispatch(apiClientAuthorizationsActions.SET_COLUMNS({ columns: apiClientAuthorizationPanelColumns }));
+
                 dispatch<any>(initSidePanelTree());
                 if (router.location) {
                     const match = matchRootRoute(router.location.pathname);

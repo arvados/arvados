@@ -15,7 +15,7 @@ import { openApiClientAuthorizationsHelpDialog } from '~/store/api-client-author
 
 const mapStateToProps = (state: RootState): ApiClientAuthorizationPanelRootDataProps => {
     return {
-        resources: state.resources,
+        resources: state.resources
     };
 };
 
