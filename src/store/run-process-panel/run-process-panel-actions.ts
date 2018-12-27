@@ -141,6 +141,7 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
             cwd: '/var/spool/cwl',
             command: [
                 'arvados-cwl-runner',
+                '--api=containers',
                 '/var/lib/cwl/workflow.json#main',
                 '/var/lib/cwl/cwl.input.json'
             ],
