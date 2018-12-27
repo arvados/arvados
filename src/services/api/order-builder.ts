@@ -3,11 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as _ from "lodash";
-import { ResourceTypes } from "src/models/resource";
+import { Resource } from "src/models/resource";
 
 export enum OrderDirection { ASC, DESC }
 
-export class OrderBuilder<T extends ResourceTypes = ResourceTypes> {
+export class OrderBuilder<T extends Resource = Resource> {
 
     constructor(private order: string[] = []) {}
 

@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ResourceKind } from '~/models/resource';
+import { ResourceKind, Resource } from '~/models/resource';
 
-export interface ApiClientAuthorization {
+export interface ApiClientAuthorization extends Resource {
     uuid: string;
     apiToken: string;
     apiClientId: number;
@@ -18,7 +18,4 @@ export interface ApiClientAuthorization {
     ownerUuid: string;
     defaultOwnerUuid: string;
     scopes: string[];
-    kind: ResourceKind.API_CLIENT_AUTHORIZATION;
-    etag: string;
-    href: string;
 }

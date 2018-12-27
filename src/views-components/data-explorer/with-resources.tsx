@@ -6,10 +6,10 @@ import * as React from 'react';
 import { connect } from 'react-redux';
 import { RootState } from '~/store/store';
 import { getResource } from '~/store/resources/resources';
-import { Resource, ResourceTypes } from '~/models/resource';
+import { Resource } from '~/models/resource';
 
 interface WithResourceProps {
-    resource?: ResourceTypes;
+    resource?: Resource;
 }
 
 export const withResource = (component: React.ComponentType<WithResourceProps & { uuid: string }>) =>
@@ -19,7 +19,7 @@ export const withResource = (component: React.ComponentType<WithResourceProps & 
         })
     )(component);
 
-export const getDataFromResource = (property: string, resource?: ResourceTypes) => {
+export const getDataFromResource = (property: string, resource?: Resource) => {
     return resource && resource[property] ? resource[property] : '(none)';
 };
 

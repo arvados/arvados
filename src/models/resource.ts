@@ -16,8 +16,6 @@ export interface Resource {
     etag: string;
 }
 
-export type ResourceTypes = Resource | ApiClientAuthorization;
-
 export interface TrashableResource extends Resource {
     trashAt: string;
     deleteAt: string;
