@@ -23,6 +23,7 @@ export interface ListArguments {
 }
 
 export interface ListResults<T> {
+    clusterId?: string;
     kind: string;
     offset: number;
     limit: number;

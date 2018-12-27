@@ -5,21 +5,37 @@
 import { Dispatch } from 'redux';
 import { RootState } from "~/store/store";
 import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
-import { snackbarActions } from '~/store/snackbar/snackbar-actions';
-import { loadFavoritePanel } from '~/store/favorite-panel/favorite-panel-action';
-import { openProjectPanel, projectPanelActions, setIsProjectPanelTrashed } from '~/store/project-panel/project-panel-action';
-import { activateSidePanelTreeItem, initSidePanelTree, SidePanelTreeCategory, loadSidePanelTreeProjects } from '~/store/side-panel-tree/side-panel-tree-actions';
+import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
+import { favoritePanelActions, loadFavoritePanel } from '~/store/favorite-panel/favorite-panel-action';
+import {
+    getProjectPanelCurrentUuid,
+    openProjectPanel,
+    projectPanelActions,
+    setIsProjectPanelTrashed
+} from '~/store/project-panel/project-panel-action';
+import {
+    activateSidePanelTreeItem,
+    initSidePanelTree,
+    loadSidePanelTreeProjects,
+    SidePanelTreeCategory
+} from '~/store/side-panel-tree/side-panel-tree-actions';
 import { loadResource, updateResources } from '~/store/resources/resources-actions';
-import { favoritePanelActions } from '~/store/favorite-panel/favorite-panel-action';
 import { projectPanelColumns } from '~/views/project-panel/project-panel';
 import { favoritePanelColumns } from '~/views/favorite-panel/favorite-panel';
 import { matchRootRoute } from '~/routes/routes';
-import { setSidePanelBreadcrumbs, setProcessBreadcrumbs, setSharedWithMeBreadcrumbs, setTrashBreadcrumbs, setBreadcrumbs, setGroupDetailsBreadcrumbs, setGroupsBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions';
+import {
+    setBreadcrumbs,
+    setGroupDetailsBreadcrumbs,
+    setGroupsBreadcrumbs,
+    setProcessBreadcrumbs,
+    setSharedWithMeBreadcrumbs,
+    setSidePanelBreadcrumbs,
+    setTrashBreadcrumbs
+} from '~/store/breadcrumbs/breadcrumbs-actions';
 import { navigateToProject } from '~/store/navigation/navigation-action';
 import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
 import { ServiceRepository } from '~/services/services';
 import { getResource } from '~/store/resources/resources';
-import { getProjectPanelCurrentUuid } from '~/store/project-panel/project-panel-action';
 import * as projectCreateActions from '~/store/projects/project-create-actions';
 import * as projectMoveActions from '~/store/projects/project-move-actions';
 import * as projectUpdateActions from '~/store/projects/project-update-actions';
@@ -35,8 +51,10 @@ import { trashPanelColumns } from "~/views/trash-panel/trash-panel";
 import { loadTrashPanel, trashPanelActions } from "~/store/trash-panel/trash-panel-action";
 import { initProcessLogsPanel } from '~/store/process-logs-panel/process-logs-panel-actions';
 import { loadProcessPanel } from '~/store/process-panel/process-panel-actions';
-import { sharedWithMePanelActions } from '~/store/shared-with-me-panel/shared-with-me-panel-actions';
-import { loadSharedWithMePanel } from '~/store/shared-with-me-panel/shared-with-me-panel-actions';
+import {
+    loadSharedWithMePanel,
+    sharedWithMePanelActions
+} from '~/store/shared-with-me-panel/shared-with-me-panel-actions';
 import { CopyFormDialogData } from '~/store/copy-dialog/copy-dialog';
 import { loadWorkflowPanel, workflowPanelActions } from '~/store/workflow-panel/workflow-panel-actions';
 import { loadSshKeysPanel } from '~/store/auth/auth-action-ssh';
@@ -45,23 +63,25 @@ import { loadSiteManagerPanel } from '~/store/auth/auth-action-session';
 import { workflowPanelColumns } from '~/views/workflow-panel/workflow-panel-view';
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions';
 import { getProgressIndicator } from '~/store/progress-indicator/progress-indicator-reducer';
-import { ResourceKind, extractUuidKind } from '~/models/resource';
+import { extractUuidKind, ResourceKind } from '~/models/resource';
 import { FilterBuilder } from '~/services/api/filter-builder';
 import { GroupContentsResource } from '~/services/groups-service/groups-service';
-import { unionize, ofType, UnionOf, MatchCases } from '~/common/unionize';
+import { MatchCases, ofType, unionize, UnionOf } from '~/common/unionize';
 import { loadRunProcessPanel } from '~/store/run-process-panel/run-process-panel-actions';
 import { loadCollectionFiles } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
-import { SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { collectionPanelActions } from "~/store/collection-panel/collection-panel-action";
 import { CollectionResource } from "~/models/collection";
-import { searchResultsPanelActions, loadSearchResultsPanel } from '~/store/search-results-panel/search-results-panel-actions';
+import {
+    loadSearchResultsPanel,
+    searchResultsPanelActions
+} from '~/store/search-results-panel/search-results-panel-actions';
 import { searchResultsPanelColumns } from '~/views/search-results-panel/search-results-panel-view';
 import { loadVirtualMachinesPanel } from '~/store/virtual-machines/virtual-machines-actions';
 import { loadRepositoriesPanel } from '~/store/repositories/repositories-actions';
 import { loadKeepServicesPanel } from '~/store/keep-services/keep-services-actions';
 import { loadUsersPanel, userBindedActions } from '~/store/users/users-actions';
-import { loadLinkPanel, linkPanelActions } from '~/store/link-panel/link-panel-actions';
-import { loadComputeNodesPanel, computeNodesActions } from '~/store/compute-nodes/compute-nodes-actions';
+import { linkPanelActions, loadLinkPanel } from '~/store/link-panel/link-panel-actions';
+import { computeNodesActions, loadComputeNodesPanel } from '~/store/compute-nodes/compute-nodes-actions';
 import { linkPanelColumns } from '~/views/link-panel/link-panel-root';
 import { userPanelColumns } from '~/views/user-panel/user-panel';
 import { computeNodePanelColumns } from '~/views/compute-node-panel/compute-node-panel-root';
@@ -70,6 +90,7 @@ import * as groupPanelActions from '~/store/groups-panel/groups-panel-actions';
 import { groupsPanelColumns } from '~/views/groups-panel/groups-panel';
 import * as groupDetailsPanelActions from '~/store/group-details-panel/group-details-panel-actions';
 import { groupDetailsPanelColumns } from '~/views/group-details-panel/group-details-panel';
+import { DataTableFetchMode } from "~/components/data-table/data-table";
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -102,6 +123,7 @@ export const loadWorkbench = () =>
                 dispatch(trashPanelActions.SET_COLUMNS({ columns: trashPanelColumns }));
                 dispatch(sharedWithMePanelActions.SET_COLUMNS({ columns: projectPanelColumns }));
                 dispatch(workflowPanelActions.SET_COLUMNS({ columns: workflowPanelColumns }));
+                dispatch(searchResultsPanelActions.SET_FETCH_MODE({ fetchMode: DataTableFetchMode.INFINITE }));
                 dispatch(searchResultsPanelActions.SET_COLUMNS({ columns: searchResultsPanelColumns }));
                 dispatch(userBindedActions.SET_COLUMNS({ columns: userPanelColumns }));
                 dispatch(groupPanelActions.GroupsPanelActions.SET_COLUMNS({ columns: groupsPanelColumns }));

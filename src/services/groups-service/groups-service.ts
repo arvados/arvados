@@ -70,7 +70,7 @@ export class GroupsService<T extends GroupResource = GroupResource> extends Tras
             }
         });
         const mappedResponse = { ...TrashableResourceService.mapKeys(_.camelCase)(res) };
-        return { ...mappedResponse, items: mappedItems };
+        return { ...mappedResponse, items: mappedItems, clusterId: session && session.clusterId };
     }
 
     shared(params: SharedArguments = {}): Promise<ListResults<GroupContentsResource>> {

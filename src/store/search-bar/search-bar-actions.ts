@@ -21,6 +21,8 @@ import * as _ from "lodash";
 import { getModifiedKeysValues } from "~/common/objects";
 import { activateSearchBarProject } from "~/store/search-bar/search-bar-tree-actions";
 import { Session } from "~/models/session";
+import { searchResultsPanelActions } from "~/store/search-results-panel/search-results-panel-actions";
+import { ListResults } from "~/services/common-service/common-service";
 
 export const searchBarActions = unionize({
     SET_CURRENT_VIEW: ofType<string>(),
@@ -190,6 +192,7 @@ export const submitData = (event: React.FormEvent<HTMLFormElement>) =>
         dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
         dispatch(searchBarActions.SET_SEARCH_VALUE(searchValue));
         dispatch(searchBarActions.SET_SEARCH_RESULTS([]));
+        dispatch(searchResultsPanelActions.CLEAR());
         dispatch(navigateToSearchResults);
     };
 
@@ -209,15 +212,17 @@ const searchGroups = (searchValue: string, limit: number) =>
             const sq = parseSearchQuery(searchValue);
             const clusterId = getSearchQueryFirstProp(sq, 'cluster');
             const sessions = getSearchSessions(clusterId, getState().auth.sessions);
-            sessions.forEach(async session => {
+            const lists: ListResults<GroupContentsResource>[] = await Promise.all(sessions.map(session => {
                 const filters = getFilters('name', searchValue, sq);
-                const { items } = await services.groupsService.contents('', {
+                return services.groupsService.contents('', {
                     filters,
                     limit,
                     recursive: true
                 }, session);
-                dispatch(searchBarActions.SET_SEARCH_RESULTS(items));
-            });
+            }));
+
+            const items = lists.reduce((items, list) => items.concat(list.items), [] as GroupContentsResource[]);
+            dispatch(searchBarActions.SET_SEARCH_RESULTS(items));
         }
     };
 
