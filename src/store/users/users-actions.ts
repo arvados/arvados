@@ -34,10 +34,11 @@ export const openUserAttributes = (uuid: string) =>
     };
 
 export const openUserManagement = (uuid: string) =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const { resources } = getState();
-        const data = getResource<UserResource>(uuid)(resources);
-        dispatch(dialogActions.OPEN_DIALOG({ id: USER_MANAGEMENT_DIALOG, data }));
+        const user = getResource<UserResource>(uuid)(resources);
+        const clients = await services.apiClientAuthorizationService.list();
+        dispatch(dialogActions.OPEN_DIALOG({ id: USER_MANAGEMENT_DIALOG, data: { user, ...clients } }));
     };
 
 export const openSetupShellAccount = (uuid: string) =>
@@ -49,11 +50,10 @@ export const openSetupShellAccount = (uuid: string) =>
         dispatch(dialogActions.OPEN_DIALOG({ id: SETUP_SHELL_ACCOUNT_DIALOG, data: { user, ...virtualMachines } }));
     };
 
-export const loginAs = (createdAt: string) =>
+export const loginAs = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const clients = await services.apiClientAuthorizationService.list();
-        const client = clients.items.find(it => it.createdAt === createdAt);
-        dispatch<any>(saveApiToken(client!.apiToken));
+        const client = await services.apiClientAuthorizationService.get(uuid);
+        dispatch<any>(saveApiToken(client.apiToken));
         dispatch<any>(getUserDetails()).then(() => {
             location.reload();
             dispatch<any>(navigateToRootProject);
