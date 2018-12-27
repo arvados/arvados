@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 export interface SchedulingParameters {
-    partitions: string[];
-    preemptible: boolean;
-    maxRunTime: number;
+    partitions?: string[];
+    preemptible?: boolean;
+    maxRunTime?: number;
 }
