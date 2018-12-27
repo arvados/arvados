@@ -22,7 +22,7 @@ export const IntInput = ({ input }: IntInputProps) =>
         format={format}
         validate={getValidation(input)} />;
 
-const parse = (value: any) => parseInt(value, 10);
+const parse = (value: any) => value === '' ? '' : parseInt(value, 10);
 
 const format = (value: any) => isNaN(value) ? '' : JSON.stringify(value);
 
