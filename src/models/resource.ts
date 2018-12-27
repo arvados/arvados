@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+import { ApiClientAuthorization } from '~/models/api-client-authorization';
+
 export interface Resource {
     uuid: string;
     ownerUuid: string;
@@ -13,6 +15,8 @@ export interface Resource {
     kind: ResourceKind;
     etag: string;
 }
+
+export type ResourceTypes = Resource | ApiClientAuthorization;
 
 export interface TrashableResource extends Resource {
     trashAt: string;

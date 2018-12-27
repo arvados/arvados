@@ -11,7 +11,7 @@ import { DataColumns } from '~/components/data-table/data-table';
 import { SortDirection } from '~/components/data-table/data-column';
 import { createTree } from '~/models/tree';
 import { 
-    ComputeNodeUuid, ComputeNodeInfo, ComputeNodeDomain, ComputeNodeHostname, ComputeNodeJobUuid,
+    CommonUuid, ComputeNodeInfo, ComputeNodeDomain, ComputeNodeHostname, ComputeNodeJobUuid,
     ComputeNodeFirstPingAt, ComputeNodeLastPingAt, ComputeNodeIpAddress
 } from '~/views-components/data-explorer/renderers';
 import { ResourcesState } from '~/store/resources/resources';
@@ -41,7 +41,7 @@ export const computeNodePanelColumns: DataColumns<string> = [
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: createTree(),
-        render: uuid => <ComputeNodeUuid uuid={uuid} />
+        render: uuid => <CommonUuid uuid={uuid} />
     },
     {
         name: ComputeNodePanelColumnNames.DOMAIN,

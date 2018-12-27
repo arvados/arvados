@@ -2,16 +2,16 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Resource } from "~/models/resource";
+import { ResourceTypes } from "~/models/resource";
 import { ResourceKind } from '~/models/resource';
 
-export type ResourcesState = { [key: string]: Resource };
+export type ResourcesState = { [key: string]: ResourceTypes };
 
-export const getResource = <T extends Resource = Resource>(id: string) =>
+export const getResource = <T extends ResourceTypes = ResourceTypes>(id: string) =>
     (state: ResourcesState): T | undefined =>
         state[id] as T;
 
-export const setResource = <T extends Resource>(id: string, data: T) =>
+export const setResource = <T extends ResourceTypes>(id: string, data: T) =>
     (state: ResourcesState) => ({
         ...state,
         [id]: data
@@ -24,7 +24,7 @@ export const deleteResource = (id: string) =>
         return newState;
     };
 
-export const filterResources = (filter: (resource: Resource) => boolean) =>
+export const filterResources = (filter: (resource: ResourceTypes) => boolean) =>
     (state: ResourcesState) =>
         Object
             .keys(state)

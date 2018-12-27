@@ -3,20 +3,20 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { unionize, ofType, UnionOf } from '~/common/unionize';
-import { Resource, extractUuidKind } from '~/models/resource';
+import { extractUuidKind, ResourceTypes } from '~/models/resource';
 import { Dispatch } from 'redux';
 import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
 import { getResourceService } from '~/services/services';
 
 export const resourcesActions = unionize({
-    SET_RESOURCES: ofType<Resource[]>(),
+    SET_RESOURCES: ofType<ResourceTypes[]>(),
     DELETE_RESOURCES: ofType<string[]>()
 });
 
 export type ResourcesAction = UnionOf<typeof resourcesActions>;
 
-export const updateResources = (resources: Resource[]) => resourcesActions.SET_RESOURCES(resources);
+export const updateResources = (resources: ResourceTypes[]) => resourcesActions.SET_RESOURCES(resources);
 
 export const loadResource = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
