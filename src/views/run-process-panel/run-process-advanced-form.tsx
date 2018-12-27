@@ -23,7 +23,7 @@ export const KEEP_CACHE_RAM_FIELD = 'keepCacheRam';
 
 export interface RunProcessAdvancedFormData {
     [OUTPUT_FIELD]?: string;
-    [RUNTIME_FIELD]?: string;
+    [RUNTIME_FIELD]?: number;
     [RAM_FIELD]: number;
     [VCPUS_FIELD]: number;
     [KEEP_CACHE_RAM_FIELD]?: number;
