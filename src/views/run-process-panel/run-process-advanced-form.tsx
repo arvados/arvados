@@ -32,10 +32,6 @@ export interface RunProcessAdvancedFormData {
 export const RunProcessAdvancedForm =
     reduxForm<RunProcessAdvancedFormData>({
         form: RUN_PROCESS_ADVANCED_FORM,
-        initialValues: {
-            [RAM_FIELD]: 1073741824,
-            [VCPUS_FIELD]: 1,
-        },
     })(() =>
         <form>
             <ExpansionPanel elevation={0}>
