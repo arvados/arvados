@@ -81,7 +81,7 @@ const renderWorkflowName = (item: { name: string; uuid: string, kind: string, ow
         </Grid>
     </Grid>;
 
-export const RosurceWorkflowName = connect(
+export const ResourceWorkflowName = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<WorkflowResource>(props.uuid)(state.resources);
         return resource || { name: '', uuid: '', kind: '', ownerUuid: '' };

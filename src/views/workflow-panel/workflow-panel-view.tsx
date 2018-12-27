@@ -9,7 +9,7 @@ import { DataTableDefaultView } from '~/components/data-table-default-view/data-
 import { WORKFLOW_PANEL_ID } from '~/store/workflow-panel/workflow-panel-actions';
 import {
     ResourceLastModifiedDate,
-    RosurceWorkflowName,
+    ResourceWorkflowName,
     ResourceWorkflowStatus,
     ResourceShare,
     ResourceRunProcess
@@ -70,7 +70,7 @@ export const workflowPanelColumns: DataColumns<string> = [
         configurable: true,
         sortDirection: SortDirection.ASC,
         filters: createTree(),
-        render: (uuid: string) => <RosurceWorkflowName uuid={uuid} />
+        render: (uuid: string) => <ResourceWorkflowName uuid={uuid} />
     },
     {
         name: WorkflowPanelColumnNames.AUTHORISATION,
