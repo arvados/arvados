@@ -14,7 +14,7 @@ import { WorkflowInputsData } from '~/models/workflow';
 import { createWorkflowMounts } from '~/models/process';
 import { ContainerRequestState } from '~/models/container-request';
 import { navigateToProcess } from '../navigation/navigation-action';
-import { RunProcessAdvancedFormData, RUN_PROCESS_ADVANCED_FORM, VCPUS_FIELD, RAM_FIELD, RUNTIME_FIELD, OUTPUT_FIELD } from '~/views/run-process-panel/run-process-advanced-form';
+import { RunProcessAdvancedFormData, RUN_PROCESS_ADVANCED_FORM, VCPUS_FIELD, RAM_FIELD, RUNTIME_FIELD, OUTPUT_FIELD, API_FIELD } from '~/views/run-process-panel/run-process-advanced-form';
 import { isItemNotInProject, isProjectOrRunProcessRoute } from '~/store/projects/project-create-actions';
 import { dialogActions } from '~/store/dialog/dialog-actions';
 import { setBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions';
@@ -133,6 +133,7 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
                 API: true,
                 vcpus: advancedForm[VCPUS_FIELD],
                 ram: advancedForm[RAM_FIELD],
+                api: advancedForm[API_FIELD],
             },
             schedulingParameters: {
                 maxRunTime: advancedForm[RUNTIME_FIELD]
