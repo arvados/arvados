@@ -10,7 +10,7 @@ import { getDataExplorer, DataExplorer } from '~/store/data-explorer/data-explor
 import { updateFavorites } from '~/store/favorites/favorites-actions';
 import { updateResources } from '~/store/resources/resources-actions';
 import { loadMissingProcessesInformation, getFilters } from '~/store/project-panel/project-panel-middleware-service';
-import { snackbarActions } from '~/store/snackbar/snackbar-actions';
+import {snackbarActions, SnackbarKind} from '~/store/snackbar/snackbar-actions';
 import { sharedWithMePanelActions } from './shared-with-me-panel-actions';
 import { ListResults } from '~/services/common-service/common-service';
 import { GroupContentsResource, GroupContentsResourcePrefix } from '~/services/groups-service/groups-service';
@@ -82,5 +82,6 @@ export const setItems = (listResults: ListResults<GroupContentsResource>) =>
 
 const couldNotFetchSharedItems = () =>
     snackbarActions.OPEN_SNACKBAR({
-        message: 'Could not fetch shared items.'
+        message: 'Could not fetch shared items.',
+        kind: SnackbarKind.ERROR
     });

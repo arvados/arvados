@@ -41,12 +41,6 @@ export const collectionActionSet: ContextMenuActionSet = [[
         }
     },
     {
-        component: ToggleTrashAction,
-        execute: (dispatch, resource) => {
-            dispatch<any>(toggleCollectionTrashed(resource.uuid, resource.isTrashed!!));
-        }
-    },
-    {
         icon: MoveToIcon,
         name: "Move to",
         execute: (dispatch, resource) => dispatch<any>(openMoveCollectionDialog(resource))
@@ -79,7 +73,13 @@ export const collectionActionSet: ContextMenuActionSet = [[
         execute: (dispatch, resource) => {
             dispatch<any>(openAdvancedTabDialog(resource.uuid));
         }
-    }
+    },
+    {
+        component: ToggleTrashAction,
+        execute: (dispatch, resource) => {
+            dispatch<any>(toggleCollectionTrashed(resource.uuid, resource.isTrashed!!));
+        }
+    },
     // {
     //     icon: RemoveIcon,
     //     name: "Remove",

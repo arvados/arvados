@@ -86,7 +86,8 @@ export class GroupsPanelMiddlewareService extends DataExplorerMiddlewareService 
 
 const groupsPanelDataExplorerIsNotSet = () =>
     snackbarActions.OPEN_SNACKBAR({
-        message: 'Groups panel is not ready.'
+        message: 'Groups panel is not ready.',
+        kind: SnackbarKind.ERROR
     });
 
 const couldNotFetchFavoritesContents = () =>

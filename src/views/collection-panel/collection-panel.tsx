@@ -18,7 +18,7 @@ import { CollectionPanelFiles } from '~/views-components/collection-panel-files/
 import * as CopyToClipboard from 'react-copy-to-clipboard';
 import { CollectionTagForm } from './collection-tag-form';
 import { deleteCollectionTag, navigateToProcess } from '~/store/collection-panel/collection-panel-action';
-import { snackbarActions } from '~/store/snackbar/snackbar-actions';
+import {snackbarActions, SnackbarKind} from '~/store/snackbar/snackbar-actions';
 import { getResource } from '~/store/resources/resources';
 import { openContextMenu } from '~/store/context-menu/context-menu-actions';
 import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
@@ -169,7 +169,8 @@ export const CollectionPanel = withStyles(styles)(
             onCopy = () => {
                 this.props.dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: "Uuid has been copied",
-                    hideDuration: 2000
+                    hideDuration: 2000,
+                    kind: SnackbarKind.SUCCESS
                 }));
             }
         }

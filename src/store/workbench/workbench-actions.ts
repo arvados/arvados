@@ -182,7 +182,8 @@ export const createProject = (data: projectCreateActions.ProjectCreateFormDialog
         if (newProject) {
             dispatch(snackbarActions.OPEN_SNACKBAR({
                 message: "Project has been successfully created.",
-                hideDuration: 2000
+                hideDuration: 2000,
+                kind: SnackbarKind.SUCCESS
             }));
             await dispatch<any>(loadSidePanelTreeProjects(newProject.ownerUuid));
             dispatch<any>(reloadProjectMatchingUuid([newProject.ownerUuid]));
@@ -196,14 +197,14 @@ export const moveProject = (data: MoveToFormDialogData) =>
             const oldOwnerUuid = oldProject ? oldProject.ownerUuid : '';
             const movedProject = await dispatch<any>(projectMoveActions.moveProject(data));
             if (movedProject) {
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Project has been moved', hideDuration: 2000 }));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Project has been moved', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
                 if (oldProject) {
                     await dispatch<any>(loadSidePanelTreeProjects(oldProject.ownerUuid));
                 }
                 dispatch<any>(reloadProjectMatchingUuid([oldOwnerUuid, movedProject.ownerUuid, movedProject.uuid]));
             }
         } catch (e) {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000 }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000, kind: SnackbarKind.ERROR }));
         }
     };
 
@@ -213,7 +214,8 @@ export const updateProject = (data: projectUpdateActions.ProjectUpdateFormDialog
         if (updatedProject) {
             dispatch(snackbarActions.OPEN_SNACKBAR({
                 message: "Project has been successfully updated.",
-                hideDuration: 2000
+                hideDuration: 2000,
+                kind: SnackbarKind.SUCCESS
             }));
             await dispatch<any>(loadSidePanelTreeProjects(updatedProject.ownerUuid));
             dispatch<any>(reloadProjectMatchingUuid([updatedProject.ownerUuid, updatedProject.uuid]));
@@ -259,7 +261,8 @@ export const createCollection = (data: collectionCreateActions.CollectionCreateF
         if (collection) {
             dispatch(snackbarActions.OPEN_SNACKBAR({
                 message: "Collection has been successfully created.",
-                hideDuration: 2000
+                hideDuration: 2000,
+                kind: SnackbarKind.SUCCESS
             }));
             dispatch<any>(updateResources([collection]));
             dispatch<any>(reloadProjectMatchingUuid([collection.ownerUuid]));
@@ -272,7 +275,8 @@ export const updateCollection = (data: collectionUpdateActions.CollectionUpdateF
         if (collection) {
             dispatch(snackbarActions.OPEN_SNACKBAR({
                 message: "Collection has been successfully updated.",
-                hideDuration: 2000
+                hideDuration: 2000,
+                kind: SnackbarKind.SUCCESS
             }));
             dispatch<any>(updateResources([collection]));
             dispatch<any>(reloadProjectMatchingUuid([collection.ownerUuid]));
@@ -306,7 +310,7 @@ export const moveCollection = (data: MoveToFormDialogData) =>
             dispatch<any>(reloadProjectMatchingUuid([collection.ownerUuid]));
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been moved.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
         } catch (e) {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000 }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000, kind: SnackbarKind.ERROR }));
         }
     };
 
@@ -327,13 +331,14 @@ export const updateProcess = (data: processUpdateActions.ProcessUpdateFormDialog
             if (process) {
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: "Process has been successfully updated.",
-                    hideDuration: 2000
+                    hideDuration: 2000,
+                    kind: SnackbarKind.SUCCESS
                 }));
                 dispatch<any>(updateResources([process]));
                 dispatch<any>(reloadProjectMatchingUuid([process.ownerUuid]));
             }
         } catch (e) {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000 }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000, kind: SnackbarKind.ERROR }));
         }
     };
 
@@ -343,9 +348,9 @@ export const moveProcess = (data: MoveToFormDialogData) =>
             const process = await dispatch<any>(processMoveActions.moveProcess(data));
             dispatch<any>(updateResources([process]));
             dispatch<any>(reloadProjectMatchingUuid([process.ownerUuid]));
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Process has been moved.', hideDuration: 2000 }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Process has been moved.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
         } catch (e) {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000 }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000, kind: SnackbarKind.ERROR }));
         }
     };
 
@@ -355,9 +360,9 @@ export const copyProcess = (data: CopyFormDialogData) =>
             const process = await dispatch<any>(processCopyActions.copyProcess(data));
             dispatch<any>(updateResources([process]));
             dispatch<any>(reloadProjectMatchingUuid([process.ownerUuid]));
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Process has been copied.', hideDuration: 2000 }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Process has been copied.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
         } catch (e) {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000 }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000, kind: SnackbarKind.ERROR }));
         }
     };
 
@@ -372,15 +377,18 @@ export const loadProcessLog = (uuid: string) =>
 
 export const resourceIsNotLoaded = (uuid: string) =>
     snackbarActions.OPEN_SNACKBAR({
-        message: `Resource identified by ${uuid} is not loaded.`
+        message: `Resource identified by ${uuid} is not loaded.`,
+        kind: SnackbarKind.ERROR
     });
 
 export const userIsNotAuthenticated = snackbarActions.OPEN_SNACKBAR({
-    message: 'User is not authenticated'
+    message: 'User is not authenticated',
+    kind: SnackbarKind.ERROR
 });
 
 export const couldNotLoadUser = snackbarActions.OPEN_SNACKBAR({
-    message: 'Could not load user'
+    message: 'Could not load user',
+    kind: SnackbarKind.ERROR
 });
 
 export const reloadProjectMatchingUuid = (matchingUuids: string[]) =>

@@ -10,7 +10,7 @@ import { setBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions';
 import { dialogActions } from '~/store/dialog/dialog-actions';
 import { LinkResource } from '~/models/link';
 import { getResource } from '~/store/resources/resources';
-import { snackbarActions } from '~/store/snackbar/snackbar-actions';
+import {snackbarActions, SnackbarKind} from '~/store/snackbar/snackbar-actions';
 
 export const LINK_PANEL_ID = "linkPanelId";
 export const linkPanelActions = bindDataExplorerActions(LINK_PANEL_ID);
@@ -46,11 +46,11 @@ export const openLinkRemoveDialog = (uuid: string) =>
 
 export const removeLink = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...' }));
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...', kind: SnackbarKind.INFO }));
         try {
             await services.linkService.delete(uuid);
             dispatch(linkPanelActions.REQUEST_ITEMS());
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Link has been successfully removed.', hideDuration: 2000 }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Link has been successfully removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
         } catch (e) {
             return;
         }

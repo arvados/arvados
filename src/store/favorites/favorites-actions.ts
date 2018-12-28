@@ -27,7 +27,8 @@ export const toggleFavorite = (resource: { uuid: string; name: string }) =>
         dispatch(snackbarActions.OPEN_SNACKBAR({
             message: isFavorite
                 ? "Removing from favorites..."
-                : "Adding to favorites..."
+                : "Adding to favorites...",
+            kind: SnackbarKind.INFO
         }));
 
         const promise: any = isFavorite

@@ -8,7 +8,7 @@ import { startSubmit, stopSubmit, initialize, FormErrors } from 'redux-form';
 import { ServiceRepository } from '~/services/services';
 import { RootState } from '~/store/store';
 import { getCommonResourceServiceError, CommonResourceServiceError } from "~/services/common-service/common-resource-service";
-import { snackbarActions } from '~/store/snackbar/snackbar-actions';
+import {snackbarActions, SnackbarKind} from '~/store/snackbar/snackbar-actions';
 import { projectPanelActions } from '~/store/project-panel/project-panel-action';
 import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
 import { resetPickerProjectTree } from '~/store/project-tree-picker/project-tree-picker-actions';
@@ -42,7 +42,7 @@ export const moveCollection = (resource: MoveToFormDialogData) =>
                 dispatch(stopSubmit(COLLECTION_MOVE_FORM_NAME, { ownerUuid: 'A collection with the same name already exists in the target project.' } as FormErrors));
             } else {
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_MOVE_FORM_NAME }));
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not move the collection.', hideDuration: 2000 }));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not move the collection.', hideDuration: 2000, kind: SnackbarKind.ERROR }));
             }
             dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_MOVE_FORM_NAME));
             return;

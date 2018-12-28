@@ -40,7 +40,7 @@ export const openAdminVirtualMachines = () =>
             dispatch<any>(navigateToAdminVirtualMachines);
         } else {
             dispatch<any>(navigateToRootProject);
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "You don't have permissions to view this page", hideDuration: 2000 }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "You don't have permissions to view this page", hideDuration: 2000, kind: SnackbarKind.ERROR }));
         }
     };
 
@@ -101,7 +101,7 @@ export const openRemoveVirtualMachineDialog = (uuid: string) =>
 
 export const removeVirtualMachine = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...' }));
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...', kind: SnackbarKind.INFO }));
         await services.virtualMachineService.delete(uuid);
         dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
         dispatch<any>(loadVirtualMachinesAdminData());
