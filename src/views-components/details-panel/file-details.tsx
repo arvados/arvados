@@ -9,6 +9,7 @@ import { getIcon } from '~/components/file-tree/file-tree-item';
 import { DetailsAttribute } from '~/components/details-attribute/details-attribute';
 import { formatFileSize } from '~/common/formatters';
 import { FileThumbnail } from '~/components/file-tree/file-thumbnail';
+import isImage from 'is-image';
 
 export class FileDetails extends DetailsData<CollectionFile | CollectionDirectory> {
 
@@ -22,8 +23,12 @@ export class FileDetails extends DetailsData<CollectionFile | CollectionDirector
         return item.type === CollectionFileType.FILE
             ? <>
                 <DetailsAttribute label='Size' value={formatFileSize(item.size)} />
-                <DetailsAttribute label='Preview' />
-                <FileThumbnail file={item}/>
+                {
+                    isImage(item.url) && <>
+                        <DetailsAttribute label='Preview' />
+                        <FileThumbnail file={item} />
+                    </>
+                }
             </>
             : <div />;
     }
