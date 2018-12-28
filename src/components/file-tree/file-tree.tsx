@@ -12,6 +12,7 @@ export interface FileTreeProps {
     onMenuOpen: (event: React.MouseEvent<HTMLElement>, item: TreeItem<FileTreeData>) => void;
     onSelectionToggle: (event: React.MouseEvent<HTMLElement>, item: TreeItem<FileTreeData>) => void;
     onCollapseToggle: (id: string, status: TreeItemStatus) => void;
+    onFileClick: (id: string) => void;
 }
 
 export class FileTree extends React.Component<FileTreeProps> {
@@ -36,7 +37,9 @@ export class FileTree extends React.Component<FileTreeProps> {
         this.props.onCollapseToggle(id, status);
     }
 
-    handleToggleActive = () => { return; };
+    handleToggleActive = (_: React.MouseEvent<HTMLElement>, item: TreeItem<FileTreeData>) => {
+        this.props.onFileClick(item.id);
+    }
 
     handleSelectionChange = (event: React.MouseEvent<HTMLElement>, item: TreeItem<FileTreeData>) => {
         event.stopPropagation();

@@ -18,6 +18,7 @@ export const SLIDE_TIMEOUT = 500;
 
 export const detailsPanelActions = unionize({
     TOGGLE_DETAILS_PANEL: ofType<{}>(),
+    OPEN_DETAILS_PANEL: ofType<string>(),
     LOAD_DETAILS_PANEL: ofType<string>()
 });
 
@@ -27,6 +28,8 @@ export const PROJECT_PROPERTIES_FORM_NAME = 'projectPropertiesFormName';
 export const PROJECT_PROPERTIES_DIALOG_NAME = 'projectPropertiesDialogName';
 
 export const loadDetailsPanel = (uuid: string) => detailsPanelActions.LOAD_DETAILS_PANEL(uuid);
+
+export const openDetailsPanel = (uuid: string) => detailsPanelActions.OPEN_DETAILS_PANEL(uuid);
 
 export const openProjectPropertiesDialog = () =>
     (dispatch: Dispatch) => {
