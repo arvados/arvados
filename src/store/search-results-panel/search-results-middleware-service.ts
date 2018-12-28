@@ -28,7 +28,7 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
         super(id);
     }
 
-    async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
+    async requestItems(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean) {
         const state = api.getState();
         const userUuid = state.auth.user!.uuid;
         const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
@@ -61,7 +61,10 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
             };
 
             api.dispatch(updateResources(list.items));
-            api.dispatch(appendItems(list));
+            api.dispatch(criteriaChanged
+                ? setItems(list)
+                : appendItems(list)
+            );
 
         } catch {
             api.dispatch(couldNotFetchSearchResults());

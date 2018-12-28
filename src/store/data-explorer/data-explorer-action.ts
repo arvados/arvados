@@ -9,7 +9,7 @@ import { DataTableFilters } from '~/components/data-table-filters/data-table-fil
 export const dataExplorerActions = unionize({
     CLEAR: ofType<{ id: string }>(),
     RESET_PAGINATION: ofType<{ id: string }>(),
-    REQUEST_ITEMS: ofType<{ id: string }>(),
+    REQUEST_ITEMS: ofType<{ id: string, criteriaChanged?: boolean }>(),
     SET_FETCH_MODE: ofType<({ id: string, fetchMode: DataTableFetchMode })>(),
     SET_COLUMNS: ofType<{ id: string, columns: DataColumns<any> }>(),
     SET_FILTERS: ofType<{ id: string, columnName: string, filters: DataTableFilters }>(),
@@ -29,8 +29,8 @@ export const bindDataExplorerActions = (id: string) => ({
         dataExplorerActions.CLEAR({ id }),
     RESET_PAGINATION: () =>
         dataExplorerActions.RESET_PAGINATION({ id }),
-    REQUEST_ITEMS: () =>
-        dataExplorerActions.REQUEST_ITEMS({ id }),
+    REQUEST_ITEMS: (criteriaChanged?: boolean) =>
+        dataExplorerActions.REQUEST_ITEMS({ id, criteriaChanged }),
     SET_FETCH_MODE: (payload: { fetchMode: DataTableFetchMode }) =>
         dataExplorerActions.SET_FETCH_MODE({ ...payload, id }),
     SET_COLUMNS: (payload: { columns: DataColumns<any> }) =>
