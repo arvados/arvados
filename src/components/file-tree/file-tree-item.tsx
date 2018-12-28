@@ -60,7 +60,6 @@ export const FileTreeItem = withStyles(fileTreeItemStyle)(
                         </IconButton>
                     </Tooltip>
                 </div >
-                <FileThumbnail file={item.data} />
             </>;
         }
 
