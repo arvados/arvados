@@ -280,7 +280,7 @@ const DirectoryArrayInputComponent = connect(mapStateToProps)(
                     </div>
                     <Divider />
                     <div className={classes.chips}>
-                        <Typography variant='subheading'>Selected collections ({this.state.directories.length}):</Typography>
+                        <Typography variant='subtitle1'>Selected collections ({this.state.directories.length}):</Typography>
                         <Chips
                             orderable
                             deletable

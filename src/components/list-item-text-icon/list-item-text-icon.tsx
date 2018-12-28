@@ -51,7 +51,7 @@ export const ListItemTextIcon = withStyles(styles)(
                         <Icon style={{ fontSize: `${iconSize}rem` }} />
                     </ListItemIcon>
                     <ListItemText primary={
-                        <Typography variant='body1' className={classnames(classes.listItemText, {
+                        <Typography  className={classnames(classes.listItemText, {
                                 [classes.active]: isActive
                             })}>
                             {name}

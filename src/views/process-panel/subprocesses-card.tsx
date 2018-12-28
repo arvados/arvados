@@ -40,7 +40,7 @@ export const SubprocessesCard = withStyles(styles)(
             <CardHeader
                 className={classes.title}
                 title={
-                    <Typography noWrap variant="title" color='inherit'>
+                    <Typography noWrap variant='h6' color='inherit'>
                         Subprocess and filters
                 </Typography>} />
             <CardContent>

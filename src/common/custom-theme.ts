@@ -39,6 +39,9 @@ const grey900 = grey["900"];
 const rocheBlue = '#06C';
 
 export const themeOptions: ArvadosThemeOptions = {
+    typography: {
+        useNextVariants: true,
+    },
     customs: {
         colors: {
             green700: green["700"],
@@ -148,7 +151,7 @@ export const themeOptions: ArvadosThemeOptions = {
             dark: teal.A400,
             contrastText: '#fff'
         }
-    }
+    },
 };
 
 export const CustomTheme = createMuiTheme(themeOptions);

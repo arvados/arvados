@@ -45,7 +45,7 @@ export const GroupAttributesDialog = compose(
                 maxWidth="sm">
                 <DialogTitle>Attributes</DialogTitle>
                 <DialogContent>
-                    <Typography variant="body2" className={props.classes.spacing}>
+                    <Typography variant='body1' className={props.classes.spacing}>
                         {props.data && attributes(props.data, props.classes)}
                     </Typography>
                 </DialogContent>

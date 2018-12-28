@@ -14,7 +14,7 @@ export const SharingDialogContent = (props: { advancedViewOpen: boolean }) =>
         {props.advancedViewOpen &&
             <>
                 <Grid item>
-                    <Typography variant='subheading'>
+                    <Typography variant='subtitle1'>
                         Who can access
                     </Typography>
                     <SharingPublicAccessForm />

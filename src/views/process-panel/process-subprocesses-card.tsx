@@ -83,7 +83,7 @@ export const ProcessSubprocessesCard = withStyles(styles, { withTheme: true })(
                 classes={{ content: classes.title, action: classes.action }}
                 action={
                     <div className={classes.rightSideHeader}>
-                        <Typography noWrap variant="body2" className={classes.status}>
+                        <Typography noWrap variant='body1' className={classes.status}>
                             {getProcessStatus(subprocess)}
                         </Typography>
                         <Tooltip title="More options" disableFocusListener>
@@ -98,7 +98,7 @@ export const ProcessSubprocessesCard = withStyles(styles, { withTheme: true })(
                 }
                 title={
                     <Tooltip title={subprocess.containerRequest.name}>
-                        <Typography noWrap variant="body2" className={classes.titleHeader}>
+                        <Typography noWrap variant='body1' className={classes.titleHeader}>
                             {subprocess.containerRequest.name}
                         </Typography>
                     </Tooltip>

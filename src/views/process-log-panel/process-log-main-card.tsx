@@ -80,7 +80,7 @@ export const ProcessLogMainCard = withStyles(styles)(
                         </Tooltip>}
                     title={
                         <Tooltip title={process.containerRequest.name} placement="bottom-start">
-                            <Typography noWrap variant="title" className={classes.title}>
+                            <Typography noWrap variant='h6' className={classes.title}>
                                 {process.containerRequest.name}
                             </Typography>
                         </Tooltip>}

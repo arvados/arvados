@@ -78,7 +78,7 @@ export const HelpMenu = compose(
                         <MenuItem key={link.title}>
                             <a href={link.link} target="_blank" className={classes.link}>
                                 <ImportContactsIcon className={classes.icon} />
-                                <Typography variant="body1" className={classes.linkTitle}>{link.title}</Typography>
+                                <Typography  className={classes.linkTitle}>{link.title}</Typography>
                             </a>
                         </MenuItem>
                     )

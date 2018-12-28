@@ -101,7 +101,7 @@ export const RepositoriesPanel = compose(
                         <CardContent>
                             <Grid container direction="row">
                                 <Grid item xs={8}>
-                                    <Typography variant="body2">
+                                    <Typography variant='body1'>
                                         When you are using an Arvados virtual machine, you should clone the https:// URLs. This will authenticate automatically using your API token. <br />
                                         In order to clone git repositories using SSH, <Link to={Routes.SSH_KEYS_USER} className={classes.link}>add an SSH key to your account</Link> and clone the git@ URLs.
                                     </Typography>

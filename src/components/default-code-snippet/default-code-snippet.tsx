@@ -19,7 +19,8 @@ const theme = createMuiTheme({
         }
     },
     typography: {
-        fontFamily: 'monospace'
+        fontFamily: 'monospace',
+        useNextVariants: true,
     }
 });
 
