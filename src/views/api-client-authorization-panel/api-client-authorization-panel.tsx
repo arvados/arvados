@@ -15,15 +15,16 @@ import { openApiClientAuthorizationsHelpDialog } from '~/store/api-client-author
 
 const mapStateToProps = (state: RootState): ApiClientAuthorizationPanelRootDataProps => {
     return {
-        apiClientAuthorizations: state.apiClientAuthorizations,
-        hasApiClientAuthorizations: state.apiClientAuthorizations.length > 0
+        resources: state.resources
     };
 };
 
 const mapDispatchToProps = (dispatch: Dispatch): ApiClientAuthorizationPanelRootActionProps => ({
-    openRowOptions: (event, apiClientAuthorization) => {
+    onContextMenu: (event, apiClientAuthorization) => {
         dispatch<any>(openApiClientAuthorizationContextMenu(event, apiClientAuthorization));
     },
+    onItemClick: (resourceUuid: string) => { return; },
+    onItemDoubleClick: uuid => { return; },
     openHelpDialog: () => {
         dispatch<any>(openApiClientAuthorizationsHelpDialog());
     }

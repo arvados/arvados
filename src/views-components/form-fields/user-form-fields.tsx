@@ -18,13 +18,6 @@ export const UserEmailField = () =>
         autoFocus={true}
         label="Email" />;
 
-export const UserIdentityUrlField = () =>
-    <Field
-        name='identityUrl'
-        component={TextField}
-        validate={USER_LENGTH_VALIDATION}
-        label="Identity URL Prefix" />;
-
 export const UserVirtualMachineField = ({ data }: any) =>
     <div style={{ marginBottom: '21px' }}>
         <InputLabel>Virtual Machine</InputLabel>

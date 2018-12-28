@@ -80,7 +80,7 @@ const getSaltedToken = (clusterId: string, tokenUuid: string, token: string) => 
     return `v2/${tokenUuid}/${hmac}`;
 };
 
-const clusterLogin = async (clusterId: string, baseUrl: string, activeSession: Session): Promise<{user: User, token: string}> => {
+const clusterLogin = async (clusterId: string, baseUrl: string, activeSession: Session): Promise<{ user: User, token: string }> => {
     const tokenUuid = await getTokenUuid(activeSession.baseUrl, activeSession.token);
     const saltedToken = getSaltedToken(clusterId, tokenUuid, activeSession.token);
     const user = await getUserDetails(baseUrl, saltedToken);
@@ -207,7 +207,7 @@ export const initSessions = (authService: AuthService, config: Config, user: Use
 export const loadSiteManagerPanel = () =>
     async (dispatch: Dispatch<any>) => {
         try {
-            dispatch(setBreadcrumbs([{ label: 'Site Manager'}]));
+            dispatch(setBreadcrumbs([{ label: 'Site Manager' }]));
             dispatch(validateSessions());
         } catch (e) {
             return;

@@ -28,6 +28,7 @@ import { compose, Dispatch } from 'redux';
 import { UserResource } from '~/models/user';
 import { ShareMeIcon, AddIcon } from '~/components/icon/icon';
 import { USERS_PANEL_ID, openUserCreateDialog } from '~/store/users/users-actions';
+import { noop } from 'lodash';
 
 type UserPanelRules = "button";
 
@@ -165,8 +166,8 @@ export const UserPanel = compose(
                         <span>
                             <DataExplorer
                                 id={USERS_PANEL_ID}
-                                onRowClick={this.handleRowClick}
-                                onRowDoubleClick={this.handleRowDoubleClick}
+                                onRowClick={noop}
+                                onRowDoubleClick={noop}
                                 onContextMenu={this.handleContextMenu}
                                 contextMenuColumn={true}
                                 hideColumnSelector
@@ -204,14 +205,6 @@ export const UserPanel = compose(
                         menuKind: ContextMenuKind.USER
                     });
                 }
-            }
-
-            handleRowDoubleClick = (uuid: string) => {
-                this.props.handleRowDoubleClick(uuid);
-            }
-
-            handleRowClick = () => {
-                return;
             }
         }
     );

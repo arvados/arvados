@@ -86,7 +86,7 @@ export const DataExplorer = withStyles(styles)(
                 paperKey, fetchMode
             } = this.props;
             return <Paper className={classes.root} {...paperProps} key={paperKey}>
-                <Toolbar className={classes.toolbar}>
+                {(!hideColumnSelector || !hideSearchInput) && <Toolbar className={classes.toolbar}>
                     <Grid container justify="space-between" wrap="nowrap" alignItems="center">
                         {!hideSearchInput && <div className={classes.searchBox}>
                             <SearchInput
@@ -98,7 +98,7 @@ export const DataExplorer = withStyles(styles)(
                             columns={columns}
                             onColumnToggle={onColumnToggle} />}
                     </Grid>
-                </Toolbar>
+                </Toolbar>}
                 <DataTable
                     columns={this.props.contextMenuColumn ? [...columns, this.contextMenuColumn] : columns}
                     items={items}
@@ -154,7 +154,6 @@ export const DataExplorer = withStyles(styles)(
             name: "Actions",
             selected: true,
             configurable: false,
-            sortDirection: SortDirection.NONE,
             filters: createTree(),
             key: "context-actions",
             render: this.renderContextMenuTrigger
