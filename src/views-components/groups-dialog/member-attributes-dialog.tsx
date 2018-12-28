@@ -51,7 +51,7 @@ export const GroupMemberAttributesDialog = compose(
                 </DialogContent>
                 <DialogActions>
                     <Button
-                        variant='flat'
+                        variant='text'
                         color='primary'
                         onClick={props.closeDialog}>
                         Close

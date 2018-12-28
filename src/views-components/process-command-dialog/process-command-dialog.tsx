@@ -51,7 +51,7 @@ export const ProcessCommandDialog = compose(
                 lines={[props.data.command]} />
             <DialogActions>
                 <Button
-                    variant='flat'
+                    variant='text'
                     color='primary'
                     onClick={props.closeDialog}>
                     Close
