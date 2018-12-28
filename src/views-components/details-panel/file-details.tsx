@@ -4,8 +4,11 @@
 
 import * as React from 'react';
 import { DetailsData } from "./details-data";
-import { CollectionFile, CollectionDirectory } from '~/models/collection-file';
+import { CollectionFile, CollectionDirectory, CollectionFileType } from '~/models/collection-file';
 import { getIcon } from '~/components/file-tree/file-tree-item';
+import { DetailsAttribute } from '~/components/details-attribute/details-attribute';
+import { formatFileSize } from '~/common/formatters';
+import { FileThumbnail } from '~/components/file-tree/file-thumbnail';
 
 export class FileDetails extends DetailsData<CollectionFile | CollectionDirectory> {
 
@@ -15,6 +18,13 @@ export class FileDetails extends DetailsData<CollectionFile | CollectionDirector
     }
 
     getDetails() {
-        return <div>File details</div>;
+        const { item } = this;
+        return item.type === CollectionFileType.FILE
+            ? <>
+                <DetailsAttribute label='Size' value={formatFileSize(item.size)} />
+                <DetailsAttribute label='Preview' />
+                <FileThumbnail file={item}/>
+            </>
+            : <div />;
     }
 }
