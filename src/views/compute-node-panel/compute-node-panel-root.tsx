@@ -7,12 +7,12 @@ import { ShareMeIcon } from '~/components/icon/icon';
 import { DataExplorer } from '~/views-components/data-explorer/data-explorer';
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 import { COMPUTE_NODE_PANEL_ID } from '~/store/compute-nodes/compute-nodes-actions';
-import { DataColumns, DataTableFetchMode } from '~/components/data-table/data-table';
+import { DataColumns } from '~/components/data-table/data-table';
 import { SortDirection } from '~/components/data-table/data-column';
 import { createTree } from '~/models/tree';
 import {
-    ComputeUuid, ComputeNodeInfo, ComputeNodeDomain, ComputeNodeHostname, ComputeNodeJobUuid,
-    ComputeNodeFirstPingAt, ComputeNodeLastPingAt, ComputeNodeIpAddress
+    ComputeNodeInfo, ComputeNodeDomain, ComputeNodeHostname, ComputeNodeJobUuid,
+    ComputeNodeFirstPingAt, ComputeNodeLastPingAt, ComputeNodeIpAddress, CommonUuid
 } from '~/views-components/data-explorer/renderers';
 import { ResourcesState } from '~/store/resources/resources';
 
