@@ -23,7 +23,7 @@ import { CollectionFileType, createCollectionDirectory } from "~/models/collecti
 import { openContextMenu, openCollectionFilesContextMenu } from '~/store/context-menu/context-menu-actions';
 import { openUploadCollectionFilesDialog } from '~/store/collections/collection-upload-actions';
 import { ResourceKind } from "~/models/resource";
-import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
+import { openDetailsPanel } from '~/store/details-panel/details-panel-action';
 
 const memoizedMapStateToProps = () => {
     let prevState: CollectionPanelFilesState;
@@ -58,7 +58,7 @@ const mapDispatchToProps = (dispatch: Dispatch): Pick<CollectionPanelFilesProps,
         dispatch<any>(openCollectionFilesContextMenu(event));
     },
     onFileClick: (id) => {
-        dispatch(loadDetailsPanel(id));
+        dispatch(openDetailsPanel(id));
     },
 });
 
