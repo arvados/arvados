@@ -46,7 +46,7 @@ export const FileTreeItem = withStyles(fileTreeItemStyle)(
             return <>
                 <div className={classes.root}>
                     <ListItemTextIcon
-                        icon={getIcon(item)}
+                        icon={getIcon(item.data.type)}
                         name={item.data.name} />
                     <div className={classes.spacer} />
                     <Typography
@@ -69,8 +69,8 @@ export const FileTreeItem = withStyles(fileTreeItemStyle)(
         }
     });
 
-const getIcon = (item: TreeItem<FileTreeData>) => {
-    switch (item.data.type) {
+export const getIcon = (type: string) => {
+    switch (type) {
         case 'directory':
             return ProjectIcon;
         case 'file':
