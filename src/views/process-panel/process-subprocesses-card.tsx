@@ -91,7 +91,7 @@ export const ProcessSubprocessesCard = withStyles(styles, { withTheme: true })(
                                 className={classes.options}
                                 aria-label="More options"
                                 onClick={onContextMenu}>
-                                <MoreOptionsIcon className={classes.moreOptions}/>
+                                <MoreOptionsIcon className={classes.moreOptions} />
                             </IconButton>
                         </Tooltip>
                     </div>
@@ -105,7 +105,9 @@ export const ProcessSubprocessesCard = withStyles(styles, { withTheme: true })(
                 } />
             <CardContent className={classes.content}>
                 <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                    label="Runtime" value={formatTime(getProcessRuntime(subprocess))} />
+                    label="Runtime" value={subprocess.container && subprocess.container.startedAt && subprocess.container.finishedAt
+                        ? formatTime(getProcessRuntime(subprocess)) :
+                        '(none)'} />
             </CardContent>
         </Card>;
     });
