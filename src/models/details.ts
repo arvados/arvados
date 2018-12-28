@@ -6,5 +6,6 @@ import { ProjectResource } from "./project";
 import { CollectionResource } from "./collection";
 import { ProcessResource } from "./process";
 import { EmptyResource } from "./empty";
+import { CollectionFile, CollectionDirectory } from '~/models/collection-file';
 
-export type DetailsResource = ProjectResource | CollectionResource | ProcessResource | EmptyResource;
+export type DetailsResource = ProjectResource | CollectionResource | ProcessResource | EmptyResource | CollectionFile | CollectionDirectory;

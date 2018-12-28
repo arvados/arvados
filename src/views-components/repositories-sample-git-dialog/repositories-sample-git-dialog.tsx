@@ -52,7 +52,7 @@ export const RepositoriesSampleGitDialog = compose(
                     <DefaultCodeSnippet
                         className={props.classes.codeSnippet}
                         lines={[snippetText(props.data.uuidPrefix)]} />
-                    <Typography variant="body2" className={props.classes.spacing}>
+                    <Typography variant='body1' className={props.classes.spacing}>
                         See also:
                         <div><a href="https://doc.arvados.org/user/getting_started/ssh-access-unix.html" className={props.classes.link} target="_blank">SSH access</a></div>
                         <div><a href="https://doc.arvados.org/user/tutorials/tutorial-firstscript.html" className={props.classes.link} target="_blank">Writing a Crunch Script</a></div>
@@ -60,7 +60,7 @@ export const RepositoriesSampleGitDialog = compose(
                 </DialogContent>
                 <DialogActions>
                     <Button
-                        variant='flat'
+                        variant='text'
                         color='primary'
                         onClick={props.closeDialog}>
                         Close

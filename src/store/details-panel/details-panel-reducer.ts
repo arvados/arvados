@@ -18,5 +18,6 @@ export const detailsPanelReducer = (state: DetailsPanelState = initialState, act
     detailsPanelActions.match(action, {
         default: () => state,
         LOAD_DETAILS_PANEL: resourceUuid => ({ ...state, resourceUuid }),
-        TOGGLE_DETAILS_PANEL: () => ({ ...state, isOpened: !state.isOpened })
+        OPEN_DETAILS_PANEL: resourceUuid => ({ resourceUuid, isOpened: true }),
+        TOGGLE_DETAILS_PANEL: () => ({ ...state, isOpened: !state.isOpened }),
     });

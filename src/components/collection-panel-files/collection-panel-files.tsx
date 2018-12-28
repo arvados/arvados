@@ -17,6 +17,7 @@ export interface CollectionPanelFilesProps {
     onOptionsMenuOpen: (event: React.MouseEvent<HTMLElement>) => void;
     onSelectionToggle: (event: React.MouseEvent<HTMLElement>, item: TreeItem<FileTreeData>) => void;
     onCollapseToggle: (id: string, status: TreeItemStatus) => void;
+    onFileClick: (id: string) => void;
 }
 
 type CssRules = 'root' | 'cardSubheader' | 'nameHeader' | 'fileSizeHeader' | 'uploadIcon' | 'button';
@@ -53,7 +54,7 @@ export const CollectionPanelFiles =
                     classes={{ action: classes.button }}
                     action={
                         <Button onClick={onUploadDataClick}
-                            variant='raised'
+                            variant='contained'
                             color='primary'
                             size='small'>
                             <DownloadIcon className={classes.uploadIcon} />

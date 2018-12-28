@@ -59,7 +59,7 @@ export const AttributesSshKeyDialog = compose(
                 </DialogContent>
                 <DialogActions>
                     <Button
-                        variant='flat'
+                        variant='text'
                         color='primary'
                         onClick={closeDialog}>
                         Close

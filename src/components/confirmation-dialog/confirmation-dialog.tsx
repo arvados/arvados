@@ -31,7 +31,7 @@ export const ConfirmationDialog = (props: ConfirmationDialogProps & WithDialogPr
         </DialogContent>
         <DialogActions style={{ margin: '0px 24px 24px' }}>
             <Button
-                variant='flat'
+                variant='text'
                 color='primary'
                 onClick={props.closeDialog}>
                 {props.data.cancelButtonLabel || 'Cancel'}

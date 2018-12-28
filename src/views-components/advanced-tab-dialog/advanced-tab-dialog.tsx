@@ -87,7 +87,7 @@ export const AdvancedTabDialog = compose(
                     {value === 4 && dialogContent(curlHeader, curlExample, classes)}
                 </DialogContent>
                 <DialogActions>
-                    <Button variant='flat' color='primary' onClick={closeDialog}>
+                    <Button variant='text' color='primary' onClick={closeDialog}>
                         Close
                     </Button>
                 </DialogActions>

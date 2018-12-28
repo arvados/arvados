@@ -136,7 +136,7 @@ export const FileUpload = withStyles(styles)(
                     {files.length === 0 &&
                         <Grid container justify="center" alignItems="center" className={classes.container}>
                             <Grid item component={"span"}>
-                                <Typography variant={"subheading"}>
+                                <Typography variant='subtitle1'>
                                     <CloudUploadIcon className={classes.uploadIcon} /> Drag and drop data or click to browse
                             </Typography>
                             </Grid>

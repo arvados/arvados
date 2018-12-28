@@ -22,7 +22,7 @@ const SharingPublicAccessForm = withStyles(sharingPublicAccessStyles)(
             <Divider />
             <Grid container alignItems='center' spacing={8} className={classes.root}>
                 <Grid item xs={8}>
-                    <Typography variant='subheading'>
+                    <Typography variant='subtitle1'>
                         {renderVisibilityInfo(visibility)}
                     </Typography>
                 </Grid>

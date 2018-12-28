@@ -22,7 +22,7 @@ export const ProcessInputDialog = withDialog(PROCESS_INPUT_DIALOG_NAME)(
             </DialogContent>
             <DialogActions>
                 <Button
-                    variant='flat'
+                    variant='text'
                     color='primary'
                     onClick={props.closeDialog}>
                     Close

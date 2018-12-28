@@ -51,13 +51,13 @@ export const UserManageDialog = compose(
                     <span>
                         <DialogTitle>{`Manage - ${props.data.user.firstName} ${props.data.user.lastName}`}</DialogTitle>
                         <DialogContent>
-                            <Typography variant="body2" className={props.classes.spacing}>
+                            <Typography variant='body1' className={props.classes.spacing}>
                                 As an admin, you can log in as this user. When you’ve finished, you will need to log out and log in again with your own account.
                     </Typography>
                             <Button variant="contained" color="primary" onClick={() => props.loginAs(props.data.client.uuid)}>
                                 {`LOG IN AS ${props.data.user.firstName} ${props.data.user.lastName}`}
                             </Button>
-                            <Typography variant="body2" className={props.classes.spacing}>
+                            <Typography variant='body1' className={props.classes.spacing}>
                                 As an admin, you can setup a shell account for this user. The login name is automatically generated from the user's e-mail address.
                     </Typography>
                             <Button variant="contained" color="primary" onClick={() => props.openSetupShellAccount(props.data.uuid)}>
@@ -67,7 +67,7 @@ export const UserManageDialog = compose(
 
                 <DialogActions>
                     <Button
-                        variant='flat'
+                        variant='text'
                         color='primary'
                         onClick={props.closeDialog}>
                         Close

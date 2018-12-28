@@ -45,13 +45,13 @@ export const RepositoryAttributesDialog = compose(
                 maxWidth="sm">
                 <DialogTitle>Attributes</DialogTitle>
                 <DialogContent>
-                    <Typography variant="body2" className={props.classes.spacing}>
+                    <Typography variant='body1' className={props.classes.spacing}>
                         {props.data.repositoryData && attributes(props.data.repositoryData, props.classes)}
                     </Typography>
                 </DialogContent>
                 <DialogActions>
                     <Button
-                        variant='flat'
+                        variant='text'
                         color='primary'
                         onClick={props.closeDialog}>
                         Close
