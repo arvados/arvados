@@ -72,9 +72,6 @@ export const WorkflowDetailsCard = withStyles(styles)(
 
         render() {
             const { classes, workflow } = this.props;
-            if (workflow) {
-                console.log(workflow.definition);
-            }
             const { value } = this.state;
             return <div className={classes.root}>
                 <Tabs value={value} onChange={this.handleChange} centered={true}>
