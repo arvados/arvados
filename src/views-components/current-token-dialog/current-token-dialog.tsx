@@ -47,7 +47,7 @@ export const CurrentTokenDialog =
                 maxWidth='md'>
                 <DialogTitle>Current Token</DialogTitle>
                 <DialogContent>
-                    <Typography variant='body1' paragraph={true}>
+                    <Typography  paragraph={true}>
                         The Arvados API token is a secret key that enables the Arvados SDKs to access Arvados with the proper permissions.
                                 <Typography component='p'>
                             For more information see
@@ -56,11 +56,11 @@ export const CurrentTokenDialog =
                                     </a>
                         </Typography>
                     </Typography>
-                    <Typography variant='body1' paragraph={true}>
+                    <Typography  paragraph={true}>
                         Paste the following lines at a shell prompt to set up the necessary environment for Arvados SDKs to authenticate to your klingenc account.
                             </Typography>
                     <DefaultCodeSnippet lines={[getSnippet(data)]} />
-                    <Typography variant='body1'>
+                    <Typography >
                         Arvados
                                 <a href='http://doc.arvados.org/user/reference/api-tokens.html' target='blank' className={classes.link}>virtual machines</a>
                         do this for you automatically. This setup is needed only when you use the API remotely (e.g., from your own workstation).

@@ -55,14 +55,14 @@ export const SshKeyPanelRoot = withStyles(styles)(
             <CardContent>
                 <Grid container direction="row">
                     <Grid item xs={8}>
-                        { !hasKeys && <Typography variant='body1' paragraph={true} >
+                        { !hasKeys && <Typography  paragraph={true} >
                             You have not yet set up an SSH public key for use with Arvados.
                             <a href='https://doc.arvados.org/user/getting_started/ssh-access-unix.html'
                                 target='blank' className={classes.link}>
                                 Learn more.
                             </a>
                         </Typography>}
-                        { !hasKeys && <Typography variant='body1' paragraph={true}>
+                        { !hasKeys && <Typography  paragraph={true}>
                             When you have an SSH key you would like to use, add it using button below.
                         </Typography> }
                     </Grid>

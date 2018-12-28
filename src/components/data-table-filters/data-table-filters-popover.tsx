@@ -113,7 +113,7 @@ export const DataTableFiltersPopover = withStyles(styles)(
                         <CardActions>
                             <Button
                                 color="primary"
-                                variant="raised"
+                                variant='contained'
                                 size="small"
                                 onClick={this.submit}>
                                 Ok

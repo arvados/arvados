@@ -18,12 +18,12 @@ export const RemoveDialog = withDialog(REMOVE_DIALOG)(
             </DialogContent>
             <DialogActions>
                 <Button
-                    variant='flat'
+                    variant='text'
                     color='primary'
                     onClick={props.closeDialog}>
                     Cancel
                 </Button>
-                <Button variant='raised' color='primary'>
+                <Button variant='contained' color='primary'>
                     Remove
                 </Button>
             </DialogActions>

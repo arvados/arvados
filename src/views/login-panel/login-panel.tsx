@@ -54,20 +54,20 @@ export const LoginPanel = withStyles(styles)(connect()(
     ({ classes, dispatch }: LoginPanelProps) =>
     <Grid container direction="column" item xs alignItems="center" justify="center" className={classes.root}>
         <Grid item className={classes.container}>
-            <Typography variant="title" align="center" className={classes.title}>
+            <Typography variant='h6' align="center" className={classes.title}>
                 Welcome to the Arvados Workbench
             </Typography>
-            <Typography variant="body1" className={classes.content}>
+            <Typography  className={classes.content}>
                 The "Log in" button below will show you a Google sign-in page.
                 After you assure Google that you want to log in here with your Google account, you will be redirected back here to Arvados Workbench.
             </Typography>
-            <Typography variant="body1" className={classes.content}>
+            <Typography  className={classes.content}>
                 If you have never used Arvados Workbench before, logging in for the first time will automatically create a new account.
             </Typography>
-            <Typography variant="body2" className={classNames(classes.content, classes.content__bolder)}>
+            <Typography variant='body1' className={classNames(classes.content, classes.content__bolder)}>
                 IMPORTANT: Please keep in mind to store exploratory data only but not any information used for clinical decision making.
             </Typography>
-            <Typography variant="body1" className={classes.content}>
+            <Typography  className={classes.content}>
                 Arvados Workbench uses your name and email address only for identification, and does not retrieve any other personal information from Google.
             </Typography>
             <Typography component="div" align="right">

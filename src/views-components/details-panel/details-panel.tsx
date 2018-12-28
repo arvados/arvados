@@ -152,7 +152,7 @@ export const DetailsPanel = withStyles(styles)(
                         </Grid>
                         <Grid item xs={8}>
                             <Tooltip title={item.getTitle()}>
-                                <Typography variant="title" noWrap>
+                                <Typography variant='h6' noWrap>
                                     {item.getTitle()}
                                 </Typography>
                             </Tooltip>

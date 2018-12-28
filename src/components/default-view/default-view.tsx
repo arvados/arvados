@@ -39,7 +39,7 @@ export const DefaultView = withStyles(styles)(
         <Typography className={classnames([classes.root, classRoot])} component="div">
             <Icon className={classnames([classes.icon, classIcon])} />
             {messages.map((msg: string, index: number) => {
-                return <Typography key={index} variant="body1" 
+                return <Typography key={index}  
                     className={classnames([classes.message, classMessage])}>{msg}</Typography>;
             })}
         </Typography>
