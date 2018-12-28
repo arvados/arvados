@@ -25,6 +25,7 @@ import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
 import { formatFileSize } from "~/common/formatters";
 import { getResourceData } from "~/store/resources-data/resources-data";
 import { ResourceData } from "~/store/resources-data/resources-data-reducer";
+import { openDetailsPanel } from '~/store/details-panel/details-panel-action';
 
 type CssRules = 'card' | 'iconHeader' | 'tag' | 'copyIcon' | 'label' | 'value' | 'link';
 
@@ -77,13 +78,18 @@ export const CollectionPanel = withStyles(styles)(
         return { item, data };
     })(
         class extends React.Component<CollectionPanelProps> {
+
             render() {
                 const { classes, item, data, dispatch } = this.props;
                 return item
                     ? <>
                         <Card className={classes.card}>
                             <CardHeader
-                                avatar={<CollectionIcon className={classes.iconHeader} />}
+                                avatar={
+                                    <IconButton onClick={this.openCollectionDetails}>
+                                        <CollectionIcon className={classes.iconHeader} />
+                                    </IconButton>
+                                }
                                 action={
                                     <Tooltip title="More options" disableFocusListener>
                                         <IconButton
@@ -94,7 +100,9 @@ export const CollectionPanel = withStyles(styles)(
                                     </Tooltip>
                                 }
                                 title={item && item.name}
-                                subheader={item && item.description} />
+                                titleTypographyProps={this.titleProps}
+                                subheader={item && item.description}
+                                subheaderTypographyProps={this.titleProps} />
                             <CardContent>
                                 <Grid container direction="column">
                                     <Grid item xs={6}>
@@ -113,7 +121,7 @@ export const CollectionPanel = withStyles(styles)(
                                             label='Content size' value={data && formatFileSize(data.fileSize)} />
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                                             label='Owner' value={item && item.ownerUuid} />
-                                        <span onClick={() => dispatch<any>(navigateToProcess(item.properties.container_request  || item.properties.containerRequest))}>
+                                        <span onClick={() => dispatch<any>(navigateToProcess(item.properties.container_request || item.properties.containerRequest))}>
                                             <DetailsAttribute classLabel={classes.link} label='Link to process' />
                                         </span>
                                     </Grid>
@@ -172,6 +180,18 @@ export const CollectionPanel = withStyles(styles)(
                     hideDuration: 2000
                 }));
             }
+
+            openCollectionDetails = () => {
+                const { item } = this.props;
+                if (item) {
+                    this.props.dispatch(openDetailsPanel(item.uuid));
+                }
+            }
+
+            titleProps = {
+                onClick: this.openCollectionDetails
+            };
+
         }
     )
 );
