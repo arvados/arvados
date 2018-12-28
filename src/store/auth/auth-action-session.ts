@@ -56,7 +56,7 @@ const getTokenUuid = async (baseUrl: string, token: string): Promise<string> => 
         return Promise.resolve(uuid);
     }
 
-    const resp = await Axios.get(`${baseUrl}/api_client_authorizations`, {
+    const resp = await Axios.get(`${baseUrl}api_client_authorizations`, {
         headers: {
             Authorization: `OAuth2 ${token}`
         },
