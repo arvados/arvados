@@ -203,6 +203,28 @@ const renderNodeInfo = (data: string) => {
     return <Typography>{JSON.stringify(data, null, 4)}</Typography>;
 };
 
+const clusterColors = [
+    ['#f44336', '#fff'],
+    ['#2196f3', '#fff'],
+    ['#009688', '#fff'],
+    ['#cddc39', '#fff'],
+    ['#ff9800', '#fff']
+];
+
+export const ResourceCluster = (props: { uuid: string }) => {
+    const p = props.uuid.indexOf('-');
+    const clusterId = p >= 5 ? props.uuid.substr(0, p) : '';
+    const ci = p >= 5 ? (props.uuid.charCodeAt(0) + props.uuid.charCodeAt(1)) % clusterColors.length : 0;
+    return <Typography>
+        <div style={{
+            backgroundColor: clusterColors[ci][0],
+            color: clusterColors[ci][1],
+            padding: "2px 7px",
+            borderRadius: 3
+        }}>{clusterId}</div>
+    </Typography>;
+};
+
 export const ComputeNodeInfo = withResourceData('info', renderNodeInfo);
 
 export const ComputeNodeUuid = withResourceData('uuid', renderNodeData);
