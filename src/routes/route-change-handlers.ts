@@ -3,6 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { History, Location } from 'history';
+import { match } from 'react-router-dom';
+import { Dispatch } from 'redux';
+import { ThunkAction } from 'redux-thunk';
 import { RootStore } from '~/store/store';
 import * as R from '~/routes/routes';
 import * as WA from '~/store/workbench/workbench-actions';
@@ -10,8 +13,6 @@ import { navigateToRootProject } from '~/store/navigation/navigation-action';
 import { dialogActions } from '~/store/dialog/dialog-actions';
 import { contextMenuActions } from '~/store/context-menu/context-menu-actions';
 import { searchBarActions } from '~/store/search-bar/search-bar-actions';
-import { match } from 'react-router-dom';
-import { Dispatch } from 'redux';
 
 export const addRouteChangeHandlers = (history: History, store: RootStore) => {
     const handler = handleLocationChange(store);
