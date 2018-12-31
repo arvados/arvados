@@ -31,7 +31,7 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
 };
 
 type MatchRoute<Params> = (route: string) => match<Params> | null;
-type ActionCreator<Params> = (params: Params) => void;
+type ActionCreator<Params> = (params: Params) => ThunkAction<any, any, any, any>;
 
 const handle = <Params>(matchRoute: MatchRoute<Params>, actionCreator: ActionCreator<Params>) =>
     (dispatch: Dispatch, route: string) => {
