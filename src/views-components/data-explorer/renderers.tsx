@@ -233,9 +233,10 @@ const clusterColors = [
 ];
 
 export const ResourceCluster = (props: { uuid: string }) => {
-    const p = props.uuid.indexOf('-');
-    const clusterId = p >= 5 ? props.uuid.substr(0, p) : '';
-    const ci = p >= 5 ? (props.uuid.charCodeAt(0) + props.uuid.charCodeAt(1)) % clusterColors.length : 0;
+    const CLUSTER_ID_LENGTH = 5;
+    const pos = props.uuid.indexOf('-');
+    const clusterId = pos >= CLUSTER_ID_LENGTH ? props.uuid.substr(0, pos) : '';
+    const ci = pos >= CLUSTER_ID_LENGTH ? (props.uuid.charCodeAt(0) + props.uuid.charCodeAt(1)) % clusterColors.length : 0;
     return <Typography>
         <div style={{
             backgroundColor: clusterColors[ci][0],

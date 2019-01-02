@@ -122,7 +122,7 @@ export const DataExplorer = withStyles(styles)(
                             component="div" /> : <Button
                                 variant="text"
                                 size="medium"
-                                onClick={() => this.loadMore(this.props.page)}
+                                onClick={this.loadMore}
                                 >Load more</Button>}
                     </Grid>
                 </Toolbar>
@@ -137,8 +137,8 @@ export const DataExplorer = withStyles(styles)(
             this.props.onChangeRowsPerPage(parseInt(event.target.value, 10));
         }
 
-        loadMore = (page: number) => {
-            this.props.onLoadMore(page + 1);
+        loadMore = () => {
+            this.props.onLoadMore(this.props.page + 1);
         }
 
         renderContextMenuTrigger = (item: T) =>
