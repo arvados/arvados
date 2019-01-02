@@ -38,7 +38,7 @@ describe("DataExplorerMiddleware", () => {
         middleware(dataExplorerActions.SET_PAGE({ id: "OtherId", page: 0 }));
         middleware(dataExplorerActions.SET_PAGE({ id: "ServiceId", page: 0 }));
         middleware(dataExplorerActions.SET_PAGE({ id: "OtherId", page: 0 }));
-        expect(api.dispatch).toHaveBeenCalledWith(dataExplorerActions.REQUEST_ITEMS({ id: "ServiceId" }));
+        expect(api.dispatch).toHaveBeenCalledWith(dataExplorerActions.REQUEST_ITEMS({ id: "ServiceId", criteriaChanged: false }));
         expect(api.dispatch).toHaveBeenCalledTimes(1);
     });
 
