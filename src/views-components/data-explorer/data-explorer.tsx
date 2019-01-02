@@ -57,6 +57,10 @@ const mapDispatchToProps = () => {
             dispatch(dataExplorerActions.SET_ROWS_PER_PAGE({ id, rowsPerPage }));
         },
 
+        onLoadMore: (page: number) => {
+            dispatch(dataExplorerActions.SET_PAGE({ id, page }));
+        },
+
         onRowClick,
 
         onRowDoubleClick,

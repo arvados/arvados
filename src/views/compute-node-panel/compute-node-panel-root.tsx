@@ -10,9 +10,9 @@ import { COMPUTE_NODE_PANEL_ID } from '~/store/compute-nodes/compute-nodes-actio
 import { DataColumns } from '~/components/data-table/data-table';
 import { SortDirection } from '~/components/data-table/data-column';
 import { createTree } from '~/models/tree';
-import { 
-    CommonUuid, ComputeNodeInfo, ComputeNodeDomain, ComputeNodeHostname, ComputeNodeJobUuid,
-    ComputeNodeFirstPingAt, ComputeNodeLastPingAt, ComputeNodeIpAddress
+import {
+    ComputeNodeInfo, ComputeNodeDomain, ComputeNodeHostname, ComputeNodeJobUuid,
+    ComputeNodeFirstPingAt, ComputeNodeLastPingAt, ComputeNodeIpAddress, CommonUuid
 } from '~/views-components/data-explorer/renderers';
 import { ResourcesState } from '~/store/resources/resources';
 

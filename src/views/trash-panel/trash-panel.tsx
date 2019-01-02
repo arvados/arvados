@@ -32,7 +32,10 @@ import { ContextMenuKind } from "~/views-components/context-menu/context-menu";
 import { Dispatch } from "redux";
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 import { createTree } from '~/models/tree';
-import { getInitialResourceTypeFilters } from '~/store/resource-type-filters/resource-type-filters';
+import {
+    getInitialResourceTypeFilters,
+    getTrashPanelTypeFilters
+} from '~/store/resource-type-filters/resource-type-filters';
 
 type CssRules = "toolbar" | "button";
 
@@ -93,7 +96,7 @@ export const trashPanelColumns: DataColumns<string> = [
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
-        filters: getInitialResourceTypeFilters(),
+        filters: getTrashPanelTypeFilters(),
         render: uuid => <ResourceType uuid={uuid} />,
     },
     {

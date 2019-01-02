@@ -25,7 +25,7 @@ export abstract class DataExplorerMiddlewareService {
         return getDataExplorerColumnFilters(columns, columnName);
     }
 
-    abstract requestItems(api: MiddlewareAPI<Dispatch, RootState>): void;
+    abstract requestItems(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean): void;
 }
 
 export const getDataExplorerColumnFilters = <T>(columns: DataColumns<T>, columnName: string): DataTableFilters => {

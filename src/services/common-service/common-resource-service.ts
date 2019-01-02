@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as _ from "lodash";
 import { AxiosInstance } from "axios";
 import { Resource } from "src/models/resource";
 import { ApiActions } from "~/services/api/api-actions";
@@ -18,11 +17,9 @@ export enum CommonResourceServiceError {
 }
 
 export class CommonResourceService<T extends Resource> extends CommonService<T> {
-
-    constructor(serverApi: AxiosInstance, resourceType: string, actions: ApiActions) {
+   constructor(serverApi: AxiosInstance, resourceType: string, actions: ApiActions) {
         super(serverApi, resourceType, actions);
     }
-    
 }
 
 export const getCommonResourceServiceError = (errorResponse: any) => {

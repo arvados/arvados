@@ -56,7 +56,7 @@ const getTokenUuid = async (baseUrl: string, token: string): Promise<string> => 
         return Promise.resolve(uuid);
     }
 
-    const resp = await Axios.get(`${baseUrl}/api_client_authorizations`, {
+    const resp = await Axios.get(`${baseUrl}api_client_authorizations`, {
         headers: {
             Authorization: `OAuth2 ${token}`
         },
@@ -99,7 +99,7 @@ const clusterLogin = async (clusterId: string, baseUrl: string, activeSession: S
     };
 };
 
-const getActiveSession = (sessions: Session[]): Session | undefined => sessions.find(s => s.active);
+export const getActiveSession = (sessions: Session[]): Session | undefined => sessions.find(s => s.active);
 
 export const validateCluster = async (remoteHost: string, clusterId: string, activeSession: Session): Promise<{ user: User; token: string, baseUrl: string }> => {
     const baseUrl = await getRemoteHostBaseUrl(remoteHost);

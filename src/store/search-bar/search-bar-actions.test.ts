@@ -4,7 +4,6 @@
 
 import { getAdvancedDataFromQuery, getQueryFromAdvancedData, parseSearchQuery } from "~/store/search-bar/search-bar-actions";
 import { ResourceKind } from "~/models/resource";
-import { ClusterObjectType } from "~/models/search-bar";
 
 describe('search-bar-actions', () => {
     describe('parseSearchQuery', () => {
@@ -95,11 +94,11 @@ describe('search-bar-actions', () => {
         });
 
         it('should correctly build advanced data record from query #2', () => {
-            const r = getAdvancedDataFromQuery('document from:2017-08-01 pdf has:filesize:101mb is:trashed type:arvados#collection cluster:indianapolis');
+            const r = getAdvancedDataFromQuery('document from:2017-08-01 pdf has:filesize:101mb is:trashed type:arvados#collection cluster:c97qx');
             expect(r).toEqual({
                 searchValue: 'document pdf',
                 type: ResourceKind.COLLECTION,
-                cluster: ClusterObjectType.INDIANAPOLIS,
+                cluster: 'c97qx',
                 projectUuid: undefined,
                 inTrash: true,
                 dateFrom: '2017-08-01',
@@ -119,7 +118,7 @@ describe('search-bar-actions', () => {
             const q = getQueryFromAdvancedData({
                 searchValue: 'document pdf',
                 type: ResourceKind.COLLECTION,
-                cluster: ClusterObjectType.INDIANAPOLIS,
+                cluster: 'c97qx',
                 projectUuid: undefined,
                 inTrash: true,
                 dateFrom: '2017-08-01',
@@ -131,7 +130,7 @@ describe('search-bar-actions', () => {
                 saveQuery: false,
                 queryName: ''
             });
-            expect(q).toBe('document pdf type:arvados#collection cluster:indianapolis is:trashed from:2017-08-01 has:filesize:101mb');
+            expect(q).toBe('document pdf type:arvados#collection cluster:c97qx is:trashed from:2017-08-01 has:filesize:101mb');
         });
     });
 });

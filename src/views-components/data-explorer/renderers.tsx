@@ -81,7 +81,7 @@ const renderWorkflowName = (item: { name: string; uuid: string, kind: string, ow
         </Grid>
     </Grid>;
 
-export const RosurceWorkflowName = connect(
+export const ResourceWorkflowName = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<WorkflowResource>(props.uuid)(state.resources);
         return resource || { name: '', uuid: '', kind: '', ownerUuid: '' };
@@ -222,6 +222,29 @@ export const TokenUserId = withResourceData('userId', renderCommonData);
 // Compute Node Resources
 const renderNodeInfo = (data: string) => {
     return <Typography>{JSON.stringify(data, null, 4)}</Typography>;
+};
+
+const clusterColors = [
+    ['#f44336', '#fff'],
+    ['#2196f3', '#fff'],
+    ['#009688', '#fff'],
+    ['#cddc39', '#fff'],
+    ['#ff9800', '#fff']
+];
+
+export const ResourceCluster = (props: { uuid: string }) => {
+    const CLUSTER_ID_LENGTH = 5;
+    const pos = props.uuid.indexOf('-');
+    const clusterId = pos >= CLUSTER_ID_LENGTH ? props.uuid.substr(0, pos) : '';
+    const ci = pos >= CLUSTER_ID_LENGTH ? (props.uuid.charCodeAt(0) + props.uuid.charCodeAt(1)) % clusterColors.length : 0;
+    return <Typography>
+        <div style={{
+            backgroundColor: clusterColors[ci][0],
+            color: clusterColors[ci][1],
+            padding: "2px 7px",
+            borderRadius: 3
+        }}>{clusterId}</div>
+    </Typography>;
 };
 
 export const ComputeNodeInfo = withResourceData('info', renderNodeInfo);
