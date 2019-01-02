@@ -3,12 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { History, Location } from 'history';
-import { match } from 'react-router-dom';
-import { Dispatch } from 'redux';
-import { ThunkAction } from 'redux-thunk';
 import { RootStore } from '~/store/store';
-import * as R from '~/routes/routes';
-import * as WA from '~/store/workbench/workbench-actions';
+import * as Routes from '~/routes/routes';
+import * as WorkbenchActions from '~/store/workbench/workbench-actions';
 import { navigateToRootProject } from '~/store/navigation/navigation-action';
 import { dialogActions } from '~/store/dialog/dialog-actions';
 import { contextMenuActions } from '~/store/context-menu/context-menu-actions';
@@ -22,154 +19,85 @@ export const addRouteChangeHandlers = (history: History, store: RootStore) => {
 
 const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
 
+    const rootMatch = Routes.matchRootRoute(pathname);
+    const projectMatch = Routes.matchProjectRoute(pathname);
+    const collectionMatch = Routes.matchCollectionRoute(pathname);
+    const favoriteMatch = Routes.matchFavoritesRoute(pathname);
+    const trashMatch = Routes.matchTrashRoute(pathname);
+    const processMatch = Routes.matchProcessRoute(pathname);
+    const processLogMatch = Routes.matchProcessLogRoute(pathname);
+    const repositoryMatch = Routes.matchRepositoriesRoute(pathname);
+    const searchResultsMatch = Routes.matchSearchResultsRoute(pathname);
+    const sharedWithMeMatch = Routes.matchSharedWithMeRoute(pathname);
+    const runProcessMatch = Routes.matchRunProcessRoute(pathname);
+    const virtualMachineUserMatch = Routes.matchUserVirtualMachineRoute(pathname);
+    const virtualMachineAdminMatch = Routes.matchAdminVirtualMachineRoute(pathname);
+    const workflowMatch = Routes.matchWorkflowRoute(pathname);
+    const sshKeysUserMatch = Routes.matchSshKeysUserRoute(pathname);
+    const sshKeysAdminMatch = Routes.matchSshKeysAdminRoute(pathname);
+    const siteManagerMatch = Routes.matchSiteManagerRoute(pathname);
+    const keepServicesMatch = Routes.matchKeepServicesRoute(pathname);
+    const computeNodesMatch = Routes.matchComputeNodesRoute(pathname);
+    const apiClientAuthorizationsMatch = Routes.matchApiClientAuthorizationsRoute(pathname);
+    const myAccountMatch = Routes.matchMyAccountRoute(pathname);
+    const userMatch = Routes.matchUsersRoute(pathname);
+    const groupsMatch = Routes.matchGroupsRoute(pathname);
+    const groupDetailsMatch = Routes.matchGroupDetailsRoute(pathname);
+    const linksMatch = Routes.matchLinksRoute(pathname);
+
     store.dispatch(dialogActions.CLOSE_ALL_DIALOGS());
     store.dispatch(contextMenuActions.CLOSE_CONTEXT_MENU());
     store.dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
 
-    locationChangeHandlers.find(handler => handler(store.dispatch, pathname));
-
+    if (projectMatch) {
+        store.dispatch(WorkbenchActions.loadProject(projectMatch.params.id));
+    } else if (collectionMatch) {
+        store.dispatch(WorkbenchActions.loadCollection(collectionMatch.params.id));
+    } else if (favoriteMatch) {
+        store.dispatch(WorkbenchActions.loadFavorites());
+    } else if (trashMatch) {
+        store.dispatch(WorkbenchActions.loadTrash());
+    } else if (processMatch) {
+        store.dispatch(WorkbenchActions.loadProcess(processMatch.params.id));
+    } else if (processLogMatch) {
+        store.dispatch(WorkbenchActions.loadProcessLog(processLogMatch.params.id));
+    } else if (rootMatch) {
+        store.dispatch(navigateToRootProject);
+    } else if (sharedWithMeMatch) {
+        store.dispatch(WorkbenchActions.loadSharedWithMe);
+    } else if (runProcessMatch) {
+        store.dispatch(WorkbenchActions.loadRunProcess);
+    } else if (workflowMatch) {
+        store.dispatch(WorkbenchActions.loadWorkflow);
+    } else if (searchResultsMatch) {
+        store.dispatch(WorkbenchActions.loadSearchResults);
+    } else if (virtualMachineUserMatch) {
+        store.dispatch(WorkbenchActions.loadVirtualMachines);
+    } else if (virtualMachineAdminMatch) {
+        store.dispatch(WorkbenchActions.loadVirtualMachines);
+    } else if (repositoryMatch) {
+        store.dispatch(WorkbenchActions.loadRepositories);
+    } else if (sshKeysUserMatch) {
+        store.dispatch(WorkbenchActions.loadSshKeys);
+    } else if (sshKeysAdminMatch) {
+        store.dispatch(WorkbenchActions.loadSshKeys);
+    } else if (siteManagerMatch) {
+        store.dispatch(WorkbenchActions.loadSiteManager);
+    } else if (keepServicesMatch) {
+        store.dispatch(WorkbenchActions.loadKeepServices);
+    } else if (computeNodesMatch) {
+        store.dispatch(WorkbenchActions.loadComputeNodes);
+    } else if (apiClientAuthorizationsMatch) {
+        store.dispatch(WorkbenchActions.loadApiClientAuthorizations);
+    } else if (myAccountMatch) {
+        store.dispatch(WorkbenchActions.loadMyAccount);
+    } else if (userMatch) {
+        store.dispatch(WorkbenchActions.loadUsers);
+    } else if (groupsMatch) {
+        store.dispatch(WorkbenchActions.loadGroupsPanel);
+    } else if (groupDetailsMatch) {
+        store.dispatch(WorkbenchActions.loadGroupDetailsPanel(groupDetailsMatch.params.id));
+    } else if (linksMatch) {
+        store.dispatch(WorkbenchActions.loadLinks);
+    }
 };
-
-type MatchRoute<Params> = (route: string) => match<Params> | null;
-type ActionCreator<Params> = (params: Params) => ThunkAction<any, any, any, any>;
-
-const handle = <Params>(matchRoute: MatchRoute<Params>, actionCreator: ActionCreator<Params>) =>
-    (dispatch: Dispatch, route: string) => {
-        const match = matchRoute(route);
-        return match
-            ? (
-                dispatch<any>(actionCreator(match.params)),
-                true
-            )
-            : false;
-    };
-
-const locationChangeHandlers = [
-
-    handle(
-        R.matchApiClientAuthorizationsRoute,
-        () => WA.loadApiClientAuthorizations
-    ),
-
-    handle(
-        R.matchCollectionRoute,
-        ({ id }) => WA.loadCollection(id)
-    ),
-
-    handle(
-        R.matchComputeNodesRoute,
-        () => WA.loadComputeNodes
-    ),
-
-    handle(
-        R.matchFavoritesRoute,
-        () => WA.loadFavorites
-    ),
-
-    handle(
-        R.matchGroupDetailsRoute,
-        ({ id }) => WA.loadGroupDetailsPanel(id)
-    ),
-
-    handle(
-        R.matchGroupsRoute,
-        () => WA.loadGroupsPanel
-    ),
-
-    handle(
-        R.matchKeepServicesRoute,
-        () => WA.loadKeepServices
-    ),
-
-    handle(
-        R.matchLinksRoute,
-        () => WA.loadLinks
-    ),
-
-    handle(
-        R.matchMyAccountRoute,
-        () => WA.loadMyAccount
-    ),
-
-    handle(
-        R.matchProcessLogRoute,
-        ({ id }) => WA.loadProcessLog(id)
-    ),
-
-    handle(
-        R.matchProcessRoute,
-        ({ id }) => WA.loadProcess(id)
-    ),
-
-    handle(
-        R.matchProjectRoute,
-        ({ id }) => WA.loadProject(id)
-    ),
-
-    handle(
-        R.matchRepositoriesRoute,
-        () => WA.loadRepositories
-    ),
-
-    handle(
-        R.matchRootRoute,
-        () => navigateToRootProject
-    ),
-
-    handle(
-        R.matchRunProcessRoute,
-        () => WA.loadRunProcess
-    ),
-
-    handle(
-        R.matchSearchResultsRoute,
-        () => WA.loadSearchResults
-    ),
-
-    handle(
-        R.matchSharedWithMeRoute,
-        () => WA.loadSharedWithMe
-    ),
-
-    handle(
-        R.matchSiteManagerRoute,
-        () => WA.loadSiteManager
-    ),
-
-    handle(
-        R.matchSshKeysAdminRoute,
-        () => WA.loadSshKeys
-    ),
-
-    handle(
-        R.matchSshKeysUserRoute,
-        () => WA.loadSshKeys
-    ),
-
-    handle(
-        R.matchTrashRoute,
-        () => WA.loadTrash
-    ),
-
-    handle(
-        R.matchUsersRoute,
-        () => WA.loadUsers
-    ),
-
-    handle(
-        R.matchAdminVirtualMachineRoute,
-        () => WA.loadVirtualMachines
-    ),
-
-    handle(
-        R.matchUserVirtualMachineRoute,
-        () => WA.loadVirtualMachines
-    ),
-
-    handle(
-        R.matchWorkflowRoute,
-        () => WA.loadWorkflow
-    ),
-
-];
-
