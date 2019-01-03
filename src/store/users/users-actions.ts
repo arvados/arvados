@@ -53,8 +53,8 @@ export const loginAs = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const client = await services.apiClientAuthorizationService.create({ ownerUuid: uuid });
         dispatch<any>(saveApiToken(client.apiToken));
+        location.reload();
         dispatch<any>(getUserDetails()).then(() => {
-            location.reload();
             dispatch<any>(navigateToRootProject);
         });
     };
