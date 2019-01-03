@@ -52,8 +52,8 @@ export const openSetupShellAccount = (uuid: string) =>
 export const loginAs = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const client = await services.apiClientAuthorizationService.create({ ownerUuid: uuid });
-        dispatch<any>(saveApiToken(client.apiToken));
-        location.reload();
+        dispatch<any>(saveApiToken(`v2/${client.uuid}/${client.apiToken}`));
+        await location.reload();
         dispatch<any>(getUserDetails()).then(() => {
             dispatch<any>(navigateToRootProject);
         });
