@@ -36,11 +36,8 @@ export const openUserAttributes = (uuid: string) =>
 export const openUserManagement = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const { resources } = getState();
-        const user = getResource<UserResource>(uuid)(resources);
-        const clients = await services.apiClientAuthorizationService.list();
-        const client = clients.items.find(it => it.ownerUuid === uuid);
-        console.log(client);
-        dispatch(dialogActions.OPEN_DIALOG({ id: USER_MANAGEMENT_DIALOG, data: { user, client } }));
+        const data = getResource<UserResource>(uuid)(resources);
+        dispatch(dialogActions.OPEN_DIALOG({ id: USER_MANAGEMENT_DIALOG, data }));
     };
 
 export const openSetupShellAccount = (uuid: string) =>
@@ -54,7 +51,7 @@ export const openSetupShellAccount = (uuid: string) =>
 
 export const loginAs = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const client = await services.apiClientAuthorizationService.get(uuid);
+        const client = await services.apiClientAuthorizationService.create({ ownerUuid: uuid });
         dispatch<any>(saveApiToken(client.apiToken));
         dispatch<any>(getUserDetails()).then(() => {
             location.reload();
