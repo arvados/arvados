@@ -33,10 +33,6 @@ if ! test -s /var/lib/arvados/workbench_secret_token ; then
 fi
 secret_token=$(cat /var/lib/arvados/workbench_secret_token)
 
-if ! test -s self-signed.key ; then
-  openssl req -new -x509 -nodes -out self-signed.pem -keyout self-signed.key -days 365 -subj '/CN=localhost'
-fi
-
 cat >config/application.yml <<EOF
 $RAILS_ENV:
   secret_token: $secret_token

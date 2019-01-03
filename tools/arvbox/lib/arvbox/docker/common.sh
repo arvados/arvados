@@ -19,7 +19,9 @@ fi
 
 declare -A services
 services=(
-  [workbench]=80
+  [workbench]=443
+  [workbench2]=3000
+  [workbench2-ssl]=3001
   [api]=8004
   [controller]=8003
   [controller-ssl]=8000
@@ -32,7 +34,8 @@ services=(
   [keepstore1]=25108
   [ssh]=22
   [doc]=8001
-  [websockets]=8002
+  [websockets]=8005
+  [websockets-ssl]=8002
 )
 
 if test "$(id arvbox -u 2>/dev/null)" = 0 ; then

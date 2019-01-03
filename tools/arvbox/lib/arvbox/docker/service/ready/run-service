@@ -90,6 +90,6 @@ fi
 
 echo
 echo "Your Arvados-in-a-box is ready!"
-echo "Workbench is running at http://$localip"
+echo "Workbench is running at https://$localip"
 
 rm -r /tmp/arvbox-ready

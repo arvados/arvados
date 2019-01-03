@@ -34,7 +34,7 @@ Postgres:
   user: arvados
   password: $database_pw
   host: localhost
-Listen: :8002
+Listen: localhost:${services[websockets]}
 EOF
 
 exec /usr/local/bin/arvados-ws -config /var/lib/arvados/arvados-ws.yml

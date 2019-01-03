@@ -1,0 +1,23 @@
+#!/bin/bash
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
+exec 2>&1
+set -ex -o pipefail
+
+.  /usr/local/lib/arvbox/common.sh
+
+cd /usr/src/workbench2
+
+npm -d install --prefix /usr/local --global yarn
+
+yarn install
+
+if test "$1" = "--only-deps" ; then
+    exit
+fi
+
+echo "{\"API_HOST\": \"${localip}:${services[controller-ssl]}\"}" > /usr/src/workbench2/public/config.json
+export HTTPS=false
+exec yarn start
