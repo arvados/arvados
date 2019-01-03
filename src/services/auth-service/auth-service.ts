@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { getUserFullname, User, UserPrefs } from "~/models/user";
+import { getUserFullname, User, UserPrefs, UserResource } from '~/models/user';
 import { AxiosInstance } from "axios";
 import { ApiActions } from "~/services/api/api-actions";
 import * as uuid from "uuid/v4";
@@ -77,7 +77,7 @@ export class AuthService {
             : undefined;
     }
 
-    public saveUser(user: User) {
+    public saveUser(user: User | UserResource) {
         localStorage.setItem(USER_EMAIL_KEY, user.email);
         localStorage.setItem(USER_FIRST_NAME_KEY, user.firstName);
         localStorage.setItem(USER_LAST_NAME_KEY, user.lastName);

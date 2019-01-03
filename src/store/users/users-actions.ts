@@ -51,12 +51,15 @@ export const openSetupShellAccount = (uuid: string) =>
 
 export const loginAs = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const { resources } = getState();
+        const data = getResource<UserResource>(uuid)(resources);
+        if (data) {
+            services.authService.saveUser(data);
+        }
         const client = await services.apiClientAuthorizationService.create({ ownerUuid: uuid });
         dispatch<any>(saveApiToken(`v2/${client.uuid}/${client.apiToken}`));
-        await location.reload();
-        dispatch<any>(getUserDetails()).then(() => {
-            dispatch<any>(navigateToRootProject);
-        });
+        location.reload();
+        dispatch<any>(navigateToRootProject);
     };
 
 export const openUserCreateDialog = () =>
