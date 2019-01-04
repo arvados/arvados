@@ -6,7 +6,7 @@ import { Dispatch } from "redux";
 import { RootState } from '~/store/store';
 import { setBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions';
 import { dialogActions } from '~/store/dialog/dialog-actions';
-import { snackbarActions } from '~/store/snackbar/snackbar-actions';
+import {snackbarActions, SnackbarKind} from '~/store/snackbar/snackbar-actions';
 import { navigateToRootProject } from '~/store/navigation/navigation-action';
 import { bindDataExplorerActions } from '~/store/data-explorer/data-explorer-action';
 import { getResource } from '~/store/resources/resources';
@@ -31,7 +31,7 @@ export const loadComputeNodesPanel = () =>
             }
         } else {
             dispatch(navigateToRootProject);
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "You don't have permissions to view this page", hideDuration: 2000 }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "You don't have permissions to view this page", hideDuration: 2000, kind: SnackbarKind.ERROR }));
         }
     };
 
@@ -57,11 +57,11 @@ export const openComputeNodeRemoveDialog = (uuid: string) =>
 
 export const removeComputeNode = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...' }));
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...', kind: SnackbarKind.INFO }));
         try {
             await services.nodeService.delete(uuid);
             dispatch(computeNodesActions.REQUEST_ITEMS());
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Compute node has been successfully removed.', hideDuration: 2000 }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Compute node has been successfully removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
         } catch (e) {
             return;
         }

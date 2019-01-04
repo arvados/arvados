@@ -48,12 +48,6 @@ export const projectActionSet: ContextMenuActionSet = [[
         }
     },
     {
-        component: ToggleTrashAction,
-        execute: (dispatch, resource) => {
-            dispatch<any>(toggleProjectTrashed(resource.uuid, resource.ownerUuid, resource.isTrashed!!));
-        }
-    },
-    {
         icon: MoveToIcon,
         name: "Move to",
         execute: (dispatch, resource) => {
@@ -79,6 +73,12 @@ export const projectActionSet: ContextMenuActionSet = [[
         name: "Advanced",
         execute: (dispatch, resource) => {
             dispatch<any>(openAdvancedTabDialog(resource.uuid));
+        }
+    },
+    {
+        component: ToggleTrashAction,
+        execute: (dispatch, resource) => {
+            dispatch<any>(toggleProjectTrashed(resource.uuid, resource.ownerUuid, resource.isTrashed!!));
         }
     },
 ]];

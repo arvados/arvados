@@ -6,7 +6,7 @@ import { dialogActions } from "~/store/dialog/dialog-actions";
 import { Dispatch } from "redux";
 import { RootState } from "~/store/store";
 import { ServiceRepository } from "~/services/services";
-import { snackbarActions } from "~/store/snackbar/snackbar-actions";
+import {snackbarActions, SnackbarKind} from "~/store/snackbar/snackbar-actions";
 import { FormErrors, reset, startSubmit, stopSubmit } from "redux-form";
 import { KeyType } from "~/models/ssh-key";
 import {
@@ -54,10 +54,10 @@ export const openSshKeyRemoveDialog = (uuid: string) =>
 
 export const removeSshKey = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...' }));
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...', kind: SnackbarKind.INFO }));
         await services.authorizedKeysService.delete(uuid);
         dispatch(authActions.REMOVE_SSH_KEY(uuid));
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Public Key has been successfully removed.', hideDuration: 2000 }));
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Public Key has been successfully removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
     };
 
 export const createSshKey = (data: SshKeyCreateFormDialogData) =>
@@ -77,7 +77,8 @@ export const createSshKey = (data: SshKeyCreateFormDialogData) =>
             dispatch(reset(SSH_KEY_CREATE_FORM_NAME));
             dispatch(snackbarActions.OPEN_SNACKBAR({
                 message: "Public key has been successfully created.",
-                hideDuration: 2000
+                hideDuration: 2000,
+                kind: SnackbarKind.SUCCESS
             }));
         } catch (e) {
             const error = getAuthorizedKeysServiceError(e);

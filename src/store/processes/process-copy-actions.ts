@@ -10,7 +10,7 @@ import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
 import { CopyFormDialogData } from '~/store/copy-dialog/copy-dialog';
 import { getProcess } from '~/store/processes/process';
-import { snackbarActions } from '~/store/snackbar/snackbar-actions';
+import {snackbarActions, SnackbarKind} from '~/store/snackbar/snackbar-actions';
 import { initProjectsTreePicker } from '~/store/tree-picker/tree-picker-actions';
 
 export const PROCESS_COPY_FORM_NAME = 'processCopyFormName';
@@ -25,7 +25,7 @@ export const openCopyProcessDialog = (resource: { name: string, uuid: string }) 
             dispatch<any>(initialize(PROCESS_COPY_FORM_NAME, initialData));
             dispatch(dialogActions.OPEN_DIALOG({ id: PROCESS_COPY_FORM_NAME, data: {} }));
         } else {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Process not found', hideDuration: 2000 }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Process not found', hideDuration: 2000, kind: SnackbarKind.ERROR }));
         }
     };
 

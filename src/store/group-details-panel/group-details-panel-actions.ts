@@ -109,7 +109,7 @@ export const removeGroupMember = (uuid: string) =>
             const group = getResource<GroupResource>(groupUuid)(getState().resources);
             const user = getResource<UserResource>(groupUuid)(getState().resources);
 
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...' }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...', kind: SnackbarKind.INFO }));
 
             await deleteGroupMember({
                 user: {

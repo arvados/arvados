@@ -155,7 +155,8 @@ export const getOrder = (dataExplorer: DataExplorer) => {
 
 const projectPanelCurrentUuidIsNotSet = () =>
     snackbarActions.OPEN_SNACKBAR({
-        message: 'Project panel is not opened.'
+        message: 'Project panel is not opened.',
+        kind: SnackbarKind.ERROR
     });
 
 const couldNotFetchProjectContents = () =>
@@ -166,5 +167,6 @@ const couldNotFetchProjectContents = () =>
 
 const projectPanelDataExplorerIsNotSet = () =>
     snackbarActions.OPEN_SNACKBAR({
-        message: 'Project panel is not ready.'
+        message: 'Project panel is not ready.',
+        kind: SnackbarKind.ERROR
     });

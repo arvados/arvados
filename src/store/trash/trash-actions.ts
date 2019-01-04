@@ -17,7 +17,7 @@ export const toggleProjectTrashed = (uuid: string, ownerUuid: string, isTrashed:
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
         try {
             if (isTrashed) {
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Restoring from trash..." }));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Restoring from trash...", kind: SnackbarKind.INFO }));
                 await services.groupsService.untrash(uuid);
                 dispatch<any>(activateSidePanelTreeItem(uuid));
                 dispatch(trashPanelActions.REQUEST_ITEMS());
@@ -27,7 +27,7 @@ export const toggleProjectTrashed = (uuid: string, ownerUuid: string, isTrashed:
                     kind: SnackbarKind.SUCCESS
                 }));
             } else {
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Moving to trash..." }));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Moving to trash...", kind: SnackbarKind.INFO }));
                 await services.groupsService.trash(uuid);
                 dispatch<any>(loadSidePanelTreeProjects(ownerUuid));
                 dispatch(snackbarActions.OPEN_SNACKBAR({
@@ -49,7 +49,7 @@ export const toggleCollectionTrashed = (uuid: string, isTrashed: boolean) =>
         try {
             if (isTrashed) {
                 const { location } = getState().router;
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Restoring from trash..." }));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Restoring from trash...", kind: SnackbarKind.INFO }));
                 await services.collectionService.untrash(uuid);
                 if (matchCollectionRoute(location ? location.pathname : '')) {
                     dispatch(navigateToTrash);
@@ -61,7 +61,7 @@ export const toggleCollectionTrashed = (uuid: string, isTrashed: boolean) =>
                     kind: SnackbarKind.SUCCESS
                 }));
             } else {
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Moving to trash..." }));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Moving to trash...", kind: SnackbarKind.INFO }));
                 await services.collectionService.trash(uuid);
                 dispatch(projectPanelActions.REQUEST_ITEMS());
                 dispatch(snackbarActions.OPEN_SNACKBAR({

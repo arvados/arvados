@@ -5,7 +5,7 @@
 import { Dispatch } from 'redux';
 import { isSidePanelTreeCategory, SidePanelTreeCategory } from '~/store/side-panel-tree/side-panel-tree-actions';
 import { navigateToFavorites, navigateTo, navigateToTrash, navigateToSharedWithMe, navigateToWorkflows } from '../navigation/navigation-action';
-import { snackbarActions } from '~/store/snackbar/snackbar-actions';
+import {snackbarActions, SnackbarKind} from '~/store/snackbar/snackbar-actions';
 
 export const navigateFromSidePanel = (id: string) =>
     (dispatch: Dispatch) => {
@@ -35,4 +35,5 @@ const sidePanelTreeCategoryNotAvailable = (id: string) =>
     snackbarActions.OPEN_SNACKBAR({
         message: `${id} not available`,
         hideDuration: 3000,
+        kind: SnackbarKind.ERROR
     });

@@ -33,7 +33,7 @@ const renderName = (item: { name: string; uuid: string, kind: string }) =>
             {renderIcon(item)}
         </Grid>
         <Grid item>
-            <Typography color="primary" style={{ width: '450px' }}>
+            <Typography color="primary" style={{ width: 'auto' }}>
                 {item.name}
             </Typography>
         </Grid>

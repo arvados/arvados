@@ -12,7 +12,7 @@ import { ServiceRepository } from '~/services/services';
 import { TagProperty } from '~/models/tag';
 import { startSubmit, stopSubmit } from 'redux-form';
 import { resourcesActions } from '~/store/resources/resources-actions';
-import { snackbarActions } from '~/store/snackbar/snackbar-actions';
+import {snackbarActions, SnackbarKind} from '~/store/snackbar/snackbar-actions';
 
 export const SLIDE_TIMEOUT = 500;
 
@@ -45,7 +45,7 @@ export const deleteProjectProperty = (key: string) =>
                 delete project.properties[key];
                 const updatedProject = await services.projectService.update(project.uuid, project);
                 dispatch(resourcesActions.SET_RESOURCES([updatedProject]));
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Property has been successfully deleted.", hideDuration: 2000 }));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Property has been successfully deleted.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
             }
         } catch (e) {
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_PROPERTIES_FORM_NAME }));
@@ -63,7 +63,7 @@ export const createProjectProperty = (data: TagProperty) =>
                 project.properties[data.key] = data.value;
                 const updatedProject = await services.projectService.update(project.uuid, project);
                 dispatch(resourcesActions.SET_RESOURCES([updatedProject]));
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Property has been successfully added.", hideDuration: 2000 }));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Property has been successfully added.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
                 dispatch(stopSubmit(PROJECT_PROPERTIES_FORM_NAME));
             }
             return;

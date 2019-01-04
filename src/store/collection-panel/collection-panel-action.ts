@@ -46,7 +46,7 @@ export const createCollectionTag = (data: TagProperty) =>
                 item.properties[data.key] = data.value;
                 const updatedCollection = await services.collectionService.update(uuid, item);
                 dispatch(resourcesActions.SET_RESOURCES([updatedCollection]));
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Tag has been successfully added.", hideDuration: 2000 }));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Tag has been successfully added.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
                 return updatedCollection;
             }
             return;
@@ -74,7 +74,7 @@ export const deleteCollectionTag = (key: string) =>
                 delete item.properties[key];
                 const updatedCollection = await services.collectionService.update(uuid, item);
                 dispatch(resourcesActions.SET_RESOURCES([updatedCollection]));
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Tag has been successfully deleted.", hideDuration: 2000 }));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Tag has been successfully deleted.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
                 return updatedCollection;
             }
             return;

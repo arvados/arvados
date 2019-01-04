@@ -93,7 +93,8 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
 
 const favoritesPanelDataExplorerIsNotSet = () =>
     snackbarActions.OPEN_SNACKBAR({
-        message: 'Favorites panel is not ready.'
+        message: 'Favorites panel is not ready.',
+        kind: SnackbarKind.ERROR
     });
 
 const couldNotFetchFavoritesContents = () =>
