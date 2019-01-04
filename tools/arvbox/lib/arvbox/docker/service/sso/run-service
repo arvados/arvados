@@ -35,69 +35,7 @@ if ! test -s /var/lib/arvados/sso_secret_token ; then
 fi
 secret_token=$(cat /var/lib/arvados/sso_secret_token)
 
-if test ! -s /var/lib/arvados/root-cert.pem ; then
-    # req           signing request sub-command
-    # -new          new certificate request
-    # -nodes        "no des" don't encrypt key
-    # -sha256       include sha256 fingerprint
-    # -x509         generate self-signed certificate
-    # -subj         certificate subject
-    # -reqexts      certificate request extension for subjectAltName
-    # -extensions   certificate request extension for subjectAltName
-    # -config       certificate generation configuration plus subjectAltName
-    # -out          certificate output
-    # -keyout       private key output
-    # -days         certificate lifetime
-    openssl req \
-	    -new \
-	    -nodes \
-	    -sha256 \
-	    -x509 \
-	    -subj "/C=US/ST=MA/O=Arvados testing/OU=arvbox/CN=arvbox testing root CA for ${uuid_prefix}" \
-	    -extensions x509_ext \
-	    -config <(cat /etc/ssl/openssl.cnf \
-			  <(printf "\n[x509_ext]\nbasicConstraints=critical,CA:true,pathlen:0\nkeyUsage=critical,keyCertSign,cRLSign")) \
-            -out /var/lib/arvados/root-cert.pem \
-            -keyout /var/lib/arvados/root-cert.key \
-            -days 365
-fi
-
-if test ! -s /var/lib/arvados/server-cert-${localip}.pem ; then
-    # req           signing request sub-command
-    # -new          new certificate request
-    # -nodes        "no des" don't encrypt key
-    # -sha256       include sha256 fingerprint
-    # -subj         certificate subject
-    # -reqexts      certificate request extension for subjectAltName
-    # -extensions   certificate request extension for subjectAltName
-    # -config       certificate generation configuration plus subjectAltName
-    # -out          certificate output
-    # -keyout       private key output
-    # -days         certificate lifetime
-    openssl req \
-	    -new \
-	    -nodes \
-	    -sha256 \
-	    -subj "/C=US/ST=MA/O=Arvados testing for ${uuid_prefix}/OU=arvbox/CN=localhost" \
-	    -reqexts x509_ext \
-	    -extensions x509_ext \
-	    -config <(cat /etc/ssl/openssl.cnf \
-			  <(printf "\n[x509_ext]\nkeyUsage=critical,digitalSignature,keyEncipherment\nsubjectAltName=DNS:localhost,IP:$localip")) \
-            -out /var/lib/arvados/server-cert-${localip}.csr \
-            -keyout /var/lib/arvados/server-cert-${localip}.key \
-            -days 365
-
-    openssl x509 \
-	    -req \
-	    -in /var/lib/arvados/server-cert-${localip}.csr \
-	    -CA /var/lib/arvados/root-cert.pem \
-	    -CAkey /var/lib/arvados/root-cert.key \
-	    -out /var/lib/arvados/server-cert-${localip}.pem \
-	    -set_serial $RANDOM$RANDOM \
-	    -extfile <(cat /etc/ssl/openssl.cnf \
-			  <(printf "\n[x509_ext]\nkeyUsage=critical,digitalSignature,keyEncipherment\nsubjectAltName=DNS:localhost,IP:$localip")) \
-	    -extensions x509_ext
-fi
+test -s /var/lib/arvados/server-cert-${localip}.pem
 
 cat >config/application.yml <<EOF
 $RAILS_ENV:

@@ -55,7 +55,7 @@ $RAILS_ENV:
   sso_app_secret: $sso_app_secret
   sso_app_id: arvados-server
   sso_provider_url: "https://$localip:${services[sso]}"
-  sso_insecure: true
+  sso_insecure: false
   workbench_address: "https://$localip/"
   websocket_address: "wss://$localip:${services[websockets-ssl]}/websocket"
   git_repo_ssh_base: "git@$localip:"
@@ -67,7 +67,7 @@ $RAILS_ENV:
   auto_setup_new_users_with_repository: true
   default_collection_replication: 1
   docker_image_formats: ["v2"]
-  keep_web_service_url: http://$localip:${services[keep-web]}/
+  keep_web_service_url: https://$localip:${services[keep-web-ssl]}/
   ManagementToken: $management_token
 EOF
 

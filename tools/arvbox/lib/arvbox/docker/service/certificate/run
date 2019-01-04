@@ -1,0 +1,81 @@
+#!/bin/bash
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
+exec 2>&1
+set -ex -o pipefail
+
+. /usr/local/lib/arvbox/common.sh
+
+if test ! -s /var/lib/arvados/root-cert.pem ; then
+    # req           signing request sub-command
+    # -new          new certificate request
+    # -nodes        "no des" don't encrypt key
+    # -sha256       include sha256 fingerprint
+    # -x509         generate self-signed certificate
+    # -subj         certificate subject
+    # -reqexts      certificate request extension for subjectAltName
+    # -extensions   certificate request extension for subjectAltName
+    # -config       certificate generation configuration plus subjectAltName
+    # -out          certificate output
+    # -keyout       private key output
+    # -days         certificate lifetime
+    openssl req \
+	    -new \
+	    -nodes \
+	    -sha256 \
+	    -x509 \
+	    -subj "/C=US/ST=MA/O=Arvados testing/OU=arvbox/CN=arvbox testing root CA for ${uuid_prefix}" \
+	    -extensions x509_ext \
+	    -config <(cat /etc/ssl/openssl.cnf \
+			  <(printf "\n[x509_ext]\nbasicConstraints=critical,CA:true,pathlen:0\nkeyUsage=critical,keyCertSign,cRLSign")) \
+            -out /var/lib/arvados/root-cert.pem \
+            -keyout /var/lib/arvados/root-cert.key \
+            -days 365
+    chown arvbox:arvbox /var/lib/arvados/root-cert.*
+fi
+
+if test ! -s /var/lib/arvados/server-cert-${localip}.pem ; then
+    # req           signing request sub-command
+    # -new          new certificate request
+    # -nodes        "no des" don't encrypt key
+    # -sha256       include sha256 fingerprint
+    # -subj         certificate subject
+    # -reqexts      certificate request extension for subjectAltName
+    # -extensions   certificate request extension for subjectAltName
+    # -config       certificate generation configuration plus subjectAltName
+    # -out          certificate output
+    # -keyout       private key output
+    # -days         certificate lifetime
+    openssl req \
+	    -new \
+	    -nodes \
+	    -sha256 \
+	    -subj "/C=US/ST=MA/O=Arvados testing for ${uuid_prefix}/OU=arvbox/CN=localhost" \
+	    -reqexts x509_ext \
+	    -extensions x509_ext \
+	    -config <(cat /etc/ssl/openssl.cnf \
+			  <(printf "\n[x509_ext]\nkeyUsage=critical,digitalSignature,keyEncipherment\nsubjectAltName=DNS:localhost,IP:$localip")) \
+            -out /var/lib/arvados/server-cert-${localip}.csr \
+            -keyout /var/lib/arvados/server-cert-${localip}.key \
+            -days 365
+
+    openssl x509 \
+	    -req \
+	    -in /var/lib/arvados/server-cert-${localip}.csr \
+	    -CA /var/lib/arvados/root-cert.pem \
+	    -CAkey /var/lib/arvados/root-cert.key \
+	    -out /var/lib/arvados/server-cert-${localip}.pem \
+	    -set_serial $RANDOM$RANDOM \
+	    -extfile <(cat /etc/ssl/openssl.cnf \
+			  <(printf "\n[x509_ext]\nkeyUsage=critical,digitalSignature,keyEncipherment\nsubjectAltName=DNS:localhost,IP:$localip")) \
+	    -extensions x509_ext
+
+    chown arvbox:arvbox /var/lib/arvados/server-cert-${localip}.*
+fi
+
+cp /var/lib/arvados/root-cert.pem /usr/local/share/ca-certificates/arvados-testing-cert.crt
+update-ca-certificates
+
+sv stop certificate
