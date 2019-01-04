@@ -23,6 +23,7 @@ import { CollectionFileType, createCollectionDirectory } from "~/models/collecti
 import { openContextMenu, openCollectionFilesContextMenu } from '~/store/context-menu/context-menu-actions';
 import { openUploadCollectionFilesDialog } from '~/store/collections/collection-upload-actions';
 import { ResourceKind } from "~/models/resource";
+import { openDetailsPanel } from '~/store/details-panel/details-panel-action';
 
 const memoizedMapStateToProps = () => {
     let prevState: CollectionPanelFilesState;
@@ -40,7 +41,7 @@ const memoizedMapStateToProps = () => {
     };
 };
 
-const mapDispatchToProps = (dispatch: Dispatch): Pick<CollectionPanelFilesProps, 'onUploadDataClick' | 'onCollapseToggle' | 'onSelectionToggle' | 'onItemMenuOpen' | 'onOptionsMenuOpen'> => ({
+const mapDispatchToProps = (dispatch: Dispatch): Pick<CollectionPanelFilesProps, 'onFileClick' | 'onUploadDataClick' | 'onCollapseToggle' | 'onSelectionToggle' | 'onItemMenuOpen' | 'onOptionsMenuOpen'> => ({
     onUploadDataClick: () => {
         dispatch<any>(openUploadCollectionFilesDialog());
     },
@@ -55,6 +56,9 @@ const mapDispatchToProps = (dispatch: Dispatch): Pick<CollectionPanelFilesProps,
     },
     onOptionsMenuOpen: (event) => {
         dispatch<any>(openCollectionFilesContextMenu(event));
+    },
+    onFileClick: (id) => {
+        dispatch(openDetailsPanel(id));
     },
 });
 

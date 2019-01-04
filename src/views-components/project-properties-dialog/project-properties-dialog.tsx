@@ -63,7 +63,7 @@ export const ProjectPropertiesDialog = connect(mapStateToProps, mapDispatchToPro
                 </DialogContent>
                 <DialogActions>
                     <Button
-                        variant='flat'
+                        variant='text'
                         color='primary'
                         onClick={closeDialog}>
                         Close

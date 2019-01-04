@@ -18,6 +18,7 @@ export const addRouteChangeHandlers = (history: History, store: RootStore) => {
 };
 
 const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
+
     const rootMatch = Routes.matchRootRoute(pathname);
     const projectMatch = Routes.matchProjectRoute(pathname);
     const collectionMatch = Routes.matchCollectionRoute(pathname);

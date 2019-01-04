@@ -32,7 +32,7 @@ export const FilesUploadDialog = (props: FilesUploadDialogProps & WithDialogProp
         </DialogContent>
         <DialogActions>
             <Button
-                variant='flat'
+                variant='text'
                 color='primary'
                 disabled={props.uploading}
                 onClick={props.closeDialog}>

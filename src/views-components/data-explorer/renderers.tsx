@@ -81,7 +81,7 @@ const renderWorkflowName = (item: { name: string; uuid: string, kind: string, ow
         </Grid>
     </Grid>;
 
-export const RosurceWorkflowName = connect(
+export const ResourceWorkflowName = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<WorkflowResource>(props.uuid)(state.resources);
         return resource || { name: '', uuid: '', kind: '', ownerUuid: '' };
@@ -191,33 +191,75 @@ export const ResourceUsername = connect(
         return resource || { username: '' };
     })(renderUsername);
 
-// Compute Node Resources
-const renderNodeDate = (date: string) =>
+// Common methods
+const renderCommonData = (data: string) =>
+    <Typography noWrap>{data}</Typography>;
+
+const renderCommonDate = (date: string) =>
     <Typography noWrap>{formatDate(date)}</Typography>;
 
-const renderNodeData = (data: string) => {
-    return <Typography noWrap>{data}</Typography>;
-};
+export const CommonUuid = withResourceData('uuid', renderCommonData);
 
+// Api Client Authorizations
+export const TokenApiClientId = withResourceData('apiClientId', renderCommonData);
+
+export const TokenApiToken = withResourceData('apiToken', renderCommonData);
+
+export const TokenCreatedByIpAddress = withResourceData('createdByIpAddress', renderCommonDate);
+
+export const TokenDefaultOwnerUuid = withResourceData('defaultOwnerUuid', renderCommonData);
+
+export const TokenExpiresAt = withResourceData('expiresAt', renderCommonDate);
+
+export const TokenLastUsedAt = withResourceData('lastUsedAt', renderCommonDate);
+
+export const TokenLastUsedByIpAddress = withResourceData('lastUsedByIpAddress', renderCommonData);
+
+export const TokenScopes = withResourceData('scopes', renderCommonData);
+
+export const TokenUserId = withResourceData('userId', renderCommonData);
+
+// Compute Node Resources
 const renderNodeInfo = (data: string) => {
     return <Typography>{JSON.stringify(data, null, 4)}</Typography>;
 };
 
+const clusterColors = [
+    ['#f44336', '#fff'],
+    ['#2196f3', '#fff'],
+    ['#009688', '#fff'],
+    ['#cddc39', '#fff'],
+    ['#ff9800', '#fff']
+];
+
+export const ResourceCluster = (props: { uuid: string }) => {
+    const CLUSTER_ID_LENGTH = 5;
+    const pos = props.uuid.indexOf('-');
+    const clusterId = pos >= CLUSTER_ID_LENGTH ? props.uuid.substr(0, pos) : '';
+    const ci = pos >= CLUSTER_ID_LENGTH ? (props.uuid.charCodeAt(0) + props.uuid.charCodeAt(1)) % clusterColors.length : 0;
+    return <Typography>
+        <div style={{
+            backgroundColor: clusterColors[ci][0],
+            color: clusterColors[ci][1],
+            padding: "2px 7px",
+            borderRadius: 3
+        }}>{clusterId}</div>
+    </Typography>;
+};
+
 export const ComputeNodeInfo = withResourceData('info', renderNodeInfo);
 
-export const ComputeNodeUuid = withResourceData('uuid', renderNodeData);
+export const ComputeNodeDomain = withResourceData('domain', renderCommonData);
 
-export const ComputeNodeDomain = withResourceData('domain', renderNodeData);
+export const ComputeNodeFirstPingAt = withResourceData('firstPingAt', renderCommonDate);
 
-export const ComputeNodeFirstPingAt = withResourceData('firstPingAt', renderNodeDate);
+export const ComputeNodeHostname = withResourceData('hostname', renderCommonData);
 
-export const ComputeNodeHostname = withResourceData('hostname', renderNodeData);
+export const ComputeNodeIpAddress = withResourceData('ipAddress', renderCommonData);
 
-export const ComputeNodeIpAddress = withResourceData('ipAddress', renderNodeData);
+export const ComputeNodeJobUuid = withResourceData('jobUuid', renderCommonData);
 
-export const ComputeNodeJobUuid = withResourceData('jobUuid', renderNodeData);
-
-export const ComputeNodeLastPingAt = withResourceData('lastPingAt', renderNodeDate);
+export const ComputeNodeLastPingAt = withResourceData('lastPingAt', renderCommonDate);
 
 // Links Resources
 const renderLinkName = (item: { name: string }) =>

@@ -15,7 +15,12 @@ import { OrderDirection, OrderBuilder } from '~/services/api/order-builder';
 import { GroupContentsResource, GroupContentsResourcePrefix } from "~/services/groups-service/groups-service";
 import { ListResults } from '~/services/common-service/common-service';
 import { searchResultsPanelActions } from '~/store/search-results-panel/search-results-panel-actions';
-import { getFilters } from '~/store/search-bar/search-bar-actions';
+import {
+    getFilters,
+    getSearchQueryFirstProp,
+    getSearchSessions, ParseSearchQuery,
+    parseSearchQuery
+} from '~/store/search-bar/search-bar-actions';
 import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
 
 export class SearchResultsMiddlewareService extends DataExplorerMiddlewareService {
@@ -23,24 +28,53 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
         super(id);
     }
 
-    async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
+    async requestItems(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean) {
         const state = api.getState();
         const userUuid = state.auth.user!.uuid;
         const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
         const searchValue = state.searchBar.searchValue;
+        const sq = parseSearchQuery(searchValue);
+        const clusterId = getSearchQueryFirstProp(sq, 'cluster');
+        const sessions = getSearchSessions(clusterId, state.auth.sessions);
+
+        if (searchValue.trim() === '') {
+            return;
+        }
+
         try {
-            const response = await this.services.groupsService.contents('', getParams(dataExplorer, searchValue));
-            api.dispatch(updateResources(response.items));
-            api.dispatch(setItems(response));
+            const params = getParams(dataExplorer, searchValue, sq);
+            const lists: ListResults<GroupContentsResource>[] = await Promise.all(sessions.map(session =>
+                this.services.groupsService.contents('', params, session)
+            ));
+
+            const items = lists
+                .reduce((items, list) => items.concat(list.items), [] as GroupContentsResource[]);
+
+            const itemsAvailable = lists
+                .reduce((itemsAvailable, list) => itemsAvailable + list.itemsAvailable, 0);
+
+            const list: ListResults<GroupContentsResource> = {
+                ...params,
+                kind: '',
+                items,
+                itemsAvailable
+            };
+
+            api.dispatch(updateResources(list.items));
+            api.dispatch(criteriaChanged
+                ? setItems(list)
+                : appendItems(list)
+            );
+
         } catch {
-            api.dispatch(couldNotFetchWorkflows());
+            api.dispatch(couldNotFetchSearchResults());
         }
     }
 }
 
-export const getParams = (dataExplorer: DataExplorer, searchValue: string) => ({
+export const getParams = (dataExplorer: DataExplorer, searchValue: string, sq: ParseSearchQuery) => ({
     ...dataExplorerToListParams(dataExplorer),
-    filters: getFilters('name', searchValue),
+    filters: getFilters('name', searchValue, sq),
     order: getOrder(dataExplorer)
 });
 
@@ -69,8 +103,14 @@ export const setItems = (listResults: ListResults<GroupContentsResource>) =>
         items: listResults.items.map(resource => resource.uuid),
     });
 
-const couldNotFetchWorkflows = () =>
+export const appendItems = (listResults: ListResults<GroupContentsResource>) =>
+    searchResultsPanelActions.APPEND_ITEMS({
+        ...listResultsToDataExplorerItemsMeta(listResults),
+        items: listResults.items.map(resource => resource.uuid),
+    });
+
+const couldNotFetchSearchResults = () =>
     snackbarActions.OPEN_SNACKBAR({
-        message: 'Could not fetch workflows.',
+        message: `Could not fetch search results for some sessions.`,
         kind: SnackbarKind.ERROR
     });

@@ -263,7 +263,7 @@ const FileArrayInputComponent = connect(mapStateToProps)(
                     </div>
                     <Divider />
                     <div className={classes.chips}>
-                        <Typography variant='subheading'>Selected files ({this.state.files.length}):</Typography>
+                        <Typography variant='subtitle1'>Selected files ({this.state.files.length}):</Typography>
                         <Chips
                             orderable
                             deletable

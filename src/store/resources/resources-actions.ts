@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { unionize, ofType, UnionOf } from '~/common/unionize';
-import { Resource, extractUuidKind } from '~/models/resource';
+import { extractUuidKind, Resource } from '~/models/resource';
 import { Dispatch } from 'redux';
 import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';

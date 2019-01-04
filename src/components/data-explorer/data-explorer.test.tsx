@@ -8,11 +8,10 @@ import * as Adapter from 'enzyme-adapter-react-16';
 
 import { DataExplorer } from "./data-explorer";
 import { ColumnSelector } from "../column-selector/column-selector";
-import { DataTable } from "../data-table/data-table";
+import { DataTable, DataTableFetchMode } from "../data-table/data-table";
 import { SearchInput } from "../search-input/search-input";
 import { TablePagination } from "@material-ui/core";
 import { ProjectIcon } from '../icon/icon';
-import { DefaultView } from '../default-view/default-view';
 import { SortDirection } from '../data-table/data-column';
 
 configure({ adapter: new Adapter() });
@@ -36,7 +35,7 @@ describe("<DataExplorer />", () => {
     it("communicates with <ColumnSelector/>", () => {
         const onColumnToggle = jest.fn();
         const onSetColumns = jest.fn();
-        const columns = [{ name: "Column 1", render: jest.fn(), selected: true, configurable: true, sortDirection: SortDirection.ASC, filters: [] }];
+        const columns = [{ name: "Column 1", render: jest.fn(), selected: true, configurable: true, sortDirection: SortDirection.ASC, filters: {} }];
         const dataExplorer = mount(<DataExplorer
             {...mockDataExplorerProps()}
             columns={columns}
@@ -53,7 +52,7 @@ describe("<DataExplorer />", () => {
         const onSortToggle = jest.fn();
         const onRowClick = jest.fn();
         const onSetColumns = jest.fn();
-        const columns = [{ name: "Column 1", render: jest.fn(), selected: true, configurable: true, sortDirection: SortDirection.ASC, filters: [] }];
+        const columns = [{ name: "Column 1", render: jest.fn(), selected: true, configurable: true, sortDirection: SortDirection.ASC, filters: {} }];
         const items = [{ name: "item 1" }];
         const dataExplorer = mount(<DataExplorer
             {...mockDataExplorerProps()}
@@ -95,6 +94,7 @@ describe("<DataExplorer />", () => {
 });
 
 const mockDataExplorerProps = () => ({
+    fetchMode: DataTableFetchMode.PAGINATED,
     columns: [],
     items: [],
     itemsAvailable: 0,
@@ -114,6 +114,7 @@ const mockDataExplorerProps = () => ({
     onContextMenu: jest.fn(),
     defaultIcon: ProjectIcon,
     onSetColumns: jest.fn(),
+    onLoadMore: jest.fn(),
     defaultMessages: ['testing'],
     contextMenuColumn: true
 });

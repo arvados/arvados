@@ -12,6 +12,11 @@ import { countNodes } from '~/models/tree';
 
 export type DataColumns<T> = Array<DataColumn<T>>;
 
+export enum DataTableFetchMode {
+    PAGINATED,
+    INFINITE
+}
+
 export interface DataTableDataProps<T> {
     items: T[];
     columns: DataColumns<T>;

@@ -257,7 +257,8 @@ export const openAdvancedTabDialog = (uuid: string) =>
                 dispatch<any>(initAdvancedTabDialog(advanceDataComputeNode));
                 break;
             case ResourceKind.API_CLIENT_AUTHORIZATION:
-                const dataApiClientAuthorization = getState().apiClientAuthorizations.find(item => item.uuid === uuid);
+                const apiClientAuthorizationResources = getState().resources;
+                const dataApiClientAuthorization = getResource<ApiClientAuthorization>(uuid)(apiClientAuthorizationResources);
                 const advanceDataApiClientAuthorization = advancedTabData({
                     uuid,
                     metadata: '',

@@ -5,7 +5,7 @@
 import * as _ from "lodash";
 import { CommonResourceService } from '~/services/common-service/common-resource-service';
 import { ListResults, ListArguments } from '~/services/common-service/common-service';
-import { AxiosInstance } from "axios";
+import { AxiosInstance, AxiosRequestConfig } from "axios";
 import { CollectionResource } from "~/models/collection";
 import { ProjectResource } from "~/models/project";
 import { ProcessResource } from "~/models/process";
@@ -13,6 +13,7 @@ import { ResourceKind } from '~/models/resource';
 import { TrashableResourceService } from "~/services/common-service/trashable-resource-service";
 import { ApiActions } from "~/services/api/api-actions";
 import { GroupResource } from "~/models/group";
+import { Session } from "~/models/session";
 
 export interface ContentsArguments {
     limit?: number;
@@ -39,7 +40,7 @@ export class GroupsService<T extends GroupResource = GroupResource> extends Tras
         super(serverApi, "groups", actions);
     }
 
-    async contents(uuid: string, args: ContentsArguments = {}): Promise<ListResults<GroupContentsResource>> {
+    async contents(uuid: string, args: ContentsArguments = {}, session?: Session): Promise<ListResults<GroupContentsResource>> {
         const { filters, order, ...other } = args;
         const params = {
             ...other,
@@ -48,17 +49,18 @@ export class GroupsService<T extends GroupResource = GroupResource> extends Tras
         };
 
         const pathUrl = uuid ? `${uuid}/contents` : 'contents';
+
+        const cfg: AxiosRequestConfig = { params: CommonResourceService.mapKeys(_.snakeCase)(params) };
+        if (session) {
+            cfg.baseURL = session.baseUrl;
+        }
+
         const response = await CommonResourceService.defaultResponse(
-                this.serverApi
-                    .get(this.resourceType + pathUrl, {
-                        params: CommonResourceService.mapKeys(_.snakeCase)(params)
-                    }),
-                this.actions, 
-                false
-            );
+            this.serverApi.get(this.resourceType + pathUrl, cfg), this.actions, false
+        );
 
         const { items, ...res } = response;
-        const mappedItems = items.map((item: GroupContentsResource) => {
+        const mappedItems = (items || []).map((item: GroupContentsResource) => {
             const mappedItem = TrashableResourceService.mapKeys(_.camelCase)(item);
             if (item.kind === ResourceKind.COLLECTION || item.kind === ResourceKind.PROJECT) {
                 const { properties } = item;
@@ -68,7 +70,7 @@ export class GroupsService<T extends GroupResource = GroupResource> extends Tras
             }
         });
         const mappedResponse = { ...TrashableResourceService.mapKeys(_.camelCase)(res) };
-        return { ...mappedResponse, items: mappedItems };
+        return { ...mappedResponse, items: mappedItems, clusterId: session && session.clusterId };
     }
 
     shared(params: SharedArguments = {}): Promise<ListResults<GroupContentsResource>> {

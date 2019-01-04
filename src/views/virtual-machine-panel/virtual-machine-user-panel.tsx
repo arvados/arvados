@@ -110,7 +110,7 @@ const CardContentWithoutVirtualMachines = (props: VirtualMachineProps) =>
         <Card>
             <CardContent className={props.classes.cardWithoutMachines}>
                 <Grid item xs={6}>
-                    <Typography variant="body2">
+                    <Typography variant='body1'>
                         You do not have access to any virtual machines. Some Arvados features require using the command line. You may request access to a hosted virtual machine with the command line shell.
                     </Typography>
                 </Grid>
@@ -149,7 +149,7 @@ const virtualMachineSendRequest = (props: VirtualMachineProps) =>
             SEND REQUEST FOR SHELL ACCESS
         </Button>
         {props.requestedDate &&
-            <Typography variant="body1">
+            <Typography >
                 A request for shell access was sent on {props.requestedDate}
             </Typography>}
     </span>;
@@ -188,7 +188,7 @@ const CardSSHSection = (props: VirtualMachineProps) =>
     <Grid item xs={12}>
         <Card>
             <CardContent>
-                <Typography variant="body2">
+                <Typography variant='body1'>
                     In order to access virtual machines using SSH, <Link to={Routes.SSH_KEYS_USER} className={props.classes.link}>add an SSH key to your account</Link> and add a section like this to your SSH configuration file ( ~/.ssh/config):
                 </Typography>
                 <DefaultCodeSnippet

@@ -119,7 +119,7 @@ export const SiteManagerPanelRoot = compose(
             <CardContent>
                 <Grid container direction="row">
                     <Grid item xs={12}>
-                        <Typography variant='body1' paragraph={true} >
+                        <Typography  paragraph={true} >
                             You can log in to multiple Arvados sites here, then use the multi-site search page to search collections and projects on all sites at once.
                         </Typography>
                     </Grid>
@@ -157,7 +157,7 @@ export const SiteManagerPanelRoot = compose(
                 <form onSubmit={handleSubmit}>
                     <Grid container direction="row">
                         <Grid item xs={12}>
-                            <Typography variant='body1' paragraph={true} className={classes.remoteSiteInfo}>
+                            <Typography  paragraph={true} className={classes.remoteSiteInfo}>
                                 To add a remote Arvados site, paste the remote site's host here (see "ARVADOS_API_HOST" on the "current token" page).
                             </Typography>
                         </Grid>

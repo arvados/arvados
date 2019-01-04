@@ -41,7 +41,7 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
 
         const otherFilters = new FilterBuilder()
             .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.COLLECTION)
-            .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROCESS)
+            // .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROCESS)
             .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROJECT)
             .addEqual("is_trashed", true)
             .getFilters();

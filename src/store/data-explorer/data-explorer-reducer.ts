@@ -2,12 +2,18 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { DataColumn, toggleSortDirection, resetSortDirection, SortDirection } from "~/components/data-table/data-column";
-import { dataExplorerActions, DataExplorerAction } from "./data-explorer-action";
-import { DataColumns } from "~/components/data-table/data-table";
+import {
+    DataColumn,
+    resetSortDirection,
+    SortDirection,
+    toggleSortDirection
+} from "~/components/data-table/data-column";
+import { DataExplorerAction, dataExplorerActions } from "./data-explorer-action";
+import { DataColumns, DataTableFetchMode } from "~/components/data-table/data-table";
 import { DataTableFilters } from "~/components/data-table-filters/data-table-filters-tree";
 
 export interface DataExplorer {
+    fetchMode: DataTableFetchMode;
     columns: DataColumns<any>;
     items: any[];
     itemsAvailable: number;
@@ -19,6 +25,7 @@ export interface DataExplorer {
 }
 
 export const initialDataExplorer: DataExplorer = {
+    fetchMode: DataTableFetchMode.PAGINATED,
     columns: [],
     items: [],
     itemsAvailable: 0,
@@ -32,8 +39,14 @@ export type DataExplorerState = Record<string, DataExplorer>;
 
 export const dataExplorerReducer = (state: DataExplorerState = {}, action: DataExplorerAction) =>
     dataExplorerActions.match(action, {
+        CLEAR: ({ id }) =>
+            update(state, id, explorer => ({ ...explorer, page: 0, itemsAvailable: 0, items: [] })),
+
         RESET_PAGINATION: ({ id }) =>
             update(state, id, explorer => ({ ...explorer, page: 0 })),
+
+        SET_FETCH_MODE: ({ id, fetchMode }) =>
+            update(state, id, explorer => ({ ...explorer, fetchMode })),
 
         SET_COLUMNS: ({ id, columns }) =>
             update(state, id, setColumns(columns)),
@@ -43,6 +56,15 @@ export const dataExplorerReducer = (state: DataExplorerState = {}, action: DataE
 
         SET_ITEMS: ({ id, items, itemsAvailable, page, rowsPerPage }) =>
             update(state, id, explorer => ({ ...explorer, items, itemsAvailable, page, rowsPerPage })),
+
+        APPEND_ITEMS: ({ id, items, itemsAvailable, page, rowsPerPage }) =>
+            update(state, id, explorer => ({
+                ...explorer,
+                items: state[id].items.concat(items),
+                itemsAvailable: state[id].itemsAvailable + itemsAvailable,
+                page,
+                rowsPerPage
+            })),
 
         SET_PAGE: ({ id, page }) =>
             update(state, id, explorer => ({ ...explorer, page })),

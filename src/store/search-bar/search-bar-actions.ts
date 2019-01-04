@@ -15,11 +15,14 @@ import { GroupClass } from '~/models/group';
 import { SearchView } from '~/store/search-bar/search-bar-reducer';
 import { navigateTo, navigateToSearchResults } from '~/store/navigation/navigation-action';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { ClusterObjectType, PropertyValue, SearchBarAdvanceFormData } from '~/models/search-bar';
+import { PropertyValue, SearchBarAdvanceFormData } from '~/models/search-bar';
 import { debounce } from 'debounce';
 import * as _ from "lodash";
 import { getModifiedKeysValues } from "~/common/objects";
 import { activateSearchBarProject } from "~/store/search-bar/search-bar-tree-actions";
+import { Session } from "~/models/session";
+import { searchResultsPanelActions } from "~/store/search-results-panel/search-results-panel-actions";
+import { ListResults } from "~/services/common-service/common-service";
 
 export const searchBarActions = unionize({
     SET_CURRENT_VIEW: ofType<string>(),
@@ -189,6 +192,7 @@ export const submitData = (event: React.FormEvent<HTMLFormElement>) =>
         dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
         dispatch(searchBarActions.SET_SEARCH_VALUE(searchValue));
         dispatch(searchBarActions.SET_SEARCH_RESULTS([]));
+        dispatch(searchResultsPanelActions.CLEAR());
         dispatch(navigateToSearchResults);
     };
 
@@ -205,12 +209,19 @@ const searchGroups = (searchValue: string, limit: number) =>
         const currentView = getState().searchBar.currentView;
 
         if (searchValue || currentView === SearchView.ADVANCED) {
-            const filters = getFilters('name', searchValue);
-            const { items } = await services.groupsService.contents('', {
-                filters,
-                limit,
-                recursive: true
-            });
+            const sq = parseSearchQuery(searchValue);
+            const clusterId = getSearchQueryFirstProp(sq, 'cluster');
+            const sessions = getSearchSessions(clusterId, getState().auth.sessions);
+            const lists: ListResults<GroupContentsResource>[] = await Promise.all(sessions.map(session => {
+                const filters = getFilters('name', searchValue, sq);
+                return services.groupsService.contents('', {
+                    filters,
+                    limit,
+                    recursive: true
+                }, session);
+            }));
+
+            const items = lists.reduce((items, list) => items.concat(list.items), [] as GroupContentsResource[]);
             dispatch(searchBarActions.SET_SEARCH_RESULTS(items));
         }
     };
@@ -288,7 +299,7 @@ export const getQueryFromAdvancedData = (data: SearchBarAdvanceFormData, prevDat
     return value;
 };
 
-export interface ParseSearchQuery {
+export class ParseSearchQuery {
     hasKeywords: boolean;
     values: string[];
     properties: {
@@ -351,9 +362,9 @@ export const parseSearchQuery: (query: string) => ParseSearchQuery = (searchValu
     return { hasKeywords: keywordsCnt > 0, values, properties };
 };
 
-const getFirstProp = (sq: ParseSearchQuery, name: string) => sq.properties[name] && sq.properties[name][0];
-const getPropValue = (sq: ParseSearchQuery, name: string, value: string) => sq.properties[name] && sq.properties[name].find((v: string) => v === value);
-const getProperties = (sq: ParseSearchQuery): PropertyValue[] => {
+export const getSearchQueryFirstProp = (sq: ParseSearchQuery, name: string) => sq.properties[name] && sq.properties[name][0];
+export const getSearchQueryPropValue = (sq: ParseSearchQuery, name: string, value: string) => sq.properties[name] && sq.properties[name].find((v: string) => v === value);
+export const getSearchQueryProperties = (sq: ParseSearchQuery): PropertyValue[] => {
     if (sq.properties.has) {
         return sq.properties.has.map((value: string) => {
             const v = value.split(':');
@@ -371,23 +382,26 @@ export const getAdvancedDataFromQuery = (query: string): SearchBarAdvanceFormDat
 
     return {
         searchValue: sq.values.join(' '),
-        type: getFirstProp(sq, 'type') as ResourceKind,
-        cluster: getFirstProp(sq, 'cluster') as ClusterObjectType,
-        projectUuid: getFirstProp(sq, 'project'),
-        inTrash: getPropValue(sq, 'is', 'trashed') !== undefined,
-        dateFrom: getFirstProp(sq, 'from'),
-        dateTo: getFirstProp(sq, 'to'),
-        properties: getProperties(sq),
+        type: getSearchQueryFirstProp(sq, 'type') as ResourceKind,
+        cluster: getSearchQueryFirstProp(sq, 'cluster'),
+        projectUuid: getSearchQueryFirstProp(sq, 'project'),
+        inTrash: getSearchQueryPropValue(sq, 'is', 'trashed') !== undefined,
+        dateFrom: getSearchQueryFirstProp(sq, 'from'),
+        dateTo: getSearchQueryFirstProp(sq, 'to'),
+        properties: getSearchQueryProperties(sq),
         saveQuery: false,
         queryName: ''
     };
 };
 
-export const getFilters = (filterName: string, searchValue: string): string => {
-    const filter = new FilterBuilder();
-    const sq = parseSearchQuery(searchValue);
+export const getSearchSessions = (clusterId: string | undefined, sessions: Session[]): Session[] => {
+    return sessions.filter(s => s.loggedIn && (!clusterId || s.clusterId === clusterId));
+};
 
-    const resourceKind = getFirstProp(sq, 'type') as ResourceKind;
+export const getFilters = (filterName: string, searchValue: string, sq: ParseSearchQuery): string => {
+    const filter = new FilterBuilder();
+
+    const resourceKind = getSearchQueryFirstProp(sq, 'type') as ResourceKind;
 
     let prefix = '';
     switch (resourceKind) {
@@ -402,11 +416,16 @@ export const getFilters = (filterName: string, searchValue: string): string => {
             break;
     }
 
+    const isTrashed = getSearchQueryPropValue(sq, 'is', 'trashed');
+
     if (!sq.hasKeywords) {
         filter
             .addILike(filterName, searchValue, GroupContentsResourcePrefix.COLLECTION)
-            .addILike(filterName, searchValue, GroupContentsResourcePrefix.PROCESS)
             .addILike(filterName, searchValue, GroupContentsResourcePrefix.PROJECT);
+
+        if (isTrashed) {
+            filter.addILike(filterName, searchValue, GroupContentsResourcePrefix.PROCESS);
+        }
     } else {
         if (prefix) {
             sq.values.forEach(v =>
@@ -416,33 +435,38 @@ export const getFilters = (filterName: string, searchValue: string): string => {
             sq.values.forEach(v => {
                 filter
                     .addILike(filterName, v, GroupContentsResourcePrefix.COLLECTION)
-                    .addILike(filterName, v, GroupContentsResourcePrefix.PROCESS)
                     .addILike(filterName, v, GroupContentsResourcePrefix.PROJECT);
+
+                if (isTrashed) {
+                    filter.addILike(filterName, v, GroupContentsResourcePrefix.PROCESS);
+                }
             });
         }
 
-        if (getPropValue(sq, 'is', 'trashed')) {
+        if (isTrashed) {
             filter.addEqual("is_trashed", true);
         }
 
-        const projectUuid = getFirstProp(sq, 'project');
+        const projectUuid = getSearchQueryFirstProp(sq, 'project');
         if (projectUuid) {
             filter.addEqual('uuid', projectUuid, prefix);
         }
 
-        const dateFrom = getFirstProp(sq, 'from');
+        const dateFrom = getSearchQueryFirstProp(sq, 'from');
         if (dateFrom) {
             filter.addGte('modified_at', buildDateFilter(dateFrom));
         }
 
-        const dateTo = getFirstProp(sq, 'to');
+        const dateTo = getSearchQueryFirstProp(sq, 'to');
         if (dateTo) {
             filter.addLte('modified_at', buildDateFilter(dateTo));
         }
 
-        const props = getProperties(sq);
+        const props = getSearchQueryProperties(sq);
         props.forEach(p => {
-            // filter.addILike(`properties.${p.key}`, p.value);
+            if (p.value) {
+                filter.addILike(`properties.${p.key}`, p.value);
+            }
             filter.addExists(p.key);
         });
     }

@@ -24,6 +24,8 @@ import { getResource } from '~/store/resources/resources';
 import { ResourceData } from "~/store/resources-data/resources-data-reducer";
 import { getResourceData } from "~/store/resources-data/resources-data";
 import { toggleDetailsPanel, SLIDE_TIMEOUT } from '~/store/details-panel/details-panel-action';
+import { FileDetails } from '~/views-components/details-panel/file-details';
+import { getNode } from '~/models/tree';
 
 type CssRules = 'root' | 'container' | 'opened' | 'headerContainer' | 'headerIcon' | 'tabContainer';
 
@@ -58,26 +60,32 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-const getItem = (resource: DetailsResource, resourceData?: ResourceData): DetailsData => {
-    const res = resource || { kind: undefined, name: 'Projects' };
-    switch (res.kind) {
-        case ResourceKind.PROJECT:
-            return new ProjectDetails(res);
-        case ResourceKind.COLLECTION:
-            return new CollectionDetails(res, resourceData);
-        case ResourceKind.PROCESS:
-            return new ProcessDetails(res);
-        default:
-            return new EmptyDetails(res as EmptyResource);
+const EMPTY_RESOURCE: EmptyResource = { kind: undefined, name: 'Projects' };
+
+const getItem = (res: DetailsResource, resourceData?: ResourceData): DetailsData => {
+    if ('kind' in res) {
+        switch (res.kind) {
+            case ResourceKind.PROJECT:
+                return new ProjectDetails(res);
+            case ResourceKind.COLLECTION:
+                return new CollectionDetails(res, resourceData);
+            case ResourceKind.PROCESS:
+                return new ProcessDetails(res);
+            default:
+                return new EmptyDetails(res);
+        }
+    } else {
+        return new FileDetails(res);
     }
 };
 
-const mapStateToProps = ({ detailsPanel, resources, resourcesData }: RootState) => {
-    const resource = getResource(detailsPanel.resourceUuid)(resources) as DetailsResource;
+const mapStateToProps = ({ detailsPanel, resources, resourcesData, collectionPanelFiles }: RootState) => {
+    const resource = getResource(detailsPanel.resourceUuid)(resources) as DetailsResource | undefined;
+    const file = getNode(detailsPanel.resourceUuid)(collectionPanelFiles);
     const resourceData = getResourceData(detailsPanel.resourceUuid)(resourcesData);
     return {
         isOpened: detailsPanel.isOpened,
-        item: getItem(resource, resourceData)
+        item: getItem(resource || (file && file.value) || EMPTY_RESOURCE, resourceData)
     };
 };
 
@@ -144,7 +152,7 @@ export const DetailsPanel = withStyles(styles)(
                         </Grid>
                         <Grid item xs={8}>
                             <Tooltip title={item.getTitle()}>
-                                <Typography variant="title" noWrap>
+                                <Typography variant='h6' noWrap>
                                     {item.getTitle()}
                                 </Typography>
                             </Tooltip>

@@ -83,7 +83,7 @@ export const ProcessSubprocessesCard = withStyles(styles, { withTheme: true })(
                 classes={{ content: classes.title, action: classes.action }}
                 action={
                     <div className={classes.rightSideHeader}>
-                        <Typography noWrap variant="body2" className={classes.status}>
+                        <Typography noWrap variant='body1' className={classes.status}>
                             {getProcessStatus(subprocess)}
                         </Typography>
                         <Tooltip title="More options" disableFocusListener>
@@ -91,21 +91,23 @@ export const ProcessSubprocessesCard = withStyles(styles, { withTheme: true })(
                                 className={classes.options}
                                 aria-label="More options"
                                 onClick={onContextMenu}>
-                                <MoreOptionsIcon className={classes.moreOptions}/>
+                                <MoreOptionsIcon className={classes.moreOptions} />
                             </IconButton>
                         </Tooltip>
                     </div>
                 }
                 title={
                     <Tooltip title={subprocess.containerRequest.name}>
-                        <Typography noWrap variant="body2" className={classes.titleHeader}>
+                        <Typography noWrap variant='body1' className={classes.titleHeader}>
                             {subprocess.containerRequest.name}
                         </Typography>
                     </Tooltip>
                 } />
             <CardContent className={classes.content}>
                 <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                    label="Runtime" value={formatTime(getProcessRuntime(subprocess))} />
+                    label="Runtime" value={subprocess.container && subprocess.container.startedAt && subprocess.container.finishedAt
+                        ? formatTime(getProcessRuntime(subprocess)) :
+                        '(none)'} />
             </CardContent>
         </Card>;
     });

@@ -69,7 +69,7 @@ export const MyAccountPanelRoot = withStyles(styles)(
     ({ classes, isValid, handleSubmit, reset, isPristine, invalid, submitting }: MyAccountPanelRootProps) => {
         return <Card className={classes.root}>
             <CardContent>
-                <Typography variant="title" className={classes.title}>User profile</Typography>
+                <Typography variant='h6' className={classes.title}>User profile</Typography>
                 <form onSubmit={handleSubmit}>
                     <Grid container direction="row" spacing={24}>
                         <Grid item xs={6}>

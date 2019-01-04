@@ -23,7 +23,7 @@ export const RenameDialog = (props: WithDialogProps<string> & InjectedFormProps<
             </DialogContent>
             <DialogActions>
                 <Button
-                    variant='flat'
+                    variant='text'
                     color='primary'
                     disabled={props.submitting}
                     onClick={props.closeDialog}>

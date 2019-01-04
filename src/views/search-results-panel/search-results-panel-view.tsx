@@ -12,7 +12,7 @@ import { SearchBarAdvanceFormData } from '~/models/search-bar';
 import { SEARCH_RESULTS_PANEL_ID } from '~/store/search-results-panel/search-results-panel-actions';
 import { DataExplorer } from '~/views-components/data-explorer/data-explorer';
 import {
-    ProcessStatus,
+    ProcessStatus, ResourceCluster,
     ResourceFileSize,
     ResourceLastModifiedDate,
     ResourceName,
@@ -23,6 +23,7 @@ import { createTree } from '~/models/tree';
 import { getInitialResourceTypeFilters } from '~/store/resource-type-filters/resource-type-filters';
 
 export enum SearchResultsPanelColumnNames {
+    CLUSTER = "Cluster",
     NAME = "Name",
     PROJECT = "Project",
     STATUS = "Status",
@@ -50,6 +51,13 @@ export interface WorkflowPanelFilter extends DataTableFilterItem {
 }
 
 export const searchResultsPanelColumns: DataColumns<string> = [
+    {
+        name: SearchResultsPanelColumnNames.CLUSTER,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: (uuid: string) => <ResourceCluster uuid={uuid} />
+    },
     {
         name: SearchResultsPanelColumnNames.NAME,
         selected: true,

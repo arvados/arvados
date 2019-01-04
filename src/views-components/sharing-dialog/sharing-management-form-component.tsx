@@ -40,7 +40,7 @@ const PermissionManagementRow = withStyles(permissionManagementRowStyles)(
             <Divider />
             <Grid container alignItems='center' spacing={8} wrap='nowrap' className={classes.root}>
                 <Grid item xs={8}>
-                    <Typography noWrap variant='subheading'>{fields.get(index).email}</Typography>
+                    <Typography noWrap variant='subtitle1'>{fields.get(index).email}</Typography>
                 </Grid>
                 <Grid item xs={4} container wrap='nowrap'>
                     <Field

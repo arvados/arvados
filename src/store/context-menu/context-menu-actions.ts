@@ -123,12 +123,12 @@ export const openComputeNodeContextMenu = (event: React.MouseEvent<HTMLElement>,
     };
 
 export const openApiClientAuthorizationContextMenu =
-    (event: React.MouseEvent<HTMLElement>, apiClientAuthorization: ApiClientAuthorization) =>
+    (event: React.MouseEvent<HTMLElement>, resourceUuid: string) =>
         (dispatch: Dispatch) => {
             dispatch<any>(openContextMenu(event, {
                 name: '',
-                uuid: apiClientAuthorization.uuid,
-                ownerUuid: apiClientAuthorization.ownerUuid,
+                uuid: resourceUuid,
+                ownerUuid: '',
                 kind: ResourceKind.API_CLIENT_AUTHORIZATION,
                 menuKind: ContextMenuKind.API_CLIENT_AUTHORIZATION
             }));
