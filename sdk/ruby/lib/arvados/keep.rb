@@ -162,15 +162,15 @@ module Keep
           elsif in_file_tokens or not Locator.valid? token
             in_file_tokens = true
 
-            file_tokens = split_file_token(token)
+            start_pos, file_size, file_name = split_file_token(token)
             stream_name_adjuster = ''
-            if file_tokens[2].include?('/')                # '/' in filename
-              parts = file_tokens[2].rpartition('/')
-              stream_name_adjuster = parts[1] + parts[0]   # /dir_parts
-              file_tokens[2] = parts[2]
+            if file_name.include?('/')                # '/' in filename
+              dirname, sep, basename = file_name.rpartition('/')
+              stream_name_adjuster = sep + dirname   # /dir_parts
+              file_name = basename
             end
 
-            yield [stream_name + stream_name_adjuster] + file_tokens
+            yield [stream_name + stream_name_adjuster, start_pos, file_size, file_name]
           end
         end
       end
