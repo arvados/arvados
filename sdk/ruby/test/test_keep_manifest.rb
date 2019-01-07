@@ -62,6 +62,11 @@ class ManifestTest < Minitest::Test
     assert_equal(0, Keep::Manifest.new("").files_count)
   end
 
+  def test_empty_dir_files_count
+    assert_equal(0,
+      Keep::Manifest.new("./empty_dir d41d8cd98f00b204e9800998ecf8427e+0 0:0:\\056\n").files_count)
+  end
+
   def test_empty_files_size
     assert_equal(0, Keep::Manifest.new("").files_size)
   end

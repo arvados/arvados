@@ -205,10 +205,13 @@ module Keep
       # files.  This can help you avoid parsing the entire manifest if you
       # just want to check if a small number of files are specified.
       if stop_after.nil? or not @files.nil?
-        return files.size
+        # Avoid counting empty dir placeholders
+        return files.reject{|_, name, size| name == '.' and size == 0}.size
       end
       seen_files = {}
-      each_file_spec do |streamname, _, _, filename|
+      each_file_spec do |streamname, _, filesize, filename|
+        # Avoid counting empty dir placeholders
+        next if filename == "." and filesize == 0
         seen_files[[streamname, filename]] = true
         return stop_after if (seen_files.size >= stop_after)
       end
