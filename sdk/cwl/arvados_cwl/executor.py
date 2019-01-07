@@ -660,7 +660,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                            runtimeContext)
 
         if runtimeContext.submit and not runtimeContext.wait:
-            runnerjob = jobiter.next()
+            runnerjob = next(jobiter)
             runnerjob.run(runtimeContext)
             return (runnerjob.uuid, "success")
 
