@@ -320,6 +320,7 @@ class ManifestTest < Minitest::Test
     [true, ". 00000000000000000000000000000000+0 0:0:0\n"],
     [true, ". 00000000000000000000000000000000+0 0:0:d41d8cd98f00b204e9800998ecf8427e+0+Ad41d8cd98f00b204e9800998ecf8427e00000000@ffffffff\n"],
     [true, ". d41d8cd98f00b204e9800998ecf8427e+0+Ad41d8cd98f00b204e9800998ecf8427e00000000@ffffffff 0:0:empty.txt\n"],
+    [true, "./empty_dir d41d8cd98f00b204e9800998ecf8427e+0 0:0:.\n"],
     [false, '. d41d8cd98f00b204e9800998ecf8427e 0:0:abc.txt',
       "Invalid manifest: does not end with newline"],
     [false, "abc d41d8cd98f00b204e9800998ecf8427e 0:0:abc.txt\n",
@@ -334,8 +335,9 @@ class ManifestTest < Minitest::Test
       "invalid stream name \"./abc/..\""],
     [false, "./abc/./foo d41d8cd98f00b204e9800998ecf8427e 0:0:abc.txt\n",
       "invalid stream name \"./abc/./foo\""],
-    [false, ". d41d8cd98f00b204e9800998ecf8427e 0:0:.\n",
-      "invalid file token \"0:0:.\""],
+    # non-empty '.'-named file tokens aren't acceptable. Empty ones are used as empty dir placeholders.
+    [false, ". 8cf8463b34caa8ac871a52d5dd7ad1ef+1 0:1:.\n",
+      "invalid file token \"0:1:.\""],
     [false, ". d41d8cd98f00b204e9800998ecf8427e 0:0:..\n",
       "invalid file token \"0:0:..\""],
     [false, ". d41d8cd98f00b204e9800998ecf8427e 0:0:./abc.txt\n",
@@ -429,6 +431,18 @@ class ManifestTest < Minitest::Test
       "Manifest invalid for stream 1: invalid file token \"0:0:foo//bar.txt\""],
     [false, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo/\n",
       "Manifest invalid for stream 1: invalid file token \"0:0:foo/\""],
+    # escaped chars
+    [true, "./empty_dir d41d8cd98f00b204e9800998ecf8427e+0 0:0:\\056\n"],
+    [true, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo\\057bar\n"],
+    [true, ".\\057Data d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo\n"],
+    [false, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo\\057/bar\n",
+      "Manifest invalid for stream 1: invalid file token \"0:0:foo\\\\057/bar\""],
+    [false, ".\\057/Data d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo\n",
+      "Manifest invalid for stream 1: missing or invalid stream name \".\\\\057/Data\""],
+    [true, "./Data\\040Folder d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo\n"],
+    [false, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:\\057foo/bar\n",
+      "Manifest invalid for stream 1: invalid file token \"0:0:\\\\057foo/bar\""],
+    [true, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:\\134057foo/bar\n"],
   ].each do |ok, manifest, expected_error=nil|
     define_method "test_validate manifest #{manifest.inspect}" do
       assert_equal ok, Keep::Manifest.valid?(manifest)
