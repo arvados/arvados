@@ -595,6 +595,7 @@ pythonstuff=(
     sdk/python
     sdk/python:py3
     sdk/cwl
+    sdk/cwl:py3
     services/dockercleaner:py3
     services/fuse
     services/nodemanager
