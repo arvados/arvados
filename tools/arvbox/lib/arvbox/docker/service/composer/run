@@ -5,4 +5,4 @@
 
 set -e
 
-/usr/local/lib/arvbox/runsu.sh $0-service $1
+exec /usr/local/lib/arvbox/runsu.sh $0-service $1

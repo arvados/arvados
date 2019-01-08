@@ -91,5 +91,6 @@ fi
 echo
 echo "Your Arvados-in-a-box is ready!"
 echo "Workbench is running at https://$localip"
+echo "Workbench2 is running at https://$localip:${services[workbench2-ssl]}"
 
 rm -r /tmp/arvbox-ready

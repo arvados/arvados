@@ -104,7 +104,7 @@ wait_for_arvbox() {
     LOGPID=$!
     while read line ; do
         echo $line
-        if echo $line | grep "Workbench is running at" >/dev/null ; then
+        if echo $line | grep "Workbench2 is running at" >/dev/null ; then
             kill $LOGPID
         fi
     done < $FF
