@@ -1,0 +1,33 @@
+#!/bin/bash
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
+exec 2>&1
+set -ex -o pipefail
+
+.  /usr/local/lib/arvbox/common.sh
+
+cd /usr/src/workbench2
+
+npm -d install --prefix /usr/local --global yarn
+
+yarn install
+
+if test "$1" = "--only-deps" ; then
+    exit
+fi
+
+cat <<EOF > /usr/src/workbench2/public/config.json
+{
+  "API_HOST": "${localip}:${services[controller-ssl]}",
+  "VOCABULARY_URL": "vocabulary-example.json",
+  "FILE_VIEWERS_CONFIG_URL": "file-viewers-example.json"
+}
+EOF
+
+export HTTPS=false
+# Can't use "yarn start", need to run the dev server script
+# directly so that the TERM signal from "sv restart" gets to the
+# right process.
+exec node node_modules/react-scripts-ts/scripts/start.js
