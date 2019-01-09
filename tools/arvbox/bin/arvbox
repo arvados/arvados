@@ -103,9 +103,10 @@ wait_for_arvbox() {
     docker logs -f $ARVBOX_CONTAINER > $FF &
     LOGPID=$!
     while read line ; do
-        echo $line
-        if echo $line | grep "Workbench2 is running at" >/dev/null ; then
+        if echo $line | grep "ok: down: ready:" >/dev/null ; then
             kill $LOGPID
+	else
+	    echo $line
         fi
     done < $FF
     rm $FF
