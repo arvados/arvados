@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package dispatchcloud
+package cloud
 
 import (
 	"context"
@@ -29,7 +29,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-type AzureProviderConfig struct {
+type AzureInstanceSetConfig struct {
 	SubscriptionID               string  `json:"subscription_id"`
 	ClientID                     string  `json:"key"`
 	ClientSecret                 string  `json:"secret"`
@@ -185,8 +185,8 @@ func WrapAzureError(err error) error {
 	return err
 }
 
-type AzureProvider struct {
-	azconfig          AzureProviderConfig
+type AzureInstanceSet struct {
+	azconfig          AzureInstanceSetConfig
 	vmClient          VirtualMachinesClientWrapper
 	netClient         InterfacesClientWrapper
 	storageAcctClient storageacct.AccountsClient
@@ -196,8 +196,13 @@ type AzureProvider struct {
 	namePrefix        string
 }
 
-func NewAzureProvider(azcfg AzureProviderConfig, dispatcherID string) (prv InstanceProvider, err error) {
-	ap := AzureProvider{}
+func NewAzureInstanceSet(config map[string]interface{}, dispatcherID string) (prv InstanceProvider, err error) {
+	azcfg := AzureInstanceSetConfig{}
+	err = mapstructure.Decode(config, &azcfg)
+	if err != nil {
+		return nil, err
+	}
+	ap := AzureInstanceSet{}
 	err = ap.setup(azcfg, dispatcherID)
 	if err != nil {
 		return nil, err
@@ -205,7 +210,7 @@ func NewAzureProvider(azcfg AzureProviderConfig, dispatcherID string) (prv Insta
 	return &ap, nil
 }
 
-func (az *AzureProvider) setup(azcfg AzureProviderConfig, dispatcherID string) (err error) {
+func (az *AzureInstanceSet) setup(azcfg AzureInstanceSetConfig, dispatcherID string) (err error) {
 	az.azconfig = azcfg
 	vmClient := compute.NewVirtualMachinesClient(az.azconfig.SubscriptionID)
 	netClient := network.NewInterfacesClient(az.azconfig.SubscriptionID)
@@ -241,7 +246,7 @@ func (az *AzureProvider) setup(azcfg AzureProviderConfig, dispatcherID string) (
 	return nil
 }
 
-func (az *AzureProvider) Create(ctx context.Context,
+func (az *AzureInstanceSet) Create(ctx context.Context,
 	instanceType arvados.InstanceType,
 	imageId ImageID,
 	newTags InstanceTags,
@@ -371,7 +376,7 @@ echo '%s-%s' > /home/crunch/node-token`, name, newTags["node-token"])))
 	}, nil
 }
 
-func (az *AzureProvider) Instances(ctx context.Context) ([]Instance, error) {
+func (az *AzureInstanceSet) Instances(ctx context.Context) ([]Instance, error) {
 	interfaces, err := az.ManageNics(ctx)
 	if err != nil {
 		return nil, err
@@ -398,7 +403,7 @@ func (az *AzureProvider) Instances(ctx context.Context) ([]Instance, error) {
 	return instances, nil
 }
 
-func (az *AzureProvider) ManageNics(ctx context.Context) (map[string]network.Interface, error) {
+func (az *AzureInstanceSet) ManageNics(ctx context.Context) (map[string]network.Interface, error) {
 	result, err := az.netClient.ListComplete(ctx, az.azconfig.ResourceGroup)
 	if err != nil {
 		return nil, WrapAzureError(err)
@@ -457,7 +462,7 @@ func (az *AzureProvider) ManageNics(ctx context.Context) (map[string]network.Int
 	return interfaces, nil
 }
 
-func (az *AzureProvider) ManageBlobs(ctx context.Context) {
+func (az *AzureInstanceSet) ManageBlobs(ctx context.Context) {
 	result, err := az.storageAcctClient.ListKeys(ctx, az.azconfig.ResourceGroup, az.azconfig.StorageAccount)
 	if err != nil {
 		log.Printf("Couldn't get account keys %v", err)
@@ -527,11 +532,11 @@ func (az *AzureProvider) ManageBlobs(ctx context.Context) {
 	}
 }
 
-func (az *AzureProvider) Stop() {
+func (az *AzureInstanceSet) Stop() {
 }
 
 type AzureInstance struct {
-	provider *AzureProvider
+	provider *AzureInstanceSet
 	nic      network.Interface
 	vm       compute.VirtualMachine
 }

@@ -11,7 +11,9 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 )
 
-var drivers = map[string]cloud.Driver{}
+var drivers = map[string]cloud.Driver{
+	"azure": "",
+}
 
 func newInstanceSet(cluster *arvados.Cluster, setID cloud.InstanceSetID) (cloud.InstanceSet, error) {
 	driver, ok := drivers[cluster.CloudVMs.Driver]
