@@ -26,6 +26,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/jmcvetta/randutil"
+	"github.com/mitchellh/mapstructure"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -196,14 +197,13 @@ type AzureInstanceSet struct {
 	namePrefix        string
 }
 
-func NewAzureInstanceSet(config map[string]interface{}, dispatcherID string) (prv InstanceProvider, err error) {
+func NewAzureInstanceSet(config map[string]interface{}, dispatcherID InstanceSetID) (prv InstanceSet, err error) {
 	azcfg := AzureInstanceSetConfig{}
-	err = mapstructure.Decode(config, &azcfg)
-	if err != nil {
+	if err = mapstructure.Decode(config, &azcfg); err != nil {
 		return nil, err
 	}
 	ap := AzureInstanceSet{}
-	err = ap.setup(azcfg, dispatcherID)
+	err = ap.setup(azcfg, string(dispatcherID))
 	if err != nil {
 		return nil, err
 	}
@@ -376,7 +376,7 @@ echo '%s-%s' > /home/crunch/node-token`, name, newTags["node-token"])))
 	}, nil
 }
 
-func (az *AzureInstanceSet) Instances(ctx context.Context) ([]Instance, error) {
+func (az *AzureInstanceSet) Instances(ctx context.Context, _ InstanceTags) ([]Instance, error) {
 	interfaces, err := az.ManageNics(ctx)
 	if err != nil {
 		return nil, err
@@ -549,6 +549,10 @@ func (ai *AzureInstance) String() string {
 	return *ai.vm.Name
 }
 
+func (ai *AzureInstance) ProviderType() string {
+	return string(ai.vm.VirtualMachineProperties.HardwareProfile.VMSize)
+}
+
 func (ai *AzureInstance) SetTags(ctx context.Context, newTags InstanceTags) error {
 	tags := make(map[string]*string)
 
@@ -575,7 +579,7 @@ func (ai *AzureInstance) SetTags(ctx context.Context, newTags InstanceTags) erro
 	return nil
 }
 
-func (ai *AzureInstance) Tags(ctx context.Context) (InstanceTags, error) {
+func (ai *AzureInstance) Tags() InstanceTags {
 	tags := make(map[string]string)
 
 	for k, v := range ai.vm.Tags {
@@ -584,7 +588,7 @@ func (ai *AzureInstance) Tags(ctx context.Context) (InstanceTags, error) {
 		}
 	}
 
-	return tags, nil
+	return tags
 }
 
 func (ai *AzureInstance) Destroy(ctx context.Context) error {
@@ -596,10 +600,10 @@ func (ai *AzureInstance) Address() string {
 	return *(*ai.nic.IPConfigurations)[0].PrivateIPAddress
 }
 
-func (ai *AzureInstance) VerifyPublicKey(ctx context.Context, receivedKey ssh.PublicKey, client *ssh.Client) error {
+func (ai *AzureInstance) VerifyHostKey(ctx context.Context, receivedKey ssh.PublicKey, client *ssh.Client) error {
 	remoteFingerprint := ssh.FingerprintSHA256(receivedKey)
 
-	tags, _ := ai.Tags(ctx)
+	tags := ai.Tags()
 
 	tg := tags["ssh-pubkey-fingerprint"]
 	if tg != "" {

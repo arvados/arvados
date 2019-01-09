@@ -5,6 +5,7 @@
 package cloud
 
 import (
+	"context"
 	"io"
 	"time"
 
@@ -66,7 +67,7 @@ type ExecutorTarget interface {
 	// VerifyHostKey can use it to make outgoing network
 	// connections from the instance -- e.g., to use the cloud's
 	// "this instance's metadata" API.
-	VerifyHostKey(ssh.PublicKey, *ssh.Client) error
+	VerifyHostKey(context.Context, ssh.PublicKey, *ssh.Client) error
 }
 
 // Instance is implemented by the provider-specific instance types.
@@ -88,10 +89,10 @@ type Instance interface {
 	Tags() InstanceTags
 
 	// Replace tags with the given tags
-	SetTags(InstanceTags) error
+	SetTags(context.Context, InstanceTags) error
 
 	// Shut down the node
-	Destroy() error
+	Destroy(context.Context) error
 }
 
 // An InstanceSet manages a set of VM instances created by an elastic
@@ -105,7 +106,7 @@ type InstanceSet interface {
 	//
 	// The returned error should implement RateLimitError and
 	// QuotaError where applicable.
-	Create(arvados.InstanceType, ImageID, InstanceTags, ssh.PublicKey) (Instance, error)
+	Create(context.Context, arvados.InstanceType, ImageID, InstanceTags, ssh.PublicKey) (Instance, error)
 
 	// Return all instances, including ones that are booting or
 	// shutting down. Optionally, filter out nodes that don't have
@@ -117,7 +118,7 @@ type InstanceSet interface {
 	// Instance object each time. Thus, the caller is responsible
 	// for de-duplicating the returned instances by comparing the
 	// InstanceIDs returned by the instances' ID() methods.
-	Instances(InstanceTags) ([]Instance, error)
+	Instances(context.Context, InstanceTags) ([]Instance, error)
 
 	// Stop any background tasks and release other resources.
 	Stop()

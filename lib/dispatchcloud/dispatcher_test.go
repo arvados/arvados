@@ -5,6 +5,7 @@
 package dispatchcloud
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"math/rand"
@@ -165,7 +166,7 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 
 	deadline := time.Now().Add(time.Second)
 	for range time.NewTicker(10 * time.Millisecond).C {
-		insts, err := s.stubDriver.InstanceSets()[0].Instances(nil)
+		insts, err := s.stubDriver.InstanceSets()[0].Instances(context.TODO(), nil)
 		c.Check(err, check.IsNil)
 		queue.Update()
 		ents, _ := queue.Entries()

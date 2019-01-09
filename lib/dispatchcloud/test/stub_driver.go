@@ -5,6 +5,7 @@
 package test
 
 import (
+	"context"
 	"crypto/rand"
 	"errors"
 	"fmt"
@@ -68,7 +69,7 @@ type StubInstanceSet struct {
 	stopped bool
 }
 
-func (sis *StubInstanceSet) Create(it arvados.InstanceType, image cloud.ImageID, tags cloud.InstanceTags, authKey ssh.PublicKey) (cloud.Instance, error) {
+func (sis *StubInstanceSet) Create(_ context.Context, it arvados.InstanceType, image cloud.ImageID, tags cloud.InstanceTags, authKey ssh.PublicKey) (cloud.Instance, error) {
 	sis.mtx.Lock()
 	defer sis.mtx.Unlock()
 	if sis.stopped {
@@ -96,7 +97,7 @@ func (sis *StubInstanceSet) Create(it arvados.InstanceType, image cloud.ImageID,
 	return svm.Instance(), nil
 }
 
-func (sis *StubInstanceSet) Instances(cloud.InstanceTags) ([]cloud.Instance, error) {
+func (sis *StubInstanceSet) Instances(context.Context, cloud.InstanceTags) ([]cloud.Instance, error) {
 	sis.mtx.RLock()
 	defer sis.mtx.RUnlock()
 	var r []cloud.Instance
@@ -261,7 +262,7 @@ func (si stubInstance) Address() string {
 	return si.addr
 }
 
-func (si stubInstance) Destroy() error {
+func (si stubInstance) Destroy(_ context.Context) error {
 	if math_rand.Float64() < si.svm.sis.driver.ErrorRateDestroy {
 		return errors.New("instance could not be destroyed")
 	}
@@ -277,7 +278,7 @@ func (si stubInstance) ProviderType() string {
 	return si.svm.providerType
 }
 
-func (si stubInstance) SetTags(tags cloud.InstanceTags) error {
+func (si stubInstance) SetTags(_ context.Context, tags cloud.InstanceTags) error {
 	tags = copyTags(tags)
 	svm := si.svm
 	go func() {
@@ -296,7 +297,7 @@ func (si stubInstance) String() string {
 	return string(si.svm.id)
 }
 
-func (si stubInstance) VerifyHostKey(key ssh.PublicKey, client *ssh.Client) error {
+func (si stubInstance) VerifyHostKey(_ context.Context, key ssh.PublicKey, client *ssh.Client) error {
 	buf := make([]byte, 512)
 	_, err := io.ReadFull(rand.Reader, buf)
 	if err != nil {

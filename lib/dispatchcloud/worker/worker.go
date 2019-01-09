@@ -6,6 +6,7 @@ package worker
 
 import (
 	"bytes"
+	"context"
 	"strings"
 	"sync"
 	"time"
@@ -311,7 +312,7 @@ func (wkr *worker) shutdown() {
 	wkr.state = StateShutdown
 	go wkr.wp.notify()
 	go func() {
-		err := wkr.instance.Destroy()
+		err := wkr.instance.Destroy(context.TODO())
 		if err != nil {
 			wkr.logger.WithError(err).Warn("shutdown failed")
 			return

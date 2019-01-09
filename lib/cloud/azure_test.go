@@ -27,9 +27,9 @@ import (
 	check "gopkg.in/check.v1"
 )
 
-type AzureProviderSuite struct{}
+type AzureInstanceSetSuite struct{}
 
-var _ = check.Suite(&AzureProviderSuite{})
+var _ = check.Suite(&AzureInstanceSetSuite{})
 
 type VirtualMachinesClientStub struct{}
 
@@ -71,7 +71,7 @@ func (*InterfacesClientStub) ListComplete(ctx context.Context, resourceGroupName
 
 var live = flag.String("live-azure-cfg", "", "Test with real azure API, provide config file")
 
-func GetProvider() (InstanceProvider, ImageID, arvados.Cluster, error) {
+func GetInstanceSet() (InstanceSet, ImageID, arvados.Cluster, error) {
 	cluster := arvados.Cluster{
 		InstanceTypes: arvados.InstanceTypeMap(map[string]arvados.InstanceType{
 			"tiny": arvados.InstanceType{
@@ -85,16 +85,16 @@ func GetProvider() (InstanceProvider, ImageID, arvados.Cluster, error) {
 			},
 		})}
 	if *live != "" {
-		cfg := AzureProviderConfig{}
+		cfg := make(map[string]interface{})
 		err := config.LoadFile(&cfg, *live)
 		if err != nil {
 			return nil, ImageID(""), cluster, err
 		}
-		ap, err := NewAzureProvider(cfg, "test123")
-		return ap, ImageID(cfg.Image), cluster, err
+		ap, err := NewAzureInstanceSet(cfg, "test123")
+		return ap, ImageID(cfg["image"].(string)), cluster, err
 	} else {
-		ap := AzureProvider{
-			azconfig: AzureProviderConfig{
+		ap := AzureInstanceSet{
+			azconfig: AzureInstanceSetConfig{
 				BlobContainer: "vhds",
 			},
 			dispatcherID: "test123",
@@ -106,8 +106,8 @@ func GetProvider() (InstanceProvider, ImageID, arvados.Cluster, error) {
 	}
 }
 
-func (*AzureProviderSuite) TestCreate(c *check.C) {
-	ap, img, cluster, err := GetProvider()
+func (*AzureInstanceSetSuite) TestCreate(c *check.C) {
+	ap, img, cluster, err := GetInstanceSet()
 	if err != nil {
 		c.Fatal("Error making provider", err)
 	}
@@ -132,52 +132,52 @@ func (*AzureProviderSuite) TestCreate(c *check.C) {
 
 	c.Assert(err, check.IsNil)
 
-	tg, _ := inst.Tags(context.Background())
+	tg := inst.Tags()
 	log.Printf("Result %v %v %v", inst.String(), inst.Address(), tg)
 
 }
 
-func (*AzureProviderSuite) TestListInstances(c *check.C) {
-	ap, _, _, err := GetProvider()
+func (*AzureInstanceSetSuite) TestListInstances(c *check.C) {
+	ap, _, _, err := GetInstanceSet()
 	if err != nil {
 		c.Fatal("Error making provider", err)
 	}
 
-	l, err := ap.Instances(context.Background())
+	l, err := ap.Instances(context.Background(), nil)
 
 	c.Assert(err, check.IsNil)
 
 	for _, i := range l {
-		tg, _ := i.Tags(context.Background())
+		tg := i.Tags()
 		log.Printf("%v %v %v", i.String(), i.Address(), tg)
 	}
 }
 
-func (*AzureProviderSuite) TestManageNics(c *check.C) {
-	ap, _, _, err := GetProvider()
+func (*AzureInstanceSetSuite) TestManageNics(c *check.C) {
+	ap, _, _, err := GetInstanceSet()
 	if err != nil {
 		c.Fatal("Error making provider", err)
 	}
 
-	ap.(*AzureProvider).ManageNics(context.Background())
+	ap.(*AzureInstanceSet).ManageNics(context.Background())
 }
 
-func (*AzureProviderSuite) TestManageBlobs(c *check.C) {
-	ap, _, _, err := GetProvider()
+func (*AzureInstanceSetSuite) TestManageBlobs(c *check.C) {
+	ap, _, _, err := GetInstanceSet()
 	if err != nil {
 		c.Fatal("Error making provider", err)
 	}
 
-	ap.(*AzureProvider).ManageBlobs(context.Background())
+	ap.(*AzureInstanceSet).ManageBlobs(context.Background())
 }
 
-func (*AzureProviderSuite) TestDestroyInstances(c *check.C) {
-	ap, _, _, err := GetProvider()
+func (*AzureInstanceSetSuite) TestDestroyInstances(c *check.C) {
+	ap, _, _, err := GetInstanceSet()
 	if err != nil {
 		c.Fatal("Error making provider", err)
 	}
 
-	l, err := ap.Instances(context.Background())
+	l, err := ap.Instances(context.Background(), nil)
 	c.Assert(err, check.IsNil)
 
 	for _, i := range l {
@@ -185,13 +185,13 @@ func (*AzureProviderSuite) TestDestroyInstances(c *check.C) {
 	}
 }
 
-func (*AzureProviderSuite) TestDeleteFake(c *check.C) {
-	ap, _, _, err := GetProvider()
+func (*AzureInstanceSetSuite) TestDeleteFake(c *check.C) {
+	ap, _, _, err := GetInstanceSet()
 	if err != nil {
 		c.Fatal("Error making provider", err)
 	}
 
-	_, err = ap.(*AzureProvider).netClient.Delete(context.Background(), "fakefakefake", "fakefakefake")
+	_, err = ap.(*AzureInstanceSet).netClient.Delete(context.Background(), "fakefakefake", "fakefakefake")
 
 	de, ok := err.(autorest.DetailedError)
 	if ok {
@@ -201,7 +201,7 @@ func (*AzureProviderSuite) TestDeleteFake(c *check.C) {
 	}
 }
 
-func (*AzureProviderSuite) TestWrapError(c *check.C) {
+func (*AzureInstanceSetSuite) TestWrapError(c *check.C) {
 	retryError := autorest.DetailedError{
 		Original: &azure.RequestError{
 			DetailedError: autorest.DetailedError{
@@ -234,12 +234,12 @@ func (*AzureProviderSuite) TestWrapError(c *check.C) {
 	c.Check(ok, check.Equals, true)
 }
 
-func (*AzureProviderSuite) TestSetTags(c *check.C) {
-	ap, _, _, err := GetProvider()
+func (*AzureInstanceSetSuite) TestSetTags(c *check.C) {
+	ap, _, _, err := GetInstanceSet()
 	if err != nil {
 		c.Fatal("Error making provider", err)
 	}
-	l, err := ap.Instances(context.Background())
+	l, err := ap.Instances(context.Background(), nil)
 	c.Assert(err, check.IsNil)
 
 	if len(l) > 0 {
@@ -248,21 +248,21 @@ func (*AzureProviderSuite) TestSetTags(c *check.C) {
 			c.Fatal("Error setting tags", err)
 		}
 	}
-	l, err = ap.Instances(context.Background())
+	l, err = ap.Instances(context.Background(), nil)
 	c.Assert(err, check.IsNil)
 
 	if len(l) > 0 {
-		tg, _ := l[0].Tags(context.Background())
+		tg := l[0].Tags()
 		log.Printf("tags are %v", tg)
 	}
 }
 
-func (*AzureProviderSuite) TestSSH(c *check.C) {
-	ap, _, _, err := GetProvider()
+func (*AzureInstanceSetSuite) TestSSH(c *check.C) {
+	ap, _, _, err := GetInstanceSet()
 	if err != nil {
 		c.Fatal("Error making provider", err)
 	}
-	l, err := ap.Instances(context.Background())
+	l, err := ap.Instances(context.Background(), nil)
 	c.Assert(err, check.IsNil)
 
 	if len(l) > 0 {
@@ -316,7 +316,7 @@ func SetupSSHClient(c *check.C, inst Instance) (*ssh.Client, error) {
 		return nil, errors.New("BUG: key was never provided to HostKeyCallback")
 	}
 
-	err = inst.VerifyPublicKey(context.Background(), receivedKey, client)
+	err = inst.VerifyHostKey(context.Background(), receivedKey, client)
 	c.Assert(err, check.IsNil)
 
 	return client, nil
