@@ -1,3 +1,6 @@
+from future import standard_library
+standard_library.install_aliases()
+from builtins import object
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
@@ -5,7 +8,7 @@
 import fnmatch
 import os
 import errno
-import urlparse
+import urllib.parse
 import re
 import logging
 import threading
@@ -48,7 +51,7 @@ class CollectionCache(object):
 
     def cap_cache(self, required):
         # ordered dict iterates from oldest to newest
-        for pdh, v in self.collections.items():
+        for pdh, v in list(self.collections.items()):
             available = self.cap - self.total
             if available >= required or len(self.collections) < self.min_entries:
                 return
@@ -90,7 +93,7 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
         p = sp[0]
         if p.startswith("keep:") and arvados.util.keep_locator_pattern.match(p[5:]):
             pdh = p[5:]
-            return (self.collection_cache.get(pdh), urlparse.unquote(sp[1]) if len(sp) == 2 else None)
+            return (self.collection_cache.get(pdh), urllib.parse.unquote(sp[1]) if len(sp) == 2 else None)
         else:
             return (None, path)
 
@@ -188,7 +191,7 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
                 raise IOError(errno.ENOENT, "Directory '%s' in '%s' not found" % (rest, collection.portable_data_hash()))
             if not isinstance(dir, arvados.collection.RichCollectionBase):
                 raise IOError(errno.ENOENT, "Path '%s' in '%s' is not a Directory" % (rest, collection.portable_data_hash()))
-            return [abspath(l, fn) for l in dir.keys()]
+            return [abspath(l, fn) for l in list(dir.keys())]
         else:
             return super(CollectionFsAccess, self).listdir(fn)
 
@@ -243,11 +246,11 @@ class CollectionFetcher(DefaultFetcher):
         if not url:
             return base_url
 
-        urlsp = urlparse.urlsplit(url)
+        urlsp = urllib.parse.urlsplit(url)
         if urlsp.scheme or not base_url:
             return url
 
-        basesp = urlparse.urlsplit(base_url)
+        basesp = urllib.parse.urlsplit(base_url)
         if basesp.scheme in ("keep", "arvwf"):
             if not basesp.path:
                 raise IOError(errno.EINVAL, "Invalid Keep locator", base_url)
@@ -268,7 +271,7 @@ class CollectionFetcher(DefaultFetcher):
                 baseparts.pop()
 
             path = "/".join([pdh] + baseparts + urlparts)
-            return urlparse.urlunsplit((basesp.scheme, "", path, "", urlsp.fragment))
+            return urllib.parse.urlunsplit((basesp.scheme, "", path, "", urlsp.fragment))
 
         return super(CollectionFetcher, self).urljoin(base_url, url)
 
@@ -290,7 +293,7 @@ def collectionResolver(api_client, document_loader, uri, num_retries=4):
 
     if pipeline_template_uuid_pattern.match(uri):
         pt = api_client.pipeline_templates().get(uuid=uri).execute(num_retries=num_retries)
-        return "keep:" + pt["components"].values()[0]["script_parameters"]["cwl:tool"]
+        return "keep:" + list(pt["components"].values())[0]["script_parameters"]["cwl:tool"]
 
     p = uri.split("/")
     if arvados.util.keep_locator_pattern.match(p[0]):

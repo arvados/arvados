@@ -1,3 +1,4 @@
+from past.builtins import basestring
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
@@ -61,7 +62,7 @@ def run():
             if "location" in v:
                 v["location"] = keeppath(v["location"])
 
-        for k,v in job_order_object.items():
+        for k,v in list(job_order_object.items()):
             if isinstance(v, basestring) and arvados.util.keep_locator_pattern.match(v):
                 job_order_object[k] = {
                     "class": "File",

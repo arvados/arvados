@@ -1,9 +1,12 @@
+from future import standard_library
+standard_library.install_aliases()
+from builtins import object
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
 
 import copy
-import cStringIO
+import io
 import functools
 import hashlib
 import json
@@ -33,7 +36,7 @@ def stubs(func):
     @mock.patch("arvados.keep.KeepClient")
     @mock.patch("arvados.events.subscribe")
     def wrapped(self, events, keep_client1, keep_client2, keepdocker, *args, **kwargs):
-        class Stubs:
+        class Stubs(object):
             pass
         stubs = Stubs()
         stubs.events = events
@@ -89,7 +92,7 @@ def stubs(func):
             return CollectionExecute(created_collections[uuid])
 
         def collection_getstub(created_collections, uuid):
-            for v in created_collections.itervalues():
+            for v in created_collections.values():
                 if uuid in (v["uuid"], v["portable_data_hash"]):
                     return CollectionExecute(v)
 
@@ -318,7 +321,7 @@ class TestSubmit(unittest.TestCase):
                 return '999999999999999999999999999999d4+99'
         arvdock.side_effect = get_image
 
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=jobs", "--debug",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
@@ -361,7 +364,7 @@ class TestSubmit(unittest.TestCase):
     @mock.patch("time.sleep")
     @stubs
     def test_submit_no_reuse(self, stubs, tm):
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=jobs", "--debug", "--disable-reuse",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
@@ -389,7 +392,7 @@ class TestSubmit(unittest.TestCase):
     @mock.patch("time.sleep")
     @stubs
     def test_submit_on_error(self, stubs, tm):
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=jobs", "--debug", "--on-error=stop",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
@@ -408,7 +411,7 @@ class TestSubmit(unittest.TestCase):
     @mock.patch("time.sleep")
     @stubs
     def test_submit_runner_ram(self, stubs, tm):
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--debug", "--submit-runner-ram=2048",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
@@ -427,7 +430,7 @@ class TestSubmit(unittest.TestCase):
     @mock.patch("time.sleep")
     @stubs
     def test_submit_invalid_runner_ram(self, stubs, tm):
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--debug", "--submit-runner-ram=-2048",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
@@ -439,7 +442,7 @@ class TestSubmit(unittest.TestCase):
     def test_submit_output_name(self, stubs, tm):
         output_name = "test_output_name"
 
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--debug", "--output-name", output_name,
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
@@ -458,7 +461,7 @@ class TestSubmit(unittest.TestCase):
     @mock.patch("time.sleep")
     @stubs
     def test_submit_pipeline_name(self, stubs, tm):
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--debug", "--name=hello job 123",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
@@ -478,7 +481,7 @@ class TestSubmit(unittest.TestCase):
     def test_submit_output_tags(self, stubs, tm):
         output_tags = "tag0,tag1,tag2"
 
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--debug", "--output-tags", output_tags,
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
@@ -512,7 +515,7 @@ class TestSubmit(unittest.TestCase):
 
     @stubs
     def test_submit_container(self, stubs):
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug",
@@ -544,7 +547,7 @@ class TestSubmit(unittest.TestCase):
 
     @stubs
     def test_submit_container_no_reuse(self, stubs):
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug", "--disable-reuse",
@@ -572,7 +575,7 @@ class TestSubmit(unittest.TestCase):
 
     @stubs
     def test_submit_container_reuse_disabled_by_workflow(self, stubs):
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
 
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug",
@@ -608,7 +611,7 @@ class TestSubmit(unittest.TestCase):
 
     @stubs
     def test_submit_container_on_error(self, stubs):
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug", "--on-error=stop",
@@ -635,7 +638,7 @@ class TestSubmit(unittest.TestCase):
     def test_submit_container_output_name(self, stubs):
         output_name = "test_output_name"
 
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug", "--output-name", output_name,
@@ -661,7 +664,7 @@ class TestSubmit(unittest.TestCase):
 
     @stubs
     def test_submit_storage_classes(self, stubs):
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--debug", "--submit", "--no-wait", "--api=containers", "--storage-classes=foo",
@@ -728,7 +731,7 @@ class TestSubmit(unittest.TestCase):
 
     @stubs
     def test_submit_container_output_ttl(self, stubs):
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug", "--intermediate-output-ttl", "3600",
@@ -754,7 +757,7 @@ class TestSubmit(unittest.TestCase):
 
     @stubs
     def test_submit_container_trash_intermediate(self, stubs):
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug", "--trash-intermediate",
@@ -782,7 +785,7 @@ class TestSubmit(unittest.TestCase):
     def test_submit_container_output_tags(self, stubs):
         output_tags = "tag0,tag1,tag2"
 
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug", "--output-tags", output_tags,
@@ -807,7 +810,7 @@ class TestSubmit(unittest.TestCase):
 
     @stubs
     def test_submit_container_runner_ram(self, stubs):
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug", "--submit-runner-ram=2048",
@@ -829,7 +832,7 @@ class TestSubmit(unittest.TestCase):
     @mock.patch("time.sleep")
     @stubs
     def test_submit_file_keepref(self, stubs, tm, collectionReader):
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         collectionReader().find.return_value = arvados.arvfile.ArvadosFile(mock.MagicMock(), "blorp.txt")
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug",
@@ -842,7 +845,7 @@ class TestSubmit(unittest.TestCase):
     @mock.patch("time.sleep")
     @stubs
     def test_submit_keepref(self, stubs, tm, reader):
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
 
         with open("tests/wf/expect_arvworkflow.cwl") as f:
             reader().open().__enter__().read.return_value = f.read()
@@ -904,7 +907,7 @@ class TestSubmit(unittest.TestCase):
     @mock.patch("time.sleep")
     @stubs
     def test_submit_jobs_keepref(self, stubs, tm, reader):
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
 
         with open("tests/wf/expect_arvworkflow.cwl") as f:
             reader().open().__enter__().read.return_value = f.read()
@@ -927,7 +930,7 @@ class TestSubmit(unittest.TestCase):
     @mock.patch("time.sleep")
     @stubs
     def test_submit_arvworkflow(self, stubs, tm):
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
 
         with open("tests/wf/expect_arvworkflow.cwl") as f:
             stubs.api.workflows().get().execute.return_value = {"definition": f.read(), "name": "a test workflow"}
@@ -1026,7 +1029,7 @@ class TestSubmit(unittest.TestCase):
 
     @stubs
     def test_submit_container_name(self, stubs):
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug", "--name=hello container 123",
@@ -1047,14 +1050,14 @@ class TestSubmit(unittest.TestCase):
 
     @stubs
     def test_submit_missing_input(self, stubs):
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
         self.assertEqual(exited, 0)
 
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job_missing.json"],
@@ -1065,7 +1068,7 @@ class TestSubmit(unittest.TestCase):
     @stubs
     def test_submit_container_project(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug", "--project-uuid="+project_uuid,
@@ -1093,7 +1096,7 @@ class TestSubmit(unittest.TestCase):
     @stubs
     def test_submit_container_eval_timeout(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug", "--eval-timeout=60",
@@ -1119,7 +1122,7 @@ class TestSubmit(unittest.TestCase):
     @stubs
     def test_submit_container_collection_cache(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug", "--collection-cache-size=500",
@@ -1147,7 +1150,7 @@ class TestSubmit(unittest.TestCase):
     @stubs
     def test_submit_container_thread_count(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug", "--thread-count=20",
@@ -1173,7 +1176,7 @@ class TestSubmit(unittest.TestCase):
 
     @stubs
     def test_submit_job_runner_image(self, stubs):
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=jobs", "--debug", "--submit-runner-image=arvados/jobs:123",
@@ -1193,7 +1196,7 @@ class TestSubmit(unittest.TestCase):
 
     @stubs
     def test_submit_container_runner_image(self, stubs):
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug", "--submit-runner-image=arvados/jobs:123",
@@ -1213,7 +1216,7 @@ class TestSubmit(unittest.TestCase):
 
     @stubs
     def test_submit_priority(self, stubs):
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug", "--priority=669",
@@ -1234,7 +1237,7 @@ class TestSubmit(unittest.TestCase):
 
     @stubs
     def test_submit_wf_runner_resources(self, stubs):
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug",
@@ -1315,7 +1318,7 @@ class TestSubmit(unittest.TestCase):
 
     @stubs
     def test_submit_secrets(self, stubs):
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug",
@@ -1492,7 +1495,7 @@ class TestSubmit(unittest.TestCase):
             "state": "Queued"
         }
 
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug", "--submit-request-uuid=zzzzz-xvhdp-yyyyyyyyyyyyyyy",
@@ -1509,7 +1512,7 @@ class TestSubmit(unittest.TestCase):
 
     @stubs
     def test_submit_container_cluster_id(self, stubs):
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         stubs.api._rootDesc["remoteHosts"]["zbbbb"] = "123"
         try:
             exited = arvados_cwl.main(
@@ -1530,7 +1533,7 @@ class TestSubmit(unittest.TestCase):
 
     @stubs
     def test_submit_validate_cluster_id(self, stubs):
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
         stubs.api._rootDesc["remoteHosts"]["zbbbb"] = "123"
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug", "--submit-runner-cluster=zcccc",
@@ -1565,7 +1568,7 @@ class TestCreateTemplate(unittest.TestCase):
     def test_create(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
 
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
 
         exited = arvados_cwl.main(
             ["--create-workflow", "--debug",
@@ -1598,7 +1601,7 @@ class TestCreateTemplate(unittest.TestCase):
     def test_create_name(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
 
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
 
         exited = arvados_cwl.main(
             ["--create-workflow", "--debug",
@@ -1632,7 +1635,7 @@ class TestCreateTemplate(unittest.TestCase):
     def test_update_name(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
 
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
 
         exited = arvados_cwl.main(
             ["--update-workflow", self.existing_template_uuid,
@@ -1673,7 +1676,7 @@ class TestCreateWorkflow(unittest.TestCase):
     def test_create(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
 
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
 
         exited = arvados_cwl.main(
             ["--create-workflow", "--debug",
@@ -1705,7 +1708,7 @@ class TestCreateWorkflow(unittest.TestCase):
     def test_create_name(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
 
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
 
         exited = arvados_cwl.main(
             ["--create-workflow", "--debug",
@@ -1735,7 +1738,7 @@ class TestCreateWorkflow(unittest.TestCase):
 
     @stubs
     def test_incompatible_api(self, stubs):
-        capture_stderr = cStringIO.StringIO()
+        capture_stderr = io.StringIO()
         logging.getLogger('arvados.cwl-runner').addHandler(
             logging.StreamHandler(capture_stderr))
 
@@ -1752,7 +1755,7 @@ class TestCreateWorkflow(unittest.TestCase):
 
     @stubs
     def test_update(self, stubs):
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
 
         exited = arvados_cwl.main(
             ["--update-workflow", self.existing_workflow_uuid,
@@ -1777,7 +1780,7 @@ class TestCreateWorkflow(unittest.TestCase):
 
     @stubs
     def test_update_name(self, stubs):
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
 
         exited = arvados_cwl.main(
             ["--update-workflow", self.existing_workflow_uuid,
@@ -1804,7 +1807,7 @@ class TestCreateWorkflow(unittest.TestCase):
     def test_create_collection_per_tool(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
 
-        capture_stdout = cStringIO.StringIO()
+        capture_stdout = io.StringIO()
 
         exited = arvados_cwl.main(
             ["--create-workflow", "--debug",
@@ -1884,7 +1887,7 @@ class TestTemplateInputs(unittest.TestCase):
         exited = arvados_cwl.main(
             ["--create-template",
              "tests/wf/inputs_test.cwl", "tests/order/empty_order.json"],
-            cStringIO.StringIO(), sys.stderr, api_client=stubs.api)
+            io.StringIO(), sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
 
         stubs.api.pipeline_templates().create.assert_called_with(
@@ -1895,7 +1898,7 @@ class TestTemplateInputs(unittest.TestCase):
         exited = arvados_cwl.main(
             ["--create-template",
              "tests/wf/inputs_test.cwl", "tests/order/inputs_test_order.json"],
-            cStringIO.StringIO(), sys.stderr, api_client=stubs.api)
+            io.StringIO(), sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
 
         expect_template = copy.deepcopy(self.expect_template)

@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 import arvados
 import sys
 import os
@@ -10,7 +12,7 @@ import os
 if "JOB_UUID" in os.environ:
     requested = arvados.api().jobs().get(uuid=os.environ["JOB_UUID"]).execute()["runtime_constraints"]["min_ram_mb_per_node"]
 else:
-    requested = arvados.api().containers().current().execute()["runtime_constraints"]["ram"]/(1024*1024)
+    requested = old_div(arvados.api().containers().current().execute()["runtime_constraints"]["ram"],(1024*1024))
 
 print("Requested %d expected %d" % (requested, int(sys.argv[1])))
 

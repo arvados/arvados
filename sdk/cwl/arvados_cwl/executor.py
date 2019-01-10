@@ -1,3 +1,7 @@
+from __future__ import division
+from builtins import next
+from builtins import object
+from past.utils import old_div
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
@@ -401,7 +405,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                             "Option 'dockerOutputDirectory' must be an absolute path.")
             if obj.get("class") == "http://commonwl.org/cwltool#Secrets" and self.work_api != "containers":
                 raise SourceLine(obj, "class", UnsupportedRequirement).makeError("Secrets not supported with --api=jobs")
-            for v in obj.itervalues():
+            for v in obj.values():
                 self.check_features(v)
         elif isinstance(obj, list):
             for i,v in enumerate(obj):
@@ -424,7 +428,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                                               keep_client=self.keep_client,
                                               num_retries=self.num_retries)
 
-        for k,v in generatemapper.items():
+        for k,v in list(generatemapper.items()):
             if k.startswith("_:"):
                 if v.type == "Directory":
                     continue
@@ -608,7 +612,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                         visited.add(m.group(1))
                         estimated_size[0] += int(m.group(2))
             visit_class(job_order, ("File", "Directory"), estimate_collection_cache)
-            runtimeContext.collection_cache_size = max(((estimated_size[0]*192) / (1024*1024))+1, 256)
+            runtimeContext.collection_cache_size = max((old_div((estimated_size[0]*192), (1024*1024)))+1, 256)
             self.collection_cache.set_cap(runtimeContext.collection_cache_size*1024*1024)
 
         logger.info("Using collection cache size %s MiB", runtimeContext.collection_cache_size)

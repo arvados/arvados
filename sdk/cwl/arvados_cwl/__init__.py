@@ -271,7 +271,7 @@ def main(args, stdout, stderr, api_client=None, keep_client=None,
 
     add_arv_hints()
 
-    for key, val in cwltool.argparser.get_default_args().items():
+    for key, val in list(cwltool.argparser.get_default_args().items()):
         if not hasattr(arvargs, key):
             setattr(arvargs, key, val)
 

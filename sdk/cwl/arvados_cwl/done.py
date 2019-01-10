@@ -63,7 +63,7 @@ def logtail(logcollection, logfunc, header, maxlen=25):
     containersapi = ("crunch-run.txt" in logcollection)
     mergelogs = {}
 
-    for log in logcollection.keys():
+    for log in list(logcollection.keys()):
         if not containersapi or log in ("crunch-run.txt", "stdout.txt", "stderr.txt"):
             logname = log[:-4]
             logt = deque([], maxlen)
@@ -77,7 +77,7 @@ def logtail(logcollection, logfunc, header, maxlen=25):
                         logt.append(l)
 
     if containersapi:
-        keys = mergelogs.keys()
+        keys = list(mergelogs.keys())
         loglines = []
         while True:
             earliest = None
@@ -91,7 +91,7 @@ def logtail(logcollection, logfunc, header, maxlen=25):
             loglines.append("%s %s %s" % (ts, earliest, msg))
         loglines = loglines[-maxlen:]
     else:
-        loglines = mergelogs.values()[0]
+        loglines = list(mergelogs.values())[0]
 
     logtxt = "\n  ".join(l.strip() for l in loglines)
     logfunc("%s\n\n  %s", header, logtxt)

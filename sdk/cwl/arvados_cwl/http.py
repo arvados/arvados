@@ -1,3 +1,7 @@
+from __future__ import division
+from future import standard_library
+standard_library.install_aliases()
+from past.utils import old_div
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
@@ -9,7 +13,7 @@ import datetime
 import re
 import arvados
 import arvados.collection
-import urlparse
+import urllib.parse
 import logging
 import calendar
 
@@ -91,13 +95,13 @@ def http_to_keep(api, project_uuid, url, utcnow=datetime.datetime.utcnow):
         if fresh_cache(url, properties, now):
             # Do nothing
             cr = arvados.collection.CollectionReader(item["portable_data_hash"], api_client=api)
-            return "keep:%s/%s" % (item["portable_data_hash"], cr.keys()[0])
+            return "keep:%s/%s" % (item["portable_data_hash"], list(cr.keys())[0])
 
         if not changed(url, properties, now):
             # ETag didn't change, same content, just update headers
             api.collections().update(uuid=item["uuid"], body={"collection":{"properties": properties}}).execute()
             cr = arvados.collection.CollectionReader(item["portable_data_hash"], api_client=api)
-            return "keep:%s/%s" % (item["portable_data_hash"], cr.keys()[0])
+            return "keep:%s/%s" % (item["portable_data_hash"], list(cr.keys())[0])
 
     properties = {}
     req = requests.get(url, stream=True, allow_redirects=True)
@@ -123,7 +127,7 @@ def http_to_keep(api, project_uuid, url, utcnow=datetime.datetime.utcnow):
         else:
             name = grp.group(4)
     else:
-        name = urlparse.urlparse(url).path.split("/")[-1]
+        name = urllib.parse.urlparse(url).path.split("/")[-1]
 
     count = 0
     start = time.time()
@@ -134,14 +138,14 @@ def http_to_keep(api, project_uuid, url, utcnow=datetime.datetime.utcnow):
             f.write(chunk)
             loopnow = time.time()
             if (loopnow - checkpoint) > 20:
-                bps = (float(count)/float(loopnow - start))
+                bps = (old_div(float(count),float(loopnow - start)))
                 if cl is not None:
                     logger.info("%2.1f%% complete, %3.2f MiB/s, %1.0f seconds left",
-                                float(count * 100) / float(cl),
-                                bps/(1024*1024),
-                                (cl-count)/bps)
+                                old_div(float(count * 100), float(cl)),
+                                old_div(bps,(1024*1024)),
+                                old_div((cl-count),bps))
                 else:
-                    logger.info("%d downloaded, %3.2f MiB/s", count, bps/(1024*1024))
+                    logger.info("%d downloaded, %3.2f MiB/s", count, old_div(bps,(1024*1024)))
                 checkpoint = loopnow
 
     c.save_new(name="Downloaded from %s" % url, owner_uuid=project_uuid, ensure_unique_name=True)

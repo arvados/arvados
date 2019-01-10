@@ -1,3 +1,5 @@
+from past.builtins import basestring
+from builtins import object
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
@@ -71,7 +73,7 @@ class ArvadosJob(JobBase):
                                                separateDirs=False)
 
                 with Perf(metrics, "createfiles %s" % self.name):
-                    for f, p in generatemapper.items():
+                    for f, p in list(generatemapper.items()):
                         if p.type == "CreateFile":
                             with vwd.open(p.target, "w") as n:
                                 n.write(p.resolved.encode("utf-8"))
@@ -85,7 +87,7 @@ class ArvadosJob(JobBase):
                                      trash_at=info["trash_at"],
                                      properties=info["properties"])
 
-                for f, p in generatemapper.items():
+                for f, p in list(generatemapper.items()):
                     if p.type == "File":
                         script_parameters["task.vwd"][p.target] = p.resolved
                     if p.type == "CreateFile":
@@ -243,7 +245,7 @@ class ArvadosJob(JobBase):
                                                                    api_client=self.arvrunner.api,
                                                                    keep_client=self.arvrunner.keep_client,
                                                                    num_retries=self.arvrunner.num_retries)
-                        log = logc.open(logc.keys()[0])
+                        log = logc.open(list(logc.keys())[0])
                         dirs = {
                             "tmpdir": "/tmpdir",
                             "outdir": "/outdir",
@@ -343,7 +345,7 @@ class RunnerJob(Runner):
             find_or_create=self.enable_reuse
         ).execute(num_retries=self.arvrunner.num_retries)
 
-        for k,v in job_spec["script_parameters"].items():
+        for k,v in list(job_spec["script_parameters"].items()):
             if v is False or v is None or isinstance(v, dict):
                 job_spec["script_parameters"][k] = {"value": v}
 

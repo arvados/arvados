@@ -1,3 +1,4 @@
+from past.builtins import basestring
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
@@ -135,7 +136,7 @@ class ArvadosWorkflowStep(WorkflowStep):
         runtimeContext = runtimeContext.copy()
         runtimeContext.toplevel = True  # Preserve behavior for #13365
 
-        builder = make_builder({shortname(k): v for k,v in joborder.items()}, self.hints, self.requirements, runtimeContext)
+        builder = make_builder({shortname(k): v for k,v in list(joborder.items())}, self.hints, self.requirements, runtimeContext)
         runtimeContext = set_cluster_target(self.tool, self.arvrunner, builder, runtimeContext)
         return super(ArvadosWorkflowStep, self).job(joborder, output_callback, runtimeContext)
 

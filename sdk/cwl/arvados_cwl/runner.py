@@ -1,16 +1,18 @@
+from future import standard_library
+standard_library.install_aliases()
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
 
 import os
-import urlparse
+import urllib.parse
 from functools import partial
 import logging
 import json
 import subprocess32 as subprocess
 from collections import namedtuple
 
-from StringIO import StringIO
+from io import StringIO
 
 from schema_salad.sourceline import SourceLine, cmap
 
@@ -61,7 +63,7 @@ def find_defaults(d, op):
         if "default" in d:
             op(d)
         else:
-            for i in d.itervalues():
+            for i in d.values():
                 find_defaults(i, op)
 
 def setSecondary(t, fileobj, discovered):
@@ -98,7 +100,7 @@ def upload_dependencies(arvrunner, name, document_loader,
     loaded = set()
     def loadref(b, u):
         joined = document_loader.fetcher.urljoin(b, u)
-        defrg, _ = urlparse.urldefrag(joined)
+        defrg, _ = urllib.parse.urldefrag(joined)
         if defrg not in loaded:
             loaded.add(defrg)
             # Use fetch_text to get raw file (before preprocessing).
@@ -232,7 +234,7 @@ def packed_workflow(arvrunner, tool, merged_map):
     packed = pack(tool.doc_loader, tool.doc_loader.fetch(tool.tool["id"]),
                   tool.tool["id"], tool.metadata, rewrite_out=rewrites)
 
-    rewrite_to_orig = {v: k for k,v in rewrites.items()}
+    rewrite_to_orig = {v: k for k,v in list(rewrites.items())}
 
     def visit(v, cur_id):
         if isinstance(v, dict):
@@ -314,7 +316,7 @@ def upload_workflow_deps(arvrunner, tool):
                                      discovered_secondaryfiles=discovered_secondaryfiles)
             document_loader.idx[deptool["id"]] = deptool
             toolmap = {}
-            for k,v in pm.items():
+            for k,v in list(pm.items()):
                 toolmap[k] = v.resolved
             merged_map[deptool["id"]] = FileUpdates(toolmap, discovered_secondaryfiles)
 
