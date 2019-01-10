@@ -5,7 +5,6 @@
 package test
 
 import (
-	"context"
 	"fmt"
 	"math/rand"
 	"sync"
@@ -25,13 +24,13 @@ type LameInstanceSet struct {
 }
 
 // Create returns a new instance.
-func (p *LameInstanceSet) Create(_ context.Context, instType arvados.InstanceType, imageID cloud.ImageID, tags cloud.InstanceTags, pubkey ssh.PublicKey) (cloud.Instance, error) {
+func (p *LameInstanceSet) Create(instType arvados.InstanceType, imageID cloud.ImageID, tags cloud.InstanceTags, pubkey ssh.PublicKey) (cloud.Instance, error) {
 	inst := &lameInstance{
 		p:            p,
 		id:           cloud.InstanceID(fmt.Sprintf("lame-%x", rand.Uint64())),
 		providerType: instType.ProviderType,
 	}
-	inst.SetTags(context.TODO(), tags)
+	inst.SetTags(tags)
 	if p.Hold != nil {
 		p.Hold <- true
 	}
@@ -45,7 +44,7 @@ func (p *LameInstanceSet) Create(_ context.Context, instType arvados.InstanceTyp
 }
 
 // Instances returns the instances that haven't been destroyed.
-func (p *LameInstanceSet) Instances(context.Context, cloud.InstanceTags) ([]cloud.Instance, error) {
+func (p *LameInstanceSet) Instances(cloud.InstanceTags) ([]cloud.Instance, error) {
 	p.mtx.Lock()
 	defer p.mtx.Unlock()
 	var instances []cloud.Instance
@@ -90,7 +89,7 @@ func (inst *lameInstance) Address() string {
 	return "0.0.0.0:1234"
 }
 
-func (inst *lameInstance) SetTags(_ context.Context, tags cloud.InstanceTags) error {
+func (inst *lameInstance) SetTags(tags cloud.InstanceTags) error {
 	inst.p.mtx.Lock()
 	defer inst.p.mtx.Unlock()
 	inst.tags = cloud.InstanceTags{}
@@ -100,7 +99,7 @@ func (inst *lameInstance) SetTags(_ context.Context, tags cloud.InstanceTags) er
 	return nil
 }
 
-func (inst *lameInstance) Destroy(context.Context) error {
+func (inst *lameInstance) Destroy() error {
 	if inst.p.Hold != nil {
 		inst.p.Hold <- true
 	}
@@ -114,6 +113,6 @@ func (inst *lameInstance) Tags() cloud.InstanceTags {
 	return inst.tags
 }
 
-func (inst *lameInstance) VerifyHostKey(context.Context, ssh.PublicKey, *ssh.Client) error {
+func (inst *lameInstance) VerifyHostKey(ssh.PublicKey, *ssh.Client) error {
 	return nil
 }

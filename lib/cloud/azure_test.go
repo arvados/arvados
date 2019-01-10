@@ -1,6 +1,28 @@
 // Copyright (C) The Arvados Authors. All rights reserved.
 //
 // SPDX-License-Identifier: AGPL-3.0
+//
+//
+// How to manually run individual tests against the real cloud
+//
+// $ go test -v git.curoverse.com/arvados.git/lib/cloud -live-azure-cfg azconfig.yml -check.f=TestListInstances
+//
+// Example azconfig.yml:
+//
+// subscription_id: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+// key: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+// region: centralus
+// cloud_environment: AzurePublicCloud
+// secret: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+// tenant_id: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+// resource_group: zzzzz
+// network: zzzzz
+// subnet: zzzzz-subnet-private
+// storage_account: example
+// blob_container: vhds
+// image: "https://example.blob.core.windows.net/system/Microsoft.Compute/Images/images/zzzzz-compute-osDisk.XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX.vhd"
+// delete_dangling_resources_after: 20
+// authorized_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDLQS1ExT2+WjA0d/hntEAyAtgeN1W2ik2QX8c2zO6HjlPHWXL92r07W0WMuDib40Pcevpi1BXeBWXA9ZB5KKMJB+ukaAu22KklnQuUmNvk6ZXnPKSkGxuCYvPQb08WhHf3p1VxiKfP3iauedBDM4x9/bkJohlBBQiFXzNUcQ+a6rKiMzmJN2gbL8ncyUzc+XQ5q4JndTwTGtOlzDiGOc9O4z5Dd76wtAVJneOuuNpwfFRVHThpJM6VThpCZOnl8APaceWXKeuwOuCae3COZMz++xQfxOfZ9Z8aIwo+TlQhsRaNfZ4Vjrop6ej8dtfZtgUFKfbXEOYaHrGrWGotFDTD example@example"
 
 package cloud
 
@@ -124,8 +146,7 @@ func (*AzureInstanceSetSuite) TestCreate(c *check.C) {
 	nodetoken, err := randutil.String(40, "abcdefghijklmnopqrstuvwxyz0123456789")
 	c.Assert(err, check.IsNil)
 
-	inst, err := ap.Create(context.Background(),
-		cluster.InstanceTypes["tiny"],
+	inst, err := ap.Create(cluster.InstanceTypes["tiny"],
 		img, map[string]string{
 			"node-token": nodetoken},
 		pk)
@@ -143,7 +164,7 @@ func (*AzureInstanceSetSuite) TestListInstances(c *check.C) {
 		c.Fatal("Error making provider", err)
 	}
 
-	l, err := ap.Instances(context.Background(), nil)
+	l, err := ap.Instances(nil)
 
 	c.Assert(err, check.IsNil)
 
@@ -159,7 +180,8 @@ func (*AzureInstanceSetSuite) TestManageNics(c *check.C) {
 		c.Fatal("Error making provider", err)
 	}
 
-	ap.(*AzureInstanceSet).ManageNics(context.Background())
+	ap.(*AzureInstanceSet).ManageNics()
+	ap.Stop()
 }
 
 func (*AzureInstanceSetSuite) TestManageBlobs(c *check.C) {
@@ -168,7 +190,8 @@ func (*AzureInstanceSetSuite) TestManageBlobs(c *check.C) {
 		c.Fatal("Error making provider", err)
 	}
 
-	ap.(*AzureInstanceSet).ManageBlobs(context.Background())
+	ap.(*AzureInstanceSet).ManageBlobs()
+	ap.Stop()
 }
 
 func (*AzureInstanceSetSuite) TestDestroyInstances(c *check.C) {
@@ -177,11 +200,11 @@ func (*AzureInstanceSetSuite) TestDestroyInstances(c *check.C) {
 		c.Fatal("Error making provider", err)
 	}
 
-	l, err := ap.Instances(context.Background(), nil)
+	l, err := ap.Instances(nil)
 	c.Assert(err, check.IsNil)
 
 	for _, i := range l {
-		c.Check(i.Destroy(context.Background()), check.IsNil)
+		c.Check(i.Destroy(), check.IsNil)
 	}
 }
 
@@ -239,16 +262,16 @@ func (*AzureInstanceSetSuite) TestSetTags(c *check.C) {
 	if err != nil {
 		c.Fatal("Error making provider", err)
 	}
-	l, err := ap.Instances(context.Background(), nil)
+	l, err := ap.Instances(nil)
 	c.Assert(err, check.IsNil)
 
 	if len(l) > 0 {
-		err = l[0].SetTags(context.Background(), map[string]string{"foo": "bar"})
+		err = l[0].SetTags(map[string]string{"foo": "bar"})
 		if err != nil {
 			c.Fatal("Error setting tags", err)
 		}
 	}
-	l, err = ap.Instances(context.Background(), nil)
+	l, err = ap.Instances(nil)
 	c.Assert(err, check.IsNil)
 
 	if len(l) > 0 {
@@ -262,7 +285,7 @@ func (*AzureInstanceSetSuite) TestSSH(c *check.C) {
 	if err != nil {
 		c.Fatal("Error making provider", err)
 	}
-	l, err := ap.Instances(context.Background(), nil)
+	l, err := ap.Instances(nil)
 	c.Assert(err, check.IsNil)
 
 	if len(l) > 0 {
@@ -316,7 +339,7 @@ func SetupSSHClient(c *check.C, inst Instance) (*ssh.Client, error) {
 		return nil, errors.New("BUG: key was never provided to HostKeyCallback")
 	}
 
-	err = inst.VerifyHostKey(context.Background(), receivedKey, client)
+	err = inst.VerifyHostKey(receivedKey, client)
 	c.Assert(err, check.IsNil)
 
 	return client, nil

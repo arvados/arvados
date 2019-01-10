@@ -5,7 +5,6 @@
 package worker
 
 import (
-	"context"
 	"io"
 	"sort"
 	"strings"
@@ -226,7 +225,7 @@ func (wp *Pool) Create(it arvados.InstanceType) error {
 	wp.creating[it] = append(wp.creating[it], now)
 	go func() {
 		defer wp.notify()
-		inst, err := wp.instanceSet.Create(context.TODO(), it, wp.imageID, tags, nil)
+		inst, err := wp.instanceSet.Create(it, wp.imageID, tags, nil)
 		wp.mtx.Lock()
 		defer wp.mtx.Unlock()
 		// Remove our timestamp marker from wp.creating
@@ -627,7 +626,7 @@ func (wp *Pool) getInstancesAndSync() error {
 	wp.setupOnce.Do(wp.setup)
 	wp.logger.Debug("getting instance list")
 	threshold := time.Now()
-	instances, err := wp.instanceSet.Instances(context.TODO(), cloud.InstanceTags{})
+	instances, err := wp.instanceSet.Instances(cloud.InstanceTags{})
 	if err != nil {
 		return err
 	}

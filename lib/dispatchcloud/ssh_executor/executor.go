@@ -8,7 +8,6 @@ package ssh_executor
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"io"
 	"net"
@@ -181,7 +180,7 @@ func (exr *Executor) setupSSHClient() (*ssh.Client, error) {
 	}
 
 	if exr.hostKey == nil || !bytes.Equal(exr.hostKey.Marshal(), receivedKey.Marshal()) {
-		err = target.VerifyHostKey(context.TODO(), receivedKey, client)
+		err = target.VerifyHostKey(receivedKey, client)
 		if err != nil {
 			return nil, err
 		}
