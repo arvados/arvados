@@ -1,8 +1,9 @@
-from future import standard_library
-standard_library.install_aliases()
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
+
+from future import standard_library
+standard_library.install_aliases()
 
 import functools
 import json

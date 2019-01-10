@@ -1,8 +1,9 @@
-from past.builtins import basestring
-from builtins import object
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
+
+from past.builtins import basestring
+from builtins import object
 
 import logging
 import re

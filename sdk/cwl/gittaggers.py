@@ -1,8 +1,9 @@
-from builtins import str
-from builtins import next
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
+
+from builtins import str
+from builtins import next
 
 from setuptools.command.egg_info import egg_info
 import subprocess

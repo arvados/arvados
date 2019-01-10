@@ -1,4 +1,3 @@
-from past.builtins import basestring
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
@@ -10,6 +9,8 @@ from past.builtins import basestring
 # input object, then executes the CWL runner to run the underlying workflow or
 # tool.  When the workflow completes, record the output object in an output
 # collection for this runner job.
+
+from past.builtins import basestring
 
 import arvados
 import arvados_cwl

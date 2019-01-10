@@ -1,7 +1,8 @@
-from past.builtins import basestring
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
+
+from past.builtins import basestring
 
 import os
 import json
