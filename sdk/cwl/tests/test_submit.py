@@ -5,6 +5,7 @@
 from future import standard_library
 standard_library.install_aliases()
 from builtins import object
+from builtins import bytes
 
 import copy
 import io
@@ -82,13 +83,13 @@ def stubs(func):
                 return self.exe
 
         def collection_createstub(created_collections, body, ensure_unique_name=None):
-            mt = body["manifest_text"]
+            mt = body["manifest_text"].encode('utf-8')
             uuid = "zzzzz-4zz18-zzzzzzzzzzzzzx%d" % len(created_collections)
             pdh = "%s+%i" % (hashlib.md5(mt).hexdigest(), len(mt))
             created_collections[uuid] = {
                 "uuid": uuid,
                 "portable_data_hash": pdh,
-                "manifest_text": mt
+                "manifest_text": mt.decode('utf-8')
             }
             return CollectionExecute(created_collections[uuid])
 
