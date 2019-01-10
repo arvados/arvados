@@ -130,7 +130,7 @@ class TestJob(unittest.TestCase):
                     # sharing link on the job
                     runner.api.links().create.side_effect = ApiError(
                         mock.MagicMock(return_value={'status': 403}),
-                        'Permission denied')
+                        bytes(b'Permission denied'))
                     j.run(runtimeContext)
                 else:
                     assert not runner.api.links().create.called
