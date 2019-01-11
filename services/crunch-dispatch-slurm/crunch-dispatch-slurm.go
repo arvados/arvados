@@ -23,8 +23,8 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/config"
 	"git.curoverse.com/arvados.git/sdk/go/dispatch"
-	"github.com/sirupsen/logrus"
 	"github.com/coreos/go-systemd/daemon"
+	"github.com/sirupsen/logrus"
 )
 
 type logger interface {

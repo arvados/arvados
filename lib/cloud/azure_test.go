@@ -41,10 +41,12 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/config"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-06-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-06-01/network"
+	"github.com/Azure/azure-sdk-for-go/storage"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/jmcvetta/randutil"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 	check "gopkg.in/check.v1"
 )
@@ -112,7 +114,7 @@ func GetInstanceSet() (InstanceSet, ImageID, arvados.Cluster, error) {
 		if err != nil {
 			return nil, ImageID(""), cluster, err
 		}
-		ap, err := NewAzureInstanceSet(cfg, "test123")
+		ap, err := NewAzureInstanceSet(cfg, "test123", logrus.StandardLogger())
 		return ap, ImageID(cfg["image"].(string)), cluster, err
 	} else {
 		ap := AzureInstanceSet{
@@ -121,7 +123,11 @@ func GetInstanceSet() (InstanceSet, ImageID, arvados.Cluster, error) {
 			},
 			dispatcherID: "test123",
 			namePrefix:   "compute-test123-",
+			logger:       logrus.StandardLogger(),
+			deleteNIC:    make(chan string),
+			deleteBlob:   make(chan storage.Blob),
 		}
+		ap.ctx, ap.stopFunc = context.WithCancel(context.Background())
 		ap.vmClient = &VirtualMachinesClientStub{}
 		ap.netClient = &InterfacesClientStub{}
 		return &ap, ImageID("blob"), cluster, nil
