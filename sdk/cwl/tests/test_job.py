@@ -442,7 +442,7 @@ class TestWorkflow(unittest.TestCase):
 
         mockc.open().__enter__().write.assert_has_calls([mock.call(subwf)])
         mockc.open().__enter__().write.assert_has_calls([mock.call(
-b'''{
+bytes(b'''{
   "fileblub": {
     "basename": "token.txt",
     "class": "File",
@@ -450,7 +450,7 @@ b'''{
     "size": 0
   },
   "sleeptime": 5
-}''')])
+}'''))])
 
     # The test passes no builder.resources
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}

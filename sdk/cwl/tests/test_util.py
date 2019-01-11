@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from builtins import bytes
+
 import unittest
 import mock
 import datetime
@@ -39,7 +41,7 @@ class TestUtil(unittest.TestCase):
 
     def test_get_current_container_error(self):
         api = mock.MagicMock()
-        api.containers().current().execute.side_effect = ApiError(httplib2.Response({"status": 300}), b"")
+        api.containers().current().execute.side_effect = ApiError(httplib2.Response({"status": 300}), bytes(b""))
         logger = mock.MagicMock()
 
         self.assertRaises(ApiError, get_current_container(api, num_retries=0, logger=logger))
