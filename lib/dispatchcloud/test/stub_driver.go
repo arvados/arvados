@@ -17,8 +17,8 @@ import (
 
 	"git.curoverse.com/arvados.git/lib/cloud"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"github.com/Sirupsen/logrus"
 	"github.com/mitchellh/mapstructure"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 )
 
