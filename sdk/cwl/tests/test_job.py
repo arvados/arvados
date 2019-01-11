@@ -5,6 +5,7 @@
 from future import standard_library
 standard_library.install_aliases()
 from builtins import str
+from builtins import next
 
 import functools
 import json
@@ -404,8 +405,8 @@ class TestWorkflow(unittest.TestCase):
         arvtool.formatgraph = None
         it = arvtool.job({}, mock.MagicMock(), runtimeContext)
 
-        it.next().run(runtimeContext)
-        it.next().run(runtimeContext)
+        next(it).run(runtimeContext)
+        next(it).run(runtimeContext)
 
         with open("tests/wf/scatter2_subwf.cwl") as f:
             subwf = StripYAMLComments(f.read())
@@ -441,7 +442,7 @@ class TestWorkflow(unittest.TestCase):
 
         mockc.open().__enter__().write.assert_has_calls([mock.call(subwf)])
         mockc.open().__enter__().write.assert_has_calls([mock.call(
-'''{
+b'''{
   "fileblub": {
     "basename": "token.txt",
     "class": "File",
@@ -483,8 +484,9 @@ class TestWorkflow(unittest.TestCase):
         arvtool = arvados_cwl.ArvadosWorkflow(runner, tool, loadingContext)
         arvtool.formatgraph = None
         it = arvtool.job({}, mock.MagicMock(), runtimeContext)
-        it.next().run(runtimeContext)
-        it.next().run(runtimeContext)
+        
+        next(it).run(runtimeContext)
+        next(it).run(runtimeContext)
 
         with open("tests/wf/echo-subwf.cwl") as f:
             subwf = StripYAMLComments(f.read())
