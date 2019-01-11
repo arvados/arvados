@@ -140,7 +140,7 @@ class ArvadosContainer(JobBase):
                 generatemapper = NoFollowPathMapper(self.generatefiles["listing"], "", "",
                                                     separateDirs=False)
 
-                sorteditems = sorted(list(generatemapper.items()), None, key=lambda n: n[1].target)
+                sorteditems = sorted(list(generatemapper.items()), key=lambda n: n[1].target)
 
                 logger.debug("generatemapper is %s", sorteditems)
 
