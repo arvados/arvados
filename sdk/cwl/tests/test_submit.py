@@ -5,7 +5,7 @@
 from future import standard_library
 standard_library.install_aliases()
 from builtins import object
-from builtins import bytes
+from builtins import str
 
 import copy
 import io
@@ -16,6 +16,8 @@ import logging
 import mock
 import sys
 import unittest
+
+from io import BytesIO, StringIO
 
 import arvados
 import arvados.collection
@@ -64,6 +66,11 @@ def stubs(func):
 
         stubs.fake_user_uuid = "zzzzz-tpzed-zzzzzzzzzzzzzzz"
         stubs.fake_container_uuid = "zzzzz-dz642-zzzzzzzzzzzzzzz"
+
+        if sys.version_info[0] < 3:
+            stubs.capture_stdout = BytesIO()
+        else:
+            stubs.capture_stdout = StringIO()
 
         stubs.api = mock.MagicMock()
         stubs.api._rootDesc = get_rootDesc()
@@ -323,11 +330,10 @@ class TestSubmit(unittest.TestCase):
                 return '999999999999999999999999999999d4+99'
         arvdock.side_effect = get_image
 
-        capture_stdout = io.StringIO()
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=jobs", "--debug",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            capture_stdout, sys.stderr, api_client=stubs.api)
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
 
         stubs.api.collections().create.assert_has_calls([
@@ -359,18 +365,17 @@ class TestSubmit(unittest.TestCase):
         expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
         stubs.api.pipeline_instances().create.assert_called_with(
             body=JsonDiffMatcher(expect_pipeline))
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_pipeline_uuid + '\n')
 
 
     @mock.patch("time.sleep")
     @stubs
     def test_submit_no_reuse(self, stubs, tm):
-        capture_stdout = io.StringIO()
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=jobs", "--debug", "--disable-reuse",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            capture_stdout, sys.stderr, api_client=stubs.api)
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
 
         expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
@@ -379,7 +384,7 @@ class TestSubmit(unittest.TestCase):
 
         stubs.api.pipeline_instances().create.assert_called_with(
             body=JsonDiffMatcher(expect_pipeline))
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_pipeline_uuid + '\n')
 
     @stubs
@@ -394,11 +399,10 @@ class TestSubmit(unittest.TestCase):
     @mock.patch("time.sleep")
     @stubs
     def test_submit_on_error(self, stubs, tm):
-        capture_stdout = io.StringIO()
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=jobs", "--debug", "--on-error=stop",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            capture_stdout, sys.stderr, api_client=stubs.api)
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
 
         expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
@@ -406,18 +410,17 @@ class TestSubmit(unittest.TestCase):
 
         stubs.api.pipeline_instances().create.assert_called_with(
             body=JsonDiffMatcher(expect_pipeline))
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_pipeline_uuid + '\n')
 
 
     @mock.patch("time.sleep")
     @stubs
     def test_submit_runner_ram(self, stubs, tm):
-        capture_stdout = io.StringIO()
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--debug", "--submit-runner-ram=2048",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            capture_stdout, sys.stderr, api_client=stubs.api)
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
 
         expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
@@ -425,18 +428,17 @@ class TestSubmit(unittest.TestCase):
 
         stubs.api.pipeline_instances().create.assert_called_with(
             body=JsonDiffMatcher(expect_pipeline))
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_pipeline_uuid + '\n')
 
 
     @mock.patch("time.sleep")
     @stubs
     def test_submit_invalid_runner_ram(self, stubs, tm):
-        capture_stdout = io.StringIO()
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--debug", "--submit-runner-ram=-2048",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            capture_stdout, sys.stderr, api_client=stubs.api)
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 1)
 
     @mock.patch("time.sleep")
@@ -444,11 +446,10 @@ class TestSubmit(unittest.TestCase):
     def test_submit_output_name(self, stubs, tm):
         output_name = "test_output_name"
 
-        capture_stdout = io.StringIO()
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--debug", "--output-name", output_name,
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            capture_stdout, sys.stderr, api_client=stubs.api)
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
 
         expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
@@ -456,18 +457,17 @@ class TestSubmit(unittest.TestCase):
 
         stubs.api.pipeline_instances().create.assert_called_with(
             body=JsonDiffMatcher(expect_pipeline))
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_pipeline_uuid + '\n')
 
 
     @mock.patch("time.sleep")
     @stubs
     def test_submit_pipeline_name(self, stubs, tm):
-        capture_stdout = io.StringIO()
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--debug", "--name=hello job 123",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            capture_stdout, sys.stderr, api_client=stubs.api)
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
 
         expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
@@ -475,7 +475,7 @@ class TestSubmit(unittest.TestCase):
 
         stubs.api.pipeline_instances().create.assert_called_with(
             body=JsonDiffMatcher(expect_pipeline))
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_pipeline_uuid + '\n')
 
     @mock.patch("time.sleep")
@@ -483,11 +483,10 @@ class TestSubmit(unittest.TestCase):
     def test_submit_output_tags(self, stubs, tm):
         output_tags = "tag0,tag1,tag2"
 
-        capture_stdout = io.StringIO()
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--debug", "--output-tags", output_tags,
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            capture_stdout, sys.stderr, api_client=stubs.api)
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
 
         expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
@@ -495,7 +494,7 @@ class TestSubmit(unittest.TestCase):
 
         stubs.api.pipeline_instances().create.assert_called_with(
             body=JsonDiffMatcher(expect_pipeline))
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_pipeline_uuid + '\n')
 
     @mock.patch("time.sleep")
@@ -517,15 +516,14 @@ class TestSubmit(unittest.TestCase):
 
     @stubs
     def test_submit_container(self, stubs):
-        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug",
                  "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+                stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
             self.assertEqual(exited, 0)
         except:
-            logging.exception("")
+            logging.exception(str(u""))
 
         stubs.api.collections().create.assert_has_calls([
             mock.call(body=JsonDiffMatcher({
@@ -544,20 +542,19 @@ class TestSubmit(unittest.TestCase):
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
     @stubs
     def test_submit_container_no_reuse(self, stubs):
-        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug", "--disable-reuse",
                  "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+                stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
             self.assertEqual(exited, 0)
         except:
-            logging.exception("")
+            logging.exception(str(u""))
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["command"] = [
@@ -571,18 +568,16 @@ class TestSubmit(unittest.TestCase):
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
 
     @stubs
     def test_submit_container_reuse_disabled_by_workflow(self, stubs):
-        capture_stdout = io.StringIO()
-
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug",
              "tests/wf/submit_wf_no_reuse.cwl", "tests/submit_test_job.json"],
-            capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
         self.assertEqual(exited, 0)
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
@@ -607,21 +602,20 @@ class TestSubmit(unittest.TestCase):
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
 
     @stubs
     def test_submit_container_on_error(self, stubs):
-        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug", "--on-error=stop",
                  "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+                stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
             self.assertEqual(exited, 0)
         except:
-            logging.exception("")
+            logging.exception(str(u""))
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
@@ -633,22 +627,21 @@ class TestSubmit(unittest.TestCase):
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
     @stubs
     def test_submit_container_output_name(self, stubs):
         output_name = "test_output_name"
 
-        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug", "--output-name", output_name,
                  "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+                stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
             self.assertEqual(exited, 0)
         except:
-            logging.exception("")
+            logging.exception(str(u""))
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
@@ -661,20 +654,19 @@ class TestSubmit(unittest.TestCase):
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
     @stubs
     def test_submit_storage_classes(self, stubs):
-        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--debug", "--submit", "--no-wait", "--api=containers", "--storage-classes=foo",
                  "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+                stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
             self.assertEqual(exited, 0)
         except:
-            logging.exception("")
+            logging.exception(str(u""))
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
@@ -686,7 +678,7 @@ class TestSubmit(unittest.TestCase):
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
     @mock.patch("arvados_cwl.task_queue.TaskQueue")
@@ -706,7 +698,7 @@ class TestSubmit(unittest.TestCase):
                 sys.stdin, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
             self.assertEqual(exited, 0)
         except:
-            logging.exception("")
+            logging.exception(str(u""))
 
         make_output.assert_called_with(u'Output of submit_wf.cwl', ['foo'], '', 'zzzzz-4zz18-zzzzzzzzzzzzzzzz')
 
@@ -727,21 +719,20 @@ class TestSubmit(unittest.TestCase):
                 sys.stdin, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
             self.assertEqual(exited, 0)
         except:
-            logging.exception("")
+            logging.exception(str(u""))
 
         make_output.assert_called_with(u'Output of submit_wf.cwl', ['default'], '', 'zzzzz-4zz18-zzzzzzzzzzzzzzzz')
 
     @stubs
     def test_submit_container_output_ttl(self, stubs):
-        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug", "--intermediate-output-ttl", "3600",
                  "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+                stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
             self.assertEqual(exited, 0)
         except:
-            logging.exception("")
+            logging.exception(str(u""))
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
@@ -754,20 +745,19 @@ class TestSubmit(unittest.TestCase):
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
     @stubs
     def test_submit_container_trash_intermediate(self, stubs):
-        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug", "--trash-intermediate",
                  "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+                stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
             self.assertEqual(exited, 0)
         except:
-            logging.exception("")
+            logging.exception(str(u""))
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
@@ -780,22 +770,21 @@ class TestSubmit(unittest.TestCase):
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
     @stubs
     def test_submit_container_output_tags(self, stubs):
         output_tags = "tag0,tag1,tag2"
 
-        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug", "--output-tags", output_tags,
                  "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+                stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
             self.assertEqual(exited, 0)
         except:
-            logging.exception("")
+            logging.exception(str(u""))
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
@@ -807,39 +796,38 @@ class TestSubmit(unittest.TestCase):
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
     @stubs
     def test_submit_container_runner_ram(self, stubs):
-        capture_stdout = io.StringIO()
+
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug", "--submit-runner-ram=2048",
                  "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+                stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
             self.assertEqual(exited, 0)
         except:
-            logging.exception("")
+            logging.exception(str(u""))
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["runtime_constraints"]["ram"] = (2048+256)*1024*1024
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
     @mock.patch("arvados.collection.CollectionReader")
     @mock.patch("time.sleep")
     @stubs
     def test_submit_file_keepref(self, stubs, tm, collectionReader):
-        capture_stdout = io.StringIO()
         collectionReader().find.return_value = arvados.arvfile.ArvadosFile(mock.MagicMock(), "blorp.txt")
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug",
              "tests/wf/submit_keepref_wf.cwl"],
-            capture_stdout, sys.stderr, api_client=stubs.api)
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
 
 
@@ -847,15 +835,13 @@ class TestSubmit(unittest.TestCase):
     @mock.patch("time.sleep")
     @stubs
     def test_submit_keepref(self, stubs, tm, reader):
-        capture_stdout = io.StringIO()
-
         with open("tests/wf/expect_arvworkflow.cwl") as f:
             reader().open().__enter__().read.return_value = f.read()
 
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug",
              "keep:99999999999999999999999999999994+99/expect_arvworkflow.cwl#main", "-x", "XxX"],
-            capture_stdout, sys.stderr, api_client=stubs.api)
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
 
         expect_container = {
@@ -901,7 +887,7 @@ class TestSubmit(unittest.TestCase):
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
 
@@ -909,15 +895,13 @@ class TestSubmit(unittest.TestCase):
     @mock.patch("time.sleep")
     @stubs
     def test_submit_jobs_keepref(self, stubs, tm, reader):
-        capture_stdout = io.StringIO()
-
         with open("tests/wf/expect_arvworkflow.cwl") as f:
             reader().open().__enter__().read.return_value = f.read()
 
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=jobs", "--debug",
              "keep:99999999999999999999999999999994+99/expect_arvworkflow.cwl#main", "-x", "XxX"],
-            capture_stdout, sys.stderr, api_client=stubs.api)
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
 
         expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
@@ -932,15 +916,13 @@ class TestSubmit(unittest.TestCase):
     @mock.patch("time.sleep")
     @stubs
     def test_submit_arvworkflow(self, stubs, tm):
-        capture_stdout = io.StringIO()
-
         with open("tests/wf/expect_arvworkflow.cwl") as f:
             stubs.api.workflows().get().execute.return_value = {"definition": f.read(), "name": "a test workflow"}
 
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug",
              "962eh-7fd4e-gkbzl62qqtfig37", "-x", "XxX"],
-            capture_stdout, sys.stderr, api_client=stubs.api)
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
 
         expect_container = {
@@ -1025,60 +1007,56 @@ class TestSubmit(unittest.TestCase):
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
 
     @stubs
     def test_submit_container_name(self, stubs):
-        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug", "--name=hello container 123",
                  "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+                stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
             self.assertEqual(exited, 0)
         except:
-            logging.exception("")
+            logging.exception(str(u""))
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["name"] = "hello container 123"
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
 
     @stubs
     def test_submit_missing_input(self, stubs):
-        capture_stdout = io.StringIO()
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
         self.assertEqual(exited, 0)
 
-        capture_stdout = io.StringIO()
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job_missing.json"],
-            capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
         self.assertEqual(exited, 1)
 
 
     @stubs
     def test_submit_container_project(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
-        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug", "--project-uuid="+project_uuid,
                  "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+                stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
             self.assertEqual(exited, 0)
         except:
-            logging.exception("")
+            logging.exception(str(u""))
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["owner_uuid"] = project_uuid
@@ -1092,21 +1070,20 @@ class TestSubmit(unittest.TestCase):
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
     @stubs
     def test_submit_container_eval_timeout(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
-        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug", "--eval-timeout=60",
                  "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+                stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
             self.assertEqual(exited, 0)
         except:
-            logging.exception("")
+            logging.exception(str(u""))
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
@@ -1118,21 +1095,20 @@ class TestSubmit(unittest.TestCase):
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
     @stubs
     def test_submit_container_collection_cache(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
-        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug", "--collection-cache-size=500",
                  "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+                stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
             self.assertEqual(exited, 0)
         except:
-            logging.exception("")
+            logging.exception(str(u""))
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
@@ -1145,22 +1121,21 @@ class TestSubmit(unittest.TestCase):
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
 
     @stubs
     def test_submit_container_thread_count(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
-        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug", "--thread-count=20",
                  "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+                stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
             self.assertEqual(exited, 0)
         except:
-            logging.exception("")
+            logging.exception(str(u""))
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
@@ -1172,82 +1147,78 @@ class TestSubmit(unittest.TestCase):
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
 
     @stubs
     def test_submit_job_runner_image(self, stubs):
-        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=jobs", "--debug", "--submit-runner-image=arvados/jobs:123",
                  "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+                stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
             self.assertEqual(exited, 0)
         except:
-            logging.exception("")
+            logging.exception(str(u""))
 
         stubs.expect_pipeline_instance["components"]["cwl-runner"]["runtime_constraints"]["docker_image"] = "999999999999999999999999999999d5+99"
 
         expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
         stubs.api.pipeline_instances().create.assert_called_with(
             body=JsonDiffMatcher(expect_pipeline))
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_pipeline_uuid + '\n')
 
     @stubs
     def test_submit_container_runner_image(self, stubs):
-        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug", "--submit-runner-image=arvados/jobs:123",
                  "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+                stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
             self.assertEqual(exited, 0)
         except:
-            logging.exception("")
+            logging.exception(str(u""))
 
         stubs.expect_container_spec["container_image"] = "999999999999999999999999999999d5+99"
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
     @stubs
     def test_submit_priority(self, stubs):
-        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug", "--priority=669",
                  "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+                stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
             self.assertEqual(exited, 0)
         except:
-            logging.exception("")
+            logging.exception(str(u""))
 
         stubs.expect_container_spec["priority"] = 669
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
 
     @stubs
     def test_submit_wf_runner_resources(self, stubs):
-        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug",
                  "tests/wf/submit_wf_runner_resources.cwl", "tests/submit_test_job.json"],
-                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+                stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
             self.assertEqual(exited, 0)
         except:
-            logging.exception("")
+            logging.exception(str(u""))
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["runtime_constraints"] = {
@@ -1275,7 +1246,7 @@ class TestSubmit(unittest.TestCase):
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
     def tearDown(self):
@@ -1320,15 +1291,14 @@ class TestSubmit(unittest.TestCase):
 
     @stubs
     def test_submit_secrets(self, stubs):
-        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug",
                  "tests/wf/secret_wf.cwl", "tests/secret_test_job.yml"],
-                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+                stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
             self.assertEqual(exited, 0)
         except:
-            logging.exception("")
+            logging.exception(str(u""))
 
 
         expect_container = {
@@ -1484,7 +1454,7 @@ class TestSubmit(unittest.TestCase):
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
     @stubs
@@ -1497,50 +1467,47 @@ class TestSubmit(unittest.TestCase):
             "state": "Queued"
         }
 
-        capture_stdout = io.StringIO()
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug", "--submit-request-uuid=zzzzz-xvhdp-yyyyyyyyyyyyyyy",
                  "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+                stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
             self.assertEqual(exited, 0)
         except:
-            logging.exception("")
+            logging.exception(str(u""))
 
         stubs.api.container_requests().update.assert_called_with(
             uuid="zzzzz-xvhdp-yyyyyyyyyyyyyyy", body=JsonDiffMatcher(stubs.expect_container_spec), cluster_id="zzzzz")
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
     @stubs
     def test_submit_container_cluster_id(self, stubs):
-        capture_stdout = io.StringIO()
         stubs.api._rootDesc["remoteHosts"]["zbbbb"] = "123"
         try:
             exited = arvados_cwl.main(
                 ["--submit", "--no-wait", "--api=containers", "--debug", "--submit-runner-cluster=zbbbb",
                  "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+                stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
             self.assertEqual(exited, 0)
         except:
-            logging.exception("")
+            logging.exception(str(u""))
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container), cluster_id="zbbbb")
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
 
     @stubs
     def test_submit_validate_cluster_id(self, stubs):
-        capture_stdout = io.StringIO()
         stubs.api._rootDesc["remoteHosts"]["zbbbb"] = "123"
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug", "--submit-runner-cluster=zcccc",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
         self.assertEqual(exited, 1)
 
 
@@ -1570,14 +1537,12 @@ class TestCreateTemplate(unittest.TestCase):
     def test_create(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
 
-        capture_stdout = io.StringIO()
-
         exited = arvados_cwl.main(
             ["--create-workflow", "--debug",
              "--api=jobs",
              "--project-uuid", project_uuid,
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            capture_stdout, sys.stderr, api_client=stubs.api)
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
 
         stubs.api.pipeline_instances().create.refute_called()
@@ -1595,7 +1560,7 @@ class TestCreateTemplate(unittest.TestCase):
         stubs.api.pipeline_templates().create.assert_called_with(
             body=JsonDiffMatcher(expect_template), ensure_unique_name=True)
 
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_pipeline_template_uuid + '\n')
 
 
@@ -1603,15 +1568,13 @@ class TestCreateTemplate(unittest.TestCase):
     def test_create_name(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
 
-        capture_stdout = io.StringIO()
-
         exited = arvados_cwl.main(
             ["--create-workflow", "--debug",
              "--project-uuid", project_uuid,
              "--api=jobs",
              "--name", "testing 123",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            capture_stdout, sys.stderr, api_client=stubs.api)
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
 
         stubs.api.pipeline_instances().create.refute_called()
@@ -1629,15 +1592,13 @@ class TestCreateTemplate(unittest.TestCase):
         stubs.api.pipeline_templates().create.assert_called_with(
             body=JsonDiffMatcher(expect_template), ensure_unique_name=True)
 
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_pipeline_template_uuid + '\n')
 
 
     @stubs
     def test_update_name(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
-
-        capture_stdout = io.StringIO()
 
         exited = arvados_cwl.main(
             ["--update-workflow", self.existing_template_uuid,
@@ -1646,7 +1607,7 @@ class TestCreateTemplate(unittest.TestCase):
              "--api=jobs",
              "--name", "testing 123",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            capture_stdout, sys.stderr, api_client=stubs.api)
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
 
         stubs.api.pipeline_instances().create.refute_called()
@@ -1665,7 +1626,7 @@ class TestCreateTemplate(unittest.TestCase):
         stubs.api.pipeline_templates().update.assert_called_with(
             body=JsonDiffMatcher(expect_template), uuid=self.existing_template_uuid)
 
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          self.existing_template_uuid + '\n')
 
 
@@ -1678,14 +1639,12 @@ class TestCreateWorkflow(unittest.TestCase):
     def test_create(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
 
-        capture_stdout = io.StringIO()
-
         exited = arvados_cwl.main(
             ["--create-workflow", "--debug",
              "--api=containers",
              "--project-uuid", project_uuid,
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            capture_stdout, sys.stderr, api_client=stubs.api)
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
 
         stubs.api.pipeline_templates().create.refute_called()
@@ -1702,7 +1661,7 @@ class TestCreateWorkflow(unittest.TestCase):
         stubs.api.workflows().create.assert_called_with(
             body=JsonDiffMatcher(body))
 
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_workflow_uuid + '\n')
 
 
@@ -1710,15 +1669,13 @@ class TestCreateWorkflow(unittest.TestCase):
     def test_create_name(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
 
-        capture_stdout = io.StringIO()
-
         exited = arvados_cwl.main(
             ["--create-workflow", "--debug",
              "--api=containers",
              "--project-uuid", project_uuid,
              "--name", "testing 123",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            capture_stdout, sys.stderr, api_client=stubs.api)
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
 
         stubs.api.pipeline_templates().create.refute_called()
@@ -1735,7 +1692,7 @@ class TestCreateWorkflow(unittest.TestCase):
         stubs.api.workflows().create.assert_called_with(
             body=JsonDiffMatcher(body))
 
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_workflow_uuid + '\n')
 
     @stubs
@@ -1757,13 +1714,11 @@ class TestCreateWorkflow(unittest.TestCase):
 
     @stubs
     def test_update(self, stubs):
-        capture_stdout = io.StringIO()
-
         exited = arvados_cwl.main(
             ["--update-workflow", self.existing_workflow_uuid,
              "--debug",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            capture_stdout, sys.stderr, api_client=stubs.api)
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
 
         body = {
@@ -1776,19 +1731,17 @@ class TestCreateWorkflow(unittest.TestCase):
         stubs.api.workflows().update.assert_called_with(
             uuid=self.existing_workflow_uuid,
             body=JsonDiffMatcher(body))
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          self.existing_workflow_uuid + '\n')
 
 
     @stubs
     def test_update_name(self, stubs):
-        capture_stdout = io.StringIO()
-
         exited = arvados_cwl.main(
             ["--update-workflow", self.existing_workflow_uuid,
              "--debug", "--name", "testing 123",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            capture_stdout, sys.stderr, api_client=stubs.api)
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
 
         body = {
@@ -1801,7 +1754,7 @@ class TestCreateWorkflow(unittest.TestCase):
         stubs.api.workflows().update.assert_called_with(
             uuid=self.existing_workflow_uuid,
             body=JsonDiffMatcher(body))
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          self.existing_workflow_uuid + '\n')
 
 
@@ -1809,14 +1762,12 @@ class TestCreateWorkflow(unittest.TestCase):
     def test_create_collection_per_tool(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
 
-        capture_stdout = io.StringIO()
-
         exited = arvados_cwl.main(
             ["--create-workflow", "--debug",
              "--api=containers",
              "--project-uuid", project_uuid,
              "tests/collection_per_tool/collection_per_tool.cwl"],
-            capture_stdout, sys.stderr, api_client=stubs.api)
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
 
         toolfile = "tests/collection_per_tool/collection_per_tool_packed.cwl"
@@ -1833,7 +1784,7 @@ class TestCreateWorkflow(unittest.TestCase):
         stubs.api.workflows().create.assert_called_with(
             body=JsonDiffMatcher(body))
 
-        self.assertEqual(capture_stdout.getvalue(),
+        self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_workflow_uuid + '\n')
 
 class TestTemplateInputs(unittest.TestCase):

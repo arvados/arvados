@@ -6,6 +6,8 @@
 # Implement cwl-runner interface for submitting and running work on Arvados, using
 # either the Crunch jobs API or Crunch containers API.
 
+from builtins import str
+
 import argparse
 import logging
 import os
@@ -232,7 +234,7 @@ def add_arv_hints():
     ])
 
 def exit_signal_handler(sigcode, frame):
-    logger.error("Caught signal {}, exiting.".format(sigcode))
+    logger.error(str(u"Caught signal {}, exiting.").format(sigcode))
     sys.exit(-sigcode)
 
 def main(args, stdout, stderr, api_client=None, keep_client=None,
@@ -243,7 +245,7 @@ def main(args, stdout, stderr, api_client=None, keep_client=None,
     arvargs = parser.parse_args(args)
 
     if len(arvargs.storage_classes.strip().split(',')) > 1:
-        logger.error("Multiple storage classes are not supported currently.")
+        logger.error(str(u"Multiple storage classes are not supported currently."))
         return 1
 
     arvargs.use_container = True
@@ -261,7 +263,7 @@ def main(args, stdout, stderr, api_client=None, keep_client=None,
         else:
             want_api = None
         if want_api and arvargs.work_api and want_api != arvargs.work_api:
-            logger.error('--update-workflow arg {!r} uses {!r} API, but --api={!r} specified'.format(
+            logger.error(str(u'--update-workflow arg {!r} uses {!r} API, but --api={!r} specified').format(
                 arvargs.update_workflow, want_api, arvargs.work_api))
             return 1
         arvargs.work_api = want_api
