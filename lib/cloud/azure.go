@@ -166,14 +166,13 @@ func WrapAzureError(err error) error {
 		if parseErr != nil {
 			// Could not parse as a timestamp, must be number of seconds
 			dur, parseErr := strconv.ParseInt(ra, 10, 64)
-			if parseErr != nil {
+			if parseErr == nil {
 				earliestRetry = time.Now().Add(time.Duration(dur) * time.Second)
+			} else {
+				// Couldn't make sense of retry-after,
+				// so set retry to 20 seconds
+				earliestRetry = time.Now().Add(20 * time.Second)
 			}
-		}
-		if parseErr != nil {
-			// Couldn't make sense of retry-after,
-			// so set retry to 20 seconds
-			earliestRetry = time.Now().Add(20 * time.Second)
 		}
 		return &AzureRateLimitError{*rq, earliestRetry}
 	}
@@ -251,10 +250,14 @@ func (az *AzureInstanceSet) setup(azcfg AzureInstanceSetConfig, dispatcherID str
 
 	az.ctx, az.stopFunc = context.WithCancel(context.Background())
 	go func() {
+		az.stopWg.Add(1)
+		defer az.stopWg.Done()
+
 		tk := time.NewTicker(5 * time.Minute)
 		for {
 			select {
 			case <-az.ctx.Done():
+				tk.Stop()
 				return
 			case <-tk.C:
 				az.ManageBlobs()
@@ -504,9 +507,6 @@ func (az *AzureInstanceSet) ManageNics() (map[string]network.Interface, error) {
 // leased to a VM) and haven't been modified for
 // DeleteDanglingResourcesAfter seconds.
 func (az *AzureInstanceSet) ManageBlobs() {
-	az.stopWg.Add(1)
-	defer az.stopWg.Done()
-
 	result, err := az.storageAcctClient.ListKeys(az.ctx, az.azconfig.ResourceGroup, az.azconfig.StorageAccount)
 	if err != nil {
 		az.logger.WithError(err).Warn("Couldn't get account keys")
