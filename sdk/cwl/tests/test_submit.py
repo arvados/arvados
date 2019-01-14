@@ -1840,7 +1840,7 @@ class TestTemplateInputs(unittest.TestCase):
         exited = arvados_cwl.main(
             ["--create-template",
              "tests/wf/inputs_test.cwl", "tests/order/empty_order.json"],
-            io.StringIO(), sys.stderr, api_client=stubs.api)
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
 
         stubs.api.pipeline_templates().create.assert_called_with(
@@ -1851,7 +1851,7 @@ class TestTemplateInputs(unittest.TestCase):
         exited = arvados_cwl.main(
             ["--create-template",
              "tests/wf/inputs_test.cwl", "tests/order/inputs_test_order.json"],
-            io.StringIO(), sys.stderr, api_client=stubs.api)
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
 
         expect_template = copy.deepcopy(self.expect_template)
