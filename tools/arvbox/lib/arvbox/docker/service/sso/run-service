@@ -35,9 +35,7 @@ if ! test -s /var/lib/arvados/sso_secret_token ; then
 fi
 secret_token=$(cat /var/lib/arvados/sso_secret_token)
 
-if ! test -s /var/lib/arvados/self-signed.key ; then
-  openssl req -new -x509 -nodes -out /var/lib/arvados/self-signed.pem -keyout /var/lib/arvados/self-signed.key -days 365 -subj '/CN=localhost'
-fi
+test -s /var/lib/arvados/server-cert-${localip}.pem
 
 cat >config/application.yml <<EOF
 $RAILS_ENV:
@@ -92,5 +90,5 @@ if test "$1" = "--only-setup" ; then
 fi
 
 exec bundle exec passenger start --port=${services[sso]} \
-     --ssl --ssl-certificate=/var/lib/arvados/self-signed.pem \
-     --ssl-certificate-key=/var/lib/arvados/self-signed.key
+     --ssl --ssl-certificate=/var/lib/arvados/server-cert-${localip}.pem \
+     --ssl-certificate-key=/var/lib/arvados/server-cert-${localip}.key

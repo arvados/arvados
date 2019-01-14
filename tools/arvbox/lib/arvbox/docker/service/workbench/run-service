@@ -33,18 +33,14 @@ if ! test -s /var/lib/arvados/workbench_secret_token ; then
 fi
 secret_token=$(cat /var/lib/arvados/workbench_secret_token)
 
-if ! test -s self-signed.key ; then
-  openssl req -new -x509 -nodes -out self-signed.pem -keyout self-signed.key -days 365 -subj '/CN=localhost'
-fi
-
 cat >config/application.yml <<EOF
 $RAILS_ENV:
   secret_token: $secret_token
   arvados_login_base: https://$localip:${services[controller-ssl]}/login
   arvados_v1_base: https://$localip:${services[controller-ssl]}/arvados/v1
-  arvados_insecure_https: true
-  keep_web_download_url: http://$localip:${services[keep-web]}/c=%{uuid_or_pdh}
-  keep_web_url: http://$localip:${services[keep-web]}/c=%{uuid_or_pdh}
+  arvados_insecure_https: false
+  keep_web_download_url: https://$localip:${services[keep-web-ssl]}/c=%{uuid_or_pdh}
+  keep_web_url: https://$localip:${services[keep-web-ssl]}/c=%{uuid_or_pdh}
   arvados_docsite: http://$localip:${services[doc]}/
   force_ssl: false
   composer_url: http://$localip:${services[composer]}

@@ -28,13 +28,13 @@ database_pw=$(cat /var/lib/arvados/api_database_pw)
 cat >/var/lib/arvados/arvados-ws.yml <<EOF
 Client:
   APIHost: $localip:${services[controller-ssl]}
-  Insecure: true
+  Insecure: false
 Postgres:
   dbname: arvados_$RAILS_ENV
   user: arvados
   password: $database_pw
   host: localhost
-Listen: :8002
+Listen: localhost:${services[websockets]}
 EOF
 
 exec /usr/local/bin/arvados-ws -config /var/lib/arvados/arvados-ws.yml

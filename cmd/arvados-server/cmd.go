@@ -9,6 +9,7 @@ import (
 
 	"git.curoverse.com/arvados.git/lib/cmd"
 	"git.curoverse.com/arvados.git/lib/controller"
+	"git.curoverse.com/arvados.git/lib/dispatchcloud"
 )
 
 var (
@@ -18,7 +19,8 @@ var (
 		"-version":  cmd.Version(version),
 		"--version": cmd.Version(version),
 
-		"controller": controller.Command,
+		"controller":     controller.Command,
+		"dispatch-cloud": dispatchcloud.Command,
 	})
 )
 
