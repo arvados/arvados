@@ -26,6 +26,9 @@ def get_current_container(api, num_retries=0, logger=None):
         current_container = api.containers().current().execute(num_retries=num_retries)
     except ApiError as e:
         # Status code 404 just means we're not running in a container.
-        if e.resp.status != 404 and logger:
-            logger.info("Getting current container: %s", e)
+        if e.resp.status != 404:
+            if logger:
+                logger.info("Getting current container: %s", e)
+            raise e
+            
     return current_container

@@ -44,4 +44,5 @@ class TestUtil(unittest.TestCase):
         api.containers().current().execute.side_effect = ApiError(httplib2.Response({"status": 300}), bytes(b""))
         logger = mock.MagicMock()
 
-        self.assertRaises(ApiError, get_current_container(api, num_retries=0, logger=logger))
+        with self.assertRaises(ApiError):
+            get_current_container(api, num_retries=0, logger=logger)
