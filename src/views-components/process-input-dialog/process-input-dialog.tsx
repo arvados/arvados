@@ -36,7 +36,7 @@ const getInputs = (data: any) =>
         { type: it.type, id: it.id, label: it.label, value: getInputValue(it.id, data.mounts.varLibCwlCwlInputJson.content), disabled: true }
     )) : [];
 
-const getInputValue = (id: string, data: any) => {
+export const getInputValue = (id: string, data: any) => {
     switch (id) {
         case "#main/example_flag":
             return data.exampleFlag;

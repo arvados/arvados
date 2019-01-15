@@ -36,6 +36,7 @@ export type ContextMenuResource = {
     menuKind: ContextMenuKind;
     isTrashed?: boolean;
     outputUuid?: string;
+    workflowUuid?: string;
 };
 
 export const isKeyboardClick = (event: React.MouseEvent<HTMLElement>) => event.nativeEvent.detail === 0;
@@ -187,6 +188,7 @@ export const openProcessContextMenu = (event: React.MouseEvent<HTMLElement>, pro
                 name: res.name,
                 description: res.description,
                 outputUuid: res.outputUuid || '',
+                workflowUuid: res.properties.workflowUuid || '',
                 menuKind: ContextMenuKind.PROCESS
             }));
         }

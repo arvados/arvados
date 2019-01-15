@@ -15,7 +15,7 @@ export const openProcessInputDialog = (processUuid: string) =>
         const process = getProcess(processUuid)(getState().resources);
         if (process) {
             const data: any = process;
-            if (data && data.containerRequest.mounts.varLibCwlWorkflowJson && data.containerRequest.mounts.varLibCwlWorkflowJson.content.graph[1].inputs.length > 0) {
+            if (data && data.containerRequest.mounts.varLibCwlWorkflowJson && data.containerRequest.mounts.varLibCwlWorkflowJson.content.graph[1] && data.containerRequest.mounts.varLibCwlWorkflowJson.content.graph[1].inputs.length > 0) {
                 dispatch(dialogActions.OPEN_DIALOG({ id: PROCESS_INPUT_DIALOG_NAME, data }));
             } else {
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'There are no inputs in this process!', kind: SnackbarKind.ERROR }));

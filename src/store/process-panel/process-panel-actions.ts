@@ -26,6 +26,7 @@ export const loadProcessPanel = (uuid: string) =>
     (dispatch: Dispatch) => {
         dispatch<any>(loadProcess(uuid));
         dispatch(initProcessPanelFilters);
+        dispatch<any>(showWorkflowDetails(uuid));
     };
 
 export const navigateToOutput = (uuid: string) =>
@@ -41,7 +42,6 @@ export const navigateToOutput = (uuid: string) =>
 export const openWorkflow = (uuid: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch<any>(navigateToWorkflows);
-        dispatch<any>(showWorkflowDetails(uuid));
     };
 
 export const initProcessPanelFilters = procesPanelActions.SET_PROCESS_PANEL_FILTERS([
