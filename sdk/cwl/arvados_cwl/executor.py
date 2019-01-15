@@ -162,7 +162,7 @@ class ArvCwlExecutor(object):
                 raise Exception("Unsupported API '%s', expected one of %s" % (arvargs.work_api, expected_api))
 
         if self.work_api == "jobs":
-            logger.warn("""
+            logger.warning("""
 *******************************
 Using the deprecated 'jobs' API.
 
@@ -356,7 +356,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                     try:
                         proc_states = table.list(filters=[["uuid", "in", page]]).execute(num_retries=self.num_retries)
                     except Exception as e:
-                        logger.warn("Error checking states on API server: %s", e)
+                        logger.warning("Error checking states on API server: %s", e)
                         remain_wait = self.poll_interval
                         continue
 
@@ -388,7 +388,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
             try:
                 self.api.collections().delete(uuid=i).execute(num_retries=self.num_retries)
             except:
-                logger.warn("Failed to delete intermediate output: %s", sys.exc_info()[1], exc_info=(sys.exc_info()[1] if self.debug else False))
+                logger.warning("Failed to delete intermediate output: %s", sys.exc_info()[1], exc_info=(sys.exc_info()[1] if self.debug else False))
             if sys.exc_info()[0] is KeyboardInterrupt or sys.exc_info()[0] is SystemExit:
                 break
 
@@ -450,7 +450,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                 logger.error("Creating CollectionReader for '%s' '%s': %s", k, v, e)
                 raise
             except IOError as e:
-                logger.warn("While preparing output collection: %s", e)
+                logger.warning("While preparing output collection: %s", e)
 
         def rewrite(fileobj):
             fileobj["location"] = generatemapper.mapper(fileobj["location"]).target
