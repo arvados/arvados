@@ -15,6 +15,10 @@ module ApplicationHelper
     Rails.configuration.arvados_v1_base.gsub /https?:\/\/|\/arvados\/v1/,''
   end
 
+  def current_uuid_prefix
+    current_api_host[0..4]
+  end
+
   def render_markup(markup)
     allowed_tags = Rails::Html::Sanitizer.white_list_sanitizer.allowed_tags + %w(table tbody th tr td col colgroup caption thead tfoot)
     sanitize(raw(RedCloth.new(markup.to_s).to_html(:refs_arvados, :textile)), tags: allowed_tags) if markup

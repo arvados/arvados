@@ -84,18 +84,17 @@ h3. Connecting to the virtual machine
 
 Use the following command to connect to the _shell_ VM instance as _you_.  Replace *<code>you@shell</code>* at the end of the following command with your *login* and *hostname* from Workbench:
 
-notextile. <pre><code>$ <span class="userinput">ssh -o "ProxyCommand ssh -a -x -p2222 turnout@switchyard.{{ site.arvados_api_host }} <b>shell</b>" -A -x <b>you@shell</b></span></code></pre>
+notextile. <pre><code>$ <span class="userinput">ssh -o "ProxyCommand ssh -p2222 turnout@switchyard.{{ site.arvados_api_host }} -x -a <b>shell</b>" -x <b>you@shell</b></span></code></pre>
 
 This command does several things at once. You usually cannot log in directly to virtual machines over the public Internet.  Instead, you log into a "switchyard" server and then tell the switchyard which virtual machine you want to connect to.
 
 * @-o "ProxyCommand ..."@ configures SSH to run the specified command to create a proxy and route your connection through it.
-* @-a@ tells SSH not to forward your ssh-agent credentials to the switchyard.
-* @-x@ tells SSH not to forward your X session to the switchyard.
 * @-p2222@ specifies that the switchyard is running on non-standard port 2222.
 * <code>turnout@switchyard.{{ site.arvados_api_host }}</code> specifies the user (@turnout@) and hostname (@switchyard.{{ site.arvados_api_host }}@) of the switchyard server that will proxy our connection to the VM.
+* @-x@ tells SSH not to forward your X session to the switchyard.
+* @-a@ tells SSH not to forward your ssh-agent credentials to the switchyard.
 * *@shell@* is the name of the VM that we want to connect to.  This is sent to the switchyard server as if it were an SSH command, and the switchyard server connects to the VM on our behalf.
 * After the ProxyCommand section, we repeat @-x@ to disable X session forwarding to the virtual machine.
-* @-A@ specifies that we want to forward access to @ssh-agent@ to the VM.
 * Finally, *<code>you@shell</code>* specifies your login name and repeats the hostname of the VM.  The username can be found in the *logins* column in the VMs Workbench page, discussed in the previous section.
 
 You should now be able to log into the Arvados VM and "check your environment.":check-environment.html
@@ -105,16 +104,16 @@ h3. Configuration (recommended)
 The command line above is cumbersome, but you can configure SSH to remember many of these settings.  Add this text to the file @.ssh/config@ in your home directory (create a new file if @.ssh/config@ doesn't exist):
 
 <notextile>
-<pre><code class="userinput">Host *.arvados
-  ProxyCommand ssh -a -x -p2222 turnout@switchyard.{{ site.arvados_api_host }} $SSH_PROXY_FLAGS %h
+<pre><code class="userinput">Host *.{{ site.arvados_cluster_uuid }}
+  TCPKeepAlive yes
+  ServerAliveInterval 60
+  ProxyCommand ssh -p2222 turnout@switchyard.{{ site.arvados_api_host }} -x -a $SSH_PROXY_FLAGS %h
   User <b>you</b>
-  ForwardAgent yes
-  ForwardX11 no
 </code></pre>
 </notextile>
 
-This will recognize any host ending in ".arvados" and automatically apply the proxy, user and forwarding settings from the configuration file, allowing you to log in with a much simpler command:
+This will recognize any host ending in ".{{ site.arvados_cluster_uuid }}" and automatically apply the proxy, user and forwarding settings from the configuration file, allowing you to log in with a much simpler command:
 
-notextile. <pre><code>$ <span class="userinput">ssh <b>shell</b>.arvados</span></code></pre>
+notextile. <pre><code>$ <span class="userinput">ssh <b>shell</b>.{{ site.arvados_cluster_uuid }}</span></code></pre>
 
 You should now be able to log into the Arvados VM and "check your environment.":check-environment.html
