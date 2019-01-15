@@ -448,6 +448,7 @@ class ManifestTest < Minitest::Test
     [false, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:\\057foo/bar\n",
       "Manifest invalid for stream 1: invalid file token \"0:0:\\\\057foo/bar\""],
     [true, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:\\134057foo/bar\n"],
+    [false, ". d41d8cd98f00b204e9800998ecf8427e+0 \\040:\\040:foo.txt\n"],
   ].each do |ok, manifest, expected_error=nil|
     define_method "test_validate manifest #{manifest.inspect}" do
       assert_equal ok, Keep::Manifest.valid?(manifest)
