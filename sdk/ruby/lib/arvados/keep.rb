@@ -101,8 +101,8 @@ module Keep
   end
 
   class Manifest
-    STRICT_STREAM_TOKEN_REGEXP = /^(\.)(\/[^\/\s]+)*$/
-    STRICT_FILE_TOKEN_REGEXP = /^[[:digit:]]+:[[:digit:]]+:([^\s\/]+(\/[^\s\/]+)*)$/
+    STRICT_STREAM_TOKEN_REGEXP = /^(\.)(\/[^\/\t\v\n\r]+)*$/
+    STRICT_FILE_TOKEN_REGEXP = /^[[:digit:]]+:[[:digit:]]+:([^\t\v\n\r\/]+(\/[^\t\v\n\r\/]+)*)$/
     EMPTY_DOT_FILE_TOKEN_REGEXP = /^0:0:\.$/
 
     # Class to parse a manifest text and provide common views of that data.
@@ -132,15 +132,14 @@ module Keep
       end
     end
 
-    def self.unescape(s, except=[])
+    def self.unescape(s)
       return nil if s.nil?
 
       # Parse backslash escapes in a Keep manifest stream or file name.
       s.gsub(/\\(\\|[0-7]{3})/) do |_|
-        if $1 == '\\'
+        case $1
+        when '\\'
           '\\'
-        elsif except.include? $1
-          $1
         else
           $1.to_i(8).chr
         end
@@ -261,7 +260,7 @@ module Keep
         count = 0
 
         word = words.shift
-        unescaped_word = unescape(word, except=["040"])
+        unescaped_word = unescape(word)
         count += 1 if unescaped_word =~ STRICT_STREAM_TOKEN_REGEXP and unescaped_word !~ /\/\.\.?(\/|$)/
         raise ArgumentError.new "Manifest invalid for stream #{line_count}: missing or invalid stream name #{word.inspect if word}" if count != 1
 
@@ -275,7 +274,7 @@ module Keep
 
         count = 0
         while unescape(word) =~ EMPTY_DOT_FILE_TOKEN_REGEXP or
-          (unescape(word, except=["040"]) =~ STRICT_FILE_TOKEN_REGEXP and ($~[1].split('/') & ['..', '.']).empty?)
+          (unescape(word) =~ STRICT_FILE_TOKEN_REGEXP and ($~[1].split('/') & ['..', '.']).empty?)
           word = words.shift
           count += 1
         end
