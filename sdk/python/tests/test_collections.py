@@ -958,6 +958,17 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         c = Collection(manifest)
         self.assertEqual(c.portable_manifest_text(), manifest)
 
+    def test_other_special_chars_on_file_token(self):
+        cases = [
+            ('\\011', '\t'),
+            ('\\012', '\n'),
+        ]
+        for encoded, decoded in cases:
+            manifest = '. d41d8cd98f00b204e9800998ecf8427e+0 0:0:some%sfile.txt\n' % encoded
+            c = Collection(manifest)
+            self.assertEqual(c.portable_manifest_text(), manifest)
+            self.assertIn('some%sfile.txt' % decoded, c.keys())
+
     def test_escaped_paths_do_get_unescaped_on_listing(self):
         # Dir & file names are literally '\056' (escaped form: \134056)
         manifest = './\\134056\\040Test d41d8cd98f00b204e9800998ecf8427e+0 0:0:\\134056\n'

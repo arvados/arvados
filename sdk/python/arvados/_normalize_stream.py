@@ -8,7 +8,15 @@ from . import config
 import re
 
 def escape(path):
-    return re.sub('\\\\([0-3][0-7][0-7])', lambda m: '\\134'+m.group(1), path).replace(' ', '\\040')
+    replacements = [
+        ('\t', '\\011'),
+        ('\n', '\\012'),
+        (' ', '\\040'),
+    ]
+    path = re.sub('\\\\([0-3][0-7][0-7])', lambda m: '\\134'+m.group(1), path)
+    for a, b in replacements:
+        path = path.replace(a, b)
+    return path
 
 def normalize_stream(stream_name, stream):
     """Take manifest stream and return a list of tokens in normalized format.
