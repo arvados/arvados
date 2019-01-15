@@ -10,11 +10,20 @@ import { FilterBuilder } from '~/services/api/filter-builder';
 import { ContainerRequestResource } from '~/models/container-request';
 import { Process } from './process';
 import { dialogActions } from '~/store/dialog/dialog-actions';
-import {snackbarActions, SnackbarKind} from '~/store/snackbar/snackbar-actions';
+import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { projectPanelActions } from '~/store/project-panel/project-panel-action';
+import { navigateToRunProcess } from '~/store/navigation/navigation-action';
+import { goToStep, runProcessPanelActions } from '~/store/run-process-panel/run-process-panel-actions';
+import { getResource } from '~/store/resources/resources';
+import { getInputValue } from "~/views-components/process-input-dialog/process-input-dialog";
+import { initialize } from "redux-form";
+import { RUN_PROCESS_BASIC_FORM, RunProcessBasicFormData } from "~/views/run-process-panel/run-process-basic-form";
+import { RunProcessAdvancedFormData, RUN_PROCESS_ADVANCED_FORM } from "~/views/run-process-panel/run-process-advanced-form";
 
 export const loadProcess = (containerRequestUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<Process> => {
+        const response = await services.workflowService.list();
+        dispatch(runProcessPanelActions.SET_WORKFLOWS(response.items));
         const containerRequest = await services.containerRequestService.get(containerRequestUuid);
         dispatch<any>(updateResources([containerRequest]));
         if (containerRequest.containerUuid) {
@@ -58,6 +67,44 @@ export const loadContainers = (filters: string) =>
         return items;
     };
 
+export const reRunProcess = (processUuid: string, workflowUuid: string) =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const process = getResource<any>(processUuid)(getState().resources);
+        const workflows = getState().runProcessPanel.searchWorkflows;
+        const workflow = workflows.find(workflow => workflow.uuid === workflowUuid);
+        if (workflow && process) {
+            const newValues = getInputs(process);
+            process.mounts.varLibCwlWorkflowJson.content.graph[1].inputs = newValues;
+            const stringifiedDefinition = JSON.stringify(process.mounts.varLibCwlWorkflowJson.content);
+            const newWorkflow = { ...workflow, definition: stringifiedDefinition };
+
+            const basicInitialData: RunProcessBasicFormData = { name: `Copy of: ${process.name}`, description: process.description };
+            dispatch<any>(initialize(RUN_PROCESS_BASIC_FORM, basicInitialData));
+
+            const advancedInitialData: RunProcessAdvancedFormData = { 
+                output: process.outputName, 
+                runtime: process.schedulingParameters.maxRunTime, 
+                ram: process.runtimeConstraints.ram,
+                vcpus: process.runtimeConstraints.vcpus,
+                keepCacheRam: process.runtimeConstraints.keepCacheRam,
+                api: process.runtimeConstraints.API
+             };
+             dispatch<any>(initialize(RUN_PROCESS_ADVANCED_FORM, advancedInitialData));
+
+            dispatch<any>(navigateToRunProcess);
+            dispatch<any>(goToStep(1));
+            dispatch(runProcessPanelActions.SET_STEP_CHANGED(true));
+            dispatch(runProcessPanelActions.SET_SELECTED_WORKFLOW(newWorkflow));
+        } else {
+            dispatch<any>(snackbarActions.OPEN_SNACKBAR({ message: `You can't re-run this process`, kind: SnackbarKind.ERROR }));
+        }
+    };
+
+const getInputs = (data: any) =>
+    data && data.mounts.varLibCwlWorkflowJson ? data.mounts.varLibCwlWorkflowJson.content.graph[1].inputs.map((it: any) => (
+        { type: it.type, id: it.id, label: it.label, default: getInputValue(it.id, data.mounts.varLibCwlCwlInputJson.content), doc: it.doc }
+    )) : [];
+
 export const openRemoveProcessDialog = (uuid: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(dialogActions.OPEN_DIALOG({
@@ -74,11 +121,11 @@ export const openRemoveProcessDialog = (uuid: string) =>
 export const REMOVE_PROCESS_DIALOG = 'removeProcessDialog';
 
 export const removeProcessPermanently = (uuid: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) =>{
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...', kind: SnackbarKind.INFO }));
         await services.containerRequestService.delete(uuid);
         dispatch(projectPanelActions.REQUEST_ITEMS());
         dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
     };
-        
+
 

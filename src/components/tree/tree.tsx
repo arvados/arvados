@@ -107,7 +107,7 @@ export const Tree = withStyles(styles)(
 
             const { levelIndentation = 20, itemRightPadding = 20 } = this.props;
 
-            return <List component="div" className={list}>
+            return <List className={list}>
                 {items && items.map((it: TreeItem<T>, idx: number) =>
                     <div key={`item/${level}/${idx}`}>
                         <ListItem button className={listItem} 

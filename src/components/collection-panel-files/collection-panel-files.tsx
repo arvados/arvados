@@ -3,11 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { TreeItem, TreeItemStatus } from '../tree/tree';
-import { FileTreeData } from '../file-tree/file-tree-data';
-import { FileTree } from '../file-tree/file-tree';
+import { TreeItem, TreeItemStatus } from '~/components/tree/tree';
+import { FileTreeData } from '~/components/file-tree/file-tree-data';
+import { FileTree } from '~/components/file-tree/file-tree';
 import { IconButton, Grid, Typography, StyleRulesCallback, withStyles, WithStyles, CardHeader, Card, Button, Tooltip } from '@material-ui/core';
-import { CustomizeTableIcon } from '../icon/icon';
+import { CustomizeTableIcon } from '~/components/icon/icon';
 import { DownloadIcon } from '~/components/icon/icon';
 
 export interface CollectionPanelFilesProps {

@@ -19,8 +19,9 @@ import { openSharingDialog } from "~/store/sharing-dialog/sharing-dialog-actions
 import { openAdvancedTabDialog } from "~/store/advanced-tab/advanced-tab";
 import { openProcessInputDialog } from "~/store/processes/process-input-actions";
 import { toggleDetailsPanel } from '~/store/details-panel/details-panel-action';
-import { openRemoveProcessDialog } from "~/store/processes/processes-actions";
+import { openRemoveProcessDialog, reRunProcess } from "~/store/processes/processes-actions";
 import { navigateToOutput } from "~/store/process-panel/process-panel-actions";
+import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
 
 export const processActionSet: ContextMenuActionSet = [[
     {
@@ -63,8 +64,12 @@ export const processActionSet: ContextMenuActionSet = [[
         icon: ReRunProcessIcon,
         name: "Re-run process",
         execute: (dispatch, resource) => {
-            // add code
-        }
+            if(resource.workflowUuid) {
+                dispatch<any>(reRunProcess(resource.uuid, resource.workflowUuid));
+            } else {
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: `You can't re-run this process`, hideDuration: 2000, kind: SnackbarKind.ERROR }));
+            }        
+        }        
     },
     {
         icon: InputIcon,

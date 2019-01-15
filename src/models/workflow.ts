@@ -13,7 +13,8 @@ export interface WorkflowResource extends Resource {
 }
 export interface WorkflowResoruceDefinition {
     cwlVersion: string;
-    $graph: Array<Workflow | CommandLineTool>;
+    graph?: Array<Workflow | CommandLineTool>;
+    $graph?: Array<Workflow | CommandLineTool>;
 }
 export interface Workflow {
     class: 'Workflow';
@@ -122,11 +123,19 @@ export const parseWorkflowDefinition = (workflow: WorkflowResource): WorkflowRes
 };
 
 export const getWorkflowInputs = (workflowDefinition: WorkflowResoruceDefinition) => {
-    const mainWorkflow = workflowDefinition.$graph.find(item => item.class === 'Workflow' && item.id === '#main');
-    return mainWorkflow
-        ? mainWorkflow.inputs
-        : undefined;
+    if (workflowDefinition.graph) {
+        const mainWorkflow = workflowDefinition.graph.find(item => item.class === 'Workflow' && item.id === '#main');
+        return mainWorkflow
+            ? mainWorkflow.inputs
+            : undefined;
+    } else {
+        const mainWorkflow = workflowDefinition.$graph!.find(item => item.class === 'Workflow' && item.id === '#main');
+        return mainWorkflow
+            ? mainWorkflow.inputs
+            : undefined;
+    }
 };
+
 export const getInputLabel = (input: CommandInputParameter) => {
     return `${input.label || input.id}`;
 };

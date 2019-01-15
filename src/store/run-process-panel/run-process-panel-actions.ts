@@ -149,6 +149,10 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
             outputPath: '/var/spool/cwl',
             priority: 1,
             outputName: advancedForm[OUTPUT_FIELD] ? advancedForm[OUTPUT_FIELD] : undefined,
+            properties: {
+                workflowUuid: selectedWorkflow.uuid,
+                workflowName: selectedWorkflow.name
+            }       
         };
         const newProcess = await services.containerRequestService.create(newProcessData);
         dispatch(navigateToProcess(newProcess.uuid));

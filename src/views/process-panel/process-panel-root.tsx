@@ -38,7 +38,7 @@ export const ProcessPanelRoot = ({ process, ...props }: ProcessPanelRootProps) =
                     onContextMenu={event => props.onContextMenu(event, process)}
                     openProcessInputDialog={props.openProcessInputDialog}
                     navigateToOutput={props.navigateToOutput}
-                    navigateToWorkflow={props.navigateToWorkflow}
+                    openWorkflow={props.navigateToWorkflow}
             />
             </Grid>
             <Grid item sm={12} md={5}>
