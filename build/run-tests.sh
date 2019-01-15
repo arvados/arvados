@@ -76,6 +76,7 @@ lib/cli
 lib/cmd
 lib/controller
 lib/crunchstat
+lib/cloud
 lib/dispatchcloud
 lib/dispatchcloud/container
 lib/dispatchcloud/scheduler
@@ -929,6 +930,7 @@ gostuff=(
     lib/cmd
     lib/controller
     lib/crunchstat
+    lib/cloud
     lib/dispatchcloud
     lib/dispatchcloud/container
     lib/dispatchcloud/scheduler
