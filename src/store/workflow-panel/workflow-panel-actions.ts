@@ -61,5 +61,7 @@ export const showWorkflowDetails = (uuid: string) =>
 
 export const getWorkflowDetails = (state: RootState) => {
     const uuid = getProperty<string>(WORKFLOW_PANEL_DETAILS_UUID)(state.properties);
-    return uuid ? getResource<WorkflowResource>(uuid)(state.resources) : undefined;
+    const workflows = state.runProcessPanel.workflows;
+    const workflow = workflows.find(workflow => workflow.uuid === uuid);
+    return workflow || undefined;
 };
