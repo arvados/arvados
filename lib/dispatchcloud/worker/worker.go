@@ -15,6 +15,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	// TODO: configurable
+	maxPingFailTime = 10 * time.Minute
+)
+
 // State indicates whether a worker is available to do work, and (if
 // not) whether/when it is expected to become ready.
 type State int
@@ -25,12 +30,6 @@ const (
 	StateIdle                  // instance booted, no containers are running
 	StateRunning               // instance is running one or more containers
 	StateShutdown              // worker has stopped monitoring the instance
-	StateHold                  // running, but not available to run new containers
-)
-
-const (
-	// TODO: configurable
-	maxPingFailTime = 10 * time.Minute
 )
 
 var stateString = map[State]string{
@@ -39,7 +38,6 @@ var stateString = map[State]string{
 	StateIdle:     "idle",
 	StateRunning:  "running",
 	StateShutdown: "shutdown",
-	StateHold:     "hold",
 }
 
 // String implements fmt.Stringer.
@@ -53,26 +51,42 @@ func (s State) MarshalText() ([]byte, error) {
 	return []byte(stateString[s]), nil
 }
 
+// IdleBehavior indicates the behavior desired when a node becomes idle.
+type IdleBehavior string
+
+const (
+	IdleBehaviorRun   IdleBehavior = "run"   // run containers, or shutdown on idle timeout
+	IdleBehaviorHold               = "hold"  // don't shutdown or run more containers
+	IdleBehaviorDrain              = "drain" // shutdown immediately when idle
+)
+
+var validIdleBehavior = map[IdleBehavior]bool{
+	IdleBehaviorRun:   true,
+	IdleBehaviorHold:  true,
+	IdleBehaviorDrain: true,
+}
+
 type worker struct {
 	logger   logrus.FieldLogger
 	executor Executor
 	wp       *Pool
 
-	mtx       sync.Locker // must be wp's Locker.
-	state     State
-	instance  cloud.Instance
-	instType  arvados.InstanceType
-	vcpus     int64
-	memory    int64
-	appeared  time.Time
-	probed    time.Time
-	updated   time.Time
-	busy      time.Time
-	destroyed time.Time
-	lastUUID  string
-	running   map[string]struct{} // remember to update state idle<->running when this changes
-	starting  map[string]struct{} // remember to update state idle<->running when this changes
-	probing   chan struct{}
+	mtx          sync.Locker // must be wp's Locker.
+	state        State
+	idleBehavior IdleBehavior
+	instance     cloud.Instance
+	instType     arvados.InstanceType
+	vcpus        int64
+	memory       int64
+	appeared     time.Time
+	probed       time.Time
+	updated      time.Time
+	busy         time.Time
+	destroyed    time.Time
+	lastUUID     string
+	running      map[string]struct{} // remember to update state idle<->running when this changes
+	starting     map[string]struct{} // remember to update state idle<->running when this changes
+	probing      chan struct{}
 }
 
 // caller must have lock.
@@ -275,7 +289,7 @@ func (wkr *worker) probeBooted() (ok bool, stderr []byte) {
 
 // caller must have lock.
 func (wkr *worker) shutdownIfBroken(dur time.Duration) {
-	if wkr.state == StateHold {
+	if wkr.idleBehavior == IdleBehaviorHold {
 		return
 	}
 	label, threshold := "", wkr.wp.timeoutProbe
@@ -295,19 +309,25 @@ func (wkr *worker) shutdownIfBroken(dur time.Duration) {
 
 // caller must have lock.
 func (wkr *worker) shutdownIfIdle() bool {
-	if wkr.state != StateIdle {
+	if wkr.idleBehavior == IdleBehaviorHold {
+		return false
+	}
+	if !(wkr.state == StateIdle || (wkr.state == StateBooting && wkr.idleBehavior == IdleBehaviorDrain)) {
 		return false
 	}
 	age := time.Since(wkr.busy)
-	if age < wkr.wp.timeoutIdle {
+	if wkr.idleBehavior != IdleBehaviorDrain && age < wkr.wp.timeoutIdle {
 		return false
 	}
-	wkr.logger.WithField("Age", age).Info("shutdown idle worker")
+	wkr.logger.WithFields(logrus.Fields{
+		"Age":          age,
+		"IdleBehavior": wkr.idleBehavior,
+	}).Info("shutdown idle worker")
 	wkr.shutdown()
 	return true
 }
 
-// caller must have lock
+// caller must have lock.
 func (wkr *worker) shutdown() {
 	now := time.Now()
 	wkr.updated = now
@@ -319,6 +339,30 @@ func (wkr *worker) shutdown() {
 		if err != nil {
 			wkr.logger.WithError(err).Warn("shutdown failed")
 			return
+		}
+	}()
+}
+
+// Save worker tags to cloud provider metadata, if they don't already
+// match. Caller must have lock.
+func (wkr *worker) saveTags() {
+	instance := wkr.instance
+	have := instance.Tags()
+	want := cloud.InstanceTags{
+		tagKeyInstanceType: wkr.instType.Name,
+		tagKeyIdleBehavior: string(wkr.idleBehavior),
+	}
+	go func() {
+		for k, v := range want {
+			if v == have[k] {
+				continue
+			}
+			err := instance.SetTags(want)
+			if err != nil {
+				wkr.wp.logger.WithField("Instance", instance).WithError(err).Warnf("error updating tags")
+			}
+			break
+
 		}
 	}()
 }

@@ -5,6 +5,7 @@
 package worker
 
 import (
+	"errors"
 	"io"
 	"sort"
 	"strings"
@@ -19,18 +20,19 @@ import (
 
 const (
 	tagKeyInstanceType = "InstanceType"
-	tagKeyHold         = "Hold"
+	tagKeyIdleBehavior = "IdleBehavior"
 )
 
 // An InstanceView shows a worker's current state and recent activity.
 type InstanceView struct {
-	Instance             string
+	Instance             cloud.InstanceID
 	Price                float64
 	ArvadosInstanceType  string
 	ProviderInstanceType string
 	LastContainerUUID    string
 	LastBusy             time.Time
 	WorkerState          string
+	IdleBehavior         IdleBehavior
 }
 
 // An Executor executes shell commands on a remote host.
@@ -173,7 +175,8 @@ func (wp *Pool) Unsubscribe(ch <-chan struct{}) {
 }
 
 // Unallocated returns the number of unallocated (creating + booting +
-// idle + unknown) workers for each instance type.
+// idle + unknown) workers for each instance type.  Workers in
+// hold/drain mode are not included.
 func (wp *Pool) Unallocated() map[arvados.InstanceType]int {
 	wp.setupOnce.Do(wp.setup)
 	wp.mtx.RLock()
@@ -184,7 +187,7 @@ func (wp *Pool) Unallocated() map[arvados.InstanceType]int {
 		creating[it] = len(times)
 	}
 	for _, wkr := range wp.workers {
-		if !(wkr.state == StateIdle || wkr.state == StateBooting || wkr.state == StateUnknown) {
+		if !(wkr.state == StateIdle || wkr.state == StateBooting || wkr.state == StateUnknown) || wkr.idleBehavior != IdleBehaviorRun {
 			continue
 		}
 		it := wkr.instType
@@ -222,7 +225,10 @@ func (wp *Pool) Create(it arvados.InstanceType) error {
 	if time.Now().Before(wp.atQuotaUntil) {
 		return wp.atQuotaErr
 	}
-	tags := cloud.InstanceTags{tagKeyInstanceType: it.Name}
+	tags := cloud.InstanceTags{
+		tagKeyInstanceType: it.Name,
+		tagKeyIdleBehavior: string(IdleBehaviorRun),
+	}
 	now := time.Now()
 	wp.creating[it] = append(wp.creating[it], now)
 	go func() {
@@ -259,6 +265,21 @@ func (wp *Pool) AtQuota() bool {
 	return time.Now().Before(wp.atQuotaUntil)
 }
 
+// SetIdleBehavior determines how the indicated instance will behave
+// when it has no containers running.
+func (wp *Pool) SetIdleBehavior(id cloud.InstanceID, idleBehavior IdleBehavior) error {
+	wp.mtx.Lock()
+	defer wp.mtx.Unlock()
+	wkr, ok := wp.workers[id]
+	if !ok {
+		return errors.New("requested instance does not exist")
+	}
+	wkr.idleBehavior = idleBehavior
+	wkr.saveTags()
+	wkr.shutdownIfIdle()
+	return nil
+}
+
 // Add or update worker attached to the given instance. Use
 // initialState if a new worker is created.
 //
@@ -274,32 +295,46 @@ func (wp *Pool) updateWorker(inst cloud.Instance, it arvados.InstanceType, initi
 		if initialState == StateBooting && wkr.state == StateUnknown {
 			wkr.state = StateBooting
 		}
+		wkr.saveTags()
 		return wkr, false
 	}
-	if initialState == StateUnknown && inst.Tags()[tagKeyHold] != "" {
-		initialState = StateHold
+
+	// If an instance has a valid IdleBehavior tag when it first
+	// appears, initialize the new worker accordingly (this is how
+	// we restore IdleBehavior that was set by a prior dispatch
+	// process); otherwise, default to "run". After this,
+	// wkr.idleBehavior is the source of truth, and will only be
+	// changed via SetIdleBehavior().
+	idleBehavior := IdleBehavior(inst.Tags()[tagKeyIdleBehavior])
+	if !validIdleBehavior[idleBehavior] {
+		idleBehavior = IdleBehaviorRun
 	}
+
 	logger := wp.logger.WithFields(logrus.Fields{
 		"InstanceType": it.Name,
 		"Instance":     inst,
 	})
-	logger.WithField("State", initialState).Infof("instance appeared in cloud")
+	logger.WithFields(logrus.Fields{
+		"State":        initialState,
+		"IdleBehavior": idleBehavior,
+	}).Infof("instance appeared in cloud")
 	now := time.Now()
 	wkr := &worker{
-		mtx:      &wp.mtx,
-		wp:       wp,
-		logger:   logger,
-		executor: wp.newExecutor(inst),
-		state:    initialState,
-		instance: inst,
-		instType: it,
-		appeared: now,
-		probed:   now,
-		busy:     now,
-		updated:  now,
-		running:  make(map[string]struct{}),
-		starting: make(map[string]struct{}),
-		probing:  make(chan struct{}, 1),
+		mtx:          &wp.mtx,
+		wp:           wp,
+		logger:       logger,
+		executor:     wp.newExecutor(inst),
+		state:        initialState,
+		idleBehavior: idleBehavior,
+		instance:     inst,
+		instType:     it,
+		appeared:     now,
+		probed:       now,
+		busy:         now,
+		updated:      now,
+		running:      make(map[string]struct{}),
+		starting:     make(map[string]struct{}),
+		probing:      make(chan struct{}, 1),
 	}
 	wp.workers[id] = wkr
 	return wkr, true
@@ -322,7 +357,7 @@ func (wp *Pool) Shutdown(it arvados.InstanceType) bool {
 		// TODO: shutdown the worker with the longest idle
 		// time (Idle) or the earliest create time (Booting)
 		for _, wkr := range wp.workers {
-			if wkr.state == tryState && wkr.instType == it {
+			if wkr.idleBehavior != IdleBehaviorHold && wkr.state == tryState && wkr.instType == it {
 				logger.WithField("Instance", wkr.instance).Info("shutting down")
 				wkr.shutdown()
 				return true
@@ -590,18 +625,19 @@ func (wp *Pool) Instances() []InstanceView {
 	wp.mtx.Lock()
 	for _, w := range wp.workers {
 		r = append(r, InstanceView{
-			Instance:             w.instance.String(),
+			Instance:             w.instance.ID(),
 			Price:                w.instType.Price,
 			ArvadosInstanceType:  w.instType.Name,
 			ProviderInstanceType: w.instType.ProviderType,
 			LastContainerUUID:    w.lastUUID,
 			LastBusy:             w.busy,
 			WorkerState:          w.state.String(),
+			IdleBehavior:         w.idleBehavior,
 		})
 	}
 	wp.mtx.Unlock()
 	sort.Slice(r, func(i, j int) bool {
-		return strings.Compare(r[i].Instance, r[j].Instance) < 0
+		return strings.Compare(string(r[i].Instance), string(r[j].Instance)) < 0
 	})
 	return r
 }

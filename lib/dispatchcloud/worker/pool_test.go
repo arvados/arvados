@@ -47,6 +47,7 @@ func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
 	lameInstanceSet := &test.LameInstanceSet{Hold: make(chan bool)}
 	type1 := arvados.InstanceType{Name: "a1s", ProviderType: "a1.small", VCPUs: 1, RAM: 1 * GiB, Price: .01}
 	type2 := arvados.InstanceType{Name: "a2m", ProviderType: "a2.medium", VCPUs: 2, RAM: 2 * GiB, Price: .02}
+	type3 := arvados.InstanceType{Name: "a2l", ProviderType: "a2.large", VCPUs: 4, RAM: 4 * GiB, Price: .04}
 	pool := &Pool{
 		logger:      logrus.StandardLogger(),
 		newExecutor: func(cloud.Instance) Executor { return &stubExecutor{} },
@@ -54,6 +55,7 @@ func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
 		instanceTypes: arvados.InstanceTypeMap{
 			type1.Name: type1,
 			type2.Name: type2,
+			type3.Name: type3,
 		},
 	}
 	notify := pool.Subscribe()
@@ -63,23 +65,39 @@ func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
 
 	c.Check(pool.Unallocated()[type1], check.Equals, 0)
 	c.Check(pool.Unallocated()[type2], check.Equals, 0)
+	c.Check(pool.Unallocated()[type3], check.Equals, 0)
 	pool.Create(type2)
 	pool.Create(type1)
 	pool.Create(type2)
+	pool.Create(type3)
 	c.Check(pool.Unallocated()[type1], check.Equals, 1)
 	c.Check(pool.Unallocated()[type2], check.Equals, 2)
+	c.Check(pool.Unallocated()[type3], check.Equals, 1)
 
 	// Unblock the pending Create calls.
-	go lameInstanceSet.Release(3)
+	go lameInstanceSet.Release(4)
 
 	// Wait for each instance to either return from its Create
 	// call, or show up in a poll.
 	suite.wait(c, pool, notify, func() bool {
 		pool.mtx.RLock()
 		defer pool.mtx.RUnlock()
-		return len(pool.workers) == 3
+		return len(pool.workers) == 4
 	})
 
+	// Place type3 node on admin-hold
+	for _, instv := range pool.Instances() {
+		if instv.ArvadosInstanceType == type3.Name {
+			pool.SetIdleBehavior(instv.Instance, IdleBehaviorHold)
+			break
+		}
+	}
+	c.Check(pool.Shutdown(type3), check.Equals, false)
+	suite.wait(c, pool, notify, func() bool {
+		return pool.Unallocated()[type3] == 0
+	})
+
+	// Shutdown both type2 nodes
 	c.Check(pool.Shutdown(type2), check.Equals, true)
 	suite.wait(c, pool, notify, func() bool {
 		return pool.Unallocated()[type1] == 1 && pool.Unallocated()[type2] == 1
@@ -99,16 +117,35 @@ func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
 		}
 		break
 	}
+
+	// Shutdown type1 node
 	c.Check(pool.Shutdown(type1), check.Equals, true)
 	suite.wait(c, pool, notify, func() bool {
-		return pool.Unallocated()[type1] == 0 && pool.Unallocated()[type2] == 0
+		return pool.Unallocated()[type1] == 0 && pool.Unallocated()[type2] == 0 && pool.Unallocated()[type3] == 0
 	})
 	select {
 	case <-notify2:
 	case <-time.After(time.Second):
 		c.Error("notify did not receive")
 	}
-	go lameInstanceSet.Release(3) // unblock Destroy calls
+
+	// Place type3 node on admin-drain so it shuts down right away
+	for _, instv := range pool.Instances() {
+		if instv.ArvadosInstanceType == type3.Name {
+			pool.SetIdleBehavior(instv.Instance, IdleBehaviorDrain)
+			break
+		}
+	}
+	suite.wait(c, pool, notify, func() bool {
+		return pool.Unallocated()[type3] == 0
+	})
+
+	go lameInstanceSet.Release(4) // unblock Destroy calls
+
+	suite.wait(c, pool, notify, func() bool {
+		pool.getInstancesAndSync()
+		return len(pool.Instances()) == 0
+	})
 }
 
 func (suite *PoolSuite) wait(c *check.C, pool *Pool, notify <-chan struct{}, ready func() bool) {
