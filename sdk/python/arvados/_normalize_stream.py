@@ -8,14 +8,11 @@ from . import config
 import re
 
 def escape(path):
-    replacements = [
-        ('\t', '\\011'),
-        ('\n', '\\012'),
-        (' ', '\\040'),
-    ]
-    path = re.sub('\\\\([0-3][0-7][0-7])', lambda m: '\\134'+m.group(1), path)
-    for a, b in replacements:
-        path = path.replace(a, b)
+    # Escape literal backslash
+    path = re.sub('\\\\', lambda m: '\\134', path)
+    # Escape other special chars. Py3's oct() output differs from Py2, this takes
+    # care of those differences.
+    path = re.sub('([\t\n\r: ])', lambda m: '\\'+oct(ord(m.group(1))).replace('o', '')[-3:], path)
     return path
 
 def normalize_stream(stream_name, stream):

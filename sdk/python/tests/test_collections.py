@@ -962,6 +962,8 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         cases = [
             ('\\011', '\t'),
             ('\\012', '\n'),
+            ('\\072', ':'),
+            ('\\134400', '\\400'),
         ]
         for encoded, decoded in cases:
             manifest = '. d41d8cd98f00b204e9800998ecf8427e+0 0:0:some%sfile.txt\n' % encoded
