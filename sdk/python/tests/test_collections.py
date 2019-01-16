@@ -960,6 +960,7 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
 
     def test_other_special_chars_on_file_token(self):
         cases = [
+            ('\\000', '\0'),
             ('\\011', '\t'),
             ('\\012', '\n'),
             ('\\072', ':'),
