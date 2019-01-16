@@ -64,6 +64,7 @@ export const loadRecentQueries = () =>
 export const searchData = (searchValue: string) =>
     async (dispatch: Dispatch, getState: () => RootState) => {
         const currentView = getState().searchBar.currentView;
+        dispatch(searchResultsPanelActions.CLEAR());
         dispatch(searchBarActions.SET_SEARCH_VALUE(searchValue));
         if (searchValue.length > 0) {
             dispatch<any>(searchGroups(searchValue, 5));
@@ -77,6 +78,7 @@ export const searchData = (searchValue: string) =>
 export const searchAdvanceData = (data: SearchBarAdvanceFormData) =>
     async (dispatch: Dispatch) => {
         dispatch<any>(saveQuery(data));
+        dispatch(searchResultsPanelActions.CLEAR());
         dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.BASIC));
         dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
         dispatch(navigateToSearchResults);
@@ -421,7 +423,8 @@ export const getFilters = (filterName: string, searchValue: string, sq: ParseSea
     if (!sq.hasKeywords) {
         filter
             .addILike(filterName, searchValue, GroupContentsResourcePrefix.COLLECTION)
-            .addILike(filterName, searchValue, GroupContentsResourcePrefix.PROJECT);
+            .addILike(filterName, searchValue, GroupContentsResourcePrefix.PROJECT)
+            .addILike(filterName, searchValue, GroupContentsResourcePrefix.PROCESS);
 
         if (isTrashed) {
             filter.addILike(filterName, searchValue, GroupContentsResourcePrefix.PROCESS);
