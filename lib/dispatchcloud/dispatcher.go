@@ -21,6 +21,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/auth"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	"github.com/julienschmidt/httprouter"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
@@ -35,6 +36,7 @@ const (
 type pool interface {
 	scheduler.WorkerPool
 	Instances() []worker.InstanceView
+	SetIdleBehavior(cloud.InstanceID, worker.IdleBehavior) error
 	Stop()
 }
 
@@ -135,14 +137,17 @@ func (disp *dispatcher) initialize() {
 			http.Error(w, "Management API authentication is not configured", http.StatusForbidden)
 		})
 	} else {
-		mux := http.NewServeMux()
-		mux.HandleFunc("/arvados/v1/dispatch/containers", disp.apiContainers)
-		mux.HandleFunc("/arvados/v1/dispatch/instances", disp.apiInstances)
+		mux := httprouter.New()
+		mux.HandlerFunc("GET", "/arvados/v1/dispatch/containers", disp.apiContainers)
+		mux.HandlerFunc("GET", "/arvados/v1/dispatch/instances", disp.apiInstances)
+		mux.HandlerFunc("POST", "/arvados/v1/dispatch/instances/:instance_id/hold", disp.apiInstanceHold)
+		mux.HandlerFunc("POST", "/arvados/v1/dispatch/instances/:instance_id/drain", disp.apiInstanceDrain)
+		mux.HandlerFunc("POST", "/arvados/v1/dispatch/instances/:instance_id/run", disp.apiInstanceRun)
 		metricsH := promhttp.HandlerFor(disp.reg, promhttp.HandlerOpts{
 			ErrorLog: disp.logger,
 		})
-		mux.Handle("/metrics", metricsH)
-		mux.Handle("/metrics.json", metricsH)
+		mux.Handler("GET", "/metrics", metricsH)
+		mux.Handler("GET", "/metrics.json", metricsH)
 		disp.httpHandler = auth.RequireLiteralToken(disp.Cluster.ManagementToken, mux)
 	}
 }
@@ -169,10 +174,6 @@ func (disp *dispatcher) run() {
 
 // Management API: all active and queued containers.
 func (disp *dispatcher) apiContainers(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "GET" {
-		httpserver.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
 	var resp struct {
 		Items []container.QueueEnt
 	}
@@ -185,13 +186,34 @@ func (disp *dispatcher) apiContainers(w http.ResponseWriter, r *http.Request) {
 
 // Management API: all active instances (cloud VMs).
 func (disp *dispatcher) apiInstances(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "GET" {
-		httpserver.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
 	var resp struct {
 		Items []worker.InstanceView
 	}
 	resp.Items = disp.pool.Instances()
 	json.NewEncoder(w).Encode(resp)
+}
+
+// Management API: set idle behavior to "hold" for specified instance.
+func (disp *dispatcher) apiInstanceHold(w http.ResponseWriter, r *http.Request) {
+	disp.apiInstanceIdleBehavior(w, r, worker.IdleBehaviorHold)
+}
+
+// Management API: set idle behavior to "drain" for specified instance.
+func (disp *dispatcher) apiInstanceDrain(w http.ResponseWriter, r *http.Request) {
+	disp.apiInstanceIdleBehavior(w, r, worker.IdleBehaviorDrain)
+}
+
+// Management API: set idle behavior to "run" for specified instance.
+func (disp *dispatcher) apiInstanceRun(w http.ResponseWriter, r *http.Request) {
+	disp.apiInstanceIdleBehavior(w, r, worker.IdleBehaviorRun)
+}
+
+func (disp *dispatcher) apiInstanceIdleBehavior(w http.ResponseWriter, r *http.Request, want worker.IdleBehavior) {
+	params, _ := r.Context().Value(httprouter.ParamsKey).(httprouter.Params)
+	id := cloud.InstanceID(params.ByName("instance_id"))
+	err := disp.pool.SetIdleBehavior(id, want)
+	if err != nil {
+		httpserver.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
 }
