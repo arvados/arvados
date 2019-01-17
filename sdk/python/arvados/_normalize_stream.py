@@ -10,10 +10,7 @@ import re
 def escape(path):
     # Escape literal backslash
     path = re.sub('\\\\', lambda m: '\\134', path)
-    # Escape other special chars. Py3's oct() output differs from Py2, this takes
-    # care of those differences.
-    path = re.sub(
-        '([:\000-\040])', lambda m: "\\%03o" % ord(m.group(1)), path)
+    path = re.sub('([:\000-\040])', lambda m: "\\%03o" % ord(m.group(1)), path)
     return path
 
 def normalize_stream(stream_name, stream):
