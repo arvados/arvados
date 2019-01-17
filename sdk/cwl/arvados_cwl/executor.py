@@ -185,6 +185,11 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
         # if running inside a container
         if arvados_cwl.util.get_current_container(self.api, self.num_retries, logger):
             root_logger = logging.getLogger('')
+
+            # Remove existing RuntimeStatusLoggingHandlers if they exist
+            handlers = [h for h in root_logger.handlers if not isinstance(h, RuntimeStatusLoggingHandler)]
+            root_logger.handlers = handlers
+
             handler = RuntimeStatusLoggingHandler(self.runtime_status_update)
             root_logger.addHandler(handler)
 
