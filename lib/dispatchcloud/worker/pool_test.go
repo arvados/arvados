@@ -86,16 +86,19 @@ func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
 	})
 
 	// Place type3 node on admin-hold
-	for _, instv := range pool.Instances() {
-		if instv.ArvadosInstanceType == type3.Name {
-			pool.SetIdleBehavior(instv.Instance, IdleBehaviorHold)
-			break
-		}
-	}
+	ivs := suite.instancesByType(pool, type3)
+	c.Assert(ivs, check.HasLen, 1)
+	type3instanceID := ivs[0].Instance
+	err := pool.SetIdleBehavior(type3instanceID, IdleBehaviorHold)
+	c.Check(err, check.IsNil)
+
+	// Check admin-hold behavior: refuse to shutdown, and don't
+	// report as Unallocated ("available now or soon").
 	c.Check(pool.Shutdown(type3), check.Equals, false)
 	suite.wait(c, pool, notify, func() bool {
 		return pool.Unallocated()[type3] == 0
 	})
+	c.Check(suite.instancesByType(pool, type3), check.HasLen, 1)
 
 	// Shutdown both type2 nodes
 	c.Check(pool.Shutdown(type2), check.Equals, true)
@@ -129,23 +132,46 @@ func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
 		c.Error("notify did not receive")
 	}
 
-	// Place type3 node on admin-drain so it shuts down right away
-	for _, instv := range pool.Instances() {
-		if instv.ArvadosInstanceType == type3.Name {
-			pool.SetIdleBehavior(instv.Instance, IdleBehaviorDrain)
-			break
-		}
-	}
+	// Put type3 node back in service.
+	err = pool.SetIdleBehavior(type3instanceID, IdleBehaviorRun)
+	c.Check(err, check.IsNil)
+	suite.wait(c, pool, notify, func() bool {
+		return pool.Unallocated()[type3] == 1
+	})
+
+	// Check admin-drain behavior: shut down right away, and don't
+	// report as Unallocated.
+	err = pool.SetIdleBehavior(type3instanceID, IdleBehaviorDrain)
+	c.Check(err, check.IsNil)
 	suite.wait(c, pool, notify, func() bool {
 		return pool.Unallocated()[type3] == 0
 	})
+	suite.wait(c, pool, notify, func() bool {
+		ivs := suite.instancesByType(pool, type3)
+		return len(ivs) == 1 && ivs[0].WorkerState == StateShutdown.String()
+	})
 
-	go lameInstanceSet.Release(4) // unblock Destroy calls
+	// Unblock all pending Destroy calls. Pool calls Destroy again
+	// if a node still appears in the provider list after a
+	// previous attempt, so there might be more than 4 Destroy
+	// calls to unblock.
+	go lameInstanceSet.Release(4444)
 
+	// Sync until all instances disappear from the provider list.
 	suite.wait(c, pool, notify, func() bool {
 		pool.getInstancesAndSync()
 		return len(pool.Instances()) == 0
 	})
+}
+
+func (suite *PoolSuite) instancesByType(pool *Pool, it arvados.InstanceType) []InstanceView {
+	var ivs []InstanceView
+	for _, iv := range pool.Instances() {
+		if iv.ArvadosInstanceType == it.Name {
+			ivs = append(ivs, iv)
+		}
+	}
+	return ivs
 }
 
 func (suite *PoolSuite) wait(c *check.C, pool *Pool, notify <-chan struct{}, ready func() bool) {
