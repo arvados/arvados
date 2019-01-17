@@ -36,9 +36,10 @@ func New(t cloud.ExecutorTarget) *Executor {
 //
 // An Executor must not be copied.
 type Executor struct {
-	target  cloud.ExecutorTarget
-	signers []ssh.Signer
-	mtx     sync.RWMutex // controls access to instance after creation
+	target     cloud.ExecutorTarget
+	targetPort string
+	signers    []ssh.Signer
+	mtx        sync.RWMutex // controls access to instance after creation
 
 	client      *ssh.Client
 	clientErr   error
@@ -65,6 +66,17 @@ func (exr *Executor) SetTarget(t cloud.ExecutorTarget) {
 	exr.mtx.Lock()
 	defer exr.mtx.Unlock()
 	exr.target = t
+}
+
+// SetTargetPort sets the default port (name or number) to connect
+// to. This is used only when the address returned by the target's
+// Address() method does not specify a port. If the given port is
+// empty (or SetTargetPort is not called at all), the default port is
+// "ssh".
+func (exr *Executor) SetTargetPort(port string) {
+	exr.mtx.Lock()
+	defer exr.mtx.Unlock()
+	exr.targetPort = port
 }
 
 // Target returns the current target.
@@ -166,6 +178,14 @@ func (exr *Executor) setupSSHClient() (*ssh.Client, error) {
 	addr := target.Address()
 	if addr == "" {
 		return nil, errors.New("instance has no address")
+	}
+	if h, p, err := net.SplitHostPort(addr); err != nil || p == "" {
+		// Target address does not specify a port.  Use
+		// targetPort, or "ssh".
+		if p = exr.targetPort; p == "" {
+			p = "ssh"
+		}
+		addr = net.JoinHostPort(h, p)
 	}
 	var receivedKey ssh.PublicKey
 	client, err := ssh.Dial("tcp", addr, &ssh.ClientConfig{

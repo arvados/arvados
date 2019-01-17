@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"io"
 	"io/ioutil"
+	"net"
 	"sync"
 	"testing"
 	"time"
@@ -30,6 +31,25 @@ type testTarget struct {
 
 func (*testTarget) VerifyHostKey(ssh.PublicKey, *ssh.Client) error {
 	return nil
+}
+
+// Address returns the wrapped SSHService's host, with the port
+// stripped. This ensures the executor won't work until
+// SetTargetPort() is called -- see (*testTarget)Port().
+func (tt *testTarget) Address() string {
+	h, _, err := net.SplitHostPort(tt.SSHService.Address())
+	if err != nil {
+		panic(err)
+	}
+	return h
+}
+
+func (tt *testTarget) Port() string {
+	_, p, err := net.SplitHostPort(tt.SSHService.Address())
+	if err != nil {
+		panic(err)
+	}
+	return p
 }
 
 type ExecutorSuite struct{}
@@ -76,6 +96,22 @@ func (s *ExecutorSuite) TestExecute(c *check.C) {
 
 		exr := New(srv)
 		exr.SetSigners(clientpriv)
+
+		// Use the default target port (ssh). Execute will
+		// return a connection error or an authentication
+		// error, depending on whether the test host is
+		// running an SSH server.
+		_, _, err = exr.Execute(nil, command, nil)
+		c.Check(err, check.ErrorMatches, `.*(unable to authenticate|connection refused).*`)
+
+		// Use a bogus target port. Execute will return a
+		// connection error.
+		exr.SetTargetPort("0")
+		_, _, err = exr.Execute(nil, command, nil)
+		c.Check(err, check.ErrorMatches, `.*connection refused.*`)
+
+		// Use the test server's listening port.
+		exr.SetTargetPort(srv.Port())
 
 		done := make(chan bool)
 		go func() {

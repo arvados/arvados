@@ -89,6 +89,7 @@ func (disp *dispatcher) Close() {
 // Make a worker.Executor for the given instance.
 func (disp *dispatcher) newExecutor(inst cloud.Instance) worker.Executor {
 	exr := ssh_executor.New(inst)
+	exr.SetTargetPort(disp.Cluster.CloudVMs.SSHPort)
 	exr.SetSigners(disp.sshKey)
 	return exr
 }
