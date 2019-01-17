@@ -158,7 +158,7 @@ class FuseMagicTest(MountTestBase):
         self.assertIn(self.testcollection,
                       llfuse.listdir(os.path.join(self.mounttmp, 'by_id')))
         self.assertIn(self.test_project, mount_ls)
-        self.assertIn(self.test_project, 
+        self.assertIn(self.test_project,
                       llfuse.listdir(os.path.join(self.mounttmp, 'by_id')))
 
         with self.assertRaises(OSError):
@@ -615,9 +615,10 @@ class FuseRmTest(MountTestBase):
             r'\./testdir 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$')
         self.pool.apply(fuseRmTestHelperDeleteFile, (self.mounttmp,))
 
-        # Can't have empty directories :-( so manifest will be empty.
+        # Empty directories are represented by an empty file named "."
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
-        self.assertEqual(collection2["manifest_text"], "")
+        self.assertRegexpMatches(collection2["manifest_text"],
+                                 r'./testdir d41d8cd98f00b204e9800998ecf8427e\+0\+A\S+ 0:0:\\056\n')
 
         self.pool.apply(fuseRmTestHelperRmdir, (self.mounttmp,))
 
@@ -674,7 +675,7 @@ class FuseMvFileTest(MountTestBase):
 
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
         self.assertRegexpMatches(collection2["manifest_text"],
-            r'\. 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$')
+            r'\. 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt\n\./testdir d41d8cd98f00b204e9800998ecf8427e\+0\+A\S+ 0:0:\\056\n')
 
 
 def fuseRenameTestHelper(mounttmp):
