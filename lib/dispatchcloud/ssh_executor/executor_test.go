@@ -6,6 +6,7 @@ package ssh_executor
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
@@ -52,7 +53,41 @@ func (tt *testTarget) Port() string {
 	return p
 }
 
+type mitmTarget struct {
+	test.SSHService
+}
+
+func (*mitmTarget) VerifyHostKey(key ssh.PublicKey, client *ssh.Client) error {
+	return fmt.Errorf("host key failed verification: %#v", key)
+}
+
 type ExecutorSuite struct{}
+
+func (s *ExecutorSuite) TestBadHostKey(c *check.C) {
+	_, hostpriv := test.LoadTestKey(c, "../test/sshkey_vm")
+	clientpub, clientpriv := test.LoadTestKey(c, "../test/sshkey_dispatch")
+	target := &mitmTarget{
+		SSHService: test.SSHService{
+			Exec: func(map[string]string, string, io.Reader, io.Writer, io.Writer) uint32 {
+				c.Error("Target Exec func called even though host key verification failed")
+				return 0
+			},
+			HostKey:        hostpriv,
+			AuthorizedKeys: []ssh.PublicKey{clientpub},
+		},
+	}
+
+	err := target.Start()
+	c.Check(err, check.IsNil)
+	c.Logf("target address %q", target.Address())
+	defer target.Close()
+
+	exr := New(target)
+	exr.SetSigners(clientpriv)
+
+	_, _, err = exr.Execute(nil, "true", nil)
+	c.Check(err, check.ErrorMatches, "host key failed verification: .*")
+}
 
 func (s *ExecutorSuite) TestExecute(c *check.C) {
 	command := `foo 'bar' "baz"`
@@ -60,7 +95,7 @@ func (s *ExecutorSuite) TestExecute(c *check.C) {
 	_, hostpriv := test.LoadTestKey(c, "../test/sshkey_vm")
 	clientpub, clientpriv := test.LoadTestKey(c, "../test/sshkey_dispatch")
 	for _, exitcode := range []int{0, 1, 2} {
-		srv := &testTarget{
+		target := &testTarget{
 			SSHService: test.SSHService{
 				Exec: func(env map[string]string, cmd string, stdin io.Reader, stdout, stderr io.Writer) uint32 {
 					c.Check(env["TESTVAR"], check.Equals, "test value")
@@ -89,12 +124,12 @@ func (s *ExecutorSuite) TestExecute(c *check.C) {
 				AuthorizedKeys: []ssh.PublicKey{clientpub},
 			},
 		}
-		err := srv.Start()
+		err := target.Start()
 		c.Check(err, check.IsNil)
-		c.Logf("srv address %q", srv.Address())
-		defer srv.Close()
+		c.Logf("target address %q", target.Address())
+		defer target.Close()
 
-		exr := New(srv)
+		exr := New(target)
 		exr.SetSigners(clientpriv)
 
 		// Use the default target port (ssh). Execute will
@@ -111,7 +146,7 @@ func (s *ExecutorSuite) TestExecute(c *check.C) {
 		c.Check(err, check.ErrorMatches, `.*connection refused.*`)
 
 		// Use the test server's listening port.
-		exr.SetTargetPort(srv.Port())
+		exr.SetTargetPort(target.Port())
 
 		done := make(chan bool)
 		go func() {
