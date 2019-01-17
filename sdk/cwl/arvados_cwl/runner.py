@@ -4,6 +4,7 @@
 
 from future import standard_library
 standard_library.install_aliases()
+from future.utils import viewvalues
 
 import os
 import urllib.parse
@@ -64,7 +65,7 @@ def find_defaults(d, op):
         if "default" in d:
             op(d)
         else:
-            for i in d.values():
+            for i in viewvalues(d):
                 find_defaults(i, op)
 
 def setSecondary(t, fileobj, discovered):

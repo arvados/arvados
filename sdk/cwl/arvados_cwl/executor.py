@@ -5,6 +5,7 @@
 from __future__ import division
 from builtins import next
 from builtins import object
+from future.utils import viewvalues
 from past.utils import old_div
 
 import argparse
@@ -411,7 +412,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                             "Option 'dockerOutputDirectory' must be an absolute path.")
             if obj.get("class") == "http://commonwl.org/cwltool#Secrets" and self.work_api != "containers":
                 raise SourceLine(obj, "class", UnsupportedRequirement).makeError("Secrets not supported with --api=jobs")
-            for v in obj.values():
+            for v in viewvalues(obj):
                 self.check_features(v)
         elif isinstance(obj, list):
             for i,v in enumerate(obj):

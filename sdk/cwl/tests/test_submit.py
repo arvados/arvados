@@ -6,6 +6,7 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import object
 from builtins import str
+from future.utils import viewvalues
 
 import copy
 import io
@@ -101,7 +102,7 @@ def stubs(func):
             return CollectionExecute(created_collections[uuid])
 
         def collection_getstub(created_collections, uuid):
-            for v in created_collections.values():
+            for v in viewvalues(created_collections):
                 if uuid in (v["uuid"], v["portable_data_hash"]):
                     return CollectionExecute(v)
 
