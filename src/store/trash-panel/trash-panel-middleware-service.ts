@@ -15,7 +15,6 @@ import { trashPanelActions } from "./trash-panel-action";
 import { Dispatch, MiddlewareAPI } from "redux";
 import { OrderBuilder, OrderDirection } from "~/services/api/order-builder";
 import { GroupContentsResourcePrefix } from "~/services/groups-service/groups-service";
-import { TrashPanelColumnNames, TrashPanelFilter } from "~/views/trash-panel/trash-panel";
 import { ProjectResource } from "~/models/project";
 import { ProjectPanelColumnNames } from "~/views/project-panel/project-panel";
 import { updateFavorites } from "~/store/favorites/favorites-actions";
@@ -25,7 +24,7 @@ import { progressIndicatorActions } from "~/store/progress-indicator/progress-in
 import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
 import { serializeResourceTypeFilters } from '~/store//resource-type-filters/resource-type-filters';
 import { getDataExplorerColumnFilters } from '~/store/data-explorer/data-explorer-middleware-service';
-import { joinFilters } from '../../services/api/filter-builder';
+import { joinFilters } from '~/services/api/filter-builder';
 
 export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {

@@ -448,6 +448,7 @@ export const getFilters = (filterName: string, searchValue: string, sq: ParseSea
 
         if (isTrashed) {
             filter.addEqual("is_trashed", true);
+            console.log(filter);
         }
 
         const projectUuid = getSearchQueryFirstProp(sq, 'project');
