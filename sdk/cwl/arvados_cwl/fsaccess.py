@@ -5,7 +5,7 @@
 from future import standard_library
 standard_library.install_aliases()
 from builtins import object
-from future.utils import listvalues
+from future.utils import viewvalues
 
 import fnmatch
 import os
@@ -295,7 +295,7 @@ def collectionResolver(api_client, document_loader, uri, num_retries=4):
 
     if pipeline_template_uuid_pattern.match(uri):
         pt = api_client.pipeline_templates().get(uuid=uri).execute(num_retries=num_retries)
-        return "keep:" + listvalues(pt["components"])[0]["script_parameters"]["cwl:tool"]
+        return "keep:" + viewvalues(pt["components"])[0]["script_parameters"]["cwl:tool"]
 
     p = uri.split("/")
     if arvados.util.keep_locator_pattern.match(p[0]):
