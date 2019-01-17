@@ -46,3 +46,11 @@ class TestUtil(unittest.TestCase):
 
         with self.assertRaises(ApiError):
             get_current_container(api, num_retries=0, logger=logger)
+
+    def test_get_current_container_404_error(self):
+        api = mock.MagicMock()
+        api.containers().current().execute.side_effect = ApiError(httplib2.Response({"status": 404}), bytes(b""))
+        logger = mock.MagicMock()
+
+        current_container = get_current_container(api, num_retries=0, logger=logger)
+        self.assertEqual(current_container, None)
