@@ -6,6 +6,7 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import str
 from past.builtins import basestring
+from future.utils import viewitems
 
 import re
 import logging
@@ -306,7 +307,7 @@ class VwdPathMapper(StagingPathMapper):
         # with any secondary files.
         self.visitlisting(referenced_files, self.stagedir, basedir)
 
-        for path, (ab, tgt, type, staged) in list(self._pathmap.items()):
+        for path, (ab, tgt, type, staged) in viewitems(self._pathmap):
             if type in ("File", "Directory") and ab.startswith("keep:"):
                 self._pathmap[path] = MapperEnt("$(task.keep)/%s" % ab[5:], tgt, type, staged)
 

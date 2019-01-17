@@ -4,7 +4,7 @@
 
 from future import standard_library
 standard_library.install_aliases()
-from future.utils import viewvalues
+from future.utils import  viewvalues, viewitems
 
 import os
 import urllib.parse
@@ -236,7 +236,7 @@ def packed_workflow(arvrunner, tool, merged_map):
     packed = pack(tool.doc_loader, tool.doc_loader.fetch(tool.tool["id"]),
                   tool.tool["id"], tool.metadata, rewrite_out=rewrites)
 
-    rewrite_to_orig = {v: k for k,v in list(rewrites.items())}
+    rewrite_to_orig = {v: k for k,v in viewitems(rewrites)}
 
     def visit(v, cur_id):
         if isinstance(v, dict):

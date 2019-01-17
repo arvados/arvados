@@ -4,6 +4,7 @@
 
 from past.builtins import basestring
 from builtins import object
+from future.utils import viewitems
 
 import logging
 import re
@@ -346,7 +347,7 @@ class RunnerJob(Runner):
             find_or_create=self.enable_reuse
         ).execute(num_retries=self.arvrunner.num_retries)
 
-        for k,v in list(job_spec["script_parameters"].items()):
+        for k,v in viewitems(job_spec["script_parameters"]):
             if v is False or v is None or isinstance(v, dict):
                 job_spec["script_parameters"][k] = {"value": v}
 
