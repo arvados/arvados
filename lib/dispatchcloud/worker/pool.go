@@ -137,6 +137,7 @@ type Pool struct {
 	setupOnce    sync.Once
 
 	mInstances         prometheus.Gauge
+	mInstancesPrice    prometheus.Gauge
 	mContainersRunning prometheus.Gauge
 	mVCPUs             prometheus.Gauge
 	mVCPUsInuse        prometheus.Gauge
@@ -481,6 +482,13 @@ func (wp *Pool) registerMetrics(reg *prometheus.Registry) {
 		Help:      "Number of cloud VMs including pending, booting, running, held, and shutting down.",
 	})
 	reg.MustRegister(wp.mInstances)
+	wp.mInstancesPrice = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "arvados",
+		Subsystem: "dispatchcloud",
+		Name:      "instances_price_total",
+		Help:      "Sum of prices of all cloud VMs including pending, booting, running, held, and shutting down.",
+	})
+	reg.MustRegister(wp.mInstancesPrice)
 	wp.mContainersRunning = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "arvados",
 		Subsystem: "dispatchcloud",
@@ -531,8 +539,10 @@ func (wp *Pool) updateMetrics() {
 	wp.mtx.RLock()
 	defer wp.mtx.RUnlock()
 
+	var price float64
 	var alloc, cpu, cpuInuse, mem, memInuse int64
 	for _, wkr := range wp.workers {
+		price += wkr.instType.Price
 		cpu += int64(wkr.instType.VCPUs)
 		mem += int64(wkr.instType.RAM)
 		if len(wkr.running)+len(wkr.starting) == 0 {
@@ -543,6 +553,7 @@ func (wp *Pool) updateMetrics() {
 		memInuse += int64(wkr.instType.RAM)
 	}
 	wp.mInstances.Set(float64(len(wp.workers)))
+	wp.mInstancesPrice.Set(price)
 	wp.mContainersRunning.Set(float64(alloc))
 	wp.mVCPUs.Set(float64(cpu))
 	wp.mMemory.Set(float64(mem))
