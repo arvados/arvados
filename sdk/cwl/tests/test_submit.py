@@ -1609,8 +1609,9 @@ class TestCreateWorkflow(unittest.TestCase):
     @stubs
     def test_incompatible_api(self, stubs):
         capture_stderr = io.StringIO()
-        logging.getLogger('arvados.cwl-runner').addHandler(
-            logging.StreamHandler(capture_stderr))
+        acr_logger = logging.getLogger('arvados.cwl-runner')
+        stderr_logger = logging.StreamHandler(capture_stderr)
+        acr_logger.addHandler(stderr_logger)
 
         exited = arvados_cwl.main(
             ["--update-workflow", self.existing_workflow_uuid,
@@ -1622,6 +1623,7 @@ class TestCreateWorkflow(unittest.TestCase):
         self.assertRegexpMatches(
             capture_stderr.getvalue(),
             "--update-workflow arg '{}' uses 'containers' API, but --api='jobs' specified".format(self.existing_workflow_uuid))
+        acr_logger.removeHandler(stderr_logger)
 
     @stubs
     def test_update(self, stubs):
