@@ -175,7 +175,7 @@ def upload_dependencies(arvrunner, name, document_loader,
 
     visit_class(workflowobj, ("CommandLineTool", "Workflow"), discover_default_secondary_files)
 
-    for d in list(discovered.keys()):
+    for d in list(discovered):
         # Only interested in discovered secondaryFiles which are local
         # files that need to be uploaded.
         if d.startswith("file:"):

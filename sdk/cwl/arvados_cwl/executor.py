@@ -343,7 +343,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                 if self.stop_polling.is_set():
                     break
                 with self.workflow_eval_lock:
-                    keys = list(self.processes.keys())
+                    keys = list(self.processes)
                 if not keys:
                     remain_wait = self.poll_interval
                     continue
