@@ -8,9 +8,8 @@ from . import config
 import re
 
 def escape(path):
-    # Escape literal backslash
     path = re.sub('\\\\', lambda m: '\\134', path)
-    path = re.sub('([:\000-\040])', lambda m: "\\%03o" % ord(m.group(1)), path)
+    path = re.sub('[:\000-\040]', lambda m: "\\%03o" % ord(m.group(0)), path)
     return path
 
 def normalize_stream(stream_name, stream):
