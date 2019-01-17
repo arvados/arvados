@@ -318,7 +318,7 @@ def upload_workflow_deps(arvrunner, tool):
                                      discovered_secondaryfiles=discovered_secondaryfiles)
             document_loader.idx[deptool["id"]] = deptool
             toolmap = {}
-            for k,v in list(pm.items()):
+            for k,v in pm.items():
                 toolmap[k] = v.resolved
             merged_map[deptool["id"]] = FileUpdates(toolmap, discovered_secondaryfiles)
 

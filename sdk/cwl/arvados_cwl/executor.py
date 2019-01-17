@@ -435,7 +435,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                                               keep_client=self.keep_client,
                                               num_retries=self.num_retries)
 
-        for k,v in list(generatemapper.items()):
+        for k,v in generatemapper.items():
             if k.startswith("_:"):
                 if v.type == "Directory":
                     continue
