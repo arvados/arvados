@@ -101,9 +101,14 @@ module Keep
   end
 
   class Manifest
-    STRICT_STREAM_TOKEN_REGEXP = /^(\.)(\/[^\/\t\v\n\r]+)*$/
-    STRICT_FILE_TOKEN_REGEXP = /^[[:digit:]]+:[[:digit:]]+:([^\t\v\n\r\/]+(\/[^\t\v\n\r\/]+)*)$/
-    EMPTY_DOT_FILE_TOKEN_REGEXP = /^0:0:\.$/
+    STREAM_TOKEN_REGEXP = /^[^\000-\040]+$/
+    STREAM_NAME_REGEXP = /^(\.)(\/[^\/]+)*$/
+
+    EMPTY_DIR_TOKEN_REGEXP = /^0:0:\.$/ # The exception when a file can have '.' as a name
+    FILE_TOKEN_REGEXP = /^[[:digit:]]+:[[:digit:]]+:[^\000-\040]+$/
+    FILE_NAME_REGEXP = /^[[:digit:]]+:[[:digit:]]+:([^\/]+(\/[^\/]+)*)$/
+
+    NON_8BIT_ENCODED_CHAR = /[^\\]\\[4-7][0-7][0-7]/
 
     # Class to parse a manifest text and provide common views of that data.
     def initialize(manifest_text)
@@ -260,8 +265,9 @@ module Keep
         count = 0
 
         word = words.shift
+        raise ArgumentError.new "Manifest invalid for stream #{line_count}: >8-bit encoded chars not allowed on stream token #{word.inspect}" if word =~ NON_8BIT_ENCODED_CHAR
         unescaped_word = unescape(word)
-        count += 1 if unescaped_word =~ STRICT_STREAM_TOKEN_REGEXP and unescaped_word !~ /\/\.\.?(\/|$)/
+        count += 1 if word =~ STREAM_TOKEN_REGEXP and unescaped_word =~ STREAM_NAME_REGEXP and unescaped_word !~ /\/\.\.?(\/|$)/
         raise ArgumentError.new "Manifest invalid for stream #{line_count}: missing or invalid stream name #{word.inspect if word}" if count != 1
 
         count = 0
@@ -273,8 +279,9 @@ module Keep
         raise ArgumentError.new "Manifest invalid for stream #{line_count}: missing or invalid locator #{word.inspect if word}" if count == 0
 
         count = 0
-        while unescape(word) =~ EMPTY_DOT_FILE_TOKEN_REGEXP or
-          (unescape(word) =~ STRICT_FILE_TOKEN_REGEXP and ($~[1].split('/') & ['..', '.']).empty?)
+        raise ArgumentError.new "Manifest invalid for stream #{line_count}: >8-bit encoded chars not allowed on file token #{word.inspect}" if word =~ NON_8BIT_ENCODED_CHAR
+        while unescape(word) =~ EMPTY_DIR_TOKEN_REGEXP or
+          (word =~ FILE_TOKEN_REGEXP and unescape(word) =~ FILE_NAME_REGEXP and ($~[1].split('/') & ['..', '.']).empty?)
           word = words.shift
           count += 1
         end
