@@ -5,6 +5,7 @@
 package container
 
 import (
+	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -24,9 +25,18 @@ var _ = check.Suite(&IntegrationSuite{})
 
 type IntegrationSuite struct{}
 
-func (*IntegrationSuite) TestControllerBackedQueue(c *check.C) {
+func (suite *IntegrationSuite) TearDownTest(c *check.C) {
+	err := arvados.NewClientFromEnv().RequestAndDecode(nil, "POST", "database/reset", nil, nil)
+	c.Check(err, check.IsNil)
+}
+
+func (suite *IntegrationSuite) TestGetLockUnlockCancel(c *check.C) {
+	typeChooser := func(ctr *arvados.Container) (arvados.InstanceType, error) {
+		return arvados.InstanceType{Name: "testType"}, nil
+	}
+
 	client := arvados.NewClientFromEnv()
-	cq := NewQueue(logrus.StandardLogger(), nil, testTypeChooser, client)
+	cq := NewQueue(logrus.StandardLogger(), nil, typeChooser, client)
 
 	err := cq.Update()
 	c.Check(err, check.IsNil)
@@ -77,6 +87,36 @@ func (*IntegrationSuite) TestControllerBackedQueue(c *check.C) {
 	c.Check(err, check.ErrorMatches, `.*State cannot change from Complete to Cancelled.*`)
 }
 
-func testTypeChooser(ctr *arvados.Container) (arvados.InstanceType, error) {
-	return arvados.InstanceType{Name: "testType"}, nil
+func (suite *IntegrationSuite) TestCancelIfNoInstanceType(c *check.C) {
+	errorTypeChooser := func(ctr *arvados.Container) (arvados.InstanceType, error) {
+		return arvados.InstanceType{}, errors.New("no suitable instance type")
+	}
+
+	client := arvados.NewClientFromEnv()
+	cq := NewQueue(logrus.StandardLogger(), nil, errorTypeChooser, client)
+
+	var ctr arvados.Container
+	err := client.RequestAndDecode(&ctr, "GET", "arvados/v1/containers/"+arvadostest.QueuedContainerUUID, nil, nil)
+	c.Check(err, check.IsNil)
+	c.Check(ctr.State, check.Equals, arvados.ContainerStateQueued)
+
+	cq.Update()
+
+	// Wait for the cancel operation to take effect. Container
+	// will have state=Cancelled or just disappear from the queue.
+	suite.waitfor(c, time.Second, func() bool {
+		err := client.RequestAndDecode(&ctr, "GET", "arvados/v1/containers/"+arvadostest.QueuedContainerUUID, nil, nil)
+		return err == nil && ctr.State == arvados.ContainerStateCancelled
+	})
+	c.Check(ctr.RuntimeStatus["error"], check.Equals, `no suitable instance type`)
+}
+
+func (suite *IntegrationSuite) waitfor(c *check.C, timeout time.Duration, fn func() bool) {
+	defer func() {
+		c.Check(fn(), check.Equals, true)
+	}()
+	deadline := time.Now().Add(timeout)
+	for !fn() && time.Now().Before(deadline) {
+		time.Sleep(timeout / 1000)
+	}
 }
