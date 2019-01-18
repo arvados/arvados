@@ -101,11 +101,11 @@ module Keep
   end
 
   class Manifest
-    STREAM_TOKEN_REGEXP = /^[^\000-\040]+$/
+    STREAM_TOKEN_REGEXP = /^([^\000-\040\\]|\\[0-3][0-7][0-7])+$/
     STREAM_NAME_REGEXP = /^(\.)(\/[^\/]+)*$/
 
     EMPTY_DIR_TOKEN_REGEXP = /^0:0:\.$/ # The exception when a file can have '.' as a name
-    FILE_TOKEN_REGEXP = /^[[:digit:]]+:[[:digit:]]+:[^\000-\040]+$/
+    FILE_TOKEN_REGEXP = /^[[:digit:]]+:[[:digit:]]+:([^\000-\040\\]|\\[0-3][0-7][0-7])+$/
     FILE_NAME_REGEXP = /^[[:digit:]]+:[[:digit:]]+:([^\/]+(\/[^\/]+)*)$/
 
     NON_8BIT_ENCODED_CHAR = /[^\\]\\[4-7][0-7][0-7]/
