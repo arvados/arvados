@@ -119,6 +119,22 @@ class UserSessionsController < ApplicationController
   # to save the return_to parameter (if it exists; see the application
   # controller). /auth/joshid bypasses the application controller.
   def login
+    
+    # Added to allow Arvados to use user ID from web server.
+    # This assumes that the user ID is the email address of the user.
+    if Rails.configuration.webserver_login
+      if request.env["REMOTE_USER"] then
+        logger.warn "Using REMOTE_USER from webserver"
+        case Rails.configuration.webserver_login
+        when "email"
+          current_user = User.find_by_email(request.env["REMOTE_USER"])
+        when "username"
+          current_user = User.find_by_username(request.env["REMOTE_USER"])   
+        end
+        Thread.current[:user] = current_user
+      end
+    end
+
     auth_provider = if params[:auth_provider] then "auth_provider=#{CGI.escape(params[:auth_provider])}" else "" end
 
     if current_user and params[:return_to]
