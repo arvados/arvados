@@ -27,8 +27,8 @@ type APIClient interface {
 type QueueEnt struct {
 	// The container to run. Only the UUID, State, Priority, and
 	// RuntimeConstraints fields are populated.
-	Container    arvados.Container
-	InstanceType arvados.InstanceType
+	Container    arvados.Container    `json:"container"`
+	InstanceType arvados.InstanceType `json:"instance_type"`
 }
 
 // String implements fmt.Stringer by returning the queued container's

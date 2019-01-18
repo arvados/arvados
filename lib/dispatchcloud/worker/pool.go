@@ -25,14 +25,14 @@ const (
 
 // An InstanceView shows a worker's current state and recent activity.
 type InstanceView struct {
-	Instance             cloud.InstanceID
-	Price                float64
-	ArvadosInstanceType  string
-	ProviderInstanceType string
-	LastContainerUUID    string
-	LastBusy             time.Time
-	WorkerState          string
-	IdleBehavior         IdleBehavior
+	Instance             cloud.InstanceID `json:"instance"`
+	Price                float64          `json:"price"`
+	ArvadosInstanceType  string           `json:"arvados_instance_type"`
+	ProviderInstanceType string           `json:"provider_instance_type"`
+	LastContainerUUID    string           `json:"last_container_uuid"`
+	LastBusy             time.Time        `json:"last_busy"`
+	WorkerState          string           `json:"worker_state"`
+	IdleBehavior         IdleBehavior     `json:"idle_behavior"`
 }
 
 // An Executor executes shell commands on a remote host.

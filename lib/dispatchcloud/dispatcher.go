@@ -176,7 +176,7 @@ func (disp *dispatcher) run() {
 // Management API: all active and queued containers.
 func (disp *dispatcher) apiContainers(w http.ResponseWriter, r *http.Request) {
 	var resp struct {
-		Items []container.QueueEnt
+		Items []container.QueueEnt `json:"items"`
 	}
 	qEntries, _ := disp.queue.Entries()
 	for _, ent := range qEntries {
@@ -188,7 +188,7 @@ func (disp *dispatcher) apiContainers(w http.ResponseWriter, r *http.Request) {
 // Management API: all active instances (cloud VMs).
 func (disp *dispatcher) apiInstances(w http.ResponseWriter, r *http.Request) {
 	var resp struct {
-		Items []worker.InstanceView
+		Items []worker.InstanceView `json:"items"`
 	}
 	resp.Items = disp.pool.Instances()
 	json.NewEncoder(w).Encode(resp)

@@ -228,11 +228,11 @@ func (s *DispatcherSuite) TestInstancesAPI(c *check.C) {
 
 	type instance struct {
 		Instance             string
-		WorkerState          string
+		WorkerState          string `json:"worker_state"`
 		Price                float64
-		LastContainerUUID    string
-		ArvadosInstanceType  string
-		ProviderInstanceType string
+		LastContainerUUID    string `json:"last_container_uuid"`
+		ArvadosInstanceType  string `json:"arvados_instance_type"`
+		ProviderInstanceType string `json:"provider_instance_type"`
 	}
 	type instancesResponse struct {
 		Items []instance
