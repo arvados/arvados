@@ -5,7 +5,6 @@
 from __future__ import division
 from future import standard_library
 standard_library.install_aliases()
-from past.utils import old_div
 
 import requests
 import email.utils
@@ -139,14 +138,14 @@ def http_to_keep(api, project_uuid, url, utcnow=datetime.datetime.utcnow):
             f.write(chunk)
             loopnow = time.time()
             if (loopnow - checkpoint) > 20:
-                bps = (old_div(float(count),float(loopnow - start)))
+                bps = count / (loopnow - start)
                 if cl is not None:
                     logger.info("%2.1f%% complete, %3.2f MiB/s, %1.0f seconds left",
-                                old_div(float(count * 100), float(cl)),
-                                old_div(bps,(1024*1024)),
-                                old_div((cl-count),bps))
+                                ((count * 100) / cl),
+                                (bps // (1024*1024)),
+                                ((cl-count) // bps))
                 else:
-                    logger.info("%d downloaded, %3.2f MiB/s", count, old_div(bps,(1024*1024)))
+                    logger.info("%d downloaded, %3.2f MiB/s", count, (bps / (1024*1024)))
                 checkpoint = loopnow
 
     c.save_new(name="Downloaded from %s" % url, owner_uuid=project_uuid, ensure_unique_name=True)

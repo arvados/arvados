@@ -6,7 +6,6 @@ from __future__ import division
 from builtins import next
 from builtins import object
 from future.utils import viewvalues
-from past.utils import old_div
 
 import argparse
 import logging
@@ -620,7 +619,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                         visited.add(m.group(1))
                         estimated_size[0] += int(m.group(2))
             visit_class(job_order, ("File", "Directory"), estimate_collection_cache)
-            runtimeContext.collection_cache_size = max((old_div((estimated_size[0]*192), (1024*1024)))+1, 256)
+            runtimeContext.collection_cache_size = max(((estimated_size[0]*192) // (1024*1024))+1, 256)
             self.collection_cache.set_cap(runtimeContext.collection_cache_size*1024*1024)
 
         logger.info("Using collection cache size %s MiB", runtimeContext.collection_cache_size)
