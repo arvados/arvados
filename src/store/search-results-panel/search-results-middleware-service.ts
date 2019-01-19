@@ -83,7 +83,8 @@ export const getParams = (dataExplorer: DataExplorer, searchValue: string, sq: P
     filters: joinFilters(
         getFilters('name', searchValue, sq),
         typeFilters(dataExplorer.columns)),
-    order: getOrder(dataExplorer)
+    order: getOrder(dataExplorer),
+    includeTrash: true
 });
 
 const getOrder = (dataExplorer: DataExplorer) => {
