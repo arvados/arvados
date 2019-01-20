@@ -15,8 +15,10 @@ RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python2.7-dev pyth
 RUN /usr/bin/pip install virtualenv virtualenv-tools
 
 # Install RVM
-ADD generated/rvm.asc /tmp/
-RUN gpg --no-tty --import /tmp/rvm.asc && \
+ADD generated/mpapis.asc /tmp/
+ADD generated/pkuczynski.asc /tmp/
+RUN gpg --import --no-tty /tmp/mpapis.asc && \
+    gpg --import --no-tty /tmp/pkuczynski.asc && \
     curl -L https://get.rvm.io | bash -s stable && \
     /usr/local/rvm/bin/rvm install 2.3 && \
     /usr/local/rvm/bin/rvm alias create default ruby-2.3 && \

@@ -12,8 +12,10 @@ RUN apt-get update && \
     apt-get -y install --no-install-recommends curl ca-certificates python2.7-dev python3 python-setuptools python3-setuptools libcurl4-gnutls-dev curl git libattr1-dev libfuse-dev libpq-dev python-pip unzip binutils build-essential ca-certificates
 
 # Install RVM
-ADD generated/rvm.asc /tmp/
-RUN gpg --import /tmp/rvm.asc && \
+ADD generated/mpapis.asc /tmp/
+ADD generated/pkuczynski.asc /tmp/
+RUN gpg --import --no-tty /tmp/mpapis.asc && \
+    gpg --import --no-tty /tmp/pkuczynski.asc && \
     curl -L https://get.rvm.io | bash -s stable && \
     /usr/local/rvm/bin/rvm install 2.3 && \
     /usr/local/rvm/bin/rvm alias create default ruby-2.3

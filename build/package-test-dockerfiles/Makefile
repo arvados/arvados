@@ -28,12 +28,16 @@ ubuntu1804/generated: common-generated-all
 	test -d ubuntu1804/generated || mkdir ubuntu1804/generated
 	cp -rlt ubuntu1804/generated common-generated/*
 
-RVMKEY=rvm.asc
+RVMKEY1=mpapis.asc
+RVMKEY2=pkuczynski.asc
 
-common-generated-all: common-generated/$(RVMKEY)
+common-generated-all: common-generated/$(RVMKEY1) common-generated/$(RVMKEY2)
 
-common-generated/$(RVMKEY): common-generated
-	wget -cqO common-generated/$(RVMKEY) https://rvm.io/mpapis.asc
+common-generated/$(RVMKEY1): common-generated
+	wget -cqO common-generated/$(RVMKEY1) https://rvm.io/mpapis.asc
+
+common-generated/$(RVMKEY2): common-generated
+	wget -cqO common-generated/$(RVMKEY2) https://rvm.io/pkuczynski.asc
 
 common-generated:
 	mkdir common-generated
