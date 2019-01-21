@@ -63,6 +63,10 @@ const (
 	defaultTimeoutBooting     = time.Minute * 10
 	defaultTimeoutProbe       = time.Minute * 10
 	defaultTimeoutShutdown    = time.Second * 10
+
+	// Time after a quota error to try again anyway, even if no
+	// instances have been shutdown.
+	quotaErrorTTL = time.Minute
 )
 
 func duration(conf arvados.Duration, def time.Duration) time.Duration {
@@ -247,7 +251,7 @@ func (wp *Pool) Create(it arvados.InstanceType) error {
 		}
 		if err, ok := err.(cloud.QuotaError); ok && err.IsQuotaError() {
 			wp.atQuotaErr = err
-			wp.atQuotaUntil = time.Now().Add(time.Minute)
+			wp.atQuotaUntil = time.Now().Add(quotaErrorTTL)
 		}
 		if err != nil {
 			logger.WithError(err).Error("create failed")
