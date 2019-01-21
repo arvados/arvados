@@ -187,7 +187,10 @@ func (svm *StubVM) Exec(env map[string]string, command string, stdin io.Reader, 
 		svm.Unlock()
 		time.Sleep(svm.CrunchRunDetachDelay)
 		fmt.Fprintf(stderr, "starting %s\n", uuid)
-		logger := logrus.WithField("ContainerUUID", uuid)
+		logger := logrus.WithFields(logrus.Fields{
+			"Instance":      svm.id,
+			"ContainerUUID": uuid,
+		})
 		logger.Printf("[test] starting crunch-run stub")
 		go func() {
 			crashluck := math_rand.Float64()
