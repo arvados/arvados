@@ -293,7 +293,7 @@ func (wkr *worker) shutdownIfBroken(dur time.Duration) {
 		return
 	}
 	label, threshold := "", wkr.wp.timeoutProbe
-	if wkr.state == StateBooting {
+	if wkr.state == StateUnknown || wkr.state == StateBooting {
 		label, threshold = "new ", wkr.wp.timeoutBooting
 	}
 	if dur < threshold {
