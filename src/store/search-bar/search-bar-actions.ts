@@ -326,36 +326,38 @@ export const parseSearchQuery: (query: string) => ParseSearchQuery = (searchValu
     const properties = {};
 
     keywords.forEach(k => {
-        let p = searchValue.indexOf(k);
-        const key = k.substr(0, k.length - 1);
+        if (k) {
+            let p = searchValue.indexOf(k);
+            const key = k.substr(0, k.length - 1);
 
-        while (p >= 0) {
-            const l = searchValue.length;
-            keywordsCnt += 1;
+            while (p >= 0) {
+                const l = searchValue.length;
+                keywordsCnt += 1;
 
-            let v = '';
-            let i = p + k.length;
-            while (i < l && searchValue[i] === ' ') {
-                ++i;
-            }
-            const vp = i;
-            while (i < l && searchValue[i] !== ' ') {
-                v += searchValue[i];
-                ++i;
-            }
-
-            if (hasKeywords(v)) {
-                searchValue = searchValue.substr(0, p) + searchValue.substr(vp);
-            } else {
-                if (v !== '') {
-                    if (!properties[key]) {
-                        properties[key] = [];
-                    }
-                    properties[key].push(v);
+                let v = '';
+                let i = p + k.length;
+                while (i < l && searchValue[i] === ' ') {
+                    ++i;
                 }
-                searchValue = searchValue.substr(0, p) + searchValue.substr(i);
+                const vp = i;
+                while (i < l && searchValue[i] !== ' ') {
+                    v += searchValue[i];
+                    ++i;
+                }
+
+                if (hasKeywords(v)) {
+                    searchValue = searchValue.substr(0, p) + searchValue.substr(vp);
+                } else {
+                    if (v !== '') {
+                        if (!properties[key]) {
+                            properties[key] = [];
+                        }
+                        properties[key].push(v);
+                    }
+                    searchValue = searchValue.substr(0, p) + searchValue.substr(i);
+                }
+                p = searchValue.indexOf(k);
             }
-            p = searchValue.indexOf(k);
         }
     });
 
@@ -424,7 +426,9 @@ export const getFilters = (filterName: string, searchValue: string, sq: ParseSea
         filter
             .addILike(filterName, searchValue, GroupContentsResourcePrefix.COLLECTION)
             .addILike(filterName, searchValue, GroupContentsResourcePrefix.PROJECT)
-            .addILike(filterName, searchValue, GroupContentsResourcePrefix.PROCESS);
+            .addILike(filterName, searchValue, GroupContentsResourcePrefix.PROCESS)
+            .addEqual('is_trashed', false, GroupContentsResourcePrefix.COLLECTION)
+            .addEqual('is_trashed', false, GroupContentsResourcePrefix.PROJECT);
 
         if (isTrashed) {
             filter.addILike(filterName, searchValue, GroupContentsResourcePrefix.PROCESS);
@@ -438,7 +442,10 @@ export const getFilters = (filterName: string, searchValue: string, sq: ParseSea
             sq.values.forEach(v => {
                 filter
                     .addILike(filterName, v, GroupContentsResourcePrefix.COLLECTION)
-                    .addILike(filterName, v, GroupContentsResourcePrefix.PROJECT);
+                    .addILike(filterName, v, GroupContentsResourcePrefix.PROJECT)
+                    .addILike(filterName, v, GroupContentsResourcePrefix.PROCESS)
+                    .addEqual('is_trashed', false, GroupContentsResourcePrefix.COLLECTION)
+                    .addEqual('is_trashed', false, GroupContentsResourcePrefix.PROJECT);
 
                 if (isTrashed) {
                     filter.addILike(filterName, v, GroupContentsResourcePrefix.PROCESS);
@@ -447,7 +454,12 @@ export const getFilters = (filterName: string, searchValue: string, sq: ParseSea
         }
 
         if (isTrashed) {
-            filter.addEqual("is_trashed", true);
+            sq.values.forEach(v => {
+                filter.addEqual('is_trashed', true, GroupContentsResourcePrefix.COLLECTION)
+                    .addEqual('is_trashed', true, GroupContentsResourcePrefix.PROJECT)
+                    .addILike(filterName, v, GroupContentsResourcePrefix.COLLECTION)
+                    .addILike(filterName, searchValue, GroupContentsResourcePrefix.PROCESS);
+            });
         }
 
         const projectUuid = getSearchQueryFirstProp(sq, 'project');
@@ -468,14 +480,14 @@ export const getFilters = (filterName: string, searchValue: string, sq: ParseSea
         const props = getSearchQueryProperties(sq);
         props.forEach(p => {
             if (p.value) {
-                filter.addILike(`properties.${p.key}`, p.value);
+                filter.addILike(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.PROJECT)
+                    .addILike(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.COLLECTION);
             }
             filter.addExists(p.key);
         });
     }
 
     return filter
-        .addEqual('groupClass', GroupClass.PROJECT, GroupContentsResourcePrefix.PROJECT)
         .addIsA("uuid", buildUuidFilter(resourceKind))
         .getFilters();
 };

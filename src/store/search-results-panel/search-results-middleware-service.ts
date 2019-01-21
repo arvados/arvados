@@ -4,7 +4,7 @@
 
 import { ServiceRepository } from '~/services/services';
 import { MiddlewareAPI, Dispatch } from 'redux';
-import { DataExplorerMiddlewareService, dataExplorerToListParams, listResultsToDataExplorerItemsMeta } from '~/store/data-explorer/data-explorer-middleware-service';
+import { DataExplorerMiddlewareService, dataExplorerToListParams, listResultsToDataExplorerItemsMeta, getDataExplorerColumnFilters } from '~/store/data-explorer/data-explorer-middleware-service';
 import { RootState } from '~/store/store';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { DataExplorer, getDataExplorer } from '~/store/data-explorer/data-explorer-reducer';
@@ -22,6 +22,10 @@ import {
     parseSearchQuery
 } from '~/store/search-bar/search-bar-actions';
 import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
+import { joinFilters } from '~/services/api/filter-builder';
+import { DataColumns } from '~/components/data-table/data-table';
+import { serializeResourceTypeFilters } from '~/store//resource-type-filters/resource-type-filters';
+import { ProjectPanelColumnNames } from '~/views/project-panel/project-panel';
 
 export class SearchResultsMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -72,10 +76,15 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
     }
 }
 
+const typeFilters = (columns: DataColumns<string>) => serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.TYPE));
+
 export const getParams = (dataExplorer: DataExplorer, searchValue: string, sq: ParseSearchQuery) => ({
     ...dataExplorerToListParams(dataExplorer),
-    filters: getFilters('name', searchValue, sq),
-    order: getOrder(dataExplorer)
+    filters: joinFilters(
+        getFilters('name', searchValue, sq),
+        typeFilters(dataExplorer.columns)),
+    order: getOrder(dataExplorer),
+    includeTrash: true
 });
 
 const getOrder = (dataExplorer: DataExplorer) => {
