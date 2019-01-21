@@ -480,14 +480,15 @@ export const getFilters = (filterName: string, searchValue: string, sq: ParseSea
         const props = getSearchQueryProperties(sq);
         props.forEach(p => {
             if (p.value) {
-                filter.addILike(`properties.${p.key}`, p.value);
+                filter.addILike(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.PROJECT)
+                    .addILike(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.COLLECTION);
             }
             filter.addExists(p.key);
         });
     }
 
-    return filter        
-    .addIsA("uuid", buildUuidFilter(resourceKind))
+    return filter
+        .addIsA("uuid", buildUuidFilter(resourceKind))
         .getFilters();
 };
 
