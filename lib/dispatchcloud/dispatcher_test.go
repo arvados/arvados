@@ -52,8 +52,8 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 		CloudVMs: arvados.CloudVMs{
 			Driver:          "test",
 			SyncInterval:    arvados.Duration(10 * time.Millisecond),
-			TimeoutIdle:     arvados.Duration(30 * time.Millisecond),
-			TimeoutBooting:  arvados.Duration(30 * time.Millisecond),
+			TimeoutIdle:     arvados.Duration(150 * time.Millisecond),
+			TimeoutBooting:  arvados.Duration(150 * time.Millisecond),
 			TimeoutProbe:    arvados.Duration(15 * time.Millisecond),
 			TimeoutShutdown: arvados.Duration(5 * time.Millisecond),
 		},

@@ -235,19 +235,29 @@ func (wkr *worker) probeAndUpdate() {
 		}
 	}
 	if wkr.state == StateUnknown || wkr.state == StateBooting {
+		// Note: this will change again below if
+		// len(wkr.starting)+len(wkr.running) > 0.
 		wkr.state = StateIdle
 		changed = true
 	}
-	if changed {
-		wkr.running = running
-		if wkr.state == StateIdle && len(wkr.starting)+len(wkr.running) > 0 {
-			wkr.state = StateRunning
-		} else if wkr.state == StateRunning && len(wkr.starting)+len(wkr.running) == 0 {
-			wkr.state = StateIdle
-		}
-		wkr.updated = updateTime
-		go wkr.wp.notify()
+	if !changed {
+		return
 	}
+
+	wkr.running = running
+	if wkr.state == StateIdle && len(wkr.starting)+len(wkr.running) > 0 {
+		wkr.state = StateRunning
+	} else if wkr.state == StateRunning && len(wkr.starting)+len(wkr.running) == 0 {
+		wkr.state = StateIdle
+	}
+	wkr.updated = updateTime
+	if needProbeBooted {
+		logger.WithFields(logrus.Fields{
+			"RunningContainers": len(running),
+			"State":             wkr.state,
+		}).Info("probes succeeded, instance is in service")
+	}
+	go wkr.wp.notify()
 }
 
 func (wkr *worker) probeRunning() (running []string, ok bool, stderr []byte) {
