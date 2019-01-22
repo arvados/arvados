@@ -8,7 +8,10 @@ MAINTAINER Ward Vandewege <ward@curoverse.com>
 ENV DEBIAN_FRONTEND noninteractive
 
 # Install dependencies.
-RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python2.7-dev python3 python-setuptools python3-setuptools libcurl4-gnutls-dev curl git libattr1-dev libfuse-dev libpq-dev python-pip unzip python3-venv python3-dev
+RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python2.7-dev python3 python-setuptools python3-setuptools libcurl4-gnutls-dev curl git libattr1-dev libfuse-dev libpq-dev python-pip unzip python3.4-venv python3.4-dev
+
+# Install virtualenv
+RUN /usr/bin/pip install virtualenv
 
 # Install RVM
 ADD generated/mpapis.asc /tmp/

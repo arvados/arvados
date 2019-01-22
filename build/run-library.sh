@@ -623,8 +623,7 @@ fpm_build_virtualenv () {
   FPM_RESULTS=$("${COMMAND_ARR[@]}")
   FPM_EXIT_CODE=$?
 
-# FIXME
-#  fpm_verify $FPM_EXIT_CODE $FPM_RESULTS
+  fpm_verify $FPM_EXIT_CODE $FPM_RESULTS
 
   # if something went wrong and debug is off, print out the fpm command that errored
   if [[ 0 -ne $? ]] && [[ "$STDOUT_IF_DEBUG" == "/dev/null" ]]; then

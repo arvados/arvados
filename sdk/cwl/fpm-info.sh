@@ -1,12 +1,10 @@
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
-# SPDX-License-Identifier: AGPL-3.0
-
-fpm_depends+=(fuse)
+# SPDX-License-Identifier: Apache-2.0
 
 case "$TARGET" in
-    centos*)
-        fpm_depends+=(fuse-libs)
+    debian8)
+        fpm_depends+=(libgnutls-deb0-28 libcurl3-gnutls)
         ;;
     debian* | ubuntu*)
         fpm_depends+=(libcurl3-gnutls)

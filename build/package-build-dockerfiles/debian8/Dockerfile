@@ -10,6 +10,9 @@ ENV DEBIAN_FRONTEND noninteractive
 # Install dependencies.
 RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python2.7-dev python3 python-setuptools python3-setuptools libcurl4-gnutls-dev curl git procps libattr1-dev libfuse-dev libgnutls28-dev libpq-dev python-pip unzip python3-venv python3-dev
 
+# Install virtualenv
+RUN /usr/bin/pip install virtualenv
+
 # Install RVM
 ADD generated/mpapis.asc /tmp/
 ADD generated/pkuczynski.asc /tmp/
