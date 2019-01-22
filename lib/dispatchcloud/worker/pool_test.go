@@ -51,7 +51,7 @@ func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
 	pool := &Pool{
 		logger:      logrus.StandardLogger(),
 		newExecutor: func(cloud.Instance) Executor { return &stubExecutor{} },
-		instanceSet: lameInstanceSet,
+		instanceSet: &throttledInstanceSet{InstanceSet: lameInstanceSet},
 		instanceTypes: arvados.InstanceTypeMap{
 			type1.Name: type1,
 			type2.Name: type2,

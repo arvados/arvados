@@ -41,6 +41,11 @@ type StubDriver struct {
 	// Destroy. 0=always succeed, 1=always fail.
 	ErrorRateDestroy float64
 
+	// If Create() or Instances() is called too frequently, return
+	// rate-limiting errors.
+	MinTimeBetweenCreateCalls    time.Duration
+	MinTimeBetweenInstancesCalls time.Duration
+
 	instanceSets []*StubInstanceSet
 }
 
@@ -68,6 +73,9 @@ type StubInstanceSet struct {
 	servers map[cloud.InstanceID]*StubVM
 	mtx     sync.RWMutex
 	stopped bool
+
+	allowCreateCall    time.Time
+	allowInstancesCall time.Time
 }
 
 func (sis *StubInstanceSet) Create(it arvados.InstanceType, image cloud.ImageID, tags cloud.InstanceTags, authKey ssh.PublicKey) (cloud.Instance, error) {
@@ -76,6 +84,12 @@ func (sis *StubInstanceSet) Create(it arvados.InstanceType, image cloud.ImageID,
 	if sis.stopped {
 		return nil, errors.New("StubInstanceSet: Create called after Stop")
 	}
+	if sis.allowCreateCall.After(time.Now()) {
+		return nil, RateLimitError{sis.allowCreateCall}
+	} else {
+		sis.allowCreateCall = time.Now().Add(sis.driver.MinTimeBetweenCreateCalls)
+	}
+
 	ak := sis.driver.AuthorizedKeys
 	if authKey != nil {
 		ak = append([]ssh.PublicKey{authKey}, ak...)
@@ -101,6 +115,11 @@ func (sis *StubInstanceSet) Create(it arvados.InstanceType, image cloud.ImageID,
 func (sis *StubInstanceSet) Instances(cloud.InstanceTags) ([]cloud.Instance, error) {
 	sis.mtx.RLock()
 	defer sis.mtx.RUnlock()
+	if sis.allowInstancesCall.After(time.Now()) {
+		return nil, RateLimitError{sis.allowInstancesCall}
+	} else {
+		sis.allowInstancesCall = time.Now().Add(sis.driver.MinTimeBetweenInstancesCalls)
+	}
 	var r []cloud.Instance
 	for _, ss := range sis.servers {
 		r = append(r, ss.Instance())
@@ -116,6 +135,11 @@ func (sis *StubInstanceSet) Stop() {
 	}
 	sis.stopped = true
 }
+
+type RateLimitError struct{ Retry time.Time }
+
+func (e RateLimitError) Error() string            { return fmt.Sprintf("rate limited until %s", e.Retry) }
+func (e RateLimitError) EarliestRetry() time.Time { return e.Retry }
 
 // StubVM is a fake server that runs an SSH service. It represents a
 // VM running in a fake cloud.

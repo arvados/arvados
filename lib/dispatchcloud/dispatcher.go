@@ -128,7 +128,7 @@ func (disp *dispatcher) initialize() {
 	if err != nil {
 		disp.logger.Fatalf("error initializing driver: %s", err)
 	}
-	disp.instanceSet = &instanceSetProxy{instanceSet}
+	disp.instanceSet = instanceSet
 	disp.reg = prometheus.NewRegistry()
 	disp.pool = worker.NewPool(disp.logger, arvClient, disp.reg, disp.instanceSet, disp.newExecutor, disp.Cluster)
 	disp.queue = container.NewQueue(disp.logger, disp.reg, disp.typeChooser, arvClient)

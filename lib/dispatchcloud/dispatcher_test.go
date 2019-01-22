@@ -43,9 +43,10 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 
 	_, hostpriv := test.LoadTestKey(c, "test/sshkey_vm")
 	s.stubDriver = &test.StubDriver{
-		HostKey:          hostpriv,
-		AuthorizedKeys:   []ssh.PublicKey{dispatchpub},
-		ErrorRateDestroy: 0.1,
+		HostKey:                   hostpriv,
+		AuthorizedKeys:            []ssh.PublicKey{dispatchpub},
+		ErrorRateDestroy:          0.1,
+		MinTimeBetweenCreateCalls: time.Millisecond,
 	}
 
 	s.cluster = &arvados.Cluster{
@@ -254,8 +255,8 @@ func (s *DispatcherSuite) TestInstancesAPI(c *check.C) {
 
 	ch := s.disp.pool.Subscribe()
 	defer s.disp.pool.Unsubscribe(ch)
-	err := s.disp.pool.Create(test.InstanceType(1))
-	c.Check(err, check.IsNil)
+	ok := s.disp.pool.Create(test.InstanceType(1))
+	c.Check(ok, check.Equals, true)
 	<-ch
 
 	sr = getInstances()

@@ -34,7 +34,7 @@ type WorkerPool interface {
 	Unallocated() map[arvados.InstanceType]int
 	CountWorkers() map[worker.State]int
 	AtQuota() bool
-	Create(arvados.InstanceType) error
+	Create(arvados.InstanceType) bool
 	Shutdown(arvados.InstanceType) bool
 	StartContainer(arvados.InstanceType, arvados.Container) bool
 	KillContainer(uuid string)

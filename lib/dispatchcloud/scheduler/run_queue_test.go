@@ -5,7 +5,6 @@
 package scheduler
 
 import (
-	"errors"
 	"time"
 
 	"git.curoverse.com/arvados.git/lib/dispatchcloud/test"
@@ -56,14 +55,14 @@ func (p *stubPool) Unallocated() map[arvados.InstanceType]int {
 	}
 	return r
 }
-func (p *stubPool) Create(it arvados.InstanceType) error {
+func (p *stubPool) Create(it arvados.InstanceType) bool {
 	p.creates = append(p.creates, it)
 	if p.canCreate < 1 {
-		return stubQuotaError{errors.New("quota")}
+		return false
 	}
 	p.canCreate--
 	p.unalloc[it]++
-	return nil
+	return true
 }
 func (p *stubPool) KillContainer(uuid string) {
 	p.running[uuid] = time.Now()
