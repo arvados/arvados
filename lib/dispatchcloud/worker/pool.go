@@ -155,15 +155,21 @@ type Pool struct {
 	mMemoryInuse       prometheus.Gauge
 }
 
-// Subscribe returns a channel that becomes ready whenever a worker's
-// state changes.
+// Subscribe returns a buffered channel that becomes ready after any
+// change to the pool's state that could have scheduling implications:
+// a worker's state changes, a new worker appears, the cloud
+// provider's API rate limiting period ends, etc.
+//
+// Additional events that occur while the channel is already ready
+// will be dropped, so it is OK if the caller services the channel
+// slowly.
 //
 // Example:
 //
 //	ch := wp.Subscribe()
 //	defer wp.Unsubscribe(ch)
 //	for range ch {
-//		// ...try scheduling some work...
+//		tryScheduling(wp)
 //		if done {
 //			break
 //		}
@@ -264,6 +270,7 @@ func (wp *Pool) Create(it arvados.InstanceType) bool {
 			if err, ok := err.(cloud.QuotaError); ok && err.IsQuotaError() {
 				wp.atQuotaErr = err
 				wp.atQuotaUntil = time.Now().Add(quotaErrorTTL)
+				time.AfterFunc(quotaErrorTTL, wp.notify)
 			}
 			logger.WithError(err).Error("create failed")
 			wp.instanceSet.throttleCreate.CheckRateLimitError(err, wp.logger, "create instance", wp.notify)
