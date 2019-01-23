@@ -9,6 +9,6 @@ case "$TARGET" in
         fpm_depends+=(fuse-libs)
         ;;
     debian* | ubuntu*)
-        fpm_depends+=(libcurl3-gnutls)
+        fpm_depends+=(libcurl3-gnutls libpython2.7)
         ;;
 esac

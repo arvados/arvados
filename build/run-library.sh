@@ -232,11 +232,6 @@ test_package_presence() {
       rpm_architecture="x86_64"
       deb_architecture="amd64"
 
-      if [[ "$pkgtype" =~ ^(python|python3)$ ]]; then
-        rpm_architecture="noarch"
-        deb_architecture="all"
-      fi
-
       if [[ "$pkgtype" =~ ^(src)$ ]]; then
         rpm_architecture="noarch"
         deb_architecture="all"
@@ -297,6 +292,9 @@ test_package_presence() {
       if [ $? -eq 0 ]; then
         echo "Package $complete_pkgname exists, not rebuilding!"
         curl -o ./${complete_pkgname} ${centos_repo}${complete_pkgname}
+        return 1
+      elif test -f "$WORKSPACE/packages/$TARGET/processed/${complete_pkgname}" ; then
+        echo "Package $complete_pkgname exists, not rebuilding!"
         return 1
       else
         echo "Package $complete_pkgname not found, building"
@@ -408,50 +406,29 @@ fpm_build_virtualenv () {
     return 0
   fi
 
-  echo "Building $FORMAT package for $PKG from $PKG_DIR"
   cd $WORKSPACE/$PKG_DIR
 
-  # Create an sdist
-  echo "Creating sdist..."
-
   rm -rf dist/*
-  $python setup.py $DASHQ_UNLESS_DEBUG sdist
 
-  if [[ "$?" != "0" ]]; then
+  if ! $python setup.py $DASHQ_UNLESS_DEBUG sdist; then
     echo "Error, unable to run python setup.py sdist for $PKG"
     exit 1
   fi
 
-  # Determine the package version from the generated sdist archive
   PACKAGE_PATH=`(cd dist; ls *tar.gz)`
-  PYTHON_VERSION=${PACKAGE_PATH#$PKG-}
 
-  # For historical reasons, arvados-fuse is called arvados_fuse in python land
-  # Same with crunchstat-summary.
-  # We should fix this, but for now let's just make this script dtrt.
-  PKG_ALTERNATE=${PKG//-/_}
-  PYTHON_VERSION=${PYTHON_VERSION#$PKG_ALTERNATE-}
-
-  # An even more complicated exception
-  if [[ "$PKG" == "libpam-arvados" ]]; then
-    PYTHON_VERSION=${PYTHON_VERSION#arvados-pam-}
-  fi
-
-  if [[ "$PACKAGE_PATH" == "$PYTHON_VERSION" ]]; then
-    echo "Error, unable to determine python package version for $PKG from $PACKAGE_PATH"
-    exit 1
-  fi
-  PYTHON_VERSION=${PYTHON_VERSION%.tar.gz}
+  # Determine the package version from the generated sdist archive
+  PYTHON_VERSION=${ARVADOS_BUILDING_VERSION:-$(awk '($1 == "Version:"){print $2}' *.egg-info/PKG-INFO)}
 
   # See if we actually need to build this package; does it exist already?
   # We can't do this earlier than here, because we need PYTHON_VERSION...
   # This isn't so bad; the sdist call above is pretty quick compared to
   # the invocation of virtualenv and fpm, below.
-  test_package_presence "$PYTHON_PKG" $PYTHON_VERSION $PACKAGE_TYPE $ARVADOS_BUILDING_ITERATION amd64
-  if [[ "$?" != "0" ]]; then
-    echo "exists"
+  if ! test_package_presence "$PYTHON_PKG" $PYTHON_VERSION $PACKAGE_TYPE $ARVADOS_BUILDING_ITERATION; then
     return 0
   fi
+
+  echo "Building $FORMAT package for $PKG from $PKG_DIR"
 
   # Package the sdist in a virtualenv
   echo "Creating virtualenv..."
@@ -463,16 +440,22 @@ fpm_build_virtualenv () {
 
   virtualenv_command="virtualenv --python `which $python` $DASHQ_UNLESS_DEBUG build/usr/share/$python/dist/$PYTHON_PKG"
 
-  $virtualenv_command
-
-  if [[ "$?" != "0" ]]; then
+  if ! $virtualenv_command; then
     echo "Error, unable to run"
     echo "  $virtualenv_command"
     exit 1
   fi
 
-  build/usr/share/$python/dist/$PYTHON_PKG/bin/pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U pip
-  build/usr/share/$python/dist/$PYTHON_PKG/bin/pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U wheel
+  if ! build/usr/share/$python/dist/$PYTHON_PKG/bin/pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U pip; then
+    echo "Error, unable to upgrade pip with"
+    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U pip"
+    exit 1
+  fi
+  if ! build/usr/share/$python/dist/$PYTHON_PKG/bin/pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U wheel; then
+    echo "Error, unable to upgrade wheel with"
+    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U wheel"
+    exit 1
+  fi
 
   if [[ "$TARGET" != "centos7" ]] || [[ "$PYTHON_PKG" != "python-arvados-fuse" ]]; then
     build/usr/share/$python/dist/$PYTHON_PKG/bin/pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PACKAGE_PATH
@@ -495,16 +478,14 @@ fpm_build_virtualenv () {
   # virtualenv_tools.py script that doesn't work in python3 without serious
   # patching, minus the parts we don't need (modifying pyc files, etc).
   for binfile in `ls bin/`; do
-    file --mime bin/$binfile |grep -q binary
-    if [[ "$?" != "0" ]]; then
+    if ! file --mime bin/$binfile |grep -q binary; then
       # Not a binary file
       if [[ "$binfile" =~ ^activate(.csh|.fish|)$ ]]; then
         # these 'activate' scripts need special treatment
         sed -i "s/VIRTUAL_ENV=\".*\"/VIRTUAL_ENV=\"\/usr\/share\/$python\/dist\/$PYTHON_PKG\"/" bin/$binfile
         sed -i "s/VIRTUAL_ENV \".*\"/VIRTUAL_ENV \"\/usr\/share\/$python\/dist\/$PYTHON_PKG\"/" bin/$binfile
       else
-        grep -q -E '^#!.*/bin/python\d?' bin/$binfile
-        if [[ "$?" == "0" ]]; then
+        if grep -q -E '^#!.*/bin/python\d?' bin/$binfile; then
           # Replace shebang line
           sed -i "1 s/^.*$/#!\/usr\/share\/$python\/dist\/$PYTHON_PKG\/bin\/python/" bin/$binfile
         fi
@@ -514,8 +495,8 @@ fpm_build_virtualenv () {
 
   cd - >$STDOUT_IF_DEBUG
 
-  find build -iname *.pyc -exec rm {} \;
-  find build -iname *.pyo -exec rm {} \;
+  find build -iname '*.pyc' -exec rm {} \;
+  find build -iname '*.pyo' -exec rm {} \;
 
   # Finally, generate the package
   echo "Creating package..."
@@ -559,16 +540,19 @@ fpm_build_virtualenv () {
     fi
   fi
 
-  if [[ "${DEBUG:-0}" != "0" ]]; then
+  if [[ "$DEBUG" != "0" ]]; then
     COMMAND_ARR+=('--verbose' '--log' 'info')
   fi
 
   COMMAND_ARR+=('-v' "$PYTHON_VERSION")
   COMMAND_ARR+=('--iteration' "$ARVADOS_BUILDING_ITERATION")
   COMMAND_ARR+=('-n' "$PYTHON_PKG")
-  COMMAND_ARR+=('--before-remove' "$WORKSPACE/build/python-package-scripts/before-remove-$PKG.tmp.sh")
-  COMMAND_ARR+=('--after-install' "$WORKSPACE/build/python-package-scripts/after-install-$PKG.tmp.sh")
   COMMAND_ARR+=('-C' "build")
+
+  if [[ -e "$WORKSPACE/$PKG_DIR/$PKG.service" ]]; then
+    COMMAND_ARR+=('--after-install' "${WORKSPACE}/build/go-python-package-scripts/postinst")
+    COMMAND_ARR+=('--before-remove' "${WORKSPACE}/build/go-python-package-scripts/prerm")
+  fi
 
   if [[ "$python" == "python2.7" ]]; then
     COMMAND_ARR+=('--depends' "$PYTHON2_PACKAGE")
@@ -588,29 +572,11 @@ fpm_build_virtualenv () {
   fpminfo="$WORKSPACE/$PKG_DIR/fpm-info.sh"
   if [[ -e "$fpminfo" ]]; then
     echo "Loading fpm overrides from $fpminfo"
-    source "$fpminfo"
-    if [[ "$?" != "0" ]]; then
+    if ! source "$fpminfo"; then
       echo "Error, unable to source $WORKSPACE/$PKG_DIR/fpm-info.sh for $PKG"
       exit 1
     fi
   fi
-
-  if [[ -e "$WORKSPACE/$PKG_DIR/bin" ]]; then
-    FPM_BINARIES=""
-    for binary in `ls $WORKSPACE/$PKG_DIR/bin`; do
-      FPM_BINARIES+="'$binary' "
-    done
-  fi
-
-  # create a custom version of the package scripts, with fpm_binaries populated
-  cp -f $WORKSPACE/build/python-package-scripts/before-remove.sh $WORKSPACE/build/python-package-scripts/before-remove-$PKG.tmp.sh
-  cp -f $WORKSPACE/build/python-package-scripts/after-install.sh $WORKSPACE/build/python-package-scripts/after-install-$PKG.tmp.sh
-  sed -i s/%FPM_BINARIES/"$FPM_BINARIES"/g $WORKSPACE/build/python-package-scripts/before-remove-$PKG.tmp.sh
-  sed -i s/%FPM_BINARIES/"$FPM_BINARIES"/g $WORKSPACE/build/python-package-scripts/after-install-$PKG.tmp.sh
-
-  # Make sure the package scripts know the correct path where its files are installed
-  sed -i s/%PYTHON/$python/g $WORKSPACE/build/python-package-scripts/before-remove-$PKG.tmp.sh
-  sed -i s/%PYTHON/$python/g $WORKSPACE/build/python-package-scripts/after-install-$PKG.tmp.sh
 
   for i in "${fpm_depends[@]}"; do
     COMMAND_ARR+=('--depends' "$i")
@@ -618,16 +584,26 @@ fpm_build_virtualenv () {
 
   COMMAND_ARR+=("${fpm_args[@]}")
 
+  # Make sure to install all our package binaries in /usr/local/bin.
+  # We have to walk $WORKSPACE/$PKG_DIR/bin rather than
+  # $WORKSPACE/build/usr/share/$python/dist/$PYTHON_PKG/bin/ to get the list
+  # because the latter also includes all the python binaries for the virtualenv.
+  # We have to take the copies of our binaries from the latter directory, though,
+  # because those are the ones we rewrote the shebang line of, above.
+  if [[ -e "$WORKSPACE/$PKG_DIR/bin" ]]; then
+    for binary in `ls $WORKSPACE/$PKG_DIR/bin`; do
+      COMMAND_ARR+=("usr/share/$python/dist/$PYTHON_PKG/bin/$binary=/usr/local/bin/")
+    done
+  fi
+
   COMMAND_ARR+=(".")
 
   FPM_RESULTS=$("${COMMAND_ARR[@]}")
   FPM_EXIT_CODE=$?
 
-  fpm_verify $FPM_EXIT_CODE $FPM_RESULTS
-
   # if something went wrong and debug is off, print out the fpm command that errored
-  if [[ 0 -ne $? ]] && [[ "$STDOUT_IF_DEBUG" == "/dev/null" ]]; then
-    echo "fpm returned an error execurin the command:"
+  if ! fpm_verify $FPM_EXIT_CODE $FPM_RESULTS && [[ "$STDOUT_IF_DEBUG" == "/dev/null" ]]; then
+    echo "fpm returned an error executing the command:"
     echo
     echo -e "\n${COMMAND_ARR[@]}\n"
   else
@@ -635,10 +611,6 @@ fpm_build_virtualenv () {
     mv $WORKSPACE/$PKG_DIR/dist/*$FORMAT $WORKSPACE/packages/$TARGET/
   fi
   echo
-
-  # clean up
-  rm -f $WORKSPACE/build/python-package-scripts/before-remove-$PKG.tmp.sh
-  rm -f $WORKSPACE/build/python-package-scripts/after-install-$PKG.tmp.sh
 }
 
 # Build packages for everything
@@ -712,7 +684,7 @@ fpm_build () {
   # 12271 - As FPM-generated packages don't include scripts by default, the
   # packages cleanup on upgrade depends on files being listed on the %files
   # section in the generated SPEC files. To remove DIRECTORIES, they need to
-  # be listed in that sectiontoo, so we need to add this parameter to properly
+  # be listed in that section too, so we need to add this parameter to properly
   # remove lingering dirs. But this only works for python2: if used on
   # python33, it includes dirs like /opt/rh/python33 that belong to
   # other packages.
@@ -720,7 +692,7 @@ fpm_build () {
     COMMAND_ARR+=('--rpm-auto-add-directories')
   fi
 
-  if [[ "${DEBUG:-0}" != "0" ]]; then
+  if [[ "$DEBUG" != "0" ]]; then
     COMMAND_ARR+=('--verbose' '--log' 'info')
   fi
 

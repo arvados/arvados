@@ -331,7 +331,7 @@ package_go_binary tools/keep-exercise keep-exercise \
 fpm_build_virtualenv "arvados-python-client" "sdk/python"
 fpm_build_virtualenv "arvados-python-client" "sdk/python" "python3"
 
-# Arvadow cwl runner
+# Arvados cwl runner
 fpm_build_virtualenv "arvados-cwl-runner" "sdk/cwl"
 
 # The PAM module
