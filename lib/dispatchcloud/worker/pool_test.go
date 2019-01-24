@@ -5,7 +5,6 @@
 package worker
 
 import (
-	"io"
 	"time"
 
 	"git.curoverse.com/arvados.git/lib/cloud"
@@ -50,7 +49,7 @@ func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
 	type3 := arvados.InstanceType{Name: "a2l", ProviderType: "a2.large", VCPUs: 4, RAM: 4 * GiB, Price: .04}
 	pool := &Pool{
 		logger:      logrus.StandardLogger(),
-		newExecutor: func(cloud.Instance) Executor { return &stubExecutor{} },
+		newExecutor: func(cloud.Instance) Executor { return stubExecutor{} },
 		instanceSet: &throttledInstanceSet{InstanceSet: lameInstanceSet},
 		instanceTypes: arvados.InstanceTypeMap{
 			type1.Name: type1,
@@ -186,13 +185,3 @@ func (suite *PoolSuite) wait(c *check.C, pool *Pool, notify <-chan struct{}, rea
 	}
 	c.Check(ready(), check.Equals, true)
 }
-
-type stubExecutor struct{}
-
-func (*stubExecutor) SetTarget(cloud.ExecutorTarget) {}
-
-func (*stubExecutor) Execute(env map[string]string, cmd string, stdin io.Reader) ([]byte, []byte, error) {
-	return nil, nil, nil
-}
-
-func (*stubExecutor) Close() {}

@@ -50,9 +50,7 @@ type StubDriver struct {
 }
 
 // InstanceSet returns a new *StubInstanceSet.
-func (sd *StubDriver) InstanceSet(params map[string]interface{}, id cloud.InstanceSetID,
-	logger logrus.FieldLogger) (cloud.InstanceSet, error) {
-
+func (sd *StubDriver) InstanceSet(params map[string]interface{}, id cloud.InstanceSetID, logger logrus.FieldLogger) (cloud.InstanceSet, error) {
 	sis := StubInstanceSet{
 		driver:  sd,
 		servers: map[cloud.InstanceID]*StubVM{},

@@ -6,6 +6,7 @@ package worker
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -144,38 +145,65 @@ func (wkr *worker) ProbeAndUpdate() {
 	}
 }
 
-// should be called in a new goroutine
+// probeAndUpdate calls probeBooted and/or probeRunning if needed, and
+// updates state accordingly.
+//
+// In StateUnknown: Call both probeBooted and probeRunning.
+// In StateBooting: Call probeBooted; if successful, call probeRunning.
+// In StateRunning: Call probeRunning.
+// In StateIdle: Call probeRunning.
+// In StateShutdown: Do nothing.
+//
+// If both probes succeed, wkr.state changes to
+// StateIdle/StateRunning.
+//
+// If probeRunning succeeds, wkr.running is updated. (This means
+// wkr.running might be non-empty even in StateUnknown, if the boot
+// probe failed.)
+//
+// probeAndUpdate should be called in a new goroutine.
 func (wkr *worker) probeAndUpdate() {
 	wkr.mtx.Lock()
 	updated := wkr.updated
-	needProbeRunning := wkr.state == StateRunning || wkr.state == StateIdle
-	needProbeBooted := wkr.state == StateUnknown || wkr.state == StateBooting
+	initialState := wkr.state
 	wkr.mtx.Unlock()
-	if !needProbeBooted && !needProbeRunning {
-		return
-	}
 
 	var (
+		booted   bool
 		ctrUUIDs []string
 		ok       bool
 		stderr   []byte
 	)
-	if needProbeBooted {
-		ok, stderr = wkr.probeBooted()
-		wkr.mtx.Lock()
-		if ok || wkr.state == StateRunning || wkr.state == StateIdle {
-			wkr.logger.Info("instance booted; will try probeRunning")
-			needProbeRunning = true
-		}
-		wkr.mtx.Unlock()
+
+	switch initialState {
+	case StateShutdown:
+		return
+	case StateIdle, StateRunning:
+		booted = true
+	case StateUnknown, StateBooting:
+	default:
+		panic(fmt.Sprintf("unknown state %s", initialState))
 	}
-	if needProbeRunning {
+
+	if !booted {
+		booted, stderr = wkr.probeBooted()
+		if !booted {
+			// Pretend this probe succeeded if another
+			// concurrent attempt succeeded.
+			wkr.mtx.Lock()
+			booted = wkr.state == StateRunning || wkr.state == StateIdle
+			wkr.mtx.Unlock()
+		} else {
+			wkr.logger.Info("instance booted; will try probeRunning")
+		}
+	}
+	if booted || wkr.state == StateUnknown {
 		ctrUUIDs, ok, stderr = wkr.probeRunning()
 	}
 	logger := wkr.logger.WithField("stderr", string(stderr))
 	wkr.mtx.Lock()
 	defer wkr.mtx.Unlock()
-	if !ok {
+	if !ok || (!booted && len(ctrUUIDs) == 0 && len(wkr.running) == 0) {
 		if wkr.state == StateShutdown && wkr.updated.After(updated) {
 			// Skip the logging noise if shutdown was
 			// initiated during probe.
@@ -186,10 +214,10 @@ func (wkr *worker) probeAndUpdate() {
 			"Duration": dur,
 			"State":    wkr.state,
 		})
-		if wkr.state == StateBooting && !needProbeRunning {
-			// If we know the instance has never passed a
-			// boot probe, it's not noteworthy that it
-			// hasn't passed this probe.
+		if !booted {
+			// While we're polling the VM to see if it's
+			// finished booting, failures are not
+			// noteworthy, so we log at Debug level.
 			logger.Debug("new instance not responding")
 		} else {
 			logger.Info("instance not responding")
@@ -234,11 +262,16 @@ func (wkr *worker) probeAndUpdate() {
 			changed = true
 		}
 	}
-	if wkr.state == StateUnknown || wkr.state == StateBooting {
+	if booted && (wkr.state == StateUnknown || wkr.state == StateBooting) {
 		// Note: this will change again below if
 		// len(wkr.starting)+len(wkr.running) > 0.
 		wkr.state = StateIdle
 		changed = true
+	} else if wkr.state == StateUnknown && len(running) != len(wkr.running) {
+		logger.WithFields(logrus.Fields{
+			"RunningContainers": len(running),
+			"State":             wkr.state,
+		}).Info("crunch-run probe succeeded, but boot probe is still failing")
 	}
 	if !changed {
 		return
@@ -251,7 +284,7 @@ func (wkr *worker) probeAndUpdate() {
 		wkr.state = StateIdle
 	}
 	wkr.updated = updateTime
-	if needProbeBooted {
+	if booted && (initialState == StateUnknown || initialState == StateBooting) {
 		logger.WithFields(logrus.Fields{
 			"RunningContainers": len(running),
 			"State":             wkr.state,
