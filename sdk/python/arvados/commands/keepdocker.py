@@ -133,6 +133,7 @@ def docker_images():
     next(list_output)  # Ignore the header line
     for line in list_output:
         words = line.split()
+        words = [word.decode() for word in words]
         size_index = len(words) - 2
         repo, tag, imageid = words[:3]
         ctime = ' '.join(words[3:size_index])
