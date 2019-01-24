@@ -288,21 +288,21 @@ pipeline_template_uuid_pattern = re.compile(r'[a-z0-9]{5}-p5p6p-[a-z0-9]{15}')
 
 def collectionResolver(api_client, document_loader, uri, num_retries=4):
     if uri.startswith("keep:") or uri.startswith("arvwf:"):
-        return uri
+        return uri.encode("utf-8").decode()
 
     if workflow_uuid_pattern.match(uri):
-        return "arvwf:%s#main" % (uri)
+        return u"arvwf:%s#main" % (uri)
 
     if pipeline_template_uuid_pattern.match(uri):
         pt = api_client.pipeline_templates().get(uuid=uri).execute(num_retries=num_retries)
-        return "keep:" + viewvalues(pt["components"])[0]["script_parameters"]["cwl:tool"]
+        return u"keep:" + viewvalues(pt["components"])[0]["script_parameters"]["cwl:tool"]
 
     p = uri.split("/")
     if arvados.util.keep_locator_pattern.match(p[0]):
-        return "keep:%s" % (uri)
+        return u"keep:%s" % (uri)
 
     if arvados.util.collection_uuid_pattern.match(p[0]):
-        return "keep:%s%s" % (api_client.collections().
+        return u"keep:%s%s" % (api_client.collections().
                               get(uuid=p[0]).execute()["portable_data_hash"],
                               uri[len(p[0]):])
 

@@ -162,7 +162,7 @@ class ArvadosContainer(JobBase):
                                 }
                             else:
                                 with vwd.open(p.target, "w") as n:
-                                    n.write(p.resolved.encode("utf-8"))
+                                    n.write(p.resolved)
 
                 def keepemptydirs(p):
                     if isinstance(p, arvados.collection.RichCollectionBase):

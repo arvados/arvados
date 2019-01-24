@@ -69,9 +69,9 @@ def versionstring():
 def arg_parser():  # type: () -> argparse.ArgumentParser
     parser = argparse.ArgumentParser(description='Arvados executor for Common Workflow Language')
 
-    parser.add_argument("--basedir", type=str,
+    parser.add_argument("--basedir",
                         help="Base directory used to resolve relative references in the input, default to directory of input object file or current directory (if inputs piped/provided on command line).")
-    parser.add_argument("--outdir", type=str, default=os.path.abspath('.'),
+    parser.add_argument("--outdir", default=os.path.abspath('.'),
                         help="Output directory, default current directory")
 
     parser.add_argument("--eval-timeout",
@@ -102,9 +102,9 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         default=True, dest="enable_reuse",
                         help="Disable job or container reuse")
 
-    parser.add_argument("--project-uuid", type=str, metavar="UUID", help="Project that will own the workflow jobs, if not provided, will go to home project.")
-    parser.add_argument("--output-name", type=str, help="Name to use for collection that stores the final output.", default=None)
-    parser.add_argument("--output-tags", type=str, help="Tags for the final output collection separated by commas, e.g., '--output-tags tag0,tag1,tag2'.", default=None)
+    parser.add_argument("--project-uuid", metavar="UUID", help="Project that will own the workflow jobs, if not provided, will go to home project.")
+    parser.add_argument("--output-name", help="Name to use for collection that stores the final output.", default=None)
+    parser.add_argument("--output-tags", help="Tags for the final output collection separated by commas, e.g., '--output-tags tag0,tag1,tag2'.", default=None)
     parser.add_argument("--ignore-docker-for-reuse", action="store_true",
                         help="Ignore Docker image version when deciding whether to reuse past jobs.",
                         default=False)
@@ -131,7 +131,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     exgroup.add_argument("--no-log-timestamps", action="store_false", help="No timestamp on logging lines",
                         default=True, dest="log_timestamps")
 
-    parser.add_argument("--api", type=str,
+    parser.add_argument("--api",
                         default=None, dest="work_api",
                         choices=("jobs", "containers"),
                         help="Select work submission API.  Default is 'jobs' if that API is available, otherwise 'containers'.")
@@ -144,7 +144,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         help="RAM (in MiB) required for the workflow runner job (default 1024)",
                         default=None)
 
-    parser.add_argument("--submit-runner-image", type=str,
+    parser.add_argument("--submit-runner-image",
                         help="Docker image for workflow runner job, default arvados/jobs:%s" % __version__,
                         default=None)
 
@@ -153,11 +153,11 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         default=False)
 
     exgroup = parser.add_mutually_exclusive_group()
-    exgroup.add_argument("--submit-request-uuid", type=str,
+    exgroup.add_argument("--submit-request-uuid",
                          default=None,
                          help="Update and commit to supplied container request instead of creating a new one (containers API only).",
                          metavar="UUID")
-    exgroup.add_argument("--submit-runner-cluster", type=str,
+    exgroup.add_argument("--submit-runner-cluster",
                          help="Submit workflow runner to a remote cluster (containers API only)",
                          default=None,
                          metavar="CLUSTER_ID")
@@ -166,7 +166,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         default=None,
                         help="Collection cache size (in MiB, default 256).")
 
-    parser.add_argument("--name", type=str,
+    parser.add_argument("--name",
                         help="Name to use for workflow execution instance.",
                         default=None)
 
@@ -178,7 +178,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("--enable-dev", action="store_true",
                         help="Enable loading and running development versions "
                              "of CWL spec.", default=False)
-    parser.add_argument('--storage-classes', default="default", type=str,
+    parser.add_argument('--storage-classes', default="default",
                         help="Specify comma separated list of storage classes to be used when saving workflow output to Keep.")
 
     parser.add_argument("--intermediate-output-ttl", type=int, metavar="N",
@@ -211,7 +211,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         default=False, dest="trash_intermediate",
                         help="Do not trash intermediate outputs (default).")
 
-    parser.add_argument("workflow", type=str, default=None, help="The workflow to execute")
+    parser.add_argument("workflow", default=None, help="The workflow to execute")
     parser.add_argument("job_order", nargs=argparse.REMAINDER, help="The input object to the workflow.")
 
     return parser

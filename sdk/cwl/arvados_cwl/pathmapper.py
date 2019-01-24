@@ -120,7 +120,7 @@ class ArvPathMapper(PathMapper):
             remap.append((obj["location"], path + "/" + obj["basename"]))
         elif obj["location"].startswith("_:") and "contents" in obj:
             with c.open(path + "/" + obj["basename"], "w") as f:
-                f.write(obj["contents"].encode("utf-8"))
+                f.write(obj["contents"])
             remap.append((obj["location"], path + "/" + obj["basename"]))
         else:
             raise SourceLine(obj, "location", WorkflowException).makeError("Don't know what to do with '%s'" % obj["location"])
