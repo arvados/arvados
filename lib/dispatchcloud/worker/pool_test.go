@@ -34,14 +34,6 @@ func (suite *PoolSuite) SetUpSuite(c *check.C) {
 	logrus.StandardLogger().SetLevel(logrus.DebugLevel)
 }
 
-func (suite *PoolSuite) TestStartContainer(c *check.C) {
-	// TODO: use an instanceSet stub with an SSH server
-}
-
-func (suite *PoolSuite) TestVerifyHostKey(c *check.C) {
-	// TODO: use an instanceSet stub with an SSH server
-}
-
 func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
 	lameInstanceSet := &test.LameInstanceSet{Hold: make(chan bool)}
 	type1 := arvados.InstanceType{Name: "a1s", ProviderType: "a1.small", VCPUs: 1, RAM: 1 * GiB, Price: .01}
