@@ -5,6 +5,7 @@
 package scheduler
 
 import (
+	"sync"
 	"time"
 
 	"git.curoverse.com/arvados.git/lib/dispatchcloud/test"
@@ -42,13 +43,24 @@ type stubPool struct {
 	creates   []arvados.InstanceType
 	starts    []string
 	shutdowns int
+	sync.Mutex
 }
 
-func (p *stubPool) AtQuota() bool                 { return p.atQuota }
-func (p *stubPool) Subscribe() <-chan struct{}    { return p.notify }
-func (p *stubPool) Unsubscribe(<-chan struct{})   {}
-func (p *stubPool) Running() map[string]time.Time { return p.running }
+func (p *stubPool) AtQuota() bool               { return p.atQuota }
+func (p *stubPool) Subscribe() <-chan struct{}  { return p.notify }
+func (p *stubPool) Unsubscribe(<-chan struct{}) {}
+func (p *stubPool) Running() map[string]time.Time {
+	p.Lock()
+	defer p.Unlock()
+	r := map[string]time.Time{}
+	for k, v := range p.running {
+		r[k] = v
+	}
+	return r
+}
 func (p *stubPool) Unallocated() map[arvados.InstanceType]int {
+	p.Lock()
+	defer p.Unlock()
 	r := map[arvados.InstanceType]int{}
 	for it, n := range p.unalloc {
 		r[it] = n
@@ -56,6 +68,8 @@ func (p *stubPool) Unallocated() map[arvados.InstanceType]int {
 	return r
 }
 func (p *stubPool) Create(it arvados.InstanceType) bool {
+	p.Lock()
+	defer p.Unlock()
 	p.creates = append(p.creates, it)
 	if p.canCreate < 1 {
 		return false
@@ -65,13 +79,17 @@ func (p *stubPool) Create(it arvados.InstanceType) bool {
 	return true
 }
 func (p *stubPool) KillContainer(uuid string) {
-	p.running[uuid] = time.Now()
+	p.Lock()
+	defer p.Unlock()
+	delete(p.running, uuid)
 }
 func (p *stubPool) Shutdown(arvados.InstanceType) bool {
 	p.shutdowns++
 	return false
 }
 func (p *stubPool) CountWorkers() map[worker.State]int {
+	p.Lock()
+	defer p.Unlock()
 	return map[worker.State]int{
 		worker.StateBooting: len(p.unalloc) - len(p.idle),
 		worker.StateIdle:    len(p.idle),
@@ -79,6 +97,8 @@ func (p *stubPool) CountWorkers() map[worker.State]int {
 	}
 }
 func (p *stubPool) StartContainer(it arvados.InstanceType, ctr arvados.Container) bool {
+	p.Lock()
+	defer p.Unlock()
 	p.starts = append(p.starts, ctr.UUID)
 	if p.idle[it] == 0 {
 		return false
@@ -87,6 +107,10 @@ func (p *stubPool) StartContainer(it arvados.InstanceType, ctr arvados.Container
 	p.unalloc[it]--
 	p.running[ctr.UUID] = time.Time{}
 	return true
+}
+
+func chooseType(ctr *arvados.Container) (arvados.InstanceType, error) {
+	return test.InstanceType(ctr.RuntimeConstraints.VCPUs), nil
 }
 
 var _ = check.Suite(&SchedulerSuite{})
@@ -100,9 +124,7 @@ type SchedulerSuite struct{}
 // create.
 func (*SchedulerSuite) TestUseIdleWorkers(c *check.C) {
 	queue := test.Queue{
-		ChooseType: func(ctr *arvados.Container) (arvados.InstanceType, error) {
-			return test.InstanceType(ctr.RuntimeConstraints.VCPUs), nil
-		},
+		ChooseType: chooseType,
 		Containers: []arvados.Container{
 			{
 				UUID:     test.ContainerUUID(1),
@@ -174,9 +196,7 @@ func (*SchedulerSuite) TestShutdownAtQuota(c *check.C) {
 			shouldCreate = append(shouldCreate, test.InstanceType(3))
 		}
 		queue := test.Queue{
-			ChooseType: func(ctr *arvados.Container) (arvados.InstanceType, error) {
-				return test.InstanceType(ctr.RuntimeConstraints.VCPUs), nil
-			},
+			ChooseType: chooseType,
 			Containers: []arvados.Container{
 				{
 					UUID:     test.ContainerUUID(2),
@@ -235,9 +255,7 @@ func (*SchedulerSuite) TestStartWhileCreating(c *check.C) {
 		canCreate: 4,
 	}
 	queue := test.Queue{
-		ChooseType: func(ctr *arvados.Container) (arvados.InstanceType, error) {
-			return test.InstanceType(ctr.RuntimeConstraints.VCPUs), nil
-		},
+		ChooseType: chooseType,
 		Containers: []arvados.Container{
 			{
 				// create a new worker
