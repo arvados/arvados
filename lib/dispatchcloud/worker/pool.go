@@ -204,7 +204,7 @@ func (wp *Pool) Unallocated() map[arvados.InstanceType]int {
 		creating[it] = len(times)
 	}
 	for _, wkr := range wp.workers {
-		if !(wkr.state == StateIdle || wkr.state == StateBooting || wkr.state == StateUnknown) || wkr.idleBehavior != IdleBehaviorRun {
+		if !(wkr.state == StateIdle || wkr.state == StateBooting || wkr.state == StateUnknown) || wkr.idleBehavior != IdleBehaviorRun || len(wkr.running) > 0 {
 			continue
 		}
 		it := wkr.instType
