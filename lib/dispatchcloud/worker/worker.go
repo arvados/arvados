@@ -57,8 +57,8 @@ type IdleBehavior string
 
 const (
 	IdleBehaviorRun   IdleBehavior = "run"   // run containers, or shutdown on idle timeout
-	IdleBehaviorHold               = "hold"  // don't shutdown or run more containers
-	IdleBehaviorDrain              = "drain" // shutdown immediately when idle
+	IdleBehaviorHold  IdleBehavior = "hold"  // don't shutdown or run more containers
+	IdleBehaviorDrain IdleBehavior = "drain" // shutdown immediately when idle
 )
 
 var validIdleBehavior = map[IdleBehavior]bool{
