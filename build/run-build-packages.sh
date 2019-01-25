@@ -294,9 +294,8 @@ package_go_binary cmd/arvados-server arvados-server \
     "Arvados server daemons"
 package_go_binary cmd/arvados-server arvados-controller \
     "Arvados cluster controller daemon"
-# No package until #14325
-#package_go_binary cmd/arvados-server crunch-dispatch-cloud \
-#    "Arvados cluster cloud dispatch"
+package_go_binary cmd/arvados-server crunch-dispatch-cloud \
+    "Arvados cluster cloud dispatch"
 package_go_binary sdk/go/crunchrunner crunchrunner \
     "Crunchrunner executes a command inside a container and uploads the output"
 package_go_binary services/arv-git-httpd arvados-git-httpd \
