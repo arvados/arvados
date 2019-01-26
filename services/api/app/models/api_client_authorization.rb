@@ -236,6 +236,13 @@ class ApiClientAuthorization < ArvadosModel
     'v2/' + uuid + '/' + api_token
   end
 
+  def salted_token(remote:)
+    if remote.nil?
+      token
+    end
+    'v2/' + uuid + '/' + OpenSSL::HMAC.hexdigest('sha1', api_token, remote)
+  end
+
   protected
 
   def permission_to_create

@@ -5,11 +5,13 @@
 require 'test_helper'
 
 class UserSessionsApiTest < ActionDispatch::IntegrationTest
-  def client_url
-    'https://wb.example.com'
+  def client_url(query_string: nil)
+    url = 'https://wb.example.com'
+    url += '?'+ query_string unless query_string.nil?
+    url
   end
 
-  def mock_auth_with(email: nil, username: nil, identity_url: nil)
+  def mock_auth_with(email: nil, username: nil, identity_url: nil, remote: nil)
     mock = {
       'provider' => 'josh_id',
       'uid' => 'https://edward.example.com',
@@ -23,8 +25,9 @@ class UserSessionsApiTest < ActionDispatch::IntegrationTest
     mock['info']['email'] = email unless email.nil?
     mock['info']['username'] = username unless username.nil?
     mock['info']['identity_url'] = identity_url unless identity_url.nil?
+    return_to = remote.nil? ? client_url : client_url(query_string: 'remote='+remote)
     post('/auth/josh_id/callback',
-         {return_to: client_url},
+         {return_to: return_to},
          {'omniauth.auth' => mock})
     assert_response :redirect, 'Did not redirect to client with token'
   end
@@ -67,6 +70,13 @@ class UserSessionsApiTest < ActionDispatch::IntegrationTest
     assert_not_nil(@response.redirect_url.index('api_token='),
                    'Expected api_token in query string of redirect url ' +
                    @response.redirect_url)
+  end
+
+  test 'issue salted token from omniauth callback with remote param' do
+    mock_auth_with(email: 'edward@example.com', remote: 'zbbbb')
+    api_client_auth = assigns(:api_client_auth)
+    assert_not_nil api_client_auth
+    assert_includes(@response.redirect_url, 'api_token=' + api_client_auth.salted_token(remote: 'zbbbb'))
   end
 
   # Test various combinations of auto_setup configuration and email

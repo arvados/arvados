@@ -95,7 +95,11 @@ class UserSessionsController < ApplicationController
 
     @redirect_to = root_path
     if params.has_key?(:return_to)
-      return send_api_token_to(params[:return_to], user)
+      rt = params[:return_to]
+      # Extracts query params as {param1 => [value1], param2 => [value2], ...}
+      p = rt.index('?').nil? ? {} : CGI::parse(rt[rt.index('?')+1..-1])
+      remote = p["remote"] && p["remote"][0]
+      return send_api_token_to(params[:return_to], user, remote)
     end
     redirect_to @redirect_to
   end
@@ -119,8 +123,6 @@ class UserSessionsController < ApplicationController
   # to save the return_to parameter (if it exists; see the application
   # controller). /auth/joshid bypasses the application controller.
   def login
-    auth_provider = if params[:auth_provider] then "auth_provider=#{CGI.escape(params[:auth_provider])}" else "" end
-
     if current_user and params[:return_to]
       # Already logged in; just need to send a token to the requesting
       # API client.
@@ -128,15 +130,25 @@ class UserSessionsController < ApplicationController
       # FIXME: if current_user has never authorized this app before,
       # ask for confirmation here!
 
-      send_api_token_to(params[:return_to], current_user)
-    elsif params[:return_to]
-      redirect_to "/auth/joshid?return_to=#{CGI.escape(params[:return_to])}&#{auth_provider}"
-    else
-      redirect_to "/auth/joshid?#{auth_provider}"
+      return send_api_token_to(params[:return_to], current_user, params[:remote])
     end
+    p = []
+    p << "auth_provider=#{CGI.escape(params[:auth_provider])}" if params[:auth_provider]
+    if params[:return_to]
+      remote_param = ''
+      if params[:remote]
+        # Encode remote param inside return_to, so that we'll get it on the
+        # callback after login
+        remote_param += if params[:return_to].include? '?' then '&' else '?' end
+        remote_param += "remote=#{params[:remote]}"
+      end
+      p << "return_to=#{CGI.escape(params[:return_to]+remote_param)}"
+    end
+
+    redirect_to "/auth/joshid?#{p.join('&')}"
   end
 
-  def send_api_token_to(callback_url, user)
+  def send_api_token_to(callback_url, user, remote=nil)
     # Give the API client a token for making API calls on behalf of
     # the authenticated user
 
@@ -147,19 +159,24 @@ class UserSessionsController < ApplicationController
         find_or_create_by(url_prefix: api_client_url_prefix)
     end
 
-    api_client_auth = ApiClientAuthorization.
+    @api_client_auth = ApiClientAuthorization.
       new(user: user,
           api_client: @api_client,
           created_by_ip_address: remote_ip,
           scopes: ["all"])
-    api_client_auth.save!
+    @api_client_auth.save!
 
     if callback_url.index('?')
       callback_url += '&'
     else
       callback_url += '?'
     end
-    callback_url += 'api_token=' + api_client_auth.token
+    if remote.nil?
+      token = @api_client_auth.token
+    else
+      token = @api_client_auth.salted_token(remote: remote)
+    end
+    callback_url += 'api_token=' + token
     redirect_to callback_url
   end
 
