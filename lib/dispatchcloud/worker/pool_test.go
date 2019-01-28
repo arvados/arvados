@@ -13,7 +13,6 @@ import (
 	"git.curoverse.com/arvados.git/lib/dispatchcloud/test"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
 
@@ -32,10 +31,6 @@ func (*lessChecker) Check(params []interface{}, names []string) (result bool, er
 var less = &lessChecker{&check.CheckerInfo{Name: "less", Params: []string{"obtained", "expected"}}}
 
 type PoolSuite struct{}
-
-func (suite *PoolSuite) SetUpSuite(c *check.C) {
-	logrus.StandardLogger().SetLevel(logrus.DebugLevel)
-}
 
 func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 	type1 := test.InstanceType(1)
@@ -67,7 +62,7 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 		}
 	}
 
-	logger := logrus.StandardLogger()
+	logger := test.Logger()
 	driver := &test.StubDriver{}
 	is, err := driver.InstanceSet(nil, "", logger)
 	c.Assert(err, check.IsNil)
@@ -129,7 +124,7 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 }
 
 func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
-	logger := logrus.StandardLogger()
+	logger := test.Logger()
 	driver := test.StubDriver{HoldCloudOps: true}
 	instanceSet, err := driver.InstanceSet(nil, "", logger)
 	c.Assert(err, check.IsNil)
@@ -138,7 +133,7 @@ func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
 	type2 := arvados.InstanceType{Name: "a2m", ProviderType: "a2.medium", VCPUs: 2, RAM: 2 * GiB, Price: .02}
 	type3 := arvados.InstanceType{Name: "a2l", ProviderType: "a2.large", VCPUs: 4, RAM: 4 * GiB, Price: .04}
 	pool := &Pool{
-		logger:      logrus.StandardLogger(),
+		logger:      logger,
 		newExecutor: func(cloud.Instance) Executor { return stubExecutor{} },
 		instanceSet: &throttledInstanceSet{InstanceSet: instanceSet},
 		instanceTypes: arvados.InstanceTypeMap{

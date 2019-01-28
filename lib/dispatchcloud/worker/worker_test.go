@@ -12,7 +12,6 @@ import (
 	"git.curoverse.com/arvados.git/lib/cloud"
 	"git.curoverse.com/arvados.git/lib/dispatchcloud/test"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
 
@@ -21,7 +20,7 @@ var _ = check.Suite(&WorkerSuite{})
 type WorkerSuite struct{}
 
 func (suite *WorkerSuite) TestProbeAndUpdate(c *check.C) {
-	logger := logrus.StandardLogger()
+	logger := test.Logger()
 	bootTimeout := time.Minute
 	probeTimeout := time.Second
 

@@ -11,13 +11,10 @@ import (
 	"git.curoverse.com/arvados.git/lib/dispatchcloud/test"
 	"git.curoverse.com/arvados.git/lib/dispatchcloud/worker"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
 
 var (
-	logger = logrus.StandardLogger()
-
 	// arbitrary example container UUIDs
 	uuids = func() (r []string) {
 		for i := 0; i < 16; i++ {
@@ -177,7 +174,7 @@ func (*SchedulerSuite) TestUseIdleWorkers(c *check.C) {
 		running:   map[string]time.Time{},
 		canCreate: 0,
 	}
-	New(logger, &queue, &pool, time.Millisecond, time.Millisecond).runQueue()
+	New(test.Logger(), &queue, &pool, time.Millisecond, time.Millisecond).runQueue()
 	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{test.InstanceType(1)})
 	c.Check(pool.starts, check.DeepEquals, []string{test.ContainerUUID(4)})
 	c.Check(pool.running, check.HasLen, 1)
@@ -232,7 +229,7 @@ func (*SchedulerSuite) TestShutdownAtQuota(c *check.C) {
 			starts:    []string{},
 			canCreate: 0,
 		}
-		New(logger, &queue, &pool, time.Millisecond, time.Millisecond).runQueue()
+		New(test.Logger(), &queue, &pool, time.Millisecond, time.Millisecond).runQueue()
 		c.Check(pool.creates, check.DeepEquals, shouldCreate)
 		c.Check(pool.starts, check.DeepEquals, []string{})
 		c.Check(pool.shutdowns, check.Not(check.Equals), 0)
@@ -320,7 +317,7 @@ func (*SchedulerSuite) TestStartWhileCreating(c *check.C) {
 		},
 	}
 	queue.Update()
-	New(logger, &queue, &pool, time.Millisecond, time.Millisecond).runQueue()
+	New(test.Logger(), &queue, &pool, time.Millisecond, time.Millisecond).runQueue()
 	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{test.InstanceType(2), test.InstanceType(1)})
 	c.Check(pool.starts, check.DeepEquals, []string{uuids[6], uuids[5], uuids[3], uuids[2]})
 	running := map[string]bool{}

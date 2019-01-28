@@ -16,7 +16,6 @@ import (
 
 	"git.curoverse.com/arvados.git/lib/dispatchcloud/test"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 	check "gopkg.in/check.v1"
 )
@@ -27,12 +26,6 @@ type DispatcherSuite struct {
 	cluster    *arvados.Cluster
 	stubDriver *test.StubDriver
 	disp       *dispatcher
-}
-
-func (s *DispatcherSuite) SetUpSuite(c *check.C) {
-	if os.Getenv("ARVADOS_DEBUG") != "" {
-		logrus.StandardLogger().SetLevel(logrus.DebugLevel)
-	}
 }
 
 func (s *DispatcherSuite) SetUpTest(c *check.C) {
