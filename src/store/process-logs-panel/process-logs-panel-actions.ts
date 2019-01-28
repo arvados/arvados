@@ -16,6 +16,8 @@ import { ResourceEventMessage } from '~/websocket/resource-event-message';
 import { getProcess } from '~/store/processes/process';
 import { FilterBuilder } from "~/services/api/filter-builder";
 import { OrderBuilder } from "~/services/api/order-builder";
+import { navigateToCollection } from '~/store/navigation/navigation-action';
+import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 
 export const processLogsPanelActions = unionize({
     RESET_PROCESS_LOGS_PANEL: ofType<{}>(),
@@ -97,6 +99,16 @@ const createInitialLogPanelState = (logResources: LogResource[]) => {
 
 const logsToLines = (logs: LogResource[]) =>
     logs.map(({ properties }) => properties.text);
+
+export const navigateToLogCollection = (uuid: string) =>
+    async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        try {
+            await services.collectionService.get(uuid);
+            dispatch<any>(navigateToCollection(uuid));
+        } catch {
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'This collection does not exists!', hideDuration: 2000, kind: SnackbarKind.ERROR }));
+        }
+    };
 
 const MAX_AMOUNT_OF_LOGS = 10000;
 

@@ -9,8 +9,8 @@ import { Dispatch } from 'redux';
 import { openProcessContextMenu } from '~/store/context-menu/context-menu-actions';
 import { ProcessLogPanelRootDataProps, ProcessLogPanelRootActionProps, ProcessLogPanelRoot } from './process-log-panel-root';
 import { getProcessPanelLogs } from '~/store/process-logs-panel/process-logs-panel';
-import { setProcessLogsPanelFilter } from '~/store/process-logs-panel/process-logs-panel-actions';
-import { getProcessLogsPanelCurrentUuid } from '../../store/process-logs-panel/process-logs-panel';
+import { setProcessLogsPanelFilter, navigateToLogCollection } from '~/store/process-logs-panel/process-logs-panel-actions';
+import { getProcessLogsPanelCurrentUuid } from '~/store/process-logs-panel/process-logs-panel';
 
 export interface Log {
     object_uuid: string;
@@ -42,6 +42,9 @@ const mapDispatchToProps = (dispatch: Dispatch): ProcessLogPanelRootActionProps 
     },
     onChange: filter => {
         dispatch(setProcessLogsPanelFilter(filter.value));
+    },
+    navigateToLogCollection: (uuid: string) => {
+        dispatch<any>(navigateToLogCollection(uuid));
     }
 });
 

@@ -43,8 +43,12 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.customs.colors.green700
     },
     link: {
-        alignSelf: 'flex-end',
-        textAlign: 'right'
+        fontSize: '0.875rem',
+        color: theme.palette.primary.main,
+        textAlign: 'right',
+        '&:hover': {
+            cursor: 'pointer'
+        }
     }
 });
 
@@ -55,6 +59,7 @@ interface ProcessLogMainCardDataProps {
 
 export interface ProcessLogMainCardActionProps {
     onContextMenu: (event: React.MouseEvent<any>, process: Process) => void;
+    navigateToLogCollection: (uuid: string) => void;
 }
 
 export type ProcessLogMainCardProps = ProcessLogMainCardDataProps
@@ -64,7 +69,7 @@ export type ProcessLogMainCardProps = ProcessLogMainCardDataProps
     & ProcessLogFormActionProps;
 
 export const ProcessLogMainCard = withStyles(styles)(
-    ({ classes, process, selectedFilter, filters, onChange, lines, onContextMenu }: ProcessLogMainCardProps & WithStyles<CssRules>) =>
+    ({ classes, process, selectedFilter, filters, onChange, lines, onContextMenu, navigateToLogCollection }: ProcessLogMainCardProps & WithStyles<CssRules>) =>
         <Grid item xs={12}>
             <Link to={`/processes/${process.containerRequest.uuid}`} className={classes.backLink}>
                 <BackIcon className={classes.backIcon} /> Back
@@ -96,9 +101,9 @@ export const ProcessLogMainCard = withStyles(styles)(
                                     <ProcessLogForm selectedFilter={selectedFilter} filters={filters} onChange={onChange} />
                                 </Grid>
                                 <Grid item xs={6} className={classes.link}>
-                                    <Typography component='div'>
+                                    <span onClick={() => navigateToLogCollection(process.containerRequest.logUuid!)}>
                                         Go to Log collection
-                                </Typography>
+                                    </span>
                                 </Grid>
                             </Grid>
                             <Grid item xs>
