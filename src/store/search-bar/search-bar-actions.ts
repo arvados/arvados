@@ -10,8 +10,7 @@ import { RootState } from '~/store/store';
 import { initUserProject, treePickerActions } from '~/store/tree-picker/tree-picker-actions';
 import { ServiceRepository } from '~/services/services';
 import { FilterBuilder } from "~/services/api/filter-builder";
-import { ResourceKind } from '~/models/resource';
-import { GroupClass } from '~/models/group';
+import { ResourceKind, isResourceUuid, extractUuidKind } from '~/models/resource';
 import { SearchView } from '~/store/search-bar/search-bar-reducer';
 import { navigateTo, navigateToSearchResults } from '~/store/navigation/navigation-action';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
@@ -404,8 +403,8 @@ export const getSearchSessions = (clusterId: string | undefined, sessions: Sessi
 
 export const getFilters = (filterName: string, searchValue: string, sq: ParseSearchQuery): string => {
     const filter = new FilterBuilder();
-
-    const resourceKind = getSearchQueryFirstProp(sq, 'type') as ResourceKind;
+    const isSearchQueryUuid = isResourceUuid(sq.values[0]);
+    const resourceKind = getSearchQueryFirstProp(sq, 'type') as ResourceKind; 
 
     let prefix = '';
     switch (resourceKind) {
@@ -422,7 +421,7 @@ export const getFilters = (filterName: string, searchValue: string, sq: ParseSea
 
     const isTrashed = getSearchQueryPropValue(sq, 'is', 'trashed');
 
-    if (!sq.hasKeywords) {
+    if (!sq.hasKeywords && !isSearchQueryUuid) {
         filter
             .addILike(filterName, searchValue, GroupContentsResourcePrefix.COLLECTION)
             .addILike(filterName, searchValue, GroupContentsResourcePrefix.PROJECT)
@@ -433,7 +432,15 @@ export const getFilters = (filterName: string, searchValue: string, sq: ParseSea
         if (isTrashed) {
             filter.addILike(filterName, searchValue, GroupContentsResourcePrefix.PROCESS);
         }
-    } else {
+    } else if (!sq.hasKeywords && isSearchQueryUuid) {
+        filter
+            .addILike('uuid', searchValue, GroupContentsResourcePrefix.COLLECTION)
+            .addILike('uuid', searchValue, GroupContentsResourcePrefix.PROJECT)
+            .addILike('uuid', searchValue, GroupContentsResourcePrefix.PROCESS)
+            .addEqual('is_trashed', false, GroupContentsResourcePrefix.COLLECTION)
+            .addEqual('is_trashed', false, GroupContentsResourcePrefix.PROJECT);
+    }
+    else {
         if (prefix) {
             sq.values.forEach(v =>
                 filter.addILike(filterName, v, prefix)
@@ -451,6 +458,13 @@ export const getFilters = (filterName: string, searchValue: string, sq: ParseSea
                     filter.addILike(filterName, v, GroupContentsResourcePrefix.PROCESS);
                 }
             });
+        }
+        if (prefix && !isTrashed) {
+            sq.values.forEach(v =>
+                filter.addILike(filterName, v, prefix)
+                    .addEqual('is_trashed', false, GroupContentsResourcePrefix.COLLECTION)
+                    .addEqual('is_trashed', false, GroupContentsResourcePrefix.PROJECT)
+            );
         }
 
         if (isTrashed) {

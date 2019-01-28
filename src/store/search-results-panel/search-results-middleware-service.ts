@@ -26,6 +26,7 @@ import { joinFilters } from '~/services/api/filter-builder';
 import { DataColumns } from '~/components/data-table/data-table';
 import { serializeResourceTypeFilters } from '~/store//resource-type-filters/resource-type-filters';
 import { ProjectPanelColumnNames } from '~/views/project-panel/project-panel';
+import * as _ from 'lodash';
 
 export class SearchResultsMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -46,29 +47,46 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
         }
 
         try {
-            const params = getParams(dataExplorer, searchValue, sq);
-            const lists: ListResults<GroupContentsResource>[] = await Promise.all(sessions.map(session =>
-                this.services.groupsService.contents('', params, session)
+            const nameParams = getParams(dataExplorer, searchValue, sq, 'name');
+
+            const nameLists: ListResults<GroupContentsResource>[] = await Promise.all(sessions.map(session =>
+                this.services.groupsService.contents('', nameParams, session)
             ));
 
-            const items = lists
+            const nameItems = nameLists
                 .reduce((items, list) => items.concat(list.items), [] as GroupContentsResource[]);
 
-            const itemsAvailable = lists
+            const nameItemsAvailable = nameLists
                 .reduce((itemsAvailable, list) => itemsAvailable + list.itemsAvailable, 0);
 
-            const list: ListResults<GroupContentsResource> = {
-                ...params,
+            const descriptionParams = getParams(dataExplorer, searchValue, sq, 'description');
+
+            const descriptionLists: ListResults<GroupContentsResource>[] = await Promise.all(sessions.map(session =>
+                this.services.groupsService.contents('', descriptionParams, session)
+            ));
+
+            const descriptionItems = descriptionLists
+                .reduce((items, list) => items.concat(list.items), [] as GroupContentsResource[]);
+
+            const descriptionItemsAvailable = descriptionLists
+                .reduce((itemsAvailable, list) => itemsAvailable + list.itemsAvailable, 0);
+
+            const items = nameItems.concat(descriptionItems);
+
+            const uniqueItems = _.uniqBy(items, 'uuid');
+
+            const mainList: ListResults<GroupContentsResource> = {
+                ...nameParams,
                 kind: '',
-                items,
-                itemsAvailable
+                items: uniqueItems,
+                itemsAvailable: nameItemsAvailable + descriptionItemsAvailable
             };
 
-            api.dispatch(updateResources(list.items));
+            api.dispatch(updateResources(mainList.items));
+
             api.dispatch(criteriaChanged
-                ? setItems(list)
-                : appendItems(list)
-            );
+                ? setItems(mainList)
+                : appendItems(mainList));
 
         } catch {
             api.dispatch(couldNotFetchSearchResults());
@@ -78,16 +96,16 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
 
 const typeFilters = (columns: DataColumns<string>) => serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.TYPE));
 
-export const getParams = (dataExplorer: DataExplorer, searchValue: string, sq: ParseSearchQuery) => ({
+export const getParams = (dataExplorer: DataExplorer, searchValue: string, sq: ParseSearchQuery, filter: string) => ({
     ...dataExplorerToListParams(dataExplorer),
     filters: joinFilters(
-        getFilters('name', searchValue, sq),
+        getFilters(filter, searchValue, sq),
         typeFilters(dataExplorer.columns)),
-    order: getOrder(dataExplorer),
+    order: getOrder(dataExplorer, filter),
     includeTrash: true
 });
 
-const getOrder = (dataExplorer: DataExplorer) => {
+const getOrder = (dataExplorer: DataExplorer, orderBy: any) => {
     const sortColumn = getSortColumn(dataExplorer);
     const order = new OrderBuilder<GroupContentsResource>();
     if (sortColumn) {
@@ -95,7 +113,7 @@ const getOrder = (dataExplorer: DataExplorer) => {
             ? OrderDirection.ASC
             : OrderDirection.DESC;
 
-        const columnName = sortColumn && sortColumn.name === SearchResultsPanelColumnNames.NAME ? "name" : "modifiedAt";
+        const columnName = sortColumn && sortColumn.name === SearchResultsPanelColumnNames.NAME ? orderBy : "modifiedAt";
         return order
             .addOrder(sortDirection, columnName, GroupContentsResourcePrefix.COLLECTION)
             .addOrder(sortDirection, columnName, GroupContentsResourcePrefix.PROCESS)
