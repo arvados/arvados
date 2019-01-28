@@ -18,7 +18,7 @@ const styles: StyleRulesCallback<CssRules> = () => ({
 const theme = createMuiTheme({
     overrides: {
         MuiTypography: {
-            body1: {
+            body2: {
                 color: grey["200"]
             },
             root: {
