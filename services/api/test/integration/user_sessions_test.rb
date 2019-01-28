@@ -13,7 +13,7 @@ class UserSessionsApiTest < ActionDispatch::IntegrationTest
     url
   end
 
-  def mock_auth_with(email: nil, username: nil, identity_url: nil, remote: nil)
+  def mock_auth_with(email: nil, username: nil, identity_url: nil, remote: nil, expected_response: :redirect)
     mock = {
       'provider' => 'josh_id',
       'uid' => 'https://edward.example.com',
@@ -30,7 +30,12 @@ class UserSessionsApiTest < ActionDispatch::IntegrationTest
     post('/auth/josh_id/callback',
          {return_to: client_url(remote: remote)},
          {'omniauth.auth' => mock})
-    assert_response :redirect, 'Did not redirect to client with token'
+
+    errors = {
+      :redirect => 'Did not redirect to client with token',
+      400 => 'Did not return Bad Request error',
+    }
+    assert_response expected_response, errors[expected_response]
   end
 
   test 'assign username from sso' do
@@ -78,6 +83,10 @@ class UserSessionsApiTest < ActionDispatch::IntegrationTest
     api_client_auth = assigns(:api_client_auth)
     assert_not_nil api_client_auth
     assert_includes(@response.redirect_url, 'api_token=' + api_client_auth.salted_token(remote: 'zbbbb'))
+  end
+
+  test 'error out from omniauth callback with invalid remote param' do
+    mock_auth_with(email: 'edward@example.com', remote: 'invalid_cluster_id', expected_response: 400)
   end
 
   # Test various combinations of auto_setup configuration and email

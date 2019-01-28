@@ -27,4 +27,12 @@ class UserSessionsControllerTest < ActionController::TestCase
     assert_not_nil api_client_auth
     assert_includes(@response.redirect_url, 'api_token='+api_client_auth.salted_token(remote: remote_prefix))
   end
+
+  test "login with malformed remote param returns an error" do
+    authorize_with :inactive
+    api_client_page = 'http://client.example.com/home'
+    remote_prefix = 'invalid_cluster_id'
+    get :login, return_to: api_client_page, remote: remote_prefix
+    assert_response 400
+  end
 end

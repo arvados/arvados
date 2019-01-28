@@ -99,6 +99,9 @@ class UserSessionsController < ApplicationController
       # encoding the remote=zbbbb parameter passed by a client asking for a salted
       # token.
       remote, return_to_url = params[:return_to].split(',', 2)
+      if remote !~ /^[0-9a-z]{5}$/ && remote != ""
+        return send_error 'Invalid remote cluster id', status: 400
+      end
       remote = nil if remote == ''
       return send_api_token_to(return_to_url, user, remote)
     end
@@ -124,6 +127,9 @@ class UserSessionsController < ApplicationController
   # to save the return_to parameter (if it exists; see the application
   # controller). /auth/joshid bypasses the application controller.
   def login
+    if params[:remote] !~ /^[0-9a-z]{5}$/ && !params[:remote].nil?
+      return send_error 'Invalid remote cluster id', status: 400
+    end
     if current_user and params[:return_to]
       # Already logged in; just need to send a token to the requesting
       # API client.
@@ -139,7 +145,7 @@ class UserSessionsController < ApplicationController
       # Encode remote param inside callback's return_to, so that we'll get it on
       # create() after login.
       remote_param = params[:remote].nil? ? '' : params[:remote]
-      p << "return_to=#{CGI.escape(remote_param)},#{CGI.escape(params[:return_to])}"
+      p << "return_to=#{CGI.escape(remote_param + ',' + params[:return_to])}"
     end
     redirect_to "/auth/joshid?#{p.join('&')}"
   end
