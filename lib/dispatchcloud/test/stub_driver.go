@@ -46,11 +46,19 @@ type StubDriver struct {
 	MinTimeBetweenCreateCalls    time.Duration
 	MinTimeBetweenInstancesCalls time.Duration
 
+	// If true, Create and Destroy calls block until Release() is
+	// called.
+	HoldCloudOps bool
+
 	instanceSets []*StubInstanceSet
+	holdCloudOps chan bool
 }
 
 // InstanceSet returns a new *StubInstanceSet.
 func (sd *StubDriver) InstanceSet(params map[string]interface{}, id cloud.InstanceSetID, logger logrus.FieldLogger) (cloud.InstanceSet, error) {
+	if sd.holdCloudOps == nil {
+		sd.holdCloudOps = make(chan bool)
+	}
 	sis := StubInstanceSet{
 		driver:  sd,
 		servers: map[cloud.InstanceID]*StubVM{},
@@ -66,6 +74,15 @@ func (sd *StubDriver) InstanceSets() []*StubInstanceSet {
 	return sd.instanceSets
 }
 
+// ReleaseCloudOps releases n pending Create/Destroy calls. If there
+// are fewer than n blocked calls pending, it waits for the rest to
+// arrive.
+func (sd *StubDriver) ReleaseCloudOps(n int) {
+	for i := 0; i < n; i++ {
+		<-sd.holdCloudOps
+	}
+}
+
 type StubInstanceSet struct {
 	driver  *StubDriver
 	servers map[cloud.InstanceID]*StubVM
@@ -77,6 +94,9 @@ type StubInstanceSet struct {
 }
 
 func (sis *StubInstanceSet) Create(it arvados.InstanceType, image cloud.ImageID, tags cloud.InstanceTags, authKey ssh.PublicKey) (cloud.Instance, error) {
+	if sis.driver.HoldCloudOps {
+		sis.driver.holdCloudOps <- true
+	}
 	sis.mtx.Lock()
 	defer sis.mtx.Unlock()
 	if sis.stopped {
@@ -295,11 +315,14 @@ func (si stubInstance) Address() string {
 }
 
 func (si stubInstance) Destroy() error {
+	sis := si.svm.sis
+	if sis.driver.HoldCloudOps {
+		sis.driver.holdCloudOps <- true
+	}
 	if math_rand.Float64() < si.svm.sis.driver.ErrorRateDestroy {
 		return errors.New("instance could not be destroyed")
 	}
 	si.svm.SSHService.Close()
-	sis := si.svm.sis
 	sis.mtx.Lock()
 	defer sis.mtx.Unlock()
 	delete(sis.servers, si.svm.id)

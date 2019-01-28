@@ -24,10 +24,9 @@ import (
 var _ = check.Suite(&DispatcherSuite{})
 
 type DispatcherSuite struct {
-	cluster     *arvados.Cluster
-	instanceSet *test.LameInstanceSet
-	stubDriver  *test.StubDriver
-	disp        *dispatcher
+	cluster    *arvados.Cluster
+	stubDriver *test.StubDriver
+	disp       *dispatcher
 }
 
 func (s *DispatcherSuite) SetUpSuite(c *check.C) {

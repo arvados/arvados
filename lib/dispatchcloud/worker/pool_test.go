@@ -129,14 +129,18 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 }
 
 func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
-	lameInstanceSet := &test.LameInstanceSet{Hold: make(chan bool)}
+	logger := logrus.StandardLogger()
+	driver := test.StubDriver{HoldCloudOps: true}
+	instanceSet, err := driver.InstanceSet(nil, "", logger)
+	c.Assert(err, check.IsNil)
+
 	type1 := arvados.InstanceType{Name: "a1s", ProviderType: "a1.small", VCPUs: 1, RAM: 1 * GiB, Price: .01}
 	type2 := arvados.InstanceType{Name: "a2m", ProviderType: "a2.medium", VCPUs: 2, RAM: 2 * GiB, Price: .02}
 	type3 := arvados.InstanceType{Name: "a2l", ProviderType: "a2.large", VCPUs: 4, RAM: 4 * GiB, Price: .04}
 	pool := &Pool{
 		logger:      logrus.StandardLogger(),
 		newExecutor: func(cloud.Instance) Executor { return stubExecutor{} },
-		instanceSet: &throttledInstanceSet{InstanceSet: lameInstanceSet},
+		instanceSet: &throttledInstanceSet{InstanceSet: instanceSet},
 		instanceTypes: arvados.InstanceTypeMap{
 			type1.Name: type1,
 			type2.Name: type2,
@@ -160,7 +164,7 @@ func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
 	c.Check(pool.Unallocated()[type3], check.Equals, 1)
 
 	// Unblock the pending Create calls.
-	go lameInstanceSet.Release(4)
+	go driver.ReleaseCloudOps(4)
 
 	// Wait for each instance to either return from its Create
 	// call, or show up in a poll.
@@ -174,7 +178,7 @@ func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
 	ivs := suite.instancesByType(pool, type3)
 	c.Assert(ivs, check.HasLen, 1)
 	type3instanceID := ivs[0].Instance
-	err := pool.SetIdleBehavior(type3instanceID, IdleBehaviorHold)
+	err = pool.SetIdleBehavior(type3instanceID, IdleBehaviorHold)
 	c.Check(err, check.IsNil)
 
 	// Check admin-hold behavior: refuse to shutdown, and don't
@@ -240,7 +244,7 @@ func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
 	// if a node still appears in the provider list after a
 	// previous attempt, so there might be more than 4 Destroy
 	// calls to unblock.
-	go lameInstanceSet.Release(4444)
+	go driver.ReleaseCloudOps(4444)
 
 	// Sync until all instances disappear from the provider list.
 	suite.wait(c, pool, notify, func() bool {
