@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/stats"
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 type contextKey struct {

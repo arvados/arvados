@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -163,17 +164,17 @@ type InstanceSet interface {
 //
 //	var _ = registerCloudDriver("example", &exampleDriver{})
 type Driver interface {
-	InstanceSet(config map[string]interface{}, id InstanceSetID) (InstanceSet, error)
+	InstanceSet(config map[string]interface{}, id InstanceSetID, logger logrus.FieldLogger) (InstanceSet, error)
 }
 
 // DriverFunc makes a Driver using the provided function as its
 // InstanceSet method. This is similar to http.HandlerFunc.
-func DriverFunc(fn func(config map[string]interface{}, id InstanceSetID) (InstanceSet, error)) Driver {
+func DriverFunc(fn func(config map[string]interface{}, id InstanceSetID, logger logrus.FieldLogger) (InstanceSet, error)) Driver {
 	return driverFunc(fn)
 }
 
-type driverFunc func(config map[string]interface{}, id InstanceSetID) (InstanceSet, error)
+type driverFunc func(config map[string]interface{}, id InstanceSetID, logger logrus.FieldLogger) (InstanceSet, error)
 
-func (df driverFunc) InstanceSet(config map[string]interface{}, id InstanceSetID) (InstanceSet, error) {
-	return df(config, id)
+func (df driverFunc) InstanceSet(config map[string]interface{}, id InstanceSetID, logger logrus.FieldLogger) (InstanceSet, error) {
+	return df(config, id, logger)
 }

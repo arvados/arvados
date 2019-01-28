@@ -5,6 +5,13 @@
 from __future__ import absolute_import
 from . import config
 
+import re
+
+def escape(path):
+    path = re.sub('\\\\', lambda m: '\\134', path)
+    path = re.sub('[:\000-\040]', lambda m: "\\%03o" % ord(m.group(0)), path)
+    return path
+
 def normalize_stream(stream_name, stream):
     """Take manifest stream and return a list of tokens in normalized format.
 
@@ -16,7 +23,7 @@ def normalize_stream(stream_name, stream):
 
     """
 
-    stream_name = stream_name.replace(' ', '\\040')
+    stream_name = escape(stream_name)
     stream_tokens = [stream_name]
     sortedfiles = list(stream.keys())
     sortedfiles.sort()
@@ -38,7 +45,7 @@ def normalize_stream(stream_name, stream):
     for streamfile in sortedfiles:
         # Add in file segments
         current_span = None
-        fout = streamfile.replace(' ', '\\040')
+        fout = escape(streamfile)
         for segment in stream[streamfile]:
             # Collapse adjacent segments
             streamoffset = blocks[segment.locator] + segment.segment_offset

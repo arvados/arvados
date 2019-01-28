@@ -21,9 +21,9 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/auth"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
-	"github.com/Sirupsen/logrus"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -121,7 +121,7 @@ func (disp *dispatcher) initialize() {
 		disp.sshKey = key
 	}
 
-	instanceSet, err := newInstanceSet(disp.Cluster, disp.InstanceSetID)
+	instanceSet, err := newInstanceSet(disp.Cluster, disp.InstanceSetID, disp.logger)
 	if err != nil {
 		disp.logger.Fatalf("error initializing driver: %s", err)
 	}

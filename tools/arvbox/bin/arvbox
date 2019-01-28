@@ -50,6 +50,10 @@ if test -z "$COMPOSER_ROOT" ; then
     COMPOSER_ROOT="$ARVBOX_DATA/composer"
 fi
 
+if test -z "$WORKBENCH2_ROOT" ; then
+    WORKBENCH2_ROOT="$ARVBOX_DATA/workbench2"
+fi
+
 PG_DATA="$ARVBOX_DATA/postgres"
 VAR_DATA="$ARVBOX_DATA/var"
 PASSENGER="$ARVBOX_DATA/passenger"
@@ -99,9 +103,10 @@ wait_for_arvbox() {
     docker logs -f $ARVBOX_CONTAINER > $FF &
     LOGPID=$!
     while read line ; do
-        echo $line
-        if echo $line | grep "Workbench is running at" >/dev/null ; then
+        if echo $line | grep "ok: down: ready:" >/dev/null ; then
             kill $LOGPID
+	else
+	    echo $line
         fi
     done < $FF
     rm $FF
@@ -158,7 +163,8 @@ run() {
         echo $localip > $iptemp
         chmod og+r $iptemp
         PUBLIC="--volume=$iptemp:/var/run/localip_override
-              --publish=80:80
+              --publish=443:443
+              --publish=3001:3001
               --publish=8000:8000
               --publish=8900:8900
               --publish=9001:9001
@@ -205,6 +211,9 @@ run() {
         if ! test -d "$COMPOSER_ROOT" ; then
             git clone https://github.com/curoverse/composer.git "$COMPOSER_ROOT"
         fi
+        if ! test -d "$WORKBENCH2_ROOT" ; then
+            git clone https://github.com/curoverse/arvados-workbench2.git "$WORKBENCH2_ROOT"
+        fi
 
         if test "$CONFIG" = test ; then
 
@@ -218,6 +227,7 @@ run() {
                        "--volume=$ARVADOS_ROOT:/usr/src/arvados:rw" \
                        "--volume=$SSO_ROOT:/usr/src/sso:rw" \
                        "--volume=$COMPOSER_ROOT:/usr/src/composer:rw" \
+                       "--volume=$WORKBENCH2_ROOT:/usr/src/workbench2:rw" \
                        "--volume=$PG_DATA:/var/lib/postgresql:rw" \
                        "--volume=$VAR_DATA:/var/lib/arvados:rw" \
                        "--volume=$PASSENGER:/var/lib/passenger:rw" \
@@ -261,6 +271,7 @@ run() {
                    "--volume=$ARVADOS_ROOT:/usr/src/arvados:rw" \
                    "--volume=$SSO_ROOT:/usr/src/sso:rw" \
                    "--volume=$COMPOSER_ROOT:/usr/src/composer:rw" \
+                   "--volume=$WORKBENCH2_ROOT:/usr/src/workbench2:rw" \
                    "--volume=$PG_DATA:/var/lib/postgresql:rw" \
                    "--volume=$VAR_DATA:/var/lib/arvados:rw" \
                    "--volume=$PASSENGER:/var/lib/passenger:rw" \
@@ -274,6 +285,7 @@ run() {
             updateconf
             wait_for_arvbox
             echo "The Arvados source code is checked out at: $ARVADOS_ROOT"
+	    echo "The Arvados testing root certificate is $VAR_DATA/root-cert.pem"
         else
             echo "Unknown configuration '$CONFIG'"
         fi

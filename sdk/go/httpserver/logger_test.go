@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
 
