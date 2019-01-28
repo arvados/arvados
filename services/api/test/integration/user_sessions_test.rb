@@ -5,9 +5,11 @@
 require 'test_helper'
 
 class UserSessionsApiTest < ActionDispatch::IntegrationTest
-  def client_url(query_string: nil)
-    url = 'https://wb.example.com'
-    url += '?'+ query_string unless query_string.nil?
+  # remote prefix & return url packed into the return_to param passed around
+  # between API and SSO provider.
+  def client_url(remote: nil)
+    url = ',https://wb.example.com'
+    url = "#{remote}#{url}" unless remote.nil?
     url
   end
 
@@ -25,9 +27,8 @@ class UserSessionsApiTest < ActionDispatch::IntegrationTest
     mock['info']['email'] = email unless email.nil?
     mock['info']['username'] = username unless username.nil?
     mock['info']['identity_url'] = identity_url unless identity_url.nil?
-    return_to = remote.nil? ? client_url : client_url(query_string: 'remote='+remote)
     post('/auth/josh_id/callback',
-         {return_to: return_to},
+         {return_to: client_url(remote: remote)},
          {'omniauth.auth' => mock})
     assert_response :redirect, 'Did not redirect to client with token'
   end
@@ -64,9 +65,9 @@ class UserSessionsApiTest < ActionDispatch::IntegrationTest
 
   test 'create new user during omniauth callback' do
     mock_auth_with(email: 'edward@example.com')
-    assert_equal(0, @response.redirect_url.index(client_url),
+    assert_equal(0, @response.redirect_url.index(client_url.split(',', 2)[1]),
                  'Redirected to wrong address after succesful login: was ' +
-                 @response.redirect_url + ', expected ' + client_url + '[...]')
+                 @response.redirect_url + ', expected ' + client_url.split(',', 2)[1] + '[...]')
     assert_not_nil(@response.redirect_url.index('api_token='),
                    'Expected api_token in query string of redirect url ' +
                    @response.redirect_url)

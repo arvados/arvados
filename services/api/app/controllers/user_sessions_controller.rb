@@ -95,11 +95,12 @@ class UserSessionsController < ApplicationController
 
     @redirect_to = root_path
     if params.has_key?(:return_to)
-      rt = params[:return_to]
-      # Extracts query params as {param1 => [value1], param2 => [value2], ...}
-      p = rt.index('?').nil? ? {} : CGI::parse(rt[rt.index('?')+1..-1])
-      remote = p["remote"] && p["remote"][0]
-      return send_api_token_to(params[:return_to], user, remote)
+      # return_to param's format is 'remote,return_to_url'. This comes from login()
+      # encoding the remote=zbbbb parameter passed by a client asking for a salted
+      # token.
+      remote, return_to_url = params[:return_to].split(',', 2)
+      remote = nil if remote == ''
+      return send_api_token_to(return_to_url, user, remote)
     end
     redirect_to @redirect_to
   end
@@ -135,16 +136,11 @@ class UserSessionsController < ApplicationController
     p = []
     p << "auth_provider=#{CGI.escape(params[:auth_provider])}" if params[:auth_provider]
     if params[:return_to]
-      remote_param = ''
-      if params[:remote]
-        # Encode remote param inside return_to, so that we'll get it on the
-        # callback after login
-        remote_param += if params[:return_to].include? '?' then '&' else '?' end
-        remote_param += "remote=#{params[:remote]}"
-      end
-      p << "return_to=#{CGI.escape(params[:return_to]+remote_param)}"
+      # Encode remote param inside callback's return_to, so that we'll get it on
+      # create() after login.
+      remote_param = params[:remote].nil? ? '' : params[:remote]
+      p << "return_to=#{CGI.escape(remote_param)},#{CGI.escape(params[:return_to])}"
     end
-
     redirect_to "/auth/joshid?#{p.join('&')}"
   end
 
