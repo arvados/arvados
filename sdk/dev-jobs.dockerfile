@@ -20,7 +20,6 @@ ENV DEBIAN_FRONTEND noninteractive
 
 ARG pythoncmd=python
 
-RUN echo $pythoncmd
 RUN apt-get update -q && apt-get install -qy git ${pythoncmd}-pip python-virtualenv ${pythoncmd}-dev libcurl4-gnutls-dev libgnutls28-dev nodejs python-pyasn1-modules
 RUN if [ "$pythoncmd" = "python3" ]; then pip3 install -U setuptools six requests; else pip install -U setuptools six requests; fi
 
