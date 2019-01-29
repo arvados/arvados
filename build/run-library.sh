@@ -161,7 +161,7 @@ package_go_binary() {
     fi
     switches+=("$WORKSPACE/${license_file}=/usr/share/doc/$prog/${license_file}")
 
-    fpm_build "$GOPATH/bin/${basename}=/usr/bin/${prog}" "${prog}" 'Curoverse, Inc.' dir "${version}" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=${description}" "${switches[@]}"
+    fpm_build "$GOPATH/bin/${basename}=/usr/bin/${prog}" "${prog}" dir "${version}" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=${description}" "${switches[@]}"
 }
 
 default_iteration() {
@@ -330,7 +330,7 @@ handle_rails_package() {
         return 1
     fi
     local railsdir="/var/www/${pkgname%-server}/current"
-    local -a pos_args=("$srcdir/=$railsdir" "$pkgname" "Curoverse, Inc." dir "$version")
+    local -a pos_args=("$srcdir/=$railsdir" "$pkgname" dir "$version")
     local license_arg="$license_path=$railsdir/$(basename "$license_path")"
     local -a switches=(--after-install "$scripts_dir/postinst"
                        --before-remove "$scripts_dir/prerm"
@@ -584,7 +584,7 @@ fpm_build_virtualenv () {
 
   COMMAND_ARR+=("${fpm_args[@]}")
 
-  # Make sure to install all our package binaries in /usr/local/bin.
+  # Make sure to install all our package binaries in /usr/bin.
   # We have to walk $WORKSPACE/$PKG_DIR/bin rather than
   # $WORKSPACE/build/usr/share/$python/dist/$PYTHON_PKG/bin/ to get the list
   # because the latter also includes all the python binaries for the virtualenv.
@@ -592,7 +592,7 @@ fpm_build_virtualenv () {
   # because those are the ones we rewrote the shebang line of, above.
   if [[ -e "$WORKSPACE/$PKG_DIR/bin" ]]; then
     for binary in `ls $WORKSPACE/$PKG_DIR/bin`; do
-      COMMAND_ARR+=("usr/share/$python/dist/$PYTHON_PKG/bin/$binary=/usr/local/bin/")
+      COMMAND_ARR+=("usr/share/$python/dist/$PYTHON_PKG/bin/$binary=/usr/bin/")
     done
   fi
 
@@ -623,12 +623,8 @@ fpm_build () {
   # The name of the package to build.
   PACKAGE_NAME=$1
   shift
-  # Optional: the vendor of the package.  Should be "Curoverse, Inc." for
-  # packages of our own software.  Passed to fpm --vendor.
-  VENDOR=$1
-  shift
-  # The type of source package.  Passed to fpm -s.  Default "python".
-  PACKAGE_TYPE=${1:-python}
+  # The type of source package.  Passed to fpm -s.  Default "dir".
+  PACKAGE_TYPE=${1:-dir}
   shift
   # Optional: the package version number.  Passed to fpm -v.
   VERSION=$1
@@ -639,41 +635,8 @@ fpm_build () {
   fi
 
   local default_iteration_value="$(default_iteration "$PACKAGE" "$VERSION" "$PACKAGE_TYPE")"
-  local python=""
 
-  case "$PACKAGE_TYPE" in
-      python)
-          # All Arvados Python2 packages depend on Python 2.7.
-          # Make sure we build with that for consistency.
-          python=python2.7
-          set -- "$@" --python-bin python2.7 \
-              "${PYTHON_FPM_INSTALLER[@]}" \
-              --python-package-name-prefix "$PYTHON2_PKG_PREFIX" \
-              --prefix "$PYTHON2_PREFIX" \
-              --python-install-lib "$PYTHON2_INSTALL_LIB" \
-              --python-install-data . \
-              --exclude "${PYTHON2_INSTALL_LIB#/}/tests" \
-              --depends "$PYTHON2_PACKAGE"
-          ;;
-      python3)
-          # fpm does not actually support a python3 package type.  Instead
-          # we recognize it as a convenience shortcut to add several
-          # necessary arguments to fpm's command line later, after we're
-          # done handling positional arguments.
-          PACKAGE_TYPE=python
-          python=python3
-          set -- "$@" --python-bin python3 \
-              "${PYTHON3_FPM_INSTALLER[@]}" \
-              --python-package-name-prefix "$PYTHON3_PKG_PREFIX" \
-              --prefix "$PYTHON3_PREFIX" \
-              --python-install-lib "$PYTHON3_INSTALL_LIB" \
-              --python-install-data . \
-              --exclude "${PYTHON3_INSTALL_LIB#/}/tests" \
-              --depends "$PYTHON3_PACKAGE"
-          ;;
-  esac
-
-  declare -a COMMAND_ARR=("fpm" "--maintainer=Ward Vandewege <ward@curoverse.com>" "-s" "$PACKAGE_TYPE" "-t" "$FORMAT")
+  declare -a COMMAND_ARR=("fpm" "-s" "$PACKAGE_TYPE" "-t" "$FORMAT")
   if [ python = "$PACKAGE_TYPE" ] && [ deb = "$FORMAT" ]; then
       # Dependencies are built from setup.py.  Since setup.py will never
       # refer to Debian package iterations, it doesn't make sense to
@@ -700,6 +663,10 @@ fpm_build () {
     COMMAND_ARR+=('-n' "$PACKAGE_NAME")
   fi
 
+  if [[ "$MAINTAINER" != "" ]]; then
+    COMMAND_ARR+=('--maintainer' "$MAINTAINER")
+  fi
+
   if [[ "$VENDOR" != "" ]]; then
     COMMAND_ARR+=('--vendor' "$VENDOR")
   fi
@@ -713,14 +680,6 @@ fpm_build () {
       COMMAND_ARR+=(--iteration "$default_iteration_value")
   fi
 
-  if [[ python = "$PACKAGE_TYPE" ]] && [[ -e "${PACKAGE}/${PACKAGE_NAME}.service" ]]
-  then
-      COMMAND_ARR+=(
-          --after-install "${WORKSPACE}/build/go-python-package-scripts/postinst"
-          --before-remove "${WORKSPACE}/build/go-python-package-scripts/prerm"
-      )
-  fi
-
   # Append --depends X and other arguments specified by fpm-info.sh in
   # the package source dir. These are added last so they can override
   # the arguments added by this script.
@@ -730,12 +689,7 @@ fpm_build () {
   declare -a fpm_exclude=()
   declare -a fpm_dirs=(
       # source dir part of 'dir' package ("/source=/dest" => "/source"):
-      "${PACKAGE%%=/*}"
-      # backports ("llfuse>=1.0" => "backports/python-llfuse")
-      "${WORKSPACE}/backports/${PACKAGE_TYPE}-${PACKAGE%%[<=>]*}")
-  if [[ -n "$PACKAGE_NAME" ]]; then
-      fpm_dirs+=("${WORKSPACE}/backports/${PACKAGE_NAME}")
-  fi
+      "${PACKAGE%%=/*}")
   for pkgdir in "${fpm_dirs[@]}"; do
       fpminfo="$pkgdir/fpm-info.sh"
       if [[ -e "$fpminfo" ]]; then

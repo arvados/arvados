@@ -30,8 +30,18 @@ WORKSPACE=path         Path to the Arvados source tree to build packages from
 
 EOF
 
-EXITCODE=0
+# Begin of user configuration
+
+# set to --no-cache-dir to disable pip caching
+CACHE_FLAG=
+
+MAINTAINER="Ward Vandewege <wvandewege@veritasgenetics.com>"
+VENDOR="Veritas Genetics, Inc."
+
+# End of user configuration
+
 DEBUG=${ARVADOS_DEBUG:-0}
+EXITCODE=0
 TARGET=debian8
 COMMAND=
 
@@ -215,7 +225,7 @@ if [[ -z "$ONLY_BUILD" ]] || [[ "libarvados-perl" = "$ONLY_BUILD" ]] ; then
     perl Makefile.PL INSTALL_BASE=install >"$STDOUT_IF_DEBUG" && \
         make install INSTALLDIRS=perl >"$STDOUT_IF_DEBUG" && \
         fpm_build install/lib/=/usr/share libarvados-perl \
-        "Curoverse, Inc." dir "$(version_from_git)" install/man/=/usr/share/man \
+        dir "$(version_from_git)" install/man/=/usr/share/man \
         "$WORKSPACE/apache-2.0.txt=/usr/share/doc/libarvados-perl/apache-2.0.txt" && \
         mv --no-clobber libarvados-perl*.$FORMAT "$WORKSPACE/packages/$TARGET/"
   fi
@@ -277,10 +287,9 @@ handle_python_package
       cd "$SRC_BUILD_DIR"
       PKG_VERSION=$(version_from_git)
       cd $WORKSPACE/packages/$TARGET
-      fpm_build $SRC_BUILD_DIR/=/usr/local/arvados/src arvados-src 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--exclude=usr/local/arvados/src/.git" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
+      fpm_build $SRC_BUILD_DIR/=/usr/local/arvados/src arvados-src 'dir' "$PKG_VERSION" "--exclude=usr/local/arvados/src/.git" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
 
       rm -rf "$SRC_BUILD_DIR"
-
     fi
 )
 
@@ -335,15 +344,7 @@ fpm_build_virtualenv "arvados-python-client" "sdk/python" "python3"
 fpm_build_virtualenv "arvados-cwl-runner" "sdk/cwl"
 
 # The PAM module
-if [[ $TARGET =~ debian|ubuntu ]]; then
-    cd $WORKSPACE/packages/$TARGET
-    rm -rf "$WORKSPACE/sdk/pam/build"
-    libpam_arvados_version=$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/pam/arvados_pam.egg-info/PKG-INFO)
-    test_package_presence libpam-arvados "$libpam_arvados_version" python
-    if [[ "$?" == "0" ]]; then
-      fpm_build $WORKSPACE/sdk/pam libpam-arvados 'Curoverse, Inc.' 'python' "$libpam_arvados_version" "--url=https://arvados.org" "--description=PAM module for authenticating shell logins using Arvados API tokens" --depends libpam-python
-    fi
-fi
+fpm_build_virtualenv "libpam-arvados" "sdk/pam"
 
 # The FUSE driver
 fpm_build_virtualenv "arvados-fuse" "services/fuse"
@@ -356,31 +357,6 @@ fpm_build_virtualenv "arvados-docker-cleaner" "services/dockercleaner" "python3"
 
 # The Arvados crunchstat-summary tool
 fpm_build_virtualenv "crunchstat-summary" "tools/crunchstat-summary"
-
-# Forked libcloud
-if test_package_presence "$PYTHON2_PKG_PREFIX"-apache-libcloud "$LIBCLOUD_PIN" python 2
-then
-  LIBCLOUD_DIR=$(mktemp -d)
-  (
-      cd $LIBCLOUD_DIR
-      git clone $DASHQ_UNLESS_DEBUG https://github.com/curoverse/libcloud.git .
-      git checkout $DASHQ_UNLESS_DEBUG apache-libcloud-$LIBCLOUD_PIN
-      # libcloud is absurdly noisy without -q, so force -q here
-      OLD_DASHQ_UNLESS_DEBUG=$DASHQ_UNLESS_DEBUG
-      DASHQ_UNLESS_DEBUG=-q
-      handle_python_package
-      DASHQ_UNLESS_DEBUG=$OLD_DASHQ_UNLESS_DEBUG
-  )
-
-  # libcloud >= 2.3.0 now requires python-requests 2.4.3 or higher, otherwise
-  # it throws
-  #   ImportError: No module named packages.urllib3.poolmanager
-  # when loaded. We only see this problem on ubuntu1404, because that is our
-  # only supported distribution that ships with a python-requests older than
-  # 2.4.3.
-  fpm_build $LIBCLOUD_DIR "$PYTHON2_PKG_PREFIX"-apache-libcloud "" python "" --iteration 2 --depends 'python-requests >= 2.4.3'
-  rm -rf $LIBCLOUD_DIR
-fi
 
 # Build the API server package
 test_rails_package_presence arvados-api-server "$WORKSPACE/services/api"

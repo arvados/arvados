@@ -12,7 +12,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 The Python SDK provides access from Python to the Arvados API and Keep.  It also includes a number of command line tools for using and administering Arvados and Keep, and some conveniences for use in Crunch scripts; see "Crunch utility libraries":crunch-utility-libraries.html for details.
 
-h3. Installation
+h2. Installation
 
 If you are logged in to an Arvados VM, the Python SDK should be installed.
 
@@ -22,12 +22,28 @@ To use the Python SDK elsewhere, you can install from a distribution package, Py
 The Python SDK requires Python 2.7.
 {% include 'notebox_end' %}
 
-h4. Option 1: Install from distribution packages
+h3. Option 1: Install with pip
+
+Run @pip-2.7 install arvados-python-client@ in an appropriate installation environment, such as a virtualenv.
+
+If your version of @pip@ is 1.4 or newer, the @pip install@ command might give an error: "Could not find a version that satisfies the requirement arvados-python-client". If this happens, try @pip-2.7 install --pre arvados-python-client@.
+
+h3. Option 2: Install from source
+
+Install the @python-setuptools@ package from your distribution.  Then run the following:
+
+<notextile>
+<pre><code>~$ <span class="userinput">git clone https://github.com/curoverse/arvados.git</span>
+~$ <span class="userinput">cd arvados/sdk/python</span>
+~/arvados/sdk/python$ <span class="userinput">python2.7 setup.py install</span>
+</code></pre>
+</notextile>
+
+You may optionally run the final installation command in a virtualenv, or with the @--user@ option.
+
+h3. Option 3: Install from distribution packages
 
 First, "add the appropriate package repository for your distribution":{{ site.baseurl }}/install/install-manual-prerequisites.html#repos.
-
-{% assign rh_version = "6" %}
-{% include 'note_python_sc' %}
 
 On Red Hat-based systems:
 
@@ -43,31 +59,27 @@ On Debian-based systems:
 </code></pre>
 </notextile>
 
-h4. Option 2: Install with pip
+h3. Test installation
 
-Run @pip-2.7 install arvados-python-client@ in an appropriate installation environment, such as a virtualenv.
+If the SDK is installed and your @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ environment variables are set up correctly (see "api-tokens":{{site.baseurl}}/user/reference/api-tokens.html for details), @import arvados@ should produce no errors.
 
-If your version of @pip@ is 1.4 or newer, the @pip install@ command might give an error: "Could not find a version that satisfies the requirement arvados-python-client". If this happens, try @pip-2.7 install --pre arvados-python-client@.
-
-h4. Option 3: Install from source
-
-Install the @python-setuptools@ package from your distribution.  Then run the following:
+If you installed with pip or from source (option 1 or 2 above):
 
 <notextile>
-<pre><code>~$ <span class="userinput">git clone https://github.com/curoverse/arvados.git</span>
-~$ <span class="userinput">cd arvados/sdk/python</span>
-~/arvados/sdk/python$ <span class="userinput">python2.7 setup.py install</span>
-</code></pre>
+<pre>~$ <code class="userinput">python</code>
+Python 2.7.4 (default, Sep 26 2013, 03:20:26)
+[GCC 4.7.3] on linux2
+Type "help", "copyright", "credits" or "license" for more information.
+>>> <code class="userinput">import arvados</code>
+>>> <code class="userinput">arvados.api('v1')</code>
+&lt;apiclient.discovery.Resource object at 0x233bb50&gt;
+</pre>
 </notextile>
 
-You may optionally run the final installation command in a virtualenv, or with the @--user@ option.
-
-h4. Test installation
-
-If the SDK is installed and your @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ environment variables are set up correctly (see "api-tokens":{{site.baseurl}}/user/reference/api-tokens.html for details), @import arvados@ should produce no errors:
+If you installed from distribution packages (option 3): the packages include a virtualenv, which means the correct python environment needs to be loaded to import the Arvados SDK:
 
 <notextile>
-<pre>~$ <code class="userinput">python2.7</code>
+<pre>~$ <code class="userinput">/usr/share/python2.7/dist/python-arvados-python-client/bin/python</code>
 Python 2.7.4 (default, Sep 26 2013, 03:20:26)
 [GCC 4.7.3] on linux2
 Type "help", "copyright", "credits" or "license" for more information.
