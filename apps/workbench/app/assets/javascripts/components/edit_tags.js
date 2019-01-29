@@ -9,7 +9,7 @@ window.SimpleInput = {
                 width: '100%',
             },
             type: 'text',
-            placeholder: 'Add ' + vnode.attrs.placeholder,
+            placeholder: `Add ${vnode.attrs.placeholder}`,
             value: vnode.attrs.value,
             onchange: function() {
                 if (this.value != '') {
@@ -187,16 +187,16 @@ window.TagEditorApp = {
         // Get vocabulary
         vnode.state.vocabulary = m.stream({"strict":false, "tags":{}})
         var vocabularyTimestamp = parseInt(Date.now() / 300000) // Bust cache every 5 minutes
-        m.request('/vocabulary.json?v=' + vocabularyTimestamp).then(vnode.state.vocabulary)
+        m.request(`/vocabulary.json?v=${vocabularyTimestamp}`).then(vnode.state.vocabulary)
         vnode.state.editMode = vnode.attrs.targetEditable
         vnode.state.tags = []
         vnode.state.dirty = m.stream(false)
         vnode.state.dirty.map(m.redraw)
-        vnode.state.objPath = 'arvados/v1/' + vnode.attrs.targetController + '/' + vnode.attrs.targetUuid
+        vnode.state.objPath = `arvados/v1/${vnode.attrs.targetController}/${vnode.attrs.targetUuid}`
         // Get tags
         vnode.state.sessionDB.request(
             vnode.state.sessionDB.loadLocal(),
-            'arvados/v1/' + vnode.attrs.targetController,
+            `arvados/v1/${vnode.attrs.targetController}`,
             {
                 data: {
                     filters: JSON.stringify([['uuid', '=', vnode.attrs.targetUuid]]),
