@@ -192,11 +192,11 @@ window.TagEditorApp = {
         vnode.state.tags = []
         vnode.state.dirty = m.stream(false)
         vnode.state.dirty.map(m.redraw)
-        vnode.state.objPath = 'arvados/v1/'+vnode.attrs.targetController+'/'+vnode.attrs.targetUuid
+        vnode.state.objPath = 'arvados/v1/' + vnode.attrs.targetController + '/' + vnode.attrs.targetUuid
         // Get tags
         vnode.state.sessionDB.request(
             vnode.state.sessionDB.loadLocal(),
-            'arvados/v1/'+vnode.attrs.targetController,
+            'arvados/v1/' + vnode.attrs.targetController,
             {
                 data: {
                     filters: JSON.stringify([['uuid', '=', vnode.attrs.targetUuid]]),
@@ -229,7 +229,7 @@ window.TagEditorApp = {
         return [
             vnode.state.editMode &&
             m("div.pull-left", [
-                m("a.btn.btn-primary.btn-sm"+(vnode.state.dirty() ? '' : '.disabled'), {
+                m("a.btn.btn-primary.btn-sm" + (vnode.state.dirty() ? '' : '.disabled'), {
                     style: {
                         margin: '10px 0px'
                     },
