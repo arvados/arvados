@@ -34,9 +34,27 @@ h3. current master branch
 
 h4. Python packaging change
 
-As part of story "#9945":https://dev.arvados.org/issues/9945, the distribution packaging (deb/rpm) of our Python packages has changed. These packages now include a built-in virtualenv, which means fewer dependencies on system packages. We have also stopped packaging and publishing backports for all the Python dependencies of our packages, as they are no longer needed.
+As part of story "#9945":https://dev.arvados.org/issues/9945, the distribution packaging (deb/rpm) of our Python packages has changed. These packages now include a built-in virtualenv to reduce dependencies on system packages. We have also stopped packaging and publishing backports for all the Python dependencies of our packages, as they are no longer needed.
 
-One practical consequence of this change is that the use of the Arvados Python SDK (aka "import arvados"), if the SDK was installed from distribution packages, now requires the loading of the virtualenv environment from our packages. The "Install documentation for the Arvados Python SDK":https:doc.arvados.org/sdk/python/sdk-python.html reflects this change. This does not affect the use of our command line tools.
+One practical consequence of this change is that the use of the Arvados Python SDK (aka "import arvados") will require a tweak if the SDK was installed from a distribution package. It now requires the loading of the virtualenv environment from our packages. The "Install documentation for the Arvados Python SDK":/sdk/python/sdk-python.html reflects this change. This does not affect the use of the command line tools (e.g. arv-get, etc.).
+
+Python scripts that rely on the distribution Arvados Python SDK packages to import the Arvados SDK will need to be tweaked to load the correct Python environment.
+
+This can be done by activating the virtualenv outside of the script:
+
+<notextile>
+<pre>~$ <code class="userinput">source /usr/share/python2.7/dist/python-arvados-python-client/bin/activate</code>
+(python-arvados-python-client) ~$ <code class="userinput">path-to-the-python-script</code>
+</pre>
+</notextile>
+
+Or alternatively, by updating the shebang line at the start of the script to:
+
+<notextile>
+<pre>
+#!/usr/share/python2.7/dist/python-arvados-python-client/bin/python
+</pre>
+</notextile>
 
 h3. v1.2.1 (2018-11-26)
 

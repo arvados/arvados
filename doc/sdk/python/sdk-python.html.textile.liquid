@@ -16,7 +16,7 @@ h2. Installation
 
 If you are logged in to an Arvados VM, the Python SDK should be installed.
 
-To use the Python SDK elsewhere, you can install from a distribution package, PyPI, or source.
+To use the Python SDK elsewhere, you can install from PyPI or a distribution package.
 
 {% include 'notebox_begin' %}
 The Python SDK requires Python 2.7.
@@ -24,24 +24,15 @@ The Python SDK requires Python 2.7.
 
 h3. Option 1: Install with pip
 
+This installation method is recommended to make the SDK available for use in your own Python programs. It can coexist with the system-wide installation method from a distribution package (option 2, below).
+
 Run @pip-2.7 install arvados-python-client@ in an appropriate installation environment, such as a virtualenv.
 
 If your version of @pip@ is 1.4 or newer, the @pip install@ command might give an error: "Could not find a version that satisfies the requirement arvados-python-client". If this happens, try @pip-2.7 install --pre arvados-python-client@.
 
-h3. Option 2: Install from source
+h3. Option 2: Install from a distribution package
 
-Install the @python-setuptools@ package from your distribution.  Then run the following:
-
-<notextile>
-<pre><code>~$ <span class="userinput">git clone https://github.com/curoverse/arvados.git</span>
-~$ <span class="userinput">cd arvados/sdk/python</span>
-~/arvados/sdk/python$ <span class="userinput">python2.7 setup.py install</span>
-</code></pre>
-</notextile>
-
-You may optionally run the final installation command in a virtualenv, or with the @--user@ option.
-
-h3. Option 3: Install from distribution packages
+This installation method is recommended to make the CLI tools available system-wide. It can coexist with the installation method described in option 1, above.
 
 First, "add the appropriate package repository for your distribution":{{ site.baseurl }}/install/install-manual-prerequisites.html#repos.
 
@@ -63,7 +54,7 @@ h3. Test installation
 
 If the SDK is installed and your @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ environment variables are set up correctly (see "api-tokens":{{site.baseurl}}/user/reference/api-tokens.html for details), @import arvados@ should produce no errors.
 
-If you installed with pip or from source (option 1 or 2 above):
+If you installed with pip (option 1, above):
 
 <notextile>
 <pre>~$ <code class="userinput">python</code>
@@ -76,7 +67,21 @@ Type "help", "copyright", "credits" or "license" for more information.
 </pre>
 </notextile>
 
-If you installed from distribution packages (option 3): the packages include a virtualenv, which means the correct python environment needs to be loaded to import the Arvados SDK:
+If you installed from a distribution package (option 2): the package includes a virtualenv, which means the correct Python environment needs to be loaded before the Arvados SDK can be imported. This can be done by activating the virtualenv first:
+
+<notextile>
+<pre>~$ <code class="userinput">source /usr/share/python2.7/dist/python-arvados-python-client/bin/activate</code>
+(python-arvados-python-client) ~$ <code class="userinput">python</code>
+Python 2.7.4 (default, Sep 26 2013, 03:20:26)
+[GCC 4.7.3] on linux2
+Type "help", "copyright", "credits" or "license" for more information.
+>>> <code class="userinput">import arvados</code>
+>>> <code class="userinput">arvados.api('v1')</code>
+&lt;apiclient.discovery.Resource object at 0x233bb50&gt;
+</pre>
+</notextile>
+
+Or alternatively, by using the Python executable from the virtualenv directly:
 
 <notextile>
 <pre>~$ <code class="userinput">/usr/share/python2.7/dist/python-arvados-python-client/bin/python</code>
