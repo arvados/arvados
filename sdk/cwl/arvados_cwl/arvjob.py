@@ -75,7 +75,7 @@ class ArvadosJob(JobBase):
                                                separateDirs=False)
 
                 with Perf(metrics, "createfiles %s" % self.name):
-                    for f, p in list(generatemapper.items()):
+                    for f, p in generatemapper.items():
                         if p.type == "CreateFile":
                             with vwd.open(p.target, "w") as n:
                                 n.write(p.resolved.encode("utf-8"))
@@ -89,7 +89,7 @@ class ArvadosJob(JobBase):
                                      trash_at=info["trash_at"],
                                      properties=info["properties"])
 
-                for f, p in list(generatemapper.items()):
+                for f, p in generatemapper.items():
                     if p.type == "File":
                         script_parameters["task.vwd"][p.target] = p.resolved
                     if p.type == "CreateFile":
