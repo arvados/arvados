@@ -19,6 +19,8 @@ import { differenceWith } from "lodash";
 import { withProgress } from "~/store/progress-indicator/with-progress";
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions.ts';
 import { snackbarActions, SnackbarKind } from "../snackbar/snackbar-actions";
+import { extractUuidKind, ResourceKind } from "~/models/resource";
+import { LinkClass } from "~/models/link";
 
 export const openSharingDialog = (resourceUuid: string) =>
     (dispatch: Dispatch) => {
@@ -189,15 +191,32 @@ const saveManagementChanges = async (_: Dispatch, getState: () => RootState, { p
     }
 };
 
-const sendInvitations = async (_: Dispatch, getState: () => RootState, { permissionService }: ServiceRepository) => {
+const sendInvitations = async (_: Dispatch, getState: () => RootState, { permissionService, userService }: ServiceRepository) => {
     const state = getState();
     const { user } = state.auth;
     const dialog = getDialog<string>(state.dialog, SHARING_DIALOG_NAME);
     if (dialog && user) {
-
         const invitations = getFormValues(SHARING_INVITATION_FORM_NAME)(state) as SharingInvitationFormData;
 
-        const invitationData = invitations.invitedPeople
+        const getGroupsFromForm = invitations.invitedPeople.filter((invitation) => extractUuidKind(invitation.uuid) === ResourceKind.GROUP);
+        const getUsersFromForm = invitations.invitedPeople.filter((invitation) => extractUuidKind(invitation.uuid) === ResourceKind.USER);
+        const uuids = getGroupsFromForm.map(group => group.uuid);
+
+        const permissions = await permissionService.list({
+            filters: new FilterBuilder()
+                .addIn('tailUuid', uuids)
+                .addEqual('linkClass', LinkClass.PERMISSION)
+                .getFilters()
+        });
+
+        const usersFromGroups = await userService.list({
+            filters: new FilterBuilder()
+                .addIn('uuid', permissions.items.map(item => item.headUuid))
+                .getFilters()
+
+        });
+
+        const invitationDataUsers = getUsersFromForm
             .map(person => ({
                 ownerUuid: user.uuid,
                 headUuid: dialog.data,
@@ -205,9 +224,19 @@ const sendInvitations = async (_: Dispatch, getState: () => RootState, { permiss
                 name: invitations.permissions
             }));
 
-        for (const invitation of invitationData) {
+        const invitationsDataGroups = usersFromGroups.items.map(
+            person => ({
+                ownerUuid: user.uuid,
+                headUuid: dialog.data,
+                tailUuid: person.uuid,
+                name: invitations.permissions
+            })
+        );
+
+        const data = invitationDataUsers.concat(invitationsDataGroups);
+
+        for (const invitation of data) {
             await permissionService.create(invitation);
         }
-
     }
 };

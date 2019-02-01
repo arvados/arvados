@@ -4,13 +4,13 @@
 
 import * as React from 'react';
 import { Autocomplete } from '~/components/autocomplete/autocomplete';
-import { UserResource } from '~/models/user';
 import { connect, DispatchProp } from 'react-redux';
 import { ServiceRepository } from '~/services/services';
 import { FilterBuilder } from '../../services/api/filter-builder';
 import { debounce } from 'debounce';
 import { ListItemText, Typography } from '@material-ui/core';
 import { noop } from 'lodash/fp';
+import { GroupClass } from '~/models/group';
 
 export interface Person {
     name: string;
@@ -23,6 +23,7 @@ export interface PeopleSelectProps {
     items: Person[];
     label?: string;
     autofocus?: boolean;
+    onlyPeople?: boolean;
 
     onBlur?: (event: React.FocusEvent<HTMLInputElement>) => void;
     onFocus?: (event: React.FocusEvent<HTMLInputElement>) => void;
@@ -34,7 +35,7 @@ export interface PeopleSelectProps {
 
 export interface PeopleSelectState {
     value: string;
-    suggestions: UserResource[];
+    suggestions: any[];
 }
 
 export const PeopleSelect = connect()(
@@ -46,8 +47,7 @@ export const PeopleSelect = connect()(
         };
 
         render() {
-
-            const { label = 'Invite people' } = this.props;
+            const { label = 'Share' } = this.props;
 
             return (
                 <Autocomplete
@@ -71,10 +71,12 @@ export const PeopleSelect = connect()(
             return name ? name : uuid;
         }
 
-        renderSuggestion({ firstName, lastName, email }: UserResource) {
+        renderSuggestion({ firstName, lastName, email, name }: any) {
             return (
                 <ListItemText>
-                    <Typography noWrap>{`${firstName} ${lastName} <<${email}>>`}</Typography>
+                    {name ?
+                        <Typography noWrap>{name}</Typography> :
+                        <Typography noWrap>{`${firstName} ${lastName} <<${email}>>`}</Typography>}
                 </ListItemText>
             );
         }
@@ -96,12 +98,12 @@ export const PeopleSelect = connect()(
             }
         }
 
-        handleSelect = ({ email, firstName, lastName, uuid }: UserResource) => {
+        handleSelect = ({ email, firstName, lastName, uuid, name }: any) => {
             const { onSelect = noop } = this.props;
             this.setState({ value: '', suggestions: [] });
             onSelect({
                 email,
-                name: `${firstName} ${lastName}`,
+                name: `${name ? name : `${firstName} ${lastName}`}`,
                 uuid,
             });
         }
@@ -112,13 +114,18 @@ export const PeopleSelect = connect()(
 
         getSuggestions = debounce(() => this.props.dispatch<any>(this.requestSuggestions), 500);
 
-        requestSuggestions = async (_: void, __: void, { userService }: ServiceRepository) => {
+        requestSuggestions = async (_: void, __: void, { userService, groupsService }: ServiceRepository) => {
             const { value } = this.state;
-            const filters = new FilterBuilder()
+            const filterGroups = new FilterBuilder()
+                .addNotIn('groupClass', [GroupClass.PROJECT])
+                .addILike('name', value)
+                .getFilters();
+            const groupItems = await groupsService.list({ filters: filterGroups, limit: 5 });
+            const filterUsers = new FilterBuilder()
                 .addILike('email', value)
                 .getFilters();
-            const { items } = await userService.list({ filters, limit: 5 });
-            this.setState({ suggestions: items });
+            const userItems: any = await userService.list({ filters: filterUsers, limit: 5 });
+            const items = groupItems.items.concat(userItems.items);
+            this.setState({ suggestions: this.props.onlyPeople ? userItems.items : items });
         }
-
     });

@@ -56,6 +56,7 @@ const UsersField = () =>
 
 const UsersSelect = ({ fields }: WrappedFieldArrayProps<Person>) =>
     <PeopleSelect
+        onlyPeople
         label='Enter email adresses '
         items={fields.getAll() || []}
         onSelect={fields.push}
