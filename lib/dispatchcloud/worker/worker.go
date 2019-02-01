@@ -247,11 +247,21 @@ func (wkr *worker) probeAndUpdate() {
 		// advantage of the non-busy state, though.
 		wkr.busy = updateTime
 	}
-	running := map[string]struct{}{}
 	changed := false
+
+	// Build a new "running" map. Set changed=true if it differs
+	// from the existing map (wkr.running) to ensure the scheduler
+	// gets notified below.
+	running := map[string]struct{}{}
 	for _, uuid := range ctrUUIDs {
 		running[uuid] = struct{}{}
 		if _, ok := wkr.running[uuid]; !ok {
+			if _, ok := wkr.starting[uuid]; !ok {
+				// We didn't start it -- it must have
+				// been started by a previous
+				// dispatcher process.
+				logger.WithField("ContainerUUID", uuid).Info("crunch-run process detected")
+			}
 			changed = true
 		}
 	}
@@ -262,19 +272,29 @@ func (wkr *worker) probeAndUpdate() {
 			changed = true
 		}
 	}
+
+	// Update state if this was the first successful boot-probe.
 	if booted && (wkr.state == StateUnknown || wkr.state == StateBooting) {
 		// Note: this will change again below if
 		// len(wkr.starting)+len(wkr.running) > 0.
 		wkr.state = StateIdle
 		changed = true
-	} else if wkr.state == StateUnknown && len(running) != len(wkr.running) {
+	}
+
+	// If wkr.state and wkr.running aren't changing then there's
+	// no need to log anything, notify the scheduler, move state
+	// back and forth between idle/running, etc.
+	if !changed {
+		return
+	}
+
+	// Log whenever a run-probe reveals crunch-run processes
+	// appearing/disappearing before boot-probe succeeds.
+	if wkr.state == StateUnknown && len(running) != len(wkr.running) {
 		logger.WithFields(logrus.Fields{
 			"RunningContainers": len(running),
 			"State":             wkr.state,
 		}).Info("crunch-run probe succeeded, but boot probe is still failing")
-	}
-	if !changed {
-		return
 	}
 
 	wkr.running = running
@@ -333,6 +353,7 @@ func (wkr *worker) probeBooted() (ok bool, stderr []byte) {
 // caller must have lock.
 func (wkr *worker) shutdownIfBroken(dur time.Duration) {
 	if wkr.idleBehavior == IdleBehaviorHold {
+		// Never shut down.
 		return
 	}
 	label, threshold := "", wkr.wp.timeoutProbe
@@ -353,16 +374,21 @@ func (wkr *worker) shutdownIfBroken(dur time.Duration) {
 // caller must have lock.
 func (wkr *worker) shutdownIfIdle() bool {
 	if wkr.idleBehavior == IdleBehaviorHold {
-		return false
-	}
-	if !(wkr.state == StateIdle || (wkr.state == StateBooting && wkr.idleBehavior == IdleBehaviorDrain)) {
+		// Never shut down.
 		return false
 	}
 	age := time.Since(wkr.busy)
-	if wkr.idleBehavior != IdleBehaviorDrain && age < wkr.wp.timeoutIdle {
+
+	old := age >= wkr.wp.timeoutIdle
+	draining := wkr.idleBehavior == IdleBehaviorDrain
+	shouldShutdown := ((old || draining) && wkr.state == StateIdle) ||
+		(draining && wkr.state == StateBooting)
+	if !shouldShutdown {
 		return false
 	}
+
 	wkr.logger.WithFields(logrus.Fields{
+		"State":        wkr.state,
 		"Age":          age,
 		"IdleBehavior": wkr.idleBehavior,
 	}).Info("shutdown idle worker")

@@ -204,7 +204,14 @@ func (wp *Pool) Unallocated() map[arvados.InstanceType]int {
 		creating[it] = len(times)
 	}
 	for _, wkr := range wp.workers {
-		if !(wkr.state == StateIdle || wkr.state == StateBooting || wkr.state == StateUnknown) || wkr.idleBehavior != IdleBehaviorRun || len(wkr.running) > 0 {
+		// Skip workers that are not expected to become
+		// available soon. Note len(wkr.running)>0 is not
+		// redundant here: it can be true even in
+		// StateUnknown.
+		if wkr.state == StateShutdown ||
+			wkr.state == StateRunning ||
+			wkr.idleBehavior != IdleBehaviorRun ||
+			len(wkr.running) > 0 {
 			continue
 		}
 		it := wkr.instType
