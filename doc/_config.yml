@@ -12,6 +12,7 @@
 
 baseurl:
 arvados_api_host: localhost
+arvados_cluster_uuid: local
 arvados_workbench_host: http://localhost
 
 exclude: ["Rakefile", "tmp", "vendor"]

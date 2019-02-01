@@ -18,10 +18,11 @@ type Container struct {
 	Mounts               map[string]Mount     `json:"mounts"`
 	Output               string               `json:"output"`
 	OutputPath           string               `json:"output_path"`
-	Priority             int                  `json:"priority"`
+	Priority             int64                `json:"priority"`
 	RuntimeConstraints   RuntimeConstraints   `json:"runtime_constraints"`
 	State                ContainerState       `json:"state"`
 	SchedulingParameters SchedulingParameters `json:"scheduling_parameters"`
+	ExitCode             int                  `json:"exit_code"`
 }
 
 // Container is an arvados#container resource.

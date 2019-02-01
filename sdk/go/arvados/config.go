@@ -60,6 +60,8 @@ type Cluster struct {
 	ManagementToken    string
 	NodeProfiles       map[string]NodeProfile
 	InstanceTypes      InstanceTypeMap
+	CloudVMs           CloudVMs
+	Dispatch           Dispatch
 	HTTPRequestTimeout Duration
 	RemoteClusters     map[string]RemoteCluster
 	PostgreSQL         PostgreSQL
@@ -93,6 +95,50 @@ type InstanceType struct {
 	Scratch      ByteSize
 	Price        float64
 	Preemptible  bool
+}
+
+type Dispatch struct {
+	// PEM encoded SSH key (RSA, DSA, or ECDSA) able to log in to
+	// cloud VMs.
+	PrivateKey []byte
+
+	// Max time for workers to come up before abandoning stale
+	// locks from previous run
+	StaleLockTimeout Duration
+
+	// Interval between queue polls
+	PollInterval Duration
+
+	// Interval between probes to each worker
+	ProbeInterval Duration
+
+	// Maximum total worker probes per second
+	MaxProbesPerSecond int
+}
+
+type CloudVMs struct {
+	// Shell command that exits zero IFF the VM is fully booted
+	// and ready to run containers, e.g., "mount | grep
+	// /encrypted-tmp"
+	BootProbeCommand string
+	SyncInterval     Duration
+
+	// Maximum idle time before automatic shutdown
+	TimeoutIdle Duration
+
+	// Maximum booting time before automatic shutdown
+	TimeoutBooting Duration
+
+	// Maximum time with no successful probes before automatic shutdown
+	TimeoutProbe Duration
+
+	// Time after shutdown to retry shutdown
+	TimeoutShutdown Duration
+
+	ImageID string
+
+	Driver           string
+	DriverParameters map[string]interface{}
 }
 
 type InstanceTypeMap map[string]InstanceType
@@ -159,45 +205,48 @@ func (cc *Cluster) GetNodeProfile(node string) (*NodeProfile, error) {
 }
 
 type NodeProfile struct {
-	Controller  SystemServiceInstance `json:"arvados-controller"`
-	Health      SystemServiceInstance `json:"arvados-health"`
-	Keepbalance SystemServiceInstance `json:"keep-balance"`
-	Keepproxy   SystemServiceInstance `json:"keepproxy"`
-	Keepstore   SystemServiceInstance `json:"keepstore"`
-	Keepweb     SystemServiceInstance `json:"keep-web"`
-	Nodemanager SystemServiceInstance `json:"arvados-node-manager"`
-	RailsAPI    SystemServiceInstance `json:"arvados-api-server"`
-	Websocket   SystemServiceInstance `json:"arvados-ws"`
-	Workbench   SystemServiceInstance `json:"arvados-workbench"`
+	Controller    SystemServiceInstance `json:"arvados-controller"`
+	Health        SystemServiceInstance `json:"arvados-health"`
+	Keepbalance   SystemServiceInstance `json:"keep-balance"`
+	Keepproxy     SystemServiceInstance `json:"keepproxy"`
+	Keepstore     SystemServiceInstance `json:"keepstore"`
+	Keepweb       SystemServiceInstance `json:"keep-web"`
+	Nodemanager   SystemServiceInstance `json:"arvados-node-manager"`
+	DispatchCloud SystemServiceInstance `json:"arvados-dispatch-cloud"`
+	RailsAPI      SystemServiceInstance `json:"arvados-api-server"`
+	Websocket     SystemServiceInstance `json:"arvados-ws"`
+	Workbench     SystemServiceInstance `json:"arvados-workbench"`
 }
 
 type ServiceName string
 
 const (
-	ServiceNameRailsAPI    ServiceName = "arvados-api-server"
-	ServiceNameController  ServiceName = "arvados-controller"
-	ServiceNameNodemanager ServiceName = "arvados-node-manager"
-	ServiceNameWorkbench   ServiceName = "arvados-workbench"
-	ServiceNameWebsocket   ServiceName = "arvados-ws"
-	ServiceNameKeepbalance ServiceName = "keep-balance"
-	ServiceNameKeepweb     ServiceName = "keep-web"
-	ServiceNameKeepproxy   ServiceName = "keepproxy"
-	ServiceNameKeepstore   ServiceName = "keepstore"
+	ServiceNameRailsAPI      ServiceName = "arvados-api-server"
+	ServiceNameController    ServiceName = "arvados-controller"
+	ServiceNameDispatchCloud ServiceName = "arvados-dispatch-cloud"
+	ServiceNameNodemanager   ServiceName = "arvados-node-manager"
+	ServiceNameWorkbench     ServiceName = "arvados-workbench"
+	ServiceNameWebsocket     ServiceName = "arvados-ws"
+	ServiceNameKeepbalance   ServiceName = "keep-balance"
+	ServiceNameKeepweb       ServiceName = "keep-web"
+	ServiceNameKeepproxy     ServiceName = "keepproxy"
+	ServiceNameKeepstore     ServiceName = "keepstore"
 )
 
 // ServicePorts returns the configured listening address (or "" if
 // disabled) for each service on the node.
 func (np *NodeProfile) ServicePorts() map[ServiceName]string {
 	return map[ServiceName]string{
-		ServiceNameRailsAPI:    np.RailsAPI.Listen,
-		ServiceNameController:  np.Controller.Listen,
-		ServiceNameNodemanager: np.Nodemanager.Listen,
-		ServiceNameWorkbench:   np.Workbench.Listen,
-		ServiceNameWebsocket:   np.Websocket.Listen,
-		ServiceNameKeepbalance: np.Keepbalance.Listen,
-		ServiceNameKeepweb:     np.Keepweb.Listen,
-		ServiceNameKeepproxy:   np.Keepproxy.Listen,
-		ServiceNameKeepstore:   np.Keepstore.Listen,
+		ServiceNameRailsAPI:      np.RailsAPI.Listen,
+		ServiceNameController:    np.Controller.Listen,
+		ServiceNameDispatchCloud: np.DispatchCloud.Listen,
+		ServiceNameNodemanager:   np.Nodemanager.Listen,
+		ServiceNameWorkbench:     np.Workbench.Listen,
+		ServiceNameWebsocket:     np.Websocket.Listen,
+		ServiceNameKeepbalance:   np.Keepbalance.Listen,
+		ServiceNameKeepweb:       np.Keepweb.Listen,
+		ServiceNameKeepproxy:     np.Keepproxy.Listen,
+		ServiceNameKeepstore:     np.Keepstore.Listen,
 	}
 }
 

@@ -836,17 +836,58 @@ class CollectionOpenModes(run_test_server.TestCaseWithServers):
         with c.open('foo', 'wb') as f:
             f.write('foo')
         for mode in ['r', 'rt', 'r+', 'rt+', 'w', 'wt', 'a', 'at']:
-            if sys.version_info >= (3, 0):
-                with self.assertRaises(NotImplementedError):
-                    c.open('foo', mode)
-            else:
-                with c.open('foo', mode) as f:
-                    if mode[0] == 'r' and '+' not in mode:
-                        self.assertEqual('foo', f.read(3))
-                    else:
-                        f.write('bar')
-                        f.seek(-3, os.SEEK_CUR)
-                        self.assertEqual('bar', f.read(3))
+            with c.open('foo', mode) as f:
+                if mode[0] == 'r' and '+' not in mode:
+                    self.assertEqual('foo', f.read(3))
+                else:
+                    f.write('bar')
+                    f.seek(0, os.SEEK_SET)
+                    self.assertEqual('bar', f.read(3))
+
+
+class TextModes(run_test_server.TestCaseWithServers):
+
+    def setUp(self):
+        arvados.config.KEEP_BLOCK_SIZE = 4
+        if sys.version_info < (3, 0):
+            import unicodedata
+            self.sailboat = unicodedata.lookup('SAILBOAT')
+            self.snowman = unicodedata.lookup('SNOWMAN')
+        else:
+            self.sailboat = '\N{SAILBOAT}'
+            self.snowman = '\N{SNOWMAN}'
+
+    def tearDown(self):
+        arvados.config.KEEP_BLOCK_SIZE = 2 ** 26
+
+    def test_read_sailboat_across_block_boundary(self):
+        c = Collection()
+        f = c.open('sailboats', 'wb')
+        data = self.sailboat.encode('utf-8')
+        f.write(data)
+        f.write(data[:1])
+        f.write(data[1:])
+        f.write(b'\n')
+        f.close()
+        self.assertRegex(c.portable_manifest_text(), r'\+4 .*\+3 ')
+
+        f = c.open('sailboats', 'r')
+        string = f.readline()
+        self.assertEqual(string, self.sailboat+self.sailboat+'\n')
+        f.close()
+
+    def test_write_snowman_across_block_boundary(self):
+        c = Collection()
+        f = c.open('snowmany', 'w')
+        data = self.snowman
+        f.write(data+data+'\n'+data+'\n')
+        f.close()
+        self.assertRegex(c.portable_manifest_text(), r'\+4 .*\+4 .*\+3 ')
+
+        f = c.open('snowmany', 'r')
+        self.assertEqual(f.readline(), self.snowman+self.snowman+'\n')
+        self.assertEqual(f.readline(), self.snowman+'\n')
+        f.close()
 
 
 class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):

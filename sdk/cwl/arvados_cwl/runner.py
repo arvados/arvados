@@ -16,7 +16,7 @@ from schema_salad.sourceline import SourceLine, cmap
 
 from cwltool.command_line_tool import CommandLineTool
 import cwltool.workflow
-from cwltool.process import scandeps, UnsupportedRequirement, normalizeFilesDirs, shortname
+from cwltool.process import scandeps, UnsupportedRequirement, normalizeFilesDirs, shortname, Process
 from cwltool.load_tool import fetch_document
 from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, visit_class
 from cwltool.utils import aslist
@@ -356,25 +356,28 @@ def upload_workflow_collection(arvrunner, name, packed):
     return collection.portable_data_hash()
 
 
-class Runner(object):
+class Runner(Process):
     """Base class for runner processes, which submit an instance of
     arvados-cwl-runner and wait for the final result."""
 
-    def __init__(self, runner, tool, job_order, enable_reuse,
+    def __init__(self, runner, tool, loadingContext, enable_reuse,
                  output_name, output_tags, submit_runner_ram=0,
                  name=None, on_error=None, submit_runner_image=None,
                  intermediate_output_ttl=0, merged_map=None,
                  priority=None, secret_store=None,
                  collection_cache_size=256,
                  collection_cache_is_default=True):
+
+        super(Runner, self).__init__(tool.tool, loadingContext)
+
         self.arvrunner = runner
-        self.tool = tool
-        self.job_order = job_order
+        self.embedded_tool = tool
+        self.job_order = None
         self.running = False
         if enable_reuse:
             # If reuse is permitted by command line arguments but
             # disabled by the workflow itself, disable it.
-            reuse_req, _ = self.tool.get_requirement("http://arvados.org/cwl#ReuseRequirement")
+            reuse_req, _ = self.embedded_tool.get_requirement("http://arvados.org/cwl#ReuseRequirement")
             if reuse_req:
                 enable_reuse = reuse_req["enableReuse"]
         self.enable_reuse = enable_reuse
@@ -393,7 +396,7 @@ class Runner(object):
         self.submit_runner_ram = 1024  # defaut 1 GiB
         self.collection_cache_size = collection_cache_size
 
-        runner_resource_req, _ = self.tool.get_requirement("http://arvados.org/cwl#WorkflowRunnerResources")
+        runner_resource_req, _ = self.embedded_tool.get_requirement("http://arvados.org/cwl#WorkflowRunnerResources")
         if runner_resource_req:
             if runner_resource_req.get("coresMin"):
                 self.submit_runner_cores = runner_resource_req["coresMin"]
@@ -413,6 +416,15 @@ class Runner(object):
             raise Exception("Value of submit-runner-cores must be greater than zero")
 
         self.merged_map = merged_map or {}
+
+    def job(self,
+            job_order,         # type: Mapping[Text, Text]
+            output_callbacks,  # type: Callable[[Any, Any], Any]
+            runtimeContext     # type: RuntimeContext
+           ):  # type: (...) -> Generator[Any, None, None]
+        self.job_order = job_order
+        self._init_job(job_order, runtimeContext)
+        yield self
 
     def update_pipeline_component(self, record):
         pass
@@ -449,7 +461,7 @@ class Runner(object):
                                                        keep_client=self.arvrunner.keep_client,
                                                        num_retries=self.arvrunner.num_retries)
             if "cwl.output.json" in outc:
-                with outc.open("cwl.output.json") as f:
+                with outc.open("cwl.output.json", "rb") as f:
                     if f.size() > 0:
                         outputs = json.load(f)
             def keepify(fileobj):

@@ -197,7 +197,7 @@ func (disp *Dispatcher) run() error {
 	defer disp.sqCheck.Stop()
 
 	if disp.cluster != nil && len(disp.cluster.InstanceTypes) > 0 {
-		go dispatchcloud.SlurmNodeTypeFeatureKludge(disp.cluster)
+		go SlurmNodeTypeFeatureKludge(disp.cluster)
 	}
 
 	if _, err := daemon.SdNotify(false, "READY=1"); err != nil {
@@ -229,12 +229,7 @@ func (disp *Dispatcher) checkSqueueForOrphans() {
 func (disp *Dispatcher) slurmConstraintArgs(container arvados.Container) []string {
 	mem := int64(math.Ceil(float64(container.RuntimeConstraints.RAM+container.RuntimeConstraints.KeepCacheRAM+disp.ReserveExtraRAM) / float64(1048576)))
 
-	var disk int64
-	for _, m := range container.Mounts {
-		if m.Kind == "tmp" {
-			disk += m.Capacity
-		}
-	}
+	disk := dispatchcloud.EstimateScratchSpace(&container)
 	disk = int64(math.Ceil(float64(disk) / float64(1048576)))
 	return []string{
 		fmt.Sprintf("--mem=%d", mem),
@@ -246,7 +241,7 @@ func (disp *Dispatcher) slurmConstraintArgs(container arvados.Container) []strin
 func (disp *Dispatcher) sbatchArgs(container arvados.Container) ([]string, error) {
 	var args []string
 	args = append(args, disp.SbatchArguments...)
-	args = append(args, "--job-name="+container.UUID, fmt.Sprintf("--nice=%d", initialNiceValue))
+	args = append(args, "--job-name="+container.UUID, fmt.Sprintf("--nice=%d", initialNiceValue), "--no-requeue")
 
 	if disp.cluster == nil {
 		// no instance types configured

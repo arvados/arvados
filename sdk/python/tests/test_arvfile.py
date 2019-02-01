@@ -217,26 +217,41 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
         keep = ArvadosFileWriterTestCase.MockKeep({
             "781e5e245d69b566979b86e28d23f2c7+10": b"0123456789",
         })
-        c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n', keep_client=keep)
-        writer = c.open("count.txt", "ab+")
-        self.assertEqual(writer.read(20), b"0123456789")
+        for (mode, convert) in (
+                ('a+', lambda data: data.decode(encoding='utf-8')),
+                ('at+', lambda data: data.decode(encoding='utf-8')),
+                ('ab+', lambda data: data)):
+            c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n', keep_client=keep)
+            writer = c.open("count.txt", mode)
+            self.assertEqual(writer.read(20), convert(b"0123456789"))
 
-        writer.seek(0, os.SEEK_SET)
-        writer.write("hello")
-        self.assertEqual(writer.read(), b"")
-        writer.seek(-5, os.SEEK_CUR)
-        self.assertEqual(writer.read(3), b"hel")
-        self.assertEqual(writer.read(), b"lo")
-        writer.seek(0, os.SEEK_SET)
-        self.assertEqual(writer.read(), b"0123456789hello")
+            writer.seek(0, os.SEEK_SET)
+            writer.write(convert(b"hello"))
+            self.assertEqual(writer.read(), convert(b""))
+            if 'b' in mode:
+                writer.seek(-5, os.SEEK_CUR)
+                self.assertEqual(writer.read(3), convert(b"hel"))
+                self.assertEqual(writer.read(), convert(b"lo"))
+            else:
+                with self.assertRaises(IOError):
+                    writer.seek(-5, os.SEEK_CUR)
+                with self.assertRaises(IOError):
+                    writer.seek(-3, os.SEEK_END)
+            writer.seek(0, os.SEEK_SET)
+            writer.read(7)
+            self.assertEqual(7, writer.tell())
+            self.assertEqual(7, writer.seek(7, os.SEEK_SET))
 
-        writer.seek(0)
-        writer.write("world")
-        self.assertEqual(writer.read(), b"")
-        writer.seek(0)
-        self.assertEqual(writer.read(), b"0123456789helloworld")
+            writer.seek(0, os.SEEK_SET)
+            self.assertEqual(writer.read(), convert(b"0123456789hello"))
 
-        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 fc5e038d38a57032085441e7fe7010b0+10 0:20:count.txt\n", c.portable_manifest_text())
+            writer.seek(0)
+            writer.write(convert(b"world"))
+            self.assertEqual(writer.read(), convert(b""))
+            writer.seek(0)
+            self.assertEqual(writer.read(), convert(b"0123456789helloworld"))
+
+            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 fc5e038d38a57032085441e7fe7010b0+10 0:20:count.txt\n", c.portable_manifest_text())
 
     def test_write_at_beginning(self):
         keep = ArvadosFileWriterTestCase.MockKeep({

@@ -1518,6 +1518,14 @@ func (runner *ContainerRunner) Run() (err error) {
 		runner.CrunchLog.Close()
 	}()
 
+	err = runner.fetchContainerRecord()
+	if err != nil {
+		return
+	}
+	if runner.Container.State != "Locked" {
+		return fmt.Errorf("dispatch error detected: container %q has state %q", runner.Container.UUID, runner.Container.State)
+	}
+
 	defer func() {
 		// checkErr prints e (unless it's nil) and sets err to
 		// e (unless err is already non-nil). Thus, if err
@@ -1558,10 +1566,6 @@ func (runner *ContainerRunner) Run() (err error) {
 		checkErr("UpdateContainerFinal", runner.UpdateContainerFinal())
 	}()
 
-	err = runner.fetchContainerRecord()
-	if err != nil {
-		return
-	}
 	runner.setupSignals()
 	err = runner.startHoststat()
 	if err != nil {
@@ -1732,6 +1736,10 @@ func main() {
 	cgroupParent := flag.String("cgroup-parent", "docker", "name of container's parent cgroup (ignored if -cgroup-parent-subsystem is used)")
 	cgroupParentSubsystem := flag.String("cgroup-parent-subsystem", "", "use current cgroup for given subsystem as parent cgroup for container")
 	caCertsPath := flag.String("ca-certs", "", "Path to TLS root certificates")
+	detach := flag.Bool("detach", false, "Detach from parent process and run in the background")
+	sleep := flag.Duration("sleep", 0, "Delay before starting (testing use only)")
+	kill := flag.Int("kill", -1, "Send signal to an existing crunch-run process for given UUID")
+	list := flag.Bool("list", false, "List UUIDs of existing crunch-run processes")
 	enableNetwork := flag.String("container-enable-networking", "default",
 		`Specify if networking should be enabled for container.  One of 'default', 'always':
     	default: only enable networking if container requests it.
@@ -1743,7 +1751,29 @@ func main() {
 	memprofile := flag.String("memprofile", "", "write memory profile to `file` after running container")
 	getVersion := flag.Bool("version", false, "Print version information and exit.")
 	flag.Duration("check-containerd", 0, "Ignored. Exists for compatibility with older versions.")
+
+	ignoreDetachFlag := false
+	if len(os.Args) > 1 && os.Args[1] == "-no-detach" {
+		// This process was invoked by a parent process, which
+		// has passed along its own arguments, including
+		// -detach, after the leading -no-detach flag.  Strip
+		// the leading -no-detach flag (it's not recognized by
+		// flag.Parse()) and ignore the -detach flag that
+		// comes later.
+		os.Args = append([]string{os.Args[0]}, os.Args[2:]...)
+		ignoreDetachFlag = true
+	}
+
 	flag.Parse()
+
+	switch {
+	case *detach && !ignoreDetachFlag:
+		os.Exit(Detach(flag.Arg(0), os.Args, os.Stdout, os.Stderr))
+	case *kill >= 0:
+		os.Exit(KillProcess(flag.Arg(0), syscall.Signal(*kill), os.Stdout, os.Stderr))
+	case *list:
+		os.Exit(ListProcesses(os.Stdout, os.Stderr))
+	}
 
 	// Print version information if requested
 	if *getVersion {
@@ -1752,6 +1782,7 @@ func main() {
 	}
 
 	log.Printf("crunch-run %s started", version)
+	time.Sleep(*sleep)
 
 	containerId := flag.Arg(0)
 

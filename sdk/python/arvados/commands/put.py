@@ -31,6 +31,7 @@ import traceback
 
 from apiclient import errors as apiclient_errors
 from arvados._version import __version__
+from arvados.util import keep_locator_pattern
 
 import arvados.commands._util as arv_cmd
 
@@ -289,6 +290,9 @@ class ResumeCacheConflict(Exception):
     pass
 
 
+class ResumeCacheInvalidError(Exception):
+    pass
+
 class ArvPutArgumentConflict(Exception):
     pass
 
@@ -387,7 +391,7 @@ class ResumeCache(object):
             new_cache = os.fdopen(new_cache_fd, 'r+')
             json.dump(data, new_cache)
             os.rename(new_cache_name, self.filename)
-        except (IOError, OSError, ResumeCacheConflict) as error:
+        except (IOError, OSError, ResumeCacheConflict):
             try:
                 os.unlink(new_cache_name)
             except NameError:  # mkstemp failed.
@@ -482,8 +486,8 @@ class ArvPutUploadJob(object):
 
     def _build_upload_list(self):
         """
-        Scan the requested paths to count file sizes, excluding files & dirs if requested
-        and building the upload file list.
+        Scan the requested paths to count file sizes, excluding requested files
+        and dirs and building the upload file list.
         """
         # If there aren't special files to be read, reset total bytes count to zero
         # to start counting.
@@ -795,6 +799,20 @@ class ArvPutUploadJob(object):
     def _my_collection(self):
         return self._remote_collection if self.update else self._local_collection
 
+    def _get_cache_filepath(self):
+        # Set up cache file name from input paths.
+        md5 = hashlib.md5()
+        md5.update(arvados.config.get('ARVADOS_API_HOST', '!nohost').encode())
+        realpaths = sorted(os.path.realpath(path) for path in self.paths)
+        md5.update(b'\0'.join([p.encode() for p in realpaths]))
+        if self.filename:
+            md5.update(self.filename.encode())
+        cache_filename = md5.hexdigest()
+        cache_filepath = os.path.join(
+            arv_cmd.make_home_conf_dir(self.CACHE_DIR, 0o700, 'raise'),
+            cache_filename)
+        return cache_filepath
+
     def _setup_state(self, update_collection):
         """
         Create a new cache file or load a previously existing one.
@@ -814,17 +832,7 @@ class ArvPutUploadJob(object):
             raise CollectionUpdateError("Collection locator unknown: '{}'".format(update_collection))
 
         if self.use_cache:
-            # Set up cache file name from input paths.
-            md5 = hashlib.md5()
-            md5.update(arvados.config.get('ARVADOS_API_HOST', '!nohost').encode())
-            realpaths = sorted(os.path.realpath(path) for path in self.paths)
-            md5.update(b'\0'.join([p.encode() for p in realpaths]))
-            if self.filename:
-                md5.update(self.filename.encode())
-            cache_filename = md5.hexdigest()
-            cache_filepath = os.path.join(
-                arv_cmd.make_home_conf_dir(self.CACHE_DIR, 0o700, 'raise'),
-                cache_filename)
+            cache_filepath = self._get_cache_filepath()
             if self.resume and os.path.exists(cache_filepath):
                 self.logger.info("Resuming upload from cache file {}".format(cache_filepath))
                 self._cache_file = open(cache_filepath, 'a+')
@@ -850,12 +858,56 @@ class ArvPutUploadJob(object):
                 self.logger.info("No cache usage requested for this run.")
                 # No cache file, set empty state
                 self._state = copy.deepcopy(self.EMPTY_STATE)
+            if not self._cached_manifest_valid():
+                raise ResumeCacheInvalidError()
             # Load the previous manifest so we can check if files were modified remotely.
             self._local_collection = arvados.collection.Collection(
                 self._state['manifest'],
                 replication_desired=self.replication_desired,
                 put_threads=self.put_threads,
                 api_client=self._api_client)
+
+    def _cached_manifest_valid(self):
+        """
+        Validate the oldest non-expired block signature to check if cached manifest
+        is usable: checking if the cached manifest was not created with a different
+        arvados account.
+        """
+        if self._state.get('manifest', None) is None:
+            # No cached manifest yet, all good.
+            return True
+        now = datetime.datetime.utcnow()
+        oldest_exp = None
+        oldest_loc = None
+        block_found = False
+        for m in keep_locator_pattern.finditer(self._state['manifest']):
+            loc = m.group(0)
+            try:
+                exp = datetime.datetime.utcfromtimestamp(int(loc.split('@')[1], 16))
+            except IndexError:
+                # Locator without signature
+                continue
+            block_found = True
+            if exp > now and (oldest_exp is None or exp < oldest_exp):
+                oldest_exp = exp
+                oldest_loc = loc
+        if not block_found:
+            # No block signatures found => no invalid block signatures.
+            return True
+        if oldest_loc is None:
+            # Locator signatures found, but all have expired.
+            # Reset the cache and move on.
+            self.logger.info('Cache expired, starting from scratch.')
+            self._state['manifest'] = ''
+            return True
+        kc = arvados.KeepClient(api_client=self._api_client,
+                                num_retries=self.num_retries)
+        try:
+            kc.head(oldest_loc)
+        except arvados.errors.KeepRequestError:
+            # Something is wrong, cached manifest is not valid.
+            return False
+        return True
 
     def collection_file_paths(self, col, path_prefix='.'):
         """Return a list of file paths by recursively go through the entire collection `col`"""
@@ -1130,6 +1182,14 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
         logger.error("\n".join([
             "arv-put: Another process is already uploading this data.",
             "         Use --no-cache if this is really what you want."]))
+        sys.exit(1)
+    except ResumeCacheInvalidError:
+        logger.error("\n".join([
+            "arv-put: Resume cache contains invalid signature: it may have expired",
+            "         or been created with another Arvados user's credentials.",
+            "         Switch user or use one of the following options to restart upload:",
+            "         --no-resume to start a new resume cache.",
+            "         --no-cache to disable resume cache."]))
         sys.exit(1)
     except CollectionUpdateError as error:
         logger.error("\n".join([

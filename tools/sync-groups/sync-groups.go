@@ -510,8 +510,8 @@ func GetRemoteGroups(cfg *ConfigParams, allUsers map[string]arvados.User) (remot
 				Operand:  group.UUID,
 			}, {
 				Attr:     "head_uuid",
-				Operator: "like",
-				Operand:  "%-tpzed-%",
+				Operator: "is_a",
+				Operand:  "arvados#user",
 			}},
 		}
 		// User -> Group filter
@@ -534,8 +534,8 @@ func GetRemoteGroups(cfg *ConfigParams, allUsers map[string]arvados.User) (remot
 				Operand:  group.UUID,
 			}, {
 				Attr:     "tail_uuid",
-				Operator: "like",
-				Operand:  "%-tpzed-%",
+				Operator: "is_a",
+				Operand:  "arvados#user",
 			}},
 		}
 		g2uLinks, err := GetAll(cfg.Client, "links", g2uFilter, &LinkList{})

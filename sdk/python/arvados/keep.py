@@ -791,6 +791,7 @@ class KeepClient(object):
 
         if local_store:
             self.local_store = local_store
+            self.head = self.local_store_head
             self.get = self.local_store_get
             self.put = self.local_store_put
         else:
@@ -1229,6 +1230,18 @@ class KeepClient(object):
             return b''
         with open(os.path.join(self.local_store, locator.md5sum), 'rb') as f:
             return f.read()
+
+    def local_store_head(self, loc_s, num_retries=None):
+        """Companion to local_store_put()."""
+        try:
+            locator = KeepLocator(loc_s)
+        except ValueError:
+            raise arvados.errors.NotFoundError(
+                "Invalid data locator: '%s'" % loc_s)
+        if locator.md5sum == config.EMPTY_BLOCK_LOCATOR.split('+')[0]:
+            return True
+        if os.path.exists(os.path.join(self.local_store, locator.md5sum)):
+            return True
 
     def is_cached(self, locator):
         return self.block_cache.reserve_cache(expect_hash)

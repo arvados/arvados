@@ -1046,6 +1046,23 @@ class TestSubmit(unittest.TestCase):
 
 
     @stubs
+    def test_submit_missing_input(self, stubs):
+        capture_stdout = cStringIO.StringIO()
+        exited = arvados_cwl.main(
+            ["--submit", "--no-wait", "--api=containers", "--debug",
+             "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
+            capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+        self.assertEqual(exited, 0)
+
+        capture_stdout = cStringIO.StringIO()
+        exited = arvados_cwl.main(
+            ["--submit", "--no-wait", "--api=containers", "--debug",
+             "tests/wf/submit_wf.cwl", "tests/submit_test_job_missing.json"],
+            capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+        self.assertEqual(exited, 1)
+
+
+    @stubs
     def test_submit_container_project(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
         capture_stdout = cStringIO.StringIO()

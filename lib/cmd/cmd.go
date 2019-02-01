@@ -36,8 +36,9 @@ func (v Version) RunCommand(prog string, args []string, stdin io.Reader, stdout,
 	return 0
 }
 
-// Multi is a Handler that looks up its first argument in a map, and
-// invokes the resulting Handler with the remaining args.
+// Multi is a Handler that looks up its first argument in a map (after
+// stripping any "arvados-" or "crunch-" prefix), and invokes the
+// resulting Handler with the remaining args.
 //
 // Example:
 //
