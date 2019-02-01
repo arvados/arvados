@@ -184,7 +184,9 @@ func (cq *Queue) Update() error {
 	cq.mtx.Lock()
 	defer cq.mtx.Unlock()
 	for uuid, ctr := range next {
-		if _, keep := cq.dontupdate[uuid]; keep {
+		if _, dontupdate := cq.dontupdate[uuid]; dontupdate {
+			// Don't clobber a local update that happened
+			// after we started polling.
 			continue
 		}
 		if cur, ok := cq.current[uuid]; !ok {
@@ -195,11 +197,16 @@ func (cq *Queue) Update() error {
 		}
 	}
 	for uuid := range cq.current {
-		if _, keep := cq.dontupdate[uuid]; keep {
+		if _, dontupdate := cq.dontupdate[uuid]; dontupdate {
+			// Don't expunge an entry that was
+			// added/updated locally after we started
+			// polling.
 			continue
-		} else if _, keep = next[uuid]; keep {
-			continue
-		} else {
+		} else if _, stillpresent := next[uuid]; !stillpresent {
+			// Expunge an entry that no longer appears in
+			// the poll response (evidently it's
+			// cancelled, completed, deleted, or taken by
+			// a different dispatcher).
 			delete(cq.current, uuid)
 		}
 	}
