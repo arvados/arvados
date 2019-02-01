@@ -5,6 +5,7 @@
 from future import standard_library
 standard_library.install_aliases()
 from builtins import object
+from builtins import str
 from future.utils import viewvalues
 
 import fnmatch
@@ -288,7 +289,7 @@ pipeline_template_uuid_pattern = re.compile(r'[a-z0-9]{5}-p5p6p-[a-z0-9]{15}')
 
 def collectionResolver(api_client, document_loader, uri, num_retries=4):
     if uri.startswith("keep:") or uri.startswith("arvwf:"):
-        return uri.encode("utf-8").decode()
+        return str(uri)
 
     if workflow_uuid_pattern.match(uri):
         return u"arvwf:%s#main" % (uri)

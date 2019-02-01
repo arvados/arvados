@@ -5,6 +5,7 @@
 from __future__ import division
 from builtins import next
 from builtins import object
+from builtins import str
 from future.utils import viewvalues
 
 import argparse
@@ -467,7 +468,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
         adjustFileObjs(outputObj, rewrite)
 
         with final.open("cwl.output.json", "w") as f:
-            res = json.dumps(outputObj, sort_keys=True, indent=4, separators=(',',': '), ensure_ascii=False).encode('utf-8').decode()
+            res = str(json.dumps(outputObj, sort_keys=True, indent=4, separators=(',',': '), ensure_ascii=False))
             f.write(res)           
 
         final.save_new(name=name, owner_uuid=self.project_uuid, storage_classes=storage_classes, ensure_unique_name=True)
