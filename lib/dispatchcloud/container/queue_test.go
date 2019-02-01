@@ -6,12 +6,14 @@ package container
 
 import (
 	"errors"
+	"os"
 	"sync"
 	"testing"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
 
@@ -21,6 +23,14 @@ func Test(t *testing.T) {
 }
 
 var _ = check.Suite(&IntegrationSuite{})
+
+func logger() logrus.FieldLogger {
+	logger := logrus.StandardLogger()
+	if os.Getenv("ARVADOS_DEBUG") != "" {
+		logger.SetLevel(logrus.DebugLevel)
+	}
+	return logger
+}
 
 type IntegrationSuite struct{}
 
@@ -35,7 +45,7 @@ func (suite *IntegrationSuite) TestGetLockUnlockCancel(c *check.C) {
 	}
 
 	client := arvados.NewClientFromEnv()
-	cq := NewQueue(test.Logger(), nil, typeChooser, client)
+	cq := NewQueue(logger(), nil, typeChooser, client)
 
 	err := cq.Update()
 	c.Check(err, check.IsNil)
@@ -92,7 +102,7 @@ func (suite *IntegrationSuite) TestCancelIfNoInstanceType(c *check.C) {
 	}
 
 	client := arvados.NewClientFromEnv()
-	cq := NewQueue(test.Logger(), nil, errorTypeChooser, client)
+	cq := NewQueue(logger(), nil, errorTypeChooser, client)
 
 	var ctr arvados.Container
 	err := client.RequestAndDecode(&ctr, "GET", "arvados/v1/containers/"+arvadostest.QueuedContainerUUID, nil, nil)
