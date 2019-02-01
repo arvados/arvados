@@ -68,8 +68,8 @@ class Collection < ArvadosBase
         .sort.flat_map do |parts|
         [parts + [nil]] + dir_to_tree.call(File.join(parts))
       end
-      # Then extend that list with files in this directory.
-      subnodes + tree[File.split(dirname)]
+      # Then extend that list with files in this directory, except the empty dir placeholders (0:0:. files).
+      subnodes + tree[File.split(dirname)].reject { |_, basename, size| (basename == '.') and (size == 0) }
     end
     dir_to_tree.call('.')
   end
