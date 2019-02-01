@@ -212,6 +212,9 @@ func (cq *Queue) Update() error {
 func (cq *Queue) addEnt(uuid string, ctr arvados.Container) {
 	it, err := cq.chooseType(&ctr)
 	if err != nil && (ctr.State == arvados.ContainerStateQueued || ctr.State == arvados.ContainerStateLocked) {
+		// We assume here that any chooseType error is a hard
+		// error: it wouldn't help to try again, or to leave
+		// it for a different dispatcher process to attempt.
 		errorString := err.Error()
 		cq.logger.WithField("ContainerUUID", ctr.UUID).Warn("cancel container with no suitable instance type")
 		go func() {
