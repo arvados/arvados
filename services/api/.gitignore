@@ -30,3 +30,6 @@
 
 # Generated git-commit.version file
 /git-commit.version
+
+# Generated when building distribution packages
+/package-build.version
