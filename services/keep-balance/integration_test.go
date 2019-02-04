@@ -15,7 +15,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
 

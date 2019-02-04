@@ -38,9 +38,6 @@ if ! test -s /var/lib/arvados/management_token ; then
 fi
 management_token=$(cat /var/lib/arvados/management_token)
 
-# self signed key will be created by SSO server script.
-test -s /var/lib/arvados/self-signed.key
-
 sso_app_secret=$(cat /var/lib/arvados/sso_app_secret)
 
 if test -s /var/lib/arvados/vm-uuid ; then
@@ -58,9 +55,9 @@ $RAILS_ENV:
   sso_app_secret: $sso_app_secret
   sso_app_id: arvados-server
   sso_provider_url: "https://$localip:${services[sso]}"
-  sso_insecure: true
-  workbench_address: "http://$localip/"
-  websocket_address: "ws://$localip:${services[websockets]}/websocket"
+  sso_insecure: false
+  workbench_address: "https://$localip/"
+  websocket_address: "wss://$localip:${services[websockets-ssl]}/websocket"
   git_repo_ssh_base: "git@$localip:"
   git_repo_https_base: "http://$localip:${services[arv-git-httpd]}/"
   new_users_are_active: true
@@ -70,7 +67,7 @@ $RAILS_ENV:
   auto_setup_new_users_with_repository: true
   default_collection_replication: 1
   docker_image_formats: ["v2"]
-  keep_web_service_url: http://$localip:${services[keep-web]}/
+  keep_web_service_url: https://$localip:${services[keep-web-ssl]}/
   ManagementToken: $management_token
 EOF
 

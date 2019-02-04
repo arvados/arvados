@@ -126,7 +126,7 @@ class WorkUnitsController < ApplicationController
                           "--local",
                           "--api=containers",
                           "--project-uuid=#{params['work_unit']['owner_uuid']}",
-                          "--collection-keep-cache=#{keep_cache}",
+                          "--collection-cache-size=#{keep_cache}",
                           "/var/lib/cwl/workflow.json#main",
                           "/var/lib/cwl/cwl.input.json"]
 

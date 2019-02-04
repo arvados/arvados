@@ -6,6 +6,7 @@ FROM arvados/arvbox-base
 ARG arvados_version
 ARG sso_version=master
 ARG composer_version=master
+ARG workbench2_version=master
 
 RUN cd /usr/src && \
     git clone --no-checkout https://github.com/curoverse/arvados.git && \
@@ -13,7 +14,9 @@ RUN cd /usr/src && \
     git clone --no-checkout https://github.com/curoverse/sso-devise-omniauth-provider.git sso && \
     git -C sso checkout ${sso_version} && \
     git clone --no-checkout https://github.com/curoverse/composer.git && \
-    git -C composer checkout ${composer_version}
+    git -C composer checkout ${composer_version} && \
+    git clone --no-checkout https://github.com/curoverse/arvados-workbench2.git workbench2 && \
+    git -C workbench2 checkout ${workbench2_version}
 
 ADD service/ /var/lib/arvbox/service
 RUN ln -sf /var/lib/arvbox/service /etc
@@ -25,6 +28,7 @@ RUN echo "production" > /var/lib/arvados/workbench_rails_env
 RUN chown -R 1000:1000 /usr/src && /usr/local/lib/arvbox/createusers.sh
 
 RUN sudo -u arvbox /var/lib/arvbox/service/composer/run-service --only-deps
+RUN sudo -u arvbox /var/lib/arvbox/service/workbench2/run-service --only-deps
 RUN sudo -u arvbox /var/lib/arvbox/service/keep-web/run-service --only-deps
 RUN sudo -u arvbox /var/lib/arvbox/service/sso/run-service --only-deps
 RUN sudo -u arvbox /var/lib/arvbox/service/api/run-service --only-deps

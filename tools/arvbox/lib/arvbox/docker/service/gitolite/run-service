@@ -114,7 +114,7 @@ $RAILS_ENV:
   gitolite_tmp: /var/lib/arvados/git
   arvados_api_host: $localip:${services[controller-ssl]}
   arvados_api_token: "$ARVADOS_API_TOKEN"
-  arvados_api_host_insecure: true
+  arvados_api_host_insecure: false
   gitolite_arvados_git_user_key: "$git_user_key"
 EOF
 

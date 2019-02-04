@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
 

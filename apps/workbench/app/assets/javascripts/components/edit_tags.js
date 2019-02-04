@@ -4,7 +4,7 @@
 
 window.SimpleInput = {
     view: function(vnode) {
-        return m("input.form-control", {
+        return m('input.form-control', {
             style: {
                 width: '100%',
             },
@@ -22,7 +22,7 @@ window.SimpleInput = {
 
 window.SelectOrAutocomplete = {
     view: function(vnode) {
-        return m("input.form-control", {
+        return m('input.form-control', {
             style: {
                 width: '100%'
             },
@@ -87,9 +87,9 @@ window.TagEditorRow = {
                     valueOpts = vnode.attrs.vocabulary().tags[vnode.attrs.name()].values
             }
         }
-        return m("tr", [
+        return m('tr', [
             // Erase tag
-            m("td", [
+            m('td', [
                 vnode.attrs.editMode &&
                 m('div.text-center', m('a.btn.btn-default.btn-sm', {
                     style: {
@@ -99,13 +99,13 @@ window.TagEditorRow = {
                 }, m('i.fa.fa-fw.fa-trash-o')))
             ]),
             // Tag key
-            m("td", [
+            m('td', [
                 vnode.attrs.editMode ?
-                m("div", {key: 'key'}, [
+                m('div', {key: 'key'}, [
                     m(inputComponent, {
                         options: nameOpts,
                         value: vnode.attrs.name,
-                        // Allow any tag name unless "strict" is set to true.
+                        // Allow any tag name unless 'strict' is set to true.
                         create: !vnode.attrs.vocabulary().strict,
                         placeholder: 'key',
                     })
@@ -113,9 +113,9 @@ window.TagEditorRow = {
                 : vnode.attrs.name
             ]),
             // Tag value
-            m("td", [
+            m('td', [
                 vnode.attrs.editMode ?
-                m("div", {key: 'value'}, [
+                m('div', {key: 'value'}, [
                     m(inputComponent, {
                         options: valueOpts,
                         value: vnode.attrs.value,
@@ -137,20 +137,20 @@ window.TagEditorRow = {
 
 window.TagEditorTable = {
     view: function(vnode) {
-        return m("table.table.table-condensed.table-justforlayout", [
-            m("colgroup", [
-                m("col", {width:"5%"}),
-                m("col", {width:"25%"}),
-                m("col", {width:"70%"}),
+        return m('table.table.table-condensed.table-justforlayout', [
+            m('colgroup', [
+                m('col', {width:'5%'}),
+                m('col', {width:'25%'}),
+                m('col', {width:'70%'}),
             ]),
-            m("thead", [
-                m("tr", [
-                    m("th"),
-                    m("th", "Key"),
-                    m("th", "Value"),
+            m('thead', [
+                m('tr', [
+                    m('th'),
+                    m('th', 'Key'),
+                    m('th', 'Value'),
                 ])
             ]),
-            m("tbody", [
+            m('tbody', [
                 vnode.attrs.tags.length > 0
                 ? vnode.attrs.tags.map(function(tag, idx) {
                     return m(TagEditorRow, {
@@ -165,7 +165,7 @@ window.TagEditorTable = {
                         vocabulary: vnode.attrs.vocabulary
                     })
                 })
-                : m("tr", m("td[colspan=3]", m("center", "Loading tags...")))
+                : m('tr', m('td[colspan=3]', m('center', 'Loading tags...')))
             ]),
         ])
     }
@@ -185,18 +185,18 @@ window.TagEditorApp = {
     oninit: function(vnode) {
         vnode.state.sessionDB = new SessionDB()
         // Get vocabulary
-        vnode.state.vocabulary = m.stream({"strict":false, "tags":{}})
+        vnode.state.vocabulary = m.stream({'strict':false, 'tags':{}})
         var vocabularyTimestamp = parseInt(Date.now() / 300000) // Bust cache every 5 minutes
         m.request('/vocabulary.json?v=' + vocabularyTimestamp).then(vnode.state.vocabulary)
         vnode.state.editMode = vnode.attrs.targetEditable
         vnode.state.tags = []
         vnode.state.dirty = m.stream(false)
         vnode.state.dirty.map(m.redraw)
-        vnode.state.objPath = '/arvados/v1/'+vnode.attrs.targetController+'/'+vnode.attrs.targetUuid
+        vnode.state.objPath = 'arvados/v1/' + vnode.attrs.targetController + '/' + vnode.attrs.targetUuid
         // Get tags
         vnode.state.sessionDB.request(
             vnode.state.sessionDB.loadLocal(),
-            '/arvados/v1/'+vnode.attrs.targetController,
+            'arvados/v1/' + vnode.attrs.targetController,
             {
                 data: {
                     filters: JSON.stringify([['uuid', '=', vnode.attrs.targetUuid]]),
@@ -228,8 +228,8 @@ window.TagEditorApp = {
     view: function(vnode) {
         return [
             vnode.state.editMode &&
-            m("div.pull-left", [
-                m("a.btn.btn-primary.btn-sm"+(vnode.state.dirty() ? '' : '.disabled'), {
+            m('div.pull-left', [
+                m('a.btn.btn-primary.btn-sm' + (vnode.state.dirty() ? '' : '.disabled'), {
                     style: {
                         margin: '10px 0px'
                     },
@@ -244,7 +244,7 @@ window.TagEditorApp = {
                         vnode.state.sessionDB.request(
                             vnode.state.sessionDB.loadLocal(),
                             vnode.state.objPath, {
-                                method: "PUT",
+                                method: 'PUT',
                                 data: {properties: JSON.stringify(tags)}
                             }
                         ).then(function(v) {

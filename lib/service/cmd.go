@@ -15,8 +15,8 @@ import (
 	"git.curoverse.com/arvados.git/lib/cmd"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
-	"github.com/Sirupsen/logrus"
 	"github.com/coreos/go-systemd/daemon"
+	"github.com/sirupsen/logrus"
 )
 
 type Handler interface {

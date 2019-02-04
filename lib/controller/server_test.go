@@ -12,7 +12,7 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
 

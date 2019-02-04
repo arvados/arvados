@@ -37,7 +37,7 @@ CONFIGSRC=path Dir with api server config files to copy into source tree.
                (If none given, leave config files alone in source tree.)
 services/api_test="TEST=test/functional/arvados/v1/collections_controller_test.rb"
                Restrict apiserver tests to the given file
-sdk/python_test="--test-suite test.test_keep_locator"
+sdk/python_test="--test-suite tests.test_keep_locator"
                Restrict Python SDK tests to the given class
 apps/workbench_test="TEST=test/integration/pipeline_instances_test.rb"
                Restrict Workbench tests to the given file
@@ -76,6 +76,7 @@ lib/cli
 lib/cmd
 lib/controller
 lib/crunchstat
+lib/cloud
 lib/dispatchcloud
 lib/dispatchcloud/container
 lib/dispatchcloud/scheduler
@@ -929,6 +930,7 @@ gostuff=(
     lib/cmd
     lib/controller
     lib/crunchstat
+    lib/cloud
     lib/dispatchcloud
     lib/dispatchcloud/container
     lib/dispatchcloud/scheduler

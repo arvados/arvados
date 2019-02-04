@@ -101,8 +101,14 @@ module Keep
   end
 
   class Manifest
-    STRICT_STREAM_TOKEN_REGEXP = /^(\.)(\/[^\/\s]+)*$/
-    STRICT_FILE_TOKEN_REGEXP = /^[[:digit:]]+:[[:digit:]]+:([^\s\/]+(\/[^\s\/]+)*)$/
+    STREAM_TOKEN_REGEXP = /^([^\000-\040\\]|\\[0-3][0-7][0-7])+$/
+    STREAM_NAME_REGEXP = /^(\.)(\/[^\/]+)*$/
+
+    EMPTY_DIR_TOKEN_REGEXP = /^0:0:\.$/ # The exception when a file can have '.' as a name
+    FILE_TOKEN_REGEXP = /^[[:digit:]]+:[[:digit:]]+:([^\000-\040\\]|\\[0-3][0-7][0-7])+$/
+    FILE_NAME_REGEXP = /^[[:digit:]]+:[[:digit:]]+:([^\/]+(\/[^\/]+)*)$/
+
+    NON_8BIT_ENCODED_CHAR = /[^\\]\\[4-7][0-7][0-7]/
 
     # Class to parse a manifest text and provide common views of that data.
     def initialize(manifest_text)
@@ -131,7 +137,9 @@ module Keep
       end
     end
 
-    def unescape(s)
+    def self.unescape(s)
+      return nil if s.nil?
+
       # Parse backslash escapes in a Keep manifest stream or file name.
       s.gsub(/\\(\\|[0-7]{3})/) do |_|
         case $1
@@ -141,6 +149,10 @@ module Keep
           $1.to_i(8).chr
         end
       end
+    end
+
+    def unescape(s)
+      self.class.unescape(s)
     end
 
     def split_file_token token
@@ -162,15 +174,15 @@ module Keep
           elsif in_file_tokens or not Locator.valid? token
             in_file_tokens = true
 
-            file_tokens = split_file_token(token)
+            start_pos, file_size, file_name = split_file_token(token)
             stream_name_adjuster = ''
-            if file_tokens[2].include?('/')                # '/' in filename
-              parts = file_tokens[2].rpartition('/')
-              stream_name_adjuster = parts[1] + parts[0]   # /dir_parts
-              file_tokens[2] = parts[2]
+            if file_name.include?('/')                # '/' in filename
+              dirname, sep, basename = file_name.rpartition('/')
+              stream_name_adjuster = sep + dirname   # /dir_parts
+              file_name = basename
             end
 
-            yield [stream_name + stream_name_adjuster] + file_tokens
+            yield [stream_name + stream_name_adjuster, start_pos, file_size, file_name]
           end
         end
       end
@@ -197,10 +209,13 @@ module Keep
       # files.  This can help you avoid parsing the entire manifest if you
       # just want to check if a small number of files are specified.
       if stop_after.nil? or not @files.nil?
-        return files.size
+        # Avoid counting empty dir placeholders
+        return files.reject{|_, name, size| name == '.' and size == 0}.size
       end
       seen_files = {}
-      each_file_spec do |streamname, _, _, filename|
+      each_file_spec do |streamname, _, filesize, filename|
+        # Avoid counting empty dir placeholders
+        next if filename == "." and filesize == 0
         seen_files[[streamname, filename]] = true
         return stop_after if (seen_files.size >= stop_after)
       end
@@ -250,7 +265,9 @@ module Keep
         count = 0
 
         word = words.shift
-        count += 1 if word =~ STRICT_STREAM_TOKEN_REGEXP and word !~ /\/\.\.?(\/|$)/
+        raise ArgumentError.new "Manifest invalid for stream #{line_count}: >8-bit encoded chars not allowed on stream token #{word.inspect}" if word =~ NON_8BIT_ENCODED_CHAR
+        unescaped_word = unescape(word)
+        count += 1 if word =~ STREAM_TOKEN_REGEXP and unescaped_word =~ STREAM_NAME_REGEXP and unescaped_word !~ /\/\.\.?(\/|$)/
         raise ArgumentError.new "Manifest invalid for stream #{line_count}: missing or invalid stream name #{word.inspect if word}" if count != 1
 
         count = 0
@@ -262,7 +279,9 @@ module Keep
         raise ArgumentError.new "Manifest invalid for stream #{line_count}: missing or invalid locator #{word.inspect if word}" if count == 0
 
         count = 0
-        while word =~ STRICT_FILE_TOKEN_REGEXP and ($~[1].split('/') & ['..','.']).empty?
+        raise ArgumentError.new "Manifest invalid for stream #{line_count}: >8-bit encoded chars not allowed on file token #{word.inspect}" if word =~ NON_8BIT_ENCODED_CHAR
+        while unescape(word) =~ EMPTY_DIR_TOKEN_REGEXP or
+          (word =~ FILE_TOKEN_REGEXP and unescape(word) =~ FILE_NAME_REGEXP and ($~[1].split('/') & ['..', '.']).empty?)
           word = words.shift
           count += 1
         end
