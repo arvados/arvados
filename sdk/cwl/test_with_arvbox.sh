@@ -14,6 +14,7 @@ leave_running=0
 config=dev
 tag="latest"
 pythoncmd=python
+suite=conformance
 
 while test -n "$1" ; do
     arg="$1"
@@ -42,8 +43,12 @@ while test -n "$1" ; do
             pythoncmd=$2
             shift ; shift
             ;;
+        --suite)
+            suite=$2
+            shift ; shift
+            ;;
         -h|--help)
-            echo "$0 [--no-reset-container] [--leave-running] [--config dev|localdemo] [--tag docker_tag] [--build] [--pythoncmd python[23]]"
+            echo "$0 [--no-reset-container] [--leave-running] [--config dev|localdemo] [--tag docker_tag] [--build] [--pythoncmd python(2|3)] [--suite (integration|conformance)]"
             exit
             ;;
         *)
@@ -76,6 +81,8 @@ if test $config = dev ; then
   \$PYCMD setup.py sdist
   pip_install \$(ls -r dist/arvados-cwl-runner-*.tar.gz | head -n1)
 fi
+
+set -x
 
 if [ \$PYCMD = "python3" ]; then
     pip3 install cwltest
@@ -119,7 +126,12 @@ EOF2
 chmod +x /tmp/cwltest/arv-cwl-containers
 
 env
-exec ./run_test.sh RUNNER=/tmp/cwltest/arv-cwl-containers EXTRA=--compute-checksum $@
+if [[ "$suite" = "conformance" ]] ; then
+   exec ./run_test.sh RUNNER=/tmp/cwltest/arv-cwl-containers EXTRA=--compute-checksum $@
+elif [[ "$suite" = "integration" ]] ; then
+   cd /usr/src/arvados/sdk/cwl/tests
+   exec ./arvados-tests.sh $@
+fi
 EOF
 
 CODE=$?
