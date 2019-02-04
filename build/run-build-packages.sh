@@ -30,8 +30,18 @@ WORKSPACE=path         Path to the Arvados source tree to build packages from
 
 EOF
 
-EXITCODE=0
+# Begin of user configuration
+
+# set to --no-cache-dir to disable pip caching
+CACHE_FLAG=
+
+MAINTAINER="Ward Vandewege <wvandewege@veritasgenetics.com>"
+VENDOR="Veritas Genetics, Inc."
+
+# End of user configuration
+
 DEBUG=${ARVADOS_DEBUG:-0}
+EXITCODE=0
 TARGET=debian8
 COMMAND=
 
@@ -117,7 +127,7 @@ case "$TARGET" in
         PYTHON2_INSTALL_LIB=lib/python$PYTHON2_VERSION/site-packages
         PYTHON3_PACKAGE=$(rpm -qf "$(which python$PYTHON3_VERSION)" --queryformat '%{NAME}\n')
         PYTHON3_PKG_PREFIX=$PYTHON3_PACKAGE
-        PYTHON3_PREFIX=/opt/rh/python33/root/usr
+        PYTHON3_PREFIX=/opt/rh/rh-python35/root/usr
         PYTHON3_INSTALL_LIB=lib/python$PYTHON3_VERSION/site-packages
         export PYCURL_SSL_LIBRARY=nss
         ;;
@@ -215,7 +225,7 @@ if [[ -z "$ONLY_BUILD" ]] || [[ "libarvados-perl" = "$ONLY_BUILD" ]] ; then
     perl Makefile.PL INSTALL_BASE=install >"$STDOUT_IF_DEBUG" && \
         make install INSTALLDIRS=perl >"$STDOUT_IF_DEBUG" && \
         fpm_build install/lib/=/usr/share libarvados-perl \
-        "Curoverse, Inc." dir "$(version_from_git)" install/man/=/usr/share/man \
+        dir "$(version_from_git)" install/man/=/usr/share/man \
         "$WORKSPACE/apache-2.0.txt=/usr/share/doc/libarvados-perl/apache-2.0.txt" && \
         mv --no-clobber libarvados-perl*.$FORMAT "$WORKSPACE/packages/$TARGET/"
   fi
@@ -277,10 +287,9 @@ handle_python_package
       cd "$SRC_BUILD_DIR"
       PKG_VERSION=$(version_from_git)
       cd $WORKSPACE/packages/$TARGET
-      fpm_build $SRC_BUILD_DIR/=/usr/local/arvados/src arvados-src 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--exclude=usr/local/arvados/src/.git" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
+      fpm_build $SRC_BUILD_DIR/=/usr/local/arvados/src arvados-src 'dir' "$PKG_VERSION" "--exclude=usr/local/arvados/src/.git" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
 
       rm -rf "$SRC_BUILD_DIR"
-
     fi
 )
 
@@ -330,270 +339,27 @@ package_go_binary tools/keep-rsync keep-rsync \
 package_go_binary tools/keep-exercise keep-exercise \
     "Performance testing tool for Arvados Keep"
 
-
-# we need explicit debian_revision values in the dependencies for ruamel.yaml, because we have a package iteration
-# greater than zero. So we parse setup.py, get the ruamel.yaml dependencies, tell fpm not to automatically include
-# them in the package being built, and re-add them manually with an appropriate debian_revision value.
-# See #14552 for the reason for this (nasty) workaround. We use ${ruamel_depends[@]} in a few places further down
-# in this script.
-# Ward, 2018-11-28
-IFS=', ' read -r -a deps <<< `grep ruamel.yaml $WORKSPACE/sdk/python/setup.py |cut -f 3 -dl |sed -e "s/'//g"`
-declare -a ruamel_depends=()
-for i in ${deps[@]}; do
-  i=`echo "$i" | sed -e 's!\([0-9]\)! \1!'`
-  if [[ $i =~ .*\>.* ]]; then
-    ruamel_depends+=(--depends "python-ruamel.yaml $i-1")
-  elif [[ $i =~ .*\<.* ]]; then
-    ruamel_depends+=(--depends "python-ruamel.yaml $i-9")
-  else
-    echo "Encountered ruamel dependency that I can't parse. Aborting..."
-    exit 1
-  fi
-done
-
-
 # The Python SDK
-# Please resist the temptation to add --no-python-fix-name to the fpm call here
-# (which would remove the python- prefix from the package name), because this
-# package is a dependency of arvados-fuse, and fpm can not omit the python-
-# prefix from only one of the dependencies of a package...  Maybe I could
-# whip up a patch and send it upstream, but that will be for another day. Ward,
-# 2014-05-15
-cd $WORKSPACE/packages/$TARGET
-rm -rf "$WORKSPACE/sdk/python/build"
-arvados_python_client_version=${ARVADOS_BUILDING_VERSION:-$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/python/arvados_python_client.egg-info/PKG-INFO)}
-test_package_presence ${PYTHON2_PKG_PREFIX}-arvados-python-client "$arvados_python_client_version" python
-if [[ "$?" == "0" ]]; then
+fpm_build_virtualenv "arvados-python-client" "sdk/python"
+fpm_build_virtualenv "arvados-python-client" "sdk/python" "python3"
 
-  fpm_build $WORKSPACE/sdk/python "${PYTHON2_PKG_PREFIX}-arvados-python-client" 'Curoverse, Inc.' 'python' "$arvados_python_client_version" "--url=https://arvados.org" "--description=The Arvados Python SDK" --depends "${PYTHON2_PKG_PREFIX}-setuptools" --deb-recommends=git  --python-disable-dependency ruamel.yaml "${ruamel_depends[@]}"
-fi
-
-# cwl-runner
-cd $WORKSPACE/packages/$TARGET
-rm -rf "$WORKSPACE/sdk/cwl/build"
-arvados_cwl_runner_version=${ARVADOS_BUILDING_VERSION:-$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/cwl/arvados_cwl_runner.egg-info/PKG-INFO)}
-declare -a iterargs=()
-if [[ -z "$ARVADOS_BUILDING_VERSION" ]]; then
-    arvados_cwl_runner_iteration=4
-    iterargs+=(--iteration $arvados_cwl_runner_iteration)
-else
-    arvados_cwl_runner_iteration=
-fi
-test_package_presence ${PYTHON2_PKG_PREFIX}-arvados-cwl-runner "$arvados_cwl_runner_version" python "$arvados_cwl_runner_iteration"
-if [[ "$?" == "0" ]]; then
-  fpm_build $WORKSPACE/sdk/cwl "${PYTHON2_PKG_PREFIX}-arvados-cwl-runner" 'Curoverse, Inc.' 'python' "$arvados_cwl_runner_version" "--url=https://arvados.org" "--description=The Arvados CWL runner" --depends "${PYTHON2_PKG_PREFIX}-setuptools" --depends "${PYTHON2_PKG_PREFIX}-subprocess32 >= 3.5.0" --depends "${PYTHON2_PKG_PREFIX}-pathlib2" --depends "${PYTHON2_PKG_PREFIX}-scandir" --python-disable-dependency ruamel.yaml "${ruamel_depends[@]}" "${iterargs[@]}"
-fi
-
-# schema_salad. This is a python dependency of arvados-cwl-runner,
-# but we can't use the usual PYTHONPACKAGES way to build this package due to the
-# intricacies of how version numbers get generated in setup.py: we need a specific version,
-# e.g. 1.7.20160316203940. If we don't explicitly list that version with the -v
-# argument to fpm, and instead specify it as schema_salad==1.7.20160316203940, we get
-# a package with version 1.7. That's because our gittagger hack is not being
-# picked up by self.distribution.get_version(), which is called from
-# https://github.com/jordansissel/fpm/blob/master/lib/fpm/package/pyfpm/get_metadata.py
-# by means of this command:
-#
-# python2.7 setup.py --command-packages=pyfpm get_metadata --output=metadata.json
-#
-# So we build this thing separately.
-#
-# Ward, 2016-03-17
-saladversion=$(cat "$WORKSPACE/sdk/cwl/setup.py" | grep schema-salad== | sed "s/.*==\(.*\)'.*/\1/")
-test_package_presence python-schema-salad "$saladversion" python 2
-if [[ "$?" == "0" ]]; then
-  fpm_build schema_salad "" "" python $saladversion --depends "${PYTHON2_PKG_PREFIX}-lockfile >= 1:0.12.2-2" --depends "${PYTHON2_PKG_PREFIX}-avro = 1.8.1-2" --iteration 2
-fi
-
-# And for cwltool we have the same problem as for schema_salad. Ward, 2016-03-17
-cwltoolversion=$(cat "$WORKSPACE/sdk/cwl/setup.py" | grep cwltool== | sed "s/.*==\(.*\)'.*/\1/")
-test_package_presence python-cwltool "$cwltoolversion" python 3
-if [[ "$?" == "0" ]]; then
-  fpm_build cwltool "" "" python $cwltoolversion --iteration 3 --python-disable-dependency ruamel.yaml "${ruamel_depends[@]}"
-fi
+# Arvados cwl runner
+fpm_build_virtualenv "arvados-cwl-runner" "sdk/cwl"
 
 # The PAM module
-if [[ $TARGET =~ debian|ubuntu ]]; then
-    cd $WORKSPACE/packages/$TARGET
-    rm -rf "$WORKSPACE/sdk/pam/build"
-    libpam_arvados_version=$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/pam/arvados_pam.egg-info/PKG-INFO)
-    test_package_presence libpam-arvados "$libpam_arvados_version" python
-    if [[ "$?" == "0" ]]; then
-      fpm_build $WORKSPACE/sdk/pam libpam-arvados 'Curoverse, Inc.' 'python' "$libpam_arvados_version" "--url=https://arvados.org" "--description=PAM module for authenticating shell logins using Arvados API tokens" --depends libpam-python
-    fi
-fi
+fpm_build_virtualenv "libpam-arvados" "sdk/pam"
 
 # The FUSE driver
-# Please see comment about --no-python-fix-name above; we stay consistent and do
-# not omit the python- prefix first.
-cd $WORKSPACE/packages/$TARGET
-rm -rf "$WORKSPACE/services/fuse/build"
-arvados_fuse_version=${ARVADOS_BUILDING_VERSION:-$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/fuse/arvados_fuse.egg-info/PKG-INFO)}
-test_package_presence "${PYTHON2_PKG_PREFIX}-arvados-fuse" "$arvados_fuse_version" python
-if [[ "$?" == "0" ]]; then
-  fpm_build $WORKSPACE/services/fuse "${PYTHON2_PKG_PREFIX}-arvados-fuse" 'Curoverse, Inc.' 'python' "$arvados_fuse_version" "--url=https://arvados.org" "--description=The Keep FUSE driver" --depends "${PYTHON2_PKG_PREFIX}-setuptools"
-fi
+fpm_build_virtualenv "arvados-fuse" "services/fuse"
 
 # The node manager
-cd $WORKSPACE/packages/$TARGET
-rm -rf "$WORKSPACE/services/nodemanager/build"
-nodemanager_version=${ARVADOS_BUILDING_VERSION:-$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/nodemanager/arvados_node_manager.egg-info/PKG-INFO)}
-iteration="${ARVADOS_BUILDING_ITERATION:-1}"
-test_package_presence arvados-node-manager "$nodemanager_version" python "$iteration"
-if [[ "$?" == "0" ]]; then
-  fpm_build $WORKSPACE/services/nodemanager arvados-node-manager 'Curoverse, Inc.' 'python' "$nodemanager_version" "--url=https://arvados.org" "--description=The Arvados node manager" --depends "${PYTHON2_PKG_PREFIX}-setuptools" --iteration "$iteration"
-fi
+fpm_build_virtualenv "arvados-node-manager" "services/nodemanager"
 
 # The Docker image cleaner
-cd $WORKSPACE/packages/$TARGET
-rm -rf "$WORKSPACE/services/dockercleaner/build"
-dockercleaner_version=${ARVADOS_BUILDING_VERSION:-$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/dockercleaner/arvados_docker_cleaner.egg-info/PKG-INFO)}
-iteration="${ARVADOS_BUILDING_ITERATION:-4}"
-test_package_presence arvados-docker-cleaner "$dockercleaner_version" python "$iteration"
-if [[ "$?" == "0" ]]; then
-  fpm_build $WORKSPACE/services/dockercleaner arvados-docker-cleaner 'Curoverse, Inc.' 'python3' "$dockercleaner_version" "--url=https://arvados.org" "--description=The Arvados Docker image cleaner" --depends "${PYTHON3_PKG_PREFIX}-websocket-client = 0.37.0" --iteration "$iteration"
-fi
+fpm_build_virtualenv "arvados-docker-cleaner" "services/dockercleaner" "python3"
 
 # The Arvados crunchstat-summary tool
-cd $WORKSPACE/packages/$TARGET
-crunchstat_summary_version=${ARVADOS_BUILDING_VERSION:-$(awk '($1 == "Version:"){print $2}' $WORKSPACE/tools/crunchstat-summary/crunchstat_summary.egg-info/PKG-INFO)}
-iteration="${ARVADOS_BUILDING_ITERATION:-2}"
-test_package_presence "$PYTHON2_PKG_PREFIX"-crunchstat-summary "$crunchstat_summary_version" python "$iteration"
-if [[ "$?" == "0" ]]; then
-  rm -rf "$WORKSPACE/tools/crunchstat-summary/build"
-  fpm_build $WORKSPACE/tools/crunchstat-summary ${PYTHON2_PKG_PREFIX}-crunchstat-summary 'Curoverse, Inc.' 'python' "$crunchstat_summary_version" "--url=https://arvados.org" "--description=Crunchstat-summary reads Arvados Crunch log files and summarize resource usage" --iteration "$iteration"
-fi
-
-# Forked libcloud
-if test_package_presence "$PYTHON2_PKG_PREFIX"-apache-libcloud "$LIBCLOUD_PIN" python 2
-then
-  LIBCLOUD_DIR=$(mktemp -d)
-  (
-      cd $LIBCLOUD_DIR
-      git clone $DASHQ_UNLESS_DEBUG https://github.com/curoverse/libcloud.git .
-      git checkout $DASHQ_UNLESS_DEBUG apache-libcloud-$LIBCLOUD_PIN
-      # libcloud is absurdly noisy without -q, so force -q here
-      OLD_DASHQ_UNLESS_DEBUG=$DASHQ_UNLESS_DEBUG
-      DASHQ_UNLESS_DEBUG=-q
-      handle_python_package
-      DASHQ_UNLESS_DEBUG=$OLD_DASHQ_UNLESS_DEBUG
-  )
-
-  # libcloud >= 2.3.0 now requires python-requests 2.4.3 or higher, otherwise
-  # it throws
-  #   ImportError: No module named packages.urllib3.poolmanager
-  # when loaded. We only see this problem on ubuntu1404, because that is our
-  # only supported distribution that ships with a python-requests older than
-  # 2.4.3.
-  fpm_build $LIBCLOUD_DIR "$PYTHON2_PKG_PREFIX"-apache-libcloud "" python "" --iteration 2 --depends 'python-requests >= 2.4.3'
-  rm -rf $LIBCLOUD_DIR
-fi
-
-# Python 2 dependencies
-declare -a PIP_DOWNLOAD_SWITCHES=(--no-deps)
-# Add --no-use-wheel if this pip knows it.
-pip install --no-use-wheel >/dev/null 2>&1
-case "$?" in
-    0) PIP_DOWNLOAD_SWITCHES+=(--no-use-wheel) ;;
-    1) ;;
-    2) ;;
-    *) echo "WARNING: 'pip install --no-use-wheel' test returned unknown exit code $?" ;;
-esac
-
-while read -r line || [[ -n "$line" ]]; do
-#  echo "Text read from file: $line"
-  if [[ "$line" =~ ^# ]]; then
-    continue
-  fi
-  IFS='|'; arr=($line); unset IFS
-
-  dist=${arr[0]}
-
-  IFS=',';dists=($dist); unset IFS
-
-  MATCH=0
-  for d in "${dists[@]}"; do
-    if [[ "$d" == "$TARGET" ]] || [[ "$d" == "all" ]]; then
-      MATCH=1
-    fi
-  done
-
-  if [[ "$MATCH" != "1" ]]; then
-    continue
-  fi
-  name=${arr[1]}
-  version=${arr[2]}
-  iteration=${arr[3]}
-  pkgtype=${arr[4]}
-  arch=${arr[5]}
-  extra=${arr[6]}
-  declare -a 'extra_arr=('"$extra"')'
-
-  if [[ "$FORMAT" == "rpm" ]]; then
-    if [[ "$arch" == "all" ]]; then
-      arch="noarch"
-    fi
-    if [[ "$arch" == "amd64" ]]; then
-      arch="x86_64"
-    fi
-  fi
-
-  if [[ "$pkgtype" == "python" ]]; then
-    outname=$(echo "$name" | sed -e 's/^python-//' -e 's/_/-/g' -e "s/^/${PYTHON2_PKG_PREFIX}-/")
-  else
-    outname=$(echo "$name" | sed -e 's/^python-//' -e 's/_/-/g' -e "s/^/${PYTHON3_PKG_PREFIX}-/")
-  fi
-
-  if [[ -n "$ONLY_BUILD" ]] && [[ "$outname" != "$ONLY_BUILD" ]] ; then
-      continue
-  fi
-
-  case "$name" in
-      httplib2|google-api-python-client)
-          test_package_presence $outname $version $pkgtype $iteration $arch
-          if [[ "$?" == "0" ]]; then
-            # Work around 0640 permissions on some package files.
-            # See #7591 and #7991.
-            pyfpm_workdir=$(mktemp --tmpdir -d pyfpm-XXXXXX) && (
-                set -e
-                cd "$pyfpm_workdir"
-                PIP_VERSION=`python$PYTHON2_VERSION -c "import pip; print(pip.__version__)" |cut -f1 -d.`
-                if (( $PIP_VERSION < 8 )); then
-                  pip install "${PIP_DOWNLOAD_SWITCHES[@]}" --download . "$name==$version"
-                else
-                  pip download --no-deps --no-binary :all: "$name==$version"
-                fi
-                # Sometimes pip gives us a tarball, sometimes a zip file...
-                DOWNLOADED=`ls $name-*`
-                [[ "$DOWNLOADED" =~ ".tar" ]] && tar -xf $DOWNLOADED
-                [[ "$DOWNLOADED" =~ ".zip" ]] && unzip $DOWNLOADED
-                cd "$name"-*/
-                "python$PYTHON2_VERSION" setup.py $DASHQ_UNLESS_DEBUG egg_info build
-                chmod -R go+rX .
-                set +e
-                fpm_build . "$outname" "" "$pkgtype" "$version" --iteration "$iteration" "${extra_arr[@]}"
-                # The upload step uses the package timestamp to determine
-                # if it is new.  --no-clobber plays nice with that.
-                mv --no-clobber "$outname"*.$FORMAT "$WORKSPACE/packages/$TARGET"
-            )
-            if [ 0 != "$?" ]; then
-                echo "ERROR: $name build process failed"
-                EXITCODE=1
-            fi
-            if [ -n "$pyfpm_workdir" ]; then
-                rm -rf "$pyfpm_workdir"
-            fi
-          fi
-          ;;
-      *)
-          test_package_presence $outname $version $pkgtype $iteration $arch
-          if [[ "$?" == "0" ]]; then
-            fpm_build "$name" "$outname" "" "$pkgtype" "$version" --iteration "$iteration" "${extra_arr[@]}"
-          fi
-          ;;
-  esac
-
-done <`dirname "$(readlink -f "$0")"`"/build.list"
+fpm_build_virtualenv "crunchstat-summary" "tools/crunchstat-summary"
 
 # Build the API server package
 test_rails_package_presence arvados-api-server "$WORKSPACE/services/api"

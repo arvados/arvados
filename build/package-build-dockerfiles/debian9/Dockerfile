@@ -9,11 +9,16 @@ MAINTAINER Nico Cesar <nico@curoverse.com>
 ENV DEBIAN_FRONTEND noninteractive
 
 # Install dependencies.
-RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python2.7-dev python3 python-setuptools python3-setuptools libcurl4-gnutls-dev curl git procps libattr1-dev libfuse-dev libgnutls28-dev libpq-dev python-pip unzip
+RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python2.7-dev python3 python-setuptools python3-setuptools libcurl4-gnutls-dev curl git procps libattr1-dev libfuse-dev libgnutls28-dev libpq-dev python-pip unzip python3-venv python3-dev
+
+# Install virtualenv
+RUN /usr/bin/pip install virtualenv
 
 # Install RVM
-ADD generated/rvm.asc /tmp/
-RUN gpg --no-tty --import /tmp/rvm.asc && \
+ADD generated/mpapis.asc /tmp/
+ADD generated/pkuczynski.asc /tmp/
+RUN gpg --import --no-tty /tmp/mpapis.asc && \
+    gpg --import --no-tty /tmp/pkuczynski.asc && \
     curl -L https://get.rvm.io | bash -s stable && \
     /usr/local/rvm/bin/rvm install 2.3 && \
     /usr/local/rvm/bin/rvm alias create default ruby-2.3 && \

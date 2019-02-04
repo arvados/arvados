@@ -2,12 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-fpm_depends+=(fuse)
-
 case "$TARGET" in
-    centos*)
-        fpm_depends+=(fuse-libs)
-        ;;
     debian* | ubuntu*)
         fpm_depends+=(libcurl3-gnutls libpython2.7)
         ;;

@@ -3,10 +3,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 case "$TARGET" in
-    centos*)
-        fpm_depends+=(glibc)
+    debian8)
+        fpm_depends+=(libgnutls-deb0-28 libcurl3-gnutls)
         ;;
     debian* | ubuntu*)
-        fpm_depends+=(libc6)
+        fpm_depends+=(libcurl3-gnutls libpython2.7)
         ;;
 esac
