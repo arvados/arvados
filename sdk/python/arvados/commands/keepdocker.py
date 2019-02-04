@@ -504,7 +504,7 @@ def main(arguments=None, stdout=sys.stdout, install_sig_handlers=True, api=None)
         else:
             json_filename = raw_image_hash + '/json'
         json_file = image_tar.extractfile(image_tar.getmember(json_filename))
-        image_metadata = json.load(json_file)
+        image_metadata = json.loads(json_file.read().decode())
         json_file.close()
         image_tar.close()
         link_base = {'head_uuid': coll_uuid, 'properties': {}}

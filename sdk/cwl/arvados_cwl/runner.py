@@ -467,7 +467,7 @@ class Runner(Process):
             if "cwl.output.json" in outc:
                 with outc.open("cwl.output.json", "rb") as f:
                     if f.size() > 0:
-                        outputs = json.load(f)
+                        outputs = json.loads(f.read().decode())
             def keepify(fileobj):
                 path = fileobj["location"]
                 if not path.startswith("keep:"):

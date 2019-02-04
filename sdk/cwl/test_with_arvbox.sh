@@ -13,6 +13,7 @@ reset_container=1
 leave_running=0
 config=dev
 tag="latest"
+pythoncmd=python
 
 while test -n "$1" ; do
     arg="$1"
@@ -33,8 +34,16 @@ while test -n "$1" ; do
             tag=$2
             shift ; shift
             ;;
+        --build)
+            build=1
+            shift
+            ;;
+        --pythoncmd)
+            pythoncmd=$2
+            shift ; shift
+            ;;
         -h|--help)
-            echo "$0 [--no-reset-container] [--leave-running] [--config dev|localdemo] [--tag docker_tag]"
+            echo "$0 [--no-reset-container] [--leave-running] [--config dev|localdemo] [--tag docker_tag] [--build] [--pythoncmd python[23]]"
             exit
             ;;
         *)
@@ -60,13 +69,19 @@ set -eu -o pipefail
 
 . /usr/local/lib/arvbox/common.sh
 
+export PYCMD=$pythoncmd
+
 if test $config = dev ; then
   cd /usr/src/arvados/sdk/cwl
-  python setup.py sdist
+  \$PYCMD setup.py sdist
   pip_install \$(ls -r dist/arvados-cwl-runner-*.tar.gz | head -n1)
 fi
 
-pip install cwltest
+if [ \$PYCMD = "python3" ]; then
+    pip3 install cwltest
+else
+    pip3 install cwltest
+fi
 
 mkdir -p /tmp/cwltest
 cd /tmp/cwltest
@@ -80,7 +95,9 @@ export ARVADOS_API_HOST_INSECURE=1
 export ARVADOS_API_TOKEN=\$(cat /var/lib/arvados/superuser_token)
 
 
-if test "$tag" = "latest" ; then
+if test -n "$build" ; then
+   /usr/src/arvados/build/build-dev-docker-jobs-image.sh
+elif test "$tag" = "latest" ; then
   arv-keepdocker --pull arvados/jobs $tag
 else
   jobsimg=\$(curl https://versions.arvados.org/v1/commit/$tag | python -c "import json; import sys; sys.stdout.write(json.load(sys.stdin)['Versions']['Docker']['arvados/jobs'])")
