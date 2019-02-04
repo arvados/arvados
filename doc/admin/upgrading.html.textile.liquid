@@ -56,6 +56,10 @@ Or alternatively, by updating the shebang line at the start of the script to:
 </pre>
 </notextile>
 
+h4. Centos7 package for libpam-arvados depends on the python-pam package, which is available from EPEL
+
+As part of story "#9945":https://dev.arvados.org/issues/9945, it was discovered that the Centos7 package for libpam-arvados was missing a dependency on the python-pam package, which is available from the EPEL repository. The dependency has been added to the libpam-arvados package. This means that going forward, the EPEL repository will need to be enabled to install libpam-arvados on Centos7.
+
 h3. v1.3.0 (2018-12-05)
 
 This release includes several database migrations, which will be executed automatically as part of the API server upgrade. On large Arvados installations, these migrations will take a while. We've seen the upgrade take 30 minutes or more on installations with a lot of collections.

@@ -6,7 +6,7 @@ FROM centos:7
 MAINTAINER Ward Vandewege <wvandewege@veritasgenetics.com>
 
 # Install dependencies.
-RUN yum -q -y install scl-utils centos-release-scl which tar
+RUN yum -q -y install scl-utils centos-release-scl which tar wget
 
 # Install RVM
 ADD generated/mpapis.asc /tmp/
@@ -17,8 +17,9 @@ RUN touch /var/lib/rpm/* && \
     curl -L https://get.rvm.io | bash -s stable && \
     /usr/local/rvm/bin/rvm install 2.3 && \
     /usr/local/rvm/bin/rvm alias create default ruby-2.3
-# && \
-#    /usr/local/rvm/bin/rvm-exec default gem install bundle && \
-#    /usr/local/rvm/bin/rvm-exec default gem install cure-fpm --version 1.6.0b
+
+# Add epel, we need it for the python-pam dependency
+RUN wget http://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+RUN rpm -ivh epel-release-latest-7.noarch.rpm
 
 COPY localrepo.repo /etc/yum.repos.d/localrepo.repo

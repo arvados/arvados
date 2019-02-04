@@ -6,7 +6,7 @@ FROM centos:7
 MAINTAINER Ward Vandewege <ward@curoverse.com>
 
 # Install dependencies.
-RUN yum -q -y install make automake gcc gcc-c++ libyaml-devel patch readline-devel zlib-devel libffi-devel openssl-devel bzip2 libtool bison sqlite-devel rpm-build git perl-ExtUtils-MakeMaker libattr-devel nss-devel libcurl-devel which tar unzip scl-utils centos-release-scl postgresql-devel python-devel python-setuptools fuse-devel xz-libs git python-virtualenv
+RUN yum -q -y install make automake gcc gcc-c++ libyaml-devel patch readline-devel zlib-devel libffi-devel openssl-devel bzip2 libtool bison sqlite-devel rpm-build git perl-ExtUtils-MakeMaker libattr-devel nss-devel libcurl-devel which tar unzip scl-utils centos-release-scl postgresql-devel python-devel python-setuptools fuse-devel xz-libs git python-virtualenv wget
 
 # Install RVM
 ADD generated/mpapis.asc /tmp/
@@ -34,6 +34,10 @@ RUN scl enable rh-python35 "easy_install-3.5 pip" && easy_install-2.7 pip
 
 # Old versions of setuptools cannot build a schema-salad package.
 RUN pip install --upgrade setuptools
+
+# Add epel, we need it for the python-pam dependency
+RUN wget http://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+RUN rpm -ivh epel-release-latest-7.noarch.rpm
 
 RUN git clone --depth 1 git://git.curoverse.com/arvados.git /tmp/arvados && cd /tmp/arvados/services/api && /usr/local/rvm/bin/rvm-exec default bundle && cd /tmp/arvados/apps/workbench && /usr/local/rvm/bin/rvm-exec default bundle && rm -rf /tmp/arvados
 
