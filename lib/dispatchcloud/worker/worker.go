@@ -172,7 +172,7 @@ func (wkr *worker) probeAndUpdate() {
 		booted   bool
 		ctrUUIDs []string
 		ok       bool
-		stderr   []byte
+		stderr   []byte // from probeBooted
 	)
 
 	switch initialState {
@@ -185,6 +185,9 @@ func (wkr *worker) probeAndUpdate() {
 		panic(fmt.Sprintf("unknown state %s", initialState))
 	}
 
+	probeStart := time.Now()
+	logger := wkr.logger.WithField("ProbeStart", probeStart)
+
 	if !booted {
 		booted, stderr = wkr.probeBooted()
 		if !booted {
@@ -193,14 +196,14 @@ func (wkr *worker) probeAndUpdate() {
 			wkr.mtx.Lock()
 			booted = wkr.state == StateRunning || wkr.state == StateIdle
 			wkr.mtx.Unlock()
-		} else {
-			wkr.logger.Info("instance booted; will try probeRunning")
+		}
+		if booted {
+			logger.Info("instance booted; will try probeRunning")
 		}
 	}
 	if booted || wkr.state == StateUnknown {
-		ctrUUIDs, ok, stderr = wkr.probeRunning()
+		ctrUUIDs, ok = wkr.probeRunning()
 	}
-	logger := wkr.logger.WithField("stderr", string(stderr))
 	wkr.mtx.Lock()
 	defer wkr.mtx.Unlock()
 	if !ok || (!booted && len(ctrUUIDs) == 0 && len(wkr.running) == 0) {
@@ -209,20 +212,27 @@ func (wkr *worker) probeAndUpdate() {
 			// initiated during probe.
 			return
 		}
-		dur := time.Since(wkr.probed)
-		logger := logger.WithFields(logrus.Fields{
-			"Duration": dur,
-			"State":    wkr.state,
-		})
-		if !booted {
-			// While we're polling the VM to see if it's
-			// finished booting, failures are not
-			// noteworthy, so we log at Debug level.
-			logger.Debug("new instance not responding")
-		} else {
-			logger.Info("instance not responding")
+		// Using the start time of the probe as the timeout
+		// threshold ensures we always initiate at least one
+		// probe attempt after the boot/probe timeout expires
+		// (otherwise, a slow probe failure could cause us to
+		// shutdown an instance even though it did in fact
+		// boot/recover before the timeout expired).
+		dur := probeStart.Sub(wkr.probed)
+		if wkr.shutdownIfBroken(dur) {
+			// stderr from failed run-probes will have
+			// been logged already, but boot-probe
+			// failures are normal so they are logged only
+			// at Debug level. This is our chance to log
+			// some evidence about why the node never
+			// booted, even in non-debug mode.
+			if !booted {
+				logger.WithFields(logrus.Fields{
+					"Duration": dur,
+					"stderr":   string(stderr),
+				}).Info("boot failed")
+			}
 		}
-		wkr.shutdownIfBroken(dur)
 		return
 	}
 
@@ -313,7 +323,7 @@ func (wkr *worker) probeAndUpdate() {
 	go wkr.wp.notify()
 }
 
-func (wkr *worker) probeRunning() (running []string, ok bool, stderr []byte) {
+func (wkr *worker) probeRunning() (running []string, ok bool) {
 	cmd := "crunch-run --list"
 	stdout, stderr, err := wkr.executor.Execute(nil, cmd, nil)
 	if err != nil {
@@ -322,13 +332,13 @@ func (wkr *worker) probeRunning() (running []string, ok bool, stderr []byte) {
 			"stdout":  string(stdout),
 			"stderr":  string(stderr),
 		}).WithError(err).Warn("probe failed")
-		return nil, false, stderr
+		return nil, false
 	}
 	stdout = bytes.TrimRight(stdout, "\n")
 	if len(stdout) == 0 {
-		return nil, true, stderr
+		return nil, true
 	}
-	return strings.Split(string(stdout), "\n"), true, stderr
+	return strings.Split(string(stdout), "\n"), true
 }
 
 func (wkr *worker) probeBooted() (ok bool, stderr []byte) {
@@ -351,17 +361,17 @@ func (wkr *worker) probeBooted() (ok bool, stderr []byte) {
 }
 
 // caller must have lock.
-func (wkr *worker) shutdownIfBroken(dur time.Duration) {
+func (wkr *worker) shutdownIfBroken(dur time.Duration) bool {
 	if wkr.idleBehavior == IdleBehaviorHold {
 		// Never shut down.
-		return
+		return false
 	}
 	label, threshold := "", wkr.wp.timeoutProbe
 	if wkr.state == StateUnknown || wkr.state == StateBooting {
 		label, threshold = "new ", wkr.wp.timeoutBooting
 	}
 	if dur < threshold {
-		return
+		return false
 	}
 	wkr.logger.WithFields(logrus.Fields{
 		"Duration": dur,
@@ -369,6 +379,7 @@ func (wkr *worker) shutdownIfBroken(dur time.Duration) {
 		"State":    wkr.state,
 	}).Warnf("%sinstance unresponsive, shutting down", label)
 	wkr.shutdown()
+	return true
 }
 
 // caller must have lock.
