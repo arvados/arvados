@@ -596,6 +596,12 @@ fpm_build_virtualenv () {
     done
   fi
 
+  # the libpam module should place this file in the historically correct place
+  # so as not to break backwards compatibility
+  if [[ -e "$WORKSPACE/$PKG_DIR/dist/build/usr/share/python2.7/dist/libpam-arvados/lib/security/libpam_arvados.py" ]]; then
+    COMMAND_ARR+=("usr/share/$python/dist/$PYTHON_PKG/data/lib/security/libpam_arvados.py=/usr/data/lib/security/")
+  fi
+
   COMMAND_ARR+=(".")
 
   FPM_RESULTS=$("${COMMAND_ARR[@]}")
