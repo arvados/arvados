@@ -93,7 +93,7 @@ def logtail(logcollection, logfunc, header, maxlen=25):
             loglines.append("%s %s %s" % (ts, earliest, msg))
         loglines = loglines[-maxlen:]
     else:
-        loglines = viewvalues(mergelogs)[0]
+        loglines = mergelogs[list(mergelogs)[0]]
 
     logtxt = "\n  ".join(l.strip() for l in loglines)
     logfunc("%s\n\n  %s", header, logtxt)
