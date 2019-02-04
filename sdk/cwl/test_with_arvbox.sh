@@ -15,6 +15,7 @@ config=dev
 tag="latest"
 pythoncmd=python
 suite=conformance
+runapi=containers
 
 while test -n "$1" ; do
     arg="$1"
@@ -45,6 +46,10 @@ while test -n "$1" ; do
             ;;
         --suite)
             suite=$2
+            shift ; shift
+            ;;
+	--api)
+	    runapi=$2
             shift ; shift
             ;;
         -h|--help)
@@ -127,7 +132,7 @@ chmod +x /tmp/cwltest/arv-cwl-containers
 
 env
 if [[ "$suite" = "conformance" ]] ; then
-   exec ./run_test.sh RUNNER=/tmp/cwltest/arv-cwl-containers EXTRA=--compute-checksum $@
+   exec ./run_test.sh RUNNER=/tmp/cwltest/arv-cwl-${runapi} EXTRA=--compute-checksum $@
 elif [[ "$suite" = "integration" ]] ; then
    cd /usr/src/arvados/sdk/cwl/tests
    exec ./arvados-tests.sh $@
