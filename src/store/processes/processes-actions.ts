@@ -67,6 +67,16 @@ export const loadContainers = (filters: string) =>
         return items;
     };
 
+export const cancelRunningWorkflow = (uuid: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        try {
+            const process = await services.containerRequestService.update(uuid, { priority: 0 });
+            return process;
+        } catch (e) {
+            throw new Error('Could not cancel the process.');
+        }
+    };
+
 export const reRunProcess = (processUuid: string, workflowUuid: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const process = getResource<any>(processUuid)(getState().resources);
@@ -81,15 +91,15 @@ export const reRunProcess = (processUuid: string, workflowUuid: string) =>
             const basicInitialData: RunProcessBasicFormData = { name: `Copy of: ${process.name}`, description: process.description };
             dispatch<any>(initialize(RUN_PROCESS_BASIC_FORM, basicInitialData));
 
-            const advancedInitialData: RunProcessAdvancedFormData = { 
-                output: process.outputName, 
-                runtime: process.schedulingParameters.maxRunTime, 
+            const advancedInitialData: RunProcessAdvancedFormData = {
+                output: process.outputName,
+                runtime: process.schedulingParameters.maxRunTime,
                 ram: process.runtimeConstraints.ram,
                 vcpus: process.runtimeConstraints.vcpus,
                 keepCacheRam: process.runtimeConstraints.keepCacheRam,
                 api: process.runtimeConstraints.API
-             };
-             dispatch<any>(initialize(RUN_PROCESS_ADVANCED_FORM, advancedInitialData));
+            };
+            dispatch<any>(initialize(RUN_PROCESS_ADVANCED_FORM, advancedInitialData));
 
             dispatch<any>(navigateToRunProcess);
             dispatch<any>(goToStep(1));

@@ -25,6 +25,7 @@ export interface ProcessPanelRootActionProps {
     openProcessInputDialog: (uuid: string) => void;
     navigateToOutput: (uuid: string) => void;
     navigateToWorkflow: (uuid: string) => void;
+    cancelProcess: (uuid: string) => void;
 }
 
 export type ProcessPanelRootProps = ProcessPanelRootDataProps & ProcessPanelRootActionProps;
@@ -39,6 +40,7 @@ export const ProcessPanelRoot = ({ process, ...props }: ProcessPanelRootProps) =
                     openProcessInputDialog={props.openProcessInputDialog}
                     navigateToOutput={props.navigateToOutput}
                     openWorkflow={props.navigateToWorkflow}
+                    cancelProcess={props.cancelProcess}
             />
             </Grid>
             <Grid item sm={12} md={5}>

@@ -13,6 +13,7 @@ import { ProcessPanel as ProcessPanelState} from '~/store/process-panel/process-
 import { groupBy } from 'lodash';
 import { toggleProcessPanelFilter, navigateToOutput, openWorkflow } from '~/store/process-panel/process-panel-actions';
 import { openProcessInputDialog } from '~/store/processes/process-input-actions';
+import { cancelRunningWorkflow } from '~/store/processes/processes-actions';
 
 const mapStateToProps = ({ router, resources, processPanel }: RootState): ProcessPanelRootDataProps => {
     const pathname = router.location ? router.location.pathname : '';
@@ -36,7 +37,8 @@ const mapDispatchToProps = (dispatch: Dispatch): ProcessPanelRootActionProps => 
     },
     openProcessInputDialog: (uuid) => dispatch<any>(openProcessInputDialog(uuid)),
     navigateToOutput: (uuid) => dispatch<any>(navigateToOutput(uuid)),
-    navigateToWorkflow: (uuid) => dispatch<any>(openWorkflow(uuid))
+    navigateToWorkflow: (uuid) => dispatch<any>(openWorkflow(uuid)),
+    cancelProcess: (uuid) => dispatch<any>(cancelRunningWorkflow(uuid))
 });
 
 export const ProcessPanel = connect(mapStateToProps, mapDispatchToProps)(ProcessPanelRoot);
