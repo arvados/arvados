@@ -74,6 +74,7 @@ while [ $# -gt 0 ]; do
             ;;
         --only-test)
             test_packages=1
+            testing_one_package=1
             packages="$2"; shift
             ;;
         --force-test)
@@ -121,33 +122,33 @@ if [[ -n "$ARVADOS_BUILDING_VERSION" ]]; then
 fi
 
 if [[ -n "$test_packages" ]]; then
-    if [[ -n "$(find $WORKSPACE/packages/$TARGET -name '*.rpm')" ]] ; then
-	set +e
-	/usr/bin/which createrepo >/dev/null
-	if [[ "$?" != "0" ]]; then
-		echo >&2
-		echo >&2 "Error: please install createrepo. E.g. sudo apt-get install createrepo"
-		echo >&2
-		exit 1
-	fi
-	set -e
-        createrepo $WORKSPACE/packages/$TARGET
+  if [[ -n "$(find $WORKSPACE/packages/$TARGET -name '*.rpm')" ]] ; then
+    set +e
+    /usr/bin/which createrepo >/dev/null
+    if [[ "$?" != "0" ]]; then
+      echo >&2
+      echo >&2 "Error: please install createrepo. E.g. sudo apt-get install createrepo"
+      echo >&2
+      exit 1
     fi
+    set -e
+    createrepo $WORKSPACE/packages/$TARGET
+  fi
 
-    if [[ -n "$(find $WORKSPACE/packages/$TARGET -name '*.deb')" ]] ; then
-        (cd $WORKSPACE/packages/$TARGET
-          dpkg-scanpackages .  2> >(grep -v 'warning' 1>&2) | tee Packages | gzip -c > Packages.gz
-          apt-ftparchive -o APT::FTPArchive::Release::Origin=Arvados release . > Release
-        )
-    fi
+  if [[ -n "$(find $WORKSPACE/packages/$TARGET -name '*.deb')" ]] ; then
+    (cd $WORKSPACE/packages/$TARGET
+      dpkg-scanpackages .  2> >(grep -v 'warning' 1>&2) | tee Packages | gzip -c > Packages.gz
+      apt-ftparchive -o APT::FTPArchive::Release::Origin=Arvados release . > Release
+    )
+  fi
 
-    COMMAND="/jenkins/package-testing/test-packages-$TARGET.sh"
-    IMAGE="arvados/package-test:$TARGET"
+  COMMAND="/jenkins/package-testing/test-packages-$TARGET.sh"
+  IMAGE="arvados/package-test:$TARGET"
 else
-    IMAGE="arvados/build:$TARGET"
-    if [[ "$COMMAND" != "" ]]; then
-        COMMAND="/usr/local/rvm/bin/rvm-exec default bash /jenkins/$COMMAND --target $TARGET$DEBUG"
-    fi
+  IMAGE="arvados/build:$TARGET"
+  if [[ "$COMMAND" != "" ]]; then
+    COMMAND="/usr/local/rvm/bin/rvm-exec default bash /jenkins/$COMMAND --target $TARGET$DEBUG"
+  fi
 fi
 
 JENKINS_DIR=$(dirname "$(readlink -e "$0")")
@@ -218,6 +219,17 @@ if [[ -n "$test_packages" ]]; then
             continue
           fi
         fi
+        # If we're testing all packages, we should not error out on packages that don't exist.
+        # If we are testing one specific package only (i.e. --only-test was given), we should
+        # error out if that package does not exist.
+        if [[ -z "$testing_one_package" ]]; then
+          MATCH=`find ${WORKSPACE}/packages/ -regextype posix-extended -regex .*${TARGET}/$p.*\\(deb\\|rpm\\)`
+          if [[ "$MATCH" == "" ]]; then
+            # No new package has been built that needs testing
+            echo "Skipping $p test because no package file is available to test."
+            continue
+          fi
+        fi
         echo
         echo "START: $p test on $IMAGE" >&2
         # ulimit option can be removed when debian8 and ubuntu1404 are retired
@@ -237,7 +249,9 @@ if [[ -n "$test_packages" ]]; then
         fi
     done
 
-    touch ${WORKSPACE}/packages/.last_test_${TARGET}
+    if [[ "$FINAL_EXITCODE" == "0" ]]; then
+      touch ${WORKSPACE}/packages/.last_test_${TARGET}
+    fi
 else
     echo
     echo "START: build packages on $IMAGE" >&2
