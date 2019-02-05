@@ -136,7 +136,7 @@ fi
 echo cwl_runner_version $cwl_runner_version python_sdk_version $python_sdk_version
 
 if [[ "${python_sdk_version}" != "${ARVADOS_BUILDING_VERSION}" ]]; then
-	python_sdk_version="${python_sdk_version}-2"
+	python_sdk_version="${python_sdk_version}-1"
 else
 	python_sdk_version="${ARVADOS_BUILDING_VERSION}-${ARVADOS_BUILDING_ITERATION}"
 fi
@@ -144,7 +144,7 @@ fi
 cwl_runner_version_orig=$cwl_runner_version
 
 if [[ "${cwl_runner_version}" != "${ARVADOS_BUILDING_VERSION}" ]]; then
-	cwl_runner_version="${cwl_runner_version}-4"
+	cwl_runner_version="${cwl_runner_version}-1"
 else
 	cwl_runner_version="${ARVADOS_BUILDING_VERSION}-${ARVADOS_BUILDING_ITERATION}"
 fi
