@@ -56,6 +56,14 @@ Or alternatively, by updating the shebang line at the start of the script to:
 </pre>
 </notextile>
 
+h4. python-arvados-cwl-runner deb/rpm package now conflicts with python-cwltool deb/rpm package
+
+As part of story "#9945":https://dev.arvados.org/issues/9945, the distribution packaging (deb/rpm) of our Python packages has changed. The python-arvados-cwl-runner package now includes a version of cwltool. If present, the python-cwltool and cwltool distribution packages will need to be uninstalled before the python-arvados-cwl-runner deb or rpm package can be installed.
+
+h4. Centos7 Python 3 dependency upgraded to rh-python35
+
+As part of story "#9945":https://dev.arvados.org/issues/9945, the Python 3 dependency for Centos7 Arvados packages was upgraded from SCL python33 to rh-python35.
+
 h4. Centos7 package for libpam-arvados depends on the python-pam package, which is available from EPEL
 
 As part of story "#9945":https://dev.arvados.org/issues/9945, it was discovered that the Centos7 package for libpam-arvados was missing a dependency on the python-pam package, which is available from the EPEL repository. The dependency has been added to the libpam-arvados package. This means that going forward, the EPEL repository will need to be enabled to install libpam-arvados on Centos7.

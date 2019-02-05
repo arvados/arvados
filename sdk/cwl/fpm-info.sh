@@ -10,3 +10,5 @@ case "$TARGET" in
         fpm_depends+=(libcurl3-gnutls libpython2.7)
         ;;
 esac
+
+fpm_args+=(--conflicts=python-cwltool --conflicts=cwltool)
