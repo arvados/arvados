@@ -42,7 +42,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.palette.common.white,
     },
     status: {
-        paddingTop: theme.spacing.unit * 0.5,
+        paddingTop: theme.spacing.unit * 0.75,
         color: theme.palette.common.white,
     },
     rightSideHeader: {

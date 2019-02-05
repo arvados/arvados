@@ -14,8 +14,9 @@ import { Process } from '~/store/processes/process';
 import { getProcessStatus, getProcessStatusColor } from '~/store/processes/process';
 import { formatDate } from '~/common/formatters';
 import * as classNames from 'classnames';
+import { ContainerState } from '~/models/container';
 
-type CssRules = 'card' | 'iconHeader' | 'label' | 'value' | 'chip' | 'link' | 'content' | 'title' | 'avatar';
+type CssRules = 'card' | 'iconHeader' | 'label' | 'value' | 'chip' | 'link' | 'content' | 'title' | 'avatar' | 'cancelButton';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
@@ -62,6 +63,14 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     title: {
         overflow: 'hidden',
         paddingTop: theme.spacing.unit * 0.5
+    },
+    cancelButton: {
+        paddingRight: theme.spacing.unit * 2,
+        fontSize: '14px',
+        color: theme.customs.colors.red900,
+        "&:hover": {
+            cursor: 'pointer'
+        }
     }
 });
 
@@ -71,12 +80,13 @@ export interface ProcessInformationCardDataProps {
     openProcessInputDialog: (uuid: string) => void;
     navigateToOutput: (uuid: string) => void;
     openWorkflow: (uuid: string) => void;
+    cancelProcess: (uuid: string) => void;
 }
 
 type ProcessInformationCardProps = ProcessInformationCardDataProps & WithStyles<CssRules, true>;
 
 export const ProcessInformationCard = withStyles(styles, { withTheme: true })(
-    ({ classes, process, onContextMenu, theme, openProcessInputDialog, navigateToOutput, openWorkflow }: ProcessInformationCardProps) => {
+    ({ classes, process, onContextMenu, theme, openProcessInputDialog, navigateToOutput, openWorkflow, cancelProcess }: ProcessInformationCardProps) => {
         const { container } = process;
         const startedAt = container ? formatDate(container.startedAt) : 'N/A';
         const finishedAt = container ? formatDate(container.finishedAt) : 'N/A';
@@ -89,6 +99,8 @@ export const ProcessInformationCard = withStyles(styles, { withTheme: true })(
                 avatar={<ProcessIcon className={classes.iconHeader} />}
                 action={
                     <div>
+                        {process.container && process.container.state === ContainerState.RUNNING &&
+                            <span className={classes.cancelButton} onClick={() => cancelProcess(process.containerRequest.uuid)}>Cancel</span>}
                         <Chip label={getProcessStatus(process)}
                             className={classes.chip}
                             style={{ backgroundColor: getProcessStatusColor(getProcessStatus(process), theme as ArvadosTheme) }} />
@@ -125,8 +137,8 @@ export const ProcessInformationCard = withStyles(styles, { withTheme: true })(
                             value={process.container ? formatDate(finishedAt) : 'N/A'} />
                         {process.containerRequest.properties.workflowUuid &&
                             <span onClick={() => openWorkflow(process.containerRequest.properties.workflowUuid)}>
-                                <DetailsAttribute classLabel={classes.label} classValue={classNames(classes.value, classes.link)} 
-                                label='Workflow' value={process.containerRequest.properties.workflowName}/>
+                                <DetailsAttribute classLabel={classes.label} classValue={classNames(classes.value, classes.link)}
+                                    label='Workflow' value={process.containerRequest.properties.workflowName} />
                             </span>}
                     </Grid>
                     <Grid item xs={6}>
