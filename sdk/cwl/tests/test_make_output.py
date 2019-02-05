@@ -2,12 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from future import standard_library
+standard_library.install_aliases()
+
 import functools
 import json
 import logging
 import mock
 import os
-import StringIO
+import io
 import unittest
 
 import arvados
@@ -35,7 +38,7 @@ class TestMakeOutput(unittest.TestCase):
         final_uuid = final.manifest_locator()
         num_retries = runner.num_retries
 
-        cwlout = StringIO.StringIO()
+        cwlout = io.StringIO()
         openmock = mock.MagicMock()
         final.open.return_value = openmock
         openmock.__enter__.return_value = cwlout

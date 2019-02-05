@@ -2,6 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import next
+
 import functools
 import json
 import logging
@@ -9,7 +14,7 @@ import mock
 import os
 import unittest
 import copy
-import StringIO
+import io
 
 import arvados
 import arvados_cwl
@@ -126,7 +131,7 @@ class TestJob(unittest.TestCase):
                     # sharing link on the job
                     runner.api.links().create.side_effect = ApiError(
                         mock.MagicMock(return_value={'status': 403}),
-                        'Permission denied')
+                        bytes(b'Permission denied'))
                     j.run(runtimeContext)
                 else:
                     assert not runner.api.links().create.called
@@ -213,11 +218,12 @@ class TestJob(unittest.TestCase):
         runner.num_retries = 0
         runner.ignore_docker_for_reuse = False
 
-        reader().open.return_value = StringIO.StringIO(
-            """2016-11-02_23:12:18 c97qk-8i9sb-cryqw2blvzy4yaj 13358 0 stderr 2016/11/02 23:12:18 crunchrunner: $(task.tmpdir)=/tmp/crunch-job-task-work/compute3.1/tmpdir
+        reader().keys.return_value = "log.txt"
+        reader().open.return_value = io.StringIO(
+            str(u"""2016-11-02_23:12:18 c97qk-8i9sb-cryqw2blvzy4yaj 13358 0 stderr 2016/11/02 23:12:18 crunchrunner: $(task.tmpdir)=/tmp/crunch-job-task-work/compute3.1/tmpdir
 2016-11-02_23:12:18 c97qk-8i9sb-cryqw2blvzy4yaj 13358 0 stderr 2016/11/02 23:12:18 crunchrunner: $(task.outdir)=/tmp/crunch-job-task-work/compute3.1/outdir
 2016-11-02_23:12:18 c97qk-8i9sb-cryqw2blvzy4yaj 13358 0 stderr 2016/11/02 23:12:18 crunchrunner: $(task.keep)=/keep
-        """)
+        """))
         api.collections().list().execute.side_effect = ({"items": []},
                                                         {"items": [{"manifest_text": "XYZ"}]},
                                                         {"items": []},
@@ -286,11 +292,12 @@ class TestJob(unittest.TestCase):
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.num_retries = 0
 
-        reader().open.return_value = StringIO.StringIO(
-            """2016-11-02_23:12:18 c97qk-8i9sb-cryqw2blvzy4yaj 13358 0 stderr 2016/11/02 23:12:18 crunchrunner: $(task.tmpdir)=/tmp/crunch-job-task-work/compute3.1/tmpdir
+        reader().keys.return_value = "log.txt"
+        reader().open.return_value = io.StringIO(
+            str(u"""2016-11-02_23:12:18 c97qk-8i9sb-cryqw2blvzy4yaj 13358 0 stderr 2016/11/02 23:12:18 crunchrunner: $(task.tmpdir)=/tmp/crunch-job-task-work/compute3.1/tmpdir
 2016-11-02_23:12:18 c97qk-8i9sb-cryqw2blvzy4yaj 13358 0 stderr 2016/11/02 23:12:18 crunchrunner: $(task.outdir)=/tmp/crunch-job-task-work/compute3.1/outdir
 2016-11-02_23:12:18 c97qk-8i9sb-cryqw2blvzy4yaj 13358 0 stderr 2016/11/02 23:12:18 crunchrunner: $(task.keep)=/keep
-        """)
+        """))
 
         api.collections().list().execute.side_effect = (
             {"items": [{"uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz2"}]},
@@ -398,8 +405,8 @@ class TestWorkflow(unittest.TestCase):
         arvtool.formatgraph = None
         it = arvtool.job({}, mock.MagicMock(), runtimeContext)
 
-        it.next().run(runtimeContext)
-        it.next().run(runtimeContext)
+        next(it).run(runtimeContext)
+        next(it).run(runtimeContext)
 
         with open("tests/wf/scatter2_subwf.cwl") as f:
             subwf = StripYAMLComments(f.read())
@@ -435,7 +442,7 @@ class TestWorkflow(unittest.TestCase):
 
         mockc.open().__enter__().write.assert_has_calls([mock.call(subwf)])
         mockc.open().__enter__().write.assert_has_calls([mock.call(
-'''{
+bytes(b'''{
   "fileblub": {
     "basename": "token.txt",
     "class": "File",
@@ -443,7 +450,7 @@ class TestWorkflow(unittest.TestCase):
     "size": 0
   },
   "sleeptime": 5
-}''')])
+}'''))])
 
     # The test passes no builder.resources
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
@@ -477,8 +484,9 @@ class TestWorkflow(unittest.TestCase):
         arvtool = arvados_cwl.ArvadosWorkflow(runner, tool, loadingContext)
         arvtool.formatgraph = None
         it = arvtool.job({}, mock.MagicMock(), runtimeContext)
-        it.next().run(runtimeContext)
-        it.next().run(runtimeContext)
+        
+        next(it).run(runtimeContext)
+        next(it).run(runtimeContext)
 
         with open("tests/wf/echo-subwf.cwl") as f:
             subwf = StripYAMLComments(f.read())

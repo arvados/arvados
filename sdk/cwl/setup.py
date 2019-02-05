@@ -45,6 +45,10 @@ setup(name='arvados-cwl-runner',
       data_files=[
           ('share/doc/arvados-cwl-runner', ['LICENSE-2.0.txt', 'README.rst']),
       ],
+      classifiers=[
+          'Programming Language :: Python :: 2',
+          'Programming Language :: Python :: 3',
+      ],
       test_suite='tests',
       tests_require=[
           'mock>=1.0',

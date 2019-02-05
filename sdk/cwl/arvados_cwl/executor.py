@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import division
+from builtins import next
+from builtins import object
+from builtins import str
+from future.utils import viewvalues
+
 import argparse
 import logging
 import os
@@ -157,7 +163,7 @@ class ArvCwlExecutor(object):
                 raise Exception("Unsupported API '%s', expected one of %s" % (arvargs.work_api, expected_api))
 
         if self.work_api == "jobs":
-            logger.warn("""
+            logger.warning("""
 *******************************
 Using the deprecated 'jobs' API.
 
@@ -180,6 +186,11 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
         # if running inside a container
         if arvados_cwl.util.get_current_container(self.api, self.num_retries, logger):
             root_logger = logging.getLogger('')
+
+            # Remove existing RuntimeStatusLoggingHandlers if they exist
+            handlers = [h for h in root_logger.handlers if not isinstance(h, RuntimeStatusLoggingHandler)]
+            root_logger.handlers = handlers
+
             handler = RuntimeStatusLoggingHandler(self.runtime_status_update)
             root_logger.addHandler(handler)
 
@@ -332,7 +343,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                 if self.stop_polling.is_set():
                     break
                 with self.workflow_eval_lock:
-                    keys = list(self.processes.keys())
+                    keys = list(self.processes)
                 if not keys:
                     remain_wait = self.poll_interval
                     continue
@@ -351,7 +362,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                     try:
                         proc_states = table.list(filters=[["uuid", "in", page]]).execute(num_retries=self.num_retries)
                     except Exception as e:
-                        logger.warn("Error checking states on API server: %s", e)
+                        logger.warning("Error checking states on API server: %s", e)
                         remain_wait = self.poll_interval
                         continue
 
@@ -383,7 +394,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
             try:
                 self.api.collections().delete(uuid=i).execute(num_retries=self.num_retries)
             except:
-                logger.warn("Failed to delete intermediate output: %s", sys.exc_info()[1], exc_info=(sys.exc_info()[1] if self.debug else False))
+                logger.warning("Failed to delete intermediate output: %s", sys.exc_info()[1], exc_info=(sys.exc_info()[1] if self.debug else False))
             if sys.exc_info()[0] is KeyboardInterrupt or sys.exc_info()[0] is SystemExit:
                 break
 
@@ -401,7 +412,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                             "Option 'dockerOutputDirectory' must be an absolute path.")
             if obj.get("class") == "http://commonwl.org/cwltool#Secrets" and self.work_api != "containers":
                 raise SourceLine(obj, "class", UnsupportedRequirement).makeError("Secrets not supported with --api=jobs")
-            for v in obj.itervalues():
+            for v in viewvalues(obj):
                 self.check_features(v)
         elif isinstance(obj, list):
             for i,v in enumerate(obj):
@@ -445,7 +456,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                 logger.error("Creating CollectionReader for '%s' '%s': %s", k, v, e)
                 raise
             except IOError as e:
-                logger.warn("While preparing output collection: %s", e)
+                logger.warning("While preparing output collection: %s", e)
 
         def rewrite(fileobj):
             fileobj["location"] = generatemapper.mapper(fileobj["location"]).target
@@ -457,7 +468,8 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
         adjustFileObjs(outputObj, rewrite)
 
         with final.open("cwl.output.json", "w") as f:
-            json.dump(outputObj, f, sort_keys=True, indent=4, separators=(',',': '))
+            res = str(json.dumps(outputObj, sort_keys=True, indent=4, separators=(',',': '), ensure_ascii=False))
+            f.write(res)           
 
         final.save_new(name=name, owner_uuid=self.project_uuid, storage_classes=storage_classes, ensure_unique_name=True)
 
@@ -608,7 +620,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                         visited.add(m.group(1))
                         estimated_size[0] += int(m.group(2))
             visit_class(job_order, ("File", "Directory"), estimate_collection_cache)
-            runtimeContext.collection_cache_size = max(((estimated_size[0]*192) / (1024*1024))+1, 256)
+            runtimeContext.collection_cache_size = max(((estimated_size[0]*192) // (1024*1024))+1, 256)
             self.collection_cache.set_cap(runtimeContext.collection_cache_size*1024*1024)
 
         logger.info("Using collection cache size %s MiB", runtimeContext.collection_cache_size)
@@ -660,7 +672,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                            runtimeContext)
 
         if runtimeContext.submit and not runtimeContext.wait:
-            runnerjob = jobiter.next()
+            runnerjob = next(jobiter)
             runnerjob.run(runtimeContext)
             return (runnerjob.uuid, "success")
 

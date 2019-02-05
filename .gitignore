@@ -30,3 +30,4 @@ services/api/config/arvados-clients.yml
 .vscode
 .Rproj.user
 _version.py
+*.bak

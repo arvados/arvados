@@ -16,7 +16,7 @@ def validate_cluster_target(arvrunner, runtimeContext):
         runtimeContext.submit_runner_cluster not in arvrunner.api._rootDesc["remoteHosts"] and
         runtimeContext.submit_runner_cluster != arvrunner.api._rootDesc["uuidPrefix"]):
         raise WorkflowException("Unknown or invalid cluster id '%s' known remote clusters are %s" % (runtimeContext.submit_runner_cluster,
-                                                                                                  ", ".join(arvrunner.api._rootDesc["remoteHosts"].keys())))
+                                                                                                  ", ".join(list(arvrunner.api._rootDesc["remoteHosts"].keys()))))
 def set_cluster_target(tool, arvrunner, builder, runtimeContext):
     cluster_target_req = None
     for field in ("hints", "requirements"):

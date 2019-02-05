@@ -18,9 +18,17 @@ MAINTAINER Ward Vandewege <ward@curoverse.com>
 
 ENV DEBIAN_FRONTEND noninteractive
 
-RUN apt-get update -q && apt-get install -qy git python-pip python-virtualenv python-dev libcurl4-gnutls-dev libgnutls28-dev nodejs python-pyasn1-modules
+ARG pythoncmd=python
 
-RUN pip install -U setuptools six requests
+RUN apt-get update -q && apt-get install -qy --no-install-recommends \
+    git ${pythoncmd}-pip ${pythoncmd}-virtualenv ${pythoncmd}-dev libcurl4-gnutls-dev \
+    libgnutls28-dev nodejs ${pythoncmd}-pyasn1-modules build-essential
+
+RUN if [ "$pythoncmd" = "python3" ]; then \
+       pip3 install -U setuptools six requests ; \
+    else \
+       pip install -U setuptools six requests ; \
+    fi
 
 ARG sdk
 ARG runner
@@ -32,10 +40,10 @@ ADD cwl/salad_dist/$salad /tmp/
 ADD cwl/cwltool_dist/$cwltool /tmp/
 ADD cwl/dist/$runner /tmp/
 
-RUN cd /tmp/arvados-python-client-* && python setup.py install
-RUN if test -d /tmp/schema-salad-* ; then cd /tmp/schema-salad-* && python setup.py install ; fi
-RUN if test -d /tmp/cwltool-* ; then cd /tmp/cwltool-* && python setup.py install ; fi
-RUN cd /tmp/arvados-cwl-runner-* && python setup.py install
+RUN cd /tmp/arvados-python-client-* && $pythoncmd setup.py install
+RUN if test -d /tmp/schema-salad-* ; then cd /tmp/schema-salad-* && $pythoncmd setup.py install ; fi
+RUN if test -d /tmp/cwltool-* ; then cd /tmp/cwltool-* && $pythoncmd setup.py install ; fi
+RUN cd /tmp/arvados-cwl-runner-* && $pythoncmd setup.py install
 
 # Install dependencies and set up system.
 RUN /usr/sbin/adduser --disabled-password \

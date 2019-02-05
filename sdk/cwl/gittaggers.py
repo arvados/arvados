@@ -2,6 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from builtins import str
+from builtins import next
+
 from setuptools.command.egg_info import egg_info
 import subprocess
 import time
