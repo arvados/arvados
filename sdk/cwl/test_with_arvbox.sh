@@ -92,7 +92,7 @@ set -x
 if [ \$PYCMD = "python3" ]; then
     pip3 install cwltest
 else
-    pip3 install cwltest
+    pip install cwltest
 fi
 
 mkdir -p /tmp/cwltest
