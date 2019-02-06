@@ -2,8 +2,18 @@
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: AGPL-3.0
-
 set -eu
+
+# Set up
+DEBUG=${ARVADOS_DEBUG:-0}
+STDOUT_IF_DEBUG=/dev/null
+STDERR_IF_DEBUG=/dev/null
+DASHQQ_UNLESS_DEBUG=-qq
+if [[ "$DEBUG" != "0" ]]; then
+  STDOUT_IF_DEBUG=/dev/stdout
+  STDERR_IF_DEBUG=/dev/stderr
+  DASHQQ_UNLESS_DEBUG=
+fi
 
 # Multiple .deb based distros symlink to this script, so extract the target
 # from the invocation path.
@@ -13,8 +23,9 @@ export ARV_PACKAGES_DIR="/arvados/packages/$target"
 
 dpkg-query --show > "$ARV_PACKAGES_DIR/$1.before"
 
-apt-get -qq update
-apt-get --assume-yes --allow-unauthenticated install "$1"
+apt-get $DASHQQ_UNLESS_DEBUG update
+
+apt-get $DASHQQ_UNLESS_DEBUG -y --allow-unauthenticated install "$1" >"$STDOUT_IF_DEBUG" 2>"$STDERR_IF_DEBUG"
 
 dpkg-query --show > "$ARV_PACKAGES_DIR/$1.after"
 
@@ -35,12 +46,14 @@ fi
 
 dpkg-deb -x $debpkg .
 
-while read so && [ -n "$so" ]; do
-    echo
-    echo "== Packages dependencies for $so =="
-    ldd "$so" | awk '($3 ~ /^\//){print $3}' | sort -u | xargs dpkg -S | cut -d: -f1 | sort -u
-done <<EOF
+if [[ "$DEBUG" != "0" ]]; then
+  while read so && [ -n "$so" ]; do
+      echo
+      echo "== Packages dependencies for $so =="
+      ldd "$so" | awk '($3 ~ /^\//){print $3}' | sort -u | xargs dpkg -S | cut -d: -f1 | sort -u
+  done <<EOF
 $(find -name '*.so')
 EOF
+fi
 
 exec /jenkins/package-testing/common-test-packages.sh "$1"

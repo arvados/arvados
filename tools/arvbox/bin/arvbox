@@ -361,7 +361,12 @@ case "$subcmd" in
         ;;
 
     sh*)
-        exec docker exec -ti -e LINES=$(tput lines) -e COLUMNS=$(tput cols) -e TERM=$TERM -e GEM_HOME=/var/lib/gems $ARVBOX_CONTAINER /bin/bash
+        exec docker exec -ti \
+	       -e LINES=$(tput lines) \
+	       -e COLUMNS=$(tput cols) \
+	       -e TERM=$TERM \
+	       -e GEM_HOME=/var/lib/gems \
+	       $ARVBOX_CONTAINER /bin/bash
         ;;
 
     pipe)

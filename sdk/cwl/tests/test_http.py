@@ -2,8 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from future import standard_library
+standard_library.install_aliases()
+
 import copy
-import cStringIO
+import io
 import functools
 import hashlib
 import json

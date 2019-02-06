@@ -2,6 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from past.builtins import basestring
+from builtins import object
+from future.utils import viewitems
+
 import logging
 import re
 import copy
@@ -243,7 +247,7 @@ class ArvadosJob(JobBase):
                                                                    api_client=self.arvrunner.api,
                                                                    keep_client=self.arvrunner.keep_client,
                                                                    num_retries=self.arvrunner.num_retries)
-                        log = logc.open(logc.keys()[0])
+                        log = logc.open(list(logc.keys())[0])
                         dirs = {
                             "tmpdir": "/tmpdir",
                             "outdir": "/outdir",
@@ -343,7 +347,7 @@ class RunnerJob(Runner):
             find_or_create=self.enable_reuse
         ).execute(num_retries=self.arvrunner.num_retries)
 
-        for k,v in job_spec["script_parameters"].items():
+        for k,v in viewitems(job_spec["script_parameters"]):
             if v is False or v is None or isinstance(v, dict):
                 job_spec["script_parameters"][k] = {"value": v}
 

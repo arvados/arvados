@@ -161,7 +161,7 @@ package_go_binary() {
     fi
     switches+=("$WORKSPACE/${license_file}=/usr/share/doc/$prog/${license_file}")
 
-    fpm_build "$GOPATH/bin/${basename}=/usr/bin/${prog}" "${prog}" 'Curoverse, Inc.' dir "${version}" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=${description}" "${switches[@]}"
+    fpm_build "$GOPATH/bin/${basename}=/usr/bin/${prog}" "${prog}" dir "${version}" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=${description}" "${switches[@]}"
 }
 
 default_iteration() {
@@ -232,11 +232,6 @@ test_package_presence() {
       rpm_architecture="x86_64"
       deb_architecture="amd64"
 
-      if [[ "$pkgtype" =~ ^(python|python3)$ ]]; then
-        rpm_architecture="noarch"
-        deb_architecture="all"
-      fi
-
       if [[ "$pkgtype" =~ ^(src)$ ]]; then
         rpm_architecture="noarch"
         deb_architecture="all"
@@ -281,7 +276,7 @@ test_package_presence() {
           echo "Package $complete_pkgname exists, not rebuilding!"
           curl -o ./${complete_pkgname} http://apt.arvados.org/pool/${D}/main/${repo_subdir}/${complete_pkgname}
           return 1
-	elif test -f "$WORKSPACE/packages/$TARGET/processed/${complete_pkgname}" ; then
+        elif test -f "$WORKSPACE/packages/$TARGET/processed/${complete_pkgname}" ; then
           echo "Package $complete_pkgname exists, not rebuilding!"
           return 1
         else
@@ -297,6 +292,9 @@ test_package_presence() {
       if [ $? -eq 0 ]; then
         echo "Package $complete_pkgname exists, not rebuilding!"
         curl -o ./${complete_pkgname} ${centos_repo}${complete_pkgname}
+        return 1
+      elif test -f "$WORKSPACE/packages/$TARGET/processed/${complete_pkgname}" ; then
+        echo "Package $complete_pkgname exists, not rebuilding!"
         return 1
       else
         echo "Package $complete_pkgname not found, building"
@@ -332,7 +330,7 @@ handle_rails_package() {
         return 1
     fi
     local railsdir="/var/www/${pkgname%-server}/current"
-    local -a pos_args=("$srcdir/=$railsdir" "$pkgname" "Curoverse, Inc." dir "$version")
+    local -a pos_args=("$srcdir/=$railsdir" "$pkgname" dir "$version")
     local license_arg="$license_path=$railsdir/$(basename "$license_path")"
     local -a switches=(--after-install "$scripts_dir/postinst"
                        --before-remove "$scripts_dir/prerm"
@@ -359,6 +357,273 @@ handle_rails_package() {
     rm -rf "$scripts_dir"
 }
 
+# Build python packages with a virtualenv built-in
+fpm_build_virtualenv () {
+  PKG=$1
+  shift
+  PKG_DIR=$1
+  shift
+  PACKAGE_TYPE=${1:-python}
+  shift
+
+  # Set up
+  STDOUT_IF_DEBUG=/dev/null
+  STDERR_IF_DEBUG=/dev/null
+  DASHQ_UNLESS_DEBUG=-q
+  if [[ "$DEBUG" != "0" ]]; then
+      STDOUT_IF_DEBUG=/dev/stdout
+      STDERR_IF_DEBUG=/dev/stderr
+      DASHQ_UNLESS_DEBUG=
+  fi
+  if [[ "$ARVADOS_BUILDING_ITERATION" == "" ]]; then
+    ARVADOS_BUILDING_ITERATION=1
+  fi
+
+  local python=""
+  case "$PACKAGE_TYPE" in
+    python)
+        # All Arvados Python2 packages depend on Python 2.7.
+        # Make sure we build with that for consistency.
+        python=python2.7
+        PACKAGE_PREFIX=$PYTHON2_PKG_PREFIX
+        ;;
+    python3)
+        PACKAGE_PREFIX=$PYTHON3_PKG_PREFIX
+        python=python3
+        ;;
+  esac
+
+  if [[ "$PKG" != "libpam-arvados" ]] &&
+     [[ "$PKG" != "arvados-node-manager" ]] &&
+     [[ "$PKG" != "arvados-docker-cleaner" ]]; then
+    PYTHON_PKG=$PACKAGE_PREFIX-$PKG
+  else
+    # Exception to our package naming convention
+    PYTHON_PKG=$PKG
+  fi
+
+  if [[ -n "$ONLY_BUILD" ]] && [[ "$PYTHON_PKG" != "$ONLY_BUILD" ]] && [[ "$PKG" != "$ONLY_BUILD" ]]; then
+    return 0
+  fi
+
+  cd $WORKSPACE/$PKG_DIR
+
+  rm -rf dist/*
+
+  if ! $python setup.py $DASHQ_UNLESS_DEBUG sdist; then
+    echo "Error, unable to run python setup.py sdist for $PKG"
+    exit 1
+  fi
+
+  PACKAGE_PATH=`(cd dist; ls *tar.gz)`
+
+  # Determine the package version from the generated sdist archive
+  PYTHON_VERSION=${ARVADOS_BUILDING_VERSION:-$(awk '($1 == "Version:"){print $2}' *.egg-info/PKG-INFO)}
+
+  # See if we actually need to build this package; does it exist already?
+  # We can't do this earlier than here, because we need PYTHON_VERSION...
+  # This isn't so bad; the sdist call above is pretty quick compared to
+  # the invocation of virtualenv and fpm, below.
+  if ! test_package_presence "$PYTHON_PKG" $PYTHON_VERSION $PACKAGE_TYPE $ARVADOS_BUILDING_ITERATION; then
+    return 0
+  fi
+
+  echo "Building $FORMAT package for $PKG from $PKG_DIR"
+
+  # Package the sdist in a virtualenv
+  echo "Creating virtualenv..."
+
+  cd dist
+
+  rm -rf build
+  rm -f $PYTHON_PKG*deb
+
+  virtualenv_command="virtualenv --python `which $python` $DASHQ_UNLESS_DEBUG build/usr/share/$python/dist/$PYTHON_PKG"
+
+  if ! $virtualenv_command; then
+    echo "Error, unable to run"
+    echo "  $virtualenv_command"
+    exit 1
+  fi
+
+  if ! build/usr/share/$python/dist/$PYTHON_PKG/bin/pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U pip; then
+    echo "Error, unable to upgrade pip with"
+    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U pip"
+    exit 1
+  fi
+  if ! build/usr/share/$python/dist/$PYTHON_PKG/bin/pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U wheel; then
+    echo "Error, unable to upgrade wheel with"
+    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U wheel"
+    exit 1
+  fi
+
+  if [[ "$TARGET" != "centos7" ]] || [[ "$PYTHON_PKG" != "python-arvados-fuse" ]]; then
+    build/usr/share/$python/dist/$PYTHON_PKG/bin/pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PACKAGE_PATH
+  else
+    # centos7 needs these special tweaks to install python-arvados-fuse
+    build/usr/share/$python/dist/$PYTHON_PKG/bin/pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG docutils
+    PYCURL_SSL_LIBRARY=nss build/usr/share/$python/dist/$PYTHON_PKG/bin/pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PACKAGE_PATH
+  fi
+
+  if [[ "$?" != "0" ]]; then
+    echo "Error, unable to run"
+    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PACKAGE_PATH"
+    exit 1
+  fi
+
+  cd build/usr/share/$python/dist/$PYTHON_PKG/
+
+  # Replace the shebang lines in all python scripts, and handle the activate
+  # scripts too This is a functional replacement of the 237 line
+  # virtualenv_tools.py script that doesn't work in python3 without serious
+  # patching, minus the parts we don't need (modifying pyc files, etc).
+  for binfile in `ls bin/`; do
+    if ! file --mime bin/$binfile |grep -q binary; then
+      # Not a binary file
+      if [[ "$binfile" =~ ^activate(.csh|.fish|)$ ]]; then
+        # these 'activate' scripts need special treatment
+        sed -i "s/VIRTUAL_ENV=\".*\"/VIRTUAL_ENV=\"\/usr\/share\/$python\/dist\/$PYTHON_PKG\"/" bin/$binfile
+        sed -i "s/VIRTUAL_ENV \".*\"/VIRTUAL_ENV \"\/usr\/share\/$python\/dist\/$PYTHON_PKG\"/" bin/$binfile
+      else
+        if grep -q -E '^#!.*/bin/python\d?' bin/$binfile; then
+          # Replace shebang line
+          sed -i "1 s/^.*$/#!\/usr\/share\/$python\/dist\/$PYTHON_PKG\/bin\/python/" bin/$binfile
+        fi
+      fi
+    fi
+  done
+
+  cd - >$STDOUT_IF_DEBUG
+
+  find build -iname '*.pyc' -exec rm {} \;
+  find build -iname '*.pyo' -exec rm {} \;
+
+  # Finally, generate the package
+  echo "Creating package..."
+
+  declare -a COMMAND_ARR=("fpm" "-s" "dir" "-t" "$FORMAT")
+
+  if [[ "$MAINTAINER" != "" ]]; then
+    COMMAND_ARR+=('--maintainer' "$MAINTAINER")
+  fi
+
+  if [[ "$VENDOR" != "" ]]; then
+    COMMAND_ARR+=('--vendor' "$VENDOR")
+  fi
+
+  COMMAND_ARR+=('--url' 'https://arvados.org')
+
+  # Get description
+  DESCRIPTION=`grep '\sdescription' $WORKSPACE/$PKG_DIR/setup.py|cut -f2 -d=|sed -e "s/[',\\"]//g"`
+  COMMAND_ARR+=('--description' "$DESCRIPTION")
+
+  # Get license string
+  LICENSE_STRING=`grep license $WORKSPACE/$PKG_DIR/setup.py|cut -f2 -d=|sed -e "s/[',\\"]//g"`
+  COMMAND_ARR+=('--license' "$LICENSE_STRING")
+
+  # 12271 - As FPM-generated packages don't include scripts by default, the
+  # packages cleanup on upgrade depends on files being listed on the %files
+  # section in the generated SPEC files. To remove DIRECTORIES, they need to
+  # be listed in that sectiontoo, so we need to add this parameter to properly
+  # remove lingering dirs. But this only works for python2: if used on
+  # python33, it includes dirs like /opt/rh/python33 that belong to
+  # other packages.
+  if [[ "$FORMAT" == "rpm" ]] && [[ "$python" == "python2.7" ]]; then
+    COMMAND_ARR+=('--rpm-auto-add-directories')
+  fi
+
+  if [[ "$PKG" == "arvados-python-client" ]]; then
+    if [[ "$python" == "python2.7" ]]; then
+      COMMAND_ARR+=('--conflicts' "$PYTHON3_PKG_PREFIX-$PKG")
+    else
+      COMMAND_ARR+=('--conflicts' "$PYTHON2_PKG_PREFIX-$PKG")
+    fi
+  fi
+
+  if [[ "$DEBUG" != "0" ]]; then
+    COMMAND_ARR+=('--verbose' '--log' 'info')
+  fi
+
+  COMMAND_ARR+=('-v' "$PYTHON_VERSION")
+  COMMAND_ARR+=('--iteration' "$ARVADOS_BUILDING_ITERATION")
+  COMMAND_ARR+=('-n' "$PYTHON_PKG")
+  COMMAND_ARR+=('-C' "build")
+
+  if [[ -e "$WORKSPACE/$PKG_DIR/$PKG.service" ]]; then
+    COMMAND_ARR+=('--after-install' "${WORKSPACE}/build/go-python-package-scripts/postinst")
+    COMMAND_ARR+=('--before-remove' "${WORKSPACE}/build/go-python-package-scripts/prerm")
+  fi
+
+  if [[ "$python" == "python2.7" ]]; then
+    COMMAND_ARR+=('--depends' "$PYTHON2_PACKAGE")
+  else
+    COMMAND_ARR+=('--depends' "$PYTHON3_PACKAGE")
+  fi
+
+  # avoid warning
+  COMMAND_ARR+=('--deb-no-default-config-files')
+
+  # Append --depends X and other arguments specified by fpm-info.sh in
+  # the package source dir. These are added last so they can override
+  # the arguments added by this script.
+  declare -a fpm_args=()
+  declare -a fpm_depends=()
+
+  fpminfo="$WORKSPACE/$PKG_DIR/fpm-info.sh"
+  if [[ -e "$fpminfo" ]]; then
+    echo "Loading fpm overrides from $fpminfo"
+    if ! source "$fpminfo"; then
+      echo "Error, unable to source $WORKSPACE/$PKG_DIR/fpm-info.sh for $PKG"
+      exit 1
+    fi
+  fi
+
+  for i in "${fpm_depends[@]}"; do
+    COMMAND_ARR+=('--depends' "$i")
+  done
+
+  COMMAND_ARR+=("${fpm_args[@]}")
+
+  # Make sure to install all our package binaries in /usr/bin.
+  # We have to walk $WORKSPACE/$PKG_DIR/bin rather than
+  # $WORKSPACE/build/usr/share/$python/dist/$PYTHON_PKG/bin/ to get the list
+  # because the latter also includes all the python binaries for the virtualenv.
+  # We have to take the copies of our binaries from the latter directory, though,
+  # because those are the ones we rewrote the shebang line of, above.
+  if [[ -e "$WORKSPACE/$PKG_DIR/bin" ]]; then
+    for binary in `ls $WORKSPACE/$PKG_DIR/bin`; do
+      COMMAND_ARR+=("usr/share/$python/dist/$PYTHON_PKG/bin/$binary=/usr/bin/")
+    done
+  fi
+
+  # the libpam module should place this file in the historically correct place
+  # so as not to break backwards compatibility
+  if [[ -e "$WORKSPACE/$PKG_DIR/dist/build/usr/share/python2.7/dist/libpam-arvados/lib/security/libpam_arvados.py" ]]; then
+    COMMAND_ARR+=("usr/share/$python/dist/$PYTHON_PKG/data/lib/security/libpam_arvados.py=/usr/data/lib/security/")
+  fi
+
+  # the python-arvados-cwl-runner package comes with cwltool, expose that version
+  if [[ -e "$WORKSPACE/$PKG_DIR/dist/build/usr/share/python2.7/dist/python-arvados-cwl-runner/bin/cwltool" ]]; then
+    COMMAND_ARR+=("usr/share/python2.7/dist/python-arvados-cwl-runner/bin/cwltool=/usr/bin/")
+  fi
+
+  COMMAND_ARR+=(".")
+
+  FPM_RESULTS=$("${COMMAND_ARR[@]}")
+  FPM_EXIT_CODE=$?
+
+  # if something went wrong and debug is off, print out the fpm command that errored
+  if ! fpm_verify $FPM_EXIT_CODE $FPM_RESULTS && [[ "$STDOUT_IF_DEBUG" == "/dev/null" ]]; then
+    echo "fpm returned an error executing the command:"
+    echo
+    echo -e "\n${COMMAND_ARR[@]}\n"
+  else
+    echo `ls *$FORMAT`
+    mv $WORKSPACE/$PKG_DIR/dist/*$FORMAT $WORKSPACE/packages/$TARGET/
+  fi
+  echo
+}
+
 # Build packages for everything
 fpm_build () {
   # The package source.  Depending on the source type, this can be a
@@ -369,12 +634,8 @@ fpm_build () {
   # The name of the package to build.
   PACKAGE_NAME=$1
   shift
-  # Optional: the vendor of the package.  Should be "Curoverse, Inc." for
-  # packages of our own software.  Passed to fpm --vendor.
-  VENDOR=$1
-  shift
-  # The type of source package.  Passed to fpm -s.  Default "python".
-  PACKAGE_TYPE=${1:-python}
+  # The type of source package.  Passed to fpm -s.  Default "dir".
+  PACKAGE_TYPE=${1:-dir}
   shift
   # Optional: the package version number.  Passed to fpm -v.
   VERSION=$1
@@ -385,41 +646,8 @@ fpm_build () {
   fi
 
   local default_iteration_value="$(default_iteration "$PACKAGE" "$VERSION" "$PACKAGE_TYPE")"
-  local python=""
 
-  case "$PACKAGE_TYPE" in
-      python)
-          # All Arvados Python2 packages depend on Python 2.7.
-          # Make sure we build with that for consistency.
-          python=python2.7
-          set -- "$@" --python-bin python2.7 \
-              "${PYTHON_FPM_INSTALLER[@]}" \
-              --python-package-name-prefix "$PYTHON2_PKG_PREFIX" \
-              --prefix "$PYTHON2_PREFIX" \
-              --python-install-lib "$PYTHON2_INSTALL_LIB" \
-              --python-install-data . \
-              --exclude "${PYTHON2_INSTALL_LIB#/}/tests" \
-              --depends "$PYTHON2_PACKAGE"
-          ;;
-      python3)
-          # fpm does not actually support a python3 package type.  Instead
-          # we recognize it as a convenience shortcut to add several
-          # necessary arguments to fpm's command line later, after we're
-          # done handling positional arguments.
-          PACKAGE_TYPE=python
-          python=python3
-          set -- "$@" --python-bin python3 \
-              "${PYTHON3_FPM_INSTALLER[@]}" \
-              --python-package-name-prefix "$PYTHON3_PKG_PREFIX" \
-              --prefix "$PYTHON3_PREFIX" \
-              --python-install-lib "$PYTHON3_INSTALL_LIB" \
-              --python-install-data . \
-              --exclude "${PYTHON3_INSTALL_LIB#/}/tests" \
-              --depends "$PYTHON3_PACKAGE"
-          ;;
-  esac
-
-  declare -a COMMAND_ARR=("fpm" "--maintainer=Ward Vandewege <ward@curoverse.com>" "-s" "$PACKAGE_TYPE" "-t" "$FORMAT")
+  declare -a COMMAND_ARR=("fpm" "-s" "$PACKAGE_TYPE" "-t" "$FORMAT")
   if [ python = "$PACKAGE_TYPE" ] && [ deb = "$FORMAT" ]; then
       # Dependencies are built from setup.py.  Since setup.py will never
       # refer to Debian package iterations, it doesn't make sense to
@@ -430,7 +658,7 @@ fpm_build () {
   # 12271 - As FPM-generated packages don't include scripts by default, the
   # packages cleanup on upgrade depends on files being listed on the %files
   # section in the generated SPEC files. To remove DIRECTORIES, they need to
-  # be listed in that sectiontoo, so we need to add this parameter to properly
+  # be listed in that section too, so we need to add this parameter to properly
   # remove lingering dirs. But this only works for python2: if used on
   # python33, it includes dirs like /opt/rh/python33 that belong to
   # other packages.
@@ -438,12 +666,16 @@ fpm_build () {
     COMMAND_ARR+=('--rpm-auto-add-directories')
   fi
 
-  if [[ "${DEBUG:-0}" != "0" ]]; then
+  if [[ "$DEBUG" != "0" ]]; then
     COMMAND_ARR+=('--verbose' '--log' 'info')
   fi
 
   if [[ -n "$PACKAGE_NAME" ]]; then
     COMMAND_ARR+=('-n' "$PACKAGE_NAME")
+  fi
+
+  if [[ "$MAINTAINER" != "" ]]; then
+    COMMAND_ARR+=('--maintainer' "$MAINTAINER")
   fi
 
   if [[ "$VENDOR" != "" ]]; then
@@ -459,14 +691,6 @@ fpm_build () {
       COMMAND_ARR+=(--iteration "$default_iteration_value")
   fi
 
-  if [[ python = "$PACKAGE_TYPE" ]] && [[ -e "${PACKAGE}/${PACKAGE_NAME}.service" ]]
-  then
-      COMMAND_ARR+=(
-          --after-install "${WORKSPACE}/build/go-python-package-scripts/postinst"
-          --before-remove "${WORKSPACE}/build/go-python-package-scripts/prerm"
-      )
-  fi
-
   # Append --depends X and other arguments specified by fpm-info.sh in
   # the package source dir. These are added last so they can override
   # the arguments added by this script.
@@ -476,12 +700,7 @@ fpm_build () {
   declare -a fpm_exclude=()
   declare -a fpm_dirs=(
       # source dir part of 'dir' package ("/source=/dest" => "/source"):
-      "${PACKAGE%%=/*}"
-      # backports ("llfuse>=1.0" => "backports/python-llfuse")
-      "${WORKSPACE}/backports/${PACKAGE_TYPE}-${PACKAGE%%[<=>]*}")
-  if [[ -n "$PACKAGE_NAME" ]]; then
-      fpm_dirs+=("${WORKSPACE}/backports/${PACKAGE_NAME}")
-  fi
+      "${PACKAGE%%=/*}")
   for pkgdir in "${fpm_dirs[@]}"; do
       fpminfo="$pkgdir/fpm-info.sh"
       if [[ -e "$fpminfo" ]]; then

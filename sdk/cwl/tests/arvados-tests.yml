@@ -102,8 +102,8 @@
             "size": 32
         },
         {
-            "checksum": "sha1$83483b9c65d99967aecc794c14f9f4743314d186",
-            "location": "sample2_S01_R3_001.fastq.txt",
+            "checksum": "sha1$5f3b4df1b0f7fdced751fc6079778600ad9fdb45",
+            "location": "sample2_S01_R1_001.fastq.txt",
             "class": "File",
             "size": 32
         }

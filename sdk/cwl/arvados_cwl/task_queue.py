@@ -2,7 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import Queue
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
+from builtins import object
+
+import queue
 import threading
 import logging
 
@@ -11,13 +16,13 @@ logger = logging.getLogger('arvados.cwl-runner')
 class TaskQueue(object):
     def __init__(self, lock, thread_count):
         self.thread_count = thread_count
-        self.task_queue = Queue.Queue(maxsize=self.thread_count)
+        self.task_queue = queue.Queue(maxsize=self.thread_count)
         self.task_queue_threads = []
         self.lock = lock
         self.in_flight = 0
         self.error = None
 
-        for r in xrange(0, self.thread_count):
+        for r in range(0, self.thread_count):
             t = threading.Thread(target=self.task_queue_func)
             self.task_queue_threads.append(t)
             t.start()
@@ -51,7 +56,7 @@ class TaskQueue(object):
                     return
                 self.task_queue.put(task, block=True, timeout=3)
                 return
-            except Queue.Full:
+            except queue.Full:
                 pass
             finally:
                 unlock.acquire()
@@ -62,7 +67,7 @@ class TaskQueue(object):
             # Drain queue
             while not self.task_queue.empty():
                 self.task_queue.get(True, .1)
-        except Queue.Empty:
+        except queue.Empty:
             pass
 
     def join(self):

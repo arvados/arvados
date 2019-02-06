@@ -56,6 +56,10 @@ setup(name='arvados-python-client',
           'ws4py >=0.4.2',
           'subprocess32 >=3.5.1',
       ],
+      classifiers=[
+          'Programming Language :: Python :: 2',
+          'Programming Language :: Python :: 3',
+      ],
       test_suite='tests',
       tests_require=['pbr<1.7.0', 'mock>=1.0', 'PyYAML'],
       zip_safe=False

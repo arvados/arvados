@@ -528,7 +528,7 @@ setup_virtualenv() {
 }
 
 export PERLINSTALLBASE
-export PERLLIB="$PERLINSTALLBASE/lib/perl5:${PERLLIB:+$PERLLIB}"
+export PERL5LIB="$PERLINSTALLBASE/lib/perl5${PERL5LIB:+:$PERL5LIB}"
 
 export R_LIBS
 
@@ -596,6 +596,7 @@ pythonstuff=(
     sdk/python
     sdk/python:py3
     sdk/cwl
+    sdk/cwl:py3
     services/dockercleaner:py3
     services/fuse
     services/nodemanager

@@ -37,6 +37,13 @@ if test ! -s /var/lib/arvados/root-cert.pem ; then
 fi
 
 if test ! -s /var/lib/arvados/server-cert-${localip}.pem ; then
+
+    if [[ $localip =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+	san=IP:$localip
+    else
+	san=DNS:$localip
+    fi
+
     # req           signing request sub-command
     # -new          new certificate request
     # -nodes        "no des" don't encrypt key
@@ -56,7 +63,7 @@ if test ! -s /var/lib/arvados/server-cert-${localip}.pem ; then
 	    -reqexts x509_ext \
 	    -extensions x509_ext \
 	    -config <(cat /etc/ssl/openssl.cnf \
-			  <(printf "\n[x509_ext]\nkeyUsage=critical,digitalSignature,keyEncipherment\nsubjectAltName=DNS:localhost,IP:$localip")) \
+			  <(printf "\n[x509_ext]\nkeyUsage=critical,digitalSignature,keyEncipherment\nsubjectAltName=DNS:localhost,$san")) \
             -out /var/lib/arvados/server-cert-${localip}.csr \
             -keyout /var/lib/arvados/server-cert-${localip}.key \
             -days 365
@@ -69,7 +76,7 @@ if test ! -s /var/lib/arvados/server-cert-${localip}.pem ; then
 	    -out /var/lib/arvados/server-cert-${localip}.pem \
 	    -set_serial $RANDOM$RANDOM \
 	    -extfile <(cat /etc/ssl/openssl.cnf \
-			  <(printf "\n[x509_ext]\nkeyUsage=critical,digitalSignature,keyEncipherment\nsubjectAltName=DNS:localhost,IP:$localip")) \
+			  <(printf "\n[x509_ext]\nkeyUsage=critical,digitalSignature,keyEncipherment\nsubjectAltName=DNS:localhost,$san")) \
 	    -extensions x509_ext
 
     chown arvbox:arvbox /var/lib/arvados/server-cert-${localip}.*

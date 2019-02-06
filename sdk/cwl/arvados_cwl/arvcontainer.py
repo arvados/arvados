@@ -2,10 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+
 import logging
 import json
 import os
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import time
 import datetime
 import ciso8601
@@ -136,7 +140,7 @@ class ArvadosContainer(JobBase):
                 generatemapper = NoFollowPathMapper(self.generatefiles["listing"], "", "",
                                                     separateDirs=False)
 
-                sorteditems = sorted(generatemapper.items(), None, key=lambda n: n[1].target)
+                sorteditems = sorted(generatemapper.items(), key=lambda n: n[1].target)
 
                 logger.debug("generatemapper is %s", sorteditems)
 
@@ -158,7 +162,7 @@ class ArvadosContainer(JobBase):
                                 }
                             else:
                                 with vwd.open(p.target, "w") as n:
-                                    n.write(p.resolved.encode("utf-8"))
+                                    n.write(p.resolved)
 
                 def keepemptydirs(p):
                     if isinstance(p, arvados.collection.RichCollectionBase):

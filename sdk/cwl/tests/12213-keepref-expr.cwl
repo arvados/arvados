@@ -14,6 +14,7 @@ expression: |
   ${
     var samples = {};
     var pattern = /^(.+)(_S[0-9]{1,3}_)(.+)$/;
+    inputs.dir.listing = inputs.dir.listing.sort(function(a, b) { return a.basename.localeCompare(b.basename); });
     for (var i = 0; i < inputs.dir.listing.length; i++) {
       var file = inputs.dir.listing[i];
       var groups = file.basename.match(pattern);

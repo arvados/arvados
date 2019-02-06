@@ -30,9 +30,10 @@ ubuntu1804/generated: common-generated-all
 
 GOTARBALL=go1.10.1.linux-amd64.tar.gz
 NODETARBALL=node-v6.11.2-linux-x64.tar.xz
-RVMKEY=rvm.asc
+RVMKEY1=mpapis.asc
+RVMKEY2=pkuczynski.asc
 
-common-generated-all: common-generated/$(GOTARBALL) common-generated/$(NODETARBALL) common-generated/$(RVMKEY)
+common-generated-all: common-generated/$(GOTARBALL) common-generated/$(NODETARBALL) common-generated/$(RVMKEY1) common-generated/$(RVMKEY2)
 
 common-generated/$(GOTARBALL): common-generated
 	wget -cqO common-generated/$(GOTARBALL) http://storage.googleapis.com/golang/$(GOTARBALL)
@@ -40,8 +41,11 @@ common-generated/$(GOTARBALL): common-generated
 common-generated/$(NODETARBALL): common-generated
 	wget -cqO common-generated/$(NODETARBALL) https://nodejs.org/dist/v6.11.2/$(NODETARBALL)
 
-common-generated/$(RVMKEY): common-generated
-	wget -cqO common-generated/$(RVMKEY) https://rvm.io/pkuczynski.asc
+common-generated/$(RVMKEY1): common-generated
+	wget -cqO common-generated/$(RVMKEY1) https://rvm.io/mpapis.asc
+
+common-generated/$(RVMKEY2): common-generated
+	wget -cqO common-generated/$(RVMKEY2) https://rvm.io/pkuczynski.asc
 
 common-generated:
 	mkdir common-generated
