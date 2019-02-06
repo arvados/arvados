@@ -4,7 +4,10 @@
 
 case "$TARGET" in
     debian* | ubuntu*)
-        fpm_depends+=('libpam-python')
+        fpm_depends+=('libpam-python' 'libcurl3-gnutls')
+        ;;
+    centos*)
+        fpm_depends+=('python-pam')
         ;;
     *)
         echo >&2 "ERROR: $PACKAGE: pam_python.so dependency unavailable in $TARGET."

@@ -180,7 +180,7 @@ ${cc}${cc:+ }SPDX-License-Identifier: CC-BY-SA-3.0${ce}"
         Makefile | build/* | lib/* | tools/* | apps/* | services/* | sdk/cli/bin/crunch-job)
             want=${wantGPL}
             ;;
-        crunch_scripts/* | backports/* | docker/* | sdk/*)
+        crunch_scripts/* | docker/* | sdk/*)
             want=${wantApache}
             ;;
         doc/*)

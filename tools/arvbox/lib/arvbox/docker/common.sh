@@ -66,6 +66,7 @@ run_bundler() {
     fi
 }
 
+PYCMD=""
 pip_install() {
     pushd /var/lib/pip
     for p in $(ls http*.tar.gz) $(ls http*.tar.bz2) $(ls http*.whl) $(ls http*.zip) ; do
@@ -75,7 +76,13 @@ pip_install() {
     done
     popd
 
-    if ! pip install --no-index --find-links /var/lib/pip $1 ; then
-        pip install $1
+    if [ "$PYCMD" = "python3" ]; then
+	if ! pip3 install --no-index --find-links /var/lib/pip $1 ; then
+            pip3 install $1
+	fi
+    else
+	if ! pip install --no-index --find-links /var/lib/pip $1 ; then
+            pip install $1
+	fi
     fi
 }

@@ -5,11 +5,15 @@
 require 'test_helper'
 
 class UserSessionsApiTest < ActionDispatch::IntegrationTest
-  def client_url
-    'https://wb.example.com'
+  # remote prefix & return url packed into the return_to param passed around
+  # between API and SSO provider.
+  def client_url(remote: nil)
+    url = ',https://wb.example.com'
+    url = "#{remote}#{url}" unless remote.nil?
+    url
   end
 
-  def mock_auth_with(email: nil, username: nil, identity_url: nil)
+  def mock_auth_with(email: nil, username: nil, identity_url: nil, remote: nil, expected_response: :redirect)
     mock = {
       'provider' => 'josh_id',
       'uid' => 'https://edward.example.com',
@@ -24,9 +28,14 @@ class UserSessionsApiTest < ActionDispatch::IntegrationTest
     mock['info']['username'] = username unless username.nil?
     mock['info']['identity_url'] = identity_url unless identity_url.nil?
     post('/auth/josh_id/callback',
-         {return_to: client_url},
+         {return_to: client_url(remote: remote)},
          {'omniauth.auth' => mock})
-    assert_response :redirect, 'Did not redirect to client with token'
+
+    errors = {
+      :redirect => 'Did not redirect to client with token',
+      400 => 'Did not return Bad Request error',
+    }
+    assert_response expected_response, errors[expected_response]
   end
 
   test 'assign username from sso' do
@@ -61,12 +70,23 @@ class UserSessionsApiTest < ActionDispatch::IntegrationTest
 
   test 'create new user during omniauth callback' do
     mock_auth_with(email: 'edward@example.com')
-    assert_equal(0, @response.redirect_url.index(client_url),
+    assert_equal(0, @response.redirect_url.index(client_url.split(',', 2)[1]),
                  'Redirected to wrong address after succesful login: was ' +
-                 @response.redirect_url + ', expected ' + client_url + '[...]')
+                 @response.redirect_url + ', expected ' + client_url.split(',', 2)[1] + '[...]')
     assert_not_nil(@response.redirect_url.index('api_token='),
                    'Expected api_token in query string of redirect url ' +
                    @response.redirect_url)
+  end
+
+  test 'issue salted token from omniauth callback with remote param' do
+    mock_auth_with(email: 'edward@example.com', remote: 'zbbbb')
+    api_client_auth = assigns(:api_client_auth)
+    assert_not_nil api_client_auth
+    assert_includes(@response.redirect_url, 'api_token=' + api_client_auth.salted_token(remote: 'zbbbb'))
+  end
+
+  test 'error out from omniauth callback with invalid remote param' do
+    mock_auth_with(email: 'edward@example.com', remote: 'invalid_cluster_id', expected_response: 400)
   end
 
   # Test various combinations of auto_setup configuration and email

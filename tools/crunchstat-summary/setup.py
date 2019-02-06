@@ -23,7 +23,7 @@ if '--short-tests-only' in sys.argv:
 
 setup(name='crunchstat_summary',
       version=version,
-      description='read crunch log files and summarize resource usage',
+      description='Arvados crunchstat-summary reads crunch log files and summarizes resource usage',
       author='Arvados',
       author_email='info@arvados.org',
       url="https://arvados.org",

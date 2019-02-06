@@ -128,7 +128,7 @@ func (s *HandlerSuite) TestProxyRedirect(c *check.C) {
 	resp := httptest.NewRecorder()
 	s.handler.ServeHTTP(resp, req)
 	c.Check(resp.Code, check.Equals, http.StatusFound)
-	c.Check(resp.Header().Get("Location"), check.Matches, `https://0.0.0.0:1/auth/joshid\?return_to=foo&?`)
+	c.Check(resp.Header().Get("Location"), check.Matches, `https://0.0.0.0:1/auth/joshid\?return_to=%2Cfoo&?`)
 }
 
 func (s *HandlerSuite) TestValidateV1APIToken(c *check.C) {

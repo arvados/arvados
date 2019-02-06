@@ -2156,6 +2156,7 @@ sub find_docker_image {
           return (undef, undef);  # More than one file in the Collection.
         } else {
           $filename = (split(/:/, $filedata, 3))[2];
+          $filename =~ s/\\([0-3][0-7][0-7])/chr(oct($1))/ge;
         }
       }
     }

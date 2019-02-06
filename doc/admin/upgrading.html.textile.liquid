@@ -30,6 +30,44 @@ Note to developers: Add new items at the top. Include the date, issue number, co
 TODO: extract this information based on git commit messages and generate changelogs / release notes automatically.
 {% endcomment %}
 
+h3. current master branch
+
+h4. Python packaging change
+
+As part of story "#9945":https://dev.arvados.org/issues/9945, the distribution packaging (deb/rpm) of our Python packages has changed. These packages now include a built-in virtualenv to reduce dependencies on system packages. We have also stopped packaging and publishing backports for all the Python dependencies of our packages, as they are no longer needed.
+
+One practical consequence of this change is that the use of the Arvados Python SDK (aka "import arvados") will require a tweak if the SDK was installed from a distribution package. It now requires the loading of the virtualenv environment from our packages. The "Install documentation for the Arvados Python SDK":/sdk/python/sdk-python.html reflects this change. This does not affect the use of the command line tools (e.g. arv-get, etc.).
+
+Python scripts that rely on the distribution Arvados Python SDK packages to import the Arvados SDK will need to be tweaked to load the correct Python environment.
+
+This can be done by activating the virtualenv outside of the script:
+
+<notextile>
+<pre>~$ <code class="userinput">source /usr/share/python2.7/dist/python-arvados-python-client/bin/activate</code>
+(python-arvados-python-client) ~$ <code class="userinput">path-to-the-python-script</code>
+</pre>
+</notextile>
+
+Or alternatively, by updating the shebang line at the start of the script to:
+
+<notextile>
+<pre>
+#!/usr/share/python2.7/dist/python-arvados-python-client/bin/python
+</pre>
+</notextile>
+
+h4. python-arvados-cwl-runner deb/rpm package now conflicts with python-cwltool deb/rpm package
+
+As part of story "#9945":https://dev.arvados.org/issues/9945, the distribution packaging (deb/rpm) of our Python packages has changed. The python-arvados-cwl-runner package now includes a version of cwltool. If present, the python-cwltool and cwltool distribution packages will need to be uninstalled before the python-arvados-cwl-runner deb or rpm package can be installed.
+
+h4. Centos7 Python 3 dependency upgraded to rh-python35
+
+As part of story "#9945":https://dev.arvados.org/issues/9945, the Python 3 dependency for Centos7 Arvados packages was upgraded from SCL python33 to rh-python35.
+
+h4. Centos7 package for libpam-arvados depends on the python-pam package, which is available from EPEL
+
+As part of story "#9945":https://dev.arvados.org/issues/9945, it was discovered that the Centos7 package for libpam-arvados was missing a dependency on the python-pam package, which is available from the EPEL repository. The dependency has been added to the libpam-arvados package. This means that going forward, the EPEL repository will need to be enabled to install libpam-arvados on Centos7.
+
 h3. v1.3.0 (2018-12-05)
 
 This release includes several database migrations, which will be executed automatically as part of the API server upgrade. On large Arvados installations, these migrations will take a while. We've seen the upgrade take 30 minutes or more on installations with a lot of collections.
