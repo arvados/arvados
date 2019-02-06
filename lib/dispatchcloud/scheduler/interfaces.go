@@ -13,7 +13,8 @@ import (
 )
 
 // A ContainerQueue is a set of containers that need to be started or
-// stopped. Implemented by container.Queue and test stubs.
+// stopped. Implemented by container.Queue and test stubs. See
+// container.Queue method documentation for details.
 type ContainerQueue interface {
 	Entries() (entries map[string]container.QueueEnt, updated time.Time)
 	Lock(uuid string) error
@@ -28,13 +29,13 @@ type ContainerQueue interface {
 
 // A WorkerPool asynchronously starts and stops worker VMs, and starts
 // and stops containers on them. Implemented by worker.Pool and test
-// stubs.
+// stubs. See worker.Pool method documentation for details.
 type WorkerPool interface {
 	Running() map[string]time.Time
 	Unallocated() map[arvados.InstanceType]int
 	CountWorkers() map[worker.State]int
 	AtQuota() bool
-	Create(arvados.InstanceType) error
+	Create(arvados.InstanceType) bool
 	Shutdown(arvados.InstanceType) bool
 	StartContainer(arvados.InstanceType, arvados.Container) bool
 	KillContainer(uuid string)

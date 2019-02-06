@@ -27,8 +27,8 @@ type APIClient interface {
 type QueueEnt struct {
 	// The container to run. Only the UUID, State, Priority, and
 	// RuntimeConstraints fields are populated.
-	Container    arvados.Container
-	InstanceType arvados.InstanceType
+	Container    arvados.Container    `json:"container"`
+	InstanceType arvados.InstanceType `json:"instance_type"`
 }
 
 // String implements fmt.Stringer by returning the queued container's
@@ -184,7 +184,9 @@ func (cq *Queue) Update() error {
 	cq.mtx.Lock()
 	defer cq.mtx.Unlock()
 	for uuid, ctr := range next {
-		if _, keep := cq.dontupdate[uuid]; keep {
+		if _, dontupdate := cq.dontupdate[uuid]; dontupdate {
+			// Don't clobber a local update that happened
+			// after we started polling.
 			continue
 		}
 		if cur, ok := cq.current[uuid]; !ok {
@@ -195,11 +197,16 @@ func (cq *Queue) Update() error {
 		}
 	}
 	for uuid := range cq.current {
-		if _, keep := cq.dontupdate[uuid]; keep {
+		if _, dontupdate := cq.dontupdate[uuid]; dontupdate {
+			// Don't expunge an entry that was
+			// added/updated locally after we started
+			// polling.
 			continue
-		} else if _, keep = next[uuid]; keep {
-			continue
-		} else {
+		} else if _, stillpresent := next[uuid]; !stillpresent {
+			// Expunge an entry that no longer appears in
+			// the poll response (evidently it's
+			// cancelled, completed, deleted, or taken by
+			// a different dispatcher).
 			delete(cq.current, uuid)
 		}
 	}
@@ -211,9 +218,44 @@ func (cq *Queue) Update() error {
 
 func (cq *Queue) addEnt(uuid string, ctr arvados.Container) {
 	it, err := cq.chooseType(&ctr)
-	if err != nil {
-		// FIXME: throttle warnings, cancel after timeout
-		cq.logger.Warnf("cannot run %s", &ctr)
+	if err != nil && (ctr.State == arvados.ContainerStateQueued || ctr.State == arvados.ContainerStateLocked) {
+		// We assume here that any chooseType error is a hard
+		// error: it wouldn't help to try again, or to leave
+		// it for a different dispatcher process to attempt.
+		errorString := err.Error()
+		cq.logger.WithField("ContainerUUID", ctr.UUID).Warn("cancel container with no suitable instance type")
+		go func() {
+			var err error
+			defer func() {
+				if err == nil {
+					return
+				}
+				// On failure, check current container
+				// state, and don't log the error if
+				// the failure came from losing a
+				// race.
+				var latest arvados.Container
+				cq.client.RequestAndDecode(&latest, "GET", "arvados/v1/containers/"+ctr.UUID, nil, map[string][]string{"select": {"state"}})
+				if latest.State == arvados.ContainerStateCancelled {
+					return
+				}
+				cq.logger.WithField("ContainerUUID", ctr.UUID).WithError(err).Warn("error while trying to cancel unsatisfiable container")
+			}()
+			if ctr.State == arvados.ContainerStateQueued {
+				err = cq.Lock(ctr.UUID)
+				if err != nil {
+					return
+				}
+			}
+			err = cq.setRuntimeError(ctr.UUID, errorString)
+			if err != nil {
+				return
+			}
+			err = cq.Cancel(ctr.UUID)
+			if err != nil {
+				return
+			}
+		}()
 		return
 	}
 	cq.current[uuid] = QueueEnt{Container: ctr, InstanceType: it}
@@ -227,6 +269,18 @@ func (cq *Queue) Lock(uuid string) error {
 // Unlock releases the dispatch lock for the given container.
 func (cq *Queue) Unlock(uuid string) error {
 	return cq.apiUpdate(uuid, "unlock")
+}
+
+// setRuntimeError sets runtime_status["error"] to the given value.
+// Container should already have state==Locked or Running.
+func (cq *Queue) setRuntimeError(uuid, errorString string) error {
+	return cq.client.RequestAndDecode(nil, "PUT", "arvados/v1/containers/"+uuid, nil, map[string]map[string]map[string]interface{}{
+		"container": {
+			"runtime_status": {
+				"error": errorString,
+			},
+		},
+	})
 }
 
 // Cancel cancels the given container.

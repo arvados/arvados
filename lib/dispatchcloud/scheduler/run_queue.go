@@ -7,7 +7,6 @@ package scheduler
 import (
 	"sort"
 
-	"git.curoverse.com/arvados.git/lib/cloud"
 	"git.curoverse.com/arvados.git/lib/dispatchcloud/container"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"github.com/sirupsen/logrus"
@@ -62,11 +61,13 @@ tryrun:
 				break tryrun
 			} else {
 				logger.Info("creating new instance")
-				err := sch.pool.Create(it)
-				if err != nil {
-					if _, ok := err.(cloud.QuotaError); !ok {
-						logger.WithError(err).Warn("error creating worker")
-					}
+				if !sch.pool.Create(it) {
+					// (Note pool.Create works
+					// asynchronously and logs its
+					// own failures, so we don't
+					// need to log this as a
+					// failure.)
+
 					sch.queue.Unlock(ctr.UUID)
 					// Don't let lower-priority
 					// containers starve this one

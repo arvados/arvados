@@ -210,14 +210,19 @@ func (c *Client) RequestAndDecode(dst interface{}, method, path string, body io.
 	if err != nil {
 		return err
 	}
-	if (method == "GET" || body != nil) && urlValues != nil {
-		// FIXME: what if params don't fit in URL
+	if urlValues == nil {
+		// Nothing to send
+	} else if method == "GET" || method == "HEAD" || body != nil {
+		// Must send params in query part of URL (FIXME: what
+		// if resulting URL is too long?)
 		u, err := url.Parse(urlString)
 		if err != nil {
 			return err
 		}
 		u.RawQuery = urlValues.Encode()
 		urlString = u.String()
+	} else {
+		body = strings.NewReader(urlValues.Encode())
 	}
 	req, err := http.NewRequest(method, urlString, body)
 	if err != nil {

@@ -8,21 +8,22 @@ import "time"
 
 // Container is an arvados#container resource.
 type Container struct {
-	UUID                 string               `json:"uuid"`
-	CreatedAt            time.Time            `json:"created_at"`
-	Command              []string             `json:"command"`
-	ContainerImage       string               `json:"container_image"`
-	Cwd                  string               `json:"cwd"`
-	Environment          map[string]string    `json:"environment"`
-	LockedByUUID         string               `json:"locked_by_uuid"`
-	Mounts               map[string]Mount     `json:"mounts"`
-	Output               string               `json:"output"`
-	OutputPath           string               `json:"output_path"`
-	Priority             int64                `json:"priority"`
-	RuntimeConstraints   RuntimeConstraints   `json:"runtime_constraints"`
-	State                ContainerState       `json:"state"`
-	SchedulingParameters SchedulingParameters `json:"scheduling_parameters"`
-	ExitCode             int                  `json:"exit_code"`
+	UUID                 string                 `json:"uuid"`
+	CreatedAt            time.Time              `json:"created_at"`
+	Command              []string               `json:"command"`
+	ContainerImage       string                 `json:"container_image"`
+	Cwd                  string                 `json:"cwd"`
+	Environment          map[string]string      `json:"environment"`
+	LockedByUUID         string                 `json:"locked_by_uuid"`
+	Mounts               map[string]Mount       `json:"mounts"`
+	Output               string                 `json:"output"`
+	OutputPath           string                 `json:"output_path"`
+	Priority             int64                  `json:"priority"`
+	RuntimeConstraints   RuntimeConstraints     `json:"runtime_constraints"`
+	State                ContainerState         `json:"state"`
+	SchedulingParameters SchedulingParameters   `json:"scheduling_parameters"`
+	ExitCode             int                    `json:"exit_code"`
+	RuntimeStatus        map[string]interface{} `json:"runtime_status"`
 }
 
 // Container is an arvados#container resource.
