@@ -2,9 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from builtins import str
-from builtins import next
-
 import subprocess
 import time
 import os
