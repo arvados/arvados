@@ -7,31 +7,35 @@ import { StyleRulesCallback, WithStyles, Typography, withStyles } from '@materia
 import { ArvadosTheme } from '~/common/custom-theme';
 import * as classNames from 'classnames';
 
-type CssRules = 'root';
+type CssRules = 'root' | 'space';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         boxSizing: 'border-box',
         overflow: 'auto',
         padding: theme.spacing.unit
+    },
+    space: {
+        marginLeft: '15px'
     }
 });
 
 export interface CodeSnippetDataProps {
     lines: string[];
     className?: string;
+    apiResponse?: boolean;
 }
 
 type CodeSnippetProps = CodeSnippetDataProps & WithStyles<CssRules>;
 
 export const CodeSnippet = withStyles(styles)(
-    ({ classes, lines, className }: CodeSnippetProps) =>
+    ({ classes, lines, className, apiResponse }: CodeSnippetProps) =>
         <Typography 
         component="div" 
         className={classNames(classes.root, className)}>
             {
                 lines.map((line: string, index: number) => {
-                    return <Typography key={index} component="pre">{line}</Typography>;
+                    return <Typography key={index} className={apiResponse ? classes.space : ''} component="pre">{line}</Typography>;
                 })
             }
         </Typography>

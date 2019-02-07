@@ -109,5 +109,6 @@ const dialogContentHeader = (header: string) =>
 
 const dialogContentExample = (example: string, classes: any) =>
     <DefaultCodeSnippet
+        apiResponse
         className={classes.codeSnippet}
         lines={[example]} />;

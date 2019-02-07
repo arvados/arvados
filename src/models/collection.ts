@@ -17,6 +17,9 @@ export interface CollectionResource extends TrashableResource {
     storageClassesDesired: string[];
     storageClassesConfirmed: string[];
     storageClassesConfirmedAt: string;
+    currentVersionUuid: string;
+    version: number;
+    preserveVersion: boolean;
 }
 
 export const getCollectionUrl = (uuid: string) => {

@@ -23,6 +23,7 @@ import { LinkResource } from '~/models/link';
 import { KeepServiceResource } from '~/models/keep-services';
 import { NodeResource } from '~/models/node';
 import { ApiClientAuthorization } from '~/models/api-client-authorization';
+import * as React from 'react';
 
 export const ADVANCED_TAB_DIALOG = 'advancedTabDialog';
 
@@ -312,7 +313,7 @@ interface AdvancedTabData {
     uuid: string;
     metadata: ListResults<LinkResource> | string;
     user: UserResource | string;
-    apiResponseKind: (apiResponse: AdvanceResponseData) => string;
+    apiResponseKind: any;
     data: AdvanceResponseData;
     resourceKind: AdvanceResourceKind;
     resourcePrefix: AdvanceResourcePrefix;
@@ -396,7 +397,8 @@ const containerRequestApiResponse = (apiResponse: ContainerRequestResource) => {
     const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name, description, properties, state, requestingContainerUuid, containerUuid,
         containerCountMax, mounts, runtimeConstraints, containerImage, environment, cwd, command, outputPath, priority, expiresAt, filters, containerCount,
         useExisting, schedulingParameters, outputUuid, logUuid, outputName, outputTtl } = apiResponse;
-    const response = `"uuid": "${uuid}",
+    const response = `
+"uuid": "${uuid}",
 "owner_uuid": "${ownerUuid}",
 "created_at": "${createdAt}",
 "modified_at": ${stringify(modifiedAt)},
@@ -427,14 +429,15 @@ const containerRequestApiResponse = (apiResponse: ContainerRequestResource) => {
 "output_name": ${stringify(outputName)},
 "output_ttl": ${stringify(outputTtl)}`;
 
-    return response;
+    return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
 };
 
 const collectionApiResponse = (apiResponse: CollectionResource) => {
     const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name, description, properties, portableDataHash, replicationDesired,
         replicationConfirmedAt, replicationConfirmed, manifestText, deleteAt, trashAt, isTrashed, storageClassesDesired,
-        storageClassesConfirmed, storageClassesConfirmedAt } = apiResponse;
-    const response = `"uuid": "${uuid}",
+        storageClassesConfirmed, storageClassesConfirmedAt, currentVersionUuid, version, preserveVersion } = apiResponse;
+    const response = `
+"uuid": "${uuid}",
 "owner_uuid": "${ownerUuid}",
 "created_at": "${createdAt}",
 "modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
@@ -453,14 +456,18 @@ const collectionApiResponse = (apiResponse: CollectionResource) => {
 "is_trashed": ${stringify(isTrashed)},
 "storage_classes_desired": ${JSON.stringify(storageClassesDesired, null, 2)},
 "storage_classes_confirmed": ${JSON.stringify(storageClassesConfirmed, null, 2)},
-"storage_classes_confirmed_at": ${stringify(storageClassesConfirmedAt)}`;
+"storage_classes_confirmed_at": ${stringify(storageClassesConfirmedAt)},
+"currentVersionUuid": ${stringify(currentVersionUuid)},
+"version": ${version},
+"preserveVersion": ${preserveVersion}`;
 
-    return response;
+    return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
 };
 
 const groupRequestApiResponse = (apiResponse: ProjectResource) => {
-    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name, description, groupClass, trashAt, isTrashed, deleteAt, properties } = apiResponse;
-    const response = `"uuid": "${uuid}",
+    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name, description, groupClass, trashAt, isTrashed, deleteAt, properties, writeableBy } = apiResponse;
+    const response = `
+"uuid": "${uuid}",
 "owner_uuid": "${ownerUuid}",
 "created_at": "${createdAt}",
 "modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
@@ -472,27 +479,31 @@ const groupRequestApiResponse = (apiResponse: ProjectResource) => {
 "trash_at": ${stringify(trashAt)},
 "is_trashed": ${stringify(isTrashed)},
 "delete_at": ${stringify(deleteAt)},
-"properties": ${stringifyObject(properties)}`;
+"properties": ${stringifyObject(properties)},
+"witable_by": ${stringifyObject(writeableBy)}`;
 
-    return response;
+    return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
 };
 
 const repositoryApiResponse = (apiResponse: RepositoryResource) => {
-    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name } = apiResponse;
-    const response = `"uuid": "${uuid}",
+    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name, cloneUrls } = apiResponse;
+    const response = `
+"uuid": "${uuid}",
 "owner_uuid": "${ownerUuid}",
 "modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
 "modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
 "modified_at": ${stringify(modifiedAt)},
 "name": ${stringify(name)},
-"created_at": "${createdAt}"`;
+"created_at": "${createdAt}",
+"clone_urls": ${stringifyObject(cloneUrls)}`;
 
-    return response;
+    return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
 };
 
 const sshKeyApiResponse = (apiResponse: SshKeyResource) => {
     const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name, authorizedUserUuid, expiresAt } = apiResponse;
-    const response = `"uuid": "${uuid}",
+    const response = `
+"uuid": "${uuid}",
 "owner_uuid": "${ownerUuid}",
 "authorized_user_uuid": "${authorizedUserUuid}",
 "modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
@@ -501,12 +512,13 @@ const sshKeyApiResponse = (apiResponse: SshKeyResource) => {
 "name": ${stringify(name)},
 "created_at": "${createdAt}",
 "expires_at": "${expiresAt}"`;
-    return response;
+    return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
 };
 
 const virtualMachineApiResponse = (apiResponse: VirtualMachinesResource) => {
     const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, hostname } = apiResponse;
-    const response = `"hostname": ${stringify(hostname)},
+    const response = `
+"hostname": ${stringify(hostname)},
 "uuid": "${uuid}",
 "owner_uuid": "${ownerUuid}",
 "modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
@@ -515,7 +527,7 @@ const virtualMachineApiResponse = (apiResponse: VirtualMachinesResource) => {
 "modified_at": ${stringify(modifiedAt)},
 "created_at": "${createdAt}"`;
 
-    return response;
+    return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
 };
 
 const keepServiceApiResponse = (apiResponse: KeepServiceResource) => {
@@ -523,7 +535,8 @@ const keepServiceApiResponse = (apiResponse: KeepServiceResource) => {
         uuid, readOnly, serviceHost, servicePort, serviceSslFlag, serviceType,
         ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid
     } = apiResponse;
-    const response = `"uuid": "${uuid}",
+    const response = `
+"uuid": "${uuid}",
 "owner_uuid": "${ownerUuid}",
 "modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
 "modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
@@ -535,7 +548,7 @@ const keepServiceApiResponse = (apiResponse: KeepServiceResource) => {
 "created_at": "${createdAt}",
 "read_only": "${stringify(readOnly)}"`;
 
-    return response;
+    return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
 };
 
 const userApiResponse = (apiResponse: UserResource) => {
@@ -543,7 +556,8 @@ const userApiResponse = (apiResponse: UserResource) => {
         uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid,
         email, firstName, lastName, identityUrl, isActive, isAdmin, prefs, defaultOwnerUuid, username
     } = apiResponse;
-    const response = `"uuid": "${uuid}",
+    const response = `
+"uuid": "${uuid}",
 "owner_uuid": "${ownerUuid}",
 "created_at": "${createdAt}",
 "modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
@@ -559,7 +573,7 @@ const userApiResponse = (apiResponse: UserResource) => {
 "default_owner_uuid": "${defaultOwnerUuid},
 "username": "${username}"`;
 
-    return response;
+    return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
 };
 
 const computeNodeApiResponse = (apiResponse: NodeResource) => {
@@ -568,7 +582,8 @@ const computeNodeApiResponse = (apiResponse: NodeResource) => {
         ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid,
         properties, info
     } = apiResponse;
-    const response = `"uuid": "${uuid}",
+    const response = `
+"uuid": "${uuid}",
 "owner_uuid": "${ownerUuid}",
 "modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
 "modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
@@ -581,10 +596,10 @@ const computeNodeApiResponse = (apiResponse: NodeResource) => {
 "first_ping_at": "${stringify(firstPingAt)}",
 "last_ping_at": "${stringify(lastPingAt)}",
 "job_uuid": "${stringify(jobUuid)}",
-"properties": "${JSON.stringify(properties, null, 4)}",
-"info": "${JSON.stringify(info, null, 4)}"`;
+"properties": "${JSON.stringify(properties, null, 2)}",
+"info": "${JSON.stringify(info, null, 2)}"`;
 
-    return response;
+    return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
 };
 
 const apiClientAuthorizationApiResponse = (apiResponse: ApiClientAuthorization) => {
@@ -592,7 +607,8 @@ const apiClientAuthorizationApiResponse = (apiResponse: ApiClientAuthorization) 
         uuid, ownerUuid, apiToken, apiClientId, userId, createdByIpAddress, lastUsedByIpAddress,
         lastUsedAt, expiresAt, defaultOwnerUuid, scopes, updatedAt, createdAt
     } = apiResponse;
-    const response = `"uuid": "${uuid}",
+    const response = `
+"uuid": "${uuid}",
 "owner_uuid": "${ownerUuid}",
 "api_token": "${stringify(apiToken)}",
 "api_client_id": "${stringify(apiClientId)}",
@@ -604,9 +620,9 @@ const apiClientAuthorizationApiResponse = (apiResponse: ApiClientAuthorization) 
 "created_at": "${stringify(createdAt)}",
 "updated_at": "${stringify(updatedAt)}",
 "default_owner_uuid": "${stringify(defaultOwnerUuid)}",
-"scopes": "${JSON.stringify(scopes, null, 4)}"`;
+"scopes": "${JSON.stringify(scopes, null, 2)}"`;
 
-    return response;
+    return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
 };
 
 const linkApiResponse = (apiResponse: LinkResource) => {
@@ -614,7 +630,8 @@ const linkApiResponse = (apiResponse: LinkResource) => {
         uuid, name, headUuid, properties, headKind, tailUuid, tailKind, linkClass,
         ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid
     } = apiResponse;
-    const response = `"uuid": "${uuid}",
+    const response = `
+"uuid": "${uuid}",
 "name": "${name}",
 "head_uuid": "${headUuid}",
 "head_kind": "${headKind}",
@@ -626,7 +643,7 @@ const linkApiResponse = (apiResponse: LinkResource) => {
 "modified_at": ${stringify(modifiedAt)},
 "modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
 "modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
-"properties": "${JSON.stringify(properties, null, 4)}"`;
+"properties": "${JSON.stringify(properties, null, 2)}"`;
 
-    return response;
+    return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
 };
