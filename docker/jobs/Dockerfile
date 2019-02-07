@@ -23,6 +23,9 @@ RUN apt-get install -yq --no-install-recommends \
     python-arvados-python-client=$python_sdk_version \
     python-arvados-cwl-runner=$cwl_runner_version
 
+# use the Python executable from the python-arvados-python-client package
+RUN rm -f /usr/bin/python && ln -s /usr/share/python2.7/dist/python-arvados-python-client/bin/python /usr/bin/python
+
 # Install dependencies and set up system.
 RUN /usr/sbin/adduser --disabled-password \
       --gecos 'Crunch execution user' crunch && \
