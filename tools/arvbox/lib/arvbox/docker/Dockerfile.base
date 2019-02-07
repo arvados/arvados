@@ -20,7 +20,7 @@ RUN apt-get update && \
     linkchecker python3-virtualenv python-virtualenv xvfb iceweasel \
     libgnutls28-dev python3-dev vim cadaver cython gnupg dirmngr \
     libsecret-1-dev r-base r-cran-testthat libxml2-dev pandoc \
-    python3-setuptools python3-pip && \
+    python3-setuptools python3-pip openjdk-8-jdk && \
     apt-get clean
 
 ENV RUBYVERSION_MINOR 2.3
@@ -40,7 +40,7 @@ ENV GEM_HOME /var/lib/gems
 ENV GEM_PATH /var/lib/gems
 ENV PATH $PATH:/var/lib/gems/bin
 
-ENV GOVERSION 1.10.1
+ENV GOVERSION 1.11.5
 
 # Install golang binary
 RUN curl -f http://storage.googleapis.com/golang/go${GOVERSION}.linux-amd64.tar.gz | \
@@ -79,7 +79,7 @@ RUN set -e && curl -L -f ${GDURL} | tar -C /usr/local/bin -xzf - geckodriver
 
 RUN pip install -U setuptools
 
-ENV NODEVERSION v6.11.4
+ENV NODEVERSION v10.15.1
 
 # Install nodejs binary
 RUN curl -L -f https://nodejs.org/dist/${NODEVERSION}/node-${NODEVERSION}-linux-x64.tar.xz | tar -C /usr/local -xJf - && \
@@ -100,7 +100,7 @@ ADD crunch-setup.sh gitolite.rc \
     keep-setup.sh common.sh createusers.sh \
     logger runsu.sh waitforpostgres.sh \
     yml_override.py api-setup.sh \
-    go-setup.sh \
+    go-setup.sh devenv.sh \
     /usr/local/lib/arvbox/
 
 ADD runit /etc/runit
