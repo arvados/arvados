@@ -53,9 +53,11 @@ export const loadSubprocesses = (containerUuid: string) =>
         }
     };
 
+const MAX_AMOUNT_OF_SUBPROCESSES = 10000;
+
 export const loadContainerRequests = (filters: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const { items } = await services.containerRequestService.list({ filters });
+        const { items } = await services.containerRequestService.list({ filters, limit: MAX_AMOUNT_OF_SUBPROCESSES });
         dispatch<any>(updateResources(items));
         return items;
     };
