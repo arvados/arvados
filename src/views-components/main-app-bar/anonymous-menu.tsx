@@ -11,6 +11,6 @@ export const AnonymousMenu = connect()(
     ({ dispatch }: DispatchProp<any>) =>
         <Button
             color="inherit"
-            onClick={() => dispatch(login())}>
+            onClick={() => dispatch(login("", ""))}>
             Sign in
         </Button>);

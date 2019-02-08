@@ -38,7 +38,7 @@ export const AccountMenu = connect(mapStateToProps)(
                 title="Account Management"
                 key={currentRoute}>
                 <MenuItem>
-                    {getUserFullname(user)}
+                    {getUserFullname(user)} ({user.uuid.substr(0, 5)})
                 </MenuItem>
                 <MenuItem onClick={() => dispatch(openUserVirtualMachines())}>Virtual Machines</MenuItem>
                 {!user.isAdmin && <MenuItem onClick={() => dispatch(openRepositoriesPanel())}>Repositories</MenuItem>}

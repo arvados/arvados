@@ -99,9 +99,10 @@ export class AuthService {
         localStorage.removeItem(USER_PREFS);
     }
 
-    public login() {
+    public login(uuidPrefix: string, homeCluster: string) {
         const currentUrl = `${window.location.protocol}//${window.location.host}/token`;
-        window.location.assign(`${this.baseUrl || ""}/login?return_to=${currentUrl}`);
+        // window.location.assign(`${this.baseUrl || ""}/login?return_to=${currentUrl}`);
+        window.location.assign(`https://${homeCluster}/login?remote=${uuidPrefix}&return_to=${currentUrl}`);
     }
 
     public logout() {
@@ -116,7 +117,7 @@ export class AuthService {
             .get<UserDetailsResponse>('/users/current')
             .then(resp => {
                 this.actions.progressFn(reqId, false);
-                const prefs = resp.data.prefs.profile ? resp.data.prefs : { profile: {}};
+                const prefs = resp.data.prefs.profile ? resp.data.prefs : { profile: {} };
                 return {
                     email: resp.data.email,
                     firstName: resp.data.first_name,

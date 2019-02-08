@@ -60,8 +60,8 @@ export const saveApiToken = (token: string) => (dispatch: Dispatch, getState: ()
     dispatch(authActions.SAVE_API_TOKEN(token));
 };
 
-export const login = () => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    services.authService.login();
+export const login = (uuidPrefix: string, homeCluster: string) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    services.authService.login(uuidPrefix, homeCluster);
     dispatch(authActions.LOGIN());
 };
 

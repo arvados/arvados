@@ -26,18 +26,20 @@ export interface MainPanelRootDataProps {
     working: boolean;
     loading: boolean;
     buildInfo: string;
+    uuidPrefix: string;
 }
 
 type MainPanelRootProps = MainPanelRootDataProps & WithStyles<CssRules>;
 
 export const MainPanelRoot = withStyles(styles)(
-    ({ classes, loading, working, user, buildInfo }: MainPanelRootProps) =>
-        loading 
+    ({ classes, loading, working, user, buildInfo, uuidPrefix }: MainPanelRootProps) =>
+        loading
             ? <WorkbenchLoadingScreen />
             : <>
                 <MainAppBar
                     user={user}
-                    buildInfo={buildInfo}>
+                    buildInfo={buildInfo}
+                    uuidPrefix={uuidPrefix}>
                     {working ? <LinearProgress color="secondary" /> : null}
                 </MainAppBar>
                 <Grid container direction="column" className={classes.root}>
