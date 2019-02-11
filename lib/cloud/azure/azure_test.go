@@ -5,24 +5,23 @@
 //
 // How to manually run individual tests against the real cloud
 //
-// $ go test -v git.curoverse.com/arvados.git/lib/cloud -live-azure-cfg azconfig.yml -check.f=TestListInstances
+// $ go test -v git.curoverse.com/arvados.git/lib/cloud/azure -live-azure-cfg azconfig.yml -check.f=TestListInstances
 //
 // Example azconfig.yml:
 //
-// subscription_id: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
-// key: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
-// region: centralus
-// cloud_environment: AzurePublicCloud
-// secret: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-// tenant_id: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
-// resource_group: zzzzz
-// network: zzzzz
-// subnet: zzzzz-subnet-private
-// storage_account: example
-// blob_container: vhds
-// image: "https://example.blob.core.windows.net/system/Microsoft.Compute/Images/images/zzzzz-compute-osDisk.XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX.vhd"
-// delete_dangling_resources_after: 20
-// authorized_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDLQS1ExT2+WjA0d/hntEAyAtgeN1W2ik2QX8c2zO6HjlPHWXL92r07W0WMuDib40Pcevpi1BXeBWXA9ZB5KKMJB+ukaAu22KklnQuUmNvk6ZXnPKSkGxuCYvPQb08WhHf3p1VxiKfP3iauedBDM4x9/bkJohlBBQiFXzNUcQ+a6rKiMzmJN2gbL8ncyUzc+XQ5q4JndTwTGtOlzDiGOc9O4z5Dd76wtAVJneOuuNpwfFRVHThpJM6VThpCZOnl8APaceWXKeuwOuCae3COZMz++xQfxOfZ9Z8aIwo+TlQhsRaNfZ4Vjrop6ej8dtfZtgUFKfbXEOYaHrGrWGotFDTD example@example"
+// ImageIDForTestSuite: "https://example.blob.core.windows.net/system/Microsoft.Compute/Images/images/zzzzz-compute-osDisk.XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX.vhd"
+// SubscriptionID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+// ClientID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+// Location: centralus
+// CloudEnvironment: AzurePublicCloud
+// ClientSecret: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+// TenantId: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+// ResourceGroup: zzzzz
+// Network: zzzzz0:10 / 3:26:1
+// Subnet: zzzzz-subnet-private
+// StorageAccount: example
+// BlobContainer: vhds
+// DeleteDanglingResourcesAfter: 20
 
 package azure
 
@@ -64,7 +63,7 @@ var _ = check.Suite(&AzureInstanceSetSuite{})
 
 type VirtualMachinesClientStub struct{}
 
-var testKey []byte = []byte(`ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDLQS1ExT2+WjA0d/hntEAyAtgeN1W2ik2QX8c2zO6HjlPHWXL92r07W0WMuDib40Pcevpi1BXeBWXA9ZB5KKMJB+ukaAu22KklnQuUmNvk6ZXnPKSkGxuCYvPQb08WhHf3p1VxiKfP3iauedBDM4x9/bkJohlBBQiFXzNUcQ+a6rKiMzmJN2gbL8ncyUzc+XQ5q4JndTwTGtOlzDiGOc9O4z5Dd76wtAVJneOuuNpwfFRVHThpJM6VThpCZOnl8APaceWXKeuwOuCae3COZMz++xQfxOfZ9Z8aIwo+TlQhsRaNfZ4Vjrop6ej8dtfZtgUFKfbXEOYaHrGrWGotFDTD example@example`)
+var testKey = []byte(`ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDLQS1ExT2+WjA0d/hntEAyAtgeN1W2ik2QX8c2zO6HjlPHWXL92r07W0WMuDib40Pcevpi1BXeBWXA9ZB5KKMJB+ukaAu22KklnQuUmNvk6ZXnPKSkGxuCYvPQb08WhHf3p1VxiKfP3iauedBDM4x9/bkJohlBBQiFXzNUcQ+a6rKiMzmJN2gbL8ncyUzc+XQ5q4JndTwTGtOlzDiGOc9O4z5Dd76wtAVJneOuuNpwfFRVHThpJM6VThpCZOnl8APaceWXKeuwOuCae3COZMz++xQfxOfZ9Z8aIwo+TlQhsRaNfZ4Vjrop6ej8dtfZtgUFKfbXEOYaHrGrWGotFDTD example@example`)
 
 func (*VirtualMachinesClientStub) CreateOrUpdate(ctx context.Context,
 	resourceGroupName string,
@@ -118,29 +117,28 @@ func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error)
 			},
 		})}
 	if *live != "" {
-		cfg := make(map[string]interface{})
-		err := config.LoadFile(&cfg, *live)
+		exampleCfg := make(map[string]interface{})
+		err := config.LoadFile(&exampleCfg, *live)
 		if err != nil {
 			return nil, cloud.ImageID(""), cluster, err
 		}
-		ap, err := NewAzureInstanceSet(cfg, "test123", logrus.StandardLogger())
-		return ap, cloud.ImageID(cfg["image"].(string)), cluster, err
-	} else {
-		ap := AzureInstanceSet{
-			azconfig: AzureInstanceSetConfig{
-				BlobContainer: "vhds",
-			},
-			dispatcherID: "test123",
-			namePrefix:   "compute-test123-",
-			logger:       logrus.StandardLogger(),
-			deleteNIC:    make(chan string),
-			deleteBlob:   make(chan storage.Blob),
-		}
-		ap.ctx, ap.stopFunc = context.WithCancel(context.Background())
-		ap.vmClient = &VirtualMachinesClientStub{}
-		ap.netClient = &InterfacesClientStub{}
-		return &ap, cloud.ImageID("blob"), cluster, nil
+		ap, err := NewAzureInstanceSet(exampleCfg, "test123", logrus.StandardLogger())
+		return ap, cloud.ImageID(exampleCfg["ImageIDForTestSuite"].(string)), cluster, err
 	}
+	ap := AzureInstanceSet{
+		azconfig: AzureInstanceSetConfig{
+			BlobContainer: "vhds",
+		},
+		dispatcherID: "test123",
+		namePrefix:   "compute-test123-",
+		logger:       logrus.StandardLogger(),
+		deleteNIC:    make(chan string),
+		deleteBlob:   make(chan storage.Blob),
+	}
+	ap.ctx, ap.stopFunc = context.WithCancel(context.Background())
+	ap.vmClient = &VirtualMachinesClientStub{}
+	ap.netClient = &InterfacesClientStub{}
+	return &ap, cloud.ImageID("blob"), cluster, nil
 }
 
 func (*AzureInstanceSetSuite) TestCreate(c *check.C) {

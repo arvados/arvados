@@ -32,19 +32,18 @@ import (
 )
 
 type AzureInstanceSetConfig struct {
-	SubscriptionID               string  `mapstructure:"subscription_id"`
-	ClientID                     string  `mapstructure:"key"`
-	ClientSecret                 string  `mapstructure:"secret"`
-	TenantID                     string  `mapstructure:"tenant_id"`
-	CloudEnv                     string  `mapstructure:"cloud_environment"`
-	ResourceGroup                string  `mapstructure:"resource_group"`
-	Location                     string  `mapstructure:"region"`
-	Network                      string  `mapstructure:"network"`
-	Subnet                       string  `mapstructure:"subnet"`
-	StorageAccount               string  `mapstructure:"storage_account"`
-	BlobContainer                string  `mapstructure:"blob_container"`
-	Image                        string  `mapstructure:"image"`
-	DeleteDanglingResourcesAfter float64 `mapstructure:"delete_dangling_resources_after"`
+	SubscriptionID               string  "SubscriptionID"
+	ClientID                     string  "ClientID"
+	ClientSecret                 string  "ClientSecret"
+	TenantID                     string  "TenantID"
+	CloudEnvironment             string  "CloudEnvironment"
+	ResourceGroup                string  "ResourceGroup"
+	Location                     string  "Location"
+	Network                      string  "Network"
+	Subnet                       string  "Subnet"
+	StorageAccount               string  "StorageAccount"
+	BlobContainer                string  "BlobContainer"
+	DeleteDanglingResourcesAfter float64 "DeleteDanglingResourcesAfter"
 }
 
 type VirtualMachinesClientWrapper interface {
@@ -222,7 +221,7 @@ func (az *AzureInstanceSet) setup(azcfg AzureInstanceSetConfig, dispatcherID str
 	netClient := network.NewInterfacesClient(az.azconfig.SubscriptionID)
 	storageAcctClient := storageacct.NewAccountsClient(az.azconfig.SubscriptionID)
 
-	az.azureEnv, err = azure.EnvironmentFromName(az.azconfig.CloudEnv)
+	az.azureEnv, err = azure.EnvironmentFromName(az.azconfig.CloudEnvironment)
 	if err != nil {
 		return err
 	}
@@ -269,7 +268,7 @@ func (az *AzureInstanceSet) setup(azcfg AzureInstanceSetConfig, dispatcherID str
 	az.deleteNIC = make(chan string)
 	az.deleteBlob = make(chan storage.Blob)
 
-	for i := 0; i < 4; i += 1 {
+	for i := 0; i < 4; i++ {
 		go func() {
 			for {
 				nicname, ok := <-az.deleteNIC
@@ -305,7 +304,7 @@ func (az *AzureInstanceSet) setup(azcfg AzureInstanceSetConfig, dispatcherID str
 
 func (az *AzureInstanceSet) Create(
 	instanceType arvados.InstanceType,
-	imageId cloud.ImageID,
+	imageID cloud.ImageID,
 	newTags cloud.InstanceTags,
 	publicKey ssh.PublicKey) (cloud.Instance, error) {
 
@@ -361,7 +360,7 @@ func (az *AzureInstanceSet) Create(
 		return nil, WrapAzureError(err)
 	}
 
-	instance_vhd := fmt.Sprintf("https://%s.blob.%s/%s/%s-os.vhd",
+	instanceVhd := fmt.Sprintf("https://%s.blob.%s/%s/%s-os.vhd",
 		az.azconfig.StorageAccount,
 		az.azureEnv.StorageEndpointSuffix,
 		az.azconfig.BlobContainer,
@@ -383,10 +382,10 @@ echo '%s-%s' > /home/crunch/node-token`, name, newTags["node-token"])))
 					Name:         to.StringPtr(name + "-os"),
 					CreateOption: compute.FromImage,
 					Image: &compute.VirtualHardDisk{
-						URI: to.StringPtr(string(imageId)),
+						URI: to.StringPtr(string(imageID)),
 					},
 					Vhd: &compute.VirtualHardDisk{
-						URI: &instance_vhd,
+						URI: &instanceVhd,
 					},
 				},
 			},
@@ -488,9 +487,9 @@ func (az *AzureInstanceSet) ManageNics() (map[string]network.Interface, error) {
 				interfaces[*result.Value().ID] = result.Value()
 			} else {
 				if result.Value().Tags["created-at"] != nil {
-					created_at, err := time.Parse(time.RFC3339Nano, *result.Value().Tags["created-at"])
+					createdAt, err := time.Parse(time.RFC3339Nano, *result.Value().Tags["created-at"])
 					if err == nil {
-						if timestamp.Sub(created_at).Seconds() > az.azconfig.DeleteDanglingResourcesAfter {
+						if timestamp.Sub(createdAt).Seconds() > az.azconfig.DeleteDanglingResourcesAfter {
 							az.logger.Printf("Will delete %v because it is older than %v s", *result.Value().Name, az.azconfig.DeleteDanglingResourcesAfter)
 							az.deleteNIC <- *result.Value().Name
 						}
