@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type BlockWriter interface {
@@ -414,4 +415,10 @@ type ioStats struct {
 
 type InternalStatser interface {
 	InternalStats() interface{}
+}
+
+// InternalMetricser provides an interface for volume drivers to register their
+// own specific metrics.
+type InternalMetricser interface {
+	SetupInternalMetrics(*prometheus.Registry, prometheus.Labels)
 }

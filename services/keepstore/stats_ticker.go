@@ -5,8 +5,11 @@
 package main
 
 import (
+	"fmt"
 	"sync"
 	"sync/atomic"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type statsTicker struct {
@@ -16,6 +19,28 @@ type statsTicker struct {
 
 	ErrorCodes map[string]uint64 `json:",omitempty"`
 	lock       sync.Mutex
+}
+
+func (s *statsTicker) setupPrometheus(drv string, reg *prometheus.Registry, lbl prometheus.Labels) {
+	metrics := map[string][]interface{}{
+		"errors":    []interface{}{string("errors"), s.Errors},
+		"in_bytes":  []interface{}{string("input bytes"), s.InBytes},
+		"out_bytes": []interface{}{string("output bytes"), s.OutBytes},
+	}
+	for mName, data := range metrics {
+		mHelp := data[0].(string)
+		mVal := data[1].(uint64)
+		reg.Register(prometheus.NewGaugeFunc(
+			prometheus.GaugeOpts{
+				Namespace:   "arvados",
+				Subsystem:   "keepstore",
+				Name:        fmt.Sprintf("%s_%s", drv, mName),
+				Help:        fmt.Sprintf("Number of %s backend %s", drv, mHelp),
+				ConstLabels: lbl,
+			},
+			func() float64 { return float64(mVal) },
+		))
+	}
 }
 
 // Tick increments each of the given counters by 1 using

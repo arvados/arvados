@@ -21,6 +21,8 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type unixVolumeAdder struct {
@@ -787,6 +789,42 @@ func (v *UnixVolume) EmptyTrash() {
 	}
 
 	log.Printf("EmptyTrash stats for %v: Deleted %v bytes in %v blocks. Remaining in trash: %v bytes in %v blocks.", v.String(), bytesDeleted, blocksDeleted, bytesInTrash-bytesDeleted, blocksInTrash-blocksDeleted)
+}
+
+// SetupInternalMetrics registers driver stats to Prometheus.
+// Implements InternalMetricser interface.
+func (v *UnixVolume) SetupInternalMetrics(reg *prometheus.Registry, lbl prometheus.Labels) {
+	v.os.stats.setupPrometheus(reg, lbl)
+}
+
+func (s *unixStats) setupPrometheus(reg *prometheus.Registry, lbl prometheus.Labels) {
+	// Common backend metrics
+	s.statsTicker.setupPrometheus("unix", reg, lbl)
+	// Driver-specific backend metrics
+	metrics := map[string][]interface{}{
+		"open_ops":    []interface{}{string("open operations"), s.OpenOps},
+		"stat_ops":    []interface{}{string("stat operations"), s.StatOps},
+		"flock_ops":   []interface{}{string("flock operations"), s.FlockOps},
+		"utimes_ops":  []interface{}{string("utimes operations"), s.UtimesOps},
+		"create_ops":  []interface{}{string("create operations"), s.CreateOps},
+		"rename_ops":  []interface{}{string("rename operations"), s.RenameOps},
+		"unlink_ops":  []interface{}{string("unlink operations"), s.UnlinkOps},
+		"readdir_ops": []interface{}{string("readdir operations"), s.ReaddirOps},
+	}
+	for mName, data := range metrics {
+		mHelp := data[0].(string)
+		mVal := data[1].(uint64)
+		reg.Register(prometheus.NewGaugeFunc(
+			prometheus.GaugeOpts{
+				Namespace:   "arvados",
+				Subsystem:   "keepstore",
+				Name:        fmt.Sprintf("unix_%s", mName),
+				Help:        fmt.Sprintf("Number of unix backend %s", mHelp),
+				ConstLabels: lbl,
+			},
+			func() float64 { return float64(mVal) },
+		))
+	}
 }
 
 type unixStats struct {

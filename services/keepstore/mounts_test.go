@@ -131,7 +131,9 @@ func (s *MountsSuite) TestMetrics(c *check.C) {
 	}
 	json.NewDecoder(resp.Body).Decode(&j)
 	found := make(map[string]bool)
+	names := map[string]bool{}
 	for _, g := range j {
+		names[g.Name] = true
 		for _, m := range g.Metric {
 			if len(m.Label) == 2 && m.Label[0].Name == "code" && m.Label[0].Value == "200" && m.Label[1].Name == "method" && m.Label[1].Value == "put" {
 				c.Check(m.Summary.SampleCount, check.Equals, "2")
@@ -143,6 +145,24 @@ func (s *MountsSuite) TestMetrics(c *check.C) {
 	}
 	c.Check(found["request_duration_seconds"], check.Equals, true)
 	c.Check(found["time_to_status_seconds"], check.Equals, true)
+
+	metricsNames := []string{
+		"arvados_keepstore_bufferpool_buffers_in_use",
+		"arvados_keepstore_bufferpool_buffers_max",
+		"arvados_keepstore_bufferpool_bytes_allocated",
+		"arvados_keepstore_pull_queue_in_progress",
+		"arvados_keepstore_pull_queue_queued",
+		"arvados_keepstore_requests_current",
+		"arvados_keepstore_requests_max",
+		"arvados_keepstore_trash_queue_in_progress",
+		"arvados_keepstore_trash_queue_queued",
+		"request_duration_seconds",
+		"time_to_status_seconds",
+	}
+	for _, m := range metricsNames {
+		_, ok := names[m]
+		c.Check(ok, check.Equals, true)
+	}
 }
 
 func (s *MountsSuite) call(method, path, tok string, body []byte) *httptest.ResponseRecorder {
