@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package cloud
+package azure
 
 import (
 	"context"
@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"git.curoverse.com/arvados.git/lib/cloud"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-06-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-06-01/network"
@@ -202,7 +203,7 @@ type AzureInstanceSet struct {
 	logger            logrus.FieldLogger
 }
 
-func NewAzureInstanceSet(config map[string]interface{}, dispatcherID InstanceSetID, logger logrus.FieldLogger) (prv InstanceSet, err error) {
+func NewAzureInstanceSet(config map[string]interface{}, dispatcherID cloud.InstanceSetID, logger logrus.FieldLogger) (prv cloud.InstanceSet, err error) {
 	azcfg := AzureInstanceSetConfig{}
 	if err = mapstructure.Decode(config, &azcfg); err != nil {
 		return nil, err
@@ -304,9 +305,9 @@ func (az *AzureInstanceSet) setup(azcfg AzureInstanceSetConfig, dispatcherID str
 
 func (az *AzureInstanceSet) Create(
 	instanceType arvados.InstanceType,
-	imageId ImageID,
-	newTags InstanceTags,
-	publicKey ssh.PublicKey) (Instance, error) {
+	imageId cloud.ImageID,
+	newTags cloud.InstanceTags,
+	publicKey ssh.PublicKey) (cloud.Instance, error) {
 
 	az.stopWg.Add(1)
 	defer az.stopWg.Done()
@@ -430,7 +431,7 @@ echo '%s-%s' > /home/crunch/node-token`, name, newTags["node-token"])))
 	}, nil
 }
 
-func (az *AzureInstanceSet) Instances(InstanceTags) ([]Instance, error) {
+func (az *AzureInstanceSet) Instances(cloud.InstanceTags) ([]cloud.Instance, error) {
 	az.stopWg.Add(1)
 	defer az.stopWg.Done()
 
@@ -444,7 +445,7 @@ func (az *AzureInstanceSet) Instances(InstanceTags) ([]Instance, error) {
 		return nil, WrapAzureError(err)
 	}
 
-	instances := make([]Instance, 0)
+	instances := make([]cloud.Instance, 0)
 
 	for ; result.NotDone(); err = result.Next() {
 		if err != nil {
@@ -564,8 +565,8 @@ type AzureInstance struct {
 	vm       compute.VirtualMachine
 }
 
-func (ai *AzureInstance) ID() InstanceID {
-	return InstanceID(*ai.vm.ID)
+func (ai *AzureInstance) ID() cloud.InstanceID {
+	return cloud.InstanceID(*ai.vm.ID)
 }
 
 func (ai *AzureInstance) String() string {
@@ -576,7 +577,7 @@ func (ai *AzureInstance) ProviderType() string {
 	return string(ai.vm.VirtualMachineProperties.HardwareProfile.VMSize)
 }
 
-func (ai *AzureInstance) SetTags(newTags InstanceTags) error {
+func (ai *AzureInstance) SetTags(newTags cloud.InstanceTags) error {
 	ai.provider.stopWg.Add(1)
 	defer ai.provider.stopWg.Done()
 
@@ -605,7 +606,7 @@ func (ai *AzureInstance) SetTags(newTags InstanceTags) error {
 	return nil
 }
 
-func (ai *AzureInstance) Tags() InstanceTags {
+func (ai *AzureInstance) Tags() cloud.InstanceTags {
 	tags := make(map[string]string)
 
 	for k, v := range ai.vm.Tags {

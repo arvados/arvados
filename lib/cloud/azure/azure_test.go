@@ -24,7 +24,7 @@
 // delete_dangling_resources_after: 20
 // authorized_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDLQS1ExT2+WjA0d/hntEAyAtgeN1W2ik2QX8c2zO6HjlPHWXL92r07W0WMuDib40Pcevpi1BXeBWXA9ZB5KKMJB+ukaAu22KklnQuUmNvk6ZXnPKSkGxuCYvPQb08WhHf3p1VxiKfP3iauedBDM4x9/bkJohlBBQiFXzNUcQ+a6rKiMzmJN2gbL8ncyUzc+XQ5q4JndTwTGtOlzDiGOc9O4z5Dd76wtAVJneOuuNpwfFRVHThpJM6VThpCZOnl8APaceWXKeuwOuCae3COZMz++xQfxOfZ9Z8aIwo+TlQhsRaNfZ4Vjrop6ej8dtfZtgUFKfbXEOYaHrGrWGotFDTD example@example"
 
-package cloud
+package azure
 
 import (
 	"context"
@@ -37,6 +37,7 @@ import (
 	"os"
 	"time"
 
+	"git.curoverse.com/arvados.git/lib/cloud"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/config"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-06-01/compute"
@@ -97,7 +98,7 @@ func (*InterfacesClientStub) ListComplete(ctx context.Context, resourceGroupName
 
 var live = flag.String("live-azure-cfg", "", "Test with real azure API, provide config file")
 
-func GetInstanceSet() (InstanceSet, ImageID, arvados.Cluster, error) {
+func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error) {
 	cluster := arvados.Cluster{
 		InstanceTypes: arvados.InstanceTypeMap(map[string]arvados.InstanceType{
 			"tiny": arvados.InstanceType{
@@ -114,10 +115,10 @@ func GetInstanceSet() (InstanceSet, ImageID, arvados.Cluster, error) {
 		cfg := make(map[string]interface{})
 		err := config.LoadFile(&cfg, *live)
 		if err != nil {
-			return nil, ImageID(""), cluster, err
+			return nil, cloud.ImageID(""), cluster, err
 		}
 		ap, err := NewAzureInstanceSet(cfg, "test123", logrus.StandardLogger())
-		return ap, ImageID(cfg["image"].(string)), cluster, err
+		return ap, cloud.ImageID(cfg["image"].(string)), cluster, err
 	} else {
 		ap := AzureInstanceSet{
 			azconfig: AzureInstanceSetConfig{
@@ -132,7 +133,7 @@ func GetInstanceSet() (InstanceSet, ImageID, arvados.Cluster, error) {
 		ap.ctx, ap.stopFunc = context.WithCancel(context.Background())
 		ap.vmClient = &VirtualMachinesClientStub{}
 		ap.netClient = &InterfacesClientStub{}
-		return &ap, ImageID("blob"), cluster, nil
+		return &ap, cloud.ImageID("blob"), cluster, nil
 	}
 }
 
@@ -239,7 +240,7 @@ func (*AzureInstanceSetSuite) TestWrapError(c *check.C) {
 		},
 	}
 	wrapped := WrapAzureError(retryError)
-	_, ok := wrapped.(RateLimitError)
+	_, ok := wrapped.(cloud.RateLimitError)
 	c.Check(ok, check.Equals, true)
 
 	quotaError := autorest.DetailedError{
@@ -255,7 +256,7 @@ func (*AzureInstanceSetSuite) TestWrapError(c *check.C) {
 		},
 	}
 	wrapped = WrapAzureError(quotaError)
-	_, ok = wrapped.(QuotaError)
+	_, ok = wrapped.(cloud.QuotaError)
 	c.Check(ok, check.Equals, true)
 }
 
@@ -307,7 +308,7 @@ func (*AzureInstanceSetSuite) TestSSH(c *check.C) {
 	}
 }
 
-func SetupSSHClient(c *check.C, inst Instance) (*ssh.Client, error) {
+func SetupSSHClient(c *check.C, inst cloud.Instance) (*ssh.Client, error) {
 	addr := inst.Address() + ":2222"
 	if addr == "" {
 		return nil, errors.New("instance has no address")
