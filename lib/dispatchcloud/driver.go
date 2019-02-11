@@ -14,7 +14,7 @@ import (
 )
 
 var drivers = map[string]cloud.Driver{
-	"azure": cloud.DriverFunc(azure.NewAzureInstanceSet),
+	"azure": azure.Driver,
 }
 
 func newInstanceSet(cluster *arvados.Cluster, setID cloud.InstanceSetID, logger logrus.FieldLogger) (cloud.InstanceSet, error) {
