@@ -35,6 +35,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"testing"
 	"time"
 
 	"git.curoverse.com/arvados.git/lib/cloud"
@@ -51,6 +52,11 @@ import (
 	"golang.org/x/crypto/ssh"
 	check "gopkg.in/check.v1"
 )
+
+// Gocheck boilerplate
+func Test(t *testing.T) {
+	check.TestingT(t)
+}
 
 type AzureInstanceSetSuite struct{}
 
