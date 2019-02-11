@@ -60,7 +60,6 @@ import { groupActionSet } from '~/views-components/context-menu/action-sets/grou
 import { groupMemberActionSet } from '~/views-components/context-menu/action-sets/group-member-action-set';
 import { linkActionSet } from '~/views-components/context-menu/action-sets/link-action-set';
 import { loadFileViewersConfig } from '~/store/file-viewers/file-viewers-actions';
-import { setRemoteHosts } from '~/views/login-panel/login-panel';
 
 console.log(`Starting arvados [${getBuildInfo()}]`);
 
@@ -106,8 +105,6 @@ fetchConfig()
         store.dispatch(initAuth(config));
         store.dispatch(setBuildInfo());
         store.dispatch(setCurrentTokenDialogApiHost(apiHost));
-        store.dispatch(setUuidPrefix(config.uuidPrefix));
-        store.dispatch(setRemoteHosts(config.remoteHosts));
         store.dispatch(loadVocabulary);
         store.dispatch(loadFileViewersConfig);
 

@@ -4,13 +4,11 @@
 
 import * as React from 'react';
 import { connect, DispatchProp } from 'react-redux';
-import { Grid, Typography, Button } from '@material-ui/core';
+import { Grid, Typography, Button, Select, FormControl } from '@material-ui/core';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
-import { login } from '~/store/auth/auth-action';
+import { login, authActions } from '~/store/auth/auth-action';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { RootState } from '~/store/store';
-import { getProperty } from '~/store/properties/properties';
-import { propertiesActions } from '~/store/properties/properties-actions';
 import * as classNames from 'classnames';
 
 type CssRules = 'root' | 'container' | 'title' | 'content' | 'content__bolder' | 'button';
@@ -52,24 +50,16 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 type LoginPanelProps = DispatchProp<any> & WithStyles<CssRules> & {
-    remoteHosts: any,
+    remoteHosts: { [key: string]: string },
     homeCluster: string,
     uuidPrefix: string
 };
 
-export const REMOTE_HOSTS_NAME = 'remoteHosts';
-export const HOME_CLUSTER_NAME = 'homeCluster';
-export const setRemoteHosts = (remoteHosts: any) =>
-    propertiesActions.SET_PROPERTY({ key: REMOTE_HOSTS_NAME, value: remoteHosts });
-
-export const setHomeCluster = (homeCluster: string) =>
-    propertiesActions.SET_PROPERTY({ key: HOME_CLUSTER_NAME, value: homeCluster });
-
 export const LoginPanel = withStyles(styles)(
     connect((state: RootState) => ({
-        remoteHosts: state.properties.remoteHosts,
-        homeCluster: state.properties.homeCluster,
-        uuidPrefix: state.properties.uuidPrefix
+        remoteHosts: state.auth.remoteHosts,
+        homeCluster: state.auth.homeCluster,
+        uuidPrefix: state.auth.localCluster
     }))(({ classes, dispatch, remoteHosts, homeCluster, uuidPrefix }: LoginPanelProps) =>
         <Grid container direction="column" item xs alignItems="center" justify="center" className={classes.root}>
             <Grid item className={classes.container}>
@@ -90,20 +80,22 @@ export const LoginPanel = withStyles(styles)(
                     Arvados Workbench uses your name and email address only for identification, and does not retrieve any other personal information from Google.
 		</Typography>
 
-                <Typography className={classes.content}>
-                    <form>
-                        <label>
-                            Choose your home cluster:
-			    <select value={homeCluster} onChange={(event) => dispatch(setHomeCluster(event.target.value))}>
-                                {Object.keys(remoteHosts).map((k) => <option key={k} value={k}>{k}</option>)}
-                            </select>
-                        </label>
-                    </form>
-                </Typography>
+                {Object.keys(remoteHosts).length > 1 &&
+                    <Typography component="div" align="right">
+                        <label>Please select the cluster that hosts your user account:</label>
+                        <Select native value={homeCluster} style={{ margin: "1em" }}
+                            onChange={(event) => dispatch(authActions.SET_HOME_CLUSTER(event.target.value))}>
+                            {Object.keys(remoteHosts).map((k) => <option key={k} value={k}>{k}</option>)}
+                        </Select>
+                    </Typography>}
+
                 <Typography component="div" align="right">
-                    <Button variant="contained" color="primary" className={classes.button} onClick={() => dispatch(login(uuidPrefix, remoteHosts[homeCluster]))}>
-                        Log in
-		    </Button>
+                    <Button variant="contained" color="primary" style={{ margin: "1em" }} className={classes.button}
+                        onClick={() => dispatch(login(uuidPrefix, remoteHosts[homeCluster]))}>
+                        Log in to {uuidPrefix}
+                        {uuidPrefix !== homeCluster &&
+                            <span>&nbsp;with user from {homeCluster}</span>}
+                    </Button>
                 </Typography>
             </Grid>
         </Grid>

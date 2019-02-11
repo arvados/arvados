@@ -14,7 +14,7 @@ const mapStateToProps = (state: RootState): MainPanelRootDataProps => {
         working: isSystemWorking(state.progressIndicator),
         loading: isWorkbenchLoading(state),
         buildInfo: state.appInfo.buildInfo,
-        uuidPrefix: state.properties.uuidPrefix
+        uuidPrefix: state.auth.localCluster
     };
 };
 
