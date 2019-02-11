@@ -24,7 +24,7 @@ Gem::Specification.new do |s|
   s.files       = ["bin/arvados-login-sync", "agpl-3.0.txt"]
   s.executables << "arvados-login-sync"
   s.required_ruby_version = '>= 2.1.0'
-  s.add_runtime_dependency 'arvados', '~> 1.2.0', '>= 1.2.0'
+  s.add_runtime_dependency 'arvados', '~> 1.3.0', '>= 1.3.0'
   s.homepage    =
     'https://arvados.org'
 end
