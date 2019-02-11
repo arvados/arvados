@@ -60,7 +60,7 @@ class TestHttpToKeep(unittest.TestCase):
 
         getmock.assert_called_with("http://example.com/file1.txt", stream=True, allow_redirects=True)
 
-        cm.open.assert_called_with("file1.txt", "w")
+        cm.open.assert_called_with("file1.txt", "wb")
         cm.save_new.assert_called_with(name="Downloaded from http://example.com/file1.txt",
                                        owner_uuid=None, ensure_unique_name=True)
 
@@ -188,7 +188,7 @@ class TestHttpToKeep(unittest.TestCase):
 
         getmock.assert_called_with("http://example.com/file1.txt", stream=True, allow_redirects=True)
 
-        cm.open.assert_called_with("file1.txt", "w")
+        cm.open.assert_called_with("file1.txt", "wb")
         cm.save_new.assert_called_with(name="Downloaded from http://example.com/file1.txt",
                                        owner_uuid=None, ensure_unique_name=True)
 
@@ -279,7 +279,7 @@ class TestHttpToKeep(unittest.TestCase):
 
         getmock.assert_called_with("http://example.com/download?fn=/file1.txt", stream=True, allow_redirects=True)
 
-        cm.open.assert_called_with("file1.txt", "w")
+        cm.open.assert_called_with("file1.txt", "wb")
         cm.save_new.assert_called_with(name="Downloaded from http://example.com/download?fn=/file1.txt",
                                        owner_uuid=None, ensure_unique_name=True)
 
