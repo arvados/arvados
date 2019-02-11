@@ -499,6 +499,9 @@ class RunnerContainer(Runner):
             extra_submit_params["cluster_id"] = runtimeContext.submit_runner_cluster
 
         if runtimeContext.submit_request_uuid:
+            if "cluster_id" in extra_submit_params:
+                # Doesn't make sense for "update" and actually fails
+                del extra_submit_params["cluster_id"]
             response = self.arvrunner.api.container_requests().update(
                 uuid=runtimeContext.submit_request_uuid,
                 body=job_spec,

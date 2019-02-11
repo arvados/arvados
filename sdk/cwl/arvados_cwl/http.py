@@ -132,7 +132,7 @@ def http_to_keep(api, project_uuid, url, utcnow=datetime.datetime.utcnow):
     count = 0
     start = time.time()
     checkpoint = start
-    with c.open(name, "w") as f:
+    with c.open(name, "wb") as f:
         for chunk in req.iter_content(chunk_size=1024):
             count += len(chunk)
             f.write(chunk)

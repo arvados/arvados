@@ -512,7 +512,7 @@ class TestSubmit(unittest.TestCase):
             body=JsonDiffMatcher(expect_pipeline))
 
     @stubs
-    def test_submit_container(self, stubs):        
+    def test_submit_container(self, stubs):
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug",
                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
@@ -559,7 +559,7 @@ class TestSubmit(unittest.TestCase):
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
         self.assertEqual(stubs.capture_stdout.getvalue(),
-                         stubs.expect_container_request_uuid + '\n') 
+                         stubs.expect_container_request_uuid + '\n')
         self.assertEqual(exited, 0)
 
     @stubs
@@ -602,7 +602,7 @@ class TestSubmit(unittest.TestCase):
             ["--submit", "--no-wait", "--api=containers", "--debug", "--on-error=stop",
                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
- 
+
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
                                        '--no-log-timestamps', '--disable-validate',
@@ -620,7 +620,7 @@ class TestSubmit(unittest.TestCase):
     @stubs
     def test_submit_container_output_name(self, stubs):
         output_name = "test_output_name"
-  
+
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug", "--output-name", output_name,
                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
@@ -642,7 +642,7 @@ class TestSubmit(unittest.TestCase):
         self.assertEqual(exited, 0)
 
     @stubs
-    def test_submit_storage_classes(self, stubs):     
+    def test_submit_storage_classes(self, stubs):
         exited = arvados_cwl.main(
             ["--debug", "--submit", "--no-wait", "--api=containers", "--storage-classes=foo",
                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
@@ -726,7 +726,7 @@ class TestSubmit(unittest.TestCase):
             ["--submit", "--no-wait", "--api=containers", "--debug", "--trash-intermediate",
                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
-            
+
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
@@ -1394,7 +1394,7 @@ class TestSubmit(unittest.TestCase):
             stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
 
         stubs.api.container_requests().update.assert_called_with(
-            uuid="zzzzz-xvhdp-yyyyyyyyyyyyyyy", body=JsonDiffMatcher(stubs.expect_container_spec), cluster_id="zzzzz")
+            uuid="zzzzz-xvhdp-yyyyyyyyyyyyyyy", body=JsonDiffMatcher(stubs.expect_container_spec))
         self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
         self.assertEqual(exited, 0)
@@ -1541,7 +1541,7 @@ class TestCreateTemplate(unittest.TestCase):
         self.assertEqual(stubs.capture_stdout.getvalue(),
                          self.existing_template_uuid + '\n')
         self.assertEqual(exited, 0)
-        
+
 
 class TestCreateWorkflow(unittest.TestCase):
     existing_workflow_uuid = "zzzzz-7fd4e-validworkfloyml"
