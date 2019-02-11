@@ -32,18 +32,18 @@ import (
 )
 
 type AzureInstanceSetConfig struct {
-	SubscriptionID               string  "SubscriptionID"
-	ClientID                     string  "ClientID"
-	ClientSecret                 string  "ClientSecret"
-	TenantID                     string  "TenantID"
-	CloudEnvironment             string  "CloudEnvironment"
-	ResourceGroup                string  "ResourceGroup"
-	Location                     string  "Location"
-	Network                      string  "Network"
-	Subnet                       string  "Subnet"
-	StorageAccount               string  "StorageAccount"
-	BlobContainer                string  "BlobContainer"
-	DeleteDanglingResourcesAfter float64 "DeleteDanglingResourcesAfter"
+	SubscriptionID               string
+	ClientID                     string
+	ClientSecret                 string
+	TenantID                     string
+	CloudEnvironment             string
+	ResourceGroup                string
+	Location                     string
+	Network                      string
+	Subnet                       string
+	StorageAccount               string
+	BlobContainer                string
+	DeleteDanglingResourcesAfter arvados.Duration
 }
 
 type VirtualMachinesClientWrapper interface {
@@ -204,9 +204,19 @@ type AzureInstanceSet struct {
 
 func NewAzureInstanceSet(config map[string]interface{}, dispatcherID cloud.InstanceSetID, logger logrus.FieldLogger) (prv cloud.InstanceSet, err error) {
 	azcfg := AzureInstanceSetConfig{}
-	if err = mapstructure.Decode(config, &azcfg); err != nil {
+
+	decoderConfig := mapstructure.DecoderConfig{
+		DecodeHook: arvados.DurationMapStructureDecodeHook(),
+		Result:     &azcfg}
+
+	decoder, err := mapstructure.NewDecoder(&decoderConfig)
+	if err != nil {
 		return nil, err
 	}
+	if err = decoder.Decode(config); err != nil {
+		return nil, err
+	}
+
 	ap := AzureInstanceSet{logger: logger}
 	err = ap.setup(azcfg, string(dispatcherID))
 	if err != nil {
@@ -489,7 +499,7 @@ func (az *AzureInstanceSet) ManageNics() (map[string]network.Interface, error) {
 				if result.Value().Tags["created-at"] != nil {
 					createdAt, err := time.Parse(time.RFC3339Nano, *result.Value().Tags["created-at"])
 					if err == nil {
-						if timestamp.Sub(createdAt).Seconds() > az.azconfig.DeleteDanglingResourcesAfter {
+						if timestamp.Sub(createdAt).Seconds() > az.azconfig.DeleteDanglingResourcesAfter.Duration().Seconds() {
 							az.logger.Printf("Will delete %v because it is older than %v s", *result.Value().Name, az.azconfig.DeleteDanglingResourcesAfter)
 							az.deleteNIC <- *result.Value().Name
 						}
@@ -537,7 +547,7 @@ func (az *AzureInstanceSet) ManageBlobs() {
 			if b.Properties.BlobType == storage.BlobTypePage &&
 				b.Properties.LeaseState == "available" &&
 				b.Properties.LeaseStatus == "unlocked" &&
-				age.Seconds() > az.azconfig.DeleteDanglingResourcesAfter {
+				age.Seconds() > az.azconfig.DeleteDanglingResourcesAfter.Duration().Seconds() {
 
 				az.logger.Printf("Blob %v is unlocked and not modified for %v seconds, will delete", b.Name, age.Seconds())
 				az.deleteBlob <- b

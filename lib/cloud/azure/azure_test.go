@@ -21,7 +21,7 @@
 // Subnet: zzzzz-subnet-private
 // StorageAccount: example
 // BlobContainer: vhds
-// DeleteDanglingResourcesAfter: 20
+// DeleteDanglingResourcesAfter: 20s
 
 package azure
 
