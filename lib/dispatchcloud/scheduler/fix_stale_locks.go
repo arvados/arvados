@@ -23,7 +23,7 @@ func (sch *Scheduler) fixStaleLocks() {
 	var stale []string
 	timeout := time.NewTimer(sch.staleLockTimeout)
 waiting:
-	for {
+	for sch.pool.CountWorkers()[worker.StateUnknown] > 0 {
 		running := sch.pool.Running()
 		qEntries, _ := sch.queue.Entries()
 
@@ -43,11 +43,6 @@ waiting:
 
 		select {
 		case <-wp:
-			// Stop waiting if all workers have been
-			// contacted.
-			if sch.pool.CountWorkers()[worker.StateUnknown] == 0 {
-				break waiting
-			}
 		case <-timeout.C:
 			// Give up.
 			break waiting
