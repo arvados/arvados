@@ -17,7 +17,7 @@ StartLimitIntervalSec=0
 [Service]
 Type=notify
 EnvironmentFile=-/etc/arvados/environment
-ExecStart=/usr/bin/crunch-dispatch-cloud
+ExecStart=/usr/bin/arvados-dispatch-cloud
 Restart=always
 RestartSec=1
 
