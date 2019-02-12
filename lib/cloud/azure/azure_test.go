@@ -3,30 +3,34 @@
 // SPDX-License-Identifier: AGPL-3.0
 //
 //
-// How to manually run individual tests against the real cloud
+// How to manually run individual tests against the real cloud:
 //
-// $ go test -v git.curoverse.com/arvados.git/lib/cloud/azure -live-azure-cfg azconfig.yml -check.f=TestListInstances
+// $ go test -v git.curoverse.com/arvados.git/lib/cloud/azure -live-azure-cfg azconfig.yml -check.f=TestListInstance
+//
+// Tests should be run individually and in the order they are listed in the file:
 //
 // Example azconfig.yml:
 //
 // ImageIDForTestSuite: "https://example.blob.core.windows.net/system/Microsoft.Compute/Images/images/zzzzz-compute-osDisk.XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX.vhd"
-// SubscriptionID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
-// ClientID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
-// Location: centralus
-// CloudEnvironment: AzurePublicCloud
-// ClientSecret: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-// TenantId: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
-// ResourceGroup: zzzzz
-// Network: zzzzz0:10 / 3:26:1
-// Subnet: zzzzz-subnet-private
-// StorageAccount: example
-// BlobContainer: vhds
-// DeleteDanglingResourcesAfter: 20s
+// DriverParameters:
+// 	 SubscriptionID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+// 	 ClientID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+// 	 Location: centralus
+// 	 CloudEnvironment: AzurePublicCloud
+// 	 ClientSecret: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+// 	 TenantId: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+// 	 ResourceGroup: zzzzz
+// 	 Network: zzzzz0:10 / 3:26:1
+// 	 Subnet: zzzzz-subnet-private
+// 	 StorageAccount: example
+// 	 BlobContainer: vhds
+// 	 DeleteDanglingResourcesAfter: 20s
 
 package azure
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"io/ioutil"
@@ -101,6 +105,11 @@ func (*InterfacesClientStub) listComplete(ctx context.Context, resourceGroupName
 	return network.InterfaceListResultIterator{}, nil
 }
 
+type testConfig struct {
+	ImageIDForTestSuite string
+	DriverParameters    json.RawMessage
+}
+
 var live = flag.String("live-azure-cfg", "", "Test with real azure API, provide config file")
 
 func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error) {
@@ -117,13 +126,20 @@ func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error)
 			},
 		})}
 	if *live != "" {
-		exampleCfg := make(map[string]interface{})
+		var exampleCfg testConfig
 		err := config.LoadFile(&exampleCfg, *live)
 		if err != nil {
 			return nil, cloud.ImageID(""), cluster, err
 		}
-		ap, err := newAzureInstanceSet(exampleCfg, "test123", logrus.StandardLogger())
-		return ap, cloud.ImageID(exampleCfg["ImageIDForTestSuite"].(string)), cluster, err
+
+		var azcfg azureInstanceSetConfig
+		err = json.Unmarshal(exampleCfg.DriverParameters, &azcfg)
+		if err != nil {
+			println(err.Error())
+		}
+
+		ap, err := newAzureInstanceSet(exampleCfg.DriverParameters, "test123", logrus.StandardLogger())
+		return ap, cloud.ImageID(exampleCfg.ImageIDForTestSuite), cluster, err
 	}
 	ap := azureInstanceSet{
 		azconfig: azureInstanceSetConfig{

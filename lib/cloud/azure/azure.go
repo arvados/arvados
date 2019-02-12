@@ -7,6 +7,7 @@ package azure
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -26,7 +27,6 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/jmcvetta/randutil"
-	"github.com/mitchellh/mapstructure"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 )
@@ -205,18 +205,10 @@ type azureInstanceSet struct {
 	logger            logrus.FieldLogger
 }
 
-func newAzureInstanceSet(config map[string]interface{}, dispatcherID cloud.InstanceSetID, logger logrus.FieldLogger) (prv cloud.InstanceSet, err error) {
+func newAzureInstanceSet(config json.RawMessage, dispatcherID cloud.InstanceSetID, logger logrus.FieldLogger) (prv cloud.InstanceSet, err error) {
 	azcfg := azureInstanceSetConfig{}
-
-	decoderConfig := mapstructure.DecoderConfig{
-		DecodeHook: arvados.DurationMapStructureDecodeHook(),
-		Result:     &azcfg}
-
-	decoder, err := mapstructure.NewDecoder(&decoderConfig)
+	err = json.Unmarshal(config, &azcfg)
 	if err != nil {
-		return nil, err
-	}
-	if err = decoder.Decode(config); err != nil {
 		return nil, err
 	}
 

@@ -7,7 +7,6 @@ package arvados
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"time"
 )
 
@@ -43,17 +42,4 @@ func (d *Duration) Set(s string) error {
 	dur, err := time.ParseDuration(s)
 	*d = Duration(dur)
 	return err
-}
-
-// DurationMapStructureDecodeHook can be used to create a decoder for arvados.duration when using mapstructure
-func DurationMapStructureDecodeHook() interface{} {
-	return func(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
-		var duration Duration
-		if f.Kind() != reflect.String || t != reflect.TypeOf(duration) {
-			return data, nil
-		}
-
-		duration.Set(data.(string))
-		return duration, nil
-	}
 }
