@@ -156,7 +156,7 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 		c.Fatalf("timed out; still waiting for %d containers: %q", len(waiting), waiting)
 	}
 
-	deadline := time.Now().Add(time.Second)
+	deadline := time.Now().Add(5 * time.Second)
 	for range time.NewTicker(10 * time.Millisecond).C {
 		insts, err := s.stubDriver.InstanceSets()[0].Instances(nil)
 		c.Check(err, check.IsNil)
