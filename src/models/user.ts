@@ -20,7 +20,7 @@ export interface User {
     lastName: string;
     uuid: string;
     ownerUuid: string;
-    identityUrl: string;
+    username: string;
     prefs: UserPrefs;
     isAdmin: boolean;
 }
@@ -35,7 +35,6 @@ export interface UserResource extends Resource {
     username: string;
     firstName: string;
     lastName: string;
-    identityUrl: string;
     isAdmin: boolean;
     prefs: UserPrefs;
     defaultOwnerUuid: string;

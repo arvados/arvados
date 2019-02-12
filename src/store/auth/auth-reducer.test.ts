@@ -13,8 +13,8 @@ import { ApiActions } from "~/services/api/api-actions";
 describe('auth-reducer', () => {
     let reducer: (state: AuthState | undefined, action: AuthAction) => any;
     const actions: ApiActions = {
-        progressFn: (id: string, working: boolean) => {},
-        errorFn: (id: string, message: string) => {}
+        progressFn: (id: string, working: boolean) => { },
+        errorFn: (id: string, message: string) => { }
     };
 
     beforeAll(() => {
@@ -30,7 +30,7 @@ describe('auth-reducer', () => {
             lastName: "Doe",
             uuid: "uuid",
             ownerUuid: "ownerUuid",
-            identityUrl: "identityUrl",
+            username: "username",
             prefs: {},
             isAdmin: false
         };
@@ -64,7 +64,7 @@ describe('auth-reducer', () => {
             lastName: "Doe",
             uuid: "uuid",
             ownerUuid: "ownerUuid",
-            identityUrl: "identityUrl",
+            username: "username",
             prefs: {},
             isAdmin: false
         };
@@ -80,7 +80,7 @@ describe('auth-reducer', () => {
                 lastName: "Doe",
                 uuid: "uuid",
                 ownerUuid: "ownerUuid",
-                identityUrl: "identityUrl",
+                username: "username",
                 prefs: {},
                 isAdmin: false
             }

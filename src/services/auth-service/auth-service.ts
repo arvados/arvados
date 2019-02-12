@@ -17,7 +17,7 @@ export const USER_LAST_NAME_KEY = 'userLastName';
 export const USER_UUID_KEY = 'userUuid';
 export const USER_OWNER_UUID_KEY = 'userOwnerUuid';
 export const USER_IS_ADMIN = 'isAdmin';
-export const USER_IDENTITY_URL = 'identityUrl';
+export const USER_USERNAME = 'username';
 export const USER_PREFS = 'prefs';
 
 export interface UserDetailsResponse {
@@ -27,7 +27,7 @@ export interface UserDetailsResponse {
     uuid: string;
     owner_uuid: string;
     is_admin: boolean;
-    identity_url: string;
+    username: string;
     prefs: UserPrefs;
 }
 
@@ -69,11 +69,11 @@ export class AuthService {
         const uuid = this.getUuid();
         const ownerUuid = this.getOwnerUuid();
         const isAdmin = this.getIsAdmin();
-        const identityUrl = localStorage.getItem(USER_IDENTITY_URL);
+        const username = localStorage.getItem(USER_USERNAME);
         const prefs = JSON.parse(localStorage.getItem(USER_PREFS) || '{"profile": {}}');
 
-        return email && firstName && lastName && uuid && ownerUuid && identityUrl && prefs
-            ? { email, firstName, lastName, uuid, ownerUuid, isAdmin, identityUrl, prefs }
+        return email && firstName && lastName && uuid && ownerUuid && username && prefs
+            ? { email, firstName, lastName, uuid, ownerUuid, isAdmin, username, prefs }
             : undefined;
     }
 
@@ -84,7 +84,7 @@ export class AuthService {
         localStorage.setItem(USER_UUID_KEY, user.uuid);
         localStorage.setItem(USER_OWNER_UUID_KEY, user.ownerUuid);
         localStorage.setItem(USER_IS_ADMIN, JSON.stringify(user.isAdmin));
-        localStorage.setItem(USER_IDENTITY_URL, user.identityUrl);
+        localStorage.setItem(USER_USERNAME, user.username);
         localStorage.setItem(USER_PREFS, JSON.stringify(user.prefs));
     }
 
@@ -95,7 +95,7 @@ export class AuthService {
         localStorage.removeItem(USER_UUID_KEY);
         localStorage.removeItem(USER_OWNER_UUID_KEY);
         localStorage.removeItem(USER_IS_ADMIN);
-        localStorage.removeItem(USER_IDENTITY_URL);
+        localStorage.removeItem(USER_USERNAME);
         localStorage.removeItem(USER_PREFS);
     }
 
@@ -125,7 +125,7 @@ export class AuthService {
                     uuid: resp.data.uuid,
                     ownerUuid: resp.data.owner_uuid,
                     isAdmin: resp.data.is_admin,
-                    identityUrl: resp.data.identity_url,
+                    username: resp.data.username,
                     prefs
                 };
             })

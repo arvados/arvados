@@ -61,7 +61,9 @@ export const LoginPanel = withStyles(styles)(
         homeCluster: state.auth.homeCluster,
         uuidPrefix: state.auth.localCluster
     }))(({ classes, dispatch, remoteHosts, homeCluster, uuidPrefix }: LoginPanelProps) =>
-        <Grid container direction="column" item xs alignItems="center" justify="center" className={classes.root}>
+        <Grid container justify="center" alignItems="center"
+            className={classes.root}
+            style={{ marginTop: 56, overflowY: "auto" }}>
             <Grid item className={classes.container}>
                 <Typography variant='h6' align="center" className={classes.title}>
                     Welcome to the Arvados Workbench
@@ -98,5 +100,5 @@ export const LoginPanel = withStyles(styles)(
                     </Button>
                 </Typography>
             </Grid>
-        </Grid>
+        </Grid >
     ));

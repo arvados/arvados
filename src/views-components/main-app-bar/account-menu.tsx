@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from "react";
-import { MenuItem } from "@material-ui/core";
+import { MenuItem, Divider } from "@material-ui/core";
 import { User, getUserFullname } from "~/models/user";
 import { DropdownMenu } from "~/components/dropdown-menu/dropdown-menu";
 import { UserPanelIcon } from "~/components/icon/icon";
@@ -37,8 +37,8 @@ export const AccountMenu = connect(mapStateToProps)(
                 id="account-menu"
                 title="Account Management"
                 key={currentRoute}>
-                <MenuItem>
-                    {getUserFullname(user)} ({user.uuid.substr(0, 5)})
+                <MenuItem disabled>
+                    {getUserFullname(user)}
                 </MenuItem>
                 <MenuItem onClick={() => dispatch(openUserVirtualMachines())}>Virtual Machines</MenuItem>
                 {!user.isAdmin && <MenuItem onClick={() => dispatch(openRepositoriesPanel())}>Repositories</MenuItem>}
@@ -46,6 +46,7 @@ export const AccountMenu = connect(mapStateToProps)(
                 <MenuItem onClick={() => dispatch(navigateToSshKeysUser)}>Ssh Keys</MenuItem>
                 <MenuItem onClick={() => dispatch(navigateToSiteManager)}>Site Manager</MenuItem>
                 <MenuItem onClick={() => dispatch(navigateToMyAccount)}>My account</MenuItem>
+                <Divider />
                 <MenuItem onClick={() => dispatch(logout())}>Logout</MenuItem>
             </DropdownMenu>
             : null);

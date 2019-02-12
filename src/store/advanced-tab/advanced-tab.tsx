@@ -554,7 +554,7 @@ const keepServiceApiResponse = (apiResponse: KeepServiceResource) => {
 const userApiResponse = (apiResponse: UserResource) => {
     const {
         uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid,
-        email, firstName, lastName, identityUrl, isActive, isAdmin, prefs, defaultOwnerUuid, username
+        email, firstName, lastName, username, isActive, isAdmin, prefs, defaultOwnerUuid,
     } = apiResponse;
     const response = `
 "uuid": "${uuid}",
@@ -566,7 +566,7 @@ const userApiResponse = (apiResponse: UserResource) => {
 "email": "${email}",
 "first_name": "${firstName}",
 "last_name": "${stringify(lastName)}",
-"identity_url": "${identityUrl}",
+"username": "${username}",
 "is_active": "${isActive},
 "is_admin": "${isAdmin},
 "prefs": "${stringifyObject(prefs)},
