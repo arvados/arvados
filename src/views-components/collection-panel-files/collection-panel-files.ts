@@ -29,14 +29,15 @@ const memoizedMapStateToProps = () => {
     let prevState: CollectionPanelFilesState;
     let prevTree: Array<TreeItem<FileTreeData>>;
 
-    return (state: RootState): Pick<CollectionPanelFilesProps, "items"> => {
+    return (state: RootState): Pick<CollectionPanelFilesProps, "items" | "currentItemUuid"> => {
         if (prevState !== state.collectionPanelFiles) {
             prevState = state.collectionPanelFiles;
             prevTree = getNodeChildrenIds('')(state.collectionPanelFiles)
                 .map(collectionItemToTreeItem(state.collectionPanelFiles));
         }
         return {
-            items: prevTree
+            items: prevTree,
+            currentItemUuid: state.detailsPanel.resourceUuid
         };
     };
 };

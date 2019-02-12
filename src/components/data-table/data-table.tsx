@@ -28,6 +28,8 @@ export interface DataTableDataProps<T> {
     extractKey?: (item: T) => React.Key;
     working?: boolean;
     defaultView?: React.ReactNode;
+    currentItemUuid?: string;
+    currentRoute?: string;
 }
 
 type CssRules = "tableBody" | "root" | "content" | "noItemsInfo" | 'tableCell';
@@ -112,14 +114,15 @@ export const DataTable = withStyles(styles)(
             </TableCell>;
         }
 
-        renderBodyRow = (item: T, index: number) => {
-            const { onRowClick, onRowDoubleClick, extractKey, classes } = this.props;
+        renderBodyRow = (item: any, index: number) => {
+            const { onRowClick, onRowDoubleClick, extractKey, classes, currentItemUuid } = this.props;
             return <TableRow
                 hover
                 key={extractKey ? extractKey(item) : index}
                 onClick={event => onRowClick && onRowClick(event, item)}
                 onContextMenu={this.handleRowContextMenu(item)}
-                onDoubleClick={event => onRowDoubleClick && onRowDoubleClick(event, item)}>
+                onDoubleClick={event => onRowDoubleClick && onRowDoubleClick(event, item)}
+                selected={item === currentItemUuid}>
                 {this.mapVisibleColumns((column, index) => (
                     <TableCell key={column.key || index} className={classes.tableCell}>
                         {column.render(item)}

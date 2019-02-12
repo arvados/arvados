@@ -6,7 +6,7 @@ import * as React from 'react';
 import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, WithStyles, TablePagination, IconButton, Tooltip, Button } from '@material-ui/core';
 import { ColumnSelector } from "~/components/column-selector/column-selector";
 import { DataTable, DataColumns, DataTableFetchMode } from "~/components/data-table/data-table";
-import { DataColumn, SortDirection } from "~/components/data-table/data-column";
+import { DataColumn } from "~/components/data-table/data-column";
 import { SearchInput } from '~/components/search-input/search-input';
 import { ArvadosTheme } from "~/common/custom-theme";
 import { createTree } from '~/models/tree';
@@ -51,6 +51,7 @@ interface DataExplorerDataProps<T> {
     actions?: React.ReactNode;
     hideSearchInput?: boolean;
     paperKey?: string;
+    currentItemUuid: string;
 }
 
 interface DataExplorerActionProps<T> {
@@ -83,7 +84,7 @@ export const DataExplorer = withStyles(styles)(
                 rowsPerPage, rowsPerPageOptions, onColumnToggle, searchValue, onSearch,
                 items, itemsAvailable, onRowClick, onRowDoubleClick, classes,
                 dataTableDefaultView, hideColumnSelector, actions, paperProps, hideSearchInput,
-                paperKey, fetchMode
+                paperKey, fetchMode, currentItemUuid
             } = this.props;
             return <Paper className={classes.root} {...paperProps} key={paperKey}>
                 {(!hideColumnSelector || !hideSearchInput) && <Toolbar className={classes.toolbar}>
@@ -109,7 +110,9 @@ export const DataExplorer = withStyles(styles)(
                     onSortToggle={onSortToggle}
                     extractKey={extractKey}
                     working={working}
-                    defaultView={dataTableDefaultView} />
+                    defaultView={dataTableDefaultView} 
+                    currentItemUuid={currentItemUuid} 
+                    currentRoute={paperKey} />
                 <Toolbar className={classes.footer}>
                     <Grid container justify="flex-end">
                         {fetchMode === DataTableFetchMode.PAGINATED ? <TablePagination
