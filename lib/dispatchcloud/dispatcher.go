@@ -118,7 +118,7 @@ func (disp *dispatcher) initialize() {
 	disp.stopped = make(chan struct{})
 	disp.logger = logrus.StandardLogger()
 
-	if key, err := ssh.ParsePrivateKey(disp.Cluster.Dispatch.PrivateKey); err != nil {
+	if key, err := ssh.ParsePrivateKey([]byte(disp.Cluster.Dispatch.PrivateKey)); err != nil {
 		disp.logger.Fatalf("error parsing configured Dispatch.PrivateKey: %s", err)
 	} else {
 		disp.sshKey = key

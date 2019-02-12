@@ -51,7 +51,7 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 			TimeoutShutdown: arvados.Duration(5 * time.Millisecond),
 		},
 		Dispatch: arvados.Dispatch{
-			PrivateKey:         dispatchprivraw,
+			PrivateKey:         string(dispatchprivraw),
 			PollInterval:       arvados.Duration(5 * time.Millisecond),
 			ProbeInterval:      arvados.Duration(5 * time.Millisecond),
 			StaleLockTimeout:   arvados.Duration(5 * time.Millisecond),

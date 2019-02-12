@@ -100,7 +100,7 @@ type InstanceType struct {
 type Dispatch struct {
 	// PEM encoded SSH key (RSA, DSA, or ECDSA) able to log in to
 	// cloud VMs.
-	PrivateKey []byte
+	PrivateKey string
 
 	// Max time for workers to come up before abandoning stale
 	// locks from previous run
