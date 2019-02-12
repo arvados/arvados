@@ -28,7 +28,7 @@ describe('auth-reducer', () => {
             email: "test@test.com",
             firstName: "John",
             lastName: "Doe",
-            uuid: "uuid",
+            uuid: "zzzzz-tpzed-xurymjxw79nv3jz",
             ownerUuid: "ownerUuid",
             username: "username",
             prefs: {},
@@ -39,7 +39,10 @@ describe('auth-reducer', () => {
             apiToken: "token",
             user,
             sshKeys: [],
-            sessions: []
+            sessions: [],
+            homeCluster: "zzzzz",
+            localCluster: "",
+            remoteHosts: {}
         });
     });
 
@@ -51,7 +54,10 @@ describe('auth-reducer', () => {
             apiToken: "token",
             user: undefined,
             sshKeys: [],
-            sessions: []
+            sessions: [],
+            homeCluster: "",
+            localCluster: "",
+            remoteHosts: {},
         });
     });
 
@@ -74,6 +80,9 @@ describe('auth-reducer', () => {
             apiToken: undefined,
             sshKeys: [],
             sessions: [],
+            homeCluster: "",
+            localCluster: "",
+            remoteHosts: {},
             user: {
                 email: "test@test.com",
                 firstName: "John",

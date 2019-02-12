@@ -56,6 +56,11 @@ describe('auth-actions', () => {
         expect(store.getState().auth).toEqual({
             apiToken: "token",
             sshKeys: [],
+            homeCluster: "uuid",
+            localCluster: undefined,
+            remoteHosts: {
+                xc59: "xc59.api.arvados.com"
+            },
             sessions: [{
                 "active": true,
                 "baseUrl": undefined,
