@@ -155,8 +155,11 @@ func kill(uuid string, signal syscall.Signal, stdout, stderr io.Writer) error {
 
 // List UUIDs of active crunch-run processes.
 func ListProcesses(stdout, stderr io.Writer) int {
-	return exitcode(stderr, filepath.Walk(lockdir, func(path string, info os.FileInfo, err error) error {
-		if info.IsDir() {
+	// filepath.Walk does not follow symlinks, so we must walk
+	// lockdir+"/." in case lockdir itself is a symlink.
+	walkdir := lockdir + "/."
+	return exitcode(stderr, filepath.Walk(walkdir, func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() && path != walkdir {
 			return filepath.SkipDir
 		}
 		if name := info.Name(); !strings.HasPrefix(name, lockprefix) || !strings.HasSuffix(name, locksuffix) {
