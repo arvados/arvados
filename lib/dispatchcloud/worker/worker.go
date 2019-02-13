@@ -96,7 +96,7 @@ func (wkr *worker) startContainer(ctr arvados.Container) {
 		"ContainerUUID": ctr.UUID,
 		"Priority":      ctr.Priority,
 	})
-	logger = logger.WithField("Instance", wkr.instance)
+	logger = logger.WithField("Instance", wkr.instance.ID())
 	logger.Debug("starting container")
 	wkr.starting[ctr.UUID] = struct{}{}
 	wkr.state = StateRunning
@@ -446,7 +446,7 @@ func (wkr *worker) saveTags() {
 			}
 			err := instance.SetTags(want)
 			if err != nil {
-				wkr.wp.logger.WithField("Instance", instance).WithError(err).Warnf("error updating tags")
+				wkr.wp.logger.WithField("Instance", instance.ID()).WithError(err).Warnf("error updating tags")
 			}
 			break
 

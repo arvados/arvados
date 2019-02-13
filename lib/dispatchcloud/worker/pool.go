@@ -347,7 +347,7 @@ func (wp *Pool) updateWorker(inst cloud.Instance, it arvados.InstanceType, initi
 
 	logger := wp.logger.WithFields(logrus.Fields{
 		"InstanceType": it.Name,
-		"Instance":     inst,
+		"Instance":     inst.ID(),
 		"Address":      inst.Address(),
 	})
 	logger.WithFields(logrus.Fields{
@@ -487,7 +487,7 @@ func (wp *Pool) KillContainer(uuid string) {
 func (wp *Pool) kill(wkr *worker, uuid string) {
 	logger := wp.logger.WithFields(logrus.Fields{
 		"ContainerUUID": uuid,
-		"Instance":      wkr.instance,
+		"Instance":      wkr.instance.ID(),
 	})
 	logger.Debug("killing process")
 	cmd := "crunch-run --kill 15 " + uuid
@@ -763,7 +763,7 @@ func (wp *Pool) sync(threshold time.Time, instances []cloud.Instance) {
 			continue
 		}
 		logger := wp.logger.WithFields(logrus.Fields{
-			"Instance":    wkr.instance,
+			"Instance":    wkr.instance.ID(),
 			"WorkerState": wkr.state,
 		})
 		logger.Info("instance disappeared in cloud")
