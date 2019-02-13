@@ -212,6 +212,9 @@ func (disp *dispatcher) apiInstanceRun(w http.ResponseWriter, r *http.Request) {
 func (disp *dispatcher) apiInstanceIdleBehavior(w http.ResponseWriter, r *http.Request, want worker.IdleBehavior) {
 	params, _ := r.Context().Value(httprouter.ParamsKey).(httprouter.Params)
 	id := cloud.InstanceID(params.ByName("instance_id"))
+	if qp := r.FormValue("instance_id"); qp != "" {
+		id = cloud.InstanceID(qp)
+	}
 	err := disp.pool.SetIdleBehavior(id, want)
 	if err != nil {
 		httpserver.Error(w, err.Error(), http.StatusNotFound)
