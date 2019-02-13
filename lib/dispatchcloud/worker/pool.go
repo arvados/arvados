@@ -485,7 +485,11 @@ func (wp *Pool) kill(wkr *worker, uuid string) {
 		"Instance":      wkr.instance,
 	})
 	logger.Debug("killing process")
-	stdout, stderr, err := wkr.executor.Execute(nil, "crunch-run --kill 15 "+uuid, nil)
+	cmd := "crunch-run --kill 15 " + uuid
+	if u := wkr.instance.RemoteUser(); u != "root" {
+		cmd = "sudo " + cmd
+	}
+	stdout, stderr, err := wkr.executor.Execute(nil, cmd, nil)
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"stderr": string(stderr),

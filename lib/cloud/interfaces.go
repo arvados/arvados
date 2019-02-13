@@ -63,6 +63,9 @@ type ExecutorTarget interface {
 	// unknown while instance is booting.
 	Address() string
 
+	// Remote username to send during SSH authentication.
+	RemoteUser() string
+
 	// Return nil if the given public key matches the instance's
 	// SSH server key. If the provided Dialer is not nil,
 	// VerifyHostKey can use it to make outgoing network

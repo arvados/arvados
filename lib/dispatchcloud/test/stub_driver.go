@@ -126,6 +126,7 @@ func (sis *StubInstanceSet) Create(it arvados.InstanceType, image cloud.ImageID,
 	}
 	svm.SSHService = SSHService{
 		HostKey:        sis.driver.HostKey,
+		AuthorizedUser: "root",
 		AuthorizedKeys: ak,
 		Exec:           svm.Exec,
 	}
@@ -330,6 +331,10 @@ func (si stubInstance) ID() cloud.InstanceID {
 
 func (si stubInstance) Address() string {
 	return si.addr
+}
+
+func (si stubInstance) RemoteUser() string {
+	return si.svm.SSHService.AuthorizedUser
 }
 
 func (si stubInstance) Destroy() error {

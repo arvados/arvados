@@ -101,10 +101,14 @@ func (wkr *worker) startContainer(ctr arvados.Container) {
 	wkr.starting[ctr.UUID] = struct{}{}
 	wkr.state = StateRunning
 	go func() {
+		cmd := "crunch-run --detach '" + ctr.UUID + "'"
 		stdin := bytes.NewBufferString(fmt.Sprintf("export %s=%q\nexport %s=%q\n",
 			"ARVADOS_API_HOST", wkr.wp.arvClient.APIHost,
 			"ARVADOS_API_TOKEN", wkr.wp.arvClient.AuthToken))
-		cmd := "source /dev/stdin; crunch-run --detach '" + ctr.UUID + "'"
+		if u := wkr.instance.RemoteUser(); u != "root" {
+			cmd = "sudo -E " + cmd
+		}
+		cmd = "source /dev/stdin; " + cmd
 		stdout, stderr, err := wkr.executor.Execute(nil, cmd, stdin)
 		wkr.mtx.Lock()
 		defer wkr.mtx.Unlock()
@@ -325,6 +329,9 @@ func (wkr *worker) probeAndUpdate() {
 
 func (wkr *worker) probeRunning() (running []string, ok bool) {
 	cmd := "crunch-run --list"
+	if u := wkr.instance.RemoteUser(); u != "root" {
+		cmd = "sudo " + cmd
+	}
 	stdout, stderr, err := wkr.executor.Execute(nil, cmd, nil)
 	if err != nil {
 		wkr.logger.WithFields(logrus.Fields{

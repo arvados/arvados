@@ -25,6 +25,7 @@
 // 	 StorageAccount: example
 // 	 BlobContainer: vhds
 // 	 DeleteDanglingResourcesAfter: 20s
+//	 AdminUsername: crunch
 
 package azure
 

@@ -39,6 +39,7 @@ type SSHExecFunc func(env map[string]string, command string, stdin io.Reader, st
 type SSHService struct {
 	Exec           SSHExecFunc
 	HostKey        ssh.Signer
+	AuthorizedUser string
 	AuthorizedKeys []ssh.PublicKey
 
 	listener net.Listener
@@ -62,6 +63,11 @@ func (ss *SSHService) Address() string {
 		return ""
 	}
 	return ln.Addr().String()
+}
+
+// RemoteUser returns the username that will be accepted.
+func (ss *SSHService) RemoteUser() string {
+	return ss.AuthorizedUser
 }
 
 // Close shuts down the server and releases resources. Established

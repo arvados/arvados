@@ -73,6 +73,7 @@ func (s *ExecutorSuite) TestBadHostKey(c *check.C) {
 				return 0
 			},
 			HostKey:        hostpriv,
+			AuthorizedUser: "username",
 			AuthorizedKeys: []ssh.PublicKey{clientpub},
 		},
 	}
@@ -121,6 +122,7 @@ func (s *ExecutorSuite) TestExecute(c *check.C) {
 					return uint32(exitcode)
 				},
 				HostKey:        hostpriv,
+				AuthorizedUser: "username",
 				AuthorizedKeys: []ssh.PublicKey{clientpub},
 			},
 		}

@@ -47,6 +47,7 @@ type azureInstanceSetConfig struct {
 	StorageAccount               string
 	BlobContainer                string
 	DeleteDanglingResourcesAfter arvados.Duration
+	AdminUsername                string
 }
 
 type virtualMachinesClientWrapper interface {
@@ -372,7 +373,7 @@ func (az *azureInstanceSet) Create(
 		name)
 
 	customData := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf(`#!/bin/sh
-echo '%s-%s' > /home/crunch/node-token`, name, newTags["node-token"])))
+echo '%s-%s' > '/home/%s/node-token'`, name, newTags["node-token"], az.azconfig.AdminUsername)))
 
 	vmParameters := compute.VirtualMachine{
 		Location: &az.azconfig.Location,
@@ -406,13 +407,13 @@ echo '%s-%s' > /home/crunch/node-token`, name, newTags["node-token"])))
 			},
 			OsProfile: &compute.OSProfile{
 				ComputerName:  &name,
-				AdminUsername: to.StringPtr("crunch"),
+				AdminUsername: to.StringPtr(az.azconfig.AdminUsername),
 				LinuxConfiguration: &compute.LinuxConfiguration{
 					DisablePasswordAuthentication: to.BoolPtr(true),
 					SSH: &compute.SSHConfiguration{
 						PublicKeys: &[]compute.SSHPublicKey{
-							compute.SSHPublicKey{
-								Path:    to.StringPtr("/home/crunch/.ssh/authorized_keys"),
+							{
+								Path:    to.StringPtr("/home/" + az.azconfig.AdminUsername + "/.ssh/authorized_keys"),
 								KeyData: to.StringPtr(string(ssh.MarshalAuthorizedKey(publicKey))),
 							},
 						},
@@ -634,6 +635,10 @@ func (ai *azureInstance) Address() string {
 	return *(*ai.nic.IPConfigurations)[0].PrivateIPAddress
 }
 
+func (ai *azureInstance) RemoteUser() string {
+	return ai.provider.azconfig.AdminUsername
+}
+
 func (ai *azureInstance) VerifyHostKey(receivedKey ssh.PublicKey, client *ssh.Client) error {
 	ai.provider.stopWg.Add(1)
 	defer ai.provider.stopWg.Done()
@@ -660,7 +665,7 @@ func (ai *azureInstance) VerifyHostKey(receivedKey ssh.PublicKey, client *ssh.Cl
 		return err
 	}
 
-	nodetokenbytes, err := sess.Output("cat /home/crunch/node-token")
+	nodetokenbytes, err := sess.Output("cat /home/" + ai.provider.azconfig.AdminUsername + "/node-token")
 	if err != nil {
 		return err
 	}
