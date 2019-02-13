@@ -64,7 +64,7 @@ func (sd *StubDriver) InstanceSet(params json.RawMessage, id cloud.InstanceSetID
 		servers: map[cloud.InstanceID]*StubVM{},
 	}
 	sd.instanceSets = append(sd.instanceSets, &sis)
-	return &sis, nil
+	return &sis, json.Unmarshal(params, &sis)
 }
 
 // InstanceSets returns all instances that have been created by the
