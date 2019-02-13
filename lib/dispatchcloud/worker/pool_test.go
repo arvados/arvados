@@ -90,7 +90,7 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 		},
 	}
 
-	pool := NewPool(logger, arvados.NewClientFromEnv(), prometheus.NewRegistry(), is, newExecutor, cluster)
+	pool := NewPool(logger, arvados.NewClientFromEnv(), prometheus.NewRegistry(), is, newExecutor, nil, cluster)
 	notify := pool.Subscribe()
 	defer pool.Unsubscribe(notify)
 	pool.Create(type1)
@@ -108,7 +108,7 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 
 	c.Log("------- starting new pool, waiting to recover state")
 
-	pool2 := NewPool(logger, arvados.NewClientFromEnv(), prometheus.NewRegistry(), is, newExecutor, cluster)
+	pool2 := NewPool(logger, arvados.NewClientFromEnv(), prometheus.NewRegistry(), is, newExecutor, nil, cluster)
 	notify2 := pool2.Subscribe()
 	defer pool2.Unsubscribe(notify2)
 	waitForIdle(pool2, notify2)

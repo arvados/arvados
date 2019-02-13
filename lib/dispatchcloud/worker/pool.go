@@ -16,6 +16,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/crypto/ssh"
 )
 
 const (
@@ -84,7 +85,7 @@ func duration(conf arvados.Duration, def time.Duration) time.Duration {
 //
 // New instances are configured and set up according to the given
 // cluster configuration.
-func NewPool(logger logrus.FieldLogger, arvClient *arvados.Client, reg *prometheus.Registry, instanceSet cloud.InstanceSet, newExecutor func(cloud.Instance) Executor, cluster *arvados.Cluster) *Pool {
+func NewPool(logger logrus.FieldLogger, arvClient *arvados.Client, reg *prometheus.Registry, instanceSet cloud.InstanceSet, newExecutor func(cloud.Instance) Executor, installPublicKey ssh.PublicKey, cluster *arvados.Cluster) *Pool {
 	wp := &Pool{
 		logger:             logger,
 		arvClient:          arvClient,
@@ -100,6 +101,7 @@ func NewPool(logger logrus.FieldLogger, arvClient *arvados.Client, reg *promethe
 		timeoutBooting:     duration(cluster.CloudVMs.TimeoutBooting, defaultTimeoutBooting),
 		timeoutProbe:       duration(cluster.CloudVMs.TimeoutProbe, defaultTimeoutProbe),
 		timeoutShutdown:    duration(cluster.CloudVMs.TimeoutShutdown, defaultTimeoutShutdown),
+		installPublicKey:   installPublicKey,
 		stop:               make(chan bool),
 	}
 	wp.registerMetrics(reg)
@@ -130,6 +132,7 @@ type Pool struct {
 	timeoutBooting     time.Duration
 	timeoutProbe       time.Duration
 	timeoutShutdown    time.Duration
+	installPublicKey   ssh.PublicKey
 
 	// private state
 	subscribers  map[<-chan struct{}]chan<- struct{}
@@ -262,7 +265,7 @@ func (wp *Pool) Create(it arvados.InstanceType) bool {
 	wp.creating[it] = append(wp.creating[it], now)
 	go func() {
 		defer wp.notify()
-		inst, err := wp.instanceSet.Create(it, wp.imageID, tags, nil)
+		inst, err := wp.instanceSet.Create(it, wp.imageID, tags, wp.installPublicKey)
 		wp.mtx.Lock()
 		defer wp.mtx.Unlock()
 		// Remove our timestamp marker from wp.creating
