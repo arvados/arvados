@@ -49,14 +49,15 @@ func detach(uuid string, args []string, stdout, stderr io.Writer) error {
 			return nil, err
 		}
 		defer dirlock.Close()
-		lockfile, err := os.OpenFile(filepath.Join(lockdir, lockprefix+uuid+locksuffix), os.O_CREATE|os.O_RDWR, 0700)
+		lockfilename := filepath.Join(lockdir, lockprefix+uuid+locksuffix)
+		lockfile, err := os.OpenFile(lockfilename, os.O_CREATE|os.O_RDWR, 0700)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("open %s: %s", lockfilename, err)
 		}
 		err = syscall.Flock(int(lockfile.Fd()), syscall.LOCK_EX|syscall.LOCK_NB)
 		if err != nil {
 			lockfile.Close()
-			return nil, err
+			return nil, fmt.Errorf("lock %s: %s", lockfilename, err)
 		}
 		return lockfile, nil
 	}()
@@ -91,7 +92,7 @@ func detach(uuid string, args []string, stdout, stderr io.Writer) error {
 	if err != nil {
 		os.Remove(outfile.Name())
 		os.Remove(errfile.Name())
-		return err
+		return fmt.Errorf("exec %s: %s", cmd.Path, err)
 	}
 
 	w := io.MultiWriter(stdout, lockfile)
@@ -123,14 +124,14 @@ func kill(uuid string, signal syscall.Signal, stdout, stderr io.Writer) error {
 	if os.IsNotExist(err) {
 		return nil
 	} else if err != nil {
-		return err
+		return fmt.Errorf("open %s: %s", path, err)
 	}
 	defer f.Close()
 
 	var pi procinfo
 	err = json.NewDecoder(f).Decode(&pi)
 	if err != nil {
-		return fmt.Errorf("%s: %s\n", path, err)
+		return fmt.Errorf("decode %s: %s\n", path, err)
 	}
 
 	if pi.UUID != uuid || pi.PID == 0 {
@@ -139,7 +140,7 @@ func kill(uuid string, signal syscall.Signal, stdout, stderr io.Writer) error {
 
 	proc, err := os.FindProcess(pi.PID)
 	if err != nil {
-		return err
+		return fmt.Errorf("%s: find process %d: %s", uuid, pi.PID, err)
 	}
 
 	err = proc.Signal(signal)
@@ -147,9 +148,9 @@ func kill(uuid string, signal syscall.Signal, stdout, stderr io.Writer) error {
 		err = proc.Signal(syscall.Signal(0))
 	}
 	if err == nil {
-		return fmt.Errorf("pid %d: sent signal %d (%s) but process is still alive", pi.PID, signal, signal)
+		return fmt.Errorf("%s: pid %d: sent signal %d (%s) but process is still alive", uuid, pi.PID, signal, signal)
 	}
-	fmt.Fprintf(stderr, "pid %d: %s\n", pi.PID, err)
+	fmt.Fprintf(stderr, "%s: pid %d: %s\n", uuid, pi.PID, err)
 	return nil
 }
 
@@ -189,7 +190,7 @@ func ListProcesses(stdout, stderr io.Writer) int {
 			err := os.Remove(path)
 			dirlock.Close()
 			if err != nil {
-				fmt.Fprintln(stderr, err)
+				fmt.Fprintf(stderr, "unlink %s: %s\n", f.Name(), err)
 			}
 			return nil
 		}
@@ -227,14 +228,15 @@ func exitcode(stderr io.Writer, err error) int {
 //
 // Caller releases the lock by closing the returned file.
 func lockall() (*os.File, error) {
-	f, err := os.OpenFile(filepath.Join(lockdir, lockprefix+"all"+locksuffix), os.O_CREATE|os.O_RDWR, 0700)
+	lockfile := filepath.Join(lockdir, lockprefix+"all"+locksuffix)
+	f, err := os.OpenFile(lockfile, os.O_CREATE|os.O_RDWR, 0700)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("open %s: %s", lockfile, err)
 	}
 	err = syscall.Flock(int(f.Fd()), syscall.LOCK_EX)
 	if err != nil {
 		f.Close()
-		return nil, err
+		return nil, fmt.Errorf("lock %s: %s", lockfile, err)
 	}
 	return f, nil
 }
