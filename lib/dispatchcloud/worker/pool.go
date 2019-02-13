@@ -27,6 +27,7 @@ const (
 // An InstanceView shows a worker's current state and recent activity.
 type InstanceView struct {
 	Instance             cloud.InstanceID `json:"instance"`
+	Address              string           `json:"address"`
 	Price                float64          `json:"price"`
 	ArvadosInstanceType  string           `json:"arvados_instance_type"`
 	ProviderInstanceType string           `json:"provider_instance_type"`
@@ -347,6 +348,7 @@ func (wp *Pool) updateWorker(inst cloud.Instance, it arvados.InstanceType, initi
 	logger := wp.logger.WithFields(logrus.Fields{
 		"InstanceType": it.Name,
 		"Instance":     inst,
+		"Address":      inst.Address(),
 	})
 	logger.WithFields(logrus.Fields{
 		"State":        initialState,
@@ -680,6 +682,7 @@ func (wp *Pool) Instances() []InstanceView {
 	for _, w := range wp.workers {
 		r = append(r, InstanceView{
 			Instance:             w.instance.ID(),
+			Address:              w.instance.Address(),
 			Price:                w.instType.Price,
 			ArvadosInstanceType:  w.instType.Name,
 			ProviderInstanceType: w.instType.ProviderType,
