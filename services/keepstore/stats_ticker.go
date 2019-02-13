@@ -48,7 +48,9 @@ func (s *statsTicker) TickErr(err error, errType string) {
 	if err == nil {
 		return
 	}
-	s.errors.Inc()
+	if s.errors != nil {
+		s.errors.Inc()
+	}
 	s.Tick(&s.Errors)
 
 	s.lock.Lock()
@@ -57,17 +59,23 @@ func (s *statsTicker) TickErr(err error, errType string) {
 	}
 	s.ErrorCodes[errType]++
 	s.lock.Unlock()
-	s.errCounters.WithLabelValues(errType).Inc()
+	if s.errCounters != nil {
+		s.errCounters.WithLabelValues(errType).Inc()
+	}
 }
 
 // TickInBytes increments the incoming byte counter by n.
 func (s *statsTicker) TickInBytes(n uint64) {
-	s.inBytes.Add(float64(n))
+	if s.inBytes != nil {
+		s.inBytes.Add(float64(n))
+	}
 	atomic.AddUint64(&s.InBytes, n)
 }
 
 // TickOutBytes increments the outgoing byte counter by n.
 func (s *statsTicker) TickOutBytes(n uint64) {
-	s.outBytes.Add(float64(n))
+	if s.outBytes != nil {
+		s.outBytes.Add(float64(n))
+	}
 	atomic.AddUint64(&s.OutBytes, n)
 }

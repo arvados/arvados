@@ -88,6 +88,7 @@ func (m *nodeMetrics) setupRequestMetrics(rc httpserver.RequestCounter) {
 }
 
 type volumeMetricsVecs struct {
+	reg        *prometheus.Registry
 	BytesFree  *prometheus.GaugeVec
 	BytesUsed  *prometheus.GaugeVec
 	Errors     *prometheus.CounterVec
@@ -102,21 +103,26 @@ type volumeMetricsVecs struct {
 }
 
 type volumeMetrics struct {
-	BytesFree  prometheus.Gauge
-	BytesUsed  prometheus.Gauge
-	Errors     prometheus.Counter
-	Ops        prometheus.Counter
-	CompareOps prometheus.Counter
-	GetOps     prometheus.Counter
-	PutOps     prometheus.Counter
-	TouchOps   prometheus.Counter
-	InBytes    prometheus.Counter
-	OutBytes   prometheus.Counter
-	ErrorCodes *prometheus.CounterVec
+	reg              *prometheus.Registry
+	lbls             []string
+	internalCounters map[string]*prometheus.CounterVec
+	BytesFree        prometheus.Gauge
+	BytesUsed        prometheus.Gauge
+	Errors           prometheus.Counter
+	Ops              prometheus.Counter
+	CompareOps       prometheus.Counter
+	GetOps           prometheus.Counter
+	PutOps           prometheus.Counter
+	TouchOps         prometheus.Counter
+	InBytes          prometheus.Counter
+	OutBytes         prometheus.Counter
+	ErrorCodes       *prometheus.CounterVec
 }
 
 func newVolumeMetricsVecs(reg *prometheus.Registry) *volumeMetricsVecs {
-	m := &volumeMetricsVecs{}
+	m := &volumeMetricsVecs{
+		reg: reg,
+	}
 	m.BytesFree = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Namespace: "arvados",
@@ -234,16 +240,19 @@ func newVolumeMetricsVecs(reg *prometheus.Registry) *volumeMetricsVecs {
 func (m *volumeMetricsVecs) curryWith(lbl string, mnt string, dev string) *volumeMetrics {
 	lbls := []string{lbl, mnt, dev}
 	curried := &volumeMetrics{
-		BytesFree:  m.BytesFree.WithLabelValues(lbls...),
-		BytesUsed:  m.BytesUsed.WithLabelValues(lbls...),
-		Errors:     m.Errors.WithLabelValues(lbls...),
-		Ops:        m.Ops.WithLabelValues(lbls...),
-		CompareOps: m.CompareOps.WithLabelValues(lbls...),
-		GetOps:     m.GetOps.WithLabelValues(lbls...),
-		PutOps:     m.PutOps.WithLabelValues(lbls...),
-		TouchOps:   m.TouchOps.WithLabelValues(lbls...),
-		InBytes:    m.InBytes.WithLabelValues(lbls...),
-		OutBytes:   m.OutBytes.WithLabelValues(lbls...),
+		reg:              m.reg,
+		lbls:             lbls,
+		internalCounters: make(map[string]*prometheus.CounterVec),
+		BytesFree:        m.BytesFree.WithLabelValues(lbls...),
+		BytesUsed:        m.BytesUsed.WithLabelValues(lbls...),
+		Errors:           m.Errors.WithLabelValues(lbls...),
+		Ops:              m.Ops.WithLabelValues(lbls...),
+		CompareOps:       m.CompareOps.WithLabelValues(lbls...),
+		GetOps:           m.GetOps.WithLabelValues(lbls...),
+		PutOps:           m.PutOps.WithLabelValues(lbls...),
+		TouchOps:         m.TouchOps.WithLabelValues(lbls...),
+		InBytes:          m.InBytes.WithLabelValues(lbls...),
+		OutBytes:         m.OutBytes.WithLabelValues(lbls...),
 		ErrorCodes: m.ErrorCodes.MustCurryWith(prometheus.Labels{
 			"label":         lbl,
 			"mount_point":   mnt,
@@ -251,4 +260,24 @@ func (m *volumeMetricsVecs) curryWith(lbl string, mnt string, dev string) *volum
 		}),
 	}
 	return curried
+}
+
+// Returns a driver specific counter, creating it when needed. The 'name' argument
+// should include the driver prefix.
+func (m *volumeMetrics) getInternalCounter(name string, help string) prometheus.Counter {
+	counterVec, ok := m.internalCounters[name]
+	if !ok {
+		counterVec = prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace: "arvados",
+				Subsystem: "keepstore",
+				Name:      name,
+				Help:      help,
+			},
+			[]string{"label", "mount_point", "device_number"},
+		)
+		m.reg.MustRegister(counterVec)
+		m.internalCounters[name] = counterVec
+	}
+	return counterVec.WithLabelValues(m.lbls...)
 }
