@@ -5,7 +5,9 @@
 package worker
 
 import (
+	"crypto/rand"
 	"errors"
+	"fmt"
 	"io"
 	"sort"
 	"strings"
@@ -22,6 +24,7 @@ import (
 const (
 	tagKeyInstanceType = "InstanceType"
 	tagKeyIdleBehavior = "IdleBehavior"
+	tagKeyNodeToken    = "node-token" // deprecated, but required by Azure driver
 )
 
 // An InstanceView shows a worker's current state and recent activity.
@@ -261,6 +264,7 @@ func (wp *Pool) Create(it arvados.InstanceType) bool {
 	tags := cloud.InstanceTags{
 		tagKeyInstanceType: it.Name,
 		tagKeyIdleBehavior: string(IdleBehaviorRun),
+		tagKeyNodeToken:    randomToken(),
 	}
 	now := time.Now()
 	wp.creating[it] = append(wp.creating[it], now)
@@ -780,4 +784,13 @@ func (wp *Pool) sync(threshold time.Time, instances []cloud.Instance) {
 	if notify {
 		go wp.notify()
 	}
+}
+
+func randomToken() string {
+	buf := make([]byte, 32)
+	_, err := rand.Read(buf)
+	if err != nil {
+		panic(err)
+	}
+	return fmt.Sprintf("%x", buf)
 }
