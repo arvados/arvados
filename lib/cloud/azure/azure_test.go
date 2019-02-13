@@ -5,7 +5,7 @@
 //
 // How to manually run individual tests against the real cloud:
 //
-// $ go test -v git.curoverse.com/arvados.git/lib/cloud/azure -live-azure-cfg azconfig.yml -check.f=TestListInstance
+// $ go test -v git.curoverse.com/arvados.git/lib/cloud/azure -live-azure-cfg azconfig.yml -check.f=TestCreate
 //
 // Tests should be run individually and in the order they are listed in the file:
 //
@@ -20,7 +20,7 @@
 // 	 ClientSecret: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // 	 TenantId: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
 // 	 ResourceGroup: zzzzz
-// 	 Network: zzzzz0:10 / 3:26:1
+// 	 Network: zzzzz
 // 	 Subnet: zzzzz-subnet-private
 // 	 StorageAccount: example
 // 	 BlobContainer: vhds
@@ -135,7 +135,7 @@ func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error)
 		var azcfg azureInstanceSetConfig
 		err = json.Unmarshal(exampleCfg.DriverParameters, &azcfg)
 		if err != nil {
-			println(err.Error())
+			return nil, cloud.ImageID(exampleCfg.ImageIDForTestSuite), cluster, err
 		}
 
 		ap, err := newAzureInstanceSet(exampleCfg.DriverParameters, "test123", logrus.StandardLogger())
