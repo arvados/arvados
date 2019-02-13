@@ -168,6 +168,9 @@ func (it *InstanceTypeMap) UnmarshalJSON(data []byte) error {
 			if _, ok := (*it)[t.Name]; ok {
 				return errDuplicateInstanceTypeName
 			}
+			if t.ProviderType == "" {
+				t.ProviderType = t.Name
+			}
 			(*it)[t.Name] = t
 		}
 		return nil
@@ -177,10 +180,14 @@ func (it *InstanceTypeMap) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	// Fill in Name field using hash key.
+	// Fill in Name field (and ProviderType field, if not
+	// specified) using hash key.
 	*it = InstanceTypeMap(hash)
 	for name, t := range *it {
 		t.Name = name
+		if t.ProviderType == "" {
+			t.ProviderType = name
+		}
 		(*it)[name] = t
 	}
 	return nil
