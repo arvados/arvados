@@ -132,12 +132,6 @@ func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error)
 			return nil, cloud.ImageID(""), cluster, err
 		}
 
-		var azcfg azureInstanceSetConfig
-		err = json.Unmarshal(exampleCfg.DriverParameters, &azcfg)
-		if err != nil {
-			return nil, cloud.ImageID(exampleCfg.ImageIDForTestSuite), cluster, err
-		}
-
 		ap, err := newAzureInstanceSet(exampleCfg.DriverParameters, "test123", logrus.StandardLogger())
 		return ap, cloud.ImageID(exampleCfg.ImageIDForTestSuite), cluster, err
 	}
