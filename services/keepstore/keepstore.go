@@ -18,6 +18,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/config"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"github.com/coreos/go-systemd/daemon"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 var version = "dev"
@@ -120,7 +121,9 @@ func main() {
 
 	log.Printf("keepstore %s started", version)
 
-	err = theConfig.Start()
+	metricsRegistry := prometheus.NewRegistry()
+
+	err = theConfig.Start(metricsRegistry)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -173,7 +176,7 @@ func main() {
 	KeepVM = MakeRRVolumeManager(theConfig.Volumes)
 
 	// Middleware/handler stack
-	router := MakeRESTRouter(cluster)
+	router := MakeRESTRouter(cluster, metricsRegistry)
 
 	// Set up a TCP listener.
 	listener, err := net.Listen("tcp", theConfig.Listen)

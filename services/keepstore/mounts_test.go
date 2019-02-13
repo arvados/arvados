@@ -12,6 +12,7 @@ import (
 	"net/http/httptest"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	"github.com/prometheus/client_golang/prometheus"
 	check "gopkg.in/check.v1"
 )
 
@@ -28,15 +29,16 @@ func (s *MountsSuite) SetUpTest(c *check.C) {
 	theConfig = DefaultConfig()
 	theConfig.systemAuthToken = arvadostest.DataManagerToken
 	theConfig.ManagementToken = arvadostest.ManagementToken
-	theConfig.Start()
-	s.rtr = MakeRESTRouter(testCluster)
+	r := prometheus.NewRegistry()
+	theConfig.Start(r)
+	s.rtr = MakeRESTRouter(testCluster, r)
 }
 
 func (s *MountsSuite) TearDownTest(c *check.C) {
 	s.vm.Close()
 	KeepVM = nil
 	theConfig = DefaultConfig()
-	theConfig.Start()
+	theConfig.Start(prometheus.NewRegistry())
 }
 
 func (s *MountsSuite) TestMounts(c *check.C) {

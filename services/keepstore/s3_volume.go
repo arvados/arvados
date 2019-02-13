@@ -198,7 +198,7 @@ func (*S3Volume) Type() string {
 
 // Start populates private fields and verifies the configuration is
 // valid.
-func (v *S3Volume) Start() error {
+func (v *S3Volume) Start(m *volumeMetrics) error {
 	region, ok := aws.Regions[v.Region]
 	if v.Endpoint == "" {
 		if !ok {

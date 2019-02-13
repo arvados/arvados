@@ -20,6 +20,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/auth"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"github.com/prometheus/client_golang/prometheus"
 	check "gopkg.in/check.v1"
 )
 
@@ -100,15 +101,16 @@ func (s *ProxyRemoteSuite) SetUpTest(c *check.C) {
 	theConfig = DefaultConfig()
 	theConfig.systemAuthToken = arvadostest.DataManagerToken
 	theConfig.blobSigningKey = []byte(knownKey)
-	theConfig.Start()
-	s.rtr = MakeRESTRouter(s.cluster)
+	r := prometheus.NewRegistry()
+	theConfig.Start(r)
+	s.rtr = MakeRESTRouter(s.cluster, r)
 }
 
 func (s *ProxyRemoteSuite) TearDownTest(c *check.C) {
 	s.vm.Close()
 	KeepVM = nil
 	theConfig = DefaultConfig()
-	theConfig.Start()
+	theConfig.Start(prometheus.NewRegistry())
 	s.remoteAPI.Close()
 	s.remoteKeepproxy.Close()
 }

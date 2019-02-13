@@ -5,7 +5,6 @@
 package main
 
 import (
-	"fmt"
 	"sync"
 	"sync/atomic"
 
@@ -17,30 +16,14 @@ type statsTicker struct {
 	InBytes  uint64
 	OutBytes uint64
 
+	// Prometheus metrics
+	PromErrors     prometheus.Counter
+	PromInBytes    prometheus.Counter
+	PromOutBytes   prometheus.Counter
+	PromErrorCodes *prometheus.CounterVec
+
 	ErrorCodes map[string]uint64 `json:",omitempty"`
 	lock       sync.Mutex
-}
-
-func (s *statsTicker) setupPrometheus(drv string, reg *prometheus.Registry, lbl prometheus.Labels) {
-	metrics := map[string][]interface{}{
-		"errors":    []interface{}{string("errors"), s.Errors},
-		"in_bytes":  []interface{}{string("input bytes"), s.InBytes},
-		"out_bytes": []interface{}{string("output bytes"), s.OutBytes},
-	}
-	for mName, data := range metrics {
-		mHelp := data[0].(string)
-		mVal := data[1].(uint64)
-		reg.Register(prometheus.NewGaugeFunc(
-			prometheus.GaugeOpts{
-				Namespace:   "arvados",
-				Subsystem:   "keepstore",
-				Name:        fmt.Sprintf("%s_%s", drv, mName),
-				Help:        fmt.Sprintf("Number of %s backend %s", drv, mHelp),
-				ConstLabels: lbl,
-			},
-			func() float64 { return float64(mVal) },
-		))
-	}
 }
 
 // Tick increments each of the given counters by 1 using
@@ -58,6 +41,7 @@ func (s *statsTicker) TickErr(err error, errType string) {
 	if err == nil {
 		return
 	}
+	s.PromErrors.Inc()
 	s.Tick(&s.Errors)
 
 	s.lock.Lock()
@@ -66,14 +50,17 @@ func (s *statsTicker) TickErr(err error, errType string) {
 	}
 	s.ErrorCodes[errType]++
 	s.lock.Unlock()
+	s.PromErrorCodes.WithLabelValues(errType).Inc()
 }
 
 // TickInBytes increments the incoming byte counter by n.
 func (s *statsTicker) TickInBytes(n uint64) {
+	s.PromInBytes.Add(float64(n))
 	atomic.AddUint64(&s.InBytes, n)
 }
 
 // TickOutBytes increments the outgoing byte counter by n.
 func (s *statsTicker) TickOutBytes(n uint64) {
+	s.PromOutBytes.Add(float64(n))
 	atomic.AddUint64(&s.OutBytes, n)
 }

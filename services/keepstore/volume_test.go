@@ -211,7 +211,7 @@ func (v *MockVolume) Type() string {
 	return "Mock"
 }
 
-func (v *MockVolume) Start() error {
+func (v *MockVolume) Start(m *volumeMetrics) error {
 	return nil
 }
 

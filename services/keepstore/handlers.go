@@ -32,17 +32,16 @@ type router struct {
 	limiter     httpserver.RequestCounter
 	cluster     *arvados.Cluster
 	remoteProxy remoteProxy
-	registry    *prometheus.Registry
-	metrics     nodeMetrics
+	metrics     *nodeMetrics
 }
 
 // MakeRESTRouter returns a new router that forwards all Keep requests
 // to the appropriate handlers.
-func MakeRESTRouter(cluster *arvados.Cluster) http.Handler {
+func MakeRESTRouter(cluster *arvados.Cluster, reg *prometheus.Registry) http.Handler {
 	rtr := &router{
-		Router:   mux.NewRouter(),
-		cluster:  cluster,
-		registry: prometheus.NewRegistry(),
+		Router:  mux.NewRouter(),
+		cluster: cluster,
+		metrics: &nodeMetrics{reg: reg},
 	}
 
 	rtr.HandleFunc(
@@ -89,13 +88,12 @@ func MakeRESTRouter(cluster *arvados.Cluster) http.Handler {
 	rtr.NotFoundHandler = http.HandlerFunc(BadRequestHandler)
 
 	rtr.limiter = httpserver.NewRequestLimiter(theConfig.MaxRequests, rtr)
-	rtr.metrics = nodeMetrics{
-		reg: rtr.registry,
-		rc:  rtr.limiter,
-	}
-	rtr.metrics.setup()
+	rtr.metrics.setupBufferPoolMetrics(bufs)
+	rtr.metrics.setupWorkQueueMetrics(pullq, "pull")
+	rtr.metrics.setupWorkQueueMetrics(trashq, "trash")
+	rtr.metrics.setupRequestMetrics(rtr.limiter)
 
-	instrumented := httpserver.Instrument(rtr.registry, nil,
+	instrumented := httpserver.Instrument(rtr.metrics.reg, nil,
 		httpserver.AddRequestIDs(httpserver.LogRequests(nil, rtr.limiter)))
 	return instrumented.ServeAPI(theConfig.ManagementToken, instrumented)
 }

@@ -147,7 +147,7 @@ func (v *AzureBlobVolume) Type() string {
 }
 
 // Start implements Volume.
-func (v *AzureBlobVolume) Start() error {
+func (v *AzureBlobVolume) Start(m *volumeMetrics) error {
 	if v.ContainerName == "" {
 		return errors.New("no container name given")
 	}

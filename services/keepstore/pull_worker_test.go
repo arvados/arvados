@@ -14,6 +14,7 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"github.com/prometheus/client_golang/prometheus"
 	. "gopkg.in/check.v1"
 )
 
@@ -58,7 +59,7 @@ func (s *PullWorkerTestSuite) TearDownTest(c *C) {
 	pullq = nil
 	teardown()
 	theConfig = DefaultConfig()
-	theConfig.Start()
+	theConfig.Start(prometheus.NewRegistry())
 }
 
 var firstPullList = []byte(`[

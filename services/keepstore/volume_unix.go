@@ -21,8 +21,6 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
-
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 type unixVolumeAdder struct {
@@ -120,6 +118,8 @@ type UnixVolume struct {
 	locker sync.Locker
 
 	os osWithStats
+
+	metrics *volumeMetrics
 }
 
 // DeviceID returns a globally unique ID for the volume's root
@@ -220,7 +220,7 @@ func (v *UnixVolume) Type() string {
 }
 
 // Start implements Volume
-func (v *UnixVolume) Start() error {
+func (v *UnixVolume) Start(m *volumeMetrics) error {
 	if v.Serialize {
 		v.locker = &sync.Mutex{}
 	}
@@ -231,11 +231,29 @@ func (v *UnixVolume) Start() error {
 		v.DirectoryReplication = 1
 	}
 	_, err := v.os.Stat(v.Root)
+	if err == nil {
+		// Set up prometheus metrics
+		v.metrics = m
+		v.os.stats.PromErrors = v.metrics.Errors
+		v.os.stats.PromErrorCodes = v.metrics.ErrorCodes
+		v.os.stats.PromInBytes = v.metrics.InBytes
+		v.os.stats.PromOutBytes = v.metrics.OutBytes
+		// Periodically update free/used volume space
+		go func() {
+			for {
+				v.metrics.BytesFree.Set(float64(v.Status().BytesFree))
+				v.metrics.BytesUsed.Set(float64(v.Status().BytesUsed))
+				time.Sleep(10 * time.Second)
+			}
+		}()
+	}
 	return err
 }
 
 // Touch sets the timestamp for the given locator to the current time
 func (v *UnixVolume) Touch(loc string) error {
+	v.metrics.Ops.Inc()
+	v.metrics.TouchOps.Inc()
 	if v.ReadOnly {
 		return MethodDisabledError
 	}
@@ -301,6 +319,8 @@ func (v *UnixVolume) stat(path string) (os.FileInfo, error) {
 // Get retrieves a block, copies it to the given slice, and returns
 // the number of bytes copied.
 func (v *UnixVolume) Get(ctx context.Context, loc string, buf []byte) (int, error) {
+	v.metrics.Ops.Inc()
+	v.metrics.GetOps.Inc()
 	return getWithPipe(ctx, loc, buf, v)
 }
 
@@ -324,6 +344,8 @@ func (v *UnixVolume) ReadBlock(ctx context.Context, loc string, w io.Writer) err
 // expect. It is functionally equivalent to Get() followed by
 // bytes.Compare(), but uses less memory.
 func (v *UnixVolume) Compare(ctx context.Context, loc string, expect []byte) error {
+	v.metrics.Ops.Inc()
+	v.metrics.CompareOps.Inc()
 	path := v.blockPath(loc)
 	if _, err := v.stat(path); err != nil {
 		return v.translateError(err)
@@ -338,6 +360,8 @@ func (v *UnixVolume) Compare(ctx context.Context, loc string, expect []byte) err
 // returns a FullError.  If the write fails due to some other error,
 // that error is returned.
 func (v *UnixVolume) Put(ctx context.Context, loc string, block []byte) error {
+	v.metrics.Ops.Inc()
+	v.metrics.PutOps.Inc()
 	return putWithPipe(ctx, loc, block, v)
 }
 
@@ -789,42 +813,6 @@ func (v *UnixVolume) EmptyTrash() {
 	}
 
 	log.Printf("EmptyTrash stats for %v: Deleted %v bytes in %v blocks. Remaining in trash: %v bytes in %v blocks.", v.String(), bytesDeleted, blocksDeleted, bytesInTrash-bytesDeleted, blocksInTrash-blocksDeleted)
-}
-
-// SetupInternalMetrics registers driver stats to Prometheus.
-// Implements InternalMetricser interface.
-func (v *UnixVolume) SetupInternalMetrics(reg *prometheus.Registry, lbl prometheus.Labels) {
-	v.os.stats.setupPrometheus(reg, lbl)
-}
-
-func (s *unixStats) setupPrometheus(reg *prometheus.Registry, lbl prometheus.Labels) {
-	// Common backend metrics
-	s.statsTicker.setupPrometheus("unix", reg, lbl)
-	// Driver-specific backend metrics
-	metrics := map[string][]interface{}{
-		"open_ops":    []interface{}{string("open operations"), s.OpenOps},
-		"stat_ops":    []interface{}{string("stat operations"), s.StatOps},
-		"flock_ops":   []interface{}{string("flock operations"), s.FlockOps},
-		"utimes_ops":  []interface{}{string("utimes operations"), s.UtimesOps},
-		"create_ops":  []interface{}{string("create operations"), s.CreateOps},
-		"rename_ops":  []interface{}{string("rename operations"), s.RenameOps},
-		"unlink_ops":  []interface{}{string("unlink operations"), s.UnlinkOps},
-		"readdir_ops": []interface{}{string("readdir operations"), s.ReaddirOps},
-	}
-	for mName, data := range metrics {
-		mHelp := data[0].(string)
-		mVal := data[1].(uint64)
-		reg.Register(prometheus.NewGaugeFunc(
-			prometheus.GaugeOpts{
-				Namespace:   "arvados",
-				Subsystem:   "keepstore",
-				Name:        fmt.Sprintf("unix_%s", mName),
-				Help:        fmt.Sprintf("Number of unix backend %s", mHelp),
-				ConstLabels: lbl,
-			},
-			func() float64 { return float64(mVal) },
-		))
-	}
 }
 
 type unixStats struct {
