@@ -17,13 +17,20 @@ type statsTicker struct {
 	OutBytes uint64
 
 	// Prometheus metrics
-	PromErrors     prometheus.Counter
-	PromInBytes    prometheus.Counter
-	PromOutBytes   prometheus.Counter
-	PromErrorCodes *prometheus.CounterVec
+	errors      prometheus.Counter
+	inBytes     prometheus.Counter
+	outBytes    prometheus.Counter
+	errCounters *prometheus.CounterVec
 
 	ErrorCodes map[string]uint64 `json:",omitempty"`
 	lock       sync.Mutex
+}
+
+func (s *statsTicker) setup(m *volumeMetrics) {
+	s.errors = m.Errors
+	s.errCounters = m.ErrorCodes
+	s.inBytes = m.InBytes
+	s.outBytes = m.OutBytes
 }
 
 // Tick increments each of the given counters by 1 using
@@ -41,7 +48,7 @@ func (s *statsTicker) TickErr(err error, errType string) {
 	if err == nil {
 		return
 	}
-	s.PromErrors.Inc()
+	s.errors.Inc()
 	s.Tick(&s.Errors)
 
 	s.lock.Lock()
@@ -50,17 +57,17 @@ func (s *statsTicker) TickErr(err error, errType string) {
 	}
 	s.ErrorCodes[errType]++
 	s.lock.Unlock()
-	s.PromErrorCodes.WithLabelValues(errType).Inc()
+	s.errCounters.WithLabelValues(errType).Inc()
 }
 
 // TickInBytes increments the incoming byte counter by n.
 func (s *statsTicker) TickInBytes(n uint64) {
-	s.PromInBytes.Add(float64(n))
+	s.inBytes.Add(float64(n))
 	atomic.AddUint64(&s.InBytes, n)
 }
 
 // TickOutBytes increments the outgoing byte counter by n.
 func (s *statsTicker) TickOutBytes(n uint64) {
-	s.PromOutBytes.Add(float64(n))
+	s.outBytes.Add(float64(n))
 	atomic.AddUint64(&s.OutBytes, n)
 }

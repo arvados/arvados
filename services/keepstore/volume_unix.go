@@ -28,7 +28,7 @@ type unixVolumeAdder struct {
 }
 
 // String implements flag.Value
-func (s *unixVolumeAdder) String() string {
+func (vs *unixVolumeAdder) String() string {
 	return "-"
 }
 
@@ -234,10 +234,7 @@ func (v *UnixVolume) Start(m *volumeMetrics) error {
 	if err == nil {
 		// Set up prometheus metrics
 		v.metrics = m
-		v.os.stats.PromErrors = v.metrics.Errors
-		v.os.stats.PromErrorCodes = v.metrics.ErrorCodes
-		v.os.stats.PromInBytes = v.metrics.InBytes
-		v.os.stats.PromOutBytes = v.metrics.OutBytes
+		v.os.stats.statsTicker.setup(m)
 		// Periodically update free/used volume space
 		go func() {
 			for {
@@ -365,7 +362,7 @@ func (v *UnixVolume) Put(ctx context.Context, loc string, block []byte) error {
 	return putWithPipe(ctx, loc, block, v)
 }
 
-// ReadBlock implements BlockWriter.
+// WriteBlock implements BlockWriter.
 func (v *UnixVolume) WriteBlock(ctx context.Context, loc string, rdr io.Reader) error {
 	if v.ReadOnly {
 		return MethodDisabledError
