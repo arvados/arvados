@@ -101,11 +101,11 @@ func (wkr *worker) startContainer(ctr arvados.Container) {
 	wkr.starting[ctr.UUID] = struct{}{}
 	wkr.state = StateRunning
 	go func() {
-		env := map[string]string{
-			"ARVADOS_API_HOST":  wkr.wp.arvClient.APIHost,
-			"ARVADOS_API_TOKEN": wkr.wp.arvClient.AuthToken,
-		}
-		stdout, stderr, err := wkr.executor.Execute(env, "crunch-run --detach '"+ctr.UUID+"'", nil)
+		stdin := bytes.NewBufferString(fmt.Sprintf("export %s=%q\nexport %s=%q\n",
+			"ARVADOS_API_HOST", wkr.wp.arvClient.APIHost,
+			"ARVADOS_API_TOKEN", wkr.wp.arvClient.AuthToken))
+		cmd := "source /dev/stdin; crunch-run --detach '" + ctr.UUID + "'"
+		stdout, stderr, err := wkr.executor.Execute(nil, cmd, stdin)
 		wkr.mtx.Lock()
 		defer wkr.mtx.Unlock()
 		now := time.Now()

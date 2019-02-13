@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	math_rand "math/rand"
 	"regexp"
 	"strings"
@@ -205,6 +206,11 @@ func (svm *StubVM) Instance() stubInstance {
 }
 
 func (svm *StubVM) Exec(env map[string]string, command string, stdin io.Reader, stdout, stderr io.Writer) uint32 {
+	stdinData, err := ioutil.ReadAll(stdin)
+	if err != nil {
+		fmt.Fprintf(stderr, "error reading stdin: %s\n", err)
+		return 1
+	}
 	queue := svm.sis.driver.Queue
 	uuid := regexp.MustCompile(`.{5}-dz642-.{15}`).FindString(command)
 	if eta := svm.Boot.Sub(time.Now()); eta > 0 {
@@ -219,10 +225,17 @@ func (svm *StubVM) Exec(env map[string]string, command string, stdin io.Reader, 
 		fmt.Fprint(stderr, "crunch-run: command not found\n")
 		return 1
 	}
-	if strings.HasPrefix(command, "crunch-run --detach ") {
+	if strings.HasPrefix(command, "source /dev/stdin; crunch-run --detach ") {
+		stdinKV := map[string]string{}
+		for _, line := range strings.Split(string(stdinData), "\n") {
+			kv := strings.SplitN(strings.TrimPrefix(line, "export "), "=", 2)
+			if len(kv) == 2 && len(kv[1]) > 0 {
+				stdinKV[kv[0]] = kv[1]
+			}
+		}
 		for _, name := range []string{"ARVADOS_API_HOST", "ARVADOS_API_TOKEN"} {
-			if env[name] == "" {
-				fmt.Fprintf(stderr, "%s missing from environment %q\n", name, env)
+			if stdinKV[name] == "" {
+				fmt.Fprintf(stderr, "%s env var missing from stdin %q\n", name, stdin)
 				return 1
 			}
 		}
