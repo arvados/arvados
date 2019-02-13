@@ -31,7 +31,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-// Driver provides access to the azure instance set
+// Driver is the azure implementation of the cloud.Driver interface.
 var Driver = cloud.DriverFunc(newAzureInstanceSet)
 
 type azureInstanceSetConfig struct {
