@@ -183,6 +183,9 @@ func (exr *Executor) setupSSHClient() (*ssh.Client, error) {
 	if h, p, err := net.SplitHostPort(addr); err != nil || p == "" {
 		// Target address does not specify a port.  Use
 		// targetPort, or "ssh".
+		if h == "" {
+			h = addr
+		}
 		if p = exr.targetPort; p == "" {
 			p = "ssh"
 		}
