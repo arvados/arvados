@@ -346,7 +346,7 @@ class Container < ArvadosModel
     transaction do
       reload
       check_lock_fail
-      update_attributes!(state: Locked)
+      update_attributes!(state: Locked, lock_count: self.lock_count+1)
     end
   end
 
@@ -364,7 +364,14 @@ class Container < ArvadosModel
     transaction do
       reload(lock: 'FOR UPDATE')
       check_unlock_fail
-      update_attributes!(state: Queued)
+      if self.lock_count < Rails.configuration.max_container_dispatch_attempts
+        update_attributes!(state: Queued)
+      else
+        update_attributes!(state: Cancelled,
+                           runtime_status: {
+                             error: "Container exceeded 'max_container_dispatch_attempts' (lock_count=#{self.lock_count}."
+                           })
+      end
     end
   end
 
@@ -454,7 +461,7 @@ class Container < ArvadosModel
 
     case self.state
     when Locked
-      permitted.push :priority, :runtime_status, :log
+      permitted.push :priority, :runtime_status, :log, :lock_count
 
     when Queued
       permitted.push :priority
@@ -475,7 +482,7 @@ class Container < ArvadosModel
       when Running
         permitted.push :finished_at, *progress_attrs
       when Queued, Locked
-        permitted.push :finished_at, :log
+        permitted.push :finished_at, :log, :runtime_status
       end
 
     else

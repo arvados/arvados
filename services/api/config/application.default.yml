@@ -529,6 +529,10 @@ common:
   # > 0 = auto-create a new version when older than the specified number of seconds.
   preserve_version_if_idle: -1
 
+  # Number of times a container can be unlocked before being
+  # automatically cancelled.
+  max_container_dispatch_attempts: 5
+
 development:
   force_ssl: false
   cache_classes: false
