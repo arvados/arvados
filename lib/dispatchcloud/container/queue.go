@@ -223,8 +223,25 @@ func (cq *Queue) addEnt(uuid string, ctr arvados.Container) {
 		// error: it wouldn't help to try again, or to leave
 		// it for a different dispatcher process to attempt.
 		errorString := err.Error()
-		cq.logger.WithField("ContainerUUID", ctr.UUID).Warn("cancel container with no suitable instance type")
+		logger := cq.logger.WithField("ContainerUUID", ctr.UUID)
+		logger.WithError(err).Warn("cancel container with no suitable instance type")
 		go func() {
+			if ctr.State == arvados.ContainerStateQueued {
+				// Can't set runtime error without
+				// locking first. If Lock() is
+				// successful, it will call addEnt()
+				// again itself, and we'll fall
+				// through to the
+				// setRuntimeError/Cancel code below.
+				err := cq.Lock(ctr.UUID)
+				if err != nil {
+					logger.WithError(err).Warn("lock failed")
+					// ...and try again on the
+					// next Update, if the problem
+					// still exists.
+				}
+				return
+			}
 			var err error
 			defer func() {
 				if err == nil {
@@ -239,14 +256,8 @@ func (cq *Queue) addEnt(uuid string, ctr arvados.Container) {
 				if latest.State == arvados.ContainerStateCancelled {
 					return
 				}
-				cq.logger.WithField("ContainerUUID", ctr.UUID).WithError(err).Warn("error while trying to cancel unsatisfiable container")
+				logger.WithError(err).Warn("error while trying to cancel unsatisfiable container")
 			}()
-			if ctr.State == arvados.ContainerStateQueued {
-				err = cq.Lock(ctr.UUID)
-				if err != nil {
-					return
-				}
-			}
 			err = cq.setRuntimeError(ctr.UUID, errorString)
 			if err != nil {
 				return
