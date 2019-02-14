@@ -5,6 +5,7 @@
 package cloud
 
 import (
+	"encoding/json"
 	"io"
 	"time"
 
@@ -153,9 +154,9 @@ type InstanceSet interface {
 //
 //	type exampleDriver struct {}
 //
-//	func (*exampleDriver) InstanceSet(config map[string]interface{}, id InstanceSetID) (InstanceSet, error) {
+//	func (*exampleDriver) InstanceSet(config json.RawMessage, id InstanceSetID) (InstanceSet, error) {
 //		var is exampleInstanceSet
-//		if err := mapstructure.Decode(config, &is); err != nil {
+//		if err := json.Unmarshal(config, &is); err != nil {
 //			return nil, err
 //		}
 //		is.ownID = id
@@ -164,17 +165,17 @@ type InstanceSet interface {
 //
 //	var _ = registerCloudDriver("example", &exampleDriver{})
 type Driver interface {
-	InstanceSet(config map[string]interface{}, id InstanceSetID, logger logrus.FieldLogger) (InstanceSet, error)
+	InstanceSet(config json.RawMessage, id InstanceSetID, logger logrus.FieldLogger) (InstanceSet, error)
 }
 
 // DriverFunc makes a Driver using the provided function as its
 // InstanceSet method. This is similar to http.HandlerFunc.
-func DriverFunc(fn func(config map[string]interface{}, id InstanceSetID, logger logrus.FieldLogger) (InstanceSet, error)) Driver {
+func DriverFunc(fn func(config json.RawMessage, id InstanceSetID, logger logrus.FieldLogger) (InstanceSet, error)) Driver {
 	return driverFunc(fn)
 }
 
-type driverFunc func(config map[string]interface{}, id InstanceSetID, logger logrus.FieldLogger) (InstanceSet, error)
+type driverFunc func(config json.RawMessage, id InstanceSetID, logger logrus.FieldLogger) (InstanceSet, error)
 
-func (df driverFunc) InstanceSet(config map[string]interface{}, id InstanceSetID, logger logrus.FieldLogger) (InstanceSet, error) {
+func (df driverFunc) InstanceSet(config json.RawMessage, id InstanceSetID, logger logrus.FieldLogger) (InstanceSet, error) {
 	return df(config, id, logger)
 }

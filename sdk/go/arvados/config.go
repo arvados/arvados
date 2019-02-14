@@ -143,7 +143,7 @@ type CloudVMs struct {
 	ImageID string
 
 	Driver           string
-	DriverParameters map[string]interface{}
+	DriverParameters json.RawMessage
 }
 
 type InstanceTypeMap map[string]InstanceType

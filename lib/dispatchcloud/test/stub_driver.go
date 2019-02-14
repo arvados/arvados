@@ -6,6 +6,7 @@ package test
 
 import (
 	"crypto/rand"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -17,7 +18,6 @@ import (
 
 	"git.curoverse.com/arvados.git/lib/cloud"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"github.com/mitchellh/mapstructure"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 )
@@ -55,7 +55,7 @@ type StubDriver struct {
 }
 
 // InstanceSet returns a new *StubInstanceSet.
-func (sd *StubDriver) InstanceSet(params map[string]interface{}, id cloud.InstanceSetID, logger logrus.FieldLogger) (cloud.InstanceSet, error) {
+func (sd *StubDriver) InstanceSet(params json.RawMessage, id cloud.InstanceSetID, logger logrus.FieldLogger) (cloud.InstanceSet, error) {
 	if sd.holdCloudOps == nil {
 		sd.holdCloudOps = make(chan bool)
 	}
@@ -64,7 +64,12 @@ func (sd *StubDriver) InstanceSet(params map[string]interface{}, id cloud.Instan
 		servers: map[cloud.InstanceID]*StubVM{},
 	}
 	sd.instanceSets = append(sd.instanceSets, &sis)
-	return &sis, mapstructure.Decode(params, &sis)
+
+	var err error
+	if params != nil {
+		err = json.Unmarshal(params, &sis)
+	}
+	return &sis, err
 }
 
 // InstanceSets returns all instances that have been created by the

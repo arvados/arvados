@@ -3,31 +3,34 @@
 // SPDX-License-Identifier: AGPL-3.0
 //
 //
-// How to manually run individual tests against the real cloud
+// How to manually run individual tests against the real cloud:
 //
-// $ go test -v git.curoverse.com/arvados.git/lib/cloud -live-azure-cfg azconfig.yml -check.f=TestListInstances
+// $ go test -v git.curoverse.com/arvados.git/lib/cloud/azure -live-azure-cfg azconfig.yml -check.f=TestCreate
+//
+// Tests should be run individually and in the order they are listed in the file:
 //
 // Example azconfig.yml:
 //
-// subscription_id: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
-// key: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
-// region: centralus
-// cloud_environment: AzurePublicCloud
-// secret: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-// tenant_id: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
-// resource_group: zzzzz
-// network: zzzzz
-// subnet: zzzzz-subnet-private
-// storage_account: example
-// blob_container: vhds
-// image: "https://example.blob.core.windows.net/system/Microsoft.Compute/Images/images/zzzzz-compute-osDisk.XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX.vhd"
-// delete_dangling_resources_after: 20
-// authorized_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDLQS1ExT2+WjA0d/hntEAyAtgeN1W2ik2QX8c2zO6HjlPHWXL92r07W0WMuDib40Pcevpi1BXeBWXA9ZB5KKMJB+ukaAu22KklnQuUmNvk6ZXnPKSkGxuCYvPQb08WhHf3p1VxiKfP3iauedBDM4x9/bkJohlBBQiFXzNUcQ+a6rKiMzmJN2gbL8ncyUzc+XQ5q4JndTwTGtOlzDiGOc9O4z5Dd76wtAVJneOuuNpwfFRVHThpJM6VThpCZOnl8APaceWXKeuwOuCae3COZMz++xQfxOfZ9Z8aIwo+TlQhsRaNfZ4Vjrop6ej8dtfZtgUFKfbXEOYaHrGrWGotFDTD example@example"
+// ImageIDForTestSuite: "https://example.blob.core.windows.net/system/Microsoft.Compute/Images/images/zzzzz-compute-osDisk.XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX.vhd"
+// DriverParameters:
+// 	 SubscriptionID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+// 	 ClientID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+// 	 Location: centralus
+// 	 CloudEnvironment: AzurePublicCloud
+// 	 ClientSecret: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+// 	 TenantId: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+// 	 ResourceGroup: zzzzz
+// 	 Network: zzzzz
+// 	 Subnet: zzzzz-subnet-private
+// 	 StorageAccount: example
+// 	 BlobContainer: vhds
+// 	 DeleteDanglingResourcesAfter: 20s
 
-package cloud
+package azure
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"io/ioutil"
@@ -35,8 +38,10 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"testing"
 	"time"
 
+	"git.curoverse.com/arvados.git/lib/cloud"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/config"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-06-01/compute"
@@ -51,15 +56,20 @@ import (
 	check "gopkg.in/check.v1"
 )
 
+// Gocheck boilerplate
+func Test(t *testing.T) {
+	check.TestingT(t)
+}
+
 type AzureInstanceSetSuite struct{}
 
 var _ = check.Suite(&AzureInstanceSetSuite{})
 
 type VirtualMachinesClientStub struct{}
 
-var testKey []byte = []byte(`ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDLQS1ExT2+WjA0d/hntEAyAtgeN1W2ik2QX8c2zO6HjlPHWXL92r07W0WMuDib40Pcevpi1BXeBWXA9ZB5KKMJB+ukaAu22KklnQuUmNvk6ZXnPKSkGxuCYvPQb08WhHf3p1VxiKfP3iauedBDM4x9/bkJohlBBQiFXzNUcQ+a6rKiMzmJN2gbL8ncyUzc+XQ5q4JndTwTGtOlzDiGOc9O4z5Dd76wtAVJneOuuNpwfFRVHThpJM6VThpCZOnl8APaceWXKeuwOuCae3COZMz++xQfxOfZ9Z8aIwo+TlQhsRaNfZ4Vjrop6ej8dtfZtgUFKfbXEOYaHrGrWGotFDTD example@example`)
+var testKey = []byte(`ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDLQS1ExT2+WjA0d/hntEAyAtgeN1W2ik2QX8c2zO6HjlPHWXL92r07W0WMuDib40Pcevpi1BXeBWXA9ZB5KKMJB+ukaAu22KklnQuUmNvk6ZXnPKSkGxuCYvPQb08WhHf3p1VxiKfP3iauedBDM4x9/bkJohlBBQiFXzNUcQ+a6rKiMzmJN2gbL8ncyUzc+XQ5q4JndTwTGtOlzDiGOc9O4z5Dd76wtAVJneOuuNpwfFRVHThpJM6VThpCZOnl8APaceWXKeuwOuCae3COZMz++xQfxOfZ9Z8aIwo+TlQhsRaNfZ4Vjrop6ej8dtfZtgUFKfbXEOYaHrGrWGotFDTD example@example`)
 
-func (*VirtualMachinesClientStub) CreateOrUpdate(ctx context.Context,
+func (*VirtualMachinesClientStub) createOrUpdate(ctx context.Context,
 	resourceGroupName string,
 	VMName string,
 	parameters compute.VirtualMachine) (result compute.VirtualMachine, err error) {
@@ -68,17 +78,17 @@ func (*VirtualMachinesClientStub) CreateOrUpdate(ctx context.Context,
 	return parameters, nil
 }
 
-func (*VirtualMachinesClientStub) Delete(ctx context.Context, resourceGroupName string, VMName string) (result *http.Response, err error) {
+func (*VirtualMachinesClientStub) delete(ctx context.Context, resourceGroupName string, VMName string) (result *http.Response, err error) {
 	return nil, nil
 }
 
-func (*VirtualMachinesClientStub) ListComplete(ctx context.Context, resourceGroupName string) (result compute.VirtualMachineListResultIterator, err error) {
+func (*VirtualMachinesClientStub) listComplete(ctx context.Context, resourceGroupName string) (result compute.VirtualMachineListResultIterator, err error) {
 	return compute.VirtualMachineListResultIterator{}, nil
 }
 
 type InterfacesClientStub struct{}
 
-func (*InterfacesClientStub) CreateOrUpdate(ctx context.Context,
+func (*InterfacesClientStub) createOrUpdate(ctx context.Context,
 	resourceGroupName string,
 	nicName string,
 	parameters network.Interface) (result network.Interface, err error) {
@@ -87,17 +97,22 @@ func (*InterfacesClientStub) CreateOrUpdate(ctx context.Context,
 	return parameters, nil
 }
 
-func (*InterfacesClientStub) Delete(ctx context.Context, resourceGroupName string, VMName string) (result *http.Response, err error) {
+func (*InterfacesClientStub) delete(ctx context.Context, resourceGroupName string, VMName string) (result *http.Response, err error) {
 	return nil, nil
 }
 
-func (*InterfacesClientStub) ListComplete(ctx context.Context, resourceGroupName string) (result network.InterfaceListResultIterator, err error) {
+func (*InterfacesClientStub) listComplete(ctx context.Context, resourceGroupName string) (result network.InterfaceListResultIterator, err error) {
 	return network.InterfaceListResultIterator{}, nil
+}
+
+type testConfig struct {
+	ImageIDForTestSuite string
+	DriverParameters    json.RawMessage
 }
 
 var live = flag.String("live-azure-cfg", "", "Test with real azure API, provide config file")
 
-func GetInstanceSet() (InstanceSet, ImageID, arvados.Cluster, error) {
+func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error) {
 	cluster := arvados.Cluster{
 		InstanceTypes: arvados.InstanceTypeMap(map[string]arvados.InstanceType{
 			"tiny": arvados.InstanceType{
@@ -111,29 +126,29 @@ func GetInstanceSet() (InstanceSet, ImageID, arvados.Cluster, error) {
 			},
 		})}
 	if *live != "" {
-		cfg := make(map[string]interface{})
-		err := config.LoadFile(&cfg, *live)
+		var exampleCfg testConfig
+		err := config.LoadFile(&exampleCfg, *live)
 		if err != nil {
-			return nil, ImageID(""), cluster, err
+			return nil, cloud.ImageID(""), cluster, err
 		}
-		ap, err := NewAzureInstanceSet(cfg, "test123", logrus.StandardLogger())
-		return ap, ImageID(cfg["image"].(string)), cluster, err
-	} else {
-		ap := AzureInstanceSet{
-			azconfig: AzureInstanceSetConfig{
-				BlobContainer: "vhds",
-			},
-			dispatcherID: "test123",
-			namePrefix:   "compute-test123-",
-			logger:       logrus.StandardLogger(),
-			deleteNIC:    make(chan string),
-			deleteBlob:   make(chan storage.Blob),
-		}
-		ap.ctx, ap.stopFunc = context.WithCancel(context.Background())
-		ap.vmClient = &VirtualMachinesClientStub{}
-		ap.netClient = &InterfacesClientStub{}
-		return &ap, ImageID("blob"), cluster, nil
+
+		ap, err := newAzureInstanceSet(exampleCfg.DriverParameters, "test123", logrus.StandardLogger())
+		return ap, cloud.ImageID(exampleCfg.ImageIDForTestSuite), cluster, err
 	}
+	ap := azureInstanceSet{
+		azconfig: azureInstanceSetConfig{
+			BlobContainer: "vhds",
+		},
+		dispatcherID: "test123",
+		namePrefix:   "compute-test123-",
+		logger:       logrus.StandardLogger(),
+		deleteNIC:    make(chan string),
+		deleteBlob:   make(chan storage.Blob),
+	}
+	ap.ctx, ap.stopFunc = context.WithCancel(context.Background())
+	ap.vmClient = &VirtualMachinesClientStub{}
+	ap.netClient = &InterfacesClientStub{}
+	return &ap, cloud.ImageID("blob"), cluster, nil
 }
 
 func (*AzureInstanceSetSuite) TestCreate(c *check.C) {
@@ -182,7 +197,7 @@ func (*AzureInstanceSetSuite) TestManageNics(c *check.C) {
 		c.Fatal("Error making provider", err)
 	}
 
-	ap.(*AzureInstanceSet).ManageNics()
+	ap.(*azureInstanceSet).manageNics()
 	ap.Stop()
 }
 
@@ -192,7 +207,7 @@ func (*AzureInstanceSetSuite) TestManageBlobs(c *check.C) {
 		c.Fatal("Error making provider", err)
 	}
 
-	ap.(*AzureInstanceSet).ManageBlobs()
+	ap.(*azureInstanceSet).manageBlobs()
 	ap.Stop()
 }
 
@@ -216,7 +231,7 @@ func (*AzureInstanceSetSuite) TestDeleteFake(c *check.C) {
 		c.Fatal("Error making provider", err)
 	}
 
-	_, err = ap.(*AzureInstanceSet).netClient.Delete(context.Background(), "fakefakefake", "fakefakefake")
+	_, err = ap.(*azureInstanceSet).netClient.delete(context.Background(), "fakefakefake", "fakefakefake")
 
 	de, ok := err.(autorest.DetailedError)
 	if ok {
@@ -238,8 +253,8 @@ func (*AzureInstanceSetSuite) TestWrapError(c *check.C) {
 			ServiceError: &azure.ServiceError{},
 		},
 	}
-	wrapped := WrapAzureError(retryError)
-	_, ok := wrapped.(RateLimitError)
+	wrapped := wrapAzureError(retryError)
+	_, ok := wrapped.(cloud.RateLimitError)
 	c.Check(ok, check.Equals, true)
 
 	quotaError := autorest.DetailedError{
@@ -254,8 +269,8 @@ func (*AzureInstanceSetSuite) TestWrapError(c *check.C) {
 			},
 		},
 	}
-	wrapped = WrapAzureError(quotaError)
-	_, ok = wrapped.(QuotaError)
+	wrapped = wrapAzureError(quotaError)
+	_, ok = wrapped.(cloud.QuotaError)
 	c.Check(ok, check.Equals, true)
 }
 
@@ -307,7 +322,7 @@ func (*AzureInstanceSetSuite) TestSSH(c *check.C) {
 	}
 }
 
-func SetupSSHClient(c *check.C, inst Instance) (*ssh.Client, error) {
+func SetupSSHClient(c *check.C, inst cloud.Instance) (*ssh.Client, error) {
 	addr := inst.Address() + ":2222"
 	if addr == "" {
 		return nil, errors.New("instance has no address")

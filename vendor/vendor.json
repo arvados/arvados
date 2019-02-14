@@ -391,12 +391,6 @@
 			"revisionTime": "2016-12-03T19:45:07Z"
 		},
 		{
-			"checksumSHA1": "ewGq4nGalpCQOHcmBTdAEQx1wW0=",
-			"path": "github.com/mitchellh/mapstructure",
-			"revision": "bb74f1db0675b241733089d5a1faa5dd8b0ef57b",
-			"revisionTime": "2018-05-11T14:21:26Z"
-		},
-		{
 			"checksumSHA1": "OFNit1Qx2DdWhotfREKodDNUwCM=",
 			"path": "github.com/opencontainers/go-digest",
 			"revision": "279bed98673dd5bef374d3b6e4b09e2af76183bf",
