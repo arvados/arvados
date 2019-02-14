@@ -75,7 +75,10 @@ func (sch *Scheduler) run() {
 	// Ensure the queue is fetched once before attempting anything.
 	for err := sch.queue.Update(); err != nil; err = sch.queue.Update() {
 		sch.logger.Errorf("error updating queue: %s", err)
-		d := sch.queueUpdateInterval / 60
+		d := sch.queueUpdateInterval / 10
+		if d < time.Second {
+			d = time.Second
+		}
 		sch.logger.Infof("waiting %s before retry", d)
 		time.Sleep(d)
 	}
