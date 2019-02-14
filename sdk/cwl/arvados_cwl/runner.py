@@ -7,12 +7,16 @@ standard_library.install_aliases()
 from future.utils import  viewvalues, viewitems
 
 import os
+import sys
 import urllib.parse
 from functools import partial
 import logging
 import json
-import subprocess32 as subprocess
 from collections import namedtuple
+if sys.version_info[0] < 3:
+    import subprocess32 as subprocess
+else:
+    import subprocess
 
 from io import StringIO
 

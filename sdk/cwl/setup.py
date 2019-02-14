@@ -40,8 +40,10 @@ setup(name='arvados-cwl-runner',
           'arvados-python-client>=1.3.0.20190205182514',
           'setuptools',
           'ciso8601 >=1.0.6, <2.0.0',
-          'subprocess32>=3.5.1',
       ],
+      extras_require={
+          ':os.name=="posix" and python_version<"3"': ['subprocess32 >= 3.5.1'],
+      },
       data_files=[
           ('share/doc/arvados-cwl-runner', ['LICENSE-2.0.txt', 'README.rst']),
       ],

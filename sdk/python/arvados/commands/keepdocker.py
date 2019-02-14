@@ -10,13 +10,16 @@ import errno
 import json
 import os
 import re
-import subprocess32 as subprocess
 import sys
 import tarfile
 import tempfile
 import shutil
 import _strptime
 import fcntl
+if sys.version_info[0] < 3:
+    import subprocess32 as subprocess
+else:
+    import subprocess
 
 from operator import itemgetter
 from stat import *
