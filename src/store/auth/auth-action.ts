@@ -17,7 +17,7 @@ export const authActions = unionize({
     SAVE_API_TOKEN: ofType<string>(),
     LOGIN: {},
     LOGOUT: {},
-    CONFIG: ofType<{ uuidPrefix: string, remoteHosts: { [key: string]: string } }>(),
+    CONFIG: ofType<{ config: Config }>(),
     INIT: ofType<{ user: User, token: string }>(),
     USER_DETAILS_REQUEST: {},
     USER_DETAILS_SUCCESS: ofType<User>(),
@@ -50,7 +50,7 @@ export const initAuth = (config: Config) => (dispatch: Dispatch, getState: () =>
     if (token) {
         setAuthorizationHeader(services, token);
     }
-    dispatch(authActions.CONFIG({ uuidPrefix: config.uuidPrefix, remoteHosts: config.remoteHosts }));
+    dispatch(authActions.CONFIG({ config }));
     if (token && user) {
         dispatch(authActions.INIT({ user, token }));
         dispatch<any>(initSessions(services.authService, config, user));

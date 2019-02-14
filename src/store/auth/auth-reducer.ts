@@ -33,9 +33,12 @@ export const authReducer = (services: ServiceRepository) => (state = initialStat
         SAVE_API_TOKEN: (token: string) => {
             return { ...state, apiToken: token };
         },
-        CONFIG: ({ uuidPrefix, remoteHosts }) => {
+        CONFIG: ({ config }) => {
             return {
-                ...state, localCluster: uuidPrefix, remoteHosts, homeCluster: uuidPrefix
+                ...state,
+                localCluster: config.uuidPrefix,
+                remoteHosts: config.remoteHosts,
+                homeCluster: config.uuidPrefix
             };
         },
         INIT: ({ user, token }) => {

@@ -14,6 +14,7 @@ import { configureStore, RootStore } from '~/store/store';
 import { ConnectedRouter } from "react-router-redux";
 import { ApiToken } from "~/views-components/api-token/api-token";
 import { initAuth } from "~/store/auth/auth-action";
+import { configActions } from "~/store/config/config-action";
 import { createServices } from "~/services/services";
 import { MuiThemeProvider } from '@material-ui/core/styles';
 import { CustomTheme } from '~/common/custom-theme';
