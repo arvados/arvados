@@ -491,8 +491,8 @@ func (az *azureInstanceSet) manageNics() (map[string]network.Interface, error) {
 				if result.Value().Tags["created-at"] != nil {
 					createdAt, err := time.Parse(time.RFC3339Nano, *result.Value().Tags["created-at"])
 					if err == nil {
-						if timestamp.Sub(createdAt).Seconds() > az.azconfig.DeleteDanglingResourcesAfter.Duration().Seconds() {
-							az.logger.Printf("Will delete %v because it is older than %v s", *result.Value().Name, az.azconfig.DeleteDanglingResourcesAfter)
+						if timestamp.Sub(createdAt) > az.azconfig.DeleteDanglingResourcesAfter.Duration() {
+							az.logger.Printf("Will delete %v because it is older than %s", *result.Value().Name, az.azconfig.DeleteDanglingResourcesAfter)
 							az.deleteNIC <- *result.Value().Name
 						}
 					}
