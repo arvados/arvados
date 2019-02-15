@@ -13,12 +13,12 @@ from functools import partial
 import logging
 import json
 from collections import namedtuple
-if sys.version_info[0] < 3:
+from io import StringIO
+
+if os.name == "posix" and sys.version_info[0] < 3:
     import subprocess32 as subprocess
 else:
     import subprocess
-
-from io import StringIO
 
 from schema_salad.sourceline import SourceLine, cmap
 
