@@ -226,13 +226,12 @@ func (svm *StubVM) Exec(env map[string]string, command string, stdin io.Reader, 
 		fmt.Fprint(stderr, "crunch-run: command not found\n")
 		return 1
 	}
-	if strings.HasPrefix(command, "source /dev/stdin; crunch-run --detach ") {
-		stdinKV := map[string]string{}
-		for _, line := range strings.Split(string(stdinData), "\n") {
-			kv := strings.SplitN(strings.TrimPrefix(line, "export "), "=", 2)
-			if len(kv) == 2 && len(kv[1]) > 0 {
-				stdinKV[kv[0]] = kv[1]
-			}
+	if strings.HasPrefix(command, "crunch-run --detach --stdin-env ") {
+		var stdinKV map[string]string
+		err := json.Unmarshal(stdinData, &stdinKV)
+		if err != nil {
+			fmt.Fprintf(stderr, "unmarshal stdin: %s (stdin was: %q)\n", err, stdinData)
+			return 1
 		}
 		for _, name := range []string{"ARVADOS_API_HOST", "ARVADOS_API_TOKEN"} {
 			if stdinKV[name] == "" {

@@ -6,6 +6,7 @@ package worker
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -101,14 +102,22 @@ func (wkr *worker) startContainer(ctr arvados.Container) {
 	wkr.starting[ctr.UUID] = struct{}{}
 	wkr.state = StateRunning
 	go func() {
-		cmd := "crunch-run --detach '" + ctr.UUID + "'"
-		stdin := bytes.NewBufferString(fmt.Sprintf("export %s=%q\nexport %s=%q\n",
-			"ARVADOS_API_HOST", wkr.wp.arvClient.APIHost,
-			"ARVADOS_API_TOKEN", wkr.wp.arvClient.AuthToken))
-		if u := wkr.instance.RemoteUser(); u != "root" {
-			cmd = "sudo -E " + cmd
+		env := map[string]string{
+			"ARVADOS_API_HOST":  wkr.wp.arvClient.APIHost,
+			"ARVADOS_API_TOKEN": wkr.wp.arvClient.AuthToken,
 		}
-		cmd = "source /dev/stdin; " + cmd
+		if wkr.wp.arvClient.Insecure {
+			env["ARVADOS_API_HOST_INSECURE"] = "1"
+		}
+		envJSON, err := json.Marshal(env)
+		if err != nil {
+			panic(err)
+		}
+		stdin := bytes.NewBuffer(envJSON)
+		cmd := "crunch-run --detach --stdin-env '" + ctr.UUID + "'"
+		if u := wkr.instance.RemoteUser(); u != "root" {
+			cmd = "sudo " + cmd
+		}
 		stdout, stderr, err := wkr.executor.Execute(nil, cmd, stdin)
 		wkr.mtx.Lock()
 		defer wkr.mtx.Unlock()
