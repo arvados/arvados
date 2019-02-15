@@ -443,22 +443,24 @@ func (wkr *worker) shutdown() {
 // match. Caller must have lock.
 func (wkr *worker) saveTags() {
 	instance := wkr.instance
-	have := instance.Tags()
-	want := cloud.InstanceTags{
+	tags := instance.Tags()
+	update := cloud.InstanceTags{
 		tagKeyInstanceType: wkr.instType.Name,
 		tagKeyIdleBehavior: string(wkr.idleBehavior),
 	}
-	go func() {
-		for k, v := range want {
-			if v == have[k] {
-				continue
-			}
-			err := instance.SetTags(want)
+	save := false
+	for k, v := range update {
+		if tags[k] != v {
+			tags[k] = v
+			save = true
+		}
+	}
+	if save {
+		go func() {
+			err := instance.SetTags(tags)
 			if err != nil {
 				wkr.wp.logger.WithField("Instance", instance.ID()).WithError(err).Warnf("error updating tags")
 			}
-			break
-
-		}
-	}()
+		}()
+	}
 }
