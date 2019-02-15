@@ -26,7 +26,7 @@ func (suite *WorkerSuite) TestProbeAndUpdate(c *check.C) {
 
 	is, err := (&test.StubDriver{}).InstanceSet(nil, "", logger)
 	c.Assert(err, check.IsNil)
-	inst, err := is.Create(arvados.InstanceType{}, "", nil, nil)
+	inst, err := is.Create(arvados.InstanceType{}, "", nil, "echo InitCommand", nil)
 	c.Assert(err, check.IsNil)
 
 	type trialT struct {

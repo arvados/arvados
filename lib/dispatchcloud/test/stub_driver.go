@@ -99,7 +99,7 @@ type StubInstanceSet struct {
 	allowInstancesCall time.Time
 }
 
-func (sis *StubInstanceSet) Create(it arvados.InstanceType, image cloud.ImageID, tags cloud.InstanceTags, authKey ssh.PublicKey) (cloud.Instance, error) {
+func (sis *StubInstanceSet) Create(it arvados.InstanceType, image cloud.ImageID, tags cloud.InstanceTags, cmd cloud.InitCommand, authKey ssh.PublicKey) (cloud.Instance, error) {
 	if sis.driver.HoldCloudOps {
 		sis.driver.holdCloudOps <- true
 	}
@@ -123,6 +123,7 @@ func (sis *StubInstanceSet) Create(it arvados.InstanceType, image cloud.ImageID,
 		id:           cloud.InstanceID(fmt.Sprintf("stub-%s-%x", it.ProviderType, math_rand.Int63())),
 		tags:         copyTags(tags),
 		providerType: it.ProviderType,
+		initCommand:  cmd,
 	}
 	svm.SSHService = SSHService{
 		HostKey:        sis.driver.HostKey,
@@ -184,6 +185,7 @@ type StubVM struct {
 	sis          *StubInstanceSet
 	id           cloud.InstanceID
 	tags         cloud.InstanceTags
+	initCommand  cloud.InitCommand
 	providerType string
 	SSHService   SSHService
 	running      map[string]bool

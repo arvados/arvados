@@ -22,9 +22,9 @@ import (
 )
 
 const (
-	tagKeyInstanceType = "InstanceType"
-	tagKeyIdleBehavior = "IdleBehavior"
-	tagKeyNodeToken    = "node-token" // deprecated, but required by Azure driver
+	tagKeyInstanceType   = "InstanceType"
+	tagKeyIdleBehavior   = "IdleBehavior"
+	tagKeyInstanceSecret = "InstanceSecret"
 )
 
 // An InstanceView shows a worker's current state and recent activity.
@@ -261,16 +261,18 @@ func (wp *Pool) Create(it arvados.InstanceType) bool {
 	if time.Now().Before(wp.atQuotaUntil) || wp.throttleCreate.Error() != nil {
 		return false
 	}
-	tags := cloud.InstanceTags{
-		tagKeyInstanceType: it.Name,
-		tagKeyIdleBehavior: string(IdleBehaviorRun),
-		tagKeyNodeToken:    randomToken(),
-	}
 	now := time.Now()
 	wp.creating[it] = append(wp.creating[it], now)
 	go func() {
 		defer wp.notify()
-		inst, err := wp.instanceSet.Create(it, wp.imageID, tags, wp.installPublicKey)
+		secret := randomHex(instanceSecretLength)
+		tags := cloud.InstanceTags{
+			tagKeyInstanceType:   it.Name,
+			tagKeyIdleBehavior:   string(IdleBehaviorRun),
+			tagKeyInstanceSecret: secret,
+		}
+		initCmd := cloud.InitCommand(fmt.Sprintf("umask 0177 && echo -n %q >%s", secret, instanceSecretFilename))
+		inst, err := wp.instanceSet.Create(it, wp.imageID, tags, initCmd, wp.installPublicKey)
 		wp.mtx.Lock()
 		defer wp.mtx.Unlock()
 		// Remove our timestamp marker from wp.creating
@@ -326,6 +328,7 @@ func (wp *Pool) SetIdleBehavior(id cloud.InstanceID, idleBehavior IdleBehavior) 
 //
 // Caller must have lock.
 func (wp *Pool) updateWorker(inst cloud.Instance, it arvados.InstanceType, initialState State) (*worker, bool) {
+	inst = tagVerifier{inst}
 	id := inst.ID()
 	if wkr := wp.workers[id]; wkr != nil {
 		wkr.executor.SetTarget(inst)
@@ -786,8 +789,10 @@ func (wp *Pool) sync(threshold time.Time, instances []cloud.Instance) {
 	}
 }
 
-func randomToken() string {
-	buf := make([]byte, 32)
+// Return a random string of n hexadecimal digits (n*4 random bits). n
+// must be even.
+func randomHex(n int) string {
+	buf := make([]byte, n/2)
 	_, err := rand.Read(buf)
 	if err != nil {
 		panic(err)
