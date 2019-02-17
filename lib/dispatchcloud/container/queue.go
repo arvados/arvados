@@ -131,7 +131,7 @@ func (cq *Queue) Forget(uuid string) {
 	defer cq.mtx.Unlock()
 	ctr := cq.current[uuid].Container
 	if ctr.State == arvados.ContainerStateComplete || ctr.State == arvados.ContainerStateCancelled {
-		delete(cq.current, uuid)
+		cq.delEnt(uuid, ctr.State)
 	}
 }
 
@@ -196,7 +196,7 @@ func (cq *Queue) Update() error {
 			cq.current[uuid] = cur
 		}
 	}
-	for uuid := range cq.current {
+	for uuid, ent := range cq.current {
 		if _, dontupdate := cq.dontupdate[uuid]; dontupdate {
 			// Don't expunge an entry that was
 			// added/updated locally after we started
@@ -207,13 +207,22 @@ func (cq *Queue) Update() error {
 			// the poll response (evidently it's
 			// cancelled, completed, deleted, or taken by
 			// a different dispatcher).
-			delete(cq.current, uuid)
+			cq.delEnt(uuid, ent.Container.State)
 		}
 	}
 	cq.dontupdate = nil
 	cq.updated = updateStarted
 	cq.notify()
 	return nil
+}
+
+// Caller must have lock.
+func (cq *Queue) delEnt(uuid string, state arvados.ContainerState) {
+	cq.logger.WithFields(logrus.Fields{
+		"ContainerUUID": uuid,
+		"State":         state,
+	}).Info("dropping container from queue")
+	delete(cq.current, uuid)
 }
 
 func (cq *Queue) addEnt(uuid string, ctr arvados.Container) {
@@ -269,6 +278,12 @@ func (cq *Queue) addEnt(uuid string, ctr arvados.Container) {
 		}()
 		return
 	}
+	cq.logger.WithFields(logrus.Fields{
+		"ContainerUUID": ctr.UUID,
+		"State":         ctr.State,
+		"Priority":      ctr.Priority,
+		"InstanceType":  it.Name,
+	}).Info("adding container to queue")
 	cq.current[uuid] = QueueEnt{Container: ctr, InstanceType: it}
 }
 
