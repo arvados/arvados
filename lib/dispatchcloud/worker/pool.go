@@ -153,13 +153,11 @@ type Pool struct {
 	throttleCreate    throttle
 	throttleInstances throttle
 
-	mInstances         prometheus.Gauge
-	mInstancesPrice    prometheus.Gauge
 	mContainersRunning prometheus.Gauge
-	mVCPUs             prometheus.Gauge
-	mVCPUsInuse        prometheus.Gauge
-	mMemory            prometheus.Gauge
-	mMemoryInuse       prometheus.Gauge
+	mInstances         *prometheus.GaugeVec
+	mInstancesPrice    *prometheus.GaugeVec
+	mVCPUs             *prometheus.GaugeVec
+	mMemory            *prometheus.GaugeVec
 }
 
 // Subscribe returns a buffered channel that becomes ready after any
@@ -527,20 +525,6 @@ func (wp *Pool) registerMetrics(reg *prometheus.Registry) {
 	if reg == nil {
 		reg = prometheus.NewRegistry()
 	}
-	wp.mInstances = prometheus.NewGauge(prometheus.GaugeOpts{
-		Namespace: "arvados",
-		Subsystem: "dispatchcloud",
-		Name:      "instances_total",
-		Help:      "Number of cloud VMs including pending, booting, running, held, and shutting down.",
-	})
-	reg.MustRegister(wp.mInstances)
-	wp.mInstancesPrice = prometheus.NewGauge(prometheus.GaugeOpts{
-		Namespace: "arvados",
-		Subsystem: "dispatchcloud",
-		Name:      "instances_price_total",
-		Help:      "Sum of prices of all cloud VMs including pending, booting, running, held, and shutting down.",
-	})
-	reg.MustRegister(wp.mInstancesPrice)
 	wp.mContainersRunning = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "arvados",
 		Subsystem: "dispatchcloud",
@@ -548,35 +532,34 @@ func (wp *Pool) registerMetrics(reg *prometheus.Registry) {
 		Help:      "Number of containers reported running by cloud VMs.",
 	})
 	reg.MustRegister(wp.mContainersRunning)
-
-	wp.mVCPUs = prometheus.NewGauge(prometheus.GaugeOpts{
+	wp.mInstances = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "arvados",
+		Subsystem: "dispatchcloud",
+		Name:      "instances_total",
+		Help:      "Number of cloud VMs.",
+	}, []string{"category"})
+	reg.MustRegister(wp.mInstances)
+	wp.mInstancesPrice = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "arvados",
+		Subsystem: "dispatchcloud",
+		Name:      "instances_price",
+		Help:      "Price of cloud VMs.",
+	}, []string{"category"})
+	reg.MustRegister(wp.mInstancesPrice)
+	wp.mVCPUs = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "arvados",
 		Subsystem: "dispatchcloud",
 		Name:      "vcpus_total",
 		Help:      "Total VCPUs on all cloud VMs.",
-	})
+	}, []string{"category"})
 	reg.MustRegister(wp.mVCPUs)
-	wp.mVCPUsInuse = prometheus.NewGauge(prometheus.GaugeOpts{
-		Namespace: "arvados",
-		Subsystem: "dispatchcloud",
-		Name:      "vcpus_inuse",
-		Help:      "VCPUs on cloud VMs that are running containers.",
-	})
-	reg.MustRegister(wp.mVCPUsInuse)
-	wp.mMemory = prometheus.NewGauge(prometheus.GaugeOpts{
+	wp.mMemory = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "arvados",
 		Subsystem: "dispatchcloud",
 		Name:      "memory_bytes_total",
 		Help:      "Total memory on all cloud VMs.",
-	})
+	}, []string{"category"})
 	reg.MustRegister(wp.mMemory)
-	wp.mMemoryInuse = prometheus.NewGauge(prometheus.GaugeOpts{
-		Namespace: "arvados",
-		Subsystem: "dispatchcloud",
-		Name:      "memory_bytes_inuse",
-		Help:      "Memory on cloud VMs that are running containers.",
-	})
-	reg.MustRegister(wp.mMemoryInuse)
 }
 
 func (wp *Pool) runMetrics() {
@@ -591,26 +574,38 @@ func (wp *Pool) updateMetrics() {
 	wp.mtx.RLock()
 	defer wp.mtx.RUnlock()
 
-	var price float64
-	var alloc, cpu, cpuInuse, mem, memInuse int64
+	instances := map[string]int64{}
+	price := map[string]float64{}
+	cpu := map[string]int64{}
+	mem := map[string]int64{}
+	var running int64
 	for _, wkr := range wp.workers {
-		price += wkr.instType.Price
-		cpu += int64(wkr.instType.VCPUs)
-		mem += int64(wkr.instType.RAM)
-		if len(wkr.running)+len(wkr.starting) == 0 {
-			continue
+		var cat string
+		switch {
+		case len(wkr.running)+len(wkr.starting) > 0:
+			cat = "inuse"
+		case wkr.idleBehavior == IdleBehaviorHold:
+			cat = "hold"
+		case wkr.state == StateBooting:
+			cat = "booting"
+		case wkr.state == StateUnknown:
+			cat = "unknown"
+		default:
+			cat = "idle"
 		}
-		alloc += int64(len(wkr.running) + len(wkr.starting))
-		cpuInuse += int64(wkr.instType.VCPUs)
-		memInuse += int64(wkr.instType.RAM)
+		instances[cat]++
+		price[cat] += wkr.instType.Price
+		cpu[cat] += int64(wkr.instType.VCPUs)
+		mem[cat] += int64(wkr.instType.RAM)
+		running += int64(len(wkr.running) + len(wkr.starting))
 	}
-	wp.mInstances.Set(float64(len(wp.workers)))
-	wp.mInstancesPrice.Set(price)
-	wp.mContainersRunning.Set(float64(alloc))
-	wp.mVCPUs.Set(float64(cpu))
-	wp.mMemory.Set(float64(mem))
-	wp.mVCPUsInuse.Set(float64(cpuInuse))
-	wp.mMemoryInuse.Set(float64(memInuse))
+	for _, cat := range []string{"inuse", "hold", "booting", "unknown", "idle"} {
+		wp.mInstances.WithLabelValues(cat).Set(float64(instances[cat]))
+		wp.mInstancesPrice.WithLabelValues(cat).Set(price[cat])
+		wp.mVCPUs.WithLabelValues(cat).Set(float64(cpu[cat]))
+		wp.mMemory.WithLabelValues(cat).Set(float64(mem[cat]))
+	}
+	wp.mContainersRunning.Set(float64(running))
 }
 
 func (wp *Pool) runProbes() {
