@@ -50,7 +50,7 @@ func (sch *Scheduler) sync() {
 			} else if !exited.IsZero() && qUpdated.After(exited) {
 				go cancel(ent, "state=\"Running\" after crunch-run exited")
 			} else if ent.Container.Priority == 0 {
-				go kill(ent, fmt.Sprintf("priority=%d", ent.Container.Priority))
+				go kill(ent, "priority=0")
 			}
 		case arvados.ContainerStateComplete, arvados.ContainerStateCancelled:
 			if running {
@@ -82,16 +82,30 @@ func (sch *Scheduler) sync() {
 			if running && !exited.IsZero() && qUpdated.After(exited) {
 				logger := sch.logger.WithFields(logrus.Fields{
 					"ContainerUUID": uuid,
+					"State":         ent.Container.State,
+					"Priority":      ent.Container.Priority,
 					"Exited":        time.Since(exited).Seconds(),
 				})
-				logger.Infof("requeueing container because state=%q after crunch-run exited", ent.Container.State)
+				logger.Info("requeueing locked container after crunch-run exited")
 				err := sch.queue.Unlock(uuid)
 				if err != nil {
-					logger.WithError(err).Info("error requeueing container")
+					logger.WithError(err).Error("error requeueing container")
+				}
+			} else if running && exited.IsZero() && ent.Container.Priority == 0 {
+				go kill(ent, "priority=0")
+			} else if !running && ent.Container.Priority == 0 {
+				logger := sch.logger.WithField("ContainerUUID", uuid)
+				logger.Info("unlocking container because priority=0")
+				err := sch.queue.Unlock(uuid)
+				if err != nil {
+					logger.WithError(err).Error("error requeueing container")
 				}
 			}
 		default:
-			sch.logger.WithField("ContainerUUID", uuid).Errorf("BUG: unexpected state %q", ent.Container.State)
+			sch.logger.WithFields(logrus.Fields{
+				"ContainerUUID": uuid,
+				"State":         ent.Container.State,
+			}).Error("BUG: unexpected state")
 		}
 	}
 }
