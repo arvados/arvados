@@ -48,11 +48,11 @@ export const copyCollectionPartial = ({ name, description, projectUuid }: Collec
                 dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_COPY_FORM_NAME));
                 const collection = await services.collectionService.get(currentCollection.uuid);
                 const collectionCopy = {
-                    ...collection,
                     name,
                     description,
                     ownerUuid: projectUuid,
-                    uuid: undefined
+                    uuid: undefined,
+                    manifestText: collection.manifestText,
                 };
                 const newCollection = await services.collectionService.create(collectionCopy);
                 const paths = filterCollectionFilesBySelection(state.collectionPanelFiles, false).map(file => file.id);

@@ -32,7 +32,12 @@ export class CollectionService extends TrashableResourceService<CollectionResour
 
     async deleteFiles(collectionUuid: string, filePaths: string[]) {
         for (const path of filePaths) {
-            await this.webdavClient.delete(`c=${collectionUuid}${path}`);
+            const splittedPath = path.split('/');
+            if (collectionUuid) {
+                await this.webdavClient.delete(`c=${collectionUuid}/${splittedPath[1]}`);
+            } else {
+                await this.webdavClient.delete(`c=${collectionUuid}${path}`);
+            }
         }
     }
 
@@ -54,11 +59,11 @@ export class CollectionService extends TrashableResourceService<CollectionResour
         const baseUrl = this.webdavClient.defaults.baseURL.endsWith('/')
             ? this.webdavClient.defaults.baseURL.slice(0, -1)
             : this.webdavClient.defaults.baseURL;
-            const apiToken = this.authService.getApiToken();
-            const splittedApiToken = apiToken ? apiToken.split('/') : [];
-            const userApiToken = `/t=${splittedApiToken[2]}/`;
-            const splittedPrevFileUrl = file.url.split('/');
-            const url = `${baseUrl}/${splittedPrevFileUrl[1]}${userApiToken}${splittedPrevFileUrl[2]}`;
+        const apiToken = this.authService.getApiToken();
+        const splittedApiToken = apiToken ? apiToken.split('/') : [];
+        const userApiToken = `/t=${splittedApiToken[2]}/`;
+        const splittedPrevFileUrl = file.url.split('/');
+        const url = `${baseUrl}/${splittedPrevFileUrl[1]}${userApiToken}${splittedPrevFileUrl[2]}`;
         return {
             ...file,
             url
