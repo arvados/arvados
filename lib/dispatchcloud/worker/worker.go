@@ -14,6 +14,7 @@ import (
 
 	"git.curoverse.com/arvados.git/lib/cloud"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/stats"
 	"github.com/sirupsen/logrus"
 )
 
@@ -416,7 +417,7 @@ func (wkr *worker) shutdownIfIdle() bool {
 
 	wkr.logger.WithFields(logrus.Fields{
 		"State":        wkr.state,
-		"Age":          age,
+		"IdleDuration": stats.Duration(age),
 		"IdleBehavior": wkr.idleBehavior,
 	}).Info("shutdown idle worker")
 	wkr.shutdown()
