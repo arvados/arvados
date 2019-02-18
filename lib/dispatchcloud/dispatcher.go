@@ -144,9 +144,9 @@ func (disp *dispatcher) initialize() {
 		mux := httprouter.New()
 		mux.HandlerFunc("GET", "/arvados/v1/dispatch/containers", disp.apiContainers)
 		mux.HandlerFunc("GET", "/arvados/v1/dispatch/instances", disp.apiInstances)
-		mux.HandlerFunc("POST", "/arvados/v1/dispatch/instances/:instance_id/hold", disp.apiInstanceHold)
-		mux.HandlerFunc("POST", "/arvados/v1/dispatch/instances/:instance_id/drain", disp.apiInstanceDrain)
-		mux.HandlerFunc("POST", "/arvados/v1/dispatch/instances/:instance_id/run", disp.apiInstanceRun)
+		mux.HandlerFunc("POST", "/arvados/v1/dispatch/instances/hold", disp.apiInstanceHold)
+		mux.HandlerFunc("POST", "/arvados/v1/dispatch/instances/drain", disp.apiInstanceDrain)
+		mux.HandlerFunc("POST", "/arvados/v1/dispatch/instances/run", disp.apiInstanceRun)
 		metricsH := promhttp.HandlerFor(disp.reg, promhttp.HandlerOpts{
 			ErrorLog: disp.logger,
 		})
@@ -213,10 +213,10 @@ func (disp *dispatcher) apiInstanceRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (disp *dispatcher) apiInstanceIdleBehavior(w http.ResponseWriter, r *http.Request, want worker.IdleBehavior) {
-	params, _ := r.Context().Value(httprouter.ParamsKey).(httprouter.Params)
-	id := cloud.InstanceID(params.ByName("instance_id"))
-	if qp := r.FormValue("instance_id"); qp != "" {
-		id = cloud.InstanceID(qp)
+	id := cloud.InstanceID(r.FormValue("instance_id"))
+	if id == "" {
+		httpserver.Error(w, "instance_id parameter not provided", http.StatusBadRequest)
+		return
 	}
 	err := disp.pool.SetIdleBehavior(id, want)
 	if err != nil {
