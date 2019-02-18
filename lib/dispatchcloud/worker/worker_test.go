@@ -20,7 +20,7 @@ var _ = check.Suite(&WorkerSuite{})
 type WorkerSuite struct{}
 
 func (suite *WorkerSuite) TestProbeAndUpdate(c *check.C) {
-	logger := test.Logger()
+	logger := ctxlog.TestLogger(c)
 	bootTimeout := time.Minute
 	probeTimeout := time.Second
 

@@ -6,6 +6,7 @@
 package service
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -14,6 +15,7 @@ import (
 
 	"git.curoverse.com/arvados.git/lib/cmd"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	"github.com/coreos/go-systemd/daemon"
 	"github.com/sirupsen/logrus"
@@ -24,7 +26,7 @@ type Handler interface {
 	CheckHealth() error
 }
 
-type NewHandlerFunc func(*arvados.Cluster, *arvados.NodeProfile) Handler
+type NewHandlerFunc func(context.Context, *arvados.Cluster, *arvados.NodeProfile) Handler
 
 type command struct {
 	newHandler NewHandlerFunc
@@ -45,11 +47,7 @@ func Command(svcName arvados.ServiceName, newHandler NewHandlerFunc) cmd.Handler
 }
 
 func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
-	log := logrus.New()
-	log.Formatter = &logrus.JSONFormatter{
-		TimestampFormat: rfc3339NanoFixed,
-	}
-	log.Out = stderr
+	log := ctxlog.New(stderr, "json", "info")
 
 	var err error
 	defer func() {
@@ -76,6 +74,10 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	if err != nil {
 		return 1
 	}
+	log = ctxlog.New(stderr, cluster.Logging.Format, cluster.Logging.Level).WithFields(logrus.Fields{
+		"PID": os.Getpid(),
+	})
+	ctx := ctxlog.Context(context.Background(), log)
 	profileName := *nodeProfile
 	if profileName == "" {
 		profileName = os.Getenv("ARVADOS_NODE_PROFILE")
@@ -89,7 +91,7 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 		err = fmt.Errorf("configuration does not enable the %s service on this host", c.svcName)
 		return 1
 	}
-	handler := c.newHandler(cluster, profile)
+	handler := c.newHandler(ctx, cluster, profile)
 	if err = handler.CheckHealth(); err != nil {
 		return 1
 	}

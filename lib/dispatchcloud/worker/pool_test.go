@@ -62,7 +62,7 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 		}
 	}
 
-	logger := test.Logger()
+	logger := ctxlog.TestLogger(c)
 	driver := &test.StubDriver{}
 	is, err := driver.InstanceSet(nil, "", logger)
 	c.Assert(err, check.IsNil)
@@ -124,7 +124,7 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 }
 
 func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
-	logger := test.Logger()
+	logger := ctxlog.TestLogger(c)
 	driver := test.StubDriver{HoldCloudOps: true}
 	instanceSet, err := driver.InstanceSet(nil, "", logger)
 	c.Assert(err, check.IsNil)

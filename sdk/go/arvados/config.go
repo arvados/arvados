@@ -66,6 +66,12 @@ type Cluster struct {
 	RemoteClusters     map[string]RemoteCluster
 	PostgreSQL         PostgreSQL
 	RequestLimits      RequestLimits
+	Logging            Logging
+}
+
+type Logging struct {
+	Level  string
+	Format string
 }
 
 type PostgreSQL struct {

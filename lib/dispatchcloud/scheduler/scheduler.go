@@ -7,9 +7,11 @@
 package scheduler
 
 import (
+	"context"
 	"sync"
 	"time"
 
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"github.com/sirupsen/logrus"
 )
 
@@ -44,9 +46,9 @@ type Scheduler struct {
 //
 // Any given queue and pool should not be used by more than one
 // scheduler at a time.
-func New(logger logrus.FieldLogger, queue ContainerQueue, pool WorkerPool, staleLockTimeout, queueUpdateInterval time.Duration) *Scheduler {
+func New(ctx context.Context, queue ContainerQueue, pool WorkerPool, staleLockTimeout, queueUpdateInterval time.Duration) *Scheduler {
 	return &Scheduler{
-		logger:              logger,
+		logger:              ctxlog.FromContext(ctx),
 		queue:               queue,
 		pool:                pool,
 		staleLockTimeout:    staleLockTimeout,

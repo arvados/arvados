@@ -62,6 +62,7 @@ func (sd *StubDriver) InstanceSet(params json.RawMessage, id cloud.InstanceSetID
 	}
 	sis := StubInstanceSet{
 		driver:  sd,
+		logger:  logger,
 		servers: map[cloud.InstanceID]*StubVM{},
 	}
 	sd.instanceSets = append(sd.instanceSets, &sis)
@@ -91,6 +92,7 @@ func (sd *StubDriver) ReleaseCloudOps(n int) {
 
 type StubInstanceSet struct {
 	driver  *StubDriver
+	logger  logrus.FieldLogger
 	servers map[cloud.InstanceID]*StubVM
 	mtx     sync.RWMutex
 	stopped bool
@@ -249,7 +251,7 @@ func (svm *StubVM) Exec(env map[string]string, command string, stdin io.Reader, 
 		svm.Unlock()
 		time.Sleep(svm.CrunchRunDetachDelay)
 		fmt.Fprintf(stderr, "starting %s\n", uuid)
-		logger := logrus.WithFields(logrus.Fields{
+		logger := svm.sis.logger.WithFields(logrus.Fields{
 			"Instance":      svm.id,
 			"ContainerUUID": uuid,
 		})

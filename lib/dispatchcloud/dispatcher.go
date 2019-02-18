@@ -5,6 +5,7 @@
 package dispatchcloud
 
 import (
+	"context"
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
@@ -20,6 +21,7 @@ import (
 	"git.curoverse.com/arvados.git/lib/dispatchcloud/worker"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/auth"
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prometheus/client_golang/prometheus"
@@ -42,6 +44,7 @@ type pool interface {
 
 type dispatcher struct {
 	Cluster       *arvados.Cluster
+	Context       context.Context
 	InstanceSetID cloud.InstanceSetID
 
 	logger      logrus.FieldLogger
@@ -116,7 +119,7 @@ func (disp *dispatcher) initialize() {
 	}
 	disp.stop = make(chan struct{}, 1)
 	disp.stopped = make(chan struct{})
-	disp.logger = logrus.StandardLogger()
+	disp.logger = ctxlog.FromContext(disp.Context)
 
 	if key, err := ssh.ParsePrivateKey([]byte(disp.Cluster.Dispatch.PrivateKey)); err != nil {
 		disp.logger.Fatalf("error parsing configured Dispatch.PrivateKey: %s", err)
@@ -166,7 +169,7 @@ func (disp *dispatcher) run() {
 	if pollInterval <= 0 {
 		pollInterval = defaultPollInterval
 	}
-	sched := scheduler.New(disp.logger, disp.queue, disp.pool, staleLockTimeout, pollInterval)
+	sched := scheduler.New(disp.Context, disp.queue, disp.pool, staleLockTimeout, pollInterval)
 	sched.Start()
 	defer sched.Stop()
 
