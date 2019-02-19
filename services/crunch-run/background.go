@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -25,16 +24,17 @@ var (
 
 // procinfo is saved in each process's lockfile.
 type procinfo struct {
-	UUID   string
-	PID    int
-	Stdout string
-	Stderr string
+	UUID string
+	PID  int
 }
 
 // Detach acquires a lock for the given uuid, and starts the current
 // program as a child process (with -no-detach prepended to the given
 // arguments so the child knows not to detach again). The lock is
 // passed along to the child process.
+//
+// Stdout and stderr in the child process are sent to the systemd
+// journal using the systemd-cat program.
 func Detach(uuid string, args []string, stdout, stderr io.Writer) int {
 	return exitcode(stderr, detach(uuid, args, stdout, stderr))
 }
@@ -67,21 +67,7 @@ func detach(uuid string, args []string, stdout, stderr io.Writer) error {
 	defer lockfile.Close()
 	lockfile.Truncate(0)
 
-	outfile, err := ioutil.TempFile("", "crunch-run-"+uuid+"-stdout-")
-	if err != nil {
-		return err
-	}
-	defer outfile.Close()
-	errfile, err := ioutil.TempFile("", "crunch-run-"+uuid+"-stderr-")
-	if err != nil {
-		os.Remove(outfile.Name())
-		return err
-	}
-	defer errfile.Close()
-
-	cmd := exec.Command(args[0], append([]string{"-no-detach"}, args[1:]...)...)
-	cmd.Stdout = outfile
-	cmd.Stderr = errfile
+	cmd := exec.Command("systemd-cat", append([]string{"--identifier=crunch-run", args[0], "-no-detach"}, args[1:]...)...)
 	// Child inherits lockfile.
 	cmd.ExtraFiles = []*os.File{lockfile}
 	// Ensure child isn't interrupted even if we receive signals
@@ -90,24 +76,14 @@ func detach(uuid string, args []string, stdout, stderr io.Writer) error {
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	err = cmd.Start()
 	if err != nil {
-		os.Remove(outfile.Name())
-		os.Remove(errfile.Name())
 		return fmt.Errorf("exec %s: %s", cmd.Path, err)
 	}
 
 	w := io.MultiWriter(stdout, lockfile)
-	err = json.NewEncoder(w).Encode(procinfo{
-		UUID:   uuid,
-		PID:    cmd.Process.Pid,
-		Stdout: outfile.Name(),
-		Stderr: errfile.Name(),
+	return json.NewEncoder(w).Encode(procinfo{
+		UUID: uuid,
+		PID:  cmd.Process.Pid,
 	})
-	if err != nil {
-		os.Remove(outfile.Name())
-		os.Remove(errfile.Name())
-		return err
-	}
-	return nil
 }
 
 // KillProcess finds the crunch-run process corresponding to the given
