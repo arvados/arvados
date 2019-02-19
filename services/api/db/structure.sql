@@ -362,7 +362,8 @@ CREATE TABLE public.containers (
     runtime_status jsonb DEFAULT '{}'::jsonb,
     runtime_user_uuid text,
     runtime_auth_scopes jsonb,
-    runtime_token text
+    runtime_token text,
+    lock_count integer DEFAULT 0 NOT NULL
 );
 
 
@@ -3216,4 +3217,6 @@ INSERT INTO schema_migrations (version) VALUES ('20181005192222');
 INSERT INTO schema_migrations (version) VALUES ('20181011184200');
 
 INSERT INTO schema_migrations (version) VALUES ('20181213183234');
+
+INSERT INTO schema_migrations (version) VALUES ('20190214214814');
 

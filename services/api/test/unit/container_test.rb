@@ -663,6 +663,52 @@ class ContainerTest < ActiveSupport::TestCase
     assert_operator auth_exp, :<, db_current_time
   end
 
+  test "Exceed maximum lock-unlock cycles" do
+    Rails.configuration.max_container_dispatch_attempts = 3
+
+    set_user_from_auth :active
+    c, cr = minimal_new
+
+    set_user_from_auth :dispatch1
+    assert_equal Container::Queued, c.state
+    assert_equal 0, c.lock_count
+
+    c.lock
+    c.reload
+    assert_equal 1, c.lock_count
+    assert_equal Container::Locked, c.state
+
+    c.unlock
+    c.reload
+    assert_equal 1, c.lock_count
+    assert_equal Container::Queued, c.state
+
+    c.lock
+    c.reload
+    assert_equal 2, c.lock_count
+    assert_equal Container::Locked, c.state
+
+    c.unlock
+    c.reload
+    assert_equal 2, c.lock_count
+    assert_equal Container::Queued, c.state
+
+    c.lock
+    c.reload
+    assert_equal 3, c.lock_count
+    assert_equal Container::Locked, c.state
+
+    c.unlock
+    c.reload
+    assert_equal 3, c.lock_count
+    assert_equal Container::Cancelled, c.state
+
+    assert_raise(ArvadosModel::LockFailedError) do
+      # Cancelled to Locked is not allowed
+      c.lock
+    end
+  end
+
   test "Container queued cancel" do
     set_user_from_auth :active
     c, cr = minimal_new({container_count_max: 1})
