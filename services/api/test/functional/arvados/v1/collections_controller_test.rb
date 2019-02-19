@@ -1279,12 +1279,35 @@ EOS
         version: 42,
         current_version_uuid: collections(:collection_owned_by_active).uuid,
         manifest_text: manifest_text,
-        # portable_data_hash: "d30fe8ae534397864cb96c544f4cf102+47"
       }
     }
     assert_response :success
     resp = JSON.parse(@response.body)
     assert_equal 1, resp['version']
     assert_equal resp['uuid'], resp['current_version_uuid']
+  end
+
+  test "update collection with versioning enabled" do
+    Rails.configuration.collection_versioning = true
+    Rails.configuration.preserve_version_if_idle = 1 # 1 second
+
+    col = collections(:collection_owned_by_active)
+    assert_equal 2, col.version
+    assert col.modified_at < Time.now - 1.second
+
+    token = api_client_authorizations(:active).v2token
+    signed = Blob.sign_locator(
+      'acbd18db4cc2f85cedef654fccc4a4d8+3',
+      key: Rails.configuration.blob_signing_key,
+      api_token: token)
+    authorize_with_token token
+    put :update, {
+          id: col.uuid,
+          collection: {
+            manifest_text: ". #{signed} 0:3:foo.txt\n",
+          },
+        }
+    assert_response :success
+    assert_equal 3, json_response['version']
   end
 end
