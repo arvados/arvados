@@ -15,11 +15,12 @@ import { createWorkflowMounts } from '~/models/process';
 import { ContainerRequestState } from '~/models/container-request';
 import { navigateToProcess } from '../navigation/navigation-action';
 import { RunProcessAdvancedFormData, RUN_PROCESS_ADVANCED_FORM, VCPUS_FIELD, RAM_FIELD, RUNTIME_FIELD, OUTPUT_FIELD, API_FIELD } from '~/views/run-process-panel/run-process-advanced-form';
-import { isItemNotInProject, isProjectOrRunProcessRoute } from '~/store/projects/project-create-actions';
 import { dialogActions } from '~/store/dialog/dialog-actions';
 import { setBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions';
+import { matchProjectRoute } from '~/routes/routes';
 
 export const runProcessPanelActions = unionize({
+    SET_PROCESS_PATHNAME: ofType<string>(),
     SET_PROCESS_OWNER_UUID: ofType<string>(),
     SET_CURRENT_STEP: ofType<number>(),
     SET_STEP_CHANGED: ofType<boolean>(),
@@ -45,7 +46,6 @@ export const loadRunProcessPanel = () =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         try {
             dispatch(setBreadcrumbs([{ label: 'Run Process' }]));
-            dispatch(runProcessPanelActions.RESET_RUN_PROCESS_PANEL());
             const response = await services.workflowService.list();
             dispatch(runProcessPanelActions.SET_WORKFLOWS(response.items));
         } catch (e) {
@@ -119,12 +119,11 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
     const inputsForm = getFormValues(RUN_PROCESS_INPUTS_FORM)(state) as WorkflowInputsData;
     const advancedForm = getFormValues(RUN_PROCESS_ADVANCED_FORM)(state) as RunProcessAdvancedFormData || DEFAULT_ADVANCED_FORM_VALUES;
     const userUuid = getState().auth.user!.uuid;
-    const router = getState();
-    const properties = getState().properties;
+    const pathname = getState().runProcessPanel.processPathname;
     const { processOwnerUuid, selectedWorkflow } = state.runProcessPanel;
     if (selectedWorkflow) {
         const newProcessData = {
-            ownerUuid: isItemNotInProject(properties) || !isProjectOrRunProcessRoute(router) ? userUuid : processOwnerUuid,
+            ownerUuid: !matchProjectRoute(pathname) ? userUuid : processOwnerUuid,
             name: basicForm.name,
             description: basicForm.description,
             state: ContainerRequestState.COMMITTED,

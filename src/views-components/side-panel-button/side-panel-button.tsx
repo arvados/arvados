@@ -34,6 +34,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 interface SidePanelDataProps {
+    location: any;
     currentItemId: string;
 }
 
@@ -50,7 +51,8 @@ const transformOrigin: PopoverOrigin = {
 
 export const SidePanelButton = withStyles(styles)(
     connect((state: RootState) => ({
-        currentItemId: getProperty(PROJECT_PANEL_CURRENT_UUID)(state.properties)
+        currentItemId: getProperty(PROJECT_PANEL_CURRENT_UUID)(state.properties),
+        location: state.router.location
     }))(
         class extends React.Component<SidePanelProps> {
 
@@ -98,7 +100,11 @@ export const SidePanelButton = withStyles(styles)(
             }
 
             handleRunProcessClick = () => {
+                const location = this.props.location;
+                this.props.dispatch(runProcessPanelActions.RESET_RUN_PROCESS_PANEL());
+                this.props.dispatch(runProcessPanelActions.SET_PROCESS_PATHNAME(location.pathname));
                 this.props.dispatch(runProcessPanelActions.SET_PROCESS_OWNER_UUID(this.props.currentItemId));
+                
                 this.props.dispatch<any>(navigateToRunProcess);
             }
 
