@@ -456,6 +456,11 @@ fpm_build_virtualenv () {
     echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U wheel"
     exit 1
   fi
+  if ! build/usr/share/$python/dist/$PYTHON_PKG/bin/pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U setuptools; then
+    echo "Error, unable to upgrade setuptools with"
+    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U setuptools"
+    exit 1
+  fi
 
   if [[ "$TARGET" != "centos7" ]] || [[ "$PYTHON_PKG" != "python-arvados-fuse" ]]; then
     build/usr/share/$python/dist/$PYTHON_PKG/bin/pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PACKAGE_PATH
