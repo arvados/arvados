@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from future.utils import viewvalues
+
 import re
 from cwltool.errors import WorkflowException
 from collections import deque
@@ -63,7 +65,7 @@ def logtail(logcollection, logfunc, header, maxlen=25):
     containersapi = ("crunch-run.txt" in logcollection)
     mergelogs = {}
 
-    for log in logcollection.keys():
+    for log in list(logcollection):
         if not containersapi or log in ("crunch-run.txt", "stdout.txt", "stderr.txt"):
             logname = log[:-4]
             logt = deque([], maxlen)
@@ -77,7 +79,7 @@ def logtail(logcollection, logfunc, header, maxlen=25):
                         logt.append(l)
 
     if containersapi:
-        keys = mergelogs.keys()
+        keys = list(mergelogs)
         loglines = []
         while True:
             earliest = None
@@ -91,7 +93,7 @@ def logtail(logcollection, logfunc, header, maxlen=25):
             loglines.append("%s %s %s" % (ts, earliest, msg))
         loglines = loglines[-maxlen:]
     else:
-        loglines = mergelogs.values()[0]
+        loglines = mergelogs[list(mergelogs)[0]]
 
     logtxt = "\n  ".join(l.strip() for l in loglines)
     logfunc("%s\n\n  %s", header, logtxt)

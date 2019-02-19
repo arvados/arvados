@@ -16,7 +16,6 @@ import (
 
 	"git.curoverse.com/arvados.git/lib/dispatchcloud/test"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 	check "gopkg.in/check.v1"
 )
@@ -24,16 +23,9 @@ import (
 var _ = check.Suite(&DispatcherSuite{})
 
 type DispatcherSuite struct {
-	cluster     *arvados.Cluster
-	instanceSet *test.LameInstanceSet
-	stubDriver  *test.StubDriver
-	disp        *dispatcher
-}
-
-func (s *DispatcherSuite) SetUpSuite(c *check.C) {
-	if os.Getenv("ARVADOS_DEBUG") != "" {
-		logrus.StandardLogger().SetLevel(logrus.DebugLevel)
-	}
+	cluster    *arvados.Cluster
+	stubDriver *test.StubDriver
+	disp       *dispatcher
 }
 
 func (s *DispatcherSuite) SetUpTest(c *check.C) {
@@ -43,22 +35,23 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 
 	_, hostpriv := test.LoadTestKey(c, "test/sshkey_vm")
 	s.stubDriver = &test.StubDriver{
-		HostKey:          hostpriv,
-		AuthorizedKeys:   []ssh.PublicKey{dispatchpub},
-		ErrorRateDestroy: 0.1,
+		HostKey:                   hostpriv,
+		AuthorizedKeys:            []ssh.PublicKey{dispatchpub},
+		ErrorRateDestroy:          0.1,
+		MinTimeBetweenCreateCalls: time.Millisecond,
 	}
 
 	s.cluster = &arvados.Cluster{
 		CloudVMs: arvados.CloudVMs{
 			Driver:          "test",
 			SyncInterval:    arvados.Duration(10 * time.Millisecond),
-			TimeoutIdle:     arvados.Duration(30 * time.Millisecond),
-			TimeoutBooting:  arvados.Duration(30 * time.Millisecond),
+			TimeoutIdle:     arvados.Duration(150 * time.Millisecond),
+			TimeoutBooting:  arvados.Duration(150 * time.Millisecond),
 			TimeoutProbe:    arvados.Duration(15 * time.Millisecond),
 			TimeoutShutdown: arvados.Duration(5 * time.Millisecond),
 		},
 		Dispatch: arvados.Dispatch{
-			PrivateKey:         dispatchprivraw,
+			PrivateKey:         string(dispatchprivraw),
 			PollInterval:       arvados.Duration(5 * time.Millisecond),
 			ProbeInterval:      arvados.Duration(5 * time.Millisecond),
 			StaleLockTimeout:   arvados.Duration(5 * time.Millisecond),
@@ -163,7 +156,7 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 		c.Fatalf("timed out; still waiting for %d containers: %q", len(waiting), waiting)
 	}
 
-	deadline := time.Now().Add(time.Second)
+	deadline := time.Now().Add(5 * time.Second)
 	for range time.NewTicker(10 * time.Millisecond).C {
 		insts, err := s.stubDriver.InstanceSets()[0].Instances(nil)
 		c.Check(err, check.IsNil)
@@ -228,11 +221,11 @@ func (s *DispatcherSuite) TestInstancesAPI(c *check.C) {
 
 	type instance struct {
 		Instance             string
-		WorkerState          string
+		WorkerState          string `json:"worker_state"`
 		Price                float64
-		LastContainerUUID    string
-		ArvadosInstanceType  string
-		ProviderInstanceType string
+		LastContainerUUID    string `json:"last_container_uuid"`
+		ArvadosInstanceType  string `json:"arvados_instance_type"`
+		ProviderInstanceType string `json:"provider_instance_type"`
 	}
 	type instancesResponse struct {
 		Items []instance
@@ -254,8 +247,8 @@ func (s *DispatcherSuite) TestInstancesAPI(c *check.C) {
 
 	ch := s.disp.pool.Subscribe()
 	defer s.disp.pool.Unsubscribe(ch)
-	err := s.disp.pool.Create(test.InstanceType(1))
-	c.Check(err, check.IsNil)
+	ok := s.disp.pool.Create(test.InstanceType(1))
+	c.Check(ok, check.Equals, true)
 	<-ch
 
 	sr = getInstances()

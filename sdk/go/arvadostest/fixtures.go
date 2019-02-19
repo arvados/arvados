@@ -41,6 +41,10 @@ const (
 	QueuedContainerRequestUUID = "zzzzz-xvhdp-cr4queuedcontnr"
 	QueuedContainerUUID        = "zzzzz-dz642-queuedcontainer"
 
+	RunningContainerUUID = "zzzzz-dz642-runningcontainr"
+
+	CompletedContainerUUID = "zzzzz-dz642-compltcontainer"
+
 	ArvadosRepoUUID = "zzzzz-s0uqq-arvadosrepo0123"
 	ArvadosRepoName = "arvados"
 	FooRepoUUID     = "zzzzz-s0uqq-382brsig8rp3666"

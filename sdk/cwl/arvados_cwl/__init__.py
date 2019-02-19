@@ -6,6 +6,9 @@
 # Implement cwl-runner interface for submitting and running work on Arvados, using
 # either the Crunch jobs API or Crunch containers API.
 
+from future.utils import viewitems
+from builtins import str
+
 import argparse
 import logging
 import os
@@ -66,9 +69,9 @@ def versionstring():
 def arg_parser():  # type: () -> argparse.ArgumentParser
     parser = argparse.ArgumentParser(description='Arvados executor for Common Workflow Language')
 
-    parser.add_argument("--basedir", type=str,
+    parser.add_argument("--basedir",
                         help="Base directory used to resolve relative references in the input, default to directory of input object file or current directory (if inputs piped/provided on command line).")
-    parser.add_argument("--outdir", type=str, default=os.path.abspath('.'),
+    parser.add_argument("--outdir", default=os.path.abspath('.'),
                         help="Output directory, default current directory")
 
     parser.add_argument("--eval-timeout",
@@ -99,9 +102,9 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         default=True, dest="enable_reuse",
                         help="Disable job or container reuse")
 
-    parser.add_argument("--project-uuid", type=str, metavar="UUID", help="Project that will own the workflow jobs, if not provided, will go to home project.")
-    parser.add_argument("--output-name", type=str, help="Name to use for collection that stores the final output.", default=None)
-    parser.add_argument("--output-tags", type=str, help="Tags for the final output collection separated by commas, e.g., '--output-tags tag0,tag1,tag2'.", default=None)
+    parser.add_argument("--project-uuid", metavar="UUID", help="Project that will own the workflow jobs, if not provided, will go to home project.")
+    parser.add_argument("--output-name", help="Name to use for collection that stores the final output.", default=None)
+    parser.add_argument("--output-tags", help="Tags for the final output collection separated by commas, e.g., '--output-tags tag0,tag1,tag2'.", default=None)
     parser.add_argument("--ignore-docker-for-reuse", action="store_true",
                         help="Ignore Docker image version when deciding whether to reuse past jobs.",
                         default=False)
@@ -114,7 +117,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     exgroup.add_argument("--create-template", action="store_true", help="(Deprecated) synonym for --create-workflow.",
                          dest="create_workflow")
     exgroup.add_argument("--create-workflow", action="store_true", help="Create an Arvados workflow (if using the 'containers' API) or pipeline template (if using the 'jobs' API). See --api.")
-    exgroup.add_argument("--update-workflow", type=str, metavar="UUID", help="Update an existing Arvados workflow or pipeline template with the given UUID.")
+    exgroup.add_argument("--update-workflow", metavar="UUID", help="Update an existing Arvados workflow or pipeline template with the given UUID.")
 
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--wait", action="store_true", help="After submitting workflow runner job, wait for completion.",
@@ -128,7 +131,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     exgroup.add_argument("--no-log-timestamps", action="store_false", help="No timestamp on logging lines",
                         default=True, dest="log_timestamps")
 
-    parser.add_argument("--api", type=str,
+    parser.add_argument("--api",
                         default=None, dest="work_api",
                         choices=("jobs", "containers"),
                         help="Select work submission API.  Default is 'jobs' if that API is available, otherwise 'containers'.")
@@ -141,7 +144,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         help="RAM (in MiB) required for the workflow runner job (default 1024)",
                         default=None)
 
-    parser.add_argument("--submit-runner-image", type=str,
+    parser.add_argument("--submit-runner-image",
                         help="Docker image for workflow runner job, default arvados/jobs:%s" % __version__,
                         default=None)
 
@@ -150,11 +153,11 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         default=False)
 
     exgroup = parser.add_mutually_exclusive_group()
-    exgroup.add_argument("--submit-request-uuid", type=str,
+    exgroup.add_argument("--submit-request-uuid",
                          default=None,
                          help="Update and commit to supplied container request instead of creating a new one (containers API only).",
                          metavar="UUID")
-    exgroup.add_argument("--submit-runner-cluster", type=str,
+    exgroup.add_argument("--submit-runner-cluster",
                          help="Submit workflow runner to a remote cluster (containers API only)",
                          default=None,
                          metavar="CLUSTER_ID")
@@ -163,7 +166,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         default=None,
                         help="Collection cache size (in MiB, default 256).")
 
-    parser.add_argument("--name", type=str,
+    parser.add_argument("--name",
                         help="Name to use for workflow execution instance.",
                         default=None)
 
@@ -175,7 +178,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("--enable-dev", action="store_true",
                         help="Enable loading and running development versions "
                              "of CWL spec.", default=False)
-    parser.add_argument('--storage-classes', default="default", type=str,
+    parser.add_argument('--storage-classes', default="default",
                         help="Specify comma separated list of storage classes to be used when saving workflow output to Keep.")
 
     parser.add_argument("--intermediate-output-ttl", type=int, metavar="N",
@@ -208,7 +211,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         default=False, dest="trash_intermediate",
                         help="Do not trash intermediate outputs (default).")
 
-    parser.add_argument("workflow", type=str, default=None, help="The workflow to execute")
+    parser.add_argument("workflow", default=None, help="The workflow to execute")
     parser.add_argument("job_order", nargs=argparse.REMAINDER, help="The input object to the workflow.")
 
     return parser
@@ -232,7 +235,7 @@ def add_arv_hints():
     ])
 
 def exit_signal_handler(sigcode, frame):
-    logger.error("Caught signal {}, exiting.".format(sigcode))
+    logger.error(str(u"Caught signal {}, exiting.").format(sigcode))
     sys.exit(-sigcode)
 
 def main(args, stdout, stderr, api_client=None, keep_client=None,
@@ -243,7 +246,7 @@ def main(args, stdout, stderr, api_client=None, keep_client=None,
     arvargs = parser.parse_args(args)
 
     if len(arvargs.storage_classes.strip().split(',')) > 1:
-        logger.error("Multiple storage classes are not supported currently.")
+        logger.error(str(u"Multiple storage classes are not supported currently."))
         return 1
 
     arvargs.use_container = True
@@ -261,7 +264,7 @@ def main(args, stdout, stderr, api_client=None, keep_client=None,
         else:
             want_api = None
         if want_api and arvargs.work_api and want_api != arvargs.work_api:
-            logger.error('--update-workflow arg {!r} uses {!r} API, but --api={!r} specified'.format(
+            logger.error(str(u'--update-workflow arg {!r} uses {!r} API, but --api={!r} specified').format(
                 arvargs.update_workflow, want_api, arvargs.work_api))
             return 1
         arvargs.work_api = want_api
@@ -271,7 +274,7 @@ def main(args, stdout, stderr, api_client=None, keep_client=None,
 
     add_arv_hints()
 
-    for key, val in cwltool.argparser.get_default_args().items():
+    for key, val in viewitems(cwltool.argparser.get_default_args()):
         if not hasattr(arvargs, key):
             setattr(arvargs, key, val)
 

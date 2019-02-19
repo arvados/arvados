@@ -602,6 +602,11 @@ fpm_build_virtualenv () {
     COMMAND_ARR+=("usr/share/$python/dist/$PYTHON_PKG/data/lib/security/libpam_arvados.py=/usr/data/lib/security/")
   fi
 
+  # the python-arvados-cwl-runner package comes with cwltool, expose that version
+  if [[ -e "$WORKSPACE/$PKG_DIR/dist/build/usr/share/python2.7/dist/python-arvados-cwl-runner/bin/cwltool" ]]; then
+    COMMAND_ARR+=("usr/share/python2.7/dist/python-arvados-cwl-runner/bin/cwltool=/usr/bin/")
+  fi
+
   COMMAND_ARR+=(".")
 
   FPM_RESULTS=$("${COMMAND_ARR[@]}")

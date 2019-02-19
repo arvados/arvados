@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from builtins import object
+
 import difflib
 import json
 import re

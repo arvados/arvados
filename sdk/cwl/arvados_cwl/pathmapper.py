@@ -2,11 +2,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from past.builtins import basestring
+from future.utils import viewitems
+
 import re
 import logging
 import uuid
 import os
-import urllib
+import urllib.request, urllib.parse, urllib.error
 
 import arvados_cwl.util
 import arvados.commands.run
@@ -60,7 +66,7 @@ class ArvPathMapper(PathMapper):
             src = src[:src.index("#")]
 
         if isinstance(src, basestring) and ArvPathMapper.pdh_dirpath.match(src):
-            self._pathmap[src] = MapperEnt(src, self.collection_pattern % urllib.unquote(src[5:]), srcobj["class"], True)
+            self._pathmap[src] = MapperEnt(src, self.collection_pattern % urllib.parse.unquote(src[5:]), srcobj["class"], True)
 
         debug = logger.isEnabledFor(logging.DEBUG)
 
@@ -77,7 +83,7 @@ class ArvPathMapper(PathMapper):
                     if isinstance(st, arvados.commands.run.UploadFile):
                         uploadfiles.add((src, ab, st))
                     elif isinstance(st, arvados.commands.run.ArvFile):
-                        self._pathmap[src] = MapperEnt(st.fn, self.collection_pattern % urllib.unquote(st.fn[5:]), "File", True)
+                        self._pathmap[src] = MapperEnt(st.fn, self.collection_pattern % urllib.parse.unquote(st.fn[5:]), "File", True)
                     else:
                         raise WorkflowException("Input file path '%s' is invalid" % st)
             elif src.startswith("_:"):
@@ -114,7 +120,7 @@ class ArvPathMapper(PathMapper):
             remap.append((obj["location"], path + "/" + obj["basename"]))
         elif obj["location"].startswith("_:") and "contents" in obj:
             with c.open(path + "/" + obj["basename"], "w") as f:
-                f.write(obj["contents"].encode("utf-8"))
+                f.write(obj["contents"])
             remap.append((obj["location"], path + "/" + obj["basename"]))
         else:
             raise SourceLine(obj, "location", WorkflowException).makeError("Don't know what to do with '%s'" % obj["location"])
@@ -176,7 +182,7 @@ class ArvPathMapper(PathMapper):
                                          packed=False)
 
         for src, ab, st in uploadfiles:
-            self._pathmap[src] = MapperEnt(urllib.quote(st.fn, "/:+@"), self.collection_pattern % st.fn[5:],
+            self._pathmap[src] = MapperEnt(urllib.parse.quote(st.fn, "/:+@"), self.collection_pattern % st.fn[5:],
                                            "Directory" if os.path.isdir(ab) else "File", True)
 
         for srcobj in referenced_files:
@@ -228,7 +234,7 @@ class ArvPathMapper(PathMapper):
                                                               ab, "File", True)
                 if srcobj.get("secondaryFiles"):
                     ab = self.collection_pattern % c.portable_data_hash()
-                    self._pathmap["_:" + unicode(uuid.uuid4())] = MapperEnt("keep:"+c.portable_data_hash(), ab, "Directory", True)
+                    self._pathmap["_:" + str(uuid.uuid4())] = MapperEnt("keep:"+c.portable_data_hash(), ab, "Directory", True)
 
             if remap:
                 for loc, sub in remap:
@@ -301,7 +307,7 @@ class VwdPathMapper(StagingPathMapper):
         # with any secondary files.
         self.visitlisting(referenced_files, self.stagedir, basedir)
 
-        for path, (ab, tgt, type, staged) in self._pathmap.items():
+        for path, (ab, tgt, type, staged) in viewitems(self._pathmap):
             if type in ("File", "Directory") and ab.startswith("keep:"):
                 self._pathmap[path] = MapperEnt("$(task.keep)/%s" % ab[5:], tgt, type, staged)
 

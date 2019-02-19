@@ -10,6 +10,9 @@
 # tool.  When the workflow completes, record the output object in an output
 # collection for this runner job.
 
+from past.builtins import basestring
+from future.utils import viewitems
+
 import arvados
 import arvados_cwl
 import arvados.collection
@@ -61,7 +64,7 @@ def run():
             if "location" in v:
                 v["location"] = keeppath(v["location"])
 
-        for k,v in job_order_object.items():
+        for k,v in viewitems(job_order_object):
             if isinstance(v, basestring) and arvados.util.keep_locator_pattern.match(v):
                 job_order_object[k] = {
                     "class": "File",

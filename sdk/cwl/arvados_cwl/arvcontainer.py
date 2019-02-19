@@ -2,10 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+
 import logging
 import json
 import os
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import time
 import datetime
 import ciso8601
@@ -136,7 +140,7 @@ class ArvadosContainer(JobBase):
                 generatemapper = NoFollowPathMapper(self.generatefiles["listing"], "", "",
                                                     separateDirs=False)
 
-                sorteditems = sorted(generatemapper.items(), None, key=lambda n: n[1].target)
+                sorteditems = sorted(generatemapper.items(), key=lambda n: n[1].target)
 
                 logger.debug("generatemapper is %s", sorteditems)
 
@@ -158,7 +162,7 @@ class ArvadosContainer(JobBase):
                                 }
                             else:
                                 with vwd.open(p.target, "w") as n:
-                                    n.write(p.resolved.encode("utf-8"))
+                                    n.write(p.resolved)
 
                 def keepemptydirs(p):
                     if isinstance(p, arvados.collection.RichCollectionBase):
@@ -495,6 +499,9 @@ class RunnerContainer(Runner):
             extra_submit_params["cluster_id"] = runtimeContext.submit_runner_cluster
 
         if runtimeContext.submit_request_uuid:
+            if "cluster_id" in extra_submit_params:
+                # Doesn't make sense for "update" and actually fails
+                del extra_submit_params["cluster_id"]
             response = self.arvrunner.api.container_requests().update(
                 uuid=runtimeContext.submit_request_uuid,
                 body=job_spec,

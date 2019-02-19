@@ -555,16 +555,20 @@ func (s *FederationSuite) TestGetRemoteContainerRequest(c *check.C) {
 
 func (s *FederationSuite) TestUpdateRemoteContainerRequest(c *check.C) {
 	defer s.localServiceReturns404(c).Close()
-	req := httptest.NewRequest("PATCH", "/arvados/v1/container_requests/"+arvadostest.QueuedContainerRequestUUID,
-		strings.NewReader(`{"container_request": {"priority": 696}}`))
-	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
-	req.Header.Set("Content-type", "application/json")
-	resp := s.testRequest(req)
-	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
-	var cr arvados.ContainerRequest
-	c.Check(json.NewDecoder(resp.Body).Decode(&cr), check.IsNil)
-	c.Check(cr.UUID, check.Equals, arvadostest.QueuedContainerRequestUUID)
-	c.Check(cr.Priority, check.Equals, 696)
+	setPri := func(pri int) {
+		req := httptest.NewRequest("PATCH", "/arvados/v1/container_requests/"+arvadostest.QueuedContainerRequestUUID,
+			strings.NewReader(fmt.Sprintf(`{"container_request": {"priority": %d}}`, pri)))
+		req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+		req.Header.Set("Content-type", "application/json")
+		resp := s.testRequest(req)
+		c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+		var cr arvados.ContainerRequest
+		c.Check(json.NewDecoder(resp.Body).Decode(&cr), check.IsNil)
+		c.Check(cr.UUID, check.Equals, arvadostest.QueuedContainerRequestUUID)
+		c.Check(cr.Priority, check.Equals, pri)
+	}
+	setPri(696)
+	setPri(1) // Reset fixture so side effect doesn't break other tests.
 }
 
 func (s *FederationSuite) TestCreateRemoteContainerRequest(c *check.C) {

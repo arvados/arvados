@@ -14,7 +14,7 @@ import (
 // a number of nanoseconds.
 type Duration time.Duration
 
-// UnmarshalJSON implements json.Unmarshaler
+// UnmarshalJSON implements json.Unmarshaler.
 func (d *Duration) UnmarshalJSON(data []byte) error {
 	if data[0] == '"' {
 		return d.Set(string(data[1 : len(data)-1]))
@@ -22,22 +22,22 @@ func (d *Duration) UnmarshalJSON(data []byte) error {
 	return fmt.Errorf("duration must be given as a string like \"600s\" or \"1h30m\"")
 }
 
-// MarshalJSON implements json.Marshaler
+// MarshalJSON implements json.Marshaler.
 func (d *Duration) MarshalJSON() ([]byte, error) {
 	return json.Marshal(d.String())
 }
 
-// String implements fmt.Stringer
+// String implements fmt.Stringer.
 func (d Duration) String() string {
 	return time.Duration(d).String()
 }
 
-// Duration returns a time.Duration
+// Duration returns a time.Duration.
 func (d Duration) Duration() time.Duration {
 	return time.Duration(d)
 }
 
-// Value implements flag.Value
+// Set implements the flag.Value interface and sets the duration value by using time.ParseDuration to parse the string.
 func (d *Duration) Set(s string) error {
 	dur, err := time.ParseDuration(s)
 	*d = Duration(dur)

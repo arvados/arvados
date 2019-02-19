@@ -100,7 +100,7 @@ type InstanceType struct {
 type Dispatch struct {
 	// PEM encoded SSH key (RSA, DSA, or ECDSA) able to log in to
 	// cloud VMs.
-	PrivateKey []byte
+	PrivateKey string
 
 	// Max time for workers to come up before abandoning stale
 	// locks from previous run
@@ -121,7 +121,12 @@ type CloudVMs struct {
 	// and ready to run containers, e.g., "mount | grep
 	// /encrypted-tmp"
 	BootProbeCommand string
-	SyncInterval     Duration
+
+	// Listening port (name or number) of SSH servers on worker
+	// VMs
+	SSHPort string
+
+	SyncInterval Duration
 
 	// Maximum idle time before automatic shutdown
 	TimeoutIdle Duration
@@ -138,7 +143,7 @@ type CloudVMs struct {
 	ImageID string
 
 	Driver           string
-	DriverParameters map[string]interface{}
+	DriverParameters json.RawMessage
 }
 
 type InstanceTypeMap map[string]InstanceType
