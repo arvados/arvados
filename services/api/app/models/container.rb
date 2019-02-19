@@ -375,6 +375,9 @@ class Container < ArvadosModel
     else
       kwargs = {}
     end
+    if users_list.select { |u| u.is_admin }.any?
+      return super
+    end
     Container.where(ContainerRequest.readable_by(*users_list).where("containers.uuid = container_requests.container_uuid").exists)
   end
 
