@@ -381,15 +381,22 @@ fpm_build_virtualenv () {
 
   local python=""
   case "$PACKAGE_TYPE" in
+    python3)
+        python=python3
+        if [[ "$FORMAT" != "rpm" ]]; then
+          pip=pip3
+        else
+          # In CentOS, we use a different mechanism to get the right version of pip
+          pip=pip
+        fi
+        PACKAGE_PREFIX=$PYTHON3_PKG_PREFIX
+        ;;
     python)
         # All Arvados Python2 packages depend on Python 2.7.
         # Make sure we build with that for consistency.
         python=python2.7
+        pip=pip
         PACKAGE_PREFIX=$PYTHON2_PKG_PREFIX
-        ;;
-    python3)
-        PACKAGE_PREFIX=$PYTHON3_PKG_PREFIX
-        python=python3
         ;;
   esac
 
@@ -410,8 +417,14 @@ fpm_build_virtualenv () {
 
   rm -rf dist/*
 
+  # Get the latest setuptools
+  if ! $pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U setuptools; then
+    echo "Error, unable to upgrade setuptools with"
+    echo "  $pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U setuptools"
+    exit 1
+  fi
   if ! $python setup.py $DASHQ_UNLESS_DEBUG sdist; then
-    echo "Error, unable to run python setup.py sdist for $PKG"
+    echo "Error, unable to run $python setup.py sdist for $PKG"
     exit 1
   fi
 
@@ -446,33 +459,33 @@ fpm_build_virtualenv () {
     exit 1
   fi
 
-  if ! build/usr/share/$python/dist/$PYTHON_PKG/bin/pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U pip; then
+  if ! build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U pip; then
     echo "Error, unable to upgrade pip with"
-    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U pip"
+    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U pip"
     exit 1
   fi
-  if ! build/usr/share/$python/dist/$PYTHON_PKG/bin/pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U wheel; then
-    echo "Error, unable to upgrade wheel with"
-    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U wheel"
-    exit 1
-  fi
-  if ! build/usr/share/$python/dist/$PYTHON_PKG/bin/pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U setuptools; then
+  if ! build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U setuptools; then
     echo "Error, unable to upgrade setuptools with"
-    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U setuptools"
+    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U setuptools"
+    exit 1
+  fi
+  if ! build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U wheel; then
+    echo "Error, unable to upgrade wheel with"
+    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U wheel"
     exit 1
   fi
 
   if [[ "$TARGET" != "centos7" ]] || [[ "$PYTHON_PKG" != "python-arvados-fuse" ]]; then
-    build/usr/share/$python/dist/$PYTHON_PKG/bin/pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PACKAGE_PATH
+    build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PACKAGE_PATH
   else
     # centos7 needs these special tweaks to install python-arvados-fuse
-    build/usr/share/$python/dist/$PYTHON_PKG/bin/pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG docutils
-    PYCURL_SSL_LIBRARY=nss build/usr/share/$python/dist/$PYTHON_PKG/bin/pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PACKAGE_PATH
+    build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG docutils
+    PYCURL_SSL_LIBRARY=nss build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PACKAGE_PATH
   fi
 
   if [[ "$?" != "0" ]]; then
     echo "Error, unable to run"
-    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PACKAGE_PATH"
+    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PACKAGE_PATH"
     exit 1
   fi
 
