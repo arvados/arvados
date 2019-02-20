@@ -274,7 +274,7 @@ test_package_presence() {
         echo ${repo_pkg_list} |grep -q ${complete_pkgname}
         if [ $? -eq 0 ] ; then
           echo "Package $complete_pkgname exists, not rebuilding!"
-          curl -o ./${complete_pkgname} http://apt.arvados.org/pool/${D}/main/${repo_subdir}/${complete_pkgname}
+          curl -s -o ./${complete_pkgname} http://apt.arvados.org/pool/${D}/main/${repo_subdir}/${complete_pkgname}
           return 1
         elif test -f "$WORKSPACE/packages/$TARGET/processed/${complete_pkgname}" ; then
           echo "Package $complete_pkgname exists, not rebuilding!"
@@ -287,11 +287,11 @@ test_package_presence() {
     else
       centos_repo="http://rpm.arvados.org/CentOS/7/dev/x86_64/"
 
-      repo_pkg_list=$(curl -o - ${centos_repo})
+      repo_pkg_list=$(curl -s -o - ${centos_repo})
       echo ${repo_pkg_list} |grep -q ${complete_pkgname}
       if [ $? -eq 0 ]; then
         echo "Package $complete_pkgname exists, not rebuilding!"
-        curl -o ./${complete_pkgname} ${centos_repo}${complete_pkgname}
+        curl -s -o ./${complete_pkgname} ${centos_repo}${complete_pkgname}
         return 1
       elif test -f "$WORKSPACE/packages/$TARGET/processed/${complete_pkgname}" ; then
         echo "Package $complete_pkgname exists, not rebuilding!"
