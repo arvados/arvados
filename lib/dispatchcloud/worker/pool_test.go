@@ -12,6 +12,7 @@ import (
 	"git.curoverse.com/arvados.git/lib/cloud"
 	"git.curoverse.com/arvados.git/lib/dispatchcloud/test"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"github.com/prometheus/client_golang/prometheus"
 	check "gopkg.in/check.v1"
 )
@@ -62,7 +63,7 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 		}
 	}
 
-	logger := test.Logger()
+	logger := ctxlog.TestLogger(c)
 	driver := &test.StubDriver{}
 	is, err := driver.InstanceSet(nil, "", logger)
 	c.Assert(err, check.IsNil)
@@ -90,7 +91,7 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 		},
 	}
 
-	pool := NewPool(logger, arvados.NewClientFromEnv(), prometheus.NewRegistry(), is, newExecutor, cluster)
+	pool := NewPool(logger, arvados.NewClientFromEnv(), prometheus.NewRegistry(), is, newExecutor, nil, cluster)
 	notify := pool.Subscribe()
 	defer pool.Unsubscribe(notify)
 	pool.Create(type1)
@@ -108,7 +109,7 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 
 	c.Log("------- starting new pool, waiting to recover state")
 
-	pool2 := NewPool(logger, arvados.NewClientFromEnv(), prometheus.NewRegistry(), is, newExecutor, cluster)
+	pool2 := NewPool(logger, arvados.NewClientFromEnv(), prometheus.NewRegistry(), is, newExecutor, nil, cluster)
 	notify2 := pool2.Subscribe()
 	defer pool2.Unsubscribe(notify2)
 	waitForIdle(pool2, notify2)
@@ -124,7 +125,7 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 }
 
 func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
-	logger := test.Logger()
+	logger := ctxlog.TestLogger(c)
 	driver := test.StubDriver{HoldCloudOps: true}
 	instanceSet, err := driver.InstanceSet(nil, "", logger)
 	c.Assert(err, check.IsNil)

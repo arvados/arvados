@@ -723,6 +723,14 @@ class ContainerTest < ActiveSupport::TestCase
     assert_equal 1, Container.readable_by(users(:active)).where(state: "Queued").count
   end
 
+  test "Containers with no matching request are readable by admin" do
+    uuids = Container.includes('container_requests').where(container_requests: {uuid: nil}).collect(&:uuid)
+    assert_not_empty uuids
+    assert_empty Container.readable_by(users(:active)).where(uuid: uuids)
+    assert_not_empty Container.readable_by(users(:admin)).where(uuid: uuids)
+    assert_equal uuids.count, Container.readable_by(users(:admin)).where(uuid: uuids).count
+  end
+
   test "Container locked cancel" do
     set_user_from_auth :active
     c, _ = minimal_new

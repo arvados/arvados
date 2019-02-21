@@ -47,7 +47,10 @@ type azureInstanceSetConfig struct {
 	StorageAccount               string
 	BlobContainer                string
 	DeleteDanglingResourcesAfter arvados.Duration
+	AdminUsername                string
 }
+
+const tagKeyInstanceSecret = "InstanceSecret"
 
 type virtualMachinesClientWrapper interface {
 	createOrUpdate(ctx context.Context,
@@ -311,14 +314,11 @@ func (az *azureInstanceSet) Create(
 	instanceType arvados.InstanceType,
 	imageID cloud.ImageID,
 	newTags cloud.InstanceTags,
+	initCommand cloud.InitCommand,
 	publicKey ssh.PublicKey) (cloud.Instance, error) {
 
 	az.stopWg.Add(1)
 	defer az.stopWg.Done()
-
-	if len(newTags["node-token"]) == 0 {
-		return nil, fmt.Errorf("Must provide tag 'node-token'")
-	}
 
 	name, err := randutil.String(15, "abcdefghijklmnopqrstuvwxyz0123456789")
 	if err != nil {
@@ -335,8 +335,6 @@ func (az *azureInstanceSet) Create(
 		newstr := v
 		tags["dispatch-"+k] = &newstr
 	}
-
-	tags["dispatch-instance-type"] = &instanceType.Name
 
 	nicParameters := network.Interface{
 		Location: &az.azconfig.Location,
@@ -371,8 +369,7 @@ func (az *azureInstanceSet) Create(
 		az.azconfig.BlobContainer,
 		name)
 
-	customData := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf(`#!/bin/sh
-echo '%s-%s' > /home/crunch/node-token`, name, newTags["node-token"])))
+	customData := base64.StdEncoding.EncodeToString([]byte("#!/bin/sh\n" + initCommand + "\n"))
 
 	vmParameters := compute.VirtualMachine{
 		Location: &az.azconfig.Location,
@@ -406,13 +403,13 @@ echo '%s-%s' > /home/crunch/node-token`, name, newTags["node-token"])))
 			},
 			OsProfile: &compute.OSProfile{
 				ComputerName:  &name,
-				AdminUsername: to.StringPtr("crunch"),
+				AdminUsername: to.StringPtr(az.azconfig.AdminUsername),
 				LinuxConfiguration: &compute.LinuxConfiguration{
 					DisablePasswordAuthentication: to.BoolPtr(true),
 					SSH: &compute.SSHConfiguration{
 						PublicKeys: &[]compute.SSHPublicKey{
-							compute.SSHPublicKey{
-								Path:    to.StringPtr("/home/crunch/.ssh/authorized_keys"),
+							{
+								Path:    to.StringPtr("/home/" + az.azconfig.AdminUsername + "/.ssh/authorized_keys"),
 								KeyData: to.StringPtr(string(ssh.MarshalAuthorizedKey(publicKey))),
 							},
 						},
@@ -494,8 +491,8 @@ func (az *azureInstanceSet) manageNics() (map[string]network.Interface, error) {
 				if result.Value().Tags["created-at"] != nil {
 					createdAt, err := time.Parse(time.RFC3339Nano, *result.Value().Tags["created-at"])
 					if err == nil {
-						if timestamp.Sub(createdAt).Seconds() > az.azconfig.DeleteDanglingResourcesAfter.Duration().Seconds() {
-							az.logger.Printf("Will delete %v because it is older than %v s", *result.Value().Name, az.azconfig.DeleteDanglingResourcesAfter)
+						if timestamp.Sub(createdAt) > az.azconfig.DeleteDanglingResourcesAfter.Duration() {
+							az.logger.Printf("Will delete %v because it is older than %s", *result.Value().Name, az.azconfig.DeleteDanglingResourcesAfter)
 							az.deleteNIC <- *result.Value().Name
 						}
 					}
@@ -634,63 +631,10 @@ func (ai *azureInstance) Address() string {
 	return *(*ai.nic.IPConfigurations)[0].PrivateIPAddress
 }
 
-func (ai *azureInstance) VerifyHostKey(receivedKey ssh.PublicKey, client *ssh.Client) error {
-	ai.provider.stopWg.Add(1)
-	defer ai.provider.stopWg.Done()
+func (ai *azureInstance) RemoteUser() string {
+	return ai.provider.azconfig.AdminUsername
+}
 
-	remoteFingerprint := ssh.FingerprintSHA256(receivedKey)
-
-	tags := ai.Tags()
-
-	tg := tags["ssh-pubkey-fingerprint"]
-	if tg != "" {
-		if remoteFingerprint == tg {
-			return nil
-		}
-		return fmt.Errorf("Key fingerprint did not match, expected %q got %q", tg, remoteFingerprint)
-	}
-
-	nodetokenTag := tags["node-token"]
-	if nodetokenTag == "" {
-		return fmt.Errorf("Missing node token tag")
-	}
-
-	sess, err := client.NewSession()
-	if err != nil {
-		return err
-	}
-
-	nodetokenbytes, err := sess.Output("cat /home/crunch/node-token")
-	if err != nil {
-		return err
-	}
-
-	nodetoken := strings.TrimSpace(string(nodetokenbytes))
-
-	expectedToken := fmt.Sprintf("%s-%s", *ai.vm.Name, nodetokenTag)
-
-	if strings.TrimSpace(nodetoken) != expectedToken {
-		return fmt.Errorf("Node token did not match, expected %q got %q", expectedToken, nodetoken)
-	}
-
-	sess, err = client.NewSession()
-	if err != nil {
-		return err
-	}
-
-	keyfingerprintbytes, err := sess.Output("ssh-keygen -E sha256 -l -f /etc/ssh/ssh_host_rsa_key.pub")
-	if err != nil {
-		return err
-	}
-
-	sp := strings.Split(string(keyfingerprintbytes), " ")
-
-	if remoteFingerprint != sp[1] {
-		return fmt.Errorf("Key fingerprint did not match, expected %q got %q", sp[1], remoteFingerprint)
-	}
-
-	tags["ssh-pubkey-fingerprint"] = sp[1]
-	delete(tags, "node-token")
-	ai.SetTags(tags)
-	return nil
+func (ai *azureInstance) VerifyHostKey(ssh.PublicKey, *ssh.Client) error {
+	return cloud.ErrNotImplemented
 }

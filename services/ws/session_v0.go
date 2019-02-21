@@ -44,7 +44,7 @@ type v0session struct {
 	permChecker   permChecker
 	subscriptions []v0subscribe
 	lastMsgID     uint64
-	log           *logrus.Entry
+	log           logrus.FieldLogger
 	mtx           sync.Mutex
 	setupOnce     sync.Once
 }

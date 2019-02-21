@@ -19,6 +19,7 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"github.com/sirupsen/logrus"
@@ -29,7 +30,7 @@ import (
 var _ = check.Suite(&FederationSuite{})
 
 type FederationSuite struct {
-	log *logrus.Logger
+	log logrus.FieldLogger
 	// testServer and testHandler are the controller being tested,
 	// "zhome".
 	testServer  *httpserver.Server
@@ -44,9 +45,7 @@ type FederationSuite struct {
 }
 
 func (s *FederationSuite) SetUpTest(c *check.C) {
-	s.log = logrus.New()
-	s.log.Formatter = &logrus.JSONFormatter{}
-	s.log.Out = &logWriter{c.Log}
+	s.log = ctxlog.TestLogger(c)
 
 	s.remoteServer = newServerFromIntegrationTestEnv(c)
 	c.Assert(s.remoteServer.Start(), check.IsNil)

@@ -5,6 +5,7 @@
 package controller
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -16,6 +17,7 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	check "gopkg.in/check.v1"
 )
@@ -30,9 +32,13 @@ var _ = check.Suite(&HandlerSuite{})
 type HandlerSuite struct {
 	cluster *arvados.Cluster
 	handler http.Handler
+	ctx     context.Context
+	cancel  context.CancelFunc
 }
 
 func (s *HandlerSuite) SetUpTest(c *check.C) {
+	s.ctx, s.cancel = context.WithCancel(context.Background())
+	s.ctx = ctxlog.Context(s.ctx, ctxlog.New(os.Stderr, "json", "debug"))
 	s.cluster = &arvados.Cluster{
 		ClusterID:  "zzzzz",
 		PostgreSQL: integrationTestCluster().PostgreSQL,
@@ -44,7 +50,11 @@ func (s *HandlerSuite) SetUpTest(c *check.C) {
 		},
 	}
 	node := s.cluster.NodeProfiles["*"]
-	s.handler = newHandler(s.cluster, &node)
+	s.handler = newHandler(s.ctx, s.cluster, &node)
+}
+
+func (s *HandlerSuite) TearDownTest(c *check.C) {
+	s.cancel()
 }
 
 func (s *HandlerSuite) TestProxyDiscoveryDoc(c *check.C) {
