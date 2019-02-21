@@ -23,6 +23,7 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"github.com/Azure/azure-sdk-for-go/storage"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 const azureDefaultRequestTimeout = arvados.Duration(10 * time.Minute)
@@ -147,7 +148,7 @@ func (v *AzureBlobVolume) Type() string {
 }
 
 // Start implements Volume.
-func (v *AzureBlobVolume) Start(m *volumeMetrics) error {
+func (v *AzureBlobVolume) Start(opsCounters, errCounters, ioBytes *prometheus.CounterVec) error {
 	if v.ContainerName == "" {
 		return errors.New("no container name given")
 	}

@@ -121,7 +121,10 @@ type UnixVolume struct {
 
 	os osWithStats
 
-	metrics *volumeMetrics
+	// Volume metrics
+	opsCounters *prometheus.CounterVec
+	errCounters *prometheus.CounterVec
+	ioBytes     *prometheus.CounterVec
 }
 
 // DeviceID returns a globally unique ID for the volume's root
@@ -222,7 +225,7 @@ func (v *UnixVolume) Type() string {
 }
 
 // Start implements Volume
-func (v *UnixVolume) Start(m *volumeMetrics) error {
+func (v *UnixVolume) Start(opsCounters, errCounters, ioBytes *prometheus.CounterVec) error {
 	if v.Serialize {
 		v.locker = &sync.Mutex{}
 	}
@@ -235,24 +238,17 @@ func (v *UnixVolume) Start(m *volumeMetrics) error {
 	_, err := v.os.Stat(v.Root)
 	if err == nil {
 		// Set up prometheus metrics
-		v.metrics = m
-		v.os.stats.setup(v.metrics)
-		// Periodically update free/used volume space
-		go func() {
-			for {
-				v.metrics.BytesFree.Set(float64(v.Status().BytesFree))
-				v.metrics.BytesUsed.Set(float64(v.Status().BytesUsed))
-				time.Sleep(10 * time.Second)
-			}
-		}()
+		lbls := prometheus.Labels{"device_id": v.DeviceID()}
+		v.opsCounters = opsCounters.MustCurryWith(lbls)
+		v.errCounters = errCounters.MustCurryWith(lbls)
+		v.ioBytes = ioBytes.MustCurryWith(lbls)
+		v.os.promSetup(v.opsCounters, v.errCounters, v.ioBytes)
 	}
 	return err
 }
 
 // Touch sets the timestamp for the given locator to the current time
 func (v *UnixVolume) Touch(loc string) error {
-	v.metrics.Ops.Inc()
-	v.metrics.TouchOps.Inc()
 	if v.ReadOnly {
 		return MethodDisabledError
 	}
@@ -271,7 +267,7 @@ func (v *UnixVolume) Touch(loc string) error {
 	}
 	defer v.unlockfile(f)
 	ts := syscall.NsecToTimespec(time.Now().UnixNano())
-	v.os.stats.utimesOps.Inc()
+	v.os.opsCounters.With(prometheus.Labels{"operation": "utimes"}).Inc()
 	v.os.stats.Tick(&v.os.stats.UtimesOps)
 	err = syscall.UtimesNano(p, []syscall.Timespec{ts, ts})
 	v.os.stats.TickErr(err)
@@ -300,7 +296,12 @@ func (v *UnixVolume) getFunc(ctx context.Context, path string, fn func(io.Reader
 		return err
 	}
 	defer f.Close()
-	return fn(NewCountingReader(ioutil.NopCloser(f), v.os.stats.TickInBytes))
+	return fn(NewCountingReader(
+		ioutil.NopCloser(f),
+		func(c uint64) {
+			v.os.stats.TickInBytes(c)
+			v.ioBytes.With(prometheus.Labels{"direction": "in"}).Add(float64(c))
+		}))
 }
 
 // stat is os.Stat() with some extra sanity checks.
@@ -319,8 +320,6 @@ func (v *UnixVolume) stat(path string) (os.FileInfo, error) {
 // Get retrieves a block, copies it to the given slice, and returns
 // the number of bytes copied.
 func (v *UnixVolume) Get(ctx context.Context, loc string, buf []byte) (int, error) {
-	v.metrics.Ops.Inc()
-	v.metrics.GetOps.Inc()
 	return getWithPipe(ctx, loc, buf, v)
 }
 
@@ -344,8 +343,6 @@ func (v *UnixVolume) ReadBlock(ctx context.Context, loc string, w io.Writer) err
 // expect. It is functionally equivalent to Get() followed by
 // bytes.Compare(), but uses less memory.
 func (v *UnixVolume) Compare(ctx context.Context, loc string, expect []byte) error {
-	v.metrics.Ops.Inc()
-	v.metrics.CompareOps.Inc()
 	path := v.blockPath(loc)
 	if _, err := v.stat(path); err != nil {
 		return v.translateError(err)
@@ -360,8 +357,6 @@ func (v *UnixVolume) Compare(ctx context.Context, loc string, expect []byte) err
 // returns a FullError.  If the write fails due to some other error,
 // that error is returned.
 func (v *UnixVolume) Put(ctx context.Context, loc string, block []byte) error {
-	v.metrics.Ops.Inc()
-	v.metrics.PutOps.Inc()
 	return putWithPipe(ctx, loc, block, v)
 }
 
@@ -393,6 +388,7 @@ func (v *UnixVolume) WriteBlock(ctx context.Context, loc string, rdr io.Reader) 
 	}
 	defer v.unlock()
 	n, err := io.Copy(tmpfile, rdr)
+	v.os.ioBytes.With(prometheus.Labels{"direction": "out"}).Add(float64(n))
 	v.os.stats.TickOutBytes(uint64(n))
 	if err != nil {
 		log.Printf("%s: writing to %s: %s\n", v, bpath, err)
@@ -465,7 +461,7 @@ func (v *UnixVolume) IndexTo(prefix string, w io.Writer) error {
 		return err
 	}
 	defer rootdir.Close()
-	v.os.stats.readdirOps.Inc()
+	v.os.opsCounters.With(prometheus.Labels{"operation": "readdir"}).Inc()
 	v.os.stats.Tick(&v.os.stats.ReaddirOps)
 	for {
 		names, err := rootdir.Readdirnames(1)
@@ -488,7 +484,7 @@ func (v *UnixVolume) IndexTo(prefix string, w io.Writer) error {
 			lastErr = err
 			continue
 		}
-		v.os.stats.readdirOps.Inc()
+		v.os.opsCounters.With(prometheus.Labels{"operation": "readdir"}).Inc()
 		v.os.stats.Tick(&v.os.stats.ReaddirOps)
 		for {
 			fileInfo, err := blockdir.Readdir(1)
@@ -577,7 +573,7 @@ func (v *UnixVolume) Untrash(loc string) (err error) {
 		return MethodDisabledError
 	}
 
-	v.os.stats.readdirOps.Inc()
+	v.os.opsCounters.With(prometheus.Labels{"operation": "readdir"}).Inc()
 	v.os.stats.Tick(&v.os.stats.ReaddirOps)
 	files, err := ioutil.ReadDir(v.blockDir(loc))
 	if err != nil {
@@ -724,7 +720,7 @@ func (v *UnixVolume) unlock() {
 
 // lockfile and unlockfile use flock(2) to manage kernel file locks.
 func (v *UnixVolume) lockfile(f *os.File) error {
-	v.os.stats.flockOps.Inc()
+	v.os.opsCounters.With(prometheus.Labels{"operation": "flock"}).Inc()
 	v.os.stats.Tick(&v.os.stats.FlockOps)
 	err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX)
 	v.os.stats.TickErr(err)
@@ -829,27 +825,6 @@ type unixStats struct {
 	RenameOps  uint64
 	UnlinkOps  uint64
 	ReaddirOps uint64
-	// Prometheus metrics -- Above ad-hoc counters will be eventually removed
-	openOps    prometheus.Counter
-	statOps    prometheus.Counter
-	flockOps   prometheus.Counter
-	utimesOps  prometheus.Counter
-	createOps  prometheus.Counter
-	renameOps  prometheus.Counter
-	unlinkOps  prometheus.Counter
-	readdirOps prometheus.Counter
-}
-
-func (s *unixStats) setup(m *volumeMetrics) {
-	s.statsTicker.setup(m)
-	s.openOps = m.getInternalCounter("unix_open_ops", "Number of backend open operations")
-	s.statOps = m.getInternalCounter("unix_stat_ops", "Number of backend stat operations")
-	s.flockOps = m.getInternalCounter("unix_flock_ops", "Number of backend flock operations")
-	s.utimesOps = m.getInternalCounter("unix_utimes_ops", "Number of backend utimes operations")
-	s.createOps = m.getInternalCounter("unix_create_ops", "Number of backend create operations")
-	s.renameOps = m.getInternalCounter("unix_rename_ops", "Number of backend rename operations")
-	s.unlinkOps = m.getInternalCounter("unix_unlink_ops", "Number of backend unlink operations")
-	s.readdirOps = m.getInternalCounter("unix_readdir_ops", "Number of backend readdir operations")
 }
 
 func (s *unixStats) TickErr(err error) {
@@ -860,56 +835,75 @@ func (s *unixStats) TickErr(err error) {
 }
 
 type osWithStats struct {
-	stats unixStats
+	stats       unixStats
+	opsCounters *prometheus.CounterVec
+	errCounters *prometheus.CounterVec
+	ioBytes     *prometheus.CounterVec
+}
+
+func (o *osWithStats) tickErr(err error) {
+	if err == nil {
+		return
+	}
+	o.errCounters.With(prometheus.Labels{"type": fmt.Sprintf("%T", err)}).Inc()
+}
+
+func (o *osWithStats) promSetup(opsC, errC, ioB *prometheus.CounterVec) {
+	o.opsCounters = opsC
+	o.errCounters = errC
+	o.ioBytes = ioB
 }
 
 func (o *osWithStats) Open(name string) (*os.File, error) {
-	o.stats.openOps.Inc()
+	o.opsCounters.With(prometheus.Labels{"operation": "open"}).Inc()
 	o.stats.Tick(&o.stats.OpenOps)
 	f, err := os.Open(name)
+	o.tickErr(err)
 	o.stats.TickErr(err)
 	return f, err
 }
 
 func (o *osWithStats) OpenFile(name string, flag int, perm os.FileMode) (*os.File, error) {
-	o.stats.openOps.Inc()
+	o.opsCounters.With(prometheus.Labels{"operation": "open"}).Inc()
 	o.stats.Tick(&o.stats.OpenOps)
 	f, err := os.OpenFile(name, flag, perm)
+	o.tickErr(err)
 	o.stats.TickErr(err)
 	return f, err
 }
 
 func (o *osWithStats) Remove(path string) error {
-	o.stats.unlinkOps.Inc()
+	o.opsCounters.With(prometheus.Labels{"operation": "unlink"}).Inc()
 	o.stats.Tick(&o.stats.UnlinkOps)
 	err := os.Remove(path)
+	o.tickErr(err)
 	o.stats.TickErr(err)
 	return err
 }
 
 func (o *osWithStats) Rename(a, b string) error {
-	o.stats.renameOps.Inc()
+	o.opsCounters.With(prometheus.Labels{"operation": "rename"}).Inc()
 	o.stats.Tick(&o.stats.RenameOps)
 	err := os.Rename(a, b)
+	o.tickErr(err)
 	o.stats.TickErr(err)
 	return err
 }
 
 func (o *osWithStats) Stat(path string) (os.FileInfo, error) {
-	// Avoid segfaulting when called from vol.Status() on theConfig.Start()
-	if o.stats.statOps != nil {
-		o.stats.statOps.Inc()
-	}
+	o.opsCounters.With(prometheus.Labels{"operation": "stat"}).Inc()
 	o.stats.Tick(&o.stats.StatOps)
 	fi, err := os.Stat(path)
+	o.tickErr(err)
 	o.stats.TickErr(err)
 	return fi, err
 }
 
 func (o *osWithStats) TempFile(dir, base string) (*os.File, error) {
-	o.stats.createOps.Inc()
+	o.opsCounters.With(prometheus.Labels{"operation": "create"}).Inc()
 	o.stats.Tick(&o.stats.CreateOps)
 	f, err := ioutil.TempFile(dir, base)
+	o.tickErr(err)
 	o.stats.TickErr(err)
 	return f, err
 }

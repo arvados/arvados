@@ -25,6 +25,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"github.com/AdRoll/goamz/aws"
 	"github.com/AdRoll/goamz/s3"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 const (
@@ -198,7 +199,7 @@ func (*S3Volume) Type() string {
 
 // Start populates private fields and verifies the configuration is
 // valid.
-func (v *S3Volume) Start(m *volumeMetrics) error {
+func (v *S3Volume) Start(opsCounters, errCounters, ioBytes *prometheus.CounterVec) error {
 	region, ok := aws.Regions[v.Region]
 	if v.Endpoint == "" {
 		if !ok {

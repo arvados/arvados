@@ -88,196 +88,43 @@ func (m *nodeMetrics) setupRequestMetrics(rc httpserver.RequestCounter) {
 }
 
 type volumeMetricsVecs struct {
-	reg        *prometheus.Registry
-	BytesFree  *prometheus.GaugeVec
-	BytesUsed  *prometheus.GaugeVec
-	Errors     *prometheus.CounterVec
-	Ops        *prometheus.CounterVec
-	CompareOps *prometheus.CounterVec
-	GetOps     *prometheus.CounterVec
-	PutOps     *prometheus.CounterVec
-	TouchOps   *prometheus.CounterVec
-	InBytes    *prometheus.CounterVec
-	OutBytes   *prometheus.CounterVec
-	ErrorCodes *prometheus.CounterVec
-}
-
-type volumeMetrics struct {
-	reg              *prometheus.Registry
-	lbls             []string
-	internalCounters map[string]*prometheus.CounterVec
-	BytesFree        prometheus.Gauge
-	BytesUsed        prometheus.Gauge
-	Errors           prometheus.Counter
-	Ops              prometheus.Counter
-	CompareOps       prometheus.Counter
-	GetOps           prometheus.Counter
-	PutOps           prometheus.Counter
-	TouchOps         prometheus.Counter
-	InBytes          prometheus.Counter
-	OutBytes         prometheus.Counter
-	ErrorCodes       *prometheus.CounterVec
+	ioBytes     *prometheus.CounterVec
+	errCounters *prometheus.CounterVec
+	opsCounters *prometheus.CounterVec
 }
 
 func newVolumeMetricsVecs(reg *prometheus.Registry) *volumeMetricsVecs {
-	m := &volumeMetricsVecs{
-		reg: reg,
-	}
-	m.BytesFree = prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Namespace: "arvados",
-			Subsystem: "keepstore",
-			Name:      "volume_bytes_free",
-			Help:      "Number of free bytes on the volume",
-		},
-		[]string{"label", "mount_point", "device_number"},
-	)
-	reg.MustRegister(m.BytesFree)
-	m.BytesUsed = prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Namespace: "arvados",
-			Subsystem: "keepstore",
-			Name:      "volume_bytes_used",
-			Help:      "Number of used bytes on the volume",
-		},
-		[]string{"label", "mount_point", "device_number"},
-	)
-	reg.MustRegister(m.BytesUsed)
-	m.Errors = prometheus.NewCounterVec(
+	m := &volumeMetricsVecs{}
+	m.opsCounters = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "arvados",
 			Subsystem: "keepstore",
-			Name:      "volume_io_errors",
-			Help:      "Number of volume I/O errors",
+			Name:      "volume_operations",
+			Help:      "Number of volume operations",
 		},
-		[]string{"label", "mount_point", "device_number"},
+		[]string{"device_id", "operation"},
 	)
-	reg.MustRegister(m.Errors)
-	m.Ops = prometheus.NewCounterVec(
+	reg.MustRegister(m.opsCounters)
+	m.errCounters = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "arvados",
 			Subsystem: "keepstore",
-			Name:      "volume_io_ops",
-			Help:      "Number of volume I/O operations",
+			Name:      "volume_errors",
+			Help:      "Number of volume errors",
 		},
-		[]string{"label", "mount_point", "device_number"},
+		[]string{"device_id", "error_type"},
 	)
-	reg.MustRegister(m.Ops)
-	m.CompareOps = prometheus.NewCounterVec(
+	reg.MustRegister(m.errCounters)
+	m.ioBytes = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "arvados",
 			Subsystem: "keepstore",
-			Name:      "volume_io_compare_ops",
-			Help:      "Number of volume I/O compare operations",
+			Name:      "volume_io_bytes",
+			Help:      "Volume I/O traffic in bytes",
 		},
-		[]string{"label", "mount_point", "device_number"},
+		[]string{"device_id", "direction"},
 	)
-	reg.MustRegister(m.CompareOps)
-	m.GetOps = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Namespace: "arvados",
-			Subsystem: "keepstore",
-			Name:      "volume_io_get_ops",
-			Help:      "Number of volume I/O get operations",
-		},
-		[]string{"label", "mount_point", "device_number"},
-	)
-	reg.MustRegister(m.GetOps)
-	m.PutOps = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Namespace: "arvados",
-			Subsystem: "keepstore",
-			Name:      "volume_io_put_ops",
-			Help:      "Number of volume I/O put operations",
-		},
-		[]string{"label", "mount_point", "device_number"},
-	)
-	reg.MustRegister(m.PutOps)
-	m.TouchOps = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Namespace: "arvados",
-			Subsystem: "keepstore",
-			Name:      "volume_io_touch_ops",
-			Help:      "Number of volume I/O touch operations",
-		},
-		[]string{"label", "mount_point", "device_number"},
-	)
-	reg.MustRegister(m.TouchOps)
-	m.InBytes = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Namespace: "arvados",
-			Subsystem: "keepstore",
-			Name:      "volume_io_in_bytes",
-			Help:      "Number of input bytes",
-		},
-		[]string{"label", "mount_point", "device_number"},
-	)
-	reg.MustRegister(m.InBytes)
-	m.OutBytes = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Namespace: "arvados",
-			Subsystem: "keepstore",
-			Name:      "volume_io_out_bytes",
-			Help:      "Number of output bytes",
-		},
-		[]string{"label", "mount_point", "device_number"},
-	)
-	reg.MustRegister(m.OutBytes)
-	m.ErrorCodes = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Namespace: "arvados",
-			Subsystem: "keepstore",
-			Name:      "volume_io_error_codes",
-			Help:      "Number of I/O errors by error code",
-		},
-		[]string{"label", "mount_point", "device_number", "error_code"},
-	)
-	reg.MustRegister(m.ErrorCodes)
+	reg.MustRegister(m.ioBytes)
 
 	return m
-}
-
-func (m *volumeMetricsVecs) curryWith(lbl string, mnt string, dev string) *volumeMetrics {
-	lbls := []string{lbl, mnt, dev}
-	curried := &volumeMetrics{
-		reg:              m.reg,
-		lbls:             lbls,
-		internalCounters: make(map[string]*prometheus.CounterVec),
-		BytesFree:        m.BytesFree.WithLabelValues(lbls...),
-		BytesUsed:        m.BytesUsed.WithLabelValues(lbls...),
-		Errors:           m.Errors.WithLabelValues(lbls...),
-		Ops:              m.Ops.WithLabelValues(lbls...),
-		CompareOps:       m.CompareOps.WithLabelValues(lbls...),
-		GetOps:           m.GetOps.WithLabelValues(lbls...),
-		PutOps:           m.PutOps.WithLabelValues(lbls...),
-		TouchOps:         m.TouchOps.WithLabelValues(lbls...),
-		InBytes:          m.InBytes.WithLabelValues(lbls...),
-		OutBytes:         m.OutBytes.WithLabelValues(lbls...),
-		ErrorCodes: m.ErrorCodes.MustCurryWith(prometheus.Labels{
-			"label":         lbl,
-			"mount_point":   mnt,
-			"device_number": dev,
-		}),
-	}
-	return curried
-}
-
-// Returns a driver specific counter, creating it when needed. The 'name' argument
-// should include the driver prefix.
-func (m *volumeMetrics) getInternalCounter(name string, help string) prometheus.Counter {
-	counterVec, ok := m.internalCounters[name]
-	if !ok {
-		counterVec = prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Namespace: "arvados",
-				Subsystem: "keepstore",
-				Name:      name,
-				Help:      help,
-			},
-			[]string{"label", "mount_point", "device_number"},
-		)
-		m.reg.MustRegister(counterVec)
-		m.internalCounters[name] = counterVec
-	}
-	return counterVec.WithLabelValues(m.lbls...)
 }

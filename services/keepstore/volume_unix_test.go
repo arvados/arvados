@@ -116,9 +116,8 @@ func TestReplicationDefault1(t *testing.T) {
 		Root:     "/",
 		ReadOnly: true,
 	}
-	metrics := newVolumeMetricsVecs(prometheus.NewRegistry()).curryWith(
-		v.String(), v.Status().MountPoint, fmt.Sprintf("%d", v.Status().DeviceNum))
-	if err := v.Start(metrics); err != nil {
+	metrics := newVolumeMetricsVecs(prometheus.NewRegistry())
+	if err := v.Start(metrics.opsCounters, metrics.errCounters, metrics.ioBytes); err != nil {
 		t.Error(err)
 	}
 	if got := v.Replication(); got != 1 {

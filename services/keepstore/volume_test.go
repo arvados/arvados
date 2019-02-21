@@ -15,6 +15,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 // A TestableVolume allows test suites to manipulate the state of an
@@ -211,7 +213,7 @@ func (v *MockVolume) Type() string {
 	return "Mock"
 }
 
-func (v *MockVolume) Start(m *volumeMetrics) error {
+func (v *MockVolume) Start(opsCounters, errCounters, ioBytes *prometheus.CounterVec) error {
 	return nil
 }
 
