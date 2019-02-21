@@ -34,8 +34,9 @@ type Scheduler struct {
 	staleLockTimeout    time.Duration
 	queueUpdateInterval time.Duration
 
-	locking map[string]bool
-	mtx     sync.Mutex
+	uuidOp map[string]string // operation in progress: "lock", "cancel", ...
+	mtx    sync.Mutex
+	wakeup *time.Timer
 
 	runOnce sync.Once
 	stop    chan struct{}
@@ -53,9 +54,10 @@ func New(ctx context.Context, queue ContainerQueue, pool WorkerPool, staleLockTi
 		pool:                pool,
 		staleLockTimeout:    staleLockTimeout,
 		queueUpdateInterval: queueUpdateInterval,
+		wakeup:              time.NewTimer(time.Second),
 		stop:                make(chan struct{}),
 		stopped:             make(chan struct{}),
-		locking:             map[string]bool{},
+		uuidOp:              map[string]string{},
 	}
 }
 
@@ -116,6 +118,7 @@ func (sch *Scheduler) run() {
 			return
 		case <-queueNotify:
 		case <-poolNotify:
+		case <-sch.wakeup.C:
 		}
 	}
 }
