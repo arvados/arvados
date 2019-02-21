@@ -109,7 +109,7 @@ func (ss *SSHService) run() {
 	}
 	config.AddHostKey(ss.HostKey)
 
-	listener, err := net.Listen("tcp", ":")
+	listener, err := net.Listen("tcp", "127.0.0.1:")
 	if err != nil {
 		ss.err = err
 		return
