@@ -248,21 +248,6 @@ handle_ruby_gem arvados-login-sync
 # Python packages
 debug_echo -e "\nPython packages\n"
 
-cd "$WORKSPACE/sdk/pam"
-handle_python_package
-
-cd "$WORKSPACE/sdk/python"
-handle_python_package
-
-cd "$WORKSPACE/sdk/cwl"
-handle_python_package
-
-cd "$WORKSPACE/services/fuse"
-handle_python_package
-
-cd "$WORKSPACE/services/nodemanager"
-handle_python_package
-
 # arvados-src
 (
     cd "$WORKSPACE"
