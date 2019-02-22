@@ -37,7 +37,7 @@ export const authReducer = (services: ServiceRepository) => (state = initialStat
             return {
                 ...state,
                 localCluster: config.uuidPrefix,
-                remoteHosts: config.remoteHosts,
+                remoteHosts: { ...config.remoteHosts, [config.uuidPrefix]: new URL(config.rootUrl).host },
                 homeCluster: config.uuidPrefix
             };
         },

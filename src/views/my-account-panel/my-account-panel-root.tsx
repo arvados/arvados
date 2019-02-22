@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Field, InjectedFormProps } from "redux-form";
+import { Field, InjectedFormProps, WrappedFieldProps } from "redux-form";
 import { TextField } from "~/components/text-field/text-field";
 import { NativeSelectField } from "~/components/select-field/select-field";
 import {
@@ -51,6 +51,7 @@ export interface MyAccountPanelRootDataProps {
     isPristine: boolean;
     isValid: boolean;
     initialValues?: User;
+    localCluster: string;
 }
 
 const RoleTypes = [
@@ -65,21 +66,20 @@ const RoleTypes = [
 
 type MyAccountPanelRootProps = InjectedFormProps<MyAccountPanelRootActionProps> & MyAccountPanelRootDataProps & WithStyles<CssRules>;
 
+type LocalClusterProp = { localCluster: string };
+const renderField: React.ComponentType<WrappedFieldProps & LocalClusterProp> = ({ input, localCluster }) => (
+    <span>{localCluster === input.value.substr(0, 5) ? "" : "federated"} user {input.value}</span>
+);
+
 export const MyAccountPanelRoot = withStyles(styles)(
-    ({ classes, isValid, handleSubmit, reset, isPristine, invalid, submitting }: MyAccountPanelRootProps) => {
+    ({ classes, isValid, handleSubmit, reset, isPristine, invalid, submitting, localCluster }: MyAccountPanelRootProps) => {
         return <Card className={classes.root}>
             <CardContent>
+                <Typography variant="title" className={classes.title}>
+                    Logged in as <Field name="uuid" component={renderField} localCluster={localCluster} />
+                </Typography>
                 <form onSubmit={handleSubmit}>
                     <Grid container spacing={24}>
-                        <Grid item xs={6} />
-                        <Grid item className={classes.gridItem} sm={6} xs={12}>
-                            <Field
-                                label="UUID"
-                                name="uuid"
-                                component={TextField}
-                                disabled
-                            />
-                        </Grid>
                         <Grid item className={classes.gridItem} sm={6} xs={12}>
                             <Field
                                 label="First name"
@@ -154,7 +154,7 @@ export const MyAccountPanelRoot = withStyles(styles)(
                                 type="submit"
                                 disabled={isPristine || invalid || submitting}>
                                 Save changes
-                        </Button>
+                            </Button>
                         </Grid>
                     </Grid>
                 </form >
