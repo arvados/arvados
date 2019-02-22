@@ -474,8 +474,8 @@ class Runner(Process):
                     fileobj["location"] = "keep:%s/%s" % (record["output"], path)
             adjustFileObjs(outputs, keepify)
             adjustDirObjs(outputs, keepify)
-        except Exception as e:
-            logger.exception("[%s] While getting final output object: %s", self.name, e)
+        except Exception:
+            logger.exception("[%s] While getting final output object", self.name)
             self.arvrunner.output_callback({}, "permanentFail")
         else:
             self.arvrunner.output_callback(outputs, processStatus)
