@@ -25,12 +25,14 @@ interface AccountMenuProps {
     user?: User;
     currentRoute: string;
     workbenchURL: string;
+    apiToken?: string;
 }
 
 const mapStateToProps = (state: RootState): AccountMenuProps => ({
     user: state.auth.user,
     currentRoute: state.router.location ? state.router.location.pathname : '',
     workbenchURL: state.config.workbenchUrl,
+    apiToken: state.auth.apiToken
 });
 
 const wb1URL = (route: string) => {
@@ -54,7 +56,7 @@ const styles: StyleRulesCallback<CssRules> = () => ({
 
 export const AccountMenu = withStyles(styles)(
     connect(mapStateToProps)(
-        ({ user, dispatch, currentRoute, workbenchURL, classes }: AccountMenuProps & DispatchProp<any> & WithStyles<CssRules>) =>
+        ({ user, dispatch, currentRoute, workbenchURL, apiToken, classes }: AccountMenuProps & DispatchProp<any> & WithStyles<CssRules>) =>
             user
                 ? <DropdownMenu
                     icon={<UserPanelIcon />}
@@ -71,7 +73,7 @@ export const AccountMenu = withStyles(styles)(
                     <MenuItem onClick={() => dispatch(navigateToSiteManager)}>Site Manager</MenuItem>
                     <MenuItem onClick={() => dispatch(navigateToMyAccount)}>My account</MenuItem>
                     <MenuItem>
-                        <a href={`${workbenchURL.replace(/\/$/, "")}/${wb1URL(currentRoute)}`}
+                        <a href={`${workbenchURL.replace(/\/$/, "")}/${wb1URL(currentRoute)}?api_token=${apiToken}`}
                             className={classes.link}>
                             Switch to Workbench v1</a></MenuItem>
                     <Divider />
