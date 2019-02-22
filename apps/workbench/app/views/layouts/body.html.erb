@@ -83,6 +83,18 @@ SPDX-License-Identifier: AGPL-3.0 %>
                     </li>
                   <% end %>
                 <li role="menuitem">
+                  <%
+                  protocol, hostname = arvados_api_client.discovery[:workbenchUrl].split("://")
+                  workbench2_url = "#{protocol}://workbench2.#{hostname.split(".")[1..-1].join(".")}"
+                  %>
+                  <form action="<%= workbench2_url %>/token" method="GET">
+                    <input type="hidden" name="api_token" value="<%= Thread.current[:arvados_api_token] %>">
+                    <button role="menuitem" type="submit">
+                      <i class="fa fa-lg fa-share-square fa-fw"></i> Go to new Workbench
+                    </button>
+                  </form>
+                </li>
+                <li role="menuitem">
                   <%= link_to virtual_machines_user_path(current_user), role: 'menu-item' do %>
                     <i class="fa fa-lg fa-terminal fa-fw"></i> Virtual machines
                   <% end %>
