@@ -41,14 +41,16 @@ describe('auth-actions', () => {
         localStorage.setItem(USER_EMAIL_KEY, "test@test.com");
         localStorage.setItem(USER_FIRST_NAME_KEY, "John");
         localStorage.setItem(USER_LAST_NAME_KEY, "Doe");
-        localStorage.setItem(USER_UUID_KEY, "uuid");
+        localStorage.setItem(USER_UUID_KEY, "zzzzz-tpzed-abcefg");
         localStorage.setItem(USER_USERNAME, "username");
         localStorage.setItem(USER_PREFS, JSON.stringify({}));
         localStorage.setItem(USER_OWNER_UUID_KEY, "ownerUuid");
         localStorage.setItem(USER_IS_ADMIN, JSON.stringify("false"));
 
         const config: any = {
-            remoteHosts: { "xc59": "xc59.api.arvados.com" }
+            rootUrl: "https://zzzzz.arvadosapi.com",
+            uuidPrefix: "zzzzz",
+            remoteHosts: { xc59z: "xc59z.arvadosapi.com" },
         };
 
         store.dispatch(initAuth(config));
@@ -56,28 +58,29 @@ describe('auth-actions', () => {
         expect(store.getState().auth).toEqual({
             apiToken: "token",
             sshKeys: [],
-            homeCluster: "uuid",
-            localCluster: undefined,
+            homeCluster: "zzzzz",
+            localCluster: "zzzzz",
             remoteHosts: {
-                xc59: "xc59.api.arvados.com"
+                zzzzz: "zzzzz.arvadosapi.com",
+                xc59z: "xc59z.arvadosapi.com"
             },
             sessions: [{
                 "active": true,
                 "baseUrl": undefined,
-                "clusterId": undefined,
+                "clusterId": "zzzzz",
                 "email": "test@test.com",
                 "loggedIn": true,
-                "remoteHost": undefined,
+                "remoteHost": "https://zzzzz.arvadosapi.com",
                 "status": 2,
                 "token": "token",
                 "username": "John Doe"
             }, {
                 "active": false,
                 "baseUrl": "",
-                "clusterId": "xc59",
+                "clusterId": "xc59z",
                 "email": "",
                 "loggedIn": false,
-                "remoteHost": "xc59.api.arvados.com",
+                "remoteHost": "xc59z.arvadosapi.com",
                 "status": 0,
                 "token": "",
                 "username": ""
@@ -86,7 +89,7 @@ describe('auth-actions', () => {
                 email: "test@test.com",
                 firstName: "John",
                 lastName: "Doe",
-                uuid: "uuid",
+                uuid: "zzzzz-tpzed-abcefg",
                 ownerUuid: "ownerUuid",
                 username: "username",
                 prefs: {},
