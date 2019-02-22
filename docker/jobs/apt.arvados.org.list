@@ -1,2 +1,2 @@
 # apt.arvados.org
-deb http://apt.arvados.org/ jessie-dev main
+deb http://apt.arvados.org/ jessie-testing main
