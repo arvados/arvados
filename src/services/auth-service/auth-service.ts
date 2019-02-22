@@ -101,7 +101,6 @@ export class AuthService {
 
     public login(uuidPrefix: string, homeCluster: string) {
         const currentUrl = `${window.location.protocol}//${window.location.host}/token`;
-        // window.location.assign(`${this.baseUrl || ""}/login?return_to=${currentUrl}`);
         window.location.assign(`https://${homeCluster}/login?remote=${uuidPrefix}&return_to=${currentUrl}`);
     }
 
