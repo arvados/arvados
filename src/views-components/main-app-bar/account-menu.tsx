@@ -26,13 +26,15 @@ interface AccountMenuProps {
     currentRoute: string;
     workbenchURL: string;
     apiToken?: string;
+    localCluster: string;
 }
 
 const mapStateToProps = (state: RootState): AccountMenuProps => ({
     user: state.auth.user,
     currentRoute: state.router.location ? state.router.location.pathname : '',
     workbenchURL: state.config.workbenchUrl,
-    apiToken: state.auth.apiToken
+    apiToken: state.auth.apiToken,
+    localCluster: state.auth.localCluster
 });
 
 const wb1URL = (route: string) => {
@@ -56,7 +58,7 @@ const styles: StyleRulesCallback<CssRules> = () => ({
 
 export const AccountMenu = withStyles(styles)(
     connect(mapStateToProps)(
-        ({ user, dispatch, currentRoute, workbenchURL, apiToken, classes }: AccountMenuProps & DispatchProp<any> & WithStyles<CssRules>) =>
+        ({ user, dispatch, currentRoute, workbenchURL, apiToken, localCluster, classes }: AccountMenuProps & DispatchProp<any> & WithStyles<CssRules>) =>
             user
                 ? <DropdownMenu
                     icon={<UserPanelIcon />}
@@ -64,7 +66,7 @@ export const AccountMenu = withStyles(styles)(
                     title="Account Management"
                     key={currentRoute}>
                     <MenuItem disabled>
-                        {getUserFullname(user)}
+                        {getUserFullname(user)} {user.uuid.substr(0, 5) !== localCluster && `(${user.uuid.substr(0, 5)})`}
                     </MenuItem>
                     <MenuItem onClick={() => dispatch(openUserVirtualMachines())}>Virtual Machines</MenuItem>
                     {!user.isAdmin && <MenuItem onClick={() => dispatch(openRepositoriesPanel())}>Repositories</MenuItem>}
