@@ -46,7 +46,7 @@ setup(name='arvados-python-client',
           ('share/doc/arvados-python-client', ['LICENSE-2.0.txt', 'README.rst']),
       ],
       install_requires=[
-          'ciso8601 >=1.0.6, <2.0.0',
+          'ciso8601 >=2.0.0',
           'future',
           'google-api-python-client >=1.6.2, <1.7',
           'httplib2 >=0.9.2',
