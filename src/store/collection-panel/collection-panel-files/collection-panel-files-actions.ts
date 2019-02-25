@@ -39,9 +39,13 @@ export const removeCollectionFiles = (filePaths: string[]) =>
         if (currentCollection) {
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing...' }));
             try {
-                await services.collectionService.deleteFiles('', filePaths);
+                await services.collectionService.deleteFiles(currentCollection.uuid, filePaths);
                 dispatch<any>(loadCollectionFiles(currentCollection.uuid));
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000 }));
+                dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: 'Removed.',
+                    hideDuration: 2000,
+                    kind: SnackbarKind.SUCCESS
+                }));
             } catch (e) {
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'Could not remove file.',
