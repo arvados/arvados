@@ -65,7 +65,6 @@ export class AuthService {
     }
 
     public getIsActive(): boolean {
-        console.log(`uia ${localStorage.getItem(USER_IS_ACTIVE)}`)
         return localStorage.getItem(USER_IS_ACTIVE) === 'true';
     }
 
@@ -79,8 +78,6 @@ export class AuthService {
         const isActive = this.getIsActive();
         const username = localStorage.getItem(USER_USERNAME);
         const prefs = JSON.parse(localStorage.getItem(USER_PREFS) || '{"profile": {}}');
-
-        console.log(`leg! ${isActive}`)
 
         return email && firstName && lastName && uuid && ownerUuid && username && prefs
             ? { email, firstName, lastName, uuid, ownerUuid, isAdmin, isActive, username, prefs }
