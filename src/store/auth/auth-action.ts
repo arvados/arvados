@@ -53,9 +53,9 @@ export const initAuth = (config: Config) => (dispatch: Dispatch, getState: () =>
     dispatch(authActions.CONFIG({ config }));
     if (token && user) {
         dispatch(authActions.INIT({ user, token }));
+        dispatch<any>(initSessions(services.authService, config, user));
         dispatch<any>(getUserDetails()).then((user: User) => {
             dispatch(authActions.INIT({ user, token }));
-            dispatch<any>(initSessions(services.authService, config, user));
         });
     }
 };
