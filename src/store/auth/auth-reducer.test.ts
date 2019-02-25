@@ -13,8 +13,8 @@ import { ApiActions } from "~/services/api/api-actions";
 describe('auth-reducer', () => {
     let reducer: (state: AuthState | undefined, action: AuthAction) => any;
     const actions: ApiActions = {
-        progressFn: (id: string, working: boolean) => {},
-        errorFn: (id: string, message: string) => {}
+        progressFn: (id: string, working: boolean) => { },
+        errorFn: (id: string, message: string) => { }
     };
 
     beforeAll(() => {
@@ -28,18 +28,22 @@ describe('auth-reducer', () => {
             email: "test@test.com",
             firstName: "John",
             lastName: "Doe",
-            uuid: "uuid",
+            uuid: "zzzzz-tpzed-xurymjxw79nv3jz",
             ownerUuid: "ownerUuid",
-            identityUrl: "identityUrl",
+            username: "username",
             prefs: {},
-            isAdmin: false
+            isAdmin: false,
+            isActive: true
         };
         const state = reducer(initialState, authActions.INIT({ user, token: "token" }));
         expect(state).toEqual({
             apiToken: "token",
             user,
             sshKeys: [],
-            sessions: []
+            sessions: [],
+            homeCluster: "zzzzz",
+            localCluster: "",
+            remoteHosts: {}
         });
     });
 
@@ -51,7 +55,10 @@ describe('auth-reducer', () => {
             apiToken: "token",
             user: undefined,
             sshKeys: [],
-            sessions: []
+            sessions: [],
+            homeCluster: "",
+            localCluster: "",
+            remoteHosts: {},
         });
     });
 
@@ -64,9 +71,10 @@ describe('auth-reducer', () => {
             lastName: "Doe",
             uuid: "uuid",
             ownerUuid: "ownerUuid",
-            identityUrl: "identityUrl",
+            username: "username",
             prefs: {},
-            isAdmin: false
+            isAdmin: false,
+            isActive: true
         };
 
         const state = reducer(initialState, authActions.USER_DETAILS_SUCCESS(user));
@@ -74,15 +82,19 @@ describe('auth-reducer', () => {
             apiToken: undefined,
             sshKeys: [],
             sessions: [],
+            homeCluster: "",
+            localCluster: "",
+            remoteHosts: {},
             user: {
                 email: "test@test.com",
                 firstName: "John",
                 lastName: "Doe",
                 uuid: "uuid",
                 ownerUuid: "ownerUuid",
-                identityUrl: "identityUrl",
+                username: "username",
                 prefs: {},
-                isAdmin: false
+                isAdmin: false,
+                isActive: true
             }
         });
     });

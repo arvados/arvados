@@ -61,7 +61,7 @@ export const UserAttributesDialog = compose(
     );
 
 const attributes = (user: UserResource, classes: any) => {
-    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, firstName, lastName, href, identityUrl, username } = user;
+    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, firstName, lastName, href, username } = user;
     return (
         <span>
             <Grid container direction="row">
@@ -75,7 +75,7 @@ const attributes = (user: UserResource, classes: any) => {
                     {modifiedByClientUuid && <Grid item>Modified by client uuid</Grid>}
                     {uuid && <Grid item>uuid</Grid>}
                     {href && <Grid item>Href</Grid>}
-                    {identityUrl && <Grid item>Identity url</Grid>}
+                    {username && <Grid item>Username</Grid>}
                     {username && <Grid item>Username</Grid>}
                 </Grid>
                 <Grid item xs={7} className={classes.leftContainer}>
@@ -88,7 +88,7 @@ const attributes = (user: UserResource, classes: any) => {
                     <Grid item>{modifiedByClientUuid}</Grid>
                     <Grid item>{uuid}</Grid>
                     <Grid item>{href}</Grid>
-                    <Grid item>{identityUrl}</Grid>
+                    <Grid item>{username}</Grid>
                     <Grid item>{username}</Grid>
                 </Grid>
             </Grid>

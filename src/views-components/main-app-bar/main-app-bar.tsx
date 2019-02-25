@@ -31,6 +31,7 @@ interface MainAppBarDataProps {
     user?: User;
     buildInfo?: string;
     children?: ReactNode;
+    uuidPrefix: string;
 }
 
 export type MainAppBarProps = MainAppBarDataProps & WithStyles<CssRules>;
@@ -43,7 +44,7 @@ export const MainAppBar = withStyles(styles)(
                     <Grid container item xs={3} direction="column" justify="center">
                         <Typography variant='h6' color="inherit" noWrap>
                             <Link to={Routes.ROOT} className={props.classes.link}>
-                                arvados workbench
+                                arvados workbench ({props.uuidPrefix})
                             </Link>
                         </Typography>
                         <Typography variant="caption" color="inherit">{props.buildInfo}</Typography>
@@ -53,7 +54,7 @@ export const MainAppBar = withStyles(styles)(
                         xs={6}
                         container
                         alignItems="center">
-                        {props.user && <SearchBar /> }
+                        {props.user && props.user.isActive && <SearchBar />}
                     </Grid>
                     <Grid
                         item

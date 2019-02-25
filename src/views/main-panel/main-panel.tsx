@@ -13,7 +13,8 @@ const mapStateToProps = (state: RootState): MainPanelRootDataProps => {
         user: state.auth.user,
         working: isSystemWorking(state.progressIndicator),
         loading: isWorkbenchLoading(state),
-        buildInfo: state.appInfo.buildInfo
+        buildInfo: state.appInfo.buildInfo,
+        uuidPrefix: state.auth.localCluster
     };
 };
 

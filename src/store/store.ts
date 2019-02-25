@@ -8,6 +8,7 @@ import thunkMiddleware from 'redux-thunk';
 import { History } from "history";
 
 import { authReducer } from "./auth/auth-reducer";
+import { configReducer } from "./config/config-reducer";
 import { dataExplorerReducer } from './data-explorer/data-explorer-reducer';
 import { detailsPanelReducer } from './details-panel/details-panel-reducer';
 import { contextMenuReducer } from './context-menu/context-menu-reducer';
@@ -61,8 +62,8 @@ import { ApiClientAuthorizationMiddlewareService } from '~/store/api-client-auth
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
-     window && window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ &&
-     window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__({trace: true, traceLimit: 25})) ||
+        window && window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ &&
+        window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__({ trace: true, traceLimit: 25 })) ||
     compose;
 
 export type RootState = ReturnType<ReturnType<typeof createRootReducer>>;
@@ -130,6 +131,7 @@ export function configureStore(history: History, services: ServiceRepository): R
 
 const createRootReducer = (services: ServiceRepository) => combineReducers({
     auth: authReducer(services),
+    config: configReducer,
     collectionPanel: collectionPanelReducer,
     collectionPanelFiles: collectionPanelFilesReducer,
     contextMenu: contextMenuReducer,

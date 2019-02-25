@@ -13,14 +13,15 @@ import { MY_ACCOUNT_FORM } from "~/store/my-account/my-account-panel-actions";
 const mapStateToProps = (state: RootState): MyAccountPanelRootDataProps => ({
     isPristine: isPristine(MY_ACCOUNT_FORM)(state),
     isValid: isValid(MY_ACCOUNT_FORM)(state),
-    initialValues: state.auth.user
+    initialValues: state.auth.user,
+    localCluster: state.auth.localCluster
 });
 
 export const MyAccountPanel = compose(
     connect(mapStateToProps),
     reduxForm({
-    form: MY_ACCOUNT_FORM,
-    onSubmit: (data, dispatch) => {
-        dispatch(saveEditedUser(data));
-    }
-}))(MyAccountPanelRoot);
+        form: MY_ACCOUNT_FORM,
+        onSubmit: (data, dispatch) => {
+            dispatch(saveEditedUser(data));
+        }
+    }))(MyAccountPanelRoot);
