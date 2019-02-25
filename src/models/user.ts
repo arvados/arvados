@@ -23,6 +23,7 @@ export interface User {
     username: string;
     prefs: UserPrefs;
     isAdmin: boolean;
+    isActive: boolean;
 }
 
 export const getUserFullname = (user?: User) => {

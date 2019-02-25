@@ -32,7 +32,8 @@ describe('auth-reducer', () => {
             ownerUuid: "ownerUuid",
             username: "username",
             prefs: {},
-            isAdmin: false
+            isAdmin: false,
+            isActive: true
         };
         const state = reducer(initialState, authActions.INIT({ user, token: "token" }));
         expect(state).toEqual({
@@ -72,7 +73,8 @@ describe('auth-reducer', () => {
             ownerUuid: "ownerUuid",
             username: "username",
             prefs: {},
-            isAdmin: false
+            isAdmin: false,
+            isActive: true
         };
 
         const state = reducer(initialState, authActions.USER_DETAILS_SUCCESS(user));
@@ -91,7 +93,8 @@ describe('auth-reducer', () => {
                 ownerUuid: "ownerUuid",
                 username: "username",
                 prefs: {},
-                isAdmin: false
+                isAdmin: false,
+                isActive: true
             }
         });
     });

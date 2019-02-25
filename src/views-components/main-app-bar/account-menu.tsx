@@ -68,12 +68,14 @@ export const AccountMenu = withStyles(styles)(
                     <MenuItem disabled>
                         {getUserFullname(user)} {user.uuid.substr(0, 5) !== localCluster && `(${user.uuid.substr(0, 5)})`}
                     </MenuItem>
-                    <MenuItem onClick={() => dispatch(openUserVirtualMachines())}>Virtual Machines</MenuItem>
-                    {!user.isAdmin && <MenuItem onClick={() => dispatch(openRepositoriesPanel())}>Repositories</MenuItem>}
-                    <MenuItem onClick={() => dispatch(openCurrentTokenDialog)}>Current token</MenuItem>
-                    <MenuItem onClick={() => dispatch(navigateToSshKeysUser)}>Ssh Keys</MenuItem>
-                    <MenuItem onClick={() => dispatch(navigateToSiteManager)}>Site Manager</MenuItem>
-                    <MenuItem onClick={() => dispatch(navigateToMyAccount)}>My account</MenuItem>
+                    {user.isActive ? <>
+                        <MenuItem onClick={() => dispatch(openUserVirtualMachines())}>Virtual Machines</MenuItem>
+                        {!user.isAdmin && <MenuItem onClick={() => dispatch(openRepositoriesPanel())}>Repositories</MenuItem>}
+                        <MenuItem onClick={() => dispatch(openCurrentTokenDialog)}>Current token</MenuItem>
+                        <MenuItem onClick={() => dispatch(navigateToSshKeysUser)}>Ssh Keys</MenuItem>
+                        <MenuItem onClick={() => dispatch(navigateToSiteManager)}>Site Manager</MenuItem>
+                        <MenuItem onClick={() => dispatch(navigateToMyAccount)}>My account</MenuItem>)
+                     </> : null}
                     <MenuItem>
                         <a href={`${workbenchURL.replace(/\/$/, "")}/${wb1URL(currentRoute)}?api_token=${apiToken}`}
                             className={classes.link}>

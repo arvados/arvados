@@ -17,6 +17,7 @@ export const USER_LAST_NAME_KEY = 'userLastName';
 export const USER_UUID_KEY = 'userUuid';
 export const USER_OWNER_UUID_KEY = 'userOwnerUuid';
 export const USER_IS_ADMIN = 'isAdmin';
+export const USER_IS_ACTIVE = 'isActive';
 export const USER_USERNAME = 'username';
 export const USER_PREFS = 'prefs';
 
@@ -27,6 +28,7 @@ export interface UserDetailsResponse {
     uuid: string;
     owner_uuid: string;
     is_admin: boolean;
+    is_active: boolean;
     username: string;
     prefs: UserPrefs;
 }
@@ -62,6 +64,11 @@ export class AuthService {
         return localStorage.getItem(USER_IS_ADMIN) === 'true';
     }
 
+    public getIsActive(): boolean {
+        console.log(`uia ${localStorage.getItem(USER_IS_ACTIVE)}`)
+        return localStorage.getItem(USER_IS_ACTIVE) === 'true';
+    }
+
     public getUser(): User | undefined {
         const email = localStorage.getItem(USER_EMAIL_KEY);
         const firstName = localStorage.getItem(USER_FIRST_NAME_KEY);
@@ -69,11 +76,14 @@ export class AuthService {
         const uuid = this.getUuid();
         const ownerUuid = this.getOwnerUuid();
         const isAdmin = this.getIsAdmin();
+        const isActive = this.getIsActive();
         const username = localStorage.getItem(USER_USERNAME);
         const prefs = JSON.parse(localStorage.getItem(USER_PREFS) || '{"profile": {}}');
 
+        console.log(`leg! ${isActive}`)
+
         return email && firstName && lastName && uuid && ownerUuid && username && prefs
-            ? { email, firstName, lastName, uuid, ownerUuid, isAdmin, username, prefs }
+            ? { email, firstName, lastName, uuid, ownerUuid, isAdmin, isActive, username, prefs }
             : undefined;
     }
 
@@ -84,6 +94,7 @@ export class AuthService {
         localStorage.setItem(USER_UUID_KEY, user.uuid);
         localStorage.setItem(USER_OWNER_UUID_KEY, user.ownerUuid);
         localStorage.setItem(USER_IS_ADMIN, JSON.stringify(user.isAdmin));
+        localStorage.setItem(USER_IS_ACTIVE, JSON.stringify(user.isActive));
         localStorage.setItem(USER_USERNAME, user.username);
         localStorage.setItem(USER_PREFS, JSON.stringify(user.prefs));
     }
@@ -95,6 +106,7 @@ export class AuthService {
         localStorage.removeItem(USER_UUID_KEY);
         localStorage.removeItem(USER_OWNER_UUID_KEY);
         localStorage.removeItem(USER_IS_ADMIN);
+        localStorage.removeItem(USER_IS_ACTIVE);
         localStorage.removeItem(USER_USERNAME);
         localStorage.removeItem(USER_PREFS);
     }
@@ -124,6 +136,7 @@ export class AuthService {
                     uuid: resp.data.uuid,
                     ownerUuid: resp.data.owner_uuid,
                     isAdmin: resp.data.is_admin,
+                    isActive: resp.data.is_active,
                     username: resp.data.username,
                     prefs
                 };

@@ -54,7 +54,7 @@ export const MainAppBar = withStyles(styles)(
                         xs={6}
                         container
                         alignItems="center">
-                        {props.user && <SearchBar />}
+                        {props.user && props.user.isActive && <SearchBar />}
                     </Grid>
                     <Grid
                         item

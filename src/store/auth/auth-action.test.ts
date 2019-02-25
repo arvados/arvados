@@ -11,7 +11,10 @@ import {
     USER_LAST_NAME_KEY,
     USER_OWNER_UUID_KEY,
     USER_UUID_KEY,
-    USER_IS_ADMIN, USER_USERNAME, USER_PREFS
+    USER_IS_ADMIN,
+    USER_IS_ACTIVE,
+    USER_USERNAME,
+    USER_PREFS
 } from "~/services/auth-service/auth-service";
 
 import 'jest-localstorage-mock';
@@ -45,7 +48,8 @@ describe('auth-actions', () => {
         localStorage.setItem(USER_USERNAME, "username");
         localStorage.setItem(USER_PREFS, JSON.stringify({}));
         localStorage.setItem(USER_OWNER_UUID_KEY, "ownerUuid");
-        localStorage.setItem(USER_IS_ADMIN, JSON.stringify("false"));
+        localStorage.setItem(USER_IS_ADMIN, JSON.stringify(false));
+        localStorage.setItem(USER_IS_ACTIVE, JSON.stringify(true));
 
         const config: any = {
             rootUrl: "https://zzzzz.arvadosapi.com",
@@ -93,7 +97,8 @@ describe('auth-actions', () => {
                 ownerUuid: "ownerUuid",
                 username: "username",
                 prefs: {},
-                isAdmin: false
+                isAdmin: false,
+                isActive: true
             }
         });
     });

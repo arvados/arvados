@@ -8,6 +8,7 @@ import { User } from "~/models/user";
 import { ArvadosTheme } from '~/common/custom-theme';
 import { WorkbenchPanel } from '~/views/workbench/workbench';
 import { LoginPanel } from '~/views/login-panel/login-panel';
+import { InactivePanel } from '~/views/inactive-panel/inactive-panel';
 import { WorkbenchLoadingScreen } from '~/views/workbench/workbench-loading-screen';
 import { MainAppBar } from '~/views-components/main-app-bar/main-app-bar';
 
@@ -43,7 +44,7 @@ export const MainPanelRoot = withStyles(styles)(
                     {working ? <LinearProgress color="secondary" /> : null}
                 </MainAppBar>
                 <Grid container direction="column" className={classes.root}>
-                    {user ? <WorkbenchPanel /> : <LoginPanel />}
+                    {user ? (user.isActive ? <WorkbenchPanel /> : <InactivePanel />) : <LoginPanel />}
                 </Grid>
             </>
 );
