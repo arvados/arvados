@@ -5,6 +5,7 @@
 import { ContextMenuActionSet } from "~/views-components/context-menu/context-menu-action-set";
 import { collectionPanelFilesAction, openMultipleFilesRemoveDialog } from "~/store/collection-panel/collection-panel-files/collection-panel-files-actions";
 import { openCollectionPartialCopyDialog } from '~/store/collections/collection-partial-copy-actions';
+import { DownloadCollectionFileAction } from "~/views-components/context-menu/actions/download-collection-file-action";
 
 export const collectionFilesActionSet: ContextMenuActionSet = [[{
     name: "Select all",
@@ -22,7 +23,7 @@ export const collectionFilesActionSet: ContextMenuActionSet = [[{
         dispatch(openMultipleFilesRemoveDialog());
     }
 }, {
-    name: "Download selected",
+    component: DownloadCollectionFileAction,
     execute: () => { return; }
 }, {
     name: "Create a new collection with selected",
