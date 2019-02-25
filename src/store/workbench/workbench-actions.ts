@@ -117,31 +117,26 @@ export const loadWorkbench = () =>
         const { auth, router } = getState();
         const { user } = auth;
         if (user) {
-            const userResource = await dispatch<any>(loadResource(user.uuid));
-            if (userResource) {
-                dispatch(projectPanelActions.SET_COLUMNS({ columns: projectPanelColumns }));
-                dispatch(favoritePanelActions.SET_COLUMNS({ columns: favoritePanelColumns }));
-                dispatch(trashPanelActions.SET_COLUMNS({ columns: trashPanelColumns }));
-                dispatch(sharedWithMePanelActions.SET_COLUMNS({ columns: projectPanelColumns }));
-                dispatch(workflowPanelActions.SET_COLUMNS({ columns: workflowPanelColumns }));
-                dispatch(searchResultsPanelActions.SET_FETCH_MODE({ fetchMode: DataTableFetchMode.INFINITE }));
-                dispatch(searchResultsPanelActions.SET_COLUMNS({ columns: searchResultsPanelColumns }));
-                dispatch(userBindedActions.SET_COLUMNS({ columns: userPanelColumns }));
-                dispatch(groupPanelActions.GroupsPanelActions.SET_COLUMNS({ columns: groupsPanelColumns }));
-                dispatch(groupDetailsPanelActions.GroupDetailsPanelActions.SET_COLUMNS({columns: groupDetailsPanelColumns}));
-                dispatch(linkPanelActions.SET_COLUMNS({ columns: linkPanelColumns }));
-                dispatch(computeNodesActions.SET_COLUMNS({ columns: computeNodePanelColumns }));
-                dispatch(apiClientAuthorizationsActions.SET_COLUMNS({ columns: apiClientAuthorizationPanelColumns }));
+            dispatch(projectPanelActions.SET_COLUMNS({ columns: projectPanelColumns }));
+            dispatch(favoritePanelActions.SET_COLUMNS({ columns: favoritePanelColumns }));
+            dispatch(trashPanelActions.SET_COLUMNS({ columns: trashPanelColumns }));
+            dispatch(sharedWithMePanelActions.SET_COLUMNS({ columns: projectPanelColumns }));
+            dispatch(workflowPanelActions.SET_COLUMNS({ columns: workflowPanelColumns }));
+            dispatch(searchResultsPanelActions.SET_FETCH_MODE({ fetchMode: DataTableFetchMode.INFINITE }));
+            dispatch(searchResultsPanelActions.SET_COLUMNS({ columns: searchResultsPanelColumns }));
+            dispatch(userBindedActions.SET_COLUMNS({ columns: userPanelColumns }));
+            dispatch(groupPanelActions.GroupsPanelActions.SET_COLUMNS({ columns: groupsPanelColumns }));
+            dispatch(groupDetailsPanelActions.GroupDetailsPanelActions.SET_COLUMNS({ columns: groupDetailsPanelColumns }));
+            dispatch(linkPanelActions.SET_COLUMNS({ columns: linkPanelColumns }));
+            dispatch(computeNodesActions.SET_COLUMNS({ columns: computeNodePanelColumns }));
+            dispatch(apiClientAuthorizationsActions.SET_COLUMNS({ columns: apiClientAuthorizationPanelColumns }));
 
-                dispatch<any>(initSidePanelTree());
-                if (router.location) {
-                    const match = matchRootRoute(router.location.pathname);
-                    if (match) {
-                        dispatch(navigateToProject(userResource.uuid));
-                    }
+            dispatch<any>(initSidePanelTree());
+            if (router.location) {
+                const match = matchRootRoute(router.location.pathname);
+                if (match) {
+                    dispatch(navigateToProject(user.uuid));
                 }
-            } else {
-                dispatch(userIsNotAuthenticated);
             }
         } else {
             dispatch(userIsNotAuthenticated);
@@ -470,9 +465,9 @@ export const loadSshKeys = handleFirstTimeLoad(
     });
 
 export const loadSiteManager = handleFirstTimeLoad(
-async (dispatch: Dispatch<any>) => {
-    await dispatch(loadSiteManagerPanel());
-});
+    async (dispatch: Dispatch<any>) => {
+        await dispatch(loadSiteManagerPanel());
+    });
 
 export const loadMyAccount = handleFirstTimeLoad(
     (dispatch: Dispatch<any>) => {

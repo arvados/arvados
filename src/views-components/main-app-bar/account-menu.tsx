@@ -74,8 +74,8 @@ export const AccountMenu = withStyles(styles)(
                         <MenuItem onClick={() => dispatch(openCurrentTokenDialog)}>Current token</MenuItem>
                         <MenuItem onClick={() => dispatch(navigateToSshKeysUser)}>Ssh Keys</MenuItem>
                         <MenuItem onClick={() => dispatch(navigateToSiteManager)}>Site Manager</MenuItem>
-                        <MenuItem onClick={() => dispatch(navigateToMyAccount)}>My account</MenuItem>)
-                     </> : null}
+                        <MenuItem onClick={() => dispatch(navigateToMyAccount)}>My account</MenuItem>
+                    </> : null}
                     <MenuItem>
                         <a href={`${workbenchURL.replace(/\/$/, "")}/${wb1URL(currentRoute)}?api_token=${apiToken}`}
                             className={classes.link}>
