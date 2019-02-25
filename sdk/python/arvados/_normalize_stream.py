@@ -55,13 +55,13 @@ def normalize_stream(stream_name, stream):
                 if streamoffset == current_span[1]:
                     current_span[1] += segment.segment_size
                 else:
-                    stream_tokens.append("{0}:{1}:{2}".format(current_span[0], current_span[1] - current_span[0], fout))
+                    stream_tokens.append(u"{0}:{1}:{2}".format(current_span[0], current_span[1] - current_span[0], fout))
                     current_span = [streamoffset, streamoffset + segment.segment_size]
 
         if current_span is not None:
-            stream_tokens.append("{0}:{1}:{2}".format(current_span[0], current_span[1] - current_span[0], fout))
+            stream_tokens.append(u"{0}:{1}:{2}".format(current_span[0], current_span[1] - current_span[0], fout))
 
         if not stream[streamfile]:
-            stream_tokens.append("0:0:{0}".format(fout))
+            stream_tokens.append(u"0:0:{0}".format(fout))
 
     return stream_tokens
