@@ -326,3 +326,8 @@ common:
   # the jobs api is disabled and there are no local git repositories.
   #
   repositories: true
+
+  #
+  # Add an item to the user menu pointing to workbench2_url, if not false.
+  #
+  workbench2_url: false
