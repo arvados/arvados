@@ -49,6 +49,7 @@ type RequestTester struct {
 //   - permissions on, authenticated request, unsigned locator
 //   - permissions on, unauthenticated request, signed locator
 //   - permissions on, authenticated request, expired locator
+//   - permissions on, authenticated request, signed locator, transient error from backend
 //
 func TestGetHandler(t *testing.T) {
 	defer teardown()
