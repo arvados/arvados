@@ -361,8 +361,8 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                     keys = keys[pageSize:]
                     try:
                         proc_states = table.list(filters=[["uuid", "in", page]]).execute(num_retries=self.num_retries)
-                    except Exception as e:
-                        logger.warning("Error checking states on API server: %s", e)
+                    except Exception:
+                        logger.exception("Error checking states on API server: %s")
                         remain_wait = self.poll_interval
                         continue
 
