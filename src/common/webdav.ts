@@ -29,17 +29,11 @@ export class WebDAV {
         })
 
     upload = (url: string, path: string, files: File[], config: WebDAVRequestConfig = {}) => {
-        const fd = new FormData();
-        fd.append('path', path);
-        files.forEach((f, idx) => {
-            fd.append(`file-${idx}`, f);
-        });
-
-        return this.request({
+        return files.map(file => this.request({
             ...config, url,
             method: 'PUT',
-            data: fd
-        });
+            data: file
+        }));
     }
 
     copy = (url: string, destination: string, config: WebDAVRequestConfig = {}) =>
@@ -66,7 +60,6 @@ export class WebDAV {
         return new Promise<XMLHttpRequest>((resolve, reject) => {
             const r = this.createRequest();
             r.open(config.method, this.defaults.baseURL + config.url);
-
             const headers = { ...this.defaults.headers, ...config.headers };
             Object
                 .keys(headers)

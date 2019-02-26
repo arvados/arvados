@@ -11,6 +11,9 @@ import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions
 import { fileUploaderActions } from '~/store/file-uploader/file-uploader-actions';
 import { reset, startSubmit, stopSubmit } from 'redux-form';
 import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
+import { collectionPanelFilesAction } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
+import { createTree } from '~/models/tree';
+import { loadCollectionPanel } from '../collection-panel/collection-panel-action';
 
 export const uploadCollectionFiles = (collectionUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -35,8 +38,10 @@ export const submitCollectionFiles = () =>
             try {
                 dispatch(progressIndicatorActions.START_WORKING(COLLECTION_UPLOAD_FILES_DIALOG));
                 dispatch(startSubmit(COLLECTION_UPLOAD_FILES_DIALOG));
-                await dispatch<any>(uploadCollectionFiles(currentCollection.uuid));
+                await dispatch<any>(uploadCollectionFiles(currentCollection.uuid))
+                    .then(() => dispatch<any>(collectionPanelFilesAction.SET_COLLECTION_FILES({ files: createTree() })));
                 dispatch<any>(loadCollectionFiles(currentCollection.uuid));
+                dispatch<any>(loadCollectionPanel(currentCollection.uuid));
                 dispatch(closeUploadCollectionFilesDialog());
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'Data has been uploaded.',
