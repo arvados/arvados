@@ -330,4 +330,7 @@ common:
   #
   # Add an item to the user menu pointing to workbench2_url, if not false.
   #
+  # Example:
+  # workbench2_url: https://workbench2.qr1hi.arvadosapi.com
+  #
   workbench2_url: false

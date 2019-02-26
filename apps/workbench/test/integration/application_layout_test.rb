@@ -142,7 +142,13 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
 
   [
     [false, false],
+    ['http://wb2.example.org//', false],
+    ['ftp://wb2.example.org', false],
+    ['wb2.example.org', false],
     ['http://wb2.example.org', true],
+    ['https://wb2.example.org', true],
+    ['http://wb2.example.org/', true],
+    ['https://wb2.example.org/', true],
   ].each do |wb2_url_config, wb2_menu_appear|
     test "workbench2_url=#{wb2_url_config} should#{wb2_menu_appear ? '' : ' not'} show WB2 menu" do
       Rails.configuration.workbench2_url = wb2_url_config
