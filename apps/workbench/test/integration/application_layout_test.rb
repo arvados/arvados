@@ -141,6 +141,30 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
   end
 
   [
+    [false, false],
+    ['http://wb2.example.org//', false],
+    ['ftp://wb2.example.org', false],
+    ['wb2.example.org', false],
+    ['http://wb2.example.org', true],
+    ['https://wb2.example.org', true],
+    ['http://wb2.example.org/', true],
+    ['https://wb2.example.org/', true],
+  ].each do |wb2_url_config, wb2_menu_appear|
+    test "workbench2_url=#{wb2_url_config} should#{wb2_menu_appear ? '' : ' not'} show WB2 menu" do
+      Rails.configuration.workbench2_url = wb2_url_config
+      assert_equal wb2_menu_appear, ConfigValidators::validate_wb2_url_config()
+
+      visit page_with_token('active')
+      within('.navbar-fixed-top') do
+        page.find("#notifications-menu").click
+        within('.dropdown-menu') do
+          assert_equal wb2_menu_appear, page.has_text?('Go to Workbench 2')
+        end
+      end
+    end
+  end
+
+  [
     ['active', true],
     ['active_with_prefs_profile_no_getting_started_shown', false],
   ].each do |token, getting_started_shown|

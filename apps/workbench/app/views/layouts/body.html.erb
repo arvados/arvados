@@ -82,6 +82,21 @@ SPDX-License-Identifier: AGPL-3.0 %>
 		      </form>
                     </li>
                   <% end %>
+                <% if Rails.configuration.workbench2_url %>
+                <li role="menuitem">
+                  <%
+                    wb2_url = Rails.configuration.workbench2_url
+                    wb2_url += '/' if wb2_url[-1] != '/'
+                    wb2_url += 'token'
+                  %>
+                  <form action="<%= wb2_url %>" method="GET">
+                    <input type="hidden" name="api_token" value="<%= Thread.current[:arvados_api_token] %>">
+                    <button role="menuitem" type="submit">
+                      <i class="fa fa-lg fa-share-square fa-fw"></i> Go to Workbench 2
+                    </button>
+                  </form>
+                </li>
+                <% end %>
                 <li role="menuitem">
                   <%= link_to virtual_machines_user_path(current_user), role: 'menu-item' do %>
                     <i class="fa fa-lg fa-terminal fa-fw"></i> Virtual machines
