@@ -12,7 +12,7 @@ def convertTime(t):
     if not t:
         return 0
     try:
-        return calendar.timegm(ciso8601.parse_datetime_unaware(t).timetuple())
+        return calendar.timegm(ciso8601.parse_datetime_as_naive(t).timetuple())
     except (TypeError, ValueError):
         return 0
 
