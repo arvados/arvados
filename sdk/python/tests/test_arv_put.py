@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
@@ -1283,6 +1285,16 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
         self.assertRegex(c['manifest_text'],
                          r'^\./%s.*:file2.txt' % os.path.basename(tmpdir))
         self.assertRegex(c['manifest_text'], r'^.*:file3.txt')
+
+    def test_unicode_on_filename(self):
+        tmpdir = self.make_tmpdir()
+        fname = u"i❤arvados.txt"
+        with open(os.path.join(tmpdir, fname), 'w') as f:
+            f.write("This is a unicode named file")
+        col = self.run_and_find_collection("", ['--no-progress', tmpdir])
+        self.assertNotEqual(None, col['uuid'])
+        c = arv_put.api_client.collections().get(uuid=col['uuid']).execute()
+        self.assertTrue(fname in c['manifest_text'], u"{} does not include {}".format(c['manifest_text'], fname))
 
     def test_silent_mode_no_errors(self):
         self.authorize_with('active')
