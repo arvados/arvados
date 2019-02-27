@@ -120,6 +120,24 @@
 			"revisionTime": "2019-02-25T19:22:39Z"
 		},
 		{
+			"checksumSHA1": "QHizt8XKUpuslIZv6EH6ENiGpGA=",
+			"path": "github.com/aws/aws-sdk-go/aws/credentials",
+			"revision": "6bea93e633a2e43ff55ce486f226109e9ceec5db",
+			"revisionTime": "2019-02-25T19:22:39Z"
+		},
+		{
+			"checksumSHA1": "qJUoBAO52ktC3lgCfd+59eQLxrw=",
+			"path": "github.com/aws/aws-sdk-go/aws/session",
+			"revision": "6bea93e633a2e43ff55ce486f226109e9ceec5db",
+			"revisionTime": "2019-02-25T19:22:39Z"
+		},
+		{
+			"checksumSHA1": "ucgpIIjgIQMbk/wzxJlcAt20XhQ=",
+			"path": "github.com/aws/aws-sdk-go/service/ec2",
+			"revision": "6bea93e633a2e43ff55ce486f226109e9ceec5db",
+			"revisionTime": "2019-02-25T19:22:39Z"
+		},
+		{
 			"checksumSHA1": "spyv5/YFBjYyZLZa1U2LBfDR8PM=",
 			"path": "github.com/beorn7/perks/quantile",
 			"revision": "4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9",
