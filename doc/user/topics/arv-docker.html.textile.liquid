@@ -210,6 +210,6 @@ h2. Share Docker images
 Docker images are subject to normal Arvados permissions.  If wish to share your Docker image with others (or wish to share a pipeline template that uses your Docker image) you will need to use @arv-keepdocker@ with the @--project-uuid@ option to upload the image to a shared project.
 
 <notextile>
-<pre><code>$ <span class="userinput">arv-keepdocker --project-uuid qr1hi-j7d0g-xxxxxxxxxxxxxxx arvados/jobs-with-r</span>
+<pre><code>$ <span class="userinput">arv-keepdocker arvados/jobs-with-r --project-uuid qr1hi-j7d0g-xxxxxxxxxxxxxxx</span>
 </code></pre>
 </notextile>
