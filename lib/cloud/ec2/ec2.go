@@ -5,7 +5,9 @@
 package ec2
 
 import (
+	"encoding/base64"
 	"encoding/json"
+	"log"
 	"strings"
 
 	"git.curoverse.com/arvados.git/lib/cloud"
@@ -90,13 +92,23 @@ func (instanceSet *ec2InstanceSet) Create(
 	}
 
 	rsv, err := instanceSet.client.RunInstances(&ec2.RunInstancesInput{
-		ImageId:          aws.String(string(imageID)),
-		InstanceType:     &instanceType.ProviderType,
-		MaxCount:         aws.Int64(1),
-		MinCount:         aws.Int64(1),
-		KeyName:          &instanceSet.ec2config.KeyPairName,
-		SecurityGroupIds: []*string{&instanceSet.ec2config.SecurityGroupId},
-		SubnetId:         &instanceSet.ec2config.SubnetId,
+		ImageId:      aws.String(string(imageID)),
+		InstanceType: &instanceType.ProviderType,
+		MaxCount:     aws.Int64(1),
+		MinCount:     aws.Int64(1),
+		KeyName:      &instanceSet.ec2config.KeyPairName,
+
+		NetworkInterfaces: []*ec2.InstanceNetworkInterfaceSpecification{
+			&ec2.InstanceNetworkInterfaceSpecification{
+				AssociatePublicIpAddress: aws.Bool(false),
+				DeleteOnTermination:      aws.Bool(true),
+				DeviceIndex:              aws.Int64(0),
+				Groups:                   []*string{&instanceSet.ec2config.SecurityGroupId},
+				SubnetId:                 &instanceSet.ec2config.SubnetId,
+			}},
+		DisableApiTermination:             aws.Bool(false),
+		InstanceInitiatedShutdownBehavior: aws.String("terminate"),
+		UserData: aws.String(base64.StdEncoding.EncodeToString([]byte("#!/bin/sh\n" + initCommand + "\n"))),
 		TagSpecifications: []*ec2.TagSpecification{
 			&ec2.TagSpecification{
 				ResourceType: aws.String("instance"),
@@ -194,6 +206,7 @@ func (inst *ec2Instance) Tags() cloud.InstanceTags {
 }
 
 func (inst *ec2Instance) Destroy() error {
+	log.Printf("terminating %v", *inst.instance.InstanceId)
 	_, err := inst.provider.client.TerminateInstances(&ec2.TerminateInstancesInput{
 		InstanceIds: []*string{inst.instance.InstanceId},
 	})

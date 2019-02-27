@@ -19,6 +19,7 @@
 //       SecurityGroupId: sg-xxxxxxxx
 //       SubnetId: subnet-xxxxxxxx
 //       AdminUsername: crunch
+//       KeyPairName: arvados-dispatcher-keypair
 
 package ec2
 
