@@ -73,7 +73,7 @@ h2. Download and tag the latest arvados/jobs docker image
 In order to start workflows from workbench, there needs to be Docker image tagged @arvados/jobs:latest@. The following command downloads the latest arvados/jobs image from Docker Hub, loads it into Keep, and tags it as 'latest'.  In this example @$project_uuid@ should be the the UUID of the "Arvados Standard Docker Images" project.
 
 <notextile>
-<pre><code>~$ <span class="userinput">arv-keepdocker --project-uuid $project_uuid --pull arvados/jobs latest</span>
+<pre><code>~$ <span class="userinput">arv-keepdocker --pull arvados/jobs latest --project-uuid $project_uuid</span>
 </code></pre></notextile>
 
 If the image needs to be downloaded from Docker Hub, the command can take a few minutes to complete, depending on available network bandwidth.

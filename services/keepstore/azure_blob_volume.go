@@ -603,6 +603,9 @@ func (v *AzureBlobVolume) translateError(err error) error {
 	switch {
 	case err == nil:
 		return err
+	case strings.Contains(err.Error(), "StatusCode=503"):
+		// "storage: service returned error: StatusCode=503, ErrorCode=ServerBusy, ErrorMessage=The server is busy" (See #14804)
+		return VolumeBusyError
 	case strings.Contains(err.Error(), "Not Found"):
 		// "storage: service returned without a response body (404 Not Found)"
 		return os.ErrNotExist

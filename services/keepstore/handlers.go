@@ -20,11 +20,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gorilla/mux"
-
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/health"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	"github.com/gorilla/mux"
 )
 
 type router struct {
@@ -668,6 +667,11 @@ func GetBlock(ctx context.Context, hash string, buf []byte, resp http.ResponseWr
 			// we return a NotFoundError.
 			if !os.IsNotExist(err) {
 				log.Printf("%s: Get(%s): %s", vol, hash, err)
+			}
+			// If some volume returns a transient error, return it to the caller
+			// instead of "Not found" so it can retry.
+			if err == VolumeBusyError {
+				errorToCaller = err.(*KeepError)
 			}
 			continue
 		}
