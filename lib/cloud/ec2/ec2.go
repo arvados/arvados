@@ -7,6 +7,7 @@ package ec2
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"log"
 	"strings"
 
@@ -83,6 +84,10 @@ func (instanceSet *ec2InstanceSet) Create(
 			Key:   aws.String(ARVADOS_DISPATCH_ID),
 			Value: aws.String(string(instanceSet.dispatcherID)),
 		},
+		&ec2.Tag{
+			Key:   aws.String("arvados-class"),
+			Value: aws.String("dynamic-compute"),
+		},
 	}
 	for k, v := range newTags {
 		ec2tags = append(ec2tags, &ec2.Tag{
@@ -91,7 +96,7 @@ func (instanceSet *ec2InstanceSet) Create(
 		})
 	}
 
-	rsv, err := instanceSet.client.RunInstances(&ec2.RunInstancesInput{
+	rii := ec2.RunInstancesInput{
 		ImageId:      aws.String(string(imageID)),
 		InstanceType: &instanceType.ProviderType,
 		MaxCount:     aws.Int64(1),
@@ -114,7 +119,28 @@ func (instanceSet *ec2InstanceSet) Create(
 				ResourceType: aws.String("instance"),
 				Tags:         ec2tags,
 			}},
-	})
+	}
+
+	if instanceType.ExtraScratch > 0 {
+		rii.BlockDeviceMappings = []*ec2.BlockDeviceMapping{&ec2.BlockDeviceMapping{
+			DeviceName: aws.String("/dev/xvdt"),
+			Ebs: &ec2.EbsBlockDevice{
+				DeleteOnTermination: aws.Bool(true),
+				VolumeSize:          aws.Int64((int64(instanceType.ExtraScratch) / 1000000000) + 1),
+				VolumeType:          aws.String("gp2"),
+			}}}
+	}
+
+	if instanceType.Preemptible {
+		rii.InstanceMarketOptions = &ec2.InstanceMarketOptionsRequest{
+			MarketType: aws.String("spot"),
+			SpotOptions: &ec2.SpotMarketOptions{
+				InstanceInterruptionBehavior: aws.String("terminate"),
+				MaxPrice:                     aws.String(fmt.Sprintf("%v", instanceType.Price)),
+			}}
+	}
+
+	rsv, err := instanceSet.client.RunInstances(&rii)
 
 	if err != nil {
 		return nil, err

@@ -99,6 +99,7 @@ type InstanceType struct {
 	VCPUs        int
 	RAM          ByteSize
 	Scratch      ByteSize
+	ExtraScratch ByteSize
 	Price        float64
 	Preemptible  bool
 }

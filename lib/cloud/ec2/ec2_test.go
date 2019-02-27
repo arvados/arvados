@@ -65,6 +65,25 @@ func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error)
 				Price:        .02,
 				Preemptible:  false,
 			},
+			"tiny-with-extra-scratch": arvados.InstanceType{
+				Name:         "tiny",
+				ProviderType: "m1.small",
+				VCPUs:        1,
+				RAM:          4000000000,
+				Scratch:      10000000000,
+				ExtraScratch: 20000000000,
+				Price:        .02,
+				Preemptible:  false,
+			},
+			"tiny-preemptible": arvados.InstanceType{
+				Name:         "tiny",
+				ProviderType: "m1.small",
+				VCPUs:        1,
+				RAM:          4000000000,
+				Scratch:      10000000000,
+				Price:        .02,
+				Preemptible:  true,
+			},
 		})}
 	if *live != "" {
 		var exampleCfg testConfig
@@ -108,10 +127,54 @@ func (*EC2InstanceSetSuite) TestCreate(c *check.C) {
 
 }
 
+func (*EC2InstanceSetSuite) TestCreateWithExtraScratch(c *check.C) {
+	ap, img, cluster, err := GetInstanceSet()
+	if err != nil {
+		c.Fatal("Error making provider", err)
+	}
+
+	pk, _, _, _, err := ssh.ParseAuthorizedKey(testKey)
+	c.Assert(err, check.IsNil)
+
+	inst, err := ap.Create(cluster.InstanceTypes["tiny-with-extra-scratch"],
+		img, map[string]string{
+			"TestTagName": "test tag value",
+		}, "umask 0600; echo -n test-file-data >/var/run/test-file", pk)
+
+	c.Assert(err, check.IsNil)
+
+	tags := inst.Tags()
+	c.Check(tags["TestTagName"], check.Equals, "test tag value")
+	c.Logf("inst.String()=%v Address()=%v Tags()=%v", inst.String(), inst.Address(), tags)
+
+}
+
+func (*EC2InstanceSetSuite) TestCreatePreemptible(c *check.C) {
+	ap, img, cluster, err := GetInstanceSet()
+	if err != nil {
+		c.Fatal("Error making provider", err)
+	}
+
+	pk, _, _, _, err := ssh.ParseAuthorizedKey(testKey)
+	c.Assert(err, check.IsNil)
+
+	inst, err := ap.Create(cluster.InstanceTypes["tiny-preemptible"],
+		img, map[string]string{
+			"TestTagName": "test tag value",
+		}, "umask 0600; echo -n test-file-data >/var/run/test-file", pk)
+
+	c.Assert(err, check.IsNil)
+
+	tags := inst.Tags()
+	c.Check(tags["TestTagName"], check.Equals, "test tag value")
+	c.Logf("inst.String()=%v Address()=%v Tags()=%v", inst.String(), inst.Address(), tags)
+
+}
+
 func (*EC2InstanceSetSuite) TestListInstances(c *check.C) {
 	ap, _, _, err := GetInstanceSet()
 	if err != nil {
-		c.Fatal("Error making provider", err)
+		c.Fatal("Error making provider: ", err)
 	}
 
 	l, err := ap.Instances(nil)
