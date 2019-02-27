@@ -235,15 +235,15 @@ func (v *UnixVolume) Start(opsCounters, errCounters, ioBytes *prometheus.Counter
 	if v.DirectoryReplication == 0 {
 		v.DirectoryReplication = 1
 	}
+	// Set up prometheus metrics
+	lbls := prometheus.Labels{"device_id": v.DeviceID()}
+	v.opsCounters = opsCounters.MustCurryWith(lbls)
+	v.errCounters = errCounters.MustCurryWith(lbls)
+	v.ioBytes = ioBytes.MustCurryWith(lbls)
+	v.os.promSetup(v.opsCounters, v.errCounters, v.ioBytes)
+
 	_, err := v.os.Stat(v.Root)
-	if err == nil {
-		// Set up prometheus metrics
-		lbls := prometheus.Labels{"device_id": v.DeviceID()}
-		v.opsCounters = opsCounters.MustCurryWith(lbls)
-		v.errCounters = errCounters.MustCurryWith(lbls)
-		v.ioBytes = ioBytes.MustCurryWith(lbls)
-		v.os.promSetup(v.opsCounters, v.errCounters, v.ioBytes)
-	}
+
 	return err
 }
 
@@ -267,7 +267,9 @@ func (v *UnixVolume) Touch(loc string) error {
 	}
 	defer v.unlockfile(f)
 	ts := syscall.NsecToTimespec(time.Now().UnixNano())
-	v.os.opsCounters.With(prometheus.Labels{"operation": "utimes"}).Inc()
+	if v.os.opsCounters != nil {
+		v.os.opsCounters.With(prometheus.Labels{"operation": "utimes"}).Inc()
+	}
 	v.os.stats.Tick(&v.os.stats.UtimesOps)
 	err = syscall.UtimesNano(p, []syscall.Timespec{ts, ts})
 	v.os.stats.TickErr(err)
@@ -300,7 +302,9 @@ func (v *UnixVolume) getFunc(ctx context.Context, path string, fn func(io.Reader
 		ioutil.NopCloser(f),
 		func(c uint64) {
 			v.os.stats.TickInBytes(c)
-			v.ioBytes.With(prometheus.Labels{"direction": "in"}).Add(float64(c))
+			if v.ioBytes != nil {
+				v.ioBytes.With(prometheus.Labels{"direction": "in"}).Add(float64(c))
+			}
 		}))
 }
 
@@ -388,7 +392,9 @@ func (v *UnixVolume) WriteBlock(ctx context.Context, loc string, rdr io.Reader) 
 	}
 	defer v.unlock()
 	n, err := io.Copy(tmpfile, rdr)
-	v.os.ioBytes.With(prometheus.Labels{"direction": "out"}).Add(float64(n))
+	if v.ioBytes != nil {
+		v.ioBytes.With(prometheus.Labels{"direction": "out"}).Add(float64(n))
+	}
 	v.os.stats.TickOutBytes(uint64(n))
 	if err != nil {
 		log.Printf("%s: writing to %s: %s\n", v, bpath, err)
@@ -461,7 +467,9 @@ func (v *UnixVolume) IndexTo(prefix string, w io.Writer) error {
 		return err
 	}
 	defer rootdir.Close()
-	v.os.opsCounters.With(prometheus.Labels{"operation": "readdir"}).Inc()
+	if v.opsCounters != nil {
+		v.opsCounters.With(prometheus.Labels{"operation": "readdir"}).Inc()
+	}
 	v.os.stats.Tick(&v.os.stats.ReaddirOps)
 	for {
 		names, err := rootdir.Readdirnames(1)
@@ -484,7 +492,9 @@ func (v *UnixVolume) IndexTo(prefix string, w io.Writer) error {
 			lastErr = err
 			continue
 		}
-		v.os.opsCounters.With(prometheus.Labels{"operation": "readdir"}).Inc()
+		if v.opsCounters != nil {
+			v.opsCounters.With(prometheus.Labels{"operation": "readdir"}).Inc()
+		}
 		v.os.stats.Tick(&v.os.stats.ReaddirOps)
 		for {
 			fileInfo, err := blockdir.Readdir(1)
@@ -573,7 +583,9 @@ func (v *UnixVolume) Untrash(loc string) (err error) {
 		return MethodDisabledError
 	}
 
-	v.os.opsCounters.With(prometheus.Labels{"operation": "readdir"}).Inc()
+	if v.opsCounters != nil {
+		v.opsCounters.With(prometheus.Labels{"operation": "readdir"}).Inc()
+	}
 	v.os.stats.Tick(&v.os.stats.ReaddirOps)
 	files, err := ioutil.ReadDir(v.blockDir(loc))
 	if err != nil {
@@ -720,7 +732,9 @@ func (v *UnixVolume) unlock() {
 
 // lockfile and unlockfile use flock(2) to manage kernel file locks.
 func (v *UnixVolume) lockfile(f *os.File) error {
-	v.os.opsCounters.With(prometheus.Labels{"operation": "flock"}).Inc()
+	if v.opsCounters != nil {
+		v.opsCounters.With(prometheus.Labels{"operation": "flock"}).Inc()
+	}
 	v.os.stats.Tick(&v.os.stats.FlockOps)
 	err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX)
 	v.os.stats.TickErr(err)
@@ -842,10 +856,10 @@ type osWithStats struct {
 }
 
 func (o *osWithStats) tickErr(err error) {
-	if err == nil {
+	if err == nil || o.errCounters == nil {
 		return
 	}
-	o.errCounters.With(prometheus.Labels{"type": fmt.Sprintf("%T", err)}).Inc()
+	o.errCounters.With(prometheus.Labels{"error_type": fmt.Sprintf("%T", err)}).Inc()
 }
 
 func (o *osWithStats) promSetup(opsC, errC, ioB *prometheus.CounterVec) {
@@ -855,7 +869,9 @@ func (o *osWithStats) promSetup(opsC, errC, ioB *prometheus.CounterVec) {
 }
 
 func (o *osWithStats) Open(name string) (*os.File, error) {
-	o.opsCounters.With(prometheus.Labels{"operation": "open"}).Inc()
+	if o.opsCounters != nil {
+		o.opsCounters.With(prometheus.Labels{"operation": "open"}).Inc()
+	}
 	o.stats.Tick(&o.stats.OpenOps)
 	f, err := os.Open(name)
 	o.tickErr(err)
@@ -864,7 +880,9 @@ func (o *osWithStats) Open(name string) (*os.File, error) {
 }
 
 func (o *osWithStats) OpenFile(name string, flag int, perm os.FileMode) (*os.File, error) {
-	o.opsCounters.With(prometheus.Labels{"operation": "open"}).Inc()
+	if o.opsCounters != nil {
+		o.opsCounters.With(prometheus.Labels{"operation": "open"}).Inc()
+	}
 	o.stats.Tick(&o.stats.OpenOps)
 	f, err := os.OpenFile(name, flag, perm)
 	o.tickErr(err)
@@ -873,7 +891,9 @@ func (o *osWithStats) OpenFile(name string, flag int, perm os.FileMode) (*os.Fil
 }
 
 func (o *osWithStats) Remove(path string) error {
-	o.opsCounters.With(prometheus.Labels{"operation": "unlink"}).Inc()
+	if o.opsCounters != nil {
+		o.opsCounters.With(prometheus.Labels{"operation": "unlink"}).Inc()
+	}
 	o.stats.Tick(&o.stats.UnlinkOps)
 	err := os.Remove(path)
 	o.tickErr(err)
@@ -882,7 +902,9 @@ func (o *osWithStats) Remove(path string) error {
 }
 
 func (o *osWithStats) Rename(a, b string) error {
-	o.opsCounters.With(prometheus.Labels{"operation": "rename"}).Inc()
+	if o.opsCounters != nil {
+		o.opsCounters.With(prometheus.Labels{"operation": "rename"}).Inc()
+	}
 	o.stats.Tick(&o.stats.RenameOps)
 	err := os.Rename(a, b)
 	o.tickErr(err)
@@ -891,7 +913,9 @@ func (o *osWithStats) Rename(a, b string) error {
 }
 
 func (o *osWithStats) Stat(path string) (os.FileInfo, error) {
-	o.opsCounters.With(prometheus.Labels{"operation": "stat"}).Inc()
+	if o.opsCounters != nil {
+		o.opsCounters.With(prometheus.Labels{"operation": "stat"}).Inc()
+	}
 	o.stats.Tick(&o.stats.StatOps)
 	fi, err := os.Stat(path)
 	o.tickErr(err)
@@ -900,7 +924,9 @@ func (o *osWithStats) Stat(path string) (os.FileInfo, error) {
 }
 
 func (o *osWithStats) TempFile(dir, base string) (*os.File, error) {
-	o.opsCounters.With(prometheus.Labels{"operation": "create"}).Inc()
+	if o.opsCounters != nil {
+		o.opsCounters.With(prometheus.Labels{"operation": "create"}).Inc()
+	}
 	o.stats.Tick(&o.stats.CreateOps)
 	f, err := ioutil.TempFile(dir, base)
 	o.tickErr(err)
