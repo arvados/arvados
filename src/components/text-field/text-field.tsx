@@ -15,12 +15,23 @@ import {
 import RichTextEditor from 'react-rte';
 import Margin = PropTypes.Margin;
 
-type CssRules = 'textField';
+type CssRules = 'textField' | 'rte';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     textField: {
         marginBottom: theme.spacing.unit * 3
     },
+    rte: {
+        fontFamily: 'Arial',
+        '& a': {
+            textDecoration: 'none',
+            color: theme.palette.primary.main,
+            '&:hover': {
+                cursor: 'pointer',
+                textDecoration: 'underline'
+            }
+        }     
+    }
 });
 
 type TextFieldProps = WrappedFieldProps & WithStyles<CssRules>;
@@ -67,6 +78,7 @@ export const RichEditorTextField = withStyles(styles)(
 
         render() {
             return <RichTextEditor
+                className={this.props.classes.rte}
                 value={this.state.value}
                 onChange={this.onChange}
                 placeholder={this.props.label} />;
