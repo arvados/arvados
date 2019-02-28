@@ -199,7 +199,7 @@ class ArvadosJob(JobBase):
                                     e)
             else:
                 logger.info("%s %s is %s", self.arvrunner.label(self), response["uuid"], response["state"])
-        except Exception: 
+        except Exception:
             logger.exception("%s error" % (self.arvrunner.label(self)))
             self.output_callback({}, "permanentFail")
 

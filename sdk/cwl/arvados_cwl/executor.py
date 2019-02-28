@@ -734,7 +734,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                 logger.error("Interrupted, workflow will be cancelled")
             elif isinstance(sys.exc_info()[1], WorkflowException):
                 logger.error("Workflow execution failed:\n%s", sys.exc_info()[1], exc_info=(sys.exc_info()[1] if self.debug else False))
-            else: 
+            else:
                 logger.exception("Workflow execution failed")
 
             if self.pipeline:
