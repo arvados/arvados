@@ -43,6 +43,7 @@ setup(name='arvados-cwl-runner',
       ],
       extras_require={
           ':os.name=="posix" and python_version<"3"': ['subprocess32 >= 3.5.1'],
+          ':python_version<"3"': ['pytz'],
       },
       data_files=[
           ('share/doc/arvados-cwl-runner', ['LICENSE-2.0.txt', 'README.rst']),

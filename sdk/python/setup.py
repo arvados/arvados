@@ -57,6 +57,7 @@ setup(name='arvados-python-client',
       ],
       extras_require={
           ':os.name=="posix" and python_version<"3"': ['subprocess32 >= 3.5.1'],
+          ':python_version<"3"': ['pytz'],
       },
       classifiers=[
           'Programming Language :: Python :: 2',
