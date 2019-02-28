@@ -58,7 +58,7 @@ func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error)
 		InstanceTypes: arvados.InstanceTypeMap(map[string]arvados.InstanceType{
 			"tiny": arvados.InstanceType{
 				Name:         "tiny",
-				ProviderType: "m1.small",
+				ProviderType: "t2.micro",
 				VCPUs:        1,
 				RAM:          4000000000,
 				Scratch:      10000000000,
@@ -67,7 +67,7 @@ func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error)
 			},
 			"tiny-with-extra-scratch": arvados.InstanceType{
 				Name:         "tiny",
-				ProviderType: "m1.small",
+				ProviderType: "t2.micro",
 				VCPUs:        1,
 				RAM:          4000000000,
 				Scratch:      10000000000,
@@ -77,7 +77,7 @@ func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error)
 			},
 			"tiny-preemptible": arvados.InstanceType{
 				Name:         "tiny",
-				ProviderType: "m1.small",
+				ProviderType: "t2.micro",
 				VCPUs:        1,
 				RAM:          4000000000,
 				Scratch:      10000000000,
@@ -169,6 +169,22 @@ func (*EC2InstanceSetSuite) TestCreatePreemptible(c *check.C) {
 	c.Check(tags["TestTagName"], check.Equals, "test tag value")
 	c.Logf("inst.String()=%v Address()=%v Tags()=%v", inst.String(), inst.Address(), tags)
 
+}
+
+func (*EC2InstanceSetSuite) TestTagInstances(c *check.C) {
+	ap, _, _, err := GetInstanceSet()
+	if err != nil {
+		c.Fatal("Error making provider", err)
+	}
+
+	l, err := ap.Instances(nil)
+	c.Assert(err, check.IsNil)
+
+	for _, i := range l {
+		tg := i.Tags()
+		tg["TestTag2"] = "123 test tag 2"
+		c.Check(i.SetTags(tg), check.IsNil)
+	}
 }
 
 func (*EC2InstanceSetSuite) TestListInstances(c *check.C) {
