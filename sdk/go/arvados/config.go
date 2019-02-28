@@ -94,14 +94,14 @@ type RemoteCluster struct {
 }
 
 type InstanceType struct {
-	Name         string
-	ProviderType string
-	VCPUs        int
-	RAM          ByteSize
-	Scratch      ByteSize
-	ExtraScratch ByteSize
-	Price        float64
-	Preemptible  bool
+	Name          string
+	ProviderType  string
+	VCPUs         int
+	RAM           ByteSize
+	Scratch       ByteSize
+	Price         float64
+	Preemptible   bool
+	AttachScratch bool
 }
 
 type Dispatch struct {

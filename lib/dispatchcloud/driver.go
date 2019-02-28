@@ -9,12 +9,14 @@ import (
 
 	"git.curoverse.com/arvados.git/lib/cloud"
 	"git.curoverse.com/arvados.git/lib/cloud/azure"
+	"git.curoverse.com/arvados.git/lib/cloud/ec2"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"github.com/sirupsen/logrus"
 )
 
 var drivers = map[string]cloud.Driver{
 	"azure": azure.Driver,
+	"ec2":   ec2.Driver,
 }
 
 func newInstanceSet(cluster *arvados.Cluster, setID cloud.InstanceSetID, logger logrus.FieldLogger) (cloud.InstanceSet, error) {

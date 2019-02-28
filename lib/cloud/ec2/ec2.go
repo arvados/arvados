@@ -129,12 +129,12 @@ func (instanceSet *ec2InstanceSet) Create(
 			}},
 	}
 
-	if instanceType.ExtraScratch > 0 {
+	if instanceType.AttachScratch {
 		rii.BlockDeviceMappings = []*ec2.BlockDeviceMapping{&ec2.BlockDeviceMapping{
 			DeviceName: aws.String("/dev/xvdt"),
 			Ebs: &ec2.EbsBlockDevice{
 				DeleteOnTermination: aws.Bool(true),
-				VolumeSize:          aws.Int64((int64(instanceType.ExtraScratch) / 1000000000) + 1),
+				VolumeSize:          aws.Int64((int64(instanceType.Scratch) / 1000000000) + 1),
 				VolumeType:          aws.String("gp2"),
 			}}}
 	}
