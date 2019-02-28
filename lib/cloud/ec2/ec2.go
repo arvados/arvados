@@ -22,7 +22,7 @@ import (
 )
 
 const ARVADOS_DISPATCH_ID = "arvados-dispatch-id"
-const TAG_PREFIX = "disispatch-"
+const TAG_PREFIX = "arvados-dispatch-tag-"
 
 // Driver is the ec2 implementation of the cloud.Driver interface.
 var Driver = cloud.DriverFunc(newEC2InstanceSet)
