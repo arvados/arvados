@@ -272,6 +272,7 @@ func (v *UnixVolume) Touch(loc string) error {
 	}
 	v.os.stats.Tick(&v.os.stats.UtimesOps)
 	err = syscall.UtimesNano(p, []syscall.Timespec{ts, ts})
+	v.os.tickErr(err)
 	v.os.stats.TickErr(err)
 	return err
 }
@@ -737,12 +738,14 @@ func (v *UnixVolume) lockfile(f *os.File) error {
 	}
 	v.os.stats.Tick(&v.os.stats.FlockOps)
 	err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX)
+	v.os.tickErr(err)
 	v.os.stats.TickErr(err)
 	return err
 }
 
 func (v *UnixVolume) unlockfile(f *os.File) error {
 	err := syscall.Flock(int(f.Fd()), syscall.LOCK_UN)
+	v.os.tickErr(err)
 	v.os.stats.TickErr(err)
 	return err
 }
