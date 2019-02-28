@@ -184,6 +184,12 @@ func (v *AzureBlobVolume) Start(opsCounters, errCounters, ioBytes *prometheus.Co
 	} else if !ok {
 		return fmt.Errorf("Azure container %q does not exist", v.ContainerName)
 	}
+	// Set up prometheus metrics
+	lbls := prometheus.Labels{"device_id": v.DeviceID()}
+	v.container.stats.opsCounters = opsCounters.MustCurryWith(lbls)
+	v.container.stats.errCounters = errCounters.MustCurryWith(lbls)
+	v.container.stats.ioBytes = ioBytes.MustCurryWith(lbls)
+
 	return nil
 }
 
@@ -725,6 +731,7 @@ type azureContainer struct {
 }
 
 func (c *azureContainer) Exists() (bool, error) {
+	c.stats.TickOps("exists")
 	c.stats.Tick(&c.stats.Ops)
 	ok, err := c.ctr.Exists()
 	c.stats.TickErr(err)
@@ -732,6 +739,7 @@ func (c *azureContainer) Exists() (bool, error) {
 }
 
 func (c *azureContainer) GetBlobMetadata(bname string) (storage.BlobMetadata, error) {
+	c.stats.TickOps("get_metadata")
 	c.stats.Tick(&c.stats.Ops, &c.stats.GetMetadataOps)
 	b := c.ctr.GetBlobReference(bname)
 	err := b.GetMetadata(nil)
@@ -740,6 +748,7 @@ func (c *azureContainer) GetBlobMetadata(bname string) (storage.BlobMetadata, er
 }
 
 func (c *azureContainer) GetBlobProperties(bname string) (*storage.BlobProperties, error) {
+	c.stats.TickOps("get_properties")
 	c.stats.Tick(&c.stats.Ops, &c.stats.GetPropertiesOps)
 	b := c.ctr.GetBlobReference(bname)
 	err := b.GetProperties(nil)
@@ -748,6 +757,7 @@ func (c *azureContainer) GetBlobProperties(bname string) (*storage.BlobPropertie
 }
 
 func (c *azureContainer) GetBlob(bname string) (io.ReadCloser, error) {
+	c.stats.TickOps("get")
 	c.stats.Tick(&c.stats.Ops, &c.stats.GetOps)
 	b := c.ctr.GetBlobReference(bname)
 	rdr, err := b.Get(nil)
@@ -756,6 +766,7 @@ func (c *azureContainer) GetBlob(bname string) (io.ReadCloser, error) {
 }
 
 func (c *azureContainer) GetBlobRange(bname string, start, end int, opts *storage.GetBlobOptions) (io.ReadCloser, error) {
+	c.stats.TickOps("get_range")
 	c.stats.Tick(&c.stats.Ops, &c.stats.GetRangeOps)
 	b := c.ctr.GetBlobReference(bname)
 	rdr, err := b.GetRange(&storage.GetBlobRangeOptions{
@@ -783,6 +794,7 @@ func (r *readerWithAzureLen) Len() int {
 }
 
 func (c *azureContainer) CreateBlockBlobFromReader(bname string, size int, rdr io.Reader, opts *storage.PutBlobOptions) error {
+	c.stats.TickOps("create")
 	c.stats.Tick(&c.stats.Ops, &c.stats.CreateOps)
 	if size != 0 {
 		rdr = &readerWithAzureLen{
@@ -797,6 +809,7 @@ func (c *azureContainer) CreateBlockBlobFromReader(bname string, size int, rdr i
 }
 
 func (c *azureContainer) SetBlobMetadata(bname string, m storage.BlobMetadata, opts *storage.SetBlobMetadataOptions) error {
+	c.stats.TickOps("set_metadata")
 	c.stats.Tick(&c.stats.Ops, &c.stats.SetMetadataOps)
 	b := c.ctr.GetBlobReference(bname)
 	b.Metadata = m
@@ -806,6 +819,7 @@ func (c *azureContainer) SetBlobMetadata(bname string, m storage.BlobMetadata, o
 }
 
 func (c *azureContainer) ListBlobs(params storage.ListBlobsParameters) (storage.BlobListResponse, error) {
+	c.stats.TickOps("list")
 	c.stats.Tick(&c.stats.Ops, &c.stats.ListOps)
 	resp, err := c.ctr.ListBlobs(params)
 	c.stats.TickErr(err)
@@ -813,6 +827,7 @@ func (c *azureContainer) ListBlobs(params storage.ListBlobsParameters) (storage.
 }
 
 func (c *azureContainer) DeleteBlob(bname string, opts *storage.DeleteBlobOptions) error {
+	c.stats.TickOps("delete")
 	c.stats.Tick(&c.stats.Ops, &c.stats.DelOps)
 	b := c.ctr.GetBlobReference(bname)
 	err := b.Delete(opts)

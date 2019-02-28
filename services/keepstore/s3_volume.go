@@ -976,12 +976,7 @@ func (b *s3bucket) GetReader(path string) (io.ReadCloser, error) {
 	b.stats.TickOps("get")
 	b.stats.Tick(&b.stats.Ops, &b.stats.GetOps)
 	b.stats.TickErr(err)
-	return NewCountingReader(
-		rdr,
-		func(c uint64) {
-			b.stats.CountBytesIn(c)
-			b.stats.TickInBytes(c)
-		}), err
+	return NewCountingReader(rdr, b.stats.TickInBytes), err
 }
 
 func (b *s3bucket) Head(path string, headers map[string][]string) (*http.Response, error) {
@@ -1002,12 +997,7 @@ func (b *s3bucket) PutReader(path string, r io.Reader, length int64, contType st
 		// empty objects.
 		r = nil
 	} else {
-		r = NewCountingReader(
-			r,
-			func(c uint64) {
-				b.stats.CountBytesOut(c)
-				b.stats.TickOutBytes(c)
-			})
+		r = NewCountingReader(r, b.stats.TickOutBytes)
 	}
 	err := b.Bucket.PutReader(path, r, length, contType, perm, options)
 	b.stats.TickOps("put")
@@ -1032,10 +1022,6 @@ type s3bucketStats struct {
 	HeadOps uint64
 	DelOps  uint64
 	ListOps uint64
-
-	opsCounters *prometheus.CounterVec
-	errCounters *prometheus.CounterVec
-	ioBytes     *prometheus.CounterVec
 }
 
 func (s *s3bucketStats) TickErr(err error) {
@@ -1046,32 +1032,5 @@ func (s *s3bucketStats) TickErr(err error) {
 	if err, ok := err.(*s3.Error); ok {
 		errType = errType + fmt.Sprintf(" %d %s", err.StatusCode, err.Code)
 	}
-	if s.errCounters != nil {
-		s.errCounters.With(prometheus.Labels{"error_type": errType}).Inc()
-	}
 	s.statsTicker.TickErr(err, errType)
-}
-
-func (s *s3bucketStats) TickOps(operations ...string) {
-	if s.opsCounters == nil {
-		return
-	}
-	for _, opType := range operations {
-		s.opsCounters.With(prometheus.Labels{"operation": opType}).Inc()
-	}
-}
-
-func (s *s3bucketStats) CountBytesIn(b uint64) {
-	s.countBytes("in", float64(b))
-}
-
-func (s *s3bucketStats) CountBytesOut(b uint64) {
-	s.countBytes("out", float64(b))
-}
-
-func (s *s3bucketStats) countBytes(direction string, bytes float64) {
-	if s.ioBytes == nil {
-		return
-	}
-	s.ioBytes.With(prometheus.Labels{"direction": direction}).Add(bytes)
 }
