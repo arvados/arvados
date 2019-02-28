@@ -105,6 +105,16 @@ func (*InterfacesClientStub) listComplete(ctx context.Context, resourceGroupName
 	return network.InterfaceListResultIterator{}, nil
 }
 
+type BlobContainerStub struct{}
+
+func (*BlobContainerStub) GetBlobReference(name string) *storage.Blob {
+	return nil
+}
+
+func (*BlobContainerStub) ListBlobs(params storage.ListBlobsParameters) (storage.BlobListResponse, error) {
+	return storage.BlobListResponse{}, nil
+}
+
 type testConfig struct {
 	ImageIDForTestSuite string
 	DriverParameters    json.RawMessage
@@ -148,6 +158,7 @@ func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error)
 	ap.ctx, ap.stopFunc = context.WithCancel(context.Background())
 	ap.vmClient = &VirtualMachinesClientStub{}
 	ap.netClient = &InterfacesClientStub{}
+	ap.blobcont = &BlobContainerStub{}
 	return &ap, cloud.ImageID("blob"), cluster, nil
 }
 
