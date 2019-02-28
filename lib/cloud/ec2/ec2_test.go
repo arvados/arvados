@@ -32,6 +32,8 @@ import (
 	"git.curoverse.com/arvados.git/lib/cloud"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/config"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 	check "gopkg.in/check.v1"
@@ -51,6 +53,32 @@ var _ = check.Suite(&EC2InstanceSetSuite{})
 type testConfig struct {
 	ImageIDForTestSuite string
 	DriverParameters    json.RawMessage
+}
+
+type ec2stub struct {
+}
+
+func (e *ec2stub) ImportKeyPair(input *ec2.ImportKeyPairInput) (*ec2.ImportKeyPairOutput, error) {
+	return nil, nil
+}
+
+func (e *ec2stub) RunInstances(input *ec2.RunInstancesInput) (*ec2.Reservation, error) {
+	return &ec2.Reservation{Instances: []*ec2.Instance{&ec2.Instance{
+		InstanceId: aws.String("i-123"),
+		Tags:       input.TagSpecifications[0].Tags,
+	}}}, nil
+}
+
+func (e *ec2stub) DescribeInstances(input *ec2.DescribeInstancesInput) (*ec2.DescribeInstancesOutput, error) {
+	return &ec2.DescribeInstancesOutput{}, nil
+}
+
+func (e *ec2stub) CreateTags(input *ec2.CreateTagsInput) (*ec2.CreateTagsOutput, error) {
+	return nil, nil
+}
+
+func (e *ec2stub) TerminateInstances(input *ec2.TerminateInstancesInput) (*ec2.TerminateInstancesOutput, error) {
+	return nil, nil
 }
 
 func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error) {
@@ -99,6 +127,7 @@ func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error)
 		ec2config:    ec2InstanceSetConfig{},
 		dispatcherID: "test123",
 		logger:       logrus.StandardLogger(),
+		client:       &ec2stub{},
 	}
 	return &ap, cloud.ImageID("blob"), cluster, nil
 }

@@ -37,11 +37,19 @@ type ec2InstanceSetConfig struct {
 	KeyPairName     string
 }
 
+type EC2Interface interface {
+	ImportKeyPair(input *ec2.ImportKeyPairInput) (*ec2.ImportKeyPairOutput, error)
+	RunInstances(input *ec2.RunInstancesInput) (*ec2.Reservation, error)
+	DescribeInstances(input *ec2.DescribeInstancesInput) (*ec2.DescribeInstancesOutput, error)
+	CreateTags(input *ec2.CreateTagsInput) (*ec2.CreateTagsOutput, error)
+	TerminateInstances(input *ec2.TerminateInstancesInput) (*ec2.TerminateInstancesOutput, error)
+}
+
 type ec2InstanceSet struct {
 	ec2config    ec2InstanceSetConfig
 	dispatcherID cloud.InstanceSetID
 	logger       logrus.FieldLogger
-	client       *ec2.EC2
+	client       EC2Interface
 	importedKey  bool
 }
 
