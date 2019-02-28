@@ -63,6 +63,7 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid
                 arvados.commands.put.api_client = api_client
                 arvados.commands.keepdocker.main(args, stdout=sys.stderr, install_sig_handlers=False, api=api_client)
             except SystemExit as e:
+                # If e.code is None or zero, then keepdocker exited normally and we can continue
                 if e.code:
                     raise WorkflowException("keepdocker exited with code %s" % e.code)
 
