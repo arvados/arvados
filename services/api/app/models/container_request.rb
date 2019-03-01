@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 require 'whitelist_update'
+require 'arvados/collection'
 
 class ContainerRequest < ArvadosModel
   include ArvadosModelUpdates
@@ -149,18 +150,28 @@ class ContainerRequest < ArvadosModel
       manifest = Collection.where(portable_data_hash: pdh).first.manifest_text
 
       coll_uuid = self.send(out_type + '_uuid')
-      coll = coll_uuid.nil? ? nil : Collection.where(uuid: coll_uuid).first
+      coll = coll_uuid.nil? ? nil : Collection.find_by_uuid(coll_uuid)
       if !coll
         coll = Collection.new(
           owner_uuid: self.owner_uuid,
           name: coll_name,
+          manifest_text: "",
           properties: {
             'type' => out_type,
             'container_request' => uuid,
           })
       end
+
+      if out_type == "log"
+        src = Arv::Collection.new(manifest)
+        dst = Arv::Collection.new(coll.manifest_text)
+        dst.cp_r("./", ".", src)
+        dst.cp_r("./", "container #{container.uuid}", src)
+        manifest = dst.manifest_text
+      end
+
       coll.assign_attributes(
-        portable_data_hash: pdh,
+        portable_data_hash: Digest::MD5.hexdigest(manifest) + '+' + manifest.bytesize.to_s,
         manifest_text: manifest,
         trash_at: trash_at,
         delete_at: trash_at)
@@ -203,6 +214,16 @@ class ContainerRequest < ArvadosModel
         return false
       else
         self.container_count += 1
+        if self.container_uuid_was
+          # old_container = Container.find_by_uuid()
+          # # copy logs from old container into CR's log collection
+          # #
+          #   src = Arv::Collection.new(manifest)
+          #   tgt = Arv::Collection.new(coll.manifest_text)
+          #   tgt.cp_r("./", "./", src)
+          #   tgt.cp_r("./", "container #{container.uuid}", src)
+          #   manifest = tgt.manifest_text
+        end
       end
     end
   end

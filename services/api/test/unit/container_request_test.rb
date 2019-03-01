@@ -245,6 +245,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr.reload
     assert_equal "Final", cr.state
     assert_equal users(:active).uuid, cr.modified_by_user_uuid
+    puts "CR #{Collection.find_by_uuid(cr.log_uuid).manifest_text}"
     ['output', 'log'].each do |out_type|
       pdh = Container.find_by_uuid(cr.container_uuid).send(out_type)
       assert_equal(1, Collection.where(portable_data_hash: pdh,
