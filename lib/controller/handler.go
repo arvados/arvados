@@ -80,12 +80,10 @@ func (h *Handler) setup() {
 	h.handlerStack = mux
 
 	sc := *arvados.DefaultSecureClient
-	sc.Timeout = time.Duration(h.Cluster.HTTPRequestTimeout)
 	sc.CheckRedirect = neverRedirect
 	h.secureClient = &sc
 
 	ic := *arvados.InsecureHTTPClient
-	ic.Timeout = time.Duration(h.Cluster.HTTPRequestTimeout)
 	ic.CheckRedirect = neverRedirect
 	h.insecureClient = &ic
 

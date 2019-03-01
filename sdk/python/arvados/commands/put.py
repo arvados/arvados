@@ -360,7 +360,7 @@ class ResumeCache(object):
         try:
             fcntl.flock(fileobj, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except IOError:
-            raise ResumeCacheConflict("{} locked".format(fileobj.name))
+            raise ResumeCacheConflict(u"{} locked".format(fileobj.name))
 
     def load(self):
         self.cache_file.seek(0)
@@ -502,7 +502,7 @@ class ArvPutUploadJob(object):
                     raise ArvPutUploadIsPending()
                 self._write_stdin(self.filename or 'stdin')
             elif not os.path.exists(path):
-                 raise PathDoesNotExistError("file or directory '{}' does not exist.".format(path))
+                 raise PathDoesNotExistError(u"file or directory '{}' does not exist.".format(path))
             elif os.path.isdir(path):
                 # Use absolute paths on cache index so CWD doesn't interfere
                 # with the caching logic.
@@ -742,7 +742,7 @@ class ArvPutUploadJob(object):
             elif file_in_local_collection.permission_expired():
                 # Permission token expired, re-upload file. This will change whenever
                 # we have a API for refreshing tokens.
-                self.logger.warning("Uploaded file '{}' access token expired, will re-upload it from scratch".format(filename))
+                self.logger.warning(u"Uploaded file '{}' access token expired, will re-upload it from scratch".format(filename))
                 should_upload = True
                 self._local_collection.remove(filename)
             elif cached_file_data['size'] == file_in_local_collection.size():
@@ -757,7 +757,7 @@ class ArvPutUploadJob(object):
                 # Inconsistent cache, re-upload the file
                 should_upload = True
                 self._local_collection.remove(filename)
-                self.logger.warning("Uploaded version of file '{}' is bigger than local version, will re-upload it from scratch.".format(source))
+                self.logger.warning(u"Uploaded version of file '{}' is bigger than local version, will re-upload it from scratch.".format(source))
         # Local file differs from cached data, re-upload it.
         else:
             if file_in_local_collection:
@@ -834,11 +834,11 @@ class ArvPutUploadJob(object):
         if self.use_cache:
             cache_filepath = self._get_cache_filepath()
             if self.resume and os.path.exists(cache_filepath):
-                self.logger.info("Resuming upload from cache file {}".format(cache_filepath))
+                self.logger.info(u"Resuming upload from cache file {}".format(cache_filepath))
                 self._cache_file = open(cache_filepath, 'a+')
             else:
                 # --no-resume means start with a empty cache file.
-                self.logger.info("Creating new cache file at {}".format(cache_filepath))
+                self.logger.info(u"Creating new cache file at {}".format(cache_filepath))
                 self._cache_file = open(cache_filepath, 'w+')
             self._cache_filename = self._cache_file.name
             self._lock_file(self._cache_file)
@@ -924,7 +924,7 @@ class ArvPutUploadJob(object):
         try:
             fcntl.flock(fileobj, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except IOError:
-            raise ResumeCacheConflict("{} locked".format(fileobj.name))
+            raise ResumeCacheConflict(u"{} locked".format(fileobj.name))
 
     def _save_state(self):
         """
@@ -1234,9 +1234,9 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
     else:
         try:
             if args.update_collection:
-                logger.info("Collection updated: '{}'".format(writer.collection_name()))
+                logger.info(u"Collection updated: '{}'".format(writer.collection_name()))
             else:
-                logger.info("Collection saved as '{}'".format(writer.collection_name()))
+                logger.info(u"Collection saved as '{}'".format(writer.collection_name()))
             if args.portable_data_hash:
                 output = writer.portable_data_hash()
             else:

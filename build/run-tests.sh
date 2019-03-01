@@ -77,6 +77,7 @@ lib/cmd
 lib/controller
 lib/crunchstat
 lib/cloud
+lib/cloud/azure
 lib/dispatchcloud
 lib/dispatchcloud/container
 lib/dispatchcloud/scheduler
@@ -536,7 +537,6 @@ export GOPATH
 (
     set -e
     mkdir -p "$GOPATH/src/git.curoverse.com"
-    rmdir -v --parents --ignore-fail-on-non-empty "${temp}/GOPATH"
     if [[ ! -h "$GOPATH/src/git.curoverse.com/arvados.git" ]]; then
         for d in \
             "$GOPATH/src/git.curoverse.com/arvados.git/tmp/GOPATH" \
@@ -932,6 +932,7 @@ gostuff=(
     lib/controller
     lib/crunchstat
     lib/cloud
+    lib/cloud/azure
     lib/dispatchcloud
     lib/dispatchcloud/container
     lib/dispatchcloud/scheduler

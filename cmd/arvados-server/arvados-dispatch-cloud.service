@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 [Unit]
-Description=Arvados cloud dispatch
+Description=arvados-dispatch-cloud
 Documentation=https://doc.arvados.org/
 After=network.target
 AssertPathExists=/etc/arvados/config.yml
@@ -17,7 +17,7 @@ StartLimitIntervalSec=0
 [Service]
 Type=notify
 EnvironmentFile=-/etc/arvados/environment
-ExecStart=/usr/bin/crunch-dispatch-cloud
+ExecStart=/usr/bin/arvados-dispatch-cloud
 Restart=always
 RestartSec=1
 

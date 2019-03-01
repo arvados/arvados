@@ -5,7 +5,9 @@
 package worker
 
 import (
+	"crypto/rand"
 	"errors"
+	"fmt"
 	"io"
 	"sort"
 	"strings"
@@ -16,16 +18,19 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/crypto/ssh"
 )
 
 const (
-	tagKeyInstanceType = "InstanceType"
-	tagKeyIdleBehavior = "IdleBehavior"
+	tagKeyInstanceType   = "InstanceType"
+	tagKeyIdleBehavior   = "IdleBehavior"
+	tagKeyInstanceSecret = "InstanceSecret"
 )
 
 // An InstanceView shows a worker's current state and recent activity.
 type InstanceView struct {
 	Instance             cloud.InstanceID `json:"instance"`
+	Address              string           `json:"address"`
 	Price                float64          `json:"price"`
 	ArvadosInstanceType  string           `json:"arvados_instance_type"`
 	ProviderInstanceType string           `json:"provider_instance_type"`
@@ -84,7 +89,7 @@ func duration(conf arvados.Duration, def time.Duration) time.Duration {
 //
 // New instances are configured and set up according to the given
 // cluster configuration.
-func NewPool(logger logrus.FieldLogger, arvClient *arvados.Client, reg *prometheus.Registry, instanceSet cloud.InstanceSet, newExecutor func(cloud.Instance) Executor, cluster *arvados.Cluster) *Pool {
+func NewPool(logger logrus.FieldLogger, arvClient *arvados.Client, reg *prometheus.Registry, instanceSet cloud.InstanceSet, newExecutor func(cloud.Instance) Executor, installPublicKey ssh.PublicKey, cluster *arvados.Cluster) *Pool {
 	wp := &Pool{
 		logger:             logger,
 		arvClient:          arvClient,
@@ -100,6 +105,7 @@ func NewPool(logger logrus.FieldLogger, arvClient *arvados.Client, reg *promethe
 		timeoutBooting:     duration(cluster.CloudVMs.TimeoutBooting, defaultTimeoutBooting),
 		timeoutProbe:       duration(cluster.CloudVMs.TimeoutProbe, defaultTimeoutProbe),
 		timeoutShutdown:    duration(cluster.CloudVMs.TimeoutShutdown, defaultTimeoutShutdown),
+		installPublicKey:   installPublicKey,
 		stop:               make(chan bool),
 	}
 	wp.registerMetrics(reg)
@@ -130,6 +136,7 @@ type Pool struct {
 	timeoutBooting     time.Duration
 	timeoutProbe       time.Duration
 	timeoutShutdown    time.Duration
+	installPublicKey   ssh.PublicKey
 
 	// private state
 	subscribers  map[<-chan struct{}]chan<- struct{}
@@ -146,13 +153,11 @@ type Pool struct {
 	throttleCreate    throttle
 	throttleInstances throttle
 
-	mInstances         prometheus.Gauge
-	mInstancesPrice    prometheus.Gauge
 	mContainersRunning prometheus.Gauge
-	mVCPUs             prometheus.Gauge
-	mVCPUsInuse        prometheus.Gauge
-	mMemory            prometheus.Gauge
-	mMemoryInuse       prometheus.Gauge
+	mInstances         *prometheus.GaugeVec
+	mInstancesPrice    *prometheus.GaugeVec
+	mVCPUs             *prometheus.GaugeVec
+	mMemory            *prometheus.GaugeVec
 }
 
 // Subscribe returns a buffered channel that becomes ready after any
@@ -254,15 +259,18 @@ func (wp *Pool) Create(it arvados.InstanceType) bool {
 	if time.Now().Before(wp.atQuotaUntil) || wp.throttleCreate.Error() != nil {
 		return false
 	}
-	tags := cloud.InstanceTags{
-		tagKeyInstanceType: it.Name,
-		tagKeyIdleBehavior: string(IdleBehaviorRun),
-	}
 	now := time.Now()
 	wp.creating[it] = append(wp.creating[it], now)
 	go func() {
 		defer wp.notify()
-		inst, err := wp.instanceSet.Create(it, wp.imageID, tags, nil)
+		secret := randomHex(instanceSecretLength)
+		tags := cloud.InstanceTags{
+			tagKeyInstanceType:   it.Name,
+			tagKeyIdleBehavior:   string(IdleBehaviorRun),
+			tagKeyInstanceSecret: secret,
+		}
+		initCmd := cloud.InitCommand(fmt.Sprintf("umask 0177 && echo -n %q >%s", secret, instanceSecretFilename))
+		inst, err := wp.instanceSet.Create(it, wp.imageID, tags, initCmd, wp.installPublicKey)
 		wp.mtx.Lock()
 		defer wp.mtx.Unlock()
 		// Remove our timestamp marker from wp.creating
@@ -318,6 +326,7 @@ func (wp *Pool) SetIdleBehavior(id cloud.InstanceID, idleBehavior IdleBehavior) 
 //
 // Caller must have lock.
 func (wp *Pool) updateWorker(inst cloud.Instance, it arvados.InstanceType, initialState State) (*worker, bool) {
+	inst = tagVerifier{inst}
 	id := inst.ID()
 	if wkr := wp.workers[id]; wkr != nil {
 		wkr.executor.SetTarget(inst)
@@ -343,7 +352,8 @@ func (wp *Pool) updateWorker(inst cloud.Instance, it arvados.InstanceType, initi
 
 	logger := wp.logger.WithFields(logrus.Fields{
 		"InstanceType": it.Name,
-		"Instance":     inst,
+		"Instance":     inst.ID(),
+		"Address":      inst.Address(),
 	})
 	logger.WithFields(logrus.Fields{
 		"State":        initialState,
@@ -482,10 +492,14 @@ func (wp *Pool) KillContainer(uuid string) {
 func (wp *Pool) kill(wkr *worker, uuid string) {
 	logger := wp.logger.WithFields(logrus.Fields{
 		"ContainerUUID": uuid,
-		"Instance":      wkr.instance,
+		"Instance":      wkr.instance.ID(),
 	})
 	logger.Debug("killing process")
-	stdout, stderr, err := wkr.executor.Execute(nil, "crunch-run --kill 15 "+uuid, nil)
+	cmd := "crunch-run --kill 15 " + uuid
+	if u := wkr.instance.RemoteUser(); u != "root" {
+		cmd = "sudo " + cmd
+	}
+	stdout, stderr, err := wkr.executor.Execute(nil, cmd, nil)
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"stderr": string(stderr),
@@ -511,20 +525,6 @@ func (wp *Pool) registerMetrics(reg *prometheus.Registry) {
 	if reg == nil {
 		reg = prometheus.NewRegistry()
 	}
-	wp.mInstances = prometheus.NewGauge(prometheus.GaugeOpts{
-		Namespace: "arvados",
-		Subsystem: "dispatchcloud",
-		Name:      "instances_total",
-		Help:      "Number of cloud VMs including pending, booting, running, held, and shutting down.",
-	})
-	reg.MustRegister(wp.mInstances)
-	wp.mInstancesPrice = prometheus.NewGauge(prometheus.GaugeOpts{
-		Namespace: "arvados",
-		Subsystem: "dispatchcloud",
-		Name:      "instances_price_total",
-		Help:      "Sum of prices of all cloud VMs including pending, booting, running, held, and shutting down.",
-	})
-	reg.MustRegister(wp.mInstancesPrice)
 	wp.mContainersRunning = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "arvados",
 		Subsystem: "dispatchcloud",
@@ -532,35 +532,34 @@ func (wp *Pool) registerMetrics(reg *prometheus.Registry) {
 		Help:      "Number of containers reported running by cloud VMs.",
 	})
 	reg.MustRegister(wp.mContainersRunning)
-
-	wp.mVCPUs = prometheus.NewGauge(prometheus.GaugeOpts{
+	wp.mInstances = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "arvados",
+		Subsystem: "dispatchcloud",
+		Name:      "instances_total",
+		Help:      "Number of cloud VMs.",
+	}, []string{"category"})
+	reg.MustRegister(wp.mInstances)
+	wp.mInstancesPrice = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "arvados",
+		Subsystem: "dispatchcloud",
+		Name:      "instances_price",
+		Help:      "Price of cloud VMs.",
+	}, []string{"category"})
+	reg.MustRegister(wp.mInstancesPrice)
+	wp.mVCPUs = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "arvados",
 		Subsystem: "dispatchcloud",
 		Name:      "vcpus_total",
 		Help:      "Total VCPUs on all cloud VMs.",
-	})
+	}, []string{"category"})
 	reg.MustRegister(wp.mVCPUs)
-	wp.mVCPUsInuse = prometheus.NewGauge(prometheus.GaugeOpts{
-		Namespace: "arvados",
-		Subsystem: "dispatchcloud",
-		Name:      "vcpus_inuse",
-		Help:      "VCPUs on cloud VMs that are running containers.",
-	})
-	reg.MustRegister(wp.mVCPUsInuse)
-	wp.mMemory = prometheus.NewGauge(prometheus.GaugeOpts{
+	wp.mMemory = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "arvados",
 		Subsystem: "dispatchcloud",
 		Name:      "memory_bytes_total",
 		Help:      "Total memory on all cloud VMs.",
-	})
+	}, []string{"category"})
 	reg.MustRegister(wp.mMemory)
-	wp.mMemoryInuse = prometheus.NewGauge(prometheus.GaugeOpts{
-		Namespace: "arvados",
-		Subsystem: "dispatchcloud",
-		Name:      "memory_bytes_inuse",
-		Help:      "Memory on cloud VMs that are running containers.",
-	})
-	reg.MustRegister(wp.mMemoryInuse)
 }
 
 func (wp *Pool) runMetrics() {
@@ -575,26 +574,38 @@ func (wp *Pool) updateMetrics() {
 	wp.mtx.RLock()
 	defer wp.mtx.RUnlock()
 
-	var price float64
-	var alloc, cpu, cpuInuse, mem, memInuse int64
+	instances := map[string]int64{}
+	price := map[string]float64{}
+	cpu := map[string]int64{}
+	mem := map[string]int64{}
+	var running int64
 	for _, wkr := range wp.workers {
-		price += wkr.instType.Price
-		cpu += int64(wkr.instType.VCPUs)
-		mem += int64(wkr.instType.RAM)
-		if len(wkr.running)+len(wkr.starting) == 0 {
-			continue
+		var cat string
+		switch {
+		case len(wkr.running)+len(wkr.starting) > 0:
+			cat = "inuse"
+		case wkr.idleBehavior == IdleBehaviorHold:
+			cat = "hold"
+		case wkr.state == StateBooting:
+			cat = "booting"
+		case wkr.state == StateUnknown:
+			cat = "unknown"
+		default:
+			cat = "idle"
 		}
-		alloc += int64(len(wkr.running) + len(wkr.starting))
-		cpuInuse += int64(wkr.instType.VCPUs)
-		memInuse += int64(wkr.instType.RAM)
+		instances[cat]++
+		price[cat] += wkr.instType.Price
+		cpu[cat] += int64(wkr.instType.VCPUs)
+		mem[cat] += int64(wkr.instType.RAM)
+		running += int64(len(wkr.running) + len(wkr.starting))
 	}
-	wp.mInstances.Set(float64(len(wp.workers)))
-	wp.mInstancesPrice.Set(price)
-	wp.mContainersRunning.Set(float64(alloc))
-	wp.mVCPUs.Set(float64(cpu))
-	wp.mMemory.Set(float64(mem))
-	wp.mVCPUsInuse.Set(float64(cpuInuse))
-	wp.mMemoryInuse.Set(float64(memInuse))
+	for _, cat := range []string{"inuse", "hold", "booting", "unknown", "idle"} {
+		wp.mInstances.WithLabelValues(cat).Set(float64(instances[cat]))
+		wp.mInstancesPrice.WithLabelValues(cat).Set(price[cat])
+		wp.mVCPUs.WithLabelValues(cat).Set(float64(cpu[cat]))
+		wp.mMemory.WithLabelValues(cat).Set(float64(mem[cat]))
+	}
+	wp.mContainersRunning.Set(float64(running))
 }
 
 func (wp *Pool) runProbes() {
@@ -673,6 +684,7 @@ func (wp *Pool) Instances() []InstanceView {
 	for _, w := range wp.workers {
 		r = append(r, InstanceView{
 			Instance:             w.instance.ID(),
+			Address:              w.instance.Address(),
 			Price:                w.instType.Price,
 			ArvadosInstanceType:  w.instType.Name,
 			ProviderInstanceType: w.instType.ProviderType,
@@ -753,7 +765,7 @@ func (wp *Pool) sync(threshold time.Time, instances []cloud.Instance) {
 			continue
 		}
 		logger := wp.logger.WithFields(logrus.Fields{
-			"Instance":    wkr.instance,
+			"Instance":    wkr.instance.ID(),
 			"WorkerState": wkr.state,
 		})
 		logger.Info("instance disappeared in cloud")
@@ -770,4 +782,15 @@ func (wp *Pool) sync(threshold time.Time, instances []cloud.Instance) {
 	if notify {
 		go wp.notify()
 	}
+}
+
+// Return a random string of n hexadecimal digits (n*4 random bits). n
+// must be even.
+func randomHex(n int) string {
+	buf := make([]byte, n/2)
+	_, err := rand.Read(buf)
+	if err != nil {
+		panic(err)
+	}
+	return fmt.Sprintf("%x", buf)
 }

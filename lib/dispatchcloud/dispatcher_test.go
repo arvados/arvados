@@ -5,6 +5,7 @@
 package dispatchcloud
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"math/rand"
@@ -16,6 +17,7 @@ import (
 
 	"git.curoverse.com/arvados.git/lib/dispatchcloud/test"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"golang.org/x/crypto/ssh"
 	check "gopkg.in/check.v1"
 )
@@ -23,12 +25,16 @@ import (
 var _ = check.Suite(&DispatcherSuite{})
 
 type DispatcherSuite struct {
+	ctx        context.Context
+	cancel     context.CancelFunc
 	cluster    *arvados.Cluster
 	stubDriver *test.StubDriver
 	disp       *dispatcher
 }
 
 func (s *DispatcherSuite) SetUpTest(c *check.C) {
+	s.ctx, s.cancel = context.WithCancel(context.Background())
+	s.ctx = ctxlog.Context(s.ctx, ctxlog.TestLogger(c))
 	dispatchpub, _ := test.LoadTestKey(c, "test/sshkey_dispatch")
 	dispatchprivraw, err := ioutil.ReadFile("test/sshkey_dispatch")
 	c.Assert(err, check.IsNil)
@@ -51,7 +57,7 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 			TimeoutShutdown: arvados.Duration(5 * time.Millisecond),
 		},
 		Dispatch: arvados.Dispatch{
-			PrivateKey:         dispatchprivraw,
+			PrivateKey:         string(dispatchprivraw),
 			PollInterval:       arvados.Duration(5 * time.Millisecond),
 			ProbeInterval:      arvados.Duration(5 * time.Millisecond),
 			StaleLockTimeout:   arvados.Duration(5 * time.Millisecond),
@@ -73,13 +79,17 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 			},
 		},
 	}
-	s.disp = &dispatcher{Cluster: s.cluster}
+	s.disp = &dispatcher{
+		Cluster: s.cluster,
+		Context: s.ctx,
+	}
 	// Test cases can modify s.cluster before calling
 	// initialize(), and then modify private state before calling
 	// go run().
 }
 
 func (s *DispatcherSuite) TearDownTest(c *check.C) {
+	s.cancel()
 	s.disp.Close()
 }
 
@@ -156,7 +166,7 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 		c.Fatalf("timed out; still waiting for %d containers: %q", len(waiting), waiting)
 	}
 
-	deadline := time.Now().Add(time.Second)
+	deadline := time.Now().Add(5 * time.Second)
 	for range time.NewTicker(10 * time.Millisecond).C {
 		insts, err := s.stubDriver.InstanceSets()[0].Instances(nil)
 		c.Check(err, check.IsNil)

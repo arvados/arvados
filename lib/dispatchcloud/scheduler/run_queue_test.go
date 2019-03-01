@@ -5,12 +5,14 @@
 package scheduler
 
 import (
+	"context"
 	"sync"
 	"time"
 
 	"git.curoverse.com/arvados.git/lib/dispatchcloud/test"
 	"git.curoverse.com/arvados.git/lib/dispatchcloud/worker"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	check "gopkg.in/check.v1"
 )
 
@@ -120,6 +122,7 @@ type SchedulerSuite struct{}
 // immediately. Don't try to create any other nodes after the failed
 // create.
 func (*SchedulerSuite) TestUseIdleWorkers(c *check.C) {
+	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
 	queue := test.Queue{
 		ChooseType: chooseType,
 		Containers: []arvados.Container{
@@ -174,7 +177,7 @@ func (*SchedulerSuite) TestUseIdleWorkers(c *check.C) {
 		running:   map[string]time.Time{},
 		canCreate: 0,
 	}
-	New(test.Logger(), &queue, &pool, time.Millisecond, time.Millisecond).runQueue()
+	New(ctx, &queue, &pool, time.Millisecond, time.Millisecond).runQueue()
 	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{test.InstanceType(1)})
 	c.Check(pool.starts, check.DeepEquals, []string{test.ContainerUUID(4)})
 	c.Check(pool.running, check.HasLen, 1)
@@ -186,6 +189,7 @@ func (*SchedulerSuite) TestUseIdleWorkers(c *check.C) {
 // If Create() fails, shutdown some nodes, and don't call Create()
 // again.  Don't call Create() at all if AtQuota() is true.
 func (*SchedulerSuite) TestShutdownAtQuota(c *check.C) {
+	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
 	for quota := 0; quota < 2; quota++ {
 		c.Logf("quota=%d", quota)
 		shouldCreate := []arvados.InstanceType{}
@@ -229,7 +233,7 @@ func (*SchedulerSuite) TestShutdownAtQuota(c *check.C) {
 			starts:    []string{},
 			canCreate: 0,
 		}
-		New(test.Logger(), &queue, &pool, time.Millisecond, time.Millisecond).runQueue()
+		New(ctx, &queue, &pool, time.Millisecond, time.Millisecond).runQueue()
 		c.Check(pool.creates, check.DeepEquals, shouldCreate)
 		c.Check(pool.starts, check.DeepEquals, []string{})
 		c.Check(pool.shutdowns, check.Not(check.Equals), 0)
@@ -239,6 +243,7 @@ func (*SchedulerSuite) TestShutdownAtQuota(c *check.C) {
 // Start lower-priority containers while waiting for new/existing
 // workers to come up for higher-priority containers.
 func (*SchedulerSuite) TestStartWhileCreating(c *check.C) {
+	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
 	pool := stubPool{
 		unalloc: map[arvados.InstanceType]int{
 			test.InstanceType(1): 2,
@@ -317,7 +322,7 @@ func (*SchedulerSuite) TestStartWhileCreating(c *check.C) {
 		},
 	}
 	queue.Update()
-	New(test.Logger(), &queue, &pool, time.Millisecond, time.Millisecond).runQueue()
+	New(ctx, &queue, &pool, time.Millisecond, time.Millisecond).runQueue()
 	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{test.InstanceType(2), test.InstanceType(1)})
 	c.Check(pool.starts, check.DeepEquals, []string{uuids[6], uuids[5], uuids[3], uuids[2]})
 	running := map[string]bool{}

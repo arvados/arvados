@@ -5,27 +5,15 @@
 package controller
 
 import (
-	"bytes"
 	"net/http"
 	"os"
 	"path/filepath"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
-	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
-
-// logWriter is an io.Writer that writes by calling a "write log"
-// function, typically (*check.C)Log().
-type logWriter struct {
-	logfunc func(...interface{})
-}
-
-func (tl *logWriter) Write(buf []byte) (int, error) {
-	tl.logfunc(string(bytes.TrimRight(buf, "\n")))
-	return len(buf), nil
-}
 
 func integrationTestCluster() *arvados.Cluster {
 	cfg, err := arvados.GetConfig(filepath.Join(os.Getenv("WORKSPACE"), "tmp", "arvados.yml"))
@@ -42,9 +30,7 @@ func integrationTestCluster() *arvados.Cluster {
 // Return a new unstarted controller server, using the Rails API
 // provided by the integration-testing environment.
 func newServerFromIntegrationTestEnv(c *check.C) *httpserver.Server {
-	log := logrus.New()
-	log.Formatter = &logrus.JSONFormatter{}
-	log.Out = &logWriter{c.Log}
+	log := ctxlog.TestLogger(c)
 
 	nodeProfile := arvados.NodeProfile{
 		Controller: arvados.SystemServiceInstance{Listen: ":"},

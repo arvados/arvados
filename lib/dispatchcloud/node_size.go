@@ -46,7 +46,7 @@ func estimateDockerImageSize(collectionPDH string) int64 {
 	// the size of the manifest.
 	//
 	// Use the following heuristic:
-	// - Start with the length of the mainfest (n)
+	// - Start with the length of the manifest (n)
 	// - Subtract 80 characters for the filename and file segment
 	// - Divide by 42 to get the number of block identifiers ('hash\+size\ ' is 32+1+8+1)
 	// - Assume each block is full, multiply by 64 MiB

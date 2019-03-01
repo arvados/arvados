@@ -66,6 +66,12 @@ type Cluster struct {
 	RemoteClusters     map[string]RemoteCluster
 	PostgreSQL         PostgreSQL
 	RequestLimits      RequestLimits
+	Logging            Logging
+}
+
+type Logging struct {
+	Level  string
+	Format string
 }
 
 type PostgreSQL struct {
@@ -100,7 +106,7 @@ type InstanceType struct {
 type Dispatch struct {
 	// PEM encoded SSH key (RSA, DSA, or ECDSA) able to log in to
 	// cloud VMs.
-	PrivateKey []byte
+	PrivateKey string
 
 	// Max time for workers to come up before abandoning stale
 	// locks from previous run
@@ -143,7 +149,7 @@ type CloudVMs struct {
 	ImageID string
 
 	Driver           string
-	DriverParameters map[string]interface{}
+	DriverParameters json.RawMessage
 }
 
 type InstanceTypeMap map[string]InstanceType
@@ -168,6 +174,9 @@ func (it *InstanceTypeMap) UnmarshalJSON(data []byte) error {
 			if _, ok := (*it)[t.Name]; ok {
 				return errDuplicateInstanceTypeName
 			}
+			if t.ProviderType == "" {
+				t.ProviderType = t.Name
+			}
 			(*it)[t.Name] = t
 		}
 		return nil
@@ -177,10 +186,14 @@ func (it *InstanceTypeMap) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	// Fill in Name field using hash key.
+	// Fill in Name field (and ProviderType field, if not
+	// specified) using hash key.
 	*it = InstanceTypeMap(hash)
 	for name, t := range *it {
 		t.Name = name
+		if t.ProviderType == "" {
+			t.ProviderType = name
+		}
 		(*it)[name] = t
 	}
 	return nil

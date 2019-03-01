@@ -8,7 +8,7 @@ MAINTAINER Ward Vandewege <ward@curoverse.com>
 ENV DEBIAN_FRONTEND noninteractive
 
 # Install dependencies.
-RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python2.7-dev python3 python-setuptools python3-setuptools libcurl4-gnutls-dev curl git procps libattr1-dev libfuse-dev libgnutls28-dev libpq-dev python-pip unzip python3-venv python3-dev
+RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python2.7-dev python3 python-setuptools python3-setuptools python3-pip libcurl4-gnutls-dev curl git procps libattr1-dev libfuse-dev libgnutls28-dev libpq-dev python-pip unzip python3-venv python3-dev
 
 # Install virtualenv
 RUN /usr/bin/pip install virtualenv
@@ -31,9 +31,6 @@ RUN ln -s /usr/local/go/bin/go /usr/local/bin/
 # Install nodejs and npm
 ADD generated/node-v6.11.2-linux-x64.tar.xz /usr/local/
 RUN ln -s /usr/local/node-v6.11.2-linux-x64/bin/* /usr/local/bin/
-
-# Old versions of setuptools cannot build a schema-salad package.
-RUN pip install --upgrade setuptools
 
 RUN git clone --depth 1 git://git.curoverse.com/arvados.git /tmp/arvados && cd /tmp/arvados/services/api && /usr/local/rvm/bin/rvm-exec default bundle && cd /tmp/arvados/apps/workbench && /usr/local/rvm/bin/rvm-exec default bundle && rm -rf /tmp/arvados
 

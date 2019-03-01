@@ -38,6 +38,7 @@ func New(t cloud.ExecutorTarget) *Executor {
 type Executor struct {
 	target     cloud.ExecutorTarget
 	targetPort string
+	targetUser string
 	signers    []ssh.Signer
 	mtx        sync.RWMutex // controls access to instance after creation
 
@@ -182,6 +183,9 @@ func (exr *Executor) setupSSHClient() (*ssh.Client, error) {
 	if h, p, err := net.SplitHostPort(addr); err != nil || p == "" {
 		// Target address does not specify a port.  Use
 		// targetPort, or "ssh".
+		if h == "" {
+			h = addr
+		}
 		if p = exr.targetPort; p == "" {
 			p = "ssh"
 		}
@@ -189,7 +193,7 @@ func (exr *Executor) setupSSHClient() (*ssh.Client, error) {
 	}
 	var receivedKey ssh.PublicKey
 	client, err := ssh.Dial("tcp", addr, &ssh.ClientConfig{
-		User: "root",
+		User: target.RemoteUser(),
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(exr.signers...),
 		},

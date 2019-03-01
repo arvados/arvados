@@ -7,6 +7,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -165,6 +166,7 @@ func TestPutBlockOneVol(t *testing.T) {
 
 	vols := KeepVM.AllWritable()
 	vols[0].(*MockVolume).Bad = true
+	vols[0].(*MockVolume).BadVolumeError = errors.New("Bad volume")
 
 	// Check that PutBlock stores the data as expected.
 	if n, err := PutBlock(context.Background(), TestBlock, TestHash); err != nil || n < 1 {

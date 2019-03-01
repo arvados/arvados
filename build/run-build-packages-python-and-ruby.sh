@@ -118,9 +118,6 @@ if [[ "$DEBUG" != 0 ]]; then
     DASHQ_UNLESS_DEBUG=
 fi
 
-EASY_INSTALL2=$(find_easy_install -$PYTHON2_VERSION "")
-EASY_INSTALL3=$(find_easy_install -$PYTHON3_VERSION 3)
-
 RUN_BUILD_PACKAGES_PATH="`dirname \"$0\"`"
 RUN_BUILD_PACKAGES_PATH="`( cd \"$RUN_BUILD_PACKAGES_PATH\" && pwd )`"  # absolutized and normalized
 if [ -z "$RUN_BUILD_PACKAGES_PATH" ] ; then

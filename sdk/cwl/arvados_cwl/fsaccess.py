@@ -240,8 +240,8 @@ class CollectionFetcher(DefaultFetcher):
                     return True
         except arvados.errors.NotFoundError:
             return False
-        except:
-            logger.exception("Got unexpected exception checking if file exists:")
+        except Exception:
+            logger.exception("Got unexpected exception checking if file exists")
             return False
         return super(CollectionFetcher, self).check_exists(url)
 

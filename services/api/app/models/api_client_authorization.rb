@@ -155,6 +155,12 @@ class ApiClientAuthorization < ArvadosModel
         clnt = HTTPClient.new
         if Rails.configuration.sso_insecure
           clnt.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
+        else
+          # Use system CA certificates
+          ["/etc/ssl/certs/ca-certificates.crt",
+           "/etc/pki/tls/certs/ca-bundle.crt"]
+            .select { |ca_path| File.readable?(ca_path) }
+            .each { |ca_path| clnt.ssl_config.add_trust_ca(ca_path) }
         end
         remote_user = SafeJSON.load(
           clnt.get_content('https://' + host + '/arvados/v1/users/current',
