@@ -46,7 +46,7 @@ export const RichTextEditorDialog = withStyles(styles)(withDialog(RICH_TEXT_EDIT
         <Dialog open={props.open}
             onClose={props.closeDialog}
             fullWidth
-            maxWidth='sm'>
+            maxWidth='md'>
             <DialogTitle>{props.data.title}</DialogTitle>
             <DialogContent>
                 <RichTextEditor
