@@ -385,6 +385,16 @@ class CollectionTest < Minitest::Test
                  dst_coll.manifest_text)
   end
 
+  def test_copy_root_into_empty_collection
+    block = random_block(8)
+    src_coll = Arv::Collection.new(". #{block} 0:8:f1\n")
+    dst_coll = Arv::Collection.new()
+    dst_coll.cp_r("./", ".", src_coll)
+    assert_equal(". %s 0:8:f1\n" %
+                 [block],
+                 dst_coll.manifest_text)
+  end
+
   def test_copy_empty_source_path_raises_ArgumentError(src="", dst="./s1")
     coll = Arv::Collection.new(SIMPLEST_MANIFEST)
     assert_raises(ArgumentError) do
