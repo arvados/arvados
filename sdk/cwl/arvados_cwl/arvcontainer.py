@@ -342,7 +342,7 @@ class ArvadosContainer(JobBase):
             if record["output_uuid"]:
                 if self.arvrunner.trash_intermediate or self.arvrunner.intermediate_output_ttl:
                     # Compute the trash time to avoid requesting the collection record.
-                    trash_at = ciso8601.parse_datetime_unaware(record["modified_at"]) + datetime.timedelta(0, self.arvrunner.intermediate_output_ttl)
+                    trash_at = ciso8601.parse_datetime(record["modified_at"]) + datetime.timedelta(0, self.arvrunner.intermediate_output_ttl)
                     aftertime = " at %s" % trash_at.strftime("%Y-%m-%d %H:%M:%S UTC") if self.arvrunner.intermediate_output_ttl else ""
                     orpart = ", or" if self.arvrunner.trash_intermediate and self.arvrunner.intermediate_output_ttl else ""
                     oncomplete = " upon successful completion of the workflow" if self.arvrunner.trash_intermediate else ""

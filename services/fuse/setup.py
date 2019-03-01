@@ -42,9 +42,12 @@ setup(name='arvados_fuse',
         # llfuse 1.3.4 fails to install via pip
         'llfuse >=1.2, <1.3.4',
         'python-daemon',
-        'ciso8601 >=1.0.6, <2.0.0',
+        'ciso8601 >= 2.0.0',
         'setuptools'
         ],
+      extras_require={
+          ':python_version<"3"': ['pytz'],
+      },
       test_suite='tests',
       tests_require=['pbr<1.7.0', 'mock>=1.0', 'PyYAML'],
       zip_safe=False

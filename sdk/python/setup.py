@@ -46,7 +46,7 @@ setup(name='arvados-python-client',
           ('share/doc/arvados-python-client', ['LICENSE-2.0.txt', 'README.rst']),
       ],
       install_requires=[
-          'ciso8601 >=1.0.6, <2.0.0',
+          'ciso8601 >=2.0.0',
           'future',
           'google-api-python-client >=1.6.2, <1.7',
           'httplib2 >=0.9.2',
@@ -57,6 +57,7 @@ setup(name='arvados-python-client',
       ],
       extras_require={
           ':os.name=="posix" and python_version<"3"': ['subprocess32 >= 3.5.1'],
+          ':python_version<"3"': ['pytz'],
       },
       classifiers=[
           'Programming Language :: Python :: 2',
