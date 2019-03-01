@@ -503,22 +503,23 @@ class TestContainer(unittest.TestCase):
     # Test for issue 14886
     # Test to make sure we dont call runtime_status_update if we already did
     # some where higher up in the call stack
-    def test_runtime_status_update_api_failure(self):
+    @mock.patch("arvados_cwl.util.get_current_container")
+    def test_infinite_runtime_status_update(self, gcc_mock):
         api = mock.MagicMock()
         api._rootDesc = copy.deepcopy(get_rootDesc())
         del api._rootDesc.get('resources')['jobs']['methods']['create']
         
         # Make sure ArvCwlExecutor thinks it's running inside a container so it
         # adds the logging handler that will call runtime_status_update()
-        api.containers().current().execute.return_value = mock.MagicMock()
         runner = arvados_cwl.ArvCwlExecutor(api)
         self.assertEqual(runner.work_api, 'containers')        
         root_logger = logging.getLogger('')
         handlerClasses = [h.__class__ for h in root_logger.handlers]
         self.assertTrue(arvados_cwl.RuntimeStatusLoggingHandler in handlerClasses)
         
-        # api.containers() is invoked when we call root_logger.error, so try and log again!
-        api.containers().current.side_effect = lambda : root_logger.error("Second Error")
+        # get_current_container is invoked when we call runtime_status_update
+        # so try and log again!
+        gcc_mock.side_effect = lambda *args: root_logger.error("Second Error")
         root_logger.error("First Error")
 
     @mock.patch("arvados_cwl.util.get_current_container")
