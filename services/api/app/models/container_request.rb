@@ -150,7 +150,7 @@ class ContainerRequest < ArvadosModel
       manifest = Collection.where(portable_data_hash: pdh).first.manifest_text
 
       coll_uuid = self.send(out_type + '_uuid')
-      coll = coll_uuid.nil? ? nil : Collection.find_by_uuid(coll_uuid)
+      coll = coll_uuid.nil? ? nil : Collection.where(uuid: coll_uuid).first
       if !coll
         coll = Collection.new(
           owner_uuid: self.owner_uuid,
@@ -215,14 +215,29 @@ class ContainerRequest < ArvadosModel
       else
         self.container_count += 1
         if self.container_uuid_was
-          # old_container = Container.find_by_uuid()
-          # # copy logs from old container into CR's log collection
-          # #
-          #   src = Arv::Collection.new(manifest)
-          #   tgt = Arv::Collection.new(coll.manifest_text)
-          #   tgt.cp_r("./", "./", src)
-          #   tgt.cp_r("./", "container #{container.uuid}", src)
-          #   manifest = tgt.manifest_text
+          old_container = Container.find_by_uuid(self.container_uuid_was)
+          old_logs = Collection.where(portable_data_hash: old_container.log).first
+          if old_logs
+            log_coll = coll_uuid.nil? ? nil : Collection.where(uuid: coll_uuid).first
+            if self.log_uuid.nil?
+              log_coll = Collection.new(
+                owner_uuid: self.owner_uuid,
+                name: coll_name = "Container log for request #{uuid}",
+                manifest_text: "")
+            end
+
+            # copy logs from old container into CR's log collection
+            src = Arv::Collection.new(old_logs.manifest_text)
+            dst = Arv::Collection.new(log_coll.manifest_text)
+            dst.cp_r("./", "container #{container.uuid}", src)
+            manifest = dst.manifest_text
+
+            log_coll.assign_attributes(
+              portable_data_hash: Digest::MD5.hexdigest(manifest) + '+' + manifest.bytesize.to_s,
+              manifest_text: manifest)
+            log_coll.save_with_unique_name!
+            self.log_uuid = log_coll.uuid
+          end
         end
       end
     end
