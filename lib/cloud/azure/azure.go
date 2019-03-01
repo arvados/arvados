@@ -52,6 +52,11 @@ type azureInstanceSetConfig struct {
 
 const tagKeyInstanceSecret = "InstanceSecret"
 
+type containerWrapper interface {
+	GetBlobReference(name string) *storage.Blob
+	ListBlobs(params storage.ListBlobsParameters) (storage.BlobListResponse, error)
+}
+
 type virtualMachinesClientWrapper interface {
 	createOrUpdate(ctx context.Context,
 		resourceGroupName string,
@@ -192,20 +197,20 @@ func wrapAzureError(err error) error {
 }
 
 type azureInstanceSet struct {
-	azconfig          azureInstanceSetConfig
-	vmClient          virtualMachinesClientWrapper
-	netClient         interfacesClientWrapper
-	storageAcctClient storageacct.AccountsClient
-	azureEnv          azure.Environment
-	interfaces        map[string]network.Interface
-	dispatcherID      string
-	namePrefix        string
-	ctx               context.Context
-	stopFunc          context.CancelFunc
-	stopWg            sync.WaitGroup
-	deleteNIC         chan string
-	deleteBlob        chan storage.Blob
-	logger            logrus.FieldLogger
+	azconfig     azureInstanceSetConfig
+	vmClient     virtualMachinesClientWrapper
+	netClient    interfacesClientWrapper
+	blobcont     containerWrapper
+	azureEnv     azure.Environment
+	interfaces   map[string]network.Interface
+	dispatcherID string
+	namePrefix   string
+	ctx          context.Context
+	stopFunc     context.CancelFunc
+	stopWg       sync.WaitGroup
+	deleteNIC    chan string
+	deleteBlob   chan storage.Blob
+	logger       logrus.FieldLogger
 }
 
 func newAzureInstanceSet(config json.RawMessage, dispatcherID cloud.InstanceSetID, logger logrus.FieldLogger) (prv cloud.InstanceSet, err error) {
@@ -251,7 +256,22 @@ func (az *azureInstanceSet) setup(azcfg azureInstanceSetConfig, dispatcherID str
 
 	az.vmClient = &virtualMachinesClientImpl{vmClient}
 	az.netClient = &interfacesClientImpl{netClient}
-	az.storageAcctClient = storageAcctClient
+
+	result, err := storageAcctClient.ListKeys(az.ctx, az.azconfig.ResourceGroup, az.azconfig.StorageAccount)
+	if err != nil {
+		az.logger.WithError(err).Warn("Couldn't get account keys")
+		return err
+	}
+
+	key1 := *(*result.Keys)[0].Value
+	client, err := storage.NewBasicClientOnSovereignCloud(az.azconfig.StorageAccount, key1, az.azureEnv)
+	if err != nil {
+		az.logger.WithError(err).Warn("Couldn't make client")
+		return err
+	}
+
+	blobsvc := client.GetBlobService()
+	az.blobcont = blobsvc.GetContainerReference(az.azconfig.BlobContainer)
 
 	az.dispatcherID = dispatcherID
 	az.namePrefix = fmt.Sprintf("compute-%s-", az.dispatcherID)
@@ -363,11 +383,12 @@ func (az *azureInstanceSet) Create(
 		return nil, wrapAzureError(err)
 	}
 
-	instanceVhd := fmt.Sprintf("https://%s.blob.%s/%s/%s-os.vhd",
+	blobname := fmt.Sprintf("%s-os.vhd", name)
+	instanceVhd := fmt.Sprintf("https://%s.blob.%s/%s/%s",
 		az.azconfig.StorageAccount,
 		az.azureEnv.StorageEndpointSuffix,
 		az.azconfig.BlobContainer,
-		name)
+		blobname)
 
 	customData := base64.StdEncoding.EncodeToString([]byte("#!/bin/sh\n" + initCommand + "\n"))
 
@@ -422,6 +443,16 @@ func (az *azureInstanceSet) Create(
 
 	vm, err := az.vmClient.createOrUpdate(az.ctx, az.azconfig.ResourceGroup, name, vmParameters)
 	if err != nil {
+		_, delerr := az.blobcont.GetBlobReference(blobname).DeleteIfExists(nil)
+		if delerr != nil {
+			az.logger.WithError(delerr).Warnf("Error cleaning up vhd blob after failed create")
+		}
+
+		_, delerr = az.netClient.delete(context.Background(), az.azconfig.ResourceGroup, *nic.Name)
+		if delerr != nil {
+			az.logger.WithError(delerr).Warnf("Error cleaning up NIC after failed create")
+		}
+
 		return nil, wrapAzureError(err)
 	}
 
@@ -509,27 +540,12 @@ func (az *azureInstanceSet) manageNics() (map[string]network.Interface, error) {
 // leased to a VM) and haven't been modified for
 // DeleteDanglingResourcesAfter seconds.
 func (az *azureInstanceSet) manageBlobs() {
-	result, err := az.storageAcctClient.ListKeys(az.ctx, az.azconfig.ResourceGroup, az.azconfig.StorageAccount)
-	if err != nil {
-		az.logger.WithError(err).Warn("Couldn't get account keys")
-		return
-	}
-
-	key1 := *(*result.Keys)[0].Value
-	client, err := storage.NewBasicClientOnSovereignCloud(az.azconfig.StorageAccount, key1, az.azureEnv)
-	if err != nil {
-		az.logger.WithError(err).Warn("Couldn't make client")
-		return
-	}
-
-	blobsvc := client.GetBlobService()
-	blobcont := blobsvc.GetContainerReference(az.azconfig.BlobContainer)
 
 	page := storage.ListBlobsParameters{Prefix: az.namePrefix}
 	timestamp := time.Now()
 
 	for {
-		response, err := blobcont.ListBlobs(page)
+		response, err := az.blobcont.ListBlobs(page)
 		if err != nil {
 			az.logger.WithError(err).Warn("Error listing blobs")
 			return
@@ -628,7 +644,13 @@ func (ai *azureInstance) Destroy() error {
 }
 
 func (ai *azureInstance) Address() string {
-	return *(*ai.nic.IPConfigurations)[0].PrivateIPAddress
+	if ai.nic.IPConfigurations != nil &&
+		len(*ai.nic.IPConfigurations) > 0 &&
+		(*ai.nic.IPConfigurations)[0].PrivateIPAddress != nil {
+
+		return *(*ai.nic.IPConfigurations)[0].PrivateIPAddress
+	}
+	return ""
 }
 
 func (ai *azureInstance) RemoteUser() string {
