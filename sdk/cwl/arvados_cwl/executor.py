@@ -59,6 +59,7 @@ class RuntimeStatusLoggingHandler(logging.Handler):
     def __init__(self, runtime_status_update_func):
         super(RuntimeStatusLoggingHandler, self).__init__()
         self.runtime_status_update = runtime_status_update_func
+        self.updatingRuntimeStatus = False
 
     def emit(self, record):
         kind = None
@@ -66,22 +67,27 @@ class RuntimeStatusLoggingHandler(logging.Handler):
             kind = 'error'
         elif record.levelno >= logging.WARNING:
             kind = 'warning'
-        if kind is not None:
-            log_msg = record.getMessage()
-            if '\n' in log_msg:
-                # If the logged message is multi-line, use its first line as status
-                # and the rest as detail.
-                status, detail = log_msg.split('\n', 1)
-                self.runtime_status_update(
-                    kind,
-                    "%s: %s" % (record.name, status),
-                    detail
-                )
-            else:
-                self.runtime_status_update(
-                    kind,
-                    "%s: %s" % (record.name, record.getMessage())
-                )
+        if kind is not None and self.updatingRuntimeStatus is not True:
+            self.updatingRuntimeStatus = True
+            try:
+                log_msg = record.getMessage()
+                if '\n' in log_msg:
+                    # If the logged message is multi-line, use its first line as status
+                    # and the rest as detail.
+                    status, detail = log_msg.split('\n', 1)
+                    self.runtime_status_update(
+                        kind,
+                        "%s: %s" % (record.name, status),
+                        detail
+                    )
+                else:
+                    self.runtime_status_update(
+                        kind,
+                        "%s: %s" % (record.name, record.getMessage())
+                    )
+            finally:
+                self.updatingRuntimeStatus = False
+            
 
 class ArvCwlExecutor(object):
     """Execute a CWL tool or workflow, submit work (using either jobs or
