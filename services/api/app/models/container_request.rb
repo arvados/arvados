@@ -166,7 +166,7 @@ class ContainerRequest < ArvadosModel
         src = Arv::Collection.new(manifest)
         dst = Arv::Collection.new(coll.manifest_text)
         dst.cp_r("./", ".", src)
-        dst.cp_r("./", "container #{container.uuid}", src)
+        dst.cp_r("./", "log for container #{container.uuid}", src)
         manifest = dst.manifest_text
       end
 
@@ -218,7 +218,7 @@ class ContainerRequest < ArvadosModel
           old_container = Container.find_by_uuid(self.container_uuid_was)
           old_logs = Collection.where(portable_data_hash: old_container.log).first
           if old_logs
-            log_coll = coll_uuid.nil? ? nil : Collection.where(uuid: coll_uuid).first
+            log_coll = self.log_uuid.nil? ? nil : Collection.where(uuid: self.log_uuid).first
             if self.log_uuid.nil?
               log_coll = Collection.new(
                 owner_uuid: self.owner_uuid,
@@ -229,7 +229,7 @@ class ContainerRequest < ArvadosModel
             # copy logs from old container into CR's log collection
             src = Arv::Collection.new(old_logs.manifest_text)
             dst = Arv::Collection.new(log_coll.manifest_text)
-            dst.cp_r("./", "container #{container.uuid}", src)
+            dst.cp_r("./", "log for container #{old_container.uuid}", src)
             manifest = dst.manifest_text
 
             log_coll.assign_attributes(

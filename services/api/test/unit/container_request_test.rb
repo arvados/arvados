@@ -5,6 +5,7 @@
 require 'test_helper'
 require 'helpers/container_test_helper'
 require 'helpers/docker_migration_helper'
+require 'arvados/collection'
 
 class ContainerRequestTest < ActiveSupport::TestCase
   include DockerMigrationHelper
@@ -245,19 +246,18 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr.reload
     assert_equal "Final", cr.state
     assert_equal users(:active).uuid, cr.modified_by_user_uuid
-    puts "CR #{Collection.find_by_uuid(cr.log_uuid).manifest_text}"
-    ['output', 'log'].each do |out_type|
-      pdh = Container.find_by_uuid(cr.container_uuid).send(out_type)
-      assert_equal(1, Collection.where(portable_data_hash: pdh,
-                                       owner_uuid: project.uuid).count,
-                   "Container #{out_type} should be copied to #{project.uuid}")
-    end
+
     assert_not_nil cr.output_uuid
     assert_not_nil cr.log_uuid
     output = Collection.find_by_uuid cr.output_uuid
     assert_equal output_pdh, output.portable_data_hash
+    assert_equal output.owner_uuid, project.uuid, "Container output should be copied to #{project.uuid}"
+
     log = Collection.find_by_uuid cr.log_uuid
-    assert_equal log_pdh, log.portable_data_hash
+    assert_equal log.manifest_text, ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar
+./log\\040for\\040container\\040#{cr.container_uuid} 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+
+    assert_equal log.owner_uuid, project.uuid, "Container log should be copied to #{project.uuid}"
   end
 
   test "Container makes container request, then is cancelled" do
@@ -744,6 +744,46 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr.reload
     assert_equal "Final", cr.state
     assert_equal prev_container_uuid, cr.container_uuid
+  end
+
+
+  test "Retry saves logs from previous attempts" do
+    set_user_from_auth :active
+    cr = create_minimal_req!(priority: 1, state: "Committed", container_count_max: 3)
+
+    c = act_as_system_user do
+      c = Container.find_by_uuid(cr.container_uuid)
+      c.update_attributes!(state: Container::Locked)
+      c.update_attributes!(state: Container::Running)
+      c
+    end
+
+    container_uuids = []
+
+    [0, 1, 2].each do
+      cr.reload
+      assert_equal "Committed", cr.state
+      container_uuids << cr.container_uuid
+
+      c = act_as_system_user do
+        logc = Collection.new(manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n")
+        logc.save!
+        c = Container.find_by_uuid(cr.container_uuid)
+        c.update_attributes!(state: Container::Cancelled, log: logc.portable_data_hash)
+        c
+      end
+    end
+
+    container_uuids.sort!
+
+    cr.reload
+    assert_equal "Final", cr.state
+    assert_equal 3, cr.container_count
+    assert_equal ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar
+./log\\040for\\040container\\040#{container_uuids[0]} 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar
+./log\\040for\\040container\\040#{container_uuids[1]} 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar
+./log\\040for\\040container\\040#{container_uuids[2]} 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar
+" , Collection.find_by_uuid(cr.log_uuid).manifest_text
 
   end
 
