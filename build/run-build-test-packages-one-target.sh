@@ -40,7 +40,7 @@ if ! [[ -d "$WORKSPACE" ]]; then
 fi
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,upload,target:,build-version: \
+    help,upload,rc,target:,build-version: \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -65,6 +65,9 @@ while [ $# -gt 0 ]; do
         --upload)
             UPLOAD=1
             ;;
+        --rc)
+            RC=1
+            ;;    
         --build-version)
             build_args+=("$1" "$2")
             shift
@@ -115,8 +118,13 @@ if [[ "$UPLOAD" != 0 ]]; then
   timer_reset
 
   if [ ${#failures[@]} -eq 0 ]; then
-    echo "/usr/local/arvados-dev/jenkins/run_upload_packages.py -H jenkinsapt@apt.arvados.org -o Port=2222 --workspace $WORKSPACE $TARGET"
-    /usr/local/arvados-dev/jenkins/run_upload_packages.py -H jenkinsapt@apt.arvados.org -o Port=2222 --workspace $WORKSPACE $TARGET
+    if [[ "$RC" != 0 ]]; then
+      echo "/usr/local/arvados-dev/jenkins/run_upload_packages_testing.py -H jenkinsapt@apt.arvados.org -o Port=2222 --workspace $WORKSPACE $TARGET"
+      /usr/local/arvados-dev/jenkins/run_upload_packages_testing.py -H jenkinsapt@apt.arvados.org -o Port=2222 --workspace $WORKSPACE $TARGET
+    else
+      echo "/usr/local/arvados-dev/jenkins/run_upload_packages.py -H jenkinsapt@apt.arvados.org -o Port=2222 --workspace $WORKSPACE $TARGET"
+      /usr/local/arvados-dev/jenkins/run_upload_packages.py -H jenkinsapt@apt.arvados.org -o Port=2222 --workspace $WORKSPACE $TARGET
+    fi
   else
     echo "Skipping package upload, there were errors building and/or testing the packages"
   fi
