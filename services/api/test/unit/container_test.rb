@@ -831,7 +831,10 @@ class ContainerTest < ActiveSupport::TestCase
     cr2.reload
     assert_equal cr1log_uuid, cr1.log_uuid
     assert_equal cr2log_uuid, cr2.log_uuid
-    assert_equal [logpdh_time2], Collection.where(uuid: [cr1log_uuid, cr2log_uuid]).to_a.collect(&:portable_data_hash).uniq
+    assert_equal 1, Collection.where(uuid: [cr1log_uuid, cr2log_uuid]).to_a.collect(&:portable_data_hash).uniq.length
+    assert_equal ". acbd18db4cc2f85cedef654fccc4a4d8+3 cdd549ae79fe6640fa3d5c6261d8303c+195 0:3:foo.txt 3:195:zzzzz-8i9sb-0vsrcqi7whchuil.log.txt
+./log\\040for\\040container\\040#{cr1.container_uuid} acbd18db4cc2f85cedef654fccc4a4d8+3 cdd549ae79fe6640fa3d5c6261d8303c+195 0:3:foo.txt 3:195:zzzzz-8i9sb-0vsrcqi7whchuil.log.txt
+", Collection.find_by_uuid(cr1log_uuid).manifest_text
   end
 
   ["auth_uuid", "runtime_token"].each do |tok|
