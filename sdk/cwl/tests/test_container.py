@@ -500,7 +500,6 @@ class TestContainer(unittest.TestCase):
         arvjob.output_callback.assert_called_with({"out": "stuff"}, "success")
         runner.add_intermediate_output.assert_called_with("zzzzz-4zz18-zzzzzzzzzzzzzz2")
 
-    # Test for issue 14886
     # Test to make sure we dont call runtime_status_update if we already did
     # some where higher up in the call stack
     @mock.patch("arvados_cwl.util.get_current_container")
@@ -520,7 +519,10 @@ class TestContainer(unittest.TestCase):
         # get_current_container is invoked when we call runtime_status_update
         # so try and log again!
         gcc_mock.side_effect = lambda *args: root_logger.error("Second Error")
-        root_logger.error("First Error")
+        try: 
+            root_logger.error("First Error")
+        except RuntimeError as e: 
+            self.fail(str(e))
 
     @mock.patch("arvados_cwl.util.get_current_container")
     @mock.patch("arvados.collection.CollectionReader")
