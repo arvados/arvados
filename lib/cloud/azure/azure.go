@@ -220,12 +220,14 @@ func newAzureInstanceSet(config json.RawMessage, dispatcherID cloud.InstanceSetI
 		return nil, err
 	}
 
-	ap := azureInstanceSet{logger: logger}
-	err = ap.setup(azcfg, string(dispatcherID))
+	az := azureInstanceSet{logger: logger}
+	az.ctx, az.stopFunc = context.WithCancel(context.Background())
+	err = az.setup(azcfg, string(dispatcherID))
 	if err != nil {
+		az.stopFunc()
 		return nil, err
 	}
-	return &ap, nil
+	return &az, nil
 }
 
 func (az *azureInstanceSet) setup(azcfg azureInstanceSetConfig, dispatcherID string) (err error) {
@@ -276,7 +278,6 @@ func (az *azureInstanceSet) setup(azcfg azureInstanceSetConfig, dispatcherID str
 	az.dispatcherID = dispatcherID
 	az.namePrefix = fmt.Sprintf("compute-%s-", az.dispatcherID)
 
-	az.ctx, az.stopFunc = context.WithCancel(context.Background())
 	go func() {
 		az.stopWg.Add(1)
 		defer az.stopWg.Done()
