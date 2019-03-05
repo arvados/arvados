@@ -87,7 +87,7 @@ export const trashPanelColumns: DataColumns<string> = [
         name: TrashPanelColumnNames.NAME,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.ASC,
+        sortDirection: SortDirection.NONE,
         filters: createTree(),
         render: uuid => <ResourceName uuid={uuid} />
     },
@@ -111,7 +111,7 @@ export const trashPanelColumns: DataColumns<string> = [
         name: TrashPanelColumnNames.TRASHED_DATE,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.NONE,
+        sortDirection: SortDirection.DESC,
         filters: createTree(),
         render: uuid => <ResourceTrashDate uuid={uuid} />
     },
