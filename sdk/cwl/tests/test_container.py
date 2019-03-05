@@ -80,6 +80,23 @@ class TestContainer(unittest.TestCase):
 
         return loadingContext, runtimeContext
 
+    # Helper function to set up the ArvCwlExecuture to use the containers api 
+    # and test that the RuntimeStatusLoggingHandler is set up correctly
+    def setup_and_test_container_executor_and_logging(self, gcc_mock) :
+        api = mock.MagicMock()
+        api._rootDesc = copy.deepcopy(get_rootDesc())
+        del api._rootDesc.get('resources')['jobs']['methods']['create']
+
+        # Make sure ArvCwlExecutor thinks it's running inside a container so it
+        # adds the logging handler that will call runtime_status_update() mock
+        self.assertFalse(gcc_mock.called)
+        runner = arvados_cwl.ArvCwlExecutor(api)
+        self.assertEqual(runner.work_api, 'containers')
+        root_logger = logging.getLogger('')
+        handlerClasses = [h.__class__ for h in root_logger.handlers]
+        self.assertTrue(arvados_cwl.RuntimeStatusLoggingHandler in handlerClasses)
+        return runner
+        
     # The test passes no builder.resources
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
@@ -503,49 +520,27 @@ class TestContainer(unittest.TestCase):
     # Test to make sure we dont call runtime_status_update if we already did
     # some where higher up in the call stack
     @mock.patch("arvados_cwl.util.get_current_container")
-    def test_infinite_runtime_status_update(self, gcc_mock):
-        api = mock.MagicMock()
-        api._rootDesc = copy.deepcopy(get_rootDesc())
-        del api._rootDesc.get('resources')['jobs']['methods']['create']
-        
-        # Make sure ArvCwlExecutor thinks it's running inside a container so it
-        # adds the logging handler that will call runtime_status_update()
-        runner = arvados_cwl.ArvCwlExecutor(api)
-        self.assertEqual(runner.work_api, 'containers')        
+    def test_recursive_runtime_status_update(self, gcc_mock):
+        self.setup_and_test_container_executor_and_logging(gcc_mock)
         root_logger = logging.getLogger('')
-        handlerClasses = [h.__class__ for h in root_logger.handlers]
-        self.assertTrue(arvados_cwl.RuntimeStatusLoggingHandler in handlerClasses)
-        
+
         # get_current_container is invoked when we call runtime_status_update
         # so try and log again!
         gcc_mock.side_effect = lambda *args: root_logger.error("Second Error")
         try: 
             root_logger.error("First Error")
-        except RuntimeError as e: 
-            self.fail(str(e))
+        except RuntimeError: 
+            self.fail("RuntimeStatusLoggingHandler should not be called recursively")
 
+    @mock.patch("arvados_cwl.ArvCwlExecutor.runtime_status_update")
     @mock.patch("arvados_cwl.util.get_current_container")
     @mock.patch("arvados.collection.CollectionReader")
     @mock.patch("arvados.collection.Collection")
-    def test_child_failure(self, col, reader, gcc_mock):
-        api = mock.MagicMock()
-        api._rootDesc = copy.deepcopy(get_rootDesc())
-        del api._rootDesc.get('resources')['jobs']['methods']['create']
-
-        # Set up runner with mocked runtime_status_update()
-        self.assertFalse(gcc_mock.called)
-        runtime_status_update = mock.MagicMock()
-        arvados_cwl.ArvCwlExecutor.runtime_status_update = runtime_status_update
-        runner = arvados_cwl.ArvCwlExecutor(api)
-        self.assertEqual(runner.work_api, 'containers')
-
-        # Make sure ArvCwlExecutor thinks it's running inside a container so it
-        # adds the logging handler that will call runtime_status_update() mock
+    def test_child_failure(self, col, reader, gcc_mock, rts_mock):
+        runner = self.setup_and_test_container_executor_and_logging(gcc_mock)
+        
         gcc_mock.return_value = {"uuid" : "zzzzz-dz642-zzzzzzzzzzzzzzz"}
         self.assertTrue(gcc_mock.called)
-        root_logger = logging.getLogger('')
-        handlerClasses = [h.__class__ for h in root_logger.handlers]
-        self.assertTrue(arvados_cwl.RuntimeStatusLoggingHandler in handlerClasses)
 
         runner.num_retries = 0
         runner.ignore_docker_for_reuse = False
@@ -589,7 +584,7 @@ class TestContainer(unittest.TestCase):
             "modified_at": "2017-05-26T12:01:22Z"
         })
 
-        runtime_status_update.assert_called_with(
+        rts_mock.assert_called_with(
             'error',
             'arvados.cwl-runner: [container testjob] (zzzzz-xvhdp-zzzzzzzzzzzzzzz) error log:',
             '  ** log is empty **'
