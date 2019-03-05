@@ -565,6 +565,7 @@ func (wp *Pool) registerMetrics(reg *prometheus.Registry) {
 func (wp *Pool) runMetrics() {
 	ch := wp.Subscribe()
 	defer wp.Unsubscribe(ch)
+	wp.updateMetrics()
 	for range ch {
 		wp.updateMetrics()
 	}
