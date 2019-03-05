@@ -80,7 +80,7 @@ class TestContainer(unittest.TestCase):
 
         return loadingContext, runtimeContext
 
-    # Helper function to set up the ArvCwlExecuture to use the containers api 
+    # Helper function to set up the ArvCwlExecutor to use the containers api 
     # and test that the RuntimeStatusLoggingHandler is set up correctly
     def setup_and_test_container_executor_and_logging(self, gcc_mock) :
         api = mock.MagicMock()
