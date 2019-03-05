@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash 
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: AGPL-3.0
@@ -14,6 +14,8 @@ Syntax:
 --upload
     If the build and test steps are successful, upload the packages
     to a remote apt repository (default: false)
+--rc
+    If the build is for a Release Candidate this param must be passed   
 --build-version <version>
     Version to build (default:
     \$ARVADOS_BUILDING_VERSION-\$ARVADOS_BUILDING_ITERATION or
