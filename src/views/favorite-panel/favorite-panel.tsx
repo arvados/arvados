@@ -63,7 +63,7 @@ export const favoritePanelColumns: DataColumns<string> = [
         name: FavoritePanelColumnNames.NAME,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.ASC,
+        sortDirection: SortDirection.NONE,
         filters: createTree(),
         render: uuid => <ResourceName uuid={uuid} />
     },
@@ -99,7 +99,7 @@ export const favoritePanelColumns: DataColumns<string> = [
         name: FavoritePanelColumnNames.LAST_MODIFIED,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.NONE,
+        sortDirection: SortDirection.DESC,
         filters: createTree(),
         render: uuid => <ResourceLastModifiedDate uuid={uuid} />
     }
