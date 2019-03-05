@@ -21,23 +21,23 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-const ARVADOS_DISPATCH_ID = "arvados-dispatch-id"
-const TAG_PREFIX = "arvados-dispatch-tag-"
+const arvadosDispatchID = "arvados-dispatch-id"
+const tagPrefix = "arvados-dispatch-tag-"
 
 // Driver is the ec2 implementation of the cloud.Driver interface.
 var Driver = cloud.DriverFunc(newEC2InstanceSet)
 
 type ec2InstanceSetConfig struct {
-	AccessKeyID     string
-	SecretAccessKey string
-	Region          string
-	SecurityGroupId string
-	SubnetId        string
-	AdminUsername   string
-	KeyPairName     string
+	AccessKeyID      string
+	SecretAccessKey  string
+	Region           string
+	SecurityGroupIDs []string
+	SubnetID         string
+	AdminUsername    string
+	KeyPairName      string
 }
 
-type EC2Interface interface {
+type ec2Interface interface {
 	ImportKeyPair(input *ec2.ImportKeyPairInput) (*ec2.ImportKeyPairOutput, error)
 	RunInstances(input *ec2.RunInstancesInput) (*ec2.Reservation, error)
 	DescribeInstances(input *ec2.DescribeInstancesInput) (*ec2.DescribeInstancesOutput, error)
@@ -49,7 +49,7 @@ type ec2InstanceSet struct {
 	ec2config    ec2InstanceSetConfig
 	dispatcherID cloud.InstanceSetID
 	logger       logrus.FieldLogger
-	client       EC2Interface
+	client       ec2Interface
 	importedKey  bool
 }
 
@@ -89,7 +89,7 @@ func (instanceSet *ec2InstanceSet) Create(
 
 	ec2tags := []*ec2.Tag{
 		&ec2.Tag{
-			Key:   aws.String(ARVADOS_DISPATCH_ID),
+			Key:   aws.String(arvadosDispatchID),
 			Value: aws.String(string(instanceSet.dispatcherID)),
 		},
 		&ec2.Tag{
@@ -99,7 +99,7 @@ func (instanceSet *ec2InstanceSet) Create(
 	}
 	for k, v := range newTags {
 		ec2tags = append(ec2tags, &ec2.Tag{
-			Key:   aws.String(TAG_PREFIX + k),
+			Key:   aws.String(tagPrefix + k),
 			Value: aws.String(v),
 		})
 	}
@@ -116,8 +116,8 @@ func (instanceSet *ec2InstanceSet) Create(
 				AssociatePublicIpAddress: aws.Bool(false),
 				DeleteOnTermination:      aws.Bool(true),
 				DeviceIndex:              aws.Int64(0),
-				Groups:                   []*string{&instanceSet.ec2config.SecurityGroupId},
-				SubnetId:                 &instanceSet.ec2config.SubnetId,
+				Groups:                   aws.StringSlice(instanceSet.ec2config.SecurityGroupIDs),
+				SubnetId:                 &instanceSet.ec2config.SubnetID,
 			}},
 		DisableApiTermination:             aws.Bool(false),
 		InstanceInitiatedShutdownBehavior: aws.String("terminate"),
@@ -163,7 +163,7 @@ func (instanceSet *ec2InstanceSet) Create(
 func (instanceSet *ec2InstanceSet) Instances(cloud.InstanceTags) (instances []cloud.Instance, err error) {
 	dii := &ec2.DescribeInstancesInput{
 		Filters: []*ec2.Filter{&ec2.Filter{
-			Name:   aws.String("tag:" + ARVADOS_DISPATCH_ID),
+			Name:   aws.String("tag:" + arvadosDispatchID),
 			Values: []*string{aws.String(string(instanceSet.dispatcherID))},
 		}}}
 
@@ -208,13 +208,13 @@ func (inst *ec2Instance) ProviderType() string {
 func (inst *ec2Instance) SetTags(newTags cloud.InstanceTags) error {
 	ec2tags := []*ec2.Tag{
 		&ec2.Tag{
-			Key:   aws.String(ARVADOS_DISPATCH_ID),
+			Key:   aws.String(arvadosDispatchID),
 			Value: aws.String(string(inst.provider.dispatcherID)),
 		},
 	}
 	for k, v := range newTags {
 		ec2tags = append(ec2tags, &ec2.Tag{
-			Key:   aws.String(TAG_PREFIX + k),
+			Key:   aws.String(tagPrefix + k),
 			Value: aws.String(v),
 		})
 	}
@@ -231,8 +231,8 @@ func (inst *ec2Instance) Tags() cloud.InstanceTags {
 	tags := make(map[string]string)
 
 	for _, t := range inst.instance.Tags {
-		if strings.HasPrefix(*t.Key, TAG_PREFIX) {
-			tags[(*t.Key)[len(TAG_PREFIX):]] = *t.Value
+		if strings.HasPrefix(*t.Key, tagPrefix) {
+			tags[(*t.Key)[len(tagPrefix):]] = *t.Value
 		}
 	}
 
