@@ -34,9 +34,9 @@ h3. current master branch
 
 h4. Stricter collection manifest validation on the API server
 
-As a consequence of "#14482":https://dev.arvados.org/issues/14482, the Ruby SDK does a more rigorous collection manifest validation. Additionally, the API server's dependency on the Ruby SDK was updated on "#14870":https://dev.arvados.org/issues/14870 so it may be convenient to check your existing collections against this updated validation code before upgrading.
+As a consequence of "#14482":https://dev.arvados.org/issues/14482, the Ruby SDK does a more rigorous collection manifest validation. Collections created after 2015-05 are unlikely to be invalid, however you may check for invalid manifests using the script below.
 
-One way you could easily do this is by setting up a new rvm gemset and install the specific arvados gem for testing, like so:
+You could set up a new rvm gemset and install the specific arvados gem for testing, like so:
 
 <notextile>
 <pre><code>~$ <span class="userinput">rvm gemset create rubysdk-test</span>
@@ -47,7 +47,7 @@ One way you could easily do this is by setting up a new rvm gemset and install t
 
 Next, you can run the following script using admin credentials, it will scan the whole collection database and report any collection that didn't pass the check:
 
-{% codeblock as python %}
+{% codeblock as ruby %}
 require 'arvados'
 require 'arvados/keep'
 
@@ -80,7 +80,11 @@ while true
     break if offset > req[:items_available]
 end
 
-invalid.each {|c| puts "#{c[:uuid]} (Created at #{c[:created_at]}): #{c[:error]}" }
+if invalid.empty?
+    puts "No invalid collection manifests found"
+else
+    invalid.each {|c| puts "#{c[:uuid]} (Created at #{c[:created_at]}): #{c[:error]}" }
+end
 {% endcodeblock %}
 
 The script will return a final report enumerating any invalid collection by UUID, with its creation date and error message so you can take the proper correction measures, if needed.
