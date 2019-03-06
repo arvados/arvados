@@ -20,7 +20,7 @@ func (m *nodeMetrics) setupBufferPoolMetrics(b *bufferPool) {
 		prometheus.GaugeOpts{
 			Namespace: "arvados",
 			Subsystem: "keepstore",
-			Name:      "bufferpool_bytes_allocated",
+			Name:      "bufferpool_allocated_bytes",
 			Help:      "Number of bytes allocated to buffers",
 		},
 		func() float64 { return float64(b.Alloc()) },
@@ -29,7 +29,7 @@ func (m *nodeMetrics) setupBufferPoolMetrics(b *bufferPool) {
 		prometheus.GaugeOpts{
 			Namespace: "arvados",
 			Subsystem: "keepstore",
-			Name:      "bufferpool_buffers_max",
+			Name:      "bufferpool_max_buffers",
 			Help:      "Maximum number of buffers allowed",
 		},
 		func() float64 { return float64(b.Cap()) },
@@ -38,7 +38,7 @@ func (m *nodeMetrics) setupBufferPoolMetrics(b *bufferPool) {
 		prometheus.GaugeOpts{
 			Namespace: "arvados",
 			Subsystem: "keepstore",
-			Name:      "bufferpool_buffers_in_use",
+			Name:      "bufferpool_inuse_buffers",
 			Help:      "Number of buffers in use",
 		},
 		func() float64 { return float64(b.Len()) },
@@ -50,7 +50,7 @@ func (m *nodeMetrics) setupWorkQueueMetrics(q *WorkQueue, qName string) {
 		prometheus.GaugeOpts{
 			Namespace: "arvados",
 			Subsystem: "keepstore",
-			Name:      fmt.Sprintf("%s_queue_in_progress", qName),
+			Name:      fmt.Sprintf("%s_queue_inprogress_entries", qName),
 			Help:      fmt.Sprintf("Number of %s requests in progress", qName),
 		},
 		func() float64 { return float64(getWorkQueueStatus(q).InProgress) },
@@ -59,7 +59,7 @@ func (m *nodeMetrics) setupWorkQueueMetrics(q *WorkQueue, qName string) {
 		prometheus.GaugeOpts{
 			Namespace: "arvados",
 			Subsystem: "keepstore",
-			Name:      fmt.Sprintf("%s_queue_queued", qName),
+			Name:      fmt.Sprintf("%s_queue_pending_entries", qName),
 			Help:      fmt.Sprintf("Number of queued %s requests", qName),
 		},
 		func() float64 { return float64(getWorkQueueStatus(q).Queued) },
@@ -71,7 +71,7 @@ func (m *nodeMetrics) setupRequestMetrics(rc httpserver.RequestCounter) {
 		prometheus.GaugeOpts{
 			Namespace: "arvados",
 			Subsystem: "keepstore",
-			Name:      "requests_current",
+			Name:      "concurrent_requests",
 			Help:      "Number of requests in progress",
 		},
 		func() float64 { return float64(rc.Current()) },
@@ -80,7 +80,7 @@ func (m *nodeMetrics) setupRequestMetrics(rc httpserver.RequestCounter) {
 		prometheus.GaugeOpts{
 			Namespace: "arvados",
 			Subsystem: "keepstore",
-			Name:      "requests_max",
+			Name:      "max_concurrent_requests",
 			Help:      "Maximum number of concurrent requests",
 		},
 		func() float64 { return float64(rc.Max()) },
