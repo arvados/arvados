@@ -78,11 +78,11 @@ class FuseMountTest(MountTestBase):
         cw.write("data 8")
 
         cw.start_new_stream('edgecases')
-        for f in ":/.../-/*/\\/ ".split("/"):
+        for f in ":/.../-/*/ ".split("/"):
             cw.start_new_file(f)
             cw.write('x')
 
-        for f in ":/.../-/*/\\/ ".split("/"):
+        for f in ":/.../-/*/ ".split("/"):
             cw.start_new_stream('edgecases/dirs/' + f)
             cw.start_new_file('x/x')
             cw.write('x')
