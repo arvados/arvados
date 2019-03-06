@@ -230,12 +230,12 @@ def docker_link_sort_key(link):
     Docker metadata links to sort them from least to most preferred.
     """
     try:
-        image_timestamp = ciso8601.parse_datetime(
+        image_timestamp = ciso8601.parse_datetime_as_naive(
             link['properties']['image_timestamp'])
     except (KeyError, ValueError):
         image_timestamp = EARLIEST_DATETIME
     try:
-        created_timestamp = ciso8601.parse_datetime(link['created_at'])
+        created_timestamp = ciso8601.parse_datetime_as_naive(link['created_at'])
     except ValueError:
         created_timestamp = None
     return (image_timestamp, created_timestamp)
