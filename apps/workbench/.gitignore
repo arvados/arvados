@@ -44,3 +44,6 @@
 # npm-rails
 /node_modules
 /npm-debug.log
+
+# Generated when building distribution packages
+/package-build.version

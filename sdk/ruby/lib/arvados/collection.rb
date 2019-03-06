@@ -369,7 +369,11 @@ module Arv
       end
 
       def add_copy(src_item, key)
-        self[key] = src_item.copy_named("#{path}/#{key}")
+        if key == "."
+          self[key] = src_item.copy_named("#{path}")
+        else
+          self[key] = src_item.copy_named("#{path}/#{key}")
+        end
       end
 
       def merge(src_item, key)
@@ -455,6 +459,10 @@ module Arv
 
       def setup
         items["."] = CollectionStream.new(".")
+      end
+
+      def add_copy(src_item, key)
+        items["."].add_copy(src_item, key)
       end
 
       def raise_root_write_error(key)

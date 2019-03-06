@@ -1737,6 +1737,7 @@ func main() {
 	cgroupParentSubsystem := flag.String("cgroup-parent-subsystem", "", "use current cgroup for given subsystem as parent cgroup for container")
 	caCertsPath := flag.String("ca-certs", "", "Path to TLS root certificates")
 	detach := flag.Bool("detach", false, "Detach from parent process and run in the background")
+	stdinEnv := flag.Bool("stdin-env", false, "Load environment variables from JSON message on stdin")
 	sleep := flag.Duration("sleep", 0, "Delay before starting (testing use only)")
 	kill := flag.Int("kill", -1, "Send signal to an existing crunch-run process for given UUID")
 	list := flag.Bool("list", false, "List UUIDs of existing crunch-run processes")
@@ -1765,6 +1766,13 @@ func main() {
 	}
 
 	flag.Parse()
+
+	if *stdinEnv && !ignoreDetachFlag {
+		// Load env vars on stdin if asked (but not in a
+		// detached child process, in which case stdin is
+		// /dev/null).
+		loadEnv(os.Stdin)
+	}
 
 	switch {
 	case *detach && !ignoreDetachFlag:
@@ -1854,5 +1862,23 @@ func main() {
 
 	if runerr != nil {
 		log.Fatalf("%s: %v", containerId, runerr)
+	}
+}
+
+func loadEnv(rdr io.Reader) {
+	buf, err := ioutil.ReadAll(rdr)
+	if err != nil {
+		log.Fatalf("read stdin: %s", err)
+	}
+	var env map[string]string
+	err = json.Unmarshal(buf, &env)
+	if err != nil {
+		log.Fatalf("decode stdin: %s", err)
+	}
+	for k, v := range env {
+		err = os.Setenv(k, v)
+		if err != nil {
+			log.Fatalf("setenv(%q): %s", k, err)
+		}
 	}
 }

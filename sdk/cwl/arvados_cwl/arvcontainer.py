@@ -304,8 +304,8 @@ class ArvadosContainer(JobBase):
                 logger.info("%s reused container %s", self.arvrunner.label(self), response["container_uuid"])
             else:
                 logger.info("%s %s state is %s", self.arvrunner.label(self), response["uuid"], response["state"])
-        except Exception as e:
-            logger.error("%s got error %s" % (self.arvrunner.label(self), str(e)))
+        except Exception:
+            logger.exception("%s got an error", self.arvrunner.label(self))
             self.output_callback({}, "permanentFail")
 
     def done(self, record):
@@ -342,7 +342,7 @@ class ArvadosContainer(JobBase):
             if record["output_uuid"]:
                 if self.arvrunner.trash_intermediate or self.arvrunner.intermediate_output_ttl:
                     # Compute the trash time to avoid requesting the collection record.
-                    trash_at = ciso8601.parse_datetime_unaware(record["modified_at"]) + datetime.timedelta(0, self.arvrunner.intermediate_output_ttl)
+                    trash_at = ciso8601.parse_datetime(record["modified_at"]) + datetime.timedelta(0, self.arvrunner.intermediate_output_ttl)
                     aftertime = " at %s" % trash_at.strftime("%Y-%m-%d %H:%M:%S UTC") if self.arvrunner.intermediate_output_ttl else ""
                     orpart = ", or" if self.arvrunner.trash_intermediate and self.arvrunner.intermediate_output_ttl else ""
                     oncomplete = " upon successful completion of the workflow" if self.arvrunner.trash_intermediate else ""
@@ -353,11 +353,13 @@ class ArvadosContainer(JobBase):
             if container["output"]:
                 outputs = done.done_outputs(self, container, "/tmp", self.outdir, "/keep")
         except WorkflowException as e:
+            # Only include a stack trace if in debug mode. 
+            # A stack trace may obfuscate more useful output about the workflow. 
             logger.error("%s unable to collect output from %s:\n%s",
                          self.arvrunner.label(self), container["output"], e, exc_info=(e if self.arvrunner.debug else False))
             processStatus = "permanentFail"
-        except Exception as e:
-            logger.exception("%s while getting output object: %s", self.arvrunner.label(self), e)
+        except Exception:
+            logger.exception("%s while getting output object:", self.arvrunner.label(self))
             processStatus = "permanentFail"
         finally:
             self.output_callback(outputs, processStatus)
@@ -523,8 +525,8 @@ class RunnerContainer(Runner):
             container = self.arvrunner.api.containers().get(
                 uuid=record["container_uuid"]
             ).execute(num_retries=self.arvrunner.num_retries)
-        except Exception as e:
-            logger.exception("%s while getting runner container: %s", self.arvrunner.label(self), e)
+        except Exception:
+            logger.exception("%s while getting runner container", self.arvrunner.label(self))
             self.arvrunner.output_callback({}, "permanentFail")
         else:
             super(RunnerContainer, self).done(container)

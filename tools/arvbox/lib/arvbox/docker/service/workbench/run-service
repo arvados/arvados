@@ -44,6 +44,7 @@ $RAILS_ENV:
   arvados_docsite: http://$localip:${services[doc]}/
   force_ssl: false
   composer_url: http://$localip:${services[composer]}
+  workbench2_url: https://$localip:${services[workbench2-ssl]}
 EOF
 
 bundle exec rake assets:precompile

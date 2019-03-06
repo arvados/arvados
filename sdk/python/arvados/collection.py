@@ -283,7 +283,7 @@ class CollectionWriter(CollectionBase):
             streampath, filename = split(streampath)
         if self._last_open and not self._last_open.closed:
             raise errors.AssertionError(
-                "can't open '{}' when '{}' is still open".format(
+                u"can't open '{}' when '{}' is still open".format(
                     filename, self._last_open.name))
         if streampath != self.current_stream_name():
             self.start_new_stream(streampath)
@@ -461,22 +461,22 @@ class ResumableCollectionWriter(CollectionWriter):
                 writer._queued_file.seek(pos)
             except IOError as error:
                 raise errors.StaleWriterStateError(
-                    "failed to reopen active file {}: {}".format(path, error))
+                    u"failed to reopen active file {}: {}".format(path, error))
         return writer
 
     def check_dependencies(self):
         for path, orig_stat in listitems(self._dependencies):
             if not S_ISREG(orig_stat[ST_MODE]):
-                raise errors.StaleWriterStateError("{} not file".format(path))
+                raise errors.StaleWriterStateError(u"{} not file".format(path))
             try:
                 now_stat = tuple(os.stat(path))
             except OSError as error:
                 raise errors.StaleWriterStateError(
-                    "failed to stat {}: {}".format(path, error))
+                    u"failed to stat {}: {}".format(path, error))
             if ((not S_ISREG(now_stat[ST_MODE])) or
                 (orig_stat[ST_MTIME] != now_stat[ST_MTIME]) or
                 (orig_stat[ST_SIZE] != now_stat[ST_SIZE])):
-                raise errors.StaleWriterStateError("{} changed".format(path))
+                raise errors.StaleWriterStateError(u"{} changed".format(path))
 
     def dump_state(self, copy_func=lambda x: x):
         state = {attr: copy_func(getattr(self, attr))
@@ -492,7 +492,7 @@ class ResumableCollectionWriter(CollectionWriter):
         try:
             src_path = os.path.realpath(source)
         except Exception:
-            raise errors.AssertionError("{} not a file path".format(source))
+            raise errors.AssertionError(u"{} not a file path".format(source))
         try:
             path_stat = os.stat(src_path)
         except OSError as stat_error:
@@ -505,10 +505,10 @@ class ResumableCollectionWriter(CollectionWriter):
             self._dependencies[source] = tuple(fd_stat)
         elif path_stat is None:
             raise errors.AssertionError(
-                "could not stat {}: {}".format(source, stat_error))
+                u"could not stat {}: {}".format(source, stat_error))
         elif path_stat.st_ino != fd_stat.st_ino:
             raise errors.AssertionError(
-                "{} changed between open and stat calls".format(source))
+                u"{} changed between open and stat calls".format(source))
         else:
             self._dependencies[src_path] = tuple(fd_stat)
 
@@ -1347,7 +1347,10 @@ class Collection(RichCollectionBase):
 
     def get_trash_at(self):
         if self._api_response and self._api_response["trash_at"]:
-            return ciso8601.parse_datetime(self._api_response["trash_at"])
+            try:
+                return ciso8601.parse_datetime(self._api_response["trash_at"])
+            except ValueError:
+                return None
         else:
             return None
 

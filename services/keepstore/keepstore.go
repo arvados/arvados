@@ -51,6 +51,7 @@ var (
 	DiskHashError       = &KeepError{500, "Hash mismatch in stored data"}
 	ExpiredError        = &KeepError{401, "Expired permission signature"}
 	NotFoundError       = &KeepError{404, "Not Found"}
+	VolumeBusyError     = &KeepError{503, "Volume backend busy"}
 	GenericError        = &KeepError{500, "Fail"}
 	FullError           = &KeepError{503, "Full"}
 	SizeRequiredError   = &KeepError{411, "Missing Content-Length"}

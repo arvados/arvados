@@ -675,6 +675,11 @@ func GetBlock(ctx context.Context, hash string, buf []byte, resp http.ResponseWr
 			if !os.IsNotExist(err) {
 				log.Printf("%s: Get(%s): %s", vol, hash, err)
 			}
+			// If some volume returns a transient error, return it to the caller
+			// instead of "Not found" so it can retry.
+			if err == VolumeBusyError {
+				errorToCaller = err.(*KeepError)
+			}
 			continue
 		}
 		// Check the file checksum.

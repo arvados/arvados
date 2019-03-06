@@ -199,7 +199,7 @@ class ArvadosJob(JobBase):
                                     e)
             else:
                 logger.info("%s %s is %s", self.arvrunner.label(self), response["uuid"], response["state"])
-        except Exception as e:
+        except Exception:
             logger.exception("%s error" % (self.arvrunner.label(self)))
             self.output_callback({}, "permanentFail")
 
@@ -224,8 +224,8 @@ class ArvadosJob(JobBase):
                             body={
                                 "components": components
                             }).execute(num_retries=self.arvrunner.num_retries)
-                except Exception as e:
-                    logger.info("Error adding to components: %s", e)
+                except Exception:
+                    logger.exception("Error adding to components")
 
     def done(self, record):
         try:
@@ -272,10 +272,12 @@ class ArvadosJob(JobBase):
                         outputs = done.done(self, record, dirs["tmpdir"],
                                             dirs["outdir"], dirs["keep"])
             except WorkflowException as e:
+                # Only include a stack trace if in debug mode. 
+                # This is most likely a user workflow error and a stack trace may obfuscate more useful output. 
                 logger.error("%s unable to collect output from %s:\n%s",
                              self.arvrunner.label(self), record["output"], e, exc_info=(e if self.arvrunner.debug else False))
                 processStatus = "permanentFail"
-            except Exception as e:
+            except Exception:
                 logger.exception("Got unknown exception while collecting output for job %s:", self.name)
                 processStatus = "permanentFail"
 

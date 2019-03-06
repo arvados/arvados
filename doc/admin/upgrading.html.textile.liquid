@@ -32,6 +32,63 @@ TODO: extract this information based on git commit messages and generate changel
 
 h3. current master branch
 
+h4. Stricter collection manifest validation on the API server
+
+As a consequence of "#14482":https://dev.arvados.org/issues/14482, the Ruby SDK does a more rigorous collection manifest validation. Collections created after 2015-05 are unlikely to be invalid, however you may check for invalid manifests using the script below.
+
+You could set up a new rvm gemset and install the specific arvados gem for testing, like so:
+
+<notextile>
+<pre><code>~$ <span class="userinput">rvm gemset create rubysdk-test</span>
+~$ <span class="userinput">rvm gemset use rubysdk-test</span>
+~$ <span class="userinput">gem install arvados -v 1.3.1.20190301212059</span>
+</code></pre>
+</notextile>
+
+Next, you can run the following script using admin credentials, it will scan the whole collection database and report any collection that didn't pass the check:
+
+{% codeblock as ruby %}
+require 'arvados'
+require 'arvados/keep'
+
+api = Arvados.new
+offset = 0
+batch_size = 100
+invalid = []
+
+while true
+    begin
+        req = api.collection.index(
+            :select => [:uuid, :created_at, :manifest_text],
+            :include_trash => true, :include_old_versions => true,
+            :limit => batch_size, :offset => offset)
+    rescue
+        invalid.each {|c| puts "#{c[:uuid]} (Created at #{c[:created_at]}): #{c[:error]}" }
+        raise
+    end
+
+    req[:items].each do |col|
+        begin
+            Keep::Manifest.validate! col[:manifest_text]
+        rescue Exception => e
+            puts "Collection #{col[:uuid]} manifest not valid"
+            invalid << {uuid: col[:uuid], error: e, created_at: col[:created_at]}
+        end
+    end
+    puts "Checked #{offset} / #{req[:items_available]} - Invalid: #{invalid.size}"
+    offset += req[:limit]
+    break if offset > req[:items_available]
+end
+
+if invalid.empty?
+    puts "No invalid collection manifests found"
+else
+    invalid.each {|c| puts "#{c[:uuid]} (Created at #{c[:created_at]}): #{c[:error]}" }
+end
+{% endcodeblock %}
+
+The script will return a final report enumerating any invalid collection by UUID, with its creation date and error message so you can take the proper correction measures, if needed.
+
 h4. Python packaging change
 
 As part of story "#9945":https://dev.arvados.org/issues/9945, the distribution packaging (deb/rpm) of our Python packages has changed. These packages now include a built-in virtualenv to reduce dependencies on system packages. We have also stopped packaging and publishing backports for all the Python dependencies of our packages, as they are no longer needed.

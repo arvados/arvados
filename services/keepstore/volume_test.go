@@ -42,7 +42,8 @@ type MockVolume struct {
 	Timestamps map[string]time.Time
 
 	// Bad volumes return an error for every operation.
-	Bad bool
+	Bad            bool
+	BadVolumeError error
 
 	// Touchable volumes' Touch() method succeeds for a locator
 	// that has been Put().
@@ -106,7 +107,7 @@ func (v *MockVolume) Compare(ctx context.Context, loc string, buf []byte) error 
 	v.gotCall("Compare")
 	<-v.Gate
 	if v.Bad {
-		return errors.New("Bad volume")
+		return v.BadVolumeError
 	} else if block, ok := v.Store[loc]; ok {
 		if fmt.Sprintf("%x", md5.Sum(block)) != loc {
 			return DiskHashError
@@ -124,7 +125,7 @@ func (v *MockVolume) Get(ctx context.Context, loc string, buf []byte) (int, erro
 	v.gotCall("Get")
 	<-v.Gate
 	if v.Bad {
-		return 0, errors.New("Bad volume")
+		return 0, v.BadVolumeError
 	} else if block, ok := v.Store[loc]; ok {
 		copy(buf[:len(block)], block)
 		return len(block), nil
@@ -136,7 +137,7 @@ func (v *MockVolume) Put(ctx context.Context, loc string, block []byte) error {
 	v.gotCall("Put")
 	<-v.Gate
 	if v.Bad {
-		return errors.New("Bad volume")
+		return v.BadVolumeError
 	}
 	if v.Readonly {
 		return MethodDisabledError
@@ -164,7 +165,7 @@ func (v *MockVolume) Mtime(loc string) (time.Time, error) {
 	var mtime time.Time
 	var err error
 	if v.Bad {
-		err = errors.New("Bad volume")
+		err = v.BadVolumeError
 	} else if t, ok := v.Timestamps[loc]; ok {
 		mtime = t
 	} else {

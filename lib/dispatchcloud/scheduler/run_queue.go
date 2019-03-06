@@ -6,6 +6,7 @@ package scheduler
 
 import (
 	"sort"
+	"time"
 
 	"git.curoverse.com/arvados.git/lib/dispatchcloud/container"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
@@ -50,7 +51,7 @@ tryrun:
 				overquota = sorted[i:]
 				break tryrun
 			}
-			sch.bgLock(logger, ctr.UUID)
+			go sch.lockContainer(logger, ctr.UUID)
 			unalloc[it]--
 		case arvados.ContainerStateLocked:
 			if unalloc[it] > 0 {
@@ -120,22 +121,16 @@ tryrun:
 	}
 }
 
-// Start an API call to lock the given container, and return
-// immediately while waiting for the response in a new goroutine. Do
-// nothing if a lock request is already in progress for this
-// container.
-func (sch *Scheduler) bgLock(logger logrus.FieldLogger, uuid string) {
-	logger.Debug("locking")
-	sch.mtx.Lock()
-	defer sch.mtx.Unlock()
-	if sch.locking[uuid] {
-		logger.Debug("locking in progress, doing nothing")
+// Lock the given container. Should be called in a new goroutine.
+func (sch *Scheduler) lockContainer(logger logrus.FieldLogger, uuid string) {
+	if !sch.uuidLock(uuid, "lock") {
 		return
 	}
+	defer sch.uuidUnlock(uuid)
 	if ctr, ok := sch.queue.Get(uuid); !ok || ctr.State != arvados.ContainerStateQueued {
 		// This happens if the container has been cancelled or
 		// locked since runQueue called sch.queue.Entries(),
-		// possibly by a bgLock() call from a previous
+		// possibly by a lockContainer() call from a previous
 		// runQueue iteration. In any case, we will respond
 		// appropriately on the next runQueue iteration, which
 		// will have already been triggered by the queue
@@ -143,24 +138,50 @@ func (sch *Scheduler) bgLock(logger logrus.FieldLogger, uuid string) {
 		logger.WithField("State", ctr.State).Debug("container no longer queued by the time we decided to lock it, doing nothing")
 		return
 	}
-	sch.locking[uuid] = true
-	go func() {
-		defer func() {
-			sch.mtx.Lock()
-			defer sch.mtx.Unlock()
-			delete(sch.locking, uuid)
-		}()
-		err := sch.queue.Lock(uuid)
-		if err != nil {
-			logger.WithError(err).Warn("error locking container")
-			return
-		}
-		logger.Debug("lock succeeded")
-		ctr, ok := sch.queue.Get(uuid)
-		if !ok {
-			logger.Error("(BUG?) container disappeared from queue after Lock succeeded")
-		} else if ctr.State != arvados.ContainerStateLocked {
-			logger.Warnf("(race?) container has state=%q after Lock succeeded", ctr.State)
-		}
-	}()
+	err := sch.queue.Lock(uuid)
+	if err != nil {
+		logger.WithError(err).Warn("error locking container")
+		return
+	}
+	logger.Debug("lock succeeded")
+	ctr, ok := sch.queue.Get(uuid)
+	if !ok {
+		logger.Error("(BUG?) container disappeared from queue after Lock succeeded")
+	} else if ctr.State != arvados.ContainerStateLocked {
+		logger.Warnf("(race?) container has state=%q after Lock succeeded", ctr.State)
+	}
+}
+
+// Acquire a non-blocking lock for specified UUID, returning true if
+// successful.  The op argument is used only for debug logs.
+//
+// If the lock is not available, uuidLock arranges to wake up the
+// scheduler after a short delay, so it can retry whatever operation
+// is trying to get the lock (if that operation is still worth doing).
+//
+// This mechanism helps avoid spamming the controller/database with
+// concurrent updates for any single container, even when the
+// scheduler loop is running frequently.
+func (sch *Scheduler) uuidLock(uuid, op string) bool {
+	sch.mtx.Lock()
+	defer sch.mtx.Unlock()
+	logger := sch.logger.WithFields(logrus.Fields{
+		"ContainerUUID": uuid,
+		"Op":            op,
+	})
+	if op, locked := sch.uuidOp[uuid]; locked {
+		logger.Debugf("uuidLock not available, Op=%s in progress", op)
+		// Make sure the scheduler loop wakes up to retry.
+		sch.wakeup.Reset(time.Second / 4)
+		return false
+	}
+	logger.Debug("uuidLock acquired")
+	sch.uuidOp[uuid] = op
+	return true
+}
+
+func (sch *Scheduler) uuidUnlock(uuid string) {
+	sch.mtx.Lock()
+	defer sch.mtx.Unlock()
+	delete(sch.uuidOp, uuid)
 }

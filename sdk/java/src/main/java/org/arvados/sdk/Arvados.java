@@ -91,7 +91,6 @@ public class Arvados {
       }
     }
     arvadosRootUrl = "https://" + arvadosApiHost;
-    arvadosRootUrl += (arvadosApiHost.endsWith("/")) ? "" : "/";
 
     if (hostInsecure != null) {
       arvadosApiHostInsecure = Boolean.valueOf(hostInsecure);

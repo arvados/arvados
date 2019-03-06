@@ -10,16 +10,19 @@ import errno
 import json
 import os
 import re
-import subprocess32 as subprocess
 import sys
 import tarfile
 import tempfile
 import shutil
 import _strptime
 import fcntl
-
 from operator import itemgetter
 from stat import *
+
+if os.name == "posix" and sys.version_info[0] < 3:
+    import subprocess32 as subprocess
+else:
+    import subprocess
 
 import arvados
 import arvados.util
@@ -227,12 +230,15 @@ def docker_link_sort_key(link):
     Docker metadata links to sort them from least to most preferred.
     """
     try:
-        image_timestamp = ciso8601.parse_datetime_unaware(
+        image_timestamp = ciso8601.parse_datetime(
             link['properties']['image_timestamp'])
     except (KeyError, ValueError):
         image_timestamp = EARLIEST_DATETIME
-    return (image_timestamp,
-            ciso8601.parse_datetime_unaware(link['created_at']))
+    try:
+        created_timestamp = ciso8601.parse_datetime(link['created_at'])
+    except ValueError:
+        created_timestamp = None
+    return (image_timestamp, created_timestamp)
 
 def _get_docker_links(api_client, num_retries, **kwargs):
     links = arvados.util.list_all(api_client.links().list,

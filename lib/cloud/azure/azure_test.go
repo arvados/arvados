@@ -25,6 +25,7 @@
 // 	 StorageAccount: example
 // 	 BlobContainer: vhds
 // 	 DeleteDanglingResourcesAfter: 20s
+//	 AdminUsername: crunch
 
 package azure
 
@@ -50,7 +51,6 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/jmcvetta/randutil"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 	check "gopkg.in/check.v1"
@@ -105,6 +105,16 @@ func (*InterfacesClientStub) listComplete(ctx context.Context, resourceGroupName
 	return network.InterfaceListResultIterator{}, nil
 }
 
+type BlobContainerStub struct{}
+
+func (*BlobContainerStub) GetBlobReference(name string) *storage.Blob {
+	return nil
+}
+
+func (*BlobContainerStub) ListBlobs(params storage.ListBlobsParameters) (storage.BlobListResponse, error) {
+	return storage.BlobListResponse{}, nil
+}
+
 type testConfig struct {
 	ImageIDForTestSuite string
 	DriverParameters    json.RawMessage
@@ -148,6 +158,7 @@ func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error)
 	ap.ctx, ap.stopFunc = context.WithCancel(context.Background())
 	ap.vmClient = &VirtualMachinesClientStub{}
 	ap.netClient = &InterfacesClientStub{}
+	ap.blobcont = &BlobContainerStub{}
 	return &ap, cloud.ImageID("blob"), cluster, nil
 }
 
@@ -160,18 +171,16 @@ func (*AzureInstanceSetSuite) TestCreate(c *check.C) {
 	pk, _, _, _, err := ssh.ParseAuthorizedKey(testKey)
 	c.Assert(err, check.IsNil)
 
-	nodetoken, err := randutil.String(40, "abcdefghijklmnopqrstuvwxyz0123456789")
-	c.Assert(err, check.IsNil)
-
 	inst, err := ap.Create(cluster.InstanceTypes["tiny"],
 		img, map[string]string{
-			"node-token": nodetoken},
-		pk)
+			"TestTagName": "test tag value",
+		}, "umask 0600; echo -n test-file-data >/var/run/test-file", pk)
 
 	c.Assert(err, check.IsNil)
 
-	tg := inst.Tags()
-	log.Printf("Result %v %v %v", inst.String(), inst.Address(), tg)
+	tags := inst.Tags()
+	c.Check(tags["TestTagName"], check.Equals, "test tag value")
+	c.Logf("inst.String()=%v Address()=%v Tags()=%v", inst.String(), inst.Address(), tags)
 
 }
 
@@ -306,19 +315,22 @@ func (*AzureInstanceSetSuite) TestSSH(c *check.C) {
 	c.Assert(err, check.IsNil)
 
 	if len(l) > 0 {
-
 		sshclient, err := SetupSSHClient(c, l[0])
 		c.Assert(err, check.IsNil)
+		defer sshclient.Conn.Close()
 
 		sess, err := sshclient.NewSession()
 		c.Assert(err, check.IsNil)
-
-		out, err := sess.Output("cat /home/crunch/node-token")
+		defer sess.Close()
+		_, err = sess.Output("find /var/run/test-file -maxdepth 0 -user root -perm 0600")
 		c.Assert(err, check.IsNil)
 
-		log.Printf("%v", string(out))
-
-		sshclient.Conn.Close()
+		sess, err = sshclient.NewSession()
+		c.Assert(err, check.IsNil)
+		defer sess.Close()
+		out, err := sess.Output("sudo cat /var/run/test-file")
+		c.Assert(err, check.IsNil)
+		c.Check(string(out), check.Equals, "test-file-data")
 	}
 }
 

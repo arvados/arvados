@@ -50,6 +50,7 @@ type RequestTester struct {
 //   - permissions on, authenticated request, unsigned locator
 //   - permissions on, unauthenticated request, signed locator
 //   - permissions on, authenticated request, expired locator
+//   - permissions on, authenticated request, signed locator, transient error from backend
 //
 func TestGetHandler(t *testing.T) {
 	defer teardown()
@@ -152,6 +153,23 @@ func TestGetHandler(t *testing.T) {
 	ExpectStatusCode(t,
 		"Authenticated request, expired locator",
 		ExpiredError.HTTPCode, response)
+
+	// Authenticated request, signed locator
+	// => 503 Server busy (transient error)
+
+	// Set up the block owning volume to respond with errors
+	vols[0].(*MockVolume).Bad = true
+	vols[0].(*MockVolume).BadVolumeError = VolumeBusyError
+	response = IssueRequest(&RequestTester{
+		method:   "GET",
+		uri:      signedLocator,
+		apiToken: knownToken,
+	})
+	// A transient error from one volume while the other doesn't find the block
+	// should make the service return a 503 so that clients can retry.
+	ExpectStatusCode(t,
+		"Volume backend busy",
+		503, response)
 }
 
 // Test PutBlockHandler on the following situations:

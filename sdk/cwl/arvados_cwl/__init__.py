@@ -289,10 +289,12 @@ def main(args, stdout, stderr, api_client=None, keep_client=None,
         if keep_client is None:
             keep_client = arvados.keep.KeepClient(api_client=api_client, num_retries=4)
         executor = ArvCwlExecutor(api_client, arvargs, keep_client=keep_client, num_retries=4)
-    except Exception as e:
-        logger.error(e)
+    except Exception:
+        logger.exception("Error creating the Arvados CWL Executor")
         return 1
 
+    # Note that unless in debug mode, some stack traces related to user 
+    # workflow errors may be suppressed. See ArvadosJob.done().
     if arvargs.debug:
         logger.setLevel(logging.DEBUG)
         logging.getLogger('arvados').setLevel(logging.DEBUG)

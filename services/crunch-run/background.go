@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -25,16 +24,17 @@ var (
 
 // procinfo is saved in each process's lockfile.
 type procinfo struct {
-	UUID   string
-	PID    int
-	Stdout string
-	Stderr string
+	UUID string
+	PID  int
 }
 
 // Detach acquires a lock for the given uuid, and starts the current
 // program as a child process (with -no-detach prepended to the given
 // arguments so the child knows not to detach again). The lock is
 // passed along to the child process.
+//
+// Stdout and stderr in the child process are sent to the systemd
+// journal using the systemd-cat program.
 func Detach(uuid string, args []string, stdout, stderr io.Writer) int {
 	return exitcode(stderr, detach(uuid, args, stdout, stderr))
 }
@@ -49,14 +49,15 @@ func detach(uuid string, args []string, stdout, stderr io.Writer) error {
 			return nil, err
 		}
 		defer dirlock.Close()
-		lockfile, err := os.OpenFile(filepath.Join(lockdir, lockprefix+uuid+locksuffix), os.O_CREATE|os.O_RDWR, 0700)
+		lockfilename := filepath.Join(lockdir, lockprefix+uuid+locksuffix)
+		lockfile, err := os.OpenFile(lockfilename, os.O_CREATE|os.O_RDWR, 0700)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("open %s: %s", lockfilename, err)
 		}
 		err = syscall.Flock(int(lockfile.Fd()), syscall.LOCK_EX|syscall.LOCK_NB)
 		if err != nil {
 			lockfile.Close()
-			return nil, err
+			return nil, fmt.Errorf("lock %s: %s", lockfilename, err)
 		}
 		return lockfile, nil
 	}()
@@ -66,21 +67,7 @@ func detach(uuid string, args []string, stdout, stderr io.Writer) error {
 	defer lockfile.Close()
 	lockfile.Truncate(0)
 
-	outfile, err := ioutil.TempFile("", "crunch-run-"+uuid+"-stdout-")
-	if err != nil {
-		return err
-	}
-	defer outfile.Close()
-	errfile, err := ioutil.TempFile("", "crunch-run-"+uuid+"-stderr-")
-	if err != nil {
-		os.Remove(outfile.Name())
-		return err
-	}
-	defer errfile.Close()
-
-	cmd := exec.Command(args[0], append([]string{"-no-detach"}, args[1:]...)...)
-	cmd.Stdout = outfile
-	cmd.Stderr = errfile
+	cmd := exec.Command("systemd-cat", append([]string{"--identifier=crunch-run", args[0], "-no-detach"}, args[1:]...)...)
 	// Child inherits lockfile.
 	cmd.ExtraFiles = []*os.File{lockfile}
 	// Ensure child isn't interrupted even if we receive signals
@@ -89,24 +76,14 @@ func detach(uuid string, args []string, stdout, stderr io.Writer) error {
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	err = cmd.Start()
 	if err != nil {
-		os.Remove(outfile.Name())
-		os.Remove(errfile.Name())
-		return err
+		return fmt.Errorf("exec %s: %s", cmd.Path, err)
 	}
 
 	w := io.MultiWriter(stdout, lockfile)
-	err = json.NewEncoder(w).Encode(procinfo{
-		UUID:   uuid,
-		PID:    cmd.Process.Pid,
-		Stdout: outfile.Name(),
-		Stderr: errfile.Name(),
+	return json.NewEncoder(w).Encode(procinfo{
+		UUID: uuid,
+		PID:  cmd.Process.Pid,
 	})
-	if err != nil {
-		os.Remove(outfile.Name())
-		os.Remove(errfile.Name())
-		return err
-	}
-	return nil
 }
 
 // KillProcess finds the crunch-run process corresponding to the given
@@ -123,14 +100,14 @@ func kill(uuid string, signal syscall.Signal, stdout, stderr io.Writer) error {
 	if os.IsNotExist(err) {
 		return nil
 	} else if err != nil {
-		return err
+		return fmt.Errorf("open %s: %s", path, err)
 	}
 	defer f.Close()
 
 	var pi procinfo
 	err = json.NewDecoder(f).Decode(&pi)
 	if err != nil {
-		return fmt.Errorf("%s: %s\n", path, err)
+		return fmt.Errorf("decode %s: %s\n", path, err)
 	}
 
 	if pi.UUID != uuid || pi.PID == 0 {
@@ -139,7 +116,7 @@ func kill(uuid string, signal syscall.Signal, stdout, stderr io.Writer) error {
 
 	proc, err := os.FindProcess(pi.PID)
 	if err != nil {
-		return err
+		return fmt.Errorf("%s: find process %d: %s", uuid, pi.PID, err)
 	}
 
 	err = proc.Signal(signal)
@@ -147,16 +124,19 @@ func kill(uuid string, signal syscall.Signal, stdout, stderr io.Writer) error {
 		err = proc.Signal(syscall.Signal(0))
 	}
 	if err == nil {
-		return fmt.Errorf("pid %d: sent signal %d (%s) but process is still alive", pi.PID, signal, signal)
+		return fmt.Errorf("%s: pid %d: sent signal %d (%s) but process is still alive", uuid, pi.PID, signal, signal)
 	}
-	fmt.Fprintf(stderr, "pid %d: %s\n", pi.PID, err)
+	fmt.Fprintf(stderr, "%s: pid %d: %s\n", uuid, pi.PID, err)
 	return nil
 }
 
 // List UUIDs of active crunch-run processes.
 func ListProcesses(stdout, stderr io.Writer) int {
-	return exitcode(stderr, filepath.Walk(lockdir, func(path string, info os.FileInfo, err error) error {
-		if info.IsDir() {
+	// filepath.Walk does not follow symlinks, so we must walk
+	// lockdir+"/." in case lockdir itself is a symlink.
+	walkdir := lockdir + "/."
+	return exitcode(stderr, filepath.Walk(walkdir, func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() && path != walkdir {
 			return filepath.SkipDir
 		}
 		if name := info.Name(); !strings.HasPrefix(name, lockprefix) || !strings.HasSuffix(name, locksuffix) {
@@ -186,7 +166,7 @@ func ListProcesses(stdout, stderr io.Writer) int {
 			err := os.Remove(path)
 			dirlock.Close()
 			if err != nil {
-				fmt.Fprintln(stderr, err)
+				fmt.Fprintf(stderr, "unlink %s: %s\n", f.Name(), err)
 			}
 			return nil
 		}
@@ -224,14 +204,15 @@ func exitcode(stderr io.Writer, err error) int {
 //
 // Caller releases the lock by closing the returned file.
 func lockall() (*os.File, error) {
-	f, err := os.OpenFile(filepath.Join(lockdir, lockprefix+"all"+locksuffix), os.O_CREATE|os.O_RDWR, 0700)
+	lockfile := filepath.Join(lockdir, lockprefix+"all"+locksuffix)
+	f, err := os.OpenFile(lockfile, os.O_CREATE|os.O_RDWR, 0700)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("open %s: %s", lockfile, err)
 	}
 	err = syscall.Flock(int(f.Fd()), syscall.LOCK_EX)
 	if err != nil {
 		f.Close()
-		return nil, err
+		return nil, fmt.Errorf("lock %s: %s", lockfile, err)
 	}
 	return f, nil
 }
