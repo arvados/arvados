@@ -16,10 +16,9 @@
 //       AccessKeyID: XXXXXXXXXXXXXX
 //       SecretAccessKey: xxxxxxxxxxxxxxxxxxxx
 //       Region: us-east-1
-//       SecurityGroupId: sg-xxxxxxxx
-//       SubnetId: subnet-xxxxxxxx
+//       SecurityGroupIDs: [sg-xxxxxxxx]
+//       SubnetID: subnet-xxxxxxxx
 //       AdminUsername: crunch
-//       KeyPairName: arvados-dispatcher-keypair
 
 package ec2
 
@@ -94,14 +93,13 @@ func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error)
 				Preemptible:  false,
 			},
 			"tiny-with-extra-scratch": arvados.InstanceType{
-				Name:          "tiny",
-				ProviderType:  "t2.micro",
-				VCPUs:         1,
-				RAM:           4000000000,
-				Scratch:       20000000000,
-				Price:         .02,
-				Preemptible:   false,
-				AttachScratch: true,
+				Name:         "tiny",
+				ProviderType: "t2.micro",
+				VCPUs:        1,
+				RAM:          4000000000,
+				Price:        .02,
+				Preemptible:  false,
+				AddedScratch: 20000000000,
 			},
 			"tiny-preemptible": arvados.InstanceType{
 				Name:         "tiny",
@@ -128,6 +126,7 @@ func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error)
 		dispatcherID: "test123",
 		logger:       logrus.StandardLogger(),
 		client:       &ec2stub{},
+		keys:         make(map[string]string),
 	}
 	return &ap, cloud.ImageID("blob"), cluster, nil
 }

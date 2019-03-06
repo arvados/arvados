@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync"
 
 	"git.curoverse.com/arvados.git/lib/cloud"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
@@ -34,7 +35,6 @@ type ec2InstanceSetConfig struct {
 	SecurityGroupIDs []string
 	SubnetID         string
 	AdminUsername    string
-	KeyPairName      string
 }
 
 type ec2Interface interface {
@@ -50,7 +50,8 @@ type ec2InstanceSet struct {
 	dispatcherID cloud.InstanceSetID
 	logger       logrus.FieldLogger
 	client       ec2Interface
-	importedKey  bool
+	keysMtx      sync.Mutex
+	keys         map[string]string
 }
 
 func newEC2InstanceSet(config json.RawMessage, dispatcherID cloud.InstanceSetID, logger logrus.FieldLogger) (prv cloud.InstanceSet, err error) {
@@ -69,6 +70,7 @@ func newEC2InstanceSet(config json.RawMessage, dispatcherID cloud.InstanceSetID,
 			"")).
 		WithRegion(instanceSet.ec2config.Region)
 	instanceSet.client = ec2.New(session.Must(session.NewSession(awsConfig)))
+	instanceSet.keys = make(map[string]string)
 	return instanceSet, nil
 }
 
@@ -79,13 +81,19 @@ func (instanceSet *ec2InstanceSet) Create(
 	initCommand cloud.InitCommand,
 	publicKey ssh.PublicKey) (cloud.Instance, error) {
 
-	if !instanceSet.importedKey {
+	keyFingerprint := ssh.FingerprintSHA256(publicKey)
+	instanceSet.keysMtx.Lock()
+	var keyname string
+	var ok bool
+	if keyname, ok = instanceSet.keys[keyFingerprint]; !ok {
+		keyname = "arvados-dispatch-keypair-" + keyFingerprint
 		instanceSet.client.ImportKeyPair(&ec2.ImportKeyPairInput{
-			KeyName:           &instanceSet.ec2config.KeyPairName,
+			KeyName:           &keyname,
 			PublicKeyMaterial: ssh.MarshalAuthorizedKey(publicKey),
 		})
-		instanceSet.importedKey = true
+		instanceSet.keys[keyFingerprint] = keyname
 	}
+	instanceSet.keysMtx.Unlock()
 
 	ec2tags := []*ec2.Tag{
 		&ec2.Tag{
@@ -109,7 +117,7 @@ func (instanceSet *ec2InstanceSet) Create(
 		InstanceType: &instanceType.ProviderType,
 		MaxCount:     aws.Int64(1),
 		MinCount:     aws.Int64(1),
-		KeyName:      &instanceSet.ec2config.KeyPairName,
+		KeyName:      &keyname,
 
 		NetworkInterfaces: []*ec2.InstanceNetworkInterfaceSpecification{
 			&ec2.InstanceNetworkInterfaceSpecification{
@@ -129,12 +137,12 @@ func (instanceSet *ec2InstanceSet) Create(
 			}},
 	}
 
-	if instanceType.AttachScratch {
+	if instanceType.AddedScratch > 0 {
 		rii.BlockDeviceMappings = []*ec2.BlockDeviceMapping{&ec2.BlockDeviceMapping{
 			DeviceName: aws.String("/dev/xvdt"),
 			Ebs: &ec2.EbsBlockDevice{
 				DeleteOnTermination: aws.Bool(true),
-				VolumeSize:          aws.Int64((int64(instanceType.Scratch) / 1000000000) + 1),
+				VolumeSize:          aws.Int64((int64(instanceType.AddedScratch) / 1000000000) + 1),
 				VolumeType:          aws.String("gp2"),
 			}}}
 	}

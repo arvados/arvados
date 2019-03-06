@@ -94,14 +94,15 @@ type RemoteCluster struct {
 }
 
 type InstanceType struct {
-	Name          string
-	ProviderType  string
-	VCPUs         int
-	RAM           ByteSize
-	Scratch       ByteSize
-	Price         float64
-	Preemptible   bool
-	AttachScratch bool
+	Name            string
+	ProviderType    string
+	VCPUs           int
+	RAM             ByteSize
+	Scratch         ByteSize
+	IncludedScratch ByteSize
+	AddedScratch    ByteSize
+	Price           float64
+	Preemptible     bool
 }
 
 type Dispatch struct {
@@ -177,6 +178,15 @@ func (it *InstanceTypeMap) UnmarshalJSON(data []byte) error {
 			}
 			if t.ProviderType == "" {
 				t.ProviderType = t.Name
+			}
+			if t.Scratch == 0 {
+				t.Scratch = t.IncludedScratch + t.AddedScratch
+			}
+			if (t.Scratch - t.IncludedScratch) > t.AddedScratch {
+				t.AddedScratch = t.Scratch - t.IncludedScratch
+			}
+			if t.Scratch != (t.IncludedScratch + t.AddedScratch) {
+				return fmt.Errorf("%v: Scratch != (IncludedScratch + AddedScratch)", t.Name)
 			}
 			(*it)[t.Name] = t
 		}
