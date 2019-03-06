@@ -117,7 +117,7 @@ func TestReplicationDefault1(t *testing.T) {
 		ReadOnly: true,
 	}
 	metrics := newVolumeMetricsVecs(prometheus.NewRegistry())
-	if err := v.Start(metrics.opsCounters, metrics.errCounters, metrics.ioBytes); err != nil {
+	if err := v.Start(metrics); err != nil {
 		t.Error(err)
 	}
 	if got := v.Replication(); got != 1 {

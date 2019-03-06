@@ -220,7 +220,7 @@ func (v *UnixVolume) Type() string {
 }
 
 // Start implements Volume
-func (v *UnixVolume) Start(opsCounters, errCounters, ioBytes *prometheus.CounterVec) error {
+func (v *UnixVolume) Start(vm *volumeMetricsVecs) error {
 	if v.Serialize {
 		v.locker = &sync.Mutex{}
 	}
@@ -232,9 +232,9 @@ func (v *UnixVolume) Start(opsCounters, errCounters, ioBytes *prometheus.Counter
 	}
 	// Set up prometheus metrics
 	lbls := prometheus.Labels{"device_id": v.DeviceID()}
-	v.os.stats.opsCounters = opsCounters.MustCurryWith(lbls)
-	v.os.stats.errCounters = errCounters.MustCurryWith(lbls)
-	v.os.stats.ioBytes = ioBytes.MustCurryWith(lbls)
+	v.os.stats.opsCounters = vm.opsCounters.MustCurryWith(lbls)
+	v.os.stats.errCounters = vm.errCounters.MustCurryWith(lbls)
+	v.os.stats.ioBytes = vm.ioBytes.MustCurryWith(lbls)
 
 	_, err := v.os.Stat(v.Root)
 

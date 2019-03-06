@@ -199,7 +199,7 @@ func (*S3Volume) Type() string {
 
 // Start populates private fields and verifies the configuration is
 // valid.
-func (v *S3Volume) Start(opsCounters, errCounters, ioBytes *prometheus.CounterVec) error {
+func (v *S3Volume) Start(vm *volumeMetricsVecs) error {
 	region, ok := aws.Regions[v.Region]
 	if v.Endpoint == "" {
 		if !ok {
@@ -251,9 +251,9 @@ func (v *S3Volume) Start(opsCounters, errCounters, ioBytes *prometheus.CounterVe
 	}
 	// Set up prometheus metrics
 	lbls := prometheus.Labels{"device_id": v.DeviceID()}
-	v.bucket.stats.opsCounters = opsCounters.MustCurryWith(lbls)
-	v.bucket.stats.errCounters = errCounters.MustCurryWith(lbls)
-	v.bucket.stats.ioBytes = ioBytes.MustCurryWith(lbls)
+	v.bucket.stats.opsCounters = vm.opsCounters.MustCurryWith(lbls)
+	v.bucket.stats.errCounters = vm.errCounters.MustCurryWith(lbls)
+	v.bucket.stats.ioBytes = vm.ioBytes.MustCurryWith(lbls)
 
 	return nil
 }

@@ -146,7 +146,7 @@ func (cfg *Config) Start(reg *prometheus.Registry) error {
 	}
 	vm := newVolumeMetricsVecs(reg)
 	for _, v := range cfg.Volumes {
-		if err := v.Start(vm.opsCounters, vm.errCounters, vm.ioBytes); err != nil {
+		if err := v.Start(vm); err != nil {
 			return fmt.Errorf("volume %s: %s", v, err)
 		}
 		log.Printf("Using volume %v (writable=%v)", v, v.Writable())

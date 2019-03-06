@@ -148,7 +148,7 @@ func (v *AzureBlobVolume) Type() string {
 }
 
 // Start implements Volume.
-func (v *AzureBlobVolume) Start(opsCounters, errCounters, ioBytes *prometheus.CounterVec) error {
+func (v *AzureBlobVolume) Start(vm *volumeMetricsVecs) error {
 	if v.ContainerName == "" {
 		return errors.New("no container name given")
 	}
@@ -186,9 +186,9 @@ func (v *AzureBlobVolume) Start(opsCounters, errCounters, ioBytes *prometheus.Co
 	}
 	// Set up prometheus metrics
 	lbls := prometheus.Labels{"device_id": v.DeviceID()}
-	v.container.stats.opsCounters = opsCounters.MustCurryWith(lbls)
-	v.container.stats.errCounters = errCounters.MustCurryWith(lbls)
-	v.container.stats.ioBytes = ioBytes.MustCurryWith(lbls)
+	v.container.stats.opsCounters = vm.opsCounters.MustCurryWith(lbls)
+	v.container.stats.errCounters = vm.errCounters.MustCurryWith(lbls)
+	v.container.stats.ioBytes = vm.ioBytes.MustCurryWith(lbls)
 
 	return nil
 }

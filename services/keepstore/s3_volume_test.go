@@ -172,7 +172,7 @@ func (s *StubbedS3Suite) testContextCancel(c *check.C, testFunc func(context.Con
 	vol.Endpoint = srv.URL
 	v = &TestableS3Volume{S3Volume: &vol}
 	metrics := newVolumeMetricsVecs(prometheus.NewRegistry())
-	v.Start(metrics.opsCounters, metrics.errCounters, metrics.ioBytes)
+	v.Start(metrics)
 
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -433,7 +433,7 @@ func (s *StubbedS3Suite) newTestableVolume(c *check.C, raceWindow time.Duration,
 		serverClock: clock,
 	}
 	metrics := newVolumeMetricsVecs(prometheus.NewRegistry())
-	v.Start(metrics.opsCounters, metrics.errCounters, metrics.ioBytes)
+	v.Start(metrics)
 	err = v.bucket.PutBucket(s3.ACL("private"))
 	c.Assert(err, check.IsNil)
 	return v
@@ -451,7 +451,7 @@ Volumes:
 	c.Check(cfg.Volumes[0].GetStorageClasses(), check.DeepEquals, []string{"class_a", "class_b"})
 }
 
-func (v *TestableS3Volume) Start(opsCounters, errCounters, ioBytes *prometheus.CounterVec) error {
+func (v *TestableS3Volume) Start(vm *volumeMetricsVecs) error {
 	tmp, err := ioutil.TempFile("", "keepstore")
 	v.c.Assert(err, check.IsNil)
 	defer os.Remove(tmp.Name())
@@ -462,7 +462,7 @@ func (v *TestableS3Volume) Start(opsCounters, errCounters, ioBytes *prometheus.C
 	v.S3Volume.AccessKeyFile = tmp.Name()
 	v.S3Volume.SecretKeyFile = tmp.Name()
 
-	v.c.Assert(v.S3Volume.Start(opsCounters, errCounters, ioBytes), check.IsNil)
+	v.c.Assert(v.S3Volume.Start(vm), check.IsNil)
 	return nil
 }
 
