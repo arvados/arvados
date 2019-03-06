@@ -99,9 +99,9 @@ class FuseMountTest(MountTestBase):
         self.assertDirContents('dir2', ['thing5.txt', 'thing6.txt', 'dir3'])
         self.assertDirContents('dir2/dir3', ['thing7.txt', 'thing8.txt'])
         self.assertDirContents('edgecases',
-                               "dirs/:/.../-/*/\x01\\/ ".split("/"))
+                               "dirs/:/.../-/*/ ".split("/"))
         self.assertDirContents('edgecases/dirs',
-                               ":/.../-/*/\x01\\/ ".split("/"))
+                               ":/.../-/*/ ".split("/"))
 
         files = {'thing1.txt': 'data 1',
                  'thing2.txt': 'data 2',
