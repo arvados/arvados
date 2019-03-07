@@ -43,6 +43,7 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/lib/cloud"
+	"git.curoverse.com/arvados.git/lib/dispatchcloud/test"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/config"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-06-01/compute"
@@ -66,8 +67,6 @@ type AzureInstanceSetSuite struct{}
 var _ = check.Suite(&AzureInstanceSetSuite{})
 
 type VirtualMachinesClientStub struct{}
-
-var testKey = []byte(`ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDLQS1ExT2+WjA0d/hntEAyAtgeN1W2ik2QX8c2zO6HjlPHWXL92r07W0WMuDib40Pcevpi1BXeBWXA9ZB5KKMJB+ukaAu22KklnQuUmNvk6ZXnPKSkGxuCYvPQb08WhHf3p1VxiKfP3iauedBDM4x9/bkJohlBBQiFXzNUcQ+a6rKiMzmJN2gbL8ncyUzc+XQ5q4JndTwTGtOlzDiGOc9O4z5Dd76wtAVJneOuuNpwfFRVHThpJM6VThpCZOnl8APaceWXKeuwOuCae3COZMz++xQfxOfZ9Z8aIwo+TlQhsRaNfZ4Vjrop6ej8dtfZtgUFKfbXEOYaHrGrWGotFDTD example@example`)
 
 func (*VirtualMachinesClientStub) createOrUpdate(ctx context.Context,
 	resourceGroupName string,
@@ -157,7 +156,7 @@ func (*AzureInstanceSetSuite) TestCreate(c *check.C) {
 		c.Fatal("Error making provider", err)
 	}
 
-	pk, _, _, _, err := ssh.ParseAuthorizedKey(testKey)
+	pk, _ := test.LoadTestKey(c, "../../dispatchcloud/test/sshkey_dispatch")
 	c.Assert(err, check.IsNil)
 
 	inst, err := ap.Create(cluster.InstanceTypes["tiny"],

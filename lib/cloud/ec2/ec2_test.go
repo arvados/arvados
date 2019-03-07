@@ -25,16 +25,15 @@ package ec2
 import (
 	"encoding/json"
 	"flag"
-	"log"
 	"testing"
 
 	"git.curoverse.com/arvados.git/lib/cloud"
+	"git.curoverse.com/arvados.git/lib/dispatchcloud/test"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/config"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/crypto/ssh"
 	check "gopkg.in/check.v1"
 )
 
@@ -131,15 +130,13 @@ func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error)
 	return &ap, cloud.ImageID("blob"), cluster, nil
 }
 
-var testKey = []byte(`ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDLQS1ExT2+WjA0d/hntEAyAtgeN1W2ik2QX8c2zO6HjlPHWXL92r07W0WMuDib40Pcevpi1BXeBWXA9ZB5KKMJB+ukaAu22KklnQuUmNvk6ZXnPKSkGxuCYvPQb08WhHf3p1VxiKfP3iauedBDM4x9/bkJohlBBQiFXzNUcQ+a6rKiMzmJN2gbL8ncyUzc+XQ5q4JndTwTGtOlzDiGOc9O4z5Dd76wtAVJneOuuNpwfFRVHThpJM6VThpCZOnl8APaceWXKeuwOuCae3COZMz++xQfxOfZ9Z8aIwo+TlQhsRaNfZ4Vjrop6ej8dtfZtgUFKfbXEOYaHrGrWGotFDTD example@example`)
-
 func (*EC2InstanceSetSuite) TestCreate(c *check.C) {
 	ap, img, cluster, err := GetInstanceSet()
 	if err != nil {
 		c.Fatal("Error making provider", err)
 	}
 
-	pk, _, _, _, err := ssh.ParseAuthorizedKey(testKey)
+	pk, _ := test.LoadTestKey(c, "../../dispatchcloud/test/sshkey_dispatch")
 	c.Assert(err, check.IsNil)
 
 	inst, err := ap.Create(cluster.InstanceTypes["tiny"],
@@ -161,7 +158,7 @@ func (*EC2InstanceSetSuite) TestCreateWithExtraScratch(c *check.C) {
 		c.Fatal("Error making provider", err)
 	}
 
-	pk, _, _, _, err := ssh.ParseAuthorizedKey(testKey)
+	pk, _ := test.LoadTestKey(c, "../../dispatchcloud/test/sshkey_dispatch")
 	c.Assert(err, check.IsNil)
 
 	inst, err := ap.Create(cluster.InstanceTypes["tiny-with-extra-scratch"],
@@ -183,7 +180,7 @@ func (*EC2InstanceSetSuite) TestCreatePreemptible(c *check.C) {
 		c.Fatal("Error making provider", err)
 	}
 
-	pk, _, _, _, err := ssh.ParseAuthorizedKey(testKey)
+	pk, _ := test.LoadTestKey(c, "../../dispatchcloud/test/sshkey_dispatch")
 	c.Assert(err, check.IsNil)
 
 	inst, err := ap.Create(cluster.InstanceTypes["tiny-preemptible"],
@@ -227,7 +224,7 @@ func (*EC2InstanceSetSuite) TestListInstances(c *check.C) {
 
 	for _, i := range l {
 		tg := i.Tags()
-		log.Printf("%v %v %v", i.String(), i.Address(), tg)
+		c.Logf("%v %v %v", i.String(), i.Address(), tg)
 	}
 }
 
