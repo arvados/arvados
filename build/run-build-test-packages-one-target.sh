@@ -15,7 +15,7 @@ Syntax:
     If the build and test steps are successful, upload the packages
     to a remote apt repository (default: false)
 --rc
-    If the build is for a Release Candidate this param must be passed   
+    Optional Parameter to build Release Candidate
 --build-version <version>
     Version to build (default:
     \$ARVADOS_BUILDING_VERSION-\$ARVADOS_BUILDING_ITERATION or
@@ -50,6 +50,7 @@ fi
 
 TARGET=debian8
 UPLOAD=0
+RC=0
 
 declare -a build_args=()
 
@@ -69,7 +70,7 @@ while [ $# -gt 0 ]; do
             ;;
         --rc)
             RC=1
-            ;;    
+            ;;
         --build-version)
             build_args+=("$1" "$2")
             shift
