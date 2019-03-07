@@ -87,10 +87,13 @@ func (instanceSet *ec2InstanceSet) Create(
 	var ok bool
 	if keyname, ok = instanceSet.keys[keyFingerprint]; !ok {
 		keyname = "arvados-dispatch-keypair-" + keyFingerprint
-		instanceSet.client.ImportKeyPair(&ec2.ImportKeyPairInput{
+		_, err := instanceSet.client.ImportKeyPair(&ec2.ImportKeyPairInput{
 			KeyName:           &keyname,
 			PublicKeyMaterial: ssh.MarshalAuthorizedKey(publicKey),
 		})
+		if err != nil {
+			return nil, fmt.Errorf("Could not import keypair: %v", err)
+		}
 		instanceSet.keys[keyFingerprint] = keyname
 	}
 	instanceSet.keysMtx.Unlock()
