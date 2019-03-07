@@ -101,7 +101,10 @@ func (wkr *worker) startContainer(ctr arvados.Container) {
 	logger = logger.WithField("Instance", wkr.instance.ID())
 	logger.Debug("starting container")
 	wkr.starting[ctr.UUID] = struct{}{}
-	wkr.state = StateRunning
+	if wkr.state != StateRunning {
+		wkr.state = StateRunning
+		go wkr.wp.notify()
+	}
 	go func() {
 		env := map[string]string{
 			"ARVADOS_API_HOST":  wkr.wp.arvClient.APIHost,
