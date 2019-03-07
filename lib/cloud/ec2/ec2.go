@@ -5,9 +5,14 @@
 package ec2
 
 import (
+	"crypto/md5"
+	"crypto/rsa"
+	"crypto/sha1"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"strings"
 	"sync"
 
@@ -38,6 +43,7 @@ type ec2InstanceSetConfig struct {
 }
 
 type ec2Interface interface {
+	DescribeKeyPairs(input *ec2.DescribeKeyPairsInput) (*ec2.DescribeKeyPairsOutput, error)
 	ImportKeyPair(input *ec2.ImportKeyPairInput) (*ec2.ImportKeyPairOutput, error)
 	RunInstances(input *ec2.RunInstancesInput) (*ec2.Reservation, error)
 	DescribeInstances(input *ec2.DescribeInstancesInput) (*ec2.DescribeInstancesOutput, error)
@@ -77,6 +83,39 @@ func newEC2InstanceSet(config json.RawMessage, dispatcherID cloud.InstanceSetID,
 	return instanceSet, nil
 }
 
+func awsKeyFingerprint(pk ssh.PublicKey) (md5fp string, sha1fp string, err error) {
+	// AWS key fingerprints don't use the usual key fingerprint
+	// you get from ssh-keygen or ssh.FingerprintLegacyMD5()
+	// (you can get that from md5.Sum(pk.Marshal())
+	//
+	// AWS uses the md5 or sha1 of the PKIX DER encoding of the
+	// public key, so calculate those fingerprints here.
+	var rsaPub struct {
+		Name string
+		E    *big.Int
+		N    *big.Int
+	}
+	if err := ssh.Unmarshal(pk.Marshal(), &rsaPub); err != nil {
+		return "", "", fmt.Errorf("agent: Unmarshal failed to parse public key: %v", err)
+	}
+	rsaPk := rsa.PublicKey{
+		E: int(rsaPub.E.Int64()),
+		N: rsaPub.N,
+	}
+	pkix, _ := x509.MarshalPKIXPublicKey(&rsaPk)
+	md5pkix := md5.Sum([]byte(pkix))
+	sha1pkix := sha1.Sum([]byte(pkix))
+	md5fp = ""
+	sha1fp = ""
+	for i := 0; i < len(md5pkix); i += 1 {
+		md5fp += fmt.Sprintf(":%02x", md5pkix[i])
+	}
+	for i := 0; i < len(sha1pkix); i += 1 {
+		sha1fp += fmt.Sprintf(":%02x", sha1pkix[i])
+	}
+	return md5fp[1:], sha1fp[1:], nil
+}
+
 func (instanceSet *ec2InstanceSet) Create(
 	instanceType arvados.InstanceType,
 	imageID cloud.ImageID,
@@ -84,20 +123,37 @@ func (instanceSet *ec2InstanceSet) Create(
 	initCommand cloud.InitCommand,
 	publicKey ssh.PublicKey) (cloud.Instance, error) {
 
-	keyFingerprint := ssh.FingerprintSHA256(publicKey)
+	md5keyFingerprint, sha1keyFingerprint, err := awsKeyFingerprint(publicKey)
+	if err != nil {
+		return nil, fmt.Errorf("Could not make key fingerprint: %v", err)
+	}
 	instanceSet.keysMtx.Lock()
 	var keyname string
 	var ok bool
-	if keyname, ok = instanceSet.keys[keyFingerprint]; !ok {
-		keyname = "arvados-dispatch-keypair-" + keyFingerprint
-		_, err := instanceSet.client.ImportKeyPair(&ec2.ImportKeyPairInput{
-			KeyName:           &keyname,
-			PublicKeyMaterial: ssh.MarshalAuthorizedKey(publicKey),
+	if keyname, ok = instanceSet.keys[md5keyFingerprint]; !ok {
+		keyout, err := instanceSet.client.DescribeKeyPairs(&ec2.DescribeKeyPairsInput{
+			Filters: []*ec2.Filter{&ec2.Filter{
+				Name:   aws.String("fingerprint"),
+				Values: []*string{&md5keyFingerprint, &sha1keyFingerprint},
+			}},
 		})
 		if err != nil {
-			return nil, fmt.Errorf("Could not import keypair: %v", err)
+			return nil, fmt.Errorf("Could not search for keypair: %v", err)
 		}
-		instanceSet.keys[keyFingerprint] = keyname
+
+		if len(keyout.KeyPairs) > 0 {
+			keyname = *(keyout.KeyPairs[0].KeyName)
+		} else {
+			keyname = "arvados-dispatch-keypair-" + md5keyFingerprint
+			_, err := instanceSet.client.ImportKeyPair(&ec2.ImportKeyPairInput{
+				KeyName:           &keyname,
+				PublicKeyMaterial: ssh.MarshalAuthorizedKey(publicKey),
+			})
+			if err != nil {
+				return nil, fmt.Errorf("Could not import keypair: %v", err)
+			}
+		}
+		instanceSet.keys[md5keyFingerprint] = keyname
 	}
 	instanceSet.keysMtx.Unlock()
 
@@ -189,7 +245,9 @@ func (instanceSet *ec2InstanceSet) Instances(cloud.InstanceTags) (instances []cl
 
 		for _, rsv := range dio.Reservations {
 			for _, inst := range rsv.Instances {
-				instances = append(instances, &ec2Instance{instanceSet, inst})
+				if *inst.State.Name != "terminated" {
+					instances = append(instances, &ec2Instance{instanceSet, inst})
+				}
 			}
 		}
 		if dio.NextToken == nil {

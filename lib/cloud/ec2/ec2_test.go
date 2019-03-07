@@ -60,6 +60,10 @@ func (e *ec2stub) ImportKeyPair(input *ec2.ImportKeyPairInput) (*ec2.ImportKeyPa
 	return nil, nil
 }
 
+func (e *ec2stub) DescribeKeyPairs(input *ec2.DescribeKeyPairsInput) (*ec2.DescribeKeyPairsOutput, error) {
+	return &ec2.DescribeKeyPairsOutput{}, nil
+}
+
 func (e *ec2stub) RunInstances(input *ec2.RunInstancesInput) (*ec2.Reservation, error) {
 	return &ec2.Reservation{Instances: []*ec2.Instance{&ec2.Instance{
 		InstanceId: aws.String("i-123"),
