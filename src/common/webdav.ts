@@ -28,12 +28,14 @@ export class WebDAV {
             data
         })
 
-    upload = (url: string, path: string, files: File[], config: WebDAVRequestConfig = {}) => {
-        return files.map(file => this.request({
-            ...config, url,
-            method: 'PUT',
-            data: file
-        }));
+    upload = (url: string, files: File[], config: WebDAVRequestConfig = {}) => {
+        return Promise.all(
+            files.map(file => this.request({
+                ...config, url,
+                method: 'PUT',
+                data: file
+            }))
+        );
     }
 
     copy = (url: string, destination: string, config: WebDAVRequestConfig = {}) =>
