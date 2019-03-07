@@ -181,10 +181,12 @@ func (it *InstanceTypeMap) UnmarshalJSON(data []byte) error {
 			}
 			if t.Scratch == 0 {
 				t.Scratch = t.IncludedScratch + t.AddedScratch
-			}
-			if (t.Scratch - t.IncludedScratch) > t.AddedScratch {
+			} else if t.AddedScratch == 0 {
 				t.AddedScratch = t.Scratch - t.IncludedScratch
+			} else if t.IncludedScratch == 0 {
+				t.IncludedScratch = t.Scratch - t.AddedScratch
 			}
+
 			if t.Scratch != (t.IncludedScratch + t.AddedScratch) {
 				return fmt.Errorf("%v: Scratch != (IncludedScratch + AddedScratch)", t.Name)
 			}
