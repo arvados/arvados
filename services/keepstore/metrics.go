@@ -128,3 +128,10 @@ func newVolumeMetricsVecs(reg *prometheus.Registry) *volumeMetricsVecs {
 
 	return m
 }
+
+func (vm *volumeMetricsVecs) getCounterVecsFor(lbls prometheus.Labels) (opsCV, errCV, ioCV *prometheus.CounterVec) {
+	opsCV = vm.opsCounters.MustCurryWith(lbls)
+	errCV = vm.errCounters.MustCurryWith(lbls)
+	ioCV = vm.ioBytes.MustCurryWith(lbls)
+	return
+}

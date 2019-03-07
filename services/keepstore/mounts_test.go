@@ -149,15 +149,15 @@ func (s *MountsSuite) TestMetrics(c *check.C) {
 	c.Check(found["time_to_status_seconds"], check.Equals, true)
 
 	metricsNames := []string{
-		"arvados_keepstore_bufferpool_buffers_in_use",
-		"arvados_keepstore_bufferpool_buffers_max",
-		"arvados_keepstore_bufferpool_bytes_allocated",
-		"arvados_keepstore_pull_queue_in_progress",
-		"arvados_keepstore_pull_queue_queued",
-		"arvados_keepstore_requests_current",
-		"arvados_keepstore_requests_max",
-		"arvados_keepstore_trash_queue_in_progress",
-		"arvados_keepstore_trash_queue_queued",
+		"arvados_keepstore_bufferpool_inuse_buffers",
+		"arvados_keepstore_bufferpool_max_buffers",
+		"arvados_keepstore_bufferpool_allocated_bytes",
+		"arvados_keepstore_pull_queue_inprogress_entries",
+		"arvados_keepstore_pull_queue_pending_entries",
+		"arvados_keepstore_concurrent_requests",
+		"arvados_keepstore_max_concurrent_requests",
+		"arvados_keepstore_trash_queue_inprogress_entries",
+		"arvados_keepstore_trash_queue_pending_entries",
 		"request_duration_seconds",
 		"time_to_status_seconds",
 	}

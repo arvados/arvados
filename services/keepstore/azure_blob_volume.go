@@ -186,9 +186,7 @@ func (v *AzureBlobVolume) Start(vm *volumeMetricsVecs) error {
 	}
 	// Set up prometheus metrics
 	lbls := prometheus.Labels{"device_id": v.DeviceID()}
-	v.container.stats.opsCounters = vm.opsCounters.MustCurryWith(lbls)
-	v.container.stats.errCounters = vm.errCounters.MustCurryWith(lbls)
-	v.container.stats.ioBytes = vm.ioBytes.MustCurryWith(lbls)
+	v.container.stats.opsCounters, v.container.stats.errCounters, v.container.stats.ioBytes = vm.getCounterVecsFor(lbls)
 
 	return nil
 }

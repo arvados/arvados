@@ -232,9 +232,7 @@ func (v *UnixVolume) Start(vm *volumeMetricsVecs) error {
 	}
 	// Set up prometheus metrics
 	lbls := prometheus.Labels{"device_id": v.DeviceID()}
-	v.os.stats.opsCounters = vm.opsCounters.MustCurryWith(lbls)
-	v.os.stats.errCounters = vm.errCounters.MustCurryWith(lbls)
-	v.os.stats.ioBytes = vm.ioBytes.MustCurryWith(lbls)
+	v.os.stats.opsCounters, v.os.stats.errCounters, v.os.stats.ioBytes = vm.getCounterVecsFor(lbls)
 
 	_, err := v.os.Stat(v.Root)
 

@@ -251,9 +251,7 @@ func (v *S3Volume) Start(vm *volumeMetricsVecs) error {
 	}
 	// Set up prometheus metrics
 	lbls := prometheus.Labels{"device_id": v.DeviceID()}
-	v.bucket.stats.opsCounters = vm.opsCounters.MustCurryWith(lbls)
-	v.bucket.stats.errCounters = vm.errCounters.MustCurryWith(lbls)
-	v.bucket.stats.ioBytes = vm.ioBytes.MustCurryWith(lbls)
+	v.bucket.stats.opsCounters, v.bucket.stats.errCounters, v.bucket.stats.ioBytes = vm.getCounterVecsFor(lbls)
 
 	return nil
 }
