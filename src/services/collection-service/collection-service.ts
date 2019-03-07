@@ -80,7 +80,7 @@ export class CollectionService extends TrashableResourceService<CollectionResour
                 onProgress(fileId, e.loaded, e.total, Date.now());
             }
         };
-        return this.webdavClient.upload(fileURL, '', [file], requestConfig);
+        return this.webdavClient.upload(fileURL, [file], requestConfig);
     }
 
     update(uuid: string, data: Partial<CollectionResource>) {

@@ -28,7 +28,7 @@ export class WebDAV {
             data
         })
 
-    upload = (url: string, path: string, files: File[], config: WebDAVRequestConfig = {}) => {
+    upload = (url: string, files: File[], config: WebDAVRequestConfig = {}) => {
         return Promise.all(
             files.map(file => this.request({
                 ...config, url,
