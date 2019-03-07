@@ -245,7 +245,7 @@ func (instanceSet *ec2InstanceSet) Instances(cloud.InstanceTags) (instances []cl
 
 		for _, rsv := range dio.Reservations {
 			for _, inst := range rsv.Instances {
-				if *inst.State.Name != "terminated" {
+				if *inst.State.Name != "shutting-down" && *inst.State.Name != "terminated" {
 					instances = append(instances, &ec2Instance{instanceSet, inst})
 				}
 			}
