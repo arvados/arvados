@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 require 'whitelist_update'
+require 'arvados/collection'
 
 class ContainerRequest < ArvadosModel
   include ArvadosModelUpdates
@@ -154,13 +155,23 @@ class ContainerRequest < ArvadosModel
         coll = Collection.new(
           owner_uuid: self.owner_uuid,
           name: coll_name,
+          manifest_text: "",
           properties: {
             'type' => out_type,
             'container_request' => uuid,
           })
       end
+
+      if out_type == "log"
+        src = Arv::Collection.new(manifest)
+        dst = Arv::Collection.new(coll.manifest_text)
+        dst.cp_r("./", ".", src)
+        dst.cp_r("./", "log for container #{container.uuid}", src)
+        manifest = dst.manifest_text
+      end
+
       coll.assign_attributes(
-        portable_data_hash: pdh,
+        portable_data_hash: Digest::MD5.hexdigest(manifest) + '+' + manifest.bytesize.to_s,
         manifest_text: manifest,
         trash_at: trash_at,
         delete_at: trash_at)
@@ -203,6 +214,31 @@ class ContainerRequest < ArvadosModel
         return false
       else
         self.container_count += 1
+        if self.container_uuid_was
+          old_container = Container.find_by_uuid(self.container_uuid_was)
+          old_logs = Collection.where(portable_data_hash: old_container.log).first
+          if old_logs
+            log_coll = self.log_uuid.nil? ? nil : Collection.where(uuid: self.log_uuid).first
+            if self.log_uuid.nil?
+              log_coll = Collection.new(
+                owner_uuid: self.owner_uuid,
+                name: coll_name = "Container log for request #{uuid}",
+                manifest_text: "")
+            end
+
+            # copy logs from old container into CR's log collection
+            src = Arv::Collection.new(old_logs.manifest_text)
+            dst = Arv::Collection.new(log_coll.manifest_text)
+            dst.cp_r("./", "log for container #{old_container.uuid}", src)
+            manifest = dst.manifest_text
+
+            log_coll.assign_attributes(
+              portable_data_hash: Digest::MD5.hexdigest(manifest) + '+' + manifest.bytesize.to_s,
+              manifest_text: manifest)
+            log_coll.save_with_unique_name!
+            self.log_uuid = log_coll.uuid
+          end
+        end
       end
     end
   end
