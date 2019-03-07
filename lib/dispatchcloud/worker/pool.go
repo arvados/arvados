@@ -140,7 +140,7 @@ type Pool struct {
 
 	// private state
 	subscribers  map[<-chan struct{}]chan<- struct{}
-	creating     map[string]createCall // unfinished (cloud.InstanceSet)Create calls
+	creating     map[string]createCall // unfinished (cloud.InstanceSet)Create calls (key is instance secret)
 	workers      map[cloud.InstanceID]*worker
 	loaded       bool                 // loaded list of instances from InstanceSet at least once
 	exited       map[string]time.Time // containers whose crunch-run proc has exited, but KillContainer has not been called
