@@ -7,4 +7,4 @@
 
 set -e
 UID=$(id -u)
-docker run --user $UID -v $PWD:$PWD -w $PWD java:8 /bin/sh -c '(./gradlew clean && ./gradlew test); ./gradlew --stop'
+exec docker run --rm --user $UID -v $PWD:$PWD -w $PWD java:8 /bin/sh -c '(./gradlew clean && ./gradlew test); ./gradlew --stop'
