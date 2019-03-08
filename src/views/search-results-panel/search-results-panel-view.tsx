@@ -62,7 +62,7 @@ export const searchResultsPanelColumns: DataColumns<string> = [
         name: SearchResultsPanelColumnNames.NAME,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.ASC,
+        sortDirection: SortDirection.NONE,
         filters: createTree(),
         render: (uuid: string) => <ResourceName uuid={uuid} />
     },
@@ -105,7 +105,7 @@ export const searchResultsPanelColumns: DataColumns<string> = [
         name: SearchResultsPanelColumnNames.LAST_MODIFIED,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.NONE,
+        sortDirection: SortDirection.DESC,
         filters: createTree(),
         render: uuid => <ResourceLastModifiedDate uuid={uuid} />
     }
