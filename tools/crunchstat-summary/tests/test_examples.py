@@ -8,9 +8,12 @@ import crunchstat_summary.command
 import difflib
 import glob
 import gzip
+from io import open
 import mock
 import os
 import unittest
+
+from crunchstat_summary.command import UTF8Decode
 
 TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -18,10 +21,10 @@ TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
 class ReportDiff(unittest.TestCase):
     def diff_known_report(self, logfile, cmd):
         expectfile = logfile+'.report'
-        expect = open(expectfile).readlines()
+        expect = open(expectfile, encoding='utf-8').readlines()
         self.diff_report(cmd, expect, expectfile=expectfile)
 
-    def diff_report(self, cmd, expect, expectfile=None):
+    def diff_report(self, cmd, expect, expectfile='(expected)'):
         got = [x+"\n" for x in cmd.report().strip("\n").split("\n")]
         self.assertEqual(got, expect, "\n"+"".join(difflib.context_diff(
             expect, got, fromfile=expectfile, tofile="(generated)")))
@@ -51,10 +54,9 @@ class HTMLFromFile(ReportDiff):
             cmd.run()
             self.assertRegexpMatches(cmd.report(), r'(?is)<html>.*</html>\s*$')
 
-
 class SummarizeEdgeCases(unittest.TestCase):
     def test_error_messages(self):
-        logfile = open(os.path.join(TESTS_DIR, 'crunchstat_error_messages.txt'))
+        logfile = open(os.path.join(TESTS_DIR, 'crunchstat_error_messages.txt'), encoding='utf-8')
         s = crunchstat_summary.summarizer.Summarizer(logfile)
         s.run()
 
@@ -89,9 +91,9 @@ class SummarizeContainer(ReportDiff):
             'container.json', 'crunchstat.txt', 'arv-mount.txt']
         def _open(n):
             if n == "crunchstat.txt":
-                return gzip.open(self.logfile)
+                return UTF8Decode(gzip.open(self.logfile))
             elif n == "arv-mount.txt":
-                return gzip.open(self.arvmountlog)
+                return UTF8Decode(gzip.open(self.arvmountlog))
         mock_cr().open.side_effect = _open
         args = crunchstat_summary.command.ArgumentParser().parse_args(
             ['--job', self.fake_request['uuid']])
@@ -114,7 +116,7 @@ class SummarizeJob(ReportDiff):
     def test_job_report(self, mock_api, mock_cr):
         mock_api().jobs().get().execute.return_value = self.fake_job
         mock_cr().__iter__.return_value = ['fake-logfile.txt']
-        mock_cr().open.return_value = gzip.open(self.logfile)
+        mock_cr().open.return_value = UTF8Decode(gzip.open(self.logfile))
         args = crunchstat_summary.command.ArgumentParser().parse_args(
             ['--job', self.fake_job_uuid])
         cmd = crunchstat_summary.command.Command(args)
@@ -175,14 +177,14 @@ class SummarizePipeline(ReportDiff):
         mock_api().pipeline_instances().get().execute. \
             return_value = self.fake_instance
         mock_cr().__iter__.return_value = ['fake-logfile.txt']
-        mock_cr().open.side_effect = [gzip.open(logfile) for _ in range(3)]
+        mock_cr().open.side_effect = [UTF8Decode(gzip.open(logfile)) for _ in range(3)]
         args = crunchstat_summary.command.ArgumentParser().parse_args(
             ['--pipeline-instance', self.fake_instance['uuid']])
         cmd = crunchstat_summary.command.Command(args)
         cmd.run()
 
         job_report = [
-            line for line in open(logfile+'.report').readlines()
+            line for line in open(logfile+'.report', encoding='utf-8').readlines()
             if not line.startswith('#!! ')]
         expect = (
             ['### Summary for foo (zzzzz-8i9sb-000000000000000)\n'] +
@@ -251,14 +253,14 @@ class SummarizeACRJob(ReportDiff):
         mock_api().jobs().index().execute.return_value = self.fake_jobs_index
         mock_api().jobs().get().execute.return_value = self.fake_job
         mock_cr().__iter__.return_value = ['fake-logfile.txt']
-        mock_cr().open.side_effect = [gzip.open(logfile) for _ in range(3)]
+        mock_cr().open.side_effect = [UTF8Decode(gzip.open(logfile)) for _ in range(3)]
         args = crunchstat_summary.command.ArgumentParser().parse_args(
             ['--job', self.fake_job['uuid']])
         cmd = crunchstat_summary.command.Command(args)
         cmd.run()
 
         job_report = [
-            line for line in open(logfile+'.report').readlines()
+            line for line in open(logfile+'.report', encoding='utf-8').readlines()
             if not line.startswith('#!! ')]
         expect = (
             ['### Summary for zzzzz-8i9sb-i3e77t9z5y8j9cc (partial) (zzzzz-8i9sb-i3e77t9z5y8j9cc)\n',

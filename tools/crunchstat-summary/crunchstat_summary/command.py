@@ -4,6 +4,7 @@
 
 import argparse
 import gzip
+from io import open
 import logging
 import sys
 
@@ -41,6 +42,31 @@ class ArgumentParser(argparse.ArgumentParser):
             help='Log more information (once for progress, twice for debug)')
 
 
+class UTF8Decode(object):
+    '''Wrap a file-like iterable to decode UTF-8 bytes into a strings
+    '''
+    def __init__(self, fh):
+        self.fh = fh
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return next(self.fh).decode('utf-8')
+
+    next = __next__
+
+    def close(self):
+        # mimic Gzip behavior and don't close underlying object
+        pass
+
+
 class Command(object):
     def __init__(self, args):
         self.args = args
@@ -57,9 +83,9 @@ class Command(object):
             self.summer = summarizer.NewSummarizer(self.args.job, **kwargs)
         elif self.args.log_file:
             if self.args.log_file.endswith('.gz'):
-                fh = gzip.open(self.args.log_file)
+                fh = UTF8Decode(gzip.open(self.args.log_file))
             else:
-                fh = open(self.args.log_file)
+                fh = open(self.args.log_file, mode = 'r', encoding = 'utf-8')
             self.summer = summarizer.Summarizer(fh, **kwargs)
         else:
             self.summer = summarizer.Summarizer(sys.stdin, **kwargs)
