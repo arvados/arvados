@@ -45,7 +45,7 @@ class WebChart(object):
                 'label': s.long_label(),
                 'charts': [
                     self.chartdata(s.label, s.tasks, stat)
-                    for stat in (('cpu', 'user+sys__rate'),
+                    for stat in (('cp', 'user+sys__rate'),
                                  ('mem', 'rss'),
                                  ('net:eth0', 'tx+rx__rate'),
                                  ('net:keep0', 'tx+rx__rate'))],
