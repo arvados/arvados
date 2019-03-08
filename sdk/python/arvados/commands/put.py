@@ -154,18 +154,7 @@ On high latency installations, using a greater number will improve
 overall throughput.
 """)
 
-run_opts = argparse.ArgumentParser(add_help=False)
-
-run_opts.add_argument('--project-uuid', metavar='UUID', help="""
-Store the collection in the specified project, instead of your Home
-project.
-""")
-
-run_opts.add_argument('--name', help="""
-Save the collection with the specified name.
-""")
-
-run_opts.add_argument('--exclude', metavar='PATTERN', default=[],
+upload_opts.add_argument('--exclude', metavar='PATTERN', default=[],
                       action='append', help="""
 Exclude files and directories whose names match the given glob pattern. When
 using a path-like pattern like 'subdir/*.txt', all text files inside 'subdir'
@@ -175,6 +164,28 @@ no matter where is placed.
 For the special case of needing to exclude only files or dirs directly below
 the given input directory, you can use a pattern like './exclude_this.gif'.
 You can specify multiple patterns by using this argument more than once.
+""")
+
+_group = upload_opts.add_mutually_exclusive_group()
+_group.add_argument('--follow-links', action='store_true', default=True,
+                    dest='follow_links', help="""
+Follow file and directory symlinks (default).
+""")
+_group.add_argument('--no-follow-links', action='store_false', dest='follow_links',
+                    help="""
+Do not follow file and directory symlinks.
+""")
+
+
+run_opts = argparse.ArgumentParser(add_help=False)
+
+run_opts.add_argument('--project-uuid', metavar='UUID', help="""
+Store the collection in the specified project, instead of your Home
+project.
+""")
+
+run_opts.add_argument('--name', help="""
+Save the collection with the specified name.
 """)
 
 _group = run_opts.add_mutually_exclusive_group()
@@ -211,16 +222,6 @@ Continue interrupted uploads from cached state (default).
 _group.add_argument('--no-resume', action='store_false', dest='resume',
                     help="""
 Do not continue interrupted uploads from cached state.
-""")
-
-_group = run_opts.add_mutually_exclusive_group()
-_group.add_argument('--follow-links', action='store_true', default=True,
-                    dest='follow_links', help="""
-Follow file and directory symlinks (default).
-""")
-_group.add_argument('--no-follow-links', action='store_false', dest='follow_links',
-                    help="""
-Do not follow file and directory symlinks.
 """)
 
 _group = run_opts.add_mutually_exclusive_group()

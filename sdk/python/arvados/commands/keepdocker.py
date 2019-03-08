@@ -64,19 +64,19 @@ _group.add_argument(
     '--no-pull', action='store_false', dest='pull',
     help="Use locally installed image only, don't pull image from Docker registry (default)")
 
-keepdocker_parser.add_argument(
-    'image', nargs='?',
-    help="Docker image to upload: repo, repo:tag, or hash")
-keepdocker_parser.add_argument(
-    'tag', nargs='?',
-    help="Tag of the Docker image to upload (default 'latest'), if image is given as an untagged repo name")
-
 # Combine keepdocker options listed above with run_opts options of arv-put.
 # The options inherited from arv-put include --name, --project-uuid,
 # --progress/--no-progress/--batch-progress and --resume/--no-resume.
 arg_parser = argparse.ArgumentParser(
         description="Upload or list Docker images in Arvados",
         parents=[keepdocker_parser, arv_put.run_opts, arv_cmd.retry_opt])
+
+arg_parser.add_argument(
+    'image', nargs='?',
+    help="Docker image to upload: repo, repo:tag, or hash")
+arg_parser.add_argument(
+    'tag', nargs='?',
+    help="Tag of the Docker image to upload (default 'latest'), if image is given as an untagged repo name")
 
 class DockerError(Exception):
     pass
@@ -492,6 +492,9 @@ def main(arguments=None, stdout=sys.stdout, install_sig_handlers=True, api=None)
 
         # Call arv-put with switches we inherited from it
         # (a.k.a., switches that aren't our own).
+        if arguments is None:
+            arguments = sys.argv[1:]
+        arguments = [i for i in arguments if i not in (args.image, args.tag, image_repo_tag)]
         put_args = keepdocker_parser.parse_known_args(arguments)[1]
 
         if args.name is None:
