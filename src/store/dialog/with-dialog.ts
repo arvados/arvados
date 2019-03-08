@@ -23,9 +23,11 @@ export const withDialog = (id: string) =>
     <T, P>(component: React.ComponentType<WithDialogProps<T> & any>) =>
         connect(mapStateToProps(id), mapDispatchToProps(id))(component);
 
+const emptyData = {};
+
 export const mapStateToProps = (id: string) => <T>(state: { dialog: DialogState }): WithDialogStateProps<T> => {
     const dialog = state.dialog[id];
-    return dialog ? dialog : { open: false, data: {} };
+    return dialog ? dialog : { open: false, data: emptyData };
 };
 
 export const mapDispatchToProps = (id: string) => (dispatch: Dispatch): WithDialogDispatchProps => ({

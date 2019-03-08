@@ -9,7 +9,7 @@ import { ContextMenu as ContextMenuComponent, ContextMenuProps, ContextMenuItem 
 import { createAnchorAt } from "~/components/popover/helpers";
 import { ContextMenuActionSet, ContextMenuAction } from "./context-menu-action-set";
 import { Dispatch } from "redux";
-
+import { memoize } from 'lodash';
 type DataProps = Pick<ContextMenuProps, "anchorEl" | "items" | "open"> & { resource?: ContextMenuResource };
 const mapStateToProps = (state: RootState): DataProps => {
     const { open, position, resource } = state.contextMenu;
@@ -34,13 +34,19 @@ const mapDispatchToProps = (dispatch: Dispatch): ActionProps => ({
     }
 });
 
+const handleItemClick = memoize(
+    (resource: DataProps['resource'], onItemClick: ActionProps['onItemClick']): ContextMenuProps['onItemClick'] =>
+        item => {
+            onItemClick(item, resource);
+        }
+);
+
 const mergeProps = ({ resource, ...dataProps }: DataProps, actionProps: ActionProps): ContextMenuProps => ({
     ...dataProps,
     ...actionProps,
-    onItemClick: item => {
-        actionProps.onItemClick(item, resource);
-    }
+    onItemClick: handleItemClick(resource, actionProps.onItemClick)
 });
+
 
 export const ContextMenu = connect(mapStateToProps, mapDispatchToProps, mergeProps)(ContextMenuComponent);
 
@@ -50,8 +56,9 @@ export const addMenuActionSet = (name: string, itemSet: ContextMenuActionSet) =>
     menuActionSets.set(name, itemSet);
 };
 
+const emptyActionSet: ContextMenuActionSet = [];
 const getMenuActionSet = (resource?: ContextMenuResource): ContextMenuActionSet => {
-    return resource ? menuActionSets.get(resource.menuKind) || [] : [];
+    return resource ? menuActionSets.get(resource.menuKind) || emptyActionSet : emptyActionSet;
 };
 
 export enum ContextMenuKind {
