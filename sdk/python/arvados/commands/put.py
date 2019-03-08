@@ -160,7 +160,7 @@ Exclude files and directories whose names match the given glob pattern. When
 using a path-like pattern like 'subdir/*.txt', all text files inside 'subdir'
 directory, relative to the provided input dirs will be excluded.
 When using a filename pattern like '*.txt', any text file will be excluded
-no matter where is placed.
+no matter where it is placed.
 For the special case of needing to exclude only files or dirs directly below
 the given input directory, you can use a pattern like './exclude_this.gif'.
 You can specify multiple patterns by using this argument more than once.
