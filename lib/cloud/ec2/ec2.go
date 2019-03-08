@@ -39,7 +39,7 @@ type ec2InstanceSetConfig struct {
 	SecurityGroupIDs []string
 	SubnetID         string
 	AdminUsername    string
-	EbsVolumeType    string
+	EBSVolumeType    string
 }
 
 type ec2Interface interface {
@@ -77,8 +77,8 @@ func newEC2InstanceSet(config json.RawMessage, dispatcherID cloud.InstanceSetID,
 		WithRegion(instanceSet.ec2config.Region)
 	instanceSet.client = ec2.New(session.Must(session.NewSession(awsConfig)))
 	instanceSet.keys = make(map[string]string)
-	if instanceSet.ec2config.EbsVolumeType == "" {
-		instanceSet.ec2config.EbsVolumeType = "gp2"
+	if instanceSet.ec2config.EBSVolumeType == "" {
+		instanceSet.ec2config.EBSVolumeType = "gp2"
 	}
 	return instanceSet, nil
 }
@@ -205,7 +205,7 @@ func (instanceSet *ec2InstanceSet) Create(
 			Ebs: &ec2.EbsBlockDevice{
 				DeleteOnTermination: aws.Bool(true),
 				VolumeSize:          aws.Int64((int64(instanceType.AddedScratch) + (1<<30 - 1)) >> 30),
-				VolumeType:          &instanceSet.ec2config.EbsVolumeType,
+				VolumeType:          &instanceSet.ec2config.EBSVolumeType,
 			}}}
 	}
 
