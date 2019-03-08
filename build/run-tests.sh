@@ -933,6 +933,7 @@ gostuff=(
     lib/crunchstat
     lib/cloud
     lib/cloud/azure
+    lib/cloud/ec2
     lib/dispatchcloud
     lib/dispatchcloud/container
     lib/dispatchcloud/scheduler
