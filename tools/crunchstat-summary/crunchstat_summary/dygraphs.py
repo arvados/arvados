@@ -18,7 +18,7 @@ class DygraphsChart(crunchstat_summary.webchart.WebChart):
             'data': self._collate_data(tasks, stat),
             'options': {
                 'connectSeparatedPoints': True,
-                'labels': ['elapsed']+[uuid for uuid, _ in tasks.iteritems()],
+                'labels': ['elapsed']+[uuid for uuid, _ in tasks.items()],
                 'title': '{}: {} {}'.format(label, stat[0], stat[1]),
             },
         }
@@ -26,7 +26,7 @@ class DygraphsChart(crunchstat_summary.webchart.WebChart):
     def _collate_data(self, tasks, stat):
         data = []
         nulls = []
-        for uuid, task in tasks.iteritems():
+        for uuid, task in tasks.items():
             for pt in task.series[stat]:
                 data.append([pt[0].total_seconds()] + nulls + [pt[1]])
             nulls.append(None)

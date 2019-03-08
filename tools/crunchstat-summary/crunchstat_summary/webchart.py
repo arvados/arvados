@@ -33,7 +33,7 @@ class WebChart(object):
     def js(self):
         return 'var chartdata = {};\n{}'.format(
             json.dumps(self.sections()),
-            '\n'.join([pkg_resources.resource_string('crunchstat_summary', jsa) for jsa in self.JSASSETS]))
+            '\n'.join([pkg_resources.resource_string('crunchstat_summary', jsa).decode('utf-8') for jsa in self.JSASSETS]))
 
     def sections(self):
         return [
