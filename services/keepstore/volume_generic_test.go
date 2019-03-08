@@ -18,6 +18,8 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	"github.com/prometheus/client_golang/prometheus"
+	dto "github.com/prometheus/client_model/go"
 )
 
 type TB interface {
@@ -74,6 +76,8 @@ func DoGenericVolumeTests(t TB, factory TestableVolumeFactory) {
 	testDeleteNoSuchBlock(t, factory)
 
 	testStatus(t, factory)
+
+	testMetrics(t, factory)
 
 	testString(t, factory)
 
@@ -530,6 +534,82 @@ func testStatus(t TB, factory TestableVolumeFactory) {
 
 	if status.BytesUsed == 0 {
 		t.Errorf("uninitialized bytes_used in %v", status)
+	}
+}
+
+func getValueFrom(cv *prometheus.CounterVec, lbls prometheus.Labels) float64 {
+	c, _ := cv.GetMetricWith(lbls)
+	pb := &dto.Metric{}
+	c.Write(pb)
+	return pb.GetCounter().GetValue()
+}
+
+func testMetrics(t TB, factory TestableVolumeFactory) {
+	var err error
+
+	v := factory(t)
+	defer v.Teardown()
+	reg := prometheus.NewRegistry()
+	vm := newVolumeMetricsVecs(reg)
+
+	err = v.Start(vm)
+	if err != nil {
+		t.Error("Failed Start(): ", err)
+	}
+	opsC, _, ioC := v.GetMetricsVecs()
+
+	if ioC == nil {
+		t.Error("ioBytes CounterVec is nil")
+		return
+	}
+
+	if getValueFrom(ioC, prometheus.Labels{"direction": "out"})+
+		getValueFrom(ioC, prometheus.Labels{"direction": "in"}) > 0 {
+		t.Error("ioBytes counter should be zero")
+	}
+
+	if opsC == nil {
+		t.Error("opsCounter CounterVec is nil")
+		return
+	}
+
+	var c, anyOpCounter float64
+	anyOpCounter = getValueFrom(opsC, prometheus.Labels{"operation": "any"})
+	// Test Put if volume is writable
+	if v.Writable() {
+		err = v.Put(context.Background(), TestHash, TestBlock)
+		if err != nil {
+			t.Errorf("Got err putting block %q: %q, expected nil", TestBlock, err)
+		}
+		// Check that the operations counter increased
+		c = getValueFrom(opsC, prometheus.Labels{"operation": "any"})
+		if c <= anyOpCounter {
+			t.Error("Operation(s) not counted on Put")
+		}
+		anyOpCounter = c
+		// Check that bytes counter is > 0
+		if getValueFrom(ioC, prometheus.Labels{"direction": "out"}) == 0 {
+			t.Error("ioBytes{direction=out} counter shouldn't be zero")
+		}
+	} else {
+		v.PutRaw(TestHash, TestBlock)
+	}
+
+	buf := make([]byte, BlockSize)
+	_, err = v.Get(context.Background(), TestHash, buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Check that the operations counter increased
+	c = getValueFrom(opsC, prometheus.Labels{"operation": "any"})
+	if c <= anyOpCounter {
+		t.Error("Operation(s) not counted on Get")
+	}
+	anyOpCounter = c
+	// Check that the bytes "in" counter is > 0
+	if getValueFrom(ioC, prometheus.Labels{"direction": "in"}) == 0 {
+		t.Error("ioBytes{direction=in} counter shouldn't be zero")
 	}
 }
 

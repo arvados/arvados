@@ -74,6 +74,7 @@ func (s *statsTicker) TickOps(operations ...string) {
 		return
 	}
 	for _, opType := range operations {
+		s.opsCounters.With(prometheus.Labels{"operation": "any"}).Inc()
 		s.opsCounters.With(prometheus.Labels{"operation": opType}).Inc()
 	}
 }

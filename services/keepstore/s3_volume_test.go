@@ -493,3 +493,10 @@ func (v *TestableS3Volume) TouchWithDate(locator string, lastPut time.Time) {
 func (v *TestableS3Volume) Teardown() {
 	v.server.Quit()
 }
+
+func (v *TestableS3Volume) GetMetricsVecs() (opsCounters, errCounters, ioBytes *prometheus.CounterVec) {
+	opsCounters = v.bucket.stats.opsCounters
+	errCounters = v.bucket.stats.errCounters
+	ioBytes = v.bucket.stats.ioBytes
+	return
+}

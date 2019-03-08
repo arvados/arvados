@@ -15,6 +15,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 // A TestableVolume allows test suites to manipulate the state of an
@@ -22,6 +24,10 @@ import (
 // impractical to achieve with a sequence of normal Volume operations.
 type TestableVolume interface {
 	Volume
+
+	// Get prometheus metrics
+	GetMetricsVecs() (opsCounters, errCounters, ioBytes *prometheus.CounterVec)
+
 	// [Over]write content for a locator with the given data,
 	// bypassing all constraints like readonly and serialize.
 	PutRaw(locator string, data []byte)
