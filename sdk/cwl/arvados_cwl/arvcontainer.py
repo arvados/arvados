@@ -123,6 +123,8 @@ class ArvadosContainer(JobBase):
                 "kind": "collection",
                 "portable_data_hash": pdh
             }
+            if pdh in self.pathmapper.pdh_to_uuid:
+                mounts[targetdir]["uuid"] = self.pathmapper.pdh_to_uuid[pdh]
             if len(sp) == 2:
                 if tp == "Directory":
                     path = sp[1]

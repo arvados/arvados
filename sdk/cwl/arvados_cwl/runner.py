@@ -33,7 +33,7 @@ from cwltool.builder import substitute
 from cwltool.pack import pack
 
 import arvados.collection
-import arvados.util
+from .util import collectionUUID
 import ruamel.yaml as yaml
 
 import arvados_cwl.arvdocker
@@ -236,8 +236,7 @@ def upload_dependencies(arvrunner, name, document_loader,
         if uuid not in uuid_map:
             raise Exception("Cannot resolve uuid %s" % uuid)
         p["location"] = "keep:%s%s" % (uuid_map[uuid], gp.groups()[1] if gp.groups()[1] else "")
-        p["http://arvados.org/cwl#collectionUUID"] = uuid
-
+        p[collectionUUID] = uuid
 
     visit_class(workflowobj, ("File", "Directory"), setloc)
     visit_class(discovered, ("File", "Directory"), setloc)
