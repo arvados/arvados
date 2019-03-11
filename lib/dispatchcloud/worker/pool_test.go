@@ -105,6 +105,23 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 			pool.SetIdleBehavior(heldInstanceID, IdleBehaviorHold)
 		}
 	}
+	// Wait for the tags to save to the cloud provider
+	deadline := time.Now().Add(time.Second)
+	for !func() bool {
+		pool.mtx.RLock()
+		defer pool.mtx.RUnlock()
+		for _, wkr := range pool.workers {
+			if wkr.instType == type2 {
+				return wkr.instance.Tags()[tagKeyIdleBehavior] == string(IdleBehaviorHold)
+			}
+		}
+		return false
+	}() {
+		if time.Now().After(deadline) {
+			c.Fatal("timeout")
+		}
+		time.Sleep(time.Millisecond * 10)
+	}
 	pool.Stop()
 
 	c.Log("------- starting new pool, waiting to recover state")
