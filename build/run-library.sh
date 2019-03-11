@@ -450,7 +450,7 @@ fpm_build_virtualenv () {
 
   rm -rf build
   rm -f $PYTHON_PKG*deb
-
+  echo "virtualenv version: `virtualenv --version`"
   virtualenv_command="virtualenv --python `which $python` $DASHQ_UNLESS_DEBUG build/usr/share/$python/dist/$PYTHON_PKG"
 
   if ! $virtualenv_command; then
@@ -464,16 +464,21 @@ fpm_build_virtualenv () {
     echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U pip"
     exit 1
   fi
+  echo "pip version:        `build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip --version`"
+
   if ! build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U setuptools; then
     echo "Error, unable to upgrade setuptools with"
     echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U setuptools"
     exit 1
   fi
+  echo "setuptools version: `build/usr/share/$python/dist/$PYTHON_PKG/bin/$python -c 'import setuptools; print(setuptools.__version__)'`"
+
   if ! build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U wheel; then
     echo "Error, unable to upgrade wheel with"
     echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U wheel"
     exit 1
   fi
+  echo "wheel version:      `build/usr/share/$python/dist/$PYTHON_PKG/bin/wheel version`"
 
   if [[ "$TARGET" != "centos7" ]] || [[ "$PYTHON_PKG" != "python-arvados-fuse" ]]; then
     build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PACKAGE_PATH
