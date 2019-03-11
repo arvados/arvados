@@ -371,7 +371,9 @@ func (si stubInstance) SetTags(tags cloud.InstanceTags) error {
 }
 
 func (si stubInstance) Tags() cloud.InstanceTags {
-	return si.tags
+	// Return a copy to ensure a caller can't change our saved
+	// tags just by writing to the returned map.
+	return copyTags(si.tags)
 }
 
 func (si stubInstance) String() string {
