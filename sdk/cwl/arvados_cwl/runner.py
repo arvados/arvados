@@ -8,6 +8,7 @@ from future.utils import  viewvalues, viewitems
 
 import os
 import sys
+import re
 import urllib.parse
 from functools import partial
 import logging
@@ -32,6 +33,7 @@ from cwltool.builder import substitute
 from cwltool.pack import pack
 
 import arvados.collection
+import arvados.util
 import ruamel.yaml as yaml
 
 import arvados_cwl.arvdocker
@@ -87,6 +89,7 @@ def discover_secondary_files(inputs, job_order, discovered=None):
         if shortname(t["id"]) in job_order and t.get("secondaryFiles"):
             setSecondary(t, job_order[shortname(t["id"])], discovered)
 
+collection_uuid_pattern = re.compile(r'^keep:([a-z0-9]{5}-4zz18-[a-z0-9]{15})(/.*)?$')
 
 def upload_dependencies(arvrunner, name, document_loader,
                         workflowobj, uri, loadref_run,
@@ -136,14 +139,40 @@ def upload_dependencies(arvrunner, name, document_loader,
                   loadref, urljoin=document_loader.fetcher.urljoin)
 
     sc = []
-    def only_real(obj):
-        # Only interested in local files than need to be uploaded,
-        # don't include file literals, keep references, etc.
-        sp = obj.get("location", "").split(":")
-        if len(sp) > 1 and sp[0] in ("file", "http", "https"):
+    uuids = []
+    def dependencies_needing_transformation(obj):
+        loc = obj.get("location", "")
+        sp = loc.split(":")
+        if len(sp) < 1:
+            return
+        if sp[0] in ("file", "http", "https"):
+            # Record local files than need to be uploaded,
+            # don't include file literals, keep references, etc.
             sc.append(obj)
+        elif sp[0] == "keep":
+            # Collect collection uuids that need to be resolved to
+            # portable data hashes
+            gp = collection_uuid_pattern.match(loc)
+            if gp:
+                uuids.append(gp.groups()[0])
 
-    visit_class(sc_result, ("File", "Directory"), only_real)
+    visit_class(sc_result, ("File", "Directory"), dependencies_needing_transformation)
+
+    uuid_map = {}
+    while uuids:
+        lookups = arvrunner.api.collections().list(
+            filters=[["uuid", "in", uuids]],
+            count="none",
+            select=["uuid", "portable_data_hash"]).execute(
+                num_retries=arvrunner.num_retries)
+
+        if not lookups["items"]:
+            break
+
+        for l in lookups["items"]:
+            uuid_map[l["uuid"]] = l["portable_data_hash"]
+
+        uuids = [u for u in uuids if u not in uuid_map]
 
     normalizeFilesDirs(sc)
 
@@ -194,8 +223,21 @@ def upload_dependencies(arvrunner, name, document_loader,
                            single_collection=True)
 
     def setloc(p):
-        if "location" in p and (not p["location"].startswith("_:")) and (not p["location"].startswith("keep:")):
+        loc = p.get("location")
+        if loc and (not loc.startswith("_:")) and (not loc.startswith("keep:")):
             p["location"] = mapper.mapper(p["location"]).resolved
+            return
+        if not uuid_map:
+            return
+        gp = collection_uuid_pattern.match(loc)
+        if not gp:
+            return
+        uuid = gp.groups()[0]
+        if uuid not in uuid_map:
+            raise Exception("Cannot resolve uuid %s" % uuid)
+        p["location"] = "keep:%s%s" % (uuid_map[uuid], gp.groups()[1] if gp.groups()[1] else "")
+        p["http://arvados.org/cwl#collectionUUID"] = uuid
+
 
     visit_class(workflowobj, ("File", "Directory"), setloc)
     visit_class(discovered, ("File", "Directory"), setloc)

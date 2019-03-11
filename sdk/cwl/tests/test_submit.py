@@ -1425,6 +1425,40 @@ class TestSubmit(unittest.TestCase):
             stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
         self.assertEqual(exited, 1)
 
+    @stubs
+    def test_submit_uuid_inputs(self, stubs):
+        def list_side_effect(**kwargs):
+            m = mock.MagicMock()
+            if "count" in kwargs:
+                m.execute.return_value = {"items": [
+                    {"uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzz", "portable_data_hash": "99999999999999999999999999999998+99"}
+                ]}
+            else:
+                m.execute.return_value = {"items": []}
+            return m
+        stubs.api.collections().list.side_effect = list_side_effect
+
+        exited = arvados_cwl.main(
+            ["--submit", "--no-wait", "--api=containers", "--debug",
+                "tests/wf/submit_wf.cwl", "tests/submit_test_job_with_uuids.json"],
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+
+        expect_container = copy.deepcopy(stubs.expect_container_spec)
+        expect_container['mounts']['/var/lib/cwl/cwl.input.json']['content']['y']['basename'] = 'zzzzz-4zz18-zzzzzzzzzzzzzzz'
+        expect_container['mounts']['/var/lib/cwl/cwl.input.json']['content']['y']['http://arvados.org/cwl#collectionUUID'] = 'zzzzz-4zz18-zzzzzzzzzzzzzzz'
+        expect_container['mounts']['/var/lib/cwl/cwl.input.json']['content']['z']['listing'][0]['http://arvados.org/cwl#collectionUUID'] = 'zzzzz-4zz18-zzzzzzzzzzzzzzz'
+        del expect_container['mounts']['/var/lib/cwl/cwl.input.json']['content']['z']['listing'][0]['size']
+
+        stubs.api.collections().list.assert_has_calls([
+            mock.call(count='none',
+                      filters=[['uuid', 'in', ['zzzzz-4zz18-zzzzzzzzzzzzzzz', 'zzzzz-4zz18-zzzzzzzzzzzzzzz', 'zzzzz-4zz18-zzzzzzzzzzzzzzz']]],
+                      select=['uuid', 'portable_data_hash'])])
+        stubs.api.container_requests().create.assert_called_with(
+            body=JsonDiffMatcher(expect_container))
+        self.assertEqual(stubs.capture_stdout.getvalue(),
+                         stubs.expect_container_request_uuid + '\n')
+        self.assertEqual(exited, 0)
+
 
 class TestCreateTemplate(unittest.TestCase):
     existing_template_uuid = "zzzzz-d1hrv-validworkfloyml"
