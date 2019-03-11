@@ -165,7 +165,7 @@ func (vl *VolumeList) UnmarshalJSON(data []byte) error {
 	for _, factory := range VolumeTypes {
 		t := factory().Type()
 		if _, ok := typeMap[t]; ok {
-			log.Fatal("volume type %+q is claimed by multiple VolumeTypes")
+			log.Fatalf("volume type %+q is claimed by multiple VolumeTypes", t)
 		}
 		typeMap[t] = factory
 	}
