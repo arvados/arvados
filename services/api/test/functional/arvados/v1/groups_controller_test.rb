@@ -403,20 +403,6 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
                  new_project['name'])
   end
 
-  test "create request with async=true returns 202 Accepted" do
-    name = "Random group #{rand(1000)}"
-    assert_equal nil, Group.find_by_name(name)
-    authorize_with :active
-    post :create, {
-      group: {
-        name: name
-      },
-      async: true
-    }
-    assert_response :accepted
-    assert_not_equal nil, Group.find_by_name(name)
-  end
-
   test "unsharing a project results in hiding it from previously shared user" do
     # remove sharing link for project
     @controller = Arvados::V1::LinksController.new

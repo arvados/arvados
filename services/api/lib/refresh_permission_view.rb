@@ -14,7 +14,11 @@ end
 def refresh_permission_view(async=false)
   if async and Rails.configuration.async_permissions_update_interval > 0
     exp = Rails.configuration.async_permissions_update_interval.seconds
+    need = false
     Rails.cache.fetch('AsyncRefreshPermissionView', expires_in: exp) do
+      need = true
+    end
+    if need
       # Schedule a new permission update and return immediately
       Thread.new do
         Thread.current.abort_on_exception = false
