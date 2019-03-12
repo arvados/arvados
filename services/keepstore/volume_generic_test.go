@@ -556,7 +556,7 @@ func testMetrics(t TB, factory TestableVolumeFactory) {
 	if err != nil {
 		t.Error("Failed Start(): ", err)
 	}
-	opsC, _, ioC := v.GetMetricsVecs()
+	opsC, _, ioC := vm.getCounterVecsFor(prometheus.Labels{"device_id": v.DeviceID()})
 
 	if ioC == nil {
 		t.Error("ioBytes CounterVec is nil")

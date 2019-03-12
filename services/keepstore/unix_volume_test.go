@@ -74,13 +74,6 @@ func (v *TestableUnixVolume) Teardown() {
 	}
 }
 
-func (v *TestableUnixVolume) GetMetricsVecs() (opsCounters, errCounters, ioBytes *prometheus.CounterVec) {
-	opsCounters = v.os.stats.opsCounters
-	errCounters = v.os.stats.errCounters
-	ioBytes = v.os.stats.ioBytes
-	return
-}
-
 // serialize = false; readonly = false
 func TestUnixVolumeWithGenericTests(t *testing.T) {
 	DoGenericVolumeTests(t, func(t TB) TestableVolume {
