@@ -20,6 +20,7 @@ def refresh_permission_view(async=false)
         Thread.current.abort_on_exception = false
         begin
           sleep(exp)
+          Rails.cache.delete('AsyncRefreshPermissionView')
           do_refresh_permission_view
         rescue => e
           Rails.logger.error "Updating permission view: #{e}\n#{e.backtrace.join("\n\t")}"
