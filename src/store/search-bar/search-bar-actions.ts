@@ -214,7 +214,7 @@ const searchGroups = (searchValue: string, limit: number) =>
             const clusterId = getSearchQueryFirstProp(sq, 'cluster');
             const sessions = getSearchSessions(clusterId, getState().auth.sessions);
             const lists: ListResults<GroupContentsResource>[] = await Promise.all(sessions.map(session => {
-                const filters = getFilters('name', searchValue, sq);
+                const filters = searchQueryToFilters(sq);
                 return services.groupsService.contents('', {
                     filters,
                     limit,
@@ -404,7 +404,7 @@ export const getSearchSessions = (clusterId: string | undefined, sessions: Sessi
 export const getFilters = (filterName: string, searchValue: string, sq: ParseSearchQuery): string => {
     const filter = new FilterBuilder();
     const isSearchQueryUuid = isResourceUuid(sq.values[0]);
-    const resourceKind = getSearchQueryFirstProp(sq, 'type') as ResourceKind; 
+    const resourceKind = getSearchQueryFirstProp(sq, 'type') as ResourceKind;
 
     let prefix = '';
     switch (resourceKind) {
