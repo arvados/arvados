@@ -31,6 +31,7 @@ from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, visit_class
 from cwltool.utils import aslist
 from cwltool.builder import substitute
 from cwltool.pack import pack
+import schema_salad.validate as validate
 
 import arvados.collection
 from .util import collectionUUID
@@ -90,6 +91,7 @@ def discover_secondary_files(inputs, job_order, discovered=None):
             setSecondary(t, job_order[shortname(t["id"])], discovered)
 
 collection_uuid_pattern = re.compile(r'^keep:([a-z0-9]{5}-4zz18-[a-z0-9]{15})(/.*)?$')
+collection_pdh_pattern = re.compile(r'^keep:([0-9a-f]{32}\+\d+)(/.*)?')
 
 def upload_dependencies(arvrunner, name, document_loader,
                         workflowobj, uri, loadref_run,
@@ -139,8 +141,21 @@ def upload_dependencies(arvrunner, name, document_loader,
                   loadref, urljoin=document_loader.fetcher.urljoin)
 
     sc = []
-    uuids = []
-    def dependencies_needing_transformation(obj):
+    uuids = {}
+
+    def collect_uuids(obj):
+        loc = obj.get("location", "")
+        sp = loc.split(":")
+        if sp[0] == "keep":
+            # Collect collection uuids that need to be resolved to
+            # portable data hashes
+            gp = collection_uuid_pattern.match(loc)
+            if gp:
+                uuids[gp.groups()[0]] = obj
+            if collectionUUID in obj:
+                uuids[obj[collectionUUID]] = obj
+
+    def collect_uploads(obj):
         loc = obj.get("location", "")
         sp = loc.split(":")
         if len(sp) < 1:
@@ -149,19 +164,18 @@ def upload_dependencies(arvrunner, name, document_loader,
             # Record local files than need to be uploaded,
             # don't include file literals, keep references, etc.
             sc.append(obj)
-        elif sp[0] == "keep":
-            # Collect collection uuids that need to be resolved to
-            # portable data hashes
-            gp = collection_uuid_pattern.match(loc)
-            if gp:
-                uuids.append(gp.groups()[0])
+        collect_uuids(obj)
 
-    visit_class(sc_result, ("File", "Directory"), dependencies_needing_transformation)
+    visit_class(workflowobj, ("File", "Directory"), collect_uuids)
+    visit_class(sc_result, ("File", "Directory"), collect_uploads)
 
+    # Resolve any collection uuids we found to portable data hashes
+    # and assign them to uuid_map
     uuid_map = {}
-    while uuids:
+    fetch_uuids = list(uuids.keys())
+    while fetch_uuids:
         lookups = arvrunner.api.collections().list(
-            filters=[["uuid", "in", uuids]],
+            filters=[["uuid", "in", fetch_uuids]],
             count="none",
             select=["uuid", "portable_data_hash"]).execute(
                 num_retries=arvrunner.num_retries)
@@ -172,7 +186,7 @@ def upload_dependencies(arvrunner, name, document_loader,
         for l in lookups["items"]:
             uuid_map[l["uuid"]] = l["portable_data_hash"]
 
-        uuids = [u for u in uuids if u not in uuid_map]
+        fetch_uuids = [u for u in fetch_uuids if u not in uuid_map]
 
     normalizeFilesDirs(sc)
 
@@ -227,14 +241,31 @@ def upload_dependencies(arvrunner, name, document_loader,
         if loc and (not loc.startswith("_:")) and (not loc.startswith("keep:")):
             p["location"] = mapper.mapper(p["location"]).resolved
             return
-        if not uuid_map:
+
+        if not loc:
             return
+
+        if collectionUUID in p:
+            uuid = p[collectionUUID]
+            if uuid not in uuid_map:
+                raise SourceLine(p, collectionUUID, validate.ValidationException).makeError(
+                    "Collection uuid %s not found" % uuid)
+            gp = collection_pdh_pattern.match(loc)
+            if gp and uuid_map[uuid] != gp.groups()[0]:
+                # This file entry has both collectionUUID and a PDH
+                # location. If the PDH doesn't match the one returned
+                # the API server, raise an error.
+                raise SourceLine(p, "location", validate.ValidationException).makeError(
+                    "Expected collection uuid %s to be %s but API server reported %s" % (
+                        uuid, gp.groups()[0], uuid_map[p[collectionUUID]]))
+
         gp = collection_uuid_pattern.match(loc)
         if not gp:
             return
         uuid = gp.groups()[0]
         if uuid not in uuid_map:
-            raise Exception("Cannot resolve uuid %s" % uuid)
+            raise SourceLine(p, "location", validate.ValidationException).makeError(
+                "Collection uuid %s not found" % uuid)
         p["location"] = "keep:%s%s" % (uuid_map[uuid], gp.groups()[1] if gp.groups()[1] else "")
         p[collectionUUID] = uuid
 

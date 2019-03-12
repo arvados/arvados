@@ -112,6 +112,11 @@ def stubs(func):
                 "portable_data_hash": "99999999999999999999999999999998+99",
                 "manifest_text": ". 99999999999999999999999999999998+99 0:0:file1.txt"
             },
+            "99999999999999999999999999999997+99": {
+                "uuid": "",
+                "portable_data_hash": "99999999999999999999999999999997+99",
+                "manifest_text": ". 99999999999999999999999999999997+99 0:0:file1.txt"
+            },
             "99999999999999999999999999999994+99": {
                 "uuid": "",
                 "portable_data_hash": "99999999999999999999999999999994+99",
@@ -1451,13 +1456,65 @@ class TestSubmit(unittest.TestCase):
 
         stubs.api.collections().list.assert_has_calls([
             mock.call(count='none',
-                      filters=[['uuid', 'in', ['zzzzz-4zz18-zzzzzzzzzzzzzzz', 'zzzzz-4zz18-zzzzzzzzzzzzzzz', 'zzzzz-4zz18-zzzzzzzzzzzzzzz']]],
+                      filters=[['uuid', 'in', ['zzzzz-4zz18-zzzzzzzzzzzzzzz']]],
                       select=['uuid', 'portable_data_hash'])])
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
         self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
         self.assertEqual(exited, 0)
+
+    @stubs
+    def test_submit_mismatched_uuid_inputs(self, stubs):
+        def list_side_effect(**kwargs):
+            m = mock.MagicMock()
+            if "count" in kwargs:
+                m.execute.return_value = {"items": [
+                    {"uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzz", "portable_data_hash": "99999999999999999999999999999997+99"}
+                ]}
+            else:
+                m.execute.return_value = {"items": []}
+            return m
+        stubs.api.collections().list.side_effect = list_side_effect
+
+        for infile in ("tests/submit_test_job_with_mismatched_uuids.json", "tests/submit_test_job_with_inconsistent_uuids.json"):
+            capture_stderr = io.StringIO()
+            cwltool_logger = logging.getLogger('cwltool')
+            stderr_logger = logging.StreamHandler(capture_stderr)
+            cwltool_logger.addHandler(stderr_logger)
+
+            try:
+                exited = arvados_cwl.main(
+                    ["--submit", "--no-wait", "--api=containers", "--debug",
+                        "tests/wf/submit_wf.cwl", infile],
+                    stubs.capture_stdout, capture_stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+
+                self.assertEqual(exited, 1)
+                self.assertRegexpMatches(
+                    capture_stderr.getvalue(),
+                    r"Expected collection uuid zzzzz-4zz18-zzzzzzzzzzzzzzz to be 99999999999999999999999999999998\+99 but API server reported 99999999999999999999999999999997\+99")
+            finally:
+                cwltool_logger.removeHandler(stderr_logger)
+
+    @stubs
+    def test_submit_unknown_uuid_inputs(self, stubs):
+        capture_stderr = io.StringIO()
+        cwltool_logger = logging.getLogger('cwltool')
+        stderr_logger = logging.StreamHandler(capture_stderr)
+        cwltool_logger.addHandler(stderr_logger)
+
+        exited = arvados_cwl.main(
+            ["--submit", "--no-wait", "--api=containers", "--debug",
+                "tests/wf/submit_wf.cwl", "tests/submit_test_job_with_uuids.json"],
+            stubs.capture_stdout, capture_stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+
+        try:
+            self.assertEqual(exited, 1)
+            self.assertRegexpMatches(
+                capture_stderr.getvalue(),
+                r"Collection uuid zzzzz-4zz18-zzzzzzzzzzzzzzz not found")
+        finally:
+            cwltool_logger.removeHandler(stderr_logger)
 
 
 class TestCreateTemplate(unittest.TestCase):
@@ -1648,17 +1705,19 @@ class TestCreateWorkflow(unittest.TestCase):
         stderr_logger = logging.StreamHandler(capture_stderr)
         acr_logger.addHandler(stderr_logger)
 
-        exited = arvados_cwl.main(
-            ["--update-workflow", self.existing_workflow_uuid,
-             "--api=jobs",
-             "--debug",
-             "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            sys.stderr, sys.stderr, api_client=stubs.api)
-        self.assertEqual(exited, 1)
-        self.assertRegexpMatches(
-            capture_stderr.getvalue(),
-            "--update-workflow arg '{}' uses 'containers' API, but --api='jobs' specified".format(self.existing_workflow_uuid))
-        acr_logger.removeHandler(stderr_logger)
+        try:
+            exited = arvados_cwl.main(
+                ["--update-workflow", self.existing_workflow_uuid,
+                 "--api=jobs",
+                 "--debug",
+                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
+                sys.stderr, sys.stderr, api_client=stubs.api)
+            self.assertEqual(exited, 1)
+            self.assertRegexpMatches(
+                capture_stderr.getvalue(),
+                "--update-workflow arg '{}' uses 'containers' API, but --api='jobs' specified".format(self.existing_workflow_uuid))
+        finally:
+            acr_logger.removeHandler(stderr_logger)
 
     @stubs
     def test_update(self, stubs):
