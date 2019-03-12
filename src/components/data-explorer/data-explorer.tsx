@@ -89,11 +89,11 @@ export const DataExplorer = withStyles(styles)(
             return <Paper className={classes.root} {...paperProps} key={paperKey}>
                 {(!hideColumnSelector || !hideSearchInput) && <Toolbar className={classes.toolbar}>
                     <Grid container justify="space-between" wrap="nowrap" alignItems="center">
-                        {!hideSearchInput && <div className={classes.searchBox}>
-                            <SearchInput
+                        <div className={classes.searchBox}>
+                            {!hideSearchInput && <SearchInput
                                 value={searchValue}
-                                onSearch={onSearch} />
-                        </div>}
+                                onSearch={onSearch} />}
+                        </div>
                         {actions}
                         {!hideColumnSelector && <ColumnSelector
                             columns={columns}
@@ -110,8 +110,8 @@ export const DataExplorer = withStyles(styles)(
                     onSortToggle={onSortToggle}
                     extractKey={extractKey}
                     working={working}
-                    defaultView={dataTableDefaultView} 
-                    currentItemUuid={currentItemUuid} 
+                    defaultView={dataTableDefaultView}
+                    currentItemUuid={currentItemUuid}
                     currentRoute={paperKey} />
                 <Toolbar className={classes.footer}>
                     <Grid container justify="flex-end">
@@ -126,7 +126,7 @@ export const DataExplorer = withStyles(styles)(
                                 variant="text"
                                 size="medium"
                                 onClick={this.loadMore}
-                                >Load more</Button>}
+                            >Load more</Button>}
                     </Grid>
                 </Toolbar>
             </Paper>;
