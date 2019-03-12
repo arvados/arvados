@@ -261,29 +261,33 @@ test_package_presence() {
     # Get the list of packages from the repos
 
     if [[ "$FORMAT" == "deb" ]]; then
-      debian_distros="jessie precise stretch trusty wheezy xenial bionic"
+      declare -A dd
+      dd[debian8]=jessie
+      dd[debian9]=stretch
+      dd[debian10]=buster
+      dd[ubuntu1404]=trusty
+      dd[ubuntu1604]=xenial
+      dd[ubuntu1804]=bionic
+      D=${dd[$TARGET]}
+      if [ ${pkgname:0:3} = "lib" ]; then
+        repo_subdir=${pkgname:0:4}
+      else
+        repo_subdir=${pkgname:0:1}
+      fi
 
-      for D in ${debian_distros}; do
-        if [ ${pkgname:0:3} = "lib" ]; then
-          repo_subdir=${pkgname:0:4}
-        else
-          repo_subdir=${pkgname:0:1}
-        fi
-
-        repo_pkg_list=$(curl -s -o - http://apt.arvados.org/pool/${D}/main/${repo_subdir}/)
-        echo ${repo_pkg_list} |grep -q ${complete_pkgname}
-        if [ $? -eq 0 ] ; then
-          echo "Package $complete_pkgname exists, not rebuilding!"
-          curl -s -o ./${complete_pkgname} http://apt.arvados.org/pool/${D}/main/${repo_subdir}/${complete_pkgname}
-          return 1
-        elif test -f "$WORKSPACE/packages/$TARGET/processed/${complete_pkgname}" ; then
-          echo "Package $complete_pkgname exists, not rebuilding!"
-          return 1
-        else
-          echo "Package $complete_pkgname not found, building"
-          return 0
-        fi
-      done
+      repo_pkg_list=$(curl -s -o - http://apt.arvados.org/pool/${D}/main/${repo_subdir}/)
+      echo ${repo_pkg_list} |grep -q ${complete_pkgname}
+      if [ $? -eq 0 ] ; then
+        echo "Package $complete_pkgname exists, not rebuilding!"
+        curl -s -o ./${complete_pkgname} http://apt.arvados.org/pool/${D}/main/${repo_subdir}/${complete_pkgname}
+        return 1
+      elif test -f "$WORKSPACE/packages/$TARGET/processed/${complete_pkgname}" ; then
+        echo "Package $complete_pkgname exists, not rebuilding!"
+        return 1
+      else
+        echo "Package $complete_pkgname not found, building"
+        return 0
+      fi
     else
       centos_repo="http://rpm.arvados.org/CentOS/7/dev/x86_64/"
 
