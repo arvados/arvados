@@ -345,6 +345,17 @@ fpm_build_virtualenv "arvados-docker-cleaner" "services/dockercleaner" "python3"
 # The Arvados crunchstat-summary tool
 fpm_build_virtualenv "crunchstat-summary" "tools/crunchstat-summary"
 
+# The cwltest package, which lives out of tree
+cd "$WORKSPACE"
+if [[ -e "$WORKSPACE/cwltest" ]]; then
+	rm -rf "$WORKSPACE/cwltest"
+fi
+git clone https://github.com/common-workflow-language/cwltest.git
+# signal to our build script that we want a cwltest executable installed in /usr/bin/
+mkdir cwltest/bin && touch cwltest/bin/cwltest
+fpm_build_virtualenv "cwltest" "cwltest"
+rm -rf "$WORKSPACE/cwltest"
+
 # Build the API server package
 test_rails_package_presence arvados-api-server "$WORKSPACE/services/api"
 if [[ "$?" == "0" ]]; then

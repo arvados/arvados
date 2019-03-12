@@ -423,7 +423,8 @@ fpm_build_virtualenv () {
     echo "  $pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U setuptools"
     exit 1
   fi
-  if ! $python setup.py $DASHQ_UNLESS_DEBUG sdist; then
+  # filter a useless warning (when building the cwltest package) from the stderr output
+  if ! $python setup.py $DASHQ_UNLESS_DEBUG sdist 2> >(grep -v 'warning: no previously-included files matching'); then
     echo "Error, unable to run $python setup.py sdist for $PKG"
     exit 1
   fi
