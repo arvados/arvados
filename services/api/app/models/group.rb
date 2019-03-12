@@ -40,7 +40,7 @@ class Group < ArvadosModel
   def invalidate_permissions_cache
     # Ensure a new group can be accessed by the appropriate users
     # immediately after being created.
-    User.invalidate_permissions_cache db_current_time.to_i, self.async_permissions_update
+    User.invalidate_permissions_cache self.async_permissions_update
   end
 
   def assign_name

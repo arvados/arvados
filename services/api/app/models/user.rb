@@ -141,16 +141,11 @@ class User < ArvadosModel
     true
   end
 
-  def self.invalidate_permissions_cache(timestamp=nil, async=false)
-    if Rails.configuration.async_permissions_update
-      timestamp = DbCurrentTime::db_current_time.to_i if timestamp.nil?
-      connection.execute "NOTIFY invalidate_permissions_cache, '#{timestamp}'"
-    else
-      refresh_permission_view(async)
-    end
+  def self.invalidate_permissions_cache(async=false)
+    refresh_permission_view(async)
   end
 
-  def invalidate_permissions_cache(timestamp=nil)
+  def invalidate_permissions_cache
     User.invalidate_permissions_cache
   end
 

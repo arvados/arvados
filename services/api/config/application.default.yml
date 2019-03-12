@@ -496,12 +496,6 @@ common:
   # (included in vendor packages).
   package_version: false
 
-  # Enable asynchronous permission graph rebuild.  Must run
-  # script/permission-updater.rb as a separate process.  When the permission
-  # cache is invalidated, the background process will update the permission
-  # graph cache.  This feature is experimental!
-  async_permissions_update: false
-
   # Default value for container_count_max for container requests.  This is the
   # number of times Arvados will create a new container to satisfy a container
   # request.  If a container is cancelled it will retry a new container if
