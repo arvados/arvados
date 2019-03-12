@@ -271,7 +271,7 @@ export const getQueryFromAdvancedData = (data: SearchBarAdvanceFormData, prevDat
             dateFrom: data.dateFrom,
             dateTo: data.dateTo,
         };
-        (data.properties || []).forEach(p => fo[`prop-${p.key}`] = p.value);
+        (data.properties || []).forEach(p => fo[`prop-"${p.key}"`] = `"${p.value}"`);
         return fo;
     };
 
@@ -284,7 +284,7 @@ export const getQueryFromAdvancedData = (data: SearchBarAdvanceFormData, prevDat
         ['to', 'dateTo']
     ];
     _.union(data.properties, prevData ? prevData.properties : [])
-        .forEach(p => keyMap.push([`has:${p.key}`, `prop-${p.key}`]));
+        .forEach(p => keyMap.push([`has:"${p.key}"`, `prop-"${p.key}"`]));
 
     if (prevData) {
         const obj = getModifiedKeysValues(flatData(data), flatData(prevData));
