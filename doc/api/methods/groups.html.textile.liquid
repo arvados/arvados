@@ -68,6 +68,7 @@ Arguments:
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |group|object||query||
+|async|boolean (default false)|Defer the permissions graph update by a configured number of seconds. (By default, @async_permissions_update_interval@ is 60 seconds). On success, the response is 202 (Accepted).|query|@true@|
 
 h3. delete
 
@@ -115,6 +116,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Group in question.|path||
 |group|object||query||
+|async|boolean (default false)|Defer the permissions graph update by a configured number of seconds. (By default, @async_permissions_update_interval@ is 60 seconds). On success, the response is 202 (Accepted).|query|@true@|
 
 h3. untrash
 
