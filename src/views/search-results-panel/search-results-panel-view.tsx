@@ -117,5 +117,6 @@ export const SearchResultsPanelView = (props: SearchResultsPanelProps) => {
         onRowClick={props.onItemClick}
         onRowDoubleClick={props.onItemDoubleClick}
         onContextMenu={props.onContextMenu}
-        contextMenuColumn={true} />;
+        contextMenuColumn={true}
+        hideSearchInput />;
 };

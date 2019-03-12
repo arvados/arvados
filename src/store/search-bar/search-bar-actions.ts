@@ -214,7 +214,7 @@ const searchGroups = (searchValue: string, limit: number) =>
             const clusterId = getSearchQueryFirstProp(sq, 'cluster');
             const sessions = getSearchSessions(clusterId, getState().auth.sessions);
             const lists: ListResults<GroupContentsResource>[] = await Promise.all(sessions.map(session => {
-                const filters = getFilters('name', searchValue, sq);
+                const filters = searchQueryToFilters(sq);
                 return services.groupsService.contents('', {
                     filters,
                     limit,
@@ -404,7 +404,7 @@ export const getSearchSessions = (clusterId: string | undefined, sessions: Sessi
 export const getFilters = (filterName: string, searchValue: string, sq: ParseSearchQuery): string => {
     const filter = new FilterBuilder();
     const isSearchQueryUuid = isResourceUuid(sq.values[0]);
-    const resourceKind = getSearchQueryFirstProp(sq, 'type') as ResourceKind; 
+    const resourceKind = getSearchQueryFirstProp(sq, 'type') as ResourceKind;
 
     let prefix = '';
     switch (resourceKind) {
@@ -503,6 +503,41 @@ export const getFilters = (filterName: string, searchValue: string, sq: ParseSea
 
     return filter
         .addIsA("uuid", buildUuidFilter(resourceKind))
+        .getFilters();
+};
+
+export const searchQueryToFilters = (sq: ParseSearchQuery): string => {
+    const filter = new FilterBuilder();
+    const resourceKind = getSearchQueryFirstProp(sq, 'type') as ResourceKind;
+
+    const projectUuid = getSearchQueryFirstProp(sq, 'project');
+    if (projectUuid) {
+        filter.addEqual('ownerUuid', projectUuid);
+    }
+
+    const dateFrom = getSearchQueryFirstProp(sq, 'from');
+    if (dateFrom) {
+        filter.addGte('modified_at', buildDateFilter(dateFrom));
+    }
+
+    const dateTo = getSearchQueryFirstProp(sq, 'to');
+    if (dateTo) {
+        filter.addLte('modified_at', buildDateFilter(dateTo));
+    }
+
+    const props = getSearchQueryProperties(sq);
+    props.forEach(p => {
+        if (p.value) {
+            filter
+                .addILike(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.PROJECT)
+                .addILike(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.COLLECTION);
+        }
+        filter.addExists(p.key);
+    });
+
+    return filter
+        .addIsA("uuid", buildUuidFilter(resourceKind))
+        .addFullTextSearch(sq.values.join(' '))
         .getFilters();
 };
 
