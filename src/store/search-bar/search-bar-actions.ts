@@ -506,6 +506,41 @@ export const getFilters = (filterName: string, searchValue: string, sq: ParseSea
         .getFilters();
 };
 
+export const searchQueryToFilters = (sq: ParseSearchQuery): string => {
+    const filter = new FilterBuilder();
+    const resourceKind = getSearchQueryFirstProp(sq, 'type') as ResourceKind;
+
+    const projectUuid = getSearchQueryFirstProp(sq, 'project');
+    if (projectUuid) {
+        filter.addEqual('ownerUuid', projectUuid);
+    }
+
+    const dateFrom = getSearchQueryFirstProp(sq, 'from');
+    if (dateFrom) {
+        filter.addGte('modified_at', buildDateFilter(dateFrom));
+    }
+
+    const dateTo = getSearchQueryFirstProp(sq, 'to');
+    if (dateTo) {
+        filter.addLte('modified_at', buildDateFilter(dateTo));
+    }
+
+    const props = getSearchQueryProperties(sq);
+    props.forEach(p => {
+        if (p.value) {
+            filter
+                .addILike(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.PROJECT)
+                .addILike(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.COLLECTION);
+        }
+        filter.addExists(p.key);
+    });
+
+    return filter
+        .addIsA("uuid", buildUuidFilter(resourceKind))
+        .addFullTextSearch(sq.values.join(' '))
+        .getFilters();
+};
+
 const buildUuidFilter = (type?: ResourceKind): ResourceKind[] => {
     return type ? [type] : [ResourceKind.PROJECT, ResourceKind.COLLECTION, ResourceKind.PROCESS];
 };
