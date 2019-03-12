@@ -189,6 +189,11 @@ common:
   # arrived, and deleted if their delete_at time has arrived.
   trash_sweep_interval: 60
 
+  # Interval (seconds) between asynchronous permission view updates. Any
+  # permission-updating API called with the 'async' parameter schedules a an
+  # update on the permission view in the future, if not already scheduled.
+  async_permissions_update_interval: 60
+
   # Maximum characters of (JSON-encoded) query parameters to include
   # in each request log entry. When params exceed this size, they will
   # be JSON-encoded, truncated to this size, and logged as

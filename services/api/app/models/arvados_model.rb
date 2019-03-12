@@ -41,6 +41,11 @@ class ArvadosModel < ActiveRecord::Base
            class_name: 'Link',
            primary_key: :uuid)
 
+  # If async is true at create or update, permission graph
+  # update is deferred allowing making multiple calls without the performance
+  # penalty.
+  attr_accessor :async_permissions_update
+
   class PermissionDeniedError < RequestError
     def http_status
       403
