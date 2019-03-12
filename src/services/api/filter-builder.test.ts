@@ -81,4 +81,12 @@ describe("FilterBuilder", () => {
             .getFilters())
             .toEqual(`["myPrefix.etag","in",["etagValue1","etagValue2"]]`);
     });
+
+    it('should add full text search', () => {
+        expect(
+            new FilterBuilder()
+                .addFullTextSearch('my custom search')
+                .getFilters()
+        ).toEqual(`["any","@@","my:*&custom:*&search"]`);
+    });
 });
