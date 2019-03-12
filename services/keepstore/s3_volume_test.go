@@ -493,3 +493,7 @@ func (v *TestableS3Volume) TouchWithDate(locator string, lastPut time.Time) {
 func (v *TestableS3Volume) Teardown() {
 	v.server.Quit()
 }
+
+func (v *TestableS3Volume) ReadWriteOperationLabelValues() (r, w string) {
+	return "get", "put"
+}

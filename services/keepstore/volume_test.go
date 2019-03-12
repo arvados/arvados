@@ -27,6 +27,9 @@ type TestableVolume interface {
 	// bypassing all constraints like readonly and serialize.
 	PutRaw(locator string, data []byte)
 
+	// Returns the strings that a driver uses to record read/write operations.
+	ReadWriteOperationLabelValues() (r, w string)
+
 	// Specify the value Mtime() should return, until the next
 	// call to Touch, TouchWithDate, or Put.
 	TouchWithDate(locator string, lastPut time.Time)

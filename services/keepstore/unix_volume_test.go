@@ -74,6 +74,10 @@ func (v *TestableUnixVolume) Teardown() {
 	}
 }
 
+func (v *TestableUnixVolume) ReadWriteOperationLabelValues() (r, w string) {
+	return "open", "create"
+}
+
 // serialize = false; readonly = false
 func TestUnixVolumeWithGenericTests(t *testing.T) {
 	DoGenericVolumeTests(t, func(t TB) TestableVolume {

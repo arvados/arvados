@@ -573,20 +573,23 @@ func testMetrics(t TB, factory TestableVolumeFactory) {
 		return
 	}
 
-	var c, anyOpCounter float64
-	anyOpCounter = getValueFrom(opsC, prometheus.Labels{"operation": "any"})
+	var c, writeOpCounter, readOpCounter float64
+
+	readOpType, writeOpType := v.ReadWriteOperationLabelValues()
+	writeOpCounter = getValueFrom(opsC, prometheus.Labels{"operation": writeOpType})
+	readOpCounter = getValueFrom(opsC, prometheus.Labels{"operation": readOpType})
+
 	// Test Put if volume is writable
 	if v.Writable() {
 		err = v.Put(context.Background(), TestHash, TestBlock)
 		if err != nil {
 			t.Errorf("Got err putting block %q: %q, expected nil", TestBlock, err)
 		}
-		// Check that the operations counter increased
-		c = getValueFrom(opsC, prometheus.Labels{"operation": "any"})
-		if c <= anyOpCounter {
+		// Check that the write operations counter increased
+		c = getValueFrom(opsC, prometheus.Labels{"operation": writeOpType})
+		if c <= writeOpCounter {
 			t.Error("Operation(s) not counted on Put")
 		}
-		anyOpCounter = c
 		// Check that bytes counter is > 0
 		if getValueFrom(ioC, prometheus.Labels{"direction": "out"}) == 0 {
 			t.Error("ioBytes{direction=out} counter shouldn't be zero")
@@ -602,11 +605,10 @@ func testMetrics(t TB, factory TestableVolumeFactory) {
 	}
 
 	// Check that the operations counter increased
-	c = getValueFrom(opsC, prometheus.Labels{"operation": "any"})
-	if c <= anyOpCounter {
+	c = getValueFrom(opsC, prometheus.Labels{"operation": readOpType})
+	if c <= readOpCounter {
 		t.Error("Operation(s) not counted on Get")
 	}
-	anyOpCounter = c
 	// Check that the bytes "in" counter is > 0
 	if getValueFrom(ioC, prometheus.Labels{"direction": "in"}) == 0 {
 		t.Error("ioBytes{direction=in} counter shouldn't be zero")

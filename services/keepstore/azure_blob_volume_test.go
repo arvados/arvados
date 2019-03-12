@@ -746,6 +746,10 @@ func (v *TestableAzureBlobVolume) Teardown() {
 	v.azStub.Close()
 }
 
+func (v *TestableAzureBlobVolume) ReadWriteOperationLabelValues() (r, w string) {
+	return "get", "create"
+}
+
 func (v *TestableAzureBlobVolume) DeviceID() string {
 	// Dummy device id for testing purposes
 	return "azure://azure_blob_volume_test"
