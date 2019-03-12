@@ -7,6 +7,8 @@ package main
 import (
 	"sync"
 	"sync/atomic"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type statsTicker struct {
@@ -16,6 +18,10 @@ type statsTicker struct {
 
 	ErrorCodes map[string]uint64 `json:",omitempty"`
 	lock       sync.Mutex
+
+	opsCounters *prometheus.CounterVec
+	errCounters *prometheus.CounterVec
+	ioBytes     *prometheus.CounterVec
 }
 
 // Tick increments each of the given counters by 1 using
@@ -41,14 +47,33 @@ func (s *statsTicker) TickErr(err error, errType string) {
 	}
 	s.ErrorCodes[errType]++
 	s.lock.Unlock()
+	if s.errCounters != nil {
+		s.errCounters.With(prometheus.Labels{"error_type": errType}).Inc()
+	}
 }
 
 // TickInBytes increments the incoming byte counter by n.
 func (s *statsTicker) TickInBytes(n uint64) {
+	if s.ioBytes != nil {
+		s.ioBytes.With(prometheus.Labels{"direction": "in"}).Add(float64(n))
+	}
 	atomic.AddUint64(&s.InBytes, n)
 }
 
 // TickOutBytes increments the outgoing byte counter by n.
 func (s *statsTicker) TickOutBytes(n uint64) {
+	if s.ioBytes != nil {
+		s.ioBytes.With(prometheus.Labels{"direction": "out"}).Add(float64(n))
+	}
 	atomic.AddUint64(&s.OutBytes, n)
+}
+
+// TickOps increments the counter of the listed operations by 1.
+func (s *statsTicker) TickOps(operations ...string) {
+	if s.opsCounters == nil {
+		return
+	}
+	for _, opType := range operations {
+		s.opsCounters.With(prometheus.Labels{"operation": opType}).Inc()
+	}
 }

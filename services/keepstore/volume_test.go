@@ -22,9 +22,13 @@ import (
 // impractical to achieve with a sequence of normal Volume operations.
 type TestableVolume interface {
 	Volume
+
 	// [Over]write content for a locator with the given data,
 	// bypassing all constraints like readonly and serialize.
 	PutRaw(locator string, data []byte)
+
+	// Returns the strings that a driver uses to record read/write operations.
+	ReadWriteOperationLabelValues() (r, w string)
 
 	// Specify the value Mtime() should return, until the next
 	// call to Touch, TouchWithDate, or Put.
@@ -212,7 +216,7 @@ func (v *MockVolume) Type() string {
 	return "Mock"
 }
 
-func (v *MockVolume) Start() error {
+func (v *MockVolume) Start(vm *volumeMetricsVecs) error {
 	return nil
 }
 

@@ -24,6 +24,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/health"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type router struct {
@@ -31,14 +32,16 @@ type router struct {
 	limiter     httpserver.RequestCounter
 	cluster     *arvados.Cluster
 	remoteProxy remoteProxy
+	metrics     *nodeMetrics
 }
 
 // MakeRESTRouter returns a new router that forwards all Keep requests
 // to the appropriate handlers.
-func MakeRESTRouter(cluster *arvados.Cluster) http.Handler {
+func MakeRESTRouter(cluster *arvados.Cluster, reg *prometheus.Registry) http.Handler {
 	rtr := &router{
 		Router:  mux.NewRouter(),
 		cluster: cluster,
+		metrics: &nodeMetrics{reg: reg},
 	}
 
 	rtr.HandleFunc(
@@ -85,8 +88,12 @@ func MakeRESTRouter(cluster *arvados.Cluster) http.Handler {
 	rtr.NotFoundHandler = http.HandlerFunc(BadRequestHandler)
 
 	rtr.limiter = httpserver.NewRequestLimiter(theConfig.MaxRequests, rtr)
+	rtr.metrics.setupBufferPoolMetrics(bufs)
+	rtr.metrics.setupWorkQueueMetrics(pullq, "pull")
+	rtr.metrics.setupWorkQueueMetrics(trashq, "trash")
+	rtr.metrics.setupRequestMetrics(rtr.limiter)
 
-	instrumented := httpserver.Instrument(nil, nil,
+	instrumented := httpserver.Instrument(rtr.metrics.reg, nil,
 		httpserver.AddRequestIDs(httpserver.LogRequests(nil, rtr.limiter)))
 	return instrumented.ServeAPI(theConfig.ManagementToken, instrumented)
 }

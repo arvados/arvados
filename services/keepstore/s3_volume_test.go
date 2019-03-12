@@ -20,6 +20,7 @@ import (
 	"github.com/AdRoll/goamz/s3"
 	"github.com/AdRoll/goamz/s3/s3test"
 	"github.com/ghodss/yaml"
+	"github.com/prometheus/client_golang/prometheus"
 	check "gopkg.in/check.v1"
 )
 
@@ -170,7 +171,8 @@ func (s *StubbedS3Suite) testContextCancel(c *check.C, testFunc func(context.Con
 	vol := *v.S3Volume
 	vol.Endpoint = srv.URL
 	v = &TestableS3Volume{S3Volume: &vol}
-	v.Start()
+	metrics := newVolumeMetricsVecs(prometheus.NewRegistry())
+	v.Start(metrics)
 
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -430,7 +432,8 @@ func (s *StubbedS3Suite) newTestableVolume(c *check.C, raceWindow time.Duration,
 		server:      srv,
 		serverClock: clock,
 	}
-	v.Start()
+	metrics := newVolumeMetricsVecs(prometheus.NewRegistry())
+	v.Start(metrics)
 	err = v.bucket.PutBucket(s3.ACL("private"))
 	c.Assert(err, check.IsNil)
 	return v
@@ -448,7 +451,7 @@ Volumes:
 	c.Check(cfg.Volumes[0].GetStorageClasses(), check.DeepEquals, []string{"class_a", "class_b"})
 }
 
-func (v *TestableS3Volume) Start() error {
+func (v *TestableS3Volume) Start(vm *volumeMetricsVecs) error {
 	tmp, err := ioutil.TempFile("", "keepstore")
 	v.c.Assert(err, check.IsNil)
 	defer os.Remove(tmp.Name())
@@ -459,7 +462,7 @@ func (v *TestableS3Volume) Start() error {
 	v.S3Volume.AccessKeyFile = tmp.Name()
 	v.S3Volume.SecretKeyFile = tmp.Name()
 
-	v.c.Assert(v.S3Volume.Start(), check.IsNil)
+	v.c.Assert(v.S3Volume.Start(vm), check.IsNil)
 	return nil
 }
 
@@ -489,4 +492,8 @@ func (v *TestableS3Volume) TouchWithDate(locator string, lastPut time.Time) {
 
 func (v *TestableS3Volume) Teardown() {
 	v.server.Quit()
+}
+
+func (v *TestableS3Volume) ReadWriteOperationLabelValues() (r, w string) {
+	return "get", "put"
 }

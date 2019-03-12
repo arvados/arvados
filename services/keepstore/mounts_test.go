@@ -12,6 +12,7 @@ import (
 	"net/http/httptest"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	"github.com/prometheus/client_golang/prometheus"
 	check "gopkg.in/check.v1"
 )
 
@@ -28,15 +29,16 @@ func (s *MountsSuite) SetUpTest(c *check.C) {
 	theConfig = DefaultConfig()
 	theConfig.systemAuthToken = arvadostest.DataManagerToken
 	theConfig.ManagementToken = arvadostest.ManagementToken
-	theConfig.Start()
-	s.rtr = MakeRESTRouter(testCluster)
+	r := prometheus.NewRegistry()
+	theConfig.Start(r)
+	s.rtr = MakeRESTRouter(testCluster, r)
 }
 
 func (s *MountsSuite) TearDownTest(c *check.C) {
 	s.vm.Close()
 	KeepVM = nil
 	theConfig = DefaultConfig()
-	theConfig.Start()
+	theConfig.Start(prometheus.NewRegistry())
 }
 
 func (s *MountsSuite) TestMounts(c *check.C) {
@@ -131,7 +133,9 @@ func (s *MountsSuite) TestMetrics(c *check.C) {
 	}
 	json.NewDecoder(resp.Body).Decode(&j)
 	found := make(map[string]bool)
+	names := map[string]bool{}
 	for _, g := range j {
+		names[g.Name] = true
 		for _, m := range g.Metric {
 			if len(m.Label) == 2 && m.Label[0].Name == "code" && m.Label[0].Value == "200" && m.Label[1].Name == "method" && m.Label[1].Value == "put" {
 				c.Check(m.Summary.SampleCount, check.Equals, "2")
@@ -143,6 +147,24 @@ func (s *MountsSuite) TestMetrics(c *check.C) {
 	}
 	c.Check(found["request_duration_seconds"], check.Equals, true)
 	c.Check(found["time_to_status_seconds"], check.Equals, true)
+
+	metricsNames := []string{
+		"arvados_keepstore_bufferpool_inuse_buffers",
+		"arvados_keepstore_bufferpool_max_buffers",
+		"arvados_keepstore_bufferpool_allocated_bytes",
+		"arvados_keepstore_pull_queue_inprogress_entries",
+		"arvados_keepstore_pull_queue_pending_entries",
+		"arvados_keepstore_concurrent_requests",
+		"arvados_keepstore_max_concurrent_requests",
+		"arvados_keepstore_trash_queue_inprogress_entries",
+		"arvados_keepstore_trash_queue_pending_entries",
+		"request_duration_seconds",
+		"time_to_status_seconds",
+	}
+	for _, m := range metricsNames {
+		_, ok := names[m]
+		c.Check(ok, check.Equals, true)
+	}
 }
 
 func (s *MountsSuite) call(method, path, tok string, body []byte) *httptest.ResponseRecorder {

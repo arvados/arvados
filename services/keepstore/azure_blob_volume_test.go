@@ -29,6 +29,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/storage"
 	"github.com/ghodss/yaml"
+	"github.com/prometheus/client_golang/prometheus"
 	check "gopkg.in/check.v1"
 )
 
@@ -743,6 +744,21 @@ func (v *TestableAzureBlobVolume) TouchWithDate(locator string, lastPut time.Tim
 
 func (v *TestableAzureBlobVolume) Teardown() {
 	v.azStub.Close()
+}
+
+func (v *TestableAzureBlobVolume) ReadWriteOperationLabelValues() (r, w string) {
+	return "get", "create"
+}
+
+func (v *TestableAzureBlobVolume) DeviceID() string {
+	// Dummy device id for testing purposes
+	return "azure://azure_blob_volume_test"
+}
+
+func (v *TestableAzureBlobVolume) Start(vm *volumeMetricsVecs) error {
+	// Override original Start() to be able to assign CounterVecs with a dummy DeviceID
+	v.container.stats.opsCounters, v.container.stats.errCounters, v.container.stats.ioBytes = vm.getCounterVecsFor(prometheus.Labels{"device_id": v.DeviceID()})
+	return nil
 }
 
 func makeEtag() string {

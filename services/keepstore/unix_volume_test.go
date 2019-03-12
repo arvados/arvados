@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
+	"github.com/prometheus/client_golang/prometheus"
 	check "gopkg.in/check.v1"
 )
 
@@ -73,6 +74,10 @@ func (v *TestableUnixVolume) Teardown() {
 	}
 }
 
+func (v *TestableUnixVolume) ReadWriteOperationLabelValues() (r, w string) {
+	return "open", "create"
+}
+
 // serialize = false; readonly = false
 func TestUnixVolumeWithGenericTests(t *testing.T) {
 	DoGenericVolumeTests(t, func(t TB) TestableVolume {
@@ -115,7 +120,8 @@ func TestReplicationDefault1(t *testing.T) {
 		Root:     "/",
 		ReadOnly: true,
 	}
-	if err := v.Start(); err != nil {
+	metrics := newVolumeMetricsVecs(prometheus.NewRegistry())
+	if err := v.Start(metrics); err != nil {
 		t.Error(err)
 	}
 	if got := v.Replication(); got != 1 {
