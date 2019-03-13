@@ -122,11 +122,25 @@ class GroupsTest < ActionDispatch::IntegrationTest
     assert_includes coll_uuids, collections(:foo_collection_in_aproject).uuid
     assert_not_includes coll_uuids, collections(:expired_collection).uuid
   end
+end
+
+class NonTransactionalGroupsTest < ActionDispatch::IntegrationTest
+  # Transactional tests are disabled to be able to test the concurrent
+  # asynchronous permissions update feature.
+  # This is needed because nested transactions share the connection pool, so
+  # one thread is locked while trying to talk to the database, until the other
+  # one finishes.
+  #
+  # WARNING: Any test within this class should clean up the changes made in the
+  # database to avoid state leaks to other tests!
+  self.use_transactional_fixtures = false
 
   test "create request with async=true defers permissions update" do
-    Rails.configuration.async_permissions_update_interval = 1 # seconds
+    Rails.configuration.async_permissions_update_interval = 1 # second
     name = "Random group #{rand(1000)}"
     assert_equal nil, Group.find_by_name(name)
+
+    # Trigger the asynchronous permission update by using async=true parameter.
     post "/arvados/v1/groups", {
       group: {
         name: name
@@ -134,8 +148,9 @@ class GroupsTest < ActionDispatch::IntegrationTest
       async: true
     }, auth(:active)
     assert_response 202
-    g = Group.find_by_name(name)
-    assert_not_nil g
+
+    # The group exists on the database, but it's not accesible yet.
+    assert_not_nil Group.find_by_name(name)
     get "/arvados/v1/groups", {
       filters: [["name", "=", name]].to_json,
       limit: 10
@@ -143,15 +158,16 @@ class GroupsTest < ActionDispatch::IntegrationTest
     assert_response 200
     assert_equal 0, json_response['items_available']
 
-    # Unblock the thread doing the permissions update
-    ActiveRecord::Base.clear_active_connections!
-
-    sleep(3)
+    # Wait a bit and try again
+    sleep(1)
     get "/arvados/v1/groups", {
       filters: [["name", "=", name]].to_json,
       limit: 10
     }, auth(:active)
     assert_response 200
     assert_equal 1, json_response['items_available']
+
+    # Clean up after ourselves
+    Group.find_by_uuid(json_response['items'][0]['uuid']).destroy
   end
 end
