@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Based on Debian Stretch
-FROM debian:stretch
+FROM debian:stretch-slim
 MAINTAINER Ward Vandewege <wvandewege@veritasgenetics.com>
 
 ENV DEBIAN_FRONTEND noninteractive
