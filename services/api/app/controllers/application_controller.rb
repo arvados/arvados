@@ -164,6 +164,10 @@ class ApplicationController < ActionController::Base
     send_error("Path not found", status: 404)
   end
 
+  def render_accepted
+    send_json ({accepted: true}), status: 202
+  end
+
   protected
 
   def send_error(*args)

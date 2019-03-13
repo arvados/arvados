@@ -261,29 +261,33 @@ test_package_presence() {
     # Get the list of packages from the repos
 
     if [[ "$FORMAT" == "deb" ]]; then
-      debian_distros="jessie precise stretch trusty wheezy xenial bionic"
+      declare -A dd
+      dd[debian8]=jessie
+      dd[debian9]=stretch
+      dd[debian10]=buster
+      dd[ubuntu1404]=trusty
+      dd[ubuntu1604]=xenial
+      dd[ubuntu1804]=bionic
+      D=${dd[$TARGET]}
+      if [ ${pkgname:0:3} = "lib" ]; then
+        repo_subdir=${pkgname:0:4}
+      else
+        repo_subdir=${pkgname:0:1}
+      fi
 
-      for D in ${debian_distros}; do
-        if [ ${pkgname:0:3} = "lib" ]; then
-          repo_subdir=${pkgname:0:4}
-        else
-          repo_subdir=${pkgname:0:1}
-        fi
-
-        repo_pkg_list=$(curl -s -o - http://apt.arvados.org/pool/${D}/main/${repo_subdir}/)
-        echo ${repo_pkg_list} |grep -q ${complete_pkgname}
-        if [ $? -eq 0 ] ; then
-          echo "Package $complete_pkgname exists, not rebuilding!"
-          curl -s -o ./${complete_pkgname} http://apt.arvados.org/pool/${D}/main/${repo_subdir}/${complete_pkgname}
-          return 1
-        elif test -f "$WORKSPACE/packages/$TARGET/processed/${complete_pkgname}" ; then
-          echo "Package $complete_pkgname exists, not rebuilding!"
-          return 1
-        else
-          echo "Package $complete_pkgname not found, building"
-          return 0
-        fi
-      done
+      repo_pkg_list=$(curl -s -o - http://apt.arvados.org/pool/${D}/main/${repo_subdir}/)
+      echo ${repo_pkg_list} |grep -q ${complete_pkgname}
+      if [ $? -eq 0 ] ; then
+        echo "Package $complete_pkgname exists, not rebuilding!"
+        curl -s -o ./${complete_pkgname} http://apt.arvados.org/pool/${D}/main/${repo_subdir}/${complete_pkgname}
+        return 1
+      elif test -f "$WORKSPACE/packages/$TARGET/processed/${complete_pkgname}" ; then
+        echo "Package $complete_pkgname exists, not rebuilding!"
+        return 1
+      else
+        echo "Package $complete_pkgname not found, building"
+        return 0
+      fi
     else
       centos_repo="http://rpm.arvados.org/CentOS/7/dev/x86_64/"
 
@@ -423,7 +427,8 @@ fpm_build_virtualenv () {
     echo "  $pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U setuptools"
     exit 1
   fi
-  if ! $python setup.py $DASHQ_UNLESS_DEBUG sdist; then
+  # filter a useless warning (when building the cwltest package) from the stderr output
+  if ! $python setup.py $DASHQ_UNLESS_DEBUG sdist 2> >(grep -v 'warning: no previously-included files matching'); then
     echo "Error, unable to run $python setup.py sdist for $PKG"
     exit 1
   fi
@@ -450,7 +455,7 @@ fpm_build_virtualenv () {
 
   rm -rf build
   rm -f $PYTHON_PKG*deb
-
+  echo "virtualenv version: `virtualenv --version`"
   virtualenv_command="virtualenv --python `which $python` $DASHQ_UNLESS_DEBUG build/usr/share/$python/dist/$PYTHON_PKG"
 
   if ! $virtualenv_command; then
@@ -464,16 +469,21 @@ fpm_build_virtualenv () {
     echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U pip"
     exit 1
   fi
+  echo "pip version:        `build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip --version`"
+
   if ! build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U setuptools; then
     echo "Error, unable to upgrade setuptools with"
     echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U setuptools"
     exit 1
   fi
+  echo "setuptools version: `build/usr/share/$python/dist/$PYTHON_PKG/bin/$python -c 'import setuptools; print(setuptools.__version__)'`"
+
   if ! build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U wheel; then
     echo "Error, unable to upgrade wheel with"
     echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U wheel"
     exit 1
   fi
+  echo "wheel version:      `build/usr/share/$python/dist/$PYTHON_PKG/bin/wheel version`"
 
   if [[ "$TARGET" != "centos7" ]] || [[ "$PYTHON_PKG" != "python-arvados-fuse" ]]; then
     build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PACKAGE_PATH

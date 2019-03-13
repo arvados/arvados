@@ -39,7 +39,7 @@ type Volume interface {
 	// Do whatever private setup tasks and configuration checks
 	// are needed. Return non-nil if the volume is unusable (e.g.,
 	// invalid config).
-	Start() error
+	Start(vm *volumeMetricsVecs) error
 
 	// Get a block: copy the block data into buf, and return the
 	// number of bytes copied.

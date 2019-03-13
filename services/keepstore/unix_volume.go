@@ -21,6 +21,8 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type unixVolumeAdder struct {
@@ -28,7 +30,7 @@ type unixVolumeAdder struct {
 }
 
 // String implements flag.Value
-func (s *unixVolumeAdder) String() string {
+func (vs *unixVolumeAdder) String() string {
 	return "-"
 }
 
@@ -218,7 +220,7 @@ func (v *UnixVolume) Type() string {
 }
 
 // Start implements Volume
-func (v *UnixVolume) Start() error {
+func (v *UnixVolume) Start(vm *volumeMetricsVecs) error {
 	if v.Serialize {
 		v.locker = &sync.Mutex{}
 	}
@@ -228,7 +230,12 @@ func (v *UnixVolume) Start() error {
 	if v.DirectoryReplication == 0 {
 		v.DirectoryReplication = 1
 	}
+	// Set up prometheus metrics
+	lbls := prometheus.Labels{"device_id": v.DeviceID()}
+	v.os.stats.opsCounters, v.os.stats.errCounters, v.os.stats.ioBytes = vm.getCounterVecsFor(lbls)
+
 	_, err := v.os.Stat(v.Root)
+
 	return err
 }
 
@@ -252,6 +259,7 @@ func (v *UnixVolume) Touch(loc string) error {
 	}
 	defer v.unlockfile(f)
 	ts := syscall.NsecToTimespec(time.Now().UnixNano())
+	v.os.stats.TickOps("utimes")
 	v.os.stats.Tick(&v.os.stats.UtimesOps)
 	err = syscall.UtimesNano(p, []syscall.Timespec{ts, ts})
 	v.os.stats.TickErr(err)
@@ -339,7 +347,7 @@ func (v *UnixVolume) Put(ctx context.Context, loc string, block []byte) error {
 	return putWithPipe(ctx, loc, block, v)
 }
 
-// ReadBlock implements BlockWriter.
+// WriteBlock implements BlockWriter.
 func (v *UnixVolume) WriteBlock(ctx context.Context, loc string, rdr io.Reader) error {
 	if v.ReadOnly {
 		return MethodDisabledError
@@ -439,6 +447,7 @@ func (v *UnixVolume) IndexTo(prefix string, w io.Writer) error {
 		return err
 	}
 	defer rootdir.Close()
+	v.os.stats.TickOps("readdir")
 	v.os.stats.Tick(&v.os.stats.ReaddirOps)
 	for {
 		names, err := rootdir.Readdirnames(1)
@@ -461,6 +470,7 @@ func (v *UnixVolume) IndexTo(prefix string, w io.Writer) error {
 			lastErr = err
 			continue
 		}
+		v.os.stats.TickOps("readdir")
 		v.os.stats.Tick(&v.os.stats.ReaddirOps)
 		for {
 			fileInfo, err := blockdir.Readdir(1)
@@ -549,6 +559,7 @@ func (v *UnixVolume) Untrash(loc string) (err error) {
 		return MethodDisabledError
 	}
 
+	v.os.stats.TickOps("readdir")
 	v.os.stats.Tick(&v.os.stats.ReaddirOps)
 	files, err := ioutil.ReadDir(v.blockDir(loc))
 	if err != nil {
@@ -695,6 +706,7 @@ func (v *UnixVolume) unlock() {
 
 // lockfile and unlockfile use flock(2) to manage kernel file locks.
 func (v *UnixVolume) lockfile(f *os.File) error {
+	v.os.stats.TickOps("flock")
 	v.os.stats.Tick(&v.os.stats.FlockOps)
 	err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX)
 	v.os.stats.TickErr(err)
@@ -813,6 +825,7 @@ type osWithStats struct {
 }
 
 func (o *osWithStats) Open(name string) (*os.File, error) {
+	o.stats.TickOps("open")
 	o.stats.Tick(&o.stats.OpenOps)
 	f, err := os.Open(name)
 	o.stats.TickErr(err)
@@ -820,6 +833,7 @@ func (o *osWithStats) Open(name string) (*os.File, error) {
 }
 
 func (o *osWithStats) OpenFile(name string, flag int, perm os.FileMode) (*os.File, error) {
+	o.stats.TickOps("open")
 	o.stats.Tick(&o.stats.OpenOps)
 	f, err := os.OpenFile(name, flag, perm)
 	o.stats.TickErr(err)
@@ -827,6 +841,7 @@ func (o *osWithStats) OpenFile(name string, flag int, perm os.FileMode) (*os.Fil
 }
 
 func (o *osWithStats) Remove(path string) error {
+	o.stats.TickOps("unlink")
 	o.stats.Tick(&o.stats.UnlinkOps)
 	err := os.Remove(path)
 	o.stats.TickErr(err)
@@ -834,6 +849,7 @@ func (o *osWithStats) Remove(path string) error {
 }
 
 func (o *osWithStats) Rename(a, b string) error {
+	o.stats.TickOps("rename")
 	o.stats.Tick(&o.stats.RenameOps)
 	err := os.Rename(a, b)
 	o.stats.TickErr(err)
@@ -841,6 +857,7 @@ func (o *osWithStats) Rename(a, b string) error {
 }
 
 func (o *osWithStats) Stat(path string) (os.FileInfo, error) {
+	o.stats.TickOps("stat")
 	o.stats.Tick(&o.stats.StatOps)
 	fi, err := os.Stat(path)
 	o.stats.TickErr(err)
@@ -848,6 +865,7 @@ func (o *osWithStats) Stat(path string) (os.FileInfo, error) {
 }
 
 func (o *osWithStats) TempFile(dir, base string) (*os.File, error) {
+	o.stats.TickOps("create")
 	o.stats.Tick(&o.stats.CreateOps)
 	f, err := ioutil.TempFile(dir, base)
 	o.stats.TickErr(err)

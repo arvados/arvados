@@ -28,6 +28,7 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 var testCluster = &arvados.Cluster{
@@ -845,7 +846,7 @@ func IssueRequest(rt *RequestTester) *httptest.ResponseRecorder {
 	if rt.apiToken != "" {
 		req.Header.Set("Authorization", "OAuth2 "+rt.apiToken)
 	}
-	loggingRouter := MakeRESTRouter(testCluster)
+	loggingRouter := MakeRESTRouter(testCluster, prometheus.NewRegistry())
 	loggingRouter.ServeHTTP(response, req)
 	return response
 }
@@ -857,7 +858,7 @@ func IssueHealthCheckRequest(rt *RequestTester) *httptest.ResponseRecorder {
 	if rt.apiToken != "" {
 		req.Header.Set("Authorization", "Bearer "+rt.apiToken)
 	}
-	loggingRouter := MakeRESTRouter(testCluster)
+	loggingRouter := MakeRESTRouter(testCluster, prometheus.NewRegistry())
 	loggingRouter.ServeHTTP(response, req)
 	return response
 }
@@ -997,7 +998,7 @@ func TestGetHandlerClientDisconnect(t *testing.T) {
 	ok := make(chan struct{})
 	go func() {
 		req, _ := http.NewRequest("GET", fmt.Sprintf("/%s+%d", TestHash, len(TestBlock)), nil)
-		MakeRESTRouter(testCluster).ServeHTTP(resp, req)
+		MakeRESTRouter(testCluster, prometheus.NewRegistry()).ServeHTTP(resp, req)
 		ok <- struct{}{}
 	}()
 

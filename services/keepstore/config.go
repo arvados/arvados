@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 )
 
@@ -81,7 +82,7 @@ func DefaultConfig() *Config {
 
 // Start should be called exactly once: after setting all public
 // fields, and before using the config.
-func (cfg *Config) Start() error {
+func (cfg *Config) Start(reg *prometheus.Registry) error {
 	if cfg.Debug {
 		log.Level = logrus.DebugLevel
 		cfg.debugLogf = log.Printf
@@ -143,8 +144,9 @@ func (cfg *Config) Start() error {
 			return fmt.Errorf("no volumes found")
 		}
 	}
+	vm := newVolumeMetricsVecs(reg)
 	for _, v := range cfg.Volumes {
-		if err := v.Start(); err != nil {
+		if err := v.Start(vm); err != nil {
 			return fmt.Errorf("volume %s: %s", v, err)
 		}
 		log.Printf("Using volume %v (writable=%v)", v, v.Writable())
@@ -165,7 +167,7 @@ func (vl *VolumeList) UnmarshalJSON(data []byte) error {
 	for _, factory := range VolumeTypes {
 		t := factory().Type()
 		if _, ok := typeMap[t]; ok {
-			log.Fatal("volume type %+q is claimed by multiple VolumeTypes")
+			log.Fatalf("volume type %+q is claimed by multiple VolumeTypes", t)
 		}
 		typeMap[t] = factory
 	}

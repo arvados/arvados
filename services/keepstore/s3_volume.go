@@ -25,6 +25,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"github.com/AdRoll/goamz/aws"
 	"github.com/AdRoll/goamz/s3"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 const (
@@ -198,7 +199,7 @@ func (*S3Volume) Type() string {
 
 // Start populates private fields and verifies the configuration is
 // valid.
-func (v *S3Volume) Start() error {
+func (v *S3Volume) Start(vm *volumeMetricsVecs) error {
 	region, ok := aws.Regions[v.Region]
 	if v.Endpoint == "" {
 		if !ok {
@@ -248,6 +249,10 @@ func (v *S3Volume) Start() error {
 			Name: v.Bucket,
 		},
 	}
+	// Set up prometheus metrics
+	lbls := prometheus.Labels{"device_id": v.DeviceID()}
+	v.bucket.stats.opsCounters, v.bucket.stats.errCounters, v.bucket.stats.ioBytes = vm.getCounterVecsFor(lbls)
+
 	return nil
 }
 
@@ -929,6 +934,7 @@ func (lister *s3Lister) Error() error {
 }
 
 func (lister *s3Lister) getPage() {
+	lister.Stats.TickOps("list")
 	lister.Stats.Tick(&lister.Stats.Ops, &lister.Stats.ListOps)
 	resp, err := lister.Bucket.List(lister.Prefix, "", lister.nextMarker, lister.PageSize)
 	lister.nextMarker = ""
@@ -965,6 +971,7 @@ type s3bucket struct {
 
 func (b *s3bucket) GetReader(path string) (io.ReadCloser, error) {
 	rdr, err := b.Bucket.GetReader(path)
+	b.stats.TickOps("get")
 	b.stats.Tick(&b.stats.Ops, &b.stats.GetOps)
 	b.stats.TickErr(err)
 	return NewCountingReader(rdr, b.stats.TickInBytes), err
@@ -972,6 +979,7 @@ func (b *s3bucket) GetReader(path string) (io.ReadCloser, error) {
 
 func (b *s3bucket) Head(path string, headers map[string][]string) (*http.Response, error) {
 	resp, err := b.Bucket.Head(path, headers)
+	b.stats.TickOps("head")
 	b.stats.Tick(&b.stats.Ops, &b.stats.HeadOps)
 	b.stats.TickErr(err)
 	return resp, err
@@ -990,6 +998,7 @@ func (b *s3bucket) PutReader(path string, r io.Reader, length int64, contType st
 		r = NewCountingReader(r, b.stats.TickOutBytes)
 	}
 	err := b.Bucket.PutReader(path, r, length, contType, perm, options)
+	b.stats.TickOps("put")
 	b.stats.Tick(&b.stats.Ops, &b.stats.PutOps)
 	b.stats.TickErr(err)
 	return err
@@ -997,6 +1006,7 @@ func (b *s3bucket) PutReader(path string, r io.Reader, length int64, contType st
 
 func (b *s3bucket) Del(path string) error {
 	err := b.Bucket.Del(path)
+	b.stats.TickOps("delete")
 	b.stats.Tick(&b.stats.Ops, &b.stats.DelOps)
 	b.stats.TickErr(err)
 	return err
