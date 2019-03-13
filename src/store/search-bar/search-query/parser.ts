@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+import { uniq } from 'lodash/fp';
+
 export interface ParsedSearchQuery {
     tokens: string[];
     searchString: string;
@@ -25,7 +27,12 @@ export const findAllTokens = (query: string, patterns: RegExp[]): string[] => {
 };
 
 export const findSearchString = (query: string, tokens: string[]) => {
-    return tokens.reduce((q, token) => q.replace(token, ''), query);
+    const uniqueWords = uniq(tokens
+        .reduce((q, token) => q.replace(token, ''), query)
+        .split(' ')
+        .filter(word => word !== '')
+    );
+    return uniqueWords.join(' ');
 };
 
 export const parseSearchQuery = (patterns: RegExp[]) => (query: string): ParsedSearchQuery => {
