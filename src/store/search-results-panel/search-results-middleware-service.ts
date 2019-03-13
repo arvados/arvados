@@ -16,11 +16,9 @@ import { GroupContentsResource, GroupContentsResourcePrefix } from "~/services/g
 import { ListResults } from '~/services/common-service/common-service';
 import { searchResultsPanelActions } from '~/store/search-results-panel/search-results-panel-actions';
 import {
-    getSearchQueryFirstProp,
-    getSearchSessions, ParseSearchQuery,
-    parseSearchQuery,
-    searchQueryToFilters,
-    getSearchQueryPropValue
+    getSearchSessions,
+    queryToFilters,
+    getAdvancedDataFromQuery
 } from '~/store/search-bar/search-bar-actions';
 import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
 import { joinFilters } from '~/services/api/filter-builder';
@@ -39,8 +37,7 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
         const state = api.getState();
         const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
         const searchValue = state.searchBar.searchValue;
-        const sq = parseSearchQuery(searchValue);
-        const clusterId = getSearchQueryFirstProp(sq, 'cluster');
+        const { cluster: clusterId } = getAdvancedDataFromQuery(searchValue);
         const sessions = getSearchSessions(clusterId, state.auth.sessions);
 
         if (searchValue.trim() === '') {
@@ -48,7 +45,7 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
         }
 
         try {
-            const params = getParams(dataExplorer, sq);
+            const params = getParams(dataExplorer, searchValue);
 
             const responses = await Promise.all(sessions.map(session =>
                 this.services.groupsService.contents('', params, session)
@@ -82,14 +79,14 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
 
 const typeFilters = (columns: DataColumns<string>) => serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.TYPE));
 
-export const getParams = (dataExplorer: DataExplorer, sq: ParseSearchQuery) => ({
+export const getParams = (dataExplorer: DataExplorer, query: string) => ({
     ...dataExplorerToListParams(dataExplorer),
     filters: joinFilters(
-        searchQueryToFilters(sq),
+        queryToFilters(query),
         typeFilters(dataExplorer.columns)
     ),
     order: getOrder(dataExplorer),
-    includeTrash: (!!getSearchQueryPropValue(sq, 'is', 'trashed')) || false
+    includeTrash: getAdvancedDataFromQuery(query).inTrash
 });
 
 const getOrder = (dataExplorer: DataExplorer) => {
