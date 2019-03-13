@@ -495,11 +495,12 @@ module ApplicationHelper
       chooser_title = "Choose a #{primary_type == 'Directory' ? 'dataset' : 'file'}:"
       selection_param = object.class.to_s.underscore + dn
       if attrvalue.is_a? Hash
-        display_value = attrvalue[:"arv:collection"] || attrvalue[:location]
+        display_value = attrvalue[:"http://arvados.org/cwl#collectionUUID"] || attrvalue[:"arv:collection"] || attrvalue[:location]
         re = CollectionsHelper.match_uuid_with_optional_filepath(display_value)
+        locationre = CollectionsHelper.match(attrvalue[:location])
         if re
-          if re[4]
-            display_value = "#{Collection.find(re[1]).name} / #{re[4][1..-1]}"
+          if locationre[4]
+            display_value = "#{Collection.find(re[1]).name} / #{locationre[4][1..-1]}"
           else
             display_value = Collection.find(re[1]).name
           end

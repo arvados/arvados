@@ -120,7 +120,7 @@ class ContainerRequestsController < ApplicationController
             c = Collection.find(re[1])
             input_obj[param_id] = {"class" => primary_type,
                                    "location" => "keep:#{c.portable_data_hash}#{re[4]}",
-                                   "arv:collection" => input_obj[param_id]}
+                                   "http://arvados.org/cwl#collectionUUID" => re[1]}
           end
         end
       end
