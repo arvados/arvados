@@ -33,6 +33,57 @@ class Arvados::V1::GroupsController < ApplicationController
     params
   end
 
+  def self._create_requires_parameters
+    super.merge(
+      {
+        async: {
+          required: false,
+          type: 'boolean',
+          location: 'query',
+          default: false,
+          description: 'defer permissions update'
+        }
+      }
+    )
+  end
+
+  def self._update_requires_parameters
+    super.merge(
+      {
+        async: {
+          required: false,
+          type: 'boolean',
+          location: 'query',
+          default: false,
+          description: 'defer permissions update'
+        }
+      }
+    )
+  end
+
+  def create
+    if params[:async]
+      @object = model_class.new(resource_attrs.merge({async_permissions_update: true}))
+      @object.save!
+      render_accepted
+    else
+      super
+    end
+  end
+
+  def update
+    if params[:async]
+      attrs_to_update = resource_attrs.reject { |k, v|
+        [:kind, :etag, :href].index k
+      }.merge({async_permissions_update: true})
+      @object.update_attributes!(attrs_to_update)
+      @object.save!
+      render_accepted
+    else
+      super
+    end
+  end
+
   def render_404_if_no_object
     if params[:action] == 'contents'
       if !params[:uuid]

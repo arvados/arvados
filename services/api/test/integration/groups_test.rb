@@ -122,4 +122,36 @@ class GroupsTest < ActionDispatch::IntegrationTest
     assert_includes coll_uuids, collections(:foo_collection_in_aproject).uuid
     assert_not_includes coll_uuids, collections(:expired_collection).uuid
   end
+
+  test "create request with async=true defers permissions update" do
+    Rails.configuration.async_permissions_update_interval = 1 # seconds
+    name = "Random group #{rand(1000)}"
+    assert_equal nil, Group.find_by_name(name)
+    post "/arvados/v1/groups", {
+      group: {
+        name: name
+      },
+      async: true
+    }, auth(:active)
+    assert_response 202
+    g = Group.find_by_name(name)
+    assert_not_nil g
+    get "/arvados/v1/groups", {
+      filters: [["name", "=", name]].to_json,
+      limit: 10
+    }, auth(:active)
+    assert_response 200
+    assert_equal 0, json_response['items_available']
+
+    # Unblock the thread doing the permissions update
+    ActiveRecord::Base.clear_active_connections!
+
+    sleep(3)
+    get "/arvados/v1/groups", {
+      filters: [["name", "=", name]].to_json,
+      limit: 10
+    }, auth(:active)
+    assert_response 200
+    assert_equal 1, json_response['items_available']
+  end
 end
