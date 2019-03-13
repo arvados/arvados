@@ -3,8 +3,10 @@
 #
 # SPDX-License-Identifier: CC-BY-SA-3.0
 
-# Example input file using UUIDs to reference input collections. These
-# will be resolved to content addresses before running the workflow.
+# Example input file providing both content addresses and UUIDs.  The
+# collections identified by 'collectionUUID' will be checked that the
+# current content of the collection record matches the content address
+# in the 'location' field.
 
 $namespaces:
   arv: 'http://arvados.org/cwl#'
