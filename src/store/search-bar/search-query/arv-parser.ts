@@ -19,6 +19,10 @@ export enum Keywords {
     TO = 'to',
 }
 
+export enum States {
+    TRASHED = 'trashed'
+}
+
 const keyValuePattern = (key: string) => new RegExp(`${key}:([^ ]*)`);
 const propertyPattern = /has:"(.*?)":"(.*?)"/;
 
@@ -54,3 +58,17 @@ export const getProperties = (tokens: string[]) =>
         }
         return properties;
     }, [] as Property[]);
+
+
+export const isTrashed = (tokens: string[]) => {
+    for (const token of tokens) {
+        const match = token.match(keyValuePattern(Keywords.IS)) || ['', ''];
+        if (match) {
+            const [, value] = match;
+            if(value === States.TRASHED) {
+                return true;
+            }
+        }
+    }
+    return false;
+};
