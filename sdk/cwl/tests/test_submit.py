@@ -1430,8 +1430,10 @@ class TestSubmit(unittest.TestCase):
             stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
         self.assertEqual(exited, 1)
 
+    @mock.patch("arvados.collection.CollectionReader")
     @stubs
-    def test_submit_uuid_inputs(self, stubs):
+    def test_submit_uuid_inputs(self, stubs, collectionReader):
+        collectionReader().find.return_value = arvados.arvfile.ArvadosFile(mock.MagicMock(), "file1.txt")
         def list_side_effect(**kwargs):
             m = mock.MagicMock()
             if "count" in kwargs:
@@ -1452,7 +1454,6 @@ class TestSubmit(unittest.TestCase):
         expect_container['mounts']['/var/lib/cwl/cwl.input.json']['content']['y']['basename'] = 'zzzzz-4zz18-zzzzzzzzzzzzzzz'
         expect_container['mounts']['/var/lib/cwl/cwl.input.json']['content']['y']['http://arvados.org/cwl#collectionUUID'] = 'zzzzz-4zz18-zzzzzzzzzzzzzzz'
         expect_container['mounts']['/var/lib/cwl/cwl.input.json']['content']['z']['listing'][0]['http://arvados.org/cwl#collectionUUID'] = 'zzzzz-4zz18-zzzzzzzzzzzzzzz'
-        del expect_container['mounts']['/var/lib/cwl/cwl.input.json']['content']['z']['listing'][0]['size']
 
         stubs.api.collections().list.assert_has_calls([
             mock.call(count='none',
@@ -1496,8 +1497,11 @@ class TestSubmit(unittest.TestCase):
             finally:
                 cwltool_logger.removeHandler(stderr_logger)
 
+    @mock.patch("arvados.collection.CollectionReader")
     @stubs
-    def test_submit_unknown_uuid_inputs(self, stubs):
+    def test_submit_unknown_uuid_inputs(self, stubs, collectionReader):
+        collectionReader().find.return_value = arvados.arvfile.ArvadosFile(mock.MagicMock(), "file1.txt")
+
         capture_stderr = io.StringIO()
         cwltool_logger = logging.getLogger('cwltool')
         stderr_logger = logging.StreamHandler(capture_stderr)

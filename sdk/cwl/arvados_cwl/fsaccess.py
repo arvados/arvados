@@ -265,8 +265,8 @@ class CollectionFetcher(DefaultFetcher):
             locator = baseparts.pop(0)
 
             if (basesp.scheme == "keep" and
-                (not arvados.util.keep_locator_pattern.match(pdh)) and
-                (not arvados.util.collection_uuid_pattern.match(pdh))):
+                (not arvados.util.keep_locator_pattern.match(locator)) and
+                (not arvados.util.collection_uuid_pattern.match(locator))):
                 raise IOError(errno.EINVAL, "Invalid Keep locator", base_url)
 
             if urlsp.path.startswith("/"):
