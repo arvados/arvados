@@ -327,6 +327,10 @@ export const queryToFilters = (query: string) => {
     const filter = new FilterBuilder();
     const resourceKind = data.type;
 
+    if(data.searchValue){
+        filter.addFullTextSearch(data.searchValue);
+    }
+
     if (data.projectUuid) {
         filter.addEqual('ownerUuid', data.projectUuid);
     }
@@ -350,7 +354,6 @@ export const queryToFilters = (query: string) => {
 
     return filter
         .addIsA("uuid", buildUuidFilter(resourceKind))
-        .addFullTextSearch(data.searchValue)
         .getFilters();
 };
 
