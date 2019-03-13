@@ -121,6 +121,7 @@ sdk/cwl
 sdk/R
 tools/sync-groups
 tools/crunchstat-summary
+tools/crunchstat-summary:py3
 tools/keep-exercise
 tools/keep-rsync
 tools/keep-block-check
@@ -601,6 +602,7 @@ pythonstuff=(
     services/fuse
     services/nodemanager
     tools/crunchstat-summary
+    tools/crunchstat-summary:py3
     )
 
 # If Python 3 is available, set up its virtualenv in $VENV3DIR.
