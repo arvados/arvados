@@ -290,7 +290,7 @@ class Summarizer(object):
                  self.stats_max['cpu']['user+sys__rate'],
                  lambda x: x * 100),
                 ('Overall CPU usage: {}%',
-                 self.job_tot['cpu']['user+sys'] /
+                 float(self.job_tot['cpu']['user+sys']) /
                  self.job_tot['time']['elapsed']
                  if self.job_tot['time']['elapsed'] > 0 else 0,
                  lambda x: x * 100),
@@ -344,7 +344,7 @@ class Summarizer(object):
                 'try runtime_constraints "{}":{}'
             ).format(
                 self.label,
-                int(math.ceil(cpu_max_rate*100)),
+                math.ceil(cpu_max_rate*100),
                 constraint_key,
                 int(used_cores))
 
