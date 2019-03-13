@@ -497,9 +497,9 @@ module ApplicationHelper
       if attrvalue.is_a? Hash
         display_value = attrvalue[:"http://arvados.org/cwl#collectionUUID"] || attrvalue[:"arv:collection"] || attrvalue[:location]
         re = CollectionsHelper.match_uuid_with_optional_filepath(display_value)
-        locationre = CollectionsHelper.match(attrvalue[:location])
+        locationre = CollectionsHelper.match(attrvalue[:location][5..-1])
         if re
-          if locationre[4]
+          if locationre and locationre[4]
             display_value = "#{Collection.find(re[1]).name} / #{locationre[4][1..-1]}"
           else
             display_value = Collection.find(re[1]).name

@@ -70,9 +70,12 @@ class CollectionCache(object):
                 if m:
                     self.cap_cache(int(m.group(2)) * 128)
                 logger.debug("Creating collection reader for %s", locator)
-                cr = arvados.collection.CollectionReader(locator, api_client=self.api_client,
-                                                         keep_client=self.keep_client,
-                                                         num_retries=self.num_retries)
+                try:
+                    cr = arvados.collection.CollectionReader(locator, api_client=self.api_client,
+                                                             keep_client=self.keep_client,
+                                                             num_retries=self.num_retries)
+                except arvados.errors.ApiError as ap:
+                    raise IOError(errno.ENOENT, "Could not access collection '%s': %s" % (locator, str(ap._get_reason())))
                 sz = len(cr.manifest_text()) * 128
                 self.collections[locator] = (cr, sz)
                 self.total += sz
