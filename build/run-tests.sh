@@ -119,6 +119,7 @@ sdk/go/stats
 sdk/go/crunchrunner
 sdk/cwl
 sdk/R
+sdk/java-v2
 tools/sync-groups
 tools/crunchstat-summary
 tools/keep-exercise
@@ -1033,6 +1034,11 @@ test_cli() {
         && KEEP_LOCAL_STORE=/tmp/keep bundle exec rake test TESTOPTS=-v ${testargs[sdk/cli]}
 }
 do_test sdk/cli cli
+
+test_java_v2_sdk() {
+    cd "$WORKSPACE/sdk/java-v2" && ./gradlew test
+}
+do_test sdk/java-v2 java_v2_sdk
 
 test_login-sync() {
     cd "$WORKSPACE/services/login-sync" \
