@@ -826,14 +826,13 @@ install_package() {
   fi
 }
 
-title () {
-    txt="********** $1 **********"
-    printf "\n%*s%s\n\n" $((($COLUMNS-${#txt})/2)) "" "$txt"
+title() {
+    printf '%s %s\n' "=======" "$1"
 }
 
 checkexit() {
     if [[ "$1" != "0" ]]; then
-        title "!!!!!! $2 FAILED !!!!!!"
+        title "$2 -- FAILED"
         failures+=("$2 (`timer`)")
     else
         successes+=("$2 (`timer`)")
