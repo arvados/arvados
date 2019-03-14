@@ -130,10 +130,13 @@ class NonTransactionalGroupsTest < ActionDispatch::IntegrationTest
   # This is needed because nested transactions share the connection pool, so
   # one thread is locked while trying to talk to the database, until the other
   # one finishes.
-  #
-  # WARNING: Any test within this class should clean up the changes made in the
-  # database to avoid state leaks to other tests!
   self.use_transactional_fixtures = false
+
+  teardown do
+    # Explicitly reset the database after each test.
+    post '/database/reset', {}, auth(:admin)
+    assert_response :success
+  end
 
   test "create request with async=true defers permissions update" do
     Rails.configuration.async_permissions_update_interval = 1 # second
@@ -149,7 +152,7 @@ class NonTransactionalGroupsTest < ActionDispatch::IntegrationTest
     }, auth(:active)
     assert_response 202
 
-    # The group exists on the database, but it's not accesible yet.
+    # The group exists on the database, but it's not accessible yet.
     assert_not_nil Group.find_by_name(name)
     get "/arvados/v1/groups", {
       filters: [["name", "=", name]].to_json,
@@ -158,7 +161,7 @@ class NonTransactionalGroupsTest < ActionDispatch::IntegrationTest
     assert_response 200
     assert_equal 0, json_response['items_available']
 
-    # Wait a bit and try again
+    # Wait a bit and try again.
     sleep(1)
     get "/arvados/v1/groups", {
       filters: [["name", "=", name]].to_json,
@@ -166,8 +169,5 @@ class NonTransactionalGroupsTest < ActionDispatch::IntegrationTest
     }, auth(:active)
     assert_response 200
     assert_equal 1, json_response['items_available']
-
-    # Clean up after ourselves
-    Group.find_by_uuid(json_response['items'][0]['uuid']).destroy
   end
 end
