@@ -21,7 +21,8 @@ TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
 class ReportDiff(unittest.TestCase):
     def diff_known_report(self, logfile, cmd):
         expectfile = logfile+'.report'
-        expect = open(expectfile, encoding='utf-8').readlines()
+        with open(expectfile, encoding='utf-8') as f:
+            expect = f.readlines()
         self.diff_report(cmd, expect, expectfile=expectfile)
 
     def diff_report(self, cmd, expect, expectfile='(expected)'):
@@ -183,9 +184,8 @@ class SummarizePipeline(ReportDiff):
         cmd = crunchstat_summary.command.Command(args)
         cmd.run()
 
-        job_report = [
-            line for line in open(logfile+'.report', encoding='utf-8').readlines()
-            if not line.startswith('#!! ')]
+        with open(logfile+'.report', encoding='utf-8') as f:
+            job_report = [line for line in f if not line.startswith('#!! ')]
         expect = (
             ['### Summary for foo (zzzzz-8i9sb-000000000000000)\n'] +
             job_report + ['\n'] +
@@ -259,9 +259,8 @@ class SummarizeACRJob(ReportDiff):
         cmd = crunchstat_summary.command.Command(args)
         cmd.run()
 
-        job_report = [
-            line for line in open(logfile+'.report', encoding='utf-8').readlines()
-            if not line.startswith('#!! ')]
+        with open(logfile+'.report', encoding='utf-8') as f:
+            job_report = [line for line in f if not line.startswith('#!! ')]
         expect = (
             ['### Summary for zzzzz-8i9sb-i3e77t9z5y8j9cc (partial) (zzzzz-8i9sb-i3e77t9z5y8j9cc)\n',
              '(no report generated)\n',
