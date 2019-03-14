@@ -178,7 +178,6 @@ export const changeData = (searchValue: string) =>
         } else if (searchValuePresent) {
             dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.AUTOCOMPLETE));
             dispatch(searchBarActions.SET_SELECTED_ITEM(searchValue));
-            debounceStartSearch(dispatch);
         } else {
             dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.BASIC));
             dispatch(searchBarActions.SET_SEARCH_RESULTS([]));
@@ -199,7 +198,6 @@ export const submitData = (event: React.FormEvent<HTMLFormElement>) =>
         dispatch(navigateToSearchResults);
     };
 
-const debounceStartSearch = debounce((dispatch: Dispatch) => dispatch<any>(startSearch()), DEFAULT_SEARCH_DEBOUNCE);
 
 const startSearch = () =>
     (dispatch: Dispatch, getState: () => RootState) => {

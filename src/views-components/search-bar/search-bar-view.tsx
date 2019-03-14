@@ -32,6 +32,7 @@ import {
     SearchBarAdvancedViewActionProps
 } from '~/views-components/search-bar/search-bar-advanced-view';
 import { KEY_CODE_DOWN, KEY_CODE_ESC, KEY_CODE_UP, KEY_ENTER } from "~/common/codes";
+import { debounce } from 'debounce';
 
 type CssRules = 'container' | 'containerSearchViewOpened' | 'input' | 'view';
 
@@ -145,52 +146,73 @@ const handleDropdownClick = (e: React.MouseEvent, props: SearchBarViewProps) => 
 };
 
 export const SearchBarView = withStyles(styles)(
-    (props: SearchBarViewProps) => {
-        const { classes, isPopoverOpen } = props;
-        return (
-            <>
+    class extends React.Component<SearchBarViewProps> {
 
-                {isPopoverOpen &&
-                    <Backdrop onClick={props.closeView} />}
+        debouncedSearch = debounce(() => {
+            this.props.onSearch(this.props.searchValue);
+        }, 1000);
 
-                <Paper className={isPopoverOpen ? classes.containerSearchViewOpened : classes.container} >
-                    <form onSubmit={props.onSubmit}>
-                        <Input
-                            className={classes.input}
-                            onChange={props.onChange}
-                            placeholder="Search"
-                            value={props.searchValue}
-                            fullWidth={true}
-                            disableUnderline={true}
-                            onClick={e => handleInputClick(e, props)}
-                            onKeyDown={e => handleKeyDown(e, props)}
-                            startAdornment={
-                                <InputAdornment position="start">
-                                    <Tooltip title='Search'>
-                                        <IconButton type="submit">
-                                            <SearchIcon />
-                                        </IconButton>
-                                    </Tooltip>
-                                </InputAdornment>
-                            }
-                            endAdornment={
-                                <InputAdornment position="end">
-                                    <Tooltip title='Advanced search'>
-                                        <IconButton onClick={e => handleDropdownClick(e, props)}>
-                                            <ArrowDropDownIcon />
-                                        </IconButton>
-                                    </Tooltip>
-                                </InputAdornment>
-                            } />
-                    </form>
-                    <div className={classes.view}>
-                        {isPopoverOpen && getView({ ...props })}
-                    </div>
-                </Paper >
-            </>
-        );
-    }
-);
+        handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+            this.debouncedSearch();
+            this.props.onChange(event);
+        }
+
+        handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+            this.debouncedSearch.clear();
+            this.props.onSubmit(event);
+        }
+
+        componentWillUnmount() {
+            this.debouncedSearch.clear();
+        }
+
+        render() {
+            const { children, ...props } = this.props;
+            const { classes, isPopoverOpen } = this.props;
+            return (
+                <>
+
+                    {isPopoverOpen &&
+                        <Backdrop onClick={props.closeView} />}
+
+                    <Paper className={isPopoverOpen ? classes.containerSearchViewOpened : classes.container} >
+                        <form onSubmit={this.handleSubmit}>
+                            <Input
+                                className={classes.input}
+                                onChange={this.handleChange}
+                                placeholder="Search"
+                                value={props.searchValue}
+                                fullWidth={true}
+                                disableUnderline={true}
+                                onClick={e => handleInputClick(e, props)}
+                                onKeyDown={e => handleKeyDown(e, props)}
+                                startAdornment={
+                                    <InputAdornment position="start">
+                                        <Tooltip title='Search'>
+                                            <IconButton type="submit">
+                                                <SearchIcon />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </InputAdornment>
+                                }
+                                endAdornment={
+                                    <InputAdornment position="end">
+                                        <Tooltip title='Advanced search'>
+                                            <IconButton onClick={e => handleDropdownClick(e, props)}>
+                                                <ArrowDropDownIcon />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </InputAdornment>
+                                } />
+                        </form>
+                        <div className={classes.view}>
+                            {isPopoverOpen && getView({ ...props })}
+                        </div>
+                    </Paper >
+                </>
+            );
+        }
+    });
 
 const getView = (props: SearchBarViewProps) => {
     switch (props.currentView) {
