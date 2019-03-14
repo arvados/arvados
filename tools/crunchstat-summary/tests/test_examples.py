@@ -11,6 +11,7 @@ import gzip
 from io import open
 import mock
 import os
+import sys
 import unittest
 
 from crunchstat_summary.command import UTF8Decode
@@ -53,7 +54,11 @@ class HTMLFromFile(ReportDiff):
                 ['--format=html', '--log-file', logfile])
             cmd = crunchstat_summary.command.Command(args)
             cmd.run()
-            self.assertRegexpMatches(cmd.report(), r'(?is)<html>.*</html>\s*$')
+            if sys.version_info >= (3,2):
+                self.assertRegex(cmd.report(), r'(?is)<html>.*</html>\s*$')
+            else:
+                self.assertRegexpMatches(cmd.report(), r'(?is)<html>.*</html>\s*$')
+
 
 class SummarizeEdgeCases(unittest.TestCase):
     def test_error_messages(self):
