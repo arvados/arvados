@@ -4,12 +4,12 @@
 
 source 'https://rubygems.org'
 
-gem 'rails', '~> 4.2'
-gem 'responders', '~> 2.0'
+gem 'rails', '~> 4.2', '>= 4.2.11.1'
+gem 'responders', '~> 2.4', '>= 2.4.0'
 gem 'protected_attributes'
 
 group :test, :development do
-  gem 'factory_bot_rails'
+  gem 'factory_bot_rails', '>= 4.11.1'
   gem 'database_cleaner'
   gem 'ruby-prof'
   # Note: "require: false" here tells bunder not to automatically
@@ -37,12 +37,12 @@ gem 'multi_json'
 gem 'oj'
 
 # for building assets
-gem 'sass-rails',   '~> 4.0'
-gem 'coffee-rails', '~> 4.0'
+gem 'sass-rails', '~> 4.0', '>= 4.0.5'
+gem 'coffee-rails', '~> 4.2', '>= 4.2.2'
 gem 'therubyracer'
 gem 'uglifier', '~> 2.0'
 
-gem 'jquery-rails'
+gem 'jquery-rails', '>= 4.3.3'
 
 gem 'rvm-capistrano', :group => :test
 
@@ -68,7 +68,7 @@ gem 'httpclient'
 
 gem 'sshkey'
 gem 'safe_yaml'
-gem 'lograge'
+gem 'lograge', '>= 0.10.0'
 gem 'logstash-event'
 
 gem 'rails-observers'
