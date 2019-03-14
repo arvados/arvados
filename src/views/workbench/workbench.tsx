@@ -144,7 +144,7 @@ export const WorkbenchPanel =
                         <SidePanel />
                     </Grid>
                     <Grid container item xs component="main" direction="column" className={classes.contentWrapper}>
-                        <Grid item>
+                        <Grid item xs>
                             <MainContentBar />
                         </Grid>
                         <Grid item xs className={classes.content}>
