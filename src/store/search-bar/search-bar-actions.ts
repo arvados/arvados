@@ -235,7 +235,7 @@ const buildQueryFromKeyMap = (data: any, keyMap: string[][], mode: 'rebuild' | '
         if (data.hasOwnProperty(key)) {
             const pattern = v === false
                 ? `${field.replace(':', '\\:\\s*')}\\s*`
-                : `${field.replace(':', '\\:\\s*')}\\:\\s*[\\w|\\#|\\-|\\/]*\\s*`;
+                : `${field.replace(':', '\\:\\s*')}\\:\\s*"[\\w|\\#|\\-|\\/]*"\\s*`;
             value = value.replace(new RegExp(pattern), '');
         }
 
@@ -286,6 +286,8 @@ export const getQueryFromAdvancedData = (data: SearchBarAdvanceFormData, prevDat
         .forEach(p => keyMap.push([`has:"${p.key}"`, `prop-"${p.key}"`]));
 
     if (prevData) {
+        const fd = flatData(data);
+        const pfd = flatData(prevData);
         const obj = getModifiedKeysValues(flatData(data), flatData(prevData));
         value = buildQueryFromKeyMap({
             searchValue: data.searchValue,
