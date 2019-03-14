@@ -1,0 +1,15 @@
+Unless indicated otherwise in the header of the file, the files in this
+repository are dual-licensed AGPL-3.0 and Apache-2.0
+
+Individual files contain an SPDX tag that indicates the license for the file.
+dual-licensed files use the following tag:
+
+    SPDX-License-Identifier: AGPL-3.0 OR Apache-2.0
+
+This enables machine processing of license information based on the SPDX
+License Identifiers that are available here: http://spdx.org/licenses/
+
+The full license text for each license is available in this directory:
+
+  AGPL-3.0:     agpl-3.0.txt
+  Apache-2.0:   apache-2.0.txt

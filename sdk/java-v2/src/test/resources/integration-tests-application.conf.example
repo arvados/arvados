@@ -1,0 +1,16 @@
+# example configuration for integration tests
+
+arvados {
+    api {
+        keepweb-host = collections.ardev.mycompany.com
+        keepweb-port = 443
+        host = api.ardev.mycompany.com
+        port = 443
+        token = mytoken
+        protocol = https
+        host-insecure = false
+    }
+    integration-tests {
+        project-uuid = ardev-j7d0g-aa123f81q6y7skk
+    }
+}
