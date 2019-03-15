@@ -15,7 +15,8 @@ import {
     CardActions,
     Typography,
     CardContent,
-    Tooltip
+    Tooltip,
+    IconButton
 } from "@material-ui/core";
 import * as classnames from "classnames";
 import { DefaultTransformOrigin } from "~/components/popover/helpers";
@@ -23,7 +24,7 @@ import { createTree } from '~/models/tree';
 import { DataTableFilters, DataTableFiltersTree } from "./data-table-filters-tree";
 import { getNodeDescendants } from '~/models/tree';
 
-export type CssRules = "root" | "icon" | "active" | "checkbox";
+export type CssRules = "root" | "icon" | "iconButton" | "active" | "checkbox";
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     root: {
@@ -41,16 +42,17 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
     active: {
         color: theme.palette.text.primary,
-        '& $icon': {
+        '& $iconButton': {
             opacity: 1,
         },
     },
     icon: {
-        marginRight: 4,
-        marginLeft: 4,
-        opacity: 0.7,
         userSelect: "none",
-        width: 16
+        fontSize: 'small'
+    },
+    iconButton: {
+        color: theme.palette.text.primary,
+        opacity: 0.7,
     },
     checkbox: {
         width: 24,
@@ -105,9 +107,11 @@ export const DataTableFiltersPopover = withStyles(styles)(
                         onClick={this.open}
                         disableRipple>
                         {children}
-                        <i className={classnames(["fas fa-filter", classes.icon])}
-                            data-fa-transform="shrink-3"
-                            ref={this.icon} />
+                        <IconButton component='span' classes={{root: classes.iconButton}}>
+                            <i className={classnames(["fas fa-filter", classes.icon])}
+                                data-fa-transform="shrink-3"
+                                ref={this.icon} />
+                        </IconButton>
                     </ButtonBase>
                 </Tooltip>
                 <Popover
