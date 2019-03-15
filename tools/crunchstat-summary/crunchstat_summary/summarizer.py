@@ -409,7 +409,8 @@ class Summarizer(object):
             return
         utilization = (float(self.job_tot['blkio:0:0']['read']) /
                        float(self.job_tot['net:keep0']['rx']))
-        asked_cache = self.existing_constraints.get(constraint_key, 256)
+        # FIXME: the default on this get won't work correctly
+        asked_cache = self.existing_constraints.get(constraint_key, 256) * self._runtime_constraint_mem_unit()
 
         if utilization < 0.8:
             yield (
@@ -419,7 +420,7 @@ class Summarizer(object):
                 self.label,
                 utilization * 100.0,
                 constraint_key,
-                asked_cache*2*(MB)/self._runtime_constraint_mem_unit())
+                math.ceil(asked_cache * 2 / self._runtime_constraint_mem_unit()))
 
 
     def _format(self, val):
