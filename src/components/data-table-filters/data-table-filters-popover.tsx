@@ -58,10 +58,21 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     }
 });
 
+enum SelectionMode {
+    ALL = 'all',
+    NONE = 'none'
+}
+
 export interface DataTableFilterProps {
     name: string;
     filters: DataTableFilters;
     onChange?: (filters: DataTableFilters) => void;
+
+    /**
+     * By default `all` filters selection means that label should be grayed out.
+     * Use `none` when label is supposed to be grayed out when no filter is selected.
+     */
+    defaultSelection?: SelectionMode;
 }
 
 interface DataTableFilterState {
@@ -80,8 +91,12 @@ export const DataTableFiltersPopover = withStyles(styles)(
         icon = React.createRef<HTMLElement>();
 
         render() {
-            const { name, classes, children } = this.props;
-            const isActive = getNodeDescendants('')(this.state.filters).some(f => f.selected);
+            const { name, classes, defaultSelection = SelectionMode.ALL, children } = this.props;
+            const isActive = getNodeDescendants('')(this.state.filters)
+                .some(f => defaultSelection === SelectionMode.ALL
+                    ? !f.selected
+                    : f.selected
+                );
             return <>
                 <Tooltip title='Filters'>
                     <ButtonBase
