@@ -22,7 +22,7 @@ from crunchstat_summary import logger
 # number of GiB. (Actual nodes tend to be sold in sizes like 8 GiB
 # that have amounts like 7.5 GiB according to the kernel.)
 AVAILABLE_RAM_RATIO = 0.95
-
+MB=2**20
 
 # Workaround datetime.datetime.strptime() thread-safety bug by calling
 # it once before starting threads.  https://bugs.python.org/issue7980
@@ -387,7 +387,7 @@ class Summarizer(object):
         if used_bytes == float('-Inf'):
             logger.warning('%s: no memory usage data', self.label)
             return
-        used_mib = math.ceil(float(used_bytes) / 1048576)
+        used_mib = math.ceil(float(used_bytes) / MB)
         asked_mib = self.existing_constraints.get(constraint_key)
 
         nearlygibs = lambda mebibytes: mebibytes/AVAILABLE_RAM_RATIO/1024
@@ -400,7 +400,7 @@ class Summarizer(object):
                 self.label,
                 int(used_mib),
                 constraint_key,
-                int(math.ceil(nearlygibs(used_mib))*AVAILABLE_RAM_RATIO*1024*(2**20)/self._runtime_constraint_mem_unit()))
+                int(math.ceil(nearlygibs(used_mib))*AVAILABLE_RAM_RATIO*1024*(MB)/self._runtime_constraint_mem_unit()))
 
     def _recommend_keep_cache(self):
         """Recommend increasing keep cache if utilization < 80%"""
@@ -409,7 +409,7 @@ class Summarizer(object):
             return
         utilization = (float(self.job_tot['blkio:0:0']['read']) /
                        float(self.job_tot['net:keep0']['rx']))
-        asked_mib = self.existing_constraints.get(constraint_key, 256)
+        asked_cache = self.existing_constraints.get(constraint_key, 256)
 
         if utilization < 0.8:
             yield (
@@ -419,7 +419,7 @@ class Summarizer(object):
                 self.label,
                 utilization * 100.0,
                 constraint_key,
-                asked_mib*2*(2**20)/self._runtime_constraint_mem_unit())
+                asked_cache*2*(MB)/self._runtime_constraint_mem_unit())
 
 
     def _format(self, val):
@@ -511,7 +511,7 @@ class ProcessSummarizer(Summarizer):
 
 
 class JobSummarizer(ProcessSummarizer):
-    runtime_constraint_mem_unit = 1048576
+    runtime_constraint_mem_unit = MB
     map_runtime_constraint = {
         'keep_cache_ram': 'keep_cache_mb_per_task',
         'ram': 'min_ram_mb_per_node',
