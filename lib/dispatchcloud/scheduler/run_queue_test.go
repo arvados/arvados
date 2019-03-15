@@ -335,3 +335,40 @@ func (*SchedulerSuite) TestStartWhileCreating(c *check.C) {
 	}
 	c.Check(running, check.DeepEquals, map[string]bool{uuids[3]: false, uuids[6]: false})
 }
+
+func (*SchedulerSuite) TestKillNonexistentContainer(c *check.C) {
+	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
+	pool := stubPool{
+		unalloc: map[arvados.InstanceType]int{
+			test.InstanceType(2): 0,
+		},
+		idle: map[arvados.InstanceType]int{
+			test.InstanceType(2): 0,
+		},
+		running: map[string]time.Time{
+			test.ContainerUUID(2): time.Time{},
+		},
+	}
+	queue := test.Queue{
+		ChooseType: chooseType,
+		Containers: []arvados.Container{
+			{
+				// create a new worker
+				UUID:     test.ContainerUUID(1),
+				Priority: 1,
+				State:    arvados.ContainerStateLocked,
+				RuntimeConstraints: arvados.RuntimeConstraints{
+					VCPUs: 1,
+					RAM:   1 << 30,
+				},
+			},
+		},
+	}
+	queue.Update()
+	sch := New(ctx, &queue, &pool, time.Millisecond, time.Millisecond)
+	c.Check(pool.running, check.HasLen, 1)
+	sch.sync()
+	for deadline := time.Now().Add(time.Second); len(pool.Running()) > 0 && time.Now().Before(deadline); time.Sleep(time.Millisecond) {
+	}
+	c.Check(pool.Running(), check.HasLen, 0)
+}
