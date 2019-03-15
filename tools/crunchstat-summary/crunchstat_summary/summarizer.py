@@ -343,16 +343,18 @@ class Summarizer(object):
         asked_cores = self.existing_constraints.get(constraint_key)
         if asked_cores is None:
             asked_cores = 1
+        # TODO: This should be more nuanced in cases where max >> avg
         if used_cores < asked_cores:
             yield (
                 '#!! {} max CPU usage was {}% -- '
-                'try runtime_constraints "{}":{}'
+                'try reducing runtime_constraints to "{}":{}'
             ).format(
                 self.label,
                 math.ceil(cpu_max_rate*100),
                 constraint_key,
                 int(used_cores))
 
+    # FIXME: This needs to be updated to account for current nodemanager algorithms
     def _recommend_ram(self):
         """Recommend an economical RAM constraint for this job.
 
@@ -400,7 +402,7 @@ class Summarizer(object):
                 math.ceil(nearlygibs(used_mib)) < nearlygibs(asked_mib))):
             yield (
                 '#!! {} max RSS was {} MiB -- '
-                'try runtime_constraints "{}":{}'
+                'try reducing runtime_constraints to "{}":{}'
             ).format(
                 self.label,
                 int(used_mib),
@@ -420,7 +422,7 @@ class Summarizer(object):
         if utilization < 0.8:
             yield (
                 '#!! {} Keep cache utilization was {:.2f}% -- '
-                'try runtime_constraints "{}":{} (or more)'
+                'try doubling runtime_constraints to "{}":{} (or more)'
             ).format(
                 self.label,
                 utilization * 100.0,

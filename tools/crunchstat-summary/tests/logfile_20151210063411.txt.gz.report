@@ -20,4 +20,4 @@ time	elapsed	2	-	4
 # Max network speed in a single interval: 0.00MB/s
 # Keep cache miss rate 0.00%
 # Keep cache utilization 0.00%
-#!! 4xphq-8i9sb-zvb2ocfycpomrup max RSS was 1 MiB -- try runtime_constraints "min_ram_mb_per_node":972
+#!! 4xphq-8i9sb-zvb2ocfycpomrup max RSS was 1 MiB -- try reducing runtime_constraints to "min_ram_mb_per_node":972
