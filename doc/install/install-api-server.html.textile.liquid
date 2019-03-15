@@ -241,3 +241,17 @@ break this application for all non-root users on this machine.</pre></notextile>
 
 <notextile><pre>fatal: Not a git repository (or any of the parent directories): .git</pre></notextile>
 {% include 'notebox_end' %}
+
+h2. Multiple load-balanced API server instances
+
+You can run multiple instances of the API server (on multiple hosts) behind a load balancer provided the following conditions are met:
+
+* All API server instances are the same version.
+* All API server instances use the same configuration and same backend database instance.
+* You use the Containers API and @crunch-dispatch-slurm@ on a static slurm cluster, or @crunch-dispatch-cloud@ on cloud.
+* All API server instances must be stopped before upgrading.  A single instance must be upgraded first before upgrading the others in order to run database migrations without conflicts.
+
+The following components are incompatible with multiple API server instances (these components are slated for replacement or removal in future versions.)
+
+* Node Manager, because it controls compute node DNS through the API server @nodes@ table, which goes on to update files local to the API server instance.
+* The deprecated Jobs API, which also relies on updating files local to the API server instance.
