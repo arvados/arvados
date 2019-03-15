@@ -126,7 +126,7 @@ export const DataTable = withStyles(styles)(
         }
 
         ArrowIcon = ({className, ...props}: SvgIconProps) => (
-            <IconButton component='span' className={this.props.classes.arrowButton}>
+            <IconButton component='span' className={this.props.classes.arrowButton} tabIndex={-1}>
                 <ArrowDownwardIcon {...props} className={classnames(className, this.props.classes.arrow)}/>
             </IconButton>
         )

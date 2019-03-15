@@ -110,7 +110,7 @@ export const DataTableFiltersPopover = withStyles(styles)(
                         onClick={this.open}
                         disableRipple>
                         {children}
-                        <IconButton component='span' classes={{root: classes.iconButton}}>
+                        <IconButton component='span' classes={{root: classes.iconButton}} tabIndex={-1}>
                             <i className={classnames(["fas fa-filter", classes.icon])}
                                 data-fa-transform="shrink-3"
                                 ref={this.icon} />
