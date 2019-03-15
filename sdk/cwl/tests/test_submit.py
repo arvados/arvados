@@ -18,7 +18,16 @@ import mock
 import sys
 import unittest
 
-from io import BytesIO, StringIO
+from io import BytesIO
+
+# StringIO.StringIO and io.StringIO have different behavior write() is
+# called with both python2 (byte) strings and unicode strings
+# (specifically there's some logging in cwltool that causes trouble).
+# This isn't a problem on python3 because all string are unicode.
+if sys.version_info[0] < 3:
+    from StringIO import StringIO
+else:
+    from io import StringIO
 
 import arvados
 import arvados.collection
@@ -1479,7 +1488,7 @@ class TestSubmit(unittest.TestCase):
         stubs.api.collections().list.side_effect = list_side_effect
 
         for infile in ("tests/submit_test_job_with_mismatched_uuids.json", "tests/submit_test_job_with_inconsistent_uuids.json"):
-            capture_stderr = io.StringIO()
+            capture_stderr = StringIO()
             cwltool_logger = logging.getLogger('cwltool')
             stderr_logger = logging.StreamHandler(capture_stderr)
             cwltool_logger.addHandler(stderr_logger)
@@ -1501,8 +1510,8 @@ class TestSubmit(unittest.TestCase):
     @stubs
     def test_submit_unknown_uuid_inputs(self, stubs, collectionReader):
         collectionReader().find.return_value = arvados.arvfile.ArvadosFile(mock.MagicMock(), "file1.txt")
+        capture_stderr = StringIO()
 
-        capture_stderr = io.StringIO()
         cwltool_logger = logging.getLogger('cwltool')
         stderr_logger = logging.StreamHandler(capture_stderr)
         cwltool_logger.addHandler(stderr_logger)
@@ -1704,7 +1713,7 @@ class TestCreateWorkflow(unittest.TestCase):
 
     @stubs
     def test_incompatible_api(self, stubs):
-        capture_stderr = io.StringIO()
+        capture_stderr = StringIO()
         acr_logger = logging.getLogger('arvados.cwl-runner')
         stderr_logger = logging.StreamHandler(capture_stderr)
         acr_logger.addHandler(stderr_logger)

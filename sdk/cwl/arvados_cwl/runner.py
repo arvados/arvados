@@ -174,6 +174,9 @@ def upload_dependencies(arvrunner, name, document_loader,
     uuid_map = {}
     fetch_uuids = list(uuids.keys())
     while fetch_uuids:
+        # For a large number of fetch_uuids, API server may limit
+        # response size, so keep fetching from API server has nothing
+        # more to give us.
         lookups = arvrunner.api.collections().list(
             filters=[["uuid", "in", fetch_uuids]],
             count="none",
