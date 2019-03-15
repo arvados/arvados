@@ -3,12 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Table, TableBody, TableRow, TableCell, TableHead, TableSortLabel, StyleRulesCallback, Theme, WithStyles, withStyles } from '@material-ui/core';
+import { Table, TableBody, TableRow, TableCell, TableHead, TableSortLabel, StyleRulesCallback, Theme, WithStyles, withStyles, IconButton } from '@material-ui/core';
+import classnames from 'classnames';
 import { DataColumn, SortDirection } from './data-column';
 import { DataTableDefaultView } from '../data-table-default-view/data-table-default-view';
 import { DataTableFilters } from '../data-table-filters/data-table-filters-tree';
 import { DataTableFiltersPopover } from '../data-table-filters/data-table-filters-popover';
 import { countNodes } from '~/models/tree';
+import { SvgIconProps } from '@material-ui/core/SvgIcon';
+import ArrowDownwardIcon from '@material-ui/icons/ArrowDownward';
 
 export type DataColumns<T> = Array<DataColumn<T>>;
 
@@ -32,7 +35,7 @@ export interface DataTableDataProps<T> {
     currentRoute?: string;
 }
 
-type CssRules = "tableBody" | "root" | "content" | "noItemsInfo" | 'tableCell';
+type CssRules = "tableBody" | "root" | "content" | "noItemsInfo" | 'tableCell' | 'arrow' | 'arrowButton';
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     root: {
@@ -52,6 +55,12 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
     tableCell: {
         wordWrap: 'break-word'
+    },
+    arrow: {
+        margin: 0
+    },
+    arrowButton: {
+        color: theme.palette.text.primary
     }
 });
 
@@ -81,7 +90,7 @@ export const DataTable = withStyles(styles)(
         renderNoItemsPlaceholder = () => {
             return this.props.defaultView
                 ? this.props.defaultView
-                : <DataTableDefaultView/>;
+                : <DataTableDefaultView />;
         }
 
         renderHeadCell = (column: DataColumn<T>, index: number) => {
@@ -103,6 +112,8 @@ export const DataTable = withStyles(styles)(
                             ? <TableSortLabel
                                 active={sortDirection !== SortDirection.NONE}
                                 direction={sortDirection !== SortDirection.NONE ? sortDirection : undefined}
+                                IconComponent={this.ArrowIcon}
+                                hideSortIcon
                                 onClick={() =>
                                     onSortToggle &&
                                     onSortToggle(column)}>
@@ -113,6 +124,12 @@ export const DataTable = withStyles(styles)(
                             </span>}
             </TableCell>;
         }
+
+        ArrowIcon = ({className, ...props}: SvgIconProps) => (
+            <IconButton component='span' className={this.props.classes.arrowButton}>
+                <ArrowDownwardIcon {...props} className={classnames(className, this.props.classes.arrow)}/>
+            </IconButton>
+        )
 
         renderBodyRow = (item: any, index: number) => {
             const { onRowClick, onRowDoubleClick, extractKey, classes, currentItemUuid } = this.props;

@@ -15,7 +15,8 @@ import {
     CardActions,
     Typography,
     CardContent,
-    Tooltip
+    Tooltip,
+    IconButton
 } from "@material-ui/core";
 import * as classnames from "classnames";
 import { DefaultTransformOrigin } from "~/components/popover/helpers";
@@ -23,7 +24,7 @@ import { createTree } from '~/models/tree';
 import { DataTableFilters, DataTableFiltersTree } from "./data-table-filters-tree";
 import { getNodeDescendants } from '~/models/tree';
 
-export type CssRules = "root" | "icon" | "active" | "checkbox";
+export type CssRules = "root" | "icon" | "iconButton" | "active" | "checkbox";
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     root: {
@@ -41,16 +42,20 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
     active: {
         color: theme.palette.text.primary,
-        '& $icon': {
+        '& $iconButton': {
             opacity: 1,
         },
     },
     icon: {
-        marginRight: 4,
-        marginLeft: 4,
+        fontSize: 12,
+        userSelect: 'none',
+        width: 16,
+        height: 15,
+        marginTop: 1
+    },
+    iconButton: {
+        color: theme.palette.text.primary,
         opacity: 0.7,
-        userSelect: "none",
-        width: 16
     },
     checkbox: {
         width: 24,
@@ -58,10 +63,21 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     }
 });
 
+enum SelectionMode {
+    ALL = 'all',
+    NONE = 'none'
+}
+
 export interface DataTableFilterProps {
     name: string;
     filters: DataTableFilters;
     onChange?: (filters: DataTableFilters) => void;
+
+    /**
+     * By default `all` filters selection means that label should be grayed out.
+     * Use `none` when label is supposed to be grayed out when no filter is selected.
+     */
+    defaultSelection?: SelectionMode;
 }
 
 interface DataTableFilterState {
@@ -80,8 +96,12 @@ export const DataTableFiltersPopover = withStyles(styles)(
         icon = React.createRef<HTMLElement>();
 
         render() {
-            const { name, classes, children } = this.props;
-            const isActive = getNodeDescendants('')(this.state.filters).some(f => f.selected);
+            const { name, classes, defaultSelection = SelectionMode.ALL, children } = this.props;
+            const isActive = getNodeDescendants('')(this.state.filters)
+                .some(f => defaultSelection === SelectionMode.ALL
+                    ? !f.selected
+                    : f.selected
+                );
             return <>
                 <Tooltip title='Filters'>
                     <ButtonBase
@@ -90,9 +110,11 @@ export const DataTableFiltersPopover = withStyles(styles)(
                         onClick={this.open}
                         disableRipple>
                         {children}
-                        <i className={classnames(["fas fa-filter", classes.icon])}
-                            data-fa-transform="shrink-3"
-                            ref={this.icon} />
+                        <IconButton component='span' classes={{root: classes.iconButton}}>
+                            <i className={classnames(["fas fa-filter", classes.icon])}
+                                data-fa-transform="shrink-3"
+                                ref={this.icon} />
+                        </IconButton>
                     </ButtonBase>
                 </Tooltip>
                 <Popover
