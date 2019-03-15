@@ -329,8 +329,8 @@ class ArvadosContainer(JobBase):
             else:
                 processStatus = "permanentFail"
 
-            if processStatus == "permanentFail":
-                logc = arvados.collection.CollectionReader(container["log"],
+            if processStatus == "permanentFail" and record["log_uuid"]:
+                logc = arvados.collection.CollectionReader(record["log_uuid"],
                                                            api_client=self.arvrunner.api,
                                                            keep_client=self.arvrunner.keep_client,
                                                            num_retries=self.arvrunner.num_retries)
@@ -353,8 +353,8 @@ class ArvadosContainer(JobBase):
             if container["output"]:
                 outputs = done.done_outputs(self, container, "/tmp", self.outdir, "/keep")
         except WorkflowException as e:
-            # Only include a stack trace if in debug mode. 
-            # A stack trace may obfuscate more useful output about the workflow. 
+            # Only include a stack trace if in debug mode.
+            # A stack trace may obfuscate more useful output about the workflow.
             logger.error("%s unable to collect output from %s:\n%s",
                          self.arvrunner.label(self), container["output"], e, exc_info=(e if self.arvrunner.debug else False))
             processStatus = "permanentFail"
