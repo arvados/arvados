@@ -47,8 +47,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         },
     },
     icon: {
-        userSelect: "none",
-        fontSize: 'small'
+        fontSize: 12,
+        userSelect: 'none',
+        width: 16,
+        height: 15,
+        marginTop: 1
     },
     iconButton: {
         color: theme.palette.text.primary,
