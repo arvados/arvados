@@ -323,6 +323,7 @@ class Summarizer(object):
             yield "# "+format_string.format(self._format(val))
 
     def _recommend_gen(self):
+        # TODO recommend fixing job granularity if elapsed time is too short
         return itertools.chain(
             self._recommend_cpu(),
             self._recommend_ram(),
@@ -333,9 +334,11 @@ class Summarizer(object):
 
         constraint_key = self._map_runtime_constraint('vcpus')
         cpu_max_rate = self.stats_max['cpu']['user+sys__rate']
-        if cpu_max_rate == float('-Inf'):
+        if cpu_max_rate == float('-Inf') or cpu_max_rate == 0.0:
             logger.warning('%s: no CPU usage data', self.label)
             return
+        # TODO Don't necessarily want to recommend on isolated max peak
+        # take average CPU usage into account as well or % time at max
         used_cores = max(1, int(math.ceil(cpu_max_rate)))
         asked_cores = self.existing_constraints.get(constraint_key)
         if asked_cores is None or used_cores < asked_cores:
@@ -391,8 +394,8 @@ class Summarizer(object):
         asked_mib = self.existing_constraints.get(constraint_key)
 
         nearlygibs = lambda mebibytes: mebibytes/AVAILABLE_RAM_RATIO/1024
-        if asked_mib is None or (
-                math.ceil(nearlygibs(used_mib)) < nearlygibs(asked_mib)):
+        if used_mib > 0 and (asked_mib is None or (
+                math.ceil(nearlygibs(used_mib)) < nearlygibs(asked_mib))):
             yield (
                 '#!! {} max RSS was {} MiB -- '
                 'try runtime_constraints "{}":{}'
