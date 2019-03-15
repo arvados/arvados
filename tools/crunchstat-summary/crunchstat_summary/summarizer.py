@@ -341,7 +341,9 @@ class Summarizer(object):
         # take average CPU usage into account as well or % time at max
         used_cores = max(1, int(math.ceil(cpu_max_rate)))
         asked_cores = self.existing_constraints.get(constraint_key)
-        if asked_cores is None or used_cores < asked_cores:
+        if asked_cores is None:
+            asked_cores = 1
+        if used_cores < asked_cores:
             yield (
                 '#!! {} max CPU usage was {}% -- '
                 'try runtime_constraints "{}":{}'
