@@ -77,7 +77,7 @@ func (p *stubPool) Create(it arvados.InstanceType) bool {
 	p.unalloc[it]++
 	return true
 }
-func (p *stubPool) KillContainer(uuid string) {
+func (p *stubPool) KillContainer(uuid, reason string) {
 	p.Lock()
 	defer p.Unlock()
 	delete(p.running, uuid)
