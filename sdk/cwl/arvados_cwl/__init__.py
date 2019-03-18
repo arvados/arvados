@@ -293,7 +293,7 @@ def main(args, stdout, stderr, api_client=None, keep_client=None,
         logger.exception("Error creating the Arvados CWL Executor")
         return 1
 
-    # Note that unless in debug mode, some stack traces related to user 
+    # Note that unless in debug mode, some stack traces related to user
     # workflow errors may be suppressed. See ArvadosJob.done().
     if arvargs.debug:
         logger.setLevel(logging.DEBUG)
