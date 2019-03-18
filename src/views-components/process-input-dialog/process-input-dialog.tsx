@@ -32,51 +32,16 @@ export const ProcessInputDialog = withDialog(PROCESS_INPUT_DIALOG_NAME)(
 );
 
 const getInputs = (data: any) =>
-    data && data.mounts.varLibCwlWorkflowJson ? data.mounts.varLibCwlWorkflowJson.content.graph[1].inputs.map((it: any) => (
+    data && data.mounts.varLibCwlWorkflowJson ? data.mounts.varLibCwlWorkflowJson.content.graph.filter((a: any) => a.class === 'Workflow')[0].inputs.map((it: any) => (
         { type: it.type, id: it.id, label: it.label, value: getInputValue(it.id, data.mounts.varLibCwlCwlInputJson.content), disabled: true }
     )) : [];
 
+const snakeToCamel = (s: string) => {
+    const a = s.split('/');
+    return a[1].replace(/(\_\w)/g, (m: string) => m[1].toUpperCase());
+};
+
 export const getInputValue = (id: string, data: any) => {
-    switch (id) {
-        case "#main/example_flag":
-            return data.exampleFlag;
-        case "#main/example_directory":
-            return data.exampleDirectory;
-        case "#main/example_double":
-            return data.exampleDouble;
-        case "#main/example_file":
-            return data.exampleFile;
-        case "#main/example_float":
-            return data.exampleFloat;
-        case "#main/example_int":
-            return data.exampleInt;
-        case "#main/example_long":
-            return data.exampleLong;
-        case "#main/example_null":
-            return data.exampleNull;
-        case "#main/example_string":
-            return data.exampleString;
-        case "#main/enum_type":
-            return data.enumType;
-        case "#main/multiple_collections":
-            return data.multipleCollections;
-        case "#main/example_string_array":
-            return data.exampleStringArray;
-        case "#main/example_int_array":
-            return data.exampleIntArray;
-        case "#main/example_float_array":
-            return data.exampleFloatArray;
-        case "#main/multiple_files":
-            return data.multipleFiles;
-        case "#main/collection":
-            return data.collection;
-        case "#main/optional_file_missing_label":
-            return data.optionalFileMissingLabel;
-        case "#main/optional_file":
-            return data.optionalFile;
-        case "#main/single_file":
-            return data.singleFile;
-        default:
-            return data.exampleString;
-    }
+    const a = snakeToCamel(id);
+    return data[a];
 };
