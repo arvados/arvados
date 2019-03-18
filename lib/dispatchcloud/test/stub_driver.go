@@ -126,6 +126,8 @@ func (sis *StubInstanceSet) Create(it arvados.InstanceType, image cloud.ImageID,
 		tags:         copyTags(tags),
 		providerType: it.ProviderType,
 		initCommand:  cmd,
+		running:      map[string]int64{},
+		killing:      map[string]bool{},
 	}
 	svm.SSHService = SSHService{
 		HostKey:        sis.driver.HostKey,
@@ -192,6 +194,7 @@ type StubVM struct {
 	providerType string
 	SSHService   SSHService
 	running      map[string]int64
+	killing      map[string]bool
 	lastPID      int64
 	sync.Mutex
 }
@@ -248,9 +251,6 @@ func (svm *StubVM) Exec(env map[string]string, command string, stdin io.Reader, 
 		svm.Lock()
 		svm.lastPID++
 		pid := svm.lastPID
-		if svm.running == nil {
-			svm.running = map[string]int64{}
-		}
 		svm.running[uuid] = pid
 		svm.Unlock()
 		time.Sleep(svm.CrunchRunDetachDelay)
@@ -319,21 +319,25 @@ func (svm *StubVM) Exec(env map[string]string, command string, stdin io.Reader, 
 	if strings.HasPrefix(command, "crunch-run --kill ") {
 		svm.Lock()
 		pid, running := svm.running[uuid]
-		svm.Unlock()
-		go func() {
-			time.Sleep(time.Duration(math_rand.Float64()*20) * time.Millisecond)
+		if running && !svm.killing[uuid] {
+			svm.killing[uuid] = true
+			go func() {
+				time.Sleep(time.Duration(math_rand.Float64()*30) * time.Millisecond)
+				svm.Lock()
+				defer svm.Unlock()
+				if svm.running[uuid] == pid {
+					// Kill only if the running entry
+					// hasn't since been killed and
+					// replaced with a different one.
+					delete(svm.running, uuid)
+				}
+				delete(svm.killing, uuid)
+			}()
+			svm.Unlock()
+			time.Sleep(time.Duration(math_rand.Float64()*2) * time.Millisecond)
 			svm.Lock()
-			defer svm.Unlock()
-			if svm.running[uuid] == pid {
-				// Kill only if the running entry
-				// hasn't since been killed and
-				// replaced with a different one.
-				delete(svm.running, uuid)
-			}
-		}()
-		time.Sleep(time.Duration(math_rand.Float64()*2) * time.Millisecond)
-		svm.Lock()
-		_, running = svm.running[uuid]
+			_, running = svm.running[uuid]
+		}
 		svm.Unlock()
 		if running {
 			fmt.Fprintf(stderr, "%s: container is running\n", uuid)
