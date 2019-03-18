@@ -158,14 +158,21 @@ func (q *Queue) Update() error {
 //
 // The resulting changes are not exposed through Get() or Entries()
 // until the next call to Update().
-func (q *Queue) Notify(upd arvados.Container) {
+//
+// Return value is true unless the update is rejected (invalid state
+// transition).
+func (q *Queue) Notify(upd arvados.Container) bool {
 	q.mtx.Lock()
 	defer q.mtx.Unlock()
 	for i, ctr := range q.Containers {
 		if ctr.UUID == upd.UUID {
-			q.Containers[i] = upd
-			return
+			if ctr.State != arvados.ContainerStateComplete && ctr.State != arvados.ContainerStateCancelled {
+				q.Containers[i] = upd
+				return true
+			}
+			return false
 		}
 	}
 	q.Containers = append(q.Containers, upd)
+	return true
 }
