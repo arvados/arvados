@@ -261,7 +261,13 @@ func (s *DispatcherSuite) TestInstancesAPI(c *check.C) {
 	c.Check(ok, check.Equals, true)
 	<-ch
 
-	sr = getInstances()
+	for deadline := time.Now().Add(time.Second); time.Now().Before(deadline); {
+		sr = getInstances()
+		if len(sr.Items) > 0 {
+			break
+		}
+		time.Sleep(time.Millisecond)
+	}
 	c.Assert(len(sr.Items), check.Equals, 1)
 	c.Check(sr.Items[0].Instance, check.Matches, "stub.*")
 	c.Check(sr.Items[0].WorkerState, check.Equals, "booting")
