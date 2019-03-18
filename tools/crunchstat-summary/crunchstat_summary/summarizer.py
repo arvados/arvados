@@ -167,9 +167,9 @@ class Summarizer(object):
             if task.finishtime is None or timestamp > task.finishtime:
                 task.finishtime = timestamp
 
-            if self.starttime is None or timestamp < task.starttime:
+            if self.starttime is None or timestamp < self.starttime:
                 self.starttime = timestamp
-            if self.finishtime is None or timestamp < task.finishtime:
+            if self.finishtime is None or timestamp > self.finishtime:
                 self.finishtime = timestamp
 
             if (not self.detected_crunch1) and task.starttime is not None and task.finishtime is not None:
