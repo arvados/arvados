@@ -157,6 +157,7 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 			stubvm.CrunchRunMissing = true
 		default:
 			stubvm.CrunchRunCrashRate = 0.1
+			stubvm.ReportBroken = time.Now().Add(time.Duration(rand.Int63n(200)+200) * time.Millisecond)
 		}
 	}
 
