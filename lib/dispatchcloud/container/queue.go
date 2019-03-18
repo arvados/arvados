@@ -428,6 +428,7 @@ func (cq *Queue) poll() (map[string]*arvados.Container, error) {
 		if err != nil {
 			return nil, err
 		}
+		apply(ended)
 		if len(ended) == 0 {
 			// This is the only case where we can conclude
 			// a container has been deleted from the
@@ -443,7 +444,6 @@ func (cq *Queue) poll() (map[string]*arvados.Container, error) {
 			}
 			continue
 		}
-		apply(ended)
 		for _, ctr := range ended {
 			if _, ok := missing[ctr.UUID]; !ok {
 				msg := "BUG? server response did not match requested filters, erroring out rather than risk deadlock"
