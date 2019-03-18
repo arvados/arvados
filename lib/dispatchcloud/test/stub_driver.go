@@ -340,8 +340,8 @@ func (svm *StubVM) Exec(env map[string]string, command string, stdin io.Reader, 
 			return 1
 		} else {
 			fmt.Fprintf(stderr, "%s: container is not running\n", uuid)
+			return 0
 		}
-		return 0
 	}
 	if command == "true" {
 		return 0
