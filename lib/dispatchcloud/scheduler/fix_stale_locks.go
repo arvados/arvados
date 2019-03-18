@@ -47,7 +47,6 @@ waiting:
 			// Give up.
 			break waiting
 		}
-
 	}
 
 	for _, uuid := range stale {

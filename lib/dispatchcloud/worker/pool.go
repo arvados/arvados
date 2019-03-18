@@ -419,8 +419,12 @@ func (wp *Pool) Shutdown(it arvados.InstanceType) bool {
 }
 
 // CountWorkers returns the current number of workers in each state.
+//
+// CountWorkers blocks, if necessary, until the initial instance list
+// has been loaded from the cloud provider.
 func (wp *Pool) CountWorkers() map[State]int {
 	wp.setupOnce.Do(wp.setup)
+	wp.waitUntilLoaded()
 	wp.mtx.Lock()
 	defer wp.mtx.Unlock()
 	r := map[State]int{}
@@ -786,12 +790,24 @@ func (wp *Pool) sync(threshold time.Time, instances []cloud.Instance) {
 	}
 
 	if !wp.loaded {
+		notify = true
 		wp.loaded = true
 		wp.logger.WithField("N", len(wp.workers)).Info("loaded initial instance list")
 	}
 
 	if notify {
 		go wp.notify()
+	}
+}
+
+func (wp *Pool) waitUntilLoaded() {
+	ch := wp.Subscribe()
+	wp.mtx.RLock()
+	defer wp.mtx.RUnlock()
+	for !wp.loaded {
+		wp.mtx.RUnlock()
+		<-ch
+		wp.mtx.RLock()
 	}
 }
 
