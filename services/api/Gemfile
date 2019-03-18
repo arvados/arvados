@@ -6,7 +6,6 @@ source 'https://rubygems.org'
 
 gem 'rails', '~> 4.2'
 gem 'responders', '~> 2.0'
-gem 'protected_attributes'
 
 group :test, :development do
   gem 'factory_bot_rails'

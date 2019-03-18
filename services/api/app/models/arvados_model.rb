@@ -46,6 +46,11 @@ class ArvadosModel < ActiveRecord::Base
   # penalty.
   attr_accessor :async_permissions_update
 
+  # Ignore listed attributes on mass assignments
+  def self.protected_attributes
+    []
+  end
+
   class PermissionDeniedError < RequestError
     def http_status
       403
@@ -98,6 +103,7 @@ class ArvadosModel < ActiveRecord::Base
     # "ActionController::Parameters.permit_all_parameters = true",
     # because permit_all does not permit nested attributes.
     if raw_params
+      raw_params.delete_if { |k, _| self.protected_attributes.include? k }
       serialized_attributes.each do |colname, coder|
         param = raw_params[colname.to_sym]
         if param.nil?

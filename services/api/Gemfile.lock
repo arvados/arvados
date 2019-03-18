@@ -188,8 +188,6 @@ GEM
       rake (>= 0.8.1)
     pg (0.21.0)
     power_assert (1.1.1)
-    protected_attributes (1.1.4)
-      activemodel (>= 4.0.1, < 5.0)
     public_suffix (3.0.3)
     rack (1.6.11)
     rack-test (0.6.3)
@@ -303,7 +301,6 @@ DEPENDENCIES
   omniauth-oauth2 (~> 1.1)
   passenger
   pg (~> 0.18)
-  protected_attributes
   rails (~> 4.2)
   rails-observers
   responders (~> 2.0)
