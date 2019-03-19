@@ -256,8 +256,13 @@ func (r *Reporter) doMemoryStats() {
 	}
 	var outstat bytes.Buffer
 	for _, key := range wantStats {
-		if val, ok := thisSample.memStat[key]; ok {
-			outstat.WriteString(fmt.Sprintf(" %d %s", val, key))
+		// Use "total_X" stats (entire hierarchy) if enabled,
+		// otherwise just the single cgroup -- see
+		// https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt
+		if val, ok := thisSample.memStat["total_"+key]; ok {
+			fmt.Fprintf(&outstat, " %d %s", val, key)
+		} else if val, ok := thisSample.memStat[key]; ok {
+			fmt.Fprintf(&outstat, " %d %s", val, key)
 		}
 	}
 	r.Logger.Printf("mem%s\n", outstat.String())
