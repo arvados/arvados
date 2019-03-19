@@ -46,6 +46,7 @@ config_key_map =
    "max_request_size":                 "API.MaxRequestSize",
    "max_index_database_read":          "API.MaxIndexDatabaseRead",
    "max_items_per_response":           "API.MaxItemsPerResponse",
+   "async_permissions_update_interval":         "API.AsyncPermissionsUpdateInterval",
    "auto_setup_new_users":                      "Users.AutoSetupNewUsers",
    "auto_setup_new_users_with_vm_uuid":         "Users.AutoSetupNewUsersWithVmUUID",
    "auto_setup_new_users_with_repository":      "Users.AutoSetupNewUsersWithRepository",
@@ -72,7 +73,7 @@ config_key_map =
    "trash_sweep_interval":                      "Collections.TrashSweepInterval",
    "blob_signing_key":                          "Collections.BlobSigningKey",
    "blob_signature_ttl":                        "Collections.BlobSigningTTL",
-   "permit_create_collection_with_unsigned_manifest": "Collections.BlobSigning",
+   "permit_create_collection_with_unsigned_manifest": "Collections.BlobSigning", # XXX
    "docker_image_formats":             "Containers.SupportedDockerImageFormats",
    "log_reuse_decisions":              "Containers.LogReuseDecisions",
    "container_default_keep_cache_ram": "Containers.DefaultKeepCacheRAM",
@@ -97,6 +98,7 @@ config_key_map =
    "compute_node_domain":                     "Containers.SLURM.Managed.ComputeNodeDomain",
    "compute_node_nameservers":                "Containers.SLURM.Managed.ComputeNodeNameservers",
    "assign_node_hostname":                    "Containers.SLURM.Managed.AssignNodeHostname",
+   "enable_legacy_jobs_api":                  "Containers.JobsAPI.Enable",
    "crunch_job_wrapper":                      "Containers.JobsAPI.CrunchJobWrapper",
    "crunch_job_user":                         "Containers.JobsAPI.CrunchJobUser",
    "crunch_refresh_trigger":                  "Containers.JobsAPI.CrunchRefreshTrigger",
@@ -140,6 +142,8 @@ application_config.each do |k, v|
     cfg[k] = v
   end
 end
+
+puts $arvados_config.to_yaml
 
 Server::Application.configure do
   nils = []
