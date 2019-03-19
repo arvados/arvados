@@ -53,7 +53,6 @@ func (c *QueueEnt) String() string {
 // cache up to date.
 type Queue struct {
 	logger     logrus.FieldLogger
-	reg        *prometheus.Registry
 	chooseType typeChooser
 	client     APIClient
 
@@ -79,14 +78,17 @@ type Queue struct {
 // Arvados cluster's queue during Update, chooseType will be called to
 // assign an appropriate arvados.InstanceType for the queue entry.
 func NewQueue(logger logrus.FieldLogger, reg *prometheus.Registry, chooseType typeChooser, client APIClient) *Queue {
-	return &Queue{
+	cq := &Queue{
 		logger:      logger,
-		reg:         reg,
 		chooseType:  chooseType,
 		client:      client,
 		current:     map[string]QueueEnt{},
 		subscribers: map[<-chan struct{}]chan struct{}{},
 	}
+	if reg != nil {
+		go cq.runMetrics(reg)
+	}
+	return cq
 }
 
 // Subscribe returns a channel that becomes ready to receive when an
@@ -486,4 +488,35 @@ func (cq *Queue) fetchAll(initialParams arvados.ResourceListParams) ([]arvados.C
 		}
 	}
 	return results, nil
+}
+
+func (cq *Queue) runMetrics(reg *prometheus.Registry) {
+	mEntries := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "arvados",
+		Subsystem: "dispatchcloud",
+		Name:      "queue_entries",
+		Help:      "Number of active container entries in the controller database.",
+	}, []string{"state", "instance_type"})
+	reg.MustRegister(mEntries)
+
+	type entKey struct {
+		state arvados.ContainerState
+		inst  string
+	}
+	count := map[entKey]int{}
+
+	ch := cq.Subscribe()
+	defer cq.Unsubscribe(ch)
+	for range ch {
+		for k := range count {
+			count[k] = 0
+		}
+		ents, _ := cq.Entries()
+		for _, ent := range ents {
+			count[entKey{ent.Container.State, ent.InstanceType.Name}]++
+		}
+		for k, v := range count {
+			mEntries.WithLabelValues(string(k.state), k.inst).Set(float64(v))
+		}
+	}
 }
