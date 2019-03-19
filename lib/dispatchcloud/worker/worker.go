@@ -394,12 +394,12 @@ func (wkr *worker) eligibleForShutdown() bool {
 			return false
 		}
 		for _, rr := range wkr.running {
-			if !rr.sentKILL {
+			if !rr.givenup {
 				return false
 			}
 		}
 		for _, rr := range wkr.starting {
-			if !rr.sentKILL {
+			if !rr.givenup {
 				return false
 			}
 		}

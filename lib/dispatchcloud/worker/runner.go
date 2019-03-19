@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 package worker
 
 import (
@@ -19,14 +23,13 @@ type remoteRunner struct {
 	arvClient     *arvados.Client
 	remoteUser    string
 	timeoutTERM   time.Duration
-	timeoutKILL   time.Duration
 	timeoutSignal time.Duration
-	onUnkillable  func(uuid string) // callback invoked when giving up on SIGKILL
-	onKilled      func(uuid string) // callback invoked when process exits after SIGTERM/SIGKILL
+	onUnkillable  func(uuid string) // callback invoked when giving up on SIGTERM
+	onKilled      func(uuid string) // callback invoked when process exits after SIGTERM
 	logger        logrus.FieldLogger
 
 	stopping bool          // true if Stop() has been called
-	sentKILL bool          // true if SIGKILL has been sent
+	givenup  bool          // true if timeoutTERM has been reached
 	closed   chan struct{} // channel is closed if Close() has been called
 }
 
@@ -39,7 +42,6 @@ func newRemoteRunner(uuid string, wkr *worker) *remoteRunner {
 		arvClient:     wkr.wp.arvClient,
 		remoteUser:    wkr.instance.RemoteUser(),
 		timeoutTERM:   wkr.wp.timeoutTERM,
-		timeoutKILL:   wkr.wp.timeoutKILL,
 		timeoutSignal: wkr.wp.timeoutSignal,
 		onUnkillable:  wkr.onUnkillable,
 		onKilled:      wkr.onKilled,
@@ -88,9 +90,13 @@ func (rr *remoteRunner) Close() {
 	close(rr.closed)
 }
 
-// Kill starts a background task to kill the remote process,
-// escalating from SIGTERM to SIGKILL to onUnkillable() according to
-// the configured timeouts.
+// Kill starts a background task to kill the remote process, first
+// trying SIGTERM until reaching timeoutTERM, then calling
+// onUnkillable().
+//
+// SIGKILL is not used. It would merely kill the crunch-run supervisor
+// and thereby make the docker container, arv-mount, etc. invisible to
+// us without actually stopping them.
 //
 // Once Kill has been called, calling it again has no effect.
 func (rr *remoteRunner) Kill(reason string) {
@@ -101,19 +107,17 @@ func (rr *remoteRunner) Kill(reason string) {
 	rr.logger.WithField("Reason", reason).Info("killing crunch-run process")
 	go func() {
 		termDeadline := time.Now().Add(rr.timeoutTERM)
-		killDeadline := termDeadline.Add(rr.timeoutKILL)
 		t := time.NewTicker(rr.timeoutSignal)
 		defer t.Stop()
 		for range t.C {
 			switch {
 			case rr.isClosed():
 				return
-			case time.Now().After(killDeadline):
+			case time.Now().After(termDeadline):
+				rr.logger.Debug("giving up")
+				rr.givenup = true
 				rr.onUnkillable(rr.uuid)
 				return
-			case time.Now().After(termDeadline):
-				rr.sentKILL = true
-				rr.kill(syscall.SIGKILL)
 			default:
 				rr.kill(syscall.SIGTERM)
 			}

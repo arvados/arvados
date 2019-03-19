@@ -69,7 +69,6 @@ const (
 	defaultTimeoutProbe       = time.Minute * 10
 	defaultTimeoutShutdown    = time.Second * 10
 	defaultTimeoutTERM        = time.Minute * 2
-	defaultTimeoutKILL        = time.Second * 20
 	defaultTimeoutSignal      = time.Second * 5
 
 	// Time after a quota error to try again anyway, even if no
@@ -109,7 +108,6 @@ func NewPool(logger logrus.FieldLogger, arvClient *arvados.Client, reg *promethe
 		timeoutProbe:       duration(cluster.CloudVMs.TimeoutProbe, defaultTimeoutProbe),
 		timeoutShutdown:    duration(cluster.CloudVMs.TimeoutShutdown, defaultTimeoutShutdown),
 		timeoutTERM:        duration(cluster.Dispatch.TimeoutTERM, defaultTimeoutTERM),
-		timeoutKILL:        duration(cluster.Dispatch.TimeoutKILL, defaultTimeoutKILL),
 		timeoutSignal:      duration(cluster.Dispatch.TimeoutSignal, defaultTimeoutSignal),
 		installPublicKey:   installPublicKey,
 		stop:               make(chan bool),
@@ -143,7 +141,6 @@ type Pool struct {
 	timeoutProbe       time.Duration
 	timeoutShutdown    time.Duration
 	timeoutTERM        time.Duration
-	timeoutKILL        time.Duration
 	timeoutSignal      time.Duration
 	installPublicKey   ssh.PublicKey
 

@@ -64,7 +64,6 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 			MaxProbesPerSecond: 1000,
 			TimeoutSignal:      arvados.Duration(3 * time.Millisecond),
 			TimeoutTERM:        arvados.Duration(20 * time.Millisecond),
-			TimeoutKILL:        arvados.Duration(20 * time.Millisecond),
 		},
 		InstanceTypes: arvados.InstanceTypeMap{
 			test.InstanceType(1).Name:  test.InstanceType(1),
