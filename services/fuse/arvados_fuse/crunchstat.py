@@ -56,10 +56,12 @@ def statlogger(interval, keep, ops):
         Stat("read", ops.read_ops_counter.get)
     ])
     fusetimes = []
-    for sample in ops.time_sum_samples():   
-        cur_op = sample.labels['op']   
-        fusetimes.append(StatWriter("fuseopstime", interval, [
-            Stat(cur_op, ops.time_sum_value_func(cur_op))
+    for cur_op in ops.metric_op_names():   
+        fusetimes.append(StatWriter("fuseop:count", interval, [
+            Stat(cur_op, ops.metric_count_func(cur_op))
+        ]))
+        fusetimes.append(StatWriter("fuseop:time", interval, [
+            Stat(cur_op, ops.metric_sum_func(cur_op))
         ]))
     blk = StatWriter("blkio:0:0", interval, [
         Stat("write", ops.write_counter.get),

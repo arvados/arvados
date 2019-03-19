@@ -413,25 +413,26 @@ class Operations(llfuse.Operations):
         # initializing to continue
         self.initlock.set()
 
-    def time_samples(self):
-        metrics = self.fuse_time.collect()
+    def metric_samples(self):
+        return self.fuse_time.collect()[0].samples 
 
-        # We should have one parent summary metric, and child summaries for each op
-        if len(metrics) != 1:
-            _logger.warning("arv-mount metrics: invalid number of prometheus Summary metrics")
-            return [] 
-        return metrics[0].samples
+    def metric_op_names(self):
+        ops = []
+        for cur_op in [sample.labels['op'] for sample in self.metric_samples()]:
+            if cur_op not in ops:
+                ops.append(cur_op)
+        return ops
 
-    def time_sum_samples(self):
-        return [sample for sample in self.time_samples() if sample.name == 'arvmount_fuse_operations_seconds_sum']
+    def metric_value(self, opname, metric):
+        op_value = [sample.value for sample in self.metric_samples()
+                    if sample.name == metric and sample.labels['op'] == opname]
+        return op_value[0] if len(op_value) == 1 else None
 
-    def time_sum_value(self, opname):
-        for op_sum in self.time_sum_samples():
-            if op_sum.labels['op'] == opname:
-                return op_sum.value
+    def metric_sum_func(self, opname):
+        return lambda: self.metric_value(opname, "arvmount_fuse_operations_seconds_sum")
 
-    def time_sum_value_func(self, opname):
-        return lambda: self.time_sum_value(opname)
+    def metric_count_func(self, opname):
+        return lambda: int(self.metric_value(opname, "arvmount_fuse_operations_seconds_count"))
 
     @destroy_time.time()
     @catch_exceptions
