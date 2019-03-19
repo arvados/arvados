@@ -855,7 +855,9 @@ report_outcomes() {
 
     if [[ ${#failures[@]} == 0 ]]
     then
-        echo "All test suites passed."
+        if [[ ${#successes[@]} != 0 ]]; then
+           echo "All test suites passed."
+        fi
     else
         echo "Failures (${#failures[@]}):"
         for x in "${failures[@]}"

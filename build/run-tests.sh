@@ -401,7 +401,7 @@ stop_services() {
         return
     fi
     unset ARVADOS_TEST_API_HOST
-    . "$VENVDIR/bin/activate"
+    . "$VENVDIR/bin/activate" || return
     cd "$WORKSPACE" \
         && python sdk/python/tests/run_test_server.py stop_nginx \
         && python sdk/python/tests/run_test_server.py stop_arv-git-httpd \
@@ -572,7 +572,7 @@ initialize() {
     echo "PATH is $PATH"
 }
 
-install_deps() {
+install_env() {
     (
         set -e
         mkdir -p "$GOPATH/src/git.curoverse.com"
@@ -712,8 +712,11 @@ do_test_once() {
     title "test $1"
     timer_reset
 
-    if which deactivate >/dev/null; then deactivate; fi; . "$VENVDIR/bin/activate"
-    if [[ "$2" == "go" ]]
+    if which deactivate >/dev/null; then deactivate; fi
+    if ! . "$VENVDIR/bin/activate"
+    then
+        result=1
+    elif [[ "$2" == "go" ]]
     then
         covername="coverage-$(echo "$1" | sed -e 's/\//_/g')"
         coverflags=("-covermode=count" "-coverprofile=$WORKSPACE/tmp/.$covername.tmp")
@@ -781,8 +784,10 @@ do_install_once() {
     title "install $1"
     timer_reset
 
-    if which deactivate >/dev/null; then deactivate; fi; . "$VENVDIR/bin/activate"
-    if [[ "$2" == "go" ]]
+    if which deactivate >/dev/null; then deactivate; fi
+    if [[ "$1" != "env" ]] && ! . "$VENVDIR/bin/activate"; then
+        result=1
+    elif [[ "$2" == "go" ]]
     then
         go get -ldflags "-X main.version=${ARVADOS_VERSION:-$(git log -n1 --format=%H)-dev}" -t "git.curoverse.com/arvados.git/$1"
     elif [[ "$2" == "pip" ]]
@@ -810,7 +815,7 @@ do_install_once() {
     else
         "install_$1"
     fi
-    result=$?
+    result=${result:-$?}
     checkexit $result "$1 install"
     title "install $1 -- `timer`"
     return $result
@@ -1053,19 +1058,29 @@ test_apps/workbench_profile() {
         && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:profile ${testargs[apps/workbench_profile]}
 }
 
+install_deps() {
+    # Install parts needed by test suites
+    do_install env
+    do_install sdk/cli
+    do_install sdk/perl
+    do_install sdk/python pip
+    do_install sdk/ruby
+    do_install services/api
+    do_install services/arv-git-httpd go
+    do_install services/keepproxy go
+    do_install services/keepstore go
+    do_install services/keep-web go
+    do_install services/ws go
+}
+
 install_all() {
-    do_install deps
+    do_install env
     do_install doc
     do_install sdk/ruby
     do_install sdk/R
     do_install sdk/perl
     do_install sdk/cli
     do_install services/login-sync
-    # Install the Python SDK early. Various other test suites (like
-    # keepproxy) bring up run_test_server.py, which imports the arvados
-    # module. We can't actually *test* the Python SDK yet though, because
-    # its own test suite brings up some of those other programs (like
-    # keepproxy).
     for p in "${pythonstuff[@]}"
     do
         dir=${p%:py3}
@@ -1131,12 +1146,13 @@ test_all() {
 
 help_interactive() {
     echo "== Interactive commands:"
-    echo "dir           (short for 'test dir')"
-    echo "test dir"
-    echo "test dir:py3  (test with python3)"
-    echo "install dir"
-    echo "install deps  (go/python libs)"
-    echo "reset         (...services used by integration tests)"
+    echo "TARGET           (short for 'test DIR')"
+    echo "test TARGET"
+    echo "test TARGET:py3  (test with python3)"
+    echo "install TARGET"
+    echo "install env      (go/python libs)"
+    echo "install deps     (go/python libs + arvados components needed for integration tests)"
+    echo "reset            (...services used by integration tests)"
     echo "exit"
     echo "== Test targets:"
     echo "${!testfuncargs[@]}" | tr ' ' '\n' | sort | column
@@ -1161,12 +1177,21 @@ if [[ -z ${interactive} ]]; then
     install_all
     test_all
 else
-    stop_services
-    verb=test
-    target=lib/cmd
+    if [[ -e "$VENVDIR/bin/activate" ]]; then stop_services; fi
+    setreaddefault() {
+        readdefault="$verb $target"
+        if [[ -n "$verb" && "$readdefault" != "install deps" ]]; then
+            :
+        elif [[ -e "$VENVDIR/bin/activate" ]]; then
+            readdefault="test lib/cmd"
+        else
+            readdefault="install deps"
+        fi
+    }
     echo
     help_interactive
-    while read -p 'What next? ' -e -i "${verb}${target:+ }${target}" verb target; do
+    setreaddefault
+    while read -p 'What next? ' -e -i "${readdefault}" verb target; do
         case "${verb}" in
             "" | "help")
                 help_interactive
@@ -1201,6 +1226,7 @@ else
             failures=()
         fi
         cd "$WORKSPACE"
+        setreaddefault
     done
     echo
 fi
