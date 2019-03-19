@@ -104,13 +104,14 @@ const loadSharedRoot = async (dispatch: Dispatch, _: () => RootState, services: 
     dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id: SidePanelTreeCategory.SHARED_WITH_ME, pickerId: SIDE_PANEL_TREE }));
 
     const params = {
-        filters:  `[${new FilterBuilder()
+        filters: `[${new FilterBuilder()
             .addIsA('uuid', ResourceKind.PROJECT)
             .addEqual('groupClass', GroupClass.PROJECT)
             .getFilters()}]`,
         order: new OrderBuilder<ProjectResource>()
             .addAsc('name', GroupContentsResourcePrefix.PROJECT)
             .getOrder(),
+        limit: 1000
     };
 
     const { items } = await services.groupsService.shared(params);
