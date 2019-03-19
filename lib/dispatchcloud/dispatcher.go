@@ -39,6 +39,7 @@ type pool interface {
 	scheduler.WorkerPool
 	Instances() []worker.InstanceView
 	SetIdleBehavior(cloud.InstanceID, worker.IdleBehavior) error
+	KillInstance(id cloud.InstanceID, reason string) error
 	Stop()
 }
 
@@ -147,6 +148,7 @@ func (disp *dispatcher) initialize() {
 		mux.HandlerFunc("POST", "/arvados/v1/dispatch/instances/hold", disp.apiInstanceHold)
 		mux.HandlerFunc("POST", "/arvados/v1/dispatch/instances/drain", disp.apiInstanceDrain)
 		mux.HandlerFunc("POST", "/arvados/v1/dispatch/instances/run", disp.apiInstanceRun)
+		mux.HandlerFunc("POST", "/arvados/v1/dispatch/instances/kill", disp.apiInstanceKill)
 		metricsH := promhttp.HandlerFor(disp.reg, promhttp.HandlerOpts{
 			ErrorLog: disp.logger,
 		})
@@ -210,6 +212,20 @@ func (disp *dispatcher) apiInstanceDrain(w http.ResponseWriter, r *http.Request)
 // Management API: set idle behavior to "run" for specified instance.
 func (disp *dispatcher) apiInstanceRun(w http.ResponseWriter, r *http.Request) {
 	disp.apiInstanceIdleBehavior(w, r, worker.IdleBehaviorRun)
+}
+
+// Management API: shutdown/destroy specified instance now.
+func (disp *dispatcher) apiInstanceKill(w http.ResponseWriter, r *http.Request) {
+	id := cloud.InstanceID(r.FormValue("instance_id"))
+	if id == "" {
+		httpserver.Error(w, "instance_id parameter not provided", http.StatusBadRequest)
+		return
+	}
+	err := disp.pool.KillInstance(id, "via management API: "+r.FormValue("reason"))
+	if err != nil {
+		httpserver.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
 }
 
 func (disp *dispatcher) apiInstanceIdleBehavior(w http.ResponseWriter, r *http.Request, want worker.IdleBehavior) {

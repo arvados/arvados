@@ -691,6 +691,18 @@ func (wp *Pool) Instances() []InstanceView {
 	return r
 }
 
+// KillInstance destroys a cloud VM instance. It returns an error if
+// the given instance does not exist.
+func (wp *Pool) KillInstance(id cloud.InstanceID, reason string) error {
+	wkr, ok := wp.workers[id]
+	if !ok {
+		return errors.New("instance not found")
+	}
+	wkr.logger.WithField("Reason", reason).Info("shutting down")
+	wkr.shutdown()
+	return nil
+}
+
 func (wp *Pool) setup() {
 	wp.creating = map[string]createCall{}
 	wp.exited = map[string]time.Time{}
