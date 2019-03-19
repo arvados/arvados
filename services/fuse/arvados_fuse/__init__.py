@@ -413,14 +413,25 @@ class Operations(llfuse.Operations):
         # initializing to continue
         self.initlock.set()
 
-    def fuse_ops_total_time(self):
-        ops_sum = 0.0
+    def time_samples(self):
         metrics = self.fuse_time.collect()
-        for metric in metrics:
-            for sample in metric.samples:
-                if sample.name == 'arvmount_fuse_operations_seconds_sum':
-                    ops_sum += sample.value      
-        return ops_sum
+
+        # We should have one parent summary metric, and child summaries for each op
+        if len(metrics) != 1:
+            _logger.warning("arv-mount metrics: invalid number of prometheus Summary metrics")
+            return [] 
+        return metrics[0].samples
+
+    def time_sum_samples(self):
+        return [sample for sample in self.time_samples() if sample.name == 'arvmount_fuse_operations_seconds_sum']
+
+    def time_sum_value(self, opname):
+        for op_sum in self.time_sum_samples():
+            if op_sum.labels['op'] == opname:
+                return op_sum.value
+
+    def time_sum_value_func(self, opname):
+        return lambda: self.time_sum_value(opname)
 
     @destroy_time.time()
     @catch_exceptions
