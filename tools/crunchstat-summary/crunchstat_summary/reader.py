@@ -26,6 +26,7 @@ class CollectionReader(object):
         # Crunch2 has multiple stats files
         if len(filenames) > 1:
             filenames = ['crunchstat.txt', 'arv-mount.txt']
+            filenames = ['hoststat.txt']
         for filename in filenames:
             try:
                 self._readers.append(collection.open(filename))
