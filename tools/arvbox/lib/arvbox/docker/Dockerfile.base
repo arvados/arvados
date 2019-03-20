@@ -79,7 +79,7 @@ RUN set -e && curl -L -f ${GDURL} | tar -C /usr/local/bin -xzf - geckodriver
 
 RUN pip install -U setuptools
 
-ENV NODEVERSION v10.15.1
+ENV NODEVERSION v8.15.1
 
 # Install nodejs binary
 RUN curl -L -f https://nodejs.org/dist/${NODEVERSION}/node-${NODEVERSION}-linux-x64.tar.xz | tar -C /usr/local -xJf - && \

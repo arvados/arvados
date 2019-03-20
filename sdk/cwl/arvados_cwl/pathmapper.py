@@ -58,6 +58,7 @@ class ArvPathMapper(PathMapper):
         self.name = name
         self.referenced_files = [r["location"] for r in referenced_files]
         self.single_collection = single_collection
+        self.pdh_to_uuid = {}
         super(ArvPathMapper, self).__init__(referenced_files, input_basedir, None)
 
     def visit(self, srcobj, uploadfiles):
@@ -67,6 +68,8 @@ class ArvPathMapper(PathMapper):
 
         if isinstance(src, basestring) and ArvPathMapper.pdh_dirpath.match(src):
             self._pathmap[src] = MapperEnt(src, self.collection_pattern % urllib.parse.unquote(src[5:]), srcobj["class"], True)
+            if arvados_cwl.util.collectionUUID in srcobj:
+                self.pdh_to_uuid[src.split("/", 1)[0][5:]] = srcobj[arvados_cwl.util.collectionUUID]
 
         debug = logger.isEnabledFor(logging.DEBUG)
 
