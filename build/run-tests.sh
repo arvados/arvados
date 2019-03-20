@@ -1179,6 +1179,9 @@ if [[ -z ${interactive} ]]; then
     install_all
     test_all
 else
+    skip=()
+    only=()
+    only_install=()
     if [[ -e "$VENVDIR/bin/activate" ]]; then stop_services; fi
     setnextcmd() {
         if [[ "$nextcmd" != "install deps" ]]; then
