@@ -1147,13 +1147,14 @@ test_all() {
 
 help_interactive() {
     echo "== Interactive commands:"
-    echo "TARGET           (short for 'test DIR')"
+    echo "TARGET                 (short for 'test DIR')"
     echo "test TARGET"
-    echo "test TARGET:py3  (test with python3)"
+    echo "test TARGET:py3        (test with python3)"
+    echo "test TARGET -check.vv  (pass arguments to test)"
     echo "install TARGET"
-    echo "install env      (go/python libs)"
-    echo "install deps     (go/python libs + arvados components needed for integration tests)"
-    echo "reset            (...services used by integration tests)"
+    echo "install env            (go/python libs)"
+    echo "install deps           (go/python libs + arvados components needed for integration tests)"
+    echo "reset                  (...services used by integration tests)"
     echo "exit"
     echo "== Test targets:"
     echo "${!testfuncargs[@]}" | tr ' ' '\n' | sort | column
@@ -1179,20 +1180,21 @@ if [[ -z ${interactive} ]]; then
     test_all
 else
     if [[ -e "$VENVDIR/bin/activate" ]]; then stop_services; fi
-    setreaddefault() {
-        readdefault="$verb $target"
-        if [[ -n "$verb" && "$readdefault" != "install deps" ]]; then
+    setnextcmd() {
+        if [[ "$nextcmd" != "install deps" ]]; then
             :
         elif [[ -e "$VENVDIR/bin/activate" ]]; then
-            readdefault="test lib/cmd"
+            nextcmd="test lib/cmd"
         else
-            readdefault="install deps"
+            nextcmd="install deps"
         fi
     }
     echo
     help_interactive
-    setreaddefault
-    while read -p 'What next? ' -e -i "${readdefault}" verb target; do
+    nextcmd="install deps"
+    setnextcmd
+    while read -p 'What next? ' -e -i "${nextcmd}" nextcmd; do
+        read verb target opts <<<"${nextcmd}"
         case "${verb}" in
             "" | "help")
                 help_interactive
@@ -1204,11 +1206,8 @@ else
                 stop_services
                 ;;
             *)
-                if [[ -z "${target}" ]]; then
-                    target="${verb}"
-                    verb=test
-                fi
                 target="${target%/}"
+                testargs["$target"]="${opts}"
                 case "$target" in
                     all | deps)
                         ${verb}_${target}
@@ -1227,7 +1226,7 @@ else
             failures=()
         fi
         cd "$WORKSPACE"
-        setreaddefault
+        setnextcmd
     done
     echo
 fi
