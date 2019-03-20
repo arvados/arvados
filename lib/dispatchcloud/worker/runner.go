@@ -138,7 +138,7 @@ func (rr *remoteRunner) kill(sig syscall.Signal) {
 			"stderr": string(stderr),
 			"stdout": string(stdout),
 			"error":  err,
-		}).Info("kill failed")
+		}).Info("kill attempt unsuccessful")
 		return
 	}
 	rr.onKilled(rr.uuid)
