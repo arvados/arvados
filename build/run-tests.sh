@@ -1061,7 +1061,7 @@ test_apps/workbench_profile() {
 install_deps() {
     # Install parts needed by test suites
     do_install env
-    do_install cmd/arvados-server
+    do_install cmd/arvados-server go
     do_install sdk/cli
     do_install sdk/perl
     do_install sdk/python pip
