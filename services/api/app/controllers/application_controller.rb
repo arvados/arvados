@@ -306,7 +306,7 @@ class ApplicationController < ActionController::Base
       limit_query.each do |record|
         new_limit += 1
         read_total += record.read_length.to_i
-        if read_total >= Rails.configuration.max_index_database_read
+        if read_total >= Rails.configuration.API["MaxIndexDatabaseRead"]
           new_limit -= 1 if new_limit > 1
           @limit = new_limit
           break
@@ -419,7 +419,7 @@ class ApplicationController < ActionController::Base
   end
 
   def disable_api_methods
-    if Rails.configuration.disable_api_methods.
+    if Rails.configuration.API["DisabledAPIs"].
         include?(controller_name + "." + action_name)
       send_error("Disabled", status: 404)
     end

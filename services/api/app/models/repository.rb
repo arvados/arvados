@@ -49,7 +49,7 @@ class Repository < ArvadosModel
     # prefers bare repositories over checkouts.
     [["%s.git"], ["%s", ".git"]].each do |repo_base, *join_args|
       [:uuid, :name].each do |path_attr|
-        git_dir = File.join(Rails.configuration.git_repositories_dir,
+        git_dir = File.join(Rails.configuration.Containers["Git"]["Repositories"],
                             repo_base % send(path_attr), *join_args)
         return git_dir if File.exist?(git_dir)
       end
@@ -108,8 +108,8 @@ class Repository < ArvadosModel
   def _clone_url config_var, default_base_fmt
     configured_base = Rails.configuration.send config_var
     return nil if configured_base == false
-    prefix = new_record? ? Rails.configuration.uuid_prefix : uuid[0,5]
-    if prefix == Rails.configuration.uuid_prefix and configured_base != true
+    prefix = new_record? ? Rails.configuration.ClusterID : uuid[0,5]
+    if prefix == Rails.configuration.ClusterID and configured_base != true
       base = configured_base
     else
       base = default_base_fmt % prefix

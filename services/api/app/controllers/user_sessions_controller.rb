@@ -52,7 +52,7 @@ class UserSessionsController < ApplicationController
                       :first_name => omniauth['info']['first_name'],
                       :last_name => omniauth['info']['last_name'],
                       :identity_url => omniauth['info']['identity_url'],
-                      :is_active => Rails.configuration.new_users_are_active,
+                      :is_active => Rails.configuration.Users["NewUsersAreActive"],
                       :owner_uuid => system_user_uuid)
       if omniauth['info']['username']
         user.set_initial_username(requested: omniauth['info']['username'])

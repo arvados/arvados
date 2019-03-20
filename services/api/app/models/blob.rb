@@ -51,15 +51,15 @@ class Blob
       timestamp = opts[:expire]
     else
       timestamp = db_current_time.to_i +
-        (opts[:ttl] || Rails.configuration.blob_signature_ttl)
+        (opts[:ttl] || Rails.configuration.Collections["BlobSigningTTL"])
     end
     timestamp_hex = timestamp.to_s(16)
     # => "53163cb4"
-    blob_signature_ttl = Rails.configuration.blob_signature_ttl.to_s(16)
+    blob_signature_ttl = Rails.configuration.Collections["BlobSigningTTL"].to_s(16)
 
     # Generate a signature.
     signature =
-      generate_signature((opts[:key] or Rails.configuration.blob_signing_key),
+      generate_signature((opts[:key] or Rails.configuration.Collections["BlobSigningKey"]),
                          blob_hash, opts[:api_token], timestamp_hex, blob_signature_ttl)
 
     blob_locator + '+A' + signature + '@' + timestamp_hex
@@ -103,10 +103,10 @@ class Blob
     if timestamp.to_i(16) < (opts[:now] or db_current_time.to_i)
       raise Blob::InvalidSignatureError.new 'Signature expiry time has passed.'
     end
-    blob_signature_ttl = Rails.configuration.blob_signature_ttl.to_s(16)
+    blob_signature_ttl = Rails.configuration.Collections["BlobSigningTTL"].to_s(16)
 
     my_signature =
-      generate_signature((opts[:key] or Rails.configuration.blob_signing_key),
+      generate_signature((opts[:key] or Rails.configuration.Collections["BlobSigningKey"]),
                          blob_hash, opts[:api_token], timestamp, blob_signature_ttl)
 
     if my_signature != given_signature

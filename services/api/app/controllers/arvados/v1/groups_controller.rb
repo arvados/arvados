@@ -191,7 +191,7 @@ class Arvados::V1::GroupsController < ApplicationController
 
     table_names = Hash[klasses.collect { |k| [k, k.table_name] }]
 
-    disabled_methods = Rails.configuration.disable_api_methods
+    disabled_methods = Rails.configuration.API["DisabledAPIs"]
     avail_klasses = table_names.select{|k, t| !disabled_methods.include?(t+'.index')}
     klasses = avail_klasses.keys
 

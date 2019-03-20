@@ -39,7 +39,7 @@ class Arvados::V1::SchemaController < ApplicationController
         title: "Arvados API",
         description: "The API to interact with Arvados.",
         documentationLink: "http://doc.arvados.org/api/index.html",
-        defaultCollectionReplication: Rails.configuration.default_collection_replication,
+        defaultCollectionReplication: Rails.configuration.Collections["DefaultReplication"],
         protocol: "rest",
         baseUrl: root_url + "arvados/v1/",
         basePath: "/arvados/v1/",
@@ -70,7 +70,7 @@ class Arvados::V1::SchemaController < ApplicationController
                 when false
                   ''
                 when true
-                  'https://git.%s.arvadosapi.com/' % Rails.configuration.uuid_prefix
+                  'https://git.%s.arvadosapi.com/' % Rails.configuration.ClusterID
                 else
                   Rails.application.config.git_repo_https_base
                 end,
@@ -405,7 +405,7 @@ class Arvados::V1::SchemaController < ApplicationController
           end
         end
       end
-      Rails.configuration.disable_api_methods.each do |method|
+      Rails.configuration.API["DisabledAPIs"].each do |method|
         ctrl, action = method.split('.', 2)
         discovery[:resources][ctrl][:methods].delete(action.to_sym)
       end
