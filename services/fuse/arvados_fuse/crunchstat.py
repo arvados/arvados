@@ -57,11 +57,10 @@ def statlogger(interval, keep, ops):
     ])
     fusetimes = []
     for cur_op in ops.metric_op_names():   
-        fusetimes.append(StatWriter("fuseop:count", interval, [
-            Stat(cur_op, ops.metric_count_func(cur_op))
-        ]))
-        fusetimes.append(StatWriter("fuseop:time", interval, [
-            Stat(cur_op, ops.metric_sum_func(cur_op))
+        name = "fuseop:{0}".format(cur_op)
+        fusetimes.append(StatWriter(name, interval, [
+            Stat("count", ops.metric_count_func(cur_op)),
+            Stat("time", ops.metric_sum_func(cur_op))
         ]))
     blk = StatWriter("blkio:0:0", interval, [
         Stat("write", ops.write_counter.get),
