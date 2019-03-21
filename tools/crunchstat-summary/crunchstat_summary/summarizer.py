@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-from __future__ import print_function
-
 import arvados
 import collections
 import crunchstat_summary.dygraphs
@@ -209,7 +207,7 @@ class Summarizer(object):
                     stats['user+sys'] = stats.get('user', 0) + stats.get('sys', 0)
                 if 'tx' in stats or 'rx' in stats:
                     stats['tx+rx'] = stats.get('tx', 0) + stats.get('rx', 0)
-                for stat, val in stats.iteritems():
+                for stat, val in stats.items():
                     if group == 'interval':
                         if stat == 'seconds':
                             this_interval_s = val
@@ -236,9 +234,9 @@ class Summarizer(object):
 
         self.job_tot = collections.defaultdict(
             functools.partial(collections.defaultdict, int))
-        for task_id, task_stat in self.task_stats.iteritems():
-            for category, stat_last in task_stat.iteritems():
-                for stat, val in stat_last.iteritems():
+        for task_id, task_stat in self.task_stats.items():
+            for category, stat_last in task_stat.items():
+                for stat, val in stat_last.items():
                     if stat in ['cpus', 'cache', 'swap', 'rss']:
                         # meaningless stats like 16 cpu cores x 5 tasks = 80
                         continue
@@ -273,8 +271,8 @@ class Summarizer(object):
 
     def _text_report_gen(self):
         yield "\t".join(['category', 'metric', 'task_max', 'task_max_rate', 'job_total'])
-        for category, stat_max in sorted(self.stats_max.iteritems()):
-            for stat, val in sorted(stat_max.iteritems()):
+        for category, stat_max in sorted(self.stats_max.items()):
+            for stat, val in sorted(stat_max.items()):
                 if stat.endswith('__rate'):
                     continue
                 max_rate = self._format(stat_max.get(stat+'__rate', '-'))
@@ -292,7 +290,7 @@ class Summarizer(object):
                  self.stats_max['cpu']['user+sys__rate'],
                  lambda x: x * 100),
                 ('Overall CPU usage: {}%',
-                 self.job_tot['cpu']['user+sys'] /
+                 float(self.job_tot['cpu']['user+sys']) /
                  self.job_tot['time']['elapsed']
                  if self.job_tot['time']['elapsed'] > 0 else 0,
                  lambda x: x * 100),
@@ -346,7 +344,7 @@ class Summarizer(object):
                 'try runtime_constraints "{}":{}'
             ).format(
                 self.label,
-                int(math.ceil(cpu_max_rate*100)),
+                math.ceil(cpu_max_rate*100),
                 constraint_key,
                 int(used_cores))
 
@@ -539,7 +537,7 @@ class MultiSummarizer(object):
 
     def run(self):
         threads = []
-        for child in self.children.itervalues():
+        for child in self.children.values():
             self.throttle.acquire()
             t = threading.Thread(target=self.run_and_release, args=(child.run, ))
             t.daemon = True
@@ -551,7 +549,7 @@ class MultiSummarizer(object):
     def text_report(self):
         txt = ''
         d = self._descendants()
-        for child in d.itervalues():
+        for child in d.values():
             if len(d) > 1:
                 txt += '### Summary for {} ({})\n'.format(
                     child.label, child.process['uuid'])
@@ -566,7 +564,7 @@ class MultiSummarizer(object):
         MultiSummarizers) are omitted.
         """
         d = collections.OrderedDict()
-        for key, child in self.children.iteritems():
+        for key, child in self.children.items():
             if isinstance(child, Summarizer):
                 d[key] = child
             if isinstance(child, MultiSummarizer):
@@ -574,7 +572,7 @@ class MultiSummarizer(object):
         return d
 
     def html_report(self):
-        return WEBCHART_CLASS(self.label, self._descendants().itervalues()).html()
+        return WEBCHART_CLASS(self.label, iter(self._descendants().values())).html()
 
 
 class JobTreeSummarizer(MultiSummarizer):
@@ -588,7 +586,7 @@ class JobTreeSummarizer(MultiSummarizer):
             preloaded = {}
             for j in arv.jobs().index(
                     limit=len(job['components']),
-                    filters=[['uuid','in',job['components'].values()]]).execute()['items']:
+                    filters=[['uuid','in',list(job['components'].values())]]).execute()['items']:
                 preloaded[j['uuid']] = j
             for cname in sorted(job['components'].keys()):
                 child_uuid = job['components'][cname]
@@ -605,7 +603,7 @@ class JobTreeSummarizer(MultiSummarizer):
 class PipelineSummarizer(MultiSummarizer):
     def __init__(self, instance, **kwargs):
         children = collections.OrderedDict()
-        for cname, component in instance['components'].iteritems():
+        for cname, component in instance['components'].items():
             if 'job' not in component:
                 logger.warning(
                     "%s: skipping component with no job assigned", cname)
@@ -663,7 +661,7 @@ class ContainerTreeSummarizer(MultiSummarizer):
                         cr['name'] = cr.get('name') or cr['uuid']
                         todo.append(cr)
         sorted_children = collections.OrderedDict()
-        for uuid in sorted(children.keys(), key=lambda uuid: children[uuid].sort_key):
+        for uuid in sorted(list(children.keys()), key=lambda uuid: children[uuid].sort_key):
             sorted_children[uuid] = children[uuid]
         super(ContainerTreeSummarizer, self).__init__(
             children=sorted_children,

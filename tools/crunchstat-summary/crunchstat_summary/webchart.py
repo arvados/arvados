@@ -2,7 +2,11 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-import cgi
+try:
+    from html import escape
+except ImportError:
+    from cgi import escape
+
 import json
 import pkg_resources
 
@@ -27,13 +31,13 @@ class WebChart(object):
         <script type="text/javascript">{}</script>
         {}
         </head><body></body></html>
-        '''.format(cgi.escape(self.label),
+        '''.format(escape(self.label),
                    self.JSLIB, self.js(), self.headHTML())
 
     def js(self):
         return 'var chartdata = {};\n{}'.format(
             json.dumps(self.sections()),
-            '\n'.join([pkg_resources.resource_string('crunchstat_summary', jsa) for jsa in self.JSASSETS]))
+            '\n'.join([pkg_resources.resource_string('crunchstat_summary', jsa).decode('utf-8') for jsa in self.JSASSETS]))
 
     def sections(self):
         return [

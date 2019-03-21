@@ -2,11 +2,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-from __future__ import print_function
-
 import arvados
 import itertools
-import Queue
+import queue
 import threading
 
 from crunchstat_summary import logger
@@ -87,18 +85,20 @@ class LiveLogReader(object):
             self._queue.put(self.EOF)
 
     def __iter__(self):
-        self._queue = Queue.Queue()
+        self._queue = queue.Queue()
         self._thread = threading.Thread(target=self._get_all_pages)
         self._thread.daemon = True
         self._thread.start()
         return self
 
-    def next(self):
+    def __next__(self):
         line = self._queue.get()
         if line is self.EOF:
             self._thread.join()
             raise StopIteration
         return line
+
+    next = __next__ # for Python 2
 
     def __enter__(self):
         return self

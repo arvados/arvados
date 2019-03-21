@@ -123,6 +123,7 @@ sdk/cwl
 sdk/R
 tools/sync-groups
 tools/crunchstat-summary
+tools/crunchstat-summary:py3
 tools/keep-exercise
 tools/keep-rsync
 tools/keep-block-check
