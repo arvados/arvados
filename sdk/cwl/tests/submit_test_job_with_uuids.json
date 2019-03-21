@@ -1,0 +1,23 @@
+{
+    "x": {
+        "class": "File",
+        "path": "input/blorp.txt"
+    },
+    "y": {
+        "class": "Directory",
+        "location": "keep:zzzzz-4zz18-zzzzzzzzzzzzzzz",
+        "listing": [{
+            "class": "File",
+            "location": "keep:zzzzz-4zz18-zzzzzzzzzzzzzzz/file1.txt"
+        }]
+    },
+    "z": {
+        "class": "Directory",
+        "basename": "anonymous",
+        "listing": [{
+            "basename": "renamed.txt",
+            "class": "File",
+            "location": "keep:zzzzz-4zz18-zzzzzzzzzzzzzzz/file1.txt"
+        }]
+    }
+}

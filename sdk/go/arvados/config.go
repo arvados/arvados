@@ -122,6 +122,12 @@ type Dispatch struct {
 
 	// Maximum total worker probes per second
 	MaxProbesPerSecond int
+
+	// Time before repeating SIGTERM when killing a container
+	TimeoutSignal Duration
+
+	// Time to give up on SIGTERM and write off the worker
+	TimeoutTERM Duration
 }
 
 type CloudVMs struct {

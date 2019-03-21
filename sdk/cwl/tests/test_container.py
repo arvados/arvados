@@ -80,7 +80,7 @@ class TestContainer(unittest.TestCase):
 
         return loadingContext, runtimeContext
 
-    # Helper function to set up the ArvCwlExecutor to use the containers api 
+    # Helper function to set up the ArvCwlExecutor to use the containers api
     # and test that the RuntimeStatusLoggingHandler is set up correctly
     def setup_and_test_container_executor_and_logging(self, gcc_mock) :
         api = mock.MagicMock()
@@ -96,7 +96,7 @@ class TestContainer(unittest.TestCase):
         handlerClasses = [h.__class__ for h in root_logger.handlers]
         self.assertTrue(arvados_cwl.RuntimeStatusLoggingHandler in handlerClasses)
         return runner
-        
+
     # The test passes no builder.resources
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
@@ -527,9 +527,9 @@ class TestContainer(unittest.TestCase):
         # get_current_container is invoked when we call runtime_status_update
         # so try and log again!
         gcc_mock.side_effect = lambda *args: root_logger.error("Second Error")
-        try: 
+        try:
             root_logger.error("First Error")
-        except RuntimeError: 
+        except RuntimeError:
             self.fail("RuntimeStatusLoggingHandler should not be called recursively")
 
     @mock.patch("arvados_cwl.ArvCwlExecutor.runtime_status_update")
@@ -538,7 +538,7 @@ class TestContainer(unittest.TestCase):
     @mock.patch("arvados.collection.Collection")
     def test_child_failure(self, col, reader, gcc_mock, rts_mock):
         runner = self.setup_and_test_container_executor_and_logging(gcc_mock)
-        
+
         gcc_mock.return_value = {"uuid" : "zzzzz-dz642-zzzzzzzzzzzzzzz"}
         self.assertTrue(gcc_mock.called)
 
@@ -630,6 +630,7 @@ class TestContainer(unittest.TestCase):
             "p1": {
                 "class": "Directory",
                 "location": "keep:99999999999999999999999999999994+44",
+                "http://arvados.org/cwl#collectionUUID": "zzzzz-4zz18-zzzzzzzzzzzzzzz",
                 "listing": [
                     {
                         "class": "File",
@@ -660,7 +661,8 @@ class TestContainer(unittest.TestCase):
                     'mounts': {
                         "/keep/99999999999999999999999999999994+44": {
                             "kind": "collection",
-                            "portable_data_hash": "99999999999999999999999999999994+44"
+                            "portable_data_hash": "99999999999999999999999999999994+44",
+                            "uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzz"
                         },
                         '/tmp': {'kind': 'tmp',
                                  "capacity": 1073741824 },

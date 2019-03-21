@@ -9,6 +9,7 @@ export GEM_PATH=/var/lib/gems
 export npm_config_cache=/var/lib/npm
 export npm_config_cache_min=Infinity
 export R_LIBS=/var/lib/Rlibs
+export HOME=$(getent passwd arvbox | cut -d: -f6)
 
 if test -s /var/run/localip_override ; then
     localip=$(cat /var/run/localip_override)

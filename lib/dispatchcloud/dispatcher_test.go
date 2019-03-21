@@ -62,6 +62,8 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 			ProbeInterval:      arvados.Duration(5 * time.Millisecond),
 			StaleLockTimeout:   arvados.Duration(5 * time.Millisecond),
 			MaxProbesPerSecond: 1000,
+			TimeoutSignal:      arvados.Duration(3 * time.Millisecond),
+			TimeoutTERM:        arvados.Duration(20 * time.Millisecond),
 		},
 		InstanceTypes: arvados.InstanceTypeMap{
 			test.InstanceType(1).Name:  test.InstanceType(1),
@@ -124,17 +126,20 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 	for _, ctr := range queue.Containers {
 		waiting[ctr.UUID] = struct{}{}
 	}
-	executeContainer := func(ctr arvados.Container) int {
+	finishContainer := func(ctr arvados.Container) {
 		mtx.Lock()
 		defer mtx.Unlock()
 		if _, ok := waiting[ctr.UUID]; !ok {
-			c.Logf("container completed twice: %s -- perhaps completed after stub instance was killed?", ctr.UUID)
-			return 1
+			c.Errorf("container completed twice: %s", ctr.UUID)
+			return
 		}
 		delete(waiting, ctr.UUID)
 		if len(waiting) == 0 {
 			close(done)
 		}
+	}
+	executeContainer := func(ctr arvados.Container) int {
+		finishContainer(ctr)
 		return int(rand.Uint32() & 0x3)
 	}
 	n := 0
@@ -144,6 +149,7 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 		stubvm.Boot = time.Now().Add(time.Duration(rand.Int63n(int64(5 * time.Millisecond))))
 		stubvm.CrunchRunDetachDelay = time.Duration(rand.Int63n(int64(10 * time.Millisecond)))
 		stubvm.ExecuteContainer = executeContainer
+		stubvm.CrashRunningContainer = finishContainer
 		switch n % 7 {
 		case 0:
 			stubvm.Broken = time.Now().Add(time.Duration(rand.Int63n(90)) * time.Millisecond)
@@ -261,7 +267,13 @@ func (s *DispatcherSuite) TestInstancesAPI(c *check.C) {
 	c.Check(ok, check.Equals, true)
 	<-ch
 
-	sr = getInstances()
+	for deadline := time.Now().Add(time.Second); time.Now().Before(deadline); {
+		sr = getInstances()
+		if len(sr.Items) > 0 {
+			break
+		}
+		time.Sleep(time.Millisecond)
+	}
 	c.Assert(len(sr.Items), check.Equals, 1)
 	c.Check(sr.Items[0].Instance, check.Matches, "stub.*")
 	c.Check(sr.Items[0].WorkerState, check.Equals, "booting")

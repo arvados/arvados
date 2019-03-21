@@ -5,6 +5,8 @@
 import datetime
 from arvados.errors import ApiError
 
+collectionUUID =  "http://arvados.org/cwl#collectionUUID"
+
 def get_intermediate_collection_info(workflow_step_name, current_container, intermediate_output_ttl):
         if workflow_step_name:
             name = "Intermediate collection for step %s" % (workflow_step_name)
@@ -30,5 +32,5 @@ def get_current_container(api, num_retries=0, logger=None):
             if logger:
                 logger.info("Getting current container: %s", e)
             raise e
-            
+
     return current_container

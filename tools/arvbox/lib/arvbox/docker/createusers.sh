@@ -13,9 +13,13 @@ if ! grep "^arvbox:" /etc/passwd >/dev/null 2>/dev/null ; then
           /var/lib/passenger /var/lib/gopath \
           /var/lib/pip /var/lib/npm
 
+    if test -z "$ARVBOX_HOME" ; then
+	ARVBOX_HOME=/var/lib/arvados
+    fi
+
     groupadd --gid $HOSTGID --non-unique arvbox
     groupadd --gid $HOSTGID --non-unique git
-    useradd --home-dir /var/lib/arvados \
+    useradd --home-dir $ARVBOX_HOME \
             --uid $HOSTUID --gid $HOSTGID \
             --non-unique \
             --groups docker \
@@ -36,6 +40,17 @@ if ! grep "^arvbox:" /etc/passwd >/dev/null 2>/dev/null ; then
     chown crunch:crunch -R /tmp/crunch0 /tmp/crunch1
 
     echo "arvbox    ALL=(crunch) NOPASSWD: ALL" >> /etc/sudoers
+
+    cat <<EOF > /etc/profile.d/paths.sh
+export PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/go/bin:/var/lib/gems/bin:$(ls -d /usr/local/node-*)/bin
+export GEM_HOME=/var/lib/gems
+export GEM_PATH=/var/lib/gems
+export npm_config_cache=/var/lib/npm
+export npm_config_cache_min=Infinity
+export R_LIBS=/var/lib/Rlibs
+export GOPATH=/var/lib/gopath
+EOF
+
 fi
 
 if ! grep "^fuse:" /etc/group >/dev/null 2>/dev/null ; then
