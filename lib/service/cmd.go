@@ -78,6 +78,17 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 		"PID": os.Getpid(),
 	})
 	ctx := ctxlog.Context(context.Background(), log)
+
+	// Currently all components use SystemRootToken if configured,
+	// otherwise ARVADOS_API_TOKEN. In future, per-process tokens
+	// will be generated/obtained here.
+	token := cluster.SystemRootToken
+	if token == "" {
+		log.Warn("SystemRootToken missing from cluster config, falling back to ARVADOS_API_TOKEN environment variable")
+		token = os.Getenv("ARVADOS_API_TOKEN")
+	}
+	ctx = tokenContext(ctx, token)
+
 	profileName := *nodeProfile
 	if profileName == "" {
 		profileName = os.Getenv("ARVADOS_NODE_PROFILE")

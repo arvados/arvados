@@ -46,6 +46,7 @@ type pool interface {
 type dispatcher struct {
 	Cluster       *arvados.Cluster
 	Context       context.Context
+	AuthToken     string
 	InstanceSetID cloud.InstanceSetID
 
 	logger      logrus.FieldLogger
@@ -108,7 +109,15 @@ func (disp *dispatcher) setup() {
 }
 
 func (disp *dispatcher) initialize() {
-	arvClient := arvados.NewClientFromEnv()
+	disp.logger = ctxlog.FromContext(disp.Context)
+
+	arvClient, err := arvados.NewClientFromConfig(disp.Cluster)
+	if err != nil {
+		disp.logger.WithError(err).Warn("error initializing client from cluster config, falling back to ARVADOS_API_HOST(_INSECURE) environment variables")
+		arvClient = arvados.NewClientFromEnv()
+	}
+	arvClient.AuthToken = disp.AuthToken
+
 	if disp.InstanceSetID == "" {
 		if strings.HasPrefix(arvClient.AuthToken, "v2/") {
 			disp.InstanceSetID = cloud.InstanceSetID(strings.Split(arvClient.AuthToken, "/")[1])
@@ -120,7 +129,6 @@ func (disp *dispatcher) initialize() {
 	}
 	disp.stop = make(chan struct{}, 1)
 	disp.stopped = make(chan struct{})
-	disp.logger = ctxlog.FromContext(disp.Context)
 
 	if key, err := ssh.ParsePrivateKey([]byte(disp.Cluster.Dispatch.PrivateKey)); err != nil {
 		disp.logger.Fatalf("error parsing configured Dispatch.PrivateKey: %s", err)

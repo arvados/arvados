@@ -17,6 +17,7 @@ import (
 
 	"git.curoverse.com/arvados.git/lib/dispatchcloud/test"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"golang.org/x/crypto/ssh"
 	check "gopkg.in/check.v1"
@@ -81,10 +82,16 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 				DispatchCloud: arvados.SystemServiceInstance{Listen: ":"},
 			},
 		},
+		Services: arvados.Services{
+			DispatchCloud: arvados.Service{InternalURLs: map[arvados.URL]arvados.ServiceInstance{
+				arvados.URL{Scheme: "https", Host: os.Getenv("ARVADOS_API_HOST")}: {},
+			}},
+		},
 	}
 	s.disp = &dispatcher{
-		Cluster: s.cluster,
-		Context: s.ctx,
+		Cluster:   s.cluster,
+		Context:   s.ctx,
+		AuthToken: arvadostest.AdminToken,
 	}
 	// Test cases can modify s.cluster before calling
 	// initialize(), and then modify private state before calling

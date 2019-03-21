@@ -69,6 +69,21 @@ var InsecureHTTPClient = &http.Client{
 var DefaultSecureClient = &http.Client{
 	Timeout: 5 * time.Minute}
 
+// NewClientFromConfig creates a new Client that uses the endpoints in
+// the given cluster.
+//
+// AuthToken is left empty for the caller to populate.
+func NewClientFromConfig(cluster *Cluster) (*Client, error) {
+	ctrlURL := cluster.Services.Controller.ExternalURL
+	if ctrlURL.Host == "" {
+		return nil, fmt.Errorf("no host in config Services.Controller.ExternalURL: %s", ctrlURL)
+	}
+	return &Client{
+		APIHost:  fmt.Sprintf("%s", ctrlURL),
+		Insecure: cluster.TLS.Insecure,
+	}, nil
+}
+
 // NewClientFromEnv creates a new Client that uses the default HTTP
 // client with the API endpoint and credentials given by the
 // ARVADOS_API_* environment variables.
