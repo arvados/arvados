@@ -20,9 +20,9 @@ EOS
   # Real values will be copied from globals by omniauth_init.rb. For
   # now, assign some strings so the generic *.yml config loader
   # doesn't overwrite them or complain that they're missing.
-  Rails.configuration.sso_app_id = 'xxx'
-  Rails.configuration.sso_app_secret = 'xxx'
-  Rails.configuration.sso_provider_url = '//xxx'
+  Rails.configuration.Login["ProviderAppID"] = 'xxx'
+  Rails.configuration.Login["ProviderAppSecret"] = 'xxx'
+  Rails.configuration.Services["SSO"]["ExternalURL"] = '//xxx'
   WARNED_OMNIAUTH_CONFIG = true
 end
 
@@ -39,75 +39,110 @@ $arvados_config = {}
   end
 end
 
-config_key_map =
-  {
-    "git_repositories_dir":             "Git.Repositories",
-   "disable_api_methods":              "API.DisabledAPIs",
-   "max_request_size":                 "API.MaxRequestSize",
-   "max_index_database_read":          "API.MaxIndexDatabaseRead",
-   "max_items_per_response":           "API.MaxItemsPerResponse",
-   "async_permissions_update_interval":         "API.AsyncPermissionsUpdateInterval",
-   "auto_setup_new_users":                      "Users.AutoSetupNewUsers",
-   "auto_setup_new_users_with_vm_uuid":         "Users.AutoSetupNewUsersWithVmUUID",
-   "auto_setup_new_users_with_repository":      "Users.AutoSetupNewUsersWithRepository",
-   "auto_setup_name_blacklist":                 "Users.AutoSetupUsernameBlacklist",
-   "new_users_are_active":                      "Users.NewUsersAreActive",
-   "auto_admin_user":                           "Users.AutoAdminUserWithEmail",
-   "auto_admin_first_user":                     "Users.AutoAdminFirstUser",
-   "user_profile_notification_address":         "Users.UserProfileNotificationAddress",
-   "admin_notifier_email_from":                 "Users.AdminNotifierEmailFrom",
-   "email_subject_prefix":                      "Users.EmailSubjectPrefix",
-   "user_notifier_email_from":                  "Users.UserNotifierEmailFrom",
-   "new_user_notification_recipients":          "Users.NewUserNotificationRecipients",
-   "new_inactive_user_notification_recipients": "Users.NewInactiveUserNotificationRecipients",
-   "sso_app_secret":                            "Login.ProviderAppSecret",
-   "sso_app_id":                                "Login.ProviderAppID",
-   "max_audit_log_age":                         "AuditLogs.MaxAge",
-   "max_audit_log_delete_batch":                "AuditLogs.MaxDeleteBatch",
-   "unlogged_attributes":                       "AuditLogs.UnloggedAttributes",
-   "max_request_log_params_size":               "SystemLogs.MaxRequestLogParamsSize",
-   "default_collection_replication":            "Collections.DefaultReplication",
-   "default_trash_lifetime":                    "Collections.DefaultTrashLifetime",
-   "collection_versioning":                     "Collections.CollectionVersioning",
-   "preserve_version_if_idle":                  "Collections.PreserveVersionIfIdle",
-   "trash_sweep_interval":                      "Collections.TrashSweepInterval",
-   "blob_signing_key":                          "Collections.BlobSigningKey",
-   "blob_signature_ttl":                        "Collections.BlobSigningTTL",
-   "permit_create_collection_with_unsigned_manifest": "Collections.BlobSigning", # XXX
-   "docker_image_formats":             "Containers.SupportedDockerImageFormats",
-   "log_reuse_decisions":              "Containers.LogReuseDecisions",
-   "container_default_keep_cache_ram": "Containers.DefaultKeepCacheRAM",
-   "max_container_dispatch_attempts":  "Containers.MaxDispatchAttempts",
-   "container_count_max":              "Containers.MaxRetryAttempts",
-   "preemptible_instances":            "Containers.UsePreemptibleInstances",
-   "max_compute_nodes":                "Containers.MaxComputeVMs",
-   "crunch_log_bytes_per_event":       "Containers.Logging.LogBytesPerEvent",
-   "crunch_log_seconds_between_events": "Containers.Logging.LogSecondsBetweenEvents",
-   "crunch_log_throttle_period":        "Containers.Logging.LogThrottlePeriod",
-   "crunch_log_throttle_bytes":         "Containers.Logging.LogThrottleBytes",
-   "crunch_log_throttle_lines":         "Containers.Logging.LogThrottleLines",
-   "crunch_limit_log_bytes_per_job":    "Containers.Logging.LimitLogBytesPerJob",
-   "crunch_log_partial_line_throttle_period": "Containers.Logging.LogPartialLineThrottlePeriod",
-   "crunch_log_update_period":                "Containers.Logging.LogUpdatePeriod",
-   "crunch_log_update_size":                  "Containers.Logging.LogUpdateSize",
-   "clean_container_log_rows_after":          "Containers.Logging.MaxAge",
-   "dns_server_conf_dir":                     "Containers.SLURM.Managed.DNSServerConfDir",
-   "dns_server_conf_template":                "Containers.SLURM.Managed.DNSServerConfTemplate",
-   "dns_server_reload_command":               "Containers.SLURM.Managed.DNSServerReloadCommand",
-   "dns_server_update_command":               "Containers.SLURM.Managed.DNSServerUpdateCommand",
-   "compute_node_domain":                     "Containers.SLURM.Managed.ComputeNodeDomain",
-   "compute_node_nameservers":                "Containers.SLURM.Managed.ComputeNodeNameservers",
-   "assign_node_hostname":                    "Containers.SLURM.Managed.AssignNodeHostname",
-   "enable_legacy_jobs_api":                  "Containers.JobsAPI.Enable",
-   "crunch_job_wrapper":                      "Containers.JobsAPI.CrunchJobWrapper",
-   "crunch_job_user":                         "Containers.JobsAPI.CrunchJobUser",
-   "crunch_refresh_trigger":                  "Containers.JobsAPI.CrunchRefreshTrigger",
-   "git_internal_dir":                        "Containers.JobsAPI.GitInternalDir",
-   "reuse_job_if_outputs_differ":             "Containers.JobsAPI.ReuseJobIfOutputsDiffer",
-   "default_docker_image_for_jobs":           "Containers.JobsAPI.DefaultDockerImage",
-   "mailchimp_api_key":                       "Mail.MailchimpAPIKey",
-   "mailchimp_list_id":                       "Mail.MailchimpListID",
-}
+def set_cfg cfg, k, v
+  # "foo.bar: baz" --> { config.foo.bar = baz }
+  ks = k.split '.'
+  k = ks.pop
+  ks.each do |kk|
+    cfg = cfg[kk]
+    if cfg.nil?
+      break
+    end
+  end
+  if !cfg.nil?
+    cfg[k] = v
+  end
+end
+
+$config_migrate_map = {}
+$config_types = {}
+def declare_config(assign_to, configtype, migrate_from=nil)
+  if migrate_from
+    $config_migrate_map[migrate_from] = ->(cfg, k, v) {
+      set_cfg cfg, assign_to, v
+    }
+  end
+  $config_types[assign_to] = configtype
+end
+
+module Boolean; end
+class TrueClass; include Boolean; end
+class FalseClass; include Boolean; end
+
+declare_config "ClusterID", String, :uuid_prefix
+declare_config "Git.Repositories", String, :git_repositories_dir
+declare_config "API.DisabledAPIs", Array, :disable_api_methods
+declare_config "API.MaxRequestSize", Integer, :max_request_size
+declare_config "API.MaxIndexDatabaseRead", Integer, :max_index_database_read
+declare_config "API.MaxItemsPerResponse", Integer, :max_items_per_response
+declare_config "API.AsyncPermissionsUpdateInterval", ActiveSupport::Duration, :async_permissions_update_interval
+declare_config "Users.AutoSetupNewUsers", Boolean, :auto_setup_new_users
+declare_config "Users.AutoSetupNewUsersWithVmUUID", String, :auto_setup_new_users_with_vm_uuid
+declare_config "Users.AutoSetupNewUsersWithRepository", Boolean, :auto_setup_new_users_with_repository
+declare_config "Users.AutoSetupUsernameBlacklist", Array, :auto_setup_name_blacklist
+declare_config "Users.NewUsersAreActive", Boolean, :new_users_are_active
+declare_config "Users.AutoAdminUserWithEmail", String, :auto_admin_user
+declare_config "Users.AutoAdminFirstUser", Boolean, :auto_admin_first_user
+declare_config "Users.UserProfileNotificationAddress", String, :user_profile_notification_address
+declare_config "Users.AdminNotifierEmailFrom", String, :admin_notifier_email_from
+declare_config "Users.EmailSubjectPrefix", String, :email_subject_prefix
+declare_config "Users.UserNotifierEmailFrom", String, :user_notifier_email_from
+declare_config "Users.NewUserNotificationRecipients", Array, :new_user_notification_recipients
+declare_config "Users.NewInactiveUserNotificationRecipients", Array, :new_inactive_user_notification_recipients
+declare_config "Login.ProviderAppSecret", String, :sso_app_secret
+declare_config "Login.ProviderAppID", String, :sso_app_id
+declare_config "TLS.Insecure", Boolean, :sso_insecure
+declare_config "Services.SSO.ExternalURL", String, :sso_provider_url
+declare_config "AuditLogs.MaxAge", ActiveSupport::Duration, :max_audit_log_age
+declare_config "AuditLogs.MaxDeleteBatch", Integer, :max_audit_log_delete_batch
+declare_config "AuditLogs.UnloggedAttributes", Array, :unlogged_attributes
+declare_config "SystemLogs.MaxRequestLogParamsSize", Integer, :max_request_log_params_size
+declare_config "Collections.DefaultReplication", Integer, :default_collection_replication
+declare_config "Collections.DefaultTrashLifetime", ActiveSupport::Duration, :default_trash_lifetime
+declare_config "Collections.CollectionVersioning", Boolean, :collection_versioning
+declare_config "Collections.PreserveVersionIfIdle", ActiveSupport::Duration, :preserve_version_if_idle
+declare_config "Collections.TrashSweepInterval", ActiveSupport::Duration, :trash_sweep_interval
+declare_config "Collections.BlobSigningKey", String, :blob_signing_key
+declare_config "Collections.BlobSigningTTL", Integer, :blob_signature_ttl
+declare_config "Collections.BlobSigning", Boolean, :permit_create_collection_with_unsigned_manifest
+declare_config "Containers.SupportedDockerImageFormats", Array, :docker_image_formats
+declare_config "Containers.LogReuseDecisions", Boolean, :log_reuse_decisions
+declare_config "Containers.DefaultKeepCacheRAM", Integer, :container_default_keep_cache_ram
+declare_config "Containers.MaxDispatchAttempts", Integer, :max_container_dispatch_attempts
+declare_config "Containers.MaxRetryAttempts", Integer, :container_count_max
+declare_config "Containers.UsePreemptibleInstances", Boolean, :preemptible_instances
+declare_config "Containers.MaxComputeVMs", Integer, :max_compute_nodes
+declare_config "Containers.Logging.LogBytesPerEvent", Integer, :crunch_log_bytes_per_event
+declare_config "Containers.Logging.LogSecondsBetweenEvents", ActiveSupport::Duration, :crunch_log_seconds_between_events
+declare_config "Containers.Logging.LogThrottlePeriod", ActiveSupport::Duration, :crunch_log_throttle_period
+declare_config "Containers.Logging.LogThrottleBytes", Integer, :crunch_log_throttle_bytes
+declare_config "Containers.Logging.LogThrottleLines", Integer, :crunch_log_throttle_lines
+declare_config "Containers.Logging.LimitLogBytesPerJob", Integer, :crunch_limit_log_bytes_per_job
+declare_config "Containers.Logging.LogPartialLineThrottlePeriod", ActiveSupport::Duration, :crunch_log_partial_line_throttle_period
+declare_config "Containers.Logging.LogUpdatePeriod", ActiveSupport::Duration, :crunch_log_update_period
+declare_config "Containers.Logging.LogUpdateSize", Integer, :crunch_log_update_size
+declare_config "Containers.Logging.MaxAge", ActiveSupport::Duration, :clean_container_log_rows_after
+declare_config "Containers.SLURM.Managed.DNSServerConfDir", String, :dns_server_conf_dir
+declare_config "Containers.SLURM.Managed.DNSServerConfTemplate", String, :dns_server_conf_template
+declare_config "Containers.SLURM.Managed.DNSServerReloadCommand", String, :dns_server_reload_command
+declare_config "Containers.SLURM.Managed.DNSServerUpdateCommand", String, :dns_server_update_command
+declare_config "Containers.SLURM.Managed.ComputeNodeDomain", String, :compute_node_domain
+declare_config "Containers.SLURM.Managed.ComputeNodeNameservers", Array, :compute_node_nameservers
+declare_config "Containers.SLURM.Managed.AssignNodeHostname", String, :assign_node_hostname
+declare_config "Containers.JobsAPI.Enable", String, :enable_legacy_jobs_api
+declare_config "Containers.JobsAPI.CrunchJobWrapper", String, :crunch_job_wrapper
+declare_config "Containers.JobsAPI.CrunchJobUser", String, :crunch_job_user
+declare_config "Containers.JobsAPI.CrunchRefreshTrigger", String, :crunch_refresh_trigger
+declare_config "Containers.JobsAPI.GitInternalDir", String, :git_internal_dir
+declare_config "Containers.JobsAPI.ReuseJobIfOutputsDiffer", Boolean, :reuse_job_if_outputs_differ
+declare_config "Containers.JobsAPI.DefaultDockerImage", String, :default_docker_image_for_jobs
+declare_config "Mail.MailchimpAPIKey", String, :mailchimp_api_key
+declare_config "Mail.MailchimpListID", String, :mailchimp_list_id
+declare_config "Services.Workbench1.ExternalURL", String, :workbench_address
+declare_config "Services.Websocket.ExternalURL", String, :websocket_address
+declare_config "Services.WebDAV.ExternalURL", String, :keep_web_service_url
+declare_config "Services.GitHTTP.ExternalURL", String, :git_repo_https_base
+declare_config "Services.GitSSH.ExternalURL", String, :git_repo_ssh_base
 
 application_config = {}
 %w(application.default application).each do |cfgfile|
@@ -123,13 +158,16 @@ application_config = {}
 end
 
 application_config.each do |k, v|
-  cfg = $arvados_config
-
-  if config_key_map[k.to_sym]
-     k = config_key_map[k.to_sym]
+  if $config_migrate_map[k.to_sym]
+    $config_migrate_map[k.to_sym].call $arvados_config, k, v
+  else
+    set_cfg $arvados_config, k, v
   end
+end
 
-  # "foo.bar: baz" --> { config.foo.bar = baz }
+$config_types.each do |cfgkey, cfgtype|
+  cfg = $arvados_config
+  k = cfgkey
   ks = k.split '.'
   k = ks.pop
   ks.each do |kk|
@@ -138,12 +176,25 @@ application_config.each do |k, v|
       break
     end
   end
-  if !cfg.nil?
-    cfg[k] = v
+  if cfgtype == String and !cfg[k]
+    cfg[k] = ""
+  end
+  if cfgtype == ActiveSupport::Duration
+    if cfg[k].is_a? Integer
+      cfg[k] = cfg[k].seconds
+    elsif cfg[k].is_a? String
+      # TODO handle suffixes
+    end
+  end
+
+  if cfg.nil?
+    raise "missing #{cfgkey}"
+  end
+
+  if !cfg[k].is_a? cfgtype
+    raise "#{cfgkey} expected #{cfgtype} but was #{cfg[k].class}"
   end
 end
-
-puts $arvados_config.to_yaml
 
 Server::Application.configure do
   nils = []

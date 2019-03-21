@@ -203,7 +203,7 @@ class Node < ArvadosModel
       tmpfile = nil
       begin
         begin
-          template = IO.read(Rails.configuration.Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfTemplate"])
+          template = IO.read(Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfTemplate"])
         rescue IOError, SystemCallError => e
           logger.error "Reading #{Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfTemplate"]}: #{e.message}"
           raise

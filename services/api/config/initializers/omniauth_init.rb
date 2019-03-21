@@ -9,15 +9,15 @@
 
 if defined? CUSTOM_PROVIDER_URL
   Rails.logger.warn "Copying omniauth from globals in legacy config file."
-  Rails.configuration.sso_app_id = APP_ID
-  Rails.configuration.sso_app_secret = APP_SECRET
-  Rails.configuration.sso_provider_url = CUSTOM_PROVIDER_URL
+  Rails.configuration.Login["ProviderAppID"] = APP_ID
+  Rails.configuration.Login["ProviderAppSecret"] = APP_SECRET
+  Rails.configuration.Services["SSO"]["ExternalURL"] = CUSTOM_PROVIDER_URL
 else
   Rails.application.config.middleware.use OmniAuth::Builder do
     provider(:josh_id,
-             Rails.configuration.sso_app_id,
-             Rails.configuration.sso_app_secret,
-             Rails.configuration.sso_provider_url)
+             Rails.configuration.Login["ProviderAppID"],
+             Rails.configuration.Login["ProviderAppSecret"],
+             Rails.configuration.Services["SSO"]["ExternalURL"])
   end
   OmniAuth.config.on_failure = StaticController.action(:login_failure)
 end

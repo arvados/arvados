@@ -53,8 +53,6 @@ class ApplicationController < ActionController::Base
   before_action(:render_404_if_no_object,
                 except: [:index, :create] + ERROR_ACTIONS)
 
-  theme Rails.configuration.arvados_theme
-
   attr_writer :resource_attrs
 
   begin
@@ -83,15 +81,10 @@ class ApplicationController < ActionController::Base
 
   def default_url_options
     options = {}
-    if Rails.configuration.host
-      options[:host] = Rails.configuration.host
-    end
-    if Rails.configuration.port
-      options[:port] = Rails.configuration.port
-    end
-    if Rails.configuration.protocol
-      options[:protocol] = Rails.configuration.protocol
-    end
+    exturl = URI.parse(Rails.configuration.Services["Controller"]["ExternalURL"])
+    options[:host] = exturl.host
+    options[:port] = exturl.port
+    options[:protocol] = exturl.scheme
     options
   end
 

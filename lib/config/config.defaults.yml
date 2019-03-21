@@ -1,5 +1,15 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
 #
+# SPDX-License-Identifier: AGPL-3.0
+
+# Do not use this file for site configuration. Create
+# /etc/arvados/config.yml instead.
 #
+# The order of precedence (highest to lowest):
+# 1. Legacy component-specific config files (deprecated)
+# 2. /etc/arvados/config.yml
+# 3. config.defaults.yml
+
 Clusters:
   xxxxx:
     SystemRootToken: ""
@@ -8,6 +18,51 @@ Clusters:
     # Server expects request header of the format "Authorization: Bearer xxx"
     ManagementToken: ""
 
+    Services:
+      RailsAPI:
+        InternalURLs: {}
+      GitHTTP:
+        InternalURLs: {}
+        ExternalURL: ""
+      Keepstore:
+        InternalURLs: {}
+      Controller:
+        InternalURLs: {}
+        ExternalURL: ""
+      Websocket:
+        InternalURLs: {}
+        ExternalURL: ""
+      Keepbalance:
+        InternalURLs: {}
+      GitHTTP:
+        InternalURLs: {}
+        ExternalURL: ""
+      GitSSH:
+        ExternalURL: ""
+      DispatchCloud:
+        InternalURLs: {}
+      SSO:
+        ExternalURL: ""
+      Keepproxy:
+        InternalURLs: {}
+        ExternalURL: ""
+      WebDAV:
+        InternalURLs: {}
+        ExternalURL: ""
+      WebDAVDownload:
+        InternalURLs: {}
+        ExternalURL: ""
+      Keepstore:
+        InternalURLs: {}
+      Composer:
+        ExternalURL: ""
+      WebShell:
+        ExternalURL: ""
+      Workbench1:
+        InternalURLs: {}
+        ExternalURL: ""
+      Workbench2:
+        ExternalURL: ""
     API:
       # Maximum size (in bytes) allowed for a single API request.  This
       # limit is published in the discovery document for use by clients.
@@ -37,6 +92,11 @@ Clusters:
       # discovery document, and respond 404 to all requests.
       # Example: ["jobs.create", "pipeline_instances.create"]
       DisabledAPIs: []
+
+      # Interval (seconds) between asynchronous permission view updates. Any
+      # permission-updating API called with the 'async' parameter schedules a an
+      # update on the permission view in the future, if not already scheduled.
+      AsyncPermissionsUpdateInterval: 20
 
     Users:
       # Config parameters to automatically setup new users.  If enabled,
@@ -165,11 +225,6 @@ Clusters:
       # arrived, and deleted if their delete_at time has arrived.
       TrashSweepInterval: 60
 
-      # Interval (seconds) between asynchronous permission view updates. Any
-      # permission-updating API called with the 'async' parameter schedules a an
-      # update on the permission view in the future, if not already scheduled.
-      AsyncPermissionsUpdateInterval: 20
-
       # If true, enable collection versioning.
       # When a collection's preserve_version field is true or the current version
       # is older than the amount of seconds defined on preserve_version_if_idle,
@@ -194,6 +249,9 @@ Clusters:
       # of the arvados tree in {git_repositories_dir}/arvados.git or
       # {git_repositories_dir}/arvados/.git
       Repositories: /var/lib/arvados/git/repositories
+
+    TLS:
+      Insecure: false
 
     Containers:
       # List of supported Docker Registry image formats that compute nodes
@@ -327,7 +385,7 @@ Clusters:
           # Example for compute0000, compute0001, ....:
           # assign_node_hostname: compute%<slot_number>04d
           # (See http://ruby-doc.org/core-2.2.2/Kernel.html#method-i-format for more.)
-          AssignNodeHostname: compute%<slot_number>d
+          AssignNodeHostname: "compute%<slot_number>d"
 
       JobsAPI:
         # Enable the legacy Jobs API.
@@ -346,8 +404,8 @@ Clusters:
         # Docker image to be used when none found in runtime_constraints of a job
         DefaultDockerImage: ""
 
-        # :none or :slurm_immediate
-        CrunchJobWrapper: :none
+        # none or slurm_immediate
+        CrunchJobWrapper: none
 
         # username, or false = do not set uid when running jobs.
         CrunchJobUser: crunch
@@ -368,10 +426,10 @@ Clusters:
         ReuseJobIfOutputsDiffer: false
 
       Mail:
-        MailchimpAPIKey:            # api-server/mailchimp_api_key
-        MailchimpListID:            # api-server/mailchimp_list_id
-        SendUserSetupNotificationEmail:  # workbench/send_user_setup_notification_email
-        IssueReporterEmailFrom:     # workbench/issue_reporter_email_from
-        IssueReporterEmailTo:       # workbench/issue_reporter_email_to
-        SupportEmailAddress:        # workbench/support_email_address
-        EmailFrom:                  # workbench/email_from
+        MailchimpAPIKey: ""
+        MailchimpListID: ""
+        SendUserSetupNotificationEmail: ""
+        IssueReporterEmailFrom: ""
+        IssueReporterEmailTo: ""
+        SupportEmailAddress: ""
+        EmailFrom: ""
