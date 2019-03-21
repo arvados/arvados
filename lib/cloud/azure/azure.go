@@ -647,7 +647,8 @@ func (ai *azureInstance) Destroy() error {
 func (ai *azureInstance) Address() string {
 	if ai.nic.IPConfigurations != nil &&
 		len(*ai.nic.IPConfigurations) > 0 &&
-		(*ai.nic.IPConfigurations)[0].PrivateIPAddress != nil {
+		(*ai.nic.IPConfigurations)[0].InterfaceIPConfigurationPropertiesFormat != nil &&
+		(*ai.nic.IPConfigurations)[0].InterfaceIPConfigurationPropertiesFormat.PrivateIPAddress != nil {
 
 		return *(*ai.nic.IPConfigurations)[0].PrivateIPAddress
 	}
