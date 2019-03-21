@@ -154,6 +154,9 @@ type CloudVMs struct {
 	// Time after shutdown to retry shutdown
 	TimeoutShutdown Duration
 
+	// Maximum create/destroy-instance operations per second
+	MaxCloudOpsPerSecond int
+
 	ImageID string
 
 	Driver           string

@@ -49,12 +49,13 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 
 	s.cluster = &arvados.Cluster{
 		CloudVMs: arvados.CloudVMs{
-			Driver:          "test",
-			SyncInterval:    arvados.Duration(10 * time.Millisecond),
-			TimeoutIdle:     arvados.Duration(150 * time.Millisecond),
-			TimeoutBooting:  arvados.Duration(150 * time.Millisecond),
-			TimeoutProbe:    arvados.Duration(15 * time.Millisecond),
-			TimeoutShutdown: arvados.Duration(5 * time.Millisecond),
+			Driver:               "test",
+			SyncInterval:         arvados.Duration(10 * time.Millisecond),
+			TimeoutIdle:          arvados.Duration(150 * time.Millisecond),
+			TimeoutBooting:       arvados.Duration(150 * time.Millisecond),
+			TimeoutProbe:         arvados.Duration(15 * time.Millisecond),
+			TimeoutShutdown:      arvados.Duration(5 * time.Millisecond),
+			MaxCloudOpsPerSecond: 500,
 		},
 		Dispatch: arvados.Dispatch{
 			PrivateKey:         string(dispatchprivraw),
@@ -155,6 +156,8 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 			stubvm.Broken = time.Now().Add(time.Duration(rand.Int63n(90)) * time.Millisecond)
 		case 1:
 			stubvm.CrunchRunMissing = true
+		case 2:
+			stubvm.ReportBroken = time.Now().Add(time.Duration(rand.Int63n(200)) * time.Millisecond)
 		default:
 			stubvm.CrunchRunCrashRate = 0.1
 		}

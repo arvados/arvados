@@ -20,6 +20,7 @@ var (
 	lockdir    = "/var/lock"
 	lockprefix = "crunch-run-"
 	locksuffix = ".lock"
+	brokenfile = "crunch-run-broken"
 )
 
 // procinfo is saved in each process's lockfile.
@@ -146,7 +147,10 @@ func ListProcesses(stdout, stderr io.Writer) int {
 		if info.IsDir() && path != walkdir {
 			return filepath.SkipDir
 		}
-		if name := info.Name(); !strings.HasPrefix(name, lockprefix) || !strings.HasSuffix(name, locksuffix) {
+		if name := info.Name(); name == brokenfile {
+			fmt.Fprintln(stdout, "broken")
+			return nil
+		} else if !strings.HasPrefix(name, lockprefix) || !strings.HasSuffix(name, locksuffix) {
 			return nil
 		}
 		if info.Size() == 0 {

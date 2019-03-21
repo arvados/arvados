@@ -181,6 +181,7 @@ func (e RateLimitError) EarliestRetry() time.Time { return e.Retry }
 type StubVM struct {
 	Boot                  time.Time
 	Broken                time.Time
+	ReportBroken          time.Time
 	CrunchRunMissing      bool
 	CrunchRunCrashRate    float64
 	CrunchRunDetachDelay  time.Duration
@@ -313,6 +314,9 @@ func (svm *StubVM) Exec(env map[string]string, command string, stdin io.Reader, 
 		defer svm.Unlock()
 		for uuid := range svm.running {
 			fmt.Fprintf(stdout, "%s\n", uuid)
+		}
+		if !svm.ReportBroken.IsZero() && svm.ReportBroken.Before(time.Now()) {
+			fmt.Fprintln(stdout, "broken")
 		}
 		return 0
 	}
