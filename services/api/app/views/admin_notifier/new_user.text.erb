@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
 
 <%
   add_to_message = ''
-  if Rails.configuration.auto_setup_new_users
+  if Rails.configuration.Users["AutoSetupNewUsers"]
     add_to_message = @user.is_invited ? ' and setup' : ', but not setup'
   end
 %>
@@ -22,4 +22,3 @@ Please see workbench for more information:
 <% end -%>
 Thanks,
 Your friendly Arvados robot.
-

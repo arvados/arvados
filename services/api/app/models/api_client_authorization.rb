@@ -94,7 +94,7 @@ class ApiClientAuthorization < ArvadosModel
 
   def self.validate(token:, remote: nil)
     return nil if !token
-    remote ||= Rails.configuration.uuid_prefix
+    remote ||= Rails.configuration.ClusterID
 
     case token[0..2]
     when 'v2/'
@@ -134,7 +134,7 @@ class ApiClientAuthorization < ArvadosModel
       end
 
       uuid_prefix = uuid[0..4]
-      if uuid_prefix == Rails.configuration.uuid_prefix
+      if uuid_prefix == Rails.configuration.ClusterID
         # If the token were valid, we would have validated it above
         return nil
       elsif uuid_prefix.length != 5
@@ -153,7 +153,7 @@ class ApiClientAuthorization < ArvadosModel
       # [re]validate it.
       begin
         clnt = HTTPClient.new
-        if Rails.configuration.sso_insecure
+        if Rails.configuration.TLS["Insecure"]
           clnt.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
         else
           # Use system CA certificates
@@ -164,7 +164,7 @@ class ApiClientAuthorization < ArvadosModel
         end
         remote_user = SafeJSON.load(
           clnt.get_content('https://' + host + '/arvados/v1/users/current',
-                           {'remote' => Rails.configuration.uuid_prefix},
+                           {'remote' => Rails.configuration.ClusterID},
                            {'Authorization' => 'Bearer ' + token}))
       rescue => e
         Rails.logger.warn "remote authentication with token #{token.inspect} failed: #{e}"
@@ -187,7 +187,7 @@ class ApiClientAuthorization < ArvadosModel
           end
         end
 
-        if Rails.configuration.new_users_are_active ||
+        if Rails.configuration.Users["NewUsersAreActive"] ||
            Rails.configuration.auto_activate_users_from.include?(remote_user['uuid'][0..4])
           # Update is_active to whatever it is at the remote end
           user.is_active = remote_user['is_active']

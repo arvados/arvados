@@ -9,7 +9,7 @@ module LogReuseInfo
   # doing expensive things like database queries, and we want to skip
   # those when logging is disabled.
   def log_reuse_info(candidates=nil)
-    if Rails.configuration.log_reuse_decisions
+    if Rails.configuration.Containers["LogReuseDecisions"]
       msg = yield
       if !candidates.nil?
         msg = "have #{candidates.count} candidates " + msg
