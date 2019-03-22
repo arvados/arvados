@@ -76,10 +76,10 @@ var DefaultSecureClient = &http.Client{
 func NewClientFromConfig(cluster *Cluster) (*Client, error) {
 	ctrlURL := cluster.Services.Controller.ExternalURL
 	if ctrlURL.Host == "" {
-		return nil, fmt.Errorf("no host in config Services.Controller.ExternalURL: %s", ctrlURL)
+		return nil, fmt.Errorf("no host in config Services.Controller.ExternalURL: %v", ctrlURL)
 	}
 	return &Client{
-		APIHost:  fmt.Sprintf("%s", ctrlURL),
+		APIHost:  fmt.Sprintf("%v", ctrlURL),
 		Insecure: cluster.TLS.Insecure,
 	}, nil
 }
