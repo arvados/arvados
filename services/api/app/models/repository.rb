@@ -98,16 +98,15 @@ class Repository < ArvadosModel
   end
 
   def ssh_clone_url
-    _clone_url :git_repo_ssh_base, 'git@git.%s.arvadosapi.com:'
+    _clone_url Rails.configuration.Services["GitSSH"]["ExternalURL"], 'git@git.%s.arvadosapi.com:'
   end
 
   def https_clone_url
-    _clone_url :git_repo_https_base, 'https://git.%s.arvadosapi.com/'
+    _clone_url Rails.configuration.Services["GitHTTP"]["ExternalURL"], 'https://git.%s.arvadosapi.com/'
   end
 
   def _clone_url config_var, default_base_fmt
-    configured_base = Rails.configuration.send config_var
-    return nil if configured_base == false
+    configured_base = config_var
     prefix = new_record? ? Rails.configuration.ClusterID : uuid[0,5]
     if prefix == Rails.configuration.ClusterID and configured_base != true
       base = configured_base

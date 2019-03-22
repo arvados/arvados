@@ -14,10 +14,10 @@ A new user has been created<%=add_to_message%>:
 
 This user is <%= @user.is_active ? '' : 'NOT ' %>active.
 
-<% if Rails.configuration.workbench_address -%>
+<% if Rails.configuration.Services["Workbench1"]["ExternalURL"] -%>
 Please see workbench for more information:
 
-  <%= Rails.configuration.workbench_address %>
+  <%= Rails.configuration.Services["Workbench1"]["ExternalURL"] %>
 
 <% end -%>
 Thanks,

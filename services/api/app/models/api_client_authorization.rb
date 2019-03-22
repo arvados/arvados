@@ -87,8 +87,8 @@ class ApiClientAuthorization < ArvadosModel
   end
 
   def self.remote_host(uuid_prefix:)
-    Rails.configuration.remote_hosts[uuid_prefix] ||
-      (Rails.configuration.remote_hosts_via_dns &&
+    Rails.configuration.RemoteClusters[uuid_prefix]["Host"] ||
+      (Rails.configuration.RemoteClusters["*"]["Proxy"] &&
        uuid_prefix+".arvadosapi.com")
   end
 
@@ -188,7 +188,7 @@ class ApiClientAuthorization < ArvadosModel
         end
 
         if Rails.configuration.Users["NewUsersAreActive"] ||
-           Rails.configuration.auto_activate_users_from.include?(remote_user['uuid'][0..4])
+           Rails.configuration.RemoteClusters[remote_user['uuid'][0..4]].andand["ActivateUsers"]
           # Update is_active to whatever it is at the remote end
           user.is_active = remote_user['is_active']
         elsif !remote_user['is_active']

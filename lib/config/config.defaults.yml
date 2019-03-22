@@ -433,3 +433,7 @@ Clusters:
       IssueReporterEmailTo: ""
       SupportEmailAddress: ""
       EmailFrom: ""
+    RemoteClusters:
+      "*":
+        Proxy: false
+        ActivateUsers: false

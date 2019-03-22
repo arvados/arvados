@@ -364,7 +364,7 @@ class User < ArvadosModel
   def check_auto_admin
     return if self.uuid.end_with?('anonymouspublic')
     if (User.where("email = ?",self.email).where(:is_admin => true).count == 0 and
-        Rails.configuration.Users["AutoAdminUserWithEmail"] and self.email == Rails.configuration.Users["AutoAdminUserWithEmail"]) or
+        !Rails.configuration.Users["AutoAdminUserWithEmail"].empty? and self.email == Rails.configuration.Users["AutoAdminUserWithEmail"]) or
        (User.where("uuid not like '%-000000000000000'").where(:is_admin => true).count == 0 and
         Rails.configuration.Users["AutoAdminFirstUser"])
       self.is_admin = true

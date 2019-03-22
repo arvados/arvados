@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+require 'config_loader'
+
 begin
   # If secret_token.rb exists here, we need to load it first.
   require_relative 'secret_token.rb'
@@ -39,37 +41,8 @@ $arvados_config = {}
   end
 end
 
-def set_cfg cfg, k, v
-  # "foo.bar: baz" --> { config.foo.bar = baz }
-  ks = k.split '.'
-  k = ks.pop
-  ks.each do |kk|
-    cfg = cfg[kk]
-    if cfg.nil?
-      break
-    end
-  end
-  if !cfg.nil?
-    cfg[k] = v
-  end
-end
-
-$config_migrate_map = {}
-$config_types = {}
-def declare_config(assign_to, configtype, migrate_from=nil, migrate_fn=nil)
-  if migrate_from
-    $config_migrate_map[migrate_from] = migrate_fn || ->(cfg, k, v) {
-      set_cfg cfg, assign_to, v
-    }
-  end
-  $config_types[assign_to] = configtype
-end
-
-module Boolean; end
-class TrueClass; include Boolean; end
-class FalseClass; include Boolean; end
-
-declare_config "ClusterID", String, :uuid_prefix
+declare_config "ClusterID", NonemptyString, :uuid_prefix
+declare_config "ManagementToken", NonemptyString, :ManagementToken
 declare_config "Git.Repositories", String, :git_repositories_dir
 declare_config "API.DisabledAPIs", Array, :disable_api_methods
 declare_config "API.MaxRequestSize", Integer, :max_request_size
@@ -89,10 +62,10 @@ declare_config "Users.EmailSubjectPrefix", String, :email_subject_prefix
 declare_config "Users.UserNotifierEmailFrom", String, :user_notifier_email_from
 declare_config "Users.NewUserNotificationRecipients", Array, :new_user_notification_recipients
 declare_config "Users.NewInactiveUserNotificationRecipients", Array, :new_inactive_user_notification_recipients
-declare_config "Login.ProviderAppSecret", String, :sso_app_secret
-declare_config "Login.ProviderAppID", String, :sso_app_id
+declare_config "Login.ProviderAppSecret", NonemptyString, :sso_app_secret
+declare_config "Login.ProviderAppID", NonemptyString, :sso_app_id
 declare_config "TLS.Insecure", Boolean, :sso_insecure
-declare_config "Services.SSO.ExternalURL", String, :sso_provider_url
+declare_config "Services.SSO.ExternalURL", NonemptyString, :sso_provider_url
 declare_config "AuditLogs.MaxAge", ActiveSupport::Duration, :max_audit_log_age
 declare_config "AuditLogs.MaxDeleteBatch", Integer, :max_audit_log_delete_batch
 declare_config "AuditLogs.UnloggedAttributes", Array, :unlogged_attributes
@@ -102,7 +75,7 @@ declare_config "Collections.DefaultTrashLifetime", ActiveSupport::Duration, :def
 declare_config "Collections.CollectionVersioning", Boolean, :collection_versioning
 declare_config "Collections.PreserveVersionIfIdle", ActiveSupport::Duration, :preserve_version_if_idle
 declare_config "Collections.TrashSweepInterval", ActiveSupport::Duration, :trash_sweep_interval
-declare_config "Collections.BlobSigningKey", String, :blob_signing_key
+declare_config "Collections.BlobSigningKey", NonemptyString, :blob_signing_key
 declare_config "Collections.BlobSigningTTL", Integer, :blob_signature_ttl
 declare_config "Collections.BlobSigning", Boolean, :permit_create_collection_with_unsigned_manifest
 declare_config "Containers.SupportedDockerImageFormats", Array, :docker_image_formats
@@ -129,9 +102,7 @@ declare_config "Containers.SLURM.Managed.DNSServerUpdateCommand", String, :dns_s
 declare_config "Containers.SLURM.Managed.ComputeNodeDomain", String, :compute_node_domain
 declare_config "Containers.SLURM.Managed.ComputeNodeNameservers", Array, :compute_node_nameservers
 declare_config "Containers.SLURM.Managed.AssignNodeHostname", String, :assign_node_hostname
-declare_config "Containers.JobsAPI.Enable", String, :enable_legacy_jobs_api, ->(cfg, k, v) {
-  set_cfg cfg, "Containers.JobsAPI.Enable", if v.is_a? Boolean then v.to_s else v end
-}
+declare_config "Containers.JobsAPI.Enable", String, :enable_legacy_jobs_api, ->(cfg, k, v) { set_cfg cfg, "Containers.JobsAPI.Enable", v.to_s }
 declare_config "Containers.JobsAPI.CrunchJobWrapper", String, :crunch_job_wrapper
 declare_config "Containers.JobsAPI.CrunchJobUser", String, :crunch_job_user
 declare_config "Containers.JobsAPI.CrunchRefreshTrigger", String, :crunch_refresh_trigger
@@ -145,6 +116,20 @@ declare_config "Services.Websocket.ExternalURL", String, :websocket_address
 declare_config "Services.WebDAV.ExternalURL", String, :keep_web_service_url
 declare_config "Services.GitHTTP.ExternalURL", String, :git_repo_https_base
 declare_config "Services.GitSSH.ExternalURL", String, :git_repo_ssh_base
+declare_config "RemoteClusters", Hash, :remote_hosts, ->(cfg, k, v) {
+  h = {}
+  v.each do |clusterid, host|
+    h[clusterid] = {
+      "Host" => host,
+      "Proxy" => true,
+      "Scheme" => "https",
+      "Insecure" => false,
+      "ActivateUsers" => false
+    }
+  end
+  set_cfg cfg, "RemoteClusters", h
+}
+declare_config "RemoteClusters.*.Proxy", Boolean, :remote_hosts_via_dns
 
 application_config = {}
 %w(application.default application).each do |cfgfile|
@@ -159,52 +144,17 @@ application_config = {}
   end
 end
 
-application_config.each do |k, v|
-  if $config_migrate_map[k.to_sym]
-    $config_migrate_map[k.to_sym].call $arvados_config, k, v
-  else
-    set_cfg $arvados_config, k, v
+remainders = migrate_config application_config, $arvados_config
+
+if application_config[:auto_activate_users_from]
+  application_config[:auto_activate_users_from].each do |cluster|
+    if $arvados_config.RemoteClusters[cluster]
+      $arvados_config.RemoteClusters[cluster]["ActivateUsers"] = true
+    end
   end
 end
 
-duration_re = /(\d+(\.\d+)?)(ms|s|m|h)/
-
-$config_types.each do |cfgkey, cfgtype|
-  cfg = $arvados_config
-  k = cfgkey
-  ks = k.split '.'
-  k = ks.pop
-  ks.each do |kk|
-    cfg = cfg[kk]
-    if cfg.nil?
-      break
-    end
-  end
-
-  if cfg.nil?
-    raise "missing #{cfgkey}"
-  end
-
-  if cfgtype == String and !cfg[k]
-    cfg[k] = ""
-  end
-  if cfgtype == ActiveSupport::Duration
-    if cfg[k].is_a? Integer
-      cfg[k] = cfg[k].seconds
-    elsif cfg[k].is_a? String
-      mt = duration_re.match cfg[k]
-      if !mt
-        raise "#{cfgkey} not a valid duration: '#{cfg[k]}', accepted suffixes are ms, s, m, h"
-      end
-      multiplier = {ms: 0.001, s: 1, m: 60, h: 3600}
-      cfg[k] = (Float(mt[1]) * multiplier[mt[3].to_sym]).seconds
-    end
-  end
-
-  if !cfg[k].is_a? cfgtype
-    raise "#{cfgkey} expected #{cfgtype} but was #{cfg[k].class}"
-  end
-end
+coercion_and_check $arvados_config
 
 Server::Application.configure do
   nils = []
@@ -223,6 +173,10 @@ Server::Application.configure do
       cfg.send "#{k}=", v
     end
   end
+  remainders.each do |k, v|
+    config.send "#{k}=", v
+  end
+
   if !nils.empty?
     raise <<EOS
 Refusing to start in #{::Rails.env.to_s} mode with missing configuration.

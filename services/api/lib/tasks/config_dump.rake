@@ -5,6 +5,8 @@
 namespace :config do
   desc 'Show site configuration'
   task dump: :environment do
-    puts $arvados_config.to_yaml
+    cfg = { "Clusters" => {}}
+    cfg["Clusters"][$arvados_config["ClusterID"]] = $arvados_config.select {|k,v| k != "ClusterID"}
+    puts cfg.to_yaml
   end
 end
