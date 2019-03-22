@@ -308,7 +308,7 @@ Clusters:
         # containers that have been finished for at least this many seconds,
         # and delete their stdout, stderr, arv-mount, crunch-run, and
         # crunchstat logs from the logs table.
-        MaxAge: 30d
+        MaxAge: 720h
 
         # These two settings control how frequently log events are flushed to the
         # database.  Log lines are buffered until either crunch_log_bytes_per_event
@@ -388,12 +388,12 @@ Clusters:
           AssignNodeHostname: "compute%<slot_number>d"
 
       JobsAPI:
-        # Enable the legacy Jobs API.
-        # auto -- (default) enable the Jobs API only if it has been used before
+        # Enable the legacy Jobs API.  This value must be a string.
+        # 'auto' -- (default) enable the Jobs API only if it has been used before
         #         (i.e., there are job records in the database)
-        # true -- enable the Jobs API despite lack of existing records.
-        # false -- disable the Jobs API despite presence of existing records.
-        Enable: auto
+        # 'true' -- enable the Jobs API despite lack of existing records.
+        # 'false' -- disable the Jobs API despite presence of existing records.
+        Enable: 'auto'
 
         # Git repositories must be readable by api server, or you won't be
         # able to submit crunch jobs. To pass the test suites, put a clone
@@ -425,11 +425,11 @@ Clusters:
         # original job reuse behavior, and is still the default).
         ReuseJobIfOutputsDiffer: false
 
-      Mail:
-        MailchimpAPIKey: ""
-        MailchimpListID: ""
-        SendUserSetupNotificationEmail: ""
-        IssueReporterEmailFrom: ""
-        IssueReporterEmailTo: ""
-        SupportEmailAddress: ""
-        EmailFrom: ""
+    Mail:
+      MailchimpAPIKey: ""
+      MailchimpListID: ""
+      SendUserSetupNotificationEmail: ""
+      IssueReporterEmailFrom: ""
+      IssueReporterEmailTo: ""
+      SupportEmailAddress: ""
+      EmailFrom: ""

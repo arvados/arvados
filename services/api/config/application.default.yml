@@ -14,17 +14,6 @@
 
 common:
 
-  # When you run the db:delete_old_job_logs task, it will find jobs that
-  # have been finished for at least this many seconds, and delete their
-  # stderr logs from the logs table.
-  clean_job_log_rows_after: <%= 30.days %>
-
-  # When you run the db:delete_old_container_logs task, it will find
-  # containers that have been finished for at least this many seconds,
-  # and delete their stdout, stderr, arv-mount, crunch-run, and
-  # crunchstat logs from the logs table.
-  clean_container_log_rows_after: <%= 30.days %>
-
   ## Set Time.zone default to the specified zone and make Active
   ## Record auto-convert to this zone.  Run "rake -D time" for a list
   ## of tasks for finding time zone names. Default is UTC.

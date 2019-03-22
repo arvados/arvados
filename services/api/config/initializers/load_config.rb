@@ -56,9 +56,9 @@ end
 
 $config_migrate_map = {}
 $config_types = {}
-def declare_config(assign_to, configtype, migrate_from=nil)
+def declare_config(assign_to, configtype, migrate_from=nil, migrate_fn=nil)
   if migrate_from
-    $config_migrate_map[migrate_from] = ->(cfg, k, v) {
+    $config_migrate_map[migrate_from] = migrate_fn || ->(cfg, k, v) {
       set_cfg cfg, assign_to, v
     }
   end
@@ -129,7 +129,9 @@ declare_config "Containers.SLURM.Managed.DNSServerUpdateCommand", String, :dns_s
 declare_config "Containers.SLURM.Managed.ComputeNodeDomain", String, :compute_node_domain
 declare_config "Containers.SLURM.Managed.ComputeNodeNameservers", Array, :compute_node_nameservers
 declare_config "Containers.SLURM.Managed.AssignNodeHostname", String, :assign_node_hostname
-declare_config "Containers.JobsAPI.Enable", String, :enable_legacy_jobs_api
+declare_config "Containers.JobsAPI.Enable", String, :enable_legacy_jobs_api, ->(cfg, k, v) {
+  set_cfg cfg, "Containers.JobsAPI.Enable", if v.is_a? Boolean then v.to_s else v end
+}
 declare_config "Containers.JobsAPI.CrunchJobWrapper", String, :crunch_job_wrapper
 declare_config "Containers.JobsAPI.CrunchJobUser", String, :crunch_job_user
 declare_config "Containers.JobsAPI.CrunchRefreshTrigger", String, :crunch_refresh_trigger
@@ -165,6 +167,8 @@ application_config.each do |k, v|
   end
 end
 
+duration_re = /(\d+(\.\d+)?)(ms|s|m|h)/
+
 $config_types.each do |cfgkey, cfgtype|
   cfg = $arvados_config
   k = cfgkey
@@ -176,6 +180,11 @@ $config_types.each do |cfgkey, cfgtype|
       break
     end
   end
+
+  if cfg.nil?
+    raise "missing #{cfgkey}"
+  end
+
   if cfgtype == String and !cfg[k]
     cfg[k] = ""
   end
@@ -183,12 +192,13 @@ $config_types.each do |cfgkey, cfgtype|
     if cfg[k].is_a? Integer
       cfg[k] = cfg[k].seconds
     elsif cfg[k].is_a? String
-      # TODO handle suffixes
+      mt = duration_re.match cfg[k]
+      if !mt
+        raise "#{cfgkey} not a valid duration: '#{cfg[k]}', accepted suffixes are ms, s, m, h"
+      end
+      multiplier = {ms: 0.001, s: 1, m: 60, h: 3600}
+      cfg[k] = (Float(mt[1]) * multiplier[mt[3].to_sym]).seconds
     end
-  end
-
-  if cfg.nil?
-    raise "missing #{cfgkey}"
   end
 
   if !cfg[k].is_a? cfgtype
