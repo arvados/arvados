@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 class AddExpressionIndexToLinks < ActiveRecord::Migration
   def up
     ActiveRecord::Base.connection.execute 'CREATE INDEX index_links_on_substring_head_uuid on links (substring(head_uuid, 7, 5))'

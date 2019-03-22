@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 class AddContainerRuntimeToken < ActiveRecord::Migration
   def change
     add_column :container_requests, :runtime_token, :text, :null => true
