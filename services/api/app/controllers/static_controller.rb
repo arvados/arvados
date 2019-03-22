@@ -5,9 +5,9 @@
 class StaticController < ApplicationController
   respond_to :json, :html
 
-  skip_before_filter :find_object_by_uuid
-  skip_before_filter :render_404_if_no_object
-  skip_before_filter :require_auth_scope, only: [:home, :empty, :login_failure]
+  skip_before_action :find_object_by_uuid
+  skip_before_action :render_404_if_no_object
+  skip_before_action :require_auth_scope, only: [:home, :empty, :login_failure]
 
   def home
     respond_to do |f|

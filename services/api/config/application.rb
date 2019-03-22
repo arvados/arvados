@@ -58,8 +58,6 @@ module Server
     # Load entire application at startup.
     config.eager_load = true
 
-    config.active_record.raise_in_transactional_callbacks = true
-
     config.active_support.test_order = :sorted
 
     config.action_dispatch.perform_deep_munge = false

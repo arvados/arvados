@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 class Arvados::V1::VirtualMachinesController < ApplicationController
-  skip_before_filter :find_object_by_uuid, :only => :get_all_logins
-  skip_before_filter :render_404_if_no_object, :only => :get_all_logins
-  before_filter(:admin_required,
+  skip_before_action :find_object_by_uuid, :only => :get_all_logins
+  skip_before_action :render_404_if_no_object, :only => :get_all_logins
+  before_action(:admin_required,
                 :only => [:logins, :get_all_logins])
 
   # Get all login permissons (user uuid, login account, SSH key) for a

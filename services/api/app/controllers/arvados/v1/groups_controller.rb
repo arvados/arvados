@@ -7,8 +7,8 @@ require "trashable"
 class Arvados::V1::GroupsController < ApplicationController
   include TrashableController
 
-  skip_before_filter :find_object_by_uuid, only: :shared
-  skip_before_filter :render_404_if_no_object, only: :shared
+  skip_before_action :find_object_by_uuid, only: :shared
+  skip_before_action :render_404_if_no_object, only: :shared
 
   def self._index_requires_parameters
     (super rescue {}).
