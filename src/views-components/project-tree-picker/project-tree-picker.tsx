@@ -104,3 +104,15 @@ export const ProjectTreePickerField = (props: WrappedFieldProps & PickerIdProp) 
 const handleChange = (props: WrappedFieldProps) =>
     (_: any, { id }: TreeItem<ProjectsTreePickerItem>) =>
         props.input.onChange(id);
+
+export const CollectionTreePickerField = (props: WrappedFieldProps & PickerIdProp) =>
+    <div style={{ height: '200px', display: 'flex', flexDirection: 'column' }}>
+        <ProjectsTreePicker
+            pickerId={props.pickerId}
+            toggleItemActive={handleChange(props)}
+            includeCollections />
+        {props.meta.dirty && props.meta.error &&
+            <Typography variant='caption' color='error'>
+                {props.meta.error}
+            </Typography>}
+    </div>;

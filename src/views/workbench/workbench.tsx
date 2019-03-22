@@ -90,6 +90,7 @@ import { GroupDetailsPanel } from '~/views/group-details-panel/group-details-pan
 import { RemoveGroupMemberDialog } from '~/views-components/groups-dialog/member-remove-dialog';
 import { GroupMemberAttributesDialog } from '~/views-components/groups-dialog/member-attributes-dialog';
 import { AddGroupMembersDialog } from '~/views-components/dialog-forms/add-group-member-dialog';
+import { PartialCopyToCollectionDialog } from '~/views-components/dialog-forms/partial-copy-to-collection-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -210,6 +211,7 @@ export const WorkbenchPanel =
             <MultipleFilesRemoveDialog />
             <PublicKeyDialog />
             <PartialCopyCollectionDialog />
+            <PartialCopyToCollectionDialog />
             <ProcessCommandDialog />
             <ProcessInputDialog />
             <ProjectPropertiesDialog />

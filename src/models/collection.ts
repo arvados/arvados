@@ -20,6 +20,7 @@ export interface CollectionResource extends TrashableResource {
     currentVersionUuid: string;
     version: number;
     preserveVersion: boolean;
+    unsignedManifestText?: string;
 }
 
 export const getCollectionUrl = (uuid: string) => {

@@ -4,7 +4,7 @@
 
 import { ContextMenuActionSet } from "~/views-components/context-menu/context-menu-action-set";
 import { collectionPanelFilesAction, openMultipleFilesRemoveDialog } from "~/store/collection-panel/collection-panel-files/collection-panel-files-actions";
-import { openCollectionPartialCopyDialog } from '~/store/collections/collection-partial-copy-actions';
+import { openCollectionPartialCopyDialog, openCollectionPartialCopyToSelectedCollectionDialog } from '~/store/collections/collection-partial-copy-actions';
 import { DownloadCollectionFileAction } from "~/views-components/context-menu/actions/download-collection-file-action";
 
 export const collectionFilesActionSet: ContextMenuActionSet = [[{
@@ -27,7 +27,12 @@ export const collectionFilesActionSet: ContextMenuActionSet = [[{
     execute: () => { return; }
 }, {
     name: "Create a new collection with selected",
-    execute: dispatch => { 
+    execute: dispatch => {
         dispatch<any>(openCollectionPartialCopyDialog());
+    }
+}, {
+    name: "Copy selected into the collection",
+    execute: dispatch => {
+        dispatch<any>(openCollectionPartialCopyToSelectedCollectionDialog());
     }
 }]];

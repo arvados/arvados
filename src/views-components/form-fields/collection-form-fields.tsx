@@ -6,7 +6,7 @@ import * as React from "react";
 import { Field } from "redux-form";
 import { TextField } from "~/components/text-field/text-field";
 import { COLLECTION_NAME_VALIDATION, COLLECTION_DESCRIPTION_VALIDATION, COLLECTION_PROJECT_VALIDATION } from "~/validators/validators";
-import { ProjectTreePickerField } from "~/views-components/project-tree-picker/project-tree-picker";
+import { ProjectTreePickerField, CollectionTreePickerField } from "~/views-components/project-tree-picker/project-tree-picker";
 import { PickerIdProp } from '~/store/tree-picker/picker-id';
 
 export const CollectionNameField = () =>
@@ -29,4 +29,11 @@ export const CollectionProjectPickerField = (props: PickerIdProp) =>
         name="projectUuid"
         pickerId={props.pickerId}
         component={ProjectTreePickerField}
+        validate={COLLECTION_PROJECT_VALIDATION} />;
+
+export const CollectionPickerField = (props: PickerIdProp) =>
+    <Field
+        name="collectionUuid"
+        pickerId={props.pickerId}
+        component={CollectionTreePickerField}
         validate={COLLECTION_PROJECT_VALIDATION} />;
