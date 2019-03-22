@@ -26,7 +26,7 @@ type Handler interface {
 	CheckHealth() error
 }
 
-type NewHandlerFunc func(context.Context, *arvados.Cluster, *arvados.NodeProfile) Handler
+type NewHandlerFunc func(_ context.Context, _ *arvados.Cluster, _ *arvados.NodeProfile, token string) Handler
 
 type command struct {
 	newHandler NewHandlerFunc
@@ -79,16 +79,6 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	})
 	ctx := ctxlog.Context(context.Background(), log)
 
-	// Currently all components use SystemRootToken if configured,
-	// otherwise ARVADOS_API_TOKEN. In future, per-process tokens
-	// will be generated/obtained here.
-	token := cluster.SystemRootToken
-	if token == "" {
-		log.Warn("SystemRootToken missing from cluster config, falling back to ARVADOS_API_TOKEN environment variable")
-		token = os.Getenv("ARVADOS_API_TOKEN")
-	}
-	ctx = tokenContext(ctx, token)
-
 	profileName := *nodeProfile
 	if profileName == "" {
 		profileName = os.Getenv("ARVADOS_NODE_PROFILE")
@@ -102,7 +92,17 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 		err = fmt.Errorf("configuration does not enable the %s service on this host", c.svcName)
 		return 1
 	}
-	handler := c.newHandler(ctx, cluster, profile)
+
+	// Currently all components use SystemRootToken if configured,
+	// otherwise ARVADOS_API_TOKEN. In future, per-process tokens
+	// will be generated/obtained here.
+	token := cluster.SystemRootToken
+	if token == "" {
+		log.Warn("SystemRootToken missing from cluster config, falling back to ARVADOS_API_TOKEN environment variable")
+		token = os.Getenv("ARVADOS_API_TOKEN")
+	}
+
+	handler := c.newHandler(ctx, cluster, profile, token)
 	if err = handler.CheckHealth(); err != nil {
 		return 1
 	}

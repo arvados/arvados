@@ -14,6 +14,6 @@ import (
 
 var Command cmd.Handler = service.Command(arvados.ServiceNameController, newHandler)
 
-func newHandler(_ context.Context, cluster *arvados.Cluster, np *arvados.NodeProfile) service.Handler {
+func newHandler(_ context.Context, cluster *arvados.Cluster, np *arvados.NodeProfile, _ string) service.Handler {
 	return &Handler{Cluster: cluster, NodeProfile: np}
 }
