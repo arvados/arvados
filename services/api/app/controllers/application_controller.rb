@@ -187,7 +187,7 @@ class ApplicationController < ActionController::Base
     # The obvious render(json: ...) forces a slow JSON encoder. See
     # #3021 and commit logs. Might be fixed in Rails 4.1.
     render({
-             text: SafeJSON.dump(response).html_safe,
+             plain: SafeJSON.dump(response).html_safe,
              content_type: 'application/json'
            }.merge opts)
   end
@@ -431,8 +431,8 @@ class ApplicationController < ActionController::Base
   end
 
   def respond_with_json_by_default
-    html_index = request.accepts.index(Mime::HTML)
-    if html_index.nil? or request.accepts[0...html_index].include?(Mime::JSON)
+    html_index = request.accepts.index(Mime[:html])
+    if html_index.nil? or request.accepts[0...html_index].include?(Mime[:json])
       request.format = :json
     end
   end
