@@ -17,7 +17,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
   test "activate a user after signing UA" do
     authorize_with :inactive_but_signed_user_agreement
-    post :activate, id: users(:inactive_but_signed_user_agreement).uuid
+    post :activate, params: {id: users(:inactive_but_signed_user_agreement).uuid}
     assert_response :success
     assert_not_nil assigns(:object)
     me = JSON.parse(@response.body)
@@ -49,7 +49,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :inactive
     assert_equal false, users(:inactive).is_active
 
-    post :activate, id: users(:inactive).uuid
+    post :activate, params: {id: users(:inactive).uuid}
     assert_response 403
 
     resp = json_response
@@ -59,7 +59,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
   test "activate an already-active user" do
     authorize_with :active
-    post :activate, id: users(:active).uuid
+    post :activate, params: {id: users(:active).uuid}
     assert_response :success
     me = JSON.parse(@response.body)
     assert_equal true, me['is_active']
@@ -73,10 +73,12 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
   test "create new user with user as input" do
     authorize_with :admin
-    post :create, user: {
-      first_name: "test_first_name",
-      last_name: "test_last_name",
-      email: "foo@example.com"
+    post :create, params: {
+      user: {
+        first_name: "test_first_name",
+        last_name: "test_last_name",
+        email: "foo@example.com"
+      }
     }
     assert_response :success
     created = JSON.parse(@response.body)
@@ -90,7 +92,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :admin
     repo_name = 'usertestrepo'
 
-    post :setup, {
+    post :setup, params: {
       repo_name: repo_name,
       openid_prefix: 'https://www.google.com/accounts/o8/id',
       user: {
@@ -132,7 +134,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   test "setup user with bogus uuid and expect error" do
     authorize_with :admin
 
-    post :setup, {
+    post :setup, params: {
       uuid: 'bogus_uuid',
       repo_name: 'usertestrepo',
       vm_uuid: @vm_uuid
@@ -146,7 +148,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   test "setup user with bogus uuid in user and expect error" do
     authorize_with :admin
 
-    post :setup, {
+    post :setup, params: {
       user: {uuid: 'bogus_uuid'},
       repo_name: 'usertestrepo',
       vm_uuid: @vm_uuid,
@@ -162,7 +164,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   test "setup user with no uuid and user, expect error" do
     authorize_with :admin
 
-    post :setup, {
+    post :setup, params: {
       repo_name: 'usertestrepo',
       vm_uuid: @vm_uuid,
       openid_prefix: 'https://www.google.com/accounts/o8/id'
@@ -177,7 +179,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   test "setup user with no uuid and email, expect error" do
     authorize_with :admin
 
-    post :setup, {
+    post :setup, params: {
       user: {},
       repo_name: 'usertestrepo',
       vm_uuid: @vm_uuid,
@@ -194,7 +196,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :admin
     inactive_user = users(:inactive)
 
-    post :setup, {
+    post :setup, params: {
       uuid: users(:inactive).uuid,
       repo_name: 'usertestrepo',
       vm_uuid: @vm_uuid
@@ -222,7 +224,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :admin
     inactive_user = users(:inactive)
 
-    post :setup, {
+    post :setup, params: {
       uuid: inactive_user['uuid'],
       user: {email: 'junk_email'}
     }
@@ -241,7 +243,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   test "setup user with valid email and repo as input" do
     authorize_with :admin
 
-    post :setup, {
+    post :setup, params: {
       repo_name: 'usertestrepo',
       user: {email: 'foo@example.com'},
       openid_prefix: 'https://www.google.com/accounts/o8/id'
@@ -260,7 +262,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   test "setup user with fake vm and expect error" do
     authorize_with :admin
 
-    post :setup, {
+    post :setup, params: {
       repo_name: 'usertestrepo',
       vm_uuid: 'no_such_vm',
       user: {email: 'foo@example.com'},
@@ -277,7 +279,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   test "setup user with valid email, repo and real vm as input" do
     authorize_with :admin
 
-    post :setup, {
+    post :setup, params: {
       repo_name: 'usertestrepo',
       openid_prefix: 'https://www.google.com/accounts/o8/id',
       vm_uuid: @vm_uuid,
@@ -297,7 +299,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   test "setup user with valid email, no vm and no repo as input" do
     authorize_with :admin
 
-    post :setup, {
+    post :setup, params: {
       user: {email: 'foo@example.com'},
       openid_prefix: 'https://www.google.com/accounts/o8/id'
     }
@@ -327,7 +329,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   test "setup user with email, first name, repo name and vm uuid" do
     authorize_with :admin
 
-    post :setup, {
+    post :setup, params: {
       openid_prefix: 'https://www.google.com/accounts/o8/id',
       repo_name: 'usertestrepo',
       vm_uuid: @vm_uuid,
@@ -353,7 +355,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :admin
     inactive_user = users(:inactive)
 
-    post :setup, {
+    post :setup, params: {
       openid_prefix: 'https://www.google.com/accounts/o8/id',
       repo_name: 'usertestrepo',
       user: {
@@ -375,7 +377,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   test "setup user with openid prefix" do
     authorize_with :admin
 
-    post :setup, {
+    post :setup, params: {
       repo_name: 'usertestrepo',
       openid_prefix: 'http://www.example.com/account',
       user: {
@@ -415,7 +417,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   test "invoke setup with no openid prefix, expect error" do
     authorize_with :admin
 
-    post :setup, {
+    post :setup, params: {
       repo_name: 'usertestrepo',
       user: {
         first_name: "in_create_test_first_name",
@@ -434,7 +436,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   test "setup user with user, vm and repo and verify links" do
     authorize_with :admin
 
-    post :setup, {
+    post :setup, params: {
       user: {
         first_name: "in_create_test_first_name",
         last_name: "test_last_name",
@@ -475,7 +477,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   test "create user as non admin user and expect error" do
     authorize_with :active
 
-    post :create, {
+    post :create, params: {
       user: {email: 'foo@example.com'}
     }
 
@@ -489,7 +491,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   test "setup user as non admin user and expect error" do
     authorize_with :active
 
-    post :setup, {
+    post :setup, params: {
       openid_prefix: 'https://www.google.com/accounts/o8/id',
       user: {email: 'foo@example.com'}
     }
@@ -506,7 +508,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     active_user = users(:active)
 
     # invoke setup with a repository
-    post :setup, {
+    post :setup, params: {
       repo_name: 'usertestrepo',
       uuid: active_user['uuid']
     }
@@ -539,7 +541,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     repo_link_count = repo_link_query.count
 
     # invoke setup with a repository
-    post :setup, {
+    post :setup, params: {
       vm_uuid: @vm_uuid,
       uuid: active_user['uuid'],
       email: 'junk_email'
@@ -574,7 +576,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :admin
 
     # now unsetup this user
-    post :unsetup, id: active_user['uuid']
+    post :unsetup, params: {id: active_user['uuid']}
     assert_response :success
 
     response_user = JSON.parse(@response.body)
@@ -598,7 +600,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   test "setup user with send notification param false and verify no email" do
     authorize_with :admin
 
-    post :setup, {
+    post :setup, params: {
       openid_prefix: 'http://www.example.com/account',
       send_notification_email: 'false',
       user: {
@@ -619,7 +621,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   test "setup user with send notification param true and verify email" do
     authorize_with :admin
 
-    post :setup, {
+    post :setup, params: {
       openid_prefix: 'http://www.example.com/account',
       send_notification_email: 'true',
       user: {
@@ -649,7 +651,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     active_user = users(:active)
 
     # invoke setup with a repository
-    put :update, {
+    put :update, params: {
           id: active_user['uuid'],
           user: {
             is_active: true,
@@ -676,7 +678,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     users = create_list :active_user, 2, join_groups: [g]
     token = create :token, user: users[0]
     authorize_with_token token
-    get :show, id: users[1].uuid
+    get :show, params: {id: users[1].uuid}
     check_non_admin_show
   end
 
@@ -689,7 +691,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
       token = create :token, user: users[0]
 
       authorize_with_token token
-      get(:index, limit: limit)
+      get(:index, params: {limit: limit})
       check_non_admin_index
       assert_equal(limit, json_response["items"].size,
                    "non-admin index limit was ineffective")
@@ -708,14 +710,14 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
   test "admin can filter on user.is_active" do
     authorize_with :admin
-    get(:index, filters: [["is_active", "=", "true"]])
+    get(:index, params: {filters: [["is_active", "=", "true"]]})
     assert_response :success
     check_readable_users_index [:active, :spectator], [:inactive]
   end
 
   test "admin can search where user.is_active" do
     authorize_with :admin
-    get(:index, where: {is_active: true})
+    get(:index, params: {where: {is_active: true}})
     assert_response :success
     check_readable_users_index [:active, :spectator], [:inactive]
   end
@@ -723,7 +725,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   test "update active_no_prefs user profile and expect notification email" do
     authorize_with :admin
 
-    put :update, {
+    put :update, params: {
       id: users(:active_no_prefs).uuid,
       user: {
         prefs: {:profile => {'organization' => 'example.com'}}
@@ -747,7 +749,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     user = {}
     user[:prefs] = users(:active_no_prefs_profile_no_getting_started_shown).prefs
     user[:prefs][:profile] = {:profile => {'organization' => 'example.com'}}
-    put :update, {
+    put :update, params: {
       id: users(:active_no_prefs_profile_no_getting_started_shown).uuid,
       user: user
     }
@@ -766,7 +768,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   test "update active user profile and expect no notification email" do
     authorize_with :admin
 
-    put :update, {
+    put :update, params: {
       id: users(:active).uuid,
       user: {
         prefs: {:profile => {'organization' => 'anotherexample.com'}}
@@ -801,7 +803,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     test "update_uuid as #{auth_user}" do
       authorize_with auth_user
       orig_uuid = users(:active).uuid
-      post :update_uuid, {
+      post :update_uuid, params: {
              id: orig_uuid,
              new_uuid: 'zbbbb-tpzed-abcde12345abcde',
            }
@@ -817,7 +819,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
   test "refuse to merge with redirect_to_user_uuid=false (not yet supported)" do
     authorize_with :project_viewer_trustedclient
-    post :merge, {
+    post :merge, params: {
            new_user_token: api_client_authorizations(:active_trustedclient).api_token,
            new_owner_uuid: users(:active).uuid,
            redirect_to_new_user: false,
@@ -827,7 +829,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
   test "refuse to merge user into self" do
     authorize_with(:active_trustedclient)
-    post(:merge, {
+    post(:merge, params: {
            new_user_token: api_client_authorizations(:active_trustedclient).api_token,
            new_owner_uuid: users(:active).uuid,
            redirect_to_new_user: true,
@@ -839,7 +841,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
    [:active_trustedclient, :project_viewer]].each do |src, dst|
     test "refuse to merge with untrusted token (#{src} -> #{dst})" do
       authorize_with(src)
-      post(:merge, {
+      post(:merge, params: {
              new_user_token: api_client_authorizations(dst).api_token,
              new_owner_uuid: api_client_authorizations(dst).user.uuid,
              redirect_to_new_user: true,
@@ -852,7 +854,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
    [:project_viewer_trustedclient, :expired_trustedclient]].each do |src, dst|
     test "refuse to merge with expired token (#{src} -> #{dst})" do
       authorize_with(src)
-      post(:merge, {
+      post(:merge, params: {
              new_user_token: api_client_authorizations(dst).api_token,
              new_owner_uuid: api_client_authorizations(dst).user.uuid,
              redirect_to_new_user: true,
@@ -868,7 +870,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         api_client_authorizations(auth).update_attributes(scopes: ["GET /", "POST /", "PUT /"])
       end
       authorize_with(:active_trustedclient)
-      post(:merge, {
+      post(:merge, params: {
              new_user_token: api_client_authorizations(:project_viewer_trustedclient).api_token,
              new_owner_uuid: users(:project_viewer).uuid,
              redirect_to_new_user: true,
@@ -879,7 +881,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
   test "refuse to merge if new_owner_uuid is not writable" do
     authorize_with(:project_viewer_trustedclient)
-    post(:merge, {
+    post(:merge, params: {
            new_user_token: api_client_authorizations(:active_trustedclient).api_token,
            new_owner_uuid: groups(:anonymously_accessible_project).uuid,
            redirect_to_new_user: true,
@@ -889,7 +891,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
   test "refuse to merge if new_owner_uuid is empty" do
     authorize_with(:project_viewer_trustedclient)
-    post(:merge, {
+    post(:merge, params: {
            new_user_token: api_client_authorizations(:active_trustedclient).api_token,
            new_owner_uuid: "",
            redirect_to_new_user: true,
@@ -899,7 +901,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
   test "refuse to merge if new_owner_uuid is not provided" do
     authorize_with(:project_viewer_trustedclient)
-    post(:merge, {
+    post(:merge, params: {
            new_user_token: api_client_authorizations(:active_trustedclient).api_token,
            redirect_to_new_user: true,
          })
@@ -908,7 +910,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
   test "refuse to update redirect_to_user_uuid directly" do
     authorize_with(:active_trustedclient)
-    patch(:update, {
+    patch(:update, params: {
             id: users(:active).uuid,
             user: {
               redirect_to_user_uuid: users(:active).uuid,
@@ -919,7 +921,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
   test "merge 'project_viewer' account into 'active' account" do
     authorize_with(:project_viewer_trustedclient)
-    post(:merge, {
+    post(:merge, params: {
            new_user_token: api_client_authorizations(:active_trustedclient).api_token,
            new_owner_uuid: users(:active).uuid,
            redirect_to_new_user: true,
@@ -972,7 +974,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
   def check_inactive_user_findable(params={})
     inactive_user = users(:inactive)
-    get(:index, params.merge(filters: [["email", "=", inactive_user.email]]))
+    get(:index, params: params.merge(filters: [["email", "=", inactive_user.email]]))
     assert_response :success
     user_list = json_response["items"]
     assert_equal(1, user_list.andand.count)

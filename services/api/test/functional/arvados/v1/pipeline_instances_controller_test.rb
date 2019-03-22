@@ -8,7 +8,7 @@ class Arvados::V1::PipelineInstancesControllerTest < ActionController::TestCase
 
   test 'create pipeline with components copied from template' do
     authorize_with :active
-    post :create, {
+    post :create, params: {
       pipeline_instance: {
         pipeline_template_uuid: pipeline_templates(:two_part).uuid
       }
@@ -20,7 +20,7 @@ class Arvados::V1::PipelineInstancesControllerTest < ActionController::TestCase
 
   test 'create pipeline with no template' do
     authorize_with :active
-    post :create, {
+    post :create, params: {
       pipeline_instance: {
         components: {}
       }
@@ -37,7 +37,7 @@ class Arvados::V1::PipelineInstancesControllerTest < ActionController::TestCase
       authorize_with :active
       pi_uuid = pipeline_instances(:job_child_pipeline_with_components_at_level_2).uuid
 
-      post :cancel, {id: pi_uuid, cascade: cascade}
+      post :cancel, params: {id: pi_uuid, cascade: cascade}
       assert_response :success
 
       pi = PipelineInstance.where(uuid: pi_uuid).first

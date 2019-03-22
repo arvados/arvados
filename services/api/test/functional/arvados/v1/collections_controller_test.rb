@@ -57,7 +57,7 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
 
   test "get index with include_old_versions" do
     authorize_with :active
-    get :index, {
+    get :index, params: {
       include_old_versions: true
     }
     assert_response :success
@@ -69,7 +69,7 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
   test "collections.get returns signed locators, and no unsigned_manifest_text" do
     permit_unsigned_manifests
     authorize_with :active
-    get :show, {id: collections(:foo_file).uuid}
+    get :show, params: {id: collections(:foo_file).uuid}
     assert_response :success
     assert_signed_manifest json_response['manifest_text'], 'foo_file'
     refute_includes json_response, 'unsigned_manifest_text'
@@ -79,7 +79,7 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
     test "correct signatures are given for #{token_method}" do
       token = api_client_authorizations(:active).send(token_method)
       authorize_with_token token
-      get :show, {id: collections(:foo_file).uuid}
+      get :show, params: {id: collections(:foo_file).uuid}
       assert_response :success
       assert_signed_manifest json_response['manifest_text'], 'foo_file', token: token
     end
@@ -91,7 +91,7 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
         key: Rails.configuration.blob_signing_key,
         api_token: token)
       authorize_with_token token
-      put :update, {
+      put :update, params: {
             id: collections(:collection_owned_by_active).uuid,
             collection: {
               manifest_text: ". #{signed} 0:3:foo.txt\n",
@@ -105,7 +105,7 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
   test "index with manifest_text selected returns signed locators" do
     columns = %w(uuid owner_uuid manifest_text)
     authorize_with :active
-    get :index, select: columns
+    get :index, params: {select: columns}
     assert_response :success
     assert(assigns(:objects).andand.any?,
            "no Collections returned for index with columns selected")
@@ -118,7 +118,7 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
 
   test "index with unsigned_manifest_text selected returns only unsigned locators" do
     authorize_with :active
-    get :index, select: ['unsigned_manifest_text']
+    get :index, params: {select: ['unsigned_manifest_text']}
     assert_response :success
     assert_operator json_response["items"].count, :>, 0
     locs = 0
@@ -146,7 +146,7 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
   ['', nil, false, 'null'].each do |select|
     test "index with select=#{select.inspect} returns everything except manifest" do
       authorize_with :active
-      get :index, select: select
+      get :index, params: {select: select}
       assert_response :success
       assert json_response['items'].any?
       json_response['items'].each do |coll|
@@ -164,7 +164,7 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
    '["uuid", "manifest_text"]'].each do |select|
     test "index with select=#{select.inspect} returns no name" do
       authorize_with :active
-      get :index, select: select
+      get :index, params: {select: select}
       assert_response :success
       assert json_response['items'].any?
       json_response['items'].each do |coll|
@@ -176,7 +176,7 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
   [0,1,2].each do |limit|
     test "get index with limit=#{limit}" do
       authorize_with :active
-      get :index, limit: limit
+      get :index, params: {limit: limit}
       assert_response :success
       assert_equal limit, assigns(:objects).count
       resp = JSON.parse(@response.body)
@@ -186,7 +186,7 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
 
   test "items.count == items_available" do
     authorize_with :active
-    get :index, limit: 100000
+    get :index, params: {limit: 100000}
     assert_response :success
     resp = JSON.parse(@response.body)
     assert_equal resp['items_available'], assigns(:objects).length
@@ -197,7 +197,7 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
 
   test "items.count == items_available with filters" do
     authorize_with :active
-    get :index, {
+    get :index, params: {
       limit: 100,
       filters: [['uuid','=',collections(:foo_file).uuid]]
     }
@@ -210,7 +210,7 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
   test "get index with limit=2 offset=99999" do
     # Assume there are not that many test fixtures.
     authorize_with :active
-    get :index, limit: 2, offset: 99999
+    get :index, params: {limit: 2, offset: 99999}
     assert_response :success
     assert_equal 0, assigns(:objects).count
     resp = JSON.parse(@response.body)
@@ -223,7 +223,7 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
     coll1 = collections(:collection_1_of_201)
     Rails.configuration.max_index_database_read =
       yield(coll1.manifest_text.size)
-    get :index, {
+    get :index, params: {
       select: %w(uuid manifest_text),
       filters: [["owner_uuid", "=", coll1.owner_uuid]],
       limit: 300,
@@ -301,7 +301,7 @@ EOS
     # post :create will modify test_collection in place, so we save a copy first.
     # Hash.deep_dup is not sufficient as it preserves references of strings (??!?)
     post_collection = Marshal.load(Marshal.dump(test_collection))
-    post :create, {
+    post :create, params: {
       collection: post_collection
     }
 
@@ -331,7 +331,7 @@ EOS
       foo_collection = collections(:foo_file)
 
       # Get foo_file using its portable data hash
-      get :show, {
+      get :show, params: {
         id: foo_collection[:portable_data_hash]
       }
       assert_response :success
@@ -351,7 +351,7 @@ EOS
     permit_unsigned_manifests
     authorize_with :active
     manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
-    post :create, {
+    post :create, params: {
       collection: {
         owner_uuid: 'zzzzz-j7d0g-rew6elm53kancon',
         manifest_text: manifest_text,
@@ -367,7 +367,7 @@ EOS
     permit_unsigned_manifests
     authorize_with :admin
     manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
-    post :create, {
+    post :create, params: {
       collection: {
         owner_uuid: 'zzzzz-tpzed-000000000000000',
         manifest_text: manifest_text,
@@ -390,7 +390,7 @@ EOS
       if !unsigned
         manifest_text = Collection.sign_manifest manifest_text, api_token(:active)
       end
-      post :create, {
+      post :create, params: {
         collection: {
           owner_uuid: users(:active).uuid,
           manifest_text: manifest_text,
@@ -407,7 +407,7 @@ EOS
     permit_unsigned_manifests
     authorize_with :active
     manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
-    post :create, {
+    post :create, params: {
       collection: {
         owner_uuid: groups(:active_user_has_can_manage).uuid,
         manifest_text: manifest_text,
@@ -423,7 +423,7 @@ EOS
     permit_unsigned_manifests
     authorize_with :active
     manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
-    post :create, {
+    post :create, params: {
       collection: {
         owner_uuid: groups(:all_users).uuid,
         manifest_text: manifest_text,
@@ -437,7 +437,7 @@ EOS
     permit_unsigned_manifests
     authorize_with :active
     manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
-    post :create, {
+    post :create, params: {
       collection: {
         owner_uuid: groups(:public).uuid,
         manifest_text: manifest_text,
@@ -451,7 +451,7 @@ EOS
     permit_unsigned_manifests
     authorize_with :admin
     manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
-    post :create, {
+    post :create, params: {
       collection: {
         owner_uuid: 'zzzzz-j7d0g-it30l961gq3t0oi',
         manifest_text: manifest_text,
@@ -464,7 +464,7 @@ EOS
   test "should create with collection passed as json" do
     permit_unsigned_manifests
     authorize_with :active
-    post :create, {
+    post :create, params: {
       collection: <<-EOS
       {
         "manifest_text":". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n",\
@@ -478,7 +478,7 @@ EOS
   test "should fail to create with checksum mismatch" do
     permit_unsigned_manifests
     authorize_with :active
-    post :create, {
+    post :create, params: {
       collection: <<-EOS
       {
         "manifest_text":". d41d8cd98f00b204e9800998ecf8427e 0:0:bar.txt\n",\
@@ -492,7 +492,7 @@ EOS
   test "collection UUID is normalized when created" do
     permit_unsigned_manifests
     authorize_with :active
-    post :create, {
+    post :create, params: {
       collection: {
         manifest_text: ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n",
         portable_data_hash: "d30fe8ae534397864cb96c544f4cf102+47+Khint+Xhint+Zhint"
@@ -506,7 +506,7 @@ EOS
 
   test "get full provenance for baz file" do
     authorize_with :active
-    get :provenance, id: 'ea10d51bcf88862dbcc36eb292017dfd+45'
+    get :provenance, params: {id: 'ea10d51bcf88862dbcc36eb292017dfd+45'}
     assert_response :success
     resp = JSON.parse(@response.body)
     assert_not_nil resp['ea10d51bcf88862dbcc36eb292017dfd+45'] # baz
@@ -519,14 +519,14 @@ EOS
   test "get no provenance for foo file" do
     # spectator user cannot even see baz collection
     authorize_with :spectator
-    get :provenance, id: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'
+    get :provenance, params: {id: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'}
     assert_response 404
   end
 
   test "get partial provenance for baz file" do
     # spectator user can see bar->baz job, but not foo->bar job
     authorize_with :spectator
-    get :provenance, id: 'ea10d51bcf88862dbcc36eb292017dfd+45'
+    get :provenance, params: {id: 'ea10d51bcf88862dbcc36eb292017dfd+45'}
     assert_response :success
     resp = JSON.parse(@response.body)
     assert_not_nil resp['ea10d51bcf88862dbcc36eb292017dfd+45'] # baz
@@ -539,7 +539,7 @@ EOS
   test "search collections with 'any' operator" do
     expect_pdh = collections(:docker_image).portable_data_hash
     authorize_with :active
-    get :index, {
+    get :index, params: {
       where: { any: ['contains', expect_pdh[5..25]] }
     }
     assert_response :success
@@ -584,7 +584,7 @@ EOS
         ". " + signed_locators[1] + " 0:0:foo.txt\n" +
         ". " + signed_locators[2] + " 0:0:foo.txt\n"
 
-      post :create, {
+      post :create, params: {
         collection: {
           manifest_text: signed_manifest,
           portable_data_hash: manifest_uuid,
@@ -631,7 +631,7 @@ EOS
       ". " + Blob.sign_locator(locators[1], signing_opts) + " 0:0:foo.txt\n" +
       ". " + Blob.sign_locator(locators[2], signing_opts) + " 0:0:foo.txt\n"
 
-    post :create, {
+    post :create, params: {
       collection: {
         manifest_text: signed_manifest,
         portable_data_hash: manifest_uuid,
@@ -670,7 +670,7 @@ EOS
       unsigned_manifest.length.to_s
 
     bad_manifest = ". #{bad_locator} 0:0:foo.txt\n"
-    post :create, {
+    post :create, params: {
       collection: {
         manifest_text: bad_manifest,
         portable_data_hash: manifest_uuid
@@ -694,7 +694,7 @@ EOS
       '+' +
       signed_manifest.length.to_s
 
-    post :create, {
+    post :create, params: {
       collection: {
         manifest_text: signed_manifest,
         portable_data_hash: manifest_uuid
@@ -706,7 +706,7 @@ EOS
 
   test "reject manifest with unsigned block as stream name" do
     authorize_with :active
-    post :create, {
+    post :create, params: {
       collection: {
         manifest_text: "00000000000000000000000000000000+1234 d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo.txt\n"
       }
@@ -732,7 +732,7 @@ EOS
       portable_data_hash: manifest_uuid,
     }
     post_collection = Marshal.load(Marshal.dump(test_collection))
-    post :create, {
+    post :create, params: {
       collection: post_collection
     }
     assert_response :success
@@ -767,7 +767,7 @@ EOS
     signed_locators = locators.map { |loc| Blob.sign_locator loc, signing_opts }
     signed_manifest = [".", *signed_locators, "0:0:foo.txt\n"].join(" ")
 
-    post :create, {
+    post :create, params: {
       collection: {
         manifest_text: signed_manifest,
         portable_data_hash: manifest_uuid,
@@ -795,7 +795,7 @@ EOS
     authorize_with :active
     unsigned_manifest = ". 0cc175b9c0f1b6a831c399e269772661+1 0:1:a.txt\n"
     manifest_uuid = Digest::MD5.hexdigest(unsigned_manifest)
-    post :create, {
+    post :create, params: {
       collection: {
         manifest_text: unsigned_manifest,
         portable_data_hash: manifest_uuid,
@@ -809,7 +809,7 @@ EOS
 
   test 'List expired collection returns empty list' do
     authorize_with :active
-    get :index, {
+    get :index, params: {
       where: {name: 'expired_collection'},
     }
     assert_response :success
@@ -819,7 +819,7 @@ EOS
 
   test 'Show expired collection returns 404' do
     authorize_with :active
-    get :show, {
+    get :show, params: {
       id: 'zzzzz-4zz18-mto52zx1s7sn3ih',
     }
     assert_response 404
@@ -827,7 +827,7 @@ EOS
 
   test 'Update expired collection returns 404' do
     authorize_with :active
-    post :update, {
+    post :update, params: {
       id: 'zzzzz-4zz18-mto52zx1s7sn3ih',
       collection: {
         name: "still expired"
@@ -838,7 +838,7 @@ EOS
 
   test 'List collection with future expiration time succeeds' do
     authorize_with :active
-    get :index, {
+    get :index, params: {
       where: {name: 'collection_expires_in_future'},
     }
     found = assigns(:objects)
@@ -848,7 +848,7 @@ EOS
 
   test 'Show collection with future expiration time succeeds' do
     authorize_with :active
-    get :show, {
+    get :show, params: {
       id: 'zzzzz-4zz18-padkqo7yb8d9i3j',
     }
     assert_response :success
@@ -856,7 +856,7 @@ EOS
 
   test 'Update collection with future expiration time succeeds' do
     authorize_with :active
-    post :update, {
+    post :update, params: {
       id: 'zzzzz-4zz18-padkqo7yb8d9i3j',
       collection: {
         name: "still not expired"
@@ -867,7 +867,7 @@ EOS
 
   test "get collection and verify that file_names is not included" do
     authorize_with :active
-    get :show, {id: collections(:foo_file).uuid}
+    get :show, params: {id: collections(:foo_file).uuid}
     assert_response :success
     assert_equal collections(:foo_file).uuid, json_response['uuid']
     assert_nil json_response['file_names']
@@ -890,9 +890,11 @@ EOS
         description = description + description
       end
 
-      post :create, collection: {
-        manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo.txt\n",
-        description: description,
+      post :create, params: {
+        collection: {
+          manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo.txt\n",
+          description: description,
+        }
       }
 
       assert_response expected_response
@@ -903,7 +905,7 @@ EOS
     test "Set replication_desired=#{ask.inspect}" do
       Rails.configuration.default_collection_replication = 2
       authorize_with :active
-      put :update, {
+      put :update, params: {
         id: collections(:replication_undesired_unconfirmed).uuid,
         collection: {
           replication_desired: ask,
@@ -916,7 +918,7 @@ EOS
 
   test "get collection with properties" do
     authorize_with :active
-    get :show, {id: collections(:collection_with_one_property).uuid}
+    get :show, params: {id: collections(:collection_with_one_property).uuid}
     assert_response :success
     assert_not_nil json_response['uuid']
     assert_equal 'value1', json_response['properties']['property1']
@@ -925,7 +927,7 @@ EOS
   test "create collection with properties" do
     authorize_with :active
     manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
-    post :create, {
+    post :create, params: {
       collection: {
         manifest_text: manifest_text,
         portable_data_hash: "d30fe8ae534397864cb96c544f4cf102+47",
@@ -945,7 +947,7 @@ EOS
   ].each do |manifest_text|
     test "create collection with invalid manifest #{manifest_text} and expect error" do
       authorize_with :active
-      post :create, {
+      post :create, params: {
         collection: {
           manifest_text: manifest_text,
           portable_data_hash: "d41d8cd98f00b204e9800998ecf8427e+0"
@@ -966,7 +968,7 @@ EOS
   ].each do |manifest_text, pdh|
     test "create collection with valid manifest #{manifest_text.inspect} and expect success" do
       authorize_with :active
-      post :create, {
+      post :create, params: {
         collection: {
           manifest_text: manifest_text,
           portable_data_hash: pdh
@@ -984,7 +986,7 @@ EOS
   ].each do |manifest_text|
     test "update collection with invalid manifest #{manifest_text} and expect error" do
       authorize_with :active
-      post :update, {
+      post :update, params: {
         id: 'zzzzz-4zz18-bv31uwvy3neko21',
         collection: {
           manifest_text: manifest_text,
@@ -1005,7 +1007,7 @@ EOS
   ].each do |manifest_text|
     test "update collection with valid manifest #{manifest_text.inspect} and expect success" do
       authorize_with :active
-      post :update, {
+      post :update, params: {
         id: 'zzzzz-4zz18-bv31uwvy3neko21',
         collection: {
           manifest_text: manifest_text,
@@ -1018,7 +1020,7 @@ EOS
   test 'get trashed collection with include_trash' do
     uuid = 'zzzzz-4zz18-mto52zx1s7sn3ih' # expired_collection
     authorize_with :active
-    get :show, {
+    get :show, params: {
       id: uuid,
       include_trash: true,
     }
@@ -1029,7 +1031,7 @@ EOS
     test "get trashed collection via filters and #{user} user" do
       uuid = 'zzzzz-4zz18-mto52zx1s7sn3ih' # expired_collection
       authorize_with user
-      get :index, {
+      get :index, params: {
         filters: [["current_version_uuid", "=", uuid]],
         include_trash: true,
       }
@@ -1043,7 +1045,7 @@ EOS
     test "get trashed collection via filters and #{user} user, including its past versions" do
       uuid = 'zzzzz-4zz18-mto52zx1s7sn3ih' # expired_collection
       authorize_with :admin
-      get :index, {
+      get :index, params: {
         filters: [["current_version_uuid", "=", uuid]],
         include_trash: true,
         include_old_versions: true,
@@ -1062,7 +1064,7 @@ EOS
     versions.each do |col|
       refute col.is_trashed
     end
-    post :trash, {
+    post :trash, params: {
       id: uuid,
     }
     assert_response 200
@@ -1076,7 +1078,7 @@ EOS
   test 'get trashed collection without include_trash' do
     uuid = 'zzzzz-4zz18-mto52zx1s7sn3ih' # expired_collection
     authorize_with :active
-    get :show, {
+    get :show, params: {
       id: uuid,
     }
     assert_response 404
@@ -1085,7 +1087,7 @@ EOS
   test 'trash collection using http DELETE verb' do
     uuid = collections(:collection_owned_by_active).uuid
     authorize_with :active
-    delete :destroy, {
+    delete :destroy, params: {
       id: uuid,
     }
     assert_response 200
@@ -1097,7 +1099,7 @@ EOS
   test 'delete long-trashed collection immediately using http DELETE verb' do
     uuid = 'zzzzz-4zz18-mto52zx1s7sn3ih' # expired_collection
     authorize_with :active
-    delete :destroy, {
+    delete :destroy, params: {
       id: uuid,
     }
     assert_response 200
@@ -1117,7 +1119,7 @@ EOS
       end
       authorize_with :active
       time_before_trashing = db_current_time
-      post :trash, {
+      post :trash, params: {
         id: uuid,
       }
       assert_response 200
@@ -1129,7 +1131,7 @@ EOS
 
   test 'untrash a trashed collection' do
     authorize_with :active
-    post :untrash, {
+    post :untrash, params: {
       id: collections(:expired_collection).uuid,
     }
     assert_response 200
@@ -1139,7 +1141,7 @@ EOS
 
   test 'untrash error on not trashed collection' do
     authorize_with :active
-    post :untrash, {
+    post :untrash, params: {
       id: collections(:collection_owned_by_active).uuid,
     }
     assert_response 422
@@ -1148,7 +1150,7 @@ EOS
   [:active, :admin].each do |user|
     test "get trashed collections as #{user}" do
       authorize_with user
-      get :index, {
+      get :index, params: {
         filters: [["is_trashed", "=", true]],
         include_trash: true,
       }
@@ -1170,7 +1172,7 @@ EOS
 
   test 'untrash collection with same name as another with no ensure unique name' do
     authorize_with :active
-    post :untrash, {
+    post :untrash, params: {
       id: collections(:trashed_collection_to_test_name_conflict_on_untrash).uuid,
     }
     assert_response 422
@@ -1178,7 +1180,7 @@ EOS
 
   test 'untrash collection with same name as another with ensure unique name' do
     authorize_with :active
-    post :untrash, {
+    post :untrash, params: {
       id: collections(:trashed_collection_to_test_name_conflict_on_untrash).uuid,
       ensure_unique_name: true
     }
@@ -1191,7 +1193,7 @@ EOS
 
   test 'cannot show collection in trashed subproject' do
     authorize_with :active
-    get :show, {
+    get :show, params: {
       id: collections(:collection_in_trashed_subproject).uuid,
       format: :json
     }
@@ -1201,7 +1203,7 @@ EOS
   test 'can show collection in untrashed subproject' do
     authorize_with :active
     Group.find_by_uuid(groups(:trashed_project).uuid).update! is_trashed: false
-    get :show, {
+    get :show, params: {
       id: collections(:collection_in_trashed_subproject).uuid,
       format: :json,
     }
@@ -1210,7 +1212,7 @@ EOS
 
   test 'cannot index collection in trashed subproject' do
     authorize_with :active
-    get :index, { limit: 1000 }
+    get :index, params: { limit: 1000 }
     assert_response :success
     item_uuids = json_response['items'].map do |item|
       item['uuid']
@@ -1221,7 +1223,7 @@ EOS
   test 'can index collection in untrashed subproject' do
     authorize_with :active
     Group.find_by_uuid(groups(:trashed_project).uuid).update! is_trashed: false
-    get :index, { limit: 1000 }
+    get :index, params: { limit: 1000 }
     assert_response :success
     item_uuids = json_response['items'].map do |item|
       item['uuid']
@@ -1231,7 +1233,7 @@ EOS
 
   test 'can index trashed subproject collection with include_trash' do
     authorize_with :active
-    get :index, {
+    get :index, params: {
           include_trash: true,
           limit: 1000
         }
@@ -1244,7 +1246,7 @@ EOS
 
   test 'can get collection with past versions' do
     authorize_with :active
-    get :index, {
+    get :index, params: {
       filters: [['current_version_uuid','=',collections(:collection_owned_by_active).uuid]],
       include_old_versions: true
     }
@@ -1261,7 +1263,7 @@ EOS
 
   test 'can get old version collection by uuid' do
     authorize_with :active
-    get :show, {
+    get :show, params: {
       id: collections(:collection_owned_by_active_past_version_1).uuid,
     }
     assert_response :success
@@ -1273,7 +1275,7 @@ EOS
     permit_unsigned_manifests
     authorize_with :active
     manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
-    post :create, {
+    post :create, params: {
       collection: {
         name: 'Test collection',
         version: 42,
@@ -1301,7 +1303,7 @@ EOS
       key: Rails.configuration.blob_signing_key,
       api_token: token)
     authorize_with_token token
-    put :update, {
+    put :update, params: {
           id: col.uuid,
           collection: {
             manifest_text: ". #{signed} 0:3:foo.txt\n",

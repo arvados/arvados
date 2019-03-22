@@ -17,14 +17,16 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "reuse job with no_reuse=false" do
-    post :create, job: {
-      no_reuse: false,
-      script: "hash",
-      script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
-      repository: "active/foo",
-      script_parameters: {
-        an_integer: '1',
-        input: 'fa7aeb5140e2848d39b416daeef4ffc5+45'
+    post :create, params: {
+      job: {
+        no_reuse: false,
+        script: "hash",
+        script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
+        repository: "active/foo",
+        script_parameters: {
+          an_integer: '1',
+          input: 'fa7aeb5140e2848d39b416daeef4ffc5+45'
+        }
       }
     }
     assert_response :success
@@ -35,7 +37,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "reuse job with find_or_create=true" do
-    post :create, {
+    post :create, params: {
       job: {
         script: "hash",
         script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
@@ -55,7 +57,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "no reuse job with null log" do
-    post :create, {
+    post :create, params: {
       job: {
         script: "hash",
         script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
@@ -75,7 +77,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "reuse job with symbolic script_version" do
-    post :create, {
+    post :create, params: {
       job: {
         script: "hash",
         script_version: "tag1",
@@ -95,7 +97,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "do not reuse job because no_reuse=true" do
-    post :create, {
+    post :create, params: {
       job: {
         no_reuse: true,
         script: "hash",
@@ -116,7 +118,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
 
   [false, "false"].each do |whichfalse|
     test "do not reuse job because find_or_create=#{whichfalse.inspect}" do
-      post :create, {
+      post :create, params: {
         job: {
           script: "hash",
           script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
@@ -138,7 +140,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
 
   test "do not reuse job because output is not readable by user" do
     authorize_with :job_reader
-    post :create, {
+    post :create, params: {
       job: {
         script: "hash",
         script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
@@ -158,14 +160,16 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "test_cannot_reuse_job_no_output" do
-    post :create, job: {
-      no_reuse: false,
-      script: "hash",
-      script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
-      repository: "active/foo",
-      script_parameters: {
-        input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
-        an_integer: '2'
+    post :create, params: {
+      job: {
+        no_reuse: false,
+        script: "hash",
+        script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
+        repository: "active/foo",
+        script_parameters: {
+          input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
+          an_integer: '2'
+        }
       }
     }
     assert_response :success
@@ -175,15 +179,17 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "test_reuse_job_range" do
-    post :create, job: {
-      no_reuse: false,
-      script: "hash",
-      minimum_script_version: "tag1",
-      script_version: "master",
-      repository: "active/foo",
-      script_parameters: {
-        input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
-        an_integer: '1'
+    post :create, params: {
+      job: {
+        no_reuse: false,
+        script: "hash",
+        minimum_script_version: "tag1",
+        script_version: "master",
+        repository: "active/foo",
+        script_parameters: {
+          input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
+          an_integer: '1'
+        }
       }
     }
     assert_response :success
@@ -194,14 +200,16 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "cannot_reuse_job_no_minimum_given_so_must_use_specified_commit" do
-    post :create, job: {
-      no_reuse: false,
-      script: "hash",
-      script_version: "master",
-      repository: "active/foo",
-      script_parameters: {
-        input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
-        an_integer: '1'
+    post :create, params: {
+      job: {
+        no_reuse: false,
+        script: "hash",
+        script_version: "master",
+        repository: "active/foo",
+        script_parameters: {
+          input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
+          an_integer: '1'
+        }
       }
     }
     assert_response :success
@@ -212,14 +220,16 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "test_cannot_reuse_job_different_input" do
-    post :create, job: {
-      no_reuse: false,
-      script: "hash",
-      script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
-      repository: "active/foo",
-      script_parameters: {
-        input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
-        an_integer: '2'
+    post :create, params: {
+      job: {
+        no_reuse: false,
+        script: "hash",
+        script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
+        repository: "active/foo",
+        script_parameters: {
+          input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
+          an_integer: '2'
+        }
       }
     }
     assert_response :success
@@ -230,14 +240,16 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "test_cannot_reuse_job_different_version" do
-    post :create, job: {
-      no_reuse: false,
-      script: "hash",
-      script_version: "master",
-      repository: "active/foo",
-      script_parameters: {
-        input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
-        an_integer: '2'
+    post :create, params: {
+      job: {
+        no_reuse: false,
+        script: "hash",
+        script_version: "master",
+        repository: "active/foo",
+        script_parameters: {
+          input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
+          an_integer: '2'
+        }
       }
     }
     assert_response :success
@@ -248,16 +260,18 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "test_can_reuse_job_submitted_nondeterministic" do
-    post :create, job: {
-      no_reuse: false,
-      script: "hash",
-      script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
-      repository: "active/foo",
-      script_parameters: {
-        input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
-        an_integer: '1'
-      },
-      nondeterministic: true
+    post :create, params: {
+      job: {
+        no_reuse: false,
+        script: "hash",
+        script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
+        repository: "active/foo",
+        script_parameters: {
+          input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
+          an_integer: '1'
+        },
+        nondeterministic: true
+      }
     }
     assert_response :success
     assert_not_nil assigns(:object)
@@ -267,14 +281,16 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "test_cannot_reuse_job_past_nondeterministic" do
-    post :create, job: {
-      no_reuse: false,
-      script: "hash2",
-      script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
-      repository: "active/foo",
-      script_parameters: {
-        input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
-        an_integer: '1'
+    post :create, params: {
+      job: {
+        no_reuse: false,
+        script: "hash2",
+        script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
+        repository: "active/foo",
+        script_parameters: {
+          input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
+          an_integer: '1'
+        }
       }
     }
     assert_response :success
@@ -286,14 +302,16 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
 
   test "test_cannot_reuse_job_no_permission" do
     authorize_with :spectator
-    post :create, job: {
-      no_reuse: false,
-      script: "hash",
-      script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
-      repository: "active/foo",
-      script_parameters: {
-        input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
-        an_integer: '1'
+    post :create, params: {
+      job: {
+        no_reuse: false,
+        script: "hash",
+        script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
+        repository: "active/foo",
+        script_parameters: {
+          input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
+          an_integer: '1'
+        }
       }
     }
     assert_response :success
@@ -304,16 +322,18 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "test_cannot_reuse_job_excluded" do
-    post :create, job: {
-      no_reuse: false,
-      script: "hash",
-      minimum_script_version: "31ce37fe365b3dc204300a3e4c396ad333ed0556",
-      script_version: "master",
-      repository: "active/foo",
-      exclude_script_versions: ["tag1"],
-      script_parameters: {
-        input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
-        an_integer: '1'
+    post :create, params: {
+      job: {
+        no_reuse: false,
+        script: "hash",
+        minimum_script_version: "31ce37fe365b3dc204300a3e4c396ad333ed0556",
+        script_version: "master",
+        repository: "active/foo",
+        exclude_script_versions: ["tag1"],
+        script_parameters: {
+          input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
+          an_integer: '1'
+        }
       }
     }
     assert_response :success
@@ -325,7 +345,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "cannot reuse job with find_or_create but excluded version" do
-    post :create, {
+    post :create, params: {
       job: {
         script: "hash",
         script_version: "master",
@@ -367,7 +387,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   test "can reuse a Job based on filters" do
     filters_hash = BASE_FILTERS.
       merge('script_version' => ['in git', 'tag1'])
-    post(:create, {
+    post(:create, params: {
            job: {
              script: "hash",
              script_version: "master",
@@ -393,7 +413,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
     filters += [["script_version", "in git",
                  "31ce37fe365b3dc204300a3e4c396ad333ed0556"],
                 ["script_version", "not in git", ["tag1"]]]
-    post(:create, {
+    post(:create, params: {
            job: {
              script: "hash",
              script_version: "master",
@@ -416,7 +436,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   test "can not reuse a Job based on arbitrary filters" do
     filters_hash = BASE_FILTERS.
       merge("created_at" => ["<", "2010-01-01T00:00:00Z"])
-    post(:create, {
+    post(:create, params: {
            job: {
              script: "hash",
              script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
@@ -437,7 +457,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "can reuse a Job with a Docker image" do
-    post(:create, {
+    post(:create, params: {
            job: {
              script: "hash",
              script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
@@ -467,7 +487,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
               ["=", "4fe459abe02d9b365932b8f5dc419439ab4e2577"],
             "docker_image_locator" =>
               ["in docker", links(:docker_image_collection_hash).name])
-    post(:create, {
+    post(:create, params: {
            job: {
              script: "hash",
              script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
@@ -495,7 +515,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
               ["=", "4fe459abe02d9b365932b8f5dc419439ab4e2577"],
             "docker_image_locator" =>
               ["in docker", links(:docker_image_collection_tag2).name])
-    post(:create, {
+    post(:create, params: {
            job: {
              script: "hash",
              script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
@@ -520,7 +540,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   test "new job with unknown Docker image filter" do
     filters_hash = BASE_FILTERS.
       merge("docker_image_locator" => ["in docker", "_nonesuchname_"])
-    post(:create, {
+    post(:create, params: {
            job: {
              script: "hash",
              script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
@@ -557,7 +577,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   ["repository", "script"].each do |skip_key|
     test "missing #{skip_key} filter raises an error" do
       filters = filters_from_hash(BASE_FILTERS.reject { |k| k == skip_key })
-      post(:create, {
+      post(:create, params: {
              job: {
                script: "hash",
                script_version: "master",
@@ -576,9 +596,11 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "find Job with script version range" do
-    get :index, filters: [["repository", "=", "active/foo"],
-                          ["script", "=", "hash"],
-                          ["script_version", "in git", "tag1"]]
+    get :index, params: {
+      filters: [["repository", "=", "active/foo"],
+                ["script", "=", "hash"],
+                ["script_version", "in git", "tag1"]]
+    }
     assert_response :success
     assert_not_nil assigns(:objects)
     assert_includes(assigns(:objects).map { |job| job.uuid },
@@ -586,9 +608,11 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "find Job with script version range exclusions" do
-    get :index, filters: [["repository", "=", "active/foo"],
-                          ["script", "=", "hash"],
-                          ["script_version", "not in git", "tag1"]]
+    get :index, params: {
+      filters: [["repository", "=", "active/foo"],
+                ["script", "=", "hash"],
+                ["script_version", "not in git", "tag1"]]
+    }
     assert_response :success
     assert_not_nil assigns(:objects)
     refute_includes(assigns(:objects).map { |job| job.uuid },
@@ -596,8 +620,10 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "find Job with Docker image range" do
-    get :index, filters: [["docker_image_locator", "in docker",
-                           "arvados/apitestfixture"]]
+    get :index, params: {
+      filters: [["docker_image_locator", "in docker",
+                 "arvados/apitestfixture"]]
+    }
     assert_response :success
     assert_not_nil assigns(:objects)
     assert_includes(assigns(:objects).map { |job| job.uuid },
@@ -608,7 +634,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
 
   test "find Job with Docker image using reader tokens" do
     authorize_with :inactive
-    get(:index, {
+    get(:index, params: {
           filters: [["docker_image_locator", "in docker",
                      "arvados/apitestfixture"]],
           reader_tokens: [api_token(:active)],
@@ -622,8 +648,10 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "'in docker' filter accepts arrays" do
-    get :index, filters: [["docker_image_locator", "in docker",
-                           ["_nonesuchname_", "arvados/apitestfixture"]]]
+    get :index, params: {
+      filters: [["docker_image_locator", "in docker",
+                ["_nonesuchname_", "arvados/apitestfixture"]]]
+    }
     assert_response :success
     assert_not_nil assigns(:objects)
     assert_includes(assigns(:objects).map { |job| job.uuid },
@@ -633,8 +661,10 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "'not in docker' filter accepts arrays" do
-    get :index, filters: [["docker_image_locator", "not in docker",
-                           ["_nonesuchname_", "arvados/apitestfixture"]]]
+    get :index, params: {
+      filters: [["docker_image_locator", "not in docker",
+                ["_nonesuchname_", "arvados/apitestfixture"]]]
+    }
     assert_response :success
     assert_not_nil assigns(:objects)
     assert_includes(assigns(:objects).map { |job| job.uuid },
@@ -668,7 +698,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   def create_job_from(params, start_from)
-    post(:create, create_job_params(params, start_from))
+    post(:create, params: create_job_params(params, start_from))
     assert_response :success
     new_job = assigns(:object)
     assert_not_nil new_job
@@ -688,7 +718,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   def check_errors_from(params, start_from=DEFAULT_START_JOB)
-    post(:create, create_job_params(params, start_from))
+    post(:create, params: create_job_params(params, start_from))
     assert_includes(405..499, @response.code.to_i)
     errors = json_response.fetch("errors", [])
     assert(errors.any?, "no errors assigned from #{params}")
@@ -762,7 +792,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
             "docker_image_locator" => ["=", prev_job.docker_image_locator])
     filters_hash.delete("script_version")
     params = create_job_params(filters: filters_from_hash(filters_hash))
-    post(:create, params)
+    post(:create, params: params)
     assert_response :success
     assert_equal(prev_job.uuid, assigns(:object).uuid)
   end

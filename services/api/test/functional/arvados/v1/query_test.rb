@@ -8,7 +8,7 @@ class Arvados::V1::QueryTest < ActionController::TestCase
   test 'no fallback orders when order is unambiguous' do
     @controller = Arvados::V1::LogsController.new
     authorize_with :active
-    get :index, {
+    get :index, params: {
       order: ['id asc'],
       controller: 'logs',
     }
@@ -19,7 +19,7 @@ class Arvados::V1::QueryTest < ActionController::TestCase
   test 'fallback orders when order is ambiguous' do
     @controller = Arvados::V1::LogsController.new
     authorize_with :active
-    get :index, {
+    get :index, params: {
       order: ['event_type asc'],
       controller: 'logs',
     }
@@ -31,7 +31,7 @@ class Arvados::V1::QueryTest < ActionController::TestCase
   test 'skip fallback orders already given by client' do
     @controller = Arvados::V1::LogsController.new
     authorize_with :active
-    get :index, {
+    get :index, params: {
       order: ['modified_at asc'],
       controller: 'logs',
     }
@@ -43,7 +43,7 @@ class Arvados::V1::QueryTest < ActionController::TestCase
   test 'eliminate superfluous orders' do
     @controller = Arvados::V1::LogsController.new
     authorize_with :active
-    get :index, {
+    get :index, params: {
       order: ['logs.modified_at asc',
               'modified_at desc',
               'event_type desc',
@@ -58,7 +58,7 @@ class Arvados::V1::QueryTest < ActionController::TestCase
   test 'eliminate orders after the first unique column' do
     @controller = Arvados::V1::LogsController.new
     authorize_with :active
-    get :index, {
+    get :index, params: {
       order: ['event_type asc',
               'id asc',
               'uuid asc',
@@ -73,7 +73,7 @@ class Arvados::V1::QueryTest < ActionController::TestCase
   test 'do not count items_available if count=none' do
     @controller = Arvados::V1::LinksController.new
     authorize_with :active
-    get :index, {
+    get :index, params: {
       count: 'none',
     }
     assert_response(:success)
@@ -84,7 +84,7 @@ class Arvados::V1::QueryTest < ActionController::TestCase
     test "count items_available if params=#{params.inspect}" do
       @controller = Arvados::V1::LinksController.new
       authorize_with :active
-      get :index, params
+      get :index, params: params
       assert_response(:success)
       assert_operator(json_response['items_available'], :>, 0)
     end
@@ -93,7 +93,7 @@ class Arvados::V1::QueryTest < ActionController::TestCase
   test 'error if count=bogus' do
     @controller = Arvados::V1::LinksController.new
     authorize_with :active
-    get :index, {
+    get :index, params: {
       count: 'bogus',
     }
     assert_response(422)

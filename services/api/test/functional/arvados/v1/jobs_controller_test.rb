@@ -11,11 +11,13 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
 
   test "submit a job" do
     authorize_with :active
-    post :create, job: {
-      script: "hash",
-      script_version: "master",
-      repository: "active/foo",
-      script_parameters: {}
+    post :create, params: {
+      job: {
+        script: "hash",
+        script_version: "master",
+        repository: "active/foo",
+        script_parameters: {}
+      }
     }
     assert_response :success
     assert_not_nil assigns(:object)
@@ -27,17 +29,19 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
 
   test "normalize output and log uuids when creating job" do
     authorize_with :active
-    post :create, job: {
-      script: "hash",
-      script_version: "master",
-      script_parameters: {},
-      repository: "active/foo",
-      started_at: Time.now,
-      finished_at: Time.now,
-      running: false,
-      success: true,
-      output: 'd41d8cd98f00b204e9800998ecf8427e+0+K@xyzzy',
-      log: 'd41d8cd98f00b204e9800998ecf8427e+0+K@xyzzy'
+    post :create, params: {
+      job: {
+        script: "hash",
+        script_version: "master",
+        script_parameters: {},
+        repository: "active/foo",
+        started_at: Time.now,
+        finished_at: Time.now,
+        running: false,
+        success: true,
+        output: 'd41d8cd98f00b204e9800998ecf8427e+0+K@xyzzy',
+        log: 'd41d8cd98f00b204e9800998ecf8427e+0+K@xyzzy'
+      }
     }
     assert_response :success
     assert_not_nil assigns(:object)
@@ -58,7 +62,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
 
     new_output = 'd41d8cd98f00b204e9800998ecf8427e+0+K@xyzzy'
     new_log = 'd41d8cd98f00b204e9800998ecf8427e+0+K@xyzzy'
-    put :update, {
+    put :update, params: {
       id: foobar_job['uuid'],
       job: {
         output: new_output,
@@ -84,7 +88,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     end
 
     authorize_with :active
-    put :update, {
+    put :update, params: {
       id: jobs(:running).uuid,
       job: {
         cancelled_at: 4.day.ago
@@ -124,7 +128,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
       end
 
       authorize_with :active
-      self.send http_method, action, { id: jobs(:cancelled).uuid }.merge(params)
+      self.send http_method, action, params: { id: jobs(:cancelled).uuid }.merge(params)
       assert_response expected_response
       if expected_response == :success
         job = json_response
@@ -145,7 +149,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     end
 
     authorize_with :active
-    put :update, {
+    put :update, params: {
       id: jobs(:running_cancelled).uuid,
       job: {
         cancelled_at: nil
@@ -157,7 +161,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
   ['abc.py', 'hash.py'].each do |script|
     test "update job script attribute to #{script} without failing script_version check" do
       authorize_with :admin
-      put :update, {
+      put :update, params: {
         id: jobs(:uses_nonexistent_script_version).uuid,
         job: {
           script: script
@@ -171,7 +175,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
 
   test "search jobs by uuid with >= query" do
     authorize_with :active
-    get :index, {
+    get :index, params: {
       filters: [['uuid', '>=', 'zzzzz-8i9sb-pshmckwoma9plh7']]
     }
     assert_response :success
@@ -182,7 +186,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
 
   test "search jobs by uuid with <= query" do
     authorize_with :active
-    get :index, {
+    get :index, params: {
       filters: [['uuid', '<=', 'zzzzz-8i9sb-pshmckwoma9plh7']]
     }
     assert_response :success
@@ -193,7 +197,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
 
   test "search jobs by uuid with >= and <= query" do
     authorize_with :active
-    get :index, {
+    get :index, params: {
       filters: [['uuid', '>=', 'zzzzz-8i9sb-pshmckwoma9plh7'],
               ['uuid', '<=', 'zzzzz-8i9sb-pshmckwoma9plh7']]
     }
@@ -204,7 +208,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
 
   test "search jobs by uuid with < query" do
     authorize_with :active
-    get :index, {
+    get :index, params: {
       filters: [['uuid', '<', 'zzzzz-8i9sb-pshmckwoma9plh7']]
     }
     assert_response :success
@@ -215,7 +219,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
 
   test "search jobs by uuid with like query" do
     authorize_with :active
-    get :index, {
+    get :index, params: {
       filters: [['uuid', 'like', '%hmckwoma9pl%']]
     }
     assert_response :success
@@ -225,7 +229,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
 
   test "search jobs by uuid with 'in' query" do
     authorize_with :active
-    get :index, {
+    get :index, params: {
       filters: [['uuid', 'in', ['zzzzz-8i9sb-4cf0nhn6xte809j',
                                 'zzzzz-8i9sb-pshmckwoma9plh7']]]
     }
@@ -239,7 +243,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     exclude_uuids = [jobs(:running).uuid,
                      jobs(:running_cancelled).uuid]
     authorize_with :active
-    get :index, {
+    get :index, params: {
       filters: [['uuid', 'not in', exclude_uuids]]
     }
     assert_response :success
@@ -254,7 +258,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
      ['output', nil]].each do |attr, operand|
       test "search jobs with #{attr} #{operator} #{operand.inspect} query" do
         authorize_with :active
-        get :index, {
+        get :index, params: {
           filters: [[attr, operator, operand]]
         }
         assert_response :success
@@ -271,7 +275,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
 
   test "search jobs by started_at with < query" do
     authorize_with :active
-    get :index, {
+    get :index, params: {
       filters: [['started_at', '<', Time.now.to_s]]
     }
     assert_response :success
@@ -281,7 +285,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
 
   test "search jobs by started_at with > query" do
     authorize_with :active
-    get :index, {
+    get :index, params: {
       filters: [['started_at', '>', Time.now.to_s]]
     }
     assert_response :success
@@ -290,7 +294,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
 
   test "search jobs by started_at with >= query on metric date" do
     authorize_with :active
-    get :index, {
+    get :index, params: {
       filters: [['started_at', '>=', '2014-01-01']]
     }
     assert_response :success
@@ -300,7 +304,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
 
   test "search jobs by started_at with >= query on metric date and time" do
     authorize_with :active
-    get :index, {
+    get :index, params: {
       filters: [['started_at', '>=', '2014-01-01 01:23:45']]
     }
     assert_response :success
@@ -310,7 +314,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
 
   test "search jobs with 'any' operator" do
     authorize_with :active
-    get :index, {
+    get :index, params: {
       where: { any: ['contains', 'pshmckw'] }
     }
     assert_response :success
@@ -321,7 +325,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
 
   test "search jobs by nonexistent column with < query" do
     authorize_with :active
-    get :index, {
+    get :index, params: {
       filters: [['is_borked', '<', 'fizzbuzz']]
     }
     assert_response 422
@@ -329,7 +333,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
 
   test "finish a job" do
     authorize_with :active
-    put :update, {
+    put :update, params: {
       id: jobs(:nearly_finished_job).uuid,
       job: {
         output: '551392cc37a317abf865b95f66f4ef94+101',
@@ -354,7 +358,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
 
   test "get job queue as with a = filter" do
     authorize_with :admin
-    get :queue, { filters: [['script','=','foo']] }
+    get :queue, params: { filters: [['script','=','foo']] }
     assert_response :success
     assert_equal ['foo'], assigns(:objects).collect(&:script).uniq
     assert_equal 0, assigns(:objects)[0].queue_position
@@ -362,7 +366,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
 
   test "get job queue as with a != filter" do
     authorize_with :admin
-    get :queue, { filters: [['script','!=','foo']] }
+    get :queue, params: { filters: [['script','!=','foo']] }
     assert_response :success
     assert_equal 0, assigns(:objects).count
   end
@@ -378,14 +382,14 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
 
   test "job includes assigned nodes" do
     authorize_with :active
-    get :show, {id: jobs(:nearly_finished_job).uuid}
+    get :show, params: {id: jobs(:nearly_finished_job).uuid}
     assert_response :success
     assert_equal([nodes(:busy).uuid], json_response["node_uuids"])
   end
 
   test "job lock success" do
     authorize_with :active
-    post :lock, {id: jobs(:queued).uuid}
+    post :lock, params: {id: jobs(:queued).uuid}
     assert_response :success
     job = Job.where(uuid: jobs(:queued).uuid).first
     assert_equal "Running", job.state
@@ -393,7 +397,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
 
   test "job lock conflict" do
     authorize_with :active
-    post :lock, {id: jobs(:running).uuid}
+    post :lock, params: {id: jobs(:running).uuid}
     assert_response 422 # invalid state transition
   end
 
@@ -401,11 +405,13 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     authorize_with :active
     url = "http://localhost:1/fake/fake.git"
     fetch_remote_from_local_repo url, :foo
-    post :create, job: {
-      script: "hash",
-      script_version: "abc123",
-      repository: url,
-      script_parameters: {}
+    post :create, params: {
+      job: {
+        script: "hash",
+        script_version: "abc123",
+        repository: url,
+        script_parameters: {}
+      }
     }
     assert_response 422
   end
@@ -414,11 +420,13 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     authorize_with :active
     url = "http://localhost:1/fake/fake.git"
     fetch_remote_from_local_repo url, :foo
-    post :create, job: {
-      script: "hash",
-      script_version: "master",
-      repository: url,
-      script_parameters: {}
+    post :create, params: {
+      job: {
+        script: "hash",
+        script_version: "master",
+        repository: url,
+        script_parameters: {}
+      }
     }
     assert_response :success
     assert_equal('077ba2ad3ea24a929091a9e6ce545c93199b8e57',
@@ -427,11 +435,13 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
 
   test 'tag local commit in internal repository' do
     authorize_with :active
-    post :create, job: {
-      script: "hash",
-      script_version: "master",
-      repository: "active/foo",
-      script_parameters: {}
+    post :create, params: {
+      job: {
+        script: "hash",
+        script_version: "master",
+        repository: "active/foo",
+        script_parameters: {}
+      }
     }
     assert_response :success
     assert_equal('077ba2ad3ea24a929091a9e6ce545c93199b8e57',
@@ -440,7 +450,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
 
   test 'get job with components' do
     authorize_with :active
-    get :show, {id: jobs(:running_job_with_components).uuid}
+    get :show, params: {id: jobs(:running_job_with_components).uuid}
     assert_response :success
     assert_not_nil json_response["components"]
     assert_equal ["component1", "component2"], json_response["components"].keys
@@ -453,7 +463,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
   ].each do |user, expected|
     test "add components to job locked by active user as #{user} user and expect #{expected}" do
       authorize_with user
-      put :update, {
+      put :update, params: {
         id: jobs(:running).uuid,
         job: {
           components: {"component1" => "value1", "component2" => "value2"}
@@ -471,7 +481,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
 
   test 'get_delete components_get again for job with components' do
     authorize_with :active
-    get :show, {id: jobs(:running_job_with_components).uuid}
+    get :show, params: {id: jobs(:running_job_with_components).uuid}
     assert_response :success
     assert_not_nil json_response["components"]
     assert_equal ["component1", "component2"], json_response["components"].keys
@@ -479,7 +489,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     # delete second component
     @test_counter = 0  # Reset executed action counter
     @controller = Arvados::V1::JobsController.new
-    put :update, {
+    put :update, params: {
       id: jobs(:running_job_with_components).uuid,
       job: {
         components: {"component1" => "zzzzz-8i9sb-jobuuid00000001"}
@@ -489,7 +499,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
 
     @test_counter = 0  # Reset executed action counter
     @controller = Arvados::V1::JobsController.new
-    get :show, {id: jobs(:running_job_with_components).uuid}
+    get :show, params: {id: jobs(:running_job_with_components).uuid}
     assert_response :success
     assert_not_nil json_response["components"]
     assert_equal ["component1"], json_response["components"].keys
@@ -497,7 +507,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     # delete all components
     @test_counter = 0  # Reset executed action counter
     @controller = Arvados::V1::JobsController.new
-    put :update, {
+    put :update, params: {
       id: jobs(:running_job_with_components).uuid,
       job: {
         components: {}
@@ -507,7 +517,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
 
     @test_counter = 0  # Reset executed action counter
     @controller = Arvados::V1::JobsController.new
-    get :show, {id: jobs(:running_job_with_components).uuid}
+    get :show, params: {id: jobs(:running_job_with_components).uuid}
     assert_response :success
     assert_not_nil json_response["components"]
     assert_equal [], json_response["components"].keys
@@ -517,11 +527,13 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     Rails.configuration.disable_api_methods = ["jobs.create",
                                                "pipeline_instances.create"]
     authorize_with :active
-    post :create, job: {
-      script: "hash",
-      script_version: "master",
-      repository: "active/foo",
-      script_parameters: {}
+    post :create, params: {
+      job: {
+        script: "hash",
+        script_version: "master",
+        repository: "active/foo",
+        script_parameters: {}
+      }
     }
     assert_response 404
   end

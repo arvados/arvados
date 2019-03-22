@@ -198,32 +198,32 @@ class User < ArvadosModel
   # delete user signatures, login, repo, and vm perms, and mark as inactive
   def unsetup
     # delete oid_login_perms for this user
-    Link.destroy_all(tail_uuid: self.email,
+    Link.where(tail_uuid: self.email,
                      link_class: 'permission',
-                     name: 'can_login')
+                     name: 'can_login').destroy_all
 
     # delete repo_perms for this user
-    Link.destroy_all(tail_uuid: self.uuid,
+    Link.where(tail_uuid: self.uuid,
                      link_class: 'permission',
-                     name: 'can_manage')
+                     name: 'can_manage').destroy_all
 
     # delete vm_login_perms for this user
-    Link.destroy_all(tail_uuid: self.uuid,
+    Link.where(tail_uuid: self.uuid,
                      link_class: 'permission',
-                     name: 'can_login')
+                     name: 'can_login').destroy_all
 
     # delete "All users" group read permissions for this user
     group = Group.where(name: 'All users').select do |g|
       g[:uuid].match(/-f+$/)
     end.first
-    Link.destroy_all(tail_uuid: self.uuid,
+    Link.where(tail_uuid: self.uuid,
                      head_uuid: group[:uuid],
                      link_class: 'permission',
-                     name: 'can_read')
+                     name: 'can_read').destroy_all
 
     # delete any signatures by this user
-    Link.destroy_all(link_class: 'signature',
-                     tail_uuid: self.uuid)
+    Link.where(link_class: 'signature',
+                     tail_uuid: self.uuid).destroy_all
 
     # delete user preferences (including profile)
     self.prefs = {}
