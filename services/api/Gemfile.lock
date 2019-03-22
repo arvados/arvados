@@ -256,7 +256,6 @@ GEM
       ref
     thor (0.20.3)
     thread_safe (0.3.6)
-    trollop (2.9.9)
     tzinfo (1.2.5)
       thread_safe (~> 0.1)
     uglifier (2.7.2)
@@ -287,6 +286,7 @@ DEPENDENCIES
   oj
   omniauth (~> 1.4.0)
   omniauth-oauth2 (~> 1.1)
+  optimist
   passenger
   pg (~> 0.18)
   rails (~> 5.0.0)
@@ -303,7 +303,6 @@ DEPENDENCIES
   test-unit (~> 3.0)
   themes_for_rails!
   therubyracer
-  trollop
   uglifier (~> 2.0)
 
 BUNDLED WITH

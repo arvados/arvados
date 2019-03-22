@@ -102,7 +102,10 @@ class ArvadosModel < ActiveRecord::Base
     # The following permit! is necessary even with
     # "ActionController::Parameters.permit_all_parameters = true",
     # because permit_all does not permit nested attributes.
+    raw_params ||= {}
+
     if raw_params
+      raw_params = raw_params.to_hash
       raw_params.delete_if { |k, _| self.protected_attributes.include? k }
       serialized_attributes.each do |colname, coder|
         param = raw_params[colname.to_sym]
@@ -119,7 +122,7 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def initialize raw_params={}, *args
-    super(self.class.permit_attribute_params(raw_params.to_hash), *args)
+    super(self.class.permit_attribute_params(raw_params), *args)
   end
 
   # Reload "old attributes" for logging, too.
@@ -363,7 +366,7 @@ class ArvadosModel < ActiveRecord::Base
         # discover a unique name.  It is necessary to handle name choosing at
         # this level (as opposed to the client) to ensure that record creation
         # never fails due to a race condition.
-        err = rn.original_exception
+        err = rn.cause
         raise unless err.is_a?(PG::UniqueViolation)
 
         # Unfortunately ActiveRecord doesn't abstract out any of the
@@ -455,7 +458,7 @@ class ArvadosModel < ActiveRecord::Base
           end
         rescue ActiveRecord::RecordNotFound => e
           errors.add :owner_uuid, "is not owned by any user: #{e}"
-          return false
+          throw(:abort)
         end
         if uuid_in_path[x]
           if x == owner_uuid
@@ -463,7 +466,7 @@ class ArvadosModel < ActiveRecord::Base
           else
             errors.add :owner_uuid, "has an ownership cycle"
           end
-          return false
+          throw(:abort)
         end
         uuid_in_path[x] = true
       end

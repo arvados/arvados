@@ -51,7 +51,7 @@ gem 'omniauth-oauth2', '~> 1.1'
 
 gem 'andand'
 
-gem 'trollop'
+gem 'optimist'
 gem 'faye-websocket'
 
 gem 'themes_for_rails', git: 'https://github.com/curoverse/themes_for_rails'

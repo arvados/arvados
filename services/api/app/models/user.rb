@@ -588,7 +588,7 @@ class User < ArvadosModel
   def verify_repositories_empty
     unless repositories.first.nil?
       errors.add(:username, "can't be unset when the user owns repositories")
-      false
+      throw(:abort)
     end
   end
 
