@@ -31,6 +31,7 @@ type NewHandlerFunc func(_ context.Context, _ *arvados.Cluster, _ *arvados.NodeP
 type command struct {
 	newHandler NewHandlerFunc
 	svcName    arvados.ServiceName
+	ctx        context.Context // enables tests to shutdown service; no public API yet
 }
 
 // Command returns a cmd.Handler that loads site config, calls
@@ -43,6 +44,7 @@ func Command(svcName arvados.ServiceName, newHandler NewHandlerFunc) cmd.Handler
 	return &command{
 		newHandler: newHandler,
 		svcName:    svcName,
+		ctx:        context.Background(),
 	}
 }
 
@@ -77,7 +79,7 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	log = ctxlog.New(stderr, cluster.Logging.Format, cluster.Logging.Level).WithFields(logrus.Fields{
 		"PID": os.Getpid(),
 	})
-	ctx := ctxlog.Context(context.Background(), log)
+	ctx := ctxlog.Context(c.ctx, log)
 
 	profileName := *nodeProfile
 	if profileName == "" {
@@ -123,6 +125,10 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	if _, err := daemon.SdNotify(false, "READY=1"); err != nil {
 		log.WithError(err).Errorf("error notifying init daemon")
 	}
+	go func() {
+		<-ctx.Done()
+		srv.Close()
+	}()
 	err = srv.Wait()
 	if err != nil {
 		return 1
