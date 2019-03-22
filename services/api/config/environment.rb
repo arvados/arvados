@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 # Load the rails application
-require File.expand_path('../application', __FILE__)
+require_relative 'application'
 require 'josh_id'
 
 # Initialize the rails application
-Server::Application.initialize!
+Rails.application.initialize!

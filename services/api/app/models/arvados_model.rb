@@ -119,7 +119,7 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def initialize raw_params={}, *args
-    super(self.class.permit_attribute_params(raw_params), *args)
+    super(self.class.permit_attribute_params(raw_params.to_hash), *args)
   end
 
   # Reload "old attributes" for logging, too.
