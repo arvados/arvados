@@ -8,7 +8,7 @@ require 'record_filters'
 require 'serializers'
 require 'request_error'
 
-class ArvadosModel < ActiveRecord::Base
+class ArvadosModel < ApplicationRecord
   self.abstract_class = true
 
   include ArvadosModelUpdates
