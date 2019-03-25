@@ -83,14 +83,17 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 			},
 		},
 		Services: arvados.Services{
-			DispatchCloud: arvados.Service{InternalURLs: map[arvados.URL]arvados.ServiceInstance{
-				arvados.URL{Scheme: "https", Host: os.Getenv("ARVADOS_API_HOST")}: {},
-			}},
+			Controller: arvados.Service{ExternalURL: arvados.URL{Scheme: "https", Host: os.Getenv("ARVADOS_API_HOST")}},
 		},
 	}
+
+	arvClient, err := arvados.NewClientFromConfig(s.cluster)
+	c.Check(err, check.IsNil)
+
 	s.disp = &dispatcher{
 		Cluster:   s.cluster,
 		Context:   s.ctx,
+		ArvClient: arvClient,
 		AuthToken: arvadostest.AdminToken,
 	}
 	// Test cases can modify s.cluster before calling

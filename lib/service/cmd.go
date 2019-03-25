@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 
 	"git.curoverse.com/arvados.git/lib/cmd"
@@ -95,16 +96,24 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 		return 1
 	}
 
-	// Currently all components use SystemRootToken if configured,
-	// otherwise ARVADOS_API_TOKEN. In future, per-process tokens
-	// will be generated/obtained here.
-	token := cluster.SystemRootToken
-	if token == "" {
+	if cluster.SystemRootToken == "" {
 		log.Warn("SystemRootToken missing from cluster config, falling back to ARVADOS_API_TOKEN environment variable")
-		token = os.Getenv("ARVADOS_API_TOKEN")
+		cluster.SystemRootToken = os.Getenv("ARVADOS_API_TOKEN")
+	}
+	if cluster.Services.Controller.ExternalURL.Host == "" {
+		log.Warn("Services.Controller.ExternalURL missing from cluster config, falling back to ARVADOS_API_HOST(_INSECURE) environment variables")
+		u, err := url.Parse("https://" + os.Getenv("ARVADOS_API_HOST"))
+		if err != nil {
+			err = fmt.Errorf("ARVADOS_API_HOST: %s", err)
+			return 1
+		}
+		cluster.Services.Controller.ExternalURL = arvados.URL(*u)
+		if i := os.Getenv("ARVADOS_API_HOST_INSECURE"); i != "" && i != "0" {
+			cluster.TLS.Insecure = true
+		}
 	}
 
-	handler := c.newHandler(ctx, cluster, profile, token)
+	handler := c.newHandler(ctx, cluster, profile, cluster.SystemRootToken)
 	if err = handler.CheckHealth(); err != nil {
 		return 1
 	}
