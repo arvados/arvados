@@ -110,7 +110,7 @@ class CrunchDispatch
   end
 
   def update_node_status
-    return unless Server::Application.config.crunch_job_wrapper.to_s.match(/^slurm/)
+    return unless Rails.configuration.Containers["JobsAPI"]["CrunchJobWrapper"].to_s.match(/^slurm/)
     slurm_status.each_pair do |hostname, slurmdata|
       next if @node_state[hostname] == slurmdata
       begin
@@ -337,7 +337,7 @@ class CrunchDispatch
       next if @running[job.uuid]
 
       cmd_args = nil
-      case Server::Application.config.crunch_job_wrapper
+      case Rails.configuration.Containers["JobsAPI"]["CrunchJobWrapper"]
       when :none
         if @running.size > 0
             # Don't run more than one at a time.
@@ -361,7 +361,7 @@ class CrunchDispatch
                     "--job-name=#{job.uuid}",
                     "--nodelist=#{nodelist.join(',')}"]
       else
-        raise "Unknown crunch_job_wrapper: #{Server::Application.config.crunch_job_wrapper}"
+        raise "Unknown crunch_job_wrapper: #{Rails.configuration.Containers["JobsAPI"]["CrunchJobWrapper"]}"
       end
 
       cmd_args = sudo_preface + cmd_args
@@ -902,9 +902,9 @@ class CrunchDispatch
   end
 
   def sudo_preface
-    return [] if not Server::Application.config.crunch_job_user
+    return [] if not Rails.configuration.Containers["JobsAPI"]["CrunchJobUser"]
     ["sudo", "-E", "-u",
-     Server::Application.config.crunch_job_user,
+     Rails.configuration.Containers["JobsAPI"]["CrunchJobUser"],
      "LD_LIBRARY_PATH=#{ENV['LD_LIBRARY_PATH']}",
      "PATH=#{ENV['PATH']}",
      "PERLLIB=#{ENV['PERLLIB']}",
@@ -957,7 +957,7 @@ class CrunchDispatch
 
   # An array of job_uuids in squeue
   def squeue_jobs
-    if Rails.configuration.Containers["JobsAPI"]["CrunchJobWrapper"].to_sym == :slurm_immediate
+    if Rails.configuration.Containers["JobsAPI"]["CrunchJobWrapper"] == "slurm_immediate"
       p = IO.popen(['squeue', '-a', '-h', '-o', '%j'])
       begin
         p.readlines.map {|line| line.strip}

@@ -19,7 +19,7 @@ class UserNotifierTest < ActionMailer::TestCase
     assert_equal 'Welcome to Arvados - shell account enabled', email.subject
     assert (email.body.to_s.include? 'Your Arvados shell account has been set up'),
         'Expected Your Arvados shell account has been set up in email body'
-    assert (email.body.to_s.include? Rails.configuration.Services["Workbench1"]["ExternalURL"]),
+    assert (email.body.to_s.include? Rails.configuration.Services["Workbench1"]["ExternalURL"].to_s),
         'Expected workbench url in email body'
   end
 

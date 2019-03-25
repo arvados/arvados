@@ -518,7 +518,9 @@ class Collection < ArvadosModel
     if loc = Keep::Locator.parse(search_term)
       loc.strip_hints!
       coll_match = readable_by(*readers).where(portable_data_hash: loc.to_s).limit(1)
-      if coll_match.any? or Rails.configuration.RemoteClusters.length > 1
+      rc = Rails.configuration.RemoteClusters.select{ |k|
+        k != "*" && k != Rails.configuration.ClusterID}
+      if coll_match.any? or rc.length == 0
         return get_compatible_images(readers, pattern, coll_match)
       else
         # Allow bare pdh that doesn't exist in the local database so

@@ -109,6 +109,10 @@ def coercion_and_check check_cfg
       cfg[k] = ""
     end
 
+    if cfgtype == String and cfg[k].is_a? Symbol
+      cfg[k] = cfg[k].to_s
+    end
+
     if cfgtype == NonemptyString
       if (!cfg[k] || cfg[k] == "")
         raise "#{cfgkey} cannot be empty"

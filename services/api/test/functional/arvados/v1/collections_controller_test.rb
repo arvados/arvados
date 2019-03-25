@@ -1176,7 +1176,7 @@ EOS
     assert_response 200
     c = Collection.find_by_uuid(uuid)
     assert_operator c.trash_at, :<, db_current_time
-    assert_equal c.delete_at, c.trash_at + Rails.configuration.Collection["BlobSigningTTL"]
+    assert_equal c.delete_at, c.trash_at + Rails.configuration.Collections["BlobSigningTTL"]
   end
 
   test 'delete long-trashed collection immediately using http DELETE verb' do

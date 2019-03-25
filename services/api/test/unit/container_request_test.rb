@@ -525,6 +525,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
    'ENOEXIST',
    'arvados/apitestfixture:ENOEXIST',
   ].each do |img|
+    puts "RC", Rails.configuration.RemoteClusters
     test "container_image_for_container(#{img.inspect}) => 422" do
       set_user_from_auth :active
       assert_raises(ArvadosModel::UnresolvableContainerError) do
@@ -884,7 +885,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     [false, ActiveRecord::RecordInvalid],
     [true, nil],
   ].each do |preemptible_conf, expected|
-    test "having Rails.configuration.Containers["UsePreemptibleInstances"]=#{preemptible_conf}, create preemptible container request and verify #{expected}" do
+    test "having Rails.configuration.Containers['UsePreemptibleInstances']=#{preemptible_conf}, create preemptible container request and verify #{expected}" do
       sp = {"preemptible" => true}
       common_attrs = {cwd: "test",
                       priority: 1,
@@ -946,7 +947,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     [false, 'zzzzz-dz642-runningcontainr', nil],
     [false, nil, nil],
   ].each do |preemptible_conf, requesting_c, schedule_preemptible|
-    test "having Rails.configuration.Containers["UsePreemptibleInstances"]=#{preemptible_conf}, #{requesting_c.nil? ? 'non-':''}child CR should #{schedule_preemptible ? '':'not'} ask for preemptible instance by default" do
+    test "having Rails.configuration.Containers['UsePreemptibleInstances']=#{preemptible_conf}, #{requesting_c.nil? ? 'non-':''}child CR should #{schedule_preemptible ? '':'not'} ask for preemptible instance by default" do
       common_attrs = {cwd: "test",
                       priority: 1,
                       command: ["echo", "hello"],

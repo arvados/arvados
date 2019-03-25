@@ -81,10 +81,12 @@ class ApplicationController < ActionController::Base
 
   def default_url_options
     options = {}
-    exturl = URI.parse(Rails.configuration.Services["Controller"]["ExternalURL"])
-    options[:host] = exturl.host
-    options[:port] = exturl.port
-    options[:protocol] = exturl.scheme
+    if Rails.configuration.Services["Controller"]["ExternalURL"] != ""
+      exturl = URI.parse(Rails.configuration.Services["Controller"]["ExternalURL"])
+      options[:host] = exturl.host
+      options[:port] = exturl.port
+      options[:protocol] = exturl.scheme
+    end
     options
   end
 

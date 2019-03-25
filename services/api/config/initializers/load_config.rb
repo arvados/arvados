@@ -42,7 +42,7 @@ $arvados_config = {}
 end
 
 declare_config "ClusterID", NonemptyString, :uuid_prefix
-declare_config "ManagementToken", NonemptyString, :ManagementToken
+declare_config "ManagementToken", String, :ManagementToken
 declare_config "Git.Repositories", String, :git_repositories_dir
 declare_config "API.DisabledAPIs", Array, :disable_api_methods
 declare_config "API.MaxRequestSize", Integer, :max_request_size
@@ -115,7 +115,7 @@ declare_config "Services.Workbench1.ExternalURL", URI, :workbench_address
 declare_config "Services.Websocket.ExternalURL", URI, :websocket_address
 declare_config "Services.WebDAV.ExternalURL", URI, :keep_web_service_url
 declare_config "Services.GitHTTP.ExternalURL", URI, :git_repo_https_base
-declare_config "Services.GitSSH.ExternalURL", URI, :git_repo_ssh_base
+declare_config "Services.GitSSH.ExternalURL", URI, :git_repo_ssh_base, ->(cfg, k, v) { set_cfg cfg, "Services.GitSSH.ExternalURL", "ssh://#{v}" }
 declare_config "RemoteClusters", Hash, :remote_hosts, ->(cfg, k, v) {
   h = {}
   v.each do |clusterid, host|
@@ -159,7 +159,6 @@ end
 coercion_and_check $arvados_config
 
 Server::Application.configure do
-  nils = []
   copy_into_config $arvados_config, config
   copy_into_config $remaining_config, config
   config.secret_key_base = config.secret_token

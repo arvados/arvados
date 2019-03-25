@@ -491,7 +491,7 @@ class Job < ArvadosModel
   end
 
   def find_docker_image_locator
-    if runtime_constraints.is_a? Hash
+    if runtime_constraints.is_a? Hash and Rails.configuration.Containers["JobsAPI"]["DefaultDockerImage"] != ""
       runtime_constraints['docker_image'] ||=
         Rails.configuration.Containers["JobsAPI"]["DefaultDockerImage"]
     end

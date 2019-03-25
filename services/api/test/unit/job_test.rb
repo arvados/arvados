@@ -130,7 +130,7 @@ class JobTest < ActiveSupport::TestCase
       Rails.configuration.RemoteClusters = {}
       job = Job.new job_attrs(runtime_constraints:
                               {'docker_image' => image_spec})
-      assert(job.invalid?, "nonexistent Docker image #{spec_type} was valid")
+      assert(job.invalid?, "nonexistent Docker image #{spec_type} #{image_spec} was valid")
     end
   end
 
