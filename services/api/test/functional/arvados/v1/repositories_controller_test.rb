@@ -200,15 +200,15 @@ class Arvados::V1::RepositoriesControllerTest < ActionController::TestCase
   end
 
   [
-    {cfg: :git_repo_ssh_base, cfgval: "git@example.com:", match: %r"^git@example.com:"},
-    {cfg: :git_repo_ssh_base, cfgval: true, match: %r"^git@git.zzzzz.arvadosapi.com:"},
-    {cfg: :git_repo_ssh_base, cfgval: false, refute: /^git@/ },
-    {cfg: :git_repo_https_base, cfgval: "https://example.com/", match: %r"^https://example.com/"},
-    {cfg: :git_repo_https_base, cfgval: true, match: %r"^https://git.zzzzz.arvadosapi.com/"},
-    {cfg: :git_repo_https_base, cfgval: false, refute: /^http/ },
+    {cfg: "Services.GitSSH.ExternalURL", cfgval: "git@example.com:", match: %r"^git@example.com:"},
+    {cfg: "Services.GitSSH.ExternalURL", cfgval: true, match: %r"^git@git.zzzzz.arvadosapi.com:"},
+    {cfg: "Services.GitSSH.ExternalURL", cfgval: false, refute: /^git@/ },
+    {cfg: "Services.GitHTTP.ExternalURL", cfgval: "https://example.com/", match: %r"^https://example.com/"},
+    {cfg: "Services.GitHTTP.ExternalURL", cfgval: true, match: %r"^https://git.zzzzz.arvadosapi.com/"},
+    {cfg: "Services.GitHTTP.ExternalURL", cfgval: false, refute: /^http/ },
   ].each do |expect|
     test "set #{expect[:cfg]} to #{expect[:cfgval]}" do
-      Rails.configuration.send expect[:cfg].to_s+"=", expect[:cfgval]
+      set_cfg Rails.configuration, expect[:cfg].to_s, expect[:cfgval]
       authorize_with :active
       get :index
       assert_response :success

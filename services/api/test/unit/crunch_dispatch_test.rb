@@ -99,7 +99,7 @@ class CrunchDispatchTest < ActiveSupport::TestCase
 
   test 'override --cgroup-root with CRUNCH_CGROUP_ROOT' do
     ENV['CRUNCH_CGROUP_ROOT'] = '/path/to/cgroup'
-    Rails.configuration.crunch_job_wrapper = :none
+    Rails.configuration.Containers["JobsAPI"]["CrunchJobWrapper"] = "none"
     act_as_system_user do
       j = Job.create(repository: 'active/foo',
                      script: 'hash',
@@ -140,7 +140,7 @@ class CrunchDispatchTest < ActiveSupport::TestCase
 
   test 'rate limit of partial line segments' do
     act_as_system_user do
-      Rails.configuration.crunch_log_partial_line_throttle_period = 1
+      Rails.configuration.Containers["Logging"]["LogPartialLineThrottlePeriod"] = 1
 
       job = {}
       job[:bytes_logged] = 0
@@ -197,7 +197,7 @@ class CrunchDispatchTest < ActiveSupport::TestCase
   end
 
   test 'scancel orphaned job nodes' do
-    Rails.configuration.crunch_job_wrapper = :slurm_immediate
+    Rails.configuration.Containers["JobsAPI"]["CrunchJobWrapper"] = "slurm_immediate"
     act_as_system_user do
       dispatch = CrunchDispatch.new
 

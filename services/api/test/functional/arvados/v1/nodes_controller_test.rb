@@ -223,7 +223,7 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
   end
 
   test "node should fail ping with invalid hostname config format" do
-    Rails.configuration.assign_node_hostname = 'compute%<slot_number>04'  # should end with "04d"
+    Rails.configuration.Containers["SLURM"]["Managed"]["AssignNodeHostname"] = 'compute%<slot_number>04'  # should end with "04d"
     post :ping, params: {
       id: nodes(:new_with_no_hostname).uuid,
       ping_secret: nodes(:new_with_no_hostname).info['ping_secret'],

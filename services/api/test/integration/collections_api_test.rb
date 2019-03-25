@@ -129,7 +129,7 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
 
   test "store collection as json" do
     signing_opts = {
-      key: Rails.configuration.blob_signing_key,
+      key: Rails.configuration.Collections["BlobSigningKey"],
       api_token: api_token(:active),
     }
     signed_locator = Blob.sign_locator('bad42fa702ae3ea7d888fef11b46f450+44',
@@ -146,7 +146,7 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
 
   test "store collection with manifest_text only" do
     signing_opts = {
-      key: Rails.configuration.blob_signing_key,
+      key: Rails.configuration.Collections["BlobSigningKey"],
       api_token: api_token(:active),
     }
     signed_locator = Blob.sign_locator('bad42fa702ae3ea7d888fef11b46f450+44',
@@ -163,7 +163,7 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
 
   test "store collection then update name" do
     signing_opts = {
-      key: Rails.configuration.blob_signing_key,
+      key: Rails.configuration.Collections["BlobSigningKey"],
       api_token: api_token(:active),
     }
     signed_locator = Blob.sign_locator('bad42fa702ae3ea7d888fef11b46f450+44',

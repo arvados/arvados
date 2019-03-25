@@ -16,7 +16,7 @@ class DeleteOldContainerLogsTaskTest < ActiveSupport::TestCase
   end
 
   def run_with_expiry(clean_after)
-    Rails.configuration.clean_container_log_rows_after = clean_after
+    Rails.configuration.Containers["Logging"]["MaxAge"] = clean_after
     Rake::Task[TASK_NAME].reenable
     Rake.application.invoke_task TASK_NAME
   end

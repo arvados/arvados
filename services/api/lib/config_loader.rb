@@ -29,7 +29,7 @@ module Psych
 end
 
 def set_cfg cfg, k, v
-  # "foo.bar: baz" --> { config.foo.bar = baz }
+  # "foo.bar = baz" --> { cfg["foo"]["bar"] = baz }
   ks = k.split '.'
   k = ks.pop
   ks.each do |kk|
@@ -126,9 +126,19 @@ def coercion_and_check check_cfg
       end
     end
 
+    if cfgtype == URI
+      cfg[k] = URI(cfg[k])
+    end
+
     if !cfg[k].is_a? cfgtype
       raise "#{cfgkey} expected #{cfgtype} but was #{cfg[k].class}"
     end
   end
 
+end
+
+def copy_into_config src, dst
+  src.each do |k, v|
+    dst.send "#{k}=", Marshal.load(Marshal.dump v)
+  end
 end

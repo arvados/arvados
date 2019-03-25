@@ -111,10 +111,10 @@ class UserSessionsApiTest < ActionDispatch::IntegrationTest
    ].each do |testcase|
     test "user auto-activate #{testcase.inspect}" do
       # Configure auto_setup behavior according to testcase[:cfg]
-      Rails.configuration.auto_setup_new_users = testcase[:cfg][:auto]
-      Rails.configuration.auto_setup_new_users_with_vm_uuid =
-        (testcase[:cfg][:vm] ? virtual_machines(:testvm).uuid : false)
-      Rails.configuration.auto_setup_new_users_with_repository =
+      Rails.configuration.Users["AutoSetupNewUsers"] = testcase[:cfg][:auto]
+      Rails.configuration.Users["AutoSetupNewUsersWithVmUUID"] =
+        (testcase[:cfg][:vm] ? virtual_machines(:testvm).uuid : "")
+      Rails.configuration.Users["AutoSetupNewUsersWithRepository"] =
         testcase[:cfg][:repo]
 
       mock_auth_with(email: testcase[:email])

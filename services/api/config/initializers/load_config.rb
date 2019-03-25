@@ -111,11 +111,11 @@ declare_config "Containers.JobsAPI.ReuseJobIfOutputsDiffer", Boolean, :reuse_job
 declare_config "Containers.JobsAPI.DefaultDockerImage", String, :default_docker_image_for_jobs
 declare_config "Mail.MailchimpAPIKey", String, :mailchimp_api_key
 declare_config "Mail.MailchimpListID", String, :mailchimp_list_id
-declare_config "Services.Workbench1.ExternalURL", String, :workbench_address
-declare_config "Services.Websocket.ExternalURL", String, :websocket_address
-declare_config "Services.WebDAV.ExternalURL", String, :keep_web_service_url
-declare_config "Services.GitHTTP.ExternalURL", String, :git_repo_https_base
-declare_config "Services.GitSSH.ExternalURL", String, :git_repo_ssh_base
+declare_config "Services.Workbench1.ExternalURL", URI, :workbench_address
+declare_config "Services.Websocket.ExternalURL", URI, :websocket_address
+declare_config "Services.WebDAV.ExternalURL", URI, :keep_web_service_url
+declare_config "Services.GitHTTP.ExternalURL", URI, :git_repo_https_base
+declare_config "Services.GitSSH.ExternalURL", URI, :git_repo_ssh_base
 declare_config "RemoteClusters", Hash, :remote_hosts, ->(cfg, k, v) {
   h = {}
   v.each do |clusterid, host|
@@ -144,7 +144,7 @@ application_config = {}
   end
 end
 
-remainders = migrate_config application_config, $arvados_config
+$remaining_config = migrate_config application_config, $arvados_config
 
 if application_config[:auto_activate_users_from]
   application_config[:auto_activate_users_from].each do |cluster|
@@ -154,38 +154,13 @@ if application_config[:auto_activate_users_from]
   end
 end
 
+# Checks for wrongly typed configuration items, and essential items
+# that can't be empty
 coercion_and_check $arvados_config
 
 Server::Application.configure do
   nils = []
-  $arvados_config.each do |k, v|
-    cfg = config
-    if cfg.respond_to?(k.to_sym) and !cfg.send(k).nil?
-    # Config must have been set already in environments/*.rb.
-    #
-    # After config files have been migrated, this mechanism should
-    # be deprecated, then removed.
-    elsif v.nil?
-      # Config variables are not allowed to be nil. Make a "naughty"
-      # list, and present it below.
-      nils << k
-    else
-      cfg.send "#{k}=", v
-    end
-  end
-  remainders.each do |k, v|
-    config.send "#{k}=", v
-  end
-
-  if !nils.empty?
-    raise <<EOS
-Refusing to start in #{::Rails.env.to_s} mode with missing configuration.
-
-The following configuration settings must be specified in
-config/application.yml:
-* #{nils.join "\n* "}
-
-EOS
-  end
+  copy_into_config $arvados_config, config
+  copy_into_config $remaining_config, config
   config.secret_key_base = config.secret_token
 end

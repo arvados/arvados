@@ -65,7 +65,7 @@ class Arvados::V1::SchemaControllerTest < ActionController::TestCase
   end
 
   test "non-empty disable_api_methods" do
-    Rails.configuration.disable_api_methods =
+    Rails.configuration.API["DisabledAPIs"] =
       ['jobs.create', 'pipeline_instances.create', 'pipeline_templates.create']
     get :index
     assert_response :success

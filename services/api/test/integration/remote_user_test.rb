@@ -63,8 +63,8 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     ready.pop
     @remote_server = srv
     @remote_host = "127.0.0.1:#{srv.config[:Port]}"
-    Rails.configuration.remote_hosts = Rails.configuration.remote_hosts.merge({'zbbbb' => @remote_host,
-                                                                               'zbork' => @remote_host})
+    Rails.configuration.RemoteClusters = Rails.configuration.RemoteClusters.merge({'zbbbb' => {"Host" => @remote_host},
+                                                                                   'zbork' => {"Host" => @remote_host}})
     Arvados::V1::SchemaController.any_instance.stubs(:root_url).returns "https://#{@remote_host}"
     @stub_status = 200
     @stub_content = {
@@ -243,7 +243,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
   end
 
   test 'auto-activate user from trusted cluster' do
-    Rails.configuration.auto_activate_users_from = ['zbbbb']
+    Rails.configuration.RemoteClusters['zbbbb']["ActivateUsers"] = true
     get '/arvados/v1/users/current',
       params: {format: 'json'},
       headers: auth(remote: 'zbbbb')

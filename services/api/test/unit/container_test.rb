@@ -241,7 +241,7 @@ class ContainerTest < ActiveSupport::TestCase
   end
 
   test "find_reusable method should select higher priority queued container" do
-        Rails.configuration.log_reuse_decisions = true
+        Rails.configuration.Containers["LogReuseDecisions"] = true
     set_user_from_auth :active
     common_attrs = REUSABLE_COMMON_ATTRS.merge({environment:{"var" => "queued"}})
     c_low_priority, _ = minimal_new(common_attrs.merge({use_existing:false, priority:1}))
@@ -511,7 +511,7 @@ class ContainerTest < ActiveSupport::TestCase
 
   test "find_reusable with logging enabled" do
     set_user_from_auth :active
-    Rails.configuration.log_reuse_decisions = true
+    Rails.configuration.Containers["LogReuseDecisions"] = true
     Rails.logger.expects(:info).at_least(3)
     Container.find_reusable(REUSABLE_COMMON_ATTRS)
   end
@@ -666,7 +666,7 @@ class ContainerTest < ActiveSupport::TestCase
   end
 
   test "Exceed maximum lock-unlock cycles" do
-    Rails.configuration.max_container_dispatch_attempts = 3
+    Rails.configuration.Containers["MaxDispatchAttempts"] = 3
 
     set_user_from_auth :active
     c, cr = minimal_new

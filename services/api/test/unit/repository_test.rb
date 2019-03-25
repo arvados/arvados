@@ -23,15 +23,15 @@ class RepositoryTest < ActiveSupport::TestCase
   def default_git_url(repo_name, user_name=nil)
     if user_name
       "git@git.%s.arvadosapi.com:%s/%s.git" %
-        [Rails.configuration.uuid_prefix, user_name, repo_name]
+        [Rails.configuration.ClusterID, user_name, repo_name]
     else
       "git@git.%s.arvadosapi.com:%s.git" %
-        [Rails.configuration.uuid_prefix, repo_name]
+        [Rails.configuration.ClusterID, repo_name]
     end
   end
 
   def assert_server_path(path_tail, repo_sym)
-    assert_equal(File.join(Rails.configuration.git_repositories_dir, path_tail),
+    assert_equal(File.join(Rails.configuration.Git["Repositories"], path_tail),
                  repositories(repo_sym).server_path)
   end
 

@@ -108,7 +108,7 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
       format: :json,
       count: 'none',
       limit: 1000,
-      filters: [['any', '@@', Rails.configuration.uuid_prefix]],
+      filters: [['any', '@@', Rails.configuration.ClusterID]],
     }
 
     assert_response :success
@@ -137,7 +137,7 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
       limit: 1000,
       offset: '5',
       last_object_class: 'PipelineInstance',
-      filters: [['any', '@@', Rails.configuration.uuid_prefix]],
+      filters: [['any', '@@', Rails.configuration.ClusterID]],
     }
 
     assert_response :success

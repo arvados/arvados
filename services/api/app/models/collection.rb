@@ -125,7 +125,7 @@ class Collection < ArvadosModel
             # Signature provided, but verify_signature did not like it.
             logger.warn "Invalid signature on locator #{tok}"
             raise ArvadosModel::PermissionDeniedError
-          elsif Rails.configuration.Collections["BlobSigning"]
+          elsif !Rails.configuration.Collections["BlobSigning"]
             # No signature provided, but we are running in insecure mode.
             logger.debug "Missing signature on locator #{tok} ignored"
           elsif Blob.new(tok).empty?

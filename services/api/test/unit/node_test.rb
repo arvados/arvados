@@ -34,8 +34,8 @@ class NodeTest < ActiveSupport::TestCase
   end
 
   test "dns_server_conf_template" do
-    Rails.configuration.dns_server_conf_dir = Rails.root.join 'tmp'
-    Rails.configuration.dns_server_conf_template = Rails.root.join 'config', 'unbound.template'
+    Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfDir"] = Rails.root.join 'tmp'
+    Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfTemplate"] = Rails.root.join 'config', 'unbound.template'
     conffile = Rails.root.join 'tmp', 'compute65535.conf'
     File.unlink conffile rescue nil
     assert Node.dns_server_update 'compute65535', '127.0.0.1'
@@ -44,8 +44,8 @@ class NodeTest < ActiveSupport::TestCase
   end
 
   test "dns_server_restart_command" do
-    Rails.configuration.dns_server_conf_dir = Rails.root.join 'tmp'
-    Rails.configuration.dns_server_reload_command = 'foobar'
+    Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfDir"] = Rails.root.join 'tmp'
+    Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerReloadCommand"] = 'foobar'
     restartfile = Rails.root.join 'tmp', 'restart.txt'
     File.unlink restartfile rescue nil
     assert Node.dns_server_update 'compute65535', '127.0.0.127'
@@ -54,14 +54,14 @@ class NodeTest < ActiveSupport::TestCase
   end
 
   test "dns_server_restart_command fail" do
-    Rails.configuration.dns_server_conf_dir = Rails.root.join 'tmp', 'bogusdir'
-    Rails.configuration.dns_server_reload_command = 'foobar'
+    Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfDir"] = Rails.root.join 'tmp', 'bogusdir'
+    Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerReloadCommand"] = 'foobar'
     refute Node.dns_server_update 'compute65535', '127.0.0.127'
   end
 
   test "dns_server_update_command with valid command" do
     testfile = Rails.root.join('tmp', 'node_test_dns_server_update_command.txt')
-    Rails.configuration.dns_server_update_command =
+    Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerUpdateCommand"] =
       ('echo -n "%{hostname} == %{ip_address}" >' +
        testfile.to_s.shellescape)
     assert Node.dns_server_update 'compute65535', '127.0.0.1'
@@ -70,23 +70,23 @@ class NodeTest < ActiveSupport::TestCase
   end
 
   test "dns_server_update_command with failing command" do
-    Rails.configuration.dns_server_update_command = 'false %{hostname}'
+    Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerUpdateCommand"] = 'false %{hostname}'
     refute Node.dns_server_update 'compute65535', '127.0.0.1'
   end
 
   test "dns update with no commands/dirs configured" do
-    Rails.configuration.dns_server_update_command = false
-    Rails.configuration.dns_server_conf_dir = false
-    Rails.configuration.dns_server_conf_template = 'ignored!'
-    Rails.configuration.dns_server_reload_command = 'ignored!'
+    Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerUpdateCommand"] = false
+    Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfDir"] = false
+    Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfTemplate"] = 'ignored!'
+    Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerReloadCommand"] = 'ignored!'
     assert Node.dns_server_update 'compute65535', '127.0.0.127'
   end
 
   test "don't leave temp files behind if there's an error writing them" do
-    Rails.configuration.dns_server_conf_template = Rails.root.join 'config', 'unbound.template'
+    Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfTemplate"] = Rails.root.join 'config', 'unbound.template'
     Tempfile.any_instance.stubs(:puts).raises(IOError)
     Dir.mktmpdir do |tmpdir|
-      Rails.configuration.dns_server_conf_dir = tmpdir
+      Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfDir"] = tmpdir
       refute Node.dns_server_update 'compute65535', '127.0.0.127'
       assert_empty Dir.entries(tmpdir).select{|f| File.file? f}
     end
@@ -100,14 +100,14 @@ class NodeTest < ActiveSupport::TestCase
   end
 
   test "ping new node with no hostname and no config" do
-    Rails.configuration.assign_node_hostname = false
+    Rails.configuration.Containers["SLURM"]["Managed"]["AssignNodeHostname"] = false
     node = ping_node(:new_with_no_hostname, {})
     refute_nil node.slot_number
     assert_nil node.hostname
   end
 
   test "ping new node with zero padding config" do
-    Rails.configuration.assign_node_hostname = 'compute%<slot_number>04d'
+    Rails.configuration.Containers["SLURM"]["Managed"]["AssignNodeHostname"] = 'compute%<slot_number>04d'
     node = ping_node(:new_with_no_hostname, {})
     slot_number = node.slot_number
     refute_nil slot_number
@@ -121,7 +121,7 @@ class NodeTest < ActiveSupport::TestCase
   end
 
   test "ping node with hostname and no config and expect hostname unchanged" do
-    Rails.configuration.assign_node_hostname = false
+    Rails.configuration.Containers["SLURM"]["Managed"]["AssignNodeHostname"] = false
     node = ping_node(:new_with_custom_hostname, {})
     assert_equal(23, node.slot_number)
     assert_equal("custom1", node.hostname)
@@ -196,13 +196,13 @@ class NodeTest < ActiveSupport::TestCase
   end
 
   test 'run out of slots' do
-    Rails.configuration.max_compute_nodes = 3
+    Rails.configuration.Containers["MaxComputeVMs"] = 3
     act_as_system_user do
       Node.destroy_all
       (1..4).each do |i|
         n = Node.create!
         args = { ip: "10.0.0.#{i}", ping_secret: n.info['ping_secret'] }
-        if i <= Rails.configuration.max_compute_nodes
+        if i <= Rails.configuration.Containers["MaxComputeVMs"]
           n.ping(args)
         else
           assert_raises do

@@ -14,12 +14,12 @@ class UserNotifierTest < ActionMailer::TestCase
     assert_not_nil email
 
     # Test the body of the sent email contains what we expect it to
-    assert_equal Rails.configuration.user_notifier_email_from, email.from.first
+    assert_equal Rails.configuration.Users["UserNotifierEmailFrom"], email.from.first
     assert_equal user.email, email.to.first
     assert_equal 'Welcome to Arvados - shell account enabled', email.subject
     assert (email.body.to_s.include? 'Your Arvados shell account has been set up'),
         'Expected Your Arvados shell account has been set up in email body'
-    assert (email.body.to_s.include? Rails.configuration.workbench_address),
+    assert (email.body.to_s.include? Rails.configuration.Services["Workbench1"]["ExternalURL"]),
         'Expected workbench url in email body'
   end
 
