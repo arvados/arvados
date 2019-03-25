@@ -956,4 +956,17 @@ class ContainerTest < ActiveSupport::TestCase
       assert_no_secrets_logged
     end
   end
+
+  # NOTE: Migration 20190322174136_add_file_info_to_collection.rb 
+  # relies on this test. Change with caution!
+  test "pdh_grouping_by_manifest_size" do
+    batch_size_max = 200
+    pdhs_in = ['x1+30', 'x2+30', 'x3+201', 'x4+100', 'x5+100']
+    batched_pdhs = []
+    Container.group_pdhs_by_manifest_size(pdhs_in, batch_size_max) do |pdhs|
+      batched_pdhs << pdhs
+    end
+    expected = [['x1+30', 'x2+30'], ['x3+201'], ['x4+100', 'x5+100']]
+    assert_equal(batched_pdhs, expected)
+  end
 end
