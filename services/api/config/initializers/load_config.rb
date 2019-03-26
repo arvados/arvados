@@ -41,6 +41,8 @@ $arvados_config = {}
   end
 end
 
+$base_arvados_config = $arvados_config.deep_dup
+
 declare_config "ClusterID", NonemptyString, :uuid_prefix
 declare_config "ManagementToken", String, :ManagementToken
 declare_config "Git.Repositories", Pathname, :git_repositories_dir

@@ -24,6 +24,18 @@ module Psych
         end
         @emitter.scalar outstr, nil, nil, true, false, Nodes::Scalar::ANY
       end
+
+      def visit_URI_Generic o
+        @emitter.scalar o.to_s, nil, nil, true, false, Nodes::Scalar::ANY
+      end
+
+      def visit_URI_HTTP o
+        @emitter.scalar o.to_s, nil, nil, true, false, Nodes::Scalar::ANY
+      end
+
+      def visit_Pathname o
+        @emitter.scalar o.to_s, nil, nil, true, false, Nodes::Scalar::ANY
+      end
     end
   end
 end
