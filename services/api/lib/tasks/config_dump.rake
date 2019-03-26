@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 namespace :config do
-  desc 'Show site configuration'
+  desc 'Print active site configuration'
   task dump: :environment do
     cfg = { "Clusters" => {}}
     cfg["Clusters"][$arvados_config["ClusterID"]] = $arvados_config.select {|k,v| k != "ClusterID"}

@@ -45,7 +45,7 @@ $base_arvados_config = $arvados_config.deep_dup
 
 declare_config "ClusterID", NonemptyString, :uuid_prefix
 declare_config "ManagementToken", String, :ManagementToken
-declare_config "Git.Repositories", Pathname, :git_repositories_dir
+declare_config "Git.Repositories", String, :git_repositories_dir
 declare_config "API.DisabledAPIs", Array, :disable_api_methods
 declare_config "API.MaxRequestSize", Integer, :max_request_size
 declare_config "API.MaxIndexDatabaseRead", Integer, :max_index_database_read

@@ -22,7 +22,7 @@ def diff_hash base, final
 end
 
 namespace :config do
-  desc 'Diff site configuration'
+  desc 'Print configuration loaded from legacy application.yml as new Arvados configuration structure'
   task diff: :environment do
     diffed = diff_hash $base_arvados_config, $arvados_config
     cfg = { "Clusters" => {}}
