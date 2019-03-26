@@ -25,6 +25,8 @@ class Arvados::V1::SchemaController < ApplicationController
   def discovery_doc
     Rails.cache.fetch 'arvados_v1_rest_discovery' do
       Rails.application.eager_load!
+      remoteHosts = {}
+      Rails.configuration.RemoteClusters.each {|k,v| if k != "*" then remoteHosts[k] = v["Host"] end }
       discovery = {
         kind: "discovery#restDescription",
         discoveryVersion: "v1",
@@ -61,7 +63,7 @@ class Arvados::V1::SchemaController < ApplicationController
         crunchLogPartialLineThrottlePeriod: Rails.configuration.Containers["Logging"]["LogPartialLineThrottlePeriod"],
         crunchLogUpdatePeriod: Rails.configuration.Containers["Logging"]["LogUpdatePeriod"],
         crunchLogUpdateSize: Rails.configuration.Containers["Logging"]["LogUpdateSize"],
-        remoteHosts: Rails.configuration.RemoteClusters.map {|k,v| v["Host"]},
+        remoteHosts: remoteHosts,
         remoteHostsViaDNS: Rails.configuration.RemoteClusters["*"]["Proxy"],
         websocketUrl: Rails.configuration.Services["Websocket"]["ExternalURL"].to_s,
         workbenchUrl: Rails.configuration.Services["Workbench1"]["ExternalURL"].to_s,

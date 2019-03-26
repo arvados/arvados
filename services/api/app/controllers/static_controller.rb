@@ -12,7 +12,7 @@ class StaticController < ApplicationController
   def home
     respond_to do |f|
       f.html do
-        if !Rails.configuration.Services["Workbench1"]["ExternalURL"].empty?
+        if !Rails.configuration.Services["Workbench1"]["ExternalURL"].to_s.empty?
           redirect_to Rails.configuration.Services["Workbench1"]["ExternalURL"]
         else
           render_not_found "Oops, this is an API endpoint. You probably want to point your browser to an Arvados Workbench site instead."
