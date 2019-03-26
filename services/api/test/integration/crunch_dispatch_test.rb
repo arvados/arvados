@@ -35,7 +35,10 @@ class CrunchDispatchIntegrationTest < ActionDispatch::IntegrationTest
           script: "log",
           repository: "active/crunchdispatchtest",
           script_version: "f35f99b7d32bac257f5989df02b9f12ee1a9b0d6",
-          script_parameters: "{}"
+          script_parameters: {
+            input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
+            an_integer: '1'
+          }
         }
       },
       headers: auth(:admin)

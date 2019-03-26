@@ -25,7 +25,7 @@ class StaticController < ApplicationController
   end
 
   def empty
-    render text: ""
+    render plain: ""
   end
 
 end

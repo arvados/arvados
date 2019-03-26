@@ -211,7 +211,7 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     verify_link_existence created['uuid'], created['email'], true, true, true, true, false
 
-    post "/arvados/v1/users/#{created['uuid']}/unsetup", {}, auth(:admin)
+    post "/arvados/v1/users/#{created['uuid']}/unsetup", params: {}, headers: auth(:admin)
 
     assert_response :success
 

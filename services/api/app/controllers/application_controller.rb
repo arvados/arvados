@@ -326,7 +326,7 @@ class ApplicationController < ActionController::Base
     if @attrs.is_a? String
       @attrs = Oj.strict_load @attrs, symbol_keys: true
     end
-    unless @attrs.is_a? Hash
+    unless [Hash, ActionController::Parameters].include? @attrs.class
       message = "No #{resource_name}"
       if resource_name.index('_')
         message << " (or #{resource_name.camelcase(:lower)})"
