@@ -341,6 +341,10 @@ func (az *azureInstanceSet) Create(
 	az.stopWg.Add(1)
 	defer az.stopWg.Done()
 
+	if instanceType.AddedScratch > 0 {
+		return nil, fmt.Errorf("cannot create instance type %q: driver does not implement non-zero AddedScratch (%d)", instanceType.Name, instanceType.AddedScratch)
+	}
+
 	name, err := randutil.String(15, "abcdefghijklmnopqrstuvwxyz0123456789")
 	if err != nil {
 		return nil, err

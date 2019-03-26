@@ -32,6 +32,7 @@ var dropHeaders = map[string]bool{
 	"Keep-Alive":          true,
 	"Proxy-Authenticate":  true,
 	"Proxy-Authorization": true,
+	// this line makes gofmt 1.10 and 1.11 agree
 	"TE":                true,
 	"Trailer":           true,
 	"Transfer-Encoding": true, // *-Encoding headers interfer with Go's automatic compression/decompression

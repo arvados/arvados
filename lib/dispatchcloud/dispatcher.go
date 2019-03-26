@@ -46,6 +46,8 @@ type pool interface {
 type dispatcher struct {
 	Cluster       *arvados.Cluster
 	Context       context.Context
+	ArvClient     *arvados.Client
+	AuthToken     string
 	InstanceSetID cloud.InstanceSetID
 
 	logger      logrus.FieldLogger
@@ -108,19 +110,21 @@ func (disp *dispatcher) setup() {
 }
 
 func (disp *dispatcher) initialize() {
-	arvClient := arvados.NewClientFromEnv()
+	disp.logger = ctxlog.FromContext(disp.Context)
+
+	disp.ArvClient.AuthToken = disp.AuthToken
+
 	if disp.InstanceSetID == "" {
-		if strings.HasPrefix(arvClient.AuthToken, "v2/") {
-			disp.InstanceSetID = cloud.InstanceSetID(strings.Split(arvClient.AuthToken, "/")[1])
+		if strings.HasPrefix(disp.AuthToken, "v2/") {
+			disp.InstanceSetID = cloud.InstanceSetID(strings.Split(disp.AuthToken, "/")[1])
 		} else {
 			// Use some other string unique to this token
 			// that doesn't reveal the token itself.
-			disp.InstanceSetID = cloud.InstanceSetID(fmt.Sprintf("%x", md5.Sum([]byte(arvClient.AuthToken))))
+			disp.InstanceSetID = cloud.InstanceSetID(fmt.Sprintf("%x", md5.Sum([]byte(disp.AuthToken))))
 		}
 	}
 	disp.stop = make(chan struct{}, 1)
 	disp.stopped = make(chan struct{})
-	disp.logger = ctxlog.FromContext(disp.Context)
 
 	if key, err := ssh.ParsePrivateKey([]byte(disp.Cluster.Dispatch.PrivateKey)); err != nil {
 		disp.logger.Fatalf("error parsing configured Dispatch.PrivateKey: %s", err)
@@ -134,8 +138,8 @@ func (disp *dispatcher) initialize() {
 	}
 	disp.instanceSet = instanceSet
 	disp.reg = prometheus.NewRegistry()
-	disp.pool = worker.NewPool(disp.logger, arvClient, disp.reg, disp.instanceSet, disp.newExecutor, disp.sshKey.PublicKey(), disp.Cluster)
-	disp.queue = container.NewQueue(disp.logger, disp.reg, disp.typeChooser, arvClient)
+	disp.pool = worker.NewPool(disp.logger, disp.ArvClient, disp.reg, disp.instanceSet, disp.newExecutor, disp.sshKey.PublicKey(), disp.Cluster)
+	disp.queue = container.NewQueue(disp.logger, disp.reg, disp.typeChooser, disp.ArvClient)
 
 	if disp.Cluster.ManagementToken == "" {
 		disp.httpHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
