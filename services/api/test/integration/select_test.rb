@@ -6,7 +6,9 @@ require 'test_helper'
 
 class SelectTest < ActionDispatch::IntegrationTest
   test "should select just two columns" do
-    get "/arvados/v1/links", {:format => :json, :select => ['uuid', 'link_class']}, auth(:active)
+    get "/arvados/v1/links",
+      params: {:format => :json, :select => ['uuid', 'link_class']},
+      headers: auth(:active)
     assert_response :success
     assert_equal json_response['items'].count, json_response['items'].select { |i|
       i.count == 3 and i['uuid'] != nil and i['link_class'] != nil
@@ -14,11 +16,15 @@ class SelectTest < ActionDispatch::IntegrationTest
   end
 
   test "fewer distinct than total count" do
-    get "/arvados/v1/links", {:format => :json, :select => ['link_class'], :distinct => false}, auth(:active)
+    get "/arvados/v1/links",
+      params: {:format => :json, :select => ['link_class'], :distinct => false},
+      headers: auth(:active)
     assert_response :success
     links = json_response['items']
 
-    get "/arvados/v1/links", {:format => :json, :select => ['link_class'], :distinct => true}, auth(:active)
+    get "/arvados/v1/links",
+      params: {:format => :json, :select => ['link_class'], :distinct => true},
+      headers: auth(:active)
     assert_response :success
     distinct = json_response['items']
 
@@ -28,7 +34,9 @@ class SelectTest < ActionDispatch::IntegrationTest
   end
 
   test "select with order" do
-    get "/arvados/v1/links", {:format => :json, :select => ['uuid'], :order => ["uuid asc"]}, auth(:active)
+    get "/arvados/v1/links",
+      params: {:format => :json, :select => ['uuid'], :order => ["uuid asc"]},
+      headers: auth(:active)
     assert_response :success
 
     assert json_response['items'].length > 0
@@ -41,7 +49,9 @@ class SelectTest < ActionDispatch::IntegrationTest
   end
 
   test "select with default order" do
-    get "/arvados/v1/links", {format: :json, select: ['uuid']}, auth(:admin)
+    get "/arvados/v1/links",
+      params: {format: :json, select: ['uuid']},
+      headers: auth(:admin)
     assert_response :success
     uuids = json_response['items'].collect { |i| i['uuid'] }
     assert_equal uuids, uuids.sort
@@ -58,7 +68,12 @@ class SelectTest < ActionDispatch::IntegrationTest
   end
 
   test "select two columns with order" do
-    get "/arvados/v1/links", {:format => :json, :select => ['link_class', 'uuid'], :order => ['link_class asc', "uuid desc"]}, auth(:active)
+    get "/arvados/v1/links",
+      params: {
+        :format => :json,
+        :select => ['link_class', 'uuid'], :order => ['link_class asc', "uuid desc"]
+      },
+      headers: auth(:active)
     assert_response :success
 
     assert json_response['items'].length > 0
@@ -80,7 +95,12 @@ class SelectTest < ActionDispatch::IntegrationTest
   end
 
   test "select two columns with old-style order syntax" do
-    get "/arvados/v1/links", {:format => :json, :select => ['link_class', 'uuid'], :order => 'link_class asc, uuid desc'}, auth(:active)
+    get "/arvados/v1/links",
+      params: {
+        :format => :json,
+        :select => ['link_class', 'uuid'], :order => 'link_class asc, uuid desc'
+      },
+      headers: auth(:active)
     assert_response :success
 
     assert json_response['items'].length > 0

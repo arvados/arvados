@@ -283,7 +283,7 @@ class ApplicationController < ActionController::Base
     @objects = @objects.order(@orders.join ", ") if @orders.any?
     @objects = @objects.limit(@limit)
     @objects = @objects.offset(@offset)
-    @objects = @objects.uniq(@distinct) if not @distinct.nil?
+    @objects = @objects.distinct(@distinct) if not @distinct.nil?
   end
 
   # limit_database_read ensures @objects (which must be an

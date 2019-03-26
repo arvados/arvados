@@ -13,7 +13,7 @@ class UserSessionsController < ApplicationController
 
   # omniauth callback method
   def create
-    omniauth = env['omniauth.auth']
+    omniauth = request.env['omniauth.auth']
 
     identity_url_ok = (omniauth['info']['identity_url'].length > 0) rescue false
     unless identity_url_ok

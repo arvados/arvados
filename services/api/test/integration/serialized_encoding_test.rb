@@ -48,7 +48,8 @@ class SerializedEncodingTest < ActionDispatch::IntegrationTest
   }.each_pair do |resource, postdata|
     test "create json-encoded #{resource.to_s}" do
       post("/arvados/v1/#{resource.to_s.pluralize}",
-           {resource => postdata.to_json}, auth(:admin_trustedclient))
+        params: {resource => postdata.to_json},
+        headers: auth(:admin_trustedclient))
       assert_response :success
     end
   end

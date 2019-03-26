@@ -9,12 +9,14 @@ class GroupsTest < ActionDispatch::IntegrationTest
     test "results are consistent when provided orders #{orders} is incomplete" do
       last = nil
       (0..20).each do
-        get '/arvados/v1/groups/contents', {
-          id: groups(:aproject).uuid,
-          filters: [["uuid", "is_a", "arvados#collection"]].to_json,
-          orders: orders.to_json,
-          format: :json,
-        }, auth(:active)
+        get '/arvados/v1/groups/contents',
+          params: {
+            id: groups(:aproject).uuid,
+            filters: [["uuid", "is_a", "arvados#collection"]].to_json,
+            orders: orders.to_json,
+            format: :json,
+          },
+          headers: auth(:active)
         assert_response :success
         if last.nil?
           last = json_response['items']
@@ -32,12 +34,14 @@ class GroupsTest < ActionDispatch::IntegrationTest
     uuid_received = {}
     owner_received = {}
     while true
-      get "/arvados/v1/groups/contents", {
-        id: groups(:aproject).uuid,
-        limit: limit,
-        offset: offset,
-        format: :json,
-      }, auth(:active)
+      get "/arvados/v1/groups/contents",
+        params: {
+          id: groups(:aproject).uuid,
+          limit: limit,
+          offset: offset,
+          format: :json,
+        },
+        headers: auth(:active)
 
       assert_response :success
       assert_operator(0, :<, json_response['items'].count,
@@ -71,11 +75,13 @@ class GroupsTest < ActionDispatch::IntegrationTest
     ['no-such-thing', false],         # script_parameter of pipeline instances
   ].each do |search_filter, expect_results|
     test "full text search of group-owned objects for #{search_filter}" do
-      get "/arvados/v1/groups/contents", {
-        id: groups(:aproject).uuid,
-        limit: 5,
-        :filters => [['any', '@@', search_filter]].to_json
-      }, auth(:active)
+      get "/arvados/v1/groups/contents",
+        params: {
+          id: groups(:aproject).uuid,
+          limit: 5,
+          :filters => [['any', '@@', search_filter]].to_json
+        },
+        headers: auth(:active)
       assert_response :success
       if expect_results
         refute_empty json_response['items']
@@ -90,18 +96,22 @@ class GroupsTest < ActionDispatch::IntegrationTest
   end
 
   test "full text search is not supported for individual columns" do
-    get "/arvados/v1/groups/contents", {
-      :filters => [['name', '@@', 'Private']].to_json
-    }, auth(:active)
+    get "/arvados/v1/groups/contents",
+      params: {
+        :filters => [['name', '@@', 'Private']].to_json
+      },
+      headers: auth(:active)
     assert_response 422
   end
 
   test "group contents with include trash collections" do
-    get "/arvados/v1/groups/contents", {
-      include_trash: "true",
-      filters: [["uuid", "is_a", "arvados#collection"]].to_json,
-      limit: 1000
-    }, auth(:active)
+    get "/arvados/v1/groups/contents",
+      params: {
+        include_trash: "true",
+        filters: [["uuid", "is_a", "arvados#collection"]].to_json,
+        limit: 1000
+      },
+      headers: auth(:active)
     assert_response 200
 
     coll_uuids = []
@@ -111,10 +121,12 @@ class GroupsTest < ActionDispatch::IntegrationTest
   end
 
   test "group contents without trash collections" do
-    get "/arvados/v1/groups/contents", {
-      filters: [["uuid", "is_a", "arvados#collection"]].to_json,
-      limit: 1000
-    }, auth(:active)
+    get "/arvados/v1/groups/contents",
+      params: {
+        filters: [["uuid", "is_a", "arvados#collection"]].to_json,
+        limit: 1000
+      },
+      headers: auth(:active)
     assert_response 200
 
     coll_uuids = []
@@ -134,7 +146,7 @@ class NonTransactionalGroupsTest < ActionDispatch::IntegrationTest
 
   teardown do
     # Explicitly reset the database after each test.
-    post '/database/reset', {}, auth(:admin)
+    post '/database/reset', params: {}, headers: auth(:admin)
     assert_response :success
   end
 
@@ -144,29 +156,35 @@ class NonTransactionalGroupsTest < ActionDispatch::IntegrationTest
     assert_equal nil, Group.find_by_name(name)
 
     # Trigger the asynchronous permission update by using async=true parameter.
-    post "/arvados/v1/groups", {
-      group: {
-        name: name
+    post "/arvados/v1/groups",
+      params: {
+        group: {
+          name: name
+        },
+        async: true
       },
-      async: true
-    }, auth(:active)
+      headers: auth(:active)
     assert_response 202
 
     # The group exists on the database, but it's not accessible yet.
     assert_not_nil Group.find_by_name(name)
-    get "/arvados/v1/groups", {
-      filters: [["name", "=", name]].to_json,
-      limit: 10
-    }, auth(:active)
+    get "/arvados/v1/groups",
+      params: {
+        filters: [["name", "=", name]].to_json,
+        limit: 10
+      },
+      headers: auth(:active)
     assert_response 200
     assert_equal 0, json_response['items_available']
 
     # Wait a bit and try again.
     sleep(1)
-    get "/arvados/v1/groups", {
-      filters: [["name", "=", name]].to_json,
-      limit: 10
-    }, auth(:active)
+    get "/arvados/v1/groups",
+      params: {
+        filters: [["name", "=", name]].to_json,
+        limit: 10
+      },
+      headers: auth(:active)
     assert_response 200
     assert_equal 1, json_response['items_available']
   end

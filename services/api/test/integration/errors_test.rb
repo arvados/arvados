@@ -9,7 +9,7 @@ class ErrorsTest < ActionDispatch::IntegrationTest
 
   %w(/arvados/v1/shoes /arvados/shoes /shoes /nodes /users).each do |path|
     test "non-existent route #{path}" do
-      get path, {:format => :json}, auth(:active)
+      get path, params: {:format => :json}, headers: auth(:active)
       assert_nil assigns(:objects)
       assert_nil assigns(:object)
       assert_not_nil json_response['errors']

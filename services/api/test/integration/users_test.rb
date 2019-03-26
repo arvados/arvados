@@ -11,16 +11,18 @@ class UsersTest < ActionDispatch::IntegrationTest
   test "setup user multiple times" do
     repo_name = 'usertestrepo'
 
-    post "/arvados/v1/users/setup", {
-      repo_name: repo_name,
-      openid_prefix: 'https://www.google.com/accounts/o8/id',
-      user: {
-        uuid: 'zzzzz-tpzed-abcdefghijklmno',
-        first_name: "in_create_test_first_name",
-        last_name: "test_last_name",
-        email: "foo@example.com"
-      }
-    }, auth(:admin)
+    post "/arvados/v1/users/setup",
+      params: {
+        repo_name: repo_name,
+        openid_prefix: 'https://www.google.com/accounts/o8/id',
+        user: {
+          uuid: 'zzzzz-tpzed-abcdefghijklmno',
+          first_name: "in_create_test_first_name",
+          last_name: "test_last_name",
+          email: "foo@example.com"
+        }
+      },
+      headers: auth(:admin)
 
     assert_response :success
 
@@ -50,26 +52,30 @@ class UsersTest < ActionDispatch::IntegrationTest
     verify_system_group_permission_link_for created['uuid']
 
     # invoke setup again with the same data
-    post "/arvados/v1/users/setup", {
-      repo_name: repo_name,
-      vm_uuid: virtual_machines(:testvm).uuid,
-      openid_prefix: 'https://www.google.com/accounts/o8/id',
-      user: {
-        uuid: 'zzzzz-tpzed-abcdefghijklmno',
-        first_name: "in_create_test_first_name",
-        last_name: "test_last_name",
-        email: "foo@example.com"
-      }
-    }, auth(:admin)
+    post "/arvados/v1/users/setup",
+      params: {
+        repo_name: repo_name,
+        vm_uuid: virtual_machines(:testvm).uuid,
+        openid_prefix: 'https://www.google.com/accounts/o8/id',
+        user: {
+          uuid: 'zzzzz-tpzed-abcdefghijklmno',
+          first_name: "in_create_test_first_name",
+          last_name: "test_last_name",
+          email: "foo@example.com"
+        }
+      },
+      headers: auth(:admin)
     assert_response 422         # cannot create another user with same UUID
 
     # invoke setup on the same user
-    post "/arvados/v1/users/setup", {
-      repo_name: repo_name,
-      vm_uuid: virtual_machines(:testvm).uuid,
-      openid_prefix: 'https://www.google.com/accounts/o8/id',
-      uuid: 'zzzzz-tpzed-abcdefghijklmno',
-    }, auth(:admin)
+    post "/arvados/v1/users/setup",
+      params: {
+        repo_name: repo_name,
+        vm_uuid: virtual_machines(:testvm).uuid,
+        openid_prefix: 'https://www.google.com/accounts/o8/id',
+        uuid: 'zzzzz-tpzed-abcdefghijklmno',
+      },
+      headers: auth(:admin)
 
     response_items = json_response['items']
 
@@ -94,12 +100,14 @@ class UsersTest < ActionDispatch::IntegrationTest
   end
 
   test "setup user in multiple steps and verify response" do
-    post "/arvados/v1/users/setup", {
-      openid_prefix: 'http://www.example.com/account',
-      user: {
-        email: "foo@example.com"
-      }
-    }, auth(:admin)
+    post "/arvados/v1/users/setup",
+      params: {
+        openid_prefix: 'http://www.example.com/account',
+        user: {
+          email: "foo@example.com"
+        }
+      },
+      headers: auth(:admin)
 
     assert_response :success
     response_items = json_response['items']
@@ -120,11 +128,13 @@ class UsersTest < ActionDispatch::IntegrationTest
         nil, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
 
    # invoke setup with a repository
-    post "/arvados/v1/users/setup", {
-      openid_prefix: 'http://www.example.com/account',
-      repo_name: 'newusertestrepo',
-      uuid: created['uuid']
-    }, auth(:admin)
+    post "/arvados/v1/users/setup",
+      params: {
+        openid_prefix: 'http://www.example.com/account',
+        repo_name: 'newusertestrepo',
+        uuid: created['uuid']
+      },
+      headers: auth(:admin)
 
     assert_response :success
 
@@ -144,14 +154,16 @@ class UsersTest < ActionDispatch::IntegrationTest
         nil, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
 
     # invoke setup with a vm_uuid
-    post "/arvados/v1/users/setup", {
-      vm_uuid: virtual_machines(:testvm).uuid,
-      openid_prefix: 'http://www.example.com/account',
-      user: {
-        email: 'junk_email'
+    post "/arvados/v1/users/setup",
+      params: {
+        vm_uuid: virtual_machines(:testvm).uuid,
+        openid_prefix: 'http://www.example.com/account',
+        user: {
+          email: 'junk_email'
+        },
+        uuid: created['uuid']
       },
-      uuid: created['uuid']
-    }, auth(:admin)
+      headers: auth(:admin)
 
     assert_response :success
 
@@ -169,12 +181,14 @@ class UsersTest < ActionDispatch::IntegrationTest
   end
 
   test "setup and unsetup user" do
-    post "/arvados/v1/users/setup", {
-      repo_name: 'newusertestrepo',
-      vm_uuid: virtual_machines(:testvm).uuid,
-      user: {email: 'foo@example.com'},
-      openid_prefix: 'https://www.google.com/accounts/o8/id'
-    }, auth(:admin)
+    post "/arvados/v1/users/setup",
+      params: {
+        repo_name: 'newusertestrepo',
+        vm_uuid: virtual_machines(:testvm).uuid,
+        user: {email: 'foo@example.com'},
+        openid_prefix: 'https://www.google.com/accounts/o8/id'
+      },
+      headers: auth(:admin)
 
     assert_response :success
     response_items = json_response['items']
@@ -218,36 +232,46 @@ class UsersTest < ActionDispatch::IntegrationTest
   end
 
   test 'merge active into project_viewer account' do
-    post('/arvados/v1/groups', {
-           group: {
-             group_class: 'project',
-             name: "active user's stuff",
-           },
-         }, auth(:project_viewer))
+    post('/arvados/v1/groups',
+      params: {
+        group: {
+          group_class: 'project',
+          name: "active user's stuff",
+        },
+      },
+      headers: auth(:project_viewer))
     assert_response(:success)
     project_uuid = json_response['uuid']
 
-    post('/arvados/v1/users/merge', {
-           new_user_token: api_client_authorizations(:project_viewer_trustedclient).api_token,
-           new_owner_uuid: project_uuid,
-           redirect_to_new_user: true,
-         }, auth(:active_trustedclient))
+    post('/arvados/v1/users/merge',
+      params: {
+        new_user_token: api_client_authorizations(:project_viewer_trustedclient).api_token,
+        new_owner_uuid: project_uuid,
+        redirect_to_new_user: true,
+      },
+      headers: auth(:active_trustedclient))
     assert_response(:success)
 
-    get('/arvados/v1/users/current', {}, auth(:active))
+    get('/arvados/v1/users/current', params: {}, headers: auth(:active))
     assert_response(:success)
     assert_equal(users(:project_viewer).uuid, json_response['uuid'])
 
-    get('/arvados/v1/authorized_keys/' + authorized_keys(:active).uuid, {}, auth(:active))
+    get('/arvados/v1/authorized_keys/' + authorized_keys(:active).uuid,
+      params: {},
+      headers: auth(:active))
     assert_response(:success)
     assert_equal(users(:project_viewer).uuid, json_response['owner_uuid'])
     assert_equal(users(:project_viewer).uuid, json_response['authorized_user_uuid'])
 
-    get('/arvados/v1/repositories/' + repositories(:foo).uuid, {}, auth(:active))
+    get('/arvados/v1/repositories/' + repositories(:foo).uuid,
+      params: {},
+      headers: auth(:active))
     assert_response(:success)
     assert_equal(users(:project_viewer).uuid, json_response['owner_uuid'])
 
-    get('/arvados/v1/groups/' + groups(:aproject).uuid, {}, auth(:active))
+    get('/arvados/v1/groups/' + groups(:aproject).uuid,
+      params: {},
+      headers: auth(:active))
     assert_response(:success)
     assert_equal(project_uuid, json_response['owner_uuid'])
   end

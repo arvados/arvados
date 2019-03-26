@@ -28,8 +28,8 @@ class UserSessionsApiTest < ActionDispatch::IntegrationTest
     mock['info']['username'] = username unless username.nil?
     mock['info']['identity_url'] = identity_url unless identity_url.nil?
     post('/auth/josh_id/callback',
-         {return_to: client_url(remote: remote)},
-         {'omniauth.auth' => mock})
+      params: {return_to: client_url(remote: remote)},
+      headers: {'omniauth.auth' => mock})
 
     errors = {
       :redirect => 'Did not redirect to client with token',

@@ -16,7 +16,7 @@ class ReaderTokensTest < ActionDispatch::IntegrationTest
     params[:reader_tokens] = [api_token(read_auth)].send(formatter) if read_auth
     headers = {}
     headers.merge!(auth(main_auth)) if main_auth
-    get('/arvados/v1/specimens', params, headers)
+    get('/arvados/v1/specimens', params: params, headers: headers)
   end
 
   def get_specimen_uuids(main_auth, read_auth, formatter=:to_a)
@@ -34,8 +34,8 @@ class ReaderTokensTest < ActionDispatch::IntegrationTest
       expected = 401
     end
     post('/arvados/v1/specimens.json',
-         {specimen: {}, reader_tokens: [api_token(read_auth)].send(formatter)},
-         headers)
+      params: {specimen: {}, reader_tokens: [api_token(read_auth)].send(formatter)},
+      headers: headers)
     assert_response expected
   end
 
@@ -65,8 +65,8 @@ class ReaderTokensTest < ActionDispatch::IntegrationTest
 
   test "scopes are still limited with reader tokens" do
     get('/arvados/v1/collections',
-        {reader_tokens: [api_token(:spectator_specimens)]},
-        auth(:active_noscope))
+      params: {reader_tokens: [api_token(:spectator_specimens)]},
+      headers: auth(:active_noscope))
     assert_response 403
   end
 
