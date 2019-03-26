@@ -106,7 +106,7 @@ declare_config "Containers.JobsAPI.Enable", String, :enable_legacy_jobs_api, ->(
 declare_config "Containers.JobsAPI.CrunchJobWrapper", String, :crunch_job_wrapper
 declare_config "Containers.JobsAPI.CrunchJobUser", String, :crunch_job_user
 declare_config "Containers.JobsAPI.CrunchRefreshTrigger", String, :crunch_refresh_trigger
-declare_config "Containers.JobsAPI.GitInternalDir", Pathname, :git_internal_dir
+declare_config "Containers.JobsAPI.GitInternalDir", String, :git_internal_dir
 declare_config "Containers.JobsAPI.ReuseJobIfOutputsDiffer", Boolean, :reuse_job_if_outputs_differ
 declare_config "Containers.JobsAPI.DefaultDockerImage", String, :default_docker_image_for_jobs
 declare_config "Mail.MailchimpAPIKey", String, :mailchimp_api_key
