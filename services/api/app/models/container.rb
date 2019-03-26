@@ -428,11 +428,9 @@ class Container < ArvadosModel
         "WHERE portable_data_hash > '#{last_pdh}' "\
         'GROUP BY portable_data_hash LIMIT 1000'
       )
-      if pdhs.rows.count.zero?
-        break
-      end
+      break if pdhs.rows.count.zero?
 
-      Container.group_pdhs_by_manifest_size(pdhs, batch_size_max) do |grouped_pdhs|
+      Container.group_pdhs_by_manifest_size(pdhs.rows, batch_size_max) do |grouped_pdhs|
         any = true
         yield grouped_pdhs
         done += grouped_pdhs.size
