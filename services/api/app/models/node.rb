@@ -199,8 +199,8 @@ class Node < ArvadosModel
       ptr_domain: ptr_domain,
     }
 
-    if (!Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfDir"].empty? and
-        !Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfTemplate"].empty?)
+    if (!Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfDir"].to_s.empty? and
+        !Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfTemplate"].to_s.empty?)
       tmpfile = nil
       begin
         begin
@@ -236,8 +236,8 @@ class Node < ArvadosModel
       end
     end
 
-    if (!Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfDir"].empty? and
-        !Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerReloadCommand"].empty?)
+    if (!Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfDir"].to_s.empty? and
+        !Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerReloadCommand"].to_s.empty?)
       restartfile = File.join(Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfDir"], 'restart.txt')
       begin
         File.open(restartfile, 'w') do |f|
@@ -263,8 +263,8 @@ class Node < ArvadosModel
 
   # At startup, make sure all DNS entries exist.  Otherwise, slurmctld
   # will refuse to start.
-  if (!Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfDir"].empty? and
-      !Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfTemplate"].empty? and
+  if (!Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfDir"].to_s.empty? and
+      !Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfTemplate"].to_s.empty? and
       !Rails.configuration.Containers["SLURM"]["Managed"]["AssignNodeHostname"].empty?)
 
     (0..Rails.configuration.Containers["MaxComputeVMs"]-1).each do |slot_number|

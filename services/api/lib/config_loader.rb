@@ -113,6 +113,18 @@ def coercion_and_check check_cfg
       cfg[k] = cfg[k].to_s
     end
 
+    if cfgtype == Pathname and cfg[k].is_a? String
+
+      if cfg[k] == ""
+        cfg[k] = Pathname.new("")
+      else
+        cfg[k] = Pathname.new(cfg[k])
+        if !cfg[k].exist?
+          raise "#{cfgkey} path #{cfg[k]} does not exist"
+        end
+      end
+    end
+
     if cfgtype == NonemptyString
       if (!cfg[k] || cfg[k] == "")
         raise "#{cfgkey} cannot be empty"

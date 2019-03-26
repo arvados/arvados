@@ -493,7 +493,7 @@ class User < ArvadosModel
   # create login permission for the given vm_uuid, if it does not already exist
   def create_vm_login_permission_link(vm_uuid, repo_name)
     # vm uuid is optional
-    return if !vm_uuid
+    return if vm_uuid == ""
 
     vm = VirtualMachine.where(uuid: vm_uuid).first
     if !vm

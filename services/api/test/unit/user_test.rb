@@ -157,8 +157,8 @@ class UserTest < ActiveSupport::TestCase
    [false, 'bar@example.com', nil, true],
    [true, 'foo@example.com', true, nil],
    [true, 'bar@example.com', true, true],
-   [false, false, nil, nil],
-   [true, false, true, nil]
+   [false, '', nil, nil],
+   [true, '', true, nil]
   ].each do |auto_admin_first_user_config, auto_admin_user_config, foo_should_be_admin, bar_should_be_admin|
     # In each case, 'foo' is created first, then 'bar', then 'bar2', then 'baz'.
     test "auto admin with auto_admin_first=#{auto_admin_first_user_config} auto_admin=#{auto_admin_user_config}" do
@@ -657,7 +657,7 @@ class UserTest < ActiveSupport::TestCase
                          named_repo.uuid, user.uuid, "permission", "can_manage")
     end
     # Check for VM login.
-    if auto_vm_uuid = Rails.configuration.Users["AutoSetupNewUsersWithVmUUID"]
+    if (auto_vm_uuid = Rails.configuration.Users["AutoSetupNewUsersWithVmUUID"]) != ""
       verify_link_exists(can_setup, auto_vm_uuid, user.uuid,
                          "permission", "can_login", "username", expect_username)
     end

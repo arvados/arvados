@@ -43,7 +43,7 @@ end
 
 declare_config "ClusterID", NonemptyString, :uuid_prefix
 declare_config "ManagementToken", String, :ManagementToken
-declare_config "Git.Repositories", String, :git_repositories_dir
+declare_config "Git.Repositories", Pathname, :git_repositories_dir
 declare_config "API.DisabledAPIs", Array, :disable_api_methods
 declare_config "API.MaxRequestSize", Integer, :max_request_size
 declare_config "API.MaxIndexDatabaseRead", Integer, :max_index_database_read
@@ -95,8 +95,8 @@ declare_config "Containers.Logging.LogPartialLineThrottlePeriod", ActiveSupport:
 declare_config "Containers.Logging.LogUpdatePeriod", ActiveSupport::Duration, :crunch_log_update_period
 declare_config "Containers.Logging.LogUpdateSize", Integer, :crunch_log_update_size
 declare_config "Containers.Logging.MaxAge", ActiveSupport::Duration, :clean_container_log_rows_after
-declare_config "Containers.SLURM.Managed.DNSServerConfDir", String, :dns_server_conf_dir
-declare_config "Containers.SLURM.Managed.DNSServerConfTemplate", String, :dns_server_conf_template
+declare_config "Containers.SLURM.Managed.DNSServerConfDir", Pathname, :dns_server_conf_dir
+declare_config "Containers.SLURM.Managed.DNSServerConfTemplate", Pathname, :dns_server_conf_template
 declare_config "Containers.SLURM.Managed.DNSServerReloadCommand", String, :dns_server_reload_command
 declare_config "Containers.SLURM.Managed.DNSServerUpdateCommand", String, :dns_server_update_command
 declare_config "Containers.SLURM.Managed.ComputeNodeDomain", String, :compute_node_domain
@@ -106,7 +106,7 @@ declare_config "Containers.JobsAPI.Enable", String, :enable_legacy_jobs_api, ->(
 declare_config "Containers.JobsAPI.CrunchJobWrapper", String, :crunch_job_wrapper
 declare_config "Containers.JobsAPI.CrunchJobUser", String, :crunch_job_user
 declare_config "Containers.JobsAPI.CrunchRefreshTrigger", String, :crunch_refresh_trigger
-declare_config "Containers.JobsAPI.GitInternalDir", String, :git_internal_dir
+declare_config "Containers.JobsAPI.GitInternalDir", Pathname, :git_internal_dir
 declare_config "Containers.JobsAPI.ReuseJobIfOutputsDiffer", Boolean, :reuse_job_if_outputs_differ
 declare_config "Containers.JobsAPI.DefaultDockerImage", String, :default_docker_image_for_jobs
 declare_config "Mail.MailchimpAPIKey", String, :mailchimp_api_key

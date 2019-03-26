@@ -338,13 +338,13 @@ class CrunchDispatch
 
       cmd_args = nil
       case Rails.configuration.Containers["JobsAPI"]["CrunchJobWrapper"]
-      when :none
+      when "none"
         if @running.size > 0
             # Don't run more than one at a time.
             return
         end
         cmd_args = []
-      when :slurm_immediate
+      when "slurm_immediate"
         nodelist = nodes_available_for_job(job)
         if nodelist.nil?
           if Time.now < @node_wait_deadline

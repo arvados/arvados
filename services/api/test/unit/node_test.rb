@@ -75,8 +75,8 @@ class NodeTest < ActiveSupport::TestCase
   end
 
   test "dns update with no commands/dirs configured" do
-    Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerUpdateCommand"] = false
-    Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfDir"] = false
+    Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerUpdateCommand"] = ""
+    Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfDir"] = ""
     Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfTemplate"] = 'ignored!'
     Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerReloadCommand"] = 'ignored!'
     assert Node.dns_server_update 'compute65535', '127.0.0.127'

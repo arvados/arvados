@@ -29,12 +29,12 @@ class Arvados::V1::SchemaControllerTest < ActionController::TestCase
     assert_response :success
     discovery_doc = JSON.parse(@response.body)
     assert_includes discovery_doc, 'defaultTrashLifetime'
-    assert_equal discovery_doc['defaultTrashLifetime'], Rails.application.config.default_trash_lifetime
+    assert_equal discovery_doc['defaultTrashLifetime'], Rails.configuration.Collections["DefaultTrashLifetime"]
     assert_match(/^[0-9a-f]+(-modified)?$/, discovery_doc['source_version'])
     assert_match(/^[0-9a-f]+(-modified)?$/, discovery_doc['sourceVersion'])
     assert_match(/^unknown$/, discovery_doc['packageVersion'])
-    assert_equal discovery_doc['websocketUrl'], Rails.application.config.websocket_address
-    assert_equal discovery_doc['workbenchUrl'], Rails.application.config.workbench_address
+    assert_equal discovery_doc['websocketUrl'], Rails.configuration.Services["Websocket"]["ExternalURL"]
+    assert_equal discovery_doc['workbenchUrl'], Rails.configuration.Services["Workbench1"]["ExternalURL"]
     assert_equal('zzzzz', discovery_doc['uuidPrefix'])
   end
 
