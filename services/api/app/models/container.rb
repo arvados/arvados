@@ -423,14 +423,15 @@ class Container < ArvadosModel
 
     while any
       any = false
-      pdhs = ActiveRecord::Base.connection.exec_query(
+      pdhs_res = ActiveRecord::Base.connection.exec_query(
         'SELECT DISTINCT portable_data_hash FROM collections '\
         "WHERE portable_data_hash > '#{last_pdh}' "\
         'GROUP BY portable_data_hash LIMIT 1000'
       )
-      break if pdhs.rows.count.zero?
+      break if pdhs_res.rows.count.zero?
 
-      Container.group_pdhs_by_manifest_size(pdhs.rows, batch_size_max) do |grouped_pdhs|
+      pdhs = pdhs_res.rows.collect { |r| r[0] }
+      Container.group_pdhs_by_manifest_size(pdhs, batch_size_max) do |grouped_pdhs|
         any = true
         yield grouped_pdhs
         done += grouped_pdhs.size

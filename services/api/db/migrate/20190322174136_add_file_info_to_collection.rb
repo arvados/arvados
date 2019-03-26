@@ -6,7 +6,7 @@ class AddFileInfoToCollection < ActiveRecord::Migration
   def do_batch(pdhs)
     pdhs_str = ''
     pdhs.each do |pdh|
-      pdhs_str << "'" << pdh[0] << "'" << ','
+      pdhs_str << "'" << pdh << "'" << ','
     end
 
     collections = ActiveRecord::Base.connection.exec_query(
