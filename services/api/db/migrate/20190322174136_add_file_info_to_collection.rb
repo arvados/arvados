@@ -18,7 +18,7 @@ class AddFileInfoToCollection < ActiveRecord::Migration
       file_count = 0
       file_size_total = 0
       row[1].scan(/\S+/) do |token|
-        is_file = token.match(/^[[:digit:]]+:[[:digit:]]+:([^\000-\040\\]|\\[0-3][0-7][0-7])+$/)
+        is_file = token.match(/^[[:digit:]]+:[[:digit:]]+:/)
         if is_file
           _, filesize, filename = token.split(':', 3)
 
