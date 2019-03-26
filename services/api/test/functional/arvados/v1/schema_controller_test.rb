@@ -33,8 +33,8 @@ class Arvados::V1::SchemaControllerTest < ActionController::TestCase
     assert_match(/^[0-9a-f]+(-modified)?$/, discovery_doc['source_version'])
     assert_match(/^[0-9a-f]+(-modified)?$/, discovery_doc['sourceVersion'])
     assert_match(/^unknown$/, discovery_doc['packageVersion'])
-    assert_equal discovery_doc['websocketUrl'], Rails.configuration.Services["Websocket"]["ExternalURL"]
-    assert_equal discovery_doc['workbenchUrl'], Rails.configuration.Services["Workbench1"]["ExternalURL"]
+    assert_equal discovery_doc['websocketUrl'], Rails.configuration.Services["Websocket"]["ExternalURL"].to_s
+    assert_equal discovery_doc['workbenchUrl'], Rails.configuration.Services["Workbench1"]["ExternalURL"].to_s
     assert_equal('zzzzz', discovery_doc['uuidPrefix'])
   end
 

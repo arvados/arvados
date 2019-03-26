@@ -63,10 +63,10 @@ class Arvados::V1::SchemaController < ApplicationController
         crunchLogUpdateSize: Rails.configuration.Containers["Logging"]["LogUpdateSize"],
         remoteHosts: Rails.configuration.RemoteClusters.map {|k,v| v["Host"]},
         remoteHostsViaDNS: Rails.configuration.RemoteClusters["*"]["Proxy"],
-        websocketUrl: Rails.configuration.Services["Websocket"]["ExternalURL"],
-        workbenchUrl: Rails.configuration.Services["Workbench1"]["ExternalURL"],
-        keepWebServiceUrl: Rails.configuration.Services["WebDAV"]["ExternalURL"],
-        gitUrl: Rails.configuration.Services["GitHTTP"]["ExternalURL"],
+        websocketUrl: Rails.configuration.Services["Websocket"]["ExternalURL"].to_s,
+        workbenchUrl: Rails.configuration.Services["Workbench1"]["ExternalURL"].to_s,
+        keepWebServiceUrl: Rails.configuration.Services["WebDAV"]["ExternalURL"].to_s,
+        gitUrl: Rails.configuration.Services["GitHTTP"]["ExternalURL"].to_s,
         parameters: {
           alt: {
             type: "string",
