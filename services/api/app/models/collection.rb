@@ -30,6 +30,7 @@ class Collection < ArvadosModel
   validate :versioning_metadata_updates, on: :update
   validate :past_versions_cannot_be_updated, on: :update
   before_save :set_file_names
+  before_save :set_file_count_and_total_size
   around_update :manage_versioning
 
   api_accessible :user, extend: :common do |t|
@@ -51,6 +52,8 @@ class Collection < ArvadosModel
     t.add :version
     t.add :current_version_uuid
     t.add :preserve_version
+    t.add :file_count
+    t.add :file_size_total
   end
 
   after_initialize do
@@ -191,6 +194,15 @@ class Collection < ArvadosModel
   def set_file_names
     if self.manifest_text_changed?
       self.file_names = manifest_files
+    end
+    true
+  end
+
+  def set_file_count_and_total_size
+    if self.manifest_text_changed?
+      m = Keep::Manifest.new(self.manifest_text)
+      self.file_size_total = m.files_size
+      self.file_count = m.files_count
     end
     true
   end
