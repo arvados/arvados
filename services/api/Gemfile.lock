@@ -85,6 +85,7 @@ GEM
       extlib (>= 0.9.15)
       multi_json (>= 1.0.0)
     builder (3.2.3)
+    byebug (11.0.1)
     capistrano (2.15.9)
       highline
       net-scp (>= 1.0.0)
@@ -182,7 +183,7 @@ GEM
     passenger (6.0.2)
       rack
       rake (>= 0.8.1)
-    pg (0.21.0)
+    pg (1.1.4)
     power_assert (1.1.3)
     public_suffix (3.0.3)
     rack (2.0.6)
@@ -273,6 +274,7 @@ DEPENDENCIES
   andand
   arvados (>= 1.3.1.20190301212059)
   arvados-cli
+  byebug
   database_cleaner
   factory_bot_rails
   faye-websocket
@@ -288,7 +290,7 @@ DEPENDENCIES
   omniauth-oauth2 (~> 1.1)
   optimist
   passenger
-  pg (~> 0.18)
+  pg (~> 1.0)
   rails (~> 5.0.0)
   rails-controller-testing
   rails-observers

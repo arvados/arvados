@@ -18,15 +18,13 @@ group :test, :development do
   gem 'simplecov', '~> 0.7.1', require: false
   gem 'simplecov-rcov', require: false
   gem 'mocha', require: false
+  gem 'byebug'
 end
 
 # We need this dependency because of crunchv1
 gem 'arvados-cli'
 
-# pg is the only supported database driver.
-# Note: Rails 4.2 is not compatible with pg 1.0
-#       (See: https://github.com/rails/rails/pull/31671)
-gem 'pg', '~> 0.18'
+gem 'pg', '~> 1.0'
 
 gem 'multi_json'
 gem 'oj'
