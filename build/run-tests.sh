@@ -1208,31 +1208,31 @@ else
         read verb target opts <<<"${nextcmd}"
         target="${target%/}"
         target="${target/\/:/:}"
-        if [[ -z "${target}" ]]; then
-            verb=help
-        fi
         case "${verb}" in
-            "" | "help")
-                help_interactive
-                ;;
             "exit" | "quit")
                 exit_cleanly
                 ;;
             "reset")
                 stop_services
                 ;;
-            *)
-                testargs["$target"]="${opts}"
+            "test" | "install")
                 case "$target" in
+                    "")
+                        help_interactive
+                        ;;
                     all | deps)
                         ${verb}_${target}
                         ;;
                     *)
+                        testargs["$target"]="${opts}"
                         tt="${testfuncargs[${target}]}"
                         tt="${tt:-$target}"
                         do_$verb $tt
                         ;;
                 esac
+                ;;
+            "" | "help" | *)
+                help_interactive
                 ;;
         esac
         if [[ ${#successes[@]} -gt 0 || ${#failures[@]} -gt 0 ]]; then
