@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class DropPdhIndexFromCollections < ActiveRecord::Migration
+class DropPdhIndexFromCollections < ActiveRecord::Migration[4.2]
   def change
     remove_index :collections, column: :portable_data_hash
   end

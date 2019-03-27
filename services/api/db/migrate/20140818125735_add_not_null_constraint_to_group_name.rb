@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddNotNullConstraintToGroupName < ActiveRecord::Migration
+class AddNotNullConstraintToGroupName < ActiveRecord::Migration[4.2]
   def change
     ActiveRecord::Base.connection.execute("update groups set name=uuid where name is null or name=''")
     change_column_null :groups, :name, false

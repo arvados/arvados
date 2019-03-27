@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddCreatedByJobTaskToJobTasks < ActiveRecord::Migration
+class AddCreatedByJobTaskToJobTasks < ActiveRecord::Migration[4.2]
   def change
     add_column :job_tasks, :created_by_job_task, :string
   end

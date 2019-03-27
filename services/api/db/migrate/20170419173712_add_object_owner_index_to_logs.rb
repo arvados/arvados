@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddObjectOwnerIndexToLogs < ActiveRecord::Migration
+class AddObjectOwnerIndexToLogs < ActiveRecord::Migration[4.2]
   def change
     add_index :logs, :object_owner_uuid
   end

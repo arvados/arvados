@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class RenameJobStepsToJobTasks < ActiveRecord::Migration
+class RenameJobStepsToJobTasks < ActiveRecord::Migration[4.2]
   def up
     rename_table :job_steps, :job_tasks
     rename_index :job_tasks, :index_job_steps_on_created_at, :index_job_tasks_on_created_at

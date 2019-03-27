@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class FixTrashFlagFollow < ActiveRecord::Migration
+class FixTrashFlagFollow < ActiveRecord::Migration[4.2]
   def change
     ActiveRecord::Base.connection.execute("DROP MATERIALIZED VIEW materialized_permission_view")
     ActiveRecord::Base.connection.execute(

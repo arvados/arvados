@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddObjectOwnerToLogs < ActiveRecord::Migration
+class AddObjectOwnerToLogs < ActiveRecord::Migration[4.2]
   include CurrentApiClient
 
   def up

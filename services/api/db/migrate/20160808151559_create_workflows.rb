@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class CreateWorkflows < ActiveRecord::Migration
+class CreateWorkflows < ActiveRecord::Migration[4.2]
   def up
     create_table :workflows do |t|
       t.string :uuid

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddOutputNameToContainerRequestSearchIndex < ActiveRecord::Migration
+class AddOutputNameToContainerRequestSearchIndex < ActiveRecord::Migration[4.2]
   def up
     begin
       remove_index :container_requests, :name => 'container_requests_search_index'

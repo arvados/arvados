@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddPropertiesToNode < ActiveRecord::Migration
+class AddPropertiesToNode < ActiveRecord::Migration[4.2]
   def up
     add_column :nodes, :properties, :text
   end

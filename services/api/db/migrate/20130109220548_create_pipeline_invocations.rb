@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class CreatePipelineInvocations < ActiveRecord::Migration
+class CreatePipelineInvocations < ActiveRecord::Migration[4.2]
   def up
     create_table :pipeline_invocations do |t|
       t.string :uuid

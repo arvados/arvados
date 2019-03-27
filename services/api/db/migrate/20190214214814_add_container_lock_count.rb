@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddContainerLockCount < ActiveRecord::Migration
+class AddContainerLockCount < ActiveRecord::Migration[4.2]
   def change
     add_column :containers, :lock_count, :int, :null => false, :default => 0
   end

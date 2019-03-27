@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class SeparateRepositoryFromScriptVersion < ActiveRecord::Migration
+class SeparateRepositoryFromScriptVersion < ActiveRecord::Migration[4.2]
   include CurrentApiClient
 
   def fixup pt

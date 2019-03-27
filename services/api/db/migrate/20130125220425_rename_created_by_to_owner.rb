@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class RenameCreatedByToOwner < ActiveRecord::Migration
+class RenameCreatedByToOwner < ActiveRecord::Migration[4.2]
   def tables
     %w{api_clients collections logs metadata nodes pipelines pipeline_invocations projects specimens users}
   end

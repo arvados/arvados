@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddRuntimeTokenToContainer < ActiveRecord::Migration
+class AddRuntimeTokenToContainer < ActiveRecord::Migration[4.2]
   def change
     add_column :containers, :runtime_token, :text, :null => true
   end

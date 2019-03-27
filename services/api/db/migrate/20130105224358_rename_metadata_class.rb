@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class RenameMetadataClass < ActiveRecord::Migration
+class RenameMetadataClass < ActiveRecord::Migration[4.2]
   def up
     rename_column :metadata, :metadatum_class, :metadata_class
   end

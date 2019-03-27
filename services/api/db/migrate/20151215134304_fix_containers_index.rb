@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class FixContainersIndex < ActiveRecord::Migration
+class FixContainersIndex < ActiveRecord::Migration[4.2]
   def up
     execute "CREATE INDEX container_requests_full_text_search_idx ON container_requests USING gin(#{ContainerRequest.full_text_tsvector});"
     add_index :container_requests, ["uuid", "owner_uuid", "modified_by_client_uuid", "modified_by_user_uuid", "name", "state", "requesting_container_uuid", "container_uuid", "container_image", "cwd", "output_path"], name: 'container_requests_search_index'

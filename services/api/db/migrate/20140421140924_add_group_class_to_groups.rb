@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddGroupClassToGroups < ActiveRecord::Migration
+class AddGroupClassToGroups < ActiveRecord::Migration[4.2]
   def change
     add_column :groups, :group_class, :string
     add_index :groups, :group_class

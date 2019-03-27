@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class RenameProjectsToGroups < ActiveRecord::Migration
+class RenameProjectsToGroups < ActiveRecord::Migration[4.2]
   def up
     rename_table :projects, :groups
     rename_index :groups, :index_projects_on_created_at, :index_groups_on_created_at

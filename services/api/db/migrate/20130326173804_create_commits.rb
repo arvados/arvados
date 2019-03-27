@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class CreateCommits < ActiveRecord::Migration
+class CreateCommits < ActiveRecord::Migration[4.2]
   def change
     create_table :commits do |t|
       t.string :repository_name

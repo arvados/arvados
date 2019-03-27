@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddOutputNameToCrFtsIndex < ActiveRecord::Migration
+class AddOutputNameToCrFtsIndex < ActiveRecord::Migration[4.2]
   def up
     t = "container_requests"
     i = "container_requests_full_text_search_idx"

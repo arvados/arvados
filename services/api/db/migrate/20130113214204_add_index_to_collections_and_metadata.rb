@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddIndexToCollectionsAndMetadata < ActiveRecord::Migration
+class AddIndexToCollectionsAndMetadata < ActiveRecord::Migration[4.2]
   def up
     add_index :collections, :uuid, :unique => true
     add_index :metadata, :uuid, :unique => true

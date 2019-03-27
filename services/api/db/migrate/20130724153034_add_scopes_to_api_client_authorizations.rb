@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddScopesToApiClientAuthorizations < ActiveRecord::Migration
+class AddScopesToApiClientAuthorizations < ActiveRecord::Migration[4.2]
   def change
     add_column :api_client_authorizations, :scopes, :text, :null => false, :default => ['all'].to_yaml
   end

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class SearchIndex < ActiveRecord::Migration
+class SearchIndex < ActiveRecord::Migration[4.2]
   def tables_with_searchable_columns
     {
       "api_client_authorizations" => ["api_token", "created_by_ip_address", "last_used_by_ip_address", "default_owner_uuid"],

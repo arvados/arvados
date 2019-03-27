@@ -4,7 +4,7 @@
 
 require './db/migrate/20161213172944_full_text_search_indexes'
 
-class PropertiesToJsonb < ActiveRecord::Migration
+class PropertiesToJsonb < ActiveRecord::Migration[4.2]
 
   @@tables_columns = [["nodes", "properties"],
                       ["nodes", "info"],

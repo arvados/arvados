@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class UpdateNodesIndex < ActiveRecord::Migration
+class UpdateNodesIndex < ActiveRecord::Migration[4.2]
   def up
     remove_index :nodes, :hostname
     add_index :nodes, :hostname

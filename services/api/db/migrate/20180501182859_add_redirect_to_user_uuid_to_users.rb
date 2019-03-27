@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddRedirectToUserUuidToUsers < ActiveRecord::Migration
+class AddRedirectToUserUuidToUsers < ActiveRecord::Migration[4.2]
   def up
     add_column :users, :redirect_to_user_uuid, :string
     User.reset_column_information

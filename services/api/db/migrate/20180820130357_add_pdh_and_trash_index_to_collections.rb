@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddPdhAndTrashIndexToCollections < ActiveRecord::Migration
+class AddPdhAndTrashIndexToCollections < ActiveRecord::Migration[4.2]
   def change
     add_index :collections, [:portable_data_hash, :trash_at]
   end

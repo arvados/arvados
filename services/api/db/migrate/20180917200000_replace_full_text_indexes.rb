@@ -4,7 +4,7 @@
 
 require './db/migrate/20161213172944_full_text_search_indexes'
 
-class ReplaceFullTextIndexes < ActiveRecord::Migration
+class ReplaceFullTextIndexes < ActiveRecord::Migration[4.2]
   def up
     FullTextSearchIndexes.new.up
   end

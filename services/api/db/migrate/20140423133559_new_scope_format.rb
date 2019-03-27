@@ -7,7 +7,7 @@
 # login list.  This migration converts those VM-specific scopes to the new
 # general format, and back.
 
-class NewScopeFormat < ActiveRecord::Migration
+class NewScopeFormat < ActiveRecord::Migration[4.2]
   include CurrentApiClient
 
   VM_PATH_REGEX =

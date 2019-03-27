@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class RemoveOutputIsPersistentColumn < ActiveRecord::Migration
+class RemoveOutputIsPersistentColumn < ActiveRecord::Migration[4.2]
   def up
     remove_column :jobs, :output_is_persistent
   end
