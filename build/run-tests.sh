@@ -392,6 +392,10 @@ start_services() {
         && (env | egrep ^ARVADOS) \
         || fail=1
     deactivate
+    if [[ $fail = 0 ]] && ! kill -0 "$(cat "$WORKSPACE/tmp/nginx.pid")"; then
+        echo >&2 "ERROR: nginx seems to have died already"
+        fail=1
+    fi
     if [[ $fail != 0 ]]; then
         unset ARVADOS_TEST_API_HOST
     fi
