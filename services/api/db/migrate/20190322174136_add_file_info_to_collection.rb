@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+require "arvados/keep"
+
 class AddFileInfoToCollection < ActiveRecord::Migration
   def do_batch(pdhs)
     pdhs_str = ''
@@ -15,23 +17,10 @@ class AddFileInfoToCollection < ActiveRecord::Migration
     )
 
     collections.rows.each do |row|
-      file_count = 0
-      file_size_total = 0
-      row[1].scan(/\S+/) do |token|
-        is_file = token.match(/^[[:digit:]]+:[[:digit:]]+:/)
-        if is_file
-          _, filesize, filename = token.split(':', 3)
-
-          # Avoid counting empty dir placeholders
-          break if filename == '.' && filesize.zero?
-
-          file_count += 1
-          file_size_total += filesize.to_i
-        end
-      end
+      manifest = Keep::Manifest.new(row[1])
       ActiveRecord::Base.connection.exec_query('BEGIN')
-      ActiveRecord::Base.connection.exec_query("UPDATE collections SET file_count=#{file_count}, "\
-                                               "file_size_total=#{file_size_total} "\
+      ActiveRecord::Base.connection.exec_query("UPDATE collections SET file_count=#{manifest.files_count}, "\
+                                               "file_size_total=#{manifest.files_size} "\
                                                "WHERE portable_data_hash='#{row[0]}'")
       ActiveRecord::Base.connection.exec_query('COMMIT')
     end
