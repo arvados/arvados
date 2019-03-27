@@ -199,7 +199,7 @@ class Collection < ArvadosModel
   end
 
   def set_file_count_and_total_size
-    if self.manifest_text_changed?
+    if self.manifest_text_changed? && self.valid?
       m = Keep::Manifest.new(self.manifest_text)
       self.file_size_total = m.files_size
       self.file_count = m.files_count
