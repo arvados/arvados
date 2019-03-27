@@ -46,7 +46,11 @@ class AddFileInfoToCollection < ActiveRecord::Migration
       end
     }
 
-    Container.group_pdhs_for_multiple_transactions(ordered_pdh_query, distinct_pdh_count, "AddFileInfoToCollection") do |pdhs|
+    batch_size_max = 1 << 28 # 256 MiB
+    Container.group_pdhs_for_multiple_transactions(ordered_pdh_query,
+                                                   distinct_pdh_count,
+                                                   batch_size_max,
+                                                   "AddFileInfoToCollection") do |pdhs|
       do_batch(pdhs)
     end
   end

@@ -411,8 +411,7 @@ class Container < ArvadosModel
   #
   # Correctly groups pdhs to use for batch database updates. Helps avoid
   # updating too many database rows in a single transaction.
-  def self.group_pdhs_for_multiple_transactions(distinct_ordered_pdhs, distinct_pdh_count, log_prefix)
-    batch_size_max = 1 << 28 # 256 MiB
+  def self.group_pdhs_for_multiple_transactions(distinct_ordered_pdhs, distinct_pdh_count, batch_size_max, log_prefix)
     batch_size = 0
     batch_pdhs = {}
     last_pdh = '0'
