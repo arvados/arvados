@@ -152,6 +152,10 @@ end
 class ActionController::TestCase
   setup do
     @test_counter = 0
+    # Trying this:
+    # https://stackoverflow.com/questions/44119273/rails-5-1-minitest-flattens-array-of-arrays-in-params
+    self.request.headers['Accept'] = 'application/json'
+    self.request.headers['Content-Type'] = 'application/json'
   end
 
   def check_counter action
