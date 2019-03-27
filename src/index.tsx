@@ -61,6 +61,9 @@ import { groupActionSet } from '~/views-components/context-menu/action-sets/grou
 import { groupMemberActionSet } from '~/views-components/context-menu/action-sets/group-member-action-set';
 import { linkActionSet } from '~/views-components/context-menu/action-sets/link-action-set';
 import { loadFileViewersConfig } from '~/store/file-viewers/file-viewers-actions';
+import { collectionAdminActionSet } from '~/views-components/context-menu/action-sets/collection-admin-action-set';
+import { processResourceAdminActionSet } from '~/views-components/context-menu/action-sets/process-resource-admin-action-set';
+import { projectAdminActionSet } from '~/views-components/context-menu/action-sets/project-admin-action-set';
 
 console.log(`Starting arvados [${getBuildInfo()}]`);
 
@@ -87,6 +90,9 @@ addMenuActionSet(ContextMenuKind.NODE, computeNodeActionSet);
 addMenuActionSet(ContextMenuKind.API_CLIENT_AUTHORIZATION, apiClientAuthorizationActionSet);
 addMenuActionSet(ContextMenuKind.GROUPS, groupActionSet);
 addMenuActionSet(ContextMenuKind.GROUP_MEMBER, groupMemberActionSet);
+addMenuActionSet(ContextMenuKind.COLLECTION_ADMIN, collectionAdminActionSet);
+addMenuActionSet(ContextMenuKind.PROCESS_ADMIN, processResourceAdminActionSet);
+addMenuActionSet(ContextMenuKind.PROJECT_ADMIN, projectAdminActionSet);
 
 fetchConfig()
     .then(({ config, apiHost }) => {

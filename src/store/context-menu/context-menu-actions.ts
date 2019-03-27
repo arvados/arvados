@@ -194,15 +194,15 @@ export const openProcessContextMenu = (event: React.MouseEvent<HTMLElement>, pro
         }
     };
 
-export const resourceKindToContextMenuKind = (uuid: string) => {
+export const resourceKindToContextMenuKind = (uuid: string, isAdmin?: boolean) => {
     const kind = extractUuidKind(uuid);
     switch (kind) {
         case ResourceKind.PROJECT:
-            return ContextMenuKind.PROJECT;
+            return !isAdmin ? ContextMenuKind.PROJECT : ContextMenuKind.PROJECT_ADMIN;
         case ResourceKind.COLLECTION:
-            return ContextMenuKind.COLLECTION_RESOURCE;
+            return !isAdmin ? ContextMenuKind.COLLECTION_RESOURCE : ContextMenuKind.COLLECTION_ADMIN;
         case ResourceKind.PROCESS:
-            return ContextMenuKind.PROCESS_RESOURCE;
+            return !isAdmin ? ContextMenuKind.PROCESS_RESOURCE : ContextMenuKind.PROCESS_ADMIN;
         case ResourceKind.USER:
             return ContextMenuKind.ROOT_PROJECT;
         case ResourceKind.LINK:

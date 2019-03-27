@@ -33,7 +33,8 @@ export const Routes = {
     API_CLIENT_AUTHORIZATIONS: `/api_client_authorizations`,
     GROUPS: '/groups',
     GROUP_DETAILS: `/group/:id(${RESOURCE_UUID_PATTERN})`,
-    LINKS: '/links'
+    LINKS: '/links',
+    PUBLIC_FAVORITES: '/public-favorites'
 };
 
 export const getResourceUrl = (uuid: string) => {
@@ -131,6 +132,9 @@ export const matchGroupsRoute = (route: string) =>
 
 export const matchGroupDetailsRoute = (route: string) =>
     matchPath<ResourceRouteParams>(route, { path: Routes.GROUP_DETAILS });
-    
+
 export const matchLinksRoute = (route: string) =>
     matchPath(route, { path: Routes.LINKS });
+
+export const matchPublicFavorites = (route: string) =>
+    matchPath(route, { path: Routes.PUBLIC_FAVORITES });

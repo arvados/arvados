@@ -16,8 +16,9 @@ import { ShareIcon } from '~/components/icon/icon';
 import { openSharingDialog } from "~/store/sharing-dialog/sharing-dialog-actions";
 import { openAdvancedTabDialog } from "~/store/advanced-tab/advanced-tab";
 import { toggleDetailsPanel } from '~/store/details-panel/details-panel-action';
+import { TogglePublicFavoriteAction } from "~/views-components/context-menu/actions/public-favorite-action";
 
-export const projectActionSet: ContextMenuActionSet = [[
+export const projectAdminActionSet: ContextMenuActionSet = [[
     {
         icon: NewProjectIcon,
         name: "New project",
@@ -41,6 +42,14 @@ export const projectActionSet: ContextMenuActionSet = [[
     },
     {
         component: ToggleFavoriteAction,
+        execute: (dispatch, resource) => {
+            dispatch<any>(toggleFavorite(resource)).then(() => {
+                dispatch<any>(favoritePanelActions.REQUEST_ITEMS());
+            });
+        }
+    },
+    {
+        component: TogglePublicFavoriteAction,
         execute: (dispatch, resource) => {
             dispatch<any>(toggleFavorite(resource)).then(() => {
                 dispatch<any>(favoritePanelActions.REQUEST_ITEMS());

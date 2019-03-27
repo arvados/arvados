@@ -91,6 +91,7 @@ import { RemoveGroupMemberDialog } from '~/views-components/groups-dialog/member
 import { GroupMemberAttributesDialog } from '~/views-components/groups-dialog/member-attributes-dialog';
 import { AddGroupMembersDialog } from '~/views-components/dialog-forms/add-group-member-dialog';
 import { PartialCopyToCollectionDialog } from '~/views-components/dialog-forms/partial-copy-to-collection-dialog';
+import { PublicFavoritePanel } from '~/views/public-favorites-panel/public-favorites-panel';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -138,9 +139,9 @@ export const WorkbenchPanel =
         <Grid container item xs className={classes.root}>
             <Grid container item xs className={classes.container}>
                 <SplitterLayout customClassName={classes.splitter} percentage={true}
-                                primaryIndex={0} primaryMinSize={10}
-                                secondaryInitialSize={getSplitterInitialSize()} secondaryMinSize={40}
-                                onSecondaryPaneSizeChange={saveSplitterSize}>
+                    primaryIndex={0} primaryMinSize={10}
+                    secondaryInitialSize={getSplitterInitialSize()} secondaryMinSize={40}
+                    onSecondaryPaneSizeChange={saveSplitterSize}>
                     <Grid container item xs component='aside' direction='column' className={classes.asidePanel}>
                         <SidePanel />
                     </Grid>
@@ -174,6 +175,7 @@ export const WorkbenchPanel =
                                 <Route path={Routes.GROUPS} component={GroupsPanel} />
                                 <Route path={Routes.GROUP_DETAILS} component={GroupDetailsPanel} />
                                 <Route path={Routes.LINKS} component={LinkPanel} />
+                                <Route path={Routes.PUBLIC_FAVORITES} component={PublicFavoritePanel} />
                             </Switch>
                         </Grid>
                     </Grid>

@@ -59,6 +59,8 @@ import { COMPUTE_NODE_PANEL_ID } from '~/store/compute-nodes/compute-nodes-actio
 import { ComputeNodeMiddlewareService } from '~/store/compute-nodes/compute-nodes-middleware-service';
 import { API_CLIENT_AUTHORIZATION_PANEL_ID } from '~/store/api-client-authorizations/api-client-authorizations-actions';
 import { ApiClientAuthorizationMiddlewareService } from '~/store/api-client-authorizations/api-client-authorizations-middleware-service';
+import { PublicFavoritesMiddlewareService } from '~/store/public-favorites-panel/public-favorites-middleware-service';
+import { PUBLIC_FAVORITE_PANEL_ID } from '~/store/public-favorites-panel/public-favorites-action';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -109,6 +111,9 @@ export function configureStore(history: History, services: ServiceRepository): R
     const apiClientAuthorizationMiddlewareService = dataExplorerMiddleware(
         new ApiClientAuthorizationMiddlewareService(services, API_CLIENT_AUTHORIZATION_PANEL_ID)
     );
+    const publicFavoritesMiddleware = dataExplorerMiddleware(
+        new PublicFavoritesMiddlewareService(services, PUBLIC_FAVORITE_PANEL_ID)
+    );
     const middlewares: Middleware[] = [
         routerMiddleware(history),
         thunkMiddleware.withExtraArgument(services),
@@ -123,7 +128,8 @@ export function configureStore(history: History, services: ServiceRepository): R
         groupDetailsPanelMiddleware,
         linkPanelMiddleware,
         computeNodeMiddleware,
-        apiClientAuthorizationMiddlewareService
+        apiClientAuthorizationMiddlewareService,
+        publicFavoritesMiddleware
     ];
     const enhancer = composeEnhancers(applyMiddleware(...middlewares));
     return createStore(rootReducer, enhancer);

@@ -15,7 +15,7 @@ import { DataTableFilters } from '~/components/data-table-filters/data-table-fil
 interface Props {
     id: string;
     onRowClick: (item: any) => void;
-    onContextMenu?: (event: React.MouseEvent<HTMLElement>, item: any) => void;
+    onContextMenu?: (event: React.MouseEvent<HTMLElement>, item: any, isAdmin?: boolean) => void;
     onRowDoubleClick: (item: any) => void;
     extractKey?: (item: any) => React.Key;
 }

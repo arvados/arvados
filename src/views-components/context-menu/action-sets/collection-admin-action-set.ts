@@ -5,7 +5,7 @@
 import { ContextMenuActionSet } from "../context-menu-action-set";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "~/store/favorites/favorites-actions";
-import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, ProvenanceGraphIcon, AdvancedIcon, RemoveIcon } from "~/components/icon/icon";
+import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, AdvancedIcon } from "~/components/icon/icon";
 import { openCollectionUpdateDialog } from "~/store/collections/collection-update-actions";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
 import { openMoveCollectionDialog } from '~/store/collections/collection-move-actions';
@@ -15,8 +15,9 @@ import { toggleCollectionTrashed } from "~/store/trash/trash-actions";
 import { openSharingDialog } from '~/store/sharing-dialog/sharing-dialog-actions';
 import { openAdvancedTabDialog } from "~/store/advanced-tab/advanced-tab";
 import { toggleDetailsPanel } from '~/store/details-panel/details-panel-action';
+import { TogglePublicFavoriteAction } from "~/views-components/context-menu/actions/public-favorite-action";
 
-export const collectionActionSet: ContextMenuActionSet = [[
+export const collectionAdminActionSet: ContextMenuActionSet = [[
     {
         icon: RenameIcon,
         name: "Edit collection",
@@ -33,6 +34,14 @@ export const collectionActionSet: ContextMenuActionSet = [[
     },
     {
         component: ToggleFavoriteAction,
+        execute: (dispatch, resource) => {
+            dispatch<any>(toggleFavorite(resource)).then(() => {
+                dispatch<any>(favoritePanelActions.REQUEST_ITEMS());
+            });
+        }
+    },
+    {
+        component: TogglePublicFavoriteAction,
         execute: (dispatch, resource) => {
             dispatch<any>(toggleFavorite(resource)).then(() => {
                 dispatch<any>(favoritePanelActions.REQUEST_ITEMS());

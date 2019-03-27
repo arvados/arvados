@@ -19,6 +19,7 @@ import { GroupClass } from '~/models/group';
 export enum SidePanelTreeCategory {
     PROJECTS = 'Projects',
     SHARED_WITH_ME = 'Shared with me',
+    PUBLIC_FAVORITES = 'Public Favorites',
     WORKFLOWS = 'Workflows',
     FAVORITES = 'Favorites',
     TRASH = 'Trash'
@@ -42,6 +43,7 @@ export const getSidePanelTreeBranch = (uuid: string) => (treePicker: TreePicker)
 };
 
 const SIDE_PANEL_CATEGORIES = [
+    SidePanelTreeCategory.PUBLIC_FAVORITES,
     SidePanelTreeCategory.WORKFLOWS,
     SidePanelTreeCategory.FAVORITES,
     SidePanelTreeCategory.TRASH,
