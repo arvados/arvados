@@ -936,6 +936,7 @@ pythonstuff=(
     services/fuse
     services/nodemanager
     tools/crunchstat-summary
+    tools/crunchstat-summary:py3
 )
 
 declare -a gostuff
