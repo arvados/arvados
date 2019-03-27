@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 
 	"git.curoverse.com/arvados.git/lib/cmd"
@@ -26,11 +27,12 @@ type Handler interface {
 	CheckHealth() error
 }
 
-type NewHandlerFunc func(context.Context, *arvados.Cluster, *arvados.NodeProfile) Handler
+type NewHandlerFunc func(_ context.Context, _ *arvados.Cluster, _ *arvados.NodeProfile, token string) Handler
 
 type command struct {
 	newHandler NewHandlerFunc
 	svcName    arvados.ServiceName
+	ctx        context.Context // enables tests to shutdown service; no public API yet
 }
 
 // Command returns a cmd.Handler that loads site config, calls
@@ -43,6 +45,7 @@ func Command(svcName arvados.ServiceName, newHandler NewHandlerFunc) cmd.Handler
 	return &command{
 		newHandler: newHandler,
 		svcName:    svcName,
+		ctx:        context.Background(),
 	}
 }
 
@@ -77,7 +80,8 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	log = ctxlog.New(stderr, cluster.Logging.Format, cluster.Logging.Level).WithFields(logrus.Fields{
 		"PID": os.Getpid(),
 	})
-	ctx := ctxlog.Context(context.Background(), log)
+	ctx := ctxlog.Context(c.ctx, log)
+
 	profileName := *nodeProfile
 	if profileName == "" {
 		profileName = os.Getenv("ARVADOS_NODE_PROFILE")
@@ -91,7 +95,25 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 		err = fmt.Errorf("configuration does not enable the %s service on this host", c.svcName)
 		return 1
 	}
-	handler := c.newHandler(ctx, cluster, profile)
+
+	if cluster.SystemRootToken == "" {
+		log.Warn("SystemRootToken missing from cluster config, falling back to ARVADOS_API_TOKEN environment variable")
+		cluster.SystemRootToken = os.Getenv("ARVADOS_API_TOKEN")
+	}
+	if cluster.Services.Controller.ExternalURL.Host == "" {
+		log.Warn("Services.Controller.ExternalURL missing from cluster config, falling back to ARVADOS_API_HOST(_INSECURE) environment variables")
+		u, err := url.Parse("https://" + os.Getenv("ARVADOS_API_HOST"))
+		if err != nil {
+			err = fmt.Errorf("ARVADOS_API_HOST: %s", err)
+			return 1
+		}
+		cluster.Services.Controller.ExternalURL = arvados.URL(*u)
+		if i := os.Getenv("ARVADOS_API_HOST_INSECURE"); i != "" && i != "0" {
+			cluster.TLS.Insecure = true
+		}
+	}
+
+	handler := c.newHandler(ctx, cluster, profile, cluster.SystemRootToken)
 	if err = handler.CheckHealth(); err != nil {
 		return 1
 	}
@@ -112,6 +134,10 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	if _, err := daemon.SdNotify(false, "READY=1"); err != nil {
 		log.WithError(err).Errorf("error notifying init daemon")
 	}
+	go func() {
+		<-ctx.Done()
+		srv.Close()
+	}()
 	err = srv.Wait()
 	if err != nil {
 		return 1

@@ -17,6 +17,7 @@ import (
 
 	"git.curoverse.com/arvados.git/lib/dispatchcloud/test"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"golang.org/x/crypto/ssh"
 	check "gopkg.in/check.v1"
@@ -49,12 +50,13 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 
 	s.cluster = &arvados.Cluster{
 		CloudVMs: arvados.CloudVMs{
-			Driver:          "test",
-			SyncInterval:    arvados.Duration(10 * time.Millisecond),
-			TimeoutIdle:     arvados.Duration(150 * time.Millisecond),
-			TimeoutBooting:  arvados.Duration(150 * time.Millisecond),
-			TimeoutProbe:    arvados.Duration(15 * time.Millisecond),
-			TimeoutShutdown: arvados.Duration(5 * time.Millisecond),
+			Driver:               "test",
+			SyncInterval:         arvados.Duration(10 * time.Millisecond),
+			TimeoutIdle:          arvados.Duration(150 * time.Millisecond),
+			TimeoutBooting:       arvados.Duration(150 * time.Millisecond),
+			TimeoutProbe:         arvados.Duration(15 * time.Millisecond),
+			TimeoutShutdown:      arvados.Duration(5 * time.Millisecond),
+			MaxCloudOpsPerSecond: 500,
 		},
 		Dispatch: arvados.Dispatch{
 			PrivateKey:         string(dispatchprivraw),
@@ -62,6 +64,8 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 			ProbeInterval:      arvados.Duration(5 * time.Millisecond),
 			StaleLockTimeout:   arvados.Duration(5 * time.Millisecond),
 			MaxProbesPerSecond: 1000,
+			TimeoutSignal:      arvados.Duration(3 * time.Millisecond),
+			TimeoutTERM:        arvados.Duration(20 * time.Millisecond),
 		},
 		InstanceTypes: arvados.InstanceTypeMap{
 			test.InstanceType(1).Name:  test.InstanceType(1),
@@ -78,10 +82,19 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 				DispatchCloud: arvados.SystemServiceInstance{Listen: ":"},
 			},
 		},
+		Services: arvados.Services{
+			Controller: arvados.Service{ExternalURL: arvados.URL{Scheme: "https", Host: os.Getenv("ARVADOS_API_HOST")}},
+		},
 	}
+
+	arvClient, err := arvados.NewClientFromConfig(s.cluster)
+	c.Check(err, check.IsNil)
+
 	s.disp = &dispatcher{
-		Cluster: s.cluster,
-		Context: s.ctx,
+		Cluster:   s.cluster,
+		Context:   s.ctx,
+		ArvClient: arvClient,
+		AuthToken: arvadostest.AdminToken,
 	}
 	// Test cases can modify s.cluster before calling
 	// initialize(), and then modify private state before calling
@@ -124,17 +137,20 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 	for _, ctr := range queue.Containers {
 		waiting[ctr.UUID] = struct{}{}
 	}
-	executeContainer := func(ctr arvados.Container) int {
+	finishContainer := func(ctr arvados.Container) {
 		mtx.Lock()
 		defer mtx.Unlock()
 		if _, ok := waiting[ctr.UUID]; !ok {
-			c.Logf("container completed twice: %s -- perhaps completed after stub instance was killed?", ctr.UUID)
-			return 1
+			c.Errorf("container completed twice: %s", ctr.UUID)
+			return
 		}
 		delete(waiting, ctr.UUID)
 		if len(waiting) == 0 {
 			close(done)
 		}
+	}
+	executeContainer := func(ctr arvados.Container) int {
+		finishContainer(ctr)
 		return int(rand.Uint32() & 0x3)
 	}
 	n := 0
@@ -144,11 +160,14 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 		stubvm.Boot = time.Now().Add(time.Duration(rand.Int63n(int64(5 * time.Millisecond))))
 		stubvm.CrunchRunDetachDelay = time.Duration(rand.Int63n(int64(10 * time.Millisecond)))
 		stubvm.ExecuteContainer = executeContainer
+		stubvm.CrashRunningContainer = finishContainer
 		switch n % 7 {
 		case 0:
 			stubvm.Broken = time.Now().Add(time.Duration(rand.Int63n(90)) * time.Millisecond)
 		case 1:
 			stubvm.CrunchRunMissing = true
+		case 2:
+			stubvm.ReportBroken = time.Now().Add(time.Duration(rand.Int63n(200)) * time.Millisecond)
 		default:
 			stubvm.CrunchRunCrashRate = 0.1
 		}
@@ -261,7 +280,13 @@ func (s *DispatcherSuite) TestInstancesAPI(c *check.C) {
 	c.Check(ok, check.Equals, true)
 	<-ch
 
-	sr = getInstances()
+	for deadline := time.Now().Add(time.Second); time.Now().Before(deadline); {
+		sr = getInstances()
+		if len(sr.Items) > 0 {
+			break
+		}
+		time.Sleep(time.Millisecond)
+	}
 	c.Assert(len(sr.Items), check.Equals, 1)
 	c.Check(sr.Items[0].Instance, check.Matches, "stub.*")
 	c.Check(sr.Items[0].WorkerState, check.Equals, "booting")

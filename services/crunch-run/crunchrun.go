@@ -222,7 +222,14 @@ var brokenNodeHook *string = flag.String("broken-node-hook", "", "Script to run 
 
 func (runner *ContainerRunner) runBrokenNodeHook() {
 	if *brokenNodeHook == "" {
-		runner.CrunchLog.Printf("No broken node hook provided, cannot mark node as broken.")
+		path := filepath.Join(lockdir, brokenfile)
+		runner.CrunchLog.Printf("Writing %s to mark node as broken", path)
+		f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0700)
+		if err != nil {
+			runner.CrunchLog.Printf("Error writing %s: %s", path, err)
+			return
+		}
+		f.Close()
 	} else {
 		runner.CrunchLog.Printf("Running broken node hook %q", *brokenNodeHook)
 		// run killme script

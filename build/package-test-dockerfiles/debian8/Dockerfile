@@ -5,6 +5,8 @@
 FROM debian:8
 MAINTAINER Ward Vandewege <wvandewege@veritasgenetics.com>
 
+RUN perl -ni~ -e 'print unless /jessie-updates/' /etc/apt/sources.list
+
 ENV DEBIAN_FRONTEND noninteractive
 
 # Install dependencies
