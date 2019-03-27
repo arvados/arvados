@@ -17,7 +17,7 @@ module LoadParam
   def load_where_param
     if params[:where].nil? or params[:where] == ""
       @where = {}
-    elsif params[:where].is_a? Hash
+    elsif [Hash, ActionController::Parameters].include? params[:where].class
       @where = params[:where]
     elsif params[:where].is_a? String
       begin

@@ -323,7 +323,9 @@ class ApplicationController < ActionController::Base
   def resource_attrs
     return @attrs if @attrs
     @attrs = params[resource_name]
-    if @attrs.is_a? String
+    if @attrs.nil?
+      @attrs = {}
+    elsif @attrs.is_a? String
       @attrs = Oj.strict_load @attrs, symbol_keys: true
     end
     unless [Hash, ActionController::Parameters].include? @attrs.class
