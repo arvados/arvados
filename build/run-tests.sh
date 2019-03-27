@@ -1171,11 +1171,8 @@ for g in "${gostuff[@]}"; do
 done
 for p in "${pythonstuff[@]}"; do
     dir=${p%:py3}
-    if [[ ${dir} = ${p} ]]; then
-        testfuncargs[$p]="$dir pip $VENVDIR/bin/"
-    else
-        testfuncargs[$p]="$dir pip $VENV3DIR/bin/"
-    fi
+    testfuncargs[$dir]="$dir pip $VENVDIR/bin/"
+    testfuncargs[$dir:py3]="$dir pip $VENV3DIR/bin/"
 done
 
 if [[ -z ${interactive} ]]; then
@@ -1201,6 +1198,12 @@ else
     setnextcmd
     while read -p 'What next? ' -e -i "${nextcmd}" nextcmd; do
         read verb target opts <<<"${nextcmd}"
+        target="${target%/}"
+        target="${target/\/:/:}"
+        if [[ -z "${target}" ]]; then
+            help_interactive
+            continue
+        fi
         case "${verb}" in
             "" | "help")
                 help_interactive
@@ -1212,7 +1215,6 @@ else
                 stop_services
                 ;;
             *)
-                target="${target%/}"
                 testargs["$target"]="${opts}"
                 case "$target" in
                     all | deps)
