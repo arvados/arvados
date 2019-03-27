@@ -71,6 +71,7 @@ import ciso8601
 import collections
 import functools
 import arvados.keep
+from prometheus_client import Summary
 
 import Queue
 
@@ -351,6 +352,27 @@ class Operations(llfuse.Operations):
 
     """
 
+    fuse_time = Summary('arvmount_fuse_operations_seconds', 'Time spent during FUSE operations', labelnames=['op'])
+    read_time = fuse_time.labels(op='read')
+    write_time = fuse_time.labels(op='write')
+    destroy_time = fuse_time.labels(op='destroy')
+    on_event_time = fuse_time.labels(op='on_event')
+    getattr_time = fuse_time.labels(op='getattr')
+    setattr_time = fuse_time.labels(op='setattr')
+    lookup_time = fuse_time.labels(op='lookup')
+    forget_time = fuse_time.labels(op='forget')
+    open_time = fuse_time.labels(op='open')
+    release_time = fuse_time.labels(op='release')
+    opendir_time = fuse_time.labels(op='opendir')
+    readdir_time = fuse_time.labels(op='readdir')
+    statfs_time = fuse_time.labels(op='statfs')
+    create_time = fuse_time.labels(op='create')
+    mkdir_time = fuse_time.labels(op='mkdir')
+    unlink_time = fuse_time.labels(op='unlink')
+    rmdir_time = fuse_time.labels(op='rmdir')
+    rename_time = fuse_time.labels(op='rename')
+    flush_time = fuse_time.labels(op='flush')
+
     def __init__(self, uid, gid, api_client, encoding="utf-8", inode_cache=None, num_retries=4, enable_write=False):
         super(Operations, self).__init__()
 
@@ -391,6 +413,28 @@ class Operations(llfuse.Operations):
         # initializing to continue
         self.initlock.set()
 
+    def metric_samples(self):
+        return self.fuse_time.collect()[0].samples 
+
+    def metric_op_names(self):
+        ops = []
+        for cur_op in [sample.labels['op'] for sample in self.metric_samples()]:
+            if cur_op not in ops:
+                ops.append(cur_op)
+        return ops
+
+    def metric_value(self, opname, metric):
+        op_value = [sample.value for sample in self.metric_samples()
+                    if sample.name == metric and sample.labels['op'] == opname]
+        return op_value[0] if len(op_value) == 1 else None
+
+    def metric_sum_func(self, opname):
+        return lambda: self.metric_value(opname, "arvmount_fuse_operations_seconds_sum")
+
+    def metric_count_func(self, opname):
+        return lambda: int(self.metric_value(opname, "arvmount_fuse_operations_seconds_count"))
+
+    @destroy_time.time()
     @catch_exceptions
     def destroy(self):
         self._shutdown_started.set()
@@ -417,6 +461,7 @@ class Operations(llfuse.Operations):
             [["event_type", "in", ["create", "update", "delete"]]],
             self.on_event)
 
+    @on_event_time.time()
     @catch_exceptions
     def on_event(self, ev):
         if 'event_type' not in ev or ev["event_type"] not in ("create", "update", "delete"):
@@ -447,6 +492,7 @@ class Operations(llfuse.Operations):
                     self.inodes.inode_cache.find_by_uuid(newowner)):
                 parent.child_event(ev)
 
+    @getattr_time.time()
     @catch_exceptions
     def getattr(self, inode, ctx=None):
         if inode not in self.inodes:
@@ -493,6 +539,7 @@ class Operations(llfuse.Operations):
 
         return entry
 
+    @setattr_time.time()
     @catch_exceptions
     def setattr(self, inode, attr, fields=None, fh=None, ctx=None):
         entry = self.getattr(inode)
@@ -516,6 +563,7 @@ class Operations(llfuse.Operations):
 
         return entry
 
+    @lookup_time.time()
     @catch_exceptions
     def lookup(self, parent_inode, name, ctx=None):
         name = unicode(name, self.inodes.encoding)
@@ -542,6 +590,7 @@ class Operations(llfuse.Operations):
                       parent_inode, name)
             raise llfuse.FUSEError(errno.ENOENT)
 
+    @forget_time.time()
     @catch_exceptions
     def forget(self, inodes):
         if self._shutdown_started.is_set():
@@ -552,6 +601,7 @@ class Operations(llfuse.Operations):
             if ent.dec_ref(nlookup) == 0 and ent.dead:
                 self.inodes.del_entry(ent)
 
+    @open_time.time()
     @catch_exceptions
     def open(self, inode, flags, ctx=None):
         if inode in self.inodes:
@@ -587,6 +637,7 @@ class Operations(llfuse.Operations):
 
         return fh
 
+    @read_time.time()
     @catch_exceptions
     def read(self, fh, off, size):
         _logger.debug("arv-mount read fh %i off %i size %i", fh, off, size)
@@ -604,6 +655,7 @@ class Operations(llfuse.Operations):
             self.read_counter.add(len(r))
         return r
 
+    @write_time.time()
     @catch_exceptions
     def write(self, fh, off, buf):
         _logger.debug("arv-mount write %i %i %i", fh, off, len(buf))
@@ -624,6 +676,7 @@ class Operations(llfuse.Operations):
             self.write_counter.add(w)
         return w
 
+    @release_time.time()
     @catch_exceptions
     def release(self, fh):
         if fh in self._filehandles:
@@ -640,6 +693,7 @@ class Operations(llfuse.Operations):
     def releasedir(self, fh):
         self.release(fh)
 
+    @opendir_time.time()
     @catch_exceptions
     def opendir(self, inode, ctx=None):
         _logger.debug("arv-mount opendir: inode %i", inode)
@@ -664,6 +718,7 @@ class Operations(llfuse.Operations):
         self._filehandles[fh] = DirectoryHandle(fh, p, [('.', p), ('..', parent)] + list(p.items()))
         return fh
 
+    @readdir_time.time()
     @catch_exceptions
     def readdir(self, fh, off):
         _logger.debug("arv-mount readdir: fh %i off %i", fh, off)
@@ -679,6 +734,7 @@ class Operations(llfuse.Operations):
                 yield (handle.entries[e][0].encode(self.inodes.encoding), self.getattr(handle.entries[e][1].inode), e+1)
             e += 1
 
+    @statfs_time.time()
     @catch_exceptions
     def statfs(self, ctx=None):
         st = llfuse.StatvfsData()
@@ -712,6 +768,7 @@ class Operations(llfuse.Operations):
 
         return p
 
+    @create_time.time()
     @catch_exceptions
     def create(self, inode_parent, name, mode, flags, ctx=None):
         _logger.debug("arv-mount create: parent_inode %i '%s' %o", inode_parent, name, mode)
@@ -728,6 +785,7 @@ class Operations(llfuse.Operations):
         f.inc_ref()
         return (fh, self.getattr(f.inode))
 
+    @mkdir_time.time()
     @catch_exceptions
     def mkdir(self, inode_parent, name, mode, ctx=None):
         _logger.debug("arv-mount mkdir: parent_inode %i '%s' %o", inode_parent, name, mode)
@@ -741,18 +799,21 @@ class Operations(llfuse.Operations):
         d.inc_ref()
         return self.getattr(d.inode)
 
+    @unlink_time.time()
     @catch_exceptions
     def unlink(self, inode_parent, name, ctx=None):
         _logger.debug("arv-mount unlink: parent_inode %i '%s'", inode_parent, name)
         p = self._check_writable(inode_parent)
         p.unlink(name)
 
+    @rmdir_time.time()
     @catch_exceptions
     def rmdir(self, inode_parent, name, ctx=None):
         _logger.debug("arv-mount rmdir: parent_inode %i '%s'", inode_parent, name)
         p = self._check_writable(inode_parent)
         p.rmdir(name)
 
+    @rename_time.time()
     @catch_exceptions
     def rename(self, inode_parent_old, name_old, inode_parent_new, name_new, ctx=None):
         _logger.debug("arv-mount rename: old_parent_inode %i '%s' new_parent_inode %i '%s'", inode_parent_old, name_old, inode_parent_new, name_new)
@@ -760,6 +821,7 @@ class Operations(llfuse.Operations):
         dest = self._check_writable(inode_parent_new)
         dest.rename(name_old, name_new, src)
 
+    @flush_time.time()
     @catch_exceptions
     def flush(self, fh):
         if fh in self._filehandles:

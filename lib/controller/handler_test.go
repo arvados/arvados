@@ -50,7 +50,7 @@ func (s *HandlerSuite) SetUpTest(c *check.C) {
 		},
 	}
 	node := s.cluster.NodeProfiles["*"]
-	s.handler = newHandler(s.ctx, s.cluster, &node)
+	s.handler = newHandler(s.ctx, s.cluster, &node, "")
 }
 
 func (s *HandlerSuite) TearDownTest(c *check.C) {

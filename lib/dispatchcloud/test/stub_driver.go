@@ -126,6 +126,8 @@ func (sis *StubInstanceSet) Create(it arvados.InstanceType, image cloud.ImageID,
 		tags:         copyTags(tags),
 		providerType: it.ProviderType,
 		initCommand:  cmd,
+		running:      map[string]int64{},
+		killing:      map[string]bool{},
 	}
 	svm.SSHService = SSHService{
 		HostKey:        sis.driver.HostKey,
@@ -177,12 +179,14 @@ func (e RateLimitError) EarliestRetry() time.Time { return e.Retry }
 // running (and might change IP addresses, shut down, etc.)  without
 // updating any stubInstances that have been returned to callers.
 type StubVM struct {
-	Boot                 time.Time
-	Broken               time.Time
-	CrunchRunMissing     bool
-	CrunchRunCrashRate   float64
-	CrunchRunDetachDelay time.Duration
-	ExecuteContainer     func(arvados.Container) int
+	Boot                  time.Time
+	Broken                time.Time
+	ReportBroken          time.Time
+	CrunchRunMissing      bool
+	CrunchRunCrashRate    float64
+	CrunchRunDetachDelay  time.Duration
+	ExecuteContainer      func(arvados.Container) int
+	CrashRunningContainer func(arvados.Container)
 
 	sis          *StubInstanceSet
 	id           cloud.InstanceID
@@ -190,7 +194,9 @@ type StubVM struct {
 	initCommand  cloud.InitCommand
 	providerType string
 	SSHService   SSHService
-	running      map[string]bool
+	running      map[string]int64
+	killing      map[string]bool
+	lastPID      int64
 	sync.Mutex
 }
 
@@ -239,21 +245,21 @@ func (svm *StubVM) Exec(env map[string]string, command string, stdin io.Reader, 
 		}
 		for _, name := range []string{"ARVADOS_API_HOST", "ARVADOS_API_TOKEN"} {
 			if stdinKV[name] == "" {
-				fmt.Fprintf(stderr, "%s env var missing from stdin %q\n", name, stdin)
+				fmt.Fprintf(stderr, "%s env var missing from stdin %q\n", name, stdinData)
 				return 1
 			}
 		}
 		svm.Lock()
-		if svm.running == nil {
-			svm.running = map[string]bool{}
-		}
-		svm.running[uuid] = true
+		svm.lastPID++
+		pid := svm.lastPID
+		svm.running[uuid] = pid
 		svm.Unlock()
 		time.Sleep(svm.CrunchRunDetachDelay)
 		fmt.Fprintf(stderr, "starting %s\n", uuid)
 		logger := svm.sis.logger.WithFields(logrus.Fields{
 			"Instance":      svm.id,
 			"ContainerUUID": uuid,
+			"PID":           pid,
 		})
 		logger.Printf("[test] starting crunch-run stub")
 		go func() {
@@ -263,37 +269,43 @@ func (svm *StubVM) Exec(env map[string]string, command string, stdin io.Reader, 
 				logger.Print("[test] container not in queue")
 				return
 			}
+
+			defer func() {
+				if ctr.State == arvados.ContainerStateRunning && svm.CrashRunningContainer != nil {
+					svm.CrashRunningContainer(ctr)
+				}
+			}()
+
 			if crashluck > svm.CrunchRunCrashRate/2 {
 				time.Sleep(time.Duration(math_rand.Float64()*20) * time.Millisecond)
 				ctr.State = arvados.ContainerStateRunning
-				queue.Notify(ctr)
+				if !queue.Notify(ctr) {
+					ctr, _ = queue.Get(uuid)
+					logger.Print("[test] erroring out because state=Running update was rejected")
+					return
+				}
 			}
 
 			time.Sleep(time.Duration(math_rand.Float64()*20) * time.Millisecond)
+
 			svm.Lock()
-			_, running := svm.running[uuid]
-			svm.Unlock()
-			if !running {
+			defer svm.Unlock()
+			if svm.running[uuid] != pid {
 				logger.Print("[test] container was killed")
 				return
 			}
-			if svm.ExecuteContainer != nil {
-				ctr.ExitCode = svm.ExecuteContainer(ctr)
-			}
-			// TODO: Check whether the stub instance has
-			// been destroyed, and if so, don't call
-			// queue.Notify. Then "container finished
-			// twice" can be classified as a bug.
-			if crashluck < svm.CrunchRunCrashRate {
-				logger.Print("[test] crashing crunch-run stub")
-			} else {
-				ctr.State = arvados.ContainerStateComplete
-				queue.Notify(ctr)
-			}
-			logger.Print("[test] exiting crunch-run stub")
-			svm.Lock()
-			defer svm.Unlock()
 			delete(svm.running, uuid)
+
+			if crashluck < svm.CrunchRunCrashRate {
+				logger.WithField("State", ctr.State).Print("[test] crashing crunch-run stub")
+			} else {
+				if svm.ExecuteContainer != nil {
+					ctr.ExitCode = svm.ExecuteContainer(ctr)
+				}
+				logger.WithField("ExitCode", ctr.ExitCode).Print("[test] exiting crunch-run stub")
+				ctr.State = arvados.ContainerStateComplete
+				go queue.Notify(ctr)
+			}
 		}()
 		return 0
 	}
@@ -303,17 +315,41 @@ func (svm *StubVM) Exec(env map[string]string, command string, stdin io.Reader, 
 		for uuid := range svm.running {
 			fmt.Fprintf(stdout, "%s\n", uuid)
 		}
+		if !svm.ReportBroken.IsZero() && svm.ReportBroken.Before(time.Now()) {
+			fmt.Fprintln(stdout, "broken")
+		}
 		return 0
 	}
 	if strings.HasPrefix(command, "crunch-run --kill ") {
 		svm.Lock()
-		defer svm.Unlock()
-		if svm.running[uuid] {
-			delete(svm.running, uuid)
+		pid, running := svm.running[uuid]
+		if running && !svm.killing[uuid] {
+			svm.killing[uuid] = true
+			go func() {
+				time.Sleep(time.Duration(math_rand.Float64()*30) * time.Millisecond)
+				svm.Lock()
+				defer svm.Unlock()
+				if svm.running[uuid] == pid {
+					// Kill only if the running entry
+					// hasn't since been killed and
+					// replaced with a different one.
+					delete(svm.running, uuid)
+				}
+				delete(svm.killing, uuid)
+			}()
+			svm.Unlock()
+			time.Sleep(time.Duration(math_rand.Float64()*2) * time.Millisecond)
+			svm.Lock()
+			_, running = svm.running[uuid]
+		}
+		svm.Unlock()
+		if running {
+			fmt.Fprintf(stderr, "%s: container is running\n", uuid)
+			return 1
 		} else {
 			fmt.Fprintf(stderr, "%s: container is not running\n", uuid)
+			return 0
 		}
-		return 0
 	}
 	if command == "true" {
 		return 0

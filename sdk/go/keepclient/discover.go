@@ -6,6 +6,7 @@ package keepclient
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -150,7 +151,12 @@ func (kc *KeepClient) discoverServices() error {
 	}
 	svcListCacheMtx.Unlock()
 
-	return kc.loadKeepServers(<-cacheEnt.latest)
+	select {
+	case <-time.After(time.Minute):
+		return errors.New("timed out while getting initial list of keep services")
+	case sl := <-cacheEnt.latest:
+		return kc.loadKeepServers(sl)
+	}
 }
 
 func (kc *KeepClient) RefreshServiceDiscovery() {

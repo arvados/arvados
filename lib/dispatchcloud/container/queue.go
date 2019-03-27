@@ -5,6 +5,7 @@
 package container
 
 import (
+	"errors"
 	"io"
 	"sync"
 	"time"
@@ -52,7 +53,6 @@ func (c *QueueEnt) String() string {
 // cache up to date.
 type Queue struct {
 	logger     logrus.FieldLogger
-	reg        *prometheus.Registry
 	chooseType typeChooser
 	client     APIClient
 
@@ -78,14 +78,17 @@ type Queue struct {
 // Arvados cluster's queue during Update, chooseType will be called to
 // assign an appropriate arvados.InstanceType for the queue entry.
 func NewQueue(logger logrus.FieldLogger, reg *prometheus.Registry, chooseType typeChooser, client APIClient) *Queue {
-	return &Queue{
+	cq := &Queue{
 		logger:      logger,
-		reg:         reg,
 		chooseType:  chooseType,
 		client:      client,
 		current:     map[string]QueueEnt{},
 		subscribers: map[<-chan struct{}]chan struct{}{},
 	}
+	if reg != nil {
+		go cq.runMetrics(reg)
+	}
+	return cq
 }
 
 // Subscribe returns a channel that becomes ready to receive when an
@@ -398,32 +401,62 @@ func (cq *Queue) poll() (map[string]*arvados.Container, error) {
 	}
 	apply(avail)
 
-	var missing []string
+	missing := map[string]bool{}
 	cq.mtx.Lock()
 	for uuid, ent := range cq.current {
 		if next[uuid] == nil &&
 			ent.Container.State != arvados.ContainerStateCancelled &&
 			ent.Container.State != arvados.ContainerStateComplete {
-			missing = append(missing, uuid)
+			missing[uuid] = true
 		}
 	}
 	cq.mtx.Unlock()
 
-	for i, page := 0, 20; i < len(missing); i += page {
-		batch := missing[i:]
-		if len(batch) > page {
-			batch = batch[:page]
+	for len(missing) > 0 {
+		var batch []string
+		for uuid := range missing {
+			batch = append(batch, uuid)
+			if len(batch) == 20 {
+				break
+			}
 		}
+		filters := []arvados.Filter{{"uuid", "in", batch}}
 		ended, err := cq.fetchAll(arvados.ResourceListParams{
 			Select:  selectParam,
 			Order:   "uuid",
 			Count:   "none",
-			Filters: []arvados.Filter{{"uuid", "in", batch}},
+			Filters: filters,
 		})
 		if err != nil {
 			return nil, err
 		}
 		apply(ended)
+		if len(ended) == 0 {
+			// This is the only case where we can conclude
+			// a container has been deleted from the
+			// database. A short (but non-zero) page, on
+			// the other hand, can be caused by a response
+			// size limit.
+			for _, uuid := range batch {
+				cq.logger.WithField("ContainerUUID", uuid).Warn("container not found by controller (deleted?)")
+				delete(missing, uuid)
+				cq.mtx.Lock()
+				cq.delEnt(uuid, cq.current[uuid].Container.State)
+				cq.mtx.Unlock()
+			}
+			continue
+		}
+		for _, ctr := range ended {
+			if _, ok := missing[ctr.UUID]; !ok {
+				msg := "BUG? server response did not match requested filters, erroring out rather than risk deadlock"
+				cq.logger.WithFields(logrus.Fields{
+					"ContainerUUID": ctr.UUID,
+					"Filters":       filters,
+				}).Error(msg)
+				return nil, errors.New(msg)
+			}
+			delete(missing, ctr.UUID)
+		}
 	}
 	return next, nil
 }
@@ -455,4 +488,35 @@ func (cq *Queue) fetchAll(initialParams arvados.ResourceListParams) ([]arvados.C
 		}
 	}
 	return results, nil
+}
+
+func (cq *Queue) runMetrics(reg *prometheus.Registry) {
+	mEntries := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "arvados",
+		Subsystem: "dispatchcloud",
+		Name:      "queue_entries",
+		Help:      "Number of active container entries in the controller database.",
+	}, []string{"state", "instance_type"})
+	reg.MustRegister(mEntries)
+
+	type entKey struct {
+		state arvados.ContainerState
+		inst  string
+	}
+	count := map[entKey]int{}
+
+	ch := cq.Subscribe()
+	defer cq.Unsubscribe(ch)
+	for range ch {
+		for k := range count {
+			count[k] = 0
+		}
+		ents, _ := cq.Entries()
+		for _, ent := range ents {
+			count[entKey{ent.Container.State, ent.InstanceType.Name}]++
+		}
+		for k, v := range count {
+			mEntries.WithLabelValues(string(k.state), k.inst).Set(float64(v))
+		}
+	}
 }

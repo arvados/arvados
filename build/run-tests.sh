@@ -19,6 +19,10 @@ Syntax:
 Options:
 
 --skip FOO     Do not test the FOO component.
+--skip sanity  Skip initial dev environment sanity checks.
+--skip install Do not run any install steps. Just run tests.
+               You should provide GOPATH, GEMHOME, and VENVDIR options
+               from a previous invocation if you use this option.
 --only FOO     Do not test anything except the FOO component.
 --temp DIR     Install components and dependencies under DIR instead of
                making a new temporary directory. Implies --leave-temp.
@@ -27,11 +31,9 @@ Options:
                subsequent invocations.
 --repeat N     Repeat each install/test step until it succeeds N times.
 --retry        Prompt to retry if an install or test suite fails.
---skip-install Do not run any install steps. Just run tests.
-               You should provide GOPATH, GEMHOME, and VENVDIR options
-               from a previous invocation if you use this option.
 --only-install Run specific install step
 --short        Skip (or scale down) some slow tests.
+--interactive  Set up, then prompt for test/install steps to perform.
 WORKSPACE=path Arvados source tree to test.
 CONFIGSRC=path Dir with api server config files to copy into source tree.
                (If none given, leave config files alone in source tree.)
@@ -49,7 +51,7 @@ ARVADOS_DEBUG=1
 envvar=value   Set \$envvar to value. Primarily useful for WORKSPACE,
                *_test, and other examples shown above.
 
-Assuming --skip-install is not given, all components are installed
+Assuming "--skip install" is not given, all components are installed
 into \$GOPATH, \$VENDIR, and \$GEMHOME before running any tests. Many
 test suites depend on other components being installed, and installing
 everything tends to be quicker than debugging dependencies.
@@ -83,6 +85,7 @@ lib/dispatchcloud/container
 lib/dispatchcloud/scheduler
 lib/dispatchcloud/ssh_executor
 lib/dispatchcloud/worker
+lib/service
 services/api
 services/arv-git-httpd
 services/crunchstat
@@ -122,6 +125,7 @@ sdk/R
 sdk/java-v2
 tools/sync-groups
 tools/crunchstat-summary
+tools/crunchstat-summary:py3
 tools/keep-exercise
 tools/keep-rsync
 tools/keep-block-check
@@ -170,7 +174,9 @@ fatal() {
 
 exit_cleanly() {
     trap - INT
-    create-plot-data-from-log.sh $BUILD_NUMBER "$WORKSPACE/apps/workbench/log/test.log" "$WORKSPACE/apps/workbench/log/"
+    if which create-plot-data-from-log.sh >/dev/null; then
+        create-plot-data-from-log.sh $BUILD_NUMBER "$WORKSPACE/apps/workbench/log/test.log" "$WORKSPACE/apps/workbench/log/"
+    fi
     rotate_logfile "$WORKSPACE/apps/workbench/log/" "test.log"
     stop_services
     rotate_logfile "$WORKSPACE/services/api/log/" "test.log"
@@ -180,6 +186,7 @@ exit_cleanly() {
 }
 
 sanity_checks() {
+    [[ -n "${skip[sanity]}" ]] && return 0
     ( [[ -n "$WORKSPACE" ]] && [[ -d "$WORKSPACE/services" ]] ) \
         || fatal "WORKSPACE environment variable not set to a source directory (see: $0 --help)"
     echo Checking dependencies:
@@ -304,8 +311,11 @@ do
         --short)
             short=1
             ;;
+        --interactive)
+            interactive=1
+            ;;
         --skip-install)
-            only_install=nothing
+            skip[install]=1
             ;;
         --only-install)
             only_install="$1"; shift
@@ -356,6 +366,10 @@ if [[ $NEED_SDK_R == false ]]; then
 fi
 
 start_services() {
+    if [[ -n "$ARVADOS_TEST_API_HOST" ]]; then
+        return 0
+    fi
+    . "$VENVDIR/bin/activate"
     echo 'Starting API, keepproxy, keep-web, ws, arv-git-httpd, and nginx ssl proxy...'
     if [[ ! -d "$WORKSPACE/services/api/log" ]]; then
 	mkdir -p "$WORKSPACE/services/api/log"
@@ -364,8 +378,10 @@ start_services() {
     if [[ -f "$WORKSPACE/tmp/api.pid" && ! -s "$WORKSPACE/tmp/api.pid" ]]; then
 	rm -f "$WORKSPACE/tmp/api.pid"
     fi
+    all_services_stopped=
+    fail=0
     cd "$WORKSPACE" \
-        && eval $(python sdk/python/tests/run_test_server.py start --auth admin || echo fail=1) \
+        && eval $(python sdk/python/tests/run_test_server.py start --auth admin || echo "fail=1; false") \
         && export ARVADOS_TEST_API_HOST="$ARVADOS_API_HOST" \
         && export ARVADOS_TEST_API_INSTALLED="$$" \
         && python sdk/python/tests/run_test_server.py start_controller \
@@ -373,18 +389,22 @@ start_services() {
         && python sdk/python/tests/run_test_server.py start_keep-web \
         && python sdk/python/tests/run_test_server.py start_arv-git-httpd \
         && python sdk/python/tests/run_test_server.py start_ws \
-        && eval $(python sdk/python/tests/run_test_server.py start_nginx || echo fail=1) \
-        && (env | egrep ^ARVADOS)
-    if [[ -n "$fail" ]]; then
-       return 1
+        && eval $(python sdk/python/tests/run_test_server.py start_nginx || echo "fail=1; false") \
+        && (env | egrep ^ARVADOS) \
+        || fail=1
+    deactivate
+    if [[ $fail != 0 ]]; then
+        unset ARVADOS_TEST_API_HOST
     fi
+    return $fail
 }
 
 stop_services() {
-    if [[ -z "$ARVADOS_TEST_API_HOST" ]]; then
+    if [[ -n "$all_services_stopped" ]]; then
         return
     fi
     unset ARVADOS_TEST_API_HOST
+    . "$VENVDIR/bin/activate" || return
     cd "$WORKSPACE" \
         && python sdk/python/tests/run_test_server.py stop_nginx \
         && python sdk/python/tests/run_test_server.py stop_arv-git-httpd \
@@ -392,7 +412,9 @@ stop_services() {
         && python sdk/python/tests/run_test_server.py stop_keep-web \
         && python sdk/python/tests/run_test_server.py stop_keep_proxy \
         && python sdk/python/tests/run_test_server.py stop_controller \
-        && python sdk/python/tests/run_test_server.py stop
+        && python sdk/python/tests/run_test_server.py stop \
+        && all_services_stopped=1
+    deactivate
 }
 
 interrupt() {
@@ -400,36 +422,6 @@ interrupt() {
     exit_cleanly
 }
 trap interrupt INT
-
-sanity_checks
-
-echo "WORKSPACE=$WORKSPACE"
-
-if [[ -z "$CONFIGSRC" ]] && [[ -d "$HOME/arvados-api-server" ]]; then
-    # Jenkins expects us to use this by default.
-    CONFIGSRC="$HOME/arvados-api-server"
-fi
-
-# Clean up .pyc files that may exist in the workspace
-cd "$WORKSPACE"
-find -name '*.pyc' -delete
-
-if [[ -z "$temp" ]]; then
-    temp="$(mktemp -d)"
-fi
-
-# Set up temporary install dirs (unless existing dirs were supplied)
-for tmpdir in VENVDIR VENV3DIR GOPATH GEMHOME PERLINSTALLBASE R_LIBS
-do
-    if [[ -z "${!tmpdir}" ]]; then
-        eval "$tmpdir"="$temp/$tmpdir"
-    fi
-    if ! [[ -d "${!tmpdir}" ]]; then
-        mkdir "${!tmpdir}" || fatal "can't create ${!tmpdir} (does $temp exist?)"
-    fi
-done
-
-rm -vf "${WORKSPACE}/tmp/*.log"
 
 setup_ruby_environment() {
     if [[ -s "$HOME/.rvm/scripts/rvm" ]] ; then
@@ -529,114 +521,136 @@ setup_virtualenv() {
     "$venvdest/bin/pip" install --no-cache-dir 'mock>=1.0' 'pbr<1.7.0'
 }
 
-export PERLINSTALLBASE
-export PERL5LIB="$PERLINSTALLBASE/lib/perl5${PERL5LIB:+:$PERL5LIB}"
+initialize() {
+    sanity_checks
 
-export R_LIBS
+    echo "WORKSPACE=$WORKSPACE"
 
-export GOPATH
-(
-    set -e
-    mkdir -p "$GOPATH/src/git.curoverse.com"
-    if [[ ! -h "$GOPATH/src/git.curoverse.com/arvados.git" ]]; then
-        for d in \
-            "$GOPATH/src/git.curoverse.com/arvados.git/tmp/GOPATH" \
-                "$GOPATH/src/git.curoverse.com/arvados.git/tmp" \
-                "$GOPATH/src/git.curoverse.com/arvados.git"; do
-            [[ -d "$d" ]] && rmdir "$d"
-        done
+    if [[ -z "$CONFIGSRC" ]] && [[ -d "$HOME/arvados-api-server" ]]; then
+        # Jenkins expects us to use this by default.
+        CONFIGSRC="$HOME/arvados-api-server"
     fi
-    for d in \
-        "$GOPATH/src/git.curoverse.com/arvados.git/arvados" \
-        "$GOPATH/src/git.curoverse.com/arvados.git"; do
-        [[ -h "$d" ]] && rm "$d"
+
+    # Clean up .pyc files that may exist in the workspace
+    cd "$WORKSPACE"
+    find -name '*.pyc' -delete
+
+    if [[ -z "$temp" ]]; then
+        temp="$(mktemp -d)"
+    fi
+
+    # Set up temporary install dirs (unless existing dirs were supplied)
+    for tmpdir in VENVDIR VENV3DIR GOPATH GEMHOME PERLINSTALLBASE R_LIBS
+    do
+        if [[ -z "${!tmpdir}" ]]; then
+            eval "$tmpdir"="$temp/$tmpdir"
+        fi
+        if ! [[ -d "${!tmpdir}" ]]; then
+            mkdir "${!tmpdir}" || fatal "can't create ${!tmpdir} (does $temp exist?)"
+        fi
     done
-    ln -vsfT "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
-    go get -v github.com/kardianos/govendor
-    cd "$GOPATH/src/git.curoverse.com/arvados.git"
-    if [[ -n "$short" ]]; then
-        go get -v -d ...
-        "$GOPATH/bin/govendor" sync
-    else
-        # Remove cached source dirs in workdir. Otherwise, they will
-        # not qualify as +missing or +external below, and we won't be
-        # able to detect that they're missing from vendor/vendor.json.
-        rm -rf vendor/*/
-        go get -v -d ...
-        "$GOPATH/bin/govendor" sync
-        [[ -z $("$GOPATH/bin/govendor" list +unused +missing +external | tee /dev/stderr) ]] \
-            || fatal "vendor/vendor.json has unused or missing dependencies -- try:
+
+    rm -vf "${WORKSPACE}/tmp/*.log"
+
+    export PERLINSTALLBASE
+    export PERL5LIB="$PERLINSTALLBASE/lib/perl5${PERL5LIB:+:$PERL5LIB}"
+
+    export R_LIBS
+
+    export GOPATH
+
+    # Jenkins config requires that glob tmp/*.log match something. Ensure
+    # that happens even if we don't end up running services that set up
+    # logging.
+    mkdir -p "${WORKSPACE}/tmp/" || fatal "could not mkdir ${WORKSPACE}/tmp"
+    touch "${WORKSPACE}/tmp/controller.log" || fatal "could not touch ${WORKSPACE}/tmp/controller.log"
+
+    unset http_proxy https_proxy no_proxy
+
+
+    # Note: this must be the last time we change PATH, otherwise rvm will
+    # whine a lot.
+    setup_ruby_environment
+
+    echo "PATH is $PATH"
+}
+
+install_env() {
+    (
+        set -e
+        mkdir -p "$GOPATH/src/git.curoverse.com"
+        if [[ ! -h "$GOPATH/src/git.curoverse.com/arvados.git" ]]; then
+            for d in \
+                "$GOPATH/src/git.curoverse.com/arvados.git/tmp/GOPATH" \
+                    "$GOPATH/src/git.curoverse.com/arvados.git/tmp" \
+                    "$GOPATH/src/git.curoverse.com/arvados.git"; do
+                [[ -d "$d" ]] && rmdir "$d"
+            done
+        fi
+        for d in \
+            "$GOPATH/src/git.curoverse.com/arvados.git/arvados" \
+                "$GOPATH/src/git.curoverse.com/arvados.git"; do
+            [[ -h "$d" ]] && rm "$d"
+        done
+        ln -vsfT "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
+        go get -v github.com/kardianos/govendor
+        cd "$GOPATH/src/git.curoverse.com/arvados.git"
+        if [[ -n "$short" ]]; then
+            go get -v -d ...
+            "$GOPATH/bin/govendor" sync
+        else
+            # Remove cached source dirs in workdir. Otherwise, they will
+            # not qualify as +missing or +external below, and we won't be
+            # able to detect that they're missing from vendor/vendor.json.
+            rm -rf vendor/*/
+            go get -v -d ...
+            "$GOPATH/bin/govendor" sync
+            [[ -z $("$GOPATH/bin/govendor" list +unused +missing +external | tee /dev/stderr) ]] \
+                || fatal "vendor/vendor.json has unused or missing dependencies -- try:
 
 (export GOPATH=\"${GOPATH}\"; cd \$GOPATH/src/git.curoverse.com/arvados.git && \$GOPATH/bin/govendor add +missing +external && \$GOPATH/bin/govendor remove +unused)
 
 ";
+        fi
+    ) || fatal "Go setup failed"
+
+    setup_virtualenv "$VENVDIR" --python python2.7
+    . "$VENVDIR/bin/activate"
+
+    # Needed for run_test_server.py which is used by certain (non-Python) tests.
+    pip install --no-cache-dir PyYAML \
+        || fatal "pip install PyYAML failed"
+
+    # Preinstall libcloud if using a fork; otherwise nodemanager "pip
+    # install" won't pick it up by default.
+    if [[ -n "$LIBCLOUD_PIN_SRC" ]]; then
+        pip freeze 2>/dev/null | egrep ^apache-libcloud==$LIBCLOUD_PIN \
+            || pip install --pre --ignore-installed --no-cache-dir "$LIBCLOUD_PIN_SRC" >/dev/null \
+            || fatal "pip install apache-libcloud failed"
     fi
-) || fatal "Go setup failed"
 
-setup_virtualenv "$VENVDIR" --python python2.7
-. "$VENVDIR/bin/activate"
+    # Deactivate Python 2 virtualenv
+    deactivate
 
-# Needed for run_test_server.py which is used by certain (non-Python) tests.
-pip install --no-cache-dir PyYAML \
-    || fatal "pip install PyYAML failed"
-
-# Preinstall libcloud if using a fork; otherwise nodemanager "pip
-# install" won't pick it up by default.
-if [[ -n "$LIBCLOUD_PIN_SRC" ]]; then
-    pip freeze 2>/dev/null | egrep ^apache-libcloud==$LIBCLOUD_PIN \
-        || pip install --pre --ignore-installed --no-cache-dir "$LIBCLOUD_PIN_SRC" >/dev/null \
-        || fatal "pip install apache-libcloud failed"
-fi
-
-# Deactivate Python 2 virtualenv
-deactivate
-
-declare -a pythonstuff
-pythonstuff=(
-    sdk/pam
-    sdk/python
-    sdk/python:py3
-    sdk/cwl
-    sdk/cwl:py3
-    services/dockercleaner:py3
-    services/fuse
-    services/nodemanager
-    tools/crunchstat-summary
-    )
-
-# If Python 3 is available, set up its virtualenv in $VENV3DIR.
-# Otherwise, skip dependent tests.
-PYTHON3=$(which python3)
-if [[ ${?} = 0 ]]; then
-    setup_virtualenv "$VENV3DIR" --python python3
-else
-    PYTHON3=
-    cat >&2 <<EOF
+    # If Python 3 is available, set up its virtualenv in $VENV3DIR.
+    # Otherwise, skip dependent tests.
+    PYTHON3=$(which python3)
+    if [[ ${?} = 0 ]]; then
+        setup_virtualenv "$VENV3DIR" --python python3
+    else
+        PYTHON3=
+        cat >&2 <<EOF
 
 Warning: python3 could not be found. Python 3 tests will be skipped.
 
 EOF
-fi
+    fi
 
-# Reactivate Python 2 virtualenv
-. "$VENVDIR/bin/activate"
-
-# Note: this must be the last time we change PATH, otherwise rvm will
-# whine a lot.
-setup_ruby_environment
-
-echo "PATH is $PATH"
-
-if ! which bundler >/dev/null
-then
-    gem install --user-install bundler || fatal 'Could not install bundler'
-fi
-
-# Jenkins config requires that glob tmp/*.log match something. Ensure
-# that happens even if we don't end up running services that set up
-# logging.
-mkdir -p "${WORKSPACE}/tmp/" || fatal "could not mkdir ${WORKSPACE}/tmp"
-touch "${WORKSPACE}/tmp/controller.log" || fatal "could not touch ${WORKSPACE}/tmp/controller.log"
+    if ! which bundler >/dev/null
+    then
+        gem install --user-install bundler || fatal 'Could not install bundler'
+    fi
+}
 
 retry() {
     remain="${repeat}"
@@ -645,7 +659,7 @@ retry() {
         if ${@}; then
             if [[ "$remain" -gt 1 ]]; then
                 remain=$((${remain}-1))
-                title "Repeating ${remain} more times"
+                title "(repeating ${remain} more times)"
             else
                 break
             fi
@@ -673,22 +687,39 @@ do_test() {
             suite="${1}"
             ;;
     esac
-    if [[ -z "${skip[$suite]}" && -z "${skip[$1]}" && \
-              (${#only[@]} -eq 0 || ${only[$suite]} -eq 1 || \
-                   ${only[$1]} -eq 1) ||
-                  ${only[$2]} -eq 1 ]]; then
-        retry do_test_once ${@}
-    else
-        title "Skipping ${1} tests"
+    if [[ -n "${skip[$suite]}" || \
+              -n "${skip[$1]}" || \
+              (${#only[@]} -ne 0 && ${only[$suite]} -eq 0 && ${only[$1]} -eq 0) ]]; then
+        return 0
     fi
+    case "${1}" in
+        services/api)
+            stop_services
+            ;;
+        doc | lib/cli | lib/cloud/azure | lib/cloud/ec2 | lib/cmd | lib/dispatchcloud/ssh_executor | lib/dispatchcloud/worker)
+            # don't care whether services are running
+            ;;
+        *)
+            if ! start_services; then
+                title "test $1 -- failed to start services"
+                return 1
+            fi
+            ;;
+    esac
+    retry do_test_once ${@}
 }
 
 do_test_once() {
     unset result
 
-    title "Running $1 tests"
+    title "test $1"
     timer_reset
-    if [[ "$2" == "go" ]]
+
+    if which deactivate >/dev/null; then deactivate; fi
+    if ! . "$VENVDIR/bin/activate"
+    then
+        result=1
+    elif [[ "$2" == "go" ]]
     then
         covername="coverage-$(echo "$1" | sed -e 's/\//_/g')"
         coverflags=("-covermode=count" "-coverprofile=$WORKSPACE/tmp/.$covername.tmp")
@@ -741,28 +772,25 @@ do_test_once() {
     fi
     result=${result:-$?}
     checkexit $result "$1 tests"
-    title "End of $1 tests (`timer`)"
+    title "test $1 -- `timer`"
     return $result
 }
 
 do_install() {
-  skipit=false
-
-  if [[ -z "${only_install}" || "${only_install}" == "${1}" || "${only_install}" == "${2}" ]]; then
-      retry do_install_once ${@}
-  else
-      skipit=true
-  fi
-
-  if [[ "$skipit" = true ]]; then
-    title "Skipping $1 install"
-  fi
+    if [[ -n "${skip[install]}" || ( -n "${only_install}" && "${only_install}" != "${1}" && "${only_install}" != "${2}" ) ]]; then
+        return 0
+    fi
+    retry do_install_once ${@}
 }
 
 do_install_once() {
-    title "Running $1 install"
+    title "install $1"
     timer_reset
-    if [[ "$2" == "go" ]]
+
+    if which deactivate >/dev/null; then deactivate; fi
+    if [[ "$1" != "env" ]] && ! . "$VENVDIR/bin/activate"; then
+        result=1
+    elif [[ "$2" == "go" ]]
     then
         go get -ldflags "-X main.version=${ARVADOS_VERSION:-$(git log -n1 --format=%H)-dev}" -t "git.curoverse.com/arvados.git/$1"
     elif [[ "$2" == "pip" ]]
@@ -790,9 +818,9 @@ do_install_once() {
     else
         "install_$1"
     fi
-    result=$?
+    result=${result:-$?}
     checkexit $result "$1 install"
-    title "End of $1 install (`timer`)"
+    title "install $1 -- `timer`"
     return $result
 }
 
@@ -813,7 +841,6 @@ install_doc() {
         && bundle_install_trylocal \
         && rm -rf .site
 }
-do_install doc
 
 install_gem() {
     gemname=$1
@@ -825,56 +852,32 @@ install_gem() {
         && with_test_gemset gem install --no-ri --no-rdoc $(ls -t "$gemname"-*.gem|head -n1)
 }
 
-install_ruby_sdk() {
+install_sdk/ruby() {
     install_gem arvados sdk/ruby
 }
-do_install sdk/ruby ruby_sdk
 
-install_R_sdk() {
+install_sdk/R() {
   if [[ "$NEED_SDK_R" = true ]]; then
     cd "$WORKSPACE/sdk/R" \
        && Rscript --vanilla install_deps.R
   fi
 }
-do_install sdk/R R_sdk
 
-install_perl_sdk() {
+install_sdk/perl() {
     cd "$WORKSPACE/sdk/perl" \
         && perl Makefile.PL INSTALL_BASE="$PERLINSTALLBASE" \
         && make install INSTALLDIRS=perl
 }
-do_install sdk/perl perl_sdk
 
-install_cli() {
+install_sdk/cli() {
     install_gem arvados-cli sdk/cli
 }
-do_install sdk/cli cli
 
-install_login-sync() {
+install_services/login-sync() {
     install_gem arvados-login-sync services/login-sync
 }
-do_install services/login-sync login-sync
 
-# Install the Python SDK early. Various other test suites (like
-# keepproxy) bring up run_test_server.py, which imports the arvados
-# module. We can't actually *test* the Python SDK yet though, because
-# its own test suite brings up some of those other programs (like
-# keepproxy).
-for p in "${pythonstuff[@]}"
-do
-    dir=${p%:py3}
-    if [[ ${dir} = ${p} ]]; then
-        if [[ -z ${skip[python2]} ]]; then
-            do_install ${dir} pip
-        fi
-    elif [[ -n ${PYTHON3} ]]; then
-        if [[ -z ${skip[python3]} ]]; then
-            do_install ${dir} pip "$VENV3DIR/bin/"
-        fi
-    fi
-done
-
-install_apiserver() {
+install_services/api() {
     cd "$WORKSPACE/services/api" \
         && RAILS_ENV=test bundle_install_trylocal
 
@@ -922,7 +925,19 @@ install_apiserver() {
         && RAILS_ENV=test bundle exec rake db:setup \
         && RAILS_ENV=test bundle exec rake db:fixtures:load
 }
-do_install services/api apiserver
+
+declare -a pythonstuff
+pythonstuff=(
+    sdk/pam
+    sdk/python
+    sdk/python:py3
+    sdk/cwl
+    sdk/cwl:py3
+    services/dockercleaner:py3
+    services/fuse
+    services/nodemanager
+    tools/crunchstat-summary
+)
 
 declare -a gostuff
 gostuff=(
@@ -940,6 +955,7 @@ gostuff=(
     lib/dispatchcloud/scheduler
     lib/dispatchcloud/ssh_executor
     lib/dispatchcloud/worker
+    lib/service
     sdk/go/arvados
     sdk/go/arvadosclient
     sdk/go/auth
@@ -968,22 +984,15 @@ gostuff=(
     tools/keep-rsync
     tools/sync-groups
 )
-for g in "${gostuff[@]}"
-do
-    do_install "$g" go
-done
 
-install_workbench() {
+install_apps/workbench() {
     cd "$WORKSPACE/apps/workbench" \
         && mkdir -p tmp/cache \
         && RAILS_ENV=test bundle_install_trylocal \
         && RAILS_ENV=test RAILS_GROUPS=assets bundle exec rake npm:install
 }
-do_install apps/workbench workbench
 
-unset http_proxy https_proxy no_proxy
-
-test_doclinkchecker() {
+test_doc() {
     (
         set -e
         cd "$WORKSPACE/doc"
@@ -993,113 +1002,244 @@ test_doclinkchecker() {
         PYTHONPATH=$WORKSPACE/sdk/python/ bundle exec rake linkchecker baseurl=file://$WORKSPACE/doc/.site/ arvados_workbench_host=https://workbench.$ARVADOS_API_HOST arvados_api_host=$ARVADOS_API_HOST
     )
 }
-do_test doc doclinkchecker
 
-stop_services
-
-test_apiserver() {
+test_services/api() {
     rm -f "$WORKSPACE/services/api/git-commit.version"
     cd "$WORKSPACE/services/api" \
         && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test TESTOPTS=-v ${testargs[services/api]}
 }
-do_test services/api apiserver
 
-# Shortcut for when we're only running apiserver tests. This saves a bit of time,
-# because we don't need to start up the api server for subsequent tests.
-if [ ! -z "$only" ] && [ "$only" == "services/api" ]; then
-  rotate_logfile "$WORKSPACE/services/api/log/" "test.log"
-  exit_cleanly
-fi
-
-start_services || { stop_services; fatal "start_services"; }
-
-test_ruby_sdk() {
+test_sdk/ruby() {
     cd "$WORKSPACE/sdk/ruby" \
         && bundle exec rake test TESTOPTS=-v ${testargs[sdk/ruby]}
 }
-do_test sdk/ruby ruby_sdk
 
-test_R_sdk() {
+test_sdk/R() {
   if [[ "$NEED_SDK_R" = true ]]; then
     cd "$WORKSPACE/sdk/R" \
         && Rscript --vanilla run_test.R
   fi
 }
 
-do_test sdk/R R_sdk
-
-test_cli() {
+test_sdk/cli() {
     cd "$WORKSPACE/sdk/cli" \
         && mkdir -p /tmp/keep \
         && KEEP_LOCAL_STORE=/tmp/keep bundle exec rake test TESTOPTS=-v ${testargs[sdk/cli]}
 }
-do_test sdk/cli cli
 
-test_java_v2_sdk() {
+test_sdk/java-v2() {
     cd "$WORKSPACE/sdk/java-v2" && ./gradlew test
 }
-do_test sdk/java-v2 java_v2_sdk
 
-test_login-sync() {
+test_services/login-sync() {
     cd "$WORKSPACE/services/login-sync" \
         && bundle exec rake test TESTOPTS=-v ${testargs[services/login-sync]}
 }
-do_test services/login-sync login-sync
 
-test_nodemanager_integration() {
+test_services/nodemanager_integration() {
     cd "$WORKSPACE/services/nodemanager" \
         && tests/integration_test.py ${testargs[services/nodemanager_integration]}
 }
-do_test services/nodemanager_integration nodemanager_integration
 
-for p in "${pythonstuff[@]}"
-do
-    dir=${p%:py3}
-    if [[ ${dir} = ${p} ]]; then
-        if [[ -z ${skip[python2]} ]]; then
-            do_test ${dir} pip
-        fi
-    elif [[ -n ${PYTHON3} ]]; then
-        if [[ -z ${skip[python3]} ]]; then
-            do_test ${dir} pip "$VENV3DIR/bin/"
-        fi
-    fi
-done
-
-for g in "${gostuff[@]}"
-do
-    do_test "$g" go
-done
-
-test_workbench_units() {
+test_apps/workbench_units() {
     cd "$WORKSPACE/apps/workbench" \
         && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:units TESTOPTS=-v ${testargs[apps/workbench]}
 }
-do_test apps/workbench_units workbench_units
 
-test_workbench_functionals() {
+test_apps/workbench_functionals() {
     cd "$WORKSPACE/apps/workbench" \
         && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:functionals TESTOPTS=-v ${testargs[apps/workbench]}
 }
-do_test apps/workbench_functionals workbench_functionals
 
-test_workbench_integration() {
+test_apps/workbench_integration() {
     cd "$WORKSPACE/apps/workbench" \
         && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:integration TESTOPTS=-v ${testargs[apps/workbench]}
 }
-do_test apps/workbench_integration workbench_integration
 
-
-test_workbench_benchmark() {
+test_apps/workbench_benchmark() {
     cd "$WORKSPACE/apps/workbench" \
         && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:benchmark ${testargs[apps/workbench_benchmark]}
 }
-do_test apps/workbench_benchmark workbench_benchmark
 
-test_workbench_profile() {
+test_apps/workbench_profile() {
     cd "$WORKSPACE/apps/workbench" \
         && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:profile ${testargs[apps/workbench_profile]}
 }
-do_test apps/workbench_profile workbench_profile
 
+install_deps() {
+    # Install parts needed by test suites
+    do_install env
+    do_install cmd/arvados-server go
+    do_install sdk/cli
+    do_install sdk/perl
+    do_install sdk/python pip
+    do_install sdk/ruby
+    do_install services/api
+    do_install services/arv-git-httpd go
+    do_install services/keepproxy go
+    do_install services/keepstore go
+    do_install services/keep-web go
+    do_install services/ws go
+}
+
+install_all() {
+    do_install env
+    do_install doc
+    do_install sdk/ruby
+    do_install sdk/R
+    do_install sdk/perl
+    do_install sdk/cli
+    do_install services/login-sync
+    for p in "${pythonstuff[@]}"
+    do
+        dir=${p%:py3}
+        if [[ ${dir} = ${p} ]]; then
+            if [[ -z ${skip[python2]} ]]; then
+                do_install ${dir} pip
+            fi
+        elif [[ -n ${PYTHON3} ]]; then
+            if [[ -z ${skip[python3]} ]]; then
+                do_install ${dir} pip "$VENV3DIR/bin/"
+            fi
+        fi
+    done
+    do_install services/api
+    for g in "${gostuff[@]}"
+    do
+        do_install "$g" go
+    done
+    do_install apps/workbench
+}
+
+test_all() {
+    stop_services
+    do_test services/api
+
+    # Shortcut for when we're only running apiserver tests. This saves a bit of time,
+    # because we don't need to start up the api server for subsequent tests.
+    if [ ! -z "$only" ] && [ "$only" == "services/api" ]; then
+        rotate_logfile "$WORKSPACE/services/api/log/" "test.log"
+        exit_cleanly
+    fi
+
+    do_test doc
+    do_test sdk/ruby
+    do_test sdk/R
+    do_test sdk/cli
+    do_test services/login-sync
+    do_test sdk/java-v2
+    do_test services/nodemanager_integration
+    for p in "${pythonstuff[@]}"
+    do
+        dir=${p%:py3}
+        if [[ ${dir} = ${p} ]]; then
+            if [[ -z ${skip[python2]} ]]; then
+                do_test ${dir} pip
+            fi
+        elif [[ -n ${PYTHON3} ]]; then
+            if [[ -z ${skip[python3]} ]]; then
+                do_test ${dir} pip "$VENV3DIR/bin/"
+            fi
+        fi
+    done
+
+    for g in "${gostuff[@]}"
+    do
+        do_test "$g" go
+    done
+    do_test apps/workbench_units
+    do_test apps/workbench_functionals
+    do_test apps/workbench_integration
+    do_test apps/workbench_benchmark
+    do_test apps/workbench_profile
+}
+
+help_interactive() {
+    echo "== Interactive commands:"
+    echo "TARGET                 (short for 'test DIR')"
+    echo "test TARGET"
+    echo "test TARGET:py3        (test with python3)"
+    echo "test TARGET -check.vv  (pass arguments to test)"
+    echo "install TARGET"
+    echo "install env            (go/python libs)"
+    echo "install deps           (go/python libs + arvados components needed for integration tests)"
+    echo "reset                  (...services used by integration tests)"
+    echo "exit"
+    echo "== Test targets:"
+    echo "${!testfuncargs[@]}" | tr ' ' '\n' | sort | column
+}
+
+initialize
+
+declare -A testfuncargs=()
+for g in "${gostuff[@]}"; do
+    testfuncargs[$g]="$g go"
+done
+for p in "${pythonstuff[@]}"; do
+    dir=${p%:py3}
+    if [[ ${dir} = ${p} ]]; then
+        testfuncargs[$p]="$dir pip $VENVDIR/bin/"
+    else
+        testfuncargs[$p]="$dir pip $VENV3DIR/bin/"
+    fi
+done
+
+if [[ -z ${interactive} ]]; then
+    install_all
+    test_all
+else
+    skip=()
+    only=()
+    only_install=()
+    if [[ -e "$VENVDIR/bin/activate" ]]; then stop_services; fi
+    setnextcmd() {
+        if [[ "$nextcmd" != "install deps" ]]; then
+            :
+        elif [[ -e "$VENVDIR/bin/activate" ]]; then
+            nextcmd="test lib/cmd"
+        else
+            nextcmd="install deps"
+        fi
+    }
+    echo
+    help_interactive
+    nextcmd="install deps"
+    setnextcmd
+    while read -p 'What next? ' -e -i "${nextcmd}" nextcmd; do
+        read verb target opts <<<"${nextcmd}"
+        case "${verb}" in
+            "" | "help")
+                help_interactive
+                ;;
+            "exit" | "quit")
+                exit_cleanly
+                ;;
+            "reset")
+                stop_services
+                ;;
+            *)
+                target="${target%/}"
+                testargs["$target"]="${opts}"
+                case "$target" in
+                    all | deps)
+                        ${verb}_${target}
+                        ;;
+                    *)
+                        tt="${testfuncargs[${target}]}"
+                        tt="${tt:-$target}"
+                        do_$verb $tt
+                        ;;
+                esac
+                ;;
+        esac
+        if [[ ${#successes[@]} -gt 0 || ${#failures[@]} -gt 0 ]]; then
+            report_outcomes
+            successes=()
+            failures=()
+        fi
+        cd "$WORKSPACE"
+        setnextcmd
+    done
+    echo
+fi
 exit_cleanly

@@ -43,7 +43,8 @@ setup(name='arvados_fuse',
         'llfuse >=1.2, <1.3.4',
         'python-daemon',
         'ciso8601 >= 2.0.0',
-        'setuptools'
+        'setuptools',
+        "prometheus_client"
         ],
       extras_require={
           ':python_version<"3"': ['pytz'],

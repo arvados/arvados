@@ -4,64 +4,77 @@
 
 import sys
 import time
+from collections import namedtuple
 
-class Stat(object):
-    def __init__(self, prefix, interval,
-                 egr_name, ing_name,
-                 egr_func, ing_func):
+Stat = namedtuple("Stat", ['name', 'get'])
+
+class StatWriter(object):    
+    def __init__(self, prefix, interval, stats):
         self.prefix = prefix
         self.interval = interval
-        self.egr_name = egr_name
-        self.ing_name = ing_name
-        self.egress = egr_func
-        self.ingress = ing_func
-        self.egr_prev = self.egress()
-        self.ing_prev = self.ingress()
+        self.stats = stats
+        self.previous_stats = []
+        self.update_previous_stats()
+
+    def update_previous_stats(self):
+        self.previous_stats = [stat.get() for stat in self.stats]
 
     def update(self):
-        egr = self.egress()
-        ing = self.ingress()
+        def append_by_type(string, name, value):
+            if type(value) is float:
+                string += " %.6f %s" % (value, name)
+            else:
+                string += " %s %s" % (str(value), name)
+            return string
 
-        delta = " -- interval %.4f seconds %d %s %d %s" % (self.interval,
-                                                           egr - self.egr_prev,
-                                                           self.egr_name,
-                                                           ing - self.ing_prev,
-                                                           self.ing_name)
+        out = "crunchstat: %s" % self.prefix
+        delta = "-- interval %.4f seconds" % self.interval
+        for i, stat in enumerate(self.stats):
+            value = stat.get()
+            diff = value - self.previous_stats[i]
+            delta = append_by_type(delta, stat.name, diff)
+            out = append_by_type(out, stat.name, value)
 
-        sys.stderr.write("crunchstat: %s %d %s %d %s%s\n" % (self.prefix,
-                                                             egr,
-                                                             self.egr_name,
-                                                             ing,
-                                                             self.ing_name,
-                                                             delta))
-
-        self.egr_prev = egr
-        self.ing_prev = ing
-
+        sys.stderr.write("%s %s\n" % (out, delta))
+        self.update_previous_stats()
 
 def statlogger(interval, keep, ops):
-    calls = Stat("keepcalls", interval, "put", "get",
-                 keep.put_counter.get,
-                 keep.get_counter.get)
-    net = Stat("net:keep0", interval, "tx", "rx",
-               keep.upload_counter.get,
-               keep.download_counter.get)
-    cache = Stat("keepcache", interval, "hit", "miss",
-               keep.hits_counter.get,
-               keep.misses_counter.get)
-    fuseops = Stat("fuseops", interval,"write", "read",
-                   ops.write_ops_counter.get,
-                   ops.read_ops_counter.get)
-    blk = Stat("blkio:0:0", interval, "write", "read",
-               ops.write_counter.get,
-               ops.read_counter.get)
+    calls = StatWriter("keepcalls", interval, [
+        Stat("put", keep.put_counter.get), 
+        Stat("get", keep.get_counter.get)
+    ])
+    net = StatWriter("net:keep0", interval, [
+        Stat("tx", keep.upload_counter.get),
+        Stat("rx", keep.download_counter.get)
+    ])
+    cache = StatWriter("keepcache", interval, [
+        Stat("hit", keep.hits_counter.get), 
+        Stat("miss", keep.misses_counter.get)
+    ])
+    fuseops = StatWriter("fuseops", interval, [
+        Stat("write", ops.write_ops_counter.get), 
+        Stat("read", ops.read_ops_counter.get)
+    ])
+    fusetimes = []
+    for cur_op in ops.metric_op_names():   
+        name = "fuseop:{0}".format(cur_op)
+        fusetimes.append(StatWriter(name, interval, [
+            Stat("count", ops.metric_count_func(cur_op)),
+            Stat("time", ops.metric_sum_func(cur_op))
+        ]))
+    blk = StatWriter("blkio:0:0", interval, [
+        Stat("write", ops.write_counter.get),
+        Stat("read", ops.read_counter.get)
+    ])
 
     while True:
         time.sleep(interval)
         calls.update()
         net.update()
         cache.update()
-        fuseops.update()
         blk.update()
+        fuseops.update()
+        for ftime in fusetimes:
+            ftime.update()
 
 

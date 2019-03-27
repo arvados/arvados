@@ -2049,7 +2049,7 @@ func (s *TestSuite) TestFullBrokenDocker2(c *C) {
 
 	c.Check(api.CalledWith("container.state", "Queued"), NotNil)
 	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*unable to run containers.*")
-	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*No broken node hook.*")
+	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*Writing /var/lock/crunch-run-broken to mark node as broken.*")
 }
 
 func (s *TestSuite) TestFullBrokenDocker3(c *C) {

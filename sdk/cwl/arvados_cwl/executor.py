@@ -87,7 +87,7 @@ class RuntimeStatusLoggingHandler(logging.Handler):
                     )
             finally:
                 self.updatingRuntimeStatus = False
-            
+
 
 class ArvCwlExecutor(object):
     """Execute a CWL tool or workflow, submit work (using either jobs or
@@ -475,7 +475,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
 
         with final.open("cwl.output.json", "w") as f:
             res = str(json.dumps(outputObj, sort_keys=True, indent=4, separators=(',',': '), ensure_ascii=False))
-            f.write(res)           
+            f.write(res)
 
         final.save_new(name=name, owner_uuid=self.project_uuid, storage_classes=storage_classes, ensure_unique_name=True)
 
