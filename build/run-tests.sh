@@ -1184,7 +1184,11 @@ else
     only_install=()
     if [[ -e "$VENVDIR/bin/activate" ]]; then stop_services; fi
     setnextcmd() {
-        if [[ "$nextcmd" != "install deps" ]]; then
+        if [[ "$TERM" = dumb ]]; then
+            # assume emacs, or something, is offering a history buffer
+            # and pre-populating the command will only cause trouble
+            nextcmd=
+        elif [[ "$nextcmd" != "install deps" ]]; then
             :
         elif [[ -e "$VENVDIR/bin/activate" ]]; then
             nextcmd="test lib/cmd"
@@ -1201,8 +1205,7 @@ else
         target="${target%/}"
         target="${target/\/:/:}"
         if [[ -z "${target}" ]]; then
-            help_interactive
-            continue
+            verb=help
         fi
         case "${verb}" in
             "" | "help")
