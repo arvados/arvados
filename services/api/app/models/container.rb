@@ -418,15 +418,15 @@ class Container < ArvadosModel
     any = true
 
     total = ActiveRecord::Base.connection.exec_query(
-      'SELECT DISTINCT portable_data_hash FROM collections'
+      "SELECT DISTINCT portable_data_hash FROM collections"
     ).rows.count
 
     while any
       any = false
       pdhs_res = ActiveRecord::Base.connection.exec_query(
-        'SELECT DISTINCT portable_data_hash FROM collections '\
+        "SELECT DISTINCT portable_data_hash FROM collections "\
         "WHERE portable_data_hash > '#{last_pdh}' "\
-        'GROUP BY portable_data_hash LIMIT 1000'
+        "GROUP BY portable_data_hash LIMIT 1000"
       )
       break if pdhs_res.rows.count.zero?
 
@@ -439,7 +439,7 @@ class Container < ArvadosModel
         Rails.logger.info(log_prefix + ": #{done}/#{total}")
       end
     end
-    Rails.logger.info(log_prefix + ': finished')
+    Rails.logger.info(log_prefix + ": finished")
   end
 
   # NOTE: Migration 20190322174136_add_file_info_to_collection.rb relies on this function.
