@@ -13,3 +13,4 @@ RUN echo "development" > /var/lib/arvados/sso_rails_env
 RUN echo "development" > /var/lib/arvados/workbench_rails_env
 
 RUN mkdir /etc/test-service && ln -sf /var/lib/arvbox/service/postgres /etc/test-service
+RUN mkdir /etc/devenv-service

@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 
 	"git.curoverse.com/arvados.git/sdk/go/config"
@@ -58,6 +59,8 @@ type RequestLimits struct {
 type Cluster struct {
 	ClusterID          string `json:"-"`
 	ManagementToken    string
+	SystemRootToken    string
+	Services           Services
 	NodeProfiles       map[string]NodeProfile
 	InstanceTypes      InstanceTypeMap
 	CloudVMs           CloudVMs
@@ -67,7 +70,42 @@ type Cluster struct {
 	PostgreSQL         PostgreSQL
 	RequestLimits      RequestLimits
 	Logging            Logging
+	TLS                TLS
 }
+
+type Services struct {
+	Controller    Service
+	DispatchCloud Service
+	Health        Service
+	Keepbalance   Service
+	Keepproxy     Service
+	Keepstore     Service
+	Keepweb       Service
+	Nodemanager   Service
+	RailsAPI      Service
+	Websocket     Service
+	Workbench     Service
+}
+
+type Service struct {
+	InternalURLs map[URL]ServiceInstance
+	ExternalURL  URL
+}
+
+// URL is a url.URL that is also usable as a JSON key/value.
+type URL url.URL
+
+// UnmarshalText implements encoding.TextUnmarshaler so URL can be
+// used as a JSON key/value.
+func (su *URL) UnmarshalText(text []byte) error {
+	u, err := url.Parse(string(text))
+	if err == nil {
+		*su = URL(*u)
+	}
+	return err
+}
+
+type ServiceInstance struct{}
 
 type Logging struct {
 	Level  string
@@ -122,6 +160,12 @@ type Dispatch struct {
 
 	// Maximum total worker probes per second
 	MaxProbesPerSecond int
+
+	// Time before repeating SIGTERM when killing a container
+	TimeoutSignal Duration
+
+	// Time to give up on SIGTERM and write off the worker
+	TimeoutTERM Duration
 }
 
 type CloudVMs struct {
@@ -147,6 +191,9 @@ type CloudVMs struct {
 
 	// Time after shutdown to retry shutdown
 	TimeoutShutdown Duration
+
+	// Maximum create/destroy-instance operations per second
+	MaxCloudOpsPerSecond int
 
 	ImageID string
 
@@ -299,4 +346,10 @@ type SystemServiceInstance struct {
 	Listen   string
 	TLS      bool
 	Insecure bool
+}
+
+type TLS struct {
+	Certificate string
+	Key         string
+	Insecure    bool
 }

@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-from __future__ import print_function
-
 import arvados
 import collections
 import crunchstat_summary.dygraphs
@@ -24,7 +22,7 @@ from crunchstat_summary import logger
 # number of GiB. (Actual nodes tend to be sold in sizes like 8 GiB
 # that have amounts like 7.5 GiB according to the kernel.)
 AVAILABLE_RAM_RATIO = 0.95
-
+MB=2**20
 
 # Workaround datetime.datetime.strptime() thread-safety bug by calling
 # it once before starting threads.  https://bugs.python.org/issue7980
@@ -209,7 +207,7 @@ class Summarizer(object):
                     stats['user+sys'] = stats.get('user', 0) + stats.get('sys', 0)
                 if 'tx' in stats or 'rx' in stats:
                     stats['tx+rx'] = stats.get('tx', 0) + stats.get('rx', 0)
-                for stat, val in stats.iteritems():
+                for stat, val in stats.items():
                     if group == 'interval':
                         if stat == 'seconds':
                             this_interval_s = val
@@ -236,9 +234,9 @@ class Summarizer(object):
 
         self.job_tot = collections.defaultdict(
             functools.partial(collections.defaultdict, int))
-        for task_id, task_stat in self.task_stats.iteritems():
-            for category, stat_last in task_stat.iteritems():
-                for stat, val in stat_last.iteritems():
+        for task_id, task_stat in self.task_stats.items():
+            for category, stat_last in task_stat.items():
+                for stat, val in stat_last.items():
                     if stat in ['cpus', 'cache', 'swap', 'rss']:
                         # meaningless stats like 16 cpu cores x 5 tasks = 80
                         continue
@@ -273,8 +271,8 @@ class Summarizer(object):
 
     def _text_report_gen(self):
         yield "\t".join(['category', 'metric', 'task_max', 'task_max_rate', 'job_total'])
-        for category, stat_max in sorted(self.stats_max.iteritems()):
-            for stat, val in sorted(stat_max.iteritems()):
+        for category, stat_max in sorted(self.stats_max.items()):
+            for stat, val in sorted(stat_max.items()):
                 if stat.endswith('__rate'):
                     continue
                 max_rate = self._format(stat_max.get(stat+'__rate', '-'))
@@ -292,7 +290,7 @@ class Summarizer(object):
                  self.stats_max['cpu']['user+sys__rate'],
                  lambda x: x * 100),
                 ('Overall CPU usage: {}%',
-                 self.job_tot['cpu']['user+sys'] /
+                 float(self.job_tot['cpu']['user+sys']) /
                  self.job_tot['time']['elapsed']
                  if self.job_tot['time']['elapsed'] > 0 else 0,
                  lambda x: x * 100),
@@ -325,6 +323,7 @@ class Summarizer(object):
             yield "# "+format_string.format(self._format(val))
 
     def _recommend_gen(self):
+        # TODO recommend fixing job granularity if elapsed time is too short
         return itertools.chain(
             self._recommend_cpu(),
             self._recommend_ram(),
@@ -335,21 +334,27 @@ class Summarizer(object):
 
         constraint_key = self._map_runtime_constraint('vcpus')
         cpu_max_rate = self.stats_max['cpu']['user+sys__rate']
-        if cpu_max_rate == float('-Inf'):
+        if cpu_max_rate == float('-Inf') or cpu_max_rate == 0.0:
             logger.warning('%s: no CPU usage data', self.label)
             return
+        # TODO Don't necessarily want to recommend on isolated max peak
+        # take average CPU usage into account as well or % time at max
         used_cores = max(1, int(math.ceil(cpu_max_rate)))
         asked_cores = self.existing_constraints.get(constraint_key)
-        if asked_cores is None or used_cores < asked_cores:
+        if asked_cores is None:
+            asked_cores = 1
+        # TODO: This should be more nuanced in cases where max >> avg
+        if used_cores < asked_cores:
             yield (
                 '#!! {} max CPU usage was {}% -- '
-                'try runtime_constraints "{}":{}'
+                'try reducing runtime_constraints to "{}":{}'
             ).format(
                 self.label,
-                int(math.ceil(cpu_max_rate*100)),
+                math.ceil(cpu_max_rate*100),
                 constraint_key,
                 int(used_cores))
 
+    # FIXME: This needs to be updated to account for current nodemanager algorithms
     def _recommend_ram(self):
         """Recommend an economical RAM constraint for this job.
 
@@ -389,20 +394,20 @@ class Summarizer(object):
         if used_bytes == float('-Inf'):
             logger.warning('%s: no memory usage data', self.label)
             return
-        used_mib = math.ceil(float(used_bytes) / 1048576)
+        used_mib = math.ceil(float(used_bytes) / MB)
         asked_mib = self.existing_constraints.get(constraint_key)
 
         nearlygibs = lambda mebibytes: mebibytes/AVAILABLE_RAM_RATIO/1024
-        if asked_mib is None or (
-                math.ceil(nearlygibs(used_mib)) < nearlygibs(asked_mib)):
+        if used_mib > 0 and (asked_mib is None or (
+                math.ceil(nearlygibs(used_mib)) < nearlygibs(asked_mib))):
             yield (
                 '#!! {} max RSS was {} MiB -- '
-                'try runtime_constraints "{}":{}'
+                'try reducing runtime_constraints to "{}":{}'
             ).format(
                 self.label,
                 int(used_mib),
                 constraint_key,
-                int(math.ceil(nearlygibs(used_mib))*AVAILABLE_RAM_RATIO*1024*(2**20)/self._runtime_constraint_mem_unit()))
+                int(math.ceil(nearlygibs(used_mib))*AVAILABLE_RAM_RATIO*1024*(MB)/self._runtime_constraint_mem_unit()))
 
     def _recommend_keep_cache(self):
         """Recommend increasing keep cache if utilization < 80%"""
@@ -411,17 +416,18 @@ class Summarizer(object):
             return
         utilization = (float(self.job_tot['blkio:0:0']['read']) /
                        float(self.job_tot['net:keep0']['rx']))
-        asked_mib = self.existing_constraints.get(constraint_key, 256)
+        # FIXME: the default on this get won't work correctly
+        asked_cache = self.existing_constraints.get(constraint_key, 256) * self._runtime_constraint_mem_unit()
 
         if utilization < 0.8:
             yield (
                 '#!! {} Keep cache utilization was {:.2f}% -- '
-                'try runtime_constraints "{}":{} (or more)'
+                'try doubling runtime_constraints to "{}":{} (or more)'
             ).format(
                 self.label,
                 utilization * 100.0,
                 constraint_key,
-                asked_mib*2*(2**20)/self._runtime_constraint_mem_unit())
+                math.ceil(asked_cache * 2 / self._runtime_constraint_mem_unit()))
 
 
     def _format(self, val):
@@ -513,7 +519,7 @@ class ProcessSummarizer(Summarizer):
 
 
 class JobSummarizer(ProcessSummarizer):
-    runtime_constraint_mem_unit = 1048576
+    runtime_constraint_mem_unit = MB
     map_runtime_constraint = {
         'keep_cache_ram': 'keep_cache_mb_per_task',
         'ram': 'min_ram_mb_per_node',
@@ -539,7 +545,7 @@ class MultiSummarizer(object):
 
     def run(self):
         threads = []
-        for child in self.children.itervalues():
+        for child in self.children.values():
             self.throttle.acquire()
             t = threading.Thread(target=self.run_and_release, args=(child.run, ))
             t.daemon = True
@@ -551,7 +557,7 @@ class MultiSummarizer(object):
     def text_report(self):
         txt = ''
         d = self._descendants()
-        for child in d.itervalues():
+        for child in d.values():
             if len(d) > 1:
                 txt += '### Summary for {} ({})\n'.format(
                     child.label, child.process['uuid'])
@@ -566,7 +572,7 @@ class MultiSummarizer(object):
         MultiSummarizers) are omitted.
         """
         d = collections.OrderedDict()
-        for key, child in self.children.iteritems():
+        for key, child in self.children.items():
             if isinstance(child, Summarizer):
                 d[key] = child
             if isinstance(child, MultiSummarizer):
@@ -574,7 +580,7 @@ class MultiSummarizer(object):
         return d
 
     def html_report(self):
-        return WEBCHART_CLASS(self.label, self._descendants().itervalues()).html()
+        return WEBCHART_CLASS(self.label, iter(self._descendants().values())).html()
 
 
 class JobTreeSummarizer(MultiSummarizer):
@@ -588,7 +594,7 @@ class JobTreeSummarizer(MultiSummarizer):
             preloaded = {}
             for j in arv.jobs().index(
                     limit=len(job['components']),
-                    filters=[['uuid','in',job['components'].values()]]).execute()['items']:
+                    filters=[['uuid','in',list(job['components'].values())]]).execute()['items']:
                 preloaded[j['uuid']] = j
             for cname in sorted(job['components'].keys()):
                 child_uuid = job['components'][cname]
@@ -605,7 +611,7 @@ class JobTreeSummarizer(MultiSummarizer):
 class PipelineSummarizer(MultiSummarizer):
     def __init__(self, instance, **kwargs):
         children = collections.OrderedDict()
-        for cname, component in instance['components'].iteritems():
+        for cname, component in instance['components'].items():
             if 'job' not in component:
                 logger.warning(
                     "%s: skipping component with no job assigned", cname)
@@ -663,7 +669,7 @@ class ContainerTreeSummarizer(MultiSummarizer):
                         cr['name'] = cr.get('name') or cr['uuid']
                         todo.append(cr)
         sorted_children = collections.OrderedDict()
-        for uuid in sorted(children.keys(), key=lambda uuid: children[uuid].sort_key):
+        for uuid in sorted(list(children.keys()), key=lambda uuid: children[uuid].sort_key):
             sorted_children[uuid] = children[uuid]
         super(ContainerTreeSummarizer, self).__init__(
             children=sorted_children,

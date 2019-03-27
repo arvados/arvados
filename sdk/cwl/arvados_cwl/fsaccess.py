@@ -63,24 +63,27 @@ class CollectionCache(object):
             del self.collections[pdh]
             self.total -= v[1]
 
-    def get(self, pdh):
+    def get(self, locator):
         with self.lock:
-            if pdh not in self.collections:
-                m = pdh_size.match(pdh)
+            if locator not in self.collections:
+                m = pdh_size.match(locator)
                 if m:
                     self.cap_cache(int(m.group(2)) * 128)
-                logger.debug("Creating collection reader for %s", pdh)
-                cr = arvados.collection.CollectionReader(pdh, api_client=self.api_client,
-                                                         keep_client=self.keep_client,
-                                                         num_retries=self.num_retries)
+                logger.debug("Creating collection reader for %s", locator)
+                try:
+                    cr = arvados.collection.CollectionReader(locator, api_client=self.api_client,
+                                                             keep_client=self.keep_client,
+                                                             num_retries=self.num_retries)
+                except arvados.errors.ApiError as ap:
+                    raise IOError(errno.ENOENT, "Could not access collection '%s': %s" % (locator, str(ap._get_reason())))
                 sz = len(cr.manifest_text()) * 128
-                self.collections[pdh] = (cr, sz)
+                self.collections[locator] = (cr, sz)
                 self.total += sz
             else:
-                cr, sz = self.collections[pdh]
+                cr, sz = self.collections[locator]
                 # bump it to the back
-                del self.collections[pdh]
-                self.collections[pdh] = (cr, sz)
+                del self.collections[locator]
+                self.collections[locator] = (cr, sz)
             return cr
 
 
@@ -94,9 +97,10 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
     def get_collection(self, path):
         sp = path.split("/", 1)
         p = sp[0]
-        if p.startswith("keep:") and arvados.util.keep_locator_pattern.match(p[5:]):
-            pdh = p[5:]
-            return (self.collection_cache.get(pdh), urllib.parse.unquote(sp[1]) if len(sp) == 2 else None)
+        if p.startswith("keep:") and (arvados.util.keep_locator_pattern.match(p[5:]) or
+                                      arvados.util.collection_uuid_pattern.match(p[5:])):
+            locator = p[5:]
+            return (self.collection_cache.get(locator), urllib.parse.unquote(sp[1]) if len(sp) == 2 else None)
         else:
             return (None, path)
 
@@ -261,9 +265,11 @@ class CollectionFetcher(DefaultFetcher):
             baseparts = basesp.path.split("/")
             urlparts = urlsp.path.split("/") if urlsp.path else []
 
-            pdh = baseparts.pop(0)
+            locator = baseparts.pop(0)
 
-            if basesp.scheme == "keep" and not arvados.util.keep_locator_pattern.match(pdh):
+            if (basesp.scheme == "keep" and
+                (not arvados.util.keep_locator_pattern.match(locator)) and
+                (not arvados.util.collection_uuid_pattern.match(locator))):
                 raise IOError(errno.EINVAL, "Invalid Keep locator", base_url)
 
             if urlsp.path.startswith("/"):
@@ -273,7 +279,7 @@ class CollectionFetcher(DefaultFetcher):
             if baseparts and urlsp.path:
                 baseparts.pop()
 
-            path = "/".join([pdh] + baseparts + urlparts)
+            path = "/".join([locator] + baseparts + urlparts)
             return urllib.parse.urlunsplit((basesp.scheme, "", path, "", urlsp.fragment))
 
         return super(CollectionFetcher, self).urljoin(base_url, url)

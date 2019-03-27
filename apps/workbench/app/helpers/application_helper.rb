@@ -495,11 +495,12 @@ module ApplicationHelper
       chooser_title = "Choose a #{primary_type == 'Directory' ? 'dataset' : 'file'}:"
       selection_param = object.class.to_s.underscore + dn
       if attrvalue.is_a? Hash
-        display_value = attrvalue[:"arv:collection"] || attrvalue[:location]
+        display_value = attrvalue[:"http://arvados.org/cwl#collectionUUID"] || attrvalue[:"arv:collection"] || attrvalue[:location]
         re = CollectionsHelper.match_uuid_with_optional_filepath(display_value)
+        locationre = CollectionsHelper.match(attrvalue[:location][5..-1])
         if re
-          if re[4]
-            display_value = "#{Collection.find(re[1]).name} / #{re[4][1..-1]}"
+          if locationre and locationre[4]
+            display_value = "#{Collection.find(re[1]).name} / #{locationre[4][1..-1]}"
           else
             display_value = Collection.find(re[1]).name
           end
@@ -677,8 +678,8 @@ module ApplicationHelper
     render_runtime duration, use_words, round_to_min
   end
 
-  # Keep locators are expected to be of the form \"...<pdh/file_path>\"
-  JSON_KEEP_LOCATOR_REGEXP = /([0-9a-f]{32}\+\d+[^'"]*?)(?=['"]|\z|$)/
+  # Keep locators are expected to be of the form \"...<pdh/file_path>\" or \"...<uuid/file_path>\"
+  JSON_KEEP_LOCATOR_REGEXP = /([0-9a-f]{32}\+\d+[^'"]*|[a-z0-9]{5}-4zz18-[a-z0-9]{15}[^'"]*)(?=['"]|\z|$)/
   def keep_locator_in_json str
     # Return a list of all matches
     str.scan(JSON_KEEP_LOCATOR_REGEXP).flatten

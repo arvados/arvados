@@ -5,8 +5,6 @@
 package worker
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -87,9 +85,36 @@ type worker struct {
 	busy         time.Time
 	destroyed    time.Time
 	lastUUID     string
-	running      map[string]struct{} // remember to update state idle<->running when this changes
-	starting     map[string]struct{} // remember to update state idle<->running when this changes
+	running      map[string]*remoteRunner // remember to update state idle<->running when this changes
+	starting     map[string]*remoteRunner // remember to update state idle<->running when this changes
 	probing      chan struct{}
+}
+
+func (wkr *worker) onUnkillable(uuid string) {
+	wkr.mtx.Lock()
+	defer wkr.mtx.Unlock()
+	logger := wkr.logger.WithField("ContainerUUID", uuid)
+	if wkr.idleBehavior == IdleBehaviorHold {
+		logger.Warn("unkillable container, but worker has IdleBehavior=Hold")
+		return
+	}
+	logger.Warn("unkillable container, draining worker")
+	wkr.setIdleBehavior(IdleBehaviorDrain)
+}
+
+func (wkr *worker) onKilled(uuid string) {
+	wkr.mtx.Lock()
+	defer wkr.mtx.Unlock()
+	wkr.closeRunner(uuid)
+	go wkr.wp.notify()
+}
+
+// caller must have lock.
+func (wkr *worker) setIdleBehavior(idleBehavior IdleBehavior) {
+	wkr.logger.WithField("IdleBehavior", idleBehavior).Info("set idle behavior")
+	wkr.idleBehavior = idleBehavior
+	wkr.saveTags()
+	wkr.shutdownIfIdle()
 }
 
 // caller must have lock.
@@ -98,51 +123,22 @@ func (wkr *worker) startContainer(ctr arvados.Container) {
 		"ContainerUUID": ctr.UUID,
 		"Priority":      ctr.Priority,
 	})
-	logger = logger.WithField("Instance", wkr.instance.ID())
 	logger.Debug("starting container")
-	wkr.starting[ctr.UUID] = struct{}{}
+	rr := newRemoteRunner(ctr.UUID, wkr)
+	wkr.starting[ctr.UUID] = rr
 	if wkr.state != StateRunning {
 		wkr.state = StateRunning
 		go wkr.wp.notify()
 	}
 	go func() {
-		env := map[string]string{
-			"ARVADOS_API_HOST":  wkr.wp.arvClient.APIHost,
-			"ARVADOS_API_TOKEN": wkr.wp.arvClient.AuthToken,
-		}
-		if wkr.wp.arvClient.Insecure {
-			env["ARVADOS_API_HOST_INSECURE"] = "1"
-		}
-		envJSON, err := json.Marshal(env)
-		if err != nil {
-			panic(err)
-		}
-		stdin := bytes.NewBuffer(envJSON)
-		cmd := "crunch-run --detach --stdin-env '" + ctr.UUID + "'"
-		if u := wkr.instance.RemoteUser(); u != "root" {
-			cmd = "sudo " + cmd
-		}
-		stdout, stderr, err := wkr.executor.Execute(nil, cmd, stdin)
+		rr.Start()
 		wkr.mtx.Lock()
 		defer wkr.mtx.Unlock()
 		now := time.Now()
 		wkr.updated = now
 		wkr.busy = now
 		delete(wkr.starting, ctr.UUID)
-		wkr.running[ctr.UUID] = struct{}{}
-		wkr.lastUUID = ctr.UUID
-		if err != nil {
-			logger.WithField("stdout", string(stdout)).
-				WithField("stderr", string(stderr)).
-				WithError(err).
-				Error("error starting crunch-run process")
-			// Leave uuid in wkr.running, though: it's
-			// possible the error was just a communication
-			// failure and the process was in fact
-			// started.  Wait for next probe to find out.
-			return
-		}
-		logger.Info("crunch-run process started")
+		wkr.running[ctr.UUID] = rr
 		wkr.lastUUID = ctr.UUID
 	}()
 }
@@ -218,11 +214,16 @@ func (wkr *worker) probeAndUpdate() {
 			logger.Info("instance booted; will try probeRunning")
 		}
 	}
+	reportedBroken := false
 	if booted || wkr.state == StateUnknown {
-		ctrUUIDs, ok = wkr.probeRunning()
+		ctrUUIDs, reportedBroken, ok = wkr.probeRunning()
 	}
 	wkr.mtx.Lock()
 	defer wkr.mtx.Unlock()
+	if reportedBroken && wkr.idleBehavior == IdleBehaviorRun {
+		logger.Info("probe reported broken instance")
+		wkr.setIdleBehavior(IdleBehaviorDrain)
+	}
 	if !ok || (!booted && len(ctrUUIDs) == 0 && len(wkr.running) == 0) {
 		if wkr.state == StateShutdown && wkr.updated.After(updated) {
 			// Skip the logging noise if shutdown was
@@ -274,31 +275,8 @@ func (wkr *worker) probeAndUpdate() {
 		// advantage of the non-busy state, though.
 		wkr.busy = updateTime
 	}
-	changed := false
 
-	// Build a new "running" map. Set changed=true if it differs
-	// from the existing map (wkr.running) to ensure the scheduler
-	// gets notified below.
-	running := map[string]struct{}{}
-	for _, uuid := range ctrUUIDs {
-		running[uuid] = struct{}{}
-		if _, ok := wkr.running[uuid]; !ok {
-			if _, ok := wkr.starting[uuid]; !ok {
-				// We didn't start it -- it must have
-				// been started by a previous
-				// dispatcher process.
-				logger.WithField("ContainerUUID", uuid).Info("crunch-run process detected")
-			}
-			changed = true
-		}
-	}
-	for uuid := range wkr.running {
-		if _, ok := running[uuid]; !ok {
-			logger.WithField("ContainerUUID", uuid).Info("crunch-run process ended")
-			wkr.wp.notifyExited(uuid, updateTime)
-			changed = true
-		}
-	}
+	changed := wkr.updateRunning(ctrUUIDs)
 
 	// Update state if this was the first successful boot-probe.
 	if booted && (wkr.state == StateUnknown || wkr.state == StateBooting) {
@@ -317,14 +295,13 @@ func (wkr *worker) probeAndUpdate() {
 
 	// Log whenever a run-probe reveals crunch-run processes
 	// appearing/disappearing before boot-probe succeeds.
-	if wkr.state == StateUnknown && len(running) != len(wkr.running) {
+	if wkr.state == StateUnknown && changed {
 		logger.WithFields(logrus.Fields{
-			"RunningContainers": len(running),
+			"RunningContainers": len(wkr.running),
 			"State":             wkr.state,
 		}).Info("crunch-run probe succeeded, but boot probe is still failing")
 	}
 
-	wkr.running = running
 	if wkr.state == StateIdle && len(wkr.starting)+len(wkr.running) > 0 {
 		wkr.state = StateRunning
 	} else if wkr.state == StateRunning && len(wkr.starting)+len(wkr.running) == 0 {
@@ -333,14 +310,14 @@ func (wkr *worker) probeAndUpdate() {
 	wkr.updated = updateTime
 	if booted && (initialState == StateUnknown || initialState == StateBooting) {
 		logger.WithFields(logrus.Fields{
-			"RunningContainers": len(running),
+			"RunningContainers": len(wkr.running),
 			"State":             wkr.state,
 		}).Info("probes succeeded, instance is in service")
 	}
 	go wkr.wp.notify()
 }
 
-func (wkr *worker) probeRunning() (running []string, ok bool) {
+func (wkr *worker) probeRunning() (running []string, reportsBroken, ok bool) {
 	cmd := "crunch-run --list"
 	if u := wkr.instance.RemoteUser(); u != "root" {
 		cmd = "sudo " + cmd
@@ -352,13 +329,17 @@ func (wkr *worker) probeRunning() (running []string, ok bool) {
 			"stdout":  string(stdout),
 			"stderr":  string(stderr),
 		}).WithError(err).Warn("probe failed")
-		return nil, false
+		return
 	}
-	stdout = bytes.TrimRight(stdout, "\n")
-	if len(stdout) == 0 {
-		return nil, true
+	ok = true
+	for _, s := range strings.Split(string(stdout), "\n") {
+		if s == "broken" {
+			reportsBroken = true
+		} else if s != "" {
+			running = append(running, s)
+		}
 	}
-	return strings.Split(string(stdout), "\n"), true
+	return
 }
 
 func (wkr *worker) probeBooted() (ok bool, stderr []byte) {
@@ -402,27 +383,52 @@ func (wkr *worker) shutdownIfBroken(dur time.Duration) bool {
 	return true
 }
 
+// Returns true if the instance is eligible for shutdown: either it's
+// been idle too long, or idleBehavior=Drain and nothing is running.
+//
+// caller must have lock.
+func (wkr *worker) eligibleForShutdown() bool {
+	if wkr.idleBehavior == IdleBehaviorHold {
+		return false
+	}
+	draining := wkr.idleBehavior == IdleBehaviorDrain
+	switch wkr.state {
+	case StateBooting:
+		return draining
+	case StateIdle:
+		return draining || time.Since(wkr.busy) >= wkr.wp.timeoutIdle
+	case StateRunning:
+		if !draining {
+			return false
+		}
+		for _, rr := range wkr.running {
+			if !rr.givenup {
+				return false
+			}
+		}
+		for _, rr := range wkr.starting {
+			if !rr.givenup {
+				return false
+			}
+		}
+		// draining, and all remaining runners are just trying
+		// to force-kill their crunch-run procs
+		return true
+	default:
+		return false
+	}
+}
+
 // caller must have lock.
 func (wkr *worker) shutdownIfIdle() bool {
-	if wkr.idleBehavior == IdleBehaviorHold {
-		// Never shut down.
+	if !wkr.eligibleForShutdown() {
 		return false
 	}
-	age := time.Since(wkr.busy)
-
-	old := age >= wkr.wp.timeoutIdle
-	draining := wkr.idleBehavior == IdleBehaviorDrain
-	shouldShutdown := ((old || draining) && wkr.state == StateIdle) ||
-		(draining && wkr.state == StateBooting)
-	if !shouldShutdown {
-		return false
-	}
-
 	wkr.logger.WithFields(logrus.Fields{
 		"State":        wkr.state,
-		"IdleDuration": stats.Duration(age),
+		"IdleDuration": stats.Duration(time.Since(wkr.busy)),
 		"IdleBehavior": wkr.idleBehavior,
-	}).Info("shutdown idle worker")
+	}).Info("shutdown worker")
 	wkr.shutdown()
 	return true
 }
@@ -466,5 +472,70 @@ func (wkr *worker) saveTags() {
 				wkr.wp.logger.WithField("Instance", instance.ID()).WithError(err).Warnf("error updating tags")
 			}
 		}()
+	}
+}
+
+func (wkr *worker) Close() {
+	// This might take time, so do it after unlocking mtx.
+	defer wkr.executor.Close()
+
+	wkr.mtx.Lock()
+	defer wkr.mtx.Unlock()
+	for uuid, rr := range wkr.running {
+		wkr.logger.WithField("ContainerUUID", uuid).Info("crunch-run process abandoned")
+		rr.Close()
+	}
+	for uuid, rr := range wkr.starting {
+		wkr.logger.WithField("ContainerUUID", uuid).Info("crunch-run process abandoned")
+		rr.Close()
+	}
+}
+
+// Add/remove entries in wkr.running to match ctrUUIDs returned by a
+// probe. Returns true if anything was added or removed.
+//
+// Caller must have lock.
+func (wkr *worker) updateRunning(ctrUUIDs []string) (changed bool) {
+	alive := map[string]bool{}
+	for _, uuid := range ctrUUIDs {
+		alive[uuid] = true
+		if _, ok := wkr.running[uuid]; ok {
+			// unchanged
+		} else if rr, ok := wkr.starting[uuid]; ok {
+			wkr.running[uuid] = rr
+			delete(wkr.starting, uuid)
+			changed = true
+		} else {
+			// We didn't start it -- it must have been
+			// started by a previous dispatcher process.
+			wkr.logger.WithField("ContainerUUID", uuid).Info("crunch-run process detected")
+			wkr.running[uuid] = newRemoteRunner(uuid, wkr)
+			changed = true
+		}
+	}
+	for uuid := range wkr.running {
+		if !alive[uuid] {
+			wkr.closeRunner(uuid)
+			changed = true
+		}
+	}
+	return
+}
+
+// caller must have lock.
+func (wkr *worker) closeRunner(uuid string) {
+	rr := wkr.running[uuid]
+	if rr == nil {
+		return
+	}
+	wkr.logger.WithField("ContainerUUID", uuid).Info("crunch-run process ended")
+	delete(wkr.running, uuid)
+	rr.Close()
+
+	now := time.Now()
+	wkr.updated = now
+	wkr.wp.exited[uuid] = now
+	if wkr.state == StateRunning && len(wkr.running)+len(wkr.starting) == 0 {
+		wkr.state = StateIdle
 	}
 }

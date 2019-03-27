@@ -118,6 +118,23 @@ wait_for_arvbox() {
     fi
 }
 
+docker_run_dev() {
+    docker run \
+	   "--volume=$ARVADOS_ROOT:/usr/src/arvados:rw" \
+           "--volume=$SSO_ROOT:/usr/src/sso:rw" \
+           "--volume=$COMPOSER_ROOT:/usr/src/composer:rw" \
+           "--volume=$WORKBENCH2_ROOT:/usr/src/workbench2:rw" \
+           "--volume=$PG_DATA:/var/lib/postgresql:rw" \
+           "--volume=$VAR_DATA:/var/lib/arvados:rw" \
+           "--volume=$PASSENGER:/var/lib/passenger:rw" \
+           "--volume=$GEMS:/var/lib/gems:rw" \
+           "--volume=$PIPCACHE:/var/lib/pip:rw" \
+           "--volume=$NPMCACHE:/var/lib/npm:rw" \
+           "--volume=$GOSTUFF:/var/lib/gopath:rw" \
+           "--volume=$RLIBS:/var/lib/Rlibs:rw" \
+	   "$@"
+}
+
 run() {
     CONFIG=$1
     TAG=$2
@@ -220,22 +237,10 @@ run() {
             mkdir -p $VAR_DATA/test
 
             if test "$need_setup" = 1 ; then
-                docker run \
+                docker_run_dev \
                        --detach \
                        --name=$ARVBOX_CONTAINER \
                        --privileged \
-                       "--volume=$ARVADOS_ROOT:/usr/src/arvados:rw" \
-                       "--volume=$SSO_ROOT:/usr/src/sso:rw" \
-                       "--volume=$COMPOSER_ROOT:/usr/src/composer:rw" \
-                       "--volume=$WORKBENCH2_ROOT:/usr/src/workbench2:rw" \
-                       "--volume=$PG_DATA:/var/lib/postgresql:rw" \
-                       "--volume=$VAR_DATA:/var/lib/arvados:rw" \
-                       "--volume=$PASSENGER:/var/lib/passenger:rw" \
-                       "--volume=$GEMS:/var/lib/gems:rw" \
-                       "--volume=$PIPCACHE:/var/lib/pip:rw" \
-                       "--volume=$NPMCACHE:/var/lib/npm:rw" \
-                       "--volume=$GOSTUFF:/var/lib/gopath:rw" \
-                       "--volume=$RLIBS:/var/lib/Rlibs:rw" \
 		       "--env=SVDIR=/etc/test-service" \
                        arvados/arvbox-dev$TAG
 
@@ -264,22 +269,10 @@ run() {
                    GEM_HOME=/var/lib/gems \
                    "$@"
         elif echo "$CONFIG" | grep 'dev$' ; then
-            docker run \
+            docker_run_dev \
                    --detach \
                    --name=$ARVBOX_CONTAINER \
                    --privileged \
-                   "--volume=$ARVADOS_ROOT:/usr/src/arvados:rw" \
-                   "--volume=$SSO_ROOT:/usr/src/sso:rw" \
-                   "--volume=$COMPOSER_ROOT:/usr/src/composer:rw" \
-                   "--volume=$WORKBENCH2_ROOT:/usr/src/workbench2:rw" \
-                   "--volume=$PG_DATA:/var/lib/postgresql:rw" \
-                   "--volume=$VAR_DATA:/var/lib/arvados:rw" \
-                   "--volume=$PASSENGER:/var/lib/passenger:rw" \
-                   "--volume=$GEMS:/var/lib/gems:rw" \
-                   "--volume=$PIPCACHE:/var/lib/pip:rw" \
-                   "--volume=$NPMCACHE:/var/lib/npm:rw" \
-                   "--volume=$GOSTUFF:/var/lib/gopath:rw" \
-                   "--volume=$RLIBS:/var/lib/Rlibs:rw" \
                    $PUBLIC \
                    arvados/arvbox-dev$TAG
             updateconf
@@ -493,6 +486,46 @@ case "$subcmd" in
             echo "available arvboxes: $(ls $ARVBOX_BASE)"
         fi
         ;;
+
+    install-root-cert)
+	set -x
+	sudo cp $VAR_DATA/root-cert.pem /usr/local/share/ca-certificates/${ARVBOX_CONTAINER}-testing-cert.crt
+	sudo update-ca-certificates
+	;;
+
+    devenv)
+	set -x
+	if docker ps -a --filter "status=exited" | grep -E "${ARVBOX_CONTAINER}-devenv$" -q ; then
+    	    docker start ${ARVBOX_CONTAINER}-devenv
+	elif ! (docker ps -a --filter "status=running" | grep -E "${ARVBOX_CONTAINER}-devenv$" -q) ; then
+    	    docker_run_dev \
+                 --detach \
+		 --name=${ARVBOX_CONTAINER}-devenv \
+		 "--env=SVDIR=/etc/devenv-service" \
+    		 "--volume=$HOME:$HOME:rw" \
+		 --volume=/tmp/.X11-unix:/tmp/.X11-unix:rw \
+    		 arvados/arvbox-dev$TAG
+	fi
+
+    	exec docker exec --interactive --tty \
+    	     -e LINES=$(tput lines) \
+    	     -e COLUMNS=$(tput cols) \
+    	     -e TERM=$TERM \
+    	     -e "ARVBOX_HOME=$HOME" \
+    	     -e "DISPLAY=$DISPLAY" \
+    	     --workdir=$PWD \
+	     ${ARVBOX_CONTAINER}-devenv \
+    	     /usr/local/lib/arvbox/devenv.sh "$@"
+    	;;
+
+    devenv-stop)
+	docker stop ${ARVBOX_CONTAINER}-devenv
+	;;
+
+    devenv-reset)
+	docker stop ${ARVBOX_CONTAINER}-devenv
+	docker rm ${ARVBOX_CONTAINER}-devenv
+	;;
 
     *)
         echo "Arvados-in-a-box                      http://arvados.org"

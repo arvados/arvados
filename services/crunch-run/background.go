@@ -20,6 +20,7 @@ var (
 	lockdir    = "/var/lock"
 	lockprefix = "crunch-run-"
 	locksuffix = ".lock"
+	brokenfile = "crunch-run-broken"
 )
 
 // procinfo is saved in each process's lockfile.
@@ -116,14 +117,21 @@ func kill(uuid string, signal syscall.Signal, stdout, stderr io.Writer) error {
 
 	proc, err := os.FindProcess(pi.PID)
 	if err != nil {
+		// FindProcess should have succeeded, even if the
+		// process does not exist.
 		return fmt.Errorf("%s: find process %d: %s", uuid, pi.PID, err)
 	}
 
+	// Send the requested signal once, then send signal 0 a few
+	// times.  When proc.Signal() returns an error (process no
+	// longer exists), return success.  If that doesn't happen
+	// within 1 second, return an error.
 	err = proc.Signal(signal)
 	for deadline := time.Now().Add(time.Second); err == nil && time.Now().Before(deadline); time.Sleep(time.Second / 100) {
 		err = proc.Signal(syscall.Signal(0))
 	}
 	if err == nil {
+		// Reached deadline without a proc.Signal() error.
 		return fmt.Errorf("%s: pid %d: sent signal %d (%s) but process is still alive", uuid, pi.PID, signal, signal)
 	}
 	fmt.Fprintf(stderr, "%s: pid %d: %s\n", uuid, pi.PID, err)
@@ -139,7 +147,10 @@ func ListProcesses(stdout, stderr io.Writer) int {
 		if info.IsDir() && path != walkdir {
 			return filepath.SkipDir
 		}
-		if name := info.Name(); !strings.HasPrefix(name, lockprefix) || !strings.HasSuffix(name, locksuffix) {
+		if name := info.Name(); name == brokenfile {
+			fmt.Fprintln(stdout, "broken")
+			return nil
+		} else if !strings.HasPrefix(name, lockprefix) || !strings.HasSuffix(name, locksuffix) {
 			return nil
 		}
 		if info.Size() == 0 {

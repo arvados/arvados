@@ -1,0 +1,26 @@
+{
+    "x": {
+        "class": "File",
+        "path": "input/blorp.txt"
+    },
+    "y": {
+        "class": "Directory",
+        "location": "keep:99999999999999999999999999999998+99",
+        "http://arvados.org/cwl#collectionUUID": "zzzzz-4zz18-zzzzzzzzzzzzzzz",
+        "listing": [{
+            "class": "File",
+            "location": "keep:99999999999999999999999999999998+99/file1.txt",
+            "http://arvados.org/cwl#collectionUUID": "zzzzz-4zz18-zzzzzzzzzzzzzzz"
+        }]
+    },
+    "z": {
+        "class": "Directory",
+        "basename": "anonymous",
+        "listing": [{
+            "basename": "renamed.txt",
+            "class": "File",
+            "location": "keep:99999999999999999999999999999998+99/file1.txt",
+            "http://arvados.org/cwl#collectionUUID": "zzzzz-4zz18-zzzzzzzzzzzzzzz"
+        }]
+    }
+}

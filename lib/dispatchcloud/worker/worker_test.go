@@ -209,12 +209,17 @@ func (suite *WorkerSuite) TestProbeAndUpdate(c *check.C) {
 			busy:     ctime,
 			probed:   ctime,
 			updated:  ctime,
+			running:  map[string]*remoteRunner{},
+			starting: map[string]*remoteRunner{},
+			probing:  make(chan struct{}, 1),
 		}
 		if trial.running > 0 {
-			wkr.running = map[string]struct{}{"zzzzz-dz642-abcdefghijklmno": struct{}{}}
+			uuid := "zzzzz-dz642-abcdefghijklmno"
+			wkr.running = map[string]*remoteRunner{uuid: newRemoteRunner(uuid, wkr)}
 		}
 		if trial.starting > 0 {
-			wkr.starting = map[string]struct{}{"zzzzz-dz642-abcdefghijklmno": struct{}{}}
+			uuid := "zzzzz-dz642-bcdefghijklmnop"
+			wkr.starting = map[string]*remoteRunner{uuid: newRemoteRunner(uuid, wkr)}
 		}
 		wkr.probeAndUpdate()
 		c.Check(wkr.state, check.Equals, trial.expectState)
