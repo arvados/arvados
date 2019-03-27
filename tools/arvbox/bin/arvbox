@@ -285,6 +285,27 @@ run() {
     fi
 }
 
+update() {
+    CONFIG=$1
+    TAG=$2
+
+    if test -n "$TAG"
+    then
+        if test $(echo $TAG | cut -c1-1) != '-' ; then
+	    TAG=":$TAG"
+            shift
+        else
+            unset TAG
+        fi
+    fi
+
+    if echo "$CONFIG" | grep 'demo$' ; then
+	docker pull arvados/arvbox-demo$TAG
+    else
+	docker pull arvados/arvbox-dev$TAG
+    fi
+}
+
 stop() {
     if docker ps -a --filter "status=running" | grep -E "$ARVBOX_CONTAINER$" -q ; then
         docker stop $ARVBOX_CONTAINER
@@ -380,6 +401,13 @@ case "$subcmd" in
         check $@
         stop
         build $@
+        run $@
+        ;;
+
+    update)
+        check $@
+        stop
+	update $@
         run $@
         ;;
 
@@ -530,17 +558,18 @@ case "$subcmd" in
     *)
         echo "Arvados-in-a-box                      http://arvados.org"
         echo
-        echo "build   <config>      build arvbox Docker image"
-        echo "rebuild <config>      build arvbox Docker image, no layer cache"
         echo "start|run <config> [tag]  start $ARVBOX_CONTAINER container"
-        echo "open       open arvbox workbench in a web browser"
-        echo "shell      enter arvbox shell"
-        echo "ip         print arvbox docker container ip address"
-        echo "host       print arvbox published host"
-        echo "status     print some information about current arvbox"
         echo "stop       stop arvbox container"
         echo "restart <config>  stop, then run again"
-        echo "reboot  <config>  stop, build arvbox Docker image, run"
+        echo "status     print some information about current arvbox"
+        echo "ip         print arvbox docker container ip address"
+        echo "host       print arvbox published host"
+        echo "shell      enter arvbox shell"
+        echo "open       open arvbox workbench in a web browser"
+        echo "update  <config> stop, pull latest image, run"
+        echo "build   <config> build arvbox Docker image"
+        echo "reboot  <config> stop, build arvbox Docker image, run"
+        echo "rebuild <config> build arvbox Docker image, no layer cache"
         echo "reset      delete arvbox arvados data (be careful!)"
         echo "destroy    delete all arvbox code and data (be careful!)"
         echo "log <service> tail log of specified service"
