@@ -30,7 +30,23 @@ class AddFileInfoToCollection < ActiveRecord::Migration
     add_column :collections, :file_count, :integer, default: 0, null: false
     add_column :collections, :file_size_total, :integer, default: 0, null: false
 
-    Container.group_pdhs_for_multiple_transactions("AddFileInfoToCollection") do |pdhs|
+    distinct_pdh_count = ActiveRecord::Base.connection.exec_query(
+      "SELECT DISTINCT portable_data_hash FROM collections"
+    ).rows.count
+
+    # Generator that queries for all the distince pdhs greater than last_pdh
+    ordered_pdh_query = lambda { |last_pdh, &block|
+      pdhs = ActiveRecord::Base.connection.exec_query(
+        "SELECT DISTINCT portable_data_hash FROM collections "\
+        "WHERE portable_data_hash > '#{last_pdh}' "\
+        "ORDER BY portable_data_hash LIMIT 1000"
+      )
+      pdhs.rows.each do |row|
+        block.call(row[0])
+      end
+    }
+
+    Container.group_pdhs_for_multiple_transactions(ordered_pdh_query, distinct_pdh_count, "AddFileInfoToCollection") do |pdhs|
       do_batch(pdhs)
     end
   end

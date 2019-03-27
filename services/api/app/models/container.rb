@@ -411,58 +411,33 @@ class Container < ArvadosModel
   #
   # Correctly groups pdhs to use for batch database updates. Helps avoid
   # updating too many database rows in a single transaction.
-  def self.group_pdhs_for_multiple_transactions(log_prefix)
+  def self.group_pdhs_for_multiple_transactions(distinct_ordered_pdhs, distinct_pdh_count, log_prefix)
     batch_size_max = 1 << 28 # 256 MiB
+    batch_size = 0
+    batch_pdhs = {}
     last_pdh = '0'
     done = 0
     any = true
 
-    total = ActiveRecord::Base.connection.exec_query(
-      "SELECT DISTINCT portable_data_hash FROM collections"
-    ).rows.count
-
     while any
       any = false
-      pdhs_res = ActiveRecord::Base.connection.exec_query(
-        "SELECT DISTINCT portable_data_hash FROM collections "\
-        "WHERE portable_data_hash > '#{last_pdh}' "\
-        "GROUP BY portable_data_hash LIMIT 1000"
-      )
-      break if pdhs_res.rows.count.zero?
-
-      pdhs = pdhs_res.rows.collect { |r| r[0] }
-      Container.group_pdhs_by_manifest_size(pdhs, batch_size_max) do |grouped_pdhs|
+      distinct_ordered_pdhs.call(last_pdh) do |pdh|
         any = true
-        yield grouped_pdhs
-        done += grouped_pdhs.size
-        last_pdh = pdhs[-1]
-        Rails.logger.info(log_prefix + ": #{done}/#{total}")
+        last_pdh = pdh
+        manifest_size = pdh.split('+')[1].to_i
+        if batch_size > 0 && batch_size + manifest_size > batch_size_max
+          yield batch_pdhs.keys
+          done += batch_pdhs.size
+          Rails.logger.info(log_prefix + ": #{done}/#{distinct_pdh_count}")
+          batch_pdhs = {}
+          batch_size = 0
+        end
+        batch_pdhs[pdh] = true
+        batch_size += manifest_size
       end
-    end
-    Rails.logger.info(log_prefix + ": finished")
-  end
-
-  # NOTE: Migration 20190322174136_add_file_info_to_collection.rb relies on this function.
-  #
-  # Change with caution!
-  #
-  # Given an array of pdhs, yield a subset array of pdhs when the total
-  # size of all manifest_texts is no more than batch_size_max. Pdhs whose manifest_text 
-  # is bigger than batch_size_max are yielded by themselves
-  def self.group_pdhs_by_manifest_size(pdhs, batch_size_max)
-    batch_size = 0
-    batch_pdhs = {}
-    pdhs.each do |pdh|
-      manifest_size = pdh.split('+')[1].to_i
-      if batch_size > 0 && batch_size + manifest_size > batch_size_max
-        yield batch_pdhs.keys
-        batch_pdhs = {}
-        batch_size = 0
-      end
-      batch_pdhs[pdh] = true
-      batch_size += manifest_size
     end
     yield batch_pdhs.keys
+    Rails.logger.info(log_prefix + ": finished")
   end
 
   protected
