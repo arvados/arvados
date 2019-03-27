@@ -142,7 +142,7 @@ class NonTransactionalGroupsTest < ActionDispatch::IntegrationTest
   # This is needed because nested transactions share the connection pool, so
   # one thread is locked while trying to talk to the database, until the other
   # one finishes.
-  self.use_transactional_fixtures = false
+  self.use_transactional_tests = false
 
   teardown do
     # Explicitly reset the database after each test.
