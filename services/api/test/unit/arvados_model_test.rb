@@ -140,6 +140,7 @@ class ArvadosModelTest < ActiveSupport::TestCase
     all_tables =  ActiveRecord::Base.connection.tables
     all_tables.delete 'schema_migrations'
     all_tables.delete 'permission_refresh_lock'
+    all_tables.delete 'ar_internal_metadata'
 
     all_tables.each do |table|
       table_class = table.classify.constantize

@@ -10,7 +10,11 @@ gem 'responders', '~> 2.0'
 group :test, :development do
   gem 'factory_bot_rails'
   gem 'database_cleaner'
-  gem 'ruby-prof'
+
+  # As of now (2019-03-27) There's an open issue about incompatibilities with
+  # newer versions of this gem: https://github.com/rails/rails-perftest/issues/38
+  gem 'ruby-prof', '~> 0.15.0'
+
   # Note: "require: false" here tells bunder not to automatically
   # 'require' the packages during application startup. Installation is
   # still mandatory.

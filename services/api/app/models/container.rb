@@ -17,13 +17,13 @@ class Container < ArvadosModel
   extend DbCurrentTime
   extend LogReuseInfo
 
+  # Posgresql JSONB columns should NOT be declared as serialized, Rails 5
+  # already know how to properly treat them.
   serialize :environment, Hash
   serialize :mounts, Hash
   serialize :runtime_constraints, Hash
   serialize :command, Array
   serialize :scheduling_parameters, Hash
-  serialize :secret_mounts, Hash
-  serialize :runtime_status, Hash
 
   before_validation :fill_field_defaults, :if => :new_record?
   before_validation :set_timestamps

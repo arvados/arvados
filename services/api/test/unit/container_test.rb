@@ -388,9 +388,11 @@ class ContainerTest < ActiveSupport::TestCase
                                                runtime_status: {'warning' => 'This is not an error'},
                                                progress: 0.15})
     c_faster_started_second.update_attributes!({state: Container::Locked})
+    assert_equal 0, Container.where("runtime_status->'error' is not null").count
     c_faster_started_second.update_attributes!({state: Container::Running,
                                                 runtime_status: {'error' => 'Something bad happened'},
                                                 progress: 0.2})
+    assert_equal 1, Container.where("runtime_status->'error' is not null").count
     reused = Container.find_reusable(common_attrs)
     assert_not_nil reused
     # Selected the non-failing container even if it's the one with less progress done

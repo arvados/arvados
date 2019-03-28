@@ -12,6 +12,7 @@ busy:
   last_ping_at: <%= 1.minute.ago.to_s(:db) %>
   first_ping_at: <%= 23.hour.ago.to_s(:db) %>
   job_uuid: zzzzz-8i9sb-2gx6rz0pjl033w3  # nearly_finished_job
+  properties: {}
   info:
     ping_secret: "48dpm3b8ijyj3jkr2yczxw0844dqd2752bhll7klodvgz9bg80"
     slurm_state: "alloc"
@@ -26,6 +27,7 @@ down:
   last_ping_at: <%= 1.hour.ago.to_s(:db) %>
   first_ping_at: <%= 23.hour.ago.to_s(:db) %>
   job_uuid: ~
+  properties: {}
   info:
     ping_secret: "2k3i71depad36ugwmlgzilbi4e8n0illb2r8l4efg9mzkb3a1k"
 
@@ -70,6 +72,7 @@ new_with_no_hostname:
   last_ping_at: ~
   first_ping_at: ~
   job_uuid: ~
+  properties: {}
   info:
     ping_secret: "abcdyi0x4lb5q4gzqqtrnq30oyj08r8dtdimmanbqw49z1anz2"
 
@@ -82,6 +85,7 @@ new_with_custom_hostname:
   last_ping_at: ~
   first_ping_at: ~
   job_uuid: ~
+  properties: {}
   info:
     ping_secret: "abcdyi0x4lb5q4gzqqtrnq30oyj08r8dtdimmanbqw49z1anz2"
 
@@ -93,5 +97,6 @@ node_with_no_ip_address_yet:
   last_ping_at: ~
   first_ping_at: ~
   job_uuid: ~
+  properties: {}
   info:
     ping_secret: "abcdyefg4lb5q4gzqqtrnq30oyj08r8dtdimmanbqw49z1anz2"

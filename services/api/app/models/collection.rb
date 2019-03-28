@@ -14,10 +14,10 @@ class Collection < ArvadosModel
   include CommonApiTemplate
   include Trashable
 
-  serialize :properties, Hash
-  serialize :storage_classes_desired, Array
-  serialize :storage_classes_confirmed, Array
+  # Posgresql JSONB columns should NOT be declared as serialized, Rails 5
+  # already know how to properly treat them.
 
+  before_validation :fill_field_defaults
   before_validation :default_empty_manifest
   before_validation :default_storage_classes, on: :create
   before_validation :check_encoding
@@ -652,5 +652,11 @@ class Collection < ArvadosModel
     super
     self.current_version_uuid ||= self.uuid
     true
+  end
+
+  def fill_field_defaults
+    self.properties ||= {}
+    self.storage_classes_desired ||= []
+    self.storage_classes_confirmed ||= []
   end
 end

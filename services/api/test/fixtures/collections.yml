@@ -14,6 +14,7 @@ user_agreement:
   updated_at: 2013-12-26T19:22:54Z
   manifest_text: ". 6a4ff0499484c6c79c95cd8c566bd25f+249025 0:249025:GNU_General_Public_License,_version_3.pdf\n"
   name: user_agreement
+  properties: {}
 
 collection_owned_by_active:
   uuid: zzzzz-4zz18-bv31uwvy3neko21
@@ -28,6 +29,7 @@ collection_owned_by_active:
   manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
   name: owned_by_active
   version: 2
+  properties: {}
 
 collection_owned_by_active_past_version_1:
   uuid: zzzzz-4zz18-znfnqtbbv4spast
@@ -42,6 +44,7 @@ collection_owned_by_active_past_version_1:
   manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
   name: owned_by_active_version_1
   version: 1
+  properties: {}
 
 foo_file:
   uuid: zzzzz-4zz18-znfnqtbbv4spc3w
@@ -55,6 +58,7 @@ foo_file:
   updated_at: 2015-02-03T17:22:54Z
   manifest_text: ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo\n"
   name: foo_file
+  properties: {}
 
 bar_file:
   uuid: zzzzz-4zz18-ehbhgtheo8909or
@@ -68,6 +72,7 @@ bar_file:
   updated_at: 2015-02-03T17:22:54Z
   manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
   name: bar_file
+  properties: {}
 
 baz_file:
   uuid: zzzzz-4zz18-y9vne9npefyxh8g
@@ -81,6 +86,7 @@ baz_file:
   updated_at: 2014-02-03T17:22:54Z
   manifest_text: ". 73feffa4b7f6bb68e44cf984c85f6e88+3 0:3:baz\n"
   name: baz_file
+  properties: {}
 
 w_a_z_file:
   uuid: zzzzz-4zz18-25k12570yk134b3
@@ -95,6 +101,7 @@ w_a_z_file:
   manifest_text: ". 4c6c2c0ac8aa0696edd7316a3be5ca3c+5 0:5:w\\040\\141\\040z\n"
   name: "\"w a z\" file"
   version: 2
+  properties: {}
 
 w_a_z_file_version_1:
   uuid: zzzzz-4zz18-25k12570yk1ver1
@@ -109,6 +116,7 @@ w_a_z_file_version_1:
   manifest_text: ". 4d20280d5e516a0109768d49ab0f3318+3 0:3:waz\n"
   name: "waz file"
   version: 1
+  properties: {}
 
 multilevel_collection_1:
   uuid: zzzzz-4zz18-pyw8yp9g3pr7irn
@@ -122,6 +130,7 @@ multilevel_collection_1:
   updated_at: 2014-02-03T17:22:54Z
   manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2 0:0:file3\n./dir1 d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2 0:0:file3\n./dir1/subdir d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2 0:0:file3\n./dir2 d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2 0:0:file3\n"
   name: multilevel_collection_1
+  properties: {}
 
 multilevel_collection_2:
   uuid: zzzzz-4zz18-45xf9hw1sxkhl6q
@@ -136,6 +145,7 @@ multilevel_collection_2:
   updated_at: 2014-02-03T17:22:54Z
   manifest_text: "./dir1/sub1 d41d8cd98f00b204e9800998ecf8427e+0 0:0:a 0:0:b\n./dir2/sub2 d41d8cd98f00b204e9800998ecf8427e+0 0:0:c 0:0:d\n"
   name: multilevel_collection_2
+  properties: {}
 
 docker_image:
   uuid: zzzzz-4zz18-1v45jub259sjjgb
@@ -150,6 +160,7 @@ docker_image:
   updated_at: 2014-06-11T17:22:54Z
   manifest_text: ". d21353cfe035e3e384563ee55eadbb2f+67108864 5c77a43e329b9838cbec18ff42790e57+55605760 0:122714624:d8309758b8fe2c81034ffc8a10c36460b77db7bc5e7b448c4e5b684f9d95a678.tar\n"
   name: docker_image
+  properties: {}
 
 # tagged docker image with sha256:{hash}.tar filename
 docker_image_1_12:
@@ -164,6 +175,7 @@ docker_image_1_12:
   updated_at: 2016-10-19 08:50:45.652930000 Z
   manifest_text: ". d21353cfe035e3e384563ee55eadbb2f+67108864 5c77a43e329b9838cbec18ff42790e57+55605760 0:122714624:sha256:d8309758b8fe2c81034ffc8a10c36460b77db7bc5e7b448c4e5b684f9d95a678.tar\n"
   name: docker_image_1_12
+  properties: {}
 
 unlinked_docker_image:
   uuid: zzzzz-4zz18-d0d8z5wofvfgwad
@@ -179,6 +191,7 @@ unlinked_docker_image:
   updated_at: 2014-06-11T17:22:54Z
   manifest_text: ". fca529cfe035e3e384563ee55eadbb2f+67108863 0:67108863:bcd02158b8fe2c81034ffc8a10c36460b77db7bc5e7b448c4e5b684f9d95a678.tar\n"
   name: unlinked_docker_image
+  properties: {}
 
 empty:
   uuid: zzzzz-4zz18-gs9ooj1h9sd5mde
@@ -193,6 +206,7 @@ empty:
   updated_at: 2014-06-11T17:22:54Z
   manifest_text: ""
   name: empty_collection
+  properties: {}
 
 foo_collection_in_aproject:
   uuid: zzzzz-4zz18-fy296fx3hot09f7
@@ -204,6 +218,7 @@ foo_collection_in_aproject:
   updated_at: 2014-04-21 15:37:48 -0400
   manifest_text: ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo\n"
   name: "zzzzz-4zz18-fy296fx3hot09f7 added sometime"
+  properties: {}
 
 user_agreement_in_anonymously_accessible_project:
   uuid: zzzzz-4zz18-uukreo9rbgwsujr
@@ -215,6 +230,7 @@ user_agreement_in_anonymously_accessible_project:
   updated_at: 2014-06-13 20:42:26 -0800
   manifest_text: ". 6a4ff0499484c6c79c95cd8c566bd25f+249025 0:249025:GNU_General_Public_License,_version_3.pdf\n"
   name: GNU General Public License, version 3
+  properties: {}
 
 public_text_file:
   uuid: zzzzz-4zz18-4en62shvi99lxd4
@@ -226,6 +242,7 @@ public_text_file:
   updated_at: 2015-02-12 16:58:03 -0500
   manifest_text: ". f0ef7081e1539ac00ef5b761b4fb01b3+12 0:12:Hello\\040world.txt\n"
   name: Hello world
+  properties: {}
 
 baz_collection_name_in_asubproject:
   uuid: zzzzz-4zz18-lsitwcf548ui4oe
@@ -237,6 +254,7 @@ baz_collection_name_in_asubproject:
   updated_at: 2014-04-21 15:37:48 -0400
   manifest_text: ". 73feffa4b7f6bb68e44cf984c85f6e88+3 0:3:baz\n"
   name: "zzzzz-4zz18-lsitwcf548ui4oe added sometime"
+  properties: {}
 
 empty_collection_name_in_active_user_home_project:
   uuid: zzzzz-4zz18-5qa38qghh1j3nvv
@@ -247,6 +265,7 @@ empty_collection_name_in_active_user_home_project:
   modified_at: 2014-08-06 22:11:51.242150425 Z
   manifest_text: ""
   name: Empty collection
+  properties: {}
 
 baz_file_in_asubproject:
   uuid: zzzzz-4zz18-0mri2x4u7ftngez
@@ -260,6 +279,7 @@ baz_file_in_asubproject:
   updated_at: 2014-02-03T17:22:54Z
   manifest_text: ". 73feffa4b7f6bb68e44cf984c85f6e88+3 0:3:baz\n"
   name: baz_file
+  properties: {}
 
 collection_to_move_around_in_aproject:
   uuid: zzzzz-4zz18-0mri2x4u7ft1234
@@ -273,6 +293,7 @@ collection_to_move_around_in_aproject:
   updated_at: 2014-02-03T17:22:54Z
   manifest_text: ". 73feffa4b7f6bb68e44cf984c85f6e88+3 0:3:baz\n"
   name: collection_to_move_around
+  properties: {}
 
 # Note: collections(:expired_collection) fixture finder won't work
 # because it is not in default scope
@@ -292,6 +313,7 @@ expired_collection:
   manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:expired\n"
   name: expired_collection
   version: 2
+  properties: {}
 
 expired_collection_past_version:
   uuid: zzzzz-4zz18-mto52zx1s7oldie
@@ -309,6 +331,7 @@ expired_collection_past_version:
   manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:expired\n"
   name: expired_collection original
   version: 1
+  properties: {}
 
 trashed_on_next_sweep:
   uuid: zzzzz-4zz18-4guozfh77ewd2f0
@@ -325,6 +348,7 @@ trashed_on_next_sweep:
   delete_at: 2112-01-01T00:00:00Z
   manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:expired\n"
   name: trashed_on_next_sweep
+  properties: {}
 
 # Note: collections(:deleted_on_next_sweep) fixture finder won't work
 # because it is not in default scope
@@ -343,6 +367,7 @@ deleted_on_next_sweep:
   delete_at: 2016-12-27T22:01:30.234567Z
   manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:expired\n"
   name: deleted_on_next_sweep
+  properties: {}
 
 collection_expires_in_future:
   uuid: zzzzz-4zz18-padkqo7yb8d9i3j
@@ -358,6 +383,7 @@ collection_expires_in_future:
   delete_at: 2038-03-01T00:00:00Z
   manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:expired\n"
   name: collection_expires_in_future
+  properties: {}
 
 unique_expired_collection:
   uuid: zzzzz-4zz18-mto52zx1s7sn3jk
@@ -374,6 +400,7 @@ unique_expired_collection:
   delete_at: 2038-01-01T00:00:00Z
   manifest_text: ". 29d7797f1888013986899bc9083783fa+3 0:3:expired\n"
   name: unique_expired_collection1
+  properties: {}
 
 unique_expired_collection2:
   uuid: zzzzz-4zz18-mto52zx1s7sn3jr
@@ -390,6 +417,7 @@ unique_expired_collection2:
   delete_at: 2038-01-01T00:00:00Z
   manifest_text: ". 29d7797f1888013986899bc9083783fa+3 0:3:expired\n"
   name: unique_expired_collection2
+  properties: {}
 
 # a collection with a log file that can be parsed by the log viewer
 # This collection hash matches the following log text:
@@ -406,6 +434,7 @@ real_log_collection:
   portable_data_hash: 0b9a7787660e1fce4a93f33e01376ba6+81
   manifest_text: ". cdd549ae79fe6640fa3d5c6261d8303c+195 0:195:zzzzz-8i9sb-0vsrcqi7whchuil.log.txt\n"
   name: real_log_collection
+  properties: {}
 
 collection_in_home_project_with_same_name_as_in_aproject:
   uuid: zzzzz-4zz18-12342x4u7ftabcd
@@ -419,6 +448,7 @@ collection_in_home_project_with_same_name_as_in_aproject:
   updated_at: 2014-02-03T17:22:54Z
   manifest_text: ". 73feffa4b7f6bb68e44cf984c85f6e88+3 0:3:baz\n"
   name: collection_with_same_name_in_aproject_and_home_project
+  properties: {}
 
 collection_in_aproject_with_same_name_as_in_home_project:
   uuid: zzzzz-4zz18-56782x4u7ftefgh
@@ -432,6 +462,7 @@ collection_in_aproject_with_same_name_as_in_home_project:
   updated_at: 2014-02-03T17:22:54Z
   manifest_text: ". 73feffa4b7f6bb68e44cf984c85f6e88+3 0:3:baz\n"
   name: collection_with_same_name_in_aproject_and_home_project
+  properties: {}
 
 collection_owned_by_foo:
   uuid: zzzzz-4zz18-50surkhkbhsp31b
@@ -442,6 +473,7 @@ collection_owned_by_foo:
   created_at: 2014-02-03T17:22:54Z
   modified_at: 2014-02-03T17:22:54Z
   name: collection_owned_by_foo
+  properties: {}
 
 collection_to_remove_from_subproject:
   # The Workbench tests remove this from subproject.
@@ -453,6 +485,7 @@ collection_to_remove_from_subproject:
   created_at: 2014-10-15T10:45:00
   modified_at: 2014-10-15T10:45:00
   name: Collection to remove from subproject
+  properties: {}
 
 collection_with_files_in_subdir:
   uuid: zzzzz-4zz18-filesinsubdir00
@@ -466,6 +499,7 @@ collection_with_files_in_subdir:
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
   manifest_text: ". 85877ca2d7e05498dd3d109baf2df106+95 0:95:file_in_subdir1\n./subdir2/subdir3 2bbc341c702df4d8f42ec31f16c10120+64 0:32:file1_in_subdir3.txt 32:32:file2_in_subdir3.txt\n./subdir2/subdir3/subdir4 2bbc341c702df4d8f42ec31f16c10120+64 0:32:file1_in_subdir4.txt 32:32:file2_in_subdir4.txt"
+  properties: {}
 
 graph_test_collection1:
   uuid: zzzzz-4zz18-bv31uwvy3neko22
@@ -476,6 +510,7 @@ graph_test_collection1:
   name: bar_file
   created_at: 2014-02-03T17:22:54Z
   modified_at: 2014-02-03T17:22:54Z
+  properties: {}
 
 graph_test_collection2:
   uuid: zzzzz-4zz18-uukreo9rbgwsujx
@@ -486,6 +521,7 @@ graph_test_collection2:
   name: "FOO General Public License, version 3"
   created_at: 2014-02-03T17:22:54Z
   modified_at: 2014-02-03T17:22:54Z
+  properties: {}
 
 graph_test_collection3:
   uuid: zzzzz-4zz18-uukreo9rbgwsujj
@@ -496,6 +532,7 @@ graph_test_collection3:
   name: "baz file"
   created_at: 2014-02-03T17:22:54Z
   modified_at: 2014-02-03T17:22:54Z
+  properties: {}
 
 collection_1_owned_by_fuse:
   uuid: zzzzz-4zz18-ovx05bfzormx3bg
@@ -509,6 +546,7 @@ collection_1_owned_by_fuse:
   updated_at: 2014-02-03T17:22:54Z
   manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
   name: "collection #1 owned by FUSE"
+  properties: {}
 
 collection_2_owned_by_fuse:
   uuid: zzzzz-4zz18-8ubpy4w74twtwzr
@@ -522,6 +560,7 @@ collection_2_owned_by_fuse:
   updated_at: 2014-02-03T17:22:54Z
   manifest_text: ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo\n"
   name: "collection #2 owned by FUSE"
+  properties: {}
 
 collection_in_fuse_project:
   uuid: zzzzz-4zz18-vx4mtkjqfrb534f
@@ -535,6 +574,7 @@ collection_in_fuse_project:
   updated_at: 2014-02-03T17:22:54Z
   manifest_text: ". 73feffa4b7f6bb68e44cf984c85f6e88+3 0:3:baz\n"
   name: "collection in FUSE project"
+  properties: {}
 
 collection_with_no_name_in_aproject:
   uuid: zzzzz-4zz18-00000nonamecoll
@@ -545,6 +585,7 @@ collection_with_no_name_in_aproject:
   modified_at: 2014-04-21 15:37:48 -0400
   updated_at: 2014-04-21 15:37:48 -0400
   manifest_text: ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo\n"
+  properties: {}
 
 collection_to_search_for_in_aproject:
   uuid: zzzzz-4zz18-abcd6fx123409f7
@@ -556,6 +597,7 @@ collection_to_search_for_in_aproject:
   updated_at: 2014-04-21 15:37:48 -0400
   manifest_text: ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo\n"
   name: "zzzzz-4zz18-abcd6fx123409f7 used to search with any"
+  properties: {}
 
 upload_sandbox:
   uuid: zzzzz-4zz18-js48y3ykkfdfjd3
@@ -568,6 +610,7 @@ upload_sandbox:
   updated_at: 2014-12-09 15:03:16
   manifest_text: ''
   name: upload sandbox
+  properties: {}
 
 collection_with_unique_words_to_test_full_text_search:
   uuid: zzzzz-4zz18-mnt690klmb51aud
@@ -582,6 +625,7 @@ collection_with_unique_words_to_test_full_text_search:
   manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
   name: collection_with_some_unique_words
   description: The quick_brown_fox jumps over the lazy_dog
+  properties: {}
 
 replication_undesired_unconfirmed:
   uuid: zzzzz-4zz18-wjxq7uzx2m9jj4a
@@ -597,6 +641,7 @@ replication_undesired_unconfirmed:
   updated_at: 2015-02-07 00:19:28.596236608 Z
   manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
   name: replication want=null have=null
+  properties: {}
 
 replication_desired_2_unconfirmed:
   uuid: zzzzz-4zz18-3t236wrz4769h7x
@@ -612,6 +657,7 @@ replication_desired_2_unconfirmed:
   updated_at: 2015-02-07 00:21:35.050126576 Z
   manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
   name: replication want=2 have=null
+  properties: {}
 
 replication_desired_2_confirmed_2:
   uuid: zzzzz-4zz18-434zv1tnnf2rygp
@@ -627,6 +673,7 @@ replication_desired_2_confirmed_2:
   updated_at: 2015-02-07 00:24:52.983381227 Z
   manifest_text: ". acbd18db4cc2f85cedef654fccc4a4d8+3 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo 3:3:bar\n"
   name: replication want=2 have=2
+  properties: {}
 
 storage_classes_desired_default_unconfirmed:
   uuid: zzzzz-4zz18-3t236wrz4769tga
@@ -642,6 +689,7 @@ storage_classes_desired_default_unconfirmed:
   updated_at: 2015-02-07 00:21:35.050126576 Z
   manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
   name: storage classes want=[default] have=[]
+  properties: {}
 
 storage_classes_desired_default_confirmed_default:
   uuid: zzzzz-4zz18-3t236wr12769tga
@@ -657,6 +705,7 @@ storage_classes_desired_default_confirmed_default:
   updated_at: 2015-02-07 00:21:35.050126576 Z
   manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
   name: storage classes want=[default] have=[default]
+  properties: {}
 
 storage_classes_desired_archive_confirmed_default:
   uuid: zzzzz-4zz18-3t236wr12769qqa
@@ -672,6 +721,7 @@ storage_classes_desired_archive_confirmed_default:
   updated_at: 2015-02-07 00:21:35.050126576 Z
   manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
   name: storage classes want=[archive] have=[default]
+  properties: {}
 
 collection_with_empty_properties:
   uuid: zzzzz-4zz18-emptyproperties
@@ -728,6 +778,7 @@ collection_with_repeated_filenames_and_contents_in_two_dirs_2:
   updated_at: 2014-02-03T17:22:54Z
   name: collection_with_repeated_filenames_and_contents_in_two_dirs_2
   manifest_text: "./dir1 92b53930db60fe94be2a73fc771ba921+34 0:12:alice 12:12:alice.txt 24:10:carol.txt\n./dir2 56ac2557b1ded11ccab7293dc47d1e88+44 0:27:alice.txt\n"
+  properties: {}
 
 foo_and_bar_files_in_dir:
   uuid: zzzzz-4zz18-foonbarfilesdir
@@ -741,6 +792,7 @@ foo_and_bar_files_in_dir:
   updated_at: 2014-02-03T17:22:54Z
   name: foo_file_in_dir
   manifest_text: "./dir1 3858f62230ac3c915f300c664312c63f+6 3:3:bar 0:3:foo\n"
+  properties: {}
 
 multi_level_to_combine:
   uuid: zzzzz-4zz18-pyw8yp9g3ujh45f
@@ -754,6 +806,7 @@ multi_level_to_combine:
   updated_at: 2014-02-03T17:22:54Z
   manifest_text: ". 85877ca2d7e05498dd3d109baf2df106+95 0:0:file1 0:0:file2 0:0:file3\n./dir1 85877ca2d7e05498dd3d109baf2df106+95 0:0:file1 0:0:file2 0:0:file3\n./dir1/subdir 85877ca2d7e05498dd3d109baf2df106+95 0:0:file1 0:0:file2 0:0:file3\n./dir2 85877ca2d7e05498dd3d109baf2df106+95 0:0:file1 0:0:file2 0:0:file3\n"
   name: multi_level_to_combine
+  properties: {}
 
 # collection with several file types to test view icon enabled state in collection show page
 collection_with_several_supported_file_types:
@@ -768,6 +821,7 @@ collection_with_several_supported_file_types:
   updated_at: 2014-02-03T17:22:54Z
   manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:file.csv 0:0:file.fa 0:0:file.fasta 0:0:file.gif 0:0:file.json 0:0:file.md 0:0:file.pdf 0:0:file.py 0:0:file.R 0:0:file.sam 0:0:file.sh 0:0:file.tiff 0:0:file.tsv 0:0:file.txt 0:0:file.vcf 0:0:file.xml 0:0:file.xsl 0:0:file.yml\n"
   name: collection_with_several_supported_file_types
+  properties: {}
 
 collection_with_several_unsupported_file_types:
   uuid: zzzzz-4zz18-supportedtypes2
@@ -781,6 +835,7 @@ collection_with_several_unsupported_file_types:
   updated_at: 2014-02-03T17:22:54Z
   manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:file 0:0:file.bam\n"
   name: collection_with_several_unsupported_file_types
+  properties: {}
 
 collection_not_readable_by_active:
   uuid: zzzzz-4zz18-cd42uwvy3neko21
@@ -794,6 +849,7 @@ collection_not_readable_by_active:
   updated_at: 2014-02-03T17:22:54Z
   manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
   name: collection_not_readable_by_active
+  properties: {}
 
 collection_to_remove_and_rename_files:
   uuid: zzzzz-4zz18-a21ux3541sxa8sf
@@ -807,6 +863,7 @@ collection_to_remove_and_rename_files:
   updated_at: 2014-02-03T17:22:54Z
   manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2\n"
   name: collection to remove and rename files
+  properties: {}
 
 collection_with_tags_owned_by_active:
   uuid: zzzzz-4zz18-taggedcolletion
@@ -839,6 +896,7 @@ trashed_collection_to_test_name_conflict_on_untrash:
   is_trashed: true
   trash_at: 2001-01-01T00:00:00Z
   delete_at: 2038-01-01T00:00:00Z
+  properties: {}
 
 same_name_as_trashed_coll_to_test_name_conflict_on_untrash:
   uuid: zzzzz-4zz18-namesameastrash
@@ -852,6 +910,7 @@ same_name_as_trashed_coll_to_test_name_conflict_on_untrash:
   updated_at: 2014-02-03T17:22:54Z
   manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2\n"
   name: same name for trashed and persisted collections
+  properties: {}
 
 collection_in_trashed_subproject:
   uuid: zzzzz-4zz18-trashedproj2col
@@ -865,6 +924,7 @@ collection_in_trashed_subproject:
   updated_at: 2014-02-03T17:22:54Z
   manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2\n"
   name: collection in trashed subproject
+  properties: {}
 
 collection_with_prop1_value1:
   uuid: zzzzz-4zz18-withprop1value1
@@ -986,6 +1046,7 @@ collection_<%=i%>_of_10:
   owner_uuid: zzzzz-j7d0g-0010collections
   created_at: <%= i.minute.ago.to_s(:db) %>
   modified_at: <%= i.minute.ago.to_s(:db) %>
+  properties: {}
 <% end %>
 
 # collections in project_with_201_collections
@@ -999,6 +1060,7 @@ collection_<%=i%>_of_201:
   owner_uuid: zzzzz-j7d0g-0201collections
   created_at: <%= i.minute.ago.to_s(:db) %>
   modified_at: <%= i.minute.ago.to_s(:db) %>
+  properties: {}
 <% end %>
 
 # Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper

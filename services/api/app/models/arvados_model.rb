@@ -117,6 +117,15 @@ class ArvadosModel < ApplicationRecord
           raise ArgumentError.new("#{colname} parameter cannot have non-string hash keys")
         end
       end
+      # Check JSONB columns that aren't listed on serialized_attributes
+      columns.select{|c| c.type == :jsonb}.collect{|j| j.name}.each do |colname|
+        if serialized_attributes.include? colname || raw_params[colname.to_sym].nil?
+          next
+        end
+        if has_nonstring_keys?(raw_params[colname.to_sym])
+          raise ArgumentError.new("#{colname} parameter cannot have non-string hash keys")
+        end
+      end
     end
     ActionController::Parameters.new(raw_params).permit!
   end
@@ -413,7 +422,8 @@ class ArvadosModel < ApplicationRecord
 
   def self.full_text_tsvector
     parts = full_text_searchable_columns.collect do |column|
-      cast = serialized_attributes[column] ? '::text' : ''
+      is_jsonb = self.columns.select{|x|x.name == column}[0].type == :jsonb
+      cast = (is_jsonb || serialized_attributes[column]) ? '::text' : ''
       "coalesce(#{column}#{cast},'')"
     end
     "to_tsvector('english', substr(#{parts.join(" || ' ' || ")}, 0, 8000))"
@@ -674,7 +684,8 @@ class ArvadosModel < ApplicationRecord
     # we'll convert symbols to strings when loading from the
     # database. (Otherwise, loading and saving an object with existing
     # symbols in a serialized field will crash.)
-    self.class.serialized_attributes.each do |colname, attr|
+    jsonb_cols = self.class.columns.select{|c| c.type == :jsonb}.collect{|j| j.name}
+    (jsonb_cols + self.class.serialized_attributes.keys).uniq.each do |colname|
       if self.class.has_symbols? attributes[colname]
         attributes[colname] = self.class.recursive_stringify attributes[colname]
         send(colname + '=',

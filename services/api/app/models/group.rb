@@ -12,7 +12,8 @@ class Group < ArvadosModel
   include CanBeAnOwner
   include Trashable
 
-  serialize :properties, Hash
+  # Posgresql JSONB columns should NOT be declared as serialized, Rails 5
+  # already know how to properly treat them.
 
   after_create :invalidate_permissions_cache
   after_update :maybe_invalidate_permissions_cache

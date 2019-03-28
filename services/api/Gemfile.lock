@@ -163,7 +163,7 @@ GEM
     net-ssh-gateway (2.0.0)
       net-ssh (>= 4.0.0)
     nio4r (2.3.1)
-    nokogiri (1.10.1)
+    nokogiri (1.10.2)
       mini_portile2 (~> 2.4.0)
     oauth2 (1.4.1)
       faraday (>= 0.8, < 0.16.0)
@@ -184,7 +184,7 @@ GEM
       rack
       rake (>= 0.8.1)
     pg (1.1.4)
-    power_assert (1.1.3)
+    power_assert (1.1.4)
     public_suffix (3.0.3)
     rack (2.0.6)
     rack-test (0.6.3)
@@ -227,7 +227,7 @@ GEM
       actionpack (>= 4.2.0, < 6.0)
       railties (>= 4.2.0, < 6.0)
     retriable (1.4.1)
-    ruby-prof (0.17.0)
+    ruby-prof (0.15.9)
     rvm-capistrano (1.5.6)
       capistrano (~> 2.15.4)
     safe_yaml (1.0.5)
@@ -250,7 +250,7 @@ GEM
       activesupport (>= 4.0)
       sprockets (>= 3.0.0)
     sshkey (2.0.0)
-    test-unit (3.3.0)
+    test-unit (3.3.1)
       power_assert
     therubyracer (0.12.3)
       libv8 (~> 3.16.14.15)
@@ -296,7 +296,7 @@ DEPENDENCIES
   rails-observers
   rails-perftest
   responders (~> 2.0)
-  ruby-prof
+  ruby-prof (~> 0.15.0)
   rvm-capistrano
   safe_yaml
   simplecov (~> 0.7.1)
@@ -308,4 +308,4 @@ DEPENDENCIES
   uglifier (~> 2.0)
 
 BUNDLED WITH
-   1.17.3
+   1.16.6

@@ -36,6 +36,8 @@ running:
   cwd: test
   output_path: test
   command: ["echo", "hello"]
+  runtime_status:
+    hello: world
   runtime_constraints:
     ram: 12000000000
     vcpus: 4

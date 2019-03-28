@@ -6,7 +6,10 @@ class Link < ArvadosModel
   include HasUuid
   include KindAndEtag
   include CommonApiTemplate
-  serialize :properties, Hash
+
+  # Posgresql JSONB columns should NOT be declared as serialized, Rails 5
+  # already know how to properly treat them.
+
   before_create :permission_to_attach_to_objects
   before_update :permission_to_attach_to_objects
   after_update :maybe_invalidate_permissions_cache
