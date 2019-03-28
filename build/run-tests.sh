@@ -703,7 +703,7 @@ do_test() {
         services/api)
             stop_services
             ;;
-        doc | lib/cli | lib/cloud/azure | lib/cloud/ec2 | lib/cmd | lib/dispatchcloud/ssh_executor | lib/dispatchcloud/worker)
+        gofmt | doc | lib/cli | lib/cloud/azure | lib/cloud/ec2 | lib/cmd | lib/dispatchcloud/ssh_executor | lib/dispatchcloud/worker)
             # don't care whether services are running
             ;;
         *)
@@ -736,7 +736,6 @@ do_test_once() {
         # compilation errors.
         go get -ldflags "-X main.version=${ARVADOS_VERSION:-$(git log -n1 --format=%H)-dev}" -t "git.curoverse.com/arvados.git/$1" && \
             cd "$GOPATH/src/git.curoverse.com/arvados.git/$1" && \
-            [[ -z "$(gofmt -e -d . | tee /dev/stderr)" ]] && \
             if [[ -n "${testargs[$1]}" ]]
         then
             # "go test -check.vv giturl" doesn't work, but this
@@ -753,6 +752,7 @@ do_test_once() {
             go tool cover -html="$WORKSPACE/tmp/.$covername.tmp" -o "$WORKSPACE/tmp/$covername.html"
             rm "$WORKSPACE/tmp/.$covername.tmp"
         fi
+        [[ $result = 0 ]] && gofmt -e -d *.go
     elif [[ "$2" == "pip" ]]
     then
         tries=0
@@ -1010,6 +1010,12 @@ test_doc() {
     )
 }
 
+test_gofmt() {
+    cd "$WORKSPACE" || return 1
+    dirs=$(ls -d */ | egrep -v 'vendor|tmp')
+    [[ -z "$(gofmt -e -d $dirs | tee -a /dev/stderr)" ]]
+}
+
 test_services/api() {
     rm -f "$WORKSPACE/services/api/git-commit.version"
     cd "$WORKSPACE/services/api" \
@@ -1125,6 +1131,7 @@ test_all() {
         exit_cleanly
     fi
 
+    do_test gofmt
     do_test doc
     do_test sdk/ruby
     do_test sdk/R
