@@ -15,6 +15,7 @@ test:
   adapter: postgresql
   template: template0
   encoding: utf8
+  collation: en_US.utf8
   database: arvados_test
   username: arvados
   password: xxxxxxxx
@@ -28,7 +29,4 @@ production:
   username: arvados
   password: xxxxxxxx
   host: localhost
-  # For the websockets server, prefer a larger database connection pool size since it
-  # multithreaded and can serve a large number of long-lived clients.  See also
-  # websocket_max_connections configuration option.
   pool: 50
