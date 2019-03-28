@@ -738,7 +738,7 @@ def _getport(program):
 def _dbconfig(key):
     global _cached_db_config
     if not _cached_db_config:
-        _cached_db_config = yaml.load(open(os.path.join(
+        _cached_db_config = yaml.safe_load(open(os.path.join(
             SERVICES_SRC_DIR, 'api', 'config', 'database.yml')))
     return _cached_db_config['test'][key]
 
@@ -750,7 +750,7 @@ def _apiconfig(key):
         fullpath = os.path.join(SERVICES_SRC_DIR, 'api', 'config', f)
         if not required and not os.path.exists(fullpath):
             return {}
-        return yaml.load(fullpath)
+        return yaml.safe_load(fullpath)
     cdefault = _load('application.default.yml')
     csite = _load('application.yml', required=False)
     _cached_config = {}
@@ -769,7 +769,7 @@ def fixture(fix):
           yaml_file = yaml_file[0:trim_index]
         except ValueError:
           pass
-        return yaml.load(yaml_file)
+        return yaml.safe_load(yaml_file)
 
 def auth_token(token_name):
     return fixture("api_client_authorizations")[token_name]["api_token"]
