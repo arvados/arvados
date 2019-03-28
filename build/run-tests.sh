@@ -1052,17 +1052,17 @@ test_services/nodemanager_integration() {
 
 test_apps/workbench_units() {
     cd "$WORKSPACE/apps/workbench" \
-        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:units TESTOPTS=-v ${testargs[apps/workbench]}
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:units TESTOPTS=-v ${testargs[apps/workbench]} ${testargs[apps/workbench_units]}
 }
 
 test_apps/workbench_functionals() {
     cd "$WORKSPACE/apps/workbench" \
-        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:functionals TESTOPTS=-v ${testargs[apps/workbench]}
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:functionals TESTOPTS=-v ${testargs[apps/workbench]} ${testargs[apps/workbench_functionals]}
 }
 
 test_apps/workbench_integration() {
     cd "$WORKSPACE/apps/workbench" \
-        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:integration TESTOPTS=-v ${testargs[apps/workbench]}
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:integration TESTOPTS=-v ${testargs[apps/workbench]} ${testargs[apps/workbench_integration]}
 }
 
 test_apps/workbench_benchmark() {
