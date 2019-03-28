@@ -28,7 +28,7 @@ class AddFileInfoToCollection < ActiveRecord::Migration
 
   def up
     add_column :collections, :file_count, :integer, default: 0, null: false
-    add_column :collections, :file_size_total, :integer, default: 0, null: false
+    add_column :collections, :file_size_total, :integer, limit: 8, default: 0, null: false
 
     distinct_pdh_count = ActiveRecord::Base.connection.exec_query(
       "SELECT DISTINCT portable_data_hash FROM collections"

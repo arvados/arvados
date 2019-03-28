@@ -177,7 +177,7 @@ CREATE TABLE public.collections (
     version integer DEFAULT 1 NOT NULL,
     preserve_version boolean DEFAULT false,
     file_count integer DEFAULT 0 NOT NULL,
-    file_size_total integer DEFAULT 0 NOT NULL
+    file_size_total bigint DEFAULT 0 NOT NULL
 );
 
 
