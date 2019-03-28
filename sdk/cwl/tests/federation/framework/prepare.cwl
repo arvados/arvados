@@ -48,4 +48,4 @@ outputs:
     type: boolean
     outputBinding:
       outputEval: $(true)
-baseCommand: python2
+baseCommand: python
