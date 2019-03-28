@@ -148,6 +148,7 @@ PYTHONPATH=
 GEMHOME=
 PERLINSTALLBASE=
 R_LIBS=
+export LANG=en_US.UTF-8
 
 short=
 only_install=
@@ -189,6 +190,9 @@ sanity_checks() {
     ( [[ -n "$WORKSPACE" ]] && [[ -d "$WORKSPACE/services" ]] ) \
         || fatal "WORKSPACE environment variable not set to a source directory (see: $0 --help)"
     echo Checking dependencies:
+    echo "locale: ${LANG}"
+    [[ "$(locale charmap)" = "UTF-8" ]] \
+        || fatal "Locale '${LANG}' is broken/missing. Try: echo ${LANG} | sudo tee -a /etc/locale.gen && sudo locale-gen"
     echo -n 'virtualenv: '
     virtualenv --version \
         || fatal "No virtualenv. Try: apt-get install virtualenv (on ubuntu: python-virtualenv)"
