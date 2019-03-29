@@ -155,6 +155,17 @@ func (lr *LocalRun) run(dispatcher *dispatch.Dispatcher,
 
 		defer func() { <-lr.concurrencyLimit }()
 
+		select {
+		case c := <-status:
+			// Check for state updates after possibly
+			// waiting to be ready-to-run
+			if c.Priority == 0 {
+				goto Finish
+			}
+		default:
+			break
+		}
+
 		waitGroup.Add(1)
 		defer waitGroup.Done()
 
@@ -211,6 +222,8 @@ func (lr *LocalRun) run(dispatcher *dispatch.Dispatcher,
 			runningCmdsMutex.Unlock()
 		}
 	}
+
+Finish:
 
 	// If the container is not finalized, then change it to "Cancelled".
 	err := dispatcher.Arv.Get("containers", uuid, nil, &container)
