@@ -29,6 +29,7 @@ class Collection < ArvadosModel
   validate :ensure_storage_classes_contain_non_empty_strings
   validate :versioning_metadata_updates, on: :update
   validate :past_versions_cannot_be_updated, on: :update
+  validate :file_count_and_size_cannot_be_changed
   before_save :set_file_names
   before_save :set_file_count_and_total_size
   around_update :manage_versioning
@@ -647,6 +648,19 @@ class Collection < ArvadosModel
       errors.add(:base, "past versions cannot be updated")
       false
     end
+  end
+
+  def file_count_and_size_cannot_be_changed
+    valid = true
+    if file_count_changed?
+      errors.add(:file_count, "cannot be changed")
+      valid = false
+    end
+    if file_size_total_changed?
+      errors.add(:file_size_total, "cannot be changed")
+      valid = false
+    end
+    valid
   end
 
   def versioning_metadata_updates
