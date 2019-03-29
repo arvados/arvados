@@ -17,7 +17,6 @@ import { RepositoryResource } from '~/models/repositories';
 import { SshKeyResource } from '~/models/ssh-key';
 import { VirtualMachinesResource } from '~/models/virtual-machines';
 import { KeepServiceResource } from '~/models/keep-services';
-import { ApiClientAuthorization } from '~/models/api-client-authorization';
 import { ProcessResource } from '~/models/process';
 
 export const contextMenuActions = unionize({

@@ -16,6 +16,8 @@ import { openSharingDialog } from '~/store/sharing-dialog/sharing-dialog-actions
 import { openAdvancedTabDialog } from "~/store/advanced-tab/advanced-tab";
 import { toggleDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { TogglePublicFavoriteAction } from "~/views-components/context-menu/actions/public-favorite-action";
+import { publicFavoritePanelActions } from "~/store/public-favorites-panel/public-favorites-action";
+import { togglePublicFavorite } from "~/store/public-favorites/public-favorites-actions";
 
 export const collectionAdminActionSet: ContextMenuActionSet = [[
     {
@@ -43,8 +45,8 @@ export const collectionAdminActionSet: ContextMenuActionSet = [[
     {
         component: TogglePublicFavoriteAction,
         execute: (dispatch, resource) => {
-            dispatch<any>(toggleFavorite(resource)).then(() => {
-                dispatch<any>(favoritePanelActions.REQUEST_ITEMS());
+            dispatch<any>(togglePublicFavorite(resource)).then(() => {
+                dispatch<any>(publicFavoritePanelActions.REQUEST_ITEMS());
             });
         }
     },

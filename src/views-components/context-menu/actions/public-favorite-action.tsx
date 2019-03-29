@@ -9,21 +9,21 @@ import { connect } from "react-redux";
 import { RootState } from "~/store/store";
 
 const mapStateToProps = (state: RootState, props: { onClick: () => {} }) => ({
-    isFavorite: state.contextMenu.resource !== undefined && state.favorites[state.contextMenu.resource.uuid] === true,
+    isPublicFavorite: state.contextMenu.resource !== undefined && state.publicFavorites[state.contextMenu.resource.uuid] === true,
     onClick: props.onClick
 });
 
-export const TogglePublicFavoriteAction = connect(mapStateToProps)((props: { isFavorite: boolean, onClick: () => void }) =>
+export const TogglePublicFavoriteAction = connect(mapStateToProps)((props: { isPublicFavorite: boolean, onClick: () => void }) =>
     <ListItem
         button
         onClick={props.onClick}>
         <ListItemIcon>
-            {props.isFavorite
+            {props.isPublicFavorite
                 ? <RemoveFavoriteIcon />
                 : <AddFavoriteIcon />}
         </ListItemIcon>
         <ListItemText style={{ textDecoration: 'none' }}>
-            {props.isFavorite
+            {props.isPublicFavorite
                 ? <>Remove from public favorites</>
                 : <>Add to public favorites</>}
         </ListItemText>

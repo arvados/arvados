@@ -18,6 +18,7 @@ import { GroupContentsResourcePrefix } from "~/services/groups-service/groups-se
 import { ProjectResource } from "~/models/project";
 import { ProjectPanelColumnNames } from "~/views/project-panel/project-panel";
 import { updateFavorites } from "~/store/favorites/favorites-actions";
+import { updatePublicFavorites } from '~/store/public-favorites/public-favorites-actions';
 import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
 import { updateResources } from "~/store/resources/resources-actions";
 import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
@@ -83,6 +84,7 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
                 items
             }));
             api.dispatch<any>(updateFavorites(items));
+            api.dispatch<any>(updatePublicFavorites(items));
             api.dispatch(updateResources(listResults.items));
         } catch (e) {
             api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));

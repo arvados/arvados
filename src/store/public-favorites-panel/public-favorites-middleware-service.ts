@@ -21,7 +21,7 @@ import { LinkResource } from '~/models/link';
 import { GroupContentsResource, GroupContentsResourcePrefix } from '~/services/groups-service/groups-service';
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions';
 import { loadMissingProcessesInformation } from '~/store/project-panel/project-panel-middleware-service';
-import { updateFavorites } from '~/store/favorites/favorites-actions';
+import { updatePublicFavorites } from '~/store/public-favorites/public-favorites-actions';
 
 export class PublicFavoritesMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -75,7 +75,7 @@ export class PublicFavoritesMiddlewareService extends DataExplorerMiddlewareServ
                     page: Math.floor(response.offset / response.limit),
                     rowsPerPage: response.limit
                 }));
-                api.dispatch<any>(updateFavorites(response.items.map(item => item.uuid)));
+                api.dispatch<any>(updatePublicFavorites(response.items.map(item => item.uuid)));
             } catch (e) {
                 api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
                 api.dispatch(publicFavoritePanelActions.SET_ITEMS({

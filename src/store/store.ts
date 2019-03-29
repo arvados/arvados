@@ -61,6 +61,7 @@ import { API_CLIENT_AUTHORIZATION_PANEL_ID } from '~/store/api-client-authorizat
 import { ApiClientAuthorizationMiddlewareService } from '~/store/api-client-authorizations/api-client-authorizations-middleware-service';
 import { PublicFavoritesMiddlewareService } from '~/store/public-favorites-panel/public-favorites-middleware-service';
 import { PUBLIC_FAVORITE_PANEL_ID } from '~/store/public-favorites-panel/public-favorites-action';
+import { publicFavoritesReducer } from '~/store/public-favorites/public-favorites-reducer';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -145,6 +146,7 @@ const createRootReducer = (services: ServiceRepository) => combineReducers({
     detailsPanel: detailsPanelReducer,
     dialog: dialogReducer,
     favorites: favoritesReducer,
+    publicFavorites: publicFavoritesReducer,
     form: formReducer,
     processLogsPanel: processLogsPanelReducer,
     properties: propertiesReducer,
