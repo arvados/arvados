@@ -73,16 +73,17 @@ func (s *TestSuite) TestIntegration(c *C) {
 	dispatcher := dispatch.Dispatcher{
 		Arv:        arv,
 		PollPeriod: time.Second,
-		RunContainer: func(d *dispatch.Dispatcher, c arvados.Container, s <-chan arvados.Container) {
-			run(d, c, s)
-			cancel()
-		},
 	}
 
-	startCmd = func(container arvados.Container, cmd *exec.Cmd) error {
+	startCmd := func(container arvados.Container, cmd *exec.Cmd) error {
 		dispatcher.UpdateState(container.UUID, "Running")
 		dispatcher.UpdateState(container.UUID, "Complete")
 		return cmd.Start()
+	}
+
+	dispatcher.RunContainer = func(d *dispatch.Dispatcher, c arvados.Container, s <-chan arvados.Container) {
+		(&LocalRun{startCmd, make(chan bool, 8), ctx}).run(d, c, s)
+		cancel()
 	}
 
 	err = dispatcher.Run(ctx)
@@ -175,16 +176,17 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 	dispatcher := dispatch.Dispatcher{
 		Arv:        arv,
 		PollPeriod: time.Second / 20,
-		RunContainer: func(d *dispatch.Dispatcher, c arvados.Container, s <-chan arvados.Container) {
-			run(d, c, s)
-			cancel()
-		},
 	}
 
-	startCmd = func(container arvados.Container, cmd *exec.Cmd) error {
+	startCmd := func(container arvados.Container, cmd *exec.Cmd) error {
 		dispatcher.UpdateState(container.UUID, "Running")
 		dispatcher.UpdateState(container.UUID, "Complete")
 		return cmd.Start()
+	}
+
+	dispatcher.RunContainer = func(d *dispatch.Dispatcher, c arvados.Container, s <-chan arvados.Container) {
+		(&LocalRun{startCmd, make(chan bool, 8), ctx}).run(d, c, s)
+		cancel()
 	}
 
 	re := regexp.MustCompile(`(?ms).*` + expected + `.*`)
