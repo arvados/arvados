@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 require "arvados/keep"
+require "group_pdhs"
 
 class AddFileInfoToCollection < ActiveRecord::Migration
   def do_batch(pdhs)
@@ -34,7 +35,7 @@ class AddFileInfoToCollection < ActiveRecord::Migration
       "SELECT DISTINCT portable_data_hash FROM collections"
     ).rows.count
 
-    # Generator that queries for all the distince pdhs greater than last_pdh
+    # Generator that queries for all the distinct pdhs greater than last_pdh
     ordered_pdh_query = lambda { |last_pdh, &block|
       pdhs = ActiveRecord::Base.connection.exec_query(
         "SELECT DISTINCT portable_data_hash FROM collections "\
@@ -47,7 +48,7 @@ class AddFileInfoToCollection < ActiveRecord::Migration
     }
 
     batch_size_max = 1 << 28 # 256 MiB
-    Container.group_pdhs_for_multiple_transactions(ordered_pdh_query,
+    GroupPdhs.group_pdhs_for_multiple_transactions(ordered_pdh_query,
                                                    distinct_pdh_count,
                                                    batch_size_max,
                                                    "AddFileInfoToCollection") do |pdhs|
