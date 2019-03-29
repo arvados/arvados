@@ -153,7 +153,10 @@ func (lr *LocalRun) run(dispatcher *dispatch.Dispatcher,
 			return
 		}
 
+		defer func() { <-lr.concurrencyLimit }()
+
 		waitGroup.Add(1)
+		defer waitGroup.Done()
 
 		cmd := exec.Command(*crunchRunCommand, uuid)
 		cmd.Stdin = nil
@@ -207,7 +210,6 @@ func (lr *LocalRun) run(dispatcher *dispatch.Dispatcher,
 			delete(runningCmds, uuid)
 			runningCmdsMutex.Unlock()
 		}
-		waitGroup.Done()
 	}
 
 	// If the container is not finalized, then change it to "Cancelled".
