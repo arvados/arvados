@@ -582,6 +582,7 @@ def stop_keep(num_servers=2):
 
 def run_keep_proxy():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
+        os.environ["ARVADOS_KEEP_SERVICES"] = "http://localhost:{}".format(_getport('keepproxy'))
         return
     stop_keep_proxy()
 

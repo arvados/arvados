@@ -393,6 +393,7 @@ start_services() {
         && python sdk/python/tests/run_test_server.py start_arv-git-httpd \
         && python sdk/python/tests/run_test_server.py start_ws \
         && eval $(python sdk/python/tests/run_test_server.py start_nginx || echo "fail=1; false") \
+        && export ARVADOS_TEST_PROXY_SERVICES=1 \
         && (env | egrep ^ARVADOS) \
         || fail=1
     deactivate
@@ -410,7 +411,7 @@ stop_services() {
     if [[ -n "$all_services_stopped" ]]; then
         return
     fi
-    unset ARVADOS_TEST_API_HOST
+    unset ARVADOS_TEST_API_HOST ARVADOS_TEST_PROXY_SERVICES
     . "$VENVDIR/bin/activate" || return
     cd "$WORKSPACE" \
         && python sdk/python/tests/run_test_server.py stop_nginx \
