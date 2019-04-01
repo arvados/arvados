@@ -29,9 +29,9 @@ class Collection < ArvadosModel
   validate :ensure_storage_classes_contain_non_empty_strings
   validate :versioning_metadata_updates, on: :update
   validate :past_versions_cannot_be_updated, on: :update
-  validate :file_count_and_size_cannot_be_changed
+  validate :file_count_and_size_cannot_be_changed, on: :update
+  after_validation :set_file_count_and_total_size
   before_save :set_file_names
-  before_save :set_file_count_and_total_size
   around_update :manage_versioning
 
   api_accessible :user, extend: :common do |t|
@@ -200,7 +200,7 @@ class Collection < ArvadosModel
   end
 
   def set_file_count_and_total_size
-    if self.manifest_text_changed? && self.valid?
+    if self.manifest_text_changed?
       m = Keep::Manifest.new(self.manifest_text)
       self.file_size_total = m.files_size
       self.file_count = m.files_count
