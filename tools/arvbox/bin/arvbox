@@ -515,10 +515,13 @@ case "$subcmd" in
         fi
         ;;
 
-    install-root-cert)
-	set -x
-	sudo cp $VAR_DATA/root-cert.pem /usr/local/share/ca-certificates/${ARVBOX_CONTAINER}-testing-cert.crt
-	sudo update-ca-certificates
+    root-cert)
+	CERT=$PWD/${ARVBOX_CONTAINER}-root-cert.pem
+	if test -n "$1" ; then
+	    CERT="$1"
+	fi
+	docker exec $ARVBOX_CONTAINER cat /var/lib/arvados/root-cert.pem > "$CERT"
+	echo "Certificate copied to $CERT"
 	;;
 
     devenv)
@@ -566,6 +569,7 @@ case "$subcmd" in
         echo "host       print arvbox published host"
         echo "shell      enter arvbox shell"
         echo "open       open arvbox workbench in a web browser"
+        echo "root-cert  get copy of root certificate"
         echo "update  <config> stop, pull latest image, run"
         echo "build   <config> build arvbox Docker image"
         echo "reboot  <config> stop, build arvbox Docker image, run"
