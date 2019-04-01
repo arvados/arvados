@@ -16,11 +16,11 @@ RUN apt-get update && \
     pkg-config libattr1-dev python-llfuse python-pycurl \
     libwww-perl libio-socket-ssl-perl libcrypt-ssleay-perl \
     libjson-perl nginx gitolite3 lsof libreadline-dev \
-    apt-transport-https ca-certificates slurm-wlm \
+    apt-transport-https ca-certificates \
     linkchecker python3-virtualenv python-virtualenv xvfb iceweasel \
     libgnutls28-dev python3-dev vim cadaver cython gnupg dirmngr \
     libsecret-1-dev r-base r-cran-testthat libxml2-dev pandoc \
-    python3-setuptools python3-pip openjdk-8-jdk && \
+    python3-setuptools python3-pip openjdk-8-jdk bsdmainutils && \
     apt-get clean
 
 ENV RUBYVERSION_MINOR 2.3
