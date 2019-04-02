@@ -19,6 +19,10 @@ class Container < ArvadosModel
 
   # Posgresql JSONB columns should NOT be declared as serialized, Rails 5
   # already know how to properly treat them.
+  attribute :secret_mounts, :jsonbHash, default: {}
+  attribute :runtime_status, :jsonbHash, default: {}
+  attribute :runtime_auth_scopes, :jsonbHash, default: {}
+
   serialize :environment, Hash
   serialize :mounts, Hash
   serialize :runtime_constraints, Hash

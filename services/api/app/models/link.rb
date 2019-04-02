@@ -9,6 +9,7 @@ class Link < ArvadosModel
 
   # Posgresql JSONB columns should NOT be declared as serialized, Rails 5
   # already know how to properly treat them.
+  attribute :properties, :jsonbHash, default: {}
 
   before_create :permission_to_attach_to_objects
   before_update :permission_to_attach_to_objects
@@ -101,5 +102,4 @@ class Link < ArvadosModel
       super
     end
   end
-
 end
