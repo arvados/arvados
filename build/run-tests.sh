@@ -368,6 +368,27 @@ if [[ $NEED_SDK_R == false ]]; then
 	echo "R SDK not needed, it will not be installed."
 fi
 
+checkpidfile() {
+    svc="$1"
+    pid="$(cat "$WORKSPACE/tmp/${svc}.pid")"
+    if [[ -z "$pid" ]] || ! kill -0 "$pid"; then
+        tail $WORKSPACE/tmp/${1}*.log
+        echo "${svc} pid ${pid} not running"
+        return 1
+    fi
+    echo "${svc} pid ${pid} ok"
+}
+
+checkdiscoverydoc() {
+    dd="https://${1}/discovery/v1/apis/arvados/v1/rest"
+    if ! (set -o pipefail; curl -fsk "$dd" | jq . >/dev/null); then
+        echo >&2 "ERROR: could not retrieve discovery doc from RailsAPI at $dd"
+        tail -v $WORKSPACE/services/api/log/test.log
+        return 1
+    fi
+    echo "${dd} ok"
+}
+
 start_services() {
     if [[ -n "$ARVADOS_TEST_API_HOST" ]]; then
         return 0
@@ -387,12 +408,21 @@ start_services() {
         && eval $(python sdk/python/tests/run_test_server.py start --auth admin || echo "fail=1; false") \
         && export ARVADOS_TEST_API_HOST="$ARVADOS_API_HOST" \
         && export ARVADOS_TEST_API_INSTALLED="$$" \
+        && checkpidfile api \
+        && checkdiscoverydoc $ARVADOS_API_HOST \
         && python sdk/python/tests/run_test_server.py start_controller \
+        && checkpidfile controller \
         && python sdk/python/tests/run_test_server.py start_keep_proxy \
+        && checkpidfile keepproxy \
         && python sdk/python/tests/run_test_server.py start_keep-web \
+        && checkpidfile keep-web \
         && python sdk/python/tests/run_test_server.py start_arv-git-httpd \
+        && checkpidfile arv-git-httpd \
         && python sdk/python/tests/run_test_server.py start_ws \
+        && checkpidfile ws \
         && eval $(python sdk/python/tests/run_test_server.py start_nginx || echo "fail=1; false") \
+        && checkdiscoverydoc $ARVADOS_API_HOST \
+        && checkpidfile nginx \
         && export ARVADOS_TEST_PROXY_SERVICES=1 \
         && (env | egrep ^ARVADOS) \
         || fail=1
