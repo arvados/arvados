@@ -99,8 +99,8 @@ class ActiveSupport::TestCase
 
   def restore_configuration
     # Restore configuration settings changed during tests
-    copy_into_config $arvados_config, Rails.configuration
-    copy_into_config $remaining_config, Rails.configuration
+    ConfigLoader.copy_into_config $arvados_config, Rails.configuration
+    ConfigLoader.copy_into_config $remaining_config, Rails.configuration
   end
 
   def set_user_from_auth(auth_name)

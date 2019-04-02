@@ -63,6 +63,17 @@ Clusters:
         ExternalURL: ""
       Workbench2:
         ExternalURL: ""
+    PostgreSQL:
+      # max concurrent connections per arvados server daemon
+      ConnectionPool: 32
+      Connection:
+        # All parameters here are passed to the PG client library in a connection string;
+        # see https://www.postgresql.org/docs/current/static/libpq-connect.html#LIBPQ-PARAMKEYWORDS
+        Host: ""
+        Port: 0
+        User: ""
+        Password: ""
+        DBName: ""
     API:
       # Maximum size (in bytes) allowed for a single API request.  This
       # limit is published in the discovery document for use by clients.

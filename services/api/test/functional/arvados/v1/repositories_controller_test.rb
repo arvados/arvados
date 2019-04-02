@@ -208,7 +208,7 @@ class Arvados::V1::RepositoriesControllerTest < ActionController::TestCase
     {cfg: "GitHTTP", cfgval: false, refute: /^http/ },
   ].each do |expect|
     test "set #{expect[:cfg]} to #{expect[:cfgval]}" do
-      set_cfg Rails.configuration.Services, expect[:cfg].to_s, expect[:cfgval]
+      ConfigLoader.set_cfg Rails.configuration.Services, expect[:cfg].to_s, expect[:cfgval]
       authorize_with :active
       get :index
       assert_response :success
