@@ -7,13 +7,16 @@ class JsonbType
   # some other default value.
   class WithDefault < ActiveModel::Type::Value
     include ActiveModel::Type::Helpers::Mutable
-    @@default_value = nil
+
+    def default_value
+      nil
+    end
 
     def deserialize(value)
       if value.nil?
-        @@default_value
+        self.default_value
       elsif value.is_a?(::String)
-        SafeJSON.load(value) rescue @@default_value
+        SafeJSON.load(value) rescue self.default_value
       else
         value
       end
@@ -21,7 +24,7 @@ class JsonbType
 
     def serialize(value)
       if value.nil?
-        @@default_value
+        self.default_value
       else
         SafeJSON.dump(value)
       end
@@ -29,10 +32,14 @@ class JsonbType
   end
 
   class Hash < JsonbType::WithDefault
-    @@default_value = {}
+    def default_value
+      {}
+    end
   end
 
   class Array < JsonbType::WithDefault
-    @@default_value = []
+    def default_value
+      []
+    end
   end
 end
