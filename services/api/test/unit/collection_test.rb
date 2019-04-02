@@ -76,25 +76,24 @@ class CollectionTest < ActiveSupport::TestCase
 
   test "file stats cannot be changed unless through manifest change" do
     act_as_system_user do
-      # Changing file stats via an update should fail validation
+      # Changing file stats via an update should ignore and overwrite
       c = Collection.create(manifest_text: ". d41d8cd98f00b204e9800998ecf8427e 0:34:foo.txt\n")
       c.file_count = 6
       c.file_size_total = 30
-      assert !c.valid?
+      assert c.valid?
       c.reload
       assert_equal 1, c.file_count
       assert_equal 34, c.file_size_total
 
-      # Changing the file stats via manifest change validates
+      # Changing the file stats via manifest change 
       c = Collection.create(manifest_text: ". d41d8cd98f00b204e9800998ecf8427e 0:34:foo.txt 0:34:foo2.txt\n")
       c.reload
       assert c.valid?
       assert_equal 2, c.file_count
       assert_equal 68, c.file_size_total
 
-      # Changing file stats at create, will silently overwrite
+      # Changing file stats at create will ignore and overwrite
       c = Collection.create(manifest_text: ". d41d8cd98f00b204e9800998ecf8427e 0:34:foo.txt\n", file_count: 10, file_size_total: 10)
-      c.reload
       assert c.valid?
       assert_equal 1, c.file_count
       assert_equal 34, c.file_size_total

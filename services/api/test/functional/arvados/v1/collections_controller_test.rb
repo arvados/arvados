@@ -955,21 +955,7 @@ EOS
     end
   end
 
-  test "create collection with file stats and expect overwrite" do
-    authorize_with :active
-    post :create, {
-      collection: {
-        manifest_text: ". d41d8cd98f00b204e9800998ecf8427e 0:34:foo.txt\n",
-        file_count: 10,
-        file_size_total: 100
-      }
-    }
-    assert_response 200
-    assert_equal 1, json_response['file_count']
-    assert_equal 34, json_response['file_size_total']
-  end
-
-  test "update collection manifest and expect file stats" do
+  test "update collection manifest and expect new file stats" do
     authorize_with :active
     post :update, {
       id: 'zzzzz-4zz18-bv31uwvy3neko21',
@@ -982,34 +968,38 @@ EOS
     assert_equal 34, json_response['file_size_total']
   end
 
-  test "update collection file count and expect error" do
-    authorize_with :active
-    post :update, {
-      id: 'zzzzz-4zz18-znfnqtbbv4spc3w',
-      collection: {
-        file_count: 10
+  [
+    ['file_count', 1],
+    ['file_size_total', 34]
+  ].each do |attribute, val|
+    test "create collection with #{attribute} and expect overwrite" do
+      authorize_with :active
+      post :create, {
+        collection: {
+          manifest_text: ". d41d8cd98f00b204e9800998ecf8427e 0:34:foo.txt\n",
+          "#{attribute}": 10
+        }
       }
-    }
-    assert_response 422
-    response_errors = json_response['errors']
-    assert_not_nil response_errors, 'Expected error in response'
-    assert(response_errors.first.include?('File count cannot be changed'),
-           "Expected file count error in #{response_errors.first}")
+      assert_response 200
+      assert_equal val, json_response[attribute]
+    end
   end
 
-  test "update collection file size and expect error" do
-    authorize_with :active
-    post :update, {
-      id: 'zzzzz-4zz18-znfnqtbbv4spc3w',
-      collection: {
-        file_size_total: 10
+  [
+    ['file_count', 1],
+    ['file_size_total', 3]
+  ].each do |attribute, val|
+    test "update collection with #{attribute} and expect overwrite" do
+      authorize_with :active
+      post :update, {
+        id: 'zzzzz-4zz18-bv31uwvy3neko21',
+        collection: {
+          "#{attribute}": 10
+        }
       }
-    }
-    assert_response 422
-    response_errors = json_response['errors']
-    assert_not_nil response_errors, 'Expected error in response'
-    assert(response_errors.first.include?('File size total cannot be changed'),
-           "Expected file size total error in #{response_errors.first}")
+      assert_response 200
+      assert_equal val, json_response[attribute]
+    end
   end
 
   [
