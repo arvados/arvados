@@ -26,12 +26,11 @@ import { toggleIsActive, toggleIsAdmin } from '~/store/users/users-actions';
 import { LinkResource } from '~/models/link';
 import { navigateTo } from '~/store/navigation/navigation-action';
 import { withResourceData } from '~/views-components/data-explorer/with-resources';
-import { PublicFavorite } from '~/views-components/public-favorite-icon/public-favorite-icon';
 
 const renderName = (item: { name: string; uuid: string, kind: string }) =>
     <Grid container alignItems="center" wrap="nowrap" spacing={16}>
         <Grid item>
-            {renderIcon(item)}
+            {renderIcon(item.kind)}
         </Grid>
         <Grid item>
             <Typography color="primary" style={{ width: 'auto' }}>
@@ -43,11 +42,6 @@ const renderName = (item: { name: string; uuid: string, kind: string }) =>
                 <FavoriteStar resourceUuid={item.uuid} />
             </Typography>
         </Grid>
-        <Grid item>
-            <Typography variant="caption">
-                <PublicFavorite resourceUuid={item.uuid} />
-            </Typography>
-        </Grid>
     </Grid>;
 
 export const ResourceName = connect(
@@ -56,8 +50,8 @@ export const ResourceName = connect(
         return resource || { name: '', uuid: '', kind: '' };
     })(renderName);
 
-const renderIcon = (item: { kind: string }) => {
-    switch (item.kind) {
+const renderIcon = (kind: string) => {
+    switch (kind) {
         case ResourceKind.PROJECT:
             return <ProjectIcon />;
         case ResourceKind.COLLECTION:
@@ -78,7 +72,7 @@ const renderDate = (date?: string) => {
 const renderWorkflowName = (item: { name: string; uuid: string, kind: string, ownerUuid: string }) =>
     <Grid container alignItems="center" wrap="nowrap" spacing={16}>
         <Grid item>
-            {renderIcon(item)}
+            {renderIcon(item.kind)}
         </Grid>
         <Grid item>
             <Typography color="primary" style={{ width: '100px' }}>
@@ -331,6 +325,35 @@ export const ResourceLinkUuid = connect(
         const resource = getResource<LinkResource>(props.uuid)(state.resources);
         return resource || { uuid: '' };
     })(renderUuid);
+
+const renderLinkNameAndIcon = (item: { name: string; headUuid: string, headKind: string }) =>
+    <Grid container alignItems="center" wrap="nowrap" spacing={16}>
+        <Grid item>
+            {renderIcon(item.headKind)}
+        </Grid>
+        <Grid item>
+            <Typography color="primary" style={{ width: 'auto' }}>
+                {item.name}
+            </Typography>
+        </Grid>
+        <Grid item>
+            <Typography variant="caption">
+                <FavoriteStar resourceUuid={item.headUuid} />
+            </Typography>
+        </Grid>
+    </Grid>;
+
+export const ResourceLinkNameAndIcon = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<LinkResource>(props.uuid)(state.resources);
+        return resource || { name: '', headUuid: '', headKind: '' };
+    })(renderLinkNameAndIcon);
+
+export const ResourceLinkType = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<LinkResource>(props.uuid)(state.resources);
+        return { type: resource ? resource.headKind : '' };
+    })((props: { type: string }) => renderType(props.type));
 
 // Process Resources
 const resourceRunProcess = (dispatch: Dispatch, uuid: string) => {

@@ -16,9 +16,8 @@ import {
     ProcessStatus,
     ResourceFileSize,
     ResourceLastModifiedDate,
-    ResourceName,
-    ResourceOwner,
-    ResourceType
+    ResourceLinkNameAndIcon,
+    ResourceLinkType
 } from '~/views-components/data-explorer/renderers';
 import { FavoriteIcon } from '~/components/icon/icon';
 import { Dispatch } from 'redux';
@@ -26,12 +25,12 @@ import { openContextMenu, resourceKindToContextMenuKind } from '~/store/context-
 import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { navigateTo } from '~/store/navigation/navigation-action';
 import { ContainerRequestState } from "~/models/container-request";
-import { FavoritesState } from '~/store/favorites/favorites-reducer';
 import { RootState } from '~/store/store';
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 import { createTree } from '~/models/tree';
 import { getSimpleObjectTypeFilters } from '~/store/resource-type-filters/resource-type-filters';
 import { PUBLIC_FAVORITE_PANEL_ID } from '~/store/public-favorites-panel/public-favorites-action';
+import { PublicFavoritesState } from '~/store/public-favorites/public-favorites-reducer';
 
 type CssRules = "toolbar" | "button";
 
@@ -58,14 +57,14 @@ export interface FavoritePanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
 }
 
-export const favoritePanelColumns: DataColumns<string> = [
+export const publicFavoritePanelColumns: DataColumns<string> = [
     {
         name: FavoritePanelColumnNames.NAME,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: createTree(),
-        render: uuid => <ResourceName uuid={uuid} />
+        render: uuid => <ResourceLinkNameAndIcon uuid={uuid} />
     },
     {
         name: "Status",
@@ -79,14 +78,7 @@ export const favoritePanelColumns: DataColumns<string> = [
         selected: true,
         configurable: true,
         filters: getSimpleObjectTypeFilters(),
-        render: uuid => <ResourceType uuid={uuid} />
-    },
-    {
-        name: FavoritePanelColumnNames.OWNER,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceOwner uuid={uuid} />
+        render: uuid => <ResourceLinkType uuid={uuid} />
     },
     {
         name: FavoritePanelColumnNames.FILE_SIZE,
@@ -105,21 +97,21 @@ export const favoritePanelColumns: DataColumns<string> = [
     }
 ];
 
-interface FavoritePanelDataProps {
-    favorites: FavoritesState;
+interface PublicFavoritePanelDataProps {
+    publicFavorites: PublicFavoritesState;
 }
 
-interface FavoritePanelActionProps {
+interface PublicFavoritePanelActionProps {
     onItemClick: (item: string) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: string) => void;
     onDialogOpen: (ownerUuid: string) => void;
     onItemDoubleClick: (item: string) => void;
 }
-const mapStateToProps = ({ favorites }: RootState): FavoritePanelDataProps => ({
-    favorites
+const mapStateToProps = ({ publicFavorites }: RootState): PublicFavoritePanelDataProps => ({
+    publicFavorites
 });
 
-const mapDispatchToProps = (dispatch: Dispatch): FavoritePanelActionProps => ({
+const mapDispatchToProps = (dispatch: Dispatch): PublicFavoritePanelActionProps => ({
     onContextMenu: (event, resourceUuid) => {
         const kind = resourceKindToContextMenuKind(resourceUuid);
         if (kind) {
@@ -142,7 +134,7 @@ const mapDispatchToProps = (dispatch: Dispatch): FavoritePanelActionProps => ({
     }
 });
 
-type FavoritePanelProps = FavoritePanelDataProps & FavoritePanelActionProps & DispatchProp
+type FavoritePanelProps = PublicFavoritePanelDataProps & PublicFavoritePanelActionProps & DispatchProp
     & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
 
 export const PublicFavoritePanel = withStyles(styles)(
@@ -158,8 +150,7 @@ export const PublicFavoritePanel = withStyles(styles)(
                     dataTableDefaultView={
                         <DataTableDefaultView
                             icon={FavoriteIcon}
-                            messages={['Public favorites list is empty.']}
-                            />
+                            messages={['Public favorites list is empty.']} />
                     } />;
             }
         }

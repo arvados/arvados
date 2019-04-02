@@ -17,7 +17,7 @@ import { FavoritePanelColumnNames } from '~/views/favorite-panel/favorite-panel'
 import { publicFavoritePanelActions } from '~/store/public-favorites-panel/public-favorites-action';
 import { DataColumns } from '~/components/data-table/data-table';
 import { serializeSimpleObjectTypeFilters } from '../resource-type-filters/resource-type-filters';
-import { LinkResource } from '~/models/link';
+import { LinkResource, LinkClass } from '~/models/link';
 import { GroupContentsResource, GroupContentsResourcePrefix } from '~/services/groups-service/groups-service';
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions';
 import { loadMissingProcessesInformation } from '~/store/project-panel/project-panel-middleware-service';
@@ -54,28 +54,27 @@ export class PublicFavoritesMiddlewareService extends DataExplorerMiddlewareServ
             }
             try {
                 api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
-                const response = await this.services.favoriteService
-                    .list(this.services.authService.getUuid()!, {
-                        limit: dataExplorer.rowsPerPage,
-                        offset: dataExplorer.page * dataExplorer.rowsPerPage,
-                        linkOrder: linkOrder.getOrder(),
-                        contentOrder: contentOrder.getOrder(),
-                        filters: new FilterBuilder()
-                            .addILike("name", dataExplorer.searchValue)
-                            .addIsA("headUuid", typeFilters)
-                            .getFilters(),
-
-                    });
+                const uuidPrefix = api.getState().config.uuidPrefix;
+                const uuid = `${uuidPrefix}-j7d0g-fffffffffffffff`;
+                const response = await this.services.linkService.list({
+                    limit: dataExplorer.rowsPerPage,
+                    offset: dataExplorer.page * dataExplorer.rowsPerPage,
+                    filters: new FilterBuilder()
+                        .addEqual('linkClass', LinkClass.STAR)
+                        .addILike("name", dataExplorer.searchValue)
+                        .addEqual('ownerUuid', uuid)
+                        .addIsA("headUuid", typeFilters)
+                        .getFilters()
+                });
                 api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
                 api.dispatch(resourcesActions.SET_RESOURCES(response.items));
-                await api.dispatch<any>(loadMissingProcessesInformation(response.items));
                 api.dispatch(publicFavoritePanelActions.SET_ITEMS({
                     items: response.items.map(resource => resource.uuid),
                     itemsAvailable: response.itemsAvailable,
                     page: Math.floor(response.offset / response.limit),
                     rowsPerPage: response.limit
                 }));
-                api.dispatch<any>(updatePublicFavorites(response.items.map(item => item.uuid)));
+                api.dispatch<any>(updatePublicFavorites(response.items.map(item => item.headUuid)));
             } catch (e) {
                 api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
                 api.dispatch(publicFavoritePanelActions.SET_ITEMS({

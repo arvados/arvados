@@ -93,6 +93,7 @@ import * as groupDetailsPanelActions from '~/store/group-details-panel/group-det
 import { groupDetailsPanelColumns } from '~/views/group-details-panel/group-details-panel';
 import { DataTableFetchMode } from "~/components/data-table/data-table";
 import { loadPublicFavoritePanel, publicFavoritePanelActions } from '~/store/public-favorites-panel/public-favorites-action';
+import { publicFavoritePanelColumns } from '~/views/public-favorites-panel/public-favorites-panel';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -120,7 +121,7 @@ export const loadWorkbench = () =>
         if (user) {
             dispatch(projectPanelActions.SET_COLUMNS({ columns: projectPanelColumns }));
             dispatch(favoritePanelActions.SET_COLUMNS({ columns: favoritePanelColumns }));
-            dispatch(publicFavoritePanelActions.SET_COLUMNS({ columns: favoritePanelColumns }));
+            dispatch(publicFavoritePanelActions.SET_COLUMNS({ columns: publicFavoritePanelColumns }));
             dispatch(trashPanelActions.SET_COLUMNS({ columns: trashPanelColumns }));
             dispatch(sharedWithMePanelActions.SET_COLUMNS({ columns: projectPanelColumns }));
             dispatch(workflowPanelActions.SET_COLUMNS({ columns: workflowPanelColumns }));

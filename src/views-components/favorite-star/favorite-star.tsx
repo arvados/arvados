@@ -18,10 +18,17 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
 
 const mapStateToProps = (state: RootState, props: { resourceUuid: string; className?: string; }) => ({
     ...props,
-    visible: state.favorites[props.resourceUuid],
+    isFavoriteVisible: state.favorites[props.resourceUuid],
+    isPublicFavoriteVisible: state.publicFavorites[props.resourceUuid]
 });
 
 export const FavoriteStar = connect(mapStateToProps)(
-    withStyles(styles)((props: { visible: boolean; className?: string; } & WithStyles<CssRules>) =>
-        props.visible ? <FavoriteIcon className={props.className || props.classes.icon} /> : null
-    ));
+    withStyles(styles)((props: { isFavoriteVisible: boolean; isPublicFavoriteVisible: boolean; className?: string; } & WithStyles<CssRules>) => {
+        if (props.isPublicFavoriteVisible) {
+            return <FavoriteIcon className={props.className || props.classes.icon} />;
+        } else if (props.isFavoriteVisible) {
+            return <FavoriteIcon className={props.className || props.classes.icon} />;
+        } else {
+            return null;
+        }
+    }));
