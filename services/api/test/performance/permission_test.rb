@@ -48,7 +48,6 @@ class PermissionPerfTest < ActionDispatch::IntegrationTest
     (0..4).each do
       puts(Benchmark.measure do
              get '/arvados/v1/groups', params: {format: :json, limit: 1000}, headers: auth(:permission_perftest)
-             byebug
              assert json_response['items_available'] >= n
            end)
     end
