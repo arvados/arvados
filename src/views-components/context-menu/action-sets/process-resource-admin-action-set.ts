@@ -14,6 +14,8 @@ import { openSharingDialog } from "~/store/sharing-dialog/sharing-dialog-actions
 import { openRemoveProcessDialog } from "~/store/processes/processes-actions";
 import { toggleDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { TogglePublicFavoriteAction } from "~/views-components/context-menu/actions/public-favorite-action";
+import { togglePublicFavorite } from "~/store/public-favorites/public-favorites-actions";
+import { publicFavoritePanelActions } from "~/store/public-favorites-panel/public-favorites-action";
 
 export const processResourceAdminActionSet: ContextMenuActionSet = [[
     {
@@ -41,8 +43,8 @@ export const processResourceAdminActionSet: ContextMenuActionSet = [[
     {
         component: TogglePublicFavoriteAction,
         execute: (dispatch, resource) => {
-            dispatch<any>(toggleFavorite(resource)).then(() => {
-                dispatch<any>(favoritePanelActions.REQUEST_ITEMS());
+            dispatch<any>(togglePublicFavorite(resource)).then(() => {
+                dispatch<any>(publicFavoritePanelActions.REQUEST_ITEMS());
             });
         }
     },

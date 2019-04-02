@@ -25,7 +25,8 @@ import { UserResource } from '~/models/user';
 import { toggleIsActive, toggleIsAdmin } from '~/store/users/users-actions';
 import { LinkResource } from '~/models/link';
 import { navigateTo } from '~/store/navigation/navigation-action';
-import { withResource, getDataFromResource, withResourceData } from '~/views-components/data-explorer/with-resources';
+import { withResourceData } from '~/views-components/data-explorer/with-resources';
+import { PublicFavorite } from '~/views-components/public-favorite-icon/public-favorite-icon';
 
 const renderName = (item: { name: string; uuid: string, kind: string }) =>
     <Grid container alignItems="center" wrap="nowrap" spacing={16}>
@@ -40,6 +41,11 @@ const renderName = (item: { name: string; uuid: string, kind: string }) =>
         <Grid item>
             <Typography variant="caption">
                 <FavoriteStar resourceUuid={item.uuid} />
+            </Typography>
+        </Grid>
+        <Grid item>
+            <Typography variant="caption">
+                <PublicFavorite resourceUuid={item.uuid} />
             </Typography>
         </Grid>
     </Grid>;
@@ -284,13 +290,13 @@ const renderLinkTail = (dispatch: Dispatch, item: { uuid: string, tailUuid: stri
     const currentLabel = resourceLabel(item.tailKind);
     const isUnknow = currentLabel === "Unknown";
     return (<div>
-        { !isUnknow  ? (
-                renderLink(dispatch, item.tailUuid, currentLabel)
-            ) : (
+        {!isUnknow ? (
+            renderLink(dispatch, item.tailUuid, currentLabel)
+        ) : (
                 <Typography noWrap color="default">
                     {item.tailUuid}
                 </Typography>
-        )}
+            )}
     </div>);
 };
 
