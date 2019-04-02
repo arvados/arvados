@@ -381,7 +381,7 @@ checkpidfile() {
 
 checkdiscoverydoc() {
     dd="https://${1}/discovery/v1/apis/arvados/v1/rest"
-    if ! (set -o pipefail; curl -fsk "$dd" | jq . >/dev/null); then
+    if ! (set -o pipefail; curl -fsk "$dd" | grep -q ^{ ); then
         echo >&2 "ERROR: could not retrieve discovery doc from RailsAPI at $dd"
         tail -v $WORKSPACE/services/api/log/test.log
         return 1
