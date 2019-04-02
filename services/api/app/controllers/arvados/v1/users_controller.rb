@@ -73,7 +73,7 @@ class Arvados::V1::UsersController < ApplicationController
       if !@object
         return render_404_if_no_object
       end
-    elsif !params[:user]
+    elsif !params[:user] || params[:user].empty?
       raise ArgumentError.new "Required uuid or user"
     elsif !params[:user]['email']
       raise ArgumentError.new "Require user email"
