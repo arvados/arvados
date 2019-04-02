@@ -152,7 +152,7 @@ func main() {
 		}
 		err = f.Sync()
 		if err != nil {
-			log.Fatal("sync(%s): %s", cfg.PIDFile, err)
+			log.Fatalf("sync(%s): %s", cfg.PIDFile, err)
 		}
 	}
 

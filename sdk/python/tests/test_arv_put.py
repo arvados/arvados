@@ -859,7 +859,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
             if not mandatory and not os.path.exists(path):
                 continue
             with open(path) as f:
-                rails_config = yaml.load(f.read())
+                rails_config = yaml.safe_load(f.read())
                 for config_section in ['test', 'common']:
                     try:
                         key = rails_config[config_section]["blob_signing_key"]
