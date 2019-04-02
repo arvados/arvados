@@ -403,9 +403,9 @@ start_services() {
 	rm -f "$WORKSPACE/tmp/api.pid"
     fi
     all_services_stopped=
-    fail=0
+    fail=1
     cd "$WORKSPACE" \
-        && eval $(python sdk/python/tests/run_test_server.py start --auth admin || echo "fail=1; false") \
+        && eval $(python sdk/python/tests/run_test_server.py start --auth admin) \
         && export ARVADOS_TEST_API_HOST="$ARVADOS_API_HOST" \
         && export ARVADOS_TEST_API_INSTALLED="$$" \
         && checkpidfile api \
@@ -420,17 +420,13 @@ start_services() {
         && checkpidfile arv-git-httpd \
         && python sdk/python/tests/run_test_server.py start_ws \
         && checkpidfile ws \
-        && eval $(python sdk/python/tests/run_test_server.py start_nginx || echo "fail=1; false") \
+        && eval $(python sdk/python/tests/run_test_server.py start_nginx) \
         && checkdiscoverydoc $ARVADOS_API_HOST \
         && checkpidfile nginx \
         && export ARVADOS_TEST_PROXY_SERVICES=1 \
         && (env | egrep ^ARVADOS) \
-        || fail=1
+        && fail=0
     deactivate
-    if [[ $fail = 0 ]] && ! kill -0 "$(cat "$WORKSPACE/tmp/nginx.pid")"; then
-        echo >&2 "ERROR: nginx seems to have died already"
-        fail=1
-    fi
     if [[ $fail != 0 ]]; then
         unset ARVADOS_TEST_API_HOST
     fi
