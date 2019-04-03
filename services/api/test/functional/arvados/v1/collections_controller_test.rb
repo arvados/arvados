@@ -958,7 +958,7 @@ EOS
   test "update collection manifest and expect new file stats" do
     authorize_with :active
     post :update, {
-      id: 'zzzzz-4zz18-bv31uwvy3neko21',
+      id: collections(:collection_owned_by_active_with_file_stats).uuid,
       collection: {
         manifest_text: ". d41d8cd98f00b204e9800998ecf8427e 0:34:foo.txt\n"
       }
@@ -989,10 +989,10 @@ EOS
     ['file_count', 1],
     ['file_size_total', 3]
   ].each do |attribute, val|
-    test "update collection with #{attribute} and expect overwrite" do
+    test "update collection with #{attribute} and expect ignore" do
       authorize_with :active
       post :update, {
-        id: 'zzzzz-4zz18-bv31uwvy3neko21',
+        id: collections(:collection_owned_by_active_with_file_stats).uuid,
         collection: {
           "#{attribute}": 10
         }

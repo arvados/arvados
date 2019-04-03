@@ -199,10 +199,15 @@ class Collection < ArvadosModel
   end
 
   def set_file_count_and_total_size
-    if self.manifest_text_changed? || self.file_count_changed? || self.file_size_total_changed?
+    # Only update the file stats if the manifest changed
+    if self.manifest_text_changed?
       m = Keep::Manifest.new(self.manifest_text)
       self.file_size_total = m.files_size
       self.file_count = m.files_count
+    # If the manifest didn't change but the attributes did, ignore the changes
+    elsif self.file_count_changed? || self.file_size_total_changed?
+      self.file_count = self.file_count_was
+      self.file_size_total = self.file_size_total_was
     end
     true
   end
