@@ -2,6 +2,19 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+#
+# Load Arvados configuration from /etc/arvados/config.yml, using defaults from config.defaults.yml
+#
+# Existing application.yml is migrated into the new config structure.
+# Keys in the legacy application.yml take precedence.
+#
+# Use "bundle exec config:dump" to get the complete active configuration
+#
+# Use "bundle exec config:migrate" to migrate application.yml and
+# database.yml to config.yml.  After adding the output of
+# config:migrate to /etc/arvados/config.yml, you will be able to
+# delete application.yml and database.yml.
+
 require 'config_loader'
 
 begin
@@ -36,7 +49,7 @@ $arvados_config = {}
     if confs
       clusters = confs["Clusters"].first
       $arvados_config["ClusterID"] = clusters[0]
-      $arvados_config.merge!(clusters[1])
+      $arvados_config.deep_merge!(clusters[1])
     end
   end
 end
@@ -154,17 +167,17 @@ application_config = {}
     confs = YAML.load(yaml, deserialize_symbols: true)
     # Ignore empty YAML file:
     next if confs == false
-    application_config.merge!(confs['common'] || {})
-    application_config.merge!(confs[::Rails.env.to_s] || {})
+    application_config.deep_merge!(confs['common'] || {})
+    application_config.deep_merge!(confs[::Rails.env.to_s] || {})
   end
 end
 
 db_config = {}
-path = "#{::Rails.root.to_s}/config/database.ymlx"
+path = "#{::Rails.root.to_s}/config/database.yml"
 if File.exist? path
   yaml = ERB.new(IO.read path).result(binding)
   confs = YAML.load(yaml, deserialize_symbols: true)
-  db_config.merge!(confs[::Rails.env.to_s] || {})
+  db_config.deep_merge!(confs[::Rails.env.to_s] || {})
 end
 
 $remaining_config = arvcfg.migrate_config(application_config, $arvados_config)
@@ -183,22 +196,29 @@ end
 arvcfg.coercion_and_check $arvados_config
 dbcfg.coercion_and_check $arvados_config
 
+#
+# Special case for test database, because the Arvados config.yml
+# doesn't have a concept of multiple rails environments.
+#
+if ::Rails.env.to_s == "test"
+  $arvados_config["PostgreSQL"]["Connection"]["DBName"] = "arvados_test"
+end
+
+dbhost = $arvados_config["PostgreSQL"]["Connection"]["Host"]
+if $arvados_config["PostgreSQL"]["Connection"]["Post"] != 0
+  dbhost += ":#{$arvados_config["PostgreSQL"]["Connection"]["Post"]}"
+end
+
+#
+# If DATABASE_URL is set, then ActiveRecord won't error out if database.yml doesn't exist.
+#
+# For config migration, we've previously populated the PostgreSQL
+# section of the config from database.yml
+#
+ENV["DATABASE_URL"] = "postgresql://#{$arvados_config["PostgreSQL"]["Connection"]["User"]}:#{$arvados_config["PostgreSQL"]["Connection"]["Password"]}@#{dbhost}/#{$arvados_config["PostgreSQL"]["Connection"]["DBName"]}?template=#{$arvados_config["PostgreSQL"]["Connection"]["Template"]}&encoding=#{$arvados_config["PostgreSQL"]["Connection"]["client_encoding"]}&pool=#{$arvados_config["PostgreSQL"]["ConnectionPool"]}"
+
 Server::Application.configure do
   ConfigLoader.copy_into_config $arvados_config, config
   ConfigLoader.copy_into_config $remaining_config, config
   config.secret_key_base = config.secret_token
-
-  dbcfg = {}
-  dbcfg[::Rails.env.to_s] = {
-    adapter: 'postgresql',
-    template: $arvados_config["PostgreSQL"]["Connection"]["Template"],
-    encoding: $arvados_config["PostgreSQL"]["Connection"]["Encoding"],
-    database: $arvados_config["PostgreSQL"]["Connection"]["DBName"],
-    username: $arvados_config["PostgreSQL"]["Connection"]["User"],
-    password: $arvados_config["PostgreSQL"]["Connection"]["Password"],
-    host: $arvados_config["PostgreSQL"]["Connection"]["Host"],
-    port: $arvados_config["PostgreSQL"]["Connection"]["Port"],
-    pool: $arvados_config["PostgreSQL"]["ConnectionPool"]
-  }
-  Rails.application.config.database_configuration = dbcfg
 end
