@@ -1,0 +1,168 @@
+---
+layout: default
+navsection: installguide
+title: Install the cloud dispatcher
+
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+The cloud dispatch service is an *experimental* service for running containers on cloud VMs. It eliminates the need for SLURM, Node Manager, and SLURM dispatcher. It works with Microsoft Azure and Amazon EC2; future versions will also support Google Compute Engine.
+
+The cloud dispatch service can run on any node that can connect to the Arvados API service, the cloud provider's API, and the SSH service on cloud VMs.  It is not resource-intensive, so you can run it on the API server node.
+
+*Only one dispatch process should be running at a time.* If you are migrating a system that currently runs @crunch-dispatch-slurm@, it is safest to remove the @crunch-dispatch-slurm@ service entirely before installing @arvados-dispatch-cloud@.
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo systemctl --now disable crunch-dispatch-slurm</span>
+~$ <span class="userinput">sudo apt-get remove crunch-dispatch-slurm</span>
+</code></pre>
+</notextile>
+
+h2. Create a dispatcher token
+
+If you haven't already done so, create an Arvados superuser token to use as SystemRootToken in your cluster config file.
+
+{% include 'create_superuser_token' %}
+
+h2. Create a private key
+
+Generate an SSH private key with no passphrase. Save it in the cluster configuration file (see @PrivateKey@ in the example below).
+
+<notextile>
+<pre><code>~$ <span class="userinput">ssh-keygen -N '' -f ~/.ssh/id_dispatcher</span>
+Generating public/private rsa key pair.
+Your identification has been saved in /home/user/.ssh/id_dispatcher.
+Your public key has been saved in /home/user/.ssh/id_dispatcher.pub.
+The key fingerprint is:
+[...]
+~$ <span class="userinput">cat ~/.ssh/id_dispatcher</span>
+-----BEGIN RSA PRIVATE KEY-----
+MIIEpQIBAAKCAQEAqXoCzcOBkFQ7w4dvXf9B++1ctgZRqEbgRYL3SstuMV4oawks
+ttUuxJycDdsPmeYcHsKo8vsEZpN6iYsX6ZZzhkO5nEayUTU8sBjmg1ZCTo4QqKXr
+...
+oFyAjVoexx0RBcH6BveTfQtJKbktP1qBO4mXo2dP0cacuZEtlAqW9Eb06Pvaw/D9
+foktmqOY8MyctzFgXBpGTxPliGjqo8OkrOyQP2g+FL7v+Km31Xs61P8=
+-----END RSA PRIVATE KEY-----
+</code></pre>
+</notextile>
+
+You can delete the key files after you have copied the private key to your configuration file.
+
+<notextile>
+<pre><code>~$ <span class="userinput">rm ~/.ssh/id_dispatcher ~/.ssh/id_dispatcher.pub</span>
+</code></pre>
+</notextile>
+
+h2. Configure the dispatcher
+
+Add or update the following portions of your cluster configuration file, @/etc/arvados/config.yml@. Refer to "config.defaults.yml":https://dev.arvados.org/projects/arvados/repository/revisions/13996-new-api-config/entry/lib/config/config.defaults.yml for information about additional configuration options.
+
+<notextile>
+<pre><code>Clusters:
+  <span class="userinput">uuid_prefix</span>:
+    ManagementToken: xyzzy
+    SystemRootToken: <span class="userinput">zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz</span>
+    NodeProfiles:
+      # The key "apiserver" corresponds to ARVADOS_NODE_PROFILE in environment file (see below).
+      apiserver:
+        arvados-dispatch-cloud:
+          Listen: ":9006"
+    Services:
+      Controller:
+        ExternalURL: "https://<span class="userinput">uuid_prefix.arvadosapi.com</span>"
+    CloudVMs:
+      # BootProbeCommand is a shell command that succeeds when an instance is ready for service
+      BootProbeCommand: "systemctl status docker"
+      ImageID: "https://zzzzzzzz.blob.core.windows.net/system/Microsoft.Compute/Images/images/zzzzz-compute-osDisk.55555555-5555-5555-5555-555555555555.vhd"
+      Driver: azure
+      DriverParameters:
+        SubscriptionID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+        ClientID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+        ClientSecret: 2WyXt0XFbEtutnf2hp528t6Wk9S5bOHWkRaaWwavKQo=
+        TenantID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+        CloudEnvironment: AzurePublicCloud
+        ResourceGroup: zzzzz
+        Location: centralus
+        Network: zzzzz
+        Subnet: zzzzz-subnet-private
+        StorageAccount: example
+        BlobContainer: vhds
+        DeleteDanglingResourcesAfter: 20s
+        AdminUsername: arvados
+    Dispatch:
+      PrivateKey: |
+        -----BEGIN RSA PRIVATE KEY-----
+        MIIEpQIBAAKCAQEAqXoCzcOBkFQ7w4dvXf9B++1ctgZRqEbgRYL3SstuMV4oawks
+        ttUuxJycDdsPmeYcHsKo8vsEZpN6iYsX6ZZzhkO5nEayUTU8sBjmg1ZCTo4QqKXr
+        FJ+amZ7oYMDof6QEdwl6KNDfIddL+NfBCLQTVInOAaNss7GRrxLTuTV7HcRaIUUI
+        jYg0Ibg8ZZTzQxCvFXXnjseTgmOcTv7CuuGdt91OVdoq8czG/w8TwOhymEb7mQlt
+        lXuucwQvYgfoUgcnTgpJr7j+hafp75g2wlPozp8gJ6WQ2yBWcfqL2aw7m7Ll88Nd
+        [...]
+        oFyAjVoexx0RBcH6BveTfQtJKbktP1qBO4mXo2dP0cacuZEtlAqW9Eb06Pvaw/D9
+        foktmqOY8MyctzFgXBpGTxPliGjqo8OkrOyQP2g+FL7v+Km31Xs61P8=
+        -----END RSA PRIVATE KEY-----
+    InstanceTypes:
+      x1md:
+        ProviderType: x1.medium
+        VCPUs: 8
+        RAM: 64GiB
+        IncludedScratch: 64GB
+        Price: 0.62
+      x1lg:
+        ProviderType: x1.large
+        VCPUs: 16
+        RAM: 128GiB
+        IncludedScratch: 128GB
+        Price: 1.23
+</code></pre>
+</notextile>
+
+Create the host configuration file @/etc/arvados/environment@.
+
+<notextile>
+<pre><code>ARVADOS_NODE_PROFILE=apiserver
+</code></pre>
+</notextile>
+
+h2. Install the dispatcher
+
+First, "add the appropriate package repository for your distribution":{{ site.baseurl }}/install/install-manual-prerequisites.html#repos.
+
+On Red Hat-based systems:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo yum install arvados-dispatch-cloud</span>
+~$ <span class="userinput">sudo systemctl enable arvados-dispatch-cloud</span>
+</code></pre>
+</notextile>
+
+On Debian-based systems:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo apt-get install arvados-dispatch-cloud</span>
+</code></pre>
+</notextile>
+
+{% include 'notebox_begin' %}
+
+The arvados-dispatch-cloud package includes configuration files for systemd. If you're using a different init system, configure a service to start and stop an @arvados-dispatch-cloud@ process as desired.
+
+{% include 'notebox_end' %}
+
+h2. Verify the dispatcher is running
+
+Use your ManagementToken to test the dispatcher's metrics endpoint.
+
+<notextile>
+<pre><code>~$ <span class="userinput">token="xyzzy"</span>
+~$ <span class="userinput">curl -H "Authorization: Bearer $token" http://localhost:9006/metrics</span>
+# HELP arvados_dispatchcloud_containers_running Number of containers reported running by cloud VMs.
+# TYPE arvados_dispatchcloud_containers_running gauge
+arvados_dispatchcloud_containers_running 0
+[...]
+</code></pre>
+</notextile>
