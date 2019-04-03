@@ -76,7 +76,7 @@ Add or update the following portions of your cluster configuration file, @/etc/a
         ExternalURL: "https://<span class="userinput">uuid_prefix.arvadosapi.com</span>"
     CloudVMs:
       # BootProbeCommand is a shell command that succeeds when an instance is ready for service
-      BootProbeCommand: "systemctl status docker"
+      BootProbeCommand: "sudo systemctl status docker"
 
       <b># --- driver-specific configuration goes here --- see Amazon and Azure examples below ---</b>
 
