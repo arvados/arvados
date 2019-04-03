@@ -9,6 +9,8 @@ import { checkPublicFavorite } from "./public-favorites-reducer";
 import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
 import { ServiceRepository } from "~/services/services";
 import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
+import { getResource } from '~/store/resources/resources';
+import { LinkResource } from "~/models/link";
 
 export const publicFavoritesActions = unionize({
     TOGGLE_PUBLIC_FAVORITE: ofType<{ resourceUuid: string }>(),
@@ -65,4 +67,16 @@ export const updatePublicFavorites = (resourceUuids: string[]) =>
             .then((results: any) => {
                 dispatch(publicFavoritesActions.UPDATE_PUBLIC_FAVORITES(results));
             });
+    };
+
+export const getHeadUuid = (uuid: string) =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const resource = getResource<LinkResource>(uuid)(getState().resources);
+        return resource!.headUuid;
+    };
+
+export const getIsAdmin = () =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const resource = getState().auth.user!.isAdmin;
+        return resource;
     };

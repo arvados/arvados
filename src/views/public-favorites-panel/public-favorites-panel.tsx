@@ -31,6 +31,7 @@ import { createTree } from '~/models/tree';
 import { getSimpleObjectTypeFilters } from '~/store/resource-type-filters/resource-type-filters';
 import { PUBLIC_FAVORITE_PANEL_ID } from '~/store/public-favorites-panel/public-favorites-action';
 import { PublicFavoritesState } from '~/store/public-favorites/public-favorites-reducer';
+import { getHeadUuid, getIsAdmin } from '~/store/public-favorites/public-favorites-actions';
 
 type CssRules = "toolbar" | "button";
 
@@ -113,24 +114,25 @@ const mapStateToProps = ({ publicFavorites }: RootState): PublicFavoritePanelDat
 
 const mapDispatchToProps = (dispatch: Dispatch): PublicFavoritePanelActionProps => ({
     onContextMenu: (event, resourceUuid) => {
-        const kind = resourceKindToContextMenuKind(resourceUuid);
+        const isAdmin = dispatch<any>(getIsAdmin());
+        const kind = resourceKindToContextMenuKind(dispatch<any>(getHeadUuid(resourceUuid)), isAdmin);
         if (kind) {
             dispatch<any>(openContextMenu(event, {
                 name: '',
-                uuid: resourceUuid,
+                uuid: dispatch<any>(getHeadUuid(resourceUuid)),
                 ownerUuid: '',
                 kind: ResourceKind.NONE,
                 menuKind: kind
             }));
         }
-        dispatch<any>(loadDetailsPanel(resourceUuid));
+        dispatch<any>(loadDetailsPanel(dispatch<any>(getHeadUuid(resourceUuid))));
     },
     onDialogOpen: (ownerUuid: string) => { return; },
-    onItemClick: (resourceUuid: string) => {
-        dispatch<any>(loadDetailsPanel(resourceUuid));
+    onItemClick: (uuid: string) => {
+        dispatch<any>(loadDetailsPanel(dispatch<any>(getHeadUuid(uuid))));
     },
     onItemDoubleClick: uuid => {
-        dispatch<any>(navigateTo(uuid));
+        dispatch<any>(navigateTo(dispatch<any>(getHeadUuid(uuid))));
     }
 });
 
