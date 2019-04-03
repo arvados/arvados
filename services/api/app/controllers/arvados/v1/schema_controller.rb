@@ -134,6 +134,14 @@ class Arvados::V1::SchemaController < ApplicationController
             object_properties[col.name] = {
               type: k.serialized_attributes[col.name].object_class.to_s
             }
+          elsif k.attribute_types[col.name].is_a? JsonbType::Hash
+            object_properties[col.name] = {
+              type: Hash.to_s
+            }
+          elsif k.attribute_types[col.name].is_a? JsonbType::Array
+            object_properties[col.name] = {
+              type: Array.to_s
+            }
           else
             object_properties[col.name] = {
               type: col.type
