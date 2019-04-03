@@ -18,9 +18,6 @@ fi
 
 set -u
 
-if ! test -s /var/lib/arvados/api_uuid_prefix ; then
-    ruby -e 'puts "#{rand(2**64).to_s(36)[0,5]}"' > /var/lib/arvados/api_uuid_prefix
-fi
 uuid_prefix=$(cat /var/lib/arvados/api_uuid_prefix)
 
 if ! test -s /var/lib/arvados/api_secret_token ; then

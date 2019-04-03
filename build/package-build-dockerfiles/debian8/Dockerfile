@@ -5,6 +5,8 @@
 FROM debian:jessie
 MAINTAINER Ward Vandewege <ward@curoverse.com>
 
+RUN perl -ni~ -e 'print unless /jessie-updates/' /etc/apt/sources.list
+
 ENV DEBIAN_FRONTEND noninteractive
 
 # Install dependencies.

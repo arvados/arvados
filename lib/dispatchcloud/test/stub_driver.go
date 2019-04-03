@@ -245,7 +245,7 @@ func (svm *StubVM) Exec(env map[string]string, command string, stdin io.Reader, 
 		}
 		for _, name := range []string{"ARVADOS_API_HOST", "ARVADOS_API_TOKEN"} {
 			if stdinKV[name] == "" {
-				fmt.Fprintf(stderr, "%s env var missing from stdin %q\n", name, stdin)
+				fmt.Fprintf(stderr, "%s env var missing from stdin %q\n", name, stdinData)
 				return 1
 			}
 		}

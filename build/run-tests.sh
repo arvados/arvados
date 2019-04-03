@@ -85,6 +85,7 @@ lib/dispatchcloud/container
 lib/dispatchcloud/scheduler
 lib/dispatchcloud/ssh_executor
 lib/dispatchcloud/worker
+lib/service
 services/api
 services/arv-git-httpd
 services/crunchstat
@@ -147,6 +148,7 @@ PYTHONPATH=
 GEMHOME=
 PERLINSTALLBASE=
 R_LIBS=
+export LANG=en_US.UTF-8
 
 short=
 only_install=
@@ -188,6 +190,9 @@ sanity_checks() {
     ( [[ -n "$WORKSPACE" ]] && [[ -d "$WORKSPACE/services" ]] ) \
         || fatal "WORKSPACE environment variable not set to a source directory (see: $0 --help)"
     echo Checking dependencies:
+    echo "locale: ${LANG}"
+    [[ "$(locale charmap)" = "UTF-8" ]] \
+        || fatal "Locale '${LANG}' is broken/missing. Try: echo ${LANG} | sudo tee -a /etc/locale.gen && sudo locale-gen"
     echo -n 'virtualenv: '
     virtualenv --version \
         || fatal "No virtualenv. Try: apt-get install virtualenv (on ubuntu: python-virtualenv)"
@@ -363,6 +368,27 @@ if [[ $NEED_SDK_R == false ]]; then
 	echo "R SDK not needed, it will not be installed."
 fi
 
+checkpidfile() {
+    svc="$1"
+    pid="$(cat "$WORKSPACE/tmp/${svc}.pid")"
+    if [[ -z "$pid" ]] || ! kill -0 "$pid"; then
+        tail $WORKSPACE/tmp/${1}*.log
+        echo "${svc} pid ${pid} not running"
+        return 1
+    fi
+    echo "${svc} pid ${pid} ok"
+}
+
+checkdiscoverydoc() {
+    dd="https://${1}/discovery/v1/apis/arvados/v1/rest"
+    if ! (set -o pipefail; curl -fsk "$dd" | grep -q ^{ ); then
+        echo >&2 "ERROR: could not retrieve discovery doc from RailsAPI at $dd"
+        tail -v $WORKSPACE/services/api/log/test.log
+        return 1
+    fi
+    echo "${dd} ok"
+}
+
 start_services() {
     if [[ -n "$ARVADOS_TEST_API_HOST" ]]; then
         return 0
@@ -377,19 +403,29 @@ start_services() {
 	rm -f "$WORKSPACE/tmp/api.pid"
     fi
     all_services_stopped=
-    fail=0
+    fail=1
     cd "$WORKSPACE" \
-        && eval $(python sdk/python/tests/run_test_server.py start --auth admin || echo "fail=1; false") \
+        && eval $(python sdk/python/tests/run_test_server.py start --auth admin) \
         && export ARVADOS_TEST_API_HOST="$ARVADOS_API_HOST" \
         && export ARVADOS_TEST_API_INSTALLED="$$" \
+        && checkpidfile api \
+        && checkdiscoverydoc $ARVADOS_API_HOST \
         && python sdk/python/tests/run_test_server.py start_controller \
+        && checkpidfile controller \
         && python sdk/python/tests/run_test_server.py start_keep_proxy \
+        && checkpidfile keepproxy \
         && python sdk/python/tests/run_test_server.py start_keep-web \
+        && checkpidfile keep-web \
         && python sdk/python/tests/run_test_server.py start_arv-git-httpd \
+        && checkpidfile arv-git-httpd \
         && python sdk/python/tests/run_test_server.py start_ws \
-        && eval $(python sdk/python/tests/run_test_server.py start_nginx || echo "fail=1; false") \
+        && checkpidfile ws \
+        && eval $(python sdk/python/tests/run_test_server.py start_nginx) \
+        && checkdiscoverydoc $ARVADOS_API_HOST \
+        && checkpidfile nginx \
+        && export ARVADOS_TEST_PROXY_SERVICES=1 \
         && (env | egrep ^ARVADOS) \
-        || fail=1
+        && fail=0
     deactivate
     if [[ $fail != 0 ]]; then
         unset ARVADOS_TEST_API_HOST
@@ -401,7 +437,7 @@ stop_services() {
     if [[ -n "$all_services_stopped" ]]; then
         return
     fi
-    unset ARVADOS_TEST_API_HOST
+    unset ARVADOS_TEST_API_HOST ARVADOS_TEST_PROXY_SERVICES
     . "$VENVDIR/bin/activate" || return
     cd "$WORKSPACE" \
         && python sdk/python/tests/run_test_server.py stop_nginx \
@@ -694,7 +730,7 @@ do_test() {
         services/api)
             stop_services
             ;;
-        doc | lib/cli | lib/cloud/azure | lib/cloud/ec2 | lib/cmd | lib/dispatchcloud/ssh_executor | lib/dispatchcloud/worker)
+        gofmt | doc | lib/cli | lib/cloud/azure | lib/cloud/ec2 | lib/cmd | lib/dispatchcloud/ssh_executor | lib/dispatchcloud/worker)
             # don't care whether services are running
             ;;
         *)
@@ -727,7 +763,6 @@ do_test_once() {
         # compilation errors.
         go get -ldflags "-X main.version=${ARVADOS_VERSION:-$(git log -n1 --format=%H)-dev}" -t "git.curoverse.com/arvados.git/$1" && \
             cd "$GOPATH/src/git.curoverse.com/arvados.git/$1" && \
-            [[ -z "$(gofmt -e -d . | tee /dev/stderr)" ]] && \
             if [[ -n "${testargs[$1]}" ]]
         then
             # "go test -check.vv giturl" doesn't work, but this
@@ -744,6 +779,7 @@ do_test_once() {
             go tool cover -html="$WORKSPACE/tmp/.$covername.tmp" -o "$WORKSPACE/tmp/$covername.html"
             rm "$WORKSPACE/tmp/.$covername.tmp"
         fi
+        [[ $result = 0 ]] && gofmt -e -d *.go
     elif [[ "$2" == "pip" ]]
     then
         tries=0
@@ -894,7 +930,7 @@ install_services/api() {
     # database, so that we can drop it. This assumes the current user
     # is a postgresql superuser.
     cd "$WORKSPACE/services/api" \
-        && test_database=$(python -c "import yaml; print yaml.load(file('config/database.yml'))['test']['database']") \
+        && test_database=$(python -c "import yaml; print yaml.safe_load(file('config/database.yml'))['test']['database']") \
         && psql "$test_database" -c "SELECT pg_terminate_backend (pg_stat_activity.pid::int) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$test_database';" 2>/dev/null
 
     mkdir -p "$WORKSPACE/services/api/tmp/pids"
@@ -953,6 +989,7 @@ gostuff=(
     lib/dispatchcloud/scheduler
     lib/dispatchcloud/ssh_executor
     lib/dispatchcloud/worker
+    lib/service
     sdk/go/arvados
     sdk/go/arvadosclient
     sdk/go/auth
@@ -1000,6 +1037,12 @@ test_doc() {
     )
 }
 
+test_gofmt() {
+    cd "$WORKSPACE" || return 1
+    dirs=$(ls -d */ | egrep -v 'vendor|tmp')
+    [[ -z "$(gofmt -e -d $dirs | tee -a /dev/stderr)" ]]
+}
+
 test_services/api() {
     rm -f "$WORKSPACE/services/api/git-commit.version"
     cd "$WORKSPACE/services/api" \
@@ -1036,17 +1079,17 @@ test_services/nodemanager_integration() {
 
 test_apps/workbench_units() {
     cd "$WORKSPACE/apps/workbench" \
-        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:units TESTOPTS=-v ${testargs[apps/workbench]}
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:units TESTOPTS=-v ${testargs[apps/workbench]} ${testargs[apps/workbench_units]}
 }
 
 test_apps/workbench_functionals() {
     cd "$WORKSPACE/apps/workbench" \
-        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:functionals TESTOPTS=-v ${testargs[apps/workbench]}
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:functionals TESTOPTS=-v ${testargs[apps/workbench]} ${testargs[apps/workbench_functionals]}
 }
 
 test_apps/workbench_integration() {
     cd "$WORKSPACE/apps/workbench" \
-        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:integration TESTOPTS=-v ${testargs[apps/workbench]}
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:integration TESTOPTS=-v ${testargs[apps/workbench]} ${testargs[apps/workbench_integration]}
 }
 
 test_apps/workbench_benchmark() {
@@ -1115,6 +1158,7 @@ test_all() {
         exit_cleanly
     fi
 
+    do_test gofmt
     do_test doc
     do_test sdk/ruby
     do_test sdk/R
@@ -1169,11 +1213,8 @@ for g in "${gostuff[@]}"; do
 done
 for p in "${pythonstuff[@]}"; do
     dir=${p%:py3}
-    if [[ ${dir} = ${p} ]]; then
-        testfuncargs[$p]="$dir pip $VENVDIR/bin/"
-    else
-        testfuncargs[$p]="$dir pip $VENV3DIR/bin/"
-    fi
+    testfuncargs[$dir]="$dir pip $VENVDIR/bin/"
+    testfuncargs[$dir:py3]="$dir pip $VENV3DIR/bin/"
 done
 
 if [[ -z ${interactive} ]]; then
@@ -1185,7 +1226,11 @@ else
     only_install=()
     if [[ -e "$VENVDIR/bin/activate" ]]; then stop_services; fi
     setnextcmd() {
-        if [[ "$nextcmd" != "install deps" ]]; then
+        if [[ "$TERM" = dumb ]]; then
+            # assume emacs, or something, is offering a history buffer
+            # and pre-populating the command will only cause trouble
+            nextcmd=
+        elif [[ "$nextcmd" != "install deps" ]]; then
             :
         elif [[ -e "$VENVDIR/bin/activate" ]]; then
             nextcmd="test lib/cmd"
@@ -1199,29 +1244,33 @@ else
     setnextcmd
     while read -p 'What next? ' -e -i "${nextcmd}" nextcmd; do
         read verb target opts <<<"${nextcmd}"
+        target="${target%/}"
+        target="${target/\/:/:}"
         case "${verb}" in
-            "" | "help")
-                help_interactive
-                ;;
             "exit" | "quit")
                 exit_cleanly
                 ;;
             "reset")
                 stop_services
                 ;;
-            *)
-                target="${target%/}"
-                testargs["$target"]="${opts}"
+            "test" | "install")
                 case "$target" in
+                    "")
+                        help_interactive
+                        ;;
                     all | deps)
                         ${verb}_${target}
                         ;;
                     *)
+                        testargs["$target"]="${opts}"
                         tt="${testfuncargs[${target}]}"
                         tt="${tt:-$target}"
                         do_$verb $tt
                         ;;
                 esac
+                ;;
+            "" | "help" | *)
+                help_interactive
                 ;;
         esac
         if [[ ${#successes[@]} -gt 0 || ${#failures[@]} -gt 0 ]]; then
