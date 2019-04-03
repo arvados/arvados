@@ -1003,6 +1003,24 @@ EOS
   end
 
   [
+    ['file_count', 1],
+    ['file_size_total', 34]
+  ].each do |attribute, val|
+    test "update collection with #{attribute} and manifest and expect manifest values" do
+      authorize_with :active
+      post :update, {
+        id: collections(:collection_owned_by_active_with_file_stats).uuid,
+        collection: {
+          manifest_text: ". d41d8cd98f00b204e9800998ecf8427e 0:34:foo.txt\n",
+          "#{attribute}": 10
+        }
+      }
+      assert_response 200
+      assert_equal val, json_response[attribute]
+    end
+  end
+
+  [
     ". 0:0:foo.txt",
     ". d41d8cd98f00b204e9800998ecf8427e foo.txt",
     "d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt",
