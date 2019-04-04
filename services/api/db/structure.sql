@@ -175,7 +175,9 @@ CREATE TABLE public.collections (
     storage_classes_confirmed_at timestamp without time zone,
     current_version_uuid character varying,
     version integer DEFAULT 1 NOT NULL,
-    preserve_version boolean DEFAULT false
+    preserve_version boolean DEFAULT false,
+    file_count integer DEFAULT 0 NOT NULL,
+    file_size_total bigint DEFAULT 0 NOT NULL
 );
 
 
@@ -3219,4 +3221,6 @@ INSERT INTO schema_migrations (version) VALUES ('20181011184200');
 INSERT INTO schema_migrations (version) VALUES ('20181213183234');
 
 INSERT INTO schema_migrations (version) VALUES ('20190214214814');
+
+INSERT INTO schema_migrations (version) VALUES ('20190322174136');
 

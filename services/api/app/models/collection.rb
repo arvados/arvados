@@ -29,6 +29,7 @@ class Collection < ArvadosModel
   validate :ensure_storage_classes_contain_non_empty_strings
   validate :versioning_metadata_updates, on: :update
   validate :past_versions_cannot_be_updated, on: :update
+  after_validation :set_file_count_and_total_size
   before_save :set_file_names
   around_update :manage_versioning
 
@@ -51,6 +52,8 @@ class Collection < ArvadosModel
     t.add :version
     t.add :current_version_uuid
     t.add :preserve_version
+    t.add :file_count
+    t.add :file_size_total
   end
 
   after_initialize do
@@ -191,6 +194,20 @@ class Collection < ArvadosModel
   def set_file_names
     if self.manifest_text_changed?
       self.file_names = manifest_files
+    end
+    true
+  end
+
+  def set_file_count_and_total_size
+    # Only update the file stats if the manifest changed
+    if self.manifest_text_changed?
+      m = Keep::Manifest.new(self.manifest_text)
+      self.file_size_total = m.files_size
+      self.file_count = m.files_count
+    # If the manifest didn't change but the attributes did, ignore the changes
+    elsif self.file_count_changed? || self.file_size_total_changed?
+      self.file_count = self.file_count_was
+      self.file_size_total = self.file_size_total_was
     end
     true
   end
