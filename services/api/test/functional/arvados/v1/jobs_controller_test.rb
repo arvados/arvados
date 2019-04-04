@@ -479,56 +479,6 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     end
   end
 
-  test 'get_delete components_get again for job with components' do
-    authorize_with :active
-    get :show, params: {id: jobs(:running_job_with_components).uuid}
-    assert_response :success
-    assert_not_nil json_response["components"]
-    assert_equal ["component1", "component2"], json_response["components"].keys
-
-    # delete second component
-    @test_counter = 0  # Reset executed action counter
-    @controller = Arvados::V1::JobsController.new
-    put :update, params: {
-      id: jobs(:running_job_with_components).uuid,
-      job: {
-        components: {"component1" => "zzzzz-8i9sb-jobuuid00000001"}
-      }
-    }
-    assert_response :success
-
-    @test_counter = 0  # Reset executed action counter
-    @controller = Arvados::V1::JobsController.new
-    get :show, params: {id: jobs(:running_job_with_components).uuid}
-    assert_response :success
-    assert_not_nil json_response["components"]
-    assert_equal ["component1"], json_response["components"].keys
-
-    # delete all components
-    @test_counter = 0  # Reset executed action counter
-    @controller = Arvados::V1::JobsController.new
-    put :update, params: {
-      id: jobs(:running_job_with_components).uuid,
-      job: {
-        components: {}
-      }
-    }
-    assert_response :success
-    # These assertions shouldn't pass. It seems that the @request var is cached
-    # from the previous call on line 492.
-    assert_not_equal 0, json_response['components'].size
-    assert_not_equal [], SafeJSON.load(@request.params['job'])['components'].keys
-
-    @test_counter = 0  # Reset executed action counter
-    @controller = Arvados::V1::JobsController.new
-    get :show, params: {id: jobs(:running_job_with_components).uuid}
-    assert_response :success
-    assert_not_nil json_response["components"]
-    # The commented assertion below fails because of what's happening on the
-    # previous request
-    # assert_equal [], json_response["components"].keys
-  end
-
   test 'jobs.create disabled in config' do
     Rails.configuration.disable_api_methods = ["jobs.create",
                                                "pipeline_instances.create"]

@@ -49,4 +49,43 @@ class JobsApiTest < ActionDispatch::IntegrationTest
       last_qsequence = qsequence
     end
   end
+
+  test 'get_delete components_get again for job with components' do
+    authorize_with :active
+    get "/arvados/v1/jobs/#{jobs(:running_job_with_components).uuid}",
+      headers: auth(:active)
+    assert_response 200
+    assert_not_nil json_response["components"]
+    assert_equal ["component1", "component2"], json_response["components"].keys
+
+    # delete second component
+    put "/arvados/v1/jobs/#{jobs(:running_job_with_components).uuid}", params: {
+      job: {
+        components: {"component1" => "zzzzz-8i9sb-jobuuid00000001"}
+      },
+      limit: 1000
+    }, headers: auth(:active)
+    assert_response 200
+
+    get "/arvados/v1/jobs/#{jobs(:running_job_with_components).uuid}",
+      headers: auth(:active)
+    assert_response 200
+    assert_not_nil json_response["components"]
+    assert_equal ["component1"], json_response["components"].keys
+
+    # delete all components
+    put "/arvados/v1/jobs/#{jobs(:running_job_with_components).uuid}", params: {
+      job: {
+        components: nil
+      },
+      limit: 1000
+    }, headers: auth(:active)
+    assert_response 200
+
+    get "/arvados/v1/jobs/#{jobs(:running_job_with_components).uuid}",
+      headers: auth(:active)
+    assert_response 200
+    assert_not_nil json_response["components"]
+    assert_equal [], json_response["components"].keys
+  end
 end

@@ -134,6 +134,49 @@ class GroupsTest < ActionDispatch::IntegrationTest
     assert_includes coll_uuids, collections(:foo_collection_in_aproject).uuid
     assert_not_includes coll_uuids, collections(:expired_collection).uuid
   end
+
+  test "unsharing a project results in hiding it from previously shared user" do
+    # remove sharing link for project
+    delete "/arvados/v1/links/#{links(:share_starred_project_with_project_viewer).uuid}", headers: auth(:admin)
+    assert_response 200
+
+    # verify that the user can no longer see the project
+    get "/arvados/v1/groups",
+      params: {
+        filters: [['group_class', '=', 'project']].to_json,
+        limit: 1000
+      }, headers: auth(:project_viewer)
+    assert_response 200
+    found_projects = {}
+    json_response['items'].each do |g|
+      found_projects[g['uuid']] = g
+    end
+    assert_equal false, found_projects.include?(groups(:starred_and_shared_active_user_project).uuid)
+
+    # share the project
+    post "/arvados/v1/links", params: {
+      link: {
+        link_class: "permission",
+        name: "can_read",
+        head_uuid: groups(:starred_and_shared_active_user_project).uuid,
+        tail_uuid: users(:project_viewer).uuid,
+      }
+    }, headers: auth(:system_user)
+    assert_response 200
+    assert_equal 'permission', json_response['link_class']
+
+    # verify that project_viewer user can now see shared project again
+    get "/arvados/v1/groups", params: {
+      filters: [['group_class', '=', 'project']].to_json,
+      limit: 1000
+    }, headers: auth(:project_viewer)
+    assert_response 200
+    found_projects = {}
+    json_response['items'].each do |g|
+      found_projects[g['uuid']] = g
+    end
+    assert_equal true, found_projects.include?(groups(:starred_and_shared_active_user_project).uuid)
+  end
 end
 
 class NonTransactionalGroupsTest < ActionDispatch::IntegrationTest
