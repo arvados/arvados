@@ -314,15 +314,14 @@ func (cq *Queue) setRuntimeError(uuid, errorString string) error {
 
 // Cancel cancels the given container.
 func (cq *Queue) Cancel(uuid string) error {
-	err := cq.client.RequestAndDecode(nil, "PUT", "arvados/v1/containers/"+uuid, nil, map[string]map[string]interface{}{
+	var resp arvados.Container
+	err := cq.client.RequestAndDecode(&resp, "PUT", "arvados/v1/containers/"+uuid, nil, map[string]map[string]interface{}{
 		"container": {"state": arvados.ContainerStateCancelled},
 	})
 	if err != nil {
 		return err
 	}
-	cq.mtx.Lock()
-	defer cq.mtx.Unlock()
-	cq.notify()
+	cq.updateWithResp(uuid, resp)
 	return nil
 }
 
@@ -332,7 +331,13 @@ func (cq *Queue) apiUpdate(uuid, action string) error {
 	if err != nil {
 		return err
 	}
+	cq.updateWithResp(uuid, resp)
+	return nil
+}
 
+// Update the local queue with the response received from a
+// state-changing API request (lock/unlock/cancel).
+func (cq *Queue) updateWithResp(uuid string, resp arvados.Container) {
 	cq.mtx.Lock()
 	defer cq.mtx.Unlock()
 	if cq.dontupdate != nil {
@@ -345,7 +350,6 @@ func (cq *Queue) apiUpdate(uuid, action string) error {
 		cq.current[uuid] = ent
 	}
 	cq.notify()
-	return nil
 }
 
 func (cq *Queue) poll() (map[string]*arvados.Container, error) {
