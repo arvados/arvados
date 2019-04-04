@@ -42,4 +42,4 @@ outputs:
       glob: success
       loadContents: true
       outputEval: $(self[0].contents=="true")
-baseCommand: python2
+baseCommand: python
