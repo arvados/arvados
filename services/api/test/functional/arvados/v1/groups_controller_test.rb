@@ -406,6 +406,23 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
   end
 
   test "unsharing a project results in hiding it from previously shared user" do
+    # Make the same call as in line 448.
+    @controller = Arvados::V1::LinksController.new
+    authorize_with :system_user
+    post :create, params: {
+      link: {
+        link_class: "permission",
+        name: "can_read",
+        head_uuid: groups(:starred_and_shared_active_user_project).uuid,
+        tail_uuid: users(:project_viewer).uuid,
+      }
+    }
+    assert_response :success
+    assert_equal 'permission', json_response['link_class']
+    l = Link.find_by_uuid(json_response['uuid'])
+    l.destroy
+    @test_counter = 0
+
     # remove sharing link for project
     @controller = Arvados::V1::LinksController.new
     authorize_with :admin
@@ -436,6 +453,13 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
         tail_uuid: users(:project_viewer).uuid,
       }
     }
+    assert_response :success
+    # This fails if the call at the beginning of the test isn't
+    # made, because for some reason the links controller gets
+    # an empty params list.
+    assert_equal 'permission', json_response['link_class']
+    # NOTE that if I manually create the link, the test pass:
+    # Link.create(link_class: 'permission', name: 'can_read', head_uuid: groups(:starred_and_shared_active_user_project).uuid, tail_uuid: users(:project_viewer).uuid)
 
     # verify that project_viewer user can now see shared project again
     @test_counter = 0
