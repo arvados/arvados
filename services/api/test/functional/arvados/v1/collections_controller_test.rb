@@ -946,7 +946,7 @@ EOS
   ].each do |manifest, count, size|
     test "create collection with valid manifest #{manifest} and expect file stats" do
       authorize_with :active
-      post :create, {
+      post :create, params: {
         collection: {
           manifest_text: manifest
         }
@@ -959,7 +959,7 @@ EOS
 
   test "update collection manifest and expect new file stats" do
     authorize_with :active
-    post :update, {
+    post :update, params: {
       id: collections(:collection_owned_by_active_with_file_stats).uuid,
       collection: {
         manifest_text: ". d41d8cd98f00b204e9800998ecf8427e 0:34:foo.txt\n"
@@ -976,7 +976,7 @@ EOS
   ].each do |attribute, val|
     test "create collection with #{attribute} and expect overwrite" do
       authorize_with :active
-      post :create, {
+      post :create, params: {
         collection: {
           manifest_text: ". d41d8cd98f00b204e9800998ecf8427e 0:34:foo.txt\n",
           "#{attribute}": 10
@@ -993,7 +993,7 @@ EOS
   ].each do |attribute, val|
     test "update collection with #{attribute} and expect ignore" do
       authorize_with :active
-      post :update, {
+      post :update, params: {
         id: collections(:collection_owned_by_active_with_file_stats).uuid,
         collection: {
           "#{attribute}": 10
@@ -1010,7 +1010,7 @@ EOS
   ].each do |attribute, val|
     test "update collection with #{attribute} and manifest and expect manifest values" do
       authorize_with :active
-      post :update, {
+      post :update, params: {
         id: collections(:collection_owned_by_active_with_file_stats).uuid,
         collection: {
           manifest_text: ". d41d8cd98f00b204e9800998ecf8427e 0:34:foo.txt\n",

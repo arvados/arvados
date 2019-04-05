@@ -5,7 +5,7 @@
 require "arvados/keep"
 require "group_pdhs"
 
-class AddFileInfoToCollection < ActiveRecord::Migration
+class AddFileInfoToCollection < ActiveRecord::Migration[4.2]
   def do_batch(pdhs)
     pdhs_str = ''
     pdhs.each do |pdh|
