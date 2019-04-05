@@ -77,7 +77,7 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 				APIHost:  arvadostest.APIHost(),
 				Insecure: true,
 			},
-			Listen:          ":0",
+			Listen:          "localhost:0",
 			GitCommand:      "/usr/bin/git",
 			RepoRoot:        s.tmpRepoRoot,
 			ManagementToken: arvadostest.ManagementToken,

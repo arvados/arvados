@@ -3,19 +3,10 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 require 'etc'
-require 'mocha/mini_test'
+require 'mocha/minitest'
 require 'ostruct'
 
 module Stubs
-  # These Etc mocks help only when we run arvados-login-sync in-process.
-
-  def setup
-    super
-    ENV['ARVADOS_VIRTUAL_MACHINE_UUID'] = 'testvm2.shell'
-    Etc.stubs(:to_enum).with(:passwd).returns stubpasswd.map { |x| OpenStruct.new x }
-    Etc.stubs(:to_enum).with(:group).returns stubgroup.map { |x| OpenStruct.new x }
-  end
-
   def stubpasswd
     [{name: 'root', uid: 0}]
   end
@@ -24,10 +15,16 @@ module Stubs
     [{name: 'root', gid: 0}]
   end
 
-  # These child-ENV tricks help only when we run arvados-login-sync as a subprocess.
 
   def setup
     super
+
+    # These Etc mocks help only when we run arvados-login-sync in-process.
+    ENV['ARVADOS_VIRTUAL_MACHINE_UUID'] = 'testvm2.shell'
+    Etc.stubs(:to_enum).with(:passwd).returns stubpasswd.map { |x| OpenStruct.new x }
+    Etc.stubs(:to_enum).with(:group).returns stubgroup.map { |x| OpenStruct.new x }
+
+    # These child-ENV tricks help only when we run arvados-login-sync as a subprocess.
     @env_was = Hash[ENV]
     @tmpdir = Dir.mktmpdir
   end

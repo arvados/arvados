@@ -266,9 +266,10 @@ func (s *IntegrationSuite) runCurl(c *check.C, token, host, uri string, args ...
 	c.Log(fmt.Sprintf("curlArgs == %#v", curlArgs))
 	cmd := exec.Command("curl", curlArgs...)
 	stdout, err := cmd.StdoutPipe()
-	c.Assert(err, check.Equals, nil)
-	cmd.Stderr = cmd.Stdout
-	go cmd.Start()
+	c.Assert(err, check.IsNil)
+	cmd.Stderr = os.Stderr
+	err = cmd.Start()
+	c.Assert(err, check.IsNil)
 	buf := make([]byte, 2<<27)
 	n, err := io.ReadFull(stdout, buf)
 	// Discard (but measure size of) anything past 128 MiB.
@@ -276,9 +277,9 @@ func (s *IntegrationSuite) runCurl(c *check.C, token, host, uri string, args ...
 	if err == io.ErrUnexpectedEOF {
 		buf = buf[:n]
 	} else {
-		c.Assert(err, check.Equals, nil)
+		c.Assert(err, check.IsNil)
 		discarded, err = io.Copy(ioutil.Discard, stdout)
-		c.Assert(err, check.Equals, nil)
+		c.Assert(err, check.IsNil)
 	}
 	err = cmd.Wait()
 	// Without "-f", curl exits 0 as long as it gets a valid HTTP

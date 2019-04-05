@@ -24,6 +24,9 @@ requirements:
       ARVADOS_API_TOKEN: $(inputs.arvados_api_token)
       ARVADOS_API_HOST_INSECURE: $(""+inputs.arvado_api_host_insecure)
   InlineJavascriptRequirement: {}
+hints:
+  DockerRequirement:
+    dockerPull: arvados/jobs
 inputs:
   arvados_api_token: string
   arvado_api_host_insecure: boolean
@@ -45,4 +48,4 @@ outputs:
     type: boolean
     outputBinding:
       outputEval: $(true)
-baseCommand: python2
+baseCommand: python

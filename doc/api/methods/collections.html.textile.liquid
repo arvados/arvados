@@ -39,6 +39,8 @@ table(table table-bordered table-condensed).
 |current_version_uuid|string|UUID of the collection's current version. On new collections, it'll be equal to the @uuid@ attribute.||
 |version|number|Version number, starting at 1 on new collections. This attribute is read-only.||
 |preserve_version|boolean|When set to true on a current version, it will be saved on the next versionable update.||
+|file_count|number|The total number of files in the collection. This attribute is read-only.||
+|file_size_total|number|The sum of the file sizes in the collection. This attribute is read-only.||
 
 h3. Conditions of creating a Collection
 

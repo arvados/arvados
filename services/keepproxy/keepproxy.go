@@ -152,7 +152,7 @@ func main() {
 		}
 		err = f.Sync()
 		if err != nil {
-			log.Fatal("sync(%s): %s", cfg.PIDFile, err)
+			log.Fatalf("sync(%s): %s", cfg.PIDFile, err)
 		}
 	}
 
@@ -541,7 +541,7 @@ func (h *proxyHandler) Put(resp http.ResponseWriter, req *http.Request) {
 	if locatorIn == "" {
 		bytes, err2 := ioutil.ReadAll(req.Body)
 		if err2 != nil {
-			_ = errors.New(fmt.Sprintf("Error reading request body: %s", err2))
+			err = fmt.Errorf("Error reading request body: %s", err2)
 			status = http.StatusInternalServerError
 			return
 		}

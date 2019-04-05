@@ -108,7 +108,7 @@ begin
                 "-G", groups.join(","),
                 l[:username],
                 out: devnull)
-        STDERR.puts "Account creation failed for #{l[:username]}: $?"
+        STDERR.puts "Account creation failed for #{l[:username]}: #{$?}"
         next
       end
       begin
@@ -121,13 +121,13 @@ begin
 
     @homedir = pwnam[l[:username]].dir
     userdotssh = File.join(@homedir, ".ssh")
-    Dir.mkdir(userdotssh) if !File.exists?(userdotssh)
+    Dir.mkdir(userdotssh) if !File.exist?(userdotssh)
 
     newkeys = "###\n###\n" + keys[l[:username]].join("\n") + "\n###\n###\n"
 
     keysfile = File.join(userdotssh, "authorized_keys")
 
-    if File.exists?(keysfile)
+    if File.exist?(keysfile)
       oldkeys = IO::read(keysfile)
     else
       oldkeys = ""

@@ -10,17 +10,14 @@ class TestAddUser < Minitest::Test
   include Stubs
 
   def test_useradd_error
+    valid_groups = %w(docker admin fuse).select { |g| Etc.getgrnam(g) rescue false }
     # binstub_new_user/useradd will exit non-zero because its args
     # won't match any line in this empty file:
     File.open(@tmpdir+'/succeed', 'w') do |f| end
     invoke_sync binstubs: ['new_user']
     spied = File.read(@tmpdir+'/spy')
     assert_match %r{useradd -m -c active -s /bin/bash -G (fuse)? active}, spied
-    # BUG(TC): This assertion succeeds only if docker and fuse groups
-    # exist on the host, but is insensitive to the admin group (groups
-    # are quietly ignored by login-sync if they don't exist on the
-    # current host).
-    assert_match %r{useradd -m -c adminroot -s /bin/bash -G (docker)?(,admin)?(,fuse)? adminroot}, spied
+    assert_match %r{useradd -m -c adminroot -s /bin/bash -G #{valid_groups.join(',')} adminroot}, spied
   end
 
   def test_useradd_success

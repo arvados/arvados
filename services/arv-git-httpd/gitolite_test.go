@@ -52,7 +52,7 @@ func (s *GitoliteSuite) SetUpTest(c *check.C) {
 			APIHost:  arvadostest.APIHost(),
 			Insecure: true,
 		},
-		Listen:       ":0",
+		Listen:       "localhost:0",
 		GitCommand:   "/usr/share/gitolite3/gitolite-shell",
 		GitoliteHome: s.gitoliteHome,
 		RepoRoot:     s.tmpRepoRoot,
