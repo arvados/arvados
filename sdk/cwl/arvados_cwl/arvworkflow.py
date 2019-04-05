@@ -288,6 +288,10 @@ class ArvadosWorkflow(Workflow):
                 adjustDirObjs(packed, keepmount)
                 self.wf_pdh = upload_workflow_collection(self.arvrunner, shortname(self.tool["id"]), packed)
 
+        self.loadingContext = self.loadingContext.copy()
+        self.loadingContext.metadata = self.loadingContext.metadata.copy()
+        self.loadingContext.metadata["http://commonwl.org/cwltool#original_cwlVersion"] = "v1.0"
+
         wf_runner = cmap({
             "class": "CommandLineTool",
             "baseCommand": "cwltool",

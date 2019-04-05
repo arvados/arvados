@@ -57,7 +57,7 @@ class CollectionMock(object):
 class TestContainer(unittest.TestCase):
 
     def helper(self, runner, enable_reuse=True):
-        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
+        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.1.0-dev1")
 
         make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
                                          collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
@@ -66,7 +66,7 @@ class TestContainer(unittest.TestCase):
              "basedir": "",
              "make_fs_access": make_fs_access,
              "loader": Loader({}),
-             "metadata": {"cwlVersion": "v1.0"}})
+             "metadata": {"cwlVersion": "v1.1.0-dev1", "http://commonwl.org/cwltool#original_cwlVersion": "v1.0"}})
         runtimeContext = arvados_cwl.context.ArvRuntimeContext(
             {"work_api": "containers",
              "basedir": "",
@@ -400,7 +400,7 @@ class TestContainer(unittest.TestCase):
         runner.api.collections().get().execute.return_value = {
             "portable_data_hash": "99999999999999999999999999999993+99"}
 
-        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
+        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.1.0-dev1")
 
         tool = cmap({
             "inputs": [],
@@ -607,7 +607,7 @@ class TestContainer(unittest.TestCase):
             "portable_data_hash": "99999999999999999999999999999994+99",
             "manifest_text": ". 99999999999999999999999999999994+99 0:0:file1 0:0:file2"}
 
-        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
+        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.1.0-dev1")
 
         tool = cmap({
             "inputs": [
@@ -697,7 +697,7 @@ class TestContainer(unittest.TestCase):
         runner.api.collections().get().execute.return_value = {
             "portable_data_hash": "99999999999999999999999999999993+99"}
 
-        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
+        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.1.0-dev1")
 
         tool = cmap({"arguments": ["md5sum", "example.conf"],
                      "class": "CommandLineTool",
@@ -803,7 +803,7 @@ class TestContainer(unittest.TestCase):
             "class": "CommandLineTool",
             "hints": [
                 {
-                    "class": "http://commonwl.org/cwltool#TimeLimit",
+                    "class": "ToolTimeLimit",
                     "timelimit": 42
                 }
             ]

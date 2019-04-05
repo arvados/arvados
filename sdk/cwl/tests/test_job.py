@@ -34,7 +34,7 @@ if not os.getenv('ARVADOS_DEBUG'):
 class TestJob(unittest.TestCase):
 
     def helper(self, runner, enable_reuse=True):
-        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
+        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.1.0-dev1")
 
         make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
                                          collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
@@ -43,7 +43,7 @@ class TestJob(unittest.TestCase):
              "basedir": "",
              "make_fs_access": make_fs_access,
              "loader": Loader({}),
-             "metadata": {"cwlVersion": "v1.0"},
+             "metadata": {"cwlVersion": "v1.1.0-dev1", "http://commonwl.org/cwltool#original_cwlVersion": "v1.0"},
              "makeTool": runner.arv_make_tool})
         runtimeContext = arvados_cwl.context.ArvRuntimeContext(
             {"work_api": "jobs",
@@ -343,7 +343,7 @@ class TestJob(unittest.TestCase):
 
 class TestWorkflow(unittest.TestCase):
     def helper(self, runner, enable_reuse=True):
-        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
+        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.1.0-dev1")
 
         make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
                                          collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
@@ -358,7 +358,7 @@ class TestWorkflow(unittest.TestCase):
              "basedir": "",
              "make_fs_access": make_fs_access,
              "loader": document_loader,
-             "metadata": {"cwlVersion": "v1.0"},
+             "metadata": {"cwlVersion": "v1.1.0-dev1", "http://commonwl.org/cwltool#original_cwlVersion": "v1.0"},
              "construct_tool_object": runner.arv_make_tool})
         runtimeContext = arvados_cwl.context.ArvRuntimeContext(
             {"work_api": "jobs",
@@ -458,6 +458,7 @@ bytes(b'''{
     @mock.patch("arvados.collection.Collection")
     @mock.patch('arvados.commands.keepdocker.list_images_in_arv')
     def test_overall_resource_singlecontainer(self, list_images_in_arv, mockcollection, mockcollectionreader):
+        # TODO copy this over to test_container
         arvados_cwl.add_arv_hints()
 
         api = mock.MagicMock()
@@ -475,16 +476,15 @@ bytes(b'''{
         runner.num_retries = 0
 
         loadingContext, runtimeContext = self.helper(runner)
-
+        loadingContext.do_update = True
         tool, metadata = loadingContext.loader.resolve_ref("tests/wf/echo-wf.cwl")
-        metadata["cwlVersion"] = tool["cwlVersion"]
 
         mockcollection.side_effect = lambda *args, **kwargs: CollectionMock(mock.MagicMock(), *args, **kwargs)
 
         arvtool = arvados_cwl.ArvadosWorkflow(runner, tool, loadingContext)
         arvtool.formatgraph = None
         it = arvtool.job({}, mock.MagicMock(), runtimeContext)
-        
+
         next(it).run(runtimeContext)
         next(it).run(runtimeContext)
 

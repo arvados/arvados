@@ -187,6 +187,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
         self.loadingContext.fetcher_constructor = self.fetcher_constructor
         self.loadingContext.resolver = partial(collectionResolver, self.api, num_retries=self.num_retries)
         self.loadingContext.construct_tool_object = self.arv_make_tool
+        self.loadingContext.do_update = False
 
         # Add a custom logging handler to the root logger for runtime status reporting
         # if running inside a container

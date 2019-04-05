@@ -84,6 +84,7 @@ def stubs(func):
 
         stubs.api = mock.MagicMock()
         stubs.api._rootDesc = get_rootDesc()
+        stubs.api._rootDesc["uuidPrefix"] = "zzzzz"
 
         stubs.api.users().current().execute.return_value = {
             "uuid": stubs.fake_user_uuid,

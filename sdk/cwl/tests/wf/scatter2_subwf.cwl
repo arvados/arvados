@@ -6,7 +6,7 @@
   "$graph": [
     {
       "class": "Workflow",
-      "cwlVersion": "v1.0",
+      "cwlVersion": "v1.1.0-dev1",
       "hints": [],
       "id": "#main",
       "inputs": [
@@ -59,10 +59,10 @@
           "run": {
             "baseCommand": "sleep",
             "class": "CommandLineTool",
-            "id": "#main/sleep1/subtool",
+            "id": "#main/sleep1/run/subtool",
             "inputs": [
               {
-                "id": "#main/sleep1/subtool/sleeptime",
+                "id": "#main/sleep1/run/subtool/sleeptime",
                 "inputBinding": {
                   "position": 1
                 },
@@ -71,7 +71,7 @@
             ],
             "outputs": [
               {
-                "id": "#main/sleep1/subtool/out",
+                "id": "#main/sleep1/run/subtool/out",
                 "outputBinding": {
                   "outputEval": "out"
                 },
@@ -83,5 +83,5 @@
       ]
     }
   ],
-  "cwlVersion": "v1.0"
+  "cwlVersion": "v1.1.0-dev1"
 }

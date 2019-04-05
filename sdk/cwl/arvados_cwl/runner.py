@@ -31,6 +31,7 @@ from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, visit_class
 from cwltool.utils import aslist
 from cwltool.builder import substitute
 from cwltool.pack import pack
+from cwltool.update import INTERNAL_VERSION
 import schema_salad.validate as validate
 
 import arvados.collection
@@ -450,6 +451,10 @@ class Runner(Process):
                  priority=None, secret_store=None,
                  collection_cache_size=256,
                  collection_cache_is_default=True):
+
+        loadingContext = loadingContext.copy()
+        loadingContext.metadata = loadingContext.metadata.copy()
+        loadingContext.metadata["cwlVersion"] = INTERNAL_VERSION
 
         super(Runner, self).__init__(tool.tool, loadingContext)
 
