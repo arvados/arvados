@@ -8,7 +8,7 @@
 # The order of precedence (highest to lowest):
 # 1. Legacy component-specific config files (deprecated)
 # 2. /etc/arvados/config.yml
-# 3. config.defaults.yml
+# 3. config.default.yml
 
 Clusters:
   xxxxx:

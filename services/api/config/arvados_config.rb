@@ -3,7 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 #
-# Load Arvados configuration from /etc/arvados/config.yml, using defaults from config.defaults.yml
+# Load Arvados configuration from /etc/arvados/config.yml, using defaults
+# from config.default.yml
 #
 # Existing application.yml is migrated into the new config structure.
 # Keys in the legacy application.yml take precedence.
@@ -43,7 +44,7 @@ end
 
 $arvados_config = {}
 
-["#{::Rails.root.to_s}/config/config.defaults.yml", "/etc/arvados/config.yml"].each do |path|
+["#{::Rails.root.to_s}/config/config.default.yml", "/etc/arvados/config.yml"].each do |path|
   if File.exist? path
     confs = YAML.load(IO.read(path), deserialize_symbols: false)
     if confs
