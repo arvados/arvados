@@ -551,7 +551,8 @@ production:
   cache_classes: true
   consider_all_requests_local: false
   action_controller.perform_caching: true
-  serve_static_files: false
+  public_file_server:
+    enabled: false
   assets.compress: true
   assets.compile: false
   assets.digest: true
