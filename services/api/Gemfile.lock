@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/curoverse/themes_for_rails
-  revision: 61154877047d2346890bda0b7be5827cf51a6a76
+  revision: ddf6e592b3b6493ea0c2de7b5d3faa120ed35be0
   specs:
     themes_for_rails (0.5.1)
       rails (>= 3.0.0)
@@ -186,7 +186,7 @@ GEM
     pg (1.1.4)
     power_assert (1.1.4)
     public_suffix (3.0.3)
-    rack (2.0.6)
+    rack (2.0.7)
     rack-test (0.6.3)
       rack (>= 1.0)
     rails (5.0.7.2)
