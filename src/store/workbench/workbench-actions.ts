@@ -92,6 +92,8 @@ import { groupsPanelColumns } from '~/views/groups-panel/groups-panel';
 import * as groupDetailsPanelActions from '~/store/group-details-panel/group-details-panel-actions';
 import { groupDetailsPanelColumns } from '~/views/group-details-panel/group-details-panel';
 import { DataTableFetchMode } from "~/components/data-table/data-table";
+import { loadPublicFavoritePanel, publicFavoritePanelActions } from '~/store/public-favorites-panel/public-favorites-action';
+import { publicFavoritePanelColumns } from '~/views/public-favorites-panel/public-favorites-panel';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -119,6 +121,7 @@ export const loadWorkbench = () =>
         if (user) {
             dispatch(projectPanelActions.SET_COLUMNS({ columns: projectPanelColumns }));
             dispatch(favoritePanelActions.SET_COLUMNS({ columns: favoritePanelColumns }));
+            dispatch(publicFavoritePanelActions.SET_COLUMNS({ columns: publicFavoritePanelColumns }));
             dispatch(trashPanelActions.SET_COLUMNS({ columns: trashPanelColumns }));
             dispatch(sharedWithMePanelActions.SET_COLUMNS({ columns: projectPanelColumns }));
             dispatch(workflowPanelActions.SET_COLUMNS({ columns: workflowPanelColumns }));
@@ -436,6 +439,14 @@ export const loadWorkflow = handleFirstTimeLoad(async (dispatch: Dispatch<any>) 
     await dispatch(loadWorkflowPanel());
     dispatch(setSidePanelBreadcrumbs(SidePanelTreeCategory.WORKFLOWS));
 });
+
+export const loadPublicFavorites = () =>
+    handleFirstTimeLoad(
+        (dispatch: Dispatch) => {
+            dispatch<any>(activateSidePanelTreeItem(SidePanelTreeCategory.PUBLIC_FAVORITES));
+            dispatch<any>(loadPublicFavoritePanel());
+            dispatch<any>(setSidePanelBreadcrumbs(SidePanelTreeCategory.PUBLIC_FAVORITES));
+        });
 
 export const loadSearchResults = handleFirstTimeLoad(
     async (dispatch: Dispatch<any>) => {

@@ -113,6 +113,7 @@ const DEFAUL_VIEW_MESSAGES = [
 interface ProjectPanelDataProps {
     currentItemId: string;
     resources: ResourcesState;
+    isAdmin: boolean;
 }
 
 type ProjectPanelProps = ProjectPanelDataProps & DispatchProp
@@ -121,7 +122,8 @@ type ProjectPanelProps = ProjectPanelDataProps & DispatchProp
 export const ProjectPanel = withStyles(styles)(
     connect((state: RootState) => ({
         currentItemId: getProperty(PROJECT_PANEL_CURRENT_UUID)(state.properties),
-        resources: state.resources
+        resources: state.resources,
+        isAdmin: state.auth.user!.isAdmin
     }))(
         class extends React.Component<ProjectPanelProps> {
             render() {
@@ -146,7 +148,7 @@ export const ProjectPanel = withStyles(styles)(
             }
 
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
-                const menuKind = resourceKindToContextMenuKind(resourceUuid);
+                const menuKind = resourceKindToContextMenuKind(resourceUuid, this.props.isAdmin);
                 const resource = getResource<ProjectResource>(resourceUuid)(this.props.resources);
                 if (menuKind && resource) {
                     this.props.dispatch<any>(openContextMenu(event, {

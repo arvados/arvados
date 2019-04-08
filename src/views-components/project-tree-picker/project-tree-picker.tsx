@@ -9,9 +9,9 @@ import { Typography } from "@material-ui/core";
 import { TreePicker, TreePickerProps } from "../tree-picker/tree-picker";
 import { TreeItem, TreeItemStatus } from "~/components/tree/tree";
 import { ProjectResource } from "~/models/project";
-import { treePickerActions, loadProjectTreePickerProjects, loadFavoriteTreePickerProjects } from "~/store/tree-picker/tree-picker-actions";
+import { treePickerActions, loadProjectTreePickerProjects, loadFavoriteTreePickerProjects, loadPublicFavoriteTreePickerProjects } from "~/store/tree-picker/tree-picker-actions";
 import { ListItemTextIcon } from "~/components/list-item-text-icon/list-item-text-icon";
-import { ProjectIcon, FavoriteIcon, ProjectsIcon, ShareMeIcon } from "~/components/icon/icon";
+import { ProjectIcon, FavoriteIcon, ProjectsIcon, ShareMeIcon, PublicFavoriteIcon } from '~/components/icon/icon';
 import { RootState } from "~/store/store";
 import { ServiceRepository } from "~/services/services";
 import { WrappedFieldProps } from 'redux-form';
@@ -46,7 +46,8 @@ const toggleItemOpen = (id: string, status: TreeItemStatus, pickerId: string) =>
                 dispatch<any>(loadProjectTreePickerProjects(id));
             } else if (pickerId === TreePickerId.FAVORITES) {
                 dispatch<any>(loadFavoriteTreePickerProjects(id === services.authService.getUuid() ? '' : id));
-            } else {
+            } else if (pickerId === TreePickerId.PUBLIC_FAVORITES) {
+                dispatch<any>(loadPublicFavoriteTreePickerProjects(id === services.authService.getUuid() ? '' : id));
                 // TODO: load sharedWithMe
             }
         } else {
@@ -67,6 +68,7 @@ export const ProjectTreePicker = connect(undefined, mapDispatchToProps)((props: 
             <TreePicker {...props} render={renderTreeItem} pickerId={TreePickerId.PROJECTS} />
             <TreePicker {...props} render={renderTreeItem} pickerId={TreePickerId.SHARED_WITH_ME} />
             <TreePicker {...props} render={renderTreeItem} pickerId={TreePickerId.FAVORITES} />
+            <TreePicker {...props} render={renderTreeItem} pickerId={TreePickerId.PUBLIC_FAVORITES} />
         </div>
     </div>);
 
@@ -78,6 +80,8 @@ const getProjectPickerIcon = (item: TreeItem<ProjectResource>) => {
             return ProjectsIcon;
         case TreePickerId.SHARED_WITH_ME:
             return ShareMeIcon;
+        case TreePickerId.PUBLIC_FAVORITES:
+            return PublicFavoriteIcon;
         default:
             return ProjectIcon;
     }

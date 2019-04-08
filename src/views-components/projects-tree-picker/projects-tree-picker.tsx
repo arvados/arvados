@@ -10,6 +10,7 @@ import { FavoritesTreePicker } from '~/views-components/projects-tree-picker/fav
 import { getProjectsTreePickerIds, SHARED_PROJECT_ID, FAVORITES_PROJECT_ID } from '~/store/tree-picker/tree-picker-actions';
 import { TreeItem } from '~/components/tree/tree';
 import { ProjectsTreePickerItem } from './generic-projects-tree-picker';
+import { PublicFavoritesTreePicker } from './public-favorites-tree-picker';
 
 export interface ProjectsTreePickerProps {
     pickerId: string;
@@ -21,7 +22,7 @@ export interface ProjectsTreePickerProps {
 }
 
 export const ProjectsTreePicker = ({ pickerId, ...props }: ProjectsTreePickerProps) => {
-    const { home, shared, favorites } = getProjectsTreePickerIds(pickerId);
+    const { home, shared, favorites, publicFavorites } = getProjectsTreePickerIds(pickerId);
     const relatedTreePickers = getRelatedTreePickers(pickerId);
     const p = {
         ...props,
@@ -32,6 +33,7 @@ export const ProjectsTreePicker = ({ pickerId, ...props }: ProjectsTreePickerPro
         <HomeTreePicker pickerId={home} {...p} />
         <SharedTreePicker pickerId={shared} {...p} />
         <FavoritesTreePicker pickerId={favorites} {...p} />
+        <PublicFavoritesTreePicker pickerId={publicFavorites} {...p} />
     </div>;
 };
 

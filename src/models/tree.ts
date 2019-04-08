@@ -27,7 +27,8 @@ export enum TreeNodeStatus {
 export enum TreePickerId {
     PROJECTS = 'Projects',
     SHARED_WITH_ME = 'Shared with me',
-    FAVORITES = 'Favorites'
+    FAVORITES = 'Favorites',
+    PUBLIC_FAVORITES = 'Public Favorites'
 }
 
 export const createTree = <T>(): Tree<T> => ({});

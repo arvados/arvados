@@ -19,6 +19,7 @@ import { OrderBuilder, OrderDirection } from '~/services/api/order-builder';
 import { ProjectResource } from '~/models/project';
 import { ProjectPanelColumnNames } from '~/views/project-panel/project-panel';
 import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
+import { updatePublicFavorites } from '~/store/public-favorites/public-favorites-actions';
 
 export class SharedWithMeMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -35,6 +36,7 @@ export class SharedWithMeMiddlewareService extends DataExplorerMiddlewareService
                     excludeHomeProject: true,
                 });
             api.dispatch<any>(updateFavorites(response.items.map(item => item.uuid)));
+            api.dispatch<any>(updatePublicFavorites(response.items.map(item => item.uuid)));
             api.dispatch(updateResources(response.items));
             await api.dispatch<any>(loadMissingProcessesInformation(response.items));
             api.dispatch(setItems(response));

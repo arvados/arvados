@@ -16,6 +16,7 @@ import { ProjectsTreePickerItem } from '~/views-components/projects-tree-picker/
 import { OrderBuilder } from '~/services/api/order-builder';
 import { ProjectResource } from '~/models/project';
 import { mapTree } from '../../models/tree';
+import { LinkResource, LinkClass } from "~/models/link";
 
 export const treePickerActions = unionize({
     LOAD_TREE_PICKER_NODE: ofType<{ id: string, pickerId: string }>(),
@@ -37,6 +38,7 @@ export const getProjectsTreePickerIds = (pickerId: string) => ({
     home: `${pickerId}_home`,
     shared: `${pickerId}_shared`,
     favorites: `${pickerId}_favorites`,
+    publicFavorites: `${pickerId}_publicFavorites`
 });
 
 export const getAllNodes = <Value>(pickerId: string, filter = (node: TreeNode<Value>) => true) => (state: TreePicker) =>
@@ -64,10 +66,11 @@ export const getSelectedNodes = <Value>(pickerId: string) => (state: TreePicker)
 
 export const initProjectsTreePicker = (pickerId: string) =>
     async (dispatch: Dispatch, _: () => RootState, services: ServiceRepository) => {
-        const { home, shared, favorites } = getProjectsTreePickerIds(pickerId);
+        const { home, shared, favorites, publicFavorites } = getProjectsTreePickerIds(pickerId);
         dispatch<any>(initUserProject(home));
         dispatch<any>(initSharedProject(shared));
         dispatch<any>(initFavoritesProject(favorites));
+        dispatch<any>(initPublicFavoritesProject(publicFavorites));
     };
 
 interface ReceiveTreePickerDataParams<T> {
@@ -205,6 +208,21 @@ export const initFavoritesProject = (pickerId: string) =>
         }));
     };
 
+export const PUBLIC_FAVORITES_PROJECT_ID = 'Public Favorites';
+export const initPublicFavoritesProject = (pickerId: string) =>
+    async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(receiveTreePickerData({
+            id: '',
+            pickerId,
+            data: [{ uuid: PUBLIC_FAVORITES_PROJECT_ID, name: PUBLIC_FAVORITES_PROJECT_ID }],
+            extractNodeData: value => ({
+                id: value.uuid,
+                status: TreeNodeStatus.INITIAL,
+                value,
+            }),
+        }));
+    };
+
 interface LoadFavoritesProjectParams {
     pickerId: string;
     includeCollections?: boolean;
@@ -234,6 +252,43 @@ export const loadFavoritesProject = (params: LoadFavoritesProjectParams) =>
                     id: item.uuid,
                     value: item,
                     status: item.kind === ResourceKind.PROJECT
+                        ? TreeNodeStatus.INITIAL
+                        : includeFiles
+                            ? TreeNodeStatus.INITIAL
+                            : TreeNodeStatus.LOADED
+                }),
+            }));
+        }
+    };
+
+export const loadPublicFavoritesProject = (params: LoadFavoritesProjectParams) =>
+    async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        const { pickerId, includeCollections = false, includeFiles = false } = params;
+        const uuidPrefix = getState().config.uuidPrefix;
+        const uuid = `${uuidPrefix}-j7d0g-fffffffffffffff`;
+        if (uuid) {
+
+            const filters = pipe(
+                (fb: FilterBuilder) => includeCollections
+                    ? fb.addIsA('headUuid', [ResourceKind.PROJECT, ResourceKind.COLLECTION])
+                    : fb.addIsA('headUuid', [ResourceKind.PROJECT]),
+                fb => fb
+                    .addEqual('linkClass', LinkClass.STAR)
+                    .addEqual('ownerUuid', uuid)
+                    .addLike('name', '')
+                    .getFilters(),
+            )(new FilterBuilder());
+
+            const { items } = await services.linkService.list({ filters });
+
+            dispatch<any>(receiveTreePickerData<LinkResource>({
+                id: 'Public Favorites',
+                pickerId,
+                data: items,
+                extractNodeData: item => ({
+                    id: item.headUuid,
+                    value: item,
+                    status: item.headKind === ResourceKind.PROJECT
                         ? TreeNodeStatus.INITIAL
                         : includeFiles
                             ? TreeNodeStatus.INITIAL
@@ -276,6 +331,22 @@ export const loadFavoriteTreePickerProjects = (id: string) =>
             dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id, pickerId: TreePickerId.FAVORITES }));
             const { items } = await services.projectService.list(buildParams(id));
             dispatch<any>(receiveTreePickerProjectsData(id, items, TreePickerId.FAVORITES));
+        }
+
+    };
+
+export const loadPublicFavoriteTreePickerProjects = (id: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const parentId = services.authService.getUuid() || '';
+
+        if (id === '') {
+            dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id: parentId, pickerId: TreePickerId.PUBLIC_FAVORITES }));
+            const { items } = await services.favoriteService.list(parentId);
+            dispatch<any>(receiveTreePickerProjectsData(parentId, items as ProjectResource[], TreePickerId.PUBLIC_FAVORITES));
+        } else {
+            dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id, pickerId: TreePickerId.PUBLIC_FAVORITES }));
+            const { items } = await services.projectService.list(buildParams(id));
+            dispatch<any>(receiveTreePickerProjectsData(id, items, TreePickerId.PUBLIC_FAVORITES));
         }
 
     };

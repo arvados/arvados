@@ -33,6 +33,7 @@ import { CollectionResource } from "~/models/collection";
 import { resourcesDataActions } from "~/store/resources-data/resources-data-actions";
 import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
 import { serializeResourceTypeFilters } from '~/store/resource-type-filters/resource-type-filters';
+import { updatePublicFavorites } from '~/store/public-favorites/public-favorites-actions';
 
 export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -55,6 +56,7 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
                 api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
                 const resourceUuids = response.items.map(item => item.uuid);
                 api.dispatch<any>(updateFavorites(resourceUuids));
+                api.dispatch<any>(updatePublicFavorites(resourceUuids));
                 api.dispatch(updateResources(response.items));
                 api.dispatch<any>(updateResourceData(resourceUuids));
                 await api.dispatch<any>(loadMissingProcessesInformation(response.items));
