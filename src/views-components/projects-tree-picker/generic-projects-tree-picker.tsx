@@ -16,13 +16,14 @@ import { GroupContentsResource } from '~/services/groups-service/groups-service'
 import { CollectionDirectory, CollectionFile, CollectionFileType } from '~/models/collection-file';
 import { ResourceKind } from '~/models/resource';
 import { TreePickerProps, TreePicker } from "~/views-components/tree-picker/tree-picker";
+import { LinkResource } from "~/models/link";
 
 export interface ProjectsTreePickerRootItem {
     id: string;
     name: string;
 }
 
-export type ProjectsTreePickerItem = ProjectsTreePickerRootItem | GroupContentsResource | CollectionDirectory | CollectionFile;
+export type ProjectsTreePickerItem = ProjectsTreePickerRootItem | GroupContentsResource | CollectionDirectory | CollectionFile | LinkResource;
 type PickedTreePickerProps = Pick<TreePickerProps<ProjectsTreePickerItem>, 'onContextMenu' | 'toggleItemActive' | 'toggleItemOpen' | 'toggleItemSelection'>;
 
 export interface ProjectsTreePickerDataProps {
@@ -45,9 +46,9 @@ const mapStateToProps = (_: any, { rootItemIcon, showSelection }: ProjectsTreePi
 const mapDispatchToProps = (dispatch: Dispatch, { loadRootItem, includeCollections, includeFiles, relatedTreePickers, ...props }: ProjectsTreePickerProps): PickedTreePickerProps => ({
     onContextMenu: () => { return; },
     toggleItemActive: (event, item, pickerId) => {
-        
+
         const { disableActivation = [] } = props;
-        if(disableActivation.some(isEqual(item.id))){
+        if (disableActivation.some(isEqual(item.id))) {
             return;
         }
 
@@ -83,6 +84,14 @@ const mapDispatchToProps = (dispatch: Dispatch, { loadRootItem, includeCollectio
 export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(TreePicker);
 
 const getProjectPickerIcon = ({ data }: TreeItem<ProjectsTreePickerItem>, rootIcon: IconType): IconType => {
+    if ('headKind' in data) {
+        switch (data.headKind) {
+            case ResourceKind.COLLECTION:
+                return CollectionIcon;
+            default:
+                return ProjectIcon;
+        }
+    }
     if ('kind' in data) {
         switch (data.kind) {
             case ResourceKind.COLLECTION:
