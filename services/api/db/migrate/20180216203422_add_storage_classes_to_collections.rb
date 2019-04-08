@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddStorageClassesToCollections < ActiveRecord::Migration
+class AddStorageClassesToCollections < ActiveRecord::Migration[4.2]
   def up
     add_column :collections, :storage_classes_desired, :jsonb, :default => ["default"]
     add_column :collections, :storage_classes_confirmed, :jsonb, :default => []

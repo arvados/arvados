@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 class DatabaseController < ApplicationController
-  skip_before_filter :find_object_by_uuid
-  skip_before_filter :render_404_if_no_object
-  before_filter :admin_required
+  skip_before_action :find_object_by_uuid
+  skip_before_action :render_404_if_no_object
+  before_action :admin_required
   def reset
     raise ArvadosModel::PermissionDeniedError unless Rails.env == 'test'
 

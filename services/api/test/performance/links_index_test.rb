@@ -3,16 +3,30 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 require 'test_helper'
-require 'rails/performance_test_help'
+require 'benchmark'
 
-class IndexTest < ActionDispatch::PerformanceTest
+class IndexTest < ActionDispatch::IntegrationTest
   def test_links_index
-    get '/arvados/v1/links', {format: :json}, auth(:admin)
+    puts("Get links index: ", Benchmark.measure do
+      get '/arvados/v1/links', params: {
+        limit: 1000,
+        format: :json
+      }, headers: auth(:admin)
+    end)
   end
   def test_links_index_with_filters
-    get '/arvados/v1/links', {format: :json, filters: [%w[head_uuid is_a arvados#collection]].to_json}, auth(:admin)
+    puts("Get links index with filters: ", Benchmark.measure do
+      get '/arvados/v1/links', params: {
+        format: :json,
+        filters: [%w[head_uuid is_a arvados#collection]].to_json
+      }, headers: auth(:admin)
+    end)
   end
   def test_collections_index
-    get '/arvados/v1/collections', {format: :json}, auth(:admin)
+    puts("Get collections index: ", Benchmark.measure do
+      get '/arvados/v1/collections', params: {
+        format: :json
+        }, headers: auth(:admin)
+      end)
   end
 end

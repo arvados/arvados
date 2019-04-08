@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class RenameCollectionCreatedByClient < ActiveRecord::Migration
+class RenameCollectionCreatedByClient < ActiveRecord::Migration[4.2]
   def up
     rename_column :collections, :create_by_client, :created_by_client
   end

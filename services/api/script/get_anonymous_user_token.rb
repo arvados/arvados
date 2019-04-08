@@ -7,9 +7,9 @@
 # If get option is used, an existing anonymous user token is returned. If none exist, one is created.
 # If the get option is omitted, a new token is created and returned.
 
-require 'trollop'
+require 'optimist'
 
-opts = Trollop::options do
+opts = Optimist::options do
   banner ''
   banner "Usage: get_anonymous_user_token "
   banner ''

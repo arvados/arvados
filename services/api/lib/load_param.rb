@@ -17,7 +17,7 @@ module LoadParam
   def load_where_param
     if params[:where].nil? or params[:where] == ""
       @where = {}
-    elsif params[:where].is_a? Hash
+    elsif [Hash, ActionController::Parameters].include? params[:where].class
       @where = params[:where]
     elsif params[:where].is_a? String
       begin
@@ -151,7 +151,7 @@ module LoadParam
     when String
       begin
         @select = SafeJSON.load(params[:select])
-        raise unless @select.is_a? Array or @select.nil?
+        raise unless @select.is_a? Array or @select.nil? or !@select
       rescue
         raise ArgumentError.new("Could not parse \"select\" param as an array")
       end

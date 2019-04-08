@@ -79,17 +79,6 @@ class CrunchDispatchTest < ActiveSupport::TestCase
     begin
       pid = Process.fork do
         begin
-          # Abandon database connections inherited from parent
-          # process.  Credit to
-          # https://github.com/kstephens/rails_is_forked
-          ActiveRecord::Base.connection_handler.connection_pools.each_value do |pool|
-            pool.instance_eval do
-              @reserved_connections = {}
-              @connections = []
-            end
-          end
-          ActiveRecord::Base.establish_connection
-
           dispatch = CrunchDispatch.new
           dispatch.stubs(:did_recently).returns true
           dispatch.run []

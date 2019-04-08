@@ -8,8 +8,12 @@ class Node < ArvadosModel
   include HasUuid
   include KindAndEtag
   include CommonApiTemplate
-  serialize :info, Hash
-  serialize :properties, Hash
+
+  # Posgresql JSONB columns should NOT be declared as serialized, Rails 5
+  # already know how to properly treat them.
+  attribute :properties, :jsonbHash, default: {}
+  attribute :info, :jsonbHash, default: {}
+
   before_validation :ensure_ping_secret
   after_update :dns_server_update
 

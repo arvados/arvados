@@ -16,6 +16,7 @@ module CanBeAnOwner
       next if t == base.table_name
       next if t == 'schema_migrations'
       next if t == 'permission_refresh_lock'
+      next if t == 'ar_internal_metadata'
       klass = t.classify.constantize
       next unless klass and 'owner_uuid'.in?(klass.columns.collect(&:name))
       base.has_many(t.to_sym,

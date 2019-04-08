@@ -17,7 +17,7 @@ class Arvados::V1::ContainerRequestsControllerTest < ActionController::TestCase
     authorize_with :active
 
     sp = {'partitions' => ['test1', 'test2']}
-    post :create, {
+    post :create, params: {
            container_request: minimal_cr.merge(scheduling_parameters: sp.dup)
          }
     assert_response :success
@@ -30,7 +30,7 @@ class Arvados::V1::ContainerRequestsControllerTest < ActionController::TestCase
   test "secret_mounts not in #create responses" do
     authorize_with :active
 
-    post :create, {
+    post :create, params: {
            container_request: minimal_cr.merge(
              secret_mounts: {'/foo' => {'kind' => 'json', 'content' => 'bar'}}),
          }
@@ -47,7 +47,7 @@ class Arvados::V1::ContainerRequestsControllerTest < ActionController::TestCase
     authorize_with :active
     req = container_requests(:uncommitted)
 
-    patch :update, {
+    patch :update, params: {
             id: req.uuid,
             container_request: {
               secret_mounts: {'/foo' => {'kind' => 'json', 'content' => 'bar'}},
@@ -67,7 +67,7 @@ class Arvados::V1::ContainerRequestsControllerTest < ActionController::TestCase
     req = container_requests(:uncommitted)
     req.update_attributes!(secret_mounts: {'/foo' => {'kind' => 'json', 'content' => 'bar'}})
 
-    patch :update, {
+    patch :update, params: {
             id: req.uuid,
             container_request: {
               command: ['echo', 'test'],
@@ -85,7 +85,7 @@ class Arvados::V1::ContainerRequestsControllerTest < ActionController::TestCase
   test "runtime_token not in #create responses" do
     authorize_with :active
 
-    post :create, {
+    post :create, params: {
            container_request: minimal_cr.merge(
              runtime_token: api_client_authorizations(:spectator).token)
          }

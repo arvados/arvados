@@ -22,24 +22,30 @@ class CollectionsApiPerformanceTest < ActionDispatch::IntegrationTest
       SafeJSON.dump({"manifest_text" => bigmanifest})
     end
     time_block 'create' do
-      post '/arvados/v1/collections', {collection: json}, auth(:active)
+      post '/arvados/v1/collections',
+        params: {collection: json},
+        headers: auth(:active)
       assert_response :success
     end
     uuid = json_response['uuid']
     time_block 'read' do
-      get '/arvados/v1/collections/' + uuid, {}, auth(:active)
+      get '/arvados/v1/collections/' + uuid, params: {}, headers: auth(:active)
       assert_response :success
     end
     time_block 'list' do
-      get '/arvados/v1/collections', {select: ['manifest_text'], filters: [['uuid', '=', uuid]].to_json}, auth(:active)
+      get '/arvados/v1/collections',
+        params: {select: ['manifest_text'], filters: [['uuid', '=', uuid]].to_json},
+        headers: auth(:active)
       assert_response :success
     end
     time_block 'update' do
-      put '/arvados/v1/collections/' + uuid, {collection: json}, auth(:active)
+      put '/arvados/v1/collections/' + uuid,
+        params: {collection: json},
+        headers: auth(:active)
       assert_response :success
     end
     time_block 'delete' do
-      delete '/arvados/v1/collections/' + uuid, {}, auth(:active)
+      delete '/arvados/v1/collections/' + uuid, params: {}, headers: auth(:active)
     end
   end
 
@@ -53,7 +59,9 @@ class CollectionsApiPerformanceTest < ActionDispatch::IntegrationTest
       SafeJSON.dump({manifest_text: hugemanifest})
     end
     vmpeak "post" do
-      post '/arvados/v1/collections', {collection: json}, auth(:active)
+      post '/arvados/v1/collections',
+        params: {collection: json},
+        headers: auth(:active)
     end
   end
 end

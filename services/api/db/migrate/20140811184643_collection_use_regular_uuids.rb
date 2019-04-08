@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class CollectionUseRegularUuids < ActiveRecord::Migration
+class CollectionUseRegularUuids < ActiveRecord::Migration[4.2]
   def up
     add_column :collections, :name, :string
     add_column :collections, :description, :string

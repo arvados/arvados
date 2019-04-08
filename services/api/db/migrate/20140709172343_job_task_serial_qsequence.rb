@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class JobTaskSerialQsequence < ActiveRecord::Migration
+class JobTaskSerialQsequence < ActiveRecord::Migration[4.2]
   SEQ_NAME = "job_tasks_qsequence_seq"
 
   def up

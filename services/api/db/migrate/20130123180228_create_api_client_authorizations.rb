@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class CreateApiClientAuthorizations < ActiveRecord::Migration
+class CreateApiClientAuthorizations < ActiveRecord::Migration[4.2]
   def change
     create_table :api_client_authorizations do |t|
       t.string :api_token, :null => false

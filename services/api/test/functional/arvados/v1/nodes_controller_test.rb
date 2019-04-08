@@ -46,7 +46,7 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
   end
 
   test "node should ping with ping_secret and no token" do
-    post :ping, {
+    post :ping, params: {
       id: 'zzzzz-7ekkf-2z3mc76g2q73aio',
       instance_id: 'i-0000000',
       local_ipv4: '172.17.2.174',
@@ -62,7 +62,7 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
   end
 
   test "node should fail ping with invalid ping_secret" do
-    post :ping, {
+    post :ping, params: {
       id: 'zzzzz-7ekkf-2z3mc76g2q73aio',
       instance_id: 'i-0000000',
       local_ipv4: '172.17.2.174',
@@ -73,7 +73,7 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
 
   test "create node" do
     authorize_with :admin
-    post :create, {node: {}}
+    post :create, params: {node: {}}
     assert_response :success
     assert_not_nil json_response['uuid']
     assert_not_nil json_response['info'].is_a? Hash
@@ -84,7 +84,7 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
 
   test "create node and assign slot" do
     authorize_with :admin
-    post :create, {node: {}, assign_slot: true}
+    post :create, params: {node: {}, assign_slot: true}
     assert_response :success
     assert_not_nil json_response['uuid']
     assert_not_nil json_response['info'].is_a? Hash
@@ -101,7 +101,7 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
   test "update node and assign slot" do
     authorize_with :admin
     node = nodes(:new_with_no_hostname)
-    post :update, {id: node.uuid, node: {}, assign_slot: true}
+    post :update, params: {id: node.uuid, node: {}, assign_slot: true}
     assert_response :success
     assert_operator 0, :<, json_response['slot_number']
     n = json_response['slot_number']
@@ -115,7 +115,7 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
   test "update node and assign slot, don't clobber hostname" do
     authorize_with :admin
     node = nodes(:new_with_custom_hostname)
-    post :update, {id: node.uuid, node: {}, assign_slot: true}
+    post :update, params: {id: node.uuid, node: {}, assign_slot: true}
     assert_response :success
     assert_operator 0, :<, json_response['slot_number']
     n = json_response['slot_number']
@@ -125,7 +125,7 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
   test "ping adds node stats to info" do
     authorize_with :admin
     node = nodes(:idle)
-    post :ping, {
+    post :ping, params: {
       id: node.uuid,
       ping_secret: node.info['ping_secret'],
       total_cpu_cores: 32,
@@ -143,14 +143,14 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
 
   test "active user can see their assigned job" do
     authorize_with :active
-    get :show, {id: nodes(:busy).uuid}
+    get :show, params: {id: nodes(:busy).uuid}
     assert_response :success
     assert_equal(jobs(:nearly_finished_job).uuid, json_response["job_uuid"])
   end
 
   test "user without job read permission can't see job" do
     authorize_with :spectator
-    get :show, {id: nodes(:busy).uuid}
+    get :show, params: {id: nodes(:busy).uuid}
     assert_response :success
     assert_nil(json_response["job"], "spectator can see node's assigned job")
   end
@@ -158,7 +158,7 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
   [:admin, :spectator].each do |user|
     test "select param does not break node list for #{user}" do
       authorize_with user
-      get :index, {select: ['domain']}
+      get :index, params: {select: ['domain']}
       assert_response :success
       assert_operator 0, :<, json_response['items_available']
     end
@@ -168,7 +168,7 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
     changed_node = nodes(:idle)
     assigned_job = jobs(:queued)
     authorize_with :admin
-    post :update, {
+    post :update, params: {
       id: changed_node.uuid,
       node: {job_uuid: assigned_job.uuid},
     }
@@ -181,7 +181,7 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
 
   test "non-admin can't associate a job with a node" do
     authorize_with :active
-    post :update, {
+    post :update, params: {
       id: nodes(:idle).uuid,
       node: {job_uuid: jobs(:queued).uuid},
     }
@@ -191,7 +191,7 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
   test "admin can unassign a job from a node" do
     changed_node = nodes(:busy)
     authorize_with :admin
-    post :update, {
+    post :update, params: {
       id: changed_node.uuid,
       node: {job_uuid: nil},
     }
@@ -204,7 +204,7 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
 
   test "non-admin can't unassign a job from a node" do
     authorize_with :project_viewer
-    post :update, {
+    post :update, params: {
       id: nodes(:busy).uuid,
       node: {job_uuid: nil},
     }
@@ -213,7 +213,7 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
 
   test "job readable after updating other attributes" do
     authorize_with :admin
-    post :update, {
+    post :update, params: {
       id: nodes(:busy).uuid,
       node: {last_ping_at: 1.second.ago},
     }
@@ -224,7 +224,7 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
 
   test "node should fail ping with invalid hostname config format" do
     Rails.configuration.assign_node_hostname = 'compute%<slot_number>04'  # should end with "04d"
-    post :ping, {
+    post :ping, params: {
       id: nodes(:new_with_no_hostname).uuid,
       ping_secret: nodes(:new_with_no_hostname).info['ping_secret'],
     }
@@ -232,7 +232,7 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
   end
 
   test "first ping should set ip addr using local_ipv4 when provided" do
-    post :ping, {
+    post :ping, params: {
       id: 'zzzzz-7ekkf-nodenoipaddryet',
       instance_id: 'i-0000000',
       local_ipv4: '172.17.2.172',
@@ -245,7 +245,7 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
   end
 
   test "first ping should set ip addr using remote_ip when local_ipv4 is not provided" do
-    post :ping, {
+    post :ping, params: {
       id: 'zzzzz-7ekkf-nodenoipaddryet',
       instance_id: 'i-0000000',
       ping_secret: 'abcdyefg4lb5q4gzqqtrnq30oyj08r8dtdimmanbqw49z1anz2'
@@ -257,7 +257,7 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
   end
 
   test "future pings should not change previous ip address" do
-    post :ping, {
+    post :ping, params: {
       id: 'zzzzz-7ekkf-2z3mc76g2q73aio',
       instance_id: 'i-0000000',
       local_ipv4: '172.17.2.175',

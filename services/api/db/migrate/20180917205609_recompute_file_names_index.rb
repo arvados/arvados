@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class RecomputeFileNamesIndex < ActiveRecord::Migration
+class RecomputeFileNamesIndex < ActiveRecord::Migration[4.2]
   def do_batch(pdhs:)
     ActiveRecord::Base.connection.exec_query('BEGIN')
     Collection.select(:portable_data_hash, :manifest_text).where(portable_data_hash: pdhs).distinct(:portable_data_hash).each do |c|

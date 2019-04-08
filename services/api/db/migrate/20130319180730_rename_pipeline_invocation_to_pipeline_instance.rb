@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class RenamePipelineInvocationToPipelineInstance < ActiveRecord::Migration
+class RenamePipelineInvocationToPipelineInstance < ActiveRecord::Migration[4.2]
   def up
     rename_table :pipeline_invocations, :pipeline_instances
     rename_index :pipeline_instances, :index_pipeline_invocations_on_created_at, :index_pipeline_instances_on_created_at

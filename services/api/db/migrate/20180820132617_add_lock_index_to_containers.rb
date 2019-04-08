@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddLockIndexToContainers < ActiveRecord::Migration
+class AddLockIndexToContainers < ActiveRecord::Migration[4.2]
   def change
     # For the current code in sdk/go/dispatch:
     add_index :containers, [:locked_by_uuid, :priority]

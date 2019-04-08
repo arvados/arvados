@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class RenameMetadataToLinks < ActiveRecord::Migration
+class RenameMetadataToLinks < ActiveRecord::Migration[4.2]
   def up
     rename_table :metadata, :links
     rename_column :links, :tail, :tail_uuid

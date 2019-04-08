@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class CreateApiClients < ActiveRecord::Migration
+class CreateApiClients < ActiveRecord::Migration[4.2]
   def change
     create_table :api_clients do |t|
       t.string :uuid

@@ -158,11 +158,9 @@ class PipelineInstance < ArvadosModel
       end
     end
 
-    if self.state.in?(States)
-      true
-    else
+    if !self.state.in?(States)
       errors.add :state, "'#{state.inspect} must be one of: [#{States.join ', '}]"
-      false
+      throw(:abort)
     end
   end
 

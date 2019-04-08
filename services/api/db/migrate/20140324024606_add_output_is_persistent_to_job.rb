@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddOutputIsPersistentToJob < ActiveRecord::Migration
+class AddOutputIsPersistentToJob < ActiveRecord::Migration[4.2]
   def change
     add_column :jobs, :output_is_persistent, :boolean, null: false, default: false
   end

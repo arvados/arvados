@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddComponentsToJob < ActiveRecord::Migration
+class AddComponentsToJob < ActiveRecord::Migration[4.2]
   def up
     add_column :jobs, :components, :text
   end

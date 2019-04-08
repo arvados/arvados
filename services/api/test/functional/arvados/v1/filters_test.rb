@@ -8,7 +8,7 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
   test '"not in" filter passes null values' do
     @controller = Arvados::V1::GroupsController.new
     authorize_with :admin
-    get :index, {
+    get :index, params: {
       filters: [ ['group_class', 'not in', ['project']] ],
       controller: 'groups',
     }
@@ -21,7 +21,7 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
   test 'error message for non-array element in filters array' do
     @controller = Arvados::V1::CollectionsController.new
     authorize_with :active
-    get :index, {
+    get :index, params: {
       filters: [{bogus: 'filter'}],
     }
     assert_response 422
@@ -32,7 +32,7 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
   test 'error message for full text search on a specific column' do
     @controller = Arvados::V1::CollectionsController.new
     authorize_with :active
-    get :index, {
+    get :index, params: {
       filters: [['uuid', '@@', 'abcdef']],
     }
     assert_response 422
@@ -42,7 +42,7 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
   test 'difficult characters in full text search' do
     @controller = Arvados::V1::CollectionsController.new
     authorize_with :active
-    get :index, {
+    get :index, params: {
       filters: [['any', '@@', 'a|b"c']],
     }
     assert_response :success
@@ -52,7 +52,7 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
   test 'array operand in full text search' do
     @controller = Arvados::V1::CollectionsController.new
     authorize_with :active
-    get :index, {
+    get :index, params: {
       filters: [['any', '@@', ['abc', 'def']]],
     }
     assert_response 422
@@ -86,7 +86,7 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
       timestamp = mine.modified_at.strftime('%Y-%m-%dT%H:%M:%S.%NZ')
       @controller = Arvados::V1::CollectionsController.new
       authorize_with :active
-      get :index, {
+      get :index, params: {
         filters: [['modified_at', operator, timestamp],
                   ['uuid', '=', mine.uuid]],
       }
@@ -104,7 +104,7 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
     @controller = Arvados::V1::GroupsController.new
     authorize_with :admin
 
-    get :contents, {
+    get :contents, params: {
       format: :json,
       count: 'none',
       limit: 1000,
@@ -131,7 +131,7 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
 
     @controller = Arvados::V1::GroupsController.new
 
-    get :contents, {
+    get :contents, params: {
       format: :json,
       count: 'none',
       limit: 1000,
@@ -176,7 +176,7 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
     test "jsonb filter properties.#{prop} #{op} #{opr})" do
       @controller = Arvados::V1::CollectionsController.new
       authorize_with :admin
-      get :index, {
+      get :index, params: {
             filters: SafeJSON.dump([ ["properties.#{prop}", op, opr] ]),
             limit: 1000
           }
@@ -196,7 +196,7 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
   test "jsonb hash 'exists' and '!=' filter" do
     @controller = Arvados::V1::CollectionsController.new
     authorize_with :admin
-    get :index, {
+    get :index, params: {
       filters: [ ['properties.prop1', 'exists', true], ['properties.prop1', '!=', 'value1'] ]
     }
     assert_response :success
@@ -211,7 +211,7 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
   test "jsonb array 'exists'" do
     @controller = Arvados::V1::CollectionsController.new
     authorize_with :admin
-    get :index, {
+    get :index, params: {
       filters: [ ['storage_classes_confirmed.default', 'exists', true] ]
     }
     assert_response :success
@@ -228,7 +228,7 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
   test "jsonb hash alternate form 'exists' and '!=' filter" do
     @controller = Arvados::V1::CollectionsController.new
     authorize_with :admin
-    get :index, {
+    get :index, params: {
       filters: [ ['properties', 'exists', 'prop1'], ['properties.prop1', '!=', 'value1'] ]
     }
     assert_response :success
@@ -243,7 +243,7 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
   test "jsonb array alternate form 'exists' filter" do
     @controller = Arvados::V1::CollectionsController.new
     authorize_with :admin
-    get :index, {
+    get :index, params: {
       filters: [ ['storage_classes_confirmed', 'exists', 'default'] ]
     }
     assert_response :success
@@ -260,7 +260,7 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
   test "jsonb 'exists' must be boolean" do
     @controller = Arvados::V1::CollectionsController.new
     authorize_with :admin
-    get :index, {
+    get :index, params: {
       filters: [ ['properties.prop1', 'exists', nil] ]
     }
     assert_response 422
@@ -271,7 +271,7 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
   test "jsonb checks column exists" do
     @controller = Arvados::V1::CollectionsController.new
     authorize_with :admin
-    get :index, {
+    get :index, params: {
       filters: [ ['puppies.prop1', '=', 'value1'] ]
     }
     assert_response 422
@@ -282,7 +282,7 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
   test "jsonb checks column is valid" do
     @controller = Arvados::V1::CollectionsController.new
     authorize_with :admin
-    get :index, {
+    get :index, params: {
       filters: [ ['name.prop1', '=', 'value1'] ]
     }
     assert_response 422
@@ -293,7 +293,7 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
   test "jsonb invalid operator" do
     @controller = Arvados::V1::CollectionsController.new
     authorize_with :admin
-    get :index, {
+    get :index, params: {
       filters: [ ['properties.prop1', '###', 'value1'] ]
     }
     assert_response 422
@@ -304,7 +304,7 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
   test "replication_desired = 2" do
     @controller = Arvados::V1::CollectionsController.new
     authorize_with :admin
-    get :index, {
+    get :index, params: {
       filters: SafeJSON.dump([ ['replication_desired', '=', 2] ])
     }
     assert_response :success
@@ -312,5 +312,4 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
     assert_includes(found, collections(:replication_desired_2_unconfirmed).uuid)
     assert_includes(found, collections(:replication_desired_2_confirmed_2).uuid)
   end
-
 end

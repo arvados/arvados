@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class RemoveKindColumns < ActiveRecord::Migration
+class RemoveKindColumns < ActiveRecord::Migration[4.2]
   include CurrentApiClient
 
   def up

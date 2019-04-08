@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class FixLinkKindUnderscores < ActiveRecord::Migration
+class FixLinkKindUnderscores < ActiveRecord::Migration[4.2]
   def up
     update_sql <<-EOS
 UPDATE links

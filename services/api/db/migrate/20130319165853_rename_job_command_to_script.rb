@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class RenameJobCommandToScript < ActiveRecord::Migration
+class RenameJobCommandToScript < ActiveRecord::Migration[4.2]
   def up
     rename_column :jobs, :command, :script
     rename_column :jobs, :command_parameters, :script_parameters

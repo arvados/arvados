@@ -33,24 +33,24 @@ class ApplicationController < ActionController::Base
 
   ERROR_ACTIONS = [:render_error, :render_not_found]
 
-  around_filter :set_current_request_id
-  before_filter :disable_api_methods
-  before_filter :set_cors_headers
-  before_filter :respond_with_json_by_default
-  before_filter :remote_ip
-  before_filter :load_read_auths
-  before_filter :require_auth_scope, except: ERROR_ACTIONS
+  around_action :set_current_request_id
+  before_action :disable_api_methods
+  before_action :set_cors_headers
+  before_action :respond_with_json_by_default
+  before_action :remote_ip
+  before_action :load_read_auths
+  before_action :require_auth_scope, except: ERROR_ACTIONS
 
-  before_filter :catch_redirect_hint
-  before_filter(:find_object_by_uuid,
+  before_action :catch_redirect_hint
+  before_action(:find_object_by_uuid,
                 except: [:index, :create] + ERROR_ACTIONS)
-  before_filter :load_required_parameters
-  before_filter :load_limit_offset_order_params, only: [:index, :contents]
-  before_filter :load_where_param, only: [:index, :contents]
-  before_filter :load_filters_param, only: [:index, :contents]
-  before_filter :find_objects_for_index, :only => :index
-  before_filter :reload_object_before_update, :only => :update
-  before_filter(:render_404_if_no_object,
+  before_action :load_required_parameters
+  before_action :load_limit_offset_order_params, only: [:index, :contents]
+  before_action :load_where_param, only: [:index, :contents]
+  before_action :load_filters_param, only: [:index, :contents]
+  before_action :find_objects_for_index, :only => :index
+  before_action :reload_object_before_update, :only => :update
+  before_action(:render_404_if_no_object,
                 except: [:index, :create] + ERROR_ACTIONS)
 
   theme Rails.configuration.arvados_theme
@@ -187,7 +187,7 @@ class ApplicationController < ActionController::Base
     # The obvious render(json: ...) forces a slow JSON encoder. See
     # #3021 and commit logs. Might be fixed in Rails 4.1.
     render({
-             text: SafeJSON.dump(response).html_safe,
+             plain: SafeJSON.dump(response).html_safe,
              content_type: 'application/json'
            }.merge opts)
   end
@@ -283,7 +283,7 @@ class ApplicationController < ActionController::Base
     @objects = @objects.order(@orders.join ", ") if @orders.any?
     @objects = @objects.limit(@limit)
     @objects = @objects.offset(@offset)
-    @objects = @objects.uniq(@distinct) if not @distinct.nil?
+    @objects = @objects.distinct(@distinct) if not @distinct.nil?
   end
 
   # limit_database_read ensures @objects (which must be an
@@ -323,10 +323,12 @@ class ApplicationController < ActionController::Base
   def resource_attrs
     return @attrs if @attrs
     @attrs = params[resource_name]
-    if @attrs.is_a? String
+    if @attrs.nil?
+      @attrs = {}
+    elsif @attrs.is_a? String
       @attrs = Oj.strict_load @attrs, symbol_keys: true
     end
-    unless @attrs.is_a? Hash
+    unless [Hash, ActionController::Parameters].include? @attrs.class
       message = "No #{resource_name}"
       if resource_name.index('_')
         message << " (or #{resource_name.camelcase(:lower)})"
@@ -431,8 +433,8 @@ class ApplicationController < ActionController::Base
   end
 
   def respond_with_json_by_default
-    html_index = request.accepts.index(Mime::HTML)
-    if html_index.nil? or request.accepts[0...html_index].include?(Mime::JSON)
+    html_index = request.accepts.index(Mime[:html])
+    if html_index.nil? or request.accepts[0...html_index].include?(Mime[:json])
       request.format = :json
     end
   end
@@ -481,7 +483,7 @@ class ApplicationController < ActionController::Base
   end
 
   def self.accept_attribute_as_json(attr, must_be_class=nil)
-    before_filter lambda { accept_attribute_as_json attr, must_be_class }
+    before_action lambda { accept_attribute_as_json attr, must_be_class }
   end
   accept_attribute_as_json :properties, Hash
   accept_attribute_as_json :info, Hash
@@ -499,7 +501,7 @@ class ApplicationController < ActionController::Base
   end
 
   def self.accept_param_as_json(key, must_be_class=nil)
-    prepend_before_filter lambda { load_json_value(params, key, must_be_class) }
+    prepend_before_action lambda { load_json_value(params, key, must_be_class) }
   end
   accept_param_as_json :reader_tokens, Array
 
@@ -523,7 +525,7 @@ class ApplicationController < ActionController::Base
       if @objects.respond_to? :except
         list[:items_available] = @objects.
           except(:limit).except(:offset).
-          count(:id, distinct: true)
+          distinct.count(:id)
       end
     when 'none'
     else

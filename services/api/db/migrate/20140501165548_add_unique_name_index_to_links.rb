@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddUniqueNameIndexToLinks < ActiveRecord::Migration
+class AddUniqueNameIndexToLinks < ActiveRecord::Migration[4.2]
   def change
     # Make sure PgPower is here. Otherwise the "where" will be ignored
     # and we'll end up with a far too restrictive unique

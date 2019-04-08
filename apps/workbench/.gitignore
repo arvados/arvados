@@ -7,6 +7,8 @@
 /tmp
 .byebug_history
 
+package-lock.json
+
 /config/.secret_token
 /config/initializers/secret_token.rb
 

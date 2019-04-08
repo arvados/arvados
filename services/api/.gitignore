@@ -33,3 +33,6 @@
 
 # Generated when building distribution packages
 /package-build.version
+
+# Debugger history
+.byebug_history

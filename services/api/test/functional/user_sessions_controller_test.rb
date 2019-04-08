@@ -9,7 +9,7 @@ class UserSessionsControllerTest < ActionController::TestCase
   test "new user from new api client" do
     authorize_with :inactive
     api_client_page = 'http://client.example.com/home'
-    get :login, return_to: api_client_page
+    get :login, params: {return_to: api_client_page}
     assert_response :redirect
     assert_equal(0, @response.redirect_url.index(api_client_page + '?'),
                  'Redirect url ' + @response.redirect_url +
@@ -21,7 +21,7 @@ class UserSessionsControllerTest < ActionController::TestCase
     authorize_with :inactive
     api_client_page = 'http://client.example.com/home'
     remote_prefix = 'zbbbb'
-    get :login, return_to: api_client_page, remote: remote_prefix
+    get :login, params: {return_to: api_client_page, remote: remote_prefix}
     assert_response :redirect
     api_client_auth = assigns(:api_client_auth)
     assert_not_nil api_client_auth
@@ -32,7 +32,7 @@ class UserSessionsControllerTest < ActionController::TestCase
     authorize_with :inactive
     api_client_page = 'http://client.example.com/home'
     remote_prefix = 'invalid_cluster_id'
-    get :login, return_to: api_client_page, remote: remote_prefix
+    get :login, params: {return_to: api_client_page, remote: remote_prefix}
     assert_response 400
   end
 end

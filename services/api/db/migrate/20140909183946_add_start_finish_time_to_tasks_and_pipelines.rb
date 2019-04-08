@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddStartFinishTimeToTasksAndPipelines < ActiveRecord::Migration
+class AddStartFinishTimeToTasksAndPipelines < ActiveRecord::Migration[4.2]
   def up
     add_column :job_tasks, :started_at, :datetime
     add_column :job_tasks, :finished_at, :datetime

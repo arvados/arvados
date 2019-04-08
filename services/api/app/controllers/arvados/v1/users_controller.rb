@@ -5,11 +5,11 @@
 class Arvados::V1::UsersController < ApplicationController
   accept_attribute_as_json :prefs, Hash
 
-  skip_before_filter :find_object_by_uuid, only:
+  skip_before_action :find_object_by_uuid, only:
     [:activate, :current, :system, :setup, :merge]
-  skip_before_filter :render_404_if_no_object, only:
+  skip_before_action :render_404_if_no_object, only:
     [:activate, :current, :system, :setup, :merge]
-  before_filter :admin_required, only: [:setup, :unsetup, :update_uuid]
+  before_action :admin_required, only: [:setup, :unsetup, :update_uuid]
 
   def current
     if current_user
@@ -73,7 +73,7 @@ class Arvados::V1::UsersController < ApplicationController
       if !@object
         return render_404_if_no_object
       end
-    elsif !params[:user]
+    elsif !params[:user] || params[:user].empty?
       raise ArgumentError.new "Required uuid or user"
     elsif !params[:user]['email']
       raise ArgumentError.new "Require user email"

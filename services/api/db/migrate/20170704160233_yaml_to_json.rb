@@ -4,7 +4,7 @@
 
 require 'migrate_yaml_to_json'
 
-class YamlToJson < ActiveRecord::Migration
+class YamlToJson < ActiveRecord::Migration[4.2]
   def up
     [
       ['collections', 'properties'],

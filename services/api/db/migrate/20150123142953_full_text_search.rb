@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class FullTextSearch < ActiveRecord::Migration
+class FullTextSearch < ActiveRecord::Migration[4.2]
 
   def up
     execute "CREATE INDEX collections_full_text_search_idx ON collections USING gin(#{Collection.full_text_tsvector});"

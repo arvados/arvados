@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class RemoveNativeTargetFromLinks < ActiveRecord::Migration
+class RemoveNativeTargetFromLinks < ActiveRecord::Migration[4.2]
   def up
     remove_column :links, :native_target_id
     remove_column :links, :native_target_type

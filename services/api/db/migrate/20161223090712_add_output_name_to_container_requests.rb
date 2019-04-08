@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddOutputNameToContainerRequests < ActiveRecord::Migration
+class AddOutputNameToContainerRequests < ActiveRecord::Migration[4.2]
   def up
     add_column :container_requests, :output_name, :string, :default => nil
   end

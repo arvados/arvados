@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class CollectionNameOwnerUniqueOnlyNonExpired < ActiveRecord::Migration
+class CollectionNameOwnerUniqueOnlyNonExpired < ActiveRecord::Migration[4.2]
   def find_index
     indexes = ActiveRecord::Base.connection.indexes('collections')
     name_owner_index = indexes.select do |index|

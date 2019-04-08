@@ -3,9 +3,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-require 'trollop'
+require 'optimist'
 
-opts = Trollop::options do
+opts = Optimist::options do
   banner 'Fail jobs that have state=="Running".'
   banner 'Options:'
   opt(:before,

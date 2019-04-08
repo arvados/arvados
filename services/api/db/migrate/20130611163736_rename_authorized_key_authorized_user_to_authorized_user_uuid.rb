@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class RenameAuthorizedKeyAuthorizedUserToAuthorizedUserUuid < ActiveRecord::Migration
+class RenameAuthorizedKeyAuthorizedUserToAuthorizedUserUuid < ActiveRecord::Migration[4.2]
   def up
     remove_index :authorized_keys, [:authorized_user, :expires_at]
     rename_column :authorized_keys, :authorized_user, :authorized_user_uuid

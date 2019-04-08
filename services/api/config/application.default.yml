@@ -551,7 +551,8 @@ production:
   cache_classes: true
   consider_all_requests_local: false
   action_controller.perform_caching: true
-  serve_static_files: false
+  public_file_server:
+    enabled: false
   assets.compress: true
   assets.compile: false
   assets.digest: true
@@ -559,8 +560,10 @@ production:
 test:
   force_ssl: false
   cache_classes: true
-  serve_static_files: true
-  static_cache_control: public, max-age=3600
+  public_file_server:
+    enabled: true
+    headers:
+      'Cache-Control': public, max-age=3600
   whiny_nils: true
   consider_all_requests_local: true
   action_controller.perform_caching: false

@@ -152,6 +152,8 @@ end
 class ActionController::TestCase
   setup do
     @test_counter = 0
+    self.request.headers['Accept'] = 'application/json'
+    self.request.headers['Content-Type'] = 'application/json'
   end
 
   def check_counter action
@@ -164,6 +166,18 @@ class ActionController::TestCase
   [:get, :post, :put, :patch, :delete].each do |method|
     define_method method do |action, *args|
       check_counter action
+      # After Rails 5.0 upgrade, some params don't get properly serialized.
+      # One case are filters: [['attr', 'op', 'val']] become [['attr'], ['op'], ['val']]
+      # if not passed upstream as a JSON string.
+      if args[0].is_a?(Hash) && args[0][:params].is_a?(Hash)
+        args[0][:params].each do |key, _|
+          next if key == :exclude_script_versions # Job Reuse tests
+          # Keys could be: :filters, :where, etc
+          if [Array, Hash].include?(args[0][:params][key].class)
+            args[0][:params][key] = SafeJSON.dump(args[0][:params][key])
+          end
+        end
+      end
       super action, *args
     end
   end

@@ -4,7 +4,7 @@
 
 require 'has_uuid'
 
-class AddUuidToApiClientAuthorization < ActiveRecord::Migration
+class AddUuidToApiClientAuthorization < ActiveRecord::Migration[4.2]
   extend HasUuid::ClassMethods
 
   def up

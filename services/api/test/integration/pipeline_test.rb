@@ -28,13 +28,17 @@ class PipelineIntegrationTest < ActionDispatch::IntegrationTest
     }
 
     post("/arvados/v1/pipeline_instances",
-         {pipeline_instance: {components: {comp_name => component}}.to_json},
-         auth(:active))
+      params: {
+        pipeline_instance: {
+          components: {comp_name => component}
+        }.to_json
+      },
+      headers: auth(:active))
     check_component_match(comp_name, component)
     pi_uuid = json_response["uuid"]
 
     @response = nil
-    get("/arvados/v1/pipeline_instances/#{pi_uuid}", {}, auth(:active))
+    get("/arvados/v1/pipeline_instances/#{pi_uuid}", params: {}, headers: auth(:active))
     check_component_match(comp_name, component)
   end
 end

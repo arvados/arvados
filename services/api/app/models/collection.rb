@@ -14,9 +14,11 @@ class Collection < ArvadosModel
   include CommonApiTemplate
   include Trashable
 
-  serialize :properties, Hash
-  serialize :storage_classes_desired, Array
-  serialize :storage_classes_confirmed, Array
+  # Posgresql JSONB columns should NOT be declared as serialized, Rails 5
+  # already know how to properly treat them.
+  attribute :properties, :jsonbHash, default: {}
+  attribute :storage_classes_desired, :jsonbArray, default: ["default"]
+  attribute :storage_classes_confirmed, :jsonbArray, default: []
 
   before_validation :default_empty_manifest
   before_validation :default_storage_classes, on: :create
@@ -86,7 +88,7 @@ class Collection < ArvadosModel
 
   FILE_TOKEN = /^[[:digit:]]+:[[:digit:]]+:/
   def check_signatures
-    return false if self.manifest_text.nil?
+    throw(:abort) if self.manifest_text.nil?
 
     return true if current_user.andand.is_admin
 
@@ -333,9 +335,7 @@ class Collection < ArvadosModel
   end
 
   def check_encoding
-    if manifest_text.encoding.name == 'UTF-8' and manifest_text.valid_encoding?
-      true
-    else
+    if !(manifest_text.encoding.name == 'UTF-8' and manifest_text.valid_encoding?)
       begin
         # If Ruby thinks the encoding is something else, like 7-bit
         # ASCII, but its stored bytes are equal to the (valid) UTF-8
@@ -350,7 +350,7 @@ class Collection < ArvadosModel
       rescue
       end
       errors.add :manifest_text, "must use UTF-8 encoding"
-      false
+      throw(:abort)
     end
   end
 
@@ -360,7 +360,7 @@ class Collection < ArvadosModel
       true
     rescue ArgumentError => e
       errors.add :manifest_text, e.message
-      false
+      throw(:abort)
     end
   end
 

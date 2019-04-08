@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class SetFinishedAtOnFinishedPipelineInstances < ActiveRecord::Migration
+class SetFinishedAtOnFinishedPipelineInstances < ActiveRecord::Migration[4.2]
   def change
     ActiveRecord::Base.connection.execute("update pipeline_instances set finished_at=updated_at where finished_at is null and (state='Failed' or state='Complete')")
   end

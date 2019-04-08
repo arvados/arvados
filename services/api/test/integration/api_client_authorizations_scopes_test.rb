@@ -16,7 +16,7 @@ class ApiTokensScopeTest < ActionDispatch::IntegrationTest
   end
 
   test "user list token can only list users" do
-    get_args = [{}, auth(:active_userlist)]
+    get_args = [params: {}, headers: auth(:active_userlist)]
     get(v1_url('users'), *get_args)
     assert_response :success
     get(v1_url('users', ''), *get_args)  # Add trailing slash.
@@ -28,9 +28,9 @@ class ApiTokensScopeTest < ActionDispatch::IntegrationTest
   end
 
   test "narrow + wide scoped tokens for different users" do
-    get_args = [{
+    get_args = [params: {
                   reader_tokens: [api_client_authorizations(:anonymous).api_token]
-                }, auth(:active_userlist)]
+                }, headers: auth(:active_userlist)]
     get(v1_url('users'), *get_args)
     assert_response :success
     get(v1_url('users', ''), *get_args)  # Add trailing slash.
@@ -42,7 +42,7 @@ class ApiTokensScopeTest < ActionDispatch::IntegrationTest
    end
 
   test "specimens token can see exactly owned specimens" do
-    get_args = [{}, auth(:active_specimens)]
+    get_args = [params: {}, headers: auth(:active_specimens)]
     get(v1_url('specimens'), *get_args)
     assert_response 403
     get(v1_url('specimens', specimens(:owned_by_active_user).uuid), *get_args)
@@ -55,7 +55,9 @@ class ApiTokensScopeTest < ActionDispatch::IntegrationTest
 
   test "token with multiple scopes can use them all" do
     def get_token_count
-      get(v1_url('api_client_authorizations'), {}, auth(:active_apitokens))
+      get(v1_url('api_client_authorizations'),
+        params: {},
+        headers: auth(:active_apitokens))
       assert_response :success
       token_count = JSON.parse(@response.body)['items_available']
       assert_not_nil(token_count, "could not find token count")
@@ -65,22 +67,22 @@ class ApiTokensScopeTest < ActionDispatch::IntegrationTest
     token_count = get_token_count
     # Test the POST scope.
     post(v1_url('api_client_authorizations'),
-         {api_client_authorization: {user_id: users(:active).id}},
-         auth(:active_apitokens))
+      params: {api_client_authorization: {user_id: users(:active).id}},
+      headers: auth(:active_apitokens))
     assert_response :success
     assert_equal(token_count + 1, get_token_count,
                  "token count suggests POST was not accepted")
     # Test other requests are denied.
     get(v1_url('api_client_authorizations',
                api_client_authorizations(:active_apitokens).uuid),
-        {}, auth(:active_apitokens))
+        params: {}, headers: auth(:active_apitokens))
     assert_response 403
   end
 
   test "token without scope has no access" do
     # Logs are good for this test, because logs have relatively
     # few access controls enforced at the model level.
-    req_args = [{}, auth(:admin_noscope)]
+    req_args = [params: {}, headers: auth(:admin_noscope)]
     get(v1_url('logs'), *req_args)
     assert_response 403
     get(v1_url('logs', logs(:noop).uuid), *req_args)
@@ -95,7 +97,7 @@ class ApiTokensScopeTest < ActionDispatch::IntegrationTest
     def vm_logins_url(name)
       v1_url('virtual_machines', virtual_machines(name).uuid, 'logins')
     end
-    get_args = [{}, auth(:admin_vm)]
+    get_args = [params: {}, headers: auth(:admin_vm)]
     get(vm_logins_url(:testvm), *get_args)
     assert_response :success
     get(vm_logins_url(:testvm2), *get_args)

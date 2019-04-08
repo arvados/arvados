@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddAuthAndLockToContainerIndex < ActiveRecord::Migration
+class AddAuthAndLockToContainerIndex < ActiveRecord::Migration[4.2]
   Columns_were = ["uuid", "owner_uuid", "modified_by_client_uuid", "modified_by_user_uuid", "state", "log", "cwd", "output_path", "output", "container_image"]
   Columns = Columns_were + ["auth_uuid", "locked_by_uuid"]
   def up

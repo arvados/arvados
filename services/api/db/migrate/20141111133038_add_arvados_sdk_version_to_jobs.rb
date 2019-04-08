@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddArvadosSdkVersionToJobs < ActiveRecord::Migration
+class AddArvadosSdkVersionToJobs < ActiveRecord::Migration[4.2]
   def up
     change_table :jobs do |t|
       t.column :arvados_sdk_version, :string
