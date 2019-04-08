@@ -11,7 +11,7 @@ import { TreeItem, TreeItemStatus } from "~/components/tree/tree";
 import { ProjectResource } from "~/models/project";
 import { treePickerActions, loadProjectTreePickerProjects, loadFavoriteTreePickerProjects, loadPublicFavoriteTreePickerProjects } from "~/store/tree-picker/tree-picker-actions";
 import { ListItemTextIcon } from "~/components/list-item-text-icon/list-item-text-icon";
-import { ProjectIcon, FavoriteIcon, ProjectsIcon, ShareMeIcon } from "~/components/icon/icon";
+import { ProjectIcon, FavoriteIcon, ProjectsIcon, ShareMeIcon, PublicFavoriteIcon } from '~/components/icon/icon';
 import { RootState } from "~/store/store";
 import { ServiceRepository } from "~/services/services";
 import { WrappedFieldProps } from 'redux-form';
@@ -81,7 +81,7 @@ const getProjectPickerIcon = (item: TreeItem<ProjectResource>) => {
         case TreePickerId.SHARED_WITH_ME:
             return ShareMeIcon;
         case TreePickerId.PUBLIC_FAVORITES:
-            return ShareMeIcon;
+            return PublicFavoriteIcon;
         default:
             return ProjectIcon;
     }

@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import { ListItemIcon, ListItemText, ListItem } from "@material-ui/core";
-import { AddFavoriteIcon, RemoveFavoriteIcon } from "~/components/icon/icon";
+import { PublicFavoriteIcon } from "~/components/icon/icon";
 import { connect } from "react-redux";
 import { RootState } from "~/store/store";
 
@@ -19,8 +19,8 @@ export const TogglePublicFavoriteAction = connect(mapStateToProps)((props: { isP
         onClick={props.onClick}>
         <ListItemIcon>
             {props.isPublicFavorite
-                ? <RemoveFavoriteIcon />
-                : <AddFavoriteIcon />}
+                ? <PublicFavoriteIcon />
+                : <PublicFavoriteIcon />}
         </ListItemIcon>
         <ListItemText style={{ textDecoration: 'none' }}>
             {props.isPublicFavorite

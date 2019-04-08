@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from "react";
-import { FavoriteIcon } from "~/components/icon/icon";
+import { FavoriteIcon, PublicFavoriteIcon } from "~/components/icon/icon";
 import { connect } from "react-redux";
 import { RootState } from "~/store/store";
 import { withStyles, StyleRulesCallback, WithStyles } from "@material-ui/core";
@@ -25,7 +25,7 @@ const mapStateToProps = (state: RootState, props: { resourceUuid: string; classN
 export const FavoriteStar = connect(mapStateToProps)(
     withStyles(styles)((props: { isFavoriteVisible: boolean; isPublicFavoriteVisible: boolean; className?: string; } & WithStyles<CssRules>) => {
         if (props.isPublicFavoriteVisible) {
-            return <FavoriteIcon className={props.className || props.classes.icon} />;
+            return <PublicFavoriteIcon className={props.className || props.classes.icon} />;
         } else if (props.isFavoriteVisible) {
             return <FavoriteIcon className={props.className || props.classes.icon} />;
         } else {

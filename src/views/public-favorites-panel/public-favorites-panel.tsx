@@ -19,7 +19,7 @@ import {
     ResourceLinkNameAndIcon,
     ResourceLinkType
 } from '~/views-components/data-explorer/renderers';
-import { FavoriteIcon } from '~/components/icon/icon';
+import { PublicFavoriteIcon } from '~/components/icon/icon';
 import { Dispatch } from 'redux';
 import { openContextMenu, resourceKindToContextMenuKind } from '~/store/context-menu/context-menu-actions';
 import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
@@ -151,7 +151,7 @@ export const PublicFavoritePanel = withStyles(styles)(
                     contextMenuColumn={true}
                     dataTableDefaultView={
                         <DataTableDefaultView
-                            icon={FavoriteIcon}
+                            icon={PublicFavoriteIcon}
                             messages={['Public favorites list is empty.']} />
                     } />;
             }

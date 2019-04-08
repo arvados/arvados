@@ -5,11 +5,11 @@
 import { connect } from 'react-redux';
 import { ProjectsTreePicker, ProjectsTreePickerProps } from '~/views-components/projects-tree-picker/generic-projects-tree-picker';
 import { Dispatch } from 'redux';
-import { FavoriteIcon } from '~/components/icon/icon';
+import { PublicFavoriteIcon } from '~/components/icon/icon';
 import { loadPublicFavoritesProject } from '~/store/tree-picker/tree-picker-actions';
 
 export const PublicFavoritesTreePicker = connect(() => ({
-    rootItemIcon: FavoriteIcon,
+    rootItemIcon: PublicFavoriteIcon,
 }), (dispatch: Dispatch): Pick<ProjectsTreePickerProps, 'loadRootItem'> => ({
     loadRootItem: (_, pickerId, includeCollections, includeFiles) => {
         dispatch<any>(loadPublicFavoritesProject({ pickerId, includeCollections, includeFiles }));
