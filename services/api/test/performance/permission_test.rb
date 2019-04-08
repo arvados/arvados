@@ -46,9 +46,9 @@ class PermissionPerfTest < ActionDispatch::IntegrationTest
     end
     puts "created #{n}"
     puts "Time spent getting group index:"
-    (0..4).each do
+    (0..1).each do
       puts(Benchmark.measure do
-             get '/arvados/v1/groups', params: {format: :json, limit: 1000}, headers: auth(:permission_perftest)
+             get '/arvados/v1/groups', params: {format: :json}, headers: auth(:permission_perftest)
              assert json_response['items_available'] >= n
            end)
     end
