@@ -276,8 +276,14 @@ class StagingPathMapper(PathMapper):
         loc = obj["location"]
         tgt = os.path.join(stagedir, obj["basename"])
         basetgt, baseext = os.path.splitext(tgt)
+
+        def targetExists():
+            return tgt in self.targets and ("contents" not in obj) and (self._pathmap[tgt].resolved != loc)
+        def literalTargetExists():
+            return tgt in self.targets and "contents" in obj
+
         n = 1
-        if tgt in self.targets and (self.reversemap(tgt)[0] != loc):
+        if targetExists() or literalTargetExists():
             while tgt in self.targets:
                 n += 1
                 tgt = "%s_%i%s" % (basetgt, n, baseext)
@@ -293,7 +299,7 @@ class StagingPathMapper(PathMapper):
             if tgt in self._pathmap:
                 return
             if "contents" in obj and loc.startswith("_:"):
-                self._pathmap[tgt] = MapperEnt(obj["contents"], tgt, "CreateFile", staged)
+                self._pathmap[loc] = MapperEnt(obj["contents"], tgt, "CreateFile", staged)
             else:
                 if copy or obj.get("writable"):
                     self._pathmap[tgt] = MapperEnt(loc, tgt, "WritableFile", staged)
@@ -302,15 +308,16 @@ class StagingPathMapper(PathMapper):
                 self.visitlisting(obj.get("secondaryFiles", []), stagedir, basedir)
 
     def mapper(self, src):  # type: (Text) -> MapperEnt
+        def getMapperEnt(src):
+            for k,v in viewitems(self._pathmap):
+                if v.resolved == src or (v.type == "CreateFile" and k == src):
+                    return v
+
         if u"#" in src:
-            i = src.index(u"#")         
-            for k,v in self._pathmap.items():
-                if v.resolved == src[:i]:
-                    return MapperEnt(v.resolved, v.target + src[i:], v.type, v.staged)
-    
-        for k,v in self._pathmap.items():
-            if v.resolved == src:
-                return self._pathmap[k]
+            i = src.index(u"#")
+            v = getMapperEnt(src[i:])
+            return MapperEnt(v.resolved, v.target + src[i:], v.type, v.staged)
+        return getMapperEnt(src)
 
 
 class VwdPathMapper(StagingPathMapper):

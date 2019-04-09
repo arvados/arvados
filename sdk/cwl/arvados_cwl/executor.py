@@ -436,17 +436,17 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
         adjustFileObjs(outputObj, capture)
 
         generatemapper = NoFollowPathMapper(files, "", "", separateDirs=False)
+
         final = arvados.collection.Collection(api_client=self.api,
                                               keep_client=self.keep_client,
                                               num_retries=self.num_retries)
 
         for k,v in generatemapper.items():
-            if v.resolved.startswith("_:"):
-                if v.type == "Directory":
+            if v.type == "Directory" and v.resolved.startswith("_:"):
                     continue
-                if v.type == "CreateFile":
-                    with final.open(v.target, "wb") as f:
-                        f.write(v.resolved.encode("utf-8"))
+            if v.type == "CreateFile" and (k.startswith("_:") or v.resolved.startswith("_:")):
+                with final.open(v.target, "wb") as f:
+                    f.write(v.resolved.encode("utf-8"))
                     continue
 
             if not v.resolved.startswith("keep:"):
