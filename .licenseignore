@@ -59,6 +59,7 @@ sdk/pam/examples/shellinabox
 sdk/pam/pam-configs/arvados
 sdk/python/tests/data/*
 services/api/config/unbound.template
+services/api/config/config.default.yml
 services/arv-web/sample-cgi-app/public/.htaccess
 services/arv-web/sample-cgi-app/public/index.cgi
 services/keepproxy/pkg-extras/etc/default/keepproxy
