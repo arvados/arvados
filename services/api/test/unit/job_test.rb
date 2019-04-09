@@ -672,7 +672,7 @@ class JobTest < ActiveSupport::TestCase
       Job.destroy_all
     end
     assert_equal 0, Job.count
-    assert_equal [], Rails.configuration.disable_api_methods
+    assert_equal [], Rails.configuration.API["DisabledAPIs"]
     check_enable_legacy_jobs_api
     assert_equal Disable_jobs_api_method_list, Rails.configuration.API["DisabledAPIs"]
   end
