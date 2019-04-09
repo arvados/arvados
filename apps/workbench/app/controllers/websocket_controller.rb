@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 class WebsocketController < ApplicationController
-  skip_before_filter :find_objects_for_index
+  skip_before_action :find_objects_for_index
 
   def index
   end

@@ -11,19 +11,19 @@ class ApplicationController < ActionController::Base
 
   ERROR_ACTIONS = [:render_error, :render_not_found]
 
-  around_filter :thread_clear
-  around_filter :set_current_request_id
-  around_filter :set_thread_api_token
+  around_action :thread_clear
+  around_action :set_current_request_id
+  around_action :set_thread_api_token
   # Methods that don't require login should
-  #   skip_around_filter :require_thread_api_token
-  around_filter :require_thread_api_token, except: ERROR_ACTIONS
-  before_filter :ensure_arvados_api_exists, only: [:index, :show]
-  before_filter :set_cache_buster
-  before_filter :accept_uuid_as_id_param, except: ERROR_ACTIONS
-  before_filter :check_user_agreements, except: ERROR_ACTIONS
-  before_filter :check_user_profile, except: ERROR_ACTIONS
-  before_filter :load_filters_and_paging_params, except: ERROR_ACTIONS
-  before_filter :find_object_by_uuid, except: [:create, :index, :choose] + ERROR_ACTIONS
+  #   skip_around_action :require_thread_api_token
+  around_action :require_thread_api_token, except: ERROR_ACTIONS
+  before_action :ensure_arvados_api_exists, only: [:index, :show]
+  before_action :set_cache_buster
+  before_action :accept_uuid_as_id_param, except: ERROR_ACTIONS
+  before_action :check_user_agreements, except: ERROR_ACTIONS
+  before_action :check_user_profile, except: ERROR_ACTIONS
+  before_action :load_filters_and_paging_params, except: ERROR_ACTIONS
+  before_action :find_object_by_uuid, except: [:create, :index, :choose] + ERROR_ACTIONS
   theme :select_theme
 
   begin

@@ -9,17 +9,17 @@ require "uri"
 class CollectionsController < ApplicationController
   include ActionController::Live
 
-  skip_around_filter :require_thread_api_token, if: proc { |ctrl|
+  skip_around_action :require_thread_api_token, if: proc { |ctrl|
     Rails.configuration.anonymous_user_token and
     'show' == ctrl.action_name
   }
-  skip_around_filter(:require_thread_api_token,
+  skip_around_action(:require_thread_api_token,
                      only: [:show_file, :show_file_links])
-  skip_before_filter(:find_object_by_uuid,
+  skip_before_action(:find_object_by_uuid,
                      only: [:provenance, :show_file, :show_file_links])
   # We depend on show_file to display the user agreement:
-  skip_before_filter :check_user_agreements, only: :show_file
-  skip_before_filter :check_user_profile, only: :show_file
+  skip_before_action :check_user_agreements, only: :show_file
+  skip_before_action :check_user_profile, only: :show_file
 
   RELATION_LIMIT = 5
 

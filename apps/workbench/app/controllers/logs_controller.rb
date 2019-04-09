@@ -3,5 +3,5 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 class LogsController < ApplicationController
-  before_filter :ensure_current_user_is_admin
+  before_action :ensure_current_user_is_admin
 end

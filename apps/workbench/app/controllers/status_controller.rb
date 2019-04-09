@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 class StatusController < ApplicationController
-  skip_around_filter :require_thread_api_token
-  skip_before_filter :find_object_by_uuid
+  skip_around_action :require_thread_api_token
+  skip_before_action :find_object_by_uuid
   def status
     # Allow non-credentialed cross-origin requests
     headers['Access-Control-Allow-Origin'] = '*'
