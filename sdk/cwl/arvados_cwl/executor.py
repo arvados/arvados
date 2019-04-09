@@ -436,13 +436,12 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
         adjustFileObjs(outputObj, capture)
 
         generatemapper = NoFollowPathMapper(files, "", "", separateDirs=False)
-
         final = arvados.collection.Collection(api_client=self.api,
                                               keep_client=self.keep_client,
                                               num_retries=self.num_retries)
 
         for k,v in generatemapper.items():
-            if k.startswith("_:"):
+            if v.resolved.startswith("_:"):
                 if v.type == "Directory":
                     continue
                 if v.type == "CreateFile":
@@ -450,9 +449,9 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                         f.write(v.resolved.encode("utf-8"))
                     continue
 
-            if not k.startswith("keep:"):
+            if not v.resolved.startswith("keep:"):
                 raise Exception("Output source is not in keep or a literal")
-            sp = k.split("/")
+            sp = v.resolved.split("/")
             srccollection = sp[0][5:]
             try:
                 reader = self.collection_cache.get(srccollection)

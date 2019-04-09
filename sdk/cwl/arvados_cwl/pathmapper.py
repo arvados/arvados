@@ -284,22 +284,33 @@ class StagingPathMapper(PathMapper):
         self.targets.add(tgt)
         if obj["class"] == "Directory":
             if obj.get("writable"):
-                self._pathmap[loc] = MapperEnt(loc, tgt, "WritableDirectory", staged)
+                self._pathmap[tgt] = MapperEnt(loc, tgt, "WritableDirectory", staged)
             else:
-                self._pathmap[loc] = MapperEnt(loc, tgt, "Directory", staged)
+                self._pathmap[tgt] = MapperEnt(loc, tgt, "Directory", staged)
             if loc.startswith("_:") or self._follow_dirs:
                 self.visitlisting(obj.get("listing", []), tgt, basedir)
         elif obj["class"] == "File":
-            if loc in self._pathmap:
+            if tgt in self._pathmap:
                 return
             if "contents" in obj and loc.startswith("_:"):
-                self._pathmap[loc] = MapperEnt(obj["contents"], tgt, "CreateFile", staged)
+                self._pathmap[tgt] = MapperEnt(obj["contents"], tgt, "CreateFile", staged)
             else:
                 if copy or obj.get("writable"):
-                    self._pathmap[loc] = MapperEnt(loc, tgt, "WritableFile", staged)
+                    self._pathmap[tgt] = MapperEnt(loc, tgt, "WritableFile", staged)
                 else:
-                    self._pathmap[loc] = MapperEnt(loc, tgt, "File", staged)
+                    self._pathmap[tgt] = MapperEnt(loc, tgt, "File", staged)
                 self.visitlisting(obj.get("secondaryFiles", []), stagedir, basedir)
+
+    def mapper(self, src):  # type: (Text) -> MapperEnt
+        if u"#" in src:
+            i = src.index(u"#")         
+            for k,v in self._pathmap.items():
+                if v.resolved == src[:i]:
+                    return MapperEnt(v.resolved, v.target + src[i:], v.type, v.staged)
+    
+        for k,v in self._pathmap.items():
+            if v.resolved == src:
+                return self._pathmap[k]
 
 
 class VwdPathMapper(StagingPathMapper):
