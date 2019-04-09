@@ -9,7 +9,11 @@
 require 'enable_jobs_api'
 
 Server::Application.configure do
-  if ActiveRecord::Base.connection.tables.include?('jobs')
-    check_enable_legacy_jobs_api
+  begin
+    if ActiveRecord::Base.connection.tables.include?('jobs')
+      check_enable_legacy_jobs_api
+    end
+  rescue ActiveRecord::NoDatabaseError
+    # Database hasn't been created yet
   end
 end
