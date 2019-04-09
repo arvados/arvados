@@ -66,7 +66,6 @@ production:
   eager_load: true
   consider_all_requests_local: false
   action_controller.perform_caching: true
-  serve_static_files: false
   assets.compile: false
   assets.digest: true
   i18n.fallbacks: true
@@ -89,8 +88,6 @@ production:
 test:
   cache_classes: true
   eager_load: false
-  serve_static_files: true
-  static_cache_control: public, max-age=3600
   consider_all_requests_local: true
   action_controller.perform_caching: false
   action_dispatch.show_exceptions: false
