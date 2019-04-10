@@ -19,14 +19,14 @@ module GitTestHelper
   def self.included base
     base.setup do
       # Extract the test repository data into the default test
-      # environment's Rails.configuration.Git["Repositories"]. (We
+      # environment's Rails.configuration.Git.Repositories. (We
       # don't use that config setting here, though: it doesn't seem
       # worth the risk of stepping on a real git repo root.)
       @tmpdir = Rails.root.join 'tmp', 'git'
       FileUtils.mkdir_p @tmpdir
       system("tar", "-xC", @tmpdir.to_s, "-f", "test/test.git.tar")
-      Rails.configuration.Git["Repositories"] = "#{@tmpdir}/test"
-      Rails.configuration.Containers["JobsAPI"]["GitInternalDir"] = "#{@tmpdir}/internal.git"
+      Rails.configuration.Git.Repositories = "#{@tmpdir}/test"
+      Rails.configuration.Containers.JobsAPI.GitInternalDir = "#{@tmpdir}/internal.git"
     end
 
     base.teardown do
@@ -37,7 +37,7 @@ module GitTestHelper
   end
 
   def internal_tag tag
-    IO.read "|git --git-dir #{Rails.configuration.Containers["JobsAPI"]["GitInternalDir"].shellescape} log --format=format:%H -n1 #{tag.shellescape}"
+    IO.read "|git --git-dir #{Rails.configuration.Containers.JobsAPI.GitInternalDir.shellescape} log --format=format:%H -n1 #{tag.shellescape}"
   end
 
   # Intercept fetch_remote_repository and fetch from a specified url

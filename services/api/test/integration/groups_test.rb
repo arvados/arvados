@@ -194,7 +194,7 @@ class NonTransactionalGroupsTest < ActionDispatch::IntegrationTest
   end
 
   test "create request with async=true defers permissions update" do
-    Rails.configuration.API["AsyncPermissionsUpdateInterval"] = 1 # second
+    Rails.configuration.API.AsyncPermissionsUpdateInterval = 1 # second
     name = "Random group #{rand(1000)}"
     assert_equal nil, Group.find_by_name(name)
 

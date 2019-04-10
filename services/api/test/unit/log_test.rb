@@ -282,7 +282,7 @@ class LogTest < ActiveSupport::TestCase
   end
 
   test "non-empty configuration.unlogged_attributes" do
-    Rails.configuration.AuditLogs["UnloggedAttributes"] = ["manifest_text"]
+    Rails.configuration.AuditLogs.UnloggedAttributes = ["manifest_text"]
     txt = ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo\n"
 
     act_as_system_user do
@@ -297,7 +297,7 @@ class LogTest < ActiveSupport::TestCase
   end
 
   test "empty configuration.unlogged_attributes" do
-    Rails.configuration.AuditLogs["UnloggedAttributes"] = []
+    Rails.configuration.AuditLogs.UnloggedAttributes = []
     txt = ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo\n"
 
     act_as_system_user do
@@ -332,8 +332,8 @@ class LogTest < ActiveSupport::TestCase
   test 'retain old audit logs with default settings' do
     assert_no_logs_deleted do
       AuditLogs.delete_old(
-        max_age: Rails.configuration.AuditLogs["MaxAge"],
-        max_batch: Rails.configuration.AuditLogs["MaxDeleteBatch"])
+        max_age: Rails.configuration.AuditLogs.MaxAge,
+        max_batch: Rails.configuration.AuditLogs.MaxDeleteBatch)
     end
   end
 
@@ -362,8 +362,8 @@ class LogTest < ActiveSupport::TestCase
 
   test 'delete old audit logs in thread' do
     begin
-      Rails.configuration.AuditLogs["MaxAge"] = 20
-      Rails.configuration.AuditLogs["MaxDeleteBatch"] = 100000
+      Rails.configuration.AuditLogs.MaxAge = 20
+      Rails.configuration.AuditLogs.MaxDeleteBatch = 100000
       Rails.cache.delete 'AuditLogs'
       initial_log_count = Log.unscoped.all.count + 1
       act_as_system_user do

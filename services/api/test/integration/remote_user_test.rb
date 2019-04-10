@@ -243,7 +243,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
   end
 
   test 'auto-activate user from trusted cluster' do
-    Rails.configuration.RemoteClusters['zbbbb']["ActivateUsers"] = true
+    Rails.configuration.RemoteClusters['zbbbb'].ActivateUsers = true
     get '/arvados/v1/users/current',
       params: {format: 'json'},
       headers: auth(remote: 'zbbbb')

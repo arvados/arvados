@@ -11,7 +11,7 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
 
   def permit_unsigned_manifests isok=true
     # Set security model for the life of a test.
-    Rails.configuration.Collections["BlobSigning"] = !isok
+    Rails.configuration.Collections.BlobSigning = !isok
   end
 
   def assert_signed_manifest manifest_text, label='', token: false
@@ -24,7 +24,7 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
         exp = tok[/\+A[[:xdigit:]]+@([[:xdigit:]]+)/, 1].to_i(16)
         sig = Blob.sign_locator(
           bare,
-          key: Rails.configuration.Collections["BlobSigningKey"],
+          key: Rails.configuration.Collections.BlobSigningKey,
           expire: exp,
           api_token: token)[/\+A[^\+]*/, 0]
         assert_includes tok, sig
@@ -88,7 +88,7 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
       token = api_client_authorizations(:active).send(token_method)
       signed = Blob.sign_locator(
         'acbd18db4cc2f85cedef654fccc4a4d8+3',
-        key: Rails.configuration.Collections["BlobSigningKey"],
+        key: Rails.configuration.Collections.BlobSigningKey,
         api_token: token)
       authorize_with_token token
       put :update, params: {
@@ -221,7 +221,7 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
   def request_capped_index(params={})
     authorize_with :user1_with_load
     coll1 = collections(:collection_1_of_201)
-    Rails.configuration.API["MaxIndexDatabaseRead"] =
+    Rails.configuration.API.MaxIndexDatabaseRead =
       yield(coll1.manifest_text.size)
     get :index, params: {
       select: %w(uuid manifest_text),
@@ -566,7 +566,7 @@ EOS
 
       # Build a manifest with both signed and unsigned locators.
       signing_opts = {
-        key: Rails.configuration.Collections["BlobSigningKey"],
+        key: Rails.configuration.Collections.BlobSigningKey,
         api_token: api_token(:active),
       }
       signed_locators = locators.collect do |x|
@@ -622,7 +622,7 @@ EOS
     # TODO(twp): in phase 4, all locators will need to be signed, so
     # this test should break and will need to be rewritten. Issue #2755.
     signing_opts = {
-      key: Rails.configuration.Collections["BlobSigningKey"],
+      key: Rails.configuration.Collections.BlobSigningKey,
       api_token: api_token(:active),
       ttl: 3600   # 1 hour
     }
@@ -653,7 +653,7 @@ EOS
   test "create fails with invalid signature" do
     authorize_with :active
     signing_opts = {
-      key: Rails.configuration.Collections["BlobSigningKey"],
+      key: Rails.configuration.Collections.BlobSigningKey,
       api_token: api_token(:active),
     }
 
@@ -683,7 +683,7 @@ EOS
   test "create fails with uuid of signed manifest" do
     authorize_with :active
     signing_opts = {
-      key: Rails.configuration.Collections["BlobSigningKey"],
+      key: Rails.configuration.Collections.BlobSigningKey,
       api_token: api_token(:active),
     }
 
@@ -755,7 +755,7 @@ EOS
       ea10d51bcf88862dbcc36eb292017dfd+45)
 
     signing_opts = {
-      key: Rails.configuration.Collections["BlobSigningKey"],
+      key: Rails.configuration.Collections.BlobSigningKey,
       api_token: api_token(:active),
     }
 
@@ -903,7 +903,7 @@ EOS
 
   [1, 5, nil].each do |ask|
     test "Set replication_desired=#{ask.inspect}" do
-      Rails.configuration.Collections["DefaultReplication"] = 2
+      Rails.configuration.Collections.DefaultReplication = 2
       authorize_with :active
       put :update, params: {
         id: collections(:replication_undesired_unconfirmed).uuid,
@@ -1176,7 +1176,7 @@ EOS
     assert_response 200
     c = Collection.find_by_uuid(uuid)
     assert_operator c.trash_at, :<, db_current_time
-    assert_equal c.delete_at, c.trash_at + Rails.configuration.Collections["BlobSigningTTL"]
+    assert_equal c.delete_at, c.trash_at + Rails.configuration.Collections.BlobSigningTTL
   end
 
   test 'delete long-trashed collection immediately using http DELETE verb' do
@@ -1208,7 +1208,7 @@ EOS
       assert_response 200
       c = Collection.find_by_uuid(uuid)
       assert_operator c.trash_at, :<, db_current_time
-      assert_operator c.delete_at, :>=, time_before_trashing + Rails.configuration.Collections["DefaultTrashLifetime"]
+      assert_operator c.delete_at, :>=, time_before_trashing + Rails.configuration.Collections.DefaultTrashLifetime
     end
   end
 
@@ -1373,8 +1373,8 @@ EOS
   end
 
   test "update collection with versioning enabled" do
-    Rails.configuration.Collections["CollectionVersioning"] = true
-    Rails.configuration.Collections["PreserveVersionIfIdle"] = 1 # 1 second
+    Rails.configuration.Collections.CollectionVersioning = true
+    Rails.configuration.Collections.PreserveVersionIfIdle = 1 # 1 second
 
     col = collections(:collection_owned_by_active)
     assert_equal 2, col.version
@@ -1383,7 +1383,7 @@ EOS
     token = api_client_authorizations(:active).v2token
     signed = Blob.sign_locator(
       'acbd18db4cc2f85cedef654fccc4a4d8+3',
-      key: Rails.configuration.Collections["BlobSigningKey"],
+      key: Rails.configuration.Collections.BlobSigningKey,
       api_token: token)
     authorize_with_token token
     put :update, params: {

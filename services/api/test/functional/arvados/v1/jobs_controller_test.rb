@@ -83,7 +83,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     # We need to verify that "cancel" creates a trigger file, so first
     # let's make sure there is no stale trigger file.
     begin
-      File.unlink(Rails.configuration.Containers["JobsAPI"]["CrunchRefreshTrigger"])
+      File.unlink(Rails.configuration.Containers.JobsAPI.CrunchRefreshTrigger)
     rescue Errno::ENOENT
     end
 
@@ -105,7 +105,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
                  'server should correct bogus cancelled_at ' +
                  job['cancelled_at'])
     assert_equal(true,
-                 File.exist?(Rails.configuration.Containers["JobsAPI"]["CrunchRefreshTrigger"]),
+                 File.exist?(Rails.configuration.Containers.JobsAPI.CrunchRefreshTrigger),
                  'trigger file should be created when job is cancelled')
   end
 
@@ -123,7 +123,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
       # We need to verify that "cancel" creates a trigger file, so first
       # let's make sure there is no stale trigger file.
       begin
-        File.unlink(Rails.configuration.Containers["JobsAPI"]["CrunchRefreshTrigger"])
+        File.unlink(Rails.configuration.Containers.JobsAPI.CrunchRefreshTrigger)
       rescue Errno::ENOENT
       end
 
@@ -144,7 +144,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     # We need to verify that "cancel" creates a trigger file, so first
     # let's make sure there is no stale trigger file.
     begin
-      File.unlink(Rails.configuration.Containers["JobsAPI"]["CrunchRefreshTrigger"])
+      File.unlink(Rails.configuration.Containers.JobsAPI.CrunchRefreshTrigger)
     rescue Errno::ENOENT
     end
 
@@ -480,7 +480,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
   end
 
   test 'jobs.create disabled in config' do
-    Rails.configuration.API["DisabledAPIs"] = ["jobs.create",
+    Rails.configuration.API.DisabledAPIs = ["jobs.create",
                                                "pipeline_instances.create"]
     authorize_with :active
     post :create, params: {

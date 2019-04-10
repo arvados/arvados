@@ -31,7 +31,7 @@ class RepositoryTest < ActiveSupport::TestCase
   end
 
   def assert_server_path(path_tail, repo_sym)
-    assert_equal(File.join(Rails.configuration.Git["Repositories"], path_tail),
+    assert_equal(File.join(Rails.configuration.Git.Repositories, path_tail),
                  repositories(repo_sym).server_path)
   end
 
