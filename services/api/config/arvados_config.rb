@@ -205,6 +205,10 @@ if ::Rails.env.to_s == "test"
   $arvados_config["PostgreSQL"]["Connection"]["DBName"] = "arvados_test"
 end
 
+if $arvados_config["PostgreSQL"]["Connection"]["Password"].empty?
+  raise "Database password is empty, PostgreSQL section is: #{$arvados_config["PostgreSQL"]}"
+end
+
 dbhost = $arvados_config["PostgreSQL"]["Connection"]["Host"]
 if $arvados_config["PostgreSQL"]["Connection"]["Post"] != 0
   dbhost += ":#{$arvados_config["PostgreSQL"]["Connection"]["Post"]}"
