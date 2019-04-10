@@ -172,8 +172,27 @@ class ConfigLoader
 
   def self.copy_into_config src, dst
     src.each do |k, v|
-      dst.send "#{k}=", Marshal.load(Marshal.dump v)
+      dst.send "#{k}=", self.to_OrderedOptions(v)
     end
+  end
+
+  def self.to_OrderedOptions confs
+    if confs.is_a? Hash
+      opts = ActiveSupport::OrderedOptions.new
+      confs.each do |k,v|
+        opts[k] = self.to_OrderedOptions(v)
+      end
+      opts
+    elsif confs.is_a? Array
+      confs.map { |v| self.to_OrderedOptions v }
+    else
+      confs
+    end
+  end
+
+  def self.load path
+    yaml = ERB.new(IO.read path).result(binding)
+    YAML.load(yaml, deserialize_symbols: false)
   end
 
 end

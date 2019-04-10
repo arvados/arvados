@@ -164,8 +164,7 @@ application_config = {}
 %w(application.default application).each do |cfgfile|
   path = "#{::Rails.root.to_s}/config/#{cfgfile}.yml"
   if File.exist? path
-    yaml = ERB.new(IO.read path).result(binding)
-    confs = YAML.load(yaml, deserialize_symbols: true)
+    confs = ConfigLoader.load(path)
     # Ignore empty YAML file:
     next if confs == false
     application_config.deep_merge!(confs['common'] || {})
@@ -176,8 +175,7 @@ end
 db_config = {}
 path = "#{::Rails.root.to_s}/config/database.yml"
 if File.exist? path
-  yaml = ERB.new(IO.read path).result(binding)
-  confs = YAML.load(yaml, deserialize_symbols: true)
+  confs = ConfigLoader.load(path)
   db_config.deep_merge!(confs[::Rails.env.to_s] || {})
 end
 
@@ -220,7 +218,12 @@ end
 # For config migration, we've previously populated the PostgreSQL
 # section of the config from database.yml
 #
-ENV["DATABASE_URL"] = "postgresql://#{$arvados_config["PostgreSQL"]["Connection"]["User"]}:#{$arvados_config["PostgreSQL"]["Connection"]["Password"]}@#{dbhost}/#{$arvados_config["PostgreSQL"]["Connection"]["DBName"]}?template=#{$arvados_config["PostgreSQL"]["Connection"]["Template"]}&encoding=#{$arvados_config["PostgreSQL"]["Connection"]["client_encoding"]}&pool=#{$arvados_config["PostgreSQL"]["ConnectionPool"]}"
+ENV["DATABASE_URL"] = "postgresql://#{$arvados_config["PostgreSQL"]["Connection"]["User"]}:"+
+                      "#{$arvados_config["PostgreSQL"]["Connection"]["Password"]}@"+
+                      "#{dbhost}/#{$arvados_config["PostgreSQL"]["Connection"]["DBName"]}?"+
+                      "template=#{$arvados_config["PostgreSQL"]["Connection"]["Template"]}&"+
+                      "encoding=#{$arvados_config["PostgreSQL"]["Connection"]["client_encoding"]}&"+
+                      "pool=#{$arvados_config["PostgreSQL"]["ConnectionPool"]}"
 
 Server::Application.configure do
   ConfigLoader.copy_into_config $arvados_config, config

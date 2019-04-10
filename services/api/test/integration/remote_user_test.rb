@@ -63,8 +63,8 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     ready.pop
     @remote_server = srv
     @remote_host = "127.0.0.1:#{srv.config[:Port]}"
-    Rails.configuration.RemoteClusters = Rails.configuration.RemoteClusters.merge({'zbbbb' => {"Host" => @remote_host},
-                                                                                   'zbork' => {"Host" => @remote_host}})
+    Rails.configuration.RemoteClusters = Rails.configuration.RemoteClusters.merge({zbbbb: ActiveSupport::InheritableOptions.new({Host: @remote_host}),
+                                                                                   zbork: ActiveSupport::InheritableOptions.new({Host: @remote_host})})
     Arvados::V1::SchemaController.any_instance.stubs(:root_url).returns "https://#{@remote_host}"
     @stub_status = 200
     @stub_content = {

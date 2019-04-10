@@ -535,7 +535,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   test "allow unrecognized container when there are remote_hosts" do
     set_user_from_auth :active
-    Rails.configuration.RemoteClusters = {"foooo" => {"Host" => "bar.com"} }
+    Rails.configuration.RemoteClusters = Rails.configuration.RemoteClusters.merge({foooo: ActiveSupport::InheritableOptions.new({Host: "bar.com"})})
     Container.resolve_container_image('acbd18db4cc2f85cedef654fccc4a4d8+3')
   end
 
