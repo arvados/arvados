@@ -81,3 +81,94 @@ class TestMakeOutput(unittest.TestCase):
         self.api.links().create.assert_has_calls([mock.call(body={"head_uuid": final_uuid, "link_class": "tag", "name": "tag0"}), mock.call().execute(num_retries=num_retries)])
         self.api.links().create.assert_has_calls([mock.call(body={"head_uuid": final_uuid, "link_class": "tag", "name": "tag1"}), mock.call().execute(num_retries=num_retries)])
         self.api.links().create.assert_has_calls([mock.call(body={"head_uuid": final_uuid, "link_class": "tag", "name": "tag2"}), mock.call().execute(num_retries=num_retries)])
+
+    @mock.patch("arvados.collection.Collection")
+    @mock.patch("arvados.collection.CollectionReader")
+    def test_make_output_for_multiple_file_targets(self, reader, col):
+        keep_client = mock.MagicMock()
+        runner = arvados_cwl.executor.ArvCwlExecutor(self.api, keep_client=keep_client)
+        runner.project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
+
+        final = mock.MagicMock()
+        col.return_value = final
+        readermock = mock.MagicMock()
+        reader.return_value = readermock
+
+        # This output describes a single file listed in 2 different directories
+        _, runner.final_output_collection = runner.make_output_collection("Test output", ["foo"], "", { 'out': [
+        {
+            'basename': 'testdir1', 
+            'listing': [
+                { 
+                    'basename': 'test.txt', 
+                    'nameroot': 'test', 
+                    'nameext': '.txt', 
+                    'location': 'keep:99999999999999999999999999999991+99/test.txt', 
+                    'class': 'File', 
+                    'size': 16
+                }
+            ], 
+            'location': '_:99999999999999999999999999999992+99',
+            'class': 'Directory'
+        }, 
+        {
+            'basename': 'testdir2', 
+            'listing': [
+                {
+                    'basename': 'test.txt', 
+                    'nameroot': 'test', 
+                    'nameext': '.txt', 
+                    'location': 'keep:99999999999999999999999999999991+99/test.txt', 
+                    'class': 
+                    'File', 
+                    'size': 16
+                }
+            ], 
+            'location': '_:99999999999999999999999999999993+99',
+            'class': 'Directory'
+        }]})
+
+        # Check that copy is called on the collection for both locations
+        final.copy.assert_any_call("test.txt", "testdir1/test.txt", source_collection=mock.ANY, overwrite=mock.ANY)
+        final.copy.assert_any_call("test.txt", "testdir2/test.txt", source_collection=mock.ANY, overwrite=mock.ANY)
+
+    @mock.patch("arvados.collection.Collection")
+    @mock.patch("arvados.collection.CollectionReader")
+    def test_make_output_for_literal_name_conflicts(self, reader, col):
+        keep_client = mock.MagicMock()
+        runner = arvados_cwl.executor.ArvCwlExecutor(self.api, keep_client=keep_client)
+        runner.project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
+
+        final = mock.MagicMock()
+        col.return_value = final
+        readermock = mock.MagicMock()
+        reader.return_value = readermock
+
+        # This output describes two literals with the same basename
+        _, runner.final_output_collection = runner.make_output_collection("Test output", ["foo"], "",  [
+        { 
+            'lit': 
+            {
+                'basename': 'a_file', 
+                'nameext': '', 
+                'nameroot': 'a_file', 
+                'location': '_:f168fc0c-4291-40aa-a04e-366d57390560', 
+                'class': 'File', 
+                'contents': 'Hello file literal.'
+            }
+        },
+        {
+            'lit': 
+            {
+                'basename': 'a_file', 
+                'nameext': '', 
+                'nameroot': 'a_file', 
+                'location': '_:1728da8f-c64e-4a3e-b2e2-1ee356be7bc8', 
+                'class': 'File', 
+                'contents': 'Hello file literal.'
+            }
+        }])
+
+        # Check that the file name conflict is resolved and open is called for both
+        final.open.assert_any_call("a_file", "wb")
+        final.open.assert_any_call("a_file_2", "wb")
