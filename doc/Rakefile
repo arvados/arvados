@@ -6,7 +6,8 @@
 require "rubygems"
 require "colorize"
 
-task :generate => [ :realclean, 'sdk/python/arvados/index.html', 'sdk/R/arvados/index.html', 'sdk/java-v2/javadoc/index.html' ] do
+#task :generate => [ :realclean, 'sdk/python/arvados/index.html', 'sdk/R/arvados/index.html', 'sdk/java-v2/javadoc/index.html' ] do
+task :generate => [ :realclean, 'sdk/python/arvados/index.html', 'sdk/java-v2/javadoc/index.html' ] do
   vars = ['baseurl', 'arvados_cluster_uuid', 'arvados_api_host', 'arvados_workbench_host']
   vars.each do |v|
     if ENV[v]
@@ -93,7 +94,7 @@ file "sdk/java-v2/javadoc/index.html" do |t|
     tgt = Dir.pwd
     docfiles = []
     Dir.chdir("../sdk/java-v2") do
-      STDERR.puts `./gradlew javadoc 2>&1`
+      STDERR.puts `gradle javadoc 2>&1`
     end
     cp_r("../sdk/java-v2/build/docs/javadoc", "sdk/java-v2")
     raise if $? != 0

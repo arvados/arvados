@@ -6,5 +6,5 @@
 #
 
 set -e
-UID=$(id -u)
-exec docker run --rm --user $UID -v $PWD:$PWD -w $PWD java:8 /bin/sh -c '(./gradlew clean && ./gradlew test); ./gradlew --stop'
+#UID=$(id -u) # UID is read-only on many systems
+exec docker run --rm --user $UID -v $PWD:$PWD -w $PWD gradle /bin/sh -c '(gradle clean && gradle test); gradle --stop'
