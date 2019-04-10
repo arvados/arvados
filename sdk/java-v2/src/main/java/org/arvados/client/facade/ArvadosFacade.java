@@ -120,6 +120,8 @@ public class ArvadosFacade {
      * Created collection has a default name and is uploaded to user's 'Home' project.
      *
      * @see ArvadosFacade#upload(List, String, String)
+     * @param files    list of files to be uploaded within new collection
+     * @return collection object mapped from JSON that is returned from server after successful upload
      */
     public Collection upload(List<File> files) {
         return upload(files, null, null);
@@ -130,6 +132,8 @@ public class ArvadosFacade {
      * Created collection has a default name and is uploaded to user's 'Home' project.
      *
      * @see ArvadosFacade#upload(List, String, String)
+     * @param file file to be uploaded
+     * @return collection object mapped from JSON that is returned from server after successful upload
      */
     public Collection upload(File file) {
         return upload(Collections.singletonList(file), null, null);
@@ -157,6 +161,10 @@ public class ArvadosFacade {
      * Uploads a file to a specified collection.
      *
      * @see ArvadosFacade#uploadToExistingCollection(List, String)
+     * @param file           file to be uploaded to existing collection. Filenames must be unique
+     *                       in comparison with files already existing within collection.
+     * @param collectionUUID UUID of collection to which files should be uploaded
+     * @return collection object mapped from JSON that is returned from server after successful upload
      */
     public Collection uploadToExistingCollection(File file, String collectionUUID) {
         return fileUploader.uploadToExistingCollection(Collections.singletonList(file), collectionUUID);
