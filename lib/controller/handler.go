@@ -18,6 +18,8 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/lib/config"
+	"git.curoverse.com/arvados.git/lib/controller/railsproxy"
+	"git.curoverse.com/arvados.git/lib/controller/router"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/health"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
@@ -63,7 +65,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 func (h *Handler) CheckHealth() error {
 	h.setupOnce.Do(h.setup)
-	_, _, err := findRailsAPI(h.Cluster)
+	_, _, err := railsproxy.FindRailsAPI(h.Cluster)
 	return err
 }
 
@@ -87,6 +89,12 @@ func (h *Handler) setup() {
 		w.Header().Set("Content-Type", "application/json")
 		io.Copy(w, &buf)
 	}))
+
+	if h.Cluster.EnableBetaController14287 {
+		rtr := router.New(h.Cluster)
+		mux.Handle("/arvados/v1/collections", rtr)
+		mux.Handle("/arvados/v1/collections/", rtr)
+	}
 
 	hs := http.NotFoundHandler()
 	hs = prepend(hs, h.proxyRailsAPI)
@@ -141,7 +149,7 @@ func prepend(next http.Handler, middleware middlewareFunc) http.Handler {
 }
 
 func (h *Handler) localClusterRequest(req *http.Request) (*http.Response, error) {
-	urlOut, insecure, err := findRailsAPI(h.Cluster)
+	urlOut, insecure, err := railsproxy.FindRailsAPI(h.Cluster)
 	if err != nil {
 		return nil, err
 	}

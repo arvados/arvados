@@ -25,20 +25,23 @@ func (h HTTPError) Error() string {
 	return h.Message
 }
 
-// headers that shouldn't be forwarded when proxying. See
-// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers
 var dropHeaders = map[string]bool{
+	// Headers that shouldn't be forwarded when proxying. See
+	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers
 	"Connection":          true,
 	"Keep-Alive":          true,
 	"Proxy-Authenticate":  true,
 	"Proxy-Authorization": true,
-	// this line makes gofmt 1.10 and 1.11 agree
-	"TE":                true,
-	"Trailer":           true,
-	"Transfer-Encoding": true, // *-Encoding headers interfer with Go's automatic compression/decompression
-	"Content-Encoding":  true,
+	// (comment/space here makes gofmt1.10 agree with gofmt1.11)
+	"TE":      true,
+	"Trailer": true,
+	"Upgrade": true,
+
+	// Headers that would interfere with Go's automatic
+	// compression/decompression if we forwarded them.
 	"Accept-Encoding":   true,
-	"Upgrade":           true,
+	"Content-Encoding":  true,
+	"Transfer-Encoding": true,
 }
 
 type ResponseFilter func(*http.Response, error) (*http.Response, error)

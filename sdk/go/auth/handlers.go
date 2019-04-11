@@ -11,15 +11,15 @@ import (
 
 type contextKey string
 
-var contextKeyCredentials contextKey = "credentials"
+var ContextKeyCredentials contextKey = "credentials"
 
 // LoadToken wraps the next handler, adding credentials to the request
 // context so subsequent handlers can access them efficiently via
 // CredentialsFromRequest.
 func LoadToken(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if _, ok := r.Context().Value(contextKeyCredentials).(*Credentials); !ok {
-			r = r.WithContext(context.WithValue(r.Context(), contextKeyCredentials, CredentialsFromRequest(r)))
+		if _, ok := r.Context().Value(ContextKeyCredentials).(*Credentials); !ok {
+			r = r.WithContext(context.WithValue(r.Context(), ContextKeyCredentials, CredentialsFromRequest(r)))
 		}
 		next.ServeHTTP(w, r)
 	})

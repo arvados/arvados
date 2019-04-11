@@ -4,7 +4,10 @@
 
 package arvados
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 // ResourceListParams expresses which results are requested in a
 // list/index API.
@@ -27,7 +30,35 @@ type Filter struct {
 	Operand  interface{}
 }
 
-// MarshalJSON encodes a Filter in the form expected by the API.
+// MarshalJSON encodes a Filter to a JSON array.
 func (f *Filter) MarshalJSON() ([]byte, error) {
 	return json.Marshal([]interface{}{f.Attr, f.Operator, f.Operand})
+}
+
+// UnmarshalJSON decodes a JSON array to a Filter.
+func (f *Filter) UnmarshalJSON(data []byte) error {
+	var elements []interface{}
+	err := json.Unmarshal(data, &elements)
+	if err != nil {
+		return err
+	}
+	if len(elements) != 3 {
+		return fmt.Errorf("invalid filter %q: must have 3 elements", data)
+	}
+	attr, ok := elements[0].(string)
+	if !ok {
+		return fmt.Errorf("invalid filter attr %q", elements[0])
+	}
+	op, ok := elements[1].(string)
+	if !ok {
+		return fmt.Errorf("invalid filter operator %q", elements[1])
+	}
+	operand := elements[2]
+	switch operand.(type) {
+	case string, float64, []interface{}:
+	default:
+		return fmt.Errorf("invalid filter operand %q", elements[2])
+	}
+	*f = Filter{attr, op, operand}
+	return nil
 }

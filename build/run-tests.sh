@@ -77,6 +77,10 @@ doc
 lib/cli
 lib/cmd
 lib/controller
+lib/controller/federation
+lib/controller/railsproxy
+lib/controller/router
+lib/controller/rpc
 lib/crunchstat
 lib/cloud
 lib/cloud/azure
@@ -997,51 +1001,7 @@ pythonstuff=(
 )
 
 declare -a gostuff
-gostuff=(
-    cmd/arvados-client
-    cmd/arvados-server
-    lib/cli
-    lib/cmd
-    lib/controller
-    lib/crunchstat
-    lib/cloud
-    lib/cloud/azure
-    lib/cloud/ec2
-    lib/config
-    lib/dispatchcloud
-    lib/dispatchcloud/container
-    lib/dispatchcloud/scheduler
-    lib/dispatchcloud/ssh_executor
-    lib/dispatchcloud/worker
-    lib/service
-    sdk/go/arvados
-    sdk/go/arvadosclient
-    sdk/go/auth
-    sdk/go/blockdigest
-    sdk/go/dispatch
-    sdk/go/health
-    sdk/go/httpserver
-    sdk/go/manifest
-    sdk/go/asyncbuf
-    sdk/go/crunchrunner
-    sdk/go/stats
-    services/arv-git-httpd
-    services/crunchstat
-    services/health
-    services/keep-web
-    services/keepstore
-    sdk/go/keepclient
-    services/keep-balance
-    services/keepproxy
-    services/crunch-dispatch-local
-    services/crunch-dispatch-slurm
-    services/crunch-run
-    services/ws
-    tools/keep-block-check
-    tools/keep-exercise
-    tools/keep-rsync
-    tools/sync-groups
-)
+gostuff=($(git grep -lw func | grep \\.go | sed -e 's/\/[^\/]*$//' | sort -u))
 
 install_apps/workbench() {
     cd "$WORKSPACE/apps/workbench" \

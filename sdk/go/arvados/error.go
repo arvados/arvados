@@ -31,6 +31,10 @@ func (e TransactionError) Error() (s string) {
 	return
 }
 
+func (e TransactionError) HTTPStatus() int {
+	return e.StatusCode
+}
+
 func newTransactionError(req *http.Request, resp *http.Response, buf []byte) *TransactionError {
 	var e TransactionError
 	if json.Unmarshal(buf, &e) != nil {

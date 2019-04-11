@@ -20,7 +20,7 @@ func NewCredentials() *Credentials {
 }
 
 func CredentialsFromRequest(r *http.Request) *Credentials {
-	if c, ok := r.Context().Value(contextKeyCredentials).(*Credentials); ok {
+	if c, ok := r.Context().Value(ContextKeyCredentials).(*Credentials); ok {
 		// preloaded by middleware
 		return c
 	}

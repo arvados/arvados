@@ -73,7 +73,6 @@ func (c *Collection) SizedDigests() ([]SizedDigest, error) {
 	return sds, scanner.Err()
 }
 
-// CollectionList is an arvados#collectionList resource.
 type CollectionList struct {
 	Items          []Collection `json:"items"`
 	ItemsAvailable int          `json:"items_available"`

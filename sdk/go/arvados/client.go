@@ -35,6 +35,9 @@ type Client struct {
 	// DefaultSecureClient or InsecureHTTPClient will be used.
 	Client *http.Client `json:"-"`
 
+	// Protocol scheme: "http", "https", or "" (https)
+	Scheme string
+
 	// Hostname (or host:port) of Arvados API server.
 	APIHost string
 
@@ -79,6 +82,7 @@ func NewClientFromConfig(cluster *Cluster) (*Client, error) {
 		return nil, fmt.Errorf("no host in config Services.Controller.ExternalURL: %v", ctrlURL)
 	}
 	return &Client{
+		Scheme:   ctrlURL.Scheme,
 		APIHost:  ctrlURL.Host,
 		Insecure: cluster.TLS.Insecure,
 	}, nil
@@ -105,6 +109,7 @@ func NewClientFromEnv() *Client {
 		insecure = true
 	}
 	return &Client{
+		Scheme:          "https",
 		APIHost:         os.Getenv("ARVADOS_API_HOST"),
 		AuthToken:       os.Getenv("ARVADOS_API_TOKEN"),
 		Insecure:        insecure,
@@ -117,12 +122,17 @@ var reqIDGen = httpserver.IDGenerator{Prefix: "req-"}
 // Do adds Authorization and X-Request-Id headers and then calls
 // (*http.Client)Do().
 func (c *Client) Do(req *http.Request) (*http.Response, error) {
-	if c.AuthToken != "" {
+	if auth, _ := req.Context().Value("Authorization").(string); auth != "" {
+		req.Header.Add("Authorization", auth)
+	} else if c.AuthToken != "" {
 		req.Header.Add("Authorization", "OAuth2 "+c.AuthToken)
 	}
 
 	if req.Header.Get("X-Request-Id") == "" {
-		reqid, _ := c.context().Value(contextKeyRequestID).(string)
+		reqid, _ := req.Context().Value(contextKeyRequestID).(string)
+		if reqid == "" {
+			reqid, _ = c.context().Value(contextKeyRequestID).(string)
+		}
 		if reqid == "" {
 			reqid = reqIDGen.Next()
 		}
@@ -203,6 +213,9 @@ func anythingToValues(params interface{}) (url.Values, error) {
 		if err != nil {
 			return nil, err
 		}
+		if string(j) == "null" {
+			continue
+		}
 		urlValues.Set(k, string(j))
 	}
 	return urlValues, nil
@@ -216,6 +229,10 @@ func anythingToValues(params interface{}) (url.Values, error) {
 //
 // path must not contain a query string.
 func (c *Client) RequestAndDecode(dst interface{}, method, path string, body io.Reader, params interface{}) error {
+	return c.RequestAndDecodeContext(c.context(), dst, method, path, body, params)
+}
+
+func (c *Client) RequestAndDecodeContext(ctx context.Context, dst interface{}, method, path string, body io.Reader, params interface{}) error {
 	if body, ok := body.(io.Closer); ok {
 		// Ensure body is closed even if we error out early
 		defer body.Close()
@@ -243,6 +260,7 @@ func (c *Client) RequestAndDecode(dst interface{}, method, path string, body io.
 	if err != nil {
 		return err
 	}
+	req = req.WithContext(ctx)
 	req.Header.Set("Content-type", "application/x-www-form-urlencoded")
 	return c.DoAndDecode(dst, req)
 }
@@ -265,13 +283,13 @@ func (c *Client) UpdateBody(rsc resource) io.Reader {
 	return bytes.NewBufferString(v.Encode())
 }
 
-type contextKey string
-
-var contextKeyRequestID contextKey = "X-Request-Id"
-
+// WithRequestID returns a new shallow copy of c that sends the given
+// X-Request-Id value (instead of a new randomly generated one) with
+// each subsequent request that doesn't provide its own via context or
+// header.
 func (c *Client) WithRequestID(reqid string) *Client {
 	cc := *c
-	cc.ctx = context.WithValue(cc.context(), contextKeyRequestID, reqid)
+	cc.ctx = ContextWithRequestID(cc.context(), reqid)
 	return &cc
 }
 
@@ -294,7 +312,11 @@ func (c *Client) httpClient() *http.Client {
 }
 
 func (c *Client) apiURL(path string) string {
-	return "https://" + c.APIHost + "/" + path
+	scheme := c.Scheme
+	if scheme == "" {
+		scheme = "https"
+	}
+	return scheme + "://" + c.APIHost + "/" + path
 }
 
 // DiscoveryDocument is the Arvados server's description of itself.

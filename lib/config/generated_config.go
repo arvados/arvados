@@ -685,4 +685,7 @@ Clusters:
       # Workbench2 configs
       VocabularyURL: ""
       FileViewersConfigURL: ""
+
+    # Use experimental controller code (see https://dev.arvados.org/issues/14287)
+    EnableBetaController14287: false
 `)
