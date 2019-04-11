@@ -97,33 +97,33 @@ class TestMakeOutput(unittest.TestCase):
         # This output describes a single file listed in 2 different directories
         _, runner.final_output_collection = runner.make_output_collection("Test output", ["foo"], "", { 'out': [
         {
-            'basename': 'testdir1', 
-            'listing': [
-                { 
-                    'basename': 'test.txt', 
-                    'nameroot': 'test', 
-                    'nameext': '.txt', 
-                    'location': 'keep:99999999999999999999999999999991+99/test.txt', 
-                    'class': 'File', 
-                    'size': 16
-                }
-            ], 
-            'location': '_:99999999999999999999999999999992+99',
-            'class': 'Directory'
-        }, 
-        {
-            'basename': 'testdir2', 
+            'basename': 'testdir1',
             'listing': [
                 {
-                    'basename': 'test.txt', 
-                    'nameroot': 'test', 
-                    'nameext': '.txt', 
-                    'location': 'keep:99999999999999999999999999999991+99/test.txt', 
-                    'class': 
-                    'File', 
+                    'basename': 'test.txt',
+                    'nameroot': 'test',
+                    'nameext': '.txt',
+                    'location': 'keep:99999999999999999999999999999991+99/test.txt',
+                    'class': 'File',
                     'size': 16
                 }
-            ], 
+            ],
+            'location': '_:99999999999999999999999999999992+99',
+            'class': 'Directory'
+        },
+        {
+            'basename': 'testdir2',
+            'listing': [
+                {
+                    'basename': 'test.txt',
+                    'nameroot': 'test',
+                    'nameext': '.txt',
+                    'location': 'keep:99999999999999999999999999999991+99/test.txt',
+                    'class':
+                    'File',
+                    'size': 16
+                }
+            ],
             'location': '_:99999999999999999999999999999993+99',
             'class': 'Directory'
         }]})
@@ -146,25 +146,25 @@ class TestMakeOutput(unittest.TestCase):
 
         # This output describes two literals with the same basename
         _, runner.final_output_collection = runner.make_output_collection("Test output", ["foo"], "",  [
-        { 
-            'lit': 
+        {
+            'lit':
             {
-                'basename': 'a_file', 
-                'nameext': '', 
-                'nameroot': 'a_file', 
-                'location': '_:f168fc0c-4291-40aa-a04e-366d57390560', 
-                'class': 'File', 
+                'basename': 'a_file',
+                'nameext': '',
+                'nameroot': 'a_file',
+                'location': '_:f168fc0c-4291-40aa-a04e-366d57390560',
+                'class': 'File',
                 'contents': 'Hello file literal.'
             }
         },
         {
-            'lit': 
+            'lit':
             {
-                'basename': 'a_file', 
-                'nameext': '', 
-                'nameroot': 'a_file', 
-                'location': '_:1728da8f-c64e-4a3e-b2e2-1ee356be7bc8', 
-                'class': 'File', 
+                'basename': 'a_file',
+                'nameext': '',
+                'nameroot': 'a_file',
+                'location': '_:1728da8f-c64e-4a3e-b2e2-1ee356be7bc8',
+                'class': 'File',
                 'contents': 'Hello file literal.'
             }
         }])
