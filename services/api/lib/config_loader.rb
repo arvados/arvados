@@ -190,9 +190,16 @@ class ConfigLoader
     end
   end
 
-  def self.load path
-    yaml = ERB.new(IO.read path).result(binding)
-    YAML.load(yaml, deserialize_symbols: false)
+  def self.load path, erb: false
+    if File.exist? path
+      yaml = IO.read path
+      if erb
+        yaml = ERB.new(yaml).result(binding)
+      end
+      YAML.load(yaml, deserialize_symbols: false)
+    else
+      {}
+    end
   end
 
 end

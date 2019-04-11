@@ -13,6 +13,7 @@ build/package-test-dockerfiles/ubuntu1604/etc-apt-preferences.d-arvados
 *by-sa-3.0.txt
 *COPYING
 doc/fonts/*
+doc/_includes/_config_default_yml.liquid
 doc/user/cwl/federated/*
 */docker_image
 docker/jobs/apt.arvados.org*.list

@@ -42,23 +42,34 @@ EOS
   WARNED_OMNIAUTH_CONFIG = true
 end
 
-$arvados_config = {}
-
-["#{::Rails.root.to_s}/config/config.default.yml", "/etc/arvados/config.yml"].each do |path|
-  if File.exist? path
-    confs = YAML.load(IO.read(path), deserialize_symbols: false)
-    if confs
-      clusters = confs["Clusters"].first
-      $arvados_config["ClusterID"] = clusters[0]
-      $arvados_config.deep_merge!(clusters[1])
-    end
-  end
+# Load the defaults
+$arvados_config_defaults = ConfigLoader.load "#{::Rails.root.to_s}/config/config.default.yml"
+if $arvados_config_defaults.empty?
+  raise "Missing #{::Rails.root.to_s}/config/config.default.yml"
 end
 
-$base_arvados_config = $arvados_config.deep_dup
+clusterID, clusterConfig = $arvados_config_defaults["Clusters"].first
+$arvados_config_defaults = clusterConfig
+$arvados_config_defaults["ClusterID"] = clusterID
 
+# Initialize the global config with the defaults
+$arvados_config_global = $arvados_config_defaults.deep_dup
+
+# Load the global config file
+confs = ConfigLoader.load "/etc/arvados/config.yml"
+if !confs.empty?
+  clusterID, clusterConfig = confs["Clusters"].first
+  $arvados_config_global["ClusterID"] = clusterID
+
+  # Copy the cluster config over the defaults
+  $arvados_config_global.deep_merge!(clusterConfig)
+end
+
+# Now make a copy
+$arvados_config = $arvados_config_global.deep_dup
+
+# Declare all our configuration items.
 arvcfg = ConfigLoader.new
-
 arvcfg.declare_config "ClusterID", NonemptyString, :uuid_prefix
 arvcfg.declare_config "ManagementToken", String, :ManagementToken
 arvcfg.declare_config "Git.Repositories", String, :git_repositories_dir
@@ -164,13 +175,11 @@ dbcfg.declare_config "PostgreSQL.Connection.Encoding", String, :encoding
 application_config = {}
 %w(application.default application).each do |cfgfile|
   path = "#{::Rails.root.to_s}/config/#{cfgfile}.yml"
-  if File.exist? path
-    confs = ConfigLoader.load(path)
-    # Ignore empty YAML file:
-    next if confs == false
-    application_config.deep_merge!(confs['common'] || {})
-    application_config.deep_merge!(confs[::Rails.env.to_s] || {})
-  end
+  confs = ConfigLoader.load(path)
+  # Ignore empty YAML file:
+  next if confs == false
+  application_config.deep_merge!(confs['common'] || {})
+  application_config.deep_merge!(confs[::Rails.env.to_s] || {})
 end
 
 db_config = {}
@@ -190,11 +199,20 @@ if application_config[:auto_activate_users_from]
   end
 end
 
-# Checks for wrongly typed configuration items, and essential items
-# that can't be empty
-arvcfg.coercion_and_check $base_arvados_config, check_nonempty: false
-arvcfg.coercion_and_check $arvados_config
-dbcfg.coercion_and_check $arvados_config
+# Checks for wrongly typed configuration items, coerces properties
+# into correct types (such as Duration), and optionally raise error
+# for essential configuration that can't be empty.
+arvcfg.coercion_and_check $arvados_config_defaults, check_nonempty: false
+arvcfg.coercion_and_check $arvados_config_global, check_nonempty: false
+arvcfg.coercion_and_check $arvados_config, check_nonempty: true
+dbcfg.coercion_and_check $arvados_config, check_nonempty: true
+
+# * $arvados_config_defaults is the defaults
+# * $arvados_config_global is $arvados_config_defaults merged with the contents of /etc/arvados/config.yml
+# These are used by the rake config: tasks
+#
+# * $arvados_config is $arvados_config_global merged with the migrated contents of application.yml
+# This is what actually gets copied into the Rails configuration object.
 
 if $arvados_config["Collections"]["DefaultTrashLifetime"] < 86400.seconds then
   raise "default_trash_lifetime is %d, must be at least 86400" % Rails.configuration.Collections.DefaultTrashLifetime
@@ -232,6 +250,10 @@ ENV["DATABASE_URL"] = "postgresql://#{$arvados_config["PostgreSQL"]["Connection"
                       "pool=#{$arvados_config["PostgreSQL"]["ConnectionPool"]}"
 
 Server::Application.configure do
+  # Copy into the Rails config object.  This also turns Hash into
+  # OrderedOptions so that application code can use
+  # Rails.configuration.API.Blah instead of
+  # Rails.configuration.API["Blah"]
   ConfigLoader.copy_into_config $arvados_config, config
   ConfigLoader.copy_into_config $remaining_config, config
   config.secret_key_base = config.secret_token
