@@ -153,7 +153,7 @@ class ApiClientAuthorization < ArvadosModel
       # [re]validate it.
       begin
         clnt = HTTPClient.new
-        if Rails.configuration.TLS["Insecure"]
+        if Rails.configuration.TLS.Insecure
           clnt.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
         else
           # Use system CA certificates
@@ -187,7 +187,7 @@ class ApiClientAuthorization < ArvadosModel
           end
         end
 
-        if Rails.configuration.Users["NewUsersAreActive"] ||
+        if Rails.configuration.Users.NewUsersAreActive ||
            Rails.configuration.RemoteClusters[remote_user['uuid'][0..4]].andand["ActivateUsers"]
           # Update is_active to whatever it is at the remote end
           user.is_active = remote_user['is_active']

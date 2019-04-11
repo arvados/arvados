@@ -52,7 +52,7 @@ class UserSessionsController < ApplicationController
                       :first_name => omniauth['info']['first_name'],
                       :last_name => omniauth['info']['last_name'],
                       :identity_url => omniauth['info']['identity_url'],
-                      :is_active => Rails.configuration.Users["NewUsersAreActive"],
+                      :is_active => Rails.configuration.Users.NewUsersAreActive,
                       :owner_uuid => system_user_uuid)
       if omniauth['info']['username']
         user.set_initial_username(requested: omniauth['info']['username'])
@@ -120,7 +120,7 @@ class UserSessionsController < ApplicationController
 
     flash[:notice] = 'You have logged off'
     return_to = params[:return_to] || root_url
-    redirect_to "#{Rails.configuration.Services["SSO"]["ExternalURL"]}/users/sign_out?redirect_uri=#{CGI.escape return_to}"
+    redirect_to "#{Rails.configuration.Services.SSO.ExternalURL}/users/sign_out?redirect_uri=#{CGI.escape return_to}"
   end
 
   # login - Just bounce to /auth/joshid. The only purpose of this function is

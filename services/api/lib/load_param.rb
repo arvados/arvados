@@ -56,7 +56,7 @@ module LoadParam
         raise ArgumentError.new("Invalid value for limit parameter")
       end
       @limit = [params[:limit].to_i,
-                Rails.configuration.API["MaxItemsPerResponse"]].min
+                Rails.configuration.API.MaxItemsPerResponse].min
     else
       @limit = DEFAULT_LIMIT
     end

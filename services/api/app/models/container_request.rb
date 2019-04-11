@@ -196,7 +196,7 @@ class ContainerRequest < ArvadosModel
     self.mounts ||= {}
     self.secret_mounts ||= {}
     self.cwd ||= "."
-    self.container_count_max ||= Rails.configuration.Containers["MaxComputeVMs"]
+    self.container_count_max ||= Rails.configuration.Containers.MaxComputeVMs
     self.scheduling_parameters ||= {}
     self.output_ttl ||= 0
     self.priority ||= 0
@@ -252,7 +252,7 @@ class ContainerRequest < ArvadosModel
     if self.state == Committed
       # If preemptible instances (eg: AWS Spot Instances) are allowed,
       # ask them on child containers by default.
-      if Rails.configuration.Containers["UsePreemptibleInstances"] and !c.nil? and
+      if Rails.configuration.Containers.UsePreemptibleInstances and !c.nil? and
         self.scheduling_parameters['preemptible'].nil?
           self.scheduling_parameters['preemptible'] = true
       end
@@ -322,7 +322,7 @@ class ContainerRequest < ArvadosModel
             scheduling_parameters['partitions'].size)
             errors.add :scheduling_parameters, "partitions must be an array of strings"
       end
-      if !Rails.configuration.Containers["UsePreemptibleInstances"] and scheduling_parameters['preemptible']
+      if !Rails.configuration.Containers.UsePreemptibleInstances and scheduling_parameters['preemptible']
         errors.add :scheduling_parameters, "preemptible instances are not allowed"
       end
       if scheduling_parameters.include? 'max_run_time' and

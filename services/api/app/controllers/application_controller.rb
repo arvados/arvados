@@ -81,8 +81,8 @@ class ApplicationController < ActionController::Base
 
   def default_url_options
     options = {}
-    if Rails.configuration.Services["Controller"]["ExternalURL"] != ""
-      exturl = URI.parse(Rails.configuration.Services["Controller"]["ExternalURL"])
+    if Rails.configuration.Services.Controller.ExternalURL != ""
+      exturl = URI.parse(Rails.configuration.Services.Controller.ExternalURL)
       options[:host] = exturl.host
       options[:port] = exturl.port
       options[:protocol] = exturl.scheme
@@ -301,7 +301,7 @@ class ApplicationController < ActionController::Base
       limit_query.each do |record|
         new_limit += 1
         read_total += record.read_length.to_i
-        if read_total >= Rails.configuration.API["MaxIndexDatabaseRead"]
+        if read_total >= Rails.configuration.API.MaxIndexDatabaseRead
           new_limit -= 1 if new_limit > 1
           @limit = new_limit
           break
@@ -414,8 +414,7 @@ class ApplicationController < ActionController::Base
   end
 
   def disable_api_methods
-    if Rails.configuration.API["DisabledAPIs"].
-        include?(controller_name + "." + action_name)
+    if Rails.configuration.API.DisabledAPIs.include?(controller_name + "." + action_name)
       send_error("Disabled", status: 404)
     end
   end

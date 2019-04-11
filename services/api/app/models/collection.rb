@@ -125,7 +125,7 @@ class Collection < ArvadosModel
             # Signature provided, but verify_signature did not like it.
             logger.warn "Invalid signature on locator #{tok}"
             raise ArvadosModel::PermissionDeniedError
-          elsif !Rails.configuration.Collections["BlobSigning"]
+          elsif !Rails.configuration.Collections.BlobSigning
             # No signature provided, but we are running in insecure mode.
             logger.debug "Missing signature on locator #{tok} ignored"
           elsif Blob.new(tok).empty?
@@ -323,9 +323,9 @@ class Collection < ArvadosModel
   end
 
   def should_preserve_version?
-    return false unless (Rails.configuration.Collections["CollectionVersioning"] && versionable_updates?(self.changes.keys))
+    return false unless (Rails.configuration.Collections.CollectionVersioning && versionable_updates?(self.changes.keys))
 
-    idle_threshold = Rails.configuration.Collections["PreserveVersionIfIdle"]
+    idle_threshold = Rails.configuration.Collections.PreserveVersionIfIdle
     if !self.preserve_version_was &&
       (idle_threshold < 0 ||
         (idle_threshold > 0 && self.modified_at_was > db_current_time-idle_threshold.seconds))
@@ -371,7 +371,7 @@ class Collection < ArvadosModel
       return manifest_text
     else
       token = Thread.current[:token]
-      exp = [db_current_time.to_i + Rails.configuration.Collections["BlobSigningTTL"],
+      exp = [db_current_time.to_i + Rails.configuration.Collections.BlobSigningTTL,
              trash_at].compact.map(&:to_i).min
       self.class.sign_manifest manifest_text, token, exp
     end
@@ -379,7 +379,7 @@ class Collection < ArvadosModel
 
   def self.sign_manifest manifest, token, exp=nil
     if exp.nil?
-      exp = db_current_time.to_i + Rails.configuration.Collections["BlobSigningTTL"]
+      exp = db_current_time.to_i + Rails.configuration.Collections.BlobSigningTTL
     end
     signing_opts = {
       api_token: token,
@@ -489,7 +489,7 @@ class Collection < ArvadosModel
   #
   # If filter_compatible_format is true (the default), only return image
   # collections which are support by the installation as indicated by
-  # Rails.configuration.Containers["SupportedDockerImageFormats"].  Will follow
+  # Rails.configuration.Containers.SupportedDockerImageFormats.  Will follow
   # 'docker_image_migration' links if search_term resolves to an incompatible
   # image, but an equivalent compatible image is available.
   def self.find_all_for_docker_image(search_term, search_tag=nil, readers=nil, filter_compatible_format: true)
@@ -500,7 +500,7 @@ class Collection < ArvadosModel
       joins("JOIN collections ON links.head_uuid = collections.uuid").
       order("links.created_at DESC")
 
-    docker_image_formats = Rails.configuration.Containers["SupportedDockerImageFormats"]
+    docker_image_formats = Rails.configuration.Containers.SupportedDockerImageFormats
 
     if (docker_image_formats.include? 'v1' and
         docker_image_formats.include? 'v2') or filter_compatible_format == false

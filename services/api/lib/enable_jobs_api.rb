@@ -31,9 +31,9 @@ Disable_jobs_api_method_list = ["jobs.create",
                                                "job_tasks.show"]
 
 def check_enable_legacy_jobs_api
-  if Rails.configuration.Containers["JobsAPI"]["Enable"] == "false" ||
-     (Rails.configuration.Containers["JobsAPI"]["Enable"] == "auto" &&
+  if Rails.configuration.Containers.JobsAPI.Enable == "false" ||
+     (Rails.configuration.Containers.JobsAPI.Enable == "auto" &&
       Job.count == 0)
-    Rails.configuration.API["DisabledAPIs"] += Disable_jobs_api_method_list
+    Rails.configuration.API.DisabledAPIs += Disable_jobs_api_method_list
   end
 end

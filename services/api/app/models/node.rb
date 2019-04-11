@@ -39,7 +39,7 @@ class Node < ArvadosModel
   api_accessible :superuser, :extend => :user do |t|
     t.add :first_ping_at
     t.add :info
-    t.add lambda { |x| Rails.configuration.Containers["SLURM"]["Managed"]["ComputeNodeNameservers"] }, :as => :nameservers
+    t.add lambda { |x| Rails.configuration.Containers.SLURM.Managed.ComputeNodeNameservers }, :as => :nameservers
   end
 
   after_initialize do
@@ -47,7 +47,7 @@ class Node < ArvadosModel
   end
 
   def domain
-    super || Rails.configuration.Containers["SLURM"]["Managed"]["ComputeNodeDomain"]
+    super || Rails.configuration.Containers.SLURM.Managed.ComputeNodeDomain
   end
 
   def api_job_uuid
@@ -143,7 +143,7 @@ class Node < ArvadosModel
   protected
 
   def assign_hostname
-    if self.hostname.nil? and Rails.configuration.Containers["SLURM"]["Managed"]["AssignNodeHostname"]
+    if self.hostname.nil? and Rails.configuration.Containers.SLURM.Managed.AssignNodeHostname
       self.hostname = self.class.hostname_for_slot(self.slot_number)
     end
   end
@@ -159,7 +159,7 @@ class Node < ArvadosModel
                           # query label:
                           'Node.available_slot_number',
                           # [col_id, val] for $1 vars:
-                          [[nil, Rails.configuration.Containers["MaxComputeVMs"]]],
+                          [[nil, Rails.configuration.Containers.MaxComputeVMs]],
                          ).rows.first.andand.first
   end
 
@@ -199,20 +199,20 @@ class Node < ArvadosModel
       ptr_domain: ptr_domain,
     }
 
-    if (!Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfDir"].to_s.empty? and
-        !Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfTemplate"].to_s.empty?)
+    if (!Rails.configuration.Containers.SLURM.Managed.DNSServerConfDir.to_s.empty? and
+        !Rails.configuration.Containers.SLURM.Managed.DNSServerConfTemplate.to_s.empty?)
       tmpfile = nil
       begin
         begin
-          template = IO.read(Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfTemplate"])
+          template = IO.read(Rails.configuration.Containers.SLURM.Managed.DNSServerConfTemplate)
         rescue IOError, SystemCallError => e
-          logger.error "Reading #{Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfTemplate"]}: #{e.message}"
+          logger.error "Reading #{Rails.configuration.Containers.SLURM.Managed.DNSServerConfTemplate}: #{e.message}"
           raise
         end
 
-        hostfile = File.join Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfDir"], "#{hostname}.conf"
+        hostfile = File.join Rails.configuration.Containers.SLURM.Managed.DNSServerConfDir, "#{hostname}.conf"
         Tempfile.open(["#{hostname}-", ".conf.tmp"],
-                                 Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfDir"]) do |f|
+                                 Rails.configuration.Containers.SLURM.Managed.DNSServerConfDir) do |f|
           tmpfile = f.path
           f.puts template % template_vars
         end
@@ -228,21 +228,21 @@ class Node < ArvadosModel
       end
     end
 
-    if !Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerUpdateCommand"].empty?
-      cmd = Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerUpdateCommand"] % template_vars
+    if !Rails.configuration.Containers.SLURM.Managed.DNSServerUpdateCommand.empty?
+      cmd = Rails.configuration.Containers.SLURM.Managed.DNSServerUpdateCommand % template_vars
       if not system cmd
         logger.error "dns_server_update_command #{cmd.inspect} failed: #{$?}"
         ok = false
       end
     end
 
-    if (!Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfDir"].to_s.empty? and
-        !Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerReloadCommand"].to_s.empty?)
-      restartfile = File.join(Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfDir"], 'restart.txt')
+    if (!Rails.configuration.Containers.SLURM.Managed.DNSServerConfDir.to_s.empty? and
+        !Rails.configuration.Containers.SLURM.Managed.DNSServerReloadCommand.to_s.empty?)
+      restartfile = File.join(Rails.configuration.Containers.SLURM.Managed.DNSServerConfDir, 'restart.txt')
       begin
         File.open(restartfile, 'w') do |f|
           # Typically, this is used to trigger a dns server restart
-          f.puts Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerReloadCommand"]
+          f.puts Rails.configuration.Containers.SLURM.Managed.DNSServerReloadCommand
         end
       rescue IOError, SystemCallError => e
         logger.error "Unable to write #{restartfile}: #{e.message}"
@@ -254,7 +254,7 @@ class Node < ArvadosModel
   end
 
   def self.hostname_for_slot(slot_number)
-    config = Rails.configuration.Containers["SLURM"]["Managed"]["AssignNodeHostname"]
+    config = Rails.configuration.Containers.SLURM.Managed.AssignNodeHostname
 
     return nil if !config
 
@@ -263,13 +263,13 @@ class Node < ArvadosModel
 
   # At startup, make sure all DNS entries exist.  Otherwise, slurmctld
   # will refuse to start.
-  if (!Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfDir"].to_s.empty? and
-      !Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfTemplate"].to_s.empty? and
-      !Rails.configuration.Containers["SLURM"]["Managed"]["AssignNodeHostname"].empty?)
+  if (!Rails.configuration.Containers.SLURM.Managed.DNSServerConfDir.to_s.empty? and
+      !Rails.configuration.Containers.SLURM.Managed.DNSServerConfTemplate.to_s.empty? and
+      !Rails.configuration.Containers.SLURM.Managed.AssignNodeHostname.empty?)
 
-    (0..Rails.configuration.Containers["MaxComputeVMs"]-1).each do |slot_number|
+    (0..Rails.configuration.Containers.MaxComputeVMs-1).each do |slot_number|
       hostname = hostname_for_slot(slot_number)
-      hostfile = File.join Rails.configuration.Containers["SLURM"]["Managed"]["DNSServerConfDir"], "#{hostname}.conf"
+      hostfile = File.join Rails.configuration.Containers.SLURM.Managed.DNSServerConfDir, "#{hostname}.conf"
       if !File.exist? hostfile
         n = Node.where(:slot_number => slot_number).first
         if n.nil? or n.ip_address.nil?

@@ -287,7 +287,7 @@ class Job < ArvadosModel
         log_reuse_info { "job #{j.uuid} has nil output" }
       elsif j.log.nil?
         log_reuse_info { "job #{j.uuid} has nil log" }
-      elsif Rails.configuration.Containers["JobsAPI"]["ReuseJobIfOutputsDiffer"]
+      elsif Rails.configuration.Containers.JobsAPI.ReuseJobIfOutputsDiffer
         if !Collection.readable_by(current_user).find_by_portable_data_hash(j.output)
           # Ignore: keep looking for an incomplete job or one whose
           # output is readable.
@@ -491,9 +491,9 @@ class Job < ArvadosModel
   end
 
   def find_docker_image_locator
-    if runtime_constraints.is_a? Hash and Rails.configuration.Containers["JobsAPI"]["DefaultDockerImage"] != ""
+    if runtime_constraints.is_a? Hash and Rails.configuration.Containers.JobsAPI.DefaultDockerImage != ""
       runtime_constraints['docker_image'] ||=
-        Rails.configuration.Containers["JobsAPI"]["DefaultDockerImage"]
+        Rails.configuration.Containers.JobsAPI.DefaultDockerImage
     end
 
     resolve_runtime_constraint("docker_image",
@@ -569,7 +569,7 @@ class Job < ArvadosModel
 
   def trigger_crunch_dispatch_if_cancelled
     if @need_crunch_dispatch_trigger
-      File.open(Rails.configuration.Containers["JobsAPI"]["CrunchRefreshTrigger"], 'wb') do
+      File.open(Rails.configuration.Containers.JobsAPI.CrunchRefreshTrigger, 'wb') do
         # That's all, just create/touch a file for crunch-job to see.
       end
     end

@@ -41,7 +41,7 @@ class Arvados::V1::SchemaController < ApplicationController
         title: "Arvados API",
         description: "The API to interact with Arvados.",
         documentationLink: "http://doc.arvados.org/api/index.html",
-        defaultCollectionReplication: Rails.configuration.Collections["DefaultReplication"],
+        defaultCollectionReplication: Rails.configuration.Collections.DefaultReplication,
         protocol: "rest",
         baseUrl: root_url + "arvados/v1/",
         basePath: "/arvados/v1/",
@@ -49,26 +49,26 @@ class Arvados::V1::SchemaController < ApplicationController
         servicePath: "arvados/v1/",
         batchPath: "batch",
         uuidPrefix: Rails.configuration.ClusterID,
-        defaultTrashLifetime: Rails.configuration.Collections["DefaultTrashLifetime"],
-        blobSignatureTtl: Rails.configuration.Collections["BlobSigningTTL"],
-        maxRequestSize: Rails.configuration.API["MaxRequestSize"],
-        maxItemsPerResponse: Rails.configuration.API["MaxItemsPerResponse"],
-        dockerImageFormats: Rails.configuration.Containers["SupportedDockerImageFormats"],
-        crunchLogBytesPerEvent: Rails.configuration.Containers["Logging"]["LogBytesPerEvent"],
-        crunchLogSecondsBetweenEvents: Rails.configuration.Containers["Logging"]["LogSecondsBetweenEvents"],
-        crunchLogThrottlePeriod: Rails.configuration.Containers["Logging"]["LogThrottlePeriod"],
-        crunchLogThrottleBytes: Rails.configuration.Containers["Logging"]["LogThrottleBytes"],
-        crunchLogThrottleLines: Rails.configuration.Containers["Logging"]["LogThrottleLines"],
-        crunchLimitLogBytesPerJob: Rails.configuration.Containers["Logging"]["LimitLogBytesPerJob"],
-        crunchLogPartialLineThrottlePeriod: Rails.configuration.Containers["Logging"]["LogPartialLineThrottlePeriod"],
-        crunchLogUpdatePeriod: Rails.configuration.Containers["Logging"]["LogUpdatePeriod"],
-        crunchLogUpdateSize: Rails.configuration.Containers["Logging"]["LogUpdateSize"],
+        defaultTrashLifetime: Rails.configuration.Collections.DefaultTrashLifetime,
+        blobSignatureTtl: Rails.configuration.Collections.BlobSigningTTL,
+        maxRequestSize: Rails.configuration.API.MaxRequestSize,
+        maxItemsPerResponse: Rails.configuration.API.MaxItemsPerResponse,
+        dockerImageFormats: Rails.configuration.Containers.SupportedDockerImageFormats,
+        crunchLogBytesPerEvent: Rails.configuration.Containers.Logging.LogBytesPerEvent,
+        crunchLogSecondsBetweenEvents: Rails.configuration.Containers.Logging.LogSecondsBetweenEvents,
+        crunchLogThrottlePeriod: Rails.configuration.Containers.Logging.LogThrottlePeriod,
+        crunchLogThrottleBytes: Rails.configuration.Containers.Logging.LogThrottleBytes,
+        crunchLogThrottleLines: Rails.configuration.Containers.Logging.LogThrottleLines,
+        crunchLimitLogBytesPerJob: Rails.configuration.Containers.Logging.LimitLogBytesPerJob,
+        crunchLogPartialLineThrottlePeriod: Rails.configuration.Containers.Logging.LogPartialLineThrottlePeriod,
+        crunchLogUpdatePeriod: Rails.configuration.Containers.Logging.LogUpdatePeriod,
+        crunchLogUpdateSize: Rails.configuration.Containers.Logging.LogUpdateSize,
         remoteHosts: remoteHosts,
-        remoteHostsViaDNS: Rails.configuration.RemoteClusters["*"]["Proxy"],
-        websocketUrl: Rails.configuration.Services["Websocket"]["ExternalURL"].to_s,
-        workbenchUrl: Rails.configuration.Services["Workbench1"]["ExternalURL"].to_s,
-        keepWebServiceUrl: Rails.configuration.Services["WebDAV"]["ExternalURL"].to_s,
-        gitUrl: Rails.configuration.Services["GitHTTP"]["ExternalURL"].to_s,
+        remoteHostsViaDNS: Rails.configuration.RemoteClusters["*"].Proxy,
+        websocketUrl: Rails.configuration.Services.Websocket.ExternalURL.to_s,
+        workbenchUrl: Rails.configuration.Services.Workbench1.ExternalURL.to_s,
+        keepWebServiceUrl: Rails.configuration.Services.WebDAV.ExternalURL.to_s,
+        gitUrl: Rails.configuration.Services.GitHTTP.ExternalURL.to_s,
         parameters: {
           alt: {
             type: "string",
@@ -400,7 +400,7 @@ class Arvados::V1::SchemaController < ApplicationController
           end
         end
       end
-      Rails.configuration.API["DisabledAPIs"].each do |method|
+      Rails.configuration.API.DisabledAPIs.each do |method|
         ctrl, action = method.split('.', 2)
         discovery[:resources][ctrl][:methods].delete(action.to_sym)
       end

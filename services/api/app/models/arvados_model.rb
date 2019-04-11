@@ -411,7 +411,7 @@ class ArvadosModel < ApplicationRecord
   end
 
   def logged_attributes
-    attributes.except(*Rails.configuration.AuditLogs["UnloggedAttributes"])
+    attributes.except(*Rails.configuration.AuditLogs.UnloggedAttributes)
   end
 
   def self.full_text_searchable_columns
@@ -814,8 +814,8 @@ class ArvadosModel < ApplicationRecord
   end
 
   def is_audit_logging_enabled?
-    return !(Rails.configuration.AuditLogs["MaxAge"].to_i == 0 &&
-             Rails.configuration.AuditLogs["MaxDeleteBatch"].to_i > 0)
+    return !(Rails.configuration.AuditLogs.MaxAge.to_i == 0 &&
+             Rails.configuration.AuditLogs.MaxDeleteBatch.to_i > 0)
   end
 
   def log_start_state

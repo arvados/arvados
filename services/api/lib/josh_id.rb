@@ -40,7 +40,7 @@ module OmniAuth
         options.client_options[:site] = options[:custom_provider_url]
         options.client_options[:authorize_url] = "#{options[:custom_provider_url]}/auth/josh_id/authorize"
         options.client_options[:access_token_url] = "#{options[:custom_provider_url]}/auth/josh_id/access_token"
-        if Rails.configuration.TLS["Insecure"]
+        if Rails.configuration.TLS.Insecure
           options.client_options[:ssl] = {verify_mode: OpenSSL::SSL::VERIFY_NONE}
         end
         ::OAuth2::Client.new(options.client_id, options.client_secret, deep_symbolize(options.client_options))

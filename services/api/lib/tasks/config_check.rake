@@ -21,8 +21,8 @@ namespace :config do
       end
     end
     # default_trash_lifetime cannot be less than 24 hours
-    if Rails.configuration.Collections["DefaultTrashLifetime"] < 86400 then
-      raise "default_trash_lifetime is %d, must be at least 86400" % Rails.configuration.Collections["DefaultTrashLifetime"]
+    if Rails.configuration.Collections.DefaultTrashLifetime < 86400 then
+      raise "default_trash_lifetime is %d, must be at least 86400" % Rails.configuration.Collections.DefaultTrashLifetime
     end
   end
 end

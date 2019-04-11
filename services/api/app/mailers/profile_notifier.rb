@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 class ProfileNotifier < ActionMailer::Base
-  default from: Rails.configuration.Users["AdminNotifierEmailFrom"]
+  default from: Rails.configuration.Users.AdminNotifierEmailFrom
 
   def profile_created(user, address)
     @user = user

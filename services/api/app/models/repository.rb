@@ -49,7 +49,7 @@ class Repository < ArvadosModel
     # prefers bare repositories over checkouts.
     [["%s.git"], ["%s", ".git"]].each do |repo_base, *join_args|
       [:uuid, :name].each do |path_attr|
-        git_dir = File.join(Rails.configuration.Git["Repositories"],
+        git_dir = File.join(Rails.configuration.Git.Repositories,
                             repo_base % send(path_attr), *join_args)
         return git_dir if File.exist?(git_dir)
       end
@@ -98,11 +98,11 @@ class Repository < ArvadosModel
   end
 
   def ssh_clone_url
-    _clone_url Rails.configuration.Services["GitSSH"].andand["ExternalURL"], 'ssh://git@git.%s.arvadosapi.com'
+    _clone_url Rails.configuration.Services.GitSSH.andand.ExternalURL, 'ssh://git@git.%s.arvadosapi.com'
   end
 
   def https_clone_url
-    _clone_url Rails.configuration.Services["GitHTTP"].andand["ExternalURL"], 'https://git.%s.arvadosapi.com/'
+    _clone_url Rails.configuration.Services.GitHTTP.andand.ExternalURL, 'https://git.%s.arvadosapi.com/'
   end
 
   def _clone_url config_var, default_base_fmt
