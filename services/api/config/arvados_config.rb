@@ -175,12 +175,11 @@ end
 db_config = {}
 path = "#{::Rails.root.to_s}/config/database.yml"
 if File.exist? path
-  confs = ConfigLoader.load(path)
-  db_config.deep_merge!(confs[::Rails.env.to_s] || {})
+  db_config = ConfigLoader.load(path)
 end
 
 $remaining_config = arvcfg.migrate_config(application_config, $arvados_config)
-dbcfg.migrate_config(db_config, $arvados_config)
+dbcfg.migrate_config(db_config[::Rails.env.to_s] || {}, $arvados_config)
 
 if application_config[:auto_activate_users_from]
   application_config[:auto_activate_users_from].each do |cluster|
@@ -196,10 +195,11 @@ arvcfg.coercion_and_check $arvados_config
 dbcfg.coercion_and_check $arvados_config
 
 #
-# Special case for test database, because the Arvados config.yml
-# doesn't have a concept of multiple rails environments.
+# Special case for test database where there's no database.yml,
+# because the Arvados config.yml doesn't have a concept of multiple
+# rails environments.
 #
-if ::Rails.env.to_s == "test"
+if ::Rails.env.to_s == "test" && db_config["test"].nil?
   $arvados_config["PostgreSQL"]["Connection"]["DBName"] = "arvados_test"
 end
 
