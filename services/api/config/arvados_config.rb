@@ -175,7 +175,7 @@ dbcfg.declare_config "PostgreSQL.Connection.Encoding", String, :encoding
 application_config = {}
 %w(application.default application).each do |cfgfile|
   path = "#{::Rails.root.to_s}/config/#{cfgfile}.yml"
-  confs = ConfigLoader.load(path)
+  confs = ConfigLoader.load(path, erb: true)
   # Ignore empty YAML file:
   next if confs == false
   application_config.deep_merge!(confs['common'] || {})
@@ -185,7 +185,7 @@ end
 db_config = {}
 path = "#{::Rails.root.to_s}/config/database.yml"
 if File.exist? path
-  db_config = ConfigLoader.load(path)
+  db_config = ConfigLoader.load(path, erb: true)
 end
 
 $remaining_config = arvcfg.migrate_config(application_config, $arvados_config)
