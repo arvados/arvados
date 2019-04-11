@@ -20,16 +20,16 @@ export const DownloadAction = (props: { href?: any, download?: any, onClick?: ()
                 const splittedByDot = href.split('.');
                 if (splittedByDot[splittedByDot.length - 1] !== 'json') {
                     if (fileUrls.length === id) {
-                        zip.file(download[id-1], data);
+                        zip.file(download[id - 1], data);
                         zip.generateAsync({ type: 'blob' }).then((content) => {
                             FileSaver.saveAs(content, `download-${props.currentCollectionUuid}.zip`);
                         });
                     } else {
-                        zip.file(download[id-1], data);
+                        zip.file(download[id - 1], data);
                         zip.generateAsync({ type: 'blob' });
                     }
                 } else {
-                    zip.file(download[id-1], JSON.stringify(data));
+                    zip.file(download[id - 1], JSON.stringify(data));
                     zip.generateAsync({ type: 'blob' });
                 }
                 id++;
@@ -40,7 +40,7 @@ export const DownloadAction = (props: { href?: any, download?: any, onClick?: ()
     return props.href || props.kind === 'files'
         ? <a
             style={{ textDecoration: 'none' }}
-            href={props.kind === 'files' ? null : props.href}
+            href={props.kind === 'files' ? undefined : `${props.href}?disposition=attachment`}
             onClick={props.onClick}
             {...downloadProps}>
             <ListItem button onClick={() => props.kind === 'files' ? createZip(props.href, props.download) : undefined}>

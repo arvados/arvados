@@ -6,7 +6,7 @@ import { ContextMenuActionSet } from "../context-menu-action-set";
 import { RenameIcon, RemoveIcon } from "~/components/icon/icon";
 import { DownloadCollectionFileAction } from "../actions/download-collection-file-action";
 import { openFileRemoveDialog, openRenameFileDialog } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
-import { FileViewerActions } from '~/views-components/context-menu/actions/file-viewer-actions';
+import { CollectionFileViewerAction } from '~/views-components/context-menu/actions/collection-file-viewer-action';
 
 
 export const collectionFilesItemActionSet: ContextMenuActionSet = [[{
@@ -25,6 +25,6 @@ export const collectionFilesItemActionSet: ContextMenuActionSet = [[{
         dispatch<any>(openFileRemoveDialog(resource.uuid));
     }
 }], [{
-    component: FileViewerActions,
+    component: CollectionFileViewerAction,
     execute: () => { return; },
 }]];
