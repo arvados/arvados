@@ -109,6 +109,11 @@ Clusters:
       # update on the permission view in the future, if not already scheduled.
       AsyncPermissionsUpdateInterval: 20
 
+      # RailsSessionSecretToken is a string of alphanumeric characters
+      # used by Rails to sign session tokens. IMPORTANT: This is a
+      # site secret. It should be at least 50 characters.
+      RailsSessionSecretToken: ""
+
     Users:
       # Config parameters to automatically setup new users.  If enabled,
       # this users will be able to self-activate.  Enable this if you want

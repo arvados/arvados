@@ -76,7 +76,7 @@ class ConfigLoader
     remainders
   end
 
-  def coercion_and_check check_cfg
+  def coercion_and_check check_cfg, check_nonempty: true
     @config_types.each do |cfgkey, cfgtype|
       cfg = check_cfg
       k = cfgkey
@@ -114,7 +114,7 @@ class ConfigLoader
       end
 
       if cfgtype == NonemptyString
-        if (!cfg[k] || cfg[k] == "")
+        if (!cfg[k] || cfg[k] == "") && check_nonempty
           raise "#{cfgkey} cannot be empty"
         end
         if cfg[k].is_a? String

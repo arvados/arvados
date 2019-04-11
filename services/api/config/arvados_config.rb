@@ -67,6 +67,7 @@ arvcfg.declare_config "API.MaxRequestSize", Integer, :max_request_size
 arvcfg.declare_config "API.MaxIndexDatabaseRead", Integer, :max_index_database_read
 arvcfg.declare_config "API.MaxItemsPerResponse", Integer, :max_items_per_response
 arvcfg.declare_config "API.AsyncPermissionsUpdateInterval", ActiveSupport::Duration, :async_permissions_update_interval
+arvcfg.declare_config "API.RailsSessionSecretToken", NonemptyString, :secret_token
 arvcfg.declare_config "Users.AutoSetupNewUsers", Boolean, :auto_setup_new_users
 arvcfg.declare_config "Users.AutoSetupNewUsersWithVmUUID", String, :auto_setup_new_users_with_vm_uuid
 arvcfg.declare_config "Users.AutoSetupNewUsersWithRepository", Boolean, :auto_setup_new_users_with_repository
@@ -191,8 +192,13 @@ end
 
 # Checks for wrongly typed configuration items, and essential items
 # that can't be empty
+arvcfg.coercion_and_check $base_arvados_config, check_nonempty: false
 arvcfg.coercion_and_check $arvados_config
 dbcfg.coercion_and_check $arvados_config
+
+if $arvados_config["Collections"]["DefaultTrashLifetime"] < 86400.seconds then
+  raise "default_trash_lifetime is %d, must be at least 86400" % Rails.configuration.Collections.DefaultTrashLifetime
+end
 
 #
 # Special case for test database where there's no database.yml,
