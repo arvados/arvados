@@ -28,10 +28,12 @@ if ! grep "^arvbox:" /etc/passwd >/dev/null 2>/dev/null ; then
     useradd --home-dir /var/lib/arvados/git --uid $HOSTUID --gid $HOSTGID --non-unique git
     useradd --groups docker crunch
 
-    chown arvbox:arvbox -R /usr/local /var/lib/arvados /var/lib/gems \
-          /var/lib/passenger /var/lib/postgresql \
-          /var/lib/nginx /var/log/nginx /etc/ssl/private \
-          /var/lib/gopath /var/lib/pip /var/lib/npm
+    if [[ "$1" != --no-chown ]] ; then
+	chown arvbox:arvbox -R /usr/local /var/lib/arvados /var/lib/gems \
+              /var/lib/passenger /var/lib/postgresql \
+              /var/lib/nginx /var/log/nginx /etc/ssl/private \
+              /var/lib/gopath /var/lib/pip /var/lib/npm
+    fi
 
     mkdir -p /var/lib/gems/ruby
     chown arvbox:arvbox -R /var/lib/gems/ruby
