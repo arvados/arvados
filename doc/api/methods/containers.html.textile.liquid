@@ -65,8 +65,10 @@ table(table table-bordered table-condensed).
 |Queued|Waiting for a dispatcher to lock it and try to run the container.|Locked, Cancelled|
 |Locked|A dispatcher has "taken" the container and is allocating resources for it. The container has not started yet.|Queued, Running, Cancelled|
 |Running|Resources have been allocated and the contained process has been started (or is about to start). Crunch-run _must_ set state to Running _before_ there is any possibility that user code will run in the container.|Complete, Cancelled|
-|Complete|Container was running, and the contained process/command has exited.|-|
+|Complete|Container was running, and the contained process/command has exited.|Cancelled|
 |Cancelled|The container did not run long enough to produce an exit code. This includes cases where the container didn't even start, cases where the container was interrupted/killed before it exited by itself (e.g., priority changed to 0), and cases where some problem prevented the system from capturing the contained process's exit status (exit code and output).|-|
+
+See "Controlling container reuse":{{site.baseurl}}/admin/controlling-container-reuse.html for details about changing state from @Complete@ to @Cancelled@
 
 h2(#mount_types). {% include 'mount_types' %}
 

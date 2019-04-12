@@ -89,7 +89,8 @@ class Container < ArvadosModel
     nil => [Queued],
     Queued => [Locked, Cancelled],
     Locked => [Queued, Running, Cancelled],
-    Running => [Complete, Cancelled]
+    Running => [Complete, Cancelled],
+    Complete => [Cancelled]
   }
 
   def self.limit_index_columns_read
