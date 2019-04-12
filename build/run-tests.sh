@@ -987,6 +987,7 @@ gostuff=(
     lib/cloud
     lib/cloud/azure
     lib/cloud/ec2
+    lib/config
     lib/dispatchcloud
     lib/dispatchcloud/container
     lib/dispatchcloud/scheduler
