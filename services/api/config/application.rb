@@ -4,7 +4,19 @@
 
 require File.expand_path('../boot', __FILE__)
 
-require 'rails/all'
+require "rails"
+# Pick only the frameworks we need:
+require "active_model/railtie"
+require "active_job/railtie"
+require "active_record/railtie"
+require "action_controller/railtie"
+require "action_mailer/railtie"
+require "action_view/railtie"
+# Skip ActionCable (new in Rails 5.0) as it adds '/cable' routes that we're not using
+# require "action_cable/engine"
+require "sprockets/railtie"
+require "rails/test_unit/railtie"
+
 require 'digest'
 
 module Kernel
@@ -57,8 +69,6 @@ module Server
 
     # Load entire application at startup.
     config.eager_load = true
-
-    config.active_record.raise_in_transactional_callbacks = true
 
     config.active_support.test_order = :sorted
 

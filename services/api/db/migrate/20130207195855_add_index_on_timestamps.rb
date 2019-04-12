@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddIndexOnTimestamps < ActiveRecord::Migration
+class AddIndexOnTimestamps < ActiveRecord::Migration[4.2]
   def tables
     %w{api_clients collections jobs job_steps links logs nodes pipeline_invocations pipelines projects specimens users}
   end

@@ -8,7 +8,7 @@
 
 require "./db/migrate/20141208185217_search_index.rb"
 
-class NoDescriptionInSearchIndex < ActiveRecord::Migration
+class NoDescriptionInSearchIndex < ActiveRecord::Migration[4.2]
   def up
     all_tables = %w{collections groups jobs pipeline_instances pipeline_templates}
     all_tables.each do |table|

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddUuidToCollections < ActiveRecord::Migration
+class AddUuidToCollections < ActiveRecord::Migration[4.2]
   def change
     add_column :collections, :uuid, :string
   end

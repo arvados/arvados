@@ -7,7 +7,7 @@ require 'test_helper'
 class Arvados::V1::VirtualMachinesControllerTest < ActionController::TestCase
   def get_logins_for(vm_sym)
     authorize_with :admin
-    get(:logins, id: virtual_machines(vm_sym).uuid)
+    get(:logins, params: {id: virtual_machines(vm_sym).uuid})
   end
 
   def find_login(sshkey_sym)
@@ -60,7 +60,7 @@ class Arvados::V1::VirtualMachinesControllerTest < ActionController::TestCase
                    properties: {'username' => 'bobblogin'})
     end
     authorize_with :admin
-    get :logins, id: vm.uuid
+    get :logins, params: {id: vm.uuid}
     assert_response :success
     assert_equal 1, json_response['items'].length
     assert_nil json_response['items'][0]['public_key']

@@ -7,7 +7,7 @@ require 'test_helper'
 class Arvados::V1::ContainersControllerTest < ActionController::TestCase
   test 'create' do
     authorize_with :system_user
-    post :create, {
+    post :create, params: {
       container: {
         command: ['echo', 'hello'],
         container_image: 'test',
@@ -20,7 +20,7 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
   [Container::Queued, Container::Complete].each do |state|
     test "cannot get auth in #{state} state" do
       authorize_with :dispatch1
-      get :auth, id: containers(:queued).uuid
+      get :auth, params: {id: containers(:queued).uuid}
       assert_response 403
     end
   end
@@ -31,7 +31,7 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
     assert c.lock, show_errors(c)
 
     authorize_with :system_user
-    get :auth, id: c.uuid
+    get :auth, params: {id: c.uuid}
     assert_response 403
   end
 
@@ -39,7 +39,7 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
     authorize_with :dispatch1
     c = containers(:queued)
     assert c.lock, show_errors(c)
-    get :auth, id: c.uuid
+    get :auth, params: {id: c.uuid}
     assert_response :success
     assert_operator 32, :<, json_response['api_token'].length
     assert_equal 'arvados#apiClientAuthorization', json_response['kind']
@@ -49,7 +49,7 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
     authorize_with :dispatch1
     c = containers(:queued)
     assert c.lock, show_errors(c)
-    get :show, id: c.uuid
+    get :show, params: {id: c.uuid}
     assert_response :success
     assert_nil json_response['auth']
     assert_nil json_response['secret_mounts']
@@ -58,7 +58,7 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
   test "lock container" do
     authorize_with :dispatch1
     uuid = containers(:queued).uuid
-    post :lock, {id: uuid}
+    post :lock, params: {id: uuid}
     assert_response :success
     assert_nil json_response['mounts']
     assert_nil json_response['command']
@@ -77,7 +77,7 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
   test "unlock container" do
     authorize_with :dispatch1
     uuid = containers(:locked).uuid
-    post :unlock, {id: uuid}
+    post :unlock, params: {id: uuid}
     assert_response :success
     assert_nil json_response['mounts']
     assert_nil json_response['command']
@@ -96,7 +96,7 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
   test "unlock container locked by different dispatcher" do
     authorize_with :dispatch2
     uuid = containers(:locked).uuid
-    post :unlock, {id: uuid}
+    post :unlock, params: {id: uuid}
     assert_response 422
   end
 
@@ -110,7 +110,7 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
     test "state transitions from #{fixture} to #{action}" do
       authorize_with :dispatch1
       uuid = containers(fixture).uuid
-      post action, {id: uuid}
+      post action, params: {id: uuid}
       assert_response response
       assert_equal state, Container.where(uuid: uuid).first.state
     end
@@ -142,7 +142,7 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
   ].each do |expect_success, auth|
     test "get secret_mounts with #{auth} token" do
       authorize_with auth
-      get :secret_mounts, {id: containers(:running).uuid}
+      get :secret_mounts, params: {id: containers(:running).uuid}
       if expect_success
         assert_response :success
         assert_equal "42\n", json_response["secret_mounts"]["/secret/6x9"]["content"]
@@ -155,10 +155,9 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
   test 'get runtime_token auth' do
     authorize_with :dispatch2
     c = containers(:runtime_token)
-    get :auth, id: c.uuid
+    get :auth, params: {id: c.uuid}
     assert_response :success
     assert_equal "v2/#{json_response['uuid']}/#{json_response['api_token']}", api_client_authorizations(:container_runtime_token).token
     assert_equal 'arvados#apiClientAuthorization', json_response['kind']
   end
-
 end

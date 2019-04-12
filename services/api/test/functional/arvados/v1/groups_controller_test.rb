@@ -8,19 +8,19 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
   test "attempt to delete group without read or write access" do
     authorize_with :active
-    post :destroy, id: groups(:empty_lonely_group).uuid
+    post :destroy, params: {id: groups(:empty_lonely_group).uuid}
     assert_response 404
   end
 
   test "attempt to delete group without write access" do
     authorize_with :active
-    post :destroy, id: groups(:all_users).uuid
+    post :destroy, params: {id: groups(:all_users).uuid}
     assert_response 403
   end
 
   test "get list of projects" do
     authorize_with :active
-    get :index, filters: [['group_class', '=', 'project']], format: :json
+    get :index, params: {filters: [['group_class', '=', 'project']], format: :json}
     assert_response :success
     group_uuids = []
     json_response['items'].each do |group|
@@ -35,7 +35,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
   test "get list of groups that are not projects" do
     authorize_with :active
-    get :index, filters: [['group_class', '!=', 'project']], format: :json
+    get :index, params: {filters: [['group_class', '!=', 'project']], format: :json}
     assert_response :success
     group_uuids = []
     json_response['items'].each do |group|
@@ -50,7 +50,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
   test "get list of groups with bogus group_class" do
     authorize_with :active
-    get :index, {
+    get :index, params: {
       filters: [['group_class', '=', 'nogrouphasthislittleclass']],
       format: :json,
     }
@@ -81,7 +81,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
   test 'get group-owned objects' do
     authorize_with :active
-    get :contents, {
+    get :contents, params: {
       id: groups(:aproject).uuid,
       format: :json,
     }
@@ -90,7 +90,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
   test "user with project read permission can see project objects" do
     authorize_with :project_viewer
-    get :contents, {
+    get :contents, params: {
       id: groups(:aproject).uuid,
       format: :json,
     }
@@ -99,7 +99,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
   test "list objects across projects" do
     authorize_with :project_viewer
-    get :contents, {
+    get :contents, params: {
       format: :json,
       filters: [['uuid', 'is_a', 'arvados#specimen']]
     }
@@ -118,7 +118,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
   test "list trashed collections and projects" do
     authorize_with :active
-    get(:contents, {
+    get(:contents, params: {
           format: :json,
           include_trash: true,
           filters: [
@@ -137,7 +137,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
   test "list objects in home project" do
     authorize_with :active
-    get :contents, {
+    get :contents, params: {
       format: :json,
       limit: 200,
       id: users(:active).uuid
@@ -150,7 +150,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
   test "user with project read permission can see project collections" do
     authorize_with :project_viewer
-    get :contents, {
+    get :contents, params: {
       id: groups(:asubproject).uuid,
       format: :json,
     }
@@ -170,7 +170,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
   ].each do |column, order, operator, field|
     test "user with project read permission can sort projects on #{column} #{order}" do
       authorize_with :project_viewer
-      get :contents, {
+      get :contents, params: {
         id: groups(:asubproject).uuid,
         format: :json,
         filters: [['uuid', 'is_a', "arvados#collection"]],
@@ -218,11 +218,13 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
   # project tests.
   def check_new_project_link_fails(link_attrs)
     @controller = Arvados::V1::LinksController.new
-    post :create, link: {
-      link_class: "permission",
-      name: "can_read",
-      head_uuid: groups(:aproject).uuid,
-    }.merge(link_attrs)
+    post :create, params: {
+      link: {
+        link_class: "permission",
+        name: "can_read",
+        head_uuid: groups(:aproject).uuid,
+      }.merge(link_attrs)
+    }
     assert_includes(403..422, response.status)
   end
 
@@ -239,7 +241,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
   test "user with project read permission can't rename items in it" do
     authorize_with :project_viewer
     @controller = Arvados::V1::LinksController.new
-    post :update, {
+    post :update, params: {
       id: jobs(:running).uuid,
       name: "Denied test name",
     }
@@ -249,7 +251,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
   test "user with project read permission can't remove items from it" do
     @controller = Arvados::V1::PipelineTemplatesController.new
     authorize_with :project_viewer
-    post :update, {
+    post :update, params: {
       id: pipeline_templates(:two_part).uuid,
       pipeline_template: {
         owner_uuid: users(:project_viewer).uuid,
@@ -260,13 +262,13 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
   test "user with project read permission can't delete it" do
     authorize_with :project_viewer
-    post :destroy, {id: groups(:aproject).uuid}
+    post :destroy, params: {id: groups(:aproject).uuid}
     assert_response 403
   end
 
   test 'get group-owned objects with limit' do
     authorize_with :active
-    get :contents, {
+    get :contents, params: {
       id: groups(:aproject).uuid,
       limit: 1,
       format: :json,
@@ -278,7 +280,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
   test 'get group-owned objects with limit and offset' do
     authorize_with :active
-    get :contents, {
+    get :contents, params: {
       id: groups(:aproject).uuid,
       limit: 1,
       offset: 12345,
@@ -291,7 +293,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
   test 'get group-owned objects with additional filter matching nothing' do
     authorize_with :active
-    get :contents, {
+    get :contents, params: {
       id: groups(:aproject).uuid,
       filters: [['uuid', 'in', ['foo_not_a_uuid','bar_not_a_uuid']]],
       format: :json,
@@ -305,7 +307,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     ['foo', '', '1234five', '0x10', '-8'].each do |val|
       test "Raise error on bogus #{arg} parameter #{val.inspect}" do
         authorize_with :active
-        get :contents, {
+        get :contents, params: {
           :id => groups(:aproject).uuid,
           :format => :json,
           arg => val,
@@ -317,7 +319,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
   test "Collection contents don't include manifest_text" do
     authorize_with :active
-    get :contents, {
+    get :contents, params: {
       id: groups(:aproject).uuid,
       filters: [["uuid", "is_a", "arvados#collection"]],
       format: :json,
@@ -331,7 +333,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
   test 'get writable_by list for owned group' do
     authorize_with :active
-    get :show, {
+    get :show, params: {
       id: groups(:aproject).uuid,
       format: :json
     }
@@ -344,7 +346,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
   test 'no writable_by list for group with read-only access' do
     authorize_with :rominiadmin
-    get :show, {
+    get :show, params: {
       id: groups(:testusergroup_admins).uuid,
       format: :json
     }
@@ -356,7 +358,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
   test 'get writable_by list by admin user' do
     authorize_with :admin
-    get :show, {
+    get :show, params: {
       id: groups(:testusergroup_admins).uuid,
       format: :json
     }
@@ -370,7 +372,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
   test 'creating subproject with duplicate name fails' do
     authorize_with :active
-    post :create, {
+    post :create, params: {
       group: {
         name: 'A Project',
         owner_uuid: users(:active).uuid,
@@ -386,7 +388,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
   test 'creating duplicate named subproject succeeds with ensure_unique_name' do
     authorize_with :active
-    post :create, {
+    post :create, params: {
       group: {
         name: 'A Project',
         owner_uuid: users(:active).uuid,
@@ -403,49 +405,6 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
                  new_project['name'])
   end
 
-  test "unsharing a project results in hiding it from previously shared user" do
-    # remove sharing link for project
-    @controller = Arvados::V1::LinksController.new
-    authorize_with :admin
-    post :destroy, id: links(:share_starred_project_with_project_viewer).uuid
-    assert_response :success
-
-    # verify that the user can no longer see the project
-    @test_counter = 0  # Reset executed action counter
-    @controller = Arvados::V1::GroupsController.new
-    authorize_with :project_viewer
-    get :index, filters: [['group_class', '=', 'project']], format: :json
-    assert_response :success
-    found_projects = {}
-    json_response['items'].each do |g|
-      found_projects[g['uuid']] = g
-    end
-    assert_equal false, found_projects.include?(groups(:starred_and_shared_active_user_project).uuid)
-
-    # share the project
-    @test_counter = 0
-    @controller = Arvados::V1::LinksController.new
-    authorize_with :system_user
-    post :create, link: {
-      link_class: "permission",
-      name: "can_read",
-      head_uuid: groups(:starred_and_shared_active_user_project).uuid,
-      tail_uuid: users(:project_viewer).uuid,
-    }
-
-    # verify that project_viewer user can now see shared project again
-    @test_counter = 0
-    @controller = Arvados::V1::GroupsController.new
-    authorize_with :project_viewer
-    get :index, filters: [['group_class', '=', 'project']], format: :json
-    assert_response :success
-    found_projects = {}
-    json_response['items'].each do |g|
-      found_projects[g['uuid']] = g
-    end
-    assert_equal true, found_projects.include?(groups(:starred_and_shared_active_user_project).uuid)
-  end
-
   [
     [['owner_uuid', '!=', 'zzzzz-tpzed-xurymjxw79nv3jz'], 200,
         'zzzzz-d1hrv-subprojpipeline', 'zzzzz-d1hrv-1xfj6xkicf2muk2'],
@@ -460,7 +419,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
   ].each do |filter, expect_code, expect_uuid, not_expect_uuid|
     test "get contents with '#{filter}' filter" do
       authorize_with :active
-      get :contents, filters: [filter], format: :json
+      get :contents, params: {filters: [filter], format: :json}
       assert_response expect_code
       if expect_code == 200
         assert_not_empty json_response['items']
@@ -475,7 +434,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     Rails.configuration.disable_api_methods = ['jobs.index', 'pipeline_instances.index']
 
     authorize_with :active
-    get :contents, {
+    get :contents, params: {
       id: groups(:aproject).uuid,
       format: :json,
     }
@@ -487,7 +446,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     # restricted column
     Rails.configuration.max_index_database_read = 12
     authorize_with :active
-    get :contents, {
+    get :contents, params: {
           id: groups(:aproject).uuid,
           format: :json,
         }
@@ -504,7 +463,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
       recursive: true,
       format: :json,
     }
-    get :contents, params
+    get :contents, params: params
     owners = json_response['items'].map do |item|
       item['owner_uuid']
     end
@@ -520,7 +479,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
         format: :json,
       }
       params[:recursive] = false if recursive == false
-      get :contents, params
+      get :contents, params: params
       owners = json_response['items'].map do |item|
         item['owner_uuid']
       end
@@ -531,7 +490,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
   test 'get home project contents, recursive=true' do
     authorize_with :active
-    get :contents, {
+    get :contents, params: {
           id: users(:active).uuid,
           recursive: true,
           format: :json,
@@ -562,7 +521,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
         untrash.each do |pr|
           Group.find_by_uuid(groups(pr).uuid).update! is_trashed: false
         end
-        get :contents, {
+        get :contents, params: {
               id: groups(project).owner_uuid,
               format: :json
             }
@@ -586,7 +545,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
         untrash.each do |pr|
           Group.find_by_uuid(groups(pr).uuid).update! is_trashed: false
         end
-        get :contents, {
+        get :contents, params: {
               id: groups(project).uuid,
               format: :json
             }
@@ -602,7 +561,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
         untrash.each do |pr|
           Group.find_by_uuid(groups(pr).uuid).update! is_trashed: false
         end
-        get :index, {
+        get :index, params: {
               format: :json,
             }
         assert_response :success
@@ -621,7 +580,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
         untrash.each do |pr|
           Group.find_by_uuid(groups(pr).uuid).update! is_trashed: false
         end
-        get :show, {
+        get :show, params: {
               id: groups(project).uuid,
               format: :json
             }
@@ -637,7 +596,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
         untrash.each do |pr|
           Group.find_by_uuid(groups(pr).uuid).update! is_trashed: false
         end
-        get :show, {
+        get :show, params: {
               id: groups(project).uuid,
               format: :json,
               include_trash: true
@@ -650,7 +609,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
         untrash.each do |pr|
           Group.find_by_uuid(groups(pr).uuid).update! is_trashed: false
         end
-        get :index, {
+        get :index, params: {
               format: :json,
               include_trash: true
             }
@@ -668,7 +627,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
         Group.find_by_uuid(groups(pr).uuid).update! is_trashed: false
       end
       assert !Group.find_by_uuid(groups(:trashed_project).uuid).is_trashed
-      post :destroy, {
+      post :destroy, params: {
             id: groups(:trashed_project).uuid,
             format: :json,
           }
@@ -679,7 +638,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     test "untrash project #{auth}" do
       authorize_with auth
       assert Group.find_by_uuid(groups(:trashed_project).uuid).is_trashed
-      post :untrash, {
+      post :untrash, params: {
             id: groups(:trashed_project).uuid,
             format: :json,
           }
@@ -695,7 +654,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
       gc = Group.create!({owner_uuid: "zzzzz-j7d0g-trashedproject1",
                          name: "trashed subproject 3",
                          group_class: "project"})
-      post :untrash, {
+      post :untrash, params: {
             id: groups(:trashed_subproject3).uuid,
             format: :json,
             ensure_unique_name: true
@@ -707,7 +666,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     test "move trashed subproject to new owner #{auth}" do
       authorize_with auth
       assert_nil Group.readable_by(users(auth)).where(uuid: groups(:trashed_subproject).uuid).first
-      put :update, {
+      put :update, params: {
             id: groups(:trashed_subproject).uuid,
             group: {
               owner_uuid: users(:active).uuid
@@ -731,7 +690,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
         head_uuid: groups(:project_owned_by_foo).uuid)
     end
 
-    get :shared, {:filters => [["group_class", "=", "project"]], :include => "owner_uuid"}
+    get :shared, params: {:filters => [["group_class", "=", "project"]], :include => "owner_uuid"}
 
     assert_equal 1, json_response['items'].length
     assert_equal json_response['items'][0]["uuid"], groups(:project_owned_by_foo).uuid
@@ -752,7 +711,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
         head_uuid: groups(:project_owned_by_foo).uuid)
     end
 
-    get :shared, {:filters => [["group_class", "=", "project"]], :include => "owner_uuid"}
+    get :shared, params: {:filters => [["group_class", "=", "project"]], :include => "owner_uuid"}
 
     assert_equal 1, json_response['items'].length
     assert_equal json_response['items'][0]["uuid"], groups(:project_owned_by_foo).uuid
@@ -767,7 +726,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
       Group.find_by_uuid(groups(:project_owned_by_foo).uuid).update!(owner_uuid: groups(:group_for_sharing_tests).uuid)
     end
 
-    get :shared, {:filters => [["group_class", "=", "project"]], :include => "owner_uuid"}
+    get :shared, params: {:filters => [["group_class", "=", "project"]], :include => "owner_uuid"}
 
     assert_equal 1, json_response['items'].length
     assert_equal json_response['items'][0]["uuid"], groups(:project_owned_by_foo).uuid
@@ -794,7 +753,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
         head_uuid: collections(:collection_owned_by_foo).uuid)
     end
 
-    get :contents, {:include => "owner_uuid", :exclude_home_project => true}
+    get :contents, params: {:include => "owner_uuid", :exclude_home_project => true}
 
     assert_equal 2, json_response['items'].length
     assert_equal json_response['items'][0]["uuid"], groups(:project_owned_by_foo).uuid
@@ -816,7 +775,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
         head_uuid: groups(:project_owned_by_foo).uuid)
     end
 
-    get :contents, {:include => "owner_uuid", :exclude_home_project => true}
+    get :contents, params: {:include => "owner_uuid", :exclude_home_project => true}
 
     assert_equal 1, json_response['items'].length
     assert_equal json_response['items'][0]["uuid"], groups(:project_owned_by_foo).uuid
@@ -831,7 +790,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
       Group.find_by_uuid(groups(:project_owned_by_foo).uuid).update!(owner_uuid: groups(:group_for_sharing_tests).uuid)
     end
 
-    get :contents, {:include => "owner_uuid", :exclude_home_project => true}
+    get :contents, params: {:include => "owner_uuid", :exclude_home_project => true}
 
     assert_equal 1, json_response['items'].length
     assert_equal json_response['items'][0]["uuid"], groups(:project_owned_by_foo).uuid
@@ -840,13 +799,11 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_equal json_response['included'][0]["uuid"], groups(:group_for_sharing_tests).uuid
   end
 
-
   test 'contents, exclude home, with parent specified' do
     authorize_with :active
 
-    get :contents, {id: groups(:aproject).uuid, :include => "owner_uuid", :exclude_home_project => true}
+    get :contents, params: {id: groups(:aproject).uuid, :include => "owner_uuid", :exclude_home_project => true}
 
     assert_response 422
   end
-
 end

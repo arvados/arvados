@@ -34,19 +34,19 @@ class ApplicationControllerTest < ActionController::TestCase
 
   test "requesting nonexistent object returns 404 error" do
     authorize_with :admin
-    get(:show, id: BAD_UUID)
+    get(:show, params: {id: BAD_UUID})
     check_404
   end
 
   test "requesting object without read permission returns 404 error" do
     authorize_with :spectator
-    get(:show, id: specimens(:owned_by_active_user).uuid)
+    get(:show, params: {id: specimens(:owned_by_active_user).uuid})
     check_404
   end
 
   test "submitting bad object returns error" do
     authorize_with :spectator
-    post(:create, specimen: {badattr: "badvalue"})
+    post(:create, params: {specimen: {badattr: "badvalue"}})
     assert_response 422
     check_error_token
   end
@@ -77,7 +77,7 @@ class ApplicationControllerTest < ActionController::TestCase
     test "bogus boolean parameter #{bogus.inspect} returns error" do
       @controller = Arvados::V1::GroupsController.new
       authorize_with :active
-      post :create, {
+      post :create, params: {
         group: {},
         ensure_unique_name: bogus
       }
@@ -94,7 +94,7 @@ class ApplicationControllerTest < ActionController::TestCase
       test "boolean parameter #{boolparam.inspect} acceptable" do
         @controller = Arvados::V1::GroupsController.new
         authorize_with :active
-        post :create, {
+        post :create, params: {
           group: {},
           ensure_unique_name: boolparam
         }
@@ -105,7 +105,7 @@ class ApplicationControllerTest < ActionController::TestCase
       test "boolean parameter #{boolparam.inspect} accepted as #{bool.inspect}" do
         @controller = Arvados::V1::GroupsController.new
         authorize_with :active
-        post :create, {
+        post :create, params: {
           group: {
             name: groups(:aproject).name,
             owner_uuid: groups(:aproject).owner_uuid

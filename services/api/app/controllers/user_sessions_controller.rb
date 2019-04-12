@@ -3,17 +3,17 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 class UserSessionsController < ApplicationController
-  before_filter :require_auth_scope, :only => [ :destroy ]
+  before_action :require_auth_scope, :only => [ :destroy ]
 
-  skip_before_filter :set_cors_headers
-  skip_before_filter :find_object_by_uuid
-  skip_before_filter :render_404_if_no_object
+  skip_before_action :set_cors_headers
+  skip_before_action :find_object_by_uuid
+  skip_before_action :render_404_if_no_object
 
   respond_to :html
 
   # omniauth callback method
   def create
-    omniauth = env['omniauth.auth']
+    omniauth = request.env['omniauth.auth']
 
     identity_url_ok = (omniauth['info']['identity_url'].length > 0) rescue false
     unless identity_url_ok

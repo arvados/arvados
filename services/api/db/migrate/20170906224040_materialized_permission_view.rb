@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class MaterializedPermissionView < ActiveRecord::Migration
+class MaterializedPermissionView < ActiveRecord::Migration[4.2]
 
   @@idxtables = [:collections, :container_requests, :groups, :jobs, :links, :pipeline_instances, :pipeline_templates, :repositories, :users, :virtual_machines, :workflows, :logs]
 

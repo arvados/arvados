@@ -17,9 +17,9 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
       }
       authorize_with :admin
       if formatted_link == 'link_json'
-        post :create, link: link.to_json
+        post :create, params: {link: link.to_json}
       else
-        post :create, link: link
+        post :create, params: {link: link}
       end
       assert_response :success
       assert_not_nil assigns(:object)
@@ -32,7 +32,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     {nil: nil, bogus: 2.days.ago}.each do |bogustype, bogusvalue|
       test "cannot set #{bogustype} #{attr} in create" do
         authorize_with :active
-        post :create, {
+        post :create, params: {
           link: {
             properties: {},
             link_class: 'test',
@@ -46,7 +46,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
       test "cannot set #{bogustype} #{attr} in update" do
         really_created_at = links(:test_timestamps).created_at
         authorize_with :active
-        put :update, {
+        put :update, params: {
           id: links(:test_timestamps).uuid,
           link: {
             :properties => {test: 'test'},
@@ -73,7 +73,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
       head_uuid: 'zzzzz-tpzed-xyzxyzxerrrorxx'
     }
     authorize_with :admin
-    post :create, link: link
+    post :create, params: {link: link}
     assert_response 422
   end
 
@@ -85,7 +85,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
       tail_uuid: 'zzzzz-tpzed-xyzxyzxerrrorxx'
     }
     authorize_with :admin
-    post :create, link: link
+    post :create, params: {link: link}
     assert_response 422
   end
 
@@ -97,7 +97,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
       tail_uuid: users(:spectator).uuid,
     }
     authorize_with :admin
-    post :create, link: link
+    post :create, params: {link: link}
     assert_response :success
     l = JSON.parse(@response.body)
     assert 'arvados#user', l['head_kind']
@@ -114,7 +114,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
       tail_kind: "arvados#user",
     }
     authorize_with :admin
-    post :create, link: link
+    post :create, params: {link: link}
     assert_response :success
     l = JSON.parse(@response.body)
     assert 'arvados#user', l['head_kind']
@@ -129,13 +129,13 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
       tail_uuid: authorized_keys(:admin).uuid,
     }
     authorize_with :active
-    post :create, link: link
+    post :create, params: {link: link}
     assert_response 422
   end
 
   test "filter links with 'is_a' operator" do
     authorize_with :admin
-    get :index, {
+    get :index, params: {
       filters: [ ['tail_uuid', 'is_a', 'arvados#user'] ]
     }
     assert_response :success
@@ -146,7 +146,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
 
   test "filter links with 'is_a' operator includes remote objects" do
     authorize_with :admin
-    get :index, {
+    get :index, params: {
       filters: [
         ['tail_uuid', 'is_a', 'arvados#user'],
         ['link_class', '=', 'permission'],
@@ -163,7 +163,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
 
   test "filter links with 'is_a' operator with more than one" do
     authorize_with :admin
-    get :index, {
+    get :index, params: {
       filters: [ ['tail_uuid', 'is_a', ['arvados#user', 'arvados#group'] ] ],
     }
     assert_response :success
@@ -177,7 +177,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
 
   test "filter links with 'is_a' operator with bogus type" do
     authorize_with :admin
-    get :index, {
+    get :index, params: {
       filters: [ ['tail_uuid', 'is_a', ['arvados#bogus'] ] ],
     }
     assert_response :success
@@ -187,7 +187,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
 
   test "filter links with 'is_a' operator with collection" do
     authorize_with :admin
-    get :index, {
+    get :index, params: {
       filters: [ ['head_uuid', 'is_a', ['arvados#collection'] ] ],
     }
     assert_response :success
@@ -198,7 +198,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
 
   test "test can still use where tail_kind" do
     authorize_with :admin
-    get :index, {
+    get :index, params: {
       where: { tail_kind: 'arvados#user' }
     }
     assert_response :success
@@ -209,7 +209,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
 
   test "test can still use where head_kind" do
     authorize_with :admin
-    get :index, {
+    get :index, params: {
       where: { head_kind: 'arvados#user' }
     }
     assert_response :success
@@ -220,7 +220,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
 
   test "test can still use filter tail_kind" do
     authorize_with :admin
-    get :index, {
+    get :index, params: {
       filters: [ ['tail_kind', '=', 'arvados#user'] ]
     }
     assert_response :success
@@ -231,7 +231,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
 
   test "test can still use filter head_kind" do
     authorize_with :admin
-    get :index, {
+    get :index, params: {
       filters: [ ['head_kind', '=', 'arvados#user'] ]
     }
     assert_response :success
@@ -250,7 +250,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
       tail_kind: "arvados#user",
     }
     authorize_with :admin
-    post :create, link: link
+    post :create, params: {link: link}
     assert_response 422
   end
 
@@ -264,7 +264,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
       tail_kind: "arvados#user",
     }
     authorize_with :admin
-    post :create, link: link
+    post :create, params: {link: link}
     assert_response 422
   end
 
@@ -279,7 +279,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
       properties: {username: "repo_and_user_name"}
     }
     authorize_with :admin
-    post :create, link: link
+    post :create, params: {link: link}
     assert_response 422
   end
 
@@ -294,14 +294,14 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
       properties: {username: "repo_and_user_name"}
     }
     authorize_with :admin
-    post :create, link: link
+    post :create, params: {link: link}
     assert_response :success
   end
 
   test "project owner can show a project permission" do
     uuid = links(:project_viewer_can_read_project).uuid
     authorize_with :active
-    get :show, id: uuid
+    get :show, params: {id: uuid}
     assert_response :success
     assert_equal(uuid, assigns(:object).andand.uuid)
   end
@@ -309,20 +309,20 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
   test "admin can show a project permission" do
     uuid = links(:project_viewer_can_read_project).uuid
     authorize_with :admin
-    get :show, id: uuid
+    get :show, params: {id: uuid}
     assert_response :success
     assert_equal(uuid, assigns(:object).andand.uuid)
   end
 
   test "project viewer can't show others' project permissions" do
     authorize_with :project_viewer
-    get :show, id: links(:admin_can_write_aproject).uuid
+    get :show, params: {id: links(:admin_can_write_aproject).uuid}
     assert_response 404
   end
 
   test "requesting a nonexistent link returns 404" do
     authorize_with :active
-    get :show, id: 'zzzzz-zzzzz-zzzzzzzzzzzzzzz'
+    get :show, params: {id: 'zzzzz-zzzzz-zzzzzzzzzzzzzzz'}
     assert_response 404
   end
 
@@ -337,8 +337,10 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     # It is possible to retrieve the full set of permissions for a
     # single object via /arvados/v1/permissions.
     authorize_with :active
-    get :index, filters: [['link_class', '=', 'permission'],
-                          ['head_uuid', '=', groups(:aproject).uuid]]
+    get :index, params: {
+      filters: [['link_class', '=', 'permission'],
+                ['head_uuid', '=', groups(:aproject).uuid]]
+    }
     assert_response :success
     assert_not_nil assigns(:objects)
     assert_includes(assigns(:objects).map(&:uuid),
@@ -347,8 +349,10 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
 
   test "admin can index project permissions" do
     authorize_with :admin
-    get :index, filters: [['link_class', '=', 'permission'],
-                          ['head_uuid', '=', groups(:aproject).uuid]]
+    get :index, params: {
+      filters: [['link_class', '=', 'permission'],
+                ['head_uuid', '=', groups(:aproject).uuid]]
+    }
     assert_response :success
     assert_not_nil assigns(:objects)
     assert_includes(assigns(:objects).map(&:uuid),
@@ -357,9 +361,11 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
 
   test "project viewer can't index others' project permissions" do
     authorize_with :project_viewer
-    get :index, filters: [['link_class', '=', 'permission'],
-                          ['head_uuid', '=', groups(:aproject).uuid],
-                          ['tail_uuid', '!=', users(:project_viewer).uuid]]
+    get :index, params: {
+      filters: [['link_class', '=', 'permission'],
+                ['head_uuid', '=', groups(:aproject).uuid],
+                ['tail_uuid', '!=', users(:project_viewer).uuid]]
+    }
     assert_response :success
     assert_not_nil assigns(:objects)
     assert_empty assigns(:objects)
@@ -371,7 +377,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
 
     refute users(:user_bar_in_sharing_group).can?(read: collections(:collection_owned_by_foo).uuid)
 
-    post :create, {
+    post :create, params: {
       link: {
         tail_uuid: users(:user_bar_in_sharing_group).uuid,
         link_class: 'permission',

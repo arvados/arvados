@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class CreateTraits < ActiveRecord::Migration
+class CreateTraits < ActiveRecord::Migration[4.2]
   def change
     create_table :traits do |t|
       t.string :uuid, :null => false

@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 class Arvados::V1::KeepDisksController < ApplicationController
-  skip_before_filter :require_auth_scope, only: :ping
-  skip_before_filter :render_404_if_no_object, only: :ping
+  skip_before_action :require_auth_scope, only: :ping
+  skip_before_action :render_404_if_no_object, only: :ping
 
   def self._ping_requires_parameters
     {

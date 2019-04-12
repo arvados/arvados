@@ -81,7 +81,9 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
   end
 
   test 'authenticate with remote token' do
-    get '/arvados/v1/users/current', {format: 'json'}, auth(remote: 'zbbbb')
+    get '/arvados/v1/users/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
     assert_response :success
     assert_equal 'zbbbb-tpzed-000000000000000', json_response['uuid']
     assert_equal false, json_response['is_admin']
@@ -93,7 +95,9 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     @stub_status = 401
 
     # re-authorize before cache expires
-    get '/arvados/v1/users/current', {format: 'json'}, auth(remote: 'zbbbb')
+    get '/arvados/v1/users/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
     assert_response :success
 
     # simulate cache expiry
@@ -102,7 +106,9 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
       update_all(expires_at: db_current_time - 1.minute)
 
     # re-authorize after cache expires
-    get '/arvados/v1/users/current', {format: 'json'}, auth(remote: 'zbbbb')
+    get '/arvados/v1/users/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
     assert_response 401
 
     # simulate cached token indicating wrong user (e.g., local user
@@ -116,7 +122,9 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     @stub_status = 200
     @stub_content[:username] = 'blarney'
     @stub_content[:email] = 'blarney@example.com'
-    get '/arvados/v1/users/current', {format: 'json'}, auth(remote: 'zbbbb')
+    get '/arvados/v1/users/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
     assert_response :success
     assert_equal 'barney', json_response['username'], 'local username should not change once assigned'
     assert_equal 'blarney@example.com', json_response['email']
@@ -124,20 +132,26 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
 
   test 'authenticate with remote token, remote username conflicts with local' do
     @stub_content[:username] = 'active'
-    get '/arvados/v1/users/current', {format: 'json'}, auth(remote: 'zbbbb')
+    get '/arvados/v1/users/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
     assert_response :success
     assert_equal 'active2', json_response['username']
   end
 
   test 'authenticate with remote token, remote username is nil' do
     @stub_content.delete :username
-    get '/arvados/v1/users/current', {format: 'json'}, auth(remote: 'zbbbb')
+    get '/arvados/v1/users/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
     assert_response :success
     assert_equal 'foo', json_response['username']
   end
 
   test 'authenticate with remote token from misbhehaving remote cluster' do
-    get '/arvados/v1/users/current', {format: 'json'}, auth(remote: 'zbork')
+    get '/arvados/v1/users/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbork')
     assert_response 401
   end
 
@@ -146,7 +160,9 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     @stub_content = {
       error: 'not authorized',
     }
-    get '/arvados/v1/users/current', {format: 'json'}, auth(remote: 'zbbbb')
+    get '/arvados/v1/users/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
     assert_response 401
   end
 
@@ -169,30 +185,36 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
    '///',
   ].each do |token|
     test "authenticate with malformed remote token #{token}" do
-      get '/arvados/v1/users/current', {format: 'json'}, {"HTTP_AUTHORIZATION" => "Bearer #{token}"}
+      get '/arvados/v1/users/current',
+        params: {format: 'json'},
+        headers: {"HTTP_AUTHORIZATION" => "Bearer #{token}"}
       assert_response 401
     end
   end
 
   test "ignore extra fields in remote token" do
     token = salted_active_token(remote: 'zbbbb') + '/foo/bar/baz/*'
-    get '/arvados/v1/users/current', {format: 'json'}, {"HTTP_AUTHORIZATION" => "Bearer #{token}"}
+    get '/arvados/v1/users/current',
+      params: {format: 'json'},
+      headers: {"HTTP_AUTHORIZATION" => "Bearer #{token}"}
     assert_response :success
   end
 
   test 'remote api server is not an api server' do
     @stub_status = 200
     @stub_content = '<html>bad</html>'
-    get '/arvados/v1/users/current', {format: 'json'}, auth(remote: 'zbbbb')
+    get '/arvados/v1/users/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
     assert_response 401
   end
 
   ['zbbbb', 'z0000'].each do |token_valid_for|
     test "validate #{token_valid_for}-salted token for remote cluster zbbbb" do
       salted_token = salt_token(fixture: :active, remote: token_valid_for)
-      get '/arvados/v1/users/current', {format: 'json', remote: 'zbbbb'}, {
-            "HTTP_AUTHORIZATION" => "Bearer #{salted_token}"
-          }
+      get '/arvados/v1/users/current',
+        params: {format: 'json', remote: 'zbbbb'},
+        headers: {"HTTP_AUTHORIZATION" => "Bearer #{salted_token}"}
       if token_valid_for == 'zbbbb'
         assert_response 200
         assert_equal(users(:active).uuid, json_response['uuid'])
@@ -204,13 +226,13 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
 
   test "list readable groups with salted token" do
     salted_token = salt_token(fixture: :active, remote: 'zbbbb')
-    get '/arvados/v1/groups', {
-          format: 'json',
-          remote: 'zbbbb',
-          limit: 10000,
-        }, {
-          "HTTP_AUTHORIZATION" => "Bearer #{salted_token}"
-        }
+    get '/arvados/v1/groups',
+      params: {
+        format: 'json',
+        remote: 'zbbbb',
+        limit: 10000,
+      },
+      headers: {"HTTP_AUTHORIZATION" => "Bearer #{salted_token}"}
     assert_response 200
     group_uuids = json_response['items'].collect { |i| i['uuid'] }
     assert_includes(group_uuids, 'zzzzz-j7d0g-fffffffffffffff')
@@ -222,7 +244,9 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
 
   test 'auto-activate user from trusted cluster' do
     Rails.configuration.auto_activate_users_from = ['zbbbb']
-    get '/arvados/v1/users/current', {format: 'json'}, auth(remote: 'zbbbb')
+    get '/arvados/v1/users/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
     assert_response :success
     assert_equal 'zbbbb-tpzed-000000000000000', json_response['uuid']
     assert_equal false, json_response['is_admin']
@@ -232,17 +256,21 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
   end
 
   test 'pre-activate remote user' do
-    post '/arvados/v1/users', {
-           "user" => {
-             "uuid" => "zbbbb-tpzed-000000000000000",
-             "email" => 'foo@example.com',
-             "username" => 'barney',
-             "is_active" => true
-           }
-    }, {'HTTP_AUTHORIZATION' => "OAuth2 #{api_token(:admin)}"}
+    post '/arvados/v1/users',
+      params: {
+        "user" => {
+          "uuid" => "zbbbb-tpzed-000000000000000",
+          "email" => 'foo@example.com',
+          "username" => 'barney',
+          "is_active" => true
+        }
+      },
+      headers: {'HTTP_AUTHORIZATION' => "OAuth2 #{api_token(:admin)}"}
     assert_response :success
 
-    get '/arvados/v1/users/current', {format: 'json'}, auth(remote: 'zbbbb')
+    get '/arvados/v1/users/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
     assert_response :success
     assert_equal 'zbbbb-tpzed-000000000000000', json_response['uuid']
     assert_equal nil, json_response['is_admin']
@@ -254,9 +282,9 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
   test "validate unsalted v2 token for remote cluster zbbbb" do
     auth = api_client_authorizations(:active)
     token = "v2/#{auth.uuid}/#{auth.api_token}"
-    get '/arvados/v1/users/current', {format: 'json', remote: 'zbbbb'}, {
-          "HTTP_AUTHORIZATION" => "Bearer #{token}"
-        }
+    get '/arvados/v1/users/current',
+      params: {format: 'json', remote: 'zbbbb'},
+      headers: {"HTTP_AUTHORIZATION" => "Bearer #{token}"}
     assert_response :success
     assert_equal(users(:active).uuid, json_response['uuid'])
   end
@@ -267,15 +295,17 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
      ["invalid local", "v2/#{api_client_authorizations(:active).uuid}/fakefakefake"],
      ["invalid remote", "v2/zbork-gj3su-000000000000000/abc"],
     ].each do |label, runtime_token|
-      post '/arvados/v1/container_requests', {
-             "container_request" => {
-               "command" => ["echo"],
-               "container_image" => "xyz",
-               "output_path" => "/",
-               "cwd" => "/",
-               "runtime_token" => runtime_token
-             }
-           }, {"HTTP_AUTHORIZATION" => "Bearer #{api_client_authorizations(:active).api_token}"}
+      post '/arvados/v1/container_requests',
+        params: {
+          "container_request" => {
+            "command" => ["echo"],
+            "container_image" => "xyz",
+            "output_path" => "/",
+            "cwd" => "/",
+            "runtime_token" => runtime_token
+          }
+        },
+        headers: {"HTTP_AUTHORIZATION" => "Bearer #{api_client_authorizations(:active).api_token}"}
       if label.include? "invalid"
         assert_response 422
       else

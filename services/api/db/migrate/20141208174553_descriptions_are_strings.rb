@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class DescriptionsAreStrings < ActiveRecord::Migration
+class DescriptionsAreStrings < ActiveRecord::Migration[4.2]
   def tables_with_description_column
     %w{collections groups jobs pipeline_instances pipeline_templates}
   end

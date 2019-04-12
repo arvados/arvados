@@ -5,7 +5,7 @@
 require 'has_uuid'
 require 'kind_and_etag'
 
-class BackwardCompatibilityForUserRepositories < ActiveRecord::Migration
+class BackwardCompatibilityForUserRepositories < ActiveRecord::Migration[4.2]
   include CurrentApiClient
 
   class ArvadosModel < ActiveRecord::Base

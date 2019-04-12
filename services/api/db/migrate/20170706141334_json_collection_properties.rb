@@ -4,7 +4,7 @@
 
 require './db/migrate/20161213172944_full_text_search_indexes'
 
-class JsonCollectionProperties < ActiveRecord::Migration
+class JsonCollectionProperties < ActiveRecord::Migration[4.2]
   def up
     # Drop the FT index before changing column type to avoid
     # "PG::DatatypeMismatch: ERROR: COALESCE types jsonb and text

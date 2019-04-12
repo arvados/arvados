@@ -3,15 +3,15 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 class Arvados::V1::SchemaController < ApplicationController
-  skip_before_filter :catch_redirect_hint
-  skip_before_filter :find_objects_for_index
-  skip_before_filter :find_object_by_uuid
-  skip_before_filter :load_filters_param
-  skip_before_filter :load_limit_offset_order_params
-  skip_before_filter :load_read_auths
-  skip_before_filter :load_where_param
-  skip_before_filter :render_404_if_no_object
-  skip_before_filter :require_auth_scope
+  skip_before_action :catch_redirect_hint
+  skip_before_action :find_objects_for_index
+  skip_before_action :find_object_by_uuid
+  skip_before_action :load_filters_param
+  skip_before_action :load_limit_offset_order_params
+  skip_before_action :load_read_auths
+  skip_before_action :load_where_param
+  skip_before_action :render_404_if_no_object
+  skip_before_action :require_auth_scope
 
   include DbCurrentTime
 
@@ -133,6 +133,14 @@ class Arvados::V1::SchemaController < ApplicationController
           if k.serialized_attributes.has_key? col.name
             object_properties[col.name] = {
               type: k.serialized_attributes[col.name].object_class.to_s
+            }
+          elsif k.attribute_types[col.name].is_a? JsonbType::Hash
+            object_properties[col.name] = {
+              type: Hash.to_s
+            }
+          elsif k.attribute_types[col.name].is_a? JsonbType::Array
+            object_properties[col.name] = {
+              type: Array.to_s
             }
           else
             object_properties[col.name] = {

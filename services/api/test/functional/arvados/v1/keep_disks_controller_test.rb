@@ -12,7 +12,7 @@ class Arvados::V1::KeepDisksControllerTest < ActionController::TestCase
 
   test "add keep disk with admin token" do
     authorize_with :admin
-    post :ping, default_ping_opts.
+    post :ping, params: default_ping_opts.
       merge(filesystem_uuid: 'eb1e77a1-db84-4193-b6e6-ca2894f67d5f')
     assert_response :success
     assert_not_nil assigns(:object)
@@ -28,19 +28,19 @@ class Arvados::V1::KeepDisksControllerTest < ActionController::TestCase
   ].each do |opts|
     test "add keep disk with[out] filesystem_uuid #{opts}" do
       authorize_with :admin
-      post :ping, default_ping_opts.merge(opts)
+      post :ping, params: default_ping_opts.merge(opts)
       assert_response :success
       assert_not_nil JSON.parse(@response.body)['uuid']
     end
   end
 
   test "refuse to add keep disk without admin token" do
-    post :ping, default_ping_opts
+    post :ping, params: default_ping_opts
     assert_response 404
   end
 
   test "ping keep disk" do
-    post :ping, default_ping_opts.
+    post :ping, params: default_ping_opts.
       merge(id: keep_disks(:nonfull).uuid,
             ping_secret: keep_disks(:nonfull).ping_secret,
             filesystem_uuid: keep_disks(:nonfull).filesystem_uuid)
@@ -92,13 +92,11 @@ class Arvados::V1::KeepDisksControllerTest < ActionController::TestCase
 
   test "search keep_services with 'any' operator" do
     authorize_with :active
-    get :index, {
+    get :index, params: {
       where: { any: ['contains', 'o2t1q5w'] }
     }
     assert_response :success
     found = assigns(:objects).collect(&:uuid)
     assert_equal true, !!found.index('zzzzz-penuu-5w2o2t1q5wy7fhn')
   end
-
-
 end

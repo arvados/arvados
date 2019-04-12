@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class CreateNodes < ActiveRecord::Migration
+class CreateNodes < ActiveRecord::Migration[4.2]
   def up
     create_table :nodes do |t|
       t.string :uuid

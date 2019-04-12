@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class RenameJobForeignUuidAttributes < ActiveRecord::Migration
+class RenameJobForeignUuidAttributes < ActiveRecord::Migration[4.2]
   def change
     rename_column :jobs, :cancelled_by_client, :cancelled_by_client_uuid
     rename_column :jobs, :cancelled_by_user, :cancelled_by_user_uuid

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class NormalizeCollectionUuid < ActiveRecord::Migration
+class NormalizeCollectionUuid < ActiveRecord::Migration[4.2]
   def count_orphans
     %w(head tail).each do |ht|
       results = ActiveRecord::Base.connection.execute(<<-EOS)

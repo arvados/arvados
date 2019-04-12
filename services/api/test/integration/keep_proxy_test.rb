@@ -6,7 +6,9 @@ require 'test_helper'
 
 class KeepProxyTest < ActionDispatch::IntegrationTest
   test "request keep disks" do
-    get "/arvados/v1/keep_services/accessible", {:format => :json}, auth(:active)
+    get "/arvados/v1/keep_services/accessible",
+      params: {:format => :json},
+      headers: auth(:active)
     assert_response :success
     services = json_response['items']
 
@@ -17,7 +19,9 @@ class KeepProxyTest < ActionDispatch::IntegrationTest
   end
 
   test "request keep proxy" do
-    get "/arvados/v1/keep_services/accessible", {:format => :json}, auth(:active).merge({'HTTP_X_EXTERNAL_CLIENT' => '1'})
+    get "/arvados/v1/keep_services/accessible",
+      params: {:format => :json},
+      headers: auth(:active).merge({'HTTP_X_EXTERNAL_CLIENT' => '1'})
     assert_response :success
     services = json_response['items']
 

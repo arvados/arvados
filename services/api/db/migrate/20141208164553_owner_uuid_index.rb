@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class OwnerUuidIndex < ActiveRecord::Migration
+class OwnerUuidIndex < ActiveRecord::Migration[4.2]
   def tables_with_owner_uuid
     %w{api_clients authorized_keys collections groups humans
        job_tasks jobs keep_disks keep_services links logs

@@ -4,14 +4,17 @@
 
 source 'https://rubygems.org'
 
-gem 'rails', '~> 4.2'
+gem 'rails', '~> 5.0.0'
 gem 'responders', '~> 2.0'
-gem 'protected_attributes'
 
 group :test, :development do
   gem 'factory_bot_rails'
   gem 'database_cleaner'
-  gem 'ruby-prof'
+
+  # As of now (2019-03-27) There's an open issue about incompatibilities with
+  # newer versions of this gem: https://github.com/rails/rails-perftest/issues/38
+  gem 'ruby-prof', '~> 0.15.0'
+
   # Note: "require: false" here tells bunder not to automatically
   # 'require' the packages during application startup. Installation is
   # still mandatory.
@@ -19,26 +22,17 @@ group :test, :development do
   gem 'simplecov', '~> 0.7.1', require: false
   gem 'simplecov-rcov', require: false
   gem 'mocha', require: false
+  gem 'byebug'
 end
 
 # We need this dependency because of crunchv1
 gem 'arvados-cli'
 
-# We'll need to update related code prior to Rails 5.
-# See: https://github.com/rails/activerecord-deprecated_finders
-gem 'activerecord-deprecated_finders', require: 'active_record/deprecated_finders'
-
-# pg is the only supported database driver.
-# Note: Rails 4.2 is not compatible with pg 1.0
-#       (See: https://github.com/rails/rails/pull/31671)
-gem 'pg', '~> 0.18'
+gem 'pg', '~> 1.0'
 
 gem 'multi_json'
 gem 'oj'
 
-# for building assets
-gem 'sass-rails',   '~> 4.0'
-gem 'coffee-rails', '~> 4.0'
 gem 'therubyracer'
 gem 'uglifier', '~> 2.0'
 
@@ -50,15 +44,16 @@ gem 'acts_as_api'
 
 gem 'passenger'
 
+# Locking to 5.10.3 to workaround issue in 5.11.1 (https://github.com/seattlerb/minitest/issues/730)
+gem 'minitest', '5.10.3'
+
 # Restricted because omniauth >= 1.5.0 requires Ruby >= 2.1.9:
 gem 'omniauth', '~> 1.4.0'
 gem 'omniauth-oauth2', '~> 1.1'
 
 gem 'andand'
 
-gem 'test_after_commit', :group => :test
-
-gem 'trollop'
+gem 'optimist'
 gem 'faye-websocket'
 
 gem 'themes_for_rails', git: 'https://github.com/curoverse/themes_for_rails'
@@ -72,6 +67,9 @@ gem 'lograge'
 gem 'logstash-event'
 
 gem 'rails-observers'
+
+gem 'rails-perftest'
+gem 'rails-controller-testing'
 
 # Install any plugin gems
 Dir.glob(File.join(File.dirname(__FILE__), 'lib', '**', "Gemfile")) do |f|

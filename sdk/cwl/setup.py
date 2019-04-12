@@ -40,6 +40,7 @@ setup(name='arvados-cwl-runner',
           'arvados-python-client>=1.3.0.20190205182514',
           'setuptools',
           'ciso8601 >= 2.0.0',
+          'networkx < 2.3'
       ],
       extras_require={
           ':os.name=="posix" and python_version<"3"': ['subprocess32 >= 3.5.1'],

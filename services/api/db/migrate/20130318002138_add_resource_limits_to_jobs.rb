@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddResourceLimitsToJobs < ActiveRecord::Migration
+class AddResourceLimitsToJobs < ActiveRecord::Migration[4.2]
   def change
     add_column :jobs, :resource_limits, :text
   end

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class ActivateAllAdmins < ActiveRecord::Migration
+class ActivateAllAdmins < ActiveRecord::Migration[4.2]
   def up
     User.update_all({is_active: true}, ['is_admin=?', true])
   end

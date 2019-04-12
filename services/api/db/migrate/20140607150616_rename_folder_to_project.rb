@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class RenameFolderToProject < ActiveRecord::Migration
+class RenameFolderToProject < ActiveRecord::Migration[4.2]
   def up
     Group.update_all("group_class = 'project'", "group_class = 'folder'")
   end

@@ -4,7 +4,7 @@
 
 require 'migrate_yaml_to_json'
 
-class JobsYamlToJson < ActiveRecord::Migration
+class JobsYamlToJson < ActiveRecord::Migration[4.2]
   def up
     [
       'components',

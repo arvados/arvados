@@ -79,7 +79,7 @@ func NewClientFromConfig(cluster *Cluster) (*Client, error) {
 		return nil, fmt.Errorf("no host in config Services.Controller.ExternalURL: %v", ctrlURL)
 	}
 	return &Client{
-		APIHost:  fmt.Sprintf("%v", ctrlURL),
+		APIHost:  ctrlURL.Host,
 		Insecure: cluster.TLS.Insecure,
 	}, nil
 }

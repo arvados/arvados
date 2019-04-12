@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddSystemGroup < ActiveRecord::Migration
+class AddSystemGroup < ActiveRecord::Migration[4.2]
   include CurrentApiClient
 
   def up

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddUseExistingToContainerRequests < ActiveRecord::Migration
+class AddUseExistingToContainerRequests < ActiveRecord::Migration[4.2]
   def up
     add_column :container_requests, :use_existing, :boolean, :default => true
   end

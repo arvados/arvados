@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddDefaultOwnerToApiClientAuthorizations < ActiveRecord::Migration
+class AddDefaultOwnerToApiClientAuthorizations < ActiveRecord::Migration[4.2]
   def change
     add_column :api_client_authorizations, :default_owner, :string
   end

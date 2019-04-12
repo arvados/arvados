@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class CreateAuthorizedKeys < ActiveRecord::Migration
+class CreateAuthorizedKeys < ActiveRecord::Migration[4.2]
   def change
     create_table :authorized_keys do |t|
       t.string :uuid, :null => false

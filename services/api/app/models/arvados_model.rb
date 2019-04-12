@@ -8,7 +8,7 @@ require 'record_filters'
 require 'serializers'
 require 'request_error'
 
-class ArvadosModel < ActiveRecord::Base
+class ArvadosModel < ApplicationRecord
   self.abstract_class = true
 
   include ArvadosModelUpdates
@@ -45,6 +45,11 @@ class ArvadosModel < ActiveRecord::Base
   # update is deferred allowing making multiple calls without the performance
   # penalty.
   attr_accessor :async_permissions_update
+
+  # Ignore listed attributes on mass assignments
+  def self.protected_attributes
+    []
+  end
 
   class PermissionDeniedError < RequestError
     def http_status
@@ -97,7 +102,11 @@ class ArvadosModel < ActiveRecord::Base
     # The following permit! is necessary even with
     # "ActionController::Parameters.permit_all_parameters = true",
     # because permit_all does not permit nested attributes.
+    raw_params ||= {}
+
     if raw_params
+      raw_params = raw_params.to_hash
+      raw_params.delete_if { |k, _| self.protected_attributes.include? k }
       serialized_attributes.each do |colname, coder|
         param = raw_params[colname.to_sym]
         if param.nil?
@@ -105,6 +114,15 @@ class ArvadosModel < ActiveRecord::Base
         elsif !param.is_a?(coder.object_class)
           raise ArgumentError.new("#{colname} parameter must be #{coder.object_class}, not #{param.class}")
         elsif has_nonstring_keys?(param)
+          raise ArgumentError.new("#{colname} parameter cannot have non-string hash keys")
+        end
+      end
+      # Check JSONB columns that aren't listed on serialized_attributes
+      columns.select{|c| c.type == :jsonb}.collect{|j| j.name}.each do |colname|
+        if serialized_attributes.include? colname || raw_params[colname.to_sym].nil?
+          next
+        end
+        if has_nonstring_keys?(raw_params[colname.to_sym])
           raise ArgumentError.new("#{colname} parameter cannot have non-string hash keys")
         end
       end
@@ -357,7 +375,7 @@ class ArvadosModel < ActiveRecord::Base
         # discover a unique name.  It is necessary to handle name choosing at
         # this level (as opposed to the client) to ensure that record creation
         # never fails due to a race condition.
-        err = rn.original_exception
+        err = rn.cause
         raise unless err.is_a?(PG::UniqueViolation)
 
         # Unfortunately ActiveRecord doesn't abstract out any of the
@@ -404,7 +422,8 @@ class ArvadosModel < ActiveRecord::Base
 
   def self.full_text_tsvector
     parts = full_text_searchable_columns.collect do |column|
-      cast = serialized_attributes[column] ? '::text' : ''
+      is_jsonb = self.columns.select{|x|x.name == column}[0].type == :jsonb
+      cast = (is_jsonb || serialized_attributes[column]) ? '::text' : ''
       "coalesce(#{column}#{cast},'')"
     end
     "to_tsvector('english', substr(#{parts.join(" || ' ' || ")}, 0, 8000))"
@@ -449,7 +468,7 @@ class ArvadosModel < ActiveRecord::Base
           end
         rescue ActiveRecord::RecordNotFound => e
           errors.add :owner_uuid, "is not owned by any user: #{e}"
-          return false
+          throw(:abort)
         end
         if uuid_in_path[x]
           if x == owner_uuid
@@ -457,7 +476,7 @@ class ArvadosModel < ActiveRecord::Base
           else
             errors.add :owner_uuid, "has an ownership cycle"
           end
-          return false
+          throw(:abort)
         end
         uuid_in_path[x] = true
       end
@@ -665,7 +684,8 @@ class ArvadosModel < ActiveRecord::Base
     # we'll convert symbols to strings when loading from the
     # database. (Otherwise, loading and saving an object with existing
     # symbols in a serialized field will crash.)
-    self.class.serialized_attributes.each do |colname, attr|
+    jsonb_cols = self.class.columns.select{|c| c.type == :jsonb}.collect{|j| j.name}
+    (jsonb_cols + self.class.serialized_attributes.keys).uniq.each do |colname|
       if self.class.has_symbols? attributes[colname]
         attributes[colname] = self.class.recursive_stringify attributes[colname]
         send(colname + '=',

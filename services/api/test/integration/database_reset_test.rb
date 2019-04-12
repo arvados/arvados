@@ -10,7 +10,7 @@ class DatabaseResetTest < ActionDispatch::IntegrationTest
     begin
       Rails.env = 'production'
       Rails.application.reload_routes!
-      post '/database/reset', {}, auth(:admin)
+      post '/database/reset', params: {}, headers: auth(:admin)
       assert_response 404
     ensure
       Rails.env = rails_env_was
@@ -19,7 +19,7 @@ class DatabaseResetTest < ActionDispatch::IntegrationTest
   end
 
   test "reset fails with non-admin token" do
-    post '/database/reset', {}, auth(:active)
+    post '/database/reset', params: {}, headers: auth(:active)
     assert_response 403
   end
 
@@ -28,24 +28,25 @@ class DatabaseResetTest < ActionDispatch::IntegrationTest
     admin_auth = auth(:admin)
 
     authorize_with :admin
-    post '/database/reset', {}, admin_auth
+    post '/database/reset', params: {}, headers: admin_auth
     assert_response :success
 
-    post '/arvados/v1/specimens', {specimen: '{}'}, active_auth
+    post '/arvados/v1/specimens', params: {specimen: '{}'}, headers: active_auth
     assert_response :success
     new_uuid = json_response['uuid']
 
-    get '/arvados/v1/specimens/'+new_uuid, {}, active_auth
+    get '/arvados/v1/specimens/'+new_uuid, params: {}, headers: active_auth
     assert_response :success
 
     put('/arvados/v1/specimens/'+new_uuid,
-        {specimen: '{"properties":{}}'}, active_auth)
+      params: {specimen: '{"properties":{}}'},
+      headers: active_auth)
     assert_response :success
 
-    delete '/arvados/v1/specimens/'+new_uuid, {}, active_auth
+    delete '/arvados/v1/specimens/'+new_uuid, params: {}, headers: active_auth
     assert_response :success
 
-    get '/arvados/v1/specimens/'+new_uuid, {}, active_auth
+    get '/arvados/v1/specimens/'+new_uuid, params: {}, headers: active_auth
     assert_response 404
   end
 
@@ -55,23 +56,23 @@ class DatabaseResetTest < ActionDispatch::IntegrationTest
 
     old_uuid = specimens(:owned_by_active_user).uuid
     authorize_with :admin
-    post '/database/reset', {}, admin_auth
+    post '/database/reset', params: {}, headers: admin_auth
     assert_response :success
 
-    delete '/arvados/v1/specimens/' + old_uuid, {}, active_auth
+    delete '/arvados/v1/specimens/' + old_uuid, params: {}, headers: active_auth
     assert_response :success
-    post '/arvados/v1/specimens', {specimen: '{}'}, active_auth
+    post '/arvados/v1/specimens', params: {specimen: '{}'}, headers: active_auth
     assert_response :success
     new_uuid = json_response['uuid']
 
     # Reset to fixtures.
-    post '/database/reset', {}, admin_auth
+    post '/database/reset', params: {}, headers: admin_auth
     assert_response :success
 
     # New specimen should disappear. Old specimen should reappear.
-    get '/arvados/v1/specimens/'+new_uuid, {}, active_auth
+    get '/arvados/v1/specimens/'+new_uuid, params: {}, headers: active_auth
     assert_response 404
-    get '/arvados/v1/specimens/'+old_uuid, {}, active_auth
+    get '/arvados/v1/specimens/'+old_uuid, params: {}, headers: active_auth
     assert_response :success
   end
 end

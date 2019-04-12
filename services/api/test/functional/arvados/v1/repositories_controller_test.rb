@@ -230,7 +230,7 @@ class Arvados::V1::RepositoriesControllerTest < ActionController::TestCase
 
   test "select push_url in index" do
     authorize_with :active
-    get(:index, {select: ["uuid", "push_url"]})
+    get(:index, params: {select: ["uuid", "push_url"]})
     assert_response :success
     assert_includes(json_response["items"].map { |r| r["push_url"] },
                     "git@git.zzzzz.arvadosapi.com:active/foo.git")
@@ -238,7 +238,7 @@ class Arvados::V1::RepositoriesControllerTest < ActionController::TestCase
 
   test "select clone_urls in index" do
     authorize_with :active
-    get(:index, {select: ["uuid", "clone_urls"]})
+    get(:index, params: {select: ["uuid", "clone_urls"]})
     assert_response :success
     assert_includes(json_response["items"].map { |r| r["clone_urls"] }.flatten,
                     "git@git.zzzzz.arvadosapi.com:active/foo.git")

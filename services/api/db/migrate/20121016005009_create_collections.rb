@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class CreateCollections < ActiveRecord::Migration
+class CreateCollections < ActiveRecord::Migration[4.2]
   def change
     create_table :collections do |t|
       t.string :locator

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class CreateJobSteps < ActiveRecord::Migration
+class CreateJobSteps < ActiveRecord::Migration[4.2]
   def change
     create_table :job_steps do |t|
       t.string :uuid

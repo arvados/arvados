@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class RepairScriptParametersDigest < ActiveRecord::Migration
+class RepairScriptParametersDigest < ActiveRecord::Migration[4.2]
   def up
     Job.find_each do |j|
       have = j.script_parameters_digest

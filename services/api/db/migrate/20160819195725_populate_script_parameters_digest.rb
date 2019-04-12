@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class PopulateScriptParametersDigest < ActiveRecord::Migration
+class PopulateScriptParametersDigest < ActiveRecord::Migration[4.2]
   def up
     done = false
     while !done

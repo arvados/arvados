@@ -29,6 +29,22 @@ collection_owned_by_active:
   name: owned_by_active
   version: 2
 
+collection_owned_by_active_with_file_stats:
+  uuid: zzzzz-4zz18-fjeod4od92kfj5f
+  current_version_uuid: zzzzz-4zz18-fjeod4od92kfj5f
+  portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-02-03T17:22:54Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2014-02-03T17:22:54Z
+  updated_at: 2014-02-03T17:22:54Z
+  manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+  file_count: 1
+  file_size_total: 3
+  name: owned_by_active_with_file_stats
+  version: 2
+
 collection_owned_by_active_past_version_1:
   uuid: zzzzz-4zz18-znfnqtbbv4spast
   current_version_uuid: zzzzz-4zz18-bv31uwvy3neko21

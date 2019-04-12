@@ -140,6 +140,7 @@ class ArvadosModelTest < ActiveSupport::TestCase
     all_tables =  ActiveRecord::Base.connection.tables
     all_tables.delete 'schema_migrations'
     all_tables.delete 'permission_refresh_lock'
+    all_tables.delete 'ar_internal_metadata'
 
     all_tables.each do |table|
       table_class = table.classify.constantize
@@ -152,7 +153,10 @@ class ArvadosModelTest < ActiveSupport::TestCase
 
         indexes = ActiveRecord::Base.connection.indexes(table)
         search_index_by_columns = indexes.select do |index|
-          index.columns.sort == search_index_columns.sort
+          # After rails 5.0 upgrade, AR::Base.connection.indexes() started to include
+          # GIN indexes, with its 'columns' attribute being a String like
+          # 'to_tsvector(...)'
+          index.columns.is_a?(Array) ? index.columns.sort == search_index_columns.sort : false
         end
         search_index_by_name = indexes.select do |index|
           index.name == "#{table}_search_index"

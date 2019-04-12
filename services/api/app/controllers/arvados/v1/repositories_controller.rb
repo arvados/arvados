@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 class Arvados::V1::RepositoriesController < ApplicationController
-  skip_before_filter :find_object_by_uuid, :only => :get_all_permissions
-  skip_before_filter :render_404_if_no_object, :only => :get_all_permissions
-  before_filter :admin_required, :only => :get_all_permissions
+  skip_before_action :find_object_by_uuid, :only => :get_all_permissions
+  skip_before_action :render_404_if_no_object, :only => :get_all_permissions
+  before_action :admin_required, :only => :get_all_permissions
 
   def get_all_permissions
     # user_aks is a map of {user_uuid => array of public keys}

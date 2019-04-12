@@ -28,15 +28,20 @@ class CrunchDispatchIntegrationTest < ActionDispatch::IntegrationTest
   end
 
   test "job runs" do
-    post "/arvados/v1/jobs", {
-      format: "json",
-      job: {
-        script: "log",
-        repository: "active/crunchdispatchtest",
-        script_version: "f35f99b7d32bac257f5989df02b9f12ee1a9b0d6",
-        script_parameters: "{}"
-      }
-    }, auth(:admin)
+    post "/arvados/v1/jobs",
+      params: {
+        format: "json",
+        job: {
+          script: "log",
+          repository: "active/crunchdispatchtest",
+          script_version: "f35f99b7d32bac257f5989df02b9f12ee1a9b0d6",
+          script_parameters: {
+            input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
+            an_integer: '1'
+          }
+        }
+      },
+      headers: auth(:admin)
     assert_response :success
   end
 end

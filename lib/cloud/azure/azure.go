@@ -649,14 +649,17 @@ func (ai *azureInstance) Destroy() error {
 }
 
 func (ai *azureInstance) Address() string {
-	if ai.nic.IPConfigurations != nil &&
-		len(*ai.nic.IPConfigurations) > 0 &&
-		(*ai.nic.IPConfigurations)[0].InterfaceIPConfigurationPropertiesFormat != nil &&
-		(*ai.nic.IPConfigurations)[0].InterfaceIPConfigurationPropertiesFormat.PrivateIPAddress != nil {
-
-		return *(*ai.nic.IPConfigurations)[0].PrivateIPAddress
+	if iprops := ai.nic.InterfacePropertiesFormat; iprops == nil {
+		return ""
+	} else if ipconfs := iprops.IPConfigurations; ipconfs == nil || len(*ipconfs) == 0 {
+		return ""
+	} else if ipconfprops := (*ipconfs)[0].InterfaceIPConfigurationPropertiesFormat; ipconfprops == nil {
+		return ""
+	} else if addr := ipconfprops.PrivateIPAddress; addr == nil {
+		return ""
+	} else {
+		return *addr
 	}
-	return ""
 }
 
 func (ai *azureInstance) RemoteUser() string {

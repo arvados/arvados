@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddServiceHostAndServicePortAndServiceSslFlagToKeepDisks < ActiveRecord::Migration
+class AddServiceHostAndServicePortAndServiceSslFlagToKeepDisks < ActiveRecord::Migration[4.2]
   def change
     add_column :keep_disks, :service_host, :string
     add_column :keep_disks, :service_port, :integer

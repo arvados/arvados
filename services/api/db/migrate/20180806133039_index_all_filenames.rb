@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class IndexAllFilenames < ActiveRecord::Migration
+class IndexAllFilenames < ActiveRecord::Migration[4.2]
   def up
     ActiveRecord::Base.connection.execute 'ALTER TABLE collections ALTER COLUMN file_names TYPE text'
   end

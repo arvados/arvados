@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddSchedulingParametersToContainer < ActiveRecord::Migration
+class AddSchedulingParametersToContainer < ActiveRecord::Migration[4.2]
   def change
     add_column :containers, :scheduling_parameters, :text
     add_column :container_requests, :scheduling_parameters, :text

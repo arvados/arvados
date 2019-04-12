@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddJobUuidToNodes < ActiveRecord::Migration
+class AddJobUuidToNodes < ActiveRecord::Migration[4.2]
   def up
     change_table :nodes do |t|
       t.column :job_uuid, :string

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class TrashableGroups < ActiveRecord::Migration
+class TrashableGroups < ActiveRecord::Migration[4.2]
   def up
     add_column :groups, :trash_at, :datetime
     add_index(:groups, :trash_at)
