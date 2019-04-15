@@ -23,6 +23,7 @@ import { loadMissingProcessesInformation } from "~/store/project-panel/project-p
 import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
 import { getDataExplorerColumnFilters } from '~/store/data-explorer/data-explorer-middleware-service';
 import { serializeSimpleObjectTypeFilters } from '../resource-type-filters/resource-type-filters';
+import { ResourceKind } from "~/models/resource";
 
 export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -55,28 +56,55 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
             }
             try {
                 api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
-                const response = await this.services.favoriteService
-                    .list(this.services.authService.getUuid()!, {
-                        limit: dataExplorer.rowsPerPage,
-                        offset: dataExplorer.page * dataExplorer.rowsPerPage,
-                        linkOrder: linkOrder.getOrder(),
-                        contentOrder: contentOrder.getOrder(),
-                        filters: new FilterBuilder()
-                            .addILike("name", dataExplorer.searchValue)
-                            .addIsA("headUuid", typeFilters)
-                            .getFilters(),
+                const resp1 = await this.services.linkService.list({
+                    filters: new FilterBuilder()
+                        .addEqual("linkClass", 'star')
+                        .addEqual('tailUuid', this.services.authService.getUuid()!)
+                        .addEqual('tailKind', ResourceKind.USER)
+                        .getFilters()
+                }).then(results => results);
+                const uuids = resp1.items.map(it => it.headUuid);
+                const groupItems: any = await this.services.groupsService.list({
+                    filters: new FilterBuilder()
+                        .addIn("uuid", uuids)
+                        .addILike("name", dataExplorer.searchValue)
+                        .addIsA("uuid", typeFilters)
+                        .getFilters()
+                });
+                const collectionItems: any = await this.services.collectionService.list({
+                    filters: new FilterBuilder()
+                        .addIn("uuid", uuids)
+                        .addILike("name", dataExplorer.searchValue)
+                        .addIsA("uuid", typeFilters)
+                        .getFilters()
+                });
+                const processItems: any = await this.services.containerRequestService.list({
+                    filters: new FilterBuilder()
+                        .addIn("uuid", uuids)
+                        .addILike("name", dataExplorer.searchValue)
+                        .addIsA("uuid", typeFilters)
+                        .getFilters()
+                });
+                const response = groupItems;
+                collectionItems.items.map((it: any) => {
+                    response.itemsAvailable++;
+                    response.items.push(it);
+                });
+                processItems.items.map((it: any) => {
+                    response.itemsAvailable++;
+                    response.items.push(it);
+                });
 
-                    });
                 api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
                 api.dispatch(resourcesActions.SET_RESOURCES(response.items));
                 await api.dispatch<any>(loadMissingProcessesInformation(response.items));
                 api.dispatch(favoritePanelActions.SET_ITEMS({
-                    items: response.items.map(resource => resource.uuid),
+                    items: response.items.map((resource: any) => resource.uuid),
                     itemsAvailable: response.itemsAvailable,
                     page: Math.floor(response.offset / response.limit),
                     rowsPerPage: response.limit
                 }));
-                api.dispatch<any>(updateFavorites(response.items.map(item => item.uuid)));
+                api.dispatch<any>(updateFavorites(response.items.map((item: any) => item.uuid)));
             } catch (e) {
                 api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
                 api.dispatch(favoritePanelActions.SET_ITEMS({
