@@ -74,3 +74,5 @@ sdk/R/ArvadosR.Rproj
 *.Rd
 lib/dispatchcloud/test/sshkey_*
 *.asc
+sdk/java-v2/build.gradle
+sdk/java-v2/settings.gradle
