@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class ArvadosBase < ActiveRecord::Base
+class ArvadosBase < ApplicationRecord
   self.abstract_class = true
   attr_accessor :attribute_sortkey
   attr_accessor :create_params
