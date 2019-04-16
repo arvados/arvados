@@ -14,5 +14,5 @@ export const searchResultsPanelActions = bindDataExplorerActions(SEARCH_RESULTS_
 export const loadSearchResultsPanel = () =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(setBreadcrumbs([{ label: 'Search results' }]));
-        dispatch(searchResultsPanelActions.REQUEST_ITEMS());
+        dispatch(searchResultsPanelActions.REQUEST_ITEMS(true));
     };
