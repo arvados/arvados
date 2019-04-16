@@ -27,6 +27,15 @@ type deprecatedConfig struct {
 	}
 }
 
+func LoadFile(path string, log logger) (*arvados.Config, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	return Load(f, log)
+}
+
 func Load(rdr io.Reader, log logger) (*arvados.Config, error) {
 	var cfg arvados.Config
 	buf, err := ioutil.ReadAll(rdr)
