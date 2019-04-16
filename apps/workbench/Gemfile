@@ -48,6 +48,7 @@ group :test, :diagnostics, :performance do
 end
 
 group :test, :performance do
+  gem 'byebug'
   gem 'rails-perftest'
   gem 'ruby-prof'
   gem 'rvm-capistrano'
