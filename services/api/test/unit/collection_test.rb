@@ -61,6 +61,56 @@ class CollectionTest < ActiveSupport::TestCase
   end
 
   [
+    [". d41d8cd98f00b204e9800998ecf8427e 0:34:foo.txt\n", 1, 34],
+    [". d41d8cd98f00b204e9800998ecf8427e 0:34:foo.txt 0:30:foo.txt 0:30:foo1.txt 0:30:foo2.txt 0:30:foo3.txt 0:30:foo4.txt\n", 5, 184],
+    [". d41d8cd98f00b204e9800998ecf8427e 0:0:.\n", 0, 0]
+  ].each do |manifest, count, size|
+    test "file stats on create collection with #{manifest}" do
+      act_as_system_user do
+        c = Collection.create(manifest_text: manifest)
+        assert_equal count, c.file_count
+        assert_equal size, c.file_size_total
+      end
+    end
+  end
+
+  test "file stats cannot be changed unless through manifest change" do
+    act_as_system_user do
+      # Direct changes to file stats should be ignored
+      c = Collection.create(manifest_text: ". d41d8cd98f00b204e9800998ecf8427e 0:34:foo.txt\n")
+      c.file_count = 6
+      c.file_size_total = 30
+      assert c.valid?
+      assert_equal 1, c.file_count
+      assert_equal 34, c.file_size_total
+
+      # File stats specified on create should be ignored and overwritten
+      c = Collection.create(manifest_text: ". d41d8cd98f00b204e9800998ecf8427e 0:34:foo.txt\n", file_count: 10, file_size_total: 10)
+      assert c.valid?
+      assert_equal 1, c.file_count
+      assert_equal 34, c.file_size_total
+
+      # Updating the manifest should change file stats
+      c.update_attributes(manifest_text: ". d41d8cd98f00b204e9800998ecf8427e 0:34:foo.txt 0:34:foo2.txt\n")
+      assert c.valid?
+      assert_equal 2, c.file_count
+      assert_equal 68, c.file_size_total
+
+      # Updating file stats and the manifest should use manifest values
+      c.update_attributes(manifest_text: ". d41d8cd98f00b204e9800998ecf8427e 0:34:foo.txt\n", file_count:10, file_size_total: 10)
+      assert c.valid?
+      assert_equal 1, c.file_count
+      assert_equal 34, c.file_size_total
+
+      # Updating just the file stats should be ignored
+      c.update_attributes(file_count: 10, file_size_total: 10)
+      assert c.valid?
+      assert_equal 1, c.file_count
+      assert_equal 34, c.file_size_total
+    end
+  end
+
+  [
     nil,
     "",
     ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n",

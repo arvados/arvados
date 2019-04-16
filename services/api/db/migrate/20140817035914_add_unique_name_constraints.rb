@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddUniqueNameConstraints < ActiveRecord::Migration
+class AddUniqueNameConstraints < ActiveRecord::Migration[4.2]
   def change
     # Ensure uniqueness before adding constraints.
     ["collections", "pipeline_templates", "groups"].each do |table|

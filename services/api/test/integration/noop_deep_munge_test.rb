@@ -21,22 +21,25 @@ class NoopDeepMungeTest < ActionDispatch::IntegrationTest
 
   def check(val)
     post "/arvados/v1/container_requests",
-         {
-           :container_request => {
-             :name => "workflow",
-             :state => "Uncommitted",
-             :command => ["echo"],
-             :container_image => "arvados/jobs",
-             :output_path => "/",
-             :mounts => {
-               :foo => {
-                 :kind => "json",
-                 :content => JSON.parse(SafeJSON.dump(val)),
-               }
-             }
-           }
-         }.to_json, {'HTTP_AUTHORIZATION' => "OAuth2 #{api_client_authorizations(:admin).api_token}",
-                    'CONTENT_TYPE' => 'application/json'}
+      params: {
+        :container_request => {
+          :name => "workflow",
+          :state => "Uncommitted",
+          :command => ["echo"],
+          :container_image => "arvados/jobs",
+          :output_path => "/",
+          :mounts => {
+            :foo => {
+              :kind => "json",
+              :content => JSON.parse(SafeJSON.dump(val)),
+            }
+          }
+        }
+      }.to_json,
+      headers: {
+        'HTTP_AUTHORIZATION' => "OAuth2 #{api_client_authorizations(:admin).api_token}",
+        'CONTENT_TYPE' => 'application/json'
+      }
     assert_response :success
     assert_equal "arvados#containerRequest", json_response['kind']
     assert_equal val, json_response['mounts']['foo']['content']

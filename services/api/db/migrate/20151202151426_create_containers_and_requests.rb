@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class CreateContainersAndRequests < ActiveRecord::Migration
+class CreateContainersAndRequests < ActiveRecord::Migration[4.2]
   def change
     create_table :containers do |t|
       t.string :uuid

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class FixJobTaskQsequenceType < ActiveRecord::Migration
+class FixJobTaskQsequenceType < ActiveRecord::Migration[4.2]
   def up
     change_column :job_tasks, :qsequence, :integer, :limit => 8
   end

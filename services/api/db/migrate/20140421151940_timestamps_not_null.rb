@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class TimestampsNotNull < ActiveRecord::Migration
+class TimestampsNotNull < ActiveRecord::Migration[4.2]
   def up
     ActiveRecord::Base.connection.tables.each do |t|
       next if t == 'schema_migrations'

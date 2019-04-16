@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddQueueIndexToContainers < ActiveRecord::Migration
+class AddQueueIndexToContainers < ActiveRecord::Migration[4.2]
   def up
     ActiveRecord::Base.connection.execute 'CREATE INDEX index_containers_on_queued_state on containers (state, (priority > 0))'
   end

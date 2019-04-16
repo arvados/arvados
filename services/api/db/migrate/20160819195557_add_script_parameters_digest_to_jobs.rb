@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddScriptParametersDigestToJobs < ActiveRecord::Migration
+class AddScriptParametersDigestToJobs < ActiveRecord::Migration[4.2]
   def change
     add_column :jobs, :script_parameters_digest, :string
     add_index :jobs, :script_parameters_digest

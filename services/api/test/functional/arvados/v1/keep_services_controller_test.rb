@@ -8,7 +8,7 @@ class Arvados::V1::KeepServicesControllerTest < ActionController::TestCase
 
   test "search by service_port with < query" do
     authorize_with :active
-    get :index, {
+    get :index, params: {
       filters: [['service_port', '<', 25107]]
     }
     assert_response :success
@@ -17,7 +17,7 @@ class Arvados::V1::KeepServicesControllerTest < ActionController::TestCase
 
   test "search by service_port with >= query" do
     authorize_with :active
-    get :index, {
+    get :index, params: {
       filters: [['service_port', '>=', 25107]]
     }
     assert_response :success

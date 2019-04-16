@@ -10,8 +10,8 @@ class Arvados::V1::ContainersController < ApplicationController
   accept_attribute_as_json :command, Array
   accept_attribute_as_json :scheduling_parameters, Hash
 
-  skip_before_filter :find_object_by_uuid, only: [:current]
-  skip_before_filter :render_404_if_no_object, only: [:current]
+  skip_before_action :find_object_by_uuid, only: [:current]
+  skip_before_action :render_404_if_no_object, only: [:current]
 
   def auth
     if @object.locked_by_uuid != Thread.current[:api_client_authorization].uuid

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class SetCurrentVersionUuidOnCollections < ActiveRecord::Migration
+class SetCurrentVersionUuidOnCollections < ActiveRecord::Migration[4.2]
   def up
     # Set the current version uuid as itself
     Collection.where(current_version_uuid: nil).update_all("current_version_uuid=uuid")

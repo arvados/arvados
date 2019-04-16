@@ -4,7 +4,7 @@
 
 require 'has_uuid'
 
-class AddOutputAndLogUuidToContainerRequest < ActiveRecord::Migration
+class AddOutputAndLogUuidToContainerRequest < ActiveRecord::Migration[4.2]
   extend HasUuid::ClassMethods
 
   def up

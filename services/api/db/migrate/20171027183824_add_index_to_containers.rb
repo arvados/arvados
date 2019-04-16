@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddIndexToContainers < ActiveRecord::Migration
+class AddIndexToContainers < ActiveRecord::Migration[4.2]
   def up
     ActiveRecord::Base.connection.execute("CREATE INDEX index_containers_on_modified_at_uuid ON containers USING btree (modified_at desc, uuid asc)")
     ActiveRecord::Base.connection.execute("CREATE INDEX index_container_requests_on_container_uuid on container_requests (container_uuid)")

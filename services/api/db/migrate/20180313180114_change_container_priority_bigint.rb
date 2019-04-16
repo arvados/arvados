@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class ChangeContainerPriorityBigint < ActiveRecord::Migration
+class ChangeContainerPriorityBigint < ActiveRecord::Migration[4.2]
   def change
     change_column :containers, :priority, :integer, limit: 8
   end

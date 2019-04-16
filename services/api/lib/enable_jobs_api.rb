@@ -33,7 +33,7 @@ Disable_jobs_api_method_list = ["jobs.create",
 def check_enable_legacy_jobs_api
   if Rails.configuration.enable_legacy_jobs_api == false ||
      (Rails.configuration.enable_legacy_jobs_api == "auto" &&
-      ActiveRecord::Base.connection.exec_query("select count(*) from jobs").first["count"] == "0")
-    Rails.configuration.disable_api_methods = Disable_jobs_api_method_list
+      Job.count == 0)
+    Rails.configuration.disable_api_methods += Disable_jobs_api_method_list
   end
 end

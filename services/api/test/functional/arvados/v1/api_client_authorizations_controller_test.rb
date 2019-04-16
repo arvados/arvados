@@ -13,7 +13,7 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
 
   test "should not get index with expired auth" do
     authorize_with :expired
-    get :index, format: :json
+    get :index, params: {format: :json}
     assert_response 401
   end
 
@@ -25,20 +25,20 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
 
   test "create system auth" do
     authorize_with :admin_trustedclient
-    post :create_system_auth, scopes: '["test"]'
+    post :create_system_auth, params: {scopes: '["test"]'}
     assert_response :success
     assert_not_nil JSON.parse(@response.body)['uuid']
   end
 
   test "prohibit create system auth with token from non-trusted client" do
     authorize_with :admin
-    post :create_system_auth, scopes: '["test"]'
+    post :create_system_auth, params: {scopes: '["test"]'}
     assert_response 403
   end
 
   test "prohibit create system auth by non-admin" do
     authorize_with :active
-    post :create_system_auth, scopes: '["test"]'
+    post :create_system_auth, params: {scopes: '["test"]'}
     assert_response 403
   end
 
@@ -47,7 +47,7 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
     expected_tokens = expected.map do |name|
       api_client_authorizations(name).api_token
     end
-    get :index, search_params
+    get :index, params: search_params
     assert_response :success
     got_tokens = JSON.parse(@response.body)['items']
       .map { |a| a['api_token'] }
@@ -94,7 +94,7 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
   ].each do |user, token, expect_get_response, expect_list_response, expect_list_items|
     test "using '#{user}', get '#{token}' by uuid" do
       authorize_with user
-      get :show, {
+      get :show, params: {
         id: api_client_authorizations(token).uuid,
       }
       assert_response expect_get_response
@@ -102,7 +102,7 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
 
     test "using '#{user}', update '#{token}' by uuid" do
       authorize_with user
-      put :update, {
+      put :update, params: {
         id: api_client_authorizations(token).uuid,
         api_client_authorization: {},
       }
@@ -111,7 +111,7 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
 
     test "using '#{user}', delete '#{token}' by uuid" do
       authorize_with user
-      post :destroy, {
+      post :destroy, params: {
         id: api_client_authorizations(token).uuid,
       }
       assert_response expect_get_response
@@ -119,7 +119,7 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
 
     test "using '#{user}', list '#{token}' by uuid" do
       authorize_with user
-      get :index, {
+      get :index, params: {
         filters: [['uuid','=',api_client_authorizations(token).uuid]],
       }
       assert_response expect_list_response
@@ -132,7 +132,7 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
     if expect_list_items
       test "using '#{user}', list '#{token}' by uuid with offset" do
         authorize_with user
-        get :index, {
+        get :index, params: {
           filters: [['uuid','=',api_client_authorizations(token).uuid]],
           offset: expect_list_items,
         }
@@ -144,7 +144,7 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
 
     test "using '#{user}', list '#{token}' by token" do
       authorize_with user
-      get :index, {
+      get :index, params: {
         filters: [['api_token','=',api_client_authorizations(token).api_token]],
       }
       assert_response expect_list_response
@@ -157,7 +157,7 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
 
   test "scoped token cannot change its own scopes" do
     authorize_with :admin_vm
-    put :update, {
+    put :update, params: {
       id: api_client_authorizations(:admin_vm).uuid,
       api_client_authorization: {scopes: ['all']},
     }
@@ -166,7 +166,7 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
 
   test "token cannot change its own uuid" do
     authorize_with :admin
-    put :update, {
+    put :update, params: {
       id: api_client_authorizations(:admin).uuid,
       api_client_authorization: {uuid: 'zzzzz-gj3su-zzzzzzzzzzzzzzz'},
     }

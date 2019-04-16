@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class CreateSpecimens < ActiveRecord::Migration
+class CreateSpecimens < ActiveRecord::Migration[4.2]
   def up
     create_table :specimens do |t|
       t.string :uuid

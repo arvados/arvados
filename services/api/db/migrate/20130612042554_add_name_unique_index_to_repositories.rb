@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddNameUniqueIndexToRepositories < ActiveRecord::Migration
+class AddNameUniqueIndexToRepositories < ActiveRecord::Migration[4.2]
   def up
     remove_index :repositories, :name
     add_index :repositories, :name, :unique => true

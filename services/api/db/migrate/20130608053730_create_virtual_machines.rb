@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class CreateVirtualMachines < ActiveRecord::Migration
+class CreateVirtualMachines < ActiveRecord::Migration[4.2]
   def change
     create_table :virtual_machines do |t|
       t.string :uuid, :null => false

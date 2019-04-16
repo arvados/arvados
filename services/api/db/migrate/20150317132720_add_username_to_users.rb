@@ -5,7 +5,7 @@
 require 'has_uuid'
 require 'kind_and_etag'
 
-class AddUsernameToUsers < ActiveRecord::Migration
+class AddUsernameToUsers < ActiveRecord::Migration[4.2]
   include CurrentApiClient
 
   SEARCH_INDEX_COLUMNS =

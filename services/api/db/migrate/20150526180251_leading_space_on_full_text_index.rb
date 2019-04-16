@@ -4,7 +4,7 @@
 
 require "./db/migrate/20150123142953_full_text_search.rb"
 
-class LeadingSpaceOnFullTextIndex < ActiveRecord::Migration
+class LeadingSpaceOnFullTextIndex < ActiveRecord::Migration[4.2]
   def up
     # Inspect one of the full-text indexes (chosen arbitrarily) to
     # determine whether this migration is needed.

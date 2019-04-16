@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class RecreateCollectionUniqueNameIndex < ActiveRecord::Migration
+class RecreateCollectionUniqueNameIndex < ActiveRecord::Migration[4.2]
   def up
     Collection.transaction do
       remove_index(:collections,

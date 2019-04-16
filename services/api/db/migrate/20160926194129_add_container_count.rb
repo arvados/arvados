@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddContainerCount < ActiveRecord::Migration
+class AddContainerCount < ActiveRecord::Migration[4.2]
   def up
     add_column :container_requests, :container_count, :int, :default => 0
   end

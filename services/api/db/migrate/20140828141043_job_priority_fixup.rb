@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class JobPriorityFixup < ActiveRecord::Migration
+class JobPriorityFixup < ActiveRecord::Migration[4.2]
   def up
     remove_column :jobs, :priority
     add_column :jobs, :priority, :integer, null: false, default: 0

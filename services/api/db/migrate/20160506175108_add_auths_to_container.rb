@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddAuthsToContainer < ActiveRecord::Migration
+class AddAuthsToContainer < ActiveRecord::Migration[4.2]
   def change
     add_column :containers, :auth_uuid, :string
     add_column :containers, :locked_by_uuid, :string

@@ -556,7 +556,7 @@ subscription_id = 00000000-0000-0000-0000-000000000000
 # https://azure.microsoft.com/en-us/documentation/articles/resource-group-authenticate-service-principal/
 # and updated for v2 of the Azure cli tool.
 #
-# az ad app create --display-name "Node Manager" --homepage "https://arvados.org" --identifier-uris "https://<Your_Application_Uri>" --password <Your_Password>
+# az ad app create --display-name "Node Manager" --homepage "https://arvados.org" --identifier-uris "https://<Your_Application_Uri>" --password <Your_Password> --end-date <Desired_credential_expiry_date>
 # az ad sp create "<Application_Id>"
 # az role assignment create --assignee "<Application_Id>" --role Owner --resource-group "<Your_Azure_Arvados_Resource_Group>"
 #

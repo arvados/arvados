@@ -6,12 +6,12 @@
 abort 'Error: Ruby >= 1.9.3 required.' if RUBY_VERSION < '1.9.3'
 
 require 'logger'
-require 'trollop'
+require 'optimist'
 
 log = Logger.new STDERR
 log.progname = $0.split('/').last
 
-opts = Trollop::options do
+opts = Optimist::options do
   banner ''
   banner "Usage: #{log.progname} " +
     "{user_uuid_or_email} {user_and_repo_name} {vm_uuid}"
@@ -32,7 +32,7 @@ end
 log.level = (ENV['DEBUG'] || opts.debug) ? Logger::DEBUG : Logger::WARN
 
 if ARGV.count != 3
-  Trollop::die "required arguments are missing"
+  Optimist::die "required arguments are missing"
 end
 
 user_arg, user_repo_name, vm_uuid = ARGV

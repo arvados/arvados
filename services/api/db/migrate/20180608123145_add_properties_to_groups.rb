@@ -4,7 +4,7 @@
 
 require './db/migrate/20161213172944_full_text_search_indexes'
 
-class AddPropertiesToGroups < ActiveRecord::Migration
+class AddPropertiesToGroups < ActiveRecord::Migration[4.2]
   def up
     add_column :groups, :properties, :jsonb, default: {}
     ActiveRecord::Base.connection.execute("CREATE INDEX group_index_on_properties ON groups USING gin (properties);")

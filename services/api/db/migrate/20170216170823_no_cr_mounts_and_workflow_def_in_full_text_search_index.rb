@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class NoCrMountsAndWorkflowDefInFullTextSearchIndex < ActiveRecord::Migration
+class NoCrMountsAndWorkflowDefInFullTextSearchIndex < ActiveRecord::Migration[4.2]
   def fts_indexes
     {
       "container_requests" => "container_requests_full_text_search_idx",

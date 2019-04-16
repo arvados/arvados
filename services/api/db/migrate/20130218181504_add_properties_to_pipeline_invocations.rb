@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddPropertiesToPipelineInvocations < ActiveRecord::Migration
+class AddPropertiesToPipelineInvocations < ActiveRecord::Migration[4.2]
   def change
     add_column :pipeline_invocations, :properties, :text
   end

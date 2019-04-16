@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class RenameReplicationAttributes < ActiveRecord::Migration
+class RenameReplicationAttributes < ActiveRecord::Migration[4.2]
   RENAME = [[:redundancy, :replication_desired],
             [:redundancy_confirmed_as, :replication_confirmed],
             [:redundancy_confirmed_at, :replication_confirmed_at]]

@@ -12,7 +12,6 @@ class Job < ArvadosModel
   extend CurrentApiClient
   extend LogReuseInfo
   serialize :components, Hash
-  attr_protected :arvados_sdk_version, :docker_image_locator
   serialize :script_parameters, Hash
   serialize :runtime_constraints, Hash
   serialize :tasks_summary, Hash
@@ -81,6 +80,10 @@ class Job < ArvadosModel
 
   def self.limit_index_columns_read
     ["components"]
+  end
+
+  def self.protected_attributes
+    [:arvados_sdk_version, :docker_image_locator]
   end
 
   def assert_finished

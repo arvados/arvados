@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddOutputTtlToContainerRequests < ActiveRecord::Migration
+class AddOutputTtlToContainerRequests < ActiveRecord::Migration[4.2]
   def change
     add_column :container_requests, :output_ttl, :integer, default: 0, null: false
   end

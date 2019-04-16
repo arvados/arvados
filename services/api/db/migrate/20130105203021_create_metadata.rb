@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class CreateMetadata < ActiveRecord::Migration
+class CreateMetadata < ActiveRecord::Migration[4.2]
   def change
     create_table :metadata do |t|
       t.string :uuid

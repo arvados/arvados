@@ -13,11 +13,11 @@
 #   Append to src_collection.name: " (reason; salvaged data at new_collection.uuid)"
 #   Set portable_data_hash to "d41d8cd98f00b204e9800998ecf8427e+0"
 
-require 'trollop'
+require 'optimist'
 require './lib/salvage_collection'
 include SalvageCollection
 
-opts = Trollop::options do
+opts = Optimist::options do
   banner ''
   banner "Usage: salvage_collection.rb " +
     "{uuid} {reason}"

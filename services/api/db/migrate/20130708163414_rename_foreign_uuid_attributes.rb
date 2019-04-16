@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class RenameForeignUuidAttributes < ActiveRecord::Migration
+class RenameForeignUuidAttributes < ActiveRecord::Migration[4.2]
   def change
     rename_column :api_client_authorizations, :default_owner, :default_owner_uuid
     [:api_clients, :authorized_keys, :collections,

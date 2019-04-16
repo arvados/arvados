@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class FullTextSearchIndexes < ActiveRecord::Migration
+class FullTextSearchIndexes < ActiveRecord::Migration[4.2]
   def fts_indexes
     {
       "collections" => "collections_full_text_search_idx",

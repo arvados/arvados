@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class NormalizeCollectionUuidsInScriptParameters < ActiveRecord::Migration
+class NormalizeCollectionUuidsInScriptParameters < ActiveRecord::Migration[4.2]
   include CurrentApiClient
   def up
     act_as_system_user do

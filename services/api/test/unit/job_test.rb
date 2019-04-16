@@ -661,6 +661,8 @@ class JobTest < ActiveSupport::TestCase
 
   test 'enable legacy api configuration option = auto, has jobs' do
     Rails.configuration.enable_legacy_jobs_api = "auto"
+    assert Job.count > 0
+    assert_equal [], Rails.configuration.disable_api_methods
     check_enable_legacy_jobs_api
     assert_equal [], Rails.configuration.disable_api_methods
   end
@@ -670,7 +672,8 @@ class JobTest < ActiveSupport::TestCase
     act_as_system_user do
       Job.destroy_all
     end
-    puts "ZZZ #{Job.count}"
+    assert_equal 0, Job.count
+    assert_equal [], Rails.configuration.disable_api_methods
     check_enable_legacy_jobs_api
     assert_equal Disable_jobs_api_method_list, Rails.configuration.disable_api_methods
   end

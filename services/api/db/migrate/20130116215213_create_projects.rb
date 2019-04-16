@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class CreateProjects < ActiveRecord::Migration
+class CreateProjects < ActiveRecord::Migration[4.2]
   def up
     create_table :projects do |t|
       t.string :uuid

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class CreateHumans < ActiveRecord::Migration
+class CreateHumans < ActiveRecord::Migration[4.2]
   def change
     create_table :humans do |t|
       t.string :uuid, :null => false

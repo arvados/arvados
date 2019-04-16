@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class NoDowngradeAfterJson < ActiveRecord::Migration
+class NoDowngradeAfterJson < ActiveRecord::Migration[4.2]
   def up
   end
 

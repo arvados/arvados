@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class SplitExpiryToTrashAndDelete < ActiveRecord::Migration
+class SplitExpiryToTrashAndDelete < ActiveRecord::Migration[4.2]
   def up
     Collection.transaction do
       add_column(:collections, :trash_at, :datetime)

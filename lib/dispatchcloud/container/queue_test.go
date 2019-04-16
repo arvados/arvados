@@ -74,6 +74,7 @@ func (suite *IntegrationSuite) TestGetLockUnlockCancel(c *check.C) {
 			defer wg.Done()
 			err := cq.Unlock(uuid)
 			c.Check(err, check.NotNil)
+
 			err = cq.Lock(uuid)
 			c.Check(err, check.IsNil)
 			ctr, ok := cq.Get(uuid)
@@ -81,12 +82,21 @@ func (suite *IntegrationSuite) TestGetLockUnlockCancel(c *check.C) {
 			c.Check(ctr.State, check.Equals, arvados.ContainerStateLocked)
 			err = cq.Lock(uuid)
 			c.Check(err, check.NotNil)
+
 			err = cq.Unlock(uuid)
 			c.Check(err, check.IsNil)
 			ctr, ok = cq.Get(uuid)
 			c.Check(ok, check.Equals, true)
 			c.Check(ctr.State, check.Equals, arvados.ContainerStateQueued)
 			err = cq.Unlock(uuid)
+			c.Check(err, check.NotNil)
+
+			err = cq.Cancel(uuid)
+			c.Check(err, check.IsNil)
+			ctr, ok = cq.Get(uuid)
+			c.Check(ok, check.Equals, true)
+			c.Check(ctr.State, check.Equals, arvados.ContainerStateCancelled)
+			err = cq.Lock(uuid)
 			c.Check(err, check.NotNil)
 		}()
 	}

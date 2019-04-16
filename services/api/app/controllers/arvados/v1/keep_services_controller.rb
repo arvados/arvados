@@ -4,9 +4,9 @@
 
 class Arvados::V1::KeepServicesController < ApplicationController
 
-  skip_before_filter :find_object_by_uuid, only: :accessible
-  skip_before_filter :render_404_if_no_object, only: :accessible
-  skip_before_filter :require_auth_scope, only: :accessible
+  skip_before_action :find_object_by_uuid, only: :accessible
+  skip_before_action :render_404_if_no_object, only: :accessible
+  skip_before_action :require_auth_scope, only: :accessible
 
   def find_objects_for_index
     # all users can list all keep services

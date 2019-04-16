@@ -15,19 +15,19 @@ class CrossOriginTest < ActionDispatch::IntegrationTest
 
   %w(/login /logout /auth/example/callback /auth/joshid).each do |path|
     test "OPTIONS requests are refused at #{path}" do
-      options path, {}, {}
+      options path, params: {}, headers: {}
       assert_no_cors_headers
     end
 
     test "CORS headers do not exist at GET #{path}" do
-      get path, {}, {}
+      get path, params: {}, headers: {}
       assert_no_cors_headers
     end
   end
 
   %w(/discovery/v1/apis/arvados/v1/rest).each do |path|
     test "CORS headers are set at GET #{path}" do
-      get path, {}, {}
+      get path, params: {}, headers: {}
       assert_response :success
       assert_cors_headers
     end
@@ -37,14 +37,14 @@ class CrossOriginTest < ActionDispatch::IntegrationTest
    '/arvados/v1/users',
    '/arvados/v1/api_client_authorizations'].each do |path|
     test "CORS headers are set and body is empty at OPTIONS #{path}" do
-      options path, {}, {}
+      options path, params: {}, headers: {}
       assert_response :success
       assert_cors_headers
       assert_equal '', response.body
     end
 
     test "CORS headers are set at authenticated GET #{path}" do
-      get path, {}, auth(:active_trustedclient)
+      get path, params: {}, headers: auth(:active_trustedclient)
       assert_response :success
       assert_cors_headers
     end
@@ -55,7 +55,7 @@ class CrossOriginTest < ActionDispatch::IntegrationTest
     # does not grant access to any resources.
     ['GET', 'POST'].each do |method|
       test "Session does not work at #{method} #{path}" do
-        send method.downcase, path, {format: 'json'}, {user_id: 1}
+        send method.downcase, path, params: {format: 'json'}, headers: {user_id: 1}
         assert_response 401
         assert_cors_headers
       end

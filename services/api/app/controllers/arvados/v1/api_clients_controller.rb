@@ -3,5 +3,5 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 class Arvados::V1::ApiClientsController < ApplicationController
-  before_filter :admin_required
+  before_action :admin_required
 end

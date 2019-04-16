@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddSecretMountsToContainers < ActiveRecord::Migration
+class AddSecretMountsToContainers < ActiveRecord::Migration[4.2]
   def change
     add_column :container_requests, :secret_mounts, :jsonb, default: {}
     add_column :containers, :secret_mounts, :jsonb, default: {}

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class AddDefaultOwnerToUsers < ActiveRecord::Migration
+class AddDefaultOwnerToUsers < ActiveRecord::Migration[4.2]
   def change
     add_column :users, :default_owner, :string
   end

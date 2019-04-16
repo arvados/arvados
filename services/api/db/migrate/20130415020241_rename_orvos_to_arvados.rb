@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class RenameOrvosToArvados < ActiveRecord::Migration
+class RenameOrvosToArvados < ActiveRecord::Migration[4.2]
   def up
     Link.update_all("head_kind=replace(head_kind,'orvos','arvados')")
     Link.update_all("tail_kind=replace(tail_kind,'orvos','arvados')")

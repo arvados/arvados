@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class RenamePipelinesToPipelineTemplates < ActiveRecord::Migration
+class RenamePipelinesToPipelineTemplates < ActiveRecord::Migration[4.2]
   def up
     rename_column :pipeline_instances, :pipeline_uuid, :pipeline_template_uuid
     rename_table :pipelines, :pipeline_templates
