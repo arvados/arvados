@@ -105,6 +105,10 @@ func (su *URL) UnmarshalText(text []byte) error {
 	return err
 }
 
+func (su URL) MarshalText() ([]byte, error) {
+	return []byte(fmt.Sprintf("%s", (*url.URL)(&su).String())), nil
+}
+
 type ServiceInstance struct{}
 
 type Logging struct {
