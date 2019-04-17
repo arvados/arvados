@@ -779,6 +779,9 @@ class ContainerTest < ActiveSupport::TestCase
 
   [
     [Container::Queued, {state: Container::Locked}],
+    [Container::Queued, {state: Container::Running}],
+    [Container::Queued, {state: Container::Complete}],
+    [Container::Queued, {state: Container::Cancelled}],
     [Container::Queued, {priority: 123456789}],
     [Container::Queued, {runtime_status: {'error' => 'oops'}}],
     [Container::Queued, {cwd: '/'}],
