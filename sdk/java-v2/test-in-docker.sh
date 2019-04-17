@@ -47,4 +47,4 @@ fi
 #UID=$(id -u) # UID is read-only on many systems
 #exec docker run --rm --user $UID -v $PWD:$PWD -w $PWD gradle /bin/sh -c '(gradle clean && gradle test); gradle --stop'
 #exec docker run --rm --user $UID -v $PWD:$PWD -w $PWD gradle /bin/sh -c 'gradle jar -Pversion='"$build_version"
-exec docker run --rm --user $UID -v $PWD:$PWD -w $PWD gradle /bin/sh -c 'gradle clean && gradle test && jar uploadArchives -Pversion='"$build_version" --info --stacktrace
+exec docker run --rm --user $UID -v $PWD:$PWD -w $PWD gradle /bin/sh -c 'gradle gradle clean && gradle test && gradle jar install uploadArchives -Pversion='"$build_version" --info --stacktrace

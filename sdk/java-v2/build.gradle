@@ -83,6 +83,7 @@ uploadArchives {
       pom.project {
         name 'Arvados Java SDK'
         packaging 'jar'
+        groupId 'org.arvados'
         description 'Arvados Java SDK'
         url 'https://github.com/curoverse/arvados'
                
