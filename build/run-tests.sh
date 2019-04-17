@@ -394,7 +394,7 @@ start_services() {
         return 0
     fi
     . "$VENVDIR/bin/activate"
-    echo 'Starting API, keepproxy, keep-web, ws, arv-git-httpd, and nginx ssl proxy...'
+    echo 'Starting API, controller, keepproxy, keep-web, arv-git-httpd, ws, and nginx ssl proxy...'
     if [[ ! -d "$WORKSPACE/services/api/log" ]]; then
 	mkdir -p "$WORKSPACE/services/api/log"
     fi
@@ -821,6 +821,7 @@ do_install_once() {
     title "install $1"
     timer_reset
 
+    result=
     if which deactivate >/dev/null; then deactivate; fi
     if [[ "$1" != "env" ]] && ! . "$VENVDIR/bin/activate"; then
         result=1
