@@ -497,7 +497,7 @@ class Container < ArvadosModel
       return false
     end
 
-    if self.state == Running &&
+    if self.state_was == Running &&
        !current_api_client_authorization.nil? &&
        (current_api_client_authorization.uuid == self.auth_uuid ||
         current_api_client_authorization.token == self.runtime_token)
@@ -505,6 +505,8 @@ class Container < ArvadosModel
       # change priority or log.
       permitted.push *final_attrs
       permitted = permitted - [:log, :priority]
+    elsif !current_user.andand.is_admin
+      raise PermissionDeniedError
     elsif self.locked_by_uuid && self.locked_by_uuid != current_api_client_authorization.andand.uuid
       # When locked, progress fields cannot be updated by the wrong
       # dispatcher, even though it has admin privileges.

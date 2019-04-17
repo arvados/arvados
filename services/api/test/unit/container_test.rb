@@ -184,7 +184,7 @@ class ContainerTest < ActiveSupport::TestCase
     assert_equal c1.runtime_status, {}
 
     assert_equal Container::Queued, c1.state
-    assert_raises ActiveRecord::RecordInvalid do
+    assert_raises ArvadosModel::PermissionDeniedError do
       c1.update_attributes! runtime_status: {'error' => 'Oops!'}
     end
 
@@ -777,6 +777,48 @@ class ContainerTest < ActiveSupport::TestCase
     end
   end
 
+  [
+    [Container::Queued, {state: Container::Locked}],
+    [Container::Queued, {priority: 123456789}],
+    [Container::Queued, {runtime_status: {'error' => 'oops'}}],
+    [Container::Queued, {cwd: '/'}],
+    [Container::Locked, {state: Container::Running}],
+    [Container::Locked, {state: Container::Queued}],
+    [Container::Locked, {priority: 123456789}],
+    [Container::Locked, {runtime_status: {'error' => 'oops'}}],
+    [Container::Locked, {cwd: '/'}],
+    [Container::Running, {state: Container::Complete}],
+    [Container::Running, {state: Container::Cancelled}],
+    [Container::Running, {priority: 123456789}],
+    [Container::Running, {runtime_status: {'error' => 'oops'}}],
+    [Container::Running, {cwd: '/'}],
+    [Container::Complete, {state: Container::Cancelled}],
+    [Container::Complete, {priority: 123456789}],
+    [Container::Complete, {runtime_status: {'error' => 'oops'}}],
+    [Container::Complete, {cwd: '/'}],
+    [Container::Cancelled, {cwd: '/'}],
+  ].each do |start_state, updates|
+    test "Container update #{updates.inspect} when #{start_state} forbidden for non-admin" do
+      set_user_from_auth :active
+      c, _ = minimal_new
+      if start_state != Container::Queued
+        set_user_from_auth :dispatch1
+        c.lock
+        if start_state != Container::Locked
+          c.update_attributes! state: Container::Running
+          if start_state != Container::Running
+            c.update_attributes! state: start_state
+          end
+        end
+      end
+      assert_equal c.state, start_state
+      set_user_from_auth :active
+      assert_raises(ArvadosModel::PermissionDeniedError) do
+        c.update_attributes! updates
+      end
+    end
+  end
+
   test "Container only set exit code on complete" do
     set_user_from_auth :active
     c, _ = minimal_new
@@ -899,7 +941,9 @@ class ContainerTest < ActiveSupport::TestCase
     c.update_attributes! state: Container::Running
 
     set_user_from_auth :running_to_be_deleted_container_auth
-    refute c.update_attributes(output: collections(:foo_file).portable_data_hash)
+    assert_raises(ArvadosModel::PermissionDeniedError) do
+      c.update_attributes(output: collections(:foo_file).portable_data_hash)
+    end
   end
 
   test "can set trashed output on running container" do
