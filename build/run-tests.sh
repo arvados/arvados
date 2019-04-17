@@ -749,6 +749,7 @@ do_test_once() {
     title "test $1"
     timer_reset
 
+    result=
     if which deactivate >/dev/null; then deactivate; fi
     if ! . "$VENVDIR/bin/activate"
     then
