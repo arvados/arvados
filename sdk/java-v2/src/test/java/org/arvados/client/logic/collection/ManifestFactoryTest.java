@@ -10,6 +10,7 @@ package org.arvados.client.logic.collection;
 import org.arvados.client.test.utils.FileTestUtils;
 import org.assertj.core.util.Lists;
 import org.junit.Test;
+import org.junit.Ignore;
 
 import java.io.File;
 import java.util.List;
