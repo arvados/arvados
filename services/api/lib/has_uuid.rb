@@ -30,7 +30,7 @@ module HasUuid
       Digest::MD5.hexdigest(self.to_s).to_i(16).to_s(36)[-5..-1]
     end
     def generate_uuid
-      [Server::Application.config.uuid_prefix,
+      [Rails.configuration.ClusterID,
        self.uuid_prefix,
        rand(2**256).to_s(36)[-15..-1]].
         join '-'

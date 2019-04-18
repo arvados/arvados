@@ -50,7 +50,7 @@ module Trashable
       if trash_at.nil?
         self.delete_at = nil
       else
-        self.delete_at = trash_at + Rails.configuration.default_trash_lifetime.seconds
+        self.delete_at = trash_at + Rails.configuration.Collections.DefaultTrashLifetime.seconds
       end
     elsif !trash_at || !delete_at || trash_at > delete_at
       # Not trash, or bogus arguments? Just validate in
@@ -65,7 +65,7 @@ module Trashable
       earliest_delete = [
         @validation_timestamp,
         trash_at_was,
-      ].compact.min + Rails.configuration.blob_signature_ttl.seconds
+      ].compact.min + Rails.configuration.Collections.BlobSigningTTL.seconds
 
       # The previous value of delete_at is also an upper bound on the
       # longest-lived permission token. For example, if TTL=14,
@@ -96,7 +96,7 @@ module TrashableController
       @object.update_attributes!(trash_at: db_current_time)
     end
     earliest_delete = (@object.trash_at +
-                       Rails.configuration.blob_signature_ttl.seconds)
+                       Rails.configuration.Collections.BlobSigningTTL.seconds)
     if @object.delete_at > earliest_delete
       @object.update_attributes!(delete_at: earliest_delete)
     end

@@ -638,12 +638,12 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     setup_email = ActionMailer::Base.deliveries.last
     assert_not_nil setup_email, 'Expected email after setup'
 
-    assert_equal Rails.configuration.user_notifier_email_from, setup_email.from[0]
+    assert_equal Rails.configuration.Users.UserNotifierEmailFrom, setup_email.from[0]
     assert_equal 'foo@example.com', setup_email.to[0]
     assert_equal 'Welcome to Arvados - shell account enabled', setup_email.subject
     assert (setup_email.body.to_s.include? 'Your Arvados shell account has been set up'),
         'Expected Your Arvados shell account has been set up in email body'
-    assert (setup_email.body.to_s.include? "#{Rails.configuration.workbench_address}users/#{created['uuid']}/virtual_machines"), 'Expected virtual machines url in email body'
+    assert (setup_email.body.to_s.include? "#{Rails.configuration.Services.Workbench1.ExternalURL}users/#{created['uuid']}/virtual_machines"), 'Expected virtual machines url in email body'
   end
 
   test "setup inactive user by changing is_active to true" do

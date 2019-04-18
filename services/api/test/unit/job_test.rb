@@ -90,7 +90,7 @@ class JobTest < ActiveSupport::TestCase
   ].each do |use_config|
     test "Job with no Docker image uses default docker image when configuration is set #{use_config}" do
       default_docker_image = collections(:docker_image)[:portable_data_hash]
-      Rails.configuration.default_docker_image_for_jobs = default_docker_image if use_config
+      Rails.configuration.Containers.JobsAPI.DefaultDockerImage = default_docker_image if use_config
 
       job = Job.new job_attrs
       assert job.valid?, job.errors.full_messages.to_s
@@ -127,10 +127,10 @@ class JobTest < ActiveSupport::TestCase
     'locator' => BAD_COLLECTION,
   }.each_pair do |spec_type, image_spec|
     test "Job validation fails with nonexistent Docker image #{spec_type}" do
-      Rails.configuration.remote_hosts = {}
+      Rails.configuration.RemoteClusters = {}
       job = Job.new job_attrs(runtime_constraints:
                               {'docker_image' => image_spec})
-      assert(job.invalid?, "nonexistent Docker image #{spec_type} was valid")
+      assert(job.invalid?, "nonexistent Docker image #{spec_type} #{image_spec} was valid")
     end
   end
 
@@ -426,7 +426,7 @@ class JobTest < ActiveSupport::TestCase
   end
 
   test "use migrated docker image if requesting old-format image by tag" do
-    Rails.configuration.docker_image_formats = ['v2']
+    Rails.configuration.Containers.SupportedDockerImageFormats = ['v2']
     add_docker19_migration_link
     job = Job.create!(
       job_attrs(
@@ -438,7 +438,7 @@ class JobTest < ActiveSupport::TestCase
   end
 
   test "use migrated docker image if requesting old-format image by pdh" do
-    Rails.configuration.docker_image_formats = ['v2']
+    Rails.configuration.Containers.SupportedDockerImageFormats = ['v2']
     add_docker19_migration_link
     job = Job.create!(
       job_attrs(
@@ -455,7 +455,7 @@ class JobTest < ActiveSupport::TestCase
    [:docker_image_1_12, :docker_image_1_12, :docker_image_1_12],
   ].each do |existing_image, request_image, expect_image|
     test "if a #{existing_image} job exists, #{request_image} yields #{expect_image} after migration" do
-      Rails.configuration.docker_image_formats = ['v1']
+      Rails.configuration.Containers.SupportedDockerImageFormats = ['v1']
 
       if existing_image == :docker_image
         oldjob = Job.create!(
@@ -477,7 +477,7 @@ class JobTest < ActiveSupport::TestCase
         end
       end
 
-      Rails.configuration.docker_image_formats = ['v2']
+      Rails.configuration.Containers.SupportedDockerImageFormats = ['v2']
       add_docker19_migration_link
 
       # Check that both v1 and v2 images get resolved to v2.
@@ -568,7 +568,7 @@ class JobTest < ActiveSupport::TestCase
   end
 
   test 'find_reusable with logging' do
-    Rails.configuration.log_reuse_decisions = true
+    Rails.configuration.Containers.LogReuseDecisions = true
     Rails.logger.expects(:info).at_least(3)
     try_find_reusable
   end
@@ -595,7 +595,7 @@ class JobTest < ActiveSupport::TestCase
     assert_nil Job.find_reusable(example_attrs, {}, [], [users(:active)])
 
     # ...unless config says to reuse the earlier job in such cases.
-    Rails.configuration.reuse_job_if_outputs_differ = true
+    Rails.configuration.Containers.JobsAPI.ReuseJobIfOutputsDiffer = true
     j = Job.find_reusable(example_attrs, {}, [], [users(:active)])
     assert_equal foobar.uuid, j.uuid
   end
@@ -648,33 +648,32 @@ class JobTest < ActiveSupport::TestCase
   end
 
   test 'enable legacy api configuration option = true' do
-    Rails.configuration.enable_legacy_jobs_api = true
+    Rails.configuration.Containers.JobsAPI.Enable = "true"
     check_enable_legacy_jobs_api
-    assert_equal [], Rails.configuration.disable_api_methods
+    assert_equal [], Rails.configuration.API.DisabledAPIs
   end
 
   test 'enable legacy api configuration option = false' do
-    Rails.configuration.enable_legacy_jobs_api = false
+    Rails.configuration.Containers.JobsAPI.Enable = "false"
     check_enable_legacy_jobs_api
-    assert_equal Disable_jobs_api_method_list, Rails.configuration.disable_api_methods
+    assert_equal Disable_jobs_api_method_list, Rails.configuration.API.DisabledAPIs
   end
 
   test 'enable legacy api configuration option = auto, has jobs' do
-    Rails.configuration.enable_legacy_jobs_api = "auto"
+    Rails.configuration.Containers.JobsAPI.Enable = "auto"
     assert Job.count > 0
-    assert_equal [], Rails.configuration.disable_api_methods
     check_enable_legacy_jobs_api
-    assert_equal [], Rails.configuration.disable_api_methods
+    assert_equal [], Rails.configuration.API.DisabledAPIs
   end
 
   test 'enable legacy api configuration option = auto, no jobs' do
-    Rails.configuration.enable_legacy_jobs_api = "auto"
+    Rails.configuration.Containers.JobsAPI.Enable = "auto"
     act_as_system_user do
       Job.destroy_all
     end
     assert_equal 0, Job.count
-    assert_equal [], Rails.configuration.disable_api_methods
+    assert_equal [], Rails.configuration.API.DisabledAPIs
     check_enable_legacy_jobs_api
-    assert_equal Disable_jobs_api_method_list, Rails.configuration.disable_api_methods
+    assert_equal Disable_jobs_api_method_list, Rails.configuration.API.DisabledAPIs
   end
 end

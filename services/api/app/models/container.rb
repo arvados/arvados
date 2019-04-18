@@ -206,7 +206,7 @@ class Container < ArvadosModel
     rc = {}
     defaults = {
       'keep_cache_ram' =>
-      Rails.configuration.container_default_keep_cache_ram,
+      Rails.configuration.Containers.DefaultKeepCacheRAM,
     }
     defaults.merge(runtime_constraints).each do |k, v|
       if v.is_a? Array
@@ -369,7 +369,7 @@ class Container < ArvadosModel
     transaction do
       reload(lock: 'FOR UPDATE')
       check_unlock_fail
-      if self.lock_count < Rails.configuration.max_container_dispatch_attempts
+      if self.lock_count < Rails.configuration.Containers.MaxDispatchAttempts
         update_attributes!(state: Queued)
       else
         update_attributes!(state: Cancelled,

@@ -154,8 +154,11 @@ navbar:
   admin:
     - Topics:
       - admin/index.html.textile.liquid
+    - Configuration:
+      - admin/config.html.textile.liquid
     - Upgrading and migrations:
       - admin/upgrading.html.textile.liquid
+      - admin/config-migration.html.textile.liquid
       - install/migrate-docker19.html.textile.liquid
       - admin/upgrade-crunch2.html.textile.liquid
     - Users and Groups:

@@ -352,6 +352,15 @@ handle_rails_package() {
     if  [[ "$pkgname" != "arvados-workbench" ]]; then
       exclude_list+=('config/database.yml')
     fi
+    # for arvados-api-server, we need to dereference the
+    # config/config.default.yml file. There is no fpm way to do that, sadly
+    # (excluding the existing symlink and then adding the file from its source
+    # path doesn't work, sadly.
+    if [[ "$pkgname" == "arvados-api-server" ]]; then
+      mv /arvados/services/api/config/config.default.yml /arvados/services/api/config/config.default.yml.bu
+      cp -p /arvados/lib/config/config.default.yml /arvados/services/api/config/
+      exclude_list+=('config/config.default.yml.bu')
+    fi
     for exclude in ${exclude_list[@]}; do
         switches+=(-x "$exclude_root/$exclude")
     done
@@ -359,6 +368,11 @@ handle_rails_package() {
               -x "$exclude_root/vendor/cache-*" \
               -x "$exclude_root/vendor/bundle" "$@" "$license_arg"
     rm -rf "$scripts_dir"
+    # Undo the deferencing we did above
+    if [[ "$pkgname" == "arvados-api-server" ]]; then
+      rm -f /arvados/services/api/config/config.default.yml
+      mv /arvados/services/api/config/config.default.yml.bu /arvados/services/api/config/config.default.yml
+    fi
 }
 
 # Build python packages with a virtualenv built-in

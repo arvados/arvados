@@ -25,6 +25,8 @@ class Arvados::V1::SchemaController < ApplicationController
   def discovery_doc
     Rails.cache.fetch 'arvados_v1_rest_discovery' do
       Rails.application.eager_load!
+      remoteHosts = {}
+      Rails.configuration.RemoteClusters.each {|k,v| if k != "*" then remoteHosts[k] = v["Host"] end }
       discovery = {
         kind: "discovery#restDescription",
         discoveryVersion: "v1",
@@ -39,41 +41,34 @@ class Arvados::V1::SchemaController < ApplicationController
         title: "Arvados API",
         description: "The API to interact with Arvados.",
         documentationLink: "http://doc.arvados.org/api/index.html",
-        defaultCollectionReplication: Rails.configuration.default_collection_replication,
+        defaultCollectionReplication: Rails.configuration.Collections.DefaultReplication,
         protocol: "rest",
         baseUrl: root_url + "arvados/v1/",
         basePath: "/arvados/v1/",
         rootUrl: root_url,
         servicePath: "arvados/v1/",
         batchPath: "batch",
-        uuidPrefix: Rails.application.config.uuid_prefix,
-        defaultTrashLifetime: Rails.application.config.default_trash_lifetime,
-        blobSignatureTtl: Rails.application.config.blob_signature_ttl,
-        maxRequestSize: Rails.application.config.max_request_size,
-        maxItemsPerResponse: Rails.application.config.max_items_per_response,
-        dockerImageFormats: Rails.application.config.docker_image_formats,
-        crunchLogBytesPerEvent: Rails.application.config.crunch_log_bytes_per_event,
-        crunchLogSecondsBetweenEvents: Rails.application.config.crunch_log_seconds_between_events,
-        crunchLogThrottlePeriod: Rails.application.config.crunch_log_throttle_period,
-        crunchLogThrottleBytes: Rails.application.config.crunch_log_throttle_bytes,
-        crunchLogThrottleLines: Rails.application.config.crunch_log_throttle_lines,
-        crunchLimitLogBytesPerJob: Rails.application.config.crunch_limit_log_bytes_per_job,
-        crunchLogPartialLineThrottlePeriod: Rails.application.config.crunch_log_partial_line_throttle_period,
-        crunchLogUpdatePeriod: Rails.application.config.crunch_log_update_period,
-        crunchLogUpdateSize: Rails.application.config.crunch_log_update_size,
-        remoteHosts: Rails.configuration.remote_hosts,
-        remoteHostsViaDNS: Rails.configuration.remote_hosts_via_dns,
-        websocketUrl: Rails.application.config.websocket_address,
-        workbenchUrl: Rails.application.config.workbench_address,
-        keepWebServiceUrl: Rails.application.config.keep_web_service_url,
-        gitUrl: case Rails.application.config.git_repo_https_base
-                when false
-                  ''
-                when true
-                  'https://git.%s.arvadosapi.com/' % Rails.configuration.uuid_prefix
-                else
-                  Rails.application.config.git_repo_https_base
-                end,
+        uuidPrefix: Rails.configuration.ClusterID,
+        defaultTrashLifetime: Rails.configuration.Collections.DefaultTrashLifetime,
+        blobSignatureTtl: Rails.configuration.Collections.BlobSigningTTL,
+        maxRequestSize: Rails.configuration.API.MaxRequestSize,
+        maxItemsPerResponse: Rails.configuration.API.MaxItemsPerResponse,
+        dockerImageFormats: Rails.configuration.Containers.SupportedDockerImageFormats,
+        crunchLogBytesPerEvent: Rails.configuration.Containers.Logging.LogBytesPerEvent,
+        crunchLogSecondsBetweenEvents: Rails.configuration.Containers.Logging.LogSecondsBetweenEvents,
+        crunchLogThrottlePeriod: Rails.configuration.Containers.Logging.LogThrottlePeriod,
+        crunchLogThrottleBytes: Rails.configuration.Containers.Logging.LogThrottleBytes,
+        crunchLogThrottleLines: Rails.configuration.Containers.Logging.LogThrottleLines,
+        crunchLimitLogBytesPerJob: Rails.configuration.Containers.Logging.LimitLogBytesPerJob,
+        crunchLogPartialLineThrottlePeriod: Rails.configuration.Containers.Logging.LogPartialLineThrottlePeriod,
+        crunchLogUpdatePeriod: Rails.configuration.Containers.Logging.LogUpdatePeriod,
+        crunchLogUpdateSize: Rails.configuration.Containers.Logging.LogUpdateSize,
+        remoteHosts: remoteHosts,
+        remoteHostsViaDNS: Rails.configuration.RemoteClusters["*"].Proxy,
+        websocketUrl: Rails.configuration.Services.Websocket.ExternalURL.to_s,
+        workbenchUrl: Rails.configuration.Services.Workbench1.ExternalURL.to_s,
+        keepWebServiceUrl: Rails.configuration.Services.WebDAV.ExternalURL.to_s,
+        gitUrl: Rails.configuration.Services.GitHTTP.ExternalURL.to_s,
         parameters: {
           alt: {
             type: "string",
@@ -405,7 +400,7 @@ class Arvados::V1::SchemaController < ApplicationController
           end
         end
       end
-      Rails.configuration.disable_api_methods.each do |method|
+      Rails.configuration.API.DisabledAPIs.each do |method|
         ctrl, action = method.split('.', 2)
         discovery[:resources][ctrl][:methods].delete(action.to_sym)
       end

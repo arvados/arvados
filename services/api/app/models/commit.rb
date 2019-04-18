@@ -148,7 +148,7 @@ class Commit < ActiveRecord::Base
     unless src_gitdir
       raise ArgumentError.new "no local repository for #{repo_name}"
     end
-    dst_gitdir = Rails.configuration.git_internal_dir
+    dst_gitdir = Rails.configuration.Containers.JobsAPI.GitInternalDir
 
     begin
       commit_in_dst = must_git(dst_gitdir, "log -n1 --format=%H #{sha1.shellescape}^{commit}").strip
