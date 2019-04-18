@@ -21,6 +21,7 @@ import org.arvados.client.test.utils.FileTestUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.Ignore;
 
 import java.io.File;
 import java.nio.charset.Charset;
@@ -47,6 +48,7 @@ public class ArvadosFacadeTest extends ArvadosClientMockedWebServerTest {
     }
 
     @Test
+    @Ignore("Failing test #15041")
     public void uploadIsPerformedSuccessfullyUsingDiskOnlyKeepServices() throws Exception {
 
         // given

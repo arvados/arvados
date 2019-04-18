@@ -1069,7 +1069,7 @@ test_sdk/cli() {
 }
 
 test_sdk/java-v2() {
-    cd "$WORKSPACE/sdk/java-v2" && ./gradlew test
+    cd "$WORKSPACE/sdk/java-v2" && gradle test
 }
 
 test_services/login-sync() {
