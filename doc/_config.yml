@@ -106,6 +106,7 @@ navbar:
       - sdk/ruby/example.html.textile.liquid
     - Java v2:
       - sdk/java-v2/index.html.textile.liquid
+      - sdk/java-v2/example.html.textile.liquid
       - sdk/java-v2/javadoc.html.textile.liquid
     - Java v1:
       - sdk/java/index.html.textile.liquid

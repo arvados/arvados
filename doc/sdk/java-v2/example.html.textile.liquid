@@ -1,0 +1,49 @@
+---
+layout: default
+navsection: sdk
+navmenu: Java SDK v2
+title: Examples
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+In these examples, the site prefix is @aaaaa@.
+
+h2.  Initialize SDK
+
+{% codeblock as java %}
+package org.arvados.example;
+
+import java.util.List;
+import org.arvados.client.config.ConfigProvider;
+import org.arvados.client.config.ExternalConfigProvider;
+import org.arvados.client.api.model.CollectionList;
+import org.arvados.client.api.model.Collection;
+import org.arvados.client.api.client.CollectionsApiClient;
+
+public class CollectionExample {
+    public static void main(String[] argv) {
+	ConfigProvider conf = ExternalConfigProvider.builder().
+	    apiProtocol("https").
+	    apiHost("qr1hi.arvadosapi.com").
+	    apiPort(443).
+	    apiToken("...").
+	    build();
+	CollectionsApiClient collectionsApi = new CollectionsApiClient(conf);
+	/* ... */
+    }
+}
+{% endcodeblock %}
+
+h2. list
+
+{% codeblock as java %}
+	CollectionList cl = collectionsApi.list();
+	List<Collection> items = cl.getItems();
+	for (int i = 0; i < items.size(); i++) {
+	    System.out.println(items.get(i));
+	}
+{% endcodeblock %}
