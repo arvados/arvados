@@ -265,6 +265,13 @@ class ArvPathMapper(PathMapper):
 
 
 class StagingPathMapper(PathMapper):
+    # Note that StagingPathMapper internally maps files from target to source.
+    # Specifically, the 'self._pathmap' dict keys are the target location and the
+    # values are 'MapperEnt' named tuples from which we use the 'resolved' attribute
+    # as the file identifier. This makes it possible to map an input file to multiple
+    # target directories. The exception is for file literals, which store the contents of
+    # the file in 'MapperEnt.resolved' and are therefore still mapped from source to target.
+
     _follow_dirs = True
 
     def __init__(self, referenced_files, basedir, stagedir, separateDirs=True):
@@ -276,30 +283,50 @@ class StagingPathMapper(PathMapper):
         loc = obj["location"]
         tgt = os.path.join(stagedir, obj["basename"])
         basetgt, baseext = os.path.splitext(tgt)
+
+        def targetExists():
+            return tgt in self.targets and ("contents" not in obj) and (self._pathmap[tgt].resolved != loc)
+        def literalTargetExists():
+            return tgt in self.targets and "contents" in obj
+
         n = 1
-        if tgt in self.targets and (self.reversemap(tgt)[0] != loc):
+        if targetExists() or literalTargetExists():
             while tgt in self.targets:
                 n += 1
                 tgt = "%s_%i%s" % (basetgt, n, baseext)
         self.targets.add(tgt)
         if obj["class"] == "Directory":
             if obj.get("writable"):
-                self._pathmap[loc] = MapperEnt(loc, tgt, "WritableDirectory", staged)
+                self._pathmap[tgt] = MapperEnt(loc, tgt, "WritableDirectory", staged)
             else:
-                self._pathmap[loc] = MapperEnt(loc, tgt, "Directory", staged)
+                self._pathmap[tgt] = MapperEnt(loc, tgt, "Directory", staged)
             if loc.startswith("_:") or self._follow_dirs:
                 self.visitlisting(obj.get("listing", []), tgt, basedir)
         elif obj["class"] == "File":
-            if loc in self._pathmap:
+            if tgt in self._pathmap:
                 return
             if "contents" in obj and loc.startswith("_:"):
                 self._pathmap[loc] = MapperEnt(obj["contents"], tgt, "CreateFile", staged)
             else:
                 if copy or obj.get("writable"):
-                    self._pathmap[loc] = MapperEnt(loc, tgt, "WritableFile", staged)
+                    self._pathmap[tgt] = MapperEnt(loc, tgt, "WritableFile", staged)
                 else:
-                    self._pathmap[loc] = MapperEnt(loc, tgt, "File", staged)
+                    self._pathmap[tgt] = MapperEnt(loc, tgt, "File", staged)
                 self.visitlisting(obj.get("secondaryFiles", []), stagedir, basedir)
+
+    def mapper(self, src):  # type: (Text) -> MapperEnt.
+        # Overridden to maintain the use case of mapping by source (identifier) to
+        # target regardless of how the map is structured interally.
+        def getMapperEnt(src):
+            for k,v in viewitems(self._pathmap):
+                if (v.type != "CreateFile" and v.resolved == src) or (v.type == "CreateFile" and k == src):
+                    return v
+
+        if u"#" in src:
+            i = src.index(u"#")
+            v = getMapperEnt(src[i:])
+            return MapperEnt(v.resolved, v.target + src[i:], v.type, v.staged)
+        return getMapperEnt(src)
 
 
 class VwdPathMapper(StagingPathMapper):

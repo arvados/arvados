@@ -442,17 +442,16 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                                               num_retries=self.num_retries)
 
         for k,v in generatemapper.items():
-            if k.startswith("_:"):
-                if v.type == "Directory":
+            if v.type == "Directory" and v.resolved.startswith("_:"):
                     continue
-                if v.type == "CreateFile":
-                    with final.open(v.target, "wb") as f:
-                        f.write(v.resolved.encode("utf-8"))
+            if v.type == "CreateFile" and (k.startswith("_:") or v.resolved.startswith("_:")):
+                with final.open(v.target, "wb") as f:
+                    f.write(v.resolved.encode("utf-8"))
                     continue
 
-            if not k.startswith("keep:"):
+            if not v.resolved.startswith("keep:"):
                 raise Exception("Output source is not in keep or a literal")
-            sp = k.split("/")
+            sp = v.resolved.split("/")
             srccollection = sp[0][5:]
             try:
                 reader = self.collection_cache.get(srccollection)
@@ -462,7 +461,8 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                 logger.error("Creating CollectionReader for '%s' '%s': %s", k, v, e)
                 raise
             except IOError as e:
-                logger.warning("While preparing output collection: %s", e)
+                logger.error("While preparing output collection: %s", e)
+                raise
 
         def rewrite(fileobj):
             fileobj["location"] = generatemapper.mapper(fileobj["location"]).target
