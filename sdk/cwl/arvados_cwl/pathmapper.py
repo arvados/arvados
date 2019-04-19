@@ -265,6 +265,13 @@ class ArvPathMapper(PathMapper):
 
 
 class StagingPathMapper(PathMapper):
+    # Note that StagingPathMapper internally maps files from target to source.
+    # Specifically, the 'self._pathmap' dict keys are the target location and the
+    # values are 'MapperEnt' named tuples from which we use the 'resolved' attribute
+    # as the file identifier. This makes it possible to map an input file to multiple
+    # target directories. The exception is for file literals, which store the contents of
+    # the file in 'MapperEnt.resolved' and are therefore still mapped from source to target.
+
     _follow_dirs = True
 
     def __init__(self, referenced_files, basedir, stagedir, separateDirs=True):
@@ -307,10 +314,12 @@ class StagingPathMapper(PathMapper):
                     self._pathmap[tgt] = MapperEnt(loc, tgt, "File", staged)
                 self.visitlisting(obj.get("secondaryFiles", []), stagedir, basedir)
 
-    def mapper(self, src):  # type: (Text) -> MapperEnt
+    def mapper(self, src):  # type: (Text) -> MapperEnt.
+        # Overridden to maintain the use case of mapping by source (identifier) to
+        # target regardless of how the map is structured interally.
         def getMapperEnt(src):
             for k,v in viewitems(self._pathmap):
-                if v.resolved == src or (v.type == "CreateFile" and k == src):
+                if (v.type != "CreateFile" and v.resolved == src) or (v.type == "CreateFile" and k == src):
                     return v
 
         if u"#" in src:

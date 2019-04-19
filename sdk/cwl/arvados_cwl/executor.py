@@ -461,7 +461,8 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                 logger.error("Creating CollectionReader for '%s' '%s': %s", k, v, e)
                 raise
             except IOError as e:
-                logger.warning("While preparing output collection: %s", e)
+                logger.error("While preparing output collection: %s", e)
+                raise
 
         def rewrite(fileobj):
             fileobj["location"] = generatemapper.mapper(fileobj["location"]).target
