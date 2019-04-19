@@ -147,15 +147,21 @@ arvcfg.declare_config "Services.WebDAV.ExternalURL", URI, :keep_web_service_url
 arvcfg.declare_config "Services.GitHTTP.ExternalURL", URI, :git_repo_https_base
 arvcfg.declare_config "Services.GitSSH.ExternalURL", URI, :git_repo_ssh_base, ->(cfg, k, v) { ConfigLoader.set_cfg cfg, "Services.GitSSH.ExternalURL", "ssh://#{v}" }
 arvcfg.declare_config "RemoteClusters", Hash, :remote_hosts, ->(cfg, k, v) {
-  h = {}
+  h = if cfg["RemoteClusters"] then
+        cfg["RemoteClusters"].deep_dup
+      else
+        {}
+      end
   v.each do |clusterid, host|
-    h[clusterid] = {
-      "Host" => host,
-      "Proxy" => true,
-      "Scheme" => "https",
-      "Insecure" => false,
-      "ActivateUsers" => false
-    }
+    if h[clusterid].nil?
+      h[clusterid] = {
+        "Host" => host,
+        "Proxy" => true,
+        "Scheme" => "https",
+        "Insecure" => false,
+        "ActivateUsers" => false
+      }
+    end
   end
   ConfigLoader.set_cfg cfg, "RemoteClusters", h
 }
