@@ -12,8 +12,8 @@ class JobsControllerTest < ActionController::TestCase
 
   test "job page lists pipelines and jobs in which it is used" do
     get(:show,
-        {id: api_fixture('jobs')['completed_job_in_publicly_accessible_project']['uuid']},
-        session_for(:active))
+        params: {id: api_fixture('jobs')['completed_job_in_publicly_accessible_project']['uuid']},
+        session: session_for(:active))
     assert_response :success
 
     assert_select "div.used-in-pipelines" do

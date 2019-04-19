@@ -6,7 +6,7 @@ require 'test_helper'
 
 class WorkflowsControllerTest < ActionController::TestCase
   test "index" do
-    get :index, {}, session_for(:active)
+    get :index, params: {}, session: session_for(:active)
     assert_response :success
     assert_includes @response.body, 'Valid workflow with no definition yaml'
   end
@@ -16,7 +16,7 @@ class WorkflowsControllerTest < ActionController::TestCase
 
     wf = api_fixture('workflows')['workflow_with_input_specifications']
 
-    get :show, {id: wf['uuid']}, session_for(:active)
+    get :show, params: {id: wf['uuid']}, session: session_for(:active)
     assert_response :success
 
     assert_includes @response.body, "a short label for this parameter (optional)"

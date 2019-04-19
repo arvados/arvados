@@ -17,11 +17,11 @@ class RepositoriesControllerTest < ActionController::TestCase
     test "#{user} shares repository with a user and group" do
       uuid_list = [api_fixture("groups")["future_project_viewing_group"]["uuid"],
                    api_fixture("users")["future_project_user"]["uuid"]]
-      post(:share_with, {
+      post(:share_with, params: {
              id: api_fixture("repositories")["foo"]["uuid"],
              uuids: uuid_list,
              format: "json"},
-           session_for(user))
+           session: session_for(user))
       assert_response :success
       assert_equal(uuid_list, json_response["success"])
     end
@@ -29,11 +29,11 @@ class RepositoriesControllerTest < ActionController::TestCase
 
   test "user with repository read permission cannot add permissions" do
     share_uuid = api_fixture("users")["project_viewer"]["uuid"]
-    post(:share_with, {
+    post(:share_with, params: {
            id: api_fixture("repositories")["arvados"]["uuid"],
            uuids: [share_uuid],
            format: "json"},
-         session_for(:spectator))
+         session: session_for(:spectator))
     assert_response 422
     assert(json_response["errors"].andand.
              any? { |msg| msg.start_with?("#{share_uuid}: ") },
@@ -57,9 +57,9 @@ class RepositoriesControllerTest < ActionController::TestCase
     [:admin,  ['#Attributes', '#Sharing', '#Advanced']],
   ].each do |user, expected_panes|
     test "#{user} sees panes #{expected_panes}" do
-      get :show, {
+      get :show, params: {
         id: api_fixture('repositories')['foo']['uuid']
-      }, session_for(user)
+      }, session: session_for(user)
       assert_response :success
 
       panes = css_select('[data-toggle=tab]').each do |pane|
@@ -75,10 +75,10 @@ class RepositoriesControllerTest < ActionController::TestCase
     test "show tree to #{user}" do
       reset_api_fixtures_after_test false
       sha1, _, _ = stub_repo_content
-      get :show_tree, {
+      get :show_tree, params: {
         id: api_fixture('repositories')['foo']['uuid'],
         commit: sha1,
-      }, session_for(user)
+      }, session: session_for(user)
       assert_response :success
       assert_select 'tr td a', 'COPYING'
       assert_select 'tr td', '625 bytes'
@@ -91,10 +91,10 @@ class RepositoriesControllerTest < ActionController::TestCase
     test "show commit to #{user}" do
       reset_api_fixtures_after_test false
       sha1, commit, _ = stub_repo_content
-      get :show_commit, {
+      get :show_commit, params: {
         id: api_fixture('repositories')['foo']['uuid'],
         commit: sha1,
-      }, session_for(user)
+      }, session: session_for(user)
       assert_response :success
       assert_select 'pre', commit
     end
@@ -102,11 +102,11 @@ class RepositoriesControllerTest < ActionController::TestCase
     test "show blob to #{user}" do
       reset_api_fixtures_after_test false
       sha1, _, filedata = stub_repo_content filename: 'COPYING'
-      get :show_blob, {
+      get :show_blob, params: {
         id: api_fixture('repositories')['foo']['uuid'],
         commit: sha1,
         path: 'COPYING',
-      }, session_for(user)
+      }, session: session_for(user)
       assert_response :success
       assert_select 'pre', filedata
     end
@@ -116,11 +116,11 @@ class RepositoriesControllerTest < ActionController::TestCase
     test "show tree with path '#{path}'" do
       reset_api_fixtures_after_test false
       sha1, _, _ = stub_repo_content filename: 'COPYING'
-      get :show_tree, {
+      get :show_tree, params: {
         id: api_fixture('repositories')['foo']['uuid'],
         commit: sha1,
         path: path,
-      }, session_for(:active)
+      }, session: session_for(:active)
       assert_response :success
       assert_select 'tr td', 'COPYING'
     end
@@ -131,7 +131,7 @@ class RepositoriesControllerTest < ActionController::TestCase
       partial: :repositories_rows,
       format: :json,
     }
-    get :index, params, session_for(:active)
+    get :index, params: params, session: session_for(:active)
     assert_response :success
     repos = assigns(:objects)
     assert repos

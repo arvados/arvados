@@ -334,7 +334,7 @@ class ApplicationControllerTest < ActionController::TestCase
     # We're really testing ApplicationController's find_object_by_uuid.
     # It's easiest to do that by instantiating a concrete controller.
     @controller = NodesController.new
-    get(:show, {id: "zzzzz-zzzzz-zzzzzzzzzzzzzzz"}, session_for(:admin))
+    get(:show, params: {id: "zzzzz-zzzzz-zzzzzzzzzzzzzzz"}, session: session_for(:admin))
     assert_response 404
   end
 
@@ -350,7 +350,7 @@ class ApplicationControllerTest < ActionController::TestCase
       api_fixture("api_client_authorizations", "anonymous", "api_token")
     @controller = ProjectsController.new
     test_uuid = "zzzzz-j7d0g-zzzzzzzzzzzzzzz"
-    get(:show, {id: test_uuid})
+    get(:show, params: {id: test_uuid})
 
     assert_not_nil got_header
     assert_includes got_header, 'X-Request-Id'
@@ -359,13 +359,13 @@ class ApplicationControllerTest < ActionController::TestCase
 
   test "current request_id is nil after a request" do
     @controller = NodesController.new
-    get(:index, {}, session_for(:active))
+    get(:index, params: {}, session: session_for(:active))
     assert_nil Thread.current[:request_id]
   end
 
   test "X-Request-Id header" do
     @controller = NodesController.new
-    get(:index, {}, session_for(:active))
+    get(:index, params: {}, session: session_for(:active))
     assert_match /^req-[0-9a-zA-Z]{20}$/, response.headers['X-Request-Id']
   end
 
@@ -378,7 +378,7 @@ class ApplicationControllerTest < ActionController::TestCase
         api_fixture("api_client_authorizations", "anonymous", "api_token")
       @controller = ProjectsController.new
       test_uuid = "zzzzz-j7d0g-zzzzzzzzzzzzzzz"
-      get(:show, {id: test_uuid})
+      get(:show, params: {id: test_uuid})
       login_link = css_select(css_selector).first
       assert_not_nil(login_link, "failed to select login link")
       login_href = URI.unescape(login_link.attributes["href"].value)
@@ -428,7 +428,7 @@ class ApplicationControllerTest < ActionController::TestCase
 
       @controller = controller
 
-      get(:show, {id: fixture['uuid']})
+      get(:show, params: {id: fixture['uuid']})
 
       if anon_config
         assert_response 200
@@ -452,7 +452,7 @@ class ApplicationControllerTest < ActionController::TestCase
       Rails.configuration.include_accept_encoding_header_in_api_requests = config
 
       @controller = CollectionsController.new
-      get(:show, {id: api_fixture('collections')['foo_file']['uuid']}, session_for(:admin))
+      get(:show, params: {id: api_fixture('collections')['foo_file']['uuid']}, session: session_for(:admin))
 
       assert_equal([['.', 'foo', 3]], assigns(:object).files)
     end
@@ -461,13 +461,13 @@ class ApplicationControllerTest < ActionController::TestCase
   test 'Edit name and verify that a duplicate is not created' do
     @controller = ProjectsController.new
     project = api_fixture("groups")["aproject"]
-    post :update, {
+    post :update, params: {
       id: project["uuid"],
       project: {
         name: 'test name'
       },
       format: :json
-    }, session_for(:active)
+    }, session: session_for(:active)
     assert_includes @response.body, 'test name'
     updated = assigns(:object)
     assert_equal updated.uuid, project["uuid"]
@@ -481,7 +481,7 @@ class ApplicationControllerTest < ActionController::TestCase
     test "access #{controller.controller_name} index as admin and verify Home link is#{' not' if !expect_home_link} shown" do
       @controller = controller
 
-      get :index, {}, session_for(:admin)
+      get :index, params: {}, session: session_for(:admin)
 
       assert_response 200
       assert_includes @response.body, expect_str
@@ -503,7 +503,7 @@ class ApplicationControllerTest < ActionController::TestCase
     test "access #{controller.controller_name} index as admin and verify Delete option is#{' not' if !expect_delete_link} shown" do
       @controller = controller
 
-      get :index, {}, session_for(:admin)
+      get :index, params: {}, session: session_for(:admin)
 
       assert_response 200
       assert_includes @response.body, expect_str

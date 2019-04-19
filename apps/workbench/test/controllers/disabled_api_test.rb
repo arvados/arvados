@@ -16,7 +16,7 @@ class DisabledApiTest < ActionController::TestCase
     dd[:resources][:pipeline_instances][:methods].delete(:index)
     ArvadosApiClient.any_instance.stubs(:discovery).returns(dd)
 
-    get :index, {}, session_for(:active)
+    get :index, params: {}, session: session_for(:active)
     assert_includes @response.body, "zzzzz-xvhdp-cr4runningcntnr" # expect crs
     assert_not_includes @response.body, "zzzzz-d1hrv-"   # expect no pipelines
     assert_includes @response.body, "Run a process"
@@ -29,7 +29,7 @@ class DisabledApiTest < ActionController::TestCase
     dd[:resources][:pipeline_instances][:methods].delete(:index)
     ArvadosApiClient.any_instance.stubs(:discovery).returns(dd)
 
-    get :index, {}, session_for(:active)
+    get :index, params: {}, session: session_for(:active)
     assert_not_includes @response.body, "compute-node-summary-pane"
   end
 
@@ -46,7 +46,7 @@ class DisabledApiTest < ActionController::TestCase
       dd[:resources][ctrl_name][:methods].delete(:index)
       ArvadosApiClient.any_instance.stubs(:discovery).returns(dd)
 
-      get :index, {}, session_for(:active)
+      get :index, params: {}, session: session_for(:active)
       assert_response 404
     end
   end
@@ -68,9 +68,9 @@ class DisabledApiTest < ActionController::TestCase
       proj_uuid = api_fixture('groups')['anonymously_accessible_project']['uuid']
 
       if user
-        get(:show, {id: proj_uuid}, session_for(user))
+        get(:show, params: {id: proj_uuid}, session: session_for(user))
       else
-        get(:show, {id: proj_uuid})
+        get(:show, params: {id: proj_uuid})
       end
 
       resp = @response.body

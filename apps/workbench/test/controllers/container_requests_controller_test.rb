@@ -12,7 +12,7 @@ class ContainerRequestsControllerTest < ActionController::TestCase
     container_uuid = cr['container_uuid']
     container = Container.find(container_uuid)
 
-    get :show, {id: cr['uuid'], tab_pane: 'Log'}, session_for(:active)
+    get :show, params: {id: cr['uuid'], tab_pane: 'Log'}, session: session_for(:active)
     assert_response :success
 
     assert_select "a", {:href=>"/collections/#{container['log']}", :text=>"Download the log"}
@@ -27,7 +27,7 @@ class ContainerRequestsControllerTest < ActionController::TestCase
     container_uuid = cr['container_uuid']
     container = Container.find(container_uuid)
 
-    get :show, {id: cr['uuid'], tab_pane: 'Log'}, session_for(:active)
+    get :show, params: {id: cr['uuid'], tab_pane: 'Log'}, session: session_for(:active)
     assert_response :success
 
     assert_includes @response.body, '<pre id="event_log_div"'
@@ -39,7 +39,7 @@ class ContainerRequestsControllerTest < ActionController::TestCase
 
     uuid = api_fixture('container_requests')['completed']['uuid']
 
-    get :show, {id: uuid}, session_for(:active)
+    get :show, params: {id: uuid}, session: session_for(:active)
     assert_response :success
 
     assert_includes @response.body, "action=\"/container_requests/#{uuid}/copy\""
@@ -47,7 +47,7 @@ class ContainerRequestsControllerTest < ActionController::TestCase
 
   test "cancel request for queued container" do
     cr_fixture = api_fixture('container_requests')['queued']
-    post :cancel, {id: cr_fixture['uuid']}, session_for(:active)
+    post :cancel, params: {id: cr_fixture['uuid']}, session: session_for(:active)
     assert_response 302
 
     use_token 'active'
@@ -72,7 +72,7 @@ class ContainerRequestsControllerTest < ActionController::TestCase
       if reuse_enabled
         copy_params.merge!({use_existing: true})
       end
-      post(:copy, copy_params, session_for(:active))
+      post(:copy, params: copy_params, session: session_for(:active))
       assert_response 302
       copied_cr = assigns(:object)
       assert_not_nil copied_cr
@@ -114,8 +114,8 @@ class ContainerRequestsControllerTest < ActionController::TestCase
       cr = api_fixture('container_requests')[cr_fixture]
       assert_not_nil cr
       get(:show,
-          {id: cr['uuid']},
-          session_for(:active))
+          params: {id: cr['uuid']},
+          session: session_for(:active))
       assert_response :success
       if should_show
         assert_includes @response.body, "href=\"#Provenance\""
@@ -130,7 +130,7 @@ class ContainerRequestsControllerTest < ActionController::TestCase
 
     cr = api_fixture('container_requests')['completed_with_input_mounts']
 
-    get :show, {id: cr['uuid']}, session_for(:active)
+    get :show, params: {id: cr['uuid']}, session: session_for(:active)
     assert_response :success
 
     assert_match /hello/, @response.body

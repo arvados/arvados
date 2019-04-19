@@ -7,12 +7,12 @@ require 'test_helper'
 class UsersControllerTest < ActionController::TestCase
 
   test "valid token works in controller test" do
-    get :index, {}, session_for(:active)
+    get :index, params: {}, session: session_for(:active)
     assert_response :success
   end
 
   test "ignore previously valid token (for deleted user), don't crash" do
-    get :activity, {}, session_for(:valid_token_deleted_user)
+    get :activity, params: {}, session: session_for(:valid_token_deleted_user)
     assert_response :redirect
     assert_match /^#{Rails.configuration.arvados_login_base}/, @response.redirect_url
     assert_nil assigns(:my_jobs)
@@ -20,9 +20,9 @@ class UsersControllerTest < ActionController::TestCase
   end
 
   test "expired token redirects to api server login" do
-    get :show, {
+    get :show, params: {
       id: api_fixture('users')['active']['uuid']
-    }, session_for(:expired_trustedclient)
+    }, session: session_for(:expired_trustedclient)
     assert_response :redirect
     assert_match /^#{Rails.configuration.arvados_login_base}/, @response.redirect_url
     assert_nil assigns(:my_jobs)
@@ -30,15 +30,15 @@ class UsersControllerTest < ActionController::TestCase
   end
 
   test "show welcome page if no token provided" do
-    get :index, {}
+    get :index, params: {}
     assert_response :redirect
     assert_match /\/users\/welcome/, @response.redirect_url
   end
 
   test "'log in as user' feature uses a v2 token" do
-    post :sudo, {
+    post :sudo, params: {
       id: api_fixture('users')['active']['uuid']
-    }, session_for('admin_trustedclient')
+    }, session: session_for('admin_trustedclient')
     assert_response :redirect
     assert_match /api_token=v2%2F/, @response.redirect_url
   end
@@ -48,10 +48,10 @@ class UsersControllerTest < ActionController::TestCase
 
     ActionMailer::Base.deliveries = []
 
-    post :request_shell_access, {
+    post :request_shell_access, params: {
       id: user['uuid'],
       format: 'js'
-    }, session_for(:spectator)
+    }, session: session_for(:spectator)
     assert_response :success
 
     full_name = "#{user['first_name']} #{user['last_name']}"
@@ -73,7 +73,7 @@ class UsersControllerTest < ActionController::TestCase
     test "access users page as #{username} and verify show button is available" do
       admin_user = api_fixture('users','admin')
       active_user = api_fixture('users','active')
-      get :index, {}, session_for(username)
+      get :index, params: {}, session: session_for(username)
       if username == 'admin'
         assert_match /<a href="\/projects\/#{admin_user['uuid']}">Home<\/a>/, @response.body
         assert_match /<a href="\/projects\/#{active_user['uuid']}">Home<\/a>/, @response.body
@@ -97,9 +97,9 @@ class UsersControllerTest < ActionController::TestCase
     test "access settings drop down menu as #{username}" do
       admin_user = api_fixture('users','admin')
       active_user = api_fixture('users','active')
-      get :show, {
+      get :show, params: {
         id: api_fixture('users')[username]['uuid']
-      }, session_for(username)
+      }, session: session_for(username)
       if username == 'admin'
         assert_includes @response.body, admin_user['email']
         refute_empty css_select('[id="system-menu"]')
