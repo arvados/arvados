@@ -55,8 +55,8 @@ module SweepTrashedObjects
   end
 
   def self.sweep_if_stale
-    return if Rails.configuration.trash_sweep_interval <= 0
-    exp = Rails.configuration.trash_sweep_interval.seconds
+    return if Rails.configuration.Collections.TrashSweepInterval <= 0
+    exp = Rails.configuration.Collections.TrashSweepInterval.seconds
     need = false
     Rails.cache.fetch('SweepTrashedObjects', expires_in: exp) do
       need = true

@@ -40,8 +40,8 @@ class FailJobsTest < ActiveSupport::TestCase
   end
 
   test 'cancel slurm jobs' do
-    Rails.configuration.crunch_job_wrapper = :slurm_immediate
-    Rails.configuration.crunch_job_user = 'foobar'
+    Rails.configuration.Containers.JobsAPI.CrunchJobWrapper = "slurm_immediate"
+    Rails.configuration.Containers.JobsAPI.CrunchJobUser = 'foobar'
     fake_squeue = IO.popen("echo #{@job[:before_reboot].uuid}")
     fake_scancel = IO.popen("true")
     IO.expects(:popen).
@@ -55,7 +55,7 @@ class FailJobsTest < ActiveSupport::TestCase
   end
 
   test 'use reboot time' do
-    Rails.configuration.crunch_job_wrapper = nil
+    Rails.configuration.Containers.JobsAPI.CrunchJobWrapper = nil
     @dispatch.expects(:open).once.with('/proc/stat').
       returns open(Rails.root.join('test/fixtures/files/proc_stat'))
     @dispatch.fail_jobs(before: 'reboot')

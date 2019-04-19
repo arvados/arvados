@@ -89,7 +89,8 @@ class Container < ArvadosModel
     nil => [Queued],
     Queued => [Locked, Cancelled],
     Locked => [Queued, Running, Cancelled],
-    Running => [Complete, Cancelled]
+    Running => [Complete, Cancelled],
+    Complete => [Cancelled]
   }
 
   def self.limit_index_columns_read
@@ -205,7 +206,7 @@ class Container < ArvadosModel
     rc = {}
     defaults = {
       'keep_cache_ram' =>
-      Rails.configuration.container_default_keep_cache_ram,
+      Rails.configuration.Containers.DefaultKeepCacheRAM,
     }
     defaults.merge(runtime_constraints).each do |k, v|
       if v.is_a? Array
@@ -368,7 +369,7 @@ class Container < ArvadosModel
     transaction do
       reload(lock: 'FOR UPDATE')
       check_unlock_fail
-      if self.lock_count < Rails.configuration.max_container_dispatch_attempts
+      if self.lock_count < Rails.configuration.Containers.MaxDispatchAttempts
         update_attributes!(state: Queued)
       else
         update_attributes!(state: Cancelled,
@@ -497,7 +498,7 @@ class Container < ArvadosModel
       return false
     end
 
-    if self.state == Running &&
+    if self.state_was == Running &&
        !current_api_client_authorization.nil? &&
        (current_api_client_authorization.uuid == self.auth_uuid ||
         current_api_client_authorization.token == self.runtime_token)
@@ -505,6 +506,8 @@ class Container < ArvadosModel
       # change priority or log.
       permitted.push *final_attrs
       permitted = permitted - [:log, :priority]
+    elsif !current_user.andand.is_admin
+      raise PermissionDeniedError
     elsif self.locked_by_uuid && self.locked_by_uuid != current_api_client_authorization.andand.uuid
       # When locked, progress fields cannot be updated by the wrong
       # dispatcher, even though it has admin privileges.

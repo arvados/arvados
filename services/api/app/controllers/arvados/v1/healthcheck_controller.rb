@@ -19,7 +19,7 @@ class Arvados::V1::HealthcheckController < ApplicationController
     mgmt_token = Rails.configuration.ManagementToken
     auth_header = request.headers['Authorization']
 
-    if !mgmt_token
+    if mgmt_token == ""
       send_json ({"errors" => "disabled"}), status: 404
     elsif !auth_header
       send_json ({"errors" => "authorization required"}), status: 401

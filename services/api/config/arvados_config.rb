@@ -1,0 +1,260 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
+#
+# Load Arvados configuration from /etc/arvados/config.yml, using defaults
+# from config.default.yml
+#
+# Existing application.yml is migrated into the new config structure.
+# Keys in the legacy application.yml take precedence.
+#
+# Use "bundle exec config:dump" to get the complete active configuration
+#
+# Use "bundle exec config:migrate" to migrate application.yml and
+# database.yml to config.yml.  After adding the output of
+# config:migrate to /etc/arvados/config.yml, you will be able to
+# delete application.yml and database.yml.
+
+require 'config_loader'
+
+begin
+  # If secret_token.rb exists here, we need to load it first.
+  require_relative 'secret_token.rb'
+rescue LoadError
+  # Normally secret_token.rb is missing and the secret token is
+  # configured by application.yml (i.e., here!) instead.
+end
+
+if (File.exist?(File.expand_path '../omniauth.rb', __FILE__) and
+    not defined? WARNED_OMNIAUTH_CONFIG)
+  Rails.logger.warn <<-EOS
+DEPRECATED CONFIGURATION:
+ Please move your SSO provider config into config/application.yml
+ and delete config/initializers/omniauth.rb.
+EOS
+  # Real values will be copied from globals by omniauth_init.rb. For
+  # now, assign some strings so the generic *.yml config loader
+  # doesn't overwrite them or complain that they're missing.
+  Rails.configuration.Login["ProviderAppID"] = 'xxx'
+  Rails.configuration.Login["ProviderAppSecret"] = 'xxx'
+  Rails.configuration.Services["SSO"]["ExternalURL"] = '//xxx'
+  WARNED_OMNIAUTH_CONFIG = true
+end
+
+# Load the defaults
+$arvados_config_defaults = ConfigLoader.load "#{::Rails.root.to_s}/config/config.default.yml"
+if $arvados_config_defaults.empty?
+  raise "Missing #{::Rails.root.to_s}/config/config.default.yml"
+end
+
+clusterID, clusterConfig = $arvados_config_defaults["Clusters"].first
+$arvados_config_defaults = clusterConfig
+$arvados_config_defaults["ClusterID"] = clusterID
+
+# Initialize the global config with the defaults
+$arvados_config_global = $arvados_config_defaults.deep_dup
+
+# Load the global config file
+confs = ConfigLoader.load "/etc/arvados/config.yml"
+if !confs.empty?
+  clusterID, clusterConfig = confs["Clusters"].first
+  $arvados_config_global["ClusterID"] = clusterID
+
+  # Copy the cluster config over the defaults
+  $arvados_config_global.deep_merge!(clusterConfig)
+end
+
+# Now make a copy
+$arvados_config = $arvados_config_global.deep_dup
+
+# Declare all our configuration items.
+arvcfg = ConfigLoader.new
+arvcfg.declare_config "ClusterID", NonemptyString, :uuid_prefix
+arvcfg.declare_config "ManagementToken", String, :ManagementToken
+arvcfg.declare_config "Git.Repositories", String, :git_repositories_dir
+arvcfg.declare_config "API.DisabledAPIs", Array, :disable_api_methods
+arvcfg.declare_config "API.MaxRequestSize", Integer, :max_request_size
+arvcfg.declare_config "API.MaxIndexDatabaseRead", Integer, :max_index_database_read
+arvcfg.declare_config "API.MaxItemsPerResponse", Integer, :max_items_per_response
+arvcfg.declare_config "API.AsyncPermissionsUpdateInterval", ActiveSupport::Duration, :async_permissions_update_interval
+arvcfg.declare_config "API.RailsSessionSecretToken", NonemptyString, :secret_token
+arvcfg.declare_config "Users.AutoSetupNewUsers", Boolean, :auto_setup_new_users
+arvcfg.declare_config "Users.AutoSetupNewUsersWithVmUUID", String, :auto_setup_new_users_with_vm_uuid
+arvcfg.declare_config "Users.AutoSetupNewUsersWithRepository", Boolean, :auto_setup_new_users_with_repository
+arvcfg.declare_config "Users.AutoSetupUsernameBlacklist", Array, :auto_setup_name_blacklist
+arvcfg.declare_config "Users.NewUsersAreActive", Boolean, :new_users_are_active
+arvcfg.declare_config "Users.AutoAdminUserWithEmail", String, :auto_admin_user
+arvcfg.declare_config "Users.AutoAdminFirstUser", Boolean, :auto_admin_first_user
+arvcfg.declare_config "Users.UserProfileNotificationAddress", String, :user_profile_notification_address
+arvcfg.declare_config "Users.AdminNotifierEmailFrom", String, :admin_notifier_email_from
+arvcfg.declare_config "Users.EmailSubjectPrefix", String, :email_subject_prefix
+arvcfg.declare_config "Users.UserNotifierEmailFrom", String, :user_notifier_email_from
+arvcfg.declare_config "Users.NewUserNotificationRecipients", Array, :new_user_notification_recipients
+arvcfg.declare_config "Users.NewInactiveUserNotificationRecipients", Array, :new_inactive_user_notification_recipients
+arvcfg.declare_config "Login.ProviderAppSecret", NonemptyString, :sso_app_secret
+arvcfg.declare_config "Login.ProviderAppID", NonemptyString, :sso_app_id
+arvcfg.declare_config "TLS.Insecure", Boolean, :sso_insecure
+arvcfg.declare_config "Services.SSO.ExternalURL", NonemptyString, :sso_provider_url
+arvcfg.declare_config "AuditLogs.MaxAge", ActiveSupport::Duration, :max_audit_log_age
+arvcfg.declare_config "AuditLogs.MaxDeleteBatch", Integer, :max_audit_log_delete_batch
+arvcfg.declare_config "AuditLogs.UnloggedAttributes", Array, :unlogged_attributes
+arvcfg.declare_config "SystemLogs.MaxRequestLogParamsSize", Integer, :max_request_log_params_size
+arvcfg.declare_config "Collections.DefaultReplication", Integer, :default_collection_replication
+arvcfg.declare_config "Collections.DefaultTrashLifetime", ActiveSupport::Duration, :default_trash_lifetime
+arvcfg.declare_config "Collections.CollectionVersioning", Boolean, :collection_versioning
+arvcfg.declare_config "Collections.PreserveVersionIfIdle", ActiveSupport::Duration, :preserve_version_if_idle
+arvcfg.declare_config "Collections.TrashSweepInterval", ActiveSupport::Duration, :trash_sweep_interval
+arvcfg.declare_config "Collections.BlobSigningKey", NonemptyString, :blob_signing_key
+arvcfg.declare_config "Collections.BlobSigningTTL", Integer, :blob_signature_ttl
+arvcfg.declare_config "Collections.BlobSigning", Boolean, :permit_create_collection_with_unsigned_manifest
+arvcfg.declare_config "Containers.SupportedDockerImageFormats", Array, :docker_image_formats
+arvcfg.declare_config "Containers.LogReuseDecisions", Boolean, :log_reuse_decisions
+arvcfg.declare_config "Containers.DefaultKeepCacheRAM", Integer, :container_default_keep_cache_ram
+arvcfg.declare_config "Containers.MaxDispatchAttempts", Integer, :max_container_dispatch_attempts
+arvcfg.declare_config "Containers.MaxRetryAttempts", Integer, :container_count_max
+arvcfg.declare_config "Containers.UsePreemptibleInstances", Boolean, :preemptible_instances
+arvcfg.declare_config "Containers.MaxComputeVMs", Integer, :max_compute_nodes
+arvcfg.declare_config "Containers.Logging.LogBytesPerEvent", Integer, :crunch_log_bytes_per_event
+arvcfg.declare_config "Containers.Logging.LogSecondsBetweenEvents", ActiveSupport::Duration, :crunch_log_seconds_between_events
+arvcfg.declare_config "Containers.Logging.LogThrottlePeriod", ActiveSupport::Duration, :crunch_log_throttle_period
+arvcfg.declare_config "Containers.Logging.LogThrottleBytes", Integer, :crunch_log_throttle_bytes
+arvcfg.declare_config "Containers.Logging.LogThrottleLines", Integer, :crunch_log_throttle_lines
+arvcfg.declare_config "Containers.Logging.LimitLogBytesPerJob", Integer, :crunch_limit_log_bytes_per_job
+arvcfg.declare_config "Containers.Logging.LogPartialLineThrottlePeriod", ActiveSupport::Duration, :crunch_log_partial_line_throttle_period
+arvcfg.declare_config "Containers.Logging.LogUpdatePeriod", ActiveSupport::Duration, :crunch_log_update_period
+arvcfg.declare_config "Containers.Logging.LogUpdateSize", Integer, :crunch_log_update_size
+arvcfg.declare_config "Containers.Logging.MaxAge", ActiveSupport::Duration, :clean_container_log_rows_after
+arvcfg.declare_config "Containers.SLURM.Managed.DNSServerConfDir", Pathname, :dns_server_conf_dir
+arvcfg.declare_config "Containers.SLURM.Managed.DNSServerConfTemplate", Pathname, :dns_server_conf_template
+arvcfg.declare_config "Containers.SLURM.Managed.DNSServerReloadCommand", String, :dns_server_reload_command
+arvcfg.declare_config "Containers.SLURM.Managed.DNSServerUpdateCommand", String, :dns_server_update_command
+arvcfg.declare_config "Containers.SLURM.Managed.ComputeNodeDomain", String, :compute_node_domain
+arvcfg.declare_config "Containers.SLURM.Managed.ComputeNodeNameservers", Array, :compute_node_nameservers
+arvcfg.declare_config "Containers.SLURM.Managed.AssignNodeHostname", String, :assign_node_hostname
+arvcfg.declare_config "Containers.JobsAPI.Enable", String, :enable_legacy_jobs_api, ->(cfg, k, v) { ConfigLoader.set_cfg cfg, "Containers.JobsAPI.Enable", v.to_s }
+arvcfg.declare_config "Containers.JobsAPI.CrunchJobWrapper", String, :crunch_job_wrapper
+arvcfg.declare_config "Containers.JobsAPI.CrunchJobUser", String, :crunch_job_user
+arvcfg.declare_config "Containers.JobsAPI.CrunchRefreshTrigger", String, :crunch_refresh_trigger
+arvcfg.declare_config "Containers.JobsAPI.GitInternalDir", String, :git_internal_dir
+arvcfg.declare_config "Containers.JobsAPI.ReuseJobIfOutputsDiffer", Boolean, :reuse_job_if_outputs_differ
+arvcfg.declare_config "Containers.JobsAPI.DefaultDockerImage", String, :default_docker_image_for_jobs
+arvcfg.declare_config "Mail.MailchimpAPIKey", String, :mailchimp_api_key
+arvcfg.declare_config "Mail.MailchimpListID", String, :mailchimp_list_id
+arvcfg.declare_config "Services.Workbench1.ExternalURL", URI, :workbench_address
+arvcfg.declare_config "Services.Websocket.ExternalURL", URI, :websocket_address
+arvcfg.declare_config "Services.WebDAV.ExternalURL", URI, :keep_web_service_url
+arvcfg.declare_config "Services.GitHTTP.ExternalURL", URI, :git_repo_https_base
+arvcfg.declare_config "Services.GitSSH.ExternalURL", URI, :git_repo_ssh_base, ->(cfg, k, v) { ConfigLoader.set_cfg cfg, "Services.GitSSH.ExternalURL", "ssh://#{v}" }
+arvcfg.declare_config "RemoteClusters", Hash, :remote_hosts, ->(cfg, k, v) {
+  h = {}
+  v.each do |clusterid, host|
+    h[clusterid] = {
+      "Host" => host,
+      "Proxy" => true,
+      "Scheme" => "https",
+      "Insecure" => false,
+      "ActivateUsers" => false
+    }
+  end
+  ConfigLoader.set_cfg cfg, "RemoteClusters", h
+}
+arvcfg.declare_config "RemoteClusters.*.Proxy", Boolean, :remote_hosts_via_dns
+
+dbcfg = ConfigLoader.new
+
+dbcfg.declare_config "PostgreSQL.ConnectionPool", Integer, :pool
+dbcfg.declare_config "PostgreSQL.Connection.Host", String, :host
+dbcfg.declare_config "PostgreSQL.Connection.Port", Integer, :port
+dbcfg.declare_config "PostgreSQL.Connection.User", String, :username
+dbcfg.declare_config "PostgreSQL.Connection.Password", String, :password
+dbcfg.declare_config "PostgreSQL.Connection.DBName", String, :database
+dbcfg.declare_config "PostgreSQL.Connection.Template", String, :template
+dbcfg.declare_config "PostgreSQL.Connection.Encoding", String, :encoding
+
+application_config = {}
+%w(application.default application).each do |cfgfile|
+  path = "#{::Rails.root.to_s}/config/#{cfgfile}.yml"
+  confs = ConfigLoader.load(path, erb: true)
+  # Ignore empty YAML file:
+  next if confs == false
+  application_config.deep_merge!(confs['common'] || {})
+  application_config.deep_merge!(confs[::Rails.env.to_s] || {})
+end
+
+db_config = {}
+path = "#{::Rails.root.to_s}/config/database.yml"
+if File.exist? path
+  db_config = ConfigLoader.load(path, erb: true)
+end
+
+$remaining_config = arvcfg.migrate_config(application_config, $arvados_config)
+dbcfg.migrate_config(db_config[::Rails.env.to_s] || {}, $arvados_config)
+
+if application_config[:auto_activate_users_from]
+  application_config[:auto_activate_users_from].each do |cluster|
+    if $arvados_config.RemoteClusters[cluster]
+      $arvados_config.RemoteClusters[cluster]["ActivateUsers"] = true
+    end
+  end
+end
+
+# Checks for wrongly typed configuration items, coerces properties
+# into correct types (such as Duration), and optionally raise error
+# for essential configuration that can't be empty.
+arvcfg.coercion_and_check $arvados_config_defaults, check_nonempty: false
+arvcfg.coercion_and_check $arvados_config_global, check_nonempty: false
+arvcfg.coercion_and_check $arvados_config, check_nonempty: true
+dbcfg.coercion_and_check $arvados_config, check_nonempty: true
+
+# * $arvados_config_defaults is the defaults
+# * $arvados_config_global is $arvados_config_defaults merged with the contents of /etc/arvados/config.yml
+# These are used by the rake config: tasks
+#
+# * $arvados_config is $arvados_config_global merged with the migrated contents of application.yml
+# This is what actually gets copied into the Rails configuration object.
+
+if $arvados_config["Collections"]["DefaultTrashLifetime"] < 86400.seconds then
+  raise "default_trash_lifetime is %d, must be at least 86400" % Rails.configuration.Collections.DefaultTrashLifetime
+end
+
+#
+# Special case for test database where there's no database.yml,
+# because the Arvados config.yml doesn't have a concept of multiple
+# rails environments.
+#
+if ::Rails.env.to_s == "test" && db_config["test"].nil?
+  $arvados_config["PostgreSQL"]["Connection"]["DBName"] = "arvados_test"
+end
+
+if $arvados_config["PostgreSQL"]["Connection"]["Password"].empty?
+  raise "Database password is empty, PostgreSQL section is: #{$arvados_config["PostgreSQL"]}"
+end
+
+dbhost = $arvados_config["PostgreSQL"]["Connection"]["Host"]
+if $arvados_config["PostgreSQL"]["Connection"]["Post"] != 0
+  dbhost += ":#{$arvados_config["PostgreSQL"]["Connection"]["Post"]}"
+end
+
+#
+# If DATABASE_URL is set, then ActiveRecord won't error out if database.yml doesn't exist.
+#
+# For config migration, we've previously populated the PostgreSQL
+# section of the config from database.yml
+#
+ENV["DATABASE_URL"] = "postgresql://#{$arvados_config["PostgreSQL"]["Connection"]["User"]}:"+
+                      "#{$arvados_config["PostgreSQL"]["Connection"]["Password"]}@"+
+                      "#{dbhost}/#{$arvados_config["PostgreSQL"]["Connection"]["DBName"]}?"+
+                      "template=#{$arvados_config["PostgreSQL"]["Connection"]["Template"]}&"+
+                      "encoding=#{$arvados_config["PostgreSQL"]["Connection"]["client_encoding"]}&"+
+                      "pool=#{$arvados_config["PostgreSQL"]["ConnectionPool"]}"
+
+Server::Application.configure do
+  # Copy into the Rails config object.  This also turns Hash into
+  # OrderedOptions so that application code can use
+  # Rails.configuration.API.Blah instead of
+  # Rails.configuration.API["Blah"]
+  ConfigLoader.copy_into_config $arvados_config, config
+  ConfigLoader.copy_into_config $remaining_config, config
+  config.secret_key_base = config.secret_token
+end

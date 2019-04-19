@@ -85,6 +85,14 @@ ENV NODEVERSION v8.15.1
 RUN curl -L -f https://nodejs.org/dist/${NODEVERSION}/node-${NODEVERSION}-linux-x64.tar.xz | tar -C /usr/local -xJf - && \
     ln -s ../node-${NODEVERSION}-linux-x64/bin/node ../node-${NODEVERSION}-linux-x64/bin/npm /usr/local/bin
 
+ENV GRADLEVERSION 5.3.1
+
+RUN cd /tmp && \
+    curl -L -O https://services.gradle.org/distributions/gradle-${GRADLEVERSION}-bin.zip && \
+    unzip gradle-${GRADLEVERSION}-bin.zip -d /usr/local && \
+    ln -s ../gradle-${GRADLEVERSION}/bin/gradle /usr/local/bin && \
+    rm gradle-${GRADLEVERSION}-bin.zip
+
 # Set UTF-8 locale
 RUN echo en_US.UTF-8 UTF-8 > /etc/locale.gen && locale-gen
 ENV LANG en_US.UTF-8

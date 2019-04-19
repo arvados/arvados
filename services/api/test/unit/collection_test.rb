@@ -157,8 +157,8 @@ class CollectionTest < ActiveSupport::TestCase
   end
 
   test "auto-create version after idle setting" do
-    Rails.configuration.collection_versioning = true
-    Rails.configuration.preserve_version_if_idle = 600 # 10 minutes
+    Rails.configuration.Collections.CollectionVersioning = true
+    Rails.configuration.Collections.PreserveVersionIfIdle = 600 # 10 minutes
     act_as_user users(:active) do
       # Set up initial collection
       c = create_collection 'foo', Encoding::US_ASCII
@@ -188,8 +188,8 @@ class CollectionTest < ActiveSupport::TestCase
   end
 
   test "preserve_version=false assignment is ignored while being true and not producing a new version" do
-    Rails.configuration.collection_versioning = true
-    Rails.configuration.preserve_version_if_idle = 3600
+    Rails.configuration.Collections.CollectionVersioning = true
+    Rails.configuration.Collections.PreserveVersionIfIdle = 3600
     act_as_user users(:active) do
       # Set up initial collection
       c = create_collection 'foo', Encoding::US_ASCII
@@ -244,8 +244,8 @@ class CollectionTest < ActiveSupport::TestCase
   end
 
   test "uuid updates on current version make older versions update their pointers" do
-    Rails.configuration.collection_versioning = true
-    Rails.configuration.preserve_version_if_idle = 0
+    Rails.configuration.Collections.CollectionVersioning = true
+    Rails.configuration.Collections.PreserveVersionIfIdle = 0
     act_as_system_user do
       # Set up initial collection
       c = create_collection 'foo', Encoding::US_ASCII
@@ -267,8 +267,8 @@ class CollectionTest < ActiveSupport::TestCase
   end
 
   test "older versions' modified_at indicate when they're created" do
-    Rails.configuration.collection_versioning = true
-    Rails.configuration.preserve_version_if_idle = 0
+    Rails.configuration.Collections.CollectionVersioning = true
+    Rails.configuration.Collections.PreserveVersionIfIdle = 0
     act_as_user users(:active) do
       # Set up initial collection
       c = create_collection 'foo', Encoding::US_ASCII
@@ -301,8 +301,8 @@ class CollectionTest < ActiveSupport::TestCase
   end
 
   test "past versions should not be directly updatable" do
-    Rails.configuration.collection_versioning = true
-    Rails.configuration.preserve_version_if_idle = 0
+    Rails.configuration.Collections.CollectionVersioning = true
+    Rails.configuration.Collections.PreserveVersionIfIdle = 0
     act_as_system_user do
       # Set up initial collection
       c = create_collection 'foo', Encoding::US_ASCII
@@ -324,7 +324,7 @@ class CollectionTest < ActiveSupport::TestCase
       assert c_old.invalid?
       c_old.reload
       # Now disable collection versioning, it should behave the same way
-      Rails.configuration.collection_versioning = false
+      Rails.configuration.Collections.CollectionVersioning = false
       c_old.name = 'this was foo'
       assert c_old.invalid?
     end
@@ -337,8 +337,8 @@ class CollectionTest < ActiveSupport::TestCase
     ['is_trashed', true, false],
   ].each do |attr, first_val, second_val|
     test "sync #{attr} with older versions" do
-      Rails.configuration.collection_versioning = true
-      Rails.configuration.preserve_version_if_idle = 0
+      Rails.configuration.Collections.CollectionVersioning = true
+      Rails.configuration.Collections.PreserveVersionIfIdle = 0
       act_as_system_user do
         # Set up initial collection
         c = create_collection 'foo', Encoding::US_ASCII
@@ -379,8 +379,8 @@ class CollectionTest < ActiveSupport::TestCase
     [false, 'replication_desired', 5, false],
   ].each do |versioning, attr, val, new_version_expected|
     test "update #{attr} with versioning #{versioning ? '' : 'not '}enabled should #{new_version_expected ? '' : 'not '}create a new version" do
-      Rails.configuration.collection_versioning = versioning
-      Rails.configuration.preserve_version_if_idle = 0
+      Rails.configuration.Collections.CollectionVersioning = versioning
+      Rails.configuration.Collections.PreserveVersionIfIdle = 0
       act_as_user users(:active) do
         # Create initial collection
         c = create_collection 'foo', Encoding::US_ASCII
@@ -414,8 +414,8 @@ class CollectionTest < ActiveSupport::TestCase
   end
 
   test 'current_version_uuid is ignored during update' do
-    Rails.configuration.collection_versioning = true
-    Rails.configuration.preserve_version_if_idle = 0
+    Rails.configuration.Collections.CollectionVersioning = true
+    Rails.configuration.Collections.PreserveVersionIfIdle = 0
     act_as_user users(:active) do
       # Create 1st collection
       col1 = create_collection 'foo', Encoding::US_ASCII
@@ -439,8 +439,8 @@ class CollectionTest < ActiveSupport::TestCase
   end
 
   test 'with versioning enabled, simultaneous updates increment version correctly' do
-    Rails.configuration.collection_versioning = true
-    Rails.configuration.preserve_version_if_idle = 0
+    Rails.configuration.Collections.CollectionVersioning = true
+    Rails.configuration.Collections.PreserveVersionIfIdle = 0
     act_as_user users(:active) do
       # Create initial collection
       col = create_collection 'foo', Encoding::US_ASCII
@@ -654,7 +654,7 @@ class CollectionTest < ActiveSupport::TestCase
 
   [0, 2, 4, nil].each do |ask|
     test "set replication_desired to #{ask.inspect}" do
-      Rails.configuration.default_collection_replication = 2
+      Rails.configuration.Collections.DefaultReplication = 2
       act_as_user users(:active) do
         c = collections(:replication_undesired_unconfirmed)
         c.update_attributes replication_desired: ask
@@ -760,7 +760,7 @@ class CollectionTest < ActiveSupport::TestCase
                              name: 'foo',
                              trash_at: db_current_time + 1.years)
       sig_exp = /\+A[0-9a-f]{40}\@([0-9]+)/.match(c.signed_manifest_text)[1].to_i
-      expect_max_sig_exp = db_current_time.to_i + Rails.configuration.blob_signature_ttl
+      expect_max_sig_exp = db_current_time.to_i + Rails.configuration.Collections.BlobSigningTTL
       assert_operator c.trash_at.to_i, :>, expect_max_sig_exp
       assert_operator sig_exp.to_i, :<=, expect_max_sig_exp
     end
@@ -849,7 +849,7 @@ class CollectionTest < ActiveSupport::TestCase
     test test_name do
       act_as_user users(:active) do
         min_exp = (db_current_time +
-                   Rails.configuration.blob_signature_ttl.seconds)
+                   Rails.configuration.Collections.BlobSigningTTL.seconds)
         if fixture_name == :expired_collection
           # Fixture-finder shorthand doesn't find trashed collections
           # because they're not in the default scope.
@@ -890,7 +890,7 @@ class CollectionTest < ActiveSupport::TestCase
   end
 
   test 'default trash interval > blob signature ttl' do
-    Rails.configuration.default_trash_lifetime = 86400 * 21 # 3 weeks
+    Rails.configuration.Collections.DefaultTrashLifetime = 86400 * 21 # 3 weeks
     start = db_current_time
     act_as_user users(:active) do
       c = Collection.create!(manifest_text: '', name: 'foo')

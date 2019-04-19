@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-flock /var/lib/arvados/createusers.lock /usr/local/lib/arvbox/createusers.sh
+flock /var/lib/arvados/createusers.lock /usr/local/lib/arvbox/createusers.sh --no-chown
 
 if [[ -n "$*" ]] ; then
     exec su --preserve-environment arvbox -c "$*"

@@ -431,7 +431,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
   end
 
   test 'get contents with jobs and pipeline instances disabled' do
-    Rails.configuration.disable_api_methods = ['jobs.index', 'pipeline_instances.index']
+    Rails.configuration.API.DisabledAPIs = ['jobs.index', 'pipeline_instances.index']
 
     authorize_with :active
     get :contents, params: {
@@ -444,7 +444,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
   test 'get contents with low max_index_database_read' do
     # Some result will certainly have at least 12 bytes in a
     # restricted column
-    Rails.configuration.max_index_database_read = 12
+    Rails.configuration.API.MaxIndexDatabaseRead = 12
     authorize_with :active
     get :contents, params: {
           id: groups(:aproject).uuid,

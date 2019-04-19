@@ -514,7 +514,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
   test "Container.resolve_container_image(pdh)" do
     set_user_from_auth :active
     [[:docker_image, 'v1'], [:docker_image_1_12, 'v2']].each do |coll, ver|
-      Rails.configuration.docker_image_formats = [ver]
+      Rails.configuration.Containers.SupportedDockerImageFormats = [ver]
       pdh = collections(coll).portable_data_hash
       resolved = Container.resolve_container_image(pdh)
       assert_equal resolved, pdh
@@ -535,12 +535,12 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   test "allow unrecognized container when there are remote_hosts" do
     set_user_from_auth :active
-    Rails.configuration.remote_hosts = {"foooo" => "bar.com"}
+    Rails.configuration.RemoteClusters = Rails.configuration.RemoteClusters.merge({foooo: ActiveSupport::InheritableOptions.new({Host: "bar.com"})})
     Container.resolve_container_image('acbd18db4cc2f85cedef654fccc4a4d8+3')
   end
 
   test "migrated docker image" do
-    Rails.configuration.docker_image_formats = ['v2']
+    Rails.configuration.Containers.SupportedDockerImageFormats = ['v2']
     add_docker19_migration_link
 
     # Test that it returns only v2 images even though request is for v1 image.
@@ -558,7 +558,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
   end
 
   test "use unmigrated docker image" do
-    Rails.configuration.docker_image_formats = ['v1']
+    Rails.configuration.Containers.SupportedDockerImageFormats = ['v1']
     add_docker19_migration_link
 
     # Test that it returns only supported v1 images even though there is a
@@ -577,7 +577,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
   end
 
   test "incompatible docker image v1" do
-    Rails.configuration.docker_image_formats = ['v1']
+    Rails.configuration.Containers.SupportedDockerImageFormats = ['v1']
     add_docker19_migration_link
 
     # Don't return unsupported v2 image even if we ask for it directly.
@@ -590,7 +590,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
   end
 
   test "incompatible docker image v2" do
-    Rails.configuration.docker_image_formats = ['v2']
+    Rails.configuration.Containers.SupportedDockerImageFormats = ['v2']
     # No migration link, don't return unsupported v1 image,
 
     set_user_from_auth :active
@@ -836,7 +836,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_not_nil(trash)
     assert_not_nil(delete)
     assert_in_delta(trash, now + 1.second, 10)
-    assert_in_delta(delete, now + Rails.configuration.blob_signature_ttl.second, 10)
+    assert_in_delta(delete, now + Rails.configuration.Collections.BlobSigningTTL.second, 10)
   end
 
   def check_output_ttl_1y(now, trash, delete)
@@ -884,7 +884,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     [false, ActiveRecord::RecordInvalid],
     [true, nil],
   ].each do |preemptible_conf, expected|
-    test "having Rails.configuration.preemptible_instances=#{preemptible_conf}, create preemptible container request and verify #{expected}" do
+    test "having Rails.configuration.Containers.UsePreemptibleInstances=#{preemptible_conf}, create preemptible container request and verify #{expected}" do
       sp = {"preemptible" => true}
       common_attrs = {cwd: "test",
                       priority: 1,
@@ -892,7 +892,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
                       output_path: "test",
                       scheduling_parameters: sp,
                       mounts: {"test" => {"kind" => "json"}}}
-      Rails.configuration.preemptible_instances = preemptible_conf
+      Rails.configuration.Containers.UsePreemptibleInstances = preemptible_conf
       set_user_from_auth :active
 
       cr = create_minimal_req!(common_attrs)
@@ -921,7 +921,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
                       scheduling_parameters: {"preemptible" => false},
                       mounts: {"test" => {"kind" => "json"}}}
 
-      Rails.configuration.preemptible_instances = true
+      Rails.configuration.Containers.UsePreemptibleInstances = true
       set_user_from_auth :active
 
       if requesting_c
@@ -946,14 +946,14 @@ class ContainerRequestTest < ActiveSupport::TestCase
     [false, 'zzzzz-dz642-runningcontainr', nil],
     [false, nil, nil],
   ].each do |preemptible_conf, requesting_c, schedule_preemptible|
-    test "having Rails.configuration.preemptible_instances=#{preemptible_conf}, #{requesting_c.nil? ? 'non-':''}child CR should #{schedule_preemptible ? '':'not'} ask for preemptible instance by default" do
+    test "having Rails.configuration.Containers.UsePreemptibleInstances=#{preemptible_conf}, #{requesting_c.nil? ? 'non-':''}child CR should #{schedule_preemptible ? '':'not'} ask for preemptible instance by default" do
       common_attrs = {cwd: "test",
                       priority: 1,
                       command: ["echo", "hello"],
                       output_path: "test",
                       mounts: {"test" => {"kind" => "json"}}}
 
-      Rails.configuration.preemptible_instances = preemptible_conf
+      Rails.configuration.Containers.UsePreemptibleInstances = preemptible_conf
       set_user_from_auth :active
 
       if requesting_c
@@ -1017,7 +1017,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
                     state: ContainerRequest::Committed,
                     mounts: {"test" => {"kind" => "json"}}}
     set_user_from_auth :active
-    Rails.configuration.preemptible_instances = true
+    Rails.configuration.Containers.UsePreemptibleInstances = true
 
     cr = with_container_auth(Container.find_by_uuid 'zzzzz-dz642-runningcontainr') do
       create_minimal_req!(common_attrs)

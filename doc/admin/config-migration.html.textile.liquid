@@ -1,0 +1,50 @@
+---
+layout: default
+navsection: admin
+title: Migrating Configuration
+...
+
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Arvados is migrating to a centralized configuration file for all components.  The centralized Arvados configuration is @/etc/arvados/config.yml@.  Components that support the new centralized configuration are listed below.  Components not listed here do not yet support centralized configuration.  During the migration period, legacy configuration files will continue to be loaded and take precedence over the centralized configuration file.
+
+h2. API server
+
+The legacy API server configuration is stored in @config/application.yml@ and @config/database.yml@.  After migration to @/etc/arvados/config.yml@, both of these files should be moved out of the way and/or deleted.
+
+Change to the API server directory and use the following commands:
+
+<pre>
+$ bundle exec rake config:migrate > config.yml
+$ cp config.yml /etc/arvados/config.yml
+</pre>
+
+This will print the contents of @config.yml@ after merging with legacy @application.yml@.  It may then be redirected to a file and copied to @/etc/arvados/config.yml@.
+
+If you wish to update @config.yml@ configuration by hand, or check that everything has been migrated, use @config:diff@ to print configuration items that differ between @application.yml@ and the system @config.yml@.
+
+<pre>
+$ bundle exec rake config:diff
+</pre>
+
+This command will also report if no migrations are required.
+
+h2. crunch-dispatch-slurm
+
+Currently only reads @InstanceTypes@ from centralized configuration.  Still requires component-specific configuration file.
+
+h2. keepstore
+
+Currently only reads @RemoteClusters@ from centralized configuration.  Still requires component-specific configuration file.
+
+h2. arvados-controller
+
+Only supports centralized config file.  No migration needed.
+
+h2. arvados-dispatch-cloud
+
+Only supports centralized config file.  No migration needed.

@@ -184,7 +184,7 @@ class ContainerTest < ActiveSupport::TestCase
     assert_equal c1.runtime_status, {}
 
     assert_equal Container::Queued, c1.state
-    assert_raises ActiveRecord::RecordInvalid do
+    assert_raises ArvadosModel::PermissionDeniedError do
       c1.update_attributes! runtime_status: {'error' => 'Oops!'}
     end
 
@@ -241,7 +241,7 @@ class ContainerTest < ActiveSupport::TestCase
   end
 
   test "find_reusable method should select higher priority queued container" do
-        Rails.configuration.log_reuse_decisions = true
+        Rails.configuration.Containers.LogReuseDecisions = true
     set_user_from_auth :active
     common_attrs = REUSABLE_COMMON_ATTRS.merge({environment:{"var" => "queued"}})
     c_low_priority, _ = minimal_new(common_attrs.merge({use_existing:false, priority:1}))
@@ -511,7 +511,7 @@ class ContainerTest < ActiveSupport::TestCase
 
   test "find_reusable with logging enabled" do
     set_user_from_auth :active
-    Rails.configuration.log_reuse_decisions = true
+    Rails.configuration.Containers.LogReuseDecisions = true
     Rails.logger.expects(:info).at_least(3)
     Container.find_reusable(REUSABLE_COMMON_ATTRS)
   end
@@ -666,7 +666,7 @@ class ContainerTest < ActiveSupport::TestCase
   end
 
   test "Exceed maximum lock-unlock cycles" do
-    Rails.configuration.max_container_dispatch_attempts = 3
+    Rails.configuration.Containers.MaxDispatchAttempts = 3
 
     set_user_from_auth :active
     c, cr = minimal_new
@@ -774,6 +774,51 @@ class ContainerTest < ActiveSupport::TestCase
     c.runtime_constraints = {}
     assert_raises(ArvadosModel::PermissionDeniedError) do
       c.save!
+    end
+  end
+
+  [
+    [Container::Queued, {state: Container::Locked}],
+    [Container::Queued, {state: Container::Running}],
+    [Container::Queued, {state: Container::Complete}],
+    [Container::Queued, {state: Container::Cancelled}],
+    [Container::Queued, {priority: 123456789}],
+    [Container::Queued, {runtime_status: {'error' => 'oops'}}],
+    [Container::Queued, {cwd: '/'}],
+    [Container::Locked, {state: Container::Running}],
+    [Container::Locked, {state: Container::Queued}],
+    [Container::Locked, {priority: 123456789}],
+    [Container::Locked, {runtime_status: {'error' => 'oops'}}],
+    [Container::Locked, {cwd: '/'}],
+    [Container::Running, {state: Container::Complete}],
+    [Container::Running, {state: Container::Cancelled}],
+    [Container::Running, {priority: 123456789}],
+    [Container::Running, {runtime_status: {'error' => 'oops'}}],
+    [Container::Running, {cwd: '/'}],
+    [Container::Complete, {state: Container::Cancelled}],
+    [Container::Complete, {priority: 123456789}],
+    [Container::Complete, {runtime_status: {'error' => 'oops'}}],
+    [Container::Complete, {cwd: '/'}],
+    [Container::Cancelled, {cwd: '/'}],
+  ].each do |start_state, updates|
+    test "Container update #{updates.inspect} when #{start_state} forbidden for non-admin" do
+      set_user_from_auth :active
+      c, _ = minimal_new
+      if start_state != Container::Queued
+        set_user_from_auth :dispatch1
+        c.lock
+        if start_state != Container::Locked
+          c.update_attributes! state: Container::Running
+          if start_state != Container::Running
+            c.update_attributes! state: start_state
+          end
+        end
+      end
+      assert_equal c.state, start_state
+      set_user_from_auth :active
+      assert_raises(ArvadosModel::PermissionDeniedError) do
+        c.update_attributes! updates
+      end
     end
   end
 
@@ -899,7 +944,9 @@ class ContainerTest < ActiveSupport::TestCase
     c.update_attributes! state: Container::Running
 
     set_user_from_auth :running_to_be_deleted_container_auth
-    refute c.update_attributes(output: collections(:foo_file).portable_data_hash)
+    assert_raises(ArvadosModel::PermissionDeniedError) do
+      c.update_attributes(output: collections(:foo_file).portable_data_hash)
+    end
   end
 
   test "can set trashed output on running container" do

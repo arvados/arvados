@@ -31,13 +31,13 @@ class CrunchDispatch
     @cgroup_root = ENV['CRUNCH_CGROUP_ROOT']
     @srun_sync_timeout = ENV['CRUNCH_SRUN_SYNC_TIMEOUT']
 
-    @arvados_internal = Rails.configuration.git_internal_dir
+    @arvados_internal = Rails.configuration.Containers.JobsAPI.GitInternalDir
     if not File.exist? @arvados_internal
       $stderr.puts `mkdir -p #{@arvados_internal.shellescape} && git init --bare #{@arvados_internal.shellescape}`
       raise "No internal git repository available" unless ($? == 0)
     end
 
-    @repo_root = Rails.configuration.git_repositories_dir
+    @repo_root = Rails.configuration.Git.Repositories
     @arvados_repo_path = Repository.where(name: "arvados").first.server_path
     @authorizations = {}
     @did_recently = {}
@@ -110,7 +110,7 @@ class CrunchDispatch
   end
 
   def update_node_status
-    return unless Server::Application.config.crunch_job_wrapper.to_s.match(/^slurm/)
+    return unless Rails.configuration.Containers.JobsAPI.CrunchJobWrapper.to_s.match(/^slurm/)
     slurm_status.each_pair do |hostname, slurmdata|
       next if @node_state[hostname] == slurmdata
       begin
@@ -337,14 +337,14 @@ class CrunchDispatch
       next if @running[job.uuid]
 
       cmd_args = nil
-      case Server::Application.config.crunch_job_wrapper
-      when :none
+      case Rails.configuration.Containers.JobsAPI.CrunchJobWrapper
+      when "none"
         if @running.size > 0
             # Don't run more than one at a time.
             return
         end
         cmd_args = []
-      when :slurm_immediate
+      when "slurm_immediate"
         nodelist = nodes_available_for_job(job)
         if nodelist.nil?
           if Time.now < @node_wait_deadline
@@ -361,7 +361,7 @@ class CrunchDispatch
                     "--job-name=#{job.uuid}",
                     "--nodelist=#{nodelist.join(',')}"]
       else
-        raise "Unknown crunch_job_wrapper: #{Server::Application.config.crunch_job_wrapper}"
+        raise "Unknown crunch_job_wrapper: #{Rails.configuration.Containers.JobsAPI.CrunchJobWrapper}"
       end
 
       cmd_args = sudo_preface + cmd_args
@@ -460,7 +460,7 @@ class CrunchDispatch
         bytes_logged: 0,
         events_logged: 0,
         log_throttle_is_open: true,
-        log_throttle_reset_time: Time.now + Rails.configuration.crunch_log_throttle_period,
+        log_throttle_reset_time: Time.now + Rails.configuration.Containers.Logging.LogThrottlePeriod,
         log_throttle_bytes_so_far: 0,
         log_throttle_lines_so_far: 0,
         log_throttle_bytes_skipped: 0,
@@ -485,7 +485,7 @@ class CrunchDispatch
       matches = line.match(/^\S+ \S+ \d+ \d+ stderr (.*)/)
       if matches and matches[1] and matches[1].start_with?('[...]') and matches[1].end_with?('[...]')
         partial_line = true
-        if Time.now > running_job[:log_throttle_partial_line_last_at] + Rails.configuration.crunch_log_partial_line_throttle_period
+        if Time.now > running_job[:log_throttle_partial_line_last_at] + Rails.configuration.Containers.Logging.LogPartialLineThrottlePeriod
           running_job[:log_throttle_partial_line_last_at] = Time.now
         else
           skip_counts = true
@@ -499,26 +499,26 @@ class CrunchDispatch
       end
 
       if (running_job[:bytes_logged] >
-          Rails.configuration.crunch_limit_log_bytes_per_job)
-        message = "Exceeded log limit #{Rails.configuration.crunch_limit_log_bytes_per_job} bytes (crunch_limit_log_bytes_per_job). Log will be truncated."
+          Rails.configuration.Containers.Logging.LimitLogBytesPerJob)
+        message = "Exceeded log limit #{Rails.configuration.Containers.Logging.LimitLogBytesPerJob} bytes (LimitLogBytesPerJob). Log will be truncated."
         running_job[:log_throttle_reset_time] = Time.now + 100.years
         running_job[:log_throttle_is_open] = false
 
       elsif (running_job[:log_throttle_bytes_so_far] >
-             Rails.configuration.crunch_log_throttle_bytes)
+             Rails.configuration.Containers.Logging.LogThrottleBytes)
         remaining_time = running_job[:log_throttle_reset_time] - Time.now
-        message = "Exceeded rate #{Rails.configuration.crunch_log_throttle_bytes} bytes per #{Rails.configuration.crunch_log_throttle_period} seconds (crunch_log_throttle_bytes). Logging will be silenced for the next #{remaining_time.round} seconds."
+        message = "Exceeded rate #{Rails.configuration.Containers.Logging.LogThrottleBytes} bytes per #{Rails.configuration.Containers.Logging.LogThrottlePeriod} seconds (LogThrottleBytes). Logging will be silenced for the next #{remaining_time.round} seconds."
         running_job[:log_throttle_is_open] = false
 
       elsif (running_job[:log_throttle_lines_so_far] >
-             Rails.configuration.crunch_log_throttle_lines)
+             Rails.configuration.Containers.Logging.LogThrottleLines)
         remaining_time = running_job[:log_throttle_reset_time] - Time.now
-        message = "Exceeded rate #{Rails.configuration.crunch_log_throttle_lines} lines per #{Rails.configuration.crunch_log_throttle_period} seconds (crunch_log_throttle_lines), logging will be silenced for the next #{remaining_time.round} seconds."
+        message = "Exceeded rate #{Rails.configuration.Containers.Logging.LogThrottleLines} lines per #{Rails.configuration.Containers.Logging.LogThrottlePeriod} seconds (LogThrottleLines), logging will be silenced for the next #{remaining_time.round} seconds."
         running_job[:log_throttle_is_open] = false
 
       elsif partial_line and running_job[:log_throttle_first_partial_line]
         running_job[:log_throttle_first_partial_line] = false
-        message = "Rate-limiting partial segments of long lines to one every #{Rails.configuration.crunch_log_partial_line_throttle_period} seconds."
+        message = "Rate-limiting partial segments of long lines to one every #{Rails.configuration.Containers.Logging.LogPartialLineThrottlePeriod} seconds."
       end
     end
 
@@ -552,7 +552,7 @@ class CrunchDispatch
           j[:stderr_buf_to_flush] << "#{LogTime.now} #{message}\n"
         end
 
-        j[:log_throttle_reset_time] = now + Rails.configuration.crunch_log_throttle_period
+        j[:log_throttle_reset_time] = now + Rails.configuration.Containers.Logging.LogThrottlePeriod
         j[:log_throttle_bytes_so_far] = 0
         j[:log_throttle_lines_so_far] = 0
         j[:log_throttle_bytes_skipped] = 0
@@ -592,7 +592,7 @@ class CrunchDispatch
         bufend = ''
         streambuf.each_line do |line|
           if not line.end_with? $/
-            if line.size > Rails.configuration.crunch_log_throttle_bytes
+            if line.size > Rails.configuration.Containers.Logging.LogThrottleBytes
               # Without a limit here, we'll use 2x an arbitrary amount
               # of memory, and waste a lot of time copying strings
               # around, all without providing any feedback to anyone
@@ -775,7 +775,7 @@ class CrunchDispatch
 
     # This is how crunch-job child procs know where the "refresh"
     # trigger file is
-    ENV["CRUNCH_REFRESH_TRIGGER"] = Rails.configuration.crunch_refresh_trigger
+    ENV["CRUNCH_REFRESH_TRIGGER"] = Rails.configuration.Containers.JobsAPI.CrunchRefreshTrigger
 
     # If salloc can't allocate resources immediately, make it use our
     # temporary failure exit code.  This ensures crunch-dispatch won't
@@ -902,9 +902,9 @@ class CrunchDispatch
   end
 
   def sudo_preface
-    return [] if not Server::Application.config.crunch_job_user
+    return [] if not Rails.configuration.Containers.JobsAPI.CrunchJobUser
     ["sudo", "-E", "-u",
-     Server::Application.config.crunch_job_user,
+     Rails.configuration.Containers.JobsAPI.CrunchJobUser,
      "LD_LIBRARY_PATH=#{ENV['LD_LIBRARY_PATH']}",
      "PATH=#{ENV['PATH']}",
      "PERLLIB=#{ENV['PERLLIB']}",
@@ -937,8 +937,8 @@ class CrunchDispatch
     # Send out to log event if buffer size exceeds the bytes per event or if
     # it has been at least crunch_log_seconds_between_events seconds since
     # the last flush.
-    if running_job[:stderr_buf_to_flush].size > Rails.configuration.crunch_log_bytes_per_event or
-        (Time.now - running_job[:stderr_flushed_at]) >= Rails.configuration.crunch_log_seconds_between_events
+    if running_job[:stderr_buf_to_flush].size > Rails.configuration.Containers.Logging.LogBytesPerEvent or
+        (Time.now - running_job[:stderr_flushed_at]) >= Rails.configuration.Containers.Logging.LogSecondsBetweenEvents
       begin
         log = Log.new(object_uuid: running_job[:job].uuid,
                       event_type: 'stderr',
@@ -957,7 +957,7 @@ class CrunchDispatch
 
   # An array of job_uuids in squeue
   def squeue_jobs
-    if Rails.configuration.crunch_job_wrapper == :slurm_immediate
+    if Rails.configuration.Containers.JobsAPI.CrunchJobWrapper == "slurm_immediate"
       p = IO.popen(['squeue', '-a', '-h', '-o', '%j'])
       begin
         p.readlines.map {|line| line.strip}
