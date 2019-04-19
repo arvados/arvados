@@ -12,6 +12,13 @@ GIT
     themes_for_rails (0.5.1)
       rails (>= 3.0.0)
 
+GIT
+  remote: https://github.com/curoverse/wiselinks.git
+  revision: 2c396ea5da7bbdef883fc6a70946b5886e182a80
+  branch: rails-5.1-compatibility
+  specs:
+    wiselinks (1.2.2)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -302,7 +309,6 @@ GEM
     websocket-driver (0.6.5)
       websocket-extensions (>= 0.1.0)
     websocket-extensions (0.1.3)
-    wiselinks (1.2.1)
     xpath (2.1.0)
       nokogiri (~> 1.3)
 
@@ -358,7 +364,7 @@ DEPENDENCIES
   themes_for_rails!
   therubyracer
   uglifier (~> 2.0)
-  wiselinks
+  wiselinks!
 
 BUNDLED WITH
    1.17.3

@@ -69,7 +69,12 @@ gem 'angularjs-rails', '~> 1.3.8'
 
 gem 'less'
 gem 'less-rails'
-gem 'wiselinks'
+
+# Wiselinks hasn't been updated for many years and it's using deprecated methods
+# Use our own Wiselinks fork until this PR is accepted:
+# https://github.com/igor-alexandrov/wiselinks/pull/116
+gem 'wiselinks', git: 'https://github.com/curoverse/wiselinks.git', branch: 'rails-5.1-compatibility'
+
 gem 'sshkey'
 
 # To use ActiveModel has_secure_password

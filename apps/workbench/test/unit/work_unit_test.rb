@@ -74,7 +74,11 @@ class WorkUnitTest < ActiveSupport::TestCase
       if walltime
         assert_equal true, (wu.walltime >= walltime)
       else
-        assert_equal walltime, wu.walltime
+        if walltime.nil?
+          assert_nil wu.walltime
+        else
+          assert_equal walltime, wu.walltime
+        end
       end
 
       if cputime
