@@ -256,5 +256,5 @@ Server::Application.configure do
   # Rails.configuration.API["Blah"]
   ConfigLoader.copy_into_config $arvados_config, config
   ConfigLoader.copy_into_config $remaining_config, config
-  config.secret_key_base = config.secret_token
+  secrets.secret_key_base = $arvados_config["API"]["RailsSessionSecretToken"]
 end
