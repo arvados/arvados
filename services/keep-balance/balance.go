@@ -732,17 +732,17 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 				From:        slot.mnt,
 			})
 			change = changeTrash
-		case len(blk.Replicas) == 0:
-			change = changeNone
-		case slot.repl == nil && slot.want && !slot.mnt.ReadOnly:
+		case len(blk.Replicas) > 0 && slot.repl == nil && slot.want && !slot.mnt.ReadOnly:
 			slot.mnt.KeepService.AddPull(Pull{
 				SizedDigest: blkid,
 				From:        blk.Replicas[0].KeepMount.KeepService,
 				To:          slot.mnt,
 			})
 			change = changePull
-		default:
+		case slot.repl != nil:
 			change = changeStay
+		default:
+			change = changeNone
 		}
 		if bal.Dumper != nil {
 			var mtime int64
