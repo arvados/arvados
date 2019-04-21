@@ -132,6 +132,75 @@ func (bal *balancerSuite) TestSkipReadonly(c *check.C) {
 		shouldPull: slots{2, 4}})
 }
 
+func (bal *balancerSuite) TestMultipleViewsReadOnly(c *check.C) {
+	bal.testMultipleViews(c, true)
+}
+
+func (bal *balancerSuite) TestMultipleViews(c *check.C) {
+	bal.testMultipleViews(c, false)
+}
+
+func (bal *balancerSuite) testMultipleViews(c *check.C, readonly bool) {
+	for i, srv := range bal.srvs {
+		// Add a mount to each service
+		srv.mounts[0].KeepMount.DeviceID = fmt.Sprintf("writable-by-srv-%x", i)
+		srv.mounts = append(srv.mounts, &KeepMount{
+			KeepMount: arvados.KeepMount{
+				DeviceID:    fmt.Sprintf("writable-by-srv-%x", (i+1)%len(bal.srvs)),
+				UUID:        fmt.Sprintf("zzzzz-mount-%015x", i<<16),
+				ReadOnly:    readonly,
+				Replication: 1,
+			},
+			KeepService: srv,
+		})
+	}
+	for i := 1; i < len(bal.srvs); i++ {
+		c.Logf("i=%d", i)
+		if i == 4 {
+			// Timestamps are all different, but one of
+			// the mounts on srv[4] has the same device ID
+			// where the non-deletable replica is stored
+			// on srv[3], so only one replica is safe to
+			// trash.
+			bal.try(c, tester{
+				desired:     map[string]int{"default": 1},
+				current:     slots{0, i, i},
+				shouldTrash: slots{i}})
+		} else if readonly {
+			// Timestamps are all different, and the third
+			// replica can't be trashed because it's on a
+			// read-only mount, so the first two replicas
+			// should be trashed.
+			bal.try(c, tester{
+				desired:     map[string]int{"default": 1},
+				current:     slots{0, i, i},
+				shouldTrash: slots{0, i}})
+		} else {
+			// Timestamps are all different, so both
+			// replicas on the non-optimal server should
+			// be trashed.
+			bal.try(c, tester{
+				desired:     map[string]int{"default": 1},
+				current:     slots{0, i, i},
+				shouldTrash: slots{i, i}})
+		}
+		// If the three replicas have identical timestamps,
+		// none of them can be trashed safely.
+		bal.try(c, tester{
+			desired:    map[string]int{"default": 1},
+			current:    slots{0, i, i},
+			timestamps: []int64{12345678, 12345678, 12345678}})
+		// If the first and third replicas have identical
+		// timestamps, only the second replica should be
+		// trashed.
+		bal.try(c, tester{
+			desired:     map[string]int{"default": 1},
+			current:     slots{0, i, i},
+			timestamps:  []int64{12345678, 12345679, 12345678},
+			shouldTrash: slots{i}})
+	}
+}
+
 func (bal *balancerSuite) TestFixUnbalanced(c *check.C) {
 	bal.try(c, tester{
 		desired:    map[string]int{"default": 2},
