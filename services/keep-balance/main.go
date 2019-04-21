@@ -76,9 +76,10 @@ func main() {
 		}
 	}
 	if *dumpFlag {
-		runOptions.Dumper = logrus.New()
-		runOptions.Dumper.Out = os.Stdout
-		runOptions.Dumper.Formatter = &logrus.TextFormatter{}
+		dumper := logrus.New()
+		dumper.Out = os.Stdout
+		dumper.Formatter = &logrus.TextFormatter{}
+		runOptions.Dumper = dumper
 	}
 	srv, err := NewServer(cfg, runOptions)
 	if err != nil {

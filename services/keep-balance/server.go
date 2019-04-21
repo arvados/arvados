@@ -70,8 +70,8 @@ type RunOptions struct {
 	Once        bool
 	CommitPulls bool
 	CommitTrash bool
-	Logger      *logrus.Logger
-	Dumper      *logrus.Logger
+	Logger      logrus.FieldLogger
+	Dumper      logrus.FieldLogger
 
 	// SafeRendezvousState from the most recent balance operation,
 	// or "" if unknown. If this changes from one run to the next,
@@ -86,8 +86,8 @@ type Server struct {
 	metrics    *metrics
 	listening  string // for tests
 
-	Logger *logrus.Logger
-	Dumper *logrus.Logger
+	Logger logrus.FieldLogger
+	Dumper logrus.FieldLogger
 }
 
 // NewServer returns a new Server that runs Balancers using the given

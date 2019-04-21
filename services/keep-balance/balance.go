@@ -31,8 +31,8 @@ import (
 // BlobSignatureTTL; and all N existing replicas of a given data block
 // are in the N best positions in rendezvous probe order.
 type Balancer struct {
-	Logger  *logrus.Logger
-	Dumper  *logrus.Logger
+	Logger  logrus.FieldLogger
+	Dumper  logrus.FieldLogger
 	Metrics *metrics
 
 	*BlockStateMap
