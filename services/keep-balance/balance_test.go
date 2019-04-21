@@ -162,9 +162,10 @@ func (bal *balancerSuite) TestFixUnbalanced(c *check.C) {
 }
 
 func (bal *balancerSuite) TestMultipleReplicasPerService(c *check.C) {
-	for _, srv := range bal.srvs {
+	for s, srv := range bal.srvs {
 		for i := 0; i < 3; i++ {
 			m := *(srv.mounts[0])
+			m.UUID = fmt.Sprintf("zzzzz-mount-%015x", (s<<10)+i)
 			srv.mounts = append(srv.mounts, &m)
 		}
 	}
