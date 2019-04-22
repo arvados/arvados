@@ -87,7 +87,7 @@ class ApiClientAuthorization < ArvadosModel
   end
 
   def self.remote_host(uuid_prefix:)
-    Rails.configuration.RemoteClusters[uuid_prefix].Host ||
+    (Rails.configuration.RemoteClusters[uuid_prefix].andand.Host) ||
       (Rails.configuration.RemoteClusters["*"].Proxy &&
        uuid_prefix+".arvadosapi.com")
   end
