@@ -141,6 +141,7 @@ arvcfg.declare_config "Containers.JobsAPI.ReuseJobIfOutputsDiffer", Boolean, :re
 arvcfg.declare_config "Containers.JobsAPI.DefaultDockerImage", String, :default_docker_image_for_jobs
 arvcfg.declare_config "Mail.MailchimpAPIKey", String, :mailchimp_api_key
 arvcfg.declare_config "Mail.MailchimpListID", String, :mailchimp_list_id
+arvcfg.declare_config "Services.Controller.ExternalURL", URI
 arvcfg.declare_config "Services.Workbench1.ExternalURL", URI, :workbench_address
 arvcfg.declare_config "Services.Websocket.ExternalURL", URI, :websocket_address
 arvcfg.declare_config "Services.WebDAV.ExternalURL", URI, :keep_web_service_url
@@ -203,6 +204,14 @@ if application_config[:auto_activate_users_from]
       $arvados_config.RemoteClusters[cluster]["ActivateUsers"] = true
     end
   end
+end
+
+if application_config[:host] || application_config[:port] || application_config[:scheme]
+  if !application_config[:host] || application_config[:host].empty?
+    raise "Must set 'host' when setting 'port' or 'scheme'"
+  end
+  $arvados_config.Services["Controller"]["ExternalURL"] = URI((application_config[:scheme] || "https")+"://"+application_config[:host]+
+                                                              (if application_config[:port] then ":#{application_config[:port]}" else "" end))
 end
 
 # Checks for wrongly typed configuration items, coerces properties
