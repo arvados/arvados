@@ -203,6 +203,8 @@ func (s *stubServer) serveCollectionsButSkipOne() *reqTracker {
 			io.WriteString(w, `{"items_available":0,"items":[]}`)
 		} else if strings.Contains(r.Form.Get("filters"), `"modified_at","="`) && strings.Contains(r.Form.Get("filters"), `"uuid","\u003e"`) {
 			io.WriteString(w, `{"items_available":0,"items":[]}`)
+		} else if strings.Contains(r.Form.Get("filters"), `"modified_at","=",null`) {
+			io.WriteString(w, `{"items_available":0,"items":[]}`)
 		} else {
 			io.WriteString(w, `{"items_available":2,"items":[
 				{"uuid":"zzzzz-4zz18-ehbhgtheo8909or","portable_data_hash":"fa7aeb5140e2848d39b416daeef4ffc5+45","manifest_text":". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n","modified_at":"2014-02-03T17:22:54Z"},
