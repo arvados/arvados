@@ -185,6 +185,9 @@ class ArvadosBase < ApplicationRecord
     # The following permit! is necessary even with
     # "ActionController::Parameters.permit_all_parameters = true",
     # because permit_all does not permit nested attributes.
+    if raw_params.is_a? ActionController::Parameters
+      raw_params = raw_params.to_unsafe_h
+    end
     ActionController::Parameters.new(raw_params).permit!
   end
 

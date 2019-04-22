@@ -58,6 +58,7 @@ group :test, :performance do
   gem 'simplecov', '~> 0.7', require: false
   gem 'simplecov-rcov', require: false
   gem 'mocha', require: false
+  gem 'rails-controller-testing'
 end
 
 gem 'jquery-rails'

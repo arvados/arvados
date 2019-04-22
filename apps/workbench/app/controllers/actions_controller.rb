@@ -14,8 +14,8 @@ class ActionsController < ApplicationController
     params['uuid'] and
     model_class.in?([Collection, Group, Job, PipelineInstance, PipelineTemplate])
   }
-  skip_filter :require_thread_api_token, only: [:report_issue_popup, :report_issue]
-  skip_filter :check_user_agreements, only: [:report_issue_popup, :report_issue]
+  skip_around_action :require_thread_api_token, only: [:report_issue_popup, :report_issue]
+  skip_before_action :check_user_agreements, only: [:report_issue_popup, :report_issue]
 
   @@exposed_actions = {}
   def self.expose_action method, &block
