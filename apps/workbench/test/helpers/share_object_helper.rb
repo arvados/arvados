@@ -71,7 +71,7 @@ module ShareObjectHelper
   end
 
   def user_can_manage(user_sym, fixture)
-    get(:show, {id: fixture["uuid"]}, session_for(user_sym))
+    get(:show, params: {id: fixture["uuid"]}, session: session_for(user_sym))
     is_manager = assigns(:user_is_manager)
     assert_not_nil(is_manager, "user_is_manager flag not set")
     if not is_manager

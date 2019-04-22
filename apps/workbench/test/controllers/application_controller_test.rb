@@ -399,7 +399,7 @@ class ApplicationControllerTest < ActionController::TestCase
       # network.  100::/64 is the IPv6 discard prefix, so it's perfect.
       Rails.configuration.arvados_v1_base = "https://[100::f]:1/"
       @controller = NodesController.new
-      get(:index, {}, session_for(:active))
+      get(:index, params: {}, session: session_for(:active))
       assert_includes(405..422, @response.code.to_i,
                       "bad response code when API server is unreachable")
     ensure

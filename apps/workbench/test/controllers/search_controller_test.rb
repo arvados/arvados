@@ -13,43 +13,43 @@ class SearchControllerTest < ActionController::TestCase
   include Rails.application.routes.url_helpers
 
   test 'Get search dialog' do
-    xhr :get, :choose, {
+    get :choose, params: {
       format: :js,
       title: 'Search',
       action_name: 'Show',
       action_href: url_for(host: 'localhost', controller: :actions, action: :show),
       action_data: {}.to_json,
-    }, session_for(:active)
+    }, session: session_for(:active), xhr: true
     assert_response :success
   end
 
   test 'Get search results for all projects' do
-    xhr :get, :choose, {
+    get :choose, params: {
       format: :json,
       partial: true,
-    }, session_for(:active)
+    }, session: session_for(:active), xhr: true
     assert_response :success
     assert_not_empty(json_response['content'],
                      'search results for all projects should not be empty')
   end
 
   test 'Get search results for empty project' do
-    xhr :get, :choose, {
+    get :choose, params: {
       format: :json,
       partial: true,
       project_uuid: api_fixture('groups')['empty_project']['uuid'],
-    }, session_for(:active)
+    }, session: session_for(:active), xhr: true
     assert_response :success
     assert_empty(json_response['content'],
                  'search results for empty project should be empty')
   end
 
   test 'search results for aproject and verify recursive contents' do
-    xhr :get, :choose, {
+    get :choose, params: {
       format: :json,
       partial: true,
       project_uuid: api_fixture('groups')['aproject']['uuid'],
-    }, session_for(:active)
+    }, session: session_for(:active), xhr: true
     assert_response :success
     assert_not_empty(json_response['content'],
                  'search results for aproject should not be empty')

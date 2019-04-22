@@ -353,6 +353,9 @@ class ApplicationController < ActionController::Base
 
   def update
     @updates ||= params[@object.resource_param_name.to_sym]
+    if @updates.is_a? ActionController::Parameters
+      @updates = @updates.to_unsafe_hash
+    end
     @updates.keys.each do |attr|
       if @object.send(attr).is_a? Hash
         if @updates[attr].is_a? String
@@ -361,6 +364,9 @@ class ApplicationController < ActionController::Base
         if params[:merge] || params["merge_#{attr}".to_sym]
           # Merge provided Hash with current Hash, instead of
           # replacing.
+          if @updates[attr].is_a? ActionController::Parameters
+            @updates[attr] = @updates[attr].to_unsafe_hash
+          end
           @updates[attr] = @object.send(attr).with_indifferent_access.
             deep_merge(@updates[attr].with_indifferent_access)
         end

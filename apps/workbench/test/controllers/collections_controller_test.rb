@@ -32,7 +32,11 @@ class CollectionsControllerTest < ActionController::TestCase
 
   def assert_hash_includes(actual_hash, expected_hash, msg=nil)
     expected_hash.each do |key, value|
-      assert_equal(value, actual_hash[key], msg)
+      if value.nil?
+        assert_nil(actual_hash[key], msg)
+      else
+        assert_equal(value, actual_hash[key], msg)
+      end
     end
   end
 
