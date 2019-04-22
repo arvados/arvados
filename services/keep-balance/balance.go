@@ -441,7 +441,7 @@ func (bal *Balancer) ComputeChangeSets() {
 
 func (bal *Balancer) setupLookupTables() {
 	bal.serviceRoots = make(map[string]string)
-	bal.classes = []string{"default"}
+	bal.classes = defaultClasses
 	bal.mountsByClass = map[string]map[*KeepMount]bool{"default": {}}
 	bal.mounts = 0
 	for _, srv := range bal.KeepServices {
