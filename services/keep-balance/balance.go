@@ -383,10 +383,7 @@ func (bal *Balancer) GetCurrentState(c *arvados.Client, pageSize, bufs int) erro
 func (bal *Balancer) addCollection(coll arvados.Collection) error {
 	blkids, err := coll.SizedDigests()
 	if err != nil {
-		bal.mutex.Lock()
-		bal.errors = append(bal.errors, fmt.Errorf("%v: %v", coll.UUID, err))
-		bal.mutex.Unlock()
-		return nil
+		return fmt.Errorf("%v: %v", coll.UUID, err)
 	}
 	repl := bal.DefaultReplication
 	if coll.ReplicationDesired != nil {
