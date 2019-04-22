@@ -332,7 +332,7 @@ func (bal *Balancer) GetCurrentState(c *arvados.Client, pageSize, bufs int) erro
 		defer wg.Done()
 		for coll := range collQ {
 			err := bal.addCollection(coll)
-			if err != nil {
+			if err != nil || len(errs) > 0 {
 				select {
 				case errs <- err:
 				default:
