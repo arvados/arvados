@@ -252,6 +252,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     output = Collection.find_by_uuid cr.output_uuid
     assert_equal output_pdh, output.portable_data_hash
     assert_equal output.owner_uuid, project.uuid, "Container output should be copied to #{project.uuid}"
+    assert_not_nil output.modified_at
 
     log = Collection.find_by_uuid cr.log_uuid
     assert_equal log.manifest_text, ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar
