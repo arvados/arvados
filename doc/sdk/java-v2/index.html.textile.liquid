@@ -10,13 +10,33 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-The Arvados Java SDK v2 provides a high level API for working with Arvados resources. It is packaged as a single JAR named
-arvados-java-<version>.jar, e.g. arvados-java-2.0.0.jar
-which can be included in your project using Gradle, Maven, or by hand.
+The Arvados Java SDK v2 provides a high level API for working with Arvados resources.
 
 h2. Using the SDK
 
-FIXME - Add intro text here
+The SDK is packaged as a JAR named @arvados-java-<version>.jar@, which is published to Maven Central and can be included using Maven, Gradle, or by hand.
+
+Here is an example @build.gradle@ file that uses the Arados java sdk:
+
+<pre>
+apply plugin: 'application'
+apply plugin: 'java-library'
+apply plugin: 'maven'
+
+repositories {
+    mavenCentral()
+}
+
+application {
+    mainClassName = "org.arvados.example.CollectionExample"
+}
+
+dependencies {
+    api 'org.arvados:arvados-java-sdk:0.1.0'
+}
+</pre>
+
+See "Java SDK Examples":example.html to get started using the SDK.
 
 h3. Logging
 
