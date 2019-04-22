@@ -207,17 +207,18 @@ class Summarizer(object):
                     stats['user+sys'] = stats.get('user', 0) + stats.get('sys', 0)
                 if 'tx' in stats or 'rx' in stats:
                     stats['tx+rx'] = stats.get('tx', 0) + stats.get('rx', 0)
-                for stat, val in stats.items():
-                    if group == 'interval':
-                        if stat == 'seconds':
-                            this_interval_s = val
-                            continue
-                        elif not (this_interval_s > 0):
+                if group == 'interval':
+                    if 'seconds' in stats:
+                        this_interval_s = stats.get('seconds',0)
+                        del stats['seconds']
+                        if this_interval_s <= 0:
                             logger.error(
                                 "BUG? interval stat given with duration {!r}".
                                 format(this_interval_s))
-                            continue
-                        else:
+                    else:
+                        logger.error('BUG? interval stat missing duration')
+                for stat, val in stats.items():
+                    if group == 'interval' and this_interval_s:
                             stat = stat + '__rate'
                             val = val / this_interval_s
                             if stat in ['user+sys__rate', 'tx+rx__rate']:
