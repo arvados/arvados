@@ -206,6 +206,24 @@ func (bal *Balancer) CheckSanityEarly(c *arvados.Client) error {
 			return fmt.Errorf("config error: %s: proxy servers cannot be balanced", srv)
 		}
 	}
+
+	var checkPage arvados.CollectionList
+	if err = c.RequestAndDecode(&checkPage, "GET", "arvados/v1/collections", nil, arvados.ResourceListParams{
+		Limit:              new(int),
+		Count:              "exact",
+		IncludeTrash:       true,
+		IncludeOldVersions: true,
+		Filters: []arvados.Filter{{
+			Attr:     "modified_at",
+			Operator: "=",
+			Operand:  nil,
+		}},
+	}); err != nil {
+		return err
+	} else if n := checkPage.ItemsAvailable; n > 0 {
+		return fmt.Errorf("%d collections exist with null modified_at; cannot fetch reliably", n)
+	}
+
 	return nil
 }
 
