@@ -71,11 +71,11 @@ func (s *integrationSuite) SetUpTest(c *check.C) {
 }
 
 func (s *integrationSuite) TestBalanceAPIFixtures(c *check.C) {
-	var logBuf *bytes.Buffer
+	var logBuf bytes.Buffer
 	for iter := 0; iter < 20; iter++ {
-		logBuf := &bytes.Buffer{}
+		logBuf.Reset()
 		logger := logrus.New()
-		logger.Out = logBuf
+		logger.Out = &logBuf
 		opts := RunOptions{
 			CommitPulls: true,
 			CommitTrash: true,
