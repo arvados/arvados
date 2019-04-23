@@ -53,46 +53,6 @@ func (s *LoadSuite) TestMultipleClusters(c *check.C) {
 	c.Check(c2.ClusterID, check.Equals, "z2222")
 }
 
-func (s *LoadSuite) TestNodeProfilesToServices(c *check.C) {
-	hostname, err := os.Hostname()
-	c.Assert(err, check.IsNil)
-	s.checkEquivalent(c, `
-Clusters:
- z1111:
-  NodeProfiles:
-   "*":
-    arvados-dispatch-cloud:
-     listen: ":9006"
-    arvados-controller:
-     listen: ":9004"
-   `+hostname+`:
-    arvados-api-server:
-     listen: ":8000"
-`, `
-Clusters:
- z1111:
-  Services:
-   RailsAPI:
-    InternalURLs:
-     "http://`+hostname+`:8000": {}
-   Controller:
-    InternalURLs:
-     "http://`+hostname+`:9004": {}
-   DispatchCloud:
-    InternalURLs:
-     "http://`+hostname+`:9006": {}
-  NodeProfiles:
-   "*":
-    arvados-dispatch-cloud:
-     listen: ":9006"
-    arvados-controller:
-     listen: ":9004"
-   `+hostname+`:
-    arvados-api-server:
-     listen: ":8000"
-`)
-}
-
 func (s *LoadSuite) TestMovedKeys(c *check.C) {
 	s.checkEquivalent(c, `# config has old keys only
 Clusters:
