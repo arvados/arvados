@@ -80,11 +80,12 @@ type Services struct {
 	Keepbalance   Service
 	Keepproxy     Service
 	Keepstore     Service
-	Keepweb       Service
 	Nodemanager   Service
 	RailsAPI      Service
+	WebDAV        Service
 	Websocket     Service
-	Workbench     Service
+	Workbench1    Service
+	Workbench2    Service
 }
 
 type Service struct {
