@@ -9,12 +9,18 @@ import { ServiceRepository } from "~/services/services";
 import { setBreadcrumbs } from "~/store/breadcrumbs/breadcrumbs-actions";
 import { authActions } from "~/store/auth/auth-action";
 import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
+import { navigateToLinkAccount } from '~/store/navigation/navigation-action';
 
 export const MY_ACCOUNT_FORM = 'myAccountForm';
 
 export const loadMyAccountPanel = () =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         dispatch(setBreadcrumbs([{ label: 'User profile'}]));
+    };
+
+export const openLinkAccount = () =>
+    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        dispatch<any>(navigateToLinkAccount);
     };
 
 export const saveEditedUser = (resource: any) =>

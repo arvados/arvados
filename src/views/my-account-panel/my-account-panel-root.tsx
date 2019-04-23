@@ -6,6 +6,7 @@ import * as React from 'react';
 import { Field, InjectedFormProps, WrappedFieldProps } from "redux-form";
 import { TextField } from "~/components/text-field/text-field";
 import { NativeSelectField } from "~/components/select-field/select-field";
+import { DetailsAttribute } from '~/components/details-attribute/details-attribute';
 import {
     StyleRulesCallback,
     WithStyles,
@@ -21,7 +22,7 @@ import { ArvadosTheme } from '~/common/custom-theme';
 import { User } from "~/models/user";
 import { MY_ACCOUNT_VALIDATION } from "~/validators/validators";
 
-type CssRules = 'root' | 'gridItem' | 'label' | 'title' | 'actions';
+type CssRules = 'root' | 'gridItem' | 'label' | 'title' | 'actions' | 'link';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -39,13 +40,24 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginBottom: theme.spacing.unit * 3,
         color: theme.palette.grey["600"]
     },
+    link: {
+        lineHeight:'2.1',
+        whiteSpace: 'nowrap',
+        fontSize: '1rem',
+        color: theme.palette.primary.main,
+        '&:hover': {
+            cursor: 'pointer'
+        }
+    },
     actions: {
         display: 'flex',
         justifyContent: 'flex-end'
     }
 });
 
-export interface MyAccountPanelRootActionProps { }
+export interface MyAccountPanelRootActionProps {
+    openLinkAccount: () => void;
+ }
 
 export interface MyAccountPanelRootDataProps {
     isPristine: boolean;
@@ -64,7 +76,7 @@ const RoleTypes = [
     { key: 'Other', value: 'Other' }
 ];
 
-type MyAccountPanelRootProps = InjectedFormProps<MyAccountPanelRootActionProps> & MyAccountPanelRootDataProps & WithStyles<CssRules>;
+type MyAccountPanelRootProps = InjectedFormProps & MyAccountPanelRootActionProps & MyAccountPanelRootDataProps & WithStyles<CssRules>;
 
 type LocalClusterProp = { localCluster: string };
 const renderField: React.ComponentType<WrappedFieldProps & LocalClusterProp> = ({ input, localCluster }) => (
@@ -72,12 +84,21 @@ const renderField: React.ComponentType<WrappedFieldProps & LocalClusterProp> = (
 );
 
 export const MyAccountPanelRoot = withStyles(styles)(
-    ({ classes, isValid, handleSubmit, reset, isPristine, invalid, submitting, localCluster }: MyAccountPanelRootProps) => {
+    ({ classes, isValid, handleSubmit, reset, isPristine, invalid, submitting, localCluster, openLinkAccount}: MyAccountPanelRootProps) => {
         return <Card className={classes.root}>
             <CardContent>
-                <Typography variant="title" className={classes.title}>
-                    Logged in as <Field name="uuid" component={renderField} localCluster={localCluster} />
-                </Typography>
+                <Grid container spacing={24}>
+                    <Grid item className={classes.gridItem}>
+                        <Typography variant="title" className={classes.title}>
+                            Logged in as <Field name="uuid" component={renderField} localCluster={localCluster} />
+                        </Typography>
+                    </Grid>
+                    <Grid item className={classes.gridItem}>
+                        <span onClick={() => openLinkAccount()}>
+                            <DetailsAttribute classLabel={classes.link} label='Link account' />
+                        </span>
+                    </Grid>
+                </Grid>
                 <form onSubmit={handleSubmit}>
                     <Grid container spacing={24}>
                         <Grid item className={classes.gridItem} sm={6} xs={12}>
