@@ -18,7 +18,7 @@ import { CollectionPanelFiles } from '~/views-components/collection-panel-files/
 import * as CopyToClipboard from 'react-copy-to-clipboard';
 import { CollectionTagForm } from './collection-tag-form';
 import { deleteCollectionTag, navigateToProcess } from '~/store/collection-panel/collection-panel-action';
-import {snackbarActions, SnackbarKind} from '~/store/snackbar/snackbar-actions';
+import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { getResource } from '~/store/resources/resources';
 import { openContextMenu } from '~/store/context-menu/context-menu-actions';
 import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
@@ -121,9 +121,11 @@ export const CollectionPanel = withStyles(styles)(
                                             label='Content size' value={data && formatFileSize(data.fileSize)} />
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                                             label='Owner' value={item && item.ownerUuid} />
-                                        <span onClick={() => dispatch<any>(navigateToProcess(item.properties.container_request || item.properties.containerRequest))}>
-                                            <DetailsAttribute classLabel={classes.link} label='Link to process' />
-                                        </span>
+                                        {(item.properties.container_request || item.properties.containerRequest) &&
+                                            <span onClick={() => dispatch<any>(navigateToProcess(item.properties.container_request || item.properties.containerRequest))}>
+                                                <DetailsAttribute classLabel={classes.link} label='Link to process' />
+                                            </span>
+                                        }
                                     </Grid>
                                 </Grid>
                             </CardContent>
