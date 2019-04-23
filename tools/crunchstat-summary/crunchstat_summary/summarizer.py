@@ -129,13 +129,14 @@ class Summarizer(object):
                 try:
                     self.label = m.group('job_uuid')
                 except IndexError:
-                    self.label = 'container'
-            if m.group('category').endswith(':'):
+                    self.label = 'label #1'
+            category = m.group('category')
+            if category.endswith(':'):
                 # "stderr crunchstat: notice: ..."
                 continue
-            elif m.group('category') in ('error', 'caught'):
+            elif category in ('error', 'caught'):
                 continue
-            elif m.group('category') in ('read', 'open', 'cgroup', 'CID', 'Running'):
+            elif category in ('read', 'open', 'cgroup', 'CID', 'Running'):
                 # "stderr crunchstat: read /proc/1234/net/dev: ..."
                 # (old logs are less careful with unprefixed error messages)
                 continue
@@ -221,11 +222,11 @@ class Summarizer(object):
                     if group == 'interval' and this_interval_s:
                             stat = stat + '__rate'
                             val = val / this_interval_s
-                            if stat in ['user+sys__rate', 'tx+rx__rate']:
+                            if stat in ['user+sys__rate', 'user__rate', 'sys__rate', 'tx+rx__rate', 'rx__rate', 'tx__rate']:
                                 task.series[category, stat].append(
                                     (timestamp - self.starttime, val))
                     else:
-                        if stat in ['rss']:
+                        if stat in ['rss','used','total']:
                             task.series[category, stat].append(
                                 (timestamp - self.starttime, val))
                         self.task_stats[task_id][category][stat] = val
@@ -315,7 +316,13 @@ class Summarizer(object):
                  (float(self.job_tot['blkio:0:0']['read']) /
                  float(self.job_tot['net:keep0']['rx']))
                  if self.job_tot['net:keep0']['rx'] > 0 else 0,
-                 lambda x: x * 100.0)):
+                 lambda x: x * 100.0),
+               ('Temp disk utilization {}%',
+                 (float(self.job_tot['statfs']['used']) /
+                 float(self.job_tot['statfs']['total']))
+                 if self.job_tot['statfs']['total'] > 0 else 0,
+                 lambda x: x * 100.0),
+                ):
             format_string, val, transform = args
             if val == float('-Inf'):
                 continue
