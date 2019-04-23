@@ -33,6 +33,10 @@ func LoadFile(path string, log logger) (*arvados.Config, error) {
 }
 
 func Load(rdr io.Reader, log logger) (*arvados.Config, error) {
+	return load(rdr, log, true)
+}
+
+func load(rdr io.Reader, log logger, useDeprecated bool) (*arvados.Config, error) {
 	buf, err := ioutil.ReadAll(rdr)
 	if err != nil {
 		return nil, err
@@ -95,10 +99,14 @@ func Load(rdr io.Reader, log logger) (*arvados.Config, error) {
 		return nil, fmt.Errorf("transcoding config data: %s", err)
 	}
 
-	err = applyDeprecatedConfig(&cfg, buf, log)
-	if err != nil {
-		return nil, err
+	if useDeprecated {
+		err = applyDeprecatedConfig(&cfg, buf, log)
+		if err != nil {
+			return nil, err
+		}
 	}
+
+	// Check for known mistakes
 	for id, cc := range cfg.Clusters {
 		err = checkKeyConflict(fmt.Sprintf("Clusters.%s.PostgreSQL.Connection", id), cc.PostgreSQL.Connection)
 		if err != nil {

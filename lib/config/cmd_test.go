@@ -16,19 +16,33 @@ type CommandSuite struct{}
 
 func (s *CommandSuite) TestBadArg(c *check.C) {
 	var stderr bytes.Buffer
-	code := DumpCommand.RunCommand("arvados dump-config", []string{"-badarg"}, bytes.NewBuffer(nil), bytes.NewBuffer(nil), &stderr)
+	code := DumpCommand.RunCommand("arvados config-dump", []string{"-badarg"}, bytes.NewBuffer(nil), bytes.NewBuffer(nil), &stderr)
 	c.Check(code, check.Equals, 2)
 	c.Check(stderr.String(), check.Matches, `(?ms)usage: .*`)
 }
 
 func (s *CommandSuite) TestEmptyInput(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	code := DumpCommand.RunCommand("arvados dump-config", nil, &bytes.Buffer{}, &stdout, &stderr)
+	code := DumpCommand.RunCommand("arvados config-dump", nil, &bytes.Buffer{}, &stdout, &stderr)
 	c.Check(code, check.Equals, 1)
 	c.Check(stderr.String(), check.Matches, `config does not define any clusters\n`)
 }
 
-func (s *CommandSuite) TestLogDeprecatedKeys(c *check.C) {
+func (s *CommandSuite) TestCheckNoDeprecatedKeys(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	in := `
+Clusters:
+ z1234:
+  API:
+    MaxItemsPerResponse: 1234
+`
+	code := CheckCommand.RunCommand("arvados config-check", nil, bytes.NewBufferString(in), &stdout, &stderr)
+	c.Check(code, check.Equals, 0)
+	c.Check(stdout.String(), check.Equals, "")
+	c.Check(stderr.String(), check.Equals, "")
+}
+
+func (s *CommandSuite) TestCheckDeprecatedKeys(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	in := `
 Clusters:
@@ -36,9 +50,9 @@ Clusters:
   RequestLimits:
     MaxItemsPerResponse: 1234
 `
-	code := DumpCommand.RunCommand("arvados dump-config", nil, bytes.NewBufferString(in), &stdout, &stderr)
-	c.Check(code, check.Equals, 0)
-	c.Check(stderr.String(), check.Matches, `(?ms).*overriding Clusters.z1234.API.MaxItemsPerResponse .* = 1234.*`)
+	code := CheckCommand.RunCommand("arvados config-check", nil, bytes.NewBufferString(in), &stdout, &stderr)
+	c.Check(code, check.Equals, 1)
+	c.Check(stdout.String(), check.Matches, `(?ms).*API:\n\- +.*MaxItemsPerResponse: 1000\n\+ +MaxItemsPerResponse: 1234\n.*`)
 }
 
 func (s *CommandSuite) TestUnknownKey(c *check.C) {
@@ -49,7 +63,7 @@ Clusters:
   UnknownKey: foobar
   ManagementToken: secret
 `
-	code := DumpCommand.RunCommand("arvados dump-config", nil, bytes.NewBufferString(in), &stdout, &stderr)
+	code := DumpCommand.RunCommand("arvados config-dump", nil, bytes.NewBufferString(in), &stdout, &stderr)
 	c.Check(code, check.Equals, 0)
 	c.Check(stderr.String(), check.Equals, "")
 	c.Check(stdout.String(), check.Matches, `(?ms)Clusters:\n  z1234:\n.*`)

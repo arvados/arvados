@@ -44,17 +44,18 @@ func applyDeprecatedConfig(cfg *arvados.Config, configdata []byte, log logger) e
 		}
 		for name, np := range dcluster.NodeProfiles {
 			if name == "*" || name == os.Getenv("ARVADOS_NODE_PROFILE") || name == hostname {
-				applyDeprecatedNodeProfile(hostname, np.RailsAPI, &cluster.Services.RailsAPI)
-				applyDeprecatedNodeProfile(hostname, np.Controller, &cluster.Services.Controller)
-				applyDeprecatedNodeProfile(hostname, np.DispatchCloud, &cluster.Services.DispatchCloud)
+				name = "localhost"
+			} else {
+				log.Warnf("overriding Clusters.%s.Services using Clusters.%s.NodeProfiles.%s (guessing %q is a hostname)", id, id, name, name)
 			}
+			applyDeprecatedNodeProfile(name, np.RailsAPI, &cluster.Services.RailsAPI)
+			applyDeprecatedNodeProfile(name, np.Controller, &cluster.Services.Controller)
+			applyDeprecatedNodeProfile(name, np.DispatchCloud, &cluster.Services.DispatchCloud)
 		}
 		if dst, n := &cluster.API.MaxItemsPerResponse, dcluster.RequestLimits.MaxItemsPerResponse; n != nil && *n != *dst {
-			log.Warnf("overriding Clusters.%s.API.MaxItemsPerResponse with deprecated config RequestLimits.MultiClusterRequestConcurrency = %d", id, *n)
 			*dst = *n
 		}
 		if dst, n := &cluster.API.MaxRequestAmplification, dcluster.RequestLimits.MultiClusterRequestConcurrency; n != nil && *n != *dst {
-			log.Warnf("overriding Clusters.%s.API.MaxRequestAmplification with deprecated config RequestLimits.MultiClusterRequestConcurrency = %d", id, *n)
 			*dst = *n
 		}
 		cfg.Clusters[id] = cluster

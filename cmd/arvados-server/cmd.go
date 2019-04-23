@@ -20,9 +20,10 @@ var (
 		"-version":  cmd.Version(version),
 		"--version": cmd.Version(version),
 
+		"config-check":   config.CheckCommand,
+		"config-dump":    config.DumpCommand,
 		"controller":     controller.Command,
 		"dispatch-cloud": dispatchcloud.Command,
-		"dump-config":    config.DumpCommand,
 	})
 )
 

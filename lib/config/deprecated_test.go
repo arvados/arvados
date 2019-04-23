@@ -18,34 +18,36 @@ Clusters:
  z1111:
   NodeProfiles:
    "*":
-    arvados-dispatch-cloud:
-     listen: ":9006"
     arvados-controller:
      listen: ":9004"
    `+hostname+`:
     arvados-api-server:
      listen: ":8000"
+   dispatch-host:
+    arvados-dispatch-cloud:
+     listen: ":9006"
 `, `
 Clusters:
  z1111:
   Services:
    RailsAPI:
     InternalURLs:
-     "http://`+hostname+`:8000": {}
+     "http://localhost:8000": {}
    Controller:
     InternalURLs:
-     "http://`+hostname+`:9004": {}
+     "http://localhost:9004": {}
    DispatchCloud:
     InternalURLs:
-     "http://`+hostname+`:9006": {}
+     "http://dispatch-host:9006": {}
   NodeProfiles:
    "*":
-    arvados-dispatch-cloud:
-     listen: ":9006"
     arvados-controller:
      listen: ":9004"
    `+hostname+`:
     arvados-api-server:
      listen: ":8000"
+   dispatch-host:
+    arvados-dispatch-cloud:
+     listen: ":9006"
 `)
 }
