@@ -12,6 +12,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"github.com/ghodss/yaml"
@@ -98,5 +99,23 @@ func Load(rdr io.Reader, log logger) (*arvados.Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	for id, cc := range cfg.Clusters {
+		err = checkKeyConflict(fmt.Sprintf("Clusters.%s.PostgreSQL.Connection", id), cc.PostgreSQL.Connection)
+		if err != nil {
+			return nil, err
+		}
+	}
 	return &cfg, nil
+}
+
+func checkKeyConflict(label string, m map[string]string) error {
+	saw := map[string]bool{}
+	for k := range m {
+		k = strings.ToLower(k)
+		if saw[k] {
+			return fmt.Errorf("%s: multiple keys with tolower(key)==%q (use same case as defaults)", label, k)
+		}
+		saw[k] = true
+	}
+	return nil
 }

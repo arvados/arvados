@@ -53,6 +53,18 @@ func (s *LoadSuite) TestMultipleClusters(c *check.C) {
 	c.Check(c2.ClusterID, check.Equals, "z2222")
 }
 
+func (s *LoadSuite) TestPostgreSQLKeyConflict(c *check.C) {
+	_, err := Load(bytes.NewBufferString(`
+Clusters:
+ zzzzz:
+  postgresql:
+   connection:
+     dbname: dbname
+     host: host
+`), ctxlog.TestLogger(c))
+	c.Assert(err, check.ErrorMatches, `Clusters.zzzzz.PostgreSQL.Connection: multiple keys with .*"(dbname|host)".*`)
+}
+
 func (s *LoadSuite) TestMovedKeys(c *check.C) {
 	s.checkEquivalent(c, `# config has old keys only
 Clusters:
