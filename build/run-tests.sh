@@ -122,6 +122,7 @@ sdk/go/stats
 sdk/go/crunchrunner
 sdk/cwl
 sdk/R
+sdk/java-v2
 tools/sync-groups
 tools/crunchstat-summary
 tools/crunchstat-summary:py3
@@ -1070,6 +1071,10 @@ test_sdk/cli() {
         && KEEP_LOCAL_STORE=/tmp/keep bundle exec rake test TESTOPTS=-v ${testargs[sdk/cli]}
 }
 
+test_sdk/java-v2() {
+    cd "$WORKSPACE/sdk/java-v2" && gradle test
+}
+
 test_services/login-sync() {
     cd "$WORKSPACE/services/login-sync" \
         && bundle exec rake test TESTOPTS=-v ${testargs[services/login-sync]}
@@ -1167,6 +1172,7 @@ test_all() {
     do_test sdk/R
     do_test sdk/cli
     do_test services/login-sync
+    do_test sdk/java-v2
     do_test services/nodemanager_integration
     for p in "${pythonstuff[@]}"
     do

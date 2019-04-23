@@ -1,0 +1,22 @@
+{
+  "href": "/collections/ardev-4zz18-jk5vo4uo9u5vj52",
+  "kind": "arvados#collection",
+  "etag": "2vm76dxmzr23u9774iguuxsrg",
+  "uuid": "ardev-4zz18-jk5vo4uo9u5vj52",
+  "owner_uuid": "ardev-tpzed-n3kzq4fvoks3uw4",
+  "created_at": "2018-02-19T11:00:00.852389000Z",
+  "modified_by_client_uuid": "ardev-ozdt8-97tzh5x96spqkay",
+  "modified_by_user_uuid": "ardev-tpzed-n3kzq4fvoks3uw4",
+  "modified_at": "2018-02-19T11:00:00.852389000Z",
+  "name": "New Collection (2018-02-19 12:00:00.273)",
+  "description": null,
+  "properties": {},
+  "portable_data_hash": "49581091dfad651945c12b08d4735d88+112",
+  "manifest_text": ". 163679d58edaadc28db769011728a72c+1070080+A3acf8c1fe582c265d2077702e4a7d74fcc03aba8@5aa4fdeb 0:1024:test-file1 1024:20480:test-file2 21504:1048576:test-file\\0403\n",
+  "replication_desired": null,
+  "replication_confirmed": null,
+  "replication_confirmed_at": null,
+  "delete_at": null,
+  "trash_at": null,
+  "is_trashed": false
+}

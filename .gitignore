@@ -13,6 +13,7 @@ docker/config.yml
 doc/.site
 doc/sdk/python/arvados
 doc/sdk/R/arvados
+doc/sdk/java-v2/javadoc
 sdk/perl/MYMETA.*
 sdk/perl/Makefile
 sdk/perl/blib
