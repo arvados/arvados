@@ -32,7 +32,6 @@ func LoadFile(path string, log logger) (*arvados.Config, error) {
 }
 
 func Load(rdr io.Reader, log logger) (*arvados.Config, error) {
-	var cfg arvados.Config
 	buf, err := ioutil.ReadAll(rdr)
 	if err != nil {
 		return nil, err
@@ -64,15 +63,23 @@ func Load(rdr io.Reader, log logger) (*arvados.Config, error) {
 		if err != nil {
 			return nil, fmt.Errorf("loading defaults for %s: %s", id, err)
 		}
-		mergo.Merge(&merged, src, mergo.WithOverride)
+		err = mergo.Merge(&merged, src, mergo.WithOverride)
+		if err != nil {
+			return nil, fmt.Errorf("merging defaults for %s: %s", id, err)
+		}
 	}
 	var src map[string]interface{}
 	err = yaml.Unmarshal(buf, &src)
 	if err != nil {
 		return nil, fmt.Errorf("loading config data: %s", err)
 	}
-	mergo.Merge(&merged, src, mergo.WithOverride)
+	err = mergo.Merge(&merged, src, mergo.WithOverride)
+	if err != nil {
+		return nil, fmt.Errorf("merging config data: %s", err)
+	}
 
+	// map[string]interface{} => json => arvados.Config
+	var cfg arvados.Config
 	var errEnc error
 	pr, pw := io.Pipe()
 	go func() {
