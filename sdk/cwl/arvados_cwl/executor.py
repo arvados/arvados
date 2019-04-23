@@ -45,6 +45,7 @@ from ._version import __version__
 from cwltool.process import shortname, UnsupportedRequirement, use_custom_schema
 from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, get_listing, visit_class
 from cwltool.command_line_tool import compute_checksums
+from cwltool.load_tool import load_tool
 
 logger = logging.getLogger('arvados.cwl-runner')
 metrics = logging.getLogger('arvados.cwl-runner.metrics')
@@ -671,6 +672,11 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                     "components": {},
                     "state": "RunningOnClient"}).execute(num_retries=self.num_retries)
             logger.info("Pipeline instance %s", self.pipeline["uuid"])
+
+        if not isinstance(tool, Runner):
+            loadingContext.do_update = True
+            tool = load_tool(tool.doc_loader.idx[tool.tool["id"]],
+                             loadingContext)
 
         if runtimeContext.cwl_runner_job is not None:
             self.uuid = runtimeContext.cwl_runner_job.get('uuid')
