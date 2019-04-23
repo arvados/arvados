@@ -15,6 +15,7 @@ import { SidePanelTreeCategory, activateSidePanelTreeItem } from '~/store/side-p
 import { updateResources } from '../resources/resources-actions';
 import { ResourceKind } from '~/models/resource';
 import { GroupResource } from '~/models/group';
+import { extractUuidKind } from '~/models/resource';
 
 export const BREADCRUMBS = 'breadcrumbs';
 
@@ -22,8 +23,14 @@ export interface ResourceBreadcrumb extends Breadcrumb {
     uuid: string;
 }
 
-export const setBreadcrumbs = (breadcrumbs: Breadcrumb[]) =>
-    propertiesActions.SET_PROPERTY({ key: BREADCRUMBS, value: breadcrumbs });
+export const setBreadcrumbs = (breadcrumbs: any, currentItem?: any) => {
+    if (currentItem) {
+        const addLastItem = { label: currentItem.name, uuid: currentItem.uuid };
+        breadcrumbs.push(addLastItem);
+    }
+    return propertiesActions.SET_PROPERTY({ key: BREADCRUMBS, value: breadcrumbs });
+};
+
 
 const getSidePanelTreeBreadcrumbs = (uuid: string) => (treePicker: TreePicker): ResourceBreadcrumb[] => {
     const nodes = getSidePanelTreeBranch(uuid)(treePicker);
@@ -34,9 +41,20 @@ const getSidePanelTreeBreadcrumbs = (uuid: string) => (treePicker: TreePicker): 
 };
 
 export const setSidePanelBreadcrumbs = (uuid: string) =>
-    (dispatch: Dispatch, getState: () => RootState) => {
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const { treePicker } = getState();
         const breadcrumbs = getSidePanelTreeBreadcrumbs(uuid)(treePicker);
+        const path = getState().router.location!.pathname;
+        const currentUuid = path.split('/')[2];
+        const uuidKind = extractUuidKind(currentUuid);
+        
+        if (uuidKind === ResourceKind.COLLECTION) {
+            const collectionItem = await services.collectionService.get(currentUuid);
+            dispatch(setBreadcrumbs(breadcrumbs, collectionItem));
+        } else if (uuidKind === ResourceKind.PROCESS) {
+            const processItem = await services.containerRequestService.get(currentUuid);
+            dispatch(setBreadcrumbs(breadcrumbs, processItem));
+        }
         dispatch(setBreadcrumbs(breadcrumbs));
     };
 
@@ -53,13 +71,22 @@ export const setCategoryBreadcrumbs = (uuid: string, category: SidePanelTreeCate
         const initialBreadcrumbs: ResourceBreadcrumb[] = [
             { label: category, uuid: category }
         ];
-        const breadrumbs = ancestors.reduce((breadcrumbs, ancestor) =>
+        const path = getState().router.location!.pathname;
+        const currentUuid = path.split('/')[2];
+        const uuidKind = extractUuidKind(currentUuid);
+        const breadcrumbs = ancestors.reduce((breadcrumbs, ancestor) =>
             ancestor.kind === ResourceKind.GROUP
                 ? [...breadcrumbs, { label: ancestor.name, uuid: ancestor.uuid }]
                 : breadcrumbs,
             initialBreadcrumbs);
-
-        dispatch(setBreadcrumbs(breadrumbs));
+        if (uuidKind === ResourceKind.COLLECTION) {
+            const collectionItem = await services.collectionService.get(currentUuid);
+            dispatch(setBreadcrumbs(breadcrumbs, collectionItem));
+        } else if (uuidKind === ResourceKind.PROCESS) {
+            const processItem = await services.containerRequestService.get(currentUuid);
+            dispatch(setBreadcrumbs(breadcrumbs, processItem));
+        }
+        dispatch(setBreadcrumbs(breadcrumbs));
     };
 
 export const setProjectBreadcrumbs = (uuid: string) =>
@@ -74,14 +101,6 @@ export const setProjectBreadcrumbs = (uuid: string) =>
         }
     };
 
-export const setCollectionBreadcrumbs = (collectionUuid: string) =>
-    (dispatch: Dispatch, getState: () => RootState) => {
-        const { resources } = getState();
-        const collection = getResource(collectionUuid)(resources);
-        if (collection) {
-            dispatch<any>(setProjectBreadcrumbs(collection.ownerUuid));
-        }
-    };
 export const setProcessBreadcrumbs = (processUuid: string) =>
     (dispatch: Dispatch, getState: () => RootState) => {
         const { resources } = getState();
