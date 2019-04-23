@@ -527,6 +527,7 @@ class RunnerContainer(Runner):
             container = self.arvrunner.api.containers().get(
                 uuid=record["container_uuid"]
             ).execute(num_retries=self.arvrunner.num_retries)
+            container["log"] = record["log_uuid"]
         except Exception:
             logger.exception("%s while getting runner container", self.arvrunner.label(self))
             self.arvrunner.output_callback({}, "permanentFail")
