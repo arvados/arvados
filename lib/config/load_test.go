@@ -38,6 +38,8 @@ func (s *LoadSuite) TestNoConfigs(c *check.C) {
 	cc, err := cfg.GetCluster("z1111")
 	c.Assert(err, check.IsNil)
 	c.Check(cc.ClusterID, check.Equals, "z1111")
+	c.Check(cc.API.MaxRequestAmplification, check.Equals, 4)
+	c.Check(cc.API.MaxItemsPerResponse, check.Equals, 1000)
 }
 
 func (s *LoadSuite) TestMultipleClusters(c *check.C) {
@@ -91,14 +93,46 @@ Clusters:
 `)
 }
 
+func (s *LoadSuite) TestMovedKeys(c *check.C) {
+	s.checkEquivalent(c, `# config has old keys only
+Clusters:
+ zzzzz:
+  RequestLimits:
+   MultiClusterRequestConcurrency: 3
+   MaxItemsPerResponse: 999
+`, `
+Clusters:
+ zzzzz:
+  API:
+   MaxRequestAmplification: 3
+   MaxItemsPerResponse: 999
+`)
+	s.checkEquivalent(c, `# config has both old and new keys; old values win
+Clusters:
+ zzzzz:
+  RequestLimits:
+   MultiClusterRequestConcurrency: 0
+   MaxItemsPerResponse: 555
+  API:
+   MaxRequestAmplification: 3
+   MaxItemsPerResponse: 999
+`, `
+Clusters:
+ zzzzz:
+  API:
+   MaxRequestAmplification: 0
+   MaxItemsPerResponse: 555
+`)
+}
+
 func (s *LoadSuite) checkEquivalent(c *check.C, goty, expectedy string) {
 	got, err := Load(bytes.NewBufferString(goty), ctxlog.TestLogger(c))
 	c.Assert(err, check.IsNil)
 	expected, err := Load(bytes.NewBufferString(expectedy), ctxlog.TestLogger(c))
 	c.Assert(err, check.IsNil)
 	if !c.Check(got, check.DeepEquals, expected) {
-		cmd := exec.Command("diff", "-u", "--label", "got", "--label", "expected", "/dev/fd/3", "/dev/fd/4")
-		for _, obj := range []interface{}{got, expected} {
+		cmd := exec.Command("diff", "-u", "--label", "expected", "--label", "got", "/dev/fd/3", "/dev/fd/4")
+		for _, obj := range []interface{}{expected, got} {
 			y, _ := yaml.Marshal(obj)
 			pr, pw, err := os.Pipe()
 			c.Assert(err, check.IsNil)

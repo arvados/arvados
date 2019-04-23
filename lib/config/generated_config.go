@@ -76,7 +76,7 @@ Clusters:
         # All parameters here are passed to the PG client library in a connection string;
         # see https://www.postgresql.org/docs/current/static/libpq-connect.html#LIBPQ-PARAMKEYWORDS
         Host: ""
-        Port: 0
+        Port: ""
         User: ""
         Password: ""
         DBName: ""
@@ -114,6 +114,15 @@ Clusters:
       # permission-updating API called with the 'async' parameter schedules a an
       # update on the permission view in the future, if not already scheduled.
       AsyncPermissionsUpdateInterval: 20
+
+      # Maximum number of concurrent outgoing requests to make while
+      # serving a single incoming multi-cluster (federated) request.
+      MaxRequestAmplification: 4
+
+      # RailsSessionSecretToken is a string of alphanumeric characters
+      # used by Rails to sign session tokens. IMPORTANT: This is a
+      # site secret. It should be at least 50 characters.
+      RailsSessionSecretToken: ""
 
     Users:
       # Config parameters to automatically setup new users.  If enabled,

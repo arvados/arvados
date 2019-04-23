@@ -6,6 +6,7 @@ package config
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -15,16 +16,25 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"github.com/ghodss/yaml"
+	"github.com/imdario/mergo"
 )
 
 type logger interface {
 	Warnf(string, ...interface{})
 }
 
+type deprRequestLimits struct {
+	MaxItemsPerResponse            *int
+	MultiClusterRequestConcurrency *int
+}
+
+type deprCluster struct {
+	RequestLimits deprRequestLimits
+	NodeProfiles  map[string]arvados.NodeProfile
+}
+
 type deprecatedConfig struct {
-	Clusters map[string]struct {
-		NodeProfiles map[string]arvados.NodeProfile
-	}
+	Clusters map[string]deprCluster
 }
 
 func LoadFile(path string, log logger) (*arvados.Config, error) {
@@ -57,18 +67,41 @@ func Load(rdr io.Reader, log logger) (*arvados.Config, error) {
 	if len(dummy.Clusters) == 0 {
 		return nil, errors.New("config does not define any clusters")
 	}
+
+	// We can't merge deep structs here; instead, we unmarshal the
+	// default & loaded config files into generic maps, merge
+	// those, and then json-encode+decode the result into the
+	// config struct type.
+	var merged map[string]interface{}
 	for id := range dummy.Clusters {
-		err = yaml.Unmarshal(bytes.Replace(DefaultYAML, []byte("xxxxx"), []byte(id), -1), &cfg)
+		var src map[string]interface{}
+		err = yaml.Unmarshal(bytes.Replace(DefaultYAML, []byte(" xxxxx:"), []byte(" "+id+":"), -1), &src)
 		if err != nil {
 			return nil, fmt.Errorf("loading defaults for %s: %s", id, err)
 		}
+		mergo.Merge(&merged, src, mergo.WithOverride)
 	}
-	err = yaml.Unmarshal(buf, &cfg)
+	var src map[string]interface{}
+	err = yaml.Unmarshal(buf, &src)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("loading config data: %s", err)
+	}
+	mergo.Merge(&merged, src, mergo.WithOverride)
+
+	var errEnc error
+	pr, pw := io.Pipe()
+	go func() {
+		errEnc = json.NewEncoder(pw).Encode(merged)
+		pw.Close()
+	}()
+	err = json.NewDecoder(pr).Decode(&cfg)
+	if errEnc != nil {
+		err = errEnc
+	}
+	if err != nil {
+		return nil, fmt.Errorf("transcoding config data: %s", err)
 	}
 
-	// Check for deprecated config values, and apply them to cfg.
 	var dc deprecatedConfig
 	err = yaml.Unmarshal(buf, &dc)
 	if err != nil {
@@ -97,6 +130,14 @@ func applyDeprecatedConfig(cfg *arvados.Config, dc *deprecatedConfig, log logger
 				applyDeprecatedNodeProfile(hostname, np.Controller, &cluster.Services.Controller)
 				applyDeprecatedNodeProfile(hostname, np.DispatchCloud, &cluster.Services.DispatchCloud)
 			}
+		}
+		if dst, n := &cluster.API.MaxItemsPerResponse, dcluster.RequestLimits.MaxItemsPerResponse; n != nil && *n != *dst {
+			log.Warnf("overriding Clusters.%s.API.MaxItemsPerResponse with deprecated config RequestLimits.MultiClusterRequestConcurrency = %d", id, *n)
+			*dst = *n
+		}
+		if dst, n := &cluster.API.MaxRequestAmplification, dcluster.RequestLimits.MultiClusterRequestConcurrency; n != nil && *n != *dst {
+			log.Warnf("overriding Clusters.%s.API.MaxRequestAmplification with deprecated config RequestLimits.MultiClusterRequestConcurrency = %d", id, *n)
+			*dst = *n
 		}
 		cfg.Clusters[id] = cluster
 	}

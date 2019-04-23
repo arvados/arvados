@@ -28,6 +28,19 @@ func (s *CommandSuite) TestEmptyInput(c *check.C) {
 	c.Check(stderr.String(), check.Matches, `config does not define any clusters\n`)
 }
 
+func (s *CommandSuite) TestLogDeprecatedKeys(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	in := `
+Clusters:
+ z1234:
+  RequestLimits:
+    MaxItemsPerResponse: 1234
+`
+	code := DumpCommand.RunCommand("arvados dump-config", nil, bytes.NewBufferString(in), &stdout, &stderr)
+	c.Check(code, check.Equals, 0)
+	c.Check(stderr.String(), check.Matches, `(?ms).*overriding Clusters.z1234.API.MaxItemsPerResponse .* = 1234.*`)
+}
+
 func (s *CommandSuite) TestUnknownKey(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	in := `
@@ -38,6 +51,7 @@ Clusters:
 `
 	code := DumpCommand.RunCommand("arvados dump-config", nil, bytes.NewBufferString(in), &stdout, &stderr)
 	c.Check(code, check.Equals, 0)
+	c.Check(stderr.String(), check.Equals, "")
 	c.Check(stdout.String(), check.Matches, `(?ms)Clusters:\n  z1234:\n.*`)
 	c.Check(stdout.String(), check.Matches, `(?ms).*\n *ManagementToken: secret\n.*`)
 	c.Check(stdout.String(), check.Not(check.Matches), `(?ms).*UnknownKey.*`)

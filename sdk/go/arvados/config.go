@@ -51,9 +51,9 @@ func (sc *Config) GetCluster(clusterID string) (*Cluster, error) {
 	}
 }
 
-type RequestLimits struct {
-	MaxItemsPerResponse            int
-	MultiClusterRequestConcurrency int
+type API struct {
+	MaxItemsPerResponse     int
+	MaxRequestAmplification int
 }
 
 type Cluster struct {
@@ -68,7 +68,7 @@ type Cluster struct {
 	HTTPRequestTimeout Duration
 	RemoteClusters     map[string]RemoteCluster
 	PostgreSQL         PostgreSQL
-	RequestLimits      RequestLimits
+	API                API
 	Logging            Logging
 	TLS                TLS
 }
@@ -330,20 +330,6 @@ func (np *NodeProfile) ServicePorts() map[ServiceName]string {
 		ServiceNameKeepproxy:     np.Keepproxy.Listen,
 		ServiceNameKeepstore:     np.Keepstore.Listen,
 	}
-}
-
-func (h RequestLimits) GetMultiClusterRequestConcurrency() int {
-	if h.MultiClusterRequestConcurrency == 0 {
-		return 4
-	}
-	return h.MultiClusterRequestConcurrency
-}
-
-func (h RequestLimits) GetMaxItemsPerResponse() int {
-	if h.MaxItemsPerResponse == 0 {
-		return 1000
-	}
-	return h.MaxItemsPerResponse
 }
 
 type SystemServiceInstance struct {
