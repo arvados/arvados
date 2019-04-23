@@ -957,7 +957,7 @@ install_services/api() {
             || return 1
 
     cd "$WORKSPACE/services/api" \
-        && bin/rails db:environment:set RAILS_ENV=test \
+        && RAILS_ENV=test bundle exec rails db:environment:set \
         && RAILS_ENV=test bundle exec rake db:drop \
         && RAILS_ENV=test bundle exec rake db:setup \
         && RAILS_ENV=test bundle exec rake db:fixtures:load
