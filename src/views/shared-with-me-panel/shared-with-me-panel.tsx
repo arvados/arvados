@@ -31,13 +31,15 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 interface SharedWithMePanelDataProps {
     resources: ResourcesState;
+    isAdmin: boolean;
 }
 
 type SharedWithMePanelProps = SharedWithMePanelDataProps & DispatchProp & WithStyles<CssRules>;
 
 export const SharedWithMePanel = withStyles(styles)(
     connect((state: RootState) => ({
-        resources: state.resources
+        resources: state.resources,
+        isAdmin: state.auth.user!.isAdmin
     }))(
         class extends React.Component<SharedWithMePanelProps> {
             render() {
@@ -51,7 +53,7 @@ export const SharedWithMePanel = withStyles(styles)(
             }
 
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
-                const menuKind = resourceKindToContextMenuKind(resourceUuid);
+                const menuKind = resourceKindToContextMenuKind(resourceUuid, this.props.isAdmin);
                 const resource = getResource<GroupResource>(resourceUuid)(this.props.resources);
                 if (menuKind && resource) {
                     this.props.dispatch<any>(openContextMenu(event, {

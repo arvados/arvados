@@ -23,11 +23,18 @@ const mapStateToProps = (state: RootState, props: { resourceUuid: string; classN
 });
 
 export const FavoriteStar = connect(mapStateToProps)(
-    withStyles(styles)((props: { isFavoriteVisible: boolean; isPublicFavoriteVisible: boolean; className?: string; } & WithStyles<CssRules>) => {
+    withStyles(styles)((props: { isFavoriteVisible: boolean; className?: string; } & WithStyles<CssRules>) => {
+        if (props.isFavoriteVisible) {
+            return <FavoriteIcon className={props.className || props.classes.icon} />;
+        } else {
+            return null;
+        }
+    }));
+
+export const PublicFavoriteStar = connect(mapStateToProps)(
+    withStyles(styles)((props: { isPublicFavoriteVisible: boolean; className?: string; } & WithStyles<CssRules>) => {
         if (props.isPublicFavoriteVisible) {
             return <PublicFavoriteIcon className={props.className || props.classes.icon} />;
-        } else if (props.isFavoriteVisible) {
-            return <FavoriteIcon className={props.className || props.classes.icon} />;
         } else {
             return null;
         }
