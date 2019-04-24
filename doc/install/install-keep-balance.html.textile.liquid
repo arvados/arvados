@@ -81,11 +81,11 @@ Client:
   AuthToken: zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
 KeepServiceTypes:
   - disk
-Listen: :9005
 ManagementToken: <span class="userinput">xyzzy</span>
 RunPeriod: 10m
 CollectionBatchSize: 100000
 CollectionBuffers: 1000
+LostBlocksFile: /tmp/keep-balance-lost-blocks.txt    # If given, this file will be updated atomically during each successful run.
 </code></pre>
 </notextile>
 

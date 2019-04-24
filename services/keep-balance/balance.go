@@ -8,12 +8,16 @@ import (
 	"bytes"
 	"crypto/md5"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"log"
 	"math"
+	"os"
 	"runtime"
 	"sort"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
@@ -35,6 +39,8 @@ type Balancer struct {
 	Dumper  *logrus.Logger
 	Metrics *metrics
 
+	LostBlocksFile string
+
 	*BlockStateMap
 	KeepServices       map[string]*KeepService
 	DefaultReplication int
@@ -48,6 +54,7 @@ type Balancer struct {
 	errors        []error
 	stats         balancerStats
 	mutex         sync.Mutex
+	lostBlocks    io.Writer
 }
 
 // Run performs a balance operation using the given config and
@@ -63,6 +70,30 @@ func (bal *Balancer) Run(config Config, runOptions RunOptions) (nextRunOptions R
 	nextRunOptions = runOptions
 
 	defer bal.time("sweep", "wall clock time to run one full sweep")()
+
+	var lbFile *os.File
+	if bal.LostBlocksFile != "" {
+		tmpfn := bal.LostBlocksFile + ".tmp"
+		lbFile, err = os.OpenFile(tmpfn, os.O_CREATE|os.O_WRONLY, 0777)
+		if err != nil {
+			return
+		}
+		defer lbFile.Close()
+		err = syscall.Flock(int(lbFile.Fd()), syscall.LOCK_EX|syscall.LOCK_NB)
+		if err != nil {
+			return
+		}
+		defer func() {
+			// Remove the tempfile only if we didn't get
+			// as far as successfully renaming it.
+			if lbFile != nil {
+				os.Remove(tmpfn)
+			}
+		}()
+		bal.lostBlocks = lbFile
+	} else {
+		bal.lostBlocks = ioutil.Discard
+	}
 
 	if len(config.KeepServiceList.Items) > 0 {
 		err = bal.SetKeepServices(config.KeepServiceList)
@@ -106,6 +137,17 @@ func (bal *Balancer) Run(config Config, runOptions RunOptions) (nextRunOptions R
 	bal.PrintStatistics()
 	if err = bal.CheckSanityLate(); err != nil {
 		return
+	}
+	if lbFile != nil {
+		err = lbFile.Sync()
+		if err != nil {
+			return
+		}
+		err = os.Rename(bal.LostBlocksFile+".tmp", bal.LostBlocksFile)
+		if err != nil {
+			return
+		}
+		lbFile = nil
 	}
 	if runOptions.CommitPulls {
 		err = bal.CommitPulls(&config.Client)
@@ -885,6 +927,7 @@ func (bal *Balancer) collectStatistics(results <-chan balanceResult) {
 			s.lost.replicas -= surplus
 			s.lost.blocks++
 			s.lost.bytes += bytes * int64(-surplus)
+			fmt.Fprintf(bal.lostBlocks, "%s\n", strings.SplitN(string(result.blkid), "+", 2)[0])
 		case surplus < 0:
 			s.underrep.replicas -= surplus
 			s.underrep.blocks++
