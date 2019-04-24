@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -270,6 +271,28 @@ func (s *stubServer) serveKeepstoreIndexFoo4Bar1() *reqTracker {
 	return rt
 }
 
+func (s *stubServer) serveKeepstoreIndexFoo1() *reqTracker {
+	rt := &reqTracker{}
+	s.mux.HandleFunc("/index/", func(w http.ResponseWriter, r *http.Request) {
+		rt.Add(r)
+		io.WriteString(w, "acbd18db4cc2f85cedef654fccc4a4d8+3 12345678\n\n")
+	})
+	for _, mounts := range stubMounts {
+		for i, mnt := range mounts {
+			i := i
+			s.mux.HandleFunc(fmt.Sprintf("/mounts/%s/blocks", mnt.UUID), func(w http.ResponseWriter, r *http.Request) {
+				rt.Add(r)
+				if i == 0 {
+					io.WriteString(w, "acbd18db4cc2f85cedef654fccc4a4d8+3 12345678\n\n")
+				} else {
+					io.WriteString(w, "\n")
+				}
+			})
+		}
+	}
+	return rt
+}
+
 func (s *stubServer) serveKeepstoreTrash() *reqTracker {
 	return s.serveStatic("/trash", `{}`)
 }
@@ -406,6 +429,32 @@ func (s *runSuite) TestDetectSkippedCollections(c *check.C) {
 	c.Check(pullReqs.Count(), check.Equals, 0)
 }
 
+func (s *runSuite) TestWriteLostBlocks(c *check.C) {
+	lostf, err := ioutil.TempFile("", "keep-balance-lost-blocks-test-")
+	c.Assert(err, check.IsNil)
+	s.config.LostBlocksFile = lostf.Name()
+	defer os.Remove(lostf.Name())
+	opts := RunOptions{
+		CommitPulls: true,
+		CommitTrash: true,
+		Logger:      s.logger(c),
+	}
+	s.stub.serveCurrentUserAdmin()
+	s.stub.serveFooBarFileCollections()
+	s.stub.serveKeepServices(stubServices)
+	s.stub.serveKeepstoreMounts()
+	s.stub.serveKeepstoreIndexFoo1()
+	s.stub.serveKeepstoreTrash()
+	s.stub.serveKeepstorePull()
+	srv, err := NewServer(s.config, opts)
+	c.Assert(err, check.IsNil)
+	_, err = srv.Run()
+	c.Check(err, check.IsNil)
+	lost, err := ioutil.ReadFile(lostf.Name())
+	c.Assert(err, check.IsNil)
+	c.Check(string(lost), check.Equals, "37b51d194a7513e45b56f6524f2d51f2\n")
+}
+
 func (s *runSuite) TestDryRun(c *check.C) {
 	opts := RunOptions{
 		CommitPulls: false,
@@ -435,6 +484,11 @@ func (s *runSuite) TestDryRun(c *check.C) {
 }
 
 func (s *runSuite) TestCommit(c *check.C) {
+	lostf, err := ioutil.TempFile("", "keep-balance-lost-blocks-test-")
+	c.Assert(err, check.IsNil)
+	s.config.LostBlocksFile = lostf.Name()
+	defer os.Remove(lostf.Name())
+
 	s.config.Listen = ":"
 	s.config.ManagementToken = "xyzzy"
 	opts := RunOptions{
@@ -461,6 +515,10 @@ func (s *runSuite) TestCommit(c *check.C) {
 	// "bar" block is underreplicated by 1, and its only copy is
 	// in a poor rendezvous position
 	c.Check(bal.stats.pulls, check.Equals, 2)
+
+	lost, err := ioutil.ReadFile(lostf.Name())
+	c.Assert(err, check.IsNil)
+	c.Check(string(lost), check.Equals, "")
 
 	metrics := s.getMetrics(c, srv)
 	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_total_bytes 15\n.*`)

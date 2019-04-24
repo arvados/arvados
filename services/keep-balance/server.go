@@ -57,6 +57,10 @@ type Config struct {
 
 	// Timeout for outgoing http request/response cycle.
 	RequestTimeout arvados.Duration
+
+	// Destination filename for the list of lost block hashes, one
+	// per line. Updated atomically during each successful run.
+	LostBlocksFile string
 }
 
 // RunOptions controls runtime behavior. The flags/options that belong
@@ -142,9 +146,10 @@ func (srv *Server) start() error {
 
 func (srv *Server) Run() (*Balancer, error) {
 	bal := &Balancer{
-		Logger:  srv.Logger,
-		Dumper:  srv.Dumper,
-		Metrics: srv.metrics,
+		Logger:         srv.Logger,
+		Dumper:         srv.Dumper,
+		Metrics:        srv.metrics,
+		LostBlocksFile: srv.config.LostBlocksFile,
 	}
 	var err error
 	srv.runOptions, err = bal.Run(srv.config, srv.runOptions)
