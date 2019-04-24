@@ -78,6 +78,7 @@ func (bal *Balancer) Run(config Config, runOptions RunOptions) (nextRunOptions R
 		if err != nil {
 			return
 		}
+		defer lbFile.Close()
 		err = syscall.Flock(int(lbFile.Fd()), syscall.LOCK_EX|syscall.LOCK_NB)
 		if err != nil {
 			return
