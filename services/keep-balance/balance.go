@@ -83,7 +83,13 @@ func (bal *Balancer) Run(config Config, runOptions RunOptions) (nextRunOptions R
 		if err != nil {
 			return
 		}
-		defer os.Remove(tmpfn)
+		defer func() {
+			// Remove the tempfile only if we didn't get
+			// as far as successfully renaming it.
+			if lbFile != nil {
+				os.Remove(tmpfn)
+			}
+		}()
 		bal.lostBlocks = lbFile
 	} else {
 		bal.lostBlocks = ioutil.Discard
@@ -141,10 +147,7 @@ func (bal *Balancer) Run(config Config, runOptions RunOptions) (nextRunOptions R
 		if err != nil {
 			return
 		}
-		err = lbFile.Close()
-		if err != nil {
-			return
-		}
+		lbFile = nil
 	}
 	if runOptions.CommitPulls {
 		err = bal.CommitPulls(&config.Client)
