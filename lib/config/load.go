@@ -78,6 +78,7 @@ func load(rdr io.Reader, log logger, useDeprecated bool) (*arvados.Config, error
 	if err != nil {
 		return nil, fmt.Errorf("loading config data: %s", err)
 	}
+	logExtraKeys(log, merged, src, "")
 	err = mergo.Merge(&merged, src, mergo.WithOverride)
 	if err != nil {
 		return nil, fmt.Errorf("merging config data: %s", err)
@@ -121,9 +122,28 @@ func checkKeyConflict(label string, m map[string]string) error {
 	for k := range m {
 		k = strings.ToLower(k)
 		if saw[k] {
-			return fmt.Errorf("%s: multiple keys with tolower(key)==%q (use same case as defaults)", label, k)
+			return fmt.Errorf("%s: multiple entries for %q (fix by using same capitalization as default/example file)", label, k)
 		}
 		saw[k] = true
 	}
 	return nil
+}
+
+func logExtraKeys(log logger, expected, supplied map[string]interface{}, prefix string) {
+	if log == nil {
+		return
+	}
+	for k, vsupp := range supplied {
+		if vexp, ok := expected[k]; !ok {
+			log.Warnf("deprecated or unknown config entry: %s%s", prefix, k)
+		} else if vsupp, ok := vsupp.(map[string]interface{}); !ok {
+			// if vsupp is a map but vexp isn't map, this
+			// will be caught elsewhere; see TestBadType.
+			continue
+		} else if vexp, ok := vexp.(map[string]interface{}); !ok {
+			log.Warnf("unexpected object in config entry: %s%s", prefix, k)
+		} else {
+			logExtraKeys(log, vexp, vsupp, prefix+k+".")
+		}
+	}
 }

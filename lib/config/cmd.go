@@ -63,7 +63,7 @@ func (checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 		err = fmt.Errorf("usage: %s <config-src.yaml && echo 'no changes needed'", prog)
 		return 2
 	}
-	log := ctxlog.New(stderr, "text", "info")
+	log := &plainLogger{w: stderr}
 	buf, err := ioutil.ReadAll(stdin)
 	if err != nil {
 		return 1
@@ -72,7 +72,7 @@ func (checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 	if err != nil {
 		return 1
 	}
-	withDepr, err := load(bytes.NewBuffer(buf), log, true)
+	withDepr, err := load(bytes.NewBuffer(buf), nil, true)
 	if err != nil {
 		return 1
 	}
@@ -91,9 +91,28 @@ func (checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 		cmd.ExtraFiles = append(cmd.ExtraFiles, pr)
 	}
 	diff, err := cmd.CombinedOutput()
-	if err == nil {
-		return 0
+	if bytes.HasPrefix(diff, []byte("--- ")) {
+		fmt.Fprintln(stdout, "Your configuration is relying on deprecated entries. Suggest making the following changes.")
+		stdout.Write(diff)
+		return 1
+	} else if len(diff) > 0 {
+		fmt.Fprintf(stderr, "Unexpected diff output:\n%s", diff)
+		return 1
+	} else if err != nil {
+		return 1
 	}
-	_, err = stdout.Write(diff)
-	return 1
+	if log.used {
+		return 1
+	}
+	return 0
+}
+
+type plainLogger struct {
+	w    io.Writer
+	used bool
+}
+
+func (pl *plainLogger) Warnf(format string, args ...interface{}) {
+	pl.used = true
+	fmt.Fprintf(pl.w, format+"\n", args...)
 }

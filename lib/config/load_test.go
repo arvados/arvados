@@ -62,7 +62,43 @@ Clusters:
      dbname: dbname
      host: host
 `), ctxlog.TestLogger(c))
-	c.Assert(err, check.ErrorMatches, `Clusters.zzzzz.PostgreSQL.Connection: multiple keys with .*"(dbname|host)".*`)
+	c.Check(err, check.ErrorMatches, `Clusters.zzzzz.PostgreSQL.Connection: multiple entries for "(dbname|host)".*`)
+}
+
+func (s *LoadSuite) TestBadType(c *check.C) {
+	for _, data := range []string{`
+Clusters:
+ zzzzz:
+  PostgreSQL: true
+`, `
+Clusters:
+ zzzzz:
+  PostgreSQL:
+   ConnectionPool: true
+`, `
+Clusters:
+ zzzzz:
+  PostgreSQL:
+   ConnectionPool: "foo"
+`, `
+Clusters:
+ zzzzz:
+  PostgreSQL:
+   ConnectionPool: []
+`, `
+Clusters:
+ zzzzz:
+  PostgreSQL:
+   ConnectionPool: [] # {foo: bar} isn't caught here; we rely on config-check
+`,
+	} {
+		c.Log(data)
+		v, err := Load(bytes.NewBufferString(data), ctxlog.TestLogger(c))
+		if v != nil {
+			c.Logf("%#v", v.Clusters["zzzzz"].PostgreSQL.ConnectionPool)
+		}
+		c.Check(err, check.ErrorMatches, `.*cannot unmarshal .*PostgreSQL.*`)
+	}
 }
 
 func (s *LoadSuite) TestMovedKeys(c *check.C) {

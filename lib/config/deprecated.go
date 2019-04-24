@@ -45,7 +45,7 @@ func applyDeprecatedConfig(cfg *arvados.Config, configdata []byte, log logger) e
 		for name, np := range dcluster.NodeProfiles {
 			if name == "*" || name == os.Getenv("ARVADOS_NODE_PROFILE") || name == hostname {
 				name = "localhost"
-			} else {
+			} else if log != nil {
 				log.Warnf("overriding Clusters.%s.Services using Clusters.%s.NodeProfiles.%s (guessing %q is a hostname)", id, id, name, name)
 			}
 			applyDeprecatedNodeProfile(name, np.RailsAPI, &cluster.Services.RailsAPI)
