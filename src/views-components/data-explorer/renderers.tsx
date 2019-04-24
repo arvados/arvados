@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { Grid, Typography, withStyles, Tooltip, IconButton, Checkbox, Button } from '@material-ui/core';
-import { FavoriteStar } from '../favorite-star/favorite-star';
+import { FavoriteStar, PublicFavoriteStar } from '../favorite-star/favorite-star';
 import { ResourceKind, TrashableResource } from '~/models/resource';
 import { ProjectIcon, CollectionIcon, ProcessIcon, DefaultIcon, WorkflowIcon, ShareIcon } from '~/components/icon/icon';
 import { formatDate, formatFileSize } from '~/common/formatters';
@@ -40,6 +40,7 @@ const renderName = (item: { name: string; uuid: string, kind: string }) =>
         <Grid item>
             <Typography variant="caption">
                 <FavoriteStar resourceUuid={item.uuid} />
+                <PublicFavoriteStar resourceUuid={item.uuid} />
             </Typography>
         </Grid>
     </Grid>;
@@ -339,6 +340,7 @@ const renderLinkNameAndIcon = (item: { name: string; headUuid: string, headKind:
         <Grid item>
             <Typography variant="caption">
                 <FavoriteStar resourceUuid={item.headUuid} />
+                <PublicFavoriteStar resourceUuid={item.headUuid} />
             </Typography>
         </Grid>
     </Grid>;
