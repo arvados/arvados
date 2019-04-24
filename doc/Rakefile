@@ -91,13 +91,19 @@ end
 file "sdk/java-v2/javadoc/index.html" do |t|
   `which java`
   if $? == 0
-    tgt = Dir.pwd
-    docfiles = []
-    Dir.chdir("../sdk/java-v2") do
-      STDERR.puts `gradle javadoc 2>&1`
+    `which gradle`
+    if $? != 0
+      puts "Warning: gradle not found, java sdk documentation will not be generated".colorize(:light_red)
+    else
+      tgt = Dir.pwd
+      docfiles = []
+      Dir.chdir("../sdk/java-v2") do
+        STDERR.puts `gradle javadoc 2>&1`
+        raise if $? != 0
+      end
+      cp_r("../sdk/java-v2/build/docs/javadoc", "sdk/java-v2")
+      raise if $? != 0
     end
-    cp_r("../sdk/java-v2/build/docs/javadoc", "sdk/java-v2")
-    raise if $? != 0
   else
     puts "Warning: java not found, java sdk documentation will not be generated".colorize(:light_red)
   end
