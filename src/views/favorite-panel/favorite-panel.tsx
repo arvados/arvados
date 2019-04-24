@@ -107,53 +107,54 @@ export const favoritePanelColumns: DataColumns<string> = [
 
 interface FavoritePanelDataProps {
     favorites: FavoritesState;
+    isAdmin: boolean;
 }
 
 interface FavoritePanelActionProps {
     onItemClick: (item: string) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: string) => void;
     onDialogOpen: (ownerUuid: string) => void;
     onItemDoubleClick: (item: string) => void;
 }
-const mapStateToProps = ({ favorites }: RootState): FavoritePanelDataProps => ({
-    favorites
-});
-
-const mapDispatchToProps = (dispatch: Dispatch): FavoritePanelActionProps => ({
-    onContextMenu: (event, resourceUuid) => {
-        const kind = resourceKindToContextMenuKind(resourceUuid);
-        if (kind) {
-            dispatch<any>(openContextMenu(event, {
-                name: '',
-                uuid: resourceUuid,
-                ownerUuid: '',
-                kind: ResourceKind.NONE,
-                menuKind: kind
-            }));
-        }
-        dispatch<any>(loadDetailsPanel(resourceUuid));
-    },
-    onDialogOpen: (ownerUuid: string) => { return; },
-    onItemClick: (resourceUuid: string) => {
-        dispatch<any>(loadDetailsPanel(resourceUuid));
-    },
-    onItemDoubleClick: uuid => {
-        dispatch<any>(navigateTo(uuid));
-    }
+const mapStateToProps = (state : RootState): FavoritePanelDataProps => ({
+    favorites: state.favorites,
+    isAdmin: state.auth.user!.isAdmin
 });
 
 type FavoritePanelProps = FavoritePanelDataProps & FavoritePanelActionProps & DispatchProp
     & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
 
 export const FavoritePanel = withStyles(styles)(
-    connect(mapStateToProps, mapDispatchToProps)(
+    connect(mapStateToProps)(
         class extends React.Component<FavoritePanelProps> {
+
+            handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
+                const menuKind = resourceKindToContextMenuKind(resourceUuid, this.props.isAdmin);
+                if (menuKind) {
+                    this.props.dispatch<any>(openContextMenu(event, {
+                        name: '',
+                        uuid: resourceUuid,
+                        ownerUuid: '',
+                        kind: ResourceKind.NONE,
+                        menuKind
+                    }));
+                }
+                this.props.dispatch<any>(loadDetailsPanel(resourceUuid));
+            }
+
+            handleRowDoubleClick = (uuid: string) => {
+                this.props.dispatch<any>(navigateTo(uuid));
+            }
+
+            handleRowClick = (uuid: string) => {
+                this.props.dispatch(loadDetailsPanel(uuid));
+            }
+
             render() {
                 return <DataExplorer
                     id={FAVORITE_PANEL_ID}
-                    onRowClick={this.props.onItemClick}
-                    onRowDoubleClick={this.props.onItemDoubleClick}
-                    onContextMenu={this.props.onContextMenu}
+                    onRowClick={this.handleRowClick}
+                    onRowDoubleClick={this.handleRowDoubleClick}
+                    onContextMenu={this.handleContextMenu}
                     contextMenuColumn={true}
                     dataTableDefaultView={
                         <DataTableDefaultView
