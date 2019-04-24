@@ -32,8 +32,8 @@ export const ProjectsTreePicker = ({ pickerId, ...props }: ProjectsTreePickerPro
     return <div>
         <HomeTreePicker pickerId={home} {...p} />
         <SharedTreePicker pickerId={shared} {...p} />
-        <FavoritesTreePicker pickerId={favorites} {...p} />
         <PublicFavoritesTreePicker pickerId={publicFavorites} {...p} />
+        <FavoritesTreePicker pickerId={favorites} {...p} />  
     </div>;
 };
 

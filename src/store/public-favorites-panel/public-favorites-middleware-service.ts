@@ -20,7 +20,6 @@ import { serializeSimpleObjectTypeFilters } from '../resource-type-filters/resou
 import { LinkResource, LinkClass } from '~/models/link';
 import { GroupContentsResource, GroupContentsResourcePrefix } from '~/services/groups-service/groups-service';
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions';
-import { loadMissingProcessesInformation } from '~/store/project-panel/project-panel-middleware-service';
 import { updatePublicFavorites } from '~/store/public-favorites/public-favorites-actions';
 
 export class PublicFavoritesMiddlewareService extends DataExplorerMiddlewareService {
