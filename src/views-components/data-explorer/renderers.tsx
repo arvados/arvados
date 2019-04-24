@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Grid, Typography, withStyles, Tooltip, IconButton, Checkbox, Button } from '@material-ui/core';
+import { Grid, Typography, withStyles, Tooltip, IconButton, Checkbox } from '@material-ui/core';
 import { FavoriteStar, PublicFavoriteStar } from '../favorite-star/favorite-star';
 import { ResourceKind, TrashableResource } from '~/models/resource';
 import { ProjectIcon, CollectionIcon, ProcessIcon, DefaultIcon, WorkflowIcon, ShareIcon } from '~/components/icon/icon';
@@ -326,36 +326,6 @@ export const ResourceLinkUuid = connect(
         const resource = getResource<LinkResource>(props.uuid)(state.resources);
         return resource || { uuid: '' };
     })(renderUuid);
-
-const renderLinkNameAndIcon = (item: { name: string; headUuid: string, headKind: string }) =>
-    <Grid container alignItems="center" wrap="nowrap" spacing={16}>
-        <Grid item>
-            {renderIcon(item.headKind)}
-        </Grid>
-        <Grid item>
-            <Typography color="primary" style={{ width: 'auto' }}>
-                {item.name}
-            </Typography>
-        </Grid>
-        <Grid item>
-            <Typography variant="caption">
-                <FavoriteStar resourceUuid={item.headUuid} />
-                <PublicFavoriteStar resourceUuid={item.headUuid} />
-            </Typography>
-        </Grid>
-    </Grid>;
-
-export const ResourceLinkNameAndIcon = connect(
-    (state: RootState, props: { uuid: string }) => {
-        const resource = getResource<LinkResource>(props.uuid)(state.resources);
-        return resource || { name: '', headUuid: '', headKind: '' };
-    })(renderLinkNameAndIcon);
-
-export const ResourceLinkType = connect(
-    (state: RootState, props: { uuid: string }) => {
-        const resource = getResource<LinkResource>(props.uuid)(state.resources);
-        return { type: resource ? resource.headKind : '' };
-    })((props: { type: string }) => renderType(props.type));
 
 // Process Resources
 const resourceRunProcess = (dispatch: Dispatch, uuid: string) => {

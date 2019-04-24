@@ -16,8 +16,8 @@ import {
     ProcessStatus,
     ResourceFileSize,
     ResourceLastModifiedDate,
-    ResourceLinkNameAndIcon,
-    ResourceLinkType
+    ResourceType,
+    ResourceName
 } from '~/views-components/data-explorer/renderers';
 import { PublicFavoriteIcon } from '~/components/icon/icon';
 import { Dispatch } from 'redux';
@@ -31,7 +31,7 @@ import { createTree } from '~/models/tree';
 import { getSimpleObjectTypeFilters } from '~/store/resource-type-filters/resource-type-filters';
 import { PUBLIC_FAVORITE_PANEL_ID } from '~/store/public-favorites-panel/public-favorites-action';
 import { PublicFavoritesState } from '~/store/public-favorites/public-favorites-reducer';
-import { getHeadUuid, getIsAdmin } from '~/store/public-favorites/public-favorites-actions';
+import { getIsAdmin } from '~/store/public-favorites/public-favorites-actions';
 
 type CssRules = "toolbar" | "button";
 
@@ -45,7 +45,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-export enum FavoritePanelColumnNames {
+export enum PublicFavoritePanelColumnNames {
     NAME = "Name",
     STATUS = "Status",
     TYPE = "Type",
@@ -60,12 +60,12 @@ export interface FavoritePanelFilter extends DataTableFilterItem {
 
 export const publicFavoritePanelColumns: DataColumns<string> = [
     {
-        name: FavoritePanelColumnNames.NAME,
+        name: PublicFavoritePanelColumnNames.NAME,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: createTree(),
-        render: uuid => <ResourceLinkNameAndIcon uuid={uuid} />
+        render: uuid => <ResourceName uuid={uuid} />
     },
     {
         name: "Status",
@@ -75,21 +75,21 @@ export const publicFavoritePanelColumns: DataColumns<string> = [
         render: uuid => <ProcessStatus uuid={uuid} />
     },
     {
-        name: FavoritePanelColumnNames.TYPE,
+        name: PublicFavoritePanelColumnNames.TYPE,
         selected: true,
         configurable: true,
         filters: getSimpleObjectTypeFilters(),
-        render: uuid => <ResourceLinkType uuid={uuid} />
+        render: uuid => <ResourceType uuid={uuid} />
     },
     {
-        name: FavoritePanelColumnNames.FILE_SIZE,
+        name: PublicFavoritePanelColumnNames.FILE_SIZE,
         selected: true,
         configurable: true,
         filters: createTree(),
         render: uuid => <ResourceFileSize uuid={uuid} />
     },
     {
-        name: FavoritePanelColumnNames.LAST_MODIFIED,
+        name: PublicFavoritePanelColumnNames.LAST_MODIFIED,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.DESC,
@@ -115,24 +115,24 @@ const mapStateToProps = ({ publicFavorites }: RootState): PublicFavoritePanelDat
 const mapDispatchToProps = (dispatch: Dispatch): PublicFavoritePanelActionProps => ({
     onContextMenu: (event, resourceUuid) => {
         const isAdmin = dispatch<any>(getIsAdmin());
-        const kind = resourceKindToContextMenuKind(dispatch<any>(getHeadUuid(resourceUuid)), isAdmin);
+        const kind = resourceKindToContextMenuKind(resourceUuid, isAdmin);
         if (kind) {
             dispatch<any>(openContextMenu(event, {
                 name: '',
-                uuid: dispatch<any>(getHeadUuid(resourceUuid)),
+                uuid: resourceUuid,
                 ownerUuid: '',
                 kind: ResourceKind.NONE,
                 menuKind: kind
             }));
         }
-        dispatch<any>(loadDetailsPanel(dispatch<any>(getHeadUuid(resourceUuid))));
+        dispatch<any>(loadDetailsPanel(resourceUuid));
     },
     onDialogOpen: (ownerUuid: string) => { return; },
     onItemClick: (uuid: string) => {
-        dispatch<any>(loadDetailsPanel(dispatch<any>(getHeadUuid(uuid))));
+        dispatch<any>(loadDetailsPanel(uuid));
     },
     onItemDoubleClick: uuid => {
-        dispatch<any>(navigateTo(dispatch<any>(getHeadUuid(uuid))));
+        dispatch<any>(navigateTo(uuid));
     }
 });
 
