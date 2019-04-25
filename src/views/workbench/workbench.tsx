@@ -92,6 +92,7 @@ import { GroupMemberAttributesDialog } from '~/views-components/groups-dialog/me
 import { AddGroupMembersDialog } from '~/views-components/dialog-forms/add-group-member-dialog';
 import { PartialCopyToCollectionDialog } from '~/views-components/dialog-forms/partial-copy-to-collection-dialog';
 import { PublicFavoritePanel } from '~/views/public-favorites-panel/public-favorites-panel';
+import { LinkAccountPanel } from '~/views/link-account-panel/link-account-panel';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -176,6 +177,7 @@ export const WorkbenchPanel =
                                 <Route path={Routes.GROUP_DETAILS} component={GroupDetailsPanel} />
                                 <Route path={Routes.LINKS} component={LinkPanel} />
                                 <Route path={Routes.PUBLIC_FAVORITES} component={PublicFavoritePanel} />
+                                <Route path={Routes.LINK_ACCOUNT} component={LinkAccountPanel} />
                             </Switch>
                         </Grid>
                     </Grid>

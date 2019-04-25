@@ -10,8 +10,6 @@ import { setBreadcrumbs } from "~/store/breadcrumbs/breadcrumbs-actions";
 import { authActions } from "~/store/auth/auth-action";
 import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
 
-export const LINK_ACCOUNT_FORM = 'linkAccountForm';
-
 export const loadLinkAccountPanel = () =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
        dispatch(setBreadcrumbs([{ label: 'Link account'}]));

@@ -1,0 +1,61 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
+import * as React from 'react';
+import {
+    StyleRulesCallback,
+    WithStyles,
+    withStyles,
+    Card,
+    CardContent,
+    Button,
+    Typography,
+    Grid,
+} from '@material-ui/core';
+import { ArvadosTheme } from '~/common/custom-theme';
+import { User } from "~/models/user";
+import { formatDate }from "~/common/formatters";
+
+type CssRules = 'root';// | 'gridItem' | 'label' | 'title' | 'actions';
+
+const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+    root: {
+        width: '100%',
+        overflow: 'auto'
+    }
+});
+
+export interface LinkAccountPanelRootDataProps {
+    user?: User;
+}
+
+export interface LinkAccountPanelRootActionProps { }
+
+type LinkAccountPanelRootProps = LinkAccountPanelRootDataProps & LinkAccountPanelRootActionProps & WithStyles<CssRules>;
+
+export const LinkAccountPanelRoot = withStyles(styles) (
+    ({classes, user}: LinkAccountPanelRootProps) => {
+        return <Card className={classes.root}>
+            <CardContent>
+            <Grid container spacing={24}>
+            { user && <Grid container item direction="column" spacing={24}>
+                <Grid item>
+                    You are currently logged in as <b>{user.email}</b> ({user.username}, {user.uuid}) created on <b>{formatDate(user.createdAt)}</b>
+                </Grid>
+                <Grid item>
+                    You can link Arvados accounts. After linking, either login will take you to the same account.
+                </Grid>
+            </Grid> }
+            <Grid container item direction="row" spacing={24}>
+                <Grid item>
+                    <Button color="primary" variant="contained">Add another login to this account</Button>
+                </Grid>
+                <Grid item>
+                    <Button color="primary" variant="contained">Use this login to access another account</Button>
+                </Grid>
+            </Grid>
+            </Grid>
+            </CardContent>
+        </Card>;
+});
