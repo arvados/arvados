@@ -188,7 +188,6 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
         self.loadingContext.fetcher_constructor = self.fetcher_constructor
         self.loadingContext.resolver = partial(collectionResolver, self.api, num_retries=self.num_retries)
         self.loadingContext.construct_tool_object = self.arv_make_tool
-        self.loadingContext.do_update = False
 
         # Add a custom logging handler to the root logger for runtime status reporting
         # if running inside a container
@@ -551,21 +550,31 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
         if not runtimeContext.name:
             runtimeContext.name = self.name = tool.tool.get("label") or tool.metadata.get("label") or os.path.basename(tool.tool["id"])
 
+        submitting = (runtimeContext.update_workflow or
+                      runtimeContext.create_workflow or
+                      (runtimeContext.submit and not
+                       (tool.tool["class"] == "CommandLineTool" and
+                        runtimeContext.wait and
+                        not runtimeContext.always_submit_runner)))
+
+        loadingContext = self.loadingContext.copy()
+        loadingContext.do_validate = False
+        loadingContext.do_update = False
+        if submitting:
+            # Document may have been auto-updated. Reload the original
+            # document with updating disabled because we want to
+            # submit the original document, not the auto-updated one.
+            tool = load_tool(tool.tool["id"], loadingContext)
+
         # Upload direct dependencies of workflow steps, get back mapping of files to keep references.
         # Also uploads docker images.
         merged_map = upload_workflow_deps(self, tool)
 
-        # Reload tool object which may have been updated by
-        # upload_workflow_deps
-        # Don't validate this time because it will just print redundant errors.
-        loadingContext = self.loadingContext.copy()
-        loadingContext.loader = tool.doc_loader
-        loadingContext.avsc_names = tool.doc_schema
-        loadingContext.metadata = tool.metadata
-        loadingContext.do_validate = False
-
-        tool = self.arv_make_tool(tool.doc_loader.idx[tool.tool["id"]],
-                                  loadingContext)
+        # Recreate process object (ArvadosWorkflow or
+        # ArvadosCommandTool) because tool document may have been
+        # updated by upload_workflow_deps in ways that modify
+        # inheritance of hints or requirements.
+        tool = load_tool(tool.tool, loadingContext)
 
         # Upload local file references in the job order.
         job_order = upload_job_order(self, "%s input" % runtimeContext.name,
@@ -638,6 +647,8 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
         if runtimeContext.submit:
             # Submit a runner job to run the workflow for us.
             if self.work_api == "containers":
+                loadingContext.loader = tool.doc_loader
+                loadingContext.avsc_names = tool.doc_schema
                 if tool.tool["class"] == "CommandLineTool" and runtimeContext.wait and (not runtimeContext.always_submit_runner):
                     runtimeContext.runnerjob = tool.tool["id"]
                 else:
@@ -672,11 +683,6 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                     "components": {},
                     "state": "RunningOnClient"}).execute(num_retries=self.num_retries)
             logger.info("Pipeline instance %s", self.pipeline["uuid"])
-
-        if not isinstance(tool, Runner):
-            loadingContext.do_update = True
-            tool = load_tool(tool.doc_loader.idx[tool.tool["id"]],
-                             loadingContext)
 
         if runtimeContext.cwl_runner_job is not None:
             self.uuid = runtimeContext.cwl_runner_job.get('uuid')

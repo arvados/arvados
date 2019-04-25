@@ -513,7 +513,7 @@ class TestContainer(unittest.TestCase):
         self.assertFalse(api.collections().create.called)
         self.assertFalse(runner.runtime_status_error.called)
 
-        arvjob.collect_outputs.assert_called_with("keep:abc+123")
+        arvjob.collect_outputs.assert_called_with("keep:abc+123", 0)
         arvjob.output_callback.assert_called_with({"out": "stuff"}, "success")
         runner.add_intermediate_output.assert_called_with("zzzzz-4zz18-zzzzzzzzzzzzzz2")
 

@@ -219,8 +219,11 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
 def add_arv_hints():
     cwltool.command_line_tool.ACCEPTLIST_EN_RELAXED_RE = re.compile(r".*")
     cwltool.command_line_tool.ACCEPTLIST_RE = cwltool.command_line_tool.ACCEPTLIST_EN_RELAXED_RE
-    res = pkg_resources.resource_stream(__name__, 'arv-cwl-schema.yml')
-    use_custom_schema("v1.0", "http://arvados.org/cwl", res.read())
+    res = pkg_resources.resource_stream(__name__, 'arv-cwl-schema-v1.0.yml')
+    res = pkg_resources.resource_stream(__name__, 'arv-cwl-schema-v1.1.yml')
+    customschema = res.read()
+    use_custom_schema("v1.0", "http://arvados.org/cwl", customschema)
+    use_custom_schema("v1.1.0-dev1", "http://arvados.org/cwl", customschema)
     res.close()
     cwltool.process.supportedProcessRequirements.extend([
         "http://arvados.org/cwl#RunInSingleContainer",
