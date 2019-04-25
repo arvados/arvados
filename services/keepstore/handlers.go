@@ -277,13 +277,19 @@ func (rtr *router) IndexHandler(resp http.ResponseWriter, req *http.Request) {
 
 	for _, v := range vols {
 		if err := v.IndexTo(prefix, resp); err != nil {
-			// The only errors returned by IndexTo are
-			// write errors returned by resp.Write(),
-			// which probably means the client has
-			// disconnected and this error will never be
-			// reported to the client -- but it will
-			// appear in our own error log.
-			http.Error(resp, err.Error(), http.StatusInternalServerError)
+			// We can't send an error message to the
+			// client because we might have already sent
+			// headers and index content. All we can do is
+			// log the error in our own logs, and (in
+			// cases where headers haven't been sent yet)
+			// set a 500 status.
+			//
+			// If headers have already been sent, the
+			// client must notice the lack of trailing
+			// newline as an indication that the response
+			// is incomplete.
+			log.Printf("index error from volume %s: %s", v, err)
+			http.Error(resp, "", http.StatusInternalServerError)
 			return
 		}
 	}
