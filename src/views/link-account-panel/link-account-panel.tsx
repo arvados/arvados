@@ -4,12 +4,9 @@
 
 import { RootState } from '~/store/store';
 import { Dispatch } from 'redux';
-import { compose } from 'redux';
-import { reduxForm } from 'redux-form';
 import { connect } from 'react-redux';
-import { getResource, ResourcesState } from '~/store/resources/resources';
-import { Resource } from '~/models/resource';
-import { User, UserResource } from '~/models/user';
+import { saveAccountLinkData } from '~/store/link-account-panel/link-account-panel-actions';
+import { LinkAccountType } from '~/models/link-account';
 import {
     LinkAccountPanelRoot,
     LinkAccountPanelRootDataProps,
@@ -22,6 +19,8 @@ const mapStateToProps = (state: RootState): LinkAccountPanelRootDataProps => {
     };
 };
 
-const mapDispatchToProps = (dispatch: Dispatch): LinkAccountPanelRootActionProps => ({});
+const mapDispatchToProps = (dispatch: Dispatch): LinkAccountPanelRootActionProps => ({
+    saveAccountLinkData: (type: LinkAccountType) => dispatch<any>(saveAccountLinkData(type))
+});
 
 export const LinkAccountPanel = connect(mapStateToProps, mapDispatchToProps)(LinkAccountPanelRoot);

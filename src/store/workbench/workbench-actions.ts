@@ -59,7 +59,7 @@ import { CopyFormDialogData } from '~/store/copy-dialog/copy-dialog';
 import { loadWorkflowPanel, workflowPanelActions } from '~/store/workflow-panel/workflow-panel-actions';
 import { loadSshKeysPanel } from '~/store/auth/auth-action-ssh';
 import { loadMyAccountPanel } from '~/store/my-account/my-account-panel-actions';
-import { loadLinkAccountPanel } from '~/store/link-account/link-account-panel-actions';
+import { loadLinkAccountPanel } from '~/store/link-account-panel/link-account-panel-actions';
 import { loadSiteManagerPanel } from '~/store/auth/auth-action-session';
 import { workflowPanelColumns } from '~/views/workflow-panel/workflow-panel-view';
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions';

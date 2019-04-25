@@ -15,6 +15,7 @@ import {
 } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { User } from "~/models/user";
+import { LinkAccountType } from "~/models/link-account";
 import { formatDate }from "~/common/formatters";
 
 type CssRules = 'root';// | 'gridItem' | 'label' | 'title' | 'actions';
@@ -30,12 +31,14 @@ export interface LinkAccountPanelRootDataProps {
     user?: User;
 }
 
-export interface LinkAccountPanelRootActionProps { }
+export interface LinkAccountPanelRootActionProps {
+    saveAccountLinkData: (type: LinkAccountType) => void;
+}
 
 type LinkAccountPanelRootProps = LinkAccountPanelRootDataProps & LinkAccountPanelRootActionProps & WithStyles<CssRules>;
 
 export const LinkAccountPanelRoot = withStyles(styles) (
-    ({classes, user}: LinkAccountPanelRootProps) => {
+    ({classes, user, saveAccountLinkData}: LinkAccountPanelRootProps) => {
         return <Card className={classes.root}>
             <CardContent>
             <Grid container spacing={24}>
@@ -49,10 +52,14 @@ export const LinkAccountPanelRoot = withStyles(styles) (
             </Grid> }
             <Grid container item direction="row" spacing={24}>
                 <Grid item>
-                    <Button color="primary" variant="contained">Add another login to this account</Button>
+                    <Button color="primary" variant="contained" onClick={() => saveAccountLinkData(LinkAccountType.ADD_OTHER_LOGIN)}>
+                        Add another login to this account
+                    </Button>
                 </Grid>
                 <Grid item>
-                    <Button color="primary" variant="contained">Use this login to access another account</Button>
+                    <Button color="primary" variant="contained" onClick={() => saveAccountLinkData(LinkAccountType.ACCESS_OTHER_ACCOUNT)}>
+                        Use this login to access another account
+                    </Button>
                 </Grid>
             </Grid>
             </Grid>
