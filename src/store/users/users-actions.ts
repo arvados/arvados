@@ -12,7 +12,7 @@ import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions
 import { UserResource } from "~/models/user";
 import { getResource } from '~/store/resources/resources';
 import { navigateToProject, navigateToUsers, navigateToRootProject } from "~/store/navigation/navigation-action";
-import { saveApiToken, getUserDetails } from '~/store/auth/auth-action';
+import { saveApiToken } from '~/store/auth/auth-action';
 
 export const USERS_PANEL_ID = 'usersPanel';
 export const USER_ATTRIBUTES_DIALOG = 'userAttributesDialog';
