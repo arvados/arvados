@@ -27,6 +27,7 @@ import (
 	"testing"
 	"time"
 
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"github.com/Azure/azure-sdk-for-go/storage"
 	"github.com/ghodss/yaml"
 	"github.com/prometheus/client_golang/prometheus"
@@ -65,8 +66,9 @@ type azBlob struct {
 
 type azStubHandler struct {
 	sync.Mutex
-	blobs map[string]*azBlob
-	race  chan chan struct{}
+	blobs      map[string]*azBlob
+	race       chan chan struct{}
+	didlist503 bool
 }
 
 func newAzStubHandler() *azStubHandler {
@@ -281,6 +283,11 @@ func (h *azStubHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		rw.WriteHeader(http.StatusAccepted)
 	case r.Method == "GET" && r.Form.Get("comp") == "list" && r.Form.Get("restype") == "container":
 		// "List Blobs" API
+		if !h.didlist503 {
+			h.didlist503 = true
+			rw.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
 		prefix := container + "|" + r.Form.Get("prefix")
 		marker := r.Form.Get("marker")
 
@@ -388,14 +395,17 @@ func NewTestableAzureBlobVolume(t TB, readonly bool, replication int) *TestableA
 			t.Fatal(err)
 		}
 	}
+	azClient.Sender = &singleSender{}
 
 	bs := azClient.GetBlobService()
 	v := &AzureBlobVolume{
-		ContainerName:    container,
-		ReadOnly:         readonly,
-		AzureReplication: replication,
-		azClient:         azClient,
-		container:        &azureContainer{ctr: bs.GetContainerReference(container)},
+		ContainerName:        container,
+		ReadOnly:             readonly,
+		AzureReplication:     replication,
+		ListBlobsMaxAttempts: 2,
+		ListBlobsRetryDelay:  arvados.Duration(time.Millisecond),
+		azClient:             azClient,
+		container:            &azureContainer{ctr: bs.GetContainerReference(container)},
 	}
 
 	return &TestableAzureBlobVolume{
