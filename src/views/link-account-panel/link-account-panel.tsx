@@ -15,7 +15,8 @@ import {
 
 const mapStateToProps = (state: RootState): LinkAccountPanelRootDataProps => {
     return {
-        user: state.auth.user
+        user: state.auth.user,
+        accountToLink: state.linkAccountPanel.accountToLink
     };
 };
 

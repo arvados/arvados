@@ -15,7 +15,7 @@ import {
 } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { User } from "~/models/user";
-import { LinkAccountType } from "~/models/link-account";
+import { LinkAccountType, AccountToLink } from "~/models/link-account";
 import { formatDate }from "~/common/formatters";
 
 type CssRules = 'root';// | 'gridItem' | 'label' | 'title' | 'actions';
@@ -29,6 +29,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 export interface LinkAccountPanelRootDataProps {
     user?: User;
+    accountToLink?: AccountToLink;
 }
 
 export interface LinkAccountPanelRootActionProps {

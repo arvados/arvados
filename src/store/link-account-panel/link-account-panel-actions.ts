@@ -8,15 +8,32 @@ import { ServiceRepository } from "~/services/services";
 import { setBreadcrumbs } from "~/store/breadcrumbs/breadcrumbs-actions";
 import { LinkAccountType, AccountToLink } from "~/models/link-account";
 import { logout } from "~/store/auth/auth-action";
+import { unionize, ofType, UnionOf } from '~/common/unionize';
+
+export const linkAccountPanelActions = unionize({
+    LOAD_LINKING: ofType<AccountToLink>()
+});
+
+export type LinkAccountPanelAction = UnionOf<typeof linkAccountPanelActions>;
 
 export const loadLinkAccountPanel = () =>
-    (dispatch: Dispatch<any>) => {
-       dispatch(setBreadcrumbs([{ label: 'Link account'}]));
+    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(setBreadcrumbs([{ label: 'Link account'}]));
+
+        const linkAccountData = services.linkAccountService.getLinkAccount();
+        if (linkAccountData) {
+            dispatch(linkAccountPanelActions.LOAD_LINKING(linkAccountData));
+        }
     };
 
 export const saveAccountLinkData = (t: LinkAccountType) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const accountToLink = {type: t, userToken: services.authService.getApiToken()} as AccountToLink;
-        sessionStorage.setItem("accountToLink", JSON.stringify(accountToLink));
+        services.linkAccountService.saveLinkAccount(accountToLink);
         dispatch(logout());
+    };
+
+export const getAccountLinkData = () =>
+    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        return services.linkAccountService.getLinkAccount();
     };

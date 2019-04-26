@@ -31,6 +31,7 @@ import { AuthorizedKeysService } from '~/services/authorized-keys-service/author
 import { VocabularyService } from '~/services/vocabulary-service/vocabulary-service';
 import { NodeService } from '~/services/node-service/node-service';
 import { FileViewersConfigService } from '~/services/file-viewers-config-service/file-viewers-config-service';
+import { LinkAccountService } from "./link-account-service/link-account-service";
 
 export type ServiceRepository = ReturnType<typeof createServices>;
 
@@ -56,6 +57,7 @@ export const createServices = (config: Config, actions: ApiActions) => {
     const userService = new UserService(apiClient, actions);
     const virtualMachineService = new VirtualMachinesService(apiClient, actions);
     const workflowService = new WorkflowService(apiClient, actions);
+    const linkAccountService = new LinkAccountService(apiClient, actions);
 
     const ancestorsService = new AncestorService(groupsService, userService);
     const authService = new AuthService(apiClient, config.rootUrl, actions);
@@ -94,6 +96,7 @@ export const createServices = (config: Config, actions: ApiActions) => {
         webdavClient,
         workflowService,
         vocabularyService,
+        linkAccountService
     };
 };
 

@@ -62,6 +62,7 @@ import { ApiClientAuthorizationMiddlewareService } from '~/store/api-client-auth
 import { PublicFavoritesMiddlewareService } from '~/store/public-favorites-panel/public-favorites-middleware-service';
 import { PUBLIC_FAVORITE_PANEL_ID } from '~/store/public-favorites-panel/public-favorites-action';
 import { publicFavoritesReducer } from '~/store/public-favorites/public-favorites-reducer';
+import { linkAccountPanelReducer } from './link-account-panel/link-account-panel-reducer';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -163,5 +164,6 @@ const createRootReducer = (services: ServiceRepository) => combineReducers({
     searchBar: searchBarReducer,
     virtualMachines: virtualMachinesReducer,
     repositories: repositoriesReducer,
-    keepServices: keepServicesReducer
+    keepServices: keepServicesReducer,
+    linkAccountPanel: linkAccountPanelReducer
 });
