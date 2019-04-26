@@ -1046,7 +1046,7 @@ test_gofmt() {
 test_services/api() {
     rm -f "$WORKSPACE/services/api/git-commit.version"
     cd "$WORKSPACE/services/api" \
-        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test TESTOPTS=-v ${testargs[services/api]}
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec bin/rails test TESTOPTS='-v -d' ${testargs[services/api]}
 }
 
 test_sdk/ruby() {
@@ -1079,27 +1079,27 @@ test_services/nodemanager_integration() {
 
 test_apps/workbench_units() {
     cd "$WORKSPACE/apps/workbench" \
-        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:units TESTOPTS=-v ${testargs[apps/workbench]} ${testargs[apps/workbench_units]}
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec bin/rails test:units TESTOPTS='-v -d' ${testargs[apps/workbench]} ${testargs[apps/workbench_units]}
 }
 
 test_apps/workbench_functionals() {
     cd "$WORKSPACE/apps/workbench" \
-        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:functionals TESTOPTS=-v ${testargs[apps/workbench]} ${testargs[apps/workbench_functionals]}
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec bin/rails test:functionals TESTOPTS='-v -d' ${testargs[apps/workbench]} ${testargs[apps/workbench_functionals]}
 }
 
 test_apps/workbench_integration() {
     cd "$WORKSPACE/apps/workbench" \
-        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:integration TESTOPTS=-v ${testargs[apps/workbench]} ${testargs[apps/workbench_integration]}
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec bin/rails test:integration TESTOPTS='-v -d' ${testargs[apps/workbench]} ${testargs[apps/workbench_integration]}
 }
 
 test_apps/workbench_benchmark() {
     cd "$WORKSPACE/apps/workbench" \
-        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:benchmark ${testargs[apps/workbench_benchmark]}
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec bin/rails test:benchmark ${testargs[apps/workbench_benchmark]}
 }
 
 test_apps/workbench_profile() {
     cd "$WORKSPACE/apps/workbench" \
-        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:profile ${testargs[apps/workbench_profile]}
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec bin/rails test:profile ${testargs[apps/workbench_profile]}
 }
 
 install_deps() {
