@@ -574,6 +574,9 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
         # ArvadosCommandTool) because tool document may have been
         # updated by upload_workflow_deps in ways that modify
         # inheritance of hints or requirements.
+        loadingContext.loader = tool.doc_loader
+        loadingContext.avsc_names = tool.doc_schema
+        loadingContext.metadata = tool.metadata
         tool = load_tool(tool.tool, loadingContext)
 
         # Upload local file references in the job order.
@@ -647,8 +650,6 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
         if runtimeContext.submit:
             # Submit a runner job to run the workflow for us.
             if self.work_api == "containers":
-                loadingContext.loader = tool.doc_loader
-                loadingContext.avsc_names = tool.doc_schema
                 if tool.tool["class"] == "CommandLineTool" and runtimeContext.wait and (not runtimeContext.always_submit_runner):
                     runtimeContext.runnerjob = tool.tool["id"]
                 else:
