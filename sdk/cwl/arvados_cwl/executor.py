@@ -550,6 +550,10 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
         if not runtimeContext.name:
             runtimeContext.name = self.name = tool.tool.get("label") or tool.metadata.get("label") or os.path.basename(tool.tool["id"])
 
+        # Upload local file references in the job order.
+        job_order = upload_job_order(self, "%s input" % runtimeContext.name,
+                                     tool, job_order)
+
         submitting = (runtimeContext.update_workflow or
                       runtimeContext.create_workflow or
                       (runtimeContext.submit and not
@@ -578,10 +582,6 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
         loadingContext.avsc_names = tool.doc_schema
         loadingContext.metadata = tool.metadata
         tool = load_tool(tool.tool, loadingContext)
-
-        # Upload local file references in the job order.
-        job_order = upload_job_order(self, "%s input" % runtimeContext.name,
-                                     tool, job_order)
 
         existing_uuid = runtimeContext.update_workflow
         if existing_uuid or runtimeContext.create_workflow:

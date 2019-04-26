@@ -79,7 +79,7 @@ def find_defaults(d, op):
 def setSecondary(t, fileobj, discovered):
     if isinstance(fileobj, dict) and fileobj.get("class") == "File":
         if "secondaryFiles" not in fileobj:
-            fileobj["secondaryFiles"] = cmap([{"location": substitute(fileobj["location"], sf), "class": "File"} for sf in t["secondaryFiles"]])
+            fileobj["secondaryFiles"] = cmap([{"location": substitute(fileobj["location"], sf["pattern"]), "class": "File"} for sf in t["secondaryFiles"]])
             if discovered is not None:
                 discovered[fileobj["location"]] = fileobj["secondaryFiles"]
     elif isinstance(fileobj, list):
