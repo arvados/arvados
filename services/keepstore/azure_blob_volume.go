@@ -533,7 +533,6 @@ func (v *AzureBlobVolume) IndexTo(prefix string, writer io.Writer) error {
 func (v *AzureBlobVolume) listBlobs(page int, params storage.ListBlobsParameters) (resp storage.BlobListResponse, err error) {
 	for i := 0; i < v.ListBlobsMaxAttempts; i++ {
 		resp, err = v.container.ListBlobs(params)
-		log.Printf("az err %T %q %#v", err, err, err)
 		err = v.translateError(err)
 		if err == VolumeBusyError {
 			log.Printf("ListBlobs: will retry page %d in %s after error: %s", page, v.ListBlobsRetryDelay, err)
@@ -863,8 +862,4 @@ func (c *azureContainer) DeleteBlob(bname string, opts *storage.DeleteBlobOption
 	err := b.Delete(opts)
 	c.stats.TickErr(err)
 	return err
-}
-
-type retryableError interface {
-	RetryAfterDelay() time.Duration
 }
