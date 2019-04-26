@@ -1051,7 +1051,7 @@ test_gofmt() {
 test_services/api() {
     rm -f "$WORKSPACE/services/api/git-commit.version"
     cd "$WORKSPACE/services/api" \
-        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test TESTOPTS=-v ${testargs[services/api]}
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec bin/rails test TESTOPTS='-v -d' ${testargs[services/api]}
 }
 
 test_sdk/ruby() {
