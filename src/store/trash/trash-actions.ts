@@ -29,6 +29,7 @@ export const toggleProjectTrashed = (uuid: string, ownerUuid: string, isTrashed:
             } else {
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Moving to trash...", kind: SnackbarKind.INFO }));
                 await services.groupsService.trash(uuid);
+                dispatch(projectPanelActions.REQUEST_ITEMS());
                 dispatch<any>(loadSidePanelTreeProjects(ownerUuid));
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: "Added to trash",
