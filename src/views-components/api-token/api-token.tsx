@@ -8,10 +8,11 @@ import { connect, DispatchProp } from "react-redux";
 import { authActions, getUserDetails, saveApiToken } from "~/store/auth/auth-action";
 import { getUrlParameter } from "~/common/url";
 import { AuthService } from "~/services/auth-service/auth-service";
-import { navigateToRootProject } from "~/store/navigation/navigation-action";
+import { navigateToRootProject, navigateToLinkAccount } from "~/store/navigation/navigation-action";
 import { User } from "~/models/user";
 import { Config } from "~/common/config";
 import { initSessions } from "~/store/auth/auth-action-session";
+import { getAccountLinkData } from "~/store/link-account-panel/link-account-panel-actions";
 
 interface ApiTokenProps {
     authService: AuthService;
@@ -27,7 +28,12 @@ export const ApiToken = connect()(
             this.props.dispatch<any>(getUserDetails()).then((user: User) => {
                 this.props.dispatch(initSessions(this.props.authService, this.props.config, user));
             }).finally(() => {
-                this.props.dispatch(navigateToRootProject);
+                if (this.props.dispatch(getAccountLinkData())) {
+                    this.props.dispatch(navigateToLinkAccount);
+                }
+                else {
+                    this.props.dispatch(navigateToRootProject);
+                }
             });
         }
         render() {

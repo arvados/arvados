@@ -17,4 +17,5 @@ export const linkAccountPanelReducer = (state: LinkAccountPanelState = initialSt
     linkAccountPanelActions.match(action, {
         default: () => state,
         LOAD_LINKING: (accountToLink) => ({ ...state, accountToLink }),
+        REMOVE_LINKING: () => ({...state, accountToLink: undefined})
     });

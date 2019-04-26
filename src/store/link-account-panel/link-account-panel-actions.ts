@@ -11,7 +11,8 @@ import { logout } from "~/store/auth/auth-action";
 import { unionize, ofType, UnionOf } from '~/common/unionize';
 
 export const linkAccountPanelActions = unionize({
-    LOAD_LINKING: ofType<AccountToLink>()
+    LOAD_LINKING: ofType<AccountToLink>(),
+    REMOVE_LINKING: {}
 });
 
 export type LinkAccountPanelAction = UnionOf<typeof linkAccountPanelActions>;
@@ -36,4 +37,10 @@ export const saveAccountLinkData = (t: LinkAccountType) =>
 export const getAccountLinkData = () =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         return services.linkAccountService.getLinkAccount();
+    };
+
+export const removeAccountLinkData = () =>
+    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        services.linkAccountService.removeLinkAccount();
+        dispatch(linkAccountPanelActions.REMOVE_LINKING());
     };
