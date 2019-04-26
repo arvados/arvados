@@ -453,7 +453,13 @@ func (bal *Balancer) addCollection(coll arvados.Collection) error {
 		repl = *coll.ReplicationDesired
 	}
 	debugf("%v: %d block x%d", coll.UUID, len(blkids), repl)
-	bal.BlockStateMap.IncreaseDesired(coll.StorageClassesDesired, repl, blkids)
+	// Pass pdh to IncreaseDesired only if LostBlocksFile is being
+	// written -- otherwise it's just a waste of memory.
+	pdh := ""
+	if bal.LostBlocksFile != "" {
+		pdh = coll.PortableDataHash
+	}
+	bal.BlockStateMap.IncreaseDesired(pdh, coll.StorageClassesDesired, repl, blkids)
 	return nil
 }
 
@@ -927,7 +933,11 @@ func (bal *Balancer) collectStatistics(results <-chan balanceResult) {
 			s.lost.replicas -= surplus
 			s.lost.blocks++
 			s.lost.bytes += bytes * int64(-surplus)
-			fmt.Fprintf(bal.lostBlocks, "%s\n", strings.SplitN(string(result.blkid), "+", 2)[0])
+			fmt.Fprintf(bal.lostBlocks, "%s", strings.SplitN(string(result.blkid), "+", 2)[0])
+			for pdh := range result.blk.Refs {
+				fmt.Fprintf(bal.lostBlocks, " %s", pdh)
+			}
+			fmt.Fprint(bal.lostBlocks, "\n")
 		case surplus < 0:
 			s.underrep.replicas -= surplus
 			s.underrep.blocks++

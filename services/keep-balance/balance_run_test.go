@@ -452,7 +452,7 @@ func (s *runSuite) TestWriteLostBlocks(c *check.C) {
 	c.Check(err, check.IsNil)
 	lost, err := ioutil.ReadFile(lostf.Name())
 	c.Assert(err, check.IsNil)
-	c.Check(string(lost), check.Equals, "37b51d194a7513e45b56f6524f2d51f2\n")
+	c.Check(string(lost), check.Equals, "37b51d194a7513e45b56f6524f2d51f2 fa7aeb5140e2848d39b416daeef4ffc5+45\n")
 }
 
 func (s *runSuite) TestDryRun(c *check.C) {
