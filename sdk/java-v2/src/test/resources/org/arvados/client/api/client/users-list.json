@@ -1,0 +1,115 @@
+{
+    "kind": "arvados#userList",
+    "etag": "",
+    "self_link": "",
+    "offset": 0,
+    "limit": 100,
+    "items": [
+        {
+            "kind": "arvados#user",
+            "uuid": "ardev-tpzed-12389ux30402est",
+            "email": "test.user@email.com",
+            "first_name": "Test",
+            "last_name": "User",
+            "is_active": true
+        },
+        {
+            "kind": "arvados#user",
+            "uuid": "ardev-tpzed-123vn7sby55up1b",
+            "email": "test.user1@email.com",
+            "first_name": "Test1",
+            "last_name": "User1",
+            "is_active": true
+        },
+        {
+            "kind": "arvados#user",
+            "uuid": "ardev-tpzed-123g70lq1m3c6fz",
+            "email": "test.user2@email.com",
+            "first_name": "Test2",
+            "last_name": "User2",
+            "is_active": true
+        },
+        {
+            "kind": "arvados#user",
+            "uuid": "ardev-tpzed-1233zsoudkgq92e",
+            "email": "test.user3@email.com",
+            "first_name": "Test3",
+            "last_name": "User3",
+            "is_active": true
+        },
+        {
+            "kind": "arvados#user",
+            "uuid": "ardev-tpzed-1234xjvs0clppd3",
+            "email": "test.user4@email.com",
+            "first_name": "Test4",
+            "last_name": "User4",
+            "is_active": true
+        },
+        {
+            "kind": "arvados#user",
+            "uuid": "ardev-tpzed-123bpggscmn6z8m",
+            "email": "test.user5@email.com",
+            "first_name": "Test5",
+            "last_name": "User5",
+            "is_active": true
+        },
+        {
+            "kind": "arvados#user",
+            "uuid": "ardev-tpzed-1231uysivaz6ipi",
+            "email": "test.user6@email.com",
+            "first_name": "Test6",
+            "last_name": "User6",
+            "is_active": true
+        },
+        {
+            "kind": "arvados#user",
+            "uuid": "ardev-tpzed-123b0a1wu0q6cm4",
+            "email": "test.user7@email.com",
+            "first_name": "Test7",
+            "last_name": "User7",
+            "is_active": true
+        },
+        {
+            "kind": "arvados#user",
+            "uuid": "ardev-tpzed-123bz6n6si24t6v",
+            "email": "test.user8@email.com",
+            "first_name": "Test8",
+            "last_name": "User8",
+            "is_active": true
+        },
+        {
+            "kind": "arvados#user",
+            "uuid": "ardev-tpzed-123lxhzifligheu",
+            "email": "test.user9@email.com",
+            "first_name": "Test9",
+            "last_name": "User9",
+            "is_active": true
+        },
+        {
+            "kind": "arvados#user",
+            "uuid": "ardev-tpzed-123gaz31qbopewh",
+            "email": "test.user10@email.com",
+            "first_name": "Test10",
+            "last_name": "User10",
+            "is_active": true
+        },
+        {
+            "kind": "arvados#user",
+            "uuid": "ardev-tpzed-123dmcf65z973uo",
+            "email": "test.user11@email.com",
+            "first_name": "Test11",
+            "last_name": "User11",
+            "is_active": true
+        },
+        {
+            "kind": "arvados#user",
+            "uuid": "ardev-tpzed-1239y3lj7ybpyg8",
+            "email": "test.user12@email.com",
+            "first_name": "Test12",
+            "last_name": "User12",
+            "is_active": true
+        }
+
+    ],
+    "items_available": 13
+}

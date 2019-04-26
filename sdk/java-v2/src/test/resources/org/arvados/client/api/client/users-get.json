@@ -1,0 +1,26 @@
+{
+    "href": "/users/ardev-tpzed-q6dvn7sby55up1b",
+    "kind": "arvados#user",
+    "etag": "b21emst9eu9u1wdpqcz6la583",
+    "uuid": "ardev-tpzed-q6dvn7sby55up1b",
+    "owner_uuid": "ardev-tpzed-000000000000000",
+    "created_at": "2017-10-30T19:42:43.324740000Z",
+    "modified_by_client_uuid": "ardev-ozdt8-97tzh5x96spqkay",
+    "modified_by_user_uuid": "ardev-tpzed-o3km4ug9jhs189j",
+    "modified_at": "2017-10-31T09:01:03.985749000Z",
+    "email": "example@email.com",
+    "username": "johnwayne",
+    "full_name": "John Wayne",
+    "first_name": "John",
+    "last_name": "Wayne",
+    "identity_url": "ardev-tpzed-r09t5ztf5qd3rlj",
+    "is_active": true,
+    "is_admin": null,
+    "is_invited": true,
+    "prefs": {},
+    "writable_by": [
+        "ardev-tpzed-000000000000000",
+        "ardev-tpzed-q6dvn7sby55up1b",
+        "ardev-j7d0g-000000000000000"
+    ]
+}

@@ -1,0 +1,24 @@
+{
+    "href": "/users/ardev-tpzed-000000000000000",
+    "kind": "arvados#user",
+    "etag": "2ehmra38iwfuexvz1cjno5xua",
+    "uuid": "ardev-tpzed-000000000000000",
+    "owner_uuid": "ardev-tpzed-000000000000000",
+    "created_at": "2016-10-19T07:48:04.838534000Z",
+    "modified_by_client_uuid": null,
+    "modified_by_user_uuid": "ardev-tpzed-000000000000000",
+    "modified_at": "2016-10-19T07:48:04.833164000Z",
+    "email": "root",
+    "username": null,
+    "full_name": "root",
+    "first_name": "root",
+    "last_name": "",
+    "identity_url": null,
+    "is_active": true,
+    "is_admin": true,
+    "is_invited": true,
+    "prefs": {},
+    "writable_by": [
+        "ardev-tpzed-000000000000000"
+    ]
+}

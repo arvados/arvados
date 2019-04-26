@@ -1,0 +1,113 @@
+apply plugin: 'java-library'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'maven'
+apply plugin: 'signing'
+
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    api 'com.squareup.okhttp3:okhttp:3.9.1'
+    api 'com.fasterxml.jackson.core:jackson-databind:2.9.2'
+    api 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.9.2'
+    api 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.9.2'
+    api 'commons-codec:commons-codec:1.11'
+    api 'commons-io:commons-io:2.6'
+    api 'com.google.guava:guava:23.4-jre'
+    api 'org.slf4j:slf4j-api:1.7.25'
+    api 'com.typesafe:config:1.3.2'
+    
+    testImplementation 'junit:junit:4.12'
+    testImplementation 'org.mockito:mockito-core:2.12.0'
+    testImplementation 'org.assertj:assertj-core:3.8.0'
+    testImplementation 'com.squareup.okhttp3:mockwebserver:3.9.1'
+}
+
+test {
+    useJUnit {
+        excludeCategories 'org.arvados.client.junit.categories.IntegrationTests'
+    }
+
+	testLogging {
+	    events "passed", "skipped", "failed"
+	    afterSuite { desc, result ->
+	        if (!desc.parent) { // will match the outermost suite
+	            println "\n---- Test results ----"
+	            println "${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} successes, ${result.failedTestCount} failures, ${result.skippedTestCount} skipped)"
+	            println ""
+	        }
+	    }
+	}
+}
+
+task integrationTest(type: Test) {
+    useJUnit {
+        includeCategories 'org.arvados.client.junit.categories.IntegrationTests'
+    }
+}
+
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+artifacts {
+    archives javadocJar, sourcesJar
+}
+
+signing {
+    sign configurations.archives
+}
+
+uploadArchives {
+  repositories {
+    mavenDeployer {
+      beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+      repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2") {
+        authentication(userName: ossrhUsername, password: ossrhPassword)
+      }
+
+      snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots") {
+        authentication(userName: ossrhUsername, password: ossrhPassword)
+      }
+
+      pom.project {
+        name 'Arvados Java SDK'
+        packaging 'jar'
+        groupId 'org.arvados'
+        description 'Arvados Java SDK'
+        url 'https://github.com/curoverse/arvados'
+               
+       scm {
+         url 'scm:git@https://github.com/curoverse/arvados.git'
+         connection 'scm:git@https://github.com/curoverse/arvados.git'
+         developerConnection 'scm:git@https://github.com/curoverse/arvados.git'
+       }
+
+        licenses {
+          license {
+            name 'The Apache License, Version 2.0'
+            url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+          }
+        }
+
+        developers {
+          developer {
+            id 'veritasgenetics'
+            name 'Veritas Genetics'
+            email 'ops@veritasgenetics.com'
+          }
+        }
+      }
+    }
+  }
+}

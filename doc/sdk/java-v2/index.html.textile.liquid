@@ -1,0 +1,146 @@
+---
+layout: default
+navsection: sdk
+navmenu: Java SDK v2
+title: "Installation"
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+The Arvados Java SDK v2 provides a high level API for working with Arvados resources.
+
+h2. Using the SDK
+
+The SDK is packaged as a JAR named @arvados-java-<version>.jar@, which is published to Maven Central and can be included using Maven, Gradle, or by hand.
+
+Here is an example @build.gradle@ file that uses the Arados java sdk:
+
+<pre>
+apply plugin: 'application'
+apply plugin: 'java-library'
+apply plugin: 'maven'
+
+repositories {
+    mavenCentral()
+}
+
+application {
+    mainClassName = "org.arvados.example.CollectionExample"
+}
+
+dependencies {
+    api 'org.arvados:arvados-java-sdk:0.1.0'
+}
+</pre>
+
+See "Java SDK Examples":example.html to get started using the SDK.
+
+h3. Logging
+
+The SDK uses the SLF4J facade library for logging. A concrete logging "binding":https://www.slf4j.org/manual.html#swapping (and configuration, if required) must be provided by a client. For small applications, you can use the Simple implementation by adding slf4j-simple-1.8.0-beta4.jar to your classpath.
+
+h3. Configuration
+
+"TypeSafe Configuration":https://github.com/lightbend/config is used for configuring this library.
+
+Please review src/main/resources/reference.conf for default values provided with this library.
+
+* **keepweb-host** - host of your Keep-Web server (default: localhost)
+* **keepweb-port** - port of your Keep-Web server (default: 8000)
+* **host** - host of your Arvados API server
+* **port** - port of your Arvados API server
+* **token** - Arvados token to authenticate registered user, one must provide "token obtained from Arvados Workbench":https://doc.arvados.org/user/reference/api-tokens.html
+* **protocol** - don't change to unless really needed (default: https)
+* **host-insecure** - ignores SSL certificate verification if true (default: false Don't change to *true* unless really needed)
+* **split-size** - size of chunk files in megabytes (default: 64)
+* **temp-dir** - temporary chunk files storage
+* **copies** - amount of chunk files duplicates per Keep server
+* **retries** - UNIMPLEMENTED
+
+In order to override default settings one can create an application.conf file in an application.  Example: src/test/resources/application.conf.
+
+Alternatively @ExternalConfigProvider@ class can be used to pass configuration via code.  @ExternalConfigProvider@ comes with a builder and all of the above values must be provided in order for it to work properly.
+
+@ArvadosFacade@ has two constructors, one without arguments that uses values from application.conf and second one taking @ExternalConfigProvider@ as an argument.
+
+h3. API clients
+
+All API clients inherit from @BaseStandardApiClient@. This class contains implementation of all common methods as described in "Arvados Common Resource Methods":http://doc.arvados.org/api/methods.html.
+
+Parameters provided to common or specific methods are String UUID or fields wrapped in Java objects. For example:
+
+{% codeblock as java %}
+String uuid = "ardev-4zz18-rxcql7qwyakg1r1";
+
+Collection actual = client.get(uuid);
+{% endcodeblock %}
+
+{% codeblock as java %}
+ListArgument listArgument = ListArgument.builder()
+        .filters(Arrays.asList(
+                Filter.of("owner_uuid", Operator.LIKE, "ardev%"),
+                Filter.of("name", Operator.LIKE, "Super%"),
+                Filter.of("portable_data_hash", Operator.IN, Lists.newArrayList("54f6d9f59065d3c009d4306660989379+65")
+            )))
+        .build();
+
+CollectionList actual = client.list(listArgument);
+{% endcodeblock %}
+
+Non-standard API clients must inherit from BaseApiClient. For example: KeepServerApiClient communicates directly with Keep servers using exclusively non-common methods.
+
+h3. Business logic
+
+More advanced API data handling could be implemented as *Facade* classes. In current version functionalities provided by SDK are handled by @ArvadosFacade@. They include:
+
+* **downloading single file from collection** - using Keep-Web
+* **downloading whole collection** - using Keep-Web or Keep Server API
+* **listing file info from certain collection** - information is returned as list of *FileTokens* providing file details
+* **uploading single file** - to either new or existing collection
+* **uploading list of files** - to either new or existing collection
+* **creating an empty collection**
+* **getting current user info**
+* **listing current user's collections**
+* **creating new project**
+* **deleting certain collection**
+
+h3. Note regarding Keep-Web
+
+The Java SDK requires Keep Web (which is part of the standard configuration) as well as the API server and Keep server(s).
+
+h3. Integration tests
+
+In order to run the integration tests, all fields within following configuration file must be provided: @src/test/resources/integration-test-appliation.conf@
+
+
+The parameter @integration-tests.project-uuid@ should contain UUID of one project available to user who's token was provided within configuration file.
+
+Integration tests require connection to a real Arvados server.
+
+h3. Note regarding file naming
+
+When uploading via the current implementation of the Java SDK all uploaded files within single collection must have different names. This applies also to uploading files to already existing collection. Renaming files with duplicate names is not currently implemented.
+
+h3. Javadoc
+
+See "Javadoc":javadoc.html
+
+h2. Building the Arvados SDK
+
+Dependencies:
+* JDK for Java 8 or later "https://www.oracle.com/technetwork/java/javase/downloads/index.html":https://www.oracle.com/technetwork/java/javase/downloads/index.html
+* Gradle "https://gradle.org/install/":https://gradle.org/install/
+
+
+<notextile>
+<pre>
+$ <code class="userinput">git clone https://github.com/curoverse/arvados.git</code>
+$ <code class="userinput">cd arvados/sdk/java-v2</code>
+$ <code class="userinput">gradle test</code>
+$ <code class="userinput">gradle jar</code>
+</pre>
+This will build the SDK and run all unit tests, then generate an Arvados Java sdk jar file in build/libs/arvados-java-2.0.0.jar
+</notextile>

@@ -26,7 +26,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-const azureDefaultRequestTimeout = arvados.Duration(10 * time.Minute)
+const (
+	azureDefaultRequestTimeout       = arvados.Duration(10 * time.Minute)
+	azureDefaultListBlobsMaxAttempts = 12
+	azureDefaultListBlobsRetryDelay  = arvados.Duration(10 * time.Second)
+)
 
 var (
 	azureMaxGetBytes           int
@@ -108,6 +112,8 @@ type AzureBlobVolume struct {
 	ReadOnly              bool
 	RequestTimeout        arvados.Duration
 	StorageClasses        []string
+	ListBlobsRetryDelay   arvados.Duration
+	ListBlobsMaxAttempts  int
 
 	azClient  storage.Client
 	container *azureContainer
@@ -149,6 +155,12 @@ func (v *AzureBlobVolume) Type() string {
 
 // Start implements Volume.
 func (v *AzureBlobVolume) Start(vm *volumeMetricsVecs) error {
+	if v.ListBlobsRetryDelay == 0 {
+		v.ListBlobsRetryDelay = azureDefaultListBlobsRetryDelay
+	}
+	if v.ListBlobsMaxAttempts == 0 {
+		v.ListBlobsMaxAttempts = azureDefaultListBlobsMaxAttempts
+	}
 	if v.ContainerName == "" {
 		return errors.New("no container name given")
 	}
@@ -486,8 +498,8 @@ func (v *AzureBlobVolume) IndexTo(prefix string, writer io.Writer) error {
 		Prefix:  prefix,
 		Include: &storage.IncludeBlobDataset{Metadata: true},
 	}
-	for {
-		resp, err := v.container.ListBlobs(params)
+	for page := 1; ; page++ {
+		resp, err := v.listBlobs(page, params)
 		if err != nil {
 			return err
 		}
@@ -515,6 +527,22 @@ func (v *AzureBlobVolume) IndexTo(prefix string, writer io.Writer) error {
 		}
 		params.Marker = resp.NextMarker
 	}
+}
+
+// call v.container.ListBlobs, retrying if needed.
+func (v *AzureBlobVolume) listBlobs(page int, params storage.ListBlobsParameters) (resp storage.BlobListResponse, err error) {
+	for i := 0; i < v.ListBlobsMaxAttempts; i++ {
+		resp, err = v.container.ListBlobs(params)
+		err = v.translateError(err)
+		if err == VolumeBusyError {
+			log.Printf("ListBlobs: will retry page %d in %s after error: %s", page, v.ListBlobsRetryDelay, err)
+			time.Sleep(time.Duration(v.ListBlobsRetryDelay))
+			continue
+		} else {
+			break
+		}
+	}
+	return
 }
 
 // Trash a Keep block.
@@ -674,8 +702,8 @@ func (v *AzureBlobVolume) EmptyTrash() {
 	}
 
 	params := storage.ListBlobsParameters{Include: &storage.IncludeBlobDataset{Metadata: true}}
-	for {
-		resp, err := v.container.ListBlobs(params)
+	for page := 1; ; page++ {
+		resp, err := v.listBlobs(page, params)
 		if err != nil {
 			log.Printf("EmptyTrash: ListBlobs: %v", err)
 			break
