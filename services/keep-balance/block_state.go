@@ -23,6 +23,7 @@ type Replica struct {
 // replicas actually stored (according to the keepstore indexes we
 // know about).
 type BlockState struct {
+	Refs     map[string]bool // pdh => true (only tracked when len(Replicas)==0)
 	RefCount int
 	Replicas []Replica
 	Desired  map[string]int
@@ -40,9 +41,21 @@ var defaultClasses = []string{"default"}
 
 func (bs *BlockState) addReplica(r Replica) {
 	bs.Replicas = append(bs.Replicas, r)
+	// Free up memory wasted by tracking PDHs that will never be
+	// reported (see comment in increaseDesired)
+	bs.Refs = nil
 }
 
-func (bs *BlockState) increaseDesired(classes []string, n int) {
+func (bs *BlockState) increaseDesired(pdh string, classes []string, n int) {
+	if pdh != "" && len(bs.Replicas) == 0 {
+		// Note we only track PDHs if there's a possibility
+		// that we will report the list of referring PDHs,
+		// i.e., if we haven't yet seen a replica.
+		if bs.Refs == nil {
+			bs.Refs = map[string]bool{}
+		}
+		bs.Refs[pdh] = true
+	}
 	bs.RefCount++
 	if len(classes) == 0 {
 		classes = defaultClasses
@@ -109,11 +122,14 @@ func (bsm *BlockStateMap) AddReplicas(mnt *KeepMount, idx []arvados.KeepServiceI
 
 // IncreaseDesired updates the map to indicate the desired replication
 // for the given blocks in the given storage class is at least n.
-func (bsm *BlockStateMap) IncreaseDesired(classes []string, n int, blocks []arvados.SizedDigest) {
+//
+// If pdh is non-empty, it will be tracked and reported in the "lost
+// blocks" report.
+func (bsm *BlockStateMap) IncreaseDesired(pdh string, classes []string, n int, blocks []arvados.SizedDigest) {
 	bsm.mutex.Lock()
 	defer bsm.mutex.Unlock()
 
 	for _, blkid := range blocks {
-		bsm.get(blkid).increaseDesired(classes, n)
+		bsm.get(blkid).increaseDesired(pdh, classes, n)
 	}
 }
