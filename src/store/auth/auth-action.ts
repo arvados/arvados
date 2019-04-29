@@ -8,13 +8,15 @@ import { AxiosInstance } from "axios";
 import { RootState } from "../store";
 import { ServiceRepository } from "~/services/services";
 import { SshKeyResource } from '~/models/ssh-key';
-import { User } from "~/models/user";
+import { User, UserResource } from "~/models/user";
 import { Session } from "~/models/session";
 import { Config } from '~/common/config';
 import { initSessions } from "~/store/auth/auth-action-session";
+import { UserRepositoryCreate } from '~/views-components/dialog-create/dialog-user-create';
 
 export const authActions = unionize({
     SAVE_API_TOKEN: ofType<string>(),
+    SAVE_USER: ofType<UserResource>(),
     LOGIN: {},
     LOGOUT: {},
     CONFIG: ofType<{ config: Config }>(),
@@ -64,6 +66,11 @@ export const saveApiToken = (token: string) => (dispatch: Dispatch, getState: ()
     services.authService.saveApiToken(token);
     setAuthorizationHeader(services, token);
     dispatch(authActions.SAVE_API_TOKEN(token));
+};
+
+export const saveUser = (user: UserResource) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    services.authService.saveUser(user);
+    dispatch(authActions.SAVE_USER(user));
 };
 
 export const login = (uuidPrefix: string, homeCluster: string) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {

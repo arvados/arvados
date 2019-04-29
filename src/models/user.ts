@@ -24,7 +24,6 @@ export interface User {
     prefs: UserPrefs;
     isAdmin: boolean;
     isActive: boolean;
-    createdAt: string;
 }
 
 export const getUserFullname = (user?: User) => {

@@ -14,7 +14,7 @@ import {
     Grid,
 } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
-import { User } from "~/models/user";
+import { User, UserResource } from "~/models/user";
 import { LinkAccountType, AccountToLink } from "~/models/link-account";
 import { formatDate }from "~/common/formatters";
 
@@ -28,25 +28,35 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 export interface LinkAccountPanelRootDataProps {
-    user?: User;
-    accountToLink?: AccountToLink;
+    user?: UserResource;
+    userToLink?: UserResource;
 }
 
 export interface LinkAccountPanelRootActionProps {
     saveAccountLinkData: (type: LinkAccountType) => void;
     removeAccountLinkData: () => void;
+    linkAccount: () => void;
+}
+
+function displayUser(user: UserResource, showCreatedAt: boolean = false) {
+    const disp = [];
+    disp.push(<span><b>{user.email}</b> ({user.username}, {user.uuid})</span>);
+    if (showCreatedAt) {
+        disp.push(<span> created on <b>{formatDate(user.createdAt)}</b></span>);
+    }
+    return disp;
 }
 
 type LinkAccountPanelRootProps = LinkAccountPanelRootDataProps & LinkAccountPanelRootActionProps & WithStyles<CssRules>;
 
 export const LinkAccountPanelRoot = withStyles(styles) (
-    ({classes, user, accountToLink, saveAccountLinkData, removeAccountLinkData}: LinkAccountPanelRootProps) => {
+    ({classes, user, userToLink, saveAccountLinkData, removeAccountLinkData, linkAccount}: LinkAccountPanelRootProps) => {
         return <Card className={classes.root}>
             <CardContent>
-            { user && accountToLink===undefined && <Grid container spacing={24}>
+            { user && userToLink===undefined && <Grid container spacing={24}>
                 <Grid container item direction="column" spacing={24}>
                     <Grid item>
-                        You are currently logged in as <b>{user.email}</b> ({user.username}, {user.uuid}) created on <b>{formatDate(user.createdAt)}</b>
+                        You are currently logged in as {displayUser(user, true)}
                     </Grid>
                     <Grid item>
                         You can link Arvados accounts. After linking, either login will take you to the same account.
@@ -65,7 +75,18 @@ export const LinkAccountPanelRoot = withStyles(styles) (
                     </Grid>
                 </Grid>
             </Grid>}
-            { accountToLink && <Grid container spacing={24}>
+            { userToLink && user && <Grid container spacing={24}>
+                <Grid container item direction="column" spacing={24}>
+                    <Grid item>
+                        Clicking 'Link accounts' will link {displayUser(userToLink, true)} to {displayUser(user, true)}.
+                    </Grid>
+                    <Grid item>
+                        After linking, logging in as {displayUser(userToLink)} will log you into the same account as {displayUser(user)}.
+                    </Grid>
+                    <Grid item>
+                       Any object owned by {displayUser(userToLink)} will be transfered to {displayUser(user)}.
+                    </Grid>
+                </Grid>
                 <Grid container item direction="row" spacing={24}>
                     <Grid item>
                         <Button variant="contained" onClick={() => removeAccountLinkData()}>
@@ -73,12 +94,12 @@ export const LinkAccountPanelRoot = withStyles(styles) (
                         </Button>
                     </Grid>
                     <Grid item>
-                        <Button color="primary" variant="contained" onClick={() => {}}>
+                        <Button color="primary" variant="contained" onClick={() => linkAccount()}>
                             Link accounts
                         </Button>
                     </Grid>
                 </Grid>
             </Grid> }
             </CardContent>
-        </Card>;
+        </Card> ;
 });

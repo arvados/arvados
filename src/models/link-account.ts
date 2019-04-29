@@ -9,5 +9,6 @@ export enum LinkAccountType {
 
 export interface AccountToLink {
     type: LinkAccountType;
-    userToken: string;
+    userUuid: string;
+    token: string;
 }

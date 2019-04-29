@@ -20,7 +20,6 @@ export const USER_IS_ADMIN = 'isAdmin';
 export const USER_IS_ACTIVE = 'isActive';
 export const USER_USERNAME = 'username';
 export const USER_PREFS = 'prefs';
-export const USER_CREATED_AT = 'createdAt';
 
 export interface UserDetailsResponse {
     email: string;
@@ -31,7 +30,6 @@ export interface UserDetailsResponse {
     is_admin: boolean;
     is_active: boolean;
     username: string;
-    created_at: string;
     prefs: UserPrefs;
 }
 
@@ -79,11 +77,10 @@ export class AuthService {
         const isAdmin = this.getIsAdmin();
         const isActive = this.getIsActive();
         const username = localStorage.getItem(USER_USERNAME);
-        const createdAt = localStorage.getItem(USER_CREATED_AT);
         const prefs = JSON.parse(localStorage.getItem(USER_PREFS) || '{"profile": {}}');
 
-        return email && firstName && lastName && uuid && ownerUuid && username && createdAt && prefs
-            ? { email, firstName, lastName, uuid, ownerUuid, isAdmin, isActive, username, createdAt, prefs }
+        return email && firstName && lastName && uuid && ownerUuid && username && prefs
+            ? { email, firstName, lastName, uuid, ownerUuid, isAdmin, isActive, username, prefs }
             : undefined;
     }
 
@@ -96,7 +93,6 @@ export class AuthService {
         localStorage.setItem(USER_IS_ADMIN, JSON.stringify(user.isAdmin));
         localStorage.setItem(USER_IS_ACTIVE, JSON.stringify(user.isActive));
         localStorage.setItem(USER_USERNAME, user.username);
-        localStorage.setItem(USER_CREATED_AT, user.createdAt);
         localStorage.setItem(USER_PREFS, JSON.stringify(user.prefs));
     }
 
@@ -109,7 +105,6 @@ export class AuthService {
         localStorage.removeItem(USER_IS_ADMIN);
         localStorage.removeItem(USER_IS_ACTIVE);
         localStorage.removeItem(USER_USERNAME);
-        localStorage.removeItem(USER_CREATED_AT);
         localStorage.removeItem(USER_PREFS);
     }
 
@@ -140,7 +135,6 @@ export class AuthService {
                     isAdmin: resp.data.is_admin,
                     isActive: resp.data.is_active,
                     username: resp.data.username,
-                    createdAt: resp.data.created_at,
                     prefs
                 };
             })

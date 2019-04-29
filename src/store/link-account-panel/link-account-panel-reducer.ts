@@ -3,19 +3,21 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { linkAccountPanelActions, LinkAccountPanelAction } from "~/store/link-account-panel/link-account-panel-actions";
-import { AccountToLink } from "~/models/link-account";
+import { UserResource, User } from "~/models/user";
 
 export interface LinkAccountPanelState {
-    accountToLink: AccountToLink | undefined;
+    user: UserResource | undefined;
+    userToLink: UserResource | undefined;
 }
 
 const initialState = {
-    accountToLink: undefined
+    user: undefined,
+    userToLink: undefined
 };
 
 export const linkAccountPanelReducer = (state: LinkAccountPanelState = initialState, action: LinkAccountPanelAction) =>
     linkAccountPanelActions.match(action, {
         default: () => state,
-        LOAD_LINKING: (accountToLink) => ({ ...state, accountToLink }),
-        REMOVE_LINKING: () => ({...state, accountToLink: undefined})
+        LOAD_LINKING: ({ userToLink, user }) => ({ ...state, user, userToLink }),
+        REMOVE_LINKING: () => ({ ...state, user: undefined, userToLink: undefined })
     });
