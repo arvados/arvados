@@ -131,7 +131,7 @@ def upload_dependencies(arvrunner, name, document_loader,
         loadref_fields = set(("$import",))
 
     scanobj = workflowobj
-    if "id" in workflowobj:
+    if "id" in workflowobj and not workflowobj["id"].startswith("_:"):
         # Need raw file content (before preprocessing) to ensure
         # that external references in $include and $mixin are captured.
         scanobj = loadref("", workflowobj["id"])
@@ -479,6 +479,7 @@ class Runner(Process):
         self.intermediate_output_ttl = intermediate_output_ttl
         self.priority = priority
         self.secret_store = secret_store
+        self.enable_dev = loadingContext.enable_dev
 
         self.submit_runner_cores = 1
         self.submit_runner_ram = 1024  # defaut 1 GiB

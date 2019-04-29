@@ -365,7 +365,6 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
 
                 while keys:
                     page = keys[:pageSize]
-                    keys = keys[pageSize:]
                     try:
                         proc_states = table.list(filters=[["uuid", "in", page]]).execute(num_retries=self.num_retries)
                     except Exception:
@@ -381,6 +380,8 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                                 "new_attributes": p
                             }
                         })
+                    keys = keys[pageSize:]
+
                 finish_poll = time.time()
                 remain_wait = self.poll_interval - (finish_poll - begin_poll)
         except:
