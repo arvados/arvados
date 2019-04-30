@@ -14,9 +14,9 @@ import {
     Grid,
 } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
-import { User, UserResource } from "~/models/user";
-import { LinkAccountType, AccountToLink } from "~/models/link-account";
-import { formatDate }from "~/common/formatters";
+import { UserResource } from "~/models/user";
+import { LinkAccountType } from "~/models/link-account";
+import { formatDate } from "~/common/formatters";
 
 type CssRules = 'root';// | 'gridItem' | 'label' | 'title' | 'actions';
 
@@ -78,13 +78,13 @@ export const LinkAccountPanelRoot = withStyles(styles) (
             { userToLink && user && <Grid container spacing={24}>
                 <Grid container item direction="column" spacing={24}>
                     <Grid item>
-                        Clicking 'Link accounts' will link {displayUser(userToLink, true)} to {displayUser(user, true)}.
+                        Clicking 'Link accounts' will link {displayUser(user, true)} to {displayUser(userToLink, true)}.
                     </Grid>
                     <Grid item>
-                        After linking, logging in as {displayUser(userToLink)} will log you into the same account as {displayUser(user)}.
+                        After linking, logging in as {displayUser(user)} will log you into the same account as {displayUser(userToLink)}.
                     </Grid>
                     <Grid item>
-                       Any object owned by {displayUser(userToLink)} will be transfered to {displayUser(user)}.
+                       Any object owned by {displayUser(user)} will be transfered to {displayUser(userToLink)}.
                     </Grid>
                 </Grid>
                 <Grid container item direction="row" spacing={24}>
