@@ -13,8 +13,9 @@ import csv
 import sys
 
 """
-Given a list of collections missing blocks (as produced by
-keep-balance), delete the collections and re-run associated containers.
+ Given a list of collections missing blocks (as produced by
+keep-balance), produce a report listing affected collections and
+container requests.
 """
 
 def rerun_request(arv, container_requests_to_rerun, ct):
