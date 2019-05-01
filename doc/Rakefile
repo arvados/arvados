@@ -6,8 +6,7 @@
 require "rubygems"
 require "colorize"
 
-#task :generate => [ :realclean, 'sdk/python/arvados/index.html', 'sdk/R/arvados/index.html', 'sdk/java-v2/javadoc/index.html' ] do
-task :generate => [ :realclean, 'sdk/python/arvados/index.html', 'sdk/java-v2/javadoc/index.html' ] do
+task :generate => [ :realclean, 'sdk/python/arvados/index.html', 'sdk/R/arvados/index.html', 'sdk/java-v2/javadoc/index.html' ] do
   vars = ['baseurl', 'arvados_cluster_uuid', 'arvados_api_host', 'arvados_workbench_host']
   vars.each do |v|
     if ENV[v]
