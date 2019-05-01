@@ -15,7 +15,8 @@ build/package-test-dockerfiles/ubuntu1604/etc-apt-preferences.d-arvados
 doc/fonts/*
 doc/user/cwl/federated/*
 */docker_image
-docker/jobs/apt.arvados.org.list
+docker/jobs/apt.arvados.org*.list
+docker/jobs/1078ECD7.key
 */en.bootstrap.yml
 *font-awesome.css
 *.gif

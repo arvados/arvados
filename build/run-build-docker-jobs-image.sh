@@ -5,21 +5,24 @@
 
 function usage {
     echo >&2
-    echo >&2 "usage: $0 [options]"
+    echo >&2 "usage: WORKSPACE=/path/to/arvados $0 [options]"
     echo >&2
     echo >&2 "$0 options:"
     echo >&2 "  -t, --tags                    version tag for docker"
+    echo >&2 "  -r, --repo                    Arvados package repo to use: dev, testing, stable (default: dev)"
     echo >&2 "  -u, --upload                  Upload the images (docker push)"
     echo >&2 "  --no-cache                    Don't use build cache"
     echo >&2 "  -h, --help                    Display this help and exit"
     echo >&2
-    echo >&2 "  If no options are given, just builds the images."
+    echo >&2 "  WORKSPACE=path                Path to the Arvados source tree to build from"
+    echo >&2
 }
 upload=false
+REPO=dev
 
 # NOTE: This requires GNU getopt (part of the util-linux package on Debian-based distros).
-TEMP=`getopt -o hut: \
-    --long help,upload,no-cache,tags: \
+TEMP=`getopt -o hut:r: \
+    --long help,upload,no-cache,tags:,repo: \
     -n "$0" -- "$@"`
 
 if [ $? != 0 ] ; then echo "Use -h for help"; exit 1 ; fi
@@ -50,6 +53,19 @@ do
                   ;;
             esac
             ;;
+        -r | --repo)
+            case "$2" in
+                "")
+                  echo "ERROR: --repo needs a parameter";
+                  usage;
+                  exit 1
+                  ;;
+                *)
+                  REPO="$2";
+                  shift 2
+                  ;;
+            esac
+            ;;
         --)
             shift
             break
@@ -69,6 +85,16 @@ exit_cleanly() {
     exit $EXITCODE
 }
 
+# Sanity check
+if ! [[ -n "$WORKSPACE" ]]; then
+    usage;
+    echo >&2 "Error: WORKSPACE environment variable not set"
+    echo >&2
+    exit 1
+fi
+
+echo $WORKSPACE
+
 COLUMNS=80
 . $WORKSPACE/build/run-library.sh
 
@@ -87,16 +113,6 @@ docker_push () {
     fi
     checkexit $ECODE "docker push $*"
 }
-
-# Sanity check
-if ! [[ -n "$WORKSPACE" ]]; then
-    echo >&2
-    echo >&2 "Error: WORKSPACE environment variable not set"
-    echo >&2
-    exit 1
-fi
-
-echo $WORKSPACE
 
 # find the docker binary
 DOCKER=`which docker.io`
@@ -153,6 +169,7 @@ cd docker/jobs
 docker build $NOCACHE \
        --build-arg python_sdk_version=${python_sdk_version} \
        --build-arg cwl_runner_version=${cwl_runner_version} \
+       --build-arg repo_version=${REPO} \
        -t arvados/jobs:$cwl_runner_version_orig .
 
 ECODE=$?
@@ -175,6 +192,9 @@ if docker --version |grep " 1\.[0-9]\." ; then
     # -f flag removed in Docker 1.12
     FORCE=-f
 fi
+
+#docker export arvados/jobs:$cwl_runner_version_orig | docker import - arvados/jobs:$cwl_runner_version_orig
+
 if ! [[ -z "$version_tag" ]]; then
     docker tag $FORCE arvados/jobs:$cwl_runner_version_orig arvados/jobs:"$version_tag"
 else

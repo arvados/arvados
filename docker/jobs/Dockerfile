@@ -4,13 +4,19 @@
 
 # Based on Debian Jessie
 FROM debian:jessie
-MAINTAINER Ward Vandewege <ward@curoverse.com>
+MAINTAINER Ward Vandewege <wvandewege@veritasgenetics.com>
 
 ENV DEBIAN_FRONTEND noninteractive
 
-ADD apt.arvados.org.list /etc/apt/sources.list.d/
-RUN apt-key adv --keyserver pool.sks-keyservers.net --recv 1078ECD7
-RUN gpg --keyserver pool.sks-keyservers.net --recv-keys D39DC0E3
+RUN apt-get update -q
+RUN apt-get install -yq --no-install-recommends gnupg
+
+ARG repo_version
+RUN echo repo_version $repo_version
+ADD apt.arvados.org-$repo_version.list /etc/apt/sources.list.d/
+
+ADD 1078ECD7.key /tmp/
+RUN cat /tmp/1078ECD7.key | apt-key add -
 
 ARG python_sdk_version
 ARG cwl_runner_version
