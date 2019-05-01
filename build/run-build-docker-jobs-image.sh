@@ -9,7 +9,7 @@ function usage {
     echo >&2
     echo >&2 "$0 options:"
     echo >&2 "  -t, --tags                    version tag for docker"
-    echo >&2 "  -r, --repo                    Arvados package repot to use: dev, testing, stable (default: dev)"
+    echo >&2 "  -r, --repo                    Arvados package repo to use: dev (default), testing, stable"
     echo >&2 "  -u, --upload                  Upload the images (docker push)"
     echo >&2 "  --no-cache                    Don't use build cache"
     echo >&2 "  -h, --help                    Display this help and exit"
