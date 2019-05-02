@@ -17,6 +17,7 @@ import { ArvadosTheme } from '~/common/custom-theme';
 import { UserResource } from "~/models/user";
 import { LinkAccountType } from "~/models/link-account";
 import { formatDate } from "~/common/formatters";
+import { LinkAccountPanelStatus, LinkAccountPanelError } from "~/store/link-account-panel/link-account-panel-reducer";
 
 type CssRules = 'root';// | 'gridItem' | 'label' | 'title' | 'actions';
 
@@ -30,6 +31,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 export interface LinkAccountPanelRootDataProps {
     user?: UserResource;
     userToLink?: UserResource;
+    status : LinkAccountPanelStatus;
+    error: LinkAccountPanelError;
 }
 
 export interface LinkAccountPanelRootActionProps {
@@ -50,10 +53,11 @@ function displayUser(user: UserResource, showCreatedAt: boolean = false) {
 type LinkAccountPanelRootProps = LinkAccountPanelRootDataProps & LinkAccountPanelRootActionProps & WithStyles<CssRules>;
 
 export const LinkAccountPanelRoot = withStyles(styles) (
-    ({classes, user, userToLink, saveAccountLinkData, removeAccountLinkData, linkAccount}: LinkAccountPanelRootProps) => {
+    ({classes, user, userToLink, status, error, saveAccountLinkData, removeAccountLinkData, linkAccount}: LinkAccountPanelRootProps) => {
         return <Card className={classes.root}>
             <CardContent>
-            { user && userToLink===undefined && <Grid container spacing={24}>
+            { status === LinkAccountPanelStatus.INITIAL && user &&
+            <Grid container spacing={24}>
                 <Grid container item direction="column" spacing={24}>
                     <Grid item>
                         You are currently logged in as {displayUser(user, true)}
@@ -74,9 +78,10 @@ export const LinkAccountPanelRoot = withStyles(styles) (
                         </Button>
                     </Grid>
                 </Grid>
-            </Grid>}
-            { userToLink && user && <Grid container spacing={24}>
-                <Grid container item direction="column" spacing={24}>
+            </Grid> }
+            { (status === LinkAccountPanelStatus.LINKING || status === LinkAccountPanelStatus.ERROR) && userToLink && user &&
+            <Grid container spacing={24}>
+                { status === LinkAccountPanelStatus.LINKING && <Grid container item direction="column" spacing={24}>
                     <Grid item>
                         Clicking 'Link accounts' will link {displayUser(user, true)} to {displayUser(userToLink, true)}.
                     </Grid>
@@ -86,7 +91,13 @@ export const LinkAccountPanelRoot = withStyles(styles) (
                     <Grid item>
                        Any object owned by {displayUser(user)} will be transfered to {displayUser(userToLink)}.
                     </Grid>
-                </Grid>
+                </Grid> }
+                { error === LinkAccountPanelError.NON_ADMIN && <Grid item>
+                    Cannot link admin account {displayUser(userToLink)} to non-admin account {displayUser(user)}.
+                </Grid> }
+                { error === LinkAccountPanelError.SAME_USER && <Grid item>
+                    Cannot link {displayUser(userToLink)} to the same account.
+                </Grid> }
                 <Grid container item direction="row" spacing={24}>
                     <Grid item>
                         <Button variant="contained" onClick={() => removeAccountLinkData()}>
@@ -94,7 +105,7 @@ export const LinkAccountPanelRoot = withStyles(styles) (
                         </Button>
                     </Grid>
                     <Grid item>
-                        <Button color="primary" variant="contained" onClick={() => linkAccount()}>
+                        <Button disabled={status === LinkAccountPanelStatus.ERROR} color="primary" variant="contained" onClick={() => linkAccount()}>
                             Link accounts
                         </Button>
                     </Grid>
