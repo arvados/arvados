@@ -11,6 +11,10 @@ import arvados
 import arvados.util
 import csv
 import sys
+import logging
+
+lglvl = logging.INFO+1
+logging.basicConfig(level=lglvl, format='%(message)s')
 
 """
  Given a list of collections missing blocks (as produced by
@@ -26,12 +30,15 @@ def rerun_request(arv, container_requests_to_rerun, ct):
         else:
             container_requests_to_rerun[cr["uuid"]] = cr
 
-def get_owner(arv, owners, uuid):
+def get_owner(arv, owners, record):
+    uuid = record["owner_uuid"]
     if uuid not in owners:
         if uuid[6:11] == "tpzed":
-            owners[uuid] = arv.users().get(uuid=uuid).execute()["full_name"]
+            owners[uuid] = (arv.users().get(uuid=uuid).execute()["full_name"], uuid)
         else:
-            owners[uuid] = arv.groups().get(uuid=uuid).execute()["name"]
+            grp = arv.groups().get(uuid=uuid).execute()
+            _, ou = get_owner(arv, owners, grp)
+            owners[uuid] = (grp["name"], ou)
     return owners[uuid]
 
 def main():
@@ -43,6 +50,8 @@ def main():
 
     busted_collections = set()
 
+    logging.log(lglvl, "Reading %s", args.inp)
+
     # Get the list of bad collection PDHs
     blocksfile = open(args.inp, "rt")
     for line in blocksfile:
@@ -53,7 +62,9 @@ def main():
 
     out = csv.writer(sys.stdout)
 
-    out.writerow(("collection uuid", "container request uuid", "record name", "modified at", "owner uuid", "owner name", "notes"))
+    out.writerow(("collection uuid", "container request uuid", "record name", "modified at", "owner uuid", "owner name", "root owner uuid", "root owner name", "notes"))
+
+    logging.log(lglvl, "Finding collections")
 
     owners = {}
     collections_to_delete = {}
@@ -61,23 +72,33 @@ def main():
     # Get containers that produced these collections
     i = 0
     for b in busted_collections:
+        if (i % 100) == 0:
+            logging.log(lglvl, "%d/%d", i, len(busted_collections))
         i += 1
         collections_to_delete = arvados.util.list_all(arv.collections().list, filters=[["portable_data_hash", "=", b]])
         for d in collections_to_delete:
             t = ""
             if d["properties"].get("type") not in ("output", "log"):
                 t = "\"type\" was '%s', expected one of 'output' or 'log'" % d["properties"].get("type")
-            out.writerow((d["uuid"], "", d["name"], d["modified_at"], d["owner_uuid"], get_owner(arv, owners, d["owner_uuid"]), t))
+            ou = get_owner(arv, owners, d)
+            out.writerow((d["uuid"], "", d["name"], d["modified_at"], d["owner_uuid"], ou[0], ou[1], owners[ou[1]][0], t))
 
         maybe_containers_to_rerun = arvados.util.list_all(arv.containers().list, filters=[["output", "=", b]])
         for ct in maybe_containers_to_rerun:
             rerun_request(arv, container_requests_to_rerun, ct)
 
+    logging.log(lglvl, "%d/%d", i, len(busted_collections))
+    logging.log(lglvl, "Finding container requests")
+
     i = 0
     for _, cr in container_requests_to_rerun.items():
+        if (i % 100) == 0:
+            logging.log(lglvl, "%d/%d", i, len(container_requests_to_rerun))
         i += 1
-        out.writerow(("", cr["uuid"], cr["name"], cr["modified_at"], cr["owner_uuid"], get_owner(arv, owners, cr["owner_uuid"]), ""))
+        ou = get_owner(arv, owners, cr)
+        out.writerow(("", cr["uuid"], cr["name"], cr["modified_at"], cr["owner_uuid"], ou[0], ou[1], owners[ou[1]][0], ""))
 
+    logging.log(lglvl, "%d/%d", i, len(container_requests_to_rerun))
 
 if __name__ == "__main__":
     main()
