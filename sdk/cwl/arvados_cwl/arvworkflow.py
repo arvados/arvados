@@ -22,9 +22,11 @@ from cwltool.context import LoadingContext
 import ruamel.yaml as yaml
 
 from .runner import (upload_dependencies, packed_workflow, upload_workflow_collection,
-                     trim_anonymous_location, remove_redundant_fields, discover_secondary_files)
+                     trim_anonymous_location, remove_redundant_fields, discover_secondary_files,
+                     make_builder)
 from .pathmapper import ArvPathMapper, trim_listing
-from .arvtool import ArvadosCommandTool, set_cluster_target, make_builder
+from .arvtool import ArvadosCommandTool, set_cluster_target
+
 from .perf import Perf
 
 logger = logging.getLogger('arvados.cwl-runner')
