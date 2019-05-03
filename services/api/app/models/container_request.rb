@@ -217,7 +217,7 @@ class ContainerRequest < ArvadosModel
     self.mounts ||= {}
     self.secret_mounts ||= {}
     self.cwd ||= "."
-    self.container_count_max ||= Rails.configuration.Containers.MaxComputeVMs
+    self.container_count_max ||= Rails.configuration.Containers.MaxRetryAttempts
     self.scheduling_parameters ||= {}
     self.output_ttl ||= 0
     self.priority ||= 0
