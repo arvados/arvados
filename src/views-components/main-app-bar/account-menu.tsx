@@ -17,7 +17,8 @@ import { openRepositoriesPanel } from "~/store/repositories/repositories-actions
 import {
     navigateToSiteManager,
     navigateToSshKeysUser,
-    navigateToMyAccount
+    navigateToMyAccount,
+    navigateToLinkAccount
 } from '~/store/navigation/navigation-action';
 import { openUserVirtualMachines } from "~/store/virtual-machines/virtual-machines-actions";
 
@@ -75,6 +76,7 @@ export const AccountMenu = withStyles(styles)(
                         <MenuItem onClick={() => dispatch(navigateToSshKeysUser)}>Ssh Keys</MenuItem>
                         <MenuItem onClick={() => dispatch(navigateToSiteManager)}>Site Manager</MenuItem>
                         <MenuItem onClick={() => dispatch(navigateToMyAccount)}>My account</MenuItem>
+                        <MenuItem onClick={() => dispatch(navigateToLinkAccount)}>Link account</MenuItem>
                     </> : null}
                     <MenuItem>
                         <a href={`${workbenchURL.replace(/\/$/, "")}/${wb1URL(currentRoute)}?api_token=${apiToken}`}
