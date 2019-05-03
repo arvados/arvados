@@ -137,7 +137,8 @@ def set_secondary(fsaccess, builder, inputschema, secondaryspec, primary, discov
         # set secondaryFiles, may be inherited by compound types.
         secondaryspec = inputschema["secondaryFiles"]
 
-    if isinstance(inputschema["type"], (Mapping, Sequence)):
+    if (isinstance(inputschema["type"], (Mapping, Sequence)) and
+        not isinstance(inputschema["type"], basestring)):
         # compound type (union, array, record)
         set_secondary(fsaccess, builder, inputschema["type"], secondaryspec, primary, discovered)
 

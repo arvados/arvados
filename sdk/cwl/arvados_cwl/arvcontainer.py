@@ -260,7 +260,7 @@ class ArvadosContainer(JobBase):
         if self.output_ttl < 0:
             raise WorkflowException("Invalid value %d for output_ttl, cannot be less than zero" % container_request["output_ttl"])
 
-        if self.timelimit is not None:
+        if self.timelimit is not None and self.timelimit > 0:
             scheduling_parameters["max_run_time"] = self.timelimit
 
         extra_submit_params = {}
