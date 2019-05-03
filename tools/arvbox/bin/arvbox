@@ -564,7 +564,7 @@ case "$subcmd" in
         ;;
 
     root-cert)
-	CERT=$PWD/${ARVBOX_CONTAINER}-root-cert.pem
+	CERT=$PWD/${ARVBOX_CONTAINER}-root-cert.crt
 	if test -n "$1" ; then
 	    CERT="$1"
 	fi

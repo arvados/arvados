@@ -8,6 +8,8 @@ set -ex -o pipefail
 
 . /usr/local/lib/arvbox/common.sh
 
+uuid_prefix=$(cat /var/lib/arvados/api_uuid_prefix)
+
 if test ! -s /var/lib/arvados/root-cert.pem ; then
     # req           signing request sub-command
     # -new          new certificate request
@@ -26,7 +28,7 @@ if test ! -s /var/lib/arvados/root-cert.pem ; then
 	    -nodes \
 	    -sha256 \
 	    -x509 \
-	    -subj "/C=US/ST=MA/O=Arvados testing/OU=arvbox/CN=arvbox testing root CA for ${uuid_prefix}" \
+	    -subj "/C=US/ST=MA/O=Arvados testing/OU=arvbox/CN=test root CA for ${uuid_prefix} generated $(date --rfc-3339=seconds)" \
 	    -extensions x509_ext \
 	    -config <(cat /etc/ssl/openssl.cnf \
 			  <(printf "\n[x509_ext]\nbasicConstraints=critical,CA:true,pathlen:0\nkeyUsage=critical,keyCertSign,cRLSign")) \
@@ -59,7 +61,7 @@ if test ! -s /var/lib/arvados/server-cert-${localip}.pem ; then
 	    -new \
 	    -nodes \
 	    -sha256 \
-	    -subj "/C=US/ST=MA/O=Arvados testing for ${uuid_prefix}/OU=arvbox/CN=localhost" \
+	    -subj "/C=US/ST=MA/O=Arvados testing/OU=arvbox/CN=test server cert for ${uuid_prefix} generated $(date --rfc-3339=seconds)" \
 	    -reqexts x509_ext \
 	    -extensions x509_ext \
 	    -config <(cat /etc/ssl/openssl.cnf \

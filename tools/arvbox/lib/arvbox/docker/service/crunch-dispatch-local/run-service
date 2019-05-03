@@ -19,7 +19,7 @@ fi
 
 cat > /usr/local/bin/crunch-run.sh <<EOF
 #!/bin/sh
-exec /usr/local/bin/crunch-run -container-enable-networking=always -container-network-mode=host \$@
+exec /usr/local/bin/crunch-run -container-enable-networking=default -container-network-mode=host \$@
 EOF
 chmod +x /usr/local/bin/crunch-run.sh
 
