@@ -10,36 +10,61 @@ import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions
 import { LinkAccountType, AccountToLink } from "~/models/link-account";
 import { logout, saveApiToken, saveUser } from "~/store/auth/auth-action";
 import { unionize, ofType, UnionOf } from '~/common/unionize';
-import { UserResource, User } from "~/models/user";
-import { navigateToRootProject } from "~/store/navigation/navigation-action";
+import { UserResource } from "~/models/user";
 import { GroupResource } from "~/models/group";
-import { LinkAccountPanelError } from "./link-account-panel-reducer";
+import { LinkAccountPanelError, OriginatingUser } from "./link-account-panel-reducer";
+import { navigateToRootProject } from "../navigation/navigation-action";
 
 export const linkAccountPanelActions = unionize({
-    INIT: ofType<{ user: UserResource | undefined }>(),
-    LOAD: ofType<{
-        user: UserResource | undefined,
-        userToken: string | undefined,
+    LINK_INIT: ofType<{ targetUser: UserResource | undefined }>(),
+    LINK_LOAD: ofType<{
+        originatingUser: OriginatingUser | undefined,
+        targetUser: UserResource | undefined,
+        targetUserToken: string | undefined,
         userToLink: UserResource | undefined,
         userToLinkToken: string | undefined }>(),
-    RESET: {},
-    INVALID: ofType<{
-        user: UserResource | undefined,
+    LINK_INVALID: ofType<{
+        originatingUser: OriginatingUser | undefined,
+        targetUser: UserResource | undefined,
         userToLink: UserResource | undefined,
         error: LinkAccountPanelError }>(),
 });
 
 export type LinkAccountPanelAction = UnionOf<typeof linkAccountPanelActions>;
 
-function validateLink(user: UserResource, userToLink: UserResource) {
-    if (user.uuid === userToLink.uuid) {
+function validateLink(userToLink: UserResource, targetUser: UserResource) {
+    if (userToLink.uuid === targetUser.uuid) {
         return LinkAccountPanelError.SAME_USER;
     }
-    else if (!user.isAdmin && userToLink.isAdmin) {
+    else if (userToLink.isAdmin && !targetUser.isAdmin) {
         return LinkAccountPanelError.NON_ADMIN;
     }
     return LinkAccountPanelError.NONE;
 }
+
+export const switchUser = (user: UserResource, token: string) =>
+    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(saveUser(user));
+        dispatch(saveApiToken(token));
+    };
+
+export const linkFailed = () =>
+    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        // If the link fails, switch to the user account that originated the link operation
+        const linkState = getState().linkAccountPanel;
+        if (linkState.userToLink && linkState.userToLinkToken && linkState.targetUser && linkState.targetUserToken) {
+            if (linkState.originatingUser === OriginatingUser.TARGET_USER) {
+                dispatch(switchUser(linkState.targetUser, linkState.targetUserToken));
+                dispatch(linkAccountPanelActions.LINK_INIT({targetUser: linkState.targetUser}));
+            }
+            else if ((linkState.originatingUser === OriginatingUser.USER_TO_LINK)) {
+                dispatch(switchUser(linkState.userToLink, linkState.userToLinkToken));
+                dispatch(linkAccountPanelActions.LINK_INIT({targetUser: linkState.userToLink}));
+            }
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Account link failed.', kind: SnackbarKind.ERROR , hideDuration: 3000 }));
+        }
+        services.linkAccountService.removeFromSession();
+    };
 
 export const loadLinkAccountPanel = () =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
@@ -53,38 +78,48 @@ export const loadLinkAccountPanel = () =>
 
             // If there is link account session data, then the user has logged in a second time
             if (linkAccountData) {
-                dispatch<any>(saveApiToken(linkAccountData.token));
+                // Use the token of the user we are getting data for. This avoids any admin/non-admin permissions
+                // issues since a user will always be able to query the api server for their own user data.
+                dispatch(saveApiToken(linkAccountData.token));
                 const savedUserResource = await services.userService.get(linkAccountData.userUuid);
-                dispatch<any>(saveApiToken(curToken));
+                dispatch(saveApiToken(curToken));
 
                 let params: any;
                 if (linkAccountData.type === LinkAccountType.ACCESS_OTHER_ACCOUNT) {
                     params = {
-                        user: savedUserResource,
-                        userToken: linkAccountData.token,
-                        userToLink: curUserResource,
-                        userToLinkToken: curToken
-                    };
-                }
-                else if (linkAccountData.type === LinkAccountType.ADD_OTHER_LOGIN) {
-                    params = {
-                        user: curUserResource,
-                        userToken: curToken,
+                        originatingUser: OriginatingUser.USER_TO_LINK,
+                        targetUser: curUserResource,
+                        targetUserToken: curToken,
                         userToLink: savedUserResource,
                         userToLinkToken: linkAccountData.token
                     };
                 }
+                else if (linkAccountData.type === LinkAccountType.ADD_OTHER_LOGIN) {
+                    params = {
+                        originatingUser: OriginatingUser.TARGET_USER,
+                        targetUser: savedUserResource,
+                        targetUserToken: linkAccountData.token,
+                        userToLink: curUserResource,
+                        userToLinkToken: curToken
+                    };
+                }
                 else {
+                    // This should never really happen, but just in case, switch to the user that
+                    // originated the linking operation (i.e. the user saved in session data)
+                    dispatch(switchUser(savedUserResource, linkAccountData.token));
+                    dispatch(linkAccountPanelActions.LINK_INIT({targetUser: savedUserResource}));
                     throw new Error("Invalid link account type.");
                 }
 
-                const error = validateLink(params.user, params.userToLink);
+                dispatch(switchUser(params.targetUser, params.targetUserToken));
+                const error = validateLink(params.userToLink, params.targetUser);
                 if (error === LinkAccountPanelError.NONE) {
-                    dispatch<any>(linkAccountPanelActions.LOAD(params));
+                    dispatch(linkAccountPanelActions.LINK_LOAD(params));
                 }
                 else {
-                    dispatch<any>(linkAccountPanelActions.INVALID({
-                        user: params.user,
+                    dispatch(linkAccountPanelActions.LINK_INVALID({
+                        originatingUser: params.originatingUser,
+                        targetUser: params.targetUser,
                         userToLink: params.userToLink,
                         error}));
                     return;
@@ -92,9 +127,8 @@ export const loadLinkAccountPanel = () =>
             }
             else {
                 // If there is no link account session data, set the state to invoke the initial UI
-                dispatch<any>(linkAccountPanelActions.INIT({
-                    user: curUserResource }
-                ));
+                dispatch(linkAccountPanelActions.LINK_INIT({ targetUser: curUserResource }));
+                return;
             }
         }
     };
@@ -111,75 +145,66 @@ export const getAccountLinkData = () =>
         return services.linkAccountService.getFromSession();
     };
 
-export const removeAccountLinkData = () =>
+export const cancelLinking = () =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        let user: UserResource | undefined;
         try {
+            // When linking is cancelled switch to the originating user (i.e. the user saved in session data)
             const linkAccountData = services.linkAccountService.getFromSession();
             if (linkAccountData) {
-                const savedUser = await services.userService.get(linkAccountData.userUuid);
-                dispatch<any>(saveUser(savedUser));
-                dispatch<any>(saveApiToken(linkAccountData.token));
+                dispatch(saveApiToken(linkAccountData.token));
+                user = await services.userService.get(linkAccountData.userUuid);
+                dispatch(switchUser(user, linkAccountData.token));
             }
         }
         finally {
-            dispatch<any>(navigateToRootProject);
-            dispatch(linkAccountPanelActions.RESET());
             services.linkAccountService.removeFromSession();
+            dispatch(linkAccountPanelActions.LINK_INIT({ targetUser: user }));
         }
     };
 
 export const linkAccount = () =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const linkState = getState().linkAccountPanel;
-        const currentToken = getState().auth.apiToken;
-        if (linkState.userToLink && linkState.userToLinkToken && linkState.user && linkState.userToken && currentToken) {
+        if (linkState.userToLink && linkState.userToLinkToken && linkState.targetUser && linkState.targetUserToken) {
 
-            // First create a project owned by the "userToLink" to accept everything from the current user
-            const projectName = `Migrated from ${linkState.user.email} (${linkState.user.uuid})`;
+            // First create a project owned by the target user
+            const projectName = `Migrated from ${linkState.userToLink.email} (${linkState.userToLink.uuid})`;
             let newGroup: GroupResource;
             try {
-                dispatch<any>(saveApiToken(linkState.userToLinkToken));
                 newGroup = await services.projectService.create({
                     name: projectName,
                     ensure_unique_name: true
                 });
             }
             catch (e) {
-                dispatch<any>(saveApiToken(currentToken));
-                dispatch(snackbarActions.OPEN_SNACKBAR({
-                    message: 'Account link failed.', kind: SnackbarKind.ERROR , hideDuration: 3000
-                }));
+                dispatch(linkFailed());
                 throw e;
             }
 
             try {
-                // Use the token of the account that is getting merged to call the merge api
-                dispatch<any>(saveApiToken(linkState.userToken));
-                await services.linkAccountService.linkAccounts(linkState.userToLinkToken, newGroup.uuid);
-
-                // If the link was successful, switch to the account that was merged with
-                dispatch<any>(saveUser(linkState.userToLink));
-                dispatch<any>(saveApiToken(linkState.userToLinkToken));
+                // The merge api links the user sending the request into the user
+                // specified in the request, so switch users for this api call
+                dispatch(switchUser(linkState.userToLink, linkState.userToLinkToken));
+                await services.linkAccountService.linkAccounts(linkState.targetUserToken, newGroup.uuid);
+                dispatch(switchUser(linkState.targetUser, linkState.targetUserToken));
+                dispatch(navigateToRootProject);
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Account link success!', kind: SnackbarKind.SUCCESS, hideDuration: 3000 }));
+                dispatch(linkAccountPanelActions.LINK_INIT({targetUser: linkState.targetUser}));
             }
             catch(e) {
                 // If the link operation fails, delete the previously made project
-                // and stay logged in to the current account.
                 try {
-                    dispatch<any>(saveApiToken(linkState.userToLinkToken));
+                    dispatch(switchUser(linkState.targetUser, linkState.targetUserToken));
                     await services.projectService.delete(newGroup.uuid);
                 }
                 finally {
-                    dispatch<any>(saveApiToken(currentToken));
-                    dispatch(snackbarActions.OPEN_SNACKBAR({
-                        message: 'Account link failed.', kind: SnackbarKind.ERROR , hideDuration: 3000
-                    }));
+                    dispatch(linkFailed());
                 }
                 throw e;
             }
             finally {
-                dispatch<any>(navigateToRootProject);
                 services.linkAccountService.removeFromSession();
-                dispatch(linkAccountPanelActions.RESET());
             }
         }
     };

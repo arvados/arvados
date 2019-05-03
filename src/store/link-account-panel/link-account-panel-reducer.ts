@@ -17,9 +17,16 @@ export enum LinkAccountPanelError {
     SAME_USER
 }
 
+export enum OriginatingUser {
+    NONE,
+    TARGET_USER,
+    USER_TO_LINK
+}
+
 export interface LinkAccountPanelState {
-    user: UserResource | undefined;
-    userToken: string | undefined;
+    originatingUser: OriginatingUser | undefined;
+    targetUser: UserResource | undefined;
+    targetUserToken: string | undefined;
     userToLink: UserResource | undefined;
     userToLinkToken: string | undefined;
     status: LinkAccountPanelStatus;
@@ -27,8 +34,9 @@ export interface LinkAccountPanelState {
 }
 
 const initialState = {
-    user: undefined,
-    userToken: undefined,
+    originatingUser: undefined,
+    targetUser: undefined,
+    targetUserToken: undefined,
     userToLink: undefined,
     userToLinkToken: undefined,
     status: LinkAccountPanelStatus.INITIAL,
@@ -38,16 +46,13 @@ const initialState = {
 export const linkAccountPanelReducer = (state: LinkAccountPanelState = initialState, action: LinkAccountPanelAction) =>
     linkAccountPanelActions.match(action, {
         default: () => state,
-        INIT: ({ user }) => ({
-            ...state, user, state: LinkAccountPanelStatus.INITIAL, error: LinkAccountPanelError.NONE
+        LINK_INIT: ({ targetUser }) => ({
+            ...state, targetUser, status: LinkAccountPanelStatus.INITIAL, error: LinkAccountPanelError.NONE, originatingUser: OriginatingUser.NONE
         }),
-        LOAD: ({ userToLink, user, userToken, userToLinkToken}) => ({
-            ...state, user, userToken, userToLink, userToLinkToken, status: LinkAccountPanelStatus.LINKING, error: LinkAccountPanelError.NONE
+        LINK_LOAD: ({ originatingUser, userToLink, targetUser, targetUserToken, userToLinkToken}) => ({
+            ...state, originatingUser, targetUser, targetUserToken, userToLink, userToLinkToken, status: LinkAccountPanelStatus.LINKING, error: LinkAccountPanelError.NONE
         }),
-        RESET: () => ({
-            ...state, userToken: undefined, userToLink: undefined, userToLinkToken: undefined, status: LinkAccountPanelStatus.INITIAL,  error: LinkAccountPanelError.NONE
-        }),
-        INVALID: ({user, userToLink, error}) => ({
-            ...state, user, userToLink, error, status: LinkAccountPanelStatus.ERROR
+        LINK_INVALID: ({originatingUser, targetUser, userToLink, error}) => ({
+            ...state, originatingUser, targetUser, userToLink, error, status: LinkAccountPanelStatus.ERROR
         })
     });

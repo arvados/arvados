@@ -10,7 +10,6 @@ import {
     Card,
     CardContent,
     Button,
-    Typography,
     Grid,
 } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
@@ -29,7 +28,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 export interface LinkAccountPanelRootDataProps {
-    user?: UserResource;
+    targetUser?: UserResource;
     userToLink?: UserResource;
     status : LinkAccountPanelStatus;
     error: LinkAccountPanelError;
@@ -37,7 +36,7 @@ export interface LinkAccountPanelRootDataProps {
 
 export interface LinkAccountPanelRootActionProps {
     saveAccountLinkData: (type: LinkAccountType) => void;
-    removeAccountLinkData: () => void;
+    cancelLinking: () => void;
     linkAccount: () => void;
 }
 
@@ -53,14 +52,14 @@ function displayUser(user: UserResource, showCreatedAt: boolean = false) {
 type LinkAccountPanelRootProps = LinkAccountPanelRootDataProps & LinkAccountPanelRootActionProps & WithStyles<CssRules>;
 
 export const LinkAccountPanelRoot = withStyles(styles) (
-    ({classes, user, userToLink, status, error, saveAccountLinkData, removeAccountLinkData, linkAccount}: LinkAccountPanelRootProps) => {
+    ({classes, targetUser, userToLink, status, error, saveAccountLinkData, cancelLinking, linkAccount}: LinkAccountPanelRootProps) => {
         return <Card className={classes.root}>
             <CardContent>
-            { status === LinkAccountPanelStatus.INITIAL && user &&
+            { status === LinkAccountPanelStatus.INITIAL && targetUser &&
             <Grid container spacing={24}>
                 <Grid container item direction="column" spacing={24}>
                     <Grid item>
-                        You are currently logged in as {displayUser(user, true)}
+                        You are currently logged in as {displayUser(targetUser, true)}
                     </Grid>
                     <Grid item>
                         You can link Arvados accounts. After linking, either login will take you to the same account.
@@ -79,28 +78,28 @@ export const LinkAccountPanelRoot = withStyles(styles) (
                     </Grid>
                 </Grid>
             </Grid> }
-            { (status === LinkAccountPanelStatus.LINKING || status === LinkAccountPanelStatus.ERROR) && userToLink && user &&
+            { (status === LinkAccountPanelStatus.LINKING || status === LinkAccountPanelStatus.ERROR) && userToLink && targetUser &&
             <Grid container spacing={24}>
                 { status === LinkAccountPanelStatus.LINKING && <Grid container item direction="column" spacing={24}>
                     <Grid item>
-                        Clicking 'Link accounts' will link {displayUser(user, true)} to {displayUser(userToLink, true)}.
+                        Clicking 'Link accounts' will link {displayUser(userToLink, true)} to {displayUser(targetUser, true)}.
                     </Grid>
                     <Grid item>
-                        After linking, logging in as {displayUser(user)} will log you into the same account as {displayUser(userToLink)}.
+                        After linking, logging in as {displayUser(userToLink)} will log you into the same account as {displayUser(targetUser)}.
                     </Grid>
                     <Grid item>
-                       Any object owned by {displayUser(user)} will be transfered to {displayUser(userToLink)}.
+                       Any object owned by {displayUser(userToLink)} will be transfered to {displayUser(targetUser)}.
                     </Grid>
                 </Grid> }
                 { error === LinkAccountPanelError.NON_ADMIN && <Grid item>
-                    Cannot link admin account {displayUser(userToLink)} to non-admin account {displayUser(user)}.
+                    Cannot link admin account {displayUser(userToLink)} to non-admin account {displayUser(targetUser)}.
                 </Grid> }
                 { error === LinkAccountPanelError.SAME_USER && <Grid item>
-                    Cannot link {displayUser(userToLink)} to the same account.
+                    Cannot link {displayUser(targetUser)} to the same account.
                 </Grid> }
                 <Grid container item direction="row" spacing={24}>
                     <Grid item>
-                        <Button variant="contained" onClick={() => removeAccountLinkData()}>
+                        <Button variant="contained" onClick={() => cancelLinking()}>
                             Cancel
                         </Button>
                     </Grid>

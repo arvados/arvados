@@ -6,7 +6,6 @@ import { AxiosInstance } from "axios";
 import { ApiActions } from "~/services/api/api-actions";
 import { AccountToLink } from "~/models/link-account";
 import { CommonService } from "~/services/common-service/common-service";
-import { AuthService } from "../auth-service/auth-service";
 
 export const USER_LINK_ACCOUNT_KEY = 'accountToLink';
 
