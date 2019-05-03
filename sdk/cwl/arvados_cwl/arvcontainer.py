@@ -276,6 +276,9 @@ class ArvadosContainer(JobBase):
 
         enable_reuse = runtimeContext.enable_reuse
         if enable_reuse:
+            reuse_req, _ = self.get_requirement("WorkReuse")
+            if reuse_req:
+                enable_reuse = reuse_req["enableReuse"]
             reuse_req, _ = self.get_requirement("http://arvados.org/cwl#ReuseRequirement")
             if reuse_req:
                 enable_reuse = reuse_req["enableReuse"]
