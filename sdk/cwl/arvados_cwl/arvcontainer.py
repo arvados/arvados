@@ -225,6 +225,10 @@ class ArvadosContainer(JobBase):
                                                                     runtimeContext.pull_image,
                                                                     runtimeContext.project_uuid)
 
+        network_req, _ = self.get_requirement("NetworkAccess")
+        if network_req:
+            runtime_constraints["API"] = network_req["networkAccess"]
+
         api_req, _ = self.get_requirement("http://arvados.org/cwl#APIRequirement")
         if api_req:
             runtime_constraints["API"] = True

@@ -318,6 +318,15 @@ def main(args, stdout, stderr, api_client=None, keep_client=None,
     else:
         arvados.log_handler.setFormatter(logging.Formatter('%(name)s %(levelname)s: %(message)s'))
 
+    if stdout is sys.stdout:
+        # cwltool.main has code to work around encoding issues with
+        # sys.stdout and unix pipes (they default to ASCII encoding,
+        # we want utf-8), so when stdout is sys.stdout set it to None
+        # to take advantage of that.  Don't override it for all cases
+        # since we still want to be able to capture stdout for the
+        # unit tests.
+        stdout = None
+
     return cwltool.main.main(args=arvargs,
                              stdout=stdout,
                              stderr=stderr,

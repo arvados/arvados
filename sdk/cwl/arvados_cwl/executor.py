@@ -6,7 +6,7 @@ from __future__ import division
 from builtins import next
 from builtins import object
 from builtins import str
-from future.utils import viewvalues
+from future.utils import viewvalues, viewitems
 
 import argparse
 import logging
@@ -406,7 +406,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
             except (KeyboardInterrupt, SystemExit):
                 break
 
-    def check_features(self, obj):
+    def check_features(self, obj, parentfield=""):
         if isinstance(obj, dict):
             if obj.get("writable") and self.work_api != "containers":
                 raise SourceLine(obj, "writable", UnsupportedRequirement).makeError("InitialWorkDir feature 'writable: true' not supported with --api=jobs")
@@ -420,12 +420,15 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                             "Option 'dockerOutputDirectory' must be an absolute path.")
             if obj.get("class") == "http://commonwl.org/cwltool#Secrets" and self.work_api != "containers":
                 raise SourceLine(obj, "class", UnsupportedRequirement).makeError("Secrets not supported with --api=jobs")
-            for v in viewvalues(obj):
-                self.check_features(v)
+            if obj.get("class") == "InplaceUpdateRequirement":
+                if obj["inplaceUpdate"] and parentfield == "requirements":
+                    raise SourceLine(obj, "class", UnsupportedRequirement).makeError("InplaceUpdateRequirement not supported for keep collections.")
+            for k,v in viewitems(obj):
+                self.check_features(v, parentfield=k)
         elif isinstance(obj, list):
             for i,v in enumerate(obj):
                 with SourceLine(obj, i, UnsupportedRequirement, logger.isEnabledFor(logging.DEBUG)):
-                    self.check_features(v)
+                    self.check_features(v, parentfield=parentfield)
 
     def make_output_collection(self, name, storage_classes, tagsString, outputObj):
         outputObj = copy.deepcopy(outputObj)
@@ -525,6 +528,18 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                                        'progress':1.0
                                    }).execute(num_retries=self.num_retries)
 
+    def apply_reqs(self, job_order_object, tool):
+        if "https://w3id.org/cwl/cwl#requirements" in job_order_object:
+            if tool.metadata.get("http://commonwl.org/cwltool#original_cwlVersion") == 'v1.0':
+                raise WorkflowException(
+                    "`cwl:requirements` in the input object is not part of CWL "
+                    "v1.0. You can adjust to use `cwltool:overrides` instead; or you "
+                    "can set the cwlVersion to v1.1.0-dev1 or greater and re-run with "
+                    "--enable-dev.")
+            job_reqs = job_order_object["https://w3id.org/cwl/cwl#requirements"]
+            for req in job_reqs:
+                tool.requirements.append(req)
+
     def arv_executor(self, tool, job_order, runtimeContext, logger=None):
         self.debug = runtimeContext.debug
 
@@ -606,6 +621,8 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                                         name=runtimeContext.name,
                                         merged_map=merged_map),
                         "success")
+
+        self.apply_reqs(job_order, tool)
 
         self.ignore_docker_for_reuse = runtimeContext.ignore_docker_for_reuse
         self.eval_timeout = runtimeContext.eval_timeout
