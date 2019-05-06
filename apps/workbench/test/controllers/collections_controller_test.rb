@@ -612,6 +612,7 @@ class CollectionsControllerTest < ActionController::TestCase
     }, session: session_for(:active)
     assert_response :success
 
+    use_token :active
     # verify no 'file1' in the updated collection
     collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
     assert_not_includes(collection['manifest_text'], "0:0:file1")
@@ -637,6 +638,7 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_response :success
 
     # verify that "./dir1" no longer exists in this collection's manifest text
+    use_token :active
     collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
     assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1 0:0:file2\n$/, collection['manifest_text']
     assert_not_includes(collection['manifest_text'], 'dir1')
@@ -661,6 +663,7 @@ class CollectionsControllerTest < ActionController::TestCase
     }, session: session_for(:active)
     assert_response :success
 
+    use_token :active
     collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
     assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed 0:0:file2\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1 0:0:dir1file2 0:0:dir1imagefile.png\n$/, collection['manifest_text']
 
@@ -675,6 +678,7 @@ class CollectionsControllerTest < ActionController::TestCase
     }, session: session_for(:active)
     assert_response :success
 
+    use_token :active
     collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
     assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1 0:0:dir1file2 0:0:dir1imagefile.png 0:0:file2\n$/, collection['manifest_text']
 
@@ -689,6 +693,7 @@ class CollectionsControllerTest < ActionController::TestCase
     }, session: session_for(:active)
     assert_response :success
 
+    use_token :active
     collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
     assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file2 0:0:dir1imagefile.png 0:0:file2\n.\/dir2\/dir3 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1moved\n$/, collection['manifest_text']
 
@@ -703,6 +708,7 @@ class CollectionsControllerTest < ActionController::TestCase
     }, session: session_for(:active)
     assert_response :success
 
+    use_token :active
     collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
     assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file2 0:0:dir1imagefilerenamed.png 0:0:file2\n.\/dir2\/dir3 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1moved\n$/, collection['manifest_text']
   end

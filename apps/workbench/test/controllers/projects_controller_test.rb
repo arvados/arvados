@@ -276,6 +276,8 @@ class ProjectsControllerTest < ActionController::TestCase
   end
 
   test "visit public projects page when anon config is not enabled as active user and expect 404" do
+    Rails.configuration.anonymous_user_token = nil
+    Rails.configuration.enable_public_projects_page = false
     get :public, params: {}, session: session_for(:active)
     assert_response 404
   end
@@ -288,6 +290,8 @@ class ProjectsControllerTest < ActionController::TestCase
   end
 
   test "visit public projects page when anon config is not enabled as anonymous and expect login page" do
+    Rails.configuration.anonymous_user_token = nil
+    Rails.configuration.enable_public_projects_page = false
     get :public
     assert_response :redirect
     assert_match /\/users\/welcome/, @response.redirect_url
