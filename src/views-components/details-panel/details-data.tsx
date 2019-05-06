@@ -7,7 +7,7 @@ import { DetailsResource } from "~/models/details";
 import { ResourceData } from "~/store/resources-data/resources-data-reducer";
 
 export abstract class DetailsData<T extends DetailsResource = DetailsResource> {
-    constructor(protected item: T, protected data?: ResourceData) {}
+    constructor(protected item: T, protected data?: ResourceData, protected numberOfCollectionsByPDH?: number) {}
 
     getTitle(): string {
         return this.item.name || 'Projects';

@@ -62,13 +62,13 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 const EMPTY_RESOURCE: EmptyResource = { kind: undefined, name: 'Projects' };
 
-const getItem = (res: DetailsResource, resourceData?: ResourceData): DetailsData => {
+const getItem = (res: DetailsResource, resourceData?: ResourceData, numberOfCollectionsByPDH?: number): DetailsData => {
     if ('kind' in res) {
         switch (res.kind) {
             case ResourceKind.PROJECT:
                 return new ProjectDetails(res);
             case ResourceKind.COLLECTION:
-                return new CollectionDetails(res, resourceData);
+                return new CollectionDetails(res, resourceData, numberOfCollectionsByPDH);
             case ResourceKind.PROCESS:
                 return new ProcessDetails(res);
             default:
@@ -79,13 +79,14 @@ const getItem = (res: DetailsResource, resourceData?: ResourceData): DetailsData
     }
 };
 
-const mapStateToProps = ({ detailsPanel, resources, resourcesData, collectionPanelFiles }: RootState) => {
+const mapStateToProps = ({ detailsPanel, resources, resourcesData, collectionPanelFiles, collectionPanel }: RootState) => {
     const resource = getResource(detailsPanel.resourceUuid)(resources) as DetailsResource | undefined;
     const file = getNode(detailsPanel.resourceUuid)(collectionPanelFiles);
     const resourceData = getResourceData(detailsPanel.resourceUuid)(resourcesData);
+    const numberOfCollectionsByPDH = collectionPanel.numberOfCollectionsWithSamePDH;
     return {
         isOpened: detailsPanel.isOpened,
-        item: getItem(resource || (file && file.value) || EMPTY_RESOURCE, resourceData)
+        item: getItem(resource || (file && file.value) || EMPTY_RESOURCE, resourceData, numberOfCollectionsByPDH),
     };
 };
 

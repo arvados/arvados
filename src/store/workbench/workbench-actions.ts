@@ -68,8 +68,7 @@ import { FilterBuilder } from '~/services/api/filter-builder';
 import { GroupContentsResource } from '~/services/groups-service/groups-service';
 import { MatchCases, ofType, unionize, UnionOf } from '~/common/unionize';
 import { loadRunProcessPanel } from '~/store/run-process-panel/run-process-panel-actions';
-import { loadCollectionFiles } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
-import { collectionPanelActions } from "~/store/collection-panel/collection-panel-action";
+import { collectionPanelActions, loadCollectionPanel } from "~/store/collection-panel/collection-panel-action";
 import { CollectionResource } from "~/models/collection";
 import {
     loadSearchResultsPanel,
@@ -256,22 +255,22 @@ export const loadCollection = (uuid: string) =>
                         dispatch(collectionPanelActions.SET_COLLECTION(collection as CollectionResource));
                         dispatch(updateResources([collection]));
                         await dispatch(activateSidePanelTreeItem(collection.ownerUuid));
-                        dispatch(setSidePanelBreadcrumbs(collection.ownerUuid));
-                        dispatch(loadCollectionFiles(collection.uuid));
+                        dispatch(setSidePanelBreadcrumbs(collection.ownerUuid));              
+                        dispatch(loadCollectionPanel(collection.uuid));
                     },
                     SHARED: collection => {
                         dispatch(collectionPanelActions.SET_COLLECTION(collection as CollectionResource));
                         dispatch(updateResources([collection]));
                         dispatch<any>(setSharedWithMeBreadcrumbs(collection.ownerUuid));
                         dispatch(activateSidePanelTreeItem(collection.ownerUuid));
-                        dispatch(loadCollectionFiles(collection.uuid));
+                        dispatch(loadCollectionPanel(collection.uuid));
                     },
                     TRASHED: collection => {
                         dispatch(collectionPanelActions.SET_COLLECTION(collection as CollectionResource));
                         dispatch(updateResources([collection]));
                         dispatch(setTrashBreadcrumbs(''));
                         dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.TRASH));
-                        dispatch(loadCollectionFiles(collection.uuid));
+                        dispatch(loadCollectionPanel(collection.uuid));
                     },
 
                 });

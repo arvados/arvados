@@ -26,7 +26,7 @@ export class CollectionDetails extends DetailsData<CollectionResource> {
             <DetailsAttribute label='Created at' value={formatDate(this.item.createdAt)} />
             {/* Links but we dont have view */}
             <DetailsAttribute label='Collection UUID' link={this.item.uuid} value={this.item.uuid} />
-            <DetailsAttribute label='Content address' link={this.item.portableDataHash} value={this.item.portableDataHash} />
+            <DetailsAttribute label='Content address' link={this.numberOfCollectionsByPDH === 1 ? this.item.uuid : this.item.portableDataHash} value={this.item.portableDataHash} />
             {/* Missing attrs */}
             <DetailsAttribute label='Number of files' value={this.data && this.data.fileCount} />
             <DetailsAttribute label='Content size' value={formatFileSize(this.data && this.data.fileSize)} />
