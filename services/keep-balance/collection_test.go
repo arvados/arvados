@@ -30,7 +30,6 @@ func (s *integrationSuite) TestIdenticalTimestamps(c *check.C) {
 			var lastMod time.Time
 			sawUUID := make(map[string]bool)
 			err := EachCollection(&s.config.Client, pageSize, func(c arvados.Collection) error {
-				got[trial] = append(got[trial], c.UUID)
 				if c.ModifiedAt == nil {
 					return nil
 				}
@@ -38,6 +37,7 @@ func (s *integrationSuite) TestIdenticalTimestamps(c *check.C) {
 					// dup
 					return nil
 				}
+				got[trial] = append(got[trial], c.UUID)
 				sawUUID[c.UUID] = true
 				if lastMod == *c.ModifiedAt {
 					streak++
