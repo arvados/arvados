@@ -324,7 +324,7 @@ class CollectionsControllerTest < ActionController::TestCase
     show_collection(fixture_name, :active)
     fixture = api_fixture('collections')[fixture_name.to_s]
     assert_equal(fixture['name'], assigns(:object).name)
-    assert_equal(fixture['properties'][0], assigns(:object).properties[0])
+    assert_equal(fixture['properties'].values[0], assigns(:object).properties.values[0])
   end
 
   test "create collection with properties" do

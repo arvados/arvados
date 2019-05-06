@@ -78,7 +78,6 @@ class ContainerRequestsControllerTest < ActionController::TestCase
       assert_not_nil copied_cr
       assert_equal 'Uncommitted', copied_cr[:state]
       assert_equal "Copy of #{completed_cr['name']}", copied_cr['name']
-      assert_equal completed_cr['cmd'], copied_cr['cmd']
       assert_equal completed_cr['runtime_constraints']['ram'], copied_cr['runtime_constraints'][:ram]
       if reuse_enabled
         assert copied_cr[:use_existing]

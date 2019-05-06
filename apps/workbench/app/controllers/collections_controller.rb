@@ -265,7 +265,7 @@ class CollectionsController < ApplicationController
   end
 
   def update
-    updated_attr = params[:collection].each.select {|a| a[0].andand.start_with? 'rename-file-path:'}
+    updated_attr = params[:collection].to_unsafe_hash.each.select {|a| a[0].andand.start_with? 'rename-file-path:'}
 
     if updated_attr.size > 0
       # Is it file rename?

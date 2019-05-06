@@ -23,7 +23,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
 
   <div id="pipeline-instance-tab-buttons"
        class="pane-loaded arv-log-event-listener arv-refresh-on-state-change"
-       data-pane-content-url="<%= url_for(params.merge(tab_pane: "tab_buttons")) %>"
+       data-pane-content-url="<%= url_for(params.permit!.merge(tab_pane: "tab_buttons")) %>"
        data-object-uuid="<%= @object.uuid %>"
        >
     <%= render partial: 'show_tab_buttons', locals: {object: @object}%>

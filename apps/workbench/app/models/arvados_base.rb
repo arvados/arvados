@@ -7,6 +7,7 @@ class ArvadosBase
   include ActiveModel::Conversion
   include ActiveModel::Serialization
   include ActiveModel::Dirty
+  include ActiveModel::AttributeAssignment
   extend ActiveModel::Naming
 
   Column = Struct.new("Column", :name)
@@ -155,7 +156,8 @@ end
                 raise ArvadosBase::Error.new("Type unknown: #{sql_type}")
             end
     define_method "#{name}=" do |val|
-      casted_value = caster.new.cast(val || default)
+      val = default if val.nil?
+      casted_value = caster.new.cast(val)
       attribute_will_change!(name) if send(name) != casted_value
       set_attribute_after_cast(name, casted_value)
     end
@@ -167,7 +169,11 @@ end
   end
 
   def [](attr_name)
-    send(attr_name)
+    begin
+      send(attr_name)
+    rescue
+      nil
+    end
   end
 
   def []=(attr_name, attr_val)
@@ -257,20 +263,30 @@ end
     # The following permit! is necessary even with
     # "ActionController::Parameters.permit_all_parameters = true",
     # because permit_all does not permit nested attributes.
-    if raw_params.is_a? ActionController::Parameters
-      raw_params = raw_params.to_unsafe_h
+    if !raw_params.is_a? ActionController::Parameters
+      raw_params = ActionController::Parameters.new(raw_params)
     end
-    ActionController::Parameters.new(raw_params).permit!
+    raw_params.permit!
   end
 
   def self.create raw_params={}, create_params={}
-    x = super(permit_attribute_params(raw_params))
-    x.create_params = create_params
+    x = new(permit_attribute_params(raw_params), create_params)
+    x.save
     x
   end
 
+  def self.table_name
+    self.name.underscore.pluralize.downcase
+  end
+
   def update_attributes raw_params={}
-    super(self.class.permit_attribute_params(raw_params))
+    assign_attributes(self.class.permit_attribute_params(raw_params))
+    save
+  end
+
+  def update_attributes! raw_params={}
+    assign_attributes(self.class.permit_attribute_params(raw_params))
+    save!
   end
 
   def save
@@ -318,6 +334,14 @@ end
 
   def save!
     self.save or raise Exception.new("Save failed")
+  end
+
+  def persisted?
+    (!new_record? && !destroyed?) ? true : false
+  end
+
+  def destroyed?
+    !(etag || uuid)
   end
 
   def destroy
