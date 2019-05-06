@@ -275,6 +275,12 @@ end
     x
   end
 
+  def self.create! raw_params={}, create_params={}
+    x = new(permit_attribute_params(raw_params), create_params)
+    x.save!
+    x
+  end
+
   def self.table_name
     self.name.underscore.pluralize.downcase
   end
