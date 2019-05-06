@@ -203,7 +203,7 @@ You can try recreating the collection to get a copy with full provenance data."
 
     respond_to do |format|
       IssueReporter.send_report(current_user, params).deliver
-      format.js {render nothing: true}
+      format.js {render body: nil}
     end
   end
 
