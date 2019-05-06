@@ -514,7 +514,7 @@ EOT
       limit: 0,
       offset: 1000,
     }, session: session_for(:active)
-    assert_select "#projects-menu + ul li.divider ~ li a[href=/projects/#{project_uuid}]"
+    assert_select "#projects-menu + ul li.divider ~ li a[href=\"/projects/#{project_uuid}\"]"
   end
 
   [
