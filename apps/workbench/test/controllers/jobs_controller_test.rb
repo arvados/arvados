@@ -17,11 +17,11 @@ class JobsControllerTest < ActionController::TestCase
     assert_response :success
 
     assert_select "div.used-in-pipelines" do
-      assert_select "a[href=/pipeline_instances/zzzzz-d1hrv-n68vc490mloy4fi]"
+      assert_select "a[href=\"/pipeline_instances/zzzzz-d1hrv-n68vc490mloy4fi\"]"
     end
 
     assert_select "div.used-in-jobs" do
-      assert_select "a[href=/jobs/zzzzz-8i9sb-with2components]"
+      assert_select "a[href=\"/jobs/zzzzz-8i9sb-with2components\"]"
     end
   end
 end
