@@ -26,7 +26,7 @@ class Arvados::V1::SchemaController < ApplicationController
     Rails.cache.fetch 'arvados_v1_rest_discovery' do
       Rails.application.eager_load!
       remoteHosts = {}
-      Rails.configuration.RemoteClusters.each {|k,v| if k != "*" then remoteHosts[k] = v["Host"] end }
+      Rails.configuration.RemoteClusters.each {|k,v| if k != :"*" then remoteHosts[k] = v["Host"] end }
       discovery = {
         kind: "discovery#restDescription",
         discoveryVersion: "v1",
