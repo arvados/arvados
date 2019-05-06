@@ -7,6 +7,7 @@ import { UserResource } from "~/models/user";
 
 export enum LinkAccountPanelStatus {
     INITIAL,
+    HAS_SESSION_DATA,
     LINKING,
     ERROR
 }
@@ -54,5 +55,8 @@ export const linkAccountPanelReducer = (state: LinkAccountPanelState = initialSt
         }),
         LINK_INVALID: ({originatingUser, targetUser, userToLink, error}) => ({
             ...state, originatingUser, targetUser, userToLink, error, status: LinkAccountPanelStatus.ERROR
+        }),
+        HAS_SESSION_DATA: () => ({
+            ...state, status: LinkAccountPanelStatus.HAS_SESSION_DATA
         })
     });

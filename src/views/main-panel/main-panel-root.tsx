@@ -11,6 +11,7 @@ import { LoginPanel } from '~/views/login-panel/login-panel';
 import { InactivePanel } from '~/views/inactive-panel/inactive-panel';
 import { WorkbenchLoadingScreen } from '~/views/workbench/workbench-loading-screen';
 import { MainAppBar } from '~/views-components/main-app-bar/main-app-bar';
+import { LinkAccountPanel } from '~/views/link-account-panel/link-account-panel';
 
 type CssRules = 'root';
 
@@ -28,23 +29,24 @@ export interface MainPanelRootDataProps {
     loading: boolean;
     buildInfo: string;
     uuidPrefix: string;
+    isNotLinking: boolean;
 }
 
 type MainPanelRootProps = MainPanelRootDataProps & WithStyles<CssRules>;
 
 export const MainPanelRoot = withStyles(styles)(
-    ({ classes, loading, working, user, buildInfo, uuidPrefix }: MainPanelRootProps) =>
+    ({ classes, loading, working, user, buildInfo, uuidPrefix, isNotLinking }: MainPanelRootProps) =>
         loading
             ? <WorkbenchLoadingScreen />
-            : <>
-                <MainAppBar
+            : <> { isNotLinking ? <>
+               <MainAppBar
                     user={user}
                     buildInfo={buildInfo}
                     uuidPrefix={uuidPrefix}>
                     {working ? <LinearProgress color="secondary" /> : null}
                 </MainAppBar>
                 <Grid container direction="column" className={classes.root}>
-                    {user ? (user.isActive ? <WorkbenchPanel /> : <InactivePanel />) : <LoginPanel />}
-                </Grid>
-            </>
+                    { user ? (user.isActive ? <WorkbenchPanel /> : <InactivePanel />) : <LoginPanel />}
+               </Grid>
+            </> : user ? <LinkAccountPanel/> : <LoginPanel /> } </>
 );

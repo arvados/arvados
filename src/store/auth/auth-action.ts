@@ -78,7 +78,10 @@ export const login = (uuidPrefix: string, homeCluster: string) => (dispatch: Dis
     dispatch(authActions.LOGIN());
 };
 
-export const logout = () => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+export const logout = (deleteLinkData: boolean = false) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    if (deleteLinkData) {
+        services.linkAccountService.removeFromSession();
+    }
     services.authService.removeApiToken();
     services.authService.removeUser();
     removeAuthorizationHeader(services.apiClient);

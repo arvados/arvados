@@ -8,7 +8,7 @@ import { ServiceRepository } from "~/services/services";
 import { setBreadcrumbs } from "~/store/breadcrumbs/breadcrumbs-actions";
 import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
 import { LinkAccountType, AccountToLink } from "~/models/link-account";
-import { logout, saveApiToken, saveUser } from "~/store/auth/auth-action";
+import { saveApiToken, saveUser } from "~/store/auth/auth-action";
 import { unionize, ofType, UnionOf } from '~/common/unionize';
 import { UserResource } from "~/models/user";
 import { GroupResource } from "~/models/group";
@@ -28,6 +28,7 @@ export const linkAccountPanelActions = unionize({
         targetUser: UserResource | undefined,
         userToLink: UserResource | undefined,
         error: LinkAccountPanelError }>(),
+    HAS_SESSION_DATA: {}
 });
 
 export type LinkAccountPanelAction = UnionOf<typeof linkAccountPanelActions>;
@@ -69,7 +70,6 @@ export const linkFailed = () =>
 export const loadLinkAccountPanel = () =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         dispatch(setBreadcrumbs([{ label: 'Link account'}]));
-
         const curUser = getState().auth.user;
         const curToken = getState().auth.apiToken;
         if (curUser && curToken) {
@@ -78,6 +78,16 @@ export const loadLinkAccountPanel = () =>
 
             // If there is link account session data, then the user has logged in a second time
             if (linkAccountData) {
+
+                // If the window is refreshed after the second login, cancel the linking
+                if (window.performance) {
+                    if (performance.navigation.type === PerformanceNavigation.TYPE_BACK_FORWARD ||
+                        performance.navigation.type === PerformanceNavigation.TYPE_RELOAD) {
+                        dispatch(cancelLinking());
+                        return;
+                    }
+                }
+
                 // Use the token of the user we are getting data for. This avoids any admin/non-admin permissions
                 // issues since a user will always be able to query the api server for their own user data.
                 dispatch(saveApiToken(linkAccountData.token));
@@ -137,7 +147,8 @@ export const saveAccountLinkData = (t: LinkAccountType) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const accountToLink = {type: t, userUuid: services.authService.getUuid(), token: services.authService.getApiToken()} as AccountToLink;
         services.linkAccountService.saveToSession(accountToLink);
-        dispatch(logout());
+        const auth = getState().auth;
+        services.authService.login(auth.localCluster, auth.remoteHosts[auth.homeCluster]);
     };
 
 export const getAccountLinkData = () =>

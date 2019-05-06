@@ -83,6 +83,6 @@ export const AccountMenu = withStyles(styles)(
                             className={classes.link}>
                             Switch to Workbench v1</a></MenuItem>
                     <Divider />
-                    <MenuItem onClick={() => dispatch(logout())}>Logout</MenuItem>
+                    <MenuItem onClick={() => dispatch(logout(true))}>Logout</MenuItem>
                 </DropdownMenu>
                 : null));

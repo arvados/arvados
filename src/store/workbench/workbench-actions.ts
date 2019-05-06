@@ -59,7 +59,7 @@ import { CopyFormDialogData } from '~/store/copy-dialog/copy-dialog';
 import { loadWorkflowPanel, workflowPanelActions } from '~/store/workflow-panel/workflow-panel-actions';
 import { loadSshKeysPanel } from '~/store/auth/auth-action-ssh';
 import { loadMyAccountPanel } from '~/store/my-account/my-account-panel-actions';
-import { loadLinkAccountPanel } from '~/store/link-account-panel/link-account-panel-actions';
+import { loadLinkAccountPanel, linkAccountPanelActions } from '~/store/link-account-panel/link-account-panel-actions';
 import { loadSiteManagerPanel } from '~/store/auth/auth-action-session';
 import { workflowPanelColumns } from '~/views/workflow-panel/workflow-panel-view';
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions';
@@ -95,6 +95,7 @@ import { groupDetailsPanelColumns } from '~/views/group-details-panel/group-deta
 import { DataTableFetchMode } from "~/components/data-table/data-table";
 import { loadPublicFavoritePanel, publicFavoritePanelActions } from '~/store/public-favorites-panel/public-favorites-action';
 import { publicFavoritePanelColumns } from '~/views/public-favorites-panel/public-favorites-panel';
+import { USER_LINK_ACCOUNT_KEY } from '~/services/link-account-service/link-account-service';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -134,6 +135,10 @@ export const loadWorkbench = () =>
             dispatch(linkPanelActions.SET_COLUMNS({ columns: linkPanelColumns }));
             dispatch(computeNodesActions.SET_COLUMNS({ columns: computeNodePanelColumns }));
             dispatch(apiClientAuthorizationsActions.SET_COLUMNS({ columns: apiClientAuthorizationPanelColumns }));
+
+            if (sessionStorage.getItem(USER_LINK_ACCOUNT_KEY)) {
+                dispatch(linkAccountPanelActions.HAS_SESSION_DATA());
+            }
 
             dispatch<any>(initSidePanelTree());
             if (router.location) {
