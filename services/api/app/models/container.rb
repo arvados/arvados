@@ -648,64 +648,76 @@ class Container < ArvadosModel
     # This container is finished so finalize any associated container requests
     # that are associated with this container.
     if self.state_changed? and self.final?
-      act_as_system_user do
+      # These get wiped out by with_lock (which reloads the record),
+      # so record them now in case we need to schedule a retry.
+      prev_secret_mounts = self.secret_mounts_was
+      prev_runtime_token = self.runtime_token_was
 
-        if self.state == Cancelled
-          retryable_requests = ContainerRequest.where("container_uuid = ? and priority > 0 and state = 'Committed' and container_count < container_count_max", uuid)
-        else
-          retryable_requests = []
-        end
+      # Need to take a lock on the container to ensure that any
+      # concurrent container requests that might try to reuse this
+      # container will block until the container completion
+      # transaction finishes.  This ensure that concurrent container
+      # requests that try to reuse this container are finalized (on
+      # Complete) or don't reuse it (on Cancelled).
+      self.with_lock do
+        act_as_system_user do
+          if self.state == Cancelled
+            retryable_requests = ContainerRequest.where("container_uuid = ? and priority > 0 and state = 'Committed' and container_count < container_count_max", uuid)
+          else
+            retryable_requests = []
+          end
 
-        if retryable_requests.any?
-          c_attrs = {
-            command: self.command,
-            cwd: self.cwd,
-            environment: self.environment,
-            output_path: self.output_path,
-            container_image: self.container_image,
-            mounts: self.mounts,
-            runtime_constraints: self.runtime_constraints,
-            scheduling_parameters: self.scheduling_parameters,
-            secret_mounts: self.secret_mounts_was,
-            runtime_token: self.runtime_token_was,
-            runtime_user_uuid: self.runtime_user_uuid,
-            runtime_auth_scopes: self.runtime_auth_scopes
-          }
-          c = Container.create! c_attrs
-          retryable_requests.each do |cr|
-            cr.with_lock do
-              leave_modified_by_user_alone do
-                # Use row locking because this increments container_count
-                cr.container_uuid = c.uuid
-                cr.save!
+          if retryable_requests.any?
+            c_attrs = {
+              command: self.command,
+              cwd: self.cwd,
+              environment: self.environment,
+              output_path: self.output_path,
+              container_image: self.container_image,
+              mounts: self.mounts,
+              runtime_constraints: self.runtime_constraints,
+              scheduling_parameters: self.scheduling_parameters,
+              secret_mounts: prev_secret_mounts,
+              runtime_token: prev_runtime_token,
+              runtime_user_uuid: self.runtime_user_uuid,
+              runtime_auth_scopes: self.runtime_auth_scopes
+            }
+            c = Container.create! c_attrs
+            retryable_requests.each do |cr|
+              cr.with_lock do
+                leave_modified_by_user_alone do
+                  # Use row locking because this increments container_count
+                  cr.container_uuid = c.uuid
+                  cr.save!
+                end
               end
             end
           end
-        end
 
-        # Notify container requests associated with this container
-        ContainerRequest.where(container_uuid: uuid,
-                               state: ContainerRequest::Committed).each do |cr|
-          leave_modified_by_user_alone do
-            cr.finalize!
+          # Notify container requests associated with this container
+          ContainerRequest.where(container_uuid: uuid,
+                                 state: ContainerRequest::Committed).each do |cr|
+            leave_modified_by_user_alone do
+              cr.finalize!
+            end
           end
-        end
 
-        # Cancel outstanding container requests made by this container.
-        ContainerRequest.
-          includes(:container).
-          where(requesting_container_uuid: uuid,
-                state: ContainerRequest::Committed).each do |cr|
-          leave_modified_by_user_alone do
-            cr.update_attributes!(priority: 0)
-            cr.container.reload
-            if cr.container.state == Container::Queued || cr.container.state == Container::Locked
-              # If the child container hasn't started yet, finalize the
-              # child CR now instead of leaving it "on hold", i.e.,
-              # Queued with priority 0.  (OTOH, if the child is already
-              # running, leave it alone so it can get cancelled the
-              # usual way, get a copy of the log collection, etc.)
-              cr.update_attributes!(state: ContainerRequest::Final)
+          # Cancel outstanding container requests made by this container.
+          ContainerRequest.
+            includes(:container).
+            where(requesting_container_uuid: uuid,
+                  state: ContainerRequest::Committed).each do |cr|
+            leave_modified_by_user_alone do
+              cr.update_attributes!(priority: 0)
+              cr.container.reload
+              if cr.container.state == Container::Queued || cr.container.state == Container::Locked
+                # If the child container hasn't started yet, finalize the
+                # child CR now instead of leaving it "on hold", i.e.,
+                # Queued with priority 0.  (OTOH, if the child is already
+                # running, leave it alone so it can get cancelled the
+                # usual way, get a copy of the log collection, etc.)
+                cr.update_attributes!(state: ContainerRequest::Final)
+              end
             end
           end
         end

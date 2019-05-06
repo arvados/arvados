@@ -119,13 +119,34 @@ class ContainerRequest < ArvadosModel
   end
 
   def finalize_if_needed
-    if state == Committed && Container.find_by_uuid(container_uuid).final?
-      reload
-      act_as_system_user do
-        leave_modified_by_user_alone do
-          finalize!
+    return if state != Committed
+    while true
+      # get container lock first, then lock current container request
+      # (same order as Container#handle_completed). Locking always
+      # reloads the Container and ContainerRequest records.
+      c = Container.find_by_uuid(container_uuid)
+      c.lock!
+      self.lock!
+
+      if container_uuid != c.uuid
+        # After locking, we've noticed a race, the container_uuid is
+        # different than the container record we just loaded.  This
+        # can happen if Container#handle_completed scheduled a new
+        # container for retry and set container_uuid while we were
+        # waiting on the container lock.  Restart the loop and get the
+        # new container.
+        redo
+      end
+
+      if state == Committed && c.final?
+        # The current container is
+        act_as_system_user do
+          leave_modified_by_user_alone do
+            finalize!
+          end
         end
       end
+      return true
     end
   end
 
@@ -196,7 +217,7 @@ class ContainerRequest < ArvadosModel
     self.mounts ||= {}
     self.secret_mounts ||= {}
     self.cwd ||= "."
-    self.container_count_max ||= Rails.configuration.Containers.MaxComputeVMs
+    self.container_count_max ||= Rails.configuration.Containers.MaxRetryAttempts
     self.scheduling_parameters ||= {}
     self.output_ttl ||= 0
     self.priority ||= 0
@@ -210,7 +231,18 @@ class ContainerRequest < ArvadosModel
       return false
     end
     if state_changed? and state == Committed and container_uuid.nil?
-      self.container_uuid = Container.resolve(self).uuid
+      while true
+        c = Container.resolve(self)
+        c.lock!
+        if c.state == Container::Cancelled
+          # Lost a race, we have a lock on the container but the
+          # container was cancelled in a different request, restart
+          # the loop and resolve request to a new container.
+          redo
+        end
+        self.container_uuid = c.uuid
+        break
+      end
     end
     if self.container_uuid != self.container_uuid_was
       if self.container_count_changed?

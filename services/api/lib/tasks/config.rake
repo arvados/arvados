@@ -48,4 +48,9 @@ namespace :config do
     combined.update $remaining_config
     puts combined.to_yaml
   end
+
+  desc 'Legacy config check task -- it is a noop now'
+  task check: :environment do
+    # This exists so that build/rails-package-scripts/postinst.sh doesn't fail.
+  end
 end
