@@ -112,7 +112,7 @@ func (s *RouterSuite) TestContainerList(c *check.C) {
 
 func (s *RouterSuite) TestContainerLock(c *check.C) {
 	uuid := arvadostest.QueuedContainerUUID
-	token := arvadostest.ActiveTokenV2
+	token := arvadostest.AdminToken
 	_, rw, jresp := s.doRequest(c, token, "POST", "/arvados/v1/containers/"+uuid+"/lock", nil, nil)
 	c.Check(rw.Code, check.Equals, http.StatusOK)
 	c.Check(jresp["uuid"], check.HasLen, 27)
