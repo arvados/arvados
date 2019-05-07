@@ -71,10 +71,15 @@ func (conn *Conn) requestAndDecode(ctx context.Context, dst interface{}, ep arva
 	tokens, err := conn.tokenProvider(ctx)
 	if err != nil {
 		return err
-	} else if len(tokens) == 0 {
-		return fmt.Errorf("bug: token provider returned no tokens and no error")
+	} else if len(tokens) > 0 {
+		ctx = context.WithValue(ctx, "Authorization", "Bearer "+tokens[0])
+	} else {
+		// Use a non-empty auth string to ensure we override
+		// any default token set on aClient -- and to avoid
+		// having the remote prompt us to send a token by
+		// responding 401.
+		ctx = context.WithValue(ctx, "Authorization", "Bearer -")
 	}
-	ctx = context.WithValue(ctx, "Authorization", "Bearer "+tokens[0])
 
 	// Encode opts to JSON and decode from there to a
 	// map[string]interface{}, so we can munge the query params
