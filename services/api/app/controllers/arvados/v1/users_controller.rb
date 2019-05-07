@@ -126,28 +126,50 @@ class Arvados::V1::UsersController < ApplicationController
   end
 
   def merge
-    if !Thread.current[:api_client].andand.is_trusted
-      return send_error("supplied API token is not from a trusted client", status: 403)
-    elsif Thread.current[:api_client_authorization].scopes != ['all']
-      return send_error("cannot merge with a scoped token", status: 403)
-    end
-
-    new_auth = ApiClientAuthorization.validate(token: params[:new_user_token])
-    if !new_auth
-      return send_error("invalid new_user_token", status: 401)
-    end
-
-    if new_auth.user.uuid[0..4] == Rails.configuration.ClusterID
-      if !new_auth.api_client.andand.is_trusted
-        return send_error("supplied new_user_token is not from a trusted client", status: 403)
-      elsif new_auth.scopes != ['all']
-        return send_error("supplied new_user_token has restricted scope", status: 403)
+    if (params[:old_user_uuid] || params[:new_user_uuid])
+      if !current_user.andand.is_admin
+        return send_error("Must be admin to use old_user_uuid/new_user_uuid", status: 403)
       end
-    end
-    new_user = new_auth.user
+      if !params[:old_user_uuid] || !params[:new_user_uuid]
+        return send_error("Must supply both old_user_uuid and new_user_uuid", status: 422)
+      end
+      new_user = User.find_by_uuid(params[:new_user_uuid])
+      if !new_user
+        return send_error("User in new_user_uuid not found", status: 422)
+      end
+      @object = User.find_by_uuid(params[:old_user_uuid])
+      if !@object
+        return send_error("User in old_user_uuid not found", status: 422)
+      end
+    else
+      if !Thread.current[:api_client].andand.is_trusted
+        return send_error("supplied API token is not from a trusted client", status: 403)
+      elsif Thread.current[:api_client_authorization].scopes != ['all']
+        return send_error("cannot merge with a scoped token", status: 403)
+      end
 
-    if current_user.uuid == new_user.uuid
+      new_auth = ApiClientAuthorization.validate(token: params[:new_user_token])
+      if !new_auth
+        return send_error("invalid new_user_token", status: 401)
+      end
+
+      if new_auth.user.uuid[0..4] == Rails.configuration.ClusterID
+        if !new_auth.api_client.andand.is_trusted
+          return send_error("supplied new_user_token is not from a trusted client", status: 403)
+        elsif new_auth.scopes != ['all']
+          return send_error("supplied new_user_token has restricted scope", status: 403)
+        end
+      end
+      new_user = new_auth.user
+      @object = current_user
+    end
+
+    if @object.uuid == new_user.uuid
       return send_error("cannot merge user to self", status: 422)
+    end
+
+    if !params[:new_owner_uuid]
+      return send_error("missing new_owner_uuid", status: 422)
     end
 
     if !new_user.can?(write: params[:new_owner_uuid])
@@ -155,11 +177,14 @@ class Arvados::V1::UsersController < ApplicationController
     end
 
     redirect = params[:redirect_to_new_user]
+    if @object.uuid[0..4] != Rails.configuration.ClusterID && redirect
+      return send_error("cannot merge remote user to other with redirect_to_new_user=true", status: 422)
+    end
+
     if !redirect
       return send_error("merge with redirect_to_new_user=false is not yet supported", status: 422)
     end
 
-    @object = current_user
     act_as_system_user do
       @object.merge(new_owner_uuid: params[:new_owner_uuid], redirect_to_user_uuid: redirect && new_user.uuid)
     end
@@ -174,11 +199,17 @@ class Arvados::V1::UsersController < ApplicationController
         type: 'string', required: true,
       },
       new_user_token: {
-        type: 'string', required: true,
+        type: 'string', required: false,
       },
       redirect_to_new_user: {
         type: 'boolean', required: false,
       },
+      old_user_uuid: {
+        type: 'string', required: false,
+      },
+      new_user_uuid: {
+        type: 'string', required: false,
+      }
     }
   end
 

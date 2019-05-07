@@ -927,12 +927,88 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
            redirect_to_new_user: true,
          })
     assert_response(:success)
-    assert_equal(users(:project_viewer).redirect_to_user_uuid, users(:active).uuid)
+    assert_equal(users(:active).uuid, User.unscoped.find_by_uuid(users(:project_viewer).uuid).redirect_to_user_uuid)
 
     auth = ApiClientAuthorization.validate(token: api_client_authorizations(:project_viewer).api_token)
     assert_not_nil(auth)
     assert_not_nil(auth.user)
     assert_equal(users(:active).uuid, auth.user.uuid)
+  end
+
+
+  test "merge 'project_viewer' account into 'active' account using uuids" do
+    authorize_with(:admin)
+    post(:merge, params: {
+           old_user_uuid: users(:project_viewer).uuid,
+           new_user_uuid: users(:active).uuid,
+           new_owner_uuid: users(:active).uuid,
+           redirect_to_new_user: true,
+         })
+    assert_response(:success)
+    assert_equal(users(:active).uuid, User.unscoped.find_by_uuid(users(:project_viewer).uuid).redirect_to_user_uuid)
+
+    auth = ApiClientAuthorization.validate(token: api_client_authorizations(:project_viewer).api_token)
+    assert_not_nil(auth)
+    assert_not_nil(auth.user)
+    assert_equal(users(:active).uuid, auth.user.uuid)
+  end
+
+  test "merge 'project_viewer' account into 'active' account using uuids denied for non-admin" do
+    authorize_with(:active)
+    post(:merge, params: {
+           old_user_uuid: users(:project_viewer).uuid,
+           new_user_uuid: users(:active).uuid,
+           new_owner_uuid: users(:active).uuid,
+           redirect_to_new_user: true,
+         })
+    assert_response(403)
+    assert_nil(users(:project_viewer).redirect_to_user_uuid)
+  end
+
+  test "merge 'project_viewer' account into 'active' account using uuids denied missing old_user_uuid" do
+    authorize_with(:admin)
+    post(:merge, params: {
+           new_user_uuid: users(:active).uuid,
+           new_owner_uuid: users(:active).uuid,
+           redirect_to_new_user: true,
+         })
+    assert_response(422)
+    assert_nil(users(:project_viewer).redirect_to_user_uuid)
+  end
+
+  test "merge 'project_viewer' account into 'active' account using uuids denied missing new_user_uuid" do
+    authorize_with(:admin)
+    post(:merge, params: {
+           old_user_uuid: users(:project_viewer).uuid,
+           new_owner_uuid: users(:active).uuid,
+           redirect_to_new_user: true,
+         })
+    assert_response(422)
+    assert_nil(users(:project_viewer).redirect_to_user_uuid)
+  end
+
+  test "merge 'project_viewer' account into 'active' account using uuids denied bogus old_user_uuid" do
+    authorize_with(:admin)
+    post(:merge, params: {
+           old_user_uuid: "zzzzz-tpzed-bogusbogusbogus",
+           new_user_uuid: users(:active).uuid,
+           new_owner_uuid: users(:active).uuid,
+           redirect_to_new_user: true,
+         })
+    assert_response(422)
+    assert_nil(users(:project_viewer).redirect_to_user_uuid)
+  end
+
+  test "merge 'project_viewer' account into 'active' account using uuids denied bogus new_user_uuid" do
+    authorize_with(:admin)
+    post(:merge, params: {
+           old_user_uuid: users(:project_viewer).uuid,
+           new_user_uuid: "zzzzz-tpzed-bogusbogusbogus",
+           new_owner_uuid: users(:active).uuid,
+           redirect_to_new_user: true,
+         })
+    assert_response(422)
+    assert_nil(users(:project_viewer).redirect_to_user_uuid)
   end
 
   NON_ADMIN_USER_DATA = ["uuid", "kind", "is_active", "email", "first_name",
