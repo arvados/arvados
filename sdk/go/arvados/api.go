@@ -42,6 +42,7 @@ type ListOptions struct {
 	Filters []Filter `json:"filters"`
 	Limit   int      `json:"limit"`
 	Offset  int      `json:"offset"`
+	Order   string   `json:"order"`
 }
 
 type CreateOptions struct {
