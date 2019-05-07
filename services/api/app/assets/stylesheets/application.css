@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0 */
  * and any sub-directories. You're free to add application-wide styles to this file and they'll appear at
  * the top of the compiled file, but it's generally better to create a new file per style scope.
  *= require_self
- *= require_tree . 
+ *= require_tree .
 */
 
 .contain-align-left {
@@ -63,8 +63,7 @@ div#header span.beta > span {
     font-size: 0.8em;
 }
 img.curoverse-logo {
-    width: 221px;
-    height: 44px;
+    height: 66px;
 }
 #intropage {
     font-family: Verdana,Arial,sans-serif;
@@ -180,4 +179,3 @@ div#header a.sudo-logout {
     color: #000;
     font-weight: bold;
 }
-

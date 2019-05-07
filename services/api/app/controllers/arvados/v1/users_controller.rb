@@ -136,10 +136,13 @@ class Arvados::V1::UsersController < ApplicationController
     if !new_auth
       return send_error("invalid new_user_token", status: 401)
     end
-    if !new_auth.api_client.andand.is_trusted
-      return send_error("supplied new_user_token is not from a trusted client", status: 403)
-    elsif new_auth.scopes != ['all']
-      return send_error("supplied new_user_token has restricted scope", status: 403)
+
+    if new_auth.user.uuid[0..4] == Rails.configuration.ClusterID
+      if !new_auth.api_client.andand.is_trusted
+        return send_error("supplied new_user_token is not from a trusted client", status: 403)
+      elsif new_auth.scopes != ['all']
+        return send_error("supplied new_user_token has restricted scope", status: 403)
+      end
     end
     new_user = new_auth.user
 
