@@ -12,6 +12,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
@@ -128,6 +129,27 @@ func (s *RouterSuite) TestContainerLock(c *check.C) {
 	_, rw, jresp = s.doRequest(c, token, "POST", "/arvados/v1/containers/"+uuid+"/unlock", nil, nil)
 	c.Check(rw.Code, check.Equals, http.StatusUnprocessableEntity)
 	c.Check(jresp["uuid"], check.IsNil)
+}
+
+func (s *RouterSuite) TestFullTimestampsInResponse(c *check.C) {
+	uuid := arvadostest.CollectionReplicationDesired2Confirmed2UUID
+	token := arvadostest.ActiveTokenV2
+
+	_, rw, jresp := s.doRequest(c, token, "GET", `/arvados/v1/collections/`+uuid, nil, nil)
+	c.Check(rw.Code, check.Equals, http.StatusOK)
+	c.Check(jresp["uuid"], check.Equals, uuid)
+	expectNS := map[string]int{
+		"created_at":  596506000, // fixture says 596506247, but truncated by postgresql
+		"modified_at": 596338000, // fixture says 596338465, but truncated by postgresql
+	}
+	for key, ns := range expectNS {
+		mt, ok := jresp[key].(string)
+		c.Logf("jresp[%q] == %q", key, mt)
+		c.Assert(ok, check.Equals, true)
+		t, err := time.Parse(time.RFC3339Nano, mt)
+		c.Check(err, check.IsNil)
+		c.Check(t.Nanosecond(), check.Equals, ns)
+	}
 }
 
 func (s *RouterSuite) TestSelectParam(c *check.C) {
