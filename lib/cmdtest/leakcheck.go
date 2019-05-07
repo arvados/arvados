@@ -43,7 +43,7 @@ func LeakCheck(c *check.C) func() {
 		os.Stdout, os.Stderr = stdout, stderr
 
 		for i, tmpfile := range tmpfiles {
-			c.Log("checking %s", i)
+			c.Logf("checking %s", i)
 			_, err := tmpfile.Seek(0, io.SeekStart)
 			c.Assert(err, check.IsNil)
 			leaked, err := ioutil.ReadAll(tmpfile)
