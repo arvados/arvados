@@ -98,7 +98,7 @@ export const LinkAccountPanelRoot = withStyles(styles) (
                     Cannot link {displayUser(targetUser)} to the same account.
                 </Grid> }
                 { error === LinkAccountPanelError.INACTIVE && <Grid item>
-                    Cannot link active account {displayUser(userToLink)} to inactive account {displayUser(targetUser)}.
+                    Cannot link account {displayUser(userToLink)} to inactive account {displayUser(targetUser)}.
                 </Grid> }
                 <Grid container item direction="row" spacing={24}>
                     <Grid item>
