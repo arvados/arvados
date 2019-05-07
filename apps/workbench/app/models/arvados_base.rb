@@ -104,7 +104,7 @@ class ArvadosBase
     attributes.symbolize_keys.each do |name, value|
       send("#{name}=", value)
     end
-end
+  end
 
   def self.columns
     return @discovered_columns if @discovered_columns.andand.any?
@@ -133,7 +133,14 @@ end
   end
 
   def new_record?
-    (uuid == nil) ? true : false
+    # dup method doesn't reset the uuid attr
+    @uuid.nil? || @new_record || false
+  end
+
+  def initialize_dup(other)
+    super
+    @new_record = true
+    @created_at = nil
   end
 
   def self.column(name, sql_type = nil, default = nil, null = true)
@@ -152,6 +159,8 @@ end
                 ArvadosBase::Type::Hash
               when 'Array'
                 ArvadosBase::Type::Array
+              when 'jsonb'
+                ArvadosBase::Type::Hash
               else
                 raise ArvadosBase::Error.new("Type unknown: #{sql_type}")
             end
@@ -316,7 +325,10 @@ end
       obdata.delete :uuid
       resp = arvados_api_client.api(self.class, '/' + uuid, postdata)
     else
-      postdata.merge!(@create_params) if @create_params
+      if @create_params
+        @create_params = @create_params.to_unsafe_hash if @create_params.is_a? ActionController::Parameters
+        postdata.merge!(@create_params)
+      end
       resp = arvados_api_client.api(self.class, '', postdata)
     end
     return false if !resp[:etag] || !resp[:uuid]
