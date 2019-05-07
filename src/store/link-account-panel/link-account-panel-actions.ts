@@ -40,6 +40,9 @@ function validateLink(userToLink: UserResource, targetUser: UserResource) {
     else if (userToLink.isAdmin && !targetUser.isAdmin) {
         return LinkAccountPanelError.NON_ADMIN;
     }
+    else if (userToLink.isActive && !targetUser.isActive) {
+        return LinkAccountPanelError.INACTIVE;
+    }
     return LinkAccountPanelError.NONE;
 }
 

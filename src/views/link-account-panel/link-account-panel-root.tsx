@@ -97,6 +97,9 @@ export const LinkAccountPanelRoot = withStyles(styles) (
                 { error === LinkAccountPanelError.SAME_USER && <Grid item>
                     Cannot link {displayUser(targetUser)} to the same account.
                 </Grid> }
+                { error === LinkAccountPanelError.INACTIVE && <Grid item>
+                    Cannot link active account {displayUser(userToLink)} to inactive account {displayUser(targetUser)}.
+                </Grid> }
                 <Grid container item direction="row" spacing={24}>
                     <Grid item>
                         <Button variant="contained" onClick={() => cancelLinking()}>

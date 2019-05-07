@@ -14,6 +14,7 @@ export enum LinkAccountPanelStatus {
 
 export enum LinkAccountPanelError {
     NONE,
+    INACTIVE,
     NON_ADMIN,
     SAME_USER
 }
