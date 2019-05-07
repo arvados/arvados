@@ -5,6 +5,7 @@
 package router
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -54,6 +55,26 @@ func (s *RouterSuite) doRequest(c *check.C, token, method, path string, hdrs htt
 	err := json.Unmarshal(rw.Body.Bytes(), &jresp)
 	c.Check(err, check.IsNil)
 	return req, rw, jresp
+}
+
+func (s *RouterSuite) TestCollectionParams(c *check.C) {
+	token := arvadostest.ActiveTokenV2
+
+	_, rw, jresp := s.doRequest(c, token, "GET", `/arvados/v1/collections?include_trash=true`, nil, nil)
+	c.Check(rw.Code, check.Equals, http.StatusOK)
+	c.Check(jresp["items_available"], check.FitsTypeOf, float64(0))
+
+	_, rw, jresp = s.doRequest(c, token, "GET", `/arvados/v1/collections`, nil, bytes.NewBufferString(`{"include_trash":true}`))
+	c.Check(rw.Code, check.Equals, http.StatusOK)
+	c.Check(jresp["items"], check.FitsTypeOf, []interface{}{})
+
+	_, rw, jresp = s.doRequest(c, token, "POST", `/arvados/v1/collections`, nil, bytes.NewBufferString(`ensure_unique_name=true`))
+	c.Check(rw.Code, check.Equals, http.StatusOK)
+	c.Check(jresp["uuid"], check.FitsTypeOf, "")
+
+	_, rw, jresp = s.doRequest(c, token, "POST", `/arvados/v1/collections?ensure_unique_name=true`, nil, nil)
+	c.Check(rw.Code, check.Equals, http.StatusOK)
+	c.Check(jresp["uuid"], check.FitsTypeOf, "")
 }
 
 func (s *RouterSuite) TestContainerList(c *check.C) {

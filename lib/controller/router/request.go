@@ -29,6 +29,8 @@ func (rtr *router) loadRequestParams(req *http.Request, attrsKey string) (map[st
 	for k, values := range req.Form {
 		for _, v := range values {
 			switch {
+			case boolParams[k]:
+				params[k] = stringToBool(v)
 			case v == "null" || v == "":
 				params[k] = nil
 			case strings.HasPrefix(v, "["):
@@ -109,4 +111,19 @@ func (rtr *router) transcode(src interface{}, dst interface{}) error {
 		return errw
 	}
 	return err
+}
+
+var boolParams = map[string]bool{
+	"ensure_unique_name":   true,
+	"include_trash":        true,
+	"include_old_versions": true,
+}
+
+func stringToBool(s string) bool {
+	switch s {
+	case "", "false", "0":
+		return false
+	default:
+		return true
+	}
 }
