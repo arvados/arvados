@@ -23,3 +23,14 @@ func TestMarshalFiltersWithNanoseconds(t *testing.T) {
 		t.Errorf("Encoded as %q, expected %q", buf, expect)
 	}
 }
+
+func TestMarshalFiltersWithNil(t *testing.T) {
+	buf, err := json.Marshal([]Filter{
+		{Attr: "modified_at", Operator: "=", Operand: nil}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if expect := []byte(`[["modified_at","=",null]]`); 0 != bytes.Compare(buf, expect) {
+		t.Errorf("Encoded as %q, expected %q", buf, expect)
+	}
+}
