@@ -17,6 +17,7 @@ import { FavoritePanelColumnNames } from '~/views/favorite-panel/favorite-panel'
 import { GroupContentsResource, GroupContentsResourcePrefix } from '~/services/groups-service/groups-service';
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions';
 import { collectionsContentAddressActions } from './collections-content-address-panel-actions';
+import { navigateTo } from '~/store/navigation/navigation-action';
 
 export class CollectionsWithSameContentAddressMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -51,14 +52,19 @@ export class CollectionsWithSameContentAddressMiddlewareService extends DataExpl
                         .addEqual('portableDataHash', contentAddress)
                         .getFilters()
                 });
-                api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
-                api.dispatch(resourcesActions.SET_RESOURCES(response.items));
-                api.dispatch(collectionsContentAddressActions.SET_ITEMS({
-                    items: response.items.map((resource: any) => resource.uuid),
-                    itemsAvailable: response.itemsAvailable,
-                    page: Math.floor(response.offset / response.limit),
-                    rowsPerPage: response.limit
-                }));
+                if (response.itemsAvailable === 1) {
+                    api.dispatch<any>(navigateTo(response.items[0].uuid));
+                    api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
+                } else {
+                    api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
+                    api.dispatch(resourcesActions.SET_RESOURCES(response.items));
+                    api.dispatch(collectionsContentAddressActions.SET_ITEMS({
+                        items: response.items.map((resource: any) => resource.uuid),
+                        itemsAvailable: response.itemsAvailable,
+                        page: Math.floor(response.offset / response.limit),
+                        rowsPerPage: response.limit
+                    }));
+                }
             } catch (e) {
                 api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
                 api.dispatch(collectionsContentAddressActions.SET_ITEMS({
