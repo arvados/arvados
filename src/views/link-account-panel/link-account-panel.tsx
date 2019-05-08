@@ -5,7 +5,7 @@
 import { RootState } from '~/store/store';
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
-import { saveAccountLinkData, cancelLinking, linkAccount } from '~/store/link-account-panel/link-account-panel-actions';
+import { startLinking, cancelLinking, linkAccount } from '~/store/link-account-panel/link-account-panel-actions';
 import { LinkAccountType } from '~/models/link-account';
 import {
     LinkAccountPanelRoot,
@@ -23,7 +23,7 @@ const mapStateToProps = (state: RootState): LinkAccountPanelRootDataProps => {
 };
 
 const mapDispatchToProps = (dispatch: Dispatch): LinkAccountPanelRootActionProps => ({
-    saveAccountLinkData: (type: LinkAccountType) => dispatch<any>(saveAccountLinkData(type)),
+    startLinking: (type: LinkAccountType) => dispatch<any>(startLinking(type)),
     cancelLinking: () => dispatch<any>(cancelLinking()),
     linkAccount: () => dispatch<any>(linkAccount())
 });

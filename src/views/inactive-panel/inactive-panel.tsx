@@ -5,7 +5,7 @@
 import * as React from 'react';
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
-import { saveAccountLinkData } from '~/store/link-account-panel/link-account-panel-actions';
+import { startLinking } from '~/store/link-account-panel/link-account-panel-actions';
 import { Grid, Typography, Button } from '@material-ui/core';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from '~/common/custom-theme';
@@ -39,16 +39,16 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 export interface InactivePanelActionProps {
-    linkAccount: () => void;
+    startLinking: () => void;
 }
 
 const mapDispatchToProps = (dispatch: Dispatch): InactivePanelActionProps => ({
-    linkAccount: () => dispatch<any>(saveAccountLinkData(LinkAccountType.ACCESS_OTHER_ACCOUNT))
+    startLinking: () => dispatch<any>(startLinking(LinkAccountType.ACCESS_OTHER_ACCOUNT))
 });
 
 type InactivePanelProps =  WithStyles<CssRules> & InactivePanelActionProps;
 
-export const InactivePanel = connect(null, mapDispatchToProps)(withStyles(styles)((({ classes, linkAccount }: InactivePanelProps) =>
+export const InactivePanel = connect(null, mapDispatchToProps)(withStyles(styles)((({ classes, startLinking }: InactivePanelProps) =>
         <Grid container justify="center" alignItems="center" direction="column" spacing={24}
             className={classes.root}
             style={{ marginTop: 56, height: "100%" }}>
@@ -68,7 +68,7 @@ export const InactivePanel = connect(null, mapDispatchToProps)(withStyles(styles
                 </Typography>
             </Grid>
             <Grid item>
-                <Button className={classes.ontop} color="primary" variant="contained" onClick={() => linkAccount()}>
+                <Button className={classes.ontop} color="primary" variant="contained" onClick={() => startLinking()}>
                     Link Account
                 </Button>
             </Grid>

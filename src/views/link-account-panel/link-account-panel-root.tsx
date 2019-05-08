@@ -35,7 +35,7 @@ export interface LinkAccountPanelRootDataProps {
 }
 
 export interface LinkAccountPanelRootActionProps {
-    saveAccountLinkData: (type: LinkAccountType) => void;
+    startLinking: (type: LinkAccountType) => void;
     cancelLinking: () => void;
     linkAccount: () => void;
 }
@@ -52,7 +52,7 @@ function displayUser(user: UserResource, showCreatedAt: boolean = false) {
 type LinkAccountPanelRootProps = LinkAccountPanelRootDataProps & LinkAccountPanelRootActionProps & WithStyles<CssRules>;
 
 export const LinkAccountPanelRoot = withStyles(styles) (
-    ({classes, targetUser, userToLink, status, error, saveAccountLinkData, cancelLinking, linkAccount}: LinkAccountPanelRootProps) => {
+    ({classes, targetUser, userToLink, status, error, startLinking, cancelLinking, linkAccount}: LinkAccountPanelRootProps) => {
         return <Card className={classes.root}>
             <CardContent>
             { status === LinkAccountPanelStatus.INITIAL && targetUser &&
@@ -67,12 +67,12 @@ export const LinkAccountPanelRoot = withStyles(styles) (
                 </Grid>
                 <Grid container item direction="row" spacing={24}>
                     <Grid item>
-                        <Button color="primary" variant="contained" onClick={() => saveAccountLinkData(LinkAccountType.ADD_OTHER_LOGIN)}>
+                        <Button color="primary" variant="contained" onClick={() => startLinking(LinkAccountType.ADD_OTHER_LOGIN)}>
                             Add another login to this account
                         </Button>
                     </Grid>
                     <Grid item>
-                        <Button color="primary" variant="contained" onClick={() => saveAccountLinkData(LinkAccountType.ACCESS_OTHER_ACCOUNT)}>
+                        <Button color="primary" variant="contained" onClick={() => startLinking(LinkAccountType.ACCESS_OTHER_ACCOUNT)}>
                             Use this login to access another account
                         </Button>
                     </Grid>

@@ -147,7 +147,7 @@ export const loadLinkAccountPanel = () =>
         }
     };
 
-export const saveAccountLinkData = (t: LinkAccountType) =>
+export const startLinking = (t: LinkAccountType) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const accountToLink = {type: t, userUuid: services.authService.getUuid(), token: services.authService.getApiToken()} as AccountToLink;
         services.linkAccountService.saveToSession(accountToLink);
