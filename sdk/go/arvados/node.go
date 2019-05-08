@@ -12,10 +12,10 @@ type Node struct {
 	Domain     string         `json:"domain"`
 	Hostname   string         `json:"hostname"`
 	IPAddress  string         `json:"ip_address"`
-	LastPingAt *time.Time     `json:"last_ping_at,omitempty"`
+	LastPingAt *time.Time     `json:"last_ping_at"`
 	SlotNumber int            `json:"slot_number"`
 	Status     string         `json:"status"`
-	JobUUID    string         `json:"job_uuid,omitempty"`
+	JobUUID    string         `json:"job_uuid"`
 	Properties NodeProperties `json:"properties"`
 }
 
