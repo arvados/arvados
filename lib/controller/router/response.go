@@ -7,10 +7,14 @@ package router
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
+	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 )
+
+const rfc3339NanoFixed = "2006-01-02T15:04:05.000000000Z07:00"
 
 type responseOptions struct {
 	Select []string
@@ -40,6 +44,29 @@ func (rtr *router) sendResponse(w http.ResponseWriter, resp interface{}, opts re
 			}
 		}
 		tmp = selected
+	}
+	// Format non-nil timestamps as rfc3339NanoFixed (by default
+	// they will have been encoded to time.RFC3339Nano, which
+	// omits trailing zeroes).
+	for k, v := range tmp {
+		if !strings.HasSuffix(k, "_at") {
+			continue
+		}
+		switch tv := v.(type) {
+		case *time.Time:
+			if tv == nil {
+				break
+			}
+			tmp[k] = tv.Format(rfc3339NanoFixed)
+		case time.Time:
+			tmp[k] = tv.Format(rfc3339NanoFixed)
+		case string:
+			t, err := time.Parse(time.RFC3339Nano, tv)
+			if err != nil {
+				break
+			}
+			tmp[k] = t.Format(rfc3339NanoFixed)
+		}
 	}
 	json.NewEncoder(w).Encode(tmp)
 }
