@@ -69,7 +69,7 @@ func (s *RouterSuite) TestCollectionParams(c *check.C) {
 	c.Check(rw.Code, check.Equals, http.StatusOK)
 	c.Check(jresp["items"], check.FitsTypeOf, []interface{}{})
 
-	_, rw, jresp = s.doRequest(c, token, "POST", `/arvados/v1/collections`, nil, bytes.NewBufferString(`ensure_unique_name=true`))
+	_, rw, jresp = s.doRequest(c, token, "POST", `/arvados/v1/collections`, http.Header{"Content-Type": {"application/x-www-form-urlencoded"}}, bytes.NewBufferString(`ensure_unique_name=true`))
 	c.Check(rw.Code, check.Equals, http.StatusOK)
 	c.Check(jresp["uuid"], check.FitsTypeOf, "")
 

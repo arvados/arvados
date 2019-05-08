@@ -6,6 +6,7 @@ package router
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"mime"
 	"net/http"
@@ -66,9 +67,15 @@ func (rtr *router) loadRequestParams(req *http.Request, attrsKey string) (map[st
 			// as foo=["bar","baz"]?
 		}
 	}
-	if ct, _, err := mime.ParseMediaType(req.Header.Get("Content-Type")); err != nil && ct == "application/json" {
+
+	// Decode body as JSON if Content-Type request header is
+	// missing or application/json.
+	mt := req.Header.Get("Content-Type")
+	if ct, _, err := mime.ParseMediaType(mt); err != nil && mt != "" {
+		return nil, fmt.Errorf("error parsing media type %q: %s", mt, err)
+	} else if (ct == "application/json" || mt == "") && req.ContentLength != 0 {
 		jsonParams := map[string]interface{}{}
-		err := json.NewDecoder(req.Body).Decode(jsonParams)
+		err := json.NewDecoder(req.Body).Decode(&jsonParams)
 		if err != nil {
 			return nil, httpError(http.StatusBadRequest, err)
 		}
