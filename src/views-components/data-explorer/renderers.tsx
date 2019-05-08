@@ -26,6 +26,7 @@ import { toggleIsActive, toggleIsAdmin } from '~/store/users/users-actions';
 import { LinkResource } from '~/models/link';
 import { navigateTo } from '~/store/navigation/navigation-action';
 import { withResourceData } from '~/views-components/data-explorer/with-resources';
+import { extractUuidKind } from '~/models/resource';
 
 const renderName = (item: { name: string; uuid: string, kind: string }) =>
     <Grid container alignItems="center" wrap="nowrap" spacing={16}>

@@ -10,7 +10,6 @@ import {
 import { CollectionIcon } from '~/components/icon/icon';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { BackIcon } from '~/components/icon/icon';
-import { CollectionResource } from '~/models/collection';
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 import { COLLECTIONS_CONTENT_ADDRESS_PANEL_ID } from '~/store/collections-content-address-panel/collections-content-address-panel-actions';
 import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
@@ -19,8 +18,12 @@ import { getIsAdmin } from '~/store/public-favorites/public-favorites-actions';
 import { resourceKindToContextMenuKind, openContextMenu } from '~/store/context-menu/context-menu-actions';
 import { ResourceKind } from '~/models/resource';
 import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
-import { connect, DispatchProp } from 'react-redux';
+import { connect } from 'react-redux';
 import { navigateTo } from '~/store/navigation/navigation-action';
+import { DataColumns } from '~/components/data-table/data-table';
+import { SortDirection } from '~/components/data-table/data-column';
+import { createTree } from '~/models/tree';
+import { ResourceName, ResourceOwner, ResourceLastModifiedDate } from '~/views-components/data-explorer/renderers';
 
 type CssRules = 'backLink' | 'backIcon' | 'card' | 'title' | 'iconHeader' | 'link';
 
@@ -57,6 +60,37 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     }
 });
 
+enum CollectionContentAddressPanelColumnNames {
+    COLLECTION_WITH_THIS_ADDRESS = "Collection with this address",
+    OWNER = "Owner",
+    LAST_MODIFIED = "Last modified"
+}
+
+export const collectionContentAddressPanelColumns: DataColumns<string> = [
+    {
+        name: CollectionContentAddressPanelColumnNames.COLLECTION_WITH_THIS_ADDRESS,
+        selected: true,
+        configurable: true,
+        sortDirection: SortDirection.NONE,
+        filters: createTree(),
+        render: uuid => <ResourceName uuid={uuid} />
+    },
+    {
+        name: CollectionContentAddressPanelColumnNames.OWNER,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ResourceOwner uuid={uuid} />
+    },
+    {
+        name: CollectionContentAddressPanelColumnNames.LAST_MODIFIED,
+        selected: true,
+        configurable: true,
+        sortDirection: SortDirection.DESC,
+        filters: createTree(),
+        render: uuid => <ResourceLastModifiedDate uuid={uuid} />
+    }
+];
 
 export interface CollectionContentAddressMainCardActionProps {
     onContextMenu: (event: React.MouseEvent<any>, uuid: string) => void;
