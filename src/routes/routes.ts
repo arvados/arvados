@@ -34,7 +34,8 @@ export const Routes = {
     GROUPS: '/groups',
     GROUP_DETAILS: `/group/:id(${RESOURCE_UUID_PATTERN})`,
     LINKS: '/links',
-    PUBLIC_FAVORITES: '/public-favorites'
+    PUBLIC_FAVORITES: '/public-favorites',
+    COLLECTIONS_CONTENT_ADDRESS: '/collections/:id',
 };
 
 export const getResourceUrl = (uuid: string) => {
@@ -136,5 +137,8 @@ export const matchGroupDetailsRoute = (route: string) =>
 export const matchLinksRoute = (route: string) =>
     matchPath(route, { path: Routes.LINKS });
 
-export const matchPublicFavorites = (route: string) =>
+export const matchPublicFavoritesRoute = (route: string) =>
     matchPath(route, { path: Routes.PUBLIC_FAVORITES });
+
+export const matchCollectionsContentAddressRoute = (route: string) =>
+    matchPath(route, { path: Routes.COLLECTIONS_CONTENT_ADDRESS });

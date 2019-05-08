@@ -1,0 +1,86 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
+import { ServiceRepository } from '~/services/services';
+import { MiddlewareAPI, Dispatch } from 'redux';
+import { DataExplorerMiddlewareService } from '~/store/data-explorer/data-explorer-middleware-service';
+import { RootState } from '~/store/store';
+import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
+import { getDataExplorer } from '~/store/data-explorer/data-explorer-reducer';
+import { resourcesActions } from '~/store/resources/resources-actions';
+import { FilterBuilder } from '~/services/api/filter-builder';
+import { SortDirection } from '~/components/data-table/data-column';
+import { OrderDirection, OrderBuilder } from '~/services/api/order-builder';
+import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
+import { FavoritePanelColumnNames } from '~/views/favorite-panel/favorite-panel';
+import { GroupContentsResource, GroupContentsResourcePrefix } from '~/services/groups-service/groups-service';
+import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions';
+import { collectionsContentAddressActions } from './collections-content-address-panel-actions';
+
+export class CollectionsWithSameContentAddressMiddlewareService extends DataExplorerMiddlewareService {
+    constructor(private services: ServiceRepository, id: string) {
+        super(id);
+    }
+
+    async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
+        const dataExplorer = getDataExplorer(api.getState().dataExplorer, this.getId());
+        if (!dataExplorer) {
+            api.dispatch(collectionPanelDataExplorerIsNotSet());
+        } else {
+            const sortColumn = getSortColumn(dataExplorer);
+
+            const contentOrder = new OrderBuilder<GroupContentsResource>();
+
+            if (sortColumn && sortColumn.name === FavoritePanelColumnNames.NAME) {
+                const direction = sortColumn.sortDirection === SortDirection.ASC
+                    ? OrderDirection.ASC
+                    : OrderDirection.DESC;
+
+                contentOrder
+                    .addOrder(direction, "name", GroupContentsResourcePrefix.COLLECTION);
+            }
+            try {
+                api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
+                const pathname = api.getState().router.location!.pathname;
+                const contentAddress = pathname.split('/')[2];
+                const response = await this.services.collectionService.list({
+                    limit: dataExplorer.rowsPerPage,
+                    offset: dataExplorer.page * dataExplorer.rowsPerPage,
+                    filters: new FilterBuilder()
+                        .addEqual('portableDataHash', contentAddress)
+                        .getFilters()
+                });
+                api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
+                api.dispatch(resourcesActions.SET_RESOURCES(response.items));
+                api.dispatch(collectionsContentAddressActions.SET_ITEMS({
+                    items: response.items.map((resource: any) => resource.uuid),
+                    itemsAvailable: response.itemsAvailable,
+                    page: Math.floor(response.offset / response.limit),
+                    rowsPerPage: response.limit
+                }));
+            } catch (e) {
+                api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
+                api.dispatch(collectionsContentAddressActions.SET_ITEMS({
+                    items: [],
+                    itemsAvailable: 0,
+                    page: 0,
+                    rowsPerPage: dataExplorer.rowsPerPage
+                }));
+                api.dispatch(couldNotFetchCollections());
+            }
+        }
+    }
+}
+
+const collectionPanelDataExplorerIsNotSet = () =>
+    snackbarActions.OPEN_SNACKBAR({
+        message: 'Collection panel is not ready.',
+        kind: SnackbarKind.ERROR
+    });
+
+const couldNotFetchCollections = () =>
+    snackbarActions.OPEN_SNACKBAR({
+        message: 'Could not fetch collection with this content address.',
+        kind: SnackbarKind.ERROR
+    });

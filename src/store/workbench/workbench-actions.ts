@@ -93,6 +93,7 @@ import { groupDetailsPanelColumns } from '~/views/group-details-panel/group-deta
 import { DataTableFetchMode } from "~/components/data-table/data-table";
 import { loadPublicFavoritePanel, publicFavoritePanelActions } from '~/store/public-favorites-panel/public-favorites-action';
 import { publicFavoritePanelColumns } from '~/views/public-favorites-panel/public-favorites-panel';
+import { loadCollectionsContentAddressPanel, collectionsContentAddressActions } from '~/store/collections-content-address-panel/collections-content-address-panel-actions';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -132,6 +133,7 @@ export const loadWorkbench = () =>
             dispatch(linkPanelActions.SET_COLUMNS({ columns: linkPanelColumns }));
             dispatch(computeNodesActions.SET_COLUMNS({ columns: computeNodePanelColumns }));
             dispatch(apiClientAuthorizationsActions.SET_COLUMNS({ columns: apiClientAuthorizationPanelColumns }));
+            dispatch(collectionsContentAddressActions.SET_COLUMNS({ columns: projectPanelColumns }));
 
             dispatch<any>(initSidePanelTree());
             if (router.location) {
@@ -152,6 +154,11 @@ export const loadFavorites = () =>
             dispatch<any>(loadFavoritePanel());
             dispatch<any>(setSidePanelBreadcrumbs(SidePanelTreeCategory.FAVORITES));
         });
+
+export const loadCollectionContentAddress = handleFirstTimeLoad(
+    async (dispatch: Dispatch<any>) => {
+        await dispatch(loadCollectionsContentAddressPanel());
+    });
 
 export const loadTrash = () =>
     handleFirstTimeLoad(
@@ -255,7 +262,7 @@ export const loadCollection = (uuid: string) =>
                         dispatch(collectionPanelActions.SET_COLLECTION(collection as CollectionResource));
                         dispatch(updateResources([collection]));
                         await dispatch(activateSidePanelTreeItem(collection.ownerUuid));
-                        dispatch(setSidePanelBreadcrumbs(collection.ownerUuid));              
+                        dispatch(setSidePanelBreadcrumbs(collection.ownerUuid));
                         dispatch(loadCollectionPanel(collection.uuid));
                     },
                     SHARED: collection => {
