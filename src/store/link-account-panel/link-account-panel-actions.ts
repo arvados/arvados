@@ -14,6 +14,7 @@ import { UserResource } from "~/models/user";
 import { GroupResource } from "~/models/group";
 import { LinkAccountPanelError, OriginatingUser } from "./link-account-panel-reducer";
 import { navigateToRootProject } from "../navigation/navigation-action";
+import { login, logout } from "~/store/auth/auth-action";
 
 export const linkAccountPanelActions = unionize({
     LINK_INIT: ofType<{ targetUser: UserResource | undefined }>(),
@@ -151,7 +152,8 @@ export const saveAccountLinkData = (t: LinkAccountType) =>
         const accountToLink = {type: t, userUuid: services.authService.getUuid(), token: services.authService.getApiToken()} as AccountToLink;
         services.linkAccountService.saveToSession(accountToLink);
         const auth = getState().auth;
-        services.authService.login(auth.localCluster, auth.remoteHosts[auth.homeCluster]);
+        dispatch(logout());
+        dispatch(login(auth.localCluster, auth.remoteHosts[auth.homeCluster]));
     };
 
 export const getAccountLinkData = () =>
