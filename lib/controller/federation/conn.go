@@ -211,7 +211,10 @@ func (conn *Conn) CollectionGet(ctx context.Context, options arvados.GetOptions)
 			if err != nil {
 				return err
 			}
-			if pdh := portableDataHash(c.ManifestText); pdh != options.UUID {
+			// options.UUID is either hash+size or
+			// hash+size+hints; only hash+size need to
+			// match the computed PDH.
+			if pdh := portableDataHash(c.ManifestText); pdh != options.UUID && !strings.HasPrefix(options.UUID, pdh+"+") {
 				ctxlog.FromContext(ctx).Warnf("bad portable data hash %q received from remote %q (expected %q)", pdh, remoteID, options.UUID)
 				return notFoundError{}
 			}
