@@ -44,7 +44,7 @@ function displayUser(user: UserResource, showCreatedAt: boolean = false) {
     const disp = [];
     disp.push(<span><b>{user.email}</b> ({user.username}, {user.uuid})</span>);
     if (showCreatedAt) {
-        disp.push(<span> created on <b>{formatDate(user.createdAt)}</b></span>);
+        disp.push(<span> created on <b>{formatDate(user.createdAt, true)}</b></span>);
     }
     return disp;
 }

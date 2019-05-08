@@ -4,10 +4,16 @@
 
 import { PropertyValue } from "~/models/search-bar";
 
-export const formatDate = (isoDate?: string | null) => {
+export const formatDate = (isoDate?: string | null, utc: boolean = false) => {
     if (isoDate) {
         const date = new Date(isoDate);
-        const text = date.toLocaleString();
+        let text: string;
+        if (utc) {
+            text = date.toUTCString();
+        }
+        else {
+            text = date.toLocaleString();
+        }
         return text === 'Invalid Date' ? "(none)" : text;
     }
     return "(none)";
