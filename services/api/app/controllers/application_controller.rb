@@ -53,8 +53,6 @@ class ApplicationController < ActionController::Base
   before_action(:render_404_if_no_object,
                 except: [:index, :create] + ERROR_ACTIONS)
 
-  theme Rails.configuration.arvados_theme
-
   attr_writer :resource_attrs
 
   begin
@@ -83,14 +81,11 @@ class ApplicationController < ActionController::Base
 
   def default_url_options
     options = {}
-    if Rails.configuration.host
-      options[:host] = Rails.configuration.host
-    end
-    if Rails.configuration.port
-      options[:port] = Rails.configuration.port
-    end
-    if Rails.configuration.protocol
-      options[:protocol] = Rails.configuration.protocol
+    if Rails.configuration.Services.Controller.ExternalURL != URI("")
+      exturl = Rails.configuration.Services.Controller.ExternalURL
+      options[:host] = exturl.host
+      options[:port] = exturl.port
+      options[:protocol] = exturl.scheme
     end
     options
   end
@@ -306,7 +301,7 @@ class ApplicationController < ActionController::Base
       limit_query.each do |record|
         new_limit += 1
         read_total += record.read_length.to_i
-        if read_total >= Rails.configuration.max_index_database_read
+        if read_total >= Rails.configuration.API.MaxIndexDatabaseRead
           new_limit -= 1 if new_limit > 1
           @limit = new_limit
           break
@@ -419,8 +414,7 @@ class ApplicationController < ActionController::Base
   end
 
   def disable_api_methods
-    if Rails.configuration.disable_api_methods.
-        include?(controller_name + "." + action_name)
+    if Rails.configuration.API.DisabledAPIs.include?(controller_name + "." + action_name)
       send_error("Disabled", status: 404)
     end
   end

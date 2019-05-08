@@ -130,14 +130,14 @@ class BlobTest < ActiveSupport::TestCase
       expire: 0x7fffffff,
     }
 
-    original_ttl = Rails.configuration.blob_signature_ttl
-    Rails.configuration.blob_signature_ttl = original_ttl*2
+    original_ttl = Rails.configuration.Collections.BlobSigningTTL
+    Rails.configuration.Collections.BlobSigningTTL = original_ttl*2
     signed2 = Blob.sign_locator @@known_locator, {
       api_token: @@known_token,
       key: @@known_key,
       expire: 0x7fffffff,
     }
-    Rails.configuration.blob_signature_ttl = original_ttl
+    Rails.configuration.Collections.BlobSigningTTL = original_ttl
 
     assert_not_equal signed, signed2
   end

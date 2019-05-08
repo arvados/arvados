@@ -104,7 +104,11 @@ navbar:
     - Ruby:
       - sdk/ruby/index.html.textile.liquid
       - sdk/ruby/example.html.textile.liquid
-    - Java:
+    - Java v2:
+      - sdk/java-v2/index.html.textile.liquid
+      - sdk/java-v2/example.html.textile.liquid
+      - sdk/java-v2/javadoc.html.textile.liquid
+    - Java v1:
       - sdk/java/index.html.textile.liquid
       - sdk/java/example.html.textile.liquid
   api:
@@ -154,8 +158,11 @@ navbar:
   admin:
     - Topics:
       - admin/index.html.textile.liquid
+    - Configuration:
+      - admin/config.html.textile.liquid
     - Upgrading and migrations:
       - admin/upgrading.html.textile.liquid
+      - admin/config-migration.html.textile.liquid
       - install/migrate-docker19.html.textile.liquid
       - admin/upgrade-crunch2.html.textile.liquid
     - Users and Groups:
@@ -174,6 +181,8 @@ navbar:
     - Other:
       - admin/collection-versioning.html.textile.liquid
       - admin/federation.html.textile.liquid
+      - admin/controlling-container-reuse.html.textile.liquid
+      - admin/logs-table-management.html.textile.liquid
   installguide:
     - Overview:
       - install/index.html.textile.liquid

@@ -34,7 +34,7 @@ class User < ArvadosModel
   after_create :add_system_group_permission_link
   after_create :invalidate_permissions_cache
   after_create :auto_setup_new_user, :if => Proc.new { |user|
-    Rails.configuration.auto_setup_new_users and
+    Rails.configuration.Users.AutoSetupNewUsers and
     (user.uuid != system_user_uuid) and
     (user.uuid != anonymous_user_uuid)
   }
@@ -81,7 +81,7 @@ class User < ArvadosModel
 
   def is_invited
     !!(self.is_active ||
-       Rails.configuration.new_users_are_active ||
+       Rails.configuration.Users.NewUsersAreActive ||
        self.groups_i_can(:read).select { |x| x.match(/-f+$/) }.first)
   end
 
@@ -358,15 +358,15 @@ class User < ArvadosModel
     current_user.andand.is_admin or
       (self == current_user &&
        self.redirect_to_user_uuid.nil? &&
-       self.is_active == Rails.configuration.new_users_are_active)
+       self.is_active == Rails.configuration.Users.NewUsersAreActive)
   end
 
   def check_auto_admin
     return if self.uuid.end_with?('anonymouspublic')
     if (User.where("email = ?",self.email).where(:is_admin => true).count == 0 and
-        Rails.configuration.auto_admin_user and self.email == Rails.configuration.auto_admin_user) or
+        !Rails.configuration.Users.AutoAdminUserWithEmail.empty? and self.email == Rails.configuration.Users["AutoAdminUserWithEmail"]) or
        (User.where("uuid not like '%-000000000000000'").where(:is_admin => true).count == 0 and
-        Rails.configuration.auto_admin_first_user)
+        Rails.configuration.Users.AutoAdminFirstUser)
       self.is_admin = true
       self.is_active = true
     end
@@ -381,7 +381,7 @@ class User < ArvadosModel
     quoted_name = self.class.connection.quote_string(basename)
     next_username = basename
     next_suffix = 1
-    while Rails.configuration.auto_setup_name_blacklist.include?(next_username)
+    while Rails.configuration.Users.AutoSetupUsernameBlacklist.include?(next_username)
       next_suffix += 1
       next_username = "%s%i" % [basename, next_suffix]
     end
@@ -493,7 +493,7 @@ class User < ArvadosModel
   # create login permission for the given vm_uuid, if it does not already exist
   def create_vm_login_permission_link(vm_uuid, repo_name)
     # vm uuid is optional
-    return if !vm_uuid
+    return if vm_uuid == ""
 
     vm = VirtualMachine.where(uuid: vm_uuid).first
     if !vm
@@ -563,10 +563,10 @@ class User < ArvadosModel
   def auto_setup_new_user
     setup(openid_prefix: Rails.configuration.default_openid_prefix)
     if username
-      create_vm_login_permission_link(Rails.configuration.auto_setup_new_users_with_vm_uuid,
+      create_vm_login_permission_link(Rails.configuration.Users.AutoSetupNewUsersWithVmUUID,
                                       username)
       repo_name = "#{username}/#{username}"
-      if Rails.configuration.auto_setup_new_users_with_repository and
+      if Rails.configuration.Users.AutoSetupNewUsersWithRepository and
           Repository.where(name: repo_name).first.nil?
         repo = Repository.create!(name: repo_name, owner_uuid: uuid)
         Link.create!(tail_uuid: uuid, head_uuid: repo.uuid,
@@ -579,7 +579,7 @@ class User < ArvadosModel
   def send_profile_created_notification
     if self.prefs_changed?
       if self.prefs_was.andand.empty? || !self.prefs_was.andand['profile']
-        profile_notification_address = Rails.configuration.user_profile_notification_address
+        profile_notification_address = Rails.configuration.Users.UserProfileNotificationAddress
         ProfileNotifier.profile_created(self, profile_notification_address).deliver_now if profile_notification_address
       end
     end

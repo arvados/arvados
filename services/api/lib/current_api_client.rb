@@ -42,25 +42,25 @@ module CurrentApiClient
   end
 
   def system_user_uuid
-    [Server::Application.config.uuid_prefix,
+    [Rails.configuration.ClusterID,
      User.uuid_prefix,
      '000000000000000'].join('-')
   end
 
   def system_group_uuid
-    [Server::Application.config.uuid_prefix,
+    [Rails.configuration.ClusterID,
      Group.uuid_prefix,
      '000000000000000'].join('-')
   end
 
   def anonymous_group_uuid
-    [Server::Application.config.uuid_prefix,
+    [Rails.configuration.ClusterID,
      Group.uuid_prefix,
      'anonymouspublic'].join('-')
   end
 
   def anonymous_user_uuid
-    [Server::Application.config.uuid_prefix,
+    [Rails.configuration.ClusterID,
      User.uuid_prefix,
      'anonymouspublic'].join('-')
   end
@@ -105,7 +105,7 @@ module CurrentApiClient
   end
 
   def all_users_group_uuid
-    [Server::Application.config.uuid_prefix,
+    [Rails.configuration.ClusterID,
      Group.uuid_prefix,
      'fffffffffffffff'].join('-')
   end

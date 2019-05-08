@@ -122,6 +122,7 @@ sdk/go/stats
 sdk/go/crunchrunner
 sdk/cwl
 sdk/R
+sdk/java-v2
 tools/sync-groups
 tools/crunchstat-summary
 tools/crunchstat-summary:py3
@@ -394,7 +395,7 @@ start_services() {
         return 0
     fi
     . "$VENVDIR/bin/activate"
-    echo 'Starting API, keepproxy, keep-web, ws, arv-git-httpd, and nginx ssl proxy...'
+    echo 'Starting API, controller, keepproxy, keep-web, arv-git-httpd, ws, and nginx ssl proxy...'
     if [[ ! -d "$WORKSPACE/services/api/log" ]]; then
 	mkdir -p "$WORKSPACE/services/api/log"
     fi
@@ -749,6 +750,7 @@ do_test_once() {
     title "test $1"
     timer_reset
 
+    result=
     if which deactivate >/dev/null; then deactivate; fi
     if ! . "$VENVDIR/bin/activate"
     then
@@ -821,6 +823,7 @@ do_install_once() {
     title "install $1"
     timer_reset
 
+    result=
     if which deactivate >/dev/null; then deactivate; fi
     if [[ "$1" != "env" ]] && ! . "$VENVDIR/bin/activate"; then
         result=1
@@ -955,6 +958,7 @@ install_services/api() {
             || return 1
 
     cd "$WORKSPACE/services/api" \
+        && RAILS_ENV=test bundle exec rails db:environment:set \
         && RAILS_ENV=test bundle exec rake db:drop \
         && RAILS_ENV=test bundle exec rake db:setup \
         && RAILS_ENV=test bundle exec rake db:fixtures:load
@@ -971,6 +975,7 @@ pythonstuff=(
     services/fuse
     services/nodemanager
     tools/crunchstat-summary
+    tools/crunchstat-summary:py3
 )
 
 declare -a gostuff
@@ -1046,7 +1051,11 @@ test_gofmt() {
 test_services/api() {
     rm -f "$WORKSPACE/services/api/git-commit.version"
     cd "$WORKSPACE/services/api" \
+<<<<<<< HEAD
         && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec bin/rails test TESTOPTS='-v -d' ${testargs[services/api]}
+=======
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test TESTOPTS='-v -d' ${testargs[services/api]}
+>>>>>>> master
 }
 
 test_sdk/ruby() {
@@ -1065,6 +1074,10 @@ test_sdk/cli() {
     cd "$WORKSPACE/sdk/cli" \
         && mkdir -p /tmp/keep \
         && KEEP_LOCAL_STORE=/tmp/keep bundle exec rake test TESTOPTS=-v ${testargs[sdk/cli]}
+}
+
+test_sdk/java-v2() {
+    cd "$WORKSPACE/sdk/java-v2" && gradle test
 }
 
 test_services/login-sync() {
@@ -1164,6 +1177,7 @@ test_all() {
     do_test sdk/R
     do_test sdk/cli
     do_test services/login-sync
+    do_test sdk/java-v2
     do_test services/nodemanager_integration
     for p in "${pythonstuff[@]}"
     do

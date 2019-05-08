@@ -17,7 +17,7 @@ class CommitAncestor < ActiveRecord::Base
   protected
 
   def ask_git_whether_is
-    @gitdirbase = Rails.configuration.git_repositories_dir
+    @gitdirbase = Rails.configuration.Git.Repositories
     self.is = nil
     Dir.foreach @gitdirbase do |repo|
       next if repo.match(/^\./)

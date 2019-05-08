@@ -74,6 +74,7 @@ func (suite *IntegrationSuite) TestGetLockUnlockCancel(c *check.C) {
 			defer wg.Done()
 			err := cq.Unlock(uuid)
 			c.Check(err, check.NotNil)
+			c.Check(err, check.ErrorMatches, ".*cannot unlock when Queued*.")
 
 			err = cq.Lock(uuid)
 			c.Check(err, check.IsNil)
@@ -101,9 +102,6 @@ func (suite *IntegrationSuite) TestGetLockUnlockCancel(c *check.C) {
 		}()
 	}
 	wg.Wait()
-
-	err = cq.Cancel(arvadostest.CompletedContainerUUID)
-	c.Check(err, check.ErrorMatches, `.*State cannot change from Complete to Cancelled.*`)
 }
 
 func (suite *IntegrationSuite) TestCancelIfNoInstanceType(c *check.C) {

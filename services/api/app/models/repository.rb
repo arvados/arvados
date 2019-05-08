@@ -49,7 +49,7 @@ class Repository < ArvadosModel
     # prefers bare repositories over checkouts.
     [["%s.git"], ["%s", ".git"]].each do |repo_base, *join_args|
       [:uuid, :name].each do |path_attr|
-        git_dir = File.join(Rails.configuration.git_repositories_dir,
+        git_dir = File.join(Rails.configuration.Git.Repositories,
                             repo_base % send(path_attr), *join_args)
         return git_dir if File.exist?(git_dir)
       end
@@ -98,22 +98,27 @@ class Repository < ArvadosModel
   end
 
   def ssh_clone_url
-    _clone_url :git_repo_ssh_base, 'git@git.%s.arvadosapi.com:'
+    _clone_url Rails.configuration.Services.GitSSH.andand.ExternalURL, 'ssh://git@git.%s.arvadosapi.com'
   end
 
   def https_clone_url
-    _clone_url :git_repo_https_base, 'https://git.%s.arvadosapi.com/'
+    _clone_url Rails.configuration.Services.GitHTTP.andand.ExternalURL, 'https://git.%s.arvadosapi.com/'
   end
 
   def _clone_url config_var, default_base_fmt
-    configured_base = Rails.configuration.send config_var
-    return nil if configured_base == false
-    prefix = new_record? ? Rails.configuration.uuid_prefix : uuid[0,5]
-    if prefix == Rails.configuration.uuid_prefix and configured_base != true
-      base = configured_base
-    else
-      base = default_base_fmt % prefix
+    if not config_var
+      return ""
     end
-    '%s%s.git' % [base, name]
+    prefix = new_record? ? Rails.configuration.ClusterID : uuid[0,5]
+    if prefix == Rails.configuration.ClusterID and config_var != URI("")
+      base = config_var
+    else
+      base = URI(default_base_fmt % prefix)
+    end
+    if base.scheme == "ssh"
+      '%s@%s:%s.git' % [base.user, base.host, name]
+    else
+      '%s%s.git' % [base, name]
+    end
   end
 end

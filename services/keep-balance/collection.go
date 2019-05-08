@@ -43,6 +43,18 @@ func EachCollection(c *arvados.Client, pageSize int, f func(arvados.Collection) 
 		return err
 	}
 
+	// Note the obvious way to get all collections (sorting by
+	// UUID) would be much easier, but would lose data: If a
+	// client were to move files from collection with uuid="zzz"
+	// to a collection with uuid="aaa" around the time when we
+	// were fetching the "mmm" page, we would never see those
+	// files' block IDs at all -- even if the client is careful to
+	// save "aaa" before saving "zzz".
+	//
+	// Instead, we get pages in modified_at order. Collections
+	// that are modified during the run will be re-fetched in a
+	// subsequent page.
+
 	limit := pageSize
 	if limit <= 0 {
 		// Use the maximum page size the server allows

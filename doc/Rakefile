@@ -6,7 +6,7 @@
 require "rubygems"
 require "colorize"
 
-task :generate => [ :realclean, 'sdk/python/arvados/index.html', 'sdk/R/arvados/index.html' ] do
+task :generate => [ :realclean, 'sdk/python/arvados/index.html', 'sdk/R/arvados/index.html', 'sdk/java-v2/javadoc/index.html' ] do
   vars = ['baseurl', 'arvados_cluster_uuid', 'arvados_api_host', 'arvados_workbench_host']
   vars.each do |v|
     if ENV[v]
@@ -87,6 +87,27 @@ EOF
   end
 end
 
+file "sdk/java-v2/javadoc/index.html" do |t|
+  `which java`
+  if $? == 0
+    `which gradle`
+    if $? != 0
+      puts "Warning: gradle not found, java sdk documentation will not be generated".colorize(:light_red)
+    else
+      tgt = Dir.pwd
+      docfiles = []
+      Dir.chdir("../sdk/java-v2") do
+        STDERR.puts `gradle javadoc 2>&1`
+        raise if $? != 0
+      end
+      cp_r("../sdk/java-v2/build/docs/javadoc", "sdk/java-v2")
+      raise if $? != 0
+    end
+  else
+    puts "Warning: java not found, java sdk documentation will not be generated".colorize(:light_red)
+  end
+end
+
 task :linkchecker => [ :generate ] do
   Dir.chdir(".site") do
     `which linkchecker`
@@ -101,6 +122,7 @@ end
 task :clean do
   rm_rf "sdk/python/arvados"
   rm_rf "sdk/R"
+  rm_rf "sdk/java-v2/javadoc"
 end
 
 require "zenweb/tasks"

@@ -8,12 +8,16 @@ import (
 	"bytes"
 	"crypto/md5"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"log"
 	"math"
+	"os"
 	"runtime"
 	"sort"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
@@ -31,9 +35,11 @@ import (
 // BlobSignatureTTL; and all N existing replicas of a given data block
 // are in the N best positions in rendezvous probe order.
 type Balancer struct {
-	Logger  *logrus.Logger
-	Dumper  *logrus.Logger
+	Logger  logrus.FieldLogger
+	Dumper  logrus.FieldLogger
 	Metrics *metrics
+
+	LostBlocksFile string
 
 	*BlockStateMap
 	KeepServices       map[string]*KeepService
@@ -48,6 +54,7 @@ type Balancer struct {
 	errors        []error
 	stats         balancerStats
 	mutex         sync.Mutex
+	lostBlocks    io.Writer
 }
 
 // Run performs a balance operation using the given config and
@@ -63,6 +70,30 @@ func (bal *Balancer) Run(config Config, runOptions RunOptions) (nextRunOptions R
 	nextRunOptions = runOptions
 
 	defer bal.time("sweep", "wall clock time to run one full sweep")()
+
+	var lbFile *os.File
+	if bal.LostBlocksFile != "" {
+		tmpfn := bal.LostBlocksFile + ".tmp"
+		lbFile, err = os.OpenFile(tmpfn, os.O_CREATE|os.O_WRONLY, 0777)
+		if err != nil {
+			return
+		}
+		defer lbFile.Close()
+		err = syscall.Flock(int(lbFile.Fd()), syscall.LOCK_EX|syscall.LOCK_NB)
+		if err != nil {
+			return
+		}
+		defer func() {
+			// Remove the tempfile only if we didn't get
+			// as far as successfully renaming it.
+			if lbFile != nil {
+				os.Remove(tmpfn)
+			}
+		}()
+		bal.lostBlocks = lbFile
+	} else {
+		bal.lostBlocks = ioutil.Discard
+	}
 
 	if len(config.KeepServiceList.Items) > 0 {
 		err = bal.SetKeepServices(config.KeepServiceList)
@@ -106,6 +137,17 @@ func (bal *Balancer) Run(config Config, runOptions RunOptions) (nextRunOptions R
 	bal.PrintStatistics()
 	if err = bal.CheckSanityLate(); err != nil {
 		return
+	}
+	if lbFile != nil {
+		err = lbFile.Sync()
+		if err != nil {
+			return
+		}
+		err = os.Rename(bal.LostBlocksFile+".tmp", bal.LostBlocksFile)
+		if err != nil {
+			return
+		}
+		lbFile = nil
 	}
 	if runOptions.CommitPulls {
 		err = bal.CommitPulls(&config.Client)
@@ -206,6 +248,24 @@ func (bal *Balancer) CheckSanityEarly(c *arvados.Client) error {
 			return fmt.Errorf("config error: %s: proxy servers cannot be balanced", srv)
 		}
 	}
+
+	var checkPage arvados.CollectionList
+	if err = c.RequestAndDecode(&checkPage, "GET", "arvados/v1/collections", nil, arvados.ResourceListParams{
+		Limit:              new(int),
+		Count:              "exact",
+		IncludeTrash:       true,
+		IncludeOldVersions: true,
+		Filters: []arvados.Filter{{
+			Attr:     "modified_at",
+			Operator: "=",
+			Operand:  nil,
+		}},
+	}); err != nil {
+		return err
+	} else if n := checkPage.ItemsAvailable; n > 0 {
+		return fmt.Errorf("%d collections exist with null modified_at; cannot fetch reliably", n)
+	}
+
 	return nil
 }
 
@@ -332,7 +392,7 @@ func (bal *Balancer) GetCurrentState(c *arvados.Client, pageSize, bufs int) erro
 		defer wg.Done()
 		for coll := range collQ {
 			err := bal.addCollection(coll)
-			if err != nil {
+			if err != nil || len(errs) > 0 {
 				select {
 				case errs <- err:
 				default:
@@ -383,17 +443,20 @@ func (bal *Balancer) GetCurrentState(c *arvados.Client, pageSize, bufs int) erro
 func (bal *Balancer) addCollection(coll arvados.Collection) error {
 	blkids, err := coll.SizedDigests()
 	if err != nil {
-		bal.mutex.Lock()
-		bal.errors = append(bal.errors, fmt.Errorf("%v: %v", coll.UUID, err))
-		bal.mutex.Unlock()
-		return nil
+		return fmt.Errorf("%v: %v", coll.UUID, err)
 	}
 	repl := bal.DefaultReplication
 	if coll.ReplicationDesired != nil {
 		repl = *coll.ReplicationDesired
 	}
 	debugf("%v: %d block x%d", coll.UUID, len(blkids), repl)
-	bal.BlockStateMap.IncreaseDesired(coll.StorageClassesDesired, repl, blkids)
+	// Pass pdh to IncreaseDesired only if LostBlocksFile is being
+	// written -- otherwise it's just a waste of memory.
+	pdh := ""
+	if bal.LostBlocksFile != "" {
+		pdh = coll.PortableDataHash
+	}
+	bal.BlockStateMap.IncreaseDesired(pdh, coll.StorageClassesDesired, repl, blkids)
 	return nil
 }
 
@@ -444,7 +507,7 @@ func (bal *Balancer) ComputeChangeSets() {
 
 func (bal *Balancer) setupLookupTables() {
 	bal.serviceRoots = make(map[string]string)
-	bal.classes = []string{"default"}
+	bal.classes = defaultClasses
 	bal.mountsByClass = map[string]map[*KeepMount]bool{"default": {}}
 	bal.mounts = 0
 	for _, srv := range bal.KeepServices {
@@ -732,17 +795,17 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 				From:        slot.mnt,
 			})
 			change = changeTrash
-		case len(blk.Replicas) == 0:
-			change = changeNone
-		case slot.repl == nil && slot.want && !slot.mnt.ReadOnly:
+		case len(blk.Replicas) > 0 && slot.repl == nil && slot.want && !slot.mnt.ReadOnly:
 			slot.mnt.KeepService.AddPull(Pull{
 				SizedDigest: blkid,
 				From:        blk.Replicas[0].KeepMount.KeepService,
 				To:          slot.mnt,
 			})
 			change = changePull
-		default:
+		case slot.repl != nil:
 			change = changeStay
+		default:
+			change = changeNone
 		}
 		if bal.Dumper != nil {
 			var mtime int64
@@ -754,7 +817,7 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 		}
 	}
 	if bal.Dumper != nil {
-		bal.Dumper.Printf("%s have=%d want=%v %s", blkid, have, want, strings.Join(changes, " "))
+		bal.Dumper.Printf("%s refs=%d have=%d want=%v %v %v", blkid, blk.RefCount, have, want, blk.Desired, changes)
 	}
 	return balanceResult{
 		blk:        blk,
@@ -867,6 +930,11 @@ func (bal *Balancer) collectStatistics(results <-chan balanceResult) {
 			s.lost.replicas -= surplus
 			s.lost.blocks++
 			s.lost.bytes += bytes * int64(-surplus)
+			fmt.Fprintf(bal.lostBlocks, "%s", strings.SplitN(string(result.blkid), "+", 2)[0])
+			for pdh := range result.blk.Refs {
+				fmt.Fprintf(bal.lostBlocks, " %s", pdh)
+			}
+			fmt.Fprint(bal.lostBlocks, "\n")
 		case surplus < 0:
 			s.underrep.replicas -= surplus
 			s.underrep.blocks++

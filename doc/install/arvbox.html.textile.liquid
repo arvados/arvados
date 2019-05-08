@@ -29,29 +29,32 @@ h2. Usage
 
 <pre>
 $ arvbox
-Arvados-in-a-box                      http://arvados.org
+Arvados-in-a-box             https://doc.arvados.org/install/arvbox.html
 
-start|run <config> [tag]  start arvbox container
-stop       stop arvbox container
-restart <config>  stop, then run again
-status     print some information about current arvbox
-ip         print arvbox docker container ip address
-host       print arvbox published host
-shell      enter arvbox shell
-open       open arvbox workbench in a web browser
-root-cert  get copy of root certificate
-update  <config> stop, pull latest image, run
-build   <config> build arvbox Docker image
-reboot  <config> stop, build arvbox Docker image, run
-rebuild <config> build arvbox Docker image, no layer cache
-reset      delete arvbox arvados data (be careful!)
-destroy    delete all arvbox code and data (be careful!)
-log <service> tail log of specified service
-ls <options>  list directories inside arvbox
-cat <files>   get contents of files inside arvbox
-pipe       run a bash script piped in from stdin
-sv <start|stop|restart> <service> change state of service inside arvbox
-clone <from> <to>   clone an arvbox
+start|run <config> [tag]   start arvbox container
+stop               stop arvbox container
+restart <config>   stop, then run again
+status             print some information about current arvbox
+ip                 print arvbox docker container ip address
+host               print arvbox published host
+shell              enter shell as root
+ashell             enter shell as 'arvbox'
+psql               enter postgres console
+open               open arvbox workbench in a web browser
+root-cert          get copy of root certificate
+update  <config>   stop, pull latest image, run
+build   <config>   build arvbox Docker image
+reboot  <config>   stop, build arvbox Docker image, run
+rebuild <config>   build arvbox Docker image, no layer cache
+reset              delete arvbox arvados data (be careful!)
+destroy            delete all arvbox code and data (be careful!)
+log <service>      tail log of specified service
+ls <options>       list directories inside arvbox
+cat <files>        get contents of files inside arvbox
+pipe               run a bash script piped in from stdin
+sv <start|stop|restart> <service>
+                   change state of service inside arvbox
+clone <from> <to>  clone dev arvbox
 </pre>
 
 h2. Install root certificate
@@ -85,7 +88,11 @@ Demo configuration.  Boots a complete Arvados environment inside the container. 
 
 h3. test
 
-Run the test suite.
+Starts postgres and initializes the API server, then runs the Arvados test suite.  Will pass command line arguments to test runner.  Supports test runner interactive mode.
+
+h3. devenv
+
+Starts a minimal container with no services and the host's $HOME bind mounted inside the container, then enters an interactive login shell.  Intended to make it convenient to use tools installed in arvbox that don't require services.
 
 h3. publicdev
 

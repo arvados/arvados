@@ -38,8 +38,8 @@ Server::Application.configure do
     end
 
     params_s = SafeJSON.dump(params)
-    if params_s.length > Rails.configuration.max_request_log_params_size
-      payload[:params_truncated] = params_s[0..Rails.configuration.max_request_log_params_size] + "[...]"
+    if params_s.length > Rails.configuration.SystemLogs["MaxRequestLogParamsSize"]
+      payload[:params_truncated] = params_s[0..Rails.configuration.SystemLogs["MaxRequestLogParamsSize"]] + "[...]"
     else
       payload[:params] = params
     end

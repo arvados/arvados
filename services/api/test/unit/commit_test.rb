@@ -78,7 +78,7 @@ class CommitTest < ActiveSupport::TestCase
 
   test 'tag_in_internal_repository creates and updates tags in internal.git' do
     authorize_with :active
-    gitint = "git --git-dir #{Rails.configuration.git_internal_dir}"
+    gitint = "git --git-dir #{Rails.configuration.Containers.JobsAPI.GitInternalDir}"
     IO.read("|#{gitint} tag -d testtag 2>/dev/null") # "no such tag", fine
     assert_match(/^fatal: /, IO.read("|#{gitint} show testtag 2>&1"))
     refute $?.success?
@@ -88,7 +88,7 @@ class CommitTest < ActiveSupport::TestCase
   end
 
   def with_foo_repository
-    Dir.chdir("#{Rails.configuration.git_repositories_dir}/#{repositories(:foo).uuid}") do
+    Dir.chdir("#{Rails.configuration.Git.Repositories}/#{repositories(:foo).uuid}") do
       must_pipe("git checkout master 2>&1")
       yield
     end
@@ -107,7 +107,7 @@ class CommitTest < ActiveSupport::TestCase
       must_pipe("git -c user.email=x@x -c user.name=X commit -m -")
     end
     Commit.tag_in_internal_repository 'active/foo', sha1, tag
-    gitint = "git --git-dir #{Rails.configuration.git_internal_dir.shellescape}"
+    gitint = "git --git-dir #{Rails.configuration.Containers.JobsAPI.GitInternalDir.shellescape}"
     assert_match(/^commit /, IO.read("|#{gitint} show #{tag.shellescape}"))
     assert $?.success?
   end
@@ -123,7 +123,7 @@ class CommitTest < ActiveSupport::TestCase
       must_pipe("git reset --hard HEAD^")
     end
     Commit.tag_in_internal_repository 'active/foo', sha1, tag
-    gitint = "git --git-dir #{Rails.configuration.git_internal_dir.shellescape}"
+    gitint = "git --git-dir #{Rails.configuration.Containers.JobsAPI.GitInternalDir.shellescape}"
     assert_match(/^commit /, IO.read("|#{gitint} show #{tag.shellescape}"))
     assert $?.success?
   end

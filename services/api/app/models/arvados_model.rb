@@ -411,7 +411,7 @@ class ArvadosModel < ApplicationRecord
   end
 
   def logged_attributes
-    attributes.except(*Rails.configuration.unlogged_attributes)
+    attributes.except(*Rails.configuration.AuditLogs.UnloggedAttributes)
   end
 
   def self.full_text_searchable_columns
@@ -735,7 +735,7 @@ class ArvadosModel < ApplicationRecord
   end
 
   def self.uuid_like_pattern
-    "#{Rails.configuration.uuid_prefix}-#{uuid_prefix}-_______________"
+    "#{Rails.configuration.ClusterID}-#{uuid_prefix}-_______________"
   end
 
   def self.uuid_regex
@@ -814,8 +814,8 @@ class ArvadosModel < ApplicationRecord
   end
 
   def is_audit_logging_enabled?
-    return !(Rails.configuration.max_audit_log_age.to_i == 0 &&
-             Rails.configuration.max_audit_log_delete_batch.to_i > 0)
+    return !(Rails.configuration.AuditLogs.MaxAge.to_i == 0 &&
+             Rails.configuration.AuditLogs.MaxDeleteBatch.to_i > 0)
   end
 
   def log_start_state

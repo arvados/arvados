@@ -110,7 +110,7 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "new username set avoiding blacklist" do
-    Rails.configuration.auto_setup_name_blacklist = ["root"]
+    Rails.configuration.Users.AutoSetupUsernameBlacklist = ["root"]
     check_new_username_setting("root", "root2")
   end
 
@@ -157,8 +157,8 @@ class UserTest < ActiveSupport::TestCase
    [false, 'bar@example.com', nil, true],
    [true, 'foo@example.com', true, nil],
    [true, 'bar@example.com', true, true],
-   [false, false, nil, nil],
-   [true, false, true, nil]
+   [false, '', nil, nil],
+   [true, '', true, nil]
   ].each do |auto_admin_first_user_config, auto_admin_user_config, foo_should_be_admin, bar_should_be_admin|
     # In each case, 'foo' is created first, then 'bar', then 'bar2', then 'baz'.
     test "auto admin with auto_admin_first=#{auto_admin_first_user_config} auto_admin=#{auto_admin_user_config}" do
@@ -170,8 +170,8 @@ class UserTest < ActiveSupport::TestCase
         assert_equal 0, @all_users.count, "No admin users should exist (except for the system user)"
       end
 
-      Rails.configuration.auto_admin_first_user = auto_admin_first_user_config
-      Rails.configuration.auto_admin_user = auto_admin_user_config
+      Rails.configuration.Users.AutoAdminFirstUser = auto_admin_first_user_config
+      Rails.configuration.Users.AutoAdminUserWithEmail = auto_admin_user_config
 
       # See if the foo user has is_admin
       foo = User.new
@@ -384,15 +384,15 @@ class UserTest < ActiveSupport::TestCase
     test "create new user with auto setup #{active} #{email} #{auto_setup_vm} #{auto_setup_repo}" do
       set_user_from_auth :admin
 
-      Rails.configuration.auto_setup_new_users = true
+      Rails.configuration.Users.AutoSetupNewUsers = true
 
       if auto_setup_vm
-        Rails.configuration.auto_setup_new_users_with_vm_uuid = virtual_machines(:testvm)['uuid']
+        Rails.configuration.Users.AutoSetupNewUsersWithVmUUID = virtual_machines(:testvm)['uuid']
       else
-        Rails.configuration.auto_setup_new_users_with_vm_uuid = false
+        Rails.configuration.Users.AutoSetupNewUsersWithVmUUID = ""
       end
 
-      Rails.configuration.auto_setup_new_users_with_repository = auto_setup_repo
+      Rails.configuration.Users.AutoSetupNewUsersWithRepository = auto_setup_repo
 
       create_user_and_verify_setup_and_notifications active, new_user_recipients, inactive_recipients, email, expect_username
     end
@@ -625,12 +625,12 @@ class UserTest < ActiveSupport::TestCase
   end
 
   def create_user_and_verify_setup_and_notifications (active, new_user_recipients, inactive_recipients, email, expect_username)
-    Rails.configuration.new_user_notification_recipients = new_user_recipients
-    Rails.configuration.new_inactive_user_notification_recipients = inactive_recipients
+    Rails.configuration.Users.NewUserNotificationRecipients = new_user_recipients
+    Rails.configuration.Users.NewInactiveUserNotificationRecipients = inactive_recipients
 
     ActionMailer::Base.deliveries = []
 
-    can_setup = (Rails.configuration.auto_setup_new_users and
+    can_setup = (Rails.configuration.Users.AutoSetupNewUsers and
                  (not expect_username.nil?))
     expect_repo_name = "#{expect_username}/#{expect_username}"
     prior_repo = Repository.where(name: expect_repo_name).first
@@ -643,21 +643,21 @@ class UserTest < ActiveSupport::TestCase
     assert_equal(expect_username, user.username)
 
     # check user setup
-    verify_link_exists(Rails.configuration.auto_setup_new_users || active,
+    verify_link_exists(Rails.configuration.Users.AutoSetupNewUsers || active,
                        groups(:all_users).uuid, user.uuid,
                        "permission", "can_read")
     # Check for OID login link.
-    verify_link_exists(Rails.configuration.auto_setup_new_users || active,
+    verify_link_exists(Rails.configuration.Users.AutoSetupNewUsers || active,
                        user.uuid, user.email, "permission", "can_login")
     # Check for repository.
     if named_repo = (prior_repo or
                      Repository.where(name: expect_repo_name).first)
       verify_link_exists((can_setup and prior_repo.nil? and
-                          Rails.configuration.auto_setup_new_users_with_repository),
+                          Rails.configuration.Users.AutoSetupNewUsersWithRepository),
                          named_repo.uuid, user.uuid, "permission", "can_manage")
     end
     # Check for VM login.
-    if auto_vm_uuid = Rails.configuration.auto_setup_new_users_with_vm_uuid
+    if (auto_vm_uuid = Rails.configuration.Users.AutoSetupNewUsersWithVmUUID) != ""
       verify_link_exists(can_setup, auto_vm_uuid, user.uuid,
                          "permission", "can_login", "username", expect_username)
     end
@@ -666,17 +666,17 @@ class UserTest < ActiveSupport::TestCase
     new_user_email = nil
     new_inactive_user_email = nil
 
-    new_user_email_subject = "#{Rails.configuration.email_subject_prefix}New user created notification"
-    if Rails.configuration.auto_setup_new_users
+    new_user_email_subject = "#{Rails.configuration.Users.EmailSubjectPrefix}New user created notification"
+    if Rails.configuration.Users.AutoSetupNewUsers
       new_user_email_subject = (expect_username or active) ?
-                                 "#{Rails.configuration.email_subject_prefix}New user created and setup notification" :
-                                 "#{Rails.configuration.email_subject_prefix}New user created, but not setup notification"
+                                 "#{Rails.configuration.Users.EmailSubjectPrefix}New user created and setup notification" :
+                                 "#{Rails.configuration.Users.EmailSubjectPrefix}New user created, but not setup notification"
     end
 
     ActionMailer::Base.deliveries.each do |d|
       if d.subject == new_user_email_subject then
         new_user_email = d
-      elsif d.subject == "#{Rails.configuration.email_subject_prefix}New inactive user notification" then
+      elsif d.subject == "#{Rails.configuration.Users.EmailSubjectPrefix}New inactive user notification" then
         new_inactive_user_email = d
       end
     end
@@ -685,7 +685,7 @@ class UserTest < ActiveSupport::TestCase
     # if the new user email recipients config parameter is set
     if not new_user_recipients.empty? then
       assert_not_nil new_user_email, 'Expected new user email after setup'
-      assert_equal Rails.configuration.user_notifier_email_from, new_user_email.from[0]
+      assert_equal Rails.configuration.Users.UserNotifierEmailFrom, new_user_email.from[0]
       assert_equal new_user_recipients, new_user_email.to[0]
       assert_equal new_user_email_subject, new_user_email.subject
     else
@@ -695,9 +695,9 @@ class UserTest < ActiveSupport::TestCase
     if not active
       if not inactive_recipients.empty? then
         assert_not_nil new_inactive_user_email, 'Expected new inactive user email after setup'
-        assert_equal Rails.configuration.user_notifier_email_from, new_inactive_user_email.from[0]
+        assert_equal Rails.configuration.Users.UserNotifierEmailFrom, new_inactive_user_email.from[0]
         assert_equal inactive_recipients, new_inactive_user_email.to[0]
-        assert_equal "#{Rails.configuration.email_subject_prefix}New inactive user notification", new_inactive_user_email.subject
+        assert_equal "#{Rails.configuration.Users.EmailSubjectPrefix}New inactive user notification", new_inactive_user_email.subject
       else
         assert_nil new_inactive_user_email, 'Did not expect new inactive user email after setup'
       end

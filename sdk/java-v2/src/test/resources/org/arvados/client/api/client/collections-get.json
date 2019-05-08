@@ -1,0 +1,22 @@
+{
+    "href": "/collections/112ci-4zz18-p51w7z3fpopo6sm",
+    "kind": "arvados#collection",
+    "etag": "52tk5yg024cwhkkcidu3zcmj2",
+    "uuid": "112ci-4zz18-p51w7z3fpopo6sm",
+    "owner_uuid": "112ci-tpzed-nd84czdo4iea1mz",
+    "created_at": "2017-11-15T10:36:03.554356000Z",
+    "modified_by_client_uuid": "112ci-ozdt8-f4633qdjs6w8zcy",
+    "modified_by_user_uuid": "112ci-tpzed-nd84czdo4iea1mz",
+    "modified_at": "2017-11-15T10:36:03.554356000Z",
+    "name": "Collection With Manifest #2",
+    "description": null,
+    "properties": {},
+    "portable_data_hash": "6c4106229b08fe25f48b3a7a8289dd46+143",
+    "manifest_text": ". 66c9daa69630e092e9ce554b7aae8a20+524288+A4a15ffea58f259e09f68d3f7eea29942750a79d0@5a269ff6 435f38dd384b06c248feabee0cabca52+524288+A8a99e8148bd368c49901526098901bb7d7890c3b@5a269ff6 dc5b6c104aab35fff6d70a4dadc28d37+391727+Ab0662d549c422c983fccaad02b4ade7b48a8255b@5a269ff6 0:1440303:lombok.jar\n",
+    "replication_desired": null,
+    "replication_confirmed": null,
+    "replication_confirmed_at": null,
+    "delete_at": null,
+    "trash_at": null,
+    "is_trashed": false
+}

@@ -5,7 +5,6 @@
 # Config must be done before we  files; otherwise they
 # won't be able to use Rails.configuration.* to initialize their
 # classes.
-require_relative 'load_config.rb'
 
 require 'enable_jobs_api'
 
