@@ -4,10 +4,11 @@
 
 import { AxiosInstance } from "axios";
 import { ApiActions } from "~/services/api/api-actions";
-import { AccountToLink } from "~/models/link-account";
+import { AccountToLink, LinkAccountStatus } from "~/models/link-account";
 import { CommonService } from "~/services/common-service/common-service";
 
 export const USER_LINK_ACCOUNT_KEY = 'accountToLink';
+export const ACCOUNT_LINK_STATUS_KEY = 'accountLinkStatus';
 
 export class LinkAccountService {
 
@@ -26,6 +27,19 @@ export class LinkAccountService {
     public getFromSession() {
         const data = sessionStorage.getItem(USER_LINK_ACCOUNT_KEY);
         return data ? JSON.parse(data) as AccountToLink : undefined;
+    }
+
+    public saveLinkOpStatus(status: LinkAccountStatus) {
+        sessionStorage.setItem(ACCOUNT_LINK_STATUS_KEY, JSON.stringify(status));
+    }
+
+    public removeLinkOpStatus() {
+        sessionStorage.removeItem(ACCOUNT_LINK_STATUS_KEY);
+    }
+
+    public getLinkOpStatus() {
+        const data = sessionStorage.getItem(ACCOUNT_LINK_STATUS_KEY);
+        return data ? JSON.parse(data) as LinkAccountStatus : undefined;
     }
 
     public linkAccounts(newUserToken: string, newGroupUuid: string) {

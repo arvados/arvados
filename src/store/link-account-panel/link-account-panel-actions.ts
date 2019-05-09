@@ -7,13 +7,12 @@ import { RootState } from "~/store/store";
 import { ServiceRepository } from "~/services/services";
 import { setBreadcrumbs } from "~/store/breadcrumbs/breadcrumbs-actions";
 import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
-import { LinkAccountType, AccountToLink } from "~/models/link-account";
+import { LinkAccountType, AccountToLink, LinkAccountStatus } from "~/models/link-account";
 import { saveApiToken, saveUser } from "~/store/auth/auth-action";
 import { unionize, ofType, UnionOf } from '~/common/unionize';
 import { UserResource } from "~/models/user";
 import { GroupResource } from "~/models/group";
 import { LinkAccountPanelError, OriginatingUser } from "./link-account-panel-reducer";
-import { navigateToRootProject } from "../navigation/navigation-action";
 import { login, logout } from "~/store/auth/auth-action";
 
 export const linkAccountPanelActions = unionize({
@@ -47,6 +46,36 @@ function validateLink(userToLink: UserResource, targetUser: UserResource) {
     return LinkAccountPanelError.NONE;
 }
 
+export const checkForLinkStatus = () =>
+    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        const status = services.linkAccountService.getLinkOpStatus();
+        if (status !== undefined) {
+            let msg: string;
+            let msgKind: SnackbarKind;
+            if (status.valueOf() === LinkAccountStatus.CANCELLED) {
+                msg = "Account link cancelled!", msgKind = SnackbarKind.INFO;
+            }
+            else if (status.valueOf() === LinkAccountStatus.FAILED) {
+                msg = "Account link failed!", msgKind = SnackbarKind.ERROR;
+            }
+            else if (status.valueOf() === LinkAccountStatus.SUCCESS) {
+                msg = "Account link success!", msgKind = SnackbarKind.SUCCESS;
+            }
+            else {
+                msg = "Unknown Error!", msgKind = SnackbarKind.ERROR;
+            }
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: msg, kind: msgKind, hideDuration: 3000 }));
+            services.linkAccountService.removeLinkOpStatus();
+        }
+    };
+
+export const finishLinking = (status: LinkAccountStatus) =>
+    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        services.linkAccountService.removeFromSession();
+        services.linkAccountService.saveLinkOpStatus(status);
+        location.reload();
+    };
+
 export const switchUser = (user: UserResource, token: string) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         dispatch(saveUser(user));
@@ -68,11 +97,16 @@ export const linkFailed = () =>
             }
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Account link failed.', kind: SnackbarKind.ERROR , hideDuration: 3000 }));
         }
-        services.linkAccountService.removeFromSession();
+        dispatch(finishLinking(LinkAccountStatus.FAILED));
     };
 
 export const loadLinkAccountPanel = () =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+
+        // First check if an account link operation has completed
+        dispatch(checkForLinkStatus());
+
+        // Continue loading the link account panel
         dispatch(setBreadcrumbs([{ label: 'Link account'}]));
         const curUser = getState().auth.user;
         const curToken = getState().auth.apiToken;
@@ -121,8 +155,7 @@ export const loadLinkAccountPanel = () =>
                     // This should never really happen, but just in case, switch to the user that
                     // originated the linking operation (i.e. the user saved in session data)
                     dispatch(switchUser(savedUserResource, linkAccountData.token));
-                    dispatch(linkAccountPanelActions.LINK_INIT({targetUser: savedUserResource}));
-                    throw new Error("Invalid link account type.");
+                    dispatch(finishLinking(LinkAccountStatus.FAILED));
                 }
 
                 dispatch(switchUser(params.targetUser, params.targetUserToken));
@@ -174,8 +207,7 @@ export const cancelLinking = () =>
             }
         }
         finally {
-            services.linkAccountService.removeFromSession();
-            dispatch(linkAccountPanelActions.LINK_INIT({ targetUser: user }));
+            dispatch(finishLinking(LinkAccountStatus.CANCELLED));
         }
     };
 
@@ -201,17 +233,14 @@ export const linkAccount = () =>
             try {
                 // The merge api links the user sending the request into the user
                 // specified in the request, so switch users for this api call
-                dispatch(switchUser(linkState.userToLink, linkState.userToLinkToken));
+                dispatch(saveApiToken(linkState.userToLinkToken));
                 await services.linkAccountService.linkAccounts(linkState.targetUserToken, newGroup.uuid);
                 dispatch(switchUser(linkState.targetUser, linkState.targetUserToken));
-                dispatch(navigateToRootProject);
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Account link success!', kind: SnackbarKind.SUCCESS, hideDuration: 3000 }));
-                dispatch(linkAccountPanelActions.LINK_INIT({targetUser: linkState.targetUser}));
             }
             catch(e) {
                 // If the link operation fails, delete the previously made project
                 try {
-                    dispatch(switchUser(linkState.targetUser, linkState.targetUserToken));
+                    dispatch(saveApiToken(linkState.targetUserToken));
                     await services.projectService.delete(newGroup.uuid);
                 }
                 finally {
@@ -220,7 +249,7 @@ export const linkAccount = () =>
                 throw e;
             }
             finally {
-                services.linkAccountService.removeFromSession();
+                dispatch(finishLinking(LinkAccountStatus.SUCCESS));
             }
         }
     };
