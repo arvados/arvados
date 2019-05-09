@@ -5,14 +5,15 @@ SPDX-License-Identifier: AGPL-3.0 %>
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Server</title>
+  <title>Arvados API Server (<%= Rails.configuration.ClusterID %>)</title>
   <%= stylesheet_link_tag    "application" %>
   <%= javascript_include_tag "application" %>
   <%= csrf_meta_tags %>
 </head>
 <body>
 <div id="header">
-  <div class="apptitle">ARVADOS <span class="beta"><span>BETA</span></span></div>
+  <div class="apptitle">ARVADOS</div>
+  <div>(<%= Rails.configuration.ClusterID %>)</div>
   <div style="float:right">
     <% if current_user %>
     <%= current_user.full_name %>
@@ -23,7 +24,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
     &nbsp;&bull;&nbsp;
     <a class="logout" href="/logout">Log out</a>
     <% else %>
-    <a class="logout" href="/auth/joshid">Log in</a>
+      <!--<a class="logout" href="/auth/joshid">Log in</a>-->
     <% end %>
 
     <% if current_user and session[:real_uid] and session[:switch_back_to] and User.find(session[:real_uid].to_i).verify_userswitch_cookie(session[:switch_back_to]) %>
