@@ -12,15 +12,16 @@ import hmac
 
 def main():
 
-    parser = argparse.ArgumentParser(description='Migrate users to federated identity')
-    parser.add_argument('--tokens', type=str)
-    group = parser.add_mutually_exclusive_group()
+    parser = argparse.ArgumentParser(description='Migrate users to federated identity, see https://doc.arvados.org/admin/???')
+    parser.add_argument('--tokens', type=str, required=True)
+    group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--report', type=str)
     group.add_argument('--migrate', type=str)
     args = parser.parse_args()
 
     clusters = {}
 
+    print("Reading %s" % args.tokens)
     with open(args.tokens, "rt") as f:
         for r in csv.reader(f):
             host = r[0]
@@ -34,6 +35,7 @@ def main():
     if args.report:
         users = []
         for c, arv in clusters.items():
+            print("Getting user list from %s" % c)
             ul = arvados.util.list_all(arv.users().list)
             for l in ul:
                 if l["uuid"].startswith(c):
@@ -75,6 +77,8 @@ def main():
         for a in accum:
             out.writerow((a["email"], a["uuid"], homeuuid[0:5]))
 
+        print("Wrote %s" % args.report)
+
     if args.migrate:
         rows = []
         by_email = {}
@@ -101,7 +105,7 @@ def main():
                 print("(%s) Multiple users listed to migrate %s to %s, use full uuid" % (r[0], r[1], r[2]))
                 continue
             new_user_uuid = candidates[0][1]
-            print("(%s) Will migrate %s to %s" % (r[0], r[1], new_user_uuid))
+            print("(%s) Migrating %s to %s" % (r[0], r[1], new_user_uuid))
             oldcluster = r[1][0:5]
             newhomecluster = r[2][0:5]
             homearv = clusters[newhomecluster]

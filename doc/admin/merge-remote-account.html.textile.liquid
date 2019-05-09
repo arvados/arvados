@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: admin
-title: "Migrating a user to a federated account"
+title: "Migrating users to federated accounts"
 ...
 {% comment %}
 Copyright (C) The Arvados Authors. All rights reserved.
@@ -9,39 +9,72 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-When you use federation capabilities to connect two or more clusters that were already operating, some users might already have accounts on multiple clusters. Typically, they will want to choose a single account on one of the clusters and abandon the rest, transferring all data or permissions from their old “remote” accounts to a single “home” account.
+When using multiple Arvados clusters, prior to federation capabilities described here, a user would have to create a separate account on each cluster.  Unfortunately, because each account represents a separate "identity", in this system permissions granted to a user on one cluster do not transfer to another cluster, even if the accounts are associated with the same user.
 
-This effect can be achieved by changing the UUIDs of the user records on the remote clusters. This should be done before the user has ever used federation features to access cluster B with cluster A credentials. Otherwise, see "managing conflicting accounts" below.
+To address this, Arvados supports "federated user accounts".  A federated user account is associated with a specific "home" cluster, and can be used access other clusters in the federation that trust the home cluster.  When a user arrives at another cluster's Workbench, they select and log in to their home cluster, and then are returned to the starting cluster logged in with the federated user account.
 
-For example, a user might have:
-* an account A on cluster A with uuid @aaaaa-tpzed-abcdefghijklmno@, and
-* an account B on cluster B with uuid @bbbbb-tpzed-lmnopqrstuvwxyz@
+When setting up federation capabilities on existing clusters, some users might already have accounts on multiple clusters.  In order to have a single federated identity, users should be assigned a "home" cluster, and accounts associated with that user on the other (non-home) clusters should be migrated to the new federated user account.  The @arv-federation-migrate@ tool assists with this.
 
-An administrator at cluster B can merge the two accounts by renaming account B to account A.
+h2. arv-federation-migrate
 
-<notextile>
-<pre><code>#!/usr/bin/env python
-import arvados
-arvados.api('v1').users().update_uuid(
-    uuid="<span class="userinput">bbbbb-tpzed-lmnopqrstuvwxyz</span>",
-    new_uuid="<span class="userinput">aaaaa-tpzed-abcdefghijklmno</span>").execute()
-</code></pre></notextile>
+The tool @arv-federation-migrate@ is part of the @arvados-python-client@ package.
 
-This should be done when the user is idle, i.e., not logged in and not running any jobs or containers.
+This tool is designed to help an administrator who has access to all clusters in a federation to migrate users who have multiple accounts to a single federated account.
 
-h2. Managing conflicting accounts
+As part of migrating a user, any data or permissions associated with old user accounts will be reassigned to the federated account.
 
-If the user has already used federation capabilities to access cluster B using account A before the above migration has been done, this will have already created a database entry for account A on cluster B, and the above program will error out. To fix this, the same "update_uuid API call":../api/methods/users.html#update_uuid can be used to move the conflicting account out of the way first.
+h2. Get user report
 
-<notextile>
-<pre><code>#!/usr/bin/env python
-import arvados
-import random
-import string
-random_chars = ''.join(random.SystemRandom().choice(string.ascii_lowercase + string.digits) for _ in range(15))
-arvados.api('v1').users().update_uuid(
-    uuid="<span class="userinput">aaaaa-tpzed-abcdefghijklmno</span>",
-    new_uuid="bbbbb-tpzed-"+random_chars).execute()
-</code></pre></notextile>
+The first step is to create @tokens.csv@ and list each cluster and API token to access the cluster.  API tokens must be trusted tokens with administrator access.  This is a simple comma separated value file and can be created in a text editor.  Example:
 
-After this is done and the migration is complete, the affected user should wait 5 minutes for the authorization cache to expire before using the remote cluster.
+_tokens.csv_
+
+<pre>
+x3982.arvadosapi.com,v2/x3982-gj3su-sb6meh2jf145s7x/98d40d70d8862e33d7398213435d1a71a96cf870
+x6b1s.arvadosapi.com,v2/x6b1s-gj3su-dxc87btfv5kg91z/5575d980d3ff6231bb0c692281c42a7541c59417
+</pre>
+
+Next, run @arv-federation-migrate@ with the @--tokens@ and @--report@ flags:
+
+<pre>
+$ arv-federation-migrate --tokens tokens.csv --report users.csv
+Reading tokens.csv
+Getting user list from x6b1s
+Getting user list from x3982
+Wrote users.csv
+</pre>
+
+This will produce a report of users across all clusters listed in @tokens.csv@, sorted by email address.  This file can be loaded into a text editor or spreadsheet program for ease of viewing and editing.
+
+_users.csv_
+
+<pre>
+email,user uuid,primary cluster/user
+person_a@example.com,x6b1s-tpzed-hb5n7doogwhk6cf,x6b1s
+person_b@example.com,x3982-tpzed-1vl3k7knf7qihbe,
+person_b@example.com,x6b1s-tpzed-w4nhkx2rmrhlr54,
+</pre>
+
+The third column describes that user's home cluster.  If a user only has one account (identified by email address), the column will be filled in and there is nothing to do.  If the column is blank, that means there is more than one Arvados account associated with the user.  Edit the file and provide the desired home cluster for each user.  In this example, @person_b@example.com@ is assigned the home cluster @x3982@.
+
+_users.csv_
+
+<pre>
+email,user uuid,primary cluster/user
+person_a@example.com,x6b1s-tpzed-hb5n7doogwhk6cf,x6b1s
+person_b@example.com,x3982-tpzed-1vl3k7knf7qihbe,x3982
+person_b@example.com,x6b1s-tpzed-w4nhkx2rmrhlr54,x3982
+</pre>
+
+h2. Migrate users
+
+To avoid disruption, advise users to log out and avoid running workflows while performing the migration.
+
+After updating @users.csv@, use the @--migrate@ option:
+
+<pre>
+$ arv-federation-migrate --tokens tokens.csv --migrate users.csv
+(person_b@example.com) Migrating x6b1s-tpzed-w4nhkx2rmrhlr54 to x3982-tpzed-1vl3k7knf7qihbe
+</pre>
+
+After migration, users should select their home cluster when logging into Arvados Workbench.  If a user attempts to log into a migrated user account, they will be redirected to log in with their home cluster.
