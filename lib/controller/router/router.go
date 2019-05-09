@@ -189,7 +189,7 @@ func (rtr *router) addRoutes(cluster *arvados.Cluster) {
 				ctx = arvados.ContextWithRequestID(ctx, req.Header.Get("X-Request-Id"))
 				resp, err := route.exec(ctx, opts)
 				if err != nil {
-					ctxlog.FromContext(ctx).WithError(err).Infof("returning error response for %#v", err)
+					ctxlog.FromContext(ctx).WithError(err).Debugf("returning error response for %#v", err)
 					rtr.sendError(w, err)
 					return
 				}
