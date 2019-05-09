@@ -36,7 +36,7 @@ export interface LinkAccountPanelState {
 }
 
 const initialState = {
-    originatingUser: undefined,
+    originatingUser: OriginatingUser.NONE,
     targetUser: undefined,
     targetUserToken: undefined,
     userToLink: undefined,
@@ -49,13 +49,21 @@ export const linkAccountPanelReducer = (state: LinkAccountPanelState = initialSt
     linkAccountPanelActions.match(action, {
         default: () => state,
         LINK_INIT: ({ targetUser }) => ({
-            ...state, targetUser, status: LinkAccountPanelStatus.INITIAL, error: LinkAccountPanelError.NONE, originatingUser: OriginatingUser.NONE
+            targetUser, targetUserToken: undefined,
+            userToLink: undefined, userToLinkToken: undefined,
+            status: LinkAccountPanelStatus.INITIAL, error: LinkAccountPanelError.NONE, originatingUser: OriginatingUser.NONE
         }),
         LINK_LOAD: ({ originatingUser, userToLink, targetUser, targetUserToken, userToLinkToken}) => ({
-            ...state, originatingUser, targetUser, targetUserToken, userToLink, userToLinkToken, status: LinkAccountPanelStatus.LINKING, error: LinkAccountPanelError.NONE
+            originatingUser,
+            targetUser, targetUserToken,
+            userToLink, userToLinkToken,
+            status: LinkAccountPanelStatus.LINKING, error: LinkAccountPanelError.NONE
         }),
         LINK_INVALID: ({originatingUser, targetUser, userToLink, error}) => ({
-            ...state, originatingUser, targetUser, userToLink, error, status: LinkAccountPanelStatus.ERROR
+            originatingUser,
+            targetUser, targetUserToken: undefined,
+            userToLink, userToLinkToken: undefined,
+            error, status: LinkAccountPanelStatus.ERROR
         }),
         HAS_SESSION_DATA: () => ({
             ...state, status: LinkAccountPanelStatus.HAS_SESSION_DATA
