@@ -13,7 +13,6 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"math"
 	"net/http"
 	"net/url"
 	"os"
@@ -188,7 +187,9 @@ func anythingToValues(params interface{}) (url.Values, error) {
 		return nil, err
 	}
 	var generic map[string]interface{}
-	err = json.Unmarshal(j, &generic)
+	dec := json.NewDecoder(bytes.NewBuffer(j))
+	dec.UseNumber()
+	err = dec.Decode(&generic)
 	if err != nil {
 		return nil, err
 	}
@@ -198,22 +199,16 @@ func anythingToValues(params interface{}) (url.Values, error) {
 			urlValues.Set(k, v)
 			continue
 		}
-		if v, ok := v.(float64); ok {
-			// Unmarshal decodes all numbers as float64,
-			// which can be written as 1.2345e4 in JSON,
-			// but this form is not accepted for ints in
-			// url params. If a number fits in an int64,
-			// encode it as int64 rather than float64.
-			if v, frac := math.Modf(v); frac == 0 && v <= math.MaxInt64 && v >= math.MinInt64 {
-				urlValues.Set(k, fmt.Sprintf("%d", int64(v)))
-				continue
-			}
+		if v, ok := v.(json.Number); ok {
+			urlValues.Set(k, v.String())
+			continue
 		}
 		j, err := json.Marshal(v)
 		if err != nil {
 			return nil, err
 		}
-		if string(j) == "null" {
+		if bytes.Equal(j, []byte("null")) {
+			// don't add it to urlValues at all
 			continue
 		}
 		urlValues.Set(k, string(j))
