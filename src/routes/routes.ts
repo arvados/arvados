@@ -10,6 +10,7 @@ import { getCollectionUrl } from '~/models/collection';
 export const Routes = {
     ROOT: '/',
     TOKEN: '/token',
+    FED_LOGIN: '/fedtoken',
     PROJECTS: `/projects/:id(${RESOURCE_UUID_PATTERN})`,
     COLLECTIONS: `/collections/:id(${RESOURCE_UUID_PATTERN})`,
     PROCESSES: `/processes/:id(${RESOURCE_UUID_PATTERN})`,

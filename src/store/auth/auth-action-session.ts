@@ -68,7 +68,7 @@ const getTokenUuid = async (baseUrl: string, token: string): Promise<string> => 
     return resp.data.items[0].uuid;
 };
 
-const getSaltedToken = (clusterId: string, tokenUuid: string, token: string) => {
+export const getSaltedToken = (clusterId: string, tokenUuid: string, token: string) => {
     const shaObj = new jsSHA("SHA-1", "TEXT");
     let secret = token;
     if (token.startsWith("v2/")) {

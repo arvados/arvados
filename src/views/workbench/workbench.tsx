@@ -92,6 +92,7 @@ import { GroupMemberAttributesDialog } from '~/views-components/groups-dialog/me
 import { AddGroupMembersDialog } from '~/views-components/dialog-forms/add-group-member-dialog';
 import { PartialCopyToCollectionDialog } from '~/views-components/dialog-forms/partial-copy-to-collection-dialog';
 import { PublicFavoritePanel } from '~/views/public-favorites-panel/public-favorites-panel';
+import { FedLogin } from './fed-login';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -240,5 +241,6 @@ export const WorkbenchPanel =
             <UserAttributesDialog />
             <UserManageDialog />
             <VirtualMachineAttributesDialog />
+            <FedLogin />
         </Grid>
     );
