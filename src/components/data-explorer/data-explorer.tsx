@@ -14,7 +14,7 @@ import { DataTableFilters } from '~/components/data-table-filters/data-table-fil
 import { MoreOptionsIcon } from '~/components/icon/icon';
 import { PaperProps } from '@material-ui/core/Paper';
 
-type CssRules = 'searchBox' | "toolbar" | "footer" | "root" | 'moreOptionsButton';
+type CssRules = 'searchBox' | "toolbar" | "footer" | "root" | 'moreOptionsButton' | 'title';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     searchBox: {
@@ -31,6 +31,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     moreOptionsButton: {
         padding: 0
+    },
+    title: {
+        paddingLeft: theme.spacing.unit * 3,
+        paddingTop: theme.spacing.unit * 3,
+        fontSize: '18px'
     }
 });
 
@@ -52,6 +57,7 @@ interface DataExplorerDataProps<T> {
     hideSearchInput?: boolean;
     paperKey?: string;
     currentItemUuid: string;
+    title?: string;
 }
 
 interface DataExplorerActionProps<T> {
@@ -84,9 +90,10 @@ export const DataExplorer = withStyles(styles)(
                 rowsPerPage, rowsPerPageOptions, onColumnToggle, searchValue, onSearch,
                 items, itemsAvailable, onRowClick, onRowDoubleClick, classes,
                 dataTableDefaultView, hideColumnSelector, actions, paperProps, hideSearchInput,
-                paperKey, fetchMode, currentItemUuid
+                paperKey, fetchMode, currentItemUuid, title
             } = this.props;
             return <Paper className={classes.root} {...paperProps} key={paperKey}>
+                {title ? <div className={classes.title}>Content Address: {title}</div> : null}
                 {(!hideColumnSelector || !hideSearchInput) && <Toolbar className={classes.toolbar}>
                     <Grid container justify="space-between" wrap="nowrap" alignItems="center">
                         <div className={classes.searchBox}>

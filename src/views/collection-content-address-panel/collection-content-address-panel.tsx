@@ -121,9 +121,15 @@ const mapDispatchToProps = (dispatch: Dispatch): CollectionContentAddressPanelAc
     }
 });
 
+interface CollectionContentAddressDataProps {
+    match: {
+        params: { id: string }
+    };
+}
+
 export const CollectionsContentAddressPanel = withStyles(styles)(
     connect(null, mapDispatchToProps)(
-        class extends React.Component<CollectionContentAddressPanelActionProps & WithStyles<CssRules>> {
+        class extends React.Component<CollectionContentAddressPanelActionProps & CollectionContentAddressDataProps & WithStyles<CssRules>> {
             render() {
                 return <Grid item xs={12}>
                     {/* <Link to={`/collections/${collectionUuid}`} className={this.props.classes.backLink}>
@@ -136,6 +142,7 @@ export const CollectionsContentAddressPanel = withStyles(styles)(
                         onRowDoubleClick={this.props.onItemDoubleClick}
                         onContextMenu={this.props.onContextMenu}
                         contextMenuColumn={true}
+                        title={this.props.match.params.id}
                         dataTableDefaultView={
                             <DataTableDefaultView
                                 icon={CollectionIcon}
