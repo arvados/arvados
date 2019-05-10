@@ -18,6 +18,8 @@ import { GroupContentsResource, GroupContentsResourcePrefix } from '~/services/g
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions';
 import { collectionsContentAddressActions } from './collections-content-address-panel-actions';
 import { navigateTo } from '~/store/navigation/navigation-action';
+import { updateFavorites } from '~/store/favorites/favorites-actions';
+import { updatePublicFavorites } from '~/store/public-favorites/public-favorites-actions';
 
 export class CollectionsWithSameContentAddressMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -50,8 +52,11 @@ export class CollectionsWithSameContentAddressMiddlewareService extends DataExpl
                     offset: dataExplorer.page * dataExplorer.rowsPerPage,
                     filters: new FilterBuilder()
                         .addEqual('portableDataHash', contentAddress)
+                        .addILike("name", dataExplorer.searchValue)
                         .getFilters()
                 });
+                api.dispatch<any>(updateFavorites(response.items.map(item => item.uuid)));
+                api.dispatch<any>(updatePublicFavorites(response.items.map(item => item.uuid)));
                 if (response.itemsAvailable === 1) {
                     api.dispatch<any>(navigateTo(response.items[0].uuid));
                     api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));

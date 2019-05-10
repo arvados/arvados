@@ -62,7 +62,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 enum CollectionContentAddressPanelColumnNames {
     COLLECTION_WITH_THIS_ADDRESS = "Collection with this address",
-    OWNER = "Owner",
+    LOCATION = "Location",
     LAST_MODIFIED = "Last modified"
 }
 
@@ -76,7 +76,7 @@ export const collectionContentAddressPanelColumns: DataColumns<string> = [
         render: uuid => <ResourceName uuid={uuid} />
     },
     {
-        name: CollectionContentAddressPanelColumnNames.OWNER,
+        name: CollectionContentAddressPanelColumnNames.LOCATION,
         selected: true,
         configurable: true,
         filters: createTree(),
@@ -92,13 +92,13 @@ export const collectionContentAddressPanelColumns: DataColumns<string> = [
     }
 ];
 
-export interface CollectionContentAddressMainCardActionProps {
+export interface CollectionContentAddressPanelActionProps {
     onContextMenu: (event: React.MouseEvent<any>, uuid: string) => void;
     onItemClick: (item: string) => void;
     onItemDoubleClick: (item: string) => void;
 }
 
-const mapDispatchToProps = (dispatch: Dispatch): CollectionContentAddressMainCardActionProps => ({
+const mapDispatchToProps = (dispatch: Dispatch): CollectionContentAddressPanelActionProps => ({
     onContextMenu: (event, resourceUuid) => {
         const isAdmin = dispatch<any>(getIsAdmin());
         const kind = resourceKindToContextMenuKind(resourceUuid, isAdmin);
@@ -123,12 +123,12 @@ const mapDispatchToProps = (dispatch: Dispatch): CollectionContentAddressMainCar
 
 export const CollectionsContentAddressPanel = withStyles(styles)(
     connect(null, mapDispatchToProps)(
-        class extends React.Component<CollectionContentAddressMainCardActionProps & WithStyles<CssRules>> {
+        class extends React.Component<CollectionContentAddressPanelActionProps & WithStyles<CssRules>> {
             render() {
                 return <Grid item xs={12}>
-                    {/* <Link to={`/collections/${this.props.collection.uuid}`} className={this.props.classes.backLink}>
+                    {/* <Link to={`/collections/${collectionUuid}`} className={this.props.classes.backLink}>
                         <BackIcon className={this.props.classes.backIcon} />
-                        Back test
+                        Back
                     </Link> */}
                     <DataExplorer
                         id={COLLECTIONS_CONTENT_ADDRESS_PANEL_ID}
