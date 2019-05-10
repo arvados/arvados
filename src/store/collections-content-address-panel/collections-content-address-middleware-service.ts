@@ -20,6 +20,7 @@ import { collectionsContentAddressActions } from './collections-content-address-
 import { navigateTo } from '~/store/navigation/navigation-action';
 import { updateFavorites } from '~/store/favorites/favorites-actions';
 import { updatePublicFavorites } from '~/store/public-favorites/public-favorites-actions';
+import { setBreadcrumbs } from '../breadcrumbs/breadcrumbs-actions';
 
 export class CollectionsWithSameContentAddressMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -45,6 +46,7 @@ export class CollectionsWithSameContentAddressMiddlewareService extends DataExpl
             }
             try {
                 api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
+                const userUuid = api.getState().auth.user!.uuid;
                 const pathname = api.getState().router.location!.pathname;
                 const contentAddress = pathname.split('/')[2];
                 const response = await this.services.collectionService.list({
@@ -55,6 +57,7 @@ export class CollectionsWithSameContentAddressMiddlewareService extends DataExpl
                         .addILike("name", dataExplorer.searchValue)
                         .getFilters()
                 });
+                api.dispatch<any>(setBreadcrumbs([{ label: 'Projects', uuid: userUuid }]));
                 api.dispatch<any>(updateFavorites(response.items.map(item => item.uuid)));
                 api.dispatch<any>(updatePublicFavorites(response.items.map(item => item.uuid)));
                 if (response.itemsAvailable === 1) {
