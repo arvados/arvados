@@ -64,18 +64,24 @@ func (s *RouterSuite) TestCollectionParams(c *check.C) {
 	_, rw, jresp := s.doRequest(c, token, "GET", `/arvados/v1/collections?include_trash=true`, nil, nil)
 	c.Check(rw.Code, check.Equals, http.StatusOK)
 	c.Check(jresp["items_available"], check.FitsTypeOf, float64(0))
+	c.Check(jresp["kind"], check.Equals, "arvados#collectionList")
+	c.Check(jresp["items"].([]interface{})[0].(map[string]interface{})["kind"], check.Equals, "arvados#collection")
 
 	_, rw, jresp = s.doRequest(c, token, "GET", `/arvados/v1/collections`, nil, bytes.NewBufferString(`{"include_trash":true}`))
 	c.Check(rw.Code, check.Equals, http.StatusOK)
 	c.Check(jresp["items"], check.FitsTypeOf, []interface{}{})
+	c.Check(jresp["kind"], check.Equals, "arvados#collectionList")
+	c.Check(jresp["items"].([]interface{})[0].(map[string]interface{})["kind"], check.Equals, "arvados#collection")
 
 	_, rw, jresp = s.doRequest(c, token, "POST", `/arvados/v1/collections`, http.Header{"Content-Type": {"application/x-www-form-urlencoded"}}, bytes.NewBufferString(`ensure_unique_name=true`))
 	c.Check(rw.Code, check.Equals, http.StatusOK)
 	c.Check(jresp["uuid"], check.FitsTypeOf, "")
+	c.Check(jresp["kind"], check.Equals, "arvados#collection")
 
 	_, rw, jresp = s.doRequest(c, token, "POST", `/arvados/v1/collections?ensure_unique_name=true`, nil, nil)
 	c.Check(rw.Code, check.Equals, http.StatusOK)
 	c.Check(jresp["uuid"], check.FitsTypeOf, "")
+	c.Check(jresp["kind"], check.Equals, "arvados#collection")
 }
 
 func (s *RouterSuite) TestContainerList(c *check.C) {
@@ -165,6 +171,7 @@ func (s *RouterSuite) TestSelectParam(c *check.C) {
 		_, rw, resp := s.doRequest(c, token, "GET", "/arvados/v1/containers/"+uuid+"?select="+string(j), nil, nil)
 		c.Check(rw.Code, check.Equals, http.StatusOK)
 
+		c.Check(resp["kind"], check.Equals, "arvados#container")
 		c.Check(resp["uuid"], check.HasLen, 27)
 		c.Check(resp["command"], check.HasLen, 2)
 		c.Check(resp["mounts"], check.IsNil)

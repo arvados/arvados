@@ -6,7 +6,9 @@ package router
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -68,6 +70,7 @@ func (rtr *router) sendResponse(w http.ResponseWriter, resp interface{}, opts re
 			tmp[k] = t.Format(rfc3339NanoFixed)
 		}
 	}
+	tmp["kind"] = kind(resp)
 	json.NewEncoder(w).Encode(tmp)
 }
 
@@ -77,4 +80,13 @@ func (rtr *router) sendError(w http.ResponseWriter, err error) {
 		code = err.HTTPStatus()
 	}
 	httpserver.Error(w, err.Error(), code)
+}
+
+var mungeKind = regexp.MustCompile(`\..`)
+
+func kind(resp interface{}) string {
+	return mungeKind.ReplaceAllStringFunc(fmt.Sprintf("%T", resp), func(s string) string {
+		// "arvados.CollectionList" => "arvados#collectionList"
+		return "#" + strings.ToLower(s[1:])
+	})
 }
