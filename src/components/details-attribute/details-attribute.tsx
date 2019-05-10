@@ -60,7 +60,7 @@ export const DetailsAttribute = withStyles(styles)(
         <Typography component="div" className={classes.attribute}>
             <Typography component="span" className={classnames([classes.label, classLabel])}>{label}</Typography>
             {link && <a href={link} className={classes.link} target='_blank'>{value}</a>}
-            {linkInsideCard && <Link to={linkInsideCard} className={classes.link}>{value}</Link>}
+            {linkInsideCard && <Link to={`/collections/${linkInsideCard}`} className={classes.link}>{value}</Link>}
             {!link && !linkInsideCard && <Typography
                 onClick={onValueClick}
                 component="span"
