@@ -667,6 +667,7 @@ func (v *UnixVolume) lock(ctx context.Context) error {
 	if v.locker == nil {
 		return nil
 	}
+	t0 := time.Now()
 	locked := make(chan struct{})
 	go func() {
 		v.locker.Lock()
@@ -674,6 +675,7 @@ func (v *UnixVolume) lock(ctx context.Context) error {
 	}()
 	select {
 	case <-ctx.Done():
+		log.Printf("%s: client hung up while waiting for Serialize lock (%s)", v, time.Since(t0))
 		go func() {
 			<-locked
 			v.locker.Unlock()
