@@ -59,11 +59,11 @@ export const initAuth = (config: Config) => (dispatch: Dispatch, getState: () =>
         dispatch<any>(getUserDetails()).then((user: User) => {
             dispatch(authActions.INIT({ user, token }));
         });
-        Object.keys(config.remoteHosts).map((k) => {
-            Axios.get<Config>(getDiscoveryURL(config.remoteHosts[k]))
-                .then(response => dispatch(authActions.REMOTE_CLUSTER_CONFIG({ config: response.data })));
-        });
     }
+    Object.keys(config.remoteHosts).map((k) => {
+        Axios.get<Config>(getDiscoveryURL(config.remoteHosts[k]))
+            .then(response => dispatch(authActions.REMOTE_CLUSTER_CONFIG({ config: response.data })));
+    });
 };
 
 export const saveApiToken = (token: string) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -72,8 +72,8 @@ export const saveApiToken = (token: string) => (dispatch: Dispatch, getState: ()
     dispatch(authActions.SAVE_API_TOKEN(token));
 };
 
-export const login = (uuidPrefix: string, homeCluster: string) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    services.authService.login(uuidPrefix, homeCluster);
+export const login = (uuidPrefix: string, homeCluster: string, remoteHosts: { [key: string]: string }) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    services.authService.login(uuidPrefix, homeCluster, remoteHosts);
     dispatch(authActions.LOGIN());
 };
 

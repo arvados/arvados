@@ -108,9 +108,10 @@ export class AuthService {
         localStorage.removeItem(USER_PREFS);
     }
 
-    public login(uuidPrefix: string, homeCluster: string) {
+    public login(uuidPrefix: string, homeCluster: string, remoteHosts: { [key: string]: string }) {
         const currentUrl = `${window.location.protocol}//${window.location.host}/token`;
-        window.location.assign(`https://${homeCluster}/login?remote=${uuidPrefix}&return_to=${currentUrl}`);
+        const homeClusterHost = remoteHosts[homeCluster];
+        window.location.assign(`https://${homeClusterHost}/login?${uuidPrefix !== homeCluster ? "remote=" + uuidPrefix + "&" : ""}return_to=${currentUrl}`);
     }
 
     public logout() {
