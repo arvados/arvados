@@ -43,6 +43,7 @@ type ListOptions struct {
 	Limit   int      `json:"limit"`
 	Offset  int      `json:"offset"`
 	Order   string   `json:"order"`
+	Count   string   `json:"count"`
 }
 
 type CreateOptions struct {

@@ -20,6 +20,7 @@ const rfc3339NanoFixed = "2006-01-02T15:04:05.000000000Z07:00"
 
 type responseOptions struct {
 	Select []string
+	Count  string
 }
 
 func (rtr *router) responseOptions(opts interface{}) (responseOptions, error) {
@@ -27,6 +28,9 @@ func (rtr *router) responseOptions(opts interface{}) (responseOptions, error) {
 	switch opts := opts.(type) {
 	case *arvados.GetOptions:
 		rOpts.Select = opts.Select
+	case *arvados.ListOptions:
+		rOpts.Select = opts.Select
+		rOpts.Count = opts.Count
 	}
 	return rOpts, nil
 }
