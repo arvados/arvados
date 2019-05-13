@@ -67,7 +67,7 @@ class PipelineInstancesController < ApplicationController
   end
 
   def update
-    @updates ||= params[@object.class.to_s.underscore.singularize.to_sym]
+    @updates ||= params.to_unsafe_hash[@object.class.to_s.underscore.singularize.to_sym]
     if (components = @updates[:components])
       components.each do |cname, component|
         if component[:script_parameters]
