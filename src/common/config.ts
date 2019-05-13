@@ -137,4 +137,4 @@ const getDefaultConfig = (): ConfigJSON => ({
 });
 
 export const DISCOVERY_URL = 'discovery/v1/apis/arvados/v1/rest';
-export const getDiscoveryURL = (apiHost: string) => `${window.location.protocol}//${apiHost}/${DISCOVERY_URL}`;
+export const getDiscoveryURL = (apiHost: string) => `${window.location.protocol}//${apiHost}/${DISCOVERY_URL}?nocache=${(new Date()).getTime()}`;
