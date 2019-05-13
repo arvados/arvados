@@ -41,6 +41,7 @@ export interface SearchResultsPanelDataProps {
     user: User;
     sessions: Session[];
     remoteHostsConfig: { [key: string]: Config };
+    localCluster: string;
 }
 
 export interface SearchResultsPanelActionProps {
@@ -118,6 +119,7 @@ export const searchResultsPanelColumns: DataColumns<string> = [
 ];
 
 export const SearchResultsPanelView = (props: SearchResultsPanelProps) => {
+    const homeCluster = props.user.uuid.substr(0, 5);
     return <DataExplorer
         id={SEARCH_RESULTS_PANEL_ID}
         onRowClick={props.onItemClick}
@@ -125,6 +127,10 @@ export const SearchResultsPanelView = (props: SearchResultsPanelProps) => {
         onContextMenu={props.onContextMenu}
         contextMenuColumn={true}
         hideSearchInput
-        header={<p>Searching {props.sessions.filter((ss) => ss.loggedIn).map((ss) => <span key={ss.clusterId}> {ss.clusterId}</span>)}
-        </p>} />;
+        header={
+            props.localCluster === homeCluster ?
+                <p>Searching clusters: {props.sessions.filter((ss) => ss.loggedIn).map((ss) => <span key={ss.clusterId}> {ss.clusterId}</span>)}</p> :
+                <p>Searching local cluster {props.localCluster} only.  To search multiple clusters, <a href={props.remoteHostsConfig[homeCluster] && props.remoteHostsConfig[homeCluster].workbench2Url}> start from your home Workbench.</a></p>
+        }
+    />;
 };

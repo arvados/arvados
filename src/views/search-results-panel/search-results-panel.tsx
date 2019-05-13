@@ -16,7 +16,8 @@ const mapStateToProps = (rootState: RootState) => {
     return {
         user: rootState.auth.user,
         sessions: rootState.auth.sessions,
-        remoteHostsConfig: rootState.auth.remoteHostsConfig
+        remoteHostsConfig: rootState.auth.remoteHostsConfig,
+        localCluster: rootState.auth.localCluster,
     };
 };
 
