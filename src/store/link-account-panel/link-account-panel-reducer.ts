@@ -6,6 +6,7 @@ import { linkAccountPanelActions, LinkAccountPanelAction } from "~/store/link-ac
 import { UserResource } from "~/models/user";
 
 export enum LinkAccountPanelStatus {
+    NONE,
     INITIAL,
     HAS_SESSION_DATA,
     LINKING,
@@ -41,7 +42,7 @@ const initialState = {
     targetUserToken: undefined,
     userToLink: undefined,
     userToLinkToken: undefined,
-    status: LinkAccountPanelStatus.INITIAL,
+    status: LinkAccountPanelStatus.NONE,
     error: LinkAccountPanelError.NONE
 };
 

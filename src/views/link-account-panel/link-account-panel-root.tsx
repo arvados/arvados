@@ -67,7 +67,7 @@ export const LinkAccountPanelRoot = withStyles(styles) (
                 </Grid>
                 <Grid container item direction="row" spacing={24}>
                     <Grid item>
-                        <Button color="primary" variant="contained" onClick={() => startLinking(LinkAccountType.ADD_OTHER_LOGIN)}>
+                        <Button disabled={!targetUser.isActive} color="primary" variant="contained" onClick={() => startLinking(LinkAccountType.ADD_OTHER_LOGIN)}>
                             Add another login to this account
                         </Button>
                     </Grid>

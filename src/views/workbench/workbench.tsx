@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
+import { connect } from 'react-redux';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { Route, Switch } from "react-router";
 import { ProjectPanel } from "~/views/project-panel/project-panel";
@@ -124,7 +125,12 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     }
 });
 
-type WorkbenchPanelProps = WithStyles<CssRules>;
+interface WorkbenchDataProps {
+    isUserActive: boolean;
+    isNotLinking: boolean;
+}
+
+type WorkbenchPanelProps = WithStyles<CssRules> & WorkbenchDataProps;
 
 const defaultSplitterSize = 90;
 
@@ -136,21 +142,21 @@ const getSplitterInitialSize = () => {
 const saveSplitterSize = (size: number) => localStorage.setItem('splitterSize', size.toString());
 
 export const WorkbenchPanel =
-    withStyles(styles)(({ classes }: WorkbenchPanelProps) =>
-        <Grid container item xs className={classes.root}>
-            <Grid container item xs className={classes.container}>
-                <SplitterLayout customClassName={classes.splitter} percentage={true}
+    withStyles(styles)((props: WorkbenchPanelProps) =>
+        <Grid container item xs className={props.classes.root}>
+            <Grid container item xs className={props.classes.container}>
+                <SplitterLayout customClassName={props.classes.splitter} percentage={true}
                     primaryIndex={0} primaryMinSize={10}
                     secondaryInitialSize={getSplitterInitialSize()} secondaryMinSize={40}
                     onSecondaryPaneSizeChange={saveSplitterSize}>
-                    <Grid container item xs component='aside' direction='column' className={classes.asidePanel}>
+                    { props.isUserActive && props.isNotLinking && <Grid container item xs component='aside' direction='column' className={props.classes.asidePanel}>
                         <SidePanel />
-                    </Grid>
-                    <Grid container item xs component="main" direction="column" className={classes.contentWrapper}>
+                    </Grid> }
+                    <Grid container item xs component="main" direction="column" className={props.classes.contentWrapper}>
                         <Grid item xs>
-                            <MainContentBar />
+                            { props.isNotLinking && <MainContentBar /> }
                         </Grid>
-                        <Grid item xs className={classes.content}>
+                        <Grid item xs className={props.classes.content}>
                             <Switch>
                                 <Route path={Routes.PROJECTS} component={ProjectPanel} />
                                 <Route path={Routes.COLLECTIONS} component={CollectionPanel} />

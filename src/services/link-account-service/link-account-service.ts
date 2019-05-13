@@ -16,15 +16,15 @@ export class LinkAccountService {
         protected serverApi: AxiosInstance,
         protected actions: ApiActions) { }
 
-    public saveToSession(account: AccountToLink) {
+    public saveAccountToLink(account: AccountToLink) {
         sessionStorage.setItem(USER_LINK_ACCOUNT_KEY, JSON.stringify(account));
     }
 
-    public removeFromSession() {
+    public removeAccountToLink() {
         sessionStorage.removeItem(USER_LINK_ACCOUNT_KEY);
     }
 
-    public getFromSession() {
+    public getAccountToLink() {
         const data = sessionStorage.getItem(USER_LINK_ACCOUNT_KEY);
         return data ? JSON.parse(data) as AccountToLink : undefined;
     }

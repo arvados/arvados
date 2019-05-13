@@ -30,23 +30,24 @@ export interface MainPanelRootDataProps {
     buildInfo: string;
     uuidPrefix: string;
     isNotLinking: boolean;
+    isLinkingPath: boolean;
 }
 
 type MainPanelRootProps = MainPanelRootDataProps & WithStyles<CssRules>;
 
 export const MainPanelRoot = withStyles(styles)(
-    ({ classes, loading, working, user, buildInfo, uuidPrefix, isNotLinking }: MainPanelRootProps) =>
+    ({ classes, loading, working, user, buildInfo, uuidPrefix, isNotLinking, isLinkingPath }: MainPanelRootProps) =>
         loading
             ? <WorkbenchLoadingScreen />
-            : <> { isNotLinking ? <>
-               <MainAppBar
+            : <>
+               { isNotLinking && <MainAppBar
                     user={user}
                     buildInfo={buildInfo}
                     uuidPrefix={uuidPrefix}>
                     {working ? <LinearProgress color="secondary" /> : null}
-                </MainAppBar>
+               </MainAppBar> }
                 <Grid container direction="column" className={classes.root}>
-                    { user ? (user.isActive ? <WorkbenchPanel /> : <InactivePanel />) : <LoginPanel />}
-               </Grid>
-            </> : user ? <LinkAccountPanel/> : <LoginPanel /> } </>
+                    { user ? (user.isActive || (!user.isActive && isLinkingPath) ? <WorkbenchPanel isNotLinking={isNotLinking} isUserActive={user.isActive} /> : <InactivePanel />) : <LoginPanel /> }
+                </Grid>
+            </>
 );

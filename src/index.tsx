@@ -64,6 +64,9 @@ import { loadFileViewersConfig } from '~/store/file-viewers/file-viewers-actions
 import { collectionAdminActionSet } from '~/views-components/context-menu/action-sets/collection-admin-action-set';
 import { processResourceAdminActionSet } from '~/views-components/context-menu/action-sets/process-resource-admin-action-set';
 import { projectAdminActionSet } from '~/views-components/context-menu/action-sets/project-admin-action-set';
+import { ACCOUNT_LINK_STATUS_KEY } from '~/services/link-account-service/link-account-service';
+import { cancelLinking } from '~/store/link-account-panel/link-account-panel-actions';
+import { matchTokenRoute } from '~/routes/routes';
 
 console.log(`Starting arvados [${getBuildInfo()}]`);
 
@@ -107,6 +110,13 @@ fetchConfig()
             }
         });
         const store = configureStore(history, services);
+
+        // Cancel any link account ops in progess unless the user has
+        // just logged in or there has been a successful link operation
+        const data = sessionStorage.getItem(ACCOUNT_LINK_STATUS_KEY);
+        if (!matchTokenRoute(history.location.pathname) && data === null) {
+            store.dispatch<any>(cancelLinking());
+        }
 
         store.subscribe(initListener(history, store, services, config));
         store.dispatch(initAuth(config));

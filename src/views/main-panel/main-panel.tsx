@@ -8,6 +8,7 @@ import { MainPanelRoot, MainPanelRootDataProps } from '~/views/main-panel/main-p
 import { isSystemWorking } from '~/store/progress-indicator/progress-indicator-reducer';
 import { isWorkbenchLoading } from '~/store/workbench/workbench-actions';
 import { LinkAccountPanelStatus } from '~/store/link-account-panel/link-account-panel-reducer';
+import { matchLinkAccountRoute } from '~/routes/routes';
 
 const mapStateToProps = (state: RootState): MainPanelRootDataProps => {
     return {
@@ -16,7 +17,8 @@ const mapStateToProps = (state: RootState): MainPanelRootDataProps => {
         loading: isWorkbenchLoading(state),
         buildInfo: state.appInfo.buildInfo,
         uuidPrefix: state.auth.localCluster,
-        isNotLinking: state.linkAccountPanel.status === LinkAccountPanelStatus.INITIAL
+        isNotLinking: state.linkAccountPanel.status === LinkAccountPanelStatus.NONE || state.linkAccountPanel.status === LinkAccountPanelStatus.INITIAL,
+        isLinkingPath:  state.router.location ? matchLinkAccountRoute(state.router.location.pathname) !== null : false
     };
 };
 

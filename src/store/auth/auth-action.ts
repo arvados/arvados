@@ -80,7 +80,7 @@ export const login = (uuidPrefix: string, homeCluster: string) => (dispatch: Dis
 
 export const logout = (deleteLinkData: boolean = false) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     if (deleteLinkData) {
-        services.linkAccountService.removeFromSession();
+        services.linkAccountService.removeAccountToLink();
     }
     services.authService.removeApiToken();
     services.authService.removeUser();

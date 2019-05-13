@@ -5,11 +5,10 @@
 import * as React from 'react';
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
-import { startLinking } from '~/store/link-account-panel/link-account-panel-actions';
 import { Grid, Typography, Button } from '@material-ui/core';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from '~/common/custom-theme';
-import { LinkAccountType } from '~/models/link-account';
+import { navigateToLinkAccount } from '~/store/navigation/navigation-action';
 
 
 type CssRules = 'root' | 'ontop' | 'title';
@@ -43,7 +42,9 @@ export interface InactivePanelActionProps {
 }
 
 const mapDispatchToProps = (dispatch: Dispatch): InactivePanelActionProps => ({
-    startLinking: () => dispatch<any>(startLinking(LinkAccountType.ACCESS_OTHER_ACCOUNT))
+    startLinking: () => {
+        dispatch<any>(navigateToLinkAccount);
+    }
 });
 
 type InactivePanelProps =  WithStyles<CssRules> & InactivePanelActionProps;

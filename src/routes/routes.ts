@@ -122,6 +122,9 @@ export const matchLinkAccountRoute = (route: string) =>
 export const matchKeepServicesRoute = (route: string) =>
     matchPath(route, { path: Routes.KEEP_SERVICES });
 
+export const matchTokenRoute = (route: string) =>
+    matchPath(route, { path: Routes.TOKEN });
+
 export const matchUsersRoute = (route: string) =>
     matchPath(route, { path: Routes.USERS });
 
