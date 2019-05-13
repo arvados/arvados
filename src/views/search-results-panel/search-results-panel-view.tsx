@@ -21,6 +21,9 @@ import {
 } from '~/views-components/data-explorer/renderers';
 import { createTree } from '~/models/tree';
 import { getInitialResourceTypeFilters } from '~/store/resource-type-filters/resource-type-filters';
+import { User } from "~/models/user";
+import { Config } from '~/common/config';
+import { Session } from "~/models/session";
 
 export enum SearchResultsPanelColumnNames {
     CLUSTER = "Cluster",
@@ -35,6 +38,9 @@ export enum SearchResultsPanelColumnNames {
 
 export interface SearchResultsPanelDataProps {
     data: SearchBarAdvanceFormData;
+    user: User;
+    sessions: Session[];
+    remoteHostsConfig: { [key: string]: Config };
 }
 
 export interface SearchResultsPanelActionProps {
@@ -118,5 +124,7 @@ export const SearchResultsPanelView = (props: SearchResultsPanelProps) => {
         onRowDoubleClick={props.onItemDoubleClick}
         onContextMenu={props.onContextMenu}
         contextMenuColumn={true}
-        hideSearchInput />;
+        hideSearchInput
+        header={<p>Searching {props.sessions.filter((ss) => ss.loggedIn).map((ss) => <span key={ss.clusterId}> {ss.clusterId}</span>)}
+        </p>} />;
 };

@@ -13,6 +13,7 @@ import { Session } from "~/models/session";
 import { getDiscoveryURL, Config } from '~/common/config';
 import { initSessions } from "~/store/auth/auth-action-session";
 import Axios from "axios";
+import { AxiosError } from "axios";
 
 export const authActions = unionize({
     SAVE_API_TOKEN: ofType<string>(),
@@ -58,8 +59,15 @@ export const initAuth = (config: Config) => (dispatch: Dispatch, getState: () =>
         dispatch<any>(initSessions(services.authService, config, user));
         dispatch<any>(getUserDetails()).then((user: User) => {
             dispatch(authActions.INIT({ user, token }));
-        }).catch(() => {
-            logout()(dispatch, getState, services);
+        }).catch((err: AxiosError) => {
+            console.log("error");
+            console.log(err);
+            if (err.response) {
+                // Bad token
+                if (err.response.status === 401) {
+                    logout()(dispatch, getState, services);
+                }
+            }
         });
     }
     Object.keys(config.remoteHosts).map((k) => {

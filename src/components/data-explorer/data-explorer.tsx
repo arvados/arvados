@@ -50,6 +50,7 @@ interface DataExplorerDataProps<T> {
     paperProps?: PaperProps;
     actions?: React.ReactNode;
     hideSearchInput?: boolean;
+    header?: React.ReactNode;
     paperKey?: string;
     currentItemUuid: string;
 }
@@ -84,11 +85,12 @@ export const DataExplorer = withStyles(styles)(
                 rowsPerPage, rowsPerPageOptions, onColumnToggle, searchValue, onSearch,
                 items, itemsAvailable, onRowClick, onRowDoubleClick, classes,
                 dataTableDefaultView, hideColumnSelector, actions, paperProps, hideSearchInput,
-                paperKey, fetchMode, currentItemUuid
+                paperKey, fetchMode, currentItemUuid, header
             } = this.props;
             return <Paper className={classes.root} {...paperProps} key={paperKey}>
                 {(!hideColumnSelector || !hideSearchInput) && <Toolbar className={classes.toolbar}>
                     <Grid container justify="space-between" wrap="nowrap" alignItems="center">
+                        {header && <div>{header}</div>}
                         <div className={classes.searchBox}>
                             {!hideSearchInput && <SearchInput
                                 value={searchValue}
