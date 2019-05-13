@@ -58,6 +58,8 @@ export const initAuth = (config: Config) => (dispatch: Dispatch, getState: () =>
         dispatch<any>(initSessions(services.authService, config, user));
         dispatch<any>(getUserDetails()).then((user: User) => {
             dispatch(authActions.INIT({ user, token }));
+        }).catch(() => {
+            logout()(dispatch, getState, services);
         });
     }
     Object.keys(config.remoteHosts).map((k) => {
