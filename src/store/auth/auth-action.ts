@@ -50,10 +50,12 @@ function removeAuthorizationHeader(client: AxiosInstance) {
 export const initAuth = (config: Config) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     const user = services.authService.getUser();
     const token = services.authService.getApiToken();
+    const homeCluster = services.authService.getHomeCluster();
     if (token) {
         setAuthorizationHeader(services, token);
     }
     dispatch(authActions.CONFIG({ config }));
+    dispatch(authActions.SET_HOME_CLUSTER(homeCluster || config.uuidPrefix));
     if (token && user) {
         dispatch(authActions.INIT({ user, token }));
         dispatch<any>(initSessions(services.authService, config, user));

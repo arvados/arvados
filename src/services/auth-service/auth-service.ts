@@ -20,6 +20,7 @@ export const USER_IS_ADMIN = 'isAdmin';
 export const USER_IS_ACTIVE = 'isActive';
 export const USER_USERNAME = 'username';
 export const USER_PREFS = 'prefs';
+export const HOME_CLUSTER = 'homeCluster';
 
 export interface UserDetailsResponse {
     email: string;
@@ -42,6 +43,7 @@ export class AuthService {
 
     public saveApiToken(token: string) {
         localStorage.setItem(API_TOKEN_KEY, token);
+        localStorage.setItem(HOME_CLUSTER, token.split('/')[1].substr(0, 5));
     }
 
     public removeApiToken() {
@@ -50,6 +52,10 @@ export class AuthService {
 
     public getApiToken() {
         return localStorage.getItem(API_TOKEN_KEY) || undefined;
+    }
+
+    public getHomeCluster() {
+        return localStorage.getItem(HOME_CLUSTER) || undefined;
     }
 
     public getUuid() {
