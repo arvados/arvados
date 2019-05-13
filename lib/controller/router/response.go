@@ -35,22 +35,54 @@ func (rtr *router) responseOptions(opts interface{}) (responseOptions, error) {
 	return rOpts, nil
 }
 
+func applySelectParam(selectParam []string, orig map[string]interface{}) map[string]interface{} {
+	if len(selectParam) == 0 {
+		return orig
+	}
+	selected := map[string]interface{}{}
+	for _, attr := range selectParam {
+		if v, ok := orig[attr]; ok {
+			selected[attr] = v
+		}
+	}
+	// Preserve "kind" even if not requested
+	if v, ok := orig["kind"]; ok {
+		selected["kind"] = v
+	}
+	return selected
+}
+
 func (rtr *router) sendResponse(w http.ResponseWriter, resp interface{}, opts responseOptions) {
+	respKind := kind(resp)
 	var tmp map[string]interface{}
 	err := rtr.transcode(resp, &tmp)
 	if err != nil {
 		rtr.sendError(w, err)
 		return
 	}
-	if len(opts.Select) > 0 {
-		selected := map[string]interface{}{}
-		for _, attr := range opts.Select {
-			if v, ok := tmp[attr]; ok {
-				selected[attr] = v
+
+	tmp["kind"] = respKind
+	if items, ok := tmp["items"].([]interface{}); ok {
+		for i, item := range items {
+			// Fill in "kind" by inspecting UUID
+			item, _ := item.(map[string]interface{})
+			uuid, _ := item["uuid"].(string)
+			if len(uuid) != 27 {
+				// unsure whether this happens
+			} else if t, ok := infixMap[uuid[6:11]]; !ok {
+				// infix not listed in infixMap
+			} else {
+				item["kind"] = kind(t)
 			}
+			items[i] = applySelectParam(opts.Select, item)
 		}
-		tmp = selected
+		if opts.Count == "none" {
+			delete(tmp, "items_available")
+		}
+	} else {
+		tmp = applySelectParam(opts.Select, tmp)
 	}
+
 	// Format non-nil timestamps as rfc3339NanoFixed (by default
 	// they will have been encoded to time.RFC3339Nano, which
 	// omits trailing zeroes).
@@ -74,7 +106,6 @@ func (rtr *router) sendResponse(w http.ResponseWriter, resp interface{}, opts re
 			tmp[k] = t.Format(rfc3339NanoFixed)
 		}
 	}
-	tmp["kind"] = kind(resp)
 	json.NewEncoder(w).Encode(tmp)
 }
 
@@ -84,6 +115,11 @@ func (rtr *router) sendError(w http.ResponseWriter, err error) {
 		code = err.HTTPStatus()
 	}
 	httpserver.Error(w, err.Error(), code)
+}
+
+var infixMap = map[string]interface{}{
+	"4zz18": arvados.Collection{},
+	"j7d0g": arvados.Group{},
 }
 
 var mungeKind = regexp.MustCompile(`\..`)
