@@ -71,6 +71,8 @@ gem 'rails-observers'
 gem 'rails-perftest'
 gem 'rails-controller-testing'
 
+gem 'sass-rails'
+
 # Install any plugin gems
 Dir.glob(File.join(File.dirname(__FILE__), 'lib', '**', "Gemfile")) do |f|
     eval(IO.read(f), binding)
