@@ -140,6 +140,20 @@ func (conn *Conn) CollectionList(ctx context.Context, options arvados.ListOption
 	return resp, err
 }
 
+func (conn *Conn) CollectionProvenance(ctx context.Context, options arvados.GetOptions) (map[string]interface{}, error) {
+	ep := arvados.EndpointCollectionProvenance
+	var resp map[string]interface{}
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) CollectionUsedBy(ctx context.Context, options arvados.GetOptions) (map[string]interface{}, error) {
+	ep := arvados.EndpointCollectionUsedBy
+	var resp map[string]interface{}
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
 func (conn *Conn) CollectionDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.Collection, error) {
 	ep := arvados.EndpointCollectionDelete
 	var resp arvados.Collection

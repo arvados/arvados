@@ -53,15 +53,19 @@ func applySelectParam(selectParam []string, orig map[string]interface{}) map[str
 }
 
 func (rtr *router) sendResponse(w http.ResponseWriter, resp interface{}, opts responseOptions) {
-	respKind := kind(resp)
 	var tmp map[string]interface{}
+
 	err := rtr.transcode(resp, &tmp)
 	if err != nil {
 		rtr.sendError(w, err)
 		return
 	}
 
-	tmp["kind"] = respKind
+	respKind := kind(resp)
+	if respKind != "" {
+		tmp["kind"] = respKind
+	}
+
 	if items, ok := tmp["items"].([]interface{}); ok {
 		for i, item := range items {
 			// Fill in "kind" by inspecting UUID
@@ -71,8 +75,8 @@ func (rtr *router) sendResponse(w http.ResponseWriter, resp interface{}, opts re
 				// unsure whether this happens
 			} else if t, ok := infixMap[uuid[6:11]]; !ok {
 				// infix not listed in infixMap
-			} else {
-				item["kind"] = kind(t)
+			} else if k := kind(t); k != "" {
+				item["kind"] = k
 			}
 			items[i] = applySelectParam(opts.Select, item)
 		}
@@ -125,7 +129,11 @@ var infixMap = map[string]interface{}{
 var mungeKind = regexp.MustCompile(`\..`)
 
 func kind(resp interface{}) string {
-	return mungeKind.ReplaceAllStringFunc(fmt.Sprintf("%T", resp), func(s string) string {
+	t := fmt.Sprintf("%T", resp)
+	if !strings.HasPrefix(t, "arvados.") {
+		return ""
+	}
+	return mungeKind.ReplaceAllStringFunc(t, func(s string) string {
 		// "arvados.CollectionList" => "arvados#collectionList"
 		return "#" + strings.ToLower(s[1:])
 	})

@@ -64,6 +64,20 @@ func (rtr *router) addRoutes(cluster *arvados.Cluster) {
 			},
 		},
 		{
+			arvados.EndpointCollectionProvenance,
+			func() interface{} { return &arvados.GetOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.CollectionProvenance(ctx, *opts.(*arvados.GetOptions))
+			},
+		},
+		{
+			arvados.EndpointCollectionUsedBy,
+			func() interface{} { return &arvados.GetOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.CollectionUsedBy(ctx, *opts.(*arvados.GetOptions))
+			},
+		},
+		{
 			arvados.EndpointCollectionDelete,
 			func() interface{} { return &arvados.DeleteOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {

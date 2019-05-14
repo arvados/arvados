@@ -26,6 +26,8 @@ type Interface interface {
 	CollectionUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.Collection, error)
 	CollectionGet(ctx context.Context, options arvados.GetOptions) (arvados.Collection, error)
 	CollectionList(ctx context.Context, options arvados.ListOptions) (arvados.CollectionList, error)
+	CollectionProvenance(ctx context.Context, options arvados.GetOptions) (map[string]interface{}, error)
+	CollectionUsedBy(ctx context.Context, options arvados.GetOptions) (map[string]interface{}, error)
 	CollectionDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.Collection, error)
 	ContainerCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Container, error)
 	ContainerUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.Container, error)
@@ -238,6 +240,14 @@ func (conn *Conn) CollectionGet(ctx context.Context, options arvados.GetOptions)
 
 func (conn *Conn) CollectionList(ctx context.Context, options arvados.ListOptions) (arvados.CollectionList, error) {
 	return conn.local.CollectionList(ctx, options)
+}
+
+func (conn *Conn) CollectionProvenance(ctx context.Context, options arvados.GetOptions) (map[string]interface{}, error) {
+	return conn.local.CollectionProvenance(ctx, options)
+}
+
+func (conn *Conn) CollectionUsedBy(ctx context.Context, options arvados.GetOptions) (map[string]interface{}, error) {
+	return conn.local.CollectionUsedBy(ctx, options)
 }
 
 func (conn *Conn) CollectionDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.Collection, error) {
