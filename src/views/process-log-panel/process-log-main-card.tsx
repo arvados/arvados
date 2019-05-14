@@ -21,7 +21,7 @@ type CssRules = 'backLink' | 'backIcon' | 'card' | 'title' | 'iconHeader' | 'lin
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     backLink: {
-        fontSize: '1rem',
+        fontSize: '14px',
         fontWeight: 600,
         display: 'flex',
         alignItems: 'center',
@@ -72,7 +72,7 @@ export const ProcessLogMainCard = withStyles(styles)(
     ({ classes, process, selectedFilter, filters, onChange, lines, onContextMenu, navigateToLogCollection }: ProcessLogMainCardProps & WithStyles<CssRules>) =>
         <Grid item xs={12}>
             <Link to={`/processes/${process.containerRequest.uuid}`} className={classes.backLink}>
-                <BackIcon className={classes.backIcon} /> Back
+                <BackIcon className={classes.backIcon} /> BACK
             </Link>
             <Card className={classes.card}>
                 <CardHeader

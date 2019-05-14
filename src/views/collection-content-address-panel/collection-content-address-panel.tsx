@@ -3,10 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Link } from 'react-router-dom';
-import {
-    StyleRulesCallback, WithStyles, withStyles, Grid
-} from '@material-ui/core';
+import { StyleRulesCallback, WithStyles, withStyles, Grid, Button } from '@material-ui/core';
 import { CollectionIcon } from '~/components/icon/icon';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { BackIcon } from '~/components/icon/icon';
@@ -29,12 +26,12 @@ type CssRules = 'backLink' | 'backIcon' | 'card' | 'title' | 'iconHeader' | 'lin
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     backLink: {
-        fontSize: '1rem',
+        fontSize: '14px',
         fontWeight: 600,
         display: 'flex',
         alignItems: 'center',
-        textDecoration: 'none',
         padding: theme.spacing.unit,
+        marginBottom: theme.spacing.unit,
         color: theme.palette.grey["700"],
     },
     backIcon: {
@@ -132,10 +129,12 @@ export const CollectionsContentAddressPanel = withStyles(styles)(
         class extends React.Component<CollectionContentAddressPanelActionProps & CollectionContentAddressDataProps & WithStyles<CssRules>> {
             render() {
                 return <Grid item xs={12}>
-                    {/* <Link to={`/collections/${collectionUuid}`} className={this.props.classes.backLink}>
+                    <Button
+                        onClick={() => history.back()}
+                        className={this.props.classes.backLink}>
                         <BackIcon className={this.props.classes.backIcon} />
                         Back
-                    </Link> */}
+                    </Button>
                     <DataExplorer
                         id={COLLECTIONS_CONTENT_ADDRESS_PANEL_ID}
                         onRowClick={this.props.onItemClick}
