@@ -12,7 +12,8 @@ import { User, UserResource } from "~/models/user";
 import { Session } from "~/models/session";
 import { Config } from '~/common/config';
 import { initSessions } from "~/store/auth/auth-action-session";
-import { UserRepositoryCreate } from '~/views-components/dialog-create/dialog-user-create';
+import { cancelLinking } from '~/store/link-account-panel/link-account-panel-actions';
+import { matchTokenRoute } from '~/routes/routes';
 
 export const authActions = unionize({
     SAVE_API_TOKEN: ofType<string>(),
@@ -47,6 +48,13 @@ function removeAuthorizationHeader(client: AxiosInstance) {
 }
 
 export const initAuth = (config: Config) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    // Cancel any link account ops in progess unless the user has
+    // just logged in or there has been a successful link operation
+    const data = services.linkAccountService.getLinkOpStatus();
+    if (!matchTokenRoute(location.pathname) && data === undefined) {
+        dispatch<any>(cancelLinking());
+    }
+
     const user = services.authService.getUser();
     const token = services.authService.getApiToken();
     if (token) {
