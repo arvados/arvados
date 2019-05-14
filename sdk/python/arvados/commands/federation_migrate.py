@@ -39,8 +39,11 @@ def main():
     for v in clusters.values():
         for r in clusters:
             if r != v._rootDesc["uuidPrefix"] and r not in v._rootDesc["remoteHosts"]:
-                print("%s is missing from remoteHosts on %s" % (r, v._rootDesc["uuidPrefix"]))
+                print("ERROR: %s is missing from remoteHosts of %s" % (r, v._rootDesc["uuidPrefix"]))
                 fail = True
+        for r in v._rootDesc["remoteHosts"]:
+            if r != "*" and r not in clusters:
+                print("WARNING: %s is federated with %s but %s is not in the tokens file" % (v._rootDesc["uuidPrefix"], r, r))
 
     if fail:
         exit(1)
