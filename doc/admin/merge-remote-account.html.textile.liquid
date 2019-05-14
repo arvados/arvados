@@ -11,7 +11,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 When using multiple Arvados clusters, prior to federation capabilities described here, a user would have to create a separate account on each cluster.  Unfortunately, because each account represents a separate "identity", in this system permissions granted to a user on one cluster do not transfer to another cluster, even if the accounts are associated with the same user.
 
-To address this, Arvados supports "federated user accounts".  A federated user account is associated with a specific "home" cluster, and can be used access other clusters in the federation that trust the home cluster.  When a user arrives at another cluster's Workbench, they select and log in to their home cluster, and then are returned to the starting cluster logged in with the federated user account.
+To address this, Arvados supports "federated user accounts".  A federated user account is associated with a specific "home" cluster, and can be used to access other clusters in the federation that trust the home cluster.  When a user arrives at another cluster's Workbench, they select and log in to their home cluster, and then are returned to the starting cluster logged in with the federated user account.
 
 When setting up federation capabilities on existing clusters, some users might already have accounts on multiple clusters.  In order to have a single federated identity, users should be assigned a "home" cluster, and accounts associated with that user on the other (non-home) clusters should be migrated to the new federated user account.  The @arv-federation-migrate@ tool assists with this.
 
@@ -55,7 +55,7 @@ person_b@example.com,x3982-tpzed-1vl3k7knf7qihbe,
 person_b@example.com,x6b1s-tpzed-w4nhkx2rmrhlr54,
 </pre>
 
-The third column describes that user's home cluster.  If a user only has one account (identified by email address), the column will be filled in and there is nothing to do.  If the column is blank, that means there is more than one Arvados account associated with the user.  Edit the file and provide the desired home cluster for each user.  In this example, @person_b@example.com@ is assigned the home cluster @x3982@.
+The third column describes that user's home cluster.  If a user only has one account (identified by email address), the column will be filled in and there is nothing to do.  If the column is blank, that means there is more than one Arvados account associated with the user.  Edit the file and provide the desired home cluster for each user.  In this example, <code>person_b@example.com</code> is assigned the home cluster @x3982@.
 
 _users.csv_
 

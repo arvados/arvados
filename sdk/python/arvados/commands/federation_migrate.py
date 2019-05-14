@@ -12,11 +12,12 @@ import hmac
 
 def main():
 
-    parser = argparse.ArgumentParser(description='Migrate users to federated identity, see https://doc.arvados.org/admin/???')
+    parser = argparse.ArgumentParser(description='Migrate users to federated identity, see https://doc.arvados.org/admin/merge-remote-account.html')
     parser.add_argument('--tokens', type=str, required=True)
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument('--report', type=str)
-    group.add_argument('--migrate', type=str)
+    group.add_argument('--report', type=str, help="Generate report .csv file listing users by email address and their associated Arvados accounts")
+    group.add_argument('--migrate', type=str, help="Consume report .csv and migrate users to designated Arvados accounts")
+    group.add_argument('--check', action="store_true", help="Check that tokens are usable and the federation is well connected")
     args = parser.parse_args()
 
     clusters = {}
@@ -26,11 +27,26 @@ def main():
         for r in csv.reader(f):
             host = r[0]
             token = r[1]
+            print("Contacting %s" % (host))
             arv = arvados.api(host=host, token=token)
             clusters[arv._rootDesc["uuidPrefix"]] = arv
             cur = arv.users().current().execute()
             if not cur["is_admin"]:
                 raise Exception("Not admin of %s" % host)
+
+    print("Checking that the federation is well connected")
+    fail = False
+    for v in clusters.values():
+        for r in clusters:
+            if r != v._rootDesc["uuidPrefix"] and r not in v._rootDesc["remoteHosts"]:
+                print("%s is missing from remoteHosts on %s" % (r, v._rootDesc["uuidPrefix"]))
+                fail = True
+
+    if fail:
+        exit(1)
+
+    if args.check:
+        exit(0)
 
     if args.report:
         users = []
