@@ -15,12 +15,10 @@ import { resourcesActions } from "~/store/resources/resources-actions";
 import { unionize, ofType, UnionOf } from '~/common/unionize';
 import { SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { navigateTo } from '~/store/navigation/navigation-action';
-import { FilterBuilder } from "~/services/api/filter-builder";
 import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
 
 export const collectionPanelActions = unionize({
     SET_COLLECTION: ofType<CollectionResource>(),
-    SET_NUMBER_OF_COLLECTIONS_WITH_SAME_PDH: ofType<number>(),
     LOAD_COLLECTION: ofType<{ uuid: string }>(),
     LOAD_COLLECTION_SUCCESS: ofType<{ item: CollectionResource }>()
 });
@@ -34,12 +32,6 @@ export const loadCollectionPanel = (uuid: string) =>
         dispatch(collectionPanelActions.LOAD_COLLECTION({ uuid }));
         dispatch(collectionPanelFilesAction.SET_COLLECTION_FILES({ files: createTree() }));
         const collection = await services.collectionService.get(uuid);
-        const collectionsByPDH = await services.collectionService.list({
-            filters: new FilterBuilder()
-                .addEqual('portableDataHash', collection.portableDataHash)
-                .getFilters()
-        });
-        dispatch(collectionPanelActions.SET_NUMBER_OF_COLLECTIONS_WITH_SAME_PDH(collectionsByPDH.itemsAvailable));
         dispatch(loadDetailsPanel(collection.uuid));
         dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item: collection }));
         dispatch(resourcesActions.SET_RESOURCES([collection]));

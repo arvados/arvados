@@ -7,18 +7,15 @@ import { CollectionResource } from "~/models/collection";
 
 export interface CollectionPanelState {
     item: CollectionResource | null;
-    numberOfCollectionsWithSamePDH: number;
 }
 
 const initialState = {
-    item: null,
-    numberOfCollectionsWithSamePDH: 0
+    item: null
 };
 
 export const collectionPanelReducer = (state: CollectionPanelState = initialState, action: CollectionPanelAction) =>
     collectionPanelActions.match(action, {
         default: () => state,
         SET_COLLECTION: (item) => ({ ...state, item }),
-        LOAD_COLLECTION_SUCCESS: ({ item }) => ({ ...state, item }),
-        SET_NUMBER_OF_COLLECTIONS_WITH_SAME_PDH: (num) => ({ ...state, numberOfCollectionsWithSamePDH: num }),
+        LOAD_COLLECTION_SUCCESS: ({ item }) => ({ ...state, item })
     });

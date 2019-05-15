@@ -79,14 +79,13 @@ const getItem = (res: DetailsResource, resourceData?: ResourceData, numberOfColl
     }
 };
 
-const mapStateToProps = ({ detailsPanel, resources, resourcesData, collectionPanelFiles, collectionPanel }: RootState) => {
+const mapStateToProps = ({ detailsPanel, resources, resourcesData, collectionPanelFiles }: RootState) => {
     const resource = getResource(detailsPanel.resourceUuid)(resources) as DetailsResource | undefined;
     const file = getNode(detailsPanel.resourceUuid)(collectionPanelFiles);
     const resourceData = getResourceData(detailsPanel.resourceUuid)(resourcesData);
-    const numberOfCollectionsByPDH = collectionPanel.numberOfCollectionsWithSamePDH;
     return {
         isOpened: detailsPanel.isOpened,
-        item: getItem(resource || (file && file.value) || EMPTY_RESOURCE, resourceData, numberOfCollectionsByPDH),
+        item: getItem(resource || (file && file.value) || EMPTY_RESOURCE, resourceData),
     };
 };
 

@@ -21,6 +21,8 @@ import { navigateTo } from '~/store/navigation/navigation-action';
 import { updateFavorites } from '~/store/favorites/favorites-actions';
 import { updatePublicFavorites } from '~/store/public-favorites/public-favorites-actions';
 import { setBreadcrumbs } from '../breadcrumbs/breadcrumbs-actions';
+import { ResourceKind, extractUuidKind } from '~/models/resource';
+import { ownerNameActions } from '~/store/owner-name/owner-name-actions';
 
 export class CollectionsWithSameContentAddressMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -56,6 +58,41 @@ export class CollectionsWithSameContentAddressMiddlewareService extends DataExpl
                         .addEqual('portableDataHash', contentAddress)
                         .addILike("name", dataExplorer.searchValue)
                         .getFilters()
+                });
+                const userUuids = response.items.map(it => {
+                    if (extractUuidKind(it.ownerUuid) === ResourceKind.USER) {
+                        return it.ownerUuid;
+                    } else {
+                        return '';
+                    }
+                }
+                );
+                const groupUuids = response.items.map(it => {
+                    if (extractUuidKind(it.ownerUuid) === ResourceKind.GROUP) {
+                        return it.ownerUuid;
+                    } else {
+                        return '';
+                    }
+                });
+                const responseUsers = await this.services.userService.list({
+                    limit: dataExplorer.rowsPerPage,
+                    offset: dataExplorer.page * dataExplorer.rowsPerPage,
+                    filters: new FilterBuilder()
+                        .addIn('uuid', userUuids)
+                        .getFilters()
+                });
+                const responseGroups = await this.services.groupsService.list({
+                    limit: dataExplorer.rowsPerPage,
+                    offset: dataExplorer.page * dataExplorer.rowsPerPage,
+                    filters: new FilterBuilder()
+                        .addIn('uuid', groupUuids)
+                        .getFilters()
+                });
+                responseUsers.items.map(it=>{
+                    api.dispatch<any>(ownerNameActions.SET_OWNER_NAME({name: it.uuid === userUuid ? 'User: Me' : `User: ${it.firstName} ${it.lastName}`, uuid: it.uuid}));
+                });
+                responseGroups.items.map(it=>{
+                    api.dispatch<any>(ownerNameActions.SET_OWNER_NAME({name: `Project: ${it.name}`, uuid: it.uuid}));
                 });
                 api.dispatch<any>(setBreadcrumbs([{ label: 'Projects', uuid: userUuid }]));
                 api.dispatch<any>(updateFavorites(response.items.map(item => item.uuid)));

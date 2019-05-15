@@ -64,6 +64,7 @@ import { PUBLIC_FAVORITE_PANEL_ID } from '~/store/public-favorites-panel/public-
 import { publicFavoritesReducer } from '~/store/public-favorites/public-favorites-reducer';
 import { CollectionsWithSameContentAddressMiddlewareService } from '~/store/collections-content-address-panel/collections-content-address-middleware-service';
 import { COLLECTIONS_CONTENT_ADDRESS_PANEL_ID } from '~/store/collections-content-address-panel/collections-content-address-panel-actions';
+import { ownerNameReducer } from '~/store/owner-name/owner-name-reducer';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -153,6 +154,7 @@ const createRootReducer = (services: ServiceRepository) => combineReducers({
     detailsPanel: detailsPanelReducer,
     dialog: dialogReducer,
     favorites: favoritesReducer,
+    ownerName: ownerNameReducer,
     publicFavorites: publicFavoritesReducer,
     form: formReducer,
     processLogsPanel: processLogsPanelReducer,

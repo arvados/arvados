@@ -20,7 +20,7 @@ import { navigateTo } from '~/store/navigation/navigation-action';
 import { DataColumns } from '~/components/data-table/data-table';
 import { SortDirection } from '~/components/data-table/data-column';
 import { createTree } from '~/models/tree';
-import { ResourceName, ResourceOwner, ResourceLastModifiedDate } from '~/views-components/data-explorer/renderers';
+import { ResourceName, ResourceOwnerName, ResourceLastModifiedDate } from '~/views-components/data-explorer/renderers';
 
 type CssRules = 'backLink' | 'backIcon' | 'card' | 'title' | 'iconHeader' | 'link';
 
@@ -77,7 +77,7 @@ export const collectionContentAddressPanelColumns: DataColumns<string> = [
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceOwner uuid={uuid} />
+        render: uuid => <ResourceOwnerName uuid={uuid} />
     },
     {
         name: CollectionContentAddressPanelColumnNames.LAST_MODIFIED,
