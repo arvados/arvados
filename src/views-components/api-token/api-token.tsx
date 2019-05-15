@@ -31,12 +31,12 @@ export const ApiToken = connect()(
                 this.props.dispatch(initSessions(this.props.authService, this.props.config, user));
             }).finally(() => {
                 if (loadMainApp) {
-                if (this.props.dispatch(getAccountLinkData())) {
-                    this.props.dispatch(navigateToLinkAccount);
-                }
-                else {
-                    this.props.dispatch(navigateToRootProject);
-                }
+                    if (this.props.dispatch(getAccountLinkData())) {
+                        this.props.dispatch(navigateToLinkAccount);
+                    }
+                    else {
+                        this.props.dispatch(navigateToRootProject);
+                    }
                 }
             });
         }

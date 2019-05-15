@@ -172,7 +172,7 @@ export const startLinking = (t: LinkAccountType) =>
         services.linkAccountService.saveAccountToLink(accountToLink);
         const auth = getState().auth;
         dispatch(logout());
-        dispatch(login(auth.localCluster, auth.remoteHosts[auth.homeCluster]));
+        dispatch(login(auth.localCluster, auth.homeCluster, auth.remoteHosts));
     };
 
 export const getAccountLinkData = () =>
