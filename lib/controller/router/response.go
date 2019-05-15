@@ -65,18 +65,28 @@ func (rtr *router) sendResponse(w http.ResponseWriter, resp interface{}, opts re
 	if respKind != "" {
 		tmp["kind"] = respKind
 	}
+	defaultItemKind := ""
+	if strings.HasSuffix(respKind, "List") {
+		defaultItemKind = strings.TrimSuffix(respKind, "List")
+	}
 
 	if items, ok := tmp["items"].([]interface{}); ok {
 		for i, item := range items {
-			// Fill in "kind" by inspecting UUID
+			// Fill in "kind" by inspecting UUID/PDH if
+			// possible; fall back on assuming each
+			// Items[] entry in an "arvados#fooList"
+			// response should have kind="arvados#foo".
 			item, _ := item.(map[string]interface{})
-			uuid, _ := item["uuid"].(string)
-			if len(uuid) != 27 {
-				// unsure whether this happens
-			} else if t, ok := infixMap[uuid[6:11]]; !ok {
-				// infix not listed in infixMap
-			} else if k := kind(t); k != "" {
+			infix := ""
+			if uuid, _ := item["uuid"].(string); len(uuid) == 27 {
+				infix = uuid[6:11]
+			}
+			if k := kind(infixMap[infix]); k != "" {
 				item["kind"] = k
+			} else if pdh, _ := item["portable_data_hash"].(string); pdh != "" {
+				item["kind"] = "arvados#collection"
+			} else if defaultItemKind != "" {
+				item["kind"] = defaultItemKind
 			}
 			items[i] = applySelectParam(opts.Select, item)
 		}

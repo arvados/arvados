@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -58,27 +59,50 @@ func (s *RouterSuite) doRequest(c *check.C, token, method, path string, hdrs htt
 	return req, rw, jresp
 }
 
-func (s *RouterSuite) TestCollectionParams(c *check.C) {
+func (s *RouterSuite) TestCollectionResponses(c *check.C) {
 	token := arvadostest.ActiveTokenV2
 
-	_, rw, jresp := s.doRequest(c, token, "GET", `/arvados/v1/collections?include_trash=true`, nil, nil)
-	c.Check(rw.Code, check.Equals, http.StatusOK)
-	c.Check(jresp["items_available"], check.FitsTypeOf, float64(0))
-	c.Check(jresp["kind"], check.Equals, "arvados#collectionList")
-	c.Check(jresp["items"].([]interface{})[0].(map[string]interface{})["kind"], check.Equals, "arvados#collection")
-
-	_, rw, jresp = s.doRequest(c, token, "GET", `/arvados/v1/collections`, nil, bytes.NewBufferString(`{"include_trash":true}`))
+	// Check "get collection" response has "kind" key
+	_, rw, jresp := s.doRequest(c, token, "GET", `/arvados/v1/collections`, nil, bytes.NewBufferString(`{"include_trash":true}`))
 	c.Check(rw.Code, check.Equals, http.StatusOK)
 	c.Check(jresp["items"], check.FitsTypeOf, []interface{}{})
 	c.Check(jresp["kind"], check.Equals, "arvados#collectionList")
 	c.Check(jresp["items"].([]interface{})[0].(map[string]interface{})["kind"], check.Equals, "arvados#collection")
 
-	_, rw, jresp = s.doRequest(c, token, "POST", `/arvados/v1/collections`, http.Header{"Content-Type": {"application/x-www-form-urlencoded"}}, bytes.NewBufferString(`ensure_unique_name=true`))
-	c.Check(rw.Code, check.Equals, http.StatusOK)
-	c.Check(jresp["uuid"], check.FitsTypeOf, "")
-	c.Check(jresp["kind"], check.Equals, "arvados#collection")
+	// Check items in list response have a "kind" key regardless
+	// of whether a uuid/pdh is selected.
+	for _, selectj := range []string{
+		``,
+		`,"select":["portable_data_hash"]`,
+		`,"select":["name"]`,
+		`,"select":["uuid"]`,
+	} {
+		_, rw, jresp = s.doRequest(c, token, "GET", `/arvados/v1/collections`, nil, bytes.NewBufferString(`{"where":{"uuid":["`+arvadostest.FooCollection+`"]}`+selectj+`}`))
+		c.Check(rw.Code, check.Equals, http.StatusOK)
+		c.Check(jresp["items"], check.FitsTypeOf, []interface{}{})
+		c.Check(jresp["items_available"], check.FitsTypeOf, float64(0))
+		c.Check(jresp["kind"], check.Equals, "arvados#collectionList")
+		item0 := jresp["items"].([]interface{})[0].(map[string]interface{})
+		c.Check(item0["kind"], check.Equals, "arvados#collection")
+		if selectj == "" || strings.Contains(selectj, "portable_data_hash") {
+			c.Check(item0["portable_data_hash"], check.Equals, arvadostest.FooCollectionPDH)
+		} else {
+			c.Check(item0["portable_data_hash"], check.IsNil)
+		}
+		if selectj == "" || strings.Contains(selectj, "name") {
+			c.Check(item0["name"], check.FitsTypeOf, "")
+		} else {
+			c.Check(item0["name"], check.IsNil)
+		}
+		if selectj == "" || strings.Contains(selectj, "uuid") {
+			c.Check(item0["uuid"], check.Equals, arvadostest.FooCollection)
+		} else {
+			c.Check(item0["uuid"], check.IsNil)
+		}
+	}
 
-	_, rw, jresp = s.doRequest(c, token, "POST", `/arvados/v1/collections?ensure_unique_name=true`, nil, nil)
+	// Check "create collection" response has "kind" key
+	_, rw, jresp = s.doRequest(c, token, "POST", `/arvados/v1/collections`, http.Header{"Content-Type": {"application/x-www-form-urlencoded"}}, bytes.NewBufferString(`ensure_unique_name=true`))
 	c.Check(rw.Code, check.Equals, http.StatusOK)
 	c.Check(jresp["uuid"], check.FitsTypeOf, "")
 	c.Check(jresp["kind"], check.Equals, "arvados#collection")
