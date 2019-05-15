@@ -62,8 +62,6 @@ export const initAuth = (config: Config) => (dispatch: Dispatch, getState: () =>
         dispatch<any>(getUserDetails()).then((user: User) => {
             dispatch(authActions.INIT({ user, token }));
         }).catch((err: AxiosError) => {
-            console.log("error");
-            console.log(err);
             if (err.response) {
                 // Bad token
                 if (err.response.status === 401) {
