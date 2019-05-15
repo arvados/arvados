@@ -837,7 +837,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_not_nil(trash)
     assert_not_nil(delete)
     assert_in_delta(trash, now + 1.second, 10)
-    assert_in_delta(delete, now + Rails.configuration.Collections.BlobSigningTTL.second, 10)
+    assert_in_delta(delete, now + Rails.configuration.Collections.BlobSigningTTL, 10)
   end
 
   def check_output_ttl_1y(now, trash, delete)

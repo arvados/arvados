@@ -760,7 +760,7 @@ class CollectionTest < ActiveSupport::TestCase
                              name: 'foo',
                              trash_at: db_current_time + 1.years)
       sig_exp = /\+A[0-9a-f]{40}\@([0-9]+)/.match(c.signed_manifest_text)[1].to_i
-      expect_max_sig_exp = db_current_time.to_i + Rails.configuration.Collections.BlobSigningTTL
+      expect_max_sig_exp = db_current_time.to_i + Rails.configuration.Collections.BlobSigningTTL.to_i
       assert_operator c.trash_at.to_i, :>, expect_max_sig_exp
       assert_operator sig_exp.to_i, :<=, expect_max_sig_exp
     end
@@ -849,7 +849,7 @@ class CollectionTest < ActiveSupport::TestCase
     test test_name do
       act_as_user users(:active) do
         min_exp = (db_current_time +
-                   Rails.configuration.Collections.BlobSigningTTL.seconds)
+                   Rails.configuration.Collections.BlobSigningTTL)
         if fixture_name == :expired_collection
           # Fixture-finder shorthand doesn't find trashed collections
           # because they're not in the default scope.

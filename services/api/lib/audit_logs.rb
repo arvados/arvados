@@ -44,7 +44,7 @@ module AuditLogs
   end
 
   def self.tidy_in_background
-    max_age = Rails.configuration.AuditLogs.MaxAge
+    max_age = Rails.configuration.AuditLogs.MaxAge.to_i
     max_batch = Rails.configuration.AuditLogs.MaxDeleteBatch
     return if max_age <= 0 || max_batch <= 0
 

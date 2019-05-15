@@ -106,7 +106,7 @@ arvcfg.declare_config "Collections.CollectionVersioning", Boolean, :collection_v
 arvcfg.declare_config "Collections.PreserveVersionIfIdle", ActiveSupport::Duration, :preserve_version_if_idle
 arvcfg.declare_config "Collections.TrashSweepInterval", ActiveSupport::Duration, :trash_sweep_interval
 arvcfg.declare_config "Collections.BlobSigningKey", NonemptyString, :blob_signing_key
-arvcfg.declare_config "Collections.BlobSigningTTL", Integer, :blob_signature_ttl
+arvcfg.declare_config "Collections.BlobSigningTTL", ActiveSupport::Duration, :blob_signature_ttl
 arvcfg.declare_config "Collections.BlobSigning", Boolean, :permit_create_collection_with_unsigned_manifest, ->(cfg, k, v) { ConfigLoader.set_cfg cfg, "Collections.BlobSigning", !v }
 arvcfg.declare_config "Containers.SupportedDockerImageFormats", Array, :docker_image_formats
 arvcfg.declare_config "Containers.LogReuseDecisions", Boolean, :log_reuse_decisions

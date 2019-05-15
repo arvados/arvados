@@ -371,7 +371,7 @@ class Collection < ArvadosModel
       return manifest_text
     else
       token = Thread.current[:token]
-      exp = [db_current_time.to_i + Rails.configuration.Collections.BlobSigningTTL,
+      exp = [db_current_time.to_i + Rails.configuration.Collections.BlobSigningTTL.to_i,
              trash_at].compact.map(&:to_i).min
       self.class.sign_manifest manifest_text, token, exp
     end
@@ -379,7 +379,7 @@ class Collection < ArvadosModel
 
   def self.sign_manifest manifest, token, exp=nil
     if exp.nil?
-      exp = db_current_time.to_i + Rails.configuration.Collections.BlobSigningTTL
+      exp = db_current_time.to_i + Rails.configuration.Collections.BlobSigningTTL.to_i
     end
     signing_opts = {
       api_token: token,
