@@ -325,9 +325,9 @@ class ApplicationControllerTest < ActionController::TestCase
     # Each pdh has more than one collection; however, we should get only one for each
     assert collections.size == 2, 'Expected two objects in the preloaded collection hash'
     assert collections[pdh1], 'Expected collections for the passed in pdh #{pdh1}'
-    assert_equal collections[pdh1].size, 1, 'Expected one collection for the passed in pdh #{pdh1}'
+    assert_equal collections[pdh1].size, 1, "Expected one collection for the passed in pdh #{pdh1}"
     assert collections[pdh2], 'Expected collections for the passed in pdh #{pdh2}'
-    assert_equal collections[pdh2].size, 1, 'Expected one collection for the passed in pdh #{pdh2}'
+    assert_equal collections[pdh2].size, 1, "Expected one collection for the passed in pdh #{pdh2}"
   end
 
   test "requesting a nonexistent object returns 404" do
