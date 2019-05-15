@@ -11,6 +11,7 @@ import {
     CardContent,
     Button,
     Grid,
+    Select
 } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { UserResource } from "~/models/user";
@@ -30,19 +31,27 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 export interface LinkAccountPanelRootDataProps {
     targetUser?: UserResource;
     userToLink?: UserResource;
+    remoteHosts:  { [key: string]: string };
+    hasRemoteHosts: boolean;
     status : LinkAccountPanelStatus;
     error: LinkAccountPanelError;
+    selectedCluster?: string;
 }
 
 export interface LinkAccountPanelRootActionProps {
     startLinking: (type: LinkAccountType) => void;
     cancelLinking: () => void;
     linkAccount: () => void;
+    setSelectedCluster: (cluster: string) => void;
 }
 
-function displayUser(user: UserResource, showCreatedAt: boolean = false) {
+function displayUser(user: UserResource, showCreatedAt: boolean = false, showCluster: boolean = false) {
     const disp = [];
     disp.push(<span><b>{user.email}</b> ({user.username}, {user.uuid})</span>);
+    if (showCluster) {
+        const homeCluster = user.uuid.substr(0,5);
+        disp.push(<span> hosted on cluster <b>{homeCluster}</b> and </span>);
+    }
     if (showCreatedAt) {
         disp.push(<span> created on <b>{formatDate(user.createdAt, true)}</b></span>);
     }
@@ -52,28 +61,36 @@ function displayUser(user: UserResource, showCreatedAt: boolean = false) {
 type LinkAccountPanelRootProps = LinkAccountPanelRootDataProps & LinkAccountPanelRootActionProps & WithStyles<CssRules>;
 
 export const LinkAccountPanelRoot = withStyles(styles) (
-    ({classes, targetUser, userToLink, status, error, startLinking, cancelLinking, linkAccount}: LinkAccountPanelRootProps) => {
+    ({classes, targetUser, userToLink, status, error, startLinking, cancelLinking, linkAccount,
+      remoteHosts, hasRemoteHosts, selectedCluster, setSelectedCluster}: LinkAccountPanelRootProps) => {
         return <Card className={classes.root}>
             <CardContent>
             { status === LinkAccountPanelStatus.INITIAL && targetUser &&
             <Grid container spacing={24}>
                 <Grid container item direction="column" spacing={24}>
                     <Grid item>
-                        You are currently logged in as {displayUser(targetUser, true)}
+                        You are currently logged in as {displayUser(targetUser, true, hasRemoteHosts)}
                     </Grid>
                     <Grid item>
                         You can link Arvados accounts. After linking, either login will take you to the same account.
-                    </Grid>
+                    </Grid >
+                    {hasRemoteHosts && selectedCluster && <Grid item>
+                        Please select the cluster that hosts the account you want to link with:
+                            <Select id="remoteHostsDropdown" native defaultValue={selectedCluster} style={{ marginLeft: "1em" }}
+                                onChange={(event) => setSelectedCluster(event.target.value)}>
+                                {Object.keys(remoteHosts).map((k) => <option key={k} value={k}>{k}</option>)}
+                            </Select>
+                    </Grid> }
                 </Grid>
                 <Grid container item direction="row" spacing={24}>
                     <Grid item>
                         <Button disabled={!targetUser.isActive} color="primary" variant="contained" onClick={() => startLinking(LinkAccountType.ADD_OTHER_LOGIN)}>
-                            Add another login to this account
+                            Add another login&nbsp;{hasRemoteHosts ? <label> from {selectedCluster} </label> : null}&nbsp;to this account
                         </Button>
                     </Grid>
                     <Grid item>
                         <Button color="primary" variant="contained" onClick={() => startLinking(LinkAccountType.ACCESS_OTHER_ACCOUNT)}>
-                            Use this login to access another account
+                            Use this login to access another account&nbsp;{hasRemoteHosts ? <label> on {selectedCluster} </label> : null}
                         </Button>
                     </Grid>
                 </Grid>
@@ -82,7 +99,7 @@ export const LinkAccountPanelRoot = withStyles(styles) (
             <Grid container spacing={24}>
                 { status === LinkAccountPanelStatus.LINKING && <Grid container item direction="column" spacing={24}>
                     <Grid item>
-                        Clicking 'Link accounts' will link {displayUser(userToLink, true)} to {displayUser(targetUser, true)}.
+                        Clicking 'Link accounts' will link {displayUser(userToLink, true, hasRemoteHosts)} to {displayUser(targetUser, true, hasRemoteHosts)}.
                     </Grid>
                     <Grid item>
                         After linking, logging in as {displayUser(userToLink)} will log you into the same account as {displayUser(targetUser)}.

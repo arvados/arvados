@@ -18,7 +18,8 @@ import { progressIndicatorActions } from "~/store/progress-indicator/progress-in
 import { WORKBENCH_LOADING_SCREEN } from '~/store/workbench/workbench-actions';
 
 export const linkAccountPanelActions = unionize({
-    LINK_INIT: ofType<{ targetUser: UserResource | undefined }>(),
+    LINK_INIT: ofType<{
+        targetUser: UserResource | undefined }>(),
     LINK_LOAD: ofType<{
         originatingUser: OriginatingUser | undefined,
         targetUser: UserResource | undefined,
@@ -30,6 +31,8 @@ export const linkAccountPanelActions = unionize({
         targetUser: UserResource | undefined,
         userToLink: UserResource | undefined,
         error: LinkAccountPanelError }>(),
+    SET_SELECTED_CLUSTER: ofType<{
+        selectedCluster: string }>(),
     HAS_SESSION_DATA: {}
 });
 
@@ -97,6 +100,10 @@ export const linkFailed = () =>
 
 export const loadLinkAccountPanel = () =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        if (getState().linkAccountPanel.selectedCluster === undefined) {
+            dispatch(linkAccountPanelActions.SET_SELECTED_CLUSTER({ selectedCluster: getState().auth.localCluster }));
+        }
+
         // First check if an account link operation has completed
         dispatch(checkForLinkStatus());
 
@@ -171,8 +178,10 @@ export const startLinking = (t: LinkAccountType) =>
         const accountToLink = {type: t, userUuid: services.authService.getUuid(), token: services.authService.getApiToken()} as AccountToLink;
         services.linkAccountService.saveAccountToLink(accountToLink);
         const auth = getState().auth;
+        const selectedCluster = getState().linkAccountPanel.selectedCluster;
+        const homeCluster = selectedCluster ? selectedCluster : auth.homeCluster;
         dispatch(logout());
-        dispatch(login(auth.localCluster, auth.homeCluster, auth.remoteHosts));
+        dispatch(login(auth.localCluster, homeCluster, auth.remoteHosts));
     };
 
 export const getAccountLinkData = () =>
