@@ -23,7 +23,7 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
     const projectMatch = Routes.matchProjectRoute(pathname);
     const collectionMatch = Routes.matchCollectionRoute(pathname);
     const favoriteMatch = Routes.matchFavoritesRoute(pathname);
-    const publicFavoritesMatch = Routes.matchPublicFavorites(pathname);
+    const publicFavoritesMatch = Routes.matchPublicFavoritesRoute(pathname);
     const trashMatch = Routes.matchTrashRoute(pathname);
     const processMatch = Routes.matchProcessRoute(pathname);
     const processLogMatch = Routes.matchProcessLogRoute(pathname);
@@ -45,6 +45,7 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
     const groupsMatch = Routes.matchGroupsRoute(pathname);
     const groupDetailsMatch = Routes.matchGroupDetailsRoute(pathname);
     const linksMatch = Routes.matchLinksRoute(pathname);
+    const collectionsContentAddressMatch = Routes.matchCollectionsContentAddressRoute(pathname);
 
     store.dispatch(dialogActions.CLOSE_ALL_DIALOGS());
     store.dispatch(contextMenuActions.CLOSE_CONTEXT_MENU());
@@ -102,5 +103,7 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
         store.dispatch(WorkbenchActions.loadGroupDetailsPanel(groupDetailsMatch.params.id));
     } else if (linksMatch) {
         store.dispatch(WorkbenchActions.loadLinks);
+    } else if (collectionsContentAddressMatch) {
+        store.dispatch(WorkbenchActions.loadCollectionContentAddress);
     }
 };

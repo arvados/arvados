@@ -68,8 +68,7 @@ import { FilterBuilder } from '~/services/api/filter-builder';
 import { GroupContentsResource } from '~/services/groups-service/groups-service';
 import { MatchCases, ofType, unionize, UnionOf } from '~/common/unionize';
 import { loadRunProcessPanel } from '~/store/run-process-panel/run-process-panel-actions';
-import { loadCollectionFiles } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
-import { collectionPanelActions } from "~/store/collection-panel/collection-panel-action";
+import { collectionPanelActions, loadCollectionPanel } from "~/store/collection-panel/collection-panel-action";
 import { CollectionResource } from "~/models/collection";
 import {
     loadSearchResultsPanel,
@@ -94,6 +93,8 @@ import { groupDetailsPanelColumns } from '~/views/group-details-panel/group-deta
 import { DataTableFetchMode } from "~/components/data-table/data-table";
 import { loadPublicFavoritePanel, publicFavoritePanelActions } from '~/store/public-favorites-panel/public-favorites-action';
 import { publicFavoritePanelColumns } from '~/views/public-favorites-panel/public-favorites-panel';
+import { loadCollectionsContentAddressPanel, collectionsContentAddressActions } from '~/store/collections-content-address-panel/collections-content-address-panel-actions';
+import { collectionContentAddressPanelColumns } from '~/views/collection-content-address-panel/collection-content-address-panel';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -133,6 +134,7 @@ export const loadWorkbench = () =>
             dispatch(linkPanelActions.SET_COLUMNS({ columns: linkPanelColumns }));
             dispatch(computeNodesActions.SET_COLUMNS({ columns: computeNodePanelColumns }));
             dispatch(apiClientAuthorizationsActions.SET_COLUMNS({ columns: apiClientAuthorizationPanelColumns }));
+            dispatch(collectionsContentAddressActions.SET_COLUMNS({ columns: collectionContentAddressPanelColumns }));
 
             dispatch<any>(initSidePanelTree());
             if (router.location) {
@@ -153,6 +155,11 @@ export const loadFavorites = () =>
             dispatch<any>(loadFavoritePanel());
             dispatch<any>(setSidePanelBreadcrumbs(SidePanelTreeCategory.FAVORITES));
         });
+
+export const loadCollectionContentAddress = handleFirstTimeLoad(
+    async (dispatch: Dispatch<any>) => {
+        await dispatch(loadCollectionsContentAddressPanel());
+    });
 
 export const loadTrash = () =>
     handleFirstTimeLoad(
@@ -257,21 +264,21 @@ export const loadCollection = (uuid: string) =>
                         dispatch(updateResources([collection]));
                         await dispatch(activateSidePanelTreeItem(collection.ownerUuid));
                         dispatch(setSidePanelBreadcrumbs(collection.ownerUuid));
-                        dispatch(loadCollectionFiles(collection.uuid));
+                        dispatch(loadCollectionPanel(collection.uuid));
                     },
                     SHARED: collection => {
                         dispatch(collectionPanelActions.SET_COLLECTION(collection as CollectionResource));
                         dispatch(updateResources([collection]));
                         dispatch<any>(setSharedWithMeBreadcrumbs(collection.ownerUuid));
                         dispatch(activateSidePanelTreeItem(collection.ownerUuid));
-                        dispatch(loadCollectionFiles(collection.uuid));
+                        dispatch(loadCollectionPanel(collection.uuid));
                     },
                     TRASHED: collection => {
                         dispatch(collectionPanelActions.SET_COLLECTION(collection as CollectionResource));
                         dispatch(updateResources([collection]));
                         dispatch(setTrashBreadcrumbs(''));
                         dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.TRASH));
-                        dispatch(loadCollectionFiles(collection.uuid));
+                        dispatch(loadCollectionPanel(collection.uuid));
                     },
 
                 });

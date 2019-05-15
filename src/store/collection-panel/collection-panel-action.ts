@@ -7,7 +7,7 @@ import { loadCollectionFiles } from "./collection-panel-files/collection-panel-f
 import { CollectionResource } from '~/models/collection';
 import { collectionPanelFilesAction } from "./collection-panel-files/collection-panel-files-actions";
 import { createTree } from "~/models/tree";
-import { RootState } from "../store";
+import { RootState } from "~/store/store";
 import { ServiceRepository } from "~/services/services";
 import { TagProperty } from "~/models/tag";
 import { snackbarActions } from "../snackbar/snackbar-actions";
@@ -15,6 +15,7 @@ import { resourcesActions } from "~/store/resources/resources-actions";
 import { unionize, ofType, UnionOf } from '~/common/unionize';
 import { SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { navigateTo } from '~/store/navigation/navigation-action';
+import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
 
 export const collectionPanelActions = unionize({
     SET_COLLECTION: ofType<CollectionResource>(),
@@ -31,6 +32,7 @@ export const loadCollectionPanel = (uuid: string) =>
         dispatch(collectionPanelActions.LOAD_COLLECTION({ uuid }));
         dispatch(collectionPanelFilesAction.SET_COLLECTION_FILES({ files: createTree() }));
         const collection = await services.collectionService.get(uuid);
+        dispatch(loadDetailsPanel(collection.uuid));
         dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item: collection }));
         dispatch(resourcesActions.SET_RESOURCES([collection]));
         dispatch<any>(loadCollectionFiles(collection.uuid));

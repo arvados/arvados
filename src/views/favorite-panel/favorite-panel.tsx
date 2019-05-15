@@ -22,7 +22,6 @@ import {
     ResourceType
 } from '~/views-components/data-explorer/renderers';
 import { FavoriteIcon } from '~/components/icon/icon';
-import { Dispatch } from 'redux';
 import { openContextMenu, resourceKindToContextMenuKind } from '~/store/context-menu/context-menu-actions';
 import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { navigateTo } from '~/store/navigation/navigation-action';

@@ -27,13 +27,13 @@ import { LinkResource } from '~/models/link';
 import { navigateTo } from '~/store/navigation/navigation-action';
 import { withResourceData } from '~/views-components/data-explorer/with-resources';
 
-const renderName = (item: { name: string; uuid: string, kind: string }) =>
+const renderName = (dispatch: Dispatch, item: { name: string; uuid: string, kind: string }) =>
     <Grid container alignItems="center" wrap="nowrap" spacing={16}>
         <Grid item>
             {renderIcon(item.kind)}
         </Grid>
         <Grid item>
-            <Typography color="primary" style={{ width: 'auto' }}>
+            <Typography color="primary" style={{ width: 'auto', cursor: 'pointer' }} onClick={() => dispatch<any>(navigateTo(item.uuid))}>
                 {item.name}
             </Typography>
         </Grid>
@@ -49,7 +49,7 @@ export const ResourceName = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
         return resource || { name: '', uuid: '', kind: '' };
-    })(renderName);
+    })((resource: { name: string; uuid: string, kind: string } & DispatchProp<any>) => renderName(resource.dispatch, resource));
 
 const renderIcon = (kind: string) => {
     switch (kind) {
@@ -401,7 +401,7 @@ export const ResourceFileSize = connect(
     })((props: { fileSize?: number }) => renderFileSize(props.fileSize));
 
 const renderOwner = (owner: string) =>
-    <Typography noWrap color="primary" >
+    <Typography noWrap>
         {owner}
     </Typography>;
 
@@ -409,6 +409,14 @@ export const ResourceOwner = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
         return { owner: resource ? resource.ownerUuid : '' };
+    })((props: { owner: string }) => renderOwner(props.owner));
+
+export const ResourceOwnerName = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
+        const ownerNameState = state.ownerName;
+        const ownerName = ownerNameState.find(it => it.uuid === resource!.ownerUuid);
+        return { owner: ownerName ? ownerName!.name : resource!.ownerUuid };
     })((props: { owner: string }) => renderOwner(props.owner));
 
 const renderType = (type: string) =>
