@@ -64,6 +64,7 @@ describe('auth-actions', () => {
             sshKeys: [],
             homeCluster: "zzzzz",
             localCluster: "zzzzz",
+            remoteHostsConfig: {},
             remoteHosts: {
                 zzzzz: "zzzzz.arvadosapi.com",
                 xc59z: "xc59z.arvadosapi.com"
