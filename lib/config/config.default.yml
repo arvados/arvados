@@ -162,7 +162,7 @@ Clusters:
       # Arvados object is created, modified, or deleted.)
       #
       # Currently, websocket event notifications rely on audit logs, so
-      # this should not be set lower than 600 (5 minutes).
+      # this should not be set lower than 300 (5 minutes).
       MaxAge: 1209600
 
       # Maximum number of log rows to delete in a single SQL transaction.
