@@ -163,7 +163,7 @@ Clusters:
       #
       # Currently, websocket event notifications rely on audit logs, so
       # this should not be set lower than 300 (5 minutes).
-      MaxAge: 1209600
+      MaxAge: 336h
 
       # Maximum number of log rows to delete in a single SQL transaction.
       #
@@ -234,11 +234,11 @@ Clusters:
       # blob_signing_key note above.
       #
       # The default is 2 weeks.
-      BlobSigningTTL: 1209600
+      BlobSigningTTL: 336h
 
       # Default lifetime for ephemeral collections: 2 weeks. This must not
       # be less than blob_signature_ttl.
-      DefaultTrashLifetime: 1209600
+      DefaultTrashLifetime: 336h
 
       # Interval (seconds) between trash sweeps. During a trash sweep,
       # collections are marked as trash if their trash_at time has
