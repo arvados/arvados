@@ -98,3 +98,5 @@ export const navigateToGroups = push(Routes.GROUPS);
 export const navigateToGroupDetails = compose(push, getGroupUrl);
 
 export const navigateToLinks = push(Routes.LINKS);
+
+export const navigateToCollectionsContentAddress = push(Routes.COLLECTIONS_CONTENT_ADDRESS);

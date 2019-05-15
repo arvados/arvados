@@ -77,8 +77,8 @@ export const openFileRemoveDialog = (filePath: string) =>
                 ? 'Are you sure you want to remove this directory?'
                 : 'Are you sure you want to remove this file?';
             const info = isDirectory
-                ? 'Removing files will change content adress.'
-                : 'Removing a file will change content adress.';
+                ? 'Removing files will change content address.'
+                : 'Removing a file will change content address.';
 
             dispatch(dialogActions.OPEN_DIALOG({
                 id: FILE_REMOVE_DIALOG,
@@ -101,7 +101,7 @@ export const openMultipleFilesRemoveDialog = () =>
         data: {
             title: 'Removing files',
             text: 'Are you sure you want to remove selected files?',
-            info: 'Removing files will change content adress.',
+            info: 'Removing files will change content address.',
             confirmButtonLabel: 'Remove'
         }
     });

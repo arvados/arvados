@@ -127,10 +127,10 @@ export const SearchResultsPanelView = (props: SearchResultsPanelProps) => {
         onContextMenu={props.onContextMenu}
         contextMenuColumn={true}
         hideSearchInput
-        header={
+        title={
             props.localCluster === homeCluster ?
-                <p>Searching clusters: {props.sessions.filter((ss) => ss.loggedIn).map((ss) => <span key={ss.clusterId}> {ss.clusterId}</span>)}</p> :
-                <p>Searching local cluster {props.localCluster} only.  To search multiple clusters, <a href={props.remoteHostsConfig[homeCluster] && props.remoteHostsConfig[homeCluster].workbench2Url}> start from your home Workbench.</a></p>
+                <div>Searching clusters: {props.sessions.filter((ss) => ss.loggedIn).map((ss) => <span key={ss.clusterId}> {ss.clusterId}</span>)}</div> :
+                <div>Searching local cluster {props.localCluster} only.  To search multiple clusters, <a href={props.remoteHostsConfig[homeCluster] && props.remoteHostsConfig[homeCluster].workbench2Url}> start from your home Workbench.</a></div>
         }
     />;
 };

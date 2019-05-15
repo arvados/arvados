@@ -11,6 +11,7 @@ import { ServiceRepository } from "~/services/services";
 import { ProjectResource } from '~/models/project';
 import { ContextMenuResource } from "~/store/context-menu/context-menu-actions";
 import { getResource } from '~/store/resources/resources';
+import { projectPanelActions } from '~/store/project-panel/project-panel-action';
 
 export interface ProjectUpdateFormDialogData {
     uuid: string;
@@ -33,6 +34,7 @@ export const updateProject = (project: Partial<ProjectResource>) =>
         dispatch(startSubmit(PROJECT_UPDATE_FORM_NAME));
         try {
             const updatedProject = await services.projectService.update(uuid, project);
+            dispatch(projectPanelActions.REQUEST_ITEMS());
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_UPDATE_FORM_NAME }));
             return updatedProject;
         } catch (e) {
