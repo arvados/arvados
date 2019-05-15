@@ -14,7 +14,6 @@ import { configureStore, RootStore } from '~/store/store';
 import { ConnectedRouter } from "react-router-redux";
 import { ApiToken } from "~/views-components/api-token/api-token";
 import { initAuth } from "~/store/auth/auth-action";
-import { configActions } from "~/store/config/config-action";
 import { createServices } from "~/services/services";
 import { MuiThemeProvider } from '@material-ui/core/styles';
 import { CustomTheme } from '~/common/custom-theme';
@@ -40,7 +39,6 @@ import { addRouteChangeHandlers } from './routes/route-change-handlers';
 import { setCurrentTokenDialogApiHost } from '~/store/current-token-dialog/current-token-dialog-actions';
 import { processResourceActionSet } from '~/views-components/context-menu/action-sets/process-resource-action-set';
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions';
-import { setUuidPrefix } from '~/store/workflow-panel/workflow-panel-actions';
 import { trashedCollectionActionSet } from '~/views-components/context-menu/action-sets/trashed-collection-action-set';
 import { ContainerRequestState } from '~/models/container-request';
 import { MountKind } from '~/models/mount-types';
@@ -115,7 +113,8 @@ fetchConfig()
         store.dispatch(loadVocabulary);
         store.dispatch(loadFileViewersConfig);
 
-        const TokenComponent = (props: any) => <ApiToken authService={services.authService} config={config} {...props} />;
+        const TokenComponent = (props: any) => <ApiToken authService={services.authService} config={config} loadMainApp={true} {...props} />;
+        const FedTokenComponent = (props: any) => <ApiToken authService={services.authService} config={config} loadMainApp={false} {...props} />;
         const MainPanelComponent = (props: any) => <MainPanel {...props} />;
 
         const App = () =>
@@ -125,6 +124,7 @@ fetchConfig()
                         <ConnectedRouter history={history}>
                             <Switch>
                                 <Route path={Routes.TOKEN} component={TokenComponent} />
+                                <Route path={Routes.FED_LOGIN} component={FedTokenComponent} />
                                 <Route path={Routes.ROOT} component={MainPanelComponent} />
                             </Switch>
                         </ConnectedRouter>

@@ -27,24 +27,43 @@ export class UserMiddlewareService extends DataExplorerMiddlewareService {
         const state = api.getState();
         const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
         try {
-            const response = await this.services.userService.list(getParams(dataExplorer));
-            api.dispatch(updateResources(response.items));
-            api.dispatch(setItems(response));
+            const responseFirstName = await this.services.userService.list(getParamsFirstName(dataExplorer));
+            if (responseFirstName.itemsAvailable) {
+                api.dispatch(updateResources(responseFirstName.items));
+                api.dispatch(setItems(responseFirstName));
+            } else {
+                const responseLastName = await this.services.userService.list(getParamsLastName(dataExplorer));
+                api.dispatch(updateResources(responseLastName.items));
+                api.dispatch(setItems(responseLastName));
+            }
         } catch {
             api.dispatch(couldNotFetchUsers());
         }
     }
 }
 
-export const getParams = (dataExplorer: DataExplorer) => ({
+const getParamsFirstName = (dataExplorer: DataExplorer) => ({
     ...dataExplorerToListParams(dataExplorer),
     order: getOrder(dataExplorer),
-    filters: getFilters(dataExplorer)
+    filters: getFiltersFirstName(dataExplorer)
 });
 
-export const getFilters = (dataExplorer: DataExplorer) => {
+const getParamsLastName = (dataExplorer: DataExplorer) => ({
+    ...dataExplorerToListParams(dataExplorer),
+    order: getOrder(dataExplorer),
+    filters: getFiltersLastName(dataExplorer)
+});
+
+const getFiltersFirstName = (dataExplorer: DataExplorer) => {
     const filters = new FilterBuilder()
-        .addILike("username", dataExplorer.searchValue)
+        .addILike("firstName", dataExplorer.searchValue)
+        .getFilters();
+    return filters;
+};
+
+const getFiltersLastName = (dataExplorer: DataExplorer) => {
+    const filters = new FilterBuilder()
+        .addILike("lastName", dataExplorer.searchValue)
         .getFilters();
     return filters;
 };

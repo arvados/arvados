@@ -63,6 +63,9 @@ import { PublicFavoritesMiddlewareService } from '~/store/public-favorites-panel
 import { PUBLIC_FAVORITE_PANEL_ID } from '~/store/public-favorites-panel/public-favorites-action';
 import { publicFavoritesReducer } from '~/store/public-favorites/public-favorites-reducer';
 import { linkAccountPanelReducer } from './link-account-panel/link-account-panel-reducer';
+import { CollectionsWithSameContentAddressMiddlewareService } from '~/store/collections-content-address-panel/collections-content-address-middleware-service';
+import { COLLECTIONS_CONTENT_ADDRESS_PANEL_ID } from '~/store/collections-content-address-panel/collections-content-address-panel-actions';
+import { ownerNameReducer } from '~/store/owner-name/owner-name-reducer';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -116,6 +119,10 @@ export function configureStore(history: History, services: ServiceRepository): R
     const publicFavoritesMiddleware = dataExplorerMiddleware(
         new PublicFavoritesMiddlewareService(services, PUBLIC_FAVORITE_PANEL_ID)
     );
+    const collectionsContentAddress = dataExplorerMiddleware(
+        new CollectionsWithSameContentAddressMiddlewareService(services, COLLECTIONS_CONTENT_ADDRESS_PANEL_ID)
+    );
+
     const middlewares: Middleware[] = [
         routerMiddleware(history),
         thunkMiddleware.withExtraArgument(services),
@@ -131,7 +138,8 @@ export function configureStore(history: History, services: ServiceRepository): R
         linkPanelMiddleware,
         computeNodeMiddleware,
         apiClientAuthorizationMiddlewareService,
-        publicFavoritesMiddleware
+        publicFavoritesMiddleware,
+        collectionsContentAddress
     ];
     const enhancer = composeEnhancers(applyMiddleware(...middlewares));
     return createStore(rootReducer, enhancer);
@@ -147,6 +155,7 @@ const createRootReducer = (services: ServiceRepository) => combineReducers({
     detailsPanel: detailsPanelReducer,
     dialog: dialogReducer,
     favorites: favoritesReducer,
+    ownerName: ownerNameReducer,
     publicFavorites: publicFavoritesReducer,
     form: formReducer,
     processLogsPanel: processLogsPanelReducer,

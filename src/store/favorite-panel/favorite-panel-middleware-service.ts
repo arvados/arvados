@@ -56,14 +56,14 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
             }
             try {
                 api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
-                const resp1 = await this.services.linkService.list({
+                const responseLinks = await this.services.linkService.list({
                     filters: new FilterBuilder()
                         .addEqual("linkClass", 'star')
                         .addEqual('tailUuid', this.services.authService.getUuid()!)
                         .addEqual('tailKind', ResourceKind.USER)
                         .getFilters()
                 }).then(results => results);
-                const uuids = resp1.items.map(it => it.headUuid);
+                const uuids = responseLinks.items.map(it => it.headUuid);
                 const groupItems: any = await this.services.groupsService.list({
                     filters: new FilterBuilder()
                         .addIn("uuid", uuids)
@@ -94,7 +94,7 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
                     response.itemsAvailable++;
                     response.items.push(it);
                 });
-
+                
                 api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
                 api.dispatch(resourcesActions.SET_RESOURCES(response.items));
                 await api.dispatch<any>(loadMissingProcessesInformation(response.items));

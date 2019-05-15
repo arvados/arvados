@@ -10,6 +10,16 @@ import { openContextMenu, resourceKindToContextMenuKind } from '~/store/context-
 import { ResourceKind } from '~/models/resource';
 import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { SearchResultsPanelView } from '~/views/search-results-panel/search-results-panel-view';
+import { RootState } from '~/store/store';
+
+const mapStateToProps = (rootState: RootState) => {
+    return {
+        user: rootState.auth.user,
+        sessions: rootState.auth.sessions,
+        remoteHostsConfig: rootState.auth.remoteHostsConfig,
+        localCluster: rootState.auth.localCluster,
+    };
+};
 
 const mapDispatchToProps = (dispatch: Dispatch): SearchResultsPanelActionProps => ({
     onContextMenu: (event, resourceUuid) => {
@@ -34,4 +44,4 @@ const mapDispatchToProps = (dispatch: Dispatch): SearchResultsPanelActionProps =
     }
 });
 
-export const SearchResultsPanel = connect(null, mapDispatchToProps)(SearchResultsPanelView);
+export const SearchResultsPanel = connect(mapStateToProps, mapDispatchToProps)(SearchResultsPanelView);

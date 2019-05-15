@@ -152,12 +152,13 @@ export const openRootProjectContextMenu = (event: React.MouseEvent<HTMLElement>,
 export const openProjectContextMenu = (event: React.MouseEvent<HTMLElement>, projectUuid: string) =>
     (dispatch: Dispatch, getState: () => RootState) => {
         const res = getResource<ProjectResource>(projectUuid)(getState().resources);
+        const isAdmin = getState().auth.user!.isAdmin;
         if (res) {
             dispatch<any>(openContextMenu(event, {
                 name: res.name,
                 uuid: res.uuid,
                 kind: res.kind,
-                menuKind: ContextMenuKind.PROJECT,
+                menuKind: !isAdmin ? ContextMenuKind.PROJECT : ContextMenuKind.PROJECT_ADMIN,
                 ownerUuid: res.ownerUuid,
                 isTrashed: res.isTrashed
             }));

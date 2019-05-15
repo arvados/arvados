@@ -20,7 +20,6 @@ import { serializeSimpleObjectTypeFilters } from '../resource-type-filters/resou
 import { LinkResource, LinkClass } from '~/models/link';
 import { GroupContentsResource, GroupContentsResourcePrefix } from '~/services/groups-service/groups-service';
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions';
-import { loadMissingProcessesInformation } from '~/store/project-panel/project-panel-middleware-service';
 import { updatePublicFavorites } from '~/store/public-favorites/public-favorites-actions';
 
 export class PublicFavoritesMiddlewareService extends DataExplorerMiddlewareService {
@@ -56,7 +55,7 @@ export class PublicFavoritesMiddlewareService extends DataExplorerMiddlewareServ
                 api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
                 const uuidPrefix = api.getState().config.uuidPrefix;
                 const uuid = `${uuidPrefix}-j7d0g-fffffffffffffff`;
-                const response = await this.services.linkService.list({
+                const responseLinks = await this.services.linkService.list({
                     limit: dataExplorer.rowsPerPage,
                     offset: dataExplorer.page * dataExplorer.rowsPerPage,
                     filters: new FilterBuilder()
@@ -66,15 +65,46 @@ export class PublicFavoritesMiddlewareService extends DataExplorerMiddlewareServ
                         .addIsA("headUuid", typeFilters)
                         .getFilters()
                 });
+                const uuids = responseLinks.items.map(it => it.headUuid);
+                const groupItems: any = await this.services.groupsService.list({
+                    filters: new FilterBuilder()
+                        .addIn("uuid", uuids)
+                        .addILike("name", dataExplorer.searchValue)
+                        .addIsA("uuid", typeFilters)
+                        .getFilters()
+                });
+                const collectionItems: any = await this.services.collectionService.list({
+                    filters: new FilterBuilder()
+                        .addIn("uuid", uuids)
+                        .addILike("name", dataExplorer.searchValue)
+                        .addIsA("uuid", typeFilters)
+                        .getFilters()
+                });
+                const processItems: any = await this.services.containerRequestService.list({
+                    filters: new FilterBuilder()
+                        .addIn("uuid", uuids)
+                        .addILike("name", dataExplorer.searchValue)
+                        .addIsA("uuid", typeFilters)
+                        .getFilters()
+                });
+                const response = groupItems;
+                collectionItems.items.map((it: any) => {
+                    response.itemsAvailable++;
+                    response.items.push(it);
+                });
+                processItems.items.map((it: any) => {
+                    response.itemsAvailable++;
+                    response.items.push(it);
+                });
                 api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
                 api.dispatch(resourcesActions.SET_RESOURCES(response.items));
                 api.dispatch(publicFavoritePanelActions.SET_ITEMS({
-                    items: response.items.map(resource => resource.uuid),
+                    items: response.items.map((resource: any) => resource.uuid),
                     itemsAvailable: response.itemsAvailable,
                     page: Math.floor(response.offset / response.limit),
                     rowsPerPage: response.limit
                 }));
-                api.dispatch<any>(updatePublicFavorites(response.items.map(item => item.headUuid)));
+                api.dispatch<any>(updatePublicFavorites(response.items.map((item: any) => item.uuid)));
             } catch (e) {
                 api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
                 api.dispatch(publicFavoritePanelActions.SET_ITEMS({

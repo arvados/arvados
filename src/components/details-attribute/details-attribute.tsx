@@ -7,6 +7,7 @@ import Typography from '@material-ui/core/Typography';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from '~/common/custom-theme';
 import * as classnames from "classnames";
+import { Link } from 'react-router-dom';
 
 type CssRules = 'attribute' | 'label' | 'value' | 'lowercaseValue' | 'link';
 
@@ -49,23 +50,25 @@ interface DetailsAttributeDataProps {
     link?: string;
     children?: React.ReactNode;
     onValueClick?: () => void;
+    linkInsideCard?: string;
 }
 
 type DetailsAttributeProps = DetailsAttributeDataProps & WithStyles<CssRules>;
 
 export const DetailsAttribute = withStyles(styles)(
-    ({ label, link, value, children, classes, classLabel, classValue, lowercaseValue, onValueClick }: DetailsAttributeProps) =>
+    ({ label, link, value, children, classes, classLabel, classValue, lowercaseValue, onValueClick, linkInsideCard }: DetailsAttributeProps) =>
         <Typography component="div" className={classes.attribute}>
             <Typography component="span" className={classnames([classes.label, classLabel])}>{label}</Typography>
-            { link
-                ? <a href={link} className={classes.link} target='_blank'>{value}</a>
-                : <Typography
-                    onClick={onValueClick}
-                    component="span"
-                    className={classnames([classes.value, classValue, { [classes.lowercaseValue]: lowercaseValue }])}
-                >
-                    {value}
-                    {children}
-                </Typography> }
+            {link && <a href={link} className={classes.link} target='_blank'>{value}</a>}
+            {linkInsideCard && <Link to={`/collections/${linkInsideCard}`} className={classes.link}>{value}</Link>}
+            {!link && !linkInsideCard && <Typography
+                onClick={onValueClick}
+                component="span"
+                className={classnames([classes.value, classValue, { [classes.lowercaseValue]: lowercaseValue }])}>
+                {value}
+                {children}
+            </Typography>
+            }
+
         </Typography>
 );

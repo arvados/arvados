@@ -10,10 +10,12 @@ import { ServiceRepository } from "~/services/services";
 import { SshKeyResource } from '~/models/ssh-key';
 import { User, UserResource } from "~/models/user";
 import { Session } from "~/models/session";
-import { Config } from '~/common/config';
+import { getDiscoveryURL, Config } from '~/common/config';
 import { initSessions } from "~/store/auth/auth-action-session";
 import { cancelLinking } from '~/store/link-account-panel/link-account-panel-actions';
 import { matchTokenRoute } from '~/routes/routes';
+import Axios from "axios";
+import { AxiosError } from "axios";
 
 export const authActions = unionize({
     SAVE_API_TOKEN: ofType<string>(),
@@ -31,7 +33,8 @@ export const authActions = unionize({
     SET_SESSIONS: ofType<Session[]>(),
     ADD_SESSION: ofType<Session>(),
     REMOVE_SESSION: ofType<string>(),
-    UPDATE_SESSION: ofType<Session>()
+    UPDATE_SESSION: ofType<Session>(),
+    REMOTE_CLUSTER_CONFIG: ofType<{ config: Config }>(),
 });
 
 function setAuthorizationHeader(services: ServiceRepository, token: string) {
@@ -57,17 +60,30 @@ export const initAuth = (config: Config) => (dispatch: Dispatch, getState: () =>
 
     const user = services.authService.getUser();
     const token = services.authService.getApiToken();
+    const homeCluster = services.authService.getHomeCluster();
     if (token) {
         setAuthorizationHeader(services, token);
     }
     dispatch(authActions.CONFIG({ config }));
+    dispatch(authActions.SET_HOME_CLUSTER(homeCluster || config.uuidPrefix));
     if (token && user) {
         dispatch(authActions.INIT({ user, token }));
         dispatch<any>(initSessions(services.authService, config, user));
         dispatch<any>(getUserDetails()).then((user: User) => {
             dispatch(authActions.INIT({ user, token }));
+        }).catch((err: AxiosError) => {
+            if (err.response) {
+                // Bad token
+                if (err.response.status === 401) {
+                    logout()(dispatch, getState, services);
+                }
+            }
         });
     }
+    Object.keys(config.remoteHosts).map((k) => {
+        Axios.get<Config>(getDiscoveryURL(config.remoteHosts[k]))
+            .then(response => dispatch(authActions.REMOTE_CLUSTER_CONFIG({ config: response.data })));
+    });
 };
 
 export const saveApiToken = (token: string) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -81,8 +97,8 @@ export const saveUser = (user: UserResource) => (dispatch: Dispatch, getState: (
     dispatch(authActions.SAVE_USER(user));
 };
 
-export const login = (uuidPrefix: string, homeCluster: string) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    services.authService.login(uuidPrefix, homeCluster);
+export const login = (uuidPrefix: string, homeCluster: string, remoteHosts: { [key: string]: string }) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    services.authService.login(uuidPrefix, homeCluster, remoteHosts);
     dispatch(authActions.LOGIN());
 };
 

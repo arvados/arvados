@@ -17,5 +17,5 @@ export const collectionPanelReducer = (state: CollectionPanelState = initialStat
     collectionPanelActions.match(action, {
         default: () => state,
         SET_COLLECTION: (item) => ({ ...state, item }),
-        LOAD_COLLECTION_SUCCESS: ({ item }) => ({ ...state, item }),
+        LOAD_COLLECTION_SUCCESS: ({ item }) => ({ ...state, item })
     });

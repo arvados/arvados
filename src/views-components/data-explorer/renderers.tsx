@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Grid, Typography, withStyles, Tooltip, IconButton, Checkbox, Button } from '@material-ui/core';
-import { FavoriteStar } from '../favorite-star/favorite-star';
+import { Grid, Typography, withStyles, Tooltip, IconButton, Checkbox } from '@material-ui/core';
+import { FavoriteStar, PublicFavoriteStar } from '../favorite-star/favorite-star';
 import { ResourceKind, TrashableResource } from '~/models/resource';
 import { ProjectIcon, CollectionIcon, ProcessIcon, DefaultIcon, WorkflowIcon, ShareIcon } from '~/components/icon/icon';
 import { formatDate, formatFileSize } from '~/common/formatters';
@@ -27,19 +27,20 @@ import { LinkResource } from '~/models/link';
 import { navigateTo } from '~/store/navigation/navigation-action';
 import { withResourceData } from '~/views-components/data-explorer/with-resources';
 
-const renderName = (item: { name: string; uuid: string, kind: string }) =>
+const renderName = (dispatch: Dispatch, item: { name: string; uuid: string, kind: string }) =>
     <Grid container alignItems="center" wrap="nowrap" spacing={16}>
         <Grid item>
             {renderIcon(item.kind)}
         </Grid>
         <Grid item>
-            <Typography color="primary" style={{ width: 'auto' }}>
+            <Typography color="primary" style={{ width: 'auto', cursor: 'pointer' }} onClick={() => dispatch<any>(navigateTo(item.uuid))}>
                 {item.name}
             </Typography>
         </Grid>
         <Grid item>
             <Typography variant="caption">
                 <FavoriteStar resourceUuid={item.uuid} />
+                <PublicFavoriteStar resourceUuid={item.uuid} />
             </Typography>
         </Grid>
     </Grid>;
@@ -48,7 +49,7 @@ export const ResourceName = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
         return resource || { name: '', uuid: '', kind: '' };
-    })(renderName);
+    })((resource: { name: string; uuid: string, kind: string } & DispatchProp<any>) => renderName(resource.dispatch, resource));
 
 const renderIcon = (kind: string) => {
     switch (kind) {
@@ -326,35 +327,6 @@ export const ResourceLinkUuid = connect(
         return resource || { uuid: '' };
     })(renderUuid);
 
-const renderLinkNameAndIcon = (item: { name: string; headUuid: string, headKind: string }) =>
-    <Grid container alignItems="center" wrap="nowrap" spacing={16}>
-        <Grid item>
-            {renderIcon(item.headKind)}
-        </Grid>
-        <Grid item>
-            <Typography color="primary" style={{ width: 'auto' }}>
-                {item.name}
-            </Typography>
-        </Grid>
-        <Grid item>
-            <Typography variant="caption">
-                <FavoriteStar resourceUuid={item.headUuid} />
-            </Typography>
-        </Grid>
-    </Grid>;
-
-export const ResourceLinkNameAndIcon = connect(
-    (state: RootState, props: { uuid: string }) => {
-        const resource = getResource<LinkResource>(props.uuid)(state.resources);
-        return resource || { name: '', headUuid: '', headKind: '' };
-    })(renderLinkNameAndIcon);
-
-export const ResourceLinkType = connect(
-    (state: RootState, props: { uuid: string }) => {
-        const resource = getResource<LinkResource>(props.uuid)(state.resources);
-        return { type: resource ? resource.headKind : '' };
-    })((props: { type: string }) => renderType(props.type));
-
 // Process Resources
 const resourceRunProcess = (dispatch: Dispatch, uuid: string) => {
     return (
@@ -429,7 +401,7 @@ export const ResourceFileSize = connect(
     })((props: { fileSize?: number }) => renderFileSize(props.fileSize));
 
 const renderOwner = (owner: string) =>
-    <Typography noWrap color="primary" >
+    <Typography noWrap>
         {owner}
     </Typography>;
 
@@ -437,6 +409,14 @@ export const ResourceOwner = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
         return { owner: resource ? resource.ownerUuid : '' };
+    })((props: { owner: string }) => renderOwner(props.owner));
+
+export const ResourceOwnerName = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
+        const ownerNameState = state.ownerName;
+        const ownerName = ownerNameState.find(it => it.uuid === resource!.ownerUuid);
+        return { owner: ownerName ? ownerName!.name : resource!.ownerUuid };
     })((props: { owner: string }) => renderOwner(props.owner));
 
 const renderType = (type: string) =>

@@ -14,7 +14,7 @@ import { DataTableFilters } from '~/components/data-table-filters/data-table-fil
 import { MoreOptionsIcon } from '~/components/icon/icon';
 import { PaperProps } from '@material-ui/core/Paper';
 
-type CssRules = 'searchBox' | "toolbar" | "footer" | "root" | 'moreOptionsButton';
+type CssRules = 'searchBox' | "toolbar" | "toolbarUnderTitle" | "footer" | "root" | 'moreOptionsButton' | 'title';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     searchBox: {
@@ -22,6 +22,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     toolbar: {
         paddingTop: theme.spacing.unit * 2
+    },
+    toolbarUnderTitle: {
+        paddingTop: 0
     },
     footer: {
         overflow: 'auto'
@@ -31,6 +34,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     moreOptionsButton: {
         padding: 0
+    },
+    title: {
+        paddingLeft: theme.spacing.unit * 3,
+        paddingTop: theme.spacing.unit * 3,
+        fontSize: '18px'
     }
 });
 
@@ -50,6 +58,7 @@ interface DataExplorerDataProps<T> {
     paperProps?: PaperProps;
     actions?: React.ReactNode;
     hideSearchInput?: boolean;
+    title?: React.ReactNode;
     paperKey?: string;
     currentItemUuid: string;
 }
@@ -84,10 +93,11 @@ export const DataExplorer = withStyles(styles)(
                 rowsPerPage, rowsPerPageOptions, onColumnToggle, searchValue, onSearch,
                 items, itemsAvailable, onRowClick, onRowDoubleClick, classes,
                 dataTableDefaultView, hideColumnSelector, actions, paperProps, hideSearchInput,
-                paperKey, fetchMode, currentItemUuid
+                paperKey, fetchMode, currentItemUuid, title
             } = this.props;
             return <Paper className={classes.root} {...paperProps} key={paperKey}>
-                {(!hideColumnSelector || !hideSearchInput) && <Toolbar className={classes.toolbar}>
+                {title && <div className={classes.title}>{title}</div>}
+                {(!hideColumnSelector || !hideSearchInput) && <Toolbar className={title ? classes.toolbarUnderTitle : classes.toolbar}>
                     <Grid container justify="space-between" wrap="nowrap" alignItems="center">
                         <div className={classes.searchBox}>
                             {!hideSearchInput && <SearchInput

@@ -11,6 +11,8 @@ import { getCommonResourceServiceError, CommonResourceServiceError } from "~/ser
 import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
 import { resetPickerProjectTree } from '~/store/project-tree-picker/project-tree-picker-actions';
 import { initProjectsTreePicker } from '~/store/tree-picker/tree-picker-actions';
+import { projectPanelActions } from '~/store/project-panel/project-panel-action';
+import { loadSidePanelTreeProjects } from '../side-panel-tree/side-panel-tree-actions';
 
 export const PROJECT_MOVE_FORM_NAME = 'projectMoveFormName';
 
@@ -24,11 +26,14 @@ export const openMoveProjectDialog = (resource: { name: string, uuid: string }) 
 
 export const moveProject = (resource: MoveToFormDialogData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const userUuid = getState().auth.user!.uuid;
         dispatch(startSubmit(PROJECT_MOVE_FORM_NAME));
         try {
             const project = await services.projectService.get(resource.uuid);
             const newProject = await services.projectService.update(resource.uuid, { ...project, ownerUuid: resource.ownerUuid });
+            dispatch(projectPanelActions.REQUEST_ITEMS());
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_MOVE_FORM_NAME }));
+            await dispatch<any>(loadSidePanelTreeProjects(userUuid));
             return newProject;
         } catch (e) {
             const error = getCommonResourceServiceError(e);

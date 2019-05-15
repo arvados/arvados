@@ -85,7 +85,7 @@ const mapStateToProps = ({ detailsPanel, resources, resourcesData, collectionPan
     const resourceData = getResourceData(detailsPanel.resourceUuid)(resourcesData);
     return {
         isOpened: detailsPanel.isOpened,
-        item: getItem(resource || (file && file.value) || EMPTY_RESOURCE, resourceData)
+        item: getItem(resource || (file && file.value) || EMPTY_RESOURCE, resourceData),
     };
 };
 
