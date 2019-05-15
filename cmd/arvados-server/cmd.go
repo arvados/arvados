@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"git.curoverse.com/arvados.git/lib/cmd"
+	"git.curoverse.com/arvados.git/lib/config"
 	"git.curoverse.com/arvados.git/lib/controller"
 	"git.curoverse.com/arvados.git/lib/dispatchcloud"
 )
@@ -19,6 +20,8 @@ var (
 		"-version":  cmd.Version(version),
 		"--version": cmd.Version(version),
 
+		"config-check":   config.CheckCommand,
+		"config-dump":    config.DumpCommand,
 		"controller":     controller.Command,
 		"dispatch-cloud": dispatchcloud.Command,
 	})

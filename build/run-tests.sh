@@ -380,6 +380,20 @@ checkpidfile() {
     echo "${svc} pid ${pid} ok"
 }
 
+checkhealth() {
+    svc="$1"
+    port="$(cat "$WORKSPACE/tmp/${svc}.port")"
+    scheme=http
+    if [[ ${svc} =~ -ssl$ || ${svc} = wss ]]; then
+        scheme=https
+    fi
+    url="$scheme://localhost:${port}/_health/ping"
+    if ! curl -Ss -H "Authorization: Bearer e687950a23c3a9bceec28c6223a06c79" "${url}" | tee -a /dev/stderr | grep '"OK"'; then
+        echo "${url} failed"
+        return 1
+    fi
+}
+
 checkdiscoverydoc() {
     dd="https://${1}/discovery/v1/apis/arvados/v1/rest"
     if ! (set -o pipefail; curl -fsk "$dd" | grep -q ^{ ); then
@@ -413,12 +427,15 @@ start_services() {
         && checkdiscoverydoc $ARVADOS_API_HOST \
         && python sdk/python/tests/run_test_server.py start_controller \
         && checkpidfile controller \
+        && checkhealth controller \
         && python sdk/python/tests/run_test_server.py start_keep_proxy \
         && checkpidfile keepproxy \
         && python sdk/python/tests/run_test_server.py start_keep-web \
         && checkpidfile keep-web \
+        && checkhealth keep-web \
         && python sdk/python/tests/run_test_server.py start_arv-git-httpd \
         && checkpidfile arv-git-httpd \
+        && checkhealth arv-git-httpd \
         && python sdk/python/tests/run_test_server.py start_ws \
         && checkpidfile ws \
         && eval $(python sdk/python/tests/run_test_server.py start_nginx) \
@@ -989,6 +1006,7 @@ gostuff=(
     lib/cloud
     lib/cloud/azure
     lib/cloud/ec2
+    lib/config
     lib/dispatchcloud
     lib/dispatchcloud/container
     lib/dispatchcloud/scheduler

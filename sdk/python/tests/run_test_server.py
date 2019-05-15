@@ -413,14 +413,15 @@ def run_controller():
         f.write("""
 Clusters:
   zzzzz:
+    ManagementToken: e687950a23c3a9bceec28c6223a06c79
     HTTPRequestTimeout: 30s
     PostgreSQL:
       ConnectionPool: 32
       Connection:
-        host: {}
-        dbname: {}
-        user: {}
-        password: {}
+        Host: {}
+        DBName: {}
+        User: {}
+        Password: {}
     NodeProfiles:
       "*":
         "arvados-controller":
@@ -632,6 +633,7 @@ def run_arv_git_httpd():
     agh = subprocess.Popen(
         ['arv-git-httpd',
          '-repo-root='+gitdir+'/test',
+         '-management-token=e687950a23c3a9bceec28c6223a06c79',
          '-address=:'+str(gitport)],
         env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf)
     with open(_pidfile('arv-git-httpd'), 'w') as f:
@@ -657,6 +659,7 @@ def run_keep_web():
         ['keep-web',
          '-allow-anonymous',
          '-attachment-only-host=download',
+         '-management-token=e687950a23c3a9bceec28c6223a06c79',
          '-listen=:'+str(keepwebport)],
         env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf)
     with open(_pidfile('keep-web'), 'w') as f:

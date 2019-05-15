@@ -172,7 +172,7 @@ dbcfg = ConfigLoader.new
 
 dbcfg.declare_config "PostgreSQL.ConnectionPool", Integer, :pool
 dbcfg.declare_config "PostgreSQL.Connection.Host", String, :host
-dbcfg.declare_config "PostgreSQL.Connection.Port", Integer, :port
+dbcfg.declare_config "PostgreSQL.Connection.Port", String, :port
 dbcfg.declare_config "PostgreSQL.Connection.User", String, :username
 dbcfg.declare_config "PostgreSQL.Connection.Password", String, :password
 dbcfg.declare_config "PostgreSQL.Connection.DBName", String, :database

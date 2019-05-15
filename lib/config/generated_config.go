@@ -1,4 +1,10 @@
-# Copyright (C) The Arvados Authors. All rights reserved.
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
+package config
+
+var DefaultYAML = []byte(`# Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: AGPL-3.0
 
@@ -275,7 +281,7 @@ Clusters:
 
     Containers:
       # List of supported Docker Registry image formats that compute nodes
-      # are able to use. `arv keep docker` will error out if a user tries
+      # are able to use. ` + "`" + `arv keep docker` + "`" + ` will error out if a user tries
       # to store an image with an unsupported format. Use an empty array
       # to skip the compatibility check (and display a warning message to
       # that effect).
@@ -457,3 +463,4 @@ Clusters:
       "*":
         Proxy: false
         ActivateUsers: false
+`)

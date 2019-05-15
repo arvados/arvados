@@ -15,6 +15,7 @@ import (
 	"os"
 
 	"git.curoverse.com/arvados.git/lib/cmd"
+	"git.curoverse.com/arvados.git/lib/config"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
@@ -69,7 +70,7 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	} else if err != nil {
 		return 2
 	}
-	cfg, err := arvados.GetConfig(*configFile)
+	cfg, err := config.LoadFile(*configFile, log)
 	if err != nil {
 		return 1
 	}

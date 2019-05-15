@@ -175,9 +175,9 @@ func (h *genericFederatedRequestHandler) handleMultiClusterQuery(w http.Response
 		httpserver.Error(w, "Federated multi-object may not provide 'limit', 'offset' or 'order'.", http.StatusBadRequest)
 		return true
 	}
-	if expectCount > h.handler.Cluster.RequestLimits.GetMaxItemsPerResponse() {
+	if max := h.handler.Cluster.API.MaxItemsPerResponse; expectCount > max {
 		httpserver.Error(w, fmt.Sprintf("Federated multi-object request for %v objects which is more than max page size %v.",
-			expectCount, h.handler.Cluster.RequestLimits.GetMaxItemsPerResponse()), http.StatusBadRequest)
+			expectCount, max), http.StatusBadRequest)
 		return true
 	}
 	if req.Form.Get("select") != "" {
@@ -203,10 +203,7 @@ func (h *genericFederatedRequestHandler) handleMultiClusterQuery(w http.Response
 
 	// Perform concurrent requests to each cluster
 
-	// use channel as a semaphore to limit the number of concurrent
-	// requests at a time
-	sem := make(chan bool, h.handler.Cluster.RequestLimits.GetMultiClusterRequestConcurrency())
-	defer close(sem)
+	acquire, release := semaphore(h.handler.Cluster.API.MaxRequestAmplification)
 	wg := sync.WaitGroup{}
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -220,23 +217,20 @@ func (h *genericFederatedRequestHandler) handleMultiClusterQuery(w http.Response
 			// Nothing to query
 			continue
 		}
-
-		// blocks until it can put a value into the
-		// channel (which has a max queue capacity)
-		sem <- true
+		acquire()
 		wg.Add(1)
 		go func(k string, v []string) {
+			defer release()
+			defer wg.Done()
 			rp, kn, err := h.remoteQueryUUIDs(w, req, k, v)
 			mtx.Lock()
+			defer mtx.Unlock()
 			if err == nil {
 				completeResponses = append(completeResponses, rp...)
 				kind = kn
 			} else {
 				errors = append(errors, err)
 			}
-			mtx.Unlock()
-			wg.Done()
-			<-sem
 		}(k, v)
 	}
 	wg.Wait()

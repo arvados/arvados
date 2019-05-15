@@ -72,6 +72,7 @@ func (h *Handler) setup() {
 	mux.Handle("/_health/", &health.Handler{
 		Token:  h.Cluster.ManagementToken,
 		Prefix: "/_health/",
+		Routes: health.Routes{"ping": func() error { _, err := h.db(&http.Request{}); return err }},
 	})
 	hs := http.NotFoundHandler()
 	hs = prepend(hs, h.proxyRailsAPI)

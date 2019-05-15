@@ -9,6 +9,9 @@ import "strings"
 func (c PostgreSQLConnection) String() string {
 	s := ""
 	for k, v := range c {
+		if v == "" {
+			continue
+		}
 		s += strings.ToLower(k)
 		s += "='"
 		s += strings.Replace(
