@@ -940,6 +940,28 @@ EOS
   end
 
   [
+    false,
+    [],
+    42,
+    'some string',
+    '["json", "encoded", "list"]',
+  ].each do |p|
+    test "create collection with non-valid properties param #{p.inspect}" do
+      authorize_with :active
+      post :create, params: {
+        collection: {
+          name: "test collection with non-valid properties param '#{p.inspect}'",
+          manifest_text: '',
+          properties: p
+        }
+      }
+      assert_response 422
+      response_errors = json_response['errors']
+      assert_not_nil response_errors, 'Expected error in response'
+    end
+  end
+
+  [
     [". d41d8cd98f00b204e9800998ecf8427e 0:34:foo.txt\n", 1, 34],
     [". d41d8cd98f00b204e9800998ecf8427e 0:34:foo.txt 0:30:foo.txt 0:30:foo1.txt 0:30:foo2.txt 0:30:foo3.txt 0:30:foo4.txt\n", 5, 184],
     [". d41d8cd98f00b204e9800998ecf8427e 0:0:.\n", 0, 0]
