@@ -21,6 +21,9 @@ import {
 } from '~/views-components/data-explorer/renderers';
 import { createTree } from '~/models/tree';
 import { getInitialResourceTypeFilters } from '~/store/resource-type-filters/resource-type-filters';
+import { User } from "~/models/user";
+import { Config } from '~/common/config';
+import { Session } from "~/models/session";
 
 export enum SearchResultsPanelColumnNames {
     CLUSTER = "Cluster",
@@ -35,6 +38,10 @@ export enum SearchResultsPanelColumnNames {
 
 export interface SearchResultsPanelDataProps {
     data: SearchBarAdvanceFormData;
+    user: User;
+    sessions: Session[];
+    remoteHostsConfig: { [key: string]: Config };
+    localCluster: string;
 }
 
 export interface SearchResultsPanelActionProps {
@@ -112,11 +119,18 @@ export const searchResultsPanelColumns: DataColumns<string> = [
 ];
 
 export const SearchResultsPanelView = (props: SearchResultsPanelProps) => {
+    const homeCluster = props.user.uuid.substr(0, 5);
     return <DataExplorer
         id={SEARCH_RESULTS_PANEL_ID}
         onRowClick={props.onItemClick}
         onRowDoubleClick={props.onItemDoubleClick}
         onContextMenu={props.onContextMenu}
         contextMenuColumn={true}
-        hideSearchInput />;
+        hideSearchInput
+        title={
+            props.localCluster === homeCluster ?
+                <div>Searching clusters: {props.sessions.filter((ss) => ss.loggedIn).map((ss) => <span key={ss.clusterId}> {ss.clusterId}</span>)}</div> :
+                <div>Searching local cluster {props.localCluster} only.  To search multiple clusters, <a href={props.remoteHostsConfig[homeCluster] && props.remoteHostsConfig[homeCluster].workbench2Url}> start from your home Workbench.</a></div>
+        }
+    />;
 };
