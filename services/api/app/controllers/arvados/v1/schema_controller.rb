@@ -26,7 +26,7 @@ class Arvados::V1::SchemaController < ApplicationController
     Rails.cache.fetch 'arvados_v1_rest_discovery' do
       Rails.application.eager_load!
       remoteHosts = {}
-      Rails.configuration.RemoteClusters.each {|k,v| if k != "*" then remoteHosts[k] = v["Host"] end }
+      Rails.configuration.RemoteClusters.each {|k,v| if k != :"*" then remoteHosts[k] = v["Host"] end }
       discovery = {
         kind: "discovery#restDescription",
         discoveryVersion: "v1",
@@ -67,6 +67,7 @@ class Arvados::V1::SchemaController < ApplicationController
         remoteHostsViaDNS: Rails.configuration.RemoteClusters["*"].Proxy,
         websocketUrl: Rails.configuration.Services.Websocket.ExternalURL.to_s,
         workbenchUrl: Rails.configuration.Services.Workbench1.ExternalURL.to_s,
+        workbench2Url: Rails.configuration.Services.Workbench2.ExternalURL.to_s,
         keepWebServiceUrl: Rails.configuration.Services.WebDAV.ExternalURL.to_s,
         gitUrl: Rails.configuration.Services.GitHTTP.ExternalURL.to_s,
         parameters: {

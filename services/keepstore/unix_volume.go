@@ -169,7 +169,7 @@ func (v *UnixVolume) DeviceID() string {
 
 	fi, err := os.Stat(dev)
 	if err != nil {
-		return giveup("stat %q: %s\n", dev, err)
+		return giveup("stat %q: %s", dev, err)
 	}
 	ino := fi.Sys().(*syscall.Stat_t).Ino
 
@@ -377,18 +377,18 @@ func (v *UnixVolume) WriteBlock(ctx context.Context, loc string, rdr io.Reader) 
 	n, err := io.Copy(tmpfile, rdr)
 	v.os.stats.TickOutBytes(uint64(n))
 	if err != nil {
-		log.Printf("%s: writing to %s: %s\n", v, bpath, err)
+		log.Printf("%s: writing to %s: %s", v, bpath, err)
 		tmpfile.Close()
 		v.os.Remove(tmpfile.Name())
 		return err
 	}
 	if err := tmpfile.Close(); err != nil {
-		log.Printf("closing %s: %s\n", tmpfile.Name(), err)
+		log.Printf("closing %s: %s", tmpfile.Name(), err)
 		v.os.Remove(tmpfile.Name())
 		return err
 	}
 	if err := v.os.Rename(tmpfile.Name(), bpath); err != nil {
-		log.Printf("rename %s %s: %s\n", tmpfile.Name(), bpath, err)
+		log.Printf("rename %s %s: %s", tmpfile.Name(), bpath, err)
 		return v.os.Remove(tmpfile.Name())
 	}
 	return nil
@@ -400,14 +400,14 @@ func (v *UnixVolume) WriteBlock(ctx context.Context, loc string, rdr io.Reader) 
 func (v *UnixVolume) Status() *VolumeStatus {
 	fi, err := v.os.Stat(v.Root)
 	if err != nil {
-		log.Printf("%s: os.Stat: %s\n", v, err)
+		log.Printf("%s: os.Stat: %s", v, err)
 		return nil
 	}
 	devnum := fi.Sys().(*syscall.Stat_t).Dev
 
 	var fs syscall.Statfs_t
 	if err := syscall.Statfs(v.Root, &fs); err != nil {
-		log.Printf("%s: statfs: %s\n", v, err)
+		log.Printf("%s: statfs: %s", v, err)
 		return nil
 	}
 	// These calculations match the way df calculates disk usage:
@@ -620,7 +620,7 @@ func (v *UnixVolume) IsFull() (isFull bool) {
 	if avail, err := v.FreeDiskSpace(); err == nil {
 		isFull = avail < MinFreeKilobytes
 	} else {
-		log.Printf("%s: FreeDiskSpace: %s\n", v, err)
+		log.Printf("%s: FreeDiskSpace: %s", v, err)
 		isFull = false
 	}
 
@@ -679,6 +679,7 @@ func (v *UnixVolume) lock(ctx context.Context) error {
 	if v.locker == nil {
 		return nil
 	}
+	t0 := time.Now()
 	locked := make(chan struct{})
 	go func() {
 		v.locker.Lock()
@@ -686,6 +687,7 @@ func (v *UnixVolume) lock(ctx context.Context) error {
 	}()
 	select {
 	case <-ctx.Done():
+		log.Printf("%s: client hung up while waiting for Serialize lock (%s)", v, time.Since(t0))
 		go func() {
 			<-locked
 			v.locker.Unlock()

@@ -80,6 +80,16 @@ class UserSessionsController < ApplicationController
     # For the benefit of functional and integration tests:
     @user = user
 
+    if user.uuid[0..4] != Rails.configuration.ClusterID
+      # Actually a remote user
+      # Send them to their home cluster's login
+      rh = Rails.configuration.RemoteClusters[user.uuid[0..4]]
+      remote, return_to_url = params[:return_to].split(',', 2)
+      @remotehomeurl = "#{rh.Scheme || "https"}://#{rh.Host}/login?remote=#{Rails.configuration.ClusterID}&return_to=#{return_to_url}"
+      render
+      return
+    end
+
     # prevent ArvadosModel#before_create and _update from throwing
     # "unauthorized":
     Thread.current[:user] = user

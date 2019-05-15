@@ -19,7 +19,7 @@ setup_before_nginx_restart() {
   # initialize git_internal_dir
   # usually /var/lib/arvados/internal.git (set in application.default.yml )
   if [ "$APPLICATION_READY" = "1" ]; then
-      GIT_INTERNAL_DIR=$($COMMAND_PREFIX bundle exec rake config:check 2>&1 | grep git_internal_dir | awk '{ print $2 }')
+      GIT_INTERNAL_DIR=$($COMMAND_PREFIX bundle exec rake config:dump 2>&1 | grep GitInternalDir | awk '{ print $2 }' |tr -d '"')
       if [ ! -e "$GIT_INTERNAL_DIR" ]; then
         run_and_report "Creating git_internal_dir '$GIT_INTERNAL_DIR'" \
           mkdir -p "$GIT_INTERNAL_DIR"
