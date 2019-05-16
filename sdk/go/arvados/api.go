@@ -40,13 +40,14 @@ type GetOptions struct {
 }
 
 type ListOptions struct {
-	Select  []string               `json:"select"`
-	Filters []Filter               `json:"filters"`
-	Where   map[string]interface{} `json:"where"`
-	Limit   int                    `json:"limit"`
-	Offset  int                    `json:"offset"`
-	Order   []string               `json:"order"`
-	Count   string                 `json:"count"`
+	Select   []string               `json:"select"`
+	Filters  []Filter               `json:"filters"`
+	Where    map[string]interface{} `json:"where"`
+	Limit    int                    `json:"limit"`
+	Offset   int                    `json:"offset"`
+	Order    []string               `json:"order"`
+	Distinct bool                   `json:"distinct"`
+	Count    string                 `json:"count"`
 }
 
 type CreateOptions struct {

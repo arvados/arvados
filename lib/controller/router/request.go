@@ -134,6 +134,7 @@ func (rtr *router) transcode(src interface{}, dst interface{}) error {
 }
 
 var boolParams = map[string]bool{
+	"distinct":             true,
 	"ensure_unique_name":   true,
 	"include_trash":        true,
 	"include_old_versions": true,
