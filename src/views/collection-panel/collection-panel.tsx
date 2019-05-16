@@ -110,7 +110,17 @@ export const CollectionPanel = withStyles(styles)(
                                             label='Collection UUID'
                                             value={item && item.uuid}>
                                             <Tooltip title="Copy uuid">
-                                                <CopyToClipboard text={item && item.uuid} onCopy={() => this.onCopy()}>
+                                                <CopyToClipboard text={item && item.uuid} onCopy={() => this.onCopy("UUID has been copied")}>
+                                                    <CopyIcon className={classes.copyIcon} />
+                                                </CopyToClipboard>
+                                            </Tooltip>
+                                        </DetailsAttribute>
+                                        <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                                            label='Portable data hash'
+                                            linkToUuid={item && item.portableDataHash}
+                                            value={item && item.portableDataHash}>
+                                            <Tooltip title="Copy pdh">
+                                                <CopyToClipboard text={item && item.portableDataHash} onCopy={() => this.onCopy("PDH has been copied")}>
                                                     <CopyIcon className={classes.copyIcon} />
                                                 </CopyToClipboard>
                                             </Tooltip>
@@ -120,7 +130,7 @@ export const CollectionPanel = withStyles(styles)(
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                                             label='Content size' value={data && formatFileSize(data.fileSize)} />
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                            label='Owner' value={item && item.ownerUuid} />
+                                            label='Owner' linkToUuid={item && item.ownerUuid} value={item && item.ownerUuid} />
                                         {(item.properties.container_request || item.properties.containerRequest) &&
                                             <span onClick={() => dispatch<any>(navigateToProcess(item.properties.container_request || item.properties.containerRequest))}>
                                                 <DetailsAttribute classLabel={classes.link} label='Link to process' />
@@ -176,9 +186,9 @@ export const CollectionPanel = withStyles(styles)(
                 this.props.dispatch<any>(deleteCollectionTag(key));
             }
 
-            onCopy = () => {
+            onCopy = (message: string) => {
                 this.props.dispatch(snackbarActions.OPEN_SNACKBAR({
-                    message: "Uuid has been copied",
+                    message,
                     hideDuration: 2000,
                     kind: SnackbarKind.SUCCESS
                 }));

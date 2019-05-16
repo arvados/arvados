@@ -2,26 +2,22 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Dispatch, compose } from 'redux';
-import { push } from "react-router-redux";
+import { Dispatch, compose, AnyAction } from 'redux';
+import { push, RouterAction } from "react-router-redux";
 import { ResourceKind, extractUuidKind } from '~/models/resource';
 import { getCollectionUrl } from "~/models/collection";
 import { getProjectUrl } from "~/models/project";
 import { SidePanelTreeCategory } from '../side-panel-tree/side-panel-tree-actions';
-import { Routes, getProcessUrl, getProcessLogUrl, getGroupUrl } from '~/routes/routes';
+import { Routes, getProcessUrl, getProcessLogUrl, getGroupUrl, getNavUrl } from '~/routes/routes';
 import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
 import { GROUPS_PANEL_LABEL } from '~/store/breadcrumbs/breadcrumbs-actions';
 
 export const navigateTo = (uuid: string) =>
-    async (dispatch: Dispatch) => {
+    async (dispatch: Dispatch, getState: () => RootState) => {
         const kind = extractUuidKind(uuid);
-        if (kind === ResourceKind.PROJECT || kind === ResourceKind.USER) {
-            dispatch<any>(navigateToProject(uuid));
-        } else if (kind === ResourceKind.COLLECTION) {
-            dispatch<any>(navigateToCollection(uuid));
-        } else if (kind === ResourceKind.CONTAINER_REQUEST) {
-            dispatch<any>(navigateToProcess(uuid));
+        if (kind === ResourceKind.PROJECT || kind === ResourceKind.USER || kind === ResourceKind.COLLECTION || kind === ResourceKind.CONTAINER_REQUEST) {
+            dispatch<any>(pushOrGoto(getNavUrl(uuid, getState().auth)));
         } else if (kind === ResourceKind.VIRTUAL_MACHINE) {
             dispatch<any>(navigateToAdminVirtualMachines);
         }
@@ -50,18 +46,26 @@ export const navigateToPublicFavorites = push(Routes.PUBLIC_FAVORITES);
 
 export const navigateToWorkflows = push(Routes.WORKFLOWS);
 
-export const navigateToProject = compose(push, getProjectUrl);
+export const pushOrGoto = (url: string): AnyAction => {
+    if (url === "") {
+        console.log("url should not be empty");
+        return { type: "noop" };
+    } else if (url[0] === '/') {
+        return push(url);
+    } else {
+        window.location.href = url;
+        return { type: "noop" };
+    }
+};
 
-export const navigateToCollection = compose(push, getCollectionUrl);
-
-export const navigateToProcess = compose(push, getProcessUrl);
 
 export const navigateToProcessLogs = compose(push, getProcessLogUrl);
 
 export const navigateToRootProject = (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     const rootProjectUuid = services.authService.getUuid();
+    console.log("rootProjectUuid " + rootProjectUuid);
     if (rootProjectUuid) {
-        dispatch(navigateToProject(rootProjectUuid));
+        dispatch<any>(navigateTo(rootProjectUuid));
     }
 };
 
@@ -77,11 +81,11 @@ export const navigateToAdminVirtualMachines = push(Routes.VIRTUAL_MACHINES_ADMIN
 
 export const navigateToRepositories = push(Routes.REPOSITORIES);
 
-export const navigateToSshKeysAdmin= push(Routes.SSH_KEYS_ADMIN);
+export const navigateToSshKeysAdmin = push(Routes.SSH_KEYS_ADMIN);
 
-export const navigateToSshKeysUser= push(Routes.SSH_KEYS_USER);
+export const navigateToSshKeysUser = push(Routes.SSH_KEYS_USER);
 
-export const navigateToSiteManager= push(Routes.SITE_MANAGER);
+export const navigateToSiteManager = push(Routes.SITE_MANAGER);
 
 export const navigateToMyAccount = push(Routes.MY_ACCOUNT);
 

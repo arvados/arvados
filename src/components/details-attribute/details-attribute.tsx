@@ -3,11 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
+import { connect } from 'react-redux';
 import Typography from '@material-ui/core/Typography';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from '~/common/custom-theme';
 import * as classnames from "classnames";
 import { Link } from 'react-router-dom';
+import { RootState } from "~/store/store";
+import { FederationConfig, getNavUrl } from "~/routes/routes";
 
 type CssRules = 'attribute' | 'label' | 'value' | 'lowercaseValue' | 'link';
 
@@ -26,8 +29,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         boxSizing: 'border-box',
         width: '60%',
         display: 'flex',
-        alignItems: 'flex-start',
-        textTransform: 'capitalize'
+        alignItems: 'flex-start'
     },
     lowercaseValue: {
         textTransform: 'lowercase'
@@ -50,18 +52,36 @@ interface DetailsAttributeDataProps {
     link?: string;
     children?: React.ReactNode;
     onValueClick?: () => void;
-    linkInsideCard?: string;
+    linkToUuid?: string;
 }
 
-type DetailsAttributeProps = DetailsAttributeDataProps & WithStyles<CssRules>;
+type DetailsAttributeProps = DetailsAttributeDataProps & WithStyles<CssRules> & FederationConfig;
 
-export const DetailsAttribute = withStyles(styles)(
-    ({ label, link, value, children, classes, classLabel, classValue, lowercaseValue, onValueClick, linkInsideCard }: DetailsAttributeProps) =>
-        <Typography component="div" className={classes.attribute}>
+const mapStateToProps = ({ auth }: RootState): FederationConfig => ({
+    localCluster: auth.localCluster,
+    remoteHostsConfig: auth.remoteHostsConfig,
+    sessions: auth.sessions
+});
+
+export const DetailsAttribute = connect(mapStateToProps)(withStyles(styles)(
+    ({ label, link, value, children, classes, classLabel,
+        classValue, lowercaseValue, onValueClick, linkToUuid,
+        localCluster, remoteHostsConfig, sessions }: DetailsAttributeProps) => {
+        let insertLink: React.ReactNode;
+        if (linkToUuid) {
+            const linkUrl = getNavUrl(linkToUuid || "", { localCluster, remoteHostsConfig, sessions });
+            if (linkUrl[0] === '/') {
+                insertLink = <Link to={linkUrl} className={classes.link}>{value}</Link>;
+            } else {
+                insertLink = <a href={linkUrl} className={classes.link} target='_blank'>{value}</a>;
+            }
+        } else if (link) {
+            insertLink = <a href={link} className={classes.link} target='_blank'>{value}</a>;
+        }
+        return <Typography component="div" className={classes.attribute}>
             <Typography component="span" className={classnames([classes.label, classLabel])}>{label}</Typography>
-            {link && <a href={link} className={classes.link} target='_blank'>{value}</a>}
-            {linkInsideCard && <Link to={`/collections/${linkInsideCard}`} className={classes.link}>{value}</Link>}
-            {!link && !linkInsideCard && <Typography
+            {insertLink}
+            {!insertLink && <Typography
                 onClick={onValueClick}
                 component="span"
                 className={classnames([classes.value, classValue, { [classes.lowercaseValue]: lowercaseValue }])}>
@@ -69,6 +89,6 @@ export const DetailsAttribute = withStyles(styles)(
                 {children}
             </Typography>
             }
-
-        </Typography>
-);
+        </Typography>;
+    }
+));

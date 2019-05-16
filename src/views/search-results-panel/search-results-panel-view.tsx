@@ -8,7 +8,6 @@ import { DataColumns } from '~/components/data-table/data-table';
 import { DataTableFilterItem } from '~/components/data-table-filters/data-table-filters';
 import { ResourceKind } from '~/models/resource';
 import { ContainerRequestState } from '~/models/container-request';
-import { SearchBarAdvanceFormData } from '~/models/search-bar';
 import { SEARCH_RESULTS_PANEL_ID } from '~/store/search-results-panel/search-results-panel-actions';
 import { DataExplorer } from '~/views-components/data-explorer/data-explorer';
 import {
@@ -21,9 +20,7 @@ import {
 } from '~/views-components/data-explorer/renderers';
 import { createTree } from '~/models/tree';
 import { getInitialResourceTypeFilters } from '~/store/resource-type-filters/resource-type-filters';
-import { User } from "~/models/user";
-import { Config } from '~/common/config';
-import { Session } from "~/models/session";
+import { SearchResultsPanelProps } from "./search-results-panel";
 
 export enum SearchResultsPanelColumnNames {
     CLUSTER = "Cluster",
@@ -35,23 +32,6 @@ export enum SearchResultsPanelColumnNames {
     FILE_SIZE = "File size",
     LAST_MODIFIED = "Last modified"
 }
-
-export interface SearchResultsPanelDataProps {
-    data: SearchBarAdvanceFormData;
-    user: User;
-    sessions: Session[];
-    remoteHostsConfig: { [key: string]: Config };
-    localCluster: string;
-}
-
-export interface SearchResultsPanelActionProps {
-    onItemClick: (item: string) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: string) => void;
-    onDialogOpen: (ownerUuid: string) => void;
-    onItemDoubleClick: (item: string) => void;
-}
-
-export type SearchResultsPanelProps = SearchResultsPanelDataProps & SearchResultsPanelActionProps;
 
 export interface WorkflowPanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
@@ -125,7 +105,7 @@ export const SearchResultsPanelView = (props: SearchResultsPanelProps) => {
         onRowClick={props.onItemClick}
         onRowDoubleClick={props.onItemDoubleClick}
         onContextMenu={props.onContextMenu}
-        contextMenuColumn={true}
+        contextMenuColumn={false}
         hideSearchInput
         title={
             props.localCluster === homeCluster ?

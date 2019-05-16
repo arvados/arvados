@@ -32,7 +32,7 @@ import {
     setSidePanelBreadcrumbs,
     setTrashBreadcrumbs
 } from '~/store/breadcrumbs/breadcrumbs-actions';
-import { navigateToProject } from '~/store/navigation/navigation-action';
+import { navigateTo } from '~/store/navigation/navigation-action';
 import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
 import { ServiceRepository } from '~/services/services';
 import { getResource } from '~/store/resources/resources';
@@ -140,7 +140,7 @@ export const loadWorkbench = () =>
             if (router.location) {
                 const match = matchRootRoute(router.location.pathname);
                 if (match) {
-                    dispatch(navigateToProject(user.uuid));
+                    dispatch<any>(navigateTo(user.uuid));
                 }
             }
         } else {

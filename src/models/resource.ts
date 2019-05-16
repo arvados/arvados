@@ -57,8 +57,9 @@ export enum ResourceObjectType {
     NODE = '7ekkf'
 }
 
-export const RESOURCE_UUID_PATTERN = '.{5}-.{5}-.{15}';
+export const RESOURCE_UUID_PATTERN = '[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}';
 export const RESOURCE_UUID_REGEX = new RegExp(RESOURCE_UUID_PATTERN);
+export const COLLECTION_PDH_REGEX = /[a-f0-9]{32}\+\d+/;
 
 export const isResourceUuid = (uuid: string) =>
     RESOURCE_UUID_REGEX.test(uuid);
@@ -102,6 +103,8 @@ export const extractUuidKind = (uuid: string = '') => {
         case ResourceObjectType.LINK:
             return ResourceKind.LINK;
         default:
-            return undefined;
+            const match = COLLECTION_PDH_REGEX.exec(uuid);
+            console.log("matching " + match);
+            return match ? ResourceKind.COLLECTION : undefined;
     }
 };
