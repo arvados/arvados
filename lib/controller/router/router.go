@@ -198,6 +198,13 @@ func (rtr *router) addRoutes(cluster *arvados.Cluster) {
 				}
 
 				creds := auth.CredentialsFromRequest(req)
+				if rt, _ := params["reader_tokens"].([]interface{}); len(rt) > 0 {
+					for _, t := range rt {
+						if t, ok := t.(string); ok {
+							creds.Tokens = append(creds.Tokens, t)
+						}
+					}
+				}
 				ctx := req.Context()
 				ctx = context.WithValue(ctx, auth.ContextKeyCredentials, creds)
 				ctx = arvados.ContextWithRequestID(ctx, req.Header.Get("X-Request-Id"))

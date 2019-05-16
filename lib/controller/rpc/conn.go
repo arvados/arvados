@@ -103,6 +103,9 @@ func (conn *Conn) requestAndDecode(ctx context.Context, dst interface{}, ep arva
 		// remove it entirely.
 		delete(params, "limit")
 	}
+	if len(tokens) > 1 {
+		params["reader_tokens"] = tokens[1:]
+	}
 	path := ep.Path
 	if strings.Contains(ep.Path, "/:uuid") {
 		uuid, _ := params["uuid"].(string)
