@@ -113,11 +113,13 @@ class ArvadosApiClient
     # Clean up /arvados/v1/../../discovery/v1 to /discovery/v1
     url.sub! '/arvados/v1/../../', '/'
 
+    anon_tokens = [Rails.configuration.anonymous_user_token].select { |x| x && include_anon_token }
+
     query = {
       'reader_tokens' => ((tokens[:reader_tokens] ||
                            Thread.current[:reader_tokens] ||
                            []) +
-                          (include_anon_token ? [Rails.configuration.anonymous_user_token] : [])).to_json,
+                          anon_tokens).to_json,
     }
     if !data.nil?
       data.each do |k,v|
