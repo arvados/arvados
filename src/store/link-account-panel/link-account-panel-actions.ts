@@ -87,15 +87,14 @@ export const linkFailed = () =>
         if (linkState.userToLink && linkState.userToLinkToken && linkState.targetUser && linkState.targetUserToken) {
             if (linkState.originatingUser === OriginatingUser.TARGET_USER) {
                 dispatch(switchUser(linkState.targetUser, linkState.targetUserToken));
-                dispatch(linkAccountPanelActions.LINK_INIT({targetUser: linkState.targetUser}));
             }
             else if ((linkState.originatingUser === OriginatingUser.USER_TO_LINK)) {
                 dispatch(switchUser(linkState.userToLink, linkState.userToLinkToken));
-                dispatch(linkAccountPanelActions.LINK_INIT({targetUser: linkState.userToLink}));
             }
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Account link failed.', kind: SnackbarKind.ERROR , hideDuration: 3000 }));
         }
         services.linkAccountService.removeAccountToLink();
+        services.linkAccountService.saveLinkOpStatus(LinkAccountStatus.FAILED);
+        location.reload();
     };
 
 export const loadLinkAccountPanel = () =>
