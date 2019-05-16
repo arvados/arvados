@@ -166,3 +166,41 @@ func (s *RouterSuite) TestBoolParam(c *check.C) {
 		c.Check(params[testKey], check.Equals, true)
 	}
 }
+
+func (s *RouterSuite) TestOrderParam(c *check.C) {
+	for i, tr := range []testReq{
+		{method: "POST", param: map[string]interface{}{"order": ""}, json: true},
+		{method: "POST", param: map[string]interface{}{"order": ""}, json: false},
+		{method: "POST", param: map[string]interface{}{"order": []string{}}, json: true},
+		{method: "POST", param: map[string]interface{}{"order": []string{}}, json: false},
+		{method: "POST", param: map[string]interface{}{}, json: true},
+		{method: "POST", param: map[string]interface{}{}, json: false},
+	} {
+		c.Logf("#%d, tr: %#v", i, tr)
+		req := tr.Request()
+		params, err := s.rtr.loadRequestParams(req, tr.attrsKey)
+		c.Assert(err, check.IsNil)
+		c.Assert(params, check.NotNil)
+		if order, ok := params["order"]; ok && order != nil {
+			c.Check(order, check.DeepEquals, []interface{}{})
+		}
+	}
+
+	for i, tr := range []testReq{
+		{method: "POST", param: map[string]interface{}{"order": "foo,bar desc"}, json: true},
+		{method: "POST", param: map[string]interface{}{"order": "foo,bar desc"}, json: false},
+		{method: "POST", param: map[string]interface{}{"order": "[\"foo\", \"bar desc\"]"}, json: false},
+		{method: "POST", param: map[string]interface{}{"order": []string{"foo", "bar desc"}}, json: true},
+		{method: "POST", param: map[string]interface{}{"order": []string{"foo", "bar desc"}}, json: false},
+	} {
+		c.Logf("#%d, tr: %#v", i, tr)
+		req := tr.Request()
+		params, err := s.rtr.loadRequestParams(req, tr.attrsKey)
+		c.Assert(err, check.IsNil)
+		if _, ok := params["order"].([]string); ok {
+			c.Check(params["order"], check.DeepEquals, []string{"foo", "bar desc"})
+		} else {
+			c.Check(params["order"], check.DeepEquals, []interface{}{"foo", "bar desc"})
+		}
+	}
+}

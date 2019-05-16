@@ -45,7 +45,7 @@ type ListOptions struct {
 	Where   map[string]interface{} `json:"where"`
 	Limit   int                    `json:"limit"`
 	Offset  int                    `json:"offset"`
-	Order   string                 `json:"order"`
+	Order   []string               `json:"order"`
 	Count   string                 `json:"count"`
 }
 
