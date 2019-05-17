@@ -359,7 +359,7 @@ class ArvadosBase
   end
 
   def destroyed?
-    !(etag || uuid)
+    !(new_record? || etag || uuid)
   end
 
   def destroy
