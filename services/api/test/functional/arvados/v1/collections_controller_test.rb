@@ -924,19 +924,25 @@ EOS
     assert_equal 'value1', json_response['properties']['property1']
   end
 
-  test "create collection with properties" do
-    authorize_with :active
-    manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
-    post :create, params: {
-      collection: {
-        manifest_text: manifest_text,
-        portable_data_hash: "d30fe8ae534397864cb96c544f4cf102+47",
-        properties: {'property_1' => 'value_1'}
+  [
+    {'property_1' => 'value_1'},
+    "{\"property_1\":\"value_1\"}",
+  ].each do |p|
+    test "create collection with valid properties param #{p.inspect}" do
+      authorize_with :active
+      manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
+      post :create, params: {
+        collection: {
+          manifest_text: manifest_text,
+          portable_data_hash: "d30fe8ae534397864cb96c544f4cf102+47",
+          properties: p
+        }
       }
-    }
-    assert_response :success
-    assert_not_nil json_response['uuid']
-    assert_equal 'value_1', json_response['properties']['property_1']
+      assert_response :success
+      assert_not_nil json_response['uuid']
+      assert_equal Hash, json_response['properties'].class, 'Collection properties attribute should be of type hash'
+      assert_equal 'value_1', json_response['properties']['property_1']
+    end
   end
 
   [
@@ -944,7 +950,7 @@ EOS
     [],
     42,
     'some string',
-    '["json", "encoded", "list"]',
+    '["json", "encoded", "array"]',
   ].each do |p|
     test "create collection with non-valid properties param #{p.inspect}" do
       authorize_with :active
