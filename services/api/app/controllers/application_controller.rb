@@ -468,11 +468,21 @@ class ApplicationController < ActionController::Base
   end
 
   def load_json_value(hash, key, must_be_class=nil)
-    if hash[key].is_a? String
-      hash[key] = SafeJSON.load(hash[key])
-      if must_be_class and !hash[key].is_a? must_be_class
-        raise TypeError.new("parameter #{key.to_s} must be a #{must_be_class.to_s}")
-      end
+    return if hash[key].nil?
+
+    val = hash[key]
+    if val.is_a? ActionController::Parameters
+      val = val.to_unsafe_hash
+    elsif val.is_a? String
+      val = SafeJSON.load(val)
+      hash[key] = val
+    end
+    # When assigning a Hash to an ActionController::Parameters and then
+    # retrieve it, we get another ActionController::Parameters instead of
+    # a Hash. This doesn't happen with other types. This is why 'val' is
+    # being used to do type checking below.
+    if must_be_class and !val.is_a? must_be_class
+      raise TypeError.new("parameter #{key.to_s} must be a #{must_be_class.to_s}")
     end
   end
 
@@ -482,7 +492,7 @@ class ApplicationController < ActionController::Base
   accept_attribute_as_json :properties, Hash
   accept_attribute_as_json :info, Hash
   def accept_attribute_as_json(attr, must_be_class)
-    if params[resource_name] and resource_attrs.is_a? Hash
+    if params[resource_name] and [Hash, ActionController::Parameters].include?(resource_attrs.class)
       if resource_attrs[attr].is_a? Hash
         # Convert symbol keys to strings (in hashes provided by
         # resource_attrs)
