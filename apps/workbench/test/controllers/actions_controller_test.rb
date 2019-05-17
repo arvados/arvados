@@ -7,7 +7,7 @@ require 'test_helper'
 class ActionsControllerTest < ActionController::TestCase
 
   test "send report" do
-    post :report_issue, {format: 'js'}, session_for(:admin)
+    post :report_issue, params: {format: 'js'}, session: session_for(:admin)
     assert_response :success
 
     found_email = false
@@ -21,13 +21,13 @@ class ActionsControllerTest < ActionController::TestCase
   end
 
   test "combine files into new collection" do
-    post(:combine_selected_files_into_collection, {
+    post(:combine_selected_files_into_collection, params: {
            selection: ['zzzzz-4zz18-znfnqtbbv4spc3w/foo',
                        'zzzzz-4zz18-ehbhgtheo8909or/bar',
                        'zzzzz-4zz18-y9vne9npefyxh8g/baz',
                        '7a6ef4c162a5c6413070a8bd0bffc818+150'],
            format: "json"},
-         session_for(:active))
+         session: session_for(:active))
 
     assert_response 302   # collection created and redirected to new collection page
 
@@ -46,7 +46,7 @@ class ActionsControllerTest < ActionController::TestCase
   end
 
   test "combine files  with repeated names into new collection" do
-    post(:combine_selected_files_into_collection, {
+    post(:combine_selected_files_into_collection, params: {
            selection: ['zzzzz-4zz18-znfnqtbbv4spc3w/foo',
                        'zzzzz-4zz18-00000nonamecoll/foo',
                        'zzzzz-4zz18-abcd6fx123409f7/foo',
@@ -54,7 +54,7 @@ class ActionsControllerTest < ActionController::TestCase
                        'zzzzz-4zz18-y9vne9npefyxh8g/baz',
                        '7a6ef4c162a5c6413070a8bd0bffc818+150'],
            format: "json"},
-         session_for(:active))
+         session: session_for(:active))
 
     assert_response 302   # collection created and redirected to new collection page
 
@@ -74,13 +74,13 @@ class ActionsControllerTest < ActionController::TestCase
   end
 
   test "combine collections with repeated filenames in almost similar directories and expect files with proper suffixes" do
-    post(:combine_selected_files_into_collection, {
+    post(:combine_selected_files_into_collection, params: {
            selection: ['zzzzz-4zz18-duplicatenames1',
                        'zzzzz-4zz18-duplicatenames2',
                        'zzzzz-4zz18-znfnqtbbv4spc3w/foo',
                        'zzzzz-4zz18-00000nonamecoll/foo',],
            format: "json"},
-         session_for(:active))
+         session: session_for(:active))
 
     assert_response 302   # collection created and redirected to new collection page
 
@@ -116,11 +116,11 @@ class ActionsControllerTest < ActionController::TestCase
   end
 
   test "combine collections with same filename in two different streams and expect no suffixes for filenames" do
-    post(:combine_selected_files_into_collection, {
+    post(:combine_selected_files_into_collection, params: {
            selection: ['zzzzz-4zz18-znfnqtbbv4spc3w',
                        'zzzzz-4zz18-foonbarfilesdir'],
            format: "json"},
-         session_for(:active))
+         session: session_for(:active))
 
     assert_response 302   # collection created and redirected to new collection page
 
@@ -144,11 +144,11 @@ class ActionsControllerTest < ActionController::TestCase
   end
 
   test "combine foo files from two different collection streams and expect proper filename suffixes" do
-    post(:combine_selected_files_into_collection, {
+    post(:combine_selected_files_into_collection, params: {
            selection: ['zzzzz-4zz18-znfnqtbbv4spc3w/foo',
                        'zzzzz-4zz18-foonbarfilesdir/dir1/foo'],
            format: "json"},
-         session_for(:active))
+         session: session_for(:active))
 
     assert_response 302   # collection created and redirected to new collection page
 
@@ -174,7 +174,7 @@ class ActionsControllerTest < ActionController::TestCase
   ].each do |dm, fixture|
     test "access show method for public #{dm} and expect to see page" do
       Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
-      get(:show, {uuid: api_fixture(dm)[fixture]['uuid']})
+      get(:show, params: {uuid: api_fixture(dm)[fixture]['uuid']})
       assert_response :redirect
       if dm == 'groups'
         assert_includes @response.redirect_url, "projects/#{fixture['uuid']}"
@@ -194,7 +194,7 @@ class ActionsControllerTest < ActionController::TestCase
   ].each do |dm, fixture, expected|
     test "access show method for non-public #{dm} and expect #{expected}" do
       Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
-      get(:show, {uuid: api_fixture(dm)[fixture]['uuid']})
+      get(:show, params: {uuid: api_fixture(dm)[fixture]['uuid']})
       assert_response expected
       if expected == 404
         assert_includes @response.inspect, 'Log in'

@@ -3,11 +3,11 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 class UsersController < ApplicationController
-  skip_around_filter :require_thread_api_token, only: :welcome
-  skip_before_filter :check_user_agreements, only: [:welcome, :inactive, :link_account, :merge]
-  skip_before_filter :check_user_profile, only: [:welcome, :inactive, :profile, :link_account, :merge]
-  skip_before_filter :find_object_by_uuid, only: [:welcome, :activity, :storage]
-  before_filter :ensure_current_user_is_admin, only: [:sudo, :unsetup, :setup]
+  skip_around_action :require_thread_api_token, only: :welcome
+  skip_before_action :check_user_agreements, only: [:welcome, :inactive, :link_account, :merge]
+  skip_before_action :check_user_profile, only: [:welcome, :inactive, :profile, :link_account, :merge]
+  skip_before_action :find_object_by_uuid, only: [:welcome, :activity, :storage]
+  before_action :ensure_current_user_is_admin, only: [:sudo, :unsetup, :setup]
 
   def show
     if params[:uuid] == current_user.uuid

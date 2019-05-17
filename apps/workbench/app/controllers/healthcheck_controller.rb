@@ -3,17 +3,17 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 class HealthcheckController < ApplicationController
-  skip_around_filter :thread_clear
-  skip_around_filter :set_thread_api_token
-  skip_around_filter :require_thread_api_token
-  skip_before_filter :ensure_arvados_api_exists
-  skip_before_filter :accept_uuid_as_id_param
-  skip_before_filter :check_user_agreements
-  skip_before_filter :check_user_profile
-  skip_before_filter :load_filters_and_paging_params
-  skip_before_filter :find_object_by_uuid
+  skip_around_action :thread_clear
+  skip_around_action :set_thread_api_token
+  skip_around_action :require_thread_api_token
+  skip_before_action :ensure_arvados_api_exists
+  skip_before_action :accept_uuid_as_id_param
+  skip_before_action :check_user_agreements
+  skip_before_action :check_user_profile
+  skip_before_action :load_filters_and_paging_params
+  skip_before_action :find_object_by_uuid
 
-  before_filter :check_auth_header
+  before_action :check_auth_header
 
   def check_auth_header
     mgmt_token = Rails.configuration.ManagementToken

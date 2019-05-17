@@ -67,6 +67,6 @@ class WorkUnitsControllerTest < ActionController::TestCase
     encoded_params = Hash[params.map { |k,v|
                             [k, (v.is_a?(Array) || v.is_a?(Hash)) ? v.to_json : v]
                           }]
-    get :index, encoded_params, session_for(:active)
+    get :index, params: encoded_params, session: session_for(:active)
   end
 end

@@ -10,7 +10,9 @@ class ContainersControllerTest < ActionController::TestCase
 
     container = api_fixture('containers')['completed']
 
-    get :show, {id: container['uuid'], tab_pane: 'Log'}, session_for(:active)
+    get :show,
+        params: {id: container['uuid'], tab_pane: 'Log'},
+        session: session_for(:active)
     assert_response :success
 
     assert_select "a", {:href=>"/collections/#{container['log']}", :text=>"Download the log"}

@@ -9,7 +9,7 @@ class ProjectsControllerTest < ActionController::TestCase
   include ShareObjectHelper
 
   test "invited user is asked to sign user agreements on front page" do
-    get :index, {}, session_for(:inactive)
+    get :index, params: {}, session: session_for(:inactive)
     assert_response :redirect
     assert_match(/^#{Regexp.escape(user_agreements_url)}\b/,
                  @response.redirect_url,
@@ -17,7 +17,7 @@ class ProjectsControllerTest < ActionController::TestCase
   end
 
   test "uninvited user is asked to wait for activation" do
-    get :index, {}, session_for(:inactive_uninvited)
+    get :index, params: {}, session: session_for(:inactive_uninvited)
     assert_response :redirect
     assert_match(/^#{Regexp.escape(inactive_users_url)}\b/,
                  @response.redirect_url,
@@ -28,9 +28,9 @@ class ProjectsControllerTest < ActionController::TestCase
    [:project_viewer, false]].each do |which_user, should_show|
     test "create subproject button #{'not ' unless should_show} shown to #{which_user}" do
       readonly_project_uuid = api_fixture('groups')['aproject']['uuid']
-      get :show, {
+      get :show, params: {
         id: readonly_project_uuid
-      }, session_for(which_user)
+      }, session: session_for(which_user)
       buttons = css_select('[data-method=post]').select do |el|
         el.attributes['data-remote-href'].value.match /project.*owner_uuid.*#{readonly_project_uuid}/
       end
@@ -46,22 +46,22 @@ class ProjectsControllerTest < ActionController::TestCase
   test "sharing a project with a user and group" do
     uuid_list = [api_fixture("groups")["future_project_viewing_group"]["uuid"],
                  api_fixture("users")["future_project_user"]["uuid"]]
-    post(:share_with, {
+    post(:share_with, params: {
            id: api_fixture("groups")["asubproject"]["uuid"],
            uuids: uuid_list,
            format: "json"},
-         session_for(:active))
+         session: session_for(:active))
     assert_response :success
     assert_equal(uuid_list, json_response["success"])
   end
 
   test "user with project read permission can't add permissions" do
     share_uuid = api_fixture("users")["spectator"]["uuid"]
-    post(:share_with, {
+    post(:share_with, params: {
            id: api_fixture("groups")["aproject"]["uuid"],
            uuids: [share_uuid],
            format: "json"},
-         session_for(:project_viewer))
+         session: session_for(:project_viewer))
     assert_response 422
     assert(json_response["errors"].andand.
              any? { |msg| msg.start_with?("#{share_uuid}: ") },
@@ -98,8 +98,8 @@ class ProjectsControllerTest < ActionController::TestCase
     # detected. The test passes quickly, but fails slowly.
     Timeout::timeout 10 do
       get(:show,
-          { id: api_fixture("groups")["project_owns_itself"]["uuid"] },
-          session_for(:admin))
+          params: { id: api_fixture("groups")["project_owns_itself"]["uuid"] },
+          session: session_for(:admin))
     end
     assert_response :success
   end
@@ -111,10 +111,10 @@ class ProjectsControllerTest < ActionController::TestCase
     coll_key = "collection_to_remove_from_subproject"
     coll_uuid = api_fixture("collections")[coll_key]["uuid"]
     delete(:remove_item,
-           { id: api_fixture("groups")["asubproject"]["uuid"],
+           params: { id: api_fixture("groups")["asubproject"]["uuid"],
              item_uuid: coll_uuid,
              format: "js" },
-           session_for(:subproject_admin))
+           session: session_for(:subproject_admin))
     assert_response :success
     assert_match(/\b#{coll_uuid}\b/, @response.body,
                  "removed object not named in response")
@@ -130,10 +130,10 @@ class ProjectsControllerTest < ActionController::TestCase
     # should be implicitly moved to the user's Home project when removed.
     specimen_uuid = api_fixture('specimens', 'in_asubproject')['uuid']
     delete(:remove_item,
-           { id: api_fixture('groups', 'asubproject')['uuid'],
+           params: { id: api_fixture('groups', 'asubproject')['uuid'],
              item_uuid: specimen_uuid,
              format: 'js' },
-           session_for(:subproject_admin))
+           session: session_for(:subproject_admin))
     assert_response :success
     assert_match(/\b#{specimen_uuid}\b/, @response.body,
                  "removed object not named in response")
@@ -151,10 +151,10 @@ class ProjectsControllerTest < ActionController::TestCase
     test "removing #{dm} from a subproject results in renaming it when there is another such object with same name in home project" do
       object = api_fixture(dm, fixture)
       delete(:remove_item,
-             { id: api_fixture('groups', 'asubproject')['uuid'],
+             params: { id: api_fixture('groups', 'asubproject')['uuid'],
                item_uuid: object['uuid'],
                format: 'js' },
-             session_for(:active))
+             session: session_for(:active))
       assert_response :success
       assert_match(/\b#{object['uuid']}\b/, @response.body,
                    "removed object not named in response")
@@ -236,12 +236,12 @@ class ProjectsControllerTest < ActionController::TestCase
     encoded_params = Hash[params.map { |k,v|
                             [k, (v.is_a?(Array) || v.is_a?(Hash)) ? v.to_json : v]
                           }]
-    get :show, encoded_params, session_for(:active)
+    get :show, params: encoded_params, session: session_for(:active)
   end
 
   test "visit non-public project as anonymous when anonymous browsing is enabled and expect page not found" do
     Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
-    get(:show, {id: api_fixture('groups')['aproject']['uuid']})
+    get(:show, params: {id: api_fixture('groups')['aproject']['uuid']})
     assert_response 404
     assert_match(/log ?in/i, @response.body)
   end
@@ -261,7 +261,7 @@ class ProjectsControllerTest < ActionController::TestCase
       Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
 
       if user
-        get :public, {}, session_for(user)
+        get :public, params: {}, session: session_for(user)
       else
         get :public
       end
@@ -276,18 +276,22 @@ class ProjectsControllerTest < ActionController::TestCase
   end
 
   test "visit public projects page when anon config is not enabled as active user and expect 404" do
-    get :public, {}, session_for(:active)
+    Rails.configuration.anonymous_user_token = nil
+    Rails.configuration.enable_public_projects_page = false
+    get :public, params: {}, session: session_for(:active)
     assert_response 404
   end
 
   test "visit public projects page when anon config is enabled but public projects page is disabled as active user and expect 404" do
     Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
     Rails.configuration.enable_public_projects_page = false
-    get :public, {}, session_for(:active)
+    get :public, params: {}, session: session_for(:active)
     assert_response 404
   end
 
   test "visit public projects page when anon config is not enabled as anonymous and expect login page" do
+    Rails.configuration.anonymous_user_token = nil
+    Rails.configuration.enable_public_projects_page = false
     get :public
     assert_response :redirect
     assert_match /\/users\/welcome/, @response.redirect_url
@@ -317,7 +321,7 @@ class ProjectsControllerTest < ActionController::TestCase
     found = Group.find(project['uuid'])
     found.description = 'test description update'
     found.save!
-    get(:show, {id: project['uuid']}, session_for(:active))
+    get(:show, params: {id: project['uuid']}, session: session_for(:active))
     assert_includes @response.body, 'test description update'
   end
 
@@ -327,7 +331,7 @@ class ProjectsControllerTest < ActionController::TestCase
     found = Group.find(project['uuid'])
     found.description = '*test bold description for textile formatting*'
     found.save!
-    get(:show, {id: project['uuid']}, session_for(:active))
+    get(:show, params: {id: project['uuid']}, session: session_for(:active))
     assert_includes @response.body, '<strong>test bold description for textile formatting</strong>'
   end
 
@@ -337,7 +341,7 @@ class ProjectsControllerTest < ActionController::TestCase
     found = Group.find(project['uuid'])
     found.description = '<b>Textile</b> description with link to home page <a href="/">take me home</a>.'
     found.save!
-    get(:show, {id: project['uuid']}, session_for(:active))
+    get(:show, params: {id: project['uuid']}, session: session_for(:active))
     assert_includes @response.body, '<b>Textile</b> description with link to home page <a href="/">take me home</a>.'
   end
 
@@ -347,7 +351,7 @@ class ProjectsControllerTest < ActionController::TestCase
     found = Group.find(project['uuid'])
     found.description = 'Textile description with unsafe script tag <script language="javascript">alert("Hello there")</script>.'
     found.save!
-    get(:show, {id: project['uuid']}, session_for(:active))
+    get(:show, params: {id: project['uuid']}, session: session_for(:active))
     assert_includes @response.body, 'Textile description with unsafe script tag alert("Hello there").'
   end
 
@@ -364,7 +368,7 @@ EOT
     found = Group.find(project['uuid'])
     found.description = textile_table
     found.save!
-    get(:show, {id: project['uuid']}, session_for(:active))
+    get(:show, params: {id: project['uuid']}, session: session_for(:active))
     assert_includes @response.body, '<th>First Header'
     assert_includes @response.body, '<td>Content Cell'
   end
@@ -377,7 +381,7 @@ EOT
     # uses 'Link to object' as a hyperlink for the object
     found.description = '"Link to object":' + api_fixture('groups')['asubproject']['uuid']
     found.save!
-    get(:show, {id: project['uuid']}, session_for(:active))
+    get(:show, params: {id: project['uuid']}, session: session_for(:active))
 
     # check that input was converted to textile, not staying as inputted
     refute_includes  @response.body,'"Link to object"'
@@ -386,7 +390,7 @@ EOT
 
   test "project viewer can't see project sharing tab" do
     project = api_fixture('groups')['aproject']
-    get(:show, {id: project['uuid']}, session_for(:project_viewer))
+    get(:show, params: {id: project['uuid']}, session: session_for(:project_viewer))
     refute_includes @response.body, '<div id="Sharing"'
     assert_includes @response.body, '<div id="Data_collections"'
   end
@@ -397,7 +401,7 @@ EOT
   ].each do |username|
     test "#{username} can see project sharing tab" do
      project = api_fixture('groups')['aproject']
-     get(:show, {id: project['uuid']}, session_for(username))
+     get(:show, params: {id: project['uuid']}, session: session_for(username))
      assert_includes @response.body, '<div id="Sharing"'
      assert_includes @response.body, '<div id="Data_collections"'
     end
@@ -409,7 +413,7 @@ EOT
     ['project_viewer',false],
   ].each do |user, can_move|
     test "#{user} can move subproject from project #{can_move}" do
-      get(:show, {id: api_fixture('groups')['aproject']['uuid']}, session_for(user))
+      get(:show, params: {id: api_fixture('groups')['aproject']['uuid']}, session: session_for(user))
       if can_move
         assert_includes @response.body, 'Move project...'
       else
@@ -423,7 +427,7 @@ EOT
     [:active, false],
   ].each do |user, expect_all_nodes|
     test "in dashboard other index page links as #{user}" do
-      get :index, {}, session_for(user)
+      get :index, params: {}, session: session_for(user)
 
       [["processes", "/all_processes"],
        ["collections", "/collections"],
@@ -443,7 +447,7 @@ EOT
   end
 
   test "dashboard should show the correct status for processes" do
-    get :index, {}, session_for(:active)
+    get :index, params: {}, session: session_for(:active)
     assert_select 'div.panel-body.recent-processes' do
       [
         {
@@ -499,7 +503,7 @@ EOT
   test "visit a public project and verify the public projects page link exists" do
     Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
     uuid = api_fixture('groups')['anonymously_accessible_project']['uuid']
-    get :show, {id: uuid}
+    get :show, params: {id: uuid}
     project = assigns(:object)
     assert_equal uuid, project['uuid']
     refute_empty css_select("[href=\"/projects/#{project['uuid']}\"]")
@@ -509,12 +513,12 @@ EOT
   test 'all_projects unaffected by params after use by ProjectsController (#6640)' do
     @controller = ProjectsController.new
     project_uuid = api_fixture('groups')['aproject']['uuid']
-    get :index, {
+    get :index, params: {
       filters: [['uuid', '<', project_uuid]].to_json,
       limit: 0,
       offset: 1000,
-    }, session_for(:active)
-    assert_select "#projects-menu + ul li.divider ~ li a[href=/projects/#{project_uuid}]"
+    }, session: session_for(:active)
+    assert_select "#projects-menu + ul li.divider ~ li a[href=\"/projects/#{project_uuid}\"]"
   end
 
   [
@@ -580,7 +584,7 @@ EOT
 
     # share it again
     @controller = LinksController.new
-    post :create, {
+    post :create, params: {
       link: {
         link_class: 'permission',
         name: 'can_read',
@@ -588,7 +592,7 @@ EOT
         tail_uuid: api_fixture('users')['project_viewer']['uuid'],
       },
       format: :json
-    }, session_for(:system_user)
+    }, session: session_for(:system_user)
 
     # verify that the project is again included in starred projects
     use_token :project_viewer

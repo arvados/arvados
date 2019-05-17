@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 class UserAgreementsController < ApplicationController
-  skip_before_filter :check_user_agreements
-  skip_before_filter :find_object_by_uuid
-  skip_before_filter :check_user_profile
+  skip_before_action :check_user_agreements
+  skip_before_action :find_object_by_uuid
+  skip_before_action :check_user_profile
 
   def index
     if unsigned_user_agreements.empty?

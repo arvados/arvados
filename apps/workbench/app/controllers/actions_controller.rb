@@ -8,14 +8,14 @@ class ActionsController < ApplicationController
 
   # Skip require_thread_api_token if this is a show action
   # for an object uuid that supports anonymous access.
-  skip_around_filter :require_thread_api_token, if: proc { |ctrl|
+  skip_around_action :require_thread_api_token, if: proc { |ctrl|
     Rails.configuration.anonymous_user_token and
     'show' == ctrl.action_name and
     params['uuid'] and
     model_class.in?([Collection, Group, Job, PipelineInstance, PipelineTemplate])
   }
-  skip_filter :require_thread_api_token, only: [:report_issue_popup, :report_issue]
-  skip_filter :check_user_agreements, only: [:report_issue_popup, :report_issue]
+  skip_around_action :require_thread_api_token, only: [:report_issue_popup, :report_issue]
+  skip_before_action :check_user_agreements, only: [:report_issue_popup, :report_issue]
 
   @@exposed_actions = {}
   def self.expose_action method, &block
@@ -203,7 +203,7 @@ You can try recreating the collection to get a copy with full provenance data."
 
     respond_to do |format|
       IssueReporter.send_report(current_user, params).deliver
-      format.js {render nothing: true}
+      format.js {render body: nil}
     end
   end
 

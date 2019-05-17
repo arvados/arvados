@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 class ProjectsController < ApplicationController
-  before_filter :set_share_links, if: -> { defined? @object and @object}
-  skip_around_filter :require_thread_api_token, if: proc { |ctrl|
+  before_action :set_share_links, if: -> { defined? @object and @object}
+  skip_around_action :require_thread_api_token, if: proc { |ctrl|
     Rails.configuration.anonymous_user_token and
     %w(show tab_counts public).include? ctrl.action_name
   }

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 class RepositoriesController < ApplicationController
-  before_filter :set_share_links, if: -> { defined? @object }
+  before_action :set_share_links, if: -> { defined? @object }
 
   def index_pane_list
     %w(repositories help)

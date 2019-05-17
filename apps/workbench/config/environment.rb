@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 # Load the rails application
-require File.expand_path('../application', __FILE__)
+require_relative 'application'
 
 # Initialize the rails application
-ArvadosWorkbench::Application.initialize!
+Rails.application.initialize!

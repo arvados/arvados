@@ -26,7 +26,7 @@ end
 
 require File.expand_path('../../config/environment', __FILE__)
 require 'rails/test_help'
-require 'mocha/mini_test'
+require 'mocha/minitest'
 
 class ActiveSupport::TestCase
   # Setup all fixtures in test/fixtures/*.(yml|csv) for all tests in

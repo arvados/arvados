@@ -10,12 +10,12 @@ class PipelineInstancesControllerTest < ActionController::TestCase
   def create_instance_long_enough_to(instance_attrs={})
     # create 'two_part' pipeline with the given instance attributes
     pt_fixture = api_fixture('pipeline_templates')['two_part']
-    post :create, {
+    post :create, params: {
       pipeline_instance: instance_attrs.merge({
         pipeline_template_uuid: pt_fixture['uuid']
       }),
       format: :json
-    }, session_for(:active)
+    }, session: session_for(:active)
     assert_response :success
     pi_uuid = assigns(:object).uuid
     assert_not_nil assigns(:object)
@@ -38,14 +38,14 @@ class PipelineInstancesControllerTest < ActionController::TestCase
   test "can render pipeline instance with tagged collections" do
     # Make sure to pass in a tagged collection to test that part of the rendering behavior.
     get(:show,
-        {id: api_fixture("pipeline_instances")["pipeline_with_tagged_collection_input"]["uuid"]},
-        session_for(:active))
+        params: {id: api_fixture("pipeline_instances")["pipeline_with_tagged_collection_input"]["uuid"]},
+        session: session_for(:active))
     assert_response :success
   end
 
   test "update script_parameters one at a time using merge param" do
       template_fixture = api_fixture('pipeline_templates')['two_part']
-      post :update, {
+      post :update, params: {
         id: api_fixture("pipeline_instances")["pipeline_to_merge_params"]["uuid"],
         pipeline_instance: {
           components: {
@@ -63,7 +63,7 @@ class PipelineInstancesControllerTest < ActionController::TestCase
         },
         merge: true,
         format: :json
-      }, session_for(:active)
+      }, session: session_for(:active)
       assert_response :success
       assert_not_nil assigns(:object)
       orig_params = template_fixture['components']['part-two']['script_parameters']
@@ -77,15 +77,15 @@ class PipelineInstancesControllerTest < ActionController::TestCase
 
   test "component rendering copes with unexpected components format" do
     get(:show,
-        {id: api_fixture("pipeline_instances")["components_is_jobspec"]["uuid"]},
-        session_for(:active))
+        params: {id: api_fixture("pipeline_instances")["components_is_jobspec"]["uuid"]},
+        session: session_for(:active))
     assert_response :success
   end
 
   test "dates in JSON components are parsed" do
     get(:show,
-        {id: api_fixture('pipeline_instances')['has_component_with_completed_jobs']['uuid']},
-        session_for(:active))
+        params: {id: api_fixture('pipeline_instances')['has_component_with_completed_jobs']['uuid']},
+        session: session_for(:active))
     assert_response :success
     assert_not_nil assigns(:object)
     assert_not_nil assigns(:object).components[:foo][:job]
@@ -103,7 +103,7 @@ class PipelineInstancesControllerTest < ActionController::TestCase
 
   test "copy pipeline instance with components=use_latest" do
     post(:copy,
-         {
+         params: {
            id: api_fixture('pipeline_instances')['pipeline_with_newer_template']['uuid'],
            components: 'use_latest',
            script: 'use_latest',
@@ -111,7 +111,7 @@ class PipelineInstancesControllerTest < ActionController::TestCase
              state: 'RunningOnServer'
            }
          },
-         session_for(:active))
+         session: session_for(:active))
     assert_response 302
     assert_not_nil assigns(:object)
 
@@ -136,7 +136,7 @@ class PipelineInstancesControllerTest < ActionController::TestCase
 
   test "copy pipeline instance on newer template works with script=use_same" do
     post(:copy,
-         {
+         params: {
            id: api_fixture('pipeline_instances')['pipeline_with_newer_template']['uuid'],
            components: 'use_latest',
            script: 'use_same',
@@ -144,7 +144,7 @@ class PipelineInstancesControllerTest < ActionController::TestCase
              state: 'RunningOnServer'
            }
          },
-         session_for(:active))
+         session: session_for(:active))
     assert_response 302
     assert_not_nil assigns(:object)
 

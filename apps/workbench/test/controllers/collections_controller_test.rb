@@ -32,7 +32,11 @@ class CollectionsControllerTest < ActionController::TestCase
 
   def assert_hash_includes(actual_hash, expected_hash, msg=nil)
     expected_hash.each do |key, value|
-      assert_equal(value, actual_hash[key], msg)
+      if value.nil?
+        assert_nil(actual_hash[key], msg)
+      else
+        assert_equal(value, actual_hash[key], msg)
+      end
     end
   end
 
@@ -51,7 +55,7 @@ class CollectionsControllerTest < ActionController::TestCase
   def show_collection(params, session={}, response=:success)
     params = collection_params(params) if not params.is_a? Hash
     session = session_for(session) if not session.is_a? Hash
-    get(:show, params, session)
+    get(:show, params: params, session: session)
     assert_response response
   end
 
@@ -68,10 +72,10 @@ class CollectionsControllerTest < ActionController::TestCase
   test "download a file with spaces in filename" do
     setup_for_keep_web
     collection = api_fixture('collections')['w_a_z_file']
-    get :show_file, {
+    get :show_file, params: {
       uuid: collection['uuid'],
       file: 'w a z'
-    }, session_for(:active)
+    }, session: session_for(:active)
     assert_response :redirect
     assert_match /w%20a%20z/, response.redirect_url
   end
@@ -123,7 +127,7 @@ class CollectionsControllerTest < ActionController::TestCase
   test "viewing collection files with a reader token" do
     params = collection_params(:foo_file)
     params[:reader_token] = api_token("active_all_collections")
-    get(:show_file_links, params)
+    get(:show_file_links, params: params)
     assert_response :redirect
     assert_no_session
   end
@@ -132,7 +136,7 @@ class CollectionsControllerTest < ActionController::TestCase
     setup_for_keep_web
     params = collection_params(:foo_file, "foo")
     params[:reader_token] = api_token("active_all_collections")
-    get(:show_file, params)
+    get(:show_file, params: params)
     assert_response :redirect
     assert_match /foo/, response.redirect_url
     assert_no_session
@@ -141,7 +145,7 @@ class CollectionsControllerTest < ActionController::TestCase
   test "reader token Collection links end with trailing slash" do
     # Testing the fix for #2937.
     session = session_for(:active_trustedclient)
-    post(:share, collection_params(:foo_file), session)
+    post(:share, params: collection_params(:foo_file), session: session)
     assert(@controller.download_link.ends_with? '/',
            "Collection share link does not end with slash for wget")
   end
@@ -150,7 +154,7 @@ class CollectionsControllerTest < ActionController::TestCase
     setup_for_keep_web
     params = collection_params(:foo_file, 'foo')
     sess = session_for(:active)
-    get(:show_file, params, sess)
+    get(:show_file, params: params, session: sess)
     assert_response :redirect
     assert_match /foo/, response.redirect_url
   end
@@ -158,7 +162,7 @@ class CollectionsControllerTest < ActionController::TestCase
   test 'anonymous download' do
     setup_for_keep_web
     config_anonymous true
-    get :show_file, {
+    get :show_file, params: {
       uuid: api_fixture('collections')['user_agreement_in_anonymously_accessible_project']['uuid'],
       file: 'GNU_General_Public_License,_version_3.pdf',
     }
@@ -169,7 +173,7 @@ class CollectionsControllerTest < ActionController::TestCase
   test "can't get a file from Keep without permission" do
     params = collection_params(:foo_file, 'foo')
     sess = session_for(:spectator)
-    get(:show_file, params, sess)
+    get(:show_file, params: params, session: sess)
     assert_response 404
   end
 
@@ -178,7 +182,7 @@ class CollectionsControllerTest < ActionController::TestCase
     params = collection_params(:foo_file, 'foo')
     read_token = api_token('active')
     params[:reader_token] = read_token
-    get(:show_file, params)
+    get(:show_file, params: params)
     assert_response :redirect
     assert_match /foo/, response.redirect_url
     assert_not_equal(read_token, session[:arvados_api_token],
@@ -191,7 +195,7 @@ class CollectionsControllerTest < ActionController::TestCase
       params = collection_params(:foo_file, 'foo')
       params[:reader_token] =
         api_token('active_noscope')
-      get(:show_file, params)
+      get(:show_file, params: params)
       if anon
         # Some files can be shown without a valid token, but not this one.
         assert_response 404
@@ -209,7 +213,7 @@ class CollectionsControllerTest < ActionController::TestCase
     sess = session_for(:expired)
     read_token = api_token('active')
     params[:reader_token] = read_token
-    get(:show_file, params, sess)
+    get(:show_file, params: params, session: sess)
     assert_response :redirect
     assert_not_equal(read_token, session[:arvados_api_token],
                      "using a reader token set the session's API token")
@@ -220,10 +224,10 @@ class CollectionsControllerTest < ActionController::TestCase
     ua_collection = api_fixture('collections')['user_agreement']
     # Here we don't test whether the agreement can be retrieved from
     # Keep. We only test that show_file decides to send file content.
-    get :show_file, {
+    get :show_file, params: {
       uuid: ua_collection['uuid'],
       file: ua_collection['manifest_text'].match(/ \d+:\d+:(\S+)/)[1]
-    }, session_for(:inactive)
+    }, session: session_for(:inactive)
     assert_nil(assigns(:unsigned_user_agreements),
                "Did not skip check_user_agreements filter " +
                "when showing the user agreement.")
@@ -238,7 +242,7 @@ class CollectionsControllerTest < ActionController::TestCase
   test "show file in a subdirectory of a collection" do
     setup_for_keep_web
     params = collection_params(:collection_with_files_in_subdir, 'subdir2/subdir3/subdir4/file1_in_subdir4.txt')
-    get(:show_file, params, session_for(:user1_with_load))
+    get(:show_file, params: params, session: session_for(:user1_with_load))
     assert_response :redirect
     assert_match /subdir2\/subdir3\/subdir4\/file1_in_subdir4\.txt/, response.redirect_url
   end
@@ -320,11 +324,11 @@ class CollectionsControllerTest < ActionController::TestCase
     show_collection(fixture_name, :active)
     fixture = api_fixture('collections')[fixture_name.to_s]
     assert_equal(fixture['name'], assigns(:object).name)
-    assert_equal(fixture['properties'][0], assigns(:object).properties[0])
+    assert_equal(fixture['properties'].values[0], assigns(:object).properties.values[0])
   end
 
   test "create collection with properties" do
-    post :create, {
+    post :create, params: {
       collection: {
         name: 'collection created with properties',
         manifest_text: '',
@@ -333,7 +337,7 @@ class CollectionsControllerTest < ActionController::TestCase
         },
       },
       format: :json
-    }, session_for(:active)
+    }, session: session_for(:active)
     assert_response :success
     assert_not_nil assigns(:object).uuid
     assert_equal 'collection created with properties', assigns(:object).name
@@ -342,13 +346,13 @@ class CollectionsControllerTest < ActionController::TestCase
 
   test "update description and check manifest_text is not lost" do
     collection = api_fixture("collections")["multilevel_collection_1"]
-    post :update, {
+    post :update, params: {
       id: collection["uuid"],
       collection: {
         description: 'test description update'
       },
       format: :json
-    }, session_for(:active)
+    }, session: session_for(:active)
     assert_response :success
     assert_not_nil assigns(:object)
     # Ensure the Workbench response still has the original manifest_text
@@ -416,7 +420,7 @@ class CollectionsControllerTest < ActionController::TestCase
   test "anonymous user accesses collection in shared project" do
     config_anonymous true
     collection = api_fixture('collections')['public_text_file']
-    get(:show, {id: collection['uuid']})
+    get(:show, params: {id: collection['uuid']})
 
     response_object = assigns(:object)
     assert_equal collection['name'], response_object['name']
@@ -427,19 +431,19 @@ class CollectionsControllerTest < ActionController::TestCase
   end
 
   test "can view empty collection" do
-    get :show, {id: 'd41d8cd98f00b204e9800998ecf8427e+0'}, session_for(:active)
+    get :show, params: {id: 'd41d8cd98f00b204e9800998ecf8427e+0'}, session: session_for(:active)
     assert_includes @response.body, 'The following collections have this content'
   end
 
   test "collection portable data hash redirect" do
     di = api_fixture('collections')['docker_image']
-    get :show, {id: di['portable_data_hash']}, session_for(:active)
+    get :show, params: {id: di['portable_data_hash']}, session: session_for(:active)
     assert_match /\/collections\/#{di['uuid']}/, @response.redirect_url
   end
 
   test "collection portable data hash with multiple matches" do
     pdh = api_fixture('collections')['foo_file']['portable_data_hash']
-    get :show, {id: pdh}, session_for(:admin)
+    get :show, params: {id: pdh}, session: session_for(:admin)
     matches = api_fixture('collections').select {|k,v| v["portable_data_hash"] == pdh}
     assert matches.size > 1
 
@@ -455,13 +459,15 @@ class CollectionsControllerTest < ActionController::TestCase
 
   test "collection page renders name" do
     collection = api_fixture('collections')['foo_file']
-    get :show, {id: collection['uuid']}, session_for(:active)
+    get :show, params: {id: collection['uuid']}, session: session_for(:active)
     assert_includes @response.body, collection['name']
     assert_match /not authorized to manage collection sharing links/, @response.body
   end
 
   test "No Upload tab on non-writable collection" do
-    get :show, {id: api_fixture('collections')['user_agreement']['uuid']}, session_for(:active)
+    get :show,
+        params: {id: api_fixture('collections')['user_agreement']['uuid']},
+        session: session_for(:active)
     assert_not_includes @response.body, '<a href="#Upload"'
   end
 
@@ -475,7 +481,9 @@ class CollectionsControllerTest < ActionController::TestCase
       setup_for_keep_web
       tok = api_token('active')
       id = api_fixture('collections')['w_a_z_file'][id_type]
-      get :show_file, {uuid: id, file: "w a z"}, session_for(:active)
+      get :show_file,
+          params: {uuid: id, file: "w a z"},
+          session: session_for(:active)
       assert_response :redirect
       assert_equal "https://#{id.sub '+', '-'}.example/_/w%20a%20z?api_token=#{URI.escape tok, '/'}", @response.redirect_url
     end
@@ -484,7 +492,9 @@ class CollectionsControllerTest < ActionController::TestCase
       setup_for_keep_web
       tok = api_token('active')
       id = api_fixture('collections')['w_a_z_file'][id_type]
-      get :show_file, {uuid: id, file: "w a z", reader_token: tok}, session_for(:expired)
+      get :show_file,
+          params: {uuid: id, file: "w a z", reader_token: tok},
+          session: session_for(:expired)
       assert_response :redirect
       assert_equal "https://#{id.sub '+', '-'}.example/t=#{URI.escape tok}/_/w%20a%20z", @response.redirect_url
     end
@@ -493,7 +503,7 @@ class CollectionsControllerTest < ActionController::TestCase
       setup_for_keep_web
       config_anonymous true
       id = api_fixture('collections')['public_text_file'][id_type]
-      get :show_file, {uuid: id, file: "Hello World.txt"}
+      get :show_file, params: {uuid: id, file: "Hello World.txt"}
       assert_response :redirect
       assert_equal "https://#{id.sub '+', '-'}.example/_/Hello%20World.txt", @response.redirect_url
     end
@@ -502,7 +512,7 @@ class CollectionsControllerTest < ActionController::TestCase
       setup_for_keep_web
       config_anonymous true
       id = api_fixture('collections')['public_text_file'][id_type]
-      get :show_file, {
+      get :show_file, params: {
         uuid: id,
         file: "Hello World.txt",
         disposition: 'attachment',
@@ -516,7 +526,7 @@ class CollectionsControllerTest < ActionController::TestCase
                          'https://download.example/c=%{uuid_or_pdh}')
       tok = api_token('active')
       id = api_fixture('collections')['w_a_z_file'][id_type]
-      get :show_file, {uuid: id, file: "w a z"}, session_for(:active)
+      get :show_file, params: {uuid: id, file: "w a z"}, session: session_for(:active)
       assert_response :redirect
       assert_equal "https://download.example/c=#{id.sub '+', '-'}/_/w%20a%20z?api_token=#{URI.escape tok, '/'}", @response.redirect_url
     end
@@ -527,7 +537,7 @@ class CollectionsControllerTest < ActionController::TestCase
                          'https://download.example/c=%{uuid_or_pdh}')
       tok = api_token('active')
       id = api_fixture('collections')['w_a_z_file'][id_type]
-      get :show_file, {uuid: id, file: "w a z"}, session_for(:active)
+      get :show_file, params: {uuid: id, file: "w a z"}, session: session_for(:active)
       assert_response :redirect
       assert_equal "https://collections.example/c=#{id.sub '+', '-'}/_/w%20a%20z?api_token=#{URI.escape tok, '/'}", @response.redirect_url
     end
@@ -538,7 +548,7 @@ class CollectionsControllerTest < ActionController::TestCase
       setup_for_keep_web
       config_anonymous anon
       id = api_fixture('collections')['w_a_z_file']['uuid']
-      get :show_file, {uuid: id, file: "w a z"}, session_for(:spectator)
+      get :show_file, params: {uuid: id, file: "w a z"}, session: session_for(:spectator)
       assert_response 404
     end
 
@@ -548,11 +558,11 @@ class CollectionsControllerTest < ActionController::TestCase
                          'https://download.example/c=%{uuid_or_pdh}')
       tok = api_token('active')
       id = api_fixture('collections')['public_text_file']['uuid']
-      get :show_file, {
+      get :show_file, params: {
         uuid: id,
         file: 'Hello world.txt',
         disposition: 'attachment',
-      }, session_for(:active)
+      }, session: session_for(:active)
       assert_response :redirect
       expect_url = "https://download.example/c=#{id.sub '+', '-'}/_/Hello%20world.txt"
       if not anon
@@ -567,7 +577,7 @@ class CollectionsControllerTest < ActionController::TestCase
     # cannot read this collection without a session token.
     setup_for_keep_web 'https://collections.example/c=%{uuid_or_pdh}', false
     id = api_fixture('collections')['w_a_z_file']['uuid']
-    get :show_file, {uuid: id, file: "w a z"}, session_for(:active)
+    get :show_file, params: {uuid: id, file: "w a z"}, session: session_for(:active)
     assert_response 422
   end
 
@@ -577,7 +587,7 @@ class CollectionsControllerTest < ActionController::TestCase
       setup_for_keep_web false, 'https://download.example/c=%{uuid_or_pdh}'
       tok = api_token('active')
       id = api_fixture('collections')['w_a_z_file']['uuid']
-      get :show_file, {uuid: id, file: "w a z"}, session_for(:active)
+      get :show_file, params: {uuid: id, file: "w a z"}, session: session_for(:active)
       assert_response :redirect
       assert_equal "https://download.example/c=#{id.sub '+', '-'}/_/w%20a%20z?api_token=#{URI.escape tok, '/'}", @response.redirect_url
     end
@@ -594,14 +604,15 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_includes(collection['manifest_text'], "0:0:file1")
 
     # now remove all files named 'file1' from the collection
-    post :remove_selected_files, {
+    post :remove_selected_files, params: {
       id: collection['uuid'],
       selection: ["#{collection['uuid']}/file1",
                   "#{collection['uuid']}/dir1/file1"],
       format: :json
-    }, session_for(:active)
+    }, session: session_for(:active)
     assert_response :success
 
+    use_token :active
     # verify no 'file1' in the updated collection
     collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
     assert_not_includes(collection['manifest_text'], "0:0:file1")
@@ -618,15 +629,16 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_includes(collection['manifest_text'], "0:0:file1")
 
     # now remove all files from "dir1" subdir of the collection
-    post :remove_selected_files, {
+    post :remove_selected_files, params: {
       id: collection['uuid'],
       selection: ["#{collection['uuid']}/dir1/file1",
                   "#{collection['uuid']}/dir1/file2"],
       format: :json
-    }, session_for(:active)
+    }, session: session_for(:active)
     assert_response :success
 
     # verify that "./dir1" no longer exists in this collection's manifest text
+    use_token :active
     collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
     assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1 0:0:file2\n$/, collection['manifest_text']
     assert_not_includes(collection['manifest_text'], 'dir1')
@@ -642,57 +654,61 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_includes(collection['manifest_text'], "0:0:file1")
 
     # rename 'file1' as 'file1renamed' and verify
-    post :update, {
+    post :update, params: {
       id: collection['uuid'],
       collection: {
         'rename-file-path:file1' => 'file1renamed'
       },
       format: :json
-    }, session_for(:active)
+    }, session: session_for(:active)
     assert_response :success
 
+    use_token :active
     collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
     assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed 0:0:file2\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1 0:0:dir1file2 0:0:dir1imagefile.png\n$/, collection['manifest_text']
 
     # now rename 'file2' such that it is moved into 'dir1'
     @test_counter = 0
-    post :update, {
+    post :update, params: {
       id: collection['uuid'],
       collection: {
         'rename-file-path:file2' => 'dir1/file2'
       },
       format: :json
-    }, session_for(:active)
+    }, session: session_for(:active)
     assert_response :success
 
+    use_token :active
     collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
     assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1 0:0:dir1file2 0:0:dir1imagefile.png 0:0:file2\n$/, collection['manifest_text']
 
     # now rename 'dir1/dir1file1' such that it is moved into a new subdir
     @test_counter = 0
-    post :update, {
+    post :update, params: {
       id: collection['uuid'],
       collection: {
         'rename-file-path:dir1/dir1file1' => 'dir2/dir3/dir1file1moved'
       },
       format: :json
-    }, session_for(:active)
+    }, session: session_for(:active)
     assert_response :success
 
+    use_token :active
     collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
     assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file2 0:0:dir1imagefile.png 0:0:file2\n.\/dir2\/dir3 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1moved\n$/, collection['manifest_text']
 
     # now rename the image file 'dir1/dir1imagefile.png'
     @test_counter = 0
-    post :update, {
+    post :update, params: {
       id: collection['uuid'],
       collection: {
         'rename-file-path:dir1/dir1imagefile.png' => 'dir1/dir1imagefilerenamed.png'
       },
       format: :json
-    }, session_for(:active)
+    }, session: session_for(:active)
     assert_response :success
 
+    use_token :active
     collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
     assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file2 0:0:dir1imagefilerenamed.png 0:0:file2\n.\/dir2\/dir3 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1moved\n$/, collection['manifest_text']
   end
@@ -701,13 +717,13 @@ class CollectionsControllerTest < ActionController::TestCase
     use_token :active
 
     # rename 'file2' as 'file1' and expect error
-    post :update, {
+    post :update, params: {
       id: 'zzzzz-4zz18-pyw8yp9g3pr7irn',
       collection: {
         'rename-file-path:file2' => 'file1'
       },
       format: :json
-    }, session_for(:active)
+    }, session: session_for(:active)
     assert_response 422
     assert_includes json_response['errors'], 'Duplicate file path'
   end
@@ -716,13 +732,13 @@ class CollectionsControllerTest < ActionController::TestCase
     use_token :active
 
     # rename 'file1' as 'dir1/file1' and expect error
-    post :update, {
+    post :update, params: {
       id: 'zzzzz-4zz18-pyw8yp9g3pr7irn',
       collection: {
         'rename-file-path:file1' => 'dir1/file1'
       },
       format: :json
-    }, session_for(:active)
+    }, session: session_for(:active)
     assert_response 422
     assert_includes json_response['errors'], 'Duplicate file path'
   end

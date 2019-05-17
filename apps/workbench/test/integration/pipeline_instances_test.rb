@@ -140,9 +140,9 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     click_link 'API response'
     api_response = JSON.parse(find('div#advanced_api_response pre').text)
     input_params = api_response['components']['part-one']['script_parameters']['input']
-    assert_equal input_params['value'], collection['portable_data_hash']
-    assert_equal input_params['selection_name'], collection['name']
-    assert_equal input_params['selection_uuid'], collection['uuid']
+    assert_equal collection['portable_data_hash'], input_params['value']
+    assert_equal collection['name'], input_params['selection_name']
+    assert_equal collection['uuid'], input_params['selection_uuid']
 
     # "Run" button is now enabled
     page.assert_no_selector 'a.disabled,button.disabled', text: 'Run'
@@ -445,13 +445,13 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
     api_response = JSON.parse(find('div#advanced_api_response pre').text)
     input_params = api_response['components']['part-one']['script_parameters']['input']
-    assert_equal(input_params['selection_uuid'], collection['uuid'], "Not found expected input param uuid")
+    assert_equal(collection['uuid'], input_params['selection_uuid'], "Not found expected input param uuid")
     if choose_file
-      assert_equal(input_params['value'], collection['portable_data_hash']+'/foo', "Not found expected input file param value")
-      assert_equal(input_params['selection_name'], collection['name']+'/foo', "Not found expected input file param name")
+      assert_equal(collection['portable_data_hash']+'/foo', input_params['value'], "Not found expected input file param value")
+      assert_equal(collection['name']+'/foo', input_params['selection_name'], "Not found expected input file param name")
     else
-      assert_equal(input_params['value'], collection['portable_data_hash'], "Not found expected input param value")
-      assert_equal(input_params['selection_name'], collection['name'], "Not found expected input selection name")
+      assert_equal(collection['portable_data_hash'], input_params['value'], "Not found expected input param value")
+      assert_equal(collection['name'], input_params['selection_name'], "Not found expected input selection name")
     end
 
     # "Run" button present and enabled

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 class TestsController < ApplicationController
-  skip_before_filter :find_object_by_uuid
+  skip_before_action :find_object_by_uuid
   def mithril
   end
 end

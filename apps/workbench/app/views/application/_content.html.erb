@@ -56,7 +56,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
            <% else %>
              data-object-uuid="<%= @object.uuid %>"
            <% end %>
-           data-pane-content-url="<%= url_for(params.merge(tab_pane: pane_name)) %>"
+           data-pane-content-url="<%= url_for(params.permit!.merge(tab_pane: pane_name)) %>"
            style="margin-top:0.5em;"
            >
         <div class="pane-content">

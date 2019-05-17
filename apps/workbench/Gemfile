@@ -4,10 +4,10 @@
 
 source 'https://rubygems.org'
 
-gem 'rails', '~> 4.2.0'
+gem 'rails', '~> 5.0.0'
 gem 'arvados', '>= 0.1.20150511150219'
 
-gem 'activerecord-nulldb-adapter'
+gem 'activerecord-nulldb-adapter', git: 'https://github.com/curoverse/nulldb'
 gem 'multi_json'
 gem 'oj'
 gem 'sass'
@@ -24,7 +24,7 @@ gem 'coffee-rails'
 # Gems used only for assets and not required
 # in production environments by default.
 group :assets do
-  gem 'sass-rails'
+  gem 'sassc-rails'
   gem 'uglifier', '~> 2.0'
 
   # See https://github.com/sstephenson/execjs#readme for more supported runtimes
@@ -48,6 +48,7 @@ group :test, :diagnostics, :performance do
 end
 
 group :test, :performance do
+  gem 'byebug'
   gem 'rails-perftest'
   gem 'ruby-prof'
   gem 'rvm-capistrano'
@@ -57,10 +58,11 @@ group :test, :performance do
   gem 'simplecov', '~> 0.7', require: false
   gem 'simplecov-rcov', require: false
   gem 'mocha', require: false
+  gem 'rails-controller-testing'
 end
 
 gem 'jquery-rails'
-gem 'bootstrap-sass', '~> 3.1.0'
+gem 'bootstrap-sass', '~> 3.4.1'
 gem 'bootstrap-x-editable-rails'
 gem 'bootstrap-tab-history-rails'
 
@@ -68,7 +70,12 @@ gem 'angularjs-rails', '~> 1.3.8'
 
 gem 'less'
 gem 'less-rails'
-gem 'wiselinks'
+
+# Wiselinks hasn't been updated for many years and it's using deprecated methods
+# Use our own Wiselinks fork until this PR is accepted:
+# https://github.com/igor-alexandrov/wiselinks/pull/116
+# gem 'wiselinks', git: 'https://github.com/curoverse/wiselinks.git', branch: 'rails-5.1-compatibility'
+
 gem 'sshkey'
 
 # To use ActiveModel has_secure_password

@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 class PipelineInstancesController < ApplicationController
-  skip_before_filter :find_object_by_uuid, only: :compare
-  before_filter :find_objects_by_uuid, only: :compare
-  skip_around_filter :require_thread_api_token, if: proc { |ctrl|
+  skip_before_action :find_object_by_uuid, only: :compare
+  before_action :find_objects_by_uuid, only: :compare
+  skip_around_action :require_thread_api_token, if: proc { |ctrl|
     Rails.configuration.anonymous_user_token and
     'show' == ctrl.action_name
   }
@@ -67,7 +67,7 @@ class PipelineInstancesController < ApplicationController
   end
 
   def update
-    @updates ||= params[@object.class.to_s.underscore.singularize.to_sym]
+    @updates ||= params.to_unsafe_hash[@object.class.to_s.underscore.singularize.to_sym]
     if (components = @updates[:components])
       components.each do |cname, component|
         if component[:script_parameters]

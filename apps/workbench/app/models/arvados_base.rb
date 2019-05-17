@@ -2,10 +2,52 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class ArvadosBase < ActiveRecord::Base
-  self.abstract_class = true
+class ArvadosBase
+  include ActiveModel::Validations
+  include ActiveModel::Conversion
+  include ActiveModel::Serialization
+  include ActiveModel::Dirty
+  include ActiveModel::AttributeAssignment
+  extend ActiveModel::Naming
+
+  Column = Struct.new("Column", :name)
+
   attr_accessor :attribute_sortkey
   attr_accessor :create_params
+
+  class Error < StandardError; end
+
+  module Type
+    class Hash < ActiveModel::Type::Value
+      def type
+        :hash
+      end
+
+      def default_value
+        {}
+      end
+
+      private
+      def cast_value(value)
+        (value.class == String) ? ::JSON.parse(value) : value
+      end
+    end
+
+    class Array < ActiveModel::Type::Value
+      def type
+        :array
+      end
+
+      def default_value
+        []
+      end
+
+      private
+      def cast_value(value)
+        (value.class == String) ? ::JSON.parse(value) : value
+      end
+    end
+  end
 
   def self.arvados_api_client
     ArvadosApiClient.new_or_current
@@ -35,7 +77,7 @@ class ArvadosBase < ActiveRecord::Base
   end
 
   def initialize raw_params={}, create_params={}
-    super self.class.permit_attribute_params(raw_params)
+    self.class.permit_attribute_params(raw_params)
     @create_params = create_params
     @attribute_sortkey ||= {
       'id' => nil,
@@ -58,6 +100,10 @@ class ArvadosBase < ActiveRecord::Base
       'uuid' => '999',
     }
     @loaded_attributes = {}
+    attributes = self.class.columns.map { |c| [c.name.to_sym, nil] }.to_h.merge(raw_params)
+    attributes.symbolize_keys.each do |name, value|
+      send("#{name}=", value)
+    end
   end
 
   def self.columns
@@ -77,29 +123,70 @@ class ArvadosBase < ActiveRecord::Base
         else
           # Hash, Array
           @discovered_columns << column(k, coldef[:type], coldef[:type].constantize.new)
-          serialize k, coldef[:type].constantize
         end
-        define_method k do
-          unless new_record? or @loaded_attributes.include? k.to_s
-            Rails.logger.debug "BUG: access non-loaded attribute #{k}"
-            # We should...
-            # raise ActiveModel::MissingAttributeError, "missing attribute: #{k}"
-          end
-          super()
-        end
+        attr_reader k
         @attribute_info[k] = coldef
       end
     end
     @discovered_columns
   end
 
+  def new_record?
+    # dup method doesn't reset the uuid attr
+    @uuid.nil? || @new_record || false
+  end
+
+  def initialize_dup(other)
+    super
+    @new_record = true
+    @created_at = nil
+  end
+
   def self.column(name, sql_type = nil, default = nil, null = true)
-    if sql_type == 'datetime'
-      cast_type = "ActiveRecord::Type::DateTime".constantize.new
-    else
-      cast_type = ActiveRecord::Base.connection.lookup_cast_type(sql_type)
+    caster = case sql_type
+              when 'integer'
+                ActiveModel::Type::Integer
+              when 'string', 'text'
+                ActiveModel::Type::String
+              when 'float'
+                ActiveModel::Type::Float
+              when 'datetime'
+                ActiveModel::Type::DateTime
+              when 'boolean'
+                ActiveModel::Type::Boolean
+              when 'Hash'
+                ArvadosBase::Type::Hash
+              when 'Array'
+                ArvadosBase::Type::Array
+              when 'jsonb'
+                ArvadosBase::Type::Hash
+              else
+                raise ArvadosBase::Error.new("Type unknown: #{sql_type}")
+            end
+    define_method "#{name}=" do |val|
+      val = default if val.nil?
+      casted_value = caster.new.cast(val)
+      attribute_will_change!(name) if send(name) != casted_value
+      set_attribute_after_cast(name, casted_value)
     end
-    ActiveRecord::ConnectionAdapters::Column.new(name.to_s, default, cast_type, sql_type.to_s, null)
+    Column.new(name.to_s)
+  end
+
+  def set_attribute_after_cast(name, casted_value)
+    instance_variable_set("@#{name}", casted_value)
+  end
+
+  def [](attr_name)
+    begin
+      send(attr_name)
+    rescue
+      Rails.logger.debug "BUG: access non-loaded attribute #{attr_name}"
+      nil
+    end
+  end
+
+  def []=(attr_name, attr_val)
+    send("#{attr_name}=", attr_val)
   end
 
   def self.attribute_info
@@ -185,17 +272,36 @@ class ArvadosBase < ActiveRecord::Base
     # The following permit! is necessary even with
     # "ActionController::Parameters.permit_all_parameters = true",
     # because permit_all does not permit nested attributes.
-    ActionController::Parameters.new(raw_params).permit!
+    if !raw_params.is_a? ActionController::Parameters
+      raw_params = ActionController::Parameters.new(raw_params)
+    end
+    raw_params.permit!
   end
 
   def self.create raw_params={}, create_params={}
-    x = super(permit_attribute_params(raw_params))
-    x.create_params = create_params
+    x = new(permit_attribute_params(raw_params), create_params)
+    x.save
     x
   end
 
+  def self.create! raw_params={}, create_params={}
+    x = new(permit_attribute_params(raw_params), create_params)
+    x.save!
+    x
+  end
+
+  def self.table_name
+    self.name.underscore.pluralize.downcase
+  end
+
   def update_attributes raw_params={}
-    super(self.class.permit_attribute_params(raw_params))
+    assign_attributes(self.class.permit_attribute_params(raw_params))
+    save
+  end
+
+  def update_attributes! raw_params={}
+    assign_attributes(self.class.permit_attribute_params(raw_params))
+    save!
   end
 
   def save
@@ -219,7 +325,10 @@ class ArvadosBase < ActiveRecord::Base
       obdata.delete :uuid
       resp = arvados_api_client.api(self.class, '/' + uuid, postdata)
     else
-      postdata.merge!(@create_params) if @create_params
+      if @create_params
+        @create_params = @create_params.to_unsafe_hash if @create_params.is_a? ActionController::Parameters
+        postdata.merge!(@create_params)
+      end
       resp = arvados_api_client.api(self.class, '', postdata)
     end
     return false if !resp[:etag] || !resp[:uuid]
@@ -243,6 +352,14 @@ class ArvadosBase < ActiveRecord::Base
 
   def save!
     self.save or raise Exception.new("Save failed")
+  end
+
+  def persisted?
+    (!new_record? && !destroyed?) ? true : false
+  end
+
+  def destroyed?
+    !(new_record? || etag || uuid)
   end
 
   def destroy
@@ -331,6 +448,11 @@ class ArvadosBase < ActiveRecord::Base
   def initialize_copy orig
     super
     forget_uuid!
+  end
+
+  def attributes
+    kv = self.class.columns.collect {|c| c.name}.map {|key| [key, send(key)]}
+    kv.to_h
   end
 
   def attributes_for_display

@@ -32,12 +32,18 @@ class WorkUnitTest < ActiveSupport::TestCase
 
       if label != nil
         assert_equal(label, wu.label)
+      elsif obj.name.nil?
+        assert_nil(wu.label)
       else
         assert_equal(obj.name, wu.label)
       end
       assert_equal(obj['uuid'], wu.uuid)
       assert_equal(state, wu.state_label)
-      assert_equal(success, wu.success?)
+      if success.nil?
+        assert_nil(wu.success?)
+      else
+        assert_equal(success, wu.success?)
+      end
       assert_equal(progress, wu.progress)
 
       assert_equal(num_children, wu.children.size)
@@ -74,7 +80,11 @@ class WorkUnitTest < ActiveSupport::TestCase
       if walltime
         assert_equal true, (wu.walltime >= walltime)
       else
-        assert_equal walltime, wu.walltime
+        if walltime.nil?
+          assert_nil wu.walltime
+        else
+          assert_equal walltime, wu.walltime
+        end
       end
 
       if cputime
@@ -85,6 +95,8 @@ class WorkUnitTest < ActiveSupport::TestCase
 
       if queuedtime
         assert_equal true, (wu.queuedtime >= queuedtime)
+      elsif queuedtime.nil?
+        assert_nil wu.queuedtime
       else
         assert_equal queuedtime, wu.queuedtime
       end

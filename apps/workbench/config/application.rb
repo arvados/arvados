@@ -4,7 +4,18 @@
 
 require File.expand_path('../boot', __FILE__)
 
-require 'rails/all'
+require "rails"
+# Pick only the frameworks we need:
+require "active_model/railtie"
+require "active_job/railtie"
+require "active_record/railtie"
+require "action_controller/railtie"
+require "action_mailer/railtie"
+require "action_view/railtie"
+# Skip ActionCable (new in Rails 5.0) as it adds '/cable' routes that we're not using
+# require "action_cable/engine"
+require "sprockets/railtie"
+require "rails/test_unit/railtie"
 
 Bundler.require(:default, Rails.env)
 
