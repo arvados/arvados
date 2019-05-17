@@ -1,7 +1,13 @@
-<div style="width:30em; margin:2em auto 0 auto">
+<%# Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: AGPL-3.0 %>
+
+<div style="width:40em; margin:2em auto 0 auto">
   <h1>Login redirect</h1>
-  <p>This login is linked to federated user <b><%= @user.uuid %></b> on cluster <b><%= @user.uuid[0..4] %></b>.</p>
-  <p><a href="<%=@remotehomeurl%>">Click here log in on cluster <%= @user.uuid[0..4] %>.</a></p>
-  <p>After logging in, you will be returned to this cluster (<%=Rails.configuration.ClusterID%>).</p>
-  <p>To avoid seeing this page, choose <b><%= @user.uuid[0..4] %></b> as the cluster that hosts your user account on the Workbench login page.</p>
+  <p>This login is linked to federated user <b><%= @user.email %></b> (<b><%= @user.uuid %></b>) on cluster <b><%= @user.uuid[0..4] %></b>.  You need to log in again on that cluster.</p>
+  <p>After logging in, you will be returned to this cluster (<b><%=Rails.configuration.ClusterID%></b>).</p>
+  <div style="width: 100%">
+    <div style="float: left"><a href="<%=@remotehomeurl%>">Click here log in on cluster <%= @user.uuid[0..4] %>.</a></div>
+    <div style="float: right"><a href="/logout">Cancel</a></div>
+  </div>
 </div>
