@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { matchPath } from 'react-router';
+import { matchPath, Router } from 'react-router';
 import { ResourceKind, RESOURCE_UUID_PATTERN, extractUuidKind } from '~/models/resource';
 import { getProjectUrl } from '~/models/project';
 import { getCollectionUrl } from '~/models/collection';
@@ -126,6 +126,9 @@ export const matchKeepServicesRoute = (route: string) =>
 
 export const matchTokenRoute = (route: string) =>
     matchPath(route, { path: Routes.TOKEN });
+
+export const matchFedTokenRoute = (route: string) =>
+    matchPath(route, {path: Routes.FED_LOGIN});
 
 export const matchUsersRoute = (route: string) =>
     matchPath(route, { path: Routes.USERS });

@@ -33,6 +33,7 @@ export interface LinkAccountPanelRootDataProps {
     userToLink?: UserResource;
     remoteHosts:  { [key: string]: string };
     hasRemoteHosts: boolean;
+    localCluster: string;
     status : LinkAccountPanelStatus;
     error: LinkAccountPanelError;
     selectedCluster?: string;
@@ -58,55 +59,88 @@ function displayUser(user: UserResource, showCreatedAt: boolean = false, showClu
     return disp;
 }
 
+function isLocalUser(uuid: string, localCluster: string) {
+    return uuid.substring(0, 5) === localCluster;
+}
+
 type LinkAccountPanelRootProps = LinkAccountPanelRootDataProps & LinkAccountPanelRootActionProps & WithStyles<CssRules>;
 
 export const LinkAccountPanelRoot = withStyles(styles) (
     ({classes, targetUser, userToLink, status, error, startLinking, cancelLinking, linkAccount,
-      remoteHosts, hasRemoteHosts, selectedCluster, setSelectedCluster}: LinkAccountPanelRootProps) => {
+      remoteHosts, hasRemoteHosts, selectedCluster, setSelectedCluster, localCluster}: LinkAccountPanelRootProps) => {
         return <Card className={classes.root}>
             <CardContent>
-            { status === LinkAccountPanelStatus.INITIAL && targetUser &&
-            <Grid container spacing={24}>
-                <Grid container item direction="column" spacing={24}>
-                    <Grid item>
-                        You are currently logged in as {displayUser(targetUser, true, hasRemoteHosts)}
+            { status === LinkAccountPanelStatus.INITIAL && targetUser && <div>
+                { isLocalUser(targetUser.uuid, localCluster) ? <Grid container spacing={24}>
+                    <Grid container item direction="column" spacing={24}>
+                        <Grid item>
+                            You are currently logged in as {displayUser(targetUser, true)}
+                        </Grid>
+                        <Grid item>
+                            You can link Arvados accounts. After linking, either login will take you to the same account.
+                        </Grid >
                     </Grid>
-                    <Grid item>
-                        You can link Arvados accounts. After linking, either login will take you to the same account.
-                    </Grid >
-                    {hasRemoteHosts && selectedCluster && <Grid item>
-                        Please select the cluster that hosts the account you want to link with:
-                            <Select id="remoteHostsDropdown" native defaultValue={selectedCluster} style={{ marginLeft: "1em" }}
-                                onChange={(event) => setSelectedCluster(event.target.value)}>
-                                {Object.keys(remoteHosts).map((k) => <option key={k} value={k}>{k}</option>)}
-                            </Select>
+                    <Grid container item direction="row" spacing={24}>
+                        <Grid item>
+                            <Button disabled={!targetUser.isActive} color="primary" variant="contained" onClick={() => startLinking(LinkAccountType.ADD_OTHER_LOGIN)}>
+                                Add another login to this account
+                            </Button>
+                        </Grid>
+                        <Grid item>
+                            <Button color="primary" variant="contained" onClick={() => startLinking(LinkAccountType.ACCESS_OTHER_ACCOUNT)}>
+                                Use this login to access another account
+                            </Button>
+                        </Grid>
+                    </Grid>
+                    { hasRemoteHosts && selectedCluster && <Grid container item direction="column" spacing={24}>
+                        <Grid item>
+                            You can also link {displayUser(targetUser, false)} with an account from a remote cluster.
+                        </Grid>
+                        <Grid item>
+                            Please select the cluster that hosts the account you want to link with:
+                                <Select id="remoteHostsDropdown" native defaultValue={selectedCluster} style={{ marginLeft: "1em" }}
+                                    onChange={(event) => setSelectedCluster(event.target.value)}>
+                                    {Object.keys(remoteHosts).map((k) => k !== localCluster ? <option key={k} value={k}>{k}</option> : null)}
+                                </Select>
+                            </Grid>
+                        <Grid item>
+                            <Button color="primary" variant="contained" onClick={() => startLinking(LinkAccountType.ACCESS_OTHER_REMOTE_ACCOUNT)}>
+                                Link with an account on&nbsp;{hasRemoteHosts ? <label>{selectedCluster} </label> : null}
+                            </Button>
+                        </Grid>
                     </Grid> }
-                </Grid>
-                <Grid container item direction="row" spacing={24}>
-                    <Grid item>
-                        <Button disabled={!targetUser.isActive} color="primary" variant="contained" onClick={() => startLinking(LinkAccountType.ADD_OTHER_LOGIN)}>
-                            Add another login&nbsp;{hasRemoteHosts ? <label> from {selectedCluster} </label> : null}&nbsp;to this account
-                        </Button>
+                </Grid> :
+                <Grid container spacing={24}>
+                    <Grid container item direction="column" spacing={24}>
+                        <Grid item>
+                            You are currently logged in as {displayUser(targetUser, true, true)}
+                        </Grid>
+                        <Grid item>
+                            This a remote account. You can link a local Arvados account to this one. After linking, you can access the local account's data by logging into the <b>{localCluster}</b> cluster with the <b>{targetUser.email}</b> account.
+                        </Grid >
+                        <Grid item>
+                            <Button color="primary" variant="contained" onClick={() => startLinking(LinkAccountType.ADD_LOCAL_TO_REMOTE)}>
+                                Link an account from {localCluster} to this account
+                            </Button>
+                        </Grid>
                     </Grid>
-                    <Grid item>
-                        <Button color="primary" variant="contained" onClick={() => startLinking(LinkAccountType.ACCESS_OTHER_ACCOUNT)}>
-                            Use this login to access another account&nbsp;{hasRemoteHosts ? <label> on {selectedCluster} </label> : null}
-                        </Button>
-                    </Grid>
-                </Grid>
-            </Grid> }
+                </Grid>}
+            </div> }
             { (status === LinkAccountPanelStatus.LINKING || status === LinkAccountPanelStatus.ERROR) && userToLink && targetUser &&
             <Grid container spacing={24}>
                 { status === LinkAccountPanelStatus.LINKING && <Grid container item direction="column" spacing={24}>
                     <Grid item>
-                        Clicking 'Link accounts' will link {displayUser(userToLink, true, hasRemoteHosts)} to {displayUser(targetUser, true, hasRemoteHosts)}.
+                        Clicking 'Link accounts' will link {displayUser(userToLink, true, !isLocalUser(targetUser.uuid, localCluster))} to {displayUser(targetUser, true, !isLocalUser(targetUser.uuid, localCluster))}.
                     </Grid>
-                    <Grid item>
+                    { (isLocalUser(targetUser.uuid, localCluster)) && <Grid item>
                         After linking, logging in as {displayUser(userToLink)} will log you into the same account as {displayUser(targetUser)}.
-                    </Grid>
+                    </Grid> }
                     <Grid item>
-                       Any object owned by {displayUser(userToLink)} will be transfered to {displayUser(targetUser)}.
+                        Any object owned by {displayUser(userToLink)} will be transfered to {displayUser(targetUser)}.
                     </Grid>
+                    { !isLocalUser(targetUser.uuid, localCluster) && <Grid item>
+                        You can access <b>{userToLink.email}</b> data by logging into <b>{localCluster}</b> with the <b>{targetUser.email}</b> account.
+                    </Grid> }
                 </Grid> }
                 { error === LinkAccountPanelError.NON_ADMIN && <Grid item>
                     Cannot link admin account {displayUser(userToLink)} to non-admin account {displayUser(targetUser)}.

@@ -99,8 +99,17 @@ export const linkFailed = () =>
 
 export const loadLinkAccountPanel = () =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        // If there are remote hosts, set the initial selected cluster by getting the first cluster that isn't the local cluster
         if (getState().linkAccountPanel.selectedCluster === undefined) {
-            dispatch(linkAccountPanelActions.SET_SELECTED_CLUSTER({ selectedCluster: getState().auth.localCluster }));
+            const localCluster = getState().auth.localCluster;
+            let selectedCluster = localCluster;
+            for (const key in getState().auth.remoteHosts) {
+                if (key !== localCluster) {
+                    selectedCluster = key;
+                    break;
+                }
+            }
+            dispatch(linkAccountPanelActions.SET_SELECTED_CLUSTER({ selectedCluster }));
         }
 
         // First check if an account link operation has completed
@@ -124,7 +133,7 @@ export const loadLinkAccountPanel = () =>
                 dispatch(saveApiToken(curToken));
 
                 let params: any;
-                if (linkAccountData.type === LinkAccountType.ACCESS_OTHER_ACCOUNT) {
+                if (linkAccountData.type === LinkAccountType.ACCESS_OTHER_ACCOUNT || linkAccountData.type === LinkAccountType.ACCESS_OTHER_REMOTE_ACCOUNT) {
                     params = {
                         originatingUser: OriginatingUser.USER_TO_LINK,
                         targetUser: curUserResource,
@@ -133,7 +142,7 @@ export const loadLinkAccountPanel = () =>
                         userToLinkToken: linkAccountData.token
                     };
                 }
-                else if (linkAccountData.type === LinkAccountType.ADD_OTHER_LOGIN) {
+                else if (linkAccountData.type === LinkAccountType.ADD_OTHER_LOGIN || linkAccountData.type === LinkAccountType.ADD_LOCAL_TO_REMOTE) {
                     params = {
                         originatingUser: OriginatingUser.TARGET_USER,
                         targetUser: savedUserResource,
@@ -176,9 +185,14 @@ export const startLinking = (t: LinkAccountType) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const accountToLink = {type: t, userUuid: services.authService.getUuid(), token: services.authService.getApiToken()} as AccountToLink;
         services.linkAccountService.saveAccountToLink(accountToLink);
+
         const auth = getState().auth;
-        const selectedCluster = getState().linkAccountPanel.selectedCluster;
-        const homeCluster = selectedCluster ? selectedCluster : auth.homeCluster;
+        const isLocalUser = auth.user!.uuid.substring(0,5) === auth.localCluster;
+        let homeCluster = auth.localCluster;
+        if (isLocalUser && t === LinkAccountType.ACCESS_OTHER_REMOTE_ACCOUNT) {
+            homeCluster = getState().linkAccountPanel.selectedCluster!;
+        }
+
         dispatch(logout());
         dispatch(login(auth.localCluster, homeCluster, auth.remoteHosts));
     };

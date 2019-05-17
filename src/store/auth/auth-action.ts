@@ -13,7 +13,7 @@ import { Session } from "~/models/session";
 import { getDiscoveryURL, Config } from '~/common/config';
 import { initSessions } from "~/store/auth/auth-action-session";
 import { cancelLinking } from '~/store/link-account-panel/link-account-panel-actions';
-import { matchTokenRoute } from '~/routes/routes';
+import { matchTokenRoute, matchFedTokenRoute } from '~/routes/routes';
 import Axios from "axios";
 import { AxiosError } from "axios";
 
@@ -54,7 +54,7 @@ export const initAuth = (config: Config) => (dispatch: Dispatch, getState: () =>
     // Cancel any link account ops in progess unless the user has
     // just logged in or there has been a successful link operation
     const data = services.linkAccountService.getLinkOpStatus();
-    if (!matchTokenRoute(location.pathname) && data === undefined) {
+    if (!matchTokenRoute(location.pathname) && (!matchFedTokenRoute(location.pathname)) && data === undefined) {
         dispatch<any>(cancelLinking());
     }
 

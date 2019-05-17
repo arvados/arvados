@@ -10,7 +10,9 @@ export enum LinkAccountStatus {
 
 export enum LinkAccountType {
     ADD_OTHER_LOGIN,
-    ACCESS_OTHER_ACCOUNT
+    ADD_LOCAL_TO_REMOTE,
+    ACCESS_OTHER_ACCOUNT,
+    ACCESS_OTHER_REMOTE_ACCOUNT
 }
 
 export interface AccountToLink {
