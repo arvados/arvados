@@ -123,7 +123,6 @@ class ArvadosBase
         else
           # Hash, Array
           @discovered_columns << column(k, coldef[:type], coldef[:type].constantize.new)
-          # serialize k, coldef[:type].constantize
         end
         attr_reader k
         @attribute_info[k] = coldef
@@ -181,6 +180,7 @@ class ArvadosBase
     begin
       send(attr_name)
     rescue
+      Rails.logger.debug "BUG: access non-loaded attribute #{attr_name}"
       nil
     end
   end
