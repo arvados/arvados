@@ -26,5 +26,4 @@ type keepClient interface {
 
 type apiClient interface {
 	RequestAndDecode(dst interface{}, method, path string, body io.Reader, params interface{}) error
-	UpdateBody(rsc resource) io.Reader
 }

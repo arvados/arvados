@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -74,7 +73,7 @@ func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc fun
 	var newCollection arvados.Collection
 	arv := arvados.NewClientFromEnv()
 	arv.AuthToken = arvadostest.ActiveToken
-	err = arv.RequestAndDecode(&newCollection, "POST", "arvados/v1/collections", bytes.NewBufferString(url.Values{"collection": {"{}"}}.Encode()), nil)
+	err = arv.RequestAndDecode(&newCollection, "POST", "arvados/v1/collections", nil, map[string]interface{}{"collection": map[string]interface{}{}})
 	c.Assert(err, check.IsNil)
 
 	readPath, writePath, pdhPath := pathFunc(newCollection)

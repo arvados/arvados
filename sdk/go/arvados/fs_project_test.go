@@ -118,20 +118,24 @@ func (s *SiteFSSuite) TestProjectReaddirAfterLoadOne(c *check.C) {
 }
 
 func (s *SiteFSSuite) TestSlashInName(c *check.C) {
-	badCollection := Collection{
-		Name:      "bad/collection",
-		OwnerUUID: fixtureAProjectUUID,
-	}
-	err := s.client.RequestAndDecode(&badCollection, "POST", "arvados/v1/collections", s.client.UpdateBody(&badCollection), nil)
+	var badCollection Collection
+	err := s.client.RequestAndDecode(&badCollection, "POST", "arvados/v1/collections", nil, map[string]interface{}{
+		"collection": map[string]string{
+			"name":       "bad/collection",
+			"owner_uuid": fixtureAProjectUUID,
+		},
+	})
 	c.Assert(err, check.IsNil)
 	defer s.client.RequestAndDecode(nil, "DELETE", "arvados/v1/collections/"+badCollection.UUID, nil, nil)
 
-	badProject := Group{
-		Name:       "bad/project",
-		GroupClass: "project",
-		OwnerUUID:  fixtureAProjectUUID,
-	}
-	err = s.client.RequestAndDecode(&badProject, "POST", "arvados/v1/groups", s.client.UpdateBody(&badProject), nil)
+	var badProject Group
+	err = s.client.RequestAndDecode(&badProject, "POST", "arvados/v1/groups", nil, map[string]interface{}{
+		"group": map[string]string{
+			"name":        "bad/project",
+			"group_class": "project",
+			"owner_uuid":  fixtureAProjectUUID,
+		},
+	})
 	c.Assert(err, check.IsNil)
 	defer s.client.RequestAndDecode(nil, "DELETE", "arvados/v1/groups/"+badProject.UUID, nil, nil)
 
@@ -154,11 +158,13 @@ func (s *SiteFSSuite) TestProjectUpdatedByOther(c *check.C) {
 	_, err = s.fs.Open("/home/A Project/oob")
 	c.Check(err, check.NotNil)
 
-	oob := Collection{
-		Name:      "oob",
-		OwnerUUID: fixtureAProjectUUID,
-	}
-	err = s.client.RequestAndDecode(&oob, "POST", "arvados/v1/collections", s.client.UpdateBody(&oob), nil)
+	var oob Collection
+	err = s.client.RequestAndDecode(&oob, "POST", "arvados/v1/collections", nil, map[string]interface{}{
+		"collection": map[string]string{
+			"name":       "oob",
+			"owner_uuid": fixtureAProjectUUID,
+		},
+	})
 	c.Assert(err, check.IsNil)
 	defer s.client.RequestAndDecode(nil, "DELETE", "arvados/v1/collections/"+oob.UUID, nil, nil)
 
@@ -179,8 +185,13 @@ func (s *SiteFSSuite) TestProjectUpdatedByOther(c *check.C) {
 	c.Check(err, check.IsNil)
 
 	// Delete test.txt behind s.fs's back by updating the
-	// collection record with the old (empty) ManifestText.
-	err = s.client.RequestAndDecode(nil, "PATCH", "arvados/v1/collections/"+oob.UUID, s.client.UpdateBody(&oob), nil)
+	// collection record with an empty ManifestText.
+	err = s.client.RequestAndDecode(nil, "PATCH", "arvados/v1/collections/"+oob.UUID, nil, map[string]interface{}{
+		"collection": map[string]string{
+			"manifest_text":      "",
+			"portable_data_hash": "d41d8cd98f00b204e9800998ecf8427e+0",
+		},
+	})
 	c.Assert(err, check.IsNil)
 
 	err = project.Sync()
