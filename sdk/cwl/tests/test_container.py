@@ -324,7 +324,7 @@ class TestContainer(unittest.TestCase):
         call_args, call_kwargs = runner.api.container_requests().create.call_args
 
         vwdmock.copy.assert_has_calls([mock.call('bar', 'foo', source_collection=sourcemock)])
-        vwdmock.copy.assert_has_calls([mock.call('', 'foo2', source_collection=sourcemock)])
+        vwdmock.copy.assert_has_calls([mock.call('.', 'foo2', source_collection=sourcemock)])
         vwdmock.copy.assert_has_calls([mock.call('baz/filename', 'filename', source_collection=sourcemock)])
         vwdmock.copy.assert_has_calls([mock.call('subdir', 'subdir', source_collection=sourcemock)])
 
