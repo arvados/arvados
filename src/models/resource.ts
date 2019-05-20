@@ -104,7 +104,6 @@ export const extractUuidKind = (uuid: string = '') => {
             return ResourceKind.LINK;
         default:
             const match = COLLECTION_PDH_REGEX.exec(uuid);
-            console.log("matching " + match);
             return match ? ResourceKind.COLLECTION : undefined;
     }
 };

@@ -48,7 +48,6 @@ export const navigateToWorkflows = push(Routes.WORKFLOWS);
 
 export const pushOrGoto = (url: string): AnyAction => {
     if (url === "") {
-        console.log("url should not be empty");
         return { type: "noop" };
     } else if (url[0] === '/') {
         return push(url);
@@ -63,7 +62,6 @@ export const navigateToProcessLogs = compose(push, getProcessLogUrl);
 
 export const navigateToRootProject = (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     const rootProjectUuid = services.authService.getUuid();
-    console.log("rootProjectUuid " + rootProjectUuid);
     if (rootProjectUuid) {
         dispatch<any>(navigateTo(rootProjectUuid));
     }

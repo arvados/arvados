@@ -15,7 +15,6 @@ import { MoreOptionsIcon, CollectionIcon, CopyIcon } from '~/components/icon/ico
 import { DetailsAttribute } from '~/components/details-attribute/details-attribute';
 import { CollectionResource } from '~/models/collection';
 import { CollectionPanelFiles } from '~/views-components/collection-panel-files/collection-panel-files';
-import * as CopyToClipboard from 'react-copy-to-clipboard';
 import { CollectionTagForm } from './collection-tag-form';
 import { deleteCollectionTag, navigateToProcess } from '~/store/collection-panel/collection-panel-action';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
@@ -27,7 +26,7 @@ import { getResourceData } from "~/store/resources-data/resources-data";
 import { ResourceData } from "~/store/resources-data/resources-data-reducer";
 import { openDetailsPanel } from '~/store/details-panel/details-panel-action';
 
-type CssRules = 'card' | 'iconHeader' | 'tag' | 'copyIcon' | 'label' | 'value' | 'link';
+type CssRules = 'card' | 'iconHeader' | 'tag' | 'label' | 'value' | 'link';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
@@ -40,12 +39,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     tag: {
         marginRight: theme.spacing.unit,
         marginBottom: theme.spacing.unit
-    },
-    copyIcon: {
-        marginLeft: theme.spacing.unit,
-        fontSize: '1.125rem',
-        color: theme.palette.grey["500"],
-        cursor: 'pointer'
     },
     label: {
         fontSize: '0.875rem'
@@ -105,32 +98,19 @@ export const CollectionPanel = withStyles(styles)(
                                 subheaderTypographyProps={this.titleProps} />
                             <CardContent>
                                 <Grid container direction="column">
-                                    <Grid item xs={6}>
+                                    <Grid item xs={10}>
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                                             label='Collection UUID'
-                                            value={item && item.uuid}>
-                                            <Tooltip title="Copy uuid">
-                                                <CopyToClipboard text={item && item.uuid} onCopy={() => this.onCopy("UUID has been copied")}>
-                                                    <CopyIcon className={classes.copyIcon} />
-                                                </CopyToClipboard>
-                                            </Tooltip>
-                                        </DetailsAttribute>
+                                            linkToUuid={item && item.uuid} />
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                                             label='Portable data hash'
-                                            linkToUuid={item && item.portableDataHash}
-                                            value={item && item.portableDataHash}>
-                                            <Tooltip title="Copy pdh">
-                                                <CopyToClipboard text={item && item.portableDataHash} onCopy={() => this.onCopy("PDH has been copied")}>
-                                                    <CopyIcon className={classes.copyIcon} />
-                                                </CopyToClipboard>
-                                            </Tooltip>
-                                        </DetailsAttribute>
+                                            linkToUuid={item && item.portableDataHash} />
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                                             label='Number of files' value={data && data.fileCount} />
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                                             label='Content size' value={data && formatFileSize(data.fileSize)} />
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                            label='Owner' linkToUuid={item && item.ownerUuid} value={item && item.ownerUuid} />
+                                            label='Owner' linkToUuid={item && item.ownerUuid} />
                                         {(item.properties.container_request || item.properties.containerRequest) &&
                                             <span onClick={() => dispatch<any>(navigateToProcess(item.properties.container_request || item.properties.containerRequest))}>
                                                 <DetailsAttribute classLabel={classes.link} label='Link to process' />
@@ -184,14 +164,6 @@ export const CollectionPanel = withStyles(styles)(
 
             handleDelete = (key: string) => () => {
                 this.props.dispatch<any>(deleteCollectionTag(key));
-            }
-
-            onCopy = (message: string) => {
-                this.props.dispatch(snackbarActions.OPEN_SNACKBAR({
-                    message,
-                    hideDuration: 2000,
-                    kind: SnackbarKind.SUCCESS
-                }));
             }
 
             openCollectionDetails = () => {

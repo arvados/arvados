@@ -49,7 +49,6 @@ export const Routes = {
 
 export const getResourceUrl = (uuid: string) => {
     const kind = extractUuidKind(uuid);
-    console.log(`for ${uuid} the kind is ${kind}`);
     switch (kind) {
         case ResourceKind.PROJECT:
             return getProjectUrl(uuid);
