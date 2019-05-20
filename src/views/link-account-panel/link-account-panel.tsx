@@ -22,13 +22,14 @@ const mapStateToProps = (state: RootState): LinkAccountPanelRootDataProps => {
         targetUser: state.linkAccountPanel.targetUser,
         userToLink: state.linkAccountPanel.userToLink,
         status: state.linkAccountPanel.status,
-        error: state.linkAccountPanel.error
+        error: state.linkAccountPanel.error,
+        isProcessing: state.linkAccountPanel.isProcessing
     };
 };
 
 const mapDispatchToProps = (dispatch: Dispatch): LinkAccountPanelRootActionProps => ({
     startLinking: (type: LinkAccountType) => dispatch<any>(startLinking(type)),
-    cancelLinking: () => dispatch<any>(cancelLinking()),
+    cancelLinking: () => dispatch<any>(cancelLinking(true)),
     linkAccount: () => dispatch<any>(linkAccount()),
     setSelectedCluster: (selectedCluster: string) => dispatch<any>(linkAccountPanelActions.SET_SELECTED_CLUSTER({selectedCluster}))
 });

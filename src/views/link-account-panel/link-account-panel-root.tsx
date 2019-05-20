@@ -11,7 +11,8 @@ import {
     CardContent,
     Button,
     Grid,
-    Select
+    Select,
+    CircularProgress
 } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { UserResource } from "~/models/user";
@@ -19,7 +20,7 @@ import { LinkAccountType } from "~/models/link-account";
 import { formatDate } from "~/common/formatters";
 import { LinkAccountPanelStatus, LinkAccountPanelError } from "~/store/link-account-panel/link-account-panel-reducer";
 
-type CssRules = 'root';// | 'gridItem' | 'label' | 'title' | 'actions';
+type CssRules = 'root';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -37,6 +38,7 @@ export interface LinkAccountPanelRootDataProps {
     status : LinkAccountPanelStatus;
     error: LinkAccountPanelError;
     selectedCluster?: string;
+    isProcessing: boolean;
 }
 
 export interface LinkAccountPanelRootActionProps {
@@ -66,10 +68,18 @@ function isLocalUser(uuid: string, localCluster: string) {
 type LinkAccountPanelRootProps = LinkAccountPanelRootDataProps & LinkAccountPanelRootActionProps & WithStyles<CssRules>;
 
 export const LinkAccountPanelRoot = withStyles(styles) (
-    ({classes, targetUser, userToLink, status, error, startLinking, cancelLinking, linkAccount,
+    ({classes, targetUser, userToLink, status, isProcessing, error, startLinking, cancelLinking, linkAccount,
       remoteHosts, hasRemoteHosts, selectedCluster, setSelectedCluster, localCluster}: LinkAccountPanelRootProps) => {
         return <Card className={classes.root}>
             <CardContent>
+            { isProcessing && <Grid container item direction="column" alignContent="center" spacing={24}>
+                <Grid item>
+                    Loading user info. Please wait.
+                </Grid>
+                <Grid item style={{ alignSelf: 'center' }}>
+                    <CircularProgress/>
+                </Grid>
+            </Grid> }
             { status === LinkAccountPanelStatus.INITIAL && targetUser && <div>
                 { isLocalUser(targetUser.uuid, localCluster) ? <Grid container spacing={24}>
                     <Grid container item direction="column" spacing={24}>
@@ -164,6 +174,6 @@ export const LinkAccountPanelRoot = withStyles(styles) (
                     </Grid>
                 </Grid>
             </Grid> }
-            </CardContent>
-        </Card> ;
+        </CardContent>
+    </Card>;
 });

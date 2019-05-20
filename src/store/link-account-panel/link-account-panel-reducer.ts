@@ -35,6 +35,7 @@ export interface LinkAccountPanelState {
     userToLinkToken: string | undefined;
     status: LinkAccountPanelStatus;
     error: LinkAccountPanelError;
+    isProcessing: boolean;
 }
 
 const initialState = {
@@ -44,6 +45,7 @@ const initialState = {
     targetUserToken: undefined,
     userToLink: undefined,
     userToLinkToken: undefined,
+    isProcessing: false,
     status: LinkAccountPanelStatus.NONE,
     error: LinkAccountPanelError.NONE
 };
@@ -73,6 +75,10 @@ export const linkAccountPanelReducer = (state: LinkAccountPanelState = initialSt
         }),
         SET_SELECTED_CLUSTER: ({ selectedCluster }) => ({
             ...state, selectedCluster
+        }),
+        SET_IS_PROCESSING: ({ isProcessing }) =>({
+            ...state,
+            isProcessing
         }),
         HAS_SESSION_DATA: () => ({
             ...state, status: LinkAccountPanelStatus.HAS_SESSION_DATA

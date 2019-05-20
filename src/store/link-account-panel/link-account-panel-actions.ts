@@ -13,7 +13,7 @@ import { unionize, ofType, UnionOf } from '~/common/unionize';
 import { UserResource } from "~/models/user";
 import { GroupResource } from "~/models/group";
 import { LinkAccountPanelError, OriginatingUser } from "./link-account-panel-reducer";
-import { login, logout } from "~/store/auth/auth-action";
+import { login, logout, setAuthorizationHeader } from "~/store/auth/auth-action";
 import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
 import { WORKBENCH_LOADING_SCREEN } from '~/store/workbench/workbench-actions';
 
@@ -33,6 +33,8 @@ export const linkAccountPanelActions = unionize({
         error: LinkAccountPanelError }>(),
     SET_SELECTED_CLUSTER: ofType<{
         selectedCluster: string }>(),
+    SET_IS_PROCESSING: ofType<{
+        isProcessing: boolean}>(),
     HAS_SESSION_DATA: {}
 });
 
@@ -99,85 +101,92 @@ export const linkFailed = () =>
 
 export const loadLinkAccountPanel = () =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        // If there are remote hosts, set the initial selected cluster by getting the first cluster that isn't the local cluster
-        if (getState().linkAccountPanel.selectedCluster === undefined) {
-            const localCluster = getState().auth.localCluster;
-            let selectedCluster = localCluster;
-            for (const key in getState().auth.remoteHosts) {
-                if (key !== localCluster) {
-                    selectedCluster = key;
-                    break;
+        try {
+            // If there are remote hosts, set the initial selected cluster by getting the first cluster that isn't the local cluster
+            if (getState().linkAccountPanel.selectedCluster === undefined) {
+                const localCluster = getState().auth.localCluster;
+                let selectedCluster = localCluster;
+                for (const key in getState().auth.remoteHosts) {
+                    if (key !== localCluster) {
+                        selectedCluster = key;
+                        break;
+                    }
                 }
+                dispatch(linkAccountPanelActions.SET_SELECTED_CLUSTER({ selectedCluster }));
             }
-            dispatch(linkAccountPanelActions.SET_SELECTED_CLUSTER({ selectedCluster }));
-        }
 
-        // First check if an account link operation has completed
-        dispatch(checkForLinkStatus());
+            // First check if an account link operation has completed
+            dispatch(checkForLinkStatus());
 
-        // Continue loading the link account panel
-        dispatch(setBreadcrumbs([{ label: 'Link account'}]));
-        const curUser = getState().auth.user;
-        const curToken = getState().auth.apiToken;
-        if (curUser && curToken) {
-            const curUserResource = await services.userService.get(curUser.uuid);
-            const linkAccountData = services.linkAccountService.getAccountToLink();
+            // Continue loading the link account panel
+            dispatch(setBreadcrumbs([{ label: 'Link account'}]));
+            const curUser = getState().auth.user;
+            const curToken = getState().auth.apiToken;
+            if (curUser && curToken) {
 
-            // If there is link account session data, then the user has logged in a second time
-            if (linkAccountData) {
+                // If there is link account session data, then the user has logged in a second time
+                const linkAccountData = services.linkAccountService.getAccountToLink();
+                if (linkAccountData) {
 
-                // Use the token of the user we are getting data for. This avoids any admin/non-admin permissions
-                // issues since a user will always be able to query the api server for their own user data.
-                dispatch(saveApiToken(linkAccountData.token));
-                const savedUserResource = await services.userService.get(linkAccountData.userUuid);
-                dispatch(saveApiToken(curToken));
+                    dispatch(linkAccountPanelActions.SET_IS_PROCESSING({ isProcessing: true }));
+                    const curUserResource = await services.userService.get(curUser.uuid);
 
-                let params: any;
-                if (linkAccountData.type === LinkAccountType.ACCESS_OTHER_ACCOUNT || linkAccountData.type === LinkAccountType.ACCESS_OTHER_REMOTE_ACCOUNT) {
-                    params = {
-                        originatingUser: OriginatingUser.USER_TO_LINK,
-                        targetUser: curUserResource,
-                        targetUserToken: curToken,
-                        userToLink: savedUserResource,
-                        userToLinkToken: linkAccountData.token
-                    };
-                }
-                else if (linkAccountData.type === LinkAccountType.ADD_OTHER_LOGIN || linkAccountData.type === LinkAccountType.ADD_LOCAL_TO_REMOTE) {
-                    params = {
-                        originatingUser: OriginatingUser.TARGET_USER,
-                        targetUser: savedUserResource,
-                        targetUserToken: linkAccountData.token,
-                        userToLink: curUserResource,
-                        userToLinkToken: curToken
-                    };
+                    // Use the token of the user we are getting data for. This avoids any admin/non-admin permissions
+                    // issues since a user will always be able to query the api server for their own user data.
+                    setAuthorizationHeader(services, linkAccountData.token);
+                    const savedUserResource = await services.userService.get(linkAccountData.userUuid);
+                    setAuthorizationHeader(services, curToken);
+
+                    let params: any;
+                    if (linkAccountData.type === LinkAccountType.ACCESS_OTHER_ACCOUNT || linkAccountData.type === LinkAccountType.ACCESS_OTHER_REMOTE_ACCOUNT) {
+                        params = {
+                            originatingUser: OriginatingUser.USER_TO_LINK,
+                            targetUser: curUserResource,
+                            targetUserToken: curToken,
+                            userToLink: savedUserResource,
+                            userToLinkToken: linkAccountData.token
+                        };
+                    }
+                    else if (linkAccountData.type === LinkAccountType.ADD_OTHER_LOGIN || linkAccountData.type === LinkAccountType.ADD_LOCAL_TO_REMOTE) {
+                        params = {
+                            originatingUser: OriginatingUser.TARGET_USER,
+                            targetUser: savedUserResource,
+                            targetUserToken: linkAccountData.token,
+                            userToLink: curUserResource,
+                            userToLinkToken: curToken
+                        };
+                    }
+                    else {
+                        throw new Error("Unknown link account type");
+                    }
+
+                    dispatch(switchUser(params.targetUser, params.targetUserToken));
+                    const error = validateLink(params.userToLink, params.targetUser);
+                    if (error === LinkAccountPanelError.NONE) {
+                        dispatch(linkAccountPanelActions.LINK_LOAD(params));
+                    }
+                    else {
+                        dispatch(linkAccountPanelActions.LINK_INVALID({
+                            originatingUser: params.originatingUser,
+                            targetUser: params.targetUser,
+                            userToLink: params.userToLink,
+                            error}));
+                        return;
+                    }
                 }
                 else {
-                    // This should never really happen, but just in case, switch to the user that
-                    // originated the linking operation (i.e. the user saved in session data)
-                    dispatch(switchUser(savedUserResource, linkAccountData.token));
-                    services.linkAccountService.removeAccountToLink();
-                    dispatch(linkAccountPanelActions.LINK_INIT({targetUser:savedUserResource}));
-                }
-
-                dispatch(switchUser(params.targetUser, params.targetUserToken));
-                const error = validateLink(params.userToLink, params.targetUser);
-                if (error === LinkAccountPanelError.NONE) {
-                    dispatch(linkAccountPanelActions.LINK_LOAD(params));
-                }
-                else {
-                    dispatch(linkAccountPanelActions.LINK_INVALID({
-                        originatingUser: params.originatingUser,
-                        targetUser: params.targetUser,
-                        userToLink: params.userToLink,
-                        error}));
+                    // If there is no link account session data, set the state to invoke the initial UI
+                    const curUserResource = await services.userService.get(curUser.uuid);
+                    dispatch(linkAccountPanelActions.LINK_INIT({ targetUser: curUserResource }));
                     return;
                 }
             }
-            else {
-                // If there is no link account session data, set the state to invoke the initial UI
-                dispatch(linkAccountPanelActions.LINK_INIT({ targetUser: curUserResource }));
-                return;
-            }
+        }
+        catch (e) {
+            dispatch(linkFailed());
+        }
+        finally {
+            dispatch(linkAccountPanelActions.SET_IS_PROCESSING({ isProcessing: false }));
         }
     };
 
@@ -202,23 +211,27 @@ export const getAccountLinkData = () =>
         return services.linkAccountService.getAccountToLink();
     };
 
-export const cancelLinking = () =>
+export const cancelLinking = (reload: boolean = false) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         let user: UserResource | undefined;
         try {
-            dispatch(progressIndicatorActions.START_WORKING(WORKBENCH_LOADING_SCREEN));
             // When linking is cancelled switch to the originating user (i.e. the user saved in session data)
+            dispatch(progressIndicatorActions.START_WORKING(WORKBENCH_LOADING_SCREEN));
             const linkAccountData = services.linkAccountService.getAccountToLink();
             if (linkAccountData) {
-                dispatch(saveApiToken(linkAccountData.token));
+                services.linkAccountService.removeAccountToLink();
+                setAuthorizationHeader(services, linkAccountData.token);
                 user = await services.userService.get(linkAccountData.userUuid);
                 dispatch(switchUser(user, linkAccountData.token));
             }
         }
         finally {
-            services.linkAccountService.removeAccountToLink();
-            dispatch(linkAccountPanelActions.LINK_INIT({targetUser:user}));
-            dispatch(progressIndicatorActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
+            if (reload) {
+                location.reload();
+            }
+            else {
+                dispatch(progressIndicatorActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
+            }
         }
     };
 
@@ -243,8 +256,8 @@ export const linkAccount = () =>
 
             try {
                 // The merge api links the user sending the request into the user
-                // specified in the request, so switch users for this api call
-                dispatch(saveApiToken(linkState.userToLinkToken));
+                // specified in the request, so change the authorization header accordingly
+                setAuthorizationHeader(services, linkState.userToLinkToken);
                 await services.linkAccountService.linkAccounts(linkState.targetUserToken, newGroup.uuid);
                 dispatch(switchUser(linkState.targetUser, linkState.targetUserToken));
                 services.linkAccountService.removeAccountToLink();
@@ -254,7 +267,7 @@ export const linkAccount = () =>
             catch(e) {
                 // If the link operation fails, delete the previously made project
                 try {
-                    dispatch(saveApiToken(linkState.targetUserToken));
+                    setAuthorizationHeader(services, linkState.targetUserToken);
                     await services.projectService.delete(newGroup.uuid);
                 }
                 finally {

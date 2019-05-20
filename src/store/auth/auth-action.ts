@@ -37,7 +37,7 @@ export const authActions = unionize({
     REMOTE_CLUSTER_CONFIG: ofType<{ config: Config }>(),
 });
 
-function setAuthorizationHeader(services: ServiceRepository, token: string) {
+export function setAuthorizationHeader(services: ServiceRepository, token: string) {
     services.apiClient.defaults.headers.common = {
         Authorization: `OAuth2 ${token}`
     };
