@@ -1221,19 +1221,21 @@ else
             # assume emacs, or something, is offering a history buffer
             # and pre-populating the command will only cause trouble
             nextcmd=
-        elif [[ "$nextcmd" != "install deps" ]]; then
-            :
-        elif [[ -e "$VENVDIR/bin/activate" ]]; then
-            nextcmd="test lib/cmd"
-        else
+        elif [[ ! -e "$VENVDIR/bin/activate" ]]; then
             nextcmd="install deps"
+        else
+            nextcmd=""
         fi
     }
     echo
     help_interactive
     nextcmd="install deps"
     setnextcmd
-    while read -p 'What next? ' -e -i "${nextcmd}" nextcmd; do
+    HISTFILE="$WORKSPACE/tmp/.history"
+    history -r
+    while read -p 'What next? ' -e -i "$nextcmd" nextcmd; do
+        history -s "$nextcmd"
+        history -w
         read verb target opts <<<"${nextcmd}"
         target="${target%/}"
         target="${target/\/:/:}"
