@@ -57,31 +57,32 @@ const ProjectDetailsComponent = connect(null, mapDispatchToProps)(
     withStyles(styles)(
         ({ classes, project, onClick }: ProjectDetailsComponentProps) => <div>
             <DetailsAttribute label='Type' value={resourceLabel(ResourceKind.PROJECT)} />
-                {/* Missing attr */}
-                <DetailsAttribute label='Size' value='---' />
-                <DetailsAttribute label='Owner' value={project.ownerUuid} lowercaseValue={true} />
-                <DetailsAttribute label='Last modified' value={formatDate(project.modifiedAt)} />
-                <DetailsAttribute label='Created at' value={formatDate(project.createdAt)} />
-                {/* Missing attr */}
-                {/*<DetailsAttribute label='File size' value='1.4 GB' />*/}
-                <DetailsAttribute label='Description'>
-                    {project.description ?
-                        <RichTextEditorLink
-                            title={`Description of ${project.name}`}
-                            content={project.description}
-                            label='Show full description' />
-                        : '---'
-                    }
-                </DetailsAttribute>
-                <DetailsAttribute label='Properties'>
-                    <div onClick={onClick}>
-                        <RenameIcon className={classes.editIcon} />
-                    </div>
-                </DetailsAttribute>
-                {
-                    Object.keys(project.properties).map(k => {
-                        return <Chip key={k} className={classes.tag} label={`${k}: ${project.properties[k]}`} />;
-                    })
+            {/* Missing attr */}
+            <DetailsAttribute label='Size' value='---' />
+            <DetailsAttribute label='Owner' linkToUuid={project.ownerUuid} lowercaseValue={true} />
+            <DetailsAttribute label='Last modified' value={formatDate(project.modifiedAt)} />
+            <DetailsAttribute label='Created at' value={formatDate(project.createdAt)} />
+            <DetailsAttribute label='Project UUID' linkToUuid={project.uuid} value={project.uuid} />
+            {/* Missing attr */}
+            {/*<DetailsAttribute label='File size' value='1.4 GB' />*/}
+            <DetailsAttribute label='Description'>
+                {project.description ?
+                    <RichTextEditorLink
+                        title={`Description of ${project.name}`}
+                        content={project.description}
+                        label='Show full description' />
+                    : '---'
                 }
+            </DetailsAttribute>
+            <DetailsAttribute label='Properties'>
+                <div onClick={onClick}>
+                    <RenameIcon className={classes.editIcon} />
+                </div>
+            </DetailsAttribute>
+            {
+                Object.keys(project.properties).map(k => {
+                    return <Chip key={k} className={classes.tag} label={`${k}: ${project.properties[k]}`} />;
+                })
+            }
         </div>
-));
+    ));

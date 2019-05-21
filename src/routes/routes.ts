@@ -3,9 +3,17 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { matchPath } from 'react-router';
-import { ResourceKind, RESOURCE_UUID_PATTERN, extractUuidKind } from '~/models/resource';
+import { ResourceKind, RESOURCE_UUID_PATTERN, extractUuidKind, COLLECTION_PDH_REGEX } from '~/models/resource';
 import { getProjectUrl } from '~/models/project';
 import { getCollectionUrl } from '~/models/collection';
+import { Config } from '~/common/config';
+import { Session } from "~/models/session";
+
+export interface FederationConfig {
+    localCluster: string;
+    remoteHostsConfig: { [key: string]: Config };
+    sessions: Session[];
+}
 
 export const Routes = {
     ROOT: '/',
@@ -44,6 +52,8 @@ export const getResourceUrl = (uuid: string) => {
     switch (kind) {
         case ResourceKind.PROJECT:
             return getProjectUrl(uuid);
+        case ResourceKind.USER:
+            return getProjectUrl(uuid);
         case ResourceKind.COLLECTION:
             return getCollectionUrl(uuid);
         case ResourceKind.PROCESS:
@@ -52,6 +62,27 @@ export const getResourceUrl = (uuid: string) => {
             return undefined;
     }
 };
+
+export const getNavUrl = (uuid: string, config: FederationConfig) => {
+    const path = getResourceUrl(uuid) || "";
+    const cls = uuid.substr(0, 5);
+    if (cls === config.localCluster || extractUuidKind(uuid) === ResourceKind.USER || COLLECTION_PDH_REGEX.exec(uuid)) {
+        return path;
+    } else if (config.remoteHostsConfig[cls]) {
+        let u: URL;
+        if (config.remoteHostsConfig[cls].workbench2Url) {
+            u = new URL(config.remoteHostsConfig[cls].workbench2Url || "");
+        } else {
+            u = new URL(config.remoteHostsConfig[cls].workbenchUrl);
+            u.search = "api_token=" + config.sessions.filter((s) => s.clusterId === cls)[0].token;
+        }
+        u.pathname = path;
+        return u.toString();
+    } else {
+        return "";
+    }
+};
+
 
 export const getProcessUrl = (uuid: string) => `/processes/${uuid}`;
 
