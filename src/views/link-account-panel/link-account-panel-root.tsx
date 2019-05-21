@@ -80,7 +80,7 @@ export const LinkAccountPanelRoot = withStyles(styles) (
                     <CircularProgress/>
                 </Grid>
             </Grid> }
-            { status === LinkAccountPanelStatus.INITIAL && targetUser && <div>
+            { !isProcessing && status === LinkAccountPanelStatus.INITIAL && targetUser && <div>
                 { isLocalUser(targetUser.uuid, localCluster) ? <Grid container spacing={24}>
                     <Grid container item direction="column" spacing={24}>
                         <Grid item>
@@ -139,7 +139,7 @@ export const LinkAccountPanelRoot = withStyles(styles) (
                     </Grid>
                 </Grid>}
             </div> }
-            { (status === LinkAccountPanelStatus.LINKING || status === LinkAccountPanelStatus.ERROR) && userToLink && targetUser &&
+            { !isProcessing && (status === LinkAccountPanelStatus.LINKING || status === LinkAccountPanelStatus.ERROR) && userToLink && targetUser &&
             <Grid container spacing={24}>
                 { status === LinkAccountPanelStatus.LINKING && <Grid container item direction="column" spacing={24}>
                     <Grid item>

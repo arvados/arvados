@@ -55,9 +55,17 @@ export const initAuth = (config: Config) => (dispatch: Dispatch, getState: () =>
     // just logged in or there has been a successful link operation
     const data = services.linkAccountService.getLinkOpStatus();
     if (!matchTokenRoute(location.pathname) && (!matchFedTokenRoute(location.pathname)) && data === undefined) {
-        dispatch<any>(cancelLinking());
+        dispatch<any>(cancelLinking()).then(() => {
+            dispatch<any>(init(config));
+        });
+    }
+    else {
+        dispatch<any>(init(config));
     }
 
+};
+
+const init = (config: Config) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     const user = services.authService.getUser();
     const token = services.authService.getApiToken();
     const homeCluster = services.authService.getHomeCluster();
