@@ -6,12 +6,14 @@ package httpserver
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
@@ -31,15 +33,19 @@ func (s *Suite) TestLogRequests(c *check.C) {
 	log.Formatter = &logrus.JSONFormatter{
 		TimestampFormat: time.RFC3339Nano,
 	}
+	ctx := ctxlog.Context(context.Background(), log)
 
-	h := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		w.Write([]byte("hello world"))
-	})
+	h := AddRequestIDs(LogRequests(
+		http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			w.Write([]byte("hello world"))
+		})))
+
 	req, err := http.NewRequest("GET", "https://foo.example/bar", nil)
 	req.Header.Set("X-Forwarded-For", "1.2.3.4:12345")
 	c.Assert(err, check.IsNil)
 	resp := httptest.NewRecorder()
-	AddRequestIDs(LogRequests(log, h)).ServeHTTP(resp, req)
+
+	HandlerWithContext(ctx, h).ServeHTTP(resp, req)
 
 	dec := json.NewDecoder(captured)
 

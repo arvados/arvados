@@ -5,6 +5,7 @@
 package controller
 
 import (
+	"context"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -45,7 +46,9 @@ func newServerFromIntegrationTestEnv(c *check.C) *httpserver.Server {
 
 	srv := &httpserver.Server{
 		Server: http.Server{
-			Handler: httpserver.AddRequestIDs(httpserver.LogRequests(log, handler)),
+			Handler: httpserver.HandlerWithContext(
+				ctxlog.Context(context.Background(), log),
+				httpserver.AddRequestIDs(httpserver.LogRequests(handler))),
 		},
 		Addr: ":",
 	}
