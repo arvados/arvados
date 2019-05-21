@@ -125,14 +125,17 @@ export const LinkAccountPanelRoot = withStyles(styles) (
                         <Grid item>
                             You are currently logged in as {displayUser(targetUser, true, true)}
                         </Grid>
-                        <Grid item>
+                        {targetUser.isActive ? <> <Grid item>
                             This a remote account. You can link a local Arvados account to this one. After linking, you can access the local account's data by logging into the <b>{localCluster}</b> cluster with the <b>{targetUser.email}</b> account.
                         </Grid >
                         <Grid item>
                             <Button color="primary" variant="contained" onClick={() => startLinking(LinkAccountType.ADD_LOCAL_TO_REMOTE)}>
                                 Link an account from {localCluster} to this account
                             </Button>
-                        </Grid>
+                        </Grid> </>
+                        : <Grid item>
+                          This an inactive remote account. An administrator must activate your account before you can proceed. After your accounts is activated, you can link a local Arvados account hosted by the <b>{localCluster}</b> cluster to this one.
+                        </Grid >}
                     </Grid>
                 </Grid>}
             </div> }
