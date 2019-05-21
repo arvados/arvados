@@ -6,6 +6,7 @@ package router
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -14,6 +15,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/auth"
 	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"github.com/julienschmidt/httprouter"
+	"github.com/sirupsen/logrus"
 )
 
 type router struct {
@@ -181,19 +183,23 @@ func (rtr *router) addRoutes(cluster *arvados.Cluster) {
 		}
 		for _, method := range methods {
 			rtr.mux.HandlerFunc(method, "/"+route.endpoint.Path, func(w http.ResponseWriter, req *http.Request) {
+				logger := ctxlog.FromContext(req.Context())
 				params, err := rtr.loadRequestParams(req, route.endpoint.AttrsKey)
 				if err != nil {
+					logger.WithField("req", req).WithField("route", route).WithError(err).Debug("error loading request params")
 					rtr.sendError(w, err)
 					return
 				}
 				opts := route.defaultOpts()
 				err = rtr.transcode(params, opts)
 				if err != nil {
+					logger.WithField("params", params).WithError(err).Debugf("error transcoding params to %T", opts)
 					rtr.sendError(w, err)
 					return
 				}
 				respOpts, err := rtr.responseOptions(opts)
 				if err != nil {
+					logger.WithField("opts", opts).WithError(err).Debugf("error getting response options from %T", opts)
 					rtr.sendError(w, err)
 					return
 				}
@@ -209,9 +215,14 @@ func (rtr *router) addRoutes(cluster *arvados.Cluster) {
 				ctx := req.Context()
 				ctx = context.WithValue(ctx, auth.ContextKeyCredentials, creds)
 				ctx = arvados.ContextWithRequestID(ctx, req.Header.Get("X-Request-Id"))
+				logger.WithFields(logrus.Fields{
+					"apiEndpoint": route.endpoint,
+					"apiOptsType": fmt.Sprintf("%T", opts),
+					"apiOpts":     opts,
+				}).Debug("exec")
 				resp, err := route.exec(ctx, opts)
 				if err != nil {
-					ctxlog.FromContext(ctx).WithError(err).Debugf("returning error response for %#v", err)
+					logger.WithError(err).Debugf("returning error type %T", err)
 					rtr.sendError(w, err)
 					return
 				}
