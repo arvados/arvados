@@ -19,6 +19,8 @@ var (
 	EndpointCollectionProvenance          = APIEndpoint{"GET", "arvados/v1/collections/:uuid/provenance", ""}
 	EndpointCollectionUsedBy              = APIEndpoint{"GET", "arvados/v1/collections/:uuid/used_by", ""}
 	EndpointCollectionDelete              = APIEndpoint{"DELETE", "arvados/v1/collections/:uuid", ""}
+	EndpointCollectionTrash               = APIEndpoint{"POST", "arvados/v1/collections/:uuid/trash", ""}
+	EndpointCollectionUntrash             = APIEndpoint{"POST", "arvados/v1/collections/:uuid/untrash", ""}
 	EndpointSpecimenCreate                = APIEndpoint{"POST", "arvados/v1/specimens", "specimen"}
 	EndpointSpecimenUpdate                = APIEndpoint{"PATCH", "arvados/v1/specimens/:uuid", "specimen"}
 	EndpointSpecimenGet                   = APIEndpoint{"GET", "arvados/v1/specimens/:uuid", ""}
