@@ -16,6 +16,8 @@ describe('link-account-panel-reducer', () => {
         const state = linkAccountPanelReducer(initialState, linkAccountPanelActions.LINK_INIT({targetUser}));
         expect(state).toEqual({
             targetUser,
+            isProcessing: false,
+            selectedCluster: undefined,
             targetUserToken: undefined,
             userToLink: undefined,
             userToLinkToken: undefined,
@@ -41,6 +43,8 @@ describe('link-account-panel-reducer', () => {
         expect(state).toEqual({
             targetUser,
             targetUserToken,
+            isProcessing: false,
+            selectedCluster: undefined,
             userToLink,
             userToLinkToken,
             originatingUser: OriginatingUser.TARGET_USER,
@@ -63,6 +67,8 @@ describe('link-account-panel-reducer', () => {
         expect(state).toEqual({
             targetUser,
             targetUserToken: undefined,
+            isProcessing: false,
+            selectedCluster: undefined,
             userToLink,
             userToLinkToken: undefined,
             originatingUser: OriginatingUser.TARGET_USER,
