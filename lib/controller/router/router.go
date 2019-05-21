@@ -7,6 +7,7 @@ package router
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"git.curoverse.com/arvados.git/lib/controller/federation"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
@@ -221,6 +222,17 @@ func (rtr *router) addRoutes(cluster *arvados.Cluster) {
 }
 
 func (rtr *router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	switch strings.SplitN(strings.TrimLeft(r.URL.Path, "/"), "/", 2)[0] {
+	case "login", "logout", "auth":
+	default:
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, PUT, POST, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+		w.Header().Set("Access-Control-Max-Age", "86486400")
+	}
+	if r.Method == "OPTIONS" {
+		return
+	}
 	r.ParseForm()
 	if m := r.FormValue("_method"); m != "" {
 		r2 := *r

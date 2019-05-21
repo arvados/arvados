@@ -50,21 +50,21 @@ func (s *RouterSuite) doRequest(c *check.C, token, method, path string, hdrs htt
 		req.Header[k] = v
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
-	rw := httptest.NewRecorder()
-	s.rtr.ServeHTTP(rw, req)
-	c.Logf("response body: %s", rw.Body.String())
+	rr := httptest.NewRecorder()
+	s.rtr.ServeHTTP(rr, req)
+	c.Logf("response body: %s", rr.Body.String())
 	var jresp map[string]interface{}
-	err := json.Unmarshal(rw.Body.Bytes(), &jresp)
+	err := json.Unmarshal(rr.Body.Bytes(), &jresp)
 	c.Check(err, check.IsNil)
-	return req, rw, jresp
+	return req, rr, jresp
 }
 
 func (s *RouterSuite) TestCollectionResponses(c *check.C) {
 	token := arvadostest.ActiveTokenV2
 
 	// Check "get collection" response has "kind" key
-	_, rw, jresp := s.doRequest(c, token, "GET", `/arvados/v1/collections`, nil, bytes.NewBufferString(`{"include_trash":true}`))
-	c.Check(rw.Code, check.Equals, http.StatusOK)
+	_, rr, jresp := s.doRequest(c, token, "GET", `/arvados/v1/collections`, nil, bytes.NewBufferString(`{"include_trash":true}`))
+	c.Check(rr.Code, check.Equals, http.StatusOK)
 	c.Check(jresp["items"], check.FitsTypeOf, []interface{}{})
 	c.Check(jresp["kind"], check.Equals, "arvados#collectionList")
 	c.Check(jresp["items"].([]interface{})[0].(map[string]interface{})["kind"], check.Equals, "arvados#collection")
@@ -77,8 +77,8 @@ func (s *RouterSuite) TestCollectionResponses(c *check.C) {
 		`,"select":["name"]`,
 		`,"select":["uuid"]`,
 	} {
-		_, rw, jresp = s.doRequest(c, token, "GET", `/arvados/v1/collections`, nil, bytes.NewBufferString(`{"where":{"uuid":["`+arvadostest.FooCollection+`"]}`+selectj+`}`))
-		c.Check(rw.Code, check.Equals, http.StatusOK)
+		_, rr, jresp = s.doRequest(c, token, "GET", `/arvados/v1/collections`, nil, bytes.NewBufferString(`{"where":{"uuid":["`+arvadostest.FooCollection+`"]}`+selectj+`}`))
+		c.Check(rr.Code, check.Equals, http.StatusOK)
 		c.Check(jresp["items"], check.FitsTypeOf, []interface{}{})
 		c.Check(jresp["items_available"], check.FitsTypeOf, float64(0))
 		c.Check(jresp["kind"], check.Equals, "arvados#collectionList")
@@ -102,8 +102,8 @@ func (s *RouterSuite) TestCollectionResponses(c *check.C) {
 	}
 
 	// Check "create collection" response has "kind" key
-	_, rw, jresp = s.doRequest(c, token, "POST", `/arvados/v1/collections`, http.Header{"Content-Type": {"application/x-www-form-urlencoded"}}, bytes.NewBufferString(`ensure_unique_name=true`))
-	c.Check(rw.Code, check.Equals, http.StatusOK)
+	_, rr, jresp = s.doRequest(c, token, "POST", `/arvados/v1/collections`, http.Header{"Content-Type": {"application/x-www-form-urlencoded"}}, bytes.NewBufferString(`ensure_unique_name=true`))
+	c.Check(rr.Code, check.Equals, http.StatusOK)
 	c.Check(jresp["uuid"], check.FitsTypeOf, "")
 	c.Check(jresp["kind"], check.Equals, "arvados#collection")
 }
@@ -111,14 +111,14 @@ func (s *RouterSuite) TestCollectionResponses(c *check.C) {
 func (s *RouterSuite) TestContainerList(c *check.C) {
 	token := arvadostest.ActiveTokenV2
 
-	_, rw, jresp := s.doRequest(c, token, "GET", `/arvados/v1/containers?limit=0`, nil, nil)
-	c.Check(rw.Code, check.Equals, http.StatusOK)
+	_, rr, jresp := s.doRequest(c, token, "GET", `/arvados/v1/containers?limit=0`, nil, nil)
+	c.Check(rr.Code, check.Equals, http.StatusOK)
 	c.Check(jresp["items_available"], check.FitsTypeOf, float64(0))
 	c.Check(jresp["items_available"].(float64) > 2, check.Equals, true)
 	c.Check(jresp["items"], check.HasLen, 0)
 
-	_, rw, jresp = s.doRequest(c, token, "GET", `/arvados/v1/containers?limit=2&select=["uuid","command"]`, nil, nil)
-	c.Check(rw.Code, check.Equals, http.StatusOK)
+	_, rr, jresp = s.doRequest(c, token, "GET", `/arvados/v1/containers?limit=2&select=["uuid","command"]`, nil, nil)
+	c.Check(rr.Code, check.Equals, http.StatusOK)
 	c.Check(jresp["items_available"], check.FitsTypeOf, float64(0))
 	c.Check(jresp["items_available"].(float64) > 2, check.Equals, true)
 	c.Check(jresp["items"], check.HasLen, 2)
@@ -128,8 +128,8 @@ func (s *RouterSuite) TestContainerList(c *check.C) {
 	c.Check(item0["command"].([]interface{})[0], check.FitsTypeOf, "")
 	c.Check(item0["mounts"], check.IsNil)
 
-	_, rw, jresp = s.doRequest(c, token, "GET", `/arvados/v1/containers`, nil, nil)
-	c.Check(rw.Code, check.Equals, http.StatusOK)
+	_, rr, jresp = s.doRequest(c, token, "GET", `/arvados/v1/containers`, nil, nil)
+	c.Check(rr.Code, check.Equals, http.StatusOK)
 	c.Check(jresp["items_available"], check.FitsTypeOf, float64(0))
 	c.Check(jresp["items_available"].(float64) > 2, check.Equals, true)
 	avail := int(jresp["items_available"].(float64))
@@ -144,20 +144,20 @@ func (s *RouterSuite) TestContainerList(c *check.C) {
 func (s *RouterSuite) TestContainerLock(c *check.C) {
 	uuid := arvadostest.QueuedContainerUUID
 	token := arvadostest.AdminToken
-	_, rw, jresp := s.doRequest(c, token, "POST", "/arvados/v1/containers/"+uuid+"/lock", nil, nil)
-	c.Check(rw.Code, check.Equals, http.StatusOK)
+	_, rr, jresp := s.doRequest(c, token, "POST", "/arvados/v1/containers/"+uuid+"/lock", nil, nil)
+	c.Check(rr.Code, check.Equals, http.StatusOK)
 	c.Check(jresp["uuid"], check.HasLen, 27)
 	c.Check(jresp["state"], check.Equals, "Locked")
-	_, rw, jresp = s.doRequest(c, token, "POST", "/arvados/v1/containers/"+uuid+"/lock", nil, nil)
-	c.Check(rw.Code, check.Equals, http.StatusUnprocessableEntity)
-	c.Check(rw.Body.String(), check.Not(check.Matches), `.*"uuid":.*`)
-	_, rw, jresp = s.doRequest(c, token, "POST", "/arvados/v1/containers/"+uuid+"/unlock", nil, nil)
-	c.Check(rw.Code, check.Equals, http.StatusOK)
+	_, rr, jresp = s.doRequest(c, token, "POST", "/arvados/v1/containers/"+uuid+"/lock", nil, nil)
+	c.Check(rr.Code, check.Equals, http.StatusUnprocessableEntity)
+	c.Check(rr.Body.String(), check.Not(check.Matches), `.*"uuid":.*`)
+	_, rr, jresp = s.doRequest(c, token, "POST", "/arvados/v1/containers/"+uuid+"/unlock", nil, nil)
+	c.Check(rr.Code, check.Equals, http.StatusOK)
 	c.Check(jresp["uuid"], check.HasLen, 27)
 	c.Check(jresp["state"], check.Equals, "Queued")
 	c.Check(jresp["environment"], check.IsNil)
-	_, rw, jresp = s.doRequest(c, token, "POST", "/arvados/v1/containers/"+uuid+"/unlock", nil, nil)
-	c.Check(rw.Code, check.Equals, http.StatusUnprocessableEntity)
+	_, rr, jresp = s.doRequest(c, token, "POST", "/arvados/v1/containers/"+uuid+"/unlock", nil, nil)
+	c.Check(rr.Code, check.Equals, http.StatusUnprocessableEntity)
 	c.Check(jresp["uuid"], check.IsNil)
 }
 
@@ -165,8 +165,8 @@ func (s *RouterSuite) TestFullTimestampsInResponse(c *check.C) {
 	uuid := arvadostest.CollectionReplicationDesired2Confirmed2UUID
 	token := arvadostest.ActiveTokenV2
 
-	_, rw, jresp := s.doRequest(c, token, "GET", `/arvados/v1/collections/`+uuid, nil, nil)
-	c.Check(rw.Code, check.Equals, http.StatusOK)
+	_, rr, jresp := s.doRequest(c, token, "GET", `/arvados/v1/collections/`+uuid, nil, nil)
+	c.Check(rr.Code, check.Equals, http.StatusOK)
 	c.Check(jresp["uuid"], check.Equals, uuid)
 	expectNS := map[string]int{
 		"created_at":  596506000, // fixture says 596506247, but truncated by postgresql
@@ -192,8 +192,8 @@ func (s *RouterSuite) TestSelectParam(c *check.C) {
 	} {
 		j, err := json.Marshal(sel)
 		c.Assert(err, check.IsNil)
-		_, rw, resp := s.doRequest(c, token, "GET", "/arvados/v1/containers/"+uuid+"?select="+string(j), nil, nil)
-		c.Check(rw.Code, check.Equals, http.StatusOK)
+		_, rr, resp := s.doRequest(c, token, "GET", "/arvados/v1/containers/"+uuid+"?select="+string(j), nil, nil)
+		c.Check(rr.Code, check.Equals, http.StatusOK)
 
 		c.Check(resp["kind"], check.Equals, "arvados#container")
 		c.Check(resp["uuid"], check.HasLen, 27)
@@ -201,5 +201,54 @@ func (s *RouterSuite) TestSelectParam(c *check.C) {
 		c.Check(resp["mounts"], check.IsNil)
 		_, hasMounts := resp["mounts"]
 		c.Check(hasMounts, check.Equals, false)
+	}
+}
+
+func (s *RouterSuite) TestCORS(c *check.C) {
+	token := arvadostest.ActiveTokenV2
+	req := (&testReq{
+		method: "OPTIONS",
+		path:   "arvados/v1/collections/" + arvadostest.FooCollection,
+		header: http.Header{"Origin": {"https://example.com"}},
+		token:  token,
+	}).Request()
+	rr := httptest.NewRecorder()
+	s.rtr.ServeHTTP(rr, req)
+	c.Check(rr.Code, check.Equals, http.StatusOK)
+	c.Check(rr.Body.String(), check.HasLen, 0)
+	c.Check(rr.Result().Header.Get("Access-Control-Allow-Origin"), check.Equals, "*")
+	for _, hdr := range []string{"Authorization", "Content-Type"} {
+		c.Check(rr.Result().Header.Get("Access-Control-Allow-Headers"), check.Matches, ".*"+hdr+".*")
+	}
+	for _, method := range []string{"GET", "HEAD", "PUT", "POST", "DELETE"} {
+		c.Check(rr.Result().Header.Get("Access-Control-Allow-Methods"), check.Matches, ".*"+method+".*")
+	}
+
+	for _, unsafe := range []string{"login", "logout", "auth", "auth/foo", "login/?blah"} {
+		req := (&testReq{
+			method: "OPTIONS",
+			path:   unsafe,
+			header: http.Header{"Origin": {"https://example.com"}},
+			token:  token,
+		}).Request()
+		rr := httptest.NewRecorder()
+		s.rtr.ServeHTTP(rr, req)
+		c.Check(rr.Code, check.Equals, http.StatusOK)
+		c.Check(rr.Body.String(), check.HasLen, 0)
+		c.Check(rr.Result().Header.Get("Access-Control-Allow-Origin"), check.Equals, "")
+		c.Check(rr.Result().Header.Get("Access-Control-Allow-Methods"), check.Equals, "")
+		c.Check(rr.Result().Header.Get("Access-Control-Allow-Headers"), check.Equals, "")
+
+		req = (&testReq{
+			method: "POST",
+			path:   unsafe,
+			header: http.Header{"Origin": {"https://example.com"}},
+			token:  token,
+		}).Request()
+		rr = httptest.NewRecorder()
+		s.rtr.ServeHTTP(rr, req)
+		c.Check(rr.Result().Header.Get("Access-Control-Allow-Origin"), check.Equals, "")
+		c.Check(rr.Result().Header.Get("Access-Control-Allow-Methods"), check.Equals, "")
+		c.Check(rr.Result().Header.Get("Access-Control-Allow-Headers"), check.Equals, "")
 	}
 }
