@@ -204,6 +204,25 @@ func (s *RouterSuite) TestSelectParam(c *check.C) {
 	}
 }
 
+func (s *RouterSuite) TestRouteNotFound(c *check.C) {
+	token := arvadostest.ActiveTokenV2
+	req := (&testReq{
+		method: "POST",
+		path:   "arvados/v1/collections/" + arvadostest.FooCollection + "/error404pls",
+		token:  token,
+	}).Request()
+	rr := httptest.NewRecorder()
+	s.rtr.ServeHTTP(rr, req)
+	c.Check(rr.Code, check.Equals, http.StatusNotFound)
+	c.Logf("body: %q", rr.Body.String())
+	var j map[string]interface{}
+	err := json.Unmarshal(rr.Body.Bytes(), &j)
+	c.Check(err, check.IsNil)
+	c.Logf("decoded: %v", j)
+	c.Assert(j["errors"], check.FitsTypeOf, []interface{}{})
+	c.Check(j["errors"].([]interface{})[0], check.Equals, "API endpoint not found")
+}
+
 func (s *RouterSuite) TestCORS(c *check.C) {
 	token := arvadostest.ActiveTokenV2
 	req := (&testReq{

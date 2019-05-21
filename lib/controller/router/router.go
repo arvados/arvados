@@ -14,6 +14,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/auth"
 	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
+	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
 )
@@ -230,6 +231,9 @@ func (rtr *router) addRoutes(cluster *arvados.Cluster) {
 			})
 		}
 	}
+	rtr.mux.NotFound = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		httpserver.Errors(w, []string{"API endpoint not found"}, http.StatusNotFound)
+	})
 }
 
 func (rtr *router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
