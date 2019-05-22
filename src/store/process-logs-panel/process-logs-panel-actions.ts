@@ -16,7 +16,7 @@ import { ResourceEventMessage } from '~/websocket/resource-event-message';
 import { getProcess } from '~/store/processes/process';
 import { FilterBuilder } from "~/services/api/filter-builder";
 import { OrderBuilder } from "~/services/api/order-builder";
-import { navigateToCollection } from '~/store/navigation/navigation-action';
+import { navigateTo } from '~/store/navigation/navigation-action';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 
 export const processLogsPanelActions = unionize({
@@ -104,7 +104,7 @@ export const navigateToLogCollection = (uuid: string) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         try {
             await services.collectionService.get(uuid);
-            dispatch<any>(navigateToCollection(uuid));
+            dispatch<any>(navigateTo(uuid));
         } catch {
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'This collection does not exists!', hideDuration: 2000, kind: SnackbarKind.ERROR }));
         }

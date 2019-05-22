@@ -13,7 +13,7 @@ import { RUN_PROCESS_INPUTS_FORM } from '~/views/run-process-panel/run-process-i
 import { WorkflowInputsData } from '~/models/workflow';
 import { createWorkflowMounts } from '~/models/process';
 import { ContainerRequestState } from '~/models/container-request';
-import { navigateToProcess } from '../navigation/navigation-action';
+import { navigateTo } from '../navigation/navigation-action';
 import { RunProcessAdvancedFormData, RUN_PROCESS_ADVANCED_FORM, VCPUS_FIELD, RAM_FIELD, RUNTIME_FIELD, OUTPUT_FIELD, API_FIELD } from '~/views/run-process-panel/run-process-advanced-form';
 import { dialogActions } from '~/store/dialog/dialog-actions';
 import { setBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions';
@@ -88,7 +88,7 @@ export const setWorkflow = (workflow: WorkflowResource, isWorkflowChanged = true
         }
     };
 
-const loadPresets = (workflowUuid: string) =>
+export const loadPresets = (workflowUuid: string) =>
     async (dispatch: Dispatch<any>, _: () => RootState, { workflowService }: ServiceRepository) => {
         const { items } = await workflowService.presets(workflowUuid);
         dispatch(runProcessPanelActions.SET_WORKFLOW_PRESETS(items));
@@ -152,10 +152,10 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
             properties: {
                 workflowUuid: selectedWorkflow.uuid,
                 workflowName: selectedWorkflow.name
-            }       
+            }
         };
         const newProcess = await services.containerRequestService.create(newProcessData);
-        dispatch(navigateToProcess(newProcess.uuid));
+        dispatch(navigateTo(newProcess.uuid));
     }
 };
 

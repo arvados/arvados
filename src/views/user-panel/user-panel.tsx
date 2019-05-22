@@ -102,14 +102,6 @@ export const userPanelColumns: DataColumns<string> = [
         render: uuid => <ResourceIsAdmin uuid={uuid} />
     },
     {
-        name: UserPanelColumnNames.REDIRECT_TO_USER,
-        selected: true,
-        configurable: false,
-        sortDirection: SortDirection.NONE,
-        filters: createTree(),
-        render: () => <Typography noWrap>(none)</Typography>
-    },
-    {
         name: UserPanelColumnNames.USERNAME,
         selected: true,
         configurable: false,

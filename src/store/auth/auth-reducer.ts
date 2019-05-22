@@ -7,6 +7,7 @@ import { User } from "~/models/user";
 import { ServiceRepository } from "~/services/services";
 import { SshKeyResource } from '~/models/ssh-key';
 import { Session } from "~/models/session";
+import { Config } from '~/common/config';
 
 export interface AuthState {
     user?: User;
@@ -16,6 +17,7 @@ export interface AuthState {
     localCluster: string;
     homeCluster: string;
     remoteHosts: { [key: string]: string };
+    remoteHostsConfig: { [key: string]: Config };
 }
 
 const initialState: AuthState = {
@@ -25,7 +27,8 @@ const initialState: AuthState = {
     sessions: [],
     localCluster: "",
     homeCluster: "",
-    remoteHosts: {}
+    remoteHosts: {},
+    remoteHostsConfig: {}
 };
 
 export const authReducer = (services: ServiceRepository) => (state = initialState, action: AuthAction) => {
@@ -39,6 +42,12 @@ export const authReducer = (services: ServiceRepository) => (state = initialStat
                 localCluster: config.uuidPrefix,
                 remoteHosts: { ...config.remoteHosts, [config.uuidPrefix]: new URL(config.rootUrl).host },
                 homeCluster: config.uuidPrefix
+            };
+        },
+        REMOTE_CLUSTER_CONFIG: ({ config }) => {
+            return {
+                ...state,
+                remoteHostsConfig: { ...state.remoteHostsConfig, [config.uuidPrefix]: config },
             };
         },
         INIT: ({ user, token }) => {

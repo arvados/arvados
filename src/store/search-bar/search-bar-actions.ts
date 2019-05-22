@@ -10,7 +10,7 @@ import { RootState } from '~/store/store';
 import { initUserProject, treePickerActions } from '~/store/tree-picker/tree-picker-actions';
 import { ServiceRepository } from '~/services/services';
 import { FilterBuilder } from "~/services/api/filter-builder";
-import { ResourceKind, isResourceUuid, extractUuidKind } from '~/models/resource';
+import { ResourceKind, isResourceUuid, extractUuidKind, RESOURCE_UUID_REGEX, COLLECTION_PDH_REGEX } from '~/models/resource';
 import { SearchView } from '~/store/search-bar/search-bar-reducer';
 import { navigateTo, navigateToSearchResults } from '~/store/navigation/navigation-action';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
@@ -192,10 +192,14 @@ export const submitData = (event: React.FormEvent<HTMLFormElement>) =>
         dispatch<any>(saveRecentQuery(searchValue));
         dispatch<any>(loadRecentQueries());
         dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
-        dispatch(searchBarActions.SET_SEARCH_VALUE(searchValue));
-        dispatch(searchBarActions.SET_SEARCH_RESULTS([]));
-        dispatch(searchResultsPanelActions.CLEAR());
-        dispatch(navigateToSearchResults);
+        if (RESOURCE_UUID_REGEX.exec(searchValue) || COLLECTION_PDH_REGEX.exec(searchValue)) {
+            dispatch<any>(navigateTo(searchValue));
+        } else {
+            dispatch(searchBarActions.SET_SEARCH_VALUE(searchValue));
+            dispatch(searchBarActions.SET_SEARCH_RESULTS([]));
+            dispatch(searchResultsPanelActions.CLEAR());
+            dispatch(navigateToSearchResults);
+        }
     };
 
 
@@ -327,7 +331,7 @@ export const queryToFilters = (query: string) => {
     const filter = new FilterBuilder();
     const resourceKind = data.type;
 
-    if(data.searchValue){
+    if (data.searchValue) {
         filter.addFullTextSearch(data.searchValue);
     }
 

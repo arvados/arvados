@@ -7,12 +7,12 @@ import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
 import { bindDataExplorerActions } from '~/store/data-explorer/data-explorer-action';
 import { propertiesActions } from '~/store/properties/properties-actions';
-import { getResource } from '~/store/resources/resources';
 import { getProperty } from '~/store/properties/properties';
-import { WorkflowResource } from '~/models/workflow';
 import { navigateToRunProcess } from '~/store/navigation/navigation-action';
-import { goToStep, runProcessPanelActions } from '~/store/run-process-panel/run-process-panel-actions';
+import { goToStep, runProcessPanelActions, loadPresets, DEFAULT_ADVANCED_FORM_VALUES } from '~/store/run-process-panel/run-process-panel-actions';
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
+import { initialize } from 'redux-form';
+import { RUN_PROCESS_ADVANCED_FORM } from '~/views/run-process-panel/run-process-advanced-form';
 
 export const WORKFLOW_PANEL_ID = "workflowPanel";
 const UUID_PREFIX_PROPERTY_NAME = 'uuidPrefix';
@@ -42,6 +42,8 @@ export const openRunProcess = (uuid: string) =>
             dispatch<any>(goToStep(1));
             dispatch(runProcessPanelActions.SET_STEP_CHANGED(true));
             dispatch(runProcessPanelActions.SET_SELECTED_WORKFLOW(workflow));
+            dispatch<any>(loadPresets(workflow.uuid));
+            dispatch(initialize(RUN_PROCESS_ADVANCED_FORM, DEFAULT_ADVANCED_FORM_VALUES));
         } else {
             dispatch<any>(snackbarActions.OPEN_SNACKBAR({ message: `You can't run this process` }));
         }

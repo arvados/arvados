@@ -16,6 +16,7 @@ import { initSessions } from "~/store/auth/auth-action-session";
 interface ApiTokenProps {
     authService: AuthService;
     config: Config;
+    loadMainApp: boolean;
 }
 
 export const ApiToken = connect()(
@@ -23,15 +24,18 @@ export const ApiToken = connect()(
         componentDidMount() {
             const search = this.props.location ? this.props.location.search : "";
             const apiToken = getUrlParameter(search, 'api_token');
+            const loadMainApp = this.props.loadMainApp;
             this.props.dispatch(saveApiToken(apiToken));
             this.props.dispatch<any>(getUserDetails()).then((user: User) => {
                 this.props.dispatch(initSessions(this.props.authService, this.props.config, user));
             }).finally(() => {
-                this.props.dispatch(navigateToRootProject);
+                if (loadMainApp) {
+                    this.props.dispatch(navigateToRootProject);
+                }
             });
         }
         render() {
-            return <div/>;
+            return <div />;
         }
     }
 );

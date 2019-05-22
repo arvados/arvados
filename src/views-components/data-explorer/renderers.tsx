@@ -239,12 +239,12 @@ export const ResourceCluster = (props: { uuid: string }) => {
     const clusterId = pos >= CLUSTER_ID_LENGTH ? props.uuid.substr(0, pos) : '';
     const ci = pos >= CLUSTER_ID_LENGTH ? (props.uuid.charCodeAt(0) + props.uuid.charCodeAt(1)) % clusterColors.length : 0;
     return <Typography>
-        <div style={{
+        <span style={{
             backgroundColor: clusterColors[ci][0],
             color: clusterColors[ci][1],
             padding: "2px 7px",
             borderRadius: 3
-        }}>{clusterId}</div>
+        }}>{clusterId}</span>
     </Typography>;
 };
 
