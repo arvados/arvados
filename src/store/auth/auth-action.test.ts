@@ -23,6 +23,7 @@ import { configureStore, RootStore } from "../store";
 import createBrowserHistory from "history/createBrowserHistory";
 import { Config, mockConfig } from '~/common/config';
 import { ApiActions } from "~/services/api/api-actions";
+import { ACCOUNT_LINK_STATUS_KEY} from '~/services/link-account-service/link-account-service';
 
 describe('auth-actions', () => {
     let reducer: (state: AuthState | undefined, action: AuthAction) => any;
@@ -40,6 +41,8 @@ describe('auth-actions', () => {
 
     it('should initialise state with user and api token from local storage', () => {
 
+        // Only test the case when a link account operation is not being cancelled
+        sessionStorage.setItem(ACCOUNT_LINK_STATUS_KEY, "0");
         localStorage.setItem(API_TOKEN_KEY, "token");
         localStorage.setItem(USER_EMAIL_KEY, "test@test.com");
         localStorage.setItem(USER_FIRST_NAME_KEY, "John");

@@ -223,16 +223,15 @@ export const cancelLinking = (reload: boolean = false) =>
                 setAuthorizationHeader(services, linkAccountData.token);
                 user = await services.userService.get(linkAccountData.userUuid);
                 dispatch(switchUser(user, linkAccountData.token));
+                services.linkAccountService.saveLinkOpStatus(LinkAccountStatus.CANCELLED);
             }
         }
         finally {
             if (reload) {
-                services.linkAccountService.saveLinkOpStatus(LinkAccountStatus.CANCELLED);
                 location.reload();
             }
             else {
                 dispatch(progressIndicatorActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Account link cancelled!", kind: SnackbarKind.INFO, hideDuration: 3000 }));
             }
         }
     };

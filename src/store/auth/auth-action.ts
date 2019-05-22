@@ -51,7 +51,7 @@ function removeAuthorizationHeader(client: AxiosInstance) {
 }
 
 export const initAuth = (config: Config) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    // Cancel any link account ops in progess unless the user has
+    // Cancel any link account ops in progress unless the user has
     // just logged in or there has been a successful link operation
     const data = services.linkAccountService.getLinkOpStatus();
     if (!matchTokenRoute(location.pathname) && (!matchFedTokenRoute(location.pathname)) && data === undefined) {
@@ -62,7 +62,6 @@ export const initAuth = (config: Config) => (dispatch: Dispatch, getState: () =>
     else {
         dispatch<any>(init(config));
     }
-
 };
 
 const init = (config: Config) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
