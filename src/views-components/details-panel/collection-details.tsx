@@ -21,11 +21,11 @@ export class CollectionDetails extends DetailsData<CollectionResource> {
         return <div>
             <DetailsAttribute label='Type' value={resourceLabel(ResourceKind.COLLECTION)} />
             <DetailsAttribute label='Size' value='---' />
-            <DetailsAttribute label='Owner' value={this.item.ownerUuid} lowercaseValue={true} />
+            <DetailsAttribute label='Owner' linkToUuid={this.item.ownerUuid} lowercaseValue={true} />
             <DetailsAttribute label='Last modified' value={formatDate(this.item.modifiedAt)} />
             <DetailsAttribute label='Created at' value={formatDate(this.item.createdAt)} />
-            <DetailsAttribute label='Collection UUID' linkInsideCard={this.item.uuid} value={this.item.uuid} />
-            <DetailsAttribute label='Content address' linkInsideCard={this.item.portableDataHash} value={this.item.portableDataHash} />
+            <DetailsAttribute label='Collection UUID' linkToUuid={this.item.uuid} value={this.item.uuid} />
+            <DetailsAttribute label='Content address' linkToUuid={this.item.portableDataHash} value={this.item.portableDataHash} />
             {/* Missing attrs */}
             <DetailsAttribute label='Number of files' value={this.data && this.data.fileCount} />
             <DetailsAttribute label='Content size' value={formatFileSize(this.data && this.data.fileSize)} />

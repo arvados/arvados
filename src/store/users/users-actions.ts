@@ -11,7 +11,7 @@ import { startSubmit, reset } from "redux-form";
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { UserResource } from "~/models/user";
 import { getResource } from '~/store/resources/resources';
-import { navigateToProject, navigateToUsers, navigateToRootProject } from "~/store/navigation/navigation-action";
+import { navigateTo, navigateToUsers, navigateToRootProject } from "~/store/navigation/navigation-action";
 import { saveApiToken } from '~/store/auth/auth-action';
 
 export const USERS_PANEL_ID = 'usersPanel';
@@ -73,7 +73,7 @@ export const openUserCreateDialog = () =>
 
 export const openUserProjects = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch<any>(navigateToProject(uuid));
+        dispatch<any>(navigateTo(uuid));
     };
 
 

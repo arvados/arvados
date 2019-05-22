@@ -35,7 +35,7 @@ export interface DataTableDataProps<T> {
     currentRoute?: string;
 }
 
-type CssRules = "tableBody" | "root" | "content" | "noItemsInfo" | 'tableCell' | 'arrow' | 'arrowButton';
+type CssRules = "tableBody" | "root" | "content" | "noItemsInfo" | 'tableCell' | 'arrow' | 'arrowButton' | 'tableCellWorkflows';
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     root: {
@@ -55,6 +55,17 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
     tableCell: {
         wordWrap: 'break-word'
+    },
+    tableCellWorkflows: {
+        '&:nth-last-child(2)': {
+            padding: '0px',
+            maxWidth: '48px'
+        },
+        '&:last-child': {
+            padding: '0px',
+            paddingRight: '24px',
+            width: '48px'
+        }
     },
     arrow: {
         margin: 0
@@ -125,14 +136,14 @@ export const DataTable = withStyles(styles)(
             </TableCell>;
         }
 
-        ArrowIcon = ({className, ...props}: SvgIconProps) => (
+        ArrowIcon = ({ className, ...props }: SvgIconProps) => (
             <IconButton component='span' className={this.props.classes.arrowButton} tabIndex={-1}>
-                <ArrowDownwardIcon {...props} className={classnames(className, this.props.classes.arrow)}/>
+                <ArrowDownwardIcon {...props} className={classnames(className, this.props.classes.arrow)} />
             </IconButton>
         )
 
         renderBodyRow = (item: any, index: number) => {
-            const { onRowClick, onRowDoubleClick, extractKey, classes, currentItemUuid } = this.props;
+            const { onRowClick, onRowDoubleClick, extractKey, classes, currentItemUuid, currentRoute } = this.props;
             return <TableRow
                 hover
                 key={extractKey ? extractKey(item) : index}
@@ -141,7 +152,7 @@ export const DataTable = withStyles(styles)(
                 onDoubleClick={event => onRowDoubleClick && onRowDoubleClick(event, item)}
                 selected={item === currentItemUuid}>
                 {this.mapVisibleColumns((column, index) => (
-                    <TableCell key={column.key || index} className={classes.tableCell}>
+                    <TableCell key={column.key || index} className={currentRoute === '/workflows' ? classes.tableCellWorkflows : classes.tableCell}>
                         {column.render(item)}
                     </TableCell>
                 ))}

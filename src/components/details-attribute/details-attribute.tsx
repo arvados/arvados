@@ -3,13 +3,20 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
+import { connect, DispatchProp } from 'react-redux';
 import Typography from '@material-ui/core/Typography';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { Tooltip } from '@material-ui/core';
+import { CopyIcon } from '~/components/icon/icon';
+import * as CopyToClipboard from 'react-copy-to-clipboard';
 import { ArvadosTheme } from '~/common/custom-theme';
 import * as classnames from "classnames";
 import { Link } from 'react-router-dom';
+import { RootState } from "~/store/store";
+import { FederationConfig, getNavUrl } from "~/routes/routes";
+import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 
-type CssRules = 'attribute' | 'label' | 'value' | 'lowercaseValue' | 'link';
+type CssRules = 'attribute' | 'label' | 'value' | 'lowercaseValue' | 'link' | 'copyIcon';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     attribute: {
@@ -25,9 +32,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     value: {
         boxSizing: 'border-box',
         width: '60%',
-        display: 'flex',
-        alignItems: 'flex-start',
-        textTransform: 'capitalize'
+        alignItems: 'flex-start'
     },
     lowercaseValue: {
         textTransform: 'lowercase'
@@ -37,6 +42,12 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.palette.primary.main,
         textDecoration: 'none',
         overflowWrap: 'break-word',
+        cursor: 'pointer'
+    },
+    copyIcon: {
+        marginLeft: theme.spacing.unit,
+        fontSize: '1.125rem',
+        color: theme.palette.grey["500"],
         cursor: 'pointer'
     }
 });
@@ -50,25 +61,61 @@ interface DetailsAttributeDataProps {
     link?: string;
     children?: React.ReactNode;
     onValueClick?: () => void;
-    linkInsideCard?: string;
+    linkToUuid?: string;
 }
 
-type DetailsAttributeProps = DetailsAttributeDataProps & WithStyles<CssRules>;
+type DetailsAttributeProps = DetailsAttributeDataProps & WithStyles<CssRules> & FederationConfig & DispatchProp;
 
-export const DetailsAttribute = withStyles(styles)(
-    ({ label, link, value, children, classes, classLabel, classValue, lowercaseValue, onValueClick, linkInsideCard }: DetailsAttributeProps) =>
-        <Typography component="div" className={classes.attribute}>
-            <Typography component="span" className={classnames([classes.label, classLabel])}>{label}</Typography>
-            {link && <a href={link} className={classes.link} target='_blank'>{value}</a>}
-            {linkInsideCard && <Link to={`/collections/${linkInsideCard}`} className={classes.link}>{value}</Link>}
-            {!link && !linkInsideCard && <Typography
-                onClick={onValueClick}
-                component="span"
-                className={classnames([classes.value, classValue, { [classes.lowercaseValue]: lowercaseValue }])}>
-                {value}
-                {children}
-            </Typography>
+const mapStateToProps = ({ auth }: RootState): FederationConfig => ({
+    localCluster: auth.localCluster,
+    remoteHostsConfig: auth.remoteHostsConfig,
+    sessions: auth.sessions
+});
+
+export const DetailsAttribute = connect(mapStateToProps)(withStyles(styles)(
+    class extends React.Component<DetailsAttributeProps> {
+
+        onCopy = (message: string) => {
+            this.props.dispatch(snackbarActions.OPEN_SNACKBAR({
+                message,
+                hideDuration: 2000,
+                kind: SnackbarKind.SUCCESS
+            }));
+        }
+
+        render() {
+            const { label, link, value, children, classes, classLabel,
+                classValue, lowercaseValue, onValueClick, linkToUuid,
+                localCluster, remoteHostsConfig, sessions } = this.props;
+            let valueNode: React.ReactNode;
+
+            if (linkToUuid) {
+                const linkUrl = getNavUrl(linkToUuid || "", { localCluster, remoteHostsConfig, sessions });
+                if (linkUrl[0] === '/') {
+                    valueNode = <Link to={linkUrl} className={classes.link}>{linkToUuid}</Link>;
+                } else {
+                    valueNode = <a href={linkUrl} className={classes.link} target='_blank'>{linkToUuid}</a>;
+                }
+            } else if (link) {
+                valueNode = <a href={link} className={classes.link} target='_blank'>{value}</a>;
+            } else {
+                valueNode = value;
             }
-
-        </Typography>
-);
+            return <Typography component="div" className={classes.attribute}>
+                <Typography component="span" className={classnames([classes.label, classLabel])}>{label}</Typography>
+                <Typography
+                    onClick={onValueClick}
+                    component="span"
+                    className={classnames([classes.value, classValue, { [classes.lowercaseValue]: lowercaseValue }])}>
+                    {valueNode}
+                    {children}
+                    {linkToUuid && <Tooltip title="Copy">
+                        <CopyToClipboard text={linkToUuid || ""} onCopy={() => this.onCopy("Copied")}>
+                            <CopyIcon className={classes.copyIcon} />
+                        </CopyToClipboard>
+                    </Tooltip>}
+                </Typography>
+            </Typography>;
+        }
+    }
+));

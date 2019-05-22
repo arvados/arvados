@@ -8,7 +8,7 @@ import { Dispatch } from 'redux';
 import { ProcessStatus } from '~/store/processes/process';
 import { RootState } from '~/store/store';
 import { ServiceRepository } from "~/services/services";
-import { navigateToCollection, navigateToWorkflows } from '~/store/navigation/navigation-action';
+import { navigateTo, navigateToWorkflows } from '~/store/navigation/navigation-action';
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
 import { SnackbarKind } from '../snackbar/snackbar-actions';
 import { showWorkflowDetails } from '~/store/workflow-panel/workflow-panel-actions';
@@ -32,7 +32,7 @@ export const navigateToOutput = (uuid: string) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         try {
             await services.collectionService.get(uuid);
-            dispatch<any>(navigateToCollection(uuid));
+            dispatch<any>(navigateTo(uuid));
         } catch {
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'This collection does not exists!', hideDuration: 2000, kind: SnackbarKind.ERROR }));
         }

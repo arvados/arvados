@@ -141,7 +141,7 @@ export const CollectionsContentAddressPanel = withStyles(styles)(
                         onRowDoubleClick={this.props.onItemDoubleClick}
                         onContextMenu={this.props.onContextMenu}
                         contextMenuColumn={true}
-                        title={this.props.match.params.id}
+                        title={`Content address: ${this.props.match.params.id}`}
                         dataTableDefaultView={
                             <DataTableDefaultView
                                 icon={CollectionIcon}
