@@ -34,7 +34,7 @@ export const FedLogin = connect(mapStateToProps)(
             const [, tokenUuid, token] = apiToken.split("/");
             return <div id={"fedtoken-iframe-div"}>
                 {Object.keys(remoteHostsConfig)
-                    .map((k) => k !== localCluster &&
+                    .map((k) => k !== localCluster && remoteHostsConfig[k].workbench2Url &&
                         <iframe key={k} src={`${remoteHostsConfig[k].workbench2Url}/fedtoken?api_token=${getSaltedToken(k, tokenUuid, token)}`} style={{
                             height: 0,
                             width: 0,
