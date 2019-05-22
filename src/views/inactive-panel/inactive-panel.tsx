@@ -3,15 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { connect, DispatchProp } from 'react-redux';
-import { Grid, Typography, Button, Select } from '@material-ui/core';
+import { Dispatch } from 'redux';
+import { connect } from 'react-redux';
+import { Grid, Typography, Button } from '@material-ui/core';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
-import { login, authActions } from '~/store/auth/auth-action';
 import { ArvadosTheme } from '~/common/custom-theme';
-import { RootState } from '~/store/store';
-import * as classNames from 'classnames';
+import { navigateToLinkAccount } from '~/store/navigation/navigation-action';
 
-type CssRules = 'root' | 'container' | 'title' | 'content' | 'content__bolder' | 'button';
+
+type CssRules = 'root' | 'ontop' | 'title';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -28,51 +28,50 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
             opacity: 0.2,
         }
     },
-    container: {
-        width: '560px',
+    ontop: {
         zIndex: 10
     },
     title: {
         marginBottom: theme.spacing.unit * 6,
         color: theme.palette.grey["800"]
-    },
-    content: {
-        marginBottom: theme.spacing.unit * 3,
-        lineHeight: '1.2rem',
-        color: theme.palette.grey["800"]
-    },
-    'content__bolder': {
-        fontWeight: 'bolder'
-    },
-    button: {
-        boxShadow: 'none'
     }
 });
 
-type LoginPanelProps = DispatchProp<any> & WithStyles<CssRules> & {
-    remoteHosts: { [key: string]: string },
-    homeCluster: string,
-    uuidPrefix: string
-};
+export interface InactivePanelActionProps {
+    startLinking: () => void;
+}
 
-export const InactivePanel = withStyles(styles)(
-    connect((state: RootState) => ({
-        remoteHosts: state.auth.remoteHosts,
-        homeCluster: state.auth.homeCluster,
-        uuidPrefix: state.auth.localCluster
-    }))(({ classes, dispatch, remoteHosts, homeCluster, uuidPrefix }: LoginPanelProps) =>
-        <Grid container justify="center" alignItems="center"
+const mapDispatchToProps = (dispatch: Dispatch): InactivePanelActionProps => ({
+    startLinking: () => {
+        dispatch<any>(navigateToLinkAccount);
+    }
+});
+
+type InactivePanelProps =  WithStyles<CssRules> & InactivePanelActionProps;
+
+export const InactivePanel = connect(null, mapDispatchToProps)(withStyles(styles)((({ classes, startLinking }: InactivePanelProps) =>
+        <Grid container justify="center" alignItems="center" direction="column" spacing={24}
             className={classes.root}
-            style={{ marginTop: 56, overflowY: "auto", height: "100%" }}>
-            <Grid item className={classes.container}>
+            style={{ marginTop: 56, height: "100%" }}>
+            <Grid item>
                 <Typography variant='h6' align="center" className={classes.title}>
                     Hi! You're logged in, but...
-		</Typography>
-                <Typography>
-                    Your account is inactive.
-
-		    An administrator must activate your account before you can get any further.
-		</Typography>
+                </Typography>
+            </Grid>
+            <Grid item>
+                <Typography align="center">
+                    Your account is inactive. An administrator must activate your account before you can get any further.
+                </Typography>
+            </Grid>
+            <Grid item>
+                <Typography align="center">
+                    If you would like to use this login to access another account click "Link Account".
+                </Typography>
+            </Grid>
+            <Grid item>
+                <Button className={classes.ontop} color="primary" variant="contained" onClick={() => startLinking()}>
+                    Link Account
+                </Button>
             </Grid>
         </Grid >
-    ));
+    )));

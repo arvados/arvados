@@ -11,6 +11,7 @@ export interface GroupResource extends TrashableResource {
     description: string;
     properties: any;
     writeableBy: string[];
+    ensure_unique_name: boolean;
 }
 
 export enum GroupClass {

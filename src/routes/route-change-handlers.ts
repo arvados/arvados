@@ -41,6 +41,7 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
     const computeNodesMatch = Routes.matchComputeNodesRoute(pathname);
     const apiClientAuthorizationsMatch = Routes.matchApiClientAuthorizationsRoute(pathname);
     const myAccountMatch = Routes.matchMyAccountRoute(pathname);
+    const linkAccountMatch = Routes.matchLinkAccountRoute(pathname);
     const userMatch = Routes.matchUsersRoute(pathname);
     const groupsMatch = Routes.matchGroupsRoute(pathname);
     const groupDetailsMatch = Routes.matchGroupDetailsRoute(pathname);
@@ -95,6 +96,8 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
         store.dispatch(WorkbenchActions.loadApiClientAuthorizations);
     } else if (myAccountMatch) {
         store.dispatch(WorkbenchActions.loadMyAccount);
+    } else if (linkAccountMatch) {
+        store.dispatch(WorkbenchActions.loadLinkAccount);
     } else if (userMatch) {
         store.dispatch(WorkbenchActions.loadUsers);
     } else if (groupsMatch) {

@@ -87,6 +87,8 @@ export const navigateToSiteManager = push(Routes.SITE_MANAGER);
 
 export const navigateToMyAccount = push(Routes.MY_ACCOUNT);
 
+export const navigateToLinkAccount = push(Routes.LINK_ACCOUNT);
+
 export const navigateToKeepServices = push(Routes.KEEP_SERVICES);
 
 export const navigateToComputeNodes = push(Routes.COMPUTE_NODES);

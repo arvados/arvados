@@ -8,15 +8,18 @@ import { AxiosInstance } from "axios";
 import { RootState } from "../store";
 import { ServiceRepository } from "~/services/services";
 import { SshKeyResource } from '~/models/ssh-key';
-import { User } from "~/models/user";
+import { User, UserResource } from "~/models/user";
 import { Session } from "~/models/session";
 import { getDiscoveryURL, Config } from '~/common/config';
 import { initSessions } from "~/store/auth/auth-action-session";
+import { cancelLinking } from '~/store/link-account-panel/link-account-panel-actions';
+import { matchTokenRoute, matchFedTokenRoute } from '~/routes/routes';
 import Axios from "axios";
 import { AxiosError } from "axios";
 
 export const authActions = unionize({
     SAVE_API_TOKEN: ofType<string>(),
+    SAVE_USER: ofType<UserResource>(),
     LOGIN: {},
     LOGOUT: {},
     CONFIG: ofType<{ config: Config }>(),
@@ -34,7 +37,7 @@ export const authActions = unionize({
     REMOTE_CLUSTER_CONFIG: ofType<{ config: Config }>(),
 });
 
-function setAuthorizationHeader(services: ServiceRepository, token: string) {
+export function setAuthorizationHeader(services: ServiceRepository, token: string) {
     services.apiClient.defaults.headers.common = {
         Authorization: `OAuth2 ${token}`
     };
@@ -48,6 +51,20 @@ function removeAuthorizationHeader(client: AxiosInstance) {
 }
 
 export const initAuth = (config: Config) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    // Cancel any link account ops in progress unless the user has
+    // just logged in or there has been a successful link operation
+    const data = services.linkAccountService.getLinkOpStatus();
+    if (!matchTokenRoute(location.pathname) && (!matchFedTokenRoute(location.pathname)) && data === undefined) {
+        dispatch<any>(cancelLinking()).then(() => {
+            dispatch<any>(init(config));
+        });
+    }
+    else {
+        dispatch<any>(init(config));
+    }
+};
+
+const init = (config: Config) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     const user = services.authService.getUser();
     const token = services.authService.getApiToken();
     const homeCluster = services.authService.getHomeCluster();
@@ -82,12 +99,20 @@ export const saveApiToken = (token: string) => (dispatch: Dispatch, getState: ()
     dispatch(authActions.SAVE_API_TOKEN(token));
 };
 
+export const saveUser = (user: UserResource) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    services.authService.saveUser(user);
+    dispatch(authActions.SAVE_USER(user));
+};
+
 export const login = (uuidPrefix: string, homeCluster: string, remoteHosts: { [key: string]: string }) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     services.authService.login(uuidPrefix, homeCluster, remoteHosts);
     dispatch(authActions.LOGIN());
 };
 
-export const logout = () => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+export const logout = (deleteLinkData: boolean = false) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    if (deleteLinkData) {
+        services.linkAccountService.removeAccountToLink();
+    }
     services.authService.removeApiToken();
     services.authService.removeUser();
     removeAuthorizationHeader(services.apiClient);

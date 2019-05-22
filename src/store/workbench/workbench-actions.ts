@@ -59,6 +59,7 @@ import { CopyFormDialogData } from '~/store/copy-dialog/copy-dialog';
 import { loadWorkflowPanel, workflowPanelActions } from '~/store/workflow-panel/workflow-panel-actions';
 import { loadSshKeysPanel } from '~/store/auth/auth-action-ssh';
 import { loadMyAccountPanel } from '~/store/my-account/my-account-panel-actions';
+import { loadLinkAccountPanel, linkAccountPanelActions } from '~/store/link-account-panel/link-account-panel-actions';
 import { loadSiteManagerPanel } from '~/store/auth/auth-action-session';
 import { workflowPanelColumns } from '~/views/workflow-panel/workflow-panel-view';
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions';
@@ -115,7 +116,7 @@ const handleFirstTimeLoad = (action: any) =>
     };
 
 export const loadWorkbench = () =>
-    async (dispatch: Dispatch, getState: () => RootState) => {
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(progressIndicatorActions.START_WORKING(WORKBENCH_LOADING_SCREEN));
         const { auth, router } = getState();
         const { user } = auth;
@@ -135,6 +136,10 @@ export const loadWorkbench = () =>
             dispatch(computeNodesActions.SET_COLUMNS({ columns: computeNodePanelColumns }));
             dispatch(apiClientAuthorizationsActions.SET_COLUMNS({ columns: apiClientAuthorizationPanelColumns }));
             dispatch(collectionsContentAddressActions.SET_COLUMNS({ columns: collectionContentAddressPanelColumns }));
+
+            if (services.linkAccountService.getAccountToLink()) {
+                dispatch(linkAccountPanelActions.HAS_SESSION_DATA());
+            }
 
             dispatch<any>(initSidePanelTree());
             if (router.location) {
@@ -490,6 +495,11 @@ export const loadSiteManager = handleFirstTimeLoad(
 export const loadMyAccount = handleFirstTimeLoad(
     (dispatch: Dispatch<any>) => {
         dispatch(loadMyAccountPanel());
+    });
+
+export const loadLinkAccount = handleFirstTimeLoad(
+    (dispatch: Dispatch<any>) => {
+        dispatch(loadLinkAccountPanel());
     });
 
 export const loadKeepServices = handleFirstTimeLoad(
