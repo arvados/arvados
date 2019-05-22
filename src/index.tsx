@@ -113,7 +113,8 @@ fetchConfig()
         store.dispatch(loadVocabulary);
         store.dispatch(loadFileViewersConfig);
 
-        const TokenComponent = (props: any) => <ApiToken authService={services.authService} config={config} {...props} />;
+        const TokenComponent = (props: any) => <ApiToken authService={services.authService} config={config} loadMainApp={true} {...props} />;
+        const FedTokenComponent = (props: any) => <ApiToken authService={services.authService} config={config} loadMainApp={false} {...props} />;
         const MainPanelComponent = (props: any) => <MainPanel {...props} />;
 
         const App = () =>
@@ -123,6 +124,7 @@ fetchConfig()
                         <ConnectedRouter history={history}>
                             <Switch>
                                 <Route path={Routes.TOKEN} component={TokenComponent} />
+                                <Route path={Routes.FED_LOGIN} component={FedTokenComponent} />
                                 <Route path={Routes.ROOT} component={MainPanelComponent} />
                             </Switch>
                         </ConnectedRouter>

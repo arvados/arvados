@@ -56,7 +56,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     tabContainer: {
         overflow: 'auto',
-        padding: theme.spacing.unit * 3,
+        padding: theme.spacing.unit * 1,
     },
 });
 

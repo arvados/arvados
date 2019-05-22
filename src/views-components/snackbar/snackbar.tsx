@@ -9,7 +9,7 @@ import { RootState } from "~/store/store";
 import { Button, IconButton, StyleRulesCallback, WithStyles, withStyles, SnackbarContent } from '@material-ui/core';
 import MaterialSnackbar, { SnackbarOrigin } from "@material-ui/core/Snackbar";
 import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
-import { navigateToProject } from '~/store/navigation/navigation-action';
+import { navigateTo } from '~/store/navigation/navigation-action';
 import WarningIcon from '@material-ui/icons/Warning';
 import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 import ErrorIcon from '@material-ui/icons/Error';
@@ -56,7 +56,7 @@ const mapDispatchToProps = (dispatch: Dispatch): SnackbarEventProps => ({
         dispatch(snackbarActions.SHIFT_MESSAGES());
     },
     onClick: (uuid: string) => {
-        dispatch(navigateToProject(uuid));
+        dispatch<any>(navigateTo(uuid));
     }
 });
 
@@ -121,7 +121,7 @@ export const Snackbar = withStyles(styles)(connect(mapStateToProps, mapDispatchT
                     aria-describedby="client-snackbar"
                     message={
                         <span id="client-snackbar" className={classes.message}>
-                            <Icon className={classNames(classes.icon, classes.iconVariant)}/>
+                            <Icon className={classNames(classes.icon, classes.iconVariant)} />
                             {props.message}
                         </span>
                     }
@@ -150,7 +150,7 @@ const actions = (props: SnackbarProps) => {
                 size="small"
                 color="inherit"
                 className={classes.linkButton}
-                onClick={() => onClick(link) }>
+                onClick={() => onClick(link)}>
                 Go To
             </Button>
         );
