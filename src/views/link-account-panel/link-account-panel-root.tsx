@@ -56,7 +56,7 @@ function displayUser(user: UserResource, showCreatedAt: boolean = false, showClu
         disp.push(<span> hosted on cluster <b>{homeCluster}</b> and </span>);
     }
     if (showCreatedAt) {
-        disp.push(<span> created on <b>{formatDate(user.createdAt, true)}</b></span>);
+        disp.push(<span> created on <b>{formatDate(user.createdAt)}</b></span>);
     }
     return disp;
 }

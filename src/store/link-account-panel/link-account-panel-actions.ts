@@ -227,10 +227,12 @@ export const cancelLinking = (reload: boolean = false) =>
         }
         finally {
             if (reload) {
+                services.linkAccountService.saveLinkOpStatus(LinkAccountStatus.CANCELLED);
                 location.reload();
             }
             else {
                 dispatch(progressIndicatorActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Account link cancelled!", kind: SnackbarKind.INFO, hideDuration: 3000 }));
             }
         }
     };
