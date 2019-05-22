@@ -72,7 +72,6 @@ describe('auth-actions', () => {
                 zzzzz: "zzzzz.arvadosapi.com",
                 xc59z: "xc59z.arvadosapi.com"
             },
-	    remoteHostsConfig: {},
             sessions: [{
                 "active": true,
                 "baseUrl": undefined,
