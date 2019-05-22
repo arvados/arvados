@@ -27,7 +27,13 @@ module ArvadosWorkbench
 
     # Custom directories with classes and modules you want to be autoloadable.
     # config.autoload_paths += %W(#{config.root}/extras)
-    config.autoload_paths += %W(#{config.root}/lib)
+
+    # Autoload paths shouldn't be used anymore since Rails 5.0
+    # See #15258 and https://github.com/rails/rails/issues/13142#issuecomment-74586224
+    config.eager_load_paths += %W(#{config.root}/lib)
+
+    # Load entire application at startup.
+    config.eager_load = true
 
     # Only load the plugins named here, in the order given (default is alphabetical).
     # :all can be used as a placeholder for all plugins not explicitly named.
