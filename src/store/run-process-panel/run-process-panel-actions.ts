@@ -88,7 +88,7 @@ export const setWorkflow = (workflow: WorkflowResource, isWorkflowChanged = true
         }
     };
 
-const loadPresets = (workflowUuid: string) =>
+export const loadPresets = (workflowUuid: string) =>
     async (dispatch: Dispatch<any>, _: () => RootState, { workflowService }: ServiceRepository) => {
         const { items } = await workflowService.presets(workflowUuid);
         dispatch(runProcessPanelActions.SET_WORKFLOW_PRESETS(items));
