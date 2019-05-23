@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+require "app_version"
+
 class StatusController < ApplicationController
   skip_around_action :require_thread_api_token
   skip_before_action :find_object_by_uuid
