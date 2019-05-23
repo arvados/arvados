@@ -1394,6 +1394,7 @@ class TestSubmit(unittest.TestCase):
 
     @stubs
     def test_submit_request_uuid(self, stubs):
+        stubs.api._rootDesc["remoteHosts"]["zzzzz"] = "123"
         stubs.expect_container_request_uuid = "zzzzz-xvhdp-yyyyyyyyyyyyyyy"
 
         stubs.api.container_requests().update().execute.return_value = {

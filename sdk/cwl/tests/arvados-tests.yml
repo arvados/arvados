@@ -243,3 +243,58 @@
     }
   tool: 13931-size.cwl
   doc: Test that size is set for files in Keep
+
+- job: 15241-writable-dir-job.json
+  output: {
+    "results": {
+        "basename": "keep:6dd5fa20622d5a7a23c9147d0927da2a+180",
+        "class": "Directory",
+        "listing": [
+            {
+                "basename": "d7514270f356df848477718d58308cc4+94",
+                "class": "Directory",
+                "listing": [
+                    {
+                        "basename": "a",
+                        "checksum": "sha1$da39a3ee5e6b4b0d3255bfef95601890afd80709",
+                        "class": "File",
+                        "location": "a",
+                        "size": 0
+                    },
+                    {
+                        "basename": "blurg.txt",
+                        "checksum": "sha1$da39a3ee5e6b4b0d3255bfef95601890afd80709",
+                        "class": "File",
+                        "location": "blurg.txt",
+                        "size": 0
+                    },
+                    {
+                        "basename": "c",
+                        "class": "Directory",
+                        "listing": [
+                            {
+                                "basename": "d",
+                                "checksum": "sha1$da39a3ee5e6b4b0d3255bfef95601890afd80709",
+                                "class": "File",
+                                "location": "d",
+                                "size": 0
+                            }
+                        ],
+                        "location": "c"
+                    },
+                    {
+                        "basename": "b",
+                        "checksum": "sha1$da39a3ee5e6b4b0d3255bfef95601890afd80709",
+                        "class": "File",
+                        "location": "b",
+                        "size": 0
+                    }
+                ],
+                "location": "d7514270f356df848477718d58308cc4+94"
+            }
+        ],
+        "location": "keep:6dd5fa20622d5a7a23c9147d0927da2a+180"
+    }
+  }
+  tool: 15241-writable-dir.cwl
+  doc: Test for writable collections

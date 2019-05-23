@@ -155,7 +155,7 @@ class ArvadosContainer(JobBase):
                                 vwd.mkdirs(p.target)
                             else:
                                 source, path = self.arvrunner.fs_access.get_collection(p.resolved)
-                                vwd.copy(path, p.target, source_collection=source)
+                                vwd.copy(path or ".", p.target, source_collection=source)
                         elif p.type == "CreateFile":
                             if self.arvrunner.secret_store.has_secret(p.resolved):
                                 secret_mounts["%s/%s" % (self.outdir, p.target)] = {
