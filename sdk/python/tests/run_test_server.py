@@ -414,7 +414,8 @@ def run_controller():
 Clusters:
   zzzzz:
     ManagementToken: e687950a23c3a9bceec28c6223a06c79
-    HTTPRequestTimeout: 30s
+    API:
+      RequestTimeout: 30s
     PostgreSQL:
       ConnectionPool: 32
       Connection:

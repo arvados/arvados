@@ -54,23 +54,22 @@ func (sc *Config) GetCluster(clusterID string) (*Cluster, error) {
 type API struct {
 	MaxItemsPerResponse     int
 	MaxRequestAmplification int
+	RequestTimeout          Duration
 }
 
 type Cluster struct {
-	ClusterID          string `json:"-"`
-	ManagementToken    string
-	SystemRootToken    string
-	Services           Services
-	NodeProfiles       map[string]NodeProfile
-	InstanceTypes      InstanceTypeMap
-	CloudVMs           CloudVMs
-	Dispatch           Dispatch
-	HTTPRequestTimeout Duration
-	RemoteClusters     map[string]RemoteCluster
-	PostgreSQL         PostgreSQL
-	API                API
-	Logging            Logging
-	TLS                TLS
+	ClusterID       string `json:"-"`
+	ManagementToken string
+	SystemRootToken string
+	Services        Services
+	NodeProfiles    map[string]NodeProfile
+	InstanceTypes   InstanceTypeMap
+	Containers      ContainersConfig
+	RemoteClusters  map[string]RemoteCluster
+	PostgreSQL      PostgreSQL
+	API             API
+	SystemLogs      SystemLogs
+	TLS             TLS
 }
 
 type Services struct {
@@ -89,7 +88,7 @@ type Services struct {
 }
 
 type Service struct {
-	InternalURLs map[URL]ServiceInstance
+	InternalURLs map[URL]ServiceInstance `json:",omitempty"`
 	ExternalURL  URL
 }
 
@@ -112,9 +111,10 @@ func (su URL) MarshalText() ([]byte, error) {
 
 type ServiceInstance struct{}
 
-type Logging struct {
-	Level  string
-	Format string
+type SystemLogs struct {
+	LogLevel                string
+	Format                  string
+	MaxRequestLogParamsSize int
 }
 
 type PostgreSQL struct {
@@ -148,59 +148,29 @@ type InstanceType struct {
 	Preemptible     bool
 }
 
-type Dispatch struct {
-	// PEM encoded SSH key (RSA, DSA, or ECDSA) able to log in to
-	// cloud VMs.
-	PrivateKey string
-
-	// Max time for workers to come up before abandoning stale
-	// locks from previous run
-	StaleLockTimeout Duration
-
-	// Interval between queue polls
-	PollInterval Duration
-
-	// Interval between probes to each worker
-	ProbeInterval Duration
-
-	// Maximum total worker probes per second
-	MaxProbesPerSecond int
-
-	// Time before repeating SIGTERM when killing a container
-	TimeoutSignal Duration
-
-	// Time to give up on SIGTERM and write off the worker
-	TimeoutTERM Duration
+type ContainersConfig struct {
+	CloudVMs           CloudVMsConfig
+	DispatchPrivateKey string
+	StaleLockTimeout   Duration
 }
 
-type CloudVMs struct {
-	// Shell command that exits zero IFF the VM is fully booted
-	// and ready to run containers, e.g., "mount | grep
-	// /encrypted-tmp"
-	BootProbeCommand string
+type CloudVMsConfig struct {
+	Enable bool
 
-	// Listening port (name or number) of SSH servers on worker
-	// VMs
-	SSHPort string
-
-	SyncInterval Duration
-
-	// Maximum idle time before automatic shutdown
-	TimeoutIdle Duration
-
-	// Maximum booting time before automatic shutdown
-	TimeoutBooting Duration
-
-	// Maximum time with no successful probes before automatic shutdown
-	TimeoutProbe Duration
-
-	// Time after shutdown to retry shutdown
-	TimeoutShutdown Duration
-
-	// Maximum create/destroy-instance operations per second
+	BootProbeCommand     string
+	ImageID              string
 	MaxCloudOpsPerSecond int
-
-	ImageID string
+	MaxProbesPerSecond   int
+	PollInterval         Duration
+	ProbeInterval        Duration
+	SSHPort              string
+	SyncInterval         Duration
+	TimeoutBooting       Duration
+	TimeoutIdle          Duration
+	TimeoutProbe         Duration
+	TimeoutShutdown      Duration
+	TimeoutSignal        Duration
+	TimeoutTERM          Duration
 
 	Driver           string
 	DriverParameters json.RawMessage

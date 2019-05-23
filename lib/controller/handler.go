@@ -50,8 +50,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			req.URL.Path = strings.Replace(req.URL.Path, "//", "/", -1)
 		}
 	}
-	if h.Cluster.HTTPRequestTimeout > 0 {
-		ctx, cancel := context.WithDeadline(req.Context(), time.Now().Add(time.Duration(h.Cluster.HTTPRequestTimeout)))
+	if h.Cluster.API.RequestTimeout > 0 {
+		ctx, cancel := context.WithDeadline(req.Context(), time.Now().Add(time.Duration(h.Cluster.API.RequestTimeout)))
 		req = req.WithContext(ctx)
 		defer cancel()
 	}

@@ -72,7 +72,7 @@ func (s *HandlerSuite) TestProxyDiscoveryDoc(c *check.C) {
 }
 
 func (s *HandlerSuite) TestRequestTimeout(c *check.C) {
-	s.cluster.HTTPRequestTimeout = arvados.Duration(time.Nanosecond)
+	s.cluster.API.RequestTimeout = arvados.Duration(time.Nanosecond)
 	req := httptest.NewRequest("GET", "/discovery/v1/apis/arvados/v1/rest", nil)
 	resp := httptest.NewRecorder()
 	s.handler.ServeHTTP(resp, req)

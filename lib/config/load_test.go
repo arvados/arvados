@@ -97,6 +97,20 @@ Clusters:
 	c.Check(logs, check.HasLen, 2)
 }
 
+func (s *LoadSuite) TestNoWarningsForDumpedConfig(c *check.C) {
+	var logbuf bytes.Buffer
+	logger := logrus.New()
+	logger.Out = &logbuf
+	cfg, err := Load(bytes.NewBufferString(`{"Clusters":{"zzzzz":{}}}`), logger)
+	c.Assert(err, check.IsNil)
+	yaml, err := yaml.Marshal(cfg)
+	c.Assert(err, check.IsNil)
+	cfgDumped, err := Load(bytes.NewBuffer(yaml), logger)
+	c.Assert(err, check.IsNil)
+	c.Check(cfg, check.DeepEquals, cfgDumped)
+	c.Check(logbuf.String(), check.Equals, "")
+}
+
 func (s *LoadSuite) TestPostgreSQLKeyConflict(c *check.C) {
 	_, err := Load(bytes.NewBufferString(`
 Clusters:
