@@ -79,6 +79,7 @@ func load(rdr io.Reader, log logger, useDeprecated bool) (*arvados.Config, error
 		return nil, fmt.Errorf("loading config data: %s", err)
 	}
 	logExtraKeys(log, merged, src, "")
+	removeSampleKeys(merged)
 	err = mergo.Merge(&merged, src, mergo.WithOverride)
 	if err != nil {
 		return nil, fmt.Errorf("merging config data: %s", err)
@@ -129,14 +130,32 @@ func checkKeyConflict(label string, m map[string]string) error {
 	return nil
 }
 
+func removeSampleKeys(m map[string]interface{}) {
+	delete(m, "SAMPLE")
+	for _, v := range m {
+		if v, _ := v.(map[string]interface{}); v != nil {
+			removeSampleKeys(v)
+		}
+	}
+}
+
 func logExtraKeys(log logger, expected, supplied map[string]interface{}, prefix string) {
 	if log == nil {
 		return
 	}
+	allowed := map[string]interface{}{}
+	for k, v := range expected {
+		allowed[strings.ToLower(k)] = v
+	}
 	for k, vsupp := range supplied {
-		if vexp, ok := expected[k]; !ok {
+		vexp, ok := allowed[strings.ToLower(k)]
+		if !ok && expected["SAMPLE"] != nil {
+			vexp = expected["SAMPLE"]
+		} else if !ok {
 			log.Warnf("deprecated or unknown config entry: %s%s", prefix, k)
-		} else if vsupp, ok := vsupp.(map[string]interface{}); !ok {
+			continue
+		}
+		if vsupp, ok := vsupp.(map[string]interface{}); !ok {
 			// if vsupp is a map but vexp isn't map, this
 			// will be caught elsewhere; see TestBadType.
 			continue

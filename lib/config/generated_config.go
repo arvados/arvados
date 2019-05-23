@@ -463,4 +463,10 @@ Clusters:
       "*":
         Proxy: false
         ActivateUsers: false
+      SAMPLE:
+        Host: sample.arvadosapi.com
+        Proxy: false
+        Scheme: https
+        Insecure: false
+        ActivateUsers: false
 `)
