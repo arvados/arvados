@@ -281,8 +281,11 @@ class Collection < ArvadosModel
       sync_past_versions if syncable_updates.any?
       if snapshot
         snapshot.attributes = self.syncable_updates
-        snapshot.manifest_text = snapshot.signed_manifest_text
-        snapshot.save
+        leave_modified_by_user_alone do
+          act_as_system_user do
+            snapshot.save
+          end
+        end
       end
     end
   end
