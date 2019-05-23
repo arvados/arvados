@@ -10,6 +10,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -70,7 +71,10 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	} else if err != nil {
 		return 2
 	}
-	cfg, err := config.LoadFile(*configFile, log)
+	// Logged warnings are discarded for now: the config template
+	// is incomplete, which causes extra warnings about keys that
+	// are really OK.
+	cfg, err := config.LoadFile(*configFile, ctxlog.New(ioutil.Discard, "json", "error"))
 	if err != nil {
 		return 1
 	}
