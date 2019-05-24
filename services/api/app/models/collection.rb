@@ -338,6 +338,8 @@ class Collection < ArvadosModel
   def should_preserve_version?
     return false unless (Rails.configuration.Collections.CollectionVersioning && versionable_updates?(self.changes.keys))
 
+    return false if self.changes.keys.include?('is_trashed') && self.is_trashed_was == false
+
     idle_threshold = Rails.configuration.Collections.PreserveVersionIfIdle
     if !self.preserve_version_was &&
       (idle_threshold < 0 ||
