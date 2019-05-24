@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -168,8 +167,6 @@ func getListenAddr(svcs arvados.Services, prog arvados.ServiceName) (string, err
 			listener.Close()
 			return url.Host, nil
 		}
-		log.Print(err)
-
 	}
 	return "", fmt.Errorf("configuration does not enable the %s service on this host", prog)
 }
