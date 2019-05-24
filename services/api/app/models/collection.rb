@@ -328,17 +328,13 @@ class Collection < ArvadosModel
   def is_past_version?
     # Check for the '_was' values just in case the update operation
     # includes a change on current_version_uuid or uuid.
-    if !new_record? && self.current_version_uuid_was != self.uuid_was
-      return true
-    else
-      return false
-    end
+    !(new_record? || self.current_version_uuid_was == self.uuid_was)
   end
 
   def should_preserve_version?
     return false unless (Rails.configuration.Collections.CollectionVersioning && versionable_updates?(self.changes.keys))
 
-    return false if self.changes.keys.include?('is_trashed') && self.is_trashed_was == false
+    return false if self.is_trashed
 
     idle_threshold = Rails.configuration.Collections.PreserveVersionIfIdle
     if !self.preserve_version_was &&
