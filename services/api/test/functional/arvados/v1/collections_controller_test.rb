@@ -1423,4 +1423,20 @@ EOS
     assert_response :success
     assert_equal 3, json_response['version']
   end
+
+  test "delete collection with versioning enabled" do
+    Rails.configuration.Collections.CollectionVersioning = true
+    Rails.configuration.Collections.PreserveVersionIfIdle = 1 # 1 second
+
+    col = collections(:collection_owned_by_active)
+    assert_equal 2, col.version
+    assert col.modified_at < Time.now - 1.second
+
+    authorize_with(:active)
+    post :trash, params: {
+      id: col.uuid,
+    }
+    assert_response :success
+    assert_equal col.version, json_response['version'], 'Trashing a collection should not create a new version'
+  end
 end
