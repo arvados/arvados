@@ -266,6 +266,12 @@ class CollectionTest < ActiveSupport::TestCase
     end
   end
 
+  # This test exposes a bug related to JSONB attributes, see #15725.
+  test "recently loaded collection shouldn't list changed attributes" do
+    col = Collection.where("properties != '{}'::jsonb").limit(1).first
+    refute col.properties_changed?, 'Properties field should not be seen as changed'
+  end
+
   test "older versions' modified_at indicate when they're created" do
     Rails.configuration.Collections.CollectionVersioning = true
     Rails.configuration.Collections.PreserveVersionIfIdle = 0
