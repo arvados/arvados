@@ -326,6 +326,8 @@ class Collection < ArvadosModel
   end
 
   def is_past_version?
+    # Check for the '_was' values just in case the update operation
+    # includes a change on current_version_uuid or uuid.
     if !new_record? && self.current_version_uuid_was != self.uuid_was
       return true
     else
@@ -661,8 +663,6 @@ class Collection < ArvadosModel
   end
 
   def past_versions_cannot_be_updated
-    # We check for the '_was' values just in case the update operation
-    # includes a change on current_version_uuid or uuid.
     if is_past_version?
       errors.add(:base, "past versions cannot be updated")
       false
