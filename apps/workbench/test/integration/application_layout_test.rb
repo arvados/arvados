@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 require 'integration_helper'
+require 'config_validators'
 
 class ApplicationLayoutTest < ActionDispatch::IntegrationTest
   # These tests don't do state-changing API calls. Save some time by

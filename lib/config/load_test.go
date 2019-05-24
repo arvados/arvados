@@ -117,8 +117,8 @@ Clusters:
  zzzzz:
   postgresql:
    connection:
-     dbname: dbname
-     host: host
+     DBName: dbname
+     Host: host
 `), ctxlog.TestLogger(c))
 	c.Check(err, check.ErrorMatches, `Clusters.zzzzz.PostgreSQL.Connection: multiple entries for "(dbname|host)".*`)
 }

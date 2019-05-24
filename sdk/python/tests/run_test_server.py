@@ -419,10 +419,10 @@ Clusters:
     PostgreSQL:
       ConnectionPool: 32
       Connection:
-        Host: {}
-        DBName: {}
-        User: {}
-        Password: {}
+        host: {}
+        dbname: {}
+        user: {}
+        password: {}
     NodeProfiles:
       "*":
         "arvados-controller":

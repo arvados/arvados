@@ -266,6 +266,13 @@ class CollectionTest < ActiveSupport::TestCase
     end
   end
 
+  # This test exposes a bug related to JSONB attributes, see #15725.
+  # Skipping for the moment, to unblock federation tests.
+  skip "recently loaded collection shouldn't list changed attributes" do
+    col = Collection.where("properties != '{}'::jsonb").limit(1).first
+    refute col.properties_changed?, 'Properties field should not be seen as changed'
+  end
+
   test "older versions' modified_at indicate when they're created" do
     Rails.configuration.Collections.CollectionVersioning = true
     Rails.configuration.Collections.PreserveVersionIfIdle = 0
@@ -334,7 +341,6 @@ class CollectionTest < ActiveSupport::TestCase
     ['owner_uuid', 'zzzzz-tpzed-d9tiejq69daie8f', 'zzzzz-tpzed-xurymjxw79nv3jz'],
     ['replication_desired', 2, 3],
     ['storage_classes_desired', ['hot'], ['archive']],
-    ['is_trashed', true, false],
   ].each do |attr, first_val, second_val|
     test "sync #{attr} with older versions" do
       Rails.configuration.Collections.CollectionVersioning = true

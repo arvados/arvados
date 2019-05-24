@@ -24,6 +24,8 @@ http {
      access_log off;
      include /etc/nginx/mime.types;
      default_type application/octet-stream;
+     client_max_body_size 128M;
+
      server {
             listen ${services[doc]} default_server;
             listen [::]:${services[doc]} default_server;

@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 require "arvados/collection"
+require "app_version"
 
 class ActionsController < ApplicationController
 
