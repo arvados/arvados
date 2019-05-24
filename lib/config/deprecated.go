@@ -20,11 +20,31 @@ type deprRequestLimits struct {
 
 type deprCluster struct {
 	RequestLimits deprRequestLimits
-	NodeProfiles  map[string]arvados.NodeProfile
+	NodeProfiles  map[string]nodeProfile
 }
 
 type deprecatedConfig struct {
 	Clusters map[string]deprCluster
+}
+
+type nodeProfile struct {
+	Controller    systemServiceInstance `json:"arvados-controller"`
+	Health        systemServiceInstance `json:"arvados-health"`
+	Keepbalance   systemServiceInstance `json:"keep-balance"`
+	Keepproxy     systemServiceInstance `json:"keepproxy"`
+	Keepstore     systemServiceInstance `json:"keepstore"`
+	Keepweb       systemServiceInstance `json:"keep-web"`
+	Nodemanager   systemServiceInstance `json:"arvados-node-manager"`
+	DispatchCloud systemServiceInstance `json:"arvados-dispatch-cloud"`
+	RailsAPI      systemServiceInstance `json:"arvados-api-server"`
+	Websocket     systemServiceInstance `json:"arvados-ws"`
+	Workbench1    systemServiceInstance `json:"arvados-workbench"`
+}
+
+type systemServiceInstance struct {
+	Listen   string
+	TLS      bool
+	Insecure bool
 }
 
 func applyDeprecatedConfig(cfg *arvados.Config, configdata []byte, log logger) error {
@@ -63,7 +83,7 @@ func applyDeprecatedConfig(cfg *arvados.Config, configdata []byte, log logger) e
 	return nil
 }
 
-func applyDeprecatedNodeProfile(hostname string, ssi arvados.SystemServiceInstance, svc *arvados.Service) {
+func applyDeprecatedNodeProfile(hostname string, ssi systemServiceInstance, svc *arvados.Service) {
 	scheme := "https"
 	if !ssi.TLS {
 		scheme = "http"

@@ -66,14 +66,12 @@ Add or update the following portions of your cluster configuration file, @/etc/a
   <span class="userinput">uuid_prefix</span>:
     ManagementToken: xyzzy
     SystemRootToken: <span class="userinput">zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz</span>
-    NodeProfiles:
-      # The key "apiserver" corresponds to ARVADOS_NODE_PROFILE in environment file (see below).
-      apiserver:
-        arvados-dispatch-cloud:
-          Listen: ":9006"
     Services:
       Controller:
         ExternalURL: "https://<span class="userinput">uuid_prefix.arvadosapi.com</span>"
+      DispatchCloud:
+        InternalURLs:
+          "http://localhost:9006": {}
     CloudVMs:
       # BootProbeCommand is a shell command that succeeds when an instance is ready for service
       BootProbeCommand: "sudo systemctl status docker"
@@ -150,13 +148,6 @@ Minimal configuration example for Azure:
         BlobContainer: vhds
         DeleteDanglingResourcesAfter: 20s
         AdminUsername: arvados
-</code></pre>
-</notextile>
-
-Create the host configuration file @/etc/arvados/environment@.
-
-<notextile>
-<pre><code>ARVADOS_NODE_PROFILE=apiserver
 </code></pre>
 </notextile>
 

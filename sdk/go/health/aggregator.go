@@ -9,8 +9,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net"
 	"net/http"
+	"net/url"
 	"sync"
 	"time"
 
@@ -113,46 +113,41 @@ func (agg *Aggregator) ClusterHealth(cluster *arvados.Cluster) ClusterHealthResp
 
 	mtx := sync.Mutex{}
 	wg := sync.WaitGroup{}
-	for profileName, profile := range cluster.NodeProfiles {
-		for svc, addr := range profile.ServicePorts() {
-			// Ensure svc is listed in resp.Services.
-			mtx.Lock()
-			if _, ok := resp.Services[svc]; !ok {
-				resp.Services[svc] = ServiceHealth{Health: "ERROR"}
-			}
-			mtx.Unlock()
+	for svcName, svc := range cluster.Services.Map() {
+		// Ensure svc is listed in resp.Services.
+		mtx.Lock()
+		if _, ok := resp.Services[svcName]; !ok {
+			resp.Services[svcName] = ServiceHealth{Health: "ERROR"}
+		}
+		mtx.Unlock()
 
-			if addr == "" {
-				// svc is not expected on this node.
-				continue
-			}
-
+		for addr := range svc.InternalURLs {
 			wg.Add(1)
-			go func(profileName string, svc arvados.ServiceName, addr string) {
+			go func(svcName arvados.ServiceName, addr arvados.URL) {
 				defer wg.Done()
 				var result CheckResult
-				url, err := agg.pingURL(profileName, addr)
+				pingURL, err := agg.pingURL(addr)
 				if err != nil {
 					result = CheckResult{
 						Health: "ERROR",
 						Error:  err.Error(),
 					}
 				} else {
-					result = agg.ping(url, cluster)
+					result = agg.ping(pingURL, cluster)
 				}
 
 				mtx.Lock()
 				defer mtx.Unlock()
-				resp.Checks[fmt.Sprintf("%s+%s", svc, url)] = result
+				resp.Checks[fmt.Sprintf("%s+%s", svcName, pingURL)] = result
 				if result.Health == "OK" {
-					h := resp.Services[svc]
+					h := resp.Services[svcName]
 					h.N++
 					h.Health = "OK"
-					resp.Services[svc] = h
+					resp.Services[svcName] = h
 				} else {
 					resp.Health = "ERROR"
 				}
-			}(profileName, svc, addr)
+			}(svcName, addr)
 		}
 	}
 	wg.Wait()
@@ -168,12 +163,12 @@ func (agg *Aggregator) ClusterHealth(cluster *arvados.Cluster) ClusterHealthResp
 	return resp
 }
 
-func (agg *Aggregator) pingURL(node, addr string) (string, error) {
-	_, port, err := net.SplitHostPort(addr)
-	return "http://" + node + ":" + port + "/_health/ping", err
+func (agg *Aggregator) pingURL(svcURL arvados.URL) (*url.URL, error) {
+	base := url.URL(svcURL)
+	return base.Parse("/_health/ping")
 }
 
-func (agg *Aggregator) ping(url string, cluster *arvados.Cluster) (result CheckResult) {
+func (agg *Aggregator) ping(target *url.URL, cluster *arvados.Cluster) (result CheckResult) {
 	t0 := time.Now()
 
 	var err error
@@ -186,7 +181,7 @@ func (agg *Aggregator) ping(url string, cluster *arvados.Cluster) (result CheckR
 		}
 	}()
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", target.String(), nil)
 	if err != nil {
 		return
 	}

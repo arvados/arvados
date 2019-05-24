@@ -8,7 +8,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"net"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -22,8 +22,7 @@ import (
 )
 
 type Handler struct {
-	Cluster     *arvados.Cluster
-	NodeProfile *arvados.NodeProfile
+	Cluster *arvados.Cluster
 
 	setupOnce      sync.Once
 	handlerStack   http.Handler
@@ -61,7 +60,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 func (h *Handler) CheckHealth() error {
 	h.setupOnce.Do(h.setup)
-	_, _, err := findRailsAPI(h.Cluster, h.NodeProfile)
+	_, _, err := findRailsAPI(h.Cluster)
 	return err
 }
 
@@ -127,7 +126,7 @@ func prepend(next http.Handler, middleware middlewareFunc) http.Handler {
 }
 
 func (h *Handler) localClusterRequest(req *http.Request) (*http.Response, error) {
-	urlOut, insecure, err := findRailsAPI(h.Cluster, h.NodeProfile)
+	urlOut, insecure, err := findRailsAPI(h.Cluster)
 	if err != nil {
 		return nil, err
 	}
@@ -153,22 +152,19 @@ func (h *Handler) proxyRailsAPI(w http.ResponseWriter, req *http.Request, next h
 	}
 }
 
-// For now, findRailsAPI always uses the rails API running on this
-// node.
-func findRailsAPI(cluster *arvados.Cluster, np *arvados.NodeProfile) (*url.URL, bool, error) {
-	hostport := np.RailsAPI.Listen
-	if len(hostport) > 1 && hostport[0] == ':' && strings.TrimRight(hostport[1:], "0123456789") == "" {
-		// ":12345" => connect to indicated port on localhost
-		hostport = "localhost" + hostport
-	} else if _, _, err := net.SplitHostPort(hostport); err == nil {
-		// "[::1]:12345" => connect to indicated address & port
-	} else {
-		return nil, false, err
+// Use a localhost entry from Services.RailsAPI.InternalURLs if one is
+// present, otherwise choose an arbitrary entry.
+func findRailsAPI(cluster *arvados.Cluster) (*url.URL, bool, error) {
+	var best *url.URL
+	for target := range cluster.Services.RailsAPI.InternalURLs {
+		target := url.URL(target)
+		best = &target
+		if strings.HasPrefix(target.Host, "localhost:") || strings.HasPrefix(target.Host, "127.0.0.1:") || strings.HasPrefix(target.Host, "[::1]:") {
+			break
+		}
 	}
-	proto := "http"
-	if np.RailsAPI.TLS {
-		proto = "https"
+	if best == nil {
+		return nil, false, fmt.Errorf("Services.RailsAPI.InternalURLs is empty")
 	}
-	url, err := url.Parse(proto + "://" + hostport)
-	return url, np.RailsAPI.Insecure, err
+	return best, cluster.TLS.Insecure, nil
 }

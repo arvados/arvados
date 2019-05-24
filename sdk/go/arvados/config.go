@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"os"
 
 	"git.curoverse.com/arvados.git/sdk/go/config"
 )
@@ -62,7 +61,6 @@ type Cluster struct {
 	ManagementToken string
 	SystemRootToken string
 	Services        Services
-	NodeProfiles    map[string]NodeProfile
 	InstanceTypes   InstanceTypeMap
 	Containers      ContainersConfig
 	RemoteClusters  map[string]RemoteCluster
@@ -234,51 +232,16 @@ func (it *InstanceTypeMap) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// GetNodeProfile returns a NodeProfile for the given hostname. An
-// error is returned if the appropriate configuration can't be
-// determined (e.g., this does not appear to be a system node). If
-// node is empty, use the OS-reported hostname.
-func (cc *Cluster) GetNodeProfile(node string) (*NodeProfile, error) {
-	if node == "" {
-		hostname, err := os.Hostname()
-		if err != nil {
-			return nil, err
-		}
-		node = hostname
-	}
-	if cfg, ok := cc.NodeProfiles[node]; ok {
-		return &cfg, nil
-	}
-	// If node is not listed, but "*" gives a default system node
-	// config, use the default config.
-	if cfg, ok := cc.NodeProfiles["*"]; ok {
-		return &cfg, nil
-	}
-	return nil, fmt.Errorf("config does not provision host %q as a system node", node)
-}
-
-type NodeProfile struct {
-	Controller    SystemServiceInstance `json:"arvados-controller"`
-	Health        SystemServiceInstance `json:"arvados-health"`
-	Keepbalance   SystemServiceInstance `json:"keep-balance"`
-	Keepproxy     SystemServiceInstance `json:"keepproxy"`
-	Keepstore     SystemServiceInstance `json:"keepstore"`
-	Keepweb       SystemServiceInstance `json:"keep-web"`
-	Nodemanager   SystemServiceInstance `json:"arvados-node-manager"`
-	DispatchCloud SystemServiceInstance `json:"arvados-dispatch-cloud"`
-	RailsAPI      SystemServiceInstance `json:"arvados-api-server"`
-	Websocket     SystemServiceInstance `json:"arvados-ws"`
-	Workbench     SystemServiceInstance `json:"arvados-workbench"`
-}
-
 type ServiceName string
 
 const (
 	ServiceNameRailsAPI      ServiceName = "arvados-api-server"
 	ServiceNameController    ServiceName = "arvados-controller"
 	ServiceNameDispatchCloud ServiceName = "arvados-dispatch-cloud"
+	ServiceNameHealth        ServiceName = "arvados-health"
 	ServiceNameNodemanager   ServiceName = "arvados-node-manager"
-	ServiceNameWorkbench     ServiceName = "arvados-workbench"
+	ServiceNameWorkbench1    ServiceName = "arvados-workbench1"
+	ServiceNameWorkbench2    ServiceName = "arvados-workbench2"
 	ServiceNameWebsocket     ServiceName = "arvados-ws"
 	ServiceNameKeepbalance   ServiceName = "keep-balance"
 	ServiceNameKeepweb       ServiceName = "keep-web"
@@ -288,25 +251,21 @@ const (
 
 // ServicePorts returns the configured listening address (or "" if
 // disabled) for each service on the node.
-func (np *NodeProfile) ServicePorts() map[ServiceName]string {
-	return map[ServiceName]string{
-		ServiceNameRailsAPI:      np.RailsAPI.Listen,
-		ServiceNameController:    np.Controller.Listen,
-		ServiceNameDispatchCloud: np.DispatchCloud.Listen,
-		ServiceNameNodemanager:   np.Nodemanager.Listen,
-		ServiceNameWorkbench:     np.Workbench.Listen,
-		ServiceNameWebsocket:     np.Websocket.Listen,
-		ServiceNameKeepbalance:   np.Keepbalance.Listen,
-		ServiceNameKeepweb:       np.Keepweb.Listen,
-		ServiceNameKeepproxy:     np.Keepproxy.Listen,
-		ServiceNameKeepstore:     np.Keepstore.Listen,
+func (svcs Services) Map() map[ServiceName]Service {
+	return map[ServiceName]Service{
+		ServiceNameRailsAPI:      svcs.RailsAPI,
+		ServiceNameController:    svcs.Controller,
+		ServiceNameDispatchCloud: svcs.DispatchCloud,
+		ServiceNameHealth:        svcs.Health,
+		ServiceNameNodemanager:   svcs.Nodemanager,
+		ServiceNameWorkbench1:    svcs.Workbench1,
+		ServiceNameWorkbench2:    svcs.Workbench2,
+		ServiceNameWebsocket:     svcs.Websocket,
+		ServiceNameKeepbalance:   svcs.Keepbalance,
+		ServiceNameKeepweb:       svcs.WebDAV,
+		ServiceNameKeepproxy:     svcs.Keepproxy,
+		ServiceNameKeepstore:     svcs.Keepstore,
 	}
-}
-
-type SystemServiceInstance struct {
-	Listen   string
-	TLS      bool
-	Insecure bool
 }
 
 type TLS struct {

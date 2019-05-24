@@ -6,6 +6,9 @@ package arvadostest
 
 import (
 	"net/http"
+	"net/url"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 )
 
 // StubResponse struct with response status and body
@@ -36,4 +39,16 @@ func (stub *ServerStub) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 		resp.WriteHeader(500)
 		resp.Write([]byte(``))
 	}
+}
+
+// SetServiceURL overrides the given service config/discovery with the
+// given internalURL.
+//
+// SetServiceURL panics on errors.
+func SetServiceURL(service *arvados.Service, internalURL string) {
+	u, err := url.Parse(internalURL)
+	if err != nil {
+		panic(err)
+	}
+	service.InternalURLs = map[arvados.URL]arvados.ServiceInstance{arvados.URL(*u): {}}
 }
