@@ -51,4 +51,5 @@ func SetServiceURL(service *arvados.Service, internalURL string) {
 		panic(err)
 	}
 	service.InternalURLs = map[arvados.URL]arvados.ServiceInstance{arvados.URL(*u): {}}
+	service.ExternalURL = arvados.URL(*u)
 }

@@ -76,13 +76,13 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 	}
 
 	cluster := &arvados.Cluster{
-		Dispatch: arvados.Dispatch{
-			MaxProbesPerSecond: 1000,
-			ProbeInterval:      arvados.Duration(time.Millisecond * 10),
-		},
-		CloudVMs: arvados.CloudVMs{
-			BootProbeCommand: "true",
-			SyncInterval:     arvados.Duration(time.Millisecond * 10),
+		Containers: arvados.ContainersConfig{
+			CloudVMs: arvados.CloudVMsConfig{
+				BootProbeCommand:   "true",
+				MaxProbesPerSecond: 1000,
+				ProbeInterval:      arvados.Duration(time.Millisecond * 10),
+				SyncInterval:       arvados.Duration(time.Millisecond * 10),
+			},
 		},
 		InstanceTypes: arvados.InstanceTypeMap{
 			type1.Name: type1,
