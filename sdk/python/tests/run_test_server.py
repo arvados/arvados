@@ -419,25 +419,26 @@ Clusters:
     PostgreSQL:
       ConnectionPool: 32
       Connection:
-        host: {}
-        dbname: {}
-        user: {}
-        password: {}
-    NodeProfiles:
-      "*":
-        "arvados-controller":
-          Listen: ":{}"
-        "arvados-api-server":
-          Listen: ":{}"
-          TLS: true
-          Insecure: true
+        host: {dbhost}
+        dbname: {dbname}
+        user: {dbuser}
+        password: {dbpass}
+    TLS:
+      Insecure: true
+    Services:
+      Controller:
+        InternalURLs:
+          "http://localhost:{controllerport}": {{}}
+      RailsAPI:
+        InternalURLs:
+          "https://localhost:{railsport}": {{}}
         """.format(
-            _dbconfig('host'),
-            _dbconfig('database'),
-            _dbconfig('username'),
-            _dbconfig('password'),
-            port,
-            rails_api_port,
+            dbhost=_dbconfig('host'),
+            dbname=_dbconfig('database'),
+            dbuser=_dbconfig('username'),
+            dbpass=_dbconfig('password'),
+            controllerport=port,
+            railsport=rails_api_port,
         ))
     logf = open(_logfilename('controller'), 'a')
     controller = subprocess.Popen(
