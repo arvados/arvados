@@ -267,8 +267,7 @@ class CollectionTest < ActiveSupport::TestCase
   end
 
   # This test exposes a bug related to JSONB attributes, see #15725.
-  # Skipping for the moment, to unblock federation tests.
-  skip "recently loaded collection shouldn't list changed attributes" do
+  test "recently loaded collection shouldn't list changed attributes" do
     col = Collection.where("properties != '{}'::jsonb").limit(1).first
     refute col.properties_changed?, 'Properties field should not be seen as changed'
   end
