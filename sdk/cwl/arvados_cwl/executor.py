@@ -152,7 +152,7 @@ class ArvCwlExecutor(object):
                                            num_retries=self.num_retries)
 
         self.work_api = None
-        expected_api = ["jobs", "containers"]
+        expected_api = ["containers", "jobs"]
         for api in expected_api:
             try:
                 methods = self.api._rootDesc.get('resources')[api]['methods']
