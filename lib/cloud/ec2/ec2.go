@@ -13,7 +13,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
-	"strings"
 	"sync"
 
 	"git.curoverse.com/arvados.git/lib/cloud"
@@ -26,8 +25,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-const arvadosDispatchID = "arvados-dispatch-id"
-const tagPrefix = "arvados-dispatch-tag-"
+const tagKeyInstanceSetID = "arvados-dispatch-id"
 
 // Driver is the ec2 implementation of the cloud.Driver interface.
 var Driver = cloud.DriverFunc(newEC2InstanceSet)
@@ -52,18 +50,18 @@ type ec2Interface interface {
 }
 
 type ec2InstanceSet struct {
-	ec2config    ec2InstanceSetConfig
-	dispatcherID cloud.InstanceSetID
-	logger       logrus.FieldLogger
-	client       ec2Interface
-	keysMtx      sync.Mutex
-	keys         map[string]string
+	ec2config     ec2InstanceSetConfig
+	instanceSetID cloud.InstanceSetID
+	logger        logrus.FieldLogger
+	client        ec2Interface
+	keysMtx       sync.Mutex
+	keys          map[string]string
 }
 
-func newEC2InstanceSet(config json.RawMessage, dispatcherID cloud.InstanceSetID, logger logrus.FieldLogger) (prv cloud.InstanceSet, err error) {
+func newEC2InstanceSet(config json.RawMessage, instanceSetID cloud.InstanceSetID, logger logrus.FieldLogger) (prv cloud.InstanceSet, err error) {
 	instanceSet := &ec2InstanceSet{
-		dispatcherID: dispatcherID,
-		logger:       logger,
+		instanceSetID: instanceSetID,
+		logger:        logger,
 	}
 	err = json.Unmarshal(config, &instanceSet.ec2config)
 	if err != nil {
@@ -159,17 +157,13 @@ func (instanceSet *ec2InstanceSet) Create(
 
 	ec2tags := []*ec2.Tag{
 		&ec2.Tag{
-			Key:   aws.String(arvadosDispatchID),
-			Value: aws.String(string(instanceSet.dispatcherID)),
-		},
-		&ec2.Tag{
-			Key:   aws.String("arvados-class"),
-			Value: aws.String("dynamic-compute"),
+			Key:   aws.String(tagKeyInstanceSetID),
+			Value: aws.String(string(instanceSet.instanceSetID)),
 		},
 	}
 	for k, v := range newTags {
 		ec2tags = append(ec2tags, &ec2.Tag{
-			Key:   aws.String(tagPrefix + k),
+			Key:   aws.String(k),
 			Value: aws.String(v),
 		})
 	}
@@ -191,12 +185,12 @@ func (instanceSet *ec2InstanceSet) Create(
 			}},
 		DisableApiTermination:             aws.Bool(false),
 		InstanceInitiatedShutdownBehavior: aws.String("terminate"),
-		UserData: aws.String(base64.StdEncoding.EncodeToString([]byte("#!/bin/sh\n" + initCommand + "\n"))),
 		TagSpecifications: []*ec2.TagSpecification{
 			&ec2.TagSpecification{
 				ResourceType: aws.String("instance"),
 				Tags:         ec2tags,
 			}},
+		UserData: aws.String(base64.StdEncoding.EncodeToString([]byte("#!/bin/sh\n" + initCommand + "\n"))),
 	}
 
 	if instanceType.AddedScratch > 0 {
@@ -233,8 +227,8 @@ func (instanceSet *ec2InstanceSet) Create(
 func (instanceSet *ec2InstanceSet) Instances(cloud.InstanceTags) (instances []cloud.Instance, err error) {
 	dii := &ec2.DescribeInstancesInput{
 		Filters: []*ec2.Filter{&ec2.Filter{
-			Name:   aws.String("tag:" + arvadosDispatchID),
-			Values: []*string{aws.String(string(instanceSet.dispatcherID))},
+			Name:   aws.String("tag:" + tagKeyInstanceSetID),
+			Values: []*string{aws.String(string(instanceSet.instanceSetID))},
 		}}}
 
 	for {
@@ -280,13 +274,13 @@ func (inst *ec2Instance) ProviderType() string {
 func (inst *ec2Instance) SetTags(newTags cloud.InstanceTags) error {
 	ec2tags := []*ec2.Tag{
 		&ec2.Tag{
-			Key:   aws.String(arvadosDispatchID),
-			Value: aws.String(string(inst.provider.dispatcherID)),
+			Key:   aws.String(tagKeyInstanceSetID),
+			Value: aws.String(string(inst.provider.instanceSetID)),
 		},
 	}
 	for k, v := range newTags {
 		ec2tags = append(ec2tags, &ec2.Tag{
-			Key:   aws.String(tagPrefix + k),
+			Key:   aws.String(k),
 			Value: aws.String(v),
 		})
 	}
@@ -303,9 +297,7 @@ func (inst *ec2Instance) Tags() cloud.InstanceTags {
 	tags := make(map[string]string)
 
 	for _, t := range inst.instance.Tags {
-		if strings.HasPrefix(*t.Key, tagPrefix) {
-			tags[(*t.Key)[len(tagPrefix):]] = *t.Value
-		}
+		tags[*t.Key] = *t.Value
 	}
 
 	return tags

@@ -125,11 +125,11 @@ func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error)
 		return ap, cloud.ImageID(exampleCfg.ImageIDForTestSuite), cluster, err
 	}
 	ap := ec2InstanceSet{
-		ec2config:    ec2InstanceSetConfig{},
-		dispatcherID: "test123",
-		logger:       logrus.StandardLogger(),
-		client:       &ec2stub{},
-		keys:         make(map[string]string),
+		ec2config:     ec2InstanceSetConfig{},
+		instanceSetID: "test123",
+		logger:        logrus.StandardLogger(),
+		client:        &ec2stub{},
+		keys:          make(map[string]string),
 	}
 	return &ap, cloud.ImageID("blob"), cluster, nil
 }

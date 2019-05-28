@@ -33,6 +33,10 @@ func newInstanceSet(cluster *arvados.Cluster, setID cloud.InstanceSetID, logger 
 			ticker:      time.NewTicker(time.Second / time.Duration(maxops)),
 		}
 	}
+	is = defaultTaggingInstanceSet{
+		InstanceSet: is,
+		defaultTags: cloud.InstanceTags(cluster.Containers.CloudVMs.ResourceTags),
+	}
 	return is, err
 }
 
@@ -55,4 +59,21 @@ type rateLimitedInstance struct {
 func (inst *rateLimitedInstance) Destroy() error {
 	<-inst.ticker.C
 	return inst.Instance.Destroy()
+}
+
+// Adds the specified defaultTags to every Create() call.
+type defaultTaggingInstanceSet struct {
+	cloud.InstanceSet
+	defaultTags cloud.InstanceTags
+}
+
+func (is defaultTaggingInstanceSet) Create(it arvados.InstanceType, image cloud.ImageID, tags cloud.InstanceTags, init cloud.InitCommand, pk ssh.PublicKey) (cloud.Instance, error) {
+	allTags := cloud.InstanceTags{}
+	for k, v := range is.defaultTags {
+		allTags[k] = v
+	}
+	for k, v := range tags {
+		allTags[k] = v
+	}
+	return is.InstanceSet.Create(it, image, allTags, init, pk)
 }

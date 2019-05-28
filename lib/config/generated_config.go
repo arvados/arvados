@@ -536,6 +536,13 @@ Clusters:
         # Worker VM image ID.
         ImageID: ami-01234567890abcdef
 
+        # Tags to add on all resources (VMs, NICs, disks) created by
+        # the container dispatcher. (Arvados's own tags --
+        # InstanceType, IdleBehavior, and InstanceSecret -- will also
+        # be added.)
+        ResourceTags:
+          SAMPLE: "tag value"
+
         # Cloud driver: "azure" (Microsoft Azure) or "ec2" (Amazon AWS).
         Driver: ec2
 
