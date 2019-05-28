@@ -267,10 +267,64 @@ class CollectionTest < ActiveSupport::TestCase
   end
 
   # This test exposes a bug related to JSONB attributes, see #15725.
-  # Skipping for the moment, to unblock federation tests.
-  skip "recently loaded collection shouldn't list changed attributes" do
+  test "recently loaded collection shouldn't list changed attributes" do
     col = Collection.where("properties != '{}'::jsonb").limit(1).first
     refute col.properties_changed?, 'Properties field should not be seen as changed'
+  end
+
+  [
+    [
+      true,
+      {'foo'=>'bar', 'lst'=>[1, 3, 5, 7], 'hsh'=>{'baz'=>'qux', 'foobar'=>true, 'hsh'=>{'nested'=>true}}, 'delete_at'=>nil},
+      {:foo=>:bar, :lst=>[1, 3, 5, 7], :hsh=>{'baz'=>'qux', :foobar=>true, 'hsh'=>{:nested=>true}}, :delete_at=>nil},
+    ],
+    [
+      true,
+      {'foo'=>'bar', 'lst'=>[1, 3, 5, 7], 'hsh'=>{'baz'=>'qux', 'foobar'=>true, 'hsh'=>{'nested'=>true}}, 'delete_at'=>nil},
+      {'delete_at'=>nil, 'foo'=>'bar', 'lst'=>[1, 3, 5, 7], 'hsh'=>{'baz'=>'qux', 'foobar'=>true, 'hsh'=>{'nested'=>true}}},
+    ],
+    [
+      true,
+      {'foo'=>'bar', 'lst'=>[1, 3, 5, 7], 'hsh'=>{'baz'=>'qux', 'foobar'=>true, 'hsh'=>{'nested'=>true}}, 'delete_at'=>nil},
+      {'delete_at'=>nil, 'foo'=>'bar', 'lst'=>[1, 3, 5, 7], 'hsh'=>{'foobar'=>true, 'hsh'=>{'nested'=>true}, 'baz'=>'qux'}},
+    ],
+    [
+      false,
+      {'foo'=>'bar', 'lst'=>[1, 3, 5, 7], 'hsh'=>{'baz'=>'qux', 'foobar'=>true, 'hsh'=>{'nested'=>true}}, 'delete_at'=>nil},
+      {'foo'=>'bar', 'lst'=>[1, 3, 5, 42], 'hsh'=>{'baz'=>'qux', 'foobar'=>true, 'hsh'=>{'nested'=>true}}, 'delete_at'=>nil},
+    ],
+    [
+      false,
+      {'foo'=>'bar', 'lst'=>[1, 3, 5, 7], 'hsh'=>{'baz'=>'qux', 'foobar'=>true, 'hsh'=>{'nested'=>true}}, 'delete_at'=>nil},
+      {'foo'=>'bar', 'lst'=>[1, 3, 7, 5], 'hsh'=>{'baz'=>'qux', 'foobar'=>true, 'hsh'=>{'nested'=>true}}, 'delete_at'=>nil},
+    ],
+    [
+      false,
+      {'foo'=>'bar', 'lst'=>[1, 3, 5, 7], 'hsh'=>{'baz'=>'qux', 'foobar'=>true, 'hsh'=>{'nested'=>true}}, 'delete_at'=>nil},
+      {'foo'=>'bar', 'lst'=>[1, 3, 5, 7], 'hsh'=>{'baz'=>'qux', 'foobar'=>true, 'hsh'=>{'nested'=>false}}, 'delete_at'=>nil},
+    ],
+    [
+      false,
+      {'foo'=>'bar', 'lst'=>[1, 3, 5, 7], 'hsh'=>{'baz'=>'qux', 'foobar'=>true, 'hsh'=>{'nested'=>true}}, 'delete_at'=>nil},
+      {'foo'=>'bar', 'lst'=>[1, 3, 5, 7], 'hsh'=>{'baz'=>'qux', 'foobar'=>true, 'hsh'=>{'nested'=>true}}, 'delete_at'=>1234567890},
+    ],
+  ].each do |should_be_equal, value_1, value_2|
+    test "JSONB properties #{value_1} is#{should_be_equal ? '' : ' not'} equal to #{value_2}" do
+      act_as_user users(:active) do
+        # Set up initial collection
+        c = create_collection 'foo', Encoding::US_ASCII
+        assert c.valid?
+        c.update_attributes!({'properties' => value_1})
+        c.reload
+        assert c.changes.keys.empty?
+        c.properties = value_2
+        if should_be_equal
+          assert c.changes.keys.empty?, "Properties #{value_1.inspect} should be equal to #{value_2.inspect}"
+        else
+          refute c.changes.keys.empty?, "Properties #{value_1.inspect} should not be equal to #{value_2.inspect}"
+        end
+      end
+    end
   end
 
   test "older versions' modified_at indicate when they're created" do
