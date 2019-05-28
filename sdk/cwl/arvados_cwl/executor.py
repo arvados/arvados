@@ -534,7 +534,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                 raise WorkflowException(
                     "`cwl:requirements` in the input object is not part of CWL "
                     "v1.0. You can adjust to use `cwltool:overrides` instead; or you "
-                    "can set the cwlVersion to v1.1.0-dev1 or greater and re-run with "
+                    "can set the cwlVersion to v1.1 or greater and re-run with "
                     "--enable-dev.")
             job_reqs = job_order_object["https://w3id.org/cwl/cwl#requirements"]
             for req in job_reqs:
