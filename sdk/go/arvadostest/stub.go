@@ -42,14 +42,20 @@ func (stub *ServerStub) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 }
 
 // SetServiceURL overrides the given service config/discovery with the
-// given internalURL.
+// given internalURLs.
+//
+// ExternalURL is set to the last internalURL, which only aims to
+// address the case where there is only one.
 //
 // SetServiceURL panics on errors.
-func SetServiceURL(service *arvados.Service, internalURL string) {
-	u, err := url.Parse(internalURL)
-	if err != nil {
-		panic(err)
+func SetServiceURL(service *arvados.Service, internalURLs ...string) {
+	service.InternalURLs = map[arvados.URL]arvados.ServiceInstance{}
+	for _, u := range internalURLs {
+		u, err := url.Parse(u)
+		if err != nil {
+			panic(err)
+		}
+		service.InternalURLs[arvados.URL(*u)] = arvados.ServiceInstance{}
+		service.ExternalURL = arvados.URL(*u)
 	}
-	service.InternalURLs = map[arvados.URL]arvados.ServiceInstance{arvados.URL(*u): {}}
-	service.ExternalURL = arvados.URL(*u)
 }
