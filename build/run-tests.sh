@@ -903,7 +903,7 @@ install_gem() {
         && cd "$WORKSPACE/$srcpath" \
         && bundle_install_trylocal \
         && gem build "$gemname.gemspec" \
-        && with_test_gemset gem install --no-ri --no-rdoc $(ls -t "$gemname"-*.gem|head -n1)
+        && with_test_gemset gem install --no-document $(ls -t "$gemname"-*.gem|head -n1)
 }
 
 install_sdk/ruby() {
