@@ -12,6 +12,11 @@ module UpdatePriority
   #
   # If container priority=0 but there are committed container requests
   # for it with priority>0, update priority.
+  #
+  # Normally, update_priority is a no-op if another thread/process is
+  # already updating. Test cases that need to check priorities after
+  # updating can force a (possibly overlapping) update in the current
+  # thread/transaction by setting the "nolock" flag. See #14878.
   def self.update_priority(nolock: false)
     if !File.owned?(Rails.root.join('tmp'))
       Rails.logger.warn("UpdatePriority: not owner of #{Rails.root}/tmp, skipping")
