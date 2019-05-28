@@ -69,11 +69,11 @@ Clusters:
       Connection:
         # All parameters here are passed to the PG client library in a connection string;
         # see https://www.postgresql.org/docs/current/static/libpq-connect.html#LIBPQ-PARAMKEYWORDS
-        Host: ""
-        Port: ""
-        User: ""
-        Password: ""
-        DBName: ""
+        host: ""
+        port: ""
+        user: ""
+        password: ""
+        dbname: ""
     API:
       # Maximum size (in bytes) allowed for a single API request.  This
       # limit is published in the discovery document for use by clients.

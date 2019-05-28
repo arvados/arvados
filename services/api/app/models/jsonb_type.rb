@@ -12,6 +12,12 @@ class JsonbType
       nil
     end
 
+    def changed_in_place?(raw_old_value, value)
+      # Compare deserialized values for correctness, checking serialized values
+      # may include changes in ordering, inline whitespaces, etc.
+      deserialize(raw_old_value) != value
+    end
+
     def deserialize(value)
       if value.nil?
         self.default_value

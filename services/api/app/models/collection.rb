@@ -33,7 +33,7 @@ class Collection < ArvadosModel
   validate :past_versions_cannot_be_updated, on: :update
   after_validation :set_file_count_and_total_size
   before_save :set_file_names
-  around_update :manage_versioning
+  around_update :manage_versioning, unless: :is_past_version?
 
   api_accessible :user, extend: :common do |t|
     t.add :name
@@ -281,8 +281,11 @@ class Collection < ArvadosModel
       sync_past_versions if syncable_updates.any?
       if snapshot
         snapshot.attributes = self.syncable_updates
-        snapshot.manifest_text = snapshot.signed_manifest_text
-        snapshot.save
+        leave_modified_by_user_alone do
+          act_as_system_user do
+            snapshot.save
+          end
+        end
       end
     end
   end
@@ -304,7 +307,7 @@ class Collection < ArvadosModel
     updates = self.syncable_updates
     Collection.where('current_version_uuid = ? AND uuid != ?', self.uuid_was, self.uuid_was).each do |c|
       c.attributes = updates
-      # Use a different validation context to skip the 'old_versions_cannot_be_updated'
+      # Use a different validation context to skip the 'past_versions_cannot_be_updated'
       # validator, as on this case it is legal to update some fields.
       leave_modified_by_user_alone do
         leave_modified_at_alone do
@@ -322,8 +325,16 @@ class Collection < ArvadosModel
     ['uuid', 'owner_uuid', 'delete_at', 'trash_at', 'is_trashed', 'replication_desired', 'storage_classes_desired']
   end
 
+  def is_past_version?
+    # Check for the '_was' values just in case the update operation
+    # includes a change on current_version_uuid or uuid.
+    !(new_record? || self.current_version_uuid_was == self.uuid_was)
+  end
+
   def should_preserve_version?
     return false unless (Rails.configuration.Collections.CollectionVersioning && versionable_updates?(self.changes.keys))
+
+    return false if self.is_trashed
 
     idle_threshold = Rails.configuration.Collections.PreserveVersionIfIdle
     if !self.preserve_version_was &&
@@ -650,9 +661,7 @@ class Collection < ArvadosModel
   end
 
   def past_versions_cannot_be_updated
-    # We check for the '_was' values just in case the update operation
-    # includes a change on current_version_uuid or uuid.
-    if current_version_uuid_was != uuid_was
+    if is_past_version?
       errors.add(:base, "past versions cannot be updated")
       false
     end
@@ -660,7 +669,7 @@ class Collection < ArvadosModel
 
   def versioning_metadata_updates
     valid = true
-    if (current_version_uuid_was == uuid_was) && current_version_uuid_changed?
+    if !is_past_version? && current_version_uuid_changed?
       errors.add(:current_version_uuid, "cannot be updated")
       valid = false
     end

@@ -171,13 +171,13 @@ arvcfg.declare_config "RemoteClusters.*.Proxy", Boolean, :remote_hosts_via_dns
 dbcfg = ConfigLoader.new
 
 dbcfg.declare_config "PostgreSQL.ConnectionPool", Integer, :pool
-dbcfg.declare_config "PostgreSQL.Connection.Host", String, :host
-dbcfg.declare_config "PostgreSQL.Connection.Port", String, :port
-dbcfg.declare_config "PostgreSQL.Connection.User", String, :username
-dbcfg.declare_config "PostgreSQL.Connection.Password", String, :password
-dbcfg.declare_config "PostgreSQL.Connection.DBName", String, :database
-dbcfg.declare_config "PostgreSQL.Connection.Template", String, :template
-dbcfg.declare_config "PostgreSQL.Connection.Encoding", String, :encoding
+dbcfg.declare_config "PostgreSQL.Connection.host", String, :host
+dbcfg.declare_config "PostgreSQL.Connection.port", String, :port
+dbcfg.declare_config "PostgreSQL.Connection.user", String, :username
+dbcfg.declare_config "PostgreSQL.Connection.password", String, :password
+dbcfg.declare_config "PostgreSQL.Connection.dbname", String, :database
+dbcfg.declare_config "PostgreSQL.Connection.template", String, :template
+dbcfg.declare_config "PostgreSQL.Connection.encoding", String, :encoding
 
 application_config = {}
 %w(application.default application).each do |cfgfile|
@@ -239,16 +239,16 @@ end
 # rails environments.
 #
 if ::Rails.env.to_s == "test" && db_config["test"].nil?
-  $arvados_config["PostgreSQL"]["Connection"]["DBName"] = "arvados_test"
+  $arvados_config["PostgreSQL"]["Connection"]["dbname"] = "arvados_test"
 end
 
-if $arvados_config["PostgreSQL"]["Connection"]["Password"].empty?
+if $arvados_config["PostgreSQL"]["Connection"]["password"].empty?
   raise "Database password is empty, PostgreSQL section is: #{$arvados_config["PostgreSQL"]}"
 end
 
-dbhost = $arvados_config["PostgreSQL"]["Connection"]["Host"]
-if $arvados_config["PostgreSQL"]["Connection"]["Post"] != 0
-  dbhost += ":#{$arvados_config["PostgreSQL"]["Connection"]["Post"]}"
+dbhost = $arvados_config["PostgreSQL"]["Connection"]["host"]
+if $arvados_config["PostgreSQL"]["Connection"]["port"] != 0
+  dbhost += ":#{$arvados_config["PostgreSQL"]["Connection"]["port"]}"
 end
 
 #
@@ -257,10 +257,10 @@ end
 # For config migration, we've previously populated the PostgreSQL
 # section of the config from database.yml
 #
-ENV["DATABASE_URL"] = "postgresql://#{$arvados_config["PostgreSQL"]["Connection"]["User"]}:"+
-                      "#{$arvados_config["PostgreSQL"]["Connection"]["Password"]}@"+
-                      "#{dbhost}/#{$arvados_config["PostgreSQL"]["Connection"]["DBName"]}?"+
-                      "template=#{$arvados_config["PostgreSQL"]["Connection"]["Template"]}&"+
+ENV["DATABASE_URL"] = "postgresql://#{$arvados_config["PostgreSQL"]["Connection"]["user"]}:"+
+                      "#{$arvados_config["PostgreSQL"]["Connection"]["password"]}@"+
+                      "#{dbhost}/#{$arvados_config["PostgreSQL"]["Connection"]["dbname"]}?"+
+                      "template=#{$arvados_config["PostgreSQL"]["Connection"]["template"]}&"+
                       "encoding=#{$arvados_config["PostgreSQL"]["Connection"]["client_encoding"]}&"+
                       "pool=#{$arvados_config["PostgreSQL"]["ConnectionPool"]}"
 

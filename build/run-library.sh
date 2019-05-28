@@ -638,10 +638,13 @@ fpm_build_virtualenv () {
     done
   fi
 
-  # the libpam module should place this file in the historically correct place
-  # so as not to break backwards compatibility
-  if [[ -e "$WORKSPACE/$PKG_DIR/dist/build/usr/share/python2.7/dist/libpam-arvados/lib/security/libpam_arvados.py" ]]; then
-    COMMAND_ARR+=("usr/share/$python/dist/$PYTHON_PKG/data/lib/security/libpam_arvados.py=/usr/data/lib/security/")
+  # the libpam module should place a few files in the correct place for the pam
+  # subsystem
+  if [[ -e "$WORKSPACE/$PKG_DIR/dist/build/usr/share/$python/dist/$PYTHON_PKG/lib/security/libpam_arvados.py" ]]; then
+    COMMAND_ARR+=("usr/share/$python/dist/$PYTHON_PKG/lib/security/libpam_arvados.py=/usr/lib/security/")
+  fi
+  if [[ -e "$WORKSPACE/$PKG_DIR/dist/build/usr/share/$python/dist/$PYTHON_PKG/share/pam-configs/arvados" ]]; then
+    COMMAND_ARR+=("usr/share/$python/dist/$PYTHON_PKG/share/pam-configs/arvados=/usr/share/pam-configs/")
   fi
 
   # the python-arvados-cwl-runner package comes with cwltool, expose that version
