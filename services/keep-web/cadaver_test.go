@@ -298,8 +298,8 @@ func (s *IntegrationSuite) TestCadaverByID(c *check.C) {
 		c.Check(stdout, check.Matches, `(?ms).*collection is empty.*`)
 	}
 	for _, path := range []string{
-		"/by_id/" + arvadostest.FooPdh,
-		"/by_id/" + arvadostest.FooPdh + "/",
+		"/by_id/" + arvadostest.FooCollectionPDH,
+		"/by_id/" + arvadostest.FooCollectionPDH + "/",
 		"/by_id/" + arvadostest.FooCollection,
 		"/by_id/" + arvadostest.FooCollection + "/",
 	} {
