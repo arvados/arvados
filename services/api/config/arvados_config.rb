@@ -48,6 +48,13 @@ if $arvados_config_defaults.empty?
   raise "Missing #{::Rails.root.to_s}/config/config.default.yml"
 end
 
+def remove_sample_entries(h)
+  return unless h.is_a? Hash
+  h.delete("SAMPLE")
+  h.each { |k, v| remove_sample_entries(v) }
+end
+remove_sample_entries($arvados_config_defaults)
+
 clusterID, clusterConfig = $arvados_config_defaults["Clusters"].first
 $arvados_config_defaults = clusterConfig
 $arvados_config_defaults["ClusterID"] = clusterID
