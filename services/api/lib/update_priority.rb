@@ -12,14 +12,14 @@ module UpdatePriority
   #
   # If container priority=0 but there are committed container requests
   # for it with priority>0, update priority.
-  def self.update_priority
+  def self.update_priority(nolock: false)
     if !File.owned?(Rails.root.join('tmp'))
       Rails.logger.warn("UpdatePriority: not owner of #{Rails.root}/tmp, skipping")
       return
     end
     lockfile = Rails.root.join('tmp', 'update_priority.lock')
     File.open(lockfile, File::RDWR|File::CREAT, 0600) do |f|
-      return unless f.flock(File::LOCK_NB|File::LOCK_EX)
+      return unless nolock || f.flock(File::LOCK_NB|File::LOCK_EX)
 
       # priority>0 but should be 0:
       ActiveRecord::Base.connection.

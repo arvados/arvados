@@ -10,13 +10,13 @@ class UpdatePriorityTest < ActiveSupport::TestCase
     uuid = containers(:running).uuid
     ActiveRecord::Base.connection.exec_query('UPDATE containers SET priority=0 WHERE uuid=$1', 'test-setup', [[nil, uuid]])
     assert_equal 0, Container.find_by_uuid(uuid).priority
-    UpdatePriority.update_priority
+    UpdatePriority.update_priority(nolock: true)
     assert_operator 0, :<, Container.find_by_uuid(uuid).priority
 
     uuid = containers(:queued).uuid
     ActiveRecord::Base.connection.exec_query('UPDATE containers SET priority=0 WHERE uuid=$1', 'test-setup', [[nil, uuid]])
     assert_equal 0, Container.find_by_uuid(uuid).priority
-    UpdatePriority.update_priority
+    UpdatePriority.update_priority(nolock: true)
     assert_operator 0, :<, Container.find_by_uuid(uuid).priority
   end
 
@@ -24,7 +24,7 @@ class UpdatePriorityTest < ActiveSupport::TestCase
     uuid = containers(:running).uuid
     ActiveRecord::Base.connection.exec_query('DELETE FROM container_requests WHERE container_uuid=$1', 'test-setup', [[nil, uuid]])
     assert_operator 0, :<, Container.find_by_uuid(uuid).priority
-    UpdatePriority.update_priority
+    UpdatePriority.update_priority(nolock: true)
     assert_equal 0, Container.find_by_uuid(uuid).priority
   end
 end
