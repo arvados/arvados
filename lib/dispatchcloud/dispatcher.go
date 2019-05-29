@@ -138,7 +138,7 @@ func (disp *dispatcher) initialize() {
 	}
 	disp.instanceSet = instanceSet
 	disp.reg = prometheus.NewRegistry()
-	disp.pool = worker.NewPool(disp.logger, disp.ArvClient, disp.reg, disp.instanceSet, disp.newExecutor, disp.sshKey.PublicKey(), disp.Cluster)
+	disp.pool = worker.NewPool(disp.logger, disp.ArvClient, disp.reg, disp.InstanceSetID, disp.instanceSet, disp.newExecutor, disp.sshKey.PublicKey(), disp.Cluster)
 	disp.queue = container.NewQueue(disp.logger, disp.reg, disp.typeChooser, disp.ArvClient)
 
 	if disp.Cluster.ManagementToken == "" {

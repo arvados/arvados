@@ -25,8 +25,6 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-const tagKeyInstanceSetID = "arvados-dispatch-id"
-
 // Driver is the ec2 implementation of the cloud.Driver interface.
 var Driver = cloud.DriverFunc(newEC2InstanceSet)
 
@@ -155,12 +153,7 @@ func (instanceSet *ec2InstanceSet) Create(
 	}
 	instanceSet.keysMtx.Unlock()
 
-	ec2tags := []*ec2.Tag{
-		&ec2.Tag{
-			Key:   aws.String(tagKeyInstanceSetID),
-			Value: aws.String(string(instanceSet.instanceSetID)),
-		},
-	}
+	ec2tags := []*ec2.Tag{}
 	for k, v := range newTags {
 		ec2tags = append(ec2tags, &ec2.Tag{
 			Key:   aws.String(k),
@@ -224,13 +217,15 @@ func (instanceSet *ec2InstanceSet) Create(
 	}, nil
 }
 
-func (instanceSet *ec2InstanceSet) Instances(cloud.InstanceTags) (instances []cloud.Instance, err error) {
-	dii := &ec2.DescribeInstancesInput{
-		Filters: []*ec2.Filter{&ec2.Filter{
-			Name:   aws.String("tag:" + tagKeyInstanceSetID),
-			Values: []*string{aws.String(string(instanceSet.instanceSetID))},
-		}}}
-
+func (instanceSet *ec2InstanceSet) Instances(tags cloud.InstanceTags) (instances []cloud.Instance, err error) {
+	var filters []*ec2.Filter
+	for k, v := range tags {
+		filters = append(filters, &ec2.Filter{
+			Name:   aws.String("tag:" + k),
+			Values: []*string{aws.String(v)},
+		})
+	}
+	dii := &ec2.DescribeInstancesInput{Filters: filters}
 	for {
 		dio, err := instanceSet.client.DescribeInstances(dii)
 		if err != nil {
@@ -272,12 +267,7 @@ func (inst *ec2Instance) ProviderType() string {
 }
 
 func (inst *ec2Instance) SetTags(newTags cloud.InstanceTags) error {
-	ec2tags := []*ec2.Tag{
-		&ec2.Tag{
-			Key:   aws.String(tagKeyInstanceSetID),
-			Value: aws.String(string(inst.provider.instanceSetID)),
-		},
-	}
+	var ec2tags []*ec2.Tag
 	for k, v := range newTags {
 		ec2tags = append(ec2tags, &ec2.Tag{
 			Key:   aws.String(k),

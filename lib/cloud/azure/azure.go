@@ -477,18 +477,16 @@ func (az *azureInstanceSet) Instances(cloud.InstanceTags) ([]cloud.Instance, err
 		return nil, wrapAzureError(err)
 	}
 
-	instances := make([]cloud.Instance, 0)
-
+	var instances []cloud.Instance
 	for ; result.NotDone(); err = result.Next() {
 		if err != nil {
 			return nil, wrapAzureError(err)
 		}
-		if strings.HasPrefix(*result.Value().Name, az.namePrefix) {
-			instances = append(instances, &azureInstance{
-				provider: az,
-				vm:       result.Value(),
-				nic:      interfaces[*(*result.Value().NetworkProfile.NetworkInterfaces)[0].ID]})
-		}
+		instances = append(instances, &azureInstance{
+			provider: az,
+			vm:       result.Value(),
+			nic:      interfaces[*(*result.Value().NetworkProfile.NetworkInterfaces)[0].ID],
+		})
 	}
 	return instances, nil
 }

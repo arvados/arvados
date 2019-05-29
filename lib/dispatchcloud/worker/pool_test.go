@@ -65,7 +65,8 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 
 	logger := ctxlog.TestLogger(c)
 	driver := &test.StubDriver{}
-	is, err := driver.InstanceSet(nil, "", logger)
+	instanceSetID := cloud.InstanceSetID("test-instance-set-id")
+	is, err := driver.InstanceSet(nil, instanceSetID, logger)
 	c.Assert(err, check.IsNil)
 
 	newExecutor := func(cloud.Instance) Executor {
@@ -91,7 +92,7 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 		},
 	}
 
-	pool := NewPool(logger, arvados.NewClientFromEnv(), prometheus.NewRegistry(), is, newExecutor, nil, cluster)
+	pool := NewPool(logger, arvados.NewClientFromEnv(), prometheus.NewRegistry(), instanceSetID, is, newExecutor, nil, cluster)
 	notify := pool.Subscribe()
 	defer pool.Unsubscribe(notify)
 	pool.Create(type1)
@@ -126,7 +127,7 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 
 	c.Log("------- starting new pool, waiting to recover state")
 
-	pool2 := NewPool(logger, arvados.NewClientFromEnv(), prometheus.NewRegistry(), is, newExecutor, nil, cluster)
+	pool2 := NewPool(logger, arvados.NewClientFromEnv(), prometheus.NewRegistry(), instanceSetID, is, newExecutor, nil, cluster)
 	notify2 := pool2.Subscribe()
 	defer pool2.Unsubscribe(notify2)
 	waitForIdle(pool2, notify2)

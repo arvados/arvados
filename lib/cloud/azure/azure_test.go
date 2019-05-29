@@ -39,6 +39,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -65,6 +66,8 @@ func Test(t *testing.T) {
 type AzureInstanceSetSuite struct{}
 
 var _ = check.Suite(&AzureInstanceSetSuite{})
+
+const testNamePrefix = "compute-test123-"
 
 type VirtualMachinesClientStub struct{}
 
@@ -149,7 +152,7 @@ func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error)
 			BlobContainer: "vhds",
 		},
 		dispatcherID: "test123",
-		namePrefix:   "compute-test123-",
+		namePrefix:   testNamePrefix,
 		logger:       logrus.StandardLogger(),
 		deleteNIC:    make(chan string),
 		deleteBlob:   make(chan storage.Blob),
@@ -228,7 +231,7 @@ func (*AzureInstanceSetSuite) TestDestroyInstances(c *check.C) {
 	l, err := ap.Instances(nil)
 	c.Assert(err, check.IsNil)
 
-	for _, i := range l {
+	for _, i := range filterInstances(c, l) {
 		c.Check(i.Destroy(), check.IsNil)
 	}
 }
@@ -287,17 +290,20 @@ func (*AzureInstanceSetSuite) TestSetTags(c *check.C) {
 	if err != nil {
 		c.Fatal("Error making provider", err)
 	}
+
 	l, err := ap.Instances(nil)
 	c.Assert(err, check.IsNil)
-
+	l = filterInstances(c, l)
 	if len(l) > 0 {
 		err = l[0].SetTags(map[string]string{"foo": "bar"})
 		if err != nil {
 			c.Fatal("Error setting tags", err)
 		}
 	}
+
 	l, err = ap.Instances(nil)
 	c.Assert(err, check.IsNil)
+	l = filterInstances(c, l)
 
 	if len(l) > 0 {
 		tg := l[0].Tags()
@@ -312,6 +318,7 @@ func (*AzureInstanceSetSuite) TestSSH(c *check.C) {
 	}
 	l, err := ap.Instances(nil)
 	c.Assert(err, check.IsNil)
+	l = filterInstances(c, l)
 
 	if len(l) > 0 {
 		sshclient, err := SetupSSHClient(c, l[0])
@@ -371,4 +378,16 @@ func SetupSSHClient(c *check.C, inst cloud.Instance) (*ssh.Client, error) {
 	c.Assert(err, check.IsNil)
 
 	return client, nil
+}
+
+func filterInstances(c *check.C, instances []cloud.Instance) []cloud.Instance {
+	var r []cloud.Instance
+	for _, i := range instances {
+		if !strings.HasPrefix(i.String(), testNamePrefix) {
+			c.Logf("ignoring instance %s", i)
+			continue
+		}
+		r = append(r, i)
+	}
+	return r
 }

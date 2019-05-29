@@ -25,6 +25,7 @@ const (
 	tagKeyInstanceType   = "InstanceType"
 	tagKeyIdleBehavior   = "IdleBehavior"
 	tagKeyInstanceSecret = "InstanceSecret"
+	tagKeyInstanceSetID  = "InstanceSetID"
 )
 
 // An InstanceView shows a worker's current state and recent activity.
@@ -91,10 +92,11 @@ func duration(conf arvados.Duration, def time.Duration) time.Duration {
 //
 // New instances are configured and set up according to the given
 // cluster configuration.
-func NewPool(logger logrus.FieldLogger, arvClient *arvados.Client, reg *prometheus.Registry, instanceSet cloud.InstanceSet, newExecutor func(cloud.Instance) Executor, installPublicKey ssh.PublicKey, cluster *arvados.Cluster) *Pool {
+func NewPool(logger logrus.FieldLogger, arvClient *arvados.Client, reg *prometheus.Registry, instanceSetID cloud.InstanceSetID, instanceSet cloud.InstanceSet, newExecutor func(cloud.Instance) Executor, installPublicKey ssh.PublicKey, cluster *arvados.Cluster) *Pool {
 	wp := &Pool{
 		logger:             logger,
 		arvClient:          arvClient,
+		instanceSetID:      instanceSetID,
 		instanceSet:        &throttledInstanceSet{InstanceSet: instanceSet},
 		newExecutor:        newExecutor,
 		bootProbeCommand:   cluster.Containers.CloudVMs.BootProbeCommand,
@@ -128,6 +130,7 @@ type Pool struct {
 	// configuration
 	logger             logrus.FieldLogger
 	arvClient          *arvados.Client
+	instanceSetID      cloud.InstanceSetID
 	instanceSet        *throttledInstanceSet
 	newExecutor        func(cloud.Instance) Executor
 	bootProbeCommand   string
@@ -281,9 +284,10 @@ func (wp *Pool) Create(it arvados.InstanceType) bool {
 	go func() {
 		defer wp.notify()
 		tags := cloud.InstanceTags{
-			tagKeyInstanceType:   it.Name,
-			tagKeyIdleBehavior:   string(IdleBehaviorRun),
-			tagKeyInstanceSecret: secret,
+			wp.tagPrefix + tagKeyInstanceSetID:  string(wp.instanceSetID),
+			wp.tagPrefix + tagKeyInstanceType:   it.Name,
+			wp.tagPrefix + tagKeyIdleBehavior:   string(IdleBehaviorRun),
+			wp.tagPrefix + tagKeyInstanceSecret: secret,
 		}
 		initCmd := cloud.InitCommand(fmt.Sprintf("umask 0177 && echo -n %q >%s", secret, instanceSecretFilename))
 		inst, err := wp.instanceSet.Create(it, wp.imageID, tags, initCmd, wp.installPublicKey)
@@ -728,7 +732,7 @@ func (wp *Pool) getInstancesAndSync() error {
 	}
 	wp.logger.Debug("getting instance list")
 	threshold := time.Now()
-	instances, err := wp.instanceSet.Instances(cloud.InstanceTags{})
+	instances, err := wp.instanceSet.Instances(cloud.InstanceTags{tagKeyInstanceSetID: string(wp.instanceSetID)})
 	if err != nil {
 		wp.instanceSet.throttleInstances.CheckRateLimitError(err, wp.logger, "list instances", wp.notify)
 		return err
