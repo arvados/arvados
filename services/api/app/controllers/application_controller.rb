@@ -237,7 +237,7 @@ class ApplicationController < ActionController::Base
               conditions[0] << " and #{ar_table_name}.#{attr} in (?)"
               conditions << value
             end
-          elsif value.is_a? String or value.is_a? Fixnum or value == true or value == false
+          elsif value.is_a? String or value.is_a? Integer or value == true or value == false
             conditions[0] << " and #{ar_table_name}.#{attr}=?"
             conditions << value
           elsif value.is_a? Hash
