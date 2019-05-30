@@ -55,7 +55,7 @@ module CollectionsHelper
     f0 = '' if f0 == '.'
     f0 = f0[2..-1] if f0[0..1] == './'
     f0 += '/' if not f0.empty?
-    file_path = "#{f0}#{file[1]}"
+    "#{f0}#{file[1]}"
   end
 
   ##

@@ -13,6 +13,17 @@ class ArvadosResourceList
     @fetch_multiple_pages = true
     @arvados_api_token = Thread.current[:arvados_api_token]
     @reader_tokens = Thread.current[:reader_tokens]
+    @results = nil
+    @count = nil
+    @offset = 0
+    @cond = nil
+    @eager = nil
+    @select = nil
+    @orderby_spec = nil
+    @filters = nil
+    @distinct = nil
+    @include_trash = nil
+    @limit = nil
   end
 
   def eager(bool=true)
@@ -90,7 +101,7 @@ class ArvadosResourceList
         end
       end
     end
-    @cond.keys.select { |x| x.match /_kind$/ }.each do |kind_key|
+    @cond.keys.select { |x| x.match(/_kind$/) }.each do |kind_key|
       if @cond[kind_key].is_a? Class
         @cond = @cond.merge({ kind_key => 'arvados#' + arvados_api_client.class_kind(@cond[kind_key]) })
       end
@@ -134,7 +145,7 @@ class ArvadosResourceList
 
   def each(&block)
     if not @results.nil?
-      @results.each &block
+      @results.each(&block)
     else
       self.each_page do |items|
         items.each do |i|
