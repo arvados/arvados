@@ -37,8 +37,9 @@ var (
 )
 
 type GetOptions struct {
-	UUID   string   `json:"uuid"`
-	Select []string `json:"select"`
+	UUID         string   `json:"uuid"`
+	Select       []string `json:"select"`
+	IncludeTrash bool     `json:"include_trash"`
 }
 
 type UntrashOptions struct {
