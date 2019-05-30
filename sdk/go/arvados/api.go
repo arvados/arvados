@@ -42,6 +42,7 @@ type GetOptions struct {
 }
 
 type ListOptions struct {
+	ClusterID          string                 `json:"cluster_id"`
 	Select             []string               `json:"select"`
 	Filters            []Filter               `json:"filters"`
 	Where              map[string]interface{} `json:"where"`
