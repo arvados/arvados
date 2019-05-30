@@ -260,14 +260,10 @@ func (s *FederationSuite) TestRemoteTokenNotSalted(c *check.C) {
 }
 
 func (s *FederationSuite) TestWorkflowCRUD(c *check.C) {
-	wf := arvados.Workflow{
-		Description: "TestCRUD",
-	}
+	var wf arvados.Workflow
 	{
-		body := &strings.Builder{}
-		json.NewEncoder(body).Encode(&wf)
 		req := httptest.NewRequest("POST", "/arvados/v1/workflows", strings.NewReader(url.Values{
-			"workflow": {body.String()},
+			"workflow": {`{"description": "TestCRUD"}`},
 		}.Encode()))
 		req.Header.Set("Content-type", "application/x-www-form-urlencoded")
 		req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
