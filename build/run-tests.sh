@@ -105,6 +105,7 @@ services/crunch-dispatch-slurm
 services/ws
 sdk/cli
 sdk/pam
+sdk/pam:py3
 sdk/python
 sdk/python:py3
 sdk/ruby
