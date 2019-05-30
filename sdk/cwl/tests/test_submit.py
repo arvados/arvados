@@ -354,15 +354,15 @@ class TestSubmit(unittest.TestCase):
         stubs.api.collections().create.assert_has_calls([
             mock.call(body=JsonDiffMatcher({
                 'manifest_text':
-                '. 5bcc9fe8f8d5992e6cf418dc7ce4dbb3+16 0:16:blub.txt\n',
-                'replication_desired': None,
-                'name': 'submit_tool.cwl dependencies (5d373e7629203ce39e7c22af98a0f881+52)',
-            }), ensure_unique_name=False),
-            mock.call(body=JsonDiffMatcher({
-                'manifest_text':
                 '. 979af1245a12a1fed634d4222473bfdc+16 0:16:blorp.txt\n',
                 'replication_desired': None,
                 'name': 'submit_wf.cwl input (169f39d466a5438ac4a90e779bf750c7+53)',
+            }), ensure_unique_name=False),
+            mock.call(body=JsonDiffMatcher({
+                'manifest_text':
+                '. 5bcc9fe8f8d5992e6cf418dc7ce4dbb3+16 0:16:blub.txt\n',
+                'replication_desired': None,
+                'name': 'submit_tool.cwl dependencies (5d373e7629203ce39e7c22af98a0f881+52)',
             }), ensure_unique_name=False),
             mock.call(body=JsonDiffMatcher({
                 'manifest_text':
@@ -433,6 +433,7 @@ class TestSubmit(unittest.TestCase):
     def test_submit_runner_ram(self, stubs, tm):
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--debug", "--submit-runner-ram=2048",
+             "--api=jobs",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             stubs.capture_stdout, sys.stderr, api_client=stubs.api)
 
@@ -461,6 +462,7 @@ class TestSubmit(unittest.TestCase):
 
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--debug", "--output-name", output_name,
+             "--api=jobs",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             stubs.capture_stdout, sys.stderr, api_client=stubs.api)
 
@@ -478,6 +480,7 @@ class TestSubmit(unittest.TestCase):
     def test_submit_pipeline_name(self, stubs, tm):
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--debug", "--name=hello job 123",
+             "--api=jobs",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             stubs.capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
@@ -497,6 +500,7 @@ class TestSubmit(unittest.TestCase):
 
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--debug", "--output-tags", output_tags,
+             "--api=jobs",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             stubs.capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
@@ -517,6 +521,7 @@ class TestSubmit(unittest.TestCase):
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--debug",
              "--project-uuid", project_uuid,
+             "--api=jobs",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             sys.stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
@@ -536,16 +541,17 @@ class TestSubmit(unittest.TestCase):
         stubs.api.collections().create.assert_has_calls([
             mock.call(body=JsonDiffMatcher({
                 'manifest_text':
+                '. 979af1245a12a1fed634d4222473bfdc+16 0:16:blorp.txt\n',
+                'replication_desired': None,
+                'name': 'submit_wf.cwl input (169f39d466a5438ac4a90e779bf750c7+53)',
+            }), ensure_unique_name=False),
+            mock.call(body=JsonDiffMatcher({
+                'manifest_text':
                 '. 5bcc9fe8f8d5992e6cf418dc7ce4dbb3+16 0:16:blub.txt\n',
                 'replication_desired': None,
                 'name': 'submit_tool.cwl dependencies (5d373e7629203ce39e7c22af98a0f881+52)',
             }), ensure_unique_name=False),
-            mock.call(body=JsonDiffMatcher({
-                'manifest_text':
-                '. 979af1245a12a1fed634d4222473bfdc+16 0:16:blorp.txt\n',
-                'replication_desired': None,
-                'name': 'submit_wf.cwl input (169f39d466a5438ac4a90e779bf750c7+53)',
-            }), ensure_unique_name=False)])
+            ])
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         stubs.api.container_requests().create.assert_called_with(
@@ -1532,7 +1538,7 @@ class TestSubmit(unittest.TestCase):
 
 
 class TestCreateTemplate(unittest.TestCase):
-    existing_template_uuid = "zzzzz-d1hrv-validworkfloyml"
+    existing_template_uuid = "zzzzz-p5p6p-validworkfloyml"
 
     def _adjust_script_params(self, expect_component):
         expect_component['script_parameters']['x'] = {
@@ -1857,7 +1863,7 @@ class TestTemplateInputs(unittest.TestCase):
     @stubs
     def test_inputs_empty(self, stubs):
         exited = arvados_cwl.main(
-            ["--create-template",
+            ["--debug", "--api=jobs", "--create-template",
              "tests/wf/inputs_test.cwl", "tests/order/empty_order.json"],
             stubs.capture_stdout, sys.stderr, api_client=stubs.api)
 
@@ -1869,7 +1875,7 @@ class TestTemplateInputs(unittest.TestCase):
     @stubs
     def test_inputs(self, stubs):
         exited = arvados_cwl.main(
-            ["--create-template",
+            ["--api=jobs", "--create-template",
              "tests/wf/inputs_test.cwl", "tests/order/inputs_test_order.json"],
             stubs.capture_stdout, sys.stderr, api_client=stubs.api)
 

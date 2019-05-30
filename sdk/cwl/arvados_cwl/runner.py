@@ -470,7 +470,16 @@ def upload_job_order(arvrunner, name, tool, job_order):
 
     # Make a copy of the job order and set defaults.
     builder_job_order = copy.copy(job_order)
-    fill_in_defaults(tool.tool["inputs"],
+
+    # fill_in_defaults throws an error if there are any
+    # missing required parameters, we don't want it to do that
+    # so make them all optional.
+    inputs_copy = copy.deepcopy(tool.tool["inputs"])
+    for i in inputs_copy:
+        if "null" not in i["type"]:
+            i["type"] = ["null"] + aslist(i["type"])
+
+    fill_in_defaults(inputs_copy,
                      builder_job_order,
                      arvrunner.fs_access)
     # Need to create a builder object to evaluate expressions.

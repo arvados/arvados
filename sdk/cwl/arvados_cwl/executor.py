@@ -131,6 +131,8 @@ class ArvCwlExecutor(object):
         self.poll_interval = 12
         self.loadingContext = None
         self.should_estimate_cache_size = True
+        self.fs_access = None
+        self.secret_store = None
 
         if keep_client is not None:
             self.keep_client = keep_client

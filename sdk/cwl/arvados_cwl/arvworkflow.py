@@ -174,7 +174,8 @@ class ArvadosWorkflow(Workflow):
                 raise WorkflowException("%s object must have 'id'" % (self.tool["class"]))
         document_loader, workflowobj, uri = (self.doc_loader, self.doc_loader.fetch(self.tool["id"]), self.tool["id"])
 
-        discover_secondary_files(self.tool["inputs"], joborder)
+        discover_secondary_files(self.arvrunner.fs_access, builder,
+                                 self.tool["inputs"], joborder)
 
         with Perf(metrics, "subworkflow upload_deps"):
             upload_dependencies(self.arvrunner,
