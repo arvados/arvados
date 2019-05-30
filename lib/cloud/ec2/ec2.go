@@ -56,7 +56,7 @@ type ec2InstanceSet struct {
 	keys          map[string]string
 }
 
-func newEC2InstanceSet(config json.RawMessage, instanceSetID cloud.InstanceSetID, logger logrus.FieldLogger) (prv cloud.InstanceSet, err error) {
+func newEC2InstanceSet(config json.RawMessage, instanceSetID cloud.InstanceSetID, _ cloud.SharedResourceTags, logger logrus.FieldLogger) (prv cloud.InstanceSet, err error) {
 	instanceSet := &ec2InstanceSet{
 		instanceSetID: instanceSetID,
 		logger:        logger,

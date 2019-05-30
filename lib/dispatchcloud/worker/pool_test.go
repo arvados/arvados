@@ -66,7 +66,7 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 	logger := ctxlog.TestLogger(c)
 	driver := &test.StubDriver{}
 	instanceSetID := cloud.InstanceSetID("test-instance-set-id")
-	is, err := driver.InstanceSet(nil, instanceSetID, logger)
+	is, err := driver.InstanceSet(nil, instanceSetID, nil, logger)
 	c.Assert(err, check.IsNil)
 
 	newExecutor := func(cloud.Instance) Executor {
@@ -147,7 +147,7 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
 	logger := ctxlog.TestLogger(c)
 	driver := test.StubDriver{HoldCloudOps: true}
-	instanceSet, err := driver.InstanceSet(nil, "", logger)
+	instanceSet, err := driver.InstanceSet(nil, "test-instance-set-id", nil, logger)
 	c.Assert(err, check.IsNil)
 
 	type1 := arvados.InstanceType{Name: "a1s", ProviderType: "a1.small", VCPUs: 1, RAM: 1 * GiB, Price: .01}

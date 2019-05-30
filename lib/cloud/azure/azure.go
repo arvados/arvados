@@ -211,7 +211,7 @@ type azureInstanceSet struct {
 	logger       logrus.FieldLogger
 }
 
-func newAzureInstanceSet(config json.RawMessage, dispatcherID cloud.InstanceSetID, logger logrus.FieldLogger) (prv cloud.InstanceSet, err error) {
+func newAzureInstanceSet(config json.RawMessage, dispatcherID cloud.InstanceSetID, _ cloud.SharedResourceTags, logger logrus.FieldLogger) (prv cloud.InstanceSet, err error) {
 	azcfg := azureInstanceSetConfig{}
 	err = json.Unmarshal(config, &azcfg)
 	if err != nil {

@@ -144,7 +144,7 @@ func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error)
 			return nil, cloud.ImageID(""), cluster, err
 		}
 
-		ap, err := newAzureInstanceSet(exampleCfg.DriverParameters, "test123", logrus.StandardLogger())
+		ap, err := newAzureInstanceSet(exampleCfg.DriverParameters, "test123", nil, logrus.StandardLogger())
 		return ap, cloud.ImageID(exampleCfg.ImageIDForTestSuite), cluster, err
 	}
 	ap := azureInstanceSet{
