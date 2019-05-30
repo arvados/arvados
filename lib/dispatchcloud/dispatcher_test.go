@@ -66,6 +66,7 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 				TimeoutSignal:        arvados.Duration(3 * time.Millisecond),
 				TimeoutTERM:          arvados.Duration(20 * time.Millisecond),
 				ResourceTags:         map[string]string{"testtag": "test value"},
+				TagKeyPrefix:         "test:",
 			},
 		},
 		InstanceTypes: arvados.InstanceTypeMap{

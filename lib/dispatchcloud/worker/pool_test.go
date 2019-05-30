@@ -83,6 +83,7 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 				MaxProbesPerSecond: 1000,
 				ProbeInterval:      arvados.Duration(time.Millisecond * 10),
 				SyncInterval:       arvados.Duration(time.Millisecond * 10),
+				TagKeyPrefix:       "testprefix:",
 			},
 		},
 		InstanceTypes: arvados.InstanceTypeMap{
@@ -107,13 +108,14 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 		}
 	}
 	// Wait for the tags to save to the cloud provider
+	tagKey := cluster.Containers.CloudVMs.TagKeyPrefix + tagKeyIdleBehavior
 	deadline := time.Now().Add(time.Second)
 	for !func() bool {
 		pool.mtx.RLock()
 		defer pool.mtx.RUnlock()
 		for _, wkr := range pool.workers {
 			if wkr.instType == type2 {
-				return wkr.instance.Tags()[tagKeyIdleBehavior] == string(IdleBehaviorHold)
+				return wkr.instance.Tags()[tagKey] == string(IdleBehaviorHold)
 			}
 		}
 		return false

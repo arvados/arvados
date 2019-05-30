@@ -112,6 +112,7 @@ func NewPool(logger logrus.FieldLogger, arvClient *arvados.Client, reg *promethe
 		timeoutTERM:        duration(cluster.Containers.CloudVMs.TimeoutTERM, defaultTimeoutTERM),
 		timeoutSignal:      duration(cluster.Containers.CloudVMs.TimeoutSignal, defaultTimeoutSignal),
 		installPublicKey:   installPublicKey,
+		tagKeyPrefix:       cluster.Containers.CloudVMs.TagKeyPrefix,
 		stop:               make(chan bool),
 	}
 	wp.registerMetrics(reg)
@@ -146,6 +147,7 @@ type Pool struct {
 	timeoutTERM        time.Duration
 	timeoutSignal      time.Duration
 	installPublicKey   ssh.PublicKey
+	tagKeyPrefix       string
 
 	// private state
 	subscribers  map[<-chan struct{}]chan<- struct{}
@@ -284,10 +286,10 @@ func (wp *Pool) Create(it arvados.InstanceType) bool {
 	go func() {
 		defer wp.notify()
 		tags := cloud.InstanceTags{
-			wp.tagPrefix + tagKeyInstanceSetID:  string(wp.instanceSetID),
-			wp.tagPrefix + tagKeyInstanceType:   it.Name,
-			wp.tagPrefix + tagKeyIdleBehavior:   string(IdleBehaviorRun),
-			wp.tagPrefix + tagKeyInstanceSecret: secret,
+			wp.tagKeyPrefix + tagKeyInstanceSetID:  string(wp.instanceSetID),
+			wp.tagKeyPrefix + tagKeyInstanceType:   it.Name,
+			wp.tagKeyPrefix + tagKeyIdleBehavior:   string(IdleBehaviorRun),
+			wp.tagKeyPrefix + tagKeyInstanceSecret: secret,
 		}
 		initCmd := cloud.InitCommand(fmt.Sprintf("umask 0177 && echo -n %q >%s", secret, instanceSecretFilename))
 		inst, err := wp.instanceSet.Create(it, wp.imageID, tags, initCmd, wp.installPublicKey)
@@ -342,7 +344,8 @@ func (wp *Pool) SetIdleBehavior(id cloud.InstanceID, idleBehavior IdleBehavior) 
 //
 // Caller must have lock.
 func (wp *Pool) updateWorker(inst cloud.Instance, it arvados.InstanceType) (*worker, bool) {
-	inst = tagVerifier{inst}
+	secret := inst.Tags()[wp.tagKeyPrefix+tagKeyInstanceSecret]
+	inst = tagVerifier{inst, secret}
 	id := inst.ID()
 	if wkr := wp.workers[id]; wkr != nil {
 		wkr.executor.SetTarget(inst)
@@ -353,7 +356,7 @@ func (wp *Pool) updateWorker(inst cloud.Instance, it arvados.InstanceType) (*wor
 	}
 
 	state := StateUnknown
-	if _, ok := wp.creating[inst.Tags()[tagKeyInstanceSecret]]; ok {
+	if _, ok := wp.creating[secret]; ok {
 		state = StateBooting
 	}
 
@@ -363,7 +366,7 @@ func (wp *Pool) updateWorker(inst cloud.Instance, it arvados.InstanceType) (*wor
 	// process); otherwise, default to "run". After this,
 	// wkr.idleBehavior is the source of truth, and will only be
 	// changed via SetIdleBehavior().
-	idleBehavior := IdleBehavior(inst.Tags()[tagKeyIdleBehavior])
+	idleBehavior := IdleBehavior(inst.Tags()[wp.tagKeyPrefix+tagKeyIdleBehavior])
 	if !validIdleBehavior[idleBehavior] {
 		idleBehavior = IdleBehaviorRun
 	}
@@ -732,7 +735,7 @@ func (wp *Pool) getInstancesAndSync() error {
 	}
 	wp.logger.Debug("getting instance list")
 	threshold := time.Now()
-	instances, err := wp.instanceSet.Instances(cloud.InstanceTags{tagKeyInstanceSetID: string(wp.instanceSetID)})
+	instances, err := wp.instanceSet.Instances(cloud.InstanceTags{wp.tagKeyPrefix + tagKeyInstanceSetID: string(wp.instanceSetID)})
 	if err != nil {
 		wp.instanceSet.throttleInstances.CheckRateLimitError(err, wp.logger, "list instances", wp.notify)
 		return err
@@ -752,7 +755,7 @@ func (wp *Pool) sync(threshold time.Time, instances []cloud.Instance) {
 	notify := false
 
 	for _, inst := range instances {
-		itTag := inst.Tags()[tagKeyInstanceType]
+		itTag := inst.Tags()[wp.tagKeyPrefix+tagKeyInstanceType]
 		it, ok := wp.instanceTypes[itTag]
 		if !ok {
 			wp.logger.WithField("Instance", inst).Errorf("unknown InstanceType tag %q --- ignoring", itTag)

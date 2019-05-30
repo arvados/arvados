@@ -170,6 +170,7 @@ type CloudVMsConfig struct {
 	TimeoutSignal        Duration
 	TimeoutTERM          Duration
 	ResourceTags         map[string]string
+	TagKeyPrefix         string
 
 	Driver           string
 	DriverParameters json.RawMessage
