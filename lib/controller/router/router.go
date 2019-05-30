@@ -90,16 +90,16 @@ func (rtr *router) addRoutes(cluster *arvados.Cluster) {
 		},
 		{
 			arvados.EndpointCollectionTrash,
-			func() interface{} { return &arvados.GetOptions{} },
+			func() interface{} { return &arvados.DeleteOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.CollectionTrash(ctx, *opts.(*arvados.GetOptions))
+				return rtr.fed.CollectionTrash(ctx, *opts.(*arvados.DeleteOptions))
 			},
 		},
 		{
 			arvados.EndpointCollectionUntrash,
-			func() interface{} { return &arvados.GetOptions{} },
+			func() interface{} { return &arvados.UntrashOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.CollectionUntrash(ctx, *opts.(*arvados.GetOptions))
+				return rtr.fed.CollectionUntrash(ctx, *opts.(*arvados.UntrashOptions))
 			},
 		},
 		{

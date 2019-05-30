@@ -164,14 +164,14 @@ func (conn *Conn) CollectionDelete(ctx context.Context, options arvados.DeleteOp
 	return resp, err
 }
 
-func (conn *Conn) CollectionTrash(ctx context.Context, options arvados.GetOptions) (arvados.Collection, error) {
+func (conn *Conn) CollectionTrash(ctx context.Context, options arvados.DeleteOptions) (arvados.Collection, error) {
 	ep := arvados.EndpointCollectionTrash
 	var resp arvados.Collection
 	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
 	return resp, err
 }
 
-func (conn *Conn) CollectionUntrash(ctx context.Context, options arvados.GetOptions) (arvados.Collection, error) {
+func (conn *Conn) CollectionUntrash(ctx context.Context, options arvados.UntrashOptions) (arvados.Collection, error) {
 	ep := arvados.EndpointCollectionUntrash
 	var resp arvados.Collection
 	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)

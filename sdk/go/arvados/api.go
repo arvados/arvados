@@ -41,6 +41,11 @@ type GetOptions struct {
 	Select []string `json:"select"`
 }
 
+type UntrashOptions struct {
+	UUID             string `json:"uuid"`
+	EnsureUniqueName bool   `json:"ensure_unique_name"`
+}
+
 type ListOptions struct {
 	ClusterID          string                 `json:"cluster_id"`
 	Select             []string               `json:"select"`
