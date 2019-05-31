@@ -63,10 +63,10 @@ Clusters:
       Connection:
         # All parameters here are passed to the PG client library in a connection string;
         # see https://www.postgresql.org/docs/current/static/libpq-connect.html#LIBPQ-PARAMKEYWORDS
-        Host: localhost
-        User: arvados
-        Password: ${database_pw}
-        DBName: arvados_${database_env}
+        host: localhost
+        user: arvados
+        password: ${database_pw}
+        dbname: arvados_${database_env}
         client_encoding: utf8
     API:
       RailsSessionSecretToken: $secret_token
