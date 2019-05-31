@@ -98,6 +98,10 @@ fi
 mkdir -p /tmp/cwltest
 cd /tmp/cwltest
 
+if [[ "$suite" = "conformance" ]] ; then
+  suite=conformance-v1.0
+fi
+
 if [[ "$suite" = "conformance-v1.0" ]] ; then
    if ! test -d common-workflow-language ; then
      git clone https://github.com/common-workflow-language/common-workflow-language.git
