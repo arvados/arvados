@@ -42,15 +42,11 @@ func (s *HandlerSuite) SetUpTest(c *check.C) {
 	s.cluster = &arvados.Cluster{
 		ClusterID:  "zzzzz",
 		PostgreSQL: integrationTestCluster().PostgreSQL,
-		NodeProfiles: map[string]arvados.NodeProfile{
-			"*": {
-				Controller: arvados.SystemServiceInstance{Listen: ":"},
-				RailsAPI:   arvados.SystemServiceInstance{Listen: os.Getenv("ARVADOS_TEST_API_HOST"), TLS: true, Insecure: true},
-			},
-		},
+		TLS:        arvados.TLS{Insecure: true},
 	}
-	node := s.cluster.NodeProfiles["*"]
-	s.handler = newHandler(s.ctx, s.cluster, &node, "")
+	arvadostest.SetServiceURL(&s.cluster.Services.RailsAPI, "https://"+os.Getenv("ARVADOS_TEST_API_HOST"))
+	arvadostest.SetServiceURL(&s.cluster.Services.Controller, "http://localhost:/")
+	s.handler = newHandler(s.ctx, s.cluster, "")
 }
 
 func (s *HandlerSuite) TearDownTest(c *check.C) {
@@ -72,7 +68,7 @@ func (s *HandlerSuite) TestProxyDiscoveryDoc(c *check.C) {
 }
 
 func (s *HandlerSuite) TestRequestTimeout(c *check.C) {
-	s.cluster.HTTPRequestTimeout = arvados.Duration(time.Nanosecond)
+	s.cluster.API.RequestTimeout = arvados.Duration(time.Nanosecond)
 	req := httptest.NewRequest("GET", "/discovery/v1/apis/arvados/v1/rest", nil)
 	resp := httptest.NewRecorder()
 	s.handler.ServeHTTP(resp, req)

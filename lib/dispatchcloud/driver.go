@@ -22,12 +22,12 @@ var drivers = map[string]cloud.Driver{
 }
 
 func newInstanceSet(cluster *arvados.Cluster, setID cloud.InstanceSetID, logger logrus.FieldLogger) (cloud.InstanceSet, error) {
-	driver, ok := drivers[cluster.CloudVMs.Driver]
+	driver, ok := drivers[cluster.Containers.CloudVMs.Driver]
 	if !ok {
-		return nil, fmt.Errorf("unsupported cloud driver %q", cluster.CloudVMs.Driver)
+		return nil, fmt.Errorf("unsupported cloud driver %q", cluster.Containers.CloudVMs.Driver)
 	}
-	is, err := driver.InstanceSet(cluster.CloudVMs.DriverParameters, setID, logger)
-	if maxops := cluster.CloudVMs.MaxCloudOpsPerSecond; maxops > 0 {
+	is, err := driver.InstanceSet(cluster.Containers.CloudVMs.DriverParameters, setID, logger)
+	if maxops := cluster.Containers.CloudVMs.MaxCloudOpsPerSecond; maxops > 0 {
 		is = &rateLimitedInstanceSet{
 			InstanceSet: is,
 			ticker:      time.NewTicker(time.Second / time.Duration(maxops)),

@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	check "gopkg.in/check.v1"
 )
 
@@ -121,7 +120,7 @@ func (s *SiteFSSuite) TestProjectReaddirAfterLoadOne(c *check.C) {
 func (s *SiteFSSuite) TestSlashInName(c *check.C) {
 	badCollection := Collection{
 		Name:      "bad/collection",
-		OwnerUUID: arvadostest.AProjectUUID,
+		OwnerUUID: fixtureAProjectUUID,
 	}
 	err := s.client.RequestAndDecode(&badCollection, "POST", "arvados/v1/collections", s.client.UpdateBody(&badCollection), nil)
 	c.Assert(err, check.IsNil)
@@ -130,7 +129,7 @@ func (s *SiteFSSuite) TestSlashInName(c *check.C) {
 	badProject := Group{
 		Name:       "bad/project",
 		GroupClass: "project",
-		OwnerUUID:  arvadostest.AProjectUUID,
+		OwnerUUID:  fixtureAProjectUUID,
 	}
 	err = s.client.RequestAndDecode(&badProject, "POST", "arvados/v1/groups", s.client.UpdateBody(&badProject), nil)
 	c.Assert(err, check.IsNil)
@@ -157,7 +156,7 @@ func (s *SiteFSSuite) TestProjectUpdatedByOther(c *check.C) {
 
 	oob := Collection{
 		Name:      "oob",
-		OwnerUUID: arvadostest.AProjectUUID,
+		OwnerUUID: fixtureAProjectUUID,
 	}
 	err = s.client.RequestAndDecode(&oob, "POST", "arvados/v1/collections", s.client.UpdateBody(&oob), nil)
 	c.Assert(err, check.IsNil)

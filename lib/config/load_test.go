@@ -9,10 +9,13 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"github.com/ghodss/yaml"
+	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
 
@@ -42,6 +45,23 @@ func (s *LoadSuite) TestNoConfigs(c *check.C) {
 	c.Check(cc.API.MaxItemsPerResponse, check.Equals, 1000)
 }
 
+func (s *LoadSuite) TestSampleKeys(c *check.C) {
+	for _, yaml := range []string{
+		`{"Clusters":{"z1111":{}}}`,
+		`{"Clusters":{"z1111":{"InstanceTypes":{"Foo":{"RAM": "12345M"}}}}}`,
+	} {
+		cfg, err := Load(bytes.NewBufferString(yaml), ctxlog.TestLogger(c))
+		c.Assert(err, check.IsNil)
+		cc, err := cfg.GetCluster("z1111")
+		_, hasSample := cc.InstanceTypes["SAMPLE"]
+		c.Check(hasSample, check.Equals, false)
+		if strings.Contains(yaml, "Foo") {
+			c.Check(cc.InstanceTypes["Foo"].RAM, check.Equals, arvados.ByteSize(12345000000))
+			c.Check(cc.InstanceTypes["Foo"].Price, check.Equals, 0.0)
+		}
+	}
+}
+
 func (s *LoadSuite) TestMultipleClusters(c *check.C) {
 	cfg, err := Load(bytes.NewBufferString(`{"Clusters":{"z1111":{},"z2222":{}}}`), ctxlog.TestLogger(c))
 	c.Assert(err, check.IsNil)
@@ -51,6 +71,44 @@ func (s *LoadSuite) TestMultipleClusters(c *check.C) {
 	c2, err := cfg.GetCluster("z2222")
 	c.Assert(err, check.IsNil)
 	c.Check(c2.ClusterID, check.Equals, "z2222")
+}
+
+func (s *LoadSuite) TestDeprecatedOrUnknownWarning(c *check.C) {
+	var logbuf bytes.Buffer
+	logger := logrus.New()
+	logger.Out = &logbuf
+	_, err := Load(bytes.NewBufferString(`
+Clusters:
+  zzzzz:
+    postgresql: {}
+    BadKey: {}
+    Containers: {}
+    RemoteClusters:
+      z2222:
+        Host: z2222.arvadosapi.com
+        Proxy: true
+        BadKey: badValue
+`), logger)
+	c.Assert(err, check.IsNil)
+	logs := strings.Split(strings.TrimSuffix(logbuf.String(), "\n"), "\n")
+	for _, log := range logs {
+		c.Check(log, check.Matches, `.*deprecated or unknown config entry:.*BadKey.*`)
+	}
+	c.Check(logs, check.HasLen, 2)
+}
+
+func (s *LoadSuite) TestNoWarningsForDumpedConfig(c *check.C) {
+	var logbuf bytes.Buffer
+	logger := logrus.New()
+	logger.Out = &logbuf
+	cfg, err := Load(bytes.NewBufferString(`{"Clusters":{"zzzzz":{}}}`), logger)
+	c.Assert(err, check.IsNil)
+	yaml, err := yaml.Marshal(cfg)
+	c.Assert(err, check.IsNil)
+	cfgDumped, err := Load(bytes.NewBuffer(yaml), logger)
+	c.Assert(err, check.IsNil)
+	c.Check(cfg, check.DeepEquals, cfgDumped)
+	c.Check(logbuf.String(), check.Equals, "")
 }
 
 func (s *LoadSuite) TestPostgreSQLKeyConflict(c *check.C) {

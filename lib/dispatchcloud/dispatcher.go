@@ -95,7 +95,7 @@ func (disp *dispatcher) Close() {
 // Make a worker.Executor for the given instance.
 func (disp *dispatcher) newExecutor(inst cloud.Instance) worker.Executor {
 	exr := ssh_executor.New(inst)
-	exr.SetTargetPort(disp.Cluster.CloudVMs.SSHPort)
+	exr.SetTargetPort(disp.Cluster.Containers.CloudVMs.SSHPort)
 	exr.SetSigners(disp.sshKey)
 	return exr
 }
@@ -126,8 +126,8 @@ func (disp *dispatcher) initialize() {
 	disp.stop = make(chan struct{}, 1)
 	disp.stopped = make(chan struct{})
 
-	if key, err := ssh.ParsePrivateKey([]byte(disp.Cluster.Dispatch.PrivateKey)); err != nil {
-		disp.logger.Fatalf("error parsing configured Dispatch.PrivateKey: %s", err)
+	if key, err := ssh.ParsePrivateKey([]byte(disp.Cluster.Containers.DispatchPrivateKey)); err != nil {
+		disp.logger.Fatalf("error parsing configured Containers.DispatchPrivateKey: %s", err)
 	} else {
 		disp.sshKey = key
 	}
@@ -167,11 +167,11 @@ func (disp *dispatcher) run() {
 	defer disp.instanceSet.Stop()
 	defer disp.pool.Stop()
 
-	staleLockTimeout := time.Duration(disp.Cluster.Dispatch.StaleLockTimeout)
+	staleLockTimeout := time.Duration(disp.Cluster.Containers.StaleLockTimeout)
 	if staleLockTimeout == 0 {
 		staleLockTimeout = defaultStaleLockTimeout
 	}
-	pollInterval := time.Duration(disp.Cluster.Dispatch.PollInterval)
+	pollInterval := time.Duration(disp.Cluster.Containers.CloudVMs.PollInterval)
 	if pollInterval <= 0 {
 		pollInterval = defaultPollInterval
 	}

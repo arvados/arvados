@@ -27,11 +27,7 @@ Clusters:
     Services:
       RailsAPI:
         InternalURLs: {}
-      GitHTTP:
-        InternalURLs: {}
-        ExternalURL: ""
-      Keepstore:
-        InternalURLs: {}
+        ExternalURL: "-"
       Controller:
         InternalURLs: {}
         ExternalURL: ""
@@ -40,6 +36,7 @@ Clusters:
         ExternalURL: ""
       Keepbalance:
         InternalURLs: {}
+        ExternalURL: "-"
       GitHTTP:
         InternalURLs: {}
         ExternalURL: ""
@@ -47,6 +44,7 @@ Clusters:
         ExternalURL: ""
       DispatchCloud:
         InternalURLs: {}
+        ExternalURL: "-"
       SSO:
         ExternalURL: ""
       Keepproxy:
@@ -60,6 +58,7 @@ Clusters:
         ExternalURL: ""
       Keepstore:
         InternalURLs: {}
+        ExternalURL: "-"
       Composer:
         ExternalURL: ""
       WebShell:
@@ -69,6 +68,13 @@ Clusters:
         ExternalURL: ""
       Workbench2:
         ExternalURL: ""
+      Nodemanager:
+        InternalURLs: {}
+        ExternalURL: "-"
+      Health:
+        InternalURLs: {}
+        ExternalURL: "-"
+
     PostgreSQL:
       # max concurrent connections per arvados server daemon
       ConnectionPool: 32
@@ -123,6 +129,9 @@ Clusters:
       # used by Rails to sign session tokens. IMPORTANT: This is a
       # site secret. It should be at least 50 characters.
       RailsSessionSecretToken: ""
+
+      # Maximum wall clock time to spend handling an incoming request.
+      RequestTimeout: 5m
 
     Users:
       # Config parameters to automatically setup new users.  If enabled,
@@ -191,6 +200,14 @@ Clusters:
       UnloggedAttributes: []
 
     SystemLogs:
+
+      # Logging threshold: panic, fatal, error, warn, info, debug, or
+      # trace
+      LogLevel: info
+
+      # Logging format: json or text
+      Format: json
+
       # Maximum characters of (JSON-encoded) query parameters to include
       # in each request log entry. When params exceed this size, they will
       # be JSON-encoded, truncated to this size, and logged as
@@ -277,6 +294,8 @@ Clusters:
       Repositories: /var/lib/arvados/git/repositories
 
     TLS:
+      Certificate: ""
+      Key: ""
       Insecure: false
 
     Containers:
@@ -328,6 +347,16 @@ Clusters:
       # enabled unless you expect to examine the resulting logs for
       # troubleshooting purposes.
       LogReuseDecisions: false
+
+      # PEM encoded SSH key (RSA, DSA, or ECDSA) used by the
+      # (experimental) cloud dispatcher for executing containers on
+      # worker VMs. Begins with "-----BEGIN RSA PRIVATE KEY-----\n"
+      # and ends with "\n-----END RSA PRIVATE KEY-----\n".
+      DispatchPrivateKey: none
+
+      # Maximum time to wait for workers to come up before abandoning
+      # stale locks from a previous dispatch process.
+      StaleLockTimeout: 1m
 
       Logging:
         # When you run the db:delete_old_container_logs task, it will find
@@ -451,6 +480,111 @@ Clusters:
         # original job reuse behavior, and is still the default).
         ReuseJobIfOutputsDiffer: false
 
+      CloudVMs:
+        # Enable the cloud scheduler (experimental).
+        Enable: false
+
+        # Name/number of port where workers' SSH services listen.
+        SSHPort: "22"
+
+        # Interval between queue polls.
+        PollInterval: 10s
+
+        # Shell command to execute on each worker to determine whether
+        # the worker is booted and ready to run containers. It should
+        # exit zero if the worker is ready.
+        BootProbeCommand: "docker ps"
+
+        # Minimum interval between consecutive probes to a single
+        # worker.
+        ProbeInterval: 10s
+
+        # Maximum probes per second, across all workers in a pool.
+        MaxProbesPerSecond: 10
+
+        # Time before repeating SIGTERM when killing a container.
+        TimeoutSignal: 5s
+
+        # Time to give up on SIGTERM and write off the worker.
+        TimeoutTERM: 2m
+
+        # Maximum create/destroy-instance operations per second (0 =
+        # unlimited).
+        MaxCloudOpsPerSecond: 0
+
+        # Interval between cloud provider syncs/updates ("list all
+        # instances").
+        SyncInterval: 1m
+
+        # Time to leave an idle worker running (in case new containers
+        # appear in the queue that it can run) before shutting it
+        # down.
+        TimeoutIdle: 1m
+
+        # Time to wait for a new worker to boot (i.e., pass
+        # BootProbeCommand) before giving up and shutting it down.
+        TimeoutBooting: 10m
+
+        # Maximum time a worker can stay alive with no successful
+        # probes before being automatically shut down.
+        TimeoutProbe: 10m
+
+        # Time after shutting down a worker to retry the
+        # shutdown/destroy operation.
+        TimeoutShutdown: 10s
+
+        # Worker VM image ID.
+        ImageID: ami-01234567890abcdef
+
+        # Cloud driver: "azure" (Microsoft Azure) or "ec2" (Amazon AWS).
+        Driver: ec2
+
+        # Cloud-specific driver parameters.
+        DriverParameters:
+
+          # (ec2) Credentials.
+          AccessKeyID: ""
+          SecretAccessKey: ""
+
+          # (ec2) Instance configuration.
+          SecurityGroupIDs:
+            - ""
+          SubnetID: ""
+          Region: ""
+          EBSVolumeType: gp2
+          AdminUsername: debian
+
+          # (azure) Credentials.
+          SubscriptionID: ""
+          ClientID: ""
+          ClientSecret: ""
+          TenantID: ""
+
+          # (azure) Instance configuration.
+          CloudEnvironment: AzurePublicCloud
+          ResourceGroup: ""
+          Location: centralus
+          Network: ""
+          Subnet: ""
+          StorageAccount: ""
+          BlobContainer: ""
+          DeleteDanglingResourcesAfter: 20s
+          AdminUsername: arvados
+
+    InstanceTypes:
+
+      # Use the instance type name as the key (in place of "SAMPLE" in
+      # this sample entry).
+      SAMPLE:
+        # Cloud provider's instance type. Defaults to the configured type name.
+        ProviderType: ""
+        VCPUs: 1
+        RAM: 128MiB
+        IncludedScratch: 16GB
+        AddedScratch: 0
+        Price: 0.1
+        Preemptible: false
+
     Mail:
       MailchimpAPIKey: ""
       MailchimpListID: ""
@@ -461,6 +595,15 @@ Clusters:
       EmailFrom: ""
     RemoteClusters:
       "*":
+        Host: ""
         Proxy: false
+        Scheme: https
+        Insecure: false
+        ActivateUsers: false
+      SAMPLE:
+        Host: sample.arvadosapi.com
+        Proxy: false
+        Scheme: https
+        Insecure: false
         ActivateUsers: false
 `)

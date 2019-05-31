@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	check "gopkg.in/check.v1"
@@ -32,23 +33,19 @@ func integrationTestCluster() *arvados.Cluster {
 func newServerFromIntegrationTestEnv(c *check.C) *httpserver.Server {
 	log := ctxlog.TestLogger(c)
 
-	nodeProfile := arvados.NodeProfile{
-		Controller: arvados.SystemServiceInstance{Listen: ":"},
-		RailsAPI:   arvados.SystemServiceInstance{Listen: os.Getenv("ARVADOS_TEST_API_HOST"), TLS: true, Insecure: true},
-	}
 	handler := &Handler{Cluster: &arvados.Cluster{
 		ClusterID:  "zzzzz",
 		PostgreSQL: integrationTestCluster().PostgreSQL,
-		NodeProfiles: map[string]arvados.NodeProfile{
-			"*": nodeProfile,
-		},
-	}, NodeProfile: &nodeProfile}
+		TLS:        arvados.TLS{Insecure: true},
+	}}
+	arvadostest.SetServiceURL(&handler.Cluster.Services.RailsAPI, "https://"+os.Getenv("ARVADOS_TEST_API_HOST"))
+	arvadostest.SetServiceURL(&handler.Cluster.Services.Controller, "http://localhost:/")
 
 	srv := &httpserver.Server{
 		Server: http.Server{
 			Handler: httpserver.AddRequestIDs(httpserver.LogRequests(log, handler)),
 		},
-		Addr: nodeProfile.Controller.Listen,
+		Addr: ":",
 	}
 	return srv
 }

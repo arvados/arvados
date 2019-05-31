@@ -49,23 +49,23 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 	}
 
 	s.cluster = &arvados.Cluster{
-		CloudVMs: arvados.CloudVMs{
-			Driver:               "test",
-			SyncInterval:         arvados.Duration(10 * time.Millisecond),
-			TimeoutIdle:          arvados.Duration(150 * time.Millisecond),
-			TimeoutBooting:       arvados.Duration(150 * time.Millisecond),
-			TimeoutProbe:         arvados.Duration(15 * time.Millisecond),
-			TimeoutShutdown:      arvados.Duration(5 * time.Millisecond),
-			MaxCloudOpsPerSecond: 500,
-		},
-		Dispatch: arvados.Dispatch{
-			PrivateKey:         string(dispatchprivraw),
-			PollInterval:       arvados.Duration(5 * time.Millisecond),
-			ProbeInterval:      arvados.Duration(5 * time.Millisecond),
+		Containers: arvados.ContainersConfig{
+			DispatchPrivateKey: string(dispatchprivraw),
 			StaleLockTimeout:   arvados.Duration(5 * time.Millisecond),
-			MaxProbesPerSecond: 1000,
-			TimeoutSignal:      arvados.Duration(3 * time.Millisecond),
-			TimeoutTERM:        arvados.Duration(20 * time.Millisecond),
+			CloudVMs: arvados.CloudVMsConfig{
+				Driver:               "test",
+				SyncInterval:         arvados.Duration(10 * time.Millisecond),
+				TimeoutIdle:          arvados.Duration(150 * time.Millisecond),
+				TimeoutBooting:       arvados.Duration(150 * time.Millisecond),
+				TimeoutProbe:         arvados.Duration(15 * time.Millisecond),
+				TimeoutShutdown:      arvados.Duration(5 * time.Millisecond),
+				MaxCloudOpsPerSecond: 500,
+				PollInterval:         arvados.Duration(5 * time.Millisecond),
+				ProbeInterval:        arvados.Duration(5 * time.Millisecond),
+				MaxProbesPerSecond:   1000,
+				TimeoutSignal:        arvados.Duration(3 * time.Millisecond),
+				TimeoutTERM:          arvados.Duration(20 * time.Millisecond),
+			},
 		},
 		InstanceTypes: arvados.InstanceTypeMap{
 			test.InstanceType(1).Name:  test.InstanceType(1),
@@ -76,16 +76,9 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 			test.InstanceType(8).Name:  test.InstanceType(8),
 			test.InstanceType(16).Name: test.InstanceType(16),
 		},
-		NodeProfiles: map[string]arvados.NodeProfile{
-			"*": {
-				Controller:    arvados.SystemServiceInstance{Listen: os.Getenv("ARVADOS_API_HOST")},
-				DispatchCloud: arvados.SystemServiceInstance{Listen: ":"},
-			},
-		},
-		Services: arvados.Services{
-			Controller: arvados.Service{ExternalURL: arvados.URL{Scheme: "https", Host: os.Getenv("ARVADOS_API_HOST")}},
-		},
 	}
+	arvadostest.SetServiceURL(&s.cluster.Services.DispatchCloud, "http://localhost:/")
+	arvadostest.SetServiceURL(&s.cluster.Services.Controller, "https://"+os.Getenv("ARVADOS_API_HOST")+"/")
 
 	arvClient, err := arvados.NewClientFromConfig(s.cluster)
 	c.Check(err, check.IsNil)
@@ -242,7 +235,7 @@ func (s *DispatcherSuite) TestAPIDisabled(c *check.C) {
 
 func (s *DispatcherSuite) TestInstancesAPI(c *check.C) {
 	s.cluster.ManagementToken = "abcdefgh"
-	s.cluster.CloudVMs.TimeoutBooting = arvados.Duration(time.Second)
+	s.cluster.Containers.CloudVMs.TimeoutBooting = arvados.Duration(time.Second)
 	drivers["test"] = s.stubDriver
 	s.disp.setupOnce.Do(s.disp.initialize)
 	s.disp.queue = &test.Queue{}

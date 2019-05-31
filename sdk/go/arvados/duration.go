@@ -23,7 +23,7 @@ func (d *Duration) UnmarshalJSON(data []byte) error {
 }
 
 // MarshalJSON implements json.Marshaler.
-func (d *Duration) MarshalJSON() ([]byte, error) {
+func (d Duration) MarshalJSON() ([]byte, error) {
 	return json.Marshal(d.String())
 }
 

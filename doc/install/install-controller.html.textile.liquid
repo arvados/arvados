@@ -92,12 +92,13 @@ Create the cluster configuration file @/etc/arvados/config.yml@ using the follow
 <notextile>
 <pre><code>Clusters:
   <span class="userinput">uuid_prefix</span>:
-    NodeProfiles:
-      apiserver:
-        arvados-controller:
-          Listen: ":<span class="userinput">9004</span>" # must match the "upstream controller" section of your Nginx config
+    Services:
+      Controller:
+        InternalURLs:
+          "http://localhost:<span class="userinput">9004</span>": {} # must match the "upstream controller" section of your Nginx config
+      RailsAPI:
         arvados-api-server:
-          Listen: ":<span class="userinput">8000</span>" # must match the "upstream api" section of your Nginx config
+          "http://localhost:<span class="userinput">8000</span>": {} # must match the "upstream api" section of your Nginx config
     PostgreSQL:
       ConnectionPool: 128
       Connection:
