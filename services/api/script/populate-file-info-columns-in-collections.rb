@@ -70,7 +70,7 @@ require "group_pdhs"
 def main
 
   distinct_pdh_count = ActiveRecord::Base.connection.exec_query(
-    "SELECT DISTINCT portable_data_hash FROM collections"
+    "SELECT DISTINCT portable_data_hash FROM collections where file_count=0"
   ).rows.count
 
   # Generator that queries for all the distinct pdhs greater than last_pdh
