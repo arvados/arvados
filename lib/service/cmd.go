@@ -145,16 +145,7 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 const rfc3339NanoFixed = "2006-01-02T15:04:05.000000000Z07:00"
 
 func getListenAddr(svcs arvados.Services, prog arvados.ServiceName) (string, error) {
-	svc, ok := map[arvados.ServiceName]arvados.Service{
-		arvados.ServiceNameController:    svcs.Controller,
-		arvados.ServiceNameDispatchCloud: svcs.DispatchCloud,
-		arvados.ServiceNameHealth:        svcs.Health,
-		arvados.ServiceNameKeepbalance:   svcs.Keepbalance,
-		arvados.ServiceNameKeepproxy:     svcs.Keepproxy,
-		arvados.ServiceNameKeepstore:     svcs.Keepstore,
-		arvados.ServiceNameKeepweb:       svcs.WebDAV,
-		arvados.ServiceNameWebsocket:     svcs.Websocket,
-	}[prog]
+	svc, ok := svcs.Map()[prog]
 	if !ok {
 		return "", fmt.Errorf("unknown service name %q", prog)
 	}

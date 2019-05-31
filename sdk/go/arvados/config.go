@@ -249,8 +249,8 @@ const (
 	ServiceNameKeepstore     ServiceName = "keepstore"
 )
 
-// ServicePorts returns the configured listening address (or "" if
-// disabled) for each service on the node.
+// Map returns all services as a map, suitable for iterating over all
+// services or looking up a service by name.
 func (svcs Services) Map() map[ServiceName]Service {
 	return map[ServiceName]Service{
 		ServiceNameRailsAPI:      svcs.RailsAPI,
