@@ -66,6 +66,10 @@ if test -z "$ARVBOX_CONTAINER" ; then
    export ARVBOX_CONTAINER=cwltest
 fi
 
+if [[ "$suite" = "conformance" ]] ; then
+  suite=conformance-v1.0
+fi
+
 if test $reset_container = 1 ; then
     arvbox stop
     docker rm $ARVBOX_CONTAINER
@@ -97,10 +101,6 @@ fi
 
 mkdir -p /tmp/cwltest
 cd /tmp/cwltest
-
-if [[ "$suite" = "conformance" ]] ; then
-  suite=conformance-v1.0
-fi
 
 if [[ "$suite" = "conformance-v1.0" ]] ; then
    if ! test -d common-workflow-language ; then
