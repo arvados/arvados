@@ -10,6 +10,7 @@ import argparse
 import arvados
 import arvados.collection
 import base64
+import ciso8601
 import copy
 import datetime
 import errno
@@ -234,6 +235,18 @@ _group.add_argument('--no-cache', action='store_false', dest='use_cache',
 Do not save upload state in a cache file for resuming.
 """)
 
+_group = upload_opts.add_mutually_exclusive_group()
+_group.add_argument('--trash-at', metavar='YYYY-MM-DD HH:MM', default=None,
+                    help="""
+Set the trash date of the resulting collection to an absolute date in the future.
+The accepted format is defined by the ISO 8601 standard.
+""")
+_group.add_argument('--trash-after', type=int, metavar='DAYS', default=None,
+                    help="""
+Set the trash date of the resulting collection to an amount of days from the
+date/time that the upload process finishes.
+""")
+
 arg_parser = argparse.ArgumentParser(
     description='Copy data from the local filesystem to Keep.',
     parents=[upload_opts, run_opts, arv_cmd.retry_opt])
@@ -430,7 +443,8 @@ class ArvPutUploadJob(object):
                  put_threads=None, replication_desired=None, filename=None,
                  update_time=60.0, update_collection=None, storage_classes=None,
                  logger=logging.getLogger('arvados.arv_put'), dry_run=False,
-                 follow_links=True, exclude_paths=[], exclude_names=None):
+                 follow_links=True, exclude_paths=[], exclude_names=None,
+                 trash_at=None):
         self.paths = paths
         self.resume = resume
         self.use_cache = use_cache
@@ -470,6 +484,10 @@ class ArvPutUploadJob(object):
         self.follow_links = follow_links
         self.exclude_paths = exclude_paths
         self.exclude_names = exclude_names
+        self.trash_at = trash_at
+
+        if self.trash_at is not None and type(self.trash_at) not in [datetime.datetime, datetime.timedelta]:
+            raise TypeError('trash_at should be None, datetime or timedelta')
 
         if not self.use_cache and self.resume:
             raise ArvPutArgumentConflict('resume cannot be True when use_cache is False')
@@ -611,6 +629,10 @@ class ArvPutUploadJob(object):
                 self._cache_file.close()
 
     def save_collection(self):
+        if type(self.trash_at) == datetime.timedelta:
+            # Get an absolute datetime for trash_at before saving.
+            self.trash_at = datetime.datetime.utcnow() + self.trash_at
+
         if self.update:
             # Check if files should be updated on the remote collection.
             for fp in self._file_paths:
@@ -625,7 +647,8 @@ class ArvPutUploadJob(object):
                     # The file already exist on remote collection, skip it.
                     pass
             self._remote_collection.save(storage_classes=self.storage_classes,
-                                         num_retries=self.num_retries)
+                                         num_retries=self.num_retries,
+                                         trash_at=self.trash_at)
         else:
             if self.storage_classes is None:
                 self.storage_classes = ['default']
@@ -633,7 +656,8 @@ class ArvPutUploadJob(object):
                 name=self.name, owner_uuid=self.owner_uuid,
                 storage_classes=self.storage_classes,
                 ensure_unique_name=self.ensure_unique_name,
-                num_retries=self.num_retries)
+                num_retries=self.num_retries,
+                trash_at=self.trash_at)
 
     def destroy_cache(self):
         if self.use_cache:
@@ -1073,6 +1097,28 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
     if install_sig_handlers:
         arv_cmd.install_signal_handlers()
 
+    # Trash arguments validation
+    trash_at = None
+    if args.trash_at is not None:
+        try:
+            trash_at = ciso8601.parse_datetime(args.trash_at)
+        except:
+            logger.error("--trash-at argument format invalid, should be YYYY-MM-DDTHH:MM.")
+            sys.exit(1)
+        else:
+            if trash_at.tzinfo is not None:
+                # Timezone-aware datetime provided, convert to non-aware UTC
+                delta = trash_at.tzinfo.utcoffset(None)
+                trash_at = trash_at.replace(tzinfo=None) - delta
+        if trash_at <= datetime.datetime.utcnow():
+            logger.error("--trash-at argument should be set in the future")
+            sys.exit(1)
+    if args.trash_after is not None:
+        if args.trash_after < 1:
+            logger.error("--trash-after argument should be >= 1")
+            sys.exit(1)
+        trash_at = datetime.timedelta(seconds=(args.trash_after * 24 * 60 * 60))
+
     # Determine the name to use
     if args.name:
         if args.stream or args.raw:
@@ -1178,7 +1224,8 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
                                  dry_run=args.dry_run,
                                  follow_links=args.follow_links,
                                  exclude_paths=exclude_paths,
-                                 exclude_names=exclude_names)
+                                 exclude_names=exclude_names,
+                                 trash_at=trash_at)
     except ResumeCacheConflict:
         logger.error("\n".join([
             "arv-put: Another process is already uploading this data.",
@@ -1192,7 +1239,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
             "         --no-resume to start a new resume cache.",
             "         --no-cache to disable resume cache."]))
         sys.exit(1)
-    except CollectionUpdateError as error:
+    except (CollectionUpdateError, PathDoesNotExistError) as error:
         logger.error("\n".join([
             "arv-put: %s" % str(error)]))
         sys.exit(1)
@@ -1202,10 +1249,6 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
     except ArvPutUploadNotPending:
         # No files pending for upload
         sys.exit(0)
-    except PathDoesNotExistError as error:
-        logger.error("\n".join([
-            "arv-put: %s" % str(error)]))
-        sys.exit(1)
 
     if not args.dry_run and not args.update_collection and args.resume and writer.bytes_written > 0:
         logger.warning("\n".join([
