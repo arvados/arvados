@@ -23,11 +23,11 @@ var (
 
 type tagVerifier struct {
 	cloud.Instance
+	secret string
 }
 
 func (tv tagVerifier) VerifyHostKey(pubKey ssh.PublicKey, client *ssh.Client) error {
-	expectSecret := tv.Instance.Tags()[tagKeyInstanceSecret]
-	if err := tv.Instance.VerifyHostKey(pubKey, client); err != cloud.ErrNotImplemented || expectSecret == "" {
+	if err := tv.Instance.VerifyHostKey(pubKey, client); err != cloud.ErrNotImplemented || tv.secret == "" {
 		// If the wrapped instance indicates it has a way to
 		// verify the key, return that decision.
 		return err
@@ -49,7 +49,7 @@ func (tv tagVerifier) VerifyHostKey(pubKey ssh.PublicKey, client *ssh.Client) er
 	if err != nil {
 		return err
 	}
-	if stdout.String() != expectSecret {
+	if stdout.String() != tv.secret {
 		return errBadInstanceSecret
 	}
 	return nil

@@ -536,6 +536,24 @@ Clusters:
         # Worker VM image ID.
         ImageID: ami-01234567890abcdef
 
+        # Tags to add on all resources (VMs, NICs, disks) created by
+        # the container dispatcher. (Arvados's own tags --
+        # InstanceType, IdleBehavior, and InstanceSecret -- will also
+        # be added.)
+        ResourceTags:
+          SAMPLE: "tag value"
+
+        # Prefix for predefined tags used by Arvados (InstanceSetID,
+        # InstanceType, InstanceSecret, IdleBehavior). With the
+        # default value "Arvados", tags are "ArvadosInstanceSetID",
+        # "ArvadosInstanceSecret", etc.
+        #
+        # This should only be changed while no cloud resources are in
+        # use and the cloud dispatcher is not running. Otherwise,
+        # VMs/resources that were added using the old tag prefix will
+        # need to be detected and cleaned up manually.
+        TagKeyPrefix: Arvados
+
         # Cloud driver: "azure" (Microsoft Azure) or "ec2" (Amazon AWS).
         Driver: ec2
 

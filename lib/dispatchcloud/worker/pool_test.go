@@ -65,7 +65,8 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 
 	logger := ctxlog.TestLogger(c)
 	driver := &test.StubDriver{}
-	is, err := driver.InstanceSet(nil, "", logger)
+	instanceSetID := cloud.InstanceSetID("test-instance-set-id")
+	is, err := driver.InstanceSet(nil, instanceSetID, nil, logger)
 	c.Assert(err, check.IsNil)
 
 	newExecutor := func(cloud.Instance) Executor {
@@ -82,6 +83,7 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 				MaxProbesPerSecond: 1000,
 				ProbeInterval:      arvados.Duration(time.Millisecond * 10),
 				SyncInterval:       arvados.Duration(time.Millisecond * 10),
+				TagKeyPrefix:       "testprefix:",
 			},
 		},
 		InstanceTypes: arvados.InstanceTypeMap{
@@ -91,7 +93,7 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 		},
 	}
 
-	pool := NewPool(logger, arvados.NewClientFromEnv(), prometheus.NewRegistry(), is, newExecutor, nil, cluster)
+	pool := NewPool(logger, arvados.NewClientFromEnv(), prometheus.NewRegistry(), instanceSetID, is, newExecutor, nil, cluster)
 	notify := pool.Subscribe()
 	defer pool.Unsubscribe(notify)
 	pool.Create(type1)
@@ -106,13 +108,14 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 		}
 	}
 	// Wait for the tags to save to the cloud provider
+	tagKey := cluster.Containers.CloudVMs.TagKeyPrefix + tagKeyIdleBehavior
 	deadline := time.Now().Add(time.Second)
 	for !func() bool {
 		pool.mtx.RLock()
 		defer pool.mtx.RUnlock()
 		for _, wkr := range pool.workers {
 			if wkr.instType == type2 {
-				return wkr.instance.Tags()[tagKeyIdleBehavior] == string(IdleBehaviorHold)
+				return wkr.instance.Tags()[tagKey] == string(IdleBehaviorHold)
 			}
 		}
 		return false
@@ -126,7 +129,7 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 
 	c.Log("------- starting new pool, waiting to recover state")
 
-	pool2 := NewPool(logger, arvados.NewClientFromEnv(), prometheus.NewRegistry(), is, newExecutor, nil, cluster)
+	pool2 := NewPool(logger, arvados.NewClientFromEnv(), prometheus.NewRegistry(), instanceSetID, is, newExecutor, nil, cluster)
 	notify2 := pool2.Subscribe()
 	defer pool2.Unsubscribe(notify2)
 	waitForIdle(pool2, notify2)
@@ -144,7 +147,7 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
 	logger := ctxlog.TestLogger(c)
 	driver := test.StubDriver{HoldCloudOps: true}
-	instanceSet, err := driver.InstanceSet(nil, "", logger)
+	instanceSet, err := driver.InstanceSet(nil, "test-instance-set-id", nil, logger)
 	c.Assert(err, check.IsNil)
 
 	type1 := arvados.InstanceType{Name: "a1s", ProviderType: "a1.small", VCPUs: 1, RAM: 1 * GiB, Price: .01}

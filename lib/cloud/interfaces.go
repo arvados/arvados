@@ -36,6 +36,7 @@ type QuotaError interface {
 	error
 }
 
+type SharedResourceTags map[string]string
 type InstanceSetID string
 type InstanceTags map[string]string
 type InstanceID string
@@ -145,6 +146,10 @@ type InitCommand string
 // A Driver returns an InstanceSet that uses the given InstanceSetID
 // and driver-dependent configuration parameters.
 //
+// If the driver creates cloud resources that aren't attached to a
+// single VM instance (like SSH key pairs on AWS) and support tagging,
+// they should be tagged with the provided SharedResourceTags.
+//
 // The supplied id will be of the form "zzzzz-zzzzz-zzzzzzzzzzzzzzz"
 // where each z can be any alphanum. The returned InstanceSet must use
 // this id to tag long-lived cloud resources that it creates, and must
@@ -154,13 +159,17 @@ type InitCommand string
 // other mechanism. The tags must be visible to another instance of
 // the same driver running on a different host.
 //
-// The returned InstanceSet must ignore existing resources that are
-// visible but not tagged with the given id, except that it should log
-// a summary of such resources -- only once -- when it starts
-// up. Thus, two identically configured InstanceSets running on
-// different hosts with different ids should log about the existence
-// of each other's resources at startup, but will not interfere with
-// each other.
+// The returned InstanceSet must not modify or delete cloud resources
+// unless they are tagged with the given InstanceSetID or the caller
+// (dispatcher) calls Destroy() on them. It may log a summary of
+// untagged resources once at startup, though. Thus, two identically
+// configured InstanceSets running on different hosts with different
+// ids should log about the existence of each other's resources at
+// startup, but will not interfere with each other.
+//
+// The dispatcher always passes the InstanceSetID as a tag when
+// calling Create() and Instances(), so the driver does not need to
+// tag/filter VMs by InstanceSetID itself.
 //
 // Example:
 //
@@ -171,7 +180,7 @@ type InitCommand string
 //
 //	type exampleDriver struct {}
 //
-//	func (*exampleDriver) InstanceSet(config json.RawMessage, id InstanceSetID) (InstanceSet, error) {
+//	func (*exampleDriver) InstanceSet(config json.RawMessage, id cloud.InstanceSetID, tags cloud.SharedResourceTags, logger logrus.FieldLogger) (cloud.InstanceSet, error) {
 //		var is exampleInstanceSet
 //		if err := json.Unmarshal(config, &is); err != nil {
 //			return nil, err
@@ -182,17 +191,17 @@ type InitCommand string
 //
 //	var _ = registerCloudDriver("example", &exampleDriver{})
 type Driver interface {
-	InstanceSet(config json.RawMessage, id InstanceSetID, logger logrus.FieldLogger) (InstanceSet, error)
+	InstanceSet(config json.RawMessage, id InstanceSetID, tags SharedResourceTags, logger logrus.FieldLogger) (InstanceSet, error)
 }
 
 // DriverFunc makes a Driver using the provided function as its
 // InstanceSet method. This is similar to http.HandlerFunc.
-func DriverFunc(fn func(config json.RawMessage, id InstanceSetID, logger logrus.FieldLogger) (InstanceSet, error)) Driver {
+func DriverFunc(fn func(config json.RawMessage, id InstanceSetID, tags SharedResourceTags, logger logrus.FieldLogger) (InstanceSet, error)) Driver {
 	return driverFunc(fn)
 }
 
-type driverFunc func(config json.RawMessage, id InstanceSetID, logger logrus.FieldLogger) (InstanceSet, error)
+type driverFunc func(config json.RawMessage, id InstanceSetID, tags SharedResourceTags, logger logrus.FieldLogger) (InstanceSet, error)
 
-func (df driverFunc) InstanceSet(config json.RawMessage, id InstanceSetID, logger logrus.FieldLogger) (InstanceSet, error) {
-	return df(config, id, logger)
+func (df driverFunc) InstanceSet(config json.RawMessage, id InstanceSetID, tags SharedResourceTags, logger logrus.FieldLogger) (InstanceSet, error) {
+	return df(config, id, tags, logger)
 }
