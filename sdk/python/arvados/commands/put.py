@@ -239,7 +239,8 @@ _group = upload_opts.add_mutually_exclusive_group()
 _group.add_argument('--trash-at', metavar='YYYY-MM-DD HH:MM', default=None,
                     help="""
 Set the trash date of the resulting collection to an absolute date in the future.
-The accepted format is defined by the ISO 8601 standard.
+The accepted format is defined by the ISO 8601 standard. Examples: 20090103, 2009-01-03, 20090103T181505, 2009-01-03T18:15:05.\n
+Timezone information can be added. If not, the provided date/time is assumed as being in the local system's timezone.
 """)
 _group.add_argument('--trash-after', type=int, metavar='DAYS', default=None,
                     help="""
@@ -486,8 +487,11 @@ class ArvPutUploadJob(object):
         self.exclude_names = exclude_names
         self._trash_at = trash_at
 
-        if self._trash_at is not None and type(self._trash_at) not in [datetime.datetime, datetime.timedelta]:
-            raise TypeError('trash_at should be None, datetime or timedelta')
+        if self._trash_at is not None:
+            if type(self._trash_at) not in [datetime.datetime, datetime.timedelta]:
+                raise TypeError('trash_at should be None, timezone-naive datetime or timedelta')
+            if type(self._trash_at) == datetime.datetime and self._trash_at.tzinfo is not None:
+                raise TypeError('provided trash_at datetime should be timezone-naive')
 
         if not self.use_cache and self.resume:
             raise ArvPutArgumentConflict('resume cannot be True when use_cache is False')
@@ -1110,13 +1114,18 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
         try:
             trash_at = ciso8601.parse_datetime(args.trash_at)
         except:
-            logger.error("--trash-at argument format invalid, should be YYYY-MM-DDTHH:MM.")
+            logger.error("--trash-at argument format invalid, use --help to see examples.")
             sys.exit(1)
         else:
             if trash_at.tzinfo is not None:
-                # Timezone-aware datetime provided, convert to non-aware UTC
-                delta = trash_at.tzinfo.utcoffset(None)
-                trash_at = trash_at.replace(tzinfo=None) - delta
+                # Timezone aware datetime provided.
+                delta = trash_at.utcoffset()
+            else:
+                # Timezone naive datetime provided. Assume is local.
+                delta = datetime.datetime.now() - datetime.datetime.utcnow()
+            # Convert to UTC timezone naive datetime.
+            trash_at = trash_at.replace(tzinfo=None) - delta
+
         if trash_at <= datetime.datetime.utcnow():
             logger.error("--trash-at argument should be set in the future")
             sys.exit(1)
