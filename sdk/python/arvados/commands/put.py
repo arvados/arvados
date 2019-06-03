@@ -484,9 +484,9 @@ class ArvPutUploadJob(object):
         self.follow_links = follow_links
         self.exclude_paths = exclude_paths
         self.exclude_names = exclude_names
-        self.trash_at = trash_at
+        self._trash_at = trash_at
 
-        if self.trash_at is not None and type(self.trash_at) not in [datetime.datetime, datetime.timedelta]:
+        if self._trash_at is not None and type(self._trash_at) not in [datetime.datetime, datetime.timedelta]:
             raise TypeError('trash_at should be None, datetime or timedelta')
 
         if not self.use_cache and self.resume:
@@ -628,11 +628,18 @@ class ArvPutUploadJob(object):
             if self.use_cache:
                 self._cache_file.close()
 
-    def save_collection(self):
-        if type(self.trash_at) == datetime.timedelta:
-            # Get an absolute datetime for trash_at before saving.
-            self.trash_at = datetime.datetime.utcnow() + self.trash_at
+    def _collection_trash_at(self):
+        """
+        Returns the trash date that the collection should use at save time.
+        Takes into account absolute/relative trash_at values requested
+        by the user.
+        """
+        if type(self._trash_at) == datetime.timedelta:
+            # Get an absolute datetime for trash_at
+            return datetime.datetime.utcnow() + self._trash_at
+        return self._trash_at
 
+    def save_collection(self):
         if self.update:
             # Check if files should be updated on the remote collection.
             for fp in self._file_paths:
@@ -648,7 +655,7 @@ class ArvPutUploadJob(object):
                     pass
             self._remote_collection.save(storage_classes=self.storage_classes,
                                          num_retries=self.num_retries,
-                                         trash_at=self.trash_at)
+                                         trash_at=self._collection_trash_at())
         else:
             if self.storage_classes is None:
                 self.storage_classes = ['default']
@@ -657,7 +664,7 @@ class ArvPutUploadJob(object):
                 storage_classes=self.storage_classes,
                 ensure_unique_name=self.ensure_unique_name,
                 num_retries=self.num_retries,
-                trash_at=self.trash_at)
+                trash_at=self._collection_trash_at())
 
     def destroy_cache(self):
         if self.use_cache:
