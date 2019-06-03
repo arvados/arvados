@@ -82,7 +82,10 @@ $(DEB_FILE): build
 	 -n "$(APP_NAME)" \
 	 -v "$(VERSION)" \
 	 --iteration "$(ITERATION)" \
+	 --vendor="The Arvados Authors" \
 	 --maintainer="$(MAINTAINER)" \
+	 --url="https://arvados.org" \
+	 --license="GNU Affero General Public License, version 3.0" \
 	 --description="$(DESCRIPTION)" \
 	 --config-files="etc/arvados/workbench2/workbench2.example.json" \
 	$(WORKSPACE)/build/=$(DEST_DIR)
@@ -94,7 +97,10 @@ $(RPM_FILE): build
 	 -n "$(APP_NAME)" \
 	 -v "$(VERSION)" \
 	 --iteration "$(ITERATION)" \
+	 --vendor="The Arvados Authors" \
 	 --maintainer="$(MAINTAINER)" \
+	 --url="https://arvados.org" \
+	 --license="GNU Affero General Public License, version 3.0" \
 	 --description="$(DESCRIPTION)" \
 	 --config-files="etc/arvados/workbench2/workbench2.example.json" \
 	 $(WORKSPACE)/build/=$(DEST_DIR)
