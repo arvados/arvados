@@ -30,7 +30,13 @@ Note to developers: Add new items at the top. Include the date, issue number, co
 TODO: extract this information based on git commit messages and generate changelogs / release notes automatically.
 {% endcomment %}
 
-h3. current master branch
+h3. v1.4.0 (2019-05-31)
+
+h4. Populating the new file_count and file_size_total columns on the collections table
+
+As part of story "#14484":https://dev.arvados.org/issues/14484, two new columns were added to the collections table in a database migration. If your installation has a large collections table, this migration may take some time. We've seen it take ~5 minutes on an installation with 250k collections, but your mileage may vary.
+
+The new columns are initialized with a zero value. In order to populate them, it is necessary to run a script called <code class="userinput">populate-file-info-columns-in-collections.rb</code> from the scripts directory of the API server. This can be done out of band, ideally directly after the API server has been upgraded to v1.4.0.
 
 h4. Stricter collection manifest validation on the API server
 
