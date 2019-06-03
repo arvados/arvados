@@ -538,15 +538,15 @@ Clusters:
           SAMPLE: "tag value"
 
         # Prefix for predefined tags used by Arvados (InstanceSetID,
-        # InstanceType, InstanceSecret, IdleBehavior). For example,
-        # set to "arvados-" to use tag key "arvados-InstanceSecret"
-        # instead of "InstanceSecret".
+        # InstanceType, InstanceSecret, IdleBehavior). With the
+        # default value "Arvados", tags are "ArvadosInstanceSetID",
+        # "ArvadosInstanceSecret", etc.
         #
         # This should only be changed while no cloud resources are in
         # use and the cloud dispatcher is not running. Otherwise,
         # VMs/resources that were added using the old tag prefix will
         # need to be detected and cleaned up manually.
-        TagKeyPrefix: ""
+        TagKeyPrefix: Arvados
 
         # Cloud driver: "azure" (Microsoft Azure) or "ec2" (Amazon AWS).
         Driver: ec2
