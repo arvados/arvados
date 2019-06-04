@@ -203,6 +203,17 @@ func anythingToValues(params interface{}) (url.Values, error) {
 			urlValues.Set(k, v.String())
 			continue
 		}
+		if v, ok := v.(bool); ok {
+			if v {
+				urlValues.Set(k, "true")
+			} else {
+				// "foo=false", "foo=0", and "foo="
+				// are all taken as true strings, so
+				// don't send false values at all --
+				// rely on the default being false.
+			}
+			continue
+		}
 		j, err := json.Marshal(v)
 		if err != nil {
 			return nil, err
