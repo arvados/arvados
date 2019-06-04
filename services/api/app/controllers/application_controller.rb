@@ -42,9 +42,9 @@ class ApplicationController < ActionController::Base
   before_action :require_auth_scope, except: ERROR_ACTIONS
 
   before_action :catch_redirect_hint
+  before_action :load_required_parameters
   before_action(:find_object_by_uuid,
                 except: [:index, :create] + ERROR_ACTIONS)
-  before_action :load_required_parameters
   before_action :load_limit_offset_order_params, only: [:index, :contents]
   before_action :load_where_param, only: [:index, :contents]
   before_action :load_filters_param, only: [:index, :contents]

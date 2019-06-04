@@ -21,6 +21,18 @@ class Arvados::V1::CollectionsController < ApplicationController
       })
   end
 
+  def self._show_requires_parameters
+    (super rescue {}).
+      merge({
+        include_trash: {
+          type: 'boolean', required: false, description: "Include collections whose is_trashed attribute is true."
+        },
+        include_old_versions: {
+          type: 'boolean', required: false, description: "Include past collection versions."
+        },
+      })
+  end
+
   def create
     if resource_attrs[:uuid] and (loc = Keep::Locator.parse(resource_attrs[:uuid]))
       resource_attrs[:portable_data_hash] = loc.to_s
