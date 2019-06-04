@@ -291,7 +291,7 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
       assert_not_nil json_response['items']
       assert_equal truthiness, json_response['items'].collect {|c| c['uuid']}.include?(expired_col.uuid)
       # Try #show next
-      get("/arvados/v1/collections/#{expired_col.uuid}/?include_trash=#{param}",
+      get("/arvados/v1/collections/#{expired_col.uuid}?include_trash=#{param}",
         headers: auth(:active))
       if truthiness
         assert_response :success
