@@ -285,7 +285,7 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
     test "include_trash=#{param.inspect} param encoding via query string should be interpreted as include_trash=#{truthiness}" do
       expired_col = collections(:expired_collection)
       assert expired_col.is_trashed
-      get("/arvados/v1/collections?include_trash=#{param}",
+      get("/arvados/v1/collections?include_trash=#{param}&filters=#{[['uuid','=',expired_col.uuid]].to_json}",
           headers: auth(:active))
       assert_response :success
       assert_not_nil json_response['items']
