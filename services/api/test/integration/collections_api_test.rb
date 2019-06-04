@@ -276,7 +276,6 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
   end
 
   [
-    ["", false],
     ["false", false],
     ["0", false],
     ["true", true],
@@ -285,16 +284,24 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
     test "include_trash=#{param.inspect} param encoding via query string should be interpreted as include_trash=#{truthiness}" do
       expired_col = collections(:expired_collection)
       assert expired_col.is_trashed
+      # Try #index first
       get("/arvados/v1/collections?include_trash=#{param}&filters=#{[['uuid','=',expired_col.uuid]].to_json}",
           headers: auth(:active))
       assert_response :success
       assert_not_nil json_response['items']
       assert_equal truthiness, json_response['items'].collect {|c| c['uuid']}.include?(expired_col.uuid)
+      # Try #show next
+      get("/arvados/v1/collections/#{expired_col.uuid}/?include_trash=#{param}",
+        headers: auth(:active))
+      if truthiness
+        assert_response :success
+      else
+        assert_response 404
+      end
     end
   end
 
   [
-    ["", false],
     ["false", false],
     ["0", false],
     ["true", true],
@@ -307,6 +314,7 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
         ['include_trash', param],
         ['filters', [['uuid','=',expired_col.uuid]].to_json],
       ]
+      # Try #index first
       get "/arvados/v1/collections",
         params: URI.encode_www_form(params),
         headers: {
@@ -315,6 +323,17 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
       assert_response :success
       assert_not_nil json_response['items']
       assert_equal truthiness, json_response['items'].collect {|c| c['uuid']}.include?(expired_col.uuid)
+      # Try #show next
+      get "/arvados/v1/collections",
+        params: URI.encode_www_form([['include_trash', param]]),
+        headers: {
+          "Content-type" => "application/x-www-form-urlencoded"
+        }.update(auth(:active))
+      if truthiness
+        assert_response :success
+      else
+        assert_response 404
+      end
     end
   end
 
