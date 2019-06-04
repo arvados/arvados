@@ -280,6 +280,19 @@ Clusters:
       # > 0 = auto-create a new version when older than the specified number of seconds.
       PreserveVersionIfIdle: -1
 
+      # Default collection properties. At creation time, if the client didn't
+      # provide the listed keys, they will be automatically populated following
+      # one of the following behaviors:
+      #
+      # * UUID of the user who owns the containing project.
+      #   responsible_person_uuid: {function: original_owner, protected: true}
+      #
+      # * Default concrete value.
+      #   foo_bar: {value: baz, protected: false}
+      #
+      # If protected is true, only an admin user can modify its value.
+      DefaultProperties: {}
+
     Login:
       # These settings are provided by your OAuth2 provider (e.g.,
       # sso-provider).
