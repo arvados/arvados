@@ -236,7 +236,7 @@ Do not save upload state in a cache file for resuming.
 """)
 
 _group = upload_opts.add_mutually_exclusive_group()
-_group.add_argument('--trash-at', metavar='YYYY-MM-DD HH:MM', default=None,
+_group.add_argument('--trash-at', metavar='YYYY-MM-DDTHH:MM', default=None,
                     help="""
 Set the trash date of the resulting collection to an absolute date in the future.
 The accepted format is defined by the ISO 8601 standard. Examples: 20090103, 2009-01-03, 20090103T181505, 2009-01-03T18:15:05.\n
@@ -723,6 +723,15 @@ class ArvPutUploadJob(object):
                     self._save_state()
                 except Exception as e:
                     self.logger.error("Unexpected error trying to save cache file: {}".format(e))
+            # Keep remote collection's trash_at attribute synced when using relative expire dates
+            if self._remote_collection is not None and type(self._trash_at) == datetime.timedelta:
+                try:
+                    self._api_client.collections().update(
+                        uuid=self._remote_collection.manifest_locator(),
+                        body={'trash_at': self._collection_trash_at().strftime("%Y-%m-%dT%H:%M:%S.%fZ")}
+                    ).execute(num_retries=self.num_retries)
+                except Exception as e:
+                    self.logger.error("Unexpected error trying to update remote collection's expire date: {}".format(e))
         else:
             self.bytes_written = self.bytes_skipped
         # Call the reporter, if any
