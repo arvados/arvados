@@ -1119,12 +1119,12 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
         else:
             if trash_at.tzinfo is not None:
                 # Timezone aware datetime provided.
-                delta = trash_at.utcoffset()
+                utcoffset = trash_at.utcoffset()
             else:
                 # Timezone naive datetime provided. Assume is local.
-                delta = datetime.datetime.now() - datetime.datetime.utcnow()
+                utcoffset = datetime.timedelta(hours=-time.timezone/3600)
             # Convert to UTC timezone naive datetime.
-            trash_at = trash_at.replace(tzinfo=None) - delta
+            trash_at = trash_at.replace(tzinfo=None) - utcoffset
 
         if trash_at <= datetime.datetime.utcnow():
             logger.error("--trash-at argument should be set in the future")

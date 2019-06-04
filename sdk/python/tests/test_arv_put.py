@@ -12,6 +12,7 @@ from builtins import str
 from builtins import range
 from functools import partial
 import apiclient
+import ciso8601
 import datetime
 import hashlib
 import json
@@ -212,7 +213,7 @@ class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
 
     def test_cache_is_locked(self):
         with tempfile.NamedTemporaryFile() as cachefile:
-            arv_put.ResumeCache(cachefile.name)
+            _ = arv_put.ResumeCache(cachefile.name)
             self.assertRaises(arv_put.ResumeCacheConflict,
                               arv_put.ResumeCache, cachefile.name)
 
@@ -1159,6 +1160,82 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
         # Get the manifest and check that the new file is being included
         c = arv_put.api_client.collections().get(uuid=updated_col['uuid']).execute()
         self.assertRegex(c['manifest_text'], r'^\..* .*:44:file2\n')
+
+    def test_put_collection_with_utc_expiring_datetime(self):
+        tmpdir = self.make_tmpdir()
+        trash_at = (datetime.datetime.utcnow() + datetime.timedelta(days=90)).strftime('%Y%m%dT%H%MZ')
+        with open(os.path.join(tmpdir, 'file1'), 'w') as f:
+            f.write('Relaxing in basins at the end of inlets terminates the endless tests from the box')
+        col = self.run_and_find_collection(
+            "",
+            ['--no-progress', '--trash-at', trash_at, tmpdir])
+        self.assertNotEqual(None, col['uuid'])
+        c = arv_put.api_client.collections().get(uuid=col['uuid']).execute()
+        self.assertEqual(ciso8601.parse_datetime(trash_at),
+            ciso8601.parse_datetime(c['trash_at']))
+
+    def test_put_collection_with_timezone_aware_expiring_datetime(self):
+        tmpdir = self.make_tmpdir()
+        trash_at = (datetime.datetime.utcnow() + datetime.timedelta(days=90)).strftime('%Y%m%dT%H%M-0300')
+        with open(os.path.join(tmpdir, 'file1'), 'w') as f:
+            f.write('Relaxing in basins at the end of inlets terminates the endless tests from the box')
+        col = self.run_and_find_collection(
+            "",
+            ['--no-progress', '--trash-at', trash_at, tmpdir])
+        self.assertNotEqual(None, col['uuid'])
+        c = arv_put.api_client.collections().get(uuid=col['uuid']).execute()
+        self.assertEqual(
+            ciso8601.parse_datetime(trash_at).replace(tzinfo=None)+datetime.timedelta(hours=3),
+            ciso8601.parse_datetime(c['trash_at']).replace(tzinfo=None))
+
+    def test_put_collection_with_timezone_naive_expiring_datetime(self):
+        tmpdir = self.make_tmpdir()
+        trash_at = (datetime.datetime.utcnow() + datetime.timedelta(days=90)).strftime('%Y%m%dT%H%M')
+        with open(os.path.join(tmpdir, 'file1'), 'w') as f:
+            f.write('Relaxing in basins at the end of inlets terminates the endless tests from the box')
+        col = self.run_and_find_collection(
+            "",
+            ['--no-progress', '--trash-at', trash_at, tmpdir])
+        self.assertNotEqual(None, col['uuid'])
+        c = arv_put.api_client.collections().get(uuid=col['uuid']).execute()
+        self.assertEqual(
+            ciso8601.parse_datetime(trash_at) - datetime.timedelta(hours=-time.timezone/3600),
+            ciso8601.parse_datetime(c['trash_at']).replace(tzinfo=None))
+
+    def test_put_collection_with_invalid_absolute_expiring_datetime(self):
+        tmpdir = self.make_tmpdir()
+        with open(os.path.join(tmpdir, 'file1'), 'w') as f:
+            f.write('Relaxing in basins at the end of inlets terminates the endless tests from the box')
+        with self.assertRaises(AssertionError):
+            self.run_and_find_collection(
+                "",
+                ['--no-progress', '--trash-at', 'tomorrow at noon', tmpdir])
+
+    def test_put_collection_with_relative_expiring_datetime(self):
+        expire_after = 7
+        dt_before = datetime.datetime.utcnow() + datetime.timedelta(days=expire_after)
+        tmpdir = self.make_tmpdir()
+        with open(os.path.join(tmpdir, 'file1'), 'w') as f:
+            f.write('Relaxing in basins at the end of inlets terminates the endless tests from the box')
+        col = self.run_and_find_collection(
+            "",
+            ['--no-progress', '--trash-after', str(expire_after), tmpdir])
+        self.assertNotEqual(None, col['uuid'])
+        dt_after = datetime.datetime.utcnow() + datetime.timedelta(days=expire_after)
+        c = arv_put.api_client.collections().get(uuid=col['uuid']).execute()
+        trash_at = ciso8601.parse_datetime(c['trash_at']).replace(tzinfo=None)
+        self.assertTrue(dt_before < trash_at)
+        self.assertTrue(dt_after > trash_at)
+
+    def test_put_collection_with_invalid_relative_expiring_datetime(self):
+        expire_after = 0 # Should be >= 1
+        tmpdir = self.make_tmpdir()
+        with open(os.path.join(tmpdir, 'file1'), 'w') as f:
+            f.write('Relaxing in basins at the end of inlets terminates the endless tests from the box')
+        with self.assertRaises(AssertionError):
+            self.run_and_find_collection(
+                "",
+                ['--no-progress', '--trash-after', str(expire_after), tmpdir])
 
     def test_upload_directory_reference_without_trailing_slash(self):
         tmpdir1 = self.make_tmpdir()
