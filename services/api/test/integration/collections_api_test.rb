@@ -281,6 +281,40 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
     ["true", true],
     ["1", true]
   ].each do |param, truthiness|
+    test "include_trash=#{param.inspect} param JSON-encoded should be interpreted as include_trash=#{truthiness}" do
+      expired_col = collections(:expired_collection)
+      assert expired_col.is_trashed
+      # Try #index first
+      get "/arvados/v1/collections",
+          params: {
+            :include_trash => param,
+            :filters => [['uuid', '=', expired_col.uuid]].to_json
+          },
+          headers: auth(:active)
+      assert_response :success
+      assert_not_nil json_response['items']
+      assert_equal truthiness, json_response['items'].collect {|c| c['uuid']}.include?(expired_col.uuid)
+      # Try #show next
+      get "/arvados/v1/collections/#{expired_col.uuid}",
+        params: {
+          :format => :json,
+          :include_trash => param,
+        },
+        headers: auth(:active)
+      if truthiness
+        assert_response :success
+      else
+        assert_response 404
+      end
+    end
+  end
+
+  [
+    ["false", false],
+    ["0", false],
+    ["true", true],
+    ["1", true]
+  ].each do |param, truthiness|
     test "include_trash=#{param.inspect} param encoding via query string should be interpreted as include_trash=#{truthiness}" do
       expired_col = collections(:expired_collection)
       assert expired_col.is_trashed
@@ -324,7 +358,7 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
       assert_not_nil json_response['items']
       assert_equal truthiness, json_response['items'].collect {|c| c['uuid']}.include?(expired_col.uuid)
       # Try #show next
-      get "/arvados/v1/collections",
+      get "/arvados/v1/collections/#{expired_col.uuid}",
         params: URI.encode_www_form([['include_trash', param]]),
         headers: {
           "Content-type" => "application/x-www-form-urlencoded"
