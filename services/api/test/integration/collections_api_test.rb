@@ -289,7 +289,6 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
           headers: auth(:active))
       assert_response :success
       assert_not_nil json_response['items']
-      refute_empty json_response['items']
       assert_equal truthiness, json_response['items'].collect {|c| c['uuid']}.include?(expired_col.uuid)
     end
   end
@@ -315,7 +314,6 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
         }.update(auth(:active))
       assert_response :success
       assert_not_nil json_response['items']
-      refute_empty json_response['items']
       assert_equal truthiness, json_response['items'].collect {|c| c['uuid']}.include?(expired_col.uuid)
     end
   end
