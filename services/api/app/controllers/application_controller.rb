@@ -165,6 +165,13 @@ class ApplicationController < ActionController::Base
 
   protected
 
+  def bool_param(pname)
+    if params.include?(pname) && params[pname].is_a?(Boolean)
+      return params[pname]
+    end
+    false
+  end
+
   def send_error(*args)
     if args.last.is_a? Hash
       err = args.pop
@@ -189,8 +196,8 @@ class ApplicationController < ActionController::Base
 
   def find_objects_for_index
     @objects ||= model_class.readable_by(*@read_users, {
-      :include_trash => (params[:include_trash] || 'untrash' == action_name),
-      :include_old_versions => params[:include_old_versions]
+      :include_trash => (bool_param(:include_trash) || 'untrash' == action_name),
+      :include_old_versions => bool_param(:include_old_versions)
     })
     apply_where_limit_order_params
   end
