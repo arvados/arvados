@@ -591,6 +591,23 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
         end
       end
 
+      test "show include_trash=false #{project} #{untrash} as #{auth}" do
+        authorize_with auth
+        untrash.each do |pr|
+          Group.find_by_uuid(groups(pr).uuid).update! is_trashed: false
+        end
+        get :show, params: {
+              id: groups(project).uuid,
+              format: :json,
+              include_trash: false
+            }
+        if visible
+          assert_response :success
+        else
+          assert_response 404
+        end
+      end
+
       test "show include_trash #{project} #{untrash} as #{auth}" do
         authorize_with auth
         untrash.each do |pr|
