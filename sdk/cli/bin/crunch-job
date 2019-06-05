@@ -1634,7 +1634,9 @@ sub create_output_collection
   Log (undef, "collate");
 
   my ($child_out, $child_in);
-  my $pid = open2($child_out, $child_in, 'python', '-c', q{
+  # This depends on the python-arvados-python-client package, which needs to be installed
+  # on the machine running crunch-dispatch (typically, the API server).
+  my $pid = open2($child_out, $child_in, '/usr/share/python2.7/dist/python-arvados-python-client/bin/python', '-c', q{
 import arvados
 import sys
 print (arvados.api("v1").collections().
