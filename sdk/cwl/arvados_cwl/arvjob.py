@@ -236,8 +236,11 @@ class ArvadosJob(JobBase):
         try:
             if record["state"] == "Complete":
                 processStatus = "success"
+                # we don't have the real exit code so fake it.
+                record["exit_code"] = 0
             else:
                 processStatus = "permanentFail"
+                record["exit_code"] = 1
 
             outputs = {}
             try:
@@ -272,8 +275,8 @@ class ArvadosJob(JobBase):
                         outputs = done.done(self, record, dirs["tmpdir"],
                                             dirs["outdir"], dirs["keep"])
             except WorkflowException as e:
-                # Only include a stack trace if in debug mode. 
-                # This is most likely a user workflow error and a stack trace may obfuscate more useful output. 
+                # Only include a stack trace if in debug mode.
+                # This is most likely a user workflow error and a stack trace may obfuscate more useful output.
                 logger.error("%s unable to collect output from %s:\n%s",
                              self.arvrunner.label(self), record["output"], e, exc_info=(e if self.arvrunner.debug else False))
                 processStatus = "permanentFail"

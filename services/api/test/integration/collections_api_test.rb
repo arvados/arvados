@@ -275,6 +275,104 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
     end
   end
 
+  [
+    ["false", false],
+    ["0", false],
+    ["true", true],
+    ["1", true]
+  ].each do |param, truthiness|
+    test "include_trash=#{param.inspect} param JSON-encoded should be interpreted as include_trash=#{truthiness}" do
+      expired_col = collections(:expired_collection)
+      assert expired_col.is_trashed
+      # Try #index first
+      post "/arvados/v1/collections",
+          params: {
+            :_method => 'GET',
+            :include_trash => param,
+            :filters => [['uuid', '=', expired_col.uuid]].to_json
+          },
+          headers: auth(:active)
+      assert_response :success
+      assert_not_nil json_response['items']
+      assert_equal truthiness, json_response['items'].collect {|c| c['uuid']}.include?(expired_col.uuid)
+      # Try #show next
+      post "/arvados/v1/collections/#{expired_col.uuid}",
+        params: {
+          :_method => 'GET',
+          :include_trash => param,
+        },
+        headers: auth(:active)
+      if truthiness
+        assert_response :success
+      else
+        assert_response 404
+      end
+    end
+  end
+
+  [
+    ["false", false],
+    ["0", false],
+    ["true", true],
+    ["1", true]
+  ].each do |param, truthiness|
+    test "include_trash=#{param.inspect} param encoding via query string should be interpreted as include_trash=#{truthiness}" do
+      expired_col = collections(:expired_collection)
+      assert expired_col.is_trashed
+      # Try #index first
+      get("/arvados/v1/collections?include_trash=#{param}&filters=#{[['uuid','=',expired_col.uuid]].to_json}",
+          headers: auth(:active))
+      assert_response :success
+      assert_not_nil json_response['items']
+      assert_equal truthiness, json_response['items'].collect {|c| c['uuid']}.include?(expired_col.uuid)
+      # Try #show next
+      get("/arvados/v1/collections/#{expired_col.uuid}?include_trash=#{param}",
+        headers: auth(:active))
+      if truthiness
+        assert_response :success
+      else
+        assert_response 404
+      end
+    end
+  end
+
+  [
+    ["false", false],
+    ["0", false],
+    ["true", true],
+    ["1", true]
+  ].each do |param, truthiness|
+    test "include_trash=#{param.inspect} form-encoded param should be interpreted as include_trash=#{truthiness}" do
+      expired_col = collections(:expired_collection)
+      assert expired_col.is_trashed
+      params = [
+        ['_method', 'GET'],
+        ['include_trash', param],
+        ['filters', [['uuid','=',expired_col.uuid]].to_json],
+      ]
+      # Try #index first
+      post "/arvados/v1/collections",
+        params: URI.encode_www_form(params),
+        headers: {
+          "Content-type" => "application/x-www-form-urlencoded"
+        }.update(auth(:active))
+      assert_response :success
+      assert_not_nil json_response['items']
+      assert_equal truthiness, json_response['items'].collect {|c| c['uuid']}.include?(expired_col.uuid)
+      # Try #show next
+      post "/arvados/v1/collections/#{expired_col.uuid}",
+        params: URI.encode_www_form([['_method', 'GET'],['include_trash', param]]),
+        headers: {
+          "Content-type" => "application/x-www-form-urlencoded"
+        }.update(auth(:active))
+      if truthiness
+        assert_response :success
+      else
+        assert_response 404
+      end
+    end
+  end
+
   test "search collection using full text search" do
     # create collection to be searched for
     signed_manifest = Collection.sign_manifest(". 85877ca2d7e05498dd3d109baf2df106+95+A3a4e26a366ee7e4ed3e476ccf05354761be2e4ae@545a9920 0:95:file_in_subdir1\n./subdir2/subdir3 2bbc341c702df4d8f42ec31f16c10120+64+A315d7e7bad2ce937e711fc454fae2d1194d14d64@545a9920 0:32:file1_in_subdir3.txt 32:32:file2_in_subdir3.txt\n./subdir2/subdir3/subdir4 2bbc341c702df4d8f42ec31f16c10120+64+A315d7e7bad2ce937e711fc454fae2d1194d14d64@545a9920 0:32:file3_in_subdir4.txt 32:32:file4_in_subdir4.txt\n", api_token(:active))

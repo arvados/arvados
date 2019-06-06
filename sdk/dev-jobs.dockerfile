@@ -13,22 +13,19 @@
 # (This dockerfile file must be located in the arvados/sdk/ directory because
 #  of the docker build root.)
 
-FROM debian:jessie
+FROM debian:9
 MAINTAINER Ward Vandewege <ward@curoverse.com>
 
 ENV DEBIAN_FRONTEND noninteractive
 
 ARG pythoncmd=python
+ARG pipcmd=pip
 
 RUN apt-get update -q && apt-get install -qy --no-install-recommends \
     git ${pythoncmd}-pip ${pythoncmd}-virtualenv ${pythoncmd}-dev libcurl4-gnutls-dev \
     libgnutls28-dev nodejs ${pythoncmd}-pyasn1-modules build-essential
 
-RUN if [ "$pythoncmd" = "python3" ]; then \
-       pip3 install -U setuptools six requests ; \
-    else \
-       pip install -U setuptools six requests ; \
-    fi
+RUN $pipcmd install -U setuptools six requests
 
 ARG sdk
 ARG runner
@@ -40,10 +37,10 @@ ADD cwl/salad_dist/$salad /tmp/
 ADD cwl/cwltool_dist/$cwltool /tmp/
 ADD cwl/dist/$runner /tmp/
 
-RUN cd /tmp/arvados-python-client-* && $pythoncmd setup.py install
-RUN if test -d /tmp/schema-salad-* ; then cd /tmp/schema-salad-* && $pythoncmd setup.py install ; fi
-RUN if test -d /tmp/cwltool-* ; then cd /tmp/cwltool-* && $pythoncmd setup.py install ; fi
-RUN cd /tmp/arvados-cwl-runner-* && $pythoncmd setup.py install
+RUN cd /tmp/arvados-python-client-* && $pipcmd install .
+RUN if test -d /tmp/schema-salad-* ; then cd /tmp/schema-salad-* && $pipcmd install . ; fi
+RUN if test -d /tmp/cwltool-* ; then cd /tmp/cwltool-* && $pipcmd install networkx==2.2 && $pipcmd install . ; fi
+RUN cd /tmp/arvados-cwl-runner-* && $pipcmd install .
 
 # Install dependencies and set up system.
 RUN /usr/sbin/adduser --disabled-password \

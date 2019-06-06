@@ -19,6 +19,15 @@ class Arvados::V1::GroupsController < ApplicationController
       })
   end
 
+  def self._show_requires_parameters
+    (super rescue {}).
+      merge({
+        include_trash: {
+          type: 'boolean', required: false, description: "Show group/project even if its is_trashed attribute is true."
+        },
+      })
+  end
+
   def self._contents_requires_parameters
     params = _index_requires_parameters.
       merge({
