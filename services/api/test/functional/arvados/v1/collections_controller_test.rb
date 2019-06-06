@@ -1128,14 +1128,20 @@ EOS
     end
   end
 
-  test 'get trashed collection with include_trash' do
-    uuid = 'zzzzz-4zz18-mto52zx1s7sn3ih' # expired_collection
-    authorize_with :active
-    get :show, params: {
-      id: uuid,
-      include_trash: true,
-    }
-    assert_response 200
+  [true, false].each do |include_trash|
+    test "get trashed collection with include_trash=#{include_trash}" do
+      uuid = 'zzzzz-4zz18-mto52zx1s7sn3ih' # expired_collection
+      authorize_with :active
+      get :show, params: {
+        id: uuid,
+        include_trash: include_trash,
+      }
+      if include_trash
+        assert_response 200
+      else
+        assert_response 404
+      end
+    end
   end
 
   [:admin, :active].each do |user|
