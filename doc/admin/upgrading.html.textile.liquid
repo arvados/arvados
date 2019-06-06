@@ -30,6 +30,14 @@ Note to developers: Add new items at the top. Include the date, issue number, co
 TODO: extract this information based on git commit messages and generate changelogs / release notes automatically.
 {% endcomment %}
 
+h3. master
+
+h4. No longer stripping ':' from strings in serialized database columns
+
+ (bug #15311) Strings read from serialized columns in the database with a leading ':' would have the ':' stripped after loading the record.  This behavior existed due to legacy serialization behavior which stored Ruby symbols with a leading ':'.  Unfortunately this corrupted fields where the leading ":" was intentional.  This behavior has been removed.
+
+You can test if any records in your database are affected by going to the API server directory and running @bundle exec rake symbols:check@.  This will report which records contain fields with a leading ':' that would previously have been stripped.  If there are records to be updated, you can update the database using @bundle exec rake symbols:stringify@.
+
 h3. v1.4.0 (2019-05-31)
 
 h4. Populating the new file_count and file_size_total columns on the collections table
