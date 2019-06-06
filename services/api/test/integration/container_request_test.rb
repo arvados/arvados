@@ -4,9 +4,11 @@
 
 require 'test_helper'
 
-class ContainerRequestTest < ActionDispatch::IntegrationTest
+class ContainerRequestIntegrationTest < ActionDispatch::IntegrationTest
 
   test "test colon in input" do
+    # Tests for bug #15311 where strings with leading colons get
+    # corrupted when the leading ":" is stripped.
     val = {"itemSeparator" => ":"}
     post "/arvados/v1/container_requests",
       params: {
