@@ -23,7 +23,7 @@ class Arvados::V1::GroupsController < ApplicationController
     (super rescue {}).
       merge({
         include_trash: {
-          type: 'boolean', required: false, description: "Include items whose is_trashed attribute is true."
+          type: 'boolean', required: false, description: "Show group/project even if its is_trashed attribute is true."
         },
       })
   end
