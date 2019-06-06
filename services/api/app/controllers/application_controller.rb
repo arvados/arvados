@@ -166,8 +166,12 @@ class ApplicationController < ActionController::Base
   protected
 
   def bool_param(pname)
-    if params.include?(pname) && params[pname].is_a?(Boolean)
-      return params[pname]
+    if params.include?(pname)
+      if params[pname].is_a?(Boolean)
+        return params[pname]
+      else
+        logger.warn "Warning: received non-boolean parameter '#{pname}' on #{self.class.inspect}."
+      end
     end
     false
   end
