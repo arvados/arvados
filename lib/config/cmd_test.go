@@ -7,10 +7,17 @@ package config
 import (
 	"bytes"
 
+	"git.curoverse.com/arvados.git/lib/cmd"
 	check "gopkg.in/check.v1"
 )
 
 var _ = check.Suite(&CommandSuite{})
+
+var (
+	// Commands must satisfy cmd.Handler interface
+	_ cmd.Handler = dumpCommand{}
+	_ cmd.Handler = checkCommand{}
+)
 
 type CommandSuite struct{}
 

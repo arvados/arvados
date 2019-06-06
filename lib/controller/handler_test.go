@@ -53,6 +53,23 @@ func (s *HandlerSuite) TearDownTest(c *check.C) {
 	s.cancel()
 }
 
+func (s *HandlerSuite) TestConfigExport(c *check.C) {
+	s.cluster.Containers.CloudVMs.PollInterval = arvados.Duration(23 * time.Second)
+	req := httptest.NewRequest("GET", "/arvados/v1/config", nil)
+	resp := httptest.NewRecorder()
+	s.handler.ServeHTTP(resp, req)
+	c.Check(resp.Code, check.Equals, http.StatusOK)
+	var cluster arvados.Cluster
+	c.Log(resp.Body.String())
+	err := json.Unmarshal(resp.Body.Bytes(), &cluster)
+	c.Check(err, check.IsNil)
+	c.Check(cluster.ManagementToken, check.Equals, "")
+	c.Check(cluster.SystemRootToken, check.Equals, "")
+	c.Check(cluster.TLS.Insecure, check.Equals, true)
+	c.Check(cluster.Services.RailsAPI, check.DeepEquals, s.cluster.Services.RailsAPI)
+	c.Check(cluster.Containers.CloudVMs.PollInterval, check.Equals, arvados.Duration(23*time.Second))
+}
+
 func (s *HandlerSuite) TestProxyDiscoveryDoc(c *check.C) {
 	req := httptest.NewRequest("GET", "/discovery/v1/apis/arvados/v1/rest", nil)
 	resp := httptest.NewRecorder()

@@ -12,12 +12,11 @@ import (
 	"os"
 	"os/exec"
 
-	"git.curoverse.com/arvados.git/lib/cmd"
 	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"github.com/ghodss/yaml"
 )
 
-var DumpCommand cmd.Handler = dumpCommand{}
+var DumpCommand dumpCommand
 
 type dumpCommand struct{}
 
@@ -48,7 +47,7 @@ func (dumpCommand) RunCommand(prog string, args []string, stdin io.Reader, stdou
 	return 0
 }
 
-var CheckCommand cmd.Handler = checkCommand{}
+var CheckCommand checkCommand
 
 type checkCommand struct{}
 
