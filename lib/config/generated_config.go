@@ -635,4 +635,54 @@ Clusters:
         # their accounts are active on the remote cluster, activate
         # them on this cluster too.
         ActivateUsers: false
+
+    Workbench:
+      # Workbench1 configs
+      Theme: default
+      ActivationContactLink: mailto:info@arvados.org
+      ArvadosDocsite: https://doc.arvados.org
+      ArvadosPublicDataDocURL: https://playground.arvados.org/projects/public
+      ShowUserAgreementInline: false
+      SecretToken: ""
+      SecretKeyBase: ""
+      RepositoryCache: /var/www/arvados-workbench/current/tmp/git
+      UserProfileFormFields:
+        SAMPLE:
+          Type: text
+          FormFieldTitle: ""
+          FormFieldDescription: ""
+          Required: true
+      UserProfileFormMessage: 'Welcome to Arvados. All <span style="color:red">required fields</span> must be completed before you can proceed.'
+      ApplicationMimetypesWithViewIcon:
+        cwl: {}
+        fasta: {}
+        go: {}
+        javascript: {}
+        json: {}
+        pdf: {}
+        python: {}
+        x-python: {}
+        r: {}
+        rtf: {}
+        sam: {}
+        x-sh: {}
+        vnd.realvnc.bed: {}
+        xml: {}
+        xsl: {}
+      LogViewerMaxBytes: 1M
+      EnablePublicProjectsPage: true
+      EnableGettingStartedPopup: false
+      APIResponseCompression: true
+      APIClientConnectTimeout: 2m
+      APIClientReceiveTimeout: 5m
+      RunningJobLogRecordsToFetch: 2000
+      ShowRecentCollectionsOnDashboard: true
+      ShowUserNotifications: true
+      MultiSiteSearch: false
+      Repositories: true
+      SiteName: Arvados Workbench
+
+      # Workbench2 configs
+      VocabularyURL: ""
+      FileViewersConfigURL: ""
 `)

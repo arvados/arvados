@@ -126,6 +126,38 @@ type Cluster struct {
 		UserNotifierEmailFrom                 string
 		UserProfileNotificationAddress        string
 	}
+	Workbench struct {
+		ActivationContactLink            string
+		APIClientConnectTimeout          Duration
+		APIClientReceiveTimeout          Duration
+		APIResponseCompression           bool
+		ApplicationMimetypesWithViewIcon map[string]struct{}
+		ArvadosDocsite                   string
+		ArvadosPublicDataDocURL          string
+		EnableGettingStartedPopup        bool
+		EnablePublicProjectsPage         bool
+		FileViewersConfigURL             string
+		LogViewerMaxBytes                ByteSize
+		MultiSiteSearch                  bool
+		Repositories                     bool
+		RepositoryCache                  string
+		RunningJobLogRecordsToFetch      int
+		SecretKeyBase                    string
+		SecretToken                      string
+		ShowRecentCollectionsOnDashboard bool
+		ShowUserAgreementInline          bool
+		ShowUserNotifications            bool
+		SiteName                         string
+		Theme                            string
+		UserProfileFormFields            map[string]struct {
+			Type                 string
+			FormFieldTitle       string
+			FormFieldDescription string
+			Required             bool
+		}
+		UserProfileFormMessage string
+		VocabularyURL          string
+	}
 }
 
 type Services struct {
