@@ -41,11 +41,13 @@ Clusters:
         InternalURLs: {}
         ExternalURL: ""
       GitSSH:
+        InternalURLs: {}
         ExternalURL: ""
       DispatchCloud:
         InternalURLs: {}
         ExternalURL: "-"
       SSO:
+        InternalURLs: {}
         ExternalURL: ""
       Keepproxy:
         InternalURLs: {}
@@ -60,13 +62,16 @@ Clusters:
         InternalURLs: {}
         ExternalURL: "-"
       Composer:
+        InternalURLs: {}
         ExternalURL: ""
       WebShell:
+        InternalURLs: {}
         ExternalURL: ""
       Workbench1:
         InternalURLs: {}
         ExternalURL: ""
       Workbench2:
+        InternalURLs: {}
         ExternalURL: ""
       Nodemanager:
         InternalURLs: {}
@@ -119,7 +124,7 @@ Clusters:
       # Interval (seconds) between asynchronous permission view updates. Any
       # permission-updating API called with the 'async' parameter schedules a an
       # update on the permission view in the future, if not already scheduled.
-      AsyncPermissionsUpdateInterval: 20
+      AsyncPermissionsUpdateInterval: 20s
 
       # Maximum number of concurrent outgoing requests to make while
       # serving a single incoming multi-cluster (federated) request.
@@ -266,7 +271,7 @@ Clusters:
       # Interval (seconds) between trash sweeps. During a trash sweep,
       # collections are marked as trash if their trash_at time has
       # arrived, and deleted if their delete_at time has arrived.
-      TrashSweepInterval: 60
+      TrashSweepInterval: 60s
 
       # If true, enable collection versioning.
       # When a collection's preserve_version field is true or the current version
@@ -275,10 +280,10 @@ Clusters:
       # the current collection.
       CollectionVersioning: false
 
-      #   0 = auto-create a new version on every update.
-      #  -1 = never auto-create new versions.
-      # > 0 = auto-create a new version when older than the specified number of seconds.
-      PreserveVersionIfIdle: -1
+      #   0s = auto-create a new version on every update.
+      #  -1s = never auto-create new versions.
+      # > 0s = auto-create a new version when older than the specified number of seconds.
+      PreserveVersionIfIdle: -1s
 
     Login:
       # These settings are provided by your OAuth2 provider (e.g.,
@@ -342,12 +347,6 @@ Clusters:
       # scheduling parameter parameter set.
       UsePreemptibleInstances: false
 
-      # Include details about job reuse decisions in the server log. This
-      # causes additional database queries to run, so it should not be
-      # enabled unless you expect to examine the resulting logs for
-      # troubleshooting purposes.
-      LogReuseDecisions: false
-
       # PEM encoded SSH key (RSA, DSA, or ECDSA) used by the
       # (experimental) cloud dispatcher for executing containers on
       # worker VMs. Begins with "-----BEGIN RSA PRIVATE KEY-----\n"
@@ -372,8 +371,8 @@ Clusters:
         LogBytesPerEvent: 4096
         LogSecondsBetweenEvents: 1
 
-        # The sample period for throttling logs, in seconds.
-        LogThrottlePeriod: 60
+        # The sample period for throttling logs.
+        LogThrottlePeriod: 60s
 
         # Maximum number of bytes that job can log over crunch_log_throttle_period
         # before being silenced until the end of the period.
@@ -387,18 +386,18 @@ Clusters:
         # silenced by throttling are not counted against this total.
         LimitLogBytesPerJob: 67108864
 
-        LogPartialLineThrottlePeriod: 5
+        LogPartialLineThrottlePeriod: 5s
 
-        # Container logs are written to Keep and saved in a collection,
-        # which is updated periodically while the container runs.  This
-        # value sets the interval (given in seconds) between collection
-        # updates.
-        LogUpdatePeriod: 1800
+        # Container logs are written to Keep and saved in a
+        # collection, which is updated periodically while the
+        # container runs.  This value sets the interval between
+        # collection updates.
+        LogUpdatePeriod: 30m
 
         # The log collection is also updated when the specified amount of
         # log data (given in bytes) is produced in less than one update
         # period.
-        LogUpdateSize: 33554432
+        LogUpdateSize: 32MiB
 
       SLURM:
         Managed:
@@ -619,9 +618,21 @@ Clusters:
         Insecure: false
         ActivateUsers: false
       SAMPLE:
+        # API endpoint host or host:port; default is {id}.arvadosapi.com
         Host: sample.arvadosapi.com
+
+        # Perform a proxy request when a local client requests an
+        # object belonging to this remote.
         Proxy: false
+
+        # Default "https". Can be set to "http" for testing.
         Scheme: https
+
+        # Disable TLS verify. Can be set to true for testing.
         Insecure: false
+
+        # When users present tokens issued by this remote cluster, and
+        # their accounts are active on the remote cluster, activate
+        # them on this cluster too.
         ActivateUsers: false
 `)

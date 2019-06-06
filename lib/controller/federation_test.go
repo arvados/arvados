@@ -57,12 +57,10 @@ func (s *FederationSuite) SetUpTest(c *check.C) {
 	cluster := &arvados.Cluster{
 		ClusterID:  "zhome",
 		PostgreSQL: integrationTestCluster().PostgreSQL,
-		TLS:        arvados.TLS{Insecure: true},
-		API: arvados.API{
-			MaxItemsPerResponse:     1000,
-			MaxRequestAmplification: 4,
-		},
 	}
+	cluster.TLS.Insecure = true
+	cluster.API.MaxItemsPerResponse = 1000
+	cluster.API.MaxRequestAmplification = 4
 	arvadostest.SetServiceURL(&cluster.Services.RailsAPI, "http://localhost:1/")
 	arvadostest.SetServiceURL(&cluster.Services.Controller, "http://localhost:/")
 	s.testHandler = &Handler{Cluster: cluster}

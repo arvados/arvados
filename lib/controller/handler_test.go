@@ -42,8 +42,8 @@ func (s *HandlerSuite) SetUpTest(c *check.C) {
 	s.cluster = &arvados.Cluster{
 		ClusterID:  "zzzzz",
 		PostgreSQL: integrationTestCluster().PostgreSQL,
-		TLS:        arvados.TLS{Insecure: true},
 	}
+	s.cluster.TLS.Insecure = true
 	arvadostest.SetServiceURL(&s.cluster.Services.RailsAPI, "https://"+os.Getenv("ARVADOS_TEST_API_HOST"))
 	arvadostest.SetServiceURL(&s.cluster.Services.Controller, "http://localhost:/")
 	s.handler = newHandler(s.ctx, s.cluster, "")

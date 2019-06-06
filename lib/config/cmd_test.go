@@ -59,7 +59,7 @@ Clusters:
 `
 	code := CheckCommand.RunCommand("arvados config-check", nil, bytes.NewBufferString(in), &stdout, &stderr)
 	c.Check(code, check.Equals, 1)
-	c.Check(stdout.String(), check.Matches, `(?ms).*API:\n\- +.*MaxItemsPerResponse: 1000\n\+ +MaxItemsPerResponse: 1234\n.*`)
+	c.Check(stdout.String(), check.Matches, `(?ms).*\n\- +.*MaxItemsPerResponse: 1000\n\+ +MaxItemsPerResponse: 1234\n.*`)
 }
 
 func (s *CommandSuite) TestCheckUnknownKey(c *check.C) {
