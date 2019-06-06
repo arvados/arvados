@@ -76,24 +76,6 @@ class ContainerRequest < ArvadosModel
     t.add :use_existing
   end
 
-  def self._index_requires_parameters
-    (super rescue {}).
-      merge({
-        include_trash: {
-          type: 'boolean', required: false, description: "Include container requests whose owner project is trashed."
-        },
-      })
-  end
-
-  def self._show_requires_parameters
-    (super rescue {}).
-      merge({
-        include_trash: {
-          type: 'boolean', required: false, description: "Show container request even if its owner project is trashed."
-        },
-      })
-  end
-
   # Supported states for a container request
   States =
     [
