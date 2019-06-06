@@ -126,7 +126,7 @@ class ConfigLoader
         if cfg[k].is_a? Integer
           cfg[k] = cfg[k].seconds
         elsif cfg[k].is_a? String
-          cfg[k] = ConfigLoader.parse_duration cfg[k]
+          cfg[k] = ConfigLoader.parse_duration(cfg[k], cfgkey: cfgkey)
         end
       end
 
@@ -155,13 +155,13 @@ class ConfigLoader
     end
   end
 
-  def self.parse_duration durstr
-    duration_re = /(\d+(\.\d+)?)(s|m|h)/
+  def self.parse_duration durstr, cfgkey:
+    duration_re = /-?(\d+(\.\d+)?)(s|m|h)/
     dursec = 0
     while durstr != ""
       mt = duration_re.match durstr
       if !mt
-        raise "#{cfgkey} not a valid duration: '#{cfg[k]}', accepted suffixes are s, m, h"
+        raise "#{cfgkey} not a valid duration: '#{durstr}', accepted suffixes are s, m, h"
       end
       multiplier = {s: 1, m: 60, h: 3600}
       dursec += (Float(mt[1]) * multiplier[mt[3].to_sym])
