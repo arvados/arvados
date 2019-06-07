@@ -174,7 +174,7 @@ def set_secondary(fsaccess, builder, inputschema, secondaryspec, primary, discov
             if pattern is None:
                 continue
             sfpath = substitute(primary["location"], pattern)
-            required = builder.do_eval(sf["required"], context=primary)
+            required = builder.do_eval(sf.get("required"), context=primary)
 
             if fsaccess.exists(sfpath):
                 primary["secondaryFiles"].append({"location": sfpath, "class": "File"})
