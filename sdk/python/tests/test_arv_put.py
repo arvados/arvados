@@ -1185,7 +1185,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
         self.assertNotEqual(None, col['uuid'])
         c = arv_put.api_client.collections().get(uuid=col['uuid']).execute()
         self.assertEqual(
-            ciso8601.parse_datetime(trash_at).replace(tzinfo=None)+datetime.timedelta(hours=3),
+            ciso8601.parse_datetime(trash_at).replace(tzinfo=None) + datetime.timedelta(hours=3),
             ciso8601.parse_datetime(c['trash_at']).replace(tzinfo=None))
 
     def test_put_collection_with_timezone_naive_expiring_datetime(self):
@@ -1199,17 +1199,34 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
         self.assertNotEqual(None, col['uuid'])
         c = arv_put.api_client.collections().get(uuid=col['uuid']).execute()
         self.assertEqual(
-            ciso8601.parse_datetime(trash_at) - datetime.timedelta(hours=-time.timezone/3600),
+            ciso8601.parse_datetime(trash_at) + datetime.timedelta(seconds=time.timezone),
             ciso8601.parse_datetime(c['trash_at']).replace(tzinfo=None))
 
-    def test_put_collection_with_invalid_absolute_expiring_datetime(self):
+    def test_put_collection_with_timezone_expiring_date_only(self):
+        tmpdir = self.make_tmpdir()
+        trash_at = '2140-01-01'
+        end_of_day = datetime.timedelta(hours=23, minutes=59, seconds=59)
+        with open(os.path.join(tmpdir, 'file1'), 'w') as f:
+            f.write('Relaxing in basins at the end of inlets terminates the endless tests from the box')
+        col = self.run_and_find_collection(
+            "",
+            ['--no-progress', '--trash-at', trash_at, tmpdir])
+        self.assertNotEqual(None, col['uuid'])
+        c = arv_put.api_client.collections().get(uuid=col['uuid']).execute()
+        self.assertEqual(
+            ciso8601.parse_datetime(trash_at) + end_of_day + datetime.timedelta(seconds=time.timezone),
+            ciso8601.parse_datetime(c['trash_at']).replace(tzinfo=None))
+
+    def test_put_collection_with_invalid_absolute_expiring_datetimes(self):
+        cases = ['2100', '210010','2100-10', '2100-Oct']
         tmpdir = self.make_tmpdir()
         with open(os.path.join(tmpdir, 'file1'), 'w') as f:
             f.write('Relaxing in basins at the end of inlets terminates the endless tests from the box')
-        with self.assertRaises(AssertionError):
-            self.run_and_find_collection(
-                "",
-                ['--no-progress', '--trash-at', 'tomorrow at noon', tmpdir])
+        for test_datetime in cases:
+            with self.assertRaises(AssertionError):
+                self.run_and_find_collection(
+                    "",
+                    ['--no-progress', '--trash-at', test_datetime, tmpdir])
 
     def test_put_collection_with_relative_expiring_datetime(self):
         expire_after = 7
@@ -1228,7 +1245,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
         self.assertTrue(dt_after > trash_at)
 
     def test_put_collection_with_invalid_relative_expiring_datetime(self):
-        expire_after = 0 # Should be >= 1
+        expire_after = 0 # Must be >= 1
         tmpdir = self.make_tmpdir()
         with open(os.path.join(tmpdir, 'file1'), 'w') as f:
             f.write('Relaxing in basins at the end of inlets terminates the endless tests from the box')

@@ -1120,6 +1120,14 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
     # Trash arguments validation
     trash_at = None
     if args.trash_at is not None:
+        # ciso8601 considers YYYYMM as invalid but YYYY-MM as valid, so here we
+        # make sure the user provides a complete YYYY-MM-DD date.
+        if not re.match(r'^\d{4}(?P<dash>-?)\d{2}?(?P=dash)\d{2}', args.trash_at):
+            logger.error("--trash-at argument format invalid, use --help to see examples.")
+            sys.exit(1)
+        # Check if no time information was provided. In that case, assume end-of-day.
+        if re.match(r'^\d{4}(?P<dash>-?)\d{2}?(?P=dash)\d{2}$', args.trash_at):
+            args.trash_at += 'T23:59:59'
         try:
             trash_at = ciso8601.parse_datetime(args.trash_at)
         except:
@@ -1128,19 +1136,19 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
         else:
             if trash_at.tzinfo is not None:
                 # Timezone aware datetime provided.
-                utcoffset = trash_at.utcoffset()
+                utcoffset = -trash_at.utcoffset()
             else:
                 # Timezone naive datetime provided. Assume is local.
-                utcoffset = datetime.timedelta(hours=-time.timezone/3600)
+                utcoffset = datetime.timedelta(seconds=time.timezone)
             # Convert to UTC timezone naive datetime.
-            trash_at = trash_at.replace(tzinfo=None) - utcoffset
+            trash_at = trash_at.replace(tzinfo=None) + utcoffset
 
         if trash_at <= datetime.datetime.utcnow():
-            logger.error("--trash-at argument should be set in the future")
+            logger.error("--trash-at argument must be set in the future")
             sys.exit(1)
     if args.trash_after is not None:
         if args.trash_after < 1:
-            logger.error("--trash-after argument should be >= 1")
+            logger.error("--trash-after argument must be >= 1")
             sys.exit(1)
         trash_at = datetime.timedelta(seconds=(args.trash_after * 24 * 60 * 60))
 
