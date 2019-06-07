@@ -79,7 +79,8 @@ if test ! -s /var/lib/arvados/server-cert-${localip}.pem ; then
 	    -set_serial $RANDOM$RANDOM \
 	    -extfile <(cat /etc/ssl/openssl.cnf \
 			  <(printf "\n[x509_ext]\nkeyUsage=critical,digitalSignature,keyEncipherment\nsubjectAltName=DNS:localhost,$san")) \
-	    -extensions x509_ext
+	    -extensions x509_ext \
+	    -days 365
 
     chown arvbox:arvbox /var/lib/arvados/server-cert-${localip}.*
 fi
