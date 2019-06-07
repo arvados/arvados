@@ -1246,6 +1246,8 @@ for p in "${pythonstuff[@]}"; do
     testfuncargs[$dir:py3]="$dir pip $VENV3DIR/bin/"
 done
 
+testfuncargs["sdk/cli"]="sdk/cli"
+
 if [[ -z ${interactive} ]]; then
     install_all
     test_all
