@@ -13,7 +13,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
-	"strings"
 	"sync"
 
 	"git.curoverse.com/arvados.git/lib/cloud"
@@ -25,9 +24,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 )
-
-const arvadosDispatchID = "arvados-dispatch-id"
-const tagPrefix = "arvados-dispatch-tag-"
 
 // Driver is the ec2 implementation of the cloud.Driver interface.
 var Driver = cloud.DriverFunc(newEC2InstanceSet)
@@ -52,18 +48,18 @@ type ec2Interface interface {
 }
 
 type ec2InstanceSet struct {
-	ec2config    ec2InstanceSetConfig
-	dispatcherID cloud.InstanceSetID
-	logger       logrus.FieldLogger
-	client       ec2Interface
-	keysMtx      sync.Mutex
-	keys         map[string]string
+	ec2config     ec2InstanceSetConfig
+	instanceSetID cloud.InstanceSetID
+	logger        logrus.FieldLogger
+	client        ec2Interface
+	keysMtx       sync.Mutex
+	keys          map[string]string
 }
 
-func newEC2InstanceSet(config json.RawMessage, dispatcherID cloud.InstanceSetID, logger logrus.FieldLogger) (prv cloud.InstanceSet, err error) {
+func newEC2InstanceSet(config json.RawMessage, instanceSetID cloud.InstanceSetID, _ cloud.SharedResourceTags, logger logrus.FieldLogger) (prv cloud.InstanceSet, err error) {
 	instanceSet := &ec2InstanceSet{
-		dispatcherID: dispatcherID,
-		logger:       logger,
+		instanceSetID: instanceSetID,
+		logger:        logger,
 	}
 	err = json.Unmarshal(config, &instanceSet.ec2config)
 	if err != nil {
@@ -157,19 +153,10 @@ func (instanceSet *ec2InstanceSet) Create(
 	}
 	instanceSet.keysMtx.Unlock()
 
-	ec2tags := []*ec2.Tag{
-		&ec2.Tag{
-			Key:   aws.String(arvadosDispatchID),
-			Value: aws.String(string(instanceSet.dispatcherID)),
-		},
-		&ec2.Tag{
-			Key:   aws.String("arvados-class"),
-			Value: aws.String("dynamic-compute"),
-		},
-	}
+	ec2tags := []*ec2.Tag{}
 	for k, v := range newTags {
 		ec2tags = append(ec2tags, &ec2.Tag{
-			Key:   aws.String(tagPrefix + k),
+			Key:   aws.String(k),
 			Value: aws.String(v),
 		})
 	}
@@ -191,12 +178,12 @@ func (instanceSet *ec2InstanceSet) Create(
 			}},
 		DisableApiTermination:             aws.Bool(false),
 		InstanceInitiatedShutdownBehavior: aws.String("terminate"),
-		UserData: aws.String(base64.StdEncoding.EncodeToString([]byte("#!/bin/sh\n" + initCommand + "\n"))),
 		TagSpecifications: []*ec2.TagSpecification{
 			&ec2.TagSpecification{
 				ResourceType: aws.String("instance"),
 				Tags:         ec2tags,
 			}},
+		UserData: aws.String(base64.StdEncoding.EncodeToString([]byte("#!/bin/sh\n" + initCommand + "\n"))),
 	}
 
 	if instanceType.AddedScratch > 0 {
@@ -230,13 +217,15 @@ func (instanceSet *ec2InstanceSet) Create(
 	}, nil
 }
 
-func (instanceSet *ec2InstanceSet) Instances(cloud.InstanceTags) (instances []cloud.Instance, err error) {
-	dii := &ec2.DescribeInstancesInput{
-		Filters: []*ec2.Filter{&ec2.Filter{
-			Name:   aws.String("tag:" + arvadosDispatchID),
-			Values: []*string{aws.String(string(instanceSet.dispatcherID))},
-		}}}
-
+func (instanceSet *ec2InstanceSet) Instances(tags cloud.InstanceTags) (instances []cloud.Instance, err error) {
+	var filters []*ec2.Filter
+	for k, v := range tags {
+		filters = append(filters, &ec2.Filter{
+			Name:   aws.String("tag:" + k),
+			Values: []*string{aws.String(v)},
+		})
+	}
+	dii := &ec2.DescribeInstancesInput{Filters: filters}
 	for {
 		dio, err := instanceSet.client.DescribeInstances(dii)
 		if err != nil {
@@ -278,15 +267,10 @@ func (inst *ec2Instance) ProviderType() string {
 }
 
 func (inst *ec2Instance) SetTags(newTags cloud.InstanceTags) error {
-	ec2tags := []*ec2.Tag{
-		&ec2.Tag{
-			Key:   aws.String(arvadosDispatchID),
-			Value: aws.String(string(inst.provider.dispatcherID)),
-		},
-	}
+	var ec2tags []*ec2.Tag
 	for k, v := range newTags {
 		ec2tags = append(ec2tags, &ec2.Tag{
-			Key:   aws.String(tagPrefix + k),
+			Key:   aws.String(k),
 			Value: aws.String(v),
 		})
 	}
@@ -303,9 +287,7 @@ func (inst *ec2Instance) Tags() cloud.InstanceTags {
 	tags := make(map[string]string)
 
 	for _, t := range inst.instance.Tags {
-		if strings.HasPrefix(*t.Key, tagPrefix) {
-			tags[(*t.Key)[len(tagPrefix):]] = *t.Value
-		}
+		tags[*t.Key] = *t.Value
 	}
 
 	return tags

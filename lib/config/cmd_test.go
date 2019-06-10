@@ -79,6 +79,25 @@ Clusters:
 	c.Check(stderr.String(), check.Matches, `(?ms).*unexpected object in config entry: Clusters.z1234.PostgreSQL.ConnectionPool\n.*`)
 }
 
+func (s *CommandSuite) TestDumpFormatting(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	in := `
+Clusters:
+ z1234:
+  Containers:
+   CloudVMs:
+    TimeoutBooting: 600s
+  Services:
+   Controller:
+    InternalURLs:
+     http://localhost:12345: {}
+`
+	code := DumpCommand.RunCommand("arvados config-dump", nil, bytes.NewBufferString(in), &stdout, &stderr)
+	c.Check(code, check.Equals, 0)
+	c.Check(stdout.String(), check.Matches, `(?ms).*TimeoutBooting: 10m\n.*`)
+	c.Check(stdout.String(), check.Matches, `(?ms).*http://localhost:12345: {}\n.*`)
+}
+
 func (s *CommandSuite) TestDumpUnknownKey(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	in := `

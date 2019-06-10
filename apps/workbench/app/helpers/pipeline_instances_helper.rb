@@ -207,7 +207,7 @@ module PipelineInstancesHelper
         end
       else
         if step[:progress] and
-            (re = step[:progress].match /^(\d+)\+(\d+)\/(\d+)$/)
+            (re = step[:progress].match(/^(\d+)\+(\d+)\/(\d+)$/))
           pj[:progress] = (((re[1].to_f + re[2].to_f/2) / re[3].to_f) rescue 0.5)
         else
           pj[:progress] = 0.0

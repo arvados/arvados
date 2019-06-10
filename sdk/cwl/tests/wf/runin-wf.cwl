@@ -35,6 +35,8 @@ steps:
     out: [out]
     hints:
       - class: arv:RunInSingleContainer
+      - class: DockerRequirement
+        dockerPull: arvados/jobs:1.4.0.20190604172024
     run:
       class: Workflow
       id: mysub
@@ -60,5 +62,5 @@ steps:
               out:
                 type: string
                 outputBinding:
-                  outputEval: "out"
+                  outputEval: $("out")
             baseCommand: cat

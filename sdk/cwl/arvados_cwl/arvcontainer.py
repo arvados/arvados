@@ -225,6 +225,10 @@ class ArvadosContainer(JobBase):
                                                                     runtimeContext.pull_image,
                                                                     runtimeContext.project_uuid)
 
+        network_req, _ = self.get_requirement("NetworkAccess")
+        if network_req:
+            runtime_constraints["API"] = network_req["networkAccess"]
+
         api_req, _ = self.get_requirement("http://arvados.org/cwl#APIRequirement")
         if api_req:
             runtime_constraints["API"] = True
@@ -256,7 +260,7 @@ class ArvadosContainer(JobBase):
         if self.output_ttl < 0:
             raise WorkflowException("Invalid value %d for output_ttl, cannot be less than zero" % container_request["output_ttl"])
 
-        if self.timelimit is not None:
+        if self.timelimit is not None and self.timelimit > 0:
             scheduling_parameters["max_run_time"] = self.timelimit
 
         extra_submit_params = {}
@@ -272,6 +276,9 @@ class ArvadosContainer(JobBase):
 
         enable_reuse = runtimeContext.enable_reuse
         if enable_reuse:
+            reuse_req, _ = self.get_requirement("WorkReuse")
+            if reuse_req:
+                enable_reuse = reuse_req["enableReuse"]
             reuse_req, _ = self.get_requirement("http://arvados.org/cwl#ReuseRequirement")
             if reuse_req:
                 enable_reuse = reuse_req["enableReuse"]
@@ -484,6 +491,9 @@ class RunnerContainer(Runner):
 
         if self.arvrunner.project_uuid:
             command.append("--project-uuid="+self.arvrunner.project_uuid)
+
+        if self.enable_dev:
+            command.append("--enable-dev")
 
         command.extend([workflowpath, "/var/lib/cwl/cwl.input.json"])
 

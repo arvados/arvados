@@ -164,16 +164,16 @@ func (s *IntegrationSuite) Test200(c *check.C) {
 			dataMD5: "acbd18db4cc2f85cedef654fccc4a4d8",
 		},
 		{
-			host:    strings.Replace(arvadostest.FooPdh, "+", "-", 1) + ".collections.example.com",
+			host:    strings.Replace(arvadostest.FooCollectionPDH, "+", "-", 1) + ".collections.example.com",
 			path:    "/t=" + arvadostest.ActiveToken + "/foo",
 			dataMD5: "acbd18db4cc2f85cedef654fccc4a4d8",
 		},
 		{
-			path:    "/c=" + arvadostest.FooPdh + "/t=" + arvadostest.ActiveToken + "/foo",
+			path:    "/c=" + arvadostest.FooCollectionPDH + "/t=" + arvadostest.ActiveToken + "/foo",
 			dataMD5: "acbd18db4cc2f85cedef654fccc4a4d8",
 		},
 		{
-			path:    "/c=" + strings.Replace(arvadostest.FooPdh, "+", "-", 1) + "/t=" + arvadostest.ActiveToken + "/_/foo",
+			path:    "/c=" + strings.Replace(arvadostest.FooCollectionPDH, "+", "-", 1) + "/t=" + arvadostest.ActiveToken + "/_/foo",
 			dataMD5: "acbd18db4cc2f85cedef654fccc4a4d8",
 		},
 		{

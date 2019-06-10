@@ -15,10 +15,10 @@ import (
 
 var Command cmd.Handler = service.Command(arvados.ServiceNameDispatchCloud, newHandler)
 
-func newHandler(ctx context.Context, cluster *arvados.Cluster, np *arvados.NodeProfile, token string) service.Handler {
+func newHandler(ctx context.Context, cluster *arvados.Cluster, token string) service.Handler {
 	ac, err := arvados.NewClientFromConfig(cluster)
 	if err != nil {
-		return service.ErrorHandler(ctx, cluster, np, fmt.Errorf("error initializing client from cluster config: %s", err))
+		return service.ErrorHandler(ctx, cluster, fmt.Errorf("error initializing client from cluster config: %s", err))
 	}
 	d := &dispatcher{
 		Cluster:   cluster,

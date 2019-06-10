@@ -30,13 +30,8 @@ func (s *AggregatorSuite) TestInterface(c *check.C) {
 }
 
 func (s *AggregatorSuite) SetUpTest(c *check.C) {
-	s.handler = &Aggregator{Config: &arvados.Config{
-		Clusters: map[string]arvados.Cluster{
-			"zzzzz": {
-				ManagementToken: arvadostest.ManagementToken,
-				NodeProfiles:    map[string]arvados.NodeProfile{},
-			},
-		},
+	s.handler = &Aggregator{Cluster: &arvados.Cluster{
+		ManagementToken: arvadostest.ManagementToken,
 	}}
 	s.req = httptest.NewRequest("GET", "/_health/all", nil)
 	s.req.Header.Set("Authorization", "Bearer "+arvadostest.ManagementToken)
@@ -57,9 +52,9 @@ func (s *AggregatorSuite) TestBadAuth(c *check.C) {
 	c.Check(s.resp.Code, check.Equals, http.StatusUnauthorized)
 }
 
-func (s *AggregatorSuite) TestEmptyConfig(c *check.C) {
+func (s *AggregatorSuite) TestNoServicesConfigured(c *check.C) {
 	s.handler.ServeHTTP(s.resp, s.req)
-	s.checkOK(c)
+	s.checkUnhealthy(c)
 }
 
 func (s *AggregatorSuite) stubServer(handler http.Handler) (*httptest.Server, string) {
@@ -73,51 +68,18 @@ func (s *AggregatorSuite) stubServer(handler http.Handler) (*httptest.Server, st
 	return srv, ":" + port
 }
 
-type unhealthyHandler struct{}
-
-func (*unhealthyHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
-	if req.URL.Path == "/_health/ping" {
-		resp.Write([]byte(`{"health":"ERROR","error":"the bends"}`))
-	} else {
-		http.Error(resp, "not found", http.StatusNotFound)
-	}
-}
-
 func (s *AggregatorSuite) TestUnhealthy(c *check.C) {
 	srv, listen := s.stubServer(&unhealthyHandler{})
 	defer srv.Close()
-	s.handler.Config.Clusters["zzzzz"].NodeProfiles["localhost"] = arvados.NodeProfile{
-		Keepstore: arvados.SystemServiceInstance{Listen: listen},
-	}
+	arvadostest.SetServiceURL(&s.handler.Cluster.Services.Keepstore, "http://localhost"+listen+"/")
 	s.handler.ServeHTTP(s.resp, s.req)
 	s.checkUnhealthy(c)
-}
-
-type healthyHandler struct{}
-
-func (*healthyHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
-	if req.URL.Path == "/_health/ping" {
-		resp.Write([]byte(`{"health":"OK"}`))
-	} else {
-		http.Error(resp, "not found", http.StatusNotFound)
-	}
 }
 
 func (s *AggregatorSuite) TestHealthy(c *check.C) {
 	srv, listen := s.stubServer(&healthyHandler{})
 	defer srv.Close()
-	s.handler.Config.Clusters["zzzzz"].NodeProfiles["localhost"] = arvados.NodeProfile{
-		Controller:    arvados.SystemServiceInstance{Listen: listen},
-		DispatchCloud: arvados.SystemServiceInstance{Listen: listen},
-		Keepbalance:   arvados.SystemServiceInstance{Listen: listen},
-		Keepproxy:     arvados.SystemServiceInstance{Listen: listen},
-		Keepstore:     arvados.SystemServiceInstance{Listen: listen},
-		Keepweb:       arvados.SystemServiceInstance{Listen: listen},
-		Nodemanager:   arvados.SystemServiceInstance{Listen: listen},
-		RailsAPI:      arvados.SystemServiceInstance{Listen: listen},
-		Websocket:     arvados.SystemServiceInstance{Listen: listen},
-		Workbench:     arvados.SystemServiceInstance{Listen: listen},
-	}
+	s.setAllServiceURLs(listen)
 	s.handler.ServeHTTP(s.resp, s.req)
 	resp := s.checkOK(c)
 	svc := "keepstore+http://localhost" + listen + "/_health/ping"
@@ -132,21 +94,8 @@ func (s *AggregatorSuite) TestHealthyAndUnhealthy(c *check.C) {
 	defer srvH.Close()
 	srvU, listenU := s.stubServer(&unhealthyHandler{})
 	defer srvU.Close()
-	s.handler.Config.Clusters["zzzzz"].NodeProfiles["localhost"] = arvados.NodeProfile{
-		Controller:    arvados.SystemServiceInstance{Listen: listenH},
-		DispatchCloud: arvados.SystemServiceInstance{Listen: listenH},
-		Keepbalance:   arvados.SystemServiceInstance{Listen: listenH},
-		Keepproxy:     arvados.SystemServiceInstance{Listen: listenH},
-		Keepstore:     arvados.SystemServiceInstance{Listen: listenH},
-		Keepweb:       arvados.SystemServiceInstance{Listen: listenH},
-		Nodemanager:   arvados.SystemServiceInstance{Listen: listenH},
-		RailsAPI:      arvados.SystemServiceInstance{Listen: listenH},
-		Websocket:     arvados.SystemServiceInstance{Listen: listenH},
-		Workbench:     arvados.SystemServiceInstance{Listen: listenH},
-	}
-	s.handler.Config.Clusters["zzzzz"].NodeProfiles["127.0.0.1"] = arvados.NodeProfile{
-		Keepstore: arvados.SystemServiceInstance{Listen: listenU},
-	}
+	s.setAllServiceURLs(listenH)
+	arvadostest.SetServiceURL(&s.handler.Cluster.Services.Keepstore, "http://localhost"+listenH+"/", "http://127.0.0.1"+listenU+"/")
 	s.handler.ServeHTTP(s.resp, s.req)
 	resp := s.checkUnhealthy(c)
 	ep := resp.Checks["keepstore+http://localhost"+listenH+"/_health/ping"]
@@ -158,10 +107,25 @@ func (s *AggregatorSuite) TestHealthyAndUnhealthy(c *check.C) {
 	c.Logf("%#v", ep)
 }
 
+func (s *AggregatorSuite) TestPingTimeout(c *check.C) {
+	s.handler.timeout = arvados.Duration(100 * time.Millisecond)
+	srv, listen := s.stubServer(&slowHandler{})
+	defer srv.Close()
+	arvadostest.SetServiceURL(&s.handler.Cluster.Services.Keepstore, "http://localhost"+listen+"/")
+	s.handler.ServeHTTP(s.resp, s.req)
+	resp := s.checkUnhealthy(c)
+	ep := resp.Checks["keepstore+http://localhost"+listen+"/_health/ping"]
+	c.Check(ep.Health, check.Equals, "ERROR")
+	c.Check(ep.HTTPStatusCode, check.Equals, 0)
+	rt, err := ep.ResponseTime.Float64()
+	c.Check(err, check.IsNil)
+	c.Check(rt > 0.005, check.Equals, true)
+}
+
 func (s *AggregatorSuite) checkError(c *check.C) {
 	c.Check(s.resp.Code, check.Not(check.Equals), http.StatusOK)
 	var resp ClusterHealthResponse
-	err := json.NewDecoder(s.resp.Body).Decode(&resp)
+	err := json.Unmarshal(s.resp.Body.Bytes(), &resp)
 	c.Check(err, check.IsNil)
 	c.Check(resp.Health, check.Not(check.Equals), "OK")
 }
@@ -177,10 +141,51 @@ func (s *AggregatorSuite) checkOK(c *check.C) ClusterHealthResponse {
 func (s *AggregatorSuite) checkResult(c *check.C, health string) ClusterHealthResponse {
 	c.Check(s.resp.Code, check.Equals, http.StatusOK)
 	var resp ClusterHealthResponse
-	err := json.NewDecoder(s.resp.Body).Decode(&resp)
+	c.Log(s.resp.Body.String())
+	err := json.Unmarshal(s.resp.Body.Bytes(), &resp)
 	c.Check(err, check.IsNil)
 	c.Check(resp.Health, check.Equals, health)
 	return resp
+}
+
+func (s *AggregatorSuite) setAllServiceURLs(listen string) {
+	svcs := &s.handler.Cluster.Services
+	for _, svc := range []*arvados.Service{
+		&svcs.Controller,
+		&svcs.DispatchCloud,
+		&svcs.Keepbalance,
+		&svcs.Keepproxy,
+		&svcs.Keepstore,
+		&svcs.Health,
+		&svcs.Nodemanager,
+		&svcs.RailsAPI,
+		&svcs.WebDAV,
+		&svcs.Websocket,
+		&svcs.Workbench1,
+		&svcs.Workbench2,
+	} {
+		arvadostest.SetServiceURL(svc, "http://localhost"+listen+"/")
+	}
+}
+
+type unhealthyHandler struct{}
+
+func (*unhealthyHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	if req.URL.Path == "/_health/ping" {
+		resp.Write([]byte(`{"health":"ERROR","error":"the bends"}`))
+	} else {
+		http.Error(resp, "not found", http.StatusNotFound)
+	}
+}
+
+type healthyHandler struct{}
+
+func (*healthyHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	if req.URL.Path == "/_health/ping" {
+		resp.Write([]byte(`{"health":"OK"}`))
+	} else {
+		http.Error(resp, "not found", http.StatusNotFound)
+	}
 }
 
 type slowHandler struct{}
@@ -192,21 +197,4 @@ func (*slowHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	} else {
 		http.Error(resp, "not found", http.StatusNotFound)
 	}
-}
-
-func (s *AggregatorSuite) TestPingTimeout(c *check.C) {
-	s.handler.timeout = arvados.Duration(100 * time.Millisecond)
-	srv, listen := s.stubServer(&slowHandler{})
-	defer srv.Close()
-	s.handler.Config.Clusters["zzzzz"].NodeProfiles["localhost"] = arvados.NodeProfile{
-		Keepstore: arvados.SystemServiceInstance{Listen: listen},
-	}
-	s.handler.ServeHTTP(s.resp, s.req)
-	resp := s.checkUnhealthy(c)
-	ep := resp.Checks["keepstore+http://localhost"+listen+"/_health/ping"]
-	c.Check(ep.Health, check.Equals, "ERROR")
-	c.Check(ep.HTTPStatusCode, check.Equals, 0)
-	rt, err := ep.ResponseTime.Float64()
-	c.Check(err, check.IsNil)
-	c.Check(rt > 0.005, check.Equals, true)
 }

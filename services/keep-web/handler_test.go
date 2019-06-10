@@ -59,7 +59,7 @@ func (s *UnitSuite) TestCORSPreflight(c *check.C) {
 }
 
 func (s *UnitSuite) TestInvalidUUID(c *check.C) {
-	bogusID := strings.Replace(arvadostest.FooPdh, "+", "-", 1) + "-"
+	bogusID := strings.Replace(arvadostest.FooCollectionPDH, "+", "-", 1) + "-"
 	token := arvadostest.ActiveToken
 	for _, trial := range []string{
 		"http://keep-web/c=" + bogusID + "/foo",
@@ -186,8 +186,8 @@ func (s *IntegrationSuite) doVhostRequests(c *check.C, authz authorizer) {
 		arvadostest.FooCollection + ".example.com/foo",
 		arvadostest.FooCollection + "--collections.example.com/foo",
 		arvadostest.FooCollection + "--collections.example.com/_/foo",
-		arvadostest.FooPdh + ".example.com/foo",
-		strings.Replace(arvadostest.FooPdh, "+", "-", -1) + "--collections.example.com/foo",
+		arvadostest.FooCollectionPDH + ".example.com/foo",
+		strings.Replace(arvadostest.FooCollectionPDH, "+", "-", -1) + "--collections.example.com/foo",
 		arvadostest.FooBarDirCollection + ".example.com/dir1/foo",
 	} {
 		c.Log("doRequests: ", hostPath)

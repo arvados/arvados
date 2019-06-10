@@ -14,6 +14,7 @@ class ContainerWorkUnit < ProxyWorkUnit
         @container = Container.find(container_uuid)
       end
     end
+    @container = nil if !defined?(@container)
     @child_proxies = child_objects
   end
 

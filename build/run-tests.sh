@@ -105,6 +105,7 @@ services/crunch-dispatch-slurm
 services/ws
 sdk/cli
 sdk/pam
+sdk/pam:py3
 sdk/python
 sdk/python:py3
 sdk/ruby
@@ -903,7 +904,7 @@ install_gem() {
         && cd "$WORKSPACE/$srcpath" \
         && bundle_install_trylocal \
         && gem build "$gemname.gemspec" \
-        && with_test_gemset gem install --no-ri --no-rdoc $(ls -t "$gemname"-*.gem|head -n1)
+        && with_test_gemset gem install --no-document $(ls -t "$gemname"-*.gem|head -n1)
 }
 
 install_sdk/ruby() {
@@ -1244,6 +1245,8 @@ for p in "${pythonstuff[@]}"; do
     testfuncargs[$dir]="$dir pip $VENVDIR/bin/"
     testfuncargs[$dir:py3]="$dir pip $VENV3DIR/bin/"
 done
+
+testfuncargs["sdk/cli"]="sdk/cli"
 
 if [[ -z ${interactive} ]]; then
     install_all

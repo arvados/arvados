@@ -11,9 +11,11 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 
 	"git.curoverse.com/arvados.git/lib/cmd"
 	"git.curoverse.com/arvados.git/lib/config"
@@ -29,7 +31,7 @@ type Handler interface {
 	CheckHealth() error
 }
 
-type NewHandlerFunc func(_ context.Context, _ *arvados.Cluster, _ *arvados.NodeProfile, token string) Handler
+type NewHandlerFunc func(_ context.Context, _ *arvados.Cluster, token string) Handler
 
 type command struct {
 	newHandler NewHandlerFunc
@@ -63,7 +65,6 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	flags := flag.NewFlagSet("", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	configFile := flags.String("config", arvados.DefaultConfigFile, "Site configuration `file`")
-	nodeProfile := flags.String("node-profile", "", "`Name` of NodeProfiles config entry to use (if blank, use $ARVADOS_NODE_PROFILE or hostname reported by OS)")
 	err = flags.Parse(args)
 	if err == flag.ErrHelp {
 		err = nil
@@ -82,22 +83,13 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	if err != nil {
 		return 1
 	}
-	log = ctxlog.New(stderr, cluster.Logging.Format, cluster.Logging.Level).WithFields(logrus.Fields{
+	log = ctxlog.New(stderr, cluster.SystemLogs.Format, cluster.SystemLogs.LogLevel).WithFields(logrus.Fields{
 		"PID": os.Getpid(),
 	})
 	ctx := ctxlog.Context(c.ctx, log)
 
-	profileName := *nodeProfile
-	if profileName == "" {
-		profileName = os.Getenv("ARVADOS_NODE_PROFILE")
-	}
-	profile, err := cluster.GetNodeProfile(profileName)
+	listen, err := getListenAddr(cluster.Services, c.svcName)
 	if err != nil {
-		return 1
-	}
-	listen := profile.ServicePorts()[c.svcName]
-	if listen == "" {
-		err = fmt.Errorf("configuration does not enable the %s service on this host", c.svcName)
 		return 1
 	}
 
@@ -118,7 +110,7 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 		}
 	}
 
-	handler := c.newHandler(ctx, cluster, profile, cluster.SystemRootToken)
+	handler := c.newHandler(ctx, cluster, cluster.SystemRootToken)
 	if err = handler.CheckHealth(); err != nil {
 		return 1
 	}
@@ -151,3 +143,21 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 }
 
 const rfc3339NanoFixed = "2006-01-02T15:04:05.000000000Z07:00"
+
+func getListenAddr(svcs arvados.Services, prog arvados.ServiceName) (string, error) {
+	svc, ok := svcs.Map()[prog]
+	if !ok {
+		return "", fmt.Errorf("unknown service name %q", prog)
+	}
+	for url := range svc.InternalURLs {
+		if strings.HasPrefix(url.Host, "localhost:") {
+			return url.Host, nil
+		}
+		listener, err := net.Listen("tcp", url.Host)
+		if err == nil {
+			listener.Close()
+			return url.Host, nil
+		}
+	}
+	return "", fmt.Errorf("configuration does not enable the %s service on this host", prog)
+}

@@ -66,22 +66,20 @@ Add or update the following portions of your cluster configuration file, @/etc/a
   <span class="userinput">uuid_prefix</span>:
     ManagementToken: xyzzy
     SystemRootToken: <span class="userinput">zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz</span>
-    NodeProfiles:
-      # The key "apiserver" corresponds to ARVADOS_NODE_PROFILE in environment file (see below).
-      apiserver:
-        arvados-dispatch-cloud:
-          Listen: ":9006"
     Services:
       Controller:
         ExternalURL: "https://<span class="userinput">uuid_prefix.arvadosapi.com</span>"
-    CloudVMs:
-      # BootProbeCommand is a shell command that succeeds when an instance is ready for service
-      BootProbeCommand: "sudo systemctl status docker"
+      DispatchCloud:
+        InternalURLs:
+          "http://localhost:9006": {}
+    Containers:
+      CloudVMs:
+        # BootProbeCommand is a shell command that succeeds when an instance is ready for service
+        BootProbeCommand: "sudo systemctl status docker"
 
-      <b># --- driver-specific configuration goes here --- see Amazon and Azure examples below ---</b>
+        <b># --- driver-specific configuration goes here --- see Amazon and Azure examples below ---</b>
 
-    Dispatch:
-      PrivateKey: |
+      DispatchPrivateKey: |
         -----BEGIN RSA PRIVATE KEY-----
         MIIEpQIBAAKCAQEAqXoCzcOBkFQ7w4dvXf9B++1ctgZRqEbgRYL3SstuMV4oawks
         ttUuxJycDdsPmeYcHsKo8vsEZpN6iYsX6ZZzhkO5nEayUTU8sBjmg1ZCTo4QqKXr
@@ -113,18 +111,19 @@ Minimal configuration example for Amazon EC2:
 <notextile>
 <pre><code>Clusters:
   <span class="userinput">uuid_prefix</span>:
-    CloudVMs:
-      ImageID: ami-01234567890abcdef
-      Driver: ec2
-      DriverParameters:
-        AccessKeyID: EALMF21BJC7MKNF9FVVR
-        SecretAccessKey: yKJAPmoCQOMtYWzEUQ1tKTyrocTcbH60CRvGP3pM
-        SecurityGroupIDs:
-        - sg-0123abcd
-        SubnetID: subnet-0123abcd
-        Region: us-east-1
-        EBSVolumeType: gp2
-        AdminUsername: debian
+    Containers:
+      CloudVMs:
+        ImageID: ami-01234567890abcdef
+        Driver: ec2
+        DriverParameters:
+          AccessKeyID: EALMF21BJC7MKNF9FVVR
+          SecretAccessKey: yKJAPmoCQOMtYWzEUQ1tKTyrocTcbH60CRvGP3pM
+          SecurityGroupIDs:
+          - sg-0123abcd
+          SubnetID: subnet-0123abcd
+          Region: us-east-1
+          EBSVolumeType: gp2
+          AdminUsername: debian
 </code></pre>
 </notextile>
 
@@ -133,30 +132,24 @@ Minimal configuration example for Azure:
 <notextile>
 <pre><code>Clusters:
   <span class="userinput">uuid_prefix</span>:
-    CloudVMs:
-      ImageID: "https://zzzzzzzz.blob.core.windows.net/system/Microsoft.Compute/Images/images/zzzzz-compute-osDisk.55555555-5555-5555-5555-555555555555.vhd"
-      Driver: azure
-      DriverParameters:
-        SubscriptionID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
-        ClientID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
-        ClientSecret: 2WyXt0XFbEtutnf2hp528t6Wk9S5bOHWkRaaWwavKQo=
-        TenantID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
-        CloudEnvironment: AzurePublicCloud
-        ResourceGroup: zzzzz
-        Location: centralus
-        Network: zzzzz
-        Subnet: zzzzz-subnet-private
-        StorageAccount: example
-        BlobContainer: vhds
-        DeleteDanglingResourcesAfter: 20s
-        AdminUsername: arvados
-</code></pre>
-</notextile>
-
-Create the host configuration file @/etc/arvados/environment@.
-
-<notextile>
-<pre><code>ARVADOS_NODE_PROFILE=apiserver
+    Containers:
+      CloudVMs:
+        ImageID: "https://zzzzzzzz.blob.core.windows.net/system/Microsoft.Compute/Images/images/zzzzz-compute-osDisk.55555555-5555-5555-5555-555555555555.vhd"
+        Driver: azure
+        DriverParameters:
+          SubscriptionID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+          ClientID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+          ClientSecret: 2WyXt0XFbEtutnf2hp528t6Wk9S5bOHWkRaaWwavKQo=
+          TenantID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+          CloudEnvironment: AzurePublicCloud
+          ResourceGroup: zzzzz
+          Location: centralus
+          Network: zzzzz
+          Subnet: zzzzz-subnet-private
+          StorageAccount: example
+          BlobContainer: vhds
+          DeleteDanglingResourcesAfter: 20s
+          AdminUsername: arvados
 </code></pre>
 </notextile>
 

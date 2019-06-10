@@ -17,7 +17,7 @@ def pam_sm_authenticate(pamh, flags, argv):
 
     try:
         username = pamh.get_user(None)
-    except pamh.exception, e:
+    except pamh.exception as e:
         return e.pam_result
 
     if not username:

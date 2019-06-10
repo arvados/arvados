@@ -38,7 +38,7 @@ func (*Suite) TestCommand(c *check.C) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	cmd := Command(arvados.ServiceNameController, func(ctx context.Context, _ *arvados.Cluster, _ *arvados.NodeProfile, token string) Handler {
+	cmd := Command(arvados.ServiceNameController, func(ctx context.Context, _ *arvados.Cluster, token string) Handler {
 		c.Check(ctx.Value("foo"), check.Equals, "bar")
 		c.Check(token, check.Equals, "abcde")
 		return &testHandler{ctx: ctx, healthCheck: healthCheck}

@@ -17,7 +17,7 @@ import (
 // responds 500 to all requests.  ErrorHandler itself logs the given
 // error once, and the handler logs it again for each incoming
 // request.
-func ErrorHandler(ctx context.Context, _ *arvados.Cluster, _ *arvados.NodeProfile, err error) Handler {
+func ErrorHandler(ctx context.Context, _ *arvados.Cluster, err error) Handler {
 	logger := ctxlog.FromContext(ctx)
 	logger.WithError(err).Error("unhealthy service")
 	return errorHandler{err, logger}

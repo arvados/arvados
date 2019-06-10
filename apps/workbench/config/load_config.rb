@@ -9,7 +9,7 @@ $application_config = {}
 
 %w(application.default application).each do |cfgfile|
   path = "#{::Rails.root.to_s}/config/#{cfgfile}.yml"
-  if File.exists? path
+  if File.exist? path
     yaml = ERB.new(IO.read path).result(binding)
     confs = YAML.load(yaml, deserialize_symbols: true)
     $application_config.merge!(confs['common'] || {})

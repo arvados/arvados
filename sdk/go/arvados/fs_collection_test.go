@@ -23,7 +23,6 @@ import (
 	"testing"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	check "gopkg.in/check.v1"
 )
 
@@ -87,7 +86,7 @@ type CollectionFSSuite struct {
 
 func (s *CollectionFSSuite) SetUpTest(c *check.C) {
 	s.client = NewClientFromEnv()
-	err := s.client.RequestAndDecode(&s.coll, "GET", "arvados/v1/collections/"+arvadostest.FooAndBarFilesInDirUUID, nil, nil)
+	err := s.client.RequestAndDecode(&s.coll, "GET", "arvados/v1/collections/"+fixtureFooAndBarFilesInDirUUID, nil, nil)
 	c.Assert(err, check.IsNil)
 	s.kc = &keepClientStub{
 		blocks: map[string][]byte{

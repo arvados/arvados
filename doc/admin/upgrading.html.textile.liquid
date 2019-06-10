@@ -30,7 +30,30 @@ Note to developers: Add new items at the top. Include the date, issue number, co
 TODO: extract this information based on git commit messages and generate changelogs / release notes automatically.
 {% endcomment %}
 
-h3. current master branch
+table(table table-bordered table-condensed).
+|_. development|"master":#master|\3.|
+|_. latest stable|"v1.4.0":#v1_4_0|\3.|
+|_\5. past stable|
+|"v1.3.3":#v1_3_3|"v1.3.0":#v1_3_0|\3.|
+|"v1.2.1":#v1_2_1|"v1.2.0":#v1_2_0|\3.|
+|"v1.1.4":#v1_1_4|"v1.1.3":#v1_1_3|"v1.1.2":#v1_1_2|"v1.1.1":#v1_1_1|"v1.1.0":#v1_1_0|
+|\5. "older":#older|
+
+h3(#master). development master (as of 2019-06-07)
+
+h4. No longer stripping ':' from strings in serialized database columns
+
+ (bug #15311) Strings read from serialized columns in the database with a leading ':' would have the ':' stripped after loading the record.  This behavior existed due to legacy serialization behavior which stored Ruby symbols with a leading ':'.  Unfortunately this corrupted fields where the leading ":" was intentional.  This behavior has been removed.
+
+You can test if any records in your database are affected by going to the API server directory and running @bundle exec rake symbols:check@.  This will report which records contain fields with a leading ':' that would previously have been stripped.  If there are records to be updated, you can update the database using @bundle exec rake symbols:stringify@.
+
+h3(#v1_4_0). v1.4.0 (2019-06-05)
+
+h4. Populating the new file_count and file_size_total columns on the collections table
+
+As part of story "#14484":https://dev.arvados.org/issues/14484, two new columns were added to the collections table in a database migration. If your installation has a large collections table, this migration may take some time. We've seen it take ~5 minutes on an installation with 250k collections, but your mileage may vary.
+
+The new columns are initialized with a zero value. In order to populate them, it is necessary to run a script called <code class="userinput">populate-file-info-columns-in-collections.rb</code> from the scripts directory of the API server. This can be done out of band, ideally directly after the API server has been upgraded to v1.4.0.
 
 h4. Stricter collection manifest validation on the API server
 
@@ -129,7 +152,13 @@ h4. New configuration
 
 Arvados is migrating to a centralized configuration file for all components.  During the migration, legacy configuration files will continue to be loaded.  See "Migrating Configuration":config-migration.html for details.
 
-h3. v1.3.0 (2018-12-05)
+h3(#v1_3_3). v1.3.3 (2019-05-14)
+
+This release corrects a potential data loss issue, if you are running Arvados 1.3.0 or 1.3.1 we strongly recommended disabling @keep-balance@ until you can upgrade to 1.3.3 or 1.4.0. With keep-balance disabled, there is no chance of data loss.
+
+We've put together a "wiki page":https://dev.arvados.org/projects/arvados/wiki/Recovering_lost_data which outlines how to recover blocks which have been put in the trash, but not yet deleted, as well as how to identify any collections which have missing blocks so that they can be regenerated. The keep-balance component has been enhanced to provide a list of missing blocks and affected collections and we've provided a "utility script":https://github.com/curoverse/arvados/blob/master/tools/keep-xref/keep-xref.py  which can be used to identify the workflows that generated those collections and who ran those workflows, so that they can be rerun.
+
+h3(#v1_3_0). v1.3.0 (2018-12-05)
 
 This release includes several database migrations, which will be executed automatically as part of the API server upgrade. On large Arvados installations, these migrations will take a while. We've seen the upgrade take 30 minutes or more on installations with a lot of collections.
 
@@ -137,11 +166,11 @@ The @arvados-controller@ component now requires the /etc/arvados/config.yml file
 
 Support for the deprecated "jobs" API is broken in this release.  Users who rely on it should not upgrade.  This will be fixed in an upcoming 1.3.1 patch release, however users are "encouraged to migrate":upgrade-crunch2.html as support for the "jobs" API will be dropped in an upcoming release.  Users who are already using the "containers" API are not affected.
 
-h3. v1.2.1 (2018-11-26)
+h3(#v1_2_1). v1.2.1 (2018-11-26)
 
 There are no special upgrade notes for this release.
 
-h3. v1.2.0 (2018-09-05)
+h3(#v1_2_0). v1.2.0 (2018-09-05)
 
 h4. Regenerate Postgres table statistics
 
@@ -171,7 +200,7 @@ To add the Arvados Controller to your system please refer to the "installation i
 
 Verify your setup by confirming that API calls appear in the controller's logs (_e.g._, @journalctl -fu arvados-controller@) while loading a workbench page.
 
-h3. v1.1.4 (2018-04-10)
+h3(#v1_1_4). v1.1.4 (2018-04-10)
 
 h4. arvados-cwl-runner regressions (2018-04-05)
 
@@ -298,11 +327,11 @@ baseCommand: echo
 
 This bug has been fixed in Arvados release v1.2.0.
 
-h3. v1.1.3 (2018-02-08)
+h3(#v1_1_3). v1.1.3 (2018-02-08)
 
 There are no special upgrade notes for this release.
 
-h3. v1.1.2 (2017-12-22)
+h3(#v1_1_2). v1.1.2 (2017-12-22)
 
 h4. The minimum version for Postgres is now 9.4 (2017-12-08)
 
@@ -316,11 +345,11 @@ As part of story "#11908":https://dev.arvados.org/issues/11908, commit "8f987a92
 *# Install the @rh-postgresql94@ backport package from either Software Collections: http://doc.arvados.org/install/install-postgresql.html or the Postgres developers: https://www.postgresql.org/download/linux/redhat/
 *# Restore from the backup using @psql@
 
-h3. v1.1.1 (2017-11-30)
+h3(#v1_1_1). v1.1.1 (2017-11-30)
 
 There are no special upgrade notes for this release.
 
-h3. v1.1.0 (2017-10-24)
+h3(#v1_1_0). v1.1.0 (2017-10-24)
 
 h4. The minimum version for Postgres is now 9.3 (2017-09-25)
 
@@ -334,7 +363,7 @@ As part of story "#12032":https://dev.arvados.org/issues/12032, commit "68bdf4cb
 *# Install the @rh-postgresql94@ backport package from either Software Collections: http://doc.arvados.org/install/install-postgresql.html or the Postgres developers: https://www.postgresql.org/download/linux/redhat/
 *# Restore from the backup using @psql@
 
-h3. Older versions
+h3(#older). Older versions
 
 h4. Upgrade slower than usual (2017-06-30)
 

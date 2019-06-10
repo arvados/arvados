@@ -86,14 +86,6 @@ class Collection < ArvadosBase
     arvados_api_client.api "collections/#{self.uuid}/", "used_by"
   end
 
-  def uuid
-    if self[:uuid].nil?
-      return self[:portable_data_hash]
-    else
-      super
-    end
-  end
-
   def friendly_link_name lookup=nil
     name || portable_data_hash
   end

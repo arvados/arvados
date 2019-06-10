@@ -197,9 +197,9 @@ class ActionDispatch::IntegrationTest
   # exception if not found. Use this with assertions to explain that
   # the error signifies a failed test rather than an unexpected error
   # during a testing procedure.
-  def find? *args
+  def find?(*args)
     begin
-      find *args
+      find(*args)
     rescue Capybara::ElementNotFound
       false
     end
