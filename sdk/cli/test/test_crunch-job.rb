@@ -101,6 +101,8 @@ class TestCrunchJob < Minitest::Test
   end
 
   def test_output_collection_owner_uuid
+    skip "Depends on a post 1.3 python-arvados-python-client package being installed"
+
     j = jobspec :grep_local
     out, err = capture_subprocess_io do
       tryjobrecord j, binstubs: ['arv-mount', 'output_coll_owner']

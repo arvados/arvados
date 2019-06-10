@@ -219,9 +219,15 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
 def add_arv_hints():
     cwltool.command_line_tool.ACCEPTLIST_EN_RELAXED_RE = re.compile(r".*")
     cwltool.command_line_tool.ACCEPTLIST_RE = cwltool.command_line_tool.ACCEPTLIST_EN_RELAXED_RE
-    res = pkg_resources.resource_stream(__name__, 'arv-cwl-schema.yml')
-    use_custom_schema("v1.0", "http://arvados.org/cwl", res.read())
-    res.close()
+    res10 = pkg_resources.resource_stream(__name__, 'arv-cwl-schema-v1.0.yml')
+    res11 = pkg_resources.resource_stream(__name__, 'arv-cwl-schema-v1.1.yml')
+    customschema10 = res10.read()
+    customschema11 = res11.read()
+    use_custom_schema("v1.0", "http://arvados.org/cwl", customschema10)
+    use_custom_schema("v1.1.0-dev1", "http://arvados.org/cwl", customschema11)
+    use_custom_schema("v1.1", "http://arvados.org/cwl", customschema11)
+    res10.close()
+    res11.close()
     cwltool.process.supportedProcessRequirements.extend([
         "http://arvados.org/cwl#RunInSingleContainer",
         "http://arvados.org/cwl#OutputDirType",
@@ -314,6 +320,15 @@ def main(args, stdout, stderr, api_client=None, keep_client=None,
             '%Y-%m-%d %H:%M:%S'))
     else:
         arvados.log_handler.setFormatter(logging.Formatter('%(name)s %(levelname)s: %(message)s'))
+
+    if stdout is sys.stdout:
+        # cwltool.main has code to work around encoding issues with
+        # sys.stdout and unix pipes (they default to ASCII encoding,
+        # we want utf-8), so when stdout is sys.stdout set it to None
+        # to take advantage of that.  Don't override it for all cases
+        # since we still want to be able to capture stdout for the
+        # unit tests.
+        stdout = None
 
     return cwltool.main.main(args=arvargs,
                              stdout=stdout,

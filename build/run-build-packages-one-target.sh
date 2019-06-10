@@ -10,7 +10,7 @@ Syntax:
         WORKSPACE=/path/to/arvados $(basename $0) [options]
 
 --target <target>
-    Distribution to build packages for (default: debian8)
+    Distribution to build packages for (default: debian9)
 --command
     Build command to execute (default: use built-in Docker image command)
 --test-packages
@@ -57,7 +57,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-TARGET=debian8
+TARGET=debian9
 COMMAND=
 DEBUG=
 
@@ -262,6 +262,7 @@ else
     set +e
     mv -f ${WORKSPACE}/packages/${TARGET}/* ${WORKSPACE}/packages/${TARGET}/processed/ 2>/dev/null
     set -e
+set -x
     # Build packages. ulimit option can be removed when debian8 and ubuntu1404 are retired
     if docker run --ulimit nofile=4096:4096 \
         --rm \

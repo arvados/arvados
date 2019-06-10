@@ -45,7 +45,7 @@ func (s *UnitSuite) TestCache(c *check.C) {
 		coll, err = cache.Get(arv, arvadostest.FooCollection, false)
 		c.Check(err, check.Equals, nil)
 		c.Assert(coll, check.NotNil)
-		c.Check(coll.PortableDataHash, check.Equals, arvadostest.FooPdh)
+		c.Check(coll.PortableDataHash, check.Equals, arvadostest.FooCollectionPDH)
 		c.Check(coll.ManifestText[:2], check.Equals, ". ")
 	}
 	s.checkCacheMetrics(c, cache.registry,
@@ -62,10 +62,10 @@ func (s *UnitSuite) TestCache(c *check.C) {
 	// lookup.
 	arv.ApiToken = arvadostest.ActiveToken
 
-	coll2, err := cache.Get(arv, arvadostest.FooPdh, false)
+	coll2, err := cache.Get(arv, arvadostest.FooCollectionPDH, false)
 	c.Check(err, check.Equals, nil)
 	c.Assert(coll2, check.NotNil)
-	c.Check(coll2.PortableDataHash, check.Equals, arvadostest.FooPdh)
+	c.Check(coll2.PortableDataHash, check.Equals, arvadostest.FooCollectionPDH)
 	c.Check(coll2.ManifestText[:2], check.Equals, ". ")
 	c.Check(coll2.ManifestText, check.Not(check.Equals), coll.ManifestText)
 
@@ -76,10 +76,10 @@ func (s *UnitSuite) TestCache(c *check.C) {
 		"pdh_hits 4",
 		"api_calls 2")
 
-	coll2, err = cache.Get(arv, arvadostest.FooPdh, false)
+	coll2, err = cache.Get(arv, arvadostest.FooCollectionPDH, false)
 	c.Check(err, check.Equals, nil)
 	c.Assert(coll2, check.NotNil)
-	c.Check(coll2.PortableDataHash, check.Equals, arvadostest.FooPdh)
+	c.Check(coll2.PortableDataHash, check.Equals, arvadostest.FooCollectionPDH)
 	c.Check(coll2.ManifestText[:2], check.Equals, ". ")
 
 	s.checkCacheMetrics(c, cache.registry,
@@ -118,7 +118,7 @@ func (s *UnitSuite) TestCacheForceReloadByPDH(c *check.C) {
 	cache.registry = prometheus.NewRegistry()
 
 	for _, forceReload := range []bool{false, true, false, true} {
-		_, err := cache.Get(arv, arvadostest.FooPdh, forceReload)
+		_, err := cache.Get(arv, arvadostest.FooCollectionPDH, forceReload)
 		c.Check(err, check.Equals, nil)
 	}
 

@@ -54,25 +54,22 @@ func (s *FederationSuite) SetUpTest(c *check.C) {
 	s.remoteMock.Server.Handler = http.HandlerFunc(s.remoteMockHandler)
 	c.Assert(s.remoteMock.Start(), check.IsNil)
 
-	nodeProfile := arvados.NodeProfile{
-		Controller: arvados.SystemServiceInstance{Listen: ":"},
-		RailsAPI:   arvados.SystemServiceInstance{Listen: ":1"}, // local reqs will error "connection refused"
-	}
-	s.testHandler = &Handler{Cluster: &arvados.Cluster{
+	cluster := &arvados.Cluster{
 		ClusterID:  "zhome",
 		PostgreSQL: integrationTestCluster().PostgreSQL,
-		NodeProfiles: map[string]arvados.NodeProfile{
-			"*": nodeProfile,
-		},
+		TLS:        arvados.TLS{Insecure: true},
 		API: arvados.API{
 			MaxItemsPerResponse:     1000,
 			MaxRequestAmplification: 4,
 		},
-	}, NodeProfile: &nodeProfile}
+	}
+	arvadostest.SetServiceURL(&cluster.Services.RailsAPI, "http://localhost:1/")
+	arvadostest.SetServiceURL(&cluster.Services.Controller, "http://localhost:/")
+	s.testHandler = &Handler{Cluster: cluster}
 	s.testServer = newServerFromIntegrationTestEnv(c)
 	s.testServer.Server.Handler = httpserver.AddRequestIDs(httpserver.LogRequests(s.log, s.testHandler))
 
-	s.testHandler.Cluster.RemoteClusters = map[string]arvados.RemoteCluster{
+	cluster.RemoteClusters = map[string]arvados.RemoteCluster{
 		"zzzzz": {
 			Host:   s.remoteServer.Addr,
 			Proxy:  true,
@@ -318,16 +315,8 @@ func (s *FederationSuite) localServiceHandler(c *check.C, h http.Handler) *https
 			Handler: h,
 		},
 	}
-
 	c.Assert(srv.Start(), check.IsNil)
-
-	np := arvados.NodeProfile{
-		Controller: arvados.SystemServiceInstance{Listen: ":"},
-		RailsAPI: arvados.SystemServiceInstance{Listen: srv.Addr,
-			TLS: false, Insecure: true}}
-	s.testHandler.Cluster.NodeProfiles["*"] = np
-	s.testHandler.NodeProfile = &np
-
+	arvadostest.SetServiceURL(&s.testHandler.Cluster.Services.RailsAPI, "http://"+srv.Addr)
 	return srv
 }
 
@@ -338,13 +327,8 @@ func (s *FederationSuite) localServiceReturns404(c *check.C) *httpserver.Server 
 }
 
 func (s *FederationSuite) TestGetLocalCollection(c *check.C) {
-	np := arvados.NodeProfile{
-		Controller: arvados.SystemServiceInstance{Listen: ":"},
-		RailsAPI: arvados.SystemServiceInstance{Listen: os.Getenv("ARVADOS_TEST_API_HOST"),
-			TLS: true, Insecure: true}}
 	s.testHandler.Cluster.ClusterID = "zzzzz"
-	s.testHandler.Cluster.NodeProfiles["*"] = np
-	s.testHandler.NodeProfile = &np
+	arvadostest.SetServiceURL(&s.testHandler.Cluster.Services.RailsAPI, "https://"+os.Getenv("ARVADOS_TEST_API_HOST"))
 
 	// HTTP GET
 
@@ -416,12 +400,7 @@ func (s *FederationSuite) TestSignedLocatorPattern(c *check.C) {
 }
 
 func (s *FederationSuite) TestGetLocalCollectionByPDH(c *check.C) {
-	np := arvados.NodeProfile{
-		Controller: arvados.SystemServiceInstance{Listen: ":"},
-		RailsAPI: arvados.SystemServiceInstance{Listen: os.Getenv("ARVADOS_TEST_API_HOST"),
-			TLS: true, Insecure: true}}
-	s.testHandler.Cluster.NodeProfiles["*"] = np
-	s.testHandler.NodeProfile = &np
+	arvadostest.SetServiceURL(&s.testHandler.Cluster.Services.RailsAPI, "https://"+os.Getenv("ARVADOS_TEST_API_HOST"))
 
 	req := httptest.NewRequest("GET", "/arvados/v1/collections/"+arvadostest.UserAgreementPDH, nil)
 	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
@@ -505,12 +484,7 @@ func (s *FederationSuite) TestGetCollectionByPDHErrorBadHash(c *check.C) {
 }
 
 func (s *FederationSuite) TestSaltedTokenGetCollectionByPDH(c *check.C) {
-	np := arvados.NodeProfile{
-		Controller: arvados.SystemServiceInstance{Listen: ":"},
-		RailsAPI: arvados.SystemServiceInstance{Listen: os.Getenv("ARVADOS_TEST_API_HOST"),
-			TLS: true, Insecure: true}}
-	s.testHandler.Cluster.NodeProfiles["*"] = np
-	s.testHandler.NodeProfile = &np
+	arvadostest.SetServiceURL(&s.testHandler.Cluster.Services.RailsAPI, "https://"+os.Getenv("ARVADOS_TEST_API_HOST"))
 
 	req := httptest.NewRequest("GET", "/arvados/v1/collections/"+arvadostest.UserAgreementPDH, nil)
 	req.Header.Set("Authorization", "Bearer v2/zzzzz-gj3su-077z32aux8dg2s1/282d7d172b6cfdce364c5ed12ddf7417b2d00065")
@@ -526,12 +500,7 @@ func (s *FederationSuite) TestSaltedTokenGetCollectionByPDH(c *check.C) {
 }
 
 func (s *FederationSuite) TestSaltedTokenGetCollectionByPDHError(c *check.C) {
-	np := arvados.NodeProfile{
-		Controller: arvados.SystemServiceInstance{Listen: ":"},
-		RailsAPI: arvados.SystemServiceInstance{Listen: os.Getenv("ARVADOS_TEST_API_HOST"),
-			TLS: true, Insecure: true}}
-	s.testHandler.Cluster.NodeProfiles["*"] = np
-	s.testHandler.NodeProfile = &np
+	arvadostest.SetServiceURL(&s.testHandler.Cluster.Services.RailsAPI, "https://"+os.Getenv("ARVADOS_TEST_API_HOST"))
 
 	req := httptest.NewRequest("GET", "/arvados/v1/collections/99999999999999999999999999999999+99", nil)
 	req.Header.Set("Authorization", "Bearer v2/zzzzz-gj3su-077z32aux8dg2s1/282d7d172b6cfdce364c5ed12ddf7417b2d00065")
@@ -616,13 +585,8 @@ func (s *FederationSuite) TestCreateRemoteContainerRequestCheckRuntimeToken(c *c
 	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveTokenV2)
 	req.Header.Set("Content-type", "application/json")
 
-	np := arvados.NodeProfile{
-		Controller: arvados.SystemServiceInstance{Listen: ":"},
-		RailsAPI: arvados.SystemServiceInstance{Listen: os.Getenv("ARVADOS_TEST_API_HOST"),
-			TLS: true, Insecure: true}}
+	arvadostest.SetServiceURL(&s.testHandler.Cluster.Services.RailsAPI, "https://"+os.Getenv("ARVADOS_TEST_API_HOST"))
 	s.testHandler.Cluster.ClusterID = "zzzzz"
-	s.testHandler.Cluster.NodeProfiles["*"] = np
-	s.testHandler.NodeProfile = &np
 
 	resp := s.testRequest(req)
 	c.Check(resp.StatusCode, check.Equals, http.StatusOK)

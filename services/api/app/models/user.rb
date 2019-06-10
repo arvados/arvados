@@ -580,7 +580,7 @@ class User < ArvadosModel
     if self.prefs_changed?
       if self.prefs_was.andand.empty? || !self.prefs_was.andand['profile']
         profile_notification_address = Rails.configuration.Users.UserProfileNotificationAddress
-        ProfileNotifier.profile_created(self, profile_notification_address).deliver_now if profile_notification_address
+        ProfileNotifier.profile_created(self, profile_notification_address).deliver_now if profile_notification_address and !profile_notification_address.empty?
       end
     end
   end

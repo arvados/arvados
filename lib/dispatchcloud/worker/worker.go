@@ -455,8 +455,8 @@ func (wkr *worker) saveTags() {
 	instance := wkr.instance
 	tags := instance.Tags()
 	update := cloud.InstanceTags{
-		tagKeyInstanceType: wkr.instType.Name,
-		tagKeyIdleBehavior: string(wkr.idleBehavior),
+		wkr.wp.tagKeyPrefix + tagKeyInstanceType: wkr.instType.Name,
+		wkr.wp.tagKeyPrefix + tagKeyIdleBehavior: string(wkr.idleBehavior),
 	}
 	save := false
 	for k, v := range update {
