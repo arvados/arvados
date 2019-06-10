@@ -22,6 +22,9 @@ requirements:
   ScatterFeatureRequirement: {}
   InlineJavascriptRequirement: {}
   StepInputExpressionRequirement: {}
+hints:
+  DockerRequirement:
+    dockerPull: arvados/jobs:1.4.0.20190604172024
 steps:
   substep:
     in:

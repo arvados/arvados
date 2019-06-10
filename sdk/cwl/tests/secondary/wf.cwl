@@ -9,6 +9,8 @@ $namespaces:
   cwltool: "http://commonwl.org/cwltool#"
 requirements:
   SubworkflowFeatureRequirement: {}
+  DockerRequirement:
+    dockerPull: arvados/jobs:1.4.0.20190604172024
 inputs:
   i:
     type: File
