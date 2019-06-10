@@ -695,13 +695,13 @@ func (s *StandaloneSuite) TestGetWithLocalServiceHint(c *C) {
 			"zzzzz-bi6l4-yyyyyyyyyyyyyyy": ks0.url,
 			"zzzzz-bi6l4-xxxxxxxxxxxxxxx": ks0.url,
 			"zzzzz-bi6l4-wwwwwwwwwwwwwww": ks0.url,
-			uuid: ks.url},
+			uuid:                          ks.url},
 		nil,
 		map[string]string{
 			"zzzzz-bi6l4-yyyyyyyyyyyyyyy": ks0.url,
 			"zzzzz-bi6l4-xxxxxxxxxxxxxxx": ks0.url,
 			"zzzzz-bi6l4-wwwwwwwwwwwwwww": ks0.url,
-			uuid: ks.url},
+			uuid:                          ks.url},
 	)
 
 	r, n, uri, err := kc.Get(hash + "+K@" + uuid)
