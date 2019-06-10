@@ -44,7 +44,7 @@ module RecordFilters
 
       cond_out = []
 
-      if attrs_in == 'any' && operator.casecmp('ilike') && operand.match('^[%].*[%]$')
+      if attrs_in == 'any' && operator.casecmp('ilike') && (operand.is_a? String) && operand.match('^[%].*[%]$')
         # Trigram index search
         cond_out << model_class.full_text_trgm + " ilike ?"
         param_out << operand
