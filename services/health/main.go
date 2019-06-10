@@ -5,67 +5,24 @@
 package main
 
 import (
-	"flag"
-	"fmt"
-	"net/http"
+	"context"
+	"os"
 
+	"git.curoverse.com/arvados.git/lib/cmd"
+	"git.curoverse.com/arvados.git/lib/service"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/health"
-	"git.curoverse.com/arvados.git/sdk/go/httpserver"
-	log "github.com/sirupsen/logrus"
 )
 
-var version = "dev"
+var (
+	version             = "dev"
+	command cmd.Handler = service.Command(arvados.ServiceNameController, newHandler)
+)
+
+func newHandler(ctx context.Context, cluster *arvados.Cluster, _ string) service.Handler {
+	return &health.Aggregator{Cluster: cluster}
+}
 
 func main() {
-	configFile := flag.String("config", arvados.DefaultConfigFile, "`path` to arvados configuration file")
-	getVersion := flag.Bool("version", false, "Print version information and exit.")
-	flag.Parse()
-
-	// Print version information if requested
-	if *getVersion {
-		fmt.Printf("arvados-health %s\n", version)
-		return
-	}
-
-	log.SetFormatter(&log.JSONFormatter{
-		TimestampFormat: "2006-01-02T15:04:05.000000000Z07:00",
-	})
-	log.Printf("arvados-health %s started", version)
-
-	cfg, err := arvados.GetConfig(*configFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-	clusterCfg, err := cfg.GetCluster("")
-	if err != nil {
-		log.Fatal(err)
-	}
-	nodeCfg, err := clusterCfg.GetNodeProfile("")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	log := log.WithField("Service", "Health")
-	srv := &httpserver.Server{
-		Addr: nodeCfg.Health.Listen,
-		Server: http.Server{
-			Handler: &health.Aggregator{
-				Config: cfg,
-				Log: func(req *http.Request, err error) {
-					log.WithField("RemoteAddr", req.RemoteAddr).
-						WithField("Path", req.URL.Path).
-						WithError(err).
-						Info("HTTP request")
-				},
-			},
-		},
-	}
-	if err := srv.Start(); err != nil {
-		log.Fatal(err)
-	}
-	log.WithField("Listen", srv.Addr).Info("listening")
-	if err := srv.Wait(); err != nil {
-		log.Fatal(err)
-	}
+	os.Exit(command.RunCommand(os.Args[0], os.Args[1:], os.Stdin, os.Stdout, os.Stderr))
 }

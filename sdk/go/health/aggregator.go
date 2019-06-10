@@ -9,8 +9,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net"
 	"net/http"
+	"net/url"
 	"sync"
 	"time"
 
@@ -28,7 +28,7 @@ type Aggregator struct {
 	httpClient *http.Client
 	timeout    arvados.Duration
 
-	Config *arvados.Config
+	Cluster *arvados.Cluster
 
 	// If non-nil, Log is called after handling each request.
 	Log func(*http.Request, error)
@@ -40,6 +40,10 @@ func (agg *Aggregator) setup() {
 		// this is always the case, except in the test suite
 		agg.timeout = defaultTimeout
 	}
+}
+
+func (agg *Aggregator) CheckHealth() error {
+	return nil
 }
 
 func (agg *Aggregator) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
@@ -54,13 +58,7 @@ func (agg *Aggregator) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 
 	resp.Header().Set("Content-Type", "application/json")
 
-	cluster, err := agg.Config.GetCluster("")
-	if err != nil {
-		err = fmt.Errorf("arvados.GetCluster(): %s", err)
-		sendErr(http.StatusInternalServerError, err)
-		return
-	}
-	if !agg.checkAuth(req, cluster) {
+	if !agg.checkAuth(req) {
 		sendErr(http.StatusUnauthorized, errUnauthorized)
 		return
 	}
@@ -68,7 +66,7 @@ func (agg *Aggregator) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 		sendErr(http.StatusNotFound, errNotFound)
 		return
 	}
-	json.NewEncoder(resp).Encode(agg.ClusterHealth(cluster))
+	json.NewEncoder(resp).Encode(agg.ClusterHealth())
 	if agg.Log != nil {
 		agg.Log(req, nil)
 	}
@@ -104,7 +102,7 @@ type ServiceHealth struct {
 	N      int    `json:"n"`
 }
 
-func (agg *Aggregator) ClusterHealth(cluster *arvados.Cluster) ClusterHealthResponse {
+func (agg *Aggregator) ClusterHealth() ClusterHealthResponse {
 	resp := ClusterHealthResponse{
 		Health:   "OK",
 		Checks:   make(map[string]CheckResult),
@@ -113,46 +111,41 @@ func (agg *Aggregator) ClusterHealth(cluster *arvados.Cluster) ClusterHealthResp
 
 	mtx := sync.Mutex{}
 	wg := sync.WaitGroup{}
-	for profileName, profile := range cluster.NodeProfiles {
-		for svc, addr := range profile.ServicePorts() {
-			// Ensure svc is listed in resp.Services.
-			mtx.Lock()
-			if _, ok := resp.Services[svc]; !ok {
-				resp.Services[svc] = ServiceHealth{Health: "ERROR"}
-			}
-			mtx.Unlock()
+	for svcName, svc := range agg.Cluster.Services.Map() {
+		// Ensure svc is listed in resp.Services.
+		mtx.Lock()
+		if _, ok := resp.Services[svcName]; !ok {
+			resp.Services[svcName] = ServiceHealth{Health: "ERROR"}
+		}
+		mtx.Unlock()
 
-			if addr == "" {
-				// svc is not expected on this node.
-				continue
-			}
-
+		for addr := range svc.InternalURLs {
 			wg.Add(1)
-			go func(profileName string, svc arvados.ServiceName, addr string) {
+			go func(svcName arvados.ServiceName, addr arvados.URL) {
 				defer wg.Done()
 				var result CheckResult
-				url, err := agg.pingURL(profileName, addr)
+				pingURL, err := agg.pingURL(addr)
 				if err != nil {
 					result = CheckResult{
 						Health: "ERROR",
 						Error:  err.Error(),
 					}
 				} else {
-					result = agg.ping(url, cluster)
+					result = agg.ping(pingURL)
 				}
 
 				mtx.Lock()
 				defer mtx.Unlock()
-				resp.Checks[fmt.Sprintf("%s+%s", svc, url)] = result
+				resp.Checks[fmt.Sprintf("%s+%s", svcName, pingURL)] = result
 				if result.Health == "OK" {
-					h := resp.Services[svc]
+					h := resp.Services[svcName]
 					h.N++
 					h.Health = "OK"
-					resp.Services[svc] = h
+					resp.Services[svcName] = h
 				} else {
 					resp.Health = "ERROR"
 				}
-			}(profileName, svc, addr)
+			}(svcName, addr)
 		}
 	}
 	wg.Wait()
@@ -168,12 +161,12 @@ func (agg *Aggregator) ClusterHealth(cluster *arvados.Cluster) ClusterHealthResp
 	return resp
 }
 
-func (agg *Aggregator) pingURL(node, addr string) (string, error) {
-	_, port, err := net.SplitHostPort(addr)
-	return "http://" + node + ":" + port + "/_health/ping", err
+func (agg *Aggregator) pingURL(svcURL arvados.URL) (*url.URL, error) {
+	base := url.URL(svcURL)
+	return base.Parse("/_health/ping")
 }
 
-func (agg *Aggregator) ping(url string, cluster *arvados.Cluster) (result CheckResult) {
+func (agg *Aggregator) ping(target *url.URL) (result CheckResult) {
 	t0 := time.Now()
 
 	var err error
@@ -186,11 +179,11 @@ func (agg *Aggregator) ping(url string, cluster *arvados.Cluster) (result CheckR
 		}
 	}()
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", target.String(), nil)
 	if err != nil {
 		return
 	}
-	req.Header.Set("Authorization", "Bearer "+cluster.ManagementToken)
+	req.Header.Set("Authorization", "Bearer "+agg.Cluster.ManagementToken)
 
 	ctx, cancel := context.WithTimeout(req.Context(), time.Duration(agg.timeout))
 	defer cancel()
@@ -216,10 +209,10 @@ func (agg *Aggregator) ping(url string, cluster *arvados.Cluster) (result CheckR
 	return
 }
 
-func (agg *Aggregator) checkAuth(req *http.Request, cluster *arvados.Cluster) bool {
+func (agg *Aggregator) checkAuth(req *http.Request) bool {
 	creds := auth.CredentialsFromRequest(req)
 	for _, token := range creds.Tokens {
-		if token != "" && token == cluster.ManagementToken {
+		if token != "" && token == agg.Cluster.ManagementToken {
 			return true
 		}
 	}

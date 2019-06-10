@@ -50,8 +50,6 @@ type azureInstanceSetConfig struct {
 	AdminUsername                string
 }
 
-const tagKeyInstanceSecret = "InstanceSecret"
-
 type containerWrapper interface {
 	GetBlobReference(name string) *storage.Blob
 	ListBlobs(params storage.ListBlobsParameters) (storage.BlobListResponse, error)
@@ -213,7 +211,7 @@ type azureInstanceSet struct {
 	logger       logrus.FieldLogger
 }
 
-func newAzureInstanceSet(config json.RawMessage, dispatcherID cloud.InstanceSetID, logger logrus.FieldLogger) (prv cloud.InstanceSet, err error) {
+func newAzureInstanceSet(config json.RawMessage, dispatcherID cloud.InstanceSetID, _ cloud.SharedResourceTags, logger logrus.FieldLogger) (prv cloud.InstanceSet, err error) {
 	azcfg := azureInstanceSetConfig{}
 	err = json.Unmarshal(config, &azcfg)
 	if err != nil {
@@ -352,14 +350,11 @@ func (az *azureInstanceSet) Create(
 
 	name = az.namePrefix + name
 
-	timestamp := time.Now().Format(time.RFC3339Nano)
-
-	tags := make(map[string]*string)
-	tags["created-at"] = &timestamp
+	tags := map[string]*string{}
 	for k, v := range newTags {
-		newstr := v
-		tags["dispatch-"+k] = &newstr
+		tags[k] = to.StringPtr(v)
 	}
+	tags["created-at"] = to.StringPtr(time.Now().Format(time.RFC3339Nano))
 
 	nicParameters := network.Interface{
 		Location: &az.azconfig.Location,
@@ -482,26 +477,24 @@ func (az *azureInstanceSet) Instances(cloud.InstanceTags) ([]cloud.Instance, err
 		return nil, wrapAzureError(err)
 	}
 
-	instances := make([]cloud.Instance, 0)
-
+	var instances []cloud.Instance
 	for ; result.NotDone(); err = result.Next() {
 		if err != nil {
 			return nil, wrapAzureError(err)
 		}
-		if strings.HasPrefix(*result.Value().Name, az.namePrefix) {
-			instances = append(instances, &azureInstance{
-				provider: az,
-				vm:       result.Value(),
-				nic:      interfaces[*(*result.Value().NetworkProfile.NetworkInterfaces)[0].ID]})
-		}
+		instances = append(instances, &azureInstance{
+			provider: az,
+			vm:       result.Value(),
+			nic:      interfaces[*(*result.Value().NetworkProfile.NetworkInterfaces)[0].ID],
+		})
 	}
 	return instances, nil
 }
 
 // ManageNics returns a list of Azure network interface resources.
-// Also performs garbage collection of NICs which have "namePrefix", are
-// not associated with a virtual machine and have a "create-at" time
-// more than DeleteDanglingResourcesAfter (to prevent racing and
+// Also performs garbage collection of NICs which have "namePrefix",
+// are not associated with a virtual machine and have a "created-at"
+// time more than DeleteDanglingResourcesAfter (to prevent racing and
 // deleting newly created NICs) in the past are deleted.
 func (az *azureInstanceSet) manageNics() (map[string]network.Interface, error) {
 	az.stopWg.Add(1)
@@ -603,16 +596,12 @@ func (ai *azureInstance) SetTags(newTags cloud.InstanceTags) error {
 	ai.provider.stopWg.Add(1)
 	defer ai.provider.stopWg.Done()
 
-	tags := make(map[string]*string)
-
+	tags := map[string]*string{}
 	for k, v := range ai.vm.Tags {
-		if !strings.HasPrefix(k, "dispatch-") {
-			tags[k] = v
-		}
+		tags[k] = v
 	}
 	for k, v := range newTags {
-		newstr := v
-		tags["dispatch-"+k] = &newstr
+		tags[k] = to.StringPtr(v)
 	}
 
 	vmParameters := compute.VirtualMachine{
@@ -629,14 +618,10 @@ func (ai *azureInstance) SetTags(newTags cloud.InstanceTags) error {
 }
 
 func (ai *azureInstance) Tags() cloud.InstanceTags {
-	tags := make(map[string]string)
-
+	tags := cloud.InstanceTags{}
 	for k, v := range ai.vm.Tags {
-		if strings.HasPrefix(k, "dispatch-") {
-			tags[k[9:]] = *v
-		}
+		tags[k] = *v
 	}
-
 	return tags
 }
 

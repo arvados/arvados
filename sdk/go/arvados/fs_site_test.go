@@ -8,8 +8,20 @@ import (
 	"net/http"
 	"os"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	check "gopkg.in/check.v1"
+)
+
+const (
+	// Importing arvadostest would be an import cycle, so these
+	// fixtures are duplicated here [until fs moves to a separate
+	// package].
+	fixtureActiveToken             = "3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi"
+	fixtureAProjectUUID            = "zzzzz-j7d0g-v955i6s2oi1cbso"
+	fixtureFooAndBarFilesInDirUUID = "zzzzz-4zz18-foonbarfilesdir"
+	fixtureFooCollectionName       = "zzzzz-4zz18-fy296fx3hot09f7 added sometime"
+	fixtureFooCollectionPDH        = "1f4b0bc7583c2a7f9102c395f4ffc5e3+45"
+	fixtureFooCollection           = "zzzzz-4zz18-fy296fx3hot09f7"
+	fixtureNonexistentCollection   = "zzzzz-4zz18-totallynotexist"
 )
 
 var _ = check.Suite(&SiteFSSuite{})
@@ -23,7 +35,7 @@ type SiteFSSuite struct {
 func (s *SiteFSSuite) SetUpTest(c *check.C) {
 	s.client = &Client{
 		APIHost:   os.Getenv("ARVADOS_API_HOST"),
-		AuthToken: arvadostest.ActiveToken,
+		AuthToken: fixtureActiveToken,
 		Insecure:  true,
 	}
 	s.kc = &keepClientStub{
@@ -53,16 +65,16 @@ func (s *SiteFSSuite) TestByUUIDAndPDH(c *check.C) {
 	c.Check(err, check.IsNil)
 	c.Check(len(fis), check.Equals, 0)
 
-	err = s.fs.Mkdir("/by_id/"+arvadostest.FooCollection, 0755)
+	err = s.fs.Mkdir("/by_id/"+fixtureFooCollection, 0755)
 	c.Check(err, check.Equals, os.ErrExist)
 
-	f, err = s.fs.Open("/by_id/" + arvadostest.NonexistentCollection)
+	f, err = s.fs.Open("/by_id/" + fixtureNonexistentCollection)
 	c.Assert(err, check.Equals, os.ErrNotExist)
 
 	for _, path := range []string{
-		arvadostest.FooCollection,
-		arvadostest.FooPdh,
-		arvadostest.AProjectUUID + "/" + arvadostest.FooCollectionName,
+		fixtureFooCollection,
+		fixtureFooCollectionPDH,
+		fixtureAProjectUUID + "/" + fixtureFooCollectionName,
 	} {
 		f, err = s.fs.Open("/by_id/" + path)
 		c.Assert(err, check.IsNil)
@@ -74,7 +86,7 @@ func (s *SiteFSSuite) TestByUUIDAndPDH(c *check.C) {
 		c.Check(names, check.DeepEquals, []string{"foo"})
 	}
 
-	f, err = s.fs.Open("/by_id/" + arvadostest.AProjectUUID + "/A Subproject/baz_file")
+	f, err = s.fs.Open("/by_id/" + fixtureAProjectUUID + "/A Subproject/baz_file")
 	c.Assert(err, check.IsNil)
 	fis, err = f.Readdir(-1)
 	var names []string
@@ -83,15 +95,15 @@ func (s *SiteFSSuite) TestByUUIDAndPDH(c *check.C) {
 	}
 	c.Check(names, check.DeepEquals, []string{"baz"})
 
-	_, err = s.fs.OpenFile("/by_id/"+arvadostest.NonexistentCollection, os.O_RDWR|os.O_CREATE, 0755)
+	_, err = s.fs.OpenFile("/by_id/"+fixtureNonexistentCollection, os.O_RDWR|os.O_CREATE, 0755)
 	c.Check(err, check.Equals, ErrInvalidOperation)
-	err = s.fs.Rename("/by_id/"+arvadostest.FooCollection, "/by_id/beep")
+	err = s.fs.Rename("/by_id/"+fixtureFooCollection, "/by_id/beep")
 	c.Check(err, check.Equals, ErrInvalidArgument)
-	err = s.fs.Rename("/by_id/"+arvadostest.FooCollection+"/foo", "/by_id/beep")
+	err = s.fs.Rename("/by_id/"+fixtureFooCollection+"/foo", "/by_id/beep")
 	c.Check(err, check.Equals, ErrInvalidArgument)
 	_, err = s.fs.Stat("/by_id/beep")
 	c.Check(err, check.Equals, os.ErrNotExist)
-	err = s.fs.Rename("/by_id/"+arvadostest.FooCollection+"/foo", "/by_id/"+arvadostest.FooCollection+"/bar")
+	err = s.fs.Rename("/by_id/"+fixtureFooCollection+"/foo", "/by_id/"+fixtureFooCollection+"/bar")
 	c.Check(err, check.IsNil)
 
 	err = s.fs.Rename("/by_id", "/beep")

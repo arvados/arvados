@@ -5,6 +5,7 @@
 from future import standard_library
 standard_library.install_aliases()
 from future.utils import  viewvalues, viewitems
+from past.builtins import basestring
 
 import os
 import sys
@@ -13,8 +14,10 @@ import urllib.parse
 from functools import partial
 import logging
 import json
+import copy
 from collections import namedtuple
 from io import StringIO
+from typing import Mapping, Sequence
 
 if os.name == "posix" and sys.version_info[0] < 3:
     import subprocess32 as subprocess
@@ -25,12 +28,15 @@ from schema_salad.sourceline import SourceLine, cmap
 
 from cwltool.command_line_tool import CommandLineTool
 import cwltool.workflow
-from cwltool.process import scandeps, UnsupportedRequirement, normalizeFilesDirs, shortname, Process
+from cwltool.process import (scandeps, UnsupportedRequirement, normalizeFilesDirs,
+                             shortname, Process, fill_in_defaults)
 from cwltool.load_tool import fetch_document
 from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, visit_class
 from cwltool.utils import aslist
 from cwltool.builder import substitute
 from cwltool.pack import pack
+from cwltool.update import INTERNAL_VERSION
+from cwltool.builder import Builder
 import schema_salad.validate as validate
 
 import arvados.collection
@@ -41,6 +47,7 @@ import arvados_cwl.arvdocker
 from .pathmapper import ArvPathMapper, trim_listing
 from ._version import __version__
 from . import done
+from . context import ArvRuntimeContext
 
 logger = logging.getLogger('arvados.cwl-runner')
 
@@ -75,20 +82,117 @@ def find_defaults(d, op):
             for i in viewvalues(d):
                 find_defaults(i, op)
 
-def setSecondary(t, fileobj, discovered):
-    if isinstance(fileobj, dict) and fileobj.get("class") == "File":
-        if "secondaryFiles" not in fileobj:
-            fileobj["secondaryFiles"] = cmap([{"location": substitute(fileobj["location"], sf), "class": "File"} for sf in t["secondaryFiles"]])
-            if discovered is not None:
-                discovered[fileobj["location"]] = fileobj["secondaryFiles"]
-    elif isinstance(fileobj, list):
-        for e in fileobj:
-            setSecondary(t, e, discovered)
+def make_builder(joborder, hints, requirements, runtimeContext):
+    return Builder(
+                 job=joborder,
+                 files=[],               # type: List[Dict[Text, Text]]
+                 bindings=[],            # type: List[Dict[Text, Any]]
+                 schemaDefs={},          # type: Dict[Text, Dict[Text, Any]]
+                 names=None,               # type: Names
+                 requirements=requirements,        # type: List[Dict[Text, Any]]
+                 hints=hints,               # type: List[Dict[Text, Any]]
+                 resources={},           # type: Dict[str, int]
+                 mutation_manager=None,    # type: Optional[MutationManager]
+                 formatgraph=None,         # type: Optional[Graph]
+                 make_fs_access=None,      # type: Type[StdFsAccess]
+                 fs_access=None,           # type: StdFsAccess
+                 job_script_provider=runtimeContext.job_script_provider, # type: Optional[Any]
+                 timeout=runtimeContext.eval_timeout,             # type: float
+                 debug=runtimeContext.debug,               # type: bool
+                 js_console=runtimeContext.js_console,          # type: bool
+                 force_docker_pull=runtimeContext.force_docker_pull,   # type: bool
+                 loadListing="",         # type: Text
+                 outdir="",              # type: Text
+                 tmpdir="",              # type: Text
+                 stagedir="",            # type: Text
+                )
 
-def discover_secondary_files(inputs, job_order, discovered=None):
-    for t in inputs:
-        if shortname(t["id"]) in job_order and t.get("secondaryFiles"):
-            setSecondary(t, job_order[shortname(t["id"])], discovered)
+def search_schemadef(name, reqs):
+    for r in reqs:
+        if r["class"] == "SchemaDefRequirement":
+            for sd in r["types"]:
+                if sd["name"] == name:
+                    return sd
+    return None
+
+primitive_types_set = frozenset(("null", "boolean", "int", "long",
+                                 "float", "double", "string", "record",
+                                 "array", "enum"))
+
+def set_secondary(fsaccess, builder, inputschema, secondaryspec, primary, discovered):
+    if isinstance(inputschema, Sequence) and not isinstance(inputschema, basestring):
+        # union type, collect all possible secondaryFiles
+        for i in inputschema:
+            set_secondary(fsaccess, builder, i, secondaryspec, primary, discovered)
+        return
+
+    if isinstance(inputschema, basestring):
+        sd = search_schemadef(inputschema, reversed(builder.hints+builder.requirements))
+        if sd:
+            inputschema = sd
+        else:
+            return
+
+    if "secondaryFiles" in inputschema:
+        # set secondaryFiles, may be inherited by compound types.
+        secondaryspec = inputschema["secondaryFiles"]
+
+    if (isinstance(inputschema["type"], (Mapping, Sequence)) and
+        not isinstance(inputschema["type"], basestring)):
+        # compound type (union, array, record)
+        set_secondary(fsaccess, builder, inputschema["type"], secondaryspec, primary, discovered)
+
+    elif (inputschema["type"] == "record" and
+          isinstance(primary, Mapping)):
+        #
+        # record type, find secondary files associated with fields.
+        #
+        for f in inputschema["fields"]:
+            p = primary.get(shortname(f["name"]))
+            if p:
+                set_secondary(fsaccess, builder, f, secondaryspec, p, discovered)
+
+    elif (inputschema["type"] == "array" and
+          isinstance(primary, Sequence)):
+        #
+        # array type, find secondary files of elements
+        #
+        for p in primary:
+            set_secondary(fsaccess, builder, {"type": inputschema["items"]}, secondaryspec, p, discovered)
+
+    elif (inputschema["type"] == "File" and
+          secondaryspec and
+          isinstance(primary, Mapping) and
+          primary.get("class") == "File" and
+          "secondaryFiles" not in primary):
+        #
+        # Found a file, check for secondaryFiles
+        #
+        primary["secondaryFiles"] = []
+        for i, sf in enumerate(aslist(secondaryspec)):
+            pattern = builder.do_eval(sf["pattern"], context=primary)
+            if pattern is None:
+                continue
+            sfpath = substitute(primary["location"], pattern)
+            required = builder.do_eval(sf["required"], context=primary)
+
+            if fsaccess.exists(sfpath):
+                primary["secondaryFiles"].append({"location": sfpath, "class": "File"})
+            elif required:
+                raise SourceLine(primary["secondaryFiles"], i, validate.ValidationException).makeError(
+                    "Required secondary file '%s' does not exist" % sfpath)
+
+        primary["secondaryFiles"] = cmap(primary["secondaryFiles"])
+        if discovered is not None:
+            discovered[primary["location"]] = primary["secondaryFiles"]
+    elif inputschema["type"] not in primitive_types_set:
+        set_secondary(fsaccess, builder, inputschema["type"], secondaryspec, primary, discovered)
+
+def discover_secondary_files(fsaccess, builder, inputs, job_order, discovered=None):
+    for inputschema in inputs:
+        primary = job_order.get(shortname(inputschema["id"]))
+        if isinstance(primary, (Mapping, Sequence)):
+            set_secondary(fsaccess, builder, inputschema, None, primary, discovered)
 
 collection_uuid_pattern = re.compile(r'^keep:([a-z0-9]{5}-4zz18-[a-z0-9]{15})(/.*)?$')
 collection_pdh_pattern = re.compile(r'^keep:([0-9a-f]{32}\+\d+)(/.*)?')
@@ -130,7 +234,7 @@ def upload_dependencies(arvrunner, name, document_loader,
         loadref_fields = set(("$import",))
 
     scanobj = workflowobj
-    if "id" in workflowobj:
+    if "id" in workflowobj and not workflowobj["id"].startswith("_:"):
         # Need raw file content (before preprocessing) to ensure
         # that external references in $include and $mixin are captured.
         scanobj = loadref("", workflowobj["id"])
@@ -219,8 +323,18 @@ def upload_dependencies(arvrunner, name, document_loader,
 
     discovered = {}
     def discover_default_secondary_files(obj):
-        discover_secondary_files(obj["inputs"],
-                                 {shortname(t["id"]): t["default"] for t in obj["inputs"] if "default" in t},
+        builder_job_order = {}
+        for t in obj["inputs"]:
+            builder_job_order[shortname(t["id"])] = t["default"] if "default" in t else None
+        # Need to create a builder object to evaluate expressions.
+        builder = make_builder(builder_job_order,
+                               obj.get("hints", []),
+                               obj.get("requirements", []),
+                               ArvRuntimeContext())
+        discover_secondary_files(arvrunner.fs_access,
+                                 builder,
+                                 obj["inputs"],
+                                 builder_job_order,
                                  discovered)
 
     visit_class(workflowobj, ("CommandLineTool", "Workflow"), discover_default_secondary_files)
@@ -354,7 +468,30 @@ def upload_job_order(arvrunner, name, tool, job_order):
     object with 'location' updated to the proper keep references.
     """
 
-    discover_secondary_files(tool.tool["inputs"], job_order)
+    # Make a copy of the job order and set defaults.
+    builder_job_order = copy.copy(job_order)
+
+    # fill_in_defaults throws an error if there are any
+    # missing required parameters, we don't want it to do that
+    # so make them all optional.
+    inputs_copy = copy.deepcopy(tool.tool["inputs"])
+    for i in inputs_copy:
+        if "null" not in i["type"]:
+            i["type"] = ["null"] + aslist(i["type"])
+
+    fill_in_defaults(inputs_copy,
+                     builder_job_order,
+                     arvrunner.fs_access)
+    # Need to create a builder object to evaluate expressions.
+    builder = make_builder(builder_job_order,
+                           tool.hints,
+                           tool.requirements,
+                           ArvRuntimeContext())
+    # Now update job_order with secondaryFiles
+    discover_secondary_files(arvrunner.fs_access,
+                             builder,
+                             tool.tool["inputs"],
+                             job_order)
 
     jobmapper = upload_dependencies(arvrunner,
                                     name,
@@ -451,6 +588,10 @@ class Runner(Process):
                  collection_cache_size=256,
                  collection_cache_is_default=True):
 
+        loadingContext = loadingContext.copy()
+        loadingContext.metadata = loadingContext.metadata.copy()
+        loadingContext.metadata["cwlVersion"] = INTERNAL_VERSION
+
         super(Runner, self).__init__(tool.tool, loadingContext)
 
         self.arvrunner = runner
@@ -474,6 +615,7 @@ class Runner(Process):
         self.intermediate_output_ttl = intermediate_output_ttl
         self.priority = priority
         self.secret_store = secret_store
+        self.enable_dev = loadingContext.enable_dev
 
         self.submit_runner_cores = 1
         self.submit_runner_ram = 1024  # defaut 1 GiB

@@ -37,8 +37,12 @@ fi
 cd "$WORKSPACE"
 
 py=python
+pipcmd=pip
 if [[ -n "$PYCMD" ]] ; then
-    py="$PYCMD" ;
+    py="$PYCMD"
+    if [[ $py = python3 ]] ; then
+	pipcmd=pip3
+    fi
 fi
 
 (cd sdk/python && python setup.py sdist)
@@ -75,6 +79,6 @@ if [[ $python_sdk_ts -gt $cwl_runner_ts ]]; then
     cwl_runner_version=$(cd sdk/python && nohash_version_from_git 1.0)
 fi
 
-docker build --build-arg sdk=$sdk --build-arg runner=$runner --build-arg salad=$salad --build-arg cwltool=$cwltool --build-arg pythoncmd=$py -f "$WORKSPACE/sdk/dev-jobs.dockerfile" -t arvados/jobs:$cwl_runner_version "$WORKSPACE/sdk"
+docker build --build-arg sdk=$sdk --build-arg runner=$runner --build-arg salad=$salad --build-arg cwltool=$cwltool --build-arg pythoncmd=$py --build-arg pipcmd=$pipcmd -f "$WORKSPACE/sdk/dev-jobs.dockerfile" -t arvados/jobs:$cwl_runner_version "$WORKSPACE/sdk"
 echo arv-keepdocker arvados/jobs $cwl_runner_version
 arv-keepdocker arvados/jobs $cwl_runner_version

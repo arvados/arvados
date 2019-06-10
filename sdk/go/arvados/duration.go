@@ -7,6 +7,7 @@ package arvados
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -23,13 +24,17 @@ func (d *Duration) UnmarshalJSON(data []byte) error {
 }
 
 // MarshalJSON implements json.Marshaler.
-func (d *Duration) MarshalJSON() ([]byte, error) {
+func (d Duration) MarshalJSON() ([]byte, error) {
 	return json.Marshal(d.String())
 }
 
-// String implements fmt.Stringer.
+// String returns a format similar to (time.Duration)String() but with
+// "0m" and "0s" removed: e.g., "1h" instead of "1h0m0s".
 func (d Duration) String() string {
-	return time.Duration(d).String()
+	s := time.Duration(d).String()
+	s = strings.Replace(s, "m0s", "m", 1)
+	s = strings.Replace(s, "h0m", "h", 1)
+	return s
 }
 
 // Duration returns a time.Duration.

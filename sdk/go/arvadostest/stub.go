@@ -6,6 +6,9 @@ package arvadostest
 
 import (
 	"net/http"
+	"net/url"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 )
 
 // StubResponse struct with response status and body
@@ -35,5 +38,24 @@ func (stub *ServerStub) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	} else {
 		resp.WriteHeader(500)
 		resp.Write([]byte(``))
+	}
+}
+
+// SetServiceURL overrides the given service config/discovery with the
+// given internalURLs.
+//
+// ExternalURL is set to the last internalURL, which only aims to
+// address the case where there is only one.
+//
+// SetServiceURL panics on errors.
+func SetServiceURL(service *arvados.Service, internalURLs ...string) {
+	service.InternalURLs = map[arvados.URL]arvados.ServiceInstance{}
+	for _, u := range internalURLs {
+		u, err := url.Parse(u)
+		if err != nil {
+			panic(err)
+		}
+		service.InternalURLs[arvados.URL(*u)] = arvados.ServiceInstance{}
+		service.ExternalURL = arvados.URL(*u)
 	}
 }

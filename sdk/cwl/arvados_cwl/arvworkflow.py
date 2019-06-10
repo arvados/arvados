@@ -22,9 +22,11 @@ from cwltool.context import LoadingContext
 import ruamel.yaml as yaml
 
 from .runner import (upload_dependencies, packed_workflow, upload_workflow_collection,
-                     trim_anonymous_location, remove_redundant_fields, discover_secondary_files)
+                     trim_anonymous_location, remove_redundant_fields, discover_secondary_files,
+                     make_builder)
 from .pathmapper import ArvPathMapper, trim_listing
-from .arvtool import ArvadosCommandTool, set_cluster_target, make_builder
+from .arvtool import ArvadosCommandTool, set_cluster_target
+
 from .perf import Perf
 
 logger = logging.getLogger('arvados.cwl-runner')
@@ -172,7 +174,8 @@ class ArvadosWorkflow(Workflow):
                 raise WorkflowException("%s object must have 'id'" % (self.tool["class"]))
         document_loader, workflowobj, uri = (self.doc_loader, self.doc_loader.fetch(self.tool["id"]), self.tool["id"])
 
-        discover_secondary_files(self.tool["inputs"], joborder)
+        discover_secondary_files(self.arvrunner.fs_access, builder,
+                                 self.tool["inputs"], joborder)
 
         with Perf(metrics, "subworkflow upload_deps"):
             upload_dependencies(self.arvrunner,
@@ -287,6 +290,10 @@ class ArvadosWorkflow(Workflow):
                 adjustFileObjs(packed, keepmount)
                 adjustDirObjs(packed, keepmount)
                 self.wf_pdh = upload_workflow_collection(self.arvrunner, shortname(self.tool["id"]), packed)
+
+        self.loadingContext = self.loadingContext.copy()
+        self.loadingContext.metadata = self.loadingContext.metadata.copy()
+        self.loadingContext.metadata["http://commonwl.org/cwltool#original_cwlVersion"] = "v1.0"
 
         wf_runner = cmap({
             "class": "CommandLineTool",

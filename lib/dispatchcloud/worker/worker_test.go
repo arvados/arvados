@@ -25,7 +25,7 @@ func (suite *WorkerSuite) TestProbeAndUpdate(c *check.C) {
 	bootTimeout := time.Minute
 	probeTimeout := time.Second
 
-	is, err := (&test.StubDriver{}).InstanceSet(nil, "", logger)
+	is, err := (&test.StubDriver{}).InstanceSet(nil, "test-instance-set-id", nil, logger)
 	c.Assert(err, check.IsNil)
 	inst, err := is.Create(arvados.InstanceType{}, "", nil, "echo InitCommand", nil)
 	c.Assert(err, check.IsNil)

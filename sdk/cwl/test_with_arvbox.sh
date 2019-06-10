@@ -53,7 +53,7 @@ while test -n "$1" ; do
             shift ; shift
             ;;
         -h|--help)
-            echo "$0 [--no-reset-container] [--leave-running] [--config dev|localdemo] [--tag docker_tag] [--build] [--pythoncmd python(2|3)] [--suite (integration|conformance)]"
+            echo "$0 [--no-reset-container] [--leave-running] [--config dev|localdemo] [--tag docker_tag] [--build] [--pythoncmd python(2|3)] [--suite (integration|conformance-v1.0|conformance-v1.1)]"
             exit
             ;;
         *)
@@ -64,6 +64,10 @@ done
 
 if test -z "$ARVBOX_CONTAINER" ; then
    export ARVBOX_CONTAINER=cwltest
+fi
+
+if test "$suite" = "conformance" ; then
+  suite=conformance-v1.0
 fi
 
 if test $reset_container = 1 ; then
@@ -97,18 +101,29 @@ fi
 
 mkdir -p /tmp/cwltest
 cd /tmp/cwltest
-if ! test -d common-workflow-language ; then
-  git clone https://github.com/common-workflow-language/common-workflow-language.git
+
+if [[ "$suite" = "conformance-v1.0" ]] ; then
+   if ! test -d common-workflow-language ; then
+     git clone https://github.com/common-workflow-language/common-workflow-language.git
+   fi
+   cd common-workflow-language
+elif [[ "$suite" = "conformance-v1.1" ]] ; then
+   if ! test -d cwl-v1.1 ; then
+     git clone https://github.com/common-workflow-language/cwl-v1.1.git
+   fi
+   cd cwl-v1.1
 fi
-cd common-workflow-language
-git pull
+
+if [[ "$suite" != "integration" ]] ; then
+  git pull
+fi
+
 export ARVADOS_API_HOST=localhost:8000
 export ARVADOS_API_HOST_INSECURE=1
 export ARVADOS_API_TOKEN=\$(cat /var/lib/arvados/superuser_token)
 
-
 if test -n "$build" ; then
-   /usr/src/arvados/build/build-dev-docker-jobs-image.sh
+  /usr/src/arvados/build/build-dev-docker-jobs-image.sh
 elif test "$tag" = "latest" ; then
   arv-keepdocker --pull arvados/jobs $tag
 else
@@ -131,11 +146,11 @@ EOF2
 chmod +x /tmp/cwltest/arv-cwl-containers
 
 env
-if [[ "$suite" = "conformance" ]] ; then
-   exec ./run_test.sh RUNNER=/tmp/cwltest/arv-cwl-${runapi} EXTRA=--compute-checksum $@
-elif [[ "$suite" = "integration" ]] ; then
+if [[ "$suite" = "integration" ]] ; then
    cd /usr/src/arvados/sdk/cwl/tests
    exec ./arvados-tests.sh $@
+else
+   exec ./run_test.sh RUNNER=/tmp/cwltest/arv-cwl-${runapi} EXTRA=--compute-checksum $@
 fi
 EOF
 

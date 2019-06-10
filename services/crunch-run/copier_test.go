@@ -111,7 +111,7 @@ func (s *copierSuite) TestSymlinkToMountedCollection(c *check.C) {
 	// simulate mounted read-only collection
 	s.cp.mounts["/mnt"] = arvados.Mount{
 		Kind:             "collection",
-		PortableDataHash: arvadostest.FooPdh,
+		PortableDataHash: arvadostest.FooCollectionPDH,
 	}
 
 	// simulate mounted writable collection
@@ -125,7 +125,7 @@ func (s *copierSuite) TestSymlinkToMountedCollection(c *check.C) {
 	c.Assert(f.Close(), check.IsNil)
 	s.cp.mounts["/mnt-w"] = arvados.Mount{
 		Kind:             "collection",
-		PortableDataHash: arvadostest.FooPdh,
+		PortableDataHash: arvadostest.FooCollectionPDH,
 		Writable:         true,
 	}
 	s.cp.binds = append(s.cp.binds, bindtmp+":/mnt-w")
@@ -197,7 +197,7 @@ func (s *copierSuite) TestUnsupportedMountKindBelow(c *check.C) {
 func (s *copierSuite) TestWritableMountBelow(c *check.C) {
 	s.cp.mounts["/ctr/outdir/mount"] = arvados.Mount{
 		Kind:             "collection",
-		PortableDataHash: arvadostest.FooPdh,
+		PortableDataHash: arvadostest.FooCollectionPDH,
 		Writable:         true,
 	}
 	c.Assert(os.MkdirAll(s.cp.hostOutputDir+"/mount", 0755), check.IsNil)

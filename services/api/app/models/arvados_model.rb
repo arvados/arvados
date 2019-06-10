@@ -27,7 +27,6 @@ class ArvadosModel < ApplicationRecord
   after_create :log_create
   after_update :log_update
   after_destroy :log_destroy
-  after_find :convert_serialized_symbols_to_strings
   before_validation :normalize_collection_uuids
   before_validation :set_default_owner
   validate :ensure_valid_uuids
@@ -614,41 +613,6 @@ class ArvadosModel < ApplicationRecord
     false
   end
 
-  def self.has_symbols? x
-    if x.is_a? Hash
-      x.each do |k,v|
-        return true if has_symbols?(k) or has_symbols?(v)
-      end
-    elsif x.is_a? Array
-      x.each do |k|
-        return true if has_symbols?(k)
-      end
-    elsif x.is_a? Symbol
-      return true
-    elsif x.is_a? String
-      return true if x.start_with?(':') && !x.start_with?('::')
-    end
-    false
-  end
-
-  def self.recursive_stringify x
-    if x.is_a? Hash
-      Hash[x.collect do |k,v|
-             [recursive_stringify(k), recursive_stringify(v)]
-           end]
-    elsif x.is_a? Array
-      x.collect do |k|
-        recursive_stringify k
-      end
-    elsif x.is_a? Symbol
-      x.to_s
-    elsif x.is_a? String and x.start_with?(':') and !x.start_with?('::')
-      x[1..-1]
-    else
-      x
-    end
-  end
-
   def self.where_serialized(colname, value, md5: false)
     colsql = colname.to_s
     if md5
@@ -687,23 +651,6 @@ class ArvadosModel < ApplicationRecord
 
   def serialized_attributes
     self.class.serialized_attributes
-  end
-
-  def convert_serialized_symbols_to_strings
-    # ensure_serialized_attribute_type should prevent symbols from
-    # getting into the database in the first place. If someone managed
-    # to get them into the database (perhaps using an older version)
-    # we'll convert symbols to strings when loading from the
-    # database. (Otherwise, loading and saving an object with existing
-    # symbols in a serialized field will crash.)
-    jsonb_cols = self.class.columns.select{|c| c.type == :jsonb}.collect{|j| j.name}
-    (jsonb_cols + self.class.serialized_attributes.keys).uniq.each do |colname|
-      if self.class.has_symbols? attributes[colname]
-        attributes[colname] = self.class.recursive_stringify attributes[colname]
-        send(colname + '=',
-             self.class.recursive_stringify(attributes[colname]))
-      end
-    end
   end
 
   def foreign_key_attributes
