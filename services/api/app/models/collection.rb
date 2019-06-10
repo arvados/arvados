@@ -32,6 +32,7 @@ class Collection < ArvadosModel
   validate :ensure_storage_classes_contain_non_empty_strings
   validate :versioning_metadata_updates, on: :update
   validate :past_versions_cannot_be_updated, on: :update
+  validate :protected_default_properties_updates, on: :update
   after_validation :set_file_count_and_total_size
   before_save :set_file_names
   around_update :manage_versioning, unless: :is_past_version?
@@ -683,6 +684,22 @@ class Collection < ArvadosModel
       errors.add(:base, "past versions cannot be updated")
       false
     end
+  end
+
+  def protected_default_properties_updates
+    if Rails.configuration.Collections.DefaultProperties.empty? || !properties_changed? || current_user.is_admin
+      return true
+    end
+    protected_props = Rails.configuration.Collections.DefaultProperties.keys.select do |p|
+      Rails.configuration.Collections.DefaultProperties[p]['protected']
+    end
+    # Pre-existent protected properties can't be updated
+    invalid_updates = properties_was.keys.select{|p| properties_was[p] != properties[p]} & protected_props
+    if !invalid_updates.empty?
+      errors.add(:properties, "protected properties cannot be updated: #{invalid_updates.join(', ')}")
+      raise PermissionDeniedError
+    end
+    true
   end
 
   def versioning_metadata_updates
