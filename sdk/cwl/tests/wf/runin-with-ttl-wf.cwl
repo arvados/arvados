@@ -61,5 +61,5 @@ steps:
               out:
                 type: string
                 outputBinding:
-                  outputEval: "out"
+                  outputEval: $("out")
             baseCommand: cat
