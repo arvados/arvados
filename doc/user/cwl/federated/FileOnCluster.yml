@@ -1,0 +1,5 @@
+name: FileOnCluster
+type: record
+fields:
+  file: File
+  cluster: string

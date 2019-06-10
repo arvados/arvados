@@ -15,6 +15,7 @@ build/package-test-dockerfiles/ubuntu1604/etc-apt-preferences.d-arvados
 doc/fonts/*
 doc/_includes/_config_default_yml.liquid
 doc/user/cwl/federated/*
+doc/_includes/_federated_cwl.liquid
 */docker_image
 docker/jobs/apt.arvados.org*.list
 docker/jobs/1078ECD7.key
