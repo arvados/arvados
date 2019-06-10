@@ -22,6 +22,7 @@ class Collection < ArvadosModel
 
   before_validation :default_empty_manifest
   before_validation :default_storage_classes, on: :create
+  before_validation :default_properties, on: :create
   before_validation :check_encoding
   before_validation :check_manifest_validity
   before_validation :check_signatures
@@ -604,6 +605,23 @@ class Collection < ArvadosModel
       self.storage_classes_desired = ["default"]
     end
     self.storage_classes_confirmed ||= []
+  end
+
+  # Sets default properties at creation time
+  def default_properties
+    default_props = Rails.configuration.Collections.DefaultProperties
+    if default_props.empty?
+      return
+    end
+    (default_props.keys - self.properties.keys).each do |key|
+      if default_props[key].has_key?('value')
+        self.properties[key] = default_props[key]['value']
+      elsif default_props[key]['function'].andand == 'original_owner'
+        self.properties[key] = self.user_owner_uuid
+      else
+        logger.warn "Unidentified default property definition '#{key}': #{default_props[key].inspect}"
+      end
+    end
   end
 
   def portable_manifest_text

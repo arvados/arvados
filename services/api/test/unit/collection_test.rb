@@ -1012,4 +1012,36 @@ class CollectionTest < ActiveSupport::TestCase
     SweepTrashedObjects.sweep_now
     assert_empty Collection.where(uuid: uuid)
   end
+
+  test "create collections with DefaultProperties configuration" do
+    Rails.configuration.Collections.DefaultProperties = {
+      'default_prop1' => {'value' => 'prop1_value'},
+      'responsible_person_uuid' => {'function' => 'original_owner'}
+    }
+    # Test collection without initial properties
+    act_as_user users(:active) do
+      c = create_collection 'foo', Encoding::US_ASCII
+      assert c.valid?
+      assert_not_empty c.properties
+      assert_equal 'prop1_value', c.properties['default_prop1']
+      assert_equal users(:active).uuid, c.properties['responsible_person_uuid']
+    end
+    # Test collection with default_prop1 property already set
+    act_as_user users(:active) do
+      c = Collection.create(manifest_text: ". d41d8cd98f00b204e9800998ecf8427e 0:34:foo.txt\n",
+                            properties: {'default_prop1' => 'custom_value'})
+      assert c.valid?
+      assert_not_empty c.properties
+      assert_equal 'custom_value', c.properties['default_prop1']
+      assert_equal users(:active).uuid, c.properties['responsible_person_uuid']
+    end
+    # Test collection inside a sub project
+    act_as_user users(:active) do
+      c = Collection.create(manifest_text: ". d41d8cd98f00b204e9800998ecf8427e 0:34:foo.txt\n",
+                            owner_uuid: groups(:asubproject).uuid)
+      assert c.valid?
+      assert_not_empty c.properties
+      assert_equal users(:active).uuid, c.properties['responsible_person_uuid']
+    end
+  end
 end
