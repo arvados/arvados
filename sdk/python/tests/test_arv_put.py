@@ -1198,11 +1198,15 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
             ['--no-progress', '--trash-at', trash_at, tmpdir])
         self.assertNotEqual(None, col['uuid'])
         c = arv_put.api_client.collections().get(uuid=col['uuid']).execute()
+        if time.daylight:
+            offset = datetime.timedelta(seconds=time.altzone)
+        else:
+            offset = datetime.timedelta(seconds=time.timezone)
         self.assertEqual(
-            ciso8601.parse_datetime(trash_at) + datetime.timedelta(seconds=time.timezone),
+            ciso8601.parse_datetime(trash_at) + offset,
             ciso8601.parse_datetime(c['trash_at']).replace(tzinfo=None))
 
-    def test_put_collection_with_timezone_expiring_date_only(self):
+    def test_put_collection_with_expiring_date_only(self):
         tmpdir = self.make_tmpdir()
         trash_at = '2140-01-01'
         end_of_day = datetime.timedelta(hours=23, minutes=59, seconds=59)
@@ -1213,8 +1217,12 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
             ['--no-progress', '--trash-at', trash_at, tmpdir])
         self.assertNotEqual(None, col['uuid'])
         c = arv_put.api_client.collections().get(uuid=col['uuid']).execute()
+        if time.daylight:
+            offset = datetime.timedelta(seconds=time.altzone)
+        else:
+            offset = datetime.timedelta(seconds=time.timezone)
         self.assertEqual(
-            ciso8601.parse_datetime(trash_at) + end_of_day + datetime.timedelta(seconds=time.timezone),
+            ciso8601.parse_datetime(trash_at) + end_of_day + offset,
             ciso8601.parse_datetime(c['trash_at']).replace(tzinfo=None))
 
     def test_put_collection_with_invalid_absolute_expiring_datetimes(self):

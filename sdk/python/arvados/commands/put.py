@@ -1142,7 +1142,10 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
                 utcoffset = -trash_at.utcoffset()
             else:
                 # Timezone naive datetime provided. Assume is local.
-                utcoffset = datetime.timedelta(seconds=time.timezone)
+                if time.daylight:
+                    utcoffset = datetime.timedelta(seconds=time.altzone)
+                else:
+                    utcoffset = datetime.timedelta(seconds=time.timezone)
             # Convert to UTC timezone naive datetime.
             trash_at = trash_at.replace(tzinfo=None) + utcoffset
 
@@ -1316,7 +1319,10 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
             expiration_notice = ""
             if writer.collection_trash_at() is not None:
                 # Get the local timezone-naive version, and log it with timezone information.
-                local_trash_at = writer.collection_trash_at().replace(tzinfo=None) - datetime.timedelta(seconds=time.timezone)
+                if time.daylight:
+                    local_trash_at = writer.collection_trash_at().replace(tzinfo=None) - datetime.timedelta(seconds=time.altzone)
+                else:
+                    local_trash_at = writer.collection_trash_at().replace(tzinfo=None) - datetime.timedelta(seconds=time.timezone)
                 expiration_notice = ". It will expire on {} {}.".format(
                     local_trash_at.strftime("%Y-%m-%d %H:%M:%S"), time.strftime("%z"))
             if args.update_collection:
