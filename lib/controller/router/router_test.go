@@ -39,7 +39,7 @@ func (s *RouterSuite) SetUpTest(c *check.C) {
 	s.rtr = New(cluster)
 }
 
-func (s *RouterSuite) TearDownTest(c *check.C) {
+func (s *RouterSuite) TearDownSuite(c *check.C) {
 	err := arvados.NewClientFromEnv().RequestAndDecode(nil, "POST", "database/reset", nil, nil)
 	c.Check(err, check.IsNil)
 }
