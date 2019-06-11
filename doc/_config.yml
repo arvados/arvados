@@ -11,6 +11,8 @@
 # $ rake generate baseurl=/example arvados_api_host=example.com
 
 baseurl:
+current_version:
+all_versions:
 arvados_api_host: localhost
 arvados_workbench_host: http://localhost
 
