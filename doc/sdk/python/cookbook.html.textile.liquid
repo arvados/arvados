@@ -64,6 +64,40 @@ collection = arvados.collection.CollectionReader(container_request["output_uuid"
 print(collection.open("cwl.output.json").read())
 {% endcodeblock %}
 
+h2. Get state of a CWL workflow
+
+{% codeblock as python %}
+import arvados
+def get_cr_state(cr_uuid):
+    api = arvados.api()
+    cr = api.container_requests().get(uuid=cr_uuid).execute()
+    if cr['container_uuid'] is None:
+        return cr['state']
+    c = api.containers().get(uuid=cr['container_uuid']).execute()
+    if cr['state'] == 'Final' and c['state'] != 'Complete':
+        return 'Cancelled'
+    elif c['state'] in ['Locked', 'Queued']:
+        if c['priority'] == 0:
+            return 'On hold'
+        else:
+            return 'Queued'
+    elif c['state'] == 'Complete':
+        if c['exit_code'] == 0:
+            return c['state']
+        else:
+            return 'Failed'
+    elif c['state'] == 'Running':
+        if c['runtime_status'].get('error', None):
+            return 'Failing'
+        elif c['runtime_status'].get('warning', None):
+            return 'Warning'
+        else:
+            return c['state']
+    return c['state']
+container_request_uuid = 'qr1hi-xvhdp-zzzzzzzzzzzzzzz'
+print(get_cr_state(container_request_uuid))
+{% endcodeblock %}
+
 h2. List input of child requests
 
 {% codeblock as python %}
