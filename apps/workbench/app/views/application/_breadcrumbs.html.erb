@@ -51,7 +51,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
               } %>
             </ul>
           </li>
-          <% if @name_link or @object %>
+          <% if (defined?(@name_link) && @name_link) or (defined?(@object) && @object) %>
             <li class="nav-separator">
               <i class="fa fa-lg fa-angle-double-right"></i>
             </li>

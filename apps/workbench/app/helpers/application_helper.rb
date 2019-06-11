@@ -12,7 +12,7 @@ module ApplicationHelper
   end
 
   def current_api_host
-    Rails.configuration.arvados_v1_base.gsub /https?:\/\/|\/arvados\/v1/,''
+    Rails.configuration.arvados_v1_base.gsub(/https?:\/\/|\/arvados\/v1/, '')
   end
 
   def current_uuid_prefix
@@ -474,8 +474,8 @@ module ApplicationHelper
   def cwl_inputs_required(object, inputs_schema, set_attr_path)
     r = 0
     inputs_schema.each do |input|
-      required, primary_type, param_id = cwl_input_info(input)
-      dn, attrvalue = cwl_input_value(object, input, set_attr_path + [param_id])
+      required, _, param_id = cwl_input_info(input)
+      _, attrvalue = cwl_input_value(object, input, set_attr_path + [param_id])
       r += 1 if required and attrvalue.nil?
     end
     r
@@ -687,6 +687,6 @@ module ApplicationHelper
 
 private
   def is_textile?( object, attr )
-    is_textile = object.textile_attributes.andand.include?(attr)
+    object.textile_attributes.andand.include?(attr)
   end
 end

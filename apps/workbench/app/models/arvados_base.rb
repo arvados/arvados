@@ -107,8 +107,8 @@ class ArvadosBase
   end
 
   def self.columns
+    @discovered_columns = [] if !defined?(@discovered_columns)
     return @discovered_columns if @discovered_columns.andand.any?
-    @discovered_columns = []
     @attribute_info ||= {}
     schema = arvados_api_client.discovery[:schemas][self.to_s.to_sym]
     return @discovered_columns if schema.nil?
@@ -539,17 +539,17 @@ class ArvadosBase
     if opts[:class].is_a? Class
       return opts[:class]
     end
-    if uuid.match /^[0-9a-f]{32}(\+[^,]+)*(,[0-9a-f]{32}(\+[^,]+)*)*$/
+    if uuid.match(/^[0-9a-f]{32}(\+[^,]+)*(,[0-9a-f]{32}(\+[^,]+)*)*$/)
       return Collection
     end
     resource_class = nil
-    uuid.match /^[0-9a-z]{5}-([0-9a-z]{5})-[0-9a-z]{15}$/ do |re|
+    uuid.match(/^[0-9a-z]{5}-([0-9a-z]{5})-[0-9a-z]{15}$/) do |re|
       resource_class ||= arvados_api_client.
         kind_class(self.uuid_infix_object_kind[re[1]])
     end
     if opts[:referring_object] and
         opts[:referring_attr] and
-        opts[:referring_attr].match /_uuid$/
+        opts[:referring_attr].match(/_uuid$/)
       resource_class ||= arvados_api_client.
         kind_class(opts[:referring_object].
                    attributes[opts[:referring_attr].

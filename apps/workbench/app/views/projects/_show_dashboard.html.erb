@@ -10,9 +10,6 @@ SPDX-License-Identifier: AGPL-3.0 %>
   recent_cr_containers = recent_crs.map {|cr| cr.container_uuid}.compact.uniq
   preload_objects_for_dataclass(Container, recent_cr_containers) if recent_cr_containers.andand.any?
 
-  # fetch children of all the active crs in one call, if there are any
-  active_crs = recent_crs.each {|cr| cr if (cr.priority.andand > 0 and cr.state != 'Final' and cr.container_uuid)}
-
   wus = {}
   outputs = []
   recent_procs.each do |p|

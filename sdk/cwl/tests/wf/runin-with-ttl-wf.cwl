@@ -27,6 +27,8 @@ requirements:
 hints:
   arv:IntermediateOutput:
     outputTTL: 60
+  DockerRequirement:
+    dockerPull: arvados/jobs:1.4.0.20190604172024
 steps:
   substep:
     in:
@@ -59,5 +61,5 @@ steps:
               out:
                 type: string
                 outputBinding:
-                  outputEval: "out"
+                  outputEval: $("out")
             baseCommand: cat

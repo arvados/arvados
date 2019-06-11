@@ -221,13 +221,13 @@ module ProvenanceHelper
                          {label: 'output'})
             end
             # Input collection nodes
-            output_pdhs = @opts[:output_collections].values.collect{|c|
-              c[:portable_data_hash]}
+            output_pdhs = @opts[:output_collections].values.collect{|oc|
+              oc[:portable_data_hash]}
             ProvenanceHelper::cr_input_pdhs(cr).each do |pdh|
               if not output_pdhs.include?(pdh)
                 # Search for collections on the same project first
-                cols = @opts[:input_collections][pdh].andand.select{|c|
-                  c[:owner_uuid] == cr[:owner_uuid]}
+                cols = @opts[:input_collections][pdh].andand.select{|ic|
+                  ic[:owner_uuid] == cr[:owner_uuid]}
                 if not cols or cols.empty?
                   # Search for any collection with this PDH
                   cols = @opts[:input_collections][pdh]

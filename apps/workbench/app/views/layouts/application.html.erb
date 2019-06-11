@@ -33,7 +33,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
   <meta property="og:type" content="article" />
   <meta property="og:url" content="<%= request.url %>" />
   <meta property="og:site_name" content="<%= Rails.configuration.site_name %>" />
-  <% if @object %>
+  <% if defined?(@object) && @object %>
     <% if @object.respond_to?(:name) and @object.name.present? %>
       <meta property="og:title" content="<%= @object.name%>" />
     <% end %>
