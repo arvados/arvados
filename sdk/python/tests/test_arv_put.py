@@ -12,6 +12,7 @@ from builtins import str
 from builtins import range
 from functools import partial
 import apiclient
+import ciso8601
 import datetime
 import hashlib
 import json
@@ -212,7 +213,7 @@ class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
 
     def test_cache_is_locked(self):
         with tempfile.NamedTemporaryFile() as cachefile:
-            cache = arv_put.ResumeCache(cachefile.name)
+            _ = arv_put.ResumeCache(cachefile.name)
             self.assertRaises(arv_put.ResumeCacheConflict,
                               arv_put.ResumeCache, cachefile.name)
 
@@ -311,7 +312,7 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
     def test_passing_nonexistant_path_raise_exception(self):
         uuid_str = str(uuid.uuid4())
         with self.assertRaises(arv_put.PathDoesNotExistError):
-            cwriter = arv_put.ArvPutUploadJob(["/this/path/does/not/exist/{}".format(uuid_str)])
+            arv_put.ArvPutUploadJob(["/this/path/does/not/exist/{}".format(uuid_str)])
 
     def test_writer_works_without_cache(self):
         cwriter = arv_put.ArvPutUploadJob(['/dev/null'], resume=False)
@@ -843,7 +844,7 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers,
             fake_httplib2_response(403), b'{}')
         with mock.patch('arvados.collection.Collection.save_new',
                         new=coll_save_mock):
-            with self.assertRaises(SystemExit) as exc_test:
+            with self.assertRaises(SystemExit):
                 self.call_main_with_args(['/dev/null'])
             self.assertRegex(
                 self.main_stderr.getvalue(), matcher)
@@ -918,7 +919,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
         BAD_UUID = 'zzzzz-tpzed-zzzzzzzzzzzzzzz'
         self.authorize_with('active')
         with self.assertRaises(apiclient.errors.HttpError):
-            result = arv_put.desired_project_uuid(arv_put.api_client, BAD_UUID,
+            arv_put.desired_project_uuid(arv_put.api_client, BAD_UUID,
                                                   0)
 
     def test_short_put_from_stdin(self):
@@ -979,7 +980,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
         # we're about to create is not present in our test fixture.
         manifest_uuid = "00b4e9f40ac4dd432ef89749f1c01e74+47"
         with self.assertRaises(apiclient.errors.HttpError):
-            notfound = arv_put.api_client.collections().get(
+            arv_put.api_client.collections().get(
                 uuid=manifest_uuid).execute()
 
         datadir = self.make_tmpdir()
@@ -990,7 +991,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE,
                              env=self.ENVIRON)
-        (out, err) = p.communicate()
+        (_, err) = p.communicate()
         self.assertRegex(err.decode(), r'INFO: Collection saved as ')
         self.assertEqual(p.returncode, 0)
 
@@ -1030,7 +1031,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE,
                              env=self.ENVIRON)
-        (out, err) = p.communicate()
+        (_, err) = p.communicate()
         self.assertRegex(err.decode(), r'INFO: Creating new cache file at ')
         self.assertEqual(p.returncode, 0)
         cache_filepath = re.search(r'INFO: Creating new cache file at (.*)',
@@ -1053,7 +1054,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE,
                              env=self.ENVIRON)
-        (out, err) = p.communicate()
+        (_, err) = p.communicate()
         self.assertRegex(
             err.decode(),
             r'INFO: Cache expired, starting from scratch.*')
@@ -1069,7 +1070,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE,
                              env=self.ENVIRON)
-        (out, err) = p.communicate()
+        (_, err) = p.communicate()
         self.assertRegex(err.decode(), r'INFO: Creating new cache file at ')
         self.assertEqual(p.returncode, 0)
         cache_filepath = re.search(r'INFO: Creating new cache file at (.*)',
@@ -1091,7 +1092,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE,
                              env=self.ENVIRON)
-        (out, err) = p.communicate()
+        (_, err) = p.communicate()
         self.assertRegex(
             err.decode(),
             r'ERROR: arv-put: Resume cache contains invalid signature.*')
@@ -1111,7 +1112,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE,
                              env=self.ENVIRON)
-        (out, err) = p.communicate()
+        (_, err) = p.communicate()
         self.assertRegex(err.decode(), r'INFO: Creating new cache file at ')
         self.assertEqual(p.returncode, 0)
         cache_filepath = re.search(r'INFO: Creating new cache file at (.*)',
@@ -1135,7 +1136,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE,
                              env=self.ENVIRON)
-        (out, err) = p.communicate()
+        (_, err) = p.communicate()
         self.assertRegex(
             err.decode(),
             r'WARNING: Uploaded file \'.*barfile.txt\' access token expired, will re-upload it from scratch')
@@ -1159,6 +1160,107 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
         # Get the manifest and check that the new file is being included
         c = arv_put.api_client.collections().get(uuid=updated_col['uuid']).execute()
         self.assertRegex(c['manifest_text'], r'^\..* .*:44:file2\n')
+
+    def test_put_collection_with_utc_expiring_datetime(self):
+        tmpdir = self.make_tmpdir()
+        trash_at = (datetime.datetime.utcnow() + datetime.timedelta(days=90)).strftime('%Y%m%dT%H%MZ')
+        with open(os.path.join(tmpdir, 'file1'), 'w') as f:
+            f.write('Relaxing in basins at the end of inlets terminates the endless tests from the box')
+        col = self.run_and_find_collection(
+            "",
+            ['--no-progress', '--trash-at', trash_at, tmpdir])
+        self.assertNotEqual(None, col['uuid'])
+        c = arv_put.api_client.collections().get(uuid=col['uuid']).execute()
+        self.assertEqual(ciso8601.parse_datetime(trash_at),
+            ciso8601.parse_datetime(c['trash_at']))
+
+    def test_put_collection_with_timezone_aware_expiring_datetime(self):
+        tmpdir = self.make_tmpdir()
+        trash_at = (datetime.datetime.utcnow() + datetime.timedelta(days=90)).strftime('%Y%m%dT%H%M-0300')
+        with open(os.path.join(tmpdir, 'file1'), 'w') as f:
+            f.write('Relaxing in basins at the end of inlets terminates the endless tests from the box')
+        col = self.run_and_find_collection(
+            "",
+            ['--no-progress', '--trash-at', trash_at, tmpdir])
+        self.assertNotEqual(None, col['uuid'])
+        c = arv_put.api_client.collections().get(uuid=col['uuid']).execute()
+        self.assertEqual(
+            ciso8601.parse_datetime(trash_at).replace(tzinfo=None) + datetime.timedelta(hours=3),
+            ciso8601.parse_datetime(c['trash_at']).replace(tzinfo=None))
+
+    def test_put_collection_with_timezone_naive_expiring_datetime(self):
+        tmpdir = self.make_tmpdir()
+        trash_at = (datetime.datetime.utcnow() + datetime.timedelta(days=90)).strftime('%Y%m%dT%H%M')
+        with open(os.path.join(tmpdir, 'file1'), 'w') as f:
+            f.write('Relaxing in basins at the end of inlets terminates the endless tests from the box')
+        col = self.run_and_find_collection(
+            "",
+            ['--no-progress', '--trash-at', trash_at, tmpdir])
+        self.assertNotEqual(None, col['uuid'])
+        c = arv_put.api_client.collections().get(uuid=col['uuid']).execute()
+        if time.daylight:
+            offset = datetime.timedelta(seconds=time.altzone)
+        else:
+            offset = datetime.timedelta(seconds=time.timezone)
+        self.assertEqual(
+            ciso8601.parse_datetime(trash_at) + offset,
+            ciso8601.parse_datetime(c['trash_at']).replace(tzinfo=None))
+
+    def test_put_collection_with_expiring_date_only(self):
+        tmpdir = self.make_tmpdir()
+        trash_at = '2140-01-01'
+        end_of_day = datetime.timedelta(hours=23, minutes=59, seconds=59)
+        with open(os.path.join(tmpdir, 'file1'), 'w') as f:
+            f.write('Relaxing in basins at the end of inlets terminates the endless tests from the box')
+        col = self.run_and_find_collection(
+            "",
+            ['--no-progress', '--trash-at', trash_at, tmpdir])
+        self.assertNotEqual(None, col['uuid'])
+        c = arv_put.api_client.collections().get(uuid=col['uuid']).execute()
+        if time.daylight:
+            offset = datetime.timedelta(seconds=time.altzone)
+        else:
+            offset = datetime.timedelta(seconds=time.timezone)
+        self.assertEqual(
+            ciso8601.parse_datetime(trash_at) + end_of_day + offset,
+            ciso8601.parse_datetime(c['trash_at']).replace(tzinfo=None))
+
+    def test_put_collection_with_invalid_absolute_expiring_datetimes(self):
+        cases = ['2100', '210010','2100-10', '2100-Oct']
+        tmpdir = self.make_tmpdir()
+        with open(os.path.join(tmpdir, 'file1'), 'w') as f:
+            f.write('Relaxing in basins at the end of inlets terminates the endless tests from the box')
+        for test_datetime in cases:
+            with self.assertRaises(AssertionError):
+                self.run_and_find_collection(
+                    "",
+                    ['--no-progress', '--trash-at', test_datetime, tmpdir])
+
+    def test_put_collection_with_relative_expiring_datetime(self):
+        expire_after = 7
+        dt_before = datetime.datetime.utcnow() + datetime.timedelta(days=expire_after)
+        tmpdir = self.make_tmpdir()
+        with open(os.path.join(tmpdir, 'file1'), 'w') as f:
+            f.write('Relaxing in basins at the end of inlets terminates the endless tests from the box')
+        col = self.run_and_find_collection(
+            "",
+            ['--no-progress', '--trash-after', str(expire_after), tmpdir])
+        self.assertNotEqual(None, col['uuid'])
+        dt_after = datetime.datetime.utcnow() + datetime.timedelta(days=expire_after)
+        c = arv_put.api_client.collections().get(uuid=col['uuid']).execute()
+        trash_at = ciso8601.parse_datetime(c['trash_at']).replace(tzinfo=None)
+        self.assertTrue(dt_before < trash_at)
+        self.assertTrue(dt_after > trash_at)
+
+    def test_put_collection_with_invalid_relative_expiring_datetime(self):
+        expire_after = 0 # Must be >= 1
+        tmpdir = self.make_tmpdir()
+        with open(os.path.join(tmpdir, 'file1'), 'w') as f:
+            f.write('Relaxing in basins at the end of inlets terminates the endless tests from the box')
+        with self.assertRaises(AssertionError):
+            self.run_and_find_collection(
+                "",
+                ['--no-progress', '--trash-after', str(expire_after), tmpdir])
 
     def test_upload_directory_reference_without_trailing_slash(self):
         tmpdir1 = self.make_tmpdir()
