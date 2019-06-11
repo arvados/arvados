@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
-
 	check "gopkg.in/check.v1"
 )
 
@@ -694,7 +693,7 @@ func (bal *balancerSuite) try(c *check.C, t tester) {
 
 // srvList returns the KeepServices, sorted in rendezvous order and
 // then selected by idx. For example, srvList(3, slots{0, 1, 4})
-// returns the the first-, second-, and fifth-best servers for storing
+// returns the first-, second-, and fifth-best servers for storing
 // bal.knownBlkid(3).
 func (bal *balancerSuite) srvList(knownBlockID int, order slots) (srvs []*KeepService) {
 	for _, i := range order {

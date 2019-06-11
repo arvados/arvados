@@ -1057,6 +1057,7 @@ class CollectionTest < ActiveSupport::TestCase
       # Add new property
       c.properties['prop2'] = 'value2'
       c.save!
+      c.reload
       assert_equal 'value2', c.properties['prop2']
       # Try to change protected property's value
       c.properties['default_prop1'] = 'new_value'
@@ -1067,6 +1068,7 @@ class CollectionTest < ActiveSupport::TestCase
       act_as_system_user do
         c.properties['default_prop1'] = 'new_value'
         c.save!
+        c.reload
         assert_equal 'new_value', c.properties['default_prop1']
       end
     end
