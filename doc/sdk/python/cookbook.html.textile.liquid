@@ -81,18 +81,13 @@ def get_cr_state(cr_uuid):
             return 'On hold'
         else:
             return 'Queued'
-    elif c['state'] == 'Complete':
-        if c['exit_code'] == 0:
-            return c['state']
-        else:
-            return 'Failed'
+    elif c['state'] == 'Complete' and c['exit_code'] != 0
+        return 'Failed'
     elif c['state'] == 'Running':
         if c['runtime_status'].get('error', None):
             return 'Failing'
         elif c['runtime_status'].get('warning', None):
             return 'Warning'
-        else:
-            return c['state']
     return c['state']
 container_request_uuid = 'qr1hi-xvhdp-zzzzzzzzzzzzzzz'
 print(get_cr_state(container_request_uuid))
