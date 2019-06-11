@@ -24,6 +24,15 @@ SPDX-License-Identifier: CC-BY-SA-3.0
         <li {% if page.navsection == 'api' %} class="active" {% endif %}><a href="{{ site.baseurl }}/api/index.html">API</a></li>
         <li {% if page.navsection == 'admin' %} class="active" {% endif %}><a href="{{ site.baseurl }}/admin/index.html">Admin</a></li>
         <li {% if page.navsection == 'installguide' %} class="active" {% endif %}><a href="{{ site.baseurl }}/install/index.html">Install</a></li>
+        <li><a href="#" class="dropdown-toggle" role="button" id="versionMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">{{ site.current_version }}{% if site.all_versions != [] %}&nbsp;&#9662;{% endif %}</a>
+          {% if site.all_versions != [] %}
+            <div class="dropdown-menu" aria-labelledby="versionMenuLink">
+            {% for version in site.all_versions %}
+              &nbsp;<a href="/{{ version }}/" class="dropdown-item">{{ version }}</a><br/>
+            {% endfor %}
+            </div>
+          {% endif %}
+        </li>
         <li><a href="https://arvados.org" style="padding-left: 2em">arvados.org&nbsp;&raquo;</a></li>
       </ul>
 
