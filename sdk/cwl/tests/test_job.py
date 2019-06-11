@@ -35,6 +35,9 @@ if not os.getenv('ARVADOS_DEBUG'):
 
 class TestJob(unittest.TestCase):
 
+    def setUp(self):
+        cwltool.process._names = set()
+
     def helper(self, runner, enable_reuse=True):
         document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.1")
 
@@ -345,6 +348,10 @@ class TestJob(unittest.TestCase):
 
 
 class TestWorkflow(unittest.TestCase):
+
+    def setUp(self):
+        cwltool.process._names = set()
+
     def helper(self, runner, enable_reuse=True):
         document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.1")
 
