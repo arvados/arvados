@@ -17,6 +17,7 @@ import logging
 import mock
 import sys
 import unittest
+import cwltool.process
 
 from io import BytesIO
 
@@ -335,6 +336,10 @@ def stubs(func):
 
 
 class TestSubmit(unittest.TestCase):
+
+    def setUp(self):
+        cwltool.process._names = set()
+
     @mock.patch("arvados_cwl.arvdocker.arv_docker_get_image")
     @mock.patch("time.sleep")
     @stubs
