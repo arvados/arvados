@@ -48,7 +48,7 @@ h2. Get input of a CWL workflow
 import arvados
 api = arvados.api()
 container_request_uuid="qr1hi-xvhdp-zzzzzzzzzzzzzzz"
-container_request = arvados.api().container_requests().get(uuid=container_request_uuid).execute()
+container_request = api.container_requests().get(uuid=container_request_uuid).execute()
 print(container_request["mounts"]["/var/lib/cwl/cwl.input.json"])
 {% endcodeblock %}
 
@@ -59,7 +59,7 @@ import arvados
 import arvados.collection
 api = arvados.api()
 container_request_uuid="qr1hi-xvhdp-zzzzzzzzzzzzzzz"
-container_request = arvados.api().container_requests().get(uuid=container_request_uuid).execute()
+container_request = api.container_requests().get(uuid=container_request_uuid).execute()
 collection = arvados.collection.CollectionReader(container_request["output_uuid"])
 print(collection.open("cwl.output.json").read())
 {% endcodeblock %}
@@ -71,9 +71,9 @@ import arvados
 api = arvados.api()
 parent_request_uuid = "qr1hi-xvhdp-zzzzzzzzzzzzzzz"
 namefilter = "bwa%"  # the "like" filter uses SQL pattern match syntax
-container_request = arvados.api().container_requests().get(uuid=parent_request_uuid).execute()
+container_request = api.container_requests().get(uuid=parent_request_uuid).execute()
 parent_container_uuid = container_request["container_uuid"]
-child_requests = arvados.api().container_requests().list(filters=[
+child_requests = api.container_requests().list(filters=[
     ["requesting_container_uuid", "=", parent_container_uuid],
     ["name", "like", namefilter]]).execute()
 for c in child_requests["items"]:
@@ -90,13 +90,13 @@ import arvados
 api = arvados.api()
 parent_request_uuid = "qr1hi-xvhdp-zzzzzzzzzzzzzzz"
 namefilter = "bwa%"  # the "like" filter uses SQL pattern match syntax
-container_request = arvados.api().container_requests().get(uuid=parent_request_uuid).execute()
+container_request = api.container_requests().get(uuid=parent_request_uuid).execute()
 parent_container_uuid = container_request["container_uuid"]
-child_requests = arvados.api().container_requests().list(filters=[
+child_requests = api.container_requests().list(filters=[
     ["requesting_container_uuid", "=", parent_container_uuid],
     ["name", "like", namefilter]]).execute()
 output_uuids = [c["output_uuid"] for c in child_requests["items"]]
-collections = arvados.api().collections().list(filters=[["uuid", "in", output_uuids]]).execute()
+collections = api.collections().list(filters=[["uuid", "in", output_uuids]]).execute()
 uuid_to_pdh = {c["uuid"]: c["portable_data_hash"] for c in collections["items"]}
 for c in child_requests["items"]:
     print("%s -> %s" % (c["name"], uuid_to_pdh[c["output_uuid"]]))
@@ -108,12 +108,12 @@ h2. List failed child requests
 import arvados
 api = arvados.api()
 parent_request_uuid = "qr1hi-xvhdp-zzzzzzzzzzzzzzz"
-container_request = arvados.api().container_requests().get(uuid=parent_request_uuid).execute()
+container_request = api.container_requests().get(uuid=parent_request_uuid).execute()
 parent_container_uuid = container_request["container_uuid"]
-child_requests = arvados.api().container_requests().list(filters=[
+child_requests = api.container_requests().list(filters=[
     ["requesting_container_uuid", "=", parent_container_uuid]], limit=1000).execute()
 child_containers = {c["container_uuid"]: c for c in child_requests["items"]}
-cancelled_child_containers = arvados.api().containers().list(filters=[
+cancelled_child_containers = api.containers().list(filters=[
     ["exit_code", "!=", "0"],
     ["uuid", "in", child_containers.keys()]], limit=1000).execute()
 for c in cancelled_child_containers["items"]:
@@ -127,7 +127,7 @@ import arvados
 import arvados.collection
 api = arvados.api()
 container_request_uuid = "qr1hi-xvhdp-zzzzzzzzzzzzzzz"
-container_request = arvados.api().container_requests().get(uuid=container_request_uuid).execute()
+container_request = api.container_requests().get(uuid=container_request_uuid).execute()
 collection = arvados.collection.CollectionReader(container_request["log_uuid"])
 for c in collection:
     print(collection.open(c).read())
