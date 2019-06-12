@@ -87,6 +87,6 @@ describe("FilterBuilder", () => {
             new FilterBuilder()
                 .addFullTextSearch('my custom search')
                 .getFilters()
-        ).toEqual(`["any","@@","my:*&custom:*&search"]`);
+        ).toEqual(`["any","ilike","%my%"],["any","ilike","%custom%"],["any","ilike","%search%"]`);
     });
 });
