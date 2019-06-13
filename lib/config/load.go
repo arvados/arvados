@@ -23,6 +23,14 @@ type logger interface {
 	Warnf(string, ...interface{})
 }
 
+func loadFileOrStdin(path string, stdin io.Reader, log logger) (*arvados.Config, error) {
+	if path == "-" {
+		return load(stdin, log, true)
+	} else {
+		return LoadFile(path, log)
+	}
+}
+
 func LoadFile(path string, log logger) (*arvados.Config, error) {
 	f, err := os.Open(path)
 	if err != nil {
