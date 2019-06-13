@@ -226,6 +226,7 @@ class ApplicationController < ActionController::Base
   end
 
   def index
+    @objects = nil if !defined?(@objects)
     find_objects_for_index if !@objects
     render_index
   end
@@ -322,6 +323,7 @@ class ApplicationController < ActionController::Base
   end
 
   def choose
+    @objects = nil if !defined?(@objects)
     params[:limit] ||= 40
     respond_to do |f|
       if params[:partial]
@@ -542,7 +544,7 @@ class ApplicationController < ActionController::Base
 
 
   def accept_uuid_as_id_param
-    if params[:id] and params[:id].match /\D/
+    if params[:id] and params[:id].match(/\D/)
       params[:uuid] = params.delete :id
     end
   end
@@ -812,6 +814,7 @@ class ApplicationController < ActionController::Base
 
   helper_method :user_notifications
   def user_notifications
+    @errors = nil if !defined?(@errors)
     return [] if @errors or not current_user.andand.is_active or not Rails.configuration.show_user_notifications
     @notifications ||= @@notification_tests.map do |t|
       t.call(self, current_user)
@@ -923,7 +926,7 @@ class ApplicationController < ActionController::Base
 
   helper_method :my_starred_projects
   def my_starred_projects user
-    return if @starred_projects
+    return if defined?(@starred_projects) && @starred_projects
     links = Link.filter([['tail_uuid', '=', user.uuid],
                          ['link_class', '=', 'star'],
                          ['head_uuid', 'is_a', 'arvados#group']]).select(%w(head_uuid))
@@ -938,7 +941,7 @@ class ApplicationController < ActionController::Base
   # That is: get toplevel projects under home, get subprojects of
   # these projects, and so on until we hit the limit.
   def my_wanted_projects(user, page_size=100)
-    return @my_wanted_projects if @my_wanted_projects
+    return @my_wanted_projects if defined?(@my_wanted_projects) && @my_wanted_projects
 
     from_top = []
     uuids = [user.uuid]
@@ -969,7 +972,7 @@ class ApplicationController < ActionController::Base
   end
 
   def build_my_wanted_projects_tree(user, page_size=100)
-    return @my_wanted_projects_tree if @my_wanted_projects_tree
+    return @my_wanted_projects_tree if defined?(@my_wanted_projects_tree) && @my_wanted_projects_tree
 
     parent_of = {user.uuid => 'me'}
     my_wanted_projects(user, page_size).each do |ob|
@@ -984,10 +987,10 @@ class ApplicationController < ActionController::Base
       children_of[parent_of[ob.uuid]] ||= []
       children_of[parent_of[ob.uuid]] << ob
     end
-    buildtree = lambda do |children_of, root_uuid=false|
+    buildtree = lambda do |chldrn_of, root_uuid=false|
       tree = {}
-      children_of[root_uuid].andand.each do |ob|
-        tree[ob] = buildtree.call(children_of, ob.uuid)
+      chldrn_of[root_uuid].andand.each do |ob|
+        tree[ob] = buildtree.call(chldrn_of, ob.uuid)
       end
       tree
     end

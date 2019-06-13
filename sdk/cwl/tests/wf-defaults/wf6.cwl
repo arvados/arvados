@@ -10,6 +10,9 @@ $namespaces:
   arv: "http://arvados.org/cwl#"
 requirements:
   SubworkflowFeatureRequirement: {}
+hints:
+  DockerRequirement:
+    dockerPull: arvados/jobs:1.4.0.20190604172024
 steps:
   step1:
     requirements:
