@@ -8,7 +8,7 @@ ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update && \
     apt-get -yq --no-install-recommends -o Acquire::Retries=6 install \
-    postgresql-9.6 git build-essential runit curl libpq-dev \
+    postgresql-9.6 postgresql-contrib-9.6 git build-essential runit curl libpq-dev \
     libcurl4-openssl-dev libssl1.0-dev zlib1g-dev libpcre3-dev \
     openssh-server python-setuptools netcat-traditional \
     python-epydoc graphviz bzip2 less sudo virtualenv \
