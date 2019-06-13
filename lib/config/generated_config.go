@@ -533,7 +533,7 @@ Clusters:
         TimeoutShutdown: 10s
 
         # Worker VM image ID.
-        ImageID: ami-01234567890abcdef
+        ImageID: ""
 
         # Tags to add on all resources (VMs, NICs, disks) created by
         # the container dispatcher. (Arvados's own tags --
