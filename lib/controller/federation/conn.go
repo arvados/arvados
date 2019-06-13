@@ -21,38 +21,13 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 )
 
-type Interface interface {
-	CollectionCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Collection, error)
-	CollectionUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.Collection, error)
-	CollectionGet(ctx context.Context, options arvados.GetOptions) (arvados.Collection, error)
-	CollectionList(ctx context.Context, options arvados.ListOptions) (arvados.CollectionList, error)
-	CollectionProvenance(ctx context.Context, options arvados.GetOptions) (map[string]interface{}, error)
-	CollectionUsedBy(ctx context.Context, options arvados.GetOptions) (map[string]interface{}, error)
-	CollectionDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.Collection, error)
-	CollectionTrash(ctx context.Context, options arvados.DeleteOptions) (arvados.Collection, error)
-	CollectionUntrash(ctx context.Context, options arvados.UntrashOptions) (arvados.Collection, error)
-	ContainerCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Container, error)
-	ContainerUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.Container, error)
-	ContainerGet(ctx context.Context, options arvados.GetOptions) (arvados.Container, error)
-	ContainerList(ctx context.Context, options arvados.ListOptions) (arvados.ContainerList, error)
-	ContainerDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.Container, error)
-	ContainerLock(ctx context.Context, options arvados.GetOptions) (arvados.Container, error)
-	ContainerUnlock(ctx context.Context, options arvados.GetOptions) (arvados.Container, error)
-	SpecimenCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Specimen, error)
-	SpecimenUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.Specimen, error)
-	SpecimenGet(ctx context.Context, options arvados.GetOptions) (arvados.Specimen, error)
-	SpecimenList(ctx context.Context, options arvados.ListOptions) (arvados.SpecimenList, error)
-	SpecimenDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.Specimen, error)
-	APIClientAuthorizationCurrent(ctx context.Context, options arvados.GetOptions) (arvados.APIClientAuthorization, error)
-}
-
 type Conn struct {
 	cluster *arvados.Cluster
 	local   backend
 	remotes map[string]backend
 }
 
-func New(cluster *arvados.Cluster) Interface {
+func New(cluster *arvados.Cluster) arvados.API {
 	local := railsproxy.NewConn(cluster)
 	remotes := map[string]backend{}
 	for id, remote := range cluster.RemoteClusters {
@@ -316,7 +291,7 @@ func (conn *Conn) APIClientAuthorizationCurrent(ctx context.Context, options arv
 	return conn.chooseBackend(options.UUID).APIClientAuthorizationCurrent(ctx, options)
 }
 
-type backend interface{ Interface }
+type backend interface{ arvados.API }
 
 type notFoundError struct{}
 

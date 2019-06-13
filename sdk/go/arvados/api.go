@@ -4,6 +4,8 @@
 
 package arvados
 
+import "context"
+
 type APIEndpoint struct {
 	Method string
 	Path   string
@@ -75,4 +77,29 @@ type UpdateOptions struct {
 
 type DeleteOptions struct {
 	UUID string `json:"uuid"`
+}
+
+type API interface {
+	CollectionCreate(ctx context.Context, options CreateOptions) (Collection, error)
+	CollectionUpdate(ctx context.Context, options UpdateOptions) (Collection, error)
+	CollectionGet(ctx context.Context, options GetOptions) (Collection, error)
+	CollectionList(ctx context.Context, options ListOptions) (CollectionList, error)
+	CollectionProvenance(ctx context.Context, options GetOptions) (map[string]interface{}, error)
+	CollectionUsedBy(ctx context.Context, options GetOptions) (map[string]interface{}, error)
+	CollectionDelete(ctx context.Context, options DeleteOptions) (Collection, error)
+	CollectionTrash(ctx context.Context, options DeleteOptions) (Collection, error)
+	CollectionUntrash(ctx context.Context, options UntrashOptions) (Collection, error)
+	ContainerCreate(ctx context.Context, options CreateOptions) (Container, error)
+	ContainerUpdate(ctx context.Context, options UpdateOptions) (Container, error)
+	ContainerGet(ctx context.Context, options GetOptions) (Container, error)
+	ContainerList(ctx context.Context, options ListOptions) (ContainerList, error)
+	ContainerDelete(ctx context.Context, options DeleteOptions) (Container, error)
+	ContainerLock(ctx context.Context, options GetOptions) (Container, error)
+	ContainerUnlock(ctx context.Context, options GetOptions) (Container, error)
+	SpecimenCreate(ctx context.Context, options CreateOptions) (Specimen, error)
+	SpecimenUpdate(ctx context.Context, options UpdateOptions) (Specimen, error)
+	SpecimenGet(ctx context.Context, options GetOptions) (Specimen, error)
+	SpecimenList(ctx context.Context, options ListOptions) (SpecimenList, error)
+	SpecimenDelete(ctx context.Context, options DeleteOptions) (Specimen, error)
+	APIClientAuthorizationCurrent(ctx context.Context, options GetOptions) (APIClientAuthorization, error)
 }

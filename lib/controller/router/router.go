@@ -21,7 +21,7 @@ import (
 
 type router struct {
 	mux *httprouter.Router
-	fed federation.Interface
+	fed arvados.API
 }
 
 func New(cluster *arvados.Cluster) *router {
