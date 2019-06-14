@@ -192,6 +192,7 @@ window.TagEditorApp = {
         vnode.state.tags = []
         vnode.state.dirty = m.stream(false)
         vnode.state.dirty.map(m.redraw)
+        vnode.state.error = m.stream('')
         vnode.state.objPath = 'arvados/v1/' + vnode.attrs.targetController + '/' + vnode.attrs.targetUuid
         // Get tags
         vnode.state.sessionDB.request(
@@ -249,9 +250,19 @@ window.TagEditorApp = {
                             }
                         ).then(function(v) {
                             vnode.state.dirty(false)
+                            vnode.state.error('')
+                        }).catch(function(err) {
+                            errMsg = err["errors"].join(', ')
+                            vnode.state.error('Error: ' + errMsg)
                         })
                     }
-                }, vnode.state.dirty() ? ' Save changes ' : ' Saved ')
+                }, vnode.state.dirty() ? ' Save changes ' : ' Saved '),
+                m('span', {
+                    style: {
+                        color: '#ff0000',
+                        margin: '0px 10px'
+                    }
+                }, [ vnode.state.error() ])
             ]),
             // Tags table
             m(TagEditorTable, {
