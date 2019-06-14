@@ -132,12 +132,12 @@ func (disp *dispatcher) initialize() {
 		disp.sshKey = key
 	}
 
-	instanceSet, err := newInstanceSet(disp.Cluster, disp.InstanceSetID, disp.logger)
+	disp.reg = prometheus.NewRegistry()
+	instanceSet, err := newInstanceSet(disp.Cluster, disp.InstanceSetID, disp.logger, disp.reg)
 	if err != nil {
 		disp.logger.Fatalf("error initializing driver: %s", err)
 	}
 	disp.instanceSet = instanceSet
-	disp.reg = prometheus.NewRegistry()
 	disp.pool = worker.NewPool(disp.logger, disp.ArvClient, disp.reg, disp.InstanceSetID, disp.instanceSet, disp.newExecutor, disp.sshKey.PublicKey(), disp.Cluster)
 	disp.queue = container.NewQueue(disp.logger, disp.reg, disp.typeChooser, disp.ArvClient)
 
