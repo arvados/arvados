@@ -107,6 +107,7 @@ arvcfg.declare_config "AuditLogs.MaxAge", ActiveSupport::Duration, :max_audit_lo
 arvcfg.declare_config "AuditLogs.MaxDeleteBatch", Integer, :max_audit_log_delete_batch
 arvcfg.declare_config "AuditLogs.UnloggedAttributes", Array, :unlogged_attributes
 arvcfg.declare_config "SystemLogs.MaxRequestLogParamsSize", Integer, :max_request_log_params_size
+arvcfg.declare_config "Collections.DefaultProperties", Hash, :collection_default_properties
 arvcfg.declare_config "Collections.DefaultReplication", Integer, :default_collection_replication
 arvcfg.declare_config "Collections.DefaultTrashLifetime", ActiveSupport::Duration, :default_trash_lifetime
 arvcfg.declare_config "Collections.CollectionVersioning", Boolean, :collection_versioning
