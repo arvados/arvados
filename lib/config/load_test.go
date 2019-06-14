@@ -97,6 +97,24 @@ Clusters:
 	c.Check(logs, check.HasLen, 2)
 }
 
+func (s *LoadSuite) TestNoUnrecognizedKeysInDefaultConfig(c *check.C) {
+	var logbuf bytes.Buffer
+	logger := logrus.New()
+	logger.Out = &logbuf
+	var supplied map[string]interface{}
+	yaml.Unmarshal(DefaultYAML, &supplied)
+	cfg, err := Load(bytes.NewBuffer(DefaultYAML), logger)
+	c.Assert(err, check.IsNil)
+	var loaded map[string]interface{}
+	buf, err := yaml.Marshal(cfg)
+	c.Assert(err, check.IsNil)
+	err = yaml.Unmarshal(buf, &loaded)
+	c.Assert(err, check.IsNil)
+
+	logExtraKeys(logger, loaded, supplied, "")
+	c.Check(logbuf.String(), check.Equals, "")
+}
+
 func (s *LoadSuite) TestNoWarningsForDumpedConfig(c *check.C) {
 	var logbuf bytes.Buffer
 	logger := logrus.New()

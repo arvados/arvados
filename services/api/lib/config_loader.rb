@@ -126,12 +126,37 @@ class ConfigLoader
         if cfg[k].is_a? Integer
           cfg[k] = cfg[k].seconds
         elsif cfg[k].is_a? String
-          cfg[k] = ConfigLoader.parse_duration cfg[k]
+          cfg[k] = ConfigLoader.parse_duration(cfg[k], cfgkey: cfgkey)
         end
       end
 
       if cfgtype == URI
         cfg[k] = URI(cfg[k])
+      end
+
+      if cfgtype == Integer && cfg[k].is_a?(String)
+        v = cfg[k].sub(/B\s*$/, '')
+        if mt = /(-?\d*\.?\d+)\s*([KMGTPE]i?)$/.match(v)
+          if mt[1].index('.')
+            v = mt[1].to_f
+          else
+            v = mt[1].to_i
+          end
+          cfg[k] = v * {
+            'K' => 1000,
+            'Ki' => 1 << 10,
+            'M' => 1000000,
+            'Mi' => 1 << 20,
+	    "G" =>  1000000000,
+	    "Gi" => 1 << 30,
+	    "T" =>  1000000000000,
+	    "Ti" => 1 << 40,
+	    "P" =>  1000000000000000,
+	    "Pi" => 1 << 50,
+	    "E" =>  1000000000000000000,
+	    "Ei" => 1 << 60,
+          }[mt[2]]
+        end
       end
 
       if !cfg[k].is_a? cfgtype
@@ -155,13 +180,13 @@ class ConfigLoader
     end
   end
 
-  def self.parse_duration durstr
-    duration_re = /(\d+(\.\d+)?)(s|m|h)/
+  def self.parse_duration durstr, cfgkey:
+    duration_re = /-?(\d+(\.\d+)?)(s|m|h)/
     dursec = 0
     while durstr != ""
       mt = duration_re.match durstr
       if !mt
-        raise "#{cfgkey} not a valid duration: '#{cfg[k]}', accepted suffixes are s, m, h"
+        raise "#{cfgkey} not a valid duration: '#{durstr}', accepted suffixes are s, m, h"
       end
       multiplier = {s: 1, m: 60, h: 3600}
       dursec += (Float(mt[1]) * multiplier[mt[3].to_sym])

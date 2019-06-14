@@ -7,10 +7,17 @@ package config
 import (
 	"bytes"
 
+	"git.curoverse.com/arvados.git/lib/cmd"
 	check "gopkg.in/check.v1"
 )
 
 var _ = check.Suite(&CommandSuite{})
+
+var (
+	// Commands must satisfy cmd.Handler interface
+	_ cmd.Handler = dumpCommand{}
+	_ cmd.Handler = checkCommand{}
+)
 
 type CommandSuite struct{}
 
@@ -52,7 +59,7 @@ Clusters:
 `
 	code := CheckCommand.RunCommand("arvados config-check", []string{"-config", "-"}, bytes.NewBufferString(in), &stdout, &stderr)
 	c.Check(code, check.Equals, 1)
-	c.Check(stdout.String(), check.Matches, `(?ms).*API:\n\- +.*MaxItemsPerResponse: 1000\n\+ +MaxItemsPerResponse: 1234\n.*`)
+	c.Check(stdout.String(), check.Matches, `(?ms).*\n\- +.*MaxItemsPerResponse: 1000\n\+ +MaxItemsPerResponse: 1234\n.*`)
 }
 
 func (s *CommandSuite) TestCheckUnknownKey(c *check.C) {

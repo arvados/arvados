@@ -179,3 +179,19 @@ Confirm the service is listening on its assigned port and responding to requests
 {"errors":["Forbidden"],"error_token":"1533044555+684b532c"}
 </code></pre>
 </notextile>
+
+h3(#confirm-config). Confirm the public configuration is OK
+
+Confirm the publicly accessible configuration endpoint does not reveal any sensitive information (e.g., a secret that was mistakenly entered under the wrong configuration key). Use the jq program, if you have installed it, to make the JSON document easier to read.
+
+<notextile>
+<pre><code>~$ <span class="userinput">curl http://0.0.0.0:<b>9004</b>/arvados/v1/config | jq .</span>
+{
+  "API": {
+    "MaxItemsPerResponse": 1000,
+    "MaxRequestAmplification": 4,
+    "RequestTimeout": "5m"
+  },
+  ...
+</code></pre>
+</notextile>
