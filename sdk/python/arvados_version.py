@@ -34,7 +34,7 @@ def get_version(setup_dir, module):
     else:
         try:
             save_version(setup_dir, module, git_latest_tag() + git_timestamp_tag())
-        except subprocess.CalledProcessError:
+        except (subprocess.CalledProcessError, OSError):
             pass
 
     return read_version(setup_dir, module)
