@@ -140,6 +140,8 @@ arv tag remove --all
 
 h3(#arv-ws). arv ws
 
+This is a frontend to @arv-ws@.
+
 @arv ws@ provides access to the websockets event stream.
 
 <notextile>
@@ -168,7 +170,7 @@ optional arguments:
 
 h3(#arv-keep). arv keep
 
-@arv keep@ provides access to the Keep storage service.
+@arv keep@ commands for accessing the Keep storage service.
 
 <notextile>
 <pre>
@@ -181,6 +183,8 @@ Available methods: ls, get, put, docker
 </notextile>
 
 h3(#arv-keep-ls). arv keep ls
+
+This is a frontend to @arv-ls@.
 
 <notextile>
 <pre>
@@ -202,6 +206,8 @@ optional arguments:
 </notextile>
 
 h3(#arv-keep-get). arv keep get
+
+This is a frontend to @arv-get@.
 
 <notextile>
 <pre>
@@ -255,6 +261,8 @@ optional arguments:
 </notextile>
 
 h3(#arv-keep-put). arv keep put
+
+This is a frontend to @arv-put@.
 
 <notextile>
 <pre>
@@ -335,6 +343,8 @@ optional arguments:
 
 h3(#arv-pipeline-run). arv pipeline run
 
+WARNING: this uses the obsolete "job" API.  Don't use this.  You should use @arvados-cwl-runner@ instead.
+
 @arv pipeline run@ can be used to start a pipeline run from the command line.
 
 The User Guide has a page with a bit more information on "using arv pipeline run":{{site.baseurl}}/user/topics/running-pipeline-command-line.html.
@@ -380,6 +390,8 @@ Options:
 </notextile>
 
 h3(#arv-run). arv run
+
+WARNING: this uses the obsolete "job" API.  Don't use this.  You should use @arvados-cwl-runner@ instead.
 
 The @arv-run@ command creates Arvados pipelines at the command line that fan out to multiple concurrent tasks across Arvados compute nodes.
 
