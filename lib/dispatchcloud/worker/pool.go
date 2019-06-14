@@ -789,7 +789,9 @@ func (wp *Pool) sync(threshold time.Time, instances []cloud.Instance) {
 			"WorkerState": wkr.state,
 		})
 		logger.Info("instance disappeared in cloud")
-		wp.mDisappearances.WithLabelValues(stateString[wkr.state]).Inc()
+		if wp.mDisappearances != nil {
+			wp.mDisappearances.WithLabelValues(stateString[wkr.state]).Inc()
+		}
 		delete(wp.workers, id)
 		go wkr.Close()
 		notify = true
