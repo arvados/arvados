@@ -9,23 +9,12 @@ SPDX-License-Identifier: AGPL-3.0 %>
         <col width="50%">
       </colgroup>
       <tr>
-	<% queued_containers = Container.order("modified_at asc").filter([["state", "in", ["Queued", "Locked"]], ["priority", ">", 0]]).limit(1) %>
-	<% running_containers = Container.order("started_at desc").where(state: "Running").limit(1) %>
-        <td><%= queued_containers.items_available %></td>
-        <td><%= running_containers.items_available %></td>
+        <td><%= nodes.select {|n| n.crunch_worker_state == "busy" }.size %></td>
+        <td><%= nodes.select {|n| n.crunch_worker_state == "idle" }.size %></td>
       </tr>
       <tr>
-        <th>Pending containers</th>
-        <th>Running containers</th>
-      </tr>
-      <tr>
-        <th><%= if queued_containers.first then render_runtime(Time.now - queued_containers.first.modified_at, false, false) else "-" end %></th>
-        <th><%= if running_containers.first then render_runtime(Time.now - running_containers.first.started_at, false, false) else "-" end %></th>
-      </tr>
-      <tr>
-        <th>Queue wait</th>
-        <th>Last start</th>
+        <th>Busy nodes</th>
+        <th>Idle nodes</th>
       </tr>
     </table>
-
 </div>
