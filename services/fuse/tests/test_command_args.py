@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+from __future__ import absolute_import
 import arvados
 import arvados_fuse
 import arvados_fuse.command
@@ -13,14 +14,14 @@ import llfuse
 import logging
 import mock
 import os
-import run_test_server
+from . import run_test_server
 import sys
 import tempfile
 import unittest
 
 def noexit(func):
     """If argparse or arvados_fuse tries to exit, fail the test instead"""
-    class SystemExitCaught(StandardError):
+    class SystemExitCaught(Exception):
         pass
     @functools.wraps(func)
     def wrapper(*args, **kwargs):

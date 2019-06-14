@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+from __future__ import absolute_import
 import arvados
 import arvados_fuse.command
 import json
@@ -9,7 +10,7 @@ import mock
 import os
 import pycurl
 import Queue
-import run_test_server
+from . import run_test_server
 import tempfile
 import unittest
 

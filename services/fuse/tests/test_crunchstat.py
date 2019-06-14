@@ -2,9 +2,10 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+from __future__ import absolute_import
 import subprocess
 
-from integration_test import IntegrationTest
+from .integration_test import IntegrationTest
 
 
 class CrunchstatTest(IntegrationTest):

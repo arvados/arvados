@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+from __future__ import absolute_import
 import arvados_fuse.unmount
 import os
 import subprocess
@@ -10,7 +11,7 @@ import tempfile
 import time
 import unittest
 
-from integration_test import IntegrationTest
+from .integration_test import IntegrationTest
 
 class UnmountTest(IntegrationTest):
     def setUp(self):

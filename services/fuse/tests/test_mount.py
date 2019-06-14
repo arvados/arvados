@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+from __future__ import absolute_import
 import json
 import llfuse
 import logging
@@ -13,9 +14,9 @@ import unittest
 
 import arvados
 import arvados_fuse as fuse
-import run_test_server
+from . import run_test_server
 
-from mount_test_base import MountTestBase
+from .mount_test_base import MountTestBase
 
 logger = logging.getLogger('arvados.arv-mount')
 

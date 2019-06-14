@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+from __future__ import absolute_import
 import arvados
 import arvados_fuse as fuse
 import arvados.safeapi
@@ -9,7 +10,7 @@ import llfuse
 import logging
 import multiprocessing
 import os
-import run_test_server
+from . import run_test_server
 import shutil
 import signal
 import subprocess
