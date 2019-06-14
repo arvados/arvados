@@ -32,9 +32,8 @@ type RouterSuite struct {
 }
 
 func (s *RouterSuite) SetUpTest(c *check.C) {
-	cluster := &arvados.Cluster{
-		TLS: arvados.TLS{Insecure: true},
-	}
+	cluster := &arvados.Cluster{}
+	cluster.TLS.Insecure = true
 	arvadostest.SetServiceURL(&cluster.Services.RailsAPI, "https://"+os.Getenv("ARVADOS_TEST_API_HOST"))
 	s.rtr = New(cluster)
 }
