@@ -45,16 +45,19 @@ export const createCollectionTag = (data: TagProperty) =>
         const uuid = item ? item.uuid : '';
         try {
             if (item) {
+                const d: Partial<CollectionResource> = {
+                    properties: JSON.parse(JSON.stringify(item.properties))
+                };
+                d.properties[data.key] = data.value;
+                const updatedCollection = await services.collectionService.update(uuid, d);
                 item.properties[data.key] = data.value;
-                const version = 'version';
-                delete item[version];
-                const updatedCollection = await services.collectionService.update(uuid, item);
                 dispatch(resourcesActions.SET_RESOURCES([updatedCollection]));
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Tag has been successfully added.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
                 return updatedCollection;
             }
             return;
         } catch (e) {
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.errors[0], hideDuration: 2000, kind: SnackbarKind.ERROR }));
             return;
         }
     };
@@ -65,7 +68,7 @@ export const navigateToProcess = (uuid: string) =>
             await services.containerRequestService.get(uuid);
             dispatch<any>(navigateTo(uuid));
         } catch {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'This process does not exists!', hideDuration: 2000, kind: SnackbarKind.ERROR }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'This process does not exist!', hideDuration: 2000, kind: SnackbarKind.ERROR }));
         }
     };
 
@@ -75,14 +78,19 @@ export const deleteCollectionTag = (key: string) =>
         const uuid = item ? item.uuid : '';
         try {
             if (item) {
+                const data: Partial<CollectionResource> = {
+                    properties: JSON.parse(JSON.stringify(item.properties))
+                };
+                delete data.properties[key];
+                const updatedCollection = await services.collectionService.update(uuid, data);
                 delete item.properties[key];
-                const updatedCollection = await services.collectionService.update(uuid, item);
                 dispatch(resourcesActions.SET_RESOURCES([updatedCollection]));
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Tag has been successfully deleted.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
                 return updatedCollection;
             }
             return;
         } catch (e) {
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.errors[0], hideDuration: 2000, kind: SnackbarKind.ERROR }));
             return;
         }
     };
