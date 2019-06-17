@@ -50,6 +50,15 @@ an object that is live in the inode cache, that object is immediately updated.
 """
 
 from __future__ import absolute_import
+from __future__ import division
+from future.utils import viewitems
+from future.utils import native
+from future import standard_library
+standard_library.install_aliases()
+from builtins import next
+from builtins import str
+from builtins import object
+from builtins import dict
 import os
 import sys
 import llfuse
@@ -73,8 +82,7 @@ import collections
 import functools
 import arvados.keep
 from prometheus_client import Summary
-
-import Queue
+import queue
 
 # Default _notify_queue has a limit of 1000 items, but it really needs to be
 # unlimited to avoid deadlocks, see https://arvados.org/issues/3198#note-43 for
@@ -82,10 +90,10 @@ import Queue
 
 if hasattr(llfuse, 'capi'):
     # llfuse < 0.42
-    llfuse.capi._notify_queue = Queue.Queue()
+    llfuse.capi._notify_queue = queue.Queue()
 else:
     # llfuse >= 0.42
-    llfuse._notify_queue = Queue.Queue()
+    llfuse._notify_queue = queue.Queue()
 
 LLFUSE_VERSION_0 = llfuse.__version__.startswith('0')
 
@@ -262,7 +270,7 @@ class Inodes(object):
         self._entries[key] = item
 
     def __iter__(self):
-        return self._entries.iterkeys()
+        return iter(self._entries.keys())
 
     def items(self):
         return self._entries.items()
@@ -303,12 +311,12 @@ class Inodes(object):
         if entry.has_ref(False):
             # Only necessary if the kernel has previously done a lookup on this
             # inode and hasn't yet forgotten about it.
-            llfuse.invalidate_entry(entry.inode, name.encode(self.encoding))
+            llfuse.invalidate_entry(entry.inode, native(name.encode(self.encoding)))
 
     def clear(self):
         self.inode_cache.clear()
 
-        for k,v in self._entries.items():
+        for k,v in viewitems(self._entries):
             try:
                 v.finalize()
             except Exception as e:
@@ -526,7 +534,7 @@ class Operations(llfuse.Operations):
         entry.st_size = e.size()
 
         entry.st_blksize = 512
-        entry.st_blocks = (entry.st_size/512)+1
+        entry.st_blocks = (entry.st_size // 512) + 1
         if hasattr(entry, 'st_atime_ns'):
             # llfuse >= 0.42
             entry.st_atime_ns = int(e.atime() * 1000000000)
@@ -567,7 +575,7 @@ class Operations(llfuse.Operations):
     @lookup_time.time()
     @catch_exceptions
     def lookup(self, parent_inode, name, ctx=None):
-        name = unicode(name, self.inodes.encoding)
+        name = str(name, self.inodes.encoding)
         inode = None
 
         if name == '.':
