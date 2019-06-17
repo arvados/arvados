@@ -368,7 +368,7 @@ class Container < ArvadosModel
   def check_unlock
     if state_was == Locked and state == Queued
       if self.locked_by_uuid != current_api_client_authorization.uuid
-        raise InvalidStateTransitionError.new("locked by a different token")
+        raise ArvadosModel::PermissionDeniedError.new("locked by a different token")
       end
       if self.lock_count >= Rails.configuration.Containers.MaxDispatchAttempts
         self.state = Cancelled
