@@ -77,8 +77,8 @@ database_pw=$(cat /var/lib/arvados/api_database_pw)
 
 if ! (psql postgres -c "\du" | grep "^ arvados ") >/dev/null ; then
     psql postgres -c "create user arvados with password '$database_pw'"
-    psql postgres -c "ALTER USER arvados WITH SUPERUSER;"
 fi
+psql postgres -c "ALTER USER arvados WITH SUPERUSER;"
 
 sed "s/password:.*/password: $database_pw/" <config/database.yml.example >config/database.yml
 
