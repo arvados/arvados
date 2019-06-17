@@ -30,7 +30,6 @@ class Arvados::V1::ContainersController < ApplicationController
 
   def update
     @object.with_lock do
-      @object.reload
       super
     end
   end

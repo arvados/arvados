@@ -31,6 +31,8 @@ class Container < ArvadosModel
 
   before_validation :fill_field_defaults, :if => :new_record?
   before_validation :set_timestamps
+  before_validation :check_lock
+  before_validation :check_unlock
   validates :command, :container_image, :output_path, :cwd, :priority, { presence: true }
   validates :priority, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   validate :validate_runtime_status
@@ -73,6 +75,7 @@ class Container < ArvadosModel
     t.add :scheduling_parameters
     t.add :runtime_user_uuid
     t.add :runtime_auth_scopes
+    t.add :lock_count
   end
 
   # Supported states for a container
@@ -335,47 +338,41 @@ class Container < ArvadosModel
     nil
   end
 
-  def check_lock_fail
-    if self.state != Queued
-      raise LockFailedError.new("cannot lock when #{self.state}")
-    elsif self.priority <= 0
-      raise LockFailedError.new("cannot lock when priority<=0")
-    end
-  end
-
   def lock
-    # Check invalid state transitions once before getting the lock
-    # (because it's cheaper that way) and once after getting the lock
-    # (because state might have changed while acquiring the lock).
-    check_lock_fail
-    transaction do
-      reload
-      check_lock_fail
-      update_attributes!(state: Locked, lock_count: self.lock_count+1)
+    self.with_lock do
+      if self.state != Queued
+        raise LockFailedError.new("cannot lock when #{self.state}")
+      end
+      self.update_attributes!(state: Locked)
     end
   end
 
-  def check_unlock_fail
-    if self.state != Locked
-      raise InvalidStateTransitionError.new("cannot unlock when #{self.state}")
-    elsif self.locked_by_uuid != current_api_client_authorization.uuid
-      raise InvalidStateTransitionError.new("locked by a different token")
+  def check_lock
+    if state_was == Queued and state == Locked
+      if self.priority <= 0
+        raise LockFailedError.new("cannot lock when priority<=0")
+      end
+      self.lock_count = self.lock_count+1
     end
   end
 
   def unlock
-    # Check invalid state transitions twice (see lock)
-    check_unlock_fail
-    transaction do
-      reload(lock: 'FOR UPDATE')
-      check_unlock_fail
-      if self.lock_count < Rails.configuration.Containers.MaxDispatchAttempts
-        update_attributes!(state: Queued)
-      else
-        update_attributes!(state: Cancelled,
-                           runtime_status: {
-                             error: "Container exceeded 'max_container_dispatch_attempts' (lock_count=#{self.lock_count}."
-                           })
+    self.with_lock do
+      if self.state != Locked
+        raise InvalidStateTransitionError.new("cannot unlock when #{self.state}")
+      end
+      self.update_attributes!(state: Queued)
+    end
+  end
+
+  def check_unlock
+    if state_was == Locked and state == Queued
+      if self.locked_by_uuid != current_api_client_authorization.uuid
+        raise InvalidStateTransitionError.new("locked by a different token")
+      end
+      if self.lock_count >= Rails.configuration.Containers.MaxDispatchAttempts
+        self.state = Cancelled
+        self.runtime_status = {error: "Failed to start container.  Cancelled after exceeding 'Containers.MaxDispatchAttempts' (lock_count=#{self.lock_count})"}
       end
     end
   end
