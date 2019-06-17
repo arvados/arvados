@@ -97,4 +97,4 @@ class MountTestBase(unittest.TestCase):
         path = self.mounttmp
         if subdir:
             path = os.path.join(path, subdir)
-        self.assertEqual(sorted(expect_content), sorted(llfuse.listdir(path)))
+        self.assertEqual(sorted(expect_content), sorted(llfuse.listdir(str(path))))

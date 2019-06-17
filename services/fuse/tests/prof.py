@@ -1,8 +1,9 @@
-from __future__ import print_function
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+from __future__ import print_function
+from builtins import object
 import time
 
 class CountTime(object):
@@ -18,5 +19,5 @@ class CountTime(object):
         sec = (time.time() - self.start)
         th = ""
         if self.size:
-            th = "throughput %s/sec" % (self.size / sec)
+            th = "throughput %s/sec" % (self.size // sec)
         print("%s time %s micoseconds %s" % (self.tag, sec*1000000, th))

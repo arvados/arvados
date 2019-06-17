@@ -3,6 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 from __future__ import absolute_import
+from future.utils import viewitems
+from builtins import str
+from builtins import object
 import json
 import llfuse
 import logging
@@ -32,7 +35,7 @@ class AssertWithTimeout(object):
         self.done = False
         return self
 
-    def next(self):
+    def __next__(self):
         if self.done:
             raise StopIteration
         return self.attempt
@@ -113,7 +116,7 @@ class FuseMountTest(MountTestBase):
                  'dir2/dir3/thing7.txt': 'data 7',
                  'dir2/dir3/thing8.txt': 'data 8'}
 
-        for k, v in files.items():
+        for k, v in viewitems(files):
             with open(os.path.join(self.mounttmp, k)) as f:
                 self.assertEqual(v, f.read())
 
@@ -168,7 +171,7 @@ class FuseMagicTest(MountTestBase):
         files = {}
         files[os.path.join(self.mounttmp, self.testcollection, 'thing1.txt')] = 'data 1'
 
-        for k, v in files.items():
+        for k, v in viewitems(files):
             with open(os.path.join(self.mounttmp, k)) as f:
                 self.assertEqual(v, f.read())
 
@@ -236,7 +239,7 @@ def fuseSharedTestHelper(mounttmp):
             # check mtime on collection
             st = os.stat(baz_path)
             try:
-                mtime = st.st_mtime_ns / 1000000000
+                mtime = st.st_mtime_ns // 1000000000
             except AttributeError:
                 mtime = st.st_mtime
             self.assertEqual(mtime, 1391448174)
@@ -290,7 +293,7 @@ class FuseHomeTest(MountTestBase):
             'anonymously_accessible_project']
         found_in = 0
         found_not_in = 0
-        for name, item in run_test_server.fixture('collections').iteritems():
+        for name, item in viewitems(run_test_server.fixture('collections')):
             if 'name' not in item:
                 pass
             elif item['owner_uuid'] == public_project['uuid']:
@@ -1165,7 +1168,7 @@ class FuseMagicTestPDHOnly(MountTestBase):
         files = {}
         files[os.path.join(self.mounttmp, self.testcollection, 'thing1.txt')] = 'data 1'
 
-        for k, v in files.items():
+        for k, v in viewitems(files):
             with open(os.path.join(self.mounttmp, k)) as f:
                 self.assertEqual(v, f.read())
 

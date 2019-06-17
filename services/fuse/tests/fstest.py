@@ -4,6 +4,8 @@
 
 from __future__ import print_function
 from __future__ import absolute_import
+from builtins import str
+from builtins import range
 from multiprocessing import Process
 import os
 import subprocess
@@ -14,7 +16,7 @@ def fn(n):
     return "file%i" % n
 
 def createfiles(d, n):
-    for j in xrange(1, 5):
+    for j in range(1, 5):
         print("Starting small file %s %i, %i" % (d, n, j))
         if d:
             os.mkdir(d)
@@ -23,25 +25,25 @@ def createfiles(d, n):
                 print("ERROR %s missing" % d)
             os.chdir(d)
 
-        for i in xrange(n, n+10):
+        for i in range(n, n+10):
             with open(fn(i), "w") as f:
                 f.write(fn(i))
 
         ld = os.listdir('.')
-        for i in xrange(n, n+10):
+        for i in range(n, n+10):
             if fn(i) not in ld:
                 print("ERROR %s missing" % fn(i))
 
-        for i in xrange(n, n+10):
+        for i in range(n, n+10):
             with open(fn(i), "r") as f:
                 if f.read() != fn(i):
                     print("ERROR %s doesn't have expected contents" % fn(i))
 
-        for i in xrange(n, n+10):
+        for i in range(n, n+10):
             os.remove(fn(i))
 
         ld = os.listdir('.')
-        for i in xrange(n, n+10):
+        for i in range(n, n+10):
             if fn(i) in ld:
                 print("ERROR %s should have been removed" % fn(i))
 
@@ -54,7 +56,7 @@ def createfiles(d, n):
 
 
 def createbigfile(d, n):
-    for j in xrange(1, 5):
+    for j in range(1, 5):
         print("Starting big file %s %i, %i" % (d, n, j))
         i = n
         if d:
@@ -65,7 +67,7 @@ def createbigfile(d, n):
             os.chdir(d)
 
         with open(fn(i), "w") as f:
-            for j in xrange(0, 1000):
+            for j in range(0, 1000):
                 f.write((str(j) + fn(i)) * 10000)
 
         ld = os.listdir('.')
@@ -73,7 +75,7 @@ def createbigfile(d, n):
             print("ERROR %s missing" % fn(i))
 
         with open(fn(i), "r") as f:
-            for j in xrange(0, 1000):
+            for j in range(0, 1000):
                 expect = (str(j) + fn(i)) * 10000
                 if f.read(len(expect)) != expect:
                     print("ERROR %s doesn't have expected contents" % fn(i))
@@ -93,12 +95,12 @@ def createbigfile(d, n):
 
 def do_ls():
     with open("/dev/null", "w") as nul:
-        for j in xrange(1, 50):
+        for j in range(1, 50):
             subprocess.call(["ls", "-l"], stdout=nul, stderr=nul)
 
 def runit(target, indir):
     procs = []
-    for n in xrange(0, 20):
+    for n in range(0, 20):
         if indir:
             p = Process(target=target, args=("dir%i" % n, n*10,))
         else:
