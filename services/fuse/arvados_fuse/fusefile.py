@@ -2,13 +2,14 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+from __future__ import absolute_import
 import json
 import llfuse
 import logging
 import re
 import time
 
-from fresh import FreshBase, convertTime
+from .fresh import FreshBase, convertTime
 
 _logger = logging.getLogger('arvados.arvados_fuse')
 

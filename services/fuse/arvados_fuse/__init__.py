@@ -49,6 +49,7 @@ an object that is live in the inode cache, that object is immediately updated.
 
 """
 
+from __future__ import absolute_import
 import os
 import sys
 import llfuse
@@ -88,8 +89,8 @@ else:
 
 LLFUSE_VERSION_0 = llfuse.__version__.startswith('0')
 
-from fusedir import sanitize_filename, Directory, CollectionDirectory, TmpCollectionDirectory, MagicDirectory, TagsDirectory, ProjectDirectory, SharedDirectory, CollectionDirectoryBase
-from fusefile import StringFile, FuseArvadosFile
+from .fusedir import sanitize_filename, Directory, CollectionDirectory, TmpCollectionDirectory, MagicDirectory, TagsDirectory, ProjectDirectory, SharedDirectory, CollectionDirectoryBase
+from .fusefile import StringFile, FuseArvadosFile
 
 _logger = logging.getLogger('arvados.arvados_fuse')
 
@@ -414,7 +415,7 @@ class Operations(llfuse.Operations):
         self.initlock.set()
 
     def metric_samples(self):
-        return self.fuse_time.collect()[0].samples 
+        return self.fuse_time.collect()[0].samples
 
     def metric_op_names(self):
         ops = []

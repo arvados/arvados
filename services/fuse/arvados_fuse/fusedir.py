@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+from __future__ import absolute_import
 import logging
 import re
 import time
@@ -14,8 +15,8 @@ from apiclient import errors as apiclient_errors
 import errno
 import time
 
-from fusefile import StringFile, ObjectFile, FuncToJSONFile, FuseArvadosFile
-from fresh import FreshBase, convertTime, use_counter, check_update
+from .fusefile import StringFile, ObjectFile, FuncToJSONFile, FuseArvadosFile
+from .fresh import FreshBase, convertTime, use_counter, check_update
 
 import arvados.collection
 from arvados.util import portable_data_hash_pattern, uuid_pattern, collection_uuid_pattern, group_uuid_pattern, user_uuid_pattern, link_uuid_pattern
