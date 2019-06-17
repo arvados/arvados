@@ -49,6 +49,7 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 	}
 
 	s.cluster = &arvados.Cluster{
+		ManagementToken: "test-management-token",
 		Containers: arvados.ContainersConfig{
 			DispatchPrivateKey: string(dispatchprivraw),
 			StaleLockTimeout:   arvados.Duration(5 * time.Millisecond),
@@ -193,6 +194,18 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 			c.Fatalf("timed out with %d containers (%v), %d instances (%+v)", len(ents), ents, len(insts), insts)
 		}
 	}
+
+	req := httptest.NewRequest("GET", "/metrics", nil)
+	req.Header.Set("Authorization", "Bearer "+s.cluster.ManagementToken)
+	resp := httptest.NewRecorder()
+	s.disp.ServeHTTP(resp, req)
+	c.Check(resp.Code, check.Equals, http.StatusOK)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*driver_operations{error="0",operation="Create"} [^0].*`)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*driver_operations{error="0",operation="List"} [^0].*`)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*driver_operations{error="1",operation="Create"} [^0].*`)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*driver_operations{error="1",operation="List"} 0\n.*`)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*instances_disappeared{state="shutdown"} [^0].*`)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*instances_disappeared{state="unknown"} 0\n.*`)
 }
 
 func (s *DispatcherSuite) TestAPIPermissions(c *check.C) {

@@ -12,6 +12,7 @@ import (
 	"git.curoverse.com/arvados.git/lib/cloud/azure"
 	"git.curoverse.com/arvados.git/lib/cloud/ec2"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 )
@@ -21,13 +22,14 @@ var drivers = map[string]cloud.Driver{
 	"ec2":   ec2.Driver,
 }
 
-func newInstanceSet(cluster *arvados.Cluster, setID cloud.InstanceSetID, logger logrus.FieldLogger) (cloud.InstanceSet, error) {
+func newInstanceSet(cluster *arvados.Cluster, setID cloud.InstanceSetID, logger logrus.FieldLogger, reg *prometheus.Registry) (cloud.InstanceSet, error) {
 	driver, ok := drivers[cluster.Containers.CloudVMs.Driver]
 	if !ok {
 		return nil, fmt.Errorf("unsupported cloud driver %q", cluster.Containers.CloudVMs.Driver)
 	}
 	sharedResourceTags := cloud.SharedResourceTags(cluster.Containers.CloudVMs.ResourceTags)
 	is, err := driver.InstanceSet(cluster.Containers.CloudVMs.DriverParameters, setID, sharedResourceTags, logger)
+	is = newInstrumentedInstanceSet(is, reg)
 	if maxops := cluster.Containers.CloudVMs.MaxCloudOpsPerSecond; maxops > 0 {
 		is = rateLimitedInstanceSet{
 			InstanceSet: is,
@@ -112,4 +114,66 @@ nextInstance:
 		"skipped":   skipped,
 	}).WithError(err).Debugf("filteringInstanceSet returning instances")
 	return returning, err
+}
+
+func newInstrumentedInstanceSet(is cloud.InstanceSet, reg *prometheus.Registry) cloud.InstanceSet {
+	cv := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "arvados",
+		Subsystem: "dispatchcloud",
+		Name:      "driver_operations",
+		Help:      "Number of instance-create/destroy/list operations performed via cloud driver.",
+	}, []string{"operation", "error"})
+
+	// Create all counters, so they are reported with zero values
+	// (instead of being missing) until they are incremented.
+	for _, op := range []string{"Create", "List", "Destroy", "SetTags"} {
+		for _, error := range []string{"0", "1"} {
+			cv.WithLabelValues(op, error).Add(0)
+		}
+	}
+
+	reg.MustRegister(cv)
+	return instrumentedInstanceSet{is, cv}
+}
+
+type instrumentedInstanceSet struct {
+	cloud.InstanceSet
+	cv *prometheus.CounterVec
+}
+
+func (is instrumentedInstanceSet) Create(it arvados.InstanceType, image cloud.ImageID, tags cloud.InstanceTags, init cloud.InitCommand, pk ssh.PublicKey) (cloud.Instance, error) {
+	inst, err := is.InstanceSet.Create(it, image, tags, init, pk)
+	is.cv.WithLabelValues("Create", boolLabelValue(err != nil)).Inc()
+	return instrumentedInstance{inst, is.cv}, err
+}
+
+func (is instrumentedInstanceSet) Instances(tags cloud.InstanceTags) ([]cloud.Instance, error) {
+	instances, err := is.InstanceSet.Instances(tags)
+	is.cv.WithLabelValues("List", boolLabelValue(err != nil)).Inc()
+	return instances, err
+}
+
+type instrumentedInstance struct {
+	cloud.Instance
+	cv *prometheus.CounterVec
+}
+
+func (inst instrumentedInstance) Destroy() error {
+	err := inst.Instance.Destroy()
+	inst.cv.WithLabelValues("Destroy", boolLabelValue(err != nil)).Inc()
+	return err
+}
+
+func (inst instrumentedInstance) SetTags(tags cloud.InstanceTags) error {
+	err := inst.Instance.SetTags(tags)
+	inst.cv.WithLabelValues("SetTags", boolLabelValue(err != nil)).Inc()
+	return err
+}
+
+func boolLabelValue(v bool) string {
+	if v {
+		return "1"
+	} else {
+		return "0"
+	}
 }
