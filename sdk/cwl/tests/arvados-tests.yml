@@ -298,3 +298,9 @@
   }
   tool: 15241-writable-dir.cwl
   doc: Test for writable collections
+
+- job: badkeep.yml
+  output: {}
+  should_fail: true
+  tool: 15295-bad-keep-ref.cwl
+  doc: Test checking for invalid keepref
