@@ -1053,19 +1053,24 @@ test_gofmt() {
 }
 
 test_govendor() {
-    cd "$GOPATH/src/git.curoverse.com/arvados.git" || return 1
-    # Remove cached source dirs in workdir. Otherwise, they will
-    # not qualify as +missing or +external below, and we won't be
-    # able to detect that they're missing from vendor/vendor.json.
-    rm -rf vendor/*/
-    go get -v -d ...
-    "$GOPATH/bin/govendor" sync
-    [[ -z $("$GOPATH/bin/govendor" list +unused +missing +external | tee /dev/stderr) ]] \
-        || fatal "vendor/vendor.json has unused or missing dependencies -- try:
+    (
+        set -e
+        cd "$GOPATH/src/git.curoverse.com/arvados.git"
+        # Remove cached source dirs in workdir. Otherwise, they will
+        # not qualify as +missing or +external below, and we won't be
+        # able to detect that they're missing from vendor/vendor.json.
+        rm -rf vendor/*/
+        go get -v -d ...
+        "$GOPATH/bin/govendor" sync
+        if [[ -n $("$GOPATH/bin/govendor" list +unused +missing +external | tee /dev/stderr) ]]; then
+            echo >&2 "vendor/vendor.json has unused or missing dependencies -- try:
 
 (export GOPATH=\"${GOPATH}\"; cd \$GOPATH/src/git.curoverse.com/arvados.git && \$GOPATH/bin/govendor add +missing +external && \$GOPATH/bin/govendor remove +unused)
 
-";
+"
+            return 1
+        fi
+    )
 }
 
 test_services/api() {
