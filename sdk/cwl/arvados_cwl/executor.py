@@ -780,11 +780,16 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
             if self.pipeline:
                 self.api.pipeline_instances().update(uuid=self.pipeline["uuid"],
                                                      body={"state": "Failed"}).execute(num_retries=self.num_retries)
-            if runtimeContext.submit and isinstance(tool, Runner):
-                runnerjob = tool
-                if runnerjob.uuid and self.work_api == "containers":
-                    self.api.container_requests().update(uuid=runnerjob.uuid,
-                                                     body={"priority": "0"}).execute(num_retries=self.num_retries)
+
+            if self.work_api == "containers" and not current_container:
+                # Not running in a crunch container, so cancel any outstanding processes.
+                for p in self.processes:
+                    try:
+                        self.api.container_requests().update(uuid=p,
+                                                             body={"priority": "0"}
+                        ).execute(num_retries=self.num_retries)
+                    except Exception:
+                        pass
         finally:
             self.workflow_eval_lock.release()
             self.task_queue.drain()
