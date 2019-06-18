@@ -182,6 +182,24 @@ window.TagEditorApp = {
         tag.value.map(function() { vnode.state.dirty(true) })
         tag.name.map(m.redraw)
     },
+    fixTag: function(vnode, tagName) {
+        // Recover tag if deleted, recover its value if modified
+        savedTagValue = vnode.state.saved_tags[tagName]
+        if (savedTagValue === undefined) {
+            return
+        }
+        found = false
+        vnode.state.tags.forEach(function(tag) {
+            if (tag.name == tagName) {
+                tag.value = vnode.state.saved_tags[tagName]
+                found = true
+            }
+        })
+        if (!found) {
+            vnode.state.tags.pop() // Remove the last empty row
+            vnode.state.appendTag(vnode, tagName, savedTagValue)
+        }
+    },
     oninit: function(vnode) {
         vnode.state.sessionDB = new SessionDB()
         // Get vocabulary
@@ -190,6 +208,7 @@ window.TagEditorApp = {
         m.request('/vocabulary.json?v=' + vocabularyTimestamp).then(vnode.state.vocabulary)
         vnode.state.editMode = vnode.attrs.targetEditable
         vnode.state.tags = []
+        vnode.state.saved_tags = {}
         vnode.state.dirty = m.stream(false)
         vnode.state.dirty.map(m.redraw)
         vnode.state.error = m.stream('')
@@ -214,6 +233,7 @@ window.TagEditorApp = {
                     }
                     // Data synced with server, so dirty state should be false
                     vnode.state.dirty(false)
+                    vnode.state.saved_tags = o.properties
                     // Add new tag row when the last one is completed
                     vnode.state.dirty.map(function() {
                         if (!vnode.state.editMode) { return }
@@ -251,9 +271,27 @@ window.TagEditorApp = {
                         ).then(function(v) {
                             vnode.state.dirty(false)
                             vnode.state.error('')
+                            vnode.state.saved_tags = tags
                         }).catch(function(err) {
-                            errMsg = err["errors"].join(', ')
-                            vnode.state.error('Error: ' + errMsg)
+                            if (err.errors !== undefined) {
+                                var re = /protected\ property/i
+                                var protected_props = []
+                                err.errors.forEach(function(error) {
+                                    if (re.test(error)) {
+                                        prop = error.split(':')[1].trim()
+                                        vnode.state.fixTag(vnode, prop)
+                                        protected_props.push(prop)
+                                    }
+                                })
+                                if (protected_props.length > 0) {
+                                    errMsg = "Protected properties cannot be updated: " + protected_props.join(', ')
+                                } else {
+                                    errMsg = errors.join(', ')
+                                }
+                            } else {
+                                errMsg = err
+                            }
+                            vnode.state.error(errMsg)
                         })
                     }
                 }, vnode.state.dirty() ? ' Save changes ' : ' Saved '),

@@ -697,7 +697,10 @@ class Collection < ArvadosModel
     # Pre-existent protected properties can't be updated
     invalid_updates = properties_was.keys.select{|p| properties_was[p] != properties[p]} & protected_props
     if !invalid_updates.empty?
-      raise PermissionDeniedError.new("protected properties cannot be updated: #{invalid_updates.join(', ')}")
+      invalid_updates.each do |p|
+        errors.add("protected property cannot be updated:", p)
+      end
+      raise PermissionDeniedError.new
     end
     true
   end
