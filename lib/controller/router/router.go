@@ -29,11 +29,11 @@ func New(cluster *arvados.Cluster) *router {
 		mux: httprouter.New(),
 		fed: federation.New(cluster),
 	}
-	rtr.addRoutes(cluster)
+	rtr.addRoutes()
 	return rtr
 }
 
-func (rtr *router) addRoutes(cluster *arvados.Cluster) {
+func (rtr *router) addRoutes() {
 	for _, route := range []struct {
 		endpoint    arvados.APIEndpoint
 		defaultOpts func() interface{}
@@ -247,6 +247,9 @@ func (rtr *router) addRoutes(cluster *arvados.Cluster) {
 	}
 	rtr.mux.NotFound = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		httpserver.Errors(w, []string{"API endpoint not found"}, http.StatusNotFound)
+	})
+	rtr.mux.MethodNotAllowed = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		httpserver.Errors(w, []string{"API endpoint not found"}, http.StatusMethodNotAllowed)
 	})
 }
 
