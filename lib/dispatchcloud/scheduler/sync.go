@@ -99,6 +99,7 @@ func (sch *Scheduler) cancel(uuid string, reason string) {
 
 func (sch *Scheduler) kill(uuid string, reason string) {
 	sch.pool.KillContainer(uuid, reason)
+	sch.pool.ForgetContainer(uuid)
 }
 
 func (sch *Scheduler) requeue(ent container.QueueEnt, reason string) {
