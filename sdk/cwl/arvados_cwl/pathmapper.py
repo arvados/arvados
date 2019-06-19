@@ -42,12 +42,12 @@ def trim_listing(obj):
     if obj.get("location", "").startswith("keep:") and "listing" in obj:
         del obj["listing"]
 
+collection_pdh_path = re.compile(r'^keep:[0-9a-f]{32}\+\d+/.+$')
+collection_pdh_pattern = re.compile(r'^keep:([0-9a-f]{32}\+\d+)(/.*)?')
+collection_uuid_pattern = re.compile(r'^keep:([a-z0-9]{5}-4zz18-[a-z0-9]{15})(/.*)?$')
 
 class ArvPathMapper(PathMapper):
     """Convert container-local paths to and from Keep collection ids."""
-
-    pdh_path = re.compile(r'^keep:[0-9a-f]{32}\+\d+/.+$')
-    pdh_dirpath = re.compile(r'^keep:[0-9a-f]{32}\+\d+(/.*)?$')
 
     def __init__(self, arvrunner, referenced_files, input_basedir,
                  collection_pattern, file_pattern, name=None, single_collection=False):
@@ -66,12 +66,16 @@ class ArvPathMapper(PathMapper):
         if "#" in src:
             src = src[:src.index("#")]
 
-        if isinstance(src, basestring) and ArvPathMapper.pdh_dirpath.match(src):
-            self._pathmap[src] = MapperEnt(src, self.collection_pattern % urllib.parse.unquote(src[5:]), srcobj["class"], True)
-            if arvados_cwl.util.collectionUUID in srcobj:
-                self.pdh_to_uuid[src.split("/", 1)[0][5:]] = srcobj[arvados_cwl.util.collectionUUID]
-
         debug = logger.isEnabledFor(logging.DEBUG)
+
+        if isinstance(src, basestring) and src.startswith("keep:"):
+            if collection_pdh_pattern.match(src):
+                self._pathmap[src] = MapperEnt(src, self.collection_pattern % urllib.parse.unquote(src[5:]), srcobj["class"], True)
+                if arvados_cwl.util.collectionUUID in srcobj:
+                    self.pdh_to_uuid[src.split("/", 1)[0][5:]] = srcobj[arvados_cwl.util.collectionUUID]
+            elif not collection_uuid_pattern.match(src):
+                with SourceLine(srcobj, "location", WorkflowException, debug):
+                    raise WorkflowException("Invalid keep reference '%s'" % src)
 
         if src not in self._pathmap:
             if src.startswith("file:"):
