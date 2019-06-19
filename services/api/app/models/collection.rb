@@ -610,7 +610,7 @@ class Collection < ArvadosModel
 
   # Sets default properties at creation time
   def default_properties
-    default_props = Rails.configuration.Collections.DefaultProperties.with_indifferent_access
+    default_props = Rails.configuration.Collections.ManagedProperties.with_indifferent_access
     if default_props.empty?
       return
     end
@@ -687,12 +687,12 @@ class Collection < ArvadosModel
   end
 
   def protected_default_properties_updates
-    default_properties = Rails.configuration.Collections.DefaultProperties.with_indifferent_access
+    default_properties = Rails.configuration.Collections.ManagedProperties.with_indifferent_access
     if default_properties.empty? || !properties_changed? || current_user.is_admin
       return true
     end
     protected_props = default_properties.keys.select do |p|
-      Rails.configuration.Collections.DefaultProperties[p]['protected']
+      Rails.configuration.Collections.ManagedProperties[p]['protected']
     end
     # Pre-existent protected properties can't be updated
     invalid_updates = properties_was.keys.select{|p| properties_was[p] != properties[p]} & protected_props

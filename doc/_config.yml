@@ -180,7 +180,7 @@ navbar:
       - admin/spot-instances.html.textile.liquid
     - Data Management:
       - admin/collection-versioning.html.textile.liquid
-      - admin/collection-default-properties.html.textile.liquid
+      - admin/collection-managed-properties.html.textile.liquid
     - Other:
       - admin/federation.html.textile.liquid
       - admin/controlling-container-reuse.html.textile.liquid

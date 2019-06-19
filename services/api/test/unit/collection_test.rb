@@ -1014,7 +1014,7 @@ class CollectionTest < ActiveSupport::TestCase
   end
 
   test "create collections with default properties" do
-    Rails.configuration.Collections.DefaultProperties = {
+    Rails.configuration.Collections.ManagedProperties = {
       'default_prop1' => {'value' => 'prop1_value'},
       'responsible_person_uuid' => {'function' => 'original_owner'}
     }
@@ -1046,7 +1046,7 @@ class CollectionTest < ActiveSupport::TestCase
   end
 
   test "update collection with protected default properties" do
-    Rails.configuration.Collections.DefaultProperties = {
+    Rails.configuration.Collections.ManagedProperties = {
       'default_prop1' => {'value' => 'prop1_value', 'protected' => true},
     }
     act_as_user users(:active) do

@@ -1,0 +1,50 @@
+---
+layout: default
+navsection: admin
+title: Configuring collection's managed properties
+...
+
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Collection's managed properties allow a cluster administrator to enable some special behaviors regarding properties at creation & update times.
+This page describes how to enable and configure these behaviors on the API server.
+
+h3. API Server configuration
+
+The @Collections.ManagedProperties@ setting from the @config.yml@ file is used for enabling any of the following behaviors:
+
+h4. Pre-assigned property key & value
+
+For every newly created collection, assign a predefined key/value pair if it isn't already passed at creation time:
+
+<pre>
+Collections:
+  ManagedProperties:
+    foo: {value: bar}
+</pre>
+
+h4. Original owner UUID
+
+This behavior will assign to a property key the UUID of the user who owns the collection's contaning project.
+
+<pre>
+Collections:
+  ManagedProperties:
+    responsible_person_uuid: {function: original_owner}
+</pre>
+
+h4. Protected properties
+
+If there's a need to prevent a non-admin user from modifying a specific property, even by its owner, the @protected@ attribute can be set to @true@, like so:
+
+<pre>
+Collections:
+  ManagedProperties:
+    responsible_person_uuid: {function: original_owner, protected: true}
+</pre>
+
+This property can be applied to any of the defined managed properties. If missing, it's assumed as being @false@ by default.

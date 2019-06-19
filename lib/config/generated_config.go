@@ -280,7 +280,7 @@ Clusters:
       # > 0 = auto-create a new version when older than the specified number of seconds.
       PreserveVersionIfIdle: -1
 
-      # Default collection properties. At creation time, if the client didn't
+      # Managed collection properties. At creation time, if the client didn't
       # provide the listed keys, they will be automatically populated following
       # one of the following behaviors:
       #
@@ -291,7 +291,7 @@ Clusters:
       #   foo_bar: {value: baz, protected: false}
       #
       # If protected is true, only an admin user can modify its value.
-      DefaultProperties: {}
+      ManagedProperties: {}
 
     Login:
       # These settings are provided by your OAuth2 provider (e.g.,
