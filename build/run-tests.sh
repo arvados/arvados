@@ -91,6 +91,7 @@ services/arv-git-httpd
 services/crunchstat
 services/dockercleaner
 services/fuse
+services/fuse:py3
 services/health
 services/keep-web
 services/keepproxy
@@ -991,6 +992,7 @@ pythonstuff=(
     sdk/cwl:py3
     services/dockercleaner:py3
     services/fuse
+    services/fuse:py3
     services/nodemanager
     tools/crunchstat-summary
     tools/crunchstat-summary:py3

@@ -53,12 +53,12 @@ from __future__ import absolute_import
 from __future__ import division
 from future.utils import viewitems
 from future.utils import native
+from future.utils import listvalues
 from future import standard_library
 standard_library.install_aliases()
 from builtins import next
 from builtins import str
 from builtins import object
-from builtins import dict
 import os
 import sys
 import llfuse
@@ -213,7 +213,7 @@ class InodeCache(object):
 
     def cap_cache(self):
         if self._total > self.cap:
-            for ent in self._entries.values():
+            for ent in listvalues(self._entries):
                 if self._total < self.cap or len(self._entries) < self.min_entries:
                     break
                 self._remove(ent, True)
