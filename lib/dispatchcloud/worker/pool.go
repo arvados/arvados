@@ -292,7 +292,7 @@ func (wp *Pool) Create(it arvados.InstanceType) bool {
 			wp.tagKeyPrefix + tagKeyIdleBehavior:   string(IdleBehaviorRun),
 			wp.tagKeyPrefix + tagKeyInstanceSecret: secret,
 		}
-		initCmd := cloud.InitCommand(fmt.Sprintf("umask 0177 && echo -n %q >%s", secret, instanceSecretFilename))
+		initCmd := TagVerifier{nil, secret}.InitCommand()
 		inst, err := wp.instanceSet.Create(it, wp.imageID, tags, initCmd, wp.installPublicKey)
 		wp.mtx.Lock()
 		defer wp.mtx.Unlock()
@@ -346,7 +346,7 @@ func (wp *Pool) SetIdleBehavior(id cloud.InstanceID, idleBehavior IdleBehavior) 
 // Caller must have lock.
 func (wp *Pool) updateWorker(inst cloud.Instance, it arvados.InstanceType) (*worker, bool) {
 	secret := inst.Tags()[wp.tagKeyPrefix+tagKeyInstanceSecret]
-	inst = tagVerifier{inst, secret}
+	inst = TagVerifier{inst, secret}
 	id := inst.ID()
 	if wkr := wp.workers[id]; wkr != nil {
 		wkr.executor.SetTarget(inst)

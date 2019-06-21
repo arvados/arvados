@@ -17,13 +17,13 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-var drivers = map[string]cloud.Driver{
+var Drivers = map[string]cloud.Driver{
 	"azure": azure.Driver,
 	"ec2":   ec2.Driver,
 }
 
 func newInstanceSet(cluster *arvados.Cluster, setID cloud.InstanceSetID, logger logrus.FieldLogger, reg *prometheus.Registry) (cloud.InstanceSet, error) {
-	driver, ok := drivers[cluster.Containers.CloudVMs.Driver]
+	driver, ok := Drivers[cluster.Containers.CloudVMs.Driver]
 	if !ok {
 		return nil, fmt.Errorf("unsupported cloud driver %q", cluster.Containers.CloudVMs.Driver)
 	}
@@ -85,7 +85,7 @@ func (is defaultTaggingInstanceSet) Create(it arvados.InstanceType, image cloud.
 	return is.InstanceSet.Create(it, image, allTags, init, pk)
 }
 
-// Filters the instances returned by the wrapped InstanceSet's
+// Filter the instances returned by the wrapped InstanceSet's
 // Instances() method (in case the wrapped InstanceSet didn't do this
 // itself).
 type filteringInstanceSet struct {
