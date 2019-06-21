@@ -57,115 +57,29 @@ For the following examples we assume that the @responsible_person_uuid@ property
 
 h4. List uuid/names of collections without @responsible_person_uuid@ property
 
+The collection's managed properties feature assigns the configured properties to newly created collections. This means that previously existing collections won't get the default properties and if needed, they should be assigned manually.
+
+The following example script outputs a listing of collection UUIDs and names of those collections that don't include the @responsible_person_uuid@ property.
+
 {% codeblock as python %}
-import arvados
-
-page = 100
-offset = 0
-cols = []
-
-filters = [['properties.responsible_person_uuid', 'exists', False]]
-api = arvados.api()
-req = api.collections().list(filters=filters, select=['uuid', 'name'], limit=page).execute()
-
-while True:
-    cols += [c for c in req['items']]
-    if req['items_available'] < offset+page:
-        break
-    offset += page
-    req = api.collections().list(filters=filters, select=['uuid', 'name'], limit=page, offset=offset).execute()
-
-print("Found {} collections:".format(len(cols)))
-for c in cols:
-    print('{}, "{}"'.format(c['uuid'], c['name']))
+{% include 'admin_list_collections_without_property_py' %}
 {% endcodeblock %}
 
 h4. Update the @responsible_person_uuid@ property from nil to X in the project hierarchy rooted at P
 
+When enabling @responsible_person_uuid@, new collections will get this property's value set to the user who owns the root project where the collection is placed, but older collections won't have the property set. The following example script allows an administrator to set the @responsible_person_uuid@ property to collections below a certaing project hierarchy.
+
 {% codeblock as python %}
-import arvados
-
-def get_subproject_uuids(api, root_uuid):
-    page = 100
-    offset = 0
-    uuids = []
-    r = api.groups().list(
-        filters=[['owner_uuid', '=', '{}'.format(root_uuid)]],
-        select=['uuid'],
-        limit=page
-    ).execute()
-    while True:
-        for g in r['items']:
-            uuids += ([g['uuid']] + get_subproject_uuids(api, g['uuid']))
-        if r['items_available'] < offset+page:
-            break
-        offset += page
-        r = api.groups().list(
-            filters=[['owner_uuid', '=', '{}'.format(root_uuid)]],
-            select=['uuid'],
-            limit=page
-        ).execute()
-    return uuids
-
-def get_cols(api, filters):
-    page = 100
-    offset = 0
-    uuids = []
-    r = api.collections().list(filters=filters, select=['uuid', 'properties'], limit=page).execute()
-    while True:
-        uuids += [c for c in r['items']]
-        if r['items_available'] < offset+page:
-            break
-        offset += page
-        r = api.collections().list(filters=filters, select=['uuid', 'properties'], limit=page).execute()
-    return uuids
-
-root_uuid = 'zzzzz-j7d0g-ppppppppppppppp'
-responsible_uuid = 'zzzzz-tpzed-xxxxxxxxxxxxxxx'
-
-api = arvados.api()
-for p_uuid in [root_uuid] + get_subproject_uuids(api, root_uuid):
-    f = [['properties.responsible_person_uuid', 'exists', False],
-         ['owner_uuid', '=', p_uuid]]
-    cols = get_cols(api, f)
-    print("Found {} collections owned by {}".format(len(cols), p_uuid))
-    for c in cols:
-        print(" - Updating collection {}".format(c["uuid"]))
-        props = c['properties']
-        props['responsible_person_uuid'] = responsible_uuid
-        api.collections().update(uuid=c['uuid'], body={'properties': props}).execute()
+{% include 'admin_set_property_to_collections_under_project_py' %}
 {% endcodeblock %}
 
-h4. Update the @responsible_person_uuid@ property from X to Y
+h4. Update the @responsible_person_uuid@ property from X to Y on all collections
 
-The following code should run with admin privileges, assuming that the managed property is @protected@.
+This example can be useful to change responsibility from one user to another.
+
+Please note that the following code should run with admin privileges, assuming that the managed property is @protected@.
 
 {% codeblock as python %}
-import arvados
-
-old_uuid = "zzzzz-tpzed-xxxxxxxxxxxxxxx"
-new_uuid = "zzzzz-tpzed-yyyyyyyyyyyyyyy"
-
-page = 100
-offset = 0
-cols = []
-
-filters = [['properties.responsible_person_uuid', '=', '{}'.format(old_uuid)]]
-api = arvados.api()
-req = api.collections().list(filters=filters, select=['uuid', 'properties'], limit=page).execute()
-
-while True:
-    cols += [c for c in req['items']]
-    if req['items_available'] < offset+page:
-        break
-    offset += page
-    req = api.collections().list(filters=filters, select=['uuid', 'properties'], limit=page, offset=offset).execute()
-
-print("Found {} collections".format(len(cols)))
-for c in cols:
-    print("Updating collection {}".format(c["uuid"]))
-    props = c['properties']
-    props['responsible_person_uuid'] = new_uuid
-    api.collections().update(uuid=c['uuid'], body={'properties': props}).execute()
+{% include 'admin_update_collection_property_py' %}
 {% endcodeblock %}
 
