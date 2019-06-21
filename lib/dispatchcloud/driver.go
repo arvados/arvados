@@ -150,7 +150,11 @@ func (is instrumentedInstanceSet) Create(it arvados.InstanceType, image cloud.Im
 func (is instrumentedInstanceSet) Instances(tags cloud.InstanceTags) ([]cloud.Instance, error) {
 	instances, err := is.InstanceSet.Instances(tags)
 	is.cv.WithLabelValues("List", boolLabelValue(err != nil)).Inc()
-	return instances, err
+	var instrumented []cloud.Instance
+	for _, i := range instances {
+		instrumented = append(instrumented, instrumentedInstance{i, is.cv})
+	}
+	return instrumented, err
 }
 
 type instrumentedInstance struct {
