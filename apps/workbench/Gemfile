@@ -61,7 +61,7 @@ group :test, :performance do
   gem 'rails-controller-testing'
 end
 
-gem 'jquery-rails'
+gem 'jquery-rails', '>= 4.3.4'
 gem 'bootstrap-sass', '~> 3.4.1'
 gem 'bootstrap-x-editable-rails'
 gem 'bootstrap-tab-history-rails'
