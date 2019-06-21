@@ -17,6 +17,9 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+// Map of available cloud drivers.
+// Clusters.*.Containers.CloudVMs.Driver configuration values
+// correspond to keys in this map.
 var Drivers = map[string]cloud.Driver{
 	"azure": azure.Driver,
 	"ec2":   ec2.Driver,

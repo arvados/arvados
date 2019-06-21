@@ -68,11 +68,17 @@ func (t *tester) Run() bool {
 		t.Logger.WithError(err).Info("error initializing driver")
 		return false
 	}
+
+	// Don't send the driver any filters the first time we get the
+	// instance list. This way we can log an instance count
+	// (N=...)  that includes all instances in this service
+	// account, even if they don't have the same InstanceSetID.
 	insts, err := t.getInstances(nil)
 	if err != nil {
 		t.Logger.WithError(err).Info("error getting initial list of instances")
 		return false
 	}
+
 	for {
 		foundExisting := false
 		for _, i := range insts {
@@ -129,6 +135,9 @@ func (t *tester) Run() bool {
 	}).Info("creating instance")
 	inst, err := t.is.Create(t.InstanceType, t.ImageID, tags, initCommand, t.SSHKey.PublicKey())
 	if err != nil {
+		// Create() might have failed due to a bug or network
+		// error even though the creation was successful, so
+		// it's safer to wait a bit for an instance to appear.
 		deferredError = true
 		t.Logger.WithError(err).Error("error creating test instance")
 		t.Logger.WithField("Deadline", bootDeadline).Info("waiting for instance to appear anyway, in case the Create response was incorrect")
@@ -143,6 +152,8 @@ func (t *tester) Run() bool {
 		t.Logger.WithField("Instance", t.testInstance.ID()).Info("new instance appeared")
 		t.showLoginInfo()
 	} else {
+		// Create() succeeded. Make sure the new instance
+		// appears right away in the Instances() list.
 		t.Logger.WithField("Instance", inst.ID()).Info("created instance")
 		t.testInstance = inst
 		t.showLoginInfo()
@@ -182,6 +193,11 @@ func (t *tester) Run() bool {
 	return !deferredError
 }
 
+// If the test instance has an address, log an "ssh user@host" command
+// line that the operator can paste into another terminal, and set
+// t.showedLoginInfo.
+//
+// If the test instance doesn't have an address yet, do nothing.
 func (t *tester) showLoginInfo() {
 	t.updateExecutor()
 	host, port := t.executor.TargetHostPort()
@@ -225,6 +241,10 @@ func (t *tester) refreshTestInstance() error {
 	return errTestInstanceNotFound
 }
 
+// Get the list of instances, passing the given tags to the cloud
+// driver to filter results.
+//
+// Return only the instances that have our InstanceSetID tag.
 func (t *tester) getInstances(tags cloud.InstanceTags) ([]cloud.Instance, error) {
 	var ret []cloud.Instance
 	t.Logger.WithField("FilterTags", tags).Info("getting instance list")
@@ -241,6 +261,8 @@ func (t *tester) getInstances(tags cloud.InstanceTags) ([]cloud.Instance, error)
 	return ret, nil
 }
 
+// Check that t.testInstance has every tag in t.Tags. If not, log an
+// error and return false.
 func (t *tester) checkTags() bool {
 	ok := true
 	for k, v := range t.Tags {
@@ -259,6 +281,8 @@ func (t *tester) checkTags() bool {
 	return ok
 }
 
+// Run t.BootProbeCommand on t.testInstance until it succeeds or the
+// deadline arrives.
 func (t *tester) waitForBoot(deadline time.Time) bool {
 	for time.Now().Before(deadline) {
 		err := t.runShellCommand(t.BootProbeCommand)
@@ -272,6 +296,8 @@ func (t *tester) waitForBoot(deadline time.Time) bool {
 	return false
 }
 
+// Create t.executor and/or update its target to t.testInstance's
+// current address.
 func (t *tester) updateExecutor() {
 	if t.executor == nil {
 		t.executor = ssh_executor.New(t.testInstance)
