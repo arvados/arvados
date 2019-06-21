@@ -36,7 +36,7 @@ gem 'oj'
 gem 'therubyracer'
 gem 'uglifier', '~> 2.0'
 
-gem 'jquery-rails'
+gem 'jquery-rails', '>= 4.3.4'
 
 gem 'rvm-capistrano', :group => :test
 
