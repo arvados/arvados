@@ -37,6 +37,12 @@ export const fileUploaderReducer = (state: UploaderState = initialState, action:
 
             return uniqUpdatedState;
         },
+        DELETE_UPLOAD_FILE: files => {
+            const idToDelete: number = files[0].id;
+            const updatedState = state.filter( file => file.id !== idToDelete);
+
+            return updatedState;
+        },
         START_UPLOAD: () => {
             const startTime = Date.now();
             return state.map(f => ({ ...f, startTime, prevTime: startTime }));

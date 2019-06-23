@@ -17,12 +17,17 @@ export interface UploadFile {
     currentTime: number;
 }
 
+export interface FileWithId extends File {
+    id: number;
+}
+
 export const fileUploaderActions = unionize({
     CLEAR_UPLOAD: ofType(),
     SET_UPLOAD_FILES: ofType<File[]>(),
     UPDATE_UPLOAD_FILES: ofType<File[]>(),
     SET_UPLOAD_PROGRESS: ofType<{ fileId: number, loaded: number, total: number, currentTime: number }>(),
     START_UPLOAD: ofType(),
+    DELETE_UPLOAD_FILE: ofType<FileWithId[]>(),
 });
 
 export type FileUploaderAction = UnionOf<typeof fileUploaderActions>;

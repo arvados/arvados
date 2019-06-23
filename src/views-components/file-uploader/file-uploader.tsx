@@ -8,7 +8,7 @@ import { connect } from 'react-redux';
 import { RootState } from '~/store/store';
 import { FileUploadProps } from '../../components/file-upload/file-upload';
 import { Dispatch } from 'redux';
-import { fileUploaderActions, getFileUploaderState } from '~/store/file-uploader/file-uploader-actions';
+import { fileUploaderActions, getFileUploaderState, FileWithId } from '~/store/file-uploader/file-uploader-actions';
 import { WrappedFieldProps } from 'redux-form';
 import { Typography } from '@material-ui/core';
 
@@ -19,7 +19,7 @@ const mapStateToProps = (state: RootState, { disabled }: FileUploaderProps): Pic
     files: state.fileUploader,
 });
 
-const mapDispatchToProps = (dispatch: Dispatch, { onDrop }: FileUploaderProps): Pick<FileUploadProps, 'onDrop'> => ({
+const mapDispatchToProps = (dispatch: Dispatch, { onDrop }: FileUploaderProps): Pick<FileUploadProps, 'onDrop' | 'onDelete'> => ({
     onDrop: files => {
         const state = dispatch<any>(getFileUploaderState());
         if (files.length > 0 && state.length === 0) {
@@ -30,6 +30,7 @@ const mapDispatchToProps = (dispatch: Dispatch, { onDrop }: FileUploaderProps): 
             onDrop(files);
         }
     },
+    onDelete: files => dispatch(fileUploaderActions.DELETE_UPLOAD_FILE(files as FileWithId[])),
 });
 
 export const FileUploader = connect(mapStateToProps, mapDispatchToProps)(FileUpload);
