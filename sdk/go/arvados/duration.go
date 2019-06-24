@@ -20,7 +20,9 @@ func (d *Duration) UnmarshalJSON(data []byte) error {
 	if data[0] == '"' {
 		return d.Set(string(data[1 : len(data)-1]))
 	}
-	return fmt.Errorf("duration must be given as a string like \"600s\" or \"1h30m\"")
+	// Mimic error message returned by ParseDuration for a number
+	// without units.
+	return fmt.Errorf("missing unit in duration %s", data)
 }
 
 // MarshalJSON implements json.Marshaler.

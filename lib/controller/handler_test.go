@@ -42,8 +42,8 @@ func (s *HandlerSuite) SetUpTest(c *check.C) {
 	s.cluster = &arvados.Cluster{
 		ClusterID:  "zzzzz",
 		PostgreSQL: integrationTestCluster().PostgreSQL,
-		TLS:        arvados.TLS{Insecure: true},
 	}
+	s.cluster.TLS.Insecure = true
 	arvadostest.SetServiceURL(&s.cluster.Services.RailsAPI, "https://"+os.Getenv("ARVADOS_TEST_API_HOST"))
 	arvadostest.SetServiceURL(&s.cluster.Services.Controller, "http://localhost:/")
 	s.handler = newHandler(s.ctx, s.cluster, "")
@@ -51,6 +51,25 @@ func (s *HandlerSuite) SetUpTest(c *check.C) {
 
 func (s *HandlerSuite) TearDownTest(c *check.C) {
 	s.cancel()
+}
+
+func (s *HandlerSuite) TestConfigExport(c *check.C) {
+	s.cluster.ManagementToken = "secret"
+	s.cluster.SystemRootToken = "secret"
+	s.cluster.Collections.BlobSigning = true
+	s.cluster.Collections.BlobSigningTTL = arvados.Duration(23 * time.Second)
+	req := httptest.NewRequest("GET", "/arvados/v1/config", nil)
+	resp := httptest.NewRecorder()
+	s.handler.ServeHTTP(resp, req)
+	c.Check(resp.Code, check.Equals, http.StatusOK)
+	var cluster arvados.Cluster
+	c.Log(resp.Body.String())
+	err := json.Unmarshal(resp.Body.Bytes(), &cluster)
+	c.Check(err, check.IsNil)
+	c.Check(cluster.ManagementToken, check.Equals, "")
+	c.Check(cluster.SystemRootToken, check.Equals, "")
+	c.Check(cluster.Collections.BlobSigning, check.DeepEquals, true)
+	c.Check(cluster.Collections.BlobSigningTTL, check.Equals, arvados.Duration(23*time.Second))
 }
 
 func (s *HandlerSuite) TestProxyDiscoveryDoc(c *check.C) {

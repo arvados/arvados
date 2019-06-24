@@ -7,10 +7,17 @@ package config
 import (
 	"bytes"
 
+	"git.curoverse.com/arvados.git/lib/cmd"
 	check "gopkg.in/check.v1"
 )
 
 var _ = check.Suite(&CommandSuite{})
+
+var (
+	// Commands must satisfy cmd.Handler interface
+	_ cmd.Handler = dumpCommand{}
+	_ cmd.Handler = checkCommand{}
+)
 
 type CommandSuite struct{}
 
@@ -18,12 +25,12 @@ func (s *CommandSuite) TestBadArg(c *check.C) {
 	var stderr bytes.Buffer
 	code := DumpCommand.RunCommand("arvados config-dump", []string{"-badarg"}, bytes.NewBuffer(nil), bytes.NewBuffer(nil), &stderr)
 	c.Check(code, check.Equals, 2)
-	c.Check(stderr.String(), check.Matches, `(?ms)usage: .*`)
+	c.Check(stderr.String(), check.Matches, `(?ms)flag provided but not defined: -badarg\nUsage:\n.*`)
 }
 
 func (s *CommandSuite) TestEmptyInput(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	code := DumpCommand.RunCommand("arvados config-dump", nil, &bytes.Buffer{}, &stdout, &stderr)
+	code := DumpCommand.RunCommand("arvados config-dump", []string{"-config", "-"}, &bytes.Buffer{}, &stdout, &stderr)
 	c.Check(code, check.Equals, 1)
 	c.Check(stderr.String(), check.Matches, `config does not define any clusters\n`)
 }
@@ -36,7 +43,7 @@ Clusters:
   API:
     MaxItemsPerResponse: 1234
 `
-	code := CheckCommand.RunCommand("arvados config-check", nil, bytes.NewBufferString(in), &stdout, &stderr)
+	code := CheckCommand.RunCommand("arvados config-check", []string{"-config", "-"}, bytes.NewBufferString(in), &stdout, &stderr)
 	c.Check(code, check.Equals, 0)
 	c.Check(stdout.String(), check.Equals, "")
 	c.Check(stderr.String(), check.Equals, "")
@@ -50,9 +57,9 @@ Clusters:
   RequestLimits:
     MaxItemsPerResponse: 1234
 `
-	code := CheckCommand.RunCommand("arvados config-check", nil, bytes.NewBufferString(in), &stdout, &stderr)
+	code := CheckCommand.RunCommand("arvados config-check", []string{"-config", "-"}, bytes.NewBufferString(in), &stdout, &stderr)
 	c.Check(code, check.Equals, 1)
-	c.Check(stdout.String(), check.Matches, `(?ms).*API:\n\- +.*MaxItemsPerResponse: 1000\n\+ +MaxItemsPerResponse: 1234\n.*`)
+	c.Check(stdout.String(), check.Matches, `(?ms).*\n\- +.*MaxItemsPerResponse: 1000\n\+ +MaxItemsPerResponse: 1234\n.*`)
 }
 
 func (s *CommandSuite) TestCheckUnknownKey(c *check.C) {
@@ -70,7 +77,7 @@ Clusters:
     ConnectionPool:
       {Bogus5: true}
 `
-	code := CheckCommand.RunCommand("arvados config-check", nil, bytes.NewBufferString(in), &stdout, &stderr)
+	code := CheckCommand.RunCommand("arvados config-check", []string{"-config", "-"}, bytes.NewBufferString(in), &stdout, &stderr)
 	c.Log(stderr.String())
 	c.Check(code, check.Equals, 1)
 	c.Check(stderr.String(), check.Matches, `(?ms).*deprecated or unknown config entry: Clusters.z1234.Bogus1\n.*`)
@@ -92,7 +99,7 @@ Clusters:
     InternalURLs:
      http://localhost:12345: {}
 `
-	code := DumpCommand.RunCommand("arvados config-dump", nil, bytes.NewBufferString(in), &stdout, &stderr)
+	code := DumpCommand.RunCommand("arvados config-dump", []string{"-config", "-"}, bytes.NewBufferString(in), &stdout, &stderr)
 	c.Check(code, check.Equals, 0)
 	c.Check(stdout.String(), check.Matches, `(?ms).*TimeoutBooting: 10m\n.*`)
 	c.Check(stdout.String(), check.Matches, `(?ms).*http://localhost:12345: {}\n.*`)
@@ -106,7 +113,7 @@ Clusters:
   UnknownKey: foobar
   ManagementToken: secret
 `
-	code := DumpCommand.RunCommand("arvados config-dump", nil, bytes.NewBufferString(in), &stdout, &stderr)
+	code := DumpCommand.RunCommand("arvados config-dump", []string{"-config", "-"}, bytes.NewBufferString(in), &stdout, &stderr)
 	c.Check(code, check.Equals, 0)
 	c.Check(stderr.String(), check.Matches, `(?ms).*deprecated or unknown config entry: Clusters.z1234.UnknownKey.*`)
 	c.Check(stdout.String(), check.Matches, `(?ms)Clusters:\n  z1234:\n.*`)

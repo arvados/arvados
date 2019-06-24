@@ -431,6 +431,18 @@ class ArvadosModel < ApplicationRecord
     end.map(&:name)
   end
 
+  def self.full_text_coalesce
+    full_text_searchable_columns.collect do |column|
+      is_jsonb = self.columns.select{|x|x.name == column}[0].type == :jsonb
+      cast = (is_jsonb || serialized_attributes[column]) ? '::text' : ''
+      "coalesce(#{column}#{cast},'')"
+    end
+  end
+
+  def self.full_text_trgm
+    "(#{full_text_coalesce.join(" || ' ' || ")})"
+  end
+
   def self.full_text_tsvector
     parts = full_text_searchable_columns.collect do |column|
       is_jsonb = self.columns.select{|x|x.name == column}[0].type == :jsonb

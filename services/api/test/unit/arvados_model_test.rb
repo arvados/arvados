@@ -200,6 +200,30 @@ class ArvadosModelTest < ActiveSupport::TestCase
     end
   end
 
+  [
+    %w[collections collections_trgm_text_search_idx],
+    %w[container_requests container_requests_trgm_text_search_idx],
+    %w[groups groups_trgm_text_search_idx],
+    %w[jobs jobs_trgm_text_search_idx],
+    %w[pipeline_instances pipeline_instances_trgm_text_search_idx],
+    %w[pipeline_templates pipeline_templates_trgm_text_search_idx],
+    %w[workflows workflows_trgm_text_search_idx]
+  ].each do |model|
+    table = model[0]
+    indexname = model[1]
+    test "trigram index exists on #{table} model" do
+      table_class = table.classify.constantize
+      expect = table_class.full_text_searchable_columns
+      ok = false
+      conn = ActiveRecord::Base.connection
+      conn.exec_query("SELECT indexdef FROM pg_indexes WHERE tablename = '#{table}' AND indexname = '#{indexname}'").each do |res|
+        searchable = res['indexdef'].scan(/COALESCE\(+([A-Za-z_]+)/).flatten
+        ok = (expect == searchable)
+        assert ok, "Invalid or no trigram index on #{table} named #{indexname}\nexpect: #{expect.inspect}\nfound: #{searchable}"
+      end
+    end
+  end
+
   test "selectable_attributes includes database attributes" do
     assert_includes(Job.selectable_attributes, "success")
   end

@@ -44,7 +44,7 @@ from .util import collectionUUID
 import ruamel.yaml as yaml
 
 import arvados_cwl.arvdocker
-from .pathmapper import ArvPathMapper, trim_listing
+from .pathmapper import ArvPathMapper, trim_listing, collection_pdh_pattern, collection_uuid_pattern
 from ._version import __version__
 from . import done
 from . context import ArvRuntimeContext
@@ -193,9 +193,6 @@ def discover_secondary_files(fsaccess, builder, inputs, job_order, discovered=No
         primary = job_order.get(shortname(inputschema["id"]))
         if isinstance(primary, (Mapping, Sequence)):
             set_secondary(fsaccess, builder, inputschema, None, primary, discovered)
-
-collection_uuid_pattern = re.compile(r'^keep:([a-z0-9]{5}-4zz18-[a-z0-9]{15})(/.*)?$')
-collection_pdh_pattern = re.compile(r'^keep:([0-9a-f]{32}\+\d+)(/.*)?')
 
 def upload_dependencies(arvrunner, name, document_loader,
                         workflowobj, uri, loadref_run,

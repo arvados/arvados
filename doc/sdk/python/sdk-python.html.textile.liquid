@@ -24,7 +24,13 @@ h3. Option 1: Install with pip
 
 This installation method is recommended to make the SDK available for use in your own Python programs. It can coexist with the system-wide installation method from a distribution package (option 2, below).
 
-Run @pip install arvados-python-client@ in an appropriate installation environment, such as a virtualenv.
+Run @pip install arvados-python-client@ in an appropriate installation environment, such as a @virtualenv@.
+
+The SDK uses @pycurl@ which depends on the @libcurl@ C library.  To build the module you may have to install additional packages.  On Debian 9 this is:
+
+<pre>
+$ apt-get install git build-essential python3-dev libcurl4-openssl-dev libssl1.0-dev
+</pre>
 
 If your version of @pip@ is 1.4 or newer, the @pip install@ command might give an error: "Could not find a version that satisfies the requirement arvados-python-client". If this happens, try @pip install --pre arvados-python-client@.
 

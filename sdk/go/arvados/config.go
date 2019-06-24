@@ -50,12 +50,6 @@ func (sc *Config) GetCluster(clusterID string) (*Cluster, error) {
 	}
 }
 
-type API struct {
-	MaxItemsPerResponse     int
-	MaxRequestAmplification int
-	RequestTimeout          Duration
-}
-
 type Cluster struct {
 	ClusterID       string `json:"-"`
 	ManagementToken string
@@ -65,28 +59,130 @@ type Cluster struct {
 	Containers      ContainersConfig
 	RemoteClusters  map[string]RemoteCluster
 	PostgreSQL      PostgreSQL
-	API             API
-	SystemLogs      SystemLogs
-	TLS             TLS
+
+	API struct {
+		AsyncPermissionsUpdateInterval Duration
+		DisabledAPIs                   []string
+		MaxIndexDatabaseRead           int
+		MaxItemsPerResponse            int
+		MaxRequestAmplification        int
+		MaxRequestSize                 int
+		RailsSessionSecretToken        string
+		RequestTimeout                 Duration
+	}
+	AuditLogs struct {
+		MaxAge             Duration
+		MaxDeleteBatch     int
+		UnloggedAttributes []string
+	}
+	Collections struct {
+		BlobSigning           bool
+		BlobSigningKey        string
+		DefaultReplication    int
+		BlobSigningTTL        Duration
+		DefaultTrashLifetime  Duration
+		TrashSweepInterval    Duration
+		CollectionVersioning  bool
+		PreserveVersionIfIdle Duration
+	}
+	Git struct {
+		Repositories string
+	}
+	Login struct {
+		ProviderAppSecret string
+		ProviderAppID     string
+	}
+	Mail struct {
+		MailchimpAPIKey                string
+		MailchimpListID                string
+		SendUserSetupNotificationEmail string
+		IssueReporterEmailFrom         string
+		IssueReporterEmailTo           string
+		SupportEmailAddress            string
+		EmailFrom                      string
+	}
+	SystemLogs struct {
+		LogLevel                string
+		Format                  string
+		MaxRequestLogParamsSize int
+	}
+	TLS struct {
+		Certificate string
+		Key         string
+		Insecure    bool
+	}
+	Users struct {
+		AdminNotifierEmailFrom                string
+		AutoAdminFirstUser                    bool
+		AutoAdminUserWithEmail                string
+		AutoSetupNewUsers                     bool
+		AutoSetupNewUsersWithRepository       bool
+		AutoSetupNewUsersWithVmUUID           string
+		AutoSetupUsernameBlacklist            []string
+		EmailSubjectPrefix                    string
+		NewInactiveUserNotificationRecipients []string
+		NewUserNotificationRecipients         []string
+		NewUsersAreActive                     bool
+		UserNotifierEmailFrom                 string
+		UserProfileNotificationAddress        string
+	}
+	Workbench struct {
+		ActivationContactLink            string
+		APIClientConnectTimeout          Duration
+		APIClientReceiveTimeout          Duration
+		APIResponseCompression           bool
+		ApplicationMimetypesWithViewIcon map[string]struct{}
+		ArvadosDocsite                   string
+		ArvadosPublicDataDocURL          string
+		EnableGettingStartedPopup        bool
+		EnablePublicProjectsPage         bool
+		FileViewersConfigURL             string
+		LogViewerMaxBytes                ByteSize
+		MultiSiteSearch                  bool
+		Repositories                     bool
+		RepositoryCache                  string
+		RunningJobLogRecordsToFetch      int
+		SecretKeyBase                    string
+		SecretToken                      string
+		ShowRecentCollectionsOnDashboard bool
+		ShowUserAgreementInline          bool
+		ShowUserNotifications            bool
+		SiteName                         string
+		Theme                            string
+		UserProfileFormFields            map[string]struct {
+			Type                 string
+			FormFieldTitle       string
+			FormFieldDescription string
+			Required             bool
+		}
+		UserProfileFormMessage string
+		VocabularyURL          string
+	}
 }
 
 type Services struct {
-	Controller    Service
-	DispatchCloud Service
-	Health        Service
-	Keepbalance   Service
-	Keepproxy     Service
-	Keepstore     Service
-	Nodemanager   Service
-	RailsAPI      Service
-	WebDAV        Service
-	Websocket     Service
-	Workbench1    Service
-	Workbench2    Service
+	Composer       Service
+	Controller     Service
+	DispatchCloud  Service
+	GitHTTP        Service
+	GitSSH         Service
+	Health         Service
+	Keepbalance    Service
+	Keepproxy      Service
+	Keepstore      Service
+	Nodemanager    Service
+	RailsAPI       Service
+	SSO            Service
+	WebDAVDownload Service
+	WebDAV         Service
+	WebShell       Service
+	Websocket      Service
+	Workbench1     Service
+	Workbench2     Service
 }
 
 type Service struct {
-	InternalURLs map[URL]ServiceInstance `json:",omitempty"`
+	InternalURLs map[URL]ServiceInstance
 	ExternalURL  URL
 }
 
@@ -109,12 +205,6 @@ func (su URL) MarshalText() ([]byte, error) {
 
 type ServiceInstance struct{}
 
-type SystemLogs struct {
-	LogLevel                string
-	Format                  string
-	MaxRequestLogParamsSize int
-}
-
 type PostgreSQL struct {
 	Connection     PostgreSQLConnection
 	ConnectionPool int
@@ -123,15 +213,11 @@ type PostgreSQL struct {
 type PostgreSQLConnection map[string]string
 
 type RemoteCluster struct {
-	// API endpoint host or host:port; default is {id}.arvadosapi.com
-	Host string
-	// Perform a proxy request when a local client requests an
-	// object belonging to this remote.
-	Proxy bool
-	// Scheme, default "https". Can be set to "http" for testing.
-	Scheme string
-	// Disable TLS verify. Can be set to true for testing.
-	Insecure bool
+	Host          string
+	Proxy         bool
+	Scheme        string
+	Insecure      bool
+	ActivateUsers bool
 }
 
 type InstanceType struct {
@@ -147,9 +233,49 @@ type InstanceType struct {
 }
 
 type ContainersConfig struct {
-	CloudVMs           CloudVMsConfig
-	DispatchPrivateKey string
-	StaleLockTimeout   Duration
+	CloudVMs                    CloudVMsConfig
+	DefaultKeepCacheRAM         ByteSize
+	DispatchPrivateKey          string
+	LogReuseDecisions           bool
+	MaxComputeVMs               int
+	MaxDispatchAttempts         int
+	MaxRetryAttempts            int
+	StaleLockTimeout            Duration
+	SupportedDockerImageFormats []string
+	UsePreemptibleInstances     bool
+
+	JobsAPI struct {
+		Enable                  string
+		GitInternalDir          string
+		DefaultDockerImage      string
+		CrunchJobWrapper        string
+		CrunchJobUser           string
+		CrunchRefreshTrigger    string
+		ReuseJobIfOutputsDiffer bool
+	}
+	Logging struct {
+		MaxAge                       Duration
+		LogBytesPerEvent             int
+		LogSecondsBetweenEvents      int
+		LogThrottlePeriod            Duration
+		LogThrottleBytes             int
+		LogThrottleLines             int
+		LimitLogBytesPerJob          int
+		LogPartialLineThrottlePeriod Duration
+		LogUpdatePeriod              Duration
+		LogUpdateSize                ByteSize
+	}
+	SLURM struct {
+		Managed struct {
+			DNSServerConfDir       string
+			DNSServerConfTemplate  string
+			DNSServerReloadCommand string
+			DNSServerUpdateCommand string
+			ComputeNodeDomain      string
+			ComputeNodeNameservers []string
+			AssignNodeHostname     string
+		}
+	}
 }
 
 type CloudVMsConfig struct {
@@ -268,10 +394,4 @@ func (svcs Services) Map() map[ServiceName]Service {
 		ServiceNameKeepproxy:     svcs.Keepproxy,
 		ServiceNameKeepstore:     svcs.Keepstore,
 	}
-}
-
-type TLS struct {
-	Certificate string
-	Key         string
-	Insecure    bool
 }

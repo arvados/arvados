@@ -27,7 +27,7 @@ h3(#centos7). CentOS 7
 {% include 'note_python_sc' %}
 
 # Install PostgreSQL:
-  <notextile><pre>~$ <span class="userinput">sudo yum install rh-postgresql95</span>
+  <notextile><pre>~$ <span class="userinput">sudo yum install rh-postgresql95 rh-postgresql95-postgresql-contrib</span>
 ~$ <span class="userinput">scl enable rh-postgresql95 bash</span></pre></notextile>
 # Initialize the database:
   <notextile><pre>~$ <span class="userinput">sudo postgresql-setup initdb</span></pre></notextile>
@@ -46,7 +46,7 @@ Debian 8 (Jessie) and Ubuntu 16.04 (Xenial) and later versions include a suffici
 Ubuntu 14.04 (Trusty) requires an updated PostgreSQL version, see "the PostgreSQL ubuntu repository":https://www.postgresql.org/download/linux/ubuntu/
 
 # Install PostgreSQL:
-  <notextile><pre>~$ <span class="userinput">sudo apt-get install postgresql</span></pre></notextile>
+  <notextile><pre>~$ <span class="userinput">sudo apt-get install postgresql postgresql-contrib</span></pre></notextile>
 # "Set up Arvados credentials and databases":#rails_setup for the services that will use this PostgreSQL install.
 
 <a name="rails_setup"></a>
@@ -55,10 +55,12 @@ h2(#sso). Set up SSO server credentials and database
 
 {% assign service_role = "arvados_sso" %}
 {% assign service_database = "arvados_sso_production" %}
+{% assign use_contrib = false %}
 {% include 'install_postgres_database' %}
 
 h2(#api). Set up API server credentials and database
 
 {% assign service_role = "arvados" %}
 {% assign service_database = "arvados_production" %}
+{% assign use_contrib = true %}
 {% include 'install_postgres_database' %}

@@ -6,18 +6,19 @@ package config
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
 
-	"git.curoverse.com/arvados.git/lib/cmd"
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"github.com/ghodss/yaml"
 )
 
-var DumpCommand cmd.Handler = dumpCommand{}
+var DumpCommand dumpCommand
 
 type dumpCommand struct{}
 
@@ -28,12 +29,24 @@ func (dumpCommand) RunCommand(prog string, args []string, stdin io.Reader, stdou
 			fmt.Fprintf(stderr, "%s\n", err)
 		}
 	}()
-	if len(args) != 0 {
-		err = fmt.Errorf("usage: %s <config-src.yaml >config-min.yaml", prog)
+
+	flags := flag.NewFlagSet("", flag.ContinueOnError)
+	flags.SetOutput(stderr)
+	configFile := flags.String("config", arvados.DefaultConfigFile, "Site configuration `file`")
+	err = flags.Parse(args)
+	if err == flag.ErrHelp {
+		err = nil
+		return 0
+	} else if err != nil {
+		return 2
+	}
+
+	if len(flags.Args()) != 0 {
+		flags.Usage()
 		return 2
 	}
 	log := ctxlog.New(stderr, "text", "info")
-	cfg, err := Load(stdin, log)
+	cfg, err := loadFileOrStdin(*configFile, stdin, log)
 	if err != nil {
 		return 1
 	}
@@ -48,7 +61,7 @@ func (dumpCommand) RunCommand(prog string, args []string, stdin io.Reader, stdou
 	return 0
 }
 
-var CheckCommand cmd.Handler = checkCommand{}
+var CheckCommand checkCommand
 
 type checkCommand struct{}
 
@@ -59,12 +72,29 @@ func (checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 			fmt.Fprintf(stderr, "%s\n", err)
 		}
 	}()
-	if len(args) != 0 {
-		err = fmt.Errorf("usage: %s <config-src.yaml && echo 'no changes needed'", prog)
+
+	flags := flag.NewFlagSet("", flag.ContinueOnError)
+	flags.SetOutput(stderr)
+	configFile := flags.String("config", arvados.DefaultConfigFile, "Site configuration `file`")
+	err = flags.Parse(args)
+	if err == flag.ErrHelp {
+		err = nil
+		return 0
+	} else if err != nil {
+		return 2
+	}
+
+	if len(flags.Args()) != 0 {
+		flags.Usage()
 		return 2
 	}
 	log := &plainLogger{w: stderr}
-	buf, err := ioutil.ReadAll(stdin)
+	var buf []byte
+	if *configFile == "-" {
+		buf, err = ioutil.ReadAll(stdin)
+	} else {
+		buf, err = ioutil.ReadFile(*configFile)
+	}
 	if err != nil {
 		return 1
 	}

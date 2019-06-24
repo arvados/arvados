@@ -1,18 +1,25 @@
-shards:
+select_column: color
+select_values:
+  class: File
+  location: colors_to_select.txt
+
+datasets:
   - cluster: clsr1
-    project: clsr1-j7d0g-qxc4jcji7n4lafx
     file:
       class: File
-      location: keep:485df2c5cec3207a32f49c42f1cdcca9+61/file-on-clsr1.dat
+      location: keep:0dcf9310e5bf0c07270416d3a0cd6a43+56/items1.csv
 
   - cluster: clsr2
-    project: clsr2-j7d0g-ivdrm1hyym21vkq
     file:
       class: File
-      location: keep:ae6e9c3e9bfa52a0122ecb489d8198ff+61/file-on-clsr2.dat
+      location: keep:12707d325a3f4687674b858bd32beae9+56/items2.csv
 
   - cluster: clsr3
-    project: clsr3-j7d0g-e3njz2s53lyb0ka
     file:
       class: File
-      location: keep:0b43a0ef9ea592d5d7b299978dfa8643+61/file-on-clsr3.dat
+      location: keep:dbff6bb7fc43176527af5eb9dec28871+56/items3.csv
+
+intermediate_projects:
+  - clsr1-j7d0g-qxc4jcji7n4lafx
+  - clsr2-j7d0g-e7r20egb8hlgn53
+  - clsr3-j7d0g-vrl00zoku9spnen
