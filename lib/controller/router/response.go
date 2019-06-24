@@ -120,6 +120,7 @@ func (rtr *router) sendResponse(w http.ResponseWriter, resp interface{}, opts re
 			tmp[k] = t.Format(rfc3339NanoFixed)
 		}
 	}
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(tmp)
 }
 
