@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-from future.utils import tobytes
 import logging
 import subprocess
 
@@ -22,7 +21,7 @@ class MountTypeTest(IntegrationTest):
             toks[4]
             for toks in [
                 line.split(' ')
-                for line in subprocess.check_output(tobytes("mount")).split("\n")
+                for line in subprocess.check_output("mount").decode().split("\n")
             ]
             if len(toks) > 4 and toks[2] == mnt
         ])
