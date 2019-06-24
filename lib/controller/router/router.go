@@ -33,11 +33,13 @@ func New(cluster *arvados.Cluster) *router {
 	return rtr
 }
 
+type routableFunc func(ctx context.Context, opts interface{}) (interface{}, error)
+
 func (rtr *router) addRoutes() {
 	for _, route := range []struct {
 		endpoint    arvados.APIEndpoint
 		defaultOpts func() interface{}
-		exec        func(ctx context.Context, opts interface{}) (interface{}, error)
+		exec        routableFunc
 	}{
 		{
 			arvados.EndpointCollectionCreate,
@@ -191,58 +193,12 @@ func (rtr *router) addRoutes() {
 			},
 		},
 	} {
-		route := route
-		methods := []string{route.endpoint.Method}
+		rtr.addRoute(route.endpoint, route.defaultOpts, route.exec)
 		if route.endpoint.Method == "PATCH" {
-			methods = append(methods, "PUT")
-		}
-		for _, method := range methods {
-			rtr.mux.HandlerFunc(method, "/"+route.endpoint.Path, func(w http.ResponseWriter, req *http.Request) {
-				logger := ctxlog.FromContext(req.Context())
-				params, err := rtr.loadRequestParams(req, route.endpoint.AttrsKey)
-				if err != nil {
-					logger.WithField("req", req).WithField("route", route).WithError(err).Debug("error loading request params")
-					rtr.sendError(w, err)
-					return
-				}
-				opts := route.defaultOpts()
-				err = rtr.transcode(params, opts)
-				if err != nil {
-					logger.WithField("params", params).WithError(err).Debugf("error transcoding params to %T", opts)
-					rtr.sendError(w, err)
-					return
-				}
-				respOpts, err := rtr.responseOptions(opts)
-				if err != nil {
-					logger.WithField("opts", opts).WithError(err).Debugf("error getting response options from %T", opts)
-					rtr.sendError(w, err)
-					return
-				}
-
-				creds := auth.CredentialsFromRequest(req)
-				if rt, _ := params["reader_tokens"].([]interface{}); len(rt) > 0 {
-					for _, t := range rt {
-						if t, ok := t.(string); ok {
-							creds.Tokens = append(creds.Tokens, t)
-						}
-					}
-				}
-				ctx := req.Context()
-				ctx = context.WithValue(ctx, auth.ContextKeyCredentials, creds)
-				ctx = arvados.ContextWithRequestID(ctx, req.Header.Get("X-Request-Id"))
-				logger.WithFields(logrus.Fields{
-					"apiEndpoint": route.endpoint,
-					"apiOptsType": fmt.Sprintf("%T", opts),
-					"apiOpts":     opts,
-				}).Debug("exec")
-				resp, err := route.exec(ctx, opts)
-				if err != nil {
-					logger.WithError(err).Debugf("returning error type %T", err)
-					rtr.sendError(w, err)
-					return
-				}
-				rtr.sendResponse(w, resp, respOpts)
-			})
+			// Accept PUT as a synonym for PATCH.
+			endpointPUT := route.endpoint
+			endpointPUT.Method = "PUT"
+			rtr.addRoute(endpointPUT, route.defaultOpts, route.exec)
 		}
 	}
 	rtr.mux.NotFound = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -250,6 +206,59 @@ func (rtr *router) addRoutes() {
 	})
 	rtr.mux.MethodNotAllowed = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		httpserver.Errors(w, []string{"API endpoint not found"}, http.StatusMethodNotAllowed)
+	})
+}
+
+func (rtr *router) addRoute(endpoint arvados.APIEndpoint, defaultOpts func() interface{}, exec routableFunc) {
+	rtr.mux.HandlerFunc(endpoint.Method, "/"+endpoint.Path, func(w http.ResponseWriter, req *http.Request) {
+		logger := ctxlog.FromContext(req.Context())
+		params, err := rtr.loadRequestParams(req, endpoint.AttrsKey)
+		if err != nil {
+			logger.WithFields(logrus.Fields{
+				"req":      req,
+				"method":   endpoint.Method,
+				"endpoint": endpoint,
+			}).WithError(err).Debug("error loading request params")
+			rtr.sendError(w, err)
+			return
+		}
+		opts := defaultOpts()
+		err = rtr.transcode(params, opts)
+		if err != nil {
+			logger.WithField("params", params).WithError(err).Debugf("error transcoding params to %T", opts)
+			rtr.sendError(w, err)
+			return
+		}
+		respOpts, err := rtr.responseOptions(opts)
+		if err != nil {
+			logger.WithField("opts", opts).WithError(err).Debugf("error getting response options from %T", opts)
+			rtr.sendError(w, err)
+			return
+		}
+
+		creds := auth.CredentialsFromRequest(req)
+		if rt, _ := params["reader_tokens"].([]interface{}); len(rt) > 0 {
+			for _, t := range rt {
+				if t, ok := t.(string); ok {
+					creds.Tokens = append(creds.Tokens, t)
+				}
+			}
+		}
+		ctx := req.Context()
+		ctx = context.WithValue(ctx, auth.ContextKeyCredentials, creds)
+		ctx = arvados.ContextWithRequestID(ctx, req.Header.Get("X-Request-Id"))
+		logger.WithFields(logrus.Fields{
+			"apiEndpoint": endpoint,
+			"apiOptsType": fmt.Sprintf("%T", opts),
+			"apiOpts":     opts,
+		}).Debug("exec")
+		resp, err := exec(ctx, opts)
+		if err != nil {
+			logger.WithError(err).Debugf("returning error type %T", err)
+			rtr.sendError(w, err)
+			return
+		}
+		rtr.sendResponse(w, resp, respOpts)
 	})
 }
 
