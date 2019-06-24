@@ -77,10 +77,13 @@ func (p *stubPool) Create(it arvados.InstanceType) bool {
 	p.unalloc[it]++
 	return true
 }
-func (p *stubPool) KillContainer(uuid, reason string) {
+func (p *stubPool) ForgetContainer(uuid string) {
+}
+func (p *stubPool) KillContainer(uuid, reason string) bool {
 	p.Lock()
 	defer p.Unlock()
 	delete(p.running, uuid)
+	return true
 }
 func (p *stubPool) Shutdown(arvados.InstanceType) bool {
 	p.shutdowns++
