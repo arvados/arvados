@@ -27,9 +27,32 @@ func (rtr *router) loadRequestParams(req *http.Request, attrsKey string) (map[st
 		return nil, httpError(http.StatusBadRequest, err)
 	}
 	params := map[string]interface{}{}
+
+	// Load parameters from req.Form, which (after
+	// req.ParseForm()) includes the query string and -- when
+	// Content-Type is application/x-www-form-urlencoded -- the
+	// request body.
 	for k, values := range req.Form {
+		// All of these form values arrive as strings, so we
+		// need some type-guessing to accept non-string
+		// inputs:
+		//
+		// Values for parameters that take ints (limit=1) or
+		// bools (include_trash=1) are parsed accordingly.
+		//
+		// "null" and "" are nil.
+		//
+		// Values that look like JSON objects, arrays, or
+		// strings are parsed as JSON.
+		//
+		// The rest are left as strings.
 		for _, v := range values {
 			switch {
+			case intParams[k]:
+				params[k], err = strconv.ParseInt(v, 10, 64)
+				if err != nil {
+					return nil, err
+				}
 			case boolParams[k]:
 				params[k] = stringToBool(v)
 			case v == "null" || v == "":
@@ -55,11 +78,6 @@ func (rtr *router) loadRequestParams(req *http.Request, attrsKey string) (map[st
 					return nil, err
 				}
 				params[k] = j
-			case k == "limit" || k == "offset":
-				params[k], err = strconv.ParseInt(v, 10, 64)
-				if err != nil {
-					return nil, err
-				}
 			default:
 				params[k] = v
 			}
@@ -138,6 +156,11 @@ func (rtr *router) transcode(src interface{}, dst interface{}) error {
 		return errw
 	}
 	return err
+}
+
+var intParams = map[string]bool{
+	"limit":  true,
+	"offset": true,
 }
 
 var boolParams = map[string]bool{
