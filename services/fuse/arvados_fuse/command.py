@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+from future.utils import native_str
 from builtins import range
-from builtins import str
 from builtins import object
 import argparse
 import arvados
@@ -137,7 +137,7 @@ class Mount(object):
         if self.args.replace:
             unmount(path=self.args.mountpoint,
                     timeout=self.args.unmount_timeout)
-        llfuse.init(self.operations, self.args.mountpoint.encode('utf-8'), self._fuse_options())
+        llfuse.init(self.operations, native_str(self.args.mountpoint), self._fuse_options())
         if self.daemon:
             daemon.DaemonContext(
                 working_directory=os.path.dirname(self.args.mountpoint),
