@@ -11,6 +11,11 @@ import (
 	check "gopkg.in/check.v1"
 )
 
+// a Gocheck checker for testing the name of a function. Used with
+// (*arvadostest.APIStub).Calls() to check that an HTTP request has
+// been routed to the correct arvados.API method.
+//
+//	c.Check(bytes.NewBuffer().Read, isMethodNamed, "Read")
 var isMethodNamed check.Checker = &chkIsMethodNamed{
 	CheckerInfo: &check.CheckerInfo{
 		Name:   "isMethodNamed",
