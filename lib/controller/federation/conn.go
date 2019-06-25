@@ -51,7 +51,7 @@ func New(cluster *arvados.Cluster) arvados.API {
 func saltedTokenProvider(local backend, remoteID string) rpc.TokenProvider {
 	return func(ctx context.Context) ([]string, error) {
 		var tokens []string
-		incoming, ok := ctx.Value(auth.ContextKeyCredentials).(*auth.Credentials)
+		incoming, ok := auth.FromContext(ctx)
 		if !ok {
 			return nil, errors.New("no token provided")
 		}
@@ -63,7 +63,7 @@ func saltedTokenProvider(local backend, remoteID string) rpc.TokenProvider {
 			case auth.ErrSalted:
 				tokens = append(tokens, token)
 			case auth.ErrObsoleteToken:
-				ctx := context.WithValue(ctx, auth.ContextKeyCredentials, &auth.Credentials{Tokens: []string{token}})
+				ctx := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{token}})
 				aca, err := local.APIClientAuthorizationCurrent(ctx, arvados.GetOptions{})
 				if errStatus(err) == http.StatusUnauthorized {
 					// pass through unmodified

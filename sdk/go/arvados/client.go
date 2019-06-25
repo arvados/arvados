@@ -121,16 +121,16 @@ var reqIDGen = httpserver.IDGenerator{Prefix: "req-"}
 // Do adds Authorization and X-Request-Id headers and then calls
 // (*http.Client)Do().
 func (c *Client) Do(req *http.Request) (*http.Response, error) {
-	if auth, _ := req.Context().Value("Authorization").(string); auth != "" {
+	if auth, _ := req.Context().Value(contextKeyAuthorization{}).(string); auth != "" {
 		req.Header.Add("Authorization", auth)
 	} else if c.AuthToken != "" {
 		req.Header.Add("Authorization", "OAuth2 "+c.AuthToken)
 	}
 
 	if req.Header.Get("X-Request-Id") == "" {
-		reqid, _ := req.Context().Value(contextKeyRequestID).(string)
+		reqid, _ := req.Context().Value(contextKeyRequestID{}).(string)
 		if reqid == "" {
-			reqid, _ = c.context().Value(contextKeyRequestID).(string)
+			reqid, _ = c.context().Value(contextKeyRequestID{}).(string)
 		}
 		if reqid == "" {
 			reqid = reqIDGen.Next()

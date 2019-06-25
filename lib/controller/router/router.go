@@ -244,8 +244,7 @@ func (rtr *router) addRoute(endpoint arvados.APIEndpoint, defaultOpts func() int
 				}
 			}
 		}
-		ctx := req.Context()
-		ctx = context.WithValue(ctx, auth.ContextKeyCredentials, creds)
+		ctx := auth.NewContext(req.Context(), creds)
 		ctx = arvados.ContextWithRequestID(ctx, req.Header.Get("X-Request-Id"))
 		logger.WithFields(logrus.Fields{
 			"apiEndpoint": endpoint,

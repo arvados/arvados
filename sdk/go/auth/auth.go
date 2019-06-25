@@ -5,6 +5,7 @@
 package auth
 
 import (
+	"context"
 	"encoding/base64"
 	"net/http"
 	"net/url"
@@ -19,8 +20,17 @@ func NewCredentials() *Credentials {
 	return &Credentials{Tokens: []string{}}
 }
 
+func NewContext(ctx context.Context, c *Credentials) context.Context {
+	return context.WithValue(ctx, contextKeyCredentials{}, c)
+}
+
+func FromContext(ctx context.Context) (*Credentials, bool) {
+	c, ok := ctx.Value(contextKeyCredentials{}).(*Credentials)
+	return c, ok
+}
+
 func CredentialsFromRequest(r *http.Request) *Credentials {
-	if c, ok := r.Context().Value(ContextKeyCredentials).(*Credentials); ok {
+	if c, ok := FromContext(r.Context()); ok {
 		// preloaded by middleware
 		return c
 	}

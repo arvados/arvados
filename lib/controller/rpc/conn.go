@@ -19,10 +19,6 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 )
 
-type contextKey string
-
-const ContextKeyCredentials contextKey = "credentials"
-
 type TokenProvider func(context.Context) ([]string, error)
 
 type Conn struct {
@@ -72,13 +68,13 @@ func (conn *Conn) requestAndDecode(ctx context.Context, dst interface{}, ep arva
 	if err != nil {
 		return err
 	} else if len(tokens) > 0 {
-		ctx = context.WithValue(ctx, "Authorization", "Bearer "+tokens[0])
+		ctx = arvados.ContextWithAuthorization(ctx, "Bearer "+tokens[0])
 	} else {
 		// Use a non-empty auth string to ensure we override
 		// any default token set on aClient -- and to avoid
 		// having the remote prompt us to send a token by
 		// responding 401.
-		ctx = context.WithValue(ctx, "Authorization", "Bearer -")
+		ctx = arvados.ContextWithAuthorization(ctx, "Bearer -")
 	}
 
 	// Encode opts to JSON and decode from there to a

@@ -44,7 +44,7 @@ func NewConn(cluster *arvados.Cluster) *rpc.Conn {
 }
 
 func provideIncomingToken(ctx context.Context) ([]string, error) {
-	incoming, ok := ctx.Value(auth.ContextKeyCredentials).(*auth.Credentials)
+	incoming, ok := auth.FromContext(ctx)
 	if !ok {
 		return nil, errors.New("no token provided")
 	}
