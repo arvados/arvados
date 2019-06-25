@@ -169,11 +169,11 @@ func (t *tester) Run() bool {
 
 	if !t.checkTags() {
 		// checkTags() already logged the errors
-		return false
+		deferredError = true
 	}
 
 	if !t.waitForBoot(bootDeadline) {
-		return false
+		deferredError = true
 	}
 
 	if t.ShellCommand != "" {
