@@ -290,7 +290,8 @@ Clusters:
       #   foo_bar: {value: baz, protected: false}
       #
       # If protected is true, only an admin user can modify its value.
-      ManagedProperties: {}
+      ManagedProperties:
+        SAMPLE: {function: original_owner, protected: true}
 
     Login:
       # These settings are provided by your OAuth2 provider (e.g.,
