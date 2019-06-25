@@ -23,7 +23,7 @@ yourgeneratedpassword
 </li>
 {% if use_contrib %}
 <li>Enable the pg_trgm extension
-  <notextile><pre>$ <span class="userinput">psql {{service_database}} -c "CREATE EXTENSION pg_trgm"</span></pre></notextile>
+  <notextile><pre>$ <span class="userinput">psql {{service_database}} -c "CREATE EXTENSION IF NOT EXISTS pg_trgm"</span></pre></notextile>
 </li>
 {% endif %}
 <li>Exit the postgres user shell:
