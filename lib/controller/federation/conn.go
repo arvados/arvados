@@ -88,8 +88,11 @@ func saltedTokenProvider(local backend, remoteID string) rpc.TokenProvider {
 // Return suitable backend for a query about the given cluster ID
 // ("aaaaa") or object UUID ("aaaaa-dz642-abcdefghijklmno").
 func (conn *Conn) chooseBackend(id string) backend {
-	if len(id) > 5 {
+	if len(id) == 27 {
 		id = id[:5]
+	} else if len(id) != 5 {
+		// PDH or bogus ID
+		return conn.local
 	}
 	if id == conn.cluster.ClusterID {
 		return conn.local
@@ -220,11 +223,11 @@ func (conn *Conn) CollectionList(ctx context.Context, options arvados.ListOption
 }
 
 func (conn *Conn) CollectionProvenance(ctx context.Context, options arvados.GetOptions) (map[string]interface{}, error) {
-	return conn.local.CollectionProvenance(ctx, options)
+	return conn.chooseBackend(options.UUID).CollectionProvenance(ctx, options)
 }
 
 func (conn *Conn) CollectionUsedBy(ctx context.Context, options arvados.GetOptions) (map[string]interface{}, error) {
-	return conn.local.CollectionUsedBy(ctx, options)
+	return conn.chooseBackend(options.UUID).CollectionUsedBy(ctx, options)
 }
 
 func (conn *Conn) CollectionDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.Collection, error) {
