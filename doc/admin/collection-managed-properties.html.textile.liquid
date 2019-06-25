@@ -24,7 +24,7 @@ For every newly created collection, assign a predefined key/value pair if it isn
 <pre>
 Collections:
   ManagedProperties:
-    foo: {value: bar}
+    foo: {Value: bar}
 </pre>
 
 h4. Original owner UUID
@@ -34,17 +34,17 @@ This behavior will assign to a property key the UUID of the user who owns the co
 <pre>
 Collections:
   ManagedProperties:
-    responsible_person_uuid: {function: original_owner}
+    responsible_person_uuid: {Function: original_owner}
 </pre>
 
 h4. Protected properties
 
-If there's a need to prevent a non-admin user from modifying a specific property, even by its owner, the @protected@ attribute can be set to @true@, like so:
+If there's a need to prevent a non-admin user from modifying a specific property, even by its owner, the @Protected@ attribute can be set to @true@, like so:
 
 <pre>
 Collections:
   ManagedProperties:
-    responsible_person_uuid: {function: original_owner, protected: true}
+    responsible_person_uuid: {Function: original_owner, Protected: true}
 </pre>
 
 This property can be applied to any of the defined managed properties. If missing, it's assumed as being @false@ by default.
@@ -53,7 +53,7 @@ h3. Supporting example scripts
 
 When enabling this feature, there may be pre-existing collections that won't have the managed properties just configured. The following script examples may be helpful to sync these older collections.
 
-For the following examples we assume that the @responsible_person_uuid@ property is set as @{function: original_owner, protected: true}@.
+For the following examples we assume that the @responsible_person_uuid@ property is set as @{Function: original_owner, Protected: true}@.
 
 h4. List uuid/names of collections without @responsible_person_uuid@ property
 
@@ -77,7 +77,7 @@ h4. Update the @responsible_person_uuid@ property from X to Y on all collections
 
 This example can be useful to change responsibility from one user to another.
 
-Please note that the following code should run with admin privileges, assuming that the managed property is @protected@.
+Please note that the following code should run with admin privileges, assuming that the managed property is @Protected@.
 
 {% codeblock as python %}
 {% include 'admin_update_collection_property_py' %}

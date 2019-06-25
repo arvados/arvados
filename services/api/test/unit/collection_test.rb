@@ -1013,10 +1013,10 @@ class CollectionTest < ActiveSupport::TestCase
     assert_empty Collection.where(uuid: uuid)
   end
 
-  test "create collections with default properties" do
+  test "create collections with managed properties" do
     Rails.configuration.Collections.ManagedProperties = {
-      'default_prop1' => {'value' => 'prop1_value'},
-      'responsible_person_uuid' => {'function' => 'original_owner'}
+      'default_prop1' => {'Value' => 'prop1_value'},
+      'responsible_person_uuid' => {'Function' => 'original_owner'}
     }
     # Test collection without initial properties
     act_as_user users(:active) do
@@ -1045,9 +1045,9 @@ class CollectionTest < ActiveSupport::TestCase
     end
   end
 
-  test "update collection with protected default properties" do
+  test "update collection with protected managed properties" do
     Rails.configuration.Collections.ManagedProperties = {
-      'default_prop1' => {'value' => 'prop1_value', 'protected' => true},
+      'default_prop1' => {'Value' => 'prop1_value', 'Protected' => true},
     }
     act_as_user users(:active) do
       c = create_collection 'foo', Encoding::US_ASCII
