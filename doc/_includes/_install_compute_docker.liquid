@@ -70,7 +70,7 @@ EOF</span>
 
 h2. Download and tag the latest arvados/jobs docker image
 
-In order to start workflows from workbench, there needs to be Docker image tagged @arvados/jobs:latest@. The following command downloads the latest arvados/jobs image from Docker Hub, loads it into Keep, and tags it as 'latest'.  In this example @$project_uuid@ should be the the UUID of the "Arvados Standard Docker Images" project.
+In order to start workflows from workbench, there needs to be Docker image tagged @arvados/jobs:latest@. The following command downloads the latest arvados/jobs image from Docker Hub, loads it into Keep, and tags it as 'latest'.  In this example @$project_uuid@ should be the UUID of the "Arvados Standard Docker Images" project.
 
 <notextile>
 <pre><code>~$ <span class="userinput">arv-keepdocker --pull arvados/jobs latest --project-uuid $project_uuid</span>

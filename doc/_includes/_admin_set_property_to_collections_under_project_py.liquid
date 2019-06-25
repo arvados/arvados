@@ -1,0 +1,36 @@
+#!/usr/bin/env python
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+import arvados
+import arvados.util as util
+
+def get_subproject_uuids(api, root_uuid):
+    uuids = []
+    groups = util.list_all(api.groups().list, filters=[['owner_uuid', '=', '{}'.format(root_uuid)]], select=['uuid'])
+    for g in groups:
+        uuids += ([g['uuid']] + get_subproject_uuids(api, g['uuid']))
+    return uuids
+
+def get_cols(api, filters):
+    cols = util.list_all(api.collections().list, filters=filters, select=['uuid', 'properties'])
+    return cols
+
+# Search for collections on project hierarchy rooted at root_uuid
+root_uuid = 'zzzzz-j7d0g-ppppppppppppppp'
+# Set the property to the UUID below
+responsible_uuid = 'zzzzz-tpzed-xxxxxxxxxxxxxxx'
+
+api = arvados.api()
+for p_uuid in [root_uuid] + get_subproject_uuids(api, root_uuid):
+    f = [['properties.responsible_person_uuid', 'exists', False],
+         ['owner_uuid', '=', p_uuid]]
+    cols = get_cols(api, f)
+    print("Found {} collections owned by {}".format(len(cols), p_uuid))
+    for c in cols:
+        print(" - Updating collection {}".format(c["uuid"]))
+        props = c['properties']
+        props['responsible_person_uuid'] = responsible_uuid
+        api.collections().update(uuid=c['uuid'], body={'properties': props}).execute()
