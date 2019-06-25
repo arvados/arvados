@@ -290,13 +290,14 @@ Clusters:
       # one of the following behaviors:
       #
       # * UUID of the user who owns the containing project.
-      #   responsible_person_uuid: {function: original_owner, protected: true}
+      #   responsible_person_uuid: {Function: original_owner, Protected: true}
       #
       # * Default concrete value.
-      #   foo_bar: {value: baz, protected: false}
+      #   foo_bar: {Value: baz, Protected: false}
       #
-      # If protected is true, only an admin user can modify its value.
-      ManagedProperties: {}
+      # If Protected is true, only an admin user can modify its value.
+      ManagedProperties:
+        SAMPLE: {Function: original_owner, Protected: true}
 
     Login:
       # These settings are provided by your OAuth2 provider (e.g.,
