@@ -46,7 +46,7 @@ type tester struct {
 	PauseBeforeDestroy func()
 
 	is              cloud.InstanceSet
-	testInstance    cloud.Instance
+	testInstance    *worker.TagVerifier
 	secret          string
 	executor        *ssh_executor.Executor
 	showedLoginInfo bool
@@ -155,7 +155,7 @@ func (t *tester) Run() bool {
 		// Create() succeeded. Make sure the new instance
 		// appears right away in the Instances() list.
 		t.Logger.WithField("Instance", inst.ID()).Info("created instance")
-		t.testInstance = inst
+		t.testInstance = &worker.TagVerifier{inst, t.secret}
 		t.showLoginInfo()
 		err = t.refreshTestInstance()
 		if err == errTestInstanceNotFound {
@@ -166,7 +166,6 @@ func (t *tester) Run() bool {
 			return false
 		}
 	}
-	t.testInstance = worker.TagVerifier{t.testInstance, t.secret}
 
 	if !t.checkTags() {
 		// checkTags() already logged the errors
@@ -232,7 +231,7 @@ func (t *tester) refreshTestInstance() error {
 			"Instance": i.ID(),
 			"Address":  i.Address(),
 		}).Info("found our instance in returned list")
-		t.testInstance = worker.TagVerifier{i, t.secret}
+		t.testInstance = &worker.TagVerifier{i, t.secret}
 		if !t.showedLoginInfo {
 			t.showLoginInfo()
 		}
