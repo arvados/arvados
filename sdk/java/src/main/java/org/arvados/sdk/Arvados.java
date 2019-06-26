@@ -459,7 +459,7 @@ public class Arvados {
 
   public static void main(String[] args){
     System.out.println("Welcome to Arvados Java SDK.");
-    System.out.println("Please refer to http://doc.arvados.org/sdk/java/index.html to get started with the the SDK.");
+    System.out.println("Please refer to http://doc.arvados.org/sdk/java/index.html to get started with the SDK.");
   }
 
 }

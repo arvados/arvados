@@ -14,10 +14,10 @@ What you need to know and do in order to upgrade your Arvados installation.
 
 h2. General process
 
+# Consult upgrade notes below to see if any manual configuration updates are necessary.
 # Wait for the cluster to be idle and stop Arvados services.
 # Install new packages using @apt-get upgrade@ or @yum upgrade@.
 # Package installation scripts will perform any necessary data migrations.
-# Consult upgrade notes below to see if any manual configuration updates are necessary.
 # Restart Arvados services.
 
 h2. Upgrade notes
@@ -46,6 +46,35 @@ h4. No longer stripping ':' from strings in serialized database columns
  (bug #15311) Strings read from serialized columns in the database with a leading ':' would have the ':' stripped after loading the record.  This behavior existed due to legacy serialization behavior which stored Ruby symbols with a leading ':'.  Unfortunately this corrupted fields where the leading ":" was intentional.  This behavior has been removed.
 
 You can test if any records in your database are affected by going to the API server directory and running @bundle exec rake symbols:check@.  This will report which records contain fields with a leading ':' that would previously have been stripped.  If there are records to be updated, you can update the database using @bundle exec rake symbols:stringify@.
+
+h4. Enabling Postgres trigram indexes
+
+Feature "#15106":https://dev.arvados.org/issues/15106 improves the speed and functionality of full text search by introducing trigram indexes on text searchable database columns via a migration. Prior to updating, you must first install the postgresql-contrib package on your system and subsequently run the <code class="userprint">CREATE EXTENSION pg_trgm</code> SQL command on the arvados_production database as a postgres superuser.
+
+The "postgres-contrib package":https://www.postgresql.org/docs/10/contrib.html has been supported since PostgreSQL version 9.4. The version of the contrib package should match the version of your PostgreSQL installation. Using 9.5 as an example, the package can be installed and the extension enabled using the following:
+
+<strong>Centos 7</strong>
+<notextile>
+<pre><code>~$ <span class="userinput">sudo yum install -y postgresql95-contrib</span>
+~$ <span class="userinput">su - postgres -c "psql -d 'arvados_production' -c 'CREATE EXTENSION IF NOT EXISTS pg_trgm'"</span>
+</code></pre>
+</notextile>
+
+<strong>RHEL 7</strong>
+<notextile>
+<pre><code>~$ <span class="userinput">sudo yum install -y rh-postgresql95-postgresql-contrib</span>
+~$ <span class="userinput">su - postgres -c "psql -d 'arvados_production' -c 'CREATE EXTENSION IF NOT EXISTS pg_trgm'"</span>
+</code></pre>
+</notextile>
+
+<strong>Debian or Ubuntu</strong>
+<notextile>
+<pre><code>~$ <span class="userinput">sudo apt-get install -y postgresql-contrib-9.5</span>
+~$ <span class="userinput">sudo -u postgres psql -d 'arvados_production' -c 'CREATE EXTENSION IF NOT EXISTS pg_trgm'</span>
+</code></pre>
+</notextile>
+
+Subsequently, the <code class="userinput">psql -d 'arvados_production' -c '\dx'</code> command will display the installed extensions for the arvados_production database. This list should now contain @pg_trgm@.
 
 h3(#v1_4_0). v1.4.0 (2019-06-05)
 

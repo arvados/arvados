@@ -154,7 +154,7 @@ type Pool struct {
 	creating     map[string]createCall // unfinished (cloud.InstanceSet)Create calls (key is instance secret)
 	workers      map[cloud.InstanceID]*worker
 	loaded       bool                 // loaded list of instances from InstanceSet at least once
-	exited       map[string]time.Time // containers whose crunch-run proc has exited, but KillContainer has not been called
+	exited       map[string]time.Time // containers whose crunch-run proc has exited, but ForgetContainer has not been called
 	atQuotaUntil time.Time
 	atQuotaErr   cloud.QuotaError
 	stop         chan bool
@@ -169,6 +169,7 @@ type Pool struct {
 	mInstancesPrice    *prometheus.GaugeVec
 	mVCPUs             *prometheus.GaugeVec
 	mMemory            *prometheus.GaugeVec
+	mDisappearances    *prometheus.CounterVec
 }
 
 type createCall struct {
@@ -445,7 +446,7 @@ func (wp *Pool) CountWorkers() map[State]int {
 // In the returned map, the time value indicates when the Pool
 // observed that the container process had exited. A container that
 // has not yet exited has a zero time value. The caller should use
-// KillContainer() to garbage-collect the entries for exited
+// ForgetContainer() to garbage-collect the entries for exited
 // containers.
 func (wp *Pool) Running() map[string]time.Time {
 	wp.setupOnce.Do(wp.setup)
@@ -492,18 +493,15 @@ func (wp *Pool) StartContainer(it arvados.InstanceType, ctr arvados.Container) b
 //
 // KillContainer returns immediately; the act of killing the container
 // takes some time, and runs in the background.
-func (wp *Pool) KillContainer(uuid string, reason string) {
+//
+// KillContainer returns false if the container has already ended.
+func (wp *Pool) KillContainer(uuid string, reason string) bool {
 	wp.mtx.Lock()
 	defer wp.mtx.Unlock()
 	logger := wp.logger.WithFields(logrus.Fields{
 		"ContainerUUID": uuid,
 		"Reason":        reason,
 	})
-	if _, ok := wp.exited[uuid]; ok {
-		logger.Debug("clearing placeholder for exited crunch-run process")
-		delete(wp.exited, uuid)
-		return
-	}
 	for _, wkr := range wp.workers {
 		rr := wkr.running[uuid]
 		if rr == nil {
@@ -511,10 +509,30 @@ func (wp *Pool) KillContainer(uuid string, reason string) {
 		}
 		if rr != nil {
 			rr.Kill(reason)
-			return
+			return true
 		}
 	}
 	logger.Debug("cannot kill: already disappeared")
+	return false
+}
+
+// ForgetContainer clears the placeholder for the given exited
+// container, so it isn't returned by subsequent calls to Running().
+//
+// ForgetContainer has no effect if the container has not yet exited.
+//
+// The "container exited at time T" placeholder (which necessitates
+// ForgetContainer) exists to make it easier for the caller
+// (scheduler) to distinguish a container that exited without
+// finalizing its state from a container that exited too recently for
+// its final state to have appeared in the scheduler's queue cache.
+func (wp *Pool) ForgetContainer(uuid string) {
+	wp.mtx.Lock()
+	defer wp.mtx.Unlock()
+	if _, ok := wp.exited[uuid]; ok {
+		wp.logger.WithField("ContainerUUID", uuid).Debug("clearing placeholder for exited crunch-run process")
+		delete(wp.exited, uuid)
+	}
 }
 
 func (wp *Pool) registerMetrics(reg *prometheus.Registry) {
@@ -556,6 +574,16 @@ func (wp *Pool) registerMetrics(reg *prometheus.Registry) {
 		Help:      "Total memory on all cloud VMs.",
 	}, []string{"category"})
 	reg.MustRegister(wp.mMemory)
+	wp.mDisappearances = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "arvados",
+		Subsystem: "dispatchcloud",
+		Name:      "instances_disappeared",
+		Help:      "Number of occurrences of an instance disappearing from the cloud provider's list of instances.",
+	}, []string{"state"})
+	for _, v := range stateString {
+		wp.mDisappearances.WithLabelValues(v).Add(0)
+	}
+	reg.MustRegister(wp.mDisappearances)
 }
 
 func (wp *Pool) runMetrics() {
@@ -778,6 +806,9 @@ func (wp *Pool) sync(threshold time.Time, instances []cloud.Instance) {
 			"WorkerState": wkr.state,
 		})
 		logger.Info("instance disappeared in cloud")
+		if wp.mDisappearances != nil {
+			wp.mDisappearances.WithLabelValues(stateString[wkr.state]).Inc()
+		}
 		delete(wp.workers, id)
 		go wkr.Close()
 		notify = true

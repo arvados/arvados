@@ -97,7 +97,7 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
     authorize_with :dispatch2
     uuid = containers(:locked).uuid
     post :unlock, params: {id: uuid}
-    assert_response 422
+    assert_response 403
   end
 
   [

@@ -132,12 +132,12 @@ func (disp *dispatcher) initialize() {
 		disp.sshKey = key
 	}
 
-	instanceSet, err := newInstanceSet(disp.Cluster, disp.InstanceSetID, disp.logger)
+	disp.reg = prometheus.NewRegistry()
+	instanceSet, err := newInstanceSet(disp.Cluster, disp.InstanceSetID, disp.logger, disp.reg)
 	if err != nil {
 		disp.logger.Fatalf("error initializing driver: %s", err)
 	}
 	disp.instanceSet = instanceSet
-	disp.reg = prometheus.NewRegistry()
 	disp.pool = worker.NewPool(disp.logger, disp.ArvClient, disp.reg, disp.InstanceSetID, disp.instanceSet, disp.newExecutor, disp.sshKey.PublicKey(), disp.Cluster)
 	disp.queue = container.NewQueue(disp.logger, disp.reg, disp.typeChooser, disp.ArvClient)
 
@@ -148,6 +148,7 @@ func (disp *dispatcher) initialize() {
 	} else {
 		mux := httprouter.New()
 		mux.HandlerFunc("GET", "/arvados/v1/dispatch/containers", disp.apiContainers)
+		mux.HandlerFunc("POST", "/arvados/v1/dispatch/containers/kill", disp.apiInstanceKill)
 		mux.HandlerFunc("GET", "/arvados/v1/dispatch/instances", disp.apiInstances)
 		mux.HandlerFunc("POST", "/arvados/v1/dispatch/instances/hold", disp.apiInstanceHold)
 		mux.HandlerFunc("POST", "/arvados/v1/dispatch/instances/drain", disp.apiInstanceDrain)
@@ -228,6 +229,20 @@ func (disp *dispatcher) apiInstanceKill(w http.ResponseWriter, r *http.Request) 
 	err := disp.pool.KillInstance(id, "via management API: "+r.FormValue("reason"))
 	if err != nil {
 		httpserver.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+}
+
+// Management API: send SIGTERM to specified container's crunch-run
+// process now.
+func (disp *dispatcher) apiContainerKill(w http.ResponseWriter, r *http.Request) {
+	uuid := r.FormValue("container_uuid")
+	if uuid == "" {
+		httpserver.Error(w, "container_uuid parameter not provided", http.StatusBadRequest)
+		return
+	}
+	if !disp.pool.KillContainer(uuid, "via management API: "+r.FormValue("reason")) {
+		httpserver.Error(w, "container not found", http.StatusNotFound)
 		return
 	}
 }

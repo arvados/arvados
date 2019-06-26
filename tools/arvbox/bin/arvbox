@@ -275,6 +275,11 @@ run() {
                        /var/lib/arvbox/service/api/run-service --only-setup
             fi
 
+	    interactive=""
+	    if [[ -z "$@" ]] ; then
+		interactive=--interactive
+	    fi
+
             docker exec -ti \
                    -e LINES=$(tput lines) \
                    -e COLUMNS=$(tput cols) \
@@ -285,6 +290,7 @@ run() {
                    /usr/local/lib/arvbox/runsu.sh \
                    /usr/src/arvados/build/run-tests.sh \
                    --temp /var/lib/arvados/test \
+		   $interactive \
                    "$@"
         elif [[ "$CONFIG" = devenv ]] ; then
 	    if [[ $need_setup = 1 ]] ; then

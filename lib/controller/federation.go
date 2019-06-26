@@ -275,7 +275,7 @@ func (h *Handler) saltAuthToken(req *http.Request, remote string) (updatedReq *h
 	}
 	updatedReq.Header.Set("Authorization", "Bearer "+token)
 
-	// Remove api_token=... from the the query string, in case we
+	// Remove api_token=... from the query string, in case we
 	// end up forwarding the request.
 	if values, err := url.ParseQuery(updatedReq.URL.RawQuery); err != nil {
 		return nil, err
