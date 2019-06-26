@@ -92,7 +92,9 @@ func (t *tester) Run() bool {
 			foundExisting = true
 			if t.DestroyExisting {
 				lgr.Info("destroying existing instance with our InstanceSetID")
+				t0 := time.Now()
 				err := i.Destroy()
+				lgr := lgr.WithField("Duration", time.Since(t0))
 				if err != nil {
 					lgr.WithError(err).Error("error destroying existing instance")
 				} else {
@@ -133,13 +135,15 @@ func (t *tester) Run() bool {
 		"Tags":                 tags,
 		"InitCommand":          initCommand,
 	}).Info("creating instance")
+	t0 := time.Now()
 	inst, err := t.is.Create(t.InstanceType, t.ImageID, tags, initCommand, t.SSHKey.PublicKey())
+	lgrC := t.Logger.WithField("Duration", time.Since(t0))
 	if err != nil {
 		// Create() might have failed due to a bug or network
 		// error even though the creation was successful, so
 		// it's safer to wait a bit for an instance to appear.
 		deferredError = true
-		t.Logger.WithError(err).Error("error creating test instance")
+		lgrC.WithError(err).Error("error creating test instance")
 		t.Logger.WithField("Deadline", bootDeadline).Info("waiting for instance to appear anyway, in case the Create response was incorrect")
 		for err = t.refreshTestInstance(); err != nil; err = t.refreshTestInstance() {
 			if time.Now().After(bootDeadline) {
@@ -154,7 +158,7 @@ func (t *tester) Run() bool {
 	} else {
 		// Create() succeeded. Make sure the new instance
 		// appears right away in the Instances() list.
-		t.Logger.WithField("Instance", inst.ID()).Info("created instance")
+		lgrC.WithField("Instance", inst.ID()).Info("created instance")
 		t.testInstance = &worker.TagVerifier{inst, t.secret}
 		t.showLoginInfo()
 		err = t.refreshTestInstance()
@@ -247,11 +251,15 @@ func (t *tester) refreshTestInstance() error {
 func (t *tester) getInstances(tags cloud.InstanceTags) ([]cloud.Instance, error) {
 	var ret []cloud.Instance
 	t.Logger.WithField("FilterTags", tags).Info("getting instance list")
+	t0 := time.Now()
 	insts, err := t.is.Instances(tags)
 	if err != nil {
 		return nil, err
 	}
-	t.Logger.WithField("N", len(insts)).Info("got instance list")
+	t.Logger.WithFields(logrus.Fields{
+		"Duration": time.Since(t0),
+		"N":        len(insts),
+	}).Info("got instance list")
 	for _, i := range insts {
 		if i.Tags()[t.TagKeyPrefix+"InstanceSetID"] == string(t.SetID) {
 			ret = append(ret, i)
@@ -312,11 +320,13 @@ func (t *tester) runShellCommand(cmd string) error {
 	t.Logger.WithFields(logrus.Fields{
 		"Command": cmd,
 	}).Info("executing remote command")
+	t0 := time.Now()
 	stdout, stderr, err := t.executor.Execute(nil, cmd, nil)
 	lgr := t.Logger.WithFields(logrus.Fields{
-		"Command": cmd,
-		"stdout":  string(stdout),
-		"stderr":  string(stderr),
+		"Duration": time.Since(t0),
+		"Command":  cmd,
+		"stdout":   string(stdout),
+		"stderr":   string(stderr),
 	})
 	if err != nil {
 		lgr.WithError(err).Info("remote command failed")
@@ -333,19 +343,21 @@ func (t *tester) destroyTestInstance() bool {
 	}
 	for {
 		t.Logger.WithField("Instance", t.testInstance.ID()).Info("destroying instance")
+		t0 := time.Now()
 		err := t.testInstance.Destroy()
-		if err != nil {
-			t.Logger.WithError(err).WithField("Instance", t.testInstance.ID()).Error("error destroying instance")
+		lgr := t.Logger.WithField("Instance", t.testInstance.ID())
+		if lgr := lgr.WithField("Duration", time.Since(t0)); err != nil {
+			lgr.WithError(err).Error("error destroying instance")
 		} else {
-			t.Logger.WithField("Instance", t.testInstance.ID()).Info("destroyed instance")
+			lgr.Info("destroyed instance")
 		}
 		err = t.refreshTestInstance()
 		if err == errTestInstanceNotFound {
-			t.Logger.WithField("Instance", t.testInstance.ID()).Info("instance no longer appears in list")
+			lgr.Info("instance no longer appears in list")
 			t.testInstance = nil
 			return true
 		} else if err == nil {
-			t.Logger.WithField("Instance", t.testInstance.ID()).Info("instance still exists after calling Destroy")
+			lgr.Info("instance still exists after calling Destroy")
 			t.sleepSyncInterval()
 			continue
 		} else {
