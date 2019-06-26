@@ -144,6 +144,8 @@ EOF
 # environment that could interfere with the tests.
 unset $(env | cut -d= -f1 | grep \^ARVADOS_)
 
+export ARVADOS_EXPERIMENTAL=14287
+
 # Reset other variables that could affect our [tests'] behavior by
 # accident.
 GITDIR=
