@@ -1,0 +1,71 @@
+---
+layout: default
+navsection: admin
+title: Testing cloud configuration
+...
+
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+The @arvados-server@ package includes a @cloudtest@ tool that checks compatibility between your Arvados configuration, your cloud driver, your cloud provider's API, your cloud provider's VM instances, and the worker image you use with the *experimental* "cloud dispatcher":../install/install-dispatch-cloud.html.
+
+@arvados-server cloudtest@ performs the following steps:
+# Create a new instance
+# Wait for it to finish booting
+# Run a shell command on the new instance (optional)
+# Pause while you log in to the new instance and do other tests yourself (optional)
+# Shut down the instance
+
+This is an easy way to expose problems like these:
+* Configured cloud credentials don't work
+* Configured image types don't work
+* Configured driver is not compatible with your cloud API/region
+* Newly created instances are not usable due to a network problem or misconfiguration
+* Newly created instances do not accept the configured SSH private key
+* Selected machine image does not boot properly
+* Selected machine image is incompatible with some instance types
+* Driver has bugs
+
+h2. Typical uses
+
+Before bringing up the @arvados-dispatch-cloud@ service for the first time, we recommend running @cloudtest@ to check your configuration:
+
+<pre>
+$ <span class="userinput">arvados-server cloudtest -command "crunch-run --list"</span>
+</pre>
+
+Before updating your configuration to use a new VM image, we recommend running @cloudtest@ with the new image:
+
+<notextile><pre>
+$ <span class="userinput">arvados-server cloudtest -image-id <b>new_image_id</b> -command "crunch-run --list"</span>
+</pre></notextile>
+
+After adding an instance type to your configuration, we recommend running @cloudtest@ with the new instance type:
+
+<notextile><pre>
+$ <span class="userinput">arvados-server cloudtest -instance-type <b>new_instance_type_name</b></span>
+</pre></notextile>
+
+For a full list of options, use the @-help@ flag:
+
+<pre>
+$ <span class="userinput">arvados-server cloudtest -help</span>
+Usage:
+  -command string
+        Run an interactive shell command on the test instance when it boots
+  -config file
+        Site configuration file (default "/etc/arvados/config.yml")
+  -destroy-existing
+        Destroy any existing instances tagged with our InstanceSetID, instead of erroring out
+  -image-id string
+        Image ID to use when creating the test instance (if empty, use cluster config)
+  -instance-set-id value
+        InstanceSetID tag value to use on the test instance (default "cloudtest-user@hostname.example")
+  -instance-type string
+        Instance type to create (if empty, use cheapest type in config)
+  -pause-before-destroy
+        Prompt and wait before destroying the test instance
+</pre>
