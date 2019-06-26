@@ -662,7 +662,7 @@ class Operations(llfuse.Operations):
         r = handle.obj.readfrom(off, size, self.num_retries)
         if r:
             self.read_counter.add(len(r))
-        return r
+        return r.encode('utf-8')
 
     @write_time.time()
     @catch_exceptions
