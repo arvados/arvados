@@ -80,6 +80,7 @@ lib/controller
 lib/crunchstat
 lib/cloud
 lib/cloud/azure
+lib/cloud/cloudtest
 lib/dispatchcloud
 lib/dispatchcloud/container
 lib/dispatchcloud/scheduler
@@ -734,7 +735,7 @@ do_test() {
         services/api)
             stop_services
             ;;
-        gofmt | govendor | doc | lib/cli | lib/cloud/azure | lib/cloud/ec2 | lib/cmd | lib/dispatchcloud/ssh_executor | lib/dispatchcloud/worker)
+        gofmt | govendor | doc | lib/cli | lib/cloud/azure | lib/cloud/ec2 | lib/cloud/cloudtest | lib/cmd | lib/dispatchcloud/ssh_executor | lib/dispatchcloud/worker)
             # don't care whether services are running
             ;;
         *)
@@ -992,6 +993,7 @@ gostuff=(
     lib/cloud
     lib/cloud/azure
     lib/cloud/ec2
+    lib/cloud/cloudtest
     lib/config
     lib/dispatchcloud
     lib/dispatchcloud/container

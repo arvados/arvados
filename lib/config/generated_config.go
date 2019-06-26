@@ -506,7 +506,7 @@ Clusters:
         # Shell command to execute on each worker to determine whether
         # the worker is booted and ready to run containers. It should
         # exit zero if the worker is ready.
-        BootProbeCommand: "docker ps"
+        BootProbeCommand: "docker ps -q"
 
         # Minimum interval between consecutive probes to a single
         # worker.
