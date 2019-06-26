@@ -115,13 +115,6 @@ func (rtr *router) loadRequestParams(req *http.Request, attrsKey string) (map[st
 	}
 
 	if v, ok := params[attrsKey]; ok && attrsKey != "" {
-		if v, ok := v.(map[string]interface{}); ok {
-			// Delete field(s) that appear in responses
-			// but not in update attrs, so clients can
-			// fetch-modify-update.
-			delete(v, "etag")
-			delete(v, "unsigned_manifest_text")
-		}
 		params["attrs"] = v
 		delete(params, attrsKey)
 	}
