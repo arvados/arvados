@@ -148,6 +148,7 @@ func (disp *dispatcher) initialize() {
 	} else {
 		mux := httprouter.New()
 		mux.HandlerFunc("GET", "/arvados/v1/dispatch/containers", disp.apiContainers)
+		mux.HandlerFunc("POST", "/arvados/v1/dispatch/containers/kill", disp.apiInstanceKill)
 		mux.HandlerFunc("GET", "/arvados/v1/dispatch/instances", disp.apiInstances)
 		mux.HandlerFunc("POST", "/arvados/v1/dispatch/instances/hold", disp.apiInstanceHold)
 		mux.HandlerFunc("POST", "/arvados/v1/dispatch/instances/drain", disp.apiInstanceDrain)
@@ -228,6 +229,20 @@ func (disp *dispatcher) apiInstanceKill(w http.ResponseWriter, r *http.Request) 
 	err := disp.pool.KillInstance(id, "via management API: "+r.FormValue("reason"))
 	if err != nil {
 		httpserver.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+}
+
+// Management API: send SIGTERM to specified container's crunch-run
+// process now.
+func (disp *dispatcher) apiContainerKill(w http.ResponseWriter, r *http.Request) {
+	uuid := r.FormValue("container_uuid")
+	if uuid == "" {
+		httpserver.Error(w, "container_uuid parameter not provided", http.StatusBadRequest)
+		return
+	}
+	if !disp.pool.KillContainer(uuid, "via management API: "+r.FormValue("reason")) {
+		httpserver.Error(w, "container not found", http.StatusNotFound)
 		return
 	}
 }

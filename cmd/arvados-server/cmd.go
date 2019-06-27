@@ -7,6 +7,7 @@ package main
 import (
 	"os"
 
+	"git.curoverse.com/arvados.git/lib/cloud/cloudtest"
 	"git.curoverse.com/arvados.git/lib/cmd"
 	"git.curoverse.com/arvados.git/lib/config"
 	"git.curoverse.com/arvados.git/lib/controller"
@@ -20,6 +21,7 @@ var (
 		"-version":  cmd.Version(version),
 		"--version": cmd.Version(version),
 
+		"cloudtest":      cloudtest.Command,
 		"config-check":   config.CheckCommand,
 		"config-dump":    config.DumpCommand,
 		"controller":     controller.Command,

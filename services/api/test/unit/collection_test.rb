@@ -1012,4 +1012,65 @@ class CollectionTest < ActiveSupport::TestCase
     SweepTrashedObjects.sweep_now
     assert_empty Collection.where(uuid: uuid)
   end
+
+  test "create collections with managed properties" do
+    Rails.configuration.Collections.ManagedProperties = {
+      'default_prop1' => {'Value' => 'prop1_value'},
+      'responsible_person_uuid' => {'Function' => 'original_owner'}
+    }
+    # Test collection without initial properties
+    act_as_user users(:active) do
+      c = create_collection 'foo', Encoding::US_ASCII
+      assert c.valid?
+      assert_not_empty c.properties
+      assert_equal 'prop1_value', c.properties['default_prop1']
+      assert_equal users(:active).uuid, c.properties['responsible_person_uuid']
+    end
+    # Test collection with default_prop1 property already set
+    act_as_user users(:active) do
+      c = Collection.create(manifest_text: ". d41d8cd98f00b204e9800998ecf8427e 0:34:foo.txt\n",
+                            properties: {'default_prop1' => 'custom_value'})
+      assert c.valid?
+      assert_not_empty c.properties
+      assert_equal 'custom_value', c.properties['default_prop1']
+      assert_equal users(:active).uuid, c.properties['responsible_person_uuid']
+    end
+    # Test collection inside a sub project
+    act_as_user users(:active) do
+      c = Collection.create(manifest_text: ". d41d8cd98f00b204e9800998ecf8427e 0:34:foo.txt\n",
+                            owner_uuid: groups(:asubproject).uuid)
+      assert c.valid?
+      assert_not_empty c.properties
+      assert_equal users(:active).uuid, c.properties['responsible_person_uuid']
+    end
+  end
+
+  test "update collection with protected managed properties" do
+    Rails.configuration.Collections.ManagedProperties = {
+      'default_prop1' => {'Value' => 'prop1_value', 'Protected' => true},
+    }
+    act_as_user users(:active) do
+      c = create_collection 'foo', Encoding::US_ASCII
+      assert c.valid?
+      assert_not_empty c.properties
+      assert_equal 'prop1_value', c.properties['default_prop1']
+      # Add new property
+      c.properties['prop2'] = 'value2'
+      c.save!
+      c.reload
+      assert_equal 'value2', c.properties['prop2']
+      # Try to change protected property's value
+      c.properties['default_prop1'] = 'new_value'
+      assert_raises(ArvadosModel::PermissionDeniedError) do
+        c.save!
+      end
+      # Admins are allowed to change protected properties
+      act_as_system_user do
+        c.properties['default_prop1'] = 'new_value'
+        c.save!
+        c.reload
+        assert_equal 'new_value', c.properties['default_prop1']
+      end
+    end
+  end
 end

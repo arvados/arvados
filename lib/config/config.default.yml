@@ -279,6 +279,20 @@ Clusters:
       # > 0s = auto-create a new version when older than the specified number of seconds.
       PreserveVersionIfIdle: -1s
 
+      # Managed collection properties. At creation time, if the client didn't
+      # provide the listed keys, they will be automatically populated following
+      # one of the following behaviors:
+      #
+      # * UUID of the user who owns the containing project.
+      #   responsible_person_uuid: {Function: original_owner, Protected: true}
+      #
+      # * Default concrete value.
+      #   foo_bar: {Value: baz, Protected: false}
+      #
+      # If Protected is true, only an admin user can modify its value.
+      ManagedProperties:
+        SAMPLE: {Function: original_owner, Protected: true}
+
     Login:
       # These settings are provided by your OAuth2 provider (e.g.,
       # sso-provider).
@@ -486,7 +500,7 @@ Clusters:
         # Shell command to execute on each worker to determine whether
         # the worker is booted and ready to run containers. It should
         # exit zero if the worker is ready.
-        BootProbeCommand: "docker ps"
+        BootProbeCommand: "docker ps -q"
 
         # Minimum interval between consecutive probes to a single
         # worker.

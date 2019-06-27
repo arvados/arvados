@@ -12,7 +12,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 When collection versioning is enabled, updating certain collection attributes (@name@, @description@, @properties@, @manifest_text@) will save a copy of the collection state, previous to the update. This copy (a new collection record) will have its own @uuid@, and a @current_version_uuid@ attribute pointing to the current version's @uuid@.
 
-Every collection has a @version@ attribute that indicates its version number, starting from 1 on new collections and incrementing by 1 with every versionable update. All collections point to their most current version via the @current_version_uuid@ attribute, being @uuid@ and @current_version_uuid@ equal on those collection records that are the the current version of themselves. Note that the "current version" collection record doesn't change its @uuid@, "past versions" are saved as new records every time it's needed, pointing to the current collection record.
+Every collection has a @version@ attribute that indicates its version number, starting from 1 on new collections and incrementing by 1 with every versionable update. All collections point to their most current version via the @current_version_uuid@ attribute, being @uuid@ and @current_version_uuid@ equal on those collection records that are the current version of themselves. Note that the "current version" collection record doesn't change its @uuid@, "past versions" are saved as new records every time it's needed, pointing to the current collection record.
 
 A version will be saved when one of the following conditions is true:
 

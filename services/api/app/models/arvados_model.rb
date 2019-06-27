@@ -409,6 +409,18 @@ class ArvadosModel < ApplicationRecord
     end
   end
 
+  def user_owner_uuid
+    if self.owner_uuid.nil?
+      return current_user.uuid
+    end
+    owner_class = ArvadosModel.resource_class_for_uuid(self.owner_uuid)
+    if owner_class == User
+      self.owner_uuid
+    else
+      owner_class.find_by_uuid(self.owner_uuid).user_owner_uuid
+    end
+  end
+
   def logged_attributes
     attributes.except(*Rails.configuration.AuditLogs.UnloggedAttributes)
   end

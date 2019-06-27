@@ -1,0 +1,22 @@
+#!/usr/bin/env python
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+import arvados
+import arvados.util as util
+
+old_uuid = "zzzzz-tpzed-xxxxxxxxxxxxxxx"
+new_uuid = "zzzzz-tpzed-yyyyyyyyyyyyyyy"
+
+api = arvados.api()
+filters = [['properties.responsible_person_uuid', '=', '{}'.format(old_uuid)]]
+cols = util.list_all(api.collections().list, filters=filters, select=['uuid', 'properties'])
+
+print("Found {} collections".format(len(cols)))
+for c in cols:
+    print("Updating collection {}".format(c["uuid"]))
+    props = c['properties']
+    props['responsible_person_uuid'] = new_uuid
+    api.collections().update(uuid=c['uuid'], body={'properties': props}).execute()
