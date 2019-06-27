@@ -43,7 +43,7 @@ setup(name='arvados_fuse',
           ('share/doc/arvados_fuse', ['agpl-3.0.txt', 'README.rst']),
       ],
       install_requires=[
-        'arvados-python-client=={}'.format(pysdk_dep),
+        'arvados-python-client{}'.format(pysdk_dep),
         # llfuse 1.3.4 fails to install via pip
         'llfuse >=1.2, <1.3.4',
         'python-daemon',

@@ -41,7 +41,7 @@ setup(name='arvados-node-manager',
       ],
       install_requires=[
           'apache-libcloud>=2.3.1.dev1',
-          'arvados-python-client=={}'.format(pysdk_dep),
+          'arvados-python-client{}'.format(pysdk_dep),
           'future',
           'pykka < 2',
           'python-daemon',

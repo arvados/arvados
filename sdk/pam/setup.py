@@ -49,7 +49,7 @@ setup(name='arvados-pam',
           ('share/doc/arvados-pam/examples', glob.glob('examples/*')),
       ],
       install_requires=[
-          'arvados-python-client=={}'.format(pysdk_dep),
+          'arvados-python-client{}'.format(pysdk_dep),
       ],
       test_suite='tests',
       tests_require=['pbr<1.7.0', 'mock>=1.0', 'python-pam'],
