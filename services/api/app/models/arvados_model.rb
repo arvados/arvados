@@ -409,6 +409,18 @@ class ArvadosModel < ApplicationRecord
     end
   end
 
+  def user_owner_uuid
+    if self.owner_uuid.nil?
+      return current_user.uuid
+    end
+    owner_class = ArvadosModel.resource_class_for_uuid(self.owner_uuid)
+    if owner_class == User
+      self.owner_uuid
+    else
+      owner_class.find_by_uuid(self.owner_uuid).user_owner_uuid
+    end
+  end
+
   def logged_attributes
     attributes.except(*Rails.configuration.AuditLogs.UnloggedAttributes)
   end
@@ -417,6 +429,18 @@ class ArvadosModel < ApplicationRecord
     self.columns.select do |col|
       [:string, :text, :jsonb].include?(col.type)
     end.map(&:name)
+  end
+
+  def self.full_text_coalesce
+    full_text_searchable_columns.collect do |column|
+      is_jsonb = self.columns.select{|x|x.name == column}[0].type == :jsonb
+      cast = (is_jsonb || serialized_attributes[column]) ? '::text' : ''
+      "coalesce(#{column}#{cast},'')"
+    end
+  end
+
+  def self.full_text_trgm
+    "(#{full_text_coalesce.join(" || ' ' || ")})"
   end
 
   def self.full_text_tsvector

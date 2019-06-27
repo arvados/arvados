@@ -28,7 +28,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
           {% if site.all_versions != [] %}
             <div class="dropdown-menu" aria-labelledby="versionMenuLink">
             {% for version in site.all_versions %}
-              &nbsp;<a href="/{{ version }}/" class="dropdown-item">{{ version }}</a><br/>
+              &nbsp;<a href="/{{ version }}{{ page.url }}" class="dropdown-item">{{ version }}</a><br/>
             {% endfor %}
             </div>
           {% endif %}

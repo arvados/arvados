@@ -1,0 +1,85 @@
+---
+layout: default
+navsection: admin
+title: Configuring collection's managed properties
+...
+
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Collection's managed properties allow a cluster administrator to enable some special behaviors regarding properties at creation & update times.
+This page describes how to enable and configure these behaviors on the API server.
+
+h3. API Server configuration
+
+The @Collections.ManagedProperties@ setting from the @config.yml@ file is used for enabling any of the following behaviors:
+
+h4. Pre-assigned property key & value
+
+For every newly created collection, assign a predefined key/value pair if it isn't already passed at creation time:
+
+<pre>
+Collections:
+  ManagedProperties:
+    foo: {Value: bar}
+</pre>
+
+h4. Original owner UUID
+
+This behavior will assign to a property key the UUID of the user who owns the collection's contaning project.
+
+<pre>
+Collections:
+  ManagedProperties:
+    responsible_person_uuid: {Function: original_owner}
+</pre>
+
+h4. Protected properties
+
+If there's a need to prevent a non-admin user from modifying a specific property, even by its owner, the @Protected@ attribute can be set to @true@, like so:
+
+<pre>
+Collections:
+  ManagedProperties:
+    responsible_person_uuid: {Function: original_owner, Protected: true}
+</pre>
+
+This property can be applied to any of the defined managed properties. If missing, it's assumed as being @false@ by default.
+
+h3. Supporting example scripts
+
+When enabling this feature, there may be pre-existing collections that won't have the managed properties just configured. The following script examples may be helpful to sync these older collections.
+
+For the following examples we assume that the @responsible_person_uuid@ property is set as @{Function: original_owner, Protected: true}@.
+
+h4. List uuid/names of collections without @responsible_person_uuid@ property
+
+The collection's managed properties feature assigns the configured properties to newly created collections. This means that previously existing collections won't get the default properties and if needed, they should be assigned manually.
+
+The following example script outputs a listing of collection UUIDs and names of those collections that don't include the @responsible_person_uuid@ property.
+
+{% codeblock as python %}
+{% include 'admin_list_collections_without_property_py' %}
+{% endcodeblock %}
+
+h4. Update the @responsible_person_uuid@ property from nil to X in the project hierarchy rooted at P
+
+When enabling @responsible_person_uuid@, new collections will get this property's value set to the user who owns the root project where the collection is placed, but older collections won't have the property set. The following example script allows an administrator to set the @responsible_person_uuid@ property to collections below a certaing project hierarchy.
+
+{% codeblock as python %}
+{% include 'admin_set_property_to_collections_under_project_py' %}
+{% endcodeblock %}
+
+h4. Update the @responsible_person_uuid@ property from X to Y on all collections
+
+This example can be useful to change responsibility from one user to another.
+
+Please note that the following code should run with admin privileges, assuming that the managed property is @Protected@.
+
+{% codeblock as python %}
+{% include 'admin_update_collection_property_py' %}
+{% endcodeblock %}
+

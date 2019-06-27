@@ -30,7 +30,6 @@ class Arvados::V1::ContainersController < ApplicationController
 
   def update
     @object.with_lock do
-      @object.reload
       super
     end
   end
@@ -39,7 +38,7 @@ class Arvados::V1::ContainersController < ApplicationController
     super
     if action_name == 'lock' || action_name == 'unlock'
       # Avoid loading more fields than we need
-      @objects = @objects.select(:id, :uuid, :state, :priority, :auth_uuid, :locked_by_uuid)
+      @objects = @objects.select(:id, :uuid, :state, :priority, :auth_uuid, :locked_by_uuid, :lock_count)
       @select = %w(uuid state priority auth_uuid locked_by_uuid)
     end
   end

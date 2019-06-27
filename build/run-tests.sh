@@ -84,6 +84,7 @@ lib/controller/rpc
 lib/crunchstat
 lib/cloud
 lib/cloud/azure
+lib/cloud/cloudtest
 lib/dispatchcloud
 lib/dispatchcloud/container
 lib/dispatchcloud/scheduler
@@ -652,23 +653,8 @@ install_env() {
         ln -vsfT "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
         go get -v github.com/kardianos/govendor
         cd "$GOPATH/src/git.curoverse.com/arvados.git"
-        if [[ -n "$short" ]]; then
-            go get -v -d ...
-            "$GOPATH/bin/govendor" sync
-        else
-            # Remove cached source dirs in workdir. Otherwise, they will
-            # not qualify as +missing or +external below, and we won't be
-            # able to detect that they're missing from vendor/vendor.json.
-            rm -rf vendor/*/
-            go get -v -d ...
-            "$GOPATH/bin/govendor" sync
-            [[ -z $("$GOPATH/bin/govendor" list +unused +missing +external | tee /dev/stderr) ]] \
-                || fatal "vendor/vendor.json has unused or missing dependencies -- try:
-
-(export GOPATH=\"${GOPATH}\"; cd \$GOPATH/src/git.curoverse.com/arvados.git && \$GOPATH/bin/govendor add +missing +external && \$GOPATH/bin/govendor remove +unused)
-
-";
-        fi
+        go get -v -d ...
+        "$GOPATH/bin/govendor" sync
     ) || fatal "Go setup failed"
 
     setup_virtualenv "$VENVDIR" --python python2.7
@@ -753,7 +739,7 @@ do_test() {
         services/api)
             stop_services
             ;;
-        gofmt | doc | lib/cli | lib/cloud/azure | lib/cloud/ec2 | lib/cmd | lib/dispatchcloud/ssh_executor | lib/dispatchcloud/worker)
+        gofmt | govendor | doc | lib/cli | lib/cloud/azure | lib/cloud/ec2 | lib/cloud/cloudtest | lib/cmd | lib/dispatchcloud/ssh_executor | lib/dispatchcloud/worker)
             # don't care whether services are running
             ;;
         *)
@@ -1027,6 +1013,27 @@ test_gofmt() {
     [[ -z "$(gofmt -e -d $dirs | tee -a /dev/stderr)" ]]
 }
 
+test_govendor() {
+    (
+        set -e
+        cd "$GOPATH/src/git.curoverse.com/arvados.git"
+        # Remove cached source dirs in workdir. Otherwise, they will
+        # not qualify as +missing or +external below, and we won't be
+        # able to detect that they're missing from vendor/vendor.json.
+        rm -rf vendor/*/
+        go get -v -d ...
+        "$GOPATH/bin/govendor" sync
+        if [[ -n $("$GOPATH/bin/govendor" list +unused +missing +external | tee /dev/stderr) ]]; then
+            echo >&2 "vendor/vendor.json has unused or missing dependencies -- try:
+
+(export GOPATH=\"${GOPATH}\"; cd \$GOPATH/src/git.curoverse.com/arvados.git && \$GOPATH/bin/govendor add +missing +external && \$GOPATH/bin/govendor remove +unused)
+
+"
+            return 1
+        fi
+    )
+}
+
 test_services/api() {
     rm -f "$WORKSPACE/services/api/git-commit.version"
     cd "$WORKSPACE/services/api" \
@@ -1147,6 +1154,7 @@ test_all() {
     fi
 
     do_test gofmt
+    do_test govendor
     do_test doc
     do_test sdk/ruby
     do_test sdk/R

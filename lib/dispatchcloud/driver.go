@@ -17,13 +17,16 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-var drivers = map[string]cloud.Driver{
+// Map of available cloud drivers.
+// Clusters.*.Containers.CloudVMs.Driver configuration values
+// correspond to keys in this map.
+var Drivers = map[string]cloud.Driver{
 	"azure": azure.Driver,
 	"ec2":   ec2.Driver,
 }
 
 func newInstanceSet(cluster *arvados.Cluster, setID cloud.InstanceSetID, logger logrus.FieldLogger, reg *prometheus.Registry) (cloud.InstanceSet, error) {
-	driver, ok := drivers[cluster.Containers.CloudVMs.Driver]
+	driver, ok := Drivers[cluster.Containers.CloudVMs.Driver]
 	if !ok {
 		return nil, fmt.Errorf("unsupported cloud driver %q", cluster.Containers.CloudVMs.Driver)
 	}
@@ -85,7 +88,7 @@ func (is defaultTaggingInstanceSet) Create(it arvados.InstanceType, image cloud.
 	return is.InstanceSet.Create(it, image, allTags, init, pk)
 }
 
-// Filters the instances returned by the wrapped InstanceSet's
+// Filter the instances returned by the wrapped InstanceSet's
 // Instances() method (in case the wrapped InstanceSet didn't do this
 // itself).
 type filteringInstanceSet struct {
@@ -150,7 +153,11 @@ func (is instrumentedInstanceSet) Create(it arvados.InstanceType, image cloud.Im
 func (is instrumentedInstanceSet) Instances(tags cloud.InstanceTags) ([]cloud.Instance, error) {
 	instances, err := is.InstanceSet.Instances(tags)
 	is.cv.WithLabelValues("List", boolLabelValue(err != nil)).Inc()
-	return instances, err
+	var instrumented []cloud.Instance
+	for _, i := range instances {
+		instrumented = append(instrumented, instrumentedInstance{i, is.cv})
+	}
+	return instrumented, err
 }
 
 type instrumentedInstance struct {

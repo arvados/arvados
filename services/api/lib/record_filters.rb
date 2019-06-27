@@ -44,6 +44,14 @@ module RecordFilters
 
       cond_out = []
 
+      if attrs_in == 'any' && (operator.casecmp('ilike').zero? || operator.casecmp('like').zero?) && (operand.is_a? String) && operand.match('^[%].*[%]$')
+        # Trigram index search
+        cond_out << model_class.full_text_trgm + " #{operator} ?"
+        param_out << operand
+        # Skip the generic per-column operator loop below
+        attrs = []
+      end
+
       if operator == '@@'
         # Full-text search
         if attrs_in != 'any'

@@ -25,7 +25,7 @@ int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact)
     real_sigaction(SIGINT, act, oldact);
   }
 
-  // Forward the call the the real sigaction.
+  // Forward the call to the real sigaction.
   return real_sigaction(signum, act, oldact);
 }
 

@@ -107,7 +107,7 @@ func (s *DispatcherSuite) TearDownTest(c *check.C) {
 // a fake queue and cloud driver. The fake cloud driver injects
 // artificial errors in order to exercise a variety of code paths.
 func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
-	drivers["test"] = s.stubDriver
+	Drivers["test"] = s.stubDriver
 	s.disp.setupOnce.Do(s.disp.initialize)
 	queue := &test.Queue{
 		ChooseType: func(ctr *arvados.Container) (arvados.InstanceType, error) {
@@ -202,6 +202,7 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 	c.Check(resp.Code, check.Equals, http.StatusOK)
 	c.Check(resp.Body.String(), check.Matches, `(?ms).*driver_operations{error="0",operation="Create"} [^0].*`)
 	c.Check(resp.Body.String(), check.Matches, `(?ms).*driver_operations{error="0",operation="List"} [^0].*`)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*driver_operations{error="0",operation="Destroy"} [^0].*`)
 	c.Check(resp.Body.String(), check.Matches, `(?ms).*driver_operations{error="1",operation="Create"} [^0].*`)
 	c.Check(resp.Body.String(), check.Matches, `(?ms).*driver_operations{error="1",operation="List"} 0\n.*`)
 	c.Check(resp.Body.String(), check.Matches, `(?ms).*instances_disappeared{state="shutdown"} [^0].*`)
@@ -210,7 +211,7 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 
 func (s *DispatcherSuite) TestAPIPermissions(c *check.C) {
 	s.cluster.ManagementToken = "abcdefgh"
-	drivers["test"] = s.stubDriver
+	Drivers["test"] = s.stubDriver
 	s.disp.setupOnce.Do(s.disp.initialize)
 	s.disp.queue = &test.Queue{}
 	go s.disp.run()
@@ -232,7 +233,7 @@ func (s *DispatcherSuite) TestAPIPermissions(c *check.C) {
 
 func (s *DispatcherSuite) TestAPIDisabled(c *check.C) {
 	s.cluster.ManagementToken = ""
-	drivers["test"] = s.stubDriver
+	Drivers["test"] = s.stubDriver
 	s.disp.setupOnce.Do(s.disp.initialize)
 	s.disp.queue = &test.Queue{}
 	go s.disp.run()
@@ -251,7 +252,7 @@ func (s *DispatcherSuite) TestAPIDisabled(c *check.C) {
 func (s *DispatcherSuite) TestInstancesAPI(c *check.C) {
 	s.cluster.ManagementToken = "abcdefgh"
 	s.cluster.Containers.CloudVMs.TimeoutBooting = arvados.Duration(time.Second)
-	drivers["test"] = s.stubDriver
+	Drivers["test"] = s.stubDriver
 	s.disp.setupOnce.Do(s.disp.initialize)
 	s.disp.queue = &test.Queue{}
 	go s.disp.run()

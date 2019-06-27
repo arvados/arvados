@@ -78,12 +78,13 @@ type Cluster struct {
 	Collections struct {
 		BlobSigning           bool
 		BlobSigningKey        string
-		DefaultReplication    int
 		BlobSigningTTL        Duration
-		DefaultTrashLifetime  Duration
-		TrashSweepInterval    Duration
 		CollectionVersioning  bool
+		DefaultTrashLifetime  Duration
+		DefaultReplication    int
+		ManagedProperties     map[string]interface{}
 		PreserveVersionIfIdle Duration
+		TrashSweepInterval    Duration
 	}
 	Git struct {
 		Repositories string

@@ -38,7 +38,8 @@ type WorkerPool interface {
 	Create(arvados.InstanceType) bool
 	Shutdown(arvados.InstanceType) bool
 	StartContainer(arvados.InstanceType, arvados.Container) bool
-	KillContainer(uuid, reason string)
+	KillContainer(uuid, reason string) bool
+	ForgetContainer(uuid string)
 	Subscribe() <-chan struct{}
 	Unsubscribe(<-chan struct{})
 }
