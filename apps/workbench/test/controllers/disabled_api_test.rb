@@ -59,7 +59,7 @@ class DisabledApiTest < ActionController::TestCase
     test "project tabs as user #{user} when pipeline related index APIs are disabled" do
       @controller = ProjectsController.new
 
-      Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
+      Rails.configuration.Users.AnonymousUserToken = api_fixture('api_client_authorizations')['anonymous']['api_token']
 
       dd = ArvadosApiClient.new_or_current.discovery.deep_dup
       dd[:resources][:pipeline_templates][:methods].delete(:index)

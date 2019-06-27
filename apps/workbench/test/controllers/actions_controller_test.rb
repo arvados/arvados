@@ -173,7 +173,7 @@ class ActionsControllerTest < ActionController::TestCase
     ['pipeline_templates', 'pipeline_template_in_publicly_accessible_project'],
   ].each do |dm, fixture|
     test "access show method for public #{dm} and expect to see page" do
-      Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
+      Rails.configuration.Users.AnonymousUserToken = api_fixture('api_client_authorizations')['anonymous']['api_token']
       get(:show, params: {uuid: api_fixture(dm)[fixture]['uuid']})
       assert_response :redirect
       if dm == 'groups'
@@ -193,7 +193,7 @@ class ActionsControllerTest < ActionController::TestCase
     ['traits', 'owned_by_aproject_with_no_name', :redirect],
   ].each do |dm, fixture, expected|
     test "access show method for non-public #{dm} and expect #{expected}" do
-      Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
+      Rails.configuration.Users.AnonymousUserToken = api_fixture('api_client_authorizations')['anonymous']['api_token']
       get(:show, params: {uuid: api_fixture(dm)[fixture]['uuid']})
       assert_response expected
       if expected == 404

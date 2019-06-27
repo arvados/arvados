@@ -7,11 +7,11 @@ require 'integration_helper'
 class ReportIssueTest < ActionDispatch::IntegrationTest
   setup do
     need_javascript
-    @user_profile_form_fields = Rails.configuration.user_profile_form_fields
+    @user_profile_form_fields = Rails.configuration.Workbench.UserProfileFormFields
   end
 
   teardown do
-    Rails.configuration.user_profile_form_fields = @user_profile_form_fields
+    Rails.configuration.Workbench.UserProfileFormFields = @user_profile_form_fields
   end
 
   # test version info and report issue from help menu

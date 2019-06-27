@@ -626,7 +626,7 @@ Clusters:
     Mail:
       MailchimpAPIKey: ""
       MailchimpListID: ""
-      SendUserSetupNotificationEmail: ""
+      SendUserSetupNotificationEmail: true
       IssueReporterEmailFrom: ""
       IssueReporterEmailTo: ""
       SupportEmailAddress: ""
@@ -664,15 +664,14 @@ Clusters:
       ArvadosDocsite: https://doc.arvados.org
       ArvadosPublicDataDocURL: https://playground.arvados.org/projects/public
       ShowUserAgreementInline: false
-      SecretToken: ""
       SecretKeyBase: ""
       RepositoryCache: /var/www/arvados-workbench/current/tmp/git
       UserProfileFormFields:
-        SAMPLE:
-          Type: text
-          FormFieldTitle: ""
-          FormFieldDescription: ""
-          Required: true
+        - SAMPLE:
+          - Type: text
+            FormFieldTitle: ""
+            FormFieldDescription: ""
+            Required: true
       UserProfileFormMessage: 'Welcome to Arvados. All <span style="color:red">required fields</span> must be completed before you can proceed.'
 
       # Mimetypes of applications for which the view icon

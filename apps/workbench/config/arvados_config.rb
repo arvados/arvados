@@ -96,6 +96,9 @@ arvcfg.declare_config "Services.Workbench2.ExternalURL", URI, :workbench2_url
 
 arvcfg.declare_config "Users.AnonymousUserToken", String, :anonymous_user_token
 
+arvcfg.declare_config "Workbench.SecretToken", String, :secret_token
+arvcfg.declare_config "Workbench.SecretKeyBase", String, :secret_key_base
+
 arvcfg.declare_config "Workbench.ApplicationMimetypesWithViewIcon", Hash, :application_mimetypes_with_view_icon, ->(cfg, k, v) {
   mimetypes = {}
   v.each do |m|
@@ -107,12 +110,17 @@ arvcfg.declare_config "Workbench.ApplicationMimetypesWithViewIcon", Hash, :appli
 arvcfg.declare_config "Workbench.RunningJobLogRecordsToFetch", Integer, :running_job_log_records_to_fetch
 arvcfg.declare_config "Workbench.LogViewerMaxBytes", Integer, :log_viewer_max_bytes
 arvcfg.declare_config "Workbench.TrustAllContent", Boolean, :trust_all_content
-arvcfg.declare_config "Workbench.UserProfileFormFields", Hash, :user_profile_form_fields
+arvcfg.declare_config "Workbench.UserProfileFormFields", Array, :user_profile_form_fields, ->(cfg, k, v) {
+  if !v
+    v = []
+  end
+  ConfigLoader.set_cfg cfg, "Workbench.UserProfileFormFields", v
+}
 arvcfg.declare_config "Workbench.UserProfileFormMessage", String, :user_profile_form_message
 arvcfg.declare_config "Workbench.Theme", String, :arvados_theme
 arvcfg.declare_config "Workbench.ShowUserNotifications", Boolean, :show_user_notifications
 arvcfg.declare_config "Workbench.ShowUserAgreementInline", Boolean, :show_user_agreement_inline
-arvcfg.declare_config "Workbench.RepositoryCache", Boolean, :repository_cache
+arvcfg.declare_config "Workbench.RepositoryCache", String, :repository_cache
 arvcfg.declare_config "Workbench.Repositories", Boolean, :repositories
 arvcfg.declare_config "Workbench.APIClientConnectTimeout", ActiveSupport::Duration, :api_client_connect_timeout
 arvcfg.declare_config "Workbench.APIClientReceiveTimeout", ActiveSupport::Duration, :api_client_receive_timeout
@@ -171,5 +179,5 @@ ArvadosWorkbench::Application.configure do
   # Rails.configuration.API["Blah"]
   ConfigLoader.copy_into_config $arvados_config, config
   ConfigLoader.copy_into_config $remaining_config, config
-  secrets.secret_key_base = $arvados_config["Workbench"]["SecretToken"]
+  secrets.secret_key_base = $arvados_config["Workbench"]["SecretKeyBase"]
 end

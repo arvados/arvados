@@ -240,14 +240,14 @@ class ProjectsControllerTest < ActionController::TestCase
   end
 
   test "visit non-public project as anonymous when anonymous browsing is enabled and expect page not found" do
-    Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
+    Rails.configuration.Users.AnonymousUserToken = api_fixture('api_client_authorizations')['anonymous']['api_token']
     get(:show, params: {id: api_fixture('groups')['aproject']['uuid']})
     assert_response 404
     assert_match(/log ?in/i, @response.body)
   end
 
   test "visit home page as anonymous when anonymous browsing is enabled and expect login" do
-    Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
+    Rails.configuration.Users.AnonymousUserToken = api_fixture('api_client_authorizations')['anonymous']['api_token']
     get(:index)
     assert_response :redirect
     assert_match /\/users\/welcome/, @response.redirect_url
@@ -258,7 +258,7 @@ class ProjectsControllerTest < ActionController::TestCase
     :active,
   ].each do |user|
     test "visit public projects page when anon config is enabled, as user #{user}, and expect page" do
-      Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
+      Rails.configuration.Users.AnonymousUserToken = api_fixture('api_client_authorizations')['anonymous']['api_token']
 
       if user
         get :public, params: {}, session: session_for(user)
@@ -276,22 +276,22 @@ class ProjectsControllerTest < ActionController::TestCase
   end
 
   test "visit public projects page when anon config is not enabled as active user and expect 404" do
-    Rails.configuration.anonymous_user_token = nil
-    Rails.configuration.enable_public_projects_page = false
+    Rails.configuration.Users.AnonymousUserToken = ""
+    Rails.configuration.Workbench.EnablePublicProjectsPage = false
     get :public, params: {}, session: session_for(:active)
     assert_response 404
   end
 
   test "visit public projects page when anon config is enabled but public projects page is disabled as active user and expect 404" do
-    Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
-    Rails.configuration.enable_public_projects_page = false
+    Rails.configuration.Users.AnonymousUserToken = api_fixture('api_client_authorizations')['anonymous']['api_token']
+    Rails.configuration.Workbench.EnablePublicProjectsPage = false
     get :public, params: {}, session: session_for(:active)
     assert_response 404
   end
 
   test "visit public projects page when anon config is not enabled as anonymous and expect login page" do
-    Rails.configuration.anonymous_user_token = nil
-    Rails.configuration.enable_public_projects_page = false
+    Rails.configuration.Users.AnonymousUserToken = nil
+    Rails.configuration.Workbench.EnablePublicProjectsPage = false
     get :public
     assert_response :redirect
     assert_match /\/users\/welcome/, @response.redirect_url
@@ -299,8 +299,8 @@ class ProjectsControllerTest < ActionController::TestCase
   end
 
   test "visit public projects page when anon config is enabled and public projects page is disabled and expect login page" do
-    Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
-    Rails.configuration.enable_public_projects_page = false
+    Rails.configuration.Users.AnonymousUserToken = api_fixture('api_client_authorizations')['anonymous']['api_token']
+    Rails.configuration.Workbench.EnablePublicProjectsPage = false
     get :index
     assert_response :redirect
     assert_match /\/users\/welcome/, @response.redirect_url
@@ -308,7 +308,7 @@ class ProjectsControllerTest < ActionController::TestCase
   end
 
   test "visit public projects page when anon config is not enabled and public projects page is enabled and expect login page" do
-    Rails.configuration.enable_public_projects_page = true
+    Rails.configuration.Workbench.EnablePublicProjectsPage = true
     get :index
     assert_response :redirect
     assert_match /\/users\/welcome/, @response.redirect_url
@@ -501,7 +501,7 @@ EOT
   end
 
   test "visit a public project and verify the public projects page link exists" do
-    Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
+    Rails.configuration.Users.AnonymousUserToken = api_fixture('api_client_authorizations')['anonymous']['api_token']
     uuid = api_fixture('groups')['anonymously_accessible_project']['uuid']
     get :show, params: {id: uuid}
     project = assigns(:object)

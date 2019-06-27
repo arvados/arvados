@@ -9,7 +9,7 @@ class WorkUnitTest < ActiveSupport::TestCase
   reset_api_fixtures :after_each_test, false
 
   setup do
-    Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
+    Rails.configuration.Users.AnonymousUserToken = api_fixture('api_client_authorizations')['anonymous']['api_token']
   end
 
   [

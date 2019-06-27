@@ -7,15 +7,15 @@ require 'integration_helper'
 class UserProfileTest < ActionDispatch::IntegrationTest
   setup do
     need_javascript
-    @user_profile_form_fields = Rails.configuration.user_profile_form_fields
+    @user_profile_form_fields = Rails.configuration.Workbench.UserProfileFormFields
   end
 
   teardown do
-    Rails.configuration.user_profile_form_fields = @user_profile_form_fields
+    Rails.configuration.Workbench.UserProfileFormFields = @user_profile_form_fields
   end
 
   def verify_homepage_with_profile user, invited, has_profile
-    profile_config = Rails.configuration.user_profile_form_fields
+    profile_config = Rails.configuration.Workbench.UserProfileFormFields
 
     if !user
       assert_text('Please log in')
@@ -96,10 +96,10 @@ class UserProfileTest < ActionDispatch::IntegrationTest
     assert_text('Save profile')
 
     # This time fill in required field and then save. Expect to go to requested page after that.
-    profile_message = Rails.configuration.user_profile_form_message
+    profile_message = Rails.configuration.Workbench.UserProfileFormMessage
     required_field_title = ''
     required_field_key = ''
-    profile_config = Rails.configuration.user_profile_form_fields
+    profile_config = Rails.configuration.Workbench.UserProfileFormFields
     profile_config.each do |entry|
       if entry['required']
         required_field_key = entry['key']
@@ -142,11 +142,11 @@ class UserProfileTest < ActionDispatch::IntegrationTest
     [true, false].each do |profile_required|
       test "visit #{token} home page when profile is #{'not ' if !profile_required}configured" do
         if !profile_required
-          Rails.configuration.user_profile_form_fields = false
+          Rails.configuration.Workbench.UserProfileFormFields = false
         else
           # Our test config enabled profile by default. So, no need to update config
         end
-        Rails.configuration.enable_getting_started_popup = true
+        Rails.configuration.Workbench.EnableGettingStartedPopup = true
 
         if !token
           visit ('/')

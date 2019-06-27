@@ -72,7 +72,7 @@ module CollectionsHelper
     elsif (file_type.raw_media_type == "text") || (file_type.raw_media_type == "image")
       true
     elsif (file_type.raw_media_type == "application") &&
-          Rails.configuration.Workbench.Workbench.ApplicationMimetypesWithViewIcon[file_type.sub_type]
+          Rails.configuration.Workbench.ApplicationMimetypesWithViewIcon[file_type.sub_type]
       true
     else
       false

@@ -16,7 +16,7 @@ class UserTest < ActiveSupport::TestCase
 
   test "User.current doesn't return anonymous user when using invalid token" do
     # Set up anonymous user token
-    Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
+    Rails.configuration.Users.AnonymousUserToken = api_fixture('api_client_authorizations')['anonymous']['api_token']
     # First, try with a valid user
     use_token :active
     u = User.current

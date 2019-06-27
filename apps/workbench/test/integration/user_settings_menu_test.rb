@@ -78,7 +78,7 @@ class UserSettingsMenuTest < ActionDispatch::IntegrationTest
 
   test "pipeline notification shown even though public pipelines exist" do
     skip "created_by doesn't work that way"
-    Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
+    Rails.configuration.Users.AnonymousUserToken = api_fixture('api_client_authorizations')['anonymous']['api_token']
     visit page_with_token 'job_reader'
     click_link 'notifications-menu'
     assert_selector 'a', text: 'Click here to learn how to run an Arvados Crunch pipeline'
@@ -89,7 +89,7 @@ class UserSettingsMenuTest < ActionDispatch::IntegrationTest
     ['active'],
   ].each do |user, *expect|
     test "user settings menu for #{user} with notifications #{expect.inspect}" do
-      Rails.configuration.anonymous_user_token = false
+      Rails.configuration.Users.AnonymousUserToken = ""
       visit page_with_token(user)
       click_link 'notifications-menu'
       if expect.include? :ssh

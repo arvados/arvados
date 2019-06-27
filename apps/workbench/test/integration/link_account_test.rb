@@ -39,7 +39,7 @@ class LinkAccountTest < ActionDispatch::IntegrationTest
   test "Add another login to this account" do
     visit page_with_token('active_trustedclient')
     stub = start_sso_stub(api_fixture('api_client_authorizations')['project_viewer_trustedclient']['api_token'])
-    Rails.configuration.arvados_login_base = stub + "login"
+    Rails.configuration.Services.Controller.ExternalURL = URI(stub)
 
     find("#notifications-menu").click
     assert_text "active-user@arvados.local"
@@ -59,7 +59,7 @@ class LinkAccountTest < ActionDispatch::IntegrationTest
   test "Use this login to access another account" do
     visit page_with_token('project_viewer_trustedclient')
     stub = start_sso_stub(api_fixture('api_client_authorizations')['active_trustedclient']['api_token'])
-    Rails.configuration.arvados_login_base = stub + "login"
+    Rails.configuration.Services.Controller.ExternalURL = URI(stub)
 
     find("#notifications-menu").click
     assert_text "project-viewer@arvados.local"
@@ -79,7 +79,7 @@ class LinkAccountTest < ActionDispatch::IntegrationTest
   test "Link login of inactive user to this account" do
     visit page_with_token('active_trustedclient')
     stub = start_sso_stub(api_fixture('api_client_authorizations')['inactive_uninvited_trustedclient']['api_token'])
-    Rails.configuration.arvados_login_base = stub + "login"
+    Rails.configuration.Services.Controller.ExternalURL = URI(stub)
 
     find("#notifications-menu").click
     assert_text "active-user@arvados.local"
@@ -99,7 +99,7 @@ class LinkAccountTest < ActionDispatch::IntegrationTest
   test "Cannot link to inactive user" do
     visit page_with_token('active_trustedclient')
     stub = start_sso_stub(api_fixture('api_client_authorizations')['inactive_uninvited_trustedclient']['api_token'])
-    Rails.configuration.arvados_login_base = stub + "login"
+    Rails.configuration.Services.Controller.ExternalURL = URI(stub)
 
     find("#notifications-menu").click
     assert_text "active-user@arvados.local"
@@ -123,7 +123,7 @@ class LinkAccountTest < ActionDispatch::IntegrationTest
   test "Inactive user can link to active account" do
     visit page_with_token('inactive_uninvited_trustedclient')
     stub = start_sso_stub(api_fixture('api_client_authorizations')['active_trustedclient']['api_token'])
-    Rails.configuration.arvados_login_base = stub + "login"
+    Rails.configuration.Services.Controller.ExternalURL = URI(stub)
 
     find("#notifications-menu").click
     assert_text "inactive-uninvited-user@arvados.local"
@@ -148,7 +148,7 @@ class LinkAccountTest < ActionDispatch::IntegrationTest
   test "Admin cannot link to non-admin" do
     visit page_with_token('admin_trustedclient')
     stub = start_sso_stub(api_fixture('api_client_authorizations')['active_trustedclient']['api_token'])
-    Rails.configuration.arvados_login_base = stub + "login"
+    Rails.configuration.Services.Controller.ExternalURL = URI(stub)
 
     find("#notifications-menu").click
     assert_text "admin@arvados.local"

@@ -72,15 +72,15 @@ class ErrorsTest < ActionDispatch::IntegrationTest
 
   test "API error page has Report problem button" do
     # point to a bad api server url to generate fiddlesticks error
-    original_arvados_v1_base = Rails.configuration.arvados_v1_base
-    Rails.configuration.arvados_v1_base = "https://[::1]:1/"
+    original_arvados_v1_base = Rails.configuration.Services.Controller.ExternalURL
+    Rails.configuration.Services.Controller.ExternalURL = URI("https://[::1]:1/")
 
     visit page_with_token("active")
 
     assert_text 'fiddlesticks'
 
     # reset api server base config to let the popup rendering to work
-    Rails.configuration.arvados_v1_base = original_arvados_v1_base
+    Rails.configuration.Services.Controller.ExternalURL = original_arvados_v1_base
 
     click_link 'Report problem'
 
