@@ -67,7 +67,7 @@ class JobsController < ApplicationController
 
   def logs
     @logs = @object.
-      stderr_log_query(Rails.configuration.running_job_log_records_to_fetch).
+      stderr_log_query(Rails.configuration.RunningJobLogRecordsToFetch).
       map { |e| e.serializable_hash.merge({ 'prepend' => true }) }
     respond_to do |format|
       format.json { render json: @logs }

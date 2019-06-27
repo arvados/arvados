@@ -335,24 +335,23 @@ class CollectionsController < ApplicationController
 
   def keep_web_url(uuid_or_pdh, file, opts)
     munged_id = uuid_or_pdh.sub('+', '-')
-    fmt = {uuid_or_pdh: munged_id}
 
-    tmpl = Rails.configuration.keep_web_url
-    if Rails.configuration.keep_web_download_url and
+    tmpl = Rails.configuration.Services.WebDAV.ExternalURL.to_s
+    if !Rails.configuration.Services.WebDAVDownload.ExternalURL.empty? and
         (!tmpl or opts[:disposition] == 'attachment')
       # Prefer the attachment-only-host when we want an attachment
       # (and when there is no preview link configured)
-      tmpl = Rails.configuration.keep_web_download_url
-    elsif not Rails.configuration.trust_all_content
-      check_uri = URI.parse(tmpl % fmt)
+      tmpl = Rails.configuration.Services.WebDAVDownload.ExternalURL.to_s
+    elsif not Rails.configuration.Workbench.TrustAllContent
+      check_uri = URI.parse(tmpl.sub("*", munged_id))
       if opts[:query_token] and
           not check_uri.host.start_with?(munged_id + "--") and
           not check_uri.host.start_with?(munged_id + ".")
         # We're about to pass a token in the query string, but
         # keep-web can't accept that safely at a single-origin URL
         # template (unless it's -attachment-only-host).
-        tmpl = Rails.configuration.keep_web_download_url
-        if not tmpl
+        tmpl = Rails.configuration.Services.WebDAVDownload.ExternalURL.to_s
+        if tmpl.empty?
           raise ArgumentError, "Download precluded by site configuration"
         end
         logger.warn("Using download link, even though inline content " \
@@ -360,13 +359,16 @@ class CollectionsController < ApplicationController
       end
     end
 
-    if tmpl == Rails.configuration.keep_web_download_url
+    if tmpl == Rails.configuration.Services.WebDAVDownload.ExternalURL.to_s
       # This takes us to keep-web's -attachment-only-host so there is
       # no need to add ?disposition=attachment.
       opts.delete :disposition
     end
 
-    uri = URI.parse(tmpl % fmt)
+    uri = URI.parse(tmpl.sub("*", munged_id))
+    if tmpl.index("*").nil?
+      uri.path += "/c=#{munged_id}"
+    end
     uri.path += '/' unless uri.path.end_with? '/'
     if opts[:path_token]
       uri.path += 't=' + opts[:path_token] + '/'

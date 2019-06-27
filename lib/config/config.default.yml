@@ -704,9 +704,10 @@ Clusters:
       RunningJobLogRecordsToFetch: 2000
       ShowRecentCollectionsOnDashboard: true
       ShowUserNotifications: true
-      MultiSiteSearch: false
+      MultiSiteSearch: ""
       Repositories: true
       SiteName: Arvados Workbench
+      TrustAllContent: false
 
       # Workbench2 configs
       VocabularyURL: ""

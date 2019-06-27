@@ -77,7 +77,7 @@ arvcfg.declare_config "Services.WebShell.ExternalURL", URI, :shell_in_a_box_url,
   ConfigLoader.set_cfg cfg, "Services.WebShell.ExternalURL", u
 }
 
-arvcfg.declare_config "Services.WebDAV.ExternalURL", URI, :keep_web_service_url, ->(cfg, k, v) {
+arvcfg.declare_config "Services.WebDAV.ExternalURL", URI, :keep_web_url, ->(cfg, k, v) {
   v ||= ""
   u = URI(v.sub("%{uuid_or_pdh}", "*"))
   u.path = ""
@@ -94,6 +94,8 @@ arvcfg.declare_config "Services.WebDAVDownload.ExternalURL", URI, :keep_web_down
 arvcfg.declare_config "Services.Composer.ExternalURL", URI, :composer_url
 arvcfg.declare_config "Services.Workbench2.ExternalURL", URI, :workbench2_url
 
+arvcfg.declare_config "Users.AnonymousUserToken", String, :anonymous_user_token
+
 arvcfg.declare_config "Workbench.ApplicationMimetypesWithViewIcon", Hash, :application_mimetypes_with_view_icon, ->(cfg, k, v) {
   mimetypes = {}
   v.each do |m|
@@ -102,8 +104,39 @@ arvcfg.declare_config "Workbench.ApplicationMimetypesWithViewIcon", Hash, :appli
   ConfigLoader.set_cfg cfg, "Workbench.ApplicationMimetypesWithViewIcon", mimetypes
 }
 
-arvcfg.declare_config "Users.AnonymousUserToken", String, :anonymous_user_token
+arvcfg.declare_config "Workbench.RunningJobLogRecordsToFetch", Integer, :running_job_log_records_to_fetch
+arvcfg.declare_config "Workbench.LogViewerMaxBytes", Integer, :log_viewer_max_bytes
+arvcfg.declare_config "Workbench.TrustAllContent", Boolean, :trust_all_content
+arvcfg.declare_config "Workbench.UserProfileFormFields", Hash, :user_profile_form_fields
+arvcfg.declare_config "Workbench.UserProfileFormMessage", String, :user_profile_form_message
+arvcfg.declare_config "Workbench.Theme", String, :arvados_theme
+arvcfg.declare_config "Workbench.ShowUserNotifications", Boolean, :show_user_notifications
+arvcfg.declare_config "Workbench.ShowUserAgreementInline", Boolean, :show_user_agreement_inline
+arvcfg.declare_config "Workbench.RepositoryCache", Boolean, :repository_cache
+arvcfg.declare_config "Workbench.Repositories", Boolean, :repositories
+arvcfg.declare_config "Workbench.APIClientConnectTimeout", ActiveSupport::Duration, :api_client_connect_timeout
+arvcfg.declare_config "Workbench.APIClientReceiveTimeout", ActiveSupport::Duration, :api_client_receive_timeout
+arvcfg.declare_config "Workbench.APIResponseCompression", Boolean, :api_response_compression
+arvcfg.declare_config "Workbench.SiteName", String, :site_name
+arvcfg.declare_config "Workbench.MultiSiteSearch", String, :multi_site_search, ->(cfg, k, v) {
+  if !v
+    v = ""
+  end
+  ConfigLoader.set_cfg cfg, "Workbench.MultiSiteSearch", v.to_s
+}
+arvcfg.declare_config "Workbench.EnablePublicProjectsPage", Boolean, :enable_public_projects_page
+arvcfg.declare_config "Workbench.EnableGettingStartedPopup", Boolean, :enable_getting_started_popup
+arvcfg.declare_config "Workbench.ArvadosPublicDataDocURL", String, :arvados_public_data_doc_url
+arvcfg.declare_config "Workbench.ArvadosDocsite", String, :arvados_docsite
+arvcfg.declare_config "Workbench.ShowRecentCollectionsOnDashboard", Boolean, :show_recent_collections_on_dashboard
+arvcfg.declare_config "Workbench.ActivationContactLink", String, :activation_contact_link
+arvcfg.declare_config "Workbench.DefaultOpenIdPrefix", String, :default_openid_prefix
 
+arvcfg.declare_config "Mail.SendUserSetupNotificationEmail", Boolean, :send_user_setup_notification_email
+arvcfg.declare_config "Mail.IssueReporterEmailFrom", String, :issue_reporter_email_from
+arvcfg.declare_config "Mail.IssueReporterEmailTo", String, :issue_reporter_email_to
+arvcfg.declare_config "Mail.SupportEmailAddress", String, :support_email_address
+arvcfg.declare_config "Mail.EmailFrom", String, :email_from
 
 application_config = {}
 %w(application.default application).each do |cfgfile|

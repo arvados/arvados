@@ -11,7 +11,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
         </button>
-        <% site_name = Rails.configuration.site_name.downcase rescue Rails.application.class.parent_name %>
+        <% site_name = Rails.configuration.Workbench.SiteName.downcase rescue Rails.application.class.parent_name %>
         <% if current_user %>
           <a class="navbar-brand" href="/" data-push=true><%= site_name %></a>
         <% else %>
@@ -28,12 +28,12 @@ SPDX-License-Identifier: AGPL-3.0 %>
 
           <% if current_user %>
             <% if current_user.is_active %>
-              <% if Rails.configuration.multi_site_search %>
+              <% if !Rails.configuration.Workbench.MultiSiteSearch.empty? %>
                 <li>
                   <form class="navbar-form">
                     <%=
-                       target = Rails.configuration.multi_site_search
-                       if target == true
+                       target = Rails.configuration.Workbench.MultiSiteSearch
+                       if target == "true"
                          target = {controller: 'search', action: 'index'}
                        end
                        link_to("Multi-site search", target, {class: 'btn btn-default'}) %>
@@ -72,9 +72,9 @@ SPDX-License-Identifier: AGPL-3.0 %>
                 </li>
                 <% if current_user.is_active %>
                 <li role="menuitem"><a href="/projects/<%=current_user.uuid%>" role="menuitem"><i class="fa fa-lg fa-home fa-fw"></i> Home project </a></li>
-                  <% if Rails.configuration.composer_url %>
+                  <% if Rails.configuration.Services.Composer.ExternalURL %>
                     <li role="menuitem">
-		      <form action="<%= Rails.configuration.composer_url %>" method="GET">
+		      <form action="<%= Rails.configuration.Services.Composer.ExternalURL %>" method="GET">
 		        <input type="hidden" name="api_token" value="<%= Thread.current[:arvados_api_token] %>" />
 			<button role="menuitem" type="submit">
 			  <i class="fa fa-lg fa-share-alt fa-fw"></i> Workflow Composer
@@ -82,10 +82,10 @@ SPDX-License-Identifier: AGPL-3.0 %>
 		      </form>
                     </li>
                   <% end %>
-                <% if Rails.configuration.workbench2_url %>
+                <% if Rails.configuration.Services.Workbench2.ExternalURL %>
                 <li role="menuitem">
                   <%
-                    wb2_url = Rails.configuration.workbench2_url
+                    wb2_url = Rails.configuration.Workbench2.ExternalURL
                     wb2_url += '/' if wb2_url[-1] != '/'
                     wb2_url += 'token'
                   %>
@@ -102,7 +102,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
                     <i class="fa fa-lg fa-terminal fa-fw"></i> Virtual machines
                   <% end %>
                 </li>
-                <% if Rails.configuration.repositories %>
+                <% if Rails.configuration.Workbench.Repositories %>
                 <li role="menuitem"><a href="/repositories" role="menuitem"><i class="fa fa-lg fa-code-fork fa-fw"></i> Repositories </a></li>
                 <% end -%>
                 <li role="menuitem"><a href="/current_token" role="menuitem"><i class="fa fa-lg fa-ticket fa-fw"></i> Current token</a></li>
@@ -112,7 +112,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
                   <% end %>
 </li>
                 <li role="menuitem"><a href="/users/link_account" role="menuitem"><i class="fa fa-lg fa-link fa-fw"></i> Link account </a></li>
-                <% if Rails.configuration.user_profile_form_fields %>
+                <% if !Rails.configuration.Workbench.UserProfileFormFields.empty? %>
                   <li role="menuitem"><a href="/users/<%=current_user.uuid%>/profile" role="menuitem"><i class="fa fa-lg fa-user fa-fw"></i> Manage profile</a></li>
                 <% end %>
                 <% end %>
@@ -138,7 +138,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
                   <li role="presentation" class="dropdown-header">
                     Admin Settings
                   </li>
-                  <% if Rails.configuration.repositories %>
+                  <% if Rails.configuration.Workbench.Repositories %>
                   <li role="menuitem"><a href="/repositories">
                       <i class="fa fa-lg fa-code-fork fa-fw"></i> Repositories
                   </a></li>
@@ -174,7 +174,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
               </li>
             <% end %>
           <% else %>
-            <% if Rails.configuration.anonymous_user_token and Rails.configuration.enable_public_projects_page %>
+            <% if !Rails.configuration.Users.AnonymousUserToken.empty? and Rails.configuration.Workbench.EnablePublicProjectsPage %>
               <li><%= link_to 'Browse public projects', "/projects/public" %></li>
             <% end %>
             <li class="dropdown hover-dropdown login-menu">
@@ -199,18 +199,18 @@ SPDX-License-Identifier: AGPL-3.0 %>
               <li role="presentation" class="dropdown-header">
                 Help
               </li>
-              <% if Rails.configuration.enable_getting_started_popup %>
+              <% if Rails.configuration.EnableGettingStartedPopup %>
                 <li>
                 <%= link_to raw('<i class="fa fa-fw fa-info"></i> Getting Started ...'), "#",
                      {'data-toggle' => "modal", 'data-target' => '#getting-started-modal-window'}  %>
                 </li>
               <% end %>
-              <% if Rails.configuration.arvados_public_data_doc_url %>
-                <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> Public Pipelines and Data sets'), "#{Rails.configuration.arvados_public_data_doc_url}", target: "_blank" %></li>
+              <% if !Rails.configuration.Workbench.ArvadosPublicDataDocURL.empty? %>
+                <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> Public Pipelines and Data sets'), "#{Rails.configuration.Workbench.ArvadosPublicDataDocURL}", target: "_blank" %></li>
               <% end %>
-              <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> Tutorials and User guide'), "#{Rails.configuration.arvados_docsite}/user", target: "_blank" %></li>
-              <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> API Reference'), "#{Rails.configuration.arvados_docsite}/api", target: "_blank" %></li>
-              <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> SDK Reference'), "#{Rails.configuration.arvados_docsite}/sdk", target: "_blank" %></li>
+              <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> Tutorials and User guide'), "#{Rails.configuration.Workbench.ArvadosDocsite}/user", target: "_blank" %></li>
+              <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> API Reference'), "#{Rails.configuration.Workbench.ArvadosDocsite}/api", target: "_blank" %></li>
+              <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> SDK Reference'), "#{Rails.configuration.Workbench.ArvadosDocsite}/sdk", target: "_blank" %></li>
               <li role="presentation" class="divider"></li>
               <li> <%= link_to report_issue_popup_path(popup_type: 'version', current_location: request.url, current_path: request.fullpath, action_method: 'post'),
                       {class: 'report-issue-modal-window', remote: true, return_to: request.url} do %>
@@ -264,7 +264,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
 <div id="report-issue-modal-window"></div>
 <script src="/browser_unsupported.js"></script>
 
-<%  if Rails.configuration.enable_getting_started_popup and current_user and !current_user.prefs[:getting_started_shown] and
+<%  if Rails.configuration.EnableGettingStartedPopup and current_user and !current_user.prefs[:getting_started_shown] and
        !request.url.include?("/profile") and
        !request.url.include?("/user_agreements") and
        !request.url.include?("/inactive")%>

@@ -3,11 +3,11 @@
 SPDX-License-Identifier: AGPL-3.0 %>
 
 <%
-    profile_config = Rails.configuration.user_profile_form_fields
+    profile_config = Rails.configuration.Workbench.UserProfileFormFields
     current_user_profile = current_user.prefs[:profile]
     show_save_button = false
 
-    profile_message = Rails.configuration.user_profile_form_message
+    profile_message = Rails.configuration.Workbench.UserProfileFormMessage
 %>
 
 <div>

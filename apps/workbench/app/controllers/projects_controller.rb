@@ -5,7 +5,7 @@
 class ProjectsController < ApplicationController
   before_action :set_share_links, if: -> { defined? @object and @object}
   skip_around_action :require_thread_api_token, if: proc { |ctrl|
-    Rails.configuration.anonymous_user_token and
+    !Rails.configuration.Users.AnonymousUserToken.empty? and
     %w(show tab_counts public).include? ctrl.action_name
   }
 
@@ -315,7 +315,7 @@ class ProjectsController < ApplicationController
   end
 
   def public  # Yes 'public' is the name of the action for public projects
-    return render_not_found if not Rails.configuration.anonymous_user_token or not Rails.configuration.enable_public_projects_page
+    return render_not_found if Rails.configuration.Users.AnonymousUserToken.empty? or not Rails.configuration.enable_public_projects_page
     @objects = using_specific_api_token Rails.configuration.anonymous_user_token do
       Group.where(group_class: 'project').order("modified_at DESC")
     end

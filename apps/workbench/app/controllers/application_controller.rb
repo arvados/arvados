@@ -756,8 +756,8 @@ class ApplicationController < ActionController::Base
   def missing_required_profile?
     missing_required = false
 
-    profile_config = Rails.configuration.user_profile_form_fields
-    if current_user && profile_config
+    profile_config = Rails.configuration.Workbench.UserProfileFormFields
+    if current_user && !profile_config.empty?
       current_user_profile = current_user.prefs[:profile]
       profile_config.kind_of?(Array) && profile_config.andand.each do |entry|
         if entry['required']
@@ -775,13 +775,13 @@ class ApplicationController < ActionController::Base
   end
 
   def select_theme
-    return Rails.configuration.arvados_theme
+    return Rails.configuration.Workbench.Theme
   end
 
   @@notification_tests = []
 
   @@notification_tests.push lambda { |controller, current_user|
-    return nil if Rails.configuration.shell_in_a_box_url
+    return nil if Rails.configuration.Services.WebShell.ExternalURL != URI("")
     AuthorizedKey.limit(1).where(authorized_user_uuid: current_user.uuid).each do
       return nil
     end
@@ -815,7 +815,7 @@ class ApplicationController < ActionController::Base
   helper_method :user_notifications
   def user_notifications
     @errors = nil if !defined?(@errors)
-    return [] if @errors or not current_user.andand.is_active or not Rails.configuration.show_user_notifications
+    return [] if @errors or not current_user.andand.is_active or not Rails.configuration.Workbench.ShowUserNotifications
     @notifications ||= @@notification_tests.map do |t|
       t.call(self, current_user)
     end.compact

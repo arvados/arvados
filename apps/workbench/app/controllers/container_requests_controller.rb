@@ -4,7 +4,7 @@
 
 class ContainerRequestsController < ApplicationController
   skip_around_action :require_thread_api_token, if: proc { |ctrl|
-    Rails.configuration.anonymous_user_token and
+    !Rails.configuration.Users.AnonymousUserToken.empty? and
     'show' == ctrl.action_name
   }
 

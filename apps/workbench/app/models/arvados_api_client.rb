@@ -89,10 +89,10 @@ class ArvadosApiClient
     if not @api_client
       @client_mtx.synchronize do
         @api_client = HTTPClient.new
-        @api_client.ssl_config.timeout = Rails.configuration.api_client_connect_timeout
-        @api_client.connect_timeout = Rails.configuration.api_client_connect_timeout
-        @api_client.receive_timeout = Rails.configuration.api_client_receive_timeout
-        if Rails.configuration.arvados_insecure_https
+        @api_client.ssl_config.timeout = Rails.configuration.Workbench.APIClientConnectTimeout
+        @api_client.connect_timeout = Rails.configuration.Workbench.APIClientConnectTimeout
+        @api_client.receive_timeout = Rails.configuration.Workbench.APIClientReceiveTimeout
+        if Rails.configuration.TLS.Insecure
           @api_client.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
         else
           # Use system CA certificates
@@ -113,7 +113,7 @@ class ArvadosApiClient
     # Clean up /arvados/v1/../../discovery/v1 to /discovery/v1
     url.sub! '/arvados/v1/../../', '/'
 
-    anon_tokens = [Rails.configuration.anonymous_user_token].select { |x| x && include_anon_token }
+    anon_tokens = [Rails.configuration.Users.AnonymousUserToken].select { |x| !x.empty? && include_anon_token }
 
     query = {
       'reader_tokens' => ((tokens[:reader_tokens] ||
@@ -236,9 +236,7 @@ class ArvadosApiClient
 
   def arvados_login_url(params={})
     if Rails.configuration.respond_to? :arvados_login_base
-      uri = Rails.configuration.arvados_login_base
-    else
-      uri = self.arvados_v1_base.sub(%r{/arvados/v\d+.*}, '/login')
+      uri = Rails.configuration.Services.Controller.ExternalURL.to_s + "/login"
     end
     if params.size > 0
       uri += '?' << params.collect { |k,v|
@@ -253,7 +251,7 @@ class ArvadosApiClient
   end
 
   def arvados_v1_base
-    Rails.configuration.arvados_v1_base
+    Rails.configuration.Services.Controller.ExternalURL.to_s + "/arvados/v1"
   end
 
   def discovery

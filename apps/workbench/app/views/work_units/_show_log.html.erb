@@ -13,7 +13,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
   </div>
 <% end %>
 
-<% live_log_lines = wu.live_log_lines(Rails.configuration.running_job_log_records_to_fetch).join("\n") %>
+<% live_log_lines = wu.live_log_lines(Rails.configuration.Workbench.RunningJobLogRecordsToFetch).join("\n") %>
 <% if !render_log or (live_log_lines.size > 0) %>
 <%# Still running, or recently finished and logs are still available from logs table %>
 <%# Show recent logs in terminal window %>
