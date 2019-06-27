@@ -82,10 +82,10 @@ SPDX-License-Identifier: AGPL-3.0 %>
 		      </form>
                     </li>
                   <% end %>
-                <% if Rails.configuration.Services.Workbench2.ExternalURL %>
+                <% if Rails.configuration.Services.Workbench2.ExternalURL != URI("") %>
                 <li role="menuitem">
                   <%
-                    wb2_url = Rails.configuration.Workbench2.ExternalURL
+                    wb2_url = Rails.configuration.Services.Workbench2.ExternalURL.to_s
                     wb2_url += '/' if wb2_url[-1] != '/'
                     wb2_url += 'token'
                   %>
