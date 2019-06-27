@@ -15,6 +15,11 @@ README = os.path.join(SETUP_DIR, 'README.rst')
 
 import arvados_version
 version = arvados_version.get_version(SETUP_DIR, "arvados_fuse")
+if os.environ.get('ARVADOS_BUILDING_VERSION', False):
+    pysdk_dep = "=={}".format(version)
+else:
+    # On dev releases, arvados-python-client may have a different timestamp
+    pysdk_dep = "<={}".format(version)
 
 short_tests_only = False
 if '--short-tests-only' in sys.argv:
@@ -38,7 +43,7 @@ setup(name='arvados_fuse',
           ('share/doc/arvados_fuse', ['agpl-3.0.txt', 'README.rst']),
       ],
       install_requires=[
-        'arvados-python-client >= 0.1.20151118035730',
+        'arvados-python-client{}'.format(pysdk_dep),
         # llfuse 1.3.4 fails to install via pip
         'llfuse >=1.2, <1.3.4',
         'python-daemon',

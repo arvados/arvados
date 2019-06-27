@@ -17,6 +17,11 @@ README = os.path.join(SETUP_DIR, 'README.rst')
 
 import arvados_version
 version = arvados_version.get_version(SETUP_DIR, "arvados_pam")
+if os.environ.get('ARVADOS_BUILDING_VERSION', False):
+    pysdk_dep = "=={}".format(version)
+else:
+    # On dev releases, arvados-python-client may have a different timestamp
+    pysdk_dep = "<={}".format(version)
 
 short_tests_only = False
 if '--short-tests-only' in sys.argv:
@@ -44,7 +49,7 @@ setup(name='arvados-pam',
           ('share/doc/arvados-pam/examples', glob.glob('examples/*')),
       ],
       install_requires=[
-          'arvados-python-client>=0.1.20150801000000',
+          'arvados-python-client{}'.format(pysdk_dep),
       ],
       test_suite='tests',
       tests_require=['pbr<1.7.0', 'mock>=1.0', 'python-pam'],
