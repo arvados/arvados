@@ -32,7 +32,7 @@ const (
 	ASubprojectUUID = "zzzzz-j7d0g-axqo7eu9pwvna1x"
 
 	FooAndBarFilesInDirUUID = "zzzzz-4zz18-foonbarfilesdir"
-	FooAndBarFilesInDirPDH  = "6bbac24198d09a93975f60098caf0bdf+62"
+	FooAndBarFilesInDirPDH  = "870369fc72738603c2fad16664e50e2d+58"
 
 	Dispatch1Token    = "kwi8oowusvbutahacwk2geulqewy5oaqmpalczfna4b6bb0hfw"
 	Dispatch1AuthUUID = "zzzzz-gj3su-k9dvestay1plssr"
@@ -55,6 +55,8 @@ const (
 	FooCollectionSharingToken     = "iknqgmunrhgsyfok8uzjlwun9iscwm3xacmzmg65fa1j1lpdss"
 
 	WorkflowWithDefinitionYAMLUUID = "zzzzz-7fd4e-validworkfloyml"
+
+	CollectionReplicationDesired2Confirmed2UUID = "zzzzz-4zz18-434zv1tnnf2rygp"
 )
 
 // PathologicalManifest : A valid manifest designed to test

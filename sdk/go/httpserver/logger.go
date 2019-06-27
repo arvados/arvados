@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"git.curoverse.com/arvados.git/sdk/go/stats"
 	"github.com/sirupsen/logrus"
 )
@@ -19,18 +20,23 @@ type contextKey struct {
 
 var (
 	requestTimeContextKey = contextKey{"requestTime"}
-	loggerContextKey      = contextKey{"logger"}
 )
 
+// HandlerWithContext returns an http.Handler that changes the request
+// context to ctx (replacing http.Server's default
+// context.Background()), then calls next.
+func HandlerWithContext(ctx context.Context, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
 // LogRequests wraps an http.Handler, logging each request and
-// response via logger.
-func LogRequests(logger logrus.FieldLogger, h http.Handler) http.Handler {
-	if logger == nil {
-		logger = logrus.StandardLogger()
-	}
+// response.
+func LogRequests(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(wrapped http.ResponseWriter, req *http.Request) {
 		w := &responseTimer{ResponseWriter: WrapResponseWriter(wrapped)}
-		lgr := logger.WithFields(logrus.Fields{
+		lgr := ctxlog.FromContext(req.Context()).WithFields(logrus.Fields{
 			"RequestID":       req.Header.Get("X-Request-Id"),
 			"remoteAddr":      req.RemoteAddr,
 			"reqForwardedFor": req.Header.Get("X-Forwarded-For"),
@@ -42,7 +48,7 @@ func LogRequests(logger logrus.FieldLogger, h http.Handler) http.Handler {
 		})
 		ctx := req.Context()
 		ctx = context.WithValue(ctx, &requestTimeContextKey, time.Now())
-		ctx = context.WithValue(ctx, &loggerContextKey, lgr)
+		ctx = ctxlog.Context(ctx, lgr)
 		req = req.WithContext(ctx)
 
 		logRequest(w, req, lgr)
@@ -52,11 +58,7 @@ func LogRequests(logger logrus.FieldLogger, h http.Handler) http.Handler {
 }
 
 func Logger(req *http.Request) logrus.FieldLogger {
-	if lgr, ok := req.Context().Value(&loggerContextKey).(logrus.FieldLogger); ok {
-		return lgr
-	} else {
-		return logrus.StandardLogger()
-	}
+	return ctxlog.FromContext(req.Context())
 }
 
 func logRequest(w *responseTimer, req *http.Request, lgr *logrus.Entry) {

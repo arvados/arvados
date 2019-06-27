@@ -8,13 +8,13 @@ import "time"
 
 // Workflow is an arvados#workflow resource.
 type Workflow struct {
-	UUID        string     `json:"uuid,omitempty"`
-	OwnerUUID   string     `json:"owner_uuid,omitempty"`
-	Name        string     `json:"name,omitempty"`
-	Description string     `json:"description,omitempty"`
-	Definition  string     `json:"definition,omitempty"`
-	CreatedAt   *time.Time `json:"created_at,omitempty"`
-	ModifiedAt  *time.Time `json:"modified_at,omitempty"`
+	UUID        string     `json:"uuid"`
+	OwnerUUID   string     `json:"owner_uuid"`
+	Name        string     `json:"name"`
+	Description string     `json:"description"`
+	Definition  string     `json:"definition"`
+	CreatedAt   *time.Time `json:"created_at"`
+	ModifiedAt  *time.Time `json:"modified_at"`
 }
 
 // WorkflowList is an arvados#workflowList resource.

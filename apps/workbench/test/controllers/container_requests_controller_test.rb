@@ -137,7 +137,7 @@ class ContainerRequestsControllerTest < ActionController::TestCase
     assert_includes @response.body, "href=\"\/collections/fa7aeb5140e2848d39b416daeef4ffc5+45/foobar\?" # locator on command
     assert_includes @response.body, "href=\"\/collections/fa7aeb5140e2848d39b416daeef4ffc5+45/foo" # mount input1
     assert_includes @response.body, "href=\"\/collections/fa7aeb5140e2848d39b416daeef4ffc5+45/bar" # mount input2
-    assert_includes @response.body, "href=\"\/collections/1fd08fc162a5c6413070a8bd0bffc818+150" # mount workflow
+    assert_includes @response.body, "href=\"\/collections/f9ddda46bb293b6847da984e3aa735db+290" # mount workflow
     assert_includes @response.body, "href=\"#Log\""
     assert_includes @response.body, "href=\"#Provenance\""
   end

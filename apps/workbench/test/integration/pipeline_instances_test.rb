@@ -393,6 +393,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   def create_and_run_pipeline_in_aproject in_aproject, template_name, collection_fixture, choose_file=false
     # collection in aproject to be used as input
     collection = api_fixture('collections', collection_fixture)
+    collection['name'] ||= '' # API response is "" even if fixture attr is null
 
     # create a pipeline instance
     find('.btn', text: 'Run a process').click
@@ -421,7 +422,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
       if collection_fixture == 'foo_collection_in_aproject'
         first('span', text: 'foo_tag').click
-      elsif collection['name']
+      elsif collection['name'] != ''
         first('span', text: "#{collection['name']}").click
       else
         collection_uuid = collection['uuid']

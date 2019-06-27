@@ -15,23 +15,25 @@ import (
 
 // Collection is an arvados#collection resource.
 type Collection struct {
-	UUID                      string     `json:"uuid,omitempty"`
-	OwnerUUID                 string     `json:"owner_uuid,omitempty"`
-	TrashAt                   *time.Time `json:"trash_at,omitempty"`
-	ManifestText              string     `json:"manifest_text"`
-	UnsignedManifestText      string     `json:"unsigned_manifest_text,omitempty"`
-	Name                      string     `json:"name,omitempty"`
-	CreatedAt                 *time.Time `json:"created_at,omitempty"`
-	ModifiedAt                *time.Time `json:"modified_at,omitempty"`
-	PortableDataHash          string     `json:"portable_data_hash,omitempty"`
-	ReplicationConfirmed      *int       `json:"replication_confirmed,omitempty"`
-	ReplicationConfirmedAt    *time.Time `json:"replication_confirmed_at,omitempty"`
-	ReplicationDesired        *int       `json:"replication_desired,omitempty"`
-	StorageClassesDesired     []string   `json:"storage_classes_desired,omitempty"`
-	StorageClassesConfirmed   []string   `json:"storage_classes_confirmed,omitempty"`
-	StorageClassesConfirmedAt *time.Time `json:"storage_classes_confirmed_at,omitempty"`
-	DeleteAt                  *time.Time `json:"delete_at,omitempty"`
-	IsTrashed                 bool       `json:"is_trashed,omitempty"`
+	UUID                      string                 `json:"uuid"`
+	Etag                      string                 `json:"etag"`
+	OwnerUUID                 string                 `json:"owner_uuid"`
+	TrashAt                   *time.Time             `json:"trash_at"`
+	ManifestText              string                 `json:"manifest_text"`
+	UnsignedManifestText      string                 `json:"unsigned_manifest_text"`
+	Name                      string                 `json:"name"`
+	CreatedAt                 *time.Time             `json:"created_at"`
+	ModifiedAt                *time.Time             `json:"modified_at"`
+	PortableDataHash          string                 `json:"portable_data_hash"`
+	ReplicationConfirmed      *int                   `json:"replication_confirmed"`
+	ReplicationConfirmedAt    *time.Time             `json:"replication_confirmed_at"`
+	ReplicationDesired        *int                   `json:"replication_desired"`
+	StorageClassesDesired     []string               `json:"storage_classes_desired"`
+	StorageClassesConfirmed   []string               `json:"storage_classes_confirmed"`
+	StorageClassesConfirmedAt *time.Time             `json:"storage_classes_confirmed_at"`
+	DeleteAt                  *time.Time             `json:"delete_at"`
+	IsTrashed                 bool                   `json:"is_trashed"`
+	Properties                map[string]interface{} `json:"properties"`
 }
 
 func (c Collection) resourceName() string {
@@ -73,7 +75,6 @@ func (c *Collection) SizedDigests() ([]SizedDigest, error) {
 	return sds, scanner.Err()
 }
 
-// CollectionList is an arvados#collectionList resource.
 type CollectionList struct {
 	Items          []Collection `json:"items"`
 	ItemsAvailable int          `json:"items_available"`

@@ -116,7 +116,8 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	}
 	srv := &httpserver.Server{
 		Server: http.Server{
-			Handler: httpserver.AddRequestIDs(httpserver.LogRequests(log, handler)),
+			Handler: httpserver.HandlerWithContext(ctx,
+				httpserver.AddRequestIDs(httpserver.LogRequests(handler))),
 		},
 		Addr: listen,
 	}

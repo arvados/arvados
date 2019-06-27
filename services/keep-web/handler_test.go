@@ -465,8 +465,12 @@ func (s *IntegrationSuite) TestSpecialCharsInPath(c *check.C) {
 	f.Close()
 	mtxt, err := fs.MarshalManifest(".")
 	c.Assert(err, check.IsNil)
-	coll := arvados.Collection{ManifestText: mtxt}
-	err = client.RequestAndDecode(&coll, "POST", "arvados/v1/collections", client.UpdateBody(coll), nil)
+	var coll arvados.Collection
+	err = client.RequestAndDecode(&coll, "POST", "arvados/v1/collections", nil, map[string]interface{}{
+		"collection": map[string]string{
+			"manifest_text": mtxt,
+		},
+	})
 	c.Assert(err, check.IsNil)
 
 	u, _ := url.Parse("http://download.example.com/c=" + coll.UUID + "/")
@@ -773,11 +777,14 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 func (s *IntegrationSuite) TestDeleteLastFile(c *check.C) {
 	arv := arvados.NewClientFromEnv()
 	var newCollection arvados.Collection
-	err := arv.RequestAndDecode(&newCollection, "POST", "arvados/v1/collections", arv.UpdateBody(&arvados.Collection{
-		OwnerUUID:    arvadostest.ActiveUserUUID,
-		ManifestText: ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo.txt 0:3:bar.txt\n",
-		Name:         "keep-web test collection",
-	}), map[string]bool{"ensure_unique_name": true})
+	err := arv.RequestAndDecode(&newCollection, "POST", "arvados/v1/collections", nil, map[string]interface{}{
+		"collection": map[string]string{
+			"owner_uuid":    arvadostest.ActiveUserUUID,
+			"manifest_text": ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo.txt 0:3:bar.txt\n",
+			"name":          "keep-web test collection",
+		},
+		"ensure_unique_name": true,
+	})
 	c.Assert(err, check.IsNil)
 	defer arv.RequestAndDecode(&newCollection, "DELETE", "arvados/v1/collections/"+newCollection.UUID, nil, nil)
 

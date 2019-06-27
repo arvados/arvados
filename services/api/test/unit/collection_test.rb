@@ -1013,6 +1013,23 @@ class CollectionTest < ActiveSupport::TestCase
     assert_empty Collection.where(uuid: uuid)
   end
 
+  test "empty names are exempt from name uniqueness" do
+    act_as_user users(:active) do
+      c1 = Collection.new(name: nil, manifest_text: '', owner_uuid: groups(:aproject).uuid)
+      assert c1.save
+      c2 = Collection.new(name: '', manifest_text: '', owner_uuid: groups(:aproject).uuid)
+      assert c2.save
+      c3 = Collection.new(name: '', manifest_text: '', owner_uuid: groups(:aproject).uuid)
+      assert c3.save
+      c4 = Collection.new(name: 'c4', manifest_text: '', owner_uuid: groups(:aproject).uuid)
+      assert c4.save
+      c5 = Collection.new(name: 'c4', manifest_text: '', owner_uuid: groups(:aproject).uuid)
+      assert_raises(ActiveRecord::RecordNotUnique) do
+        c5.save
+      end
+    end
+  end
+
   test "create collections with managed properties" do
     Rails.configuration.Collections.ManagedProperties = {
       'default_prop1' => {'Value' => 'prop1_value'},

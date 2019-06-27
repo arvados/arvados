@@ -6,9 +6,9 @@ package arvados
 
 // Group is an arvados#group record
 type Group struct {
-	UUID       string `json:"uuid,omitempty"`
-	Name       string `json:"name,omitempty"`
-	OwnerUUID  string `json:"owner_uuid,omitempty"`
+	UUID       string `json:"uuid"`
+	Name       string `json:"name"`
+	OwnerUUID  string `json:"owner_uuid"`
 	GroupClass string `json:"group_class"`
 }
 

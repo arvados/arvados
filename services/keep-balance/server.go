@@ -5,6 +5,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -14,6 +15,7 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/auth"
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	"github.com/sirupsen/logrus"
 )
@@ -127,11 +129,13 @@ func (srv *Server) start() error {
 	if srv.config.Listen == "" {
 		return nil
 	}
+	ctx := ctxlog.Context(context.Background(), srv.Logger)
 	server := &httpserver.Server{
 		Server: http.Server{
-			Handler: httpserver.LogRequests(srv.Logger,
-				auth.RequireLiteralToken(srv.config.ManagementToken,
-					srv.metrics.Handler(srv.Logger))),
+			Handler: httpserver.HandlerWithContext(ctx,
+				httpserver.LogRequests(
+					auth.RequireLiteralToken(srv.config.ManagementToken,
+						srv.metrics.Handler(srv.Logger)))),
 		},
 		Addr: srv.config.Listen,
 	}

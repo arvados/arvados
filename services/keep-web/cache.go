@@ -157,7 +157,11 @@ func (c *cache) Update(client *arvados.Client, coll arvados.Collection, fs arvad
 	}
 	var updated arvados.Collection
 	defer c.pdhs.Remove(coll.UUID)
-	err := client.RequestAndDecode(&updated, "PATCH", "arvados/v1/collections/"+coll.UUID, client.UpdateBody(coll), nil)
+	err := client.RequestAndDecode(&updated, "PATCH", "arvados/v1/collections/"+coll.UUID, nil, map[string]interface{}{
+		"collection": map[string]string{
+			"manifest_text": coll.ManifestText,
+		},
+	})
 	if err == nil {
 		c.collections.Add(client.AuthToken+"\000"+coll.PortableDataHash, &cachedCollection{
 			expire:     time.Now().Add(time.Duration(c.TTL)),

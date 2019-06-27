@@ -104,7 +104,7 @@ func (m *metrics) ServeAPI(token string, next http.Handler) http.Handler {
 //
 // For the metrics to be accurate, the caller must ensure every
 // request passed to the Handler also passes through
-// LogRequests(logger, ...), and vice versa.
+// LogRequests(...), and vice versa.
 //
 // If registry is nil, a new registry is created.
 //

@@ -208,8 +208,8 @@ func (s *v0Suite) TestTrashedCollection(c *check.C) {
 	ac := arvados.NewClientFromEnv()
 	ac.AuthToken = s.token
 
-	coll := &arvados.Collection{ManifestText: ""}
-	err := ac.RequestAndDecode(coll, "POST", "arvados/v1/collections", s.jsonBody("collection", coll), map[string]interface{}{"ensure_unique_name": true})
+	var coll arvados.Collection
+	err := ac.RequestAndDecode(&coll, "POST", "arvados/v1/collections", s.jsonBody("collection", `{"manifest_text":""}`), map[string]interface{}{"ensure_unique_name": true})
 	c.Assert(err, check.IsNil)
 	s.ignoreLogID = s.lastLogID(c)
 
@@ -290,7 +290,7 @@ func (s *v0Suite) emitEvents(uuidChan chan<- string) {
 	wf := &arvados.Workflow{
 		Name: "ws_test",
 	}
-	err := ac.RequestAndDecode(wf, "POST", "arvados/v1/workflows", s.jsonBody("workflow", wf), map[string]interface{}{"ensure_unique_name": true})
+	err := ac.RequestAndDecode(wf, "POST", "arvados/v1/workflows", s.jsonBody("workflow", `{"name":"ws_test"}`), map[string]interface{}{"ensure_unique_name": true})
 	if err != nil {
 		panic(err)
 	}
@@ -298,17 +298,17 @@ func (s *v0Suite) emitEvents(uuidChan chan<- string) {
 		uuidChan <- wf.UUID
 	}
 	lg := &arvados.Log{}
-	err = ac.RequestAndDecode(lg, "POST", "arvados/v1/logs", s.jsonBody("log", &arvados.Log{
-		ObjectUUID: wf.UUID,
-		EventType:  "blip",
-		Properties: map[string]interface{}{
+	err = ac.RequestAndDecode(lg, "POST", "arvados/v1/logs", s.jsonBody("log", map[string]interface{}{
+		"object_uuid": wf.UUID,
+		"event_type":  "blip",
+		"properties": map[string]interface{}{
 			"beep": "boop",
 		},
 	}), nil)
 	if err != nil {
 		panic(err)
 	}
-	err = ac.RequestAndDecode(wf, "PUT", "arvados/v1/workflows/"+wf.UUID, s.jsonBody("workflow", wf), nil)
+	err = ac.RequestAndDecode(wf, "PUT", "arvados/v1/workflows/"+wf.UUID, s.jsonBody("workflow", `{"name":"ws_test"}`), nil)
 	if err != nil {
 		panic(err)
 	}
@@ -316,12 +316,16 @@ func (s *v0Suite) emitEvents(uuidChan chan<- string) {
 }
 
 func (s *v0Suite) jsonBody(rscName string, ob interface{}) io.Reader {
-	j, err := json.Marshal(ob)
-	if err != nil {
-		panic(err)
+	val, ok := ob.(string)
+	if !ok {
+		j, err := json.Marshal(ob)
+		if err != nil {
+			panic(err)
+		}
+		val = string(j)
 	}
 	v := url.Values{}
-	v[rscName] = []string{string(j)}
+	v[rscName] = []string{val}
 	return bytes.NewBufferString(v.Encode())
 }
 

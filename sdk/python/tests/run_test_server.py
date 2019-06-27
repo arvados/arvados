@@ -413,9 +413,13 @@ def run_controller():
         f.write("""
 Clusters:
   zzzzz:
+    EnableBetaController14287: {beta14287}
     ManagementToken: e687950a23c3a9bceec28c6223a06c79
     API:
       RequestTimeout: 30s
+    Logging:
+        Level: "{loglevel}"
+    HTTPRequestTimeout: 30s
     PostgreSQL:
       ConnectionPool: 32
       Connection:
@@ -433,6 +437,8 @@ Clusters:
         InternalURLs:
           "https://localhost:{railsport}": {{}}
         """.format(
+            beta14287=('true' if '14287' in os.environ.get('ARVADOS_EXPERIMENTAL', '') else 'false'),
+            loglevel=('info' if os.environ.get('ARVADOS_DEBUG', '') in ['','0'] else 'debug'),
             dbhost=_dbconfig('host'),
             dbname=_dbconfig('database'),
             dbuser=_dbconfig('username'),

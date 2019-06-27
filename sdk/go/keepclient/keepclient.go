@@ -551,7 +551,7 @@ func (kc *KeepClient) httpClient() HTTPClient {
 		// It's not safe to copy *http.DefaultTransport
 		// because it has a mutex (which might be locked)
 		// protecting a private map (which might not be nil).
-		// So we build our own, using the Go 1.10 default
+		// So we build our own, using the Go 1.12 default
 		// values, ignoring any changes the application has
 		// made to http.DefaultTransport.
 		Transport: &http.Transport{
@@ -563,7 +563,7 @@ func (kc *KeepClient) httpClient() HTTPClient {
 			MaxIdleConns:          100,
 			IdleConnTimeout:       90 * time.Second,
 			TLSHandshakeTimeout:   tlsTimeout,
-			ExpectContinueTimeout: time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
 			TLSClientConfig:       arvadosclient.MakeTLSConfig(kc.Arvados.ApiInsecure),
 		},
 	}

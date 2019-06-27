@@ -101,7 +101,7 @@ baz_file:
 w_a_z_file:
   uuid: zzzzz-4zz18-25k12570yk134b3
   current_version_uuid: zzzzz-4zz18-25k12570yk134b3
-  portable_data_hash: 8706aadd12a0ebc07d74cae88762ba9e+56
+  portable_data_hash: 44a8da9ec82098323895cd14e178386f+56
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2015-02-09T10:53:38Z
   modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
@@ -129,7 +129,7 @@ w_a_z_file_version_1:
 multilevel_collection_1:
   uuid: zzzzz-4zz18-pyw8yp9g3pr7irn
   current_version_uuid: zzzzz-4zz18-pyw8yp9g3pr7irn
-  portable_data_hash: 1fd08fc162a5c6413070a8bd0bffc818+150
+  portable_data_hash: f9ddda46bb293b6847da984e3aa735db+290
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:22:54Z
   modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
@@ -143,7 +143,7 @@ multilevel_collection_2:
   uuid: zzzzz-4zz18-45xf9hw1sxkhl6q
   current_version_uuid: zzzzz-4zz18-45xf9hw1sxkhl6q
   # All of this collection's files are deep in subdirectories.
-  portable_data_hash: 80cf6dd2cf079dd13f272ec4245cb4a8+48
+  portable_data_hash: 8591cc5caeca80fc62fd529ba1d63bf3+118
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:22:54Z
   modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
@@ -394,7 +394,7 @@ unique_expired_collection:
 unique_expired_collection2:
   uuid: zzzzz-4zz18-mto52zx1s7sn3jr
   current_version_uuid: zzzzz-4zz18-mto52zx1s7sn3jr
-  portable_data_hash: 4ad199f90029935844dc3f098f4fca2b+49
+  portable_data_hash: 64a2bed1ef0f40fe3a7d39bcf2584cb8+50
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-02-03T17:22:54Z
   modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
@@ -404,7 +404,7 @@ unique_expired_collection2:
   is_trashed: true
   trash_at: 2001-01-01T00:00:00Z
   delete_at: 2038-01-01T00:00:00Z
-  manifest_text: ". 29d7797f1888013986899bc9083783fa+3 0:3:expired\n"
+  manifest_text: ". 29d7797f1888013986899bc9083783fa+3 0:3:expired2\n"
   name: unique_expired_collection2
 
 # a collection with a log file that can be parsed by the log viewer
@@ -474,14 +474,14 @@ collection_with_files_in_subdir:
   uuid: zzzzz-4zz18-filesinsubdir00
   current_version_uuid: zzzzz-4zz18-filesinsubdir00
   name: collection_files_in_subdir
-  portable_data_hash: 85877ca2d7e05498dd3d109baf2df106+95
+  portable_data_hash: 7eb64275355980ebc93411b44050c137+281
   owner_uuid: zzzzz-tpzed-user1withloadab
   created_at: 2014-02-03T17:22:54Z
   modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-user1withloadab
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
-  manifest_text: ". 85877ca2d7e05498dd3d109baf2df106+95 0:95:file_in_subdir1\n./subdir2/subdir3 2bbc341c702df4d8f42ec31f16c10120+64 0:32:file1_in_subdir3.txt 32:32:file2_in_subdir3.txt\n./subdir2/subdir3/subdir4 2bbc341c702df4d8f42ec31f16c10120+64 0:32:file1_in_subdir4.txt 32:32:file2_in_subdir4.txt"
+  manifest_text: ". 85877ca2d7e05498dd3d109baf2df106+95 0:95:file_in_subdir1\n./subdir2/subdir3 2bbc341c702df4d8f42ec31f16c10120+64 0:32:file1_in_subdir3.txt 32:32:file2_in_subdir3.txt\n./subdir2/subdir3/subdir4 2bbc341c702df4d8f42ec31f16c10120+64 0:32:file1_in_subdir4.txt 32:32:file2_in_subdir4.txt\n"
 
 graph_test_collection1:
   uuid: zzzzz-4zz18-bv31uwvy3neko22
@@ -722,7 +722,7 @@ collection_with_one_property:
 collection_with_repeated_filenames_and_contents_in_two_dirs_1:
   uuid: zzzzz-4zz18-duplicatenames1
   current_version_uuid: zzzzz-4zz18-duplicatenames1
-  portable_data_hash: f3a67fad3a19c31c658982fb8158fa58+144
+  portable_data_hash: ce437b12aa73ab34f7af5227f556c9e6+142
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:22:54Z
   modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
@@ -748,7 +748,7 @@ collection_with_repeated_filenames_and_contents_in_two_dirs_2:
 foo_and_bar_files_in_dir:
   uuid: zzzzz-4zz18-foonbarfilesdir
   current_version_uuid: zzzzz-4zz18-foonbarfilesdir
-  portable_data_hash: 6bbac24198d09a93975f60098caf0bdf+62
+  portable_data_hash: 870369fc72738603c2fad16664e50e2d+58
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:22:54Z
   modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
@@ -801,20 +801,20 @@ collection_with_several_unsupported_file_types:
 collection_not_readable_by_active:
   uuid: zzzzz-4zz18-cd42uwvy3neko21
   current_version_uuid: zzzzz-4zz18-cd42uwvy3neko21
-  portable_data_hash: bb89eb5140e2848d39b416daeef4ffc5+45
+  portable_data_hash: b9e51a238ce08a698e7d7f8f101aee18+55
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-02-03T17:22:54Z
   modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
-  manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+  manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar 0:0:empty\n"
   name: collection_not_readable_by_active
 
 collection_to_remove_and_rename_files:
   uuid: zzzzz-4zz18-a21ux3541sxa8sf
   current_version_uuid: zzzzz-4zz18-a21ux3541sxa8sf
-  portable_data_hash: 80cf6dd2cf079dd13f272ec4245cb4a8+48
+  portable_data_hash: 21aed8fd508bd6263704b673455949ba+57
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:22:54Z
   modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
@@ -843,7 +843,7 @@ collection_with_tags_owned_by_active:
 trashed_collection_to_test_name_conflict_on_untrash:
   uuid: zzzzz-4zz18-trashedcolnamec
   current_version_uuid: zzzzz-4zz18-trashedcolnamec
-  portable_data_hash: 80cf6dd2cf079dd13f272ec4245cb4a8+48
+  portable_data_hash: 21aed8fd508bd6263704b673455949ba+57
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:22:54Z
   modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
@@ -859,7 +859,7 @@ trashed_collection_to_test_name_conflict_on_untrash:
 same_name_as_trashed_coll_to_test_name_conflict_on_untrash:
   uuid: zzzzz-4zz18-namesameastrash
   current_version_uuid: zzzzz-4zz18-namesameastrash
-  portable_data_hash: 80cf6dd2cf079dd13f272ec4245cb4a8+48
+  portable_data_hash: 21aed8fd508bd6263704b673455949ba+57
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:22:54Z
   modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
@@ -872,7 +872,7 @@ same_name_as_trashed_coll_to_test_name_conflict_on_untrash:
 collection_in_trashed_subproject:
   uuid: zzzzz-4zz18-trashedproj2col
   current_version_uuid: zzzzz-4zz18-trashedproj2col
-  portable_data_hash: 80cf6dd2cf079dd13f272ec4245cb4a8+48
+  portable_data_hash: 21aed8fd508bd6263704b673455949ba+57
   owner_uuid: zzzzz-j7d0g-trashedproject2
   created_at: 2014-02-03T17:22:54Z
   modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr

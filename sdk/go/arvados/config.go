@@ -159,6 +159,8 @@ type Cluster struct {
 		UserProfileFormMessage string
 		VocabularyURL          string
 	}
+
+	EnableBetaController14287 bool
 }
 
 type Services struct {

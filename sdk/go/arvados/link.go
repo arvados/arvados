@@ -7,13 +7,13 @@ package arvados
 // Link is an arvados#link record
 type Link struct {
 	UUID      string `json:"uuid,omiempty"`
-	OwnerUUID string `json:"owner_uuid,omitempty"`
-	Name      string `json:"name,omitempty"`
-	LinkClass string `json:"link_class,omitempty"`
-	HeadUUID  string `json:"head_uuid,omitempty"`
-	HeadKind  string `json:"head_kind,omitempty"`
-	TailUUID  string `json:"tail_uuid,omitempty"`
-	TailKind  string `json:"tail_kind,omitempty"`
+	OwnerUUID string `json:"owner_uuid"`
+	Name      string `json:"name"`
+	LinkClass string `json:"link_class"`
+	HeadUUID  string `json:"head_uuid"`
+	HeadKind  string `json:"head_kind"`
+	TailUUID  string `json:"tail_uuid"`
+	TailKind  string `json:"tail_kind"`
 }
 
 // UserList is an arvados#userList resource.

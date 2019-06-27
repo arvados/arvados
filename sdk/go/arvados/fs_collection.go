@@ -131,7 +131,12 @@ func (fs *collectionFileSystem) Sync() error {
 		UUID:         fs.uuid,
 		ManifestText: txt,
 	}
-	err = fs.RequestAndDecode(nil, "PUT", "arvados/v1/collections/"+fs.uuid, fs.UpdateBody(coll), map[string]interface{}{"select": []string{"uuid"}})
+	err = fs.RequestAndDecode(nil, "PUT", "arvados/v1/collections/"+fs.uuid, nil, map[string]interface{}{
+		"collection": map[string]string{
+			"manifest_text": coll.ManifestText,
+		},
+		"select": []string{"uuid"},
+	})
 	if err != nil {
 		return fmt.Errorf("sync failed: update %s: %s", fs.uuid, err)
 	}
