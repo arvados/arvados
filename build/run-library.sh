@@ -427,7 +427,9 @@ fpm_build_virtualenv () {
     PYTHON_PKG=$PKG
   fi
 
-  if [[ -n "$ONLY_BUILD" ]] && [[ "$PYTHON_PKG" != "$ONLY_BUILD" ]] && [[ "$PKG" != "$ONLY_BUILD" ]]; then
+  # arvados-python-client sdist should always be built, to be available
+  # for other dependant packages.
+  if [[ -n "$ONLY_BUILD" ]] && [[ "arvados-python-client" != "$PKG" ]] && [[ "$PYTHON_PKG" != "$ONLY_BUILD" ]] && [[ "$PKG" != "$ONLY_BUILD" ]]; then
     return 0
   fi
 
@@ -448,6 +450,14 @@ fpm_build_virtualenv () {
   fi
 
   PACKAGE_PATH=`(cd dist; ls *tar.gz)`
+
+  if [[ "arvados-python-client" == "$PKG" ]]; then
+    PYSDK_PATH=`pwd`/dist/
+  fi
+
+  if [[ -n "$ONLY_BUILD" ]] && [[ "$PYTHON_PKG" != "$ONLY_BUILD" ]] && [[ "$PKG" != "$ONLY_BUILD" ]]; then
+    return 0
+  fi
 
   # Determine the package version from the generated sdist archive
   PYTHON_VERSION=${ARVADOS_BUILDING_VERSION:-$(awk '($1 == "Version:"){print $2}' *.egg-info/PKG-INFO)}
@@ -500,16 +510,16 @@ fpm_build_virtualenv () {
   echo "wheel version:      `build/usr/share/$python/dist/$PYTHON_PKG/bin/wheel version`"
 
   if [[ "$TARGET" != "centos7" ]] || [[ "$PYTHON_PKG" != "python-arvados-fuse" ]]; then
-    build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PACKAGE_PATH
+    build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -f $PYSDK_PATH $PACKAGE_PATH
   else
     # centos7 needs these special tweaks to install python-arvados-fuse
     build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG docutils
-    PYCURL_SSL_LIBRARY=nss build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PACKAGE_PATH
+    PYCURL_SSL_LIBRARY=nss build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -f $PYSDK_PATH $PACKAGE_PATH
   fi
 
   if [[ "$?" != "0" ]]; then
     echo "Error, unable to run"
-    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PACKAGE_PATH"
+    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -f $PYSDK_PATH $PACKAGE_PATH"
     exit 1
   fi
 

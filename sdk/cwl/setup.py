@@ -14,6 +14,11 @@ README = os.path.join(SETUP_DIR, 'README.rst')
 
 import arvados_version
 version = arvados_version.get_version(SETUP_DIR, "arvados_cwl")
+if os.environ.get('ARVADOS_BUILDING_VERSION', False):
+    pysdk_dep = "=={}".format(version)
+else:
+    # On dev releases, arvados-python-client may have a different timestamp
+    pysdk_dep = "<={}".format(version)
 
 setup(name='arvados-cwl-runner',
       version=version,
@@ -37,7 +42,7 @@ setup(name='arvados-cwl-runner',
           'schema-salad==4.2.20190417121603',
           'typing >= 3.6.4',
           'ruamel.yaml >=0.15.54, <=0.15.77',
-          'arvados-python-client>=1.3.0.20190205182514',
+          'arvados-python-client{}'.format(pysdk_dep),
           'setuptools',
           'ciso8601 >= 2.0.0',
           'networkx < 2.3'
