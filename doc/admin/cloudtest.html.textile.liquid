@@ -33,9 +33,9 @@ h2. Typical uses
 
 Before bringing up the @arvados-dispatch-cloud@ service for the first time, we recommend running @cloudtest@ to check your configuration:
 
-<pre>
+<notextile><pre>
 $ <span class="userinput">arvados-server cloudtest -command "crunch-run --list"</span>
-</pre>
+</pre></notextile>
 
 Before updating your configuration to use a new VM image, we recommend running @cloudtest@ with the new image:
 
@@ -51,7 +51,7 @@ $ <span class="userinput">arvados-server cloudtest -instance-type <b>new_instanc
 
 For a full list of options, use the @-help@ flag:
 
-<pre>
+<notextile><pre>
 $ <span class="userinput">arvados-server cloudtest -help</span>
 Usage:
   -command string
@@ -68,4 +68,4 @@ Usage:
         Instance type to create (if empty, use cheapest type in config)
   -pause-before-destroy
         Prompt and wait before destroying the test instance
-</pre>
+</pre></notextile>
