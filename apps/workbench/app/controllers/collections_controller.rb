@@ -10,7 +10,7 @@ class CollectionsController < ApplicationController
   include ActionController::Live
 
   skip_around_action :require_thread_api_token, if: proc { |ctrl|
-    Rails.configuration.anonymous_user_token and
+    !Rails.configuration.Users.AnonymousUserToken.empty? and
     'show' == ctrl.action_name
   }
   skip_around_action(:require_thread_api_token,
@@ -124,7 +124,8 @@ class CollectionsController < ApplicationController
     # Otherwise, it's impossible to know whether any other request succeeded
     # because of the reader token.
     coll = nil
-    tokens = [(Rails.configuration.anonymous_user_token || nil),
+    tokens = [(if !Rails.configuration.Users.AnonymousUserToken.empty? then
+                Rails.configuration.Users.AnonymousUserToken else nil end),
               params[:reader_token],
               Thread.current[:arvados_api_token]].compact
     usable_token = find_usable_token(tokens) do
@@ -138,7 +139,7 @@ class CollectionsController < ApplicationController
     opts = {}
     if usable_token == params[:reader_token]
       opts[:path_token] = usable_token
-    elsif usable_token == Rails.configuration.anonymous_user_token
+    elsif usable_token == Rails.configuration.Users.AnonymousUserToken
       # Don't pass a token at all
     else
       # We pass the current user's real token only if it's necessary

@@ -21,6 +21,9 @@ Bundler.require(:default, Rails.env)
 
 module ArvadosWorkbench
   class Application < Rails::Application
+
+    require_relative "arvados_config.rb"
+
     # Settings in config/environments/* take precedence over those specified here.
     # Application configuration should go into files in config/initializers
     # -- all .rb files in that directory are automatically loaded.

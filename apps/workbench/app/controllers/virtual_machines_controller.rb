@@ -25,8 +25,8 @@ class VirtualMachinesController < ApplicationController
   end
 
   def webshell
-    return render_not_found if not Rails.configuration.shell_in_a_box_url
-    @webshell_url = Rails.configuration.shell_in_a_box_url % {
+    return render_not_found if Rails.configuration.Workbench.ShellInABoxURL.empty?
+    @webshell_url = Rails.configuration.Workbench.ShellInABoxURL % {
       uuid: @object.uuid,
       hostname: @object.hostname,
     }
