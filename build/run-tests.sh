@@ -1073,28 +1073,48 @@ test_services/nodemanager_integration() {
 }
 
 test_apps/workbench_units() {
+    local TASK="test:units"
+    if [[ -n "${testargs[apps/workbench]}" ]] || [[ -n "${testargs[apps/workbench_units]}" ]]; then
+        TASK="test"
+    fi
     cd "$WORKSPACE/apps/workbench" \
-        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:units TESTOPTS='-v -d' ${testargs[apps/workbench]} ${testargs[apps/workbench_units]}
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake ${TASK} TESTOPTS='-v -d' ${testargs[apps/workbench]} ${testargs[apps/workbench_units]}
 }
 
 test_apps/workbench_functionals() {
+    local TASK="test:functionals"
+    if [[ -n "${testargs[apps/workbench]}" ]] || [[ -n "${testargs[apps/workbench_functionals]}" ]]; then
+        TASK="test"
+    fi
     cd "$WORKSPACE/apps/workbench" \
-        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:functionals TESTOPTS='-v -d' ${testargs[apps/workbench]} ${testargs[apps/workbench_functionals]}
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake ${TASK} TESTOPTS='-v -d' ${testargs[apps/workbench]} ${testargs[apps/workbench_functionals]}
 }
 
 test_apps/workbench_integration() {
+    local TASK="test:integration"
+    if [[ -n "${testargs[apps/workbench]}" ]] || [[ -n "${testargs[apps/workbench_integration]}" ]]; then
+        TASK="test"
+    fi
     cd "$WORKSPACE/apps/workbench" \
-        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:integration TESTOPTS='-v -d' ${testargs[apps/workbench]} ${testargs[apps/workbench_integration]}
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake ${TASK} TESTOPTS='-v -d' ${testargs[apps/workbench]} ${testargs[apps/workbench_integration]}
 }
 
 test_apps/workbench_benchmark() {
+    local TASK="test:benchmark"
+    if [[ -n "${testargs[apps/workbench]}" ]] || [[ -n "${testargs[apps/workbench_benchmark]}" ]]; then
+        TASK="test"
+    fi
     cd "$WORKSPACE/apps/workbench" \
-        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:benchmark ${testargs[apps/workbench_benchmark]}
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake ${TASK} ${testargs[apps/workbench_benchmark]}
 }
 
 test_apps/workbench_profile() {
+    local TASK="test:profile"
+    if [[ -n "${testargs[apps/workbench]}" ]] || [[ -n "${testargs[apps/workbench_profile]}" ]]; then
+        TASK="test"
+    fi
     cd "$WORKSPACE/apps/workbench" \
-        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:profile ${testargs[apps/workbench_profile]}
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake ${TASK} ${testargs[apps/workbench_profile]}
 }
 
 install_deps() {
