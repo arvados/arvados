@@ -16,7 +16,7 @@ import (
 
 var (
 	version             = "dev"
-	command cmd.Handler = service.Command(arvados.ServiceNameController, newHandler)
+	command cmd.Handler = service.Command(arvados.ServiceNameHealth, newHandler)
 )
 
 func newHandler(ctx context.Context, cluster *arvados.Cluster, _ string) service.Handler {
