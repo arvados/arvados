@@ -16,6 +16,7 @@
 # /etc/arvados/config.yml, you will be able to delete application.yml.
 
 require 'config_loader'
+require 'config_validators'
 
 begin
   # If secret_token.rb exists here, we need to load it first.
@@ -180,4 +181,5 @@ ArvadosWorkbench::Application.configure do
   ConfigLoader.copy_into_config $arvados_config, config
   ConfigLoader.copy_into_config $remaining_config, config
   secrets.secret_key_base = $arvados_config["Workbench"]["SecretKeyBase"]
+  ConfigValidators.validate_wb2_url_config()
 end

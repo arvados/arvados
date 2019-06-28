@@ -64,7 +64,7 @@ class ActiveSupport::TestCase
     # Restore configuration settings changed during tests
     ConfigLoader.copy_into_config $arvados_config, Rails.configuration
     ConfigLoader.copy_into_config $remaining_config, Rails.configuration
-    Rails.configuration.Services.Controller.ExternalURL = "https://#{ENV['ARVADOS_API_HOST']}"
+    Rails.configuration.Services.Controller.ExternalURL = URI("https://#{ENV['ARVADOS_API_HOST']}")
     Rails.configuration.TLS.Insecure = true
   end
 end

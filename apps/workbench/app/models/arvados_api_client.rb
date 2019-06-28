@@ -235,15 +235,13 @@ class ArvadosApiClient
   end
 
   def arvados_login_url(params={})
-    if Rails.configuration.respond_to? :arvados_login_base
-      uri = Rails.configuration.Services.Controller.ExternalURL.to_s + "/login"
+    uri = URI.parse(Rails.configuration.Services.Controller.ExternalURL.to_s)
+    if Rails.configuration.testing_override_login_url
+      uri = URI(Rails.configuration.testing_override_login_url)
     end
-    if params.size > 0
-      uri += '?' << params.collect { |k,v|
-        CGI.escape(k.to_s) + '=' + CGI.escape(v.to_s)
-      }.join('&')
-    end
-    uri
+    uri.path = "/login"
+    uri.query = URI.encode_www_form(params)
+    uri.to_s
   end
 
   def arvados_logout_url(params={})
@@ -251,7 +249,11 @@ class ArvadosApiClient
   end
 
   def arvados_v1_base
-    Rails.configuration.Services.Controller.ExternalURL.to_s + "/arvados/v1"
+    # workaround Ruby 2.3 bug, can't duplicate URI objects
+    # https://github.com/httprb/http/issues/388
+    u = URI.parse(Rails.configuration.Services.Controller.ExternalURL.to_s)
+    u.path = "/arvados/v1"
+    u.to_s
   end
 
   def discovery

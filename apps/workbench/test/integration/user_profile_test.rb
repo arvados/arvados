@@ -20,7 +20,7 @@ class UserProfileTest < ActionDispatch::IntegrationTest
     if !user
       assert_text('Please log in')
     elsif user['is_active']
-      if profile_config && !has_profile
+      if !profile_config.empty? && !has_profile
         assert_text('Save profile')
         add_profile user
       else
@@ -62,7 +62,7 @@ class UserProfileTest < ActionDispatch::IntegrationTest
             assert_selector('a', text: 'Current token')
             assert_selector('a', text: 'SSH keys')
 
-            if profile_config
+            if !profile_config.empty?
               assert_selector('a', text: 'Manage profile')
             else
               assert_no_selector('a', text: 'Manage profile')
@@ -142,7 +142,7 @@ class UserProfileTest < ActionDispatch::IntegrationTest
     [true, false].each do |profile_required|
       test "visit #{token} home page when profile is #{'not ' if !profile_required}configured" do
         if !profile_required
-          Rails.configuration.Workbench.UserProfileFormFields = false
+          Rails.configuration.Workbench.UserProfileFormFields = []
         else
           # Our test config enabled profile by default. So, no need to update config
         end

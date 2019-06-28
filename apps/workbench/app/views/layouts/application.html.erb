@@ -20,7 +20,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
   <meta name="author" content="">
   <% if current_user %>
     <% content_for :js do %>
-      window.defaultSession = <%=raw({baseURL: Rails.configuration.Services.Controller.ExternalURL, token: Thread.current[:arvados_api_token], user: current_user}.to_json)%>
+      window.defaultSession = <%=raw({baseURL: Rails.configuration.Services.Controller.ExternalURL.to_s, token: Thread.current[:arvados_api_token], user: current_user}.to_json)%>
     <% end %>
   <% end %>
   <% if current_user and $arvados_api_client.discovery[:websocketUrl] %>

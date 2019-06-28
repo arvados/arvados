@@ -147,6 +147,7 @@ common:
   secret_key_base: false
   default_openid_prefix: https://www.google.com/accounts/o8/id
   send_user_setup_notification_email: true
+  testing_override_login_url: false
 
   # Scratch directory used by the remote repository browsing
   # feature. If it doesn't exist, it (and any missing parents) will be
