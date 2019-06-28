@@ -199,7 +199,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
               <li role="presentation" class="dropdown-header">
                 Help
               </li>
-              <% if Rails.configuration.EnableGettingStartedPopup %>
+              <% if Rails.configuration.Workbench.EnableGettingStartedPopup %>
                 <li>
                 <%= link_to raw('<i class="fa fa-fw fa-info"></i> Getting Started ...'), "#",
                      {'data-toggle' => "modal", 'data-target' => '#getting-started-modal-window'}  %>
@@ -264,7 +264,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
 <div id="report-issue-modal-window"></div>
 <script src="/browser_unsupported.js"></script>
 
-<%  if Rails.configuration.EnableGettingStartedPopup and current_user and !current_user.prefs[:getting_started_shown] and
+<%  if Rails.configuration.Workbench.EnableGettingStartedPopup and current_user and !current_user.prefs[:getting_started_shown] and
        !request.url.include?("/profile") and
        !request.url.include?("/user_agreements") and
        !request.url.include?("/inactive")%>

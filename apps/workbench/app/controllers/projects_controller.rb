@@ -315,8 +315,8 @@ class ProjectsController < ApplicationController
   end
 
   def public  # Yes 'public' is the name of the action for public projects
-    return render_not_found if Rails.configuration.Users.AnonymousUserToken.empty? or not Rails.configuration.enable_public_projects_page
-    @objects = using_specific_api_token Rails.configuration.anonymous_user_token do
+    return render_not_found if Rails.configuration.Users.AnonymousUserToken.empty? or not Rails.configuration.Workbench.EnablePublicProjectsPage
+    @objects = using_specific_api_token Rails.configuration.Users.AnonymousUserToken do
       Group.where(group_class: 'project').order("modified_at DESC")
     end
   end

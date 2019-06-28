@@ -423,7 +423,7 @@ class ApplicationControllerTest < ActionController::TestCase
       if anon_config
         Rails.configuration.Users.AnonymousUserToken = api_fixture('api_client_authorizations')['anonymous']['api_token']
       else
-        Rails.configuration.Users.AnonymousUserToken = false
+        Rails.configuration.Users.AnonymousUserToken = ""
       end
 
       @controller = controller

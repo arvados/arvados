@@ -337,16 +337,18 @@ class CollectionsController < ApplicationController
     munged_id = uuid_or_pdh.sub('+', '-')
 
     tmpl = Rails.configuration.Services.WebDAV.ExternalURL.to_s
-    if !Rails.configuration.Services.WebDAVDownload.ExternalURL.empty? and
-        (!tmpl or opts[:disposition] == 'attachment')
+
+    if Rails.configuration.Services.WebDAVDownload.ExternalURL != URI("") and
+        (tmpl.empty? or opts[:disposition] == 'attachment')
       # Prefer the attachment-only-host when we want an attachment
       # (and when there is no preview link configured)
       tmpl = Rails.configuration.Services.WebDAVDownload.ExternalURL.to_s
     elsif not Rails.configuration.Workbench.TrustAllContent
       check_uri = URI.parse(tmpl.sub("*", munged_id))
       if opts[:query_token] and
+        (check_uri.host.nil? or (
           not check_uri.host.start_with?(munged_id + "--") and
-          not check_uri.host.start_with?(munged_id + ".")
+          not check_uri.host.start_with?(munged_id + ".")))
         # We're about to pass a token in the query string, but
         # keep-web can't accept that safely at a single-origin URL
         # template (unless it's -attachment-only-host).
@@ -367,7 +369,7 @@ class CollectionsController < ApplicationController
 
     uri = URI.parse(tmpl.sub("*", munged_id))
     if tmpl.index("*").nil?
-      uri.path += "/c=#{munged_id}"
+      uri.path = "/c=#{munged_id}"
     end
     uri.path += '/' unless uri.path.end_with? '/'
     if opts[:path_token]

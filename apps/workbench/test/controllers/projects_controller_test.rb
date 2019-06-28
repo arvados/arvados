@@ -290,7 +290,7 @@ class ProjectsControllerTest < ActionController::TestCase
   end
 
   test "visit public projects page when anon config is not enabled as anonymous and expect login page" do
-    Rails.configuration.Users.AnonymousUserToken = nil
+    Rails.configuration.Users.AnonymousUserToken = ""
     Rails.configuration.Workbench.EnablePublicProjectsPage = false
     get :public
     assert_response :redirect
