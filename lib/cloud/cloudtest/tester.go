@@ -342,15 +342,18 @@ func (t *tester) destroyTestInstance() bool {
 		return true
 	}
 	for {
-		t.Logger.WithField("Instance", t.testInstance.ID()).Info("destroying instance")
-		t0 := time.Now()
-		err := t.testInstance.Destroy()
 		lgr := t.Logger.WithField("Instance", t.testInstance.ID())
-		if lgr := lgr.WithField("Duration", time.Since(t0)); err != nil {
-			lgr.WithError(err).Error("error destroying instance")
+		lgr.Info("destroying instance")
+		t0 := time.Now()
+
+		err := t.testInstance.Destroy()
+		lgrDur := lgr.WithField("Duration", time.Since(t0))
+		if err != nil {
+			lgrDur.WithError(err).Error("error destroying instance")
 		} else {
-			lgr.Info("destroyed instance")
+			lgrDur.Info("destroyed instance")
 		}
+
 		err = t.refreshTestInstance()
 		if err == errTestInstanceNotFound {
 			lgr.Info("instance no longer appears in list")
