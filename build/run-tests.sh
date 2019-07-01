@@ -1135,11 +1135,11 @@ install_all() {
             fi
         fi
     done
-    do_install services/api
     for g in "${gostuff[@]}"
     do
         do_install "$g" go
     done
+    do_install services/api
     do_install apps/workbench
 }
 
