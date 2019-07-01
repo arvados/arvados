@@ -14,3 +14,6 @@ flock /var/lib/gopath/gopath.lock go get -t github.com/kardianos/govendor
 cd "$GOPATH/src/git.curoverse.com/arvados.git"
 flock /var/lib/gopath/gopath.lock go get -v -d ...
 flock /var/lib/gopath/gopath.lock "$GOPATH/bin/govendor" sync
+
+flock /var/lib/gopath/gopath.lock go get -t "git.curoverse.com/arvados.git/cmd/arvados-server"
+install $GOPATH/bin/arvados-server /usr/local/bin

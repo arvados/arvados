@@ -7,6 +7,7 @@ exec 2>&1
 set -ex -o pipefail
 
 . /usr/local/lib/arvbox/common.sh
+. /usr/local/lib/arvbox/go-setup.sh
 
 cd /usr/src/arvados/services/api
 
