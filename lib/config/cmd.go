@@ -146,3 +146,34 @@ func (pl *plainLogger) Warnf(format string, args ...interface{}) {
 	pl.used = true
 	fmt.Fprintf(pl.w, format+"\n", args...)
 }
+
+var DumpDefaultsCommand defaultsCommand
+
+type defaultsCommand struct{}
+
+func (defaultsCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	var err error
+	defer func() {
+		if err != nil {
+			fmt.Fprintf(stderr, "%s\n", err)
+		}
+	}()
+
+	var src map[string]interface{}
+	err = yaml.Unmarshal(DefaultYAML, &src)
+	if err != nil {
+		err = fmt.Errorf("loading default config data: %s", err)
+		return 1
+	}
+	removeSampleKeys(src)
+
+	out, err := yaml.Marshal(src)
+	if err != nil {
+		return 1
+	}
+	_, err = stdout.Write(out)
+	if err != nil {
+		return 1
+	}
+	return 0
+}

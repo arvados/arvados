@@ -66,6 +66,14 @@ Clusters:
         ExternalURL: ""
       WebShell:
         InternalURLs: {}
+        # ShellInABox service endpoint URL for a given VM.  If empty, do not
+        # offer web shell logins.
+        #
+        # E.g., using a path-based proxy server to forward connections to shell hosts:
+        # https://webshell.uuid_prefix.arvadosapi.com
+        #
+        # E.g., using a name-based proxy server to forward connections to shell hosts:
+        # https://*.webshell.uuid_prefix.arvadosapi.com
         ExternalURL: ""
       Workbench1:
         InternalURLs: {}
@@ -175,6 +183,11 @@ Clusters:
       UserNotifierEmailFrom: arvados@example.com
       NewUserNotificationRecipients: []
       NewInactiveUserNotificationRecipients: []
+
+      # Set anonymous_user_token to enable anonymous user access. You can get
+      # the token by running "bundle exec ./script/get_anonymous_user_token.rb"
+      # in the directory where your API server is running.
+      AnonymousUserToken: ""
 
     AuditLogs:
       # Time to keep audit logs, in seconds. (An audit log is a row added
@@ -619,7 +632,7 @@ Clusters:
     Mail:
       MailchimpAPIKey: ""
       MailchimpListID: ""
-      SendUserSetupNotificationEmail: ""
+      SendUserSetupNotificationEmail: true
       IssueReporterEmailFrom: ""
       IssueReporterEmailTo: ""
       SupportEmailAddress: ""
@@ -657,16 +670,20 @@ Clusters:
       ArvadosDocsite: https://doc.arvados.org
       ArvadosPublicDataDocURL: https://playground.arvados.org/projects/public
       ShowUserAgreementInline: false
-      SecretToken: ""
       SecretKeyBase: ""
       RepositoryCache: /var/www/arvados-workbench/current/tmp/git
       UserProfileFormFields:
-        SAMPLE:
-          Type: text
-          FormFieldTitle: ""
-          FormFieldDescription: ""
-          Required: true
+        - SAMPLE:
+          - Type: text
+            FormFieldTitle: ""
+            FormFieldDescription: ""
+            Required: true
       UserProfileFormMessage: 'Welcome to Arvados. All <span style="color:red">required fields</span> must be completed before you can proceed.'
+
+      # Mimetypes of applications for which the view icon
+      # would be enabled in a collection's show page.
+      # It is sufficient to list only applications here.
+      # No need to list text and image types.
       ApplicationMimetypesWithViewIcon:
         cwl: {}
         fasta: {}
@@ -692,9 +709,10 @@ Clusters:
       RunningJobLogRecordsToFetch: 2000
       ShowRecentCollectionsOnDashboard: true
       ShowUserNotifications: true
-      MultiSiteSearch: false
+      MultiSiteSearch: ""
       Repositories: true
       SiteName: Arvados Workbench
+      TrustAllContent: false
 
       # Workbench2 configs
       VocabularyURL: ""
