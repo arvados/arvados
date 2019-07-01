@@ -759,11 +759,11 @@ class ApplicationController < ActionController::Base
     profile_config = Rails.configuration.Workbench.UserProfileFormFields
     if current_user && !profile_config.empty?
       current_user_profile = current_user.prefs[:profile]
-      profile_config.kind_of?(Array) && profile_config.andand.each do |entry|
-        if entry['required']
+      profile_config.each do |k, entry|
+        if entry['Required']
           if !current_user_profile ||
-             !current_user_profile[entry['key'].to_sym] ||
-             current_user_profile[entry['key'].to_sym].empty?
+             !current_user_profile[k] ||
+             current_user_profile[k].empty?
             missing_required = true
             break
           end

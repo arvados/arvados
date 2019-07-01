@@ -100,10 +100,10 @@ class UserProfileTest < ActionDispatch::IntegrationTest
     required_field_title = ''
     required_field_key = ''
     profile_config = Rails.configuration.Workbench.UserProfileFormFields
-    profile_config.each do |entry|
-      if entry['required']
-        required_field_key = entry['key']
-        required_field_title = entry['form_field_title']
+    profile_config.each do |k, entry|
+      if entry['Required']
+        required_field_key = k.to_s
+        required_field_title = entry['FormFieldTitle']
         break
       end
     end

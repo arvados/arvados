@@ -107,11 +107,27 @@ arvcfg.declare_config "Workbench.ApplicationMimetypesWithViewIcon", Hash, :appli
 arvcfg.declare_config "Workbench.RunningJobLogRecordsToFetch", Integer, :running_job_log_records_to_fetch
 arvcfg.declare_config "Workbench.LogViewerMaxBytes", Integer, :log_viewer_max_bytes
 arvcfg.declare_config "Workbench.TrustAllContent", Boolean, :trust_all_content
-arvcfg.declare_config "Workbench.UserProfileFormFields", Array, :user_profile_form_fields, ->(cfg, k, v) {
+arvcfg.declare_config "Workbench.UserProfileFormFields", Hash, :user_profile_form_fields, ->(cfg, k, v) {
   if !v
     v = []
   end
-  ConfigLoader.set_cfg cfg, "Workbench.UserProfileFormFields", v
+  entries = {}
+  v.each_with_index do |s,i|
+    entries[s["key"]] = {
+      "Type" => s["type"],
+      "FormFieldTitle" => s["form_field_title"],
+      "FormFieldDescription" => s["form_field_description"],
+      "Required" => s["required"],
+      "Position": i
+    }
+    if s["options"]
+      entries[s["key"]]["Options"] = {}
+      s["options"].each do |o|
+        entries[s["key"]]["Options"][o] = {}
+      end
+    end
+  end
+  ConfigLoader.set_cfg cfg, "Workbench.UserProfileFormFields", entries
 }
 arvcfg.declare_config "Workbench.UserProfileFormMessage", String, :user_profile_form_message
 arvcfg.declare_config "Workbench.Theme", String, :arvados_theme

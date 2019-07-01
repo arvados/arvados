@@ -17,6 +17,7 @@
 # delete application.yml and database.yml.
 
 require 'config_loader'
+require 'open3'
 
 begin
   # If secret_token.rb exists here, we need to load it first.
@@ -42,34 +43,29 @@ EOS
   WARNED_OMNIAUTH_CONFIG = true
 end
 
-# Load the defaults
-$arvados_config_defaults = ConfigLoader.load "#{::Rails.root.to_s}/config/config.default.yml"
-if $arvados_config_defaults.empty?
-  raise "Missing #{::Rails.root.to_s}/config/config.default.yml"
+# Load the defaults, used by config:migrate and fallback loading
+# legacy application.yml
+Open3.popen2("arvados-server", "config-defaults") do |stdin, stdout, status_thread|
+  confs = YAML.load(stdout, deserialize_symbols: false)
+  clusterID, clusterConfig = confs["Clusters"].first
+  $arvados_config_defaults = clusterConfig
+  $arvados_config_defaults["ClusterID"] = clusterID
 end
-
-def remove_sample_entries(h)
-  return unless h.is_a? Hash
-  h.delete("SAMPLE")
-  h.each { |k, v| remove_sample_entries(v) }
-end
-remove_sample_entries($arvados_config_defaults)
-
-clusterID, clusterConfig = $arvados_config_defaults["Clusters"].first
-$arvados_config_defaults = clusterConfig
-$arvados_config_defaults["ClusterID"] = clusterID
-
-# Initialize the global config with the defaults
-$arvados_config_global = $arvados_config_defaults.deep_dup
 
 # Load the global config file
-confs = ConfigLoader.load "/etc/arvados/config.yml"
-if !confs.empty?
-  clusterID, clusterConfig = confs["Clusters"].first
-  $arvados_config_global["ClusterID"] = clusterID
-
-  # Copy the cluster config over the defaults
-  $arvados_config_global.deep_merge!(clusterConfig)
+Open3.popen2("arvados-server", "config-dump") do |stdin, stdout, status_thread|
+  confs = YAML.load(stdout, deserialize_symbols: false)
+  if confs && !confs.empty?
+    # config-dump merges defaults with user configuration, so every
+    # key should be set.
+    clusterID, clusterConfig = confs["Clusters"].first
+    $arvados_config_global = clusterConfig
+    $arvados_config_global["ClusterID"] = clusterID
+  else
+    # config-dump failed, assume we will be loading from legacy
+    # application.yml, initialize with defaults.
+    $arvados_config_global = $arvados_config_defaults.deep_dup
+  end
 end
 
 # Now make a copy

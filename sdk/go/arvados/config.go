@@ -96,7 +96,7 @@ type Cluster struct {
 	Mail struct {
 		MailchimpAPIKey                string
 		MailchimpListID                string
-		SendUserSetupNotificationEmail string
+		SendUserSetupNotificationEmail bool
 		IssueReporterEmailFrom         string
 		IssueReporterEmailTo           string
 		SupportEmailAddress            string
@@ -139,7 +139,7 @@ type Cluster struct {
 		EnablePublicProjectsPage         bool
 		FileViewersConfigURL             string
 		LogViewerMaxBytes                ByteSize
-		MultiSiteSearch                  bool
+		MultiSiteSearch                  string
 		Repositories                     bool
 		RepositoryCache                  string
 		RunningJobLogRecordsToFetch      int
@@ -155,6 +155,8 @@ type Cluster struct {
 			FormFieldTitle       string
 			FormFieldDescription string
 			Required             bool
+			Position             int
+			Options              map[string]struct{}
 		}
 		UserProfileFormMessage string
 		VocabularyURL          string
