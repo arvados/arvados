@@ -923,6 +923,7 @@ install_services/login-sync() {
 }
 
 install_services/api() {
+    stop_services
     cd "$WORKSPACE/services/api" \
         && RAILS_ENV=test bundle_install_trylocal
 
