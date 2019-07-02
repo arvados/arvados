@@ -814,7 +814,7 @@ class Operations(llfuse.Operations):
     def unlink(self, inode_parent, name, ctx=None):
         _logger.debug("arv-mount unlink: parent_inode %i '%s'", inode_parent, name)
         p = self._check_writable(inode_parent)
-        p.unlink(name)
+        p.unlink(name.decode())
 
     @rmdir_time.time()
     @catch_exceptions
