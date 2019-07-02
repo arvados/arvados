@@ -19,14 +19,6 @@ require 'config_loader'
 require 'config_validators'
 require 'open3'
 
-begin
-  # If secret_token.rb exists here, we need to load it first.
-  require_relative 'secret_token.rb'
-rescue LoadError
-  # Normally secret_token.rb is missing and the secret token is
-  # configured by application.yml (i.e., here!) instead.
-end
-
 # Load the defaults, used by config:migrate and fallback loading
 # legacy application.yml
 Open3.popen2("arvados-server", "config-defaults") do |stdin, stdout, status_thread|
@@ -93,7 +85,6 @@ arvcfg.declare_config "Services.Workbench2.ExternalURL", URI, :workbench2_url
 
 arvcfg.declare_config "Users.AnonymousUserToken", String, :anonymous_user_token
 
-arvcfg.declare_config "Workbench.SecretToken", String, :secret_token
 arvcfg.declare_config "Workbench.SecretKeyBase", String, :secret_key_base
 
 arvcfg.declare_config "Workbench.ApplicationMimetypesWithViewIcon", Hash, :application_mimetypes_with_view_icon, ->(cfg, k, v) {

@@ -988,7 +988,7 @@ pythonstuff=(
 )
 
 declare -a gostuff
-gostuff=($(git grep -lw func | grep \\.go | sed -e 's/\/[^\/]*$//' | sort -u))
+gostuff=($(cd "$WORKSPACE" && git grep -lw func | grep \\.go | sed -e 's/\/[^\/]*$//' | sort -u))
 
 install_apps/workbench() {
     cd "$WORKSPACE/apps/workbench" \

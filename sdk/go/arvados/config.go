@@ -113,6 +113,7 @@ type Cluster struct {
 		Insecure    bool
 	}
 	Users struct {
+		AnonymousUserToken                    string
 		AdminNotifierEmailFrom                string
 		AutoAdminFirstUser                    bool
 		AutoAdminUserWithEmail                string
@@ -144,12 +145,12 @@ type Cluster struct {
 		RepositoryCache                  string
 		RunningJobLogRecordsToFetch      int
 		SecretKeyBase                    string
-		SecretToken                      string
 		ShowRecentCollectionsOnDashboard bool
 		ShowUserAgreementInline          bool
 		ShowUserNotifications            bool
 		SiteName                         string
 		Theme                            string
+		TrustAllContent                  bool
 		UserProfileFormFields            map[string]struct {
 			Type                 string
 			FormFieldTitle       string

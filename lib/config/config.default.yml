@@ -666,24 +666,23 @@ Clusters:
       ShowUserAgreementInline: false
       SecretKeyBase: ""
       RepositoryCache: /var/www/arvados-workbench/current/tmp/git
-      UserProfileFormFields:
-        SAMPLE:
-          exampleTextValue:  # key that will be set in properties
-            Type: text  #
-            FormFieldTitle: ""
-            FormFieldDescription: ""
-            Required: true
-            Position: 1
-          exampleOptionsValue:
-            Type: select
-            FormFieldTitle: ""
-            FormFieldDescription: ""
-            Required: true
-            Position: 1
-            Options:
-              red: {}
-              blue: {}
-              yellow: {}
+      UserProfileFormFields: {}
+          # exampleTextValue:  # key that will be set in properties
+          #   Type: text  #
+          #   FormFieldTitle: ""
+          #   FormFieldDescription: ""
+          #   Required: true
+          #   Position: 1
+          # exampleOptionsValue:
+          #   Type: select
+          #   FormFieldTitle: ""
+          #   FormFieldDescription: ""
+          #   Required: true
+          #   Position: 1
+          #   Options:
+          #     red: {}
+          #     blue: {}
+          #     yellow: {}
       UserProfileFormMessage: 'Welcome to Arvados. All <span style="color:red">required fields</span> must be completed before you can proceed.'
 
       # Mimetypes of applications for which the view icon
