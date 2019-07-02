@@ -34,7 +34,7 @@ class ArgumentParser(argparse.ArgumentParser):
     with "--".
             """)
         self.add_argument('--version', action='version',
-                          version="%s %s" % (sys.argv[0], __version__),
+                          version=u"%s %s" % (sys.argv[0], __version__),
                           help='Print version and exit.')
         self.add_argument('mountpoint', type=str, help="""Mount point.""")
         self.add_argument('--allow-other', action='store_true',

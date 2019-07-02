@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 from __future__ import absolute_import
+from __future__ import print_function
 import arvados
 import arvados_fuse
 import arvados_fuse.command
@@ -185,11 +186,20 @@ class MountArgsTest(unittest.TestCase):
         self.assertEqual(True, self.mnt.listen_for_events)
 
     def test_version_argument(self):
-        orig, sys.stderr = sys.stderr, io.BytesIO()
+        # The argparse version action prints to stderr in Python 2 and stdout
+        # in Python 3.4 and up. Write both to the same stream so the test can pass 
+        # in both cases. 
+        origerr = sys.stderr
+        origout = sys.stdout
+        sys.stderr = io.StringIO()
+        sys.stdout = sys.stderr
+
         with self.assertRaises(SystemExit):
             args = arvados_fuse.command.ArgumentParser().parse_args(['--version'])
-        self.assertRegexpMatches(sys.stderr.getvalue(), "[0-9]+\.[0-9]+\.[0-9]+")
-        sys.stderr = orig
+        self.assertRegexpMatches(sys.stdout.getvalue(), "[0-9]+\.[0-9]+\.[0-9]+")
+        sys.stderr.close()
+        sys.stderr = origerr
+        sys.stdout = origout
 
     @noexit
     @mock.patch('arvados.events.subscribe')
