@@ -9,6 +9,19 @@ import (
 	"net/http"
 )
 
+func ErrorWithStatus(err error, status int) error {
+	return errorWithStatus{err, status}
+}
+
+type errorWithStatus struct {
+	error
+	Status int
+}
+
+func (ews errorWithStatus) HTTPStatus() int {
+	return ews.Status
+}
+
 type ErrorResponse struct {
 	Errors []string `json:"errors"`
 }

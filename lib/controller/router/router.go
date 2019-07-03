@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"strings"
 
-	"git.curoverse.com/arvados.git/lib/controller/federation"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/auth"
 	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
@@ -24,10 +23,10 @@ type router struct {
 	fed arvados.API
 }
 
-func New(cluster *arvados.Cluster) *router {
+func New(fed arvados.API) *router {
 	rtr := &router{
 		mux: httprouter.New(),
-		fed: federation.New(cluster),
+		fed: fed,
 	}
 	rtr.addRoutes()
 	return rtr
