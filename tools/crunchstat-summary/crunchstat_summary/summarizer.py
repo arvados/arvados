@@ -335,7 +335,9 @@ class Summarizer(object):
         return itertools.chain(
             self._recommend_cpu(),
             self._recommend_ram(),
-            self._recommend_keep_cache())
+            self._recommend_keep_cache(),
+            self._recommend_temp_disk(),
+            )
 
     def _recommend_cpu(self):
         """Recommend asking for 4 cores if max CPU usage was 333%"""
@@ -436,6 +438,21 @@ class Summarizer(object):
                 utilization * 100.0,
                 constraint_key,
                 math.ceil(asked_cache * 2 / self._runtime_constraint_mem_unit()))
+
+
+    def _recommend_temp_disk(self):
+        """Recommend decreasing temp disk if utilization < 50%"""
+        total = float(self.job_tot['statfs']['total'])
+        utilization = (float(self.job_tot['statfs']['used']) / total)
+
+        if utilization < 50.8:
+            yield (
+                '#!! {} max temp disk utilization was {:.0f}% of {:.0f} MiB -- '
+                'consider reducing "tmpdirMin" and/or "outdirMin"'
+            ).format(
+                self.label,
+                utilization * 100.0,
+                total / MB)
 
 
     def _format(self, val):
