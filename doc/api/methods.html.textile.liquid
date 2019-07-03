@@ -108,15 +108,15 @@ table(table table-bordered table-condensed).
 |@exists@|string|Test if a subproperty is present.|@["properties","exists","my_subproperty"]@|
 
 
-h4(#textsearchfilter). Filtering using text search
+h4(#substringsearchfilter). Filtering using substring search
 
-Resources can also be filtered by searching for a value in attributes of type @string@, @array of strings@, @text@, and @hash@. To use text search, the filter must:
+Resources can also be filtered by searching for a substring in attributes of type @string@, @array of strings@, @text@, and @hash@, which are indexed in the database specifically for search. To use substring search, the filter must:
 
 * Specify @any@ as the attribute
 * Use either the @like@ or @ilike@ operator
 * Have an operand of type @string@ that is wrapped in the SQL pattern match wildcard character @%@
 
-For example, the @["any", "like", "%foo%"]@ filter will return all resources that contain @foo@ in the content of at least one attribute of the previously defined types.
+For example, the @["any", "like", "%foo%"]@ filter will return all resources that contain @foo@ in the content of at least one attribute of the previously defined types. This is the recommended way to do keyword and file name search across the entire database. Note that only exact substring matches are returned and results are unranked and returned in the order specified by the @list@ @order@ argument.
 
 h4(#subpropertyfilters). Filtering on subproperties
 
