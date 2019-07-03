@@ -80,12 +80,12 @@ class MountArgsTest(unittest.TestCase):
         e = self.check_ent_type(arvados_fuse.MagicDirectory, 'by_id')
 
         e = self.check_ent_type(arvados_fuse.StringFile, 'README')
-        readme = e.readfrom(0, -1)
+        readme = e.readfrom(0, -1).decode()
         self.assertRegexpMatches(readme, r'active-user@arvados\.local')
         self.assertRegexpMatches(readme, r'\n$')
 
         e = self.check_ent_type(arvados_fuse.StringFile, 'by_id', 'README')
-        txt = e.readfrom(0, -1)
+        txt = e.readfrom(0, -1).decode()
         self.assertRegexpMatches(txt, r'portable data hash')
         self.assertRegexpMatches(txt, r'\n$')
 
