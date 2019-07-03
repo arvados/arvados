@@ -85,6 +85,7 @@ type Cluster struct {
 		ManagedProperties     map[string]interface{}
 		PreserveVersionIfIdle Duration
 		TrashSweepInterval    Duration
+		TrustAllContent       bool
 	}
 	Git struct {
 		Repositories string
@@ -151,7 +152,6 @@ type Cluster struct {
 		ShowUserNotifications            bool
 		SiteName                         string
 		Theme                            string
-		TrustAllContent                  bool
 		UserProfileFormFields            map[string]struct {
 			Type                 string
 			FormFieldTitle       string
