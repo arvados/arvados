@@ -137,6 +137,7 @@ type Cluster struct {
 		ApplicationMimetypesWithViewIcon map[string]struct{}
 		ArvadosDocsite                   string
 		ArvadosPublicDataDocURL          string
+		DefaultOpenIdPrefix              string
 		EnableGettingStartedPopup        bool
 		EnablePublicProjectsPage         bool
 		FileViewersConfigURL             string

@@ -149,6 +149,7 @@ var whitelist = map[string]bool{
 	"Workbench.ApplicationMimetypesWithViewIcon.*": true,
 	"Workbench.ArvadosDocsite":                     true,
 	"Workbench.ArvadosPublicDataDocURL":            true,
+	"Workbench.DefaultOpenIdPrefix":                false,
 	"Workbench.EnableGettingStartedPopup":          true,
 	"Workbench.EnablePublicProjectsPage":           true,
 	"Workbench.FileViewersConfigURL":               true,

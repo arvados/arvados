@@ -118,6 +118,8 @@ test:
         - IT
         - Other
 
+  repository_cache: <%= File.expand_path 'tmp/git', Rails.root %>
+
 common:
   assets.js_compressor: false
   assets.css_compressor: false

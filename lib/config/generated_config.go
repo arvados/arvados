@@ -836,6 +836,10 @@ Clusters:
       SiteName: Arvados Workbench
       ProfilingEnabled: false
 
+      # This is related to obsolete Google OpenID 1.0 login
+      # but some workbench stuff still expects it to be set.
+      DefaultOpenIdPrefix: "https://www.google.com/accounts/o8/id"
+
       # Workbench2 configs
       VocabularyURL: ""
       FileViewersConfigURL: ""
