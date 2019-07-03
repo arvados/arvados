@@ -141,6 +141,7 @@ type Cluster struct {
 		FileViewersConfigURL             string
 		LogViewerMaxBytes                ByteSize
 		MultiSiteSearch                  string
+		ProfilingEnabled                 bool
 		Repositories                     bool
 		RepositoryCache                  string
 		RunningJobLogRecordsToFetch      int

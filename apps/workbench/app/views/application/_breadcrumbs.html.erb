@@ -31,7 +31,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
                     <i class="glyphicon fa-fw glyphicon-search"></i> Search all projects ...
                   <% end %>
                </li>
-              <% if !Rails.configuration.Users.AnonymousUserToken.empty? and Rails.configuration.enable_public_projects_page %>
+              <% if !Rails.configuration.Users.AnonymousUserToken.empty? and Rails.configuration.Workbench.EnablePublicProjectsPage %>
                 <li role="menuitem"><a href="/projects/public" role="menuitem"><i class="fa fa-fw fa-list"></i> Browse public projects </a>
                 </li>
               <% end %>

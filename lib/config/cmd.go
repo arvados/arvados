@@ -159,19 +159,7 @@ func (defaultsCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 		}
 	}()
 
-	var src map[string]interface{}
-	err = yaml.Unmarshal(DefaultYAML, &src)
-	if err != nil {
-		err = fmt.Errorf("loading default config data: %s", err)
-		return 1
-	}
-	removeSampleKeys(src)
-
-	out, err := yaml.Marshal(src)
-	if err != nil {
-		return 1
-	}
-	_, err = stdout.Write(out)
+	_, err = stdout.Write(DefaultYAML)
 	if err != nil {
 		return 1
 	}

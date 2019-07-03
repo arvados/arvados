@@ -21,7 +21,9 @@ require 'open3'
 
 # Load the defaults, used by config:migrate and fallback loading
 # legacy application.yml
-Open3.popen2("arvados-server", "config-defaults") do |stdin, stdout, status_thread|
+Open3.popen2("arvados-server", "config-dump", "-config=-") do |stdin, stdout, status_thread|
+  stdin.write("Clusters: {xxxxx: {}}")
+  stdin.close
   confs = YAML.load(stdout, deserialize_symbols: false)
   clusterID, clusterConfig = confs["Clusters"].first
   $arvados_config_defaults = clusterConfig
@@ -52,6 +54,7 @@ arvcfg = ConfigLoader.new
 
 arvcfg.declare_config "ManagementToken", String, :ManagementToken
 arvcfg.declare_config "TLS.Insecure", Boolean, :arvados_insecure_https
+arvcfg.declare_config "Collections.TrustAllContent", Boolean, :trust_all_content
 
 arvcfg.declare_config "Services.Controller.ExternalURL", URI, :arvados_v1_base, ->(cfg, k, v) {
   u = URI(v)
@@ -97,7 +100,8 @@ arvcfg.declare_config "Workbench.ApplicationMimetypesWithViewIcon", Hash, :appli
 
 arvcfg.declare_config "Workbench.RunningJobLogRecordsToFetch", Integer, :running_job_log_records_to_fetch
 arvcfg.declare_config "Workbench.LogViewerMaxBytes", Integer, :log_viewer_max_bytes
-arvcfg.declare_config "Workbench.TrustAllContent", Boolean, :trust_all_content
+arvcfg.declare_config "Workbench.ProfilingEnabled", Boolean, :profiling_enabled
+arvcfg.declare_config "Workbench.APIResponseCompression", Boolean, :api_response_compression
 arvcfg.declare_config "Workbench.UserProfileFormFields", Hash, :user_profile_form_fields, ->(cfg, k, v) {
   if !v
     v = []

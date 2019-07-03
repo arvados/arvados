@@ -449,7 +449,7 @@ class ApplicationControllerTest < ActionController::TestCase
     false,
   ].each do |config|
     test "invoke show with include_accept_encoding_header config #{config}" do
-      Rails.configuration.include_accept_encoding_header_in_api_requests = config
+      Rails.configuration.APIResponseCompression = config
 
       @controller = CollectionsController.new
       get(:show, params: {id: api_fixture('collections')['foo_file']['uuid']}, session: session_for(:admin))

@@ -61,7 +61,7 @@ class ArvadosApiClient
     404 => NotFoundException,
   }
 
-  @@profiling_enabled = Rails.configuration.profiling_enabled
+  @@profiling_enabled = Rails.configuration.Workbench.ProfilingEnabled
   @@discovery = nil
 
   # An API client object suitable for handling API requests on behalf
@@ -101,7 +101,7 @@ class ArvadosApiClient
             .select { |ca_path| File.readable?(ca_path) }
             .each { |ca_path| @api_client.ssl_config.add_trust_ca(ca_path) }
         end
-        if Rails.configuration.api_response_compression
+        if Rails.configuration.Workbench.APIResponseCompression
           @api_client.transparent_gzip_decompression = true
         end
       end
