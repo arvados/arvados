@@ -10,6 +10,6 @@ import arvados.util as util
 filters = [['properties.responsible_person_uuid', 'exists', False]]
 cols = util.list_all(arvados.api().collections().list, filters=filters, select=['uuid', 'name'])
 
-print("Found {} collections:".format(len(cols)))
+print('Found {} collections:'.format(len(cols)))
 for c in cols:
     print('{}, "{}"'.format(c['uuid'], c['name']))
