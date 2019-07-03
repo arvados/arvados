@@ -69,17 +69,18 @@ func (t *tester) Run() bool {
 		return false
 	}
 
-	// Don't send the driver any filters the first time we get the
-	// instance list. This way we can log an instance count
-	// (N=...)  that includes all instances in this service
-	// account, even if they don't have the same InstanceSetID.
-	insts, err := t.getInstances(nil)
-	if err != nil {
-		t.Logger.WithError(err).Info("error getting initial list of instances")
-		return false
-	}
-
 	for {
+		// Don't send the driver any filters when getting the
+		// initial instance list. This way we can log an
+		// instance count (N=...)  that includes all instances
+		// in this service account, even if they don't have
+		// the same InstanceSetID.
+		insts, err := t.getInstances(nil)
+		if err != nil {
+			t.Logger.WithError(err).Info("error getting list of instances")
+			return false
+		}
+
 		foundExisting := false
 		for _, i := range insts {
 			if i.Tags()[t.TagKeyPrefix+"InstanceSetID"] != string(t.SetID) {
