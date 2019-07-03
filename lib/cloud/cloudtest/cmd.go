@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/user"
 
 	"git.curoverse.com/arvados.git/lib/cloud"
 	"git.curoverse.com/arvados.git/lib/config"
@@ -36,7 +35,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	flags := flag.NewFlagSet("", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	configFile := flags.String("config", arvados.DefaultConfigFile, "Site configuration `file`")
-	instanceSetID := flags.String("instance-set-id", defaultInstanceSetID(), "InstanceSetID tag `value` to use on the test instance")
+	instanceSetID := flags.String("instance-set-id", "zzzzz-zzzzz-zzzzzzcloudtest", "InstanceSetID tag `value` to use on the test instance")
 	imageID := flags.String("image-id", "", "Image ID to use when creating the test instance (if empty, use cluster config)")
 	instanceType := flags.String("instance-type", "", "Instance type to create (if empty, use cheapest type in config)")
 	destroyExisting := flags.Bool("destroy-existing", false, "Destroy any existing instances tagged with our InstanceSetID, instead of erroring out")
@@ -120,15 +119,6 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		return 1
 	}
 	return 0
-}
-
-func defaultInstanceSetID() string {
-	username := ""
-	if u, err := user.Current(); err == nil {
-		username = u.Username
-	}
-	hostname, _ := os.Hostname()
-	return fmt.Sprintf("cloudtest-%s@%s", username, hostname)
 }
 
 // Return the named instance type, or the cheapest type if name=="".
