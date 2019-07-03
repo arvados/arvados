@@ -689,12 +689,12 @@ Clusters:
       SendUserSetupNotificationEmail: true
 
       # Bug/issue report notification to and from addresses
-      IssueReporterEmailFrom: ""
-      IssueReporterEmailTo: ""
-      SupportEmailAddress: ""
+      IssueReporterEmailFrom: "arvados@example.com"
+      IssueReporterEmailTo: "arvados@example.com"
+      SupportEmailAddress: "arvados@example.com"
 
       # Generic issue email from
-      EmailFrom: ""
+      EmailFrom: "arvados@example.com"
     RemoteClusters:
       "*":
         Host: ""
