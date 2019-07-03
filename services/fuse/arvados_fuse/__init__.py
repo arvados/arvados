@@ -59,6 +59,7 @@ standard_library.install_aliases()
 from builtins import next
 from builtins import str
 from builtins import object
+from builtins import bytes
 import os
 import sys
 import llfuse
@@ -662,7 +663,7 @@ class Operations(llfuse.Operations):
         r = handle.obj.readfrom(off, size, self.num_retries)
         if r:
             self.read_counter.add(len(r))
-        return r.encode('utf-8')
+        return r
 
     @write_time.time()
     @catch_exceptions

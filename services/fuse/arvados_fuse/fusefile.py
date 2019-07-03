@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 from __future__ import absolute_import
+from builtins import bytes
 import json
 import llfuse
 import logging
@@ -89,7 +90,7 @@ class StringFile(File):
         return len(self.contents)
 
     def readfrom(self, off, size, num_retries=0):
-        return self.contents[off:(off+size)]
+        return bytes(self.contents[off:(off+size)], encoding='utf-8')
 
 
 class ObjectFile(StringFile):
