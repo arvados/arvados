@@ -80,7 +80,6 @@ var makeFilter = function() {
     load_log();
 
     function load_log() {
-        //console.log("fetching "+logcollection_url+" with "+ajax_opts);
         $.ajax(logcollection_url, ajax_opts).done(done).fail(fail);
     }
     function done(data, status, jqxhr) {
