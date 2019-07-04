@@ -616,6 +616,7 @@ initialize() {
     export R_LIBS
 
     export GOPATH
+    export PATH=$GOPATH/bin:$PATH
 
     # Jenkins config requires that glob tmp/*.log match something. Ensure
     # that happens even if we don't end up running services that set up
