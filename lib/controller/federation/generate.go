@@ -49,6 +49,7 @@ func main() {
 		panic(err)
 	}
 	go func() {
+		defer out.Close()
 		out.Write(regexp.MustCompile(`(?ms)^.*package .*?import.*?\n\)\n`).Find(buf))
 		io.WriteString(out, "//\n// -- this file is auto-generated -- do not edit -- edit list.go and run \"go generate\" instead --\n//\n\n")
 		for _, t := range []string{"Container", "Specimen"} {
@@ -56,10 +57,6 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-		}
-		err = out.Close()
-		if err != nil {
-			panic(err)
 		}
 	}()
 	err = gofmt.Run()
