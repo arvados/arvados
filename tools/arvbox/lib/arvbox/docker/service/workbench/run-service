@@ -33,6 +33,9 @@ if ! test -s /var/lib/arvados/workbench_secret_token ; then
 fi
 secret_token=$(cat /var/lib/arvados/workbench_secret_token)
 
+if test -a /usr/src/arvados/apps/workbench/config/arvados_config.rb ; then
+    rm -f config/application.yml
+else
 cat >config/application.yml <<EOF
 $RAILS_ENV:
   secret_token: $secret_token
@@ -47,6 +50,7 @@ $RAILS_ENV:
   workbench2_url: https://$localip:${services[workbench2-ssl]}
 EOF
 
-bundle exec rake assets:precompile
-
 (cd config && /usr/local/lib/arvbox/yml_override.py application.yml)
+fi
+
+bundle exec rake assets:precompile
