@@ -40,7 +40,7 @@ On a Red Hat-based system, install the following packages:
 
 h2(#configure). Configure Workbench
 
-Edit @/etc/arvados/config.yml@ following the instructions below.  Only a few of the most important configuration options are listed here.  The full set of configuration options are in the "Workbench section of config.yml":{{site.baseurl}}/admin/config.html
+Edit @/etc/arvados/config.yml@ to set the keys below.  Only the most important configuration options are listed here.  The full set of configuration options are in the "Workbench section of config.yml":{{site.baseurl}}/admin/config.html
 
 h3. Workbench.SecretKeyBase
 
@@ -54,6 +54,14 @@ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
 Then put that value in the @Workbench.SecretKeyBase@ field.
 
+<notextile>
+<pre><code>Cluster:
+  zzzzz:
+    Workbench:
+      SecretKeyBase: <span class="userinput">aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</span>
+</code></pre>
+</notextile>
+
 h3. Services.Controller.ExternalURL
 
 Ensure that @Services.Controller.ExternalURL@ is configured for "Arvados Controller":install-controller.html . For example like this:
@@ -63,7 +71,7 @@ Ensure that @Services.Controller.ExternalURL@ is configured for "Arvados Control
   zzzzz:
     Services:
       Controller:
-        ExternalURL: https://prefix_uuid.your.domain
+        ExternalURL: <span class="userinput">https://prefix_uuid.your.domain</span>
 </code></pre>
 </notextile>
 
@@ -71,9 +79,26 @@ h3. Workbench.SiteName
 
 @Workbench.SiteName@ can be set to any arbitrary string. It is used to identify this Workbench to people visiting it.
 
+
+<notextile>
+<pre><code>Cluster:
+  zzzzz:
+    Workbench:
+      SiteName: <span class="userinput">My Arvados</span>
+</code></pre>
+</notextile>
+
 h3. TLS.Insecure
 
 For testing only.  Allows use of self-signed certificates.  If true, workbench will not verify the TLS certificate of Arvados Controller.
+
+<notextile>
+<pre><code>Cluster:
+  zzzzz:
+    TLS:
+      Insecure: <span class="userinput">false</span>
+</code></pre>
+</notextile>
 
 h2. Configure Piwik
 

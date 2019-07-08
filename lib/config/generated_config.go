@@ -291,7 +291,7 @@ Clusters:
       # one another!
       BlobSigning: true
 
-      # blob_signing_key is a string of alphanumeric characters used to
+      # BlobSigningKey is a string of alphanumeric characters used to
       # generate permission signatures for Keep locators. It must be
       # identical to the permission key given to Keep. IMPORTANT: This is
       # a site secret. It should be at least 50 characters.
