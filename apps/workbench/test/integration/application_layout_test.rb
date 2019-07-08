@@ -153,7 +153,12 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
   ].each do |wb2_url_config, wb2_menu_appear|
     test "workbench2_url=#{wb2_url_config} should#{wb2_menu_appear ? '' : ' not'} show WB2 menu" do
       Rails.configuration.Services.Workbench2.ExternalURL = URI(wb2_url_config)
-      assert_equal wb2_menu_appear, ConfigValidators.validate_wb2_url_config()
+      if !wb2_menu_appear and !wb2_url_config.empty?
+        assert_raises RuntimeError do
+          ConfigValidators.validate_wb2_url_config()
+        end
+        Rails.configuration.Services.Workbench2.ExternalURL = URI("")
+      end
 
       visit page_with_token('active')
       within('.navbar-fixed-top') do

@@ -53,12 +53,6 @@ development:
   action_dispatch.best_standards_support: :builtin
   assets.debug: true
   profiling_enabled: true
-  site_name: Arvados Workbench (dev)
-
-  # API server configuration
-  arvados_login_base: ~
-  arvados_v1_base: ~
-  arvados_insecure_https: ~
 
 production:
   force_ssl: true
