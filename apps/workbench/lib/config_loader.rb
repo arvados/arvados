@@ -68,7 +68,11 @@ class ConfigLoader
     remainders = {}
     from_config.each do |k, v|
       if @config_migrate_map[k.to_sym]
-        @config_migrate_map[k.to_sym].call to_config, k, v
+        begin
+          @config_migrate_map[k.to_sym].call to_config, k, v
+        rescue => e
+          raise "Error migrating '#{k}: #{v}' got error #{e}"
+        end
       else
         remainders[k] = v
       end
@@ -79,90 +83,90 @@ class ConfigLoader
   def coercion_and_check check_cfg, check_nonempty: true
     @config_types.each do |cfgkey, cfgtype|
       begin
-      cfg = check_cfg
-      k = cfgkey
-      ks = k.split '.'
-      k = ks.pop
-      ks.each do |kk|
-        cfg = cfg[kk]
+        cfg = check_cfg
+        k = cfgkey
+        ks = k.split '.'
+        k = ks.pop
+        ks.each do |kk|
+          cfg = cfg[kk]
+          if cfg.nil?
+            break
+          end
+        end
+
         if cfg.nil?
-          break
+          raise "missing #{cfgkey}"
         end
-      end
 
-      if cfg.nil?
-        raise "missing #{cfgkey}"
-      end
-
-      if cfgtype == String and !cfg[k]
-        cfg[k] = ""
-      end
-
-      if cfgtype == String and cfg[k].is_a? Symbol
-        cfg[k] = cfg[k].to_s
-      end
-
-      if cfgtype == Pathname and cfg[k].is_a? String
-
-        if cfg[k] == ""
-          cfg[k] = Pathname.new("")
-        else
-          cfg[k] = Pathname.new(cfg[k])
-          if !cfg[k].exist?
-            raise "#{cfgkey} path #{cfg[k]} does not exist"
-          end
+        if cfgtype == String and !cfg[k]
+          cfg[k] = ""
         end
-      end
 
-      if cfgtype == NonemptyString
-        if (!cfg[k] || cfg[k] == "") && check_nonempty
-          raise "#{cfgkey} cannot be empty"
+        if cfgtype == String and cfg[k].is_a? Symbol
+          cfg[k] = cfg[k].to_s
         end
-        if cfg[k].is_a? String
-          next
-        end
-      end
 
-      if cfgtype == ActiveSupport::Duration
-        if cfg[k].is_a? Integer
-          cfg[k] = cfg[k].seconds
-        elsif cfg[k].is_a? String
-          cfg[k] = ConfigLoader.parse_duration(cfg[k], cfgkey: cfgkey)
-        end
-      end
+        if cfgtype == Pathname and cfg[k].is_a? String
 
-      if cfgtype == URI
-        if cfg[k]
-          cfg[k] = URI(cfg[k])
-        else
-          cfg[k] = URI("")
-        end
-      end
-
-      if cfgtype == Integer && cfg[k].is_a?(String)
-        v = cfg[k].sub(/B\s*$/, '')
-        if mt = /(-?\d*\.?\d+)\s*([KMGTPE]i?)$/.match(v)
-          if mt[1].index('.')
-            v = mt[1].to_f
+          if cfg[k] == ""
+            cfg[k] = Pathname.new("")
           else
-            v = mt[1].to_i
+            cfg[k] = Pathname.new(cfg[k])
+            if !cfg[k].exist?
+              raise "#{cfgkey} path #{cfg[k]} does not exist"
+            end
           end
-          cfg[k] = v * {
-            'K' => 1000,
-            'Ki' => 1 << 10,
-            'M' => 1000000,
-            'Mi' => 1 << 20,
-	    "G" =>  1000000000,
-	    "Gi" => 1 << 30,
-	    "T" =>  1000000000000,
-	    "Ti" => 1 << 40,
-	    "P" =>  1000000000000000,
-	    "Pi" => 1 << 50,
-	    "E" =>  1000000000000000000,
-	    "Ei" => 1 << 60,
-          }[mt[2]]
         end
-      end
+
+        if cfgtype == NonemptyString
+          if (!cfg[k] || cfg[k] == "") && check_nonempty
+            raise "#{cfgkey} cannot be empty"
+          end
+          if cfg[k].is_a? String
+            next
+          end
+        end
+
+        if cfgtype == ActiveSupport::Duration
+          if cfg[k].is_a? Integer
+            cfg[k] = cfg[k].seconds
+          elsif cfg[k].is_a? String
+            cfg[k] = ConfigLoader.parse_duration(cfg[k], cfgkey: cfgkey)
+          end
+        end
+
+        if cfgtype == URI
+          if cfg[k]
+            cfg[k] = URI(cfg[k])
+          else
+            cfg[k] = URI("")
+          end
+        end
+
+        if cfgtype == Integer && cfg[k].is_a?(String)
+          v = cfg[k].sub(/B\s*$/, '')
+          if mt = /(-?\d*\.?\d+)\s*([KMGTPE]i?)$/.match(v)
+            if mt[1].index('.')
+              v = mt[1].to_f
+            else
+              v = mt[1].to_i
+            end
+            cfg[k] = v * {
+              'K' => 1000,
+              'Ki' => 1 << 10,
+              'M' => 1000000,
+              'Mi' => 1 << 20,
+	      "G" =>  1000000000,
+	      "Gi" => 1 << 30,
+	      "T" =>  1000000000000,
+	      "Ti" => 1 << 40,
+	      "P" =>  1000000000000000,
+	      "Pi" => 1 << 50,
+	      "E" =>  1000000000000000000,
+	      "Ei" => 1 << 60,
+            }[mt[2]]
+          end
+        end
 
       rescue => e
         raise "#{cfgkey} expected #{cfgtype} but '#{cfg[k]}' got error #{e}"
