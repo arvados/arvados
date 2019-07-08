@@ -189,4 +189,6 @@ ArvadosWorkbench::Application.configure do
   ConfigLoader.copy_into_config $remaining_config, config
   secrets.secret_key_base = $arvados_config["Workbench"]["SecretKeyBase"]
   ConfigValidators.validate_wb2_url_config()
+  ConfigValidators.validate_download_config()
+
 end

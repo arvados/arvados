@@ -74,5 +74,3 @@ module ArvadosWorkbench
     config.assets.paths << Rails.root.join('node_modules')
   end
 end
-
-require File.expand_path('../load_config', __FILE__)

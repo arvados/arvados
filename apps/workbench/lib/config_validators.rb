@@ -17,4 +17,10 @@ module ConfigValidators
     end
     return false
   end
+
+  def self.validate_download_config
+    if Rails.configuration.Services.WebDAV.ExternalURL == URI("") and Rails.configuration.Services.WebDAVDownload.ExternalURL == URI("")
+      raise "Keep-web service must be configured in Services.WebDAV and/or Services.WebDAVDownload"
+    end
+  end
 end
