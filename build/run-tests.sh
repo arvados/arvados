@@ -222,6 +222,8 @@ sanity_checks() {
     echo -n 'Python3 pyconfig.h: '
     find /usr/include -path '*/python3*/pyconfig.h' | egrep --max-count=1 . \
         || fatal "No Python3 pyconfig.h. Try: apt-get install python3-dev"
+    which netstat \
+        || fatal "No netstat. Try: apt-get install net-tools"
     echo -n 'nginx: '
     PATH="$PATH:/sbin:/usr/sbin:/usr/local/sbin" nginx -v \
         || fatal "No nginx. Try: apt-get install nginx"
