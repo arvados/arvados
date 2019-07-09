@@ -54,7 +54,8 @@ Clusters:
         ExternalURL: "https://$localip:${services[keep-web-ssl]}/"
       Composer:
         ExternalURL: "http://$localip:${services[composer]}"
-
+      Controller:
+        ExternalURL: "https://$localip:${services[controller-ssl]}"
     NodeProfiles:  # to be deprecated in favor of "Services" section
       "*":
         arvados-controller:
