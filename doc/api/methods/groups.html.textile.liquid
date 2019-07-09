@@ -42,7 +42,9 @@ Required arguments are displayed in %{background:#ccffcc}green%.
 
 h3. contents
 
-Retrieve a list of items owned by the group.
+Retrieve a list of items owned by the group.  Use "recursive" to list objects within subprojects as well.
+
+When called with "include=owner_uuid" this also returns (in the @included@ field of the response) the objects (users, projects, or other groups) that own the objects returned in @items@.
 
 Arguments:
 
@@ -53,11 +55,12 @@ table(table table-bordered table-condensed).
 |order|array|Attributes to use as sort keys to determine the order resources are returned, each optionally followed by @asc@ or @desc@ to indicate ascending or descending order. Sort within a resource type by prefixing the attribute with the resource name and a period.|query|@["collections.modified_at desc"]@|
 |filters|array|Conditions for filtering items.|query|@[["uuid", "is_a", "arvados#job"]]@|
 |recursive|boolean (default false)|Include items owned by subprojects.|query|@true@|
-|exclude_home_project|boolean (default false)|Only return items which are visible to the user but not accessible within the user's home project.  Use this to get a list of items that are shared with the user.|query|@true@|
+|exclude_home_project|boolean (default false)|Only return items which are visible to the user but not accessible within the user's home project.  Use this to get a list of items that are shared with the user.  Uses the logic described under the "shared" endpoint.|query|@true@|
+|include|string|If provided with the value "owner_uuid", this will return owner objects in the "included" field of the response.|query|?include=owner_uuid|
 
 Note: Because adding access tokens to manifests can be computationally expensive, the @manifest_text@ field is not included in listed collections.  If you need it, request a "list of collections":{{site.baseurl}}/api/methods/collections.html with the filter @["owner_uuid", "=", GROUP_UUID]@, and @"manifest_text"@ listed in the select parameter.
 
-Note: Use filters with the attribute format @<item type>.<field name>@ to filter items of a specific type. For example: @["pipeline_instances.state", "=", "Complete"]@ to filter @pipeline_instances@ where @state@ is @Complete@. All other types of items owned by this group will be unimpacted by this filter and will still be included.
+Note: Use filters with the attribute format @<item type>.<field name>@ to filter items of a specific type. For example: @["container_requests.state", "=", "Final"]@ to filter @container_requests@ where @state@ is @Final@. All other types of items owned by this group will be unimpacted by this filter and will still be included.
 
 h3. create
 
@@ -131,9 +134,9 @@ table(table table-bordered table-condensed).
 
 h3. shared
 
-This endpoint returns the toplevel set of groups to which access is granted through a chain of one or more permission links rather than through direct ownership by the current user account.  This is useful for clients which wish to browse the list of projects the user has permission to read which are not part of the "home" project tree.
+This endpoint returns the toplevel set of groups to which access is granted through a chain of one or more permission links rather than through direct ownership by the current user account.  This is useful for clients which wish to browse the list of projects the user has permission to read which are not part of the "home" project tree.  Similar behavior is also available with the @exclude_home_project@ option of the "contents" endpoint.
 
-When called with "include=owner_uuid" this also returns (in the "included" field) the objects that own those projects (users or non-project groups).
+When called with "include=owner_uuid" this also returns (in the @included@ field) the objects that own those projects (users or non-project groups).
 
 Specifically, the logic is:
 
@@ -148,4 +151,4 @@ In addition to the "include" parameter this endpoint also supports the same para
 
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
-|include|string|If provided with the value "owner_uuid", this will return owner objects in the "included" field of the response.|query|?include=owner_uuid|
+|include|string|If provided with the value "owner_uuid", this will return owner objects in the @included@ field of the response.|query|?include=owner_uuid|
