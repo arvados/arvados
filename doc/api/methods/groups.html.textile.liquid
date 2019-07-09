@@ -44,7 +44,7 @@ h3. contents
 
 Retrieve a list of items owned by the group.  Use "recursive" to list objects within subprojects as well.
 
-When called with "include=owner_uuid" this also returns (in the @included@ field of the response) the objects (users, projects, or other groups) that own the objects returned in @items@.
+When called with "include=owner_uuid" this also returns (in the @included@ field of the response) the objects (users, projects, or other groups) that own the objects returned in @items@.  This can be used to fetch an object and the record of the parent project in a single API call.
 
 Arguments:
 
