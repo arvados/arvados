@@ -25,13 +25,15 @@ class ApplicationControllerTest < ActionController::TestCase
     assert_operator(token_time, :>=, @start_stamp, "error token too old")
     assert_operator(token_time, :<=, now_timestamp, "error token too new")
     json_response['errors'].each do |err|
-      assert_match(/req-[a-z0-9]{20}/, err)
+      assert_match(/req-[a-z0-9]{20}/, err, "X-Request-Id value missing on error message")
     end
   end
 
   def check_404(errmsg="Path not found")
     assert_response 404
-    assert_includes(json_response['errors'].first, errmsg)
+    json_response['errors'].each do |err|
+      assert(err.include?(errmsg), "error message '#{err}' expected to include '#{errmsg}'")
+    end
     check_error_token
   end
 

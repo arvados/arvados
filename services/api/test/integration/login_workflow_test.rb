@@ -10,7 +10,9 @@ class LoginWorkflowTest < ActionDispatch::IntegrationTest
       params: {specimen: {}},
       headers: {'HTTP_ACCEPT' => ''})
     assert_response 401
-    assert_includes(json_response['errors'], "Not logged in")
+    json_response['errors'].each do |err|
+      assert(err.include?("Not logged in"), "error message '#{err}' expected to include 'Not logged in'")
+    end
   end
 
   test "login prompt respects JSON Accept header" do
@@ -18,7 +20,9 @@ class LoginWorkflowTest < ActionDispatch::IntegrationTest
       params: {specimen: {}},
       headers: {'HTTP_ACCEPT' => 'application/json'})
     assert_response 401
-    assert_includes(json_response['errors'], "Not logged in")
+    json_response['errors'].each do |err|
+      assert(err.include?("Not logged in"), "error message '#{err}' expected to include 'Not logged in'")
+    end
   end
 
   test "login prompt respects HTML Accept header" do
