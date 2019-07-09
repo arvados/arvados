@@ -146,3 +146,22 @@ func (pl *plainLogger) Warnf(format string, args ...interface{}) {
 	pl.used = true
 	fmt.Fprintf(pl.w, format+"\n", args...)
 }
+
+var DumpDefaultsCommand defaultsCommand
+
+type defaultsCommand struct{}
+
+func (defaultsCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	var err error
+	defer func() {
+		if err != nil {
+			fmt.Fprintf(stderr, "%s\n", err)
+		}
+	}()
+
+	_, err = stdout.Write(DefaultYAML)
+	if err != nil {
+		return 1
+	}
+	return 0
+}

@@ -4,7 +4,7 @@
 
 class JobsController < ApplicationController
   skip_around_action :require_thread_api_token, if: proc { |ctrl|
-    Rails.configuration.anonymous_user_token and
+    !Rails.configuration.Users.AnonymousUserToken.empty? and
     'show' == ctrl.action_name
   }
 
@@ -67,7 +67,7 @@ class JobsController < ApplicationController
 
   def logs
     @logs = @object.
-      stderr_log_query(Rails.configuration.running_job_log_records_to_fetch).
+      stderr_log_query(Rails.configuration.Workbench.RunningJobLogRecordsToFetch).
       map { |e| e.serializable_hash.merge({ 'prepend' => true }) }
     respond_to do |format|
       format.json { render json: @logs }

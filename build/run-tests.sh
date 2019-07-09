@@ -616,6 +616,9 @@ initialize() {
     export R_LIBS
 
     export GOPATH
+    # Make sure our compiled binaries under test override anything
+    # else that might be in the environment.
+    export PATH=$GOPATH/bin:$PATH
 
     # Jenkins config requires that glob tmp/*.log match something. Ensure
     # that happens even if we don't end up running services that set up
@@ -987,7 +990,7 @@ pythonstuff=(
 )
 
 declare -a gostuff
-gostuff=($(git grep -lw func | grep \\.go | sed -e 's/\/[^\/]*$//' | sort -u))
+gostuff=($(cd "$WORKSPACE" && git grep -lw func | grep \\.go | sed -e 's/\/[^\/]*$//' | sort -u))
 
 install_apps/workbench() {
     cd "$WORKSPACE/apps/workbench" \
@@ -1154,11 +1157,11 @@ install_all() {
             fi
         fi
     done
-    do_install services/api
     for g in "${gostuff[@]}"
     do
         do_install "$g" go
     done
+    do_install services/api
     do_install apps/workbench
 }
 
@@ -1235,6 +1238,13 @@ for p in "${pythonstuff[@]}"; do
 done
 
 testfuncargs["sdk/cli"]="sdk/cli"
+testfuncargs["sdk/R"]="sdk/R"
+testfuncargs["sdk/java-v2"]="sdk/java-v2"
+testfuncargs["apps/workbench_units"]="apps/workbench_units"
+testfuncargs["apps/workbench_functionals"]="apps/workbench_functionals"
+testfuncargs["apps/workbench_integration"]="apps/workbench_integration"
+testfuncargs["apps/workbench_benchmark"]="apps/workbench_benchmark"
+testfuncargs["apps/workbench_profile"]="apps/workbench_profile"
 
 if [[ -z ${interactive} ]]; then
     install_all

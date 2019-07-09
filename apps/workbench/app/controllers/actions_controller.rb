@@ -10,7 +10,7 @@ class ActionsController < ApplicationController
   # Skip require_thread_api_token if this is a show action
   # for an object uuid that supports anonymous access.
   skip_around_action :require_thread_api_token, if: proc { |ctrl|
-    Rails.configuration.anonymous_user_token and
+    !Rails.configuration.Users.AnonymousUserToken.empty? and
     'show' == ctrl.action_name and
     params['uuid'] and
     model_class.in?([Collection, Group, Job, PipelineInstance, PipelineTemplate])
