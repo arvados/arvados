@@ -181,22 +181,18 @@ def _wait_until_port_listens(port, timeout=10, warn=True):
     in seconds), print a warning on stderr before returning.
     """
     try:
-        subprocess.check_output(['which', 'lsof'])
+        subprocess.check_output(['which', 'netstat'])
     except subprocess.CalledProcessError:
-        print("WARNING: No `lsof` -- cannot wait for port to listen. "+
+        print("WARNING: No `netstat` -- cannot wait for port to listen. "+
               "Sleeping 0.5 and hoping for the best.",
               file=sys.stderr)
         time.sleep(0.5)
         return
     deadline = time.time() + timeout
     while time.time() < deadline:
-        try:
-            subprocess.check_output(
-                ['lsof', '-t', '-i', 'tcp:'+str(port)])
-        except subprocess.CalledProcessError:
-            time.sleep(0.1)
-            continue
-        return True
+        if re.search(r'\ntcp.*:'+str(port)+' .* LISTEN *\n', subprocess.check_output(['netstat', '-an'])):
+            return True
+        time.sleep(0.1)
     if warn:
         print(
             "WARNING: Nothing is listening on port {} (waited {} seconds).".
