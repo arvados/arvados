@@ -190,7 +190,7 @@ def _wait_until_port_listens(port, timeout=10, warn=True):
         return
     deadline = time.time() + timeout
     while time.time() < deadline:
-        if re.search(r'\ntcp.*:'+str(port)+' .* LISTEN *\n', subprocess.check_output(['netstat', '-an'])):
+        if re.search(r'\ntcp.*:'+str(port)+' .* LISTEN *\n', str(subprocess.check_output(['netstat', '-an']))):
             return True
         time.sleep(0.1)
     if warn:
