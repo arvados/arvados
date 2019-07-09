@@ -100,6 +100,15 @@ type Cluster struct {
 		PreserveVersionIfIdle Duration
 		TrashSweepInterval    Duration
 		TrustAllContent       bool
+
+		WebDAVCache struct {
+			TTL                  Duration
+			UUIDTTL              Duration
+			MaxCollectionEntries int
+			MaxCollectionBytes   int64
+			MaxPermissionEntries int
+			MaxUUIDEntries       int
+		}
 	}
 	Git struct {
 		Repositories string
@@ -132,6 +141,7 @@ type Cluster struct {
 		AdminNotifierEmailFrom                string
 		AutoAdminFirstUser                    bool
 		AutoAdminUserWithEmail                string
+		AnonymousUserToken                    string
 		AutoSetupNewUsers                     bool
 		AutoSetupNewUsersWithRepository       bool
 		AutoSetupNewUsersWithVmUUID           string
