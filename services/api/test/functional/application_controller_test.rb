@@ -31,7 +31,7 @@ class ApplicationControllerTest < ActionController::TestCase
 
   def check_404(errmsg="Path not found")
     assert_response 404
-    assert_equal([errmsg], json_response['errors'])
+    assert_includes(json_response['errors'].first, errmsg)
     check_error_token
   end
 
