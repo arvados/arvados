@@ -15,4 +15,4 @@ class CrunchstatTest(IntegrationTest):
              '--crunchstat-interval', '1',
              self.mnt,
              '--exec', 'echo', 'ok'])
-        self.assertEqual("ok\n", output)
+        self.assertEqual(b"ok\n", output)
