@@ -794,7 +794,10 @@ do_test_once() {
             tries=$((${tries}+1))
             # $3 can name a path directory for us to use, including trailing
             # slash; e.g., the bin/ subdirectory of a virtualenv.
-            "${3}python" setup.py ${short:+--short-tests-only} test ${testargs[$1]}
+            if [[ -e "${3}activate" ]]; then
+                . "${3}activate"
+            fi
+            python setup.py ${short:+--short-tests-only} test ${testargs[$1]}
             result=$?
             if [[ ${tries} < 3 && ${result} == 137 ]]
             then
