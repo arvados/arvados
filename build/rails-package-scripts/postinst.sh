@@ -259,4 +259,8 @@ elif [ "$1" = "0" ] || [ "$1" = "1" ] || [ "$1" = "2" ]; then
 fi
 
 report_not_ready "$DATABASE_READY" "$CONFIG_PATH/database.yml"
-report_not_ready "$APPLICATION_READY" "$CONFIG_PATH/application.yml"
+if printf '%s\n' "$CONFIG_PATH" | grep -Fqe "sso"; then
+	report_not_ready "$APPLICATION_READY" "$CONFIG_PATH/application.yml"
+else
+	report_not_ready "$APPLICATION_READY" "/etc/arvados/config.yml"
+fi
