@@ -35,26 +35,34 @@ On a Red Hat-based system, install the following packages:
 
 {% include 'install_git' %}
 
-h2(#configure). Set up the database
-
-Configure the API server to connect to your database by updating @/etc/arvados/api/database.yml@. Replace the @xxxxxxxx@ database password placeholder with the "password you generated during database setup":install-postgresql.html#api. Be sure to update the @production@ section.
-
-<notextile>
-<pre><code>~$ <span class="userinput">editor /etc/arvados/api/database.yml</span>
-</code></pre></notextile>
-
 h2(#configure_application). Configure the API server
 
-Edit @/etc/arvados/config.yml@ to set the keys below.  Only the most important configuration options are listed here.  The full set of configuration options are listed in "config.yml":{{site.baseurl}}/admin/config.html
+Edit @/etc/arvados/config.yml@ to set the keys below.  Only the most important configuration options are listed here.  The example configuration fragments given below should be merged into a single configuration structure.  Correct indentation is important.  The full set of configuration options are listed in "config.yml":{{site.baseurl}}/admin/config.html
 
 h3(#uuid_prefix). ClusterID
 
-The @ClusterID@ is used for all database identifiers to identify the record as originating from this site.  It is the first key under @Clusters@ in @config.yml@.  It must be exactly 5 lowercase ASCII letters and digits.
+The @ClusterID@ is used for all database identifiers to identify the record as originating from this site.  It is the first key under @Clusters@ in @config.yml@.  It must be exactly 5 lowercase ASCII letters and digits.  All configuration items go under the cluster id key (replace @zzzzz@ with your cluster id in the examples below).
 
 <notextile>
 <pre><code>Clusters:
   <span class="userinput">zzzzz</span>:
     ...</code></pre>
+</notextile>
+
+h3(#configure). PostgreSQL.Connection
+
+Replace the @xxxxxxxx@ database password placeholder with the "password you generated during database setup":install-postgresql.html#api.
+
+<notextile>
+<pre><code>Clusters:
+  zzzzz:
+    PostgreSQL:
+      Connection:
+        host: <span class="userinput">localhost</span>
+        user: <span class="userinput">arvados</span>
+        password: <span class="userinput">xxxxxxxx</span>
+        dbname: <span class="userinput">arvados_production</span>
+      </code></pre>
 </notextile>
 
 h3. API.RailsSessionSecretToken
@@ -77,7 +85,7 @@ Example @config.yml@:
 
 h3(#blob_signing_key). Collections.BlobSigningKey
 
-The @Collections.BlobSigningKey@ is used to enforce access control to Keep blocks.  This same key must be provided to the Keepstore daemons when "installing Keepstore servers.":install-keepstore.html  IMPORTANT: This is a site secret. It should be at least 50 characters.  Generate a random value and set it in @application.yml@:
+The @Collections.BlobSigningKey@ is used to enforce access control to Keep blocks.  This same key must be provided to the Keepstore daemons when "installing Keepstore servers.":install-keepstore.html  IMPORTANT: This is a site secret. It should be at least 50 characters.  Generate a random value and set it in @config.yml@:
 
 <notextile>
 <pre><code>~$ <span class="userinput">ruby -e 'puts rand(2**400).to_s(36)'</span>
@@ -90,7 +98,7 @@ Example @config.yml@:
 <pre><code>Clusters:
   zzzzz:
     Collections:
-      BlobSigningKey: <span class="userinput">yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy</span></code></pre>
+      BlobSigningKey: <span class="userinput">xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</span></code></pre>
 </notextile>
 
 h3(#omniauth). Login.ProviderAppID, Login.ProviderAppSecret, Services.SSO.ExternalURL
@@ -165,7 +173,7 @@ h3(#enable_legacy_jobs_api). Containers.JobsAPI.Enable
 
 Enable the legacy "Jobs API":install-crunch-dispatch.html .  Note: new installations should use the "Containers API":crunch2-slurm/install-prerequisites.html
 
-Disabling the jobs API means methods involving @jobs@, @job_tasks@, @pipeline_templates@ and @pipeline_instances@ are disabled.  This functionality is superceded by the containers API which consists of @container_requests@, @containers@ and @workflows@.  Arvados clients (such as @arvados-cwl-runner@) detect which APIs are available and adjust behavior accordingly.
+Disabling the jobs API means methods involving @jobs@, @job_tasks@, @pipeline_templates@ and @pipeline_instances@ are disabled.  This functionality is superceded by the containers API which consists of @container_requests@, @containers@ and @workflows@.  Arvados clients (such as @arvados-cwl-runner@) detect which APIs are available and adjust behavior accordingly.  Note the configuration value must be a quoted string.
 
 * 'auto' -- (default) enable the Jobs API only if it has been used before (i.e., there are job records in the database), otherwise disable jobs API .
 * 'true' -- enable the Jobs API even if there are no existing job records.
