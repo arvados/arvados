@@ -154,12 +154,22 @@ class Arvados::V1::CollectionsController < ApplicationController
 
       if direction == :search_up
         # Search upstream for jobs where this locator is the output of some job
-        Job.readable_by(*@read_users).where(output: loc.to_s).each do |job|
-          search_edges(visited, job.uuid, :search_up)
+        if !Rails.configuration.API.DisabledAPIs.include?("jobs.list")
+          Job.readable_by(*@read_users).where(output: loc.to_s).each do |job|
+            search_edges(visited, job.uuid, :search_up)
+          end
+
+          Job.readable_by(*@read_users).where(log: loc.to_s).each do |job|
+            search_edges(visited, job.uuid, :search_up)
+          end
         end
 
-        Job.readable_by(*@read_users).where(log: loc.to_s).each do |job|
-          search_edges(visited, job.uuid, :search_up)
+        Container.readable_by(*@read_users).where(output: loc.to_s).each do |c|
+          search_edges(visited, c.uuid, :search_up)
+        end
+
+        Container.readable_by(*@read_users).where(log: loc.to_s).each do |c|
+          search_edges(visited, c.uuid, :search_up)
         end
       elsif direction == :search_down
         if loc.to_s == "d41d8cd98f00b204e9800998ecf8427e+0"
@@ -168,13 +178,20 @@ class Arvados::V1::CollectionsController < ApplicationController
         end
 
         # Search downstream for jobs where this locator is in script_parameters
-        Job.readable_by(*@read_users).where(["jobs.script_parameters like ?", "%#{loc.to_s}%"]).each do |job|
-          search_edges(visited, job.uuid, :search_down)
+        if !Rails.configuration.API.DisabledAPIs.include?("jobs.list")
+          Job.readable_by(*@read_users).where(["jobs.script_parameters like ?", "%#{loc.to_s}%"]).each do |job|
+            search_edges(visited, job.uuid, :search_down)
+          end
+
+          Job.readable_by(*@read_users).where(["jobs.docker_image_locator = ?", "#{loc.to_s}"]).each do |job|
+            search_edges(visited, job.uuid, :search_down)
+          end
         end
 
-        Job.readable_by(*@read_users).where(["jobs.docker_image_locator = ?", "#{loc.to_s}"]).each do |job|
-          search_edges(visited, job.uuid, :search_down)
+        Container.readable_by(*@read_users).where(["any", "like", "%#{loc.to_s}%"]).each do |c|
+          search_edges(visited, c.uuid, :search_down)
         end
+
       end
     else
       # uuid is a regular Arvados UUID
@@ -191,6 +208,20 @@ class Arvados::V1::CollectionsController < ApplicationController
           elsif direction == :search_down
             # Follow downstream job output
             search_edges(visited, job.output, direction)
+          end
+        end
+      elsif rsc == Container
+        Container.readable_by(*@read_users).where(uuid: uuid).each do |c|
+          visited[uuid] = c.as_api_response
+          if direction == :search_up
+            # Follow upstream collections referenced in the script parameters
+            find_collections(visited, c) do |hash, col_uuid|
+              search_edges(visited, hash, :search_up) if hash
+              search_edges(visited, col_uuid, :search_up) if col_uuid
+            end
+          elsif direction == :search_down
+            # Follow downstream job output
+            search_edges(visited, c.output, direction)
           end
         end
       elsif rsc == Collection
