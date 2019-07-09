@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 from __future__ import absolute_import
+from builtins import bytes
 import arvados_fuse.unmount
 import os
 import subprocess
@@ -38,12 +39,13 @@ class UnmountTest(IntegrationTest):
              self.mnt,
              '--exec', 'true'])
         for m in subprocess.check_output(['mount']).splitlines():
-            self.assertNotIn(' '+self.mnt+' ', m)
+            expected = bytes(' ' + self.mnt + ' ', encoding='utf-8')
+            self.assertNotIn(expected, m)
 
     def _mounted(self, mounts):
         all_mounts = subprocess.check_output(['mount'])
         return [m for m in mounts
-                if ' '+m+' ' in all_mounts]
+                if bytes(' ' + m + ' ', encoding='utf-8') in all_mounts]
 
     def _wait_for_mounts(self, mounts):
         deadline = time.time() + 10
