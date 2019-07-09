@@ -443,9 +443,9 @@ class Summarizer(object):
     def _recommend_temp_disk(self):
         """Recommend decreasing temp disk if utilization < 50%"""
         total = float(self.job_tot['statfs']['total'])
-        utilization = (float(self.job_tot['statfs']['used']) / total)
+        utilization = (float(self.job_tot['statfs']['used']) / total) if total > 0 else 0.0
 
-        if utilization < 50.8:
+        if utilization < 50.8 and total > 0:
             yield (
                 '#!! {} max temp disk utilization was {:.0f}% of {:.0f} MiB -- '
                 'consider reducing "tmpdirMin" and/or "outdirMin"'
