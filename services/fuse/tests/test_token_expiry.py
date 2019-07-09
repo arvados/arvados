@@ -33,10 +33,10 @@ class TokenExpiryTest(IntegrationTest):
     def fake_open(self, operations, *args, **kwargs):
         self.time_now += 86400*13
         logger.debug('opening file at time=%f', self.time_now)
-        return self.orig_open(operations, *args, **kwargs)
+        return TokenExpiryTest.orig_open(operations, *args, **kwargs)
 
     @mock.patch.object(arvados_fuse.Operations, 'open', autospec=True)
-    @mock.patch('time.time')
+    @mock.patch.object(time, 'time', return_value=0)
     @mock.patch('arvados.keep.KeepClient.get')
     @IntegrationTest.mount(argv=['--mount-by-id', 'zzz'])
     def test_refresh_old_manifest(self, mocked_get, mocked_time, mocked_open):
@@ -45,7 +45,7 @@ class TokenExpiryTest(IntegrationTest):
         # blobSignatureTtl seconds elapse between open() and
         # read(). See https://dev.arvados.org/issues/10008
 
-        mocked_get.return_value = 'fake data'
+        mocked_get.return_value = b'fake data'
         mocked_time.side_effect = self.fake_time
         mocked_open.side_effect = self.fake_open
 
