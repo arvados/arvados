@@ -124,6 +124,7 @@ func (checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 	if bytes.HasPrefix(diff, []byte("--- ")) {
 		fmt.Fprintln(stdout, "Your configuration is relying on deprecated entries. Suggest making the following changes.")
 		stdout.Write(diff)
+		err = nil
 		return 1
 	} else if len(diff) > 0 {
 		fmt.Fprintf(stderr, "Unexpected diff output:\n%s", diff)
