@@ -19,6 +19,16 @@ Clusters:
     ManagementToken: ""
 
     Services:
+
+      # In each of the service sections below, the keys under
+      # InternalURLs are the endpoints where the service should be
+      # listening, and reachable from other hosts in the cluster.
+      SAMPLE:
+        InternalURLs:
+          "http://example.host:12345": {}
+          SAMPLE: {}
+        ExternalURL: "-"
+
       RailsAPI:
         InternalURLs: {}
         ExternalURL: "-"
@@ -140,6 +150,7 @@ Clusters:
         user: ""
         password: ""
         dbname: ""
+        SAMPLE: ""
     API:
       # Maximum size (in bytes) allowed for a single API request.  This
       # limit is published in the discovery document for use by clients.
