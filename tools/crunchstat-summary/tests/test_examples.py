@@ -102,7 +102,7 @@ class SummarizeContainer(ReportDiff):
                 return UTF8Decode(gzip.open(self.arvmountlog))
         mock_cr().open.side_effect = _open
         args = crunchstat_summary.command.ArgumentParser().parse_args(
-            ['--job', self.fake_request['uuid']])
+            ['--container', self.fake_request['uuid']])
         cmd = crunchstat_summary.command.Command(args)
         cmd.run()
         self.diff_known_report(self.reportfile, cmd)
