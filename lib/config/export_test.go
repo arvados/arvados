@@ -19,7 +19,7 @@ type ExportSuite struct{}
 
 func (s *ExportSuite) TestExport(c *check.C) {
 	confdata := bytes.Replace(DefaultYAML, []byte("SAMPLE"), []byte("testkey"), -1)
-	cfg, err := Load(bytes.NewBuffer(confdata), ctxlog.TestLogger(c))
+	cfg, err := NewLoader(bytes.NewBuffer(confdata), ctxlog.TestLogger(c)).Load()
 	c.Assert(err, check.IsNil)
 	cluster := cfg.Clusters["xxxxx"]
 	cluster.ManagementToken = "abcdefg"

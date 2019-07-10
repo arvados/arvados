@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -17,37 +18,60 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"github.com/ghodss/yaml"
 	"github.com/imdario/mergo"
+	"github.com/sirupsen/logrus"
 )
 
-type logger interface {
-	Warnf(string, ...interface{})
+type Loader struct {
+	Stdin          io.Reader
+	Logger         logrus.FieldLogger
+	SkipDeprecated bool
+
+	Path          string
+	KeepstorePath string
+
+	configdata []byte
 }
 
-func loadFileOrStdin(path string, stdin io.Reader, log logger) (*arvados.Config, error) {
+func NewLoader(stdin io.Reader, logger logrus.FieldLogger) *Loader {
+	ldr := &Loader{Stdin: stdin, Logger: logger}
+	ldr.SetupFlags(flag.NewFlagSet("", flag.ContinueOnError))
+	ldr.Path = "-"
+	return ldr
+}
+
+// SetupFlags configures a flagset so arguments like -config X can be
+// used to change the loader's Path fields.
+//
+//	ldr := NewLoader(os.Stdin, logrus.New())
+//	flagset := flag.NewFlagSet("", flag.ContinueOnError)
+//	ldr.SetupFlags(flagset)
+//	// ldr.Path == "/etc/arvados/config.yml"
+//	flagset.Parse([]string{"-config", "/tmp/c.yaml"})
+//	// ldr.Path == "/tmp/c.yaml"
+func (ldr *Loader) SetupFlags(flagset *flag.FlagSet) {
+	flagset.StringVar(&ldr.Path, "config", arvados.DefaultConfigFile, "Site configuration `file`")
+	flagset.StringVar(&ldr.KeepstorePath, "legacy-keepstore-config", defaultKeepstoreConfigPath, "Legacy keepstore configuration `file`")
+}
+
+func (ldr *Loader) loadBytes(path string) ([]byte, error) {
 	if path == "-" {
-		return load(stdin, log, true)
-	} else {
-		return LoadFile(path, log)
+		return ioutil.ReadAll(ldr.Stdin)
 	}
-}
-
-func LoadFile(path string, log logger) (*arvados.Config, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
-	return Load(f, log)
+	return ioutil.ReadAll(f)
 }
 
-func Load(rdr io.Reader, log logger) (*arvados.Config, error) {
-	return load(rdr, log, true)
-}
-
-func load(rdr io.Reader, log logger, useDeprecated bool) (*arvados.Config, error) {
-	buf, err := ioutil.ReadAll(rdr)
-	if err != nil {
-		return nil, err
+func (ldr *Loader) Load() (*arvados.Config, error) {
+	if ldr.configdata == nil {
+		buf, err := ldr.loadBytes(ldr.Path)
+		if err != nil {
+			return nil, err
+		}
+		ldr.configdata = buf
 	}
 
 	// Load the config into a dummy map to get the cluster ID
@@ -57,7 +81,7 @@ func load(rdr io.Reader, log logger, useDeprecated bool) (*arvados.Config, error
 	var dummy struct {
 		Clusters map[string]struct{}
 	}
-	err = yaml.Unmarshal(buf, &dummy)
+	err := yaml.Unmarshal(ldr.configdata, &dummy)
 	if err != nil {
 		return nil, err
 	}
@@ -82,11 +106,11 @@ func load(rdr io.Reader, log logger, useDeprecated bool) (*arvados.Config, error
 		}
 	}
 	var src map[string]interface{}
-	err = yaml.Unmarshal(buf, &src)
+	err = yaml.Unmarshal(ldr.configdata, &src)
 	if err != nil {
 		return nil, fmt.Errorf("loading config data: %s", err)
 	}
-	logExtraKeys(log, merged, src, "")
+	ldr.logExtraKeys(merged, src, "")
 	removeSampleKeys(merged)
 	err = mergo.Merge(&merged, src, mergo.WithOverride)
 	if err != nil {
@@ -109,10 +133,17 @@ func load(rdr io.Reader, log logger, useDeprecated bool) (*arvados.Config, error
 		return nil, fmt.Errorf("transcoding config data: %s", err)
 	}
 
-	if useDeprecated {
-		err = applyDeprecatedConfig(&cfg, buf, log)
+	if !ldr.SkipDeprecated {
+		err = ldr.applyDeprecatedConfig(&cfg)
 		if err != nil {
 			return nil, err
+		}
+		for _, err := range []error{
+			ldr.loadOldKeepstoreConfig(&cfg),
+		} {
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -147,8 +178,8 @@ func removeSampleKeys(m map[string]interface{}) {
 	}
 }
 
-func logExtraKeys(log logger, expected, supplied map[string]interface{}, prefix string) {
-	if log == nil {
+func (ldr *Loader) logExtraKeys(expected, supplied map[string]interface{}, prefix string) {
+	if ldr.Logger == nil {
 		return
 	}
 	allowed := map[string]interface{}{}
@@ -160,7 +191,7 @@ func logExtraKeys(log logger, expected, supplied map[string]interface{}, prefix 
 		if !ok && expected["SAMPLE"] != nil {
 			vexp = expected["SAMPLE"]
 		} else if !ok {
-			log.Warnf("deprecated or unknown config entry: %s%s", prefix, k)
+			ldr.Logger.Warnf("deprecated or unknown config entry: %s%s", prefix, k)
 			continue
 		}
 		if vsupp, ok := vsupp.(map[string]interface{}); !ok {
@@ -168,9 +199,9 @@ func logExtraKeys(log logger, expected, supplied map[string]interface{}, prefix 
 			// will be caught elsewhere; see TestBadType.
 			continue
 		} else if vexp, ok := vexp.(map[string]interface{}); !ok {
-			log.Warnf("unexpected object in config entry: %s%s", prefix, k)
+			ldr.Logger.Warnf("unexpected object in config entry: %s%s", prefix, k)
 		} else {
-			logExtraKeys(log, vexp, vsupp, prefix+k+".")
+			ldr.logExtraKeys(vexp, vsupp, prefix+k+".")
 		}
 	}
 }
