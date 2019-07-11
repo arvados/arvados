@@ -59,7 +59,6 @@ standard_library.install_aliases()
 from builtins import next
 from builtins import str
 from builtins import object
-from builtins import bytes
 import os
 import sys
 import llfuse
@@ -799,6 +798,7 @@ class Operations(llfuse.Operations):
     @mkdir_time.time()
     @catch_exceptions
     def mkdir(self, inode_parent, name, mode, ctx=None):
+        name = name.decode()
         _logger.debug("arv-mount mkdir: parent_inode %i '%s' %o", inode_parent, name, mode)
 
         p = self._check_writable(inode_parent)
