@@ -76,13 +76,17 @@ type Cluster struct {
 		UnloggedAttributes []string
 	}
 	Collections struct {
-		BlobSigning           bool
-		BlobSigningKey        string
-		BlobSigningTTL        Duration
-		CollectionVersioning  bool
-		DefaultTrashLifetime  Duration
-		DefaultReplication    int
-		ManagedProperties     map[string]interface{}
+		BlobSigning          bool
+		BlobSigningKey       string
+		BlobSigningTTL       Duration
+		CollectionVersioning bool
+		DefaultTrashLifetime Duration
+		DefaultReplication   int
+		ManagedProperties    map[string]struct {
+			Value     interface{}
+			Function  string
+			Protected bool
+		}
 		PreserveVersionIfIdle Duration
 		TrashSweepInterval    Duration
 		TrustAllContent       bool

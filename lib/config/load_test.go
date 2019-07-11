@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -95,6 +96,42 @@ Clusters:
 		c.Check(log, check.Matches, `.*deprecated or unknown config entry:.*BadKey.*`)
 	}
 	c.Check(logs, check.HasLen, 2)
+}
+
+func (s *LoadSuite) checkSAMPLEKeys(c *check.C, path string, x interface{}) {
+	v := reflect.Indirect(reflect.ValueOf(x))
+	switch v.Kind() {
+	case reflect.Map:
+		var stringKeys, sampleKey bool
+		iter := v.MapRange()
+		for iter.Next() {
+			k := iter.Key()
+			if k.Kind() == reflect.String {
+				stringKeys = true
+				if k.String() == "SAMPLE" || k.String() == "xxxxx" {
+					sampleKey = true
+					s.checkSAMPLEKeys(c, path+"."+k.String(), iter.Value().Interface())
+				}
+			}
+		}
+		if stringKeys && !sampleKey {
+			c.Errorf("%s is a map with string keys (type %T) but config.default.yml has no SAMPLE key", path, x)
+		}
+		return
+	case reflect.Struct:
+		for i := 0; i < v.NumField(); i++ {
+			val := v.Field(i)
+			if val.CanInterface() {
+				s.checkSAMPLEKeys(c, path+"."+v.Type().Field(i).Name, val.Interface())
+			}
+		}
+	}
+}
+
+func (s *LoadSuite) TestDefaultConfigHasAllSAMPLEKeys(c *check.C) {
+	cfg, err := Load(bytes.NewBuffer(DefaultYAML), ctxlog.TestLogger(c))
+	c.Assert(err, check.IsNil)
+	s.checkSAMPLEKeys(c, "", cfg)
 }
 
 func (s *LoadSuite) TestNoUnrecognizedKeysInDefaultConfig(c *check.C) {
