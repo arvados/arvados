@@ -169,11 +169,11 @@ class FuseMagicTest(MountTestBase):
             llfuse.listdir(os.path.join(self.mounttmp, 'by_id', self.non_project_group))
 
         files = {}
-        files[os.path.join(self.mounttmp, self.testcollection, 'thing1.txt')] = b'data 1'
+        files[os.path.join(self.mounttmp, self.testcollection, 'thing1.txt')] = 'data 1'
 
         for k, v in viewitems(files):
             with open(os.path.join(self.mounttmp, k), 'rb') as f:
-                self.assertEqual(v, f.read())
+                self.assertEqual(v, f.read().decode())
 
 
 class FuseTagsTest(MountTestBase):
