@@ -822,7 +822,7 @@ class Operations(llfuse.Operations):
     def rmdir(self, inode_parent, name, ctx=None):
         _logger.debug("arv-mount rmdir: parent_inode %i '%s'", inode_parent, name)
         p = self._check_writable(inode_parent)
-        p.rmdir(name)
+        p.rmdir(name.decode())
 
     @rename_time.time()
     @catch_exceptions
@@ -830,7 +830,7 @@ class Operations(llfuse.Operations):
         _logger.debug("arv-mount rename: old_parent_inode %i '%s' new_parent_inode %i '%s'", inode_parent_old, name_old, inode_parent_new, name_new)
         src = self._check_writable(inode_parent_old)
         dest = self._check_writable(inode_parent_new)
-        dest.rename(name_old, name_new, src)
+        dest.rename(name_old.decode(), name_new.decode(), src)
 
     @flush_time.time()
     @catch_exceptions
