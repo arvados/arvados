@@ -21,6 +21,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+var ErrNoClustersDefined = errors.New("config does not define any clusters")
+
 type Loader struct {
 	Stdin          io.Reader
 	Logger         logrus.FieldLogger
@@ -86,7 +88,7 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 		return nil, err
 	}
 	if len(dummy.Clusters) == 0 {
-		return nil, errors.New("config does not define any clusters")
+		return nil, ErrNoClustersDefined
 	}
 
 	// We can't merge deep structs here; instead, we unmarshal the
