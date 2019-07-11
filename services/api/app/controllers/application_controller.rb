@@ -183,6 +183,9 @@ class ApplicationController < ActionController::Base
       err = {}
     end
     err[:errors] ||= args
+    err[:errors].map! do |err|
+      err += " (" + Thread.current[:request_id] + ")"
+    end
     err[:error_token] = [Time.now.utc.to_i, "%08x" % rand(16 ** 8)].join("+")
     status = err.delete(:status) || 422
     logger.error "Error #{err[:error_token]}: #{status}"
