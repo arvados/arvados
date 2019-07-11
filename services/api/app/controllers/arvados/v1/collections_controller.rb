@@ -188,7 +188,11 @@ class Arvados::V1::CollectionsController < ApplicationController
           end
         end
 
-        Container.readable_by(*@read_users).where(["any", "like", "%#{loc.to_s}%"]).each do |c|
+        Container.readable_by(*@read_users).where(["mounts like ?", "%#{loc.to_s}%"]).each do |c|
+          search_edges(visited, c.uuid, :search_down)
+        end
+
+        Container.readable_by(*@read_users).where(["container_image = '#{loc.to_s}'"]).each do |c|
           search_edges(visited, c.uuid, :search_down)
         end
 
