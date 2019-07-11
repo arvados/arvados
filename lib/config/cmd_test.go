@@ -42,6 +42,21 @@ Clusters:
  z1234:
   API:
     MaxItemsPerResponse: 1234
+  PostgreSQL:
+    Connection:
+      sslmode: require
+  Services:
+    RailsAPI:
+      InternalURLs:
+        "http://0.0.0.0:8000": {}
+  Workbench:
+    UserProfileFormFields:
+      color:
+        Type: select
+        Options:
+          fuchsia: {}
+    ApplicationMimetypesWithViewIcon:
+      whitespace: {}
 `
 	code := CheckCommand.RunCommand("arvados config-check", []string{"-config", "-"}, bytes.NewBufferString(in), &stdout, &stderr)
 	c.Check(code, check.Equals, 0)

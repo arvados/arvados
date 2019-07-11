@@ -156,8 +156,12 @@ func logExtraKeys(log logger, expected, supplied map[string]interface{}, prefix 
 		allowed[strings.ToLower(k)] = v
 	}
 	for k, vsupp := range supplied {
+		if k == "SAMPLE" {
+			// entry will be dropped in removeSampleKeys anyway
+			continue
+		}
 		vexp, ok := allowed[strings.ToLower(k)]
-		if !ok && expected["SAMPLE"] != nil {
+		if expected["SAMPLE"] != nil {
 			vexp = expected["SAMPLE"]
 		} else if !ok {
 			log.Warnf("deprecated or unknown config entry: %s%s", prefix, k)
