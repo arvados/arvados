@@ -104,6 +104,14 @@ func (checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 		return 2
 	}
 
+	// Load the config twice -- once without loading deprecated
+	// keys/files, once with -- and then compare the two resulting
+	// configs. This reveals whether the deprecated keys/files
+	// have any effect on the final configuration.
+	//
+	// If they do, show the operator how to update their config
+	// such that the deprecated keys/files are superfluous and can
+	// be deleted.
 	loader.SkipDeprecated = true
 	withoutDepr, err := loader.Load()
 	if err != nil {

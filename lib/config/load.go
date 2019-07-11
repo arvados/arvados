@@ -26,7 +26,7 @@ var ErrNoClustersDefined = errors.New("config does not define any clusters")
 type Loader struct {
 	Stdin          io.Reader
 	Logger         logrus.FieldLogger
-	SkipDeprecated bool
+	SkipDeprecated bool // Don't load legacy/deprecated config keys/files
 
 	Path          string
 	KeepstorePath string
