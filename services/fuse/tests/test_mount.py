@@ -117,8 +117,8 @@ class FuseMountTest(MountTestBase):
                  'dir2/dir3/thing8.txt': 'data 8'}
 
         for k, v in viewitems(files):
-            with open(os.path.join(self.mounttmp, k)) as f:
-                self.assertEqual(v, f.read())
+            with open(os.path.join(self.mounttmp, k), 'rb') as f:
+                self.assertEqual(v, f.read().decode())
 
 
 class FuseMagicTest(MountTestBase):
