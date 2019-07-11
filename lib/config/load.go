@@ -51,7 +51,7 @@ func NewLoader(stdin io.Reader, logger logrus.FieldLogger) *Loader {
 //	flagset.Parse([]string{"-config", "/tmp/c.yaml"})
 //	// ldr.Path == "/tmp/c.yaml"
 func (ldr *Loader) SetupFlags(flagset *flag.FlagSet) {
-	flagset.StringVar(&ldr.Path, "config", arvados.DefaultConfigFile, "Site configuration `file`")
+	flagset.StringVar(&ldr.Path, "config", arvados.DefaultConfigFile, "Site configuration `file` (default may be overridden by setting an ARVADOS_CONFIG environment variable)")
 	flagset.StringVar(&ldr.KeepstorePath, "legacy-keepstore-config", defaultKeepstoreConfigPath, "Legacy keepstore configuration `file`")
 }
 
