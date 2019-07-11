@@ -28,7 +28,7 @@ ubuntu1804/generated: common-generated-all
 	test -d ubuntu1804/generated || mkdir ubuntu1804/generated
 	cp -rlt ubuntu1804/generated common-generated/*
 
-GOTARBALL=go1.10.1.linux-amd64.tar.gz
+GOTARBALL=go1.12.7.linux-amd64.tar.gz
 NODETARBALL=node-v6.11.2-linux-x64.tar.xz
 RVMKEY1=mpapis.asc
 RVMKEY2=pkuczynski.asc
@@ -36,7 +36,7 @@ RVMKEY2=pkuczynski.asc
 common-generated-all: common-generated/$(GOTARBALL) common-generated/$(NODETARBALL) common-generated/$(RVMKEY1) common-generated/$(RVMKEY2)
 
 common-generated/$(GOTARBALL): common-generated
-	wget -cqO common-generated/$(GOTARBALL) http://storage.googleapis.com/golang/$(GOTARBALL)
+	wget -cqO common-generated/$(GOTARBALL) https://dl.google.com/go/$(GOTARBALL)
 
 common-generated/$(NODETARBALL): common-generated
 	wget -cqO common-generated/$(NODETARBALL) https://nodejs.org/dist/v6.11.2/$(NODETARBALL)

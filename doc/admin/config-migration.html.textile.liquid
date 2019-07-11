@@ -23,7 +23,28 @@ $ bundle exec rake config:migrate > config.yml
 $ cp config.yml /etc/arvados/config.yml
 </pre>
 
-This will print the contents of @config.yml@ after merging with legacy @application.yml@.  It may then be redirected to a file and copied to @/etc/arvados/config.yml@.
+This will print the contents of @config.yml@ after merging the legacy @application.yml@ and @database.yml@ into the existing systemwide @config.yml@.  It may be redirected to a file and copied to @/etc/arvados/config.yml@ (it is safe to copy over, all configuration items from the existing @/etc/arvados/config.yml@ will be included in the migrated output).
+
+If you wish to update @config.yml@ configuration by hand, or check that everything has been migrated, use @config:diff@ to print configuration items that differ between @application.yml@ and the system @config.yml@.
+
+<pre>
+$ bundle exec rake config:diff
+</pre>
+
+This command will also report if no migrations are required.
+
+h2. Workbench
+
+The legacy workbench configuration is stored in @config/application.yml@.  After migration to @/etc/arvados/config.yml@, this file should be moved out of the way and/or deleted.
+
+Change to the workbench server directory and use the following commands:
+
+<pre>
+$ bundle exec rake config:migrate > config.yml
+$ cp config.yml /etc/arvados/config.yml
+</pre>
+
+This will print the contents of @config.yml@ after merging the legacy @application.yml@ into the existing systemwide @config.yml@.  It may be redirected to a file and copied to @/etc/arvados/config.yml@ (it is safe to copy over, all configuration items from the existing @/etc/arvados/config.yml@ will be included in the migrated output).
 
 If you wish to update @config.yml@ configuration by hand, or check that everything has been migrated, use @config:diff@ to print configuration items that differ between @application.yml@ and the system @config.yml@.
 
@@ -43,8 +64,8 @@ Currently only reads @RemoteClusters@ from centralized configuration.  Still req
 
 h2. arvados-controller
 
-Only supports centralized config file.  No migration needed.
+Already uses centralized config exclusively.  No migration needed.
 
 h2. arvados-dispatch-cloud
 
-Only supports centralized config file.  No migration needed.
+Already uses centralized config exclusively.  No migration needed.

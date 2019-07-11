@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 class RequestShellAccessReporter < ActionMailer::Base
-  default from: Rails.configuration.email_from
-  default to: Rails.configuration.support_email_address
+  default from: Rails.configuration.Mail.EmailFrom
+  default to: Rails.configuration.Mail.SupportEmailAddress
 
   def send_request(user, params)
     @user = user

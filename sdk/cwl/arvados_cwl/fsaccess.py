@@ -133,10 +133,10 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
         patternsegments = rest.split("/")
         return sorted(self._match(collection, patternsegments, "keep:" + collection.manifest_locator()))
 
-    def open(self, fn, mode):
+    def open(self, fn, mode, encoding=None):
         collection, rest = self.get_collection(fn)
         if collection is not None:
-            return collection.open(rest, mode)
+            return collection.open(rest, mode, encoding=encoding)
         else:
             return super(CollectionFsAccess, self).open(self._abs(fn), mode)
 
@@ -225,7 +225,7 @@ class CollectionFetcher(DefaultFetcher):
 
     def fetch_text(self, url):
         if url.startswith("keep:"):
-            with self.fsaccess.open(url, "r") as f:
+            with self.fsaccess.open(url, "r", encoding="utf-8") as f:
                 return f.read()
         if url.startswith("arvwf:"):
             record = self.api_client.workflows().get(uuid=url[6:]).execute(num_retries=self.num_retries)

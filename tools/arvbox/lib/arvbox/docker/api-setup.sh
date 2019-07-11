@@ -45,6 +45,19 @@ else
     echo $vm_uuid > /var/lib/arvados/vm-uuid
 fi
 
+if ! test -f /var/lib/arvados/api_database_pw ; then
+    ruby -e 'puts rand(2**128).to_s(36)' > /var/lib/arvados/api_database_pw
+fi
+database_pw=$(cat /var/lib/arvados/api_database_pw)
+
+if ! (psql postgres -c "\du" | grep "^ arvados ") >/dev/null ; then
+    psql postgres -c "create user arvados with password '$database_pw'"
+fi
+psql postgres -c "ALTER USER arvados WITH SUPERUSER;"
+
+if test -a /usr/src/arvados/services/api/config/arvados_config.rb ; then
+    rm -f config/application.yml config/database.yml
+else
 cat >config/application.yml <<EOF
 $RAILS_ENV:
   uuid_prefix: $uuid_prefix
@@ -70,18 +83,8 @@ $RAILS_ENV:
 EOF
 
 (cd config && /usr/local/lib/arvbox/yml_override.py application.yml)
-
-if ! test -f /var/lib/arvados/api_database_pw ; then
-    ruby -e 'puts rand(2**128).to_s(36)' > /var/lib/arvados/api_database_pw
-fi
-database_pw=$(cat /var/lib/arvados/api_database_pw)
-
-if ! (psql postgres -c "\du" | grep "^ arvados ") >/dev/null ; then
-    psql postgres -c "create user arvados with password '$database_pw'"
-fi
-psql postgres -c "ALTER USER arvados WITH SUPERUSER;"
-
 sed "s/password:.*/password: $database_pw/" <config/database.yml.example >config/database.yml
+fi
 
 if ! test -f /var/lib/arvados/api_database_setup ; then
    bundle exec rake db:setup

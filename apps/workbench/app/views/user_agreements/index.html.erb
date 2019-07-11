@@ -19,7 +19,7 @@ User agreements
   <div class="alert alert-info">
     <strong>Please check <%= n_files > 1 ? 'each' : 'the' %> box below</strong> to indicate that you have read and accepted the user agreement<%= 's' if n_files > 1 %>.
   </div>
-  <% if n_files == 1 and (Rails.configuration.show_user_agreement_inline rescue false) %>
+  <% if n_files == 1 and (Rails.configuration.Workbench.ShowUserAgreementInline rescue false) %>
   <% ua = unsigned_user_agreements.first; file = ua.files.first %>
   <object data="<%= url_for(controller: 'collections', action: 'show_file', uuid: ua.uuid, file: "#{file[0]}/#{file[1]}") %>" type="<%= Rack::Mime::MIME_TYPES[file[1].match(/\.\w+$/)[0]] rescue '' %>" width="100%" height="400px">
   </object>

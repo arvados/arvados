@@ -164,8 +164,8 @@ module KeepWebConfig
   def use_keep_web_config
     @kwport = getport 'keep-web-ssl'
     @kwdport = getport 'keep-web-dl-ssl'
-    Rails.configuration.keep_web_url = "https://localhost:#{@kwport}/c=%{uuid_or_pdh}"
-    Rails.configuration.keep_web_download_url = "https://localhost:#{@kwdport}/c=%{uuid_or_pdh}"
+    Rails.configuration.Services.WebDAV.ExternalURL = URI("https://localhost:#{@kwport}")
+    Rails.configuration.Services.WebDAVDownload.ExternalURL = URI("https://localhost:#{@kwdport}")
   end
 end
 

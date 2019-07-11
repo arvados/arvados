@@ -85,6 +85,7 @@ type Cluster struct {
 		ManagedProperties     map[string]interface{}
 		PreserveVersionIfIdle Duration
 		TrashSweepInterval    Duration
+		TrustAllContent       bool
 	}
 	Git struct {
 		Repositories string
@@ -96,7 +97,7 @@ type Cluster struct {
 	Mail struct {
 		MailchimpAPIKey                string
 		MailchimpListID                string
-		SendUserSetupNotificationEmail string
+		SendUserSetupNotificationEmail bool
 		IssueReporterEmailFrom         string
 		IssueReporterEmailTo           string
 		SupportEmailAddress            string
@@ -113,6 +114,7 @@ type Cluster struct {
 		Insecure    bool
 	}
 	Users struct {
+		AnonymousUserToken                    string
 		AdminNotifierEmailFrom                string
 		AutoAdminFirstUser                    bool
 		AutoAdminUserWithEmail                string
@@ -135,16 +137,17 @@ type Cluster struct {
 		ApplicationMimetypesWithViewIcon map[string]struct{}
 		ArvadosDocsite                   string
 		ArvadosPublicDataDocURL          string
+		DefaultOpenIdPrefix              string
 		EnableGettingStartedPopup        bool
 		EnablePublicProjectsPage         bool
 		FileViewersConfigURL             string
 		LogViewerMaxBytes                ByteSize
-		MultiSiteSearch                  bool
+		MultiSiteSearch                  string
+		ProfilingEnabled                 bool
 		Repositories                     bool
 		RepositoryCache                  string
 		RunningJobLogRecordsToFetch      int
 		SecretKeyBase                    string
-		SecretToken                      string
 		ShowRecentCollectionsOnDashboard bool
 		ShowUserAgreementInline          bool
 		ShowUserNotifications            bool
@@ -155,6 +158,8 @@ type Cluster struct {
 			FormFieldTitle       string
 			FormFieldDescription string
 			Required             bool
+			Position             int
+			Options              map[string]struct{}
 		}
 		UserProfileFormMessage string
 		VocabularyURL          string

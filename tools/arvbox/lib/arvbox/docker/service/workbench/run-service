@@ -20,10 +20,17 @@ run_bundler --without=development
 bundle exec passenger-config build-native-support
 bundle exec passenger-config install-standalone-runtime
 mkdir -p /usr/src/arvados/apps/workbench/tmp
-RAILS_GROUPS=assets bundle exec rake npm:install
 
 if test "$1" = "--only-deps" ; then
-    exit
+   # Workaround for validation that asserts there's a download URL
+   # configured, which breaks rake if it is missing.
+cat >config/application.yml <<EOF
+$RAILS_ENV:
+  keep_web_url: https://example.com/c=%{uuid_or_pdh}
+EOF
+   RAILS_GROUPS=assets bundle exec rake npm:install
+   rm config/application.yml
+   exit
 fi
 
 set -u
@@ -33,6 +40,9 @@ if ! test -s /var/lib/arvados/workbench_secret_token ; then
 fi
 secret_token=$(cat /var/lib/arvados/workbench_secret_token)
 
+if test -a /usr/src/arvados/apps/workbench/config/arvados_config.rb ; then
+    rm -f config/application.yml
+else
 cat >config/application.yml <<EOF
 $RAILS_ENV:
   secret_token: $secret_token
@@ -47,6 +57,8 @@ $RAILS_ENV:
   workbench2_url: https://$localip:${services[workbench2-ssl]}
 EOF
 
-bundle exec rake assets:precompile
-
 (cd config && /usr/local/lib/arvbox/yml_override.py application.yml)
+fi
+
+RAILS_GROUPS=assets bundle exec rake npm:install
+bundle exec rake assets:precompile

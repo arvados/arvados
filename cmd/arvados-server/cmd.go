@@ -21,11 +21,12 @@ var (
 		"-version":  cmd.Version(version),
 		"--version": cmd.Version(version),
 
-		"cloudtest":      cloudtest.Command,
-		"config-check":   config.CheckCommand,
-		"config-dump":    config.DumpCommand,
-		"controller":     controller.Command,
-		"dispatch-cloud": dispatchcloud.Command,
+		"cloudtest":       cloudtest.Command,
+		"config-check":    config.CheckCommand,
+		"config-dump":     config.DumpCommand,
+		"config-defaults": config.DumpDefaultsCommand,
+		"controller":      controller.Command,
+		"dispatch-cloud":  dispatchcloud.Command,
 	})
 )
 

@@ -54,10 +54,57 @@ Clusters:
         ExternalURL: ""
       WebDAV:
         InternalURLs: {}
+        # Base URL for Workbench inline preview.  If blank, use
+        # WebDAVDownload instead, and disable inline preview.
+        # If both are empty, downloading collections from workbench
+        # will be impossible.
+        #
+        # It is important to properly configure the download service
+        # to migitate cross-site-scripting (XSS) attacks.  A HTML page
+        # can be stored in collection.  If an attacker causes a victim
+        # to visit that page through Workbench, it will be rendered by
+        # the browser.  If all collections are served at the same
+        # domain, the browser will consider collections as coming from
+        # the same origin and having access to the same browsing data,
+        # enabling malicious Javascript on that page to access Arvados
+        # on behalf of the victim.
+        #
+        # This is mitigating by having separate domains for each
+        # collection, or limiting preview to circumstances where the
+        # collection is not accessed with the user's regular
+        # full-access token.
+        #
+        # Serve preview links using uuid or pdh in subdomain
+        # (requires wildcard DNS and TLS certificate)
+        #   https://*.collections.uuid_prefix.arvadosapi.com
+        #
+        # Serve preview links using uuid or pdh in main domain
+        # (requires wildcard DNS and TLS certificate)
+        #   https://*--collections.uuid_prefix.arvadosapi.com
+        #
+        # Serve preview links by setting uuid or pdh in the path.
+        # This configuration only allows previews of public data or
+        # collection-sharing links, because these use the anonymous
+        # user token or the token is already embedded in the URL.
+        # Other data must be handled as downloads via WebDAVDownload:
+        #   https://collections.uuid_prefix.arvadosapi.com
+        #
         ExternalURL: ""
+
       WebDAVDownload:
         InternalURLs: {}
+        # Base URL for download links. If blank, serve links to WebDAV
+        # with disposition=attachment query param.  Unlike preview links,
+        # browsers do not render attachments, so there is no risk of XSS.
+        #
+        # If WebDAVDownload is blank, and WebDAV uses a
+        # single-origin form, then Workbench will show an error page
+        #
+        # Serve download links by setting uuid or pdh in the path:
+        #   https://download.uuid_prefix.arvadosapi.com
+        #
         ExternalURL: ""
+
       Keepstore:
         InternalURLs: {}
         ExternalURL: "-"
@@ -66,6 +113,14 @@ Clusters:
         ExternalURL: ""
       WebShell:
         InternalURLs: {}
+        # ShellInABox service endpoint URL for a given VM.  If empty, do not
+        # offer web shell logins.
+        #
+        # E.g., using a path-based proxy server to forward connections to shell hosts:
+        # https://webshell.uuid_prefix.arvadosapi.com
+        #
+        # E.g., using a name-based proxy server to forward connections to shell hosts:
+        # https://*.webshell.uuid_prefix.arvadosapi.com
         ExternalURL: ""
       Workbench1:
         InternalURLs: {}
@@ -176,6 +231,11 @@ Clusters:
       NewUserNotificationRecipients: []
       NewInactiveUserNotificationRecipients: []
 
+      # Set anonymous_user_token to enable anonymous user access. You can get
+      # the token by running "bundle exec ./script/get_anonymous_user_token.rb"
+      # in the directory where your API server is running.
+      AnonymousUserToken: ""
+
     AuditLogs:
       # Time to keep audit logs, in seconds. (An audit log is a row added
       # to the "logs" table in the PostgreSQL database each time an
@@ -231,7 +291,7 @@ Clusters:
       # one another!
       BlobSigning: true
 
-      # blob_signing_key is a string of alphanumeric characters used to
+      # BlobSigningKey is a string of alphanumeric characters used to
       # generate permission signatures for Keep locators. It must be
       # identical to the permission key given to Keep. IMPORTANT: This is
       # a site secret. It should be at least 50 characters.
@@ -298,6 +358,19 @@ Clusters:
       # If Protected is true, only an admin user can modify its value.
       ManagedProperties:
         SAMPLE: {Function: original_owner, Protected: true}
+
+      # In "trust all content" mode, Workbench will redirect download
+      # requests to WebDAV preview link, even in the cases when
+      # WebDAV would have to expose XSS vulnerabilities in order to
+      # handle the redirect (see discussion on Services.WebDAV).
+      #
+      # This setting has no effect in the recommended configuration,
+      # where the WebDAV is configured to have a separate domain for
+      # every collection; in this case XSS protection is provided by
+      # browsers' same-origin policy.
+      #
+      # The default setting (false) is appropriate for a multi-user site.
+      TrustAllContent: false
 
     Login:
       # These settings are provided by your OAuth2 provider (e.g.,
@@ -619,11 +692,15 @@ Clusters:
     Mail:
       MailchimpAPIKey: ""
       MailchimpListID: ""
-      SendUserSetupNotificationEmail: ""
-      IssueReporterEmailFrom: ""
-      IssueReporterEmailTo: ""
-      SupportEmailAddress: ""
-      EmailFrom: ""
+      SendUserSetupNotificationEmail: true
+
+      # Bug/issue report notification to and from addresses
+      IssueReporterEmailFrom: "arvados@example.com"
+      IssueReporterEmailTo: "arvados@example.com"
+      SupportEmailAddress: "arvados@example.com"
+
+      # Generic issue email from
+      EmailFrom: "arvados@example.com"
     RemoteClusters:
       "*":
         Host: ""
@@ -657,16 +734,51 @@ Clusters:
       ArvadosDocsite: https://doc.arvados.org
       ArvadosPublicDataDocURL: https://playground.arvados.org/projects/public
       ShowUserAgreementInline: false
-      SecretToken: ""
       SecretKeyBase: ""
+
+      # Scratch directory used by the remote repository browsing
+      # feature. If it doesn't exist, it (and any missing parents) will be
+      # created using mkdir_p.
       RepositoryCache: /var/www/arvados-workbench/current/tmp/git
-      UserProfileFormFields:
-        SAMPLE:
-          Type: text
-          FormFieldTitle: ""
-          FormFieldDescription: ""
-          Required: true
+
+      # Below is a sample setting of user_profile_form_fields config parameter.
+      # This configuration parameter should be set to either false (to disable) or
+      # to a map as shown below.
+      # Configure the map of input fields to be displayed in the profile page
+      # using the attribute "key" for each of the input fields.
+      # This sample shows configuration with one required and one optional form fields.
+      # For each of these input fields:
+      #   You can specify "Type" as "text" or "select".
+      #   List the "Options" to be displayed for each of the "select" menu.
+      #   Set "Required" as "true" for any of these fields to make them required.
+      # If any of the required fields are missing in the user's profile, the user will be
+      # redirected to the profile page before they can access any Workbench features.
+      UserProfileFormFields: {}
+        # exampleTextValue:  # key that will be set in properties
+        #   Type: text  #
+        #   FormFieldTitle: ""
+        #   FormFieldDescription: ""
+        #   Required: true
+        #   Position: 1
+        # exampleOptionsValue:
+        #   Type: select
+        #   FormFieldTitle: ""
+        #   FormFieldDescription: ""
+        #   Required: true
+        #   Position: 1
+        #   Options:
+        #     red: {}
+        #     blue: {}
+        #     yellow: {}
+
+      # Use "UserProfileFormMessage to configure the message you want
+      # to display on the profile page.
       UserProfileFormMessage: 'Welcome to Arvados. All <span style="color:red">required fields</span> must be completed before you can proceed.'
+
+      # Mimetypes of applications for which the view icon
+      # would be enabled in a collection's show page.
+      # It is sufficient to list only applications here.
+      # No need to list text and image types.
       ApplicationMimetypesWithViewIcon:
         cwl: {}
         fasta: {}
@@ -683,18 +795,50 @@ Clusters:
         vnd.realvnc.bed: {}
         xml: {}
         xsl: {}
+
+      # The maximum number of bytes to load in the log viewer
       LogViewerMaxBytes: 1M
+
+      # When anonymous_user_token is configured, show public projects page
       EnablePublicProjectsPage: true
+
+      # By default, disable the "Getting Started" popup which is specific to Arvados playground
       EnableGettingStartedPopup: false
+
+      # Ask Arvados API server to compress its response payloads.
       APIResponseCompression: true
+
+      # Timeouts for API requests.
       APIClientConnectTimeout: 2m
       APIClientReceiveTimeout: 5m
+
+      # Maximum number of historic log records of a running job to fetch
+      # and display in the Log tab, while subscribing to web sockets.
       RunningJobLogRecordsToFetch: 2000
+
+      # In systems with many shared projects, loading of dashboard and topnav
+      # cab be slow due to collections indexing; use the following parameters
+      # to suppress these properties
       ShowRecentCollectionsOnDashboard: true
       ShowUserNotifications: true
-      MultiSiteSearch: false
+
+      # Enable/disable "multi-site search" in top nav ("true"/"false"), or
+      # a link to the multi-site search page on a "home" Workbench site.
+      #
+      # Example:
+      #   https://workbench.qr1hi.arvadosapi.com/collections/multisite
+      MultiSiteSearch: ""
+
+      # Should workbench allow management of local git repositories? Set to false if
+      # the jobs api is disabled and there are no local git repositories.
       Repositories: true
+
       SiteName: Arvados Workbench
+      ProfilingEnabled: false
+
+      # This is related to obsolete Google OpenID 1.0 login
+      # but some workbench stuff still expects it to be set.
+      DefaultOpenIdPrefix: "https://www.google.com/accounts/o8/id"
 
       # Workbench2 configs
       VocabularyURL: ""

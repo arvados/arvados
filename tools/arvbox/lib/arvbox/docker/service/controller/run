@@ -23,6 +23,8 @@ sso_app_secret=$(cat /var/lib/arvados/sso_app_secret)
 vm_uuid=$(cat /var/lib/arvados/vm-uuid)
 database_pw=$(cat /var/lib/arvados/api_database_pw)
 
+workbench_secret_key_base=$(cat /var/lib/arvados/workbench_secret_token)
+
 if test -s /var/lib/arvados/api_rails_env ; then
   database_env=$(cat /var/lib/arvados/api_rails_env)
 else
@@ -50,6 +52,10 @@ Clusters:
         ExternalURL: "http://$localip:${services[arv-git-httpd]}/"
       WebDAV:
         ExternalURL: "https://$localip:${services[keep-web-ssl]}/"
+      Composer:
+        ExternalURL: "http://$localip:${services[composer]}"
+      Controller:
+        ExternalURL: "https://$localip:${services[controller-ssl]}"
     NodeProfiles:  # to be deprecated in favor of "Services" section
       "*":
         arvados-controller:
@@ -82,6 +88,9 @@ Clusters:
       AutoSetupNewUsers: true
       AutoSetupNewUsersWithVmUUID: $vm_uuid
       AutoSetupNewUsersWithRepository: true
+    Workbench:
+      SecretKeyBase: $workbench_secret_key_base
+      ArvadosDocsite: http://$localip:${services[doc]}/
 EOF
 
 /usr/local/lib/arvbox/yml_override.py /var/lib/arvados/cluster_config.yml
