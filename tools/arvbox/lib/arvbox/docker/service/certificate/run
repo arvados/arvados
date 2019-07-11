@@ -10,7 +10,7 @@ set -ex -o pipefail
 
 uuid_prefix=$(cat /var/lib/arvados/api_uuid_prefix)
 
-if test ! -s /var/lib/arvados/root-cert.pem ; then
+if ! openssl verify -CAfile $root_cert $root_cert ; then
     # req           signing request sub-command
     # -new          new certificate request
     # -nodes        "no des" don't encrypt key
@@ -32,13 +32,19 @@ if test ! -s /var/lib/arvados/root-cert.pem ; then
 	    -extensions x509_ext \
 	    -config <(cat /etc/ssl/openssl.cnf \
 			  <(printf "\n[x509_ext]\nbasicConstraints=critical,CA:true,pathlen:0\nkeyUsage=critical,keyCertSign,cRLSign")) \
-            -out /var/lib/arvados/root-cert.pem \
-            -keyout /var/lib/arvados/root-cert.key \
+            -out $root_cert \
+            -keyout $root_cert_key \
             -days 365
-    chown arvbox:arvbox /var/lib/arvados/root-cert.*
+    chown arvbox:arvbox $root_cert $root_cert_key
+    rm -f $server_cert $server_cert_key
 fi
 
-if test ! -s /var/lib/arvados/server-cert-${localip}.pem ; then
+cp $root_cert /usr/local/share/ca-certificates/arvados-testing-cert.crt
+update-ca-certificates
+
+if ! openssl verify -CAfile $root_cert $server_cert ; then
+
+    rm -f $server_cert $server_cert_key
 
     if [[ $localip =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
 	san=IP:$localip
@@ -67,25 +73,22 @@ if test ! -s /var/lib/arvados/server-cert-${localip}.pem ; then
 	    -config <(cat /etc/ssl/openssl.cnf \
 			  <(printf "\n[x509_ext]\nkeyUsage=critical,digitalSignature,keyEncipherment\nsubjectAltName=DNS:localhost,$san")) \
             -out /var/lib/arvados/server-cert-${localip}.csr \
-            -keyout /var/lib/arvados/server-cert-${localip}.key \
+            -keyout $server_cert_key \
             -days 365
 
     openssl x509 \
 	    -req \
 	    -in /var/lib/arvados/server-cert-${localip}.csr \
-	    -CA /var/lib/arvados/root-cert.pem \
-	    -CAkey /var/lib/arvados/root-cert.key \
-	    -out /var/lib/arvados/server-cert-${localip}.pem \
+	    -CA $root_cert \
+	    -CAkey $root_cert_key \
+	    -out $server_cert \
 	    -set_serial $RANDOM$RANDOM \
 	    -extfile <(cat /etc/ssl/openssl.cnf \
 			  <(printf "\n[x509_ext]\nkeyUsage=critical,digitalSignature,keyEncipherment\nsubjectAltName=DNS:localhost,$san")) \
 	    -extensions x509_ext \
 	    -days 365
 
-    chown arvbox:arvbox /var/lib/arvados/server-cert-${localip}.*
+    chown arvbox:arvbox $server_cert $server_cert_key
 fi
-
-cp /var/lib/arvados/root-cert.pem /usr/local/share/ca-certificates/arvados-testing-cert.crt
-update-ca-certificates
 
 sv stop certificate
