@@ -19,7 +19,7 @@ Options:
 --debug
     Output debug information (default: false)
 --target <target>
-    Distribution to build packages for (default: debian8)
+    Distribution to build packages for (default: debian9)
 --only-build <package>
     Build only a specific package (or $ONLY_BUILD from environment)
 --command
@@ -42,7 +42,7 @@ VENDOR="Veritas Genetics, Inc."
 
 DEBUG=${ARVADOS_DEBUG:-0}
 EXITCODE=0
-TARGET=debian8
+TARGET=debian9
 COMMAND=
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \

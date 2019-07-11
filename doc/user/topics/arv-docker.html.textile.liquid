@@ -64,19 +64,18 @@ Next, update the package list using @apt-get update@.
 
 <notextile>
 <pre><code>root@fbf1d0f529d5:/# apt-get update
-Hit http://security.debian.org jessie/updates InRelease
-Ign http://httpredir.debian.org jessie InRelease
-Ign http://apt.arvados.org jessie InRelease
-Hit http://apt.arvados.org jessie Release.gpg
-Get:1 http://security.debian.org jessie/updates/main amd64 Packages [431 kB]
-Hit http://apt.arvados.org jessie Release
-Hit http://httpredir.debian.org jessie-updates InRelease
-Get:2 http://apt.arvados.org jessie/main amd64 Packages [257 kB]
-Get:3 http://httpredir.debian.org jessie-updates/main amd64 Packages [17.6 kB]
-Hit http://httpredir.debian.org jessie Release.gpg
-Hit http://httpredir.debian.org jessie Release
-Get:4 http://httpredir.debian.org jessie/main amd64 Packages [9049 kB]
-Fetched 9755 kB in 2s (3894 kB/s)
+Get:2 http://apt.arvados.org stretch-dev InRelease [3260 B]
+Get:1 http://security-cdn.debian.org/debian-security stretch/updates InRelease [94.3 kB]
+Ign:3 http://cdn-fastly.deb.debian.org/debian stretch InRelease
+Get:4 http://cdn-fastly.deb.debian.org/debian stretch-updates InRelease [91.0 kB]
+Get:5 http://apt.arvados.org stretch-dev/main amd64 Packages [208 kB]
+Get:6 http://cdn-fastly.deb.debian.org/debian stretch Release [118 kB]
+Get:7 http://security-cdn.debian.org/debian-security stretch/updates/main amd64 Packages [499 kB]
+Get:8 http://cdn-fastly.deb.debian.org/debian stretch Release.gpg [2434 B]
+Get:9 http://cdn-fastly.deb.debian.org/debian stretch-updates/main amd64 Packages.diff/Index [10.6 kB]
+Get:10 http://cdn-fastly.deb.debian.org/debian stretch-updates/main amd64 Packages 2019-07-08-0821.07.pdiff [445 B]
+Get:10 http://cdn-fastly.deb.debian.org/debian stretch-updates/main amd64 Packages 2019-07-08-0821.07.pdiff [445 B]
+Fetched 1026 kB in 0s (1384 kB/s)
 Reading package lists... Done
 </code></pre>
 </notextile>
@@ -88,54 +87,9 @@ In this example, we will install the "R" statistical language Debian package "r-
 Reading package lists... Done
 Building dependency tree
 Reading state information... Done
-The following extra packages will be installed:
-  [...]
-  libxxf86vm1 make patch r-base-core r-base-dev r-cran-boot r-cran-class
-  r-cran-cluster r-cran-codetools r-cran-foreign r-cran-kernsmooth
-  r-cran-lattice r-cran-mass r-cran-matrix r-cran-mgcv r-cran-nlme r-cran-nnet
-  r-cran-rpart r-cran-spatial r-cran-survival r-doc-html r-recommended
-  [...]
-Suggested packages:
-  [...]
-The following NEW packages will be installed:
-  [...]
-  libxxf86vm1 make patch r-base-core r-base-dev r-cran-boot r-cran-class
-  r-cran-cluster r-cran-codetools r-cran-foreign r-cran-kernsmooth
-  r-cran-lattice r-cran-mass r-cran-matrix r-cran-mgcv r-cran-nlme r-cran-nnet
-  r-cran-rpart r-cran-spatial r-cran-survival r-doc-html r-recommended
-  [...]
-0 upgraded, 203 newly installed, 0 to remove and 39 not upgraded.
-Need to get 124 MB of archives.
-After this operation, 334 MB of additional disk space will be used.
-Do you want to continue [Y/n]? y
+The following additional packages will be installed:
 [...]
-Get:130 http://httpredir.debian.org/debian/ jessie/main r-cran-cluster amd64 1.15.3-1 [475 kB]
-Get:131 http://httpredir.debian.org/debian/ jessie/main r-base-dev all 3.1.1-1 [4018 B]
-Get:132 http://httpredir.debian.org/debian/ jessie/main r-cran-boot all 1.3-13-1 [571 kB]
-Get:133 http://httpredir.debian.org/debian/ jessie/main r-cran-codetools all 0.2-9-1 [45.7 kB]
-Get:134 http://httpredir.debian.org/debian/ jessie/main r-cran-rpart amd64 4.1-8-1 [862 kB]
-Get:135 http://httpredir.debian.org/debian/ jessie/main r-cran-foreign amd64 0.8.61-1 [213 kB]
-[...]
-Fetched 124 MB in 52s (2380 kB/s)
-debconf: delaying package configuration, since apt-utils is not installed
-[...]
-Unpacking r-base-core (3.1.1-1+b2) ...
-Selecting previously unselected package r-base-dev.
-Preparing to unpack .../r-base-dev_3.1.1-1_all.deb ...
-Unpacking r-base-dev (3.1.1-1) ...
-Selecting previously unselected package r-cran-boot.
-Preparing to unpack .../r-cran-boot_1.3-13-1_all.deb ...
-Unpacking r-cran-boot (1.3-13-1) ...
-Selecting previously unselected package r-cran-mass.
-[...]
-Setting up r-base-core (3.1.1-1+b2) ...
-
-Creating config file /etc/R/Renviron with new version
-Setting up r-base-dev (3.1.1-1) ...
-Setting up r-cran-boot (1.3-13-1) ...
-Setting up r-cran-mass (7.3-34-1) ...
-Setting up r-cran-class (7.3-11-1) ...
-[...]
+done.
 </code></pre>
 </notextile>
 
@@ -144,8 +98,8 @@ Now we can verify that "R" is installed:
 <notextile>
 <pre><code>root@fbf1d0f529d5:/# <span class="userinput">R</span>
 
-R version 3.1.1 (2014-07-10) -- "Sock it to Me"
-Copyright (C) 2014 The R Foundation for Statistical Computing
+R version 3.3.3 (2017-03-06) -- "Another Canoe"
+Copyright (C) 2017 The R Foundation for Statistical Computing
 Platform: x86_64-pc-linux-gnu (64-bit)
 
 R is free software and comes with ABSOLUTELY NO WARRANTY.

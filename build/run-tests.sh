@@ -575,8 +575,6 @@ setup_virtualenv() {
     else
         "$venvdest/bin/pip" install --no-cache-dir 'setuptools>=18.5' 'pip>=7'
     fi
-    # ubuntu1404 can't seem to install mock via tests_require, but it can do this.
-    "$venvdest/bin/pip" install --no-cache-dir 'mock>=1.0' 'pbr<1.7.0'
 }
 
 initialize() {
