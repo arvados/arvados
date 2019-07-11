@@ -6,7 +6,9 @@ package config
 
 import (
 	"bytes"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -43,6 +45,93 @@ func (s *LoadSuite) TestNoConfigs(c *check.C) {
 	c.Check(cc.ClusterID, check.Equals, "z1111")
 	c.Check(cc.API.MaxRequestAmplification, check.Equals, 4)
 	c.Check(cc.API.MaxItemsPerResponse, check.Equals, 1000)
+}
+
+func (s *LoadSuite) TestMungeLegacyConfigArgs(c *check.C) {
+	f, err := ioutil.TempFile("", "")
+	c.Check(err, check.IsNil)
+	defer os.Remove(f.Name())
+	io.WriteString(f, "Debug: true\n")
+	oldfile := f.Name()
+
+	f, err = ioutil.TempFile("", "")
+	c.Check(err, check.IsNil)
+	defer os.Remove(f.Name())
+	io.WriteString(f, "Clusters: {aaaaa: {}}\n")
+	newfile := f.Name()
+
+	for _, trial := range []struct {
+		argsIn  []string
+		argsOut []string
+	}{
+		{
+			[]string{"-config", oldfile},
+			[]string{"-old-config", oldfile},
+		},
+		{
+			[]string{"-config=" + oldfile},
+			[]string{"-old-config=" + oldfile},
+		},
+		{
+			[]string{"-config", newfile},
+			[]string{"-config", newfile},
+		},
+		{
+			[]string{"-config=" + newfile},
+			[]string{"-config=" + newfile},
+		},
+		{
+			[]string{"-foo", oldfile},
+			[]string{"-foo", oldfile},
+		},
+		{
+			[]string{"-foo=" + oldfile},
+			[]string{"-foo=" + oldfile},
+		},
+		{
+			[]string{"-foo", "-config=" + oldfile},
+			[]string{"-foo", "-old-config=" + oldfile},
+		},
+		{
+			[]string{"-foo", "bar", "-config=" + oldfile},
+			[]string{"-foo", "bar", "-old-config=" + oldfile},
+		},
+		{
+			[]string{"-foo=bar", "baz", "-config=" + oldfile},
+			[]string{"-foo=bar", "baz", "-old-config=" + oldfile},
+		},
+		{
+			[]string{"-config=/dev/null"},
+			[]string{"-config=/dev/null"},
+		},
+		{
+			[]string{"-config=-"},
+			[]string{"-config=-"},
+		},
+		{
+			[]string{"-config="},
+			[]string{"-config="},
+		},
+		{
+			[]string{"-foo=bar", "baz", "-config"},
+			[]string{"-foo=bar", "baz", "-config"},
+		},
+		{
+			[]string{},
+			nil,
+		},
+	} {
+		var logbuf bytes.Buffer
+		logger := logrus.New()
+		logger.Out = &logbuf
+
+		var ldr Loader
+		args := ldr.MungeLegacyConfigArgs(logger, trial.argsIn, "-old-config")
+		c.Check(args, check.DeepEquals, trial.argsOut)
+		if fmt.Sprintf("%v", trial.argsIn) != fmt.Sprintf("%v", trial.argsOut) {
+			c.Check(logbuf.String(), check.Matches, `.*`+oldfile+` is not a cluster config file -- interpreting -config as -old-config.*\n`)
+		}
+	}
 }
 
 func (s *LoadSuite) TestSampleKeys(c *check.C) {

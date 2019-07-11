@@ -55,6 +55,65 @@ func (ldr *Loader) SetupFlags(flagset *flag.FlagSet) {
 	flagset.StringVar(&ldr.KeepstorePath, "legacy-keepstore-config", defaultKeepstoreConfigPath, "Legacy keepstore configuration `file`")
 }
 
+// MungeLegacyConfigArgs checks args for a -config flag whose argument
+// is a regular file (or a symlink to one), but doesn't have a
+// top-level "Clusters" key and therefore isn't a valid cluster
+// configuration file. If it finds such a flag, it replaces -config
+// with legacyConfigArg (e.g., "-legacy-keepstore-config").
+//
+// This is used by programs that still need to accept "-config" as a
+// way to specify a per-component config file until their config has
+// been migrated.
+//
+// If any errors are encountered while reading or parsing a config
+// file, the given args are not munged. We presume the same errors
+// will be encountered again and reported later on when trying to load
+// cluster configuration from the same file, regardless of which
+// struct we end up using.
+func (ldr *Loader) MungeLegacyConfigArgs(lgr logrus.FieldLogger, args []string, legacyConfigArg string) []string {
+	munged := append([]string(nil), args...)
+	for i := 0; i < len(args); i++ {
+		if !strings.HasPrefix(args[i], "-") || strings.SplitN(strings.TrimPrefix(args[i], "-"), "=", 2)[0] != "config" {
+			continue
+		}
+		var operand string
+		if strings.Contains(args[i], "=") {
+			operand = strings.SplitN(args[i], "=", 2)[1]
+		} else if i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
+			i++
+			operand = args[i]
+		} else {
+			continue
+		}
+		if fi, err := os.Stat(operand); err != nil || !fi.Mode().IsRegular() {
+			continue
+		}
+		f, err := os.Open(operand)
+		if err != nil {
+			continue
+		}
+		defer f.Close()
+		buf, err := ioutil.ReadAll(f)
+		if err != nil {
+			continue
+		}
+		var cfg arvados.Config
+		err = yaml.Unmarshal(buf, &cfg)
+		if err != nil {
+			continue
+		}
+		if len(cfg.Clusters) == 0 {
+			lgr.Warnf("%s is not a cluster config file -- interpreting %s as %s (please migrate your config!)", operand, "-config", legacyConfigArg)
+			if operand == args[i] {
+				munged[i-1] = legacyConfigArg
+			} else {
+				munged[i] = legacyConfigArg + "=" + operand
+			}
+		}
+	}
+	return munged
+}
+
 func (ldr *Loader) loadBytes(path string) ([]byte, error) {
 	if path == "-" {
 		return ioutil.ReadAll(ldr.Stdin)
