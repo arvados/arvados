@@ -275,7 +275,7 @@ class FuseSharedTest(MountTestBase):
         self.make_mount(fuse.SharedDirectory,
                         exclude=self.api.users().current().execute()['uuid'])
         keep = arvados.keep.KeepClient()
-        keep.put("baz")
+        keep.put("baz".encode())
 
         self.pool.apply(fuseSharedTestHelper, (self.mounttmp,))
 
