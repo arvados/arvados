@@ -575,8 +575,6 @@ setup_virtualenv() {
     else
         "$venvdest/bin/pip" install --no-cache-dir 'setuptools>=18.5' 'pip>=7'
     fi
-    # ubuntu1404 can't seem to install mock via tests_require, but it can do this.
-    "$venvdest/bin/pip" install --no-cache-dir 'mock>=1.0' 'pbr<1.7.0'
 }
 
 initialize() {
@@ -774,7 +772,7 @@ do_test_once() {
         # before trying "go test". Otherwise, coverage-reporting
         # mode makes Go show the wrong line numbers when reporting
         # compilation errors.
-        go get -ldflags "-X main.version=${ARVADOS_VERSION:-$(git log -n1 --format=%H)-dev}" -t "git.curoverse.com/arvados.git/$1" && \
+        go get -ldflags "-X git.curoverse.com/arvados.git/lib/cmd.version=${ARVADOS_VERSION:-$(git log -n1 --format=%H)-dev}" -t "git.curoverse.com/arvados.git/$1" && \
             cd "$GOPATH/src/git.curoverse.com/arvados.git/$1" && \
             if [[ -n "${testargs[$1]}" ]]
         then
@@ -840,7 +838,7 @@ do_install_once() {
         result=1
     elif [[ "$2" == "go" ]]
     then
-        go get -ldflags "-X main.version=${ARVADOS_VERSION:-$(git log -n1 --format=%H)-dev}" -t "git.curoverse.com/arvados.git/$1"
+        go get -ldflags "-X git.curoverse.com/arvados.git/lib/cmd.version=${ARVADOS_VERSION:-$(git log -n1 --format=%H)-dev}" -t "git.curoverse.com/arvados.git/$1"
     elif [[ "$2" == "pip" ]]
     then
         # $3 can name a path directory for us to use, including trailing

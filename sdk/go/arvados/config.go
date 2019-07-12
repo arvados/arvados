@@ -9,11 +9,18 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"os"
 
 	"git.curoverse.com/arvados.git/sdk/go/config"
 )
 
-const DefaultConfigFile = "/etc/arvados/config.yml"
+var DefaultConfigFile = func() string {
+	if path := os.Getenv("ARVADOS_CONFIG"); path != "" {
+		return path
+	} else {
+		return "/etc/arvados/config.yml"
+	}
+}()
 
 type Config struct {
 	Clusters map[string]Cluster
@@ -76,13 +83,17 @@ type Cluster struct {
 		UnloggedAttributes []string
 	}
 	Collections struct {
-		BlobSigning           bool
-		BlobSigningKey        string
-		BlobSigningTTL        Duration
-		CollectionVersioning  bool
-		DefaultTrashLifetime  Duration
-		DefaultReplication    int
-		ManagedProperties     map[string]interface{}
+		BlobSigning          bool
+		BlobSigningKey       string
+		BlobSigningTTL       Duration
+		CollectionVersioning bool
+		DefaultTrashLifetime Duration
+		DefaultReplication   int
+		ManagedProperties    map[string]struct {
+			Value     interface{}
+			Function  string
+			Protected bool
+		}
 		PreserveVersionIfIdle Duration
 		TrashSweepInterval    Duration
 		TrustAllContent       bool

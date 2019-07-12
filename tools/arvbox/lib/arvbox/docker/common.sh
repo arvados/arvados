@@ -18,6 +18,11 @@ else
     localip=$(ip addr show $defaultdev | grep 'inet ' | sed 's/ *inet \(.*\)\/.*/\1/')
 fi
 
+root_cert=/var/lib/arvados/root-cert.pem
+root_cert_key=/var/lib/arvados/root-cert.key
+server_cert=/var/lib/arvados/server-cert-${localip}.pem
+server_cert_key=/var/lib/arvados/server-cert-${localip}.key
+
 declare -A services
 services=(
   [workbench]=443
