@@ -503,9 +503,10 @@ def _start_keep(n, keep_args):
     for arg, val in keep_args.items():
         keep_cmd.append("{}={}".format(arg, val))
 
-    logf = open(_logfilename('keep{}'.format(n)), 'a')
-    kp0 = subprocess.Popen(
-        keep_cmd, stdin=open('/dev/null'), stdout=logf, stderr=logf, close_fds=True)
+    with open(_logfilename('keep{}'.format(n)), 'a') as logf:
+        with open('/dev/null') as _stdin:
+            kp0 = subprocess.Popen(
+                keep_cmd, stdin=_stdin, stdout=logf, stderr=logf, close_fds=True)
 
     with open(_pidfile('keep{}'.format(n)), 'w') as f:
         f.write(str(kp0.pid))
@@ -562,7 +563,8 @@ def run_keep(blob_signing_key=None, enforce_permissions=False, num_servers=2):
         pidfile = _pidfile('keepproxy')
         if os.path.exists(pidfile):
             try:
-                os.kill(int(open(pidfile).read()), signal.SIGHUP)
+                with open(pidfile) as pid:
+                    os.kill(int(pid.read()), signal.SIGHUP)
             except OSError:
                 os.remove(pidfile)
 
@@ -733,7 +735,8 @@ def _setport(program, port):
 # Returns 9 if program is not up.
 def _getport(program):
     try:
-        return int(open(_portfile(program)).read())
+        with open(_portfile(program)) as prog:
+            return int(prog.read())
     except IOError:
         return 9
 

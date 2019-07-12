@@ -34,11 +34,12 @@ def noexit(func):
 
 @contextlib.contextmanager
 def nostderr():
-    orig, sys.stderr = sys.stderr, open(os.devnull, 'w')
-    try:
-        yield
-    finally:
-        sys.stderr = orig
+    with open(os.devnull, 'w') as dn:
+        orig, sys.stderr = sys.stderr, dn
+        try:
+            yield
+        finally:
+            sys.stderr = orig
 
 
 class MountArgsTest(unittest.TestCase):

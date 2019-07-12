@@ -59,6 +59,7 @@ class ExecMode(unittest.TestCase):
                 quote(os.path.join(self.mnt, 'zzz', 'foo.txt')),
                 quote(os.path.join(self.mnt, 'zzz', '.arvados#collection')),
                 quote(os.path.join(self.okfile)))]))
-        self.assertRegexpMatches(
-            json.load(open(self.okfile))['manifest_text'],
-            r' 0:3:foo.txt\n')
+        with open(self.okfile) as f:
+            self.assertRegexpMatches(
+                json.load(f)['manifest_text'],
+                r' 0:3:foo.txt\n')

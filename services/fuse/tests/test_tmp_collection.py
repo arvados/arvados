@@ -54,9 +54,8 @@ class TmpCollectionArgsTest(unittest.TestCase):
 
 
 def current_manifest(tmpdir):
-    return json.load(open(
-        os.path.join(tmpdir, '.arvados#collection')
-    ))['manifest_text']
+    with open(os.path.join(tmpdir, '.arvados#collection')) as tmp:
+        return json.load(tmp)['manifest_text']
 
 
 class TmpCollectionTest(IntegrationTest):
