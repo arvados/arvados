@@ -1085,15 +1085,16 @@ class MagicDirApiError(FuseMagicTest):
         api.keep.get.side_effect = Exception('Keep fail')
 
     def runTest(self):
-        self.make_mount(fuse.MagicDirectory)
+        with mock.patch('arvados_fuse.fresh.FreshBase._poll_time', new_callable=mock.PropertyMock, return_value=60) as mock_poll_time:
+            self.make_mount(fuse.MagicDirectory)
 
-        self.operations.inodes.inode_cache.cap = 1
-        self.operations.inodes.inode_cache.min_entries = 2
+            self.operations.inodes.inode_cache.cap = 1
+            self.operations.inodes.inode_cache.min_entries = 2
 
-        with self.assertRaises(OSError):
+            with self.assertRaises(OSError):
+                llfuse.listdir(os.path.join(self.mounttmp, self.testcollection))
+
             llfuse.listdir(os.path.join(self.mounttmp, self.testcollection))
-
-        llfuse.listdir(os.path.join(self.mounttmp, self.testcollection))
 
 
 class FuseUnitTest(unittest.TestCase):
