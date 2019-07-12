@@ -124,3 +124,36 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Collection to untrash.|path||
 |ensure_unique_name|boolean (default false)|Rename collection uniquely if untrashing it would fail with a unique name conflict.|query||
+
+
+h3. provenance
+
+Returns a list of objects in the database that directly or indirectly contributed to producing this collection, such as the container request that produced this collection as output.
+
+The general algorithm is:
+
+# Visit the container request that produced this collection (via "output_uuid" or "log_uuid")
+# Visit the input collections to that container request (via "mounts", or "container_image")
+# Iterate until there are no more objects to visit
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string|The UUID of the Collection to get provenance.|path||
+
+h3. used_by
+
+Returns a list of objects in the database this collection directly or indirectly contributed to, such as containers that takes this collection as input.
+
+The general algorithm is:
+
+# Visit containers that take this collection as input (via "mounts", or "container_image")
+# Visit collections produced by those containers (via "output" or "log")
+# Iterate until there are no more objects to visit
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string|The UUID of the Collection to get usage.|path||

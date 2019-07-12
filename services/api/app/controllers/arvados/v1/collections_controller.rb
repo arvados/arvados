@@ -215,13 +215,13 @@ class Arvados::V1::CollectionsController < ApplicationController
           visited[uuid] = c.as_api_response
           if direction == :search_up
             # Follow upstream collections referenced in the script parameters
-            find_collections(visited, c) do |hash, col_uuid|
+            find_collections(visited, c, ignore_columns=["log", "output"]) do |hash, col_uuid|
               search_edges(visited, hash, :search_up) if hash
               search_edges(visited, col_uuid, :search_up) if col_uuid
             end
           elsif direction == :search_down
             # Follow downstream job output
-            search_edges(visited, c.output, direction)
+            search_edges(visited, c.output, :search_down)
           end
         end
       elsif rsc == ContainerRequest
@@ -230,13 +230,13 @@ class Arvados::V1::CollectionsController < ApplicationController
           visited[uuid] = c.as_api_response
           if direction == :search_up
             # Follow upstream collections
-            find_collections(visited, c, ignore_columns=["log_uuid"]) do |hash, col_uuid|
+            find_collections(visited, c, ignore_columns=["log_uuid", "output_uuid"]) do |hash, col_uuid|
               search_edges(visited, hash, :search_up) if hash
               search_edges(visited, col_uuid, :search_up) if col_uuid
             end
           elsif direction == :search_down
             # Follow downstream job output
-            search_edges(visited, c.output_uuid, direction)
+            search_edges(visited, c.output_uuid, :search_down)
           end
         end
       elsif rsc == Collection
@@ -253,7 +253,7 @@ class Arvados::V1::CollectionsController < ApplicationController
               search_edges(visited, cr.uuid, :search_up)
             end
           elsif direction == :search_down
-            search_edges(visited, c.portable_data_hash, direction)
+            search_edges(visited, c.portable_data_hash, :search_down)
           end
         end
       elsif rsc != nil
