@@ -6,7 +6,9 @@ package config
 
 import (
 	"bytes"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"reflect"
@@ -27,16 +29,31 @@ func Test(t *testing.T) {
 
 var _ = check.Suite(&LoadSuite{})
 
+// Return a new Loader that reads cluster config from configdata
+// (instead of the usual default /etc/arvados/config.yml), and logs to
+// logdst or (if that's nil) c.Log.
+func testLoader(c *check.C, configdata string, logdst io.Writer) *Loader {
+	logger := ctxlog.TestLogger(c)
+	if logdst != nil {
+		lgr := logrus.New()
+		lgr.Out = logdst
+		logger = lgr
+	}
+	ldr := NewLoader(bytes.NewBufferString(configdata), logger)
+	ldr.Path = "-"
+	return ldr
+}
+
 type LoadSuite struct{}
 
 func (s *LoadSuite) TestEmpty(c *check.C) {
-	cfg, err := Load(&bytes.Buffer{}, ctxlog.TestLogger(c))
+	cfg, err := testLoader(c, "", nil).Load()
 	c.Check(cfg, check.IsNil)
 	c.Assert(err, check.ErrorMatches, `config does not define any clusters`)
 }
 
 func (s *LoadSuite) TestNoConfigs(c *check.C) {
-	cfg, err := Load(bytes.NewBufferString(`Clusters: {"z1111": {}}`), ctxlog.TestLogger(c))
+	cfg, err := testLoader(c, `Clusters: {"z1111": {}}`, nil).Load()
 	c.Assert(err, check.IsNil)
 	c.Assert(cfg.Clusters, check.HasLen, 1)
 	cc, err := cfg.GetCluster("z1111")
@@ -46,12 +63,99 @@ func (s *LoadSuite) TestNoConfigs(c *check.C) {
 	c.Check(cc.API.MaxItemsPerResponse, check.Equals, 1000)
 }
 
+func (s *LoadSuite) TestMungeLegacyConfigArgs(c *check.C) {
+	f, err := ioutil.TempFile("", "")
+	c.Check(err, check.IsNil)
+	defer os.Remove(f.Name())
+	io.WriteString(f, "Debug: true\n")
+	oldfile := f.Name()
+
+	f, err = ioutil.TempFile("", "")
+	c.Check(err, check.IsNil)
+	defer os.Remove(f.Name())
+	io.WriteString(f, "Clusters: {aaaaa: {}}\n")
+	newfile := f.Name()
+
+	for _, trial := range []struct {
+		argsIn  []string
+		argsOut []string
+	}{
+		{
+			[]string{"-config", oldfile},
+			[]string{"-old-config", oldfile},
+		},
+		{
+			[]string{"-config=" + oldfile},
+			[]string{"-old-config=" + oldfile},
+		},
+		{
+			[]string{"-config", newfile},
+			[]string{"-config", newfile},
+		},
+		{
+			[]string{"-config=" + newfile},
+			[]string{"-config=" + newfile},
+		},
+		{
+			[]string{"-foo", oldfile},
+			[]string{"-foo", oldfile},
+		},
+		{
+			[]string{"-foo=" + oldfile},
+			[]string{"-foo=" + oldfile},
+		},
+		{
+			[]string{"-foo", "-config=" + oldfile},
+			[]string{"-foo", "-old-config=" + oldfile},
+		},
+		{
+			[]string{"-foo", "bar", "-config=" + oldfile},
+			[]string{"-foo", "bar", "-old-config=" + oldfile},
+		},
+		{
+			[]string{"-foo=bar", "baz", "-config=" + oldfile},
+			[]string{"-foo=bar", "baz", "-old-config=" + oldfile},
+		},
+		{
+			[]string{"-config=/dev/null"},
+			[]string{"-config=/dev/null"},
+		},
+		{
+			[]string{"-config=-"},
+			[]string{"-config=-"},
+		},
+		{
+			[]string{"-config="},
+			[]string{"-config="},
+		},
+		{
+			[]string{"-foo=bar", "baz", "-config"},
+			[]string{"-foo=bar", "baz", "-config"},
+		},
+		{
+			[]string{},
+			nil,
+		},
+	} {
+		var logbuf bytes.Buffer
+		logger := logrus.New()
+		logger.Out = &logbuf
+
+		var ldr Loader
+		args := ldr.MungeLegacyConfigArgs(logger, trial.argsIn, "-old-config")
+		c.Check(args, check.DeepEquals, trial.argsOut)
+		if fmt.Sprintf("%v", trial.argsIn) != fmt.Sprintf("%v", trial.argsOut) {
+			c.Check(logbuf.String(), check.Matches, `.*`+oldfile+` is not a cluster config file -- interpreting -config as -old-config.*\n`)
+		}
+	}
+}
+
 func (s *LoadSuite) TestSampleKeys(c *check.C) {
 	for _, yaml := range []string{
 		`{"Clusters":{"z1111":{}}}`,
 		`{"Clusters":{"z1111":{"InstanceTypes":{"Foo":{"RAM": "12345M"}}}}}`,
 	} {
-		cfg, err := Load(bytes.NewBufferString(yaml), ctxlog.TestLogger(c))
+		cfg, err := testLoader(c, yaml, nil).Load()
 		c.Assert(err, check.IsNil)
 		cc, err := cfg.GetCluster("z1111")
 		_, hasSample := cc.InstanceTypes["SAMPLE"]
@@ -64,7 +168,7 @@ func (s *LoadSuite) TestSampleKeys(c *check.C) {
 }
 
 func (s *LoadSuite) TestMultipleClusters(c *check.C) {
-	cfg, err := Load(bytes.NewBufferString(`{"Clusters":{"z1111":{},"z2222":{}}}`), ctxlog.TestLogger(c))
+	cfg, err := testLoader(c, `{"Clusters":{"z1111":{},"z2222":{}}}`, nil).Load()
 	c.Assert(err, check.IsNil)
 	c1, err := cfg.GetCluster("z1111")
 	c.Assert(err, check.IsNil)
@@ -76,9 +180,7 @@ func (s *LoadSuite) TestMultipleClusters(c *check.C) {
 
 func (s *LoadSuite) TestDeprecatedOrUnknownWarning(c *check.C) {
 	var logbuf bytes.Buffer
-	logger := logrus.New()
-	logger.Out = &logbuf
-	_, err := Load(bytes.NewBufferString(`
+	_, err := testLoader(c, `
 Clusters:
   zzzzz:
     postgresql: {}
@@ -89,7 +191,7 @@ Clusters:
         Host: z2222.arvadosapi.com
         Proxy: true
         BadKey: badValue
-`), logger)
+`, &logbuf).Load()
 	c.Assert(err, check.IsNil)
 	logs := strings.Split(strings.TrimSuffix(logbuf.String(), "\n"), "\n")
 	for _, log := range logs {
@@ -136,11 +238,11 @@ func (s *LoadSuite) TestDefaultConfigHasAllSAMPLEKeys(c *check.C) {
 
 func (s *LoadSuite) TestNoUnrecognizedKeysInDefaultConfig(c *check.C) {
 	var logbuf bytes.Buffer
-	logger := logrus.New()
-	logger.Out = &logbuf
 	var supplied map[string]interface{}
 	yaml.Unmarshal(DefaultYAML, &supplied)
-	cfg, err := Load(bytes.NewBuffer(DefaultYAML), logger)
+
+	loader := testLoader(c, string(DefaultYAML), &logbuf)
+	cfg, err := loader.Load()
 	c.Assert(err, check.IsNil)
 	var loaded map[string]interface{}
 	buf, err := yaml.Marshal(cfg)
@@ -148,7 +250,7 @@ func (s *LoadSuite) TestNoUnrecognizedKeysInDefaultConfig(c *check.C) {
 	err = yaml.Unmarshal(buf, &loaded)
 	c.Assert(err, check.IsNil)
 
-	logExtraKeys(logger, loaded, supplied, "")
+	loader.logExtraKeys(loaded, supplied, "")
 	c.Check(logbuf.String(), check.Equals, "")
 }
 
@@ -156,25 +258,25 @@ func (s *LoadSuite) TestNoWarningsForDumpedConfig(c *check.C) {
 	var logbuf bytes.Buffer
 	logger := logrus.New()
 	logger.Out = &logbuf
-	cfg, err := Load(bytes.NewBufferString(`{"Clusters":{"zzzzz":{}}}`), logger)
+	cfg, err := testLoader(c, `{"Clusters":{"zzzzz":{}}}`, &logbuf).Load()
 	c.Assert(err, check.IsNil)
 	yaml, err := yaml.Marshal(cfg)
 	c.Assert(err, check.IsNil)
-	cfgDumped, err := Load(bytes.NewBuffer(yaml), logger)
+	cfgDumped, err := testLoader(c, string(yaml), &logbuf).Load()
 	c.Assert(err, check.IsNil)
 	c.Check(cfg, check.DeepEquals, cfgDumped)
 	c.Check(logbuf.String(), check.Equals, "")
 }
 
 func (s *LoadSuite) TestPostgreSQLKeyConflict(c *check.C) {
-	_, err := Load(bytes.NewBufferString(`
+	_, err := testLoader(c, `
 Clusters:
  zzzzz:
   postgresql:
    connection:
      DBName: dbname
      Host: host
-`), ctxlog.TestLogger(c))
+`, nil).Load()
 	c.Check(err, check.ErrorMatches, `Clusters.zzzzz.PostgreSQL.Connection: multiple entries for "(dbname|host)".*`)
 }
 
@@ -206,7 +308,7 @@ Clusters:
 `,
 	} {
 		c.Log(data)
-		v, err := Load(bytes.NewBufferString(data), ctxlog.TestLogger(c))
+		v, err := testLoader(c, data, nil).Load()
 		if v != nil {
 			c.Logf("%#v", v.Clusters["zzzzz"].PostgreSQL.ConnectionPool)
 		}
@@ -247,9 +349,9 @@ Clusters:
 }
 
 func (s *LoadSuite) checkEquivalent(c *check.C, goty, expectedy string) {
-	got, err := Load(bytes.NewBufferString(goty), ctxlog.TestLogger(c))
+	got, err := testLoader(c, goty, nil).Load()
 	c.Assert(err, check.IsNil)
-	expected, err := Load(bytes.NewBufferString(expectedy), ctxlog.TestLogger(c))
+	expected, err := testLoader(c, expectedy, nil).Load()
 	c.Assert(err, check.IsNil)
 	if !c.Check(got, check.DeepEquals, expected) {
 		cmd := exec.Command("diff", "-u", "--label", "expected", "--label", "got", "/dev/fd/3", "/dev/fd/4")
