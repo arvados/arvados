@@ -34,10 +34,14 @@ type Loader struct {
 	configdata []byte
 }
 
+// NewLoader returns a new Loader with Stdin and Logger set to the
+// given values, and all config paths set to their default values.
 func NewLoader(stdin io.Reader, logger logrus.FieldLogger) *Loader {
 	ldr := &Loader{Stdin: stdin, Logger: logger}
+	// Calling SetupFlags on a throwaway FlagSet has the side
+	// effect of assigning default values to the configurable
+	// fields.
 	ldr.SetupFlags(flag.NewFlagSet("", flag.ContinueOnError))
-	ldr.Path = "-"
 	return ldr
 }
 

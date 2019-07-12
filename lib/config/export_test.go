@@ -9,7 +9,6 @@ import (
 	"regexp"
 	"strings"
 
-	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	check "gopkg.in/check.v1"
 )
 
@@ -18,8 +17,8 @@ var _ = check.Suite(&ExportSuite{})
 type ExportSuite struct{}
 
 func (s *ExportSuite) TestExport(c *check.C) {
-	confdata := bytes.Replace(DefaultYAML, []byte("SAMPLE"), []byte("testkey"), -1)
-	cfg, err := NewLoader(bytes.NewBuffer(confdata), ctxlog.TestLogger(c)).Load()
+	confdata := strings.Replace(string(DefaultYAML), "SAMPLE", "testkey", -1)
+	cfg, err := testLoader(c, confdata, nil).Load()
 	c.Assert(err, check.IsNil)
 	cluster := cfg.Clusters["xxxxx"]
 	cluster.ManagementToken = "abcdefg"
