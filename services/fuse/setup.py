@@ -48,6 +48,10 @@ setup(name='arvados_fuse',
       extras_require={
           ':python_version<"3"': ['pytz'],
       },
+      classifiers=[
+          'Programming Language :: Python :: 2',
+          'Programming Language :: Python :: 3',
+      ],
       test_suite='tests',
       tests_require=['pbr<1.7.0', 'mock>=1.0', 'PyYAML'],
       zip_safe=False
