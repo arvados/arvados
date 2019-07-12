@@ -121,4 +121,16 @@ class ApplicationControllerTest < ActionController::TestCase
       end
     end
   end
+
+  test "exceptions with backtraces get logged at exception_backtrace key" do
+    Group.stubs(:new).raises(Exception, 'Whoops')
+    Rails.logger.expects(:info).with(any_parameters) do |param|
+      param.include?('Whoops') and param.include?('"exception_backtrace":')
+    end
+    @controller = Arvados::V1::GroupsController.new
+    authorize_with :active
+    post :create, params: {
+      group: {},
+    }
+  end
 end
