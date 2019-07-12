@@ -176,7 +176,7 @@ class CollectionsController < ApplicationController
     if params["tab_pane"] == "Provenance_graph"
       @prov_svg = ProvenanceHelper::create_provenance_graph(@object.provenance, "provenance_svg",
                                                             {:request => request,
-                                                             :direction => :top_down,
+                                                             :direction => "RL",
                                                              :combine_jobs => :script_only}) rescue nil
     end
 
@@ -217,7 +217,7 @@ class CollectionsController < ApplicationController
         if params["tab_pane"] == "Used_by"
           @used_by_svg = ProvenanceHelper::create_provenance_graph(@object.used_by, "used_by_svg",
                                                                    {:request => request,
-                                                                    :direction => :top_down,
+                                                                    :direction => "LR",
                                                                     :combine_jobs => :script_only,
                                                                     :pdata_only => true}) rescue nil
         end
