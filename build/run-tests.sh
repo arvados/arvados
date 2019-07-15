@@ -255,12 +255,12 @@ sanity_checks() {
     echo -n 'libpq libpq-fe.h: '
     find /usr/include -path '*/postgresql/libpq-fe.h' | egrep --max-count=1 . \
         || fatal "No libpq libpq-fe.h. Try: apt-get install libpq-dev"
-    echo -n 'services/api/config/database.yml: '
-    if [[ ! -f "$WORKSPACE/services/api/config/database.yml" ]]; then
-	    fatal "Please provide a database.yml file for the test suite"
-    else
-	    echo "OK"
-    fi
+    #echo -n 'services/api/config/database.yml: '
+    #if [[ ! -f "$WORKSPACE/services/api/config/database.yml" ]]; then
+	#    fatal "Please provide a database.yml file for the test suite"
+    #else
+	#    echo "OK"
+    #fi
     echo -n 'postgresql: '
     psql --version || fatal "No postgresql. Try: apt-get install postgresql postgresql-client-common"
     echo -n 'phantomjs: '
@@ -626,10 +626,25 @@ initialize() {
 
     unset http_proxy https_proxy no_proxy
 
-
     # Note: this must be the last time we change PATH, otherwise rvm will
     # whine a lot.
     setup_ruby_environment
+
+    if [[ -s "$CONFIGSRC/config.yml" ]] ; then
+	cp "$CONFIGSRC/config.yml" "$temp/test-config.yml"
+    else
+	if [[ -s /etc/arvados/config.yml ]] ; then
+	    python > "$temp/test-config.yml" <<EOF
+import yaml
+import json
+v = list(yaml.safe_load(open('/etc/arvados/config.yml'))['Clusters'].values())[0]['PostgreSQL']
+v['Connection']['dbname'] = 'arvados_test'
+print(json.dumps({"Clusters": { "zzzzz": {'PostgreSQL': v}}}))
+EOF
+	    test_database=$(cat $temp/db.yml)
+	fi
+    fi
+    export ARVADOS_CONFIG="$temp/test-config.yml"
 
     echo "PATH is $PATH"
 }
