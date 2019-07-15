@@ -455,6 +455,20 @@ Clusters:
       # stale locks from a previous dispatch process.
       StaleLockTimeout: 1m
 
+      # The crunch-run command to manage the container on a node
+      CrunchRunCommand: "crunch-run"
+
+      # Extra arguments to add to crunch-run invocation
+      # Example: ["--cgroup-parent-subsystem=memory"]
+      CrunchRunArgumentsList: []
+
+      # Extra RAM to reserve on the node, in addition to
+      # the amount specified in the container's RuntimeConstraints
+      ReserveExtraRAM: 256MiB
+
+      # Minimum time between two attempts to run the same container
+      MinRetryPeriod: 0s
+
       Logging:
         # When you run the db:delete_old_container_logs task, it will find
         # containers that have been finished for at least this many seconds,
@@ -498,6 +512,8 @@ Clusters:
         LogUpdateSize: 32MiB
 
       SLURM:
+        PrioritySpread: 0
+        SbatchArgumentsList: []
         Managed:
           # Path to dns server configuration directory
           # (e.g. /etc/unbound.d/conf.d). If false, do not write any config
