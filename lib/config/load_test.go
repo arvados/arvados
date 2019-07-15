@@ -231,7 +231,9 @@ func (s *LoadSuite) checkSAMPLEKeys(c *check.C, path string, x interface{}) {
 }
 
 func (s *LoadSuite) TestDefaultConfigHasAllSAMPLEKeys(c *check.C) {
-	cfg, err := Load(bytes.NewBuffer(DefaultYAML), ctxlog.TestLogger(c))
+	var logbuf bytes.Buffer
+	loader := testLoader(c, string(DefaultYAML), &logbuf)
+	cfg, err := loader.Load()
 	c.Assert(err, check.IsNil)
 	s.checkSAMPLEKeys(c, "", cfg)
 }
