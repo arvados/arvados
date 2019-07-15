@@ -18,10 +18,10 @@ import (
 	"strings"
 	"time"
 
+	"git.curoverse.com/arvados.git/lib/config"
 	"git.curoverse.com/arvados.git/lib/dispatchcloud"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/sdk/go/config"
 	"git.curoverse.com/arvados.git/sdk/go/dispatch"
 	"github.com/coreos/go-systemd/daemon"
 	"github.com/sirupsen/logrus"
@@ -47,26 +47,6 @@ type Dispatcher struct {
 	slurm   Slurm
 
 	Client arvados.Client
-
-	SbatchArguments []string
-	PollPeriod      arvados.Duration
-	PrioritySpread  int64
-
-	// crunch-run command to invoke. The container UUID will be
-	// appended. If nil, []string{"crunch-run"} will be used.
-	//
-	// Example: []string{"crunch-run", "--cgroup-parent-subsystem=memory"}
-	CrunchRunCommand []string
-
-	// Extra RAM to reserve (in Bytes) for SLURM job, in addition
-	// to the amount specified in the container's RuntimeConstraints
-	ReserveExtraRAM int64
-
-	// Minimum time between two attempts to run the same container
-	MinRetryPeriod arvados.Duration
-
-	// Batch size for container queries
-	BatchSize int64
 }
 
 func main() {
@@ -97,6 +77,9 @@ func (disp *Dispatcher) configure(prog string, args []string) error {
 	flags := flag.NewFlagSet(prog, flag.ExitOnError)
 	flags.Usage = func() { usage(flags) }
 
+	loader := config.NewLoader(stdin, log)
+	loader.SetupFlags(flags)
+
 	configPath := flags.String(
 		"config",
 		defaultConfigPath,
@@ -109,8 +92,15 @@ func (disp *Dispatcher) configure(prog string, args []string) error {
 		"version",
 		false,
 		"Print version information and exit.")
+
+	args = loader.MungeLegacyConfigArgs(logrus.StandardLogger(), args, "-crunch-dispatch-slurm-config")
+
 	// Parse args; omit the first arg which is the command name
 	flags.Parse(args)
+
+	if err == flag.ErrHelp {
+		return nil
+	}
 
 	// Print version information if requested
 	if *getVersion {
@@ -120,18 +110,19 @@ func (disp *Dispatcher) configure(prog string, args []string) error {
 
 	disp.logger.Printf("crunch-dispatch-slurm %s started", version)
 
-	err := disp.readConfig(*configPath)
+	cfg, err := loader.Load()
 	if err != nil {
 		return err
 	}
 
-	if disp.CrunchRunCommand == nil {
-		disp.CrunchRunCommand = []string{"crunch-run"}
+	if disp.cluster, err = cfg.GetCluster(""); err != nil {
+		return fmt.Errorf("config error: %s", err)
 	}
 
-	if disp.PollPeriod == 0 {
-		disp.PollPeriod = arvados.Duration(10 * time.Second)
-	}
+	disp.Client.APIHost = fmt.Sprintf("%s:%d", disp.cluster.Services.Controller.ExternalURL.Host,
+		disp.cluster.Services.Controller.ExternalURL.Port)
+	disp.Client.AuthToken = disp.cluster.SystemRootToken
+	disp.Client.Insecure = disp.cluster.TLS.Insecure
 
 	if disp.Client.APIHost != "" || disp.Client.AuthToken != "" {
 		// Copy real configs into env vars so [a]
@@ -150,16 +141,7 @@ func (disp *Dispatcher) configure(prog string, args []string) error {
 	}
 
 	if *dumpConfig {
-		return config.DumpAndExit(disp)
-	}
-
-	siteConfig, err := arvados.GetConfig(arvados.DefaultConfigFile)
-	if os.IsNotExist(err) {
-		disp.logger.Warnf("no cluster config (%s), proceeding with no node types defined", err)
-	} else if err != nil {
-		return fmt.Errorf("error loading config: %s", err)
-	} else if disp.cluster, err = siteConfig.GetCluster(""); err != nil {
-		return fmt.Errorf("config error: %s", err)
+		return config.DumpAndExit(cfg)
 	}
 
 	return nil
