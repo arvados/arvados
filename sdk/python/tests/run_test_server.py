@@ -756,7 +756,7 @@ def _dbconfig(key):
             _cached_db_config = yaml.safe_load(open(os.path.join(
                 SERVICES_SRC_DIR, 'api', 'config', 'database.yml')))["test"]
             _cached_db_config["dbname"] = _cached_db_config["database"]
-            _cached_db_config["username"] = _cached_db_config["user"]
+            _cached_db_config["user"] = _cached_db_config["username"]
     return _cached_db_config[key]
 
 def _apiconfig(key):
