@@ -57,6 +57,7 @@ psql postgres -c "ALTER USER arvados WITH SUPERUSER;"
 
 if test -a /usr/src/arvados/services/api/config/arvados_config.rb ; then
     rm -f config/application.yml config/database.yml
+    flock /var/lib/arvados/cluster_config.yml.lock /usr/local/lib/arvbox/cluster-config.sh
 else
 cat >config/application.yml <<EOF
 $RAILS_ENV:
