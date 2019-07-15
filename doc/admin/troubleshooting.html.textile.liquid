@@ -27,10 +27,10 @@ $ arv collection create --collection '{}'
 Error: #<RuntimeError: Whoops, something bad happened> (req-ku5ct9ehw0y71f1c5p79)
 </pre>
 
-The API Server logs every request in JSON format on the @production.log@ file, so we can retrieve more information about this by using @grep@ and @jq@ tools:
+The API Server logs every request in JSON format on the @production.log@ (usually under @/var/www/arvados-api/current/log/@ when installing from packages) file, so we can retrieve more information about this by using @grep@ and @jq@ tools:
 
 <pre>
-# grep req-ku5ct9ehw0y71f1c5p79 /path/to/apiserver/production.log | jq .
+# grep req-ku5ct9ehw0y71f1c5p79 /var/www/arvados-api/current/log/production.log | jq .
 {
   "method": "POST",
   "path": "/arvados/v1/collections",
@@ -45,7 +45,7 @@ The API Server logs every request in JSON format on the @production.log@ file, s
   "client_ipaddr": "127.0.0.1",
   "client_auth": "zzzzz-gj3su-jllemyj9v3s5emu",
   "exception": "#<RuntimeError: Whoops, something bad happened>",
-  "exception_backtrace": "/usr/src/arvados/services/api/app/controllers/arvados/v1/collections_controller.rb:43:in `create'\n/var/lib/gems/ruby/2.3.0/gems/actionpack-5.0.7.2/lib/action_controller/metal/basic_implicit_render.rb:4:in `send_action'\n ...[snipped]",
+  "exception_backtrace": "/var/www/arvados-api/current/app/controllers/arvados/v1/collections_controller.rb:43:in `create'\n/var/lib/gems/ruby/2.3.0/gems/actionpack-5.0.7.2/lib/action_controller/metal/basic_implicit_render.rb:4:in `send_action'\n ...[snipped]",
   "params": {
     "collection": "{}",
     "_profile": "true",
@@ -63,8 +63,8 @@ The API Server logs every request in JSON format on the @production.log@ file, s
 When logging a request that produced an error, the API Server adds @exception@ and @exception_backtrace@ keys to the JSON log. The latter includes the complete error stack trace as a string, and can be displayed in a more readable form like so:
 
 <pre>
-# grep req-ku5ct9ehw0y71f1c5p79 /path/to/apiserver/production.log | jq -r .exception_backtrace
-/usr/src/arvados/services/api/app/controllers/arvados/v1/collections_controller.rb:43:in `create'
+# grep req-ku5ct9ehw0y71f1c5p79 /var/www/arvados-api/current/log/production.log | jq -r .exception_backtrace
+/var/www/arvados-api/current/app/controllers/arvados/v1/collections_controller.rb:43:in `create'
 /var/lib/gems/ruby/2.3.0/gems/actionpack-5.0.7.2/lib/action_controller/metal/basic_implicit_render.rb:4:in `send_action'
 /var/lib/gems/ruby/2.3.0/gems/actionpack-5.0.7.2/lib/abstract_controller/base.rb:188:in `process_action'
 /var/lib/gems/ruby/2.3.0/gems/actionpack-5.0.7.2/lib/action_controller/metal/rendering.rb:30:in `process_action'
