@@ -1,0 +1,74 @@
+---
+layout: default
+navsection: admin
+title: Troubleshooting
+...
+
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Using a distributed system with several services working together sometimes makes it difficult to find the root cause of errors, as one single client request usually means several different requests to more than one service.
+
+To deal with this difficulty, Arvados creates a request ID that gets carried over different services as the requests take place. This ID has a specific format and it's comprised of the prefix "@req-@" followed by 20 random alphanumeric characters:
+
+<pre>req-frdyrcgdh4rau1ajiq5q</pre>
+
+This ID gets propagated via an HTTP @X-Request-Id@ header, and gets logged on every service.
+
+h3. API Server error reporting and logging
+
+In addition to providing the request ID on every HTTP response, the API Server adds it to every error message so that all clients show enough information to the user to be able to track a particular issue. As an example, let's suppose that we get the following error when trying to create a collection using the CLI tools:
+
+<pre>
+$ arv collection create --collection '{}'
+Error: #<RuntimeError: Whoops, something bad happened> (req-ku5ct9ehw0y71f1c5p79)
+</pre>
+
+The API Server logs every request in JSON format on the @production.log@ file, so we can retrieve more information about this by using @grep@ and @jq@ tools:
+
+<pre>
+# grep req-ku5ct9ehw0y71f1c5p79 /path/to/apiserver/production.log | jq .
+{
+  "method": "POST",
+  "path": "/arvados/v1/collections",
+  "format": "json",
+  "controller": "Arvados::V1::CollectionsController",
+  "action": "create",
+  "status": 422,
+  "duration": 1.52,
+  "view": 0.25,
+  "db": 0,
+  "request_id": "req-ku5ct9ehw0y71f1c5p79",
+  "client_ipaddr": "127.0.0.1",
+  "client_auth": "zzzzz-gj3su-jllemyj9v3s5emu",
+  "exception": "#<RuntimeError: Whoops, something bad happened>",
+  "exception_backtrace": "/usr/src/arvados/services/api/app/controllers/arvados/v1/collections_controller.rb:43:in `create'\n/var/lib/gems/ruby/2.3.0/gems/actionpack-5.0.7.2/lib/action_controller/metal/basic_implicit_render.rb:4:in `send_action'\n ...[snipped]",
+  "params": {
+    "collection": "{}",
+    "_profile": "true",
+    "cluster_id": "",
+    "collection_given": "true",
+    "ensure_unique_name": "false",
+    "help": "false"
+  },
+  "@timestamp": "2019-07-15T16:40:41.726634182Z",
+  "@version": "1",
+  "message": "[422] POST /arvados/v1/collections (Arvados::V1::CollectionsController#create)"
+}
+</pre>
+
+When logging a request that produced an error, the API Server adds @exception@ and @exception_backtrace@ keys to the JSON log. The latter includes the complete error stack trace as a string, and can be displayed in a more readable form like so:
+
+<pre>
+# grep req-ku5ct9ehw0y71f1c5p79 /path/to/apiserver/production.log | jq -r .exception_backtrace
+/usr/src/arvados/services/api/app/controllers/arvados/v1/collections_controller.rb:43:in `create'
+/var/lib/gems/ruby/2.3.0/gems/actionpack-5.0.7.2/lib/action_controller/metal/basic_implicit_render.rb:4:in `send_action'
+/var/lib/gems/ruby/2.3.0/gems/actionpack-5.0.7.2/lib/abstract_controller/base.rb:188:in `process_action'
+/var/lib/gems/ruby/2.3.0/gems/actionpack-5.0.7.2/lib/action_controller/metal/rendering.rb:30:in `process_action'
+/var/lib/gems/ruby/2.3.0/gems/actionpack-5.0.7.2/lib/abstract_controller/callbacks.rb:20:in `block in process_action'
+/var/lib/gems/ruby/2.3.0/gems/activesupport-5.0.7.2/lib/active_support/callbacks.rb:126:in `call'
+...
+</pre>
