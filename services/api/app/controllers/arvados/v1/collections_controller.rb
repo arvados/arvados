@@ -245,6 +245,16 @@ class Arvados::V1::CollectionsController < ApplicationController
           if direction == :search_up
             visited[c.uuid] = c.as_api_response
 
+            if !Rails.configuration.API.DisabledAPIs.include?("jobs.list")
+              Job.readable_by(*@read_users).where(output: c.portable_data_hash).each do |job|
+                search_edges(visited, job.uuid, :search_up)
+              end
+
+              Job.readable_by(*@read_users).where(log: c.portable_data_hash).each do |job|
+                search_edges(visited, job.uuid, :search_up)
+              end
+            end
+
             ContainerRequest.readable_by(*@read_users).where(output_uuid: uuid).each do |cr|
               search_edges(visited, cr.uuid, :search_up)
             end

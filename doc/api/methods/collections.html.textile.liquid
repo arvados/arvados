@@ -132,8 +132,8 @@ Returns a list of objects in the database that directly or indirectly contribute
 
 The general algorithm is:
 
-# Visit the container request that produced this collection (via "output_uuid" or "log_uuid")
-# Visit the input collections to that container request (via "mounts", or "container_image")
+# Visit the container request that produced this collection (via "output_uuid" or "log_uuid" attributes of the container request)
+# Visit the input collections to that container request (via "mounts" and "container_image" of the container request)
 # Iterate until there are no more objects to visit
 
 Arguments:
@@ -148,8 +148,8 @@ Returns a list of objects in the database this collection directly or indirectly
 
 The general algorithm is:
 
-# Visit containers that take this collection as input (via "mounts", or "container_image")
-# Visit collections produced by those containers (via "output" or "log")
+# Visit containers that take this collection as input (via "mounts" or "container_image" of the container)
+# Visit collections produced by those containers (via "output" or "log" of the container)
 # Iterate until there are no more objects to visit
 
 Arguments:
