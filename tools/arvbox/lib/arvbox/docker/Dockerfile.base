@@ -13,7 +13,7 @@ RUN apt-get update && \
     openssh-server python-setuptools netcat-traditional \
     python-epydoc graphviz bzip2 less sudo virtualenv \
     libpython-dev fuse libfuse-dev python-pip python-yaml \
-    pkg-config libattr1-dev python-llfuse python-pycurl \
+    pkg-config libattr1-dev python-pycurl \
     libwww-perl libio-socket-ssl-perl libcrypt-ssleay-perl \
     libjson-perl nginx gitolite3 lsof libreadline-dev \
     apt-transport-https ca-certificates \
