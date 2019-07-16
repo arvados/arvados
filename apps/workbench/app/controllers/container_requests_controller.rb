@@ -11,7 +11,7 @@ class ContainerRequestsController < ApplicationController
   def generate_provenance(cr)
     return if params['tab_pane'] != "Provenance"
 
-    nodes = {cr[:uuid] => cr}
+    nodes = {}
     child_crs = []
     col_uuids = []
     col_pdhs = []
@@ -29,38 +29,33 @@ class ContainerRequestsController < ApplicationController
       end
     end
 
-    output_cols = {} # Indexed by UUID
-    input_cols = {} # Indexed by PDH
+    if nodes.length == 0
+      nodes[cr[:uuid]] = cr
+    end
+
+    pdh_to_col = {} # Indexed by PDH
     output_pdhs = []
 
     # Batch requests to get all related collections
     # First fetch output collections by UUID.
     Collection.filter([['uuid', 'in', col_uuids.uniq]]).each do |c|
-      output_cols[c[:uuid]] = c
       output_pdhs << c[:portable_data_hash]
+      pdh_to_col[c[:portable_data_hash]] = c
+      nodes[c[:uuid]] = c
     end
-    # Then, get only input collections by PDH. There could be more than one collection
-    # per PDH: the number of collections is used on the collection node label.
+    # Next, get input collections by PDH.
     Collection.filter(
       [['portable_data_hash', 'in', col_pdhs - output_pdhs]]).each do |c|
-      if input_cols[c[:portable_data_hash]]
-        input_cols[c[:portable_data_hash]] << c
-      else
-        input_cols[c[:portable_data_hash]] = [c]
-      end
+      nodes[c[:portable_data_hash]] = c
     end
 
     @svg = ProvenanceHelper::create_provenance_graph(
       nodes, "provenance_svg",
       {
         :request => request,
-        :direction => :top_down,
-        :output_collections => output_cols,
-        :input_collections => input_cols,
-        :cr_children_of => {
-          cr[:uuid] => child_crs.select{|child| child[:uuid]},
-        },
-      })
+        :pdh_to_uuid => pdh_to_col,
+      }
+    )
   end
 
   def show_pane_list

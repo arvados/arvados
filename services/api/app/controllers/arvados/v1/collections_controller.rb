@@ -96,11 +96,11 @@ class Arvados::V1::CollectionsController < ApplicationController
   end
 
 
-  def find_collections(visited, sp, &b)
+  def find_collections(visited, sp, ignore_columns=[], &b)
     case sp
     when ArvadosModel
       sp.class.columns.each do |c|
-        find_collections(visited, sp[c.name.to_sym], &b) if c.name != "log"
+        find_collections(visited, sp[c.name.to_sym], &b) if !ignore_columns.include?(c.name)
       end
     when Hash
       sp.each do |k, v|
@@ -129,8 +129,6 @@ class Arvados::V1::CollectionsController < ApplicationController
       return if visited[loc.to_s]
     end
 
-    logger.debug "visiting #{uuid}"
-
     if loc
       # uuid is a portable_data_hash
       collections = Collection.readable_by(*@read_users).where(portable_data_hash: loc.to_s)
@@ -154,12 +152,22 @@ class Arvados::V1::CollectionsController < ApplicationController
 
       if direction == :search_up
         # Search upstream for jobs where this locator is the output of some job
-        Job.readable_by(*@read_users).where(output: loc.to_s).each do |job|
-          search_edges(visited, job.uuid, :search_up)
+        if !Rails.configuration.API.DisabledAPIs.include?("jobs.list")
+          Job.readable_by(*@read_users).where(output: loc.to_s).each do |job|
+            search_edges(visited, job.uuid, :search_up)
+          end
+
+          Job.readable_by(*@read_users).where(log: loc.to_s).each do |job|
+            search_edges(visited, job.uuid, :search_up)
+          end
         end
 
-        Job.readable_by(*@read_users).where(log: loc.to_s).each do |job|
-          search_edges(visited, job.uuid, :search_up)
+        Container.readable_by(*@read_users).where(output: loc.to_s).each do |c|
+          search_edges(visited, c.uuid, :search_up)
+        end
+
+        Container.readable_by(*@read_users).where(log: loc.to_s).each do |c|
+          search_edges(visited, c.uuid, :search_up)
         end
       elsif direction == :search_down
         if loc.to_s == "d41d8cd98f00b204e9800998ecf8427e+0"
@@ -168,12 +176,20 @@ class Arvados::V1::CollectionsController < ApplicationController
         end
 
         # Search downstream for jobs where this locator is in script_parameters
-        Job.readable_by(*@read_users).where(["jobs.script_parameters like ?", "%#{loc.to_s}%"]).each do |job|
-          search_edges(visited, job.uuid, :search_down)
+        if !Rails.configuration.API.DisabledAPIs.include?("jobs.list")
+          Job.readable_by(*@read_users).where(["jobs.script_parameters like ?", "%#{loc.to_s}%"]).each do |job|
+            search_edges(visited, job.uuid, :search_down)
+          end
+
+          Job.readable_by(*@read_users).where(["jobs.docker_image_locator = ?", "#{loc.to_s}"]).each do |job|
+            search_edges(visited, job.uuid, :search_down)
+          end
         end
 
-        Job.readable_by(*@read_users).where(["jobs.docker_image_locator = ?", "#{loc.to_s}"]).each do |job|
-          search_edges(visited, job.uuid, :search_down)
+        Container.readable_by(*@read_users).where([Container.full_text_trgm + " like ?", "%#{loc.to_s}%"]).each do |c|
+          if c.output != loc.to_s && c.log != loc.to_s
+            search_edges(visited, c.uuid, :search_down)
+          end
         end
       end
     else
@@ -193,10 +209,62 @@ class Arvados::V1::CollectionsController < ApplicationController
             search_edges(visited, job.output, direction)
           end
         end
+      elsif rsc == Container
+        c = Container.readable_by(*@read_users).where(uuid: uuid).limit(1).first
+        if c
+          visited[uuid] = c.as_api_response
+          if direction == :search_up
+            # Follow upstream collections referenced in the script parameters
+            find_collections(visited, c, ignore_columns=["log", "output"]) do |hash, col_uuid|
+              search_edges(visited, hash, :search_up) if hash
+              search_edges(visited, col_uuid, :search_up) if col_uuid
+            end
+          elsif direction == :search_down
+            # Follow downstream job output
+            search_edges(visited, c.output, :search_down)
+          end
+        end
+      elsif rsc == ContainerRequest
+        c = ContainerRequest.readable_by(*@read_users).where(uuid: uuid).limit(1).first
+        if c
+          visited[uuid] = c.as_api_response
+          if direction == :search_up
+            # Follow upstream collections
+            find_collections(visited, c, ignore_columns=["log_uuid", "output_uuid"]) do |hash, col_uuid|
+              search_edges(visited, hash, :search_up) if hash
+              search_edges(visited, col_uuid, :search_up) if col_uuid
+            end
+          elsif direction == :search_down
+            # Follow downstream job output
+            search_edges(visited, c.output_uuid, :search_down)
+          end
+        end
       elsif rsc == Collection
-        if c = Collection.readable_by(*@read_users).where(uuid: uuid).limit(1).first
-          search_edges(visited, c.portable_data_hash, direction)
-          visited[c.portable_data_hash] = c.as_api_response
+        c = Collection.readable_by(*@read_users).where(uuid: uuid).limit(1).first
+        if c
+          if direction == :search_up
+            visited[c.uuid] = c.as_api_response
+
+            if !Rails.configuration.API.DisabledAPIs.include?("jobs.list")
+              Job.readable_by(*@read_users).where(output: c.portable_data_hash).each do |job|
+                search_edges(visited, job.uuid, :search_up)
+              end
+
+              Job.readable_by(*@read_users).where(log: c.portable_data_hash).each do |job|
+                search_edges(visited, job.uuid, :search_up)
+              end
+            end
+
+            ContainerRequest.readable_by(*@read_users).where(output_uuid: uuid).each do |cr|
+              search_edges(visited, cr.uuid, :search_up)
+            end
+
+            ContainerRequest.readable_by(*@read_users).where(log_uuid: uuid).each do |cr|
+              search_edges(visited, cr.uuid, :search_up)
+            end
+          elsif direction == :search_down
+            search_edges(visited, c.portable_data_hash, :search_down)
+          end
         end
       elsif rsc != nil
         rsc.where(uuid: uuid).each do |r|
@@ -226,15 +294,21 @@ class Arvados::V1::CollectionsController < ApplicationController
 
   def provenance
     visited = {}
-    search_edges(visited, @object[:portable_data_hash], :search_up)
-    search_edges(visited, @object[:uuid], :search_up)
+    if @object[:uuid]
+      search_edges(visited, @object[:uuid], :search_up)
+    else
+      search_edges(visited, @object[:portable_data_hash], :search_up)
+    end
     send_json visited
   end
 
   def used_by
     visited = {}
-    search_edges(visited, @object[:uuid], :search_down)
-    search_edges(visited, @object[:portable_data_hash], :search_down)
+    if @object[:uuid]
+      search_edges(visited, @object[:uuid], :search_down)
+    else
+      search_edges(visited, @object[:portable_data_hash], :search_down)
+    end
     send_json visited
   end
 
