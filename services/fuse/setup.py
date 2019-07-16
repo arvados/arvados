@@ -40,6 +40,7 @@ setup(name='arvados_fuse',
       install_requires=[
         'arvados-python-client >= 0.1.20151118035730',
         'llfuse >=1.2, <=1.3.6',
+        'future',
         'python-daemon',
         'ciso8601 >= 2.0.0',
         'setuptools',
