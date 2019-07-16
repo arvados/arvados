@@ -93,7 +93,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
   end
 
   test "projects not publicly sharable when anonymous browsing disabled" do
-    Rails.configuration.anonymous_user_token = false
+    Rails.configuration.Users.AnonymousUserToken = ""
     open_groups_sharing
     # Check for a group we do expect first, to make sure the modal's loaded.
     assert_selector(".modal-container .selectable",
@@ -103,7 +103,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
   end
 
   test "projects publicly sharable when anonymous browsing enabled" do
-    Rails.configuration.anonymous_user_token = "testonlytoken"
+    Rails.configuration.Users.AnonymousUserToken = "testonlytoken"
     open_groups_sharing
     assert_selector(".modal-container .selectable",
                     text: group_name("anonymous_group"))
@@ -539,19 +539,19 @@ class ProjectsTest < ActionDispatch::IntegrationTest
   end
 
   test "error while loading tab" do
-    original_arvados_v1_base = Rails.configuration.arvados_v1_base
+    original_arvados_v1_base = Rails.configuration.Services.Controller.ExternalURL
 
     visit page_with_token 'active', '/projects/' + api_fixture('groups')['aproject']['uuid']
 
     # Point to a bad api server url to generate error
-    Rails.configuration.arvados_v1_base = "https://[::1]:1/"
+    Rails.configuration.Services.Controller.ExternalURL = "https://[::1]:1/"
     click_link 'Other objects'
     within '#Other_objects' do
       # Error
       assert_selector('a', text: 'Reload tab')
 
       # Now point back to the orig api server and reload tab
-      Rails.configuration.arvados_v1_base = original_arvados_v1_base
+      Rails.configuration.Services.Controller.ExternalURL = original_arvados_v1_base
       click_link 'Reload tab'
       assert_no_selector('a', text: 'Reload tab')
       assert_selector('button', text: 'Selection')

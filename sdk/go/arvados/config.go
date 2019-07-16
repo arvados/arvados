@@ -9,11 +9,18 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"os"
 
 	"git.curoverse.com/arvados.git/sdk/go/config"
 )
 
-const DefaultConfigFile = "/etc/arvados/config.yml"
+var DefaultConfigFile = func() string {
+	if path := os.Getenv("ARVADOS_CONFIG"); path != "" {
+		return path
+	} else {
+		return "/etc/arvados/config.yml"
+	}
+}()
 
 type Config struct {
 	Clusters map[string]Cluster
@@ -76,15 +83,20 @@ type Cluster struct {
 		UnloggedAttributes []string
 	}
 	Collections struct {
-		BlobSigning           bool
-		BlobSigningKey        string
-		BlobSigningTTL        Duration
-		CollectionVersioning  bool
-		DefaultTrashLifetime  Duration
-		DefaultReplication    int
-		ManagedProperties     map[string]interface{}
+		BlobSigning          bool
+		BlobSigningKey       string
+		BlobSigningTTL       Duration
+		CollectionVersioning bool
+		DefaultTrashLifetime Duration
+		DefaultReplication   int
+		ManagedProperties    map[string]struct {
+			Value     interface{}
+			Function  string
+			Protected bool
+		}
 		PreserveVersionIfIdle Duration
 		TrashSweepInterval    Duration
+		TrustAllContent       bool
 	}
 	Git struct {
 		Repositories string
@@ -96,7 +108,7 @@ type Cluster struct {
 	Mail struct {
 		MailchimpAPIKey                string
 		MailchimpListID                string
-		SendUserSetupNotificationEmail string
+		SendUserSetupNotificationEmail bool
 		IssueReporterEmailFrom         string
 		IssueReporterEmailTo           string
 		SupportEmailAddress            string
@@ -113,6 +125,7 @@ type Cluster struct {
 		Insecure    bool
 	}
 	Users struct {
+		AnonymousUserToken                    string
 		AdminNotifierEmailFrom                string
 		AutoAdminFirstUser                    bool
 		AutoAdminUserWithEmail                string
@@ -135,16 +148,17 @@ type Cluster struct {
 		ApplicationMimetypesWithViewIcon map[string]struct{}
 		ArvadosDocsite                   string
 		ArvadosPublicDataDocURL          string
+		DefaultOpenIdPrefix              string
 		EnableGettingStartedPopup        bool
 		EnablePublicProjectsPage         bool
 		FileViewersConfigURL             string
 		LogViewerMaxBytes                ByteSize
-		MultiSiteSearch                  bool
+		MultiSiteSearch                  string
+		ProfilingEnabled                 bool
 		Repositories                     bool
 		RepositoryCache                  string
 		RunningJobLogRecordsToFetch      int
 		SecretKeyBase                    string
-		SecretToken                      string
 		ShowRecentCollectionsOnDashboard bool
 		ShowUserAgreementInline          bool
 		ShowUserNotifications            bool
@@ -155,10 +169,14 @@ type Cluster struct {
 			FormFieldTitle       string
 			FormFieldDescription string
 			Required             bool
+			Position             int
+			Options              map[string]struct{}
 		}
 		UserProfileFormMessage string
 		VocabularyURL          string
 	}
+
+	EnableBetaController14287 bool
 }
 
 type Services struct {

@@ -14,7 +14,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
 
   setup do
     need_javascript
-    Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
+    Rails.configuration.Users.AnonymousUserToken = api_fixture('api_client_authorizations')['anonymous']['api_token']
   end
 
   PUBLIC_PROJECT = "/projects/#{api_fixture('groups')['anonymously_accessible_project']['uuid']}"
@@ -35,7 +35,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
         assert_text 'indicate that you have read and accepted the user agreement'
       end
       within('.navbar-fixed-top') do
-        assert_selector 'a', text: Rails.configuration.site_name.downcase
+        assert_selector 'a', text: Rails.configuration.Workbench.SiteName.downcase
         assert(page.has_link?("notifications-menu"), 'no user menu')
         page.find("#notifications-menu").click
         within('.dropdown-menu') do
@@ -45,8 +45,8 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     else  # anonymous
       assert_text 'Unrestricted public data'
       within('.navbar-fixed-top') do
-        assert_text Rails.configuration.site_name.downcase
-        assert_no_selector 'a', text: Rails.configuration.site_name.downcase
+        assert_text Rails.configuration.Workbench.SiteName.downcase
+        assert_no_selector 'a', text: Rails.configuration.Workbench.SiteName.downcase
         assert_selector 'a', text: 'Log in'
         assert_selector 'a', text: 'Browse public projects'
       end

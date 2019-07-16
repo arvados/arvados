@@ -27,7 +27,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
 
 or
 
-<%= mail_to(Rails.configuration.support_email_address, "email us",
+<%= mail_to(Rails.configuration.Mail.SupportEmailAddress, "email us",
             subject: "Workbench problem report",
             body: "Problem while viewing page #{request.url}") %>
 

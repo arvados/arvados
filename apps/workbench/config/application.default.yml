@@ -53,12 +53,6 @@ development:
   action_dispatch.best_standards_support: :builtin
   assets.debug: true
   profiling_enabled: true
-  site_name: Arvados Workbench (dev)
-
-  # API server configuration
-  arvados_login_base: ~
-  arvados_v1_base: ~
-  arvados_insecure_https: ~
 
 production:
   force_ssl: true
@@ -72,18 +66,6 @@ production:
   active_support.deprecation: :notify
   profiling_enabled: false
   log_level: info
-
-  arvados_insecure_https: false
-
-  data_import_dir: /data/arvados-workbench-upload/data
-  data_export_dir: /data/arvados-workbench-download/data
-
-  # API server configuration
-  arvados_login_base: ~
-  arvados_v1_base: ~
-  arvados_insecure_https: ~
-
-  site_name: Arvados Workbench
 
 test:
   cache_classes: true
@@ -130,67 +112,11 @@ test:
         - IT
         - Other
 
+  repository_cache: <%= File.expand_path 'tmp/git', Rails.root %>
+
 common:
   assets.js_compressor: false
   assets.css_compressor: false
-  data_import_dir: /tmp/arvados-workbench-upload
-  data_export_dir: /tmp/arvados-workbench-download
-  arvados_login_base: https://arvados.local/login
-  arvados_v1_base: https://arvados.local/arvados/v1
-  arvados_insecure_https: true
-  activation_contact_link: mailto:info@arvados.org
-  arvados_docsite: http://doc.arvados.org
-  arvados_public_data_doc_url: http://arvados.org/projects/arvados/wiki/Public_Pipelines_and_Datasets
-  arvados_theme: default
-  show_user_agreement_inline: false
-  secret_token: ~
-  secret_key_base: false
-  default_openid_prefix: https://www.google.com/accounts/o8/id
-  send_user_setup_notification_email: true
-
-  # Scratch directory used by the remote repository browsing
-  # feature. If it doesn't exist, it (and any missing parents) will be
-  # created using mkdir_p.
-  repository_cache: <%= File.expand_path 'tmp/git', Rails.root %>
-
-  # Set user_profile_form_fields to enable and configure the user
-  # profile page. Default is set to false. A commented example with
-  # full description is provided below.
-  user_profile_form_fields: false
-
-  # Below is a sample setting of user_profile_form_fields config parameter.
-  # This configuration parameter should be set to either false (to disable) or
-  # to an array as shown below.
-  # Configure the list of input fields to be displayed in the profile page
-  # using the attribute "key" for each of the input fields.
-  # This sample shows configuration with one required and one optional form fields.
-  # For each of these input fields:
-  #   You can specify "type" as "text" or "select".
-  #   List the "options" to be displayed for each of the "select" menu.
-  #   Set "required" as "true" for any of these fields to make them required.
-  # If any of the required fields are missing in the user's profile, the user will be
-  # redirected to the profile page before they can access any Workbench features.
-  #user_profile_form_fields:
-  #  - key: organization
-  #    type: text
-  #    form_field_title: Institution/Company
-  #    form_field_description: Your organization
-  #    required: true
-  #  - key: role
-  #    type: select
-  #    form_field_title: Your role
-  #    form_field_description: Choose the category that best describes your role in your organization.
-  #    options:
-  #      - Bio-informatician
-  #      - Computational biologist
-  #      - Biologist or geneticist
-  #      - Software developer
-  #      - IT
-  #      - Other
-
-  # Use "user_profile_form_message" to configure the message you want to display on
-  # the profile page.
-  user_profile_form_message: Welcome to Arvados. All <span style="color:red">required fields</span> must be completed before you can proceed.
 
   # Override the automatic version string. With the default value of
   # false, the version string is read from git-commit.version in
@@ -203,131 +129,5 @@ common:
   # Rails.root (included in vendor packages).
   package_version: false
 
-  # report notification to and from addresses
-  issue_reporter_email_from: arvados@example.com
-  issue_reporter_email_to: arvados@example.com
-  support_email_address: arvados@example.com
-
-  # generic issue email from
-  email_from: arvados@example.com
-
-  # Mimetypes of applications for which the view icon
-  # would be enabled in a collection's show page.
-  # It is sufficient to list only applications here.
-  # No need to list text and image types.
-  application_mimetypes_with_view_icon: [cwl, fasta, go, javascript, json, pdf, python, x-python, r, rtf, sam, x-sh, vnd.realvnc.bed, xml, xsl]
-
-  # the maximum number of bytes to load in the log viewer
-  log_viewer_max_bytes: 1000000
-
-  # Set anonymous_user_token to enable anonymous user access. You can get
-  # the token by running "bundle exec ./script/get_anonymous_user_token.rb"
-  # in the directory where your API server is running.
-  anonymous_user_token: false
-
-  # when anonymous_user_token is configured, show public projects page
-  enable_public_projects_page: true
-
-  # by default, disable the "Getting Started" popup which is specific to the public beta install
-  enable_getting_started_popup: false
-
-  # Ask Arvados API server to compress its response payloads.
-  api_response_compression: true
-
-  # Timeouts for API requests.
-  api_client_connect_timeout: 120
-  api_client_receive_timeout: 300
-
-  # ShellInABox service endpoint URL for a given VM.  If false, do not
-  # offer web shell logins.
-  #
-  # E.g., using a path-based proxy server to forward connections to shell hosts:
-  # https://webshell.uuid_prefix.arvadosapi.com/%{hostname}
-  #
-  # E.g., using a name-based proxy server to forward connections to shell hosts:
-  # https://%{hostname}.webshell.uuid_prefix.arvadosapi.com/
-  shell_in_a_box_url: false
-
-  # Format of preview links. If false, use keep_web_download_url
-  # instead, and disable inline preview.
-  # If both are false, Workbench won't start, this is a mandatory configuration.
-  #
-  # Examples:
-  # keep_web_url: https://%{uuid_or_pdh}.collections.uuid_prefix.arvadosapi.com
-  # keep_web_url: https://%{uuid_or_pdh}--collections.uuid_prefix.arvadosapi.com
-  #
-  # Example supporting only public data and collection-sharing links
-  # (other data will be handled as downloads via keep_web_download_url):
-  # keep_web_url: https://collections.uuid_prefix.arvadosapi.com/c=%{uuid_or_pdh}
-  keep_web_url: false
-
-  # Format of download links. If false, use keep_web_url with
-  # disposition=attachment query param.
-  #
-  # The host part of the keep_web_download_url value here must match
-  # the -attachment-only-host argument given to keep-web: if
-  # keep_web_download_url is "https://FOO.EXAMPLE/c=..." then keep-web
-  # must run with "-attachment-only-host=FOO.EXAMPLE".
-  #
-  # If keep_web_download_url is false, and keep_web_url uses a
-  # single-origin form, then Workbench will show an error page
-  # when asked to download or preview private data.
-  #
-  # Example:
-  # keep_web_download_url: https://download.uuid_prefix.arvadosapi.com/c=%{uuid_or_pdh}
-  keep_web_download_url: false
-
-  # In "trust all content" mode, Workbench will redirect download
-  # requests to keep-web, even in the cases when keep-web would have
-  # to expose XSS vulnerabilities in order to handle the redirect.
-  #
-  # When enabling this setting, the -trust-all-content flag on the
-  # keep-web server must also be enabled.  For more detail, see
-  # https://godoc.org/github.com/curoverse/arvados/services/keep-web
-  #
-  # This setting has no effect in the recommended configuration, where
-  # the host part of keep_web_url begins with %{uuid_or_pdh}: in this
-  # case XSS protection is provided by browsers' same-origin policy.
-  #
-  # The default setting (false) is appropriate for a multi-user site.
-  trust_all_content: false
-
-  # Maximum number of historic log records of a running job to fetch
-  # and display in the Log tab, while subscribing to web sockets.
-  running_job_log_records_to_fetch: 2000
-
-  # In systems with many shared projects, loading of dashboard and topnav
-  # cab be slow due to collections indexing; use the following parameters
-  # to suppress these properties
-  show_recent_collections_on_dashboard: true
-  show_user_notifications: true
-
-  # Token to be included in all healthcheck requests. Disabled by default.
-  # Workbench expects request header of the format "Authorization: Bearer xxx"
-  ManagementToken: false
-
-  # Enable/disable "multi-site search" in top nav (true/false), or
-  # link it to the multi-site search on a remote Workbench site.
-  #
-  # Example:
-  # multi_site_search: https://workbench.qr1hi.arvadosapi.com/collections/multisite
-  multi_site_search: false
-
-  #
-  # Link to use for Arvados Workflow Composer app, or false if not available.
-  #
-  composer_url: false
-
-  #
-  # Should workbench allow management of local git repositories? Set to false if
-  # the jobs api is disabled and there are no local git repositories.
-  #
-  repositories: true
-
-  #
-  # Add an item to the user menu pointing to workbench2_url, if not false.
-  #
-  # Example:
-  # workbench2_url: https://workbench2.qr1hi.arvadosapi.com
-  #
-  workbench2_url: false
+  # only used by tests
+  testing_override_login_url: false

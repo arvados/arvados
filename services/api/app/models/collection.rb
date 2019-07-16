@@ -27,6 +27,7 @@ class Collection < ArvadosModel
   before_validation :check_manifest_validity
   before_validation :check_signatures
   before_validation :strip_signatures_and_update_replication_confirmed
+  before_validation :name_null_if_empty
   validate :ensure_pdh_matches_manifest_text
   validate :ensure_storage_classes_desired_is_not_empty
   validate :ensure_storage_classes_contain_non_empty_strings
@@ -38,7 +39,7 @@ class Collection < ArvadosModel
   around_update :manage_versioning, unless: :is_past_version?
 
   api_accessible :user, extend: :common do |t|
-    t.add :name
+    t.add lambda { |x| x.name || "" }, as: :name
     t.add :description
     t.add :properties
     t.add :portable_data_hash
@@ -77,6 +78,7 @@ class Collection < ArvadosModel
                 # correct timestamp in signed_manifest_text.
                 'manifest_text' => ['manifest_text', 'trash_at', 'is_trashed'],
                 'unsigned_manifest_text' => ['manifest_text'],
+                'name' => ['name'],
                 )
   end
 
@@ -192,6 +194,12 @@ class Collection < ArvadosModel
       # Ignore the client-provided size part: always store
       # computed_pdh in the database.
       self.portable_data_hash = computed_pdh
+    end
+  end
+
+  def name_null_if_empty
+    if name == ""
+      self.name = nil
     end
   end
 

@@ -173,14 +173,13 @@ func (exr *Executor) sshClient(create bool) (*ssh.Client, error) {
 	return exr.client, exr.clientErr
 }
 
-// Create a new SSH client.
-func (exr *Executor) setupSSHClient() (*ssh.Client, error) {
-	target := exr.Target()
-	addr := target.Address()
+func (exr *Executor) TargetHostPort() (string, string) {
+	addr := exr.Target().Address()
 	if addr == "" {
-		return nil, errors.New("instance has no address")
+		return "", ""
 	}
-	if h, p, err := net.SplitHostPort(addr); err != nil || p == "" {
+	h, p, err := net.SplitHostPort(addr)
+	if err != nil || p == "" {
 		// Target address does not specify a port.  Use
 		// targetPort, or "ssh".
 		if h == "" {
@@ -189,11 +188,19 @@ func (exr *Executor) setupSSHClient() (*ssh.Client, error) {
 		if p = exr.targetPort; p == "" {
 			p = "ssh"
 		}
-		addr = net.JoinHostPort(h, p)
+	}
+	return h, p
+}
+
+// Create a new SSH client.
+func (exr *Executor) setupSSHClient() (*ssh.Client, error) {
+	addr := net.JoinHostPort(exr.TargetHostPort())
+	if addr == ":" {
+		return nil, errors.New("instance has no address")
 	}
 	var receivedKey ssh.PublicKey
 	client, err := ssh.Dial("tcp", addr, &ssh.ClientConfig{
-		User: target.RemoteUser(),
+		User: exr.Target().RemoteUser(),
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(exr.signers...),
 		},
@@ -210,7 +217,7 @@ func (exr *Executor) setupSSHClient() (*ssh.Client, error) {
 	}
 
 	if exr.hostKey == nil || !bytes.Equal(exr.hostKey.Marshal(), receivedKey.Marshal()) {
-		err = target.VerifyHostKey(receivedKey, client)
+		err = exr.Target().VerifyHostKey(receivedKey, client)
 		if err != nil {
 			return nil, err
 		}

@@ -12,11 +12,11 @@ module ApplicationHelper
   end
 
   def current_api_host
-    Rails.configuration.arvados_v1_base.gsub(/https?:\/\/|\/arvados\/v1/, '')
+    "#{Rails.configuration.Services.Controller.ExternalURL.hostname}:#{Rails.configuration.Services.Controller.ExternalURL.port}"
   end
 
   def current_uuid_prefix
-    current_api_host[0..4]
+    Rails.configuration.ClusterID
   end
 
   def render_markup(markup)
@@ -359,8 +359,8 @@ module ApplicationHelper
           display_value = link.name
         elsif value_info[:link_name]
           display_value = value_info[:link_name]
-        elsif value_info[:selection_name]
-          display_value = value_info[:selection_name]
+        elsif (sn = value_info[:selection_name]) && sn != ""
+          display_value = sn
         end
       end
       if (attr == :components) and (subattr.size > 2)

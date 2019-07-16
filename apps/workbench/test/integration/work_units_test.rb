@@ -258,7 +258,7 @@ class WorkUnitsTest < ActionDispatch::IntegrationTest
       if token
         visit page_with_token token, "/#{type}/#{obj['uuid']}"
       else
-        Rails.configuration.anonymous_user_token =
+        Rails.configuration.Users.AnonymousUserToken =
           api_fixture("api_client_authorizations", "anonymous", "api_token")
         visit "/#{type}/#{obj['uuid']}"
       end

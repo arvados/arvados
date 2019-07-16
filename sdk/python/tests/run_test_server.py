@@ -409,9 +409,13 @@ def run_controller():
         f.write("""
 Clusters:
   zzzzz:
+    EnableBetaController14287: {beta14287}
     ManagementToken: e687950a23c3a9bceec28c6223a06c79
     API:
       RequestTimeout: 30s
+    Logging:
+        Level: "{loglevel}"
+    HTTPRequestTimeout: 30s
     PostgreSQL:
       ConnectionPool: 32
       Connection:
@@ -429,9 +433,11 @@ Clusters:
         InternalURLs:
           "https://localhost:{railsport}": {{}}
         """.format(
+            beta14287=('true' if '14287' in os.environ.get('ARVADOS_EXPERIMENTAL', '') else 'false'),
+            loglevel=('info' if os.environ.get('ARVADOS_DEBUG', '') in ['','0'] else 'debug'),
             dbhost=_dbconfig('host'),
-            dbname=_dbconfig('database'),
-            dbuser=_dbconfig('username'),
+            dbname=_dbconfig('dbname'),
+            dbuser=_dbconfig('user'),
             dbpass=_dbconfig('password'),
             controllerport=port,
             railsport=rails_api_port,
@@ -474,8 +480,8 @@ Postgres:
                    port,
                    ('info' if os.environ.get('ARVADOS_DEBUG', '') in ['','0'] else 'debug'),
                    _dbconfig('host'),
-                   _dbconfig('database'),
-                   _dbconfig('username'),
+                   _dbconfig('dbname'),
+                   _dbconfig('user'),
                    _dbconfig('password')))
     logf = open(_logfilename('ws'), 'a')
     ws = subprocess.Popen(
@@ -743,9 +749,14 @@ def _getport(program):
 def _dbconfig(key):
     global _cached_db_config
     if not _cached_db_config:
-        _cached_db_config = yaml.safe_load(open(os.path.join(
-            SERVICES_SRC_DIR, 'api', 'config', 'database.yml')))
-    return _cached_db_config['test'][key]
+        if "ARVADOS_CONFIG" in os.environ:
+            _cached_db_config = list(yaml.safe_load(open(os.environ["ARVADOS_CONFIG"]))["Clusters"].values())[0]["PostgreSQL"]["Connection"]
+        else:
+            _cached_db_config = yaml.safe_load(open(os.path.join(
+                SERVICES_SRC_DIR, 'api', 'config', 'database.yml')))["test"]
+            _cached_db_config["dbname"] = _cached_db_config["database"]
+            _cached_db_config["user"] = _cached_db_config["username"]
+    return _cached_db_config[key]
 
 def _apiconfig(key):
     global _cached_config

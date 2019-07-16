@@ -15,11 +15,11 @@ class CollectionsControllerTest < ActionController::TestCase
   NONEXISTENT_COLLECTION = "ffffffffffffffffffffffffffffffff+0"
 
   def config_anonymous enable
-    Rails.configuration.anonymous_user_token =
+    Rails.configuration.Users.AnonymousUserToken =
       if enable
         api_token('anonymous')
       else
-        false
+        ""
       end
   end
 
@@ -471,9 +471,9 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_not_includes @response.body, '<a href="#Upload"'
   end
 
-  def setup_for_keep_web cfg='https://%{uuid_or_pdh}.example', dl_cfg=false
-    Rails.configuration.keep_web_url = cfg
-    Rails.configuration.keep_web_download_url = dl_cfg
+  def setup_for_keep_web cfg='https://*.example', dl_cfg=""
+    Rails.configuration.Services.WebDAV.ExternalURL = URI(cfg)
+    Rails.configuration.Services.WebDAVDownload.ExternalURL = URI(dl_cfg)
   end
 
   %w(uuid portable_data_hash).each do |id_type|
@@ -522,8 +522,8 @@ class CollectionsControllerTest < ActionController::TestCase
     end
 
     test "Redirect to keep_web_download_url via #{id_type}" do
-      setup_for_keep_web('https://collections.example/c=%{uuid_or_pdh}',
-                         'https://download.example/c=%{uuid_or_pdh}')
+      setup_for_keep_web('https://collections.example',
+                         'https://download.example')
       tok = api_token('active')
       id = api_fixture('collections')['w_a_z_file'][id_type]
       get :show_file, params: {uuid: id, file: "w a z"}, session: session_for(:active)
@@ -532,9 +532,9 @@ class CollectionsControllerTest < ActionController::TestCase
     end
 
     test "Redirect to keep_web_url via #{id_type} when trust_all_content enabled" do
-      Rails.configuration.trust_all_content = true
-      setup_for_keep_web('https://collections.example/c=%{uuid_or_pdh}',
-                         'https://download.example/c=%{uuid_or_pdh}')
+      Rails.configuration.Workbench.TrustAllContent = true
+      setup_for_keep_web('https://collections.example',
+                         'https://download.example')
       tok = api_token('active')
       id = api_fixture('collections')['w_a_z_file'][id_type]
       get :show_file, params: {uuid: id, file: "w a z"}, session: session_for(:active)
@@ -554,8 +554,8 @@ class CollectionsControllerTest < ActionController::TestCase
 
     test "Redirect download to keep_web_download_url, anon #{anon}" do
       config_anonymous anon
-      setup_for_keep_web('https://collections.example/c=%{uuid_or_pdh}',
-                         'https://download.example/c=%{uuid_or_pdh}')
+      setup_for_keep_web('https://collections.example/',
+                         'https://download.example/')
       tok = api_token('active')
       id = api_fixture('collections')['public_text_file']['uuid']
       get :show_file, params: {
@@ -575,7 +575,7 @@ class CollectionsControllerTest < ActionController::TestCase
   test "Error if file is impossible to retrieve from keep_web_url" do
     # Cannot pass a session token using a single-origin keep-web URL,
     # cannot read this collection without a session token.
-    setup_for_keep_web 'https://collections.example/c=%{uuid_or_pdh}', false
+    setup_for_keep_web 'https://collections.example/', ""
     id = api_fixture('collections')['w_a_z_file']['uuid']
     get :show_file, params: {uuid: id, file: "w a z"}, session: session_for(:active)
     assert_response 422
@@ -583,8 +583,8 @@ class CollectionsControllerTest < ActionController::TestCase
 
   [false, true].each do |trust_all_content|
     test "Redirect preview to keep_web_download_url when preview is disabled and trust_all_content is #{trust_all_content}" do
-      Rails.configuration.trust_all_content = trust_all_content
-      setup_for_keep_web false, 'https://download.example/c=%{uuid_or_pdh}'
+      Rails.configuration.Workbench.TrustAllContent = trust_all_content
+      setup_for_keep_web "", 'https://download.example/'
       tok = api_token('active')
       id = api_fixture('collections')['w_a_z_file']['uuid']
       get :show_file, params: {uuid: id, file: "w a z"}, session: session_for(:active)

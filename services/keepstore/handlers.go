@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"git.curoverse.com/arvados.git/sdk/go/health"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	"github.com/gorilla/mux"
@@ -93,8 +94,10 @@ func MakeRESTRouter(cluster *arvados.Cluster, reg *prometheus.Registry) http.Han
 	rtr.metrics.setupWorkQueueMetrics(trashq, "trash")
 	rtr.metrics.setupRequestMetrics(rtr.limiter)
 
-	instrumented := httpserver.Instrument(rtr.metrics.reg, nil,
-		httpserver.AddRequestIDs(httpserver.LogRequests(nil, rtr.limiter)))
+	instrumented := httpserver.Instrument(rtr.metrics.reg, log,
+		httpserver.HandlerWithContext(
+			ctxlog.Context(context.Background(), log),
+			httpserver.AddRequestIDs(httpserver.LogRequests(rtr.limiter))))
 	return instrumented.ServeAPI(theConfig.ManagementToken, instrumented)
 }
 

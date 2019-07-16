@@ -262,10 +262,8 @@ test_package_presence() {
 
     if [[ "$FORMAT" == "deb" ]]; then
       declare -A dd
-      dd[debian8]=jessie
       dd[debian9]=stretch
       dd[debian10]=buster
-      dd[ubuntu1404]=trusty
       dd[ubuntu1604]=xenial
       dd[ubuntu1804]=bionic
       D=${dd[$TARGET]}
@@ -352,15 +350,6 @@ handle_rails_package() {
     if  [[ "$pkgname" != "arvados-workbench" ]]; then
       exclude_list+=('config/database.yml')
     fi
-    # for arvados-api-server, we need to dereference the
-    # config/config.default.yml file. There is no fpm way to do that, sadly
-    # (excluding the existing symlink and then adding the file from its source
-    # path doesn't work, sadly.
-    if [[ "$pkgname" == "arvados-api-server" ]]; then
-      mv /arvados/services/api/config/config.default.yml /arvados/services/api/config/config.default.yml.bu
-      cp -p /arvados/lib/config/config.default.yml /arvados/services/api/config/
-      exclude_list+=('config/config.default.yml.bu')
-    fi
     for exclude in ${exclude_list[@]}; do
         switches+=(-x "$exclude_root/$exclude")
     done
@@ -368,11 +357,6 @@ handle_rails_package() {
               -x "$exclude_root/vendor/cache-*" \
               -x "$exclude_root/vendor/bundle" "$@" "$license_arg"
     rm -rf "$scripts_dir"
-    # Undo the deferencing we did above
-    if [[ "$pkgname" == "arvados-api-server" ]]; then
-      rm -f /arvados/services/api/config/config.default.yml
-      mv /arvados/services/api/config/config.default.yml.bu /arvados/services/api/config/config.default.yml
-    fi
 }
 
 # Build python packages with a virtualenv built-in
@@ -427,7 +411,9 @@ fpm_build_virtualenv () {
     PYTHON_PKG=$PKG
   fi
 
-  if [[ -n "$ONLY_BUILD" ]] && [[ "$PYTHON_PKG" != "$ONLY_BUILD" ]] && [[ "$PKG" != "$ONLY_BUILD" ]]; then
+  # arvados-python-client sdist should always be built, to be available
+  # for other dependant packages.
+  if [[ -n "$ONLY_BUILD" ]] && [[ "arvados-python-client" != "$PKG" ]] && [[ "$PYTHON_PKG" != "$ONLY_BUILD" ]] && [[ "$PKG" != "$ONLY_BUILD" ]]; then
     return 0
   fi
 
@@ -448,6 +434,14 @@ fpm_build_virtualenv () {
   fi
 
   PACKAGE_PATH=`(cd dist; ls *tar.gz)`
+
+  if [[ "arvados-python-client" == "$PKG" ]]; then
+    PYSDK_PATH=`pwd`/dist/
+  fi
+
+  if [[ -n "$ONLY_BUILD" ]] && [[ "$PYTHON_PKG" != "$ONLY_BUILD" ]] && [[ "$PKG" != "$ONLY_BUILD" ]]; then
+    return 0
+  fi
 
   # Determine the package version from the generated sdist archive
   PYTHON_VERSION=${ARVADOS_BUILDING_VERSION:-$(awk '($1 == "Version:"){print $2}' *.egg-info/PKG-INFO)}
@@ -500,16 +494,16 @@ fpm_build_virtualenv () {
   echo "wheel version:      `build/usr/share/$python/dist/$PYTHON_PKG/bin/wheel version`"
 
   if [[ "$TARGET" != "centos7" ]] || [[ "$PYTHON_PKG" != "python-arvados-fuse" ]]; then
-    build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PACKAGE_PATH
+    build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -f $PYSDK_PATH $PACKAGE_PATH
   else
     # centos7 needs these special tweaks to install python-arvados-fuse
     build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG docutils
-    PYCURL_SSL_LIBRARY=nss build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PACKAGE_PATH
+    PYCURL_SSL_LIBRARY=nss build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -f $PYSDK_PATH $PACKAGE_PATH
   fi
 
   if [[ "$?" != "0" ]]; then
     echo "Error, unable to run"
-    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PACKAGE_PATH"
+    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -f $PYSDK_PATH $PACKAGE_PATH"
     exit 1
   fi
 

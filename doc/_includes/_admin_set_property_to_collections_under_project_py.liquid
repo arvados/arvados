@@ -28,9 +28,9 @@ for p_uuid in [root_uuid] + get_subproject_uuids(api, root_uuid):
     f = [['properties.responsible_person_uuid', 'exists', False],
          ['owner_uuid', '=', p_uuid]]
     cols = get_cols(api, f)
-    print("Found {} collections owned by {}".format(len(cols), p_uuid))
+    print('Found {} collections owned by {}'.format(len(cols), p_uuid))
     for c in cols:
-        print(" - Updating collection {}".format(c["uuid"]))
+        print(' - Updating collection {}'.format(c['uuid']))
         props = c['properties']
         props['responsible_person_uuid'] = responsible_uuid
         api.collections().update(uuid=c['uuid'], body={'properties': props}).execute()

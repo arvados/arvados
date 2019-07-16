@@ -19,7 +19,7 @@ RUN gpg --import --no-tty /tmp/mpapis.asc && \
     /usr/local/rvm/bin/rvm-exec default gem install fpm --version 1.10.2
 
 # Install golang binary
-ADD generated/go1.10.1.linux-amd64.tar.gz /usr/local/
+ADD generated/go1.12.7.linux-amd64.tar.gz /usr/local/
 RUN ln -s /usr/local/go/bin/go /usr/local/bin/
 
 # Install nodejs and npm
@@ -35,7 +35,11 @@ RUN scl enable rh-python35 "easy_install-3.5 pip" && easy_install-2.7 pip
 RUN wget http://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
 RUN rpm -ivh epel-release-latest-7.noarch.rpm
 
-RUN git clone --depth 1 git://git.curoverse.com/arvados.git /tmp/arvados && cd /tmp/arvados/services/api && /usr/local/rvm/bin/rvm-exec default bundle && cd /tmp/arvados/apps/workbench && /usr/local/rvm/bin/rvm-exec default bundle && rm -rf /tmp/arvados
+RUN git clone --depth 1 git://git.curoverse.com/arvados.git /tmp/arvados && cd /tmp/arvados/services/api && /usr/local/rvm/bin/rvm-exec default bundle && cd /tmp/arvados/apps/workbench && /usr/local/rvm/bin/rvm-exec default bundle
+
+# Workbench depends on arvados-server for config manipulation
+ENV GOPATH /tmp
+RUN mkdir -p $GOPATH/src/git.curoverse.com && ln -sT /tmp/arvados $GOPATH/src/git.curoverse.com/arvados.git && cd $GOPATH/src/git.curoverse.com/arvados.git/cmd/arvados-server && go get -v github.com/kardianos/govendor && $GOPATH/bin/govendor sync && go get && go build && cp arvados-server /usr/local/bin/ && rm -rf /tmp/arvados
 
 # The version of setuptools that comes with CentOS is way too old
 RUN pip install --upgrade setuptools

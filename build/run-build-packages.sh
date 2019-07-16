@@ -19,7 +19,7 @@ Options:
 --debug
     Output debug information (default: false)
 --target <target>
-    Distribution to build packages for (default: debian8)
+    Distribution to build packages for (default: debian9)
 --only-build <package>
     Build only a specific package (or $ONLY_BUILD from environment)
 --command
@@ -42,7 +42,7 @@ VENDOR="Veritas Genetics, Inc."
 
 DEBUG=${ARVADOS_DEBUG:-0}
 EXITCODE=0
-TARGET=debian8
+TARGET=debian9
 COMMAND=
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
@@ -323,9 +323,8 @@ package_go_binary tools/keep-rsync keep-rsync \
 package_go_binary tools/keep-exercise keep-exercise \
     "Performance testing tool for Arvados Keep"
 
-# The Python SDK
+# The Python SDK - Should be built first because it's needed by others
 fpm_build_virtualenv "arvados-python-client" "sdk/python"
-fpm_build_virtualenv "arvados-python-client" "sdk/python" "python3"
 
 # Arvados cwl runner
 fpm_build_virtualenv "arvados-cwl-runner" "sdk/cwl"
@@ -339,11 +338,14 @@ fpm_build_virtualenv "arvados-fuse" "services/fuse"
 # The node manager
 fpm_build_virtualenv "arvados-node-manager" "services/nodemanager"
 
-# The Docker image cleaner
-fpm_build_virtualenv "arvados-docker-cleaner" "services/dockercleaner" "python3"
-
 # The Arvados crunchstat-summary tool
 fpm_build_virtualenv "crunchstat-summary" "tools/crunchstat-summary"
+
+# The Python SDK - Python3 package
+fpm_build_virtualenv "arvados-python-client" "sdk/python" "python3"
+
+# The Docker image cleaner
+fpm_build_virtualenv "arvados-docker-cleaner" "services/dockercleaner" "python3"
 
 # The cwltest package, which lives out of tree
 cd "$WORKSPACE"
@@ -382,17 +384,17 @@ if [[ "$?" == "0" ]] ; then
       rm -rf tmp
       mkdir tmp
 
-      # Set up application.yml and production.rb so that asset precompilation works
-      \cp config/application.yml.example config/application.yml -f
-      \cp config/environments/production.rb.example config/environments/production.rb -f
-      sed -i 's/secret_token: ~/secret_token: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/' config/application.yml
-      sed -i 's/keep_web_url: false/keep_web_url: exampledotcom/' config/application.yml
+      # Set up an appropriate config.yml
+      arvados-server config-dump -config <(cat /etc/arvados/config.yml 2>/dev/null || echo  "Clusters: {zzzzz: {}}") > /tmp/x
+      mkdir -p /etc/arvados/
+      mv /tmp/x /etc/arvados/config.yml
+      perl -p -i -e 'BEGIN{undef $/;} s/WebDAV(.*?):\n( *)ExternalURL: ""/WebDAV$1:\n$2ExternalURL: "example.com"/g' /etc/arvados/config.yml
 
       RAILS_ENV=production RAILS_GROUPS=assets bundle exec rake npm:install >/dev/null
       RAILS_ENV=production RAILS_GROUPS=assets bundle exec rake assets:precompile >/dev/null
 
       # Remove generated configuration files so they don't go in the package.
-      rm config/application.yml config/environments/production.rb
+      rm -rf /etc/arvados/
   )
 
   if [[ "$?" != "0" ]]; then

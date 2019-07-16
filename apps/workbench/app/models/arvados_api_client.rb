@@ -61,7 +61,7 @@ class ArvadosApiClient
     404 => NotFoundException,
   }
 
-  @@profiling_enabled = Rails.configuration.profiling_enabled
+  @@profiling_enabled = Rails.configuration.Workbench.ProfilingEnabled
   @@discovery = nil
 
   # An API client object suitable for handling API requests on behalf
@@ -89,10 +89,10 @@ class ArvadosApiClient
     if not @api_client
       @client_mtx.synchronize do
         @api_client = HTTPClient.new
-        @api_client.ssl_config.timeout = Rails.configuration.api_client_connect_timeout
-        @api_client.connect_timeout = Rails.configuration.api_client_connect_timeout
-        @api_client.receive_timeout = Rails.configuration.api_client_receive_timeout
-        if Rails.configuration.arvados_insecure_https
+        @api_client.ssl_config.timeout = Rails.configuration.Workbench.APIClientConnectTimeout
+        @api_client.connect_timeout = Rails.configuration.Workbench.APIClientConnectTimeout
+        @api_client.receive_timeout = Rails.configuration.Workbench.APIClientReceiveTimeout
+        if Rails.configuration.TLS.Insecure
           @api_client.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
         else
           # Use system CA certificates
@@ -101,7 +101,7 @@ class ArvadosApiClient
             .select { |ca_path| File.readable?(ca_path) }
             .each { |ca_path| @api_client.ssl_config.add_trust_ca(ca_path) }
         end
-        if Rails.configuration.api_response_compression
+        if Rails.configuration.Workbench.APIResponseCompression
           @api_client.transparent_gzip_decompression = true
         end
       end
@@ -113,11 +113,13 @@ class ArvadosApiClient
     # Clean up /arvados/v1/../../discovery/v1 to /discovery/v1
     url.sub! '/arvados/v1/../../', '/'
 
+    anon_tokens = [Rails.configuration.Users.AnonymousUserToken].select { |x| !x.empty? && include_anon_token }
+
     query = {
       'reader_tokens' => ((tokens[:reader_tokens] ||
                            Thread.current[:reader_tokens] ||
                            []) +
-                          (include_anon_token ? [Rails.configuration.anonymous_user_token] : [])).to_json,
+                          anon_tokens).to_json,
     }
     if !data.nil?
       data.each do |k,v|
@@ -233,17 +235,13 @@ class ArvadosApiClient
   end
 
   def arvados_login_url(params={})
-    if Rails.configuration.respond_to? :arvados_login_base
-      uri = Rails.configuration.arvados_login_base
-    else
-      uri = self.arvados_v1_base.sub(%r{/arvados/v\d+.*}, '/login')
+    uri = URI.parse(Rails.configuration.Services.Controller.ExternalURL.to_s)
+    if Rails.configuration.testing_override_login_url
+      uri = URI(Rails.configuration.testing_override_login_url)
     end
-    if params.size > 0
-      uri += '?' << params.collect { |k,v|
-        CGI.escape(k.to_s) + '=' + CGI.escape(v.to_s)
-      }.join('&')
-    end
-    uri
+    uri.path = "/login"
+    uri.query = URI.encode_www_form(params)
+    uri.to_s
   end
 
   def arvados_logout_url(params={})
@@ -251,7 +249,11 @@ class ArvadosApiClient
   end
 
   def arvados_v1_base
-    Rails.configuration.arvados_v1_base
+    # workaround Ruby 2.3 bug, can't duplicate URI objects
+    # https://github.com/httprb/http/issues/388
+    u = URI.parse(Rails.configuration.Services.Controller.ExternalURL.to_s)
+    u.path = "/arvados/v1"
+    u.to_s
   end
 
   def discovery

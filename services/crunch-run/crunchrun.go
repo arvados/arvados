@@ -987,7 +987,7 @@ func (runner *ContainerRunner) AttachStreams() (err error) {
 		go func() {
 			_, err := io.Copy(response.Conn, stdinRdr)
 			if err != nil {
-				runner.CrunchLog.Printf("While writing stdin collection to docker container %q", err)
+				runner.CrunchLog.Printf("While writing stdin collection to docker container: %v", err)
 				runner.stop(nil)
 			}
 			stdinRdr.Close()
@@ -997,7 +997,7 @@ func (runner *ContainerRunner) AttachStreams() (err error) {
 		go func() {
 			_, err := io.Copy(response.Conn, bytes.NewReader(stdinJson))
 			if err != nil {
-				runner.CrunchLog.Printf("While writing stdin json to docker container %q", err)
+				runner.CrunchLog.Printf("While writing stdin json to docker container: %v", err)
 				runner.stop(nil)
 			}
 			response.CloseWrite()

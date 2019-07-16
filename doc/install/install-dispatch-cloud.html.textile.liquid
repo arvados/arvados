@@ -59,7 +59,7 @@ You can delete the key files after you have copied the private key to your confi
 
 h2. Configure the dispatcher
 
-Add or update the following portions of your cluster configuration file, @/etc/arvados/config.yml@. Refer to "config.defaults.yml":https://dev.arvados.org/projects/arvados/repository/revisions/13996-new-api-config/entry/lib/config/config.defaults.yml for information about additional configuration options.
+Add or update the following portions of your cluster configuration file, @/etc/arvados/config.yml@. Refer to "config.defaults.yml":{{site.baseurl}}/admin/config.html for information about additional configuration options.
 
 <notextile>
 <pre><code>Clusters:
@@ -153,9 +153,36 @@ Minimal configuration example for Azure:
 </code></pre>
 </notextile>
 
-h2. Install the dispatcher
+h2. Test your configuration
 
 First, "add the appropriate package repository for your distribution":{{ site.baseurl }}/install/install-manual-prerequisites.html#repos.
+
+Next, install the arvados-server package.
+
+On Red Hat-based systems:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo yum install arvados-server</span>
+</code></pre>
+</notextile>
+
+On Debian-based systems:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo apt-get install arvados-server</span>
+</code></pre>
+</notextile>
+
+Run the @cloudtest@ tool to verify that your configuration works. This creates a new cloud VM, confirms that it boots correctly and accepts your configured SSH private key, and shuts it down.
+
+<notextile>
+<pre><code>~$ <span class="userinput">arvados-server cloudtest && echo "OK!"</span>
+</code></pre>
+</notextile>
+
+Refer to the "cloudtest tool documentation":../admin/cloudtest.html for more information.
+
+h2. Install the dispatcher
 
 On Red Hat-based systems:
 

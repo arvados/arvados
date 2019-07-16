@@ -6,11 +6,11 @@ package arvados
 
 // User is an arvados#user record
 type User struct {
-	UUID     string `json:"uuid,omitempty"`
+	UUID     string `json:"uuid"`
 	IsActive bool   `json:"is_active"`
 	IsAdmin  bool   `json:"is_admin"`
-	Username string `json:"username,omitempty"`
-	Email    string `json:"email,omitempty"`
+	Username string `json:"username"`
+	Email    string `json:"email"`
 }
 
 // UserList is an arvados#userList resource.

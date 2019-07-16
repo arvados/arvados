@@ -129,13 +129,14 @@ class Summarizer(object):
                 try:
                     self.label = m.group('job_uuid')
                 except IndexError:
-                    self.label = 'container'
-            if m.group('category').endswith(':'):
+                    self.label = 'label #1'
+            category = m.group('category')
+            if category.endswith(':'):
                 # "stderr crunchstat: notice: ..."
                 continue
-            elif m.group('category') in ('error', 'caught'):
+            elif category in ('error', 'caught'):
                 continue
-            elif m.group('category') in ('read', 'open', 'cgroup', 'CID', 'Running'):
+            elif category in ('read', 'open', 'cgroup', 'CID', 'Running'):
                 # "stderr crunchstat: read /proc/1234/net/dev: ..."
                 # (old logs are less careful with unprefixed error messages)
                 continue
@@ -221,11 +222,11 @@ class Summarizer(object):
                     if group == 'interval' and this_interval_s:
                             stat = stat + '__rate'
                             val = val / this_interval_s
-                            if stat in ['user+sys__rate', 'tx+rx__rate']:
+                            if stat in ['user+sys__rate', 'user__rate', 'sys__rate', 'tx+rx__rate', 'rx__rate', 'tx__rate']:
                                 task.series[category, stat].append(
                                     (timestamp - self.starttime, val))
                     else:
-                        if stat in ['rss']:
+                        if stat in ['rss','used','total']:
                             task.series[category, stat].append(
                                 (timestamp - self.starttime, val))
                         self.task_stats[task_id][category][stat] = val
@@ -315,7 +316,13 @@ class Summarizer(object):
                  (float(self.job_tot['blkio:0:0']['read']) /
                  float(self.job_tot['net:keep0']['rx']))
                  if self.job_tot['net:keep0']['rx'] > 0 else 0,
-                 lambda x: x * 100.0)):
+                 lambda x: x * 100.0),
+               ('Temp disk utilization {}%',
+                 (float(self.job_tot['statfs']['used']) /
+                 float(self.job_tot['statfs']['total']))
+                 if self.job_tot['statfs']['total'] > 0 else 0,
+                 lambda x: x * 100.0),
+                ):
             format_string, val, transform = args
             if val == float('-Inf'):
                 continue
@@ -328,7 +335,9 @@ class Summarizer(object):
         return itertools.chain(
             self._recommend_cpu(),
             self._recommend_ram(),
-            self._recommend_keep_cache())
+            self._recommend_keep_cache(),
+            self._recommend_temp_disk(),
+            )
 
     def _recommend_cpu(self):
         """Recommend asking for 4 cores if max CPU usage was 333%"""
@@ -429,6 +438,21 @@ class Summarizer(object):
                 utilization * 100.0,
                 constraint_key,
                 math.ceil(asked_cache * 2 / self._runtime_constraint_mem_unit()))
+
+
+    def _recommend_temp_disk(self):
+        """Recommend decreasing temp disk if utilization < 50%"""
+        total = float(self.job_tot['statfs']['total'])
+        utilization = (float(self.job_tot['statfs']['used']) / total) if total > 0 else 0.0
+
+        if utilization < 50.8 and total > 0:
+            yield (
+                '#!! {} max temp disk utilization was {:.0f}% of {:.0f} MiB -- '
+                'consider reducing "tmpdirMin" and/or "outdirMin"'
+            ).format(
+                self.label,
+                utilization * 100.0,
+                total / MB)
 
 
     def _format(self, val):

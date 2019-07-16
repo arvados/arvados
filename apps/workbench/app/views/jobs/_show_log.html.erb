@@ -12,7 +12,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
 <pre id="event_log_div"
      class="arv-log-event-listener arv-log-event-handler-append-logs arv-job-log-window"
      data-object-uuid="<%= @object.uuid %>"
-  ><%= @object.stderr_log_lines(Rails.configuration.running_job_log_records_to_fetch).join("\n") %>
+  ><%= @object.stderr_log_lines(Rails.configuration.Workbench.RunningJobLogRecordsToFetch).join("\n") %>
 </pre>
 
 <%# Applying a long throttle suppresses the auto-refresh of this
@@ -68,7 +68,7 @@ var makeFilter = function() {
   <% logcollection = Collection.find @object.log %>
   <% if logcollection %>
     var log_size = <%= logcollection.files[0][2] %>
-    var log_maxbytes = <%= Rails.configuration.log_viewer_max_bytes %>;
+    var log_maxbytes = <%= Rails.configuration.Workbench.LogViewerMaxBytes %>;
     var logcollection_url = '<%=j url_for logcollection %>/<%=j logcollection.files[0][1] %>';
     $("#log-viewer-download-url").attr('href', logcollection_url);
     $("#log-viewer-download-pane").show();

@@ -15,6 +15,11 @@ README = os.path.join(SETUP_DIR, 'README.rst')
 
 import arvados_version
 version = arvados_version.get_version(SETUP_DIR, "arvnodeman")
+if os.environ.get('ARVADOS_BUILDING_VERSION', False):
+    pysdk_dep = "=={}".format(version)
+else:
+    # On dev releases, arvados-python-client may have a different timestamp
+    pysdk_dep = "<={}".format(version)
 
 short_tests_only = False
 if '--short-tests-only' in sys.argv:
@@ -36,7 +41,7 @@ setup(name='arvados-node-manager',
       ],
       install_requires=[
           'apache-libcloud>=2.3.1.dev1',
-          'arvados-python-client>=0.1.20170731145219',
+          'arvados-python-client{}'.format(pysdk_dep),
           'future',
           'pykka < 2',
           'python-daemon',

@@ -21,13 +21,17 @@ var (
 	instanceSecretLength   = 40 // hex digits
 )
 
-type tagVerifier struct {
+type TagVerifier struct {
 	cloud.Instance
-	secret string
+	Secret string
 }
 
-func (tv tagVerifier) VerifyHostKey(pubKey ssh.PublicKey, client *ssh.Client) error {
-	if err := tv.Instance.VerifyHostKey(pubKey, client); err != cloud.ErrNotImplemented || tv.secret == "" {
+func (tv TagVerifier) InitCommand() cloud.InitCommand {
+	return cloud.InitCommand(fmt.Sprintf("umask 0177 && echo -n %q >%s", tv.Secret, instanceSecretFilename))
+}
+
+func (tv TagVerifier) VerifyHostKey(pubKey ssh.PublicKey, client *ssh.Client) error {
+	if err := tv.Instance.VerifyHostKey(pubKey, client); err != cloud.ErrNotImplemented || tv.Secret == "" {
 		// If the wrapped instance indicates it has a way to
 		// verify the key, return that decision.
 		return err
@@ -49,7 +53,7 @@ func (tv tagVerifier) VerifyHostKey(pubKey ssh.PublicKey, client *ssh.Client) er
 	if err != nil {
 		return err
 	}
-	if stdout.String() != tv.secret {
+	if stdout.String() != tv.Secret {
 		return errBadInstanceSecret
 	}
 	return nil

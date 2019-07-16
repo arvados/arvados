@@ -35,102 +35,124 @@ On a Red Hat-based system, install the following packages:
 
 {% include 'install_git' %}
 
-h2(#configure). Set up the database
-
-Configure the API server to connect to your database by updating @/etc/arvados/api/database.yml@. Replace the @xxxxxxxx@ database password placeholder with the "password you generated during database setup":install-postgresql.html#api. Be sure to update the @production@ section.
-
-<notextile>
-<pre><code>~$ <span class="userinput">editor /etc/arvados/api/database.yml</span>
-</code></pre></notextile>
-
 h2(#configure_application). Configure the API server
 
-Edit @/etc/arvados/api/application.yml@ to configure the settings described in the following sections.  The API server reads both @application.yml@ and its own @config/application.default.yml@ file.  The settings in @application.yml@ take precedence over the defaults that are defined in @config/application.default.yml@.  The @config/application.yml.example@ file is not read by the API server and is provided as a starting template only.
+Edit @/etc/arvados/config.yml@ to set the keys below.  Only the most important configuration options are listed here.  The example configuration fragments given below should be merged into a single configuration structure.  Correct indentation is important.  The full set of configuration options are listed in "config.yml":{{site.baseurl}}/admin/config.html
 
-@config/application.default.yml@ documents additional configuration settings not listed here.  You can "view the current source version":https://dev.arvados.org/projects/arvados/repository/revisions/master/entry/services/api/config/application.default.yml for reference.
+h3(#uuid_prefix). ClusterID
 
-Only put local configuration in @application.yml@.  Do not edit @application.default.yml@.
-
-h3(#uuid_prefix). uuid_prefix
-
-Define your @uuid_prefix@ in @application.yml@ by setting the @uuid_prefix@ field in the section for your environment.  This prefix is used for all database identifiers to identify the record as originating from this site.  It must be exactly 5 lowercase ASCII letters and digits.
-
-Example @application.yml@:
+The @ClusterID@ is used for all database identifiers to identify the record as originating from this site.  It is the first key under @Clusters@ in @config.yml@.  It must be exactly 5 lowercase ASCII letters and digits.  All configuration items go under the cluster id key (replace @zzzzz@ with your cluster id in the examples below).
 
 <notextile>
-<pre><code>  uuid_prefix: <span class="userinput">zzzzz</span></code></pre>
+<pre><code>Clusters:
+  <span class="userinput">zzzzz</span>:
+    ...</code></pre>
 </notextile>
 
-h3. secret_token
+h3(#configure). PostgreSQL.Connection
 
-The @secret_token@ is used for for signing cookies.  IMPORTANT: This is a site secret. It should be at least 50 characters.  Generate a random value and set it in @application.yml@:
+Replace the @xxxxxxxx@ database password placeholder with the "password you generated during database setup":install-postgresql.html#api.
+
+<notextile>
+<pre><code>Clusters:
+  zzzzz:
+    PostgreSQL:
+      Connection:
+        host: <span class="userinput">localhost</span>
+        user: <span class="userinput">arvados</span>
+        password: <span class="userinput">xxxxxxxx</span>
+        dbname: <span class="userinput">arvados_production</span>
+      </code></pre>
+</notextile>
+
+h3. API.RailsSessionSecretToken
+
+The @API.RailsSessionSecretToken@ is used for for signing cookies.  IMPORTANT: This is a site secret. It should be at least 50 characters.  Generate a random value and set it in @config.yml@:
 
 <notextile>
 <pre><code>~$ <span class="userinput">ruby -e 'puts rand(2**400).to_s(36)'</span>
 yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
 </code></pre></notextile>
 
-Example @application.yml@:
+Example @config.yml@:
 
 <notextile>
-<pre><code>  secret_token: <span class="userinput">yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy</span></code></pre>
+<pre><code>Clusters:
+  zzzzz:
+    API:
+      RailsSessionSecretToken: <span class="userinput">yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy</span></code></pre>
 </notextile>
 
-h3(#blob_signing_key). blob_signing_key
+h3(#blob_signing_key). Collections.BlobSigningKey
 
-The @blob_signing_key@ is used to enforce access control to Keep blocks.  This same key must be provided to the Keepstore daemons when "installing Keepstore servers.":install-keepstore.html  IMPORTANT: This is a site secret. It should be at least 50 characters.  Generate a random value and set it in @application.yml@:
+The @Collections.BlobSigningKey@ is used to enforce access control to Keep blocks.  This same key must be provided to the Keepstore daemons when "installing Keepstore servers.":install-keepstore.html  IMPORTANT: This is a site secret. It should be at least 50 characters.  Generate a random value and set it in @config.yml@:
 
 <notextile>
 <pre><code>~$ <span class="userinput">ruby -e 'puts rand(2**400).to_s(36)'</span>
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 </code></pre></notextile>
 
-Example @application.yml@:
+Example @config.yml@:
 
 <notextile>
-<pre><code>  blob_signing_key: <span class="userinput">xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</span></code></pre>
+<pre><code>Clusters:
+  zzzzz:
+    Collections:
+      BlobSigningKey: <span class="userinput">xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</span></code></pre>
 </notextile>
 
-h3(#omniauth). sso_app_secret, sso_app_id, sso_provider_url
+h3(#omniauth). Login.ProviderAppID, Login.ProviderAppSecret, Services.SSO.ExternalURL
 
 The following settings enable the API server to communicate with the "Single Sign On (SSO) server":install-sso.html to authenticate user log in.
 
-Set @sso_provider_url@ to the base URL where your SSO server is installed.  This should be a URL consisting of the scheme and host (and optionally, port), without a trailing slash.
+Set @Services.SSO.ExternalURL@ to the base URL where your SSO server is installed.  This should be a URL consisting of the scheme and host (and optionally, port), without a trailing slash.
 
-Set @sso_app_secret@ and @sso_app_id@ to the corresponding values for @app_secret@ and @app_id@ used in the "Create arvados-server client for Single Sign On (SSO)":install-sso.html#client step.
+Set @Login.ProviderAppID@ and @Login.ProviderAppSecret@ to the corresponding values for @app_id@ and @app_secret@ used in the "Create arvados-server client for Single Sign On (SSO)":install-sso.html#client step.
 
-Example @application.yml@:
-
-<notextile>
-<pre><code>  sso_app_id: <span class="userinput">arvados-server</span>
-  sso_app_secret: <span class="userinput">wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww</span>
-  sso_provider_url: <span class="userinput">https://sso.example.com</span>
-</code></pre>
-</notextile>
-
-h3. workbench_address
-
-Set @workbench_address@ to the URL of your workbench application after following "Install Workbench.":install-workbench-app.html
-
-Example @application.yml@:
+Example @config.yml@:
 
 <notextile>
-<pre><code>  workbench_address: <span class="userinput">https://workbench.zzzzz.example.com</span></code></pre>
+<pre><code>Clusters:
+  zzzzz:
+    Services:
+      SSO:
+        ExternalURL: <span class="userinput">https://sso.example.com</span>
+    Login:
+      ProviderAppID: <span class="userinput">arvados-server</span>
+      ProviderAppSecret: <span class="userinput">wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww</span></code></pre>
 </notextile>
 
-h3. websocket_address
+h3. Services.Workbench1.ExternalURL
 
-Set @websocket_address@ to the @wss://@ URL of the API server websocket endpoint after following "Set up Web servers":#set_up.  The path of the default endpoint is @/websocket@.
+Set @Services.Workbench1.ExternalURL@ to the URL of your workbench application after following "Install Workbench.":install-workbench-app.html
 
-Example @application.yml@:
+Example @config.yml@:
 
 <notextile>
-<pre><code>  websocket_address: <span class="userinput">wss://ws.zzzzz.example.com</span>/websocket</code></pre>
+<pre><code>Clusters:
+  zzzzz:
+    Services:
+      Workbench1:
+        ExternalURL: <span class="userinput">https://workbench.zzzzz.example.com</span></code></pre>
 </notextile>
 
-h3(#git_repositories_dir). git_repositories_dir
+h3. Services.Websocket.ExternalURL
 
-The @git_repositories_dir@ setting specifies the directory where user git repositories will be stored.
+Set @Services.Websocket.ExternalURL@ to the @wss://@ URL of the API server websocket endpoint after following "Install the websocket server":install-ws.html .
+
+Example @config.yml@:
+
+<notextile>
+<pre><code>Clusters:
+  zzzzz:
+    Services:
+      Websocket:
+        ExternalURL: <span class="userinput">wss://ws.zzzzz.example.com</span></code></pre>
+</notextile>
+
+h3(#git_repositories_dir). Git.Repositories
+
+The @Git.Repositories@ setting specifies the directory where user git repositories will be stored.
 
 The git server setup process is covered on "its own page":install-arv-git-httpd.html. For now, create an empty directory in the default location:
 
@@ -138,39 +160,47 @@ The git server setup process is covered on "its own page":install-arv-git-httpd.
 <pre><code>~$ <span class="userinput">sudo mkdir -p /var/lib/arvados/git/repositories</span>
 </code></pre></notextile>
 
-If you intend to store your git repositories in a different location, specify that location in @application.yml@.
-
-Default setting in @application.default.yml@:
+If you intend to store your git repositories in a different location, specify that location in @config.yml@.  Example:
 
 <notextile>
-<pre><code>  git_repositories_dir: <span class="userinput">/var/lib/arvados/git/repositories</span>
-</code></pre>
+<pre><code>Clusters:
+  zzzzz:
+    Git:
+      Repositories: <span class="userinput">/var/lib/arvados/git/repositories</span></code></pre>
 </notextile>
 
-h3(#git_internal_dir). git_internal_dir
-
-The @git_internal_dir@ setting specifies the location of Arvados' internal git repository.  By default this is @/var/lib/arvados/internal.git@.  This repository stores git commits that have been used to run Crunch jobs.  It should _not_ be a subdirectory of @git_repositories_dir@.
-
-Example @application.yml@:
-
-<notextile>
-<pre><code>  git_internal_dir: <span class="userinput">/var/lib/arvados/internal.git</span>
-</code></pre>
-</notextile>
-
-h3(#enable_legacy_jobs_api). enable_legacy_jobs_api
+h3(#enable_legacy_jobs_api). Containers.JobsAPI.Enable
 
 Enable the legacy "Jobs API":install-crunch-dispatch.html .  Note: new installations should use the "Containers API":crunch2-slurm/install-prerequisites.html
 
-Disabling the jobs API means methods involving @jobs@, @job_tasks@, @pipeline_templates@ and @pipeline_instances@ are disabled.  This functionality is superceded by the containers API which consists of @container_requests@, @containers@ and @workflows@.  Arvados clients (such as @arvados-cwl-runner@) detect which APIs are available and adjust behavior accordingly.
+Disabling the jobs API means methods involving @jobs@, @job_tasks@, @pipeline_templates@ and @pipeline_instances@ are disabled.  This functionality is superceded by the containers API which consists of @container_requests@, @containers@ and @workflows@.  Arvados clients (such as @arvados-cwl-runner@) detect which APIs are available and adjust behavior accordingly.  Note the configuration value must be a quoted string.
 
-* auto -- (default) enable the Jobs API only if it has been used before (i.e., there are job records in the database), otherwise disable jobs API .
-* true -- enable the Jobs API even if there are no existing job records.
-* false -- disable the Jobs API even in the presence of existing job records.
+* 'auto' -- (default) enable the Jobs API only if it has been used before (i.e., there are job records in the database), otherwise disable jobs API .
+* 'true' -- enable the Jobs API even if there are no existing job records.
+* 'false' -- disable the Jobs API even in the presence of existing job records.
 
 <notextile>
-<pre><code>  enable_legacy_jobs_api: <span class="userinput">auto</span>
-</code></pre>
+<pre><code>Clusters:
+  zzzzz:
+    Containers:
+      JobsAPI:
+        Enable: <span class="userinput">'auto'</span></code></pre>
+</notextile>
+
+h4(#git_internal_dir). Containers.JobsAPI.GitInternalDir
+
+Only required if the legacy "Jobs API" is enabled, otherwise you should skip this.
+
+The @Containers.JobsAPI.GitInternalDir@ setting specifies the location of Arvados' internal git repository.  By default this is @/var/lib/arvados/internal.git@.  This repository stores git commits that have been used to run Crunch jobs.  It should _not_ be a subdirectory of the directory in @Git.Repositories@.
+
+Example @config.yml@:
+
+<notextile>
+<pre><code>Clusters:
+  zzzzz:
+    Containers:
+      JobsAPI:
+        GitInternalDir: <span class="userinput">/var/lib/arvados/internal.git</span></code></pre>
 </notextile>
 
 h2(#set_up). Set up Nginx and Passenger
@@ -199,7 +229,7 @@ server {
   # also ensure the following settings match it:
   # * `client_max_body_size` in the server section below
   # * `client_max_body_size` in the Workbench Nginx configuration (twice)
-  # * `max_request_size` in the API server's application.yml file
+  # * `API.MaxRequestSize` in config.yml
   client_max_body_size 128m;
 }
 
@@ -241,3 +271,7 @@ break this application for all non-root users on this machine.</pre></notextile>
 
 <notextile><pre>fatal: Not a git repository (or any of the parent directories): .git</pre></notextile>
 {% include 'notebox_end' %}
+
+h2. Troubleshooting
+
+Once you have the API Server up and running you may need to check it back if dealing with client related issues. Please read our "admin troubleshooting notes":{{site.baseurl}}/admin/troubleshooting.html on how requests can be tracked down between services.

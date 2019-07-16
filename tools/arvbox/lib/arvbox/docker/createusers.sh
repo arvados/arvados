@@ -53,6 +53,8 @@ export R_LIBS=/var/lib/Rlibs
 export GOPATH=/var/lib/gopath
 EOF
 
+    mkdir -p /etc/arvados
+    chown -R arvbox:arvbox /etc/arvados
 fi
 
 if ! grep "^fuse:" /etc/group >/dev/null 2>/dev/null ; then

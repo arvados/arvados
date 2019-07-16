@@ -10,7 +10,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -62,20 +61,25 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 			log.WithError(err).Info("exiting")
 		}
 	}()
+
 	flags := flag.NewFlagSet("", flag.ContinueOnError)
 	flags.SetOutput(stderr)
-	configFile := flags.String("config", arvados.DefaultConfigFile, "Site configuration `file`")
+
+	loader := config.NewLoader(stdin, log)
+	loader.SetupFlags(flags)
+	versionFlag := flags.Bool("version", false, "Write version information to stdout and exit 0")
+
 	err = flags.Parse(args)
 	if err == flag.ErrHelp {
 		err = nil
 		return 0
 	} else if err != nil {
 		return 2
+	} else if *versionFlag {
+		return cmd.Version.RunCommand(prog, args, stdin, stdout, stderr)
 	}
-	// Logged warnings are discarded for now: the config template
-	// is incomplete, which causes extra warnings about keys that
-	// are really OK.
-	cfg, err := config.LoadFile(*configFile, ctxlog.New(ioutil.Discard, "json", "error"))
+
+	cfg, err := loader.Load()
 	if err != nil {
 		return 1
 	}
@@ -116,7 +120,8 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	}
 	srv := &httpserver.Server{
 		Server: http.Server{
-			Handler: httpserver.AddRequestIDs(httpserver.LogRequests(log, handler)),
+			Handler: httpserver.HandlerWithContext(ctx,
+				httpserver.AddRequestIDs(httpserver.LogRequests(handler))),
 		},
 		Addr: listen,
 	}

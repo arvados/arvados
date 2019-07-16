@@ -3,11 +3,18 @@
 SPDX-License-Identifier: AGPL-3.0 %>
 
 <%
-    profile_config = Rails.configuration.user_profile_form_fields
+    profile_config = []
+    Rails.configuration.Workbench.UserProfileFormFields.each do |k, v|
+      r = v.dup
+      r["Key"] = k
+      profile_config << r
+    end
+    profile_config.sort_by! { |v| v["Position"] }
+
     current_user_profile = current_user.prefs[:profile]
     show_save_button = false
 
-    profile_message = Rails.configuration.user_profile_form_message
+    profile_message = Rails.configuration.Workbench.UserProfileFormMessage
 %>
 
 <div>
@@ -61,29 +68,29 @@ SPDX-License-Identifier: AGPL-3.0 %>
               </div>
 
               <% profile_config.kind_of?(Array) && profile_config.andand.each do |entry| %>
-                <% if entry['key'] %>
+                <% if entry['Key'] %>
                   <%
                       show_save_button = true
-                      label = entry['required'] ? '* ' : ''
-                      label += entry['form_field_title']
-                      value = current_user_profile[entry['key'].to_sym] if current_user_profile
+                      label = entry['Required'] ? '* ' : ''
+                      label += entry['FormFieldTitle']
+                      value = current_user_profile[entry['Key'].to_sym] if current_user_profile
                   %>
                   <div class="form-group">
-                    <label for="<%=entry['key']%>"
+                    <label for="<%=entry['Key']%>"
                            class="col-sm-3 control-label"
-                           style=<%="color:red" if entry['required']&&(!value||value.empty?)%>> <%=label%>
+                           style=<%="color:red" if entry['Required']&&(!value||value.empty?)%>> <%=label%>
                     </label>
-                    <% if entry['type'] == 'select' %>
+                    <% if entry['Type'] == 'select' %>
                       <div class="col-sm-8">
-                        <select class="form-control" name="user[prefs][profile][<%=entry['key']%>]">
-                          <% entry['options'].each do |option| %>
+                        <select class="form-control" name="user[prefs][profile][<%=entry['Key']%>]">
+                          <% entry['Options'].each do |option, _| %>
                             <option value="<%=option%>" <%='selected' if option==value%>><%=option%></option>
                           <% end %>
                         </select>
                       </div>
                     <% else %>
                       <div class="col-sm-8">
-                        <input type="text" class="form-control" name="user[prefs][profile][<%=entry['key']%>]" placeholder="<%=entry['form_field_description']%>" value="<%=value%>" ></input>
+                        <input type="text" class="form-control" name="user[prefs][profile][<%=entry['Key']%>]" placeholder="<%=entry['FormFieldDescription']%>" value="<%=value%>" ></input>
                       </div>
                     <% end %>
                   </div>

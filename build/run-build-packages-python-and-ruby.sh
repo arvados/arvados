@@ -159,8 +159,8 @@ if [ ${#failures[@]} -ne 0 ]; then
   GEM_BUILD_FAILURES=${#failures[@]}
 fi
 
-python_wrapper arvados-pam "$WORKSPACE/sdk/pam"
 python_wrapper arvados-python-client "$WORKSPACE/sdk/python"
+python_wrapper arvados-pam "$WORKSPACE/sdk/pam"
 python_wrapper arvados-cwl-runner "$WORKSPACE/sdk/cwl"
 python_wrapper arvados_fuse "$WORKSPACE/services/fuse"
 python_wrapper arvados-node-manager "$WORKSPACE/services/nodemanager"

@@ -180,6 +180,7 @@ navbar:
     - Cloud:
       - admin/storage-classes.html.textile.liquid
       - admin/spot-instances.html.textile.liquid
+      - admin/cloudtest.html.textile.liquid
     - Data Management:
       - admin/collection-versioning.html.textile.liquid
       - admin/collection-managed-properties.html.textile.liquid
@@ -187,6 +188,7 @@ navbar:
       - admin/federation.html.textile.liquid
       - admin/controlling-container-reuse.html.textile.liquid
       - admin/logs-table-management.html.textile.liquid
+      - admin/troubleshooting.html.textile.liquid
   installguide:
     - Overview:
       - install/index.html.textile.liquid
