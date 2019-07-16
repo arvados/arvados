@@ -13,15 +13,15 @@ Arvados provides several extensions to CWL for workflow optimization, site-speci
 
 To use Arvados CWL extensions, add the following @$namespaces@ section at the top of your CWL file:
 
-<pre>
+{% codeblock as yaml %}
 $namespaces:
   arv: "http://arvados.org/cwl#"
   cwltool: "http://commonwl.org/cwltool#"
-</pre>
+{% endcodeblock %}
 
 For portability, Arvados extensions should go into the @hints@ section of your CWL file, for example:
 
-<pre>
+{% codeblock as yaml %}
 hints:
   arv:RunInSingleContainer: {}
   arv:RuntimeConstraints:
@@ -47,13 +47,13 @@ hints:
   arv:ClusterTarget:
     cluster_id: clsr1
     project_uuid: clsr1-j7d0g-qxc4jcji7n4lafx
-</pre>
+{% endcodeblock %}
 
-The one exception to this is @arv:APIRequirement@, see note below.
+The one exception to the @hints@ section this is @arv:APIRequirement@, see note below.
 
-h2. arv:RunInSingleContainer
+h2(#RunInSingleContainer). arv:RunInSingleContainer
 
-Indicates that a subworkflow should run in a single container and not be scheduled as separate steps.
+Apply this to a workflow step that runs a subworkflow.  Indicates that all the steps of the subworkflow should run together in a single container and not be scheduled separately.  If you have a sequence of short-running steps (less than 1-2 minutes each) this enables you to avoid scheduling and data transfer overhead by running all the steps together at once.  To use this feature, @cwltool@ must be installed in the container image.
 
 h2. arv:RuntimeConstraints
 
@@ -76,25 +76,13 @@ table(table table-bordered table-condensed).
 |_. Field |_. Type |_. Description |
 |partition|string or array of strings||
 
-h2. arv:APIRequirement
+h2(#APIRequirement). arv:APIRequirement
+
+For CWL v1.1 scripts, if a step requires network access but not specifically access to the Arvados API server, prefer the standard feature "NetworkAccess":https://www.commonwl.org/v1.1/CommandLineTool.html#NetworkAccess .  In the future, these may be differentiated by whether ARVADOS_API_HOST and ARVADOS_API_TOKEN is injected into the container or not.
 
 Indicates that process wants to access to the Arvados API.  Will be granted network access and have @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ set in the environment.  Tools which rely on the Arvados API being present should put @arv:APIRequirement@ in the @requirements@ section of the tool (rather than @hints@) to indicate that that it is not portable to non-Arvados CWL runners.
 
 Use @arv:APIRequirement@ in @hints@ to enable general (non-Arvados-specific) network access for a tool.
-
-h2. cwltool:LoadListingRequirement
-
-In CWL v1.0 documents, the default behavior for Directory objects is to recursively expand the @listing@ for access by parameter references an expressions.  For directory trees containing many files, this can be expensive in both time and memory usage.  Use @cwltool:LoadListingRequirement@ to change the behavior for expansion of directory listings in the workflow runner.
-
-table(table table-bordered table-condensed).
-|_. Field |_. Type |_. Description |
-|loadListing|string|One of @no_listing@, @shallow_listing@, or @deep_listing@|
-
-*no_listing*: Do not expand directory listing at all.  The @listing@ field on the Directory object will be undefined.
-
-*shallow_listing*: Only expand the first level of directory listing.  The @listing@ field on the toplevel Directory object will contain the directory contents, however @listing@ will not be defined on subdirectories.
-
-*deep_listing*: Recursively expand all levels of directory listing.  The @listing@ field will be provided on the toplevel object and all subdirectories.
 
 h2. arv:IntermediateOutput
 
@@ -105,14 +93,6 @@ table(table table-bordered table-condensed).
 |outputTTL|int|If the value is greater than zero, consider intermediate output collections to be temporary and should be automatically trashed. Temporary collections will be trashed @outputTTL@ seconds after creation.  A value of zero means intermediate output should be retained indefinitely (this is the default behavior).
 Note: arvados-cwl-runner currently does not take workflow dependencies into account when setting the TTL on an intermediate output collection. If the TTL is too short, it is possible for a collection to be trashed before downstream steps that consume it are started.  The recommended minimum value for TTL is the expected duration of the entire the workflow.|
 
-h2. arv:ReuseRequirement
-
-Enable/disable work reuse for current process.  Default true (work reuse enabled).
-
-table(table table-bordered table-condensed).
-|_. Field |_. Type |_. Description |
-|enableReuse|boolean|Enable/disable work reuse for current process.  Default true (work reuse enabled).|
-
 h2. cwltool:Secrets
 
 Indicate that one or more input parameters are "secret".  Must be applied at the top level Workflow.  Secret parameters are not stored in keep, are hidden from logs and API responses, and are wiped from the database after the workflow completes.
@@ -120,15 +100,6 @@ Indicate that one or more input parameters are "secret".  Must be applied at the
 table(table table-bordered table-condensed).
 |_. Field |_. Type |_. Description |
 |secrets|array<string>|Input parameters which are considered "secret".  Must be strings.|
-
-
-h2. cwltool:TimeLimit
-
-Set an upper limit on the execution time of a CommandLineTool or ExpressionTool.  A tool execution which exceeds the time limit may be preemptively terminated and considered failed.  May also be used by batch systems to make scheduling decisions.
-
-table(table table-bordered table-condensed).
-|_. Field |_. Type |_. Description |
-|timelimit|int|Execution time limit in seconds. If set to zero, no limit is enforced.|
 
 h2. arv:WorkflowRunnerResources
 
@@ -159,3 +130,43 @@ requirements:
     dockerPull: "debian:9"
     arv:dockerCollectionPDH: "feaf1fc916103d7cdab6489e1f8c3a2b+174"
 </pre>
+
+h1. Deprecated extensions
+
+The following extensions are deprecated because equivalent features are part of the CWL v1.1 standard.
+
+h2. cwltool:LoadListingRequirement
+
+For CWL v1.1 scripts, this is deprecated in favor of "loadListing":https://www.commonwl.org/v1.1/CommandLineTool.html#CommandInputParameter or "LoadListingRequirement":https://www.commonwl.org/v1.1/CommandLineTool.html#LoadListingRequirement
+
+In CWL v1.0 documents, the default behavior for Directory objects is to recursively expand the @listing@ for access by parameter references an expressions.  For directory trees containing many files, this can be expensive in both time and memory usage.  Use @cwltool:LoadListingRequirement@ to change the behavior for expansion of directory listings in the workflow runner.
+
+table(table table-bordered table-condensed).
+|_. Field |_. Type |_. Description |
+|loadListing|string|One of @no_listing@, @shallow_listing@, or @deep_listing@|
+
+*no_listing*: Do not expand directory listing at all.  The @listing@ field on the Directory object will be undefined.
+
+*shallow_listing*: Only expand the first level of directory listing.  The @listing@ field on the toplevel Directory object will contain the directory contents, however @listing@ will not be defined on subdirectories.
+
+*deep_listing*: Recursively expand all levels of directory listing.  The @listing@ field will be provided on the toplevel object and all subdirectories.
+
+h2. arv:ReuseRequirement
+
+For CWL v1.1 scripts, this is deprecated in favor of "WorkReuse":https://www.commonwl.org/v1.1/CommandLineTool.html#WorkReuse .
+
+Enable/disable work reuse for current process.  Default true (work reuse enabled).
+
+table(table table-bordered table-condensed).
+|_. Field |_. Type |_. Description |
+|enableReuse|boolean|Enable/disable work reuse for current process.  Default true (work reuse enabled).|
+
+h2. cwltool:TimeLimit
+
+For CWL v1.1 scripts, this is deprecated in favor of "ToolTimeLimit":https://www.commonwl.org/v1.1/CommandLineTool.html#ToolTimeLimit
+
+Set an upper limit on the execution time of a CommandLineTool or ExpressionTool.  A tool execution which exceeds the time limit may be preemptively terminated and considered failed.  May also be used by batch systems to make scheduling decisions.
+
+table(table table-bordered table-condensed).
+|_. Field |_. Type |_. Description |
+|timelimit|int|Execution time limit in seconds. If set to zero, no limit is enforced.|

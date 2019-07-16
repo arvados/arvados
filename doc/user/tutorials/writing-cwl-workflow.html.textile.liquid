@@ -15,9 +15,13 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 h2. Developing workflows
 
-For an introduction and and detailed documentation about writing CWL, see the "CWL User Guide":https://www.commonwl.org/user_guide and the "CWL Specification":http://commonwl.org/v1.0 .
+For an introduction and and detailed documentation about writing CWL, see the "CWL User Guide":https://www.commonwl.org/user_guide and the "CWL Specification":http://commonwl.org/v1.1 .
 
-See "Best Practices for writing CWL":{{site.baseurl}}/user/cwl/cwl-style.html and "Arvados CWL Extensions":{{site.baseurl}}/user/cwl/cwl-extensions.html for additional information about using CWL on Arvados.
+See "Writing Portable High-Performance Workflows":{{site.baseurl}}/user/cwl/cwl-style.html and "Arvados CWL Extensions":{{site.baseurl}}/user/cwl/cwl-extensions.html for additional information about using CWL on Arvados.
+
+See "Repositories of CWL Tools and Workflows":https://www.commonwl.org/#Repositories_of_CWL_Tools_and_Workflows for links to repositories of existing tools for reuse.
+
+See "Software for working with CWL":https://www.commonwl.org/#Software_for_working_with_CWL for links to software tools to help create CWL documents.
 
 h2. Using Composer
 
@@ -203,3 +207,15 @@ arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107,
 }
 </code></pre>
 </notextile>
+
+h2(#migrate). Differences in running CWL on the legacy jobs API vs containers API
+
+Most users can ignore this section.
+
+When migrating your Arvados cluster from using the jobs API (--api=jobs) (sometimes referred to as "crunch v1") to the containers API (--api=containers) ("crunch v2") there are a few differences in behavior:
+
+A tool may fail to find an input file that could be found when run under the jobs API.  This is because tools are limited to accessing collections explicitly listed in the input, and further limited to those individual files or subdirectories that are listed.  For example, given an explicit file input @/dir/subdir/file1.txt@, a tool will not be allowed to implicitly access a file in the parent directory @/dir/file2.txt@.  Use @secondaryFiles@ or a @Directory@ for files that need to be grouped together.
+
+A tool may fail when attempting to rename or delete a file in the output directory.  This may happen because files listed in @InitialWorkDirRequirement@ appear in the output directory as normal files (not symlinks) but cannot be moved, renamed or deleted unless marked as "writable" in CWL.  These files will be added to the output collection but without any additional copies of the underlying data.
+
+A tool may fail when attempting to access the network.  This may happen because, unlike the jobs API, under the containers API network access is disabled by default.  Tools which require network access should add @arv:APIRequirement: {}@ to the @requirements@ section.
