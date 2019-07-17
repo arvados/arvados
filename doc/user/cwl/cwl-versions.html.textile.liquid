@@ -29,4 +29,6 @@ A tool may fail to find an input file that could be found when run under the job
 
 A tool may fail when attempting to rename or delete a file in the output directory.  This may happen because files listed in @InitialWorkDirRequirement@ appear in the output directory as normal files (not symlinks) but cannot be moved, renamed or deleted unless marked as "writable" in CWL.  These files will be added to the output collection but without any additional copies of the underlying data.
 
-A tool may fail when attempting to access the network.  This may happen because, unlike the jobs API, under the containers API network access is disabled by default.  Tools which require network access should add @arv:APIRequirement: {}@ to the @requirements@ section.
+A tool may fail when attempting to access the network.  This may happen because, unlike the jobs API, under the containers API network access is disabled by default.  Tools which require network access should add "arv:APIRequirement: {}":cwl-extensions.html#APIRequirement to the @requirements@ section.
+
+CWL v1.1 is not supported by the Jobs API.
