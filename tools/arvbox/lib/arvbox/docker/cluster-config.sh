@@ -10,6 +10,8 @@ if [[ -s /etc/arvados/config.yml ]] ; then
    exit
 fi
 
+. /usr/local/lib/arvbox/common.sh
+
 uuid_prefix=$(cat /var/lib/arvados/api_uuid_prefix)
 secret_token=$(cat /var/lib/arvados/api_secret_token)
 blob_signing_key=$(cat /var/lib/arvados/blob_signing_key)
