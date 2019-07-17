@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: userguide
-title: Best Practices for writing CWL
+title: Writing Portable High-Performance Workflows
 ...
 {% comment %}
 Copyright (C) The Arvados Authors. All rights reserved.
@@ -9,51 +9,19 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-* To run on Arvados, a workflow should provide a @DockerRequirement@ in the @hints@ section.
+h2(#performance). Performance
 
-* Build a reusable library of components.  Share tool wrappers and subworkflows between projects.  Make use of and contribute to "community maintained workflows and tools":https://github.com/common-workflow-language/workflows and tool registries such as "Dockstore":http://dockstore.org .
+To get the best perfomance from your workflows, be aware of the following Arvados features, behaviors, and best practices:
 
-* When combining a parameter value with a string, such as adding a filename extension, write @$(inputs.file.basename).ext@ instead of @$(inputs.file.basename + 'ext')@.  The first form is evaluated as a simple text substitution, the second form (using the @+@ operator) is evaluated as an arbitrary Javascript expression and requires that you declare @InlineJavascriptRequirement@.
+If you have a sequence of short-running steps (less than 1-2 minutes each), use the Arvados extension "arv:RunInSingleContainer":cwl-extensions.html#RunInSingleContainer to avoid scheduling and data transfer overhead by running all the steps together at once.  To use this feature, @cwltool@ must be installed in the container image.
 
-* Avoid declaring @InlineJavascriptRequirement@ or @ShellCommandRequirement@ unless you specifically need them.  Don't include them "just in case" because they change the default behavior and may imply extra overhead.
+Avoid declaring @InlineJavascriptRequirement@ or @ShellCommandRequirement@ unless you specifically need them.  Don't include them "just in case" because they change the default behavior and may add extra overhead.
 
-* Don't write CWL scripts that access the Arvados SDK.  This is non-portable; a script that access Arvados directly won't work with @cwltool@ or crunch v2.
+When combining a parameter value with a string, such as adding a filename extension, write @$(inputs.file.basename).ext@ instead of @$(inputs.file.basename + 'ext')@.  The first form is evaluated as a simple text substitution, the second form (using the @+@ operator) is evaluated as an arbitrary Javascript expression and requires that you declare @InlineJavascriptRequirement@.
 
-* CommandLineTools wrapping custom scripts should represent the script as an input parameter with the script file as a default value.  Use @secondaryFiles@ for scripts that consist of multiple files.  For example:
+Use @ExpressionTool@ to efficiently rearrange input files between steps of a Workflow.  For example, the following expression accepts a directory containing files paired by @_R1_@ and @_R2_@ and produces an array of Directories containing each pair.
 
-<pre>
-cwlVersion: v1.0
-class: CommandLineTool
-baseCommand: python
-inputs:
-  script:
-    type: File
-    inputBinding: {position: 1}
-    default:
-      class: File
-      location: bclfastq.py
-      secondaryFiles:
-        - class: File
-          location: helper1.py
-        - class: File
-          location: helper2.py
-  inputfile:
-    type: File
-    inputBinding: {position: 2}
-outputs:
-  out:
-    type: File
-    outputBinding:
-      glob: "*.fastq"
-</pre>
-
-* You can get the designated temporary directory using @$(runtime.tmpdir)@ in your CWL file, or from the @$TMPDIR@ environment variable in your script.
-
-* Similarly, you can get the designated output directory using $(runtime.outdir), or from the @HOME@ environment variable in your script.
-
-* Use @ExpressionTool@ to efficiently rearrange input files between steps of a Workflow.  For example, the following expression accepts a directory containing files paired by @_R1_@ and @_R2_@ and produces an array of Directories containing each pair.
-
-<pre>
+{% codeblock as yaml %}
 class: ExpressionTool
 cwlVersion: v1.0
 inputs:
@@ -83,43 +51,15 @@ expression: |
     }
     return {"out": dirs};
   }
-</pre>
+{% endcodeblock %}
 
-* Avoid specifying resource requirements in CommandLineTool.  Prefer to specify them in the workflow.  You can provide a default resource requirement in the top level @hints@ section, and individual steps can override it with their own resource requirement.
+Available compute nodes types vary over time and across different cloud providers, so try to limit the RAM requirement to what the program actually needs.  However, if you need to target a specific compute node type, see this discussion on "calculating RAM request and choosing instance type for containers.":{{site.baseurl}}/api/execution.html#RAM
 
-<pre>
-cwlVersion: v1.0
-class: Workflow
-inputs:
-  inp: File
-hints:
-  ResourceRequirement:
-    ramMin: 1000
-    coresMin: 1
-    tmpdirMin: 45000
-steps:
-  step1:
-    in: {inp: inp}
-    out: [out]
-    run: tool1.cwl
-  step2:
-    in: {inp: step1/inp}
-    out: [out]
-    run: tool2.cwl
-    hints:
-      ResourceRequirement:
-        ramMin: 2000
-        coresMin: 2
-        tmpdirMin: 90000
-</pre>
-
-* Available compute nodes types vary over time and across different cloud providers, so try to limit the RAM requirement to what the program actually needs.  However, if you need to target a specific compute node type, see this discussion on "calculating RAM request and choosing instance type for containers.":{{site.baseurl}}/api/execution.html#RAM
-
-* Instead of scattering separate steps, prefer to scatter over a subworkflow.
+Instead of scattering separate steps, prefer to scatter over a subworkflow.
 
 With the following pattern, @step1@ has to wait for all samples to complete before @step2@ can start computing on any samples.  This means a single long-running sample can prevent the rest of the workflow from moving on:
 
-<pre>
+{% codeblock as yaml %}
 cwlVersion: v1.0
 class: Workflow
 inputs:
@@ -140,12 +80,12 @@ steps:
     scatter: inp
     out: [out]
     run: tool3.cwl
-</pre>
+{% endcodeblock %}
 
 Instead, scatter over a subworkflow.  In this pattern, a sample can proceed to @step2@ as soon as @step1@ is done, independently of any other samples.
 Example: (note, the subworkflow can also be put in a separate file)
 
-<pre>
+{% codeblock as yaml %}
 cwlVersion: v1.0
 class: Workflow
 steps:
@@ -174,12 +114,73 @@ steps:
           in: {inp: step2/inp}
           out: [out]
           run: tool3.cwl
-</pre>
+{% endcodeblock %}
 
-h2(#migrate). Migrating running CWL on jobs API to containers API
 
-When migrating from jobs API (--api=jobs) (sometimes referred to as "crunch v1") to the containers API (--api=containers) ("crunch v2") there are a few differences in behavior:
+h2. Portability
 
-* A tool may fail to find an input file that could be found when run under the jobs API.  This is because tools are limited to accessing collections explicitly listed in the input, and further limited to those individual files or subdirectories that are listed.  For example, given an explicit file input @/dir/subdir/file1.txt@, a tool will not be allowed to implicitly access a file in the parent directory @/dir/file2.txt@.  Use @secondaryFiles@ or a @Directory@ for files that need to be grouped together.
-* A tool may fail when attempting to rename or delete a file in the output directory.  This may happen because files listed in @InitialWorkDirRequirement@ appear in the output directory as normal files (not symlinks) but cannot be moved, renamed or deleted unless marked as "writable" in CWL.  These files will be added to the output collection but without any additional copies of the underlying data.
-* A tool may fail when attempting to access the network.  This may happen because, unlike the jobs API, under the containers API network access is disabled by default.  Tools which require network access should add @arv:APIRequirement: {}@ to the @requirements@ section.
+To write workflows that are easy to modify and portable across CWL runners (in the event you need to share your workflow with others), there are several best practices to follow:
+
+Workflows should always provide @DockerRequirement@ in the @hints@ or @requirements@ section.
+
+Build a reusable library of components.  Share tool wrappers and subworkflows between projects.  Make use of and contribute to "community maintained workflows and tools":https://github.com/common-workflow-language/workflows and tool registries such as "Dockstore":http://dockstore.org .
+
+CommandLineTools wrapping custom scripts should represent the script as an input parameter with the script file as a default value.  Use @secondaryFiles@ for scripts that consist of multiple files.  For example:
+
+{% codeblock as yaml %}
+cwlVersion: v1.0
+class: CommandLineTool
+baseCommand: python
+inputs:
+  script:
+    type: File
+    inputBinding: {position: 1}
+    default:
+      class: File
+      location: bclfastq.py
+      secondaryFiles:
+        - class: File
+          location: helper1.py
+        - class: File
+          location: helper2.py
+  inputfile:
+    type: File
+    inputBinding: {position: 2}
+outputs:
+  out:
+    type: File
+    outputBinding:
+      glob: "*.fastq"
+{% endcodeblock %}
+
+You can get the designated temporary directory using @$(runtime.tmpdir)@ in your CWL file, or from the @$TMPDIR@ environment variable in your script.
+
+Similarly, you can get the designated output directory using $(runtime.outdir), or from the @HOME@ environment variable in your script.
+
+Avoid specifying resource requirements in CommandLineTool.  Prefer to specify them in the workflow.  You can provide a default resource requirement in the top level @hints@ section, and individual steps can override it with their own resource requirement.
+
+{% codeblock as yaml %}
+cwlVersion: v1.0
+class: Workflow
+inputs:
+  inp: File
+hints:
+  ResourceRequirement:
+    ramMin: 1000
+    coresMin: 1
+    tmpdirMin: 45000
+steps:
+  step1:
+    in: {inp: inp}
+    out: [out]
+    run: tool1.cwl
+  step2:
+    in: {inp: step1/inp}
+    out: [out]
+    run: tool2.cwl
+    hints:
+      ResourceRequirement:
+        ramMin: 2000
+        coresMin: 2
+        tmpdirMin: 90000
+{% endcodeblock %}
