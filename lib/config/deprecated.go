@@ -108,29 +108,37 @@ type oldKeepstoreConfig struct {
 	Debug *bool
 }
 
-// update config using values from an old-style keepstore config file.
-func (ldr *Loader) loadOldKeepstoreConfig(cfg *arvados.Config) error {
-	path := ldr.KeepstorePath
+func (ldr *Loader) loadOldConfigHelper(component, path, defaultPath string, target interface{}) error {
 	if path == "" {
 		return nil
 	}
 	buf, err := ioutil.ReadFile(path)
-	if os.IsNotExist(err) && path == defaultKeepstoreConfigPath {
+	if os.IsNotExist(err) && path == defaultPath {
 		return nil
 	} else if err != nil {
 		return err
 	} else {
-		ldr.Logger.Warnf("you should remove the legacy keepstore config file (%s) after migrating all config keys to the cluster configuration file (%s)", path, ldr.Path)
+		ldr.Logger.Warnf("you should remove the legacy %v config file (%s) after migrating all config keys to the cluster configuration file (%s)", component, path, ldr.Path)
 	}
-	cluster, err := cfg.GetCluster("")
+
+	err = yaml.Unmarshal(buf, target)
+	if err != nil {
+		return fmt.Errorf("%s: %s", path, err)
+	}
+	return nil
+}
+
+// update config using values from an old-style keepstore config file.
+func (ldr *Loader) loadOldKeepstoreConfig(cfg *arvados.Config) error {
+	var oc oldKeepstoreConfig
+	err := ldr.loadOldConfigHelper("keepstore", ldr.KeepstorePath, defaultKeepstoreConfigPath, &oc)
 	if err != nil {
 		return err
 	}
 
-	var oc oldKeepstoreConfig
-	err = yaml.Unmarshal(buf, &oc)
+	cluster, err := cfg.GetCluster("")
 	if err != nil {
-		return fmt.Errorf("%s: %s", path, err)
+		return err
 	}
 
 	if v := oc.Debug; v == nil {
@@ -139,6 +147,74 @@ func (ldr *Loader) loadOldKeepstoreConfig(cfg *arvados.Config) error {
 	} else if !*v && cluster.SystemLogs.LogLevel != "info" {
 		cluster.SystemLogs.LogLevel = "info"
 	}
+
+	cfg.Clusters[cluster.ClusterID] = *cluster
+	return nil
+}
+
+type oldCrunchDispatchSlurmConfig struct {
+	Client arvados.Client
+
+	SbatchArguments []string
+	PollPeriod      arvados.Duration
+	PrioritySpread  int64
+
+	// crunch-run command to invoke. The container UUID will be
+	// appended. If nil, []string{"crunch-run"} will be used.
+	//
+	// Example: []string{"crunch-run", "--cgroup-parent-subsystem=memory"}
+	CrunchRunCommand []string
+
+	// Extra RAM to reserve (in Bytes) for SLURM job, in addition
+	// to the amount specified in the container's RuntimeConstraints
+	ReserveExtraRAM int64
+
+	// Minimum time between two attempts to run the same container
+	MinRetryPeriod arvados.Duration
+
+	// Batch size for container queries
+	BatchSize int64
+}
+
+const defaultCrunchDispatchSlurmConfigPath = "/etc/arvados/crunch-dispatch-slurm/crunch-dispatch-slurm.yml"
+
+// update config using values from an crunch-dispatch-slurm config file.
+func (ldr *Loader) loadOldCrunchDispatchSlurmConfig(cfg *arvados.Config) error {
+	var oc oldCrunchDispatchSlurmConfig
+	err := ldr.loadOldConfigHelper("crunch-dispatch-slurm", ldr.CrunchDispatchSlurmPath, defaultCrunchDispatchSlurmConfigPath, &oc)
+	if err != nil {
+		return err
+	}
+
+	cluster, err := cfg.GetCluster("")
+	if err != nil {
+		return err
+	}
+
+	u := arvados.URL{}
+	u.Host = oc.Client.APIHost
+	if oc.Client.Scheme != "" {
+		u.Scheme = oc.Client.Scheme
+	} else {
+		u.Scheme = "https"
+	}
+	cluster.Services.Controller.ExternalURL = u
+	cluster.SystemRootToken = oc.Client.AuthToken
+	cluster.TLS.Insecure = oc.Client.Insecure
+
+	cluster.Containers.SLURM.SbatchArgumentsList = oc.SbatchArguments
+	cluster.Containers.CloudVMs.PollInterval = oc.PollPeriod
+	cluster.Containers.SLURM.PrioritySpread = oc.PrioritySpread
+	if len(oc.CrunchRunCommand) >= 1 {
+		cluster.Containers.CrunchRunCommand = oc.CrunchRunCommand[0]
+	}
+	if len(oc.CrunchRunCommand) >= 2 {
+		cluster.Containers.CrunchRunArgumentsList = oc.CrunchRunCommand[1:]
+	}
+	cluster.Containers.ReserveExtraRAM = arvados.ByteSize(oc.ReserveExtraRAM)
+	cluster.Containers.MinRetryPeriod = oc.MinRetryPeriod
+
+	cluster.API.MaxItemsPerResponse = int(oc.BatchSize)
 
 	cfg.Clusters[cluster.ClusterID] = *cluster
 	return nil
