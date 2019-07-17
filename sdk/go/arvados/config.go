@@ -253,12 +253,16 @@ type InstanceType struct {
 
 type ContainersConfig struct {
 	CloudVMs                    CloudVMsConfig
+	CrunchRunCommand            string
+	CrunchRunArgumentsList      []string
 	DefaultKeepCacheRAM         ByteSize
 	DispatchPrivateKey          string
 	LogReuseDecisions           bool
 	MaxComputeVMs               int
 	MaxDispatchAttempts         int
 	MaxRetryAttempts            int
+	MinRetryPeriod              Duration
+	ReserveExtraRAM             ByteSize
 	StaleLockTimeout            Duration
 	SupportedDockerImageFormats []string
 	UsePreemptibleInstances     bool
@@ -285,7 +289,9 @@ type ContainersConfig struct {
 		LogUpdateSize                ByteSize
 	}
 	SLURM struct {
-		Managed struct {
+		PrioritySpread      int64
+		SbatchArgumentsList []string
+		Managed             struct {
 			DNSServerConfDir       string
 			DNSServerConfTemplate  string
 			DNSServerReloadCommand string
