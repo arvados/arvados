@@ -57,6 +57,7 @@ navbar:
       - user/cwl/cwl-style.html.textile.liquid
       - user/cwl/federated-workflows.html.textile.liquid
       - user/cwl/cwl-extensions.html.textile.liquid
+      - user/cwl/cwl-versions.html.textile.liquid
       - user/topics/arv-docker.html.textile.liquid
     - Reference:
       - user/topics/link-accounts.html.textile.liquid

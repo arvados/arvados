@@ -19,7 +19,7 @@ $namespaces:
   cwltool: "http://commonwl.org/cwltool#"
 {% endcodeblock %}
 
-For portability, Arvados extensions should go into the @hints@ section of your CWL file, for example:
+For portability, most Arvados extensions should go into the @hints@ section of your CWL file.  This makes it possible for your workflows to run other CWL runners that do not recognize Arvados hints.  The difference between @hints@ and @requirements@ is that @hints@ are optional features that can be ignored by other runners and still produce the same output, whereas @requirements@ will fail the workflow if they cannot be fulfilled.  For example, @arv:IntermediateOutput@ should go in @hints@ as it will have no effect on non-Arvados platforms, however if your workflow explicitly accesses the Arvados API and will fail without it, you should put @arv:APIRequirement@ in @requirements@.
 
 {% codeblock as yaml %}
 hints:
@@ -48,8 +48,6 @@ hints:
     cluster_id: clsr1
     project_uuid: clsr1-j7d0g-qxc4jcji7n4lafx
 {% endcodeblock %}
-
-The one exception to the @hints@ section this is @arv:APIRequirement@, see note below.
 
 h2(#RunInSingleContainer). arv:RunInSingleContainer
 

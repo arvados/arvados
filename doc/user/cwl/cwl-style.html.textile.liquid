@@ -9,85 +9,13 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-h2. Portability
-
-To run on Arvados, a workflow must provide a @DockerRequirement@ in either the @hints@ or @requirements@ section.
-
-Build a reusable library of components.  Share tool wrappers and subworkflows between projects.  Make use of and contribute to "community maintained workflows and tools":https://github.com/common-workflow-language/workflows and tool registries such as "Dockstore":http://dockstore.org .
-
-Avoid declaring @InlineJavascriptRequirement@ or @ShellCommandRequirement@ unless you specifically need them.  Don't include them "just in case" because they change the default behavior and may imply extra overhead.
-
-CommandLineTools wrapping custom scripts should represent the script as an input parameter with the script file as a default value.  Use @secondaryFiles@ for scripts that consist of multiple files.  For example:
-
-{% codeblock as yaml %}
-cwlVersion: v1.0
-class: CommandLineTool
-baseCommand: python
-inputs:
-  script:
-    type: File
-    inputBinding: {position: 1}
-    default:
-      class: File
-      location: bclfastq.py
-      secondaryFiles:
-        - class: File
-          location: helper1.py
-        - class: File
-          location: helper2.py
-  inputfile:
-    type: File
-    inputBinding: {position: 2}
-outputs:
-  out:
-    type: File
-    outputBinding:
-      glob: "*.fastq"
-{% endcodeblock %}
-
-You can get the designated temporary directory using @$(runtime.tmpdir)@ in your CWL file, or from the @$TMPDIR@ environment variable in your script.
-
-Similarly, you can get the designated output directory using $(runtime.outdir), or from the @HOME@ environment variable in your script.
-
-Avoid specifying resource requirements in CommandLineTool.  Prefer to specify them in the workflow.  You can provide a default resource requirement in the top level @hints@ section, and individual steps can override it with their own resource requirement.
-
-{% codeblock as yaml %}
-cwlVersion: v1.0
-class: Workflow
-inputs:
-  inp: File
-hints:
-  ResourceRequirement:
-    ramMin: 1000
-    coresMin: 1
-    tmpdirMin: 45000
-steps:
-  step1:
-    in: {inp: inp}
-    out: [out]
-    run: tool1.cwl
-  step2:
-    in: {inp: step1/inp}
-    out: [out]
-    run: tool2.cwl
-    hints:
-      ResourceRequirement:
-        ramMin: 2000
-        coresMin: 2
-        tmpdirMin: 90000
-{% endcodeblock %}
-
-h3. Upgrading to CWL v1.1
-
-CWL v1.1 introduces several features to the standard that were previously available as Arvados extensions.  CWL v1.1 syntax is backwards compatible with v1.0, so you can just change @cwlVersion: v1.0@ to @cwlVersion: v1.1@ and update your script to using the standard features.  On Arvados, there is only one behavior change between CWL v1.0 and v1.1 to be aware of: for performance reasons, Directory listings are no longer loaded by default.  To control loading Directory listings, use "loadListing":https://www.commonwl.org/v1.1/CommandLineTool.html#CommandInputParameter or "LoadListingRequirement":https://www.commonwl.org/v1.1/CommandLineTool.html#LoadListingRequirement (the extension @cwltool:LoadListingRequirement@ is deprecated.)
-
-If a step requires network access, use "NetworkAccess":https://www.commonwl.org/v1.1/CommandLineTool.html#NetworkAccess instead of the Arvados-specific "arv:APIRequirement":cwl-extensions.html#APIRequirement .
-
-To prevent misbehaving steps from running forever and wasting resources, you can fail the step if it exceeds a certain running time with "ToolTimeLimit":https://www.commonwl.org/v1.1/CommandLineTool.html#ToolTimeLimit instead of the deprecated @cwltool:TimeLimit@ .
-
-To control if an individual step can be reused, use "WorkReuse":https://www.commonwl.org/v1.1/CommandLineTool.html#WorkReuse instead of the deprecated @arv:ReuseRequirement@.
-
 h2(#performance). Performance
+
+To get the best perfomance from your workflows, be aware of the following Arvados features, behaviors, and best practices:
+
+If you have a sequence of short-running steps (less than 1-2 minutes each), use the Arvados extension "arv:RunInSingleContainer":cwl-extensions.html#RunInSingleContainer to avoid scheduling and data transfer overhead by running all the steps together at once.  To use this feature, @cwltool@ must be installed in the container image.
+
+Avoid declaring @InlineJavascriptRequirement@ or @ShellCommandRequirement@ unless you specifically need them.  Don't include them "just in case" because they change the default behavior and may add extra overhead.
 
 When combining a parameter value with a string, such as adding a filename extension, write @$(inputs.file.basename).ext@ instead of @$(inputs.file.basename + 'ext')@.  The first form is evaluated as a simple text substitution, the second form (using the @+@ operator) is evaluated as an arbitrary Javascript expression and requires that you declare @InlineJavascriptRequirement@.
 
@@ -188,4 +116,71 @@ steps:
           run: tool3.cwl
 {% endcodeblock %}
 
-If you have a sequence of short-running steps (less than 1-2 minutes each), use the Arvados extension "arv:RunInSingleContainer":cwl-extensions.html#RunInSingleContainer to avoid scheduling and data transfer overhead by running all the steps together at once.  To use this feature, @cwltool@ must be installed in the container image.
+
+h2. Portability
+
+To write workflows that are easy to modify and portable across CWL runners (in the event you need to share your workflow with others), there are several best practices to follow:
+
+Workflows should always provide @DockerRequirement@ in the @hints@ or @requirements@ section.
+
+Build a reusable library of components.  Share tool wrappers and subworkflows between projects.  Make use of and contribute to "community maintained workflows and tools":https://github.com/common-workflow-language/workflows and tool registries such as "Dockstore":http://dockstore.org .
+
+CommandLineTools wrapping custom scripts should represent the script as an input parameter with the script file as a default value.  Use @secondaryFiles@ for scripts that consist of multiple files.  For example:
+
+{% codeblock as yaml %}
+cwlVersion: v1.0
+class: CommandLineTool
+baseCommand: python
+inputs:
+  script:
+    type: File
+    inputBinding: {position: 1}
+    default:
+      class: File
+      location: bclfastq.py
+      secondaryFiles:
+        - class: File
+          location: helper1.py
+        - class: File
+          location: helper2.py
+  inputfile:
+    type: File
+    inputBinding: {position: 2}
+outputs:
+  out:
+    type: File
+    outputBinding:
+      glob: "*.fastq"
+{% endcodeblock %}
+
+You can get the designated temporary directory using @$(runtime.tmpdir)@ in your CWL file, or from the @$TMPDIR@ environment variable in your script.
+
+Similarly, you can get the designated output directory using $(runtime.outdir), or from the @HOME@ environment variable in your script.
+
+Avoid specifying resource requirements in CommandLineTool.  Prefer to specify them in the workflow.  You can provide a default resource requirement in the top level @hints@ section, and individual steps can override it with their own resource requirement.
+
+{% codeblock as yaml %}
+cwlVersion: v1.0
+class: Workflow
+inputs:
+  inp: File
+hints:
+  ResourceRequirement:
+    ramMin: 1000
+    coresMin: 1
+    tmpdirMin: 45000
+steps:
+  step1:
+    in: {inp: inp}
+    out: [out]
+    run: tool1.cwl
+  step2:
+    in: {inp: step1/inp}
+    out: [out]
+    run: tool2.cwl
+    hints:
+      ResourceRequirement:
+        ramMin: 2000
+        coresMin: 2
+        tmpdirMin: 90000
+{% endcodeblock %}
