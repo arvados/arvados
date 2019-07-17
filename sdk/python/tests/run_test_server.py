@@ -371,7 +371,8 @@ def reset():
     httpclient.request(
         'https://{}/database/reset'.format(existing_api_host),
         'POST',
-        headers={'Authorization': 'OAuth2 {}'.format(token)})
+        headers={'Authorization': 'OAuth2 {}'.format(token), 'Connection':'close'})
+
     os.environ['ARVADOS_API_HOST_INSECURE'] = 'true'
     os.environ['ARVADOS_API_TOKEN'] = token
     if _wait_until_port_listens(_getport('controller-ssl'), timeout=0.5, warn=False):
