@@ -274,7 +274,7 @@ class Inodes(object):
         return iter(self._entries.keys())
 
     def items(self):
-        return self._entries.items()
+        return viewitems(self._entries.items())
 
     def __contains__(self, k):
         return k in self._entries
