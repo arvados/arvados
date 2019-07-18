@@ -7,47 +7,71 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
 
-	"git.curoverse.com/arvados.git/sdk/go/config"
+	"git.curoverse.com/arvados.git/lib/config"
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
+	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
 )
 
 var logger = ctxlog.FromContext
 var version = "dev"
 
-func main() {
-	log := logger(nil)
+func configure(log logrus.FieldLogger, args []string) *arvados.Cluster {
+	flags := flag.NewFlagSet(args[0], flag.ExitOnError)
+	dumpConfig := flags.Bool("dump-config", false, "show current configuration and exit")
+	getVersion := flags.Bool("version", false, "Print version information and exit.")
 
-	configPath := flag.String("config", "/etc/arvados/ws/ws.yml", "`path` to config file")
-	dumpConfig := flag.Bool("dump-config", false, "show current configuration and exit")
-	getVersion := flag.Bool("version", false, "Print version information and exit.")
-	cfg := defaultConfig()
-	flag.Parse()
+	loader := config.NewLoader(nil, log)
+	loader.SetupFlags(flags)
+	args = loader.MungeLegacyConfigArgs(log, args[1:], "-legacy-ws-config")
+
+	flags.Parse(args)
 
 	// Print version information if requested
 	if *getVersion {
 		fmt.Printf("arvados-ws %s\n", version)
-		return
+		return nil
 	}
 
-	err := config.LoadFile(&cfg, *configPath)
+	cfg, err := loader.Load()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	ctxlog.SetLevel(cfg.LogLevel)
-	ctxlog.SetFormat(cfg.LogFormat)
+	cluster, err := cfg.GetCluster("")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ctxlog.SetLevel(cluster.SystemLogs.LogLevel)
+	ctxlog.SetFormat(cluster.SystemLogs.Format)
 
 	if *dumpConfig {
-		txt, err := config.Dump(&cfg)
+		out, err := yaml.Marshal(cfg)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Print(string(txt))
+		_, err = os.Stdout.Write(out)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return nil
+	}
+	return cluster
+}
+
+func main() {
+	log := logger(nil)
+
+	cluster := configure(log, os.Args)
+	if cluster == nil {
 		return
 	}
 
 	log.Printf("arvados-ws %s started", version)
-	srv := &server{wsConfig: &cfg}
+	srv := &server{cluster: cluster}
 	log.Fatal(srv.Run())
 }

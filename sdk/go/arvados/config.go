@@ -76,6 +76,9 @@ type Cluster struct {
 		MaxRequestSize                 int
 		RailsSessionSecretToken        string
 		RequestTimeout                 Duration
+		WebsocketKeepaliveTimeout      Duration
+		WebsocketClientEventQueue      int
+		WebsocketServerEventQueue      int
 	}
 	AuditLogs struct {
 		MaxAge             Duration

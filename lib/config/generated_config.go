@@ -204,6 +204,10 @@ Clusters:
       # Maximum wall clock time to spend handling an incoming request.
       RequestTimeout: 5m
 
+      WebsocketKeepaliveTimeout: 60s
+      WebsocketClientEventQueue: 64
+      WebsocketServerEventQueue: 4
+
     Users:
       # Config parameters to automatically setup new users.  If enabled,
       # this users will be able to self-activate.  Enable this if you want

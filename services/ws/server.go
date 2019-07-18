@@ -10,13 +10,14 @@ import (
 	"sync"
 	"time"
 
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"github.com/coreos/go-systemd/daemon"
 )
 
 type server struct {
 	httpServer  *http.Server
 	listener    net.Listener
-	wsConfig    *wsConfig
+	cluster     *arvados.Cluster
 	eventSource *pgEventSource
 	setupOnce   sync.Once
 }
@@ -40,27 +41,38 @@ func (srv *server) Run() error {
 func (srv *server) setup() {
 	log := logger(nil)
 
-	ln, err := net.Listen("tcp", srv.wsConfig.Listen)
+	var listen arvados.URL
+	for listen, _ = range srv.cluster.Services.Websocket.InternalURLs {
+		break
+	}
+	ln, err := net.Listen("tcp", listen.Host)
 	if err != nil {
-		log.WithField("Listen", srv.wsConfig.Listen).Fatal(err)
+		log.WithField("Listen", listen).Fatal(err)
 	}
 	log.WithField("Listen", ln.Addr().String()).Info("listening")
 
+	client := arvados.Client{}
+	client.APIHost = srv.cluster.Services.Controller.ExternalURL.Host
+	client.AuthToken = srv.cluster.SystemRootToken
+	client.Insecure = srv.cluster.TLS.Insecure
+
 	srv.listener = ln
 	srv.eventSource = &pgEventSource{
-		DataSource:   srv.wsConfig.Postgres.String(),
-		MaxOpenConns: srv.wsConfig.PostgresPool,
-		QueueSize:    srv.wsConfig.ServerEventQueue,
+		DataSource:   srv.cluster.PostgreSQL.Connection.String(),
+		MaxOpenConns: srv.cluster.PostgreSQL.ConnectionPool,
+		QueueSize:    srv.cluster.API.WebsocketServerEventQueue,
 	}
+
 	srv.httpServer = &http.Server{
-		Addr:           srv.wsConfig.Listen,
+		Addr:           listen.Host,
 		ReadTimeout:    time.Minute,
 		WriteTimeout:   time.Minute,
 		MaxHeaderBytes: 1 << 20,
 		Handler: &router{
-			Config:         srv.wsConfig,
+			cluster:        srv.cluster,
+			client:         client,
 			eventSource:    srv.eventSource,
-			newPermChecker: func() permChecker { return newPermChecker(srv.wsConfig.Client) },
+			newPermChecker: func() permChecker { return newPermChecker(client) },
 		},
 	}
 

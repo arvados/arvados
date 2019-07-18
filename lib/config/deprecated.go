@@ -178,6 +178,24 @@ type oldCrunchDispatchSlurmConfig struct {
 
 const defaultCrunchDispatchSlurmConfigPath = "/etc/arvados/crunch-dispatch-slurm/crunch-dispatch-slurm.yml"
 
+func loadOldClientConfig(cluster *arvados.Cluster, client *arvados.Client) {
+	if client == nil {
+		return
+	}
+	if client.APIHost != "" {
+		cluster.Services.Controller.ExternalURL.Host = client.APIHost
+	}
+	if client.Scheme != "" {
+		cluster.Services.Controller.ExternalURL.Scheme = client.Scheme
+	} else {
+		cluster.Services.Controller.ExternalURL.Scheme = "https"
+	}
+	if client.AuthToken != "" {
+		cluster.SystemRootToken = client.AuthToken
+	}
+	cluster.TLS.Insecure = client.Insecure
+}
+
 // update config using values from an crunch-dispatch-slurm config file.
 func (ldr *Loader) loadOldCrunchDispatchSlurmConfig(cfg *arvados.Config) error {
 	var oc oldCrunchDispatchSlurmConfig
@@ -193,18 +211,7 @@ func (ldr *Loader) loadOldCrunchDispatchSlurmConfig(cfg *arvados.Config) error {
 		return err
 	}
 
-	if oc.Client != nil {
-		u := arvados.URL{}
-		u.Host = oc.Client.APIHost
-		if oc.Client.Scheme != "" {
-			u.Scheme = oc.Client.Scheme
-		} else {
-			u.Scheme = "https"
-		}
-		cluster.Services.Controller.ExternalURL = u
-		cluster.SystemRootToken = oc.Client.AuthToken
-		cluster.TLS.Insecure = oc.Client.Insecure
-	}
+	loadOldClientConfig(cluster, oc.Client)
 
 	if oc.SbatchArguments != nil {
 		cluster.Containers.SLURM.SbatchArgumentsList = *oc.SbatchArguments
@@ -231,6 +238,73 @@ func (ldr *Loader) loadOldCrunchDispatchSlurmConfig(cfg *arvados.Config) error {
 	}
 	if oc.BatchSize != nil {
 		cluster.API.MaxItemsPerResponse = int(*oc.BatchSize)
+	}
+
+	cfg.Clusters[cluster.ClusterID] = *cluster
+	return nil
+}
+
+type oldWsConfig struct {
+	Client       *arvados.Client
+	Postgres     *arvados.PostgreSQLConnection
+	PostgresPool *int
+	Listen       *string
+	LogLevel     *string
+	LogFormat    *string
+
+	PingTimeout      *arvados.Duration
+	ClientEventQueue *int
+	ServerEventQueue *int
+
+	ManagementToken *string
+}
+
+const defaultWebsocketsConfigPath = "/etc/arvados/ws/ws.yml"
+
+// update config using values from an crunch-dispatch-slurm config file.
+func (ldr *Loader) loadOldWebsocketsConfig(cfg *arvados.Config) error {
+	var oc oldWsConfig
+	err := ldr.loadOldConfigHelper("arvados-ws", ldr.WebsocketsPath, &oc)
+	if os.IsNotExist(err) && ldr.WebsocketsPath == defaultWebsocketsConfigPath {
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	cluster, err := cfg.GetCluster("")
+	if err != nil {
+		return err
+	}
+
+	loadOldClientConfig(cluster, oc.Client)
+	fmt.Printf("Clllllllllllient %v %v", *oc.Client, cluster.Services.Controller.ExternalURL)
+
+	if oc.Postgres != nil {
+		cluster.PostgreSQL.Connection = *oc.Postgres
+	}
+	if oc.PostgresPool != nil {
+		cluster.PostgreSQL.ConnectionPool = *oc.PostgresPool
+	}
+	if oc.Listen != nil {
+		cluster.Services.Websocket.InternalURLs[arvados.URL{Host: *oc.Listen}] = arvados.ServiceInstance{}
+	}
+	if oc.LogLevel != nil {
+		cluster.SystemLogs.LogLevel = *oc.LogLevel
+	}
+	if oc.LogFormat != nil {
+		cluster.SystemLogs.Format = *oc.LogFormat
+	}
+	if oc.PingTimeout != nil {
+		cluster.API.WebsocketKeepaliveTimeout = *oc.PingTimeout
+	}
+	if oc.ClientEventQueue != nil {
+		cluster.API.WebsocketClientEventQueue = *oc.ClientEventQueue
+	}
+	if oc.ServerEventQueue != nil {
+		cluster.API.WebsocketServerEventQueue = *oc.ServerEventQueue
+	}
+	if oc.ManagementToken != nil {
+		cluster.ManagementToken = *oc.ManagementToken
 	}
 
 	cfg.Clusters[cluster.ClusterID] = *cluster

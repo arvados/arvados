@@ -395,7 +395,7 @@ func (s *StubbedSuite) TestLoadLegacyConfig(c *C) {
 	content := []byte(`
 Client:
   APIHost: example.com
-  APIToken: abcdefg
+  AuthToken: abcdefg
 SbatchArguments: ["--foo", "bar"]
 PollPeriod: 12s
 PrioritySpread: 42
@@ -422,6 +422,7 @@ BatchSize: 99
 	c.Check(err, IsNil)
 
 	c.Check(s.disp.cluster.Services.Controller.ExternalURL, Equals, arvados.URL{Scheme: "https", Host: "example.com"})
+	c.Check(s.disp.cluster.SystemRootToken, Equals, "abcdefg")
 	c.Check(s.disp.cluster.Containers.SLURM.SbatchArgumentsList, DeepEquals, []string{"--foo", "bar"})
 	c.Check(s.disp.cluster.Containers.CloudVMs.PollInterval, Equals, arvados.Duration(12*time.Second))
 	c.Check(s.disp.cluster.Containers.SLURM.PrioritySpread, Equals, int64(42))
