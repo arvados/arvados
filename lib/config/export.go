@@ -101,7 +101,7 @@ var whitelist = map[string]bool{
 	"Containers.MaxDispatchAttempts":               false,
 	"Containers.MaxRetryAttempts":                  true,
 	"Containers.MinRetryPeriod":                    true,
-	"Containers.ReserveExtraRam":                   true,
+	"Containers.ReserveExtraRAM":                   true,
 	"Containers.SLURM":                             false,
 	"Containers.StaleLockTimeout":                  false,
 	"Containers.SupportedDockerImageFormats":       true,

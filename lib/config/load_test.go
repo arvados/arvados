@@ -168,7 +168,9 @@ func (s *LoadSuite) TestSampleKeys(c *check.C) {
 }
 
 func (s *LoadSuite) TestMultipleClusters(c *check.C) {
-	cfg, err := testLoader(c, `{"Clusters":{"z1111":{},"z2222":{}}}`, nil).Load()
+	ldr := testLoader(c, `{"Clusters":{"z1111":{},"z2222":{}}}`, nil)
+	ldr.SkipDeprecated = true
+	cfg, err := ldr.Load()
 	c.Assert(err, check.IsNil)
 	c1, err := cfg.GetCluster("z1111")
 	c.Assert(err, check.IsNil)
