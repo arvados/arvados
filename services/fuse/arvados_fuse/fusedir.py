@@ -5,6 +5,7 @@
 from __future__ import absolute_import
 from __future__ import division
 from future.utils import viewitems
+from future.utils import itervalues
 from builtins import dict
 import logging
 import re
@@ -167,7 +168,7 @@ class Directory(FreshBase):
     def in_use(self):
         if super(Directory, self).in_use():
             return True
-        for v in self._entries.values():
+        for v in itervalues(self._entries):
             if v.in_use():
                 return True
         return False
@@ -175,7 +176,7 @@ class Directory(FreshBase):
     def has_ref(self, only_children):
         if super(Directory, self).has_ref(only_children):
             return True
-        for v in self._entries.values():
+        for v in itervalues(self._entries):
             if v.has_ref(False):
                 return True
         return False

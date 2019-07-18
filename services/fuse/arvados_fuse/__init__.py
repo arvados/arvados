@@ -54,6 +54,7 @@ from __future__ import division
 from future.utils import viewitems
 from future.utils import native
 from future.utils import listvalues
+from future.utils import listitems
 from future import standard_library
 standard_library.install_aliases()
 from builtins import next
@@ -723,8 +724,7 @@ class Operations(llfuse.Operations):
 
         # update atime
         self.inodes.touch(p)
-
-        self._filehandles[fh] = DirectoryHandle(fh, p, [('.', p), ('..', parent)] + list(p.items()))
+        self._filehandles[fh] = DirectoryHandle(fh, p, [('.', p), ('..', parent)] + listitems(p))
         return fh
 
     @readdir_time.time()
