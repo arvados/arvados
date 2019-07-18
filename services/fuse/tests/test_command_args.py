@@ -4,6 +4,7 @@
 
 from __future__ import absolute_import
 from __future__ import print_function
+from six import assertRegex
 import arvados
 import arvados_fuse
 import arvados_fuse.command
@@ -82,13 +83,13 @@ class MountArgsTest(unittest.TestCase):
 
         e = self.check_ent_type(arvados_fuse.StringFile, 'README')
         readme = e.readfrom(0, -1).decode()
-        self.assertRegexpMatches(readme, r'active-user@arvados\.local')
-        self.assertRegexpMatches(readme, r'\n$')
+        assertRegex(self, readme, r'active-user@arvados\.local')
+        assertRegex(self, readme, r'\n$')
 
         e = self.check_ent_type(arvados_fuse.StringFile, 'by_id', 'README')
         txt = e.readfrom(0, -1).decode()
-        self.assertRegexpMatches(txt, r'portable data hash')
-        self.assertRegexpMatches(txt, r'\n$')
+        assertRegex(self, txt, r'portable data hash')
+        assertRegex(self, txt, r'\n$')
 
     @noexit
     def test_by_id(self):
@@ -188,8 +189,8 @@ class MountArgsTest(unittest.TestCase):
 
     def test_version_argument(self):
         # The argparse version action prints to stderr in Python 2 and stdout
-        # in Python 3.4 and up. Write both to the same stream so the test can pass 
-        # in both cases. 
+        # in Python 3.4 and up. Write both to the same stream so the test can pass
+        # in both cases.
         origerr = sys.stderr
         origout = sys.stdout
         sys.stderr = io.StringIO()
@@ -197,7 +198,7 @@ class MountArgsTest(unittest.TestCase):
 
         with self.assertRaises(SystemExit):
             args = arvados_fuse.command.ArgumentParser().parse_args(['--version'])
-        self.assertRegexpMatches(sys.stdout.getvalue(), "[0-9]+\.[0-9]+\.[0-9]+")
+        assertRegex(self, sys.stdout.getvalue(), "[0-9]+\.[0-9]+\.[0-9]+")
         sys.stderr.close()
         sys.stderr = origerr
         sys.stdout = origout

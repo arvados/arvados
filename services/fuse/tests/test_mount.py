@@ -6,6 +6,7 @@ from __future__ import absolute_import
 from future.utils import viewitems
 from builtins import str
 from builtins import object
+from six import assertRegex
 import json
 import llfuse
 import logging
@@ -428,7 +429,7 @@ class FuseCreateFileTest(MountTestBase):
         self.assertEqual(["file1.txt"], d1)
 
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
-        self.assertRegexpMatches(collection2["manifest_text"],
+        assertRegex(self, collection2["manifest_text"],
             r'\. d41d8cd98f00b204e9800998ecf8427e\+0\+A\S+ 0:0:file1\.txt$')
 
 
@@ -470,7 +471,7 @@ class FuseWriteFileTest(MountTestBase):
         self.assertEqual(12, self.operations.read_counter.get())
 
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
-        self.assertRegexpMatches(collection2["manifest_text"],
+        assertRegex(self, collection2["manifest_text"],
             r'\. 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$')
 
 
@@ -508,7 +509,7 @@ class FuseUpdateFileTest(MountTestBase):
         self.pool.apply(fuseUpdateFileTestHelper, (self.mounttmp,))
 
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
-        self.assertRegexpMatches(collection2["manifest_text"],
+        assertRegex(self, collection2["manifest_text"],
             r'\. daaef200ebb921e011e3ae922dd3266b\+11\+A\S+ 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:11:file1\.txt 22:1:file1\.txt$')
 
 
@@ -548,7 +549,7 @@ class FuseMkdirTest(MountTestBase):
         self.pool.apply(fuseMkdirTestHelper, (self.mounttmp,))
 
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
-        self.assertRegexpMatches(collection2["manifest_text"],
+        assertRegex(self, collection2["manifest_text"],
             r'\./testdir 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$')
 
 
@@ -615,13 +616,13 @@ class FuseRmTest(MountTestBase):
 
         # Starting manifest
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
-        self.assertRegexpMatches(collection2["manifest_text"],
+        assertRegex(self, collection2["manifest_text"],
             r'\./testdir 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$')
         self.pool.apply(fuseRmTestHelperDeleteFile, (self.mounttmp,))
 
         # Empty directories are represented by an empty file named "."
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
-        self.assertRegexpMatches(collection2["manifest_text"],
+        assertRegex(self, collection2["manifest_text"],
                                  r'./testdir d41d8cd98f00b204e9800998ecf8427e\+0\+A\S+ 0:0:\\056\n')
 
         self.pool.apply(fuseRmTestHelperRmdir, (self.mounttmp,))
@@ -672,13 +673,13 @@ class FuseMvFileTest(MountTestBase):
 
         # Starting manifest
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
-        self.assertRegexpMatches(collection2["manifest_text"],
+        assertRegex(self, collection2["manifest_text"],
             r'\./testdir 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$')
 
         self.pool.apply(fuseMvFileTestHelperMoveFile, (self.mounttmp,))
 
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
-        self.assertRegexpMatches(collection2["manifest_text"],
+        assertRegex(self, collection2["manifest_text"],
             r'\. 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt\n\./testdir d41d8cd98f00b204e9800998ecf8427e\+0\+A\S+ 0:0:\\056\n')
 
 
@@ -706,7 +707,7 @@ class FuseRenameTest(MountTestBase):
 
         # Starting manifest
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
-        self.assertRegexpMatches(collection2["manifest_text"],
+        assertRegex(self, collection2["manifest_text"],
             r'\./testdir 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$')
 
         d1 = llfuse.listdir(os.path.join(self.mounttmp))
@@ -722,7 +723,7 @@ class FuseRenameTest(MountTestBase):
         self.assertEqual(["file1.txt"], d1)
 
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
-        self.assertRegexpMatches(collection2["manifest_text"],
+        assertRegex(self, collection2["manifest_text"],
             r'\./testdir2 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$')
 
 
@@ -788,7 +789,7 @@ def fuseFileConflictTestHelper(mounttmp):
             with open(os.path.join(mounttmp, "file1.txt"), "r") as f:
                 self.assertEqual(f.read(), "bar")
 
-            self.assertRegexpMatches(d1[1],
+            assertRegex(self, d1[1],
                 r'file1\.txt~\d\d\d\d\d\d\d\d-\d\d\d\d\d\d~conflict~')
 
             with open(os.path.join(mounttmp, d1[1]), "r") as f:
@@ -897,7 +898,7 @@ class FuseMvFileBetweenCollectionsTest(MountTestBase):
         collection1.update()
         collection2.update()
 
-        self.assertRegexpMatches(collection1.manifest_text(), r"\. 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$")
+        assertRegex(self, collection1.manifest_text(), r"\. 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$")
         self.assertEqual(collection2.manifest_text(), "")
 
         self.pool.apply(fuseMvFileBetweenCollectionsTest2, (self.mounttmp,
@@ -908,7 +909,7 @@ class FuseMvFileBetweenCollectionsTest(MountTestBase):
         collection2.update()
 
         self.assertEqual(collection1.manifest_text(), "")
-        self.assertRegexpMatches(collection2.manifest_text(), r"\. 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file2\.txt$")
+        assertRegex(self, collection2.manifest_text(), r"\. 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file2\.txt$")
 
         collection1.stop_threads()
         collection2.stop_threads()
@@ -968,7 +969,7 @@ class FuseMvDirBetweenCollectionsTest(MountTestBase):
         collection1.update()
         collection2.update()
 
-        self.assertRegexpMatches(collection1.manifest_text(), r"\./testdir 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$")
+        assertRegex(self, collection1.manifest_text(), r"\./testdir 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$")
         self.assertEqual(collection2.manifest_text(), "")
 
         self.pool.apply(fuseMvDirBetweenCollectionsTest2, (self.mounttmp,
@@ -979,7 +980,7 @@ class FuseMvDirBetweenCollectionsTest(MountTestBase):
         collection2.update()
 
         self.assertEqual(collection1.manifest_text(), "")
-        self.assertRegexpMatches(collection2.manifest_text(), r"\./testdir2 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$")
+        assertRegex(self, collection2.manifest_text(), r"\./testdir2 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$")
 
         collection1.stop_threads()
         collection2.stop_threads()

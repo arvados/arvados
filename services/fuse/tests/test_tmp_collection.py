@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 from builtins import range
+from six import assertRegex
 import arvados
 import arvados_fuse
 import arvados_fuse.command
@@ -96,7 +97,8 @@ class TmpCollectionTest(IntegrationTest):
     def _test_tmp_onefile(self, tmpdir):
         with open(os.path.join(tmpdir, 'foo'), 'w') as f:
             f.write('foo')
-        self.assertRegexpMatches(
+        assertRegex(
+            self,
             current_manifest(tmpdir),
             r'^\. acbd18db4cc2f85cedef654fccc4a4d8\+3(\+\S+)? 0:3:foo\n$')
 
@@ -125,7 +127,7 @@ class TmpCollectionTest(IntegrationTest):
                 else:
                     with open(path, 'w') as f:
                         f.write(content)
-                self.assertRegexpMatches(current_manifest(tmpdir), expect)
+                assertRegex(self, current_manifest(tmpdir), expect)
 
     @IntegrationTest.mount(argv=mnt_args)
     def test_tmp_rewrite(self):
@@ -138,4 +140,4 @@ class TmpCollectionTest(IntegrationTest):
             f.write("b2")
         with open(os.path.join(tmpdir, "b1"), 'w') as f:
             f.write("1b")
-        self.assertRegexpMatches(current_manifest(tmpdir), "^\. ed4f3f67c70b02b29c50ce1ea26666bd\+4(\+\S+)? 0:2:b1 2:2:b2\n$")
+        assertRegex(self, current_manifest(tmpdir), "^\. ed4f3f67c70b02b29c50ce1ea26666bd\+4(\+\S+)? 0:2:b1 2:2:b2\n$")

@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 from __future__ import absolute_import
+from six import assertRegex
 import arvados_fuse.command
 import json
 import multiprocessing
@@ -60,6 +61,7 @@ class ExecMode(unittest.TestCase):
                 quote(os.path.join(self.mnt, 'zzz', '.arvados#collection')),
                 quote(os.path.join(self.okfile)))]))
         with open(self.okfile) as f:
-            self.assertRegexpMatches(
+            assertRegex(
+                self,
                 json.load(f)['manifest_text'],
                 r' 0:3:foo.txt\n')
