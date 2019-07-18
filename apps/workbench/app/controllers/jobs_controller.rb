@@ -4,7 +4,7 @@
 
 class JobsController < ApplicationController
   skip_around_action :require_thread_api_token, if: proc { |ctrl|
-    Rails.configuration.anonymous_user_token and
+    !Rails.configuration.Users.AnonymousUserToken.empty? and
     'show' == ctrl.action_name
   }
 
@@ -34,7 +34,6 @@ class JobsController < ApplicationController
 
     @svg = ProvenanceHelper::create_provenance_graph nodes, "provenance_svg", {
       :request => request,
-      :direction => :top_down,
       :all_script_parameters => true,
       :script_version_nodes => true}
   end
@@ -67,7 +66,7 @@ class JobsController < ApplicationController
 
   def logs
     @logs = @object.
-      stderr_log_query(Rails.configuration.running_job_log_records_to_fetch).
+      stderr_log_query(Rails.configuration.Workbench.RunningJobLogRecordsToFetch).
       map { |e| e.serializable_hash.merge({ 'prepend' => true }) }
     respond_to do |format|
       format.json { render json: @logs }

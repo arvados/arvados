@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 class IssueReporter < ActionMailer::Base
-  default from: Rails.configuration.issue_reporter_email_from
-  default to: Rails.configuration.issue_reporter_email_to
+  default from: Rails.configuration.Mail.IssueReporterEmailFrom
+  default to: Rails.configuration.Mail.IssueReporterEmailTo
 
   def send_report(user, params)
     @user = user

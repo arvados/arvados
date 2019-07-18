@@ -6,6 +6,9 @@ package config
 
 import (
 	"bytes"
+	"io"
+	"io/ioutil"
+	"os"
 
 	"git.curoverse.com/arvados.git/lib/cmd"
 	check "gopkg.in/check.v1"
@@ -42,6 +45,21 @@ Clusters:
  z1234:
   API:
     MaxItemsPerResponse: 1234
+  PostgreSQL:
+    Connection:
+      sslmode: require
+  Services:
+    RailsAPI:
+      InternalURLs:
+        "http://0.0.0.0:8000": {}
+  Workbench:
+    UserProfileFormFields:
+      color:
+        Type: select
+        Options:
+          fuchsia: {}
+    ApplicationMimetypesWithViewIcon:
+      whitespace: {}
 `
 	code := CheckCommand.RunCommand("arvados config-check", []string{"-config", "-"}, bytes.NewBufferString(in), &stdout, &stderr)
 	c.Check(code, check.Equals, 0)
@@ -62,6 +80,26 @@ Clusters:
 	c.Check(stdout.String(), check.Matches, `(?ms).*\n\- +.*MaxItemsPerResponse: 1000\n\+ +MaxItemsPerResponse: 1234\n.*`)
 }
 
+func (s *CommandSuite) TestCheckOldKeepstoreConfigFile(c *check.C) {
+	f, err := ioutil.TempFile("", "")
+	c.Assert(err, check.IsNil)
+	defer os.Remove(f.Name())
+
+	io.WriteString(f, "Debug: true\n")
+
+	var stdout, stderr bytes.Buffer
+	in := `
+Clusters:
+ z1234:
+  SystemLogs:
+    LogLevel: info
+`
+	code := CheckCommand.RunCommand("arvados config-check", []string{"-config", "-", "-legacy-keepstore-config", f.Name()}, bytes.NewBufferString(in), &stdout, &stderr)
+	c.Check(code, check.Equals, 1)
+	c.Check(stdout.String(), check.Matches, `(?ms).*\n\- +.*LogLevel: info\n\+ +LogLevel: debug\n.*`)
+	c.Check(stderr.String(), check.Matches, `.*you should remove the legacy keepstore config file.*\n`)
+}
+
 func (s *CommandSuite) TestCheckUnknownKey(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	in := `
@@ -80,10 +118,10 @@ Clusters:
 	code := CheckCommand.RunCommand("arvados config-check", []string{"-config", "-"}, bytes.NewBufferString(in), &stdout, &stderr)
 	c.Log(stderr.String())
 	c.Check(code, check.Equals, 1)
-	c.Check(stderr.String(), check.Matches, `(?ms).*deprecated or unknown config entry: Clusters.z1234.Bogus1\n.*`)
-	c.Check(stderr.String(), check.Matches, `(?ms).*deprecated or unknown config entry: Clusters.z1234.BogusSection\n.*`)
-	c.Check(stderr.String(), check.Matches, `(?ms).*deprecated or unknown config entry: Clusters.z1234.API.Bogus3\n.*`)
-	c.Check(stderr.String(), check.Matches, `(?ms).*unexpected object in config entry: Clusters.z1234.PostgreSQL.ConnectionPool\n.*`)
+	c.Check(stderr.String(), check.Matches, `(?ms).*deprecated or unknown config entry: Clusters.z1234.Bogus1"\n.*`)
+	c.Check(stderr.String(), check.Matches, `(?ms).*deprecated or unknown config entry: Clusters.z1234.BogusSection"\n.*`)
+	c.Check(stderr.String(), check.Matches, `(?ms).*deprecated or unknown config entry: Clusters.z1234.API.Bogus3"\n.*`)
+	c.Check(stderr.String(), check.Matches, `(?ms).*unexpected object in config entry: Clusters.z1234.PostgreSQL.ConnectionPool"\n.*`)
 }
 
 func (s *CommandSuite) TestDumpFormatting(c *check.C) {

@@ -44,7 +44,7 @@ class JobsTest < ActionDispatch::IntegrationTest
     use_keep_web_config
 
     # This config will be restored during teardown by ../test_helper.rb:
-    Rails.configuration.log_viewer_max_bytes = 100
+    Rails.configuration.Workbench.LogViewerMaxBytes = 100
 
     logdata = fakepipe_with_log_data.read
     job_uuid = api_fixture('jobs')['running']['uuid']

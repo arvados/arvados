@@ -209,8 +209,8 @@ sanity_checks() {
     echo -n 'go: '
     go version \
         || fatal "No go binary. See http://golang.org/doc/install"
-    [[ $(go version) =~ go1.([0-9]+) ]] && [[ ${BASH_REMATCH[1]} -ge 10 ]] \
-        || fatal "Go >= 1.10 required. See http://golang.org/doc/install"
+    [[ $(go version) =~ go1.([0-9]+) ]] && [[ ${BASH_REMATCH[1]} -ge 12 ]] \
+        || fatal "Go >= 1.12 required. See http://golang.org/doc/install"
     echo -n 'gcc: '
     gcc --version | egrep ^gcc \
         || fatal "No gcc. Try: apt-get install build-essential"
@@ -255,12 +255,6 @@ sanity_checks() {
     echo -n 'libpq libpq-fe.h: '
     find /usr/include -path '*/postgresql/libpq-fe.h' | egrep --max-count=1 . \
         || fatal "No libpq libpq-fe.h. Try: apt-get install libpq-dev"
-    echo -n 'services/api/config/database.yml: '
-    if [[ ! -f "$WORKSPACE/services/api/config/database.yml" ]]; then
-	    fatal "Please provide a database.yml file for the test suite"
-    else
-	    echo "OK"
-    fi
     echo -n 'postgresql: '
     psql --version || fatal "No postgresql. Try: apt-get install postgresql postgresql-client-common"
     echo -n 'phantomjs: '
@@ -575,8 +569,6 @@ setup_virtualenv() {
     else
         "$venvdest/bin/pip" install --no-cache-dir 'setuptools>=18.5' 'pip>=7'
     fi
-    # ubuntu1404 can't seem to install mock via tests_require, but it can do this.
-    "$venvdest/bin/pip" install --no-cache-dir 'mock>=1.0' 'pbr<1.7.0'
 }
 
 initialize() {
@@ -616,6 +608,9 @@ initialize() {
     export R_LIBS
 
     export GOPATH
+    # Make sure our compiled binaries under test override anything
+    # else that might be in the environment.
+    export PATH=$GOPATH/bin:$PATH
 
     # Jenkins config requires that glob tmp/*.log match something. Ensure
     # that happens even if we don't end up running services that set up
@@ -625,10 +620,29 @@ initialize() {
 
     unset http_proxy https_proxy no_proxy
 
-
     # Note: this must be the last time we change PATH, otherwise rvm will
     # whine a lot.
     setup_ruby_environment
+
+    if [[ -s "$CONFIGSRC/config.yml" ]] ; then
+	cp "$CONFIGSRC/config.yml" "$temp/test-config.yml"
+	export ARVADOS_CONFIG="$temp/test-config.yml"
+    else
+	if [[ -s /etc/arvados/config.yml ]] ; then
+	    python > "$temp/test-config.yml" <<EOF
+import yaml
+import json
+v = list(yaml.safe_load(open('/etc/arvados/config.yml'))['Clusters'].values())[0]['PostgreSQL']
+v['Connection']['dbname'] = 'arvados_test'
+print(json.dumps({"Clusters": { "zzzzz": {'PostgreSQL': v}}}))
+EOF
+	    export ARVADOS_CONFIG="$temp/test-config.yml"
+	else
+	    if [[ ! -f "$WORKSPACE/services/api/config/database.yml" ]]; then
+		fatal "Please provide a database.yml file for the test suite"
+	    fi
+	fi
+    fi
 
     echo "PATH is $PATH"
 }
@@ -771,7 +785,7 @@ do_test_once() {
         # before trying "go test". Otherwise, coverage-reporting
         # mode makes Go show the wrong line numbers when reporting
         # compilation errors.
-        go get -ldflags "-X main.version=${ARVADOS_VERSION:-$(git log -n1 --format=%H)-dev}" -t "git.curoverse.com/arvados.git/$1" && \
+        go get -ldflags "-X git.curoverse.com/arvados.git/lib/cmd.version=${ARVADOS_VERSION:-$(git log -n1 --format=%H)-dev}" -t "git.curoverse.com/arvados.git/$1" && \
             cd "$GOPATH/src/git.curoverse.com/arvados.git/$1" && \
             if [[ -n "${testargs[$1]}" ]]
         then
@@ -837,7 +851,7 @@ do_install_once() {
         result=1
     elif [[ "$2" == "go" ]]
     then
-        go get -ldflags "-X main.version=${ARVADOS_VERSION:-$(git log -n1 --format=%H)-dev}" -t "git.curoverse.com/arvados.git/$1"
+        go get -ldflags "-X git.curoverse.com/arvados.git/lib/cmd.version=${ARVADOS_VERSION:-$(git log -n1 --format=%H)-dev}" -t "git.curoverse.com/arvados.git/$1"
     elif [[ "$2" == "pip" ]]
     then
         # $3 can name a path directory for us to use, including trailing
@@ -987,7 +1001,7 @@ pythonstuff=(
 )
 
 declare -a gostuff
-gostuff=($(git grep -lw func | grep \\.go | sed -e 's/\/[^\/]*$//' | sort -u))
+gostuff=($(cd "$WORKSPACE" && git grep -lw func | grep \\.go | sed -e 's/\/[^\/]*$//' | sort -u))
 
 install_apps/workbench() {
     cd "$WORKSPACE/apps/workbench" \
@@ -1154,11 +1168,11 @@ install_all() {
             fi
         fi
     done
-    do_install services/api
     for g in "${gostuff[@]}"
     do
         do_install "$g" go
     done
+    do_install services/api
     do_install apps/workbench
 }
 
@@ -1235,6 +1249,13 @@ for p in "${pythonstuff[@]}"; do
 done
 
 testfuncargs["sdk/cli"]="sdk/cli"
+testfuncargs["sdk/R"]="sdk/R"
+testfuncargs["sdk/java-v2"]="sdk/java-v2"
+testfuncargs["apps/workbench_units"]="apps/workbench_units"
+testfuncargs["apps/workbench_functionals"]="apps/workbench_functionals"
+testfuncargs["apps/workbench_integration"]="apps/workbench_integration"
+testfuncargs["apps/workbench_benchmark"]="apps/workbench_benchmark"
+testfuncargs["apps/workbench_profile"]="apps/workbench_profile"
 
 if [[ -z ${interactive} ]]; then
     install_all

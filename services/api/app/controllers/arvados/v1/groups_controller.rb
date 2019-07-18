@@ -37,6 +37,9 @@ class Arvados::V1::GroupsController < ApplicationController
               recursive: {
                 type: 'boolean', required: false, description: 'Include contents from child groups recursively.'
               },
+              include: {
+                type: 'string', required: false, description: 'Include objects referred to by listed field in "included" (only owner_uuid)'
+              }
             })
     params.delete(:select)
     params

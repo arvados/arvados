@@ -346,7 +346,7 @@ class ApplicationControllerTest < ActionController::TestCase
       true
     end.returns fake_api_response('{}', 200, {})
 
-    Rails.configuration.anonymous_user_token =
+    Rails.configuration.Users.AnonymousUserToken =
       api_fixture("api_client_authorizations", "anonymous", "api_token")
     @controller = ProjectsController.new
     test_uuid = "zzzzz-j7d0g-zzzzzzzzzzzzzzz"
@@ -374,7 +374,7 @@ class ApplicationControllerTest < ActionController::TestCase
   ].each do |css_selector|
     test "login link at #{css_selector.inspect} includes return_to param" do
       # Without an anonymous token, we're immediately redirected to login.
-      Rails.configuration.anonymous_user_token =
+      Rails.configuration.Users.AnonymousUserToken =
         api_fixture("api_client_authorizations", "anonymous", "api_token")
       @controller = ProjectsController.new
       test_uuid = "zzzzz-j7d0g-zzzzzzzzzzzzzzz"
@@ -393,17 +393,17 @@ class ApplicationControllerTest < ActionController::TestCase
     # We're really testing ApplicationController's render_exception.
     # Our primary concern is that it doesn't raise an error and
     # return 500.
-    orig_api_server = Rails.configuration.arvados_v1_base
+    orig_api_server = Rails.configuration.Services.Controller.ExternalURL
     begin
       # The URL should look valid in all respects, and avoid talking over a
       # network.  100::/64 is the IPv6 discard prefix, so it's perfect.
-      Rails.configuration.arvados_v1_base = "https://[100::f]:1/"
+      Rails.configuration.Services.Controller.ExternalURL = "https://[100::f]:1/"
       @controller = NodesController.new
       get(:index, params: {}, session: session_for(:active))
       assert_includes(405..422, @response.code.to_i,
                       "bad response code when API server is unreachable")
     ensure
-      Rails.configuration.arvados_v1_base = orig_api_server
+      Rails.configuration.Services.Controller.ExternalURL = orig_api_server
     end
   end
 
@@ -421,9 +421,9 @@ class ApplicationControllerTest < ActionController::TestCase
   ].each do |controller, fixture, anon_config=true|
     test "#{controller} show method with anonymous config #{anon_config ? '' : 'not '}enabled" do
       if anon_config
-        Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
+        Rails.configuration.Users.AnonymousUserToken = api_fixture('api_client_authorizations')['anonymous']['api_token']
       else
-        Rails.configuration.anonymous_user_token = false
+        Rails.configuration.Users.AnonymousUserToken = ""
       end
 
       @controller = controller
@@ -449,7 +449,7 @@ class ApplicationControllerTest < ActionController::TestCase
     false,
   ].each do |config|
     test "invoke show with include_accept_encoding_header config #{config}" do
-      Rails.configuration.include_accept_encoding_header_in_api_requests = config
+      Rails.configuration.APIResponseCompression = config
 
       @controller = CollectionsController.new
       get(:show, params: {id: api_fixture('collections')['foo_file']['uuid']}, session: session_for(:admin))

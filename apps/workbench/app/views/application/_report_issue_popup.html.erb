@@ -4,8 +4,8 @@ SPDX-License-Identifier: AGPL-3.0 %>
 
 <%
   generated_at = arvados_api_client.discovery[:generatedAt]
-  arvados_base = Rails.configuration.arvados_v1_base
-  support_email = Rails.configuration.support_email_address
+  arvados_base = Rails.configuration.Services.Controller.ExternalURL.to_s + "/arvados/v1"
+  support_email = Rails.configuration.Mail.SupportEmailAddress
 
   additional_info = {}
   additional_info['Current location'] = params[:current_location]

@@ -13,6 +13,21 @@ Server::Application.configure do
       client_ipaddr: event.payload[:client_ipaddr],
       client_auth: event.payload[:client_auth],
     }
+
+    # Lograge adds exceptions not being rescued to event.payload, but we're
+    # catching all errors on ApplicationController so we look for backtraces
+    # elsewhere.
+    if !Thread.current[:backtrace].nil?
+      payload.merge!(
+        {
+          exception: Thread.current[:exception],
+          exception_backtrace: Thread.current[:backtrace],
+        }
+      )
+      Thread.current[:exception] = nil
+      Thread.current[:backtrace] = nil
+    end
+
     exceptions = %w(controller action format id)
     params = event.payload[:params].except(*exceptions)
 

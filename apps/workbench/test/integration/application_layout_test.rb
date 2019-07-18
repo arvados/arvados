@@ -16,13 +16,13 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
   end
 
   def verify_homepage user, invited, has_profile
-    profile_config = Rails.configuration.user_profile_form_fields
+    profile_config = Rails.configuration.Workbench.UserProfileFormFields
 
     if !user
       assert page.has_text?('Please log in'), 'Not found text - Please log in'
       assert page.has_text?('The "Log in" button below will show you a Google sign-in page'), 'Not found text - google sign in page'
       assert page.has_no_text?('My projects'), 'Found text - My projects'
-      assert page.has_link?("Log in to #{Rails.configuration.site_name}"), 'Not found text - log in to'
+      assert page.has_link?("Log in to #{Rails.configuration.Workbench.SiteName}"), 'Not found text - log in to'
     elsif user['is_active']
       if profile_config && !has_profile
         assert page.has_text?('Save profile'), 'No text - Save profile'
@@ -42,12 +42,12 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
 
     within('.navbar-fixed-top') do
       if !user
-        assert_text Rails.configuration.site_name.downcase
-        assert_no_selector 'a', text: Rails.configuration.site_name.downcase
+        assert_text Rails.configuration.Workbench.SiteName.downcase
+        assert_no_selector 'a', text: Rails.configuration.Workbench.SiteName.downcase
         assert page.has_link?('Log in'), 'Not found link - Log in'
       else
         # my account menu
-        assert_selector 'a', text: Rails.configuration.site_name.downcase
+        assert_selector 'a', text: Rails.configuration.Workbench.SiteName.downcase
         assert(page.has_link?("notifications-menu"), 'no user menu')
         page.find("#notifications-menu").click
         within('.dropdown-menu') do
@@ -142,7 +142,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
   end
 
   [
-    [false, false],
+    ["", false],
     ['http://wb2.example.org//', false],
     ['ftp://wb2.example.org', false],
     ['wb2.example.org', false],
@@ -152,8 +152,13 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     ['https://wb2.example.org/', true],
   ].each do |wb2_url_config, wb2_menu_appear|
     test "workbench2_url=#{wb2_url_config} should#{wb2_menu_appear ? '' : ' not'} show WB2 menu" do
-      Rails.configuration.workbench2_url = wb2_url_config
-      assert_equal wb2_menu_appear, ConfigValidators::validate_wb2_url_config()
+      Rails.configuration.Services.Workbench2.ExternalURL = URI(wb2_url_config)
+      if !wb2_menu_appear and !wb2_url_config.empty?
+        assert_raises RuntimeError do
+          ConfigValidators.validate_wb2_url_config()
+        end
+        Rails.configuration.Services.Workbench2.ExternalURL = URI("")
+      end
 
       visit page_with_token('active')
       within('.navbar-fixed-top') do
@@ -170,7 +175,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     ['active_with_prefs_profile_no_getting_started_shown', false],
   ].each do |token, getting_started_shown|
     test "getting started help menu item #{getting_started_shown}" do
-      Rails.configuration.enable_getting_started_popup = true
+      Rails.configuration.Workbench.EnableGettingStartedPopup = true
 
       visit page_with_token(token)
 
@@ -213,7 +218,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
   end
 
   test "test arvados_public_data_doc_url config unset" do
-    Rails.configuration.arvados_public_data_doc_url = false
+    Rails.configuration.Workbench.ArvadosPublicDataDocURL = ""
 
     visit page_with_token('active')
     within '.navbar-fixed-top' do
@@ -231,7 +236,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
   end
 
   test "no SSH public key notification when shell_in_a_box_url is configured" do
-    Rails.configuration.shell_in_a_box_url = 'example.com'
+    Rails.configuration.Services.WebShell.ExternalURL = URI('http://example.com')
     visit page_with_token('job_reader')
     click_link 'notifications-menu'
     assert_no_selector 'a', text:'Click here to set up an SSH public key for use with Arvados.'

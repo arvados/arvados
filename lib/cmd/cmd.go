@@ -28,11 +28,18 @@ func (f HandlerFunc) RunCommand(prog string, args []string, stdin io.Reader, std
 	return f(prog, args, stdin, stdout, stderr)
 }
 
-type Version string
+// Version is a Handler that prints the package version (set at build
+// time using -ldflags) and Go runtime version to stdout, and returns
+// 0.
+var Version versionCommand
 
-func (v Version) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+var version = "dev"
+
+type versionCommand struct{}
+
+func (versionCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	prog = regexp.MustCompile(` -*version$`).ReplaceAllLiteralString(prog, "")
-	fmt.Fprintf(stdout, "%s %s (%s)\n", prog, v, runtime.Version())
+	fmt.Fprintf(stdout, "%s %s (%s)\n", prog, version, runtime.Version())
 	return 0
 }
 

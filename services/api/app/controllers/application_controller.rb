@@ -140,8 +140,13 @@ class ApplicationController < ActionController::Base
 
   def render_error(e)
     logger.error e.inspect
-    if !e.is_a? RequestError and (e.respond_to? :backtrace and e.backtrace)
-      logger.error e.backtrace.collect { |x| x + "\n" }.join('')
+    if e.respond_to? :backtrace and e.backtrace
+      # This will be cleared by lograge after adding it to the log.
+      # Usually lograge would get the exceptions, but in our case we're catching
+      # all of them with exception handlers that cannot re-raise them because they
+      # don't get propagated.
+      Thread.current[:exception] = e.inspect
+      Thread.current[:backtrace] = e.backtrace.collect { |x| x + "\n" }.join('')
     end
     if (@object.respond_to? :errors and
         @object.errors.andand.full_messages.andand.any?)
@@ -183,6 +188,9 @@ class ApplicationController < ActionController::Base
       err = {}
     end
     err[:errors] ||= args
+    err[:errors].map! do |err|
+      err += " (" + Thread.current[:request_id] + ")"
+    end
     err[:error_token] = [Time.now.utc.to_i, "%08x" % rand(16 ** 8)].join("+")
     status = err.delete(:status) || 422
     logger.error "Error #{err[:error_token]}: #{status}"

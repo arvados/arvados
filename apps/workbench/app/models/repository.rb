@@ -76,9 +76,9 @@ class Repository < ArvadosBase
   # non-zero.
   def run_git *gitcmd
     if not @workdir
-      workdir = File.expand_path uuid+'.git', Rails.configuration.repository_cache
+      workdir = File.expand_path uuid+'.git', Rails.configuration.Workbench.RepositoryCache
       if not File.exists? workdir
-        FileUtils.mkdir_p Rails.configuration.repository_cache
+        FileUtils.mkdir_p Rails.configuration.Workbench.RepositoryCache
         [['git', 'init', '--bare', workdir],
         ].each do |cmd|
           system *cmd
@@ -94,7 +94,7 @@ class Repository < ArvadosBase
       '!cred(){ cat >/dev/null; if [ "$1" = get ]; then echo password=$ARVADOS_API_TOKEN; fi; };cred'],
      ['git', '--git-dir', @workdir, 'config', '--local',
            'http.sslVerify',
-           Rails.configuration.arvados_insecure_https ? 'false' : 'true'],
+           Rails.configuration.TLS.Insecure ? 'false' : 'true'],
      ].each do |cmd|
       system *cmd
       raise GitCommandError.new($?.to_s) unless $?.exitstatus == 0

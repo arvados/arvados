@@ -215,7 +215,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     visit page_with_token("active", "/jobs/#{job['uuid']}\#Log")
 
     # Expect "all" historic log records because we have less than
-    # default Rails.configuration.running_job_log_records_to_fetch count
+    # default Rails.configuration.Workbench.RunningJobLogRecordsToFetch
     assert_text 'Historic log message'
 
     # Create new log record and expect it to show up in log tab
@@ -228,7 +228,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
   test "test running job with too many previous log records" do
     max = 5
-    Rails.configuration.running_job_log_records_to_fetch = max
+    Rails.configuration.Workbench.RunningJobLogRecordsToFetch = max
     job = api_fixture("jobs")['running']
 
     # Create max+1 log records

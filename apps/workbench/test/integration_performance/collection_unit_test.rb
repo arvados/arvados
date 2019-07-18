@@ -24,7 +24,7 @@ class BigCollectionTest < ActiveSupport::TestCase
   # didn't make a significant difference.
   [true].each do |compress|
     test "crud cycle for collection with big manifest (compress=#{compress})" do
-      Rails.configuration.api_response_compression = compress
+      Rails.configuration.Workbench.APIResponseCompression = compress
       Thread.current[:arvados_api_client] = nil
       crudtest
     end

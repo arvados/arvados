@@ -12,12 +12,11 @@ import (
 )
 
 var (
-	version = "dev"
 	handler = cmd.Multi(map[string]cmd.Handler{
-		"-e":        cmd.Version(version),
-		"version":   cmd.Version(version),
-		"-version":  cmd.Version(version),
-		"--version": cmd.Version(version),
+		"-e":        cmd.Version,
+		"version":   cmd.Version,
+		"-version":  cmd.Version,
+		"--version": cmd.Version,
 
 		"copy":     cli.Copy,
 		"create":   cli.Create,

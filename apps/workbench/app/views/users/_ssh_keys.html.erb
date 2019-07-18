@@ -19,7 +19,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
 <div id="manage_ssh_keys" class="panel-body">
   <% if !@my_ssh_keys.any? %>
      <p> You have not yet set up an SSH public key for use with Arvados. <%= link_to "Learn more.",
-                  "#{Rails.configuration.arvados_docsite}/user/getting_started/ssh-access-unix.html",
+                  "#{Rails.configuration.Workbench.ArvadosDocsite}/user/getting_started/ssh-access-unix.html",
                   style: "font-weight: bold",
                   target: "_blank" %>
      </p>

@@ -76,6 +76,10 @@ The "postgres-contrib package":https://www.postgresql.org/docs/10/contrib.html h
 
 Subsequently, the <code class="userinput">psql -d 'arvados_production' -c '\dx'</code> command will display the installed extensions for the arvados_production database. This list should now contain @pg_trgm@.
 
+h4. Migrating to centralized config.yml
+
+See "Migrating Configuration":config-migration.html for notes on migrating legacy per-component configuration files to the new centralized @/etc/arvados/config.yml@.  To ensure a smooth transition, the per-component config files continue to be read, and take precedence over the centralized configuration.
+
 h3(#v1_4_0). v1.4.0 (2019-06-05)
 
 h4. Populating the new file_count and file_size_total columns on the collections table

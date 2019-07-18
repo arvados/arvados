@@ -40,11 +40,9 @@ On a Red Hat-based system, install the following packages:
 
 h2(#configure). Configure Workbench
 
-Edit @/etc/arvados/workbench/application.yml@ following the instructions below.  Workbench reads both @application.yml@ and its own @config/application.defaults.yml@ file.  Values in @application.yml@ take precedence over the defaults that are defined in @config/application.defaults.yml@.  The @config/application.yml.example@ file is not read by Workbench and is provided for installation convenience only.
+Edit @/etc/arvados/config.yml@ to set the keys below.  Only the most important configuration options are listed here.  The full set of configuration options are in the "Workbench section of config.yml":{{site.baseurl}}/admin/config.html
 
-Consult @config/application.default.yml@ for a full list of configuration options.  Always put your local configuration in @/etc/arvados/workbench/application.yml@&mdash;never edit @config/application.default.yml@.
-
-h3. secret_token
+h3. Workbench.SecretKeyBase
 
 This application needs a secret token. Generate a new secret:
 
@@ -54,33 +52,57 @@ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 </code></pre>
 </notextile>
 
-Then put that value in the @secret_token@ field.
-
-h3. arvados_login_base and arvados_v1_base
-
-Point @arvados_login_base@ and @arvados_v1_base@ at your "API server":install-api-server.html. For example like this:
+Then put that value in the @Workbench.SecretKeyBase@ field.
 
 <notextile>
-<pre><code>arvados_login_base: https://prefix_uuid.your.domain/login
-arvados_v1_base: https://prefix_uuid.your.domain/arvados/v1
+<pre><code>Cluster:
+  zzzzz:
+    Workbench:
+      SecretKeyBase: <span class="userinput">aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</span>
 </code></pre>
 </notextile>
 
-h3. site_name
+h3. Services.Controller.ExternalURL
 
-@site_name@ can be set to any arbitrary string. It is used to identify this Workbench to people visiting it.
+Ensure that @Services.Controller.ExternalURL@ is configured for "Arvados Controller":install-controller.html . For example like this:
 
-h3. arvados_insecure_https
+<notextile>
+<pre><code>Cluster:
+  zzzzz:
+    Services:
+      Controller:
+        ExternalURL: <span class="userinput">https://prefix_uuid.your.domain</span>
+</code></pre>
+</notextile>
 
-If the SSL certificate you use for your API server isn't an official certificate signed by a CA, make sure @arvados_insecure_https@ is @true@.
+h3. Workbench.SiteName
 
-h3. Other options
+@Workbench.SiteName@ can be set to any arbitrary string. It is used to identify this Workbench to people visiting it.
 
-Consult @application.default.yml@ for a full list of configuration options. Always put your local configuration in @application.yml@ instead of editing @application.default.yml@.
 
-h2. Configure Piwik
+<notextile>
+<pre><code>Cluster:
+  zzzzz:
+    Workbench:
+      SiteName: <span class="userinput">My Arvados</span>
+</code></pre>
+</notextile>
 
-In @/var/www/arvados-workbench/current/config@, copy @piwik.yml.example@ to @piwik.yml@ and edit to suit.
+h3. TLS.Insecure
+
+For testing only.  Allows use of self-signed certificates.  If true, workbench will not verify the TLS certificate of Arvados Controller.
+
+<notextile>
+<pre><code>Cluster:
+  zzzzz:
+    TLS:
+      Insecure: <span class="userinput">false</span>
+</code></pre>
+</notextile>
+
+h2. Configure Piwik (optional)
+
+Piwik can be used to gather usage analytics.  In @/var/www/arvados-workbench/current/config@, copy @piwik.yml.example@ to @piwik.yml@ and edit to suit.
 
 h2. Set up Web server
 
@@ -104,7 +126,7 @@ For best performance, we recommend you use Nginx as your Web server front-end, w
   #passenger_ruby /usr/local/rvm/wrappers/default/ruby;
 
   # `client_max_body_size` should match the corresponding setting in
-  # the API server's Nginx configuration.
+  # the API.MaxRequestSize and Controller's server's Nginx configuration.
   client_max_body_size 128m;
 }
 
@@ -124,7 +146,7 @@ server {
 
   index  index.html index.htm index.php;
   # `client_max_body_size` should match the corresponding setting in
-  # the API server's Nginx configuration.
+  # the API.MaxRequestSize and Controller's server's Nginx configuration.
   client_max_body_size 128m;
 
   location / {

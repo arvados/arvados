@@ -7,20 +7,20 @@ require 'integration_helper'
 class UserProfileTest < ActionDispatch::IntegrationTest
   setup do
     need_javascript
-    @user_profile_form_fields = Rails.configuration.user_profile_form_fields
+    @user_profile_form_fields = Rails.configuration.Workbench.UserProfileFormFields
   end
 
   teardown do
-    Rails.configuration.user_profile_form_fields = @user_profile_form_fields
+    Rails.configuration.Workbench.UserProfileFormFields = @user_profile_form_fields
   end
 
   def verify_homepage_with_profile user, invited, has_profile
-    profile_config = Rails.configuration.user_profile_form_fields
+    profile_config = Rails.configuration.Workbench.UserProfileFormFields
 
     if !user
       assert_text('Please log in')
     elsif user['is_active']
-      if profile_config && !has_profile
+      if !profile_config.empty? && !has_profile
         assert_text('Save profile')
         add_profile user
       else
@@ -62,7 +62,7 @@ class UserProfileTest < ActionDispatch::IntegrationTest
             assert_selector('a', text: 'Current token')
             assert_selector('a', text: 'SSH keys')
 
-            if profile_config
+            if !profile_config.empty?
               assert_selector('a', text: 'Manage profile')
             else
               assert_no_selector('a', text: 'Manage profile')
@@ -96,14 +96,14 @@ class UserProfileTest < ActionDispatch::IntegrationTest
     assert_text('Save profile')
 
     # This time fill in required field and then save. Expect to go to requested page after that.
-    profile_message = Rails.configuration.user_profile_form_message
+    profile_message = Rails.configuration.Workbench.UserProfileFormMessage
     required_field_title = ''
     required_field_key = ''
-    profile_config = Rails.configuration.user_profile_form_fields
-    profile_config.each do |entry|
-      if entry['required']
-        required_field_key = entry['key']
-        required_field_title = entry['form_field_title']
+    profile_config = Rails.configuration.Workbench.UserProfileFormFields
+    profile_config.each do |k, entry|
+      if entry['Required']
+        required_field_key = k.to_s
+        required_field_title = entry['FormFieldTitle']
         break
       end
     end
@@ -142,11 +142,11 @@ class UserProfileTest < ActionDispatch::IntegrationTest
     [true, false].each do |profile_required|
       test "visit #{token} home page when profile is #{'not ' if !profile_required}configured" do
         if !profile_required
-          Rails.configuration.user_profile_form_fields = false
+          Rails.configuration.Workbench.UserProfileFormFields = []
         else
           # Our test config enabled profile by default. So, no need to update config
         end
-        Rails.configuration.enable_getting_started_popup = true
+        Rails.configuration.Workbench.EnableGettingStartedPopup = true
 
         if !token
           visit ('/')

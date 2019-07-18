@@ -560,7 +560,18 @@ case "$subcmd" in
 
     clone)
         if test -n "$2" ; then
-            cp -r "$ARVBOX_BASE/$1" "$ARVBOX_BASE/$2"
+	    mkdir -p "$ARVBOX_BASE/$2"
+            cp -a "$ARVBOX_BASE/$1/passenger" \
+	       "$ARVBOX_BASE/$1/gems" \
+	       "$ARVBOX_BASE/$1/pip" \
+	       "$ARVBOX_BASE/$1/npm" \
+	       "$ARVBOX_BASE/$1/gopath" \
+	       "$ARVBOX_BASE/$1/Rlibs" \
+	       "$ARVBOX_BASE/$1/arvados" \
+	       "$ARVBOX_BASE/$1/sso-devise-omniauth-provider" \
+	       "$ARVBOX_BASE/$1/composer" \
+	       "$ARVBOX_BASE/$1/workbench2" \
+	       "$ARVBOX_BASE/$2"
             echo "Created new arvbox $2"
             echo "export ARVBOX_CONTAINER=$2"
         else

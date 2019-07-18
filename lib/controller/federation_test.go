@@ -134,7 +134,7 @@ func (s *FederationSuite) TestNoAuth(c *check.C) {
 	req := httptest.NewRequest("GET", "/arvados/v1/workflows/"+arvadostest.WorkflowWithDefinitionYAMLUUID, nil)
 	resp := s.testRequest(req).Result()
 	c.Check(resp.StatusCode, check.Equals, http.StatusUnauthorized)
-	s.checkJSONErrorMatches(c, resp, `Not logged in`)
+	s.checkJSONErrorMatches(c, resp, `Not logged in.*`)
 }
 
 func (s *FederationSuite) TestBadAuth(c *check.C) {
@@ -142,7 +142,7 @@ func (s *FederationSuite) TestBadAuth(c *check.C) {
 	req.Header.Set("Authorization", "Bearer aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 	resp := s.testRequest(req).Result()
 	c.Check(resp.StatusCode, check.Equals, http.StatusUnauthorized)
-	s.checkJSONErrorMatches(c, resp, `Not logged in`)
+	s.checkJSONErrorMatches(c, resp, `Not logged in.*`)
 }
 
 func (s *FederationSuite) TestNoAccess(c *check.C) {
@@ -150,7 +150,7 @@ func (s *FederationSuite) TestNoAccess(c *check.C) {
 	req.Header.Set("Authorization", "Bearer "+arvadostest.SpectatorToken)
 	resp := s.testRequest(req).Result()
 	c.Check(resp.StatusCode, check.Equals, http.StatusNotFound)
-	s.checkJSONErrorMatches(c, resp, `.*not found`)
+	s.checkJSONErrorMatches(c, resp, `.*not found.*`)
 }
 
 func (s *FederationSuite) TestGetUnknownRemote(c *check.C) {

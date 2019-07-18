@@ -63,7 +63,9 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		logger.Info("exiting")
 	}()
 
-	cfg, err := config.LoadFile(*configFile, logger)
+	loader := config.NewLoader(stdin, logger)
+	loader.Path = *configFile
+	cfg, err := loader.Load()
 	if err != nil {
 		return 1
 	}

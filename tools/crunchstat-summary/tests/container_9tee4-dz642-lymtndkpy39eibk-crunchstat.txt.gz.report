@@ -23,4 +23,6 @@ time	elapsed	20	-	20
 # Max network speed in a single interval: 0.00MB/s
 # Keep cache miss rate 0.00%
 # Keep cache utilization 0.00%
-#!! container max RSS was 67 MiB -- try reducing runtime_constraints to "ram":1020054732
+# Temp disk utilization 1.21%
+#!! label #1 max RSS was 67 MiB -- try reducing runtime_constraints to "ram":1020054732
+#!! label #1 max temp disk utilization was 1% of 383960 MiB -- consider reducing "tmpdirMin" and/or "outdirMin"

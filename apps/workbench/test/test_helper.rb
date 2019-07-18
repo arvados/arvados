@@ -61,11 +61,11 @@ class ActiveSupport::TestCase
   end
 
   def self.reset_application_config
-    $application_config.each do |k,v|
-      if k.match /^[^.]*$/
-        Rails.configuration.send (k + '='), v
-      end
-    end
+    # Restore configuration settings changed during tests
+    ConfigLoader.copy_into_config $arvados_config, Rails.configuration
+    ConfigLoader.copy_into_config $remaining_config, Rails.configuration
+    Rails.configuration.Services.Controller.ExternalURL = URI("https://#{ENV['ARVADOS_API_HOST']}")
+    Rails.configuration.TLS.Insecure = true
   end
 end
 
@@ -207,9 +207,6 @@ class ApiServerForTests
     end
 
     run_test_server
-    $application_config['arvados_login_base'] = "https://#{ENV['ARVADOS_API_HOST']}/login"
-    $application_config['arvados_v1_base'] = "https://#{ENV['ARVADOS_API_HOST']}/arvados/v1"
-    $application_config['arvados_insecure_host'] = true
     ActiveSupport::TestCase.reset_application_config
 
     @@server_is_running = true

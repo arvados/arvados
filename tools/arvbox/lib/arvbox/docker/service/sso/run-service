@@ -35,7 +35,7 @@ if ! test -s /var/lib/arvados/sso_secret_token ; then
 fi
 secret_token=$(cat /var/lib/arvados/sso_secret_token)
 
-test -s /var/lib/arvados/server-cert-${localip}.pem
+openssl verify -CAfile $root_cert $server_cert
 
 cat >config/application.yml <<EOF
 $RAILS_ENV:

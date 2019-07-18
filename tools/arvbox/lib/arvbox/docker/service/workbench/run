@@ -22,6 +22,7 @@ else
 fi
 
 if test "$1" != "--only-deps" ; then
+    openssl verify -CAfile $root_cert $server_cert
     exec bundle exec passenger start --port=${services[workbench]} \
 	 --ssl --ssl-certificate=/var/lib/arvados/server-cert-${localip}.pem \
 	 --ssl-certificate-key=/var/lib/arvados/server-cert-${localip}.key \

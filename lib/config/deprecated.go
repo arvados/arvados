@@ -6,6 +6,7 @@ package config
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 
@@ -47,9 +48,9 @@ type systemServiceInstance struct {
 	Insecure bool
 }
 
-func applyDeprecatedConfig(cfg *arvados.Config, configdata []byte, log logger) error {
+func (ldr *Loader) applyDeprecatedConfig(cfg *arvados.Config) error {
 	var dc deprecatedConfig
-	err := yaml.Unmarshal(configdata, &dc)
+	err := yaml.Unmarshal(ldr.configdata, &dc)
 	if err != nil {
 		return err
 	}
@@ -65,8 +66,8 @@ func applyDeprecatedConfig(cfg *arvados.Config, configdata []byte, log logger) e
 		for name, np := range dcluster.NodeProfiles {
 			if name == "*" || name == os.Getenv("ARVADOS_NODE_PROFILE") || name == hostname {
 				name = "localhost"
-			} else if log != nil {
-				log.Warnf("overriding Clusters.%s.Services using Clusters.%s.NodeProfiles.%s (guessing %q is a hostname)", id, id, name, name)
+			} else if ldr.Logger != nil {
+				ldr.Logger.Warnf("overriding Clusters.%s.Services using Clusters.%s.NodeProfiles.%s (guessing %q is a hostname)", id, id, name, name)
 			}
 			applyDeprecatedNodeProfile(name, np.RailsAPI, &cluster.Services.RailsAPI)
 			applyDeprecatedNodeProfile(name, np.Controller, &cluster.Services.Controller)
@@ -99,4 +100,46 @@ func applyDeprecatedNodeProfile(hostname string, ssi systemServiceInstance, svc 
 		host = hostname + host
 	}
 	svc.InternalURLs[arvados.URL{Scheme: scheme, Host: host}] = arvados.ServiceInstance{}
+}
+
+const defaultKeepstoreConfigPath = "/etc/arvados/keepstore/keepstore.yml"
+
+type oldKeepstoreConfig struct {
+	Debug *bool
+}
+
+// update config using values from an old-style keepstore config file.
+func (ldr *Loader) loadOldKeepstoreConfig(cfg *arvados.Config) error {
+	path := ldr.KeepstorePath
+	if path == "" {
+		return nil
+	}
+	buf, err := ioutil.ReadFile(path)
+	if os.IsNotExist(err) && path == defaultKeepstoreConfigPath {
+		return nil
+	} else if err != nil {
+		return err
+	} else {
+		ldr.Logger.Warnf("you should remove the legacy keepstore config file (%s) after migrating all config keys to the cluster configuration file (%s)", path, ldr.Path)
+	}
+	cluster, err := cfg.GetCluster("")
+	if err != nil {
+		return err
+	}
+
+	var oc oldKeepstoreConfig
+	err = yaml.Unmarshal(buf, &oc)
+	if err != nil {
+		return fmt.Errorf("%s: %s", path, err)
+	}
+
+	if v := oc.Debug; v == nil {
+	} else if *v && cluster.SystemLogs.LogLevel != "debug" {
+		cluster.SystemLogs.LogLevel = "debug"
+	} else if !*v && cluster.SystemLogs.LogLevel != "info" {
+		cluster.SystemLogs.LogLevel = "info"
+	}
+
+	cfg.Clusters[cluster.ClusterID] = *cluster
+	return nil
 }

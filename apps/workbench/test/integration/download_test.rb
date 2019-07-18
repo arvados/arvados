@@ -42,7 +42,7 @@ class DownloadTest < ActionDispatch::IntegrationTest
     end
 
     test "preview anonymous content from keep-web by #{id_type}" do
-      Rails.configuration.anonymous_user_token =
+      Rails.configuration.Users.AnonymousUserToken =
         api_fixture('api_client_authorizations')['anonymous']['api_token']
       uuid_or_pdh =
         api_fixture('collections')['public_text_file'][id_type]
@@ -55,7 +55,7 @@ class DownloadTest < ActionDispatch::IntegrationTest
     end
 
     test "download anonymous content from keep-web by #{id_type}" do
-      Rails.configuration.anonymous_user_token =
+      Rails.configuration.Users.AnonymousUserToken =
         api_fixture('api_client_authorizations')['anonymous']['api_token']
       uuid_or_pdh =
         api_fixture('collections')['public_text_file'][id_type]
