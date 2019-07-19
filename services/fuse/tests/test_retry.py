@@ -2,14 +2,17 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+from __future__ import absolute_import
+from future import standard_library
+standard_library.install_aliases()
 import arvados
 import arvados_fuse.command
 import json
 import mock
 import os
 import pycurl
-import Queue
-import run_test_server
+import queue
+from . import run_test_server
 import tempfile
 import unittest
 
@@ -50,7 +53,7 @@ class RetryPUT(IntegrationTest):
     def test_retry_write(self, sleep):
         mockedCurl = mock.Mock(spec=pycurl.Curl(), wraps=pycurl.Curl())
         mockedCurl.perform.side_effect = Exception('mock error (ok)')
-        q = Queue.Queue()
+        q = queue.Queue()
         q.put(mockedCurl)
         q.put(pycurl.Curl())
         q.put(pycurl.Curl())

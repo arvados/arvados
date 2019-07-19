@@ -2,6 +2,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+from future.utils import native_str
+from builtins import range
+from builtins import object
 import argparse
 import arvados
 import daemon
@@ -31,7 +34,7 @@ class ArgumentParser(argparse.ArgumentParser):
     with "--".
             """)
         self.add_argument('--version', action='version',
-                          version="%s %s" % (sys.argv[0], __version__),
+                          version=u"%s %s" % (sys.argv[0], __version__),
                           help='Print version and exit.')
         self.add_argument('mountpoint', type=str, help="""Mount point.""")
         self.add_argument('--allow-other', action='store_true',
@@ -134,12 +137,12 @@ class Mount(object):
         if self.args.replace:
             unmount(path=self.args.mountpoint,
                     timeout=self.args.unmount_timeout)
-        llfuse.init(self.operations, self.args.mountpoint, self._fuse_options())
+        llfuse.init(self.operations, native_str(self.args.mountpoint), self._fuse_options())
         if self.daemon:
             daemon.DaemonContext(
                 working_directory=os.path.dirname(self.args.mountpoint),
-                files_preserve=range(
-                    3, resource.getrlimit(resource.RLIMIT_NOFILE)[1])
+                files_preserve=list(range(
+                    3, resource.getrlimit(resource.RLIMIT_NOFILE)[1]))
             ).open()
         if self.listen_for_events and not self.args.disable_event_listening:
             self.operations.listen_for_events()

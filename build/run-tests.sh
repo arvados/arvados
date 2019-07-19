@@ -96,6 +96,7 @@ services/arv-git-httpd
 services/crunchstat
 services/dockercleaner
 services/fuse
+services/fuse:py3
 services/health
 services/keep-web
 services/keepproxy
@@ -226,6 +227,8 @@ sanity_checks() {
     echo -n 'Python3 pyconfig.h: '
     find /usr/include -path '*/python3*/pyconfig.h' | egrep --max-count=1 . \
         || fatal "No Python3 pyconfig.h. Try: apt-get install python3-dev"
+    which netstat \
+        || fatal "No netstat. Try: apt-get install net-tools"
     echo -n 'nginx: '
     PATH="$PATH:/sbin:/usr/sbin:/usr/local/sbin" nginx -v \
         || fatal "No nginx. Try: apt-get install nginx"
@@ -812,7 +815,10 @@ do_test_once() {
             tries=$((${tries}+1))
             # $3 can name a path directory for us to use, including trailing
             # slash; e.g., the bin/ subdirectory of a virtualenv.
-            "${3}python" setup.py ${short:+--short-tests-only} test ${testargs[$1]}
+            if [[ -e "${3}activate" ]]; then
+                . "${3}activate"
+            fi
+            python setup.py ${short:+--short-tests-only} test ${testargs[$1]}
             result=$?
             if [[ ${tries} < 3 && ${result} == 137 ]]
             then
@@ -995,6 +1001,7 @@ pythonstuff=(
     sdk/cwl:py3
     services/dockercleaner:py3
     services/fuse
+    services/fuse:py3
     services/nodemanager
     tools/crunchstat-summary
     tools/crunchstat-summary:py3

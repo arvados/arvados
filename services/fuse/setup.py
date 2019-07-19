@@ -44,8 +44,8 @@ setup(name='arvados_fuse',
       ],
       install_requires=[
         'arvados-python-client{}'.format(pysdk_dep),
-        # llfuse 1.3.4 fails to install via pip
-        'llfuse >=1.2, <1.3.4',
+        'llfuse >= 1.3.6',
+        'future',
         'python-daemon',
         'ciso8601 >= 2.0.0',
         'setuptools',
@@ -54,6 +54,10 @@ setup(name='arvados_fuse',
       extras_require={
           ':python_version<"3"': ['pytz'],
       },
+      classifiers=[
+          'Programming Language :: Python :: 2',
+          'Programming Language :: Python :: 3',
+      ],
       test_suite='tests',
       tests_require=['pbr<1.7.0', 'mock>=1.0', 'PyYAML'],
       zip_safe=False

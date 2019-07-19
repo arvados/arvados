@@ -2,6 +2,11 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+from __future__ import absolute_import
+from __future__ import division
+from future.utils import viewitems
+from future.utils import itervalues
+from builtins import dict
 import logging
 import re
 import time
@@ -14,8 +19,8 @@ from apiclient import errors as apiclient_errors
 import errno
 import time
 
-from fusefile import StringFile, ObjectFile, FuncToJSONFile, FuseArvadosFile
-from fresh import FreshBase, convertTime, use_counter, check_update
+from .fusefile import StringFile, ObjectFile, FuncToJSONFile, FuseArvadosFile
+from .fresh import FreshBase, convertTime, use_counter, check_update
 
 import arvados.collection
 from arvados.util import portable_data_hash_pattern, uuid_pattern, collection_uuid_pattern, group_uuid_pattern, user_uuid_pattern, link_uuid_pattern
@@ -163,7 +168,7 @@ class Directory(FreshBase):
     def in_use(self):
         if super(Directory, self).in_use():
             return True
-        for v in self._entries.itervalues():
+        for v in itervalues(self._entries):
             if v.in_use():
                 return True
         return False
@@ -171,7 +176,7 @@ class Directory(FreshBase):
     def has_ref(self, only_children):
         if super(Directory, self).has_ref(only_children):
             return True
-        for v in self._entries.itervalues():
+        for v in itervalues(self._entries):
             if v.has_ref(False):
                 return True
         return False
@@ -193,7 +198,7 @@ class Directory(FreshBase):
         # Find self on the parent in order to invalidate this path.
         # Calling the public items() method might trigger a refresh,
         # which we definitely don't want, so read the internal dict directly.
-        for k,v in parent._entries.items():
+        for k,v in viewitems(parent._entries):
             if v is self:
                 self.inodes.invalidate_entry(parent, k)
                 break
@@ -282,7 +287,7 @@ class CollectionDirectoryBase(Directory):
     def populate(self, mtime):
         self._mtime = mtime
         self.collection.subscribe(self.on_event)
-        for entry, item in self.collection.items():
+        for entry, item in viewitems(self.collection):
             self.new_entry(entry, item, self.mtime())
 
     def writable(self):
@@ -359,7 +364,7 @@ class CollectionDirectory(CollectionDirectoryBase):
         self.collection_record = None
         self._poll = True
         try:
-            self._poll_time = (api._rootDesc.get('blobSignatureTtl', 60*60*2)/2)
+            self._poll_time = (api._rootDesc.get('blobSignatureTtl', 60*60*2) // 2)
         except:
             _logger.debug("Error getting blobSignatureTtl from discovery document: %s", sys.exc_info()[0])
             self._poll_time = 60*60
@@ -1116,7 +1121,7 @@ class SharedDirectory(Directory):
 
             # end with llfuse.lock_released, re-acquire lock
 
-            self.merge(contents.items(),
+            self.merge(viewitems(contents),
                        lambda i: i[0],
                        lambda a, i: a.uuid() == i[1]['uuid'],
                        lambda i: ProjectDirectory(self.inode, self.inodes, self.api, self.num_retries, i[1], poll=self._poll, poll_time=self._poll_time))

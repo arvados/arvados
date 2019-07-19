@@ -2,6 +2,10 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+from __future__ import absolute_import
+from future.utils import viewitems
+from builtins import str
+from builtins import range
 import arvados
 import arvados_fuse as fuse
 import llfuse
@@ -15,7 +19,7 @@ from ..slow_test import slow_test
 
 logger = logging.getLogger('arvados.arv-mount')
 
-from performance_profiler import profiled
+from .performance_profiler import profiled
 
 def fuse_createCollectionWithMultipleBlocks(mounttmp, streams=1, files_per_stream=1, data='x'):
     class Test(unittest.TestCase):
@@ -330,7 +334,7 @@ class UsingMagicDir_CreateCollectionWithManyFilesAndMoveAndDeleteFile(MountTestB
         for j in range(0, files_per_stream):
             files[os.path.join(self.mounttmp, collection, 'file'+str(j)+'.txt')] = data
 
-        for k, v in files.items():
+        for k, v in viewItems(files):
             with open(os.path.join(self.mounttmp, collection, k)) as f:
                 self.assertEqual(v, f.read())
 

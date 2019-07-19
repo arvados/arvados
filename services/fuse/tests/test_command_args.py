@@ -2,6 +2,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+from __future__ import absolute_import
+from __future__ import print_function
+from six import assertRegex
 import arvados
 import arvados_fuse
 import arvados_fuse.command
@@ -13,14 +16,14 @@ import llfuse
 import logging
 import mock
 import os
-import run_test_server
+from . import run_test_server
 import sys
 import tempfile
 import unittest
 
 def noexit(func):
     """If argparse or arvados_fuse tries to exit, fail the test instead"""
-    class SystemExitCaught(StandardError):
+    class SystemExitCaught(Exception):
         pass
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
@@ -32,11 +35,12 @@ def noexit(func):
 
 @contextlib.contextmanager
 def nostderr():
-    orig, sys.stderr = sys.stderr, open(os.devnull, 'w')
-    try:
-        yield
-    finally:
-        sys.stderr = orig
+    with open(os.devnull, 'w') as dn:
+        orig, sys.stderr = sys.stderr, dn
+        try:
+            yield
+        finally:
+            sys.stderr = orig
 
 
 class MountArgsTest(unittest.TestCase):
@@ -78,14 +82,14 @@ class MountArgsTest(unittest.TestCase):
         e = self.check_ent_type(arvados_fuse.MagicDirectory, 'by_id')
 
         e = self.check_ent_type(arvados_fuse.StringFile, 'README')
-        readme = e.readfrom(0, -1)
-        self.assertRegexpMatches(readme, r'active-user@arvados\.local')
-        self.assertRegexpMatches(readme, r'\n$')
+        readme = e.readfrom(0, -1).decode()
+        assertRegex(self, readme, r'active-user@arvados\.local')
+        assertRegex(self, readme, r'\n$')
 
         e = self.check_ent_type(arvados_fuse.StringFile, 'by_id', 'README')
-        txt = e.readfrom(0, -1)
-        self.assertRegexpMatches(txt, r'portable data hash')
-        self.assertRegexpMatches(txt, r'\n$')
+        txt = e.readfrom(0, -1).decode()
+        assertRegex(self, txt, r'portable data hash')
+        assertRegex(self, txt, r'\n$')
 
     @noexit
     def test_by_id(self):
@@ -184,11 +188,20 @@ class MountArgsTest(unittest.TestCase):
         self.assertEqual(True, self.mnt.listen_for_events)
 
     def test_version_argument(self):
-        orig, sys.stderr = sys.stderr, io.BytesIO()
+        # The argparse version action prints to stderr in Python 2 and stdout
+        # in Python 3.4 and up. Write both to the same stream so the test can pass
+        # in both cases.
+        origerr = sys.stderr
+        origout = sys.stdout
+        sys.stderr = io.StringIO()
+        sys.stdout = sys.stderr
+
         with self.assertRaises(SystemExit):
             args = arvados_fuse.command.ArgumentParser().parse_args(['--version'])
-        self.assertRegexpMatches(sys.stderr.getvalue(), "[0-9]+\.[0-9]+\.[0-9]+")
-        sys.stderr = orig
+        assertRegex(self, sys.stdout.getvalue(), "[0-9]+\.[0-9]+\.[0-9]+")
+        sys.stderr.close()
+        sys.stderr = origerr
+        sys.stdout = origout
 
     @noexit
     @mock.patch('arvados.events.subscribe')

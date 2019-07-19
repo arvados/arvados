@@ -2,13 +2,15 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+from builtins import str
+from builtins import object
 import sys
 import time
 from collections import namedtuple
 
 Stat = namedtuple("Stat", ['name', 'get'])
 
-class StatWriter(object):    
+class StatWriter(object):
     def __init__(self, prefix, interval, stats):
         self.prefix = prefix
         self.interval = interval
@@ -40,7 +42,7 @@ class StatWriter(object):
 
 def statlogger(interval, keep, ops):
     calls = StatWriter("keepcalls", interval, [
-        Stat("put", keep.put_counter.get), 
+        Stat("put", keep.put_counter.get),
         Stat("get", keep.get_counter.get)
     ])
     net = StatWriter("net:keep0", interval, [
@@ -48,15 +50,15 @@ def statlogger(interval, keep, ops):
         Stat("rx", keep.download_counter.get)
     ])
     cache = StatWriter("keepcache", interval, [
-        Stat("hit", keep.hits_counter.get), 
+        Stat("hit", keep.hits_counter.get),
         Stat("miss", keep.misses_counter.get)
     ])
     fuseops = StatWriter("fuseops", interval, [
-        Stat("write", ops.write_ops_counter.get), 
+        Stat("write", ops.write_ops_counter.get),
         Stat("read", ops.read_ops_counter.get)
     ])
     fusetimes = []
-    for cur_op in ops.metric_op_names():   
+    for cur_op in ops.metric_op_names():
         name = "fuseop:{0}".format(cur_op)
         fusetimes.append(StatWriter(name, interval, [
             Stat("count", ops.metric_count_func(cur_op)),
