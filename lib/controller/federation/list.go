@@ -181,14 +181,14 @@ func (conn *Conn) splitListRequest(ctx context.Context, opts arvados.ListOptions
 	defer cancel()
 	errs := make(chan error, len(todoByRemote))
 	for clusterID, todo := range todoByRemote {
-		clusterID, todo := clusterID, todo
-		batch := make([]string, 0, len(todo))
-		for uuid := range todo {
-			batch = append(batch, uuid)
-		}
-		go func() {
+		go func(clusterID string, todo map[string]bool) {
 			// This goroutine sends exactly one value to
 			// errs.
+			batch := make([]string, 0, len(todo))
+			for uuid := range todo {
+				batch = append(batch, uuid)
+			}
+
 			var backend arvados.API
 			if clusterID == conn.cluster.ClusterID {
 				backend = conn.local
@@ -225,13 +225,13 @@ func (conn *Conn) splitListRequest(ctx context.Context, opts arvados.ListOptions
 				}
 			}
 			errs <- nil
-		}()
+		}(clusterID, todo)
 	}
 
 	// Wait for all goroutines to return, then return the first
 	// non-nil error, if any.
 	var firstErr error
-	for i := 0; i < len(todoByRemote); i++ {
+	for range todoByRemote {
 		if err := <-errs; err != nil && firstErr == nil {
 			firstErr = err
 			// Signal to any remaining fn() calls that
