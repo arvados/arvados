@@ -262,10 +262,8 @@ test_package_presence() {
 
     if [[ "$FORMAT" == "deb" ]]; then
       declare -A dd
-      dd[debian8]=jessie
       dd[debian9]=stretch
       dd[debian10]=buster
-      dd[ubuntu1404]=trusty
       dd[ubuntu1604]=xenial
       dd[ubuntu1804]=bionic
       D=${dd[$TARGET]}

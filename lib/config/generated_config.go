@@ -25,6 +25,16 @@ Clusters:
     ManagementToken: ""
 
     Services:
+
+      # In each of the service sections below, the keys under
+      # InternalURLs are the endpoints where the service should be
+      # listening, and reachable from other hosts in the cluster.
+      SAMPLE:
+        InternalURLs:
+          "http://example.host:12345": {}
+          SAMPLE: {}
+        ExternalURL: "-"
+
       RailsAPI:
         InternalURLs: {}
         ExternalURL: "-"
@@ -146,6 +156,7 @@ Clusters:
         user: ""
         password: ""
         dbname: ""
+        SAMPLE: ""
     API:
       # Maximum size (in bytes) allowed for a single API request.  This
       # limit is published in the discovery document for use by clients.
@@ -753,7 +764,19 @@ Clusters:
       #   Set "Required" as "true" for any of these fields to make them required.
       # If any of the required fields are missing in the user's profile, the user will be
       # redirected to the profile page before they can access any Workbench features.
-      UserProfileFormFields: {}
+      UserProfileFormFields:
+        SAMPLE:
+          Type: select
+          FormFieldTitle: Best color
+          FormFieldDescription: your favorite color
+          Required: false
+          Position: 1
+          Options:
+            red: {}
+            blue: {}
+            green: {}
+            SAMPLE: {}
+
         # exampleTextValue:  # key that will be set in properties
         #   Type: text  #
         #   FormFieldTitle: ""
@@ -795,6 +818,7 @@ Clusters:
         vnd.realvnc.bed: {}
         xml: {}
         xsl: {}
+        SAMPLE: {}
 
       # The maximum number of bytes to load in the log viewer
       LogViewerMaxBytes: 1M

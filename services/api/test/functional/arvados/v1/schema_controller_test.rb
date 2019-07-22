@@ -84,7 +84,7 @@ class Arvados::V1::SchemaControllerTest < ActionController::TestCase
     group_index_params = discovery_doc['resources']['groups']['methods']['index']['parameters']
     group_contents_params = discovery_doc['resources']['groups']['methods']['contents']['parameters']
 
-    assert_equal group_contents_params.keys.sort, (group_index_params.keys - ['select'] + ['uuid', 'recursive']).sort
+    assert_equal group_contents_params.keys.sort, (group_index_params.keys - ['select'] + ['uuid', 'recursive', 'include']).sort
 
     recursive_param = group_contents_params['recursive']
     assert_equal 'boolean', recursive_param['type']

@@ -151,6 +151,83 @@ module ProvenanceHelper
       gr
     end
 
+    def cr_edges cont, edge_opts={}
+      uuid = cont[:uuid]
+      gr = ""
+
+      gr += describe_node(cont[:uuid], {href: {controller: 'container_requests',
+                                             id: cont[:uuid]},
+                                        shape: 'oval',
+                                        label: cont[:name]})
+
+      ProvenanceHelper::find_collections cont[:mounts] do |collection_hash, collection_uuid, key|
+        if @opts[:pdh_to_uuid] and @opts[:pdh_to_uuid][collection_hash]
+          collection_uuid = @opts[:pdh_to_uuid][collection_hash].uuid
+          collection_hash = nil
+        end
+        if collection_uuid and @pdata[collection_uuid]
+          gr += describe_node(collection_uuid)
+          gr += edge(collection_uuid, uuid, {:label => key})
+        elsif collection_hash and @pdata[collection_hash]
+          gr += describe_node(collection_hash)
+          gr += edge(collection_hash, uuid, {:label => key})
+        end
+      end
+
+      if cont[:container_image] and !@opts[:no_docker] and @pdata[cont[:container_image]]
+        gr += describe_node(cont[:container_image], {label: cont[:container_image]})
+        gr += edge(cont[:container_image], uuid, {label: "docker_image"})
+      end
+
+      if cont[:output_uuid] and !edge_opts[:no_output] and @pdata[cont[:output_uuid]]
+        gr += describe_node(cont[:output_uuid])
+        gr += edge(uuid, cont[:output_uuid], {label: "output" })
+      end
+
+      if cont[:log_uuid] and !edge_opts[:no_log] and @pdata[cont[:log_uuid]]
+        gr += describe_node(cont[:log_uuid])
+        gr += edge(uuid, cont[:log_uuid], {label: "log"})
+      end
+
+      gr
+    end
+
+    def container_edges cont, edge_opts={}
+      uuid = cont[:uuid]
+      gr = ""
+
+      gr += describe_node(cont[:uuid], {href: {controller: 'containers',
+                                             id: cont[:uuid]},
+                                      shape: 'oval'})
+
+      ProvenanceHelper::find_collections cont[:mounts] do |collection_hash, collection_uuid, key|
+        if collection_uuid and @pdata[collection_uuid]
+          gr += describe_node(collection_uuid)
+          gr += edge(collection_uuid, uuid, {:label => key})
+        elsif collection_hash and @pdata[collection_hash]
+          gr += describe_node(collection_hash)
+          gr += edge(collection_hash, uuid, {:label => key})
+        end
+      end
+
+      if cont[:container_image] and !@opts[:no_docker] and @pdata[cont[:container_image]]
+        gr += describe_node(cont[:container_image], {label: cont[:container_image]})
+        gr += edge(cont[:container_image], uuid, {label: "docker_image"})
+      end
+
+      if cont[:output] and !edge_opts[:no_output] and @pdata[cont[:output]]
+        gr += describe_node(cont[:output])
+        gr += edge(uuid, cont[:output], {label: "output" })
+      end
+
+      if cont[:log] and !edge_opts[:no_log] and @pdata[cont[:log]]
+        gr += describe_node(cont[:log])
+        gr += edge(uuid, cont[:log], {label: "log"})
+      end
+
+      gr
+    end
+
     def generate_provenance_edges(uuid)
       gr = ""
       m = GenerateGraph::collection_uuid(uuid)
@@ -196,56 +273,10 @@ module ProvenanceHelper
           gr += job_edges job if job
         elsif rsc == ContainerRequest
           cr = @pdata[uuid]
-          if cr
-            gr += describe_node(cr[:uuid], {href: {controller: 'container_requests',
-                                                   id: cr[:uuid]},
-                                            label: cr[:name],
-                                            shape: 'oval'})
-            # Connect child CRs
-            children = @opts[:cr_children_of].andand[cr[:uuid]]
-            if children
-              children.each do |child|
-                gr += edge(child[:uuid], cr[:uuid], {label: 'child'})
-              end
-            end
-            # Output collection node
-            if cr[:output_uuid] and @opts[:output_collections][cr[:output_uuid]]
-              c = @opts[:output_collections][cr[:output_uuid]]
-              gr += describe_node(c[:portable_data_hash],
-                                  {
-                                    label: c[:name],
-                                    col_uuid: c[:uuid],
-                                  })
-              gr += edge(cr[:uuid],
-                         c[:portable_data_hash],
-                         {label: 'output'})
-            end
-            # Input collection nodes
-            output_pdhs = @opts[:output_collections].values.collect{|oc|
-              oc[:portable_data_hash]}
-            ProvenanceHelper::cr_input_pdhs(cr).each do |pdh|
-              if not output_pdhs.include?(pdh)
-                # Search for collections on the same project first
-                cols = @opts[:input_collections][pdh].andand.select{|ic|
-                  ic[:owner_uuid] == cr[:owner_uuid]}
-                if not cols or cols.empty?
-                  # Search for any collection with this PDH
-                  cols = @opts[:input_collections][pdh]
-                end
-                if cols
-                  names = cols.collect{|x| x[:name]}.uniq
-                else
-                  names = ['(collection not found)']
-                end
-                input_name = names.first
-                if names.length > 1
-                  input_name += " + #{names.length - 1} more"
-                end
-                gr += describe_node(pdh, {label: input_name})
-              end
-              gr += edge(pdh, cr[:uuid], {label: 'input'})
-            end
-          end
+          gr += cr_edges cr if cr
+        elsif rsc == Container
+          cr = @pdata[uuid]
+          gr += container_edges cr if cr
         end
       end
 
@@ -320,9 +351,8 @@ module ProvenanceHelper
 node [fontsize=10,fontname=\"Helvetica,Arial,sans-serif\"];
 edge [fontsize=10,fontname=\"Helvetica,Arial,sans-serif\"];
 """
-
-    if opts[:direction] == :bottom_up
-      gr += "edge [dir=back];"
+    if ["LR", "RL"].include? opts[:direction]
+      gr += "rankdir=#{opts[:direction]};"
     end
 
     begin

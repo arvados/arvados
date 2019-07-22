@@ -74,7 +74,7 @@ func (suite *IntegrationSuite) TestGetLockUnlockCancel(c *check.C) {
 			defer wg.Done()
 			err := cq.Unlock(uuid)
 			c.Check(err, check.NotNil)
-			c.Check(err, check.ErrorMatches, ".*cannot unlock when Queued*.")
+			c.Check(err, check.ErrorMatches, ".*cannot unlock when Queued.*")
 
 			err = cq.Lock(uuid)
 			c.Check(err, check.IsNil)

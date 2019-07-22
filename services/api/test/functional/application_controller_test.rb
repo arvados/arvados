@@ -24,11 +24,16 @@ class ApplicationControllerTest < ActionController::TestCase
     token_time = token.split('+', 2).first.to_i
     assert_operator(token_time, :>=, @start_stamp, "error token too old")
     assert_operator(token_time, :<=, now_timestamp, "error token too new")
+    json_response['errors'].each do |err|
+      assert_match(/req-[a-z0-9]{20}/, err, "X-Request-Id value missing on error message")
+    end
   end
 
   def check_404(errmsg="Path not found")
     assert_response 404
-    assert_equal([errmsg], json_response['errors'])
+    json_response['errors'].each do |err|
+      assert(err.include?(errmsg), "error message '#{err}' expected to include '#{errmsg}'")
+    end
     check_error_token
   end
 
@@ -115,5 +120,17 @@ class ApplicationControllerTest < ActionController::TestCase
         assert_response (bool ? :success : 422)
       end
     end
+  end
+
+  test "exceptions with backtraces get logged at exception_backtrace key" do
+    Group.stubs(:new).raises(Exception, 'Whoops')
+    Rails.logger.expects(:info).with(any_parameters) do |param|
+      param.include?('Whoops') and param.include?('"exception_backtrace":')
+    end
+    @controller = Arvados::V1::GroupsController.new
+    authorize_with :active
+    post :create, params: {
+      group: {},
+    }
   end
 end

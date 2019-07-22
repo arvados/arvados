@@ -9,13 +9,12 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"github.com/ghodss/yaml"
+	"github.com/sirupsen/logrus"
 )
 
 var DumpCommand dumpCommand
@@ -30,9 +29,15 @@ func (dumpCommand) RunCommand(prog string, args []string, stdin io.Reader, stdou
 		}
 	}()
 
+	loader := &Loader{
+		Stdin:  stdin,
+		Logger: ctxlog.New(stderr, "text", "info"),
+	}
+
 	flags := flag.NewFlagSet("", flag.ContinueOnError)
 	flags.SetOutput(stderr)
-	configFile := flags.String("config", arvados.DefaultConfigFile, "Site configuration `file`")
+	loader.SetupFlags(flags)
+
 	err = flags.Parse(args)
 	if err == flag.ErrHelp {
 		err = nil
@@ -45,8 +50,8 @@ func (dumpCommand) RunCommand(prog string, args []string, stdin io.Reader, stdou
 		flags.Usage()
 		return 2
 	}
-	log := ctxlog.New(stderr, "text", "info")
-	cfg, err := loadFileOrStdin(*configFile, stdin, log)
+
+	cfg, err := loader.Load()
 	if err != nil {
 		return 1
 	}
@@ -67,15 +72,25 @@ type checkCommand struct{}
 
 func (checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	var err error
+	var logbuf = &bytes.Buffer{}
 	defer func() {
+		io.Copy(stderr, logbuf)
 		if err != nil {
 			fmt.Fprintf(stderr, "%s\n", err)
 		}
 	}()
 
+	logger := logrus.New()
+	logger.Out = logbuf
+	loader := &Loader{
+		Stdin:  stdin,
+		Logger: logger,
+	}
+
 	flags := flag.NewFlagSet("", flag.ContinueOnError)
 	flags.SetOutput(stderr)
-	configFile := flags.String("config", arvados.DefaultConfigFile, "Site configuration `file`")
+	loader.SetupFlags(flags)
+
 	err = flags.Parse(args)
 	if err == flag.ErrHelp {
 		err = nil
@@ -88,21 +103,22 @@ func (checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 		flags.Usage()
 		return 2
 	}
-	log := &plainLogger{w: stderr}
-	var buf []byte
-	if *configFile == "-" {
-		buf, err = ioutil.ReadAll(stdin)
-	} else {
-		buf, err = ioutil.ReadFile(*configFile)
-	}
+
+	// Load the config twice -- once without loading deprecated
+	// keys/files, once with -- and then compare the two resulting
+	// configs. This reveals whether the deprecated keys/files
+	// have any effect on the final configuration.
+	//
+	// If they do, show the operator how to update their config
+	// such that the deprecated keys/files are superfluous and can
+	// be deleted.
+	loader.SkipDeprecated = true
+	withoutDepr, err := loader.Load()
 	if err != nil {
 		return 1
 	}
-	withoutDepr, err := load(bytes.NewBuffer(buf), log, false)
-	if err != nil {
-		return 1
-	}
-	withDepr, err := load(bytes.NewBuffer(buf), nil, true)
+	loader.SkipDeprecated = false
+	withDepr, err := loader.Load()
 	if err != nil {
 		return 1
 	}
@@ -124,6 +140,7 @@ func (checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 	if bytes.HasPrefix(diff, []byte("--- ")) {
 		fmt.Fprintln(stdout, "Your configuration is relying on deprecated entries. Suggest making the following changes.")
 		stdout.Write(diff)
+		err = nil
 		return 1
 	} else if len(diff) > 0 {
 		fmt.Fprintf(stderr, "Unexpected diff output:\n%s", diff)
@@ -131,20 +148,10 @@ func (checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 	} else if err != nil {
 		return 1
 	}
-	if log.used {
+	if logbuf.Len() > 0 {
 		return 1
 	}
 	return 0
-}
-
-type plainLogger struct {
-	w    io.Writer
-	used bool
-}
-
-func (pl *plainLogger) Warnf(format string, args ...interface{}) {
-	pl.used = true
-	fmt.Fprintf(pl.w, format+"\n", args...)
 }
 
 var DumpDefaultsCommand defaultsCommand
@@ -152,15 +159,9 @@ var DumpDefaultsCommand defaultsCommand
 type defaultsCommand struct{}
 
 func (defaultsCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
-	var err error
-	defer func() {
-		if err != nil {
-			fmt.Fprintf(stderr, "%s\n", err)
-		}
-	}()
-
-	_, err = stdout.Write(DefaultYAML)
+	_, err := stdout.Write(DefaultYAML)
 	if err != nil {
+		fmt.Fprintln(stderr, err)
 		return 1
 	}
 	return 0

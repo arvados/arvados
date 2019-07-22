@@ -15,11 +15,10 @@ import (
 )
 
 var (
-	version = "dev"
 	handler = cmd.Multi(map[string]cmd.Handler{
-		"version":   cmd.Version(version),
-		"-version":  cmd.Version(version),
-		"--version": cmd.Version(version),
+		"version":   cmd.Version,
+		"-version":  cmd.Version,
+		"--version": cmd.Version,
 
 		"cloudtest":       cloudtest.Command,
 		"config-check":    config.CheckCommand,
