@@ -130,7 +130,8 @@ func (conn *Conn) splitListRequest(ctx context.Context, opts arvados.ListOptions
 		if matchAllFilters == nil {
 			matchAllFilters = matchThisFilter
 		} else {
-			// matchAllFilters = intersect(matchAllFilters, matchThisFilter)
+			// Reduce matchAllFilters to the intersection
+			// of matchAllFilters ∩ matchThisFilter.
 			for uuid := range matchAllFilters {
 				if !matchThisFilter[uuid] {
 					delete(matchAllFilters, uuid)
