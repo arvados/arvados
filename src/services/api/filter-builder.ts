@@ -56,10 +56,13 @@ export class FilterBuilder {
     }
 
     public addFullTextSearch(value: string) {
-        // Filter construction implementation taken from 
-        // https://dev.arvados.org/projects/arvados/repository/entry/apps/workbench/app/assets/javascripts/filterable.js
-        // https://dev.arvados.org/projects/arvados/repository/entry/apps/workbench/app/assets/javascripts/to_tsquery.js
-        return this.addCondition('any', '@@', value.replace(/[^-\w\.\/]+/g, ' ').trim().replace(/ /g, ':*&'));
+        const terms = value.trim().split(/(\s+)/);
+        terms.forEach(term => {
+            if (term !== " ") {
+                this.addCondition("any", "ilike", term, "%", "%");
+            }
+        });
+        return this;
     }
 
     public getFilters() {
