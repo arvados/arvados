@@ -127,10 +127,10 @@ func (ldr *Loader) loadOldConfigHelper(component, path string, target interface{
 }
 
 // update config using values from an old-style keepstore config file.
-func (ldr *Loader) loadOldKeepstoreConfig(cfg *arvados.Config) error {
+func (ldr *Loader) loadOldKeepstoreConfig(cfg *arvados.Config, required bool) error {
 	var oc oldKeepstoreConfig
 	err := ldr.loadOldConfigHelper("keepstore", ldr.KeepstorePath, &oc)
-	if os.IsNotExist(err) && ldr.KeepstorePath == defaultKeepstoreConfigPath {
+	if os.IsNotExist(err) && !required {
 		return nil
 	} else if err != nil {
 		return err
@@ -197,10 +197,10 @@ func loadOldClientConfig(cluster *arvados.Cluster, client *arvados.Client) {
 }
 
 // update config using values from an crunch-dispatch-slurm config file.
-func (ldr *Loader) loadOldCrunchDispatchSlurmConfig(cfg *arvados.Config) error {
+func (ldr *Loader) loadOldCrunchDispatchSlurmConfig(cfg *arvados.Config, required bool) error {
 	var oc oldCrunchDispatchSlurmConfig
 	err := ldr.loadOldConfigHelper("crunch-dispatch-slurm", ldr.CrunchDispatchSlurmPath, &oc)
-	if os.IsNotExist(err) && ldr.CrunchDispatchSlurmPath == defaultCrunchDispatchSlurmConfigPath {
+	if os.IsNotExist(err) && !required {
 		return nil
 	} else if err != nil {
 		return err
@@ -259,13 +259,13 @@ type oldWsConfig struct {
 	ManagementToken *string
 }
 
-const defaultWebsocketsConfigPath = "/etc/arvados/ws/ws.yml"
+const defaultWebsocketConfigPath = "/etc/arvados/ws/ws.yml"
 
 // update config using values from an crunch-dispatch-slurm config file.
-func (ldr *Loader) loadOldWebsocketsConfig(cfg *arvados.Config) error {
+func (ldr *Loader) loadOldWebsocketConfig(cfg *arvados.Config, required bool) error {
 	var oc oldWsConfig
-	err := ldr.loadOldConfigHelper("arvados-ws", ldr.WebsocketsPath, &oc)
-	if os.IsNotExist(err) && ldr.WebsocketsPath == defaultWebsocketsConfigPath {
+	err := ldr.loadOldConfigHelper("arvados-ws", ldr.WebsocketPath, &oc)
+	if os.IsNotExist(err) && !required {
 		return nil
 	} else if err != nil {
 		return err
@@ -277,7 +277,6 @@ func (ldr *Loader) loadOldWebsocketsConfig(cfg *arvados.Config) error {
 	}
 
 	loadOldClientConfig(cluster, oc.Client)
-	fmt.Printf("Clllllllllllient %v %v", *oc.Client, cluster.Services.Controller.ExternalURL)
 
 	if oc.Postgres != nil {
 		cluster.PostgreSQL.Connection = *oc.Postgres
@@ -295,7 +294,7 @@ func (ldr *Loader) loadOldWebsocketsConfig(cfg *arvados.Config) error {
 		cluster.SystemLogs.Format = *oc.LogFormat
 	}
 	if oc.PingTimeout != nil {
-		cluster.API.WebsocketKeepaliveTimeout = *oc.PingTimeout
+		cluster.API.SendTimeout = *oc.PingTimeout
 	}
 	if oc.ClientEventQueue != nil {
 		cluster.API.WebsocketClientEventQueue = *oc.ClientEventQueue

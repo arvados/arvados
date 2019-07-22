@@ -31,7 +31,13 @@ type Loader struct {
 	Path                    string
 	KeepstorePath           string
 	CrunchDispatchSlurmPath string
-	WebsocketsPath          string
+	WebsocketPath           string
+
+	// Legacy config file for the current component (will be the
+	// same as one of the above files).  If set, not being able to
+	// load the 'main' config.yml will not be a fatal error, but
+	// the the legacy file will be required instead.
+	LegacyComponentConfig string
 
 	configdata []byte
 }
@@ -60,7 +66,7 @@ func (ldr *Loader) SetupFlags(flagset *flag.FlagSet) {
 	flagset.StringVar(&ldr.Path, "config", arvados.DefaultConfigFile, "Site configuration `file` (default may be overridden by setting an ARVADOS_CONFIG environment variable)")
 	flagset.StringVar(&ldr.KeepstorePath, "legacy-keepstore-config", defaultKeepstoreConfigPath, "Legacy keepstore configuration `file`")
 	flagset.StringVar(&ldr.CrunchDispatchSlurmPath, "legacy-crunch-dispatch-slurm-config", defaultCrunchDispatchSlurmConfigPath, "Legacy crunch-dispatch-slurm configuration `file`")
-	flagset.StringVar(&ldr.WebsocketsPath, "legacy-ws-config", defaultWebsocketsConfigPath, "Legacy arvados-ws configuration `file`")
+	flagset.StringVar(&ldr.WebsocketPath, "legacy-ws-config", defaultWebsocketConfigPath, "Legacy arvados-ws configuration `file`")
 }
 
 // MungeLegacyConfigArgs checks args for a -config flag whose argument
@@ -134,20 +140,19 @@ func (ldr *Loader) loadBytes(path string) ([]byte, error) {
 	return ioutil.ReadAll(f)
 }
 
-func (ldr *Loader) LoadDefaults() (*arvados.Config, error) {
-	ldr.configdata = []byte(`Clusters: {zzzzz: {}}`)
-	defer func() { ldr.configdata = nil }()
-	return ldr.Load()
-}
-
 func (ldr *Loader) Load() (*arvados.Config, error) {
 	if ldr.configdata == nil {
 		buf, err := ldr.loadBytes(ldr.Path)
 		if err != nil {
-			return nil, err
+			if ldr.LegacyComponentConfig != "" && os.IsNotExist(err) && !ldr.SkipDeprecated {
+				buf = []byte(`Clusters: {zzzzz: {}}`)
+			} else {
+				return nil, err
+			}
 		}
 		ldr.configdata = buf
 	}
+	noConfigLoaded := bytes.Compare(ldr.configdata, []byte(`Clusters: {zzzzz: {}}`)) == 0
 
 	// Load the config into a dummy map to get the cluster ID
 	// keys, discarding the values; then set up defaults for each
@@ -213,10 +218,19 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 		if err != nil {
 			return nil, err
 		}
+		// legacy file is required when either:
+		// * a non-default location was specified
+		// * no primary config was loaded, and this is the
+		// legacy config file for the current component
 		for _, err := range []error{
-			ldr.loadOldKeepstoreConfig(&cfg),
-			ldr.loadOldCrunchDispatchSlurmConfig(&cfg),
-			ldr.loadOldWebsocketsConfig(&cfg),
+			ldr.loadOldKeepstoreConfig(&cfg, (ldr.KeepstorePath != defaultKeepstoreConfigPath) ||
+				(noConfigLoaded && ldr.LegacyComponentConfig == ldr.KeepstorePath)),
+
+			ldr.loadOldCrunchDispatchSlurmConfig(&cfg, (ldr.CrunchDispatchSlurmPath != defaultCrunchDispatchSlurmConfigPath) ||
+				(noConfigLoaded && ldr.LegacyComponentConfig == ldr.CrunchDispatchSlurmPath)),
+
+			ldr.loadOldWebsocketConfig(&cfg, (ldr.WebsocketPath != defaultWebsocketConfigPath) ||
+				(noConfigLoaded && ldr.LegacyComponentConfig == ldr.WebsocketPath)),
 		} {
 			if err != nil {
 				return nil, err

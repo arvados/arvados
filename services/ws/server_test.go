@@ -36,7 +36,8 @@ func (s *serverSuite) SetUpTest(c *check.C) {
 
 func (*serverSuite) testConfig() (*arvados.Cluster, error) {
 	ldr := config.NewLoader(nil, nil)
-	cfg, err := ldr.LoadDefaults()
+	ldr.LegacyComponentConfig = "ws-test"
+	cfg, err := ldr.Load()
 	if err != nil {
 		return nil, err
 	}

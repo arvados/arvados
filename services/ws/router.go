@@ -54,7 +54,7 @@ type debugStatuser interface {
 
 func (rtr *router) setup() {
 	rtr.handler = &handler{
-		PingTimeout: time.Duration(rtr.cluster.API.WebsocketKeepaliveTimeout),
+		PingTimeout: time.Duration(rtr.cluster.API.SendTimeout),
 		QueueSize:   rtr.cluster.API.WebsocketClientEventQueue,
 	}
 	rtr.mux = http.NewServeMux()

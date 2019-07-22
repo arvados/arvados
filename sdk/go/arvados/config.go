@@ -76,7 +76,7 @@ type Cluster struct {
 		MaxRequestSize                 int
 		RailsSessionSecretToken        string
 		RequestTimeout                 Duration
-		WebsocketKeepaliveTimeout      Duration
+		SendTimeout                    Duration
 		WebsocketClientEventQueue      int
 		WebsocketServerEventQueue      int
 	}
