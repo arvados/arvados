@@ -65,7 +65,7 @@ var whitelist = map[string]bool{
 	"API.RailsSessionSecretToken":                  false,
 	"API.RequestTimeout":                           true,
 	"API.WebsocketClientEventQueue":                false,
-	"API.WebsocketKeepaliveTimeout":                true,
+	"API.SendTimeout":                              true,
 	"API.WebsocketServerEventQueue":                false,
 	"AuditLogs":                                    false,
 	"AuditLogs.MaxAge":                             false,

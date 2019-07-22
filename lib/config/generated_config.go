@@ -204,7 +204,11 @@ Clusters:
       # Maximum wall clock time to spend handling an incoming request.
       RequestTimeout: 5m
 
-      WebsocketKeepaliveTimeout: 60s
+      # Websocket will send a periodic empty event after 'SendTimeout'
+      # if there is no other activity to maintain the connection /
+      # detect dropped connections.
+      SendTimeout: 60s
+
       WebsocketClientEventQueue: 64
       WebsocketServerEventQueue: 4
 
