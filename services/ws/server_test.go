@@ -182,13 +182,20 @@ ManagementToken: qqqqq
 	c.Check(cluster.Services.Controller.ExternalURL, check.Equals, arvados.URL{Scheme: "https", Host: "example.com"})
 	c.Check(cluster.SystemRootToken, check.Equals, "abcdefg")
 
-	c.Check(cluster.PostgreSQL.Connection.String(), check.Equals, "connect_timeout='30' dbname='arvados_production' fallback_application_name='arvados-ws' host='localhost' password='xyzzy' sslmode='require' user='arvados' ")
+	c.Check(cluster.PostgreSQL.Connection, check.DeepEquals, arvados.PostgreSQLConnection{
+		"connect_timeout":           "30",
+		"dbname":                    "arvados_production",
+		"fallback_application_name": "arvados-ws",
+		"host":                      "localhost",
+		"password":                  "xyzzy",
+		"sslmode":                   "require",
+		"user":                      "arvados"})
 	c.Check(cluster.PostgreSQL.ConnectionPool, check.Equals, 63)
 	c.Check(cluster.Services.Websocket.InternalURLs, check.DeepEquals, map[arvados.URL]arvados.ServiceInstance{
 		arvados.URL{Host: ":8765"}: arvados.ServiceInstance{}})
 	c.Check(cluster.SystemLogs.LogLevel, check.Equals, "debug")
 	c.Check(cluster.SystemLogs.Format, check.Equals, "text")
-	c.Check(cluster.API.WebsocketKeepaliveTimeout, check.Equals, arvados.Duration(61*time.Second))
+	c.Check(cluster.API.SendTimeout, check.Equals, arvados.Duration(61*time.Second))
 	c.Check(cluster.API.WebsocketClientEventQueue, check.Equals, 62)
 	c.Check(cluster.API.WebsocketServerEventQueue, check.Equals, 5)
 	c.Check(cluster.ManagementToken, check.Equals, "qqqqq")
