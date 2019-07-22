@@ -140,6 +140,11 @@ func (conn *Conn) splitListRequest(ctx context.Context, opts arvados.ListOptions
 		}
 	}
 
+	// Collate UUIDs in matchAllFilters by remote cluster ID --
+	// e.g., todoByRemote["aaaaa"]["aaaaa-4zz18-000000000000000"]
+	// will be true -- and count the total number of UUIDs we're
+	// filtering on, so we can compare it to our max page size
+	// limit.
 	nUUIDs := 0
 	todoByRemote := map[string]map[string]bool{}
 	for uuid := range matchAllFilters {
