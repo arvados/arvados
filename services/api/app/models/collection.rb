@@ -489,17 +489,13 @@ class Collection < ArvadosModel
         [c.portable_data_hash, c]
       }]
 
-    puts "mg #{migrated_collections} #{collections}"
-
     collections.map { |c|
       # Check if the listed image is compatible first, if not, then try the
       # migration link.
       manifest = Keep::Manifest.new(c.manifest_text)
-      puts "m1 #{manifest.exact_file_count?(1)} #{manifest.files[0][1]} #{pattern}"
       if manifest.exact_file_count?(1) and manifest.files[0][1] =~ pattern
         c
       elsif m = migrated_collections[migrations[c.portable_data_hash]]
-        puts "m2 #{manifest.exact_file_count?(1)} #{manifest.files[0][1]} #{pattern}"
         manifest = Keep::Manifest.new(m.manifest_text)
         if manifest.exact_file_count?(1) and manifest.files[0][1] =~ pattern
           m

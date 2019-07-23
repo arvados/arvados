@@ -75,8 +75,8 @@ $arvados_config = $arvados_config_global.deep_dup
 
 def arrayToHash cfg, k, v
   val = {}
-  v.each do |k|
-    val[k.to_s] = {}
+  v.each do |entry|
+    val[entry.to_s] = {}
   end
   ConfigLoader.set_cfg cfg, k, val
 end
@@ -86,7 +86,7 @@ arvcfg = ConfigLoader.new
 arvcfg.declare_config "ClusterID", NonemptyString, :uuid_prefix
 arvcfg.declare_config "ManagementToken", String, :ManagementToken
 arvcfg.declare_config "Git.Repositories", String, :git_repositories_dir
-arvcfg.declare_config "API.DisabledAPIs", Hash, :disable_api_methods, method(:arrayToHash)
+arvcfg.declare_config "API.DisabledAPIs", Hash, :disable_api_methods, ->(cfg, k, v) { arrayToHash cfg, "API.DisabledAPIs", v }
 arvcfg.declare_config "API.MaxRequestSize", Integer, :max_request_size
 arvcfg.declare_config "API.MaxIndexDatabaseRead", Integer, :max_index_database_read
 arvcfg.declare_config "API.MaxItemsPerResponse", Integer, :max_items_per_response
@@ -95,7 +95,7 @@ arvcfg.declare_config "API.RailsSessionSecretToken", NonemptyString, :secret_tok
 arvcfg.declare_config "Users.AutoSetupNewUsers", Boolean, :auto_setup_new_users
 arvcfg.declare_config "Users.AutoSetupNewUsersWithVmUUID", String, :auto_setup_new_users_with_vm_uuid
 arvcfg.declare_config "Users.AutoSetupNewUsersWithRepository", Boolean, :auto_setup_new_users_with_repository
-arvcfg.declare_config "Users.AutoSetupUsernameBlacklist", Hash, :auto_setup_name_blacklist, method(:arrayToHash)
+arvcfg.declare_config "Users.AutoSetupUsernameBlacklist", Hash, :auto_setup_name_blacklist, ->(cfg, k, v) { arrayToHash cfg, "Users.AutoSetupUsernameBlacklist", v }
 arvcfg.declare_config "Users.NewUsersAreActive", Boolean, :new_users_are_active
 arvcfg.declare_config "Users.AutoAdminUserWithEmail", String, :auto_admin_user
 arvcfg.declare_config "Users.AutoAdminFirstUser", Boolean, :auto_admin_first_user
@@ -103,7 +103,7 @@ arvcfg.declare_config "Users.UserProfileNotificationAddress", String, :user_prof
 arvcfg.declare_config "Users.AdminNotifierEmailFrom", String, :admin_notifier_email_from
 arvcfg.declare_config "Users.EmailSubjectPrefix", String, :email_subject_prefix
 arvcfg.declare_config "Users.UserNotifierEmailFrom", String, :user_notifier_email_from
-arvcfg.declare_config "Users.NewUserNotificationRecipients", Hash, :new_user_notification_recipients, method(:arrayToHash)
+arvcfg.declare_config "Users.NewUserNotificationRecipients", Hash, :new_user_notification_recipients, ->(cfg, k, v) { arrayToHash cfg, "Users.NewUserNotificationRecipients", v }
 arvcfg.declare_config "Users.NewInactiveUserNotificationRecipients", Hash, :new_inactive_user_notification_recipients, method(:arrayToHash)
 arvcfg.declare_config "Login.ProviderAppSecret", NonemptyString, :sso_app_secret
 arvcfg.declare_config "Login.ProviderAppID", NonemptyString, :sso_app_id
@@ -111,7 +111,7 @@ arvcfg.declare_config "TLS.Insecure", Boolean, :sso_insecure
 arvcfg.declare_config "Services.SSO.ExternalURL", NonemptyString, :sso_provider_url
 arvcfg.declare_config "AuditLogs.MaxAge", ActiveSupport::Duration, :max_audit_log_age
 arvcfg.declare_config "AuditLogs.MaxDeleteBatch", Integer, :max_audit_log_delete_batch
-arvcfg.declare_config "AuditLogs.UnloggedAttributes", Hash, :unlogged_attributes, method(:arrayToHash)
+arvcfg.declare_config "AuditLogs.UnloggedAttributes", Hash, :unlogged_attributes, ->(cfg, k, v) { arrayToHash cfg, "AuditLogs.UnloggedAttributes", v }
 arvcfg.declare_config "SystemLogs.MaxRequestLogParamsSize", Integer, :max_request_log_params_size
 arvcfg.declare_config "Collections.DefaultReplication", Integer, :default_collection_replication
 arvcfg.declare_config "Collections.DefaultTrashLifetime", ActiveSupport::Duration, :default_trash_lifetime
@@ -121,7 +121,7 @@ arvcfg.declare_config "Collections.TrashSweepInterval", ActiveSupport::Duration,
 arvcfg.declare_config "Collections.BlobSigningKey", NonemptyString, :blob_signing_key
 arvcfg.declare_config "Collections.BlobSigningTTL", ActiveSupport::Duration, :blob_signature_ttl
 arvcfg.declare_config "Collections.BlobSigning", Boolean, :permit_create_collection_with_unsigned_manifest, ->(cfg, k, v) { ConfigLoader.set_cfg cfg, "Collections.BlobSigning", !v }
-arvcfg.declare_config "Containers.SupportedDockerImageFormats", Hash, :docker_image_formats, method(:arrayToHash)
+arvcfg.declare_config "Containers.SupportedDockerImageFormats", Hash, :docker_image_formats, ->(cfg, k, v) { arrayToHash cfg, "Containers.SupportedDockerImageFormats", v }
 arvcfg.declare_config "Containers.LogReuseDecisions", Boolean, :log_reuse_decisions
 arvcfg.declare_config "Containers.DefaultKeepCacheRAM", Integer, :container_default_keep_cache_ram
 arvcfg.declare_config "Containers.MaxDispatchAttempts", Integer, :max_container_dispatch_attempts
@@ -143,7 +143,7 @@ arvcfg.declare_config "Containers.SLURM.Managed.DNSServerConfTemplate", Pathname
 arvcfg.declare_config "Containers.SLURM.Managed.DNSServerReloadCommand", String, :dns_server_reload_command
 arvcfg.declare_config "Containers.SLURM.Managed.DNSServerUpdateCommand", String, :dns_server_update_command
 arvcfg.declare_config "Containers.SLURM.Managed.ComputeNodeDomain", String, :compute_node_domain
-arvcfg.declare_config "Containers.SLURM.Managed.ComputeNodeNameservers", Hash, :compute_node_nameservers, method(:arrayToHash)
+arvcfg.declare_config "Containers.SLURM.Managed.ComputeNodeNameservers", Hash, :compute_node_nameservers, ->(cfg, k, v) { arrayToHash cfg, "Containers.SLURM.Managed.ComputeNodeNameservers", v }
 arvcfg.declare_config "Containers.SLURM.Managed.AssignNodeHostname", String, :assign_node_hostname
 arvcfg.declare_config "Containers.JobsAPI.Enable", String, :enable_legacy_jobs_api, ->(cfg, k, v) { ConfigLoader.set_cfg cfg, "Containers.JobsAPI.Enable", v.to_s }
 arvcfg.declare_config "Containers.JobsAPI.CrunchJobWrapper", String, :crunch_job_wrapper

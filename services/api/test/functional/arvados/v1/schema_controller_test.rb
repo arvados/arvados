@@ -66,7 +66,7 @@ class Arvados::V1::SchemaControllerTest < ActionController::TestCase
 
   test "non-empty disable_api_methods" do
     Rails.configuration.API.DisabledAPIs =
-      ['jobs.create', 'pipeline_instances.create', 'pipeline_templates.create']
+      {'jobs.create'=>{}, 'pipeline_instances.create'=>{}, 'pipeline_templates.create'=>{}}
     get :index
     assert_response :success
     discovery_doc = JSON.parse(@response.body)

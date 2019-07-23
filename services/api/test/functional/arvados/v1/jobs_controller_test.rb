@@ -480,8 +480,8 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
   end
 
   test 'jobs.create disabled in config' do
-    Rails.configuration.API.DisabledAPIs = ["jobs.create",
-                                               "pipeline_instances.create"]
+    Rails.configuration.API.DisabledAPIs = {"jobs.create"=>{},
+                                               "pipeline_instances.create"=>{}}
     authorize_with :active
     post :create, params: {
       job: {

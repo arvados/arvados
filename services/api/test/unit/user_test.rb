@@ -110,7 +110,7 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "new username set avoiding blacklist" do
-    Rails.configuration.Users.AutoSetupUsernameBlacklist = ["root"]
+    Rails.configuration.Users.AutoSetupUsernameBlacklist = {"root"=>{}}
     check_new_username_setting("root", "root2")
   end
 
@@ -341,45 +341,45 @@ class UserTest < ActiveSupport::TestCase
   test "create new user with notifications" do
     set_user_from_auth :admin
 
-    create_user_and_verify_setup_and_notifications true, 'active-notify-address@example.com', 'inactive-notify-address@example.com', nil, nil
-    create_user_and_verify_setup_and_notifications true, 'active-notify-address@example.com', [], nil, nil
-    create_user_and_verify_setup_and_notifications true, [], [], nil, nil
-    create_user_and_verify_setup_and_notifications false, 'active-notify-address@example.com', 'inactive-notify-address@example.com', nil, nil
-    create_user_and_verify_setup_and_notifications false, [], 'inactive-notify-address@example.com', nil, nil
-    create_user_and_verify_setup_and_notifications false, [], [], nil, nil
+    create_user_and_verify_setup_and_notifications true, {'active-notify-address@example.com'=>{}}, {'inactive-notify-address@example.com'=>{}}, nil, nil
+    create_user_and_verify_setup_and_notifications true, {'active-notify-address@example.com'=>{}}, {}, nil, nil
+    create_user_and_verify_setup_and_notifications true, {}, [], nil, nil
+    create_user_and_verify_setup_and_notifications false, {'active-notify-address@example.com'=>{}}, {'inactive-notify-address@example.com'=>{}}, nil, nil
+    create_user_and_verify_setup_and_notifications false, {}, {'inactive-notify-address@example.com'=>{}}, nil, nil
+    create_user_and_verify_setup_and_notifications false, {}, {}, nil, nil
   end
 
   [
     # Easy inactive user tests.
-    [false, [], [], "inactive-none@example.com", false, false, "inactivenone"],
-    [false, [], [], "inactive-vm@example.com", true, false, "inactivevm"],
-    [false, [], [], "inactive-repo@example.com", false, true, "inactiverepo"],
-    [false, [], [], "inactive-both@example.com", true, true, "inactiveboth"],
+    [false, {}, {}, "inactive-none@example.com", false, false, "inactivenone"],
+    [false, {}, {}, "inactive-vm@example.com", true, false, "inactivevm"],
+    [false, {}, {}, "inactive-repo@example.com", false, true, "inactiverepo"],
+    [false, {}, {}, "inactive-both@example.com", true, true, "inactiveboth"],
 
     # Easy active user tests.
-    [true, "active-notify@example.com", "inactive-notify@example.com", "active-none@example.com", false, false, "activenone"],
-    [true, "active-notify@example.com", "inactive-notify@example.com", "active-vm@example.com", true, false, "activevm"],
-    [true, "active-notify@example.com", "inactive-notify@example.com", "active-repo@example.com", false, true, "activerepo"],
-    [true, "active-notify@example.com", "inactive-notify@example.com", "active-both@example.com", true, true, "activeboth"],
+    [true, {"active-notify@example.com"=>{}}, {"inactive-notify@example.com"=>{}}, "active-none@example.com", false, false, "activenone"],
+    [true, {"active-notify@example.com"=>{}}, {"inactive-notify@example.com"=>{}}, "active-vm@example.com", true, false, "activevm"],
+    [true, {"active-notify@example.com"=>{}}, {"inactive-notify@example.com"=>{}}, "active-repo@example.com", false, true, "activerepo"],
+    [true, {"active-notify@example.com"=>{}}, {"inactive-notify@example.com"=>{}}, "active-both@example.com", true, true, "activeboth"],
 
     # Test users with malformed e-mail addresses.
-    [false, [], [], nil, true, true, nil],
-    [false, [], [], "arvados", true, true, nil],
-    [false, [], [], "@example.com", true, true, nil],
-    [true, "active-notify@example.com", "inactive-notify@example.com", "*!*@example.com", true, false, nil],
-    [true, "active-notify@example.com", "inactive-notify@example.com", "*!*@example.com", false, false, nil],
+    [false, {}, {}, nil, true, true, nil],
+    [false, {}, {}, "arvados", true, true, nil],
+    [false, {}, {}, "@example.com", true, true, nil],
+    [true, {"active-notify@example.com"=>{}}, {"inactive-notify@example.com"=>{}}, "*!*@example.com", true, false, nil],
+    [true, {"active-notify@example.com"=>{}}, {"inactive-notify@example.com"=>{}}, "*!*@example.com", false, false, nil],
 
     # Test users with various username transformations.
-    [false, [], [], "arvados@example.com", false, false, "arvados2"],
-    [true, "active-notify@example.com", "inactive-notify@example.com", "arvados@example.com", false, false, "arvados2"],
-    [true, "active-notify@example.com", "inactive-notify@example.com", "root@example.com", true, false, "root2"],
-    [false, "active-notify@example.com", "inactive-notify@example.com", "root@example.com", true, false, "root2"],
-    [true, "active-notify@example.com", "inactive-notify@example.com", "roo_t@example.com", false, true, "root2"],
-    [false, [], [], "^^incorrect_format@example.com", true, true, "incorrectformat"],
-    [true, "active-notify@example.com", "inactive-notify@example.com", "&4a_d9.@example.com", true, true, "ad9"],
-    [true, "active-notify@example.com", "inactive-notify@example.com", "&4a_d9.@example.com", false, false, "ad9"],
-    [false, "active-notify@example.com", "inactive-notify@example.com", "&4a_d9.@example.com", true, true, "ad9"],
-    [false, "active-notify@example.com", "inactive-notify@example.com", "&4a_d9.@example.com", false, false, "ad9"],
+    [false, {}, {}, "arvados@example.com", false, false, "arvados2"],
+    [true, {"active-notify@example.com"=>{}}, {"inactive-notify@example.com"=>{}}, "arvados@example.com", false, false, "arvados2"],
+    [true, {"active-notify@example.com"=>{}}, {"inactive-notify@example.com"=>{}}, "root@example.com", true, false, "root2"],
+    [false, {"active-notify@example.com"=>{}}, {"inactive-notify@example.com"=>{}}, "root@example.com", true, false, "root2"],
+    [true, {"active-notify@example.com"=>{}}, {"inactive-notify@example.com"=>{}}, "roo_t@example.com", false, true, "root2"],
+    [false, {}, {}, "^^incorrect_format@example.com", true, true, "incorrectformat"],
+    [true, {"active-notify@example.com"=>{}}, {"inactive-notify@example.com"=>{}}, "&4a_d9.@example.com", true, true, "ad9"],
+    [true, {"active-notify@example.com"=>{}}, {"inactive-notify@example.com"=>{}}, "&4a_d9.@example.com", false, false, "ad9"],
+    [false, {"active-notify@example.com"=>{}}, {"inactive-notify@example.com"=>{}}, "&4a_d9.@example.com", true, true, "ad9"],
+    [false, {"active-notify@example.com"=>{}}, {"inactive-notify@example.com"=>{}}, "&4a_d9.@example.com", false, false, "ad9"],
   ].each do |active, new_user_recipients, inactive_recipients, email, auto_setup_vm, auto_setup_repo, expect_username|
     test "create new user with auto setup #{active} #{email} #{auto_setup_vm} #{auto_setup_repo}" do
       set_user_from_auth :admin
@@ -686,7 +686,7 @@ class UserTest < ActiveSupport::TestCase
     if not new_user_recipients.empty? then
       assert_not_nil new_user_email, 'Expected new user email after setup'
       assert_equal Rails.configuration.Users.UserNotifierEmailFrom, new_user_email.from[0]
-      assert_equal new_user_recipients, new_user_email.to[0]
+      assert_equal new_user_recipients.keys.first, new_user_email.to[0]
       assert_equal new_user_email_subject, new_user_email.subject
     else
       assert_nil new_user_email, 'Did not expect new user email after setup'
@@ -696,7 +696,7 @@ class UserTest < ActiveSupport::TestCase
       if not inactive_recipients.empty? then
         assert_not_nil new_inactive_user_email, 'Expected new inactive user email after setup'
         assert_equal Rails.configuration.Users.UserNotifierEmailFrom, new_inactive_user_email.from[0]
-        assert_equal inactive_recipients, new_inactive_user_email.to[0]
+        assert_equal inactive_recipients.keys.first, new_inactive_user_email.to[0]
         assert_equal "#{Rails.configuration.Users.EmailSubjectPrefix}New inactive user notification", new_inactive_user_email.subject
       else
         assert_nil new_inactive_user_email, 'Did not expect new inactive user email after setup'
