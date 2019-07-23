@@ -72,8 +72,6 @@ Clusters:
     Collections:
       BlobSigningKey: $blob_signing_key
       DefaultReplication: 1
-    Containers:
-      SupportedDockerImageFormats: ["v2"]
     Login:
       ProviderAppSecret: $sso_app_secret
       ProviderAppID: arvados-server
