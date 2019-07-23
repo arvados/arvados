@@ -672,6 +672,7 @@ install_env() {
         cd "$GOPATH/src/git.curoverse.com/arvados.git"
         go get -v -d ...
         "$GOPATH/bin/govendor" sync
+        which goimports >/dev/null || go get golang.org/x/tools/cmd/goimports
     ) || fatal "Go setup failed"
 
     setup_virtualenv "$VENVDIR" --python python2.7
@@ -943,6 +944,7 @@ install_services/login-sync() {
 }
 
 install_services/api() {
+    stop_services
     cd "$WORKSPACE/services/api" \
         && RAILS_ENV=test bundle_install_trylocal
 

@@ -10,11 +10,13 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
+	"git.curoverse.com/arvados.git/lib/controller/rpc"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"github.com/julienschmidt/httprouter"
@@ -158,7 +160,8 @@ func (s *RouterIntegrationSuite) SetUpTest(c *check.C) {
 	cluster := &arvados.Cluster{}
 	cluster.TLS.Insecure = true
 	arvadostest.SetServiceURL(&cluster.Services.RailsAPI, "https://"+os.Getenv("ARVADOS_TEST_API_HOST"))
-	s.rtr = New(cluster)
+	url, _ := url.Parse("https://" + os.Getenv("ARVADOS_TEST_API_HOST"))
+	s.rtr = New(rpc.NewConn("zzzzz", url, true, rpc.PassthroughTokenProvider))
 }
 
 func (s *RouterIntegrationSuite) TearDownSuite(c *check.C) {

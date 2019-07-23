@@ -7,6 +7,8 @@ package arvadostest
 import (
 	"context"
 	"errors"
+	"reflect"
+	"runtime"
 	"sync"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
@@ -121,7 +123,9 @@ func (as *APIStub) Calls(method interface{}) []APIStubCall {
 	defer as.mtx.Unlock()
 	var calls []APIStubCall
 	for _, call := range as.calls {
-		if method == nil || call.Method == method {
+
+		if method == nil || (runtime.FuncForPC(reflect.ValueOf(call.Method).Pointer()).Name() ==
+			runtime.FuncForPC(reflect.ValueOf(method).Pointer()).Name()) {
 			calls = append(calls, call)
 		}
 	}

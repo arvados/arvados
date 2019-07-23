@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/lib/config"
+	"git.curoverse.com/arvados.git/lib/controller/federation"
 	"git.curoverse.com/arvados.git/lib/controller/railsproxy"
 	"git.curoverse.com/arvados.git/lib/controller/router"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
@@ -91,7 +92,7 @@ func (h *Handler) setup() {
 	}))
 
 	if h.Cluster.EnableBetaController14287 {
-		rtr := router.New(h.Cluster)
+		rtr := router.New(federation.New(h.Cluster))
 		mux.Handle("/arvados/v1/collections", rtr)
 		mux.Handle("/arvados/v1/collections/", rtr)
 	}

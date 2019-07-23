@@ -27,7 +27,7 @@ type Conn struct {
 	remotes map[string]backend
 }
 
-func New(cluster *arvados.Cluster) arvados.API {
+func New(cluster *arvados.Cluster) *Conn {
 	local := railsproxy.NewConn(cluster)
 	remotes := map[string]backend{}
 	for id, remote := range cluster.RemoteClusters {
@@ -218,10 +218,6 @@ func (conn *Conn) CollectionGet(ctx context.Context, options arvados.GetOptions)
 	}
 }
 
-func (conn *Conn) CollectionList(ctx context.Context, options arvados.ListOptions) (arvados.CollectionList, error) {
-	return conn.local.CollectionList(ctx, options)
-}
-
 func (conn *Conn) CollectionProvenance(ctx context.Context, options arvados.GetOptions) (map[string]interface{}, error) {
 	return conn.chooseBackend(options.UUID).CollectionProvenance(ctx, options)
 }
@@ -254,10 +250,6 @@ func (conn *Conn) ContainerGet(ctx context.Context, options arvados.GetOptions) 
 	return conn.chooseBackend(options.UUID).ContainerGet(ctx, options)
 }
 
-func (conn *Conn) ContainerList(ctx context.Context, options arvados.ListOptions) (arvados.ContainerList, error) {
-	return conn.local.ContainerList(ctx, options)
-}
-
 func (conn *Conn) ContainerDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.Container, error) {
 	return conn.chooseBackend(options.UUID).ContainerDelete(ctx, options)
 }
@@ -280,10 +272,6 @@ func (conn *Conn) SpecimenUpdate(ctx context.Context, options arvados.UpdateOpti
 
 func (conn *Conn) SpecimenGet(ctx context.Context, options arvados.GetOptions) (arvados.Specimen, error) {
 	return conn.chooseBackend(options.UUID).SpecimenGet(ctx, options)
-}
-
-func (conn *Conn) SpecimenList(ctx context.Context, options arvados.ListOptions) (arvados.SpecimenList, error) {
-	return conn.local.SpecimenList(ctx, options)
 }
 
 func (conn *Conn) SpecimenDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.Specimen, error) {

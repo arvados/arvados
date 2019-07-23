@@ -8,6 +8,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -17,9 +18,18 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/auth"
 )
 
 type TokenProvider func(context.Context) ([]string, error)
+
+func PassthroughTokenProvider(ctx context.Context) ([]string, error) {
+	if incoming, ok := auth.FromContext(ctx); !ok {
+		return nil, errors.New("no token provided")
+	} else {
+		return incoming.Tokens, nil
+	}
+}
 
 type Conn struct {
 	clusterID     string
