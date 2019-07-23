@@ -68,8 +68,7 @@ func (conn *Conn) CollectionList(ctx context.Context, options arvados.ListOption
 //
 // * len(Order)==0
 //
-// * there are no filters other than the "uuid = ..." and "uuid in
-//   ..." filters mentioned above.
+// * Each filter must be either "uuid = ..." or "uuid in [...]".
 //
 // * The maximum possible response size (total number of objects that
 //   could potentially be matched by all of the specified filters)
@@ -161,7 +160,7 @@ func (conn *Conn) splitListRequest(ctx context.Context, opts arvados.ListOptions
 
 	if len(todoByRemote) > 1 {
 		if cannotSplit {
-			return httpErrorf(http.StatusBadRequest, "cannot execute federated list query with filters other than 'uuid = ...' and 'uuid in [...]'")
+			return httpErrorf(http.StatusBadRequest, "cannot execute federated list query: each filter must be either 'uuid = ...' or 'uuid in [...]'")
 		}
 		if opts.Count != "none" {
 			return httpErrorf(http.StatusBadRequest, "cannot execute federated list query unless count==\"none\"")
