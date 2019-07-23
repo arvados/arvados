@@ -184,8 +184,8 @@ Clusters:
 
       # API methods to disable. Disabled methods are not listed in the
       # discovery document, and respond 404 to all requests.
-      # Example: ["jobs.create", "pipeline_instances.create"]
-      DisabledAPIs: []
+      # Example: {"jobs.create":{}, "pipeline_instances.create": {}}
+      DisabledAPIs: {}
 
       # Interval (seconds) between asynchronous permission view updates. Any
       # permission-updating API called with the 'async' parameter schedules a an
@@ -223,7 +223,14 @@ Clusters:
       AutoSetupNewUsers: false
       AutoSetupNewUsersWithVmUUID: ""
       AutoSetupNewUsersWithRepository: false
-      AutoSetupUsernameBlacklist: [arvados, git, gitolite, gitolite-admin, root, syslog]
+      AutoSetupUsernameBlacklist:
+        arvados: {}
+        git: {}
+        gitolite: {}
+        gitolite-admin: {}
+        root: {}
+        syslog: {}
+        SAMPLE: {}
 
       # When new_users_are_active is set to true, new users will be active
       # immediately.  This skips the "self-activate" step which enforces
@@ -247,8 +254,8 @@ Clusters:
       AdminNotifierEmailFrom: arvados@example.com
       EmailSubjectPrefix: "[ARVADOS] "
       UserNotifierEmailFrom: arvados@example.com
-      NewUserNotificationRecipients: []
-      NewInactiveUserNotificationRecipients: []
+      NewUserNotificationRecipients: {}
+      NewInactiveUserNotificationRecipients: {}
 
       # Set anonymous_user_token to enable anonymous user access. You can get
       # the token by running "bundle exec ./script/get_anonymous_user_token.rb"
@@ -275,13 +282,13 @@ Clusters:
       MaxDeleteBatch: 0
 
       # Attributes to suppress in events and audit logs.  Notably,
-      # specifying ["manifest_text"] here typically makes the database
+      # specifying {"manifest_text": {}} here typically makes the database
       # smaller and faster.
       #
       # Warning: Using any non-empty value here can have undesirable side
       # effects for any client or component that relies on event logs.
       # Use at your own risk.
-      UnloggedAttributes: []
+      UnloggedAttributes: {}
 
     SystemLogs:
 
@@ -416,10 +423,12 @@ Clusters:
       # to skip the compatibility check (and display a warning message to
       # that effect).
       #
-      # Example for sites running docker < 1.10: ["v1"]
-      # Example for sites running docker >= 1.10: ["v2"]
-      # Example for disabling check: []
-      SupportedDockerImageFormats: ["v2"]
+      # Example for sites running docker < 1.10: {"v1": {}}
+      # Example for sites running docker >= 1.10: {"v2": {}}
+      # Example for disabling check: {}
+      SupportedDockerImageFormats:
+        "v2": {}
+        SAMPLE: {}
 
       # Include details about job reuse decisions in the server log. This
       # causes additional database queries to run, so it should not be
@@ -545,7 +554,8 @@ Clusters:
 
           ComputeNodeDomain: ""
           ComputeNodeNameservers:
-            - 192.168.1.1
+            "192.168.1.1": {}
+            SAMPLE: {}
 
           # Hostname to assign to a compute node when it sends a "ping" and the
           # hostname in its Node record is nil.

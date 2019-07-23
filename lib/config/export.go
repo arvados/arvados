@@ -108,6 +108,7 @@ var whitelist = map[string]bool{
 	"Containers.SLURM":                             false,
 	"Containers.StaleLockTimeout":                  false,
 	"Containers.SupportedDockerImageFormats":       true,
+	"Containers.SupportedDockerImageFormats.*":     true,
 	"Containers.UsePreemptibleInstances":           true,
 	"EnableBetaController14287":                    false,
 	"Git":                                          false,

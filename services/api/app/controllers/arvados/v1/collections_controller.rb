@@ -152,7 +152,7 @@ class Arvados::V1::CollectionsController < ApplicationController
 
       if direction == :search_up
         # Search upstream for jobs where this locator is the output of some job
-        if !Rails.configuration.API.DisabledAPIs.include?("jobs.list")
+        if !Rails.configuration.API.DisabledAPIs["jobs.list"]
           Job.readable_by(*@read_users).where(output: loc.to_s).each do |job|
             search_edges(visited, job.uuid, :search_up)
           end
@@ -176,7 +176,7 @@ class Arvados::V1::CollectionsController < ApplicationController
         end
 
         # Search downstream for jobs where this locator is in script_parameters
-        if !Rails.configuration.API.DisabledAPIs.include?("jobs.list")
+        if !Rails.configuration.API.DisabledAPIs["jobs.list"]
           Job.readable_by(*@read_users).where(["jobs.script_parameters like ?", "%#{loc.to_s}%"]).each do |job|
             search_edges(visited, job.uuid, :search_down)
           end
@@ -245,7 +245,7 @@ class Arvados::V1::CollectionsController < ApplicationController
           if direction == :search_up
             visited[c.uuid] = c.as_api_response
 
-            if !Rails.configuration.API.DisabledAPIs.include?("jobs.list")
+            if !Rails.configuration.API.DisabledAPIs["jobs.list"]
               Job.readable_by(*@read_users).where(output: c.portable_data_hash).each do |job|
                 search_edges(visited, job.uuid, :search_up)
               end

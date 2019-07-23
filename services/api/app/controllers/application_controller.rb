@@ -433,7 +433,7 @@ class ApplicationController < ActionController::Base
   end
 
   def disable_api_methods
-    if Rails.configuration.API.DisabledAPIs.include?(controller_name + "." + action_name)
+    if Rails.configuration.API.DisabledAPIs[controller_name + "." + action_name]
       send_error("Disabled", status: 404)
     end
   end

@@ -426,7 +426,7 @@ class JobTest < ActiveSupport::TestCase
   end
 
   test "use migrated docker image if requesting old-format image by tag" do
-    Rails.configuration.Containers.SupportedDockerImageFormats = ['v2']
+    Rails.configuration.Containers.SupportedDockerImageFormats = {'v2'=>{}}
     add_docker19_migration_link
     job = Job.create!(
       job_attrs(
@@ -438,7 +438,7 @@ class JobTest < ActiveSupport::TestCase
   end
 
   test "use migrated docker image if requesting old-format image by pdh" do
-    Rails.configuration.Containers.SupportedDockerImageFormats = ['v2']
+    Rails.configuration.Containers.SupportedDockerImageFormats = {'v2'=>{}}
     add_docker19_migration_link
     job = Job.create!(
       job_attrs(
@@ -455,7 +455,7 @@ class JobTest < ActiveSupport::TestCase
    [:docker_image_1_12, :docker_image_1_12, :docker_image_1_12],
   ].each do |existing_image, request_image, expect_image|
     test "if a #{existing_image} job exists, #{request_image} yields #{expect_image} after migration" do
-      Rails.configuration.Containers.SupportedDockerImageFormats = ['v1']
+      Rails.configuration.Containers.SupportedDockerImageFormats = {'v1'=>{}}
 
       if existing_image == :docker_image
         oldjob = Job.create!(
@@ -477,7 +477,7 @@ class JobTest < ActiveSupport::TestCase
         end
       end
 
-      Rails.configuration.Containers.SupportedDockerImageFormats = ['v2']
+      Rails.configuration.Containers.SupportedDockerImageFormats = {'v2'=>{}}
       add_docker19_migration_link
 
       # Check that both v1 and v2 images get resolved to v2.

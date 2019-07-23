@@ -381,7 +381,7 @@ class User < ArvadosModel
     quoted_name = self.class.connection.quote_string(basename)
     next_username = basename
     next_suffix = 1
-    while Rails.configuration.Users.AutoSetupUsernameBlacklist.include?(next_username)
+    while Rails.configuration.Users.AutoSetupUsernameBlacklist[next_username]
       next_suffix += 1
       next_username = "%s%i" % [basename, next_suffix]
     end

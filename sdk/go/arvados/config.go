@@ -69,7 +69,7 @@ type Cluster struct {
 
 	API struct {
 		AsyncPermissionsUpdateInterval Duration
-		DisabledAPIs                   []string
+		DisabledAPIs                   map[string]struct{}
 		MaxIndexDatabaseRead           int
 		MaxItemsPerResponse            int
 		MaxRequestAmplification        int
@@ -83,7 +83,7 @@ type Cluster struct {
 	AuditLogs struct {
 		MaxAge             Duration
 		MaxDeleteBatch     int
-		UnloggedAttributes []string
+		UnloggedAttributes map[string]struct{}
 	}
 	Collections struct {
 		BlobSigning          bool
@@ -135,10 +135,10 @@ type Cluster struct {
 		AutoSetupNewUsers                     bool
 		AutoSetupNewUsersWithRepository       bool
 		AutoSetupNewUsersWithVmUUID           string
-		AutoSetupUsernameBlacklist            []string
+		AutoSetupUsernameBlacklist            map[string]struct{}
 		EmailSubjectPrefix                    string
-		NewInactiveUserNotificationRecipients []string
-		NewUserNotificationRecipients         []string
+		NewInactiveUserNotificationRecipients map[string]struct{}
+		NewUserNotificationRecipients         map[string]struct{}
 		NewUsersAreActive                     bool
 		UserNotifierEmailFrom                 string
 		UserProfileNotificationAddress        string
@@ -267,7 +267,7 @@ type ContainersConfig struct {
 	MinRetryPeriod              Duration
 	ReserveExtraRAM             ByteSize
 	StaleLockTimeout            Duration
-	SupportedDockerImageFormats []string
+	SupportedDockerImageFormats map[string]struct{}
 	UsePreemptibleInstances     bool
 
 	JobsAPI struct {
@@ -300,7 +300,7 @@ type ContainersConfig struct {
 			DNSServerReloadCommand string
 			DNSServerUpdateCommand string
 			ComputeNodeDomain      string
-			ComputeNodeNameservers []string
+			ComputeNodeNameservers map[string]struct{}
 			AssignNodeHostname     string
 		}
 	}
