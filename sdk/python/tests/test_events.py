@@ -63,6 +63,14 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
             last_log_id=(1 if start_time else None))
         self.assertIsInstance(self.ws, expect_type)
         self.assertEqual(200, events.get(True, 5)['status'])
+
+        if hasattr(self.ws, '_skip_old_events'):
+            # Avoid race by waiting for the first "find ID threshold"
+            # poll to finish.
+            deadline = time.time() + 10
+            while not self.ws._skip_old_events:
+                self.assertLess(time.time(), deadline)
+                time.sleep(0.1)
         human = arvados.api('v1').humans().create(body={}).execute()
 
         want_uuids = []
