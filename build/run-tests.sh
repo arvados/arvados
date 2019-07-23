@@ -628,10 +628,11 @@ initialize() {
     setup_ruby_environment
 
     if [[ -s "$CONFIGSRC/config.yml" ]] ; then
+	echo "Getting database configuration from $CONFIGSRC/config.yml"
 	cp "$CONFIGSRC/config.yml" "$temp/test-config.yml"
-	export ARVADOS_CONFIG="$temp/test-config.yml"
     else
 	if [[ -s /etc/arvados/config.yml ]] ; then
+	    echo "Getting database configuration from /etc/arvados/config.yml"
 	    python > "$temp/test-config.yml" <<EOF
 import yaml
 import json
@@ -639,13 +640,11 @@ v = list(yaml.safe_load(open('/etc/arvados/config.yml'))['Clusters'].values())[0
 v['Connection']['dbname'] = 'arvados_test'
 print(json.dumps({"Clusters": { "zzzzz": {'PostgreSQL': v}}}))
 EOF
-	    export ARVADOS_CONFIG="$temp/test-config.yml"
 	else
-	    if [[ ! -f "$WORKSPACE/services/api/config/database.yml" ]]; then
-		fatal "Please provide a database.yml file for the test suite"
-	    fi
+	    fatal "Please provide a config.yml file for the test suite in CONFIGSRC or /etc/arvados"
 	fi
     fi
+    export ARVADOS_CONFIG="$temp/test-config.yml"
 
     echo "PATH is $PATH"
 }
@@ -951,19 +950,11 @@ install_services/api() {
     rm -f config/environments/test.rb
     cp config/environments/test.rb.example config/environments/test.rb
 
-    if [ -n "$CONFIGSRC" ]
-    then
-        for f in database.yml
-        do
-            cp "$CONFIGSRC/$f" config/ || fatal "$f"
-        done
-    fi
-
     # Clear out any lingering postgresql connections to the test
     # database, so that we can drop it. This assumes the current user
     # is a postgresql superuser.
     cd "$WORKSPACE/services/api" \
-        && test_database=$(python -c "import yaml; print yaml.safe_load(file('config/database.yml'))['test']['database']") \
+        && test_database=$(python -c "import yaml; print yaml.safe_load(file('$ARVADOS_CONFIG'))['Clusters']['zzzzz']['PostgreSQL']['Connection']['dbname']") \
         && psql "$test_database" -c "SELECT pg_terminate_backend (pg_stat_activity.pid::int) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$test_database';" 2>/dev/null
 
     mkdir -p "$WORKSPACE/services/api/tmp/pids"

@@ -109,7 +109,6 @@ func (disp *Dispatcher) configure(prog string, args []string) error {
 
 	disp.logger.Printf("crunch-dispatch-slurm %s started", version)
 
-	loader.LegacyComponentConfig = loader.CrunchDispatchSlurmPath
 	cfg, err := loader.Load()
 	if err != nil {
 		return err

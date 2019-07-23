@@ -33,12 +33,6 @@ type Loader struct {
 	CrunchDispatchSlurmPath string
 	WebsocketPath           string
 
-	// Legacy config file for the current component (will be the
-	// same as one of the above files).  If set, not being able to
-	// load the 'main' config.yml will not be a fatal error, but
-	// the the legacy file will be required instead.
-	LegacyComponentConfig string
-
 	configdata []byte
 }
 
@@ -144,15 +138,10 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 	if ldr.configdata == nil {
 		buf, err := ldr.loadBytes(ldr.Path)
 		if err != nil {
-			if ldr.LegacyComponentConfig != "" && os.IsNotExist(err) && !ldr.SkipDeprecated {
-				buf = []byte(`Clusters: {zzzzz: {}}`)
-			} else {
-				return nil, err
-			}
+			return nil, err
 		}
 		ldr.configdata = buf
 	}
-	noConfigLoaded := bytes.Compare(ldr.configdata, []byte(`Clusters: {zzzzz: {}}`)) == 0
 
 	// Load the config into a dummy map to get the cluster ID
 	// keys, discarding the values; then set up defaults for each
@@ -223,14 +212,9 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 		// * no primary config was loaded, and this is the
 		// legacy config file for the current component
 		for _, err := range []error{
-			ldr.loadOldKeepstoreConfig(&cfg, (ldr.KeepstorePath != defaultKeepstoreConfigPath) ||
-				(noConfigLoaded && ldr.LegacyComponentConfig == ldr.KeepstorePath)),
-
-			ldr.loadOldCrunchDispatchSlurmConfig(&cfg, (ldr.CrunchDispatchSlurmPath != defaultCrunchDispatchSlurmConfigPath) ||
-				(noConfigLoaded && ldr.LegacyComponentConfig == ldr.CrunchDispatchSlurmPath)),
-
-			ldr.loadOldWebsocketConfig(&cfg, (ldr.WebsocketPath != defaultWebsocketConfigPath) ||
-				(noConfigLoaded && ldr.LegacyComponentConfig == ldr.WebsocketPath)),
+			ldr.loadOldKeepstoreConfig(&cfg),
+			ldr.loadOldCrunchDispatchSlurmConfig(&cfg),
+			ldr.loadOldWebsocketConfig(&cfg),
 		} {
 			if err != nil {
 				return nil, err

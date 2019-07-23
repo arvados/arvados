@@ -127,10 +127,10 @@ func (ldr *Loader) loadOldConfigHelper(component, path string, target interface{
 }
 
 // update config using values from an old-style keepstore config file.
-func (ldr *Loader) loadOldKeepstoreConfig(cfg *arvados.Config, required bool) error {
+func (ldr *Loader) loadOldKeepstoreConfig(cfg *arvados.Config) error {
 	var oc oldKeepstoreConfig
 	err := ldr.loadOldConfigHelper("keepstore", ldr.KeepstorePath, &oc)
-	if os.IsNotExist(err) && !required {
+	if os.IsNotExist(err) && (ldr.KeepstorePath == defaultKeepstoreConfigPath) {
 		return nil
 	} else if err != nil {
 		return err
@@ -197,10 +197,10 @@ func loadOldClientConfig(cluster *arvados.Cluster, client *arvados.Client) {
 }
 
 // update config using values from an crunch-dispatch-slurm config file.
-func (ldr *Loader) loadOldCrunchDispatchSlurmConfig(cfg *arvados.Config, required bool) error {
+func (ldr *Loader) loadOldCrunchDispatchSlurmConfig(cfg *arvados.Config) error {
 	var oc oldCrunchDispatchSlurmConfig
 	err := ldr.loadOldConfigHelper("crunch-dispatch-slurm", ldr.CrunchDispatchSlurmPath, &oc)
-	if os.IsNotExist(err) && !required {
+	if os.IsNotExist(err) && (ldr.CrunchDispatchSlurmPath == defaultCrunchDispatchSlurmConfigPath) {
 		return nil
 	} else if err != nil {
 		return err
@@ -262,10 +262,10 @@ type oldWsConfig struct {
 const defaultWebsocketConfigPath = "/etc/arvados/ws/ws.yml"
 
 // update config using values from an crunch-dispatch-slurm config file.
-func (ldr *Loader) loadOldWebsocketConfig(cfg *arvados.Config, required bool) error {
+func (ldr *Loader) loadOldWebsocketConfig(cfg *arvados.Config) error {
 	var oc oldWsConfig
 	err := ldr.loadOldConfigHelper("arvados-ws", ldr.WebsocketPath, &oc)
-	if os.IsNotExist(err) && !required {
+	if os.IsNotExist(err) && ldr.WebsocketPath == defaultWebsocketConfigPath {
 		return nil
 	} else if err != nil {
 		return err

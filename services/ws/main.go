@@ -36,7 +36,6 @@ func configure(log logrus.FieldLogger, args []string) *arvados.Cluster {
 		return nil
 	}
 
-	loader.LegacyComponentConfig = loader.WebsocketPath
 	cfg, err := loader.Load()
 	if err != nil {
 		log.Fatal(err)
