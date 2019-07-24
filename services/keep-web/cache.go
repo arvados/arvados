@@ -17,13 +17,7 @@ import (
 const metricsUpdateInterval = time.Second / 10
 
 type cache struct {
-	TTL                  arvados.Duration
-	UUIDTTL              arvados.Duration
-	MaxCollectionEntries int
-	MaxCollectionBytes   int64
-	MaxPermissionEntries int
-	MaxUUIDEntries       int
-
+	config      *arvados.WebDAVCacheConfig
 	registry    *prometheus.Registry
 	metrics     cacheMetrics
 	pdhs        *lru.TwoQueueCache
@@ -110,15 +104,15 @@ type cachedPermission struct {
 
 func (c *cache) setup() {
 	var err error
-	c.pdhs, err = lru.New2Q(c.MaxUUIDEntries)
+	c.pdhs, err = lru.New2Q(c.config.MaxUUIDEntries)
 	if err != nil {
 		panic(err)
 	}
-	c.collections, err = lru.New2Q(c.MaxCollectionEntries)
+	c.collections, err = lru.New2Q(c.config.MaxCollectionEntries)
 	if err != nil {
 		panic(err)
 	}
-	c.permissions, err = lru.New2Q(c.MaxPermissionEntries)
+	c.permissions, err = lru.New2Q(c.config.MaxPermissionEntries)
 	if err != nil {
 		panic(err)
 	}
@@ -164,7 +158,7 @@ func (c *cache) Update(client *arvados.Client, coll arvados.Collection, fs arvad
 	})
 	if err == nil {
 		c.collections.Add(client.AuthToken+"\000"+coll.PortableDataHash, &cachedCollection{
-			expire:     time.Now().Add(time.Duration(c.TTL)),
+			expire:     time.Now().Add(time.Duration(c.config.TTL)),
 			collection: &updated,
 		})
 	}
@@ -221,11 +215,11 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 		}
 		if current.PortableDataHash == pdh {
 			c.permissions.Add(permKey, &cachedPermission{
-				expire: time.Now().Add(time.Duration(c.TTL)),
+				expire: time.Now().Add(time.Duration(c.config.TTL)),
 			})
 			if pdh != targetID {
 				c.pdhs.Add(targetID, &cachedPDH{
-					expire: time.Now().Add(time.Duration(c.UUIDTTL)),
+					expire: time.Now().Add(time.Duration(c.config.UUIDTTL)),
 					pdh:    pdh,
 				})
 			}
@@ -246,19 +240,19 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 	if err != nil {
 		return nil, err
 	}
-	exp := time.Now().Add(time.Duration(c.TTL))
+	exp := time.Now().Add(time.Duration(c.config.TTL))
 	c.permissions.Add(permKey, &cachedPermission{
 		expire: exp,
 	})
 	c.pdhs.Add(targetID, &cachedPDH{
-		expire: time.Now().Add(time.Duration(c.UUIDTTL)),
+		expire: time.Now().Add(time.Duration(c.config.UUIDTTL)),
 		pdh:    collection.PortableDataHash,
 	})
 	c.collections.Add(arv.ApiToken+"\000"+collection.PortableDataHash, &cachedCollection{
 		expire:     exp,
 		collection: collection,
 	})
-	if int64(len(collection.ManifestText)) > c.MaxCollectionBytes/int64(c.MaxCollectionEntries) {
+	if int64(len(collection.ManifestText)) > c.config.MaxCollectionBytes/int64(c.config.MaxCollectionEntries) {
 		go c.pruneCollections()
 	}
 	return collection, nil
@@ -295,7 +289,7 @@ func (c *cache) pruneCollections() {
 		}
 	}
 	for i, k := range keys {
-		if size <= c.MaxCollectionBytes {
+		if size <= c.config.MaxCollectionBytes {
 			break
 		}
 		if expired[i] {
