@@ -407,7 +407,8 @@ def run_controller():
         return
     stop_controller()
     rails_api_port = int(string.split(os.environ.get('ARVADOS_TEST_API_HOST', my_api_host), ':')[-1])
-    port = find_available_port()
+    controller_port = find_available_port()
+    keepweb_port = find_available_port()
     conf = os.path.join(TEST_TMPDIR, 'arvados.yml')
     with open(conf, 'w') as f:
         f.write("""
@@ -436,6 +437,12 @@ Clusters:
       RailsAPI:
         InternalURLs:
           "https://localhost:{railsport}": {{}}
+      WebDAV:
+        InternalURLs:
+          "https://localhost:{keepwebport}": {{}}
+      WebDAVDownload:
+        InternalURLs:
+          "https://localhost:{keepwebport}": {{}}
         """.format(
             beta14287=('true' if '14287' in os.environ.get('ARVADOS_EXPERIMENTAL', '') else 'false'),
             loglevel=('info' if os.environ.get('ARVADOS_DEBUG', '') in ['','0'] else 'debug'),
@@ -443,8 +450,9 @@ Clusters:
             dbname=_dbconfig('dbname'),
             dbuser=_dbconfig('user'),
             dbpass=_dbconfig('password'),
-            controllerport=port,
+            controllerport=controller_port,
             railsport=rails_api_port,
+            keepwebport=keepweb_port,
         ))
     logf = open(_logfilename('controller'), 'a')
     controller = subprocess.Popen(
@@ -452,9 +460,10 @@ Clusters:
         stdin=open('/dev/null'), stdout=logf, stderr=logf, close_fds=True)
     with open(_pidfile('controller'), 'w') as f:
         f.write(str(controller.pid))
-    _wait_until_port_listens(port)
-    _setport('controller', port)
-    return port
+    _wait_until_port_listens(controller_port)
+    _setport('controller', controller_port)
+    _setport('keep-web', keepweb_port)
+    return controller_port
 
 def stop_controller():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
@@ -659,20 +668,15 @@ def run_keep_web():
         return
     stop_keep_web()
 
-    keepwebport = find_available_port()
+    keepwebport = _getport('keep-web') # assigned on run_controller()
     env = os.environ.copy()
     env['ARVADOS_API_TOKEN'] = auth_token('anonymous')
     logf = open(_logfilename('keep-web'), 'a')
     keepweb = subprocess.Popen(
-        ['keep-web',
-         '-allow-anonymous',
-         '-attachment-only-host=download',
-         '-management-token=e687950a23c3a9bceec28c6223a06c79',
-         '-listen=:'+str(keepwebport)],
+        ['keep-web', '-config='+os.path.join(TEST_TMPDIR, 'arvados.yml')],
         env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf)
     with open(_pidfile('keep-web'), 'w') as f:
         f.write(str(keepweb.pid))
-    _setport('keep-web', keepwebport)
     _wait_until_port_listens(keepwebport)
 
 def stop_keep_web():
