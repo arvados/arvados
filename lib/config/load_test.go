@@ -375,3 +375,45 @@ func (s *LoadSuite) checkEquivalent(c *check.C, goty, expectedy string) {
 		c.Check(err, check.IsNil)
 	}
 }
+
+func (s *LoadSuite) checkListKeys(c *check.C, path string, x interface{}) {
+	v := reflect.Indirect(reflect.ValueOf(x))
+	switch v.Kind() {
+	case reflect.Map:
+		iter := v.MapRange()
+		for iter.Next() {
+			k := iter.Key()
+			if k.Kind() == reflect.String {
+				s.checkListKeys(c, path+"."+k.String(), iter.Value().Interface())
+			}
+		}
+		return
+
+	case reflect.Struct:
+		for i := 0; i < v.NumField(); i++ {
+			val := v.Field(i)
+			fieldname := v.Type().Field(i).Name
+			endsWithList := strings.HasSuffix(fieldname, "List")
+			isAnArray := v.Type().Field(i).Type.Kind() == reflect.Slice
+			if endsWithList != isAnArray {
+				if endsWithList {
+					c.Errorf("%s.%s ends with 'List' but field is not an array (type %v)", path, fieldname, val.Kind())
+				}
+				if isAnArray && v.Type().Field(i).Type.Elem().Kind() != reflect.Uint8 {
+					c.Errorf("%s.%s is an array but field name does not end in 'List' (slice of %v)", path, fieldname, v.Type().Field(i).Type.Elem().Kind())
+				}
+			}
+			if val.CanInterface() {
+				s.checkListKeys(c, path+"."+v.Type().Field(i).Name, val.Interface())
+			}
+		}
+	}
+}
+
+func (s *LoadSuite) TestListKeys(c *check.C) {
+	var logbuf bytes.Buffer
+	loader := testLoader(c, string(DefaultYAML), &logbuf)
+	cfg, err := loader.Load()
+	c.Assert(err, check.IsNil)
+	s.checkListKeys(c, "", cfg)
+}

@@ -697,7 +697,7 @@ Clusters:
 
           # (ec2) Instance configuration.
           SecurityGroupIDs:
-            - ""
+            "SAMPLE": {}
           SubnetID: ""
           Region: ""
           EBSVolumeType: gp2
