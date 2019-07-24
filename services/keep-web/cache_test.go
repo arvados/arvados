@@ -33,7 +33,7 @@ func (s *UnitSuite) TestCache(c *check.C) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, check.Equals, nil)
 
-	cache := DefaultConfig().Cache
+	cache := DefaultConfig(s.Config).Cache
 	cache.registry = prometheus.NewRegistry()
 
 	// Hit the same collection 5 times using the same token. Only
@@ -114,7 +114,7 @@ func (s *UnitSuite) TestCacheForceReloadByPDH(c *check.C) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, check.Equals, nil)
 
-	cache := DefaultConfig().Cache
+	cache := DefaultConfig(s.Config).Cache
 	cache.registry = prometheus.NewRegistry()
 
 	for _, forceReload := range []bool{false, true, false, true} {
@@ -134,7 +134,7 @@ func (s *UnitSuite) TestCacheForceReloadByUUID(c *check.C) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, check.Equals, nil)
 
-	cache := DefaultConfig().Cache
+	cache := DefaultConfig(s.Config).Cache
 	cache.registry = prometheus.NewRegistry()
 
 	for _, forceReload := range []bool{false, true, false, true} {

@@ -17,6 +17,7 @@ import (
 	"strings"
 	"testing"
 
+	"git.curoverse.com/arvados.git/lib/config"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
@@ -148,7 +149,7 @@ type curlCase struct {
 }
 
 func (s *IntegrationSuite) Test200(c *check.C) {
-	s.testServer.Config.AnonymousTokens = []string{arvadostest.AnonymousToken}
+	s.testServer.Config.cluster.Users.AnonymousUserToken = arvadostest.AnonymousToken
 	for _, spec := range []curlCase{
 		// My collection
 		{
@@ -426,15 +427,20 @@ func (s *IntegrationSuite) TearDownSuite(c *check.C) {
 
 func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	arvadostest.ResetEnv()
-	cfg := DefaultConfig()
+	ldr := config.NewLoader(nil, nil)
+	arvCfg, err := ldr.LoadDefaults()
+	cfg := DefaultConfig(arvCfg)
+	c.Assert(err, check.IsNil)
 	cfg.Client = arvados.Client{
 		APIHost:  testAPIHost,
 		Insecure: true,
 	}
-	cfg.Listen = "127.0.0.1:0"
-	cfg.ManagementToken = arvadostest.ManagementToken
+	listen := "127.0.0.1:0"
+	cfg.cluster.Services.WebDAV.InternalURLs[arvados.URL{Host: listen}] = arvados.ServiceInstance{}
+	cfg.cluster.Services.WebDAVDownload.InternalURLs[arvados.URL{Host: listen}] = arvados.ServiceInstance{}
+	cfg.cluster.ManagementToken = arvadostest.ManagementToken
 	s.testServer = &server{Config: cfg}
-	err := s.testServer.Start()
+	err = s.testServer.Start()
 	c.Assert(err, check.Equals, nil)
 }
 
