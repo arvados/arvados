@@ -143,3 +143,89 @@ func (ldr *Loader) loadOldKeepstoreConfig(cfg *arvados.Config) error {
 	cfg.Clusters[cluster.ClusterID] = *cluster
 	return nil
 }
+
+const defaultKeepWebConfigPath = "/etc/arvados/keep-web/keep-web.yml"
+
+type oldKeepWebConfig struct {
+	Client arvados.Client
+
+	Listen string
+
+	AnonymousTokens    []string
+	AttachmentOnlyHost string
+	TrustAllContent    bool
+
+	Cache struct {
+		TTL                  arvados.Duration
+		UUIDTTL              arvados.Duration
+		MaxCollectionEntries int
+		MaxCollectionBytes   int64
+		MaxPermissionEntries int
+		MaxUUIDEntries       int
+	}
+
+	// Hack to support old command line flag, which is a bool
+	// meaning "get actual token from environment".
+	deprecatedAllowAnonymous bool
+
+	// Authorization token to be included in all health check requests.
+	ManagementToken string
+}
+
+func (ldr *Loader) loadOldKeepWebConfig(cfg *arvados.Config) error {
+	path := ldr.KeepWebPath
+	if path == "" {
+		return nil
+	}
+	buf, err := ioutil.ReadFile(path)
+	if os.IsNotExist(err) && path == defaultKeepWebConfigPath {
+		return nil
+	} else if err != nil {
+		return err
+	} else {
+		ldr.Logger.Warnf("you should remove the legacy keep-web config file (%s) after migrating all config keys to the cluster configuration file (%s)", path, ldr.Path)
+	}
+	cluster, err := cfg.GetCluster("")
+	if err != nil {
+		return err
+	}
+
+	var oc oldKeepWebConfig
+	err = yaml.Unmarshal(buf, &oc)
+	if err != nil {
+		return fmt.Errorf("%s: %s", path, err)
+	}
+
+	if oc.Client.Scheme == "" {
+		oc.Client.Scheme = "https"
+	}
+	cluster.Services.Controller.ExternalURL = arvados.URL{
+		Scheme: oc.Client.Scheme,
+		Host:   oc.Client.APIHost,
+	}
+
+	if oc.Listen == "" {
+		oc.Listen = ":80"
+	}
+	cluster.Services.WebDAV.InternalURLs[arvados.URL{Host: oc.Listen}] = arvados.ServiceInstance{}
+	cluster.Services.WebDAVDownload.InternalURLs[arvados.URL{Host: oc.Listen}] = arvados.ServiceInstance{}
+	cluster.Services.WebDAVDownload.ExternalURL = arvados.URL{Host: oc.AttachmentOnlyHost}
+	cluster.TLS.Insecure = oc.Client.Insecure
+	cluster.ManagementToken = oc.ManagementToken
+	cluster.Collections.TrustAllContent = oc.TrustAllContent
+	cluster.Collections.WebDAVCache.TTL = oc.Cache.TTL
+	cluster.Collections.WebDAVCache.UUIDTTL = oc.Cache.UUIDTTL
+	cluster.Collections.WebDAVCache.MaxCollectionEntries = oc.Cache.MaxCollectionEntries
+	cluster.Collections.WebDAVCache.MaxCollectionBytes = oc.Cache.MaxCollectionBytes
+	cluster.Collections.WebDAVCache.MaxPermissionEntries = oc.Cache.MaxPermissionEntries
+	cluster.Collections.WebDAVCache.MaxUUIDEntries = oc.Cache.MaxUUIDEntries
+	if len(oc.AnonymousTokens) > 0 {
+		cluster.Users.AnonymousUserToken = oc.AnonymousTokens[0]
+		if len(oc.AnonymousTokens) > 1 {
+			ldr.Logger.Warn("More than 1 anonymous tokens configured, using only the first and discarding the rest.")
+		}
+	}
+
+	cfg.Clusters[cluster.ClusterID] = *cluster
+	return nil
+}

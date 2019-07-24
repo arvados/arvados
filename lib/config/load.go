@@ -30,6 +30,7 @@ type Loader struct {
 
 	Path          string
 	KeepstorePath string
+	KeepWebPath   string
 
 	configdata []byte
 }
@@ -57,6 +58,7 @@ func NewLoader(stdin io.Reader, logger logrus.FieldLogger) *Loader {
 func (ldr *Loader) SetupFlags(flagset *flag.FlagSet) {
 	flagset.StringVar(&ldr.Path, "config", arvados.DefaultConfigFile, "Site configuration `file` (default may be overridden by setting an ARVADOS_CONFIG environment variable)")
 	flagset.StringVar(&ldr.KeepstorePath, "legacy-keepstore-config", defaultKeepstoreConfigPath, "Legacy keepstore configuration `file`")
+	flagset.StringVar(&ldr.KeepWebPath, "legacy-keepweb-config", defaultKeepWebConfigPath, "Legacy keep-web configuration `file`")
 }
 
 // MungeLegacyConfigArgs checks args for a -config flag whose argument
@@ -128,6 +130,12 @@ func (ldr *Loader) loadBytes(path string) ([]byte, error) {
 	}
 	defer f.Close()
 	return ioutil.ReadAll(f)
+}
+
+func (ldr *Loader) LoadDefaults() (*arvados.Config, error) {
+	ldr.configdata = []byte(`Clusters: {zzzzz: {}}`)
+	defer func() { ldr.configdata = nil }()
+	return ldr.Load()
 }
 
 func (ldr *Loader) Load() (*arvados.Config, error) {
@@ -205,6 +213,7 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 		}
 		for _, err := range []error{
 			ldr.loadOldKeepstoreConfig(&cfg),
+			ldr.loadOldKeepWebConfig(&cfg),
 		} {
 			if err != nil {
 				return nil, err
