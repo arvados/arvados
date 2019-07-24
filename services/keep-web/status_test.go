@@ -15,7 +15,7 @@ import (
 )
 
 func (s *UnitSuite) TestStatus(c *check.C) {
-	h := handler{Config: DefaultConfig()}
+	h := handler{Config: DefaultConfig(s.Config)}
 	u, _ := url.Parse("http://keep-web.example/status.json")
 	req := &http.Request{
 		Method:     "GET",
