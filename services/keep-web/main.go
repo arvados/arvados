@@ -8,52 +8,36 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"time"
 
+	"git.curoverse.com/arvados.git/lib/config"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/config"
+	sdkConfig "git.curoverse.com/arvados.git/sdk/go/config"
 	"github.com/coreos/go-systemd/daemon"
 	log "github.com/sirupsen/logrus"
 )
 
 var (
-	defaultConfigPath = "/etc/arvados/keep-web/keep-web.yml"
-	version           = "dev"
+	version = "dev"
 )
 
 // Config specifies server configuration.
 type Config struct {
-	Client arvados.Client
-
-	Listen string
-
-	AnonymousTokens    []string
-	AttachmentOnlyHost string
-	TrustAllContent    bool
-
-	Cache cache
-
-	// Hack to support old command line flag, which is a bool
-	// meaning "get actual token from environment".
-	deprecatedAllowAnonymous bool
-
-	//Authorization token to be included in all health check requests.
-	ManagementToken string
+	Client  arvados.Client
+	Cache   cache
+	cluster *arvados.Cluster
 }
 
 // DefaultConfig returns the default configuration.
-func DefaultConfig() *Config {
-	return &Config{
-		Listen: ":80",
-		Cache: cache{
-			TTL:                  arvados.Duration(5 * time.Minute),
-			UUIDTTL:              arvados.Duration(5 * time.Second),
-			MaxCollectionEntries: 1000,
-			MaxCollectionBytes:   100000000,
-			MaxPermissionEntries: 1000,
-			MaxUUIDEntries:       1000,
-		},
+func DefaultConfig(arvCfg *arvados.Config) *Config {
+	cfg := Config{}
+	var cls *arvados.Cluster
+	var err error
+	if cls, err = arvCfg.GetCluster(""); err != nil {
+		log.Fatal(err)
 	}
+	cfg.cluster = cls
+	cfg.Cache.config = &cfg.cluster.Collections.WebDAVCache
+	return &cfg
 }
 
 func init() {
@@ -72,29 +56,23 @@ func init() {
 }
 
 func main() {
-	cfg := DefaultConfig()
+	prog := os.Args[0]
+	args := os.Args[1:]
+	logger := log.New()
 
-	var configPath string
-	deprecated := " (DEPRECATED -- use config file instead)"
-	flag.StringVar(&configPath, "config", defaultConfigPath,
-		"`path` to JSON or YAML configuration file")
-	flag.StringVar(&cfg.Listen, "listen", "",
-		"address:port or :port to listen on"+deprecated)
-	flag.BoolVar(&cfg.deprecatedAllowAnonymous, "allow-anonymous", false,
-		"Load an anonymous token from the ARVADOS_API_TOKEN environment variable"+deprecated)
-	flag.StringVar(&cfg.AttachmentOnlyHost, "attachment-only-host", "",
-		"Only serve attachments at the given `host:port`"+deprecated)
-	flag.BoolVar(&cfg.TrustAllContent, "trust-all-content", false,
-		"Serve non-public content from a single origin. Dangerous: read docs before using!"+deprecated)
-	flag.StringVar(&cfg.ManagementToken, "management-token", "",
-		"Authorization token to be included in all health check requests.")
+	flags := flag.NewFlagSet(prog, flag.ExitOnError)
+	flags.Usage = usage
 
-	dumpConfig := flag.Bool("dump-config", false,
+	loader := config.NewLoader(os.Stdin, logger)
+	loader.SetupFlags(flags)
+
+	dumpConfig := flags.Bool("dump-config", false,
 		"write current configuration to stdout and exit")
-	getVersion := flag.Bool("version", false,
+	getVersion := flags.Bool("version", false,
 		"print version information and exit.")
-	flag.Usage = usage
-	flag.Parse()
+
+	args = loader.MungeLegacyConfigArgs(logger, args, "-legacy-keepweb-config")
+	flags.Parse(args)
 
 	// Print version information if requested
 	if *getVersion {
@@ -102,26 +80,19 @@ func main() {
 		return
 	}
 
-	if err := config.LoadFile(cfg, configPath); err != nil {
-		if h := os.Getenv("ARVADOS_API_HOST"); h != "" && configPath == defaultConfigPath {
-			log.Printf("DEPRECATED: Using ARVADOS_API_HOST environment variable. Use config file instead.")
-			cfg.Client.APIHost = h
-		} else {
-			log.Fatal(err)
-		}
+	arvCfg, err := loader.Load()
+	if err != nil {
+		log.Fatal(err)
 	}
-	if cfg.deprecatedAllowAnonymous {
-		log.Printf("DEPRECATED: Using -allow-anonymous command line flag with ARVADOS_API_TOKEN environment variable. Use config file instead.")
-		cfg.AnonymousTokens = []string{os.Getenv("ARVADOS_API_TOKEN")}
-	}
+	cfg := DefaultConfig(arvCfg)
 
 	if *dumpConfig {
-		log.Fatal(config.DumpAndExit(cfg))
+		log.Fatal(sdkConfig.DumpAndExit(cfg.cluster))
 	}
 
 	log.Printf("keep-web %s started", version)
 
-	os.Setenv("ARVADOS_API_HOST", cfg.Client.APIHost)
+	os.Setenv("ARVADOS_API_HOST", cfg.cluster.Services.Controller.ExternalURL.Host)
 	srv := &server{Config: cfg}
 	if err := srv.Start(); err != nil {
 		log.Fatal(err)

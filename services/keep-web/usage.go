@@ -12,8 +12,8 @@ import (
 )
 
 func usage() {
-	c := DefaultConfig()
-	c.AnonymousTokens = []string{"xxxxxxxxxxxxxxxxxxxxxxx"}
+	c := DefaultConfig(nil)
+	c.cluster.Users.AnonymousUserToken = "xxxxxxxxxxxxxxxxxxxxxxx"
 	c.Client.APIHost = "zzzzz.arvadosapi.com:443"
 	exampleConfigFile, err := json.MarshalIndent(c, "    ", "  ")
 	if err != nil {

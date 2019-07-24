@@ -81,7 +81,7 @@ func (h *handler) setup() {
 	keepclient.RefreshServiceDiscoveryOnSIGHUP()
 
 	h.healthHandler = &health.Handler{
-		Token:  h.Config.ManagementToken,
+		Token:  h.Config.cluster.ManagementToken,
 		Prefix: "/_health/",
 	}
 
@@ -249,9 +249,9 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	var pathToken bool
 	var attachment bool
 	var useSiteFS bool
-	credentialsOK := h.Config.TrustAllContent
+	credentialsOK := h.Config.cluster.Collections.TrustAllContent
 
-	if r.Host != "" && r.Host == h.Config.AttachmentOnlyHost {
+	if r.Host != "" && r.Host == h.Config.cluster.Services.WebDAVDownload.ExternalURL.Host {
 		credentialsOK = true
 		attachment = true
 	} else if r.FormValue("disposition") == "attachment" {
@@ -283,7 +283,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		} else {
 			// /collections/ID/PATH...
 			collectionID = parseCollectionIDFromURL(pathParts[1])
-			tokens = h.Config.AnonymousTokens
+			tokens = []string{h.Config.cluster.Users.AnonymousUserToken}
 			stripParts = 2
 		}
 	}
@@ -350,7 +350,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		if credentialsOK {
 			reqTokens = auth.CredentialsFromRequest(r).Tokens
 		}
-		tokens = append(reqTokens, h.Config.AnonymousTokens...)
+		tokens = append(reqTokens, h.Config.cluster.Users.AnonymousUserToken)
 	}
 
 	if len(targetPath) > 0 && targetPath[0] == "_" {
