@@ -68,6 +68,9 @@ func (s *HandlerSuite) TestConfigExport(c *check.C) {
 	resp := httptest.NewRecorder()
 	s.handler.ServeHTTP(resp, req)
 	c.Check(resp.Code, check.Equals, http.StatusOK)
+	c.Check(resp.Header().Get("Access-Control-Allow-Origin"), check.Equals, `*`)
+	c.Check(resp.Header().Get("Access-Control-Allow-Methods"), check.Matches, `.*\bGET\b.*`)
+	c.Check(resp.Header().Get("Access-Control-Allow-Headers"), check.Matches, `.+`)
 	var cluster arvados.Cluster
 	c.Log(resp.Body.String())
 	err := json.Unmarshal(resp.Body.Bytes(), &cluster)

@@ -5,8 +5,10 @@
 package federation
 
 import (
+	"bytes"
 	"context"
 	"crypto/md5"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -14,6 +16,7 @@ import (
 	"regexp"
 	"strings"
 
+	"git.curoverse.com/arvados.git/lib/config"
 	"git.curoverse.com/arvados.git/lib/controller/railsproxy"
 	"git.curoverse.com/arvados.git/lib/controller/rpc"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
@@ -175,6 +178,12 @@ func portableDataHash(mt string) string {
 		return nil
 	})
 	return fmt.Sprintf("%x+%d", h.Sum(nil), size)
+}
+
+func (conn *Conn) ConfigGet(ctx context.Context) (json.RawMessage, error) {
+	var buf bytes.Buffer
+	err := config.ExportJSON(&buf, conn.cluster)
+	return json.RawMessage(buf.Bytes()), err
 }
 
 func (conn *Conn) CollectionGet(ctx context.Context, options arvados.GetOptions) (arvados.Collection, error) {

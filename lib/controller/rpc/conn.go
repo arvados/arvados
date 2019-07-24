@@ -121,6 +121,13 @@ func (conn *Conn) requestAndDecode(ctx context.Context, dst interface{}, ep arva
 	return aClient.RequestAndDecodeContext(ctx, dst, ep.Method, path, body, params)
 }
 
+func (conn *Conn) ConfigGet(ctx context.Context) (json.RawMessage, error) {
+	ep := arvados.EndpointConfigGet
+	var resp json.RawMessage
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, nil)
+	return resp, err
+}
+
 func (conn *Conn) CollectionCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Collection, error) {
 	ep := arvados.EndpointCollectionCreate
 	var resp arvados.Collection
