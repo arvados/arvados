@@ -57,6 +57,14 @@ func (sc *Config) GetCluster(clusterID string) (*Cluster, error) {
 	}
 }
 
+type WebDAVCacheConfig struct {
+	TTL                  Duration
+	UUIDTTL              Duration
+	MaxCollectionEntries int
+	MaxCollectionBytes   int64
+	MaxPermissionEntries int
+	MaxUUIDEntries       int
+}
 type Cluster struct {
 	ClusterID       string `json:"-"`
 	ManagementToken string
@@ -101,14 +109,7 @@ type Cluster struct {
 		TrashSweepInterval    Duration
 		TrustAllContent       bool
 
-		WebDAVCache struct {
-			TTL                  Duration
-			UUIDTTL              Duration
-			MaxCollectionEntries int
-			MaxCollectionBytes   int64
-			MaxPermissionEntries int
-			MaxUUIDEntries       int
-		}
+		WebDAVCache WebDAVCacheConfig
 	}
 	Git struct {
 		Repositories string
