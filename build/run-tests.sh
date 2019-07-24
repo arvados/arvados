@@ -385,12 +385,8 @@ checkpidfile() {
 
 checkhealth() {
     svc="$1"
-    port="$(cat "$WORKSPACE/tmp/${svc}.port")"
-    scheme=http
-    if [[ ${svc} =~ -ssl$ || ${svc} = wss ]]; then
-        scheme=https
-    fi
-    url="$scheme://localhost:${port}/_health/ping"
+    base=$(python -c "import yaml; print list(yaml.safe_load(file('$ARVADOS_CONFIG'))['Clusters']['zzzzz']['Services']['$1']['InternalURLs'].keys())[0]")
+    url="$base/_health/ping"
     if ! curl -Ss -H "Authorization: Bearer e687950a23c3a9bceec28c6223a06c79" "${url}" | tee -a /dev/stderr | grep '"OK"'; then
         echo "${url} failed"
         return 1
@@ -428,22 +424,22 @@ start_services() {
         && export ARVADOS_TEST_API_INSTALLED="$$" \
         && checkpidfile api \
         && checkdiscoverydoc $ARVADOS_API_HOST \
+        && eval $(python sdk/python/tests/run_test_server.py start_nginx) \
+        && checkpidfile nginx \
         && python sdk/python/tests/run_test_server.py start_controller \
         && checkpidfile controller \
-        && checkhealth controller \
+        && checkhealth Controller \
+        && checkdiscoverydoc $ARVADOS_API_HOST \
         && python sdk/python/tests/run_test_server.py start_keep_proxy \
         && checkpidfile keepproxy \
         && python sdk/python/tests/run_test_server.py start_keep-web \
         && checkpidfile keep-web \
-        && checkhealth keep-web \
+        && checkhealth WebDAV \
         && python sdk/python/tests/run_test_server.py start_arv-git-httpd \
         && checkpidfile arv-git-httpd \
-        && checkhealth arv-git-httpd \
+        && checkhealth GitHTTP \
         && python sdk/python/tests/run_test_server.py start_ws \
         && checkpidfile ws \
-        && eval $(python sdk/python/tests/run_test_server.py start_nginx) \
-        && checkdiscoverydoc $ARVADOS_API_HOST \
-        && checkpidfile nginx \
         && export ARVADOS_TEST_PROXY_SERVICES=1 \
         && (env | egrep ^ARVADOS) \
         && fail=0
@@ -627,25 +623,6 @@ initialize() {
     # whine a lot.
     setup_ruby_environment
 
-    if [[ -s "$CONFIGSRC/config.yml" ]] ; then
-	echo "Getting database configuration from $CONFIGSRC/config.yml"
-	cp "$CONFIGSRC/config.yml" "$temp/test-config.yml"
-    else
-	if [[ -s /etc/arvados/config.yml ]] ; then
-	    echo "Getting database configuration from /etc/arvados/config.yml"
-	    python > "$temp/test-config.yml" <<EOF
-import yaml
-import json
-v = list(yaml.safe_load(open('/etc/arvados/config.yml'))['Clusters'].values())[0]['PostgreSQL']
-v['Connection']['dbname'] = 'arvados_test'
-print(json.dumps({"Clusters": { "zzzzz": {'PostgreSQL': v}}}))
-EOF
-	else
-	    fatal "Please provide a config.yml file for the test suite in CONFIGSRC or /etc/arvados"
-	fi
-    fi
-    export ARVADOS_CONFIG="$temp/test-config.yml"
-
     echo "PATH is $PATH"
 }
 
@@ -680,6 +657,8 @@ install_env() {
     # Needed for run_test_server.py which is used by certain (non-Python) tests.
     pip install --no-cache-dir PyYAML \
         || fatal "pip install PyYAML failed"
+
+    eval $(python sdk/python/tests/run_test_server.py setup_config)
 
     # Preinstall libcloud if using a fork; otherwise nodemanager "pip
     # install" won't pick it up by default.

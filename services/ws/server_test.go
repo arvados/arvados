@@ -190,8 +190,7 @@ ManagementToken: qqqqq
 		"sslmode":                   "require",
 		"user":                      "arvados"})
 	c.Check(cluster.PostgreSQL.ConnectionPool, check.Equals, 63)
-	c.Check(cluster.Services.Websocket.InternalURLs, check.DeepEquals, map[arvados.URL]arvados.ServiceInstance{
-		arvados.URL{Host: ":8765"}: arvados.ServiceInstance{}})
+	c.Check(cluster.Services.Websocket.InternalURLs[arvados.URL{Host: ":8765"}], check.NotNil)
 	c.Check(cluster.SystemLogs.LogLevel, check.Equals, "debug")
 	c.Check(cluster.SystemLogs.Format, check.Equals, "text")
 	c.Check(cluster.API.SendTimeout, check.Equals, arvados.Duration(61*time.Second))
