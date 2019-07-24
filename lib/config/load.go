@@ -31,6 +31,7 @@ type Loader struct {
 
 	Path                    string
 	KeepstorePath           string
+	KeepWebPath             string
 	CrunchDispatchSlurmPath string
 	WebsocketPath           string
 
@@ -60,6 +61,7 @@ func NewLoader(stdin io.Reader, logger logrus.FieldLogger) *Loader {
 func (ldr *Loader) SetupFlags(flagset *flag.FlagSet) {
 	flagset.StringVar(&ldr.Path, "config", arvados.DefaultConfigFile, "Site configuration `file` (default may be overridden by setting an ARVADOS_CONFIG environment variable)")
 	flagset.StringVar(&ldr.KeepstorePath, "legacy-keepstore-config", defaultKeepstoreConfigPath, "Legacy keepstore configuration `file`")
+	flagset.StringVar(&ldr.KeepWebPath, "legacy-keepweb-config", defaultKeepWebConfigPath, "Legacy keep-web configuration `file`")
 	flagset.StringVar(&ldr.CrunchDispatchSlurmPath, "legacy-crunch-dispatch-slurm-config", defaultCrunchDispatchSlurmConfigPath, "Legacy crunch-dispatch-slurm configuration `file`")
 	flagset.StringVar(&ldr.WebsocketPath, "legacy-ws-config", defaultWebsocketConfigPath, "Legacy arvados-ws configuration `file`")
 	flagset.BoolVar(&ldr.SkipLegacy, "skip-legacy", false, "Don't load legacy config files")
@@ -149,6 +151,12 @@ func (ldr *Loader) loadBytes(path string) ([]byte, error) {
 	return ioutil.ReadAll(f)
 }
 
+func (ldr *Loader) LoadDefaults() (*arvados.Config, error) {
+	ldr.configdata = []byte(`Clusters: {zzzzz: {}}`)
+	defer func() { ldr.configdata = nil }()
+	return ldr.Load()
+}
+
 func (ldr *Loader) Load() (*arvados.Config, error) {
 	if ldr.configdata == nil {
 		buf, err := ldr.loadBytes(ldr.Path)
@@ -230,6 +238,7 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 		// legacy config file for the current component
 		for _, err := range []error{
 			ldr.loadOldKeepstoreConfig(&cfg),
+			ldr.loadOldKeepWebConfig(&cfg),
 			ldr.loadOldCrunchDispatchSlurmConfig(&cfg),
 			ldr.loadOldWebsocketConfig(&cfg),
 		} {
