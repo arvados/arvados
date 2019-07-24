@@ -758,35 +758,6 @@ def stop_nginx():
 def _pidfile(program):
     return os.path.join(TEST_TMPDIR, program + '.pid')
 
-def _dbconfig(key):
-    global _cached_db_config
-    if not _cached_db_config:
-        if "ARVADOS_CONFIG" in os.environ:
-            _cached_db_config = list(yaml.safe_load(open(os.environ["ARVADOS_CONFIG"]))["Clusters"].values())[0]["PostgreSQL"]["Connection"]
-        else:
-            _cached_db_config = yaml.safe_load(open(os.path.join(
-                SERVICES_SRC_DIR, 'api', 'config', 'database.yml')))["test"]
-            _cached_db_config["dbname"] = _cached_db_config["database"]
-            _cached_db_config["user"] = _cached_db_config["username"]
-    return _cached_db_config[key]
-
-def _apiconfig(key):
-    global _cached_config
-    if _cached_config:
-        return _cached_config[key]
-    def _load(f, required=True):
-        fullpath = os.path.join(SERVICES_SRC_DIR, 'api', 'config', f)
-        if not required and not os.path.exists(fullpath):
-            return {}
-        return yaml.safe_load(fullpath)
-    cdefault = _load('application.default.yml')
-    csite = _load('application.yml', required=False)
-    _cached_config = {}
-    for section in [cdefault.get('common',{}), cdefault.get('test',{}),
-                    csite.get('common',{}), csite.get('test',{})]:
-        _cached_config.update(section)
-    return _cached_config[key]
-
 def fixture(fix):
     '''load a fixture yaml file'''
     with open(os.path.join(SERVICES_SRC_DIR, 'api', "test", "fixtures",
