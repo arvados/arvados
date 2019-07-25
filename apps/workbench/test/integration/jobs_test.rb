@@ -39,7 +39,6 @@ class JobsTest < ActionDispatch::IntegrationTest
 
   test 'view partial job log' do
     need_selenium 'to be able to see the CORS response headers (PhantomJS 1.9.8 does not)'
-    use_keep_web_config
 
     # This config will be restored during teardown by ../test_helper.rb:
     Rails.configuration.Workbench.LogViewerMaxBytes = 100
@@ -59,8 +58,6 @@ class JobsTest < ActionDispatch::IntegrationTest
   end
 
   test 'view log via keep-web redirect' do
-    use_keep_web_config
-
     token = api_token('active')
     logdata = fakepipe_with_log_data.read
     logblock = `echo -n #{logdata.shellescape} | ARVADOS_API_TOKEN=#{token.shellescape} arv-put --no-progress --raw -`.strip

@@ -117,8 +117,6 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
   end
 
   test 'view file' do
-    use_keep_web_config
-
     magic = rand(2**512).to_s 36
     owner = api_fixture('groups')['anonymously_accessible_project']['uuid']
     col = upload_data_and_get_collection(magic, 'admin', "Hello\\040world.txt", owner)

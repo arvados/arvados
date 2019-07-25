@@ -26,6 +26,11 @@ import time
 import unittest
 import yaml
 
+try:
+    from urllib.parse import urlparse
+except ImportError:
+    from urlparse import urlparse
+
 MY_DIRNAME = os.path.dirname(os.path.realpath(__file__))
 if __name__ == '__main__' and os.path.exists(
       os.path.join(MY_DIRNAME, '..', 'arvados', '__init__.py')):
@@ -395,10 +400,12 @@ def get_config():
         return yaml.safe_load(f)
 
 def internal_port_from_config(service):
-    return int(list(get_config()["Clusters"]["zzzzz"]["Services"][service]["InternalURLs"].keys())[0].split(":")[2])
+    return int(urlparse(
+        list(get_config()["Clusters"]["zzzzz"]["Services"][service]["InternalURLs"].keys())[0]).
+               netloc.split(":")[1])
 
 def external_port_from_config(service):
-    return int(get_config()["Clusters"]["zzzzz"]["Services"][service]["ExternalURL"].split(":")[2])
+    return int(urlparse(get_config()["Clusters"]["zzzzz"]["Services"][service]["ExternalURL"]).netloc.split(":")[1])
 
 def run_controller():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
@@ -691,7 +698,7 @@ def setup_config():
             "InternalURLs": { }
         },
         "Websocket": {
-            "ExternalURL": "https://localhost:%s" % websocket_external_port,
+            "ExternalURL": "wss://localhost:%s/websocket" % websocket_external_port,
             "InternalURLs": { }
         },
         "GitHTTP": {
