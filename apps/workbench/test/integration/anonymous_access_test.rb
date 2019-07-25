@@ -5,8 +5,6 @@
 require 'integration_helper'
 
 class AnonymousAccessTest < ActionDispatch::IntegrationTest
-  include KeepWebConfig
-
   # These tests don't do state-changing API calls. Save some time by
   # skipping the database reset.
   reset_api_fixtures :after_each_test, false

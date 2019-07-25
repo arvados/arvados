@@ -156,19 +156,6 @@ module HeadlessHelper
   end
 end
 
-module KeepWebConfig
-  def getport service
-    File.read(File.expand_path("../../../../tmp/#{service}.port", __FILE__))
-  end
-
-  def use_keep_web_config
-    @kwport = getport 'keep-web-ssl'
-    @kwdport = getport 'keep-web-dl-ssl'
-    Rails.configuration.Services.WebDAV.ExternalURL = URI("https://localhost:#{@kwport}")
-    Rails.configuration.Services.WebDAVDownload.ExternalURL = URI("https://localhost:#{@kwdport}")
-  end
-end
-
 class ActionDispatch::IntegrationTest
   # Make the Capybara DSL available in all integration tests
   include Capybara::DSL

@@ -6,8 +6,6 @@ require 'integration_helper'
 require_relative 'integration_test_utils'
 
 class CollectionsTest < ActionDispatch::IntegrationTest
-  include KeepWebConfig
-
   setup do
     need_javascript
   end

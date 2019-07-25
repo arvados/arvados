@@ -6,8 +6,6 @@ require 'integration_helper'
 require 'helpers/download_helper'
 
 class DownloadTest < ActionDispatch::IntegrationTest
-  include KeepWebConfig
-
   @@wrote_test_data = false
 
   setup do

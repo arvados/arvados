@@ -8,8 +8,6 @@ require 'tmpdir'
 require 'integration_helper'
 
 class JobsTest < ActionDispatch::IntegrationTest
-  include KeepWebConfig
-
   setup do
       need_javascript
   end
