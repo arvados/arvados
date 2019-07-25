@@ -188,7 +188,7 @@ class UserSettingsMenuTest < ActionDispatch::IntegrationTest
     end
     assert_text ":active/workbenchtest.git"
     assert_match /git@git.*:active\/workbenchtest.git/, page.text
-    assert_match /https:\/\/git.*\/active\/workbenchtest.git/, page.text
+    assert_match /#{Rails.configuration.Services.GitHTTP.ExternalURL.to_s}\/active\/workbenchtest.git/, page.text
   end
 
   [
