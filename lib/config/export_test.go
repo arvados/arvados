@@ -20,11 +20,12 @@ func (s *ExportSuite) TestExport(c *check.C) {
 	confdata := strings.Replace(string(DefaultYAML), "SAMPLE", "testkey", -1)
 	cfg, err := testLoader(c, confdata, nil).Load()
 	c.Assert(err, check.IsNil)
-	cluster := cfg.Clusters["xxxxx"]
+	cluster, err := cfg.GetCluster("xxxxx")
+	c.Assert(err, check.IsNil)
 	cluster.ManagementToken = "abcdefg"
 
 	var exported bytes.Buffer
-	err = ExportJSON(&exported, &cluster)
+	err = ExportJSON(&exported, cluster)
 	c.Check(err, check.IsNil)
 	if err != nil {
 		c.Logf("If all the new keys are safe, add these to whitelist in export.go:")
@@ -32,5 +33,7 @@ func (s *ExportSuite) TestExport(c *check.C) {
 			c.Logf("\t%q: true,", strings.Replace(k, `"`, "", -1))
 		}
 	}
-	c.Check(exported.String(), check.Not(check.Matches), `(?ms).*abcdefg.*`)
+	var exportedStr = exported.String()
+	c.Check(exportedStr, check.Matches, `(?ms).*ClusterID":"xxxxx.*`)
+	c.Check(exportedStr, check.Not(check.Matches), `(?ms).*abcdefg.*`)
 }
