@@ -76,7 +76,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
                     disabled: (group.owner_uuid == @object.uuid),
                     data: {
                       permission_head: group.uuid,
-                      permission_uuid: permitted_group_perms[group.uuid]}) %>
+                      permission_uuid: permitted_group_perms[group.uuid] || 'x'}) %>
                 <small>user&rarr;group</small>
               </label>
               <label class="checkbox-inline" data-toggle-permission="true" data-permission-head="<%= @object.uuid %>" data-permission-name="can_read">
@@ -87,7 +87,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
                     disabled: (group.owner_uuid == @object.uuid),
                     data: {
                       permission_tail: group.uuid,
-                      permission_uuid: member_group_perms[group.uuid]}) %>
+                      permission_uuid: member_group_perms[group.uuid] || 'x'}) %>
                 <small>group&rarr;user</small>
               </label>
               <label class="checkbox-inline">
