@@ -10,5 +10,5 @@ npm 'jquery'
 npm 'awesomplete'
 npm 'jssha'
 
-npm 'mithril'
+npm 'mithril', '1.1.6'
 npm 'es6-object-assign'
