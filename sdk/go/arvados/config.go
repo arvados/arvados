@@ -69,7 +69,7 @@ type Cluster struct {
 
 	API struct {
 		AsyncPermissionsUpdateInterval Duration
-		DisabledAPIs                   map[string]struct{}
+		DisabledAPIs                   StringSet
 		MaxIndexDatabaseRead           int
 		MaxItemsPerResponse            int
 		MaxRequestAmplification        int
@@ -83,7 +83,7 @@ type Cluster struct {
 	AuditLogs struct {
 		MaxAge             Duration
 		MaxDeleteBatch     int
-		UnloggedAttributes map[string]struct{}
+		UnloggedAttributes StringSet
 	}
 	Collections struct {
 		BlobSigning          bool
@@ -135,10 +135,10 @@ type Cluster struct {
 		AutoSetupNewUsers                     bool
 		AutoSetupNewUsersWithRepository       bool
 		AutoSetupNewUsersWithVmUUID           string
-		AutoSetupUsernameBlacklist            map[string]struct{}
+		AutoSetupUsernameBlacklist            StringSet
 		EmailSubjectPrefix                    string
-		NewInactiveUserNotificationRecipients map[string]struct{}
-		NewUserNotificationRecipients         map[string]struct{}
+		NewInactiveUserNotificationRecipients StringSet
+		NewUserNotificationRecipients         StringSet
 		NewUsersAreActive                     bool
 		UserNotifierEmailFrom                 string
 		UserProfileNotificationAddress        string
@@ -148,7 +148,7 @@ type Cluster struct {
 		APIClientConnectTimeout          Duration
 		APIClientReceiveTimeout          Duration
 		APIResponseCompression           bool
-		ApplicationMimetypesWithViewIcon map[string]struct{}
+		ApplicationMimetypesWithViewIcon StringSet
 		ArvadosDocsite                   string
 		ArvadosPublicDataDocURL          string
 		DefaultOpenIdPrefix              string
@@ -267,7 +267,7 @@ type ContainersConfig struct {
 	MinRetryPeriod              Duration
 	ReserveExtraRAM             ByteSize
 	StaleLockTimeout            Duration
-	SupportedDockerImageFormats map[string]struct{}
+	SupportedDockerImageFormats StringSet
 	UsePreemptibleInstances     bool
 
 	JobsAPI struct {
@@ -300,7 +300,7 @@ type ContainersConfig struct {
 			DNSServerReloadCommand string
 			DNSServerUpdateCommand string
 			ComputeNodeDomain      string
-			ComputeNodeNameservers map[string]struct{}
+			ComputeNodeNameservers StringSet
 			AssignNodeHostname     string
 		}
 	}
@@ -385,6 +385,40 @@ func (it *InstanceTypeMap) UnmarshalJSON(data []byte) error {
 		}
 		(*it)[name] = t
 	}
+	return nil
+}
+
+type StringSet map[string]struct{}
+
+// UnmarshalJSON handles old config files that provide an array of
+// instance types instead of a hash.
+func (ss *StringSet) UnmarshalJSON(data []byte) error {
+	if len(data) > 0 && data[0] == '[' {
+		var arr []string
+		err := json.Unmarshal(data, &arr)
+		if err != nil {
+			return err
+		}
+		if len(arr) == 0 {
+			*ss = nil
+			return nil
+		}
+		*ss = make(map[string]struct{}, len(arr))
+		for _, t := range arr {
+			(*ss)[t] = struct{}{}
+		}
+		return nil
+	}
+	var hash map[string]struct{}
+	err := json.Unmarshal(data, &hash)
+	if err != nil {
+		return err
+	}
+	*ss = make(map[string]struct{}, len(hash))
+	for t, _ := range hash {
+		(*ss)[t] = struct{}{}
+	}
+
 	return nil
 }
 
