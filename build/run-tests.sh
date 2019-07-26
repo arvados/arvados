@@ -418,6 +418,7 @@ start_services() {
     fi
     all_services_stopped=
     fail=1
+    eval $(python sdk/python/tests/run_test_server.py setup_config)
     cd "$WORKSPACE" \
         && eval $(python sdk/python/tests/run_test_server.py start --auth admin) \
         && export ARVADOS_TEST_API_HOST="$ARVADOS_API_HOST" \
@@ -657,8 +658,6 @@ install_env() {
     # Needed for run_test_server.py which is used by certain (non-Python) tests.
     pip install --no-cache-dir PyYAML \
         || fatal "pip install PyYAML failed"
-
-    eval $(python sdk/python/tests/run_test_server.py setup_config)
 
     # Preinstall libcloud if using a fork; otherwise nodemanager "pip
     # install" won't pick it up by default.
