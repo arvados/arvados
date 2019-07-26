@@ -689,42 +689,43 @@ def setup_config():
     if "test" not in pgconnection["dbname"]:
         pgconnection["dbname"] = "arvados_test"
 
+    localhost = "127.0.0.1"
     services = {
         "RailsAPI": {
             "InternalURLs": { }
         },
         "Controller": {
-            "ExternalURL": "https://localhost:%s" % controller_external_port,
+            "ExternalURL": "https://%s:%s" % (localhost, controller_external_port),
             "InternalURLs": { }
         },
         "Websocket": {
-            "ExternalURL": "wss://localhost:%s/websocket" % websocket_external_port,
+            "ExternalURL": "wss://%s:%s/websocket" % (localhost, websocket_external_port),
             "InternalURLs": { }
         },
         "GitHTTP": {
-            "ExternalURL": "https://localhost:%s" % git_httpd_external_port,
+            "ExternalURL": "https://%s:%s" % (localhost, git_httpd_external_port),
             "InternalURLs": { }
         },
         "Keepproxy": {
-            "ExternalURL": "https://localhost:%s" % keepproxy_external_port,
+            "ExternalURL": "https://%s:%s" % (localhost, keepproxy_external_port),
             "InternalURLs": { }
         },
         "WebDAV": {
-            "ExternalURL": "https://localhost:%s" % keep_web_external_port,
+            "ExternalURL": "https://%s:%s" % (localhost, keep_web_external_port),
             "InternalURLs": { }
         },
         "WebDAVDownload": {
-            "ExternalURL": "https://localhost:%s" % keep_web_dl_external_port,
+            "ExternalURL": "https://%s:%s" % (localhost, keep_web_dl_external_port),
             "InternalURLs": { }
         }
     }
-    services["RailsAPI"]["InternalURLs"]["https://localhost:%s"%rails_api_port] = {}
-    services["Controller"]["InternalURLs"]["http://localhost:%s"%controller_port] = {}
-    services["Websocket"]["InternalURLs"]["http://localhost:%s"%websocket_port] = {}
-    services["GitHTTP"]["InternalURLs"]["http://localhost:%s"%git_httpd_port] = {}
-    services["Keepproxy"]["InternalURLs"]["http://localhost:%s"%keepproxy_port] = {}
-    services["WebDAV"]["InternalURLs"]["http://localhost:%s"%keep_web_port] = {}
-    services["WebDAVDownload"]["InternalURLs"]["http://localhost:%s"%keep_web_dl_port] = {}
+    services["RailsAPI"]["InternalURLs"]["https://%s:%s"%(localhost, rails_api_port)] = {}
+    services["Controller"]["InternalURLs"]["http://%s:%s"%(localhost, controller_port)] = {}
+    services["Websocket"]["InternalURLs"]["http://%s:%s"%(localhost, websocket_port)] = {}
+    services["GitHTTP"]["InternalURLs"]["http://%s:%s"%(localhost, git_httpd_port)] = {}
+    services["Keepproxy"]["InternalURLs"]["http://%s:%s"%(localhost, keepproxy_port)] = {}
+    services["WebDAV"]["InternalURLs"]["http://%s:%s"%(localhost, keep_web_port)] = {}
+    services["WebDAVDownload"]["InternalURLs"]["http://%s:%s"%(localhost, keep_web_dl_port)] = {}
 
     config = {
         "Clusters": {
