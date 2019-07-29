@@ -677,55 +677,56 @@ def setup_config():
     keep_web_dl_port = find_available_port()
     keep_web_dl_external_port = find_available_port()
 
-    if "CONFIGSRC" in os.environ:
-        dbconf = os.path.join(os.environ["CONFIGSRC"], "config.yml")
-    else:
-        dbconf = "/etc/arvados/config.yml"
+    dbconf = os.path.join(os.environ["CONFIGSRC"], "config.yml")
 
     print("Getting config from %s" % dbconf, file=sys.stderr)
 
-    pgconnection = list(yaml.safe_load(open(dbconf))["Clusters"].values())[0]["PostgreSQL"]["Connection"]
-
-    if "test" not in pgconnection["dbname"]:
-        pgconnection["dbname"] = "arvados_test"
+    pgconnection = yaml.safe_load(open(dbconf))["Clusters"]["zzzzz"]["PostgreSQL"]["Connection"]
 
     localhost = "127.0.0.1"
     services = {
         "RailsAPI": {
-            "InternalURLs": { }
+            "InternalURLs": {
+                "https://%s:%s"%(localhost, rails_api_port): {}
+            }
         },
         "Controller": {
             "ExternalURL": "https://%s:%s" % (localhost, controller_external_port),
-            "InternalURLs": { }
+            "InternalURLs": {
+                "http://%s:%s"%(localhost, controller_port): {}
+            }
         },
         "Websocket": {
             "ExternalURL": "wss://%s:%s/websocket" % (localhost, websocket_external_port),
-            "InternalURLs": { }
+            "InternalURLs": {
+                "http://%s:%s"%(localhost, websocket_port): {}
+            }
         },
         "GitHTTP": {
             "ExternalURL": "https://%s:%s" % (localhost, git_httpd_external_port),
-            "InternalURLs": { }
+            "InternalURLs": {
+                "http://%s:%s"%(localhost, git_httpd_port): {}
+            }
         },
         "Keepproxy": {
             "ExternalURL": "https://%s:%s" % (localhost, keepproxy_external_port),
-            "InternalURLs": { }
+            "InternalURLs": {
+                "http://%s:%s"%(localhost, keepproxy_port): {}
+            }
         },
         "WebDAV": {
             "ExternalURL": "https://%s:%s" % (localhost, keep_web_external_port),
-            "InternalURLs": { }
+            "InternalURLs": {
+                "http://%s:%s"%(localhost, keep_web_port): {}
+            }
         },
         "WebDAVDownload": {
             "ExternalURL": "https://%s:%s" % (localhost, keep_web_dl_external_port),
-            "InternalURLs": { }
+            "InternalURLs": {
+                "http://%s:%s"%(localhost, keep_web_dl_port): {}
+            }
         }
     }
-    services["RailsAPI"]["InternalURLs"]["https://%s:%s"%(localhost, rails_api_port)] = {}
-    services["Controller"]["InternalURLs"]["http://%s:%s"%(localhost, controller_port)] = {}
-    services["Websocket"]["InternalURLs"]["http://%s:%s"%(localhost, websocket_port)] = {}
-    services["GitHTTP"]["InternalURLs"]["http://%s:%s"%(localhost, git_httpd_port)] = {}
-    services["Keepproxy"]["InternalURLs"]["http://%s:%s"%(localhost, keepproxy_port)] = {}
-    services["WebDAV"]["InternalURLs"]["http://%s:%s"%(localhost, keep_web_port)] = {}
-    services["WebDAVDownload"]["InternalURLs"]["http://%s:%s"%(localhost, keep_web_dl_port)] = {}
 
     config = {
         "Clusters": {
@@ -754,7 +755,6 @@ def setup_config():
         yaml.safe_dump(config, f)
 
     ex = "export ARVADOS_CONFIG="+conf
-    print(ex, file=sys.stderr)
     print(ex)
 
 

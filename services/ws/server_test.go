@@ -7,7 +7,6 @@ package main
 import (
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"sync"
@@ -163,16 +162,16 @@ ManagementToken: qqqqq
 `)
 	tmpfile, err := ioutil.TempFile("", "example")
 	if err != nil {
-		log.Fatal(err)
+		c.Error(err)
 	}
 
 	defer os.Remove(tmpfile.Name()) // clean up
 
 	if _, err := tmpfile.Write(content); err != nil {
-		log.Fatal(err)
+		c.Error(err)
 	}
 	if err := tmpfile.Close(); err != nil {
-		log.Fatal(err)
+		c.Error(err)
 
 	}
 	cluster := configure(logger(nil), []string{"arvados-ws", "-config", tmpfile.Name()})

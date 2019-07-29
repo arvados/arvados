@@ -35,8 +35,7 @@ Options:
 --short        Skip (or scale down) some slow tests.
 --interactive  Set up, then prompt for test/install steps to perform.
 WORKSPACE=path Arvados source tree to test.
-CONFIGSRC=path Dir with api server config files to copy into source tree.
-               (If none given, leave config files alone in source tree.)
+CONFIGSRC=path Dir with config.yml file containing PostgreSQL section for use by tests. (required)
 services/api_test="TEST=test/functional/arvados/v1/collections_controller_test.rb"
                Restrict apiserver tests to the given file
 sdk/python_test="--test-suite tests.test_keep_locator"
@@ -197,6 +196,8 @@ sanity_checks() {
     [[ -n "${skip[sanity]}" ]] && return 0
     ( [[ -n "$WORKSPACE" ]] && [[ -d "$WORKSPACE/services" ]] ) \
         || fatal "WORKSPACE environment variable not set to a source directory (see: $0 --help)"
+    ( [[ -n "$CONFIGSRC" ]] && [[ -s "$CONFIGSRC/config.yml" ]] ) \
+        || fatal "CONFIGSRC environment variable not set to a config file (see: $0 --help)"
     echo Checking dependencies:
     echo "locale: ${LANG}"
     [[ "$(locale charmap)" = "UTF-8" ]] \
@@ -575,11 +576,6 @@ initialize() {
     sanity_checks
 
     echo "WORKSPACE=$WORKSPACE"
-
-    if [[ -z "$CONFIGSRC" ]] && [[ -d "$HOME/arvados-api-server" ]]; then
-        # Jenkins expects us to use this by default.
-        CONFIGSRC="$HOME/arvados-api-server"
-    fi
 
     # Clean up .pyc files that may exist in the workspace
     cd "$WORKSPACE"
