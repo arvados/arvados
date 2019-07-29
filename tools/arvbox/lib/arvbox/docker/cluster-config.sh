@@ -89,3 +89,16 @@ EOF
 /usr/local/lib/arvbox/yml_override.py /var/lib/arvados/cluster_config.yml
 
 cp /var/lib/arvados/cluster_config.yml /etc/arvados/config.yml
+
+mkdir -p /var/lib/arvados/run_tests
+cat >/var/lib/arvados/run_tests/config.yml <<EOF
+Clusters:
+  zzzzz:
+    PostgreSQL:
+      Connection:
+        host: localhost
+        user: arvados
+        password: ${database_pw}
+        dbname: arvados_test
+        client_encoding: utf8
+EOF

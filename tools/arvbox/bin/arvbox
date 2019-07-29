@@ -286,6 +286,7 @@ run() {
                    -e TERM=$TERM \
                    -e WORKSPACE=/usr/src/arvados \
                    -e GEM_HOME=/var/lib/gems \
+		   -e CONFIGSRC=/var/lib/arvados/run_tests \
                    $ARVBOX_CONTAINER \
                    /usr/local/lib/arvbox/runsu.sh \
                    /usr/src/arvados/build/run-tests.sh \
