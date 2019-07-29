@@ -435,6 +435,15 @@ func (s *LoadSuite) TestListKeys(c *check.C) {
 		c.Errorf("Should have produced an error")
 	}
 
+	v3 := struct {
+		EndInList string
+	}{"a"}
+	var m3 = make(map[string]interface{})
+	m3["c"] = &v3
+	if err := checkListKeys("", m3); err == nil {
+		c.Errorf("Should have produced an error")
+	}
+
 	var logbuf bytes.Buffer
 	loader := testLoader(c, string(DefaultYAML), &logbuf)
 	cfg, err := loader.Load()
