@@ -376,7 +376,7 @@ func (s *LoadSuite) checkEquivalent(c *check.C, goty, expectedy string) {
 	}
 }
 
-func (s *LoadSuite) checkListKeys(c *check.C, path string, x interface{}) {
+func checkListKeys(path string, x interface{}) (err error) {
 	v := reflect.Indirect(reflect.ValueOf(x))
 	switch v.Kind() {
 	case reflect.Map:
@@ -384,7 +384,9 @@ func (s *LoadSuite) checkListKeys(c *check.C, path string, x interface{}) {
 		for iter.Next() {
 			k := iter.Key()
 			if k.Kind() == reflect.String {
-				s.checkListKeys(c, path+"."+k.String(), iter.Value().Interface())
+				if err = checkListKeys(path+"."+k.String(), iter.Value().Interface()); err != nil {
+					return
+				}
 			}
 		}
 		return
@@ -392,28 +394,52 @@ func (s *LoadSuite) checkListKeys(c *check.C, path string, x interface{}) {
 	case reflect.Struct:
 		for i := 0; i < v.NumField(); i++ {
 			val := v.Field(i)
-			fieldname := v.Type().Field(i).Name
+			structField := v.Type().Field(i)
+			fieldname := structField.Name
 			endsWithList := strings.HasSuffix(fieldname, "List")
-			isAnArray := v.Type().Field(i).Type.Kind() == reflect.Slice
+			isAnArray := structField.Type.Kind() == reflect.Slice
 			if endsWithList != isAnArray {
 				if endsWithList {
-					c.Errorf("%s.%s ends with 'List' but field is not an array (type %v)", path, fieldname, val.Kind())
+					err = fmt.Errorf("%s.%s ends with 'List' but field is not an array (type %v)", path, fieldname, val.Kind())
+					return
 				}
-				if isAnArray && v.Type().Field(i).Type.Elem().Kind() != reflect.Uint8 {
-					c.Errorf("%s.%s is an array but field name does not end in 'List' (slice of %v)", path, fieldname, v.Type().Field(i).Type.Elem().Kind())
+				if isAnArray && structField.Type.Elem().Kind() != reflect.Uint8 {
+					err = fmt.Errorf("%s.%s is an array but field name does not end in 'List' (slice of %v)", path, fieldname, structField.Type.Elem().Kind())
+					return
 				}
 			}
 			if val.CanInterface() {
-				s.checkListKeys(c, path+"."+v.Type().Field(i).Name, val.Interface())
+				checkListKeys(path+"."+fieldname, val.Interface())
 			}
 		}
 	}
+	return
 }
 
 func (s *LoadSuite) TestListKeys(c *check.C) {
+	v1 := struct {
+		EndInList []string
+	}{[]string{"a", "b"}}
+	var m1 = make(map[string]interface{})
+	m1["c"] = &v1
+	if err := checkListKeys("", m1); err != nil {
+		c.Error(err)
+	}
+
+	v2 := struct {
+		DoesNot []string
+	}{[]string{"a", "b"}}
+	var m2 = make(map[string]interface{})
+	m2["c"] = &v2
+	if err := checkListKeys("", m2); err == nil {
+		c.Errorf("Should have produced an error")
+	}
+
 	var logbuf bytes.Buffer
 	loader := testLoader(c, string(DefaultYAML), &logbuf)
 	cfg, err := loader.Load()
 	c.Assert(err, check.IsNil)
-	s.checkListKeys(c, "", cfg)
+	if err := checkListKeys("", cfg); err != nil {
+		c.Error(err)
+	}
 }
