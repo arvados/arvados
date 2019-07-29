@@ -6,13 +6,9 @@ require 'integration_helper'
 require 'helpers/download_helper'
 
 class DownloadTest < ActionDispatch::IntegrationTest
-  include KeepWebConfig
-
   @@wrote_test_data = false
 
   setup do
-    use_keep_web_config
-
     # Make sure Capybara can download files.
     need_selenium 'for downloading', :selenium_with_download
     DownloadHelper.clear

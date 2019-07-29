@@ -39,7 +39,7 @@ class Node < ArvadosModel
   api_accessible :superuser, :extend => :user do |t|
     t.add :first_ping_at
     t.add :info
-    t.add lambda { |x| Rails.configuration.Containers.SLURM.Managed.ComputeNodeNameservers }, :as => :nameservers
+    t.add lambda { |x| Rails.configuration.Containers.SLURM.Managed.ComputeNodeNameservers.keys }, :as => :nameservers
   end
 
   after_initialize do

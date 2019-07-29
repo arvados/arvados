@@ -38,7 +38,7 @@ type Dispatcher struct {
 	Logger Logger
 
 	// Batch size for container queries
-	BatchSize int64
+	BatchSize int
 
 	// Queue polling frequency
 	PollPeriod time.Duration

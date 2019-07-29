@@ -422,7 +422,7 @@ class ArvadosModel < ApplicationRecord
   end
 
   def logged_attributes
-    attributes.except(*Rails.configuration.AuditLogs.UnloggedAttributes)
+    attributes.except(*Rails.configuration.AuditLogs.UnloggedAttributes.keys)
   end
 
   def self.full_text_searchable_columns

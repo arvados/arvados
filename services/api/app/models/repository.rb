@@ -115,6 +115,9 @@ class Repository < ArvadosModel
     else
       base = URI(default_base_fmt % prefix)
     end
+    if base.path == ""
+      base.path = "/"
+    end
     if base.scheme == "ssh"
       '%s@%s:%s.git' % [base.user, base.host, name]
     else

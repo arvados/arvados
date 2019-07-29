@@ -15,6 +15,16 @@ type ConfigSuite struct{}
 
 func (s *ConfigSuite) TestInstanceTypesAsArray(c *check.C) {
 	var cluster Cluster
+	yaml.Unmarshal([]byte(`
+API:
+  DisabledAPIs: [jobs.list]`), &cluster)
+	c.Check(len(cluster.API.DisabledAPIs), check.Equals, 1)
+	_, ok := cluster.API.DisabledAPIs["jobs.list"]
+	c.Check(ok, check.Equals, true)
+}
+
+func (s *ConfigSuite) TestStringSetAsArray(c *check.C) {
+	var cluster Cluster
 	yaml.Unmarshal([]byte("InstanceTypes:\n- Name: foo\n"), &cluster)
 	c.Check(len(cluster.InstanceTypes), check.Equals, 1)
 	c.Check(cluster.InstanceTypes["foo"].Name, check.Equals, "foo")

@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -45,6 +46,7 @@ func (s *IntegrationSuite) SetUpTest(c *C) {
 	arvadostest.StartAPI()
 	os.Setenv("ARVADOS_API_TOKEN", arvadostest.Dispatch1Token)
 	s.disp = Dispatcher{}
+	s.disp.cluster = &arvados.Cluster{}
 	s.disp.setup()
 	s.slurm = slurmFake{}
 }
@@ -118,7 +120,7 @@ func (s *IntegrationSuite) integrationTest(c *C,
 	c.Check(err, IsNil)
 	c.Assert(len(containers.Items), Equals, 1)
 
-	s.disp.CrunchRunCommand = []string{"echo"}
+	s.disp.cluster.Containers.CrunchRunCommand = "echo"
 
 	ctx, cancel := context.WithCancel(context.Background())
 	doneRun := make(chan struct{})
@@ -243,6 +245,7 @@ type StubbedSuite struct {
 
 func (s *StubbedSuite) SetUpTest(c *C) {
 	s.disp = Dispatcher{}
+	s.disp.cluster = &arvados.Cluster{}
 	s.disp.setup()
 }
 
@@ -272,7 +275,7 @@ func (s *StubbedSuite) testWithServerStub(c *C, apiStubResponses map[string]arva
 	logrus.SetOutput(io.MultiWriter(buf, os.Stderr))
 	defer logrus.SetOutput(os.Stderr)
 
-	s.disp.CrunchRunCommand = []string{crunchCmd}
+	s.disp.cluster.Containers.CrunchRunCommand = "crunchCmd"
 
 	ctx, cancel := context.WithCancel(context.Background())
 	dispatcher := dispatch.Dispatcher{
@@ -302,51 +305,6 @@ func (s *StubbedSuite) testWithServerStub(c *C, apiStubResponses map[string]arva
 	c.Check(buf.String(), Matches, `(?ms).*`+expected+`.*`)
 }
 
-func (s *StubbedSuite) TestNoSuchConfigFile(c *C) {
-	err := s.disp.readConfig("/nosuchdir89j7879/8hjwr7ojgyy7")
-	c.Assert(err, NotNil)
-}
-
-func (s *StubbedSuite) TestBadSbatchArgsConfig(c *C) {
-	tmpfile, err := ioutil.TempFile(os.TempDir(), "config")
-	c.Check(err, IsNil)
-	defer os.Remove(tmpfile.Name())
-
-	_, err = tmpfile.Write([]byte(`{"SbatchArguments": "oops this is not a string array"}`))
-	c.Check(err, IsNil)
-
-	err = s.disp.readConfig(tmpfile.Name())
-	c.Assert(err, NotNil)
-}
-
-func (s *StubbedSuite) TestNoSuchArgInConfigIgnored(c *C) {
-	tmpfile, err := ioutil.TempFile(os.TempDir(), "config")
-	c.Check(err, IsNil)
-	defer os.Remove(tmpfile.Name())
-
-	_, err = tmpfile.Write([]byte(`{"NoSuchArg": "Nobody loves me, not one tiny hunk."}`))
-	c.Check(err, IsNil)
-
-	err = s.disp.readConfig(tmpfile.Name())
-	c.Assert(err, IsNil)
-	c.Check(0, Equals, len(s.disp.SbatchArguments))
-}
-
-func (s *StubbedSuite) TestReadConfig(c *C) {
-	tmpfile, err := ioutil.TempFile(os.TempDir(), "config")
-	c.Check(err, IsNil)
-	defer os.Remove(tmpfile.Name())
-
-	args := []string{"--arg1=v1", "--arg2", "--arg3=v3"}
-	argsS := `{"SbatchArguments": ["--arg1=v1",  "--arg2", "--arg3=v3"]}`
-	_, err = tmpfile.Write([]byte(argsS))
-	c.Check(err, IsNil)
-
-	err = s.disp.readConfig(tmpfile.Name())
-	c.Assert(err, IsNil)
-	c.Check(args, DeepEquals, s.disp.SbatchArguments)
-}
-
 func (s *StubbedSuite) TestSbatchArgs(c *C) {
 	container := arvados.Container{
 		UUID:               "123",
@@ -360,7 +318,7 @@ func (s *StubbedSuite) TestSbatchArgs(c *C) {
 		{"--arg1=v1", "--arg2"},
 	} {
 		c.Logf("%#v", defaults)
-		s.disp.SbatchArguments = defaults
+		s.disp.cluster.Containers.SLURM.SbatchArgumentsList = defaults
 
 		args, err := s.disp.sbatchArgs(container)
 		c.Check(args, DeepEquals, append(defaults, "--job-name=123", "--nice=10000", "--no-requeue", "--mem=239", "--cpus-per-task=2", "--tmp=0"))
@@ -431,4 +389,46 @@ func (s *StubbedSuite) TestSbatchPartition(c *C) {
 		"--partition=blurb,b2",
 	})
 	c.Check(err, IsNil)
+}
+
+func (s *StubbedSuite) TestLoadLegacyConfig(c *C) {
+	content := []byte(`
+Client:
+  APIHost: example.com
+  AuthToken: abcdefg
+SbatchArguments: ["--foo", "bar"]
+PollPeriod: 12s
+PrioritySpread: 42
+CrunchRunCommand: ["x-crunch-run", "--cgroup-parent-subsystem=memory"]
+ReserveExtraRAM: 12345
+MinRetryPeriod: 13s
+BatchSize: 99
+`)
+	tmpfile, err := ioutil.TempFile("", "example")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer os.Remove(tmpfile.Name()) // clean up
+
+	if _, err := tmpfile.Write(content); err != nil {
+		log.Fatal(err)
+	}
+	if err := tmpfile.Close(); err != nil {
+		log.Fatal(err)
+
+	}
+	err = s.disp.configure("crunch-dispatch-slurm", []string{"-config", tmpfile.Name()})
+	c.Check(err, IsNil)
+
+	c.Check(s.disp.cluster.Services.Controller.ExternalURL, Equals, arvados.URL{Scheme: "https", Host: "example.com"})
+	c.Check(s.disp.cluster.SystemRootToken, Equals, "abcdefg")
+	c.Check(s.disp.cluster.Containers.SLURM.SbatchArgumentsList, DeepEquals, []string{"--foo", "bar"})
+	c.Check(s.disp.cluster.Containers.CloudVMs.PollInterval, Equals, arvados.Duration(12*time.Second))
+	c.Check(s.disp.cluster.Containers.SLURM.PrioritySpread, Equals, int64(42))
+	c.Check(s.disp.cluster.Containers.CrunchRunCommand, Equals, "x-crunch-run")
+	c.Check(s.disp.cluster.Containers.CrunchRunArgumentsList, DeepEquals, []string{"--cgroup-parent-subsystem=memory"})
+	c.Check(s.disp.cluster.Containers.ReserveExtraRAM, Equals, arvados.ByteSize(12345))
+	c.Check(s.disp.cluster.Containers.MinRetryPeriod, Equals, arvados.Duration(13*time.Second))
+	c.Check(s.disp.cluster.API.MaxItemsPerResponse, Equals, 99)
 }

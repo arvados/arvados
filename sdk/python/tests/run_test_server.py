@@ -26,6 +26,11 @@ import time
 import unittest
 import yaml
 
+try:
+    from urllib.parse import urlparse
+except ImportError:
+    from urlparse import urlparse
+
 MY_DIRNAME = os.path.dirname(os.path.realpath(__file__))
 if __name__ == '__main__' and os.path.exists(
       os.path.join(MY_DIRNAME, '..', 'arvados', '__init__.py')):
@@ -313,15 +318,9 @@ def run(leave_running_atexit=False):
         os.makedirs(gitdir)
     subprocess.check_output(['tar', '-xC', gitdir, '-f', gittarball])
 
-    # The nginx proxy isn't listening here yet, but we need to choose
-    # the wss:// port now so we can write the API server config file.
-    wss_port = find_available_port()
-    _setport('wss', wss_port)
-
-    port = find_available_port()
+    port = internal_port_from_config("RailsAPI")
     env = os.environ.copy()
     env['RAILS_ENV'] = 'test'
-    env['ARVADOS_TEST_WSS_PORT'] = str(wss_port)
     env.pop('ARVADOS_WEBSOCKETS', None)
     env.pop('ARVADOS_TEST_API_HOST', None)
     env.pop('ARVADOS_API_HOST', None)
@@ -375,10 +374,7 @@ def reset():
 
     os.environ['ARVADOS_API_HOST_INSECURE'] = 'true'
     os.environ['ARVADOS_API_TOKEN'] = token
-    if _wait_until_port_listens(_getport('controller-ssl'), timeout=0.5, warn=False):
-        os.environ['ARVADOS_API_HOST'] = '0.0.0.0:'+str(_getport('controller-ssl'))
-    else:
-        os.environ['ARVADOS_API_HOST'] = existing_api_host
+    os.environ['ARVADOS_API_HOST'] = existing_api_host
 
 def stop(force=False):
     """Stop the API server, if one is running.
@@ -399,58 +395,30 @@ def stop(force=False):
         kill_server_pid(_pidfile('api'))
         my_api_host = None
 
+def get_config():
+    with open(os.environ["ARVADOS_CONFIG"]) as f:
+        return yaml.safe_load(f)
+
+def internal_port_from_config(service):
+    return int(urlparse(
+        list(get_config()["Clusters"]["zzzzz"]["Services"][service]["InternalURLs"].keys())[0]).
+               netloc.split(":")[1])
+
+def external_port_from_config(service):
+    return int(urlparse(get_config()["Clusters"]["zzzzz"]["Services"][service]["ExternalURL"]).netloc.split(":")[1])
+
 def run_controller():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
         return
     stop_controller()
-    rails_api_port = int(string.split(os.environ.get('ARVADOS_TEST_API_HOST', my_api_host), ':')[-1])
-    port = find_available_port()
-    conf = os.path.join(TEST_TMPDIR, 'arvados.yml')
-    with open(conf, 'w') as f:
-        f.write("""
-Clusters:
-  zzzzz:
-    EnableBetaController14287: {beta14287}
-    ManagementToken: e687950a23c3a9bceec28c6223a06c79
-    API:
-      RequestTimeout: 30s
-    Logging:
-        Level: "{loglevel}"
-    HTTPRequestTimeout: 30s
-    PostgreSQL:
-      ConnectionPool: 32
-      Connection:
-        host: {dbhost}
-        dbname: {dbname}
-        user: {dbuser}
-        password: {dbpass}
-    TLS:
-      Insecure: true
-    Services:
-      Controller:
-        InternalURLs:
-          "http://localhost:{controllerport}": {{}}
-      RailsAPI:
-        InternalURLs:
-          "https://localhost:{railsport}": {{}}
-        """.format(
-            beta14287=('true' if '14287' in os.environ.get('ARVADOS_EXPERIMENTAL', '') else 'false'),
-            loglevel=('info' if os.environ.get('ARVADOS_DEBUG', '') in ['','0'] else 'debug'),
-            dbhost=_dbconfig('host'),
-            dbname=_dbconfig('dbname'),
-            dbuser=_dbconfig('user'),
-            dbpass=_dbconfig('password'),
-            controllerport=port,
-            railsport=rails_api_port,
-        ))
     logf = open(_logfilename('controller'), 'a')
+    port = internal_port_from_config("Controller")
     controller = subprocess.Popen(
-        ["arvados-server", "controller", "-config", conf],
+        ["arvados-server", "controller"],
         stdin=open('/dev/null'), stdout=logf, stderr=logf, close_fds=True)
     with open(_pidfile('controller'), 'w') as f:
         f.write(str(controller.pid))
     _wait_until_port_listens(port)
-    _setport('controller', port)
     return port
 
 def stop_controller():
@@ -462,36 +430,13 @@ def run_ws():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
         return
     stop_ws()
-    port = find_available_port()
-    conf = os.path.join(TEST_TMPDIR, 'ws.yml')
-    with open(conf, 'w') as f:
-        f.write("""
-Client:
-  APIHost: {}
-  Insecure: true
-Listen: :{}
-LogLevel: {}
-Postgres:
-  host: {}
-  dbname: {}
-  user: {}
-  password: {}
-  sslmode: require
-        """.format(os.environ['ARVADOS_API_HOST'],
-                   port,
-                   ('info' if os.environ.get('ARVADOS_DEBUG', '') in ['','0'] else 'debug'),
-                   _dbconfig('host'),
-                   _dbconfig('dbname'),
-                   _dbconfig('user'),
-                   _dbconfig('password')))
+    port = internal_port_from_config("Websocket")
     logf = open(_logfilename('ws'), 'a')
-    ws = subprocess.Popen(
-        ["ws", "-config", conf],
+    ws = subprocess.Popen(["ws"],
         stdin=open('/dev/null'), stdout=logf, stderr=logf, close_fds=True)
     with open(_pidfile('ws'), 'w') as f:
         f.write(str(ws.pid))
     _wait_until_port_listens(port)
-    _setport('ws', port)
     return port
 
 def stop_ws():
@@ -590,11 +535,11 @@ def stop_keep(num_servers=2):
 
 def run_keep_proxy():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
-        os.environ["ARVADOS_KEEP_SERVICES"] = "http://localhost:{}".format(_getport('keepproxy'))
+        os.environ["ARVADOS_KEEP_SERVICES"] = "http://localhost:{}".format(internal_port_from_config('Keepproxy'))
         return
     stop_keep_proxy()
 
-    port = find_available_port()
+    port = internal_port_from_config("Keepproxy")
     env = os.environ.copy()
     env['ARVADOS_API_TOKEN'] = auth_token('anonymous')
     logf = open(_logfilename('keepproxy'), 'a')
@@ -604,6 +549,7 @@ def run_keep_proxy():
          '-listen=:{}'.format(port)],
         env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf, close_fds=True)
 
+    print("Using API %s token %s" % (os.environ['ARVADOS_API_HOST'], auth_token('admin')), file=sys.stdout)
     api = arvados.api(
         version='v1',
         host=os.environ['ARVADOS_API_HOST'],
@@ -619,7 +565,6 @@ def run_keep_proxy():
         'service_ssl_flag': False,
     }}).execute()
     os.environ["ARVADOS_KEEP_SERVICES"] = "http://localhost:{}".format(port)
-    _setport('keepproxy', port)
     _wait_until_port_listens(port)
 
 def stop_keep_proxy():
@@ -633,7 +578,7 @@ def run_arv_git_httpd():
     stop_arv_git_httpd()
 
     gitdir = os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'git')
-    gitport = find_available_port()
+    gitport = internal_port_from_config("GitHTTP")
     env = os.environ.copy()
     env.pop('ARVADOS_API_TOKEN', None)
     logf = open(_logfilename('arv-git-httpd'), 'a')
@@ -645,7 +590,6 @@ def run_arv_git_httpd():
         env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf)
     with open(_pidfile('arv-git-httpd'), 'w') as f:
         f.write(str(agh.pid))
-    _setport('arv-git-httpd', gitport)
     _wait_until_port_listens(gitport)
 
 def stop_arv_git_httpd():
@@ -658,7 +602,7 @@ def run_keep_web():
         return
     stop_keep_web()
 
-    keepwebport = find_available_port()
+    keepwebport = internal_port_from_config("WebDAV")
     env = os.environ.copy()
     env['ARVADOS_API_TOKEN'] = auth_token('anonymous')
     logf = open(_logfilename('keep-web'), 'a')
@@ -671,7 +615,6 @@ def run_keep_web():
         env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf)
     with open(_pidfile('keep-web'), 'w') as f:
         f.write(str(keepweb.pid))
-    _setport('keep-web', keepwebport)
     _wait_until_port_listens(keepwebport)
 
 def stop_keep_web():
@@ -684,17 +627,17 @@ def run_nginx():
         return
     stop_nginx()
     nginxconf = {}
-    nginxconf['CONTROLLERPORT'] = _getport('controller')
-    nginxconf['CONTROLLERSSLPORT'] = find_available_port()
-    nginxconf['KEEPWEBPORT'] = _getport('keep-web')
-    nginxconf['KEEPWEBDLSSLPORT'] = find_available_port()
-    nginxconf['KEEPWEBSSLPORT'] = find_available_port()
-    nginxconf['KEEPPROXYPORT'] = _getport('keepproxy')
-    nginxconf['KEEPPROXYSSLPORT'] = find_available_port()
-    nginxconf['GITPORT'] = _getport('arv-git-httpd')
-    nginxconf['GITSSLPORT'] = find_available_port()
-    nginxconf['WSPORT'] = _getport('ws')
-    nginxconf['WSSPORT'] = _getport('wss')
+    nginxconf['CONTROLLERPORT'] = internal_port_from_config("Controller")
+    nginxconf['CONTROLLERSSLPORT'] = external_port_from_config("Controller")
+    nginxconf['KEEPWEBPORT'] = internal_port_from_config("WebDAV")
+    nginxconf['KEEPWEBDLSSLPORT'] = external_port_from_config("WebDAVDownload")
+    nginxconf['KEEPWEBSSLPORT'] = external_port_from_config("WebDAV")
+    nginxconf['KEEPPROXYPORT'] = internal_port_from_config("Keepproxy")
+    nginxconf['KEEPPROXYSSLPORT'] = external_port_from_config("Keepproxy")
+    nginxconf['GITPORT'] = internal_port_from_config("GitHTTP")
+    nginxconf['GITSSLPORT'] = external_port_from_config("GitHTTP")
+    nginxconf['WSPORT'] = internal_port_from_config("Websocket")
+    nginxconf['WSSPORT'] = external_port_from_config("Websocket")
     nginxconf['SSLCERT'] = os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'self-signed.pem')
     nginxconf['SSLKEY'] = os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'self-signed.key')
     nginxconf['ACCESSLOG'] = _logfilename('nginx_access')
@@ -718,11 +661,102 @@ def run_nginx():
          '-g', 'pid '+_pidfile('nginx')+';',
          '-c', conffile],
         env=env, stdin=open('/dev/null'), stdout=sys.stderr)
-    _setport('controller-ssl', nginxconf['CONTROLLERSSLPORT'])
-    _setport('keep-web-dl-ssl', nginxconf['KEEPWEBDLSSLPORT'])
-    _setport('keep-web-ssl', nginxconf['KEEPWEBSSLPORT'])
-    _setport('keepproxy-ssl', nginxconf['KEEPPROXYSSLPORT'])
-    _setport('arv-git-httpd-ssl', nginxconf['GITSSLPORT'])
+
+def setup_config():
+    rails_api_port = find_available_port()
+    controller_port = find_available_port()
+    controller_external_port = find_available_port()
+    websocket_port = find_available_port()
+    websocket_external_port = find_available_port()
+    git_httpd_port = find_available_port()
+    git_httpd_external_port = find_available_port()
+    keepproxy_port = find_available_port()
+    keepproxy_external_port = find_available_port()
+    keep_web_port = find_available_port()
+    keep_web_external_port = find_available_port()
+    keep_web_dl_port = find_available_port()
+    keep_web_dl_external_port = find_available_port()
+
+    dbconf = os.path.join(os.environ["CONFIGSRC"], "config.yml")
+
+    print("Getting config from %s" % dbconf, file=sys.stderr)
+
+    pgconnection = yaml.safe_load(open(dbconf))["Clusters"]["zzzzz"]["PostgreSQL"]["Connection"]
+
+    localhost = "127.0.0.1"
+    services = {
+        "RailsAPI": {
+            "InternalURLs": {
+                "https://%s:%s"%(localhost, rails_api_port): {}
+            }
+        },
+        "Controller": {
+            "ExternalURL": "https://%s:%s" % (localhost, controller_external_port),
+            "InternalURLs": {
+                "http://%s:%s"%(localhost, controller_port): {}
+            }
+        },
+        "Websocket": {
+            "ExternalURL": "wss://%s:%s/websocket" % (localhost, websocket_external_port),
+            "InternalURLs": {
+                "http://%s:%s"%(localhost, websocket_port): {}
+            }
+        },
+        "GitHTTP": {
+            "ExternalURL": "https://%s:%s" % (localhost, git_httpd_external_port),
+            "InternalURLs": {
+                "http://%s:%s"%(localhost, git_httpd_port): {}
+            }
+        },
+        "Keepproxy": {
+            "ExternalURL": "https://%s:%s" % (localhost, keepproxy_external_port),
+            "InternalURLs": {
+                "http://%s:%s"%(localhost, keepproxy_port): {}
+            }
+        },
+        "WebDAV": {
+            "ExternalURL": "https://%s:%s" % (localhost, keep_web_external_port),
+            "InternalURLs": {
+                "http://%s:%s"%(localhost, keep_web_port): {}
+            }
+        },
+        "WebDAVDownload": {
+            "ExternalURL": "https://%s:%s" % (localhost, keep_web_dl_external_port),
+            "InternalURLs": {
+                "http://%s:%s"%(localhost, keep_web_dl_port): {}
+            }
+        }
+    }
+
+    config = {
+        "Clusters": {
+            "zzzzz": {
+                "EnableBetaController14287": ('14287' in os.environ.get('ARVADOS_EXPERIMENTAL', '')),
+                "ManagementToken": "e687950a23c3a9bceec28c6223a06c79",
+                "API": {
+                    "RequestTimeout": "30s"
+                },
+                "SystemLogs": {
+                    "LogLevel": ('info' if os.environ.get('ARVADOS_DEBUG', '') in ['','0'] else 'debug')
+                },
+                "PostgreSQL": {
+                    "Connection": pgconnection,
+                },
+                "TLS": {
+                    "Insecure": True
+                },
+                "Services": services
+            }
+        }
+    }
+
+    conf = os.path.join(TEST_TMPDIR, 'arvados.yml')
+    with open(conf, 'w') as f:
+        yaml.safe_dump(config, f)
+
+    ex = "export ARVADOS_CONFIG="+conf
+    print(ex)
+
 
 def stop_nginx():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
@@ -731,50 +765,6 @@ def stop_nginx():
 
 def _pidfile(program):
     return os.path.join(TEST_TMPDIR, program + '.pid')
-
-def _portfile(program):
-    return os.path.join(TEST_TMPDIR, program + '.port')
-
-def _setport(program, port):
-    with open(_portfile(program), 'w') as f:
-        f.write(str(port))
-
-# Returns 9 if program is not up.
-def _getport(program):
-    try:
-        with open(_portfile(program)) as prog:
-            return int(prog.read())
-    except IOError:
-        return 9
-
-def _dbconfig(key):
-    global _cached_db_config
-    if not _cached_db_config:
-        if "ARVADOS_CONFIG" in os.environ:
-            _cached_db_config = list(yaml.safe_load(open(os.environ["ARVADOS_CONFIG"]))["Clusters"].values())[0]["PostgreSQL"]["Connection"]
-        else:
-            _cached_db_config = yaml.safe_load(open(os.path.join(
-                SERVICES_SRC_DIR, 'api', 'config', 'database.yml')))["test"]
-            _cached_db_config["dbname"] = _cached_db_config["database"]
-            _cached_db_config["user"] = _cached_db_config["username"]
-    return _cached_db_config[key]
-
-def _apiconfig(key):
-    global _cached_config
-    if _cached_config:
-        return _cached_config[key]
-    def _load(f, required=True):
-        fullpath = os.path.join(SERVICES_SRC_DIR, 'api', 'config', f)
-        if not required and not os.path.exists(fullpath):
-            return {}
-        return yaml.safe_load(fullpath)
-    cdefault = _load('application.default.yml')
-    csite = _load('application.yml', required=False)
-    _cached_config = {}
-    for section in [cdefault.get('common',{}), cdefault.get('test',{}),
-                    csite.get('common',{}), csite.get('test',{})]:
-        _cached_config.update(section)
-    return _cached_config[key]
 
 def fixture(fix):
     '''load a fixture yaml file'''
@@ -868,7 +858,7 @@ if __name__ == "__main__":
         'start_keep_proxy', 'stop_keep_proxy',
         'start_keep-web', 'stop_keep-web',
         'start_arv-git-httpd', 'stop_arv-git-httpd',
-        'start_nginx', 'stop_nginx',
+        'start_nginx', 'stop_nginx', 'setup_config',
     ]
     parser = argparse.ArgumentParser()
     parser.add_argument('action', type=str, help="one of {}".format(actions))
@@ -922,8 +912,10 @@ if __name__ == "__main__":
         stop_keep_web()
     elif args.action == 'start_nginx':
         run_nginx()
-        print("export ARVADOS_API_HOST=0.0.0.0:{}".format(_getport('controller-ssl')))
+        print("export ARVADOS_API_HOST=0.0.0.0:{}".format(external_port_from_config('Controller')))
     elif args.action == 'stop_nginx':
         stop_nginx()
+    elif args.action == 'setup_config':
+        setup_config()
     else:
         raise Exception("action recognized but not implemented!?")

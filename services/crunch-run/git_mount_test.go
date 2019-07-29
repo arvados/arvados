@@ -6,9 +6,11 @@ package main
 
 import (
 	"io/ioutil"
+	"net/url"
 	"os"
 	"path/filepath"
 
+	"git.curoverse.com/arvados.git/lib/config"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	check "gopkg.in/check.v1"
@@ -203,7 +205,11 @@ func (s *GitMountSuite) checkTmpdirContents(c *check.C, expect []string) {
 func (*GitMountSuite) useTestGitServer(c *check.C) {
 	git_client.InstallProtocol("https", git_http.NewClient(arvados.InsecureHTTPClient))
 
-	port, err := ioutil.ReadFile("../../tmp/arv-git-httpd-ssl.port")
+	loader := config.NewLoader(nil, nil)
+	cfg, err := loader.Load()
 	c.Assert(err, check.IsNil)
-	discoveryMap["gitUrl"] = "https://localhost:" + string(port)
+	cluster, err := cfg.GetCluster("")
+	c.Assert(err, check.IsNil)
+
+	discoveryMap["gitUrl"] = (*url.URL)(&cluster.Services.GitHTTP.ExternalURL).String()
 }

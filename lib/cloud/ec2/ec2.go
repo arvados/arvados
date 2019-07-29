@@ -32,7 +32,7 @@ type ec2InstanceSetConfig struct {
 	AccessKeyID      string
 	SecretAccessKey  string
 	Region           string
-	SecurityGroupIDs []string
+	SecurityGroupIDs map[string]interface{}
 	SubnetID         string
 	AdminUsername    string
 	EBSVolumeType    string
@@ -161,6 +161,11 @@ func (instanceSet *ec2InstanceSet) Create(
 		})
 	}
 
+	var groups []string
+	for sg := range instanceSet.ec2config.SecurityGroupIDs {
+		groups = append(groups, sg)
+	}
+
 	rii := ec2.RunInstancesInput{
 		ImageId:      aws.String(string(imageID)),
 		InstanceType: &instanceType.ProviderType,
@@ -173,7 +178,7 @@ func (instanceSet *ec2InstanceSet) Create(
 				AssociatePublicIpAddress: aws.Bool(false),
 				DeleteOnTermination:      aws.Bool(true),
 				DeviceIndex:              aws.Int64(0),
-				Groups:                   aws.StringSlice(instanceSet.ec2config.SecurityGroupIDs),
+				Groups:                   aws.StringSlice(groups),
 				SubnetId:                 &instanceSet.ec2config.SubnetID,
 			}},
 		DisableApiTermination:             aws.Bool(false),

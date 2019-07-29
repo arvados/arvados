@@ -5,8 +5,6 @@
 require 'integration_helper'
 
 class AnonymousAccessTest < ActionDispatch::IntegrationTest
-  include KeepWebConfig
-
   # These tests don't do state-changing API calls. Save some time by
   # skipping the database reset.
   reset_api_fixtures :after_each_test, false
@@ -119,8 +117,6 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
   end
 
   test 'view file' do
-    use_keep_web_config
-
     magic = rand(2**512).to_s 36
     owner = api_fixture('groups')['anonymously_accessible_project']['uuid']
     col = upload_data_and_get_collection(magic, 'admin', "Hello\\040world.txt", owner)

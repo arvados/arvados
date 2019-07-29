@@ -13,6 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"git.curoverse.com/arvados.git/sdk/go/health"
 	"github.com/sirupsen/logrus"
@@ -27,7 +28,8 @@ type wsConn interface {
 }
 
 type router struct {
-	Config         *wsConfig
+	client         arvados.Client
+	cluster        *arvados.Cluster
 	eventSource    eventSource
 	newPermChecker func() permChecker
 
@@ -52,8 +54,8 @@ type debugStatuser interface {
 
 func (rtr *router) setup() {
 	rtr.handler = &handler{
-		PingTimeout: rtr.Config.PingTimeout.Duration(),
-		QueueSize:   rtr.Config.ClientEventQueue,
+		PingTimeout: time.Duration(rtr.cluster.API.SendTimeout),
+		QueueSize:   rtr.cluster.API.WebsocketClientEventQueue,
 	}
 	rtr.mux = http.NewServeMux()
 	rtr.mux.Handle("/websocket", rtr.makeServer(newSessionV0))
@@ -62,7 +64,7 @@ func (rtr *router) setup() {
 	rtr.mux.Handle("/status.json", rtr.jsonHandler(rtr.Status))
 
 	rtr.mux.Handle("/_health/", &health.Handler{
-		Token:  rtr.Config.ManagementToken,
+		Token:  rtr.cluster.ManagementToken,
 		Prefix: "/_health/",
 		Routes: health.Routes{
 			"db": rtr.eventSource.DBHealth,
@@ -87,7 +89,7 @@ func (rtr *router) makeServer(newSession sessionFactory) *websocket.Server {
 
 			stats := rtr.handler.Handle(ws, rtr.eventSource,
 				func(ws wsConn, sendq chan<- interface{}) (session, error) {
-					return newSession(ws, sendq, rtr.eventSource.DB(), rtr.newPermChecker(), &rtr.Config.Client)
+					return newSession(ws, sendq, rtr.eventSource.DB(), rtr.newPermChecker(), &rtr.client)
 				})
 
 			log.WithFields(logrus.Fields{

@@ -28,8 +28,10 @@ type Loader struct {
 	Logger         logrus.FieldLogger
 	SkipDeprecated bool // Don't load legacy/deprecated config keys/files
 
-	Path          string
-	KeepstorePath string
+	Path                    string
+	KeepstorePath           string
+	CrunchDispatchSlurmPath string
+	WebsocketPath           string
 
 	configdata []byte
 }
@@ -57,6 +59,8 @@ func NewLoader(stdin io.Reader, logger logrus.FieldLogger) *Loader {
 func (ldr *Loader) SetupFlags(flagset *flag.FlagSet) {
 	flagset.StringVar(&ldr.Path, "config", arvados.DefaultConfigFile, "Site configuration `file` (default may be overridden by setting an ARVADOS_CONFIG environment variable)")
 	flagset.StringVar(&ldr.KeepstorePath, "legacy-keepstore-config", defaultKeepstoreConfigPath, "Legacy keepstore configuration `file`")
+	flagset.StringVar(&ldr.CrunchDispatchSlurmPath, "legacy-crunch-dispatch-slurm-config", defaultCrunchDispatchSlurmConfigPath, "Legacy crunch-dispatch-slurm configuration `file`")
+	flagset.StringVar(&ldr.WebsocketPath, "legacy-ws-config", defaultWebsocketConfigPath, "Legacy arvados-ws configuration `file`")
 }
 
 // MungeLegacyConfigArgs checks args for a -config flag whose argument
@@ -203,8 +207,14 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 		if err != nil {
 			return nil, err
 		}
+		// legacy file is required when either:
+		// * a non-default location was specified
+		// * no primary config was loaded, and this is the
+		// legacy config file for the current component
 		for _, err := range []error{
 			ldr.loadOldKeepstoreConfig(&cfg),
+			ldr.loadOldCrunchDispatchSlurmConfig(&cfg),
+			ldr.loadOldWebsocketConfig(&cfg),
 		} {
 			if err != nil {
 				return nil, err

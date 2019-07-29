@@ -18,12 +18,13 @@ import (
 	"strings"
 	"time"
 
+	"git.curoverse.com/arvados.git/lib/config"
 	"git.curoverse.com/arvados.git/lib/dispatchcloud"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/sdk/go/config"
 	"git.curoverse.com/arvados.git/sdk/go/dispatch"
 	"github.com/coreos/go-systemd/daemon"
+	"github.com/ghodss/yaml"
 	"github.com/sirupsen/logrus"
 )
 
@@ -35,8 +36,7 @@ type logger interface {
 const initialNiceValue int64 = 10000
 
 var (
-	version           = "dev"
-	defaultConfigPath = "/etc/arvados/crunch-dispatch-slurm/crunch-dispatch-slurm.yml"
+	version = "dev"
 )
 
 type Dispatcher struct {
@@ -47,26 +47,6 @@ type Dispatcher struct {
 	slurm   Slurm
 
 	Client arvados.Client
-
-	SbatchArguments []string
-	PollPeriod      arvados.Duration
-	PrioritySpread  int64
-
-	// crunch-run command to invoke. The container UUID will be
-	// appended. If nil, []string{"crunch-run"} will be used.
-	//
-	// Example: []string{"crunch-run", "--cgroup-parent-subsystem=memory"}
-	CrunchRunCommand []string
-
-	// Extra RAM to reserve (in Bytes) for SLURM job, in addition
-	// to the amount specified in the container's RuntimeConstraints
-	ReserveExtraRAM int64
-
-	// Minimum time between two attempts to run the same container
-	MinRetryPeriod arvados.Duration
-
-	// Batch size for container queries
-	BatchSize int64
 }
 
 func main() {
@@ -94,13 +74,15 @@ func (disp *Dispatcher) Run(prog string, args []string) error {
 
 // configure() loads config files. Tests skip this.
 func (disp *Dispatcher) configure(prog string, args []string) error {
+	if disp.logger == nil {
+		disp.logger = logrus.StandardLogger()
+	}
 	flags := flag.NewFlagSet(prog, flag.ExitOnError)
 	flags.Usage = func() { usage(flags) }
 
-	configPath := flags.String(
-		"config",
-		defaultConfigPath,
-		"`path` to JSON or YAML configuration file")
+	loader := config.NewLoader(nil, disp.logger)
+	loader.SetupFlags(flags)
+
 	dumpConfig := flag.Bool(
 		"dump-config",
 		false,
@@ -109,8 +91,15 @@ func (disp *Dispatcher) configure(prog string, args []string) error {
 		"version",
 		false,
 		"Print version information and exit.")
+
+	args = loader.MungeLegacyConfigArgs(logrus.StandardLogger(), args, "-legacy-crunch-dispatch-slurm-config")
+
 	// Parse args; omit the first arg which is the command name
-	flags.Parse(args)
+	err := flags.Parse(args)
+
+	if err == flag.ErrHelp {
+		return nil
+	}
 
 	// Print version information if requested
 	if *getVersion {
@@ -120,18 +109,18 @@ func (disp *Dispatcher) configure(prog string, args []string) error {
 
 	disp.logger.Printf("crunch-dispatch-slurm %s started", version)
 
-	err := disp.readConfig(*configPath)
+	cfg, err := loader.Load()
 	if err != nil {
 		return err
 	}
 
-	if disp.CrunchRunCommand == nil {
-		disp.CrunchRunCommand = []string{"crunch-run"}
+	if disp.cluster, err = cfg.GetCluster(""); err != nil {
+		return fmt.Errorf("config error: %s", err)
 	}
 
-	if disp.PollPeriod == 0 {
-		disp.PollPeriod = arvados.Duration(10 * time.Second)
-	}
+	disp.Client.APIHost = disp.cluster.Services.Controller.ExternalURL.Host
+	disp.Client.AuthToken = disp.cluster.SystemRootToken
+	disp.Client.Insecure = disp.cluster.TLS.Insecure
 
 	if disp.Client.APIHost != "" || disp.Client.AuthToken != "" {
 		// Copy real configs into env vars so [a]
@@ -150,16 +139,14 @@ func (disp *Dispatcher) configure(prog string, args []string) error {
 	}
 
 	if *dumpConfig {
-		return config.DumpAndExit(disp)
-	}
-
-	siteConfig, err := arvados.GetConfig(arvados.DefaultConfigFile)
-	if os.IsNotExist(err) {
-		disp.logger.Warnf("no cluster config (%s), proceeding with no node types defined", err)
-	} else if err != nil {
-		return fmt.Errorf("error loading config: %s", err)
-	} else if disp.cluster, err = siteConfig.GetCluster(""); err != nil {
-		return fmt.Errorf("config error: %s", err)
+		out, err := yaml.Marshal(cfg)
+		if err != nil {
+			return err
+		}
+		_, err = os.Stdout.Write(out)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -167,9 +154,6 @@ func (disp *Dispatcher) configure(prog string, args []string) error {
 
 // setup() initializes private fields after configure().
 func (disp *Dispatcher) setup() {
-	if disp.logger == nil {
-		disp.logger = logrus.StandardLogger()
-	}
 	arv, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
 		disp.logger.Fatalf("Error making Arvados client: %v", err)
@@ -179,17 +163,17 @@ func (disp *Dispatcher) setup() {
 	disp.slurm = NewSlurmCLI()
 	disp.sqCheck = &SqueueChecker{
 		Logger:         disp.logger,
-		Period:         time.Duration(disp.PollPeriod),
-		PrioritySpread: disp.PrioritySpread,
+		Period:         time.Duration(disp.cluster.Containers.CloudVMs.PollInterval),
+		PrioritySpread: disp.cluster.Containers.SLURM.PrioritySpread,
 		Slurm:          disp.slurm,
 	}
 	disp.Dispatcher = &dispatch.Dispatcher{
 		Arv:            arv,
 		Logger:         disp.logger,
-		BatchSize:      disp.BatchSize,
+		BatchSize:      disp.cluster.API.MaxItemsPerResponse,
 		RunContainer:   disp.runContainer,
-		PollPeriod:     time.Duration(disp.PollPeriod),
-		MinRetryPeriod: time.Duration(disp.MinRetryPeriod),
+		PollPeriod:     time.Duration(disp.cluster.Containers.CloudVMs.PollInterval),
+		MinRetryPeriod: time.Duration(disp.cluster.Containers.MinRetryPeriod),
 	}
 }
 
@@ -227,7 +211,9 @@ func (disp *Dispatcher) checkSqueueForOrphans() {
 }
 
 func (disp *Dispatcher) slurmConstraintArgs(container arvados.Container) []string {
-	mem := int64(math.Ceil(float64(container.RuntimeConstraints.RAM+container.RuntimeConstraints.KeepCacheRAM+disp.ReserveExtraRAM) / float64(1048576)))
+	mem := int64(math.Ceil(float64(container.RuntimeConstraints.RAM+
+		container.RuntimeConstraints.KeepCacheRAM+
+		int64(disp.cluster.Containers.ReserveExtraRAM)) / float64(1048576)))
 
 	disk := dispatchcloud.EstimateScratchSpace(&container)
 	disk = int64(math.Ceil(float64(disk) / float64(1048576)))
@@ -240,7 +226,7 @@ func (disp *Dispatcher) slurmConstraintArgs(container arvados.Container) []strin
 
 func (disp *Dispatcher) sbatchArgs(container arvados.Container) ([]string, error) {
 	var args []string
-	args = append(args, disp.SbatchArguments...)
+	args = append(args, disp.cluster.Containers.SLURM.SbatchArgumentsList...)
 	args = append(args, "--job-name="+container.UUID, fmt.Sprintf("--nice=%d", initialNiceValue), "--no-requeue")
 
 	if disp.cluster == nil {
@@ -288,7 +274,9 @@ func (disp *Dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Contain
 
 	if ctr.State == dispatch.Locked && !disp.sqCheck.HasUUID(ctr.UUID) {
 		log.Printf("Submitting container %s to slurm", ctr.UUID)
-		if err := disp.submit(ctr, disp.CrunchRunCommand); err != nil {
+		cmd := []string{disp.cluster.Containers.CrunchRunCommand}
+		cmd = append(cmd, disp.cluster.Containers.CrunchRunArgumentsList...)
+		if err := disp.submit(ctr, cmd); err != nil {
 			var text string
 			if err, ok := err.(dispatchcloud.ConstraintsNotSatisfiableError); ok {
 				var logBuf bytes.Buffer
@@ -378,13 +366,4 @@ func (disp *Dispatcher) scancel(ctr arvados.Container) {
 		log.Printf("container %s is still in squeue after scancel", ctr.UUID)
 		time.Sleep(time.Second)
 	}
-}
-
-func (disp *Dispatcher) readConfig(path string) error {
-	err := config.LoadFile(disp, path)
-	if err != nil && os.IsNotExist(err) && path == defaultConfigPath {
-		log.Printf("Config not specified. Continue with default configuration.")
-		err = nil
-	}
-	return err
 }

@@ -168,7 +168,9 @@ func (s *LoadSuite) TestSampleKeys(c *check.C) {
 }
 
 func (s *LoadSuite) TestMultipleClusters(c *check.C) {
-	cfg, err := testLoader(c, `{"Clusters":{"z1111":{},"z2222":{}}}`, nil).Load()
+	ldr := testLoader(c, `{"Clusters":{"z1111":{},"z2222":{}}}`, nil)
+	ldr.SkipDeprecated = true
+	cfg, err := ldr.Load()
 	c.Assert(err, check.IsNil)
 	c1, err := cfg.GetCluster("z1111")
 	c.Assert(err, check.IsNil)
@@ -371,5 +373,82 @@ func (s *LoadSuite) checkEquivalent(c *check.C, goty, expectedy string) {
 		diff, err := cmd.CombinedOutput()
 		c.Log(string(diff))
 		c.Check(err, check.IsNil)
+	}
+}
+
+func checkListKeys(path string, x interface{}) (err error) {
+	v := reflect.Indirect(reflect.ValueOf(x))
+	switch v.Kind() {
+	case reflect.Map:
+		iter := v.MapRange()
+		for iter.Next() {
+			k := iter.Key()
+			if k.Kind() == reflect.String {
+				if err = checkListKeys(path+"."+k.String(), iter.Value().Interface()); err != nil {
+					return
+				}
+			}
+		}
+		return
+
+	case reflect.Struct:
+		for i := 0; i < v.NumField(); i++ {
+			val := v.Field(i)
+			structField := v.Type().Field(i)
+			fieldname := structField.Name
+			endsWithList := strings.HasSuffix(fieldname, "List")
+			isAnArray := structField.Type.Kind() == reflect.Slice
+			if endsWithList != isAnArray {
+				if endsWithList {
+					err = fmt.Errorf("%s.%s ends with 'List' but field is not an array (type %v)", path, fieldname, val.Kind())
+					return
+				}
+				if isAnArray && structField.Type.Elem().Kind() != reflect.Uint8 {
+					err = fmt.Errorf("%s.%s is an array but field name does not end in 'List' (slice of %v)", path, fieldname, structField.Type.Elem().Kind())
+					return
+				}
+			}
+			if val.CanInterface() {
+				checkListKeys(path+"."+fieldname, val.Interface())
+			}
+		}
+	}
+	return
+}
+
+func (s *LoadSuite) TestListKeys(c *check.C) {
+	v1 := struct {
+		EndInList []string
+	}{[]string{"a", "b"}}
+	var m1 = make(map[string]interface{})
+	m1["c"] = &v1
+	if err := checkListKeys("", m1); err != nil {
+		c.Error(err)
+	}
+
+	v2 := struct {
+		DoesNot []string
+	}{[]string{"a", "b"}}
+	var m2 = make(map[string]interface{})
+	m2["c"] = &v2
+	if err := checkListKeys("", m2); err == nil {
+		c.Errorf("Should have produced an error")
+	}
+
+	v3 := struct {
+		EndInList string
+	}{"a"}
+	var m3 = make(map[string]interface{})
+	m3["c"] = &v3
+	if err := checkListKeys("", m3); err == nil {
+		c.Errorf("Should have produced an error")
+	}
+
+	var logbuf bytes.Buffer
+	loader := testLoader(c, string(DefaultYAML), &logbuf)
+	cfg, err := loader.Load()
+	c.Assert(err, check.IsNil)
+	if err := checkListKeys("", cfg); err != nil {
+		c.Error(err)
 	}
 }

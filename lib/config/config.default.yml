@@ -178,8 +178,8 @@ Clusters:
 
       # API methods to disable. Disabled methods are not listed in the
       # discovery document, and respond 404 to all requests.
-      # Example: ["jobs.create", "pipeline_instances.create"]
-      DisabledAPIs: []
+      # Example: {"jobs.create":{}, "pipeline_instances.create": {}}
+      DisabledAPIs: {}
 
       # Interval (seconds) between asynchronous permission view updates. Any
       # permission-updating API called with the 'async' parameter schedules a an
@@ -198,6 +198,14 @@ Clusters:
       # Maximum wall clock time to spend handling an incoming request.
       RequestTimeout: 5m
 
+      # Websocket will send a periodic empty event after 'SendTimeout'
+      # if there is no other activity to maintain the connection /
+      # detect dropped connections.
+      SendTimeout: 60s
+
+      WebsocketClientEventQueue: 64
+      WebsocketServerEventQueue: 4
+
     Users:
       # Config parameters to automatically setup new users.  If enabled,
       # this users will be able to self-activate.  Enable this if you want
@@ -209,7 +217,14 @@ Clusters:
       AutoSetupNewUsers: false
       AutoSetupNewUsersWithVmUUID: ""
       AutoSetupNewUsersWithRepository: false
-      AutoSetupUsernameBlacklist: [arvados, git, gitolite, gitolite-admin, root, syslog]
+      AutoSetupUsernameBlacklist:
+        arvados: {}
+        git: {}
+        gitolite: {}
+        gitolite-admin: {}
+        root: {}
+        syslog: {}
+        SAMPLE: {}
 
       # When new_users_are_active is set to true, new users will be active
       # immediately.  This skips the "self-activate" step which enforces
@@ -233,8 +248,8 @@ Clusters:
       AdminNotifierEmailFrom: arvados@example.com
       EmailSubjectPrefix: "[ARVADOS] "
       UserNotifierEmailFrom: arvados@example.com
-      NewUserNotificationRecipients: []
-      NewInactiveUserNotificationRecipients: []
+      NewUserNotificationRecipients: {}
+      NewInactiveUserNotificationRecipients: {}
 
       # Set anonymous_user_token to enable anonymous user access. You can get
       # the token by running "bundle exec ./script/get_anonymous_user_token.rb"
@@ -261,13 +276,13 @@ Clusters:
       MaxDeleteBatch: 0
 
       # Attributes to suppress in events and audit logs.  Notably,
-      # specifying ["manifest_text"] here typically makes the database
+      # specifying {"manifest_text": {}} here typically makes the database
       # smaller and faster.
       #
       # Warning: Using any non-empty value here can have undesirable side
       # effects for any client or component that relies on event logs.
       # Use at your own risk.
-      UnloggedAttributes: []
+      UnloggedAttributes: {}
 
     SystemLogs:
 
@@ -402,10 +417,12 @@ Clusters:
       # to skip the compatibility check (and display a warning message to
       # that effect).
       #
-      # Example for sites running docker < 1.10: ["v1"]
-      # Example for sites running docker >= 1.10: ["v2"]
-      # Example for disabling check: []
-      SupportedDockerImageFormats: ["v2"]
+      # Example for sites running docker < 1.10: {"v1": {}}
+      # Example for sites running docker >= 1.10: {"v2": {}}
+      # Example for disabling check: {}
+      SupportedDockerImageFormats:
+        "v2": {}
+        SAMPLE: {}
 
       # Include details about job reuse decisions in the server log. This
       # causes additional database queries to run, so it should not be
@@ -448,6 +465,20 @@ Clusters:
       # Maximum time to wait for workers to come up before abandoning
       # stale locks from a previous dispatch process.
       StaleLockTimeout: 1m
+
+      # The crunch-run command to manage the container on a node
+      CrunchRunCommand: "crunch-run"
+
+      # Extra arguments to add to crunch-run invocation
+      # Example: ["--cgroup-parent-subsystem=memory"]
+      CrunchRunArgumentsList: []
+
+      # Extra RAM to reserve on the node, in addition to
+      # the amount specified in the container's RuntimeConstraints
+      ReserveExtraRAM: 256MiB
+
+      # Minimum time between two attempts to run the same container
+      MinRetryPeriod: 0s
 
       Logging:
         # When you run the db:delete_old_container_logs task, it will find
@@ -492,6 +523,8 @@ Clusters:
         LogUpdateSize: 32MiB
 
       SLURM:
+        PrioritySpread: 0
+        SbatchArgumentsList: []
         Managed:
           # Path to dns server configuration directory
           # (e.g. /etc/unbound.d/conf.d). If false, do not write any config
@@ -515,7 +548,8 @@ Clusters:
 
           ComputeNodeDomain: ""
           ComputeNodeNameservers:
-            - 192.168.1.1
+            "192.168.1.1": {}
+            SAMPLE: {}
 
           # Hostname to assign to a compute node when it sends a "ping" and the
           # hostname in its Node record is nil.
@@ -657,7 +691,7 @@ Clusters:
 
           # (ec2) Instance configuration.
           SecurityGroupIDs:
-            - ""
+            "SAMPLE": {}
           SubnetID: ""
           Region: ""
           EBSVolumeType: gp2

@@ -108,29 +108,37 @@ type oldKeepstoreConfig struct {
 	Debug *bool
 }
 
-// update config using values from an old-style keepstore config file.
-func (ldr *Loader) loadOldKeepstoreConfig(cfg *arvados.Config) error {
-	path := ldr.KeepstorePath
+func (ldr *Loader) loadOldConfigHelper(component, path string, target interface{}) error {
 	if path == "" {
 		return nil
 	}
 	buf, err := ioutil.ReadFile(path)
-	if os.IsNotExist(err) && path == defaultKeepstoreConfigPath {
-		return nil
-	} else if err != nil {
-		return err
-	} else {
-		ldr.Logger.Warnf("you should remove the legacy keepstore config file (%s) after migrating all config keys to the cluster configuration file (%s)", path, ldr.Path)
-	}
-	cluster, err := cfg.GetCluster("")
 	if err != nil {
 		return err
 	}
 
-	var oc oldKeepstoreConfig
-	err = yaml.Unmarshal(buf, &oc)
+	ldr.Logger.Warnf("you should remove the legacy %v config file (%s) after migrating all config keys to the cluster configuration file (%s)", component, path, ldr.Path)
+
+	err = yaml.Unmarshal(buf, target)
 	if err != nil {
 		return fmt.Errorf("%s: %s", path, err)
+	}
+	return nil
+}
+
+// update config using values from an old-style keepstore config file.
+func (ldr *Loader) loadOldKeepstoreConfig(cfg *arvados.Config) error {
+	var oc oldKeepstoreConfig
+	err := ldr.loadOldConfigHelper("keepstore", ldr.KeepstorePath, &oc)
+	if os.IsNotExist(err) && (ldr.KeepstorePath == defaultKeepstoreConfigPath) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	cluster, err := cfg.GetCluster("")
+	if err != nil {
+		return err
 	}
 
 	if v := oc.Debug; v == nil {
@@ -138,6 +146,164 @@ func (ldr *Loader) loadOldKeepstoreConfig(cfg *arvados.Config) error {
 		cluster.SystemLogs.LogLevel = "debug"
 	} else if !*v && cluster.SystemLogs.LogLevel != "info" {
 		cluster.SystemLogs.LogLevel = "info"
+	}
+
+	cfg.Clusters[cluster.ClusterID] = *cluster
+	return nil
+}
+
+type oldCrunchDispatchSlurmConfig struct {
+	Client *arvados.Client
+
+	SbatchArguments *[]string
+	PollPeriod      *arvados.Duration
+	PrioritySpread  *int64
+
+	// crunch-run command to invoke. The container UUID will be
+	// appended. If nil, []string{"crunch-run"} will be used.
+	//
+	// Example: []string{"crunch-run", "--cgroup-parent-subsystem=memory"}
+	CrunchRunCommand *[]string
+
+	// Extra RAM to reserve (in Bytes) for SLURM job, in addition
+	// to the amount specified in the container's RuntimeConstraints
+	ReserveExtraRAM *int64
+
+	// Minimum time between two attempts to run the same container
+	MinRetryPeriod *arvados.Duration
+
+	// Batch size for container queries
+	BatchSize *int64
+}
+
+const defaultCrunchDispatchSlurmConfigPath = "/etc/arvados/crunch-dispatch-slurm/crunch-dispatch-slurm.yml"
+
+func loadOldClientConfig(cluster *arvados.Cluster, client *arvados.Client) {
+	if client == nil {
+		return
+	}
+	if client.APIHost != "" {
+		cluster.Services.Controller.ExternalURL.Host = client.APIHost
+	}
+	if client.Scheme != "" {
+		cluster.Services.Controller.ExternalURL.Scheme = client.Scheme
+	} else {
+		cluster.Services.Controller.ExternalURL.Scheme = "https"
+	}
+	if client.AuthToken != "" {
+		cluster.SystemRootToken = client.AuthToken
+	}
+	cluster.TLS.Insecure = client.Insecure
+}
+
+// update config using values from an crunch-dispatch-slurm config file.
+func (ldr *Loader) loadOldCrunchDispatchSlurmConfig(cfg *arvados.Config) error {
+	var oc oldCrunchDispatchSlurmConfig
+	err := ldr.loadOldConfigHelper("crunch-dispatch-slurm", ldr.CrunchDispatchSlurmPath, &oc)
+	if os.IsNotExist(err) && (ldr.CrunchDispatchSlurmPath == defaultCrunchDispatchSlurmConfigPath) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	cluster, err := cfg.GetCluster("")
+	if err != nil {
+		return err
+	}
+
+	loadOldClientConfig(cluster, oc.Client)
+
+	if oc.SbatchArguments != nil {
+		cluster.Containers.SLURM.SbatchArgumentsList = *oc.SbatchArguments
+	}
+	if oc.PollPeriod != nil {
+		cluster.Containers.CloudVMs.PollInterval = *oc.PollPeriod
+	}
+	if oc.PrioritySpread != nil {
+		cluster.Containers.SLURM.PrioritySpread = *oc.PrioritySpread
+	}
+	if oc.CrunchRunCommand != nil {
+		if len(*oc.CrunchRunCommand) >= 1 {
+			cluster.Containers.CrunchRunCommand = (*oc.CrunchRunCommand)[0]
+		}
+		if len(*oc.CrunchRunCommand) >= 2 {
+			cluster.Containers.CrunchRunArgumentsList = (*oc.CrunchRunCommand)[1:]
+		}
+	}
+	if oc.ReserveExtraRAM != nil {
+		cluster.Containers.ReserveExtraRAM = arvados.ByteSize(*oc.ReserveExtraRAM)
+	}
+	if oc.MinRetryPeriod != nil {
+		cluster.Containers.MinRetryPeriod = *oc.MinRetryPeriod
+	}
+	if oc.BatchSize != nil {
+		cluster.API.MaxItemsPerResponse = int(*oc.BatchSize)
+	}
+
+	cfg.Clusters[cluster.ClusterID] = *cluster
+	return nil
+}
+
+type oldWsConfig struct {
+	Client       *arvados.Client
+	Postgres     *arvados.PostgreSQLConnection
+	PostgresPool *int
+	Listen       *string
+	LogLevel     *string
+	LogFormat    *string
+
+	PingTimeout      *arvados.Duration
+	ClientEventQueue *int
+	ServerEventQueue *int
+
+	ManagementToken *string
+}
+
+const defaultWebsocketConfigPath = "/etc/arvados/ws/ws.yml"
+
+// update config using values from an crunch-dispatch-slurm config file.
+func (ldr *Loader) loadOldWebsocketConfig(cfg *arvados.Config) error {
+	var oc oldWsConfig
+	err := ldr.loadOldConfigHelper("arvados-ws", ldr.WebsocketPath, &oc)
+	if os.IsNotExist(err) && ldr.WebsocketPath == defaultWebsocketConfigPath {
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	cluster, err := cfg.GetCluster("")
+	if err != nil {
+		return err
+	}
+
+	loadOldClientConfig(cluster, oc.Client)
+
+	if oc.Postgres != nil {
+		cluster.PostgreSQL.Connection = *oc.Postgres
+	}
+	if oc.PostgresPool != nil {
+		cluster.PostgreSQL.ConnectionPool = *oc.PostgresPool
+	}
+	if oc.Listen != nil {
+		cluster.Services.Websocket.InternalURLs[arvados.URL{Host: *oc.Listen}] = arvados.ServiceInstance{}
+	}
+	if oc.LogLevel != nil {
+		cluster.SystemLogs.LogLevel = *oc.LogLevel
+	}
+	if oc.LogFormat != nil {
+		cluster.SystemLogs.Format = *oc.LogFormat
+	}
+	if oc.PingTimeout != nil {
+		cluster.API.SendTimeout = *oc.PingTimeout
+	}
+	if oc.ClientEventQueue != nil {
+		cluster.API.WebsocketClientEventQueue = *oc.ClientEventQueue
+	}
+	if oc.ServerEventQueue != nil {
+		cluster.API.WebsocketServerEventQueue = *oc.ServerEventQueue
+	}
+	if oc.ManagementToken != nil {
+		cluster.ManagementToken = *oc.ManagementToken
 	}
 
 	cfg.Clusters[cluster.ClusterID] = *cluster

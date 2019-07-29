@@ -13,7 +13,11 @@ class Arvados::V1::HealthcheckControllerTest < ActionController::TestCase
     [true, 'Bearer configuredmanagementtoken', 200, '{"health":"OK"}'],
   ].each do |enabled, header, error_code, error_msg|
     test "ping when #{if enabled then 'enabled' else 'disabled' end} with header '#{header}'" do
-      Rails.configuration.ManagementToken = 'configuredmanagementtoken' if enabled
+      if enabled
+        Rails.configuration.ManagementToken = 'configuredmanagementtoken'
+      else
+        Rails.configuration.ManagementToken = ""
+      end
 
       @request.headers['Authorization'] = header
       get :ping

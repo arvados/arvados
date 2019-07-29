@@ -35,8 +35,7 @@ Options:
 --short        Skip (or scale down) some slow tests.
 --interactive  Set up, then prompt for test/install steps to perform.
 WORKSPACE=path Arvados source tree to test.
-CONFIGSRC=path Dir with api server config files to copy into source tree.
-               (If none given, leave config files alone in source tree.)
+CONFIGSRC=path Dir with config.yml file containing PostgreSQL section for use by tests. (required)
 services/api_test="TEST=test/functional/arvados/v1/collections_controller_test.rb"
                Restrict apiserver tests to the given file
 sdk/python_test="--test-suite tests.test_keep_locator"
@@ -197,6 +196,10 @@ sanity_checks() {
     [[ -n "${skip[sanity]}" ]] && return 0
     ( [[ -n "$WORKSPACE" ]] && [[ -d "$WORKSPACE/services" ]] ) \
         || fatal "WORKSPACE environment variable not set to a source directory (see: $0 --help)"
+    [[ -n "$CONFIGSRC" ]] \
+	|| fatal "CONFIGSRC environment not set (see: $0 --help)"
+    [[ -s "$CONFIGSRC/config.yml" ]] \
+	|| fatal "'$CONFIGSRC/config.yml' is empty or not found (see: $0 --help)"
     echo Checking dependencies:
     echo "locale: ${LANG}"
     [[ "$(locale charmap)" = "UTF-8" ]] \
@@ -385,12 +388,8 @@ checkpidfile() {
 
 checkhealth() {
     svc="$1"
-    port="$(cat "$WORKSPACE/tmp/${svc}.port")"
-    scheme=http
-    if [[ ${svc} =~ -ssl$ || ${svc} = wss ]]; then
-        scheme=https
-    fi
-    url="$scheme://localhost:${port}/_health/ping"
+    base=$(python -c "import yaml; print list(yaml.safe_load(file('$ARVADOS_CONFIG'))['Clusters']['zzzzz']['Services']['$1']['InternalURLs'].keys())[0]")
+    url="$base/_health/ping"
     if ! curl -Ss -H "Authorization: Bearer e687950a23c3a9bceec28c6223a06c79" "${url}" | tee -a /dev/stderr | grep '"OK"'; then
         echo "${url} failed"
         return 1
@@ -422,28 +421,36 @@ start_services() {
     fi
     all_services_stopped=
     fail=1
+
+    # Create config if it hasn't been created already.  Normally
+    # this happens in install_env because there are downstream
+    # steps like workbench install which require a valid
+    # config.yml, but when invoked with --skip-install that doesn't
+    # happen, so make sure to run it here.
+    eval $(python sdk/python/tests/run_test_server.py setup_config)
+
     cd "$WORKSPACE" \
         && eval $(python sdk/python/tests/run_test_server.py start --auth admin) \
         && export ARVADOS_TEST_API_HOST="$ARVADOS_API_HOST" \
         && export ARVADOS_TEST_API_INSTALLED="$$" \
         && checkpidfile api \
         && checkdiscoverydoc $ARVADOS_API_HOST \
+        && eval $(python sdk/python/tests/run_test_server.py start_nginx) \
+        && checkpidfile nginx \
         && python sdk/python/tests/run_test_server.py start_controller \
         && checkpidfile controller \
-        && checkhealth controller \
+        && checkhealth Controller \
+        && checkdiscoverydoc $ARVADOS_API_HOST \
         && python sdk/python/tests/run_test_server.py start_keep_proxy \
         && checkpidfile keepproxy \
         && python sdk/python/tests/run_test_server.py start_keep-web \
         && checkpidfile keep-web \
-        && checkhealth keep-web \
+        && checkhealth WebDAV \
         && python sdk/python/tests/run_test_server.py start_arv-git-httpd \
         && checkpidfile arv-git-httpd \
-        && checkhealth arv-git-httpd \
+        && checkhealth GitHTTP \
         && python sdk/python/tests/run_test_server.py start_ws \
         && checkpidfile ws \
-        && eval $(python sdk/python/tests/run_test_server.py start_nginx) \
-        && checkdiscoverydoc $ARVADOS_API_HOST \
-        && checkpidfile nginx \
         && export ARVADOS_TEST_PROXY_SERVICES=1 \
         && (env | egrep ^ARVADOS) \
         && fail=0
@@ -579,11 +586,6 @@ initialize() {
 
     echo "WORKSPACE=$WORKSPACE"
 
-    if [[ -z "$CONFIGSRC" ]] && [[ -d "$HOME/arvados-api-server" ]]; then
-        # Jenkins expects us to use this by default.
-        CONFIGSRC="$HOME/arvados-api-server"
-    fi
-
     # Clean up .pyc files that may exist in the workspace
     cd "$WORKSPACE"
     find -name '*.pyc' -delete
@@ -627,26 +629,6 @@ initialize() {
     # whine a lot.
     setup_ruby_environment
 
-    if [[ -s "$CONFIGSRC/config.yml" ]] ; then
-	cp "$CONFIGSRC/config.yml" "$temp/test-config.yml"
-	export ARVADOS_CONFIG="$temp/test-config.yml"
-    else
-	if [[ -s /etc/arvados/config.yml ]] ; then
-	    python > "$temp/test-config.yml" <<EOF
-import yaml
-import json
-v = list(yaml.safe_load(open('/etc/arvados/config.yml'))['Clusters'].values())[0]['PostgreSQL']
-v['Connection']['dbname'] = 'arvados_test'
-print(json.dumps({"Clusters": { "zzzzz": {'PostgreSQL': v}}}))
-EOF
-	    export ARVADOS_CONFIG="$temp/test-config.yml"
-	else
-	    if [[ ! -f "$WORKSPACE/services/api/config/database.yml" ]]; then
-		fatal "Please provide a database.yml file for the test suite"
-	    fi
-	fi
-    fi
-
     echo "PATH is $PATH"
 }
 
@@ -681,6 +663,11 @@ install_env() {
     # Needed for run_test_server.py which is used by certain (non-Python) tests.
     pip install --no-cache-dir PyYAML \
         || fatal "pip install PyYAML failed"
+
+    # Create config file.  The run_test_server script requires PyYAML,
+    # so virtualenv needs to be active.  Downstream steps like
+    # workbench install which require a valid config.yml.
+    eval $(python sdk/python/tests/run_test_server.py setup_config)
 
     # Preinstall libcloud if using a fork; otherwise nodemanager "pip
     # install" won't pick it up by default.
@@ -951,19 +938,11 @@ install_services/api() {
     rm -f config/environments/test.rb
     cp config/environments/test.rb.example config/environments/test.rb
 
-    if [ -n "$CONFIGSRC" ]
-    then
-        for f in database.yml
-        do
-            cp "$CONFIGSRC/$f" config/ || fatal "$f"
-        done
-    fi
-
     # Clear out any lingering postgresql connections to the test
     # database, so that we can drop it. This assumes the current user
     # is a postgresql superuser.
     cd "$WORKSPACE/services/api" \
-        && test_database=$(python -c "import yaml; print yaml.safe_load(file('config/database.yml'))['test']['database']") \
+        && test_database=$(python -c "import yaml; print yaml.safe_load(file('$ARVADOS_CONFIG'))['Clusters']['zzzzz']['PostgreSQL']['Connection']['dbname']") \
         && psql "$test_database" -c "SELECT pg_terminate_backend (pg_stat_activity.pid::int) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$test_database';" 2>/dev/null
 
     mkdir -p "$WORKSPACE/services/api/tmp/pids"
