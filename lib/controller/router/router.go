@@ -41,6 +41,13 @@ func (rtr *router) addRoutes() {
 		exec        routableFunc
 	}{
 		{
+			arvados.EndpointConfigGet,
+			func() interface{} { return &struct{}{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.ConfigGet(ctx)
+			},
+		},
+		{
 			arvados.EndpointCollectionCreate,
 			func() interface{} { return &arvados.CreateOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {

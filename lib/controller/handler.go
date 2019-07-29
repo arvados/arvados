@@ -5,19 +5,16 @@
 package controller
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"strings"
 	"sync"
 	"time"
 
-	"git.curoverse.com/arvados.git/lib/config"
 	"git.curoverse.com/arvados.git/lib/controller/federation"
 	"git.curoverse.com/arvados.git/lib/controller/railsproxy"
 	"git.curoverse.com/arvados.git/lib/controller/router"
@@ -80,19 +77,10 @@ func (h *Handler) setup() {
 		Routes: health.Routes{"ping": func() error { _, err := h.db(&http.Request{}); return err }},
 	})
 
-	mux.Handle("/arvados/v1/config", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var buf bytes.Buffer
-		err := config.ExportJSON(&buf, h.Cluster)
-		if err != nil {
-			httpserver.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		io.Copy(w, &buf)
-	}))
+	rtr := router.New(federation.New(h.Cluster))
+	mux.Handle("/arvados/v1/config", rtr)
 
 	if h.Cluster.EnableBetaController14287 {
-		rtr := router.New(federation.New(h.Cluster))
 		mux.Handle("/arvados/v1/collections", rtr)
 		mux.Handle("/arvados/v1/collections/", rtr)
 	}

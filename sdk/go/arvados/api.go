@@ -4,7 +4,10 @@
 
 package arvados
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+)
 
 type APIEndpoint struct {
 	Method string
@@ -14,6 +17,7 @@ type APIEndpoint struct {
 }
 
 var (
+	EndpointConfigGet                     = APIEndpoint{"GET", "arvados/v1/config", ""}
 	EndpointCollectionCreate              = APIEndpoint{"POST", "arvados/v1/collections", "collection"}
 	EndpointCollectionUpdate              = APIEndpoint{"PATCH", "arvados/v1/collections/:uuid", "collection"}
 	EndpointCollectionGet                 = APIEndpoint{"GET", "arvados/v1/collections/:uuid", ""}
@@ -80,6 +84,7 @@ type DeleteOptions struct {
 }
 
 type API interface {
+	ConfigGet(ctx context.Context) (json.RawMessage, error)
 	CollectionCreate(ctx context.Context, options CreateOptions) (Collection, error)
 	CollectionUpdate(ctx context.Context, options UpdateOptions) (Collection, error)
 	CollectionGet(ctx context.Context, options GetOptions) (Collection, error)
