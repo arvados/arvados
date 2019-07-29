@@ -196,8 +196,10 @@ sanity_checks() {
     [[ -n "${skip[sanity]}" ]] && return 0
     ( [[ -n "$WORKSPACE" ]] && [[ -d "$WORKSPACE/services" ]] ) \
         || fatal "WORKSPACE environment variable not set to a source directory (see: $0 --help)"
-    ( [[ -n "$CONFIGSRC" ]] && [[ -s "$CONFIGSRC/config.yml" ]] ) \
-        || fatal "CONFIGSRC environment variable not set to a config file (see: $0 --help)"
+    [[ -n "$CONFIGSRC" ]] \
+	|| fatal "CONFIGSRC environment not set (see: $0 --help)"
+    [[ -s "$CONFIGSRC/config.yml" ]] \
+	|| fatal "'$CONFIGSRC/config.yml' is empty or not found (see: $0 --help)"
     echo Checking dependencies:
     echo "locale: ${LANG}"
     [[ "$(locale charmap)" = "UTF-8" ]] \
@@ -420,14 +422,12 @@ start_services() {
     all_services_stopped=
     fail=1
 
-    if [[ ! -s "$ARVADOS_CONFIG" ]] ; then
-       # Create config if it hasn't been created already.  Normally
-       # this happens in install_env because there are downstream
-       # steps like workbench install which require a valid
-       # config.yml, but when invoked with --skip-install that doesn't
-       # happen, so make sure to run it here.
-       eval $(python sdk/python/tests/run_test_server.py setup_config)
-    fi
+    # Create config if it hasn't been created already.  Normally
+    # this happens in install_env because there are downstream
+    # steps like workbench install which require a valid
+    # config.yml, but when invoked with --skip-install that doesn't
+    # happen, so make sure to run it here.
+    eval $(python sdk/python/tests/run_test_server.py setup_config)
 
     cd "$WORKSPACE" \
         && eval $(python sdk/python/tests/run_test_server.py start --auth admin) \
