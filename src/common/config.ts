@@ -4,137 +4,145 @@
 
 import Axios from "axios";
 
-export const CONFIG_URL = process.env.REACT_APP_ARVADOS_CONFIG_URL || "/config.json";
+export const WORKBENCH_CONFIG_URL = process.env.REACT_APP_ARVADOS_CONFIG_URL || "/config.json";
 
-export interface Config {
-    auth: {};
-    basePath: string;
+interface WorkbenchConfig {
+    API_HOST: string;
+    VOCABULARY_URL: string;
+    FILE_VIEWERS_CONFIG_URL: string;
+}
+
+export interface ClusterConfigJSON {
+    ClusterID: string;
+    RemoteClusters:  {
+        [key: string]: {
+            ActivateUsers: boolean
+            Host: string
+            Insecure: boolean
+            Proxy: boolean
+            Scheme: string
+        }
+    };
+    Services: {
+        Controller: {
+            ExternalURL: string
+        }
+        Workbench1: {
+            ExternalURL: string
+        }
+        Workbench2: {
+            ExternalURL: string
+        }
+        Websocket: {
+            ExternalURL: string
+        }
+        WebDAV: {
+            ExternalURL: string
+        }
+    };
+    Workbench: {
+        ArvadosDocsite: string;
+        VocabularyURL: string;
+        FileViewersConfigURL: string;
+    };
+}
+
+export class Config {
     baseUrl: string;
-    batchPath: string;
-    blobSignatureTtl: number;
-    crunchLimitLogBytesPerJob: number;
-    crunchLogBytesPerEvent: number;
-    crunchLogPartialLineThrottlePeriod: number;
-    crunchLogSecondsBetweenEvents: number;
-    crunchLogThrottleBytes: number;
-    crunchLogThrottleLines: number;
-    crunchLogThrottlePeriod: number;
-    defaultCollectionReplication: number;
-    defaultTrashLifetime: number;
-    description: string;
-    discoveryVersion: string;
-    dockerImageFormats: string[];
-    documentationLink: string;
-    generatedAt: string;
-    gitUrl: string;
-    id: string;
     keepWebServiceUrl: string;
-    kind: string;
-    maxRequestSize: number;
-    name: string;
-    packageVersion: string;
-    parameters: {};
-    protocol: string;
     remoteHosts: {
         [key: string]: string
     };
-    remoteHostsViaDNS: boolean;
-    resources: {};
-    revision: string;
     rootUrl: string;
-    schemas: {};
-    servicePath: string;
-    sourceVersion: string;
-    source_version: string;
-    title: string;
     uuidPrefix: string;
-    version: string;
     websocketUrl: string;
     workbenchUrl: string;
-    workbench2Url?: string;
+    workbench2Url: string;
     vocabularyUrl: string;
     fileViewersConfigUrl: string;
 }
 
 export const fetchConfig = () => {
     return Axios
-        .get<ConfigJSON>(CONFIG_URL + "?nocache=" + (new Date()).getTime())
+        .get<WorkbenchConfig>(WORKBENCH_CONFIG_URL + "?nocache=" + (new Date()).getTime())
         .then(response => response.data)
         .catch(() => Promise.resolve(getDefaultConfig()))
-        .then(config => Axios
-            .get<Config>(getDiscoveryURL(config.API_HOST))
-            .then(response => ({
-                // TODO: After tests delete `|| '/vocabulary-example.json'`
-                // TODO: After tests delete `|| '/file-viewers-example.json'`
-                config: {
-                    ...response.data,
-                    vocabularyUrl: config.VOCABULARY_URL || '/vocabulary-example.json',
-                    fileViewersConfigUrl: config.FILE_VIEWERS_CONFIG_URL || '/file-viewers-example.json'
-                },
-                apiHost: config.API_HOST,
-            })));
+        .then(workbenchConfig => Axios
+            .get<ClusterConfigJSON>(getClusterConfigURL(workbenchConfig.API_HOST))
+            .then(response => {
 
+                const config = new Config();
+                const clusterConfigJSON = response.data;
+                const docsite = clusterConfigJSON.Workbench.ArvadosDocsite;
+                const warnDeprecation = (varName: string) => console.warn(
+`A value for ${varName} was found in ${WORKBENCH_CONFIG_URL}. This configuration is deprecated. \
+Please use the centralized configuration instead. See more at ${docsite}admin/config-migration.html`);
+
+                // Check if the workbench config has an entry for vocabulary and file viewer URLs
+                // If so, use these values (even if it is an empty string), but print a console warning.
+                // Otherwise, use the cluster config or default values.
+                let fileViewerConfigUrl;
+                if (workbenchConfig.FILE_VIEWERS_CONFIG_URL !== undefined) {
+                    warnDeprecation("FILE_VIEWERS_CONFIG_URL");
+                    fileViewerConfigUrl = workbenchConfig.FILE_VIEWERS_CONFIG_URL;
+                }
+                else {
+                    fileViewerConfigUrl = clusterConfigJSON.Workbench.FileViewersConfigURL || "/file-viewers-example.json";
+                }
+                config.fileViewersConfigUrl = fileViewerConfigUrl;
+
+                let vocabularyUrl;
+                if (workbenchConfig.VOCABULARY_URL !== undefined) {
+                    warnDeprecation("VOCABULARY_URL");
+                    vocabularyUrl = workbenchConfig.VOCABULARY_URL;
+                }
+                else {
+                    vocabularyUrl = clusterConfigJSON.Workbench.VocabularyURL || "/vocabulary-example.json";
+                }
+                config.vocabularyUrl = vocabularyUrl;
+
+                config.rootUrl = clusterConfigJSON.Services.Controller.ExternalURL;
+                config.baseUrl = `${config.rootUrl}/${ARVADOS_API_PATH}`;
+                config.uuidPrefix = clusterConfigJSON.ClusterID;
+                config.websocketUrl = clusterConfigJSON.Services.Websocket.ExternalURL;
+                config.workbench2Url = clusterConfigJSON.Services.Workbench2.ExternalURL;
+                config.workbenchUrl = clusterConfigJSON.Services.Workbench1.ExternalURL;
+                config.keepWebServiceUrl =  clusterConfigJSON.Services.WebDAV.ExternalURL;
+                mapRemoteHosts(clusterConfigJSON, config);
+
+                console.log(config);
+
+                return { config, apiHost: workbenchConfig.API_HOST };
+            })
+        );
+};
+
+// Maps remote cluster hosts and removes the default RemoteCluster entry
+export const mapRemoteHosts = (clusterConfigJSON: ClusterConfigJSON, config: Config) => {
+    config.remoteHosts = {};
+    Object.keys(clusterConfigJSON.RemoteClusters).forEach (k => { config.remoteHosts[k] = clusterConfigJSON.RemoteClusters[k].Host; });
+    delete config.remoteHosts["*"];
 };
 
 export const mockConfig = (config: Partial<Config>): Config => ({
-    auth: {},
-    basePath: '',
-    baseUrl: '',
-    batchPath: '',
-    blobSignatureTtl: 0,
-    crunchLimitLogBytesPerJob: 0,
-    crunchLogBytesPerEvent: 0,
-    crunchLogPartialLineThrottlePeriod: 0,
-    crunchLogSecondsBetweenEvents: 0,
-    crunchLogThrottleBytes: 0,
-    crunchLogThrottleLines: 0,
-    crunchLogThrottlePeriod: 0,
-    defaultCollectionReplication: 0,
-    defaultTrashLifetime: 0,
-    description: '',
-    discoveryVersion: '',
-    dockerImageFormats: [],
-    documentationLink: '',
-    generatedAt: '',
-    gitUrl: '',
-    id: '',
-    keepWebServiceUrl: '',
-    kind: '',
-    maxRequestSize: 0,
-    name: '',
-    packageVersion: '',
-    parameters: {},
-    protocol: '',
+    baseUrl: "",
+    keepWebServiceUrl: "",
     remoteHosts: {},
-    remoteHostsViaDNS: false,
-    resources: {},
-    revision: '',
-    rootUrl: '',
-    schemas: {},
-    servicePath: '',
-    sourceVersion: '',
-    source_version: '',
-    title: '',
-    uuidPrefix: '',
-    version: '',
-    websocketUrl: '',
-    workbenchUrl: '',
-    vocabularyUrl: '',
-    fileViewersConfigUrl: '',
-    ...config
+    rootUrl: "",
+    uuidPrefix: "",
+    websocketUrl: "",
+    workbenchUrl: "",
+    workbench2Url: "",
+    vocabularyUrl: "",
+    fileViewersConfigUrl: ""
 });
 
-interface ConfigJSON {
-    API_HOST: string;
-    VOCABULARY_URL: string;
-    FILE_VIEWERS_CONFIG_URL: string;
-}
-
-const getDefaultConfig = (): ConfigJSON => ({
+const getDefaultConfig = (): WorkbenchConfig => ({
     API_HOST: process.env.REACT_APP_ARVADOS_API_HOST || "",
     VOCABULARY_URL: "",
     FILE_VIEWERS_CONFIG_URL: "",
 });
 
-export const DISCOVERY_URL = 'discovery/v1/apis/arvados/v1/rest';
-export const getDiscoveryURL = (apiHost: string) => `${window.location.protocol}//${apiHost}/${DISCOVERY_URL}?nocache=${(new Date()).getTime()}`;
+export const ARVADOS_API_PATH = "arvados/v1";
+export const CLUSTER_CONFIG_URL = "arvados/v1/config";
+export const getClusterConfigURL = (apiHost: string) => `${window.location.protocol}//${apiHost}/${CLUSTER_CONFIG_URL}?nocache=${(new Date()).getTime()}`;
