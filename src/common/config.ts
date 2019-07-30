@@ -110,8 +110,6 @@ Please use the centralized configuration instead. See more at ${docsite}admin/co
                 config.keepWebServiceUrl =  clusterConfigJSON.Services.WebDAV.ExternalURL;
                 mapRemoteHosts(clusterConfigJSON, config);
 
-                console.log(config);
-
                 return { config, apiHost: workbenchConfig.API_HOST };
             })
         );

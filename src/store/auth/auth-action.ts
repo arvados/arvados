@@ -91,6 +91,7 @@ const init = (config: Config) => (dispatch: Dispatch, getState: () => RootState,
         Axios.get<ClusterConfigJSON>(getClusterConfigURL(config.remoteHosts[k]))
             .then(response => {
                 const remoteConfig = new Config();
+                remoteConfig.uuidPrefix = response.data.ClusterID;
                 remoteConfig.workbench2Url = response.data.Services.Workbench2.ExternalURL;
                 mapRemoteHosts(response.data, remoteConfig);
                 dispatch(authActions.REMOTE_CLUSTER_CONFIG({ config: remoteConfig}));
