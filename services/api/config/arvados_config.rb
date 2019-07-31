@@ -45,7 +45,7 @@ end
 
 # Load the defaults, used by config:migrate and fallback loading
 # legacy application.yml
-Open3.popen2("arvados-server", "config-dump", "-config=-") do |stdin, stdout, status_thread|
+Open3.popen2("arvados-server", "config-dump", "-config=-", "-skip-legacy") do |stdin, stdout, status_thread|
   stdin.write("Clusters: {xxxxx: {}}")
   stdin.close
   confs = YAML.load(stdout, deserialize_symbols: false)
@@ -55,7 +55,7 @@ Open3.popen2("arvados-server", "config-dump", "-config=-") do |stdin, stdout, st
 end
 
 # Load the global config file
-Open3.popen2("arvados-server", "config-dump") do |stdin, stdout, status_thread|
+Open3.popen2("arvados-server", "config-dump", "-skip-legacy") do |stdin, stdout, status_thread|
   confs = YAML.load(stdout, deserialize_symbols: false)
   if confs && !confs.empty?
     # config-dump merges defaults with user configuration, so every

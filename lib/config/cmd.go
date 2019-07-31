@@ -113,11 +113,13 @@ func (checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 	// such that the deprecated keys/files are superfluous and can
 	// be deleted.
 	loader.SkipDeprecated = true
+	loader.SkipLegacy = true
 	withoutDepr, err := loader.Load()
 	if err != nil {
 		return 1
 	}
 	loader.SkipDeprecated = false
+	loader.SkipLegacy = false
 	withDepr, err := loader.Load()
 	if err != nil {
 		return 1
