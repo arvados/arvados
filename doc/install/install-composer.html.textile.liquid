@@ -3,8 +3,13 @@ layout: default
 navsection: installguide
 title: Install Composer
 ...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
 
-Arvados Composer is a single-page javascript application for building Common Workflow Languge (CWL) Workflows.
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Arvados Composer is a web-based javascript application for building Common Workflow Languge (CWL) Workflows.
 
 h2. Prerequisites
 
@@ -30,14 +35,6 @@ On a Red Hat-based system, install the following package:
 
 h2. Configure
 
-h3. composer.yml
-
-Edit @/etc/arvados/composer/composer.yml@ and set @apiEndPoint@ to your API server:
-
-<pre>
-apiEndPoint: https://zzzzz.arvadosapi.com
-</pre>
-
 h3. Nginx
 
 Add Composer to your Nginx configuration.  This example will host Composer at @/composer@.
@@ -49,11 +46,22 @@ location /composer {
 }
 </pre>
 
-h3. Workbench link to composer
+h3. composer.yml
 
-Edit the workbench @application.yml@ and set @composer_url@ to the location from which it is served.
+Create @/var/www/arvados-composer/composer.yml@ and set @API_HOST@ to your API server:
 
 <pre>
-production:
-  composer_url: 'https://workbench.zzzzz.arvadosapi.com/composer'
+API_HOST: zzzzz.arvadosapi.com
 </pre>
+
+h3. Workbench link to composer
+
+Edit @config.yml@ and set @Services.Composer.ExternalURL@ to the location from which it is served:
+
+<notextile>
+<pre><code>Clusters:
+  zzzzz:
+    Services:
+      Composer:
+        ExternalURL: <span class="userinput">https://workbench.zzzzz.arvadosapi.com/composer</span></code></pre>
+</notextile>
