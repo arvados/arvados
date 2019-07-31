@@ -26,7 +26,8 @@ var ErrNoClustersDefined = errors.New("config does not define any clusters")
 type Loader struct {
 	Stdin          io.Reader
 	Logger         logrus.FieldLogger
-	SkipDeprecated bool // Don't load legacy/deprecated config keys/files
+	SkipDeprecated bool // Don't load deprecated config keys
+	SkipLegacy     bool // Don't load legacy config files
 
 	Path                    string
 	KeepstorePath           string
@@ -61,6 +62,7 @@ func (ldr *Loader) SetupFlags(flagset *flag.FlagSet) {
 	flagset.StringVar(&ldr.KeepstorePath, "legacy-keepstore-config", defaultKeepstoreConfigPath, "Legacy keepstore configuration `file`")
 	flagset.StringVar(&ldr.CrunchDispatchSlurmPath, "legacy-crunch-dispatch-slurm-config", defaultCrunchDispatchSlurmConfigPath, "Legacy crunch-dispatch-slurm configuration `file`")
 	flagset.StringVar(&ldr.WebsocketPath, "legacy-ws-config", defaultWebsocketConfigPath, "Legacy arvados-ws configuration `file`")
+	flagset.BoolVar(&ldr.SkipLegacy, "skip-legacy", false, "Don't load legacy config files")
 }
 
 // MungeLegacyConfigArgs checks args for a -config flag whose argument
@@ -119,6 +121,19 @@ func (ldr *Loader) MungeLegacyConfigArgs(lgr logrus.FieldLogger, args []string, 
 			}
 		}
 	}
+
+	// Disable legacy config loading for components other than the
+	// one that was specified
+	if legacyConfigArg != "-legacy-keepstore-config" {
+		ldr.KeepstorePath = ""
+	}
+	if legacyConfigArg != "-legacy-crunch-dispatch-slurm-config" {
+		ldr.CrunchDispatchSlurmPath = ""
+	}
+	if legacyConfigArg != "-legacy-ws-config" {
+		ldr.WebsocketPath = ""
+	}
+
 	return munged
 }
 
@@ -207,6 +222,8 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 		if err != nil {
 			return nil, err
 		}
+	}
+	if !ldr.SkipLegacy {
 		// legacy file is required when either:
 		// * a non-default location was specified
 		// * no primary config was loaded, and this is the
