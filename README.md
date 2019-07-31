@@ -50,12 +50,16 @@ Currently this configuration schema is supported:
 Local path, or any URL that allows cross-origin requests. See 
 [Vocabulary JSON file example](public/vocabulary-example.json).
 
+To use the URL defined in the Arvados cluster configuration, remove the entire VOCABULARY_URL entry from the runtime configuration. Found in `/config.json` by default.
+
 ### FILE_VIEWERS_CONFIG_URL
 Local path, or any URL that allows cross-origin requests. See:
 
 [File viewers config file example](public/file-viewers-example.json)
 
 [File viewers config scheme](src/models/file-viewers-config.ts)
+
+To use the URL defined in the Arvados cluster configuration, remove the entire FILE_VIEWERS_CONFIG_URL entry from the runtime configuration. Found in `/config.json` by default.
 
 ### Licensing
 

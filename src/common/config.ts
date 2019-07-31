@@ -8,13 +8,13 @@ export const WORKBENCH_CONFIG_URL = process.env.REACT_APP_ARVADOS_CONFIG_URL || 
 
 interface WorkbenchConfig {
     API_HOST: string;
-    VOCABULARY_URL: string;
-    FILE_VIEWERS_CONFIG_URL: string;
+    VOCABULARY_URL?: string;
+    FILE_VIEWERS_CONFIG_URL?: string;
 }
 
 export interface ClusterConfigJSON {
     ClusterID: string;
-    RemoteClusters:  {
+    RemoteClusters: {
         [key: string]: {
             ActivateUsers: boolean
             Host: string
@@ -74,16 +74,16 @@ export const fetchConfig = () => {
                 const config = new Config();
                 const clusterConfigJSON = response.data;
                 const docsite = clusterConfigJSON.Workbench.ArvadosDocsite;
-                const warnDeprecation = (varName: string) => console.warn(
-`A value for ${varName} was found in ${WORKBENCH_CONFIG_URL}. This configuration is deprecated. \
-Please use the centralized configuration instead. See more at ${docsite}admin/config-migration.html`);
+                const warnLocalConfig = (varName: string) => console.warn(
+                    `A value for ${varName} was found in ${WORKBENCH_CONFIG_URL}. To use the Arvados centralized configuration instead, \
+remove the entire ${varName} entry from ${WORKBENCH_CONFIG_URL}`);
 
                 // Check if the workbench config has an entry for vocabulary and file viewer URLs
                 // If so, use these values (even if it is an empty string), but print a console warning.
-                // Otherwise, use the cluster config or default values.
+                // Otherwise, use the cluster config.
                 let fileViewerConfigUrl;
                 if (workbenchConfig.FILE_VIEWERS_CONFIG_URL !== undefined) {
-                    warnDeprecation("FILE_VIEWERS_CONFIG_URL");
+                    warnLocalConfig("FILE_VIEWERS_CONFIG_URL");
                     fileViewerConfigUrl = workbenchConfig.FILE_VIEWERS_CONFIG_URL;
                 }
                 else {
@@ -93,7 +93,7 @@ Please use the centralized configuration instead. See more at ${docsite}admin/co
 
                 let vocabularyUrl;
                 if (workbenchConfig.VOCABULARY_URL !== undefined) {
-                    warnDeprecation("VOCABULARY_URL");
+                    warnLocalConfig("VOCABULARY_URL");
                     vocabularyUrl = workbenchConfig.VOCABULARY_URL;
                 }
                 else {
@@ -107,7 +107,7 @@ Please use the centralized configuration instead. See more at ${docsite}admin/co
                 config.websocketUrl = clusterConfigJSON.Services.Websocket.ExternalURL;
                 config.workbench2Url = clusterConfigJSON.Services.Workbench2.ExternalURL;
                 config.workbenchUrl = clusterConfigJSON.Services.Workbench1.ExternalURL;
-                config.keepWebServiceUrl =  clusterConfigJSON.Services.WebDAV.ExternalURL;
+                config.keepWebServiceUrl = clusterConfigJSON.Services.WebDAV.ExternalURL;
                 mapRemoteHosts(clusterConfigJSON, config);
 
                 return { config, apiHost: workbenchConfig.API_HOST };
@@ -118,7 +118,7 @@ Please use the centralized configuration instead. See more at ${docsite}admin/co
 // Maps remote cluster hosts and removes the default RemoteCluster entry
 export const mapRemoteHosts = (clusterConfigJSON: ClusterConfigJSON, config: Config) => {
     config.remoteHosts = {};
-    Object.keys(clusterConfigJSON.RemoteClusters).forEach (k => { config.remoteHosts[k] = clusterConfigJSON.RemoteClusters[k].Host; });
+    Object.keys(clusterConfigJSON.RemoteClusters).forEach(k => { config.remoteHosts[k] = clusterConfigJSON.RemoteClusters[k].Host; });
     delete config.remoteHosts["*"];
 };
 
@@ -137,8 +137,8 @@ export const mockConfig = (config: Partial<Config>): Config => ({
 
 const getDefaultConfig = (): WorkbenchConfig => ({
     API_HOST: process.env.REACT_APP_ARVADOS_API_HOST || "",
-    VOCABULARY_URL: "",
-    FILE_VIEWERS_CONFIG_URL: "",
+    VOCABULARY_URL: undefined,
+    FILE_VIEWERS_CONFIG_URL: undefined,
 });
 
 export const ARVADOS_API_PATH = "arvados/v1";
