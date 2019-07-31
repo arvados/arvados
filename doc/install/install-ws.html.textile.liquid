@@ -51,7 +51,7 @@ Usage of arvados-ws:
 
 h3. Update cluster config
 
-Edit the cluster config at @/etc/arvados/config.yml@ and set @Services.Websocket.ExternalURL@ and @Services.Websocket.InternalURLs@.  Replace @zzzzz@ with your cluster id.  Assumes that the @Services.API@ and @PostgreSQL@ sections are already filled out.
+Edit the cluster config at @/etc/arvados/config.yml@ and set @Services.Websocket.ExternalURL@ and @Services.Websocket.InternalURLs@.  Replace @zzzzz@ with your cluster id.  Expects that @SystemRootToken@, @Services.API@ and @PostgreSQL@ sections are already filled out.
 
 <notextile>
 <pre><code>
@@ -190,10 +190,10 @@ Restart Nginx to reload the API server configuration.
 
 h3. Verify DNS and proxy setup
 
-Use a host elsewhere on the Internet to confirm that your DNS, proxy, and SSL are configured correctly.
+Use a host elsewhere on the Internet to confirm that your DNS, proxy, and SSL are configured correctly.  For @Authorization: Bearer xxxx@ replace @xxxx@ with the value from @ManagementToken@ in @config.yml@.
 
 <notextile>
-<pre><code>$ <span class="userinput">curl https://ws.<b>uuid_prefix.your.domain</b>/status.json</span>
-{"Clients":1}
+<pre><code>$ <span class="userinput">curl -H "Authorization: Bearer xxxx" https://ws.<b>uuid_prefix.your.domain</b>/_health/ping</span>
+{"health":"OK"}
 </code></pre>
 </notextile>
