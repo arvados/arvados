@@ -10,7 +10,7 @@ import { ServiceRepository } from "~/services/services";
 import { SshKeyResource } from '~/models/ssh-key';
 import { User, UserResource } from "~/models/user";
 import { Session } from "~/models/session";
-import { getDiscoveryURL, Config } from '~/common/config';
+import { getClusterConfigURL, Config, ClusterConfigJSON, mapRemoteHosts } from '~/common/config';
 import { initSessions } from "~/store/auth/auth-action-session";
 import { cancelLinking } from '~/store/link-account-panel/link-account-panel-actions';
 import { matchTokenRoute, matchFedTokenRoute } from '~/routes/routes';
@@ -88,8 +88,14 @@ const init = (config: Config) => (dispatch: Dispatch, getState: () => RootState,
         });
     }
     Object.keys(config.remoteHosts).map((k) => {
-        Axios.get<Config>(getDiscoveryURL(config.remoteHosts[k]))
-            .then(response => dispatch(authActions.REMOTE_CLUSTER_CONFIG({ config: response.data })));
+        Axios.get<ClusterConfigJSON>(getClusterConfigURL(config.remoteHosts[k]))
+            .then(response => {
+                const remoteConfig = new Config();
+                remoteConfig.uuidPrefix = response.data.ClusterID;
+                remoteConfig.workbench2Url = response.data.Services.Workbench2.ExternalURL;
+                mapRemoteHosts(response.data, remoteConfig);
+                dispatch(authActions.REMOTE_CLUSTER_CONFIG({ config: remoteConfig}));
+            });
     });
 };
 

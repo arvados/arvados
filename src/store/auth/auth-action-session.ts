@@ -9,7 +9,7 @@ import { ServiceRepository } from "~/services/services";
 import Axios from "axios";
 import { getUserFullname, User } from "~/models/user";
 import { authActions } from "~/store/auth/auth-action";
-import { Config, DISCOVERY_URL } from "~/common/config";
+import { Config, ClusterConfigJSON, CLUSTER_CONFIG_URL, ARVADOS_API_PATH } from "~/common/config";
 import { Session, SessionStatus } from "~/models/session";
 import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
 import { AuthService, UserDetailsResponse } from "~/services/auth-service/auth-service";
@@ -24,8 +24,8 @@ const getRemoteHostBaseUrl = async (remoteHost: string): Promise<string | null> 
     let baseUrl: string | null = null;
 
     try {
-        const resp = await Axios.get<Config>(`${origin}/${DISCOVERY_URL}`);
-        baseUrl = resp.data.baseUrl;
+        const resp = await Axios.get<ClusterConfigJSON>(`${origin}/${CLUSTER_CONFIG_URL}`);
+        baseUrl = `${resp.data.Services.Controller.ExternalURL}/${ARVADOS_API_PATH}`;
     } catch (err) {
         try {
             const resp = await Axios.get<any>(`${origin}/status.json`);
