@@ -32,7 +32,7 @@ type ec2InstanceSetConfig struct {
 	AccessKeyID      string
 	SecretAccessKey  string
 	Region           string
-	SecurityGroupIDs map[string]interface{}
+	SecurityGroupIDs arvados.StringSet
 	SubnetID         string
 	AdminUsername    string
 	EBSVolumeType    string
