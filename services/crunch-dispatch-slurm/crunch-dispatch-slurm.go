@@ -132,7 +132,16 @@ func (disp *Dispatcher) configure(prog string, args []string) error {
 		if disp.Client.Insecure {
 			os.Setenv("ARVADOS_API_HOST_INSECURE", "1")
 		}
-		os.Setenv("ARVADOS_KEEP_SERVICES", strings.Join(disp.Client.KeepServiceURIs, " "))
+		ks := ""
+		if length(disp.cluster.Containers.SLURM.KeepServices) > 0 {
+			for _, svc := range disp.cluster.Containers.SLURM.KeepServices {
+				for k, _ := range svc.InternalURLs {
+					ks += k
+					ks += " "
+				}
+			}
+		}
+		os.Setenv("ARVADOS_KEEP_SERVICES", ks)
 		os.Setenv("ARVADOS_EXTERNAL_CLIENT", "")
 	} else {
 		disp.logger.Warnf("Client credentials missing from config, so falling back on environment variables (deprecated).")

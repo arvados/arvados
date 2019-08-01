@@ -396,6 +396,8 @@ func (s *StubbedSuite) TestLoadLegacyConfig(c *C) {
 Client:
   APIHost: example.com
   AuthToken: abcdefg
+  KeepServices:
+    - https://example.com/keep
 SbatchArguments: ["--foo", "bar"]
 PollPeriod: 12s
 PrioritySpread: 42
@@ -431,4 +433,11 @@ BatchSize: 99
 	c.Check(s.disp.cluster.Containers.ReserveExtraRAM, Equals, arvados.ByteSize(12345))
 	c.Check(s.disp.cluster.Containers.MinRetryPeriod, Equals, arvados.Duration(13*time.Second))
 	c.Check(s.disp.cluster.API.MaxItemsPerResponse, Equals, 99)
+	c.Check(s.disp.cluster.Containers.SLURM.KeepServices, DeepEquals, map[string]Service{
+		"00000-bi6l4-000000000000000": Service{
+			InternalURLs: map[string]struct{}{
+				"https://example.com/keep": struct{}{},
+			},
+		},
+	})
 }

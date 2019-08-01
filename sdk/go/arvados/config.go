@@ -294,6 +294,7 @@ type ContainersConfig struct {
 	SLURM struct {
 		PrioritySpread      int64
 		SbatchArgumentsList []string
+		KeepServices        map[string]Service
 		Managed             struct {
 			DNSServerConfDir       string
 			DNSServerConfTemplate  string
