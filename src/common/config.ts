@@ -66,14 +66,17 @@ export const fetchConfig = () => {
     return Axios
         .get<WorkbenchConfig>(WORKBENCH_CONFIG_URL + "?nocache=" + (new Date()).getTime())
         .then(response => response.data)
-        .catch(() => Promise.resolve(getDefaultConfig()))
-        .then(workbenchConfig => Axios
-            .get<ClusterConfigJSON>(getClusterConfigURL(workbenchConfig.API_HOST))
-            .then(response => {
-
+        .catch(() => {
+            console.warn(`There was an exception getting the Workbench config file at ${WORKBENCH_CONFIG_URL}. Using defaults instead.`);
+            return Promise.resolve(getDefaultConfig());
+        })
+        .then(workbenchConfig => {
+            if (workbenchConfig.API_HOST === undefined) {
+                throw new Error(`Unable to start Workbench. API_HOST is undefined in ${WORKBENCH_CONFIG_URL}.`);
+            }
+            return Axios.get<ClusterConfigJSON>(getClusterConfigURL(workbenchConfig.API_HOST)).then(response => {
                 const config = new Config();
                 const clusterConfigJSON = response.data;
-                const docsite = clusterConfigJSON.Workbench.ArvadosDocsite;
                 const warnLocalConfig = (varName: string) => console.warn(
                     `A value for ${varName} was found in ${WORKBENCH_CONFIG_URL}. To use the Arvados centralized configuration instead, \
 remove the entire ${varName} entry from ${WORKBENCH_CONFIG_URL}`);
@@ -111,8 +114,8 @@ remove the entire ${varName} entry from ${WORKBENCH_CONFIG_URL}`);
                 mapRemoteHosts(clusterConfigJSON, config);
 
                 return { config, apiHost: workbenchConfig.API_HOST };
-            })
-        );
+            });
+        });
 };
 
 // Maps remote cluster hosts and removes the default RemoteCluster entry
@@ -135,11 +138,22 @@ export const mockConfig = (config: Partial<Config>): Config => ({
     fileViewersConfigUrl: ""
 });
 
-const getDefaultConfig = (): WorkbenchConfig => ({
-    API_HOST: process.env.REACT_APP_ARVADOS_API_HOST || "",
-    VOCABULARY_URL: undefined,
-    FILE_VIEWERS_CONFIG_URL: undefined,
-});
+const getDefaultConfig = (): WorkbenchConfig => {
+    let apiHost = "";
+    const envHost = process.env.REACT_APP_ARVADOS_API_HOST;
+    if (envHost !== undefined) {
+        console.warn(`Using default API host ${envHost}.`);
+        apiHost = envHost;
+    }
+    else {
+        console.warn(`No API host was found in the environment. Workbench may not be able to communicate with Arvados components.`);
+    }
+    return {
+        API_HOST: apiHost,
+        VOCABULARY_URL: undefined,
+        FILE_VIEWERS_CONFIG_URL: undefined,
+    };
+};
 
 export const ARVADOS_API_PATH = "arvados/v1";
 export const CLUSTER_CONFIG_URL = "arvados/v1/config";
