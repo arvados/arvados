@@ -72,7 +72,7 @@ export const fetchConfig = () => {
         })
         .then(workbenchConfig => {
             if (workbenchConfig.API_HOST === undefined) {
-                throw new Error(`Unable to start Workbench. API_HOST is undefined in ${WORKBENCH_CONFIG_URL}.`);
+                throw new Error(`Unable to start Workbench. API_HOST is undefined in ${WORKBENCH_CONFIG_URL} or the environment.`);
             }
             return Axios.get<ClusterConfigJSON>(getClusterConfigURL(workbenchConfig.API_HOST)).then(response => {
                 const config = new Config();
