@@ -53,7 +53,7 @@ class Arvados::V1::SchemaController < ApplicationController
         blobSignatureTtl: Rails.configuration.Collections.BlobSigningTTL,
         maxRequestSize: Rails.configuration.API.MaxRequestSize,
         maxItemsPerResponse: Rails.configuration.API.MaxItemsPerResponse,
-        dockerImageFormats: Rails.configuration.Containers.SupportedDockerImageFormats,
+        dockerImageFormats: Rails.configuration.Containers.SupportedDockerImageFormats.keys,
         crunchLogBytesPerEvent: Rails.configuration.Containers.Logging.LogBytesPerEvent,
         crunchLogSecondsBetweenEvents: Rails.configuration.Containers.Logging.LogSecondsBetweenEvents,
         crunchLogThrottlePeriod: Rails.configuration.Containers.Logging.LogThrottlePeriod,
