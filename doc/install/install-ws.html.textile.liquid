@@ -51,15 +51,13 @@ Usage of arvados-ws:
 
 h3. Update cluster config
 
-Edit the cluster config at @/etc/arvados/config.yml@ and set @Services.Websocket.ExternalURL@ and @Services.Websocket.InternalURLs@.  Replace @zzzzz@ with your cluster id.  Expects that @SystemRootToken@, @Services.API@ and @PostgreSQL@ sections are already filled out.
+Edit the cluster config at @/etc/arvados/config.yml@ and set @Services.Websocket.ExternalURL@ and @Services.Websocket.InternalURLs@.  Replace @zzzzz@ with your cluster id.
 
 <notextile>
-<pre><code>
-Clusters:
+<pre><code>Clusters:
   zzzzz:
     Services:
-      <span class="userinput">
-      Websocket:
+      <span class="userinput">Websocket:
         ExternalURL: wss://ws.uuid_prefix.your.domain/websocket
         InternalURLs:
 	  "http://localhost:9003": {}

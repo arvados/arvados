@@ -55,10 +55,10 @@ Clusters:
   zzzzz:
     Containers:
       SLURM:
-        KeepServices:
+        <span class="userinput">KeepServices:
           00000-bi6l4-000000000000000:
 	    InternalURLs:
-              "http://127.0.0.1:25107": {}
+              "http://127.0.0.1:25107": {}</span>
 </code></pre>
 </notextile>
 
@@ -75,7 +75,7 @@ Clusters:
 </code></pre>
 </notextile>
 
-h3(#PrioritySpread). PrioritySpread
+h3(#PrioritySpread). Containers.SLURM.PrioritySpread
 
 crunch-dispatch-slurm adjusts the "nice" values of its SLURM jobs to ensure containers are prioritized correctly relative to one another. This option tunes the adjustment mechanism.
 * If non-Arvados jobs run on your SLURM cluster, and your Arvados containers are waiting too long in the SLURM queue because their "nice" values are too high for them to compete with other SLURM jobs, you should use a smaller PrioritySpread value.
@@ -103,8 +103,8 @@ Clusters:
   zzzzz:
     Containers:
       SLURM:
-        SbatchArgumentsList:
-          - <b>"--partition=PartitionName"</b>
+        <code class="userinput">SbatchArgumentsList:
+          - <b>"--partition=PartitionName"</b></code>
 </pre>
 </notextile>
 
@@ -119,8 +119,8 @@ If your SLURM cluster uses the @task/cgroup@ TaskPlugin, you can configure Crunc
 Clusters:
   zzzzz:
     Containers:
-    <code class="userinput">CrunchRunArgumentsList:
-      - <b>"-cgroup-parent-subsystem=memory"</b></code>
+      <code class="userinput">CrunchRunArgumentsList:
+        - <b>"-cgroup-parent-subsystem=memory"</b></code>
 </pre>
 </notextile>
 
@@ -143,9 +143,9 @@ Older Linux kernels (prior to 3.18) have bugs in network namespace handling whic
 Clusters:
   zzzzz:
     Containers:
-    <code class="userinput">CrunchRunArgumentsList:
-      - <b>"-container-enable-networking=always"</b>
-      - <b>"-container-network-mode=host"</b></code>
+      <code class="userinput">CrunchRunArgumentsList:
+        - <b>"-container-enable-networking=always"</b>
+        - <b>"-container-network-mode=host"</b></code>
 </pre>
 </notextile>
 
