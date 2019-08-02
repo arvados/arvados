@@ -31,36 +31,9 @@ On Debian-based systems:
 </code></pre>
 </notextile>
 
+h2. Configure the dispatcher (optional)
 
-h2. Configure the dispatcher
-
-Edit @/etc/arvados/config.yml@.
-
-<notextile>
-<pre><code class="userinput">Client:
-  APIHost: <b>zzzzz.arvadosapi.com</b>
-  AuthToken: <b>zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz</b>
-</code></pre>
-</notextile>
-
-This is the only configuration required by crunch-dispatch-slurm.  The subsections below describe optional configuration flags you can set inside the main configuration object.
-
-h3(#KeepServiceURIs). Containers.SLURM.KeepServices
-
-Override Keep service discovery with a predefined list of Keep URIs. This can be useful if the compute nodes run a local keepstore that should handle all Keep traffic. Example:
-
-<notextile>
-<pre>
-Clusters:
-  zzzzz:
-    Containers:
-      SLURM:
-        <span class="userinput">KeepServices:
-          00000-bi6l4-000000000000000:
-	    InternalURLs:
-              "http://127.0.0.1:25107": {}</span>
-</code></pre>
-</notextile>
+Crunch-dispatch-slurm reads the common configuration file at @/etc/arvados/config.yml@.  The essential configuration parameters will already be set by previous install steps, so no additional configuration is required.  The following sections describe optional configuration parameters.
 
 h3(#PollPeriod). Containers.PollInterval
 
@@ -72,6 +45,49 @@ Clusters:
   zzzzz:
     Containers:
       <code class="userinput">PollInterval: <b>3m30s</b>
+</code></pre>
+</notextile>
+
+h3(#ReserveExtraRAM). Containers.ReserveExtraRAM: Extra RAM for jobs
+
+Extra RAM to reserve (in bytes) on each SLURM job submitted by Arvados, which is added to the amount specified in the container's @runtime_constraints@.  If not provided, the default value is zero.  Helpful when using @-cgroup-parent-subsystem@, where @crunch-run@ and @arv-mount@ share the control group memory limit with the user process.  In this situation, at least 256MiB is recommended to accomodate each container's @crunch-run@ and @arv-mount@ processes.
+
+Supports suffixes @KB@, @KiB@, @MB@, @MiB@, @GB@, @GiB@, @TB@, @TiB@, @PB@, @PiB@, @EB@, @EiB@ (where @KB@ is 10[^3^], @KiB@ is 2[^10^], @MB@ is 10[^6^], @MiB@ is 2[^20^] and so forth).
+
+<notextile>
+<pre>
+Clusters:
+  zzzzz:
+    Containers:
+      <code class="userinput">ReserveExtraRAM: <b>256MiB</b></code>
+</pre>
+</notextile>
+
+h3(#MinRetryPeriod). Containers.MinRetryPeriod: Rate-limit repeated attempts to start containers
+
+If SLURM is unable to run a container, the dispatcher will submit it again after the next PollPeriod. If PollPeriod is very short, this can be excessive. If MinRetryPeriod is set, the dispatcher will avoid submitting the same container to SLURM more than once in the given time span.
+
+<notextile>
+<pre>
+Clusters:
+  zzzzz:
+    Containers:
+      <code class="userinput">MinRetryPeriod: <b>30s</b></code>
+</pre>
+</notextile>
+
+h3(#KeepServiceURIs). Containers.SLURM.SbatchEnvironmentVariables
+
+Some Arvados installations run a local keepstore on each compute node to handle all Keep traffic.  To override Keep service discovery and access the local keep server instead of the global servers, set ARVADOS_KEEP_SERVICES in SbatchEnvironmentVariables:
+
+<notextile>
+<pre>
+Clusters:
+  zzzzz:
+    Containers:
+      SLURM:
+        <span class="userinput">SbatchEnvironmentVariables:
+              "http://127.0.0.1:25107": {}</span>
 </code></pre>
 </notextile>
 
@@ -146,32 +162,6 @@ Clusters:
       <code class="userinput">CrunchRunArgumentsList:
         - <b>"-container-enable-networking=always"</b>
         - <b>"-container-network-mode=host"</b></code>
-</pre>
-</notextile>
-
-h3(#MinRetryPeriod). Containers.MinRetryPeriod: Rate-limit repeated attempts to start containers
-
-If SLURM is unable to run a container, the dispatcher will submit it again after the next PollPeriod. If PollPeriod is very short, this can be excessive. If MinRetryPeriod is set, the dispatcher will avoid submitting the same container to SLURM more than once in the given time span.
-
-<notextile>
-<pre>
-Clusters:
-  zzzzz:
-    Containers:
-      <code class="userinput">MinRetryPeriod: <b>30s</b></code>
-</pre>
-</notextile>
-
-h3(#ReserveExtraRAM). Containers.ReserveExtraRAM: Extra RAM for jobs
-
-Extra RAM to reserve (in bytes) on each SLURM job submitted by Arvados, which is added to the amount specified in the container's @runtime_constraints@.  If not provided, the default value is zero.  Helpful when using @-cgroup-parent-subsystem@, where @crunch-run@ and @arv-mount@ share the control group memory limit with the user process.  In this situation, at least 256MiB is recommended to accomodate each container's @crunch-run@ and @arv-mount@ processes.
-
-<notextile>
-<pre>
-Clusters:
-  zzzzz:
-    Containers:
-      <code class="userinput">ReserveExtraRAM: <b>256MiB</b></code>
 </pre>
 </notextile>
 
