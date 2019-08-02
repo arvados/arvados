@@ -206,6 +206,9 @@ Clusters:
       WebsocketClientEventQueue: 64
       WebsocketServerEventQueue: 4
 
+      # Timeout on requests to internal Keep services.
+      KeepServiceRequestTimeout: 15s
+
     Users:
       # Config parameters to automatically setup new users.  If enabled,
       # this users will be able to self-activate.  Enable this if you want

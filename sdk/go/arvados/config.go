@@ -79,6 +79,7 @@ type Cluster struct {
 		SendTimeout                    Duration
 		WebsocketClientEventQueue      int
 		WebsocketServerEventQueue      int
+		KeepServiceRequestTimeout      Duration
 	}
 	AuditLogs struct {
 		MaxAge             Duration
