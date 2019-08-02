@@ -7,7 +7,6 @@ package config
 import (
 	"fmt"
 	"io/ioutil"
-	"net/url"
 	"os"
 	"strings"
 
@@ -198,18 +197,14 @@ func loadOldClientConfig(cluster *arvados.Cluster, client *arvados.Client) {
 		cluster.SystemRootToken = client.AuthToken
 	}
 	cluster.TLS.Insecure = client.Insecure
-	for _, r := range client.KeepServiceURIs {
-		if cluster.Containers.SLURM.KeepServices == nil {
-			cluster.Containers.SLURM.KeepServices = make(map[string]arvados.Service)
+	ks := ""
+	for i, u := range client.KeepServiceURIs {
+		if i > 0 {
+			ks += " "
 		}
-		if cluster.Containers.SLURM.KeepServices["00000-bi6l4-000000000000000"].InternalURLs == nil {
-			cluster.Containers.SLURM.KeepServices["00000-bi6l4-000000000000000"] = arvados.Service{InternalURLs: make(map[arvados.URL]arvados.ServiceInstance)}
-		}
-		p, err := url.Parse(r)
-		if err == nil {
-			cluster.Containers.SLURM.KeepServices["00000-bi6l4-000000000000000"].InternalURLs[arvados.URL(*p)] = struct{}{}
-		}
+		ks += u
 	}
+	disp.cluster.Containers.SLURM.SbatchEnvironmentVariables = map[string]string{"ARVADOS_KEEP_SERVICES": ks}
 }
 
 // update config using values from an crunch-dispatch-slurm config file.

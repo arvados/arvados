@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"log"
 	"math"
-	"net/url"
 	"os"
 	"regexp"
 	"strings"
@@ -133,18 +132,10 @@ func (disp *Dispatcher) configure(prog string, args []string) error {
 		if disp.Client.Insecure {
 			os.Setenv("ARVADOS_API_HOST_INSECURE", "1")
 		}
-		ks := ""
-		if len(disp.cluster.Containers.SLURM.KeepServices) > 0 {
-			for _, svc := range disp.cluster.Containers.SLURM.KeepServices {
-				for k, _ := range svc.InternalURLs {
-					u := url.URL(k)
-					ks += u.String()
-					ks += " "
-				}
-			}
-		}
-		os.Setenv("ARVADOS_KEEP_SERVICES", strings.TrimSuffix(ks, " "))
 		os.Setenv("ARVADOS_EXTERNAL_CLIENT", "")
+		for k, v := range disp.cluster.Containers.SLURM.SbatchEnvironmentVariables {
+			os.Setenv(k, v)
+		}
 	} else {
 		disp.logger.Warnf("Client credentials missing from config, so falling back on environment variables (deprecated).")
 	}

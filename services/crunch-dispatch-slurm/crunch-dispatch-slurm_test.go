@@ -420,6 +420,7 @@ BatchSize: 99
 		c.Error(err)
 
 	}
+	os.Setenv("ARVADOS_KEEP_SERVICES", "")
 	err = s.disp.configure("crunch-dispatch-slurm", []string{"-config", tmpfile.Name()})
 	c.Check(err, IsNil)
 
@@ -433,16 +434,8 @@ BatchSize: 99
 	c.Check(s.disp.cluster.Containers.ReserveExtraRAM, Equals, arvados.ByteSize(12345))
 	c.Check(s.disp.cluster.Containers.MinRetryPeriod, Equals, arvados.Duration(13*time.Second))
 	c.Check(s.disp.cluster.API.MaxItemsPerResponse, Equals, 99)
-	c.Check(s.disp.cluster.Containers.SLURM.KeepServices, DeepEquals, map[string]arvados.Service{
-		"00000-bi6l4-000000000000000": arvados.Service{
-			InternalURLs: map[arvados.URL]arvados.ServiceInstance{
-				arvados.URL{Scheme: "https", Path: "/keep1", Host: "example.com"}: struct{}{},
-				arvados.URL{Scheme: "https", Path: "/keep2", Host: "example.com"}: struct{}{},
-			},
-		},
+	c.Check(s.disp.cluster.Containers.SLURM.SbatchEnvironmentVariables, DeepEquals, map[string]string{
+		"ARVADOS_KEEP_SERVICES": "https://example.com/keep1 https://example.com/keep2",
 	})
-	ks := os.Getenv("ARVADOS_KEEP_SERVICES")
-	if ks != "https://example.com/keep1 https://example.com/keep2" && ks != "https://example.com/keep2 https://example.com/keep1" {
-		c.Assert(ks, Equals, "https://example.com/keep1 https://example.com/keep2")
-	}
+	c.Check(os.Getenv("ARVADOS_KEEP_SERVICES"), Equals, "https://example.com/keep1 https://example.com/keep2")
 }
