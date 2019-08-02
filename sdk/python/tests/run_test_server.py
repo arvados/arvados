@@ -743,6 +743,9 @@ def setup_config():
                 "Services": services,
                 "Users": {
                     "AnonymousUserToken": auth_token('anonymous')
+                },
+                "Collections": {
+                    "TrustAllContent": True
                 }
             }
         }
