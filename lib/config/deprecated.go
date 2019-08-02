@@ -322,7 +322,7 @@ func (ldr *Loader) loadOldWebsocketConfig(cfg *arvados.Config) error {
 const defaultKeepWebConfigPath = "/etc/arvados/keep-web/keep-web.yml"
 
 type oldKeepWebConfig struct {
-	Client arvados.Client
+	Client *arvados.Client
 
 	Listen string
 

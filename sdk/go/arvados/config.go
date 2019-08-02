@@ -142,7 +142,6 @@ type Cluster struct {
 		AdminNotifierEmailFrom                string
 		AutoAdminFirstUser                    bool
 		AutoAdminUserWithEmail                string
-		AnonymousUserToken                    string
 		AutoSetupNewUsers                     bool
 		AutoSetupNewUsersWithRepository       bool
 		AutoSetupNewUsersWithVmUUID           string
