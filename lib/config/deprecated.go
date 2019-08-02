@@ -204,7 +204,7 @@ func loadOldClientConfig(cluster *arvados.Cluster, client *arvados.Client) {
 		}
 		ks += u
 	}
-	disp.cluster.Containers.SLURM.SbatchEnvironmentVariables = map[string]string{"ARVADOS_KEEP_SERVICES": ks}
+	cluster.Containers.SLURM.SbatchEnvironmentVariables = map[string]string{"ARVADOS_KEEP_SERVICES": ks}
 }
 
 // update config using values from an crunch-dispatch-slurm config file.
