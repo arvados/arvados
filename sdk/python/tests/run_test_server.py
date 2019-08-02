@@ -604,7 +604,6 @@ def run_keep_web():
 
     keepwebport = internal_port_from_config("WebDAV")
     env = os.environ.copy()
-    env['ARVADOS_API_TOKEN'] = auth_token('anonymous')
     logf = open(_logfilename('keep-web'), 'a')
     keepweb = subprocess.Popen(
         ['keep-web'],
@@ -741,7 +740,10 @@ def setup_config():
                 "TLS": {
                     "Insecure": True
                 },
-                "Services": services
+                "Services": services,
+                "Users": {
+                    "AnonymousUserToken": auth_token('anonymous')
+                }
             }
         }
     }
