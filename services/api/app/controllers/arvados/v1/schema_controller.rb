@@ -402,7 +402,7 @@ class Arvados::V1::SchemaController < ApplicationController
         end
       end
       Rails.configuration.API.DisabledAPIs.each do |method, _|
-        ctrl, action = method.split('.', 2)
+        ctrl, action = method.to_s.split('.', 2)
         discovery[:resources][ctrl][:methods].delete(action.to_sym)
       end
       discovery
