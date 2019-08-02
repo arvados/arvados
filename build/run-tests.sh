@@ -422,13 +422,6 @@ start_services() {
     all_services_stopped=
     fail=1
 
-    # Create config if it hasn't been created already.  Normally
-    # this happens in install_env because there are downstream
-    # steps like workbench install which require a valid
-    # config.yml, but when invoked with --skip-install that doesn't
-    # happen, so make sure to run it here.
-    eval $(python sdk/python/tests/run_test_server.py setup_config)
-
     cd "$WORKSPACE" \
         && eval $(python sdk/python/tests/run_test_server.py start --auth admin) \
         && export ARVADOS_TEST_API_HOST="$ARVADOS_API_HOST" \
@@ -664,11 +657,6 @@ install_env() {
     pip install --no-cache-dir PyYAML \
         || fatal "pip install PyYAML failed"
 
-    # Create config file.  The run_test_server script requires PyYAML,
-    # so virtualenv needs to be active.  Downstream steps like
-    # workbench install which require a valid config.yml.
-    eval $(python sdk/python/tests/run_test_server.py setup_config)
-
     # Preinstall libcloud if using a fork; otherwise nodemanager "pip
     # install" won't pick it up by default.
     if [[ -n "$LIBCLOUD_PIN_SRC" ]]; then
@@ -724,6 +712,8 @@ retry() {
 }
 
 do_test() {
+    check_arvados_config "$1"
+
     case "${1}" in
         apps/workbench_units | apps/workbench_functionals | apps/workbench_integration)
             suite=apps/workbench
@@ -828,7 +818,22 @@ do_test_once() {
     return $result
 }
 
+check_arvados_config() {
+    if [[ -z "$ARVADOS_CONFIG" ]] ; then
+	# Create config file.  The run_test_server script requires PyYAML,
+	# so virtualenv needs to be active.  Downstream steps like
+	# workbench install which require a valid config.yml.
+	if [[ (! -s "$VENVDIR/bin/activate") && "$1" != "env" ]] ; then
+	    install_env
+	fi
+	. "$VENVDIR/bin/activate"
+	eval $(python sdk/python/tests/run_test_server.py setup_config)
+	deactivate
+    fi
+}
+
 do_install() {
+    check_arvados_config "$1"
     if [[ -n "${skip[install]}" || ( -n "${only_install}" && "${only_install}" != "${1}" && "${only_install}" != "${2}" ) ]]; then
         return 0
     fi
