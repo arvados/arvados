@@ -61,7 +61,6 @@ func main() {
 	logger := log.New()
 
 	flags := flag.NewFlagSet(prog, flag.ExitOnError)
-	flags.Usage = usage
 
 	loader := config.NewLoader(os.Stdin, logger)
 	loader.SetupFlags(flags)
