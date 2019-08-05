@@ -16,12 +16,14 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
+	"time"
 
 	"git.curoverse.com/arvados.git/lib/config"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	log "github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
 
@@ -418,6 +420,65 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
 	kc.PutB([]byte("foo"))
 	kc.PutB([]byte("foobar"))
 	kc.PutB([]byte("waz"))
+}
+
+func (s *UnitSuite) TestLegacyConfig(c *check.C) {
+	content := []byte(`
+{
+	"Client": {
+		"Scheme": "",
+		"APIHost": "example.com",
+		"AuthToken": "abcdefg",
+	},
+	"Listen": ":80",
+	"AnonymousTokens": [
+		"anonusertoken"
+	],
+	"AttachmentOnlyHost": "download.example.com",
+	"TrustAllContent": false,
+	"Cache": {
+		"TTL": "1m",
+		"UUIDTTL": "1s",
+		"MaxCollectionEntries": 42,
+		"MaxCollectionBytes": 1234567890,
+		"MaxPermissionEntries": 100,
+		"MaxUUIDEntries": 100
+	},
+	"ManagementToken": "xyzzy"
+}
+`)
+	tmpfile, err := ioutil.TempFile("", "example")
+	if err != nil {
+		c.Error(err)
+	}
+	defer os.Remove(tmpfile.Name())
+
+	if _, err := tmpfile.Write(content); err != nil {
+		c.Error(err)
+	}
+	if err := tmpfile.Close(); err != nil {
+		c.Error(err)
+	}
+	cfg := configure(log.New(), []string{"keep-web", "-config", tmpfile.Name()})
+	c.Check(cfg, check.NotNil)
+	c.Check(cfg.cluster, check.NotNil)
+
+	c.Check(cfg.cluster.Services.Controller.ExternalURL, check.Equals, arvados.URL{Scheme: "https", Host: "example.com"})
+	c.Check(cfg.cluster.SystemRootToken, check.Equals, "abcdefg")
+
+	c.Check(cfg.cluster.Collections.WebDAVCache.TTL, check.Equals, arvados.Duration(60*time.Second))
+	c.Check(cfg.cluster.Collections.WebDAVCache.UUIDTTL, check.Equals, arvados.Duration(time.Second))
+	c.Check(cfg.cluster.Collections.WebDAVCache.MaxCollectionEntries, check.Equals, 42)
+	c.Check(cfg.cluster.Collections.WebDAVCache.MaxCollectionBytes, check.Equals, int64(1234567890))
+	c.Check(cfg.cluster.Collections.WebDAVCache.MaxPermissionEntries, check.Equals, 100)
+	c.Check(cfg.cluster.Collections.WebDAVCache.MaxUUIDEntries, check.Equals, 100)
+
+	c.Check(cfg.cluster.Services.WebDAVDownload.ExternalURL, check.Equals, arvados.URL{Host: "download.example.com"})
+	c.Check(cfg.cluster.Services.WebDAVDownload.InternalURLs[arvados.URL{Host: ":80"}], check.NotNil)
+	c.Check(cfg.cluster.Services.WebDAV.InternalURLs[arvados.URL{Host: ":80"}], check.NotNil)
+
+	c.Check(cfg.cluster.Users.AnonymousUserToken, check.Equals, "anonusertoken")
+	c.Check(cfg.cluster.ManagementToken, check.Equals, "xyzzy")
 }
 
 func (s *IntegrationSuite) TearDownSuite(c *check.C) {

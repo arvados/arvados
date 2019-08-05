@@ -11,9 +11,9 @@ import (
 
 	"git.curoverse.com/arvados.git/lib/config"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	sdkConfig "git.curoverse.com/arvados.git/sdk/go/config"
 	"github.com/coreos/go-systemd/daemon"
 	log "github.com/sirupsen/logrus"
+	yaml "gopkg.in/yaml.v2"
 )
 
 var (
@@ -55,12 +55,8 @@ func init() {
 	})
 }
 
-func main() {
-	prog := os.Args[0]
-	args := os.Args[1:]
-	logger := log.New()
-
-	flags := flag.NewFlagSet(prog, flag.ExitOnError)
+func configure(logger log.FieldLogger, args []string) *Config {
+	flags := flag.NewFlagSet(args[0], flag.ExitOnError)
 
 	loader := config.NewLoader(os.Stdin, logger)
 	loader.SetupFlags(flags)
@@ -70,13 +66,13 @@ func main() {
 	getVersion := flags.Bool("version", false,
 		"print version information and exit.")
 
-	args = loader.MungeLegacyConfigArgs(logger, args, "-legacy-keepweb-config")
+	args = loader.MungeLegacyConfigArgs(logger, args[1:], "-legacy-keepweb-config")
 	flags.Parse(args)
 
 	// Print version information if requested
 	if *getVersion {
 		fmt.Printf("keep-web %s\n", version)
-		return
+		return nil
 	}
 
 	arvCfg, err := loader.Load()
@@ -86,7 +82,25 @@ func main() {
 	cfg := DefaultConfig(arvCfg)
 
 	if *dumpConfig {
-		log.Fatal(sdkConfig.DumpAndExit(cfg.cluster))
+		out, err := yaml.Marshal(cfg)
+		if err != nil {
+			log.Fatal(err)
+		}
+		_, err = os.Stdout.Write(out)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return nil
+	}
+	return cfg
+}
+
+func main() {
+	logger := log.New()
+
+	cfg := configure(logger, os.Args)
+	if cfg == nil {
+		return
 	}
 
 	log.Printf("keep-web %s started", version)
