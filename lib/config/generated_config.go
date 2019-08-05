@@ -531,6 +531,8 @@ Clusters:
       SLURM:
         PrioritySpread: 0
         SbatchArgumentsList: []
+        SbatchEnvironmentVariables:
+          SAMPLE: ""
         Managed:
           # Path to dns server configuration directory
           # (e.g. /etc/unbound.d/conf.d). If false, do not write any config

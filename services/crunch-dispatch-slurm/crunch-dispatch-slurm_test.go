@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -396,6 +395,9 @@ func (s *StubbedSuite) TestLoadLegacyConfig(c *C) {
 Client:
   APIHost: example.com
   AuthToken: abcdefg
+  KeepServiceURIs:
+    - https://example.com/keep1
+    - https://example.com/keep2
 SbatchArguments: ["--foo", "bar"]
 PollPeriod: 12s
 PrioritySpread: 42
@@ -406,18 +408,19 @@ BatchSize: 99
 `)
 	tmpfile, err := ioutil.TempFile("", "example")
 	if err != nil {
-		log.Fatal(err)
+		c.Error(err)
 	}
 
 	defer os.Remove(tmpfile.Name()) // clean up
 
 	if _, err := tmpfile.Write(content); err != nil {
-		log.Fatal(err)
+		c.Error(err)
 	}
 	if err := tmpfile.Close(); err != nil {
-		log.Fatal(err)
+		c.Error(err)
 
 	}
+	os.Setenv("ARVADOS_KEEP_SERVICES", "")
 	err = s.disp.configure("crunch-dispatch-slurm", []string{"-config", tmpfile.Name()})
 	c.Check(err, IsNil)
 
@@ -431,4 +434,8 @@ BatchSize: 99
 	c.Check(s.disp.cluster.Containers.ReserveExtraRAM, Equals, arvados.ByteSize(12345))
 	c.Check(s.disp.cluster.Containers.MinRetryPeriod, Equals, arvados.Duration(13*time.Second))
 	c.Check(s.disp.cluster.API.MaxItemsPerResponse, Equals, 99)
+	c.Check(s.disp.cluster.Containers.SLURM.SbatchEnvironmentVariables, DeepEquals, map[string]string{
+		"ARVADOS_KEEP_SERVICES": "https://example.com/keep1 https://example.com/keep2",
+	})
+	c.Check(os.Getenv("ARVADOS_KEEP_SERVICES"), Equals, "https://example.com/keep1 https://example.com/keep2")
 }

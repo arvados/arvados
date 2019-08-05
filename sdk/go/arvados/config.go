@@ -292,9 +292,10 @@ type ContainersConfig struct {
 		LogUpdateSize                ByteSize
 	}
 	SLURM struct {
-		PrioritySpread      int64
-		SbatchArgumentsList []string
-		Managed             struct {
+		PrioritySpread             int64
+		SbatchArgumentsList        []string
+		SbatchEnvironmentVariables map[string]string
+		Managed                    struct {
 			DNSServerConfDir       string
 			DNSServerConfTemplate  string
 			DNSServerReloadCommand string
