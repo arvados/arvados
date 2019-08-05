@@ -8,6 +8,8 @@ set -ex -o pipefail
 
 . /usr/local/lib/arvbox/common.sh
 
+/usr/local/lib/arvbox/runsu.sh flock /var/lib/arvados/cluster_config.yml.lock /usr/local/lib/arvbox/cluster-config.sh
+
 uuid_prefix=$(cat /var/lib/arvados/api_uuid_prefix)
 
 if ! openssl verify -CAfile $root_cert $root_cert ; then

@@ -25,9 +25,6 @@ fi
 
 set -u
 
-if ! test -s /var/lib/arvados/api_uuid_prefix ; then
-  ruby -e 'puts "x#{rand(2**64).to_s(36)[0,4]}"' > /var/lib/arvados/api_uuid_prefix
-fi
 uuid_prefix=$(cat /var/lib/arvados/api_uuid_prefix)
 
 if ! test -s /var/lib/arvados/sso_secret_token ; then
@@ -62,9 +59,6 @@ sed "s/password:.*/password: $database_pw/" <config/database.yml.example >config
 if ! test -f /var/lib/arvados/sso_database_setup ; then
    bundle exec rake db:setup
 
-   if ! test -s /var/lib/arvados/sso_app_secret ; then
-       ruby -e 'puts rand(2**400).to_s(36)' > /var/lib/arvados/sso_app_secret
-   fi
    app_secret=$(cat /var/lib/arvados/sso_app_secret)
 
    bundle exec rails console <<EOF

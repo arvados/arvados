@@ -19,46 +19,19 @@ fi
 
 set -u
 
-uuid_prefix=$(cat /var/lib/arvados/api_uuid_prefix)
-
-if ! test -s /var/lib/arvados/api_secret_token ; then
-    ruby -e 'puts rand(2**400).to_s(36)' > /var/lib/arvados/api_secret_token
-fi
-secret_token=$(cat /var/lib/arvados/api_secret_token)
-
-if ! test -s /var/lib/arvados/blob_signing_key ; then
-    ruby -e 'puts rand(2**400).to_s(36)' > /var/lib/arvados/blob_signing_key
-fi
-blob_signing_key=$(cat /var/lib/arvados/blob_signing_key)
-
-if ! test -s /var/lib/arvados/management_token ; then
-    ruby -e 'puts rand(2**400).to_s(36)' > /var/lib/arvados/management_token
-fi
-management_token=$(cat /var/lib/arvados/management_token)
-
-sso_app_secret=$(cat /var/lib/arvados/sso_app_secret)
-
-if test -s /var/lib/arvados/vm-uuid ; then
-    vm_uuid=$(cat /var/lib/arvados/vm-uuid)
-else
-    vm_uuid=$uuid_prefix-2x53u-$(ruby -e 'puts rand(2**400).to_s(36)[0,15]')
-    echo $vm_uuid > /var/lib/arvados/vm-uuid
-fi
-
-if ! test -f /var/lib/arvados/api_database_pw ; then
-    ruby -e 'puts rand(2**128).to_s(36)' > /var/lib/arvados/api_database_pw
-fi
-database_pw=$(cat /var/lib/arvados/api_database_pw)
-
-if ! (psql postgres -c "\du" | grep "^ arvados ") >/dev/null ; then
-    psql postgres -c "create user arvados with password '$database_pw'"
-fi
-psql postgres -c "ALTER USER arvados WITH SUPERUSER;"
+flock /var/lib/arvados/cluster_config.yml.lock /usr/local/lib/arvbox/cluster-config.sh
 
 if test -a /usr/src/arvados/services/api/config/arvados_config.rb ; then
     rm -f config/application.yml config/database.yml
-    flock /var/lib/arvados/cluster_config.yml.lock /usr/local/lib/arvbox/cluster-config.sh
 else
+    uuid_prefix=$(cat /var/lib/arvados/api_uuid_prefix)
+    secret_token=$(cat /var/lib/arvados/api_secret_token)
+    blob_signing_key=$(cat /var/lib/arvados/blob_signing_key)
+    management_token=$(cat /var/lib/arvados/management_token)
+    sso_app_secret=$(cat /var/lib/arvados/sso_app_secret)
+    database_pw=$(cat /var/lib/arvados/api_database_pw)
+    vm_uuid=$(cat /var/lib/arvados/vm-uuid)
+
 cat >config/application.yml <<EOF
 $RAILS_ENV:
   uuid_prefix: $uuid_prefix
