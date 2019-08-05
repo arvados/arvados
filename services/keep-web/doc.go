@@ -12,31 +12,40 @@
 //
 // Configuration
 //
-// The default configuration file location is
-// /etc/arvados/keep-web/keep-web.yml.
+// The default cluster configuration file location is
+// /etc/arvados/config.yml.
 //
 // Example configuration file
 //
-//     Client:
-//       APIHost: "zzzzz.arvadosapi.com:443"
-//       AuthToken: ""
-//       Insecure: false
-//     Listen: :1234
-//     AnonymousTokens:
-//       - xxxxxxxxxxxxxxxxxxxx
-//     AttachmentOnlyHost: ""
-//     TrustAllContent: false
+//   Clusters:
+//     zzzzz:
+//       SystemRootToken: ""
+//       Services:
+//         Controller:
+//           ExternalURL: "https://example.com"
+//           Insecure: false
+//         WebDAV:
+//           InternalURLs:
+//             "http://:1234/": {}
+//         WebDAVDownload:
+//           InternalURLs:
+//             "http://:1234/": {}
+//           ExternalURL: "https://download.example.com/"
+//       Users:
+//         AnonymousUserToken: "xxxxxxxxxxxxxxxxxxxx"
+//       Collections:
+//         TrustAllContent: false
 //
 // Starting the server
 //
 // Start a server using the default config file
-// /etc/arvados/keep-web/keep-web.yml:
+// /etc/arvados/config.yml:
 //
 //   keep-web
 //
-// Start a server using the config file /path/to/keep-web.yml:
+// Start a server using the config file /path/to/config.yml:
 //
-//   keep-web -config /path/to/keep-web.yml
+//   keep-web -config /path/to/config.yml
 //
 // Proxy configuration
 //
@@ -68,12 +77,15 @@
 //
 // Anonymous downloads
 //
-// The "AnonymousTokens" configuration entry is an array of tokens to
-// use when processing anonymous requests, i.e., whenever a web client
+// The "Users.AnonymousUserToken" configuration entry used when
+// when processing anonymous requests, i.e., whenever a web client
 // does not supply its own Arvados API token via path, query string,
 // cookie, or request header.
 //
-//   "AnonymousTokens":["xxxxxxxxxxxxxxxxxxxxxxx"]
+//   Clusters:
+//     zzzzz:
+//       Users:
+//         AnonymousUserToken: "xxxxxxxxxxxxxxxxxxxxxxx"
 //
 // See http://doc.arvados.org/install/install-keep-web.html for examples.
 //
@@ -246,7 +258,11 @@
 // only when the designated origin matches exactly the Host header
 // provided by the client or downstream proxy.
 //
-//   "AttachmentOnlyHost":"domain.example:9999"
+//   Clusters:
+//     zzzzz:
+//       Services:
+//         WebDAVDownload:
+//           ExternalURL: "https://domain.example:9999"
 //
 // Trust All Content mode
 //
@@ -259,14 +275,22 @@
 //
 // In such cases you can enable trust-all-content mode.
 //
-//   "TrustAllContent":true
+//   Clusters:
+//     zzzzz:
+//       Collections:
+//         TrustAllContent: true
 //
 // When TrustAllContent is enabled, the only effect of the
-// AttachmentOnlyHost flag is to add a "Content-Disposition:
+// Attachment-Only host setting is to add a "Content-Disposition:
 // attachment" header.
 //
-//   "AttachmentOnlyHost":"domain.example:9999",
-//   "TrustAllContent":true
+//   Clusters:
+//     zzzzz:
+//       Services:
+//         WebDAVDownload:
+//           ExternalURL: "https://domain.example:9999"
+//       Collections:
+//         TrustAllContent: true
 //
 // Depending on your site configuration, you might also want to enable
 // the "trust all content" setting in Workbench. Normally, Workbench

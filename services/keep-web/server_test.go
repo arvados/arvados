@@ -435,7 +435,7 @@ func (s *UnitSuite) TestLegacyConfig(c *check.C) {
 		"anonusertoken"
 	],
 	"AttachmentOnlyHost": "download.example.com",
-	"TrustAllContent": false,
+	"TrustAllContent": true,
 	"Cache": {
 		"TTL": "1m",
 		"UUIDTTL": "1s",
@@ -477,6 +477,7 @@ func (s *UnitSuite) TestLegacyConfig(c *check.C) {
 	c.Check(cfg.cluster.Services.WebDAVDownload.InternalURLs[arvados.URL{Host: ":80"}], check.NotNil)
 	c.Check(cfg.cluster.Services.WebDAV.InternalURLs[arvados.URL{Host: ":80"}], check.NotNil)
 
+	c.Check(cfg.cluster.Collections.TrustAllContent, check.Equals, true)
 	c.Check(cfg.cluster.Users.AnonymousUserToken, check.Equals, "anonusertoken")
 	c.Check(cfg.cluster.ManagementToken, check.Equals, "xyzzy")
 }
