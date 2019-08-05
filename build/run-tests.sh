@@ -654,7 +654,7 @@ install_env() {
     . "$VENVDIR/bin/activate"
 
     # Needed for run_test_server.py which is used by certain (non-Python) tests.
-    pip install --no-cache-dir PyYAML \
+    pip install --no-cache-dir PyYAML future \
         || fatal "pip install PyYAML failed"
 
     # Preinstall libcloud if using a fork; otherwise nodemanager "pip
@@ -819,11 +819,14 @@ do_test_once() {
 }
 
 check_arvados_config() {
+    if [[ "$1" = "env" ]] ; then
+	return
+    fi
     if [[ -z "$ARVADOS_CONFIG" ]] ; then
 	# Create config file.  The run_test_server script requires PyYAML,
 	# so virtualenv needs to be active.  Downstream steps like
 	# workbench install which require a valid config.yml.
-	if [[ (! -s "$VENVDIR/bin/activate") && "$1" != "env" ]] ; then
+	if [[ ! -s "$VENVDIR/bin/activate" ]] ; then
 	    install_env
 	fi
 	. "$VENVDIR/bin/activate"
@@ -971,11 +974,15 @@ install_services/api() {
         && git --git-dir internal.git init \
             || return 1
 
-    cd "$WORKSPACE/services/api" \
-        && RAILS_ENV=test bundle exec rails db:environment:set \
-        && RAILS_ENV=test bundle exec rake db:drop \
-        && RAILS_ENV=test bundle exec rake db:setup \
-        && RAILS_ENV=test bundle exec rake db:fixtures:load
+
+    (cd "$WORKSPACE/services/api"
+     export RAILS_ENV=test
+     if bundle exec rails db:environment:set ; then
+        bundle exec rake db:drop
+     fi
+     bundle exec rake db:setup \
+	 && bundle exec rake db:fixtures:load
+    )
 }
 
 declare -a pythonstuff
