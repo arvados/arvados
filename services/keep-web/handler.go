@@ -283,8 +283,11 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		} else {
 			// /collections/ID/PATH...
 			collectionID = parseCollectionIDFromURL(pathParts[1])
-			tokens = h.Config.AnonymousTokens
 			stripParts = 2
+			// This path is only meant to work for public
+			// data. Tokens provided with the request are
+			// ignored.
+			credentialsOK = false
 		}
 	}
 
@@ -296,6 +299,10 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	forceReload := false
 	if cc := r.Header.Get("Cache-Control"); strings.Contains(cc, "no-cache") || strings.Contains(cc, "must-revalidate") {
 		forceReload = true
+	}
+
+	if credentialsOK {
+		reqTokens = auth.CredentialsFromRequest(r).Tokens
 	}
 
 	formToken := r.FormValue("api_token")
@@ -313,7 +320,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		//
 		// * The token isn't embedded in the URL, so we don't
 		//   need to worry about bookmarks and copy/paste.
-		tokens = append(tokens, formToken)
+		reqTokens = append(reqTokens, formToken)
 	} else if formToken != "" && browserMethod[r.Method] {
 		// The client provided an explicit token in the query
 		// string, or a form in POST body. We must put the
@@ -325,10 +332,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 
 	if useSiteFS {
-		if tokens == nil {
-			tokens = auth.CredentialsFromRequest(r).Tokens
-		}
-		h.serveSiteFS(w, r, tokens, credentialsOK, attachment)
+		h.serveSiteFS(w, r, reqTokens, credentialsOK, attachment)
 		return
 	}
 
@@ -347,9 +351,6 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 
 	if tokens == nil {
-		if credentialsOK {
-			reqTokens = auth.CredentialsFromRequest(r).Tokens
-		}
 		tokens = append(reqTokens, h.Config.AnonymousTokens...)
 	}
 

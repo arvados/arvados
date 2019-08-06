@@ -559,7 +559,17 @@ func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, ho
 	return resp
 }
 
-func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
+func (s *IntegrationSuite) TestDirectoryListingWithAnonymousToken(c *check.C) {
+	s.testServer.Config.AnonymousTokens = []string{arvadostest.AnonymousToken}
+	s.testDirectoryListing(c)
+}
+
+func (s *IntegrationSuite) TestDirectoryListingWithNoAnonymousToken(c *check.C) {
+	s.testServer.Config.AnonymousTokens = nil
+	s.testDirectoryListing(c)
+}
+
+func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 	s.testServer.Config.AttachmentOnlyHost = "download.example.com"
 	authHeader := http.Header{
 		"Authorization": {"OAuth2 " + arvadostest.ActiveToken},
@@ -584,10 +594,12 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 			cutDirs: 1,
 		},
 		{
-			uri:     "download.example.com/collections/" + arvadostest.FooAndBarFilesInDirUUID + "/",
-			header:  authHeader,
-			expect:  []string{"dir1/foo", "dir1/bar"},
-			cutDirs: 2,
+			// URLs of this form ignore authHeader, and
+			// FooAndBarFilesInDirUUID isn't public, so
+			// this returns 404.
+			uri:    "download.example.com/collections/" + arvadostest.FooAndBarFilesInDirUUID + "/",
+			header: authHeader,
+			expect: nil,
 		},
 		{
 			uri:     "download.example.com/users/active/foo_file_in_dir/",
