@@ -44,7 +44,7 @@ steps:
       outputs: []
       hints:
         - class: ResourceRequirement
-          ramMin: $(inputs.count*128)
+          ramMin: $(inputs.count*32)
       steps:
         sleep1:
           in:
@@ -59,4 +59,4 @@ steps:
                 type: int
               script: File
             outputs: []
-            arguments: [python, $(inputs.script), $(inputs.count * 128)]
+            arguments: [python, $(inputs.script), $(inputs.count * 32)]
