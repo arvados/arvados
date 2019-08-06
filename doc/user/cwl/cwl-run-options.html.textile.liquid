@@ -32,25 +32,25 @@ table(table table-bordered table-condensed).
 |==--debug==|               Print even more logging|
 |==--metrics==|             Print timing metrics|
 |==--tool-help==|           Print command line help for tool|
-|==--enable-reuse==|        Enable job or container reuse (default)|
-|==--disable-reuse==|       Disable job or container reuse|
-|==--project-uuid UUID==|   Project that will own the workflow jobs, if not provided, will go to home project.|
+|==--enable-reuse==|        Enable container reuse (default)|
+|==--disable-reuse==|       Disable container reuse|
+|==--project-uuid UUID==|   Project that will own the workflow containers, if not provided, will go to home project.|
 |==--output-name OUTPUT_NAME==|Name to use for collection that stores the final output.|
 |==--output-tags OUTPUT_TAGS==|Tags for the final output collection separated by commas, e.g., =='--output-tags tag0,tag1,tag2'==.|
-|==--ignore-docker-for-reuse==|Ignore Docker image version when deciding whether to reuse past jobs.|
+|==--ignore-docker-for-reuse==|Ignore Docker image version when deciding whether to reuse past containers.|
 |==--submit==|              Submit workflow runner to Arvados to manage the workflow (default).|
-|==--local==|               Run workflow on local host (still submits jobs to Arvados).|
+|==--local==|               Run workflow on local host (still submits containers to Arvados).|
 |==--create-template==|     (Deprecated) synonym for --create-workflow.|
-|==--create-workflow==|     Create an Arvados workflow (if using the 'containers' API) or pipeline template (if using the 'jobs' API). See --api.|
+|==--create-workflow==|     Register an Arvados workflow that can be run from Workbench|
 |==--update-workflow== UUID|Update an existing Arvados workflow or pipeline template with the given UUID.|
-|==--wait==|                After submitting workflow runner job, wait for completion.|
-|==--no-wait==|             Submit workflow runner job and exit.|
+|==--wait==|                After submitting workflow runner, wait for completion.|
+|==--no-wait==|             Submit workflow runner and exit.|
 |==--log-timestamps==|      Prefix logging lines with timestamp|
 |==--no-log-timestamps==|   No timestamp on logging lines|
-|==--api== {jobs,containers}|Select work submission API. Default is 'jobs' if that API is available, otherwise 'containers'.|
+|==--api== {containers}|Select work submission API.  Only supports 'containers'|
 |==--compute-checksum==|    Compute checksum of contents while collecting outputs|
-|==--submit-runner-ram== SUBMIT_RUNNER_RAM|RAM (in MiB) required for the workflow runner job (default 1024)|
-|==--submit-runner-image== SUBMIT_RUNNER_IMAGE|Docker image for workflow runner job|
+|==--submit-runner-ram== SUBMIT_RUNNER_RAM|RAM (in MiB) required for the workflow runner (default 1024)|
+|==--submit-runner-image== SUBMIT_RUNNER_IMAGE|Docker image for workflow runner|
 |==--always-submit-runner==|When invoked with --submit --wait, always submit a runner to manage the workflow, even when only running a single CommandLineTool|
 |==--submit-request-uuid== UUID|Update and commit to supplied container request instead of creating a new one (containers API only).|
 |==--submit-runner-cluster== CLUSTER_ID|Submit workflow runner to a remote cluster (containers API only)|
@@ -60,7 +60,7 @@ table(table table-bordered table-condensed).
 |==--storage-classes== STORAGE_CLASSES|Specify comma separated list of storage classes to be used when saving workflow output to Keep.|
 |==--intermediate-output-ttl== N|If N > 0, intermediate output collections will be trashed N seconds after creation. Default is 0 (don't trash).|
 |==--priority== PRIORITY|Workflow priority (range 1..1000, higher has precedence over lower, containers api only)|
-|==--thread-count== THREAD_COUNT|Number of threads to use for job submit and output collection.|
+|==--thread-count== THREAD_COUNT|Number of threads to use for container submit and output collection.|
 |==--http-timeout== HTTP_TIMEOUT|API request timeout in seconds. Default is 300 seconds (5 minutes).|
 |==--trash-intermediate==|Immediately trash intermediate outputs on workflow success.|
 |==--no-trash-intermediate==|Do not trash intermediate outputs (default).|
@@ -106,7 +106,7 @@ qr1hi-8i9sb-fm2n3b1w0l6bskg
 
 h3(#local). Control a workflow locally
 
-To run a workflow with local control, use @--local@.  This means that the host where you run @arvados-cwl-runner@ will be responsible for submitting jobs, however, the jobs themselves will still run on the Arvados cluster.  With @--local@, if you interrupt @arvados-cwl-runner@ or log out, the workflow will be terminated.
+To run a workflow with local control, use @--local@.  This means that the host where you run @arvados-cwl-runner@ will be responsible for submitting containers, however, the containers themselves will still run on the Arvados cluster.  With @--local@, if you interrupt @arvados-cwl-runner@ or log out, the workflow will be terminated.
 
 <notextile>
 <pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --local bwa-mem.cwl bwa-mem-input.yml</span>

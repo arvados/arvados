@@ -399,18 +399,11 @@ The 'jobs' API is no longer supported.
 
     def check_features(self, obj, parentfield=""):
         if isinstance(obj, dict):
-            if obj.get("writable") and self.work_api != "containers":
-                raise SourceLine(obj, "writable", UnsupportedRequirement).makeError("InitialWorkDir feature 'writable: true' not supported with --api=jobs")
             if obj.get("class") == "DockerRequirement":
                 if obj.get("dockerOutputDirectory"):
-                    if self.work_api != "containers":
-                        raise SourceLine(obj, "dockerOutputDirectory", UnsupportedRequirement).makeError(
-                            "Option 'dockerOutputDirectory' of DockerRequirement not supported with --api=jobs.")
                     if not obj.get("dockerOutputDirectory").startswith('/'):
                         raise SourceLine(obj, "dockerOutputDirectory", validate.ValidationException).makeError(
                             "Option 'dockerOutputDirectory' must be an absolute path.")
-            if obj.get("class") == "http://commonwl.org/cwltool#Secrets" and self.work_api != "containers":
-                raise SourceLine(obj, "class", UnsupportedRequirement).makeError("Secrets not supported with --api=jobs")
             if obj.get("class") == "InplaceUpdateRequirement":
                 if obj["inplaceUpdate"] and parentfield == "requirements":
                     raise SourceLine(obj, "class", UnsupportedRequirement).makeError("InplaceUpdateRequirement not supported for keep collections.")

@@ -96,10 +96,10 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--enable-reuse", action="store_true",
                         default=True, dest="enable_reuse",
-                        help="Enable job or container reuse (default)")
+                        help="Enable container reuse (default)")
     exgroup.add_argument("--disable-reuse", action="store_false",
                         default=True, dest="enable_reuse",
-                        help="Disable job or container reuse")
+                        help="Disable container reuse")
 
     parser.add_argument("--project-uuid", metavar="UUID", help="Project that will own the workflow containers, if not provided, will go to home project.")
     parser.add_argument("--output-name", help="Name to use for collection that stores the final output.", default=None)
@@ -154,10 +154,10 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--submit-request-uuid",
                          default=None,
-                         help="Update and commit to supplied container request instead of creating a new one (containers API only).",
+                         help="Update and commit to supplied container request instead of creating a new one.",
                          metavar="UUID")
     exgroup.add_argument("--submit-runner-cluster",
-                         help="Submit workflow runner to a remote cluster (containers API only)",
+                         help="Submit workflow runner to a remote cluster",
                          default=None,
                          metavar="CLUSTER_ID")
 
@@ -185,7 +185,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         default=0)
 
     parser.add_argument("--priority", type=int,
-                        help="Workflow priority (range 1..1000, higher has precedence over lower, containers api only)",
+                        help="Workflow priority (range 1..1000, higher has precedence over lower)",
                         default=DEFAULT_PRIORITY)
 
     parser.add_argument("--disable-validate", dest="do_validate",
@@ -297,7 +297,7 @@ def main(args, stdout, stderr, api_client=None, keep_client=None,
         return 1
 
     # Note that unless in debug mode, some stack traces related to user
-    # workflow errors may be suppressed. See ArvadosJob.done().
+    # workflow errors may be suppressed.
     if arvargs.debug:
         logger.setLevel(logging.DEBUG)
         logging.getLogger('arvados').setLevel(logging.DEBUG)
