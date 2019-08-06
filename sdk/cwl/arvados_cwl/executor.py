@@ -31,7 +31,6 @@ from arvados.errors import ApiError
 
 import arvados_cwl.util
 from .arvcontainer import RunnerContainer
-from .arvjob import RunnerJob, RunnerTemplate
 from .runner import Runner, upload_docker, upload_job_order, upload_workflow_deps
 from .arvtool import ArvadosCommandTool, validate_cluster_target, ArvadosExpressionTool
 from .arvworkflow import ArvadosWorkflow, upload_workflow
@@ -91,8 +90,8 @@ class RuntimeStatusLoggingHandler(logging.Handler):
 
 
 class ArvCwlExecutor(object):
-    """Execute a CWL tool or workflow, submit work (using either jobs or
-    containers API), wait for them to complete, and report output.
+    """Execute a CWL tool or workflow, submit work (using containers API),
+    wait for them to complete, and report output.
 
     """
 
@@ -154,7 +153,7 @@ class ArvCwlExecutor(object):
                                            num_retries=self.num_retries)
 
         self.work_api = None
-        expected_api = ["containers", "jobs"]
+        expected_api = ["containers"]
         for api in expected_api:
             try:
                 methods = self.api._rootDesc.get('resources')[api]['methods']
@@ -172,19 +171,11 @@ class ArvCwlExecutor(object):
                 raise Exception("Unsupported API '%s', expected one of %s" % (arvargs.work_api, expected_api))
 
         if self.work_api == "jobs":
-            logger.warning("""
+            logger.error("""
 *******************************
-Using the deprecated 'jobs' API.
-
-To get rid of this warning:
-
-Users: read about migrating at
-http://doc.arvados.org/user/cwl/cwl-style.html#migrate
-and use the option --api=containers
-
-Admins: configure the cluster to disable the 'jobs' API as described at:
-http://doc.arvados.org/install/install-api-server.html#disable_api_methods
+The 'jobs' API is no longer supported.
 *******************************""")
+            exit(1)
 
         self.loadingContext = ArvLoadingContext(vars(arvargs))
         self.loadingContext.fetcher_constructor = self.fetcher_constructor
@@ -339,7 +330,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
         return "[%s %s]" % (self.work_api[0:-1], obj.name)
 
     def poll_states(self):
-        """Poll status of jobs or containers listed in the processes dict.
+        """Poll status of containers listed in the processes dict.
 
         Runs in a separate thread.
         """
@@ -360,8 +351,6 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                 begin_poll = time.time()
                 if self.work_api == "containers":
                     table = self.poll_api.container_requests()
-                elif self.work_api == "jobs":
-                    table = self.poll_api.jobs()
 
                 pageSize = self.poll_api._rootDesc.get('maxItemsPerResponse', 1000)
 
@@ -522,13 +511,6 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
             except Exception:
                 logger.exception("Setting container output")
                 return
-        elif self.work_api == "jobs" and "TASK_UUID" in os.environ:
-            self.api.job_tasks().update(uuid=os.environ["TASK_UUID"],
-                                   body={
-                                       'output': self.final_output_collection.portable_data_hash(),
-                                       'success': self.final_status == "success",
-                                       'progress':1.0
-                                   }).execute(num_retries=self.num_retries)
 
     def apply_reqs(self, job_order_object, tool):
         if "https://w3id.org/cwl/cwl#requirements" in job_order_object:
@@ -604,18 +586,7 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
         existing_uuid = runtimeContext.update_workflow
         if existing_uuid or runtimeContext.create_workflow:
             # Create a pipeline template or workflow record and exit.
-            if self.work_api == "jobs":
-                tmpl = RunnerTemplate(self, tool, job_order,
-                                      runtimeContext.enable_reuse,
-                                      uuid=existing_uuid,
-                                      submit_runner_ram=runtimeContext.submit_runner_ram,
-                                      name=runtimeContext.name,
-                                      merged_map=merged_map,
-                                      loadingContext=loadingContext)
-                tmpl.save()
-                # cwltool.main will write our return value to stdout.
-                return (tmpl.uuid, "success")
-            elif self.work_api == "containers":
+            if self.work_api == "containers":
                 return (upload_workflow(self, tool, job_order,
                                         self.project_uuid,
                                         uuid=existing_uuid,
@@ -641,12 +612,6 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
             runtimeContext.docker_outdir = "/var/spool/cwl"
             runtimeContext.tmpdir = "/tmp"
             runtimeContext.docker_tmpdir = "/tmp"
-        elif self.work_api == "jobs":
-            if runtimeContext.priority != DEFAULT_PRIORITY:
-                raise Exception("--priority not implemented for jobs API.")
-            runtimeContext.outdir = "$(task.outdir)"
-            runtimeContext.docker_outdir = "$(task.outdir)"
-            runtimeContext.tmpdir = "$(task.tmpdir)"
 
         if runtimeContext.priority < 1 or runtimeContext.priority > 1000:
             raise Exception("--priority must be in the range 1..1000.")
@@ -686,24 +651,6 @@ http://doc.arvados.org/install/install-api-server.html#disable_api_methods
                                                 secret_store=self.secret_store,
                                                 collection_cache_size=runtimeContext.collection_cache_size,
                                                 collection_cache_is_default=self.should_estimate_cache_size)
-            elif self.work_api == "jobs":
-                tool = RunnerJob(self, tool, loadingContext, runtimeContext.enable_reuse,
-                                      self.output_name,
-                                      self.output_tags,
-                                      submit_runner_ram=runtimeContext.submit_runner_ram,
-                                      name=runtimeContext.name,
-                                      on_error=runtimeContext.on_error,
-                                      submit_runner_image=runtimeContext.submit_runner_image,
-                                      merged_map=merged_map)
-        elif runtimeContext.cwl_runner_job is None and self.work_api == "jobs":
-            # Create pipeline for local run
-            self.pipeline = self.api.pipeline_instances().create(
-                body={
-                    "owner_uuid": self.project_uuid,
-                    "name": runtimeContext.name if runtimeContext.name else shortname(tool.tool["id"]),
-                    "components": {},
-                    "state": "RunningOnClient"}).execute(num_retries=self.num_retries)
-            logger.info("Pipeline instance %s", self.pipeline["uuid"])
 
         if runtimeContext.cwl_runner_job is not None:
             self.uuid = runtimeContext.cwl_runner_job.get('uuid')
