@@ -380,10 +380,11 @@ func (ldr *Loader) loadOldKeepproxyConfig(cfg *arvados.Config) error {
 		cluster.ManagementToken = *oc.ManagementToken
 	}
 
+	// The following legacy options are no longer supported. If they are set to
+	// true or PIDFile has a value, error out and notify the user
 	unsupportedEntry := func(cfgEntry string) error {
 		return fmt.Errorf("the keepproxy %s configuration option is no longer supported, please remove it from your configuration file", cfgEntry)
 	}
-
 	if oc.DisableGet != nil && *oc.DisableGet {
 		return unsupportedEntry("DisableGet")
 	}
