@@ -281,6 +281,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			stripParts = 4
 			pathToken = true
 		} else {
+			log.Info("  !!!!  ATTN: Into /collections/uuid/path with anon token: ", h.Config.cluster.Users.AnonymousUserToken)
 			// /collections/ID/PATH...
 			collectionID = parseCollectionIDFromURL(pathParts[1])
 			tokens = []string{h.Config.cluster.Users.AnonymousUserToken}

@@ -594,12 +594,12 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 			cutDirs: 1,
 		},
 		// This test case fails
-		// {
-		// 	uri:     "download.example.com/collections/" + arvadostest.FooAndBarFilesInDirUUID + "/",
-		// 	header:  authHeader,
-		// 	expect:  []string{"dir1/foo", "dir1/bar"},
-		// 	cutDirs: 2,
-		// },
+		{
+			uri:     "download.example.com/collections/" + arvadostest.FooAndBarFilesInDirUUID + "/",
+			header:  authHeader,
+			expect:  []string{"dir1/foo", "dir1/bar"},
+			cutDirs: 2,
+		},
 		{
 			uri:     "download.example.com/users/active/foo_file_in_dir/",
 			header:  authHeader,
