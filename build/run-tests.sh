@@ -422,13 +422,6 @@ start_services() {
     all_services_stopped=
     fail=1
 
-    # Create config if it hasn't been created already.  Normally
-    # this happens in install_env because there are downstream
-    # steps like workbench install which require a valid
-    # config.yml, but when invoked with --skip-install that doesn't
-    # happen, so make sure to run it here.
-    eval $(python sdk/python/tests/run_test_server.py setup_config)
-
     cd "$WORKSPACE" \
         && eval $(python sdk/python/tests/run_test_server.py start --auth admin) \
         && export ARVADOS_TEST_API_HOST="$ARVADOS_API_HOST" \
@@ -661,13 +654,8 @@ install_env() {
     . "$VENVDIR/bin/activate"
 
     # Needed for run_test_server.py which is used by certain (non-Python) tests.
-    pip install --no-cache-dir PyYAML \
+    pip install --no-cache-dir PyYAML future \
         || fatal "pip install PyYAML failed"
-
-    # Create config file.  The run_test_server script requires PyYAML,
-    # so virtualenv needs to be active.  Downstream steps like
-    # workbench install which require a valid config.yml.
-    eval $(python sdk/python/tests/run_test_server.py setup_config)
 
     # Preinstall libcloud if using a fork; otherwise nodemanager "pip
     # install" won't pick it up by default.
@@ -724,6 +712,8 @@ retry() {
 }
 
 do_test() {
+    check_arvados_config "$1"
+
     case "${1}" in
         apps/workbench_units | apps/workbench_functionals | apps/workbench_integration)
             suite=apps/workbench
@@ -828,7 +818,25 @@ do_test_once() {
     return $result
 }
 
+check_arvados_config() {
+    if [[ "$1" = "env" ]] ; then
+	return
+    fi
+    if [[ -z "$ARVADOS_CONFIG" ]] ; then
+	# Create config file.  The run_test_server script requires PyYAML,
+	# so virtualenv needs to be active.  Downstream steps like
+	# workbench install which require a valid config.yml.
+	if [[ ! -s "$VENVDIR/bin/activate" ]] ; then
+	    install_env
+	fi
+	. "$VENVDIR/bin/activate"
+	eval $(python sdk/python/tests/run_test_server.py setup_config)
+	deactivate
+    fi
+}
+
 do_install() {
+    check_arvados_config "$1"
     if [[ -n "${skip[install]}" || ( -n "${only_install}" && "${only_install}" != "${1}" && "${only_install}" != "${2}" ) ]]; then
         return 0
     fi
@@ -966,11 +974,15 @@ install_services/api() {
         && git --git-dir internal.git init \
             || return 1
 
-    cd "$WORKSPACE/services/api" \
-        && RAILS_ENV=test bundle exec rails db:environment:set \
-        && RAILS_ENV=test bundle exec rake db:drop \
-        && RAILS_ENV=test bundle exec rake db:setup \
-        && RAILS_ENV=test bundle exec rake db:fixtures:load
+
+    (cd "$WORKSPACE/services/api"
+     export RAILS_ENV=test
+     if bundle exec rails db:environment:set ; then
+        bundle exec rake db:drop
+     fi
+     bundle exec rake db:setup \
+	 && bundle exec rake db:fixtures:load
+    )
 }
 
 declare -a pythonstuff

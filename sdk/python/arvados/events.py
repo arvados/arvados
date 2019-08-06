@@ -199,7 +199,11 @@ class PollClient(threading.Thread):
                             # filter on that same cutoff time, or
                             # (once we see our first matching event)
                             # the ID of the last-seen event.
-                            self._skip_old_events = [[
+                            #
+                            # Note: self._skip_old_events must not be
+                            # set until the threshold is decided.
+                            # Otherwise, tests will be unreliable.
+                            filter_by_time = [[
                                 "created_at", ">=",
                                 time.strftime(
                                     "%Y-%m-%dT%H:%M:%SZ",
@@ -207,7 +211,7 @@ class PollClient(threading.Thread):
                             items = self.api.logs().list(
                                 order="id desc",
                                 limit=1,
-                                filters=f+self._skip_old_events).execute()
+                                filters=f+filter_by_time).execute()
                             if items["items"]:
                                 self._skip_old_events = [
                                     ["id", ">", str(items["items"][0]["id"])]]
@@ -215,6 +219,11 @@ class PollClient(threading.Thread):
                                     "items": [],
                                     "items_available": 0,
                                 }
+                            else:
+                                # No recent events. We can keep using
+                                # the same timestamp threshold until
+                                # we receive our first new event.
+                                self._skip_old_events = filter_by_time
                         else:
                             # In this case, either we know the most
                             # recent matching ID, or we know there

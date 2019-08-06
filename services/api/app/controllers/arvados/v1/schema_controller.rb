@@ -53,7 +53,7 @@ class Arvados::V1::SchemaController < ApplicationController
         blobSignatureTtl: Rails.configuration.Collections.BlobSigningTTL,
         maxRequestSize: Rails.configuration.API.MaxRequestSize,
         maxItemsPerResponse: Rails.configuration.API.MaxItemsPerResponse,
-        dockerImageFormats: Rails.configuration.Containers.SupportedDockerImageFormats,
+        dockerImageFormats: Rails.configuration.Containers.SupportedDockerImageFormats.keys,
         crunchLogBytesPerEvent: Rails.configuration.Containers.Logging.LogBytesPerEvent,
         crunchLogSecondsBetweenEvents: Rails.configuration.Containers.Logging.LogSecondsBetweenEvents,
         crunchLogThrottlePeriod: Rails.configuration.Containers.Logging.LogThrottlePeriod,
@@ -402,7 +402,7 @@ class Arvados::V1::SchemaController < ApplicationController
         end
       end
       Rails.configuration.API.DisabledAPIs.each do |method, _|
-        ctrl, action = method.split('.', 2)
+        ctrl, action = method.to_s.split('.', 2)
         discovery[:resources][ctrl][:methods].delete(action.to_sym)
       end
       discovery

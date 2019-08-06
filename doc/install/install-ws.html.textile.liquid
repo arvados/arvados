@@ -43,26 +43,25 @@ Verify that @arvados-ws@ is functional:
 <pre><code>~$ <span class="userinput">arvados-ws -h</span>
 Usage of arvados-ws:
   -config path
-        path to config file (default "/etc/arvados/ws/ws.yml")
+        path to config file (default "/etc/arvados/config.yml")
   -dump-config
         show current configuration and exit
 </code></pre>
 </notextile>
 
-h3. Create a configuration file
+h3. Update cluster config
 
-Create @/etc/arvados/ws/ws.yml@ using the following template. Replace @xxxxxxxx@ with the "password you generated during database setup":install-postgresql.html#api.
+Edit the cluster config at @/etc/arvados/config.yml@ and set @Services.Websocket.ExternalURL@ and @Services.Websocket.InternalURLs@.  Replace @zzzzz@ with your cluster id.
 
 <notextile>
-<pre><code>Client:
-  APIHost: <span class="userinput">uuid_prefix.your.domain</span>:443
-Listen: ":<span class="userinput">9003</span>"
-Postgres:
-  dbname: arvados_production
-  host: localhost
-  password: <span class="userinput">xxxxxxxx</span>
-  user: arvados
-</code></pre>
+<pre><code>Clusters:
+  zzzzz:
+    Services:
+      <span class="userinput">Websocket:
+        ExternalURL: wss://ws.uuid_prefix.your.domain/websocket
+        InternalURLs:
+	  "http://localhost:9003": {}
+</span></code></pre>
 </notextile>
 
 h3. Start the service (option 1: systemd)
@@ -180,13 +179,6 @@ If you are upgrading a cluster where Nginx is configured to proxy @ws@ requests 
 
 h3. Update API server configuration
 
-Ensure the websocket server address is correct in the API server configuration file @/etc/arvados/api/application.yml@.
-
-<notextile>
-<pre><code>websocket_address: wss://ws.<span class="userinput">uuid_prefix.your.domain</span>/websocket
-</code></pre>
-</notextile>
-
 Restart Nginx to reload the API server configuration.
 
 <notextile>
@@ -196,10 +188,10 @@ Restart Nginx to reload the API server configuration.
 
 h3. Verify DNS and proxy setup
 
-Use a host elsewhere on the Internet to confirm that your DNS, proxy, and SSL are configured correctly.
+Use a host elsewhere on the Internet to confirm that your DNS, proxy, and SSL are configured correctly.  For @Authorization: Bearer xxxx@ replace @xxxx@ with the value from @ManagementToken@ in @config.yml@.
 
 <notextile>
-<pre><code>$ <span class="userinput">curl https://ws.<b>uuid_prefix.your.domain</b>/status.json</span>
-{"Clients":1}
+<pre><code>$ <span class="userinput">curl -H "Authorization: Bearer xxxx" https://ws.<b>uuid_prefix.your.domain</b>/_health/ping</span>
+{"health":"OK"}
 </code></pre>
 </notextile>

@@ -35,9 +35,6 @@ fi
 
 set -u
 
-if ! test -s /var/lib/arvados/workbench_secret_token ; then
-  ruby -e 'puts rand(2**400).to_s(36)' > /var/lib/arvados/workbench_secret_token
-fi
 secret_token=$(cat /var/lib/arvados/workbench_secret_token)
 
 if test -a /usr/src/arvados/apps/workbench/config/arvados_config.rb ; then

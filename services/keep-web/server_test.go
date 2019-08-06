@@ -301,6 +301,7 @@ func (s *IntegrationSuite) runCurl(c *check.C, token, host, uri string, args ...
 }
 
 func (s *IntegrationSuite) TestMetrics(c *check.C) {
+	s.testServer.Config.cluster.Services.WebDAVDownload.ExternalURL.Host = s.testServer.Addr
 	origin := "http://" + s.testServer.Addr
 	req, _ := http.NewRequest("GET", origin+"/notfound", nil)
 	_, err := http.DefaultClient.Do(req)

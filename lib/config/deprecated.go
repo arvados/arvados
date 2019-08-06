@@ -197,6 +197,14 @@ func loadOldClientConfig(cluster *arvados.Cluster, client *arvados.Client) {
 		cluster.SystemRootToken = client.AuthToken
 	}
 	cluster.TLS.Insecure = client.Insecure
+	ks := ""
+	for i, u := range client.KeepServiceURIs {
+		if i > 0 {
+			ks += " "
+		}
+		ks += u
+	}
+	cluster.Containers.SLURM.SbatchEnvironmentVariables = map[string]string{"ARVADOS_KEEP_SERVICES": ks}
 }
 
 // update config using values from an crunch-dispatch-slurm config file.

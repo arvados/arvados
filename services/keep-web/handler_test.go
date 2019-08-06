@@ -569,7 +569,17 @@ func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, ho
 	return resp
 }
 
-func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
+func (s *IntegrationSuite) TestDirectoryListingWithAnonymousToken(c *check.C) {
+	s.testServer.Config.cluster.Users.AnonymousUserToken = arvadostest.AnonymousToken
+	s.testDirectoryListing(c)
+}
+
+func (s *IntegrationSuite) TestDirectoryListingWithNoAnonymousToken(c *check.C) {
+	s.testServer.Config.cluster.Users.AnonymousUserToken = ""
+	s.testDirectoryListing(c)
+}
+
+func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 	s.testServer.Config.cluster.Services.WebDAVDownload.ExternalURL.Host = "download.example.com"
 	authHeader := http.Header{
 		"Authorization": {"OAuth2 " + arvadostest.ActiveToken},
@@ -593,12 +603,13 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 			expect:  []string{"foo", "bar"},
 			cutDirs: 1,
 		},
-		// This test case fails
 		{
-			uri:     "download.example.com/collections/" + arvadostest.FooAndBarFilesInDirUUID + "/",
-			header:  authHeader,
-			expect:  []string{"dir1/foo", "dir1/bar"},
-			cutDirs: 2,
+			// URLs of this form ignore authHeader, and
+			// FooAndBarFilesInDirUUID isn't public, so
+			// this returns 404.
+			uri:    "download.example.com/collections/" + arvadostest.FooAndBarFilesInDirUUID + "/",
+			header: authHeader,
+			expect: nil,
 		},
 		{
 			uri:     "download.example.com/users/active/foo_file_in_dir/",

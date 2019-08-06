@@ -26,6 +26,10 @@ func ExportJSON(w io.Writer, cluster *arvados.Cluster) error {
 	if err != nil {
 		return err
 	}
+
+	// ClusterID is not marshalled by default (see `json:"-"`).
+	// Add it back here so it is included in the exported config.
+	m["ClusterID"] = cluster.ClusterID
 	err = redactUnsafe(m, "", "")
 	if err != nil {
 		return err
@@ -55,6 +59,7 @@ func ExportJSON(w io.Writer, cluster *arvados.Cluster) error {
 // exists.
 var whitelist = map[string]bool{
 	// | sort -t'"' -k2,2
+	"ClusterID":                                    true,
 	"API":                                          true,
 	"API.AsyncPermissionsUpdateInterval":           false,
 	"API.DisabledAPIs":                             false,
