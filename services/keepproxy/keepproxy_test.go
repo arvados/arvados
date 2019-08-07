@@ -218,7 +218,7 @@ func (s *ServerRequiredSuite) TestPutWrongContentLength(c *C) {
 	// fixes the invalid Content-Length header. In order to test
 	// our server behavior, we have to call the handler directly
 	// using an httptest.ResponseRecorder.
-	rtr := MakeRESTRouter(true, true, kc, 10*time.Second, "")
+	rtr := MakeRESTRouter(kc, 10*time.Second, "")
 
 	type testcase struct {
 		sendLength   string
@@ -373,57 +373,6 @@ func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
 	c.Check(err, ErrorMatches, ".*not found.*")
 	c.Check(blocklen, Equals, int64(0))
 
-}
-
-func (s *ServerRequiredSuite) TestGetDisabled(c *C) {
-	kc := runProxy(c, []string{"-no-get"}, false)
-	defer closeListener()
-
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("baz")))
-
-	{
-		_, _, err := kc.Ask(hash)
-		errNotFound, _ := err.(keepclient.ErrNotFound)
-		c.Check(errNotFound, NotNil)
-		c.Assert(err, ErrorMatches, `.*HTTP 405.*`)
-		c.Log("Ask 1")
-	}
-
-	{
-		hash2, rep, err := kc.PutB([]byte("baz"))
-		c.Check(hash2, Matches, fmt.Sprintf(`^%s\+3(\+.+)?$`, hash))
-		c.Check(rep, Equals, 2)
-		c.Check(err, Equals, nil)
-		c.Log("PutB")
-	}
-
-	{
-		blocklen, _, err := kc.Ask(hash)
-		errNotFound, _ := err.(keepclient.ErrNotFound)
-		c.Check(errNotFound, NotNil)
-		c.Assert(err, ErrorMatches, `.*HTTP 405.*`)
-		c.Check(blocklen, Equals, int64(0))
-		c.Log("Ask 2")
-	}
-
-	{
-		_, blocklen, _, err := kc.Get(hash)
-		errNotFound, _ := err.(keepclient.ErrNotFound)
-		c.Check(errNotFound, NotNil)
-		c.Assert(err, ErrorMatches, `.*HTTP 405.*`)
-		c.Check(blocklen, Equals, int64(0))
-		c.Log("Get")
-	}
-}
-
-func (s *ServerRequiredSuite) TestPutDisabled(c *C) {
-	kc := runProxy(c, []string{"-no-put"}, false)
-	defer closeListener()
-
-	hash2, rep, err := kc.PutB([]byte("quux"))
-	c.Check(hash2, Equals, "")
-	c.Check(rep, Equals, 0)
-	c.Check(err, FitsTypeOf, keepclient.InsufficientReplicasError(errors.New("")))
 }
 
 func (s *ServerRequiredSuite) TestCorsHeaders(c *C) {
@@ -666,7 +615,7 @@ func (s *ServerRequiredSuite) TestPing(c *C) {
 	kc := runProxy(c, nil, false)
 	defer closeListener()
 
-	rtr := MakeRESTRouter(true, true, kc, 10*time.Second, arvadostest.ManagementToken)
+	rtr := MakeRESTRouter(kc, 10*time.Second, arvadostest.ManagementToken)
 
 	req, err := http.NewRequest("GET",
 		"http://"+listener.Addr().String()+"/_health/ping",

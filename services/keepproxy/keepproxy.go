@@ -117,30 +117,6 @@ func main() {
 	}
 	keepclient.RefreshServiceDiscoveryOnSIGHUP()
 
-	pidFile := "keepproxy"
-	f, err := os.Create(pidFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-	err = syscall.Flock(int(f.Fd()), syscall.LOCK_EX|syscall.LOCK_NB)
-	if err != nil {
-		log.Fatalf("flock(%s): %s", pidFile, err)
-	}
-	defer os.Remove(pidFile)
-	err = f.Truncate(0)
-	if err != nil {
-		log.Fatalf("truncate(%s): %s", pidFile, err)
-	}
-	_, err = fmt.Fprint(f, os.Getpid())
-	if err != nil {
-		log.Fatalf("write(%s): %s", pidFile, err)
-	}
-	err = f.Sync()
-	if err != nil {
-		log.Fatalf("sync(%s): %s", pidFile, err)
-	}
-
 	if cluster.Collections.DefaultReplication > 0 {
 		kc.Want_replicas = cluster.Collections.DefaultReplication
 	}
@@ -151,7 +127,7 @@ func main() {
 	}
 	listener, err := net.Listen("tcp", listen.Host)
 	if err != nil {
-		log.Fatalf("listen(%s): %s", listen, err)
+		log.Fatalf("listen(%s): %s", listen.Host, err)
 	}
 
 	if _, err := daemon.SdNotify(false, "READY=1"); err != nil {
