@@ -28,13 +28,12 @@ class Arvados::V1::JobsController < ApplicationController
   end
 
   def queue
-    return send_error("Unsupported legacy jobs API",
-                      status: 400)
+    @objects = []
+    index
   end
 
   def queue_size
-    return send_error("Unsupported legacy jobs API",
-                      status: 400)
+    render :json => {:queue_size => 0}
   end
 
   def self._create_requires_parameters
