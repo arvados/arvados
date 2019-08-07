@@ -83,6 +83,12 @@ Clusters:
       GitHTTP:
         ExternalURL: "http://$localip:${services[arv-git-httpd]}/"
       WebDAV:
+        InternalURLs:
+          "http://localhost:${services[keep-web]}/": {}
+        ExternalURL: "https://$localip:${services[keep-web-ssl]}/"
+      WebDAVDownload:
+        InternalURLs:
+          "http://localhost:${services[keep-web]}/": {}
         ExternalURL: "https://$localip:${services[keep-web-ssl]}/"
       Composer:
         ExternalURL: "http://$localip:${services[composer]}"
@@ -109,6 +115,7 @@ Clusters:
     Collections:
       BlobSigningKey: $blob_signing_key
       DefaultReplication: 1
+      TrustAllContent: true
     Login:
       ProviderAppSecret: $sso_app_secret
       ProviderAppID: arvados-server
@@ -118,6 +125,7 @@ Clusters:
       AutoSetupNewUsers: true
       AutoSetupNewUsersWithVmUUID: $vm_uuid
       AutoSetupNewUsersWithRepository: true
+      AnonymousUserToken: $(cat /var/lib/arvados/superuser_token)
     Workbench:
       SecretKeyBase: $workbench_secret_key_base
       ArvadosDocsite: http://$localip:${services[doc]}/
