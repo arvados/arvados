@@ -232,6 +232,10 @@ func fetchRemoteCollectionByPDH(
 			// No need to query local cluster again
 			continue
 		}
+		if remoteID == "*" {
+			// This isn't a real remote cluster: it just sets defaults for unlisted remotes.
+			continue
+		}
 
 		wg.Add(1)
 		go func(remote string) {
@@ -293,10 +297,8 @@ func fetchRemoteCollectionByPDH(
 			var errors []string
 			for len(errorChan) > 0 {
 				err := <-errorChan
-				if httperr, ok := err.(HTTPError); ok {
-					if httperr.Code != http.StatusNotFound {
-						errorCode = http.StatusBadGateway
-					}
+				if httperr, ok := err.(HTTPError); !ok || httperr.Code != http.StatusNotFound {
+					errorCode = http.StatusBadGateway
 				}
 				errors = append(errors, err.Error())
 			}

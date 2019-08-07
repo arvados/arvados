@@ -83,6 +83,9 @@ func (s *FederationSuite) SetUpTest(c *check.C) {
 			Proxy:  true,
 			Scheme: "http",
 		},
+		"*": {
+			Scheme: "https",
+		},
 	}
 
 	c.Assert(s.testServer.Start(), check.IsNil)
@@ -467,6 +470,10 @@ func (s *FederationSuite) TestGetRemoteCollectionByPDH(c *check.C) {
 func (s *FederationSuite) TestGetCollectionByPDHError(c *check.C) {
 	defer s.localServiceReturns404(c).Close()
 
+	// zmock's normal response (200 with an empty body) would
+	// change the outcome from 404 to 502
+	delete(s.testHandler.Cluster.RemoteClusters, "zmock")
+
 	req := httptest.NewRequest("GET", "/arvados/v1/collections/99999999999999999999999999999999+99", nil)
 	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
 
@@ -478,6 +485,10 @@ func (s *FederationSuite) TestGetCollectionByPDHError(c *check.C) {
 
 func (s *FederationSuite) TestGetCollectionByPDHErrorBadHash(c *check.C) {
 	defer s.localServiceReturns404(c).Close()
+
+	// zmock's normal response (200 with an empty body) would
+	// change the outcome
+	delete(s.testHandler.Cluster.RemoteClusters, "zmock")
 
 	srv2 := &httpserver.Server{
 		Server: http.Server{
@@ -512,7 +523,7 @@ func (s *FederationSuite) TestGetCollectionByPDHErrorBadHash(c *check.C) {
 	resp := s.testRequest(req).Result()
 	defer resp.Body.Close()
 
-	c.Check(resp.StatusCode, check.Equals, http.StatusNotFound)
+	c.Check(resp.StatusCode, check.Equals, http.StatusBadGateway)
 }
 
 func (s *FederationSuite) TestSaltedTokenGetCollectionByPDH(c *check.C) {
@@ -533,6 +544,10 @@ func (s *FederationSuite) TestSaltedTokenGetCollectionByPDH(c *check.C) {
 
 func (s *FederationSuite) TestSaltedTokenGetCollectionByPDHError(c *check.C) {
 	arvadostest.SetServiceURL(&s.testHandler.Cluster.Services.RailsAPI, "https://"+os.Getenv("ARVADOS_TEST_API_HOST"))
+
+	// zmock's normal response (200 with an empty body) would
+	// change the outcome
+	delete(s.testHandler.Cluster.RemoteClusters, "zmock")
 
 	req := httptest.NewRequest("GET", "/arvados/v1/collections/99999999999999999999999999999999+99", nil)
 	req.Header.Set("Authorization", "Bearer v2/zzzzz-gj3su-077z32aux8dg2s1/282d7d172b6cfdce364c5ed12ddf7417b2d00065")
