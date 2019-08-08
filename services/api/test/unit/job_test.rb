@@ -562,17 +562,6 @@ class JobTest < ActiveSupport::TestCase
     assert_equal Job.deep_sort_hash(a).to_json, Job.deep_sort_hash(b).to_json
   end
 
-  test 'find_reusable without logging' do
-    Rails.logger.expects(:info).never
-    try_find_reusable
-  end
-
-  test 'find_reusable with logging' do
-    Rails.configuration.Containers.LogReuseDecisions = true
-    Rails.logger.expects(:info).at_least(3)
-    try_find_reusable
-  end
-
   def try_find_reusable
     foobar = jobs(:foobar)
     example_attrs = {

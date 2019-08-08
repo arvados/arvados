@@ -77,67 +77,6 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "pipeline instance arv-refresh-on-log-event" do
-    # Do something and check that the pane reloads.
-    p = use_token :active do
-      PipelineInstance.create(state: "RunningOnServer",
-                              components: {
-                                c1: {
-                                  script: "test_hash.py",
-                                  script_version: "1de84a854e2b440dc53bf42f8548afa4c17da332"
-                                }
-                              })
-    end
-    visit(page_with_token("active", "/pipeline_instances/#{p.uuid}"))
-
-    assert_text 'Active'
-    assert page.has_link? 'Pause'
-    assert_no_text 'Complete'
-    assert page.has_no_link? 'Re-run with latest'
-
-    use_token :dispatch1 do
-      p.update_attributes!(state: 'Complete')
-    end
-
-    assert_no_text 'Active'
-    assert page.has_no_link? 'Pause'
-    assert_text 'Complete'
-    assert page.has_link? 'Re-run with latest'
-  end
-
-  test "job arv-refresh-on-log-event" do
-    # Do something and check that the pane reloads.
-    uuid = api_fixture('jobs')['running_will_be_completed']['uuid']
-    visit(page_with_token("active", "/jobs/#{uuid}"))
-
-    assert_no_text 'complete'
-    assert_no_text 'Re-run job'
-
-    use_token :dispatch1 do
-      Job.find(uuid).update_attributes!(state: 'Complete')
-    end
-
-    assert_text 'complete'
-    assert_text 'Re-run job'
-  end
-
-  test "dashboard arv-refresh-on-log-event" do
-    visit(page_with_token("active", "/"))
-
-    assert_no_text 'test dashboard arv-refresh-on-log-event'
-
-    # Do something and check that the pane reloads.
-    use_token :active do
-      p = PipelineInstance.create({state: "RunningOnServer",
-                                    name: "test dashboard arv-refresh-on-log-event",
-                                    components: {
-                                    }
-                                  })
-    end
-
-    assert_text 'test dashboard arv-refresh-on-log-event'
-  end
-
   test 'job graph appears when first data point is already in logs table' do
     job_graph_first_datapoint_test
   end

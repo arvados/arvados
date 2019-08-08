@@ -228,40 +228,6 @@ ALTER SEQUENCE public.collections_id_seq OWNED BY public.collections.id;
 
 
 --
--- Name: commit_ancestors; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.commit_ancestors (
-    id integer NOT NULL,
-    repository_name character varying(255),
-    descendant character varying(255) NOT NULL,
-    ancestor character varying(255) NOT NULL,
-    "is" boolean DEFAULT false NOT NULL,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: commit_ancestors_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.commit_ancestors_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: commit_ancestors_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.commit_ancestors_id_seq OWNED BY public.commit_ancestors.id;
-
-
---
 -- Name: commits; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1268,13 +1234,6 @@ ALTER TABLE ONLY public.collections ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
--- Name: commit_ancestors id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.commit_ancestors ALTER COLUMN id SET DEFAULT nextval('public.commit_ancestors_id_seq'::regclass);
-
-
---
 -- Name: commits id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1459,14 +1418,6 @@ ALTER TABLE ONLY public.authorized_keys
 
 ALTER TABLE ONLY public.collections
     ADD CONSTRAINT collections_pkey PRIMARY KEY (id);
-
-
---
--- Name: commit_ancestors commit_ancestors_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.commit_ancestors
-    ADD CONSTRAINT commit_ancestors_pkey PRIMARY KEY (id);
 
 
 --
@@ -1915,13 +1866,6 @@ CREATE INDEX index_collections_on_trash_at ON public.collections USING btree (tr
 --
 
 CREATE UNIQUE INDEX index_collections_on_uuid ON public.collections USING btree (uuid);
-
-
---
--- Name: index_commit_ancestors_on_descendant_and_ancestor; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX index_commit_ancestors_on_descendant_and_ancestor ON public.commit_ancestors USING btree (descendant, ancestor);
 
 
 --
@@ -3125,6 +3069,7 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20190214214814'),
 ('20190322174136'),
 ('20190422144631'),
-('20190523180148');
+('20190523180148'),
+('20190808145904');
 
 
