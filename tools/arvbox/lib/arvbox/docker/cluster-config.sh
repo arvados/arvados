@@ -70,6 +70,9 @@ Clusters:
   ${uuid_prefix}:
     ManagementToken: $management_token
     Services:
+      RailsAPI:
+        InternalURLs:
+          "http://localhost:${services[api]}": {}
       Workbench1:
         ExternalURL: "https://$localip:${services[workbench]}"
       Workbench2:
@@ -94,12 +97,8 @@ Clusters:
         ExternalURL: "http://$localip:${services[composer]}"
       Controller:
         ExternalURL: "https://$localip:${services[controller-ssl]}"
-    NodeProfiles:  # to be deprecated in favor of "Services" section
-      "*":
-        arvados-controller:
-          Listen: ":${services[controller]}" # choose a port
-        arvados-api-server:
-          Listen: ":${services[api]}" # must match Rails server port in your Nginx config
+        InternalURLs:
+          "http://localhost:${services[controller]}": {}
     PostgreSQL:
       ConnectionPool: 32 # max concurrent connections per arvados server daemon
       Connection:
