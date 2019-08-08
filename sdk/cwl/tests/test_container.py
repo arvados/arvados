@@ -88,7 +88,6 @@ class TestContainer(unittest.TestCase):
     def setup_and_test_container_executor_and_logging(self, gcc_mock) :
         api = mock.MagicMock()
         api._rootDesc = copy.deepcopy(get_rootDesc())
-        del api._rootDesc.get('resources')['jobs']['methods']['create']
 
         # Make sure ArvCwlExecutor thinks it's running inside a container so it
         # adds the logging handler that will call runtime_status_update() mock
@@ -1071,6 +1070,5 @@ class TestWorkflow(unittest.TestCase):
 
         api = mock.MagicMock()
         api._rootDesc = copy.deepcopy(get_rootDesc())
-        del api._rootDesc.get('resources')['jobs']['methods']['create']
         runner = arvados_cwl.executor.ArvCwlExecutor(api)
         self.assertEqual(runner.work_api, 'containers')

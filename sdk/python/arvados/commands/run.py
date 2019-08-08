@@ -39,6 +39,8 @@ import arvados.config as config
 
 from arvados._version import __version__
 
+logger = logging.getLogger('arvados.arv-run')
+logger.setLevel(logging.INFO)
 
 class ArvFile(object):
     def __init__(self, prefix, fn):
