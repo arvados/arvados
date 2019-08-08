@@ -639,7 +639,7 @@ class JobTest < ActiveSupport::TestCase
   test 'enable legacy api configuration option = true' do
     Rails.configuration.Containers.JobsAPI.Enable = "true"
     check_enable_legacy_jobs_api
-    assert_equal({}, Rails.configuration.API.DisabledAPIs)
+    assert_equal(Disable_update_jobs_api_method_list, Rails.configuration.API.DisabledAPIs)
   end
 
   test 'enable legacy api configuration option = false' do
@@ -652,7 +652,7 @@ class JobTest < ActiveSupport::TestCase
     Rails.configuration.Containers.JobsAPI.Enable = "auto"
     assert Job.count > 0
     check_enable_legacy_jobs_api
-    assert_equal({}, Rails.configuration.API.DisabledAPIs)
+    assert_equal(Disable_update_jobs_api_method_list, Rails.configuration.API.DisabledAPIs)
   end
 
   test 'enable legacy api configuration option = auto, no jobs' do
