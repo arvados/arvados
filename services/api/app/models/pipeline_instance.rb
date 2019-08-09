@@ -109,30 +109,7 @@ class PipelineInstance < ArvadosModel
   end
 
   def cancel(cascade: false, need_transaction: true)
-    if need_transaction
-      ActiveRecord::Base.transaction do
-        cancel(cascade: cascade, need_transaction: false)
-      end
-      return
-    end
-
-    if self.state.in?([RunningOnServer, RunningOnClient])
-      self.state = Paused
-      self.save!
-    elsif self.state != Paused
-      raise InvalidStateTransitionError
-    end
-
-    return if !cascade
-
-    # cancel all child jobs
-    children = self.components.andand.collect{|_, c| c['job']}.compact.collect{|j| j['uuid']}.compact
-
-    return if children.empty?
-
-    Job.where(uuid: children, state: [Job::Queued, Job::Running]).each do |job|
-      job.cancel(cascade: cascade, need_transaction: false)
-    end
+    raise "No longer supported"
   end
 
   protected
