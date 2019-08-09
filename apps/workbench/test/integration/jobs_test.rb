@@ -119,6 +119,7 @@ class JobsTest < ActionDispatch::IntegrationTest
     ['job_reader2', false],
   ].each do |user, readable|
     test "view job with components as #{user} user" do
+      Rails.configuration.Users.AnonymousUserToken = ""
       job = api_fixture('jobs')['running_job_with_components']
       component1 = api_fixture('jobs')['completed_job_in_publicly_accessible_project']
       component2 = api_fixture('pipeline_instances')['running_pipeline_with_complete_job']
