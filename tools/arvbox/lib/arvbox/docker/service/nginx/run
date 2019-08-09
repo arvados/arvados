@@ -123,6 +123,23 @@ server {
     }
   }
 
+  upstream keepproxy {
+    server localhost:${services[keepproxy]};
+  }
+  server {
+    listen *:${services[keepproxy-ssl]} ssl default_server;
+    server_name keepproxy;
+    ssl_certificate "${server_cert}";
+    ssl_certificate_key "${server_cert_key}";
+    location  / {
+      proxy_pass http://keepproxy;
+      proxy_set_header Host \$http_host;
+      proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto https;
+      proxy_redirect off;
+    }
+  }
+
 }
 
 EOF

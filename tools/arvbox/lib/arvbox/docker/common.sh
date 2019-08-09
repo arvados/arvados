@@ -37,6 +37,7 @@ services=(
   [keep-web]=9003
   [keep-web-ssl]=9002
   [keepproxy]=25100
+  [keepproxy-ssl]=25101
   [keepstore0]=25107
   [keepstore1]=25108
   [ssh]=22

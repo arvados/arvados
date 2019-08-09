@@ -40,4 +40,4 @@ else
     echo $UUID > /var/lib/arvados/keepproxy-uuid
 fi
 
-exec /usr/local/bin/keepproxy -listen=:${services[keepproxy]}
+exec /usr/local/bin/keepproxy
