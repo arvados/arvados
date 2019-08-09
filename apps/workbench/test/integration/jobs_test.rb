@@ -20,23 +20,6 @@ class JobsTest < ActionDispatch::IntegrationTest
     StringIO.new content, 'r'
   end
 
-  test "add job description" do
-    job = api_fixture('jobs')['nearly_finished_job']
-    visit page_with_token("active", "/jobs/#{job['uuid']}")
-
-    # edit job description
-    within('.arv-description-as-subtitle') do
-      find('.fa-pencil').click
-      find('.editable-input textarea').set('*Textile description for job* - "Go to dashboard":/')
-      find('.editable-submit').click
-    end
-
-    # Verify edited description
-    assert_no_text '*Textile description for job*'
-    assert_text 'Textile description for job'
-    assert_selector 'a[href="/"]', text: 'Go to dashboard'
-  end
-
   [
     ['active', true],
     ['job_reader2', false],

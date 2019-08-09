@@ -36,38 +36,6 @@ class PipelineInstancesControllerTest < ActionController::TestCase
     assert_response :success
   end
 
-  test "update script_parameters one at a time using merge param" do
-      template_fixture = api_fixture('pipeline_templates')['two_part']
-      post :update, params: {
-        id: api_fixture("pipeline_instances")["pipeline_to_merge_params"]["uuid"],
-        pipeline_instance: {
-          components: {
-            "part-two" => {
-              script_parameters: {
-                integer_with_value: {
-                  value: 9
-                },
-                plain_string: {
-                  value: 'quux'
-                },
-              }
-            }
-          }
-        },
-        merge: true,
-        format: :json
-      }, session: session_for(:active)
-      assert_response :success
-      assert_not_nil assigns(:object)
-      orig_params = template_fixture['components']['part-two']['script_parameters']
-      new_params = assigns(:object).components[:'part-two'][:script_parameters]
-      orig_params.keys.each do |k|
-        unless %w(integer_with_value plain_string).index(k)
-          assert_equal orig_params[k].to_json, new_params[k.to_sym].to_json
-        end
-      end
-  end
-
   test "component rendering copes with unexpected components format" do
     get(:show,
         params: {id: api_fixture("pipeline_instances")["components_is_jobspec"]["uuid"]},
