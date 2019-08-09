@@ -3,6 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 class PipelineTemplate < ArvadosModel
+  before_create :create_disabled
+  before_update :update_disabled
+
   include HasUuid
   include KindAndEtag
   include CommonApiTemplate
@@ -16,5 +19,13 @@ class PipelineTemplate < ArvadosModel
 
   def self.limit_index_columns_read
     ["components"]
+  end
+
+  def create_disabled
+    raise "Disabled"
+  end
+
+  def update_disabled
+    raise "Disabled"
   end
 end

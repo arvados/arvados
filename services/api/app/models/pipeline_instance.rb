@@ -17,6 +17,8 @@ class PipelineInstance < ArvadosModel
   before_validation :update_timestamps_when_state_changes
   before_create :set_state_before_save
   before_save :set_state_before_save
+  before_create :create_disabled
+  before_update :update_disabled
 
   api_accessible :user, extend: :common do |t|
     t.add :pipeline_template_uuid
@@ -160,4 +162,12 @@ class PipelineInstance < ArvadosModel
     end
   end
 
+
+  def create_disabled
+    raise "Disabled"
+  end
+
+  def update_disabled
+    raise "Disabled"
+  end
 end

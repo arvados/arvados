@@ -47,6 +47,8 @@ class Job < ArvadosModel
   validate :ensure_no_collection_uuids_in_script_params
   before_save :tag_version_in_internal_repository
   before_save :update_timestamps_when_state_changes
+  before_create :create_disabled
+  before_update :update_disabled
 
   has_many(:nodes, foreign_key: :job_uuid, primary_key: :uuid)
 
@@ -550,5 +552,13 @@ class Job < ArvadosModel
       return true if thing.match pattern
     end
     false
+  end
+
+  def create_disabled
+    raise "Disabled"
+  end
+
+  def update_disabled
+    raise "Disabled"
   end
 end
