@@ -358,13 +358,16 @@ mkdir cwltest/bin && touch cwltest/bin/cwltest
 fpm_build_virtualenv "cwltest" "cwltest"
 rm -rf "$WORKSPACE/cwltest"
 
+calculate_go_package_version arvados_server_version cmd/arvados-server
+arvados_server_iteration=$(default_iteration "arvados-server" "$arvados_server_version" "go")
+
 # Build the API server package
 test_rails_package_presence arvados-api-server "$WORKSPACE/services/api"
 if [[ "$?" == "0" ]]; then
   handle_rails_package arvados-api-server "$WORKSPACE/services/api" \
       "$WORKSPACE/agpl-3.0.txt" --url="https://arvados.org" \
       --description="Arvados API server - Arvados is a free and open source platform for big data science." \
-      --license="GNU Affero General Public License, version 3.0"
+      --license="GNU Affero General Public License, version 3.0" --depends "arvados-server = ${arvados_server_version}-${arvados_server_iteration}"
 fi
 
 # Build the workbench server package
@@ -372,6 +375,22 @@ test_rails_package_presence arvados-workbench "$WORKSPACE/apps/workbench"
 if [[ "$?" == "0" ]] ; then
   (
       set -e
+
+      # The workbench package has a build-time dependency on the arvados-server
+      # package for config manipulation, so install it first.
+      cd $WORKSPACE/cmd/arvados-server
+      get_complete_package_name arvados_server_pkgname arvados-server ${arvados_server_version} go
+
+      arvados_server_pkg_path="$WORKSPACE/packages/$TARGET/${arvados_server_pkgname}"
+      if [[ ! -e ${arvados_server_pkg_path} ]]; then
+        arvados_server_pkg_path="$WORKSPACE/packages/$TARGET/processed/${arvados_server_pkgname}"
+      fi
+      if [[ "$FORMAT" == "deb" ]]; then
+        dpkg -i ${arvados_server_pkg_path}
+      else
+        rpm -i ${arvados_server_pkg_path}
+      fi
+
       cd "$WORKSPACE/apps/workbench"
 
       # We need to bundle to be ready even when we build a package without vendor directory
@@ -404,7 +423,7 @@ if [[ "$?" == "0" ]] ; then
     handle_rails_package arvados-workbench "$WORKSPACE/apps/workbench" \
         "$WORKSPACE/agpl-3.0.txt" --url="https://arvados.org" \
         --description="Arvados Workbench - Arvados is a free and open source platform for big data science." \
-        --license="GNU Affero General Public License, version 3.0"
+        --license="GNU Affero General Public License, version 3.0" --depends "arvados-server = ${arvados_server_version}-${arvados_server_iteration}"
   fi
 fi
 

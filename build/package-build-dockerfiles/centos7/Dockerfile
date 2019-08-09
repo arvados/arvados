@@ -37,10 +37,6 @@ RUN rpm -ivh epel-release-latest-7.noarch.rpm
 
 RUN git clone --depth 1 git://git.curoverse.com/arvados.git /tmp/arvados && cd /tmp/arvados/services/api && /usr/local/rvm/bin/rvm-exec default bundle && cd /tmp/arvados/apps/workbench && /usr/local/rvm/bin/rvm-exec default bundle
 
-# Workbench depends on arvados-server for config manipulation
-ENV GOPATH /tmp
-RUN mkdir -p $GOPATH/src/git.curoverse.com && ln -sT /tmp/arvados $GOPATH/src/git.curoverse.com/arvados.git && cd $GOPATH/src/git.curoverse.com/arvados.git/cmd/arvados-server && go get -v github.com/kardianos/govendor && $GOPATH/bin/govendor sync && go get && go build && cp arvados-server /usr/local/bin/ && rm -rf /tmp/arvados
-
 # The version of setuptools that comes with CentOS is way too old
 RUN pip install --upgrade setuptools
 
