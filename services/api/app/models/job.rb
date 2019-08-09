@@ -1,6 +1,26 @@
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: AGPL-3.0
+#
+#
+# Legacy jobs API aka crunch v1
+#
+# This is superceded by containers / container_requests (aka crunch v2)
+#
+# Arvados installations since the beginning of 2018 should have never
+# used jobs, and are unaffected by this change.
+#
+# So that older Arvados sites don't lose access to legacy records, the
+# API has been converted to read-only.  Creating and updating jobs
+# (and related types job_task, pipeline_template and
+# pipeline_instance) is disabled and much of the business logic
+# related has been removed, along with the crunch-dispatch.rb and
+# various other code specific to the jobs API.
+#
+# If you need to resurrect any of this code, here is the last commit
+# on master before the branch removing jobs API support:
+#
+# Wed Aug 7 14:49:38 2019 -0400 07d92519438a592d531f2c7558cd51788da262ca
 
 require 'log_reuse_info'
 require 'safe_json'
@@ -189,7 +209,7 @@ class Job < ArvadosModel
       else
         raise ArgumentError.new("unknown attribute for git filter: #{attr}")
       end
-      revisions = Commit.find_commit_range(filter["repository"],
+      revisions = CommitsHelper::find_commit_range(filter["repository"],
                                            filter["min_version"],
                                            filter["max_version"],
                                            filter["exclude_versions"])
@@ -209,7 +229,7 @@ class Job < ArvadosModel
     # Add a filter to @filters for `attr_name` = the latest commit available
     # in `repo_name` at `refspec`.  No filter is added if refspec can't be
     # resolved.
-    commits = Commit.find_commit_range(repo_name, nil, refspec, nil)
+    commits = CommitsHelper::find_commit_range(repo_name, nil, refspec, nil)
     if commit_hash = commits.first
       [[attr_name, "=", commit_hash]]
     else
@@ -218,36 +238,7 @@ class Job < ArvadosModel
   end
 
   def cancel(cascade: false, need_transaction: true)
-    if need_transaction
-      ActiveRecord::Base.transaction do
-        cancel(cascade: cascade, need_transaction: false)
-      end
-      return
-    end
-
-    if self.state.in?([Queued, Running])
-      self.state = Cancelled
-      self.save!
-    elsif self.state != Cancelled
-      raise InvalidStateTransitionError
-    end
-
-    return if !cascade
-
-    # cancel all children; they could be jobs or pipeline instances
-    children = self.components.andand.collect{|_, u| u}.compact
-
-    return if children.empty?
-
-    # cancel any child jobs
-    Job.where(uuid: children, state: [Queued, Running]).each do |job|
-      job.cancel(cascade: cascade, need_transaction: false)
-    end
-
-    # cancel any child pipelines
-    PipelineInstance.where(uuid: children, state: [PipelineInstance::RunningOnServer, PipelineInstance::RunningOnClient]).each do |pi|
-      pi.cancel(cascade: cascade, need_transaction: false)
-    end
+    raise "No longer supported"
   end
 
   protected
@@ -283,7 +274,7 @@ class Job < ArvadosModel
       return true
     end
     if new_record? or repository_changed? or script_version_changed?
-      sha1 = Commit.find_commit_range(repository,
+      sha1 = CommitsHelper::find_commit_range(repository,
                                       nil, script_version, nil).first
       if not sha1
         errors.add :script_version, "#{script_version} does not resolve to a commit"
@@ -308,7 +299,7 @@ class Job < ArvadosModel
       uuid_was = uuid
       begin
         assign_uuid
-        Commit.tag_in_internal_repository repository, script_version, uuid
+        CommitsHelper::tag_in_internal_repository repository, script_version, uuid
       rescue
         self.uuid = uuid_was
         raise
@@ -343,7 +334,7 @@ class Job < ArvadosModel
   def find_arvados_sdk_version
     resolve_runtime_constraint("arvados_sdk_version",
                                :arvados_sdk_version) do |git_search|
-      commits = Commit.find_commit_range("arvados",
+      commits = CommitsHelper::find_commit_range("arvados",
                                          nil, git_search, nil)
       if commits.empty?
         [false, "#{git_search} does not resolve to a commit"]
