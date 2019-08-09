@@ -129,6 +129,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
   ].each do |token, user, invited, has_profile|
 
     test "visit home page for user #{token}" do
+      Rails.configuration.Users.AnoymousUserToken = ""
       if !token
         visit ('/')
       else
