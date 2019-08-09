@@ -27,9 +27,9 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"github.com/coreos/go-systemd/daemon"
+	"github.com/ghodss/yaml"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
 )
 
 var version = "dev"
@@ -97,6 +97,14 @@ func main() {
 
 	log.Printf("keepproxy %s started", version)
 
+	if err := run(logger, cluster); err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println("shutting down")
+}
+
+func run(logger log.FieldLogger, cluster *arvados.Cluster) error {
 	client, err := arvados.NewClientFromConfig(cluster)
 	if err != nil {
 		log.Fatal(err)
@@ -125,9 +133,11 @@ func main() {
 	for listen = range cluster.Services.Keepproxy.InternalURLs {
 		break
 	}
-	listener, err := net.Listen("tcp", listen.Host)
-	if err != nil {
-		log.Fatalf("listen(%s): %s", listen.Host, err)
+
+	var lErr error
+	listener, lErr = net.Listen("tcp", listen.Host)
+	if lErr != nil {
+		log.Fatalf("listen(%s): %s", listen.Host, lErr)
 	}
 
 	if _, err := daemon.SdNotify(false, "READY=1"); err != nil {
@@ -148,9 +158,7 @@ func main() {
 
 	// Start serving requests.
 	router = MakeRESTRouter(kc, time.Duration(cluster.API.KeepServiceRequestTimeout), cluster.SystemRootToken)
-	http.Serve(listener, httpserver.AddRequestIDs(httpserver.LogRequests(router)))
-
-	log.Println("shutting down")
+	return http.Serve(listener, httpserver.AddRequestIDs(httpserver.LogRequests(router)))
 }
 
 type ApiTokenCache struct {
