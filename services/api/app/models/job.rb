@@ -7,7 +7,7 @@
 #
 # This is superceded by containers / container_requests (aka crunch v2)
 #
-# Arvados installations since the beginning of 2018 should have never
+# Arvados installations since the end of 2017 should have never
 # used jobs, and are unaffected by this change.
 #
 # So that older Arvados sites don't lose access to legacy records, the
