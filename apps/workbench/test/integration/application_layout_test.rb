@@ -30,7 +30,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
         assert page.has_link?("Projects"), 'Not found link - Projects'
         page.find("#projects-menu").click
         assert_selector 'a', text: 'Search all projects'
-        assert_no_selector 'a', text: 'Browse public projects'
+        assert_selector 'a', text: 'Browse public projects'
         assert_selector 'a', text: 'Add a new project'
         assert_selector 'li[class="dropdown-header"]', text: 'My projects'
       end
