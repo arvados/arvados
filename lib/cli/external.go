@@ -22,7 +22,6 @@ var (
 	Copy = externalCmd{"arv-copy"}
 	Tag  = externalCmd{"arv-tag"}
 	Ws   = externalCmd{"arv-ws"}
-	Run  = externalCmd{"arv-run"}
 
 	Keep = cmd.Multi(map[string]cmd.Handler{
 		"get":       externalCmd{"arv-get"},
