@@ -104,7 +104,7 @@ RUN echo arvados_version is git commit $arvados_version
 
 ADD fuse.conf /etc/
 
-ADD crunch-setup.sh gitolite.rc \
+ADD gitolite.rc \
     keep-setup.sh common.sh createusers.sh \
     logger runsu.sh waitforpostgres.sh \
     yml_override.py api-setup.sh \
