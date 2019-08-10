@@ -251,11 +251,6 @@ Clusters:
       NewUserNotificationRecipients: {}
       NewInactiveUserNotificationRecipients: {}
 
-      # Set anonymous_user_token to enable anonymous user access. You can get
-      # the token by running "bundle exec ./script/get_anonymous_user_token.rb"
-      # in the directory where your API server is running.
-      AnonymousUserToken: ""
-
       # Set AnonymousUserToken to enable anonymous user access. You can get
       # the token by running "bundle exec ./script/get_anonymous_user_token.rb"
       # in the directory where your API server is running.
