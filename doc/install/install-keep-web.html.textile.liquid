@@ -82,10 +82,10 @@ Set the cluster config file like the following:
         Insecure: false
       WebDAV:
         InternalURLs:
-          "http://:9002/": {}
+          "http://keep_web_hostname_goes_here:9002/": {}
       WebDAVDownload:
         InternalURLs:
-          "http://:9002/": {}
+          "http://keep_web_hostname_goes_here:9002/": {}
         ExternalURL: "https://download.<span class="userinput">uuid_prefix</span>.your.domain/"
     Users:
       AnonymousUserToken: "xxxxxxxxxxxxxxxxxxxx"
@@ -97,13 +97,17 @@ Set the cluster config file like the following:
 The basic command to start Keep-web in the service run script is:
 
 <notextile>
-<pre><code>exec sudo -u nobody keep-web -config=/path/to/arvados.yml
+<pre><code>exec sudo -u nobody keep-web
 </code></pre>
 </notextile>
 
+{% include 'notebox_begin' %}
+Please take into consideration that the config file should be world-readable.
+{% include 'notebox_end' %}
+
 Set @Users.AnonymousUserToken: ""@ (empty string) if you do not want to serve public data.
 
-Set @Services.Controller.Insecure: true@ if your API server's TLS certificate is not signed by a recognized CA.
+Set @TLS.Insecure: true@ if your API server's TLS certificate is not signed by a recognized CA.
 
 h3. Set up a reverse proxy with TLS support
 
@@ -166,14 +170,14 @@ h3. Tell Workbench about the Keep-web service
 
 Workbench has features like "download file from collection" and "show image" which work better if the content is served by Keep-web rather than Workbench itself. We recommend using the two different hostnames ("download" and "collections" above) for file downloads and inline content respectively.
 
-Add the following entry to your Workbench cluster configuration file (@/etc/arvados/config.yml@). This URL will be used for file downloads.
+Add the following entry to your cluster configuration file (@/etc/arvados/config.yml@). This URL will be used for file downloads.
 
 <notextile>
 <pre><code>Clusters:
   zzzzz:
     Services:
       WebDAVDownload:
-        ExternalURL: "https://download.<span class="userinput">uuid_prefix</span>.your.domain/c=%{uuid_or_pdh}"
+        ExternalURL: "https://download.<span class="userinput">uuid_prefix</span>.your.domain/"
 </code></pre>
 </notextile>
 
@@ -184,8 +188,8 @@ Additionally, add *one* of the following entries to your Workbench cluster confi
   zzzzz:
     Services:
       WebDAV:
-        ExternalURL: "https://%{uuid_or_pdh}--collections.<span class="userinput">uuid_prefix</span>.your.domain"
-        ExternalURL: "https://%{uuid_or_pdh}.collections.<span class="userinput">uuid_prefix</span>.your.domain"
-        ExternalURL: "https://collections.<span class="userinput">uuid_prefix</span>.your.domain/c=%{uuid_or_pdh}"
+        ExternalURL: "https://*--collections.<span class="userinput">uuid_prefix</span>.your.domain"
+        ExternalURL: "https://*.collections.<span class="userinput">uuid_prefix</span>.your.domain"
+        ExternalURL: "https://collections.<span class="userinput">uuid_prefix</span>.your.domain"
 </code></pre>
 </notextile>
