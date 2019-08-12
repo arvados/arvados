@@ -49,10 +49,3 @@ For example, for a 3.75 GiB node, default Keep cache, and no extra RAM reserved:
     (3840 * 0.95) - 256 = 3392 MiB
 
 To run on this instance type, the container can request at most 3392 MiB of working RAM.
-
-h2. Job API (deprecated)
-
-# To submit work, create a "job":{{site.baseurl}}/api/methods/jobs.html .  If the same job has been submitted in the past, it will return an existing job in @Completed@ state.
-# The dispatcher process will notice a new job in @Queued@ state and attempt to allocate nodes to run the job.
-# The job executes.
-# Retrieve the @output@ field with the portable data hash of the collection with the output files of the job.

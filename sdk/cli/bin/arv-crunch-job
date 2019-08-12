@@ -1,6 +1,0 @@
-#!/usr/bin/env ruby
-# Copyright (C) The Arvados Authors. All rights reserved.
-#
-# SPDX-License-Identifier: Apache-2.0
-
-exec File.join(File.dirname(File.realpath(__FILE__)), 'crunch-job'), *ARGV

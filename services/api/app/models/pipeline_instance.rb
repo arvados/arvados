@@ -17,6 +17,8 @@ class PipelineInstance < ArvadosModel
   before_validation :update_timestamps_when_state_changes
   before_create :set_state_before_save
   before_save :set_state_before_save
+  before_create :create_disabled
+  before_update :update_disabled
 
   api_accessible :user, extend: :common do |t|
     t.add :pipeline_template_uuid
@@ -109,30 +111,7 @@ class PipelineInstance < ArvadosModel
   end
 
   def cancel(cascade: false, need_transaction: true)
-    if need_transaction
-      ActiveRecord::Base.transaction do
-        cancel(cascade: cascade, need_transaction: false)
-      end
-      return
-    end
-
-    if self.state.in?([RunningOnServer, RunningOnClient])
-      self.state = Paused
-      self.save!
-    elsif self.state != Paused
-      raise InvalidStateTransitionError
-    end
-
-    return if !cascade
-
-    # cancel all child jobs
-    children = self.components.andand.collect{|_, c| c['job']}.compact.collect{|j| j['uuid']}.compact
-
-    return if children.empty?
-
-    Job.where(uuid: children, state: [Job::Queued, Job::Running]).each do |job|
-      job.cancel(cascade: cascade, need_transaction: false)
-    end
+    raise "No longer supported"
   end
 
   protected
@@ -183,4 +162,12 @@ class PipelineInstance < ArvadosModel
     end
   end
 
+
+  def create_disabled
+    raise "Disabled"
+  end
+
+  def update_disabled
+    raise "Disabled"
+  end
 end

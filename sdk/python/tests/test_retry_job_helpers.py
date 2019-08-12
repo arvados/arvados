@@ -76,34 +76,3 @@ class CurrentJobTestCase(ApiClientRetryTestMixin, unittest.TestCase):
 
     def run_method(self):
         arvados.current_job()
-
-
-class CurrentTaskTestCase(ApiClientRetryTestMixin, unittest.TestCase):
-
-    DEFAULT_EXCEPTION = arvados.errors.ApiError
-
-    def setUp(self):
-        super(CurrentTaskTestCase, self).setUp()
-        os.environ['TASK_UUID'] = 'zzzzz-zzzzz-zzzzzzzzzzzzzzz'
-        os.environ['TASK_WORK'] = '.'
-
-    def tearDown(self):
-        del os.environ['TASK_UUID']
-        del os.environ['TASK_WORK']
-        arvados._current_task = None
-        super(CurrentTaskTestCase, self).tearDown()
-
-    def run_method(self):
-        arvados.current_task()
-
-
-class TaskSetOutputTestCase(CurrentTaskTestCase, unittest.TestCase):
-
-    DEFAULT_EXCEPTION = arvados.errors.ApiError
-
-    def tearDown(self):
-        super(TaskSetOutputTestCase, self).tearDown()
-        run_test_server.reset()
-
-    def run_method(self, locator=ApiClientRetryTestMixin.TEST_LOCATOR):
-        arvados.task_set_output({'uuid':self.TEST_UUID},s=locator)

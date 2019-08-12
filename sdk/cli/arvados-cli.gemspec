@@ -22,12 +22,8 @@ Gem::Specification.new do |s|
   s.email       = 'gem-dev@curoverse.com'
   #s.bindir      = '.'
   s.licenses    = ['Apache-2.0']
-  s.files       = ["bin/arv", "bin/arv-run-pipeline-instance",
-                   "bin/arv-crunch-job", "bin/arv-tag", "bin/crunch-job",
-                   "LICENSE-2.0.txt"]
+  s.files       = ["bin/arv", "bin/arv-tag", "LICENSE-2.0.txt"]
   s.executables << "arv"
-  s.executables << "arv-run-pipeline-instance"
-  s.executables << "arv-crunch-job"
   s.executables << "arv-tag"
   s.required_ruby_version = '>= 2.1.0'
   s.add_runtime_dependency 'arvados', '~> 1.3.0', '>= 1.3.0'

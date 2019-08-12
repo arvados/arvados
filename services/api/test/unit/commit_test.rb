@@ -22,7 +22,7 @@ class CommitTest < ActiveSupport::TestCase
   test 'find_commit_range does not bypass permissions' do
     authorize_with :inactive
     assert_raises ArgumentError do
-      Commit.find_commit_range 'foo', nil, 'master', []
+      CommitsHelper::find_commit_range 'foo', nil, 'master', []
     end
   end
 
@@ -41,9 +41,9 @@ class CommitTest < ActiveSupport::TestCase
   ].each do |url|
     test "find_commit_range uses fetch_remote_repository to get #{url}" do
       fake_gitdir = repositories(:foo).server_path
-      Commit.expects(:cache_dir_for).once.with(url).returns fake_gitdir
-      Commit.expects(:fetch_remote_repository).once.with(fake_gitdir, url).returns true
-      c = Commit.find_commit_range url, nil, 'master', []
+      CommitsHelper::expects(:cache_dir_for).once.with(url).returns fake_gitdir
+      CommitsHelper::expects(:fetch_remote_repository).once.with(fake_gitdir, url).returns true
+      c = CommitsHelper::find_commit_range url, nil, 'master', []
       refute_empty c
     end
   end
@@ -57,9 +57,9 @@ class CommitTest < ActiveSupport::TestCase
    'github.com/curoverse/arvados.git',
   ].each do |url|
     test "find_commit_range skips fetch_remote_repository for #{url}" do
-      Commit.expects(:fetch_remote_repository).never
+      CommitsHelper::expects(:fetch_remote_repository).never
       assert_raises ArgumentError do
-        Commit.find_commit_range url, nil, 'master', []
+        CommitsHelper::find_commit_range url, nil, 'master', []
       end
     end
   end
@@ -67,12 +67,12 @@ class CommitTest < ActiveSupport::TestCase
   test 'fetch_remote_repository does not leak commits across repositories' do
     url = "http://localhost:1/fake/fake.git"
     fetch_remote_from_local_repo url, :foo
-    c = Commit.find_commit_range url, nil, 'master', []
+    c = CommitsHelper::find_commit_range url, nil, 'master', []
     assert_equal ['077ba2ad3ea24a929091a9e6ce545c93199b8e57'], c
 
     url = "http://localhost:2/fake/fake.git"
     fetch_remote_from_local_repo url, 'file://' + File.expand_path('../../.git', Rails.root)
-    c = Commit.find_commit_range url, nil, '077ba2ad3ea24a929091a9e6ce545c93199b8e57', []
+    c = CommitsHelper::find_commit_range url, nil, '077ba2ad3ea24a929091a9e6ce545c93199b8e57', []
     assert_equal [], c
   end
 
@@ -82,7 +82,7 @@ class CommitTest < ActiveSupport::TestCase
     IO.read("|#{gitint} tag -d testtag 2>/dev/null") # "no such tag", fine
     assert_match(/^fatal: /, IO.read("|#{gitint} show testtag 2>&1"))
     refute $?.success?
-    Commit.tag_in_internal_repository 'active/foo', '31ce37fe365b3dc204300a3e4c396ad333ed0556', 'testtag'
+    CommitsHelper::tag_in_internal_repository 'active/foo', '31ce37fe365b3dc204300a3e4c396ad333ed0556', 'testtag'
     assert_match(/^commit 31ce37f/, IO.read("|#{gitint} show testtag"))
     assert $?.success?
   end
@@ -106,7 +106,7 @@ class CommitTest < ActiveSupport::TestCase
       must_pipe("git rm bar")
       must_pipe("git -c user.email=x@x -c user.name=X commit -m -")
     end
-    Commit.tag_in_internal_repository 'active/foo', sha1, tag
+    CommitsHelper::tag_in_internal_repository 'active/foo', sha1, tag
     gitint = "git --git-dir #{Rails.configuration.Containers.JobsAPI.GitInternalDir.shellescape}"
     assert_match(/^commit /, IO.read("|#{gitint} show #{tag.shellescape}"))
     assert $?.success?
@@ -122,7 +122,7 @@ class CommitTest < ActiveSupport::TestCase
       sha1 = must_pipe("git log -n1 --format=%H").strip
       must_pipe("git reset --hard HEAD^")
     end
-    Commit.tag_in_internal_repository 'active/foo', sha1, tag
+    CommitsHelper::tag_in_internal_repository 'active/foo', sha1, tag
     gitint = "git --git-dir #{Rails.configuration.Containers.JobsAPI.GitInternalDir.shellescape}"
     assert_match(/^commit /, IO.read("|#{gitint} show #{tag.shellescape}"))
     assert $?.success?
@@ -141,50 +141,50 @@ class CommitTest < ActiveSupport::TestCase
 
   test "find_commit_range min_version prefers commits over branch names" do
     assert_equal([COMMIT_BRANCH_NAME],
-                 Commit.find_commit_range("active/shabranchnames",
+                 CommitsHelper::find_commit_range("active/shabranchnames",
                                           COMMIT_BRANCH_NAME, nil, nil))
   end
 
   test "find_commit_range max_version prefers commits over branch names" do
     assert_equal([COMMIT_BRANCH_NAME],
-                 Commit.find_commit_range("active/shabranchnames",
+                 CommitsHelper::find_commit_range("active/shabranchnames",
                                           nil, COMMIT_BRANCH_NAME, nil))
   end
 
   test "find_commit_range min_version with short branch name" do
     assert_equal([SHORT_BRANCH_COMMIT_2],
-                 Commit.find_commit_range("active/shabranchnames",
+                 CommitsHelper::find_commit_range("active/shabranchnames",
                                           SHORT_COMMIT_BRANCH_NAME, nil, nil))
   end
 
   test "find_commit_range max_version with short branch name" do
     assert_equal([SHORT_BRANCH_COMMIT_2],
-                 Commit.find_commit_range("active/shabranchnames",
+                 CommitsHelper::find_commit_range("active/shabranchnames",
                                           nil, SHORT_COMMIT_BRANCH_NAME, nil))
   end
 
   test "find_commit_range min_version with disambiguated branch name" do
     assert_equal([COMMIT_BRANCH_COMMIT_2],
-                 Commit.find_commit_range("active/shabranchnames",
+                 CommitsHelper::find_commit_range("active/shabranchnames",
                                           "heads/#{COMMIT_BRANCH_NAME}",
                                           nil, nil))
   end
 
   test "find_commit_range max_version with disambiguated branch name" do
     assert_equal([COMMIT_BRANCH_COMMIT_2],
-                 Commit.find_commit_range("active/shabranchnames", nil,
+                 CommitsHelper::find_commit_range("active/shabranchnames", nil,
                                           "heads/#{COMMIT_BRANCH_NAME}", nil))
   end
 
   test "find_commit_range min_version with unambiguous short name" do
     assert_equal([COMMIT_BRANCH_NAME],
-                 Commit.find_commit_range("active/shabranchnames",
+                 CommitsHelper::find_commit_range("active/shabranchnames",
                                           COMMIT_BRANCH_NAME[0..-2], nil, nil))
   end
 
   test "find_commit_range max_version with unambiguous short name" do
     assert_equal([COMMIT_BRANCH_NAME],
-                 Commit.find_commit_range("active/shabranchnames", nil,
+                 CommitsHelper::find_commit_range("active/shabranchnames", nil,
                                           COMMIT_BRANCH_NAME[0..-2], nil))
   end
 
@@ -192,77 +192,77 @@ class CommitTest < ActiveSupport::TestCase
     authorize_with :active
 
     # single
-    a = Commit.find_commit_range('active/foo', nil, '31ce37fe365b3dc204300a3e4c396ad333ed0556', nil)
+    a = CommitsHelper::find_commit_range('active/foo', nil, '31ce37fe365b3dc204300a3e4c396ad333ed0556', nil)
     assert_equal ['31ce37fe365b3dc204300a3e4c396ad333ed0556'], a
 
     #test "test_branch1" do
-    a = Commit.find_commit_range('active/foo', nil, 'master', nil)
+    a = CommitsHelper::find_commit_range('active/foo', nil, 'master', nil)
     assert_includes(a, '077ba2ad3ea24a929091a9e6ce545c93199b8e57')
 
     #test "test_branch2" do
-    a = Commit.find_commit_range('active/foo', nil, 'b1', nil)
+    a = CommitsHelper::find_commit_range('active/foo', nil, 'b1', nil)
     assert_equal ['1de84a854e2b440dc53bf42f8548afa4c17da332'], a
 
     #test "test_branch3" do
-    a = Commit.find_commit_range('active/foo', nil, 'HEAD', nil)
+    a = CommitsHelper::find_commit_range('active/foo', nil, 'HEAD', nil)
     assert_equal ['1de84a854e2b440dc53bf42f8548afa4c17da332'], a
 
     #test "test_single_revision_repo" do
-    a = Commit.find_commit_range('active/foo', nil, '31ce37fe365b3dc204300a3e4c396ad333ed0556', nil)
+    a = CommitsHelper::find_commit_range('active/foo', nil, '31ce37fe365b3dc204300a3e4c396ad333ed0556', nil)
     assert_equal ['31ce37fe365b3dc204300a3e4c396ad333ed0556'], a
-    a = Commit.find_commit_range('arvados', nil, '31ce37fe365b3dc204300a3e4c396ad333ed0556', nil)
+    a = CommitsHelper::find_commit_range('arvados', nil, '31ce37fe365b3dc204300a3e4c396ad333ed0556', nil)
     assert_equal [], a
 
     #test "test_multi_revision" do
     # complains "fatal: bad object 077ba2ad3ea24a929091a9e6ce545c93199b8e57"
-    a = Commit.find_commit_range('active/foo', '31ce37fe365b3dc204300a3e4c396ad333ed0556', '077ba2ad3ea24a929091a9e6ce545c93199b8e57', nil)
+    a = CommitsHelper::find_commit_range('active/foo', '31ce37fe365b3dc204300a3e4c396ad333ed0556', '077ba2ad3ea24a929091a9e6ce545c93199b8e57', nil)
     assert_equal ['077ba2ad3ea24a929091a9e6ce545c93199b8e57', '4fe459abe02d9b365932b8f5dc419439ab4e2577', '31ce37fe365b3dc204300a3e4c396ad333ed0556'], a
 
     #test "test_tag" do
     # complains "fatal: ambiguous argument 'tag1': unknown revision or path
     # not in the working tree."
-    a = Commit.find_commit_range('active/foo', 'tag1', 'master', nil)
+    a = CommitsHelper::find_commit_range('active/foo', 'tag1', 'master', nil)
     assert_equal ['077ba2ad3ea24a929091a9e6ce545c93199b8e57', '4fe459abe02d9b365932b8f5dc419439ab4e2577'], a
 
     #test "test_multi_revision_exclude" do
-    a = Commit.find_commit_range('active/foo', '31ce37fe365b3dc204300a3e4c396ad333ed0556', '077ba2ad3ea24a929091a9e6ce545c93199b8e57', ['4fe459abe02d9b365932b8f5dc419439ab4e2577'])
+    a = CommitsHelper::find_commit_range('active/foo', '31ce37fe365b3dc204300a3e4c396ad333ed0556', '077ba2ad3ea24a929091a9e6ce545c93199b8e57', ['4fe459abe02d9b365932b8f5dc419439ab4e2577'])
     assert_equal ['077ba2ad3ea24a929091a9e6ce545c93199b8e57', '31ce37fe365b3dc204300a3e4c396ad333ed0556'], a
 
     #test "test_multi_revision_tagged_exclude" do
     # complains "fatal: bad object 077ba2ad3ea24a929091a9e6ce545c93199b8e57"
-    a = Commit.find_commit_range('active/foo', '31ce37fe365b3dc204300a3e4c396ad333ed0556', '077ba2ad3ea24a929091a9e6ce545c93199b8e57', ['tag1'])
+    a = CommitsHelper::find_commit_range('active/foo', '31ce37fe365b3dc204300a3e4c396ad333ed0556', '077ba2ad3ea24a929091a9e6ce545c93199b8e57', ['tag1'])
     assert_equal ['077ba2ad3ea24a929091a9e6ce545c93199b8e57', '31ce37fe365b3dc204300a3e4c396ad333ed0556'], a
 
     Dir.mktmpdir do |touchdir|
       # invalid input to maximum
-      a = Commit.find_commit_range('active/foo', nil, "31ce37fe365b3dc204300a3e4c396ad333ed0556 ; touch #{touchdir}/uh_oh", nil)
+      a = CommitsHelper::find_commit_range('active/foo', nil, "31ce37fe365b3dc204300a3e4c396ad333ed0556 ; touch #{touchdir}/uh_oh", nil)
       assert !File.exist?("#{touchdir}/uh_oh"), "#{touchdir}/uh_oh should not exist, 'maximum' parameter of find_commit_range is exploitable"
       assert_equal [], a
 
       # invalid input to maximum
-      a = Commit.find_commit_range('active/foo', nil, "$(uname>#{touchdir}/uh_oh)", nil)
+      a = CommitsHelper::find_commit_range('active/foo', nil, "$(uname>#{touchdir}/uh_oh)", nil)
       assert !File.exist?("#{touchdir}/uh_oh"), "#{touchdir}/uh_oh should not exist, 'maximum' parameter of find_commit_range is exploitable"
       assert_equal [], a
 
       # invalid input to minimum
-      a = Commit.find_commit_range('active/foo', "31ce37fe365b3dc204300a3e4c396ad333ed0556 ; touch #{touchdir}/uh_oh", "31ce37fe365b3dc204300a3e4c396ad333ed0556", nil)
+      a = CommitsHelper::find_commit_range('active/foo', "31ce37fe365b3dc204300a3e4c396ad333ed0556 ; touch #{touchdir}/uh_oh", "31ce37fe365b3dc204300a3e4c396ad333ed0556", nil)
       assert !File.exist?("#{touchdir}/uh_oh"), "#{touchdir}/uh_oh should not exist, 'minimum' parameter of find_commit_range is exploitable"
       assert_equal [], a
 
       # invalid input to minimum
-      a = Commit.find_commit_range('active/foo', "$(uname>#{touchdir}/uh_oh)", "31ce37fe365b3dc204300a3e4c396ad333ed0556", nil)
+      a = CommitsHelper::find_commit_range('active/foo', "$(uname>#{touchdir}/uh_oh)", "31ce37fe365b3dc204300a3e4c396ad333ed0556", nil)
       assert !File.exist?("#{touchdir}/uh_oh"), "#{touchdir}/uh_oh should not exist, 'minimum' parameter of find_commit_range is exploitable"
       assert_equal [], a
 
       # invalid input to 'excludes'
       # complains "fatal: bad object 077ba2ad3ea24a929091a9e6ce545c93199b8e57"
-      a = Commit.find_commit_range('active/foo', "31ce37fe365b3dc204300a3e4c396ad333ed0556", "077ba2ad3ea24a929091a9e6ce545c93199b8e57", ["4fe459abe02d9b365932b8f5dc419439ab4e2577 ; touch #{touchdir}/uh_oh"])
+      a = CommitsHelper::find_commit_range('active/foo', "31ce37fe365b3dc204300a3e4c396ad333ed0556", "077ba2ad3ea24a929091a9e6ce545c93199b8e57", ["4fe459abe02d9b365932b8f5dc419439ab4e2577 ; touch #{touchdir}/uh_oh"])
       assert !File.exist?("#{touchdir}/uh_oh"), "#{touchdir}/uh_oh should not exist, 'excludes' parameter of find_commit_range is exploitable"
       assert_equal [], a
 
       # invalid input to 'excludes'
       # complains "fatal: bad object 077ba2ad3ea24a929091a9e6ce545c93199b8e57"
-      a = Commit.find_commit_range('active/foo', "31ce37fe365b3dc204300a3e4c396ad333ed0556", "077ba2ad3ea24a929091a9e6ce545c93199b8e57", ["$(uname>#{touchdir}/uh_oh)"])
+      a = CommitsHelper::find_commit_range('active/foo', "31ce37fe365b3dc204300a3e4c396ad333ed0556", "077ba2ad3ea24a929091a9e6ce545c93199b8e57", ["$(uname>#{touchdir}/uh_oh)"])
       assert !File.exist?("#{touchdir}/uh_oh"), "#{touchdir}/uh_oh should not exist, 'excludes' parameter of find_commit_range is exploitable"
       assert_equal [], a
     end
