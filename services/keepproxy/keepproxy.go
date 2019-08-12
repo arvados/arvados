@@ -41,7 +41,7 @@ var (
 
 const rfc3339NanoFixed = "2006-01-02T15:04:05.000000000Z07:00"
 
-func configure(logger log.FieldLogger, args []string) *arvados.Cluster {
+func configure(logger log.FieldLogger, args []string) (*arvados.Cluster, error) {
 	flags := flag.NewFlagSet(args[0], flag.ExitOnError)
 	flags.Usage = usage
 
@@ -57,31 +57,29 @@ func configure(logger log.FieldLogger, args []string) *arvados.Cluster {
 	// Print version information if requested
 	if *getVersion {
 		fmt.Printf("keepproxy %s\n", version)
-		return nil
+		return nil, nil
 	}
 
 	cfg, err := loader.Load()
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-
 	cluster, err := cfg.GetCluster("")
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	if *dumpConfig {
 		out, err := yaml.Marshal(cfg)
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
-		_, err = os.Stdout.Write(out)
-		if err != nil {
-			log.Fatal(err)
+		if _, err := os.Stdout.Write(out); err != nil {
+			return nil, err
 		}
-		return nil
+		return nil, nil
 	}
-	return cluster
+	return cluster, nil
 }
 
 func main() {
@@ -90,7 +88,10 @@ func main() {
 		TimestampFormat: rfc3339NanoFixed,
 	}
 
-	cluster := configure(logger, os.Args)
+	cluster, err := configure(logger, os.Args)
+	if err != nil {
+		log.Fatal(err)
+	}
 	if cluster == nil {
 		return
 	}
