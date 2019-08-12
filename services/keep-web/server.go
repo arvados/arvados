@@ -32,6 +32,9 @@ func (srv *server) Start() error {
 	for listen = range srv.Config.cluster.Services.WebDAV.InternalURLs {
 		break
 	}
+	if len(srv.Config.cluster.Services.WebDAV.InternalURLs) > 1 {
+		logrus.Warn("Services.WebDAV.InternalURLs has more than one key; picked: ", listen)
+	}
 	srv.Addr = listen.Host
 	return srv.Server.Start()
 }

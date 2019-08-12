@@ -135,6 +135,9 @@ func (ldr *Loader) MungeLegacyConfigArgs(lgr logrus.FieldLogger, args []string, 
 	if legacyConfigArg != "-legacy-ws-config" {
 		ldr.WebsocketPath = ""
 	}
+	if legacyConfigArg != "-legacy-keepweb-config" {
+		ldr.KeepWebPath = ""
+	}
 
 	return munged
 }
@@ -149,12 +152,6 @@ func (ldr *Loader) loadBytes(path string) ([]byte, error) {
 	}
 	defer f.Close()
 	return ioutil.ReadAll(f)
-}
-
-func (ldr *Loader) LoadDefaults() (*arvados.Config, error) {
-	ldr.configdata = []byte(`Clusters: {zzzzz: {}}`)
-	defer func() { ldr.configdata = nil }()
-	return ldr.Load()
 }
 
 func (ldr *Loader) Load() (*arvados.Config, error) {
