@@ -12,8 +12,8 @@ import (
 	"git.curoverse.com/arvados.git/lib/config"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"github.com/coreos/go-systemd/daemon"
+	"github.com/ghodss/yaml"
 	log "github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
 )
 
 var (
