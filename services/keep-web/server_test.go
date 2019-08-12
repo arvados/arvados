@@ -5,6 +5,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
@@ -408,21 +409,6 @@ func (s *IntegrationSuite) TestMetrics(c *check.C) {
 	c.Check(resp.StatusCode, check.Equals, http.StatusNotFound)
 }
 
-func (s *IntegrationSuite) SetUpSuite(c *check.C) {
-	arvadostest.StartAPI()
-	arvadostest.StartKeep(2, true)
-
-	arv, err := arvadosclient.MakeArvadosClient()
-	c.Assert(err, check.Equals, nil)
-	arv.ApiToken = arvadostest.ActiveToken
-	kc, err := keepclient.MakeKeepClient(arv)
-	c.Assert(err, check.Equals, nil)
-	kc.PutB([]byte("Hello world\n"))
-	kc.PutB([]byte("foo"))
-	kc.PutB([]byte("foobar"))
-	kc.PutB([]byte("waz"))
-}
-
 func (s *UnitSuite) TestLegacyConfig(c *check.C) {
 	content := []byte(`
 {
@@ -483,6 +469,21 @@ func (s *UnitSuite) TestLegacyConfig(c *check.C) {
 	c.Check(cfg.cluster.ManagementToken, check.Equals, "xyzzy")
 }
 
+func (s *IntegrationSuite) SetUpSuite(c *check.C) {
+	arvadostest.StartAPI()
+	arvadostest.StartKeep(2, true)
+
+	arv, err := arvadosclient.MakeArvadosClient()
+	c.Assert(err, check.Equals, nil)
+	arv.ApiToken = arvadostest.ActiveToken
+	kc, err := keepclient.MakeKeepClient(arv)
+	c.Assert(err, check.Equals, nil)
+	kc.PutB([]byte("Hello world\n"))
+	kc.PutB([]byte("foo"))
+	kc.PutB([]byte("foobar"))
+	kc.PutB([]byte("waz"))
+}
+
 func (s *IntegrationSuite) TearDownSuite(c *check.C) {
 	arvadostest.StopKeep(2)
 	arvadostest.StopAPI()
@@ -490,8 +491,10 @@ func (s *IntegrationSuite) TearDownSuite(c *check.C) {
 
 func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	arvadostest.ResetEnv()
-	ldr := config.NewLoader(nil, nil)
-	arvCfg, err := ldr.LoadDefaults()
+	ldr := config.NewLoader(bytes.NewBufferString("Clusters: {zzzzz: {}}"), nil)
+	ldr.Path = "-"
+	arvCfg, err := ldr.Load()
+	c.Check(err, check.IsNil)
 	cfg := DefaultConfig(arvCfg)
 	c.Assert(err, check.IsNil)
 	cfg.Client = arvados.Client{

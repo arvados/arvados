@@ -31,8 +31,9 @@ type UnitSuite struct {
 }
 
 func (s *UnitSuite) SetUpTest(c *check.C) {
-	ldr := config.NewLoader(nil, nil)
-	cfg, err := ldr.LoadDefaults()
+	ldr := config.NewLoader(bytes.NewBufferString("Clusters: {zzzzz: {}}"), nil)
+	ldr.Path = "-"
+	cfg, err := ldr.Load()
 	c.Assert(err, check.IsNil)
 	s.Config = cfg
 }
