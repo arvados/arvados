@@ -73,24 +73,6 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     page.assert_selector "#provenance_graph"
   end
 
-  test 'pipeline description' do
-    visit page_with_token('active_trustedclient', '/pipeline_instances')
-    assert page.has_text? 'pipeline_with_job'
-
-    find('a', text: 'pipeline_with_job').click
-
-    within('.arv-description-as-subtitle') do
-      find('.fa-pencil').click
-      find('.editable-input textarea').set('*Textile description for pipeline instance*')
-      find('.editable-submit').click
-    end
-    wait_for_ajax
-
-    # verify description
-    assert page.has_no_text? '*Textile description for pipeline instance*'
-    assert page.has_text? 'Textile description for pipeline instance'
-  end
-
   test "JSON popup available for strange components" do
     uuid = api_fixture("pipeline_instances")["components_is_jobspec"]["uuid"]
     visit page_with_token("active", "/pipeline_instances/#{uuid}")
