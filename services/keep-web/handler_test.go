@@ -39,7 +39,7 @@ func (s *UnitSuite) SetUpTest(c *check.C) {
 }
 
 func (s *UnitSuite) TestCORSPreflight(c *check.C) {
-	h := handler{Config: DefaultConfig(s.Config)}
+	h := handler{Config: newConfig(s.Config)}
 	u := mustParseURL("http://keep-web.example/c=" + arvadostest.FooCollection + "/foo")
 	req := &http.Request{
 		Method:     "OPTIONS",
@@ -89,7 +89,7 @@ func (s *UnitSuite) TestInvalidUUID(c *check.C) {
 			RequestURI: u.RequestURI(),
 		}
 		resp := httptest.NewRecorder()
-		cfg := DefaultConfig(s.Config)
+		cfg := newConfig(s.Config)
 		cfg.cluster.Users.AnonymousUserToken = arvadostest.AnonymousToken
 		h := handler{Config: cfg}
 		h.ServeHTTP(resp, req)

@@ -27,8 +27,7 @@ type Config struct {
 	cluster *arvados.Cluster
 }
 
-// DefaultConfig returns the default configuration.
-func DefaultConfig(arvCfg *arvados.Config) *Config {
+func newConfig(arvCfg *arvados.Config) *Config {
 	cfg := Config{}
 	var cls *arvados.Cluster
 	var err error
@@ -79,7 +78,7 @@ func configure(logger log.FieldLogger, args []string) *Config {
 	if err != nil {
 		log.Fatal(err)
 	}
-	cfg := DefaultConfig(arvCfg)
+	cfg := newConfig(arvCfg)
 
 	if *dumpConfig {
 		out, err := yaml.Marshal(cfg)
