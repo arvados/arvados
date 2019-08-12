@@ -281,13 +281,8 @@ type ContainersConfig struct {
 	UsePreemptibleInstances     bool
 
 	JobsAPI struct {
-		Enable                  string
-		GitInternalDir          string
-		DefaultDockerImage      string
-		CrunchJobWrapper        string
-		CrunchJobUser           string
-		CrunchRefreshTrigger    string
-		ReuseJobIfOutputsDiffer bool
+		Enable         string
+		GitInternalDir string
 	}
 	Logging struct {
 		MaxAge                       Duration

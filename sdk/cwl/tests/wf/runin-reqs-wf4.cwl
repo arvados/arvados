@@ -53,10 +53,10 @@ steps:
             id: subtool
             hints:
               - class: ResourceRequirement
-                ramMin: 128
+                ramMin: 32
             inputs:
               count:
                 type: int
               script: File
             outputs: []
-            arguments: [python, $(inputs.script), "128"]
+            arguments: [python, $(inputs.script), "32"]

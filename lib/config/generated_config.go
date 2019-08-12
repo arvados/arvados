@@ -591,7 +591,11 @@ Clusters:
           AssignNodeHostname: "compute%<slot_number>d"
 
       JobsAPI:
-        # Enable the legacy Jobs API.  This value must be a string.
+        # Enable the legacy 'jobs' API (crunch v1).  This value must be a string.
+        #
+        # Note: this only enables read-only access, creating new
+        # legacy jobs and pipelines is not supported.
+        #
         # 'auto' -- (default) enable the Jobs API only if it has been used before
         #         (i.e., there are job records in the database)
         # 'true' -- enable the Jobs API despite lack of existing records.
@@ -603,30 +607,6 @@ Clusters:
         # of the arvados tree in {git_repositories_dir}/arvados.git or
         # {git_repositories_dir}/arvados/.git
         GitInternalDir: /var/lib/arvados/internal.git
-
-        # Docker image to be used when none found in runtime_constraints of a job
-        DefaultDockerImage: ""
-
-        # none or slurm_immediate
-        CrunchJobWrapper: none
-
-        # username, or false = do not set uid when running jobs.
-        CrunchJobUser: crunch
-
-        # The web service must be able to create/write this file, and
-        # crunch-job must be able to stat() it.
-        CrunchRefreshTrigger: /tmp/crunch_refresh_trigger
-
-        # Control job reuse behavior when two completed jobs match the
-        # search criteria and have different outputs.
-        #
-        # If true, in case of a conflict, reuse the earliest job (this is
-        # similar to container reuse behavior).
-        #
-        # If false, in case of a conflict, do not reuse any completed job,
-        # but do reuse an already-running job if available (this is the
-        # original job reuse behavior, and is still the default).
-        ReuseJobIfOutputsDiffer: false
 
       CloudVMs:
         # Enable the cloud scheduler (experimental).

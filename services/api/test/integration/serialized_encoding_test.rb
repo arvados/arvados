@@ -15,30 +15,9 @@ class SerializedEncodingTest < ActionDispatch::IntegrationTest
 
     human: {properties: {eye_color: 'gray'}},
 
-    job: {
-      repository: 'active/foo',
-      runtime_constraints: {docker_image: 'arvados/apitestfixture'},
-      script: 'hash',
-      script_version: 'master',
-      script_parameters: {pattern: 'foobar'},
-      tasks_summary: {todo: 0},
-    },
-
-    job_task: {parameters: {pattern: 'foo'}},
-
     link: {link_class: 'test', name: 'test', properties: {foo: :bar}},
 
     node: {info: {uptime: 1234}},
-
-    pipeline_instance: {
-      components: {"job1" => {parameters: {pattern: "xyzzy"}}},
-      components_summary: {todo: 0},
-      properties: {test: true},
-    },
-
-    pipeline_template: {
-      components: {"job1" => {parameters: {pattern: "xyzzy"}}},
-    },
 
     specimen: {properties: {eye_color: 'meringue'}},
 

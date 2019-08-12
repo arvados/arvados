@@ -78,8 +78,6 @@ class WorkUnitsTest < ActionDispatch::IntegrationTest
   end
 
   [
-    ['jobs', 'running_job_with_components', true, true],
-    ['pipeline_instances', 'components_is_jobspec', true, true],
     ['containers', 'running', false],
     ['container_requests', 'running', true],
   ].each do |type, fixture, cancelable, confirm_cancellation|
@@ -122,8 +120,6 @@ class WorkUnitsTest < ActionDispatch::IntegrationTest
   end
 
   [
-    ['jobs', 'running_job_with_components'],
-    ['pipeline_instances', 'has_component_with_completed_jobs'],
     ['container_requests', 'running'],
     ['container_requests', 'completed'],
   ].each do |type, fixture|
@@ -145,7 +141,6 @@ class WorkUnitsTest < ActionDispatch::IntegrationTest
   end
 
   [
-    ['Pipeline with default input specifications', 'part-one', 'Provide values for the following'],
     ['Workflow with default input specifications', 'this workflow has inputs specified', 'Provide a value for the following'],
   ].each do |template_name, preview_txt, process_txt|
     test "run a process using template #{template_name} from dashboard" do
@@ -245,31 +240,6 @@ class WorkUnitsTest < ActionDispatch::IntegrationTest
       assert_no_text(expect_log_text)
       fake_websocket_event(send_event.merge(object_uuid: c['uuid']))
       assert_text(expect_log_text)
-    end
-  end
-
-  [
-    ['jobs', 'active', 'running_job_with_components', 'component1', '/jobs/zzzzz-8i9sb-jyq01m7in1jlofj#Log'],
-    ['pipeline_instances', 'active', 'pipeline_in_running_state', 'foo', '/jobs/zzzzz-8i9sb-pshmckwoma9plh7#Log'],
-    ['pipeline_instances', nil, 'pipeline_in_publicly_accessible_project_but_other_objects_elsewhere', 'foo', 'Log unavailable'],
-  ].each do |type, token, fixture, child, log_link|
-    test "link_to_log for #{fixture} for #{token}" do
-      obj = api_fixture(type)[fixture]
-      if token
-        visit page_with_token token, "/#{type}/#{obj['uuid']}"
-      else
-        Rails.configuration.Users.AnonymousUserToken =
-          api_fixture("api_client_authorizations", "anonymous", "api_token")
-        visit "/#{type}/#{obj['uuid']}"
-      end
-
-      click_link(child)
-
-      if token
-        assert_selector "a[href=\"#{log_link}\"]"
-      else
-        assert_text log_link
-      end
     end
   end
 

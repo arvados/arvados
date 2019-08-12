@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Implement cwl-runner interface for submitting and running work on Arvados, using
-# either the Crunch jobs API or Crunch containers API.
+# the Crunch containers API.
 
 from future.utils import viewitems
 from builtins import str
@@ -39,7 +39,6 @@ from .executor import ArvCwlExecutor
 # These arn't used directly in this file but
 # other code expects to import them from here
 from .arvcontainer import ArvadosContainer
-from .arvjob import ArvadosJob
 from .arvtool import ArvadosCommandTool
 from .fsaccess import CollectionFsAccess, CollectionCache, CollectionFetcher
 from .util import get_current_container
@@ -97,32 +96,32 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--enable-reuse", action="store_true",
                         default=True, dest="enable_reuse",
-                        help="Enable job or container reuse (default)")
+                        help="Enable container reuse (default)")
     exgroup.add_argument("--disable-reuse", action="store_false",
                         default=True, dest="enable_reuse",
-                        help="Disable job or container reuse")
+                        help="Disable container reuse")
 
-    parser.add_argument("--project-uuid", metavar="UUID", help="Project that will own the workflow jobs, if not provided, will go to home project.")
+    parser.add_argument("--project-uuid", metavar="UUID", help="Project that will own the workflow containers, if not provided, will go to home project.")
     parser.add_argument("--output-name", help="Name to use for collection that stores the final output.", default=None)
     parser.add_argument("--output-tags", help="Tags for the final output collection separated by commas, e.g., '--output-tags tag0,tag1,tag2'.", default=None)
     parser.add_argument("--ignore-docker-for-reuse", action="store_true",
-                        help="Ignore Docker image version when deciding whether to reuse past jobs.",
+                        help="Ignore Docker image version when deciding whether to reuse past containers.",
                         default=False)
 
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--submit", action="store_true", help="Submit workflow to run on Arvados.",
                         default=True, dest="submit")
-    exgroup.add_argument("--local", action="store_false", help="Run workflow on local host (submits jobs to Arvados).",
+    exgroup.add_argument("--local", action="store_false", help="Run workflow on local host (submits containers to Arvados).",
                         default=True, dest="submit")
     exgroup.add_argument("--create-template", action="store_true", help="(Deprecated) synonym for --create-workflow.",
                          dest="create_workflow")
-    exgroup.add_argument("--create-workflow", action="store_true", help="Create an Arvados workflow (if using the 'containers' API) or pipeline template (if using the 'jobs' API). See --api.")
-    exgroup.add_argument("--update-workflow", metavar="UUID", help="Update an existing Arvados workflow or pipeline template with the given UUID.")
+    exgroup.add_argument("--create-workflow", action="store_true", help="Register an Arvados workflow that can be run from Workbench")
+    exgroup.add_argument("--update-workflow", metavar="UUID", help="Update an existing Arvados workflow with the given UUID.")
 
     exgroup = parser.add_mutually_exclusive_group()
-    exgroup.add_argument("--wait", action="store_true", help="After submitting workflow runner job, wait for completion.",
+    exgroup.add_argument("--wait", action="store_true", help="After submitting workflow runner, wait for completion.",
                         default=True, dest="wait")
-    exgroup.add_argument("--no-wait", action="store_false", help="Submit workflow runner job and exit.",
+    exgroup.add_argument("--no-wait", action="store_false", help="Submit workflow runner and exit.",
                         default=True, dest="wait")
 
     exgroup = parser.add_mutually_exclusive_group()
@@ -133,8 +132,8 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
 
     parser.add_argument("--api",
                         default=None, dest="work_api",
-                        choices=("jobs", "containers"),
-                        help="Select work submission API.  Default is 'jobs' if that API is available, otherwise 'containers'.")
+                        choices=("containers",),
+                        help="Select work submission API.  Only supports 'containers'")
 
     parser.add_argument("--compute-checksum", action="store_true", default=False,
                         help="Compute checksum of contents while collecting outputs",
@@ -155,10 +154,10 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--submit-request-uuid",
                          default=None,
-                         help="Update and commit to supplied container request instead of creating a new one (containers API only).",
+                         help="Update and commit to supplied container request instead of creating a new one.",
                          metavar="UUID")
     exgroup.add_argument("--submit-runner-cluster",
-                         help="Submit workflow runner to a remote cluster (containers API only)",
+                         help="Submit workflow runner to a remote cluster",
                          default=None,
                          metavar="CLUSTER_ID")
 
@@ -186,7 +185,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         default=0)
 
     parser.add_argument("--priority", type=int,
-                        help="Workflow priority (range 1..1000, higher has precedence over lower, containers api only)",
+                        help="Workflow priority (range 1..1000, higher has precedence over lower)",
                         default=DEFAULT_PRIORITY)
 
     parser.add_argument("--disable-validate", dest="do_validate",
@@ -265,8 +264,6 @@ def main(args, stdout, stderr, api_client=None, keep_client=None,
     if arvargs.update_workflow:
         if arvargs.update_workflow.find('-7fd4e-') == 5:
             want_api = 'containers'
-        elif arvargs.update_workflow.find('-p5p6p-') == 5:
-            want_api = 'jobs'
         else:
             want_api = None
         if want_api and arvargs.work_api and want_api != arvargs.work_api:
@@ -300,7 +297,7 @@ def main(args, stdout, stderr, api_client=None, keep_client=None,
         return 1
 
     # Note that unless in debug mode, some stack traces related to user
-    # workflow errors may be suppressed. See ArvadosJob.done().
+    # workflow errors may be suppressed.
     if arvargs.debug:
         logger.setLevel(logging.DEBUG)
         logging.getLogger('arvados').setLevel(logging.DEBUG)

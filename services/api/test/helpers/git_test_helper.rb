@@ -30,7 +30,7 @@ module GitTestHelper
     end
 
     base.teardown do
-      FileUtils.remove_entry Commit.cache_dir_base, true
+      FileUtils.remove_entry CommitsHelper.cache_dir_base, true
       FileUtils.mkdir_p @tmpdir
       system("tar", "-xC", @tmpdir.to_s, "-f", "test/test.git.tar")
     end
@@ -48,10 +48,10 @@ module GitTestHelper
     if fakeurl.is_a? Symbol
       fakeurl = 'file://' + repositories(fakeurl).server_path
     end
-    Commit.expects(:fetch_remote_repository).once.with do |gitdir, giturl|
+    CommitsHelper.expects(:fetch_remote_repository).once.with do |gitdir, giturl|
       if giturl == url
-        Commit.unstub(:fetch_remote_repository)
-        Commit.fetch_remote_repository gitdir, fakeurl
+        CommitsHelper.unstub(:fetch_remote_repository)
+        CommitsHelper.fetch_remote_repository gitdir, fakeurl
         true
       end
     end

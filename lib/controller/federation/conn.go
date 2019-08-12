@@ -142,8 +142,7 @@ func (conn *Conn) tryLocalThenRemotes(ctx context.Context, fn func(context.Conte
 	if all404 {
 		return notFoundError{}
 	}
-	// FIXME: choose appropriate HTTP status
-	return fmt.Errorf("errors: %v", errs)
+	return httpErrorf(http.StatusBadGateway, "errors: %v", errs)
 }
 
 func (conn *Conn) CollectionCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Collection, error) {
@@ -206,8 +205,9 @@ func (conn *Conn) CollectionGet(ctx context.Context, options arvados.GetOptions)
 			// hash+size+hints; only hash+size need to
 			// match the computed PDH.
 			if pdh := portableDataHash(c.ManifestText); pdh != options.UUID && !strings.HasPrefix(options.UUID, pdh+"+") {
-				ctxlog.FromContext(ctx).Warnf("bad portable data hash %q received from remote %q (expected %q)", pdh, remoteID, options.UUID)
-				return notFoundError{}
+				err = httpErrorf(http.StatusBadGateway, "bad portable data hash %q received from remote %q (expected %q)", pdh, remoteID, options.UUID)
+				ctxlog.FromContext(ctx).Warn(err)
+				return err
 			}
 			if remoteID != "" {
 				c.ManifestText = rewriteManifest(c.ManifestText, remoteID)

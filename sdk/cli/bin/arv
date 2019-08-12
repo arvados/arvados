@@ -131,16 +131,6 @@ def check_subcommands client, arvados, subcommand, global_opts, remaining_opts
       puts "Available methods: ls, get, put, docker"
     end
     abort
-  when 'pipeline'
-    sub = remaining_opts.shift
-    if sub == 'run'
-      exec_bin "arv-run-pipeline-instance", remaining_opts
-    else
-      puts "Usage: arv pipeline [method] [--parameters]\n"
-      puts "Use 'arv pipeline [method] --help' to get more information about specific methods.\n\n"
-      puts "Available methods: run"
-    end
-    abort
   end
 end
 
