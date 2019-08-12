@@ -41,6 +41,10 @@ table(table table-bordered table-condensed).
 
 h3(#master). development master (as of 2019-06-07)
 
+h4. Keepproxy configuration migration
+
+Keepproxy can now be configured using the centralized config at @/etc/arvados/config.yml@. Some configuration options are no longer supported. Please see "keepproxy's config migration guide":{{site.baseurl}}/admin/config-migration.html#keepproxy for more details.
+
 h4. No longer stripping ':' from strings in serialized database columns
 
  (bug #15311) Strings read from serialized columns in the database with a leading ':' would have the ':' stripped after loading the record.  This behavior existed due to legacy serialization behavior which stored Ruby symbols with a leading ':'.  Unfortunately this corrupted fields where the leading ":" was intentional.  This behavior has been removed.

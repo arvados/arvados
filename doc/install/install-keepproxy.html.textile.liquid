@@ -50,20 +50,29 @@ Usage: keepproxy [-config path/to/keepproxy.yml]
 </code></pre>
 </notextile>
 
-h3. Create an API token for the Keepproxy server
+h3. Update the cluster config
 
-{% assign railscmd = "bundle exec ./script/get_anonymous_user_token.rb --get" %}
-{% assign railsout = "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz" %}
-The Keepproxy server needs a token to talk to the API server.  On the <strong>API server</strong>, use the following command to create the token.  {% include 'install_rails_command' %}
+Edit the cluster config at @/etc/arvados/config.yml@ and set @Services.Keepproxy.ExternalURL@ and @Services.Keepproxy.InternalURLs@.  Replace @zzzzz@ with your cluster id.
+
+<notextile>
+<pre><code>Clusters:
+  zzzzz:
+    Services:
+      <span class="userinput">Keepproxy:
+        ExternalURL: https://keep.uuid_prefix.your.domain
+        InternalURLs:
+	  "http://localhost:25107": {}
+</span></code></pre>
+</notextile>
 
 h3. Set up the Keepproxy service
 
 Install runit to supervise the keepproxy daemon.  {% include 'install_runit' %}
 
-The run script for the keepproxy service should set the environment variables @ARVADOS_API_TOKEN@ (with the token you just generated), @ARVADOS_API_HOST@, and, if needed, @ARVADOS_API_HOST_INSECURE@.  The core keepproxy command to run is:
+The keepproxy command to run is:
 
 <notextile>
-<pre><code>ARVADOS_API_TOKEN=<span class="userinput">{{railsout}}</span> ARVADOS_API_HOST=<span class="userinput">uuid_prefix.your.domain</span> exec keepproxy
+<pre><code>~$ <span class="userinput">exec keepproxy
 </code></pre>
 </notextile>
 

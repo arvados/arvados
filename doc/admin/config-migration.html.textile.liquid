@@ -62,6 +62,25 @@ h2. keepstore
 
 Currently only reads @RemoteClusters@ from centralized configuration.  Still requires component-specific configuration file.
 
+h2(#keepproxy). keepproxy
+
+The legacy keepproxy config is stored at @/etc/arvados/keepproxy/keepproxy.yml@ and can still be used with the @-config=path/to/legacy/config@ keepproxy command line argument. If migrated to the centralized config at @/etc/arvados/config.yml@, @keepproxy.yml@ should be moved out of the way and/or deleted.
+
+Configuration via individual command line arguments is no longer available. The following table maps former keepproxy command line arguments and legacy config values to their equivalent representation in the centralized config, which may need to be set manually.
+
+table(table table-bordered table-condensed).
+|*Command Line*|*Legacy keepproxy.yml*|*Centralized config.yml*|
+|-listen|Listen|Services:Keepproxy:InternalURLs|
+|-no-get|DisableGet|N/A|
+|-no-put|DisablePut|N/A|
+|-default-replicas|DefaultReplicas|Collections:DefaultReplication|
+|-pid|PIDFile|N/A|
+|N/A|Debug|SystemLogs:LogLevel|
+|-timeout|Timeout|API:KeepServiceRequestTimeout|
+|-management-token|ManagementToken|ManagementToken|
+
+Note that some options are no longer supported. If you are still using the legacy config at @/etc/arvados/keepproxy/keepproxy.yml@ and @DisableGet@ or @DisablePut@ are set to true or @PIDFile@ has a value, keepproxy will produce an error and fail to start.
+
 h2. arvados-controller
 
 Already uses centralized config exclusively.  No migration needed.
