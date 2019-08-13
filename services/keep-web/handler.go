@@ -79,6 +79,7 @@ func (h *handler) setup() {
 	h.clientPool = arvadosclient.MakeClientPool()
 
 	keepclient.RefreshServiceDiscoveryOnSIGHUP()
+	keepclient.DefaultBlockCache.MaxBlocks = h.Config.cluster.Collections.WebDAVCache.MaxBlockEntries
 
 	h.healthHandler = &health.Handler{
 		Token:  h.Config.cluster.ManagementToken,
