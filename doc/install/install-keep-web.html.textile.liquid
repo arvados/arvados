@@ -123,7 +123,6 @@ Set the cluster config file like the following:
 <notextile>
 <pre><code>Clusters:
   <span class="userinput">uuid_prefix</span>:
-    SystemRootToken: "{{railsout}}"
     Services:
       Controller:
         ExternalURL: "https://<span class="userinput">uuid_prefix</span>.your.domain"
@@ -136,7 +135,7 @@ Set the cluster config file like the following:
           "http://keep_web_hostname_goes_here:9002/": {}
         ExternalURL: "https://download.<span class="userinput">uuid_prefix</span>.your.domain"
     Users:
-      AnonymousUserToken: "xxxxxxxxxxxxxxxxxxxx"
+      AnonymousUserToken: "{{railsout}}"
     Collections:
       TrustAllContent: false
     TLS:
@@ -203,10 +202,7 @@ Install runit to supervise the Keep-web daemon.  {% include 'install_runit' %}
 The basic command to start Keep-web in the service run script is:
 
 <notextile>
-<pre><code>exec sudo -u nobody keep-web
+<pre><code>exec keep-web
 </code></pre>
 </notextile>
 
-{% include 'notebox_begin' %}
-Please take into consideration that the config file should be world-readable.
-{% include 'notebox_end' %}
