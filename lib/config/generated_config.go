@@ -218,8 +218,8 @@ Clusters:
       # to run an open instance where anyone can create an account and use
       # the system without requiring manual approval.
       #
-      # The params auto_setup_new_users_with_* are meaningful only when auto_setup_new_users is turned on.
-      # auto_setup_name_blacklist is a list of usernames to be blacklisted for auto setup.
+      # The params AutoSetupNewUsersWith* are meaningful only when AutoSetupNewUsers is turned on.
+      # AutoSetupUsernameBlacklist is a list of usernames to be blacklisted for auto setup.
       AutoSetupNewUsers: false
       AutoSetupNewUsersWithVmUUID: ""
       AutoSetupNewUsersWithRepository: false
@@ -232,7 +232,7 @@ Clusters:
         syslog: {}
         SAMPLE: {}
 
-      # When new_users_are_active is set to true, new users will be active
+      # When NewUsersAreActive is set to true, new users will be active
       # immediately.  This skips the "self-activate" step which enforces
       # user agreements.  Should only be enabled for development.
       NewUsersAreActive: false
@@ -244,7 +244,7 @@ Clusters:
       # should be an address associated with a Google account.
       AutoAdminUserWithEmail: ""
 
-      # If auto_admin_first_user is set to true, the first user to log in when no
+      # If AutoAdminFirstUser is set to true, the first user to log in when no
       # other admin users exist will automatically become an admin user.
       AutoAdminFirstUser: false
 
@@ -257,7 +257,7 @@ Clusters:
       NewUserNotificationRecipients: {}
       NewInactiveUserNotificationRecipients: {}
 
-      # Set anonymous_user_token to enable anonymous user access. You can get
+      # Set AnonymousUserToken to enable anonymous user access. You can get
       # the token by running "bundle exec ./script/get_anonymous_user_token.rb"
       # in the directory where your API server is running.
       AnonymousUserToken: ""
@@ -273,7 +273,7 @@ Clusters:
 
       # Maximum number of log rows to delete in a single SQL transaction.
       #
-      # If max_audit_log_delete_batch is 0, log entries will never be
+      # If MaxDeleteBatch is 0, log entries will never be
       # deleted by Arvados. Cleanup can be done by an external process
       # without affecting any Arvados system processes, as long as very
       # recent (<5 minutes old) logs are not deleted.
@@ -322,7 +322,7 @@ Clusters:
       # identical to the permission key given to Keep. IMPORTANT: This is
       # a site secret. It should be at least 50 characters.
       #
-      # Modifying blob_signing_key will invalidate all existing
+      # Modifying BlobSigningKey will invalidate all existing
       # signatures, which can cause programs to fail (e.g., arv-put,
       # arv-get, and Crunch jobs).  To avoid errors, rotate keys only when
       # no such processes are running.
@@ -344,14 +344,14 @@ Clusters:
       # keepstore servers.  Otherwise, reading data blocks and saving
       # collections will fail with HTTP 403 permission errors.
       #
-      # Modifying blob_signature_ttl invalidates existing signatures; see
-      # blob_signing_key note above.
+      # Modifying BlobSigningTTL invalidates existing signatures; see
+      # BlobSigningKey note above.
       #
       # The default is 2 weeks.
       BlobSigningTTL: 336h
 
       # Default lifetime for ephemeral collections: 2 weeks. This must not
-      # be less than blob_signature_ttl.
+      # be less than BlobSigningTTL.
       DefaultTrashLifetime: 336h
 
       # Interval (seconds) between trash sweeps. During a trash sweep,
@@ -361,7 +361,7 @@ Clusters:
 
       # If true, enable collection versioning.
       # When a collection's preserve_version field is true or the current version
-      # is older than the amount of seconds defined on preserve_version_if_idle,
+      # is older than the amount of seconds defined on PreserveVersionIfIdle,
       # a snapshot of the collection's previous state is created and linked to
       # the current collection.
       CollectionVersioning: false
@@ -397,6 +397,21 @@ Clusters:
       #
       # The default setting (false) is appropriate for a multi-user site.
       TrustAllContent: false
+
+      # Cache parameters for WebDAV content serving:
+      # * TTL: Maximum time to cache manifests and permission checks.
+      # * UUIDTTL: Maximum time to cache collection state.
+      # * MaxCollectionEntries: Maximum number of collection cache entries.
+      # * MaxCollectionBytes: Approximate memory limit for collection cache.
+      # * MaxPermissionEntries: Maximum number of permission cache entries.
+      # * MaxUUIDEntries: Maximum number of UUID cache entries.
+      WebDAVCache:
+        TTL: 300s
+        UUIDTTL: 5s
+        MaxCollectionEntries: 1000
+        MaxCollectionBytes:   100000000
+        MaxPermissionEntries: 1000
+        MaxUUIDEntries:       1000
 
     Login:
       # These settings are provided by your OAuth2 provider (e.g.,

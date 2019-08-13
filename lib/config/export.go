@@ -89,6 +89,7 @@ var whitelist = map[string]bool{
 	"Collections.PreserveVersionIfIdle":            true,
 	"Collections.TrashSweepInterval":               false,
 	"Collections.TrustAllContent":                  false,
+	"Collections.WebDAVCache":                      false,
 	"Containers":                                   true,
 	"Containers.CloudVMs":                          false,
 	"Containers.CrunchRunCommand":                  false,
