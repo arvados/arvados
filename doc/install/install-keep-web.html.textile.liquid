@@ -49,16 +49,7 @@ Usage of keep-web:
     	Site configuration file (default may be overridden by setting an ARVADOS_CONFIG environment variable) (default "/etc/arvados/config.yml")
   -dump-config
     	write current configuration to stdout and exit
-  -legacy-crunch-dispatch-slurm-config file
-    	Legacy crunch-dispatch-slurm configuration file (default "/etc/arvados/crunch-dispatch-slurm/crunch-dispatch-slurm.yml")
-  -legacy-keepstore-config file
-    	Legacy keepstore configuration file (default "/etc/arvados/keepstore/keepstore.yml")
-  -legacy-keepweb-config file
-    	Legacy keep-web configuration file (default "/etc/arvados/keep-web/keep-web.yml")
-  -legacy-ws-config file
-    	Legacy arvados-ws configuration file (default "/etc/arvados/ws/ws.yml")
-  -skip-legacy
-    	Don't load legacy config files
+[...]
   -version
     	print version information and exit.
 </code></pre>
@@ -68,31 +59,29 @@ Usage of keep-web:
 {% assign railsout = "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz" %}
 If you intend to use Keep-web to serve public data to anonymous clients, configure it with an anonymous token. You can use the same one you used when you set up your Keepproxy server, or use the following command on the <strong>API server</strong> to create another. {% include 'install_rails_command' %}
 
-Install runit to supervise the Keep-web daemon.  {% include 'install_runit' %}
+h3. Start the service (option 1: systemd)
 
-Set the cluster config file like the following:
+If your system does not use systemd, skip this section and follow the "runit instructions":#runit instead.
+
+If your system uses systemd, the keep-web service should already be set up. Start it and check its status:
 
 <notextile>
-<pre><code>Clusters:
-  <span class="userinput">uuid_prefix</span>:
-    SystemRootToken: "{{railsout}}"
-    Services:
-      Controller:
-        ExternalURL: "https://<span class="userinput">uuid_prefix</span>.your.domain"
-        Insecure: false
-      WebDAV:
-        InternalURLs:
-          "http://keep_web_hostname_goes_here:9002/": {}
-      WebDAVDownload:
-        InternalURLs:
-          "http://keep_web_hostname_goes_here:9002/": {}
-        ExternalURL: "https://download.<span class="userinput">uuid_prefix</span>.your.domain/"
-    Users:
-      AnonymousUserToken: "xxxxxxxxxxxxxxxxxxxx"
-    Collections:
-      TrustAllContent: false
+<pre><code>~$ <span class="userinput">sudo systemctl restart keep-web</span>
+~$ <span class="userinput">sudo systemctl status keep-web</span>
+&#x25cf; keep-web.service - Arvados Keep web gateway
+   Loaded: loaded (/lib/systemd/system/keep-web.service; enabled)
+   Active: active (running) since Sat 2019-08-10 10:33:21 UTC; 3 days ago
+     Docs: https://doc.arvados.org/
+ Main PID: 4242 (keep-web)
+   CGroup: /system.slice/keep-web.service
+           └─4242 /usr/bin/keep-web
+[...]
 </code></pre>
 </notextile>
+
+h3(#runit). Start the service (option 2: runit)
+
+Install runit to supervise the Keep-web daemon.  {% include 'install_runit' %}
 
 The basic command to start Keep-web in the service run script is:
 
@@ -104,10 +93,6 @@ The basic command to start Keep-web in the service run script is:
 {% include 'notebox_begin' %}
 Please take into consideration that the config file should be world-readable.
 {% include 'notebox_end' %}
-
-Set @Users.AnonymousUserToken: ""@ (empty string) if you do not want to serve public data.
-
-Set @TLS.Insecure: true@ if your API server's TLS certificate is not signed by a recognized CA.
 
 h3. Set up a reverse proxy with TLS support
 
@@ -166,26 +151,56 @@ If neither of the above wildcard options is feasible, you have two choices:
 # Serve web content at @collections.uuid_prefix.your.domain@, but only for unauthenticated requests (public data and collection sharing links). Authenticated requests will always result in file downloads, using the @download@ name. For example, the Workbench "preview" button and the "view entire log file" link will invoke file downloads instead of displaying content in the browser window.
 # In the special case where you know you are immune to XSS exploits, you can enable the "trust all content" mode in Keep-web and Workbench (setting @Collections.TrustAllContent: true@ on the config file). With this enabled, inline web content can be served from a single @collections@ host name; no wildcard DNS or certificate is needed. Do not do this without understanding the security implications described in the "Keep-web documentation":http://godoc.org/github.com/curoverse/arvados/services/keep-web.
 
-h3. Tell Workbench about the Keep-web service
+h3. Configure Keep-web
 
-Workbench has features like "download file from collection" and "show image" which work better if the content is served by Keep-web rather than Workbench itself. We recommend using the two different hostnames ("download" and "collections" above) for file downloads and inline content respectively.
-
-Add the following entry to your cluster configuration file (@/etc/arvados/config.yml@). This URL will be used for file downloads.
+Set the cluster config file like the following:
 
 <notextile>
 <pre><code>Clusters:
-  zzzzz:
+  <span class="userinput">uuid_prefix</span>:
+    SystemRootToken: "{{railsout}}"
     Services:
+      Controller:
+        ExternalURL: "https://<span class="userinput">uuid_prefix</span>.your.domain"
+      WebDAV:
+        InternalURLs:
+          "http://keep_web_hostname_goes_here:9002/": {}
+        ExternalURL: "https://collections.<span class="userinput">uuid_prefix</span>.your.domain"
       WebDAVDownload:
-        ExternalURL: "https://download.<span class="userinput">uuid_prefix</span>.your.domain/"
+        InternalURLs:
+          "http://keep_web_hostname_goes_here:9002/": {}
+        ExternalURL: "https://download.<span class="userinput">uuid_prefix</span>.your.domain"
+    Users:
+      AnonymousUserToken: "xxxxxxxxxxxxxxxxxxxx"
+    Collections:
+      TrustAllContent: false
+    TLS:
+      Insecure: false
 </code></pre>
 </notextile>
 
-Additionally, add *one* of the following entries to your Workbench cluster configuration file, depending on your DNS setup. This URL will be used to serve user content that can be displayed in the browser, like image previews and static HTML pages.
+Set @Users.AnonymousUserToken: ""@ (empty string) if you do not want to serve public data.
+
+Set @TLS.Insecure: true@ if your API server's TLS certificate is not signed by a recognized CA.
+
+Workbench has features like "download file from collection" and "show image" which work better if the content is served by Keep-web rather than Workbench itself. We recommend using the two different hostnames ("download" and "collections" above) for file downloads and inline content respectively.
+
+The following entry on your cluster configuration file (@/etc/arvados/config.yml@) details the URL that will be used for file downloads.
 
 <notextile>
 <pre><code>Clusters:
-  zzzzz:
+  <span class="userinput">uuid_prefix</span>:
+    Services:
+      WebDAVDownload:
+        ExternalURL: "https://download.<span class="userinput">uuid_prefix</span>.your.domain"
+</code></pre>
+</notextile>
+
+Additionally, one of the following entries on your cluster configuration file (depending on your DNS setup) tells Workbench which URL will be used to serve user content that can be displayed in the browser, like image previews and static HTML pages.
+
+<notextile>
+<pre><code>Clusters:
+  <span class="userinput">uuid_prefix</span>:
     Services:
       WebDAV:
         ExternalURL: "https://*--collections.<span class="userinput">uuid_prefix</span>.your.domain"
