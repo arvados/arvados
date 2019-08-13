@@ -14,6 +14,8 @@ Syntax:
 --upload
     If the build and test steps are successful, upload the packages
     to a remote apt repository (default: false)
+--debug
+    Output debug information (default: false)
 --rc
     Optional Parameter to build Release Candidate
 --build-version <version>
@@ -42,7 +44,7 @@ if ! [[ -d "$WORKSPACE" ]]; then
 fi
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,upload,rc,target:,build-version: \
+    help,debug,upload,rc,target:,build-version: \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -51,6 +53,7 @@ fi
 TARGET=debian9
 UPLOAD=0
 RC=0
+DEBUG=
 
 declare -a build_args=()
 
@@ -64,6 +67,9 @@ while [ $# -gt 0 ]; do
             ;;
         --target)
             TARGET="$2"; shift
+            ;;
+        --debug)
+            DEBUG=" --debug"
             ;;
         --upload)
             UPLOAD=1
@@ -99,7 +105,7 @@ COLUMNS=80
 title "Start build packages"
 timer_reset
 
-$WORKSPACE/build/run-build-packages-one-target.sh "${build_args[@]}"
+$WORKSPACE/build/run-build-packages-one-target.sh "${build_args[@]}"$DEBUG
 
 checkexit $? "build packages"
 title "End of build packages (`timer`)"
@@ -108,7 +114,7 @@ title "Start test packages"
 timer_reset
 
 if [ ${#failures[@]} -eq 0 ]; then
-  $WORKSPACE/build/run-build-packages-one-target.sh "${build_args[@]}" --test-packages
+  $WORKSPACE/build/run-build-packages-one-target.sh "${build_args[@]}" --test-packages$DEBUG
 else
   echo "Skipping package upload, there were errors building the packages"
 fi

@@ -226,6 +226,12 @@ test_rails_package_presence() {
 }
 
 get_complete_package_name() {
+  # if the errexit flag is set, unset it until this function returns
+  # otherwise, the shift calls below will abort the program if optional arguments are not supplied
+  if [ -o errexit ]; then
+    set +e
+    trap 'set -e' RETURN
+  fi
   local -n __returnvar="$1"; shift
   local pkgname="$1"; shift
   local version="$1"; shift
