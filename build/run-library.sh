@@ -104,6 +104,9 @@ handle_ruby_gem() {
 }
 
 calculate_go_package_version() {
+  # $__returnvar has the nameref attribute set, which means it is a reference
+  # to another variable that is passed in as the first argument to this function.
+  # see https://www.gnu.org/software/bash/manual/html_node/Shell-Parameters.html
   local -n __returnvar="$1"; shift
   local src_path="$1"; shift
 
@@ -232,6 +235,9 @@ get_complete_package_name() {
     set +e
     trap 'set -e' RETURN
   fi
+  # $__returnvar has the nameref attribute set, which means it is a reference
+  # to another variable that is passed in as the first argument to this function.
+  # see https://www.gnu.org/software/bash/manual/html_node/Shell-Parameters.html
   local -n __returnvar="$1"; shift
   local pkgname="$1"; shift
   local version="$1"; shift
