@@ -21,6 +21,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/auth"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	check "gopkg.in/check.v1"
 )
 
@@ -36,6 +37,24 @@ func (s *UnitSuite) SetUpTest(c *check.C) {
 	cfg, err := ldr.Load()
 	c.Assert(err, check.IsNil)
 	s.Config = cfg
+}
+
+func (s *UnitSuite) TestKeepClientBlockCache(c *check.C) {
+	cfg := newConfig(s.Config)
+	cfg.cluster.Collections.WebDAVCache.MaxBlockEntries = 42
+	h := handler{Config: cfg}
+	c.Check(keepclient.DefaultBlockCache.MaxBlocks, check.Not(check.Equals), cfg.cluster.Collections.WebDAVCache.MaxBlockEntries)
+	u := mustParseURL("http://keep-web.example/c=" + arvadostest.FooCollection + "/t=" + arvadostest.ActiveToken + "/foo")
+	req := &http.Request{
+		Method:     "GET",
+		Host:       u.Host,
+		URL:        u,
+		RequestURI: u.RequestURI(),
+	}
+	resp := httptest.NewRecorder()
+	h.ServeHTTP(resp, req)
+	c.Check(resp.Code, check.Equals, http.StatusOK)
+	c.Check(keepclient.DefaultBlockCache.MaxBlocks, check.Equals, cfg.cluster.Collections.WebDAVCache.MaxBlockEntries)
 }
 
 func (s *UnitSuite) TestCORSPreflight(c *check.C) {
