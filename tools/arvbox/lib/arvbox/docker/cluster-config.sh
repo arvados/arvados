@@ -81,6 +81,8 @@ Clusters:
         ExternalURL: "https://$localip:${services[sso]}"
       Websocket:
         ExternalURL: "wss://$localip:${services[websockets-ssl]}/websocket"
+        InternalURLs:
+          "http://localhost:${services[websockets]}": {}
       GitSSH:
         ExternalURL: "ssh://git@$localip:"
       GitHTTP:
@@ -93,12 +95,21 @@ Clusters:
         InternalURLs:
           "http://localhost:${services[keep-web]}/": {}
         ExternalURL: "https://$localip:${services[keep-web-ssl]}/"
+        InternalURLs:
+          "http://localhost:${services[keep-web]}/": {}
       Composer:
         ExternalURL: "http://$localip:${services[composer]}"
       Controller:
         ExternalURL: "https://$localip:${services[controller-ssl]}"
         InternalURLs:
           "http://localhost:${services[controller]}": {}
+      RailsAPI:
+        InternalURLs:
+          "http://localhost:${services[api]}/": {}
+      Keepproxy:
+        ExternalURL: "http://$localip:${services[keepproxy]}"
+        InternalURLs:
+          "http://localhost:${services[keepproxy]}": {}
     PostgreSQL:
       ConnectionPool: 32 # max concurrent connections per arvados server daemon
       Connection:
