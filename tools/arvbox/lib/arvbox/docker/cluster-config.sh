@@ -107,7 +107,7 @@ Clusters:
         InternalURLs:
           "http://localhost:${services[api]}/": {}
       Keepproxy:
-        ExternalURL: "http://$localip:${services[keepproxy]}"
+        ExternalURL: "https://$localip:${services[keepproxy-ssl]}"
         InternalURLs:
           "http://localhost:${services[keepproxy]}": {}
     PostgreSQL:
