@@ -55,45 +55,6 @@ Usage of keep-web:
 </code></pre>
 </notextile>
 
-{% assign railscmd = "bundle exec ./script/get_anonymous_user_token.rb --get" %}
-{% assign railsout = "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz" %}
-If you intend to use Keep-web to serve public data to anonymous clients, configure it with an anonymous token. You can use the same one you used when you set up your Keepproxy server, or use the following command on the <strong>API server</strong> to create another. {% include 'install_rails_command' %}
-
-h3. Start the service (option 1: systemd)
-
-If your system does not use systemd, skip this section and follow the "runit instructions":#runit instead.
-
-If your system uses systemd, the keep-web service should already be set up. Start it and check its status:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo systemctl restart keep-web</span>
-~$ <span class="userinput">sudo systemctl status keep-web</span>
-&#x25cf; keep-web.service - Arvados Keep web gateway
-   Loaded: loaded (/lib/systemd/system/keep-web.service; enabled)
-   Active: active (running) since Sat 2019-08-10 10:33:21 UTC; 3 days ago
-     Docs: https://doc.arvados.org/
- Main PID: 4242 (keep-web)
-   CGroup: /system.slice/keep-web.service
-           └─4242 /usr/bin/keep-web
-[...]
-</code></pre>
-</notextile>
-
-h3(#runit). Start the service (option 2: runit)
-
-Install runit to supervise the Keep-web daemon.  {% include 'install_runit' %}
-
-The basic command to start Keep-web in the service run script is:
-
-<notextile>
-<pre><code>exec sudo -u nobody keep-web
-</code></pre>
-</notextile>
-
-{% include 'notebox_begin' %}
-Please take into consideration that the config file should be world-readable.
-{% include 'notebox_end' %}
-
 h3. Set up a reverse proxy with TLS support
 
 The Keep-web service will be accessible from anywhere on the internet, so we recommend using TLS for transport encryption.
@@ -151,7 +112,11 @@ If neither of the above wildcard options is feasible, you have two choices:
 # Serve web content at @collections.uuid_prefix.your.domain@, but only for unauthenticated requests (public data and collection sharing links). Authenticated requests will always result in file downloads, using the @download@ name. For example, the Workbench "preview" button and the "view entire log file" link will invoke file downloads instead of displaying content in the browser window.
 # In the special case where you know you are immune to XSS exploits, you can enable the "trust all content" mode in Keep-web and Workbench (setting @Collections.TrustAllContent: true@ on the config file). With this enabled, inline web content can be served from a single @collections@ host name; no wildcard DNS or certificate is needed. Do not do this without understanding the security implications described in the "Keep-web documentation":http://godoc.org/github.com/curoverse/arvados/services/keep-web.
 
-h3. Configure Keep-web
+h2. Configure Keep-web
+
+{% assign railscmd = "bundle exec ./script/get_anonymous_user_token.rb --get" %}
+{% assign railsout = "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz" %}
+If you intend to use Keep-web to serve public data to anonymous clients, configure it with an anonymous token. You can use the same one you used when you set up your Keepproxy server, or use the following command on the <strong>API server</strong> to create another. {% include 'install_rails_command' %}
 
 Set the cluster config file like the following:
 
@@ -208,3 +173,40 @@ Additionally, one of the following entries on your cluster configuration file (d
         ExternalURL: "https://collections.<span class="userinput">uuid_prefix</span>.your.domain"
 </code></pre>
 </notextile>
+
+h2. Run Keep-web
+
+h3. Start the service (option 1: systemd)
+
+If your system does not use systemd, skip this section and follow the "runit instructions":#runit instead.
+
+If your system uses systemd, the keep-web service should already be set up. Start it and check its status:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo systemctl restart keep-web</span>
+~$ <span class="userinput">sudo systemctl status keep-web</span>
+&#x25cf; keep-web.service - Arvados Keep web gateway
+   Loaded: loaded (/lib/systemd/system/keep-web.service; enabled)
+   Active: active (running) since Sat 2019-08-10 10:33:21 UTC; 3 days ago
+     Docs: https://doc.arvados.org/
+ Main PID: 4242 (keep-web)
+   CGroup: /system.slice/keep-web.service
+           └─4242 /usr/bin/keep-web
+[...]
+</code></pre>
+</notextile>
+
+h3(#runit). Start the service (option 2: runit)
+
+Install runit to supervise the Keep-web daemon.  {% include 'install_runit' %}
+
+The basic command to start Keep-web in the service run script is:
+
+<notextile>
+<pre><code>exec sudo -u nobody keep-web
+</code></pre>
+</notextile>
+
+{% include 'notebox_begin' %}
+Please take into consideration that the config file should be world-readable.
+{% include 'notebox_end' %}
