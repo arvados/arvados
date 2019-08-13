@@ -13,115 +13,27 @@ class Arvados::V1::JobsController < ApplicationController
   include DbCurrentTime
 
   def create
-    [:repository, :script, :script_version, :script_parameters].each do |r|
-      if !resource_attrs[r]
-        return send_error("#{r} attribute must be specified",
-                          status: :unprocessable_entity)
-      end
-    end
-
-    # We used to ask for the minimum_, exclude_, and no_reuse params
-    # in the job resource. Now we advertise them as flags that alter
-    # the behavior of the create action.
-    [:minimum_script_version, :exclude_script_versions].each do |attr|
-      if resource_attrs.has_key? attr
-        params[attr] = resource_attrs.delete attr
-      end
-    end
-    if resource_attrs.has_key? :no_reuse
-      params[:find_or_create] = !resource_attrs.delete(:no_reuse)
-    end
-
-    return super if !params[:find_or_create]
-    return if !load_filters_param
-
-    begin
-      @object = Job.find_reusable(resource_attrs, params, @filters, @read_users)
-    rescue ArgumentError => error
-      return send_error(error.message)
-    end
-
-    if @object
-      show
-    else
-      super
-    end
+    return send_error("Unsupported legacy jobs API",
+                      status: 400)
   end
 
   def cancel
-    reload_object_before_update
-    @object.cancel cascade: params[:cascade]
-    show
+    return send_error("Unsupported legacy jobs API",
+                      status: 400)
   end
 
   def lock
-    @object.lock current_user.uuid
-    show
-  end
-
-  class LogStreamer
-    Q_UPDATE_INTERVAL = 12
-    def initialize(job, opts={})
-      @job = job
-      @opts = opts
-    end
-    def each
-      if @job.finished_at
-        yield "#{@job.uuid} finished at #{@job.finished_at}\n"
-        return
-      end
-      while not @job.started_at
-        # send a summary (job queue + available nodes) to the client
-        # every few seconds while waiting for the job to start
-        current_time = db_current_time
-        last_ack_at ||= current_time - Q_UPDATE_INTERVAL - 1
-        if current_time - last_ack_at >= Q_UPDATE_INTERVAL
-          nodes_in_state = {idle: 0, alloc: 0}
-          ActiveRecord::Base.uncached do
-            Node.where('hostname is not ?', nil).collect do |n|
-              if n.info[:slurm_state]
-                nodes_in_state[n.info[:slurm_state]] ||= 0
-                nodes_in_state[n.info[:slurm_state]] += 1
-              end
-            end
-          end
-          job_queue = Job.queue.select(:uuid)
-          n_queued_before_me = 0
-          job_queue.each do |j|
-            break if j.uuid == @job.uuid
-            n_queued_before_me += 1
-          end
-          yield "#{db_current_time}" \
-            " job #{@job.uuid}" \
-            " queue_position #{n_queued_before_me}" \
-            " queue_size #{job_queue.count}" \
-            " nodes_idle #{nodes_in_state[:idle]}" \
-            " nodes_alloc #{nodes_in_state[:alloc]}\n"
-          last_ack_at = db_current_time
-        end
-        sleep 3
-        ActiveRecord::Base.uncached do
-          @job.reload
-        end
-      end
-    end
+    return send_error("Unsupported legacy jobs API",
+                      status: 400)
   end
 
   def queue
-    params[:order] ||= ['priority desc', 'created_at']
-    load_limit_offset_order_params
-    load_where_param
-    @where.merge!({state: Job::Queued})
-    return if !load_filters_param
-    find_objects_for_index
+    @objects = []
     index
   end
 
   def queue_size
-    # Users may not be allowed to see all the jobs in the queue, so provide a
-    # method to get just the queue size in order to get a gist of how busy the
-    # cluster is.
-    render :json => {:queue_size => Job.queue.size}
+    render :json => {:queue_size => 0}
   end
 
   def self._create_requires_parameters

@@ -40,7 +40,6 @@ setup(name='arvados-python-client',
           'bin/arv-federation-migrate',
           'bin/arv-normalize',
           'bin/arv-put',
-          'bin/arv-run',
           'bin/arv-ws'
       ],
       data_files=[

@@ -1,6 +1,26 @@
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: AGPL-3.0
+#
+#
+# Legacy jobs API aka crunch v1
+#
+# This is superceded by containers / container_requests (aka crunch v2)
+#
+# Arvados installations since the end of 2017 should have never
+# used jobs, and are unaffected by this change.
+#
+# So that older Arvados sites don't lose access to legacy records, the
+# API has been converted to read-only.  Creating and updating jobs
+# (and related types job_task, pipeline_template and
+# pipeline_instance) is disabled and much of the business logic
+# related has been removed, along with the crunch-dispatch.rb and
+# various other code specific to the jobs API.
+#
+# If you need to resurrect any of this code, here is the last commit
+# on master before the branch removing jobs API support:
+#
+# Wed Aug 7 14:49:38 2019 -0400 07d92519438a592d531f2c7558cd51788da262ca
 
 require 'log_reuse_info'
 require 'safe_json'
@@ -16,7 +36,6 @@ class Job < ArvadosModel
   serialize :runtime_constraints, Hash
   serialize :tasks_summary, Hash
   before_create :ensure_unique_submit_id
-  after_commit :trigger_crunch_dispatch_if_cancelled, :on => :update
   before_validation :set_priority
   before_validation :update_state_from_old_state_attrs
   before_validation :update_script_parameters_digest
@@ -28,8 +47,9 @@ class Job < ArvadosModel
   validate :ensure_no_collection_uuids_in_script_params
   before_save :tag_version_in_internal_repository
   before_save :update_timestamps_when_state_changes
+  before_create :create_disabled
+  before_update :update_disabled
 
-  has_many :commit_ancestors, :foreign_key => :descendant, :primary_key => :script_version
   has_many(:nodes, foreign_key: :job_uuid, primary_key: :uuid)
 
   class SubmitIdReused < RequestError
@@ -191,7 +211,7 @@ class Job < ArvadosModel
       else
         raise ArgumentError.new("unknown attribute for git filter: #{attr}")
       end
-      revisions = Commit.find_commit_range(filter["repository"],
+      revisions = CommitsHelper::find_commit_range(filter["repository"],
                                            filter["min_version"],
                                            filter["max_version"],
                                            filter["exclude_versions"])
@@ -207,144 +227,11 @@ class Job < ArvadosModel
     filters
   end
 
-  def self.find_reusable attrs, params, filters, read_users
-    if filters.empty?  # Translate older creation parameters into filters.
-      filters =
-        [["repository", "=", attrs[:repository]],
-         ["script", "=", attrs[:script]],
-         ["script_version", "not in git", params[:exclude_script_versions]],
-        ].reject { |filter| filter.last.nil? or filter.last.empty? }
-      if !params[:minimum_script_version].blank?
-        filters << ["script_version", "in git",
-                     params[:minimum_script_version]]
-      else
-        filters += default_git_filters("script_version", attrs[:repository],
-                                       attrs[:script_version])
-      end
-      if image_search = attrs[:runtime_constraints].andand["docker_image"]
-        if image_tag = attrs[:runtime_constraints]["docker_image_tag"]
-          image_search += ":#{image_tag}"
-        end
-        image_locator = Collection.
-          for_latest_docker_image(image_search).andand.portable_data_hash
-      else
-        image_locator = nil
-      end
-      filters << ["docker_image_locator", "=", image_locator]
-      if sdk_version = attrs[:runtime_constraints].andand["arvados_sdk_version"]
-        filters += default_git_filters("arvados_sdk_version", "arvados", sdk_version)
-      end
-      filters = load_job_specific_filters(attrs, filters, read_users)
-    end
-
-    # Check specified filters for some reasonableness.
-    filter_names = filters.map { |f| f.first }.uniq
-    ["repository", "script"].each do |req_filter|
-      if not filter_names.include?(req_filter)
-        return send_error("#{req_filter} filter required")
-      end
-    end
-
-    # Search for a reusable Job, and return it if found.
-    candidates = Job.readable_by(current_user)
-    log_reuse_info { "starting with #{candidates.count} jobs readable by current user #{current_user.uuid}" }
-
-    candidates = candidates.where(
-      'state = ? or (owner_uuid = ? and state in (?))',
-      Job::Complete, current_user.uuid, [Job::Queued, Job::Running])
-    log_reuse_info(candidates) { "after filtering on job state ((state=Complete) or (state=Queued/Running and (submitted by current user)))" }
-
-    digest = Job.sorted_hash_digest(attrs[:script_parameters])
-    candidates = candidates.where('script_parameters_digest = ?', digest)
-    log_reuse_info(candidates) { "after filtering on script_parameters_digest #{digest}" }
-
-    candidates = candidates.where('nondeterministic is distinct from ?', true)
-    log_reuse_info(candidates) { "after filtering on !nondeterministic" }
-
-    # prefer Running jobs over Queued
-    candidates = candidates.order('state desc, created_at')
-
-    candidates = apply_filters candidates, filters
-    log_reuse_info(candidates) { "after filtering on repo, script, and custom filters #{filters.inspect}" }
-
-    chosen = nil
-    chosen_output = nil
-    incomplete_job = nil
-    candidates.each do |j|
-      if j.state != Job::Complete
-        if !incomplete_job
-          # We'll use this if we don't find a job that has completed
-          log_reuse_info { "job #{j.uuid} is reusable, but unfinished; continuing search for completed jobs" }
-          incomplete_job = j
-        else
-          log_reuse_info { "job #{j.uuid} is unfinished and we already have #{incomplete_job.uuid}; ignoring" }
-        end
-      elsif chosen == false
-        # Ignore: we have already decided not to reuse any completed
-        # job.
-        log_reuse_info { "job #{j.uuid} with output #{j.output} ignored, see above" }
-      elsif j.output.nil?
-        log_reuse_info { "job #{j.uuid} has nil output" }
-      elsif j.log.nil?
-        log_reuse_info { "job #{j.uuid} has nil log" }
-      elsif Rails.configuration.Containers.JobsAPI.ReuseJobIfOutputsDiffer
-        if !Collection.readable_by(current_user).find_by_portable_data_hash(j.output)
-          # Ignore: keep looking for an incomplete job or one whose
-          # output is readable.
-          log_reuse_info { "job #{j.uuid} output #{j.output} unavailable to user; continuing search" }
-        elsif !Collection.readable_by(current_user).find_by_portable_data_hash(j.log)
-          # Ignore: keep looking for an incomplete job or one whose
-          # log is readable.
-          log_reuse_info { "job #{j.uuid} log #{j.log} unavailable to user; continuing search" }
-        else
-          log_reuse_info { "job #{j.uuid} with output #{j.output} is reusable; decision is final." }
-          return j
-        end
-      elsif chosen_output
-        if chosen_output != j.output
-          # If two matching jobs produced different outputs, run a new
-          # job (or use one that's already running/queued) instead of
-          # choosing one arbitrarily.
-          log_reuse_info { "job #{j.uuid} output #{j.output} disagrees; forgetting about #{chosen.uuid} and ignoring any other finished jobs (see reuse_job_if_outputs_differ in application.default.yml)" }
-          chosen = false
-        else
-          log_reuse_info { "job #{j.uuid} output #{j.output} agrees with chosen #{chosen.uuid}; continuing search in case other candidates have different outputs" }
-        end
-        # ...and that's the only thing we need to do once we've chosen
-        # a job to reuse.
-      elsif !Collection.readable_by(current_user).find_by_portable_data_hash(j.output)
-        # This user cannot read the output of this job. Any other
-        # completed job will have either the same output (making it
-        # unusable) or a different output (making it unusable because
-        # reuse_job_if_outputs_different is turned off). Therefore,
-        # any further investigation of reusable jobs is futile.
-        log_reuse_info { "job #{j.uuid} output #{j.output} is unavailable to user; this means no finished job can be reused (see reuse_job_if_outputs_differ in application.default.yml)" }
-        chosen = false
-      elsif !Collection.readable_by(current_user).find_by_portable_data_hash(j.log)
-        # This user cannot read the log of this job, don't try to reuse the
-        # job but consider if the output is consistent.
-        log_reuse_info { "job #{j.uuid} log #{j.log} is unavailable to user; continuing search" }
-        chosen_output = j.output
-      else
-        log_reuse_info { "job #{j.uuid} with output #{j.output} can be reused; continuing search in case other candidates have different outputs" }
-        chosen = j
-        chosen_output = j.output
-      end
-    end
-    j = chosen || incomplete_job
-    if j
-      log_reuse_info { "done, #{j.uuid} was selected" }
-    else
-      log_reuse_info { "done, nothing suitable" }
-    end
-    return j
-  end
-
   def self.default_git_filters(attr_name, repo_name, refspec)
     # Add a filter to @filters for `attr_name` = the latest commit available
     # in `repo_name` at `refspec`.  No filter is added if refspec can't be
     # resolved.
-    commits = Commit.find_commit_range(repo_name, nil, refspec, nil)
+    commits = CommitsHelper::find_commit_range(repo_name, nil, refspec, nil)
     if commit_hash = commits.first
       [[attr_name, "=", commit_hash]]
     else
@@ -353,36 +240,7 @@ class Job < ArvadosModel
   end
 
   def cancel(cascade: false, need_transaction: true)
-    if need_transaction
-      ActiveRecord::Base.transaction do
-        cancel(cascade: cascade, need_transaction: false)
-      end
-      return
-    end
-
-    if self.state.in?([Queued, Running])
-      self.state = Cancelled
-      self.save!
-    elsif self.state != Cancelled
-      raise InvalidStateTransitionError
-    end
-
-    return if !cascade
-
-    # cancel all children; they could be jobs or pipeline instances
-    children = self.components.andand.collect{|_, u| u}.compact
-
-    return if children.empty?
-
-    # cancel any child jobs
-    Job.where(uuid: children, state: [Queued, Running]).each do |job|
-      job.cancel(cascade: cascade, need_transaction: false)
-    end
-
-    # cancel any child pipelines
-    PipelineInstance.where(uuid: children, state: [PipelineInstance::RunningOnServer, PipelineInstance::RunningOnClient]).each do |pi|
-      pi.cancel(cascade: cascade, need_transaction: false)
-    end
+    raise "No longer supported"
   end
 
   protected
@@ -418,7 +276,7 @@ class Job < ArvadosModel
       return true
     end
     if new_record? or repository_changed? or script_version_changed?
-      sha1 = Commit.find_commit_range(repository,
+      sha1 = CommitsHelper::find_commit_range(repository,
                                       nil, script_version, nil).first
       if not sha1
         errors.add :script_version, "#{script_version} does not resolve to a commit"
@@ -443,7 +301,7 @@ class Job < ArvadosModel
       uuid_was = uuid
       begin
         assign_uuid
-        Commit.tag_in_internal_repository repository, script_version, uuid
+        CommitsHelper::tag_in_internal_repository repository, script_version, uuid
       rescue
         self.uuid = uuid_was
         raise
@@ -478,7 +336,7 @@ class Job < ArvadosModel
   def find_arvados_sdk_version
     resolve_runtime_constraint("arvados_sdk_version",
                                :arvados_sdk_version) do |git_search|
-      commits = Commit.find_commit_range("arvados",
+      commits = CommitsHelper::find_commit_range("arvados",
                                          nil, git_search, nil)
       if commits.empty?
         [false, "#{git_search} does not resolve to a commit"]
@@ -565,14 +423,6 @@ class Job < ArvadosModel
       end
     end
     super
-  end
-
-  def trigger_crunch_dispatch_if_cancelled
-    if @need_crunch_dispatch_trigger
-      File.open(Rails.configuration.Containers.JobsAPI.CrunchRefreshTrigger, 'wb') do
-        # That's all, just create/touch a file for crunch-job to see.
-      end
-    end
   end
 
   def update_timestamps_when_state_changes
@@ -702,5 +552,13 @@ class Job < ArvadosModel
       return true if thing.match pattern
     end
     false
+  end
+
+  def create_disabled
+    raise "Disabled"
+  end
+
+  def update_disabled
+    raise "Disabled"
   end
 end
