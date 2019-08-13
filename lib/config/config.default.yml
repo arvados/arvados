@@ -395,6 +395,7 @@ Clusters:
       # Cache parameters for WebDAV content serving:
       # * TTL: Maximum time to cache manifests and permission checks.
       # * UUIDTTL: Maximum time to cache collection state.
+      # * MaxBlockEntries: Maximum number of block cache entries.
       # * MaxCollectionEntries: Maximum number of collection cache entries.
       # * MaxCollectionBytes: Approximate memory limit for collection cache.
       # * MaxPermissionEntries: Maximum number of permission cache entries.
@@ -402,6 +403,7 @@ Clusters:
       WebDAVCache:
         TTL: 300s
         UUIDTTL: 5s
+        MaxBlockEntries:      4
         MaxCollectionEntries: 1000
         MaxCollectionBytes:   100000000
         MaxPermissionEntries: 1000
