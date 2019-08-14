@@ -340,73 +340,6 @@ class TestSubmit(unittest.TestCase):
     def setUp(self):
         cwltool.process._names = set()
 
-    @mock.patch("arvados_cwl.arvdocker.arv_docker_get_image")
-    @mock.patch("time.sleep")
-    @stubs
-    def test_submit(self, stubs, tm, arvdock):
-        def get_image(api_client, dockerRequirement, pull_image, project_uuid):
-            if dockerRequirement["dockerPull"] == 'arvados/jobs:'+arvados_cwl.__version__:
-                return '999999999999999999999999999999d3+99'
-            elif dockerRequirement["dockerPull"] == "debian:8":
-                return '999999999999999999999999999999d4+99'
-        arvdock.side_effect = get_image
-
-        exited = arvados_cwl.main(
-            ["--submit", "--no-wait", "--api=jobs", "--debug",
-             "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
-
-        stubs.api.collections().create.assert_has_calls([
-            mock.call(body=JsonDiffMatcher({
-                'manifest_text':
-                '. 979af1245a12a1fed634d4222473bfdc+16 0:16:blorp.txt\n',
-                'replication_desired': None,
-                'name': 'submit_wf.cwl input (169f39d466a5438ac4a90e779bf750c7+53)',
-            }), ensure_unique_name=False),
-            mock.call(body=JsonDiffMatcher({
-                'manifest_text':
-                '. 5bcc9fe8f8d5992e6cf418dc7ce4dbb3+16 0:16:blub.txt\n',
-                'replication_desired': None,
-                'name': 'submit_tool.cwl dependencies (5d373e7629203ce39e7c22af98a0f881+52)',
-            }), ensure_unique_name=False),
-            mock.call(body=JsonDiffMatcher({
-                'manifest_text':
-                ". 68089141fbf7e020ac90a9d6a575bc8f+1312 0:1312:workflow.cwl\n",
-                'replication_desired': None,
-                'name': 'submit_wf.cwl',
-            }), ensure_unique_name=True)        ])
-
-        arvdock.assert_has_calls([
-            mock.call(stubs.api, {"class": "DockerRequirement", "dockerPull": "debian:8"}, True, None),
-            mock.call(stubs.api, {"class": "DockerRequirement", "dockerPull": "debian:8", 'http://arvados.org/cwl#dockerCollectionPDH': '999999999999999999999999999999d4+99'}, True, None),
-            mock.call(stubs.api, {'dockerPull': 'arvados/jobs:'+arvados_cwl.__version__}, True, None)
-        ])
-
-        expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
-        stubs.api.pipeline_instances().create.assert_called_with(
-            body=JsonDiffMatcher(expect_pipeline))
-        self.assertEqual(stubs.capture_stdout.getvalue(),
-                         stubs.expect_pipeline_uuid + '\n')
-        self.assertEqual(exited, 0)
-
-    @mock.patch("time.sleep")
-    @stubs
-    def test_submit_no_reuse(self, stubs, tm):
-        exited = arvados_cwl.main(
-            ["--submit", "--no-wait", "--api=jobs", "--debug", "--disable-reuse",
-             "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
-
-        expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
-        expect_pipeline["components"]["cwl-runner"]["script_parameters"]["arv:enable_reuse"] = {"value": False}
-        expect_pipeline["properties"] = {"run_options": {"enable_job_reuse": False}}
-
-        stubs.api.pipeline_instances().create.assert_called_with(
-            body=JsonDiffMatcher(expect_pipeline))
-        self.assertEqual(stubs.capture_stdout.getvalue(),
-                         stubs.expect_pipeline_uuid + '\n')
-        self.assertEqual(exited, 0)
-
     @stubs
     def test_error_when_multiple_storage_classes_specified(self, stubs):
         storage_classes = "foo,bar"
@@ -418,41 +351,6 @@ class TestSubmit(unittest.TestCase):
 
     @mock.patch("time.sleep")
     @stubs
-    def test_submit_on_error(self, stubs, tm):
-        exited = arvados_cwl.main(
-            ["--submit", "--no-wait", "--api=jobs", "--debug", "--on-error=stop",
-             "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
-
-        expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
-        expect_pipeline["components"]["cwl-runner"]["script_parameters"]["arv:on_error"] = "stop"
-
-        stubs.api.pipeline_instances().create.assert_called_with(
-            body=JsonDiffMatcher(expect_pipeline))
-        self.assertEqual(stubs.capture_stdout.getvalue(),
-                         stubs.expect_pipeline_uuid + '\n')
-        self.assertEqual(exited, 0)
-
-    @mock.patch("time.sleep")
-    @stubs
-    def test_submit_runner_ram(self, stubs, tm):
-        exited = arvados_cwl.main(
-            ["--submit", "--no-wait", "--debug", "--submit-runner-ram=2048",
-             "--api=jobs",
-             "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
-
-        expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
-        expect_pipeline["components"]["cwl-runner"]["runtime_constraints"]["min_ram_mb_per_node"] = 2048
-
-        stubs.api.pipeline_instances().create.assert_called_with(
-            body=JsonDiffMatcher(expect_pipeline))
-        self.assertEqual(stubs.capture_stdout.getvalue(),
-                         stubs.expect_pipeline_uuid + '\n')
-        self.assertEqual(exited, 0)
-
-    @mock.patch("time.sleep")
-    @stubs
     def test_submit_invalid_runner_ram(self, stubs, tm):
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--debug", "--submit-runner-ram=-2048",
@@ -460,81 +358,6 @@ class TestSubmit(unittest.TestCase):
             stubs.capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 1)
 
-    @mock.patch("time.sleep")
-    @stubs
-    def test_submit_output_name(self, stubs, tm):
-        output_name = "test_output_name"
-
-        exited = arvados_cwl.main(
-            ["--submit", "--no-wait", "--debug", "--output-name", output_name,
-             "--api=jobs",
-             "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
-
-        expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
-        expect_pipeline["components"]["cwl-runner"]["script_parameters"]["arv:output_name"] = output_name
-
-        stubs.api.pipeline_instances().create.assert_called_with(
-            body=JsonDiffMatcher(expect_pipeline))
-        self.assertEqual(stubs.capture_stdout.getvalue(),
-                         stubs.expect_pipeline_uuid + '\n')
-        self.assertEqual(exited, 0)
-
-    @mock.patch("time.sleep")
-    @stubs
-    def test_submit_pipeline_name(self, stubs, tm):
-        exited = arvados_cwl.main(
-            ["--submit", "--no-wait", "--debug", "--name=hello job 123",
-             "--api=jobs",
-             "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
-        self.assertEqual(exited, 0)
-
-        expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
-        expect_pipeline["name"] = "hello job 123"
-
-        stubs.api.pipeline_instances().create.assert_called_with(
-            body=JsonDiffMatcher(expect_pipeline))
-        self.assertEqual(stubs.capture_stdout.getvalue(),
-                         stubs.expect_pipeline_uuid + '\n')
-
-    @mock.patch("time.sleep")
-    @stubs
-    def test_submit_output_tags(self, stubs, tm):
-        output_tags = "tag0,tag1,tag2"
-
-        exited = arvados_cwl.main(
-            ["--submit", "--no-wait", "--debug", "--output-tags", output_tags,
-             "--api=jobs",
-             "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
-        self.assertEqual(exited, 0)
-
-        expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
-        expect_pipeline["components"]["cwl-runner"]["script_parameters"]["arv:output_tags"] = output_tags
-
-        stubs.api.pipeline_instances().create.assert_called_with(
-            body=JsonDiffMatcher(expect_pipeline))
-        self.assertEqual(stubs.capture_stdout.getvalue(),
-                         stubs.expect_pipeline_uuid + '\n')
-
-    @mock.patch("time.sleep")
-    @stubs
-    def test_submit_with_project_uuid(self, stubs, tm):
-        project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
-
-        exited = arvados_cwl.main(
-            ["--submit", "--no-wait", "--debug",
-             "--project-uuid", project_uuid,
-             "--api=jobs",
-             "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            sys.stdout, sys.stderr, api_client=stubs.api)
-        self.assertEqual(exited, 0)
-
-        expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
-        expect_pipeline["owner_uuid"] = project_uuid
-        stubs.api.pipeline_instances().create.assert_called_with(
-            body=JsonDiffMatcher(expect_pipeline))
 
     @stubs
     def test_submit_container(self, stubs):
@@ -878,28 +701,6 @@ class TestSubmit(unittest.TestCase):
                          stubs.expect_container_request_uuid + '\n')
         self.assertEqual(exited, 0)
 
-    @mock.patch("arvados.collection.CollectionReader")
-    @mock.patch("time.sleep")
-    @stubs
-    def test_submit_jobs_keepref(self, stubs, tm, reader):
-        with open("tests/wf/expect_arvworkflow.cwl") as f:
-            reader().open().__enter__().read.return_value = f.read()
-
-        exited = arvados_cwl.main(
-            ["--submit", "--no-wait", "--api=jobs", "--debug",
-             "keep:99999999999999999999999999999994+99/expect_arvworkflow.cwl#main", "-x", "XxX"],
-            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
-
-        expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
-        expect_pipeline["components"]["cwl-runner"]["script_parameters"]["x"] = "XxX"
-        del expect_pipeline["components"]["cwl-runner"]["script_parameters"]["y"]
-        del expect_pipeline["components"]["cwl-runner"]["script_parameters"]["z"]
-        expect_pipeline["components"]["cwl-runner"]["script_parameters"]["cwl:tool"] = "99999999999999999999999999999994+99/expect_arvworkflow.cwl#main"
-        expect_pipeline["name"] = "expect_arvworkflow.cwl#main"
-        stubs.api.pipeline_instances().create.assert_called_with(
-            body=JsonDiffMatcher(expect_pipeline))
-        self.assertEqual(exited, 0)
-
     @mock.patch("time.sleep")
     @stubs
     def test_submit_arvworkflow(self, stubs, tm):
@@ -1113,22 +914,6 @@ class TestSubmit(unittest.TestCase):
             body=JsonDiffMatcher(expect_container))
         self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
-        self.assertEqual(exited, 0)
-
-    @stubs
-    def test_submit_job_runner_image(self, stubs):
-        exited = arvados_cwl.main(
-            ["--submit", "--no-wait", "--api=jobs", "--debug", "--submit-runner-image=arvados/jobs:123",
-                "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
-
-        stubs.expect_pipeline_instance["components"]["cwl-runner"]["runtime_constraints"]["docker_image"] = "999999999999999999999999999999d5+99"
-
-        expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
-        stubs.api.pipeline_instances().create.assert_called_with(
-            body=JsonDiffMatcher(expect_pipeline))
-        self.assertEqual(stubs.capture_stdout.getvalue(),
-                         stubs.expect_pipeline_uuid + '\n')
         self.assertEqual(exited, 0)
 
     @stubs
@@ -1543,123 +1328,6 @@ class TestSubmit(unittest.TestCase):
             cwltool_logger.removeHandler(stderr_logger)
 
 
-class TestCreateTemplate(unittest.TestCase):
-    existing_template_uuid = "zzzzz-p5p6p-validworkfloyml"
-
-    def _adjust_script_params(self, expect_component):
-        expect_component['script_parameters']['x'] = {
-            'dataclass': 'File',
-            'required': True,
-            'type': 'File',
-            'value': '169f39d466a5438ac4a90e779bf750c7+53/blorp.txt',
-        }
-        expect_component['script_parameters']['y'] = {
-            'dataclass': 'Collection',
-            'required': True,
-            'type': 'Directory',
-            'value': '99999999999999999999999999999998+99',
-        }
-        expect_component['script_parameters']['z'] = {
-            'dataclass': 'Collection',
-            'required': True,
-            'type': 'Directory',
-        }
-
-    @stubs
-    def test_create(self, stubs):
-        project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
-
-        exited = arvados_cwl.main(
-            ["--create-workflow", "--debug",
-             "--api=jobs",
-             "--project-uuid", project_uuid,
-             "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
-
-        stubs.api.pipeline_instances().create.refute_called()
-        stubs.api.jobs().create.refute_called()
-
-        expect_component = copy.deepcopy(stubs.expect_job_spec)
-        self._adjust_script_params(expect_component)
-        expect_template = {
-            "components": {
-                "submit_wf.cwl": expect_component,
-            },
-            "name": "submit_wf.cwl",
-            "owner_uuid": project_uuid,
-        }
-        stubs.api.pipeline_templates().create.assert_called_with(
-            body=JsonDiffMatcher(expect_template), ensure_unique_name=True)
-
-        self.assertEqual(stubs.capture_stdout.getvalue(),
-                         stubs.expect_pipeline_template_uuid + '\n')
-        self.assertEqual(exited, 0)
-
-    @stubs
-    def test_create_name(self, stubs):
-        project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
-
-        exited = arvados_cwl.main(
-            ["--create-workflow", "--debug",
-             "--project-uuid", project_uuid,
-             "--api=jobs",
-             "--name", "testing 123",
-             "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
-
-        stubs.api.pipeline_instances().create.refute_called()
-        stubs.api.jobs().create.refute_called()
-
-        expect_component = copy.deepcopy(stubs.expect_job_spec)
-        self._adjust_script_params(expect_component)
-        expect_template = {
-            "components": {
-                "testing 123": expect_component,
-            },
-            "name": "testing 123",
-            "owner_uuid": project_uuid,
-        }
-        stubs.api.pipeline_templates().create.assert_called_with(
-            body=JsonDiffMatcher(expect_template), ensure_unique_name=True)
-
-        self.assertEqual(stubs.capture_stdout.getvalue(),
-                         stubs.expect_pipeline_template_uuid + '\n')
-        self.assertEqual(exited, 0)
-
-    @stubs
-    def test_update_name(self, stubs):
-        project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
-
-        exited = arvados_cwl.main(
-            ["--update-workflow", self.existing_template_uuid,
-             "--debug",
-             "--project-uuid", project_uuid,
-             "--api=jobs",
-             "--name", "testing 123",
-             "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
-
-        stubs.api.pipeline_instances().create.refute_called()
-        stubs.api.jobs().create.refute_called()
-
-        expect_component = copy.deepcopy(stubs.expect_job_spec)
-        self._adjust_script_params(expect_component)
-        expect_template = {
-            "components": {
-                "testing 123": expect_component,
-            },
-            "name": "testing 123",
-            "owner_uuid": project_uuid,
-        }
-        stubs.api.pipeline_templates().create.refute_called()
-        stubs.api.pipeline_templates().update.assert_called_with(
-            body=JsonDiffMatcher(expect_template), uuid=self.existing_template_uuid)
-
-        self.assertEqual(stubs.capture_stdout.getvalue(),
-                         self.existing_template_uuid + '\n')
-        self.assertEqual(exited, 0)
-
-
 class TestCreateWorkflow(unittest.TestCase):
     existing_workflow_uuid = "zzzzz-7fd4e-validworkfloyml"
     expect_workflow = StripYAMLComments(
@@ -1724,26 +1392,6 @@ class TestCreateWorkflow(unittest.TestCase):
                          stubs.expect_workflow_uuid + '\n')
         self.assertEqual(exited, 0)
 
-    @stubs
-    def test_incompatible_api(self, stubs):
-        capture_stderr = StringIO()
-        acr_logger = logging.getLogger('arvados.cwl-runner')
-        stderr_logger = logging.StreamHandler(capture_stderr)
-        acr_logger.addHandler(stderr_logger)
-
-        try:
-            exited = arvados_cwl.main(
-                ["--update-workflow", self.existing_workflow_uuid,
-                 "--api=jobs",
-                 "--debug",
-                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-                sys.stderr, sys.stderr, api_client=stubs.api)
-            self.assertEqual(exited, 1)
-            self.assertRegexpMatches(
-                capture_stderr.getvalue(),
-                "--update-workflow arg '{}' uses 'containers' API, but --api='jobs' specified".format(self.existing_workflow_uuid))
-        finally:
-            acr_logger.removeHandler(stderr_logger)
 
     @stubs
     def test_update(self, stubs):
@@ -1816,83 +1464,4 @@ class TestCreateWorkflow(unittest.TestCase):
 
         self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_workflow_uuid + '\n')
-        self.assertEqual(exited, 0)
-
-class TestTemplateInputs(unittest.TestCase):
-    expect_template = {
-        "components": {
-            "inputs_test.cwl": {
-                'runtime_constraints': {
-                    'docker_image': '999999999999999999999999999999d3+99',
-                    'min_ram_mb_per_node': 1024
-                },
-                'script_parameters': {
-                    'cwl:tool':
-                    'a2de777156fb700f1363b1f2e370adca+60/workflow.cwl#main',
-                    'optionalFloatInput': None,
-                    'fileInput': {
-                        'type': 'File',
-                        'dataclass': 'File',
-                        'required': True,
-                        'title': "It's a file; we expect to find some characters in it.",
-                        'description': 'If there were anything further to say, it would be said here,\nor here.'
-                    },
-                    'floatInput': {
-                        'type': 'float',
-                        'dataclass': 'number',
-                        'required': True,
-                        'title': 'Floats like a duck',
-                        'default': 0.1,
-                        'value': 0.1,
-                    },
-                    'optionalFloatInput': {
-                        'type': ['null', 'float'],
-                        'dataclass': 'number',
-                        'required': False,
-                    },
-                    'boolInput': {
-                        'type': 'boolean',
-                        'dataclass': 'boolean',
-                        'required': True,
-                        'title': 'True or false?',
-                    },
-                },
-                'repository': 'arvados',
-                'script_version': 'master',
-                'minimum_script_version': '570509ab4d2ef93d870fd2b1f2eab178afb1bad9',
-                'script': 'cwl-runner',
-            },
-        },
-        "name": "inputs_test.cwl",
-    }
-
-    @stubs
-    def test_inputs_empty(self, stubs):
-        exited = arvados_cwl.main(
-            ["--debug", "--api=jobs", "--create-template",
-             "tests/wf/inputs_test.cwl", "tests/order/empty_order.json"],
-            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
-
-        stubs.api.pipeline_templates().create.assert_called_with(
-            body=JsonDiffMatcher(self.expect_template), ensure_unique_name=True)
-
-        self.assertEqual(exited, 0)
-
-    @stubs
-    def test_inputs(self, stubs):
-        exited = arvados_cwl.main(
-            ["--api=jobs", "--create-template",
-             "tests/wf/inputs_test.cwl", "tests/order/inputs_test_order.json"],
-            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
-
-        expect_template = copy.deepcopy(self.expect_template)
-        params = expect_template[
-            "components"]["inputs_test.cwl"]["script_parameters"]
-        params["fileInput"]["value"] = '169f39d466a5438ac4a90e779bf750c7+53/blorp.txt'
-        params["cwl:tool"] = 'a2de777156fb700f1363b1f2e370adca+60/workflow.cwl#main'
-        params["floatInput"]["value"] = 1.234
-        params["boolInput"]["value"] = True
-
-        stubs.api.pipeline_templates().create.assert_called_with(
-            body=JsonDiffMatcher(expect_template), ensure_unique_name=True)
         self.assertEqual(exited, 0)

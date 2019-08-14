@@ -9,6 +9,8 @@ class JobTask < ArvadosModel
   serialize :parameters, Hash
   before_create :set_default_qsequence
   after_update :delete_created_job_tasks_if_failed
+  before_create :create_disabled
+  before_update :update_disabled
 
   api_accessible :user, extend: :common do |t|
     t.add :job_uuid
@@ -34,5 +36,13 @@ class JobTask < ArvadosModel
   def set_default_qsequence
     self.qsequence ||= self.class.connection.
       select_value("SELECT nextval('job_tasks_qsequence_seq')")
+  end
+
+  def create_disabled
+    raise "Disabled"
+  end
+
+  def update_disabled
+    raise "Disabled"
   end
 end

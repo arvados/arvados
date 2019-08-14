@@ -39,7 +39,17 @@ table(table table-bordered table-condensed).
 |"v1.1.4":#v1_1_4|"v1.1.3":#v1_1_3|"v1.1.2":#v1_1_2|"v1.1.1":#v1_1_1|"v1.1.0":#v1_1_0|
 |\5. "older":#older|
 
-h3(#master). development master (as of 2019-06-07)
+h3(#master). development master (as of 2019-08-12)
+
+h4. Keep-web dropped support on command line flags configuration
+
+As we're migrating to a central cluster configuration file, the already deprecated way of getting configurations via environment variables and command line flags isn't valid anymore. Current keep-web supports both the now legacy @keep-web.yml@ config format (used by Arvados 1.4) and the new cluster config file format. Please check "keep-web's install guide":{{site.baseurl}}/install/install-keep-web.html for more details.
+
+h4. Jobs API is read-only
+
+(task "#15133":https://dev.arvados.org/issues/15133 ) The legacy 'jobs' API is now read-only.  It has long been superceded by containers / container_requests (aka crunch v2).  Arvados installations since the end of 2017 (v1.1.0) have probably only used containers, and are unaffected by this change.
+
+So that older Arvados sites don't lose access to legacy records, the API has been converted to read-only.  Creating and updating jobs (and related types job_task, pipeline_template and pipeline_instance) is disabled and much of the business logic related has been removed, along with various other code specific to the jobs API.  Specifically, the following programs associated with the jobs API have been removed: @crunch-dispatch.rb@, @crunch-job@, @crunchrunner@, @arv-run-pipeline-instance@, @arv-run@.
 
 h4. Keepproxy configuration migration
 
@@ -47,7 +57,7 @@ Keepproxy can now be configured using the centralized config at @/etc/arvados/co
 
 h4. No longer stripping ':' from strings in serialized database columns
 
- (bug #15311) Strings read from serialized columns in the database with a leading ':' would have the ':' stripped after loading the record.  This behavior existed due to legacy serialization behavior which stored Ruby symbols with a leading ':'.  Unfortunately this corrupted fields where the leading ":" was intentional.  This behavior has been removed.
+(bug "#15311":https://dev.arvados.org/issues/15311 ) Strings read from serialized columns in the database with a leading ':' would have the ':' stripped after loading the record.  This behavior existed due to legacy serialization behavior which stored Ruby symbols with a leading ':'.  Unfortunately this corrupted fields where the leading ":" was intentional.  This behavior has been removed.
 
 You can test if any records in your database are affected by going to the API server directory and running @bundle exec rake symbols:check@.  This will report which records contain fields with a leading ':' that would previously have been stripped.  If there are records to be updated, you can update the database using @bundle exec rake symbols:stringify@.
 

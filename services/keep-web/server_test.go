@@ -5,6 +5,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
@@ -17,6 +18,7 @@ import (
 	"strings"
 	"testing"
 
+	"git.curoverse.com/arvados.git/lib/config"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
@@ -148,7 +150,7 @@ type curlCase struct {
 }
 
 func (s *IntegrationSuite) Test200(c *check.C) {
-	s.testServer.Config.AnonymousTokens = []string{arvadostest.AnonymousToken}
+	s.testServer.Config.cluster.Users.AnonymousUserToken = arvadostest.AnonymousToken
 	for _, spec := range []curlCase{
 		// My collection
 		{
@@ -298,7 +300,7 @@ func (s *IntegrationSuite) runCurl(c *check.C, token, host, uri string, args ...
 }
 
 func (s *IntegrationSuite) TestMetrics(c *check.C) {
-	s.testServer.Config.AttachmentOnlyHost = s.testServer.Addr
+	s.testServer.Config.cluster.Services.WebDAVDownload.ExternalURL.Host = s.testServer.Addr
 	origin := "http://" + s.testServer.Addr
 	req, _ := http.NewRequest("GET", origin+"/notfound", nil)
 	_, err := http.DefaultClient.Do(req)
@@ -427,15 +429,23 @@ func (s *IntegrationSuite) TearDownSuite(c *check.C) {
 
 func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	arvadostest.ResetEnv()
-	cfg := DefaultConfig()
+	ldr := config.NewLoader(bytes.NewBufferString("Clusters: {zzzzz: {}}"), nil)
+	ldr.Path = "-"
+	arvCfg, err := ldr.Load()
+	c.Check(err, check.IsNil)
+	cfg := newConfig(arvCfg)
+	c.Assert(err, check.IsNil)
 	cfg.Client = arvados.Client{
 		APIHost:  testAPIHost,
 		Insecure: true,
 	}
-	cfg.Listen = "127.0.0.1:0"
-	cfg.ManagementToken = arvadostest.ManagementToken
+	listen := "127.0.0.1:0"
+	cfg.cluster.Services.WebDAV.InternalURLs[arvados.URL{Host: listen}] = arvados.ServiceInstance{}
+	cfg.cluster.Services.WebDAVDownload.InternalURLs[arvados.URL{Host: listen}] = arvados.ServiceInstance{}
+	cfg.cluster.ManagementToken = arvadostest.ManagementToken
+	cfg.cluster.Users.AnonymousUserToken = arvadostest.AnonymousToken
 	s.testServer = &server{Config: cfg}
-	err := s.testServer.Start()
+	err = s.testServer.Start()
 	c.Assert(err, check.Equals, nil)
 }
 

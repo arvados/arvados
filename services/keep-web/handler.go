@@ -79,9 +79,10 @@ func (h *handler) setup() {
 	h.clientPool = arvadosclient.MakeClientPool()
 
 	keepclient.RefreshServiceDiscoveryOnSIGHUP()
+	keepclient.DefaultBlockCache.MaxBlocks = h.Config.cluster.Collections.WebDAVCache.MaxBlockEntries
 
 	h.healthHandler = &health.Handler{
-		Token:  h.Config.ManagementToken,
+		Token:  h.Config.cluster.ManagementToken,
 		Prefix: "/_health/",
 	}
 
@@ -249,9 +250,9 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	var pathToken bool
 	var attachment bool
 	var useSiteFS bool
-	credentialsOK := h.Config.TrustAllContent
+	credentialsOK := h.Config.cluster.Collections.TrustAllContent
 
-	if r.Host != "" && r.Host == h.Config.AttachmentOnlyHost {
+	if r.Host != "" && r.Host == h.Config.cluster.Services.WebDAVDownload.ExternalURL.Host {
 		credentialsOK = true
 		attachment = true
 	} else if r.FormValue("disposition") == "attachment" {
@@ -351,7 +352,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 
 	if tokens == nil {
-		tokens = append(reqTokens, h.Config.AnonymousTokens...)
+		tokens = append(reqTokens, h.Config.cluster.Users.AnonymousUserToken)
 	}
 
 	if len(targetPath) > 0 && targetPath[0] == "_" {

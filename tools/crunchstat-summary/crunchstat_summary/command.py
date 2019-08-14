@@ -17,14 +17,20 @@ class ArgumentParser(argparse.ArgumentParser):
             description='Summarize resource usage of an Arvados Crunch job')
         src = self.add_mutually_exclusive_group()
         src.add_argument(
-            '--job', '--container', '--container-request',
+            '--job', '--container-request',
             type=str, metavar='UUID',
-            help='Look up the specified job, container, or container request '
+            help='Look up the specified job or container request '
+            'and read its log data from Keep (or from the Arvados event log, '
+            'if the job is still running)')
+        src.add_argument(
+            '--container',
+            type=str, metavar='UUID',
+            help='[Deprecated] Look up the specified container find its container request '
             'and read its log data from Keep (or from the Arvados event log, '
             'if the job is still running)')
         src.add_argument(
             '--pipeline-instance', type=str, metavar='UUID',
-            help='Summarize each component of the given pipeline instance')
+            help='[Deprecated] Summarize each component of the given pipeline instance (historical pre-1.4)')
         src.add_argument(
             '--log-file', type=str,
             help='Read log data from a regular file')
@@ -81,6 +87,8 @@ class Command(object):
             self.summer = summarizer.NewSummarizer(self.args.pipeline_instance, **kwargs)
         elif self.args.job:
             self.summer = summarizer.NewSummarizer(self.args.job, **kwargs)
+        elif self.args.container:
+            self.summer = summarizer.NewSummarizer(self.args.container, **kwargs)
         elif self.args.log_file:
             if self.args.log_file.endswith('.gz'):
                 fh = UTF8Decode(gzip.open(self.args.log_file))

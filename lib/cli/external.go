@@ -22,7 +22,6 @@ var (
 	Copy = externalCmd{"arv-copy"}
 	Tag  = externalCmd{"arv-tag"}
 	Ws   = externalCmd{"arv-ws"}
-	Run  = externalCmd{"arv-run"}
 
 	Keep = cmd.Multi(map[string]cmd.Handler{
 		"get":       externalCmd{"arv-get"},
@@ -30,9 +29,6 @@ var (
 		"ls":        externalCmd{"arv-ls"},
 		"normalize": externalCmd{"arv-normalize"},
 		"docker":    externalCmd{"arv-keepdocker"},
-	})
-	Pipeline = cmd.Multi(map[string]cmd.Handler{
-		"run": externalCmd{"arv-run-pipeline-instance"},
 	})
 	// user, group, container, specimen, etc.
 	APICall = apiCallCmd{}
@@ -94,7 +90,7 @@ func (ec externalCmd) RunCommand(prog string, args []string, stdin io.Reader, st
 		return 1
 	case *exec.Error:
 		fmt.Fprintln(stderr, err)
-		if ec.prog == "arv" || ec.prog == "arv-run-pipeline-instance" {
+		if ec.prog == "arv" {
 			fmt.Fprint(stderr, rubyInstallHints)
 		} else if strings.HasPrefix(ec.prog, "arv-") {
 			fmt.Fprint(stderr, pythonInstallHints)

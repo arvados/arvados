@@ -70,6 +70,9 @@ Clusters:
   ${uuid_prefix}:
     ManagementToken: $management_token
     Services:
+      RailsAPI:
+        InternalURLs:
+          "http://localhost:${services[api]}": {}
       Workbench1:
         ExternalURL: "https://$localip:${services[workbench]}"
       Workbench2:
@@ -82,22 +85,35 @@ Clusters:
         ExternalURL: "http://$localip:${services[keepproxy-ssl]}/"
       Websocket:
         ExternalURL: "wss://$localip:${services[websockets-ssl]}/websocket"
+        InternalURLs:
+          "http://localhost:${services[websockets]}": {}
       GitSSH:
         ExternalURL: "ssh://git@$localip:"
       GitHTTP:
         ExternalURL: "http://$localip:${services[arv-git-httpd]}/"
       WebDAV:
+        InternalURLs:
+          "http://localhost:${services[keep-web]}/": {}
         ExternalURL: "https://$localip:${services[keep-web-ssl]}/"
+      WebDAVDownload:
+        InternalURLs:
+          "http://localhost:${services[keep-web]}/": {}
+        ExternalURL: "https://$localip:${services[keep-web-ssl]}/"
+        InternalURLs:
+          "http://localhost:${services[keep-web]}/": {}
       Composer:
         ExternalURL: "http://$localip:${services[composer]}"
       Controller:
         ExternalURL: "https://$localip:${services[controller-ssl]}"
-    NodeProfiles:  # to be deprecated in favor of "Services" section
-      "*":
-        arvados-controller:
-          Listen: ":${services[controller]}" # choose a port
-        arvados-api-server:
-          Listen: ":${services[api]}" # must match Rails server port in your Nginx config
+        InternalURLs:
+          "http://localhost:${services[controller]}": {}
+      RailsAPI:
+        InternalURLs:
+          "http://localhost:${services[api]}/": {}
+      Keepproxy:
+        ExternalURL: "https://$localip:${services[keepproxy-ssl]}"
+        InternalURLs:
+          "http://localhost:${services[keepproxy]}": {}
     PostgreSQL:
       ConnectionPool: 32 # max concurrent connections per arvados server daemon
       Connection:
@@ -113,6 +129,7 @@ Clusters:
     Collections:
       BlobSigningKey: $blob_signing_key
       DefaultReplication: 1
+      TrustAllContent: true
     Login:
       ProviderAppSecret: $sso_app_secret
       ProviderAppID: arvados-server
@@ -122,6 +139,7 @@ Clusters:
       AutoSetupNewUsers: true
       AutoSetupNewUsersWithVmUUID: $vm_uuid
       AutoSetupNewUsersWithRepository: true
+      AnonymousUserToken: $(cat /var/lib/arvados/superuser_token)
     Workbench:
       SecretKeyBase: $workbench_secret_key_base
       ArvadosDocsite: http://$localip:${services[doc]}/

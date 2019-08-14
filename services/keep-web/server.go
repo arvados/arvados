@@ -8,6 +8,7 @@ import (
 	"context"
 	"net/http"
 
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	"github.com/prometheus/client_golang/prometheus"
@@ -25,8 +26,15 @@ func (srv *server) Start() error {
 	h.Config.Cache.registry = reg
 	ctx := ctxlog.Context(context.Background(), logrus.StandardLogger())
 	mh := httpserver.Instrument(reg, nil, httpserver.HandlerWithContext(ctx, httpserver.AddRequestIDs(httpserver.LogRequests(h))))
-	h.MetricsAPI = mh.ServeAPI(h.Config.ManagementToken, http.NotFoundHandler())
+	h.MetricsAPI = mh.ServeAPI(h.Config.cluster.ManagementToken, http.NotFoundHandler())
 	srv.Handler = mh
-	srv.Addr = srv.Config.Listen
+	var listen arvados.URL
+	for listen = range srv.Config.cluster.Services.WebDAV.InternalURLs {
+		break
+	}
+	if len(srv.Config.cluster.Services.WebDAV.InternalURLs) > 1 {
+		logrus.Warn("Services.WebDAV.InternalURLs has more than one key; picked: ", listen)
+	}
+	srv.Addr = listen.Host
 	return srv.Server.Start()
 }

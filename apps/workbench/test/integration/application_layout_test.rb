@@ -129,6 +129,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
   ].each do |token, user, invited, has_profile|
 
     test "visit home page for user #{token}" do
+      Rails.configuration.Users.AnonymousUserToken = ""
       if !token
         visit ('/')
       else
@@ -237,6 +238,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
 
   test "no SSH public key notification when shell_in_a_box_url is configured" do
     Rails.configuration.Services.WebShell.ExternalURL = URI('http://example.com')
+    Rails.configuration.Users.AnonymousUserToken = ""
     visit page_with_token('job_reader')
     click_link 'notifications-menu'
     assert_no_selector 'a', text:'Click here to set up an SSH public key for use with Arvados.'

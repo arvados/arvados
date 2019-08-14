@@ -4,9 +4,9 @@
 
 case "$TARGET" in
     centos*)
-        fpm_depends+=(git arvados-server)
+        fpm_depends+=(git)
         ;;
     debian* | ubuntu*)
-        fpm_depends+=(git g++ arvados-server)
+        fpm_depends+=(git g++)
         ;;
 esac

@@ -146,12 +146,7 @@ arvcfg.declare_config "Containers.SLURM.Managed.ComputeNodeDomain", String, :com
 arvcfg.declare_config "Containers.SLURM.Managed.ComputeNodeNameservers", Hash, :compute_node_nameservers, ->(cfg, k, v) { arrayToHash cfg, "Containers.SLURM.Managed.ComputeNodeNameservers", v }
 arvcfg.declare_config "Containers.SLURM.Managed.AssignNodeHostname", String, :assign_node_hostname
 arvcfg.declare_config "Containers.JobsAPI.Enable", String, :enable_legacy_jobs_api, ->(cfg, k, v) { ConfigLoader.set_cfg cfg, "Containers.JobsAPI.Enable", v.to_s }
-arvcfg.declare_config "Containers.JobsAPI.CrunchJobWrapper", String, :crunch_job_wrapper
-arvcfg.declare_config "Containers.JobsAPI.CrunchJobUser", String, :crunch_job_user
-arvcfg.declare_config "Containers.JobsAPI.CrunchRefreshTrigger", String, :crunch_refresh_trigger
 arvcfg.declare_config "Containers.JobsAPI.GitInternalDir", String, :git_internal_dir
-arvcfg.declare_config "Containers.JobsAPI.ReuseJobIfOutputsDiffer", Boolean, :reuse_job_if_outputs_differ
-arvcfg.declare_config "Containers.JobsAPI.DefaultDockerImage", String, :default_docker_image_for_jobs
 arvcfg.declare_config "Mail.MailchimpAPIKey", String, :mailchimp_api_key
 arvcfg.declare_config "Mail.MailchimpListID", String, :mailchimp_list_id
 arvcfg.declare_config "Services.Controller.ExternalURL", URI

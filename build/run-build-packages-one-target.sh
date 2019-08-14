@@ -261,7 +261,6 @@ else
     set +e
     mv -f ${WORKSPACE}/packages/${TARGET}/* ${WORKSPACE}/packages/${TARGET}/processed/ 2>/dev/null
     set -e
-set -x
     # Build packages.
     if docker run \
         --rm \

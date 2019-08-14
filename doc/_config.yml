@@ -67,18 +67,6 @@ navbar:
       - user/copying/agpl-3.0.html
       - user/copying/LICENSE-2.0.html
       - user/copying/by-sa-3.0.html
-    - Obsolete documentation:
-      - user/topics/running-pipeline-command-line.html.textile.liquid
-      - user/topics/arv-run.html.textile.liquid
-      - user/tutorials/running-external-program.html.textile.liquid
-      - user/topics/crunch-tools-overview.html.textile.liquid
-      - user/tutorials/tutorial-firstscript.html.textile.liquid
-      - user/tutorials/tutorial-submit-job.html.textile.liquid
-      - user/topics/tutorial-parallel.html.textile.liquid
-      - user/topics/run-command.html.textile.liquid
-      - user/reference/job-pipeline-ref.html.textile.liquid
-      - user/examples/crunch-examples.html.textile.liquid
-      - user/topics/tutorial-trait-search.html.textile.liquid
   sdk:
     - Overview:
       - sdk/index.html.textile.liquid
@@ -89,7 +77,6 @@ navbar:
       - sdk/python/arvados-fuse.html.textile.liquid
       - sdk/python/events.html.textile.liquid
       - sdk/python/cookbook.html.textile.liquid
-      - sdk/python/crunch-utility-libraries.html.textile.liquid
     - CLI:
       - sdk/cli/install.html.textile.liquid
       - sdk/cli/index.html.textile.liquid
@@ -141,13 +128,13 @@ navbar:
       - api/methods/container_requests.html.textile.liquid
       - api/methods/containers.html.textile.liquid
       - api/methods/workflows.html.textile.liquid
-    - Jobs engine (deprecated):
+    - Jobs engine (legacy):
       - api/crunch-scripts.html.textile.liquid
       - api/methods/jobs.html.textile.liquid
       - api/methods/job_tasks.html.textile.liquid
       - api/methods/pipeline_instances.html.textile.liquid
       - api/methods/pipeline_templates.html.textile.liquid
-    - Metadata for bioinformatics:
+    - Metadata for bioinformatics (deprecated):
       - api/methods/humans.html.textile.liquid
       - api/methods/specimens.html.textile.liquid
       - api/methods/traits.html.textile.liquid
@@ -228,8 +215,5 @@ navbar:
       - install/crunch2-slurm/install-test.html.textile.liquid
       - install/install-nodemanager.html.textile.liquid
       - install/install-compute-ping.html.textile.liquid
-    - Containers API support on cloud (experimental):
+    - Containers API support on cloud (beta):
       - install/install-dispatch-cloud.html.textile.liquid
-    - Jobs API support (deprecated):
-      - install/install-crunch-dispatch.html.textile.liquid
-      - install/install-compute-node.html.textile.liquid

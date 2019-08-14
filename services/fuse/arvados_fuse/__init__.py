@@ -780,7 +780,7 @@ class Operations(llfuse.Operations):
     @create_time.time()
     @catch_exceptions
     def create(self, inode_parent, name, mode, flags, ctx=None):
-        name = name.decode()
+        name = name.decode(encoding=self.inodes.encoding)
         _logger.debug("arv-mount create: parent_inode %i '%s' %o", inode_parent, name, mode)
 
         p = self._check_writable(inode_parent)
@@ -798,7 +798,7 @@ class Operations(llfuse.Operations):
     @mkdir_time.time()
     @catch_exceptions
     def mkdir(self, inode_parent, name, mode, ctx=None):
-        name = name.decode()
+        name = name.decode(encoding=self.inodes.encoding)
         _logger.debug("arv-mount mkdir: parent_inode %i '%s' %o", inode_parent, name, mode)
 
         p = self._check_writable(inode_parent)
@@ -813,24 +813,28 @@ class Operations(llfuse.Operations):
     @unlink_time.time()
     @catch_exceptions
     def unlink(self, inode_parent, name, ctx=None):
+        name = name.decode(encoding=self.inodes.encoding)
         _logger.debug("arv-mount unlink: parent_inode %i '%s'", inode_parent, name)
         p = self._check_writable(inode_parent)
-        p.unlink(name.decode())
+        p.unlink(name)
 
     @rmdir_time.time()
     @catch_exceptions
     def rmdir(self, inode_parent, name, ctx=None):
+        name = name.decode(encoding=self.inodes.encoding)
         _logger.debug("arv-mount rmdir: parent_inode %i '%s'", inode_parent, name)
         p = self._check_writable(inode_parent)
-        p.rmdir(name.decode())
+        p.rmdir(name)
 
     @rename_time.time()
     @catch_exceptions
     def rename(self, inode_parent_old, name_old, inode_parent_new, name_new, ctx=None):
+        name_old = name_old.decode(encoding=self.inodes.encoding)
+        name_new = name_new.decode(encoding=self.inodes.encoding)
         _logger.debug("arv-mount rename: old_parent_inode %i '%s' new_parent_inode %i '%s'", inode_parent_old, name_old, inode_parent_new, name_new)
         src = self._check_writable(inode_parent_old)
         dest = self._check_writable(inode_parent_new)
-        dest.rename(name_old.decode(), name_new.decode(), src)
+        dest.rename(name_old, name_new, src)
 
     @flush_time.time()
     @catch_exceptions

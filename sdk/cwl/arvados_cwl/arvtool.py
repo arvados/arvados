@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from cwltool.command_line_tool import CommandLineTool, ExpressionTool
-from .arvjob import ArvadosJob
 from .arvcontainer import ArvadosContainer
 from .pathmapper import ArvPathMapper
 from .runner import make_builder
@@ -48,8 +47,6 @@ class ArvadosCommandTool(CommandLineTool):
     def make_job_runner(self, runtimeContext):
         if runtimeContext.work_api == "containers":
             return partial(ArvadosContainer, self.arvrunner, runtimeContext)
-        elif runtimeContext.work_api == "jobs":
-            return partial(ArvadosJob, self.arvrunner)
         else:
             raise Exception("Unsupported work_api %s", runtimeContext.work_api)
 
@@ -58,10 +55,6 @@ class ArvadosCommandTool(CommandLineTool):
             return ArvPathMapper(self.arvrunner, reffiles+runtimeContext.extra_reffiles, runtimeContext.basedir,
                                  "/keep/%s",
                                  "/keep/%s/%s")
-        elif runtimeContext.work_api == "jobs":
-            return ArvPathMapper(self.arvrunner, reffiles, runtimeContext.basedir,
-                                 "$(task.keep)/%s",
-                                 "$(task.keep)/%s/%s")
 
     def job(self, joborder, output_callback, runtimeContext):
         builder = make_builder(joborder, self.hints, self.requirements, runtimeContext)
@@ -75,11 +68,6 @@ class ArvadosCommandTool(CommandLineTool):
             else:
                 runtimeContext.outdir = "/var/spool/cwl"
                 runtimeContext.docker_outdir = "/var/spool/cwl"
-        elif runtimeContext.work_api == "jobs":
-            runtimeContext.outdir = "$(task.outdir)"
-            runtimeContext.docker_outdir = "$(task.outdir)"
-            runtimeContext.tmpdir = "$(task.tmpdir)"
-            runtimeContext.docker_tmpdir = "$(task.tmpdir)"
         return super(ArvadosCommandTool, self).job(joborder, output_callback, runtimeContext)
 
 class ArvadosExpressionTool(ExpressionTool):

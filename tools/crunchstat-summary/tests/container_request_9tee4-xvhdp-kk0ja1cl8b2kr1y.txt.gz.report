@@ -1,0 +1,39 @@
+category	metric	task_max	task_max_rate	job_total
+blkio:0:0	read	0	0	0
+blkio:0:0	write	0	0	0
+cpu	cpus	20	-	-
+cpu	sys	0.39	0.04	0.39
+cpu	user	2.06	0.20	2.06
+cpu	user+sys	2.45	0.24	2.45
+fuseops	read	0	0	0
+fuseops	write	0	0	0
+keepcache	hit	0	0	0
+keepcache	miss	0	0	0
+keepcalls	get	0	0	0
+keepcalls	put	0	0	0
+mem	cache	172032	-	-
+mem	pgmajfault	0	-	0
+mem	rss	69525504	-	-
+mem	swap	0	-	-
+net:eth0	rx	859480	1478.97	859480
+net:eth0	tx	55888	395.71	55888
+net:eth0	tx+rx	915368	1874.69	915368
+net:keep0	rx	0	0	0
+net:keep0	tx	0	0	0
+net:keep0	tx+rx	0	0	0
+statfs	available	397744787456	-	397744787456
+statfs	total	402611240960	-	402611240960
+statfs	used	4870303744	52426.18	4866453504
+time	elapsed	20	-	20
+# Number of tasks: 1
+# Max CPU time spent by a single task: 2.45s
+# Max CPU usage in a single interval: 23.70%
+# Overall CPU usage: 12.25%
+# Max memory used by a single task: 0.07GB
+# Max network traffic in a single task: 0.00GB
+# Max network speed in a single interval: 0.00MB/s
+# Keep cache miss rate 0.00%
+# Keep cache utilization 0.00%
+# Temp disk utilization 1.21%
+#!! container max RSS was 67 MiB -- try reducing runtime_constraints to "ram":1020054732
+#!! container max temp disk utilization was 1% of 383960 MiB -- consider reducing "tmpdirMin" and/or "outdirMin"

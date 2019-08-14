@@ -57,6 +57,15 @@ func (sc *Config) GetCluster(clusterID string) (*Cluster, error) {
 	}
 }
 
+type WebDAVCacheConfig struct {
+	TTL                  Duration
+	UUIDTTL              Duration
+	MaxBlockEntries      int
+	MaxCollectionEntries int
+	MaxCollectionBytes   int64
+	MaxPermissionEntries int
+	MaxUUIDEntries       int
+}
 type Cluster struct {
 	ClusterID       string `json:"-"`
 	ManagementToken string
@@ -101,6 +110,8 @@ type Cluster struct {
 		PreserveVersionIfIdle Duration
 		TrashSweepInterval    Duration
 		TrustAllContent       bool
+
+		WebDAVCache WebDAVCacheConfig
 	}
 	Git struct {
 		Repositories string
@@ -272,13 +283,8 @@ type ContainersConfig struct {
 	UsePreemptibleInstances     bool
 
 	JobsAPI struct {
-		Enable                  string
-		GitInternalDir          string
-		DefaultDockerImage      string
-		CrunchJobWrapper        string
-		CrunchJobUser           string
-		CrunchRefreshTrigger    string
-		ReuseJobIfOutputsDiffer bool
+		Enable         string
+		GitInternalDir string
 	}
 	Logging struct {
 		MaxAge                       Duration

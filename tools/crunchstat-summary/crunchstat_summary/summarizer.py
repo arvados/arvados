@@ -470,7 +470,7 @@ class Summarizer(object):
         elif self.detected_crunch1:
             return JobSummarizer.runtime_constraint_mem_unit
         else:
-            return ContainerSummarizer.runtime_constraint_mem_unit
+            return ContainerRequestSummarizer.runtime_constraint_mem_unit
 
     def _map_runtime_constraint(self, key):
         if hasattr(self, 'map_runtime_constraint'):
@@ -501,12 +501,15 @@ def NewSummarizer(process_or_uuid, **kwargs):
 
     if '-dz642-' in uuid:
         if process is None:
-            process = arv.containers().get(uuid=uuid).execute()
-        klass = ContainerTreeSummarizer
+            # Get the associated CR. Doesn't matter which since they all have the same logs
+            crs = arv.container_requests().list(filters=[['container_uuid','=',uuid]],limit=1).execute()['items']
+            if len(crs) > 0:
+                process = crs[0]
+        klass = ContainerRequestTreeSummarizer
     elif '-xvhdp-' in uuid:
         if process is None:
             process = arv.container_requests().get(uuid=uuid).execute()
-        klass = ContainerTreeSummarizer
+        klass = ContainerRequestTreeSummarizer
     elif '-8i9sb-' in uuid:
         if process is None:
             process = arv.jobs().get(uuid=uuid).execute()
@@ -530,9 +533,14 @@ class ProcessSummarizer(Summarizer):
         self.process = process
         if label is None:
             label = self.process.get('name', self.process['uuid'])
-        if self.process.get('log'):
+        # Pre-Arvados v1.4 everything is in 'log'
+        # For 1.4+ containers have no logs and container_requests have them in 'log_uuid', not 'log'
+        log_collection = self.process.get('log')
+        if not log_collection:
+            log_collection = self.process.get('log_uuid')
+        if log_collection:
             try:
-                rdr = crunchstat_summary.reader.CollectionReader(self.process['log'])
+                rdr = crunchstat_summary.reader.CollectionReader(log_collection)
             except arvados.errors.NotFoundError as e:
                 logger.warning("Trying event logs after failing to read "
                                "log collection %s: %s", self.process['log'], e)
@@ -552,7 +560,7 @@ class JobSummarizer(ProcessSummarizer):
     }
 
 
-class ContainerSummarizer(ProcessSummarizer):
+class ContainerRequestSummarizer(ProcessSummarizer):
     runtime_constraint_mem_unit = 1
 
 
@@ -653,7 +661,7 @@ class PipelineSummarizer(MultiSummarizer):
             **kwargs)
 
 
-class ContainerTreeSummarizer(MultiSummarizer):
+class ContainerRequestTreeSummarizer(MultiSummarizer):
     def __init__(self, root, skip_child_jobs=False, **kwargs):
         arv = arvados.api('v1', model=OrderedJsonModel())
 
@@ -666,10 +674,8 @@ class ContainerTreeSummarizer(MultiSummarizer):
             current = todo.popleft()
             label = current['name']
             sort_key = current['created_at']
-            if current['uuid'].find('-xvhdp-') > 0:
-                current = arv.containers().get(uuid=current['container_uuid']).execute()
 
-            summer = ContainerSummarizer(current, label=label, **kwargs)
+            summer = ContainerRequestSummarizer(current, label=label, **kwargs)
             summer.sort_key = sort_key
             children[current['uuid']] = summer
 
@@ -678,7 +684,7 @@ class ContainerTreeSummarizer(MultiSummarizer):
                 child_crs = arv.container_requests().index(
                     order=['uuid asc'],
                     filters=page_filters+[
-                        ['requesting_container_uuid', '=', current['uuid']]],
+                        ['requesting_container_uuid', '=', current['container_uuid']]],
                 ).execute()
                 if not child_crs['items']:
                     break
@@ -696,7 +702,7 @@ class ContainerTreeSummarizer(MultiSummarizer):
         sorted_children = collections.OrderedDict()
         for uuid in sorted(list(children.keys()), key=lambda uuid: children[uuid].sort_key):
             sorted_children[uuid] = children[uuid]
-        super(ContainerTreeSummarizer, self).__init__(
+        super(ContainerRequestTreeSummarizer, self).__init__(
             children=sorted_children,
             label=root['name'],
             **kwargs)

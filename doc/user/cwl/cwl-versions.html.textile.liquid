@@ -18,17 +18,3 @@ If a step requires network access, use "NetworkAccess":https://www.commonwl.org/
 To prevent misbehaving steps from running forever and wasting resources, you can fail the step if it exceeds a certain running time with "ToolTimeLimit":https://www.commonwl.org/v1.1/CommandLineTool.html#ToolTimeLimit instead of the deprecated @cwltool:TimeLimit@ .
 
 To control if an individual step can be reused, use "WorkReuse":https://www.commonwl.org/v1.1/CommandLineTool.html#WorkReuse instead of the deprecated @arv:ReuseRequirement@.
-
-h2(#migrate). Differences in running CWL on the legacy jobs API vs containers API
-
-Most users can ignore this section.
-
-When migrating your Arvados cluster from using the jobs API (--api=jobs) (sometimes referred to as "crunch v1") to the containers API (--api=containers) ("crunch v2") there are a few differences in behavior:
-
-A tool may fail to find an input file that could be found when run under the jobs API.  This is because tools are limited to accessing collections explicitly listed in the input, and further limited to those individual files or subdirectories that are listed.  For example, given an explicit file input @/dir/subdir/file1.txt@, a tool will not be allowed to implicitly access a file in the parent directory @/dir/file2.txt@.  Use @secondaryFiles@ or a @Directory@ for files that need to be grouped together.
-
-A tool may fail when attempting to rename or delete a file in the output directory.  This may happen because files listed in @InitialWorkDirRequirement@ appear in the output directory as normal files (not symlinks) but cannot be moved, renamed or deleted unless marked as "writable" in CWL.  These files will be added to the output collection but without any additional copies of the underlying data.
-
-A tool may fail when attempting to access the network.  This may happen because, unlike the jobs API, under the containers API network access is disabled by default.  Tools which require network access should add "arv:APIRequirement: {}":cwl-extensions.html#APIRequirement to the @requirements@ section.
-
-CWL v1.1 is not supported by the Jobs API.

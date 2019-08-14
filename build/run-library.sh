@@ -103,6 +103,40 @@ handle_ruby_gem() {
     fi
 }
 
+calculate_go_package_version() {
+  # $__returnvar has the nameref attribute set, which means it is a reference
+  # to another variable that is passed in as the first argument to this function.
+  # see https://www.gnu.org/software/bash/manual/html_node/Shell-Parameters.html
+  local -n __returnvar="$1"; shift
+  local src_path="$1"; shift
+
+  mkdir -p "$GOPATH/src/git.curoverse.com"
+  ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
+  (cd "$GOPATH/src/git.curoverse.com/arvados.git" && "$GOPATH/bin/govendor" sync -v)
+
+  cd "$GOPATH/src/git.curoverse.com/arvados.git/$src_path"
+  local version="$(version_from_git)"
+  local timestamp="$(timestamp_from_git)"
+
+  # Update the version number and build a new package if the vendor
+  # bundle has changed, or the command imports anything from the
+  # Arvados SDK and the SDK has changed.
+  declare -a checkdirs=(vendor)
+  if grep -qr git.curoverse.com/arvados .; then
+      checkdirs+=(sdk/go lib)
+  fi
+  for dir in ${checkdirs[@]}; do
+      cd "$GOPATH/src/git.curoverse.com/arvados.git/$dir"
+      ts="$(timestamp_from_git)"
+      if [[ "$ts" -gt "$timestamp" ]]; then
+          version=$(version_from_git)
+          timestamp="$ts"
+      fi
+  done
+
+  __returnvar="$version"
+}
+
 # Usage: package_go_binary services/foo arvados-foo "Compute foo to arbitrary precision"
 package_go_binary() {
     local src_path="$1"; shift
@@ -110,46 +144,27 @@ package_go_binary() {
     local description="$1"; shift
     local license_file="${1:-agpl-3.0.txt}"; shift
 
-    if [[ -n "$ONLY_BUILD" ]] && [[ "$prog" != "$ONLY_BUILD" ]] ; then
+    if [[ -n "$ONLY_BUILD" ]] && [[ "$prog" != "$ONLY_BUILD" ]]; then
+      # arvados-workbench depends on arvados-server at build time, so even when
+      # only arvados-workbench is being built, we need to build arvados-server too
+      if [[ "$prog" != "arvados-server" ]] || [[ "$ONLY_BUILD" != "arvados-workbench" ]]; then
         return 0
+      fi
     fi
 
     debug_echo "package_go_binary $src_path as $prog"
 
     local basename="${src_path##*/}"
-
-    mkdir -p "$GOPATH/src/git.curoverse.com"
-    ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
-    (cd "$GOPATH/src/git.curoverse.com/arvados.git" && "$GOPATH/bin/govendor" sync -v)
-
-    cd "$GOPATH/src/git.curoverse.com/arvados.git/$src_path"
-    local version="$(version_from_git)"
-    local timestamp="$(timestamp_from_git)"
-
-    # Update the version number and build a new package if the vendor
-    # bundle has changed, or the command imports anything from the
-    # Arvados SDK and the SDK has changed.
-    declare -a checkdirs=(vendor)
-    if grep -qr git.curoverse.com/arvados .; then
-        checkdirs+=(sdk/go lib)
-    fi
-    for dir in ${checkdirs[@]}; do
-        cd "$GOPATH/src/git.curoverse.com/arvados.git/$dir"
-        ts="$(timestamp_from_git)"
-        if [[ "$ts" -gt "$timestamp" ]]; then
-            version=$(version_from_git)
-            timestamp="$ts"
-        fi
-    done
+    calculate_go_package_version go_package_version $src_path
 
     cd $WORKSPACE/packages/$TARGET
-    test_package_presence $prog $version go
+    test_package_presence $prog $go_package_version go
 
     if [[ "$?" != "0" ]]; then
       return 1
     fi
 
-    go get -ldflags "-X main.version=${version}" "git.curoverse.com/arvados.git/$src_path"
+    go get -ldflags "-X main.version=${go_package_version}" "git.curoverse.com/arvados.git/$src_path"
 
     local -a switches=()
     systemd_unit="$WORKSPACE/${src_path}/${prog}.service"
@@ -161,7 +176,7 @@ package_go_binary() {
     fi
     switches+=("$WORKSPACE/${license_file}=/usr/share/doc/$prog/${license_file}")
 
-    fpm_build "$GOPATH/bin/${basename}=/usr/bin/${prog}" "${prog}" dir "${version}" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=${description}" "${switches[@]}"
+    fpm_build "$GOPATH/bin/${basename}=/usr/bin/${prog}" "${prog}" dir "${go_package_version}" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=${description}" "${switches[@]}"
 }
 
 default_iteration() {
@@ -213,47 +228,71 @@ test_rails_package_presence() {
   test_package_presence $pkgname $version rails "$RAILS_PACKAGE_ITERATION"
 }
 
+get_complete_package_name() {
+  # if the errexit flag is set, unset it until this function returns
+  # otherwise, the shift calls below will abort the program if optional arguments are not supplied
+  if [ -o errexit ]; then
+    set +e
+    trap 'set -e' RETURN
+  fi
+  # $__returnvar has the nameref attribute set, which means it is a reference
+  # to another variable that is passed in as the first argument to this function.
+  # see https://www.gnu.org/software/bash/manual/html_node/Shell-Parameters.html
+  local -n __returnvar="$1"; shift
+  local pkgname="$1"; shift
+  local version="$1"; shift
+  local pkgtype="$1"; shift
+  local iteration="$1"; shift
+  local arch="$1"; shift
+  if [[ "$iteration" == "" ]]; then
+      iteration="$(default_iteration "$pkgname" "$version" "$pkgtype")"
+  fi
+
+  if [[ "$arch" == "" ]]; then
+    rpm_architecture="x86_64"
+    deb_architecture="amd64"
+
+    if [[ "$pkgtype" =~ ^(src)$ ]]; then
+      rpm_architecture="noarch"
+      deb_architecture="all"
+    fi
+
+    # These python packages have binary components
+    if [[ "$pkgname" =~ (ruamel|ciso|pycrypto|pyyaml) ]]; then
+      rpm_architecture="x86_64"
+      deb_architecture="amd64"
+    fi
+  else
+    rpm_architecture=$arch
+    deb_architecture=$arch
+  fi
+
+  local complete_pkgname="${pkgname}_$version${iteration:+-$iteration}_$deb_architecture.deb"
+  if [[ "$FORMAT" == "rpm" ]]; then
+      # rpm packages get iteration 1 if we don't supply one
+      iteration=${iteration:-1}
+      complete_pkgname="$pkgname-$version-${iteration}.$rpm_architecture.rpm"
+  fi
+  __returnvar=${complete_pkgname}
+}
+
+# Test if the package already exists, if not return 0, if it does return 1
 test_package_presence() {
     local pkgname="$1"; shift
     local version="$1"; shift
     local pkgtype="$1"; shift
     local iteration="$1"; shift
     local arch="$1"; shift
-
     if [[ -n "$ONLY_BUILD" ]] && [[ "$pkgname" != "$ONLY_BUILD" ]] ; then
+      # arvados-workbench depends on arvados-server at build time, so even when
+      # only arvados-workbench is being built, we need to build arvados-server too
+      if [[ "$pkgname" != "arvados-server" ]] || [[ "$ONLY_BUILD" != "arvados-workbench" ]]; then
         return 1
-    fi
-
-    if [[ "$iteration" == "" ]]; then
-        iteration="$(default_iteration "$pkgname" "$version" "$pkgtype")"
-    fi
-
-    if [[ "$arch" == "" ]]; then
-      rpm_architecture="x86_64"
-      deb_architecture="amd64"
-
-      if [[ "$pkgtype" =~ ^(src)$ ]]; then
-        rpm_architecture="noarch"
-        deb_architecture="all"
       fi
-
-      # These python packages have binary components
-      if [[ "$pkgname" =~ (ruamel|ciso|pycrypto|pyyaml) ]]; then
-        rpm_architecture="x86_64"
-        deb_architecture="amd64"
-      fi
-    else
-      rpm_architecture=$arch
-      deb_architecture=$arch
     fi
 
-    if [[ "$FORMAT" == "deb" ]]; then
-        local complete_pkgname="${pkgname}_$version${iteration:+-$iteration}_$deb_architecture.deb"
-    else
-        # rpm packages get iteration 1 if we don't supply one
-        iteration=${iteration:-1}
-        local complete_pkgname="$pkgname-$version-${iteration}.$rpm_architecture.rpm"
-    fi
+    local full_pkgname
+    get_complete_package_name full_pkgname $pkgname $version $pkgtype $iteration $arch
 
     # See if we can skip building the package, only if it already exists in the
     # processed/ directory. If so, move it back to the packages directory to make
@@ -274,32 +313,32 @@ test_package_presence() {
       fi
 
       repo_pkg_list=$(curl -s -o - http://apt.arvados.org/pool/${D}/main/${repo_subdir}/)
-      echo ${repo_pkg_list} |grep -q ${complete_pkgname}
+      echo ${repo_pkg_list} |grep -q ${full_pkgname}
       if [ $? -eq 0 ] ; then
-        echo "Package $complete_pkgname exists, not rebuilding!"
-        curl -s -o ./${complete_pkgname} http://apt.arvados.org/pool/${D}/main/${repo_subdir}/${complete_pkgname}
+        echo "Package $full_pkgname exists upstream, not rebuilding, downloading instead!"
+        curl -s -o "$WORKSPACE/packages/$TARGET/${full_pkgname}" http://apt.arvados.org/pool/${D}/main/${repo_subdir}/${full_pkgname}
         return 1
-      elif test -f "$WORKSPACE/packages/$TARGET/processed/${complete_pkgname}" ; then
-        echo "Package $complete_pkgname exists, not rebuilding!"
+      elif test -f "$WORKSPACE/packages/$TARGET/processed/${full_pkgname}" ; then
+        echo "Package $full_pkgname exists, not rebuilding!"
         return 1
       else
-        echo "Package $complete_pkgname not found, building"
+        echo "Package $full_pkgname not found, building"
         return 0
       fi
     else
       centos_repo="http://rpm.arvados.org/CentOS/7/dev/x86_64/"
 
       repo_pkg_list=$(curl -s -o - ${centos_repo})
-      echo ${repo_pkg_list} |grep -q ${complete_pkgname}
+      echo ${repo_pkg_list} |grep -q ${full_pkgname}
       if [ $? -eq 0 ]; then
-        echo "Package $complete_pkgname exists, not rebuilding!"
-        curl -s -o ./${complete_pkgname} ${centos_repo}${complete_pkgname}
+        echo "Package $full_pkgname exists upstream, not rebuilding, downloading instead!"
+        curl -s -o "$WORKSPACE/packages/$TARGET/${full_pkgname}" ${centos_repo}${full_pkgname}
         return 1
-      elif test -f "$WORKSPACE/packages/$TARGET/processed/${complete_pkgname}" ; then
-        echo "Package $complete_pkgname exists, not rebuilding!"
+      elif test -f "$WORKSPACE/packages/$TARGET/processed/${full_pkgname}" ; then
+        echo "Package $full_pkgname exists, not rebuilding!"
         return 1
       else
-        echo "Package $complete_pkgname not found, building"
+        echo "Package $full_pkgname not found, building"
         return 0
       fi
     fi
@@ -681,7 +720,11 @@ fpm_build () {
   shift
 
   if [[ -n "$ONLY_BUILD" ]] && [[ "$PACKAGE_NAME" != "$ONLY_BUILD" ]] && [[ "$PACKAGE" != "$ONLY_BUILD" ]] ; then
+    # arvados-workbench depends on arvados-server at build time, so even when
+    # only arvados-workbench is being built, we need to build arvados-server too
+    if [[ "$PACKAGE_NAME" != "arvados-server" ]] || [[ "$ONLY_BUILD" != "arvados-workbench" ]]; then
       return 0
+    fi
   fi
 
   local default_iteration_value="$(default_iteration "$PACKAGE" "$VERSION" "$PACKAGE_TYPE")"

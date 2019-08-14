@@ -26,7 +26,6 @@ module RepositoryStubHelper
       100644 blob 9bef02bbfda670595750fd99a4461005ce5b8f12     695    apps/workbench/.gitignore
       100644 blob b51f674d90f68bfb50d9304068f915e42b04aea4    2249    apps/workbench/Gemfile
       100644 blob b51f674d90f68bfb50d9304068f915e42b04aea4    2249    apps/workbench/Gemfile
-      100755 blob cdd5ebaff27781f93ab85e484410c0ce9e97770f    1012    crunch_scripts/hash
     EOS
     Repository.any_instance.
       stubs(:cat_file).with(fakesha1, fakefilename).returns fakefile

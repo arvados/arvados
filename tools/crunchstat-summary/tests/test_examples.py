@@ -67,29 +67,37 @@ class SummarizeEdgeCases(unittest.TestCase):
         s.run()
 
 
-class SummarizeContainer(ReportDiff):
+class SummarizeContainerCommon(ReportDiff):
     fake_container = {
         'uuid': '9tee4-dz642-lymtndkpy39eibk',
         'created_at': '2017-08-18T14:27:25.371388141',
         'log': '9tee4-4zz18-ihyzym9tcwjwg4r',
     }
     fake_request = {
-        'uuid': '9tee4-xvhdp-uper95jktm10d3w',
+        'uuid': '9tee4-xvhdp-kk0ja1cl8b2kr1y',
         'name': 'container',
         'created_at': '2017-08-18T14:27:25.242339223Z',
         'container_uuid': fake_container['uuid'],
-    }
-    reportfile = os.path.join(
-        TESTS_DIR, 'container_9tee4-dz642-lymtndkpy39eibk.txt.gz')
+        'runtime_constraints': {
+            'vcpus': 1,
+            'ram': 2621440000
+            },
+        'log_uuid' : '9tee4-4zz18-m2swj50nk0r8b6y'
+        }
+
     logfile = os.path.join(
-        TESTS_DIR, 'container_9tee4-dz642-lymtndkpy39eibk-crunchstat.txt.gz')
+        TESTS_DIR, 'container_request_9tee4-xvhdp-kk0ja1cl8b2kr1y-crunchstat.txt.gz')
     arvmountlog = os.path.join(
-        TESTS_DIR, 'container_9tee4-dz642-lymtndkpy39eibk-arv-mount.txt.gz')
+        TESTS_DIR, 'container_request_9tee4-xvhdp-kk0ja1cl8b2kr1y-arv-mount.txt.gz')
 
     @mock.patch('arvados.collection.CollectionReader')
     @mock.patch('arvados.api')
-    def test_container(self, mock_api, mock_cr):
-        mock_api().container_requests().index().execute.return_value = {'items':[]}
+    def check_common(self, mock_api, mock_cr):
+        items = [ {'items':[self.fake_request]}] + [{'items':[]}] * 100
+        # Index and list mean the same thing, but are used in different places in the
+        # code. It's fragile, but exploit that fact to distinguish the two uses.
+        mock_api().container_requests().index().execute.return_value = {'items': [] }  # child_crs
+        mock_api().container_requests().list().execute.side_effect = items # parent request
         mock_api().container_requests().get().execute.return_value = self.fake_request
         mock_api().containers().get().execute.return_value = self.fake_container
         mock_cr().__iter__.return_value = [
@@ -102,10 +110,29 @@ class SummarizeContainer(ReportDiff):
                 return UTF8Decode(gzip.open(self.arvmountlog))
         mock_cr().open.side_effect = _open
         args = crunchstat_summary.command.ArgumentParser().parse_args(
-            ['--container', self.fake_request['uuid']])
+            self.arg_strings)
         cmd = crunchstat_summary.command.Command(args)
         cmd.run()
         self.diff_known_report(self.reportfile, cmd)
+
+
+
+class SummarizeContainer(SummarizeContainerCommon):
+    uuid = '9tee4-dz642-lymtndkpy39eibk'
+    reportfile = os.path.join(TESTS_DIR, 'container_%s.txt.gz' % uuid)
+    arg_strings = ['--container', uuid, '-v', '-v']
+
+    def test_container(self):
+        self.check_common()
+
+
+class SummarizeContainerRequest(SummarizeContainerCommon):
+    uuid = '9tee4-xvhdp-kk0ja1cl8b2kr1y'
+    reportfile = os.path.join(TESTS_DIR, 'container_request_%s.txt.gz' % uuid)
+    arg_strings = ['--container-request', uuid, '-v', '-v']
+
+    def test_container_request(self):
+        self.check_common()
 
 
 class SummarizeJob(ReportDiff):

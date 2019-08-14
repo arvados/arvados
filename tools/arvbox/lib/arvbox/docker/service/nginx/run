@@ -114,6 +114,7 @@ server {
     server_name keep-web;
     ssl_certificate "${server_cert}";
     ssl_certificate_key "${server_cert_key}";
+    client_max_body_size 0;
     location  / {
       proxy_pass http://keep-web;
       proxy_set_header Host \$http_host;
@@ -123,6 +124,7 @@ server {
     }
   }
 
+
   upstream keepproxy {
     server localhost:${services[keepproxy]};
   }
@@ -131,6 +133,7 @@ server {
     server_name keepproxy;
     ssl_certificate "${server_cert}";
     ssl_certificate_key "${server_cert_key}";
+    client_max_body_size 128M;
     location  / {
       proxy_pass http://keepproxy;
       proxy_set_header Host \$http_host;

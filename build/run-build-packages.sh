@@ -290,8 +290,6 @@ package_go_binary cmd/arvados-server arvados-controller \
     "Arvados cluster controller daemon"
 package_go_binary cmd/arvados-server arvados-dispatch-cloud \
     "Arvados cluster cloud dispatch"
-package_go_binary sdk/go/crunchrunner crunchrunner \
-    "Crunchrunner executes a command inside a container and uploads the output"
 package_go_binary services/arv-git-httpd arvados-git-httpd \
     "Provide authenticated http access to Arvados-hosted git repositories"
 package_go_binary services/crunch-dispatch-local crunch-dispatch-local \
@@ -358,13 +356,16 @@ mkdir cwltest/bin && touch cwltest/bin/cwltest
 fpm_build_virtualenv "cwltest" "cwltest"
 rm -rf "$WORKSPACE/cwltest"
 
+calculate_go_package_version arvados_server_version cmd/arvados-server
+arvados_server_iteration=$(default_iteration "arvados-server" "$arvados_server_version" "go")
+
 # Build the API server package
 test_rails_package_presence arvados-api-server "$WORKSPACE/services/api"
 if [[ "$?" == "0" ]]; then
   handle_rails_package arvados-api-server "$WORKSPACE/services/api" \
       "$WORKSPACE/agpl-3.0.txt" --url="https://arvados.org" \
       --description="Arvados API server - Arvados is a free and open source platform for big data science." \
-      --license="GNU Affero General Public License, version 3.0"
+      --license="GNU Affero General Public License, version 3.0" --depends "arvados-server = ${arvados_server_version}-${arvados_server_iteration}"
 fi
 
 # Build the workbench server package
@@ -372,6 +373,22 @@ test_rails_package_presence arvados-workbench "$WORKSPACE/apps/workbench"
 if [[ "$?" == "0" ]] ; then
   (
       set -e
+
+      # The workbench package has a build-time dependency on the arvados-server
+      # package for config manipulation, so install it first.
+      cd $WORKSPACE/cmd/arvados-server
+      get_complete_package_name arvados_server_pkgname arvados-server ${arvados_server_version} go
+
+      arvados_server_pkg_path="$WORKSPACE/packages/$TARGET/${arvados_server_pkgname}"
+      if [[ ! -e ${arvados_server_pkg_path} ]]; then
+        arvados_server_pkg_path="$WORKSPACE/packages/$TARGET/processed/${arvados_server_pkgname}"
+      fi
+      if [[ "$FORMAT" == "deb" ]]; then
+        dpkg -i ${arvados_server_pkg_path}
+      else
+        rpm -i ${arvados_server_pkg_path}
+      fi
+
       cd "$WORKSPACE/apps/workbench"
 
       # We need to bundle to be ready even when we build a package without vendor directory
@@ -390,8 +407,8 @@ if [[ "$?" == "0" ]] ; then
       mv /tmp/x /etc/arvados/config.yml
       perl -p -i -e 'BEGIN{undef $/;} s/WebDAV(.*?):\n( *)ExternalURL: ""/WebDAV$1:\n$2ExternalURL: "example.com"/g' /etc/arvados/config.yml
 
-      RAILS_ENV=production RAILS_GROUPS=assets bundle exec rake npm:install >/dev/null
-      RAILS_ENV=production RAILS_GROUPS=assets bundle exec rake assets:precompile >/dev/null
+      RAILS_ENV=production RAILS_GROUPS=assets bundle exec rake npm:install >"$STDOUT_IF_DEBUG"
+      RAILS_ENV=production RAILS_GROUPS=assets bundle exec rake assets:precompile >"$STDOUT_IF_DEBUG"
 
       # Remove generated configuration files so they don't go in the package.
       rm -rf /etc/arvados/
@@ -404,7 +421,7 @@ if [[ "$?" == "0" ]] ; then
     handle_rails_package arvados-workbench "$WORKSPACE/apps/workbench" \
         "$WORKSPACE/agpl-3.0.txt" --url="https://arvados.org" \
         --description="Arvados Workbench - Arvados is a free and open source platform for big data science." \
-        --license="GNU Affero General Public License, version 3.0"
+        --license="GNU Affero General Public License, version 3.0" --depends "arvados-server = ${arvados_server_version}-${arvados_server_iteration}"
   fi
 fi
 

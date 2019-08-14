@@ -7,9 +7,13 @@ class Arvados::V1::PipelineInstancesController < ApplicationController
   accept_attribute_as_json :properties, Hash
   accept_attribute_as_json :components_summary, Hash
 
+  def create
+    return send_error("Unsupported legacy jobs API",
+                      status: 400)
+  end
+
   def cancel
-    reload_object_before_update
-    @object.cancel cascade: params[:cascade]
-    show
+    return send_error("Unsupported legacy jobs API",
+                      status: 400)
   end
 end

@@ -52,7 +52,7 @@ func (s *IntegrationSuite) TestCadaverUserProject(c *check.C) {
 }
 
 func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc func(arvados.Collection) (string, string, string), skip func(string) bool) {
-	s.testServer.Config.AnonymousTokens = []string{arvadostest.AnonymousToken}
+	s.testServer.Config.cluster.Users.AnonymousUserToken = arvadostest.AnonymousToken
 
 	testdata := []byte("the human tragedy consists in the necessity of living with the consequences of actions performed under the pressure of compulsions we do not understand")
 
@@ -340,7 +340,7 @@ func (s *IntegrationSuite) runCadaver(c *check.C, password, path, stdin string) 
 		// unauthenticated request, which it only does in
 		// AttachmentOnlyHost, TrustAllContent, and
 		// per-collection vhost cases.
-		s.testServer.Config.AttachmentOnlyHost = s.testServer.Addr
+		s.testServer.Config.cluster.Services.WebDAVDownload.ExternalURL.Host = s.testServer.Addr
 
 		cmd.Env = append(os.Environ(), "HOME="+tempdir)
 		f, err := os.OpenFile(filepath.Join(tempdir, ".netrc"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
