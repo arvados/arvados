@@ -334,7 +334,7 @@ def upload_dependencies(arvrunner, name, document_loader,
                                  builder_job_order,
                                  discovered)
 
-    copied, _ = document_loader.resolve_all(copy.deepcopy(cmap(workflowobj)), base_url=uri)
+    copied, _ = document_loader.resolve_all(copy.deepcopy(cmap(workflowobj)), base_url=uri, checklinks=False)
     visit_class(copied, ("CommandLineTool", "Workflow"), discover_default_secondary_files)
 
     for d in list(discovered):
