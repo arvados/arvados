@@ -108,13 +108,13 @@ func main() {
 func run(logger log.FieldLogger, cluster *arvados.Cluster) error {
 	client, err := arvados.NewClientFromConfig(cluster)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	client.AuthToken = cluster.SystemRootToken
 
 	arv, err := arvadosclient.New(client)
 	if err != nil {
-		log.Fatalf("Error setting up arvados client %s", err.Error())
+		return fmt.Errorf("Error setting up arvados client %v", err)
 	}
 
 	if cluster.SystemLogs.LogLevel == "debug" {
@@ -122,7 +122,7 @@ func run(logger log.FieldLogger, cluster *arvados.Cluster) error {
 	}
 	kc, err := keepclient.MakeKeepClient(arv)
 	if err != nil {
-		log.Fatalf("Error setting up keep client %s", err.Error())
+		return fmt.Errorf("Error setting up keep client %v", err)
 	}
 	keepclient.RefreshServiceDiscoveryOnSIGHUP()
 
@@ -138,13 +138,13 @@ func run(logger log.FieldLogger, cluster *arvados.Cluster) error {
 	var lErr error
 	listener, lErr = net.Listen("tcp", listen.Host)
 	if lErr != nil {
-		log.Fatalf("listen(%s): %s", listen.Host, lErr)
+		return fmt.Errorf("listen(%s): %v", listen.Host, lErr)
 	}
 
 	if _, err := daemon.SdNotify(false, "READY=1"); err != nil {
 		log.Printf("Error notifying init daemon: %v", err)
 	}
-	log.Println("Listening at", listener.Addr())
+	log.Println("listening at", listener.Addr())
 
 	// Shut down the server gracefully (by closing the listener)
 	// if SIGTERM is received.

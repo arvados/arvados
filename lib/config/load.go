@@ -141,7 +141,7 @@ func (ldr *Loader) MungeLegacyConfigArgs(lgr logrus.FieldLogger, args []string, 
 		ldr.KeepWebPath = ""
 	}
 	if legacyConfigArg != "-legacy-keepproxy-config" {
-		ldr.WebsocketPath = ""
+		ldr.KeepproxyPath = ""
 	}
 
 	return munged
