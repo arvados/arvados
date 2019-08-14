@@ -13,7 +13,6 @@ import (
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -639,75 +638,4 @@ func (s *ServerRequiredSuite) TestPing(c *C) {
 	rtr.ServeHTTP(resp, req)
 	c.Check(resp.Code, Equals, 200)
 	c.Assert(resp.Body.String(), Matches, `{"health":"OK"}\n?`)
-}
-
-func (s *NoKeepServerSuite) TestLegacyConfig(c *C) {
-	content := []byte(fmtConfig("", true))
-	cluster, err := loadLegacyConfig(content, c)
-
-	c.Check(err, IsNil)
-	c.Check(cluster, NotNil)
-	c.Check(cluster.Services.Controller.ExternalURL, Equals, arvados.URL{Scheme: "https", Host: "example.com"})
-	c.Check(cluster.SystemRootToken, Equals, "abcdefg")
-	c.Check(cluster.ManagementToken, Equals, "xyzzy")
-	c.Check(cluster.Services.Keepproxy.InternalURLs[arvados.URL{Host: ":80"}], Equals, arvados.ServiceInstance{})
-	c.Check(cluster.Collections.DefaultReplication, Equals, 0)
-	c.Check(cluster.API.KeepServiceRequestTimeout.String(), Equals, "15s")
-	c.Check(cluster.SystemLogs.LogLevel, Equals, "debug")
-
-	content = []byte(fmtConfig("", false))
-	cluster, err = loadLegacyConfig(content, c)
-	c.Check(cluster.SystemLogs.LogLevel, Equals, "info")
-
-	content = []byte(fmtConfig(`"DisableGet": true,`, true))
-	_, err = loadLegacyConfig(content, c)
-	c.Check(err, NotNil)
-
-	content = []byte(fmtConfig(`"DisablePut": true,`, true))
-	_, err = loadLegacyConfig(content, c)
-	c.Check(err, NotNil)
-
-	content = []byte(fmtConfig(`"PIDFile": "test",`, true))
-	_, err = loadLegacyConfig(content, c)
-	c.Check(err, NotNil)
-
-	content = []byte(fmtConfig(`"DisableGet": false, "DisablePut": false, "PIDFile": "",`, true))
-	_, err = loadLegacyConfig(content, c)
-	c.Check(err, IsNil)
-
-}
-
-func loadLegacyConfig(content []byte, c *C) (*arvados.Cluster, error) {
-	tmpfile, err := ioutil.TempFile("", "example")
-	if err != nil {
-		c.Error(err)
-	}
-	defer os.Remove(tmpfile.Name())
-
-	if _, err := tmpfile.Write(content); err != nil {
-		c.Error(err)
-	}
-	if err := tmpfile.Close(); err != nil {
-		c.Error(err)
-	}
-	return configure(log.New(), []string{"keepproxy", "-config", tmpfile.Name()})
-}
-
-func fmtConfig(param string, debugLog bool) string {
-	return fmt.Sprintf(`
-{
-	"Client": {
-		"Scheme": "",
-		"APIHost": "example.com",
-		"AuthToken": "abcdefg",
-		"Insecure": false
-	},
-	"Listen": ":80",
-	"DefaultReplicas": 0,
-	"Timeout": "15s",
-	"Debug": %t,
-	%s
-	"ManagementToken": "xyzzy"
-}
-`, debugLog, param)
 }
