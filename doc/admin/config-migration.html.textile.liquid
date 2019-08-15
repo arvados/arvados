@@ -64,19 +64,19 @@ Currently only reads @RemoteClusters@ from centralized configuration.  Still req
 
 h2(#keepproxy). keepproxy
 
-The legacy keepproxy config is stored at @/etc/arvados/keepproxy/keepproxy.yml@ and can still be used with the @-config=path/to/legacy/config@ keepproxy command line argument. If migrated to the centralized config at @/etc/arvados/config.yml@, @keepproxy.yml@ should be moved out of the way and/or deleted.
+The legacy keepproxy config is stored at @/etc/arvados/keepproxy/keepproxy.yml@ by default and will continue to take precedence over the cluster config, unless removed. Also, a legacy keepproxy config in a different path can still be used with the @-legacy-keepproxy-config=path/to/legacy/config@ keepproxy command line argument. If the @-legacy-keepproxy-config@ command line argument is provided, this will take precedence over @/etc/arvados/keepproxy/keepproxy.yml@ and the cluster config. If migrating to the centralized config, @keepproxy.yml@ should be moved out of the way and/or deleted and the @-legacy-keepproxy-config@ command line argument should not be used.
 
 Configuration via individual command line arguments is no longer available. The following table maps former keepproxy command line arguments and legacy config values to their equivalent representation in the centralized config, which may need to be set manually.
 
 table(table table-bordered table-condensed).
 |*Command Line*|*Legacy keepproxy.yml*|*Centralized config.yml*|
-|-listen|Listen|Services:Keepproxy:InternalURLs|
+|-listen|Listen|Services.Keepproxy.InternalURLs|
 |-no-get|DisableGet|N/A|
 |-no-put|DisablePut|N/A|
-|-default-replicas|DefaultReplicas|Collections:DefaultReplication|
+|-default-replicas|DefaultReplicas|Collections.DefaultReplication|
 |-pid|PIDFile|N/A|
-|N/A|Debug|SystemLogs:LogLevel|
-|-timeout|Timeout|API:KeepServiceRequestTimeout|
+|N/A|Debug|SystemLogs.LogLevel|
+|-timeout|Timeout|API.KeepServiceRequestTimeout|
 |-management-token|ManagementToken|ManagementToken|
 
 Note that some options are no longer supported. If you are still using the legacy config at @/etc/arvados/keepproxy/keepproxy.yml@ and @DisableGet@ or @DisablePut@ are set to true or @PIDFile@ has a value, keepproxy will produce an error and fail to start.

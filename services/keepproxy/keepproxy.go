@@ -43,7 +43,6 @@ const rfc3339NanoFixed = "2006-01-02T15:04:05.000000000Z07:00"
 
 func configure(logger log.FieldLogger, args []string) (*arvados.Cluster, error) {
 	flags := flag.NewFlagSet(args[0], flag.ExitOnError)
-	flags.Usage = usage
 
 	dumpConfig := flags.Bool("dump-config", false, "write current configuration to stdout and exit")
 	getVersion := flags.Bool("version", false, "Print version information and exit.")
