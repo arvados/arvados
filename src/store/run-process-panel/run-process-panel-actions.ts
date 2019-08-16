@@ -135,7 +135,7 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
                 api: advancedForm[API_FIELD],
             },
             schedulingParameters: {
-                maxRunTime: advancedForm[RUNTIME_FIELD]
+                max_run_time: advancedForm[RUNTIME_FIELD]
             },
             containerImage: 'arvados/jobs',
             cwd: '/var/spool/cwl',

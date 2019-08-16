@@ -20,7 +20,7 @@ export const OUTPUT_FIELD = 'output';
 export const RUNTIME_FIELD = 'runtime';
 export const RAM_FIELD = 'ram';
 export const VCPUS_FIELD = 'vcpus';
-export const KEEP_CACHE_RAM_FIELD = 'keepCacheRam';
+export const KEEP_CACHE_RAM_FIELD = 'keep_cache_ram';
 export const API_FIELD = 'api';
 
 export interface RunProcessAdvancedFormData {
@@ -93,7 +93,7 @@ export const RunProcessAdvancedForm =
                                 parse={IntInput.parse}
                                 format={IntInput.format}
                                 type='number'
-                                validate={keepCacheRamValdation} />
+                                validate={keepCacheRamValidation} />
                         </Grid>
                         <Grid item xs={12} md={6}>
                             <Field
@@ -112,5 +112,5 @@ export const RunProcessAdvancedForm =
 
 const ramValidation = [min(0)];
 const vcpusValidation = [min(1)];
-const keepCacheRamValdation = [optional(min(0))];
+const keepCacheRamValidation = [optional(min(0))];
 const runtimeValidation = [optional(min(1))];

@@ -95,10 +95,10 @@ export const reRunProcess = (processUuid: string, workflowUuid: string) =>
 
             const advancedInitialData: RunProcessAdvancedFormData = {
                 output: process.outputName,
-                runtime: process.schedulingParameters.maxRunTime,
+                runtime: process.schedulingParameters.max_run_time,
                 ram: process.runtimeConstraints.ram,
                 vcpus: process.runtimeConstraints.vcpus,
-                keepCacheRam: process.runtimeConstraints.keepCacheRam,
+                keep_cache_ram: process.runtimeConstraints.keep_cache_ram,
                 api: process.runtimeConstraints.API
             };
             dispatch<any>(initialize(RUN_PROCESS_ADVANCED_FORM, advancedInitialData));
