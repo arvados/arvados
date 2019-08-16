@@ -18,17 +18,17 @@ export interface NodeResource extends Resource {
 }
 
 export interface NodeInfo {
-    lastAction: string;
-    pingSecret: string;
-    ec2InstanceId: string;
-    slurmState?: string;
+    last_action: string;
+    ping_secret: string;
+    ec2_instance_id: string;
+    slurm_state?: string;
 }
 
 export interface NodeProperties {
-    cloudNode: CloudNode;
-    totalRamMb: number;
-    totalCpuCores: number;
-    totalScratchMb: number;
+    cloud_node: CloudNode;
+    total_ram_mb: number;
+    total_cpu_cores: number;
+    total_scratch_mb: number;
 }
 
 interface CloudNode {

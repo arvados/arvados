@@ -29,7 +29,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     grid: {
         padding: '8px 0 0 0'
-    } 
+    }
 });
 
 interface AttributesComputeNodeDialogDataProps {
@@ -81,35 +81,35 @@ const renderPrimaryInfo = (computeNode: NodeResource, classes: any) => {
 };
 
 const renderInfo = (info: NodeInfo, classes: any) => {
-    const { lastAction, pingSecret, ec2InstanceId, slurmState } = info;
+    const { last_action, ping_secret, ec2_instance_id, slurm_state } = info;
     return (
         <Grid container direction="row" spacing={16} className={classnames([classes.root, classes.grid])}>
             <Grid item xs={5}>Info - Last action</Grid>
-            <Grid item xs={7}>{lastAction || '(none)'}</Grid>
+            <Grid item xs={7}>{last_action || '(none)'}</Grid>
             <Grid item xs={5}>Info - Ping secret</Grid>
-            <Grid item xs={7}>{pingSecret || '(none)'}</Grid>
+            <Grid item xs={7}>{ping_secret || '(none)'}</Grid>
             <Grid item xs={5}>Info - ec2 instance id</Grid>
-            <Grid item xs={7}>{ec2InstanceId || '(none)'}</Grid>
+            <Grid item xs={7}>{ec2_instance_id || '(none)'}</Grid>
             <Grid item xs={5}>Info - Slurm state</Grid>
-            <Grid item xs={7}>{slurmState || '(none)'}</Grid>
+            <Grid item xs={7}>{slurm_state || '(none)'}</Grid>
         </Grid>
     );
 };
 
 const renderProperties = (properties: NodeProperties, classes: any) => {
-    const { totalRamMb, totalCpuCores, totalScratchMb, cloudNode } = properties;
+    const { total_ram_mb, total_cpu_cores, total_scratch_mb, cloud_node } = properties;
     return (
         <Grid container direction="row" spacing={16} className={classnames([classes.root, classes.grid])}>
             <Grid item xs={5}>Properties - Total ram mb</Grid>
-            <Grid item xs={7}>{totalRamMb || '(none)'}</Grid>
+            <Grid item xs={7}>{total_ram_mb || '(none)'}</Grid>
             <Grid item xs={5}>Properties - Total scratch mb</Grid>
-            <Grid item xs={7}>{totalScratchMb || '(none)'}</Grid>
+            <Grid item xs={7}>{total_scratch_mb || '(none)'}</Grid>
             <Grid item xs={5}>Properties - Total cpu cores</Grid>
-            <Grid item xs={7}>{totalCpuCores || '(none)'}</Grid>
+            <Grid item xs={7}>{total_cpu_cores || '(none)'}</Grid>
             <Grid item xs={5}>Properties - Cloud node size </Grid>
-            <Grid item xs={7}>{cloudNode ? cloudNode.size : '(none)'}</Grid>
+            <Grid item xs={7}>{cloud_node ? cloud_node.size : '(none)'}</Grid>
             <Grid item xs={5}>Properties - Cloud node price</Grid>
-            <Grid item xs={7}>{cloudNode ? cloudNode.price : '(none)'}</Grid>
+            <Grid item xs={7}>{cloud_node ? cloud_node.price : '(none)'}</Grid>
         </Grid>
     );
 };
