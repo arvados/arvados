@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"net/http/cgi"
 	"os"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 )
 
 // gitHandler is an http.Handler that invokes git-http-backend (or
@@ -20,29 +22,34 @@ type gitHandler struct {
 	cgi.Handler
 }
 
-func newGitHandler() http.Handler {
+func newGitHandler(cluster *arvados.Cluster) http.Handler {
 	const glBypass = "GL_BYPASS_ACCESS_CHECKS"
 	const glHome = "GITOLITE_HTTP_HOME"
 	var env []string
 	path := os.Getenv("PATH")
-	if theConfig.GitoliteHome != "" {
+	if cluster.Git.GitoliteHome != "" {
 		env = append(env,
-			glHome+"="+theConfig.GitoliteHome,
+			glHome+"="+cluster.Git.GitoliteHome,
 			glBypass+"=1")
-		path = path + ":" + theConfig.GitoliteHome + "/bin"
+		path = path + ":" + cluster.Git.GitoliteHome + "/bin"
 	} else if home, bypass := os.Getenv(glHome), os.Getenv(glBypass); home != "" || bypass != "" {
 		env = append(env, glHome+"="+home, glBypass+"="+bypass)
 		log.Printf("DEPRECATED: Passing through %s and %s environment variables. Use GitoliteHome configuration instead.", glHome, glBypass)
 	}
+
+	var listen arvados.URL
+	for listen = range cluster.Services.GitHTTP.InternalURLs {
+		break
+	}
 	env = append(env,
-		"GIT_PROJECT_ROOT="+theConfig.RepoRoot,
+		"GIT_PROJECT_ROOT="+cluster.Git.Repositories,
 		"GIT_HTTP_EXPORT_ALL=",
-		"SERVER_ADDR="+theConfig.Listen,
+		"SERVER_ADDR="+listen.Host,
 		"PATH="+path)
 	return &gitHandler{
 		Handler: cgi.Handler{
-			Path: theConfig.GitCommand,
-			Dir:  theConfig.RepoRoot,
+			Path: cluster.Git.GitCommand,
+			Dir:  cluster.Git.Repositories,
 			Env:  env,
 			Args: []string{"http-backend"},
 		},
