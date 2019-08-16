@@ -419,6 +419,17 @@ Clusters:
       ProviderAppID: ""
 
     Git:
+      # Path to git or gitolite-shell executable. Each authenticated
+      # request will execute this program with the single argument http-backend"
+      GitCommand: /usr/bin/git
+
+      # Path to Gitolite's home directory. If a non-empty path is given,
+      # the CGI environment will be set up to support the use of
+      # gitolite-shell as a GitCommand: for example, if GitoliteHome is
+      # "/gh", then the CGI environment will have GITOLITE_HTTP_HOME=/gh,
+      # PATH=$PATH:/gh/bin, and GL_BYPASS_ACCESS_CHECKS=1.
+      GitoliteHome: ""
+
       # Git repositories must be readable by api server, or you won't be
       # able to submit crunch jobs. To pass the test suites, put a clone
       # of the arvados tree in {git_repositories_dir}/arvados.git or
