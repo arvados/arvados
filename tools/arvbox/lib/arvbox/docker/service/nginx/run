@@ -143,6 +143,29 @@ server {
     }
   }
 
+  upstream arvados-git-httpd {
+    server localhost:${services[arv-git-httpd]};
+  }
+  server {
+    listen *:${services[arv-git-httpd-ssl]} ssl default_server;
+    server_name git.${localip};
+    proxy_connect_timeout 90s;
+    proxy_read_timeout 300s;
+
+    ssl on;
+    ssl_certificate "${server_cert}";
+    ssl_certificate_key "${server_cert_key}";
+    client_max_body_size 50m;
+
+    location  / {
+      proxy_pass http://arvados-git-httpd;
+      proxy_set_header Host \$http_host;
+      proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto https;
+      proxy_redirect off;
+    }
+  }
+
 }
 
 EOF

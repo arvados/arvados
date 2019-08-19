@@ -33,6 +33,7 @@ services=(
   [controller-ssl]=8000
   [sso]=8900
   [composer]=4200
+  [arv-git-httpd-ssl]=9000
   [arv-git-httpd]=9001
   [keep-web]=9003
   [keep-web-ssl]=9002
