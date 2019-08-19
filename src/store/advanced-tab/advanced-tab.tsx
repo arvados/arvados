@@ -413,7 +413,7 @@ const containerRequestApiResponse = (apiResponse: ContainerRequestResource) => {
 "container_count_max": ${stringify(containerCountMax)},
 "mounts": ${stringifyObject(mounts)},
 "runtime_constraints": ${stringifyObject(runtimeConstraints)},
-"container_image": "${stringify(containerImage)}",
+"container_image": ${stringify(containerImage)},
 "environment": ${stringifyObject(environment)},
 "cwd": ${stringify(cwd)},
 "command": ${stringifyObject(command)},

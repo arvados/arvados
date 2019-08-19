@@ -22,7 +22,7 @@ export type MountType =
 export interface CollectionMount {
     kind: MountKind.COLLECTION;
     uuid?: string;
-    portableDataHash?: string;
+    portable_data_hash?: string;
     path?: string;
     writable?: boolean;
 }
