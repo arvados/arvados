@@ -107,6 +107,8 @@ arvcfg.declare_config "Users.NewUserNotificationRecipients", Hash, :new_user_not
 arvcfg.declare_config "Users.NewInactiveUserNotificationRecipients", Hash, :new_inactive_user_notification_recipients, method(:arrayToHash)
 arvcfg.declare_config "Login.ProviderAppSecret", NonemptyString, :sso_app_secret
 arvcfg.declare_config "Login.ProviderAppID", NonemptyString, :sso_app_id
+arvcfg.declare_config "Login.LoginCluster", String
+arvcfg.declare_config "Login.RemoteTokenRefresh", ActiveSupport::Duration
 arvcfg.declare_config "TLS.Insecure", Boolean, :sso_insecure
 arvcfg.declare_config "Services.SSO.ExternalURL", NonemptyString, :sso_provider_url
 arvcfg.declare_config "AuditLogs.MaxAge", ActiveSupport::Duration, :max_audit_log_age

@@ -92,14 +92,28 @@ class ApiClientAuthorization < ArvadosModel
        uuid_prefix+".arvadosapi.com")
   end
 
+  def self.make_http_client
+    clnt = HTTPClient.new
+    if Rails.configuration.TLS.Insecure
+      clnt.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
+    else
+      # Use system CA certificates
+      ["/etc/ssl/certs/ca-certificates.crt",
+       "/etc/pki/tls/certs/ca-bundle.crt"]
+        .select { |ca_path| File.readable?(ca_path) }
+        .each { |ca_path| clnt.ssl_config.add_trust_ca(ca_path) }
+    end
+    clnt
+  end
+
   def self.validate(token:, remote: nil)
     return nil if !token
     remote ||= Rails.configuration.ClusterID
 
     case token[0..2]
     when 'v2/'
-      _, uuid, secret, optional = token.split('/')
-      unless uuid.andand.length == 27 && secret.andand.length.andand > 0
+      _, token_uuid, secret, optional = token.split('/')
+      unless token_uuid.andand.length == 27 && secret.andand.length.andand > 0
         return nil
       end
 
@@ -108,11 +122,11 @@ class ApiClientAuthorization < ArvadosModel
         # matches expections.
         c = Container.where(uuid: optional).first
         if !c.nil?
-          if !c.auth_uuid.nil? and c.auth_uuid != uuid
+          if !c.auth_uuid.nil? and c.auth_uuid != token_uuid
             # token doesn't match the container's token
             return nil
           end
-          if !c.runtime_token.nil? and "v2/#{uuid}/#{secret}" != c.runtime_token
+          if !c.runtime_token.nil? and "v2/#{token_uuid}/#{secret}" != c.runtime_token
             # token doesn't match the container's token
             return nil
           end
@@ -123,45 +137,45 @@ class ApiClientAuthorization < ArvadosModel
         end
       end
 
+      # fast path: look up the token in the local database
       auth = ApiClientAuthorization.
              includes(:user, :api_client).
-             where('uuid=? and (expires_at is null or expires_at > CURRENT_TIMESTAMP)', uuid).
+             where('uuid=? and (expires_at is null or expires_at > CURRENT_TIMESTAMP)', token_uuid).
              first
       if auth && auth.user &&
          (secret == auth.api_token ||
           secret == OpenSSL::HMAC.hexdigest('sha1', auth.api_token, remote))
+        # found it
         return auth
       end
 
-      uuid_prefix = uuid[0..4]
-      if uuid_prefix == Rails.configuration.ClusterID
-        # If the token were valid, we would have validated it above
+      token_uuid_prefix = token_uuid[0..4]
+      if token_uuid_prefix == Rails.configuration.ClusterID
+        # Token is supposedly issued by local cluster, but if the
+        # token were valid, we would have been found in the database
+        # in the above query.
         return nil
-      elsif uuid_prefix.length != 5
+      elsif token_uuid_prefix.length != 5
         # malformed
         return nil
       end
 
-      host = remote_host(uuid_prefix: uuid_prefix)
+      # Invarient: token_uuid_prefix != Rails.configuration.ClusterID
+      #
+      # In other words the remaing code in this method below is the
+      # case that determines whether to accept a token that was issued
+      # by a remote cluster when the token absent or expired in our
+      # database.  To begin, we need to ask the cluster that issued
+      # the token to [re]validate it.
+      clnt = ApiClientAuthorization.make_http_client
+
+      host = remote_host(uuid_prefix: token_uuid_prefix)
       if !host
-        Rails.logger.warn "remote authentication rejected: no host for #{uuid_prefix.inspect}"
+        Rails.logger.warn "remote authentication rejected: no host for #{token_uuid_prefix.inspect}"
         return nil
       end
 
-      # Token was issued by a different cluster. If it's expired or
-      # missing in our database, ask the originating cluster to
-      # [re]validate it.
       begin
-        clnt = HTTPClient.new
-        if Rails.configuration.TLS.Insecure
-          clnt.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
-        else
-          # Use system CA certificates
-          ["/etc/ssl/certs/ca-certificates.crt",
-           "/etc/pki/tls/certs/ca-bundle.crt"]
-            .select { |ca_path| File.readable?(ca_path) }
-            .each { |ca_path| clnt.ssl_config.add_trust_ca(ca_path) }
-        end
         remote_user = SafeJSON.load(
           clnt.get_content('https://' + host + '/arvados/v1/users/current',
                            {'remote' => Rails.configuration.ClusterID},
@@ -170,63 +184,91 @@ class ApiClientAuthorization < ArvadosModel
         Rails.logger.warn "remote authentication with token #{token.inspect} failed: #{e}"
         return nil
       end
-      if !remote_user.is_a?(Hash) || !remote_user['uuid'].is_a?(String) || remote_user['uuid'][0..4] != uuid[0..4]
+
+      # Check the response is well formed.
+      if !remote_user.is_a?(Hash) || !remote_user['uuid'].is_a?(String)
         Rails.logger.warn "remote authentication rejected: remote_user=#{remote_user.inspect}"
         return nil
       end
-      act_as_system_user do
-        # Add/update user and token in our database so we can
-        # validate subsequent requests faster.
 
-        user = User.find_or_create_by(uuid: remote_user['uuid']) do |user|
-          # (this block runs for the "create" case, not for "find")
-          user.is_admin = false
-          user.email = remote_user['email']
-          if remote_user['username'].andand.length.andand > 0
-            user.set_initial_username(requested: remote_user['username'])
-          end
-        end
+      remote_user_prefix = remote_user['uuid'][0..4]
 
+      # Clusters can only authenticate for their own users.
+      if remote_user_prefix != token_uuid_prefix
+        Rails.logger.warn "remote authentication rejected: claimed remote user #{remote_user_prefix} but token was issued by #{token_uuid_prefix}"
+        return nil
+      end
+
+      # Invarient:    remote_user_prefix == token_uuid_prefix
+      # therefore:    remote_user_prefix != Rails.configuration.ClusterID
+
+      # Add or update user and token in local database so we can
+      # validate subsequent requests faster.
+
+      user = User.find_by_uuid(remote_user['uuid'])
+
+      if !user
+        # Create a new record for this user.
+        user = User.new(uuid: remote_user['uuid'],
+                        is_active: false,
+                        is_admin: false,
+                        email: remote_user['email'],
+                        owner_uuid: system_user_uuid)
+        user.set_initial_username(requested: remote_user['username'])
+      end
+
+      # Sync user record.
+      if remote_user_prefix == Rails.configuration.Login.LoginCluster
+        # Remote cluster controls our user database, copy both
+        # 'is_active' and 'is_admin'
+        user.is_active = remote_user['is_active']
+        user.is_admin = remote_user['is_admin']
+      else
         if Rails.configuration.Users.NewUsersAreActive ||
-           Rails.configuration.RemoteClusters[remote_user['uuid'][0..4]].andand["ActivateUsers"]
-          # Update is_active to whatever it is at the remote end
+           Rails.configuration.RemoteClusters[remote_user_prefix].andand["ActivateUsers"]
+          # Default policy is to activate users, so match activate
+          # with the remote record.
           user.is_active = remote_user['is_active']
         elsif !remote_user['is_active']
-          # Remote user is inactive; our mirror should be, too.
+          # Deactivate user if the remote is inactive, otherwise don't
+          # change 'is_active'.
           user.is_active = false
         end
+      end
 
-        %w[first_name last_name email prefs].each do |attr|
-          user.send(attr+'=', remote_user[attr])
-        end
+      %w[first_name last_name email prefs].each do |attr|
+        user.send(attr+'=', remote_user[attr])
+      end
 
+      act_as_system_user do
         user.save!
 
-        auth = ApiClientAuthorization.find_or_create_by(uuid: uuid) do |auth|
+        # We will accept this token (and avoid reloading the user
+        # record) for 'RemoteTokenRefresh' (default 5 minutes).
+        # Possible todo:
+        # Request the actual api_client_auth record from the remote
+        # server in case it wants the token to expire sooner.
+        auth = ApiClientAuthorization.find_or_create_by(uuid: token_uuid) do |auth|
           auth.user = user
-          auth.api_token = secret
           auth.api_client_id = 0
         end
-
-        # Accept this token (and don't reload the user record) for
-        # 5 minutes. TODO: Request the actual api_client_auth
-        # record from the remote server in case it wants the token
-        # to expire sooner.
         auth.update_attributes!(user: user,
                                 api_token: secret,
                                 api_client_id: 0,
-                                expires_at: Time.now + 5.minutes)
+                                expires_at: Time.now + Rails.configuration.Login.RemoteTokenRefresh)
       end
       return auth
     else
+      # token is not a 'v2' token
       auth = ApiClientAuthorization.
-             includes(:user, :api_client).
-             where('api_token=? and (expires_at is null or expires_at > CURRENT_TIMESTAMP)', token).
-             first
+               includes(:user, :api_client).
+               where('api_token=? and (expires_at is null or expires_at > CURRENT_TIMESTAMP)', token).
+               first
       if auth && auth.user
         return auth
       end
     end
+
     return nil
   end
 
