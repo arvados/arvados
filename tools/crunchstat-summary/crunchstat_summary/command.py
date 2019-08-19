@@ -17,17 +17,26 @@ class ArgumentParser(argparse.ArgumentParser):
             description='Summarize resource usage of an Arvados Crunch job')
         src = self.add_mutually_exclusive_group()
         src.add_argument(
-            '--job', '--container-request',
+            '--process',
             type=str, metavar='UUID',
-            help='Look up the specified job or container request '
-            'and read its log data from Keep (or from the Arvados event log, '
-            'if the job is still running)')
+            help='Look up the container request, container, job, or pipeline instance,' 
+            'and summarize its resource usage from log in Keep'
+            '(or from the Arvados event log if the associated container is still running)')
+        src.add_argument(
+            '--container-request',
+            type=str, metavar='UUID',
+            help='Look up the container request and read its log data from Keep'
+            '(or from the Arvados event log if the associated container is still running)')
         src.add_argument(
             '--container',
             type=str, metavar='UUID',
-            help='[Deprecated] Look up the specified container find its container request '
-            'and read its log data from Keep (or from the Arvados event log, '
-            'if the job is still running)')
+            help='Look up the specified container, find its container request '
+            'and read its log data from Keep (or from the Arvados event log for the container, '
+            'if the container is still running)')
+        src.add_argument(
+            '--job',
+            type=str, metavar='UUID',
+            help='[Deprecated] Look up the specified job and read its log data from Keep (historical pre-1.4)')
         src.add_argument(
             '--pipeline-instance', type=str, metavar='UUID',
             help='[Deprecated] Summarize each component of the given pipeline instance (historical pre-1.4)')
@@ -36,7 +45,7 @@ class ArgumentParser(argparse.ArgumentParser):
             help='Read log data from a regular file')
         self.add_argument(
             '--skip-child-jobs', action='store_true',
-            help='Do not include stats from child jobs/containers')
+            help='Do not include stats from child jobs/container requests')
         self.add_argument(
             '--format', type=str, choices=('html', 'text'), default='text',
             help='Report format')
@@ -83,10 +92,14 @@ class Command(object):
             'skip_child_jobs': self.args.skip_child_jobs,
             'threads': self.args.threads,
         }
-        if self.args.pipeline_instance:
+        if self.args.process:
+            self.summer = summarizer.NewSummarizer(self.args.process, **kwargs)
+        elif self.args.pipeline_instance:
             self.summer = summarizer.NewSummarizer(self.args.pipeline_instance, **kwargs)
         elif self.args.job:
             self.summer = summarizer.NewSummarizer(self.args.job, **kwargs)
+        elif self.args.container_request:
+            self.summer = summarizer.NewSummarizer(self.args.container_request, **kwargs)
         elif self.args.container:
             self.summer = summarizer.NewSummarizer(self.args.container, **kwargs)
         elif self.args.log_file:
