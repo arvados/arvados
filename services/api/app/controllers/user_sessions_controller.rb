@@ -15,66 +15,11 @@ class UserSessionsController < ApplicationController
   def create
     omniauth = request.env['omniauth.auth']
 
-    identity_url_ok = (omniauth['info']['identity_url'].length > 0) rescue false
-    unless identity_url_ok
-      # Whoa. This should never happen.
-      logger.error "UserSessionsController.create: omniauth object missing/invalid"
-      logger.error "omniauth: "+omniauth.pretty_inspect
-
+    begin
+      user = User.register omniauth['info']
+    rescue => e
+      Rails.logger.warn e
       return redirect_to login_failure_url
-    end
-
-    # Only local users can create sessions, hence uuid_like_pattern
-    # here.
-    user = User.unscoped.where('identity_url = ? and uuid like ?',
-                               omniauth['info']['identity_url'],
-                               User.uuid_like_pattern).first
-    if not user
-      # Check for permission to log in to an existing User record with
-      # a different identity_url
-      Link.where("link_class = ? and name = ? and tail_uuid = ? and head_uuid like ?",
-                 'permission',
-                 'can_login',
-                 omniauth['info']['email'],
-                 User.uuid_like_pattern).each do |link|
-        if prefix = link.properties['identity_url_prefix']
-          if prefix == omniauth['info']['identity_url'][0..prefix.size-1]
-            user = User.find_by_uuid(link.head_uuid)
-            break if user
-          end
-        end
-      end
-    end
-
-    if not user
-      # New user registration
-      user = User.new(:email => omniauth['info']['email'],
-                      :first_name => omniauth['info']['first_name'],
-                      :last_name => omniauth['info']['last_name'],
-                      :identity_url => omniauth['info']['identity_url'],
-                      :is_active => Rails.configuration.Users.NewUsersAreActive,
-                      :owner_uuid => system_user_uuid)
-      if omniauth['info']['username']
-        user.set_initial_username(requested: omniauth['info']['username'])
-      end
-      act_as_system_user do
-        user.save or raise Exception.new(user.errors.messages)
-      end
-    else
-      user.email = omniauth['info']['email']
-      user.first_name = omniauth['info']['first_name']
-      user.last_name = omniauth['info']['last_name']
-      if user.identity_url.nil?
-        # First login to a pre-activated account
-        user.identity_url = omniauth['info']['identity_url']
-      end
-
-      while (uuid = user.redirect_to_user_uuid)
-        user = User.unscoped.where(uuid: uuid).first
-        if !user
-          raise Exception.new("identity_url #{omniauth['info']['identity_url']} redirects to nonexistent uuid #{uuid}")
-        end
-      end
     end
 
     # For the benefit of functional and integration tests:

@@ -327,6 +327,104 @@ class User < ArvadosModel
     end
   end
 
+  def self.register info
+    # login info should have fields:
+    #   email
+    #   first_name
+    #   last_name
+    #   username
+    #   alternate_emails
+    #   identity_url
+
+    primary_user = nil
+
+    # local database
+    identity_url = info['identity_url']
+
+    if identity_url && identity_url.length > 0
+      # Only local users can create sessions, hence uuid_like_pattern
+      # here.
+      user = User.unscoped.where('identity_url = ? and uuid like ?',
+                                 info['identity_url'],
+                                 User.uuid_like_pattern).first
+      if user
+        while (uuid = user.redirect_to_user_uuid)
+          user = User.unscoped.find_by_uuid(uuid)
+          if !user
+            raise Exception.new("user uuid #{user.uuid} redirects to nonexistent uuid #{uuid}")
+          end
+        end
+        primary_user = user
+      end
+
+      # Don't think this is necessary if admin can just create a user
+      # record with the desired email.
+      #
+      # if not user
+      #   # Check for permission to log in to an existing User record with
+      #   # a different identity_url
+      #   Link.where("link_class = ? and name = ? and tail_uuid = ? and head_uuid like ?",
+      #              'permission',
+      #              'can_login',
+      #              info['email'],
+      #              User.uuid_like_pattern).each do |link|
+      #     if prefix = link.properties['identity_url_prefix']
+      #       if prefix == info['identity_url'][0..prefix.size-1]
+      #         user = User.find_by_uuid(link.head_uuid)
+      #         break if user
+      #       end
+      #     end
+      #   end
+      # end
+    end
+
+    if !primary_user and info['email'] and !info['email'].empty?
+      # identity url is unset or didn't find anything.
+      emails = [info['email']] + (info['alternate_emails'] || [])
+      emails.select! {|em| !em.empty?}
+      emails.each do |em|
+        # Go through each email address, try to find a user record
+        # corresponding to one of the addresses supplied.
+
+        user = User.unscoped.where('email = ? and uuid like ?',
+                                   em,
+                                   User.uuid_like_pattern).first
+        next if !user
+
+        while (uuid = user.redirect_to_user_uuid)
+          user = User.unscoped.find_by_uuid(uuid)
+          if !user
+            raise Exception.new("user uuid #{user.uuid} redirects to nonexistent uuid #{uuid}")
+          end
+        end
+
+        primary_user = user
+        break
+      end
+    end
+
+    if !primary_user
+      # New user registration
+      primary_user = User.new(:owner_uuid => system_user_uuid,
+                              :is_admin => false,
+                              :is_active => Rails.configuration.Users.NewUsersAreActive)
+
+      primary_user.set_initial_username(requested: info['username']) if info['username']
+    end
+
+    primary_user.email = info['email']
+    primary_user.identity_url = info['identity_url']
+    primary_user.first_name = info['first_name']
+    primary_user.last_name = info['last_name']
+
+    act_as_system_user do
+      primary_user.save!
+    end
+
+    return primary_user
+
+  end
+
   protected
 
   def change_all_uuid_refs(old_uuid:, new_uuid:)
