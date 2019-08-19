@@ -32,16 +32,15 @@ export const ProcessInputDialog = withDialog(PROCESS_INPUT_DIALOG_NAME)(
 );
 
 const getInputs = (data: any) =>
-    data && data.mounts.varLibCwlWorkflowJson ? data.mounts.varLibCwlWorkflowJson.content.graph.filter((a: any) => a.class === 'Workflow')[0].inputs.map((it: any) => (
-        { type: it.type, id: it.id, label: it.label, value: getInputValue(it.id, data.mounts.varLibCwlCwlInputJson.content), disabled: true }
-    )) : [];
-
-const snakeToCamel = (s: string) => {
-    const a = s.split('/');
-    return a[1].replace(/(\_\w)/g, (m: string) => m[1].toUpperCase());
-};
-
-export const getInputValue = (id: string, data: any) => {
-    const a = snakeToCamel(id);
-    return data[a];
-};
+    data && data.mounts["/var/lib/cwl/workflow.json"] ? data.mounts["/var/lib/cwl/workflow.json"].content.$graph.find(
+        (a: any) => a.id === '#main').inputs.map(
+            (it: any) => (
+                {
+                    type: it.type,
+                    id: it.id,
+                    label: it.label,
+                    value: data.mounts["/var/lib/cwl/cwl.input.json"].content[it.id],
+                    disabled: true
+                }
+            )
+        ) : [];

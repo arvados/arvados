@@ -15,10 +15,10 @@ export const openProcessInputDialog = (processUuid: string) =>
         const process = getProcess(processUuid)(getState().resources);
         if (process) {
             const data: any = process;
-            if (data && data.containerRequest.mounts.varLibCwlWorkflowJson && data.containerRequest.mounts.varLibCwlWorkflowJson.content.graph.filter((a: any) => a.class === 'Workflow')[0] && data.containerRequest.mounts.varLibCwlWorkflowJson.content.graph.filter((a: any) => a.class === 'Workflow')[0].inputs.length > 0) {
+            if (data && data.containerRequest.mounts["/var/lib/cwl/workflow.json"] && data.containerRequest.mounts["/var/lib/cwl/workflow.json"].content.$graph.find((a: any) => a.class === 'Workflow' && a.id === '#main') && data.containerRequest.mounts["/var/lib/cwl/workflow.json"].content.$graph.find((a: any) => a.class === 'Workflow' && a.id === '#main').inputs.length > 0) {
                 dispatch(dialogActions.OPEN_DIALOG({ id: PROCESS_INPUT_DIALOG_NAME, data }));
             } else {
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'There are no inputs in this process!', kind: SnackbarKind.ERROR }));
             }
         }
-    }; 
+    };

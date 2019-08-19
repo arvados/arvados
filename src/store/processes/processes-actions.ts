@@ -15,7 +15,6 @@ import { projectPanelActions } from '~/store/project-panel/project-panel-action'
 import { navigateToRunProcess } from '~/store/navigation/navigation-action';
 import { goToStep, runProcessPanelActions } from '~/store/run-process-panel/run-process-panel-actions';
 import { getResource } from '~/store/resources/resources';
-import { getInputValue } from "~/views-components/process-input-dialog/process-input-dialog";
 import { initialize } from "redux-form";
 import { RUN_PROCESS_BASIC_FORM, RunProcessBasicFormData } from "~/views/run-process-panel/run-process-basic-form";
 import { RunProcessAdvancedFormData, RUN_PROCESS_ADVANCED_FORM } from "~/views/run-process-panel/run-process-advanced-form";
@@ -86,8 +85,9 @@ export const reRunProcess = (processUuid: string, workflowUuid: string) =>
         const workflow = workflows.find(workflow => workflow.uuid === workflowUuid);
         if (workflow && process) {
             const newValues = getInputs(process);
-            process.mounts.varLibCwlWorkflowJson.content.graph[1].inputs = newValues;
-            const stringifiedDefinition = JSON.stringify(process.mounts.varLibCwlWorkflowJson.content);
+            process.mounts["/var/lib/cwl/workflow.json"].content.$graph.find(
+                (a: any) => a.id === '#main').inputs = newValues;
+            const stringifiedDefinition = JSON.stringify(process.mounts["/var/lib/cwl/workflow.json"].content);
             const newWorkflow = { ...workflow, definition: stringifiedDefinition };
 
             const basicInitialData: RunProcessBasicFormData = { name: `Copy of: ${process.name}`, description: process.description };
@@ -113,9 +113,18 @@ export const reRunProcess = (processUuid: string, workflowUuid: string) =>
     };
 
 const getInputs = (data: any) =>
-    data && data.mounts.varLibCwlWorkflowJson ? data.mounts.varLibCwlWorkflowJson.content.graph[1].inputs.map((it: any) => (
-        { type: it.type, id: it.id, label: it.label, default: getInputValue(it.id, data.mounts.varLibCwlCwlInputJson.content), doc: it.doc }
-    )) : [];
+    data && data.mounts["/var/lib/cwl/workflow.json"] ? data.mounts["/var/lib/cwl/workflow.json"].content.$graph.find(
+        (a: any) => a.id === '#main').inputs.map(
+            (it: any) => (
+                {
+                    type: it.type,
+                    id: it.id,
+                    label: it.label,
+                    default: data.mounts["/var/lib/cwl/cwl.input.json"].content[it.id],
+                    doc: it.doc
+                }
+            )
+        ) : [];
 
 export const openRemoveProcessDialog = (uuid: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
