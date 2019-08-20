@@ -15,9 +15,13 @@ import { addProcessLogsPanelItem } from '../store/process-logs-panel/process-log
 import { FilterBuilder } from "~/services/api/filter-builder";
 
 export const initWebSocket = (config: Config, authService: AuthService, store: RootStore) => {
-    const webSocketService = new WebSocketService(config.websocketUrl, authService);
-    webSocketService.setMessageListener(messageListener(store));
-    webSocketService.connect();
+    if (config.websocketUrl) {
+        const webSocketService = new WebSocketService(config.websocketUrl, authService);
+        webSocketService.setMessageListener(messageListener(store));
+        webSocketService.connect();
+    } else {
+        console.warn("WARNING: webSocketUrl is not configured on the API Server");
+    }
 };
 
 const messageListener = (store: RootStore) => (message: ResourceEventMessage) => {
