@@ -21,8 +21,7 @@ export const initWebSocket = (config: Config, authService: AuthService, store: R
         webSocketService.setMessageListener(messageListener(store));
         webSocketService.connect();
     } else {
-        console.warn("WARNING: Websocket ExternalURL is not set on the API Server");
-        store.dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Websocket URL missing on cluster config", kind: SnackbarKind.WARNING }));
+        console.warn("WARNING: Websocket ExternalURL is not set on the cluster config.");
     }
 };
 
