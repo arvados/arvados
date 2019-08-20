@@ -60,11 +60,22 @@ describe("CommonResourceService", () => {
     it("#get", async () => {
         axiosMock
             .onGet("/resource/uuid")
-            .reply(200, { modified_at: "now" });
+            .reply(200, {
+                modified_at: "now",
+                properties: {
+                    responsible_owner_uuid: "another_owner"
+                }
+            });
 
         const commonResourceService = new CommonResourceService(axiosInstance, "resource", actions);
         const resource = await commonResourceService.get("uuid");
-        expect(resource).toEqual({ modifiedAt: "now" });
+        // Only first level keys are mapped to camel case
+        expect(resource).toEqual({
+            modifiedAt: "now",
+            properties: {
+                responsible_owner_uuid: "another_owner"
+            }
+        });
     });
 
     it("#list", async () => {
@@ -75,19 +86,26 @@ describe("CommonResourceService", () => {
                 offset: 2,
                 limit: 10,
                 items: [{
-                    modified_at: "now"
+                    modified_at: "now",
+                    properties: {
+                        is_active: true
+                    }
                 }],
                 items_available: 20
             });
 
         const commonResourceService = new CommonResourceService(axiosInstance, "resource", actions);
         const resource = await commonResourceService.list({ limit: 10, offset: 1 });
+        // First level keys are mapped to camel case inside "items" arrays
         expect(resource).toEqual({
             kind: "kind",
             offset: 2,
             limit: 10,
             items: [{
-                modifiedAt: "now"
+                modifiedAt: "now",
+                properties: {
+                    is_active: true
+                }
             }],
             itemsAvailable: 20
         });

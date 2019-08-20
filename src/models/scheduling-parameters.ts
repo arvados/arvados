@@ -5,5 +5,5 @@
 export interface SchedulingParameters {
     partitions?: string[];
     preemptible?: boolean;
-    maxRunTime?: number;
+    max_run_time?: number;
 }

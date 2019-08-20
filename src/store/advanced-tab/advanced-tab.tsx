@@ -413,7 +413,7 @@ const containerRequestApiResponse = (apiResponse: ContainerRequestResource) => {
 "container_count_max": ${stringify(containerCountMax)},
 "mounts": ${stringifyObject(mounts)},
 "runtime_constraints": ${stringifyObject(runtimeConstraints)},
-"container_image": "${stringify(containerImage)}",
+"container_image": ${stringify(containerImage)},
 "environment": ${stringifyObject(environment)},
 "cwd": ${stringify(cwd)},
 "command": ${stringifyObject(command)},
@@ -457,9 +457,9 @@ const collectionApiResponse = (apiResponse: CollectionResource) => {
 "storage_classes_desired": ${JSON.stringify(storageClassesDesired, null, 2)},
 "storage_classes_confirmed": ${JSON.stringify(storageClassesConfirmed, null, 2)},
 "storage_classes_confirmed_at": ${stringify(storageClassesConfirmedAt)},
-"currentVersionUuid": ${stringify(currentVersionUuid)},
+"current_version_uuid": ${stringify(currentVersionUuid)},
 "version": ${version},
-"preserveVersion": ${preserveVersion}`;
+"preserve_version": ${preserveVersion}`;
 
     return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
 };

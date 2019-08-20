@@ -11,9 +11,8 @@ export interface WorkflowResource extends Resource {
     description: string;
     definition: string;
 }
-export interface WorkflowResoruceDefinition {
+export interface WorkflowResourceDefinition {
     cwlVersion: string;
-    graph?: Array<Workflow | CommandLineTool>;
     $graph?: Array<Workflow | CommandLineTool>;
 }
 export interface Workflow {
@@ -117,23 +116,17 @@ export type DirectoryArrayCommandInputParameter = GenericArrayCommandInputParame
 export type WorkflowInputsData = {
     [key: string]: boolean | number | string | File | Directory;
 };
-export const parseWorkflowDefinition = (workflow: WorkflowResource): WorkflowResoruceDefinition => {
+export const parseWorkflowDefinition = (workflow: WorkflowResource): WorkflowResourceDefinition => {
     const definition = safeLoad(workflow.definition);
     return definition;
 };
 
-export const getWorkflowInputs = (workflowDefinition: WorkflowResoruceDefinition) => {
-    if (workflowDefinition.graph) {
-        const mainWorkflow = workflowDefinition.graph.find(item => item.class === 'Workflow' && item.id === '#main');
-        return mainWorkflow
-            ? mainWorkflow.inputs
-            : undefined;
-    } else {
-        const mainWorkflow = workflowDefinition.$graph!.find(item => item.class === 'Workflow' && item.id === '#main');
-        return mainWorkflow
-            ? mainWorkflow.inputs
-            : undefined;
-    }
+export const getWorkflowInputs = (workflowDefinition: WorkflowResourceDefinition) => {
+    if (!workflowDefinition.$graph) { return undefined; }
+    const mainWorkflow = workflowDefinition.$graph.find(item => item.class === 'Workflow' && item.id === '#main');
+    return mainWorkflow
+        ? mainWorkflow.inputs
+        : undefined;
 };
 
 export const getInputLabel = (input: CommandInputParameter) => {

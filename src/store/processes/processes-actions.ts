@@ -15,10 +15,11 @@ import { projectPanelActions } from '~/store/project-panel/project-panel-action'
 import { navigateToRunProcess } from '~/store/navigation/navigation-action';
 import { goToStep, runProcessPanelActions } from '~/store/run-process-panel/run-process-panel-actions';
 import { getResource } from '~/store/resources/resources';
-import { getInputValue } from "~/views-components/process-input-dialog/process-input-dialog";
 import { initialize } from "redux-form";
 import { RUN_PROCESS_BASIC_FORM, RunProcessBasicFormData } from "~/views/run-process-panel/run-process-basic-form";
 import { RunProcessAdvancedFormData, RUN_PROCESS_ADVANCED_FORM } from "~/views/run-process-panel/run-process-advanced-form";
+import { MOUNT_PATH_CWL_WORKFLOW, MOUNT_PATH_CWL_INPUT } from '~/models/process';
+import { getWorkflowInputs } from "~/models/workflow";
 
 export const loadProcess = (containerRequestUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<Process> => {
@@ -85,9 +86,9 @@ export const reRunProcess = (processUuid: string, workflowUuid: string) =>
         const workflows = getState().runProcessPanel.searchWorkflows;
         const workflow = workflows.find(workflow => workflow.uuid === workflowUuid);
         if (workflow && process) {
-            const newValues = getInputs(process);
-            process.mounts.varLibCwlWorkflowJson.content.graph[1].inputs = newValues;
-            const stringifiedDefinition = JSON.stringify(process.mounts.varLibCwlWorkflowJson.content);
+            let inputs = getWorkflowInputs(process.mounts[MOUNT_PATH_CWL_WORKFLOW]);
+            inputs = getInputs(process);
+            const stringifiedDefinition = JSON.stringify(process.mounts[MOUNT_PATH_CWL_WORKFLOW].content);
             const newWorkflow = { ...workflow, definition: stringifiedDefinition };
 
             const basicInitialData: RunProcessBasicFormData = { name: `Copy of: ${process.name}`, description: process.description };
@@ -95,10 +96,10 @@ export const reRunProcess = (processUuid: string, workflowUuid: string) =>
 
             const advancedInitialData: RunProcessAdvancedFormData = {
                 output: process.outputName,
-                runtime: process.schedulingParameters.maxRunTime,
+                runtime: process.schedulingParameters.max_run_time,
                 ram: process.runtimeConstraints.ram,
                 vcpus: process.runtimeConstraints.vcpus,
-                keepCacheRam: process.runtimeConstraints.keepCacheRam,
+                keep_cache_ram: process.runtimeConstraints.keep_cache_ram,
                 api: process.runtimeConstraints.API
             };
             dispatch<any>(initialize(RUN_PROCESS_ADVANCED_FORM, advancedInitialData));
@@ -112,10 +113,21 @@ export const reRunProcess = (processUuid: string, workflowUuid: string) =>
         }
     };
 
-const getInputs = (data: any) =>
-    data && data.mounts.varLibCwlWorkflowJson ? data.mounts.varLibCwlWorkflowJson.content.graph[1].inputs.map((it: any) => (
-        { type: it.type, id: it.id, label: it.label, default: getInputValue(it.id, data.mounts.varLibCwlCwlInputJson.content), doc: it.doc }
-    )) : [];
+const getInputs = (data: any) => {
+    if (!data || !data.mounts || !data.mounts[MOUNT_PATH_CWL_WORKFLOW]) { return []; }
+    const inputs = getWorkflowInputs(data.mounts[MOUNT_PATH_CWL_WORKFLOW].content);
+    return inputs ? inputs.map(
+        (it: any) => (
+            {
+                type: it.type,
+                id: it.id,
+                label: it.label,
+                default: data.mounts[MOUNT_PATH_CWL_INPUT].content[it.id],
+                doc: it.doc
+            }
+    )
+    ) : [];
+};
 
 export const openRemoveProcessDialog = (uuid: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {

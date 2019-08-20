@@ -5,6 +5,6 @@
 export interface RuntimeConstraints {
     ram: number;
     vcpus: number;
-    keepCacheRam?: number;
+    keep_cache_ram?: number;
     API: boolean;
 }

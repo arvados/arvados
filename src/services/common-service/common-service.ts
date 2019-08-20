@@ -54,7 +54,7 @@ export class CommonService<T> {
                         .map(key => [key, mapFn(key)])
                         .reduce((newValue, [key, newKey]) => ({
                             ...newValue,
-                            [newKey]: CommonService.mapKeys(mapFn)(value[key])
+                            [newKey]: (key === 'items') ? CommonService.mapKeys(mapFn)(value[key]) : value[key]
                         }), {});
                 case _.isArray(value):
                     return value.map(CommonService.mapKeys(mapFn));
