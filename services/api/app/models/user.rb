@@ -378,10 +378,10 @@ class User < ArvadosModel
       # end
     end
 
-    if !primary_user and info['email'] and !info['email'].empty?
+    if !primary_user
       # identity url is unset or didn't find anything.
       emails = [info['email']] + (info['alternate_emails'] || [])
-      emails.select! {|em| !em.empty?}
+      emails.select! {|em| !em.nil? && !em.empty?}
       emails.each do |em|
         # Go through each email address, try to find a user record
         # corresponding to one of the addresses supplied.
@@ -421,8 +421,7 @@ class User < ArvadosModel
       primary_user.save!
     end
 
-    return primary_user
-
+    primary_user
   end
 
   protected
