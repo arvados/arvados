@@ -122,7 +122,8 @@ export const parseWorkflowDefinition = (workflow: WorkflowResource): WorkflowRes
 };
 
 export const getWorkflowInputs = (workflowDefinition: WorkflowResourceDefinition) => {
-    const mainWorkflow = workflowDefinition.$graph!.find(item => item.class === 'Workflow' && item.id === '#main');
+    if (!workflowDefinition.$graph) { return undefined; }
+    const mainWorkflow = workflowDefinition.$graph.find(item => item.class === 'Workflow' && item.id === '#main');
     return mainWorkflow
         ? mainWorkflow.inputs
         : undefined;
