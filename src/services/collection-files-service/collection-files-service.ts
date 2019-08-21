@@ -58,11 +58,4 @@ export class CollectionFilesService {
         const manifestText = stringifyKeepManifest(updatedManifest);
         return this.collectionService.update(collectionUuid, { manifestText });
     }
-
-    renameTest() {
-        const u = this.renameFile('qr1hi-4zz18-n0sx074erl4p0ph', {
-            name: 'extracted2.txt.png',
-            path: ''
-        }, 'extracted-new.txt.png');
-    }
 }
