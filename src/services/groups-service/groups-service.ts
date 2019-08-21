@@ -59,18 +59,7 @@ export class GroupsService<T extends GroupResource = GroupResource> extends Tras
             this.serverApi.get(this.resourceType + pathUrl, cfg), this.actions, false
         );
 
-        const { items, ...res } = response;
-        const mappedItems = (items || []).map((item: GroupContentsResource) => {
-            const mappedItem = TrashableResourceService.mapKeys(_.camelCase)(item);
-            if (item.kind === ResourceKind.COLLECTION || item.kind === ResourceKind.PROJECT) {
-                const { properties } = item;
-                return { ...mappedItem, properties };
-            } else {
-                return mappedItem;
-            }
-        });
-        const mappedResponse = { ...TrashableResourceService.mapKeys(_.camelCase)(res) };
-        return { ...mappedResponse, items: mappedItems, clusterId: session && session.clusterId };
+        return { ...TrashableResourceService.mapKeys(_.camelCase)(response), clusterId: session && session.clusterId };
     }
 
     shared(params: SharedArguments = {}): Promise<ListResults<GroupContentsResource>> {

@@ -12,25 +12,4 @@ export class ContainerRequestService extends CommonResourceService<ContainerRequ
     constructor(serverApi: AxiosInstance, actions: ApiActions) {
         super(serverApi, "container_requests", actions);
     }
-
-    create(data?: Partial<ContainerRequestResource>) {
-        if (data) {
-            const { mounts } = data;
-            if (mounts) {
-                const mappedData = {
-                    ...CommonResourceService.mapKeys(snakeCase)(data),
-                    mounts,
-                };
-                return CommonResourceService
-                    .defaultResponse(
-                        this.serverApi.post<ContainerRequestResource>(this.resourceType, mappedData),
-                        this.actions);
-            }
-        }
-        return CommonResourceService
-            .defaultResponse(
-                this.serverApi
-                    .post<ContainerRequestResource>(this.resourceType, data && CommonResourceService.mapKeys(snakeCase)(data)),
-                this.actions);
-    }
 }

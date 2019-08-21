@@ -82,27 +82,4 @@ export class CollectionService extends TrashableResourceService<CollectionResour
         };
         return this.webdavClient.upload(fileURL, [file], requestConfig);
     }
-
-    update(uuid: string, data: Partial<CollectionResource>) {
-        if (uuid && data && data.properties) {
-            const { properties } = data;
-            const mappedData = {
-                ...TrashableResourceService.mapKeys(snakeCase)(data),
-                properties,
-            };
-            return TrashableResourceService
-                .defaultResponse(
-                    this.serverApi
-                        .put<CollectionResource>(this.resourceType + uuid, mappedData),
-                    this.actions,
-                    false
-                );
-        }
-        return TrashableResourceService
-            .defaultResponse(
-                this.serverApi
-                    .put<CollectionResource>(this.resourceType + uuid, data && TrashableResourceService.mapKeys(snakeCase)(data)),
-                this.actions
-            );
-    }
 }

@@ -16,29 +16,6 @@ export class ProjectService extends GroupsService<ProjectResource> {
         return super.create(projectData);
     }
 
-    update(uuid: string, data: Partial<ProjectResource>) {
-        if (uuid && data && data.properties) {
-            const { properties } = data;
-            const mappedData = {
-                ...TrashableResourceService.mapKeys(snakeCase)(data),
-                properties,
-            };
-            return TrashableResourceService
-                .defaultResponse(
-                    this.serverApi
-                        .put<ProjectResource>(this.resourceType + uuid, mappedData),
-                    this.actions,
-                    false
-                );
-        }
-        return TrashableResourceService
-            .defaultResponse(
-                this.serverApi
-                    .put<ProjectResource>(this.resourceType + uuid, data && TrashableResourceService.mapKeys(snakeCase)(data)),
-                this.actions
-            );
-    }
-
     list(args: ListArguments = {}) {
         return super.list({
             ...args,
