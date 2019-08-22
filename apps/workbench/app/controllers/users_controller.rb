@@ -154,11 +154,13 @@ class UsersController < ApplicationController
     @my_jobs = Job.
       limit(10).
       order('created_at desc').
+      with_count('none').
       where(created_by: current_user.uuid)
 
     @my_collections = Collection.
       limit(10).
       order('created_at desc').
+      with_count('none').
       where(created_by: current_user.uuid)
     collection_uuids = @my_collections.collect &:uuid
 
@@ -183,6 +185,7 @@ class UsersController < ApplicationController
     @my_pipelines = PipelineInstance.
       limit(10).
       order('created_at desc').
+      with_count('none').
       where(created_by: current_user.uuid)
 
     respond_to do |f|
