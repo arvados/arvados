@@ -29,8 +29,7 @@ export const moveProject = (resource: MoveToFormDialogData) =>
         const userUuid = getState().auth.user!.uuid;
         dispatch(startSubmit(PROJECT_MOVE_FORM_NAME));
         try {
-            const project = await services.projectService.get(resource.uuid);
-            const newProject = await services.projectService.update(resource.uuid, { ...project, ownerUuid: resource.ownerUuid });
+            const newProject = await services.projectService.update(resource.uuid, { ownerUuid: resource.ownerUuid });
             dispatch(projectPanelActions.REQUEST_ITEMS());
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_MOVE_FORM_NAME }));
             await dispatch<any>(loadSidePanelTreeProjects(userUuid));
