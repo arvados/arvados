@@ -55,4 +55,13 @@ class UserSessionsControllerTest < ActionController::TestCase
     assert_nil assigns(:api_client)
   end
 
+  test "don't go into redirect loop if LoginCluster is self" do
+    Rails.configuration.Login.LoginCluster = 'zzzzz'
+    api_client_page = 'http://client.example.com/home'
+    get :login, params: {return_to: api_client_page}
+    assert_response :redirect
+    assert_equal("http://test.host/auth/joshid?return_to=%2Chttp%3A%2F%2Fclient.example.com%2Fhome", @response.redirect_url)
+    assert_nil assigns(:api_client)
+  end
+
 end
