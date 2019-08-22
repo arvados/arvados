@@ -79,6 +79,10 @@ Clusters:
         ExternalURL: "https://$localip:${services[workbench2-ssl]}"
       SSO:
         ExternalURL: "https://$localip:${services[sso]}"
+      Keepproxy:
+        InternalURLs:
+          "http://localhost:${services[keepproxy]}/": {}
+        ExternalURL: "http://$localip:${services[keepproxy-ssl]}/"
       Websocket:
         ExternalURL: "wss://$localip:${services[websockets-ssl]}/websocket"
         InternalURLs:

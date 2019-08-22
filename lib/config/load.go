@@ -34,6 +34,7 @@ type Loader struct {
 	KeepWebPath             string
 	CrunchDispatchSlurmPath string
 	WebsocketPath           string
+	KeepproxyPath           string
 
 	configdata []byte
 }
@@ -64,6 +65,7 @@ func (ldr *Loader) SetupFlags(flagset *flag.FlagSet) {
 	flagset.StringVar(&ldr.KeepWebPath, "legacy-keepweb-config", defaultKeepWebConfigPath, "Legacy keep-web configuration `file`")
 	flagset.StringVar(&ldr.CrunchDispatchSlurmPath, "legacy-crunch-dispatch-slurm-config", defaultCrunchDispatchSlurmConfigPath, "Legacy crunch-dispatch-slurm configuration `file`")
 	flagset.StringVar(&ldr.WebsocketPath, "legacy-ws-config", defaultWebsocketConfigPath, "Legacy arvados-ws configuration `file`")
+	flagset.StringVar(&ldr.KeepproxyPath, "legacy-keepproxy-config", defaultKeepproxyConfigPath, "Legacy keepproxy configuration `file`")
 	flagset.BoolVar(&ldr.SkipLegacy, "skip-legacy", false, "Don't load legacy config files")
 }
 
@@ -137,6 +139,9 @@ func (ldr *Loader) MungeLegacyConfigArgs(lgr logrus.FieldLogger, args []string, 
 	}
 	if legacyConfigArg != "-legacy-keepweb-config" {
 		ldr.KeepWebPath = ""
+	}
+	if legacyConfigArg != "-legacy-keepproxy-config" {
+		ldr.KeepproxyPath = ""
 	}
 
 	return munged
@@ -238,6 +243,7 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 			ldr.loadOldKeepWebConfig(&cfg),
 			ldr.loadOldCrunchDispatchSlurmConfig(&cfg),
 			ldr.loadOldWebsocketConfig(&cfg),
+			ldr.loadOldKeepproxyConfig(&cfg),
 		} {
 			if err != nil {
 				return nil, err

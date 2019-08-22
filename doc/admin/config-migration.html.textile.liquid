@@ -62,6 +62,10 @@ h2. keepstore
 
 Currently only reads @RemoteClusters@ from centralized configuration.  Still requires component-specific configuration file.
 
+h2(#keepproxy). keepproxy
+
+The legacy keepproxy config (loaded from @/etc/arvados/keepproxy/keepproxy.yml@ or a different location specified via -legacy-keepproxy-config command line argument) takes precedence over the centralized config. After you migrate everything from the legacy config to the centralized config, you should delete @/etc/arvados/keepproxy/keepproxy.yml@ and stop using the -legacy-keepproxy-config argument.
+
 h2. arvados-controller
 
 Already uses centralized config exclusively.  No migration needed.

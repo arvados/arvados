@@ -20,9 +20,9 @@ import (
 	"syscall"
 	"time"
 
+	"git.curoverse.com/arvados.git/lib/config"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/sdk/go/config"
 	"git.curoverse.com/arvados.git/sdk/go/health"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
@@ -34,25 +34,6 @@ import (
 
 var version = "dev"
 
-type Config struct {
-	Client          arvados.Client
-	Listen          string
-	DisableGet      bool
-	DisablePut      bool
-	DefaultReplicas int
-	Timeout         arvados.Duration
-	PIDFile         string
-	Debug           bool
-	ManagementToken string
-}
-
-func DefaultConfig() *Config {
-	return &Config{
-		Listen:  ":25107",
-		Timeout: arvados.Duration(15 * time.Second),
-	}
-}
-
 var (
 	listener net.Listener
 	router   http.Handler
@@ -60,114 +41,109 @@ var (
 
 const rfc3339NanoFixed = "2006-01-02T15:04:05.000000000Z07:00"
 
-func main() {
-	log.SetFormatter(&log.JSONFormatter{
-		TimestampFormat: rfc3339NanoFixed,
-	})
+func configure(logger log.FieldLogger, args []string) (*arvados.Cluster, error) {
+	flags := flag.NewFlagSet(args[0], flag.ExitOnError)
 
-	cfg := DefaultConfig()
+	dumpConfig := flags.Bool("dump-config", false, "write current configuration to stdout and exit")
+	getVersion := flags.Bool("version", false, "Print version information and exit.")
 
-	flagset := flag.NewFlagSet("keepproxy", flag.ExitOnError)
-	flagset.Usage = usage
+	loader := config.NewLoader(os.Stdin, logger)
+	loader.SetupFlags(flags)
 
-	const deprecated = " (DEPRECATED -- use config file instead)"
-	flagset.StringVar(&cfg.Listen, "listen", cfg.Listen, "Local port to listen on."+deprecated)
-	flagset.BoolVar(&cfg.DisableGet, "no-get", cfg.DisableGet, "Disable GET operations."+deprecated)
-	flagset.BoolVar(&cfg.DisablePut, "no-put", cfg.DisablePut, "Disable PUT operations."+deprecated)
-	flagset.IntVar(&cfg.DefaultReplicas, "default-replicas", cfg.DefaultReplicas, "Default number of replicas to write if not specified by the client. If 0, use site default."+deprecated)
-	flagset.StringVar(&cfg.PIDFile, "pid", cfg.PIDFile, "Path to write pid file."+deprecated)
-	timeoutSeconds := flagset.Int("timeout", int(time.Duration(cfg.Timeout)/time.Second), "Timeout (in seconds) on requests to internal Keep services."+deprecated)
-	flagset.StringVar(&cfg.ManagementToken, "management-token", cfg.ManagementToken, "Authorization token to be included in all health check requests.")
-
-	var cfgPath string
-	const defaultCfgPath = "/etc/arvados/keepproxy/keepproxy.yml"
-	flagset.StringVar(&cfgPath, "config", defaultCfgPath, "Configuration file `path`")
-	dumpConfig := flagset.Bool("dump-config", false, "write current configuration to stdout and exit")
-	getVersion := flagset.Bool("version", false, "Print version information and exit.")
-	flagset.Parse(os.Args[1:])
+	args = loader.MungeLegacyConfigArgs(logger, args[1:], "-legacy-keepproxy-config")
+	flags.Parse(args)
 
 	// Print version information if requested
 	if *getVersion {
 		fmt.Printf("keepproxy %s\n", version)
-		return
+		return nil, nil
 	}
 
-	err := config.LoadFile(cfg, cfgPath)
+	cfg, err := loader.Load()
 	if err != nil {
-		h := os.Getenv("ARVADOS_API_HOST")
-		t := os.Getenv("ARVADOS_API_TOKEN")
-		if h == "" || t == "" || !os.IsNotExist(err) || cfgPath != defaultCfgPath {
-			log.Fatal(err)
-		}
-		log.Print("DEPRECATED: No config file found, but ARVADOS_API_HOST and ARVADOS_API_TOKEN environment variables are set. Please use a config file instead.")
-		cfg.Client.APIHost = h
-		cfg.Client.AuthToken = t
-		if regexp.MustCompile("^(?i:1|yes|true)$").MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE")) {
-			cfg.Client.Insecure = true
-		}
-		if y, err := yaml.Marshal(cfg); err == nil && !*dumpConfig {
-			log.Print("Current configuration:\n", string(y))
-		}
-		cfg.Timeout = arvados.Duration(time.Duration(*timeoutSeconds) * time.Second)
+		return nil, err
+	}
+	cluster, err := cfg.GetCluster("")
+	if err != nil {
+		return nil, err
 	}
 
 	if *dumpConfig {
-		log.Fatal(config.DumpAndExit(cfg))
+		out, err := yaml.Marshal(cfg)
+		if err != nil {
+			return nil, err
+		}
+		if _, err := os.Stdout.Write(out); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+	return cluster, nil
+}
+
+func main() {
+	logger := log.New()
+	logger.Formatter = &log.JSONFormatter{
+		TimestampFormat: rfc3339NanoFixed,
+	}
+
+	cluster, err := configure(logger, os.Args)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if cluster == nil {
+		return
 	}
 
 	log.Printf("keepproxy %s started", version)
 
-	arv, err := arvadosclient.New(&cfg.Client)
-	if err != nil {
-		log.Fatalf("Error setting up arvados client %s", err.Error())
+	if err := run(logger, cluster); err != nil {
+		log.Fatal(err)
 	}
 
-	if cfg.Debug {
+	log.Println("shutting down")
+}
+
+func run(logger log.FieldLogger, cluster *arvados.Cluster) error {
+	client, err := arvados.NewClientFromConfig(cluster)
+	if err != nil {
+		return err
+	}
+	client.AuthToken = cluster.SystemRootToken
+
+	arv, err := arvadosclient.New(client)
+	if err != nil {
+		return fmt.Errorf("Error setting up arvados client %v", err)
+	}
+
+	if cluster.SystemLogs.LogLevel == "debug" {
 		keepclient.DebugPrintf = log.Printf
 	}
 	kc, err := keepclient.MakeKeepClient(arv)
 	if err != nil {
-		log.Fatalf("Error setting up keep client %s", err.Error())
+		return fmt.Errorf("Error setting up keep client %v", err)
 	}
 	keepclient.RefreshServiceDiscoveryOnSIGHUP()
 
-	if cfg.PIDFile != "" {
-		f, err := os.Create(cfg.PIDFile)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer f.Close()
-		err = syscall.Flock(int(f.Fd()), syscall.LOCK_EX|syscall.LOCK_NB)
-		if err != nil {
-			log.Fatalf("flock(%s): %s", cfg.PIDFile, err)
-		}
-		defer os.Remove(cfg.PIDFile)
-		err = f.Truncate(0)
-		if err != nil {
-			log.Fatalf("truncate(%s): %s", cfg.PIDFile, err)
-		}
-		_, err = fmt.Fprint(f, os.Getpid())
-		if err != nil {
-			log.Fatalf("write(%s): %s", cfg.PIDFile, err)
-		}
-		err = f.Sync()
-		if err != nil {
-			log.Fatalf("sync(%s): %s", cfg.PIDFile, err)
-		}
+	if cluster.Collections.DefaultReplication > 0 {
+		kc.Want_replicas = cluster.Collections.DefaultReplication
 	}
 
-	if cfg.DefaultReplicas > 0 {
-		kc.Want_replicas = cfg.DefaultReplicas
+	var listen arvados.URL
+	for listen = range cluster.Services.Keepproxy.InternalURLs {
+		break
 	}
 
-	listener, err = net.Listen("tcp", cfg.Listen)
-	if err != nil {
-		log.Fatalf("listen(%s): %s", cfg.Listen, err)
+	var lErr error
+	listener, lErr = net.Listen("tcp", listen.Host)
+	if lErr != nil {
+		return fmt.Errorf("listen(%s): %v", listen.Host, lErr)
 	}
+
 	if _, err := daemon.SdNotify(false, "READY=1"); err != nil {
 		log.Printf("Error notifying init daemon: %v", err)
 	}
-	log.Println("Listening at", listener.Addr())
+	log.Println("listening at", listener.Addr())
 
 	// Shut down the server gracefully (by closing the listener)
 	// if SIGTERM is received.
@@ -181,10 +157,8 @@ func main() {
 	signal.Notify(term, syscall.SIGINT)
 
 	// Start serving requests.
-	router = MakeRESTRouter(!cfg.DisableGet, !cfg.DisablePut, kc, time.Duration(cfg.Timeout), cfg.ManagementToken)
-	http.Serve(listener, httpserver.AddRequestIDs(httpserver.LogRequests(router)))
-
-	log.Println("shutting down")
+	router = MakeRESTRouter(kc, time.Duration(cluster.API.KeepServiceRequestTimeout), cluster.SystemRootToken)
+	return http.Serve(listener, httpserver.AddRequestIDs(httpserver.LogRequests(router)))
 }
 
 type ApiTokenCache struct {
@@ -292,7 +266,7 @@ type proxyHandler struct {
 
 // MakeRESTRouter returns an http.Handler that passes GET and PUT
 // requests to the appropriate handlers.
-func MakeRESTRouter(enable_get bool, enable_put bool, kc *keepclient.KeepClient, timeout time.Duration, mgmtToken string) http.Handler {
+func MakeRESTRouter(kc *keepclient.KeepClient, timeout time.Duration, mgmtToken string) http.Handler {
 	rest := mux.NewRouter()
 
 	transport := defaultTransport
@@ -315,24 +289,20 @@ func MakeRESTRouter(enable_get bool, enable_put bool, kc *keepclient.KeepClient,
 		},
 	}
 
-	if enable_get {
-		rest.HandleFunc(`/{locator:[0-9a-f]{32}\+.*}`, h.Get).Methods("GET", "HEAD")
-		rest.HandleFunc(`/{locator:[0-9a-f]{32}}`, h.Get).Methods("GET", "HEAD")
+	rest.HandleFunc(`/{locator:[0-9a-f]{32}\+.*}`, h.Get).Methods("GET", "HEAD")
+	rest.HandleFunc(`/{locator:[0-9a-f]{32}}`, h.Get).Methods("GET", "HEAD")
 
-		// List all blocks
-		rest.HandleFunc(`/index`, h.Index).Methods("GET")
+	// List all blocks
+	rest.HandleFunc(`/index`, h.Index).Methods("GET")
 
-		// List blocks whose hash has the given prefix
-		rest.HandleFunc(`/index/{prefix:[0-9a-f]{0,32}}`, h.Index).Methods("GET")
-	}
+	// List blocks whose hash has the given prefix
+	rest.HandleFunc(`/index/{prefix:[0-9a-f]{0,32}}`, h.Index).Methods("GET")
 
-	if enable_put {
-		rest.HandleFunc(`/{locator:[0-9a-f]{32}\+.*}`, h.Put).Methods("PUT")
-		rest.HandleFunc(`/{locator:[0-9a-f]{32}}`, h.Put).Methods("PUT")
-		rest.HandleFunc(`/`, h.Put).Methods("POST")
-		rest.HandleFunc(`/{any}`, h.Options).Methods("OPTIONS")
-		rest.HandleFunc(`/`, h.Options).Methods("OPTIONS")
-	}
+	rest.HandleFunc(`/{locator:[0-9a-f]{32}\+.*}`, h.Put).Methods("PUT")
+	rest.HandleFunc(`/{locator:[0-9a-f]{32}}`, h.Put).Methods("PUT")
+	rest.HandleFunc(`/`, h.Put).Methods("POST")
+	rest.HandleFunc(`/{any}`, h.Options).Methods("OPTIONS")
+	rest.HandleFunc(`/`, h.Options).Methods("OPTIONS")
 
 	rest.Handle("/_health/{check}", &health.Handler{
 		Token:  mgmtToken,

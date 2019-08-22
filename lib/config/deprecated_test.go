@@ -6,6 +6,7 @@ package config
 
 import (
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"time"
@@ -13,6 +14,35 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	check "gopkg.in/check.v1"
 )
+
+func testLoadLegacyConfig(content []byte, mungeFlag string, c *check.C) (*arvados.Cluster, error) {
+	tmpfile, err := ioutil.TempFile("", "example")
+	if err != nil {
+		return nil, err
+	}
+	defer os.Remove(tmpfile.Name())
+
+	if _, err := tmpfile.Write(content); err != nil {
+		return nil, err
+	}
+	if err := tmpfile.Close(); err != nil {
+		return nil, err
+	}
+	flags := flag.NewFlagSet("test", flag.ExitOnError)
+	ldr := testLoader(c, "Clusters: {zzzzz: {}}", nil)
+	ldr.SetupFlags(flags)
+	args := ldr.MungeLegacyConfigArgs(ldr.Logger, []string{"-config", tmpfile.Name()}, mungeFlag)
+	flags.Parse(args)
+	cfg, err := ldr.Load()
+	if err != nil {
+		return nil, err
+	}
+	cluster, err := cfg.GetCluster("")
+	if err != nil {
+		return nil, err
+	}
+	return cluster, nil
+}
 
 func (s *LoadSuite) TestDeprecatedNodeProfilesToServices(c *check.C) {
 	hostname, err := os.Hostname()
@@ -81,33 +111,8 @@ func (s *LoadSuite) TestLegacyKeepWebConfig(c *check.C) {
 	"ManagementToken": "xyzzy"
 }
 `)
-	tmpfile, err := ioutil.TempFile("", "example")
-	if err != nil {
-		c.Error(err)
-	}
-	defer os.Remove(tmpfile.Name())
-
-	if _, err := tmpfile.Write(content); err != nil {
-		c.Error(err)
-	}
-	if err := tmpfile.Close(); err != nil {
-		c.Error(err)
-	}
-	flags := flag.NewFlagSet("keep-web", flag.ExitOnError)
-	ldr := testLoader(c, "Clusters: {zzzzz: {}}", nil)
-	ldr.SetupFlags(flags)
-	args := ldr.MungeLegacyConfigArgs(ldr.Logger, []string{"-config", tmpfile.Name()}, "-legacy-keepweb-config")
-	flags.Parse(args)
-	cfg, err := ldr.Load()
-	if err != nil {
-		c.Error(err)
-	}
-	c.Check(cfg, check.NotNil)
-	cluster, err := cfg.GetCluster("")
-	if err != nil {
-		c.Error(err)
-	}
-	c.Check(cluster, check.NotNil)
+	cluster, err := testLoadLegacyConfig(content, "-legacy-keepweb-config", c)
+	c.Check(err, check.IsNil)
 
 	c.Check(cluster.Services.Controller.ExternalURL, check.Equals, arvados.URL{Scheme: "https", Host: "example.com"})
 	c.Check(cluster.SystemRootToken, check.Equals, "abcdefg")
@@ -126,4 +131,59 @@ func (s *LoadSuite) TestLegacyKeepWebConfig(c *check.C) {
 	c.Check(cluster.Collections.TrustAllContent, check.Equals, true)
 	c.Check(cluster.Users.AnonymousUserToken, check.Equals, "anonusertoken")
 	c.Check(cluster.ManagementToken, check.Equals, "xyzzy")
+}
+
+func (s *LoadSuite) TestLegacyKeepproxyConfig(c *check.C) {
+	f := "-legacy-keepproxy-config"
+	content := []byte(fmtKeepproxyConfig("", true))
+	cluster, err := testLoadLegacyConfig(content, f, c)
+
+	c.Check(err, check.IsNil)
+	c.Check(cluster, check.NotNil)
+	c.Check(cluster.Services.Controller.ExternalURL, check.Equals, arvados.URL{Scheme: "https", Host: "example.com"})
+	c.Check(cluster.SystemRootToken, check.Equals, "abcdefg")
+	c.Check(cluster.ManagementToken, check.Equals, "xyzzy")
+	c.Check(cluster.Services.Keepproxy.InternalURLs[arvados.URL{Host: ":80"}], check.Equals, arvados.ServiceInstance{})
+	c.Check(cluster.Collections.DefaultReplication, check.Equals, 0)
+	c.Check(cluster.API.KeepServiceRequestTimeout.String(), check.Equals, "15s")
+	c.Check(cluster.SystemLogs.LogLevel, check.Equals, "debug")
+
+	content = []byte(fmtKeepproxyConfig("", false))
+	cluster, err = testLoadLegacyConfig(content, f, c)
+	c.Check(cluster.SystemLogs.LogLevel, check.Equals, "info")
+
+	content = []byte(fmtKeepproxyConfig(`"DisableGet": true,`, true))
+	_, err = testLoadLegacyConfig(content, f, c)
+	c.Check(err, check.NotNil)
+
+	content = []byte(fmtKeepproxyConfig(`"DisablePut": true,`, true))
+	_, err = testLoadLegacyConfig(content, f, c)
+	c.Check(err, check.NotNil)
+
+	content = []byte(fmtKeepproxyConfig(`"PIDFile": "test",`, true))
+	_, err = testLoadLegacyConfig(content, f, c)
+	c.Check(err, check.NotNil)
+
+	content = []byte(fmtKeepproxyConfig(`"DisableGet": false, "DisablePut": false, "PIDFile": "",`, true))
+	_, err = testLoadLegacyConfig(content, f, c)
+	c.Check(err, check.IsNil)
+}
+
+func fmtKeepproxyConfig(param string, debugLog bool) string {
+	return fmt.Sprintf(`
+{
+	"Client": {
+		"Scheme": "",
+		"APIHost": "example.com",
+		"AuthToken": "abcdefg",
+		"Insecure": false
+	},
+	"Listen": ":80",
+	"DefaultReplicas": 0,
+	"Timeout": "15s",
+	"Debug": %t,
+	%s
+	"ManagementToken": "xyzzy"
+}
+`, debugLog, param)
 }

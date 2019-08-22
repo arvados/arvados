@@ -51,6 +51,10 @@ h4. Jobs API is read-only
 
 So that older Arvados sites don't lose access to legacy records, the API has been converted to read-only.  Creating and updating jobs (and related types job_task, pipeline_template and pipeline_instance) is disabled and much of the business logic related has been removed, along with various other code specific to the jobs API.  Specifically, the following programs associated with the jobs API have been removed: @crunch-dispatch.rb@, @crunch-job@, @crunchrunner@, @arv-run-pipeline-instance@, @arv-run@.
 
+h4. Keepproxy configuration migration
+
+(feature "#14715":https://dev.arvados.org/issues/14715 ) Keepproxy can now be configured using the centralized config at @/etc/arvados/config.yml@. Configuration via individual command line arguments is no longer available and the @DisableGet@, @DisablePut@, and @PIDFile@ configuration options are no longer supported. If you are still using the legacy config and @DisableGet@ or @DisablePut@ are set to true or @PIDFile@ has a value, keepproxy will produce an error and fail to start. Please see "keepproxy's config migration guide":{{site.baseurl}}/admin/config-migration.html#keepproxy for more details.
+
 h4. No longer stripping ':' from strings in serialized database columns
 
 (bug "#15311":https://dev.arvados.org/issues/15311 ) Strings read from serialized columns in the database with a leading ':' would have the ':' stripped after loading the record.  This behavior existed due to legacy serialization behavior which stored Ruby symbols with a leading ':'.  Unfortunately this corrupted fields where the leading ":" was intentional.  This behavior has been removed.

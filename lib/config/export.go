@@ -72,6 +72,7 @@ var whitelist = map[string]bool{
 	"API.WebsocketClientEventQueue":                false,
 	"API.SendTimeout":                              true,
 	"API.WebsocketServerEventQueue":                false,
+	"API.KeepServiceRequestTimeout":                false,
 	"AuditLogs":                                    false,
 	"AuditLogs.MaxAge":                             false,
 	"AuditLogs.MaxDeleteBatch":                     false,

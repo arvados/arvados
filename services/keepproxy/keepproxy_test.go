@@ -13,15 +13,17 @@ import (
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"git.curoverse.com/arvados.git/lib/config"
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	log "github.com/sirupsen/logrus"
 
 	. "gopkg.in/check.v1"
 )
@@ -96,14 +98,23 @@ func (s *NoKeepServerSuite) TearDownSuite(c *C) {
 	arvadostest.StopAPI()
 }
 
-func runProxy(c *C, args []string, bogusClientToken bool) *keepclient.KeepClient {
-	args = append([]string{"keepproxy"}, args...)
-	os.Args = append(args, "-listen=:0")
+func runProxy(c *C, bogusClientToken bool) *keepclient.KeepClient {
+	cfg, err := config.NewLoader(nil, nil).Load()
+	c.Assert(err, Equals, nil)
+	cluster, err := cfg.GetCluster("")
+	c.Assert(err, Equals, nil)
+
+	cluster.Services.Keepproxy.InternalURLs = map[arvados.URL]arvados.ServiceInstance{arvados.URL{Host: ":0"}: arvados.ServiceInstance{}}
+
 	listener = nil
-	go main()
+	go func() {
+		run(log.New(), cluster)
+		defer closeListener()
+	}()
 	waitForListener()
 
-	arv, err := arvadosclient.MakeArvadosClient()
+	client := arvados.NewClientFromEnv()
+	arv, err := arvadosclient.New(client)
 	c.Assert(err, Equals, nil)
 	if bogusClientToken {
 		arv.ApiToken = "bogus-token"
@@ -119,7 +130,7 @@ func runProxy(c *C, args []string, bogusClientToken bool) *keepclient.KeepClient
 }
 
 func (s *ServerRequiredSuite) TestResponseViaHeader(c *C) {
-	runProxy(c, nil, false)
+	runProxy(c, false)
 	defer closeListener()
 
 	req, err := http.NewRequest("POST",
@@ -145,7 +156,7 @@ func (s *ServerRequiredSuite) TestResponseViaHeader(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestLoopDetection(c *C) {
-	kc := runProxy(c, nil, false)
+	kc := runProxy(c, false)
 	defer closeListener()
 
 	sr := map[string]string{
@@ -163,7 +174,7 @@ func (s *ServerRequiredSuite) TestLoopDetection(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestStorageClassesHeader(c *C) {
-	kc := runProxy(c, nil, false)
+	kc := runProxy(c, false)
 	defer closeListener()
 
 	// Set up fake keepstore to record request headers
@@ -190,7 +201,7 @@ func (s *ServerRequiredSuite) TestStorageClassesHeader(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestDesiredReplicas(c *C) {
-	kc := runProxy(c, nil, false)
+	kc := runProxy(c, false)
 	defer closeListener()
 
 	content := []byte("TestDesiredReplicas")
@@ -207,7 +218,7 @@ func (s *ServerRequiredSuite) TestDesiredReplicas(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestPutWrongContentLength(c *C) {
-	kc := runProxy(c, nil, false)
+	kc := runProxy(c, false)
 	defer closeListener()
 
 	content := []byte("TestPutWrongContentLength")
@@ -218,7 +229,7 @@ func (s *ServerRequiredSuite) TestPutWrongContentLength(c *C) {
 	// fixes the invalid Content-Length header. In order to test
 	// our server behavior, we have to call the handler directly
 	// using an httptest.ResponseRecorder.
-	rtr := MakeRESTRouter(true, true, kc, 10*time.Second, "")
+	rtr := MakeRESTRouter(kc, 10*time.Second, "")
 
 	type testcase struct {
 		sendLength   string
@@ -246,7 +257,7 @@ func (s *ServerRequiredSuite) TestPutWrongContentLength(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestManyFailedPuts(c *C) {
-	kc := runProxy(c, nil, false)
+	kc := runProxy(c, false)
 	defer closeListener()
 	router.(*proxyHandler).timeout = time.Nanosecond
 
@@ -273,7 +284,7 @@ func (s *ServerRequiredSuite) TestManyFailedPuts(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
-	kc := runProxy(c, nil, false)
+	kc := runProxy(c, false)
 	defer closeListener()
 
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
@@ -350,7 +361,7 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
-	kc := runProxy(c, nil, true)
+	kc := runProxy(c, true)
 	defer closeListener()
 
 	hash := fmt.Sprintf("%x+3", md5.Sum([]byte("bar")))
@@ -375,59 +386,8 @@ func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
 
 }
 
-func (s *ServerRequiredSuite) TestGetDisabled(c *C) {
-	kc := runProxy(c, []string{"-no-get"}, false)
-	defer closeListener()
-
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("baz")))
-
-	{
-		_, _, err := kc.Ask(hash)
-		errNotFound, _ := err.(keepclient.ErrNotFound)
-		c.Check(errNotFound, NotNil)
-		c.Assert(err, ErrorMatches, `.*HTTP 405.*`)
-		c.Log("Ask 1")
-	}
-
-	{
-		hash2, rep, err := kc.PutB([]byte("baz"))
-		c.Check(hash2, Matches, fmt.Sprintf(`^%s\+3(\+.+)?$`, hash))
-		c.Check(rep, Equals, 2)
-		c.Check(err, Equals, nil)
-		c.Log("PutB")
-	}
-
-	{
-		blocklen, _, err := kc.Ask(hash)
-		errNotFound, _ := err.(keepclient.ErrNotFound)
-		c.Check(errNotFound, NotNil)
-		c.Assert(err, ErrorMatches, `.*HTTP 405.*`)
-		c.Check(blocklen, Equals, int64(0))
-		c.Log("Ask 2")
-	}
-
-	{
-		_, blocklen, _, err := kc.Get(hash)
-		errNotFound, _ := err.(keepclient.ErrNotFound)
-		c.Check(errNotFound, NotNil)
-		c.Assert(err, ErrorMatches, `.*HTTP 405.*`)
-		c.Check(blocklen, Equals, int64(0))
-		c.Log("Get")
-	}
-}
-
-func (s *ServerRequiredSuite) TestPutDisabled(c *C) {
-	kc := runProxy(c, []string{"-no-put"}, false)
-	defer closeListener()
-
-	hash2, rep, err := kc.PutB([]byte("quux"))
-	c.Check(hash2, Equals, "")
-	c.Check(rep, Equals, 0)
-	c.Check(err, FitsTypeOf, keepclient.InsufficientReplicasError(errors.New("")))
-}
-
 func (s *ServerRequiredSuite) TestCorsHeaders(c *C) {
-	runProxy(c, nil, false)
+	runProxy(c, false)
 	defer closeListener()
 
 	{
@@ -458,7 +418,7 @@ func (s *ServerRequiredSuite) TestCorsHeaders(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestPostWithoutHash(c *C) {
-	runProxy(c, nil, false)
+	runProxy(c, false)
 	defer closeListener()
 
 	{
@@ -501,7 +461,7 @@ func (s *ServerRequiredSuite) TestStripHint(c *C) {
 //   With a valid but non-existing prefix (expect "\n")
 //   With an invalid prefix (expect error)
 func (s *ServerRequiredSuite) TestGetIndex(c *C) {
-	kc := runProxy(c, nil, false)
+	kc := runProxy(c, false)
 	defer closeListener()
 
 	// Put "index-data" blocks
@@ -564,7 +524,7 @@ func (s *ServerRequiredSuite) TestGetIndex(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestCollectionSharingToken(c *C) {
-	kc := runProxy(c, nil, false)
+	kc := runProxy(c, false)
 	defer closeListener()
 	hash, _, err := kc.PutB([]byte("shareddata"))
 	c.Check(err, IsNil)
@@ -577,7 +537,7 @@ func (s *ServerRequiredSuite) TestCollectionSharingToken(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestPutAskGetInvalidToken(c *C) {
-	kc := runProxy(c, nil, false)
+	kc := runProxy(c, false)
 	defer closeListener()
 
 	// Put a test block
@@ -614,7 +574,7 @@ func (s *ServerRequiredSuite) TestPutAskGetInvalidToken(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestAskGetKeepProxyConnectionError(c *C) {
-	kc := runProxy(c, nil, false)
+	kc := runProxy(c, false)
 	defer closeListener()
 
 	// Point keepproxy at a non-existent keepstore
@@ -640,7 +600,7 @@ func (s *ServerRequiredSuite) TestAskGetKeepProxyConnectionError(c *C) {
 }
 
 func (s *NoKeepServerSuite) TestAskGetNoKeepServerError(c *C) {
-	kc := runProxy(c, nil, false)
+	kc := runProxy(c, false)
 	defer closeListener()
 
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
@@ -663,10 +623,10 @@ func (s *NoKeepServerSuite) TestAskGetNoKeepServerError(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestPing(c *C) {
-	kc := runProxy(c, nil, false)
+	kc := runProxy(c, false)
 	defer closeListener()
 
-	rtr := MakeRESTRouter(true, true, kc, 10*time.Second, arvadostest.ManagementToken)
+	rtr := MakeRESTRouter(kc, 10*time.Second, arvadostest.ManagementToken)
 
 	req, err := http.NewRequest("GET",
 		"http://"+listener.Addr().String()+"/_health/ping",

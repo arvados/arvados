@@ -544,10 +544,11 @@ def run_keep_proxy():
     env['ARVADOS_API_TOKEN'] = auth_token('anonymous')
     logf = open(_logfilename('keepproxy'), 'a')
     kp = subprocess.Popen(
-        ['keepproxy',
-         '-pid='+_pidfile('keepproxy'),
-         '-listen=:{}'.format(port)],
-        env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf, close_fds=True)
+        ['keepproxy'], env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf, close_fds=True)
+
+    with open(_pidfile('keepproxy'), 'w') as f:
+        f.write(str(kp.pid))
+    _wait_until_port_listens(port)
 
     print("Using API %s token %s" % (os.environ['ARVADOS_API_HOST'], auth_token('admin')), file=sys.stdout)
     api = arvados.api(
