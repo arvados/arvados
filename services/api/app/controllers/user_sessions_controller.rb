@@ -13,6 +13,10 @@ class UserSessionsController < ApplicationController
 
   # omniauth callback method
   def create
+    if !Rails.configuration.Login.LoginCluster.empty? and Rails.configuration.Login.LoginCluster != Rails.configuration.ClusterID
+      raise "Local login disabled when LoginCluster is set"
+    end
+
     omniauth = request.env['omniauth.auth']
 
     identity_url_ok = (omniauth['info']['identity_url'].length > 0) rescue false
