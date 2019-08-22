@@ -40,8 +40,7 @@ export class CollectionFilesService {
                 : stream
         );
         const manifestText = stringifyKeepManifest(updatedManifest);
-        const data = { ...collection, manifestText };
-        return this.collectionService.update(collectionUuid, CommonResourceService.mapKeys(_.snakeCase)(data));
+        return this.collectionService.update(collectionUuid, { manifestText });
     }
 
     async deleteFile(collectionUuid: string, file: { name: string, path: string }) {

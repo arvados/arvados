@@ -30,8 +30,8 @@ export const moveCollection = (resource: MoveToFormDialogData) =>
         dispatch(startSubmit(COLLECTION_MOVE_FORM_NAME));
         try {
             dispatch(progressIndicatorActions.START_WORKING(COLLECTION_MOVE_FORM_NAME));
+            await services.collectionService.update(resource.uuid, { ownerUuid: resource.ownerUuid });
             const collection = await services.collectionService.get(resource.uuid);
-            await services.collectionService.update(resource.uuid, { ...collection, ownerUuid: resource.ownerUuid });
             dispatch(projectPanelActions.REQUEST_ITEMS());
             dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_MOVE_FORM_NAME }));
             dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_MOVE_FORM_NAME));
