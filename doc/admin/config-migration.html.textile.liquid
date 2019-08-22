@@ -66,8 +66,6 @@ h2(#keepproxy). keepproxy
 
 The legacy keepproxy config (loaded from @/etc/arvados/keepproxy/keepproxy.yml@ or a different location specified via -legacy-keepproxy-config command line argument) takes precedence over the centralized config. After you migrate everything from the legacy config to the centralized config, you should delete @/etc/arvados/keepproxy/keepproxy.yml@ and stop using the -legacy-keepproxy-config argument.
 
-Also, configuration via individual command line arguments is no longer available and the @DisableGet@, @DisablePut@, and @PIDFile@ configuration options are no longer supported. If you are still using the legacy config at @/etc/arvados/keepproxy/keepproxy.yml@ and @DisableGet@ or @DisablePut@ are set to true or @PIDFile@ has a value, keepproxy will produce an error and fail to start.
-
 h2. arvados-controller
 
 Already uses centralized config exclusively.  No migration needed.
