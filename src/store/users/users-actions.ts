@@ -109,7 +109,7 @@ export const toggleIsActive = (uuid: string) =>
         const { resources } = getState();
         const data = getResource<UserResource>(uuid)(resources);
         const isActive = data!.isActive;
-        const newActivity = await services.userService.update(uuid, { ...data, isActive: !isActive });
+        const newActivity = await services.userService.update(uuid, { isActive: !isActive });
         dispatch<any>(loadUsersPanel());
         return newActivity;
     };
@@ -119,7 +119,7 @@ export const toggleIsAdmin = (uuid: string) =>
         const { resources } = getState();
         const data = getResource<UserResource>(uuid)(resources);
         const isAdmin = data!.isAdmin;
-        const newActivity = await services.userService.update(uuid, { ...data, isAdmin: !isAdmin });
+        const newActivity = await services.userService.update(uuid, { isAdmin: !isAdmin });
         dispatch<any>(loadUsersPanel());
         return newActivity;
     };
