@@ -10,7 +10,7 @@ export interface GroupResource extends TrashableResource {
     groupClass: GroupClass | null;
     description: string;
     properties: any;
-    writeableBy: string[];
+    writableBy: string[];
     ensure_unique_name: boolean;
 }
 
