@@ -327,14 +327,34 @@ class User < ArvadosModel
     end
   end
 
+  def redirects_to
+    user = self
+    redirects = 0
+    while (uuid = user.redirect_to_user_uuid)
+      user = User.unscoped.find_by_uuid(uuid)
+      if !user
+        raise Exception.new("user uuid #{user.uuid} redirects to nonexistent uuid #{uuid}")
+      end
+      redirects += 1
+      if redirects > 15
+        raise "Starting from #{self.uuid} redirect_to_user_uuid exceeded maximum number of redirects"
+      end
+    end
+    user
+  end
+
   def self.register info
-    # login info should have fields:
+    # login info expected fields, all can be optional but at minimum
+    # must supply either 'identity_url' or 'email'
+    #
     #   email
     #   first_name
     #   last_name
     #   username
     #   alternate_emails
     #   identity_url
+
+    info = info.with_indifferent_access
 
     primary_user = nil
 
@@ -345,41 +365,13 @@ class User < ArvadosModel
       # Only local users can create sessions, hence uuid_like_pattern
       # here.
       user = User.unscoped.where('identity_url = ? and uuid like ?',
-                                 info['identity_url'],
+                                 identity_url,
                                  User.uuid_like_pattern).first
-      if user
-        while (uuid = user.redirect_to_user_uuid)
-          user = User.unscoped.find_by_uuid(uuid)
-          if !user
-            raise Exception.new("user uuid #{user.uuid} redirects to nonexistent uuid #{uuid}")
-          end
-        end
-        primary_user = user
-      end
-
-      # Don't think this is necessary if admin can just create a user
-      # record with the desired email.
-      #
-      # if not user
-      #   # Check for permission to log in to an existing User record with
-      #   # a different identity_url
-      #   Link.where("link_class = ? and name = ? and tail_uuid = ? and head_uuid like ?",
-      #              'permission',
-      #              'can_login',
-      #              info['email'],
-      #              User.uuid_like_pattern).each do |link|
-      #     if prefix = link.properties['identity_url_prefix']
-      #       if prefix == info['identity_url'][0..prefix.size-1]
-      #         user = User.find_by_uuid(link.head_uuid)
-      #         break if user
-      #       end
-      #     end
-      #   end
-      # end
+      primary_user = user.redirects_to if user
     end
 
     if !primary_user
-      # identity url is unset or didn't find anything.
+      # identity url is unset or didn't find matching record.
       emails = [info['email']] + (info['alternate_emails'] || [])
       emails.select! {|em| !em.nil? && !em.empty?}
       emails.each do |em|
@@ -389,17 +381,10 @@ class User < ArvadosModel
         user = User.unscoped.where('email = ? and uuid like ?',
                                    em,
                                    User.uuid_like_pattern).first
-        next if !user
-
-        while (uuid = user.redirect_to_user_uuid)
-          user = User.unscoped.find_by_uuid(uuid)
-          if !user
-            raise Exception.new("user uuid #{user.uuid} redirects to nonexistent uuid #{uuid}")
-          end
+        if user
+          primary_user = user.redirects_to
+          break
         end
-
-        primary_user = user
-        break
       end
     end
 
@@ -412,10 +397,14 @@ class User < ArvadosModel
       primary_user.set_initial_username(requested: info['username']) if info['username']
     end
 
-    primary_user.email = info['email']
-    primary_user.identity_url = info['identity_url']
-    primary_user.first_name = info['first_name']
-    primary_user.last_name = info['last_name']
+    primary_user.email = info['email'] if info['email']
+    primary_user.identity_url = info['identity_url'] if identity_url
+    primary_user.first_name = info['first_name'] if info['first_name']
+    primary_user.last_name = info['last_name'] if info['last_name']
+
+    if (!primary_user.email or primary_user.identity_url.empty?) and (!primary_user.identity_url or primary_user.identity_url.empty?)
+      raise "Must have supply at least one of 'email' or 'identity_url' to User.register"
+    end
 
     act_as_system_user do
       primary_user.save!

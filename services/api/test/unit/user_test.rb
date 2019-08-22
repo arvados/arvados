@@ -800,4 +800,47 @@ class UserTest < ActiveSupport::TestCase
       end
     end
   end
+
+  test "lookup user by email" do
+    u = User.register({"email" => "active-user@arvados.local", "identity_url" => "different-identity-url"})
+    active = User.find_by_uuid(users(:active).uuid)
+    assert_equal active.uuid, u.uuid
+    assert_equal "different-identity-url", active.identity_url
+    assert_equal "active-user@arvados.local", active.email
+  end
+
+  test "lookup user by alternate email" do
+    u = User.register({"email" => "user@parent-company.com",
+                       "alternate_emails" => ["active-user@arvados.local"],
+                       "identity_url" => "different-identity-url"})
+    active = User.find_by_uuid(users(:active).uuid)
+    assert_equal active.uuid, u.uuid
+    assert_equal "different-identity-url", active.identity_url
+    assert_equal "user@parent-company.com", active.email
+  end
+
+  test "register new user" do
+    u = User.register({"email" => "never-before-seen-user@arvados.local",
+                       "identity_url" => "different-identity-url",
+                       "first_name" => "Robert",
+                       "last_name" => "Baratheon",
+                       "username" => "bobby"})
+    nbs = User.find_by_uuid(u.uuid)
+    assert_equal nbs.uuid, u.uuid
+    assert_equal "different-identity-url", nbs.identity_url
+    assert_equal "never-before-seen-user@arvados.local", nbs.email
+    assert_equal false, nbs.is_admin
+    assert_equal false , nbs.is_active
+    assert_equal "bobby", nbs.username
+    assert_equal "Robert", nbs.first_name
+    assert_equal "Baratheon", nbs.last_name
+  end
+
+  test "fail lookup without identifiers" do
+    assert_raises do
+      User.register({"first_name" => "Robert", "last_name" => "Baratheon"})
+    end
+  end
+
+
 end
