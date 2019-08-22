@@ -152,12 +152,17 @@ class UserSessionsController < ApplicationController
     p = []
     p << "auth_provider=#{CGI.escape(params[:auth_provider])}" if params[:auth_provider]
 
-    login_cluster = ""
-    if !Rails.configuration.Login.LoginCluster.empty?
+    if !Rails.configuration.Login.LoginCluster.empty? and Rails.configuration.Login.LoginCluster != Rails.configuration.ClusterID
       cluster = Rails.configuration.RemoteClusters[Rails.configuration.Login.LoginCluster]
+      if not cluster
+        raise "LoginCluster #{Rails.configuration.Login.LoginCluster} missing from RemoteClusters"
+      end
       scheme = "https"
       if cluster['Scheme'] and !cluster['Scheme'].empty?
         scheme = cluster['Scheme']
+      end
+      if !cluster['Host'] or cluster['Host'].empty?
+        raise "LoginCluster #{Rails.configuration.Login.LoginCluster} missing 'Host' in RemoteClusters"
       end
       login_cluster = "#{scheme}://#{cluster['Host']}"
       p << "remote=#{CGI.escape(params[:remote])}" if params[:remote]
