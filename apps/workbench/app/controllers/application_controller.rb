@@ -780,7 +780,7 @@ class ApplicationController < ActionController::Base
 
   @@notification_tests.push lambda { |controller, current_user|
     return nil if Rails.configuration.shell_in_a_box_url
-    AuthorizedKey.limit(1).where(authorized_user_uuid: current_user.uuid).each do
+    AuthorizedKey.limit(1).with_count('none').where(authorized_user_uuid: current_user.uuid).each do
       return nil
     end
     return lambda { |view|
@@ -789,7 +789,7 @@ class ApplicationController < ActionController::Base
   }
 
   @@notification_tests.push lambda { |controller, current_user|
-    Collection.limit(1).where(created_by: current_user.uuid).each do
+    Collection.limit(1).with_count('none').where(created_by: current_user.uuid).each do
       return nil
     end
     return lambda { |view|
@@ -799,7 +799,7 @@ class ApplicationController < ActionController::Base
 
   @@notification_tests.push lambda { |controller, current_user|
     if PipelineInstance.api_exists?(:index)
-      PipelineInstance.limit(1).where(created_by: current_user.uuid).each do
+      PipelineInstance.limit(1).with_count('none').where(created_by: current_user.uuid).each do
         return nil
       end
     else
