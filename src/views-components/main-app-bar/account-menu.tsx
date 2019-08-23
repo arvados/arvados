@@ -7,7 +7,6 @@ import { MenuItem, Divider } from "@material-ui/core";
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { User, getUserFullname } from "~/models/user";
 import { DropdownMenu } from "~/components/dropdown-menu/dropdown-menu";
-import { Link } from "react-router-dom";
 import { UserPanelIcon } from "~/components/icon/icon";
 import { DispatchProp, connect } from 'react-redux';
 import { logout } from '~/store/auth/auth-action';

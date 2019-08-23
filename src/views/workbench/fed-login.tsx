@@ -5,7 +5,6 @@
 import * as React from 'react';
 import { connect } from 'react-redux';
 import { RootState } from '~/store/store';
-import { AuthState } from '~/store/auth/auth-reducer';
 import { User } from "~/models/user";
 import { getSaltedToken } from '~/store/auth/auth-action-session';
 import { Config } from '~/common/config';

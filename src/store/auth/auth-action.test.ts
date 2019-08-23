@@ -21,7 +21,7 @@ import 'jest-localstorage-mock';
 import { createServices } from "~/services/services";
 import { configureStore, RootStore } from "../store";
 import createBrowserHistory from "history/createBrowserHistory";
-import { Config, mockConfig } from '~/common/config';
+import { mockConfig } from '~/common/config';
 import { ApiActions } from "~/services/api/api-actions";
 import { ACCOUNT_LINK_STATUS_KEY} from '~/services/link-account-service/link-account-service';
 

@@ -13,7 +13,7 @@ import { getResource } from '~/store/resources/resources';
 import { GroupResource } from '~/models/group';
 import { getCommonResourceServiceError, CommonResourceServiceError } from '~/services/common-service/common-resource-service';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { PermissionLevel, PermissionResource } from '~/models/permission';
+import { PermissionLevel } from '~/models/permission';
 import { PermissionService } from '~/services/permission-service/permission-service';
 import { FilterBuilder } from '~/services/api/filter-builder';
 

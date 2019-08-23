@@ -5,8 +5,6 @@
 import { CollectionService } from "../collection-service/collection-service";
 import { parseKeepManifestText, stringifyKeepManifest } from "./collection-manifest-parser";
 import { mapManifestToCollectionFilesTree } from "./collection-manifest-mapper";
-import { CommonResourceService } from "~/services/common-service/common-resource-service";
-import * as _ from "lodash";
 
 export class CollectionFilesService {
 

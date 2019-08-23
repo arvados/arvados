@@ -7,8 +7,6 @@ import { ProjectResource } from "~/models/project";
 import { GroupClass } from "~/models/group";
 import { ListArguments } from "~/services/common-service/common-service";
 import { FilterBuilder, joinFilters } from "~/services/api/filter-builder";
-import { TrashableResourceService } from '~/services/common-service/trashable-resource-service';
-import { snakeCase } from 'lodash';
 export class ProjectService extends GroupsService<ProjectResource> {
 
     create(data: Partial<ProjectResource>) {

@@ -9,7 +9,6 @@ import { Typography, IconButton, StyleRulesCallback, withStyles, WithStyles, Too
 import { formatFileSize } from "~/common/formatters";
 import { ListItemTextIcon } from "../list-item-text-icon/list-item-text-icon";
 import { FileTreeData } from "./file-tree-data";
-import { FileThumbnail } from '~/components/file-tree/file-thumbnail';
 
 type CssRules = "root" | "spacer" | "sizeInfo" | "button" | "moreOptions";
 

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { createTree, TreeNode, setNode, Tree, TreeNodeStatus, setNodeStatus, expandNode, deactivateNode, deselectNode, selectNode, selectNodes, deselectNodes } from '~/models/tree';
+import { createTree, TreeNode, setNode, Tree, TreeNodeStatus, setNodeStatus, expandNode, deactivateNode, selectNodes, deselectNodes } from '~/models/tree';
 import { TreePicker } from "./tree-picker";
 import { treePickerActions, TreePickerAction } from "./tree-picker-actions";
 import { compose } from "redux";

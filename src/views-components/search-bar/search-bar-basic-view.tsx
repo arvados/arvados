@@ -4,7 +4,6 @@
 
 import * as React from 'react';
 import { Paper, StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core';
-import { SearchView } from '~/store/search-bar/search-bar-reducer';
 import {
     SearchBarRecentQueries,
     SearchBarRecentQueriesActionProps

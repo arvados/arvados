@@ -11,7 +11,7 @@ import {
 } from '~/models/workflow';
 import { Field } from 'redux-form';
 import { ERROR_MESSAGE } from '~/validators/require';
-import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button, Divider, Grid, WithStyles, Typography } from '@material-ui/core';
+import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button, Divider, WithStyles, Typography } from '@material-ui/core';
 import { GenericInputProps, GenericInput } from './generic-input';
 import { ProjectsTreePicker } from '~/views-components/projects-tree-picker/projects-tree-picker';
 import { connect, DispatchProp } from 'react-redux';

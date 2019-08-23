@@ -5,7 +5,7 @@
 import * as React from 'react';
 import { ReactElement } from 'react';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
-import { Tree, TreeItem, TreeItemStatus } from '~/components/tree/tree';
+import { Tree, TreeItem } from '~/components/tree/tree';
 import { ProjectResource } from '~/models/project';
 import { ProjectIcon } from '~/components/icon/icon';
 import { ArvadosTheme } from '~/common/custom-theme';

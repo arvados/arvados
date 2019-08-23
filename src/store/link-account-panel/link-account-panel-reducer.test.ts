@@ -4,7 +4,6 @@
 
 import { linkAccountPanelReducer, LinkAccountPanelError, LinkAccountPanelStatus, OriginatingUser } from "~/store/link-account-panel/link-account-panel-reducer";
 import { linkAccountPanelActions } from "~/store/link-account-panel/link-account-panel-actions";
-import { UserResource } from "~/models/user";
 
 describe('link-account-panel-reducer', () => {
     const initialState = undefined;

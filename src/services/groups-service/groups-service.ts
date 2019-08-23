@@ -9,7 +9,6 @@ import { AxiosInstance, AxiosRequestConfig } from "axios";
 import { CollectionResource } from "~/models/collection";
 import { ProjectResource } from "~/models/project";
 import { ProcessResource } from "~/models/process";
-import { ResourceKind } from '~/models/resource';
 import { TrashableResourceService } from "~/services/common-service/trashable-resource-service";
 import { ApiActions } from "~/services/api/api-actions";
 import { GroupResource } from "~/models/group";

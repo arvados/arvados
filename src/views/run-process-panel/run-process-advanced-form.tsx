@@ -9,7 +9,6 @@ import { Grid } from '@material-ui/core';
 import { TextField } from '~/components/text-field/text-field';
 import { ExpandIcon } from '~/components/icon/icon';
 import * as IntInput from './inputs/int-input';
-import { require } from '~/validators/require';
 import { min } from '~/validators/min';
 import { optional } from '~/validators/optional';
 import { SwitchField } from '~/components/switch-field/switch-field';

@@ -7,7 +7,7 @@ import { DataExplorerMiddlewareService, listResultsToDataExplorerItemsMeta, data
 import { RootState } from "~/store/store";
 import { ServiceRepository } from "~/services/services";
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { getDataExplorer, DataExplorer, getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
+import { getDataExplorer, getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
 import { GroupsPanelActions } from '~/store/groups-panel/groups-panel-actions';
 import { FilterBuilder } from '~/services/api/filter-builder';
 import { updateResources } from '~/store/resources/resources-actions';

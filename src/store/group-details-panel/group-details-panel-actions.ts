@@ -15,7 +15,6 @@ import { GroupResource } from '~/models/group';
 import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
 import { PermissionResource } from '~/models/permission';
-import { GroupDetailsPanel } from '~/views/group-details-panel/group-details-panel';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { UserResource, getUserFullname } from '~/models/user';
 

@@ -3,11 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { MenuItem, Select, withStyles, StyleRulesCallback } from '@material-ui/core';
+import { MenuItem, Select } from '@material-ui/core';
 import RemoveRedEye from '@material-ui/icons/RemoveRedEye';
 import Edit from '@material-ui/icons/Edit';
 import Computer from '@material-ui/icons/Computer';
-import { WithStyles } from '@material-ui/core/styles';
 import { SelectProps } from '@material-ui/core/Select';
 import { SelectItem } from './select-item';
 import { PermissionLevel } from '../../models/permission';

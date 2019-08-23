@@ -12,7 +12,7 @@ import { RootState } from '~/store/store';
 import { isValid } from 'redux-form';
 import { RUN_PROCESS_INPUTS_FORM } from './run-process-inputs-form';
 import { RunProcessAdvancedForm, RUN_PROCESS_ADVANCED_FORM } from './run-process-advanced-form';
-import { createSelector, createStructuredSelector } from 'reselect';
+import { createStructuredSelector } from 'reselect';
 import { WorkflowPresetSelect } from '~/views/run-process-panel/workflow-preset-select';
 import { selectPreset } from '~/store/run-process-panel/run-process-panel-actions';
 
