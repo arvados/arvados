@@ -32,6 +32,7 @@
     "lodash-es": "4.17.14",
     "lodash.mergewith": "4.6.2",
     "lodash.template": "4.5.0",
+    "mem": "4.0.0",
     "react": "16.5.2",
     "react-copy-to-clipboard": "5.0.1",
     "react-dnd": "5.0.0",
