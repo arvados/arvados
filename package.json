@@ -18,7 +18,7 @@
     "@types/redux-form": "7.4.12",
     "@types/reselect": "2.2.0",
     "@types/shell-quote": "1.6.0",
-    "axios": "0.18.0",
+    "axios": "0.18.1",
     "classnames": "2.2.6",
     "cwlts": "1.15.29",
     "debounce": "1.2.0",
