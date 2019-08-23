@@ -1,5 +1,5 @@
 {
-  "extends": ["tslint:recommended", "tslint-react", "tslint-config-prettier"],
+  "extends": ["tslint:recommended", "tslint-react", "tslint-config-prettier", "tslint-etc"],
   "rules": {
     "ordered-imports": false,
     "member-ordering": false,
@@ -17,14 +17,17 @@
     "interface-over-type-literal": false,
     "no-empty": false,
     "no-bitwise": false,
-    "ban-types": false
+    "ban-types": false,
+    "no-unused-declaration": true
   },
   "linterOptions": {
     "exclude": [
       "config/**/*.js",
       "node_modules/**/*.ts",
       "src/lib/**",
-      "coverage/lcov-report/*.js"
+      "src/**/*.test.ts",
+      "coverage/lcov-report/*.js",
+      "src/common/custom-theme.ts"
     ]
   }
 }
