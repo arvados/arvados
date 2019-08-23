@@ -33,7 +33,6 @@ import { Dispatch } from "redux";
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 import { createTree } from '~/models/tree';
 import {
-    getInitialResourceTypeFilters,
     getTrashPanelTypeFilters
 } from '~/store/resource-type-filters/resource-type-filters';
 

@@ -10,7 +10,6 @@ import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions
 import { DataExplorer, getDataExplorer } from '~/store/data-explorer/data-explorer-reducer';
 import { updateResources } from '~/store/resources/resources-actions';
 import { SortDirection } from '~/components/data-table/data-column';
-import { SearchResultsPanelColumnNames } from '~/views/search-results-panel/search-results-panel-view';
 import { OrderDirection, OrderBuilder } from '~/services/api/order-builder';
 import { GroupContentsResource, GroupContentsResourcePrefix } from "~/services/groups-service/groups-service";
 import { ListResults } from '~/services/common-service/common-service';
@@ -25,7 +24,6 @@ import { joinFilters } from '~/services/api/filter-builder';
 import { DataColumns } from '~/components/data-table/data-table';
 import { serializeResourceTypeFilters } from '~/store//resource-type-filters/resource-type-filters';
 import { ProjectPanelColumnNames } from '~/views/project-panel/project-panel';
-import * as _ from 'lodash';
 import { Resource } from '~/models/resource';
 
 export class SearchResultsMiddlewareService extends DataExplorerMiddlewareService {

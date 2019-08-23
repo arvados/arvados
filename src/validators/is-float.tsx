@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { isInteger, isNumber } from 'lodash';
+import { isNumber } from 'lodash';
 
 const ERROR_MESSAGE = 'This field must be a float';
 

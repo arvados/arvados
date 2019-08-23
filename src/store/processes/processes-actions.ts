@@ -19,7 +19,7 @@ import { initialize } from "redux-form";
 import { RUN_PROCESS_BASIC_FORM, RunProcessBasicFormData } from "~/views/run-process-panel/run-process-basic-form";
 import { RunProcessAdvancedFormData, RUN_PROCESS_ADVANCED_FORM } from "~/views/run-process-panel/run-process-advanced-form";
 import { MOUNT_PATH_CWL_WORKFLOW, MOUNT_PATH_CWL_INPUT } from '~/models/process';
-import { getWorkflowInputs } from "~/models/workflow";
+import { getWorkflow, getWorkflowInputs } from "~/models/workflow";
 
 export const loadProcess = (containerRequestUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<Process> => {
@@ -86,8 +86,8 @@ export const reRunProcess = (processUuid: string, workflowUuid: string) =>
         const workflows = getState().runProcessPanel.searchWorkflows;
         const workflow = workflows.find(workflow => workflow.uuid === workflowUuid);
         if (workflow && process) {
-            let inputs = getWorkflowInputs(process.mounts[MOUNT_PATH_CWL_WORKFLOW]);
-            inputs = getInputs(process);
+            const mainWf = getWorkflow(process.mounts[MOUNT_PATH_CWL_WORKFLOW]);
+            if (mainWf) { mainWf.inputs = getInputs(process); }
             const stringifiedDefinition = JSON.stringify(process.mounts[MOUNT_PATH_CWL_WORKFLOW].content);
             const newWorkflow = { ...workflow, definition: stringifiedDefinition };
 

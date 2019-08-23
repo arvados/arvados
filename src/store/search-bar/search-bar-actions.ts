@@ -10,12 +10,11 @@ import { RootState } from '~/store/store';
 import { initUserProject, treePickerActions } from '~/store/tree-picker/tree-picker-actions';
 import { ServiceRepository } from '~/services/services';
 import { FilterBuilder } from "~/services/api/filter-builder";
-import { ResourceKind, isResourceUuid, extractUuidKind, RESOURCE_UUID_REGEX, COLLECTION_PDH_REGEX } from '~/models/resource';
+import { ResourceKind, RESOURCE_UUID_REGEX, COLLECTION_PDH_REGEX } from '~/models/resource';
 import { SearchView } from '~/store/search-bar/search-bar-reducer';
 import { navigateTo, navigateToSearchResults } from '~/store/navigation/navigation-action';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { PropertyValue, SearchBarAdvanceFormData } from '~/models/search-bar';
-import { debounce } from 'debounce';
 import * as _ from "lodash";
 import { getModifiedKeysValues } from "~/common/objects";
 import { activateSearchBarProject } from "~/store/search-bar/search-bar-tree-actions";
@@ -203,12 +202,6 @@ export const submitData = (event: React.FormEvent<HTMLFormElement>) =>
     };
 
 
-const startSearch = () =>
-    (dispatch: Dispatch, getState: () => RootState) => {
-        const searchValue = getState().searchBar.searchValue;
-        dispatch<any>(searchData(searchValue));
-    };
-
 const searchGroups = (searchValue: string, limit: number) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const currentView = getState().searchBar.currentView;
@@ -290,8 +283,6 @@ export const getQueryFromAdvancedData = (data: SearchBarAdvanceFormData, prevDat
         .forEach(p => keyMap.push([`has:"${p.key}"`, `prop-"${p.key}"`]));
 
     if (prevData) {
-        const fd = flatData(data);
-        const pfd = flatData(prevData);
         const obj = getModifiedKeysValues(flatData(data), flatData(prevData));
         value = buildQueryFromKeyMap({
             searchValue: data.searchValue,

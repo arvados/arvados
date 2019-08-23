@@ -5,9 +5,7 @@ import {GraphChange, SVGPlugin}                                     from '../plu
 import {
     StepModel,
     WorkflowInputParameterModel,
-    WorkflowOutputParameterModel,
-    WorkflowStepInputModel,
-    WorkflowStepOutputModel
+    WorkflowOutputParameterModel
 } from "cwlts/models";
 
 export class SVGArrangePlugin implements SVGPlugin {

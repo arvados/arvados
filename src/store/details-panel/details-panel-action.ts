@@ -43,7 +43,7 @@ export const deleteProjectProperty = (key: string) =>
         try {
             if (project) {
                 delete project.properties[key];
-                const updatedProject = await services.projectService.update(project.uuid, project);
+                const updatedProject = await services.projectService.update(project.uuid, { properties: project.properties });
                 dispatch(resourcesActions.SET_RESOURCES([updatedProject]));
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Property has been successfully deleted.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
             }
@@ -61,7 +61,7 @@ export const createProjectProperty = (data: TagProperty) =>
         try {
             if (project) {
                 project.properties[data.key] = data.value;
-                const updatedProject = await services.projectService.update(project.uuid, project);
+                const updatedProject = await services.projectService.update(project.uuid, { properties: project.properties });
                 dispatch(resourcesActions.SET_RESOURCES([updatedProject]));
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Property has been successfully added.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
                 dispatch(stopSubmit(PROJECT_PROPERTIES_FORM_NAME));

@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { OrderBuilder } from "./order-builder";
 import { joinUrls } from "~/services/api/url-builder";
 
 describe("UrlBuilder", () => {

@@ -11,7 +11,6 @@ import { LoginPanel } from '~/views/login-panel/login-panel';
 import { InactivePanel } from '~/views/inactive-panel/inactive-panel';
 import { WorkbenchLoadingScreen } from '~/views/workbench/workbench-loading-screen';
 import { MainAppBar } from '~/views-components/main-app-bar/main-app-bar';
-import { LinkAccountPanel } from '~/views/link-account-panel/link-account-panel';
 
 type CssRules = 'root';
 

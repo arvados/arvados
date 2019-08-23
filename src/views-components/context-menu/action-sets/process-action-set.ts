@@ -6,7 +6,7 @@ import { ContextMenuActionSet } from "~/views-components/context-menu/context-me
 import { ToggleFavoriteAction } from "~/views-components/context-menu/actions/favorite-action";
 import { toggleFavorite } from "~/store/favorites/favorites-actions";
 import {
-    RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, ProvenanceGraphIcon,
+    RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon,
     AdvancedIcon, RemoveIcon, ReRunProcessIcon, LogIcon, InputIcon, CommandIcon, OutputIcon
 } from "~/components/icon/icon";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";

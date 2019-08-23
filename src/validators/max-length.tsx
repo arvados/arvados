@@ -5,12 +5,6 @@
 export const ERROR_MESSAGE = 'Maximum string length of this field is: ';
 export const DEFAULT_MAX_VALUE = 60;
 
-interface MaxLengthProps {
-    maxLengthValue: number;  
-    defaultErrorMessage: string;
-}
-
-// TODO types for maxLength
 export const maxLength: any = (maxLengthValue = DEFAULT_MAX_VALUE, errorMessage = ERROR_MESSAGE) => {
     return (value: string) => {
         if (value) {

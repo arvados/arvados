@@ -13,7 +13,6 @@ import { loadContainers } from '~/store/processes/processes-actions';
 import { LogEventType } from '~/models/log';
 import { addProcessLogsPanelItem } from '../store/process-logs-panel/process-logs-panel-actions';
 import { FilterBuilder } from "~/services/api/filter-builder";
-import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
 
 export const initWebSocket = (config: Config, authService: AuthService, store: RootStore) => {
     if (config.websocketUrl) {

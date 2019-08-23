@@ -23,7 +23,7 @@ export const mockGroupResource = (data: Partial<GroupResource> = {}): GroupResou
     properties: "",
     trashAt: "",
     uuid: "",
-    writeableBy: [],
+    writableBy: [],
     ensure_unique_name: true,
     ...data
 });

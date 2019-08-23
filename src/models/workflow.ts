@@ -121,11 +121,18 @@ export const parseWorkflowDefinition = (workflow: WorkflowResource): WorkflowRes
     return definition;
 };
 
-export const getWorkflowInputs = (workflowDefinition: WorkflowResourceDefinition) => {
+export const getWorkflow = (workflowDefinition: WorkflowResourceDefinition) => {
     if (!workflowDefinition.$graph) { return undefined; }
     const mainWorkflow = workflowDefinition.$graph.find(item => item.class === 'Workflow' && item.id === '#main');
     return mainWorkflow
-        ? mainWorkflow.inputs
+        ? mainWorkflow
+        : undefined;
+};
+
+export const getWorkflowInputs = (workflowDefinition: WorkflowResourceDefinition) => {
+    if (!workflowDefinition) { return undefined; }
+    return getWorkflow(workflowDefinition)
+        ? getWorkflow(workflowDefinition)!.inputs
         : undefined;
 };
 

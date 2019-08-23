@@ -19,7 +19,7 @@ import {
     loadSidePanelTreeProjects,
     SidePanelTreeCategory
 } from '~/store/side-panel-tree/side-panel-tree-actions';
-import { loadResource, updateResources } from '~/store/resources/resources-actions';
+import { updateResources } from '~/store/resources/resources-actions';
 import { projectPanelColumns } from '~/views/project-panel/project-panel';
 import { favoritePanelColumns } from '~/views/favorite-panel/favorite-panel';
 import { matchRootRoute } from '~/routes/routes';

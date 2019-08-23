@@ -5,8 +5,6 @@
 import { CollectionService } from "../collection-service/collection-service";
 import { parseKeepManifestText, stringifyKeepManifest } from "./collection-manifest-parser";
 import { mapManifestToCollectionFilesTree } from "./collection-manifest-mapper";
-import { CommonResourceService } from "~/services/common-service/common-resource-service";
-import * as _ from "lodash";
 
 export class CollectionFilesService {
 
@@ -40,8 +38,7 @@ export class CollectionFilesService {
                 : stream
         );
         const manifestText = stringifyKeepManifest(updatedManifest);
-        const data = { ...collection, manifestText };
-        return this.collectionService.update(collectionUuid, CommonResourceService.mapKeys(_.snakeCase)(data));
+        return this.collectionService.update(collectionUuid, { manifestText });
     }
 
     async deleteFile(collectionUuid: string, file: { name: string, path: string }) {
@@ -57,12 +54,5 @@ export class CollectionFilesService {
         );
         const manifestText = stringifyKeepManifest(updatedManifest);
         return this.collectionService.update(collectionUuid, { manifestText });
-    }
-
-    renameTest() {
-        const u = this.renameFile('qr1hi-4zz18-n0sx074erl4p0ph', {
-            name: 'extracted2.txt.png',
-            path: ''
-        }, 'extracted-new.txt.png');
     }
 }

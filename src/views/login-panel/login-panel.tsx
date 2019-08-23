@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { connect, DispatchProp } from 'react-redux';
-import { Grid, Typography, Button, Select, FormControl } from '@material-ui/core';
+import { Grid, Typography, Button, Select } from '@material-ui/core';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { login, authActions } from '~/store/auth/auth-action';
 import { ArvadosTheme } from '~/common/custom-theme';

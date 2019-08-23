@@ -11,7 +11,7 @@ import { snackbarActions, SnackbarKind } from "../../snackbar/snackbar-actions";
 import { dialogActions } from '../../dialog/dialog-actions';
 import { getNodeValue } from "~/models/tree";
 import { filterCollectionFilesBySelection } from './collection-panel-files-state';
-import { startSubmit, stopSubmit, reset, initialize, FormErrors } from 'redux-form';
+import { startSubmit, stopSubmit, initialize, FormErrors } from 'redux-form';
 import { getDialog } from "~/store/dialog/dialog-reducer";
 import { getFileFullPath } from "~/services/collection-service/collection-service-files-response";
 import { resourcesDataActions } from "~/store/resources-data/resources-data-actions";

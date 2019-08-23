@@ -5,7 +5,7 @@
 import { RouteProps } from "react-router";
 import * as React from "react";
 import { connect, DispatchProp } from "react-redux";
-import { authActions, getUserDetails, saveApiToken } from "~/store/auth/auth-action";
+import { getUserDetails, saveApiToken } from "~/store/auth/auth-action";
 import { getUrlParameter } from "~/common/url";
 import { AuthService } from "~/services/auth-service/auth-service";
 import { navigateToRootProject, navigateToLinkAccount } from "~/store/navigation/navigation-action";

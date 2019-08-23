@@ -465,7 +465,7 @@ const collectionApiResponse = (apiResponse: CollectionResource) => {
 };
 
 const groupRequestApiResponse = (apiResponse: ProjectResource) => {
-    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name, description, groupClass, trashAt, isTrashed, deleteAt, properties, writeableBy } = apiResponse;
+    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name, description, groupClass, trashAt, isTrashed, deleteAt, properties, writableBy } = apiResponse;
     const response = `
 "uuid": "${uuid}",
 "owner_uuid": "${ownerUuid}",
@@ -480,7 +480,7 @@ const groupRequestApiResponse = (apiResponse: ProjectResource) => {
 "is_trashed": ${stringify(isTrashed)},
 "delete_at": ${stringify(deleteAt)},
 "properties": ${stringifyObject(properties)},
-"witable_by": ${stringifyObject(writeableBy)}`;
+"writable_by": ${stringifyObject(writableBy)}`;
 
     return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
 };

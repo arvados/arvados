@@ -8,7 +8,6 @@ import { User } from "~/models/user";
 import { DropdownMenu } from "~/components/dropdown-menu/dropdown-menu";
 import { AdminMenuIcon } from "~/components/icon/icon";
 import { DispatchProp, connect } from 'react-redux';
-import { logout } from '~/store/auth/auth-action';
 import { RootState } from "~/store/store";
 import { openRepositoriesPanel } from "~/store/repositories/repositories-actions";
 import * as NavigationAction from '~/store/navigation/navigation-action';
