@@ -202,12 +202,6 @@ export const submitData = (event: React.FormEvent<HTMLFormElement>) =>
     };
 
 
-const startSearch = () =>
-    (dispatch: Dispatch, getState: () => RootState) => {
-        const searchValue = getState().searchBar.searchValue;
-        dispatch<any>(searchData(searchValue));
-    };
-
 const searchGroups = (searchValue: string, limit: number) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const currentView = getState().searchBar.currentView;
@@ -289,8 +283,6 @@ export const getQueryFromAdvancedData = (data: SearchBarAdvanceFormData, prevDat
         .forEach(p => keyMap.push([`has:"${p.key}"`, `prop-"${p.key}"`]));
 
     if (prevData) {
-        const fd = flatData(data);
-        const pfd = flatData(prevData);
         const obj = getModifiedKeysValues(flatData(data), flatData(prevData));
         value = buildQueryFromKeyMap({
             searchValue: data.searchValue,

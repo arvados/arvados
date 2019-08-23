@@ -58,7 +58,6 @@ export const SearchInput = withStyles(styles)(
         timeout: number;
 
         render() {
-            const { classes } = this.props;
             return <form onSubmit={this.handleSubmit}>
                 <FormControl>
                     <InputLabel>Search</InputLabel>

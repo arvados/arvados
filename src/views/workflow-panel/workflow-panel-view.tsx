@@ -50,18 +50,19 @@ export enum ResourceStatus {
     SHARED = "Shared"
 }
 
-const resourceStatus = (type: string) => {
-    switch (type) {
-        case ResourceStatus.PUBLIC:
-            return "Public";
-        case ResourceStatus.PRIVATE:
-            return "Private";
-        case ResourceStatus.SHARED:
-            return "Shared";
-        default:
-            return "Unknown";
-    }
-};
+// TODO: restore filters
+// const resourceStatus = (type: string) => {
+//     switch (type) {
+//         case ResourceStatus.PUBLIC:
+//             return "Public";
+//         case ResourceStatus.PRIVATE:
+//             return "Private";
+//         case ResourceStatus.SHARED:
+//             return "Shared";
+//         default:
+//             return "Unknown";
+//     }
+// };
 
 export const workflowPanelColumns: DataColumns<string> = [
     {
