@@ -12,3 +12,4 @@ public/*
 .licenseignore
 .yarnrc
 .npmrc
+src/lib/cwl-svg/*
