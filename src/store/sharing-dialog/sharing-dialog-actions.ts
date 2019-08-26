@@ -20,7 +20,6 @@ import { withProgress } from "~/store/progress-indicator/with-progress";
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions.ts';
 import { snackbarActions, SnackbarKind } from "../snackbar/snackbar-actions";
 import { extractUuidKind, ResourceKind } from "~/models/resource";
-import { LinkClass } from "~/models/link";
 
 export const openSharingDialog = (resourceUuid: string) =>
     (dispatch: Dispatch) => {
@@ -74,19 +73,23 @@ const loadSharingDialog = async (dispatch: Dispatch, getState: () => RootState, 
 };
 
 const initializeManagementForm = (permissionLinks: PermissionResource[]) =>
-    async (dispatch: Dispatch, getState: () => RootState, { userService }: ServiceRepository) => {
+    async (dispatch: Dispatch, getState: () => RootState, { userService, groupsService }: ServiceRepository) => {
 
         const filters = new FilterBuilder()
             .addIn('uuid', permissionLinks.map(({ tailUuid }) => tailUuid))
             .getFilters();
 
         const { items: users } = await userService.list({ filters });
+        const { items: groups} = await groupsService.list({ filters });
 
         const getEmail = (tailUuid: string) => {
             const user = users.find(({ uuid }) => uuid === tailUuid);
+            const group = groups.find(({ uuid }) => uuid === tailUuid);
             return user
                 ? user.email
-                : tailUuid;
+                : group
+                    ? group.name
+                    : tailUuid;
         };
 
         const managementPermissions = permissionLinks
@@ -200,21 +203,6 @@ const sendInvitations = async (_: Dispatch, getState: () => RootState, { permiss
 
         const getGroupsFromForm = invitations.invitedPeople.filter((invitation) => extractUuidKind(invitation.uuid) === ResourceKind.GROUP);
         const getUsersFromForm = invitations.invitedPeople.filter((invitation) => extractUuidKind(invitation.uuid) === ResourceKind.USER);
-        const uuids = getGroupsFromForm.map(group => group.uuid);
-
-        const permissions = await permissionService.list({
-            filters: new FilterBuilder()
-                .addIn('tailUuid', uuids)
-                .addEqual('linkClass', LinkClass.PERMISSION)
-                .getFilters()
-        });
-
-        const usersFromGroups = await userService.list({
-            filters: new FilterBuilder()
-                .addIn('uuid', permissions.items.map(item => item.headUuid))
-                .getFilters()
-
-        });
 
         const invitationDataUsers = getUsersFromForm
             .map(person => ({
@@ -224,11 +212,11 @@ const sendInvitations = async (_: Dispatch, getState: () => RootState, { permiss
                 name: invitations.permissions
             }));
 
-        const invitationsDataGroups = usersFromGroups.items.map(
-            person => ({
+        const invitationsDataGroups = getGroupsFromForm.map(
+            group => ({
                 ownerUuid: user.uuid,
                 headUuid: dialog.data,
-                tailUuid: person.uuid,
+                tailUuid: group.uuid,
                 name: invitations.permissions
             })
         );
