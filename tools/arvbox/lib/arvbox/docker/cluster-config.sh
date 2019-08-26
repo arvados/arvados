@@ -92,7 +92,7 @@ Clusters:
       GitHTTP:
         InternalURLs:
           "http://localhost:${services[arv-git-httpd]}/": {}
-        ExternalURL: "https://git.$localip:${services[arv-git-httpd-ssl]}/"
+        ExternalURL: "https://$localip:${services[arv-git-httpd-ssl]}/"
       WebDAV:
         InternalURLs:
           "http://localhost:${services[keep-web]}/": {}
