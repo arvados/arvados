@@ -10,17 +10,27 @@ import (
 	"net/url"
 	"regexp"
 
+	"git.curoverse.com/arvados.git/lib/config"
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	check "gopkg.in/check.v1"
 )
 
 var _ = check.Suite(&GitHandlerSuite{})
 
-type GitHandlerSuite struct{}
+type GitHandlerSuite struct {
+	cluster *arvados.Cluster
+}
 
 func (s *GitHandlerSuite) TestEnvVars(c *check.C) {
-	theConfig = defaultConfig()
-	theConfig.RepoRoot = "/"
-	theConfig.GitoliteHome = "/test/ghh"
+
+	cfg, err := config.NewLoader(nil, nil).Load()
+	c.Assert(err, check.Equals, nil)
+	s.cluster, err = cfg.GetCluster("")
+	c.Assert(err, check.Equals, nil)
+
+	s.cluster.Services.GitHTTP.InternalURLs = map[arvados.URL]arvados.ServiceInstance{arvados.URL{Host: "localhost:80"}: arvados.ServiceInstance{}}
+	s.cluster.Git.GitoliteHome = "/test/ghh"
+	s.cluster.Git.Repositories = "/"
 
 	u, err := url.Parse("git.zzzzz.arvadosapi.com/test")
 	c.Check(err, check.Equals, nil)
@@ -30,7 +40,7 @@ func (s *GitHandlerSuite) TestEnvVars(c *check.C) {
 		URL:        u,
 		RemoteAddr: "[::1]:12345",
 	}
-	h := newGitHandler()
+	h := newGitHandler(s.cluster)
 	h.(*gitHandler).Path = "/bin/sh"
 	h.(*gitHandler).Args = []string{"-c", "printf 'Content-Type: text/plain\r\n\r\n'; env"}
 
@@ -43,7 +53,7 @@ func (s *GitHandlerSuite) TestEnvVars(c *check.C) {
 	c.Check(body, check.Matches, `(?ms).*^GL_BYPASS_ACCESS_CHECKS=1$.*`)
 	c.Check(body, check.Matches, `(?ms).*^REMOTE_HOST=::1$.*`)
 	c.Check(body, check.Matches, `(?ms).*^REMOTE_PORT=12345$.*`)
-	c.Check(body, check.Matches, `(?ms).*^SERVER_ADDR=`+regexp.QuoteMeta(theConfig.Listen)+`$.*`)
+	c.Check(body, check.Matches, `(?ms).*^SERVER_ADDR=`+regexp.QuoteMeta("localhost:80")+`$.*`)
 }
 
 func (s *GitHandlerSuite) TestCGIErrorOnSplitHostPortError(c *check.C) {
@@ -55,7 +65,7 @@ func (s *GitHandlerSuite) TestCGIErrorOnSplitHostPortError(c *check.C) {
 		URL:        u,
 		RemoteAddr: "test.bad.address.missing.port",
 	}
-	h := newGitHandler()
+	h := newGitHandler(s.cluster)
 	h.ServeHTTP(resp, req)
 	c.Check(resp.Code, check.Equals, http.StatusInternalServerError)
 	c.Check(resp.Body.String(), check.Equals, "")

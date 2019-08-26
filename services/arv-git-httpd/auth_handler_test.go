@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"git.curoverse.com/arvados.git/lib/config"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	check "gopkg.in/check.v1"
@@ -34,16 +35,16 @@ func (s *AuthHandlerSuite) SetUpTest(c *check.C) {
 	arvadostest.ResetEnv()
 	repoRoot, err := filepath.Abs("../api/tmp/git/test")
 	c.Assert(err, check.IsNil)
-	theConfig = &Config{
-		Client: arvados.Client{
-			APIHost:  arvadostest.APIHost(),
-			Insecure: true,
-		},
-		Listen:          ":0",
-		GitCommand:      "/usr/bin/git",
-		RepoRoot:        repoRoot,
-		ManagementToken: arvadostest.ManagementToken,
-	}
+
+	cfg, err := config.NewLoader(nil, nil).Load()
+	c.Assert(err, check.Equals, nil)
+	cluster, err := cfg.GetCluster("")
+	c.Assert(err, check.Equals, nil)
+
+	cluster.Services.GitHTTP.InternalURLs = map[arvados.URL]arvados.ServiceInstance{arvados.URL{Host: "localhost:0"}: arvados.ServiceInstance{}}
+	cluster.TLS.Insecure = true
+	cluster.Git.GitCommand = "/usr/bin/git"
+	cluster.Git.Repositories = repoRoot
 }
 
 func (s *AuthHandlerSuite) TestPermission(c *check.C) {

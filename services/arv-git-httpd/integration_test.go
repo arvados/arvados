@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"git.curoverse.com/arvados.git/lib/config"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	check "gopkg.in/check.v1"
@@ -28,7 +29,7 @@ type IntegrationSuite struct {
 	tmpRepoRoot string
 	tmpWorkdir  string
 	testServer  *server
-	Config      *Config
+	cluster     *arvados.Cluster
 }
 
 func (s *IntegrationSuite) SetUpSuite(c *check.C) {
@@ -41,7 +42,7 @@ func (s *IntegrationSuite) TearDownSuite(c *check.C) {
 
 func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	arvadostest.ResetEnv()
-	s.testServer = &server{}
+
 	var err error
 	if s.tmpRepoRoot == "" {
 		s.tmpRepoRoot, err = ioutil.TempDir("", "arv-git-httpd")
@@ -71,19 +72,6 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 		"none").Output()
 	c.Assert(err, check.Equals, nil)
 
-	if s.Config == nil {
-		s.Config = &Config{
-			Client: arvados.Client{
-				APIHost:  arvadostest.APIHost(),
-				Insecure: true,
-			},
-			Listen:          "localhost:0",
-			GitCommand:      "/usr/bin/git",
-			RepoRoot:        s.tmpRepoRoot,
-			ManagementToken: arvadostest.ManagementToken,
-		}
-	}
-
 	// Clear ARVADOS_API_* env vars before starting up the server,
 	// to make sure arv-git-httpd doesn't use them or complain
 	// about them being missing.
@@ -91,7 +79,24 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	os.Unsetenv("ARVADOS_API_HOST_INSECURE")
 	os.Unsetenv("ARVADOS_API_TOKEN")
 
-	theConfig = s.Config
+	cfg, err := config.NewLoader(nil, nil).Load()
+	c.Assert(err, check.Equals, nil)
+	s.cluster, err = cfg.GetCluster("")
+	c.Assert(err, check.Equals, nil)
+
+	if s.cluster == nil {
+		s.cluster.Services.GitHTTP.InternalURLs = map[arvados.URL]arvados.ServiceInstance{arvados.URL{Host: "localhost:0"}: arvados.ServiceInstance{}}
+		s.cluster.TLS.Insecure = true
+		s.cluster.Git.GitCommand = "/usr/bin/git"
+		s.cluster.Git.Repositories = s.tmpRepoRoot
+	}
+
+	println(s.cluster.Services.Controller.InternalURLs)
+	println(arvadostest.APIHost())
+	println(s.cluster.ManagementToken)
+	println(arvadostest.ManagementToken)
+
+	s.testServer = &server{cluster: s.cluster}
 	err = s.testServer.Start()
 	c.Assert(err, check.Equals, nil)
 }
@@ -116,9 +121,7 @@ func (s *IntegrationSuite) TearDownTest(c *check.C) {
 	}
 	s.tmpWorkdir = ""
 
-	s.Config = nil
-
-	theConfig = defaultConfig()
+	s.cluster = nil
 }
 
 func (s *IntegrationSuite) RunGit(c *check.C, token, gitCmd, repo string, args ...string) error {
