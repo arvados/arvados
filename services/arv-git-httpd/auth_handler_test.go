@@ -21,7 +21,9 @@ import (
 
 var _ = check.Suite(&AuthHandlerSuite{})
 
-type AuthHandlerSuite struct{}
+type AuthHandlerSuite struct {
+	cluster *arvados.Cluster
+}
 
 func (s *AuthHandlerSuite) SetUpSuite(c *check.C) {
 	arvadostest.StartAPI()
@@ -38,20 +40,20 @@ func (s *AuthHandlerSuite) SetUpTest(c *check.C) {
 
 	cfg, err := config.NewLoader(nil, nil).Load()
 	c.Assert(err, check.Equals, nil)
-	cluster, err := cfg.GetCluster("")
+	s.cluster, err = cfg.GetCluster("")
 	c.Assert(err, check.Equals, nil)
 
-	cluster.Services.GitHTTP.InternalURLs = map[arvados.URL]arvados.ServiceInstance{arvados.URL{Host: "localhost:0"}: arvados.ServiceInstance{}}
-	cluster.TLS.Insecure = true
-	cluster.Git.GitCommand = "/usr/bin/git"
-	cluster.Git.Repositories = repoRoot
+	s.cluster.Services.GitHTTP.InternalURLs = map[arvados.URL]arvados.ServiceInstance{arvados.URL{Host: "localhost:0"}: arvados.ServiceInstance{}}
+	s.cluster.TLS.Insecure = true
+	s.cluster.Git.GitCommand = "/usr/bin/git"
+	s.cluster.Git.Repositories = repoRoot
 }
 
 func (s *AuthHandlerSuite) TestPermission(c *check.C) {
 	h := &authHandler{handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("%v", r.URL)
 		io.WriteString(w, r.URL.Path)
-	})}
+	}), cluster: s.cluster}
 	baseURL, err := url.Parse("http://git.example/")
 	c.Assert(err, check.IsNil)
 	for _, trial := range []struct {
@@ -134,7 +136,7 @@ func (s *AuthHandlerSuite) TestPermission(c *check.C) {
 }
 
 func (s *AuthHandlerSuite) TestCORS(c *check.C) {
-	h := &authHandler{}
+	h := &authHandler{cluster: s.cluster}
 
 	// CORS preflight
 	resp := httptest.NewRecorder()

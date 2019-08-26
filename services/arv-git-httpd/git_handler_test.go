@@ -21,8 +21,7 @@ type GitHandlerSuite struct {
 	cluster *arvados.Cluster
 }
 
-func (s *GitHandlerSuite) TestEnvVars(c *check.C) {
-
+func (s *GitHandlerSuite) SetUpTest(c *check.C) {
 	cfg, err := config.NewLoader(nil, nil).Load()
 	c.Assert(err, check.Equals, nil)
 	s.cluster, err = cfg.GetCluster("")
@@ -31,7 +30,9 @@ func (s *GitHandlerSuite) TestEnvVars(c *check.C) {
 	s.cluster.Services.GitHTTP.InternalURLs = map[arvados.URL]arvados.ServiceInstance{arvados.URL{Host: "localhost:80"}: arvados.ServiceInstance{}}
 	s.cluster.Git.GitoliteHome = "/test/ghh"
 	s.cluster.Git.Repositories = "/"
+}
 
+func (s *GitHandlerSuite) TestEnvVars(c *check.C) {
 	u, err := url.Parse("git.zzzzz.arvadosapi.com/test")
 	c.Check(err, check.Equals, nil)
 	resp := httptest.NewRecorder()

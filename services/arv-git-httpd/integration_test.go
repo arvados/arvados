@@ -61,6 +61,23 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	_, err = exec.Command("sh", "-c", "cd "+s.tmpWorkdir+" && echo work >work && git add work && git -c user.name=Foo -c user.email=Foo commit -am 'workdir: test'").CombinedOutput()
 	c.Assert(err, check.Equals, nil)
 
+	if s.cluster == nil {
+		cfg, err := config.NewLoader(nil, nil).Load()
+		c.Assert(err, check.Equals, nil)
+		s.cluster, err = cfg.GetCluster("")
+		c.Assert(err, check.Equals, nil)
+
+		s.cluster.Services.GitHTTP.InternalURLs = map[arvados.URL]arvados.ServiceInstance{arvados.URL{Host: "localhost:0"}: arvados.ServiceInstance{}}
+		s.cluster.TLS.Insecure = true
+		s.cluster.Git.GitCommand = "/usr/bin/git"
+		s.cluster.Git.Repositories = s.tmpRepoRoot
+		s.cluster.ManagementToken = arvadostest.ManagementToken
+	}
+
+	s.testServer = &server{cluster: s.cluster}
+	err = s.testServer.Start()
+	c.Assert(err, check.Equals, nil)
+
 	_, err = exec.Command("git", "config",
 		"--file", s.tmpWorkdir+"/.git/config",
 		"credential.http://"+s.testServer.Addr+"/.helper",
@@ -78,27 +95,6 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	os.Unsetenv("ARVADOS_API_HOST")
 	os.Unsetenv("ARVADOS_API_HOST_INSECURE")
 	os.Unsetenv("ARVADOS_API_TOKEN")
-
-	cfg, err := config.NewLoader(nil, nil).Load()
-	c.Assert(err, check.Equals, nil)
-	s.cluster, err = cfg.GetCluster("")
-	c.Assert(err, check.Equals, nil)
-
-	if s.cluster == nil {
-		s.cluster.Services.GitHTTP.InternalURLs = map[arvados.URL]arvados.ServiceInstance{arvados.URL{Host: "localhost:0"}: arvados.ServiceInstance{}}
-		s.cluster.TLS.Insecure = true
-		s.cluster.Git.GitCommand = "/usr/bin/git"
-		s.cluster.Git.Repositories = s.tmpRepoRoot
-	}
-
-	println(s.cluster.Services.Controller.InternalURLs)
-	println(arvadostest.APIHost())
-	println(s.cluster.ManagementToken)
-	println(arvadostest.ManagementToken)
-
-	s.testServer = &server{cluster: s.cluster}
-	err = s.testServer.Start()
-	c.Assert(err, check.Equals, nil)
 }
 
 func (s *IntegrationSuite) TearDownTest(c *check.C) {
