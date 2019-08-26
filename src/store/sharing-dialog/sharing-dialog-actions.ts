@@ -74,19 +74,23 @@ const loadSharingDialog = async (dispatch: Dispatch, getState: () => RootState, 
 };
 
 const initializeManagementForm = (permissionLinks: PermissionResource[]) =>
-    async (dispatch: Dispatch, getState: () => RootState, { userService }: ServiceRepository) => {
+    async (dispatch: Dispatch, getState: () => RootState, { userService, groupsService }: ServiceRepository) => {
 
         const filters = new FilterBuilder()
             .addIn('uuid', permissionLinks.map(({ tailUuid }) => tailUuid))
             .getFilters();
 
         const { items: users } = await userService.list({ filters });
+        const { items: groups} = await groupsService.list({ filters });
 
         const getEmail = (tailUuid: string) => {
             const user = users.find(({ uuid }) => uuid === tailUuid);
+            const group = groups.find(({ uuid }) => uuid === tailUuid);
             return user
                 ? user.email
-                : tailUuid;
+                : group
+                    ? group.name
+                    : tailUuid;
         };
 
         const managementPermissions = permissionLinks
