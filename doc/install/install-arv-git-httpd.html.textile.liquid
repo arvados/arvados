@@ -277,7 +277,7 @@ Edit the cluster config at @/etc/arvados/config.yml@ and set the following value
 <pre><code>Clusters:
   <span class="userinput">uuid_prefix</span>:
     Services:
-      GitHttp:
+      GitHTTP:
         ExternalURL: <span class="userinput">https://git.uuid_prefix.your.domain/</span>
         InternalURLs:
 	  <span class="userinput">"http://localhost:9001": {}</span>
@@ -288,7 +288,7 @@ Edit the cluster config at @/etc/arvados/config.yml@ and set the following value
 </code></pre>
 </notextile>
 
-Make sure to include the trailing slash for @Services.GitHttp.ExternalURL@.
+Make sure to include the trailing slash for @Services.GitHTTP.ExternalURL@.
 
 Restart the systemd service to ensure the new configuration is used.
 

@@ -420,7 +420,7 @@ Clusters:
 
     Git:
       # Path to git or gitolite-shell executable. Each authenticated
-      # request will execute this program with the single argument http-backend"
+      # request will execute this program with the single argument "http-backend"
       GitCommand: /usr/bin/git
 
       # Path to Gitolite's home directory. If a non-empty path is given,
