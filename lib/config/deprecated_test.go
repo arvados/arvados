@@ -187,3 +187,32 @@ func fmtKeepproxyConfig(param string, debugLog bool) string {
 }
 `, debugLog, param)
 }
+
+func (s *LoadSuite) TestLegacyArvGitHttpdConfig(c *check.C) {
+	content := []byte(`
+{
+	"Client": {
+		"Scheme": "",
+		"APIHost": "example.com",
+		"AuthToken": "abcdefg",
+	},
+	"Listen": ":9000",
+	"GitCommand": "/test/git",
+	"GitoliteHome": "/test/gitolite",
+	"RepoRoot": "/test/reporoot",
+	"ManagementToken": "xyzzy"
+}
+`)
+	f := "-legacy-git-httpd-config"
+	cluster, err := testLoadLegacyConfig(content, f, c)
+
+	c.Check(err, check.IsNil)
+	c.Check(cluster, check.NotNil)
+	c.Check(cluster.Services.Controller.ExternalURL, check.Equals, arvados.URL{Scheme: "https", Host: "example.com"})
+	c.Check(cluster.SystemRootToken, check.Equals, "abcdefg")
+	c.Check(cluster.ManagementToken, check.Equals, "xyzzy")
+	c.Check(cluster.Git.GitCommand, check.Equals, "/test/git")
+	c.Check(cluster.Git.GitoliteHome, check.Equals, "/test/gitolite")
+	c.Check(cluster.Git.Repositories, check.Equals, "/test/reporoot")
+	c.Check(cluster.Services.Keepproxy.InternalURLs[arvados.URL{Host: ":9000"}], check.Equals, arvados.ServiceInstance{})
+}

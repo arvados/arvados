@@ -114,6 +114,8 @@ type Cluster struct {
 		WebDAVCache WebDAVCacheConfig
 	}
 	Git struct {
+		GitCommand   string
+		GitoliteHome string
 		Repositories string
 	}
 	Login struct {

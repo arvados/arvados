@@ -578,16 +578,11 @@ def run_arv_git_httpd():
         return
     stop_arv_git_httpd()
 
-    gitdir = os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'git')
     gitport = internal_port_from_config("GitHTTP")
     env = os.environ.copy()
     env.pop('ARVADOS_API_TOKEN', None)
     logf = open(_logfilename('arv-git-httpd'), 'a')
-    agh = subprocess.Popen(
-        ['arv-git-httpd',
-         '-repo-root='+gitdir+'/test',
-         '-management-token=e687950a23c3a9bceec28c6223a06c79',
-         '-address=:'+str(gitport)],
+    agh = subprocess.Popen(['arv-git-httpd'],
         env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf)
     with open(_pidfile('arv-git-httpd'), 'w') as f:
         f.write(str(agh.pid))
@@ -747,6 +742,9 @@ def setup_config():
                 },
                 "Collections": {
                     "TrustAllContent": True
+                },
+                "Git": {
+                    "Repositories": "%s/test" % os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'git')
                 }
             }
         }

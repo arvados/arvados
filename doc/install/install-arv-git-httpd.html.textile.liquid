@@ -212,10 +212,14 @@ Otherwise, create @/etc/cron.d/arvados-git-sync@ with the following content:
 
 h3. Configure the API server to advertise the correct SSH URLs
 
-In your API server's @application.yml@ file, add the following entry:
+Edit the cluster config at @/etc/arvados/config.yml@ and set @Services.GitSSH.ExternalURL@. Replace @uuid_prefix@ with your cluster id.
 
 <notextile>
-<pre><code>git_repo_ssh_base: "git@git.<span class="userinput">uuid_prefix.your.domain</span>:"
+<pre><code>Clusters:
+  <span class="userinput">uuid_prefix</span>:
+    Services:
+      GitSSH:
+        ExternalURL: <span class="userinput">git@git.uuid_prefix.your.domain:</span>
 </code></pre>
 </notextile>
 
@@ -267,20 +271,27 @@ The arvados-git-httpd package includes configuration files for systemd.  If you'
 
 {% include 'notebox_end' %}
 
-Create the configuration file @/etc/arvados/git-httpd/git-httpd.yml@. Run @arvados-git-httpd -h@ to learn more about configuration entries.
+Edit the cluster config at @/etc/arvados/config.yml@ and set the following values. Replace @uuid_prefix@ with your cluster id.
 
 <notextile>
-<pre><code>Client:
-  APIHost: <b>uuid_prefix.your.domain</b>
-  Insecure: false
-GitCommand: /var/lib/arvados/git/gitolite/src/gitolite-shell
-GitoliteHome: /var/lib/arvados/git
-Listen: :9001
-RepoRoot: /var/lib/arvados/git/repositories
+<pre><code>Clusters:
+  <span class="userinput">uuid_prefix</span>:
+    Services:
+      GitHTTP:
+        ExternalURL: <span class="userinput">https://git.uuid_prefix.your.domain/</span>
+        InternalURLs:
+	  <span class="userinput">"http://localhost:9001": {}</span>
+    Git:
+      GitCommand: <span class="userinput">/var/lib/arvados/git/gitolite/src/gitolite-shell</span>
+      GitoliteHome: <span class="userinput">/var/lib/arvados/git</span>
+      Repositories: <span class="userinput">/var/lib/arvados/git/repositories</span>
 </code></pre>
 </notextile>
 
+Make sure to include the trailing slash for @Services.GitHTTP.ExternalURL@.
+
 Restart the systemd service to ensure the new configuration is used.
+
 
 <notextile>
 <pre><code>~$ <span class="userinput">sudo systemctl restart arvados-git-httpd</span>
@@ -319,17 +330,6 @@ server {
 }
 </code></pre>
 </notextile>
-
-h3. Configure the API server to advertise the correct HTTPS URLs
-
-In your API server's @application.yml@ file, add the following entry:
-
-<notextile>
-<pre><code>git_repo_https_base: https://git.<span class="userinput">uuid_prefix.your.domain</span>/
-</code></pre>
-</notextile>
-
-Make sure to include the trailing slash.
 
 h2. Restart Nginx
 

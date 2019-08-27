@@ -468,3 +468,44 @@ func (ldr *Loader) loadOldKeepWebConfig(cfg *arvados.Config) error {
 	cfg.Clusters[cluster.ClusterID] = *cluster
 	return nil
 }
+
+const defaultGitHttpdConfigPath = "/etc/arvados/git-httpd/git-httpd.yml"
+
+type oldGitHttpdConfig struct {
+	Client          *arvados.Client
+	Listen          string
+	GitCommand      string
+	GitoliteHome    string
+	RepoRoot        string
+	ManagementToken string
+}
+
+func (ldr *Loader) loadOldGitHttpdConfig(cfg *arvados.Config) error {
+	if ldr.GitHttpdPath == "" {
+		return nil
+	}
+	var oc oldGitHttpdConfig
+	err := ldr.loadOldConfigHelper("arv-git-httpd", ldr.GitHttpdPath, &oc)
+	if os.IsNotExist(err) && ldr.GitHttpdPath == defaultGitHttpdConfigPath {
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	cluster, err := cfg.GetCluster("")
+	if err != nil {
+		return err
+	}
+
+	loadOldClientConfig(cluster, oc.Client)
+
+	cluster.Services.GitHTTP.InternalURLs[arvados.URL{Host: oc.Listen}] = arvados.ServiceInstance{}
+	cluster.TLS.Insecure = oc.Client.Insecure
+	cluster.ManagementToken = oc.ManagementToken
+	cluster.Git.GitCommand = oc.GitCommand
+	cluster.Git.GitoliteHome = oc.GitoliteHome
+	cluster.Git.Repositories = oc.RepoRoot
+
+	cfg.Clusters[cluster.ClusterID] = *cluster
+	return nil
+}

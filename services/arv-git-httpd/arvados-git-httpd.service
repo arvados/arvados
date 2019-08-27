@@ -6,7 +6,6 @@
 Description=Arvados git server
 Documentation=https://doc.arvados.org/
 After=network.target
-AssertPathExists=/etc/arvados/git-httpd/git-httpd.yml
 
 # systemd==229 (ubuntu:xenial) obeys StartLimitInterval in the [Unit] section
 StartLimitInterval=0

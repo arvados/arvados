@@ -57,16 +57,16 @@ Usage of keepproxy:
 
 h3. Update the cluster config
 
-Edit the cluster config at @/etc/arvados/config.yml@ and set @Services.Keepproxy.ExternalURL@ and @Services.Keepproxy.InternalURLs@.  Replace @zzzzz@ with your cluster id.
+Edit the cluster config at @/etc/arvados/config.yml@ and set @Services.Keepproxy.ExternalURL@ and @Services.Keepproxy.InternalURLs@.  Replace @uuid_prefix@ with your cluster id.
 
 <notextile>
 <pre><code>Clusters:
   <span class="userinput">uuid_prefix</span>:
     Services:
-      <span class="userinput">Keepproxy:
-        ExternalURL: https://keep.uuid_prefix.your.domain
+      Keepproxy:
+        ExternalURL: <span class="userinput">https://keep.uuid_prefix.your.domain</span>
         InternalURLs:
-	  "http://localhost:25107": {}
+	  <span class="userinput">"http://localhost:25107": {}</span>
 </span></code></pre>
 </notextile>
 
