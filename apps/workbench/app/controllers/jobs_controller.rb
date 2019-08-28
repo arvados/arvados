@@ -24,11 +24,11 @@ class JobsController < ApplicationController
       nodes[j[:script_version]] = {:uuid => j[:script_version]}
     end
 
-    Collection.where(uuid: collections).each do |c|
+    Collection.where(uuid: collections).with_count("none").each do |c|
       nodes[c[:portable_data_hash]] = c
     end
 
-    Collection.where(portable_data_hash: hashes).each do |c|
+    Collection.where(portable_data_hash: hashes).with_count("none").each do |c|
       nodes[c[:portable_data_hash]] = c
     end
 

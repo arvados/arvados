@@ -134,7 +134,7 @@ class PipelineInstancesController < ApplicationController
 
       jobs = jobs.compact.uniq
       if jobs.any?
-        Job.where(uuid: jobs).each do |j|
+        Job.where(uuid: jobs).with_count("none").each do |j|
           job_uuid = j.uuid
 
           provenance[job_uuid] = j
@@ -158,7 +158,7 @@ class PipelineInstancesController < ApplicationController
 
       hashes = hashes.compact.uniq
       if hashes.any?
-        Collection.where(portable_data_hash: hashes).each do |c|
+        Collection.where(portable_data_hash: hashes).with_count("none").each do |c|
           hash_uuid = c.portable_data_hash
           provenance[hash_uuid] = c
           pips[hash_uuid] = 0 unless pips[hash_uuid] != nil
@@ -168,7 +168,7 @@ class PipelineInstancesController < ApplicationController
 
       collections = collections.compact.uniq
       if collections.any?
-        Collection.where(uuid: collections).each do |c|
+        Collection.where(uuid: collections).with_count("none").each do |c|
           collection_uuid = c.uuid
           provenance[collection_uuid] = c
           pips[collection_uuid] = 0 unless pips[collection_uuid] != nil
