@@ -9,7 +9,7 @@ class PipelineInstanceWorkUnit < ProxyWorkUnit
     items = []
 
     jobs = {}
-    results = Job.where(uuid: @proxied.job_ids.values).results
+    results = Job.where(uuid: @proxied.job_ids.values).with_count("none").results
     results.each do |j|
       jobs[j.uuid] = j
     end

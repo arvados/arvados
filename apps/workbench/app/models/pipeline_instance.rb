@@ -127,10 +127,10 @@ class PipelineInstance < ArvadosBase
       Keep::Locator.parse(loc_s)
     end
     if log_pdhs.any? and
-        Collection.where(portable_data_hash: log_pdhs).limit(1).results.any?
+        Collection.where(portable_data_hash: log_pdhs).limit(1).with_count("none").results.any?
       true
     elsif log_uuids.any? and
-        Collection.where(uuid: log_uuids).limit(1).results.any?
+        Collection.where(uuid: log_uuids).limit(1).with_count("none").results.any?
       true
     else
       stderr_log_query(1).results.any?

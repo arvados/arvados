@@ -499,7 +499,7 @@ class ApplicationController < ActionController::Base
   def is_starred
     links = Link.where(tail_uuid: current_user.uuid,
                head_uuid: @object.uuid,
-               link_class: 'star')
+               link_class: 'star').with_count("none")
 
     return links.andand.any?
   end
@@ -862,7 +862,7 @@ class ApplicationController < ActionController::Base
   helper_method :recent_jobs_and_pipelines
   def recent_jobs_and_pipelines
     (Job.limit(10) |
-     PipelineInstance.limit(10)).
+     PipelineInstance.limit(10).with_count("none")).
       sort_by do |x|
       (x.finished_at || x.started_at rescue nil) || x.modified_at || x.created_at
     end.reverse
@@ -870,7 +870,7 @@ class ApplicationController < ActionController::Base
 
   helper_method :running_pipelines
   def running_pipelines
-    pi = PipelineInstance.order(["started_at asc", "created_at asc"]).filter([["state", "in", ["RunningOnServer", "RunningOnClient"]]])
+    pi = PipelineInstance.order(["started_at asc", "created_at asc"]).with_count("none").filter([["state", "in", ["RunningOnServer", "RunningOnClient"]]])
     jobs = {}
     pi.each do |pl|
       pl.components.each do |k,v|
@@ -881,7 +881,7 @@ class ApplicationController < ActionController::Base
     end
 
     if jobs.keys.any?
-      Job.filter([["uuid", "in", jobs.keys]]).each do |j|
+      Job.filter([["uuid", "in", jobs.keys]]).with_count("none").each do |j|
         jobs[j[:uuid]] = j
       end
 
@@ -904,11 +904,11 @@ class ApplicationController < ActionController::Base
     procs = {}
     if PipelineInstance.api_exists?(:index)
       cols = %w(uuid owner_uuid created_at modified_at pipeline_template_uuid name state started_at finished_at)
-      pipelines = PipelineInstance.select(cols).limit(lim).order(["created_at desc"])
+      pipelines = PipelineInstance.select(cols).limit(lim).order(["created_at desc"]).with_count("none")
       pipelines.results.each { |pi| procs[pi] = pi.created_at }
     end
 
-    crs = ContainerRequest.limit(lim).order(["created_at desc"]).filter([["requesting_container_uuid", "=", nil]])
+    crs = ContainerRequest.limit(lim).with_count("none").order(["created_at desc"]).filter([["requesting_container_uuid", "=", nil]])
     crs.results.each { |c| procs[c] = c.created_at }
 
     Hash[procs.sort_by {|key, value| value}].keys.reverse.first(lim)
@@ -916,9 +916,9 @@ class ApplicationController < ActionController::Base
 
   helper_method :recent_collections
   def recent_collections lim
-    c = Collection.limit(lim).order(["modified_at desc"]).results
+    c = Collection.limit(lim).with_count("none").order(["modified_at desc"]).results
     own = {}
-    Group.filter([["uuid", "in", c.map(&:owner_uuid)]]).each do |g|
+    Group.filter([["uuid", "in", c.map(&:owner_uuid)]]).with_count("none").each do |g|
       own[g[:uuid]] = g
     end
     {collections: c, owners: own}
@@ -929,9 +929,9 @@ class ApplicationController < ActionController::Base
     return if defined?(@starred_projects) && @starred_projects
     links = Link.filter([['tail_uuid', '=', user.uuid],
                          ['link_class', '=', 'star'],
-                         ['head_uuid', 'is_a', 'arvados#group']]).select(%w(head_uuid))
+                         ['head_uuid', 'is_a', 'arvados#group']]).with_count("none").select(%w(head_uuid))
     uuids = links.collect { |x| x.head_uuid }
-    starred_projects = Group.filter([['uuid', 'in', uuids]]).order('name')
+    starred_projects = Group.filter([['uuid', 'in', uuids]]).order('name').with_count("none")
     @starred_projects = starred_projects.results
   end
 
@@ -1084,7 +1084,7 @@ class ApplicationController < ActionController::Base
     end
 
     # TODO: make sure we get every page of results from API server
-    Link.filter([['head_uuid', 'in', uuids]]).each do |link|
+    Link.filter([['head_uuid', 'in', uuids]]).with_count("none").each do |link|
       @all_links_for[link.head_uuid] << link
     end
     @all_links_for
@@ -1137,7 +1137,7 @@ class ApplicationController < ActionController::Base
     end
 
     # TODO: make sure we get every page of results from API server
-    Collection.where(uuid: uuids).each do |collection|
+    Collection.where(uuid: uuids).with_count("none").each do |collection|
       @all_collections_for[collection.uuid] << collection
     end
     @all_collections_for
@@ -1187,7 +1187,7 @@ class ApplicationController < ActionController::Base
     end
 
     # TODO: make sure we get every page of results from API server
-    Collection.where(uuid: uuids).each do |collection|
+    Collection.where(uuid: uuids).with_count("none").each do |collection|
       @all_log_collections_for[collection.uuid] << collection
     end
     @all_log_collections_for
@@ -1220,7 +1220,7 @@ class ApplicationController < ActionController::Base
       @all_pdhs_for[x] = []
     end
 
-    Collection.select(%w(portable_data_hash)).where(portable_data_hash: pdhs).distinct().each do |collection|
+    Collection.select(%w(portable_data_hash)).where(portable_data_hash: pdhs).distinct().with_count("none").each do |collection|
       @all_pdhs_for[collection.portable_data_hash] << collection
     end
     @all_pdhs_for
@@ -1291,7 +1291,7 @@ class ApplicationController < ActionController::Base
     end
 
     unless link_uuids.empty?
-      Link.select([:head_uuid]).where(uuid: link_uuids).each do |link|
+      Link.select([:head_uuid]).where(uuid: link_uuids).with_count("none").each do |link|
         if ArvadosBase::resource_class_for_uuid(link.head_uuid) == Collection
           coll_ids << link.head_uuid
         end
@@ -1314,7 +1314,7 @@ class ApplicationController < ActionController::Base
     end
 
     unless pdhs.empty?
-      Collection.where(portable_data_hash: pdhs.uniq).
+      Collection.where(portable_data_hash: pdhs.uniq).with_count("none").
           select([:uuid, :portable_data_hash]).each do |coll|
         unless source_paths[coll.portable_data_hash].empty?
           uuids << coll.uuid

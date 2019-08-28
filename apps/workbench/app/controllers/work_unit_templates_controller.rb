@@ -12,12 +12,12 @@ class WorkUnitTemplatesController < ApplicationController
     # get next page of pipeline_templates
     if PipelineTemplate.api_exists?(:index)
       filters = @filters + [["uuid", "is_a", ["arvados#pipelineTemplate"]]]
-      pipelines = PipelineTemplate.limit(@limit).order(["created_at desc"]).filter(filters)
+      pipelines = PipelineTemplate.limit(@limit).with_count("none").order(["created_at desc"]).filter(filters)
     end
 
     # get next page of workflows
     filters = @filters + [["uuid", "is_a", ["arvados#workflow"]]]
-    workflows = Workflow.limit(@limit).order(["created_at desc"]).filter(filters)
+    workflows = Workflow.limit(@limit).order(["created_at desc"]).with_count("none").filter(filters)
 
     @objects = (pipelines.to_a + workflows.to_a).sort_by(&:created_at).reverse.first(@limit)
 
