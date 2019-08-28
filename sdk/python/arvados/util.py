@@ -19,6 +19,9 @@ import arvados
 from arvados.collection import CollectionReader
 
 HEX_RE = re.compile(r'^[0-9a-fA-F]+$')
+CR_UNCOMMITTED = 'Uncommitted'
+CR_COMMITTED = 'Committed'
+CR_FINAL = 'Final'
 
 keep_locator_pattern = re.compile(r'[0-9a-f]{32}\+\d+(\+\S+)*')
 signed_locator_pattern = re.compile(r'[0-9a-f]{32}\+\d+(\+\S+)*\+A\S+(\+\S+)*')
