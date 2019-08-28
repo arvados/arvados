@@ -23,14 +23,14 @@ class WorkUnitsController < ApplicationController
     # get next page of pipeline_instances
     if PipelineInstance.api_exists?(:index)
       filters = @filters + [["uuid", "is_a", ["arvados#pipelineInstance"]]]
-      pipelines = PipelineInstance.limit(@limit).order(["created_at desc"]).filter(filters)
+      pipelines = PipelineInstance.limit(@limit).order(["created_at desc"]).filter(filters).with_count("none")
     end
 
     if params[:show_children]
       # get next page of jobs
       if Job.api_exists?(:index)
         filters = @filters + [["uuid", "is_a", ["arvados#job"]]]
-        jobs = Job.limit(@limit).order(["created_at desc"]).filter(filters)
+        jobs = Job.limit(@limit).order(["created_at desc"]).filter(filters).with_count("none")
       end
     end
 
@@ -39,7 +39,7 @@ class WorkUnitsController < ApplicationController
     if !params[:show_children]
      filters << ["requesting_container_uuid", "=", nil]
     end
-    crs = ContainerRequest.limit(@limit).order(["created_at desc"]).filter(filters)
+    crs = ContainerRequest.limit(@limit).order(["created_at desc"]).filter(filters).with_count("none")
     @objects = (jobs.to_a + pipelines.to_a + crs.to_a).sort_by(&:created_at).reverse.first(@limit)
 
     if @objects.any?

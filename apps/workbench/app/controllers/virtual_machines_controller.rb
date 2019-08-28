@@ -10,7 +10,7 @@ class VirtualMachinesController < ApplicationController
       Link.where(tail_uuid: current_user.uuid,
                  head_uuid: @objects.collect(&:uuid),
                  link_class: 'permission',
-                 name: 'can_login').
+                 name: 'can_login').with_count("none").
         each do |perm_link|
         if perm_link.properties.andand[:username]
           @vm_logins[perm_link.head_uuid] ||= []

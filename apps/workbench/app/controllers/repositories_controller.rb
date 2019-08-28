@@ -50,7 +50,7 @@ class RepositoriesController < ApplicationController
 
     if !owner_filter.andand.any?
       filters = @filters + [["owner_uuid", "=", current_user.uuid]]
-      my_repos = Repository.all.order("name ASC").limit(limit).offset(offset).filter(filters).results
+      my_repos = Repository.all.order("name ASC").limit(limit).with_count("none").offset(offset).filter(filters).results
     else      # done fetching all owned repositories
       my_repos = []
     end
@@ -64,7 +64,7 @@ class RepositoriesController < ApplicationController
     end
 
     filters = @filters + [["owner_uuid", "!=", current_user.uuid]]
-    other_repos = Repository.all.order("name ASC").limit(limit).offset(offset).filter(filters).results
+    other_repos = Repository.all.order("name ASC").limit(limit).with_count("none").offset(offset).filter(filters).results
 
     @objects = (my_repos + other_repos).first(limit)
   end

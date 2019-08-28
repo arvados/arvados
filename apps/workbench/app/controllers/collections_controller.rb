@@ -36,7 +36,7 @@ class CollectionsController < ApplicationController
                                    ['link_class', '=', 'resources'],
                                    ['name', '=', 'wants'],
                                    ['tail_uuid', '=', current_user.uuid],
-                                   ['head_uuid', '=', @object.uuid]])
+                                   ['head_uuid', '=', @object.uuid]]).with_count("none")
       logger.debug persist_links.inspect
     else
       return unprocessable "Invalid value #{value.inspect}"
@@ -65,7 +65,7 @@ class CollectionsController < ApplicationController
     @select ||= Collection.columns.map(&:name)
     base_search = Collection.select(@select)
     if params[:search].andand.length.andand > 0
-      tags = Link.where(any: ['contains', params[:search]])
+      tags = Link.where(any: ['contains', params[:search]]).with_count("none")
       @objects = (base_search.where(uuid: tags.collect(&:head_uuid)) |
                       base_search.where(any: ['contains', params[:search]])).
         uniq { |c| c.uuid }
@@ -84,7 +84,7 @@ class CollectionsController < ApplicationController
 
       @objects = base_search.limit(limit).offset(offset)
     end
-    @links = Link.where(head_uuid: @objects.collect(&:uuid))
+    @links = Link.where(head_uuid: @objects.collect(&:uuid)).with_count("none")
     @collection_info = {}
     @objects.each do |c|
       @collection_info[c.uuid] = {
@@ -196,19 +196,19 @@ class CollectionsController < ApplicationController
       else
         if Job.api_exists?(:index)
           jobs_with = lambda do |conds|
-            Job.limit(RELATION_LIMIT).where(conds)
+            Job.limit(RELATION_LIMIT).with_count("none").where(conds)
               .results.sort_by { |j| j.finished_at || j.created_at }
           end
           @output_of = jobs_with.call(output: @object.portable_data_hash)
           @log_of = jobs_with.call(log: @object.portable_data_hash)
         end
 
-        @project_links = Link.limit(RELATION_LIMIT).order("modified_at DESC")
+        @project_links = Link.limit(RELATION_LIMIT).with_count("none").order("modified_at DESC")
           .where(head_uuid: @object.uuid, link_class: 'name').results
-        project_hash = Group.where(uuid: @project_links.map(&:tail_uuid)).to_hash
+        project_hash = Group.where(uuid: @project_links.map(&:tail_uuid)).with_count("none").to_hash
         @projects = project_hash.values
 
-        @permissions = Link.limit(RELATION_LIMIT).order("modified_at DESC")
+        @permissions = Link.limit(RELATION_LIMIT).with_count("none").order("modified_at DESC")
           .where(head_uuid: @object.uuid, link_class: 'permission',
                  name: 'can_read').results
         @search_sharing = search_scopes

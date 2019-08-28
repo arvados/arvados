@@ -164,7 +164,7 @@ class ProjectsController < ApplicationController
 
   def destroy
     while (objects = Link.filter([['owner_uuid','=',@object.uuid],
-                                  ['tail_uuid','=',@object.uuid]])).any?
+                                  ['tail_uuid','=',@object.uuid]]).with_count("none")).any?
       objects.each do |object|
         object.destroy
       end

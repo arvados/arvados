@@ -20,7 +20,7 @@ class ContainerRequestsController < ApplicationController
 
     # Search for child CRs
     if cr[:container_uuid]
-      child_crs = ContainerRequest.where(requesting_container_uuid: cr[:container_uuid])
+      child_crs = ContainerRequest.where(requesting_container_uuid: cr[:container_uuid]).with_count("none")
 
       child_crs.each do |child|
         nodes[child[:uuid]] = child
@@ -35,14 +35,14 @@ class ContainerRequestsController < ApplicationController
 
     # Batch requests to get all related collections
     # First fetch output collections by UUID.
-    Collection.filter([['uuid', 'in', col_uuids.uniq]]).each do |c|
+    Collection.filter([['uuid', 'in', col_uuids.uniq]]).with_count("none").each do |c|
       output_cols[c[:uuid]] = c
       output_pdhs << c[:portable_data_hash]
     end
     # Then, get only input collections by PDH. There could be more than one collection
     # per PDH: the number of collections is used on the collection node label.
     Collection.filter(
-      [['portable_data_hash', 'in', col_pdhs - output_pdhs]]).each do |c|
+      [['portable_data_hash', 'in', col_pdhs - output_pdhs]]).with_count("none").each do |c|
       if input_cols[c[:portable_data_hash]]
         input_cols[c[:portable_data_hash]] << c
       else
@@ -78,7 +78,7 @@ class ContainerRequestsController < ApplicationController
 
   def cancel
     if @object.container_uuid
-      c = Container.select(['state']).where(uuid: @object.container_uuid).first
+      c = Container.select(['state']).where(uuid: @object.container_uuid).with_count("none").first
       if c && c.state != 'Running'
         # If the container hasn't started yet, setting priority=0
         # leaves our request in "Committed" state and doesn't cancel

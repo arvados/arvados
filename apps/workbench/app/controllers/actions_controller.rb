@@ -86,7 +86,7 @@ class ActionsController < ApplicationController
               end
             end
             if resource_class == Collection
-              dst.manifest_text = Collection.select([:manifest_text]).where(uuid: src.uuid).first.manifest_text
+              dst.manifest_text = Collection.select([:manifest_text]).where(uuid: src.uuid).with_count("none").first.manifest_text
             end
           when :move
             dst = src
@@ -122,7 +122,7 @@ class ActionsController < ApplicationController
     uuids, source_paths = selected_collection_files params
 
     new_coll = Arv::Collection.new
-    Collection.where(uuid: uuids.uniq).
+    Collection.where(uuid: uuids.uniq).with_count("none").
         select([:uuid, :manifest_text]).each do |coll|
       src_coll = Arv::Collection.new(coll.manifest_text)
       src_pathlist = source_paths[coll.uuid]
