@@ -327,6 +327,78 @@ func (ldr *Loader) loadOldWebsocketConfig(cfg *arvados.Config) error {
 	return nil
 }
 
+type oldKeepProxyConfig struct {
+	Client          *arvados.Client
+	Listen          *string
+	DisableGet      *bool
+	DisablePut      *bool
+	DefaultReplicas *int
+	Timeout         *arvados.Duration
+	PIDFile         *string
+	Debug           *bool
+	ManagementToken *string
+}
+
+const defaultKeepproxyConfigPath = "/etc/arvados/keepproxy/keepproxy.yml"
+
+func (ldr *Loader) loadOldKeepproxyConfig(cfg *arvados.Config) error {
+	if ldr.KeepproxyPath == "" {
+		return nil
+	}
+	var oc oldKeepProxyConfig
+	err := ldr.loadOldConfigHelper("keepproxy", ldr.KeepproxyPath, &oc)
+	if os.IsNotExist(err) && ldr.KeepproxyPath == defaultKeepproxyConfigPath {
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	cluster, err := cfg.GetCluster("")
+	if err != nil {
+		return err
+	}
+
+	loadOldClientConfig(cluster, oc.Client)
+
+	if oc.Listen != nil {
+		cluster.Services.Keepproxy.InternalURLs[arvados.URL{Host: *oc.Listen}] = arvados.ServiceInstance{}
+	}
+	if oc.DefaultReplicas != nil {
+		cluster.Collections.DefaultReplication = *oc.DefaultReplicas
+	}
+	if oc.Timeout != nil {
+		cluster.API.KeepServiceRequestTimeout = *oc.Timeout
+	}
+	if oc.Debug != nil {
+		if *oc.Debug && cluster.SystemLogs.LogLevel != "debug" {
+			cluster.SystemLogs.LogLevel = "debug"
+		} else if !*oc.Debug && cluster.SystemLogs.LogLevel != "info" {
+			cluster.SystemLogs.LogLevel = "info"
+		}
+	}
+	if oc.ManagementToken != nil {
+		cluster.ManagementToken = *oc.ManagementToken
+	}
+
+	// The following legacy options are no longer supported. If they are set to
+	// true or PIDFile has a value, error out and notify the user
+	unsupportedEntry := func(cfgEntry string) error {
+		return fmt.Errorf("the keepproxy %s configuration option is no longer supported, please remove it from your configuration file", cfgEntry)
+	}
+	if oc.DisableGet != nil && *oc.DisableGet {
+		return unsupportedEntry("DisableGet")
+	}
+	if oc.DisablePut != nil && *oc.DisablePut {
+		return unsupportedEntry("DisablePut")
+	}
+	if oc.PIDFile != nil && *oc.PIDFile != "" {
+		return unsupportedEntry("PIDFile")
+	}
+
+	cfg.Clusters[cluster.ClusterID] = *cluster
+	return nil
+}
+
 const defaultKeepWebConfigPath = "/etc/arvados/keep-web/keep-web.yml"
 
 type oldKeepWebConfig struct {
@@ -392,6 +464,47 @@ func (ldr *Loader) loadOldKeepWebConfig(cfg *arvados.Config) error {
 			ldr.Logger.Warn("More than 1 anonymous tokens configured, using only the first and discarding the rest.")
 		}
 	}
+
+	cfg.Clusters[cluster.ClusterID] = *cluster
+	return nil
+}
+
+const defaultGitHttpdConfigPath = "/etc/arvados/git-httpd/git-httpd.yml"
+
+type oldGitHttpdConfig struct {
+	Client          *arvados.Client
+	Listen          string
+	GitCommand      string
+	GitoliteHome    string
+	RepoRoot        string
+	ManagementToken string
+}
+
+func (ldr *Loader) loadOldGitHttpdConfig(cfg *arvados.Config) error {
+	if ldr.GitHttpdPath == "" {
+		return nil
+	}
+	var oc oldGitHttpdConfig
+	err := ldr.loadOldConfigHelper("arv-git-httpd", ldr.GitHttpdPath, &oc)
+	if os.IsNotExist(err) && ldr.GitHttpdPath == defaultGitHttpdConfigPath {
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	cluster, err := cfg.GetCluster("")
+	if err != nil {
+		return err
+	}
+
+	loadOldClientConfig(cluster, oc.Client)
+
+	cluster.Services.GitHTTP.InternalURLs[arvados.URL{Host: oc.Listen}] = arvados.ServiceInstance{}
+	cluster.TLS.Insecure = oc.Client.Insecure
+	cluster.ManagementToken = oc.ManagementToken
+	cluster.Git.GitCommand = oc.GitCommand
+	cluster.Git.GitoliteHome = oc.GitoliteHome
+	cluster.Git.Repositories = oc.RepoRoot
 
 	cfg.Clusters[cluster.ClusterID] = *cluster
 	return nil

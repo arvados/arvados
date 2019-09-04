@@ -88,6 +88,7 @@ type Cluster struct {
 		SendTimeout                    Duration
 		WebsocketClientEventQueue      int
 		WebsocketServerEventQueue      int
+		KeepServiceRequestTimeout      Duration
 	}
 	AuditLogs struct {
 		MaxAge             Duration
@@ -113,6 +114,8 @@ type Cluster struct {
 		WebDAVCache WebDAVCacheConfig
 	}
 	Git struct {
+		GitCommand   string
+		GitoliteHome string
 		Repositories string
 	}
 	Login struct {

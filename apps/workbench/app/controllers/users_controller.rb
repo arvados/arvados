@@ -43,7 +43,7 @@ class UsersController < ApplicationController
 
   def activity
     @breadcrumb_page_name = nil
-    @users = User.limit(params[:limit])
+    @users = User.limit(params[:limit]).with_count("none")
     @user_activity = {}
     @activity = {
       logins: {},
@@ -64,13 +64,13 @@ class UsersController < ApplicationController
         filter([[:event_type, '=', 'login'],
                 [:object_kind, '=', 'arvados#user'],
                 [:created_at, '>=', threshold_start],
-                [:created_at, '<', threshold_end]])
+                [:created_at, '<', threshold_end]]).with_count("none")
       @activity[:jobs][span] = Job.select(%w(uuid modified_by_user_uuid)).
         filter([[:created_at, '>=', threshold_start],
-                [:created_at, '<', threshold_end]])
+                [:created_at, '<', threshold_end]]).with_count("none")
       @activity[:pipeline_instances][span] = PipelineInstance.select(%w(uuid modified_by_user_uuid)).
         filter([[:created_at, '>=', threshold_start],
-                [:created_at, '<', threshold_end]])
+                [:created_at, '<', threshold_end]]).with_count("none")
       @activity.each do |type, act|
         records = act[span]
         @users.each do |u|
@@ -96,7 +96,7 @@ class UsersController < ApplicationController
 
   def storage
     @breadcrumb_page_name = nil
-    @users = User.limit(params[:limit])
+    @users = User.limit(params[:limit]).with_count("none")
     @user_storage = {}
     total_storage = {}
     @log_date = {}
@@ -154,11 +154,13 @@ class UsersController < ApplicationController
     @my_jobs = Job.
       limit(10).
       order('created_at desc').
+      with_count('none').
       where(created_by: current_user.uuid)
 
     @my_collections = Collection.
       limit(10).
       order('created_at desc').
+      with_count('none').
       where(created_by: current_user.uuid)
     collection_uuids = @my_collections.collect &:uuid
 
@@ -168,7 +170,7 @@ class UsersController < ApplicationController
     end
 
     Link.filter([['head_uuid', 'in', collection_uuids],
-                             ['link_class', 'in', ['tag', 'resources']]]).
+                             ['link_class', 'in', ['tag', 'resources']]]).with_count("none")
       each do |link|
       case link.link_class
       when 'tag'
@@ -183,6 +185,7 @@ class UsersController < ApplicationController
     @my_pipelines = PipelineInstance.
       limit(10).
       order('created_at desc').
+      with_count('none').
       where(created_by: current_user.uuid)
 
     respond_to do |f|
@@ -264,14 +267,14 @@ class UsersController < ApplicationController
     @my_vm_logins = {}
     Link.where(tail_uuid: @object.uuid,
                link_class: 'permission',
-               name: 'can_login').
+               name: 'can_login').with_count("none").
           each do |perm_link|
             if perm_link.properties.andand[:username]
               @my_vm_logins[perm_link.head_uuid] ||= []
               @my_vm_logins[perm_link.head_uuid] << perm_link.properties[:username]
             end
           end
-    @my_virtual_machines = VirtualMachine.where(uuid: @my_vm_logins.keys)
+    @my_virtual_machines = VirtualMachine.where(uuid: @my_vm_logins.keys).with_count("none")
   end
 
   def ssh_keys
@@ -335,7 +338,7 @@ class UsersController < ApplicationController
     oid_login_perms = Link.where(tail_uuid: user.email,
                                    head_kind: 'arvados#user',
                                    link_class: 'permission',
-                                   name: 'can_login')
+                                   name: 'can_login').with_count("none")
 
     if oid_login_perms.any?
       prefix_properties = oid_login_perms.first.properties
@@ -346,10 +349,10 @@ class UsersController < ApplicationController
     repo_perms = Link.where(tail_uuid: user.uuid,
                             head_kind: 'arvados#repository',
                             link_class: 'permission',
-                            name: 'can_write')
+                            name: 'can_write').with_count("none")
     if repo_perms.any?
       repo_uuid = repo_perms.first.head_uuid
-      repos = Repository.where(head_uuid: repo_uuid)
+      repos = Repository.where(head_uuid: repo_uuid).with_count("none")
       if repos.any?
         repo_name = repos.first.name
         current_selections[:repo_name] = repo_name
@@ -360,7 +363,7 @@ class UsersController < ApplicationController
     vm_login_perms = Link.where(tail_uuid: user.uuid,
                               head_kind: 'arvados#virtualMachine',
                               link_class: 'permission',
-                              name: 'can_login')
+                              name: 'can_login').with_count("none")
     if vm_login_perms.any?
       vm_perm = vm_login_perms.first
       vm_uuid = vm_perm.head_uuid

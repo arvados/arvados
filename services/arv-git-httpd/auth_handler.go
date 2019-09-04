@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/auth"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
@@ -22,14 +23,21 @@ import (
 type authHandler struct {
 	handler    http.Handler
 	clientPool *arvadosclient.ClientPool
+	cluster    *arvados.Cluster
 	setupOnce  sync.Once
 }
 
 func (h *authHandler) setup() {
-	ac, err := arvadosclient.New(&theConfig.Client)
+	client, err := arvados.NewClientFromConfig(h.cluster)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	ac, err := arvadosclient.New(client)
+	if err != nil {
+		log.Fatalf("Error setting up arvados client prototype %v", err)
+	}
+
 	h.clientPool = &arvadosclient.ClientPool{Prototype: ac}
 }
 
@@ -161,7 +169,7 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		"/" + repoName + "/.git",
 	}
 	for _, dir := range tryDirs {
-		if fileInfo, err := os.Stat(theConfig.RepoRoot + dir); err != nil {
+		if fileInfo, err := os.Stat(h.cluster.Git.Repositories + dir); err != nil {
 			if !os.IsNotExist(err) {
 				statusCode, statusText = http.StatusInternalServerError, err.Error()
 				return
@@ -173,7 +181,7 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 	if rewrittenPath == "" {
 		log.Println("WARNING:", repoUUID,
-			"git directory not found in", theConfig.RepoRoot, tryDirs)
+			"git directory not found in", h.cluster.Git.Repositories, tryDirs)
 		// We say "content not found" to disambiguate from the
 		// earlier "API says that repo does not exist" error.
 		statusCode, statusText = http.StatusNotFound, "content not found"

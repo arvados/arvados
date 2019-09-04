@@ -79,6 +79,10 @@ Clusters:
         ExternalURL: "https://$localip:${services[workbench2-ssl]}"
       SSO:
         ExternalURL: "https://$localip:${services[sso]}"
+      Keepproxy:
+        InternalURLs:
+          "http://localhost:${services[keepproxy]}/": {}
+        ExternalURL: "http://$localip:${services[keepproxy-ssl]}/"
       Websocket:
         ExternalURL: "wss://$localip:${services[websockets-ssl]}/websocket"
         InternalURLs:
@@ -86,7 +90,9 @@ Clusters:
       GitSSH:
         ExternalURL: "ssh://git@$localip:"
       GitHTTP:
-        ExternalURL: "http://$localip:${services[arv-git-httpd]}/"
+        InternalURLs:
+          "http://localhost:${services[arv-git-httpd]}/": {}
+        ExternalURL: "https://$localip:${services[arv-git-httpd-ssl]}/"
       WebDAV:
         InternalURLs:
           "http://localhost:${services[keep-web]}/": {}
@@ -139,6 +145,10 @@ Clusters:
     Workbench:
       SecretKeyBase: $workbench_secret_key_base
       ArvadosDocsite: http://$localip:${services[doc]}/
+    Git:
+      GitCommand: /usr/share/gitolite3/gitolite-shell
+      GitoliteHome: /var/lib/arvados/git
+      Repositories: /var/lib/arvados/git/repositories
 EOF
 
 /usr/local/lib/arvbox/yml_override.py /var/lib/arvados/cluster_config.yml

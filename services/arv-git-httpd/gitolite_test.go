@@ -10,8 +10,8 @@ import (
 	"os/exec"
 	"strings"
 
+	"git.curoverse.com/arvados.git/lib/config"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	check "gopkg.in/check.v1"
 )
 
@@ -47,16 +47,18 @@ func (s *GitoliteSuite) SetUpTest(c *check.C) {
 	runGitolite("gitolite", "setup", "--admin", "root")
 
 	s.tmpRepoRoot = s.gitoliteHome + "/repositories"
-	s.Config = &Config{
-		Client: arvados.Client{
-			APIHost:  arvadostest.APIHost(),
-			Insecure: true,
-		},
-		Listen:       "localhost:0",
-		GitCommand:   "/usr/share/gitolite3/gitolite-shell",
-		GitoliteHome: s.gitoliteHome,
-		RepoRoot:     s.tmpRepoRoot,
-	}
+
+	cfg, err := config.NewLoader(nil, nil).Load()
+	c.Assert(err, check.Equals, nil)
+	s.cluster, err = cfg.GetCluster("")
+	c.Assert(err, check.Equals, nil)
+
+	s.cluster.Services.GitHTTP.InternalURLs = map[arvados.URL]arvados.ServiceInstance{arvados.URL{Host: "localhost:0"}: arvados.ServiceInstance{}}
+	s.cluster.TLS.Insecure = true
+	s.cluster.Git.GitCommand = "/usr/share/gitolite3/gitolite-shell"
+	s.cluster.Git.GitoliteHome = s.gitoliteHome
+	s.cluster.Git.Repositories = s.tmpRepoRoot
+
 	s.IntegrationSuite.SetUpTest(c)
 
 	// Install the gitolite hooks in the bare repo we made in

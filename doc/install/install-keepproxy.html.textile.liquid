@@ -44,27 +44,30 @@ Verify that Keepproxy is functional:
 
 <notextile>
 <pre><code>~$ <span class="userinput">keepproxy -h</span>
-...
-Usage: keepproxy [-config path/to/keepproxy.yml]
-...
+Usage of keepproxy:
+  -config file
+    	Site configuration file (default may be overridden by setting an ARVADOS_CONFIG environment variable) (default "/etc/arvados/config.yml")
+  -dump-config
+    	write current configuration to stdout and exit
+[...]
+  -version
+    	print version information and exit.
 </code></pre>
 </notextile>
 
-h3. Create an API token for the Keepproxy server
+h3. Update the cluster config
 
-{% assign railscmd = "bundle exec ./script/get_anonymous_user_token.rb --get" %}
-{% assign railsout = "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz" %}
-The Keepproxy server needs a token to talk to the API server.  On the <strong>API server</strong>, use the following command to create the token.  {% include 'install_rails_command' %}
-
-h3. Set up the Keepproxy service
-
-Install runit to supervise the keepproxy daemon.  {% include 'install_runit' %}
-
-The run script for the keepproxy service should set the environment variables @ARVADOS_API_TOKEN@ (with the token you just generated), @ARVADOS_API_HOST@, and, if needed, @ARVADOS_API_HOST_INSECURE@.  The core keepproxy command to run is:
+Edit the cluster config at @/etc/arvados/config.yml@ and set @Services.Keepproxy.ExternalURL@ and @Services.Keepproxy.InternalURLs@.  Replace @uuid_prefix@ with your cluster id.
 
 <notextile>
-<pre><code>ARVADOS_API_TOKEN=<span class="userinput">{{railsout}}</span> ARVADOS_API_HOST=<span class="userinput">uuid_prefix.your.domain</span> exec keepproxy
-</code></pre>
+<pre><code>Clusters:
+  <span class="userinput">uuid_prefix</span>:
+    Services:
+      Keepproxy:
+        ExternalURL: <span class="userinput">https://keep.uuid_prefix.your.domain</span>
+        InternalURLs:
+	  <span class="userinput">"http://localhost:25107": {}</span>
+</span></code></pre>
 </notextile>
 
 h3. Set up a reverse proxy with SSL support
@@ -130,6 +133,32 @@ export ARVADOS_API_TOKEN=zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
 }
 EOF</span>
 </code></pre></notextile>
+
+h2. Run Keepproxy
+
+h3. Start the service (option 1: systemd)
+
+If your system does not use systemd, skip this section and follow the "runit instructions":#runit instead.
+
+If your system uses systemd, the keepproxy service should already be set up. Start it and check its status:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo systemctl restart keepproxy</span>
+~$ <span class="userinput">sudo systemctl status keepproxy</span>
+&#x25cf; keepproxy.service - Arvados Keep Proxy
+   Loaded: loaded (/lib/systemd/system/keepproxy.service; enabled)
+   Active: active (running) since Tue 2019-07-23 09:33:47 EDT; 3 weeks 1 days ago
+     Docs: https://doc.arvados.org/
+ Main PID: 1150 (Keepproxy)
+   CGroup: /system.slice/keepproxy.service
+           └─1150 /usr/bin/keepproxy
+[...]
+</code></pre>
+</notextile>
+
+h3(#runit). Start the service (option 2: runit)
+
+Install runit to supervise the Keep-web daemon.  {% include 'install_runit' %}
 
 h3. Testing keepproxy
 

@@ -41,6 +41,10 @@ table(table table-bordered table-condensed).
 
 h3(#master). development master (as of 2019-08-12)
 
+h4. Arv-git-httpd configuration migration
+
+(feature "#14712":https://dev.arvados.org/issues/14712 ) The arv-git-httpd package can now be configured using the centralized configuration file at @/etc/arvados/config.yml@. Configuration via individual command line arguments is no longer available. Please see "arv-git-httpd's config migration guide":{{site.baseurl}}/admin/config-migration.html#arv-git-httpd for more details.
+
 h4. Keep-web dropped support on command line flags configuration
 
 As we're migrating to a central cluster configuration file, the already deprecated way of getting configurations via environment variables and command line flags isn't valid anymore. Current keep-web supports both the now legacy @keep-web.yml@ config format (used by Arvados 1.4) and the new cluster config file format. Please check "keep-web's install guide":{{site.baseurl}}/install/install-keep-web.html for more details.
@@ -50,6 +54,10 @@ h4. Jobs API is read-only
 (task "#15133":https://dev.arvados.org/issues/15133 ) The legacy 'jobs' API is now read-only.  It has long been superceded by containers / container_requests (aka crunch v2).  Arvados installations since the end of 2017 (v1.1.0) have probably only used containers, and are unaffected by this change.
 
 So that older Arvados sites don't lose access to legacy records, the API has been converted to read-only.  Creating and updating jobs (and related types job_task, pipeline_template and pipeline_instance) is disabled and much of the business logic related has been removed, along with various other code specific to the jobs API.  Specifically, the following programs associated with the jobs API have been removed: @crunch-dispatch.rb@, @crunch-job@, @crunchrunner@, @arv-run-pipeline-instance@, @arv-run@.
+
+h4. Keepproxy configuration migration
+
+(feature "#14715":https://dev.arvados.org/issues/14715 ) Keepproxy can now be configured using the centralized config at @/etc/arvados/config.yml@. Configuration via individual command line arguments is no longer available and the @DisableGet@, @DisablePut@, and @PIDFile@ configuration options are no longer supported. If you are still using the legacy config and @DisableGet@ or @DisablePut@ are set to true or @PIDFile@ has a value, keepproxy will produce an error and fail to start. Please see "keepproxy's config migration guide":{{site.baseurl}}/admin/config-migration.html#keepproxy for more details.
 
 h4. No longer stripping ':' from strings in serialized database columns
 

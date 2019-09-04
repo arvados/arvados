@@ -78,10 +78,10 @@ class TrashItemsController < ApplicationController
         base_search = base_search.filter([["modified_at", "<=", last_mod_at], ["uuid", "not in", last_uuids]])
       end
 
-      base_search = base_search.include_trash(true).limit(limit).offset(offset)
+      base_search = base_search.include_trash(true).limit(limit).with_count("none").offset(offset)
 
       if params[:filters].andand.length.andand > 0
-        tags = Link.filter(params[:filters])
+        tags = Link.filter(params[:filters]).with_count("none")
         tagged = []
         if tags.results.length > 0
           tagged = query_on.include_trash(true).where(uuid: tags.collect(&:head_uuid))
@@ -95,14 +95,14 @@ class TrashItemsController < ApplicationController
         owner_uuids = @objects.collect(&:owner_uuid).uniq
         @owners = {}
         @not_trashed = {}
-        Group.filter([["uuid", "in", owner_uuids]]).include_trash(true).each do |grp|
+        Group.filter([["uuid", "in", owner_uuids]]).with_count("none").include_trash(true).each do |grp|
           @owners[grp.uuid] = grp
         end
-        User.filter([["uuid", "in", owner_uuids]]).include_trash(true).each do |grp|
+        User.filter([["uuid", "in", owner_uuids]]).with_count("none").include_trash(true).each do |grp|
           @owners[grp.uuid] = grp
           @not_trashed[grp.uuid] = true
         end
-        Group.filter([["uuid", "in", owner_uuids]]).select([:uuid]).each do |grp|
+        Group.filter([["uuid", "in", owner_uuids]]).with_count("none").select([:uuid]).each do |grp|
           @not_trashed[grp.uuid] = true
         end
       else

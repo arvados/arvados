@@ -544,10 +544,11 @@ def run_keep_proxy():
     env['ARVADOS_API_TOKEN'] = auth_token('anonymous')
     logf = open(_logfilename('keepproxy'), 'a')
     kp = subprocess.Popen(
-        ['keepproxy',
-         '-pid='+_pidfile('keepproxy'),
-         '-listen=:{}'.format(port)],
-        env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf, close_fds=True)
+        ['keepproxy'], env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf, close_fds=True)
+
+    with open(_pidfile('keepproxy'), 'w') as f:
+        f.write(str(kp.pid))
+    _wait_until_port_listens(port)
 
     print("Using API %s token %s" % (os.environ['ARVADOS_API_HOST'], auth_token('admin')), file=sys.stdout)
     api = arvados.api(
@@ -577,16 +578,11 @@ def run_arv_git_httpd():
         return
     stop_arv_git_httpd()
 
-    gitdir = os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'git')
     gitport = internal_port_from_config("GitHTTP")
     env = os.environ.copy()
     env.pop('ARVADOS_API_TOKEN', None)
     logf = open(_logfilename('arv-git-httpd'), 'a')
-    agh = subprocess.Popen(
-        ['arv-git-httpd',
-         '-repo-root='+gitdir+'/test',
-         '-management-token=e687950a23c3a9bceec28c6223a06c79',
-         '-address=:'+str(gitport)],
+    agh = subprocess.Popen(['arv-git-httpd'],
         env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf)
     with open(_pidfile('arv-git-httpd'), 'w') as f:
         f.write(str(agh.pid))
@@ -746,6 +742,9 @@ def setup_config():
                 },
                 "Collections": {
                     "TrustAllContent": True
+                },
+                "Git": {
+                    "Repositories": "%s/test" % os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'git')
                 }
             }
         }
