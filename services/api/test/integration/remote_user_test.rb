@@ -283,7 +283,8 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
           "uuid" => "zbbbb-tpzed-000000000001234",
           "email" => 'foo@example.com',
           "username" => 'barney',
-          "is_active" => true
+          "is_active" => true,
+          "is_admin" => false
         }
       },
       headers: {'HTTP_AUTHORIZATION' => "OAuth2 #{api_token(:admin)}"}
@@ -293,8 +294,9 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
       params: {format: 'json'},
       headers: auth(remote: 'zbbbb')
     assert_response :success
+    puts json_response
     assert_equal 'zbbbb-tpzed-000000000001234', json_response['uuid']
-    assert_nil json_response['is_admin']
+    assert_equal false, json_response['is_admin']
     assert_equal true, json_response['is_active']
     assert_equal 'foo@example.com', json_response['email']
     assert_equal 'barney', json_response['username']
@@ -315,7 +317,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
       headers: auth(remote: 'zbbbb')
     assert_response :success
     assert_equal 'zbbbb-tpzed-000000000001234', json_response['uuid']
-    assert_nil json_response['is_admin']
+    assert_equal false, json_response['is_admin']
     assert_equal false, json_response['is_active']
     assert_equal 'foo@example.com', json_response['email']
     assert_equal 'barney', json_response['username']

@@ -374,16 +374,14 @@ class User < ArvadosModel
       # identity url is unset or didn't find matching record.
       emails = [info['email']] + (info['alternate_emails'] || [])
       emails.select! {|em| !em.nil? && !em.empty?}
-      emails.each do |em|
-        # Go through each email address, try to find a user record
-        # corresponding to one of the addresses supplied.
 
-        user = User.unscoped.where('email = ? and uuid like ?',
-                                   em,
-                                   User.uuid_like_pattern).first
-        if user
+      User.unscoped.where('email in (?) and uuid like ?',
+                          emails,
+                          User.uuid_like_pattern).each do |user|
+        if !primary_user
           primary_user = user.redirects_to
-          break
+        elsif primary_user.uuid != user.redirects_to.uuid
+          raise "Ambigious email address, directs to both #{primary_user.uuid} and #{user.redirects_to.uuid}"
         end
       end
     end
@@ -402,7 +400,7 @@ class User < ArvadosModel
     primary_user.first_name = info['first_name'] if info['first_name']
     primary_user.last_name = info['last_name'] if info['last_name']
 
-    if (!primary_user.email or primary_user.identity_url.empty?) and (!primary_user.identity_url or primary_user.identity_url.empty?)
+    if (!primary_user.email or primary_user.email.empty?) and (!primary_user.identity_url or primary_user.identity_url.empty?)
       raise "Must have supply at least one of 'email' or 'identity_url' to User.register"
     end
 
@@ -431,7 +429,7 @@ class User < ArvadosModel
   end
 
   def permission_to_update
-    if username_changed? || redirect_to_user_uuid_changed?
+    if username_changed? || redirect_to_user_uuid_changed? || email_changed?
       current_user.andand.is_admin
     else
       # users must be able to update themselves (even if they are
