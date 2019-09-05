@@ -336,4 +336,5 @@ def main(args, stdout, stderr, api_client=None, keep_client=None,
                              logger_handler=arvados.log_handler,
                              custom_schema_callback=add_arv_hints,
                              loadingContext=executor.loadingContext,
-                             runtimeContext=executor.runtimeContext)
+                             runtimeContext=executor.runtimeContext,
+                             input_required=not (arvargs.create_workflow or arvargs.update_workflow))
