@@ -393,10 +393,10 @@ class User < ArvadosModel
                               :is_active => Rails.configuration.Users.NewUsersAreActive)
 
       primary_user.set_initial_username(requested: info['username']) if info['username']
+      primary_user.identity_url = info['identity_url'] if identity_url
     end
 
     primary_user.email = info['email'] if info['email']
-    primary_user.identity_url = info['identity_url'] if identity_url
     primary_user.first_name = info['first_name'] if info['first_name']
     primary_user.last_name = info['last_name'] if info['last_name']
 
