@@ -294,7 +294,6 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
       params: {format: 'json'},
       headers: auth(remote: 'zbbbb')
     assert_response :success
-    puts json_response
     assert_equal 'zbbbb-tpzed-000000000001234', json_response['uuid']
     assert_equal false, json_response['is_admin']
     assert_equal true, json_response['is_active']
