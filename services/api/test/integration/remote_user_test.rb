@@ -268,6 +268,19 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     assert_equal 'barney', json_response['username']
   end
 
+  test 'get user from Login cluster' do
+    Rails.configuration.Login.LoginCluster = 'zbbbb'
+    get '/arvados/v1/users/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
+    assert_response :success
+    assert_equal 'zbbbb-tpzed-000000000000000', json_response['uuid']
+    assert_equal true, json_response['is_admin']
+    assert_equal true, json_response['is_active']
+    assert_equal 'foo@example.com', json_response['email']
+    assert_equal 'barney', json_response['username']
+  end
+
   test 'pre-activate remote user' do
     @stub_content = {
       uuid: 'zbbbb-tpzed-000000000001234',

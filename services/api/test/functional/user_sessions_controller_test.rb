@@ -6,7 +6,16 @@ require 'test_helper'
 
 class UserSessionsControllerTest < ActionController::TestCase
 
-  test "new user from new api client" do
+  test "redirect to joshid" do
+    api_client_page = 'http://client.example.com/home'
+    get :login, params: {return_to: api_client_page}
+    assert_response :redirect
+    assert_equal("http://test.host/auth/joshid?return_to=%2Chttp%3A%2F%2Fclient.example.com%2Fhome", @response.redirect_url)
+    assert_nil assigns(:api_client)
+  end
+
+
+  test "send token when user is already logged in" do
     authorize_with :inactive
     api_client_page = 'http://client.example.com/home'
     get :login, params: {return_to: api_client_page}
@@ -35,4 +44,24 @@ class UserSessionsControllerTest < ActionController::TestCase
     get :login, params: {return_to: api_client_page, remote: remote_prefix}
     assert_response 400
   end
+
+  test "login to LoginCluster" do
+    Rails.configuration.Login.LoginCluster = 'zbbbb'
+    Rails.configuration.RemoteClusters['zbbbb'] = {'Host' => 'zbbbb.example.com'}
+    api_client_page = 'http://client.example.com/home'
+    get :login, params: {return_to: api_client_page}
+    assert_response :redirect
+    assert_equal("https://zbbbb.example.com/login?return_to=http%3A%2F%2Fclient.example.com%2Fhome", @response.redirect_url)
+    assert_nil assigns(:api_client)
+  end
+
+  test "don't go into redirect loop if LoginCluster is self" do
+    Rails.configuration.Login.LoginCluster = 'zzzzz'
+    api_client_page = 'http://client.example.com/home'
+    get :login, params: {return_to: api_client_page}
+    assert_response :redirect
+    assert_equal("http://test.host/auth/joshid?return_to=%2Chttp%3A%2F%2Fclient.example.com%2Fhome", @response.redirect_url)
+    assert_nil assigns(:api_client)
+  end
+
 end

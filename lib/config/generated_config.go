@@ -419,10 +419,19 @@ Clusters:
         MaxUUIDEntries:       1000
 
     Login:
-      # These settings are provided by your OAuth2 provider (e.g.,
-      # sso-provider).
+      # These settings are provided by your OAuth2 provider (eg
+      # Google) used to perform upstream authentication.
       ProviderAppSecret: ""
       ProviderAppID: ""
+
+      # The cluster ID to delegate the user database.  When set,
+      # logins on this cluster will be redirected to the login cluster
+      # (login cluster must appear in RemoteHosts with Proxy: true)
+      LoginCluster: ""
+
+      # How long a cached token belonging to a remote cluster will
+      # remain valid before it needs to be revalidated.
+      RemoteTokenRefresh: 5m
 
     Git:
       # Path to git or gitolite-shell executable. Each authenticated
