@@ -157,18 +157,16 @@ class UserSessionsController < ApplicationController
     p << "auth_provider=#{CGI.escape(params[:auth_provider])}" if params[:auth_provider]
 
     if !Rails.configuration.Login.LoginCluster.empty? and Rails.configuration.Login.LoginCluster != Rails.configuration.ClusterID
-      cluster = Rails.configuration.RemoteClusters[Rails.configuration.Login.LoginCluster]
-      if not cluster
+      host = ApiClientAuthorization.remote_host(uuid_prefix: Rails.configuration.Login.LoginCluster)
+      if not host
         raise "LoginCluster #{Rails.configuration.Login.LoginCluster} missing from RemoteClusters"
       end
       scheme = "https"
-      if cluster['Scheme'] and !cluster['Scheme'].empty?
+      cluster = Rails.configuration.RemoteClusters[Rails.configuration.Login.LoginCluster]
+      if cluster and cluster['Scheme'] and !cluster['Scheme'].empty?
         scheme = cluster['Scheme']
       end
-      if !cluster['Host'] or cluster['Host'].empty?
-        raise "LoginCluster #{Rails.configuration.Login.LoginCluster} missing 'Host' in RemoteClusters"
-      end
-      login_cluster = "#{scheme}://#{cluster['Host']}"
+      login_cluster = "#{scheme}://#{host}"
       p << "remote=#{CGI.escape(params[:remote])}" if params[:remote]
       p << "return_to=#{CGI.escape(params[:return_to])}" if params[:return_to]
       redirect_to "#{login_cluster}/login?#{p.join('&')}"

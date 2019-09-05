@@ -87,8 +87,8 @@ class ApiClientAuthorization < ArvadosModel
   end
 
   def self.remote_host(uuid_prefix:)
-    (Rails.configuration.RemoteClusters[uuid_prefix].andand.Host) ||
-      (Rails.configuration.RemoteClusters["*"].Proxy &&
+    (Rails.configuration.RemoteClusters[uuid_prefix].andand["Host"]) ||
+      (Rails.configuration.RemoteClusters["*"]["Proxy"] &&
        uuid_prefix+".arvadosapi.com")
   end
 
@@ -160,7 +160,7 @@ class ApiClientAuthorization < ArvadosModel
         return nil
       end
 
-      # Invarient: token_uuid_prefix != Rails.configuration.ClusterID
+      # Invariant: token_uuid_prefix != Rails.configuration.ClusterID
       #
       # In other words the remaing code in this method below is the
       # case that determines whether to accept a token that was issued
@@ -199,7 +199,7 @@ class ApiClientAuthorization < ArvadosModel
         return nil
       end
 
-      # Invarient:    remote_user_prefix == token_uuid_prefix
+      # Invariant:    remote_user_prefix == token_uuid_prefix
       # therefore:    remote_user_prefix != Rails.configuration.ClusterID
 
       # Add or update user and token in local database so we can
