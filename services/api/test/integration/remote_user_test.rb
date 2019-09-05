@@ -67,10 +67,6 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
         res.status = @stub_status
         res.body = @stub_content.is_a?(String) ? @stub_content : @stub_content.to_json
       end
-      srv.mount_proc '/arvados/v1/users/register' do |req, res|
-        res.status = @stub_status
-        res.body = @stub_content.is_a?(String) ? @stub_content : @stub_content.to_json
-      end
       Thread.new do
         srv.start
       end
@@ -286,13 +282,22 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
   end
 
   test 'pre-activate remote user' do
+    @stub_content = {
+      uuid: 'zbbbb-tpzed-000000000001234',
+      email: 'foo@example.com',
+      username: 'barney',
+      is_admin: true,
+      is_active: true,
+    }
+
     post '/arvados/v1/users',
       params: {
         "user" => {
-          "uuid" => "zbbbb-tpzed-000000000000000",
+          "uuid" => "zbbbb-tpzed-000000000001234",
           "email" => 'foo@example.com',
           "username" => 'barney',
-          "is_active" => true
+          "is_active" => true,
+          "is_admin" => false
         }
       },
       headers: {'HTTP_AUTHORIZATION' => "OAuth2 #{api_token(:admin)}"}
@@ -302,9 +307,30 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
       params: {format: 'json'},
       headers: auth(remote: 'zbbbb')
     assert_response :success
-    assert_equal 'zbbbb-tpzed-000000000000000', json_response['uuid']
-    assert_equal nil, json_response['is_admin']
+    assert_equal 'zbbbb-tpzed-000000000001234', json_response['uuid']
+    assert_equal false, json_response['is_admin']
     assert_equal true, json_response['is_active']
+    assert_equal 'foo@example.com', json_response['email']
+    assert_equal 'barney', json_response['username']
+  end
+
+
+  test 'remote user inactive without pre-activation' do
+    @stub_content = {
+      uuid: 'zbbbb-tpzed-000000000001234',
+      email: 'foo@example.com',
+      username: 'barney',
+      is_admin: true,
+      is_active: true,
+    }
+
+    get '/arvados/v1/users/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
+    assert_response :success
+    assert_equal 'zbbbb-tpzed-000000000001234', json_response['uuid']
+    assert_equal false, json_response['is_admin']
+    assert_equal false, json_response['is_active']
     assert_equal 'foo@example.com', json_response['email']
     assert_equal 'barney', json_response['username']
   end

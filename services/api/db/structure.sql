@@ -2521,6 +2521,13 @@ CREATE INDEX index_users_on_created_at ON public.users USING btree (created_at);
 
 
 --
+-- Name: index_users_on_identity_url; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_users_on_identity_url ON public.users USING btree (identity_url);
+
+
+--
 -- Name: index_users_on_modified_at; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3016,6 +3023,7 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20190422144631'),
 ('20190523180148'),
 ('20190808145904'),
-('20190809135453');
+('20190809135453'),
+('20190905151603');
 
 

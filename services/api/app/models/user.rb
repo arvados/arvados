@@ -327,6 +327,90 @@ class User < ArvadosModel
     end
   end
 
+  def redirects_to
+    user = self
+    redirects = 0
+    while (uuid = user.redirect_to_user_uuid)
+      user = User.unscoped.find_by_uuid(uuid)
+      if !user
+        raise Exception.new("user uuid #{user.uuid} redirects to nonexistent uuid #{uuid}")
+      end
+      redirects += 1
+      if redirects > 15
+        raise "Starting from #{self.uuid} redirect_to_user_uuid exceeded maximum number of redirects"
+      end
+    end
+    user
+  end
+
+  def self.register info
+    # login info expected fields, all can be optional but at minimum
+    # must supply either 'identity_url' or 'email'
+    #
+    #   email
+    #   first_name
+    #   last_name
+    #   username
+    #   alternate_emails
+    #   identity_url
+
+    info = info.with_indifferent_access
+
+    primary_user = nil
+
+    # local database
+    identity_url = info['identity_url']
+
+    if identity_url && identity_url.length > 0
+      # Only local users can create sessions, hence uuid_like_pattern
+      # here.
+      user = User.unscoped.where('identity_url = ? and uuid like ?',
+                                 identity_url,
+                                 User.uuid_like_pattern).first
+      primary_user = user.redirects_to if user
+    end
+
+    if !primary_user
+      # identity url is unset or didn't find matching record.
+      emails = [info['email']] + (info['alternate_emails'] || [])
+      emails.select! {|em| !em.nil? && !em.empty?}
+
+      User.unscoped.where('email in (?) and uuid like ?',
+                          emails,
+                          User.uuid_like_pattern).each do |user|
+        if !primary_user
+          primary_user = user.redirects_to
+        elsif primary_user.uuid != user.redirects_to.uuid
+          raise "Ambigious email address, directs to both #{primary_user.uuid} and #{user.redirects_to.uuid}"
+        end
+      end
+    end
+
+    if !primary_user
+      # New user registration
+      primary_user = User.new(:owner_uuid => system_user_uuid,
+                              :is_admin => false,
+                              :is_active => Rails.configuration.Users.NewUsersAreActive)
+
+      primary_user.set_initial_username(requested: info['username']) if info['username']
+      primary_user.identity_url = info['identity_url'] if identity_url
+    end
+
+    primary_user.email = info['email'] if info['email']
+    primary_user.first_name = info['first_name'] if info['first_name']
+    primary_user.last_name = info['last_name'] if info['last_name']
+
+    if (!primary_user.email or primary_user.email.empty?) and (!primary_user.identity_url or primary_user.identity_url.empty?)
+      raise "Must have supply at least one of 'email' or 'identity_url' to User.register"
+    end
+
+    act_as_system_user do
+      primary_user.save!
+    end
+
+    primary_user
+  end
+
   protected
 
   def change_all_uuid_refs(old_uuid:, new_uuid:)
@@ -345,7 +429,7 @@ class User < ArvadosModel
   end
 
   def permission_to_update
-    if username_changed? || redirect_to_user_uuid_changed?
+    if username_changed? || redirect_to_user_uuid_changed? || email_changed?
       current_user.andand.is_admin
     else
       # users must be able to update themselves (even if they are
