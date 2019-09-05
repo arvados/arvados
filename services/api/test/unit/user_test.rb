@@ -805,8 +805,9 @@ class UserTest < ActiveSupport::TestCase
     u = User.register({"email" => "active-user@arvados.local", "identity_url" => "different-identity-url"})
     active = User.find_by_uuid(users(:active).uuid)
     assert_equal active.uuid, u.uuid
-    assert_equal "different-identity-url", active.identity_url
     assert_equal "active-user@arvados.local", active.email
+    # identity_url is not updated
+    assert_equal "https://active-user.openid.local", active.identity_url
   end
 
   test "lookup user by alternate email" do
@@ -818,9 +819,11 @@ class UserTest < ActiveSupport::TestCase
     active = User.find_by_uuid(users(:active).uuid)
     assert_equal active.uuid, u.uuid
 
-    # identity_url and email of 'active' should be updated
-    assert_equal "different-identity-url", active.identity_url
+    # email should be updated
     assert_equal "user@parent-company.com", active.email
+
+    # identity_url is not updated
+    assert_equal "https://active-user.openid.local", active.identity_url
   end
 
   test "register new user" do
