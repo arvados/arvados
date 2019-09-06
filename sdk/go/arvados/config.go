@@ -119,6 +119,11 @@ type Cluster struct {
 		TrashSweepInterval    Duration
 		TrustAllContent       bool
 
+		BlobMissingReport        string
+		BalancePeriod            Duration
+		BalanceCollectionBatch   int
+		BalanceCollectionBuffers int
+
 		WebDAVCache WebDAVCacheConfig
 	}
 	Git struct {

@@ -216,3 +216,48 @@ func (s *LoadSuite) TestLegacyArvGitHttpdConfig(c *check.C) {
 	c.Check(cluster.Git.Repositories, check.Equals, "/test/reporoot")
 	c.Check(cluster.Services.Keepproxy.InternalURLs[arvados.URL{Host: ":9000"}], check.Equals, arvados.ServiceInstance{})
 }
+
+func (s *LoadSuite) TestLegacyKeepBalanceConfig(c *check.C) {
+	f := "-legacy-keepbalance-config"
+	content := []byte(fmtKeepBalanceConfig(""))
+	cluster, err := testLoadLegacyConfig(content, f, c)
+
+	c.Check(err, check.IsNil)
+	c.Check(cluster, check.NotNil)
+	c.Check(cluster.ManagementToken, check.Equals, "xyzzy")
+	c.Check(cluster.Services.Keepbalance.InternalURLs[arvados.URL{Host: ":80"}], check.Equals, arvados.ServiceInstance{})
+	c.Check(cluster.Collections.BalanceCollectionBuffers, check.Equals, 1000)
+	c.Check(cluster.Collections.BalanceCollectionBatch, check.Equals, 100000)
+	c.Check(cluster.Collections.BalancePeriod.String(), check.Equals, "10m")
+	c.Check(cluster.Collections.BlobMissingReport, check.Equals, "testfile")
+	c.Check(cluster.API.KeepServiceRequestTimeout.String(), check.Equals, "30m")
+
+	content = []byte(fmtKeepBalanceConfig(`"KeepServiceTypes":["disk"],`))
+	_, err = testLoadLegacyConfig(content, f, c)
+	c.Check(err, check.IsNil)
+
+	content = []byte(fmtKeepBalanceConfig(`"KeepServiceList":{},`))
+	_, err = testLoadLegacyConfig(content, f, c)
+	c.Check(err, check.NotNil)
+}
+
+func fmtKeepBalanceConfig(param string) string {
+	return fmt.Sprintf(`
+{
+	"Client": {
+		"Scheme": "",
+		"APIHost": "example.com",
+		"AuthToken": "abcdefg",
+		"Insecure": false
+	},
+	"Listen": ":80",
+	%s
+	"RunPeriod": "10m",
+	"CollectionBatchSize": 100000,
+	"CollectionBuffers": 1000,
+	"RequestTimeout": "30m",
+	"ManagementToken": "xyzzy",
+	"LostBlocksFile": "testfile"
+}
+`, param)
+}
