@@ -630,6 +630,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
       set_user_from_auth :active
       cr1 = create_minimal_req!(common_attrs.merge({state: ContainerRequest::Committed,
                                                     environment: env1}))
+      run_container(cr1)
+      cr1.reload
       if use_existing.nil?
         # Testing with use_existing default value
         cr2 = create_minimal_req!(common_attrs.merge({state: ContainerRequest::Uncommitted,
@@ -855,8 +857,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
       c.update_attributes!(state: Container::Running)
       c.update_attributes!(state: Container::Complete,
                            exit_code: 0,
-                           output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45',
-                           log: 'fa7aeb5140e2848d39b416daeef4ffc5+45')
+                           output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45')
       c
     end
   end
