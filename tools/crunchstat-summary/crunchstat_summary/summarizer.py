@@ -106,7 +106,7 @@ class Summarizer(object):
                                        self.label, uuid)
                         continue
                     logger.debug('%s: follow %s', self.label, uuid)
-                    child_summarizer = ProcessSummarizer(uuid)
+                    child_summarizer = NewSummarizer(uuid)
                     child_summarizer.stats_max = self.stats_max
                     child_summarizer.task_stats = self.task_stats
                     child_summarizer.tasks = self.tasks
