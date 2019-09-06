@@ -43,7 +43,12 @@ func (srv *Server) Start() error {
 	srv.cond = sync.NewCond(mutex.RLocker())
 	srv.running = true
 	go func() {
-		err = srv.Serve(tcpKeepAliveListener{srv.listener})
+		lnr := tcpKeepAliveListener{srv.listener}
+		if srv.TLSConfig != nil {
+			err = srv.ServeTLS(lnr, "", "")
+		} else {
+			err = srv.Serve(lnr)
+		}
 		if !srv.wantDown {
 			srv.err = err
 		}

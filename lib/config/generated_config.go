@@ -182,6 +182,15 @@ Clusters:
       # parameter higher than this value, this value is used instead.
       MaxItemsPerResponse: 1000
 
+      # Maximum number of concurrent requests to accept in a single
+      # service process, or 0 for no limit. Currently supported only
+      # by keepstore.
+      MaxConcurrentRequests: 0
+
+      # Maximum number of 64MiB memory buffers per keepstore server
+      # process, or 0 for no limit.
+      MaxKeepBlockBuffers: 128
+
       # API methods to disable. Disabled methods are not listed in the
       # discovery document, and respond 404 to all requests.
       # Example: {"jobs.create":{}, "pipeline_instances.create": {}}
@@ -322,14 +331,43 @@ Clusters:
 
       # BlobSigningKey is a string of alphanumeric characters used to
       # generate permission signatures for Keep locators. It must be
-      # identical to the permission key given to Keep. IMPORTANT: This is
-      # a site secret. It should be at least 50 characters.
+      # identical to the permission key given to Keep. IMPORTANT: This
+      # is a site secret. It should be at least 50 characters.
       #
       # Modifying BlobSigningKey will invalidate all existing
       # signatures, which can cause programs to fail (e.g., arv-put,
-      # arv-get, and Crunch jobs).  To avoid errors, rotate keys only when
-      # no such processes are running.
+      # arv-get, and Crunch jobs).  To avoid errors, rotate keys only
+      # when no such processes are running.
       BlobSigningKey: ""
+
+      # Enable garbage collection of unreferenced blobs in Keep.
+      BlobTrash: true
+
+      # Time to leave unreferenced blobs in "trashed" state before
+      # deleting them, or 0 to skip the "trashed" state entirely and
+      # delete unreferenced blobs.
+      #
+      # If you use any Amazon S3 buckets as storage volumes, this
+      # must be at least 24h to avoid occasional data loss.
+      BlobTrashLifetime: 336h
+
+      # How often to check for (and delete) trashed blocks whose
+      # BlobTrashLifetime has expired.
+      BlobTrashCheckInterval: 24h
+
+      # Maximum number of concurrent "trash blob" and "delete trashed
+      # blob" operations conducted by a single keepstore process. Each
+      # of these can be set to 0 to disable the respective operation.
+      #
+      # If BlobTrashLifetime is zero, "trash" and "delete trash"
+      # happen at once, so only the lower of these two values is used.
+      BlobTrashConcurrency: 4
+      BlobDeleteConcurrency: 4
+
+      # Maximum number of concurrent "create additional replica of
+      # existing blob" operations conducted by a single keepstore
+      # process.
+      BlobReplicateConcurrency: 4
 
       # Default replication level for collections. This is used when a
       # collection's replication_desired attribute is nil.
@@ -746,6 +784,48 @@ Clusters:
         AddedScratch: 0
         Price: 0.1
         Preemptible: false
+
+    Volumes:
+      SAMPLE:
+        AccessViaHosts:
+          SAMPLE:
+            ReadOnly: false
+        ReadOnly: false
+        Replication: 1
+        StorageClasses:
+          default: true
+          SAMPLE: true
+        Driver: s3
+        DriverParameters:
+
+          # for s3 driver
+          AccessKey: aaaaa
+          SecretKey: aaaaa
+          Endpoint: ""
+          Region: us-east-1a
+          Bucket: aaaaa
+          LocationConstraint: false
+          IndexPageSize: 1000
+          ConnectTimeout: 1m
+          ReadTimeout: 10m
+          RaceWindow: 24h
+          UnsafeDelete: false
+
+          # for azure driver
+          StorageAccountName: aaaaa
+          StorageAccountKey: aaaaa
+          StorageBaseURL: core.windows.net
+          ContainerName: aaaaa
+          RequestTimeout: 30s
+          ListBlobsRetryDelay: 10s
+          ListBlobsMaxAttempts: 10
+          MaxGetBytes: 0
+          WriteRaceInterval: 15s
+          WriteRacePollTime: 1s
+
+          # for local directory driver
+          Root: /var/lib/arvados/keep-data
+          Serialize: false
 
     Mail:
       MailchimpAPIKey: ""

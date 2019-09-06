@@ -5,6 +5,7 @@
 package main
 
 import (
+	"context"
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
@@ -28,8 +29,7 @@ var _ = check.Suite(&ProxyRemoteSuite{})
 
 type ProxyRemoteSuite struct {
 	cluster *arvados.Cluster
-	vm      VolumeManager
-	rtr     http.Handler
+	handler *handler
 
 	remoteClusterID      string
 	remoteBlobSigningKey []byte
@@ -87,7 +87,9 @@ func (s *ProxyRemoteSuite) SetUpTest(c *check.C) {
 	s.remoteKeepproxy = httptest.NewServer(http.HandlerFunc(s.remoteKeepproxyHandler))
 	s.remoteAPI = httptest.NewUnstartedServer(http.HandlerFunc(s.remoteAPIHandler))
 	s.remoteAPI.StartTLS()
-	s.cluster = arvados.IntegrationTestCluster()
+	s.cluster = testCluster(c)
+	s.cluster.Collections.BlobSigningKey = knownKey
+	s.cluster.SystemRootToken = arvadostest.DataManagerToken
 	s.cluster.RemoteClusters = map[string]arvados.RemoteCluster{
 		s.remoteClusterID: arvados.RemoteCluster{
 			Host:     strings.Split(s.remoteAPI.URL, "//")[1],
@@ -96,21 +98,12 @@ func (s *ProxyRemoteSuite) SetUpTest(c *check.C) {
 			Insecure: true,
 		},
 	}
-	s.vm = MakeTestVolumeManager(2)
-	KeepVM = s.vm
-	theConfig = DefaultConfig()
-	theConfig.systemAuthToken = arvadostest.DataManagerToken
-	theConfig.blobSigningKey = []byte(knownKey)
-	r := prometheus.NewRegistry()
-	theConfig.Start(r)
-	s.rtr = MakeRESTRouter(s.cluster, r)
+	s.cluster.Volumes = map[string]arvados.Volume{"zzzzz-nyw5e-000000000000000": {Driver: "mock"}}
+	s.handler = &handler{}
+	c.Assert(s.handler.setup(context.Background(), s.cluster, "", prometheus.NewRegistry(), testServiceURL), check.IsNil)
 }
 
 func (s *ProxyRemoteSuite) TearDownTest(c *check.C) {
-	s.vm.Close()
-	KeepVM = nil
-	theConfig = DefaultConfig()
-	theConfig.Start(prometheus.NewRegistry())
 	s.remoteAPI.Close()
 	s.remoteKeepproxy.Close()
 }
@@ -191,7 +184,7 @@ func (s *ProxyRemoteSuite) TestProxyRemote(c *check.C) {
 			req.Header.Set("X-Keep-Signature", trial.xKeepSignature)
 		}
 		resp = httptest.NewRecorder()
-		s.rtr.ServeHTTP(resp, req)
+		s.handler.ServeHTTP(resp, req)
 		c.Check(s.remoteKeepRequests, check.Equals, trial.expectRemoteReqs)
 		c.Check(resp.Code, check.Equals, trial.expectCode)
 		if resp.Code == http.StatusOK {
@@ -210,13 +203,13 @@ func (s *ProxyRemoteSuite) TestProxyRemote(c *check.C) {
 
 		c.Check(locHdr, check.Not(check.Equals), "")
 		c.Check(locHdr, check.Not(check.Matches), `.*\+R.*`)
-		c.Check(VerifySignature(locHdr, trial.token), check.IsNil)
+		c.Check(VerifySignature(s.cluster, locHdr, trial.token), check.IsNil)
 
 		// Ensure block can be requested using new signature
 		req = httptest.NewRequest("GET", "/"+locHdr, nil)
 		req.Header.Set("Authorization", "Bearer "+trial.token)
 		resp = httptest.NewRecorder()
-		s.rtr.ServeHTTP(resp, req)
+		s.handler.ServeHTTP(resp, req)
 		c.Check(resp.Code, check.Equals, http.StatusOK)
 		c.Check(s.remoteKeepRequests, check.Equals, trial.expectRemoteReqs)
 	}

@@ -85,7 +85,7 @@ func (s *CommandSuite) TestCheckOldKeepstoreConfigFile(c *check.C) {
 	c.Assert(err, check.IsNil)
 	defer os.Remove(f.Name())
 
-	io.WriteString(f, "Debug: true\n")
+	io.WriteString(f, "Listen: :12345\nDebug: true\n")
 
 	var stdout, stderr bytes.Buffer
 	in := `
@@ -97,7 +97,7 @@ Clusters:
 	code := CheckCommand.RunCommand("arvados config-check", []string{"-config", "-", "-legacy-keepstore-config", f.Name()}, bytes.NewBufferString(in), &stdout, &stderr)
 	c.Check(code, check.Equals, 1)
 	c.Check(stdout.String(), check.Matches, `(?ms).*\n\- +.*LogLevel: info\n\+ +LogLevel: debug\n.*`)
-	c.Check(stderr.String(), check.Matches, `.*you should remove the legacy keepstore config file.*\n`)
+	c.Check(stderr.String(), check.Matches, `(?ms).*you should remove the legacy keepstore config file.*\n`)
 }
 
 func (s *CommandSuite) TestCheckUnknownKey(c *check.C) {

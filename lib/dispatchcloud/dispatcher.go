@@ -48,10 +48,10 @@ type dispatcher struct {
 	Context       context.Context
 	ArvClient     *arvados.Client
 	AuthToken     string
+	Registry      *prometheus.Registry
 	InstanceSetID cloud.InstanceSetID
 
 	logger      logrus.FieldLogger
-	reg         *prometheus.Registry
 	instanceSet cloud.InstanceSet
 	pool        pool
 	queue       scheduler.ContainerQueue
@@ -132,14 +132,13 @@ func (disp *dispatcher) initialize() {
 		disp.sshKey = key
 	}
 
-	disp.reg = prometheus.NewRegistry()
-	instanceSet, err := newInstanceSet(disp.Cluster, disp.InstanceSetID, disp.logger, disp.reg)
+	instanceSet, err := newInstanceSet(disp.Cluster, disp.InstanceSetID, disp.logger, disp.Registry)
 	if err != nil {
 		disp.logger.Fatalf("error initializing driver: %s", err)
 	}
 	disp.instanceSet = instanceSet
-	disp.pool = worker.NewPool(disp.logger, disp.ArvClient, disp.reg, disp.InstanceSetID, disp.instanceSet, disp.newExecutor, disp.sshKey.PublicKey(), disp.Cluster)
-	disp.queue = container.NewQueue(disp.logger, disp.reg, disp.typeChooser, disp.ArvClient)
+	disp.pool = worker.NewPool(disp.logger, disp.ArvClient, disp.Registry, disp.InstanceSetID, disp.instanceSet, disp.newExecutor, disp.sshKey.PublicKey(), disp.Cluster)
+	disp.queue = container.NewQueue(disp.logger, disp.Registry, disp.typeChooser, disp.ArvClient)
 
 	if disp.Cluster.ManagementToken == "" {
 		disp.httpHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -154,7 +153,7 @@ func (disp *dispatcher) initialize() {
 		mux.HandlerFunc("POST", "/arvados/v1/dispatch/instances/drain", disp.apiInstanceDrain)
 		mux.HandlerFunc("POST", "/arvados/v1/dispatch/instances/run", disp.apiInstanceRun)
 		mux.HandlerFunc("POST", "/arvados/v1/dispatch/instances/kill", disp.apiInstanceKill)
-		metricsH := promhttp.HandlerFor(disp.reg, promhttp.HandlerOpts{
+		metricsH := promhttp.HandlerFor(disp.Registry, promhttp.HandlerOpts{
 			ErrorLog: disp.logger,
 		})
 		mux.Handler("GET", "/metrics", metricsH)

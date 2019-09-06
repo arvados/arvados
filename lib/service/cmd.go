@@ -22,6 +22,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	"github.com/coreos/go-systemd/daemon"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 )
 
@@ -30,7 +31,7 @@ type Handler interface {
 	CheckHealth() error
 }
 
-type NewHandlerFunc func(_ context.Context, _ *arvados.Cluster, token string) Handler
+type NewHandlerFunc func(_ context.Context, _ *arvados.Cluster, token string, registry *prometheus.Registry) Handler
 
 type command struct {
 	newHandler NewHandlerFunc
@@ -68,7 +69,6 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	loader := config.NewLoader(stdin, log)
 	loader.SetupFlags(flags)
 	versionFlag := flags.Bool("version", false, "Write version information to stdout and exit 0")
-
 	err = flags.Parse(args)
 	if err == flag.ErrHelp {
 		err = nil
@@ -87,22 +87,27 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	if err != nil {
 		return 1
 	}
-	log = ctxlog.New(stderr, cluster.SystemLogs.Format, cluster.SystemLogs.LogLevel).WithFields(logrus.Fields{
+
+	// Now that we've read the config, replace the bootstrap
+	// logger with a new one according to the logging config.
+	log = ctxlog.New(stderr, cluster.SystemLogs.Format, cluster.SystemLogs.LogLevel)
+	logger := log.WithFields(logrus.Fields{
 		"PID": os.Getpid(),
 	})
-	ctx := ctxlog.Context(c.ctx, log)
+	ctx := ctxlog.Context(c.ctx, logger)
 
-	listen, err := getListenAddr(cluster.Services, c.svcName)
+	listenURL, err := getListenAddr(cluster.Services, c.svcName)
 	if err != nil {
 		return 1
 	}
+	ctx = context.WithValue(ctx, contextKeyURL{}, listenURL)
 
 	if cluster.SystemRootToken == "" {
-		log.Warn("SystemRootToken missing from cluster config, falling back to ARVADOS_API_TOKEN environment variable")
+		logger.Warn("SystemRootToken missing from cluster config, falling back to ARVADOS_API_TOKEN environment variable")
 		cluster.SystemRootToken = os.Getenv("ARVADOS_API_TOKEN")
 	}
 	if cluster.Services.Controller.ExternalURL.Host == "" {
-		log.Warn("Services.Controller.ExternalURL missing from cluster config, falling back to ARVADOS_API_HOST(_INSECURE) environment variables")
+		logger.Warn("Services.Controller.ExternalURL missing from cluster config, falling back to ARVADOS_API_HOST(_INSECURE) environment variables")
 		u, err := url.Parse("https://" + os.Getenv("ARVADOS_API_HOST"))
 		if err != nil {
 			err = fmt.Errorf("ARVADOS_API_HOST: %s", err)
@@ -114,27 +119,42 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 		}
 	}
 
-	handler := c.newHandler(ctx, cluster, cluster.SystemRootToken)
+	reg := prometheus.NewRegistry()
+	handler := c.newHandler(ctx, cluster, cluster.SystemRootToken, reg)
 	if err = handler.CheckHealth(); err != nil {
 		return 1
 	}
+
+	instrumented := httpserver.Instrument(reg, log,
+		httpserver.HandlerWithContext(ctx,
+			httpserver.AddRequestIDs(
+				httpserver.LogRequests(
+					httpserver.NewRequestLimiter(cluster.API.MaxConcurrentRequests, handler, reg)))))
 	srv := &httpserver.Server{
 		Server: http.Server{
-			Handler: httpserver.HandlerWithContext(ctx,
-				httpserver.AddRequestIDs(httpserver.LogRequests(handler))),
+			Handler: instrumented.ServeAPI(cluster.ManagementToken, instrumented),
 		},
-		Addr: listen,
+		Addr: listenURL.Host,
+	}
+	if listenURL.Scheme == "https" {
+		tlsconfig, err := tlsConfigWithCertUpdater(cluster, logger)
+		if err != nil {
+			logger.WithError(err).Errorf("cannot start %s service on %s", c.svcName, listenURL.String())
+			return 1
+		}
+		srv.TLSConfig = tlsconfig
 	}
 	err = srv.Start()
 	if err != nil {
 		return 1
 	}
-	log.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
+		"URL":     listenURL,
 		"Listen":  srv.Addr,
 		"Service": c.svcName,
 	}).Info("listening")
 	if _, err := daemon.SdNotify(false, "READY=1"); err != nil {
-		log.WithError(err).Errorf("error notifying init daemon")
+		logger.WithError(err).Errorf("error notifying init daemon")
 	}
 	go func() {
 		<-ctx.Done()
@@ -149,20 +169,27 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 
 const rfc3339NanoFixed = "2006-01-02T15:04:05.000000000Z07:00"
 
-func getListenAddr(svcs arvados.Services, prog arvados.ServiceName) (string, error) {
+func getListenAddr(svcs arvados.Services, prog arvados.ServiceName) (arvados.URL, error) {
 	svc, ok := svcs.Map()[prog]
 	if !ok {
-		return "", fmt.Errorf("unknown service name %q", prog)
+		return arvados.URL{}, fmt.Errorf("unknown service name %q", prog)
 	}
 	for url := range svc.InternalURLs {
 		if strings.HasPrefix(url.Host, "localhost:") {
-			return url.Host, nil
+			return url, nil
 		}
 		listener, err := net.Listen("tcp", url.Host)
 		if err == nil {
 			listener.Close()
-			return url.Host, nil
+			return url, nil
 		}
 	}
-	return "", fmt.Errorf("configuration does not enable the %s service on this host", prog)
+	return arvados.URL{}, fmt.Errorf("configuration does not enable the %s service on this host", prog)
+}
+
+type contextKeyURL struct{}
+
+func URLFromContext(ctx context.Context) (arvados.URL, bool) {
+	u, ok := ctx.Value(contextKeyURL{}).(arvados.URL)
+	return u, ok
 }

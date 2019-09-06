@@ -7,7 +7,6 @@ package main
 import (
 	"fmt"
 
-	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -63,27 +62,6 @@ func (m *nodeMetrics) setupWorkQueueMetrics(q *WorkQueue, qName string) {
 			Help:      fmt.Sprintf("Number of queued %s requests", qName),
 		},
 		func() float64 { return float64(getWorkQueueStatus(q).Queued) },
-	))
-}
-
-func (m *nodeMetrics) setupRequestMetrics(rc httpserver.RequestCounter) {
-	m.reg.MustRegister(prometheus.NewGaugeFunc(
-		prometheus.GaugeOpts{
-			Namespace: "arvados",
-			Subsystem: "keepstore",
-			Name:      "concurrent_requests",
-			Help:      "Number of requests in progress",
-		},
-		func() float64 { return float64(rc.Current()) },
-	))
-	m.reg.MustRegister(prometheus.NewGaugeFunc(
-		prometheus.GaugeOpts{
-			Namespace: "arvados",
-			Subsystem: "keepstore",
-			Name:      "max_concurrent_requests",
-			Help:      "Maximum number of concurrent requests",
-		},
-		func() float64 { return float64(rc.Max()) },
 	))
 }
 

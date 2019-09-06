@@ -321,7 +321,7 @@ Clusters:
 }
 
 func (s *LoadSuite) TestMovedKeys(c *check.C) {
-	s.checkEquivalent(c, `# config has old keys only
+	checkEquivalent(c, `# config has old keys only
 Clusters:
  zzzzz:
   RequestLimits:
@@ -334,7 +334,7 @@ Clusters:
    MaxRequestAmplification: 3
    MaxItemsPerResponse: 999
 `)
-	s.checkEquivalent(c, `# config has both old and new keys; old values win
+	checkEquivalent(c, `# config has both old and new keys; old values win
 Clusters:
  zzzzz:
   RequestLimits:
@@ -352,28 +352,43 @@ Clusters:
 `)
 }
 
-func (s *LoadSuite) checkEquivalent(c *check.C, goty, expectedy string) {
-	got, err := testLoader(c, goty, nil).Load()
+func checkEquivalent(c *check.C, goty, expectedy string) {
+	gotldr := testLoader(c, goty, nil)
+	expectedldr := testLoader(c, expectedy, nil)
+	checkEquivalentLoaders(c, gotldr, expectedldr)
+}
+
+func checkEqualYAML(c *check.C, got, expected interface{}) {
+	expectedyaml, err := yaml.Marshal(expected)
 	c.Assert(err, check.IsNil)
-	expected, err := testLoader(c, expectedy, nil).Load()
+	gotyaml, err := yaml.Marshal(got)
 	c.Assert(err, check.IsNil)
-	if !c.Check(got, check.DeepEquals, expected) {
+	if !bytes.Equal(gotyaml, expectedyaml) {
 		cmd := exec.Command("diff", "-u", "--label", "expected", "--label", "got", "/dev/fd/3", "/dev/fd/4")
-		for _, obj := range []interface{}{expected, got} {
-			y, _ := yaml.Marshal(obj)
+		for _, y := range [][]byte{expectedyaml, gotyaml} {
 			pr, pw, err := os.Pipe()
 			c.Assert(err, check.IsNil)
 			defer pr.Close()
-			go func() {
-				io.Copy(pw, bytes.NewBuffer(y))
+			go func(data []byte) {
+				pw.Write(data)
 				pw.Close()
-			}()
+			}(y)
 			cmd.ExtraFiles = append(cmd.ExtraFiles, pr)
 		}
 		diff, err := cmd.CombinedOutput()
+		// diff should report differences and exit non-zero.
+		c.Check(err, check.NotNil)
 		c.Log(string(diff))
-		c.Check(err, check.IsNil)
+		c.Error("got != expected; see diff (-expected +got) above")
 	}
+}
+
+func checkEquivalentLoaders(c *check.C, gotldr, expectedldr *Loader) {
+	got, err := gotldr.Load()
+	c.Assert(err, check.IsNil)
+	expected, err := expectedldr.Load()
+	c.Assert(err, check.IsNil)
+	checkEqualYAML(c, got, expected)
 }
 
 func checkListKeys(path string, x interface{}) (err error) {

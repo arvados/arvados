@@ -523,7 +523,7 @@ func (bal *Balancer) setupLookupTables() {
 				bal.mountsByClass["default"][mnt] = true
 				continue
 			}
-			for _, class := range mnt.StorageClasses {
+			for class := range mnt.StorageClasses {
 				if mbc := bal.mountsByClass[class]; mbc == nil {
 					bal.classes = append(bal.classes, class)
 					bal.mountsByClass[class] = map[*KeepMount]bool{mnt: true}

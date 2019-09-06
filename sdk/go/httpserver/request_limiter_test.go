@@ -31,7 +31,7 @@ func newTestHandler(maxReqs int) *testHandler {
 
 func TestRequestLimiter1(t *testing.T) {
 	h := newTestHandler(10)
-	l := NewRequestLimiter(1, h)
+	l := NewRequestLimiter(1, h, nil)
 	var wg sync.WaitGroup
 	resps := make([]*httptest.ResponseRecorder, 10)
 	for i := 0; i < 10; i++ {
@@ -91,7 +91,7 @@ func TestRequestLimiter1(t *testing.T) {
 
 func TestRequestLimiter10(t *testing.T) {
 	h := newTestHandler(10)
-	l := NewRequestLimiter(10, h)
+	l := NewRequestLimiter(10, h, nil)
 	var wg sync.WaitGroup
 	for i := 0; i < 10; i++ {
 		wg.Add(1)

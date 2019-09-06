@@ -470,6 +470,7 @@ stop_services() {
         && python sdk/python/tests/run_test_server.py stop \
         && all_services_stopped=1
     deactivate
+    unset ARVADOS_CONFIG
 }
 
 interrupt() {
@@ -633,15 +634,12 @@ install_env() {
             for d in \
                 "$GOPATH/src/git.curoverse.com/arvados.git/tmp/GOPATH" \
                     "$GOPATH/src/git.curoverse.com/arvados.git/tmp" \
+                    "$GOPATH/src/git.curoverse.com/arvados.git/arvados" \
                     "$GOPATH/src/git.curoverse.com/arvados.git"; do
+                [[ -h "$d" ]] && rm "$d"
                 [[ -d "$d" ]] && rmdir "$d"
             done
         fi
-        for d in \
-            "$GOPATH/src/git.curoverse.com/arvados.git/arvados" \
-                "$GOPATH/src/git.curoverse.com/arvados.git"; do
-            [[ -h "$d" ]] && rm "$d"
-        done
         ln -vsfT "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
         go get -v github.com/kardianos/govendor
         cd "$GOPATH/src/git.curoverse.com/arvados.git"
@@ -712,8 +710,6 @@ retry() {
 }
 
 do_test() {
-    check_arvados_config "$1"
-
     case "${1}" in
         apps/workbench_units | apps/workbench_functionals | apps/workbench_integration)
             suite=apps/workbench
@@ -733,11 +729,14 @@ do_test() {
     case "${1}" in
         services/api)
             stop_services
+            check_arvados_config "$1"
             ;;
         gofmt | govendor | doc | lib/cli | lib/cloud/azure | lib/cloud/ec2 | lib/cloud/cloudtest | lib/cmd | lib/dispatchcloud/ssh_executor | lib/dispatchcloud/worker)
+            check_arvados_config "$1"
             # don't care whether services are running
             ;;
         *)
+            check_arvados_config "$1"
             if ! start_services; then
                 title "test $1 -- failed to start services"
                 return 1
@@ -830,16 +829,17 @@ check_arvados_config() {
 	    install_env
 	fi
 	. "$VENVDIR/bin/activate"
+        cd "$WORKSPACE"
 	eval $(python sdk/python/tests/run_test_server.py setup_config)
 	deactivate
     fi
 }
 
 do_install() {
-    check_arvados_config "$1"
     if [[ -n "${skip[install]}" || ( -n "${only_install}" && "${only_install}" != "${1}" && "${only_install}" != "${2}" ) ]]; then
         return 0
     fi
+    check_arvados_config "$1"
     retry do_install_once ${@}
 }
 

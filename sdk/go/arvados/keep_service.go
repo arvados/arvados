@@ -23,11 +23,11 @@ type KeepService struct {
 }
 
 type KeepMount struct {
-	UUID           string   `json:"uuid"`
-	DeviceID       string   `json:"device_id"`
-	ReadOnly       bool     `json:"read_only"`
-	Replication    int      `json:"replication"`
-	StorageClasses []string `json:"storage_classes"`
+	UUID           string          `json:"uuid"`
+	DeviceID       string          `json:"device_id"`
+	ReadOnly       bool            `json:"read_only"`
+	Replication    int             `json:"replication"`
+	StorageClasses map[string]bool `json:"storage_classes"`
 }
 
 // KeepServiceList is an arvados#keepServiceList record

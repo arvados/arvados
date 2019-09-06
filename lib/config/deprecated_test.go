@@ -47,7 +47,7 @@ func testLoadLegacyConfig(content []byte, mungeFlag string, c *check.C) (*arvado
 func (s *LoadSuite) TestDeprecatedNodeProfilesToServices(c *check.C) {
 	hostname, err := os.Hostname()
 	c.Assert(err, check.IsNil)
-	s.checkEquivalent(c, `
+	checkEquivalent(c, `
 Clusters:
  z1111:
   NodeProfiles:

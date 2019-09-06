@@ -399,9 +399,9 @@ def get_config():
     with open(os.environ["ARVADOS_CONFIG"]) as f:
         return yaml.safe_load(f)
 
-def internal_port_from_config(service):
+def internal_port_from_config(service, idx=0):
     return int(urlparse(
-        list(get_config()["Clusters"]["zzzzz"]["Services"][service]["InternalURLs"].keys())[0]).
+        sorted(list(get_config()["Clusters"]["zzzzz"]["Services"][service]["InternalURLs"].keys()))[idx]).
                netloc.split(":")[1])
 
 def external_port_from_config(service):
@@ -444,46 +444,40 @@ def stop_ws():
         return
     kill_server_pid(_pidfile('ws'))
 
-def _start_keep(n, keep_args):
-    keep0 = tempfile.mkdtemp()
-    port = find_available_port()
-    keep_cmd = ["keepstore",
-                "-volume={}".format(keep0),
-                "-listen=:{}".format(port),
-                "-pid="+_pidfile('keep{}'.format(n))]
+def _start_keep(n, blob_signing=False):
+    datadir = os.path.join(TEST_TMPDIR, "keep%d.data"%n)
+    if os.path.exists(datadir):
+        shutil.rmtree(datadir)
+    os.mkdir(datadir)
+    port = internal_port_from_config("Keepstore", idx=n)
 
-    for arg, val in keep_args.items():
-        keep_cmd.append("{}={}".format(arg, val))
+    # Currently, if there are multiple InternalURLs for a single host,
+    # the only way to tell a keepstore process which one it's supposed
+    # to listen on is to supply a redacted version of the config, with
+    # the other InternalURLs removed.
+    conf = os.path.join(TEST_TMPDIR, "keep%d.yaml"%n)
+    confdata = get_config()
+    confdata['Clusters']['zzzzz']['Services']['Keepstore']['InternalURLs'] = {"http://127.0.0.1:%d"%port: {}}
+    confdata['Clusters']['zzzzz']['Collections']['BlobSigning'] = blob_signing
+    with open(conf, 'w') as f:
+        yaml.safe_dump(confdata, f)
+    keep_cmd = ["keepstore", "-config", conf]
 
     with open(_logfilename('keep{}'.format(n)), 'a') as logf:
         with open('/dev/null') as _stdin:
-            kp0 = subprocess.Popen(
+            child = subprocess.Popen(
                 keep_cmd, stdin=_stdin, stdout=logf, stderr=logf, close_fds=True)
 
+    print('child.pid is %d'%child.pid, file=sys.stderr)
     with open(_pidfile('keep{}'.format(n)), 'w') as f:
-        f.write(str(kp0.pid))
-
-    with open("{}/keep{}.volume".format(TEST_TMPDIR, n), 'w') as f:
-        f.write(keep0)
+        f.write(str(child.pid))
 
     _wait_until_port_listens(port)
 
     return port
 
-def run_keep(blob_signing_key=None, enforce_permissions=False, num_servers=2):
+def run_keep(num_servers=2, **kwargs):
     stop_keep(num_servers)
-
-    keep_args = {}
-    if not blob_signing_key:
-        blob_signing_key = 'zfhgfenhffzltr9dixws36j1yhksjoll2grmku38mi7yxd66h5j4q9w4jzanezacp8s6q0ro3hxakfye02152hncy6zml2ed0uc'
-    with open(os.path.join(TEST_TMPDIR, "keep.blob_signing_key"), "w") as f:
-        keep_args['-blob-signing-key-file'] = f.name
-        f.write(blob_signing_key)
-    keep_args['-enforce-permissions'] = str(enforce_permissions).lower()
-    with open(os.path.join(TEST_TMPDIR, "keep.data-manager-token-file"), "w") as f:
-        keep_args['-data-manager-token-file'] = f.name
-        f.write(auth_token('data_manager'))
-    keep_args['-never-delete'] = 'false'
 
     api = arvados.api(
         version='v1',
@@ -497,7 +491,7 @@ def run_keep(blob_signing_key=None, enforce_permissions=False, num_servers=2):
         api.keep_disks().delete(uuid=d['uuid']).execute()
 
     for d in range(0, num_servers):
-        port = _start_keep(d, keep_args)
+        port = _start_keep(d, **kwargs)
         svc = api.keep_services().create(body={'keep_service': {
             'uuid': 'zzzzz-bi6l4-keepdisk{:07d}'.format(d),
             'service_host': 'localhost',
@@ -522,12 +516,6 @@ def run_keep(blob_signing_key=None, enforce_permissions=False, num_servers=2):
 
 def _stop_keep(n):
     kill_server_pid(_pidfile('keep{}'.format(n)))
-    if os.path.exists("{}/keep{}.volume".format(TEST_TMPDIR, n)):
-        with open("{}/keep{}.volume".format(TEST_TMPDIR, n), 'r') as r:
-            shutil.rmtree(r.read(), True)
-        os.unlink("{}/keep{}.volume".format(TEST_TMPDIR, n))
-    if os.path.exists(os.path.join(TEST_TMPDIR, "keep.blob_signing_key")):
-        os.remove(os.path.join(TEST_TMPDIR, "keep.blob_signing_key"))
 
 def stop_keep(num_servers=2):
     for n in range(0, num_servers):
@@ -663,6 +651,7 @@ def setup_config():
     git_httpd_external_port = find_available_port()
     keepproxy_port = find_available_port()
     keepproxy_external_port = find_available_port()
+    keepstore_ports = sorted([str(find_available_port()) for _ in xrange(0,4)])
     keep_web_port = find_available_port()
     keep_web_external_port = find_available_port()
     keep_web_dl_port = find_available_port()
@@ -678,45 +667,50 @@ def setup_config():
     services = {
         "RailsAPI": {
             "InternalURLs": {
-                "https://%s:%s"%(localhost, rails_api_port): {}
-            }
+                "https://%s:%s"%(localhost, rails_api_port): {},
+            },
         },
         "Controller": {
             "ExternalURL": "https://%s:%s" % (localhost, controller_external_port),
             "InternalURLs": {
-                "http://%s:%s"%(localhost, controller_port): {}
-            }
+                "http://%s:%s"%(localhost, controller_port): {},
+            },
         },
         "Websocket": {
             "ExternalURL": "wss://%s:%s/websocket" % (localhost, websocket_external_port),
             "InternalURLs": {
-                "http://%s:%s"%(localhost, websocket_port): {}
-            }
+                "http://%s:%s"%(localhost, websocket_port): {},
+            },
         },
         "GitHTTP": {
             "ExternalURL": "https://%s:%s" % (localhost, git_httpd_external_port),
             "InternalURLs": {
                 "http://%s:%s"%(localhost, git_httpd_port): {}
-            }
+            },
+        },
+        "Keepstore": {
+            "InternalURLs": {
+                "http://%s:%s"%(localhost, port): {} for port in keepstore_ports
+            },
         },
         "Keepproxy": {
             "ExternalURL": "https://%s:%s" % (localhost, keepproxy_external_port),
             "InternalURLs": {
-                "http://%s:%s"%(localhost, keepproxy_port): {}
-            }
+                "http://%s:%s"%(localhost, keepproxy_port): {},
+            },
         },
         "WebDAV": {
             "ExternalURL": "https://%s:%s" % (localhost, keep_web_external_port),
             "InternalURLs": {
-                "http://%s:%s"%(localhost, keep_web_port): {}
-            }
+                "http://%s:%s"%(localhost, keep_web_port): {},
+            },
         },
         "WebDAVDownload": {
             "ExternalURL": "https://%s:%s" % (localhost, keep_web_dl_external_port),
             "InternalURLs": {
-                "http://%s:%s"%(localhost, keep_web_dl_port): {}
-            }
-        }
+                "http://%s:%s"%(localhost, keep_web_dl_port): {},
+            },
+        },
     }
 
     config = {
@@ -724,30 +718,43 @@ def setup_config():
             "zzzzz": {
                 "EnableBetaController14287": ('14287' in os.environ.get('ARVADOS_EXPERIMENTAL', '')),
                 "ManagementToken": "e687950a23c3a9bceec28c6223a06c79",
+                "SystemRootToken": auth_token('data_manager'),
                 "API": {
-                    "RequestTimeout": "30s"
+                    "RequestTimeout": "30s",
                 },
                 "SystemLogs": {
-                    "LogLevel": ('info' if os.environ.get('ARVADOS_DEBUG', '') in ['','0'] else 'debug')
+                    "LogLevel": ('info' if os.environ.get('ARVADOS_DEBUG', '') in ['','0'] else 'debug'),
                 },
                 "PostgreSQL": {
                     "Connection": pgconnection,
                 },
                 "TLS": {
-                    "Insecure": True
+                    "Insecure": True,
                 },
                 "Services": services,
                 "Users": {
-                    "AnonymousUserToken": auth_token('anonymous')
+                    "AnonymousUserToken": auth_token('anonymous'),
                 },
                 "Collections": {
-                    "TrustAllContent": True
+                    "BlobSigningKey": "zfhgfenhffzltr9dixws36j1yhksjoll2grmku38mi7yxd66h5j4q9w4jzanezacp8s6q0ro3hxakfye02152hncy6zml2ed0uc",
+                    "TrustAllContent": True,
                 },
                 "Git": {
-                    "Repositories": "%s/test" % os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'git')
-                }
-            }
-        }
+                    "Repositories": "%s/test" % os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'git'),
+                },
+                "Volumes": {
+                    "zzzzz-nyw5e-%015d"%n: {
+                        "AccessViaHosts": {
+                            "http://%s:%s" % (localhost, keepstore_ports[n]): {},
+                        },
+                        "Driver": "Directory",
+                        "DriverParameters": {
+                            "Root": os.path.join(TEST_TMPDIR, "keep%d.data"%n),
+                        },
+                    } for n in range(len(keepstore_ports))
+                },
+            },
+        },
     }
 
     conf = os.path.join(TEST_TMPDIR, 'arvados.yml')
@@ -864,7 +871,7 @@ if __name__ == "__main__":
     parser.add_argument('action', type=str, help="one of {}".format(actions))
     parser.add_argument('--auth', type=str, metavar='FIXTURE_NAME', help='Print authorization info for given api_client_authorizations fixture')
     parser.add_argument('--num-keep-servers', metavar='int', type=int, default=2, help="Number of keep servers desired")
-    parser.add_argument('--keep-enforce-permissions', action="store_true", help="Enforce keep permissions")
+    parser.add_argument('--keep-blob-signing', action="store_true", help="Enable blob signing for keepstore servers")
 
     args = parser.parse_args()
 
@@ -895,7 +902,7 @@ if __name__ == "__main__":
     elif args.action == 'stop_controller':
         stop_controller()
     elif args.action == 'start_keep':
-        run_keep(enforce_permissions=args.keep_enforce_permissions, num_servers=args.num_keep_servers)
+        run_keep(blob_signing=args.keep_blob_signing, num_servers=args.num_keep_servers)
     elif args.action == 'stop_keep':
         stop_keep(num_servers=args.num_keep_servers)
     elif args.action == 'start_keep_proxy':

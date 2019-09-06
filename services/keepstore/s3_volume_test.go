@@ -10,17 +10,19 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"github.com/AdRoll/goamz/s3"
 	"github.com/AdRoll/goamz/s3/s3test"
-	"github.com/ghodss/yaml"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
 
@@ -39,34 +41,41 @@ func (c *fakeClock) Now() time.Time {
 	return *c.now
 }
 
-func init() {
-	// Deleting isn't safe from races, but if it's turned on
-	// anyway we do expect it to pass the generic volume tests.
-	s3UnsafeDelete = true
-}
-
 var _ = check.Suite(&StubbedS3Suite{})
 
 type StubbedS3Suite struct {
-	volumes []*TestableS3Volume
+	s3server *httptest.Server
+	cluster  *arvados.Cluster
+	handler  *handler
+	volumes  []*TestableS3Volume
+}
+
+func (s *StubbedS3Suite) SetUpTest(c *check.C) {
+	s.s3server = nil
+	s.cluster = testCluster(c)
+	s.cluster.Volumes = map[string]arvados.Volume{
+		"zzzzz-nyw5e-000000000000000": {Driver: "S3"},
+		"zzzzz-nyw5e-111111111111111": {Driver: "S3"},
+	}
+	s.handler = &handler{}
 }
 
 func (s *StubbedS3Suite) TestGeneric(c *check.C) {
-	DoGenericVolumeTests(c, func(t TB) TestableVolume {
+	DoGenericVolumeTests(c, false, func(t TB, cluster *arvados.Cluster, volume arvados.Volume, logger logrus.FieldLogger, metrics *volumeMetricsVecs) TestableVolume {
 		// Use a negative raceWindow so s3test's 1-second
 		// timestamp precision doesn't confuse fixRace.
-		return s.newTestableVolume(c, -2*time.Second, false, 2)
+		return s.newTestableVolume(c, cluster, volume, metrics, -2*time.Second)
 	})
 }
 
 func (s *StubbedS3Suite) TestGenericReadOnly(c *check.C) {
-	DoGenericVolumeTests(c, func(t TB) TestableVolume {
-		return s.newTestableVolume(c, -2*time.Second, true, 2)
+	DoGenericVolumeTests(c, true, func(t TB, cluster *arvados.Cluster, volume arvados.Volume, logger logrus.FieldLogger, metrics *volumeMetricsVecs) TestableVolume {
+		return s.newTestableVolume(c, cluster, volume, metrics, -2*time.Second)
 	})
 }
 
 func (s *StubbedS3Suite) TestIndex(c *check.C) {
-	v := s.newTestableVolume(c, 0, false, 2)
+	v := s.newTestableVolume(c, s.cluster, arvados.Volume{Replication: 2}, newVolumeMetricsVecs(prometheus.NewRegistry()), 0)
 	v.IndexPageSize = 3
 	for i := 0; i < 256; i++ {
 		v.PutRaw(fmt.Sprintf("%02x%030x", i, i), []byte{102, 111, 111})
@@ -91,7 +100,7 @@ func (s *StubbedS3Suite) TestIndex(c *check.C) {
 }
 
 func (s *StubbedS3Suite) TestStats(c *check.C) {
-	v := s.newTestableVolume(c, 5*time.Minute, false, 2)
+	v := s.newTestableVolume(c, s.cluster, arvados.Volume{Replication: 2}, newVolumeMetricsVecs(prometheus.NewRegistry()), 5*time.Minute)
 	stats := func() string {
 		buf, err := json.Marshal(v.InternalStats())
 		c.Check(err, check.IsNil)
@@ -125,6 +134,11 @@ type blockingHandler struct {
 }
 
 func (h *blockingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "PUT" && !strings.Contains(strings.Trim(r.URL.Path, "/"), "/") {
+		// Accept PutBucket ("PUT /bucketname/"), called by
+		// newTestableVolume
+		return
+	}
 	if h.requested != nil {
 		h.requested <- r
 	}
@@ -164,15 +178,10 @@ func (s *StubbedS3Suite) TestPutContextCancel(c *check.C) {
 
 func (s *StubbedS3Suite) testContextCancel(c *check.C, testFunc func(context.Context, *TestableS3Volume) error) {
 	handler := &blockingHandler{}
-	srv := httptest.NewServer(handler)
-	defer srv.Close()
+	s.s3server = httptest.NewServer(handler)
+	defer s.s3server.Close()
 
-	v := s.newTestableVolume(c, 5*time.Minute, false, 2)
-	vol := *v.S3Volume
-	vol.Endpoint = srv.URL
-	v = &TestableS3Volume{S3Volume: &vol}
-	metrics := newVolumeMetricsVecs(prometheus.NewRegistry())
-	v.Start(metrics)
+	v := s.newTestableVolume(c, s.cluster, arvados.Volume{Replication: 2}, newVolumeMetricsVecs(prometheus.NewRegistry()), 5*time.Minute)
 
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -209,14 +218,10 @@ func (s *StubbedS3Suite) testContextCancel(c *check.C, testFunc func(context.Con
 }
 
 func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
-	defer func(tl, bs arvados.Duration) {
-		theConfig.TrashLifetime = tl
-		theConfig.BlobSignatureTTL = bs
-	}(theConfig.TrashLifetime, theConfig.BlobSignatureTTL)
-	theConfig.TrashLifetime.Set("1h")
-	theConfig.BlobSignatureTTL.Set("1h")
+	s.cluster.Collections.BlobTrashLifetime.Set("1h")
+	s.cluster.Collections.BlobSigningTTL.Set("1h")
 
-	v := s.newTestableVolume(c, 5*time.Minute, false, 2)
+	v := s.newTestableVolume(c, s.cluster, arvados.Volume{Replication: 2}, newVolumeMetricsVecs(prometheus.NewRegistry()), 5*time.Minute)
 	var none time.Time
 
 	putS3Obj := func(t time.Time, key string, data []byte) {
@@ -411,59 +416,40 @@ type TestableS3Volume struct {
 	serverClock *fakeClock
 }
 
-func (s *StubbedS3Suite) newTestableVolume(c *check.C, raceWindow time.Duration, readonly bool, replication int) *TestableS3Volume {
+func (s *StubbedS3Suite) newTestableVolume(c *check.C, cluster *arvados.Cluster, volume arvados.Volume, metrics *volumeMetricsVecs, raceWindow time.Duration) *TestableS3Volume {
 	clock := &fakeClock{}
 	srv, err := s3test.NewServer(&s3test.Config{Clock: clock})
 	c.Assert(err, check.IsNil)
+	endpoint := srv.URL()
+	if s.s3server != nil {
+		endpoint = s.s3server.URL
+	}
 
 	v := &TestableS3Volume{
 		S3Volume: &S3Volume{
+			AccessKey:          "xxx",
+			SecretKey:          "xxx",
 			Bucket:             TestBucketName,
-			Endpoint:           srv.URL(),
+			Endpoint:           endpoint,
 			Region:             "test-region-1",
 			LocationConstraint: true,
-			RaceWindow:         arvados.Duration(raceWindow),
-			S3Replication:      replication,
-			UnsafeDelete:       s3UnsafeDelete,
-			ReadOnly:           readonly,
+			UnsafeDelete:       true,
 			IndexPageSize:      1000,
+			cluster:            cluster,
+			volume:             volume,
+			logger:             ctxlog.TestLogger(c),
+			metrics:            metrics,
 		},
 		c:           c,
 		server:      srv,
 		serverClock: clock,
 	}
-	metrics := newVolumeMetricsVecs(prometheus.NewRegistry())
-	v.Start(metrics)
-	err = v.bucket.PutBucket(s3.ACL("private"))
-	c.Assert(err, check.IsNil)
+	c.Assert(v.S3Volume.check(), check.IsNil)
+	c.Assert(v.bucket.PutBucket(s3.ACL("private")), check.IsNil)
+	// We couldn't set RaceWindow until now because check()
+	// rejects negative values.
+	v.S3Volume.RaceWindow = arvados.Duration(raceWindow)
 	return v
-}
-
-func (s *StubbedS3Suite) TestConfig(c *check.C) {
-	var cfg Config
-	err := yaml.Unmarshal([]byte(`
-Volumes:
-  - Type: S3
-    StorageClasses: ["class_a", "class_b"]
-`), &cfg)
-
-	c.Check(err, check.IsNil)
-	c.Check(cfg.Volumes[0].GetStorageClasses(), check.DeepEquals, []string{"class_a", "class_b"})
-}
-
-func (v *TestableS3Volume) Start(vm *volumeMetricsVecs) error {
-	tmp, err := ioutil.TempFile("", "keepstore")
-	v.c.Assert(err, check.IsNil)
-	defer os.Remove(tmp.Name())
-	_, err = tmp.Write([]byte("xxx\n"))
-	v.c.Assert(err, check.IsNil)
-	v.c.Assert(tmp.Close(), check.IsNil)
-
-	v.S3Volume.AccessKeyFile = tmp.Name()
-	v.S3Volume.SecretKeyFile = tmp.Name()
-
-	v.c.Assert(v.S3Volume.Start(vm), check.IsNil)
-	return nil
 }
 
 // PutRaw skips the ContentMD5 test

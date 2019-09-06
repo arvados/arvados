@@ -12,59 +12,39 @@ import (
 	"net/http/httptest"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
+	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	"github.com/prometheus/client_golang/prometheus"
 	check "gopkg.in/check.v1"
 )
 
-var _ = check.Suite(&MountsSuite{})
+func (s *HandlerSuite) TestMounts(c *check.C) {
+	c.Assert(s.handler.setup(context.Background(), s.cluster, "", prometheus.NewRegistry(), testServiceURL), check.IsNil)
 
-type MountsSuite struct {
-	vm  VolumeManager
-	rtr http.Handler
-}
-
-func (s *MountsSuite) SetUpTest(c *check.C) {
-	s.vm = MakeTestVolumeManager(2)
-	KeepVM = s.vm
-	theConfig = DefaultConfig()
-	theConfig.systemAuthToken = arvadostest.DataManagerToken
-	theConfig.ManagementToken = arvadostest.ManagementToken
-	r := prometheus.NewRegistry()
-	theConfig.Start(r)
-	s.rtr = MakeRESTRouter(testCluster, r)
-}
-
-func (s *MountsSuite) TearDownTest(c *check.C) {
-	s.vm.Close()
-	KeepVM = nil
-	theConfig = DefaultConfig()
-	theConfig.Start(prometheus.NewRegistry())
-}
-
-func (s *MountsSuite) TestMounts(c *check.C) {
-	vols := s.vm.AllWritable()
+	vols := s.handler.volmgr.AllWritable()
 	vols[0].Put(context.Background(), TestHash, TestBlock)
 	vols[1].Put(context.Background(), TestHash2, TestBlock2)
 
 	resp := s.call("GET", "/mounts", "", nil)
 	c.Check(resp.Code, check.Equals, http.StatusOK)
 	var mntList []struct {
-		UUID           string   `json:"uuid"`
-		DeviceID       string   `json:"device_id"`
-		ReadOnly       bool     `json:"read_only"`
-		Replication    int      `json:"replication"`
-		StorageClasses []string `json:"storage_classes"`
+		UUID           string          `json:"uuid"`
+		DeviceID       string          `json:"device_id"`
+		ReadOnly       bool            `json:"read_only"`
+		Replication    int             `json:"replication"`
+		StorageClasses map[string]bool `json:"storage_classes"`
 	}
+	c.Log(resp.Body.String())
 	err := json.Unmarshal(resp.Body.Bytes(), &mntList)
 	c.Assert(err, check.IsNil)
 	c.Assert(len(mntList), check.Equals, 2)
 	for _, m := range mntList {
 		c.Check(len(m.UUID), check.Equals, 27)
-		c.Check(m.UUID[:12], check.Equals, "zzzzz-ivpuk-")
+		c.Check(m.UUID[:12], check.Equals, "zzzzz-nyw5e-")
 		c.Check(m.DeviceID, check.Equals, "mock-device-id")
 		c.Check(m.ReadOnly, check.Equals, false)
 		c.Check(m.Replication, check.Equals, 1)
-		c.Check(m.StorageClasses, check.DeepEquals, []string{"default"})
+		c.Check(m.StorageClasses, check.DeepEquals, map[string]bool{"default": true})
 	}
 	c.Check(mntList[0].UUID, check.Not(check.Equals), mntList[1].UUID)
 
@@ -103,7 +83,12 @@ func (s *MountsSuite) TestMounts(c *check.C) {
 	c.Check(resp.Body.String(), check.Equals, "\n")
 }
 
-func (s *MountsSuite) TestMetrics(c *check.C) {
+func (s *HandlerSuite) TestMetrics(c *check.C) {
+	reg := prometheus.NewRegistry()
+	c.Assert(s.handler.setup(context.Background(), s.cluster, "", reg, testServiceURL), check.IsNil)
+	instrumented := httpserver.Instrument(reg, ctxlog.TestLogger(c), s.handler.Handler)
+	s.handler.Handler = instrumented.ServeAPI(s.cluster.ManagementToken, instrumented)
+
 	s.call("PUT", "/"+TestHash, "", TestBlock)
 	s.call("PUT", "/"+TestHash2, "", TestBlock2)
 	resp := s.call("GET", "/metrics.json", "", nil)
@@ -145,8 +130,6 @@ func (s *MountsSuite) TestMetrics(c *check.C) {
 			}
 		}
 	}
-	c.Check(found["request_duration_seconds"], check.Equals, true)
-	c.Check(found["time_to_status_seconds"], check.Equals, true)
 
 	metricsNames := []string{
 		"arvados_keepstore_bufferpool_inuse_buffers",
@@ -154,25 +137,22 @@ func (s *MountsSuite) TestMetrics(c *check.C) {
 		"arvados_keepstore_bufferpool_allocated_bytes",
 		"arvados_keepstore_pull_queue_inprogress_entries",
 		"arvados_keepstore_pull_queue_pending_entries",
-		"arvados_keepstore_concurrent_requests",
-		"arvados_keepstore_max_concurrent_requests",
 		"arvados_keepstore_trash_queue_inprogress_entries",
 		"arvados_keepstore_trash_queue_pending_entries",
 		"request_duration_seconds",
-		"time_to_status_seconds",
 	}
 	for _, m := range metricsNames {
 		_, ok := names[m]
-		c.Check(ok, check.Equals, true)
+		c.Check(ok, check.Equals, true, check.Commentf("checking metric %q", m))
 	}
 }
 
-func (s *MountsSuite) call(method, path, tok string, body []byte) *httptest.ResponseRecorder {
+func (s *HandlerSuite) call(method, path, tok string, body []byte) *httptest.ResponseRecorder {
 	resp := httptest.NewRecorder()
 	req, _ := http.NewRequest(method, path, bytes.NewReader(body))
 	if tok != "" {
 		req.Header.Set("Authorization", "Bearer "+tok)
 	}
-	s.rtr.ServeHTTP(resp, req)
+	s.handler.ServeHTTP(resp, req)
 	return resp
 }

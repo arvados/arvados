@@ -18,8 +18,10 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
+	"github.com/sirupsen/logrus"
 )
 
 type TB interface {
@@ -37,65 +39,96 @@ type TB interface {
 // A TestableVolumeFactory returns a new TestableVolume. The factory
 // function, and the TestableVolume it returns, can use "t" to write
 // logs, fail the current test, etc.
-type TestableVolumeFactory func(t TB) TestableVolume
+type TestableVolumeFactory func(t TB, cluster *arvados.Cluster, volume arvados.Volume, logger logrus.FieldLogger, metrics *volumeMetricsVecs) TestableVolume
 
 // DoGenericVolumeTests runs a set of tests that every TestableVolume
 // is expected to pass. It calls factory to create a new TestableVolume
 // for each test case, to avoid leaking state between tests.
-func DoGenericVolumeTests(t TB, factory TestableVolumeFactory) {
-	testGet(t, factory)
-	testGetNoSuchBlock(t, factory)
+func DoGenericVolumeTests(t TB, readonly bool, factory TestableVolumeFactory) {
+	var s genericVolumeSuite
+	s.volume.ReadOnly = readonly
 
-	testCompareNonexistent(t, factory)
-	testCompareSameContent(t, factory, TestHash, TestBlock)
-	testCompareSameContent(t, factory, EmptyHash, EmptyBlock)
-	testCompareWithCollision(t, factory, TestHash, TestBlock, []byte("baddata"))
-	testCompareWithCollision(t, factory, TestHash, TestBlock, EmptyBlock)
-	testCompareWithCollision(t, factory, EmptyHash, EmptyBlock, TestBlock)
-	testCompareWithCorruptStoredData(t, factory, TestHash, TestBlock, []byte("baddata"))
-	testCompareWithCorruptStoredData(t, factory, TestHash, TestBlock, EmptyBlock)
-	testCompareWithCorruptStoredData(t, factory, EmptyHash, EmptyBlock, []byte("baddata"))
+	s.testGet(t, factory)
+	s.testGetNoSuchBlock(t, factory)
 
-	testPutBlockWithSameContent(t, factory, TestHash, TestBlock)
-	testPutBlockWithSameContent(t, factory, EmptyHash, EmptyBlock)
-	testPutBlockWithDifferentContent(t, factory, arvadostest.MD5CollisionMD5, arvadostest.MD5CollisionData[0], arvadostest.MD5CollisionData[1])
-	testPutBlockWithDifferentContent(t, factory, arvadostest.MD5CollisionMD5, EmptyBlock, arvadostest.MD5CollisionData[0])
-	testPutBlockWithDifferentContent(t, factory, arvadostest.MD5CollisionMD5, arvadostest.MD5CollisionData[0], EmptyBlock)
-	testPutBlockWithDifferentContent(t, factory, EmptyHash, EmptyBlock, arvadostest.MD5CollisionData[0])
-	testPutMultipleBlocks(t, factory)
+	s.testCompareNonexistent(t, factory)
+	s.testCompareSameContent(t, factory, TestHash, TestBlock)
+	s.testCompareSameContent(t, factory, EmptyHash, EmptyBlock)
+	s.testCompareWithCollision(t, factory, TestHash, TestBlock, []byte("baddata"))
+	s.testCompareWithCollision(t, factory, TestHash, TestBlock, EmptyBlock)
+	s.testCompareWithCollision(t, factory, EmptyHash, EmptyBlock, TestBlock)
+	s.testCompareWithCorruptStoredData(t, factory, TestHash, TestBlock, []byte("baddata"))
+	s.testCompareWithCorruptStoredData(t, factory, TestHash, TestBlock, EmptyBlock)
+	s.testCompareWithCorruptStoredData(t, factory, EmptyHash, EmptyBlock, []byte("baddata"))
 
-	testPutAndTouch(t, factory)
-	testTouchNoSuchBlock(t, factory)
+	if !readonly {
+		s.testPutBlockWithSameContent(t, factory, TestHash, TestBlock)
+		s.testPutBlockWithSameContent(t, factory, EmptyHash, EmptyBlock)
+		s.testPutBlockWithDifferentContent(t, factory, arvadostest.MD5CollisionMD5, arvadostest.MD5CollisionData[0], arvadostest.MD5CollisionData[1])
+		s.testPutBlockWithDifferentContent(t, factory, arvadostest.MD5CollisionMD5, EmptyBlock, arvadostest.MD5CollisionData[0])
+		s.testPutBlockWithDifferentContent(t, factory, arvadostest.MD5CollisionMD5, arvadostest.MD5CollisionData[0], EmptyBlock)
+		s.testPutBlockWithDifferentContent(t, factory, EmptyHash, EmptyBlock, arvadostest.MD5CollisionData[0])
+		s.testPutMultipleBlocks(t, factory)
 
-	testMtimeNoSuchBlock(t, factory)
+		s.testPutAndTouch(t, factory)
+	}
+	s.testTouchNoSuchBlock(t, factory)
 
-	testIndexTo(t, factory)
+	s.testMtimeNoSuchBlock(t, factory)
 
-	testDeleteNewBlock(t, factory)
-	testDeleteOldBlock(t, factory)
-	testDeleteNoSuchBlock(t, factory)
+	s.testIndexTo(t, factory)
 
-	testStatus(t, factory)
+	if !readonly {
+		s.testDeleteNewBlock(t, factory)
+		s.testDeleteOldBlock(t, factory)
+	}
+	s.testDeleteNoSuchBlock(t, factory)
 
-	testMetrics(t, factory)
+	s.testStatus(t, factory)
 
-	testString(t, factory)
+	s.testMetrics(t, readonly, factory)
 
-	testUpdateReadOnly(t, factory)
+	s.testString(t, factory)
 
-	testGetConcurrent(t, factory)
-	testPutConcurrent(t, factory)
+	if readonly {
+		s.testUpdateReadOnly(t, factory)
+	}
 
-	testPutFullBlock(t, factory)
+	s.testGetConcurrent(t, factory)
+	if !readonly {
+		s.testPutConcurrent(t, factory)
 
-	testTrashUntrash(t, factory)
-	testTrashEmptyTrashUntrash(t, factory)
+		s.testPutFullBlock(t, factory)
+	}
+
+	s.testTrashUntrash(t, readonly, factory)
+	s.testTrashEmptyTrashUntrash(t, factory)
+}
+
+type genericVolumeSuite struct {
+	cluster  *arvados.Cluster
+	volume   arvados.Volume
+	logger   logrus.FieldLogger
+	metrics  *volumeMetricsVecs
+	registry *prometheus.Registry
+}
+
+func (s *genericVolumeSuite) setup(t TB) {
+	s.cluster = testCluster(t)
+	s.logger = ctxlog.TestLogger(t)
+	s.registry = prometheus.NewRegistry()
+	s.metrics = newVolumeMetricsVecs(s.registry)
+}
+
+func (s *genericVolumeSuite) newVolume(t TB, factory TestableVolumeFactory) TestableVolume {
+	return factory(t, s.cluster, s.volume, s.logger, s.metrics)
 }
 
 // Put a test block, get it and verify content
 // Test should pass for both writable and read-only volumes
-func testGet(t TB, factory TestableVolumeFactory) {
-	v := factory(t)
+func (s *genericVolumeSuite) testGet(t TB, factory TestableVolumeFactory) {
+	s.setup(t)
+	v := s.newVolume(t, factory)
 	defer v.Teardown()
 
 	v.PutRaw(TestHash, TestBlock)
@@ -113,8 +146,9 @@ func testGet(t TB, factory TestableVolumeFactory) {
 
 // Invoke get on a block that does not exist in volume; should result in error
 // Test should pass for both writable and read-only volumes
-func testGetNoSuchBlock(t TB, factory TestableVolumeFactory) {
-	v := factory(t)
+func (s *genericVolumeSuite) testGetNoSuchBlock(t TB, factory TestableVolumeFactory) {
+	s.setup(t)
+	v := s.newVolume(t, factory)
 	defer v.Teardown()
 
 	buf := make([]byte, BlockSize)
@@ -126,8 +160,9 @@ func testGetNoSuchBlock(t TB, factory TestableVolumeFactory) {
 // Compare() should return os.ErrNotExist if the block does not exist.
 // Otherwise, writing new data causes CompareAndTouch() to generate
 // error logs even though everything is working fine.
-func testCompareNonexistent(t TB, factory TestableVolumeFactory) {
-	v := factory(t)
+func (s *genericVolumeSuite) testCompareNonexistent(t TB, factory TestableVolumeFactory) {
+	s.setup(t)
+	v := s.newVolume(t, factory)
 	defer v.Teardown()
 
 	err := v.Compare(context.Background(), TestHash, TestBlock)
@@ -138,8 +173,9 @@ func testCompareNonexistent(t TB, factory TestableVolumeFactory) {
 
 // Put a test block and compare the locator with same content
 // Test should pass for both writable and read-only volumes
-func testCompareSameContent(t TB, factory TestableVolumeFactory, testHash string, testData []byte) {
-	v := factory(t)
+func (s *genericVolumeSuite) testCompareSameContent(t TB, factory TestableVolumeFactory, testHash string, testData []byte) {
+	s.setup(t)
+	v := s.newVolume(t, factory)
 	defer v.Teardown()
 
 	v.PutRaw(testHash, testData)
@@ -156,8 +192,9 @@ func testCompareSameContent(t TB, factory TestableVolumeFactory, testHash string
 // testHash = md5(testDataA).
 //
 // Test should pass for both writable and read-only volumes
-func testCompareWithCollision(t TB, factory TestableVolumeFactory, testHash string, testDataA, testDataB []byte) {
-	v := factory(t)
+func (s *genericVolumeSuite) testCompareWithCollision(t TB, factory TestableVolumeFactory, testHash string, testDataA, testDataB []byte) {
+	s.setup(t)
+	v := s.newVolume(t, factory)
 	defer v.Teardown()
 
 	v.PutRaw(testHash, testDataA)
@@ -173,8 +210,9 @@ func testCompareWithCollision(t TB, factory TestableVolumeFactory, testHash stri
 // corrupted. Requires testHash = md5(testDataA) != md5(testDataB).
 //
 // Test should pass for both writable and read-only volumes
-func testCompareWithCorruptStoredData(t TB, factory TestableVolumeFactory, testHash string, testDataA, testDataB []byte) {
-	v := factory(t)
+func (s *genericVolumeSuite) testCompareWithCorruptStoredData(t TB, factory TestableVolumeFactory, testHash string, testDataA, testDataB []byte) {
+	s.setup(t)
+	v := s.newVolume(t, factory)
 	defer v.Teardown()
 
 	v.PutRaw(TestHash, testDataB)
@@ -187,13 +225,10 @@ func testCompareWithCorruptStoredData(t TB, factory TestableVolumeFactory, testH
 
 // Put a block and put again with same content
 // Test is intended for only writable volumes
-func testPutBlockWithSameContent(t TB, factory TestableVolumeFactory, testHash string, testData []byte) {
-	v := factory(t)
+func (s *genericVolumeSuite) testPutBlockWithSameContent(t TB, factory TestableVolumeFactory, testHash string, testData []byte) {
+	s.setup(t)
+	v := s.newVolume(t, factory)
 	defer v.Teardown()
-
-	if v.Writable() == false {
-		return
-	}
 
 	err := v.Put(context.Background(), testHash, testData)
 	if err != nil {
@@ -208,13 +243,10 @@ func testPutBlockWithSameContent(t TB, factory TestableVolumeFactory, testHash s
 
 // Put a block and put again with different content
 // Test is intended for only writable volumes
-func testPutBlockWithDifferentContent(t TB, factory TestableVolumeFactory, testHash string, testDataA, testDataB []byte) {
-	v := factory(t)
+func (s *genericVolumeSuite) testPutBlockWithDifferentContent(t TB, factory TestableVolumeFactory, testHash string, testDataA, testDataB []byte) {
+	s.setup(t)
+	v := s.newVolume(t, factory)
 	defer v.Teardown()
-
-	if v.Writable() == false {
-		return
-	}
 
 	v.PutRaw(testHash, testDataA)
 
@@ -239,13 +271,10 @@ func testPutBlockWithDifferentContent(t TB, factory TestableVolumeFactory, testH
 
 // Put and get multiple blocks
 // Test is intended for only writable volumes
-func testPutMultipleBlocks(t TB, factory TestableVolumeFactory) {
-	v := factory(t)
+func (s *genericVolumeSuite) testPutMultipleBlocks(t TB, factory TestableVolumeFactory) {
+	s.setup(t)
+	v := s.newVolume(t, factory)
 	defer v.Teardown()
-
-	if v.Writable() == false {
-		return
-	}
 
 	err := v.Put(context.Background(), TestHash, TestBlock)
 	if err != nil {
@@ -295,13 +324,10 @@ func testPutMultipleBlocks(t TB, factory TestableVolumeFactory) {
 //   Test that when applying PUT to a block that already exists,
 //   the block's modification time is updated.
 // Test is intended for only writable volumes
-func testPutAndTouch(t TB, factory TestableVolumeFactory) {
-	v := factory(t)
+func (s *genericVolumeSuite) testPutAndTouch(t TB, factory TestableVolumeFactory) {
+	s.setup(t)
+	v := s.newVolume(t, factory)
 	defer v.Teardown()
-
-	if v.Writable() == false {
-		return
-	}
 
 	if err := v.Put(context.Background(), TestHash, TestBlock); err != nil {
 		t.Error(err)
@@ -337,8 +363,9 @@ func testPutAndTouch(t TB, factory TestableVolumeFactory) {
 
 // Touching a non-existing block should result in error.
 // Test should pass for both writable and read-only volumes
-func testTouchNoSuchBlock(t TB, factory TestableVolumeFactory) {
-	v := factory(t)
+func (s *genericVolumeSuite) testTouchNoSuchBlock(t TB, factory TestableVolumeFactory) {
+	s.setup(t)
+	v := s.newVolume(t, factory)
 	defer v.Teardown()
 
 	if err := v.Touch(TestHash); err == nil {
@@ -348,8 +375,9 @@ func testTouchNoSuchBlock(t TB, factory TestableVolumeFactory) {
 
 // Invoking Mtime on a non-existing block should result in error.
 // Test should pass for both writable and read-only volumes
-func testMtimeNoSuchBlock(t TB, factory TestableVolumeFactory) {
-	v := factory(t)
+func (s *genericVolumeSuite) testMtimeNoSuchBlock(t TB, factory TestableVolumeFactory) {
+	s.setup(t)
+	v := s.newVolume(t, factory)
 	defer v.Teardown()
 
 	if _, err := v.Mtime("12345678901234567890123456789012"); err == nil {
@@ -362,8 +390,9 @@ func testMtimeNoSuchBlock(t TB, factory TestableVolumeFactory) {
 // * with a prefix
 // * with no such prefix
 // Test should pass for both writable and read-only volumes
-func testIndexTo(t TB, factory TestableVolumeFactory) {
-	v := factory(t)
+func (s *genericVolumeSuite) testIndexTo(t TB, factory TestableVolumeFactory) {
+	s.setup(t)
+	v := s.newVolume(t, factory)
 	defer v.Teardown()
 
 	// minMtime and maxMtime are the minimum and maximum
@@ -437,14 +466,11 @@ func testIndexTo(t TB, factory TestableVolumeFactory) {
 // Calling Delete() for a block immediately after writing it (not old enough)
 // should neither delete the data nor return an error.
 // Test is intended for only writable volumes
-func testDeleteNewBlock(t TB, factory TestableVolumeFactory) {
-	v := factory(t)
+func (s *genericVolumeSuite) testDeleteNewBlock(t TB, factory TestableVolumeFactory) {
+	s.setup(t)
+	s.cluster.Collections.BlobSigningTTL.Set("5m")
+	v := s.newVolume(t, factory)
 	defer v.Teardown()
-	theConfig.BlobSignatureTTL.Set("5m")
-
-	if v.Writable() == false {
-		return
-	}
 
 	v.Put(context.Background(), TestHash, TestBlock)
 
@@ -463,17 +489,14 @@ func testDeleteNewBlock(t TB, factory TestableVolumeFactory) {
 // Calling Delete() for a block with a timestamp older than
 // BlobSignatureTTL seconds in the past should delete the data.
 // Test is intended for only writable volumes
-func testDeleteOldBlock(t TB, factory TestableVolumeFactory) {
-	v := factory(t)
+func (s *genericVolumeSuite) testDeleteOldBlock(t TB, factory TestableVolumeFactory) {
+	s.setup(t)
+	s.cluster.Collections.BlobSigningTTL.Set("5m")
+	v := s.newVolume(t, factory)
 	defer v.Teardown()
-	theConfig.BlobSignatureTTL.Set("5m")
-
-	if v.Writable() == false {
-		return
-	}
 
 	v.Put(context.Background(), TestHash, TestBlock)
-	v.TouchWithDate(TestHash, time.Now().Add(-2*theConfig.BlobSignatureTTL.Duration()))
+	v.TouchWithDate(TestHash, time.Now().Add(-2*s.cluster.Collections.BlobSigningTTL.Duration()))
 
 	if err := v.Trash(TestHash); err != nil {
 		t.Error(err)
@@ -507,8 +530,9 @@ func testDeleteOldBlock(t TB, factory TestableVolumeFactory) {
 
 // Calling Delete() for a block that does not exist should result in error.
 // Test should pass for both writable and read-only volumes
-func testDeleteNoSuchBlock(t TB, factory TestableVolumeFactory) {
-	v := factory(t)
+func (s *genericVolumeSuite) testDeleteNoSuchBlock(t TB, factory TestableVolumeFactory) {
+	s.setup(t)
+	v := s.newVolume(t, factory)
 	defer v.Teardown()
 
 	if err := v.Trash(TestHash2); err == nil {
@@ -518,8 +542,9 @@ func testDeleteNoSuchBlock(t TB, factory TestableVolumeFactory) {
 
 // Invoke Status and verify that VolumeStatus is returned
 // Test should pass for both writable and read-only volumes
-func testStatus(t TB, factory TestableVolumeFactory) {
-	v := factory(t)
+func (s *genericVolumeSuite) testStatus(t TB, factory TestableVolumeFactory) {
+	s.setup(t)
+	v := s.newVolume(t, factory)
 	defer v.Teardown()
 
 	// Get node status and make a basic sanity check.
@@ -544,19 +569,14 @@ func getValueFrom(cv *prometheus.CounterVec, lbls prometheus.Labels) float64 {
 	return pb.GetCounter().GetValue()
 }
 
-func testMetrics(t TB, factory TestableVolumeFactory) {
+func (s *genericVolumeSuite) testMetrics(t TB, readonly bool, factory TestableVolumeFactory) {
 	var err error
 
-	v := factory(t)
+	s.setup(t)
+	v := s.newVolume(t, factory)
 	defer v.Teardown()
-	reg := prometheus.NewRegistry()
-	vm := newVolumeMetricsVecs(reg)
 
-	err = v.Start(vm)
-	if err != nil {
-		t.Error("Failed Start(): ", err)
-	}
-	opsC, _, ioC := vm.getCounterVecsFor(prometheus.Labels{"device_id": v.DeviceID()})
+	opsC, _, ioC := s.metrics.getCounterVecsFor(prometheus.Labels{"device_id": v.GetDeviceID()})
 
 	if ioC == nil {
 		t.Error("ioBytes CounterVec is nil")
@@ -580,7 +600,7 @@ func testMetrics(t TB, factory TestableVolumeFactory) {
 	readOpCounter = getValueFrom(opsC, prometheus.Labels{"operation": readOpType})
 
 	// Test Put if volume is writable
-	if v.Writable() {
+	if !readonly {
 		err = v.Put(context.Background(), TestHash, TestBlock)
 		if err != nil {
 			t.Errorf("Got err putting block %q: %q, expected nil", TestBlock, err)
@@ -617,8 +637,9 @@ func testMetrics(t TB, factory TestableVolumeFactory) {
 
 // Invoke String for the volume; expect non-empty result
 // Test should pass for both writable and read-only volumes
-func testString(t TB, factory TestableVolumeFactory) {
-	v := factory(t)
+func (s *genericVolumeSuite) testString(t TB, factory TestableVolumeFactory) {
+	s.setup(t)
+	v := s.newVolume(t, factory)
 	defer v.Teardown()
 
 	if id := v.String(); len(id) == 0 {
@@ -628,13 +649,10 @@ func testString(t TB, factory TestableVolumeFactory) {
 
 // Putting, updating, touching, and deleting blocks from a read-only volume result in error.
 // Test is intended for only read-only volumes
-func testUpdateReadOnly(t TB, factory TestableVolumeFactory) {
-	v := factory(t)
+func (s *genericVolumeSuite) testUpdateReadOnly(t TB, factory TestableVolumeFactory) {
+	s.setup(t)
+	v := s.newVolume(t, factory)
 	defer v.Teardown()
-
-	if v.Writable() == true {
-		return
-	}
 
 	v.PutRaw(TestHash, TestBlock)
 	buf := make([]byte, BlockSize)
@@ -676,8 +694,9 @@ func testUpdateReadOnly(t TB, factory TestableVolumeFactory) {
 
 // Launch concurrent Gets
 // Test should pass for both writable and read-only volumes
-func testGetConcurrent(t TB, factory TestableVolumeFactory) {
-	v := factory(t)
+func (s *genericVolumeSuite) testGetConcurrent(t TB, factory TestableVolumeFactory) {
+	s.setup(t)
+	v := s.newVolume(t, factory)
 	defer v.Teardown()
 
 	v.PutRaw(TestHash, TestBlock)
@@ -729,13 +748,10 @@ func testGetConcurrent(t TB, factory TestableVolumeFactory) {
 
 // Launch concurrent Puts
 // Test is intended for only writable volumes
-func testPutConcurrent(t TB, factory TestableVolumeFactory) {
-	v := factory(t)
+func (s *genericVolumeSuite) testPutConcurrent(t TB, factory TestableVolumeFactory) {
+	s.setup(t)
+	v := s.newVolume(t, factory)
 	defer v.Teardown()
-
-	if v.Writable() == false {
-		return
-	}
 
 	sem := make(chan int)
 	go func(sem chan int) {
@@ -795,13 +811,10 @@ func testPutConcurrent(t TB, factory TestableVolumeFactory) {
 }
 
 // Write and read back a full size block
-func testPutFullBlock(t TB, factory TestableVolumeFactory) {
-	v := factory(t)
+func (s *genericVolumeSuite) testPutFullBlock(t TB, factory TestableVolumeFactory) {
+	s.setup(t)
+	v := s.newVolume(t, factory)
 	defer v.Teardown()
-
-	if !v.Writable() {
-		return
-	}
 
 	wdata := make([]byte, BlockSize)
 	wdata[0] = 'a'
@@ -825,18 +838,15 @@ func testPutFullBlock(t TB, factory TestableVolumeFactory) {
 // Trash an old block - which either raises ErrNotImplemented or succeeds
 // Untrash -  which either raises ErrNotImplemented or succeeds
 // Get - which must succeed
-func testTrashUntrash(t TB, factory TestableVolumeFactory) {
-	v := factory(t)
+func (s *genericVolumeSuite) testTrashUntrash(t TB, readonly bool, factory TestableVolumeFactory) {
+	s.setup(t)
+	s.cluster.Collections.BlobTrashLifetime.Set("1h")
+	v := s.newVolume(t, factory)
 	defer v.Teardown()
-	defer func() {
-		theConfig.TrashLifetime = 0
-	}()
-
-	theConfig.TrashLifetime.Set("1h")
 
 	// put block and backdate it
 	v.PutRaw(TestHash, TestBlock)
-	v.TouchWithDate(TestHash, time.Now().Add(-2*theConfig.BlobSignatureTTL.Duration()))
+	v.TouchWithDate(TestHash, time.Now().Add(-2*s.cluster.Collections.BlobSigningTTL.Duration()))
 
 	buf := make([]byte, BlockSize)
 	n, err := v.Get(context.Background(), TestHash, buf)
@@ -849,7 +859,7 @@ func testTrashUntrash(t TB, factory TestableVolumeFactory) {
 
 	// Trash
 	err = v.Trash(TestHash)
-	if v.Writable() == false {
+	if readonly {
 		if err != MethodDisabledError {
 			t.Fatal(err)
 		}
@@ -880,12 +890,10 @@ func testTrashUntrash(t TB, factory TestableVolumeFactory) {
 	}
 }
 
-func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
-	v := factory(t)
+func (s *genericVolumeSuite) testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
+	s.setup(t)
+	v := s.newVolume(t, factory)
 	defer v.Teardown()
-	defer func(orig arvados.Duration) {
-		theConfig.TrashLifetime = orig
-	}(theConfig.TrashLifetime)
 
 	checkGet := func() error {
 		buf := make([]byte, BlockSize)
@@ -918,10 +926,10 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 
 	// First set: EmptyTrash before reaching the trash deadline.
 
-	theConfig.TrashLifetime.Set("1h")
+	s.cluster.Collections.BlobTrashLifetime.Set("1h")
 
 	v.PutRaw(TestHash, TestBlock)
-	v.TouchWithDate(TestHash, time.Now().Add(-2*theConfig.BlobSignatureTTL.Duration()))
+	v.TouchWithDate(TestHash, time.Now().Add(-2*s.cluster.Collections.BlobSigningTTL.Duration()))
 
 	err := checkGet()
 	if err != nil {
@@ -966,7 +974,7 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 	}
 
 	// Because we Touch'ed, need to backdate again for next set of tests
-	v.TouchWithDate(TestHash, time.Now().Add(-2*theConfig.BlobSignatureTTL.Duration()))
+	v.TouchWithDate(TestHash, time.Now().Add(-2*s.cluster.Collections.BlobSigningTTL.Duration()))
 
 	// If the only block in the trash has already been untrashed,
 	// most volumes will fail a subsequent Untrash with a 404, but
@@ -984,11 +992,11 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 	}
 
 	// Untrash might have updated the timestamp, so backdate again
-	v.TouchWithDate(TestHash, time.Now().Add(-2*theConfig.BlobSignatureTTL.Duration()))
+	v.TouchWithDate(TestHash, time.Now().Add(-2*s.cluster.Collections.BlobSigningTTL.Duration()))
 
 	// Second set: EmptyTrash after the trash deadline has passed.
 
-	theConfig.TrashLifetime.Set("1ns")
+	s.cluster.Collections.BlobTrashLifetime.Set("1ns")
 
 	err = v.Trash(TestHash)
 	if err != nil {
@@ -1013,7 +1021,7 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 	// Trash it again, and this time call EmptyTrash so it really
 	// goes away.
 	// (In Azure volumes, un/trash changes Mtime, so first backdate again)
-	v.TouchWithDate(TestHash, time.Now().Add(-2*theConfig.BlobSignatureTTL.Duration()))
+	v.TouchWithDate(TestHash, time.Now().Add(-2*s.cluster.Collections.BlobSigningTTL.Duration()))
 	_ = v.Trash(TestHash)
 	err = checkGet()
 	if err == nil || !os.IsNotExist(err) {
@@ -1038,9 +1046,9 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 	// un-trashed copy doesn't get deleted along with it.
 
 	v.PutRaw(TestHash, TestBlock)
-	v.TouchWithDate(TestHash, time.Now().Add(-2*theConfig.BlobSignatureTTL.Duration()))
+	v.TouchWithDate(TestHash, time.Now().Add(-2*s.cluster.Collections.BlobSigningTTL.Duration()))
 
-	theConfig.TrashLifetime.Set("1ns")
+	s.cluster.Collections.BlobTrashLifetime.Set("1ns")
 	err = v.Trash(TestHash)
 	if err != nil {
 		t.Fatal(err)
@@ -1051,7 +1059,7 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 	}
 
 	v.PutRaw(TestHash, TestBlock)
-	v.TouchWithDate(TestHash, time.Now().Add(-2*theConfig.BlobSignatureTTL.Duration()))
+	v.TouchWithDate(TestHash, time.Now().Add(-2*s.cluster.Collections.BlobSigningTTL.Duration()))
 
 	// EmptyTrash should not delete the untrashed copy.
 	v.EmptyTrash()
@@ -1066,18 +1074,18 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 	// untrash the block whose deadline is "C".
 
 	v.PutRaw(TestHash, TestBlock)
-	v.TouchWithDate(TestHash, time.Now().Add(-2*theConfig.BlobSignatureTTL.Duration()))
+	v.TouchWithDate(TestHash, time.Now().Add(-2*s.cluster.Collections.BlobSigningTTL.Duration()))
 
-	theConfig.TrashLifetime.Set("1ns")
+	s.cluster.Collections.BlobTrashLifetime.Set("1ns")
 	err = v.Trash(TestHash)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	v.PutRaw(TestHash, TestBlock)
-	v.TouchWithDate(TestHash, time.Now().Add(-2*theConfig.BlobSignatureTTL.Duration()))
+	v.TouchWithDate(TestHash, time.Now().Add(-2*s.cluster.Collections.BlobSigningTTL.Duration()))
 
-	theConfig.TrashLifetime.Set("1h")
+	s.cluster.Collections.BlobTrashLifetime.Set("1h")
 	err = v.Trash(TestHash)
 	if err != nil {
 		t.Fatal(err)
