@@ -10,6 +10,7 @@ class User < ArvadosModel
   include KindAndEtag
   include CommonApiTemplate
   include CanBeAnOwner
+  extend CurrentApiClient
 
   serialize :prefs, Hash
   has_many :api_client_authorizations
