@@ -5,7 +5,7 @@
 import { Dispatch } from 'redux';
 import { ServiceRepository } from '~/services/services';
 import { propertiesActions } from '~/store/properties/properties-actions';
-import { VOCABULARY_PROPERTY_NAME, DEFAULT_VOCABULARY } from './vocabulary-selctors';
+import { VOCABULARY_PROPERTY_NAME, DEFAULT_VOCABULARY } from './vocabulary-selectors';
 import { isVocabulary } from '~/models/vocabulary';
 
 export const loadVocabulary = async (dispatch: Dispatch, _: {}, { vocabularyService }: ServiceRepository) => {

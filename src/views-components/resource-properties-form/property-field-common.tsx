@@ -7,7 +7,7 @@ import { WrappedFieldMetaProps, WrappedFieldInputProps, WrappedFieldProps } from
 import { identity } from 'lodash';
 import { Vocabulary } from '~/models/vocabulary';
 import { RootState } from '~/store/store';
-import { getVocabulary } from '~/store/vocabulary/vocabulary-selctors';
+import { getVocabulary } from '~/store/vocabulary/vocabulary-selectors';
 
 export interface VocabularyProp {
     vocabulary: Vocabulary;
