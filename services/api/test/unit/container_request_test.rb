@@ -852,12 +852,18 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   def run_container(cr)
     act_as_system_user do
+      logc = Collection.new(owner_uuid: system_user_uuid,
+                            manifest_text: ". ef772b2f28e2c8ca84de45466ed19ee9+7815 0:0:arv-mount.txt\n")
+      logc.save!
+
       c = Container.find_by_uuid(cr.container_uuid)
       c.update_attributes!(state: Container::Locked)
       c.update_attributes!(state: Container::Running)
       c.update_attributes!(state: Container::Complete,
                            exit_code: 0,
-                           output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45')
+                           output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45',
+                           log: logc.portable_data_hash)
+      logc.destroy
       c
     end
   end
