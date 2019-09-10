@@ -18,7 +18,7 @@ RUN gpg --import --no-tty /tmp/mpapis.asc && \
     /usr/local/rvm/bin/rvm alias create default ruby-2.5 && \
     /usr/local/rvm/bin/rvm-exec default gem install fpm --version 1.10.2
 
-# Install Bash 4.4.12
+# Install Bash 4.4.12 // see https://dev.arvados.org/issues/15612
 RUN cd /usr/local/src \
 && wget http://ftp.gnu.org/gnu/bash/bash-4.4.12.tar.gz \
 && wget http://ftp.gnu.org/gnu/bash/bash-4.4.12.tar.gz.sig \
