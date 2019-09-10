@@ -255,8 +255,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_not_nil output.modified_at
 
     log = Collection.find_by_uuid cr.log_uuid
-    assert_equal log.manifest_text, ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar
-./log\\040for\\040container\\040#{cr.container_uuid} 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+    assert_equal log.manifest_text, ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
 
     assert_equal log.owner_uuid, project.uuid, "Container log should be copied to #{project.uuid}"
   end
@@ -782,11 +781,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr.reload
     assert_equal "Final", cr.state
     assert_equal 3, cr.container_count
-    assert_equal ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar
-./log\\040for\\040container\\040#{container_uuids[0]} 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar
-./log\\040for\\040container\\040#{container_uuids[1]} 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar
-./log\\040for\\040container\\040#{container_uuids[2]} 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar
-" , Collection.find_by_uuid(cr.log_uuid).manifest_text
+    assert_equal ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n" , Collection.find_by_uuid(cr.log_uuid).manifest_text
 
   end
 
