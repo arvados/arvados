@@ -69,7 +69,6 @@ Add or update the following sections of @/etc/arvados/config.yml@ as needed. Ref
       MaxKeepBlockBuffers: 128
 </code></pre>
 </notextile>
-<pre>
 
 h3. Notes on storage management
 
@@ -112,7 +111,7 @@ If your system uses systemd, the keepstore service should already be set up. Res
 </code></pre>
 </notextile>
 
-h3. Run keepstore as a supervised service
+h3(#runit). Start the service (option 2: runit)
 
 Install runit to supervise the keepstore daemon.  {% include 'install_runit' %}
 
@@ -126,11 +125,11 @@ GOGC=10 exec keepstore
 </code></pre>
 </notextile>
 
-h3. Set up additional servers
+h2. Set up additional servers
 
 Repeat the above sections to prepare volumes and bring up supervised services on each Keepstore server you are setting up.
 
-h3. Restart the API server and controller
+h2. Restart the API server and controller
 
 After adding all of your keepstore servers to the Services section, make sure the cluster config file is up to date on the API server host, and restart the API server and controller processes to ensure the changes are applied.
 
@@ -138,7 +137,7 @@ After adding all of your keepstore servers to the Services section, make sure th
 sudo systemctl restart nginx arvados-controller
 </pre>
 
-h3(#testing). Testing keep
+h2(#testing). Testing keep
 
 Install the "Python SDK":{{site.baseurl}}/sdk/python/sdk-python.html
 

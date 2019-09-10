@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: installguide
-title: Filesystem storage
+title: Configure filesystem storage
 ...
 {% comment %}
 Copyright (C) The Arvados Authors. All rights reserved.
@@ -15,7 +15,7 @@ h2. Setting up filesystem mounts
 
 Volumes are configured in the @Volumes@ section of the cluster configuration file.  You may provide multiple volumes for a single keepstore process to manage multiple disks.  Keepstore distributes blocks among volumes in round-robin fashion.
 
-Note that each volume has a UUID, like "zzzzz-nyw5e-0123456789abcde". You can assign these manually, but once assigned they should not be changed.
+{% include 'assign_volume_uuid' %}
 
 Note that each volume has an AccessViaHosts section indicating that (for example) keep0's /mnt/local-disk directory is volume 0, while keep1's /mnt/local-disk directory is volume 1.
 
