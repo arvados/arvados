@@ -4,7 +4,6 @@
 
 import arvados
 import collections
-import arvados.util
 import crunchstat_summary.dygraphs
 import crunchstat_summary.reader
 import datetime
@@ -537,7 +536,7 @@ class ProcessSummarizer(Summarizer):
         # Pre-Arvados v1.4 everything is in 'log'
         # For 1.4+ containers have no logs and container_requests have them in 'log_uuid', not 'log'
         log_collection = self.process.get('log', self.process.get('log_uuid'))
-        if log_collection and self.process.get('state') != arvados.util.CR_UNCOMMITTED:
+        if log_collection and self.process.get('state') != 'Uncommitted': # arvados.util.CR_UNCOMMITTED:
             try:
                 rdr = crunchstat_summary.reader.CollectionReader(log_collection)
             except arvados.errors.NotFoundError as e:
