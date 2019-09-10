@@ -294,7 +294,12 @@ func (su URL) String() string {
 	return (*url.URL)(&su).String()
 }
 
-type ServiceInstance struct{}
+type ServiceInstance struct {
+	// Rendezvous is normally empty; when changing the URL of a
+	// Keepstore service, Rendezvous can be set to the old URL to
+	// preserve rendezvous ordering.
+	Rendezvous string `json:",omitempty"`
+}
 
 type PostgreSQL struct {
 	Connection     PostgreSQLConnection

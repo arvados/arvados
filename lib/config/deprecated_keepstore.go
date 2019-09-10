@@ -342,6 +342,9 @@ func (ldr *Loader) loadOldKeepstoreConfig(cfg *arvados.Config) error {
 				} else {
 					volUUID = rendezvousUUID
 				}
+				si := cluster.Services.Keepstore.InternalURLs[myURL]
+				si.Rendezvous = uuid[12:]
+				cluster.Services.Keepstore.InternalURLs[myURL] = si
 			}
 			if volUUID == "" {
 				volUUID = newUUID(cluster.ClusterID, "nyw5e")

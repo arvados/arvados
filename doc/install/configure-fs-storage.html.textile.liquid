@@ -13,44 +13,68 @@ Keepstore can store data in local and network-attached POSIX filesystems.
 
 h2. Setting up filesystem mounts
 
-Volumes are configured in the @Volumes@ section of the configuration file.  You may provide multiple volumes for a single keepstore process to manage multiple disks.  Keepstore distributes blocks among volumes in round-robin fashion.
+Volumes are configured in the @Volumes@ section of the cluster configuration file.  You may provide multiple volumes for a single keepstore process to manage multiple disks.  Keepstore distributes blocks among volumes in round-robin fashion.
 
-<pre>
-Volumes:
-- # The volume type, indicates this is a filesystem directory.
-  Type: Directory
+Note that each volume has a UUID, like "zzzzz-nyw5e-0123456789abcde". You can assign these manually, but once assigned they should not be changed.
 
-  # The directory that will be used as the backing store.
-  Root: /mnt/local-disk
+Note that each volume has an AccessViaHosts section indicating that (for example) keep0's /mnt/local-disk directory is volume 0, while keep1's /mnt/local-disk directory is volume 1.
 
-  # How much replication is performed by the underlying filesystem.
-  # (for example, a network filesystem may provide its own replication).
-  # This is used to inform replication decisions at the Keep layer.
-  DirectoryReplication: 1
+<notextile>
+<pre><code>Clusters:
+  <span class="userinput">uuid_prefix</span>:
+    Volumes:
+      <span class="userinput">uuid_prefix</span>-nyw5e-<span class="userinput">000000000000000</span>:
+        AccessViaHosts:
+          "http://keep0.zzzzz.example.com:25107/": {}
+        Driver: Directory
+        DriverParameters:
+          # The directory that will be used as the backing store.
+          Root: /mnt/local-disk
 
-  # If true, do not accept write or trash operations, only reads.
-  ReadOnly: false
+          # When true, read and write operations (for whole 64MiB
+          # blocks) on an individual volume will queued and issued
+          # serially.  When false, read and write operations will be
+          # issued concurrently.
+          #
+          # May improve throughput if you experience contention when
+          # there are multiple requests to the same volume.
+          #
+          # When using SSDs, RAID, or a shared network filesystem, you
+          # probably don't want this.
+          Serialize: false
 
-  # When true, read and write operations (for whole 64MiB blocks) on
-  # an individual volume will queued and issued serially.  When
-  # false, read and write operations will be issued concurrently.
-  #
-  # May improve throughput if you experience contention when there are
-  # multiple requests to the same volume.
-  #
-  # When using SSDs, RAID, or a parallel network filesystem, you probably
-  # don't want this.
-  Serialize: false
+        # How much replication is performed by the underlying
+        # filesystem.  (for example, a network filesystem may provide
+        # its own replication).  This is used to inform replication
+        # decisions at the Keep layer.
+        Replication: 1
 
-  # Storage classes to associate with this volume.  See "Storage
-  # classes" in the "Admin" section of doc.arvados.org.
-  StorageClasses: null
+        # If true, do not accept write or trash operations, only
+        # reads.
+        ReadOnly: false
 
-  # Example of a second volume section
-- DirectoryReplication: 2
-  ReadOnly: false
-  Root: /mnt/network-disk
-  Serialize: false
-  StorageClasses: null
-  Type: Directory
-</pre>
+        # Storage classes to associate with this volume.  See "Storage
+        # classes" in the "Admin" section of doc.arvados.org.
+        StorageClasses: null
+
+      <span class="userinput">uuid_prefix</span>-nyw5e-<span class="userinput">000000000000001</span>:
+        AccessViaHosts:
+          "http://keep1.zzzzz.example.com:25107/": {}
+        Driver: Directory
+        DriverParameters:
+          Root: /mnt/local-disk
+</code></pre></notextile>
+
+In the case of a network-attached filesystem accessible by all keepstore servers, the AccessViaHosts section is omitted.
+
+<notextile>
+<pre><code>Clusters:
+  <span class="userinput">uuid_prefix</span>:
+    Volumes:
+      # This volume is used by all keepstore servers.
+      <span class="userinput">uuid_prefix</span>-nyw5e-<span class="userinput">000000000000002</span>:
+        Driver: Directory
+        DriverParameters:
+          Root: /mnt/network-attached-filesystem
+        Replication: 2
+</code></pre></notextile>

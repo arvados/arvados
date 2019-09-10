@@ -32,7 +32,8 @@ Clusters:
       SAMPLE:
         InternalURLs:
           "http://example.host:12345": {}
-          SAMPLE: {}
+          SAMPLE:
+            Rendezvous: ""
         ExternalURL: "-"
 
       RailsAPI:

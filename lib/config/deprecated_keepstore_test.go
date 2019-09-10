@@ -88,24 +88,35 @@ func (s *KeepstoreMigrationSuite) TestDeprecatedKeepstoreConfig(c *check.C) {
 	c.Assert(err, check.IsNil)
 
 	s.checkEquivalentWithKeepstoreConfig(c, `
-Listen: ":12345"
+Listen: ":25107"
 Debug: true
 LogFormat: text
 MaxBuffers: 1234
 MaxRequests: 2345
 BlobSignatureTTL: 123m
 BlobSigningKeyFile: `+keyfile.Name()+`
+Volumes:
+- Type: Directory
+  Root: /tmp
 `, `
 Clusters:
   z1111:
-    {}
+    SystemRootToken: `+arvadostest.AdminToken+`
+    TLS: {Insecure: true}
+    Services:
+      Controller:
+        ExternalURL: "https://`+os.Getenv("ARVADOS_API_HOST")+`"
 `, `
 Clusters:
   z1111:
+    SystemRootToken: `+arvadostest.AdminToken+`
+    TLS: {Insecure: true}
     Services:
       Keepstore:
         InternalURLs:
-          "http://`+hostname+`:12345": {}
+          "http://`+hostname+`:25107": {Rendezvous: `+s.ksByPort[25107].UUID[12:]+`}
+      Controller:
+        ExternalURL: "https://`+os.Getenv("ARVADOS_API_HOST")+`"
     SystemLogs:
       Format: text
       LogLevel: debug
@@ -115,6 +126,18 @@ Clusters:
     Collections:
       BlobSigningTTL: 123m
       BlobSigningKey: blobsigningkey
+    Volumes:
+      z1111-nyw5e-`+s.ksByPort[25107].UUID[12:]+`:
+        AccessViaHosts:
+          "http://`+hostname+`:25107":
+            ReadOnly: false
+        Driver: Directory
+        DriverParameters:
+          Root: /tmp
+          Serialize: false
+        ReadOnly: false
+        Replication: 1
+        StorageClasses: {}
 `)
 }
 
