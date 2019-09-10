@@ -18,6 +18,17 @@ RUN touch /var/lib/rpm/* && \
     /usr/local/rvm/bin/rvm install 2.3 && \
     /usr/local/rvm/bin/rvm alias create default ruby-2.3
 
+# Install Bash 4.4.12
+RUN cd /usr/local/src \
+&& wget http://ftp.gnu.org/gnu/bash/bash-4.4.12.tar.gz \
+&& wget http://ftp.gnu.org/gnu/bash/bash-4.4.12.tar.gz.sig \
+&& tar xzf bash-4.4.12.tar.gz \
+&& cd bash-4.4.12 \
+&& ./configure --prefix=/usr/local/$( basename $( pwd ) ) \
+&& make \
+&& make install \
+&& ln -sf /usr/local/src/bash-4.4.12/bash /bin/bash
+
 # Add epel, we need it for the python-pam dependency
 RUN wget http://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
 RUN rpm -ivh epel-release-latest-7.noarch.rpm
