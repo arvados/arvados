@@ -18,6 +18,17 @@ RUN gpg --import --no-tty /tmp/mpapis.asc && \
     /usr/local/rvm/bin/rvm alias create default ruby-2.5 && \
     /usr/local/rvm/bin/rvm-exec default gem install fpm --version 1.10.2
 
+# Install Bash 4.4.12 // see https://dev.arvados.org/issues/15612
+RUN cd /usr/local/src \
+&& wget http://ftp.gnu.org/gnu/bash/bash-4.4.12.tar.gz \
+&& wget http://ftp.gnu.org/gnu/bash/bash-4.4.12.tar.gz.sig \
+&& tar xzf bash-4.4.12.tar.gz \
+&& cd bash-4.4.12 \
+&& ./configure --prefix=/usr/local/$( basename $( pwd ) ) \
+&& make \
+&& make install \
+&& ln -sf /usr/local/src/bash-4.4.12/bash /bin/bash
+
 # Install golang binary
 ADD generated/go1.12.7.linux-amd64.tar.gz /usr/local/
 RUN ln -s /usr/local/go/bin/go /usr/local/bin/
