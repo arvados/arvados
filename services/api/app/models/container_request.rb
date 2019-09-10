@@ -156,20 +156,22 @@ class ContainerRequest < ArvadosModel
     container = Container.find_by_uuid(container_uuid)
     update_collections(container: container)
 
-    log_col = Collection.where(portable_data_hash: container.log).first
-    if log_col
-      # Need to save collection
-      completed_coll = Collection.new(
-        owner_uuid: self.owner_uuid,
-        name: "Container log for container #{container_uuid}",
-        properties: {
-          'type' => 'log',
-          'container_request' => self.uuid,
-          'container_uuid' => container_uuid,
-        },
-        portable_data_hash: log_col.portable_data_hash,
-        manifest_text: log_col.manifest_text)
-      completed_coll.save_with_unique_name!
+    if container.state == Container::Complete
+      log_col = Collection.where(portable_data_hash: container.log).first
+      if log_col
+        # Need to save collection
+        completed_coll = Collection.new(
+          owner_uuid: self.owner_uuid,
+          name: "Container log for container #{container_uuid}",
+          properties: {
+            'type' => 'log',
+            'container_request' => self.uuid,
+            'container_uuid' => container_uuid,
+          },
+          portable_data_hash: log_col.portable_data_hash,
+          manifest_text: log_col.manifest_text)
+        completed_coll.save_with_unique_name!
+      end
     end
 
     update_attributes!(state: Final)
