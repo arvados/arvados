@@ -401,6 +401,28 @@ class Arvados::V1::SchemaController < ApplicationController
           end
         end
       end
+
+      discovery[:resources]['configs'] = {
+        methods: {
+          get: {
+            id: "arvados.configs.get",
+            path: "config",
+            httpMethod: "GET",
+            description: "Get public config",
+            parameters: {
+            },
+            parameterOrder: [
+            ],
+            response: {
+            },
+            scopes: [
+              "https://api.curoverse.com/auth/arvados",
+              "https://api.curoverse.com/auth/arvados.readonly"
+            ]
+          },
+        }
+      }
+
       Rails.configuration.API.DisabledAPIs.each do |method, _|
         ctrl, action = method.to_s.split('.', 2)
         discovery[:resources][ctrl][:methods].delete(action.to_sym)
