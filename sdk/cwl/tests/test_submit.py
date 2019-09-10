@@ -1465,3 +1465,39 @@ class TestCreateWorkflow(unittest.TestCase):
         self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_workflow_uuid + '\n')
         self.assertEqual(exited, 0)
+
+    @stubs
+    def test_create_with_imports(self, stubs):
+        project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
+
+        exited = arvados_cwl.main(
+            ["--create-workflow", "--debug",
+             "--api=containers",
+             "--project-uuid", project_uuid,
+             "tests/wf/feddemo/feddemo.cwl"],
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
+
+        stubs.api.pipeline_templates().create.refute_called()
+        stubs.api.container_requests().create.refute_called()
+
+        self.assertEqual(stubs.capture_stdout.getvalue(),
+                         stubs.expect_workflow_uuid + '\n')
+        self.assertEqual(exited, 0)
+
+    @stubs
+    def test_create_with_no_input(self, stubs):
+        project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
+
+        exited = arvados_cwl.main(
+            ["--create-workflow", "--debug",
+             "--api=containers",
+             "--project-uuid", project_uuid,
+             "tests/wf/revsort/revsort.cwl"],
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
+
+        stubs.api.pipeline_templates().create.refute_called()
+        stubs.api.container_requests().create.refute_called()
+
+        self.assertEqual(stubs.capture_stdout.getvalue(),
+                         stubs.expect_workflow_uuid + '\n')
+        self.assertEqual(exited, 0)

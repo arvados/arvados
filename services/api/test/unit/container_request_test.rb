@@ -630,6 +630,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
       set_user_from_auth :active
       cr1 = create_minimal_req!(common_attrs.merge({state: ContainerRequest::Committed,
                                                     environment: env1}))
+      run_container(cr1)
+      cr1.reload
       if use_existing.nil?
         # Testing with use_existing default value
         cr2 = create_minimal_req!(common_attrs.merge({state: ContainerRequest::Uncommitted,
@@ -850,13 +852,18 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   def run_container(cr)
     act_as_system_user do
+      logc = Collection.new(owner_uuid: system_user_uuid,
+                            manifest_text: ". ef772b2f28e2c8ca84de45466ed19ee9+7815 0:0:arv-mount.txt\n")
+      logc.save!
+
       c = Container.find_by_uuid(cr.container_uuid)
       c.update_attributes!(state: Container::Locked)
       c.update_attributes!(state: Container::Running)
       c.update_attributes!(state: Container::Complete,
                            exit_code: 0,
                            output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45',
-                           log: 'fa7aeb5140e2848d39b416daeef4ffc5+45')
+                           log: logc.portable_data_hash)
+      logc.destroy
       c
     end
   end

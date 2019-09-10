@@ -90,7 +90,7 @@ federated_active:
   email: zbbbb-active-user@arvados.local
   first_name: Active
   last_name: User
-  identity_url: https://active-user.openid.local
+  identity_url: https://federated-active-user.openid.local
   is_active: true
   is_admin: false
   username: federatedactive
@@ -171,7 +171,7 @@ container_runtime_token_user:
   email: spectator@arvados.local
   first_name: Spect
   last_name: Ator
-  identity_url: https://spectator.openid.local
+  identity_url: https://container_runtime_token_user.openid.local
   is_active: true
   is_admin: false
   username: containerruntimetokenuser
@@ -235,7 +235,7 @@ job_reader:
   email: jobber@arvados.local
   first_name: Job
   last_name: Er
-  identity_url: https://spectator.openid.local
+  identity_url: https://job_reader.openid.local
   is_active: true
   is_admin: false
   username: jobber
@@ -372,7 +372,7 @@ permission_perftest:
   email: fuse@arvados.local
   first_name: FUSE
   last_name: User
-  identity_url: https://fuse.openid.local
+  identity_url: https://permission_perftest.openid.local
   is_active: true
   is_admin: false
   username: perftest

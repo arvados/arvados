@@ -127,8 +127,10 @@ type Cluster struct {
 		Repositories string
 	}
 	Login struct {
-		ProviderAppSecret string
-		ProviderAppID     string
+		ProviderAppSecret  string
+		ProviderAppID      string
+		LoginCluster       string
+		RemoteTokenRefresh Duration
 	}
 	Mail struct {
 		MailchimpAPIKey                string

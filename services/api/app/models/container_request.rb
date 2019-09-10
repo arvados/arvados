@@ -153,7 +153,27 @@ class ContainerRequest < ArvadosModel
   # Finalize the container request after the container has
   # finished/cancelled.
   def finalize!
-    update_collections(container: Container.find_by_uuid(container_uuid))
+    container = Container.find_by_uuid(container_uuid)
+    update_collections(container: container)
+
+    if container.state == Container::Complete
+      log_col = Collection.where(portable_data_hash: container.log).first
+      if log_col
+        # Need to save collection
+        completed_coll = Collection.new(
+          owner_uuid: self.owner_uuid,
+          name: "Container log for container #{container_uuid}",
+          properties: {
+            'type' => 'log',
+            'container_request' => self.uuid,
+            'container_uuid' => container_uuid,
+          },
+          portable_data_hash: log_col.portable_data_hash,
+          manifest_text: log_col.manifest_text)
+        completed_coll.save_with_unique_name!
+      end
+    end
+
     update_attributes!(state: Final)
   end
 
@@ -187,6 +207,7 @@ class ContainerRequest < ArvadosModel
       end
 
       if out_type == "log"
+        # Copy the log into a merged collection
         src = Arv::Collection.new(manifest)
         dst = Arv::Collection.new(coll.manifest_text)
         dst.cp_r("./", ".", src)

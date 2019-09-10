@@ -33,39 +33,50 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
 
     @controller = Arvados::V1::UsersController.new
     ready = Thread::Queue.new
-    srv = WEBrick::HTTPServer.new(
-      Port: 0,
-      Logger: WEBrick::Log.new(
-        Rails.root.join("log", "webrick.log").to_s,
-        WEBrick::Log::INFO),
-      AccessLog: [[File.open(Rails.root.join(
-                              "log", "webrick_access.log").to_s, 'a+'),
-                   WEBrick::AccessLog::COMBINED_LOG_FORMAT]],
-      SSLEnable: true,
-      SSLVerifyClient: OpenSSL::SSL::VERIFY_NONE,
-      SSLPrivateKey: OpenSSL::PKey::RSA.new(
-        File.open(Rails.root.join("tmp", "self-signed.key")).read),
-      SSLCertificate: OpenSSL::X509::Certificate.new(
-        File.open(Rails.root.join("tmp", "self-signed.pem")).read),
-      SSLCertName: [["CN", WEBrick::Utils::getservername]],
-      StartCallback: lambda { ready.push(true) })
-    srv.mount_proc '/discovery/v1/apis/arvados/v1/rest' do |req, res|
-      Rails.cache.delete 'arvados_v1_rest_discovery'
-      res.body = Arvados::V1::SchemaController.new.send(:discovery_doc).to_json
+
+    @remote_server = []
+    @remote_host = []
+
+    ['zbbbb', 'zbork'].each do |clusterid|
+      srv = WEBrick::HTTPServer.new(
+        Port: 0,
+        Logger: WEBrick::Log.new(
+          Rails.root.join("log", "webrick.log").to_s,
+          WEBrick::Log::INFO),
+        AccessLog: [[File.open(Rails.root.join(
+                                 "log", "webrick_access.log").to_s, 'a+'),
+                     WEBrick::AccessLog::COMBINED_LOG_FORMAT]],
+        SSLEnable: true,
+        SSLVerifyClient: OpenSSL::SSL::VERIFY_NONE,
+        SSLPrivateKey: OpenSSL::PKey::RSA.new(
+          File.open(Rails.root.join("tmp", "self-signed.key")).read),
+        SSLCertificate: OpenSSL::X509::Certificate.new(
+          File.open(Rails.root.join("tmp", "self-signed.pem")).read),
+        SSLCertName: [["CN", WEBrick::Utils::getservername]],
+        StartCallback: lambda { ready.push(true) })
+      srv.mount_proc '/discovery/v1/apis/arvados/v1/rest' do |req, res|
+        Rails.cache.delete 'arvados_v1_rest_discovery'
+        res.body = Arvados::V1::SchemaController.new.send(:discovery_doc).to_json
+      end
+      srv.mount_proc '/arvados/v1/users/current' do |req, res|
+        if clusterid == 'zbbbb' and req.header['authorization'][0][10..14] == 'zbork'
+          # asking zbbbb about zbork should yield an error, zbbbb doesn't trust zbork
+          res.status = 401
+          return
+        end
+        res.status = @stub_status
+        res.body = @stub_content.is_a?(String) ? @stub_content : @stub_content.to_json
+      end
+      Thread.new do
+        srv.start
+      end
+      ready.pop
+      @remote_server << srv
+      @remote_host << "127.0.0.1:#{srv.config[:Port]}"
     end
-    srv.mount_proc '/arvados/v1/users/current' do |req, res|
-      res.status = @stub_status
-      res.body = @stub_content.is_a?(String) ? @stub_content : @stub_content.to_json
-    end
-    Thread.new do
-      srv.start
-    end
-    ready.pop
-    @remote_server = srv
-    @remote_host = "127.0.0.1:#{srv.config[:Port]}"
-    Rails.configuration.RemoteClusters = Rails.configuration.RemoteClusters.merge({zbbbb: ActiveSupport::InheritableOptions.new({Host: @remote_host}),
-                                                                                   zbork: ActiveSupport::InheritableOptions.new({Host: @remote_host})})
-    Arvados::V1::SchemaController.any_instance.stubs(:root_url).returns "https://#{@remote_host}"
+    Rails.configuration.RemoteClusters = Rails.configuration.RemoteClusters.merge({zbbbb: ActiveSupport::InheritableOptions.new({Host: @remote_host[0]}),
+                                                                                   zbork: ActiveSupport::InheritableOptions.new({Host: @remote_host[1]})})
+    Arvados::V1::SchemaController.any_instance.stubs(:root_url).returns "https://#{@remote_host[0]}"
     @stub_status = 200
     @stub_content = {
       uuid: 'zbbbb-tpzed-000000000000000',
@@ -77,7 +88,9 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
   end
 
   teardown do
-    @remote_server.andand.stop
+    @remote_server.each do |srv|
+      srv.stop
+    end
   end
 
   test 'authenticate with remote token' do
@@ -148,7 +161,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     assert_equal 'foo', json_response['username']
   end
 
-  test 'authenticate with remote token from misbhehaving remote cluster' do
+  test 'authenticate with remote token from misbehaving remote cluster' do
     get '/arvados/v1/users/current',
       params: {format: 'json'},
       headers: auth(remote: 'zbork')
@@ -255,14 +268,36 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     assert_equal 'barney', json_response['username']
   end
 
+  test 'get user from Login cluster' do
+    Rails.configuration.Login.LoginCluster = 'zbbbb'
+    get '/arvados/v1/users/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
+    assert_response :success
+    assert_equal 'zbbbb-tpzed-000000000000000', json_response['uuid']
+    assert_equal true, json_response['is_admin']
+    assert_equal true, json_response['is_active']
+    assert_equal 'foo@example.com', json_response['email']
+    assert_equal 'barney', json_response['username']
+  end
+
   test 'pre-activate remote user' do
+    @stub_content = {
+      uuid: 'zbbbb-tpzed-000000000001234',
+      email: 'foo@example.com',
+      username: 'barney',
+      is_admin: true,
+      is_active: true,
+    }
+
     post '/arvados/v1/users',
       params: {
         "user" => {
-          "uuid" => "zbbbb-tpzed-000000000000000",
+          "uuid" => "zbbbb-tpzed-000000000001234",
           "email" => 'foo@example.com',
           "username" => 'barney',
-          "is_active" => true
+          "is_active" => true,
+          "is_admin" => false
         }
       },
       headers: {'HTTP_AUTHORIZATION' => "OAuth2 #{api_token(:admin)}"}
@@ -272,9 +307,30 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
       params: {format: 'json'},
       headers: auth(remote: 'zbbbb')
     assert_response :success
-    assert_equal 'zbbbb-tpzed-000000000000000', json_response['uuid']
-    assert_equal nil, json_response['is_admin']
+    assert_equal 'zbbbb-tpzed-000000000001234', json_response['uuid']
+    assert_equal false, json_response['is_admin']
     assert_equal true, json_response['is_active']
+    assert_equal 'foo@example.com', json_response['email']
+    assert_equal 'barney', json_response['username']
+  end
+
+
+  test 'remote user inactive without pre-activation' do
+    @stub_content = {
+      uuid: 'zbbbb-tpzed-000000000001234',
+      email: 'foo@example.com',
+      username: 'barney',
+      is_admin: true,
+      is_active: true,
+    }
+
+    get '/arvados/v1/users/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
+    assert_response :success
+    assert_equal 'zbbbb-tpzed-000000000001234', json_response['uuid']
+    assert_equal false, json_response['is_admin']
+    assert_equal false, json_response['is_active']
     assert_equal 'foo@example.com', json_response['email']
     assert_equal 'barney', json_response['username']
   end
