@@ -11,102 +11,80 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 Keepstore can store data in object storage compatible with the S3 API, such as Amazon S3, Google Cloud Storage, or Ceph RADOS.
 
-h2. Configure keepstore
+Volumes are configured in the @Volumes@ section of the cluster configuration file.
 
-Copy the "access key" and "secret key" to files where they will be accessible to keepstore at startup time.
+{% include 'assign_volume_uuid' %}
 
-<notextile>
-<pre><code>~$ <span class="userinput">sudo sh -c 'cat &gt;/etc/arvados/keepstore/aws_s3_access_key.txt &lt;&lt;EOF'
-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz==
-EOF</span>
-~$ <span class="userinput">sudo chmod 0400 /etc/arvados/keepstore/aws_s3_access_key.txt</span>
-</code></pre>
-</notextile>
+<notextile><pre><code>Clusters:
+  <span class="userinput">uuid_prefix</span>:
+    Volumes:
+      <span class="userinput">uuid_prefix</span>-nyw5e-<span class="userinput">000000000000000</span>:
+        AccessViaHosts:
+          # This section determines which keepstore servers access the
+          # volume. In this example, keep0 has read/write access, and
+          # keep1 has read-only access.
+          #
+          # If the AccessViaHosts section is empty, all keepstore
+          # servers will have read/write access to the volume.
+          "http://keep0.zzzzz.example.com:25107/": {}
+          "http://keep1.zzzzz.example.com:25107/": {ReadOnly: true}
 
-Next, edit the @Volumes@ section of the @keepstore.yml@ config file.
+        Driver: S3
+        DriverParameters:
+          # The credentials to use to access the bucket.
+          AccessKey: aaaaa
+          SecretKey: aaaaa
 
-h3. Example config for Amazon S3
+          # Storage provider endpoint. For Amazon S3, use "" or
+          # omit. For Google Cloud Storage, use
+          # "https://storage.googleapis.com".
+          Endpoint: ""
 
-<pre>
-Volumes:
-- # The volume type, this indicates object storage compatible with the S3 API
-  Type: S3
+          # Storage provider region. For Google Cloud Storage, use ""
+          # or omit.
+          Region: us-east-1a
 
-  # Storage provider.  If blank, uses Amazon S3 by default.
-  # See below for example alternate configuration for Google cloud
-  # storage.
-  Endpoint: ""
+          # Change to true if the region requires a LocationConstraint
+          # declaration.
+          LocationConstraint: false
 
-  # The bucket to use for the backing store.
-  Bucket: example-bucket-name
+          # Bucket name.
+          Bucket: example-bucket-name
 
-  # The region where the bucket is located.
-  Region: us-east-1
+          # Requested page size for "list bucket contents" requests.
+          IndexPageSize: 1000
 
-  # The credentials to use to access the bucket.
-  AccessKeyFile: /etc/arvados/keepstore/aws_s3_access_key.txt
-  SecretKeyFile: /etc/arvados/keepstore/aws_s3_secret_key.txt
+          # Maximum time to wait while making the initial connection
+          # to the backend before failing the request.
+          ConnectTimeout: 1m
 
-  # Maximum time to wait making the initial connection to the backend before
-  # failing the request.
-  ConnectTimeout: 1m0s
+          # Maximum time to wait for a complete response from the
+          # backend before failing the request.
+          ReadTimeout: 2m
 
-  # Page size for s3 "list bucket contents" requests
-  IndexPageSize: 1000
+          # Maximum eventual consistency latency
+          RaceWindow: 24h
 
-  # True if the region requires a LocationConstraint declaration
-  LocationConstraint: false
+          # Enable deletion (garbage collection) even when the
+          # configured BlobTrashLifetime is zero.  WARNING: eventual
+          # consistency may result in race conditions that can cause
+          # data loss.  Do not enable this unless you understand and
+          # accept the risk.
+          UnsafeDelete: false
 
-  # Maximum eventual consistency latency
-  RaceWindow: 24h0m0s
+        # How much replication is provided by the underlying bucket.
+        # This is used to inform replication decisions at the Keep
+        # layer.
+        Replication: 2
 
-  # If true, do not accept write or trash operations, only reads.
-  ReadOnly: false
+        # If true, do not accept write or trash operations, even if
+        # AccessViaHosts.*.ReadOnly is false.
+        #
+        # If false or omitted, enable write access (subject to
+        # AccessViaHosts.*.ReadOnly, where applicable).
+        ReadOnly: false
 
-  # Maximum time to wait for a complete response from the backend before
-  # failing the request.
-  ReadTimeout: 2m0s
-
-  # How much replication is performed by the underlying bucket.
-  # This is used to inform replication decisions at the Keep layer.
-  S3Replication: 2
-
-  # Storage classes to associate with this volume.  See
-  # "Storage classes" in the "Admin" section of doc.arvados.org.
-  StorageClasses: null
-
-  # Enable deletion (garbage collection) even when TrashLifetime is
-  # zero.  WARNING: eventual consistency may result in race conditions
-  # that can cause data loss.  Do not enable this unless you know what
-  # you are doing.
-  UnsafeDelete: false
-</pre>
-
-Start (or restart) keepstore, and check its log file to confirm it is using the new configuration.
-
-h3. Example config for Google cloud storage
-
-See previous section for documentation of configuration fields.
-
-<pre>
-Volumes:
-- # Example configuration using alternate storage provider
-  # Configuration for Google cloud storage
-  Endpoint: https://storage.googleapis.com
-  Region: ""
-
-  AccessKeyFile: /etc/arvados/keepstore/gce_s3_access_key.txt
-  SecretKeyFile: /etc/arvados/keepstore/gce_s3_secret_key.txt
-  Bucket: example-bucket-name
-  ConnectTimeout: 1m0s
-  IndexPageSize: 1000
-  LocationConstraint: false
-  RaceWindow: 24h0m0s
-  ReadOnly: false
-  ReadTimeout: 2m0s
-  S3Replication: 2
-  StorageClasses: null
-  UnsafeDelete: false
-</pre>
-
-Start (or restart) keepstore, and check its log file to confirm it is using the new configuration.
+        # Storage classes to associate with this volume.  See "Storage
+        # classes" in the "Admin" section of doc.arvados.org.
+        StorageClasses: null
+</code></pre></notextile>
