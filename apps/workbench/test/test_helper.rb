@@ -348,3 +348,29 @@ end
 
 # Reset fixtures now (i.e., before any tests run).
 ActiveSupport::TestCase.reset_api_fixtures_now
+
+module Minitest
+  class Test
+    def capture_exceptions *args
+      begin
+        n = 0
+        begin
+          yield
+        rescue *PASSTHROUGH_EXCEPTIONS
+          raise
+        rescue Exception => e
+          n += 1
+          raise if n > 2
+          STDERR.puts "Test failed, retrying (##{n})"
+          retry
+        end
+      rescue *PASSTHROUGH_EXCEPTIONS
+        raise
+      rescue Assertion => e
+        self.failures << e
+      rescue Exception => e
+        self.failures << UnexpectedError.new(e)
+      end
+    end
+  end
+end
