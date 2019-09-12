@@ -1107,13 +1107,13 @@ test_apps/workbench_integration() {
 test_apps/workbench_benchmark() {
     local TASK="test:benchmark"
     cd "$WORKSPACE/apps/workbench" \
-        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake ${TASK} TESTOPTS=\'-v -d\' ${testargs[apps/workbench_benchmark]}
+        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake ${TASK} ${testargs[apps/workbench_benchmark]}
 }
 
 test_apps/workbench_profile() {
     local TASK="test:profile"
     cd "$WORKSPACE/apps/workbench" \
-        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake ${TASK} TESTOPTS=\'-v -d\' ${testargs[apps/workbench_profile]}
+        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake ${TASK} ${testargs[apps/workbench_profile]}
 }
 
 install_deps() {
