@@ -360,7 +360,7 @@ module Minitest
           raise
         rescue Exception => e
           n += 1
-          raise if n > 2
+          raise if n > 2 || e.is_a?(Skip)
           STDERR.puts "Test failed, retrying (##{n})"
           retry
         end
