@@ -191,7 +191,7 @@ func (instanceSet *ec2InstanceSet) Create(
 			}},
 		DisableApiTermination:             aws.Bool(false),
 		InstanceInitiatedShutdownBehavior: aws.String("terminate"),
-		UserData: aws.String(base64.StdEncoding.EncodeToString([]byte("#!/bin/sh\n" + initCommand + "\n"))),
+		UserData:                          aws.String(base64.StdEncoding.EncodeToString([]byte("#!/bin/sh\n" + initCommand + "\n"))),
 		TagSpecifications: []*ec2.TagSpecification{
 			&ec2.TagSpecification{
 				ResourceType: aws.String("instance"),
