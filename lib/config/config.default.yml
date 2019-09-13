@@ -370,10 +370,6 @@ Clusters:
       # still has permission) the client can retrieve the collection again
       # to get fresh signatures.
       #
-      # This must be exactly equal to the -blob-signature-ttl flag used by
-      # keepstore servers.  Otherwise, reading data blocks and saving
-      # collections will fail with HTTP 403 permission errors.
-      #
       # Modifying BlobSigningTTL invalidates existing signatures; see
       # BlobSigningKey note above.
       #
