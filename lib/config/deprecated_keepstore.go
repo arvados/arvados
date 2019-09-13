@@ -213,149 +213,167 @@ func (ldr *Loader) loadOldKeepstoreConfig(cfg *arvados.Config) error {
 	if v := oc.PullWorkers; v != nil && *v != cluster.Collections.BlobReplicateConcurrency {
 		cluster.Collections.BlobReplicateConcurrency = *v
 	}
-	if v := oc.Volumes; v == nil {
+	if oc.Volumes == nil || len(*oc.Volumes) == 0 {
 		ldr.Logger.Warn("no volumes in legacy config; discovering local directory volumes")
 		err := ldr.discoverLocalVolumes(cluster, oc.DiscoverVolumesFromMountsFile, myURL)
 		if err != nil {
 			return fmt.Errorf("error discovering local directory volumes: %s", err)
 		}
 	} else {
-		for i, oldvol := range *v {
-			var accessViaHosts map[arvados.URL]arvados.VolumeAccess
-			oldUUID, found := ldr.alreadyMigrated(oldvol, cluster.Volumes, myURL)
-			if found {
-				accessViaHosts = cluster.Volumes[oldUUID].AccessViaHosts
-				writers := false
-				for _, va := range accessViaHosts {
-					if !va.ReadOnly {
-						writers = true
-					}
-				}
-				if writers || len(accessViaHosts) == 0 {
-					ldr.Logger.Infof("ignoring volume #%d's parameters in legacy keepstore config: using matching entry in cluster config instead", i)
-					if len(accessViaHosts) > 0 {
-						cluster.Volumes[oldUUID].AccessViaHosts[myURL] = arvados.VolumeAccess{ReadOnly: oldvol.ReadOnly}
-					}
-					continue
-				}
-			}
-			var newvol arvados.Volume
-			if found {
-				ldr.Logger.Infof("ignoring volume #%d's parameters in legacy keepstore config: using matching entry in cluster config instead", i)
-				newvol = cluster.Volumes[oldUUID]
-				// Remove the old entry. It will be
-				// added back below, possibly with a
-				// new UUID.
-				delete(cluster.Volumes, oldUUID)
-			} else {
-				var params interface{}
-				switch oldvol.Type {
-				case "S3":
-					accesskeydata, err := ioutil.ReadFile(oldvol.AccessKeyFile)
-					if err != nil && oldvol.AccessKeyFile != "" {
-						return fmt.Errorf("error reading AccessKeyFile: %s", err)
-					}
-					secretkeydata, err := ioutil.ReadFile(oldvol.SecretKeyFile)
-					if err != nil && oldvol.SecretKeyFile != "" {
-						return fmt.Errorf("error reading SecretKeyFile: %s", err)
-					}
-					newvol = arvados.Volume{
-						Driver:         "S3",
-						ReadOnly:       oldvol.ReadOnly,
-						Replication:    oldvol.S3Replication,
-						StorageClasses: array2boolmap(oldvol.StorageClasses),
-					}
-					params = arvados.S3VolumeDriverParameters{
-						AccessKey:          string(bytes.TrimSpace(accesskeydata)),
-						SecretKey:          string(bytes.TrimSpace(secretkeydata)),
-						Endpoint:           oldvol.Endpoint,
-						Region:             oldvol.Region,
-						Bucket:             oldvol.Bucket,
-						LocationConstraint: oldvol.LocationConstraint,
-						IndexPageSize:      oldvol.IndexPageSize,
-						ConnectTimeout:     oldvol.ConnectTimeout,
-						ReadTimeout:        oldvol.ReadTimeout,
-						RaceWindow:         oldvol.RaceWindow,
-						UnsafeDelete:       oldvol.UnsafeDelete,
-					}
-				case "Azure":
-					keydata, err := ioutil.ReadFile(oldvol.StorageAccountKeyFile)
-					if err != nil && oldvol.StorageAccountKeyFile != "" {
-						return fmt.Errorf("error reading StorageAccountKeyFile: %s", err)
-					}
-					newvol = arvados.Volume{
-						Driver:         "Azure",
-						ReadOnly:       oldvol.ReadOnly,
-						Replication:    oldvol.AzureReplication,
-						StorageClasses: array2boolmap(oldvol.StorageClasses),
-					}
-					params = arvados.AzureVolumeDriverParameters{
-						StorageAccountName:   oldvol.StorageAccountName,
-						StorageAccountKey:    string(bytes.TrimSpace(keydata)),
-						StorageBaseURL:       oldvol.StorageBaseURL,
-						ContainerName:        oldvol.ContainerName,
-						RequestTimeout:       oldvol.RequestTimeout,
-						ListBlobsRetryDelay:  oldvol.ListBlobsRetryDelay,
-						ListBlobsMaxAttempts: oldvol.ListBlobsMaxAttempts,
-					}
-				case "Directory":
-					newvol = arvados.Volume{
-						Driver:         "Directory",
-						ReadOnly:       oldvol.ReadOnly,
-						Replication:    oldvol.DirectoryReplication,
-						StorageClasses: array2boolmap(oldvol.StorageClasses),
-					}
-					params = arvados.DirectoryVolumeDriverParameters{
-						Root:      oldvol.Root,
-						Serialize: oldvol.Serialize,
-					}
-				default:
-					return fmt.Errorf("unsupported volume type %q", oldvol.Type)
-				}
-				dp, err := json.Marshal(params)
-				if err != nil {
-					return err
-				}
-				newvol.DriverParameters = json.RawMessage(dp)
-				if newvol.Replication < 1 {
-					newvol.Replication = 1
-				}
-			}
-			if accessViaHosts == nil {
-				accessViaHosts = make(map[arvados.URL]arvados.VolumeAccess, 1)
-			}
-			accessViaHosts[myURL] = arvados.VolumeAccess{ReadOnly: oldvol.ReadOnly}
-			newvol.AccessViaHosts = accessViaHosts
-
-			volUUID := oldUUID
-			if oldvol.ReadOnly {
-			} else if oc.Listen == nil {
-				ldr.Logger.Warn("cannot find optimal volume UUID because Listen address is not given in legacy keepstore config")
-			} else if uuid, _, err := findKeepServicesItem(cluster, *oc.Listen); err != nil {
-				ldr.Logger.WithError(err).Warn("cannot find optimal volume UUID: failed to find a matching keep_service listing for this legacy keepstore config")
-			} else if len(uuid) != 27 {
-				ldr.Logger.WithField("UUID", uuid).Warn("cannot find optimal volume UUID: keep_service UUID does not have expected format")
-			} else {
-				rendezvousUUID := cluster.ClusterID + "-nyw5e-" + uuid[12:]
-				if _, ok := cluster.Volumes[rendezvousUUID]; ok {
-					ldr.Logger.Warn("suggesting a random volume UUID because the volume ID matching our keep_service UUID is already in use")
-				} else {
-					volUUID = rendezvousUUID
-				}
-				si := cluster.Services.Keepstore.InternalURLs[myURL]
-				si.Rendezvous = uuid[12:]
-				cluster.Services.Keepstore.InternalURLs[myURL] = si
-			}
-			if volUUID == "" {
-				volUUID = newUUID(cluster.ClusterID, "nyw5e")
-				ldr.Logger.WithField("UUID", volUUID).Infof("suggesting a random volume UUID for volume #%d in legacy config", i)
-			}
-			cluster.Volumes[volUUID] = newvol
+		err := ldr.migrateOldKeepstoreVolumes(cluster, oc, myURL)
+		if err != nil {
+			return err
 		}
 	}
 
 	cfg.Clusters[cluster.ClusterID] = *cluster
 	return nil
+}
+
+// Merge Volumes section of old keepstore config into cluster config.
+func (ldr *Loader) migrateOldKeepstoreVolumes(cluster *arvados.Cluster, oc oldKeepstoreConfig, myURL arvados.URL) error {
+	for i, oldvol := range *oc.Volumes {
+		var accessViaHosts map[arvados.URL]arvados.VolumeAccess
+		oldUUID, found := ldr.alreadyMigrated(oldvol, cluster.Volumes, myURL)
+		if found {
+			accessViaHosts = cluster.Volumes[oldUUID].AccessViaHosts
+			writers := false
+			for _, va := range accessViaHosts {
+				if !va.ReadOnly {
+					writers = true
+				}
+			}
+			if writers || len(accessViaHosts) == 0 {
+				ldr.Logger.Infof("ignoring volume #%d's parameters in legacy keepstore config: using matching entry in cluster config instead", i)
+				if len(accessViaHosts) > 0 {
+					cluster.Volumes[oldUUID].AccessViaHosts[myURL] = arvados.VolumeAccess{ReadOnly: oldvol.ReadOnly}
+				}
+				continue
+			}
+		}
+		var newvol arvados.Volume
+		if found {
+			ldr.Logger.Infof("ignoring volume #%d's parameters in legacy keepstore config: using matching entry in cluster config instead", i)
+			newvol = cluster.Volumes[oldUUID]
+			// Remove the old entry. It will be added back
+			// below, possibly with a new UUID.
+			delete(cluster.Volumes, oldUUID)
+		} else {
+			v, err := ldr.translateOldKeepstoreVolume(oldvol)
+			if err != nil {
+				return err
+			}
+			newvol = v
+		}
+		if accessViaHosts == nil {
+			accessViaHosts = make(map[arvados.URL]arvados.VolumeAccess, 1)
+		}
+		accessViaHosts[myURL] = arvados.VolumeAccess{ReadOnly: oldvol.ReadOnly}
+		newvol.AccessViaHosts = accessViaHosts
+
+		volUUID := oldUUID
+		if oldvol.ReadOnly {
+		} else if oc.Listen == nil {
+			ldr.Logger.Warn("cannot find optimal volume UUID because Listen address is not given in legacy keepstore config")
+		} else if uuid, _, err := findKeepServicesItem(cluster, *oc.Listen); err != nil {
+			ldr.Logger.WithError(err).Warn("cannot find optimal volume UUID: failed to find a matching keep_service listing for this legacy keepstore config")
+		} else if len(uuid) != 27 {
+			ldr.Logger.WithField("UUID", uuid).Warn("cannot find optimal volume UUID: keep_service UUID does not have expected format")
+		} else {
+			rendezvousUUID := cluster.ClusterID + "-nyw5e-" + uuid[12:]
+			if _, ok := cluster.Volumes[rendezvousUUID]; ok {
+				ldr.Logger.Warn("suggesting a random volume UUID because the volume ID matching our keep_service UUID is already in use")
+			} else {
+				volUUID = rendezvousUUID
+			}
+			si := cluster.Services.Keepstore.InternalURLs[myURL]
+			si.Rendezvous = uuid[12:]
+			cluster.Services.Keepstore.InternalURLs[myURL] = si
+		}
+		if volUUID == "" {
+			volUUID = newUUID(cluster.ClusterID, "nyw5e")
+			ldr.Logger.WithField("UUID", volUUID).Infof("suggesting a random volume UUID for volume #%d in legacy config", i)
+		}
+		cluster.Volumes[volUUID] = newvol
+	}
+	return nil
+}
+
+func (ldr *Loader) translateOldKeepstoreVolume(oldvol oldKeepstoreVolume) (arvados.Volume, error) {
+	var newvol arvados.Volume
+	var params interface{}
+	switch oldvol.Type {
+	case "S3":
+		accesskeydata, err := ioutil.ReadFile(oldvol.AccessKeyFile)
+		if err != nil && oldvol.AccessKeyFile != "" {
+			return newvol, fmt.Errorf("error reading AccessKeyFile: %s", err)
+		}
+		secretkeydata, err := ioutil.ReadFile(oldvol.SecretKeyFile)
+		if err != nil && oldvol.SecretKeyFile != "" {
+			return newvol, fmt.Errorf("error reading SecretKeyFile: %s", err)
+		}
+		newvol = arvados.Volume{
+			Driver:         "S3",
+			ReadOnly:       oldvol.ReadOnly,
+			Replication:    oldvol.S3Replication,
+			StorageClasses: array2boolmap(oldvol.StorageClasses),
+		}
+		params = arvados.S3VolumeDriverParameters{
+			AccessKey:          string(bytes.TrimSpace(accesskeydata)),
+			SecretKey:          string(bytes.TrimSpace(secretkeydata)),
+			Endpoint:           oldvol.Endpoint,
+			Region:             oldvol.Region,
+			Bucket:             oldvol.Bucket,
+			LocationConstraint: oldvol.LocationConstraint,
+			IndexPageSize:      oldvol.IndexPageSize,
+			ConnectTimeout:     oldvol.ConnectTimeout,
+			ReadTimeout:        oldvol.ReadTimeout,
+			RaceWindow:         oldvol.RaceWindow,
+			UnsafeDelete:       oldvol.UnsafeDelete,
+		}
+	case "Azure":
+		keydata, err := ioutil.ReadFile(oldvol.StorageAccountKeyFile)
+		if err != nil && oldvol.StorageAccountKeyFile != "" {
+			return newvol, fmt.Errorf("error reading StorageAccountKeyFile: %s", err)
+		}
+		newvol = arvados.Volume{
+			Driver:         "Azure",
+			ReadOnly:       oldvol.ReadOnly,
+			Replication:    oldvol.AzureReplication,
+			StorageClasses: array2boolmap(oldvol.StorageClasses),
+		}
+		params = arvados.AzureVolumeDriverParameters{
+			StorageAccountName:   oldvol.StorageAccountName,
+			StorageAccountKey:    string(bytes.TrimSpace(keydata)),
+			StorageBaseURL:       oldvol.StorageBaseURL,
+			ContainerName:        oldvol.ContainerName,
+			RequestTimeout:       oldvol.RequestTimeout,
+			ListBlobsRetryDelay:  oldvol.ListBlobsRetryDelay,
+			ListBlobsMaxAttempts: oldvol.ListBlobsMaxAttempts,
+		}
+	case "Directory":
+		newvol = arvados.Volume{
+			Driver:         "Directory",
+			ReadOnly:       oldvol.ReadOnly,
+			Replication:    oldvol.DirectoryReplication,
+			StorageClasses: array2boolmap(oldvol.StorageClasses),
+		}
+		params = arvados.DirectoryVolumeDriverParameters{
+			Root:      oldvol.Root,
+			Serialize: oldvol.Serialize,
+		}
+	default:
+		return newvol, fmt.Errorf("unsupported volume type %q", oldvol.Type)
+	}
+	dp, err := json.Marshal(params)
+	if err != nil {
+		return newvol, err
+	}
+	newvol.DriverParameters = json.RawMessage(dp)
+	if newvol.Replication < 1 {
+		newvol.Replication = 1
+	}
+	return newvol, nil
 }
 
 func (ldr *Loader) alreadyMigrated(oldvol oldKeepstoreVolume, newvols map[string]arvados.Volume, myURL arvados.URL) (string, bool) {
