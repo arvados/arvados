@@ -160,11 +160,24 @@ def main():
                 if len(userhome) == 5 and userhome not in clusters:
                     print("(%s) Cannot migrate %s, unknown home cluster %s (typo?)" % (email, old_user_uuid, userhome))
                     continue
-                print("(%s) No user listed with same email to migrate %s to %s, will create new user" % (email, old_user_uuid, userhome))
+                print("(%s) No user listed with same email to migrate %s to %s, will create new user with username '%s'" % (email, old_user_uuid, userhome, username))
                 if not args.dry_run:
                     newhomecluster = userhome[0:5]
                     homearv = clusters[userhome]
-                    user = homearv.users().create({"email": email, "username": username}).execute()
+                    user = None
+                    try:
+                        user = homearv.users().create(body={"user": {"email": email, "username": username}}).execute()
+                    except arvados.errors.ApiError as e:
+                        if "Username" in str(e):
+                            other = homearv.users().list(filters=[["username", "=", username]]).execute()
+                            if other['items'] and other['items'][0]['email'] == email:
+                                conflicting_user = other['items'][0]
+                                homearv.users().update(uuid=conflicting_user["uuid"], body={"user": {"username": username+"migrate"}}).execute()
+                                user = homearv.users().create(body={"user": {"email": email, "username": username}}).execute()
+                        if not user:
+                            print("(%s) Could not create user: %s" % (email, str(e)))
+                            continue
+
                     candidates.append((email, username, user["uuid"], userhome))
                 else:
                     candidates.append((email, username, "%s-tpzed-xfakexfakexfake" % (userhome[0:5]), userhome))
@@ -229,7 +242,6 @@ def main():
                     print("(%s) Not migrating %s because user is admin but target user %s is not admin on %s" % (email, old_user_uuid, new_user_uuid, migratecluster))
                     continue
 
-
                 print("(%s) Migrating %s to %s on %s" % (email, old_user_uuid, new_user_uuid, migratecluster))
 
                 try:
@@ -242,9 +254,16 @@ def main():
                         migratearv.users().merge(old_user_uuid=old_user_uuid,
                                                  new_user_uuid=new_user_uuid,
                                                  new_owner_uuid=grp["uuid"],
-                                                 redirect_to_new_user=True).execute()
+                                                 redirect_to_new_user=old_user_uuid.startswith(migratecluster)).execute()
                 except arvados.errors.ApiError as e:
                     print("(%s) Error migrating user: %s" % (email, e))
+
+                if newuser['username'] != username:
+                    print("%s != %s" % (newuser['username'], username))
+                    try:
+                        migratearv.users().update(uuid=new_user_uuid, body={"user": {"username": username}}).execute()
+                    except arvados.errors.ApiError as e:
+                        print("(%s) Error updating username of %s to '%s' on %s: %s" % (email, new_user_uuid, username, migratecluster, e))
 
 if __name__ == "__main__":
     main()

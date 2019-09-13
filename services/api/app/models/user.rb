@@ -339,7 +339,7 @@ class User < ArvadosModel
         klass.where(owner_uuid: uuid).update_all(owner_uuid: new_owner_uuid)
       end
 
-      update_attributes!(redirect_to_user_uuid: new_user.uuid)
+      update_attributes!(redirect_to_user_uuid: new_user.uuid, username: nil)
       invalidate_permissions_cache
     end
   end
