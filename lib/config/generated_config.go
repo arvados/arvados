@@ -319,15 +319,9 @@ Clusters:
       MaxRequestLogParamsSize: 2000
 
     Collections:
-      # Allow clients to create collections by providing a manifest with
-      # unsigned data blob locators. IMPORTANT: This effectively disables
-      # access controls for data stored in Keep: a client who knows a hash
-      # can write a manifest that references the hash, pass it to
-      # collections.create (which will create a permission link), use
-      # collections.get to obtain a signature for that data locator, and
-      # use that signed locator to retrieve the data from Keep. Therefore,
-      # do not turn this on if your users expect to keep data private from
-      # one another!
+
+      # Enable access controls for data stored in Keep. This should
+      # always be set to true on a production cluster.
       BlobSigning: true
 
       # BlobSigningKey is a string of alphanumeric characters used to
