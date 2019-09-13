@@ -308,14 +308,6 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
         end
       end
 
-      within('.compute-node-actions') do
-        if is_admin
-          assert page.has_link?('All nodes')
-        else
-          assert page.has_no_link?('All nodes')
-        end
-      end
-
       within('.compute-node-summary-pane') do
         click_link 'Details'
         assert_text 'compute0'
