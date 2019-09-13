@@ -280,7 +280,7 @@ class User < ArvadosModel
   #
   # current_user must have admin privileges, i.e., the caller is
   # responsible for checking permission to do this.
-  def merge(new_owner_uuid:, redirect_to_user_uuid:)
+  def merge(new_owner_uuid:, redirect_to_user_uuid:, redirect_auth:)
     raise PermissionDeniedError if !current_user.andand.is_admin
     raise "not implemented" if !redirect_to_user_uuid
     transaction(requires_new: true) do
@@ -291,23 +291,39 @@ class User < ArvadosModel
       raise "user does not exist" if !new_user
       raise "cannot merge to an already merged user" if new_user.redirect_to_user_uuid
 
-      # Existing API tokens are updated to authenticate to the new
-      # user.
-      ApiClientAuthorization.
-        where(user_id: id).
-        update_all(user_id: new_user.id)
+      if redirect_auth
+        # Existing API tokens and ssh keys are updated to authenticate
+        # to the new user.
+        ApiClientAuthorization.
+          where(user_id: id).
+          update_all(user_id: new_user.id)
+
+        user_updates = [
+          [AuthorizedKey, :owner_uuid],
+          [AuthorizedKey, :authorized_user_uuid],
+          [Repository, :owner_uuid],
+          [Link, :owner_uuid],
+          [Link, :tail_uuid],
+          [Link, :head_uuid],
+        ]
+      else
+        # Destroy API tokens and ssh keys associated with the old
+        # user.
+        ApiClientAuthorization.where(user_id: id).destroy_all
+        AuthorizedKey.where(owner_uuid: uuid).destroy_all
+        AuthorizedKey.where(authorized_user_uuid: uuid).destroy_all
+        user_updates = [
+          [Repository, :owner_uuid],
+          [Link, :owner_uuid],
+          [Link, :tail_uuid],
+          [Link, :head_uuid],
+        ]
+      end
 
       # References to the old user UUID in the context of a user ID
       # (rather than a "home project" in the project hierarchy) are
       # updated to point to the new user.
-      [
-        [AuthorizedKey, :owner_uuid],
-        [AuthorizedKey, :authorized_user_uuid],
-        [Repository, :owner_uuid],
-        [Link, :owner_uuid],
-        [Link, :tail_uuid],
-        [Link, :head_uuid],
-      ].each do |klass, column|
+      user_updates.each do |klass, column|
         klass.where(column => uuid).update_all(column => new_user.uuid)
       end
 

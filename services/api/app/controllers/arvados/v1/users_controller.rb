@@ -181,12 +181,10 @@ class Arvados::V1::UsersController < ApplicationController
       return send_error("cannot merge remote user to other with redirect_to_new_user=true", status: 422)
     end
 
-    if !redirect
-      return send_error("merge with redirect_to_new_user=false is not yet supported", status: 422)
-    end
-
     act_as_system_user do
-      @object.merge(new_owner_uuid: params[:new_owner_uuid], redirect_to_user_uuid: redirect && new_user.uuid)
+      @object.merge(new_owner_uuid: params[:new_owner_uuid],
+                    redirect_to_user_uuid: new_user.uuid,
+                    redirect_auth: redirect)
     end
     show
   end
