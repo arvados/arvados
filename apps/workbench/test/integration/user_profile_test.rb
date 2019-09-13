@@ -24,7 +24,7 @@ class UserProfileTest < ActionDispatch::IntegrationTest
         assert_text('Save profile')
         add_profile user
       else
-        assert_text('Recent pipelines and processes')
+        assert_text('Recent processes')
         assert_no_text('Save profile')
       end
     elsif invited
@@ -126,7 +126,7 @@ class UserProfileTest < ActionDispatch::IntegrationTest
     end
 
     # profile saved and in home page now
-    assert_text('Recent pipelines and processes')
+    assert_text('Recent processes')
   end
 
   [
