@@ -160,8 +160,8 @@ func (ldr *Loader) loadOldKeepstoreConfig(cfg *arvados.Config) error {
 	if v := oc.LogFormat; v != nil && *v != cluster.SystemLogs.Format {
 		cluster.SystemLogs.Format = *v
 	}
-	if v := oc.MaxBuffers; v != nil && *v != cluster.API.MaxKeepBlockBuffers {
-		cluster.API.MaxKeepBlockBuffers = *v
+	if v := oc.MaxBuffers; v != nil && *v != cluster.API.MaxKeepBlobBuffers {
+		cluster.API.MaxKeepBlobBuffers = *v
 	}
 	if v := oc.MaxRequests; v != nil && *v != cluster.API.MaxConcurrentRequests {
 		cluster.API.MaxConcurrentRequests = *v

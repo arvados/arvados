@@ -184,7 +184,7 @@ Clusters:
 
       # Maximum number of 64MiB memory buffers per keepstore server
       # process, or 0 for no limit.
-      MaxKeepBlockBuffers: 128
+      MaxKeepBlobBuffers: 128
 
       # API methods to disable. Disabled methods are not listed in the
       # discovery document, and respond 404 to all requests.

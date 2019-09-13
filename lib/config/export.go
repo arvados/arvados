@@ -66,7 +66,7 @@ var whitelist = map[string]bool{
 	"API.MaxConcurrentRequests":                    false,
 	"API.MaxIndexDatabaseRead":                     false,
 	"API.MaxItemsPerResponse":                      true,
-	"API.MaxKeepBlockBuffers":                      false,
+	"API.MaxKeepBlobBuffers":                       false,
 	"API.MaxRequestAmplification":                  false,
 	"API.MaxRequestSize":                           true,
 	"API.RailsSessionSecretToken":                  false,

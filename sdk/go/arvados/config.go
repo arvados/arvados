@@ -82,7 +82,7 @@ type Cluster struct {
 		MaxIndexDatabaseRead           int
 		MaxItemsPerResponse            int
 		MaxConcurrentRequests          int
-		MaxKeepBlockBuffers            int
+		MaxKeepBlobBuffers             int
 		MaxRequestAmplification        int
 		MaxRequestSize                 int
 		RailsSessionSecretToken        string

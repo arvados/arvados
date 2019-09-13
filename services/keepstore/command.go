@@ -48,7 +48,7 @@ func runCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.W
 func convertKeepstoreFlagsToServiceFlags(args []string, lgr logrus.FieldLogger) ([]string, bool) {
 	flags := flag.NewFlagSet("", flag.ContinueOnError)
 	flags.String("listen", "", "Services.Keepstore.InternalURLs")
-	flags.Int("max-buffers", 0, "API.MaxKeepBlockBuffers")
+	flags.Int("max-buffers", 0, "API.MaxKeepBlobBuffers")
 	flags.Int("max-requests", 0, "API.MaxConcurrentRequests")
 	flags.Bool("never-delete", false, "Collections.BlobTrash")
 	flags.Bool("enforce-permissions", false, "Collections.BlobSigning")
@@ -148,14 +148,14 @@ func newHandlerOrErrorHandler(ctx context.Context, cluster *arvados.Cluster, tok
 func (h *handler) setup(ctx context.Context, cluster *arvados.Cluster, token string, reg *prometheus.Registry, serviceURL arvados.URL) error {
 	h.Cluster = cluster
 	h.Logger = ctxlog.FromContext(ctx)
-	if h.Cluster.API.MaxKeepBlockBuffers <= 0 {
+	if h.Cluster.API.MaxKeepBlobBuffers <= 0 {
 		return fmt.Errorf("MaxBuffers must be greater than zero")
 	}
-	bufs = newBufferPool(h.Logger, h.Cluster.API.MaxKeepBlockBuffers, BlockSize)
+	bufs = newBufferPool(h.Logger, h.Cluster.API.MaxKeepBlobBuffers, BlockSize)
 
 	if h.Cluster.API.MaxConcurrentRequests < 1 {
-		h.Cluster.API.MaxConcurrentRequests = h.Cluster.API.MaxKeepBlockBuffers * 2
-		h.Logger.Warnf("MaxRequests <1 or not specified; defaulting to MaxKeepBlockBuffers * 2 == %d", h.Cluster.API.MaxConcurrentRequests)
+		h.Cluster.API.MaxConcurrentRequests = h.Cluster.API.MaxKeepBlobBuffers * 2
+		h.Logger.Warnf("MaxRequests <1 or not specified; defaulting to MaxKeepBlobBuffers * 2 == %d", h.Cluster.API.MaxConcurrentRequests)
 	}
 
 	if h.Cluster.Collections.BlobSigningKey != "" {

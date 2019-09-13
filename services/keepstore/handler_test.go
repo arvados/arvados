@@ -947,7 +947,7 @@ func (s *HandlerSuite) TestPutHandlerNoBufferleak(c *check.C) {
 
 	ok := make(chan bool)
 	go func() {
-		for i := 0; i < s.cluster.API.MaxKeepBlockBuffers+1; i++ {
+		for i := 0; i < s.cluster.API.MaxKeepBlobBuffers+1; i++ {
 			// Unauthenticated request, no server key
 			// => OK (unsigned response)
 			unsignedLocator := "/" + TestHash
@@ -1039,7 +1039,7 @@ func (s *HandlerSuite) TestGetHandlerNoBufferLeak(c *check.C) {
 
 	ok := make(chan bool)
 	go func() {
-		for i := 0; i < s.cluster.API.MaxKeepBlockBuffers+1; i++ {
+		for i := 0; i < s.cluster.API.MaxKeepBlobBuffers+1; i++ {
 			// Unauthenticated request, unsigned locator
 			// => OK
 			unsignedLocator := "/" + TestHash

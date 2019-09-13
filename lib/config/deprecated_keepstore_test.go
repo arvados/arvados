@@ -121,7 +121,7 @@ Clusters:
       Format: text
       LogLevel: debug
     API:
-      MaxKeepBlockBuffers: 1234
+      MaxKeepBlobBuffers: 1234
       MaxConcurrentRequests: 2345
     Collections:
       BlobSigningTTL: 123m
