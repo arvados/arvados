@@ -787,9 +787,24 @@ Clusters:
 
     Volumes:
       SAMPLE:
+        # AccessViaHosts specifies which keepstore processes can read
+        # and write data on the volume.
+        #
+        # For a local filesystem, AccessViaHosts has one entry,
+        # indicating which server the filesystem is located on.
+        #
+        # For a network-attached backend accessible by all keepstore
+        # servers, like a cloud storage bucket or an NFS mount,
+        # AccessViaHosts can be empty/omitted.
+        #
+        # Further info/examples:
+        # https://doc.arvados.org/install/configure-fs-storage.html
+        # https://doc.arvados.org/install/configure-s3-object-storage.html
+        # https://doc.arvados.org/install/configure-azure-blob-storage.html
         AccessViaHosts:
           SAMPLE:
             ReadOnly: false
+          "http://host1.example:25107": {}
         ReadOnly: false
         Replication: 1
         StorageClasses:
