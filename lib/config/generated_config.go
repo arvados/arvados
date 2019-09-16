@@ -819,7 +819,8 @@ Clusters:
         Driver: s3
         DriverParameters:
 
-          # for s3 driver
+          # for s3 driver -- see
+          # https://doc.arvados.org/install/configure-s3-object-storage.html
           AccessKey: aaaaa
           SecretKey: aaaaa
           Endpoint: ""
@@ -832,7 +833,8 @@ Clusters:
           RaceWindow: 24h
           UnsafeDelete: false
 
-          # for azure driver
+          # for azure driver -- see
+          # https://doc.arvados.org/install/configure-azure-blob-storage.html
           StorageAccountName: aaaaa
           StorageAccountKey: aaaaa
           StorageBaseURL: core.windows.net
@@ -844,7 +846,8 @@ Clusters:
           WriteRaceInterval: 15s
           WriteRacePollTime: 1s
 
-          # for local directory driver
+          # for local directory driver -- see
+          # https://doc.arvados.org/install/configure-fs-storage.html
           Root: /var/lib/arvados/keep-data
           Serialize: false
 
