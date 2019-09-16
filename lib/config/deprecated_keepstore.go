@@ -129,10 +129,10 @@ func (ldr *Loader) loadOldKeepstoreConfig(cfg *arvados.Config) error {
 		cluster.SystemLogs.LogLevel = "info"
 	}
 
-	if v := oc.TLSCertificateFile; v != nil && "file://"+*v != cluster.TLS.Certificate {
+	if v := oc.TLSCertificateFile; v != nil {
 		cluster.TLS.Certificate = "file://" + *v
 	}
-	if v := oc.TLSKeyFile; v != nil && "file://"+*v != cluster.TLS.Key {
+	if v := oc.TLSKeyFile; v != nil {
 		cluster.TLS.Key = "file://" + *v
 	}
 	if v := oc.Listen; v != nil {
@@ -157,16 +157,16 @@ func (ldr *Loader) loadOldKeepstoreConfig(cfg *arvados.Config) error {
 		}
 	}
 
-	if v := oc.LogFormat; v != nil && *v != cluster.SystemLogs.Format {
+	if v := oc.LogFormat; v != nil {
 		cluster.SystemLogs.Format = *v
 	}
-	if v := oc.MaxBuffers; v != nil && *v != cluster.API.MaxKeepBlobBuffers {
+	if v := oc.MaxBuffers; v != nil {
 		cluster.API.MaxKeepBlobBuffers = *v
 	}
-	if v := oc.MaxRequests; v != nil && *v != cluster.API.MaxConcurrentRequests {
+	if v := oc.MaxRequests; v != nil {
 		cluster.API.MaxConcurrentRequests = *v
 	}
-	if v := oc.BlobSignatureTTL; v != nil && *v != cluster.Collections.BlobSigningTTL {
+	if v := oc.BlobSignatureTTL; v != nil {
 		cluster.Collections.BlobSigningTTL = *v
 	}
 	if v := oc.BlobSigningKeyFile; v != nil {
@@ -178,7 +178,7 @@ func (ldr *Loader) loadOldKeepstoreConfig(cfg *arvados.Config) error {
 			cluster.Collections.BlobSigningKey = key
 		}
 	}
-	if v := oc.RequireSignatures; v != nil && *v != cluster.Collections.BlobSigning {
+	if v := oc.RequireSignatures; v != nil {
 		cluster.Collections.BlobSigning = *v
 	}
 	if v := oc.SystemAuthTokenFile; v != nil {
@@ -195,22 +195,22 @@ func (ldr *Loader) loadOldKeepstoreConfig(cfg *arvados.Config) error {
 			cluster.SystemRootToken = key
 		}
 	}
-	if v := oc.EnableDelete; v != nil && *v != cluster.Collections.BlobTrash {
+	if v := oc.EnableDelete; v != nil {
 		cluster.Collections.BlobTrash = *v
 	}
-	if v := oc.TrashLifetime; v != nil && *v != cluster.Collections.BlobTrashLifetime {
+	if v := oc.TrashLifetime; v != nil {
 		cluster.Collections.BlobTrashLifetime = *v
 	}
-	if v := oc.TrashCheckInterval; v != nil && *v != cluster.Collections.BlobTrashCheckInterval {
+	if v := oc.TrashCheckInterval; v != nil {
 		cluster.Collections.BlobTrashCheckInterval = *v
 	}
-	if v := oc.TrashWorkers; v != nil && *v != cluster.Collections.BlobReplicateConcurrency {
+	if v := oc.TrashWorkers; v != nil {
 		cluster.Collections.BlobTrashConcurrency = *v
 	}
-	if v := oc.EmptyTrashWorkers; v != nil && *v != cluster.Collections.BlobReplicateConcurrency {
+	if v := oc.EmptyTrashWorkers; v != nil {
 		cluster.Collections.BlobDeleteConcurrency = *v
 	}
-	if v := oc.PullWorkers; v != nil && *v != cluster.Collections.BlobReplicateConcurrency {
+	if v := oc.PullWorkers; v != nil {
 		cluster.Collections.BlobReplicateConcurrency = *v
 	}
 	if oc.Volumes == nil || len(*oc.Volumes) == 0 {
