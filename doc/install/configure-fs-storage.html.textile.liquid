@@ -25,7 +25,7 @@ Note that each volume has an AccessViaHosts section indicating that (for example
     Volumes:
       <span class="userinput">uuid_prefix</span>-nyw5e-<span class="userinput">000000000000000</span>:
         AccessViaHosts:
-          "http://keep0.zzzzz.example.com:25107/": {}
+          "http://<span class="userinput">keep0.uuid_prefix.example.com</span>:25107/": {}
         Driver: Directory
         DriverParameters:
           # The directory that will be used as the backing store.
@@ -59,7 +59,7 @@ Note that each volume has an AccessViaHosts section indicating that (for example
 
       <span class="userinput">uuid_prefix</span>-nyw5e-<span class="userinput">000000000000001</span>:
         AccessViaHosts:
-          "http://keep1.zzzzz.example.com:25107/": {}
+          "http://keep1.<span class="userinput">uuid_prefix</span>.example.com:25107/": {}
         Driver: Directory
         DriverParameters:
           Root: /mnt/local-disk
