@@ -65,14 +65,23 @@ Note that each volume has an AccessViaHosts section indicating that (for example
           Root: /mnt/local-disk
 </code></pre></notextile>
 
-In the case of a network-attached filesystem accessible by all keepstore servers, the AccessViaHosts section is omitted.
+In the case of a network-attached filesystem, the AccessViaHosts section can have multiple entries. If the filesystem is accessible by all keepstore servers, the AccessViaHosts section can be empty, or omitted entirely.
 
 <notextile>
 <pre><code>Clusters:
   <span class="userinput">uuid_prefix</span>:
     Volumes:
-      # This volume is used by all keepstore servers.
       <span class="userinput">uuid_prefix</span>-nyw5e-<span class="userinput">000000000000002</span>:
+        AccessViaHosts:
+          # This section determines which keepstore servers access the
+          # volume. In this example, keep0 has read/write access, and
+          # keep1 has read-only access.
+          #
+          # If the AccessViaHosts section is empty or omitted, all
+          # keepstore servers will have read/write access to the
+          # volume.
+          "http://<span class="userinput">keep0.uuid_prefix.example.com</span>:25107/": {}
+          "http://<span class="userinput">keep1.uuid_prefix.example.com</span>:25107/": {ReadOnly: true}
         Driver: Directory
         DriverParameters:
           Root: /mnt/network-attached-filesystem
