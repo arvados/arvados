@@ -20,6 +20,21 @@ class KeepService < ArvadosModel
   api_accessible :superuser, :extend => :user do |t|
   end
 
+  # return the set of keep services from the database (if this is an
+  # older installation or test system where entries have been added
+  # manually) or, preferably, the cluster config file.
+  def self.all *args
+    if super.count == 0
+      from_config
+    else
+      super
+    end
+  end
+
+  def self.where *args
+    all.where *args
+  end
+
   protected
 
   def permission_to_create
@@ -45,10 +60,10 @@ class KeepService < ArvadosModel
     end
     if values.length == 0
       # return empty set as AR relation
-      return where('1=0')
+      return unscoped.where('1=0')
     else
       sql = "(values #{values.join(", ")}) as keep_services (id, uuid, service_host, service_port, service_ssl_flag, service_type, read_only, created_at, modified_at, owner_uuid, modified_by_user_uuid, modified_by_client_uuid)"
-      return KeepService.from(sql)
+      return unscoped.from(sql)
     end
   end
 

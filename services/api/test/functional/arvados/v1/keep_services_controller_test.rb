@@ -37,7 +37,7 @@ class Arvados::V1::KeepServicesControllerTest < ActionController::TestCase
   end
 
   test "report configured servers if db is empty" do
-    KeepService.all.delete_all
+    KeepService.unscoped.all.delete_all
     expect_rvz = {}
     n = 0
     Rails.configuration.Services.Keepstore.InternalURLs.each do |k,v|
@@ -57,6 +57,7 @@ class Arvados::V1::KeepServicesControllerTest < ActionController::TestCase
     get :index,
       params: {:format => :json},
       headers: auth(:active)
+    assert_response :success
     json_response['items'].each do |svc|
       url = "#{svc['service_ssl_flag'] ? 'https' : 'http'}://#{svc['service_host']}:#{svc['service_port']}"
       assert_equal true, expect_rvz.has_key?(url), "#{url} does not match any configured service: expecting #{expect_rvz}"

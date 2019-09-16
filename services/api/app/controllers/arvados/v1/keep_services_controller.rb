@@ -10,29 +10,16 @@ class Arvados::V1::KeepServicesController < ApplicationController
 
   def find_objects_for_index
     # all users can list all keep services
-    @objects = from_config_or_db
+    @objects = KeepService.all
     super
   end
 
   def accessible
     if request.headers['X-External-Client'] == '1'
-      @objects = from_config_or_db.where('service_type=?', 'proxy')
+      @objects = KeepService.where('service_type=?', 'proxy')
     else
-      @objects = from_config_or_db.where('service_type<>?', 'proxy')
+      @objects = KeepService.where('service_type<>?', 'proxy')
     end
     render_list
-  end
-
-  private
-
-  # return the set of keep services from the database (if this is an
-  # older installation or test system where entries have been added
-  # manually) or, preferably, the cluster config file.
-  def from_config_or_db
-    if KeepService.all.count == 0
-      KeepService.from_config
-    else
-      KeepService.all
-    end
   end
 end
