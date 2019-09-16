@@ -31,7 +31,13 @@ Clusters:
       # listening, and reachable from other hosts in the cluster.
       SAMPLE:
         InternalURLs:
-          "http://example.host:12345": {}
+          "http://host1.example:12345": {}
+          "http://host2.example:12345":
+            # Rendezvous is normally empty/omitted. When changing the
+            # URL of a Keepstore service, Rendezvous should be set to
+            # the old URL (with trailing slash omitted) to preserve
+            # rendezvous ordering.
+            Rendezvous: ""
           SAMPLE:
             Rendezvous: ""
         ExternalURL: "-"
