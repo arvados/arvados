@@ -143,7 +143,7 @@ func (ldr *Loader) loadOldKeepstoreConfig(cfg *arvados.Config) error {
 			myURL.Host = net.JoinHostPort(hostname, (*v)[1:])
 			cluster.Services.Keepstore.InternalURLs[myURL] = arvados.ServiceInstance{}
 		} else {
-			return fmt.Errorf("unable to migrate Listen value %q from legacy keepstore config file -- remove after configuring Services.Keepstore.InternalURLs.", *v)
+			return fmt.Errorf("unable to migrate Listen value %q -- you must update Services.Keepstore.InternalURLs manually, and comment out the Listen entry in your legacy keepstore config file", *v)
 		}
 	} else {
 		for url := range cluster.Services.Keepstore.InternalURLs {
