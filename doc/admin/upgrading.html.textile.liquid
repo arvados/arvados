@@ -45,9 +45,13 @@ h4. Arv-git-httpd configuration migration
 
 (feature "#14712":https://dev.arvados.org/issues/14712 ) The arv-git-httpd package can now be configured using the centralized configuration file at @/etc/arvados/config.yml@. Configuration via individual command line arguments is no longer available. Please see "arv-git-httpd's config migration guide":{{site.baseurl}}/admin/config-migration.html#arv-git-httpd for more details.
 
-h4. Keep-web dropped support on command line flags configuration
+h4. Keepstore and keep-web no longer support configuration via command line flags
 
-As we're migrating to a central cluster configuration file, the already deprecated way of getting configurations via environment variables and command line flags isn't valid anymore. Current keep-web supports both the now legacy @keep-web.yml@ config format (used by Arvados 1.4) and the new cluster config file format. Please check "keep-web's install guide":{{site.baseurl}}/install/install-keep-web.html for more details.
+As we're migrating to a central cluster configuration file, the already deprecated way of getting configurations via environment variables and command line flags isn't valid anymore.
+
+Current keep-web supports both the now legacy @keep-web.yml@ config format (used by Arvados 1.4) and the new cluster config file format. Please check "keep-web's install guide":{{site.baseurl}}/install/install-keep-web.html for more details.
+
+Current keepstore supports both the now legacy @keepstore.yml@ config format (used by Arvados 1.4) and the new cluster config file format. Please check "keepstore's install guide":{{site.baseurl}}/install/install-keepstore.html for more details.
 
 h4. Jobs API is read-only
 
