@@ -327,7 +327,7 @@ func (s *HandlerSuite) TestPutAndDeleteSkipReadonlyVolumes(c *check.C) {
 //   - authenticated   /index/prefix request | superuser
 //
 // The only /index requests that should succeed are those issued by the
-// superuser. They should pass regardless of the value of RequireSignatures.
+// superuser. They should pass regardless of the value of BlobSigning.
 //
 func (s *HandlerSuite) TestIndexHandler(c *check.C) {
 	c.Assert(s.handler.setup(context.Background(), s.cluster, "", prometheus.NewRegistry(), testServiceURL), check.IsNil)
@@ -393,7 +393,7 @@ func (s *HandlerSuite) TestIndexHandler(c *check.C) {
 	// => UnauthorizedError
 	response := IssueRequest(s.handler, unauthenticatedReq)
 	ExpectStatusCode(c,
-		"RequireSignatures on, unauthenticated request",
+		"permissions on, unauthenticated request",
 		UnauthorizedError.HTTPCode,
 		response)
 
@@ -520,7 +520,7 @@ func (s *HandlerSuite) TestDeleteHandler(c *check.C) {
 	vols := s.handler.volmgr.AllWritable()
 	vols[0].Put(context.Background(), TestHash, TestBlock)
 
-	// Explicitly set the BlobSignatureTTL to 0 for these
+	// Explicitly set the BlobSigningTTL to 0 for these
 	// tests, to ensure the MockVolume deletes the blocks
 	// even though they have just been created.
 	s.cluster.Collections.BlobSigningTTL = arvados.Duration(0)
@@ -611,7 +611,7 @@ func (s *HandlerSuite) TestDeleteHandler(c *check.C) {
 		c.Error("superuserExistingBlockReq: block not deleted")
 	}
 
-	// A DELETE request on a block newer than BlobSignatureTTL
+	// A DELETE request on a block newer than BlobSigningTTL
 	// should return success but leave the block on the volume.
 	vols[0].Put(context.Background(), TestHash, TestBlock)
 	s.cluster.Collections.BlobSigningTTL = arvados.Duration(time.Hour)
@@ -936,7 +936,7 @@ func (s *HandlerSuite) TestPutNeedsOnlyOneBuffer(c *check.C) {
 	select {
 	case <-ok:
 	case <-time.After(time.Second):
-		c.Fatal("PUT deadlocks with MaxBuffers==1")
+		c.Fatal("PUT deadlocks with MaxKeepBlobBuffers==1")
 	}
 }
 

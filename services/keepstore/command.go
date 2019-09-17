@@ -149,13 +149,13 @@ func (h *handler) setup(ctx context.Context, cluster *arvados.Cluster, token str
 	h.Cluster = cluster
 	h.Logger = ctxlog.FromContext(ctx)
 	if h.Cluster.API.MaxKeepBlobBuffers <= 0 {
-		return fmt.Errorf("MaxBuffers must be greater than zero")
+		return fmt.Errorf("API.MaxKeepBlobBuffers must be greater than zero")
 	}
 	bufs = newBufferPool(h.Logger, h.Cluster.API.MaxKeepBlobBuffers, BlockSize)
 
 	if h.Cluster.API.MaxConcurrentRequests < 1 {
 		h.Cluster.API.MaxConcurrentRequests = h.Cluster.API.MaxKeepBlobBuffers * 2
-		h.Logger.Warnf("MaxRequests <1 or not specified; defaulting to MaxKeepBlobBuffers * 2 == %d", h.Cluster.API.MaxConcurrentRequests)
+		h.Logger.Warnf("API.MaxConcurrentRequests <1 or not specified; defaulting to MaxKeepBlobBuffers * 2 == %d", h.Cluster.API.MaxConcurrentRequests)
 	}
 
 	if h.Cluster.Collections.BlobSigningKey != "" {

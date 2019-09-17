@@ -113,7 +113,7 @@ const (
 var (
 	// ErrS3TrashDisabled is returned by Trash if that operation
 	// is impossible with the current config.
-	ErrS3TrashDisabled = fmt.Errorf("trash function is disabled because -trash-lifetime=0 and -s3-unsafe-delete=false")
+	ErrS3TrashDisabled = fmt.Errorf("trash function is disabled because Collections.BlobTrashLifetime=0 and DriverParameters.UnsafeDelete=false")
 
 	s3ACL = s3.Private
 
@@ -663,7 +663,7 @@ func (v *S3Volume) translateError(err error) error {
 	return err
 }
 
-// EmptyTrash looks for trashed blocks that exceeded TrashLifetime
+// EmptyTrash looks for trashed blocks that exceeded BlobTrashLifetime
 // and deletes them from the volume.
 func (v *S3Volume) EmptyTrash() {
 	if v.cluster.Collections.BlobDeleteConcurrency < 1 {
@@ -712,8 +712,8 @@ func (v *S3Volume) EmptyTrash() {
 				// the raceWindow that starts if we
 				// delete trash/X now.
 				//
-				// Note this means (TrashCheckInterval
-				// < BlobSignatureTTL - raceWindow) is
+				// Note this means (TrashSweepInterval
+				// < BlobSigningTTL - raceWindow) is
 				// necessary to avoid starvation.
 				log.Printf("notice: %s: EmptyTrash: detected old race for %q, calling fixRace + Touch", v, loc)
 				v.fixRace(loc)

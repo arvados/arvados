@@ -316,12 +316,12 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 			false, false, false, true, false, false,
 		},
 		{
-			"Erroneously trashed during a race, detected before TrashLifetime",
+			"Erroneously trashed during a race, detected before BlobTrashLifetime",
 			none, t0.Add(-30 * time.Minute), t0.Add(-29 * time.Minute),
 			true, false, true, true, true, false,
 		},
 		{
-			"Erroneously trashed during a race, rescue during EmptyTrash despite reaching TrashLifetime",
+			"Erroneously trashed during a race, rescue during EmptyTrash despite reaching BlobTrashLifetime",
 			none, t0.Add(-90 * time.Minute), t0.Add(-89 * time.Minute),
 			true, false, true, true, true, false,
 		},

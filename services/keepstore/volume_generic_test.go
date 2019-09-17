@@ -487,8 +487,8 @@ func (s *genericVolumeSuite) testDeleteNewBlock(t TB, factory TestableVolumeFact
 }
 
 // Calling Delete() for a block with a timestamp older than
-// BlobSignatureTTL seconds in the past should delete the data.
-// Test is intended for only writable volumes
+// BlobSigningTTL seconds in the past should delete the data.  Test is
+// intended for only writable volumes
 func (s *genericVolumeSuite) testDeleteOldBlock(t TB, factory TestableVolumeFactory) {
 	s.setup(t)
 	s.cluster.Collections.BlobSigningTTL.Set("5m")
@@ -834,7 +834,7 @@ func (s *genericVolumeSuite) testPutFullBlock(t TB, factory TestableVolumeFactor
 	}
 }
 
-// With TrashLifetime != 0, perform:
+// With BlobTrashLifetime != 0, perform:
 // Trash an old block - which either raises ErrNotImplemented or succeeds
 // Untrash -  which either raises ErrNotImplemented or succeeds
 // Get - which must succeed
@@ -940,7 +940,8 @@ func (s *genericVolumeSuite) testTrashEmptyTrashUntrash(t TB, factory TestableVo
 	err = v.Trash(TestHash)
 	if err == MethodDisabledError || err == ErrNotImplemented {
 		// Skip the trash tests for read-only volumes, and
-		// volume types that don't support TrashLifetime>0.
+		// volume types that don't support
+		// BlobTrashLifetime>0.
 		return
 	}
 

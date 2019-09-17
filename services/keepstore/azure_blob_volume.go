@@ -497,7 +497,7 @@ func (v *AzureBlobVolume) Trash(loc string) error {
 		return nil
 	}
 
-	// If TrashLifetime == 0, just delete it
+	// If BlobTrashLifetime == 0, just delete it
 	if v.cluster.Collections.BlobTrashLifetime == 0 {
 		return v.container.DeleteBlob(loc, &storage.DeleteBlobOptions{
 			IfMatch: props.Etag,
@@ -567,7 +567,7 @@ func (v *AzureBlobVolume) isKeepBlock(s string) bool {
 	return keepBlockRegexp.MatchString(s)
 }
 
-// EmptyTrash looks for trashed blocks that exceeded TrashLifetime
+// EmptyTrash looks for trashed blocks that exceeded BlobTrashLifetime
 // and deletes them from the volume.
 func (v *AzureBlobVolume) EmptyTrash() {
 	if v.cluster.Collections.BlobDeleteConcurrency < 1 {

@@ -170,12 +170,12 @@ type Volume interface {
 
 	// Trash moves the block data from the underlying storage
 	// device to trash area. The block then stays in trash for
-	// -trash-lifetime interval before it is actually deleted.
+	// BlobTrashLifetime before it is actually deleted.
 	//
 	// loc is as described in Get.
 	//
 	// If the timestamp for the given locator is newer than
-	// BlobSignatureTTL, Trash must not trash the data.
+	// BlobSigningTTL, Trash must not trash the data.
 	//
 	// If a Trash operation overlaps with any Touch or Put
 	// operations on the same locator, the implementation must
@@ -196,8 +196,7 @@ type Volume interface {
 	// reliably or fail outright.
 	//
 	// Corollary: A successful Touch or Put guarantees a block
-	// will not be trashed for at least BlobSignatureTTL
-	// seconds.
+	// will not be trashed for at least BlobSigningTTL seconds.
 	Trash(loc string) error
 
 	// Untrash moves block from trash back into store
@@ -216,8 +215,8 @@ type Volume interface {
 	// secrets.
 	String() string
 
-	// EmptyTrash looks for trashed blocks that exceeded TrashLifetime
-	// and deletes them from the volume.
+	// EmptyTrash looks for trashed blocks that exceeded
+	// BlobTrashLifetime and deletes them from the volume.
 	EmptyTrash()
 
 	// Return a globally unique ID of the underlying storage
