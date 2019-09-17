@@ -11,6 +11,15 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 Keepstore provides access to underlying storage for reading and writing content-addressed blocks, with enforcement of Arvados permissions.  Keepstore supports a variety of cloud object storage and POSIX filesystems for its backing store.
 
+h3. Plan your storage layout
+
+In the steps below, you will configure a number of backend storage volumes (like local filesystems and S3 buckets) and specify which keepstore servers have read-only and read-write access to which volumes.
+
+It is possible to configure arbitrary server/volume layouts. However, in order to provide good performance and efficient use of storage resources, we strongly recommend using one of the following layouts:
+
+# Each volume is writable by exactly one server, and optionally readable by one or more other servers. The total capacity of all writable volumes is the same for each server.
+# Each volume is writable by all servers. Each volume has enough built-in redundancy to satisfy your requirements, i.e., you do not need Arvados to mirror data across multiple volumes.
+
 We recommend starting off with two Keepstore servers.  Exact server specifications will be site and workload specific, but in general keepstore will be I/O bound and should be set up to maximize aggregate bandwidth with compute nodes.  To increase capacity (either space or throughput) it is straightforward to add additional servers, or (in cloud environments) to increase the machine size of the existing servers.
 
 By convention, we use the following hostname pattern:
