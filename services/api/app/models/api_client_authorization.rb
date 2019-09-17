@@ -92,9 +92,11 @@ class ApiClientAuthorization < ArvadosModel
        uuid_prefix+".arvadosapi.com")
   end
 
-  def self.make_http_client
+  def self.make_http_client(uuid_prefix:)
     clnt = HTTPClient.new
-    if Rails.configuration.TLS.Insecure
+
+    if uuid_prefix && (Rails.configuration.RemoteClusters[uuid_prefix].andand.Insecure ||
+                       Rails.configuration.RemoteClusters['*'].andand.Insecure)
       clnt.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
     else
       # Use system CA certificates
@@ -167,7 +169,7 @@ class ApiClientAuthorization < ArvadosModel
       # by a remote cluster when the token absent or expired in our
       # database.  To begin, we need to ask the cluster that issued
       # the token to [re]validate it.
-      clnt = ApiClientAuthorization.make_http_client
+      clnt = ApiClientAuthorization.make_http_client(uuid_prefix: token_uuid_prefix)
 
       host = remote_host(uuid_prefix: token_uuid_prefix)
       if !host
