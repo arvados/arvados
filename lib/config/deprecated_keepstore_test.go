@@ -572,6 +572,35 @@ Volumes:
 	c.Check(ok, check.Equals, true)
 }
 
+// Ensure logs mention unmigrated servers.
+func (s *KeepstoreMigrationSuite) TestPendingKeepstoreMigrations(c *check.C) {
+	client := arvados.NewClientFromEnv()
+	for _, host := range []string{"keep0", "keep1"} {
+		err := client.RequestAndDecode(new(struct{}), "POST", "arvados/v1/keep_services", nil, map[string]interface{}{
+			"keep_service": map[string]interface{}{
+				"service_type": "disk",
+				"service_host": host + ".zzzzz.example.com",
+				"service_port": 25107,
+			},
+		})
+		c.Assert(err, check.IsNil)
+	}
+
+	port, _ := s.getTestKeepstorePortAndMatchingVolumeUUID(c)
+	logs := s.logsWithKeepstoreConfig(c, `
+Listen: :`+strconv.Itoa(port)+`
+Volumes:
+- Type: S3
+  Endpoint: https://storage.googleapis.com
+  Bucket: foo
+`)
+	c.Check(logs, check.Matches, `(?ms).*you should remove the legacy keepstore config file.*`)
+	c.Check(logs, check.Matches, `(?ms).*you should migrate the legacy keepstore configuration file on host keep1.zzzzz.example.com.*`)
+	c.Check(logs, check.Not(check.Matches), `(?ms).*should migrate.*keep0.zzzzz.example.com.*`)
+	c.Check(logs, check.Matches, `(?ms).*keepstore configured at http://keep2.zzzzz.example.com:25107 does not have access to any volumes.*`)
+	c.Check(logs, check.Matches, `(?ms).*Volumes.zzzzz-nyw5e-possconfigerror.AccessViaHosts refers to nonexistent keepstore server http://keep00.zzzzz.example.com:25107.*`)
+}
+
 const clusterConfigForKeepstoreMigrationTest = `
 Clusters:
   zzzzz:
@@ -580,6 +609,8 @@ Clusters:
       Keepstore:
         InternalURLs:
           "http://{{.hostname}}:12345": {}
+          "http://keep0.zzzzz.example.com:25107": {}
+          "http://keep2.zzzzz.example.com:25107": {}
       Controller:
         ExternalURL: "https://{{.controller}}"
     TLS:
@@ -598,7 +629,7 @@ Clusters:
 
       zzzzz-nyw5e-readonlyonother:
         AccessViaHosts:
-          "http://other.host.example:12345": {ReadOnly: true}
+          "http://keep0.zzzzz.example.com:25107": {ReadOnly: true}
         Driver: S3
         DriverParameters:
           Endpoint: https://storage.googleapis.com
@@ -608,7 +639,7 @@ Clusters:
 
       zzzzz-nyw5e-writableonother:
         AccessViaHosts:
-          "http://other.host.example:12345": {}
+          "http://keep0.zzzzz.example.com:25107": {}
         Driver: S3
         DriverParameters:
           Endpoint: https://storage.googleapis.com
@@ -617,6 +648,8 @@ Clusters:
         Replication: 3
 
       zzzzz-nyw5e-localfilesystem:
+        AccessViaHosts:
+          "http://keep0.zzzzz.example.com:25107": {}
         Driver: Directory
         DriverParameters:
           Root: /data/sdd
@@ -629,16 +662,23 @@ Clusters:
         DriverParameters:
           Root: /data/sde
         Replication: 1
+
+      zzzzz-nyw5e-possconfigerror:
+        AccessViaHosts:
+          "http://keep00.zzzzz.example.com:25107": {}
+        Driver: Directory
+        DriverParameters:
+          Root: /data/sdf
+        Replication: 1
 `
 
 // Determine the effect of combining the given legacy keepstore config
 // YAML (just the "Volumes" entries of an old keepstore config file)
 // with the example clusterConfigForKeepstoreMigrationTest config.
 //
-// Return two Volumes configs -- one without loading
-// keepstoreconfigdata ("before") and one with ("after") -- for the
-// caller to compare.
-func (s *KeepstoreMigrationSuite) loadWithKeepstoreConfig(c *check.C, keepstoreVolumesYAML string) (before, after map[string]arvados.Volume) {
+// Return two Volumes configs -- one without loading keepstoreYAML
+// ("before") and one with ("after") -- for the caller to compare.
+func (s *KeepstoreMigrationSuite) loadWithKeepstoreConfig(c *check.C, keepstoreYAML string) (before, after map[string]arvados.Volume) {
 	ldr := testLoader(c, s.clusterConfigYAML(c), nil)
 	cBefore, err := ldr.Load()
 	c.Assert(err, check.IsNil)
@@ -646,7 +686,7 @@ func (s *KeepstoreMigrationSuite) loadWithKeepstoreConfig(c *check.C, keepstoreV
 	keepstoreconfig, err := ioutil.TempFile("", "")
 	c.Assert(err, check.IsNil)
 	defer os.Remove(keepstoreconfig.Name())
-	io.WriteString(keepstoreconfig, keepstoreVolumesYAML)
+	io.WriteString(keepstoreconfig, keepstoreYAML)
 
 	ldr = testLoader(c, s.clusterConfigYAML(c), nil)
 	ldr.KeepstorePath = keepstoreconfig.Name()
@@ -654,6 +694,24 @@ func (s *KeepstoreMigrationSuite) loadWithKeepstoreConfig(c *check.C, keepstoreV
 	c.Assert(err, check.IsNil)
 
 	return cBefore.Clusters["zzzzz"].Volumes, cAfter.Clusters["zzzzz"].Volumes
+}
+
+// Return the log messages emitted when loading keepstoreYAML along
+// with clusterConfigForKeepstoreMigrationTest.
+func (s *KeepstoreMigrationSuite) logsWithKeepstoreConfig(c *check.C, keepstoreYAML string) string {
+	var logs bytes.Buffer
+
+	keepstoreconfig, err := ioutil.TempFile("", "")
+	c.Assert(err, check.IsNil)
+	defer os.Remove(keepstoreconfig.Name())
+	io.WriteString(keepstoreconfig, keepstoreYAML)
+
+	ldr := testLoader(c, s.clusterConfigYAML(c), &logs)
+	ldr.KeepstorePath = keepstoreconfig.Name()
+	_, err = ldr.Load()
+	c.Assert(err, check.IsNil)
+
+	return logs.String()
 }
 
 func (s *KeepstoreMigrationSuite) clusterConfigYAML(c *check.C) string {

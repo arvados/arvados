@@ -10,16 +10,19 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // KeepService is an arvados#keepService record
 type KeepService struct {
-	UUID           string `json:"uuid"`
-	ServiceHost    string `json:"service_host"`
-	ServicePort    int    `json:"service_port"`
-	ServiceSSLFlag bool   `json:"service_ssl_flag"`
-	ServiceType    string `json:"service_type"`
-	ReadOnly       bool   `json:"read_only"`
+	UUID           string    `json:"uuid"`
+	ServiceHost    string    `json:"service_host"`
+	ServicePort    int       `json:"service_port"`
+	ServiceSSLFlag bool      `json:"service_ssl_flag"`
+	ServiceType    string    `json:"service_type"`
+	ReadOnly       bool      `json:"read_only"`
+	CreatedAt      time.Time `json:"created_at"`
+	ModifiedAt     time.Time `json:"modified_at"`
 }
 
 type KeepMount struct {

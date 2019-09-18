@@ -259,9 +259,15 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 
 	// Check for known mistakes
 	for id, cc := range cfg.Clusters {
-		err = checkKeyConflict(fmt.Sprintf("Clusters.%s.PostgreSQL.Connection", id), cc.PostgreSQL.Connection)
-		if err != nil {
-			return nil, err
+		for _, err = range []error{
+			checkKeyConflict(fmt.Sprintf("Clusters.%s.PostgreSQL.Connection", id), cc.PostgreSQL.Connection),
+			ldr.checkPendingKeepstoreMigrations(cc),
+			ldr.checkEmptyKeepstores(cc),
+			ldr.checkUnlistedKeepstores(cc),
+		} {
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 	return &cfg, nil

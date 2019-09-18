@@ -16,6 +16,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"github.com/sirupsen/logrus"
@@ -106,7 +107,7 @@ func (ldr *Loader) loadOldKeepstoreConfig(cfg *arvados.Config) error {
 
 	var oc oldKeepstoreConfig
 	err = ldr.loadOldConfigHelper("keepstore", ldr.KeepstorePath, &oc)
-	if os.IsNotExist(err) && (ldr.KeepstorePath == defaultKeepstoreConfigPath) {
+	if os.IsNotExist(err) && ldr.KeepstorePath == defaultKeepstoreConfigPath {
 		return nil
 	} else if err != nil {
 		return err
@@ -403,7 +404,7 @@ func (ldr *Loader) alreadyMigrated(oldvol oldKeepstoreVolume, newvols map[string
 			var params arvados.DirectoryVolumeDriverParameters
 			if err := json.Unmarshal(newvol.DriverParameters, &params); err == nil &&
 				oldvol.Root == params.Root {
-				if _, ok := newvol.AccessViaHosts[myURL]; ok {
+				if _, ok := newvol.AccessViaHosts[myURL]; ok || len(newvol.AccessViaHosts) == 0 {
 					return uuid, true
 				}
 			}
@@ -519,20 +520,24 @@ func findKeepServicesItem(cluster *arvados.Cluster, listen string) (uuid string,
 		if ks.ServiceType == "proxy" {
 			continue
 		} else if keepServiceIsMe(ks, hostname, listen) {
-			url := arvados.URL{
-				Scheme: "http",
-				Host:   net.JoinHostPort(ks.ServiceHost, strconv.Itoa(ks.ServicePort)),
-			}
-			if ks.ServiceSSLFlag {
-				url.Scheme = "https"
-			}
-			return ks.UUID, url, nil
+			return ks.UUID, keepServiceURL(ks), nil
 		} else {
 			tried = append(tried, fmt.Sprintf("%s:%d", ks.ServiceHost, ks.ServicePort))
 		}
 	}
 	err = fmt.Errorf("listen address %q does not match any of the non-proxy keep_services entries %q", listen, tried)
 	return
+}
+
+func keepServiceURL(ks arvados.KeepService) arvados.URL {
+	url := arvados.URL{
+		Scheme: "http",
+		Host:   net.JoinHostPort(ks.ServiceHost, strconv.Itoa(ks.ServicePort)),
+	}
+	if ks.ServiceSSLFlag {
+		url.Scheme = "https"
+	}
+	return url
 }
 
 var localhostOrAllInterfaces = map[string]bool{
@@ -569,4 +574,107 @@ func keepServiceIsMe(ks arvados.KeepService, hostname string, listen string) boo
 
 	kshost := strings.ToLower(ks.ServiceHost)
 	return localhostOrAllInterfaces[kshost] || strings.HasPrefix(kshost+".", strings.ToLower(hostname)+".")
+}
+
+// Warn about pending keepstore migration tasks that haven't already
+// been warned about in loadOldKeepstoreConfig() -- i.e., unmigrated
+// keepstore hosts other than the present host, and obsolete content
+// in the keep_services table.
+func (ldr *Loader) checkPendingKeepstoreMigrations(cluster arvados.Cluster) error {
+	if cluster.Services.Controller.ExternalURL.String() == "" {
+		ldr.Logger.Debug("Services.Controller.ExternalURL not configured -- skipping check for pending keepstore config migrations")
+		return nil
+	}
+	client, err := arvados.NewClientFromConfig(&cluster)
+	if err != nil {
+		return err
+	}
+	client.AuthToken = cluster.SystemRootToken
+	var svcList arvados.KeepServiceList
+	err = client.RequestAndDecode(&svcList, "GET", "arvados/v1/keep_services", nil, nil)
+	if err != nil {
+		ldr.Logger.WithError(err).Warn("error retrieving keep_services list -- skipping check for pending keepstore config migrations")
+		return nil
+	}
+	hostname, err := os.Hostname()
+	if err != nil {
+		return fmt.Errorf("error getting hostname: %s", err)
+	}
+	sawTimes := map[time.Time]bool{}
+	for _, ks := range svcList.Items {
+		sawTimes[ks.CreatedAt] = true
+		sawTimes[ks.ModifiedAt] = true
+	}
+	if len(sawTimes) <= 1 {
+		// If all timestamps in the arvados/v1/keep_services
+		// response are identical, it's a clear sign the
+		// response was generated on the fly from the cluster
+		// config, rather than real database records. In that
+		// case (as well as the case where none are listed at
+		// all) it's pointless to look for entries that
+		// haven't yet been migrated to the config file.
+		return nil
+	}
+	needDBRows := false
+	for _, ks := range svcList.Items {
+		if ks.ServiceType == "proxy" {
+			if len(cluster.Services.Keepproxy.InternalURLs) == 0 {
+				needDBRows = true
+				ldr.Logger.Warn("you should migrate your keepproxy configuration to the cluster configuration file")
+			}
+			continue
+		}
+		kshost := strings.ToLower(ks.ServiceHost)
+		if localhostOrAllInterfaces[kshost] || strings.HasPrefix(kshost+".", strings.ToLower(hostname)+".") {
+			// it would be confusing to recommend
+			// migrating *this* host's legacy keepstore
+			// config immediately after explaining that
+			// very migration process in more detail.
+			continue
+		}
+		ksurl := keepServiceURL(ks)
+		if _, ok := cluster.Services.Keepstore.InternalURLs[ksurl]; ok {
+			// already added to InternalURLs
+			continue
+		}
+		ldr.Logger.Warnf("you should migrate the legacy keepstore configuration file on host %s", ks.ServiceHost)
+	}
+	if !needDBRows {
+		ldr.Logger.Warn("you should delete all of your manually added keep_services listings using `arv --format=uuid keep_service list | xargs -n1 arv keep_service delete --uuid` -- when those are deleted, the services listed in your cluster configuration will be used instead")
+	}
+	return nil
+}
+
+// Warn about keepstore servers that have no volumes.
+func (ldr *Loader) checkEmptyKeepstores(cluster arvados.Cluster) error {
+servers:
+	for url := range cluster.Services.Keepstore.InternalURLs {
+		for _, vol := range cluster.Volumes {
+			if len(vol.AccessViaHosts) == 0 {
+				// accessible by all servers
+				return nil
+			}
+			if _, ok := vol.AccessViaHosts[url]; ok {
+				continue servers
+			}
+		}
+		ldr.Logger.Warnf("keepstore configured at %s does not have access to any volumes", url)
+	}
+	return nil
+}
+
+// Warn about AccessViaHosts entries that don't correspond to any of
+// the listed keepstore services.
+func (ldr *Loader) checkUnlistedKeepstores(cluster arvados.Cluster) error {
+	for uuid, vol := range cluster.Volumes {
+		if uuid == "SAMPLE" {
+			continue
+		}
+		for url := range vol.AccessViaHosts {
+			if _, ok := cluster.Services.Keepstore.InternalURLs[url]; !ok {
+				ldr.Logger.Warnf("Volumes.%s.AccessViaHosts refers to nonexistent keepstore server %s", uuid, url)
+			}
+		}
+	}
+	return nil
 }
