@@ -739,6 +739,7 @@ do_test() {
             ;;
         *)
             if ! start_services; then
+                checkexit 1 "$1 tests"
                 title "test $1 -- failed to start services"
                 return 1
             fi
