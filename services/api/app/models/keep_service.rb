@@ -51,11 +51,12 @@ class KeepService < ArvadosModel
     values = []
     id = 1
     Rails.configuration.Services.Keepstore.InternalURLs.each do |url, info|
-      values << "(#{id}, " + quoted_column_values_from_url(url: url.to_s, info: info).join(", ") + ", 'disk', 'f'::bool, #{config_time}, #{config_time}, #{owner}, #{owner}, null)"
+      values << "(#{id}, " + quoted_column_values_from_url(url: url.to_s, rendezvous: info.Rendezvous).join(", ") + ", 'disk', 'f'::bool, #{config_time}, #{config_time}, #{owner}, #{owner}, null)"
       id += 1
     end
-    Rails.configuration.Services.Keepproxy.InternalURLs.each do |url, info|
-      values << "(#{id}, " + quoted_column_values_from_url(url: url.to_s, info: info).join(", ") + ", 'proxy', 'f'::bool, #{config_time}, #{config_time}, #{owner}, #{owner}, null)"
+    url = Rails.configuration.Services.Keepproxy.ExternalURL.to_s
+    if !url.blank?
+      values << "(#{id}, " + quoted_column_values_from_url(url: url, rendezvous: "").join(", ") + ", 'proxy', 'f'::bool, #{config_time}, #{config_time}, #{owner}, #{owner}, null)"
       id += 1
     end
     if values.length == 0
@@ -69,8 +70,8 @@ class KeepService < ArvadosModel
 
   private
 
-  def self.quoted_column_values_from_url(url:, info:)
-    rvz = info.Rendezvous
+  def self.quoted_column_values_from_url(url:, rendezvous:)
+    rvz = rendezvous
     rvz = url if rvz.blank?
     if /^[a-zA-Z0-9]{15}$/ !~ rvz
       # If rvz is an URL (either the real service URL, or an alternate
