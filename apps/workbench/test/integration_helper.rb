@@ -206,7 +206,7 @@ class ActionDispatch::IntegrationTest
   end
 
   teardown do
-    if not passed?
+    if !passed? && !skipped?
       screenshot
     end
     if Capybara.current_driver == :selenium
