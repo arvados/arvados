@@ -12,6 +12,7 @@ import (
 
 	"git.curoverse.com/arvados.git/lib/config"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	check "gopkg.in/check.v1"
 )
 
@@ -48,7 +49,7 @@ func (s *GitoliteSuite) SetUpTest(c *check.C) {
 
 	s.tmpRepoRoot = s.gitoliteHome + "/repositories"
 
-	cfg, err := config.NewLoader(nil, nil).Load()
+	cfg, err := config.NewLoader(nil, ctxlog.TestLogger(c)).Load()
 	c.Assert(err, check.Equals, nil)
 	s.cluster, err = cfg.GetCluster("")
 	c.Assert(err, check.Equals, nil)

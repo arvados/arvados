@@ -22,6 +22,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	check "gopkg.in/check.v1"
 )
@@ -429,7 +430,7 @@ func (s *IntegrationSuite) TearDownSuite(c *check.C) {
 
 func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	arvadostest.ResetEnv()
-	ldr := config.NewLoader(bytes.NewBufferString("Clusters: {zzzzz: {}}"), nil)
+	ldr := config.NewLoader(bytes.NewBufferString("Clusters: {zzzzz: {}}"), ctxlog.TestLogger(c))
 	ldr.Path = "-"
 	arvCfg, err := ldr.Load()
 	c.Check(err, check.IsNil)

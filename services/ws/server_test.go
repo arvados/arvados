@@ -15,6 +15,7 @@ import (
 	"git.curoverse.com/arvados.git/lib/config"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	check "gopkg.in/check.v1"
 )
 
@@ -28,13 +29,13 @@ type serverSuite struct {
 
 func (s *serverSuite) SetUpTest(c *check.C) {
 	var err error
-	s.cluster, err = s.testConfig()
+	s.cluster, err = s.testConfig(c)
 	c.Assert(err, check.IsNil)
 	s.srv = &server{cluster: s.cluster}
 }
 
-func (*serverSuite) testConfig() (*arvados.Cluster, error) {
-	ldr := config.NewLoader(nil, nil)
+func (*serverSuite) testConfig(c *check.C) (*arvados.Cluster, error) {
+	ldr := config.NewLoader(nil, ctxlog.TestLogger(c))
 	cfg, err := ldr.Load()
 	if err != nil {
 		return nil, err

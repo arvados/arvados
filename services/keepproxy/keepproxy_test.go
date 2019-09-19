@@ -22,6 +22,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	log "github.com/sirupsen/logrus"
 
@@ -99,7 +100,7 @@ func (s *NoKeepServerSuite) TearDownSuite(c *C) {
 }
 
 func runProxy(c *C, bogusClientToken bool) *keepclient.KeepClient {
-	cfg, err := config.NewLoader(nil, nil).Load()
+	cfg, err := config.NewLoader(nil, ctxlog.TestLogger(c)).Load()
 	c.Assert(err, Equals, nil)
 	cluster, err := cfg.GetCluster("")
 	c.Assert(err, Equals, nil)
