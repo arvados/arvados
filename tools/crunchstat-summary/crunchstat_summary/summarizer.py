@@ -105,7 +105,7 @@ class Summarizer(object):
                                        self.label, uuid)
                         continue
                     logger.debug('%s: follow %s', self.label, uuid)
-                    child_summarizer = ProcessSummarizer(uuid)
+                    child_summarizer = NewSummarizer(uuid)
                     child_summarizer.stats_max = self.stats_max
                     child_summarizer.task_stats = self.task_stats
                     child_summarizer.tasks = self.tasks
@@ -526,7 +526,7 @@ def NewSummarizer(process_or_uuid, **kwargs):
 
 
 class ProcessSummarizer(Summarizer):
-    """Process is a job, pipeline, container, or container request."""
+    """Process is a job, pipeline, or container request."""
 
     def __init__(self, process, label=None, **kwargs):
         rdr = None
@@ -535,17 +535,16 @@ class ProcessSummarizer(Summarizer):
             label = self.process.get('name', self.process['uuid'])
         # Pre-Arvados v1.4 everything is in 'log'
         # For 1.4+ containers have no logs and container_requests have them in 'log_uuid', not 'log'
-        log_collection = self.process.get('log')
-        if not log_collection:
-            log_collection = self.process.get('log_uuid')
-        if log_collection:
+        log_collection = self.process.get('log', self.process.get('log_uuid'))
+        if log_collection and self.process.get('state') != 'Uncommitted': # arvados.util.CR_UNCOMMITTED:
             try:
                 rdr = crunchstat_summary.reader.CollectionReader(log_collection)
             except arvados.errors.NotFoundError as e:
                 logger.warning("Trying event logs after failing to read "
                                "log collection %s: %s", self.process['log'], e)
         if rdr is None:
-            rdr = crunchstat_summary.reader.LiveLogReader(self.process['uuid'])
+            uuid = self.process.get('container_uuid', self.process.get('uuid'))
+            rdr = crunchstat_summary.reader.LiveLogReader(uuid)
             label = label + ' (partial)'
         super(ProcessSummarizer, self).__init__(rdr, label=label, **kwargs)
         self.existing_constraints = self.process.get('runtime_constraints', {})

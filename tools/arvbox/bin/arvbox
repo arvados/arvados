@@ -242,6 +242,8 @@ run() {
         fi
         if ! test -d "$COMPOSER_ROOT" ; then
             git clone https://github.com/curoverse/composer.git "$COMPOSER_ROOT"
+            git -C "$COMPOSER_ROOT" checkout arvados-fork
+            git -C "$COMPOSER_ROOT" pull
         fi
         if ! test -d "$WORKBENCH2_ROOT" ; then
             git clone https://github.com/curoverse/arvados-workbench2.git "$WORKBENCH2_ROOT"
