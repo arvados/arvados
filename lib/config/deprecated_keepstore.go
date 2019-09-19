@@ -585,6 +585,10 @@ func (ldr *Loader) checkPendingKeepstoreMigrations(cluster arvados.Cluster) erro
 		ldr.Logger.Debug("Services.Controller.ExternalURL not configured -- skipping check for pending keepstore config migrations")
 		return nil
 	}
+	if ldr.SkipAPICalls {
+		ldr.Logger.Debug("(Loader).SkipAPICalls == true -- skipping check for pending keepstore config migrations")
+		return nil
+	}
 	client, err := arvados.NewClientFromConfig(&cluster)
 	if err != nil {
 		return err

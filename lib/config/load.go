@@ -28,6 +28,7 @@ type Loader struct {
 	Logger         logrus.FieldLogger
 	SkipDeprecated bool // Don't load deprecated config keys
 	SkipLegacy     bool // Don't load legacy config files
+	SkipAPICalls   bool // Don't do checks that call RailsAPI/controller
 
 	Path                    string
 	KeepstorePath           string

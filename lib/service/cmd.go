@@ -79,6 +79,14 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 		return cmd.Version.RunCommand(prog, args, stdin, stdout, stderr)
 	}
 
+	if strings.HasSuffix(prog, "controller") {
+		// Some config-loader checks try to make API calls via
+		// controller. Those can't be expected to work if this
+		// process _is_ the controller: we haven't started an
+		// http server yet.
+		loader.SkipAPICalls = true
+	}
+
 	cfg, err := loader.Load()
 	if err != nil {
 		return 1
