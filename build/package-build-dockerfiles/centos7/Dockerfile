@@ -52,4 +52,4 @@ RUN git clone --depth 1 git://git.curoverse.com/arvados.git /tmp/arvados && cd /
 RUN pip install --upgrade setuptools
 
 ENV WORKSPACE /arvados
-CMD ["scl", "enable", "rh-python35", "/usr/local/rvm/bin/rvm-exec default bash /jenkins/run-build-packages.sh --target centos7"]
+CMD ["scl", "enable", "rh-python36", "/usr/local/rvm/bin/rvm-exec default bash /jenkins/run-build-packages.sh --target centos7"]
