@@ -29,8 +29,8 @@ RUN ln -s /usr/local/node-v6.11.2-linux-x64/bin/* /usr/local/bin/
 
 # Need to "touch" RPM database to workaround bug in interaction between
 # overlayfs and yum (https://bugzilla.redhat.com/show_bug.cgi?id=1213602)
-RUN touch /var/lib/rpm/* && yum -q -y install rh-python35
-RUN scl enable rh-python35 "easy_install-3.5 pip" && easy_install-2.7 pip
+RUN touch /var/lib/rpm/* && yum -q -y install rh-python36
+RUN scl enable rh-python36 "easy_install-3.6 pip" && easy_install-2.7 pip
 
 # Add epel, we need it for the python-pam dependency
 RUN wget http://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
@@ -42,4 +42,4 @@ RUN git clone --depth 1 git://git.curoverse.com/arvados.git /tmp/arvados && cd /
 RUN pip install --upgrade setuptools
 
 ENV WORKSPACE /arvados
-CMD ["scl", "enable", "rh-python35", "/usr/local/rvm/bin/rvm-exec default bash /jenkins/run-build-packages.sh --target centos7"]
+CMD ["scl", "enable", "rh-python36", "/usr/local/rvm/bin/rvm-exec default bash /jenkins/run-build-packages.sh --target centos7"]
