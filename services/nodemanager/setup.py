@@ -40,7 +40,7 @@ setup(name='arvados-node-manager',
           ('share/doc/arvados-node-manager', ['agpl-3.0.txt', 'README.rst', 'arvados-node-manager.service']),
       ],
       install_requires=[
-          'apache-libcloud>=2.3.1.dev1',
+          'apache-libcloud==2.5.0', # 2.6.0 cannot create azure nodes, #15649
           'arvados-python-client{}'.format(pysdk_dep),
           'future',
           'pykka < 2',
@@ -48,15 +48,12 @@ setup(name='arvados-node-manager',
           'setuptools',
           'subprocess32>=3.5.1',
       ],
-      dependency_links=[
-          "https://github.com/curoverse/libcloud/archive/apache-libcloud-2.3.1.dev1.zip"
-      ],
       test_suite='tests',
       tests_require=[
           'requests',
           'pbr<1.7.0',
           'mock>=1.0',
-          'apache-libcloud>=2.3.1.dev1',
+          'apache-libcloud==2.5.0',
           'subprocess32>=3.5.1',
       ],
       zip_safe=False
