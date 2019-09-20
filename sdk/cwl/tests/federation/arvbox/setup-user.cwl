@@ -31,4 +31,4 @@ inputs:
 outputs:
   test_user_uuid: string
   test_user_token: string
-arguments: [python2, $(inputs.make_user_script)]
+arguments: [python, $(inputs.make_user_script)]

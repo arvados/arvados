@@ -39,8 +39,11 @@ def main():
     else:
         arv = arvados.api(cache=False)
         rh = arv._rootDesc["remoteHosts"]
+        tok = arv.api_client_authorizations().current().execute()
+        token = "v2/%s/%s" % (tok["uuid"], tok["api_token"])
+
         for k,v in rh.items():
-            arv = arvados.api(host=v, token=os.environ["ARVADOS_API_TOKEN"], cache=False)
+            arv = arvados.api(host=v, token=token, cache=False, insecure=os.environ.get("ARVADOS_API_HOST_INSECURE"))
             config = arv.configs().get().execute()
             if config["Login"]["LoginCluster"] != "" and loginCluster is None:
                 loginCluster = config["Login"]["LoginCluster"]
@@ -82,52 +85,62 @@ def main():
         print("Tokens file passed checks")
         exit(0)
 
+    rows = []
+    by_email = {}
+
+    users = []
+    for c, arv in clusters.items():
+        print("Getting user list from %s" % c)
+        ul = arvados.util.list_all(arv.users().list)
+        for l in ul:
+            if l["uuid"].startswith(c):
+                users.append(l)
+
+    users = sorted(users, key=lambda u: u["email"]+"::"+(u["username"] or "")+"::"+u["uuid"])
+
+    accum = []
+    lastemail = None
+    for u in users:
+        if u["uuid"].endswith("-anonymouspublic") or u["uuid"].endswith("-000000000000000"):
+            continue
+        if lastemail == None:
+            lastemail = u["email"]
+        if u["email"] == lastemail:
+            accum.append(u)
+        else:
+            homeuuid = None
+            for a in accum:
+                if homeuuid is None:
+                    homeuuid = a["uuid"]
+                if a["uuid"] != homeuuid:
+                    homeuuid = ""
+            for a in accum:
+                r = (a["email"], a["username"], a["uuid"], loginCluster or homeuuid[0:5])
+                by_email.setdefault(a["email"], [])
+                by_email[a["email"]].append(r)
+                rows.append(r)
+            lastemail = u["email"]
+            accum = [u]
+
+    homeuuid = None
+    for a in accum:
+        if homeuuid is None:
+            homeuuid = a["uuid"]
+        if a["uuid"] != homeuuid:
+            homeuuid = ""
+    for a in accum:
+        r = (a["email"], a["username"], a["uuid"], loginCluster or homeuuid[0:5])
+        by_email.setdefault(a["email"], [])
+        by_email[a["email"]].append(r)
+        rows.append(r)
+
     if args.report:
-        users = []
-        for c, arv in clusters.items():
-            print("Getting user list from %s" % c)
-            ul = arvados.util.list_all(arv.users().list)
-            for l in ul:
-                if l["uuid"].startswith(c):
-                    users.append(l)
-
         out = csv.writer(open(args.report, "wt"))
-
         out.writerow(("email", "username", "user uuid", "home cluster"))
-
-        users = sorted(users, key=lambda u: u["email"]+"::"+(u["username"] or "")+"::"+u["uuid"])
-
-        accum = []
-        lastemail = None
-        for u in users:
-            if u["uuid"].endswith("-anonymouspublic") or u["uuid"].endswith("-000000000000000"):
-                continue
-            if lastemail == None:
-                lastemail = u["email"]
-            if u["email"] == lastemail:
-                accum.append(u)
-            else:
-                homeuuid = None
-                for a in accum:
-                    if homeuuid is None:
-                        homeuuid = a["uuid"]
-                    if a["uuid"] != homeuuid:
-                        homeuuid = ""
-                for a in accum:
-                    out.writerow((a["email"], a["username"], a["uuid"], loginCluster or homeuuid[0:5]))
-                lastemail = u["email"]
-                accum = [u]
-
-        homeuuid = None
-        for a in accum:
-            if homeuuid is None:
-                homeuuid = a["uuid"]
-            if a["uuid"] != homeuuid:
-                homeuuid = ""
-        for a in accum:
-            out.writerow((a["email"], a["username"], a["uuid"], loginCluster or homeuuid[0:5]))
-
+        for r in rows:
+            out.writerow(r)
         print("Wrote %s" % args.report)
+        return
 
     if args.migrate or args.dry_run:
         if args.dry_run:
@@ -142,6 +155,7 @@ def main():
                 by_email.setdefault(r[0], [])
                 by_email[r[0]].append(r)
                 rows.append(r)
+
         for r in rows:
             email = r[0]
             username = r[1]
@@ -153,9 +167,16 @@ def main():
             if old_user_uuid.startswith(userhome):
                 continue
             candidates = []
+            conflict = False
             for b in by_email[email]:
                 if b[2].startswith(userhome):
                     candidates.append(b)
+                if b[1] != username and b[3] == userhome:
+                    print("(%s) Cannot migrate %s, conflicting usernames %s and %s" % (email, old_user_uuid, b[1], username))
+                    conflict = True
+                    break
+            if conflict:
+                continue
             if len(candidates) == 0:
                 if len(userhome) == 5 and userhome not in clusters:
                     print("(%s) Cannot migrate %s, unknown home cluster %s (typo?)" % (email, old_user_uuid, userhome))
@@ -166,21 +187,22 @@ def main():
                     homearv = clusters[userhome]
                     user = None
                     try:
+                        conflicts = homearv.users().list(filters=[["username", "=", username]]).execute()
+                        if conflicts["items"]:
+                            homearv.users().update(uuid=conflicts["items"][0]["uuid"], body={"user": {"username": username+"migrate"}}).execute()
                         user = homearv.users().create(body={"user": {"email": email, "username": username}}).execute()
                     except arvados.errors.ApiError as e:
-                        if "Username" in str(e):
-                            other = homearv.users().list(filters=[["username", "=", username]]).execute()
-                            if other['items'] and other['items'][0]['email'] == email:
-                                conflicting_user = other['items'][0]
-                                homearv.users().update(uuid=conflicting_user["uuid"], body={"user": {"username": username+"migrate"}}).execute()
-                                user = homearv.users().create(body={"user": {"email": email, "username": username}}).execute()
-                        if not user:
-                            print("(%s) Could not create user: %s" % (email, str(e)))
-                            continue
+                        print("(%s) Could not create user: %s" % (email, str(e)))
+                        continue
 
-                    candidates.append((email, username, user["uuid"], userhome))
+                    tup = (email, username, user["uuid"], userhome)
+                    by_email[email].append(tup)
+                    candidates.append(tup)
                 else:
-                    candidates.append((email, username, "%s-tpzed-xfakexfakexfake" % (userhome[0:5]), userhome))
+                    # dry run
+                    tup = (email, username, "%s-tpzed-xfakexfakexfake" % (userhome[0:5]), userhome)
+                    by_email[email].append(tup)
+                    candidates.append(tup)
             if len(candidates) > 1:
                 print("(%s) Multiple users listed to migrate %s to %s, use full uuid" % (email, old_user_uuid, userhome))
                 continue
@@ -215,9 +237,9 @@ def main():
                 try:
                     ru = urllib.parse.urlparse(migratearv._rootDesc["rootUrl"])
                     if not args.dry_run:
-                        newuser = arvados.api(host=ru.netloc, token=salted).users().current().execute()
+                        newuser = arvados.api(host=ru.netloc, token=salted, insecure=os.environ.get("ARVADOS_API_HOST_INSECURE")).users().current().execute()
                     else:
-                        newuser = {"is_active": True}
+                        newuser = {"is_active": True, "username": username}
                 except arvados.errors.ApiError as e:
                     print("(%s) Error getting user info for %s from %s: %s" % (email, new_user_uuid, migratecluster, e))
                     continue
@@ -259,8 +281,10 @@ def main():
                     print("(%s) Error migrating user: %s" % (email, e))
 
                 if newuser['username'] != username:
-                    print("%s != %s" % (newuser['username'], username))
                     try:
+                        conflicts = migratearv.users().list(filters=[["username", "=", username]]).execute()
+                        if conflicts["items"]:
+                            migratearv.users().update(uuid=conflicts["items"][0]["uuid"], body={"user": {"username": username+"migrate"}}).execute()
                         migratearv.users().update(uuid=new_user_uuid, body={"user": {"username": username}}).execute()
                     except arvados.errors.ApiError as e:
                         print("(%s) Error updating username of %s to '%s' on %s: %s" % (email, new_user_uuid, username, migratecluster, e))

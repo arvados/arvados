@@ -301,7 +301,6 @@ class User < ArvadosModel
         user_updates = [
           [AuthorizedKey, :owner_uuid],
           [AuthorizedKey, :authorized_user_uuid],
-          [Repository, :owner_uuid],
           [Link, :owner_uuid],
           [Link, :tail_uuid],
           [Link, :head_uuid],
@@ -313,7 +312,6 @@ class User < ArvadosModel
         AuthorizedKey.where(owner_uuid: uuid).destroy_all
         AuthorizedKey.where(authorized_user_uuid: uuid).destroy_all
         user_updates = [
-          [Repository, :owner_uuid],
           [Link, :owner_uuid],
           [Link, :tail_uuid],
           [Link, :head_uuid],
@@ -325,6 +323,20 @@ class User < ArvadosModel
       # updated to point to the new user.
       user_updates.each do |klass, column|
         klass.where(column => uuid).update_all(column => new_user.uuid)
+      end
+
+      # Need to update repository names to new username
+      old_repo_name_re = /^#{Regexp.escape(username)}\//
+      Repository.where(:owner_uuid => uuid).each do |repo|
+        repo.owner_uuid = new_user.uuid
+        repo_name_sub = "#{new_user.username}/"
+        name = repo.name.sub(old_repo_name_re, repo_name_sub)
+        while (conflict = Repository.where(:name => name).first) != nil
+          repo_name_sub += "migrated"
+          name = repo.name.sub(old_repo_name_re, repo_name_sub)
+        end
+        repo.name = name
+        repo.save!
       end
 
       # References to the merged user's "home project" are updated to

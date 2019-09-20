@@ -268,6 +268,7 @@ class UsersTest < ActionDispatch::IntegrationTest
       headers: auth(:active))
     assert_response(:success)
     assert_equal(users(:project_viewer).uuid, json_response['owner_uuid'])
+    assert_equal("#{users(:project_viewer).username}/foo", json_response['name'])
 
     get('/arvados/v1/groups/' + groups(:aproject).uuid,
       params: {},
@@ -301,6 +302,41 @@ class UsersTest < ActionDispatch::IntegrationTest
     assert_equal true, json_response['is_active']
     assert_equal 'foo@example.com', json_response['email']
     assert_equal 'barney', json_response['username']
+  end
+
+  test 'merge with repository name conflict' do
+    post('/arvados/v1/groups',
+      params: {
+        group: {
+          group_class: 'project',
+          name: "active user's stuff",
+        },
+      },
+      headers: auth(:project_viewer))
+    assert_response(:success)
+    project_uuid = json_response['uuid']
+
+    post('/arvados/v1/repositories/',
+         params: { :repository => { :name => "#{users(:project_viewer).username}/foo", :owner_uuid => users(:project_viewer).uuid } },
+         headers: auth(:project_viewer))
+    assert_response(:success)
+
+    post('/arvados/v1/users/merge',
+      params: {
+        new_user_token: api_client_authorizations(:project_viewer_trustedclient).api_token,
+        new_owner_uuid: project_uuid,
+        redirect_to_new_user: true,
+      },
+      headers: auth(:active_trustedclient))
+    assert_response(:success)
+
+    get('/arvados/v1/repositories/' + repositories(:foo).uuid,
+      params: {},
+      headers: auth(:active))
+    assert_response(:success)
+    assert_equal(users(:project_viewer).uuid, json_response['owner_uuid'])
+    assert_equal("#{users(:project_viewer).username}/migratedfoo", json_response['name'])
+
   end
 
 end

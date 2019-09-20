@@ -1,0 +1,34 @@
+def workflow main(
+  arvados_api_hosts string[],
+  superuser_tokens string[],
+  fed_migrate="arv-federation-migrate"
+) {
+
+  run tool(arvados_api_hosts, superuser_tokens, create_users=File("create_users.py")) {
+    python $(inputs.create_users) <<<
+{
+  "arvados_api_hosts": $(inputs.arvados_api_hosts),
+  "superuser_tokens": $(inputs.superuser_tokens)
+}
+>>>
+  return arvados_api_hosts as ar
+  }
+
+  run tool(arvados_api_hosts, superuser_tokens, ar,
+           fed_migrate,
+           host=$(inputs.arvados_api_hosts[0]),
+	   token=$(inputs.superuser_tokens[0])) {
+    requirements {
+      EnvVarRequirement {
+        envDef: {
+          ARVADOS_API_HOST: "$(inputs.host)",
+          ARVADOS_API_TOKEN: "$(inputs.token)"
+	}
+      }
+    }
+    $(inputs.fed_migrate) --report report.csv
+    return File("report.csv") as report
+  }
+
+  return report
+}

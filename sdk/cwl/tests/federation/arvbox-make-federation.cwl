@@ -32,12 +32,18 @@ outputs:
   arvados_cluster_ids:
     type: string[]
     outputSource: start/cluster_id
+  superuser_tokens:
+    type: string[]
+    outputSource: start/superuser_token
   acr:
     type: string?
     outputSource: in_acr
   arvado_api_host_insecure:
     type: boolean
     outputSource: insecure
+  arvbox_containers:
+    type: string[]
+    outputSource: containers
 steps:
   mkdir:
     in:
