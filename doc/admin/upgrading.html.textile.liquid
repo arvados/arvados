@@ -94,6 +94,10 @@ The "postgres-contrib package":https://www.postgresql.org/docs/10/contrib.html h
 
 Subsequently, the <code class="userinput">psql -d 'arvados_production' -c '\dx'</code> command will display the installed extensions for the arvados_production database. This list should now contain @pg_trgm@.
 
+h4. Centos7 Python 3 dependency upgraded to rh-python36
+
+Bug found on "#15648":https://dev.arvados.org/issues/15648, the Python 3 dependency for Centos7 Arvados packages was upgraded from SCL python35 to rh-python36.
+
 h4. Migrating to centralized config.yml
 
 See "Migrating Configuration":config-migration.html for notes on migrating legacy per-component configuration files to the new centralized @/etc/arvados/config.yml@.  To ensure a smooth transition, the per-component config files continue to be read, and take precedence over the centralized configuration.
