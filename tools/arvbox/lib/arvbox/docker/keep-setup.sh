@@ -45,7 +45,7 @@ fi
 management_token=$(cat /var/lib/arvados/management_token)
 
 set +e
-killall -HUP keepproxy
+sv hup /var/lib/arvbox/service/keepproxy
 
 cat >/var/lib/arvados/$1.yml <<EOF
 Listen: ":$2"
