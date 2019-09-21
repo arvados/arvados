@@ -80,9 +80,13 @@ Clusters:
       SSO:
         ExternalURL: "https://$localip:${services[sso]}"
       Keepproxy:
+        ExternalURL: "https://$localip:${services[keepproxy-ssl]}"
         InternalURLs:
-          "http://localhost:${services[keepproxy]}/": {}
-        ExternalURL: "https://$localip:${services[keepproxy-ssl]}/"
+          "http://localhost:${services[keepproxy]}": {}
+      Keepstore:
+        InternalURLs:
+          "http://localhost:${services[keepstore0]}": {}
+          "http://localhost:${services[keepstore1]}": {}
       Websocket:
         ExternalURL: "wss://$localip:${services[websockets-ssl]}/websocket"
         InternalURLs:

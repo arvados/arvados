@@ -26,7 +26,7 @@ export ARVADOS_API_TOKEN=$(cat /var/lib/arvados/superuser_token)
 set +e
 read -rd $'\000' keepservice <<EOF
 {
- "service_host":"$localip",
+ "service_host":"localhost",
  "service_port":$2,
  "service_ssl_flag":false,
  "service_type":"disk"
@@ -48,7 +48,7 @@ set +e
 sv hup /var/lib/arvbox/service/keepproxy
 
 cat >/var/lib/arvados/$1.yml <<EOF
-Listen: ":$2"
+Listen: "localhost:$2"
 BlobSigningKeyFile: /var/lib/arvados/blob_signing_key
 SystemAuthTokenFile: /var/lib/arvados/superuser_token
 ManagementToken: $management_token
