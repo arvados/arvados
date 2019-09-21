@@ -36,7 +36,7 @@ setup(name='arvados-node-manager',
       ],
       install_requires=[
           'apache-libcloud==2.5.0', # 2.6.0 cannot create azure nodes, #15649
-          'arvados-python-client{}'.format(pysdk_dep),
+          'arvados-python-client>=0.1.20170731145219',
           'future',
           'pykka < 2',
           'python-daemon',
