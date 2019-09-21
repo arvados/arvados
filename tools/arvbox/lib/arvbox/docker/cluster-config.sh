@@ -112,10 +112,6 @@ Clusters:
       RailsAPI:
         InternalURLs:
           "http://localhost:${services[api]}/": {}
-      Keepproxy:
-        ExternalURL: "https://$localip:${services[keepproxy-ssl]}"
-        InternalURLs:
-          "http://localhost:${services[keepproxy]}": {}
     PostgreSQL:
       ConnectionPool: 32 # max concurrent connections per arvados server daemon
       Connection:
