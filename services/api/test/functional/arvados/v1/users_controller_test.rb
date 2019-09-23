@@ -826,7 +826,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
            redirect_to_new_user: false,
          }
     assert_response(:success)
-    assert_equal(users(:active).uuid, User.unscoped.find_by_uuid(users(:project_viewer).uuid).redirect_to_user_uuid)
+    assert_nil(User.unscoped.find_by_uuid(users(:project_viewer).uuid).redirect_to_user_uuid)
 
     # because redirect_to_new_user=false, token owned by
     # project_viewer should be deleted

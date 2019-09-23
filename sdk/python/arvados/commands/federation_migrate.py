@@ -286,7 +286,7 @@ def main():
                         migratearv.users().merge(old_user_uuid=old_user_uuid,
                                                  new_user_uuid=new_user_uuid,
                                                  new_owner_uuid=grp["uuid"],
-                                                 redirect_to_new_user=old_user_uuid.startswith(migratecluster)).execute()
+                                                 redirect_to_new_user=True).execute()
                 except arvados.errors.ApiError as e:
                     print("(%s) Error migrating user: %s" % (email, e))
 

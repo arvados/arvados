@@ -272,26 +272,28 @@ class User < ArvadosModel
     end
   end
 
-  # Move this user's (i.e., self's) owned items into new_owner_uuid.
-  # Also redirect future uses of this account to
-  # redirect_to_user_uuid, i.e., when a caller authenticates to this
-  # account in the future, the account redirect_to_user_uuid account
-  # will be used instead.
+  # Move this user's (i.e., self's) owned items to new_owner_uuid and
+  # new_user_uuid (for things normally owned directly by the user).
+  #
+  # If redirect_auth is true, also reassign auth tokens and ssh keys,
+  # and redirect this account to redirect_to_user_uuid, i.e., when a
+  # caller authenticates to this account in the future, the account
+  # redirect_to_user_uuid account will be used instead.
   #
   # current_user must have admin privileges, i.e., the caller is
   # responsible for checking permission to do this.
-  def merge(new_owner_uuid:, redirect_to_user_uuid:, redirect_auth:)
+  def merge(new_owner_uuid:, new_user_uuid:, redirect_to_new_user:)
     raise PermissionDeniedError if !current_user.andand.is_admin
-    raise "not implemented" if !redirect_to_user_uuid
+    raise "not implemented" if !new_user_uuid
     transaction(requires_new: true) do
       reload
       raise "cannot merge an already merged user" if self.redirect_to_user_uuid
 
-      new_user = User.where(uuid: redirect_to_user_uuid).first
+      new_user = User.where(uuid: new_user_uuid).first
       raise "user does not exist" if !new_user
       raise "cannot merge to an already merged user" if new_user.redirect_to_user_uuid
 
-      if redirect_auth
+      if redirect_to_new_user
         # Existing API tokens and ssh keys are updated to authenticate
         # to the new user.
         ApiClientAuthorization.
@@ -313,8 +315,7 @@ class User < ArvadosModel
         AuthorizedKey.where(authorized_user_uuid: uuid).destroy_all
         user_updates = [
           [Link, :owner_uuid],
-          [Link, :tail_uuid],
-          [Link, :head_uuid],
+          [Link, :tail_uuid]
         ]
       end
 
@@ -351,7 +352,9 @@ class User < ArvadosModel
         klass.where(owner_uuid: uuid).update_all(owner_uuid: new_owner_uuid)
       end
 
-      update_attributes!(redirect_to_user_uuid: new_user.uuid, username: nil)
+      if redirect_to_new_user
+        update_attributes!(redirect_to_user_uuid: new_user.uuid, username: nil)
+      end
       invalidate_permissions_cache
     end
   end
