@@ -116,8 +116,8 @@ def main():
                     homeuuid = ""
             for a in accum:
                 r = (a["email"], a["username"], a["uuid"], loginCluster or homeuuid[0:5])
-                by_email.setdefault(a["email"], [])
-                by_email[a["email"]].append(r)
+                by_email.setdefault(a["email"], {})
+                by_email[a["email"]][a["uuid"]] = r
                 rows.append(r)
             lastemail = u["email"]
             accum = [u]
@@ -130,8 +130,8 @@ def main():
             homeuuid = ""
     for a in accum:
         r = (a["email"], a["username"], a["uuid"], loginCluster or homeuuid[0:5])
-        by_email.setdefault(a["email"], [])
-        by_email[a["email"]].append(r)
+        by_email.setdefault(a["email"], {})
+        by_email[a["email"]][a["uuid"]] = r
         rows.append(r)
 
     if args.report:
@@ -147,13 +147,13 @@ def main():
             print("Performing dry run")
 
         rows = []
-        by_email = {}
+
         with open(args.migrate or args.dry_run, "rt") as f:
             for r in csv.reader(f):
                 if r[0] == "email":
                     continue
-                by_email.setdefault(r[0], [])
-                by_email[r[0]].append(r)
+                by_email.setdefault(r[0], {})
+                by_email[r[0]][r[2]] = r
                 rows.append(r)
 
         for r in rows:
@@ -165,10 +165,22 @@ def main():
             if userhome == "":
                 print("(%s) Skipping %s, no home cluster specified" % (email, old_user_uuid))
             if old_user_uuid.startswith(userhome):
+                migratecluster = old_user_uuid[0:5]
+                migratearv = clusters[migratecluster]
+                if migratearv.users().get(uuid=old_user_uuid).execute()["username"] != username:
+                    print("(%s) Updating username of %s to '%s' on %s" % (email, old_user_uuid, username, migratecluster))
+                    if not args.dry_run:
+                        try:
+                            conflicts = migratearv.users().list(filters=[["username", "=", username]]).execute()
+                            if conflicts["items"]:
+                                migratearv.users().update(uuid=conflicts["items"][0]["uuid"], body={"user": {"username": username+"migrate"}}).execute()
+                            migratearv.users().update(uuid=old_user_uuid, body={"user": {"username": username}}).execute()
+                        except arvados.errors.ApiError as e:
+                            print("(%s) Error updating username of %s to '%s' on %s: %s" % (email, old_user_uuid, username, migratecluster, e))
                 continue
             candidates = []
             conflict = False
-            for b in by_email[email]:
+            for b in by_email[email].values():
                 if b[2].startswith(userhome):
                     candidates.append(b)
                 if b[1] != username and b[3] == userhome:
@@ -196,13 +208,11 @@ def main():
                         continue
 
                     tup = (email, username, user["uuid"], userhome)
-                    by_email[email].append(tup)
-                    candidates.append(tup)
                 else:
                     # dry run
                     tup = (email, username, "%s-tpzed-xfakexfakexfake" % (userhome[0:5]), userhome)
-                    by_email[email].append(tup)
-                    candidates.append(tup)
+                by_email[email][tup[2]] = tup
+                candidates.append(tup)
             if len(candidates) > 1:
                 print("(%s) Multiple users listed to migrate %s to %s, use full uuid" % (email, old_user_uuid, userhome))
                 continue
@@ -282,10 +292,11 @@ def main():
 
                 if newuser['username'] != username:
                     try:
-                        conflicts = migratearv.users().list(filters=[["username", "=", username]]).execute()
-                        if conflicts["items"]:
-                            migratearv.users().update(uuid=conflicts["items"][0]["uuid"], body={"user": {"username": username+"migrate"}}).execute()
-                        migratearv.users().update(uuid=new_user_uuid, body={"user": {"username": username}}).execute()
+                        if not args.dry_run:
+                            conflicts = migratearv.users().list(filters=[["username", "=", username]]).execute()
+                            if conflicts["items"]:
+                                migratearv.users().update(uuid=conflicts["items"][0]["uuid"], body={"user": {"username": username+"migrate"}}).execute()
+                            migratearv.users().update(uuid=new_user_uuid, body={"user": {"username": username}}).execute()
                     except arvados.errors.ApiError as e:
                         print("(%s) Error updating username of %s to '%s' on %s: %s" % (email, new_user_uuid, username, migratecluster, e))
 

@@ -6,7 +6,7 @@
 exec 2>&1
 set -ex -o pipefail
 
-if [[ -s /etc/arvados/config.yml ]] ; then
+if [[ -s /etc/arvados/config.yml ]] && [[ /var/lib/arvados/cluster_config.yml.override -ot /etc/arvados/config.yml ]] ; then
    exit
 fi
 
@@ -82,7 +82,7 @@ Clusters:
       Keepproxy:
         InternalURLs:
           "http://localhost:${services[keepproxy]}/": {}
-        ExternalURL: "http://$localip:${services[keepproxy-ssl]}/"
+        ExternalURL: "https://$localip:${services[keepproxy-ssl]}/"
       Websocket:
         ExternalURL: "wss://$localip:${services[websockets-ssl]}/websocket"
         InternalURLs:
@@ -104,7 +104,7 @@ Clusters:
         InternalURLs:
           "http://localhost:${services[keep-web]}/": {}
       Composer:
-        ExternalURL: "http://$localip:${services[composer]}"
+        ExternalURL: "https://$localip:${services[composer]}"
       Controller:
         ExternalURL: "https://$localip:${services[controller-ssl]}"
         InternalURLs:

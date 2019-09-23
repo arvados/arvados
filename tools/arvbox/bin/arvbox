@@ -242,6 +242,8 @@ run() {
         fi
         if ! test -d "$COMPOSER_ROOT" ; then
             git clone https://github.com/curoverse/composer.git "$COMPOSER_ROOT"
+            git -C "$COMPOSER_ROOT" checkout arvados-fork
+            git -C "$COMPOSER_ROOT" pull
         fi
         if ! test -d "$WORKBENCH2_ROOT" ; then
             git clone https://github.com/curoverse/arvados-workbench2.git "$WORKBENCH2_ROOT"
@@ -594,6 +596,39 @@ case "$subcmd" in
 	exec docker exec -ti $ARVBOX_CONTAINER bash -c 'PGPASSWORD=$(cat /var/lib/arvados/api_database_pw) exec psql --dbname=arvados_development --host=localhost --username=arvados'
 	;;
 
+    checkpoint)
+	exec docker exec -ti $ARVBOX_CONTAINER bash -c 'PGPASSWORD=$(cat /var/lib/arvados/api_database_pw) exec pg_dump --host=localhost --username=arvados --clean arvados_development > /var/lib/arvados/checkpoint.sql'
+	;;
+
+    restore)
+	exec docker exec -ti $ARVBOX_CONTAINER bash -c 'PGPASSWORD=$(cat /var/lib/arvados/api_database_pw) exec psql --dbname=arvados_development --host=localhost --username=arvados --quiet --file=/var/lib/arvados/checkpoint.sql'
+	;;
+
+    hotreset)
+	exec docker exec -i $ARVBOX_CONTAINER /usr/bin/env GEM_HOME=/var/lib/gems /bin/bash - <<EOF
+sv stop api
+sv stop controller
+sv stop websockets
+sv stop keepstore0
+sv stop keepstore1
+sv stop keepproxy
+cd /usr/src/arvados/services/api
+export RAILS_ENV=development
+bundle exec rake db:drop
+rm /var/lib/arvados/api_database_setup
+rm /var/lib/arvados/superuser_token
+rm /var/lib/arvados/keep0-uuid
+rm /var/lib/arvados/keep1-uuid
+rm /var/lib/arvados/keepproxy-uuid
+sv start api
+sv start controller
+sv start websockets
+sv restart keepstore0
+sv restart keepstore1
+sv restart keepproxy
+EOF
+	;;
+
     *)
         echo "Arvados-in-a-box             https://doc.arvados.org/install/arvbox.html"
         echo
@@ -612,6 +647,8 @@ case "$subcmd" in
         echo "build   <config>   build arvbox Docker image"
         echo "reboot  <config>   stop, build arvbox Docker image, run"
         echo "rebuild <config>   build arvbox Docker image, no layer cache"
+	echo "checkpoint         create database backup"
+	echo "restore            restore checkpoint"
         echo "reset              delete arvbox arvados data (be careful!)"
         echo "destroy            delete all arvbox code and data (be careful!)"
         echo "log <service>      tail log of specified service"
