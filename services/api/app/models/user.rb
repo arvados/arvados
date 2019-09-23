@@ -284,7 +284,8 @@ class User < ArvadosModel
   # responsible for checking permission to do this.
   def merge(new_owner_uuid:, new_user_uuid:, redirect_to_new_user:)
     raise PermissionDeniedError if !current_user.andand.is_admin
-    raise "not implemented" if !new_user_uuid
+    raise "Missing new_owner_uuid" if !new_owner_uuid
+    raise "Missing new_user_uuid" if !new_user_uuid
     transaction(requires_new: true) do
       reload
       raise "cannot merge an already merged user" if self.redirect_to_user_uuid
@@ -293,7 +294,17 @@ class User < ArvadosModel
       raise "user does not exist" if !new_user
       raise "cannot merge to an already merged user" if new_user.redirect_to_user_uuid
 
-      if redirect_to_new_user
+      # If 'self' is a remote user, don't transfer authorizations
+      # (i.e. ability to access the account) to the new user, because
+      # that gives the remote site the ability to access the 'new'
+      # user account that takes over the 'self' account.
+      #
+      # If 'self' is a local user, it is okay to transfer
+      # authorizations, even if the 'new' user is a remote account,
+      # theq remote site does not gain the ability to access an
+      # account it could not before.
+
+      if redirect_to_new_user and self.uuid[0..4] == Rails.configuration.ClusterID
         # Existing API tokens and ssh keys are updated to authenticate
         # to the new user.
         ApiClientAuthorization.
@@ -327,17 +338,19 @@ class User < ArvadosModel
       end
 
       # Need to update repository names to new username
-      old_repo_name_re = /^#{Regexp.escape(username)}\//
-      Repository.where(:owner_uuid => uuid).each do |repo|
-        repo.owner_uuid = new_user.uuid
-        repo_name_sub = "#{new_user.username}/"
-        name = repo.name.sub(old_repo_name_re, repo_name_sub)
-        while (conflict = Repository.where(:name => name).first) != nil
-          repo_name_sub += "migrated"
+      if username
+        old_repo_name_re = /^#{Regexp.escape(username)}\//
+        Repository.where(:owner_uuid => uuid).each do |repo|
+          repo.owner_uuid = new_user.uuid
+          repo_name_sub = "#{new_user.username}/"
           name = repo.name.sub(old_repo_name_re, repo_name_sub)
+          while (conflict = Repository.where(:name => name).first) != nil
+            repo_name_sub += "migrated"
+            name = repo.name.sub(old_repo_name_re, repo_name_sub)
+          end
+          repo.name = name
+          repo.save!
         end
-        repo.name = name
-        repo.save!
       end
 
       # References to the merged user's "home project" are updated to
