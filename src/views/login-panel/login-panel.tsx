@@ -52,15 +52,17 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 type LoginPanelProps = DispatchProp<any> & WithStyles<CssRules> & {
     remoteHosts: { [key: string]: string },
     homeCluster: string,
-    uuidPrefix: string
+    uuidPrefix: string,
+    loginCluster: string
 };
 
 export const LoginPanel = withStyles(styles)(
     connect((state: RootState) => ({
         remoteHosts: state.auth.remoteHosts,
         homeCluster: state.auth.homeCluster,
-        uuidPrefix: state.auth.localCluster
-    }))(({ classes, dispatch, remoteHosts, homeCluster, uuidPrefix }: LoginPanelProps) =>
+        uuidPrefix: state.auth.localCluster,
+        loginCluster: state.auth.loginCluster
+    }))(({ classes, dispatch, remoteHosts, homeCluster, uuidPrefix, loginCluster }: LoginPanelProps) =>
         <Grid container justify="center" alignItems="center"
             className={classes.root}
             style={{ marginTop: 56, overflowY: "auto", height: "100%" }}>
@@ -82,7 +84,7 @@ export const LoginPanel = withStyles(styles)(
                     Arvados Workbench uses your name and email address only for identification, and does not retrieve any other personal information from Google.
 		</Typography>
 
-                {Object.keys(remoteHosts).length > 1 &&
+                {Object.keys(remoteHosts).length > 1 && loginCluster === "" &&
                     <Typography component="div" align="right">
                         <label>Please select the cluster that hosts your user account:</label>
                         <Select native value={homeCluster} style={{ margin: "1em" }}

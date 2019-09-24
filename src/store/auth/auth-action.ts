@@ -72,7 +72,7 @@ const init = (config: Config) => (dispatch: Dispatch, getState: () => RootState,
         setAuthorizationHeader(services, token);
     }
     dispatch(authActions.CONFIG({ config }));
-    dispatch(authActions.SET_HOME_CLUSTER(homeCluster || config.uuidPrefix));
+    dispatch(authActions.SET_HOME_CLUSTER(config.loginCluster || homeCluster || config.uuidPrefix));
     if (token && user) {
         dispatch(authActions.INIT({ user, token }));
         dispatch<any>(initSessions(services.authService, config, user));
@@ -94,7 +94,7 @@ const init = (config: Config) => (dispatch: Dispatch, getState: () => RootState,
                 remoteConfig.uuidPrefix = response.data.ClusterID;
                 remoteConfig.workbench2Url = response.data.Services.Workbench2.ExternalURL;
                 mapRemoteHosts(response.data, remoteConfig);
-                dispatch(authActions.REMOTE_CLUSTER_CONFIG({ config: remoteConfig}));
+                dispatch(authActions.REMOTE_CLUSTER_CONFIG({ config: remoteConfig }));
             });
     });
 };

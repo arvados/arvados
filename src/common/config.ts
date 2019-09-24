@@ -45,6 +45,9 @@ export interface ClusterConfigJSON {
         VocabularyURL: string;
         FileViewersConfigURL: string;
     };
+    Login: {
+        LoginCluster: string;
+    };
 }
 
 export class Config {
@@ -60,6 +63,7 @@ export class Config {
     workbench2Url: string;
     vocabularyUrl: string;
     fileViewersConfigUrl: string;
+    loginCluster: string;
 }
 
 export const fetchConfig = () => {
@@ -111,6 +115,7 @@ remove the entire ${varName} entry from ${WORKBENCH_CONFIG_URL}`);
                 config.workbench2Url = clusterConfigJSON.Services.Workbench2.ExternalURL;
                 config.workbenchUrl = clusterConfigJSON.Services.Workbench1.ExternalURL;
                 config.keepWebServiceUrl = clusterConfigJSON.Services.WebDAV.ExternalURL;
+                config.loginCluster = clusterConfigJSON.Login.LoginCluster;
                 mapRemoteHosts(clusterConfigJSON, config);
 
                 return { config, apiHost: workbenchConfig.API_HOST };
@@ -135,7 +140,8 @@ export const mockConfig = (config: Partial<Config>): Config => ({
     workbenchUrl: "",
     workbench2Url: "",
     vocabularyUrl: "",
-    fileViewersConfigUrl: ""
+    fileViewersConfigUrl: "",
+    loginCluster: ""
 });
 
 const getDefaultConfig = (): WorkbenchConfig => {
