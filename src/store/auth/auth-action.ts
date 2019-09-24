@@ -110,8 +110,9 @@ export const saveUser = (user: UserResource) => (dispatch: Dispatch, getState: (
     dispatch(authActions.SAVE_USER(user));
 };
 
-export const login = (uuidPrefix: string, homeCluster: string, remoteHosts: { [key: string]: string }) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    services.authService.login(uuidPrefix, homeCluster, remoteHosts);
+export const login = (uuidPrefix: string, homeCluster: string, loginCluster: string,
+		      remoteHosts: { [key: string]: string }) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    services.authService.login(uuidPrefix, homeCluster, loginCluster, remoteHosts);
     dispatch(authActions.LOGIN());
 };
 

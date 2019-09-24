@@ -33,8 +33,8 @@ type CssRules = 'root' | 'link' | 'buttonContainer' | 'table' | 'tableRow' |
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
-       width: '100%',
-       overflow: 'auto'
+        width: '100%',
+        overflow: 'auto'
     },
     link: {
         color: theme.palette.primary.main,
@@ -106,7 +106,7 @@ const submitSession = (remoteHost: string) =>
     };
 
 export const SiteManagerPanelRoot = compose(
-    reduxForm<{remoteHost: string}>({
+    reduxForm<{ remoteHost: string }>({
         form: SITE_MANAGER_FORM_NAME,
         touchOnBlur: false,
         onSubmit: (data, dispatch) => {
@@ -119,9 +119,9 @@ export const SiteManagerPanelRoot = compose(
             <CardContent>
                 <Grid container direction="row">
                     <Grid item xs={12}>
-                        <Typography  paragraph={true} >
+                        <Typography paragraph={true} >
                             You can log in to multiple Arvados sites here, then use the multi-site search page to search collections and projects on all sites at once.
-                        </Typography>
+                    </Typography>
                     </Grid>
                 </Grid>
                 <Grid item xs={12}>
@@ -129,6 +129,7 @@ export const SiteManagerPanelRoot = compose(
                         <TableHead>
                             <TableRow className={classes.tableRow}>
                                 <TableCell>Cluster ID</TableCell>
+                                <TableCell>Host</TableCell>
                                 <TableCell>Username</TableCell>
                                 <TableCell>Email</TableCell>
                                 <TableCell>Status</TableCell>
@@ -139,8 +140,9 @@ export const SiteManagerPanelRoot = compose(
                                 const validating = session.status === SessionStatus.BEING_VALIDATED;
                                 return <TableRow key={index} className={classes.tableRow}>
                                     <TableCell>{session.clusterId}</TableCell>
-                                    <TableCell>{validating ? <CircularProgress size={20}/> : session.username}</TableCell>
-                                    <TableCell>{validating ? <CircularProgress size={20}/> : session.email}</TableCell>
+                                    <TableCell>{session.remoteHost}</TableCell>
+                                    <TableCell>{validating ? <CircularProgress size={20} /> : session.username}</TableCell>
+                                    <TableCell>{validating ? <CircularProgress size={20} /> : session.email}</TableCell>
                                     <TableCell className={classes.statusCell}>
                                         <Button fullWidth
                                             disabled={validating || session.status === SessionStatus.INVALIDATED || session.active}
@@ -157,9 +159,9 @@ export const SiteManagerPanelRoot = compose(
                 <form onSubmit={handleSubmit}>
                     <Grid container direction="row">
                         <Grid item xs={12}>
-                            <Typography  paragraph={true} className={classes.remoteSiteInfo}>
+                            <Typography paragraph={true} className={classes.remoteSiteInfo}>
                                 To add a remote Arvados site, paste the remote site's host here (see "ARVADOS_API_HOST" on the "current token" page).
-                            </Typography>
+                        </Typography>
                         </Grid>
                         <Grid item xs={8}>
                             <Field
@@ -169,7 +171,7 @@ export const SiteManagerPanelRoot = compose(
                                 placeholder="zzzz.arvadosapi.com"
                                 margin="normal"
                                 label="New cluster"
-                                autoFocus/>
+                                autoFocus />
                         </Grid>
                         <Grid item xs={3}>
                             <Button type="submit" variant="contained" color="primary"
