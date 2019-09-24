@@ -66,7 +66,7 @@ type Balancer struct {
 // Typical usage:
 //
 //   runOptions, err = (&Balancer{}).Run(config, runOptions)
-func (bal *Balancer) Run(config Config, runOptions RunOptions) (nextRunOptions RunOptions, err error) {
+func (bal *Balancer) Run(client *arvados.Client, cluster *arvados.Cluster, runOptions RunOptions) (nextRunOptions RunOptions, err error) {
 	nextRunOptions = runOptions
 
 	defer bal.time("sweep", "wall clock time to run one full sweep")()
@@ -95,24 +95,21 @@ func (bal *Balancer) Run(config Config, runOptions RunOptions) (nextRunOptions R
 		bal.lostBlocks = ioutil.Discard
 	}
 
-	if len(config.KeepServiceList.Items) > 0 {
-		err = bal.SetKeepServices(config.KeepServiceList)
-	} else {
-		err = bal.DiscoverKeepServices(&config.Client, config.KeepServiceTypes)
-	}
+	diskService := []string{"disk"}
+	err = bal.DiscoverKeepServices(client, diskService)
 	if err != nil {
 		return
 	}
 
 	for _, srv := range bal.KeepServices {
-		err = srv.discoverMounts(&config.Client)
+		err = srv.discoverMounts(client)
 		if err != nil {
 			return
 		}
 	}
 	bal.cleanupMounts()
 
-	if err = bal.CheckSanityEarly(&config.Client); err != nil {
+	if err = bal.CheckSanityEarly(client); err != nil {
 		return
 	}
 	rs := bal.rendezvousState()
@@ -121,7 +118,7 @@ func (bal *Balancer) Run(config Config, runOptions RunOptions) (nextRunOptions R
 			bal.logf("notice: KeepServices list has changed since last run")
 		}
 		bal.logf("clearing existing trash lists, in case the new rendezvous order differs from previous run")
-		if err = bal.ClearTrashLists(&config.Client); err != nil {
+		if err = bal.ClearTrashLists(client); err != nil {
 			return
 		}
 		// The current rendezvous state becomes "safe" (i.e.,
@@ -130,7 +127,7 @@ func (bal *Balancer) Run(config Config, runOptions RunOptions) (nextRunOptions R
 		// succeed in clearing existing trash lists.
 		nextRunOptions.SafeRendezvousState = rs
 	}
-	if err = bal.GetCurrentState(&config.Client, config.CollectionBatchSize, config.CollectionBuffers); err != nil {
+	if err = bal.GetCurrentState(client, cluster.Collections.BalanceCollectionBatch, cluster.Collections.BalanceCollectionBuffers); err != nil {
 		return
 	}
 	bal.ComputeChangeSets()
@@ -150,14 +147,14 @@ func (bal *Balancer) Run(config Config, runOptions RunOptions) (nextRunOptions R
 		lbFile = nil
 	}
 	if runOptions.CommitPulls {
-		err = bal.CommitPulls(&config.Client)
+		err = bal.CommitPulls(client)
 		if err != nil {
 			// Skip trash if we can't pull. (Too cautious?)
 			return
 		}
 	}
 	if runOptions.CommitTrash {
-		err = bal.CommitTrash(&config.Client)
+		err = bal.CommitTrash(client)
 	}
 	return
 }
