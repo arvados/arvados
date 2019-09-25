@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"git.curoverse.com/arvados.git/lib/config"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
@@ -22,7 +23,8 @@ import (
 var _ = check.Suite(&integrationSuite{})
 
 type integrationSuite struct {
-	config     Config
+	config     *arvados.Cluster
+	client     *arvados.Client
 	keepClient *keepclient.KeepClient
 }
 
@@ -59,14 +61,16 @@ func (s *integrationSuite) TearDownSuite(c *check.C) {
 }
 
 func (s *integrationSuite) SetUpTest(c *check.C) {
-	s.config = Config{
-		Client: arvados.Client{
-			APIHost:   os.Getenv("ARVADOS_API_HOST"),
-			AuthToken: arvadostest.DataManagerToken,
-			Insecure:  true,
-		},
-		KeepServiceTypes: []string{"disk"},
-		RunPeriod:        arvados.Duration(time.Second),
+	cfg, err := config.NewLoader(nil, nil).Load()
+	c.Assert(err, check.Equals, nil)
+	s.config, err = cfg.GetCluster("")
+	c.Assert(err, check.Equals, nil)
+	s.config.Collections.BalancePeriod = arvados.Duration(time.Second)
+
+	s.client = &arvados.Client{
+		APIHost:   os.Getenv("ARVADOS_API_HOST"),
+		AuthToken: arvadostest.DataManagerToken,
+		Insecure:  true,
 	}
 }
 
@@ -86,7 +90,7 @@ func (s *integrationSuite) TestBalanceAPIFixtures(c *check.C) {
 			Logger:  logger,
 			Metrics: newMetrics(),
 		}
-		nextOpts, err := bal.Run(s.config, opts)
+		nextOpts, err := bal.Run(s.client, s.config, opts)
 		c.Check(err, check.IsNil)
 		c.Check(nextOpts.SafeRendezvousState, check.Not(check.Equals), "")
 		c.Check(nextOpts.CommitPulls, check.Equals, true)

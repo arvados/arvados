@@ -13,7 +13,10 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/auth"
 	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
+	"github.com/julienschmidt/httprouter"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 )
 
@@ -39,14 +42,20 @@ type RunOptions struct {
 }
 
 type Server struct {
-	http.Handler
 	Cluster    *arvados.Cluster
 	ArvClient  *arvados.Client
 	RunOptions RunOptions
 	Metrics    *metrics
 
+	httpHandler http.Handler
+
 	Logger logrus.FieldLogger
 	Dumper logrus.FieldLogger
+}
+
+// ServeHTTP implements service.Handler.
+func (srv *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	srv.httpHandler.ServeHTTP(w, r)
 }
 
 // CheckHealth implements service.Handler.
@@ -56,16 +65,11 @@ func (srv *Server) CheckHealth() error {
 
 // Start sets up and runs the balancer.
 func (srv *Server) Start(ctx context.Context) {
-	if srv.RunOptions.Logger == nil {
-		srv.RunOptions.Logger = ctxlog.FromContext(ctx)
-	}
-
-	srv.Logger = srv.RunOptions.Logger
-	srv.Dumper = srv.RunOptions.Dumper
+	srv.init(ctx)
 
 	var err error
 	if srv.RunOptions.Once {
-		_, err = srv.run()
+		_, err = srv.runOnce()
 	} else {
 		err = srv.runForever(nil)
 	}
@@ -74,7 +78,30 @@ func (srv *Server) Start(ctx context.Context) {
 	}
 }
 
-func (srv *Server) run() (*Balancer, error) {
+func (srv *Server) init(ctx context.Context) {
+	if srv.RunOptions.Logger == nil {
+		srv.RunOptions.Logger = ctxlog.FromContext(ctx)
+	}
+
+	srv.Logger = srv.RunOptions.Logger
+	srv.Dumper = srv.RunOptions.Dumper
+
+	if srv.Cluster.ManagementToken == "" {
+		srv.httpHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			http.Error(w, "Management API authentication is not configured", http.StatusForbidden)
+		})
+	} else {
+		mux := httprouter.New()
+		metricsH := promhttp.HandlerFor(srv.Metrics.reg, promhttp.HandlerOpts{
+			ErrorLog: srv.Logger,
+		})
+		mux.Handler("GET", "/metrics", metricsH)
+		mux.Handler("GET", "/metrics.json", metricsH)
+		srv.httpHandler = auth.RequireLiteralToken(srv.Cluster.ManagementToken, mux)
+	}
+}
+
+func (srv *Server) runOnce() (*Balancer, error) {
 	bal := &Balancer{
 		Logger:         srv.Logger,
 		Dumper:         srv.Dumper,
@@ -106,7 +133,7 @@ func (srv *Server) runForever(stop <-chan interface{}) error {
 			logger.Print("=======  Consider using -commit-pulls and -commit-trash flags.")
 		}
 
-		_, err := srv.run()
+		_, err := srv.runOnce()
 		if err != nil {
 			logger.Print("run failed: ", err)
 		} else {

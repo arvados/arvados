@@ -5,6 +5,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -16,7 +17,9 @@ import (
 	"sync"
 	"time"
 
+	"git.curoverse.com/arvados.git/lib/config"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
@@ -303,7 +306,21 @@ func (s *stubServer) serveKeepstorePull() *reqTracker {
 
 type runSuite struct {
 	stub   stubServer
-	config Config
+	config *arvados.Cluster
+	client *arvados.Client
+}
+
+func (s *runSuite) newServer(options *RunOptions) *Server {
+	srv := &Server{
+		Cluster:    s.config,
+		ArvClient:  s.client,
+		RunOptions: *options,
+		Metrics:    newMetrics(),
+		Logger:     options.Logger,
+		Dumper:     options.Dumper,
+	}
+	srv.init(context.Background())
+	return srv
 }
 
 // make a log.Logger that writes to the current test's c.Log().
@@ -330,14 +347,19 @@ func (s *runSuite) logger(c *check.C) *logrus.Logger {
 }
 
 func (s *runSuite) SetUpTest(c *check.C) {
-	s.config = Config{
-		Client: arvados.Client{
-			AuthToken: "xyzzy",
-			APIHost:   "zzzzz.arvadosapi.com",
-			Client:    s.stub.Start()},
-		KeepServiceTypes: []string{"disk"},
-		RunPeriod:        arvados.Duration(time.Second),
-	}
+	cfg, err := config.NewLoader(nil, nil).Load()
+	c.Assert(err, check.Equals, nil)
+	s.config, err = cfg.GetCluster("")
+	c.Assert(err, check.Equals, nil)
+
+	s.config.Collections.BalancePeriod = arvados.Duration(time.Second)
+	arvadostest.SetServiceURL(&s.config.Services.Keepbalance, "http://localhost:/")
+
+	s.client = &arvados.Client{
+		AuthToken: "xyzzy",
+		APIHost:   "zzzzz.arvadosapi.com",
+		Client:    s.stub.Start()}
+
 	s.stub.serveDiscoveryDoc()
 	s.stub.logf = c.Logf
 }
@@ -359,33 +381,11 @@ func (s *runSuite) TestRefuseZeroCollections(c *check.C) {
 	s.stub.serveKeepstoreIndexFoo4Bar1()
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
-	srv, err := NewServer(s.config, opts)
-	c.Assert(err, check.IsNil)
-	_, err = srv.Run()
+	srv := s.newServer(&opts)
+	_, err := srv.runOnce()
 	c.Check(err, check.ErrorMatches, "received zero collections")
 	c.Check(trashReqs.Count(), check.Equals, 4)
 	c.Check(pullReqs.Count(), check.Equals, 0)
-}
-
-func (s *runSuite) TestServiceTypes(c *check.C) {
-	opts := RunOptions{
-		CommitPulls: true,
-		CommitTrash: true,
-		Logger:      s.logger(c),
-	}
-	s.config.KeepServiceTypes = []string{"unlisted-type"}
-	s.stub.serveCurrentUserAdmin()
-	s.stub.serveFooBarFileCollections()
-	s.stub.serveKeepServices(stubServices)
-	s.stub.serveKeepstoreMounts()
-	indexReqs := s.stub.serveKeepstoreIndexFoo4Bar1()
-	trashReqs := s.stub.serveKeepstoreTrash()
-	srv, err := NewServer(s.config, opts)
-	c.Assert(err, check.IsNil)
-	_, err = srv.Run()
-	c.Check(err, check.IsNil)
-	c.Check(indexReqs.Count(), check.Equals, 0)
-	c.Check(trashReqs.Count(), check.Equals, 0)
 }
 
 func (s *runSuite) TestRefuseNonAdmin(c *check.C) {
@@ -400,9 +400,8 @@ func (s *runSuite) TestRefuseNonAdmin(c *check.C) {
 	s.stub.serveKeepstoreMounts()
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
-	srv, err := NewServer(s.config, opts)
-	c.Assert(err, check.IsNil)
-	_, err = srv.Run()
+	srv := s.newServer(&opts)
+	_, err := srv.runOnce()
 	c.Check(err, check.ErrorMatches, "current user .* is not .* admin user")
 	c.Check(trashReqs.Count(), check.Equals, 0)
 	c.Check(pullReqs.Count(), check.Equals, 0)
@@ -421,9 +420,8 @@ func (s *runSuite) TestDetectSkippedCollections(c *check.C) {
 	s.stub.serveKeepstoreIndexFoo4Bar1()
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
-	srv, err := NewServer(s.config, opts)
-	c.Assert(err, check.IsNil)
-	_, err = srv.Run()
+	srv := s.newServer(&opts)
+	_, err := srv.runOnce()
 	c.Check(err, check.ErrorMatches, `Retrieved 2 collections with modtime <= .* but server now reports there are 3 collections.*`)
 	c.Check(trashReqs.Count(), check.Equals, 4)
 	c.Check(pullReqs.Count(), check.Equals, 0)
@@ -432,7 +430,7 @@ func (s *runSuite) TestDetectSkippedCollections(c *check.C) {
 func (s *runSuite) TestWriteLostBlocks(c *check.C) {
 	lostf, err := ioutil.TempFile("", "keep-balance-lost-blocks-test-")
 	c.Assert(err, check.IsNil)
-	s.config.LostBlocksFile = lostf.Name()
+	s.config.Collections.BlobMissingReport = lostf.Name()
 	defer os.Remove(lostf.Name())
 	opts := RunOptions{
 		CommitPulls: true,
@@ -446,9 +444,9 @@ func (s *runSuite) TestWriteLostBlocks(c *check.C) {
 	s.stub.serveKeepstoreIndexFoo1()
 	s.stub.serveKeepstoreTrash()
 	s.stub.serveKeepstorePull()
-	srv, err := NewServer(s.config, opts)
+	srv := s.newServer(&opts)
 	c.Assert(err, check.IsNil)
-	_, err = srv.Run()
+	_, err = srv.runOnce()
 	c.Check(err, check.IsNil)
 	lost, err := ioutil.ReadFile(lostf.Name())
 	c.Assert(err, check.IsNil)
@@ -468,9 +466,8 @@ func (s *runSuite) TestDryRun(c *check.C) {
 	s.stub.serveKeepstoreIndexFoo4Bar1()
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
-	srv, err := NewServer(s.config, opts)
-	c.Assert(err, check.IsNil)
-	bal, err := srv.Run()
+	srv := s.newServer(&opts)
+	bal, err := srv.runOnce()
 	c.Check(err, check.IsNil)
 	for _, req := range collReqs.reqs {
 		c.Check(req.Form.Get("include_trash"), check.Equals, "true")
@@ -486,10 +483,9 @@ func (s *runSuite) TestDryRun(c *check.C) {
 func (s *runSuite) TestCommit(c *check.C) {
 	lostf, err := ioutil.TempFile("", "keep-balance-lost-blocks-test-")
 	c.Assert(err, check.IsNil)
-	s.config.LostBlocksFile = lostf.Name()
+	s.config.Collections.BlobMissingReport = lostf.Name()
 	defer os.Remove(lostf.Name())
 
-	s.config.Listen = ":"
 	s.config.ManagementToken = "xyzzy"
 	opts := RunOptions{
 		CommitPulls: true,
@@ -504,9 +500,8 @@ func (s *runSuite) TestCommit(c *check.C) {
 	s.stub.serveKeepstoreIndexFoo4Bar1()
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
-	srv, err := NewServer(s.config, opts)
-	c.Assert(err, check.IsNil)
-	bal, err := srv.Run()
+	srv := s.newServer(&opts)
+	bal, err := srv.runOnce()
 	c.Check(err, check.IsNil)
 	c.Check(trashReqs.Count(), check.Equals, 8)
 	c.Check(pullReqs.Count(), check.Equals, 4)
@@ -529,7 +524,6 @@ func (s *runSuite) TestCommit(c *check.C) {
 }
 
 func (s *runSuite) TestRunForever(c *check.C) {
-	s.config.Listen = ":"
 	s.config.ManagementToken = "xyzzy"
 	opts := RunOptions{
 		CommitPulls: true,
@@ -546,13 +540,12 @@ func (s *runSuite) TestRunForever(c *check.C) {
 	pullReqs := s.stub.serveKeepstorePull()
 
 	stop := make(chan interface{})
-	s.config.RunPeriod = arvados.Duration(time.Millisecond)
-	srv, err := NewServer(s.config, opts)
-	c.Assert(err, check.IsNil)
+	s.config.Collections.BalancePeriod = arvados.Duration(time.Millisecond)
+	srv := s.newServer(&opts)
 
 	done := make(chan bool)
 	go func() {
-		srv.RunForever(stop)
+		srv.runForever(stop)
 		close(done)
 	}()
 
@@ -571,13 +564,16 @@ func (s *runSuite) TestRunForever(c *check.C) {
 }
 
 func (s *runSuite) getMetrics(c *check.C, srv *Server) string {
-	resp, err := http.Get("http://" + srv.listening + "/metrics")
-	c.Assert(err, check.IsNil)
-	c.Check(resp.StatusCode, check.Equals, http.StatusUnauthorized)
+	req := httptest.NewRequest("GET", "/metrics", nil)
+	resp := httptest.NewRecorder()
+	srv.ServeHTTP(resp, req)
+	c.Check(resp.Code, check.Equals, http.StatusUnauthorized)
 
-	resp, err = http.Get("http://" + srv.listening + "/metrics?api_token=xyzzy")
-	c.Assert(err, check.IsNil)
-	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	req = httptest.NewRequest("GET", "/metrics?api_token=xyzzy", nil)
+	resp = httptest.NewRecorder()
+	srv.ServeHTTP(resp, req)
+	c.Check(resp.Code, check.Equals, http.StatusOK)
+
 	buf, err := ioutil.ReadAll(resp.Body)
 	c.Check(err, check.IsNil)
 	return string(buf)
