@@ -28,6 +28,12 @@ http {
      default_type application/octet-stream;
      client_max_body_size 128M;
 
+     geo \$external_client {
+          default     1;
+          127.0.0.0/8 0;
+          $localip/32 0;
+     }
+
      server {
             listen ${services[doc]} default_server;
             listen [::]:${services[doc]} default_server;
@@ -55,6 +61,7 @@ http {
       proxy_set_header Host \$http_host;
       proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
       proxy_set_header X-Forwarded-Proto https;
+      proxy_set_header X-External-Client \$external_client;
       proxy_redirect off;
     }
   }
