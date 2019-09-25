@@ -53,9 +53,6 @@ BlobSigningKeyFile: /var/lib/arvados/blob_signing_key
 SystemAuthTokenFile: /var/lib/arvados/superuser_token
 ManagementToken: $management_token
 MaxBuffers: 20
-Volumes:
-  - Type: Directory
-    Root: /var/lib/arvados/$1
 EOF
 
 exec /usr/local/bin/keepstore -config=/var/lib/arvados/$1.yml
