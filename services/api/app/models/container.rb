@@ -423,6 +423,10 @@ class Container < ArvadosModel
     current_user.andand.is_admin
   end
 
+  def permission_to_destroy
+    current_user.andand.is_admin
+  end
+
   def ensure_owner_uuid_is_permitted
     # validate_change ensures owner_uuid can't be changed at all --
     # except during create, which requires admin privileges. Checking
