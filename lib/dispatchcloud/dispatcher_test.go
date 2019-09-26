@@ -19,6 +19,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
+	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/crypto/ssh"
 	check "gopkg.in/check.v1"
 )
@@ -91,6 +92,7 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 		Context:   s.ctx,
 		ArvClient: arvClient,
 		AuthToken: arvadostest.AdminToken,
+		Registry:  prometheus.NewRegistry(),
 	}
 	// Test cases can modify s.cluster before calling
 	// initialize(), and then modify private state before calling

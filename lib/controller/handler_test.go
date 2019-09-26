@@ -19,6 +19,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	"github.com/prometheus/client_golang/prometheus"
 	check "gopkg.in/check.v1"
 )
 
@@ -52,7 +53,7 @@ func (s *HandlerSuite) SetUpTest(c *check.C) {
 	s.cluster.TLS.Insecure = true
 	arvadostest.SetServiceURL(&s.cluster.Services.RailsAPI, "https://"+os.Getenv("ARVADOS_TEST_API_HOST"))
 	arvadostest.SetServiceURL(&s.cluster.Services.Controller, "http://localhost:/")
-	s.handler = newHandler(s.ctx, s.cluster, "")
+	s.handler = newHandler(s.ctx, s.cluster, "", prometheus.NewRegistry())
 }
 
 func (s *HandlerSuite) TearDownTest(c *check.C) {

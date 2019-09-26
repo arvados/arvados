@@ -81,6 +81,8 @@ type Cluster struct {
 		DisabledAPIs                   StringSet
 		MaxIndexDatabaseRead           int
 		MaxItemsPerResponse            int
+		MaxConcurrentRequests          int
+		MaxKeepBlobBuffers             int
 		MaxRequestAmplification        int
 		MaxRequestSize                 int
 		RailsSessionSecretToken        string
@@ -96,13 +98,19 @@ type Cluster struct {
 		UnloggedAttributes StringSet
 	}
 	Collections struct {
-		BlobSigning          bool
-		BlobSigningKey       string
-		BlobSigningTTL       Duration
-		CollectionVersioning bool
-		DefaultTrashLifetime Duration
-		DefaultReplication   int
-		ManagedProperties    map[string]struct {
+		BlobSigning              bool
+		BlobSigningKey           string
+		BlobSigningTTL           Duration
+		BlobTrash                bool
+		BlobTrashLifetime        Duration
+		BlobTrashCheckInterval   Duration
+		BlobTrashConcurrency     int
+		BlobDeleteConcurrency    int
+		BlobReplicateConcurrency int
+		CollectionVersioning     bool
+		DefaultTrashLifetime     Duration
+		DefaultReplication       int
+		ManagedProperties        map[string]struct {
 			Value     interface{}
 			Function  string
 			Protected bool
@@ -159,6 +167,7 @@ type Cluster struct {
 		UserNotifierEmailFrom                 string
 		UserProfileNotificationAddress        string
 	}
+	Volumes   map[string]Volume
 	Workbench struct {
 		ActivationContactLink            string
 		APIClientConnectTimeout          Duration
@@ -196,6 +205,48 @@ type Cluster struct {
 	}
 
 	EnableBetaController14287 bool
+}
+
+type Volume struct {
+	AccessViaHosts   map[URL]VolumeAccess
+	ReadOnly         bool
+	Replication      int
+	StorageClasses   map[string]bool
+	Driver           string
+	DriverParameters json.RawMessage
+}
+
+type S3VolumeDriverParameters struct {
+	AccessKey          string
+	SecretKey          string
+	Endpoint           string
+	Region             string
+	Bucket             string
+	LocationConstraint bool
+	IndexPageSize      int
+	ConnectTimeout     Duration
+	ReadTimeout        Duration
+	RaceWindow         Duration
+	UnsafeDelete       bool
+}
+
+type AzureVolumeDriverParameters struct {
+	StorageAccountName   string
+	StorageAccountKey    string
+	StorageBaseURL       string
+	ContainerName        string
+	RequestTimeout       Duration
+	ListBlobsRetryDelay  Duration
+	ListBlobsMaxAttempts int
+}
+
+type DirectoryVolumeDriverParameters struct {
+	Root      string
+	Serialize bool
+}
+
+type VolumeAccess struct {
+	ReadOnly bool
 }
 
 type Services struct {
@@ -241,7 +292,13 @@ func (su URL) MarshalText() ([]byte, error) {
 	return []byte(fmt.Sprintf("%s", (*url.URL)(&su).String())), nil
 }
 
-type ServiceInstance struct{}
+func (su URL) String() string {
+	return (*url.URL)(&su).String()
+}
+
+type ServiceInstance struct {
+	Rendezvous string `json:",omitempty"`
+}
 
 type PostgreSQL struct {
 	Connection     PostgreSQLConnection

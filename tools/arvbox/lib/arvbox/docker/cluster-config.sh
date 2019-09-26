@@ -80,9 +80,13 @@ Clusters:
       SSO:
         ExternalURL: "https://$localip:${services[sso]}"
       Keepproxy:
+        ExternalURL: "https://$localip:${services[keepproxy-ssl]}"
         InternalURLs:
-          "http://localhost:${services[keepproxy]}/": {}
-        ExternalURL: "https://$localip:${services[keepproxy-ssl]}/"
+          "http://localhost:${services[keepproxy]}": {}
+      Keepstore:
+        InternalURLs:
+          "http://localhost:${services[keepstore0]}": {}
+          "http://localhost:${services[keepstore1]}": {}
       Websocket:
         ExternalURL: "wss://$localip:${services[websockets-ssl]}/websocket"
         InternalURLs:
@@ -112,10 +116,6 @@ Clusters:
       RailsAPI:
         InternalURLs:
           "http://localhost:${services[api]}/": {}
-      Keepproxy:
-        ExternalURL: "https://$localip:${services[keepproxy-ssl]}"
-        InternalURLs:
-          "http://localhost:${services[keepproxy]}": {}
     PostgreSQL:
       ConnectionPool: 32 # max concurrent connections per arvados server daemon
       Connection:
@@ -149,6 +149,19 @@ Clusters:
       GitCommand: /usr/share/gitolite3/gitolite-shell
       GitoliteHome: /var/lib/arvados/git
       Repositories: /var/lib/arvados/git/repositories
+    Volumes:
+      ${uuid_prefix}-nyw5e-000000000000000:
+        Driver: Directory
+        DriverParameters:
+          Root: /var/lib/arvados/keep0
+        AccessViaHosts:
+          "http://localhost:${services[keepstore0]}": {}
+      ${uuid_prefix}-nyw5e-111111111111111:
+        Driver: Directory
+        DriverParameters:
+          Root: /var/lib/arvados/keep1
+        AccessViaHosts:
+          "http://localhost:${services[keepstore1]}": {}
 EOF
 
 /usr/local/lib/arvbox/yml_override.py /var/lib/arvados/cluster_config.yml

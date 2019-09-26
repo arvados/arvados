@@ -852,27 +852,8 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers,
 
 class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
                             ArvadosBaseTestCase):
-    def _getKeepServerConfig():
-        for config_file, mandatory in [
-                ['application.yml', False], ['application.default.yml', True]]:
-            path = os.path.join(run_test_server.SERVICES_SRC_DIR,
-                                "api", "config", config_file)
-            if not mandatory and not os.path.exists(path):
-                continue
-            with open(path) as f:
-                rails_config = yaml.safe_load(f.read())
-                for config_section in ['test', 'common']:
-                    try:
-                        key = rails_config[config_section]["blob_signing_key"]
-                    except (KeyError, TypeError):
-                        pass
-                    else:
-                        return {'blob_signing_key': key,
-                                'enforce_permissions': True}
-        return {'blog_signing_key': None, 'enforce_permissions': False}
-
     MAIN_SERVER = {}
-    KEEP_SERVER = _getKeepServerConfig()
+    KEEP_SERVER = {'blob_signing': True}
     PROJECT_UUID = run_test_server.fixture('groups')['aproject']['uuid']
 
     @classmethod

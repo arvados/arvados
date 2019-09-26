@@ -25,7 +25,7 @@ type remoteProxy struct {
 	mtx     sync.Mutex
 }
 
-func (rp *remoteProxy) Get(ctx context.Context, w http.ResponseWriter, r *http.Request, cluster *arvados.Cluster) {
+func (rp *remoteProxy) Get(ctx context.Context, w http.ResponseWriter, r *http.Request, cluster *arvados.Cluster, volmgr *RRVolumeManager) {
 	// Intervening proxies must not return a cached GET response
 	// to a prior request if a X-Keep-Signature request header has
 	// been added or changed.
@@ -49,6 +49,8 @@ func (rp *remoteProxy) Get(ctx context.Context, w http.ResponseWriter, r *http.R
 			Buffer:         buf[:0],
 			ResponseWriter: w,
 			Context:        ctx,
+			Cluster:        cluster,
+			VolumeManager:  volmgr,
 		}
 		defer rrc.Close()
 		w = rrc
@@ -145,10 +147,12 @@ var localOrRemoteSignature = regexp.MustCompile(`\+[AR][^\+]*`)
 // local volume, adds a response header with a locally-signed locator,
 // and finally writes the data through.
 type remoteResponseCacher struct {
-	Locator string
-	Token   string
-	Buffer  []byte
-	Context context.Context
+	Locator       string
+	Token         string
+	Buffer        []byte
+	Context       context.Context
+	Cluster       *arvados.Cluster
+	VolumeManager *RRVolumeManager
 	http.ResponseWriter
 	statusCode int
 }
@@ -173,7 +177,7 @@ func (rrc *remoteResponseCacher) Close() error {
 		rrc.ResponseWriter.Write(rrc.Buffer)
 		return nil
 	}
-	_, err := PutBlock(rrc.Context, rrc.Buffer, rrc.Locator[:32])
+	_, err := PutBlock(rrc.Context, rrc.VolumeManager, rrc.Buffer, rrc.Locator[:32])
 	if rrc.Context.Err() != nil {
 		// If caller hung up, log that instead of subsequent/misleading errors.
 		http.Error(rrc.ResponseWriter, rrc.Context.Err().Error(), http.StatusGatewayTimeout)
@@ -193,7 +197,8 @@ func (rrc *remoteResponseCacher) Close() error {
 	}
 
 	unsigned := localOrRemoteSignature.ReplaceAllLiteralString(rrc.Locator, "")
-	signed := SignLocator(unsigned, rrc.Token, time.Now().Add(theConfig.BlobSignatureTTL.Duration()))
+	expiry := time.Now().Add(rrc.Cluster.Collections.BlobSigningTTL.Duration())
+	signed := SignLocator(rrc.Cluster, unsigned, rrc.Token, expiry)
 	if signed == unsigned {
 		err = errors.New("could not sign locator")
 		http.Error(rrc.ResponseWriter, err.Error(), http.StatusInternalServerError)

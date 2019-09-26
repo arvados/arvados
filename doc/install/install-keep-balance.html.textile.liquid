@@ -53,26 +53,9 @@ Options:
 </code></pre>
 </notextile>
 
-h3. Create a keep-balance token
-
-Create an Arvados superuser token for use by keep-balance.
-
-{% include 'create_superuser_token' %}
-
-h3. Update keepstore configuration files
-
-On each node that runs keepstore, save the token you generated in the previous step in a text file like @/etc/arvados/keepstore/system-auth-token.txt@ and then create or update @/etc/arvados/keepstore/keepstore.yml@ with the following key:
-
-<notextile>
-<pre><code>SystemAuthTokenFile: /etc/arvados/keepstore/system-auth-token.txt
-</code></pre>
-</notextile>
-
-Restart all keepstore services to apply the updated configuration.
-
 h3. Create a keep-balance configuration file
 
-On the host running keep-balance, create @/etc/arvados/keep-balance/keep-balance.yml@ using the token you generated above.  Follow this YAML format:
+On the host running keep-balance, create @/etc/arvados/keep-balance/keep-balance.yml@ using the SystemRootToken from your cluster configuration file.  Follow this YAML format:
 
 <notextile>
 <pre><code>Listen: :9005
@@ -153,28 +136,14 @@ run: /etc/service/keep-balance: (pid 12520) 2s; run: log: (pid 12519) 2s
 </code></pre>
 </notextile>
 
-h2. Enable delete operations on keepstore volumes
+h2. Enable garbage collection
 
-Ensure your keepstore services have the "delete" operation enabled. If it is disabled (which is the default), unneeded blocks will be identified by keep-balance, but will never be deleted from the underlying storage devices.
-
-Add the @-never-delete=false@ command line flag to your keepstore run script:
+Ensure your cluster configuration has @Collections.BlobTrash: true@ (this is the default).
 
 <notextile>
-<pre><code>keepstore <span class="userinput">-never-delete=false</span> -volume=...
+<pre><code>~$ arvados-server config-dump | grep BlobTrash:
+      BlobTrash: true
 </code></pre>
 </notextile>
 
-{% comment %}
-// To replace the above section when the keepstore page recommends YAML...
-
-Use the @EnableDelete@ flag in your YAML configuration file @/etc/arvados/keepstore/keepstore.yml@:
-
-<notextile>
-<pre><code>...
-BlobSigningKeyFile: /etc/keepstore/blob-signing.key
-<span class="userinput">EnableDelete: true</span>
-Listen: :25107
-...
-</code></pre>
-</notextile>
-{% endcomment %}
+If BlobTrash is false, unneeded blocks will be counted and logged by keep-balance, but they will not be deleted.

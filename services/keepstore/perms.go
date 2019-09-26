@@ -5,14 +5,16 @@
 package main
 
 import (
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"time"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 )
 
 // SignLocator takes a blobLocator, an apiToken and an expiry time, and
 // returns a signed locator string.
-func SignLocator(blobLocator, apiToken string, expiry time.Time) string {
-	return keepclient.SignLocator(blobLocator, apiToken, expiry, theConfig.BlobSignatureTTL.Duration(), theConfig.blobSigningKey)
+func SignLocator(cluster *arvados.Cluster, blobLocator, apiToken string, expiry time.Time) string {
+	return keepclient.SignLocator(blobLocator, apiToken, expiry, cluster.Collections.BlobSigningTTL.Duration(), []byte(cluster.Collections.BlobSigningKey))
 }
 
 // VerifySignature returns nil if the signature on the signedLocator
@@ -20,8 +22,8 @@ func SignLocator(blobLocator, apiToken string, expiry time.Time) string {
 // either ExpiredError (if the timestamp has expired, which is
 // something the client could have figured out independently) or
 // PermissionError.
-func VerifySignature(signedLocator, apiToken string) error {
-	err := keepclient.VerifySignature(signedLocator, apiToken, theConfig.BlobSignatureTTL.Duration(), theConfig.blobSigningKey)
+func VerifySignature(cluster *arvados.Cluster, signedLocator, apiToken string) error {
+	err := keepclient.VerifySignature(signedLocator, apiToken, cluster.Collections.BlobSigningTTL.Duration(), []byte(cluster.Collections.BlobSigningKey))
 	if err == keepclient.ErrSignatureExpired {
 		return ExpiredError
 	} else if err != nil {

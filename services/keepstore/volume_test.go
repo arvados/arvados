@@ -15,6 +15,28 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"github.com/sirupsen/logrus"
+)
+
+var (
+	TestBlock       = []byte("The quick brown fox jumps over the lazy dog.")
+	TestHash        = "e4d909c290d0fb1ca068ffaddf22cbd0"
+	TestHashPutResp = "e4d909c290d0fb1ca068ffaddf22cbd0+44\n"
+
+	TestBlock2 = []byte("Pack my box with five dozen liquor jugs.")
+	TestHash2  = "f15ac516f788aec4f30932ffb6395c39"
+
+	TestBlock3 = []byte("Now is the time for all good men to come to the aid of their country.")
+	TestHash3  = "eed29bbffbc2dbe5e5ee0bb71888e61f"
+
+	// BadBlock is used to test collisions and corruption.
+	// It must not match any test hashes.
+	BadBlock = []byte("The magic words are squeamish ossifrage.")
+
+	EmptyHash  = "d41d8cd98f00b204e9800998ecf8427e"
+	EmptyBlock = []byte("")
 )
 
 // A TestableVolume allows test suites to manipulate the state of an
@@ -38,6 +60,10 @@ type TestableVolume interface {
 	Teardown()
 }
 
+func init() {
+	driver["mock"] = newMockVolume
+}
+
 // MockVolumes are test doubles for Volumes, used to test handlers.
 type MockVolume struct {
 	Store      map[string][]byte
@@ -51,10 +77,6 @@ type MockVolume struct {
 	// that has been Put().
 	Touchable bool
 
-	// Readonly volumes return an error for Put, Delete, and
-	// Touch.
-	Readonly bool
-
 	// Gate is a "starting gate", allowing test cases to pause
 	// volume operations long enough to inspect state. Every
 	// operation (except Status) starts by receiving from
@@ -62,15 +84,19 @@ type MockVolume struct {
 	// channel unblocks all operations. By default, Gate is a
 	// closed channel, so all operations proceed without
 	// blocking. See trash_worker_test.go for an example.
-	Gate chan struct{}
+	Gate chan struct{} `json:"-"`
 
-	called map[string]int
-	mutex  sync.Mutex
+	cluster *arvados.Cluster
+	volume  arvados.Volume
+	logger  logrus.FieldLogger
+	metrics *volumeMetricsVecs
+	called  map[string]int
+	mutex   sync.Mutex
 }
 
-// CreateMockVolume returns a non-Bad, non-Readonly, Touchable mock
+// newMockVolume returns a non-Bad, non-Readonly, Touchable mock
 // volume.
-func CreateMockVolume() *MockVolume {
+func newMockVolume(cluster *arvados.Cluster, volume arvados.Volume, logger logrus.FieldLogger, metrics *volumeMetricsVecs) (Volume, error) {
 	gate := make(chan struct{})
 	close(gate)
 	return &MockVolume{
@@ -78,10 +104,13 @@ func CreateMockVolume() *MockVolume {
 		Timestamps: make(map[string]time.Time),
 		Bad:        false,
 		Touchable:  true,
-		Readonly:   false,
 		called:     map[string]int{},
 		Gate:       gate,
-	}
+		cluster:    cluster,
+		volume:     volume,
+		logger:     logger,
+		metrics:    metrics,
+	}, nil
 }
 
 // CallCount returns how many times the named method has been called.
@@ -141,7 +170,7 @@ func (v *MockVolume) Put(ctx context.Context, loc string, block []byte) error {
 	if v.Bad {
 		return v.BadVolumeError
 	}
-	if v.Readonly {
+	if v.volume.ReadOnly {
 		return MethodDisabledError
 	}
 	v.Store[loc] = block
@@ -151,7 +180,7 @@ func (v *MockVolume) Put(ctx context.Context, loc string, block []byte) error {
 func (v *MockVolume) Touch(loc string) error {
 	v.gotCall("Touch")
 	<-v.Gate
-	if v.Readonly {
+	if v.volume.ReadOnly {
 		return MethodDisabledError
 	}
 	if v.Touchable {
@@ -195,11 +224,11 @@ func (v *MockVolume) IndexTo(prefix string, w io.Writer) error {
 func (v *MockVolume) Trash(loc string) error {
 	v.gotCall("Delete")
 	<-v.Gate
-	if v.Readonly {
+	if v.volume.ReadOnly {
 		return MethodDisabledError
 	}
 	if _, ok := v.Store[loc]; ok {
-		if time.Since(v.Timestamps[loc]) < time.Duration(theConfig.BlobSignatureTTL) {
+		if time.Since(v.Timestamps[loc]) < time.Duration(v.cluster.Collections.BlobSigningTTL) {
 			return nil
 		}
 		delete(v.Store, loc)
@@ -208,16 +237,8 @@ func (v *MockVolume) Trash(loc string) error {
 	return os.ErrNotExist
 }
 
-func (v *MockVolume) DeviceID() string {
+func (v *MockVolume) GetDeviceID() string {
 	return "mock-device-id"
-}
-
-func (v *MockVolume) Type() string {
-	return "Mock"
-}
-
-func (v *MockVolume) Start(vm *volumeMetricsVecs) error {
-	return nil
 }
 
 func (v *MockVolume) Untrash(loc string) error {
@@ -234,14 +255,6 @@ func (v *MockVolume) Status() *VolumeStatus {
 
 func (v *MockVolume) String() string {
 	return "[MockVolume]"
-}
-
-func (v *MockVolume) Writable() bool {
-	return !v.Readonly
-}
-
-func (v *MockVolume) Replication() int {
-	return 1
 }
 
 func (v *MockVolume) EmptyTrash() {

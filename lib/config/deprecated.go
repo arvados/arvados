@@ -102,12 +102,6 @@ func applyDeprecatedNodeProfile(hostname string, ssi systemServiceInstance, svc 
 	svc.InternalURLs[arvados.URL{Scheme: scheme, Host: host}] = arvados.ServiceInstance{}
 }
 
-const defaultKeepstoreConfigPath = "/etc/arvados/keepstore/keepstore.yml"
-
-type oldKeepstoreConfig struct {
-	Debug *bool
-}
-
 func (ldr *Loader) loadOldConfigHelper(component, path string, target interface{}) error {
 	if path == "" {
 		return nil
@@ -123,35 +117,6 @@ func (ldr *Loader) loadOldConfigHelper(component, path string, target interface{
 	if err != nil {
 		return fmt.Errorf("%s: %s", path, err)
 	}
-	return nil
-}
-
-// update config using values from an old-style keepstore config file.
-func (ldr *Loader) loadOldKeepstoreConfig(cfg *arvados.Config) error {
-	if ldr.KeepstorePath == "" {
-		return nil
-	}
-	var oc oldKeepstoreConfig
-	err := ldr.loadOldConfigHelper("keepstore", ldr.KeepstorePath, &oc)
-	if os.IsNotExist(err) && (ldr.KeepstorePath == defaultKeepstoreConfigPath) {
-		return nil
-	} else if err != nil {
-		return err
-	}
-
-	cluster, err := cfg.GetCluster("")
-	if err != nil {
-		return err
-	}
-
-	if v := oc.Debug; v == nil {
-	} else if *v && cluster.SystemLogs.LogLevel != "debug" {
-		cluster.SystemLogs.LogLevel = "debug"
-	} else if !*v && cluster.SystemLogs.LogLevel != "info" {
-		cluster.SystemLogs.LogLevel = "info"
-	}
-
-	cfg.Clusters[cluster.ClusterID] = *cluster
 	return nil
 }
 

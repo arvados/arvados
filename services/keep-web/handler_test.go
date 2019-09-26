@@ -21,6 +21,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/auth"
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	check "gopkg.in/check.v1"
 )
@@ -32,7 +33,7 @@ type UnitSuite struct {
 }
 
 func (s *UnitSuite) SetUpTest(c *check.C) {
-	ldr := config.NewLoader(bytes.NewBufferString("Clusters: {zzzzz: {}}"), nil)
+	ldr := config.NewLoader(bytes.NewBufferString("Clusters: {zzzzz: {}}"), ctxlog.TestLogger(c))
 	ldr.Path = "-"
 	cfg, err := ldr.Load()
 	c.Assert(err, check.IsNil)

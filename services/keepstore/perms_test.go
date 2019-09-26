@@ -6,10 +6,10 @@ package main
 
 import (
 	"strconv"
-	"testing"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	check "gopkg.in/check.v1"
 )
 
 const (
@@ -30,44 +30,34 @@ const (
 	knownSignedLocator = knownLocator + knownSigHint
 )
 
-func TestSignLocator(t *testing.T) {
-	defer func(b []byte) {
-		theConfig.blobSigningKey = b
-	}(theConfig.blobSigningKey)
-
+func (s *HandlerSuite) TestSignLocator(c *check.C) {
 	tsInt, err := strconv.ParseInt(knownTimestamp, 16, 0)
 	if err != nil {
-		t.Fatal(err)
+		c.Fatal(err)
 	}
 	t0 := time.Unix(tsInt, 0)
 
-	theConfig.BlobSignatureTTL = knownSignatureTTL
-
-	theConfig.blobSigningKey = []byte(knownKey)
-	if x := SignLocator(knownLocator, knownToken, t0); x != knownSignedLocator {
-		t.Fatalf("Got %+q, expected %+q", x, knownSignedLocator)
+	s.cluster.Collections.BlobSigningTTL = knownSignatureTTL
+	s.cluster.Collections.BlobSigningKey = knownKey
+	if x := SignLocator(s.cluster, knownLocator, knownToken, t0); x != knownSignedLocator {
+		c.Fatalf("Got %+q, expected %+q", x, knownSignedLocator)
 	}
 
-	theConfig.blobSigningKey = []byte("arbitrarykey")
-	if x := SignLocator(knownLocator, knownToken, t0); x == knownSignedLocator {
-		t.Fatalf("Got same signature %+q, even though blobSigningKey changed", x)
+	s.cluster.Collections.BlobSigningKey = "arbitrarykey"
+	if x := SignLocator(s.cluster, knownLocator, knownToken, t0); x == knownSignedLocator {
+		c.Fatalf("Got same signature %+q, even though blobSigningKey changed", x)
 	}
 }
 
-func TestVerifyLocator(t *testing.T) {
-	defer func(b []byte) {
-		theConfig.blobSigningKey = b
-	}(theConfig.blobSigningKey)
-
-	theConfig.BlobSignatureTTL = knownSignatureTTL
-
-	theConfig.blobSigningKey = []byte(knownKey)
-	if err := VerifySignature(knownSignedLocator, knownToken); err != nil {
-		t.Fatal(err)
+func (s *HandlerSuite) TestVerifyLocator(c *check.C) {
+	s.cluster.Collections.BlobSigningTTL = knownSignatureTTL
+	s.cluster.Collections.BlobSigningKey = knownKey
+	if err := VerifySignature(s.cluster, knownSignedLocator, knownToken); err != nil {
+		c.Fatal(err)
 	}
 
-	theConfig.blobSigningKey = []byte("arbitrarykey")
-	if err := VerifySignature(knownSignedLocator, knownToken); err == nil {
-		t.Fatal("Verified signature even with wrong blobSigningKey")
+	s.cluster.Collections.BlobSigningKey = "arbitrarykey"
+	if err := VerifySignature(s.cluster, knownSignedLocator, knownToken); err == nil {
+		c.Fatal("Verified signature even with wrong blobSigningKey")
 	}
 }

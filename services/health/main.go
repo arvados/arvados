@@ -12,6 +12,7 @@ import (
 	"git.curoverse.com/arvados.git/lib/service"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/health"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 var (
@@ -19,7 +20,7 @@ var (
 	command cmd.Handler = service.Command(arvados.ServiceNameHealth, newHandler)
 )
 
-func newHandler(ctx context.Context, cluster *arvados.Cluster, _ string) service.Handler {
+func newHandler(ctx context.Context, cluster *arvados.Cluster, _ string, _ *prometheus.Registry) service.Handler {
 	return &health.Aggregator{Cluster: cluster}
 }
 

@@ -7,8 +7,8 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
-	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -22,99 +22,94 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"github.com/Azure/azure-sdk-for-go/storage"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/sirupsen/logrus"
 )
+
+func init() {
+	driver["Azure"] = newAzureBlobVolume
+}
+
+func newAzureBlobVolume(cluster *arvados.Cluster, volume arvados.Volume, logger logrus.FieldLogger, metrics *volumeMetricsVecs) (Volume, error) {
+	v := &AzureBlobVolume{
+		StorageBaseURL:    storage.DefaultBaseURL,
+		RequestTimeout:    azureDefaultRequestTimeout,
+		WriteRaceInterval: azureDefaultWriteRaceInterval,
+		WriteRacePollTime: azureDefaultWriteRacePollTime,
+		cluster:           cluster,
+		volume:            volume,
+		logger:            logger,
+		metrics:           metrics,
+	}
+	err := json.Unmarshal(volume.DriverParameters, &v)
+	if err != nil {
+		return nil, err
+	}
+	if v.ListBlobsRetryDelay == 0 {
+		v.ListBlobsRetryDelay = azureDefaultListBlobsRetryDelay
+	}
+	if v.ListBlobsMaxAttempts == 0 {
+		v.ListBlobsMaxAttempts = azureDefaultListBlobsMaxAttempts
+	}
+	if v.ContainerName == "" || v.StorageAccountName == "" || v.StorageAccountKey == "" {
+		return nil, errors.New("DriverParameters: ContainerName, StorageAccountName, and StorageAccountKey must be provided")
+	}
+	azc, err := storage.NewClient(v.StorageAccountName, v.StorageAccountKey, v.StorageBaseURL, storage.DefaultAPIVersion, true)
+	if err != nil {
+		return nil, fmt.Errorf("creating Azure storage client: %s", err)
+	}
+	v.azClient = azc
+	v.azClient.Sender = &singleSender{}
+	v.azClient.HTTPClient = &http.Client{
+		Timeout: time.Duration(v.RequestTimeout),
+	}
+	bs := v.azClient.GetBlobService()
+	v.container = &azureContainer{
+		ctr: bs.GetContainerReference(v.ContainerName),
+	}
+
+	if ok, err := v.container.Exists(); err != nil {
+		return nil, err
+	} else if !ok {
+		return nil, fmt.Errorf("Azure container %q does not exist: %s", v.ContainerName, err)
+	}
+	return v, v.check()
+}
+
+func (v *AzureBlobVolume) check() error {
+	lbls := prometheus.Labels{"device_id": v.GetDeviceID()}
+	v.container.stats.opsCounters, v.container.stats.errCounters, v.container.stats.ioBytes = v.metrics.getCounterVecsFor(lbls)
+	return nil
+}
 
 const (
 	azureDefaultRequestTimeout       = arvados.Duration(10 * time.Minute)
 	azureDefaultListBlobsMaxAttempts = 12
 	azureDefaultListBlobsRetryDelay  = arvados.Duration(10 * time.Second)
+	azureDefaultWriteRaceInterval    = arvados.Duration(15 * time.Second)
+	azureDefaultWriteRacePollTime    = arvados.Duration(time.Second)
 )
-
-var (
-	azureMaxGetBytes           int
-	azureStorageAccountName    string
-	azureStorageAccountKeyFile string
-	azureStorageReplication    int
-	azureWriteRaceInterval     = 15 * time.Second
-	azureWriteRacePollTime     = time.Second
-)
-
-func readKeyFromFile(file string) (string, error) {
-	buf, err := ioutil.ReadFile(file)
-	if err != nil {
-		return "", errors.New("reading key from " + file + ": " + err.Error())
-	}
-	accountKey := strings.TrimSpace(string(buf))
-	if accountKey == "" {
-		return "", errors.New("empty account key in " + file)
-	}
-	return accountKey, nil
-}
-
-type azureVolumeAdder struct {
-	*Config
-}
-
-// String implements flag.Value
-func (s *azureVolumeAdder) String() string {
-	return "-"
-}
-
-func (s *azureVolumeAdder) Set(containerName string) error {
-	s.Config.Volumes = append(s.Config.Volumes, &AzureBlobVolume{
-		ContainerName:         containerName,
-		StorageAccountName:    azureStorageAccountName,
-		StorageAccountKeyFile: azureStorageAccountKeyFile,
-		AzureReplication:      azureStorageReplication,
-		ReadOnly:              deprecated.flagReadonly,
-	})
-	return nil
-}
-
-func init() {
-	VolumeTypes = append(VolumeTypes, func() VolumeWithExamples { return &AzureBlobVolume{} })
-
-	flag.Var(&azureVolumeAdder{theConfig},
-		"azure-storage-container-volume",
-		"Use the given container as a storage volume. Can be given multiple times.")
-	flag.StringVar(
-		&azureStorageAccountName,
-		"azure-storage-account-name",
-		"",
-		"Azure storage account name used for subsequent --azure-storage-container-volume arguments.")
-	flag.StringVar(
-		&azureStorageAccountKeyFile,
-		"azure-storage-account-key-file",
-		"",
-		"`File` containing the account key used for subsequent --azure-storage-container-volume arguments.")
-	flag.IntVar(
-		&azureStorageReplication,
-		"azure-storage-replication",
-		3,
-		"Replication level to report to clients when data is stored in an Azure container.")
-	flag.IntVar(
-		&azureMaxGetBytes,
-		"azure-max-get-bytes",
-		BlockSize,
-		fmt.Sprintf("Maximum bytes to request in a single GET request. If smaller than %d, use multiple concurrent range requests to retrieve a block.", BlockSize))
-}
 
 // An AzureBlobVolume stores and retrieves blocks in an Azure Blob
 // container.
 type AzureBlobVolume struct {
-	StorageAccountName    string
-	StorageAccountKeyFile string
-	StorageBaseURL        string // "" means default, "core.windows.net"
-	ContainerName         string
-	AzureReplication      int
-	ReadOnly              bool
-	RequestTimeout        arvados.Duration
-	StorageClasses        []string
-	ListBlobsRetryDelay   arvados.Duration
-	ListBlobsMaxAttempts  int
+	StorageAccountName   string
+	StorageAccountKey    string
+	StorageBaseURL       string // "" means default, "core.windows.net"
+	ContainerName        string
+	RequestTimeout       arvados.Duration
+	ListBlobsRetryDelay  arvados.Duration
+	ListBlobsMaxAttempts int
+	MaxGetBytes          int
+	WriteRaceInterval    arvados.Duration
+	WriteRacePollTime    arvados.Duration
 
+	cluster   *arvados.Cluster
+	volume    arvados.Volume
+	logger    logrus.FieldLogger
+	metrics   *volumeMetricsVecs
 	azClient  storage.Client
 	container *azureContainer
 }
@@ -127,84 +122,13 @@ func (*singleSender) Send(c *storage.Client, req *http.Request) (resp *http.Resp
 	return c.HTTPClient.Do(req)
 }
 
-// Examples implements VolumeWithExamples.
-func (*AzureBlobVolume) Examples() []Volume {
-	return []Volume{
-		&AzureBlobVolume{
-			StorageAccountName:    "example-account-name",
-			StorageAccountKeyFile: "/etc/azure_storage_account_key.txt",
-			ContainerName:         "example-container-name",
-			AzureReplication:      3,
-			RequestTimeout:        azureDefaultRequestTimeout,
-		},
-		&AzureBlobVolume{
-			StorageAccountName:    "cn-account-name",
-			StorageAccountKeyFile: "/etc/azure_cn_storage_account_key.txt",
-			StorageBaseURL:        "core.chinacloudapi.cn",
-			ContainerName:         "cn-container-name",
-			AzureReplication:      3,
-			RequestTimeout:        azureDefaultRequestTimeout,
-		},
-	}
-}
-
 // Type implements Volume.
 func (v *AzureBlobVolume) Type() string {
 	return "Azure"
 }
 
-// Start implements Volume.
-func (v *AzureBlobVolume) Start(vm *volumeMetricsVecs) error {
-	if v.ListBlobsRetryDelay == 0 {
-		v.ListBlobsRetryDelay = azureDefaultListBlobsRetryDelay
-	}
-	if v.ListBlobsMaxAttempts == 0 {
-		v.ListBlobsMaxAttempts = azureDefaultListBlobsMaxAttempts
-	}
-	if v.ContainerName == "" {
-		return errors.New("no container name given")
-	}
-	if v.StorageAccountName == "" || v.StorageAccountKeyFile == "" {
-		return errors.New("StorageAccountName and StorageAccountKeyFile must be given")
-	}
-	accountKey, err := readKeyFromFile(v.StorageAccountKeyFile)
-	if err != nil {
-		return err
-	}
-	if v.StorageBaseURL == "" {
-		v.StorageBaseURL = storage.DefaultBaseURL
-	}
-	v.azClient, err = storage.NewClient(v.StorageAccountName, accountKey, v.StorageBaseURL, storage.DefaultAPIVersion, true)
-	if err != nil {
-		return fmt.Errorf("creating Azure storage client: %s", err)
-	}
-	v.azClient.Sender = &singleSender{}
-
-	if v.RequestTimeout == 0 {
-		v.RequestTimeout = azureDefaultRequestTimeout
-	}
-	v.azClient.HTTPClient = &http.Client{
-		Timeout: time.Duration(v.RequestTimeout),
-	}
-	bs := v.azClient.GetBlobService()
-	v.container = &azureContainer{
-		ctr: bs.GetContainerReference(v.ContainerName),
-	}
-
-	if ok, err := v.container.Exists(); err != nil {
-		return err
-	} else if !ok {
-		return fmt.Errorf("Azure container %q does not exist", v.ContainerName)
-	}
-	// Set up prometheus metrics
-	lbls := prometheus.Labels{"device_id": v.DeviceID()}
-	v.container.stats.opsCounters, v.container.stats.errCounters, v.container.stats.ioBytes = vm.getCounterVecsFor(lbls)
-
-	return nil
-}
-
-// DeviceID returns a globally unique ID for the storage container.
-func (v *AzureBlobVolume) DeviceID() string {
+// GetDeviceID returns a globally unique ID for the storage container.
+func (v *AzureBlobVolume) GetDeviceID() string {
 	return "azure://" + v.StorageBaseURL + "/" + v.StorageAccountName + "/" + v.ContainerName
 }
 
@@ -245,14 +169,14 @@ func (v *AzureBlobVolume) Get(ctx context.Context, loc string, buf []byte) (int,
 		if !haveDeadline {
 			t, err := v.Mtime(loc)
 			if err != nil {
-				log.Print("Got empty block (possible race) but Mtime failed: ", err)
+				ctxlog.FromContext(ctx).Print("Got empty block (possible race) but Mtime failed: ", err)
 				break
 			}
-			deadline = t.Add(azureWriteRaceInterval)
+			deadline = t.Add(v.WriteRaceInterval.Duration())
 			if time.Now().After(deadline) {
 				break
 			}
-			log.Printf("Race? Block %s is 0 bytes, %s old. Polling until %s", loc, time.Since(t), deadline)
+			ctxlog.FromContext(ctx).Printf("Race? Block %s is 0 bytes, %s old. Polling until %s", loc, time.Since(t), deadline)
 			haveDeadline = true
 		} else if time.Now().After(deadline) {
 			break
@@ -260,12 +184,12 @@ func (v *AzureBlobVolume) Get(ctx context.Context, loc string, buf []byte) (int,
 		select {
 		case <-ctx.Done():
 			return 0, ctx.Err()
-		case <-time.After(azureWriteRacePollTime):
+		case <-time.After(v.WriteRacePollTime.Duration()):
 		}
 		size, err = v.get(ctx, loc, buf)
 	}
 	if haveDeadline {
-		log.Printf("Race ended with size==%d", size)
+		ctxlog.FromContext(ctx).Printf("Race ended with size==%d", size)
 	}
 	return size, err
 }
@@ -273,8 +197,15 @@ func (v *AzureBlobVolume) Get(ctx context.Context, loc string, buf []byte) (int,
 func (v *AzureBlobVolume) get(ctx context.Context, loc string, buf []byte) (int, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+
+	pieceSize := BlockSize
+	if v.MaxGetBytes > 0 && v.MaxGetBytes < BlockSize {
+		pieceSize = v.MaxGetBytes
+	}
+
+	pieces := 1
 	expectSize := len(buf)
-	if azureMaxGetBytes < BlockSize {
+	if pieceSize < BlockSize {
 		// Unfortunately the handler doesn't tell us how long the blob
 		// is expected to be, so we have to ask Azure.
 		props, err := v.container.GetBlobProperties(loc)
@@ -285,6 +216,7 @@ func (v *AzureBlobVolume) get(ctx context.Context, loc string, buf []byte) (int,
 			return 0, fmt.Errorf("block %s invalid size %d (max %d)", loc, props.ContentLength, BlockSize)
 		}
 		expectSize = int(props.ContentLength)
+		pieces = (expectSize + pieceSize - 1) / pieceSize
 	}
 
 	if expectSize == 0 {
@@ -293,7 +225,6 @@ func (v *AzureBlobVolume) get(ctx context.Context, loc string, buf []byte) (int,
 
 	// We'll update this actualSize if/when we get the last piece.
 	actualSize := -1
-	pieces := (expectSize + azureMaxGetBytes - 1) / azureMaxGetBytes
 	errors := make(chan error, pieces)
 	var wg sync.WaitGroup
 	wg.Add(pieces)
@@ -308,8 +239,8 @@ func (v *AzureBlobVolume) get(ctx context.Context, loc string, buf []byte) (int,
 		// interrupted as a result.
 		go func(p int) {
 			defer wg.Done()
-			startPos := p * azureMaxGetBytes
-			endPos := startPos + azureMaxGetBytes
+			startPos := p * pieceSize
+			endPos := startPos + pieceSize
 			if endPos > expectSize {
 				endPos = expectSize
 			}
@@ -412,7 +343,7 @@ func (v *AzureBlobVolume) Compare(ctx context.Context, loc string, expect []byte
 
 // Put stores a Keep block as a block blob in the container.
 func (v *AzureBlobVolume) Put(ctx context.Context, loc string, block []byte) error {
-	if v.ReadOnly {
+	if v.volume.ReadOnly {
 		return MethodDisabledError
 	}
 	// Send the block data through a pipe, so that (if we need to)
@@ -441,7 +372,7 @@ func (v *AzureBlobVolume) Put(ctx context.Context, loc string, block []byte) err
 	}()
 	select {
 	case <-ctx.Done():
-		theConfig.debugLogf("%s: taking CreateBlockBlobFromReader's input away: %s", v, ctx.Err())
+		ctxlog.FromContext(ctx).Debugf("%s: taking CreateBlockBlobFromReader's input away: %s", v, ctx.Err())
 		// Our pipe might be stuck in Write(), waiting for
 		// io.Copy() to read. If so, un-stick it. This means
 		// CreateBlockBlobFromReader will get corrupt data,
@@ -450,7 +381,7 @@ func (v *AzureBlobVolume) Put(ctx context.Context, loc string, block []byte) err
 		go io.Copy(ioutil.Discard, bufr)
 		// CloseWithError() will return once pending I/O is done.
 		bufw.CloseWithError(ctx.Err())
-		theConfig.debugLogf("%s: abandoning CreateBlockBlobFromReader goroutine", v)
+		ctxlog.FromContext(ctx).Debugf("%s: abandoning CreateBlockBlobFromReader goroutine", v)
 		return ctx.Err()
 	case err := <-errChan:
 		return err
@@ -459,7 +390,7 @@ func (v *AzureBlobVolume) Put(ctx context.Context, loc string, block []byte) err
 
 // Touch updates the last-modified property of a block blob.
 func (v *AzureBlobVolume) Touch(loc string) error {
-	if v.ReadOnly {
+	if v.volume.ReadOnly {
 		return MethodDisabledError
 	}
 	trashed, metadata, err := v.checkTrashed(loc)
@@ -508,7 +439,7 @@ func (v *AzureBlobVolume) IndexTo(prefix string, writer io.Writer) error {
 				continue
 			}
 			modtime := time.Time(b.Properties.LastModified)
-			if b.Properties.ContentLength == 0 && modtime.Add(azureWriteRaceInterval).After(time.Now()) {
+			if b.Properties.ContentLength == 0 && modtime.Add(v.WriteRaceInterval.Duration()).After(time.Now()) {
 				// A new zero-length blob is probably
 				// just a new non-empty blob that
 				// hasn't committed its data yet (see
@@ -535,7 +466,7 @@ func (v *AzureBlobVolume) listBlobs(page int, params storage.ListBlobsParameters
 		resp, err = v.container.ListBlobs(params)
 		err = v.translateError(err)
 		if err == VolumeBusyError {
-			log.Printf("ListBlobs: will retry page %d in %s after error: %s", page, v.ListBlobsRetryDelay, err)
+			v.logger.Printf("ListBlobs: will retry page %d in %s after error: %s", page, v.ListBlobsRetryDelay, err)
 			time.Sleep(time.Duration(v.ListBlobsRetryDelay))
 			continue
 		} else {
@@ -547,7 +478,7 @@ func (v *AzureBlobVolume) listBlobs(page int, params storage.ListBlobsParameters
 
 // Trash a Keep block.
 func (v *AzureBlobVolume) Trash(loc string) error {
-	if v.ReadOnly {
+	if v.volume.ReadOnly {
 		return MethodDisabledError
 	}
 
@@ -562,12 +493,12 @@ func (v *AzureBlobVolume) Trash(loc string) error {
 	}
 	if t, err := v.Mtime(loc); err != nil {
 		return err
-	} else if time.Since(t) < theConfig.BlobSignatureTTL.Duration() {
+	} else if time.Since(t) < v.cluster.Collections.BlobSigningTTL.Duration() {
 		return nil
 	}
 
-	// If TrashLifetime == 0, just delete it
-	if theConfig.TrashLifetime == 0 {
+	// If BlobTrashLifetime == 0, just delete it
+	if v.cluster.Collections.BlobTrashLifetime == 0 {
 		return v.container.DeleteBlob(loc, &storage.DeleteBlobOptions{
 			IfMatch: props.Etag,
 		})
@@ -575,7 +506,7 @@ func (v *AzureBlobVolume) Trash(loc string) error {
 
 	// Otherwise, mark as trash
 	return v.container.SetBlobMetadata(loc, storage.BlobMetadata{
-		"expires_at": fmt.Sprintf("%d", time.Now().Add(theConfig.TrashLifetime.Duration()).Unix()),
+		"expires_at": fmt.Sprintf("%d", time.Now().Add(v.cluster.Collections.BlobTrashLifetime.Duration()).Unix()),
 	}, &storage.SetBlobMetadataOptions{
 		IfMatch: props.Etag,
 	})
@@ -613,23 +544,6 @@ func (v *AzureBlobVolume) String() string {
 	return fmt.Sprintf("azure-storage-container:%+q", v.ContainerName)
 }
 
-// Writable returns true, unless the -readonly flag was on when the
-// volume was added.
-func (v *AzureBlobVolume) Writable() bool {
-	return !v.ReadOnly
-}
-
-// Replication returns the replication level of the container, as
-// specified by the -azure-storage-replication argument.
-func (v *AzureBlobVolume) Replication() int {
-	return v.AzureReplication
-}
-
-// GetStorageClasses implements Volume
-func (v *AzureBlobVolume) GetStorageClasses() []string {
-	return v.StorageClasses
-}
-
 // If possible, translate an Azure SDK error to a recognizable error
 // like os.ErrNotExist.
 func (v *AzureBlobVolume) translateError(err error) error {
@@ -653,9 +567,13 @@ func (v *AzureBlobVolume) isKeepBlock(s string) bool {
 	return keepBlockRegexp.MatchString(s)
 }
 
-// EmptyTrash looks for trashed blocks that exceeded TrashLifetime
+// EmptyTrash looks for trashed blocks that exceeded BlobTrashLifetime
 // and deletes them from the volume.
 func (v *AzureBlobVolume) EmptyTrash() {
+	if v.cluster.Collections.BlobDeleteConcurrency < 1 {
+		return
+	}
+
 	var bytesDeleted, bytesInTrash int64
 	var blocksDeleted, blocksInTrash int64
 
@@ -670,7 +588,7 @@ func (v *AzureBlobVolume) EmptyTrash() {
 
 		expiresAt, err := strconv.ParseInt(b.Metadata["expires_at"], 10, 64)
 		if err != nil {
-			log.Printf("EmptyTrash: ParseInt(%v): %v", b.Metadata["expires_at"], err)
+			v.logger.Printf("EmptyTrash: ParseInt(%v): %v", b.Metadata["expires_at"], err)
 			return
 		}
 
@@ -682,7 +600,7 @@ func (v *AzureBlobVolume) EmptyTrash() {
 			IfMatch: b.Properties.Etag,
 		})
 		if err != nil {
-			log.Printf("EmptyTrash: DeleteBlob(%v): %v", b.Name, err)
+			v.logger.Printf("EmptyTrash: DeleteBlob(%v): %v", b.Name, err)
 			return
 		}
 		atomic.AddInt64(&blocksDeleted, 1)
@@ -690,8 +608,8 @@ func (v *AzureBlobVolume) EmptyTrash() {
 	}
 
 	var wg sync.WaitGroup
-	todo := make(chan storage.Blob, theConfig.EmptyTrashWorkers)
-	for i := 0; i < 1 || i < theConfig.EmptyTrashWorkers; i++ {
+	todo := make(chan storage.Blob, v.cluster.Collections.BlobDeleteConcurrency)
+	for i := 0; i < v.cluster.Collections.BlobDeleteConcurrency; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -705,7 +623,7 @@ func (v *AzureBlobVolume) EmptyTrash() {
 	for page := 1; ; page++ {
 		resp, err := v.listBlobs(page, params)
 		if err != nil {
-			log.Printf("EmptyTrash: ListBlobs: %v", err)
+			v.logger.Printf("EmptyTrash: ListBlobs: %v", err)
 			break
 		}
 		for _, b := range resp.Blobs {
@@ -719,7 +637,7 @@ func (v *AzureBlobVolume) EmptyTrash() {
 	close(todo)
 	wg.Wait()
 
-	log.Printf("EmptyTrash stats for %v: Deleted %v bytes in %v blocks. Remaining in trash: %v bytes in %v blocks.", v.String(), bytesDeleted, blocksDeleted, bytesInTrash-bytesDeleted, blocksInTrash-blocksDeleted)
+	v.logger.Printf("EmptyTrash stats for %v: Deleted %v bytes in %v blocks. Remaining in trash: %v bytes in %v blocks.", v.String(), bytesDeleted, blocksDeleted, bytesInTrash-bytesDeleted, blocksInTrash-blocksDeleted)
 }
 
 // InternalStats returns bucket I/O and API call counters.
@@ -748,7 +666,6 @@ func (s *azureBlobStats) TickErr(err error) {
 	if err, ok := err.(storage.AzureStorageServiceError); ok {
 		errType = errType + fmt.Sprintf(" %d (%s)", err.StatusCode, err.Code)
 	}
-	log.Printf("errType %T, err %s", err, err)
 	s.statsTicker.TickErr(err, errType)
 }
 

@@ -28,6 +28,7 @@ type Loader struct {
 	Logger         logrus.FieldLogger
 	SkipDeprecated bool // Don't load deprecated config keys
 	SkipLegacy     bool // Don't load legacy config files
+	SkipAPICalls   bool // Don't do checks that call RailsAPI/controller
 
 	Path                    string
 	KeepstorePath           string
@@ -259,9 +260,15 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 
 	// Check for known mistakes
 	for id, cc := range cfg.Clusters {
-		err = checkKeyConflict(fmt.Sprintf("Clusters.%s.PostgreSQL.Connection", id), cc.PostgreSQL.Connection)
-		if err != nil {
-			return nil, err
+		for _, err = range []error{
+			checkKeyConflict(fmt.Sprintf("Clusters.%s.PostgreSQL.Connection", id), cc.PostgreSQL.Connection),
+			ldr.checkPendingKeepstoreMigrations(cc),
+			ldr.checkEmptyKeepstores(cc),
+			ldr.checkUnlistedKeepstores(cc),
+		} {
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 	return &cfg, nil

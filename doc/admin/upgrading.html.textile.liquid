@@ -41,13 +41,28 @@ table(table table-bordered table-condensed).
 
 h3(#master). development master (as of 2019-08-12)
 
+h4. Delete "keep_services" records
+
+After all keepproxy and keepstore configurations have been migrated to the centralized configuration file (see below), all keep_services records you added manually during installation should be removed. System logs from keepstore and keepproxy at startup, as well as the output of @arvados-server config-check@, will remind you to do this.
+
+<notextile><pre><code>$ export ARVADOS_API_HOST=...
+$ export ARVADOS_API_TOKEN=...
+$ arv --format=uuid keep_service list | xargs -n1 arv keep_service delete --uuid
+</code></pre></notextile>
+
+Once these old records are removed, @arv keep_service list@ will instead return the services listed under Services/Keepstore/InternalURLs and Services/Keepproxy/ExternalURL in your centralized configuration file.
+
 h4. Arv-git-httpd configuration migration
 
 (feature "#14712":https://dev.arvados.org/issues/14712 ) The arv-git-httpd package can now be configured using the centralized configuration file at @/etc/arvados/config.yml@. Configuration via individual command line arguments is no longer available. Please see "arv-git-httpd's config migration guide":{{site.baseurl}}/admin/config-migration.html#arv-git-httpd for more details.
 
-h4. Keep-web dropped support on command line flags configuration
+h4. Keepstore and keep-web configuration migration
 
-As we're migrating to a central cluster configuration file, the already deprecated way of getting configurations via environment variables and command line flags isn't valid anymore. Current keep-web supports both the now legacy @keep-web.yml@ config format (used by Arvados 1.4) and the new cluster config file format. Please check "keep-web's install guide":{{site.baseurl}}/install/install-keep-web.html for more details.
+keepstore and keep-web no longer support configuration via (previously deprecated) command line configuration flags and environment variables.
+
+keep-web now supports the legacy @keep-web.yml@ config format (used by Arvados 1.4) and the new cluster config file format. Please check "keep-web's install guide":{{site.baseurl}}/install/install-keep-web.html for more details.
+
+keepstore now supports the legacy @keepstore.yml@ config format (used by Arvados 1.4) and the new cluster config file format. Please check the "keepstore config migration notes":{{site.baseurl}}/admin/config-migration.html#keepstore and "keepstore install guide":{{site.baseurl}}/install/install-keepstore.html for more details.
 
 h4. Jobs API is read-only
 

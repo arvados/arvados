@@ -10,17 +10,16 @@ class Arvados::V1::KeepServicesController < ApplicationController
 
   def find_objects_for_index
     # all users can list all keep services
-    @objects = model_class.where('1=1')
+    @objects = KeepService.all
     super
   end
 
   def accessible
     if request.headers['X-External-Client'] == '1'
-      @objects = model_class.where('service_type=?', 'proxy')
+      @objects = KeepService.where('service_type=?', 'proxy')
     else
-      @objects = model_class.where(model_class.arel_table[:service_type].not_eq('proxy'))
+      @objects = KeepService.where('service_type<>?', 'proxy')
     end
     render_list
   end
-
 end

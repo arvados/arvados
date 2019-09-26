@@ -8,9 +8,12 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type bufferPool struct {
+	log logrus.FieldLogger
 	// limiter has a "true" placeholder for each in-use buffer.
 	limiter chan bool
 	// allocated is the number of bytes currently allocated to buffers.
@@ -19,9 +22,9 @@ type bufferPool struct {
 	sync.Pool
 }
 
-func newBufferPool(count int, bufSize int) *bufferPool {
-	p := bufferPool{}
-	p.New = func() interface{} {
+func newBufferPool(log logrus.FieldLogger, count int, bufSize int) *bufferPool {
+	p := bufferPool{log: log}
+	p.Pool.New = func() interface{} {
 		atomic.AddUint64(&p.allocated, uint64(bufSize))
 		return make([]byte, bufSize)
 	}
@@ -34,13 +37,13 @@ func (p *bufferPool) Get(size int) []byte {
 	case p.limiter <- true:
 	default:
 		t0 := time.Now()
-		log.Printf("reached max buffers (%d), waiting", cap(p.limiter))
+		p.log.Printf("reached max buffers (%d), waiting", cap(p.limiter))
 		p.limiter <- true
-		log.Printf("waited %v for a buffer", time.Since(t0))
+		p.log.Printf("waited %v for a buffer", time.Since(t0))
 	}
 	buf := p.Pool.Get().([]byte)
 	if cap(buf) < size {
-		log.Fatalf("bufferPool Get(size=%d) but max=%d", size, cap(buf))
+		p.log.Fatalf("bufferPool Get(size=%d) but max=%d", size, cap(buf))
 	}
 	return buf[:size]
 }

@@ -16,6 +16,7 @@ import (
 	"git.curoverse.com/arvados.git/lib/config"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	check "gopkg.in/check.v1"
 )
 
@@ -38,7 +39,7 @@ func (s *AuthHandlerSuite) SetUpTest(c *check.C) {
 	repoRoot, err := filepath.Abs("../api/tmp/git/test")
 	c.Assert(err, check.IsNil)
 
-	cfg, err := config.NewLoader(nil, nil).Load()
+	cfg, err := config.NewLoader(nil, ctxlog.TestLogger(c)).Load()
 	c.Assert(err, check.Equals, nil)
 	s.cluster, err = cfg.GetCluster("")
 	c.Assert(err, check.Equals, nil)
