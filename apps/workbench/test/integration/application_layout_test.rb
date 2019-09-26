@@ -307,11 +307,6 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
           assert page.has_link? 'foo_file'
         end
       end
-
-      within('.compute-node-summary-pane') do
-        click_link 'Details'
-        assert_text 'compute0'
-      end
     end
   end
 end
