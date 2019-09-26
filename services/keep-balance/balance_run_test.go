@@ -19,7 +19,8 @@ import (
 	"git.curoverse.com/arvados.git/lib/config"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
-	"github.com/sirupsen/logrus"
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
+	"github.com/prometheus/client_golang/prometheus"
 	check "gopkg.in/check.v1"
 )
 
@@ -314,7 +315,7 @@ func (s *runSuite) newServer(options *RunOptions) *Server {
 		Cluster:    s.config,
 		ArvClient:  s.client,
 		RunOptions: *options,
-		Metrics:    newMetrics(),
+		Metrics:    newMetrics(prometheus.NewRegistry()),
 		Logger:     options.Logger,
 		Dumper:     options.Dumper,
 	}
@@ -322,31 +323,8 @@ func (s *runSuite) newServer(options *RunOptions) *Server {
 	return srv
 }
 
-// make a log.Logger that writes to the current test's c.Log().
-func (s *runSuite) logger(c *check.C) *logrus.Logger {
-	r, w := io.Pipe()
-	go func() {
-		buf := make([]byte, 10000)
-		for {
-			n, err := r.Read(buf)
-			if n > 0 {
-				if buf[n-1] == '\n' {
-					n--
-				}
-				c.Log(string(buf[:n]))
-			}
-			if err != nil {
-				break
-			}
-		}
-	}()
-	logger := logrus.New()
-	logger.Out = w
-	return logger
-}
-
 func (s *runSuite) SetUpTest(c *check.C) {
-	cfg, err := config.NewLoader(nil, nil).Load()
+	cfg, err := config.NewLoader(nil, ctxlog.TestLogger(c)).Load()
 	c.Assert(err, check.Equals, nil)
 	s.config, err = cfg.GetCluster("")
 	c.Assert(err, check.Equals, nil)
@@ -371,7 +349,7 @@ func (s *runSuite) TestRefuseZeroCollections(c *check.C) {
 	opts := RunOptions{
 		CommitPulls: true,
 		CommitTrash: true,
-		Logger:      s.logger(c),
+		Logger:      ctxlog.TestLogger(c),
 	}
 	s.stub.serveCurrentUserAdmin()
 	s.stub.serveZeroCollections()
@@ -391,7 +369,7 @@ func (s *runSuite) TestRefuseNonAdmin(c *check.C) {
 	opts := RunOptions{
 		CommitPulls: true,
 		CommitTrash: true,
-		Logger:      s.logger(c),
+		Logger:      ctxlog.TestLogger(c),
 	}
 	s.stub.serveCurrentUserNotAdmin()
 	s.stub.serveZeroCollections()
@@ -410,7 +388,7 @@ func (s *runSuite) TestDetectSkippedCollections(c *check.C) {
 	opts := RunOptions{
 		CommitPulls: true,
 		CommitTrash: true,
-		Logger:      s.logger(c),
+		Logger:      ctxlog.TestLogger(c),
 	}
 	s.stub.serveCurrentUserAdmin()
 	s.stub.serveCollectionsButSkipOne()
@@ -434,7 +412,7 @@ func (s *runSuite) TestWriteLostBlocks(c *check.C) {
 	opts := RunOptions{
 		CommitPulls: true,
 		CommitTrash: true,
-		Logger:      s.logger(c),
+		Logger:      ctxlog.TestLogger(c),
 	}
 	s.stub.serveCurrentUserAdmin()
 	s.stub.serveFooBarFileCollections()
@@ -456,7 +434,7 @@ func (s *runSuite) TestDryRun(c *check.C) {
 	opts := RunOptions{
 		CommitPulls: false,
 		CommitTrash: false,
-		Logger:      s.logger(c),
+		Logger:      ctxlog.TestLogger(c),
 	}
 	s.stub.serveCurrentUserAdmin()
 	collReqs := s.stub.serveFooBarFileCollections()
@@ -489,8 +467,8 @@ func (s *runSuite) TestCommit(c *check.C) {
 	opts := RunOptions{
 		CommitPulls: true,
 		CommitTrash: true,
-		Logger:      s.logger(c),
-		Dumper:      s.logger(c),
+		Logger:      ctxlog.TestLogger(c),
+		Dumper:      ctxlog.TestLogger(c),
 	}
 	s.stub.serveCurrentUserAdmin()
 	s.stub.serveFooBarFileCollections()
@@ -527,8 +505,8 @@ func (s *runSuite) TestRunForever(c *check.C) {
 	opts := RunOptions{
 		CommitPulls: true,
 		CommitTrash: true,
-		Logger:      s.logger(c),
-		Dumper:      s.logger(c),
+		Logger:      ctxlog.TestLogger(c),
+		Dumper:      ctxlog.TestLogger(c),
 	}
 	s.stub.serveCurrentUserAdmin()
 	s.stub.serveFooBarFileCollections()

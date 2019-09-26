@@ -16,6 +16,7 @@ import (
 	"git.curoverse.com/arvados.git/lib/service"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 )
 
@@ -26,7 +27,7 @@ var (
 	options RunOptions
 )
 
-func newHandler(ctx context.Context, cluster *arvados.Cluster, token string) service.Handler {
+func newHandler(ctx context.Context, cluster *arvados.Cluster, token string, registry *prometheus.Registry) service.Handler {
 	if !options.Once && cluster.Collections.BalancePeriod == arvados.Duration(0) {
 		return service.ErrorHandler(ctx, cluster, fmt.Errorf("You must either run keep-balance with the -once flag, or set Collections.BalancePeriod in the config. "+
 			"If using the legacy keep-balance.yml config, RunPeriod is the equivalant of Collections.BalancePeriod."))
@@ -50,7 +51,7 @@ func newHandler(ctx context.Context, cluster *arvados.Cluster, token string) ser
 		Cluster:    cluster,
 		ArvClient:  ac,
 		RunOptions: options,
-		Metrics:    newMetrics(),
+		Metrics:    newMetrics(registry),
 		Logger:     options.Logger,
 		Dumper:     options.Dumper,
 	}

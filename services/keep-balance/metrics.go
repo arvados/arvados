@@ -24,9 +24,9 @@ type metrics struct {
 	mtx         sync.Mutex
 }
 
-func newMetrics() *metrics {
+func newMetrics(registry *prometheus.Registry) *metrics {
 	return &metrics{
-		reg:         prometheus.NewRegistry(),
+		reg:         registry,
 		statsGauges: map[string]setter{},
 		observers:   map[string]observer{},
 	}

@@ -15,7 +15,9 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
@@ -61,7 +63,7 @@ func (s *integrationSuite) TearDownSuite(c *check.C) {
 }
 
 func (s *integrationSuite) SetUpTest(c *check.C) {
-	cfg, err := config.NewLoader(nil, nil).Load()
+	cfg, err := config.NewLoader(nil, ctxlog.TestLogger(c)).Load()
 	c.Assert(err, check.Equals, nil)
 	s.config, err = cfg.GetCluster("")
 	c.Assert(err, check.Equals, nil)
@@ -88,7 +90,7 @@ func (s *integrationSuite) TestBalanceAPIFixtures(c *check.C) {
 
 		bal := &Balancer{
 			Logger:  logger,
-			Metrics: newMetrics(),
+			Metrics: newMetrics(prometheus.NewRegistry()),
 		}
 		nextOpts, err := bal.Run(s.client, s.config, opts)
 		c.Check(err, check.IsNil)
