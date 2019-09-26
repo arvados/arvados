@@ -26,13 +26,14 @@ var (
 	options RunOptions
 )
 
-func newHandler(ctx context.Context, cluster *arvados.Cluster, _ string) service.Handler {
+func newHandler(ctx context.Context, cluster *arvados.Cluster, token string) service.Handler {
 	if !options.Once && cluster.Collections.BalancePeriod == arvados.Duration(0) {
 		return service.ErrorHandler(ctx, cluster, fmt.Errorf("You must either run keep-balance with the -once flag, or set Collections.BalancePeriod in the config. "+
 			"If using the legacy keep-balance.yml config, RunPeriod is the equivalant of Collections.BalancePeriod."))
 	}
 
 	ac, err := arvados.NewClientFromConfig(cluster)
+	ac.AuthToken = token
 	if err != nil {
 		return service.ErrorHandler(ctx, cluster, fmt.Errorf("error initializing client from cluster config: %s", err))
 	}
