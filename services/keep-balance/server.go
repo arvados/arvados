@@ -5,16 +5,15 @@
 package main
 
 import (
-	"context"
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/auth"
-	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
@@ -48,6 +47,7 @@ type Server struct {
 	Metrics    *metrics
 
 	httpHandler http.Handler
+	setupOnce   sync.Once
 
 	Logger logrus.FieldLogger
 	Dumper logrus.FieldLogger
@@ -64,28 +64,12 @@ func (srv *Server) CheckHealth() error {
 }
 
 // Start sets up and runs the balancer.
-func (srv *Server) Start(ctx context.Context) {
-	srv.init(ctx)
-
-	var err error
-	if srv.RunOptions.Once {
-		_, err = srv.runOnce()
-	} else {
-		err = srv.runForever(nil)
-	}
-	if err != nil {
-		srv.Logger.Error(err)
-	}
+func (srv *Server) Start() {
+	srv.setupOnce.Do(srv.setup)
+	go srv.run()
 }
 
-func (srv *Server) init(ctx context.Context) {
-	if srv.RunOptions.Logger == nil {
-		srv.RunOptions.Logger = ctxlog.FromContext(ctx)
-	}
-
-	srv.Logger = srv.RunOptions.Logger
-	srv.Dumper = srv.RunOptions.Dumper
-
+func (srv *Server) setup() {
 	if srv.Cluster.ManagementToken == "" {
 		srv.httpHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Management API authentication is not configured", http.StatusForbidden)
@@ -98,6 +82,18 @@ func (srv *Server) init(ctx context.Context) {
 		mux.Handler("GET", "/metrics", metricsH)
 		mux.Handler("GET", "/metrics.json", metricsH)
 		srv.httpHandler = auth.RequireLiteralToken(srv.Cluster.ManagementToken, mux)
+	}
+}
+
+func (srv *Server) run() {
+	var err error
+	if srv.RunOptions.Once {
+		_, err = srv.runOnce()
+	} else {
+		err = srv.runForever(nil)
+	}
+	if err != nil {
+		srv.Logger.Error(err)
 	}
 }
 

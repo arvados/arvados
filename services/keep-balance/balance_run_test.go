@@ -5,7 +5,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -319,7 +318,7 @@ func (s *runSuite) newServer(options *RunOptions) *Server {
 		Logger:     options.Logger,
 		Dumper:     options.Dumper,
 	}
-	srv.init(context.Background())
+	srv.setup()
 	return srv
 }
 

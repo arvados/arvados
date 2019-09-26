@@ -41,14 +41,20 @@ func newHandler(ctx context.Context, cluster *arvados.Cluster, _ string) service
 		debugf = log.Printf
 	}
 
+	if options.Logger == nil {
+		options.Logger = ctxlog.FromContext(ctx)
+	}
+
 	srv := &Server{
 		Cluster:    cluster,
 		ArvClient:  ac,
 		RunOptions: options,
 		Metrics:    newMetrics(),
+		Logger:     options.Logger,
+		Dumper:     options.Dumper,
 	}
 
-	go srv.Start(ctx)
+	srv.Start()
 	return srv
 }
 
