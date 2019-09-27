@@ -1,0 +1,35 @@
+---
+layout: default
+navsection: admin
+title: Balancing Keep servers
+...
+
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+This page describes how to balance keepstore servers using keep-balance. Keep-balance creates new copies of under-replicated blocks, deletes excess copies of over-replicated and unreferenced blocks, and moves blocks to better positions (e.g. after adding new keepstore servers) so clients find them faster.
+
+See "the Keep-balance install docs":{{site.baseurl}}/install/install-keep-balance.html for installation instructions.
+
+h3. Scanning
+
+By default, keep-balance operates periodically, i.e. do a scan/balance operation, sleep, repeat.
+
+The @Collections.BalancePeriod@ value in @/etc/arvados/config.yml@ determines the interval between start times of successive scan/balance operations. If an operation takes longer than the @Collections.BalancePeriod@, the next operation will follow it immediately. If SIGUSR1 is received during an idle period between operations, the next operation will start immediately.
+
+Keep-balance can also be run with the @-once@ flag to do a single scan/balance operation and then exit. The exit code will be zero if the operation was successful.
+
+h3. Committing
+
+Keep-balance computes and reports changes but does not implement them by sending pull and trash lists to the Keep services unless the @-commit-pull@ and @-commit-trash@ flags are used.
+
+h3. Additional configuration
+
+For configuring resource usage tuning and lost block reporting, please see the @Collections.BlobMissingReport@, @Collections.BalanceCollectionBatch@, @Collections.BalanceCollectionBuffers@ option in the "default config.yml file":{{site.baseurl}}/admin/config.html.
+
+h3. Limitations
+
+Keep-balance does not attempt to discover whether committed pull and trash requests ever get carried out -- only that they are accepted by the Keep services. If some services are full, new copies of under-replicated blocks might never get made, only repeatedly requested.
