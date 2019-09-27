@@ -103,7 +103,7 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	})
 	ctx := ctxlog.Context(c.ctx, logger)
 
-	listenURL, err := getListenAddr(cluster.Services, c.svcName)
+	listenURL, err := getListenAddr(cluster.Services, c.svcName, log)
 	if err != nil {
 		return 1
 	}
@@ -159,7 +159,7 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 
 const rfc3339NanoFixed = "2006-01-02T15:04:05.000000000Z07:00"
 
-func getListenAddr(svcs arvados.Services, prog arvados.ServiceName) (arvados.URL, error) {
+func getListenAddr(svcs arvados.Services, prog arvados.ServiceName, log logrus.FieldLogger) (arvados.URL, error) {
 	svc, ok := svcs.Map()[prog]
 	if !ok {
 		return arvados.URL{}, fmt.Errorf("unknown service name %q", prog)
@@ -172,6 +172,12 @@ func getListenAddr(svcs arvados.Services, prog arvados.ServiceName) (arvados.URL
 		if err == nil {
 			listener.Close()
 			return url, nil
+		} else if strings.Contains(err.Error(), "cannot assign requested address") {
+			continue
+		} else if strings.Contains(err.Error(), "address already in use") {
+			return url, err
+		} else {
+			log.Warn(err)
 		}
 	}
 	return arvados.URL{}, fmt.Errorf("configuration does not enable the %s service on this host", prog)
