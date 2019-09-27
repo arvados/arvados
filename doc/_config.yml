@@ -150,11 +150,11 @@ navbar:
       - admin/index.html.textile.liquid
     - Configuration:
       - admin/config.html.textile.liquid
+      - admin/federation.html.textile.liquid
+      - admin/collection-managed-properties.html.textile.liquid
     - Upgrading and migrations:
       - admin/upgrading.html.textile.liquid
       - admin/config-migration.html.textile.liquid
-      - install/migrate-docker19.html.textile.liquid
-      - admin/upgrade-crunch2.html.textile.liquid
     - Users and Groups:
       - install/cheat_sheet.html.textile.liquid
       - admin/activation.html.textile.liquid
@@ -171,12 +171,12 @@ navbar:
       - admin/cloudtest.html.textile.liquid
     - Data Management:
       - admin/collection-versioning.html.textile.liquid
-      - admin/collection-managed-properties.html.textile.liquid
-    - Other:
-      - admin/federation.html.textile.liquid
       - admin/controlling-container-reuse.html.textile.liquid
       - admin/logs-table-management.html.textile.liquid
+    - Other:
       - admin/troubleshooting.html.textile.liquid
+      - install/migrate-docker19.html.textile.liquid
+      - admin/upgrade-crunch2.html.textile.liquid
   installguide:
     - Overview:
       - install/index.html.textile.liquid
