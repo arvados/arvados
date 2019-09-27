@@ -48,9 +48,6 @@ func (v *S3Volume) check() error {
 	if v.Bucket == "" {
 		return errors.New("DriverParameters: Bucket must be provided")
 	}
-	if v.IAMRole == "" && (v.AccessKey == "" || v.SecretKey == "") {
-		return errors.New("DriverParameters: either IAMRole or literal credentials (AccessKey and SecretKey) must be provided")
-	}
 	if v.IndexPageSize == 0 {
 		v.IndexPageSize = 1000
 	}
@@ -161,7 +158,7 @@ func (v *S3Volume) GetDeviceID() string {
 }
 
 func (v *S3Volume) bootstrapIAMCredentials() error {
-	if v.IAMRole == "" {
+	if v.AccessKey != "" || v.SecretKey != "" {
 		return nil
 	}
 	ttl, err := v.updateIAMCredentials()
@@ -213,15 +210,40 @@ func (v *S3Volume) updateIAMCredentials() (time.Duration, error) {
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Minute))
 	defer cancel()
 
+	metadataBaseURL := "http://169.254.169.254/latest/meta-data/iam/security-credentials/"
+
 	var url string
 	if strings.Contains(v.IAMRole, "://") {
 		// Configuration provides complete URL (used by tests)
 		url = v.IAMRole
-	} else {
+	} else if v.IAMRole != "" {
 		// Configuration provides IAM role name and we use the
 		// AWS metadata endpoint
-		url = "http://169.254.169.254/latest/meta-data/iam/security-credentials/" + v.IAMRole
+		url = metadataBaseURL + v.IAMRole
+	} else {
+		url = metadataBaseURL
+		v.logger.WithField("URL", url).Debug("looking up IAM role name")
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return 0, fmt.Errorf("error setting up request %s: %s", url, err)
+		}
+		resp, err := http.DefaultClient.Do(req.WithContext(ctx))
+		if err != nil {
+			return 0, fmt.Errorf("error getting %s: %s", url, err)
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			return 0, fmt.Errorf("error getting %s: HTTP status %s", url, resp.Status)
+		}
+		var role string
+		_, err = fmt.Fscanf(resp.Body, "%s\n", &role)
+		if err != nil {
+			return 0, fmt.Errorf("error reading response from %s: %s", url, err)
+		}
+		v.logger.WithField("Role", role).Debug("looked up IAM role name")
+		url = url + role
 	}
+
 	v.logger.WithField("URL", url).Debug("getting credentials")
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
