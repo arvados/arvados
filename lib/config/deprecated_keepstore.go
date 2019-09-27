@@ -227,6 +227,10 @@ func (ldr *Loader) loadOldKeepstoreConfig(cfg *arvados.Config) error {
 		}
 	}
 
+	if err := ldr.checkPendingKeepstoreMigrations(cluster); err != nil {
+		return err
+	}
+
 	cfg.Clusters[cluster.ClusterID] = *cluster
 	return nil
 }
