@@ -245,6 +245,7 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 		// * no primary config was loaded, and this is the
 		// legacy config file for the current component
 		for _, err := range []error{
+			ldr.loadOldEnvironmentVariables(&cfg),
 			ldr.loadOldKeepstoreConfig(&cfg),
 			ldr.loadOldKeepWebConfig(&cfg),
 			ldr.loadOldCrunchDispatchSlurmConfig(&cfg),

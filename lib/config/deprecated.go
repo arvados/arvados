@@ -7,6 +7,7 @@ package config
 import (
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"strings"
 
@@ -471,6 +472,33 @@ func (ldr *Loader) loadOldGitHttpdConfig(cfg *arvados.Config) error {
 	cluster.Git.GitoliteHome = oc.GitoliteHome
 	cluster.Git.Repositories = oc.RepoRoot
 
+	cfg.Clusters[cluster.ClusterID] = *cluster
+	return nil
+}
+
+func (ldr *Loader) loadOldEnvironmentVariables(cfg *arvados.Config) error {
+	if os.Getenv("ARVADOS_API_TOKEN") == "" && os.Getenv("ARVADOS_API_HOST") == "" {
+		return nil
+	}
+	cluster, err := cfg.GetCluster("")
+	if err != nil {
+		return err
+	}
+	if tok := os.Getenv("ARVADOS_API_TOKEN"); tok != "" && cluster.SystemRootToken == "" {
+		ldr.Logger.Warn("SystemRootToken missing from cluster config, falling back to ARVADOS_API_TOKEN environment variable")
+		cluster.SystemRootToken = tok
+	}
+	if apihost := os.Getenv("ARVADOS_API_HOST"); apihost != "" && cluster.Services.Controller.ExternalURL.Host == "" {
+		ldr.Logger.Warn("Services.Controller.ExternalURL missing from cluster config, falling back to ARVADOS_API_HOST(_INSECURE) environment variables")
+		u, err := url.Parse("https://" + apihost)
+		if err != nil {
+			return fmt.Errorf("cannot parse ARVADOS_API_HOST: %s", err)
+		}
+		cluster.Services.Controller.ExternalURL = arvados.URL(*u)
+		if i := os.Getenv("ARVADOS_API_HOST_INSECURE"); i != "" && i != "0" {
+			cluster.TLS.Insecure = true
+		}
+	}
 	cfg.Clusters[cluster.ClusterID] = *cluster
 	return nil
 }
