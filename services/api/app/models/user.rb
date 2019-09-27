@@ -301,7 +301,7 @@ class User < ArvadosModel
       #
       # If 'self' is a local user, it is okay to transfer
       # authorizations, even if the 'new' user is a remote account,
-      # theq remote site does not gain the ability to access an
+      # because the remote site does not gain the ability to access an
       # account it could not before.
 
       if redirect_to_new_user and self.uuid[0..4] == Rails.configuration.ClusterID
