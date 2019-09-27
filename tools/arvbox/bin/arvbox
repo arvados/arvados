@@ -649,6 +649,7 @@ EOF
         echo "rebuild <config>   build arvbox Docker image, no layer cache"
 	echo "checkpoint         create database backup"
 	echo "restore            restore checkpoint"
+	echo "hotreset           reset database and restart API without restarting container"
         echo "reset              delete arvbox arvados data (be careful!)"
         echo "destroy            delete all arvbox code and data (be careful!)"
         echo "log <service>      tail log of specified service"
