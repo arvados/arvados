@@ -821,6 +821,7 @@ Clusters:
 
           # for s3 driver -- see
           # https://doc.arvados.org/install/configure-s3-object-storage.html
+          IAMRole: aaaaa
           AccessKey: aaaaa
           SecretKey: aaaaa
           Endpoint: ""

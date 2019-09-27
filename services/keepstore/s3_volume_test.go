@@ -10,6 +10,7 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -45,6 +46,7 @@ var _ = check.Suite(&StubbedS3Suite{})
 
 type StubbedS3Suite struct {
 	s3server *httptest.Server
+	metadata *httptest.Server
 	cluster  *arvados.Cluster
 	handler  *handler
 	volumes  []*TestableS3Volume
@@ -52,6 +54,7 @@ type StubbedS3Suite struct {
 
 func (s *StubbedS3Suite) SetUpTest(c *check.C) {
 	s.s3server = nil
+	s.metadata = nil
 	s.cluster = testCluster(c)
 	s.cluster.Volumes = map[string]arvados.Volume{
 		"zzzzz-nyw5e-000000000000000": {Driver: "S3"},
@@ -97,6 +100,40 @@ func (s *StubbedS3Suite) TestIndex(c *check.C) {
 		c.Check(len(idx), check.Equals, spec.expectMatch+1)
 		c.Check(len(idx[len(idx)-1]), check.Equals, 0)
 	}
+}
+
+func (s *StubbedS3Suite) TestIAMRoleCredentials(c *check.C) {
+	s.metadata = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		upd := time.Now().UTC().Add(-time.Hour).Format(time.RFC3339)
+		exp := time.Now().UTC().Add(time.Hour).Format(time.RFC3339)
+		// Literal example from
+		// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html#instance-metadata-security-credentials
+		// but with updated timestamps
+		io.WriteString(w, `{"Code":"Success","LastUpdated":"`+upd+`","Type":"AWS-HMAC","AccessKeyId":"ASIAIOSFODNN7EXAMPLE","SecretAccessKey":"wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY","Token":"token","Expiration":"`+exp+`"}`)
+	}))
+	defer s.metadata.Close()
+
+	v := s.newTestableVolume(c, s.cluster, arvados.Volume{Replication: 2}, newVolumeMetricsVecs(prometheus.NewRegistry()), 5*time.Minute)
+	c.Check(v.AccessKey, check.Equals, "ASIAIOSFODNN7EXAMPLE")
+	c.Check(v.SecretKey, check.Equals, "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
+	c.Check(v.bucket.bucket.S3.Auth.AccessKey, check.Equals, "ASIAIOSFODNN7EXAMPLE")
+	c.Check(v.bucket.bucket.S3.Auth.SecretKey, check.Equals, "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
+
+	s.metadata = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	deadv := &S3Volume{
+		IAMRole:  s.metadata.URL + "/fake-metadata/test-role",
+		Endpoint: "http://localhost:12345",
+		Region:   "test-region-1",
+		Bucket:   "test-bucket-name",
+		cluster:  s.cluster,
+		logger:   ctxlog.TestLogger(c),
+		metrics:  newVolumeMetricsVecs(prometheus.NewRegistry()),
+	}
+	err := deadv.check()
+	c.Check(err, check.ErrorMatches, `.*/fake-metadata/test-role.*`)
+	c.Check(err, check.ErrorMatches, `.*404.*`)
 }
 
 func (s *StubbedS3Suite) TestStats(c *check.C) {
@@ -229,7 +266,7 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 			return
 		}
 		v.serverClock.now = &t
-		v.bucket.Put(key, data, "application/octet-stream", s3ACL, s3.Options{})
+		v.bucket.Bucket().Put(key, data, "application/octet-stream", s3ACL, s3.Options{})
 	}
 
 	t0 := time.Now()
@@ -425,10 +462,16 @@ func (s *StubbedS3Suite) newTestableVolume(c *check.C, cluster *arvados.Cluster,
 		endpoint = s.s3server.URL
 	}
 
+	iamRole, accessKey, secretKey := "", "xxx", "xxx"
+	if s.metadata != nil {
+		iamRole, accessKey, secretKey = s.metadata.URL+"/fake-metadata/test-role", "", ""
+	}
+
 	v := &TestableS3Volume{
 		S3Volume: &S3Volume{
-			AccessKey:          "xxx",
-			SecretKey:          "xxx",
+			AccessKey:          accessKey,
+			SecretKey:          secretKey,
+			IAMRole:            iamRole,
 			Bucket:             TestBucketName,
 			Endpoint:           endpoint,
 			Region:             "test-region-1",
@@ -445,7 +488,7 @@ func (s *StubbedS3Suite) newTestableVolume(c *check.C, cluster *arvados.Cluster,
 		serverClock: clock,
 	}
 	c.Assert(v.S3Volume.check(), check.IsNil)
-	c.Assert(v.bucket.PutBucket(s3.ACL("private")), check.IsNil)
+	c.Assert(v.bucket.Bucket().PutBucket(s3.ACL("private")), check.IsNil)
 	// We couldn't set RaceWindow until now because check()
 	// rejects negative values.
 	v.S3Volume.RaceWindow = arvados.Duration(raceWindow)
@@ -454,11 +497,11 @@ func (s *StubbedS3Suite) newTestableVolume(c *check.C, cluster *arvados.Cluster,
 
 // PutRaw skips the ContentMD5 test
 func (v *TestableS3Volume) PutRaw(loc string, block []byte) {
-	err := v.bucket.Put(loc, block, "application/octet-stream", s3ACL, s3.Options{})
+	err := v.bucket.Bucket().Put(loc, block, "application/octet-stream", s3ACL, s3.Options{})
 	if err != nil {
 		log.Printf("PutRaw: %s: %+v", loc, err)
 	}
-	err = v.bucket.Put("recent/"+loc, nil, "application/octet-stream", s3ACL, s3.Options{})
+	err = v.bucket.Bucket().Put("recent/"+loc, nil, "application/octet-stream", s3ACL, s3.Options{})
 	if err != nil {
 		log.Printf("PutRaw: recent/%s: %+v", loc, err)
 	}
@@ -469,7 +512,7 @@ func (v *TestableS3Volume) PutRaw(loc string, block []byte) {
 // while we do this.
 func (v *TestableS3Volume) TouchWithDate(locator string, lastPut time.Time) {
 	v.serverClock.now = &lastPut
-	err := v.bucket.Put("recent/"+locator, nil, "application/octet-stream", s3ACL, s3.Options{})
+	err := v.bucket.Bucket().Put("recent/"+locator, nil, "application/octet-stream", s3ACL, s3.Options{})
 	if err != nil {
 		panic(err)
 	}

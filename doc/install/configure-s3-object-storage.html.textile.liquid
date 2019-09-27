@@ -32,7 +32,13 @@ Volumes are configured in the @Volumes@ section of the cluster configuration fil
 
         Driver: S3
         DriverParameters:
-          # The credentials to use to access the bucket.
+          # If an IAM role name is given here, credentials to access
+          # the bucket will be retrieved at runtime from instance
+          # metadata.
+          IAMRole: s3access
+
+          # The credentials to use to access the bucket. Omit or leave
+          # blank if IAMRole is configured.
           AccessKey: aaaaa
           SecretKey: aaaaa
 
