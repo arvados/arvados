@@ -236,6 +236,18 @@ func (s *LoadSuite) TestLegacyKeepBalanceConfig(c *check.C) {
 	_, err = testLoadLegacyConfig(content, f, c)
 	c.Check(err, check.IsNil)
 
+	content = []byte(fmtKeepBalanceConfig(`"KeepServiceTypes":[],`))
+	_, err = testLoadLegacyConfig(content, f, c)
+	c.Check(err, check.IsNil)
+
+	content = []byte(fmtKeepBalanceConfig(`"KeepServiceTypes":["proxy"],`))
+	_, err = testLoadLegacyConfig(content, f, c)
+	c.Check(err, check.NotNil)
+
+	content = []byte(fmtKeepBalanceConfig(`"KeepServiceTypes":["disk", "proxy"],`))
+	_, err = testLoadLegacyConfig(content, f, c)
+	c.Check(err, check.NotNil)
+
 	content = []byte(fmtKeepBalanceConfig(`"KeepServiceList":{},`))
 	_, err = testLoadLegacyConfig(content, f, c)
 	c.Check(err, check.NotNil)

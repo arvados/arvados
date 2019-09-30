@@ -29,7 +29,7 @@ var (
 
 func newHandler(ctx context.Context, cluster *arvados.Cluster, token string, registry *prometheus.Registry) service.Handler {
 	if !options.Once && cluster.Collections.BalancePeriod == arvados.Duration(0) {
-		return service.ErrorHandler(ctx, cluster, fmt.Errorf("You must either run keep-balance with the -once flag, or set Collections.BalancePeriod in the config. "+
+		return service.ErrorHandler(ctx, cluster, fmt.Errorf("cannot start service: Collections.BalancePeriod is zero (if you want to run once and then exit, use the -once flag)"))
 			"If using the legacy keep-balance.yml config, RunPeriod is the equivalant of Collections.BalancePeriod."))
 	}
 

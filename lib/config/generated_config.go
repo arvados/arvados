@@ -388,9 +388,9 @@ Clusters:
       # The default is 2 weeks.
       BlobSigningTTL: 336h
 
-      # When running keep-balance, this is the destination filename for the
-      # list of lost block hashes if there are any, one per line. Updated atomically during
-      # each successful run.
+      # When running keep-balance, this is the destination filename for
+      # the list of lost block hashes if there are any, one per line.
+      # Updated automically during each successful run.
       BlobMissingReport: ""
 
       # keep-balance operates periodically, i.e.: do a
@@ -409,7 +409,7 @@ Clusters:
       # API transaction. If this is zero, page size is
       # determined by the API server's own page size limits (see
       # API.MaxItemsPerResponse and API.MaxIndexDatabaseRead).
-      BalanceCollectionBatch: 100000
+      BalanceCollectionBatch: 0
 
       # The size of keep-balance's internal queue of
       # collections. Higher values use more memory and improve throughput

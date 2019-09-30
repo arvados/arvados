@@ -531,12 +531,19 @@ func (ldr *Loader) loadOldKeepBalanceConfig(cfg *arvados.Config) error {
 		cluster.API.KeepServiceRequestTimeout = *oc.RequestTimeout
 	}
 
-	msg := "To balance specfic keep services, please update to the cluster config."
-	if oc.KeepServiceTypes != nil && len(*oc.KeepServiceTypes) > 0 {
-		ldr.Logger.Warnf("The KeepServiceType configuration option is not longer supported and is being ignored. %s", msg)
+	msg := "The %s configuration option is no longer supported. Please remove it from your configuration file. Keep-balance will operate on all configured volumes."
+
+	// If the keep service type provided is "disk" silently ignore it, since
+	// this is what ends up being done anyway.
+	if oc.KeepServiceTypes != nil {
+		numTypes := len(*oc.KeepServiceTypes)
+		if numTypes != 0 && !(numTypes == 1 && (*oc.KeepServiceTypes)[0] == "disk") {
+			return fmt.Errorf(msg, "KeepServiceType")
+		}
 	}
+
 	if oc.KeepServiceList != nil {
-		return fmt.Errorf("The KeepServiceList configuration option is no longer supported. Please remove it from your configuration file. %s", msg)
+		return fmt.Errorf(msg, "KeepServiceList")
 	}
 
 	cfg.Clusters[cluster.ClusterID] = *cluster
