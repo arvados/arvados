@@ -227,6 +227,10 @@ func (ldr *Loader) loadOldKeepstoreConfig(cfg *arvados.Config) error {
 		}
 	}
 
+	if err := ldr.checkPendingKeepstoreMigrations(cluster); err != nil {
+		return err
+	}
+
 	cfg.Clusters[cluster.ClusterID] = *cluster
 	return nil
 }
@@ -580,7 +584,7 @@ func keepServiceIsMe(ks arvados.KeepService, hostname string, listen string) boo
 // been warned about in loadOldKeepstoreConfig() -- i.e., unmigrated
 // keepstore hosts other than the present host, and obsolete content
 // in the keep_services table.
-func (ldr *Loader) checkPendingKeepstoreMigrations(cluster arvados.Cluster) error {
+func (ldr *Loader) checkPendingKeepstoreMigrations(cluster *arvados.Cluster) error {
 	if cluster.Services.Controller.ExternalURL.String() == "" {
 		ldr.Logger.Debug("Services.Controller.ExternalURL not configured -- skipping check for pending keepstore config migrations")
 		return nil
@@ -589,7 +593,7 @@ func (ldr *Loader) checkPendingKeepstoreMigrations(cluster arvados.Cluster) erro
 		ldr.Logger.Debug("(Loader).SkipAPICalls == true -- skipping check for pending keepstore config migrations")
 		return nil
 	}
-	client, err := arvados.NewClientFromConfig(&cluster)
+	client, err := arvados.NewClientFromConfig(cluster)
 	if err != nil {
 		return err
 	}

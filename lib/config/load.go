@@ -250,6 +250,7 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 		// * no primary config was loaded, and this is the
 		// legacy config file for the current component
 		for _, err := range []error{
+			ldr.loadOldEnvironmentVariables(&cfg),
 			ldr.loadOldKeepstoreConfig(&cfg),
 			ldr.loadOldKeepWebConfig(&cfg),
 			ldr.loadOldCrunchDispatchSlurmConfig(&cfg),
@@ -268,7 +269,6 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 	for id, cc := range cfg.Clusters {
 		for _, err = range []error{
 			checkKeyConflict(fmt.Sprintf("Clusters.%s.PostgreSQL.Connection", id), cc.PostgreSQL.Connection),
-			ldr.checkPendingKeepstoreMigrations(cc),
 			ldr.checkEmptyKeepstores(cc),
 			ldr.checkUnlistedKeepstores(cc),
 		} {

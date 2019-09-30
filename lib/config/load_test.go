@@ -46,6 +46,12 @@ func testLoader(c *check.C, configdata string, logdst io.Writer) *Loader {
 
 type LoadSuite struct{}
 
+func (s *LoadSuite) SetUpSuite(c *check.C) {
+	os.Unsetenv("ARVADOS_API_HOST")
+	os.Unsetenv("ARVADOS_API_HOST_INSECURE")
+	os.Unsetenv("ARVADOS_API_TOKEN")
+}
+
 func (s *LoadSuite) TestEmpty(c *check.C) {
 	cfg, err := testLoader(c, "", nil).Load()
 	c.Check(cfg, check.IsNil)

@@ -640,6 +640,7 @@ def run_nginx():
          '-g', 'pid '+_pidfile('nginx')+';',
          '-c', conffile],
         env=env, stdin=open('/dev/null'), stdout=sys.stderr)
+    _wait_until_port_listens(nginxconf['CONTROLLERSSLPORT'])
 
 def setup_config():
     rails_api_port = find_available_port()

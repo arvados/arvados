@@ -12,7 +12,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"net/url"
 	"os"
 	"strings"
 
@@ -109,23 +108,6 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 		return 1
 	}
 	ctx = context.WithValue(ctx, contextKeyURL{}, listenURL)
-
-	if cluster.SystemRootToken == "" {
-		logger.Warn("SystemRootToken missing from cluster config, falling back to ARVADOS_API_TOKEN environment variable")
-		cluster.SystemRootToken = os.Getenv("ARVADOS_API_TOKEN")
-	}
-	if cluster.Services.Controller.ExternalURL.Host == "" {
-		logger.Warn("Services.Controller.ExternalURL missing from cluster config, falling back to ARVADOS_API_HOST(_INSECURE) environment variables")
-		u, err := url.Parse("https://" + os.Getenv("ARVADOS_API_HOST"))
-		if err != nil {
-			err = fmt.Errorf("ARVADOS_API_HOST: %s", err)
-			return 1
-		}
-		cluster.Services.Controller.ExternalURL = arvados.URL(*u)
-		if i := os.Getenv("ARVADOS_API_HOST_INSECURE"); i != "" && i != "0" {
-			cluster.TLS.Insecure = true
-		}
-	}
 
 	reg := prometheus.NewRegistry()
 	handler := c.newHandler(ctx, cluster, cluster.SystemRootToken, reg)
