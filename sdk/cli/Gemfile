@@ -6,3 +6,4 @@ source 'https://rubygems.org'
 gemspec
 gem 'minitest', '>= 5.0.0'
 gem 'rake'
+gem 'faraday', '< 0.16' # arvados-google-api-client 0.8.7.2 is incompatible with faraday 0.16.2
