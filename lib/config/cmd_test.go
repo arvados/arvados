@@ -24,6 +24,12 @@ var (
 
 type CommandSuite struct{}
 
+func (s *CommandSuite) SetUpSuite(c *check.C) {
+	os.Unsetenv("ARVADOS_API_HOST")
+	os.Unsetenv("ARVADOS_API_HOST_INSECURE")
+	os.Unsetenv("ARVADOS_API_TOKEN")
+}
+
 func (s *CommandSuite) TestBadArg(c *check.C) {
 	var stderr bytes.Buffer
 	code := DumpCommand.RunCommand("arvados config-dump", []string{"-badarg"}, bytes.NewBuffer(nil), bytes.NewBuffer(nil), &stderr)

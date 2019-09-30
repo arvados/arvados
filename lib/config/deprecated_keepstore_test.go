@@ -30,6 +30,10 @@ type KeepstoreMigrationSuite struct {
 var _ = check.Suite(&KeepstoreMigrationSuite{})
 
 func (s *KeepstoreMigrationSuite) SetUpSuite(c *check.C) {
+	os.Setenv("ARVADOS_API_HOST", os.Getenv("ARVADOS_TEST_API_HOST"))
+	os.Setenv("ARVADOS_API_HOST_INSECURE", "1")
+	os.Setenv("ARVADOS_API_TOKEN", arvadostest.AdminToken)
+
 	// We don't need the keepstore servers, but we do need
 	// keep_services listings that point to localhost, rather than
 	// the apiserver fixtures that point to fictional hosts
