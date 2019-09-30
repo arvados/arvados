@@ -148,9 +148,9 @@ class TestArvGet < Minitest::Test
   def create_arv_object_with_value(value)
     out, err = capture_subprocess_io do
       system("arv", "tag", "add", value, "--object", "testing")
-      assert $?.success?, "Command failure running `arv tag`: #{$?}"
     end
     assert_equal '', err
+    assert $?.success?, "Command failure running `arv tag`: #{$?}"
     assert_operator 0, :<, out.strip.length
     out.strip
   end

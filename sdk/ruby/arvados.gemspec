@@ -33,6 +33,8 @@ Gem::Specification.new do |s|
   # work around undeclared dependency on i18n in some activesupport 3.x.x:
   s.add_dependency('i18n', '~> 0')
   s.add_dependency('json', '>= 1.7.7', '<3')
+  # arvados-google-api-client 0.8.7.2 is incompatible with faraday 0.16.2
+  s.add_dependency('faraday', '< 0.16')
   s.add_runtime_dependency('jwt', '<2', '>= 0.1.5')
   s.homepage    =
     'https://arvados.org'
