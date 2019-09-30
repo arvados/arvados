@@ -22,7 +22,7 @@ class TestArvKeepPut < Minitest::Test
     end
     $stderr.write err
     assert_empty err
-    assert_match /^usage:/, out
+    assert_match(/^usage:/, out)
   end
 
   def test_raw_stdin
@@ -65,7 +65,7 @@ class TestArvKeepPut < Minitest::Test
       assert_equal(false, arv_put('--filename', 'foo', './tmp/empty_dir/.'),
                    'arv-put --filename refuses directory')
     end
-    assert_match /^usage:.*error:/m, err
+    assert_match(/^usage:.*error:/m, err)
     assert_empty out
   end
 
@@ -76,7 +76,7 @@ class TestArvKeepPut < Minitest::Test
                                   './tmp/empty_file'),
                    'arv-put --filename refuses directory')
     end
-    assert_match /^usage:.*error:/m, err
+    assert_match(/^usage:.*error:/m, err)
     assert_empty out
   end
 
@@ -102,7 +102,7 @@ class TestArvKeepPut < Minitest::Test
     out, err = capture_subprocess_io do
       assert arv_put('--no-cache', '--manifest', '--progress', './tmp/foo')
     end
-    assert_match /%/, err
+    assert_match(/%/, err)
     assert match_collection_uuid(out)
   end
 
@@ -110,8 +110,8 @@ class TestArvKeepPut < Minitest::Test
     out, err = capture_subprocess_io do
       assert arv_put('--no-cache', '--manifest', '--batch-progress', './tmp/foo')
     end
-    assert_match /: 0 written 3 total/, err
-    assert_match /: 3 written 3 total/, err
+    assert_match(/: 0 written 3 total/, err)
+    assert_match(/: 3 written 3 total/, err)
     assert match_collection_uuid(out)
   end
 
@@ -121,7 +121,7 @@ class TestArvKeepPut < Minitest::Test
                    arv_put('--progress', '--batch-progress', './tmp/foo'),
                    'arv-put --progress --batch-progress is contradictory')
     end
-    assert_match /^usage:.*error:/m, err
+    assert_match(/^usage:.*error:/m, err)
     assert_empty out
   end
 
