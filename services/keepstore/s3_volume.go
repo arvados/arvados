@@ -5,6 +5,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"crypto/sha256"
@@ -235,10 +236,14 @@ func (v *S3Volume) updateIAMCredentials() (time.Duration, error) {
 		if resp.StatusCode != http.StatusOK {
 			return 0, fmt.Errorf("error getting %s: HTTP status %s", url, resp.Status)
 		}
+		body := bufio.NewReader(resp.Body)
 		var role string
-		_, err = fmt.Fscanf(resp.Body, "%s\n", &role)
+		_, err = fmt.Fscanf(body, "%s\n", &role)
 		if err != nil {
 			return 0, fmt.Errorf("error reading response from %s: %s", url, err)
+		}
+		if n, _ := body.Read(make([]byte, 64)); n > 0 {
+			v.logger.Warnf("ignoring additional data returned by metadata endpoint %s after the single role name that we expected", url)
 		}
 		v.logger.WithField("Role", role).Debug("looked up IAM role name")
 		url = url + role
