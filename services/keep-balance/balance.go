@@ -446,7 +446,7 @@ func (bal *Balancer) addCollection(coll arvados.Collection) error {
 	if coll.ReplicationDesired != nil {
 		repl = *coll.ReplicationDesired
 	}
-	debugf("%v: %d block x%d", coll.UUID, len(blkids), repl)
+	bal.Logger.Debugf("%v: %d block x%d", coll.UUID, len(blkids), repl)
 	// Pass pdh to IncreaseDesired only if LostBlocksFile is being
 	// written -- otherwise it's just a waste of memory.
 	pdh := ""
@@ -563,7 +563,7 @@ type balanceResult struct {
 // balanceBlock compares current state to desired state for a single
 // block, and makes the appropriate ChangeSet calls.
 func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) balanceResult {
-	debugf("balanceBlock: %v %+v", blkid, blk)
+	bal.Logger.Debugf("balanceBlock: %v %+v", blkid, blk)
 
 	type slot struct {
 		mnt  *KeepMount // never nil

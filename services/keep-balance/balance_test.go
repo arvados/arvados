@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	check "gopkg.in/check.v1"
 )
 
@@ -69,6 +70,7 @@ func (bal *balancerSuite) SetUpSuite(c *check.C) {
 	}
 
 	bal.signatureTTL = 3600
+	bal.Logger = ctxlog.TestLogger(c)
 }
 
 func (bal *balancerSuite) SetUpTest(c *check.C) {

@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 	"time"
 
@@ -47,7 +46,6 @@ type Server struct {
 	Metrics    *metrics
 
 	httpHandler http.Handler
-	setupOnce   sync.Once
 
 	Logger logrus.FieldLogger
 	Dumper logrus.FieldLogger
@@ -61,12 +59,6 @@ func (srv *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // CheckHealth implements service.Handler.
 func (srv *Server) CheckHealth() error {
 	return nil
-}
-
-// Start sets up and runs the balancer.
-func (srv *Server) Start() {
-	srv.setupOnce.Do(srv.setup)
-	go srv.run()
 }
 
 func (srv *Server) setup() {

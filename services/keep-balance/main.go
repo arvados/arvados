@@ -9,7 +9,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"os"
 
 	"git.curoverse.com/arvados.git/lib/config"
@@ -20,46 +19,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var (
-	version = "dev"
-	debugf  = func(string, ...interface{}) {}
-	command = service.Command(arvados.ServiceNameKeepbalance, newHandler)
-	options RunOptions
-)
-
-func newHandler(ctx context.Context, cluster *arvados.Cluster, token string, registry *prometheus.Registry) service.Handler {
-	if !options.Once && cluster.Collections.BalancePeriod == arvados.Duration(0) {
-		return service.ErrorHandler(ctx, cluster, fmt.Errorf("cannot start service: Collections.BalancePeriod is zero (if you want to run once and then exit, use the -once flag)"))
-			"If using the legacy keep-balance.yml config, RunPeriod is the equivalant of Collections.BalancePeriod."))
-	}
-
-	ac, err := arvados.NewClientFromConfig(cluster)
-	ac.AuthToken = token
-	if err != nil {
-		return service.ErrorHandler(ctx, cluster, fmt.Errorf("error initializing client from cluster config: %s", err))
-	}
-
-	if cluster.SystemLogs.LogLevel == "debug" {
-		debugf = log.Printf
-	}
-
-	if options.Logger == nil {
-		options.Logger = ctxlog.FromContext(ctx)
-	}
-
-	srv := &Server{
-		Cluster:    cluster,
-		ArvClient:  ac,
-		RunOptions: options,
-		Metrics:    newMetrics(registry),
-		Logger:     options.Logger,
-		Dumper:     options.Dumper,
-	}
-
-	srv.Start()
-	return srv
-}
-
 func main() {
 	os.Exit(runCommand(os.Args[0], os.Args[1:], os.Stdin, os.Stdout, os.Stderr))
 }
@@ -67,6 +26,7 @@ func main() {
 func runCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	logger := ctxlog.FromContext(context.Background())
 
+	var options RunOptions
 	flags := flag.NewFlagSet(prog, flag.ExitOnError)
 	flags.BoolVar(&options.Once, "once", false,
 		"balance once and then exit")
@@ -98,5 +58,32 @@ func runCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.W
 		}
 	})
 
-	return command.RunCommand(prog, args, stdin, stdout, stderr)
+	return service.Command(arvados.ServiceNameKeepbalance,
+		func(ctx context.Context, cluster *arvados.Cluster, token string, registry *prometheus.Registry) service.Handler {
+			if !options.Once && cluster.Collections.BalancePeriod == arvados.Duration(0) {
+				return service.ErrorHandler(ctx, cluster, fmt.Errorf("cannot start service: Collections.BalancePeriod is zero (if you want to run once and then exit, use the -once flag)"))
+			}
+
+			ac, err := arvados.NewClientFromConfig(cluster)
+			ac.AuthToken = token
+			if err != nil {
+				return service.ErrorHandler(ctx, cluster, fmt.Errorf("error initializing client from cluster config: %s", err))
+			}
+
+			if options.Logger == nil {
+				options.Logger = ctxlog.FromContext(ctx)
+			}
+
+			srv := &Server{
+				Cluster:    cluster,
+				ArvClient:  ac,
+				RunOptions: options,
+				Metrics:    newMetrics(registry),
+				Logger:     options.Logger,
+				Dumper:     options.Dumper,
+			}
+
+			go srv.run()
+			return srv
+		}).RunCommand(prog, args, stdin, stdout, stderr)
 }
