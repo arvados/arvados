@@ -135,7 +135,13 @@ module Google
         faraday.options.params_encoder = Faraday::FlatParamsEncoder
         faraday.ssl.ca_file = ca_file
         faraday.ssl.verify = true
-        faraday.proxy proxy
+        if faraday.respond_to?(:proxy=)
+          # faraday >= 0.6.2
+          faraday.proxy = proxy
+        else
+          # older versions of faraday
+          faraday.proxy proxy
+        end
         faraday.adapter Faraday.default_adapter
         if options[:faraday_option].is_a?(Hash)
           options[:faraday_option].each_pair do |option, value|
