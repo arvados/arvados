@@ -34,7 +34,6 @@ func init() {
 
 func newAzureBlobVolume(cluster *arvados.Cluster, volume arvados.Volume, logger logrus.FieldLogger, metrics *volumeMetricsVecs) (Volume, error) {
 	v := &AzureBlobVolume{
-		StorageBaseURL:    storage.DefaultBaseURL,
 		RequestTimeout:    azureDefaultRequestTimeout,
 		WriteRaceInterval: azureDefaultWriteRaceInterval,
 		WriteRacePollTime: azureDefaultWriteRacePollTime,
@@ -52,6 +51,9 @@ func newAzureBlobVolume(cluster *arvados.Cluster, volume arvados.Volume, logger 
 	}
 	if v.ListBlobsMaxAttempts == 0 {
 		v.ListBlobsMaxAttempts = azureDefaultListBlobsMaxAttempts
+	}
+	if v.StorageBaseURL == "" {
+		v.StorageBaseURL = storage.DefaultBaseURL
 	}
 	if v.ContainerName == "" || v.StorageAccountName == "" || v.StorageAccountKey == "" {
 		return nil, errors.New("DriverParameters: ContainerName, StorageAccountName, and StorageAccountKey must be provided")
