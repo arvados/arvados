@@ -233,7 +233,9 @@ func (v *S3Volume) updateIAMCredentials() (time.Duration, error) {
 			return 0, fmt.Errorf("error getting %s: %s", url, err)
 		}
 		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusNotFound {
+			return 0, fmt.Errorf("this instance does not have an IAM role assigned -- either assign a role, or configure AccessKey and SecretKey explicitly in DriverParameters (error getting %s: HTTP status %s)", url, resp.Status)
+		} else if resp.StatusCode != http.StatusOK {
 			return 0, fmt.Errorf("error getting %s: HTTP status %s", url, resp.Status)
 		}
 		body := bufio.NewReader(resp.Body)
