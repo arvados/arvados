@@ -25,6 +25,8 @@ Gem::Specification.new do |s|
   s.executables << "arvados-login-sync"
   s.required_ruby_version = '>= 2.1.0'
   s.add_runtime_dependency 'arvados', '~> 1.3.0', '>= 1.3.0'
+  # arvados-google-api-client 0.8.7.2 is incompatible with faraday 0.16.2
+  s.add_dependency('faraday', '< 0.16')
   s.homepage    =
     'https://arvados.org'
 end
