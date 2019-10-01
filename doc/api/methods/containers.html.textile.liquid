@@ -110,7 +110,9 @@ table(table table-bordered table-condensed).
 
 h3. delete
 
-Delete an existing Container.
+Delete a Container.
+
+This API requires admin privileges. In normal operation, it should not be used at all. API clients like Workbench might not work correctly when a container request references a container that has been deleted.
 
 Arguments:
 
