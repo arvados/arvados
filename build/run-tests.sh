@@ -747,6 +747,11 @@ do_test() {
     retry do_test_once ${@}
 }
 
+go_ldflags() {
+    version=${ARVADOS_VERSION:-$(git log -n1 --format=%H)-dev}
+    echo "-X git.curoverse.com/arvados.git/lib/cmd.version=${version} -X main.version=${version}"
+}
+
 do_test_once() {
     unset result
 
@@ -766,7 +771,7 @@ do_test_once() {
         # before trying "go test". Otherwise, coverage-reporting
         # mode makes Go show the wrong line numbers when reporting
         # compilation errors.
-        go get -ldflags "-X git.curoverse.com/arvados.git/lib/cmd.version=${ARVADOS_VERSION:-$(git log -n1 --format=%H)-dev}" -t "git.curoverse.com/arvados.git/$1" && \
+        go get -ldflags "$(go_ldflags)" -t "git.curoverse.com/arvados.git/$1" && \
             cd "$GOPATH/src/git.curoverse.com/arvados.git/$1" && \
             if [[ -n "${testargs[$1]}" ]]
         then
@@ -854,7 +859,7 @@ do_install_once() {
         result=1
     elif [[ "$2" == "go" ]]
     then
-        go get -ldflags "-X git.curoverse.com/arvados.git/lib/cmd.version=${ARVADOS_VERSION:-$(git log -n1 --format=%H)-dev}" -t "git.curoverse.com/arvados.git/$1"
+        go get -ldflags "$(go_ldflags)" -t "git.curoverse.com/arvados.git/$1"
     elif [[ "$2" == "pip" ]]
     then
         # $3 can name a path directory for us to use, including trailing

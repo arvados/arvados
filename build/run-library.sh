@@ -164,7 +164,7 @@ package_go_binary() {
       return 1
     fi
 
-    go get -ldflags "-X main.version=${go_package_version}" "git.curoverse.com/arvados.git/$src_path"
+    go get -ldflags "-X git.curoverse.com/arvados.git/lib/cmd.version=${go_package_version} -X main.version=${go_package_version}" "git.curoverse.com/arvados.git/$src_path"
 
     local -a switches=()
     systemd_unit="$WORKSPACE/${src_path}/${prog}.service"
