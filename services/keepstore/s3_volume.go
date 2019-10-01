@@ -160,6 +160,9 @@ func (v *S3Volume) GetDeviceID() string {
 
 func (v *S3Volume) bootstrapIAMCredentials() error {
 	if v.AccessKey != "" || v.SecretKey != "" {
+		if v.IAMRole != "" {
+			return errors.New("invalid DriverParameters: AccessKey and SecretKey must be blank if IAMRole is specified")
+		}
 		return nil
 	}
 	ttl, err := v.updateIAMCredentials()
