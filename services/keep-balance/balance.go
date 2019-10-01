@@ -95,8 +95,7 @@ func (bal *Balancer) Run(client *arvados.Client, cluster *arvados.Cluster, runOp
 		bal.lostBlocks = ioutil.Discard
 	}
 
-	diskService := []string{"disk"}
-	err = bal.DiscoverKeepServices(client, diskService)
+	err = bal.DiscoverKeepServices(client)
 	if err != nil {
 		return
 	}
@@ -173,15 +172,11 @@ func (bal *Balancer) SetKeepServices(srvList arvados.KeepServiceList) error {
 
 // DiscoverKeepServices sets the list of KeepServices by calling the
 // API to get a list of all services, and selecting the ones whose
-// ServiceType is in okTypes.
-func (bal *Balancer) DiscoverKeepServices(c *arvados.Client, okTypes []string) error {
+// ServiceType is "disk"
+func (bal *Balancer) DiscoverKeepServices(c *arvados.Client) error {
 	bal.KeepServices = make(map[string]*KeepService)
-	ok := make(map[string]bool)
-	for _, t := range okTypes {
-		ok[t] = true
-	}
 	return c.EachKeepService(func(srv arvados.KeepService) error {
-		if ok[srv.ServiceType] {
+		if srv.ServiceType == "disk" {
 			bal.KeepServices[srv.UUID] = &KeepService{
 				KeepService: srv,
 				ChangeSet:   &ChangeSet{},
