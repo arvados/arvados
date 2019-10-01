@@ -41,7 +41,7 @@ end
 
 group :test, :diagnostics, :performance do
   gem 'minitest', '~> 5.10.3'
-  gem 'selenium-webdriver', '~> 3'
+  gem 'selenium-webdriver', '~> 3', '>= 3.141.0'
   gem 'capybara', '~> 2.5.0'
   gem 'poltergeist', '~> 1.5.1'
   gem 'headless', '~> 1.0.2'

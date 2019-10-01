@@ -103,8 +103,8 @@ GEM
       rack (>= 1.0.0)
       rack-test (>= 0.5.4)
       xpath (~> 2.0)
-    childprocess (0.9.0)
-      ffi (~> 1.0, >= 1.0.11)
+    childprocess (2.0.0)
+      rake (< 13.0)
     cliver (0.3.2)
     coffee-rails (4.2.2)
       coffee-script (>= 2.2.0)
@@ -123,7 +123,7 @@ GEM
     extlib (0.9.16)
     faraday (0.15.4)
       multipart-post (>= 1.2, < 3)
-    ffi (1.10.0)
+    ffi (1.11.1)
     flamegraph (0.9.5)
     globalid (0.4.2)
       activesupport (>= 4.2.0)
@@ -153,7 +153,7 @@ GEM
       actionpack (>= 4)
       less (~> 2.6.0)
       sprockets (>= 2)
-    libv8 (3.16.14.19-x86_64-linux)
+    libv8 (3.16.14.19)
     lograge (0.10.0)
       actionpack (>= 4)
       activesupport (>= 4)
@@ -254,7 +254,7 @@ GEM
     retriable (1.4.1)
     ruby-debug-passenger (0.2.0)
     ruby-prof (0.17.0)
-    rubyzip (1.2.2)
+    rubyzip (2.0.0)
     rvm-capistrano (1.5.6)
       capistrano (~> 2.15.4)
     safe_yaml (1.0.5)
@@ -272,9 +272,9 @@ GEM
       sprockets (> 3.0)
       sprockets-rails
       tilt
-    selenium-webdriver (3.141.0)
-      childprocess (~> 0.5)
-      rubyzip (~> 1.2, >= 1.2.2)
+    selenium-webdriver (3.142.5)
+      childprocess (>= 0.5, < 3.0)
+      rubyzip (>= 1.2.2)
     signet (0.11.0)
       addressable (~> 2.3)
       faraday (~> 0.9)
@@ -358,7 +358,7 @@ DEPENDENCIES
   safe_yaml
   sass
   sassc-rails
-  selenium-webdriver (~> 3)
+  selenium-webdriver (~> 3, >= 3.141.0)
   simplecov (~> 0.7)
   simplecov-rcov
   sshkey
