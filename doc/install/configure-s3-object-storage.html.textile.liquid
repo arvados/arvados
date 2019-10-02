@@ -32,9 +32,18 @@ Volumes are configured in the @Volumes@ section of the cluster configuration fil
 
         Driver: S3
         DriverParameters:
-          # The credentials to use to access the bucket.
-          AccessKey: aaaaa
-          SecretKey: aaaaa
+          # IAM role name to use when retrieving credentials from
+          # instance metadata. It can be omitted, in which case the
+          # role name itself will be retrieved from instance metadata
+          # -- but setting it explicitly may protect you from using
+          # the wrong credentials in the event of an
+          # installation/configuration error.
+          IAMRole: ""
+
+          # If you are not using an IAM role for authentication,
+          # specify access credentials here instead.
+          AccessKey: ""
+          SecretKey: ""
 
           # Storage provider endpoint. For Amazon S3, use "" or
           # omit. For Google Cloud Storage, use
