@@ -74,6 +74,9 @@ h2(#arv-git-httpd). arv-git-httpd
 
 The legacy arv-git-httpd config (loaded from @/etc/arvados/git-httpd/git-httpd.yml@ or a different location specified via -legacy-git-httpd-config command line argument) takes precedence over the centralized config. After you migrate everything from the legacy config to the centralized config, you should delete @/etc/arvados/git-httpd/git-httpd.yml@ and stop using the -legacy-git-httpd-config argument.
 
+h2(#keepbalance). keep-balance
+
+The legacy keep-balance config (loaded from @/etc/arvados/keep-balance/keep-balance.yml@ or a different location specified via -legacy-keepbalance-config command line argument) takes precedence over the centralized config. After you migrate everything from the legacy config to the centralized config, you should delete @/etc/arvados/keep-balance/keep-balance.yml@ and stop using the -legacy-keepbalance-config argument.
 
 h2. arvados-controller
 

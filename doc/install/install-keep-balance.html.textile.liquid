@@ -9,7 +9,7 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-Keep-balance deletes unreferenced and overreplicated blocks from Keep servers, makes additional copies of underreplicated blocks, and moves blocks into optimal locations as needed (e.g., after adding new servers).
+Keep-balance deletes unreferenced and overreplicated blocks from Keep servers, makes additional copies of underreplicated blocks, and moves blocks into optimal locations as needed (e.g., after adding new servers). See "Balancing Keep servers":{{site.baseurl}}/admin/keep-balance.html for usage details.
 
 {% include 'notebox_begin' %}
 
@@ -42,44 +42,32 @@ Verify that @keep-balance@ is functional:
 <notextile>
 <pre><code>~$ <span class="userinput">keep-balance -h</span>
 ...
-Usage: keep-balance [options]
-
-Options:
+Usage of ./keep-balance:
   -commit-pulls
-        send pull requests (make more replicas of blocks that are underreplicated or are not in optimal rendezvous probe order)
+    	send pull requests (make more replicas of blocks that are underreplicated or are not in optimal rendezvous probe order)
   -commit-trash
-        send trash requests (delete unreferenced old blocks, and excess replicas of overreplicated blocks)
+    	send trash requests (delete unreferenced old blocks, and excess replicas of overreplicated blocks)
 ...
 </code></pre>
 </notextile>
 
-h3. Create a keep-balance configuration file
+h3. Update the cluster config
 
-On the host running keep-balance, create @/etc/arvados/keep-balance/keep-balance.yml@ using the SystemRootToken from your cluster configuration file.  Follow this YAML format:
+Edit the cluster config at @/etc/arvados/config.yml@ and set @Services.Keepbalance.InternalURLs@. Replace @uuid_prefix@ with your cluster id.
 
 <notextile>
-<pre><code>Listen: :9005
-Client:
-  APIHost: <span class="userinput">uuid_prefix.your.domain</span>:443
-  AuthToken: zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
-KeepServiceTypes:
-  - disk
-ManagementToken: <span class="userinput">xyzzy</span>
-RunPeriod: 10m
-CollectionBatchSize: 100000
-CollectionBuffers: 1000
-LostBlocksFile: /tmp/keep-balance-lost-blocks.txt    # If given, this file will be updated atomically during each successful run.
+<pre><code>Clusters:
+  <span class="userinput">uuid_prefix</span>:
+    Services:
+      Keepbalance:
+        InternalURLs:
+          "http://localhost:9005/": {}
+    TLS:
+      Insecure: false
 </code></pre>
 </notextile>
 
-If your API server's SSL certificate is not signed by a recognized CA, add the @Insecure@ option to the @Client@ section:
-
-<notextile>
-<pre><code>Client:
-  <span class="userinput">Insecure: true</span>
-  APIHost: ...
-</code></pre>
-</notextile>
+Set @TLS.Insecure: true@ if your API server’s TLS certificate is not signed by a recognized CA.
 
 h3. Start the service (option 1: systemd)
 

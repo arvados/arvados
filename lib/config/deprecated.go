@@ -476,6 +476,81 @@ func (ldr *Loader) loadOldGitHttpdConfig(cfg *arvados.Config) error {
 	return nil
 }
 
+const defaultKeepBalanceConfigPath = "/etc/arvados/keep-balance/keep-balance.yml"
+
+type oldKeepBalanceConfig struct {
+	Client              *arvados.Client
+	Listen              *string
+	KeepServiceTypes    *[]string
+	KeepServiceList     *arvados.KeepServiceList
+	RunPeriod           *arvados.Duration
+	CollectionBatchSize *int
+	CollectionBuffers   *int
+	RequestTimeout      *arvados.Duration
+	LostBlocksFile      *string
+	ManagementToken     *string
+}
+
+func (ldr *Loader) loadOldKeepBalanceConfig(cfg *arvados.Config) error {
+	if ldr.KeepBalancePath == "" {
+		return nil
+	}
+	var oc oldKeepBalanceConfig
+	err := ldr.loadOldConfigHelper("keep-balance", ldr.KeepBalancePath, &oc)
+	if os.IsNotExist(err) && ldr.KeepBalancePath == defaultKeepBalanceConfigPath {
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	cluster, err := cfg.GetCluster("")
+	if err != nil {
+		return err
+	}
+
+	loadOldClientConfig(cluster, oc.Client)
+
+	if oc.Listen != nil {
+		cluster.Services.Keepbalance.InternalURLs[arvados.URL{Host: *oc.Listen}] = arvados.ServiceInstance{}
+	}
+	if oc.ManagementToken != nil {
+		cluster.ManagementToken = *oc.ManagementToken
+	}
+	if oc.RunPeriod != nil {
+		cluster.Collections.BalancePeriod = *oc.RunPeriod
+	}
+	if oc.LostBlocksFile != nil {
+		cluster.Collections.BlobMissingReport = *oc.LostBlocksFile
+	}
+	if oc.CollectionBatchSize != nil {
+		cluster.Collections.BalanceCollectionBatch = *oc.CollectionBatchSize
+	}
+	if oc.CollectionBuffers != nil {
+		cluster.Collections.BalanceCollectionBuffers = *oc.CollectionBuffers
+	}
+	if oc.RequestTimeout != nil {
+		cluster.API.KeepServiceRequestTimeout = *oc.RequestTimeout
+	}
+
+	msg := "The %s configuration option is no longer supported. Please remove it from your configuration file. Keep-balance will operate on all configured volumes."
+
+	// If the keep service type provided is "disk" silently ignore it, since
+	// this is what ends up being done anyway.
+	if oc.KeepServiceTypes != nil {
+		numTypes := len(*oc.KeepServiceTypes)
+		if numTypes != 0 && !(numTypes == 1 && (*oc.KeepServiceTypes)[0] == "disk") {
+			return fmt.Errorf(msg, "KeepServiceType")
+		}
+	}
+
+	if oc.KeepServiceList != nil {
+		return fmt.Errorf(msg, "KeepServiceList")
+	}
+
+	cfg.Clusters[cluster.ClusterID] = *cluster
+	return nil
+}
+
 func (ldr *Loader) loadOldEnvironmentVariables(cfg *arvados.Config) error {
 	if os.Getenv("ARVADOS_API_TOKEN") == "" && os.Getenv("ARVADOS_API_HOST") == "" {
 		return nil
