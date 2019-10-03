@@ -58,7 +58,7 @@ h4. Keep-balance configuration migration
 
 You can no longer specify types of keep services to balance via the @KeepServiceTypes@ config option in the legacy config at @/etc/arvados/keep-balance/keep-balance.yml@. If you are still using the legacy config and @KeepServiceTypes@ has a value other than "disk", keep-balance will produce an error.
 
-You can no longer specify individual keep services to balance via the @config.KeepServiceList@ command line option or @KeepServiceList@ legacy config option. Instead, keep-balance operates on all configured volumes. If you are still using the legacy config, @KeepServiceList@ should be removed or keep-balance will produce an error.
+You can no longer specify individual keep services to balance via the @config.KeepServiceList@ command line option or @KeepServiceList@ legacy config option. Instead, keep-balance will operate on all keepstore servers with @service_type:disk@ as reported by the @arv keep_service list@ command. If you are still using the legacy config, @KeepServiceList@ should be removed or keep-balance will produce an error.
 
 Please see the "config migration guide":{{site.baseurl}}/admin/config-migration.html and "keep-balance install guide":{{site.baseurl}}/install/install-keep-balance.html for more details.
 

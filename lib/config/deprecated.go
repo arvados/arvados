@@ -532,7 +532,7 @@ func (ldr *Loader) loadOldKeepBalanceConfig(cfg *arvados.Config) error {
 		cluster.API.KeepServiceRequestTimeout = *oc.RequestTimeout
 	}
 
-	msg := "The %s configuration option is no longer supported. Please remove it from your configuration file. Keep-balance will operate on all configured volumes."
+	msg := "The %s configuration option is no longer supported. Please remove it from your configuration file. See the keep-balance upgrade notes at https://doc.arvados.org/admin/upgrading.html for more details."
 
 	// If the keep service type provided is "disk" silently ignore it, since
 	// this is what ends up being done anyway.
