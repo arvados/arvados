@@ -396,10 +396,7 @@ EOT
     end
   end
 
-  [
-    [:admin, true],
-    [:active, false],
-  ].each do |user, expect_all_nodes|
+  [:admin, :active].each do |user|
     test "in dashboard other index page links as #{user}" do
       get :index, params: {}, session: session_for(user)
 
@@ -408,14 +405,6 @@ EOT
       ].each do |target, path|
         assert_includes @response.body, "href=\"#{path}\""
         assert_includes @response.body, "All #{target}"
-      end
-
-      if expect_all_nodes
-        assert_includes @response.body, "href=\"/nodes\""
-        assert_includes @response.body, "All nodes"
-      else
-        assert_not_includes @response.body, "href=\"/nodes\""
-        assert_not_includes @response.body, "All nodes"
       end
     end
   end

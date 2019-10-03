@@ -214,7 +214,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
 
         first('button', text: 'x').click
       end
-      assert_text 'Recent pipelines and processes' # seeing dashboard now
+      assert_text 'Recent processes' # seeing dashboard now
     end
   end
 
@@ -285,7 +285,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     test "visit dashboard as #{token}" do
       visit page_with_token(token)
 
-      assert_text 'Recent pipelines and processes' # seeing dashboard now
+      assert_text 'Recent processes' # seeing dashboard now
       within('.recent-processes-actions') do
         assert page.has_link?('Run a process')
         assert page.has_link?('All processes')
@@ -306,19 +306,6 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
         within('.row-zzzzz-xvhdp-cr4completedctr')do
           assert page.has_link? 'foo_file'
         end
-      end
-
-      within('.compute-node-actions') do
-        if is_admin
-          assert page.has_link?('All nodes')
-        else
-          assert page.has_no_link?('All nodes')
-        end
-      end
-
-      within('.compute-node-summary-pane') do
-        click_link 'Details'
-        assert_text 'compute0'
       end
     end
   end
