@@ -209,6 +209,26 @@ _build_rails_package_scripts() {
     done
 }
 
+rails_package_version() {
+    local pkgname="$1"; shift
+    if [[ -n "$ARVADOS_BUILDING_VERSION" ]]; then
+        echo "$ARVADOS_BUILDING_VERSION"
+        return
+    fi
+    local version="$(version_from_git)"
+    if [ $pkgname = "arvados-api-server" -o $pkgname = "arvados-workbench" ] ; then
+	local P="$PWD"
+	cd $WORKSPACE
+	local arvados_server_version
+	calculate_go_package_version arvados_server_version cmd/arvados-server
+	cd $P
+	if [ $arvados_server_version > $version ] ; then
+	    version=$arvados_server_version
+	fi
+    fi
+    echo $version
+}
+
 test_rails_package_presence() {
   local pkgname="$1"; shift
   local srcdir="$1"; shift
@@ -221,7 +241,7 @@ test_rails_package_presence() {
 
   cd $srcdir
 
-  local version="$(version_from_git)"
+  local version="$(rails_package_version $pkgname)"
 
   cd $tmppwd
 
@@ -312,11 +332,11 @@ test_package_presence() {
         repo_subdir=${pkgname:0:1}
       fi
 
-      repo_pkg_list=$(curl -s -o - http://apt.arvados.org/pool/${D}/main/${repo_subdir}/)
-      echo ${repo_pkg_list} |grep -q ${full_pkgname}
+      repo_pkg_list=$(curl -s -o - http://apt.arvados.org/pool/${D}-dev/main/${repo_subdir}/${pkgname}/)
+      echo "${repo_pkg_list}" |grep -q ${full_pkgname}
       if [ $? -eq 0 ] ; then
         echo "Package $full_pkgname exists upstream, not rebuilding, downloading instead!"
-        curl -s -o "$WORKSPACE/packages/$TARGET/${full_pkgname}" http://apt.arvados.org/pool/${D}/main/${repo_subdir}/${full_pkgname}
+        curl -s -o "$WORKSPACE/packages/$TARGET/${full_pkgname}" http://apt.arvados.org/pool/${D}-dev/main/${repo_subdir}/${pkgname}/${full_pkgname}
         return 1
       elif test -f "$WORKSPACE/packages/$TARGET/processed/${full_pkgname}" ; then
         echo "Package $full_pkgname exists, not rebuilding!"
@@ -353,7 +373,7 @@ handle_rails_package() {
     local srcdir="$1"; shift
     cd "$srcdir"
     local license_path="$1"; shift
-    local version="$(version_from_git)"
+    local version="$(rails_package_version $pkgname)"
     echo "$version" >package-build.version
     local scripts_dir="$(mktemp --tmpdir -d "$pkgname-XXXXXXXX.scripts")" && \
     (
