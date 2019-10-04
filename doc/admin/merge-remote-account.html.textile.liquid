@@ -27,7 +27,9 @@ h2. Get user report
 
 h3. With a LoginCluster
 
-Set the @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ environment variables to be an admin user on the @LoginCluster@.  It will automatically determine the other clusters that are listed in the federation.
+When using centralized user database as specified by "LoginCluster":federation.html#LoginCluster in the config file.
+
+Set the @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ environment variables to be an admin user on cluster in @LoginCluster@ .  It will automatically determine the other clusters that are listed in the federation.
 
 Next, run @arv-federation-migrate@ with the @--report@ flag:
 
@@ -87,7 +89,14 @@ h2. Migrate users
 
 To avoid disruption, advise users to log out and avoid running workflows while performing the migration.
 
-After updating @users.csv@, use the @--migrate@ option (add @--tokens tokens.csv@ if not using LoginCluster):
+After updating @users.csv@, you can preview the migration using the @--dry-run@ option (add @--tokens tokens.csv@ if not using LoginCluster).  This will print out what actions the migration will take (as if it were happening) and report possible problems, but not make any actual changes on any cluster:
+
+<pre>
+$ arv-federation-migrate --dry-run users.csv
+(person_b@example.com) Migrating x6b1s-tpzed-w4nhkx2rmrhlr54 to x3982-tpzed-1vl3k7knf7qihbe
+</pre>
+
+Execute the migration using the @--migrate@ option (add @--tokens tokens.csv@ if not using LoginCluster):
 
 <pre>
 $ arv-federation-migrate --migrate users.csv
