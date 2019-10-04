@@ -48,7 +48,7 @@ export const FormDialog = withStyles(styles)((props: DialogProjectProps) =>
     <Dialog
         open={props.open}
         onClose={props.closeDialog}
-        disableBackdropClick={props.submitting}
+        disableBackdropClick
         disableEscapeKeyDown={props.submitting}
         fullWidth
         maxWidth='md'>
