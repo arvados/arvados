@@ -93,6 +93,7 @@ const init = (config: Config) => (dispatch: Dispatch, getState: () => RootState,
                 const remoteConfig = new Config();
                 remoteConfig.uuidPrefix = response.data.ClusterID;
                 remoteConfig.workbench2Url = response.data.Services.Workbench2.ExternalURL;
+                remoteConfig.loginCluster = response.data.Login.LoginCluster;
                 mapRemoteHosts(response.data, remoteConfig);
                 dispatch(authActions.REMOTE_CLUSTER_CONFIG({ config: remoteConfig }));
             });
@@ -111,10 +112,10 @@ export const saveUser = (user: UserResource) => (dispatch: Dispatch, getState: (
 };
 
 export const login = (uuidPrefix: string, homeCluster: string, loginCluster: string,
-		      remoteHosts: { [key: string]: string }) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    services.authService.login(uuidPrefix, homeCluster, loginCluster, remoteHosts);
-    dispatch(authActions.LOGIN());
-};
+    remoteHosts: { [key: string]: string }) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        services.authService.login(uuidPrefix, homeCluster, loginCluster, remoteHosts);
+        dispatch(authActions.LOGIN());
+    };
 
 export const logout = (deleteLinkData: boolean = false) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     if (deleteLinkData) {
