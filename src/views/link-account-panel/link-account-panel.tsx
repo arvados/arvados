@@ -16,7 +16,7 @@ import {
 const mapStateToProps = (state: RootState): LinkAccountPanelRootDataProps => {
     return {
         remoteHosts: state.auth.remoteHosts,
-        hasRemoteHosts: Object.keys(state.auth.remoteHosts).length > 1,
+        hasRemoteHosts: Object.keys(state.auth.remoteHosts).length > 1 && state.auth.loginCluster === "",
         selectedCluster: state.linkAccountPanel.selectedCluster,
         localCluster: state.auth.localCluster,
         targetUser: state.linkAccountPanel.targetUser,
@@ -31,7 +31,7 @@ const mapDispatchToProps = (dispatch: Dispatch): LinkAccountPanelRootActionProps
     startLinking: (type: LinkAccountType) => dispatch<any>(startLinking(type)),
     cancelLinking: () => dispatch<any>(cancelLinking(true)),
     linkAccount: () => dispatch<any>(linkAccount()),
-    setSelectedCluster: (selectedCluster: string) => dispatch<any>(linkAccountPanelActions.SET_SELECTED_CLUSTER({selectedCluster}))
+    setSelectedCluster: (selectedCluster: string) => dispatch<any>(linkAccountPanelActions.SET_SELECTED_CLUSTER({ selectedCluster }))
 });
 
 export const LinkAccountPanel = connect(mapStateToProps, mapDispatchToProps)(LinkAccountPanelRoot);
