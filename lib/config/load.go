@@ -28,6 +28,7 @@ type Loader struct {
 	Logger         logrus.FieldLogger
 	SkipDeprecated bool // Don't load deprecated config keys
 	SkipLegacy     bool // Don't load legacy config files
+	SkipAPICalls   bool // Don't do checks that call RailsAPI/controller
 
 	Path                    string
 	KeepstorePath           string
@@ -36,6 +37,7 @@ type Loader struct {
 	WebsocketPath           string
 	KeepproxyPath           string
 	GitHttpdPath            string
+	KeepBalancePath         string
 
 	configdata []byte
 }
@@ -68,6 +70,7 @@ func (ldr *Loader) SetupFlags(flagset *flag.FlagSet) {
 	flagset.StringVar(&ldr.WebsocketPath, "legacy-ws-config", defaultWebsocketConfigPath, "Legacy arvados-ws configuration `file`")
 	flagset.StringVar(&ldr.KeepproxyPath, "legacy-keepproxy-config", defaultKeepproxyConfigPath, "Legacy keepproxy configuration `file`")
 	flagset.StringVar(&ldr.GitHttpdPath, "legacy-git-httpd-config", defaultGitHttpdConfigPath, "Legacy arv-git-httpd configuration `file`")
+	flagset.StringVar(&ldr.KeepBalancePath, "legacy-keepbalance-config", defaultKeepBalanceConfigPath, "Legacy keep-balance configuration `file`")
 	flagset.BoolVar(&ldr.SkipLegacy, "skip-legacy", false, "Don't load legacy config files")
 }
 
@@ -147,6 +150,9 @@ func (ldr *Loader) MungeLegacyConfigArgs(lgr logrus.FieldLogger, args []string, 
 	}
 	if legacyConfigArg != "-legacy-git-httpd-config" {
 		ldr.GitHttpdPath = ""
+	}
+	if legacyConfigArg != "-legacy-keepbalance-config" {
+		ldr.KeepBalancePath = ""
 	}
 
 	return munged
@@ -244,12 +250,14 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 		// * no primary config was loaded, and this is the
 		// legacy config file for the current component
 		for _, err := range []error{
+			ldr.loadOldEnvironmentVariables(&cfg),
 			ldr.loadOldKeepstoreConfig(&cfg),
 			ldr.loadOldKeepWebConfig(&cfg),
 			ldr.loadOldCrunchDispatchSlurmConfig(&cfg),
 			ldr.loadOldWebsocketConfig(&cfg),
 			ldr.loadOldKeepproxyConfig(&cfg),
 			ldr.loadOldGitHttpdConfig(&cfg),
+			ldr.loadOldKeepBalanceConfig(&cfg),
 		} {
 			if err != nil {
 				return nil, err
@@ -259,9 +267,14 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 
 	// Check for known mistakes
 	for id, cc := range cfg.Clusters {
-		err = checkKeyConflict(fmt.Sprintf("Clusters.%s.PostgreSQL.Connection", id), cc.PostgreSQL.Connection)
-		if err != nil {
-			return nil, err
+		for _, err = range []error{
+			checkKeyConflict(fmt.Sprintf("Clusters.%s.PostgreSQL.Connection", id), cc.PostgreSQL.Connection),
+			ldr.checkEmptyKeepstores(cc),
+			ldr.checkUnlistedKeepstores(cc),
+		} {
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 	return &cfg, nil

@@ -9,14 +9,14 @@ class TestArvWs < Minitest::Test
   end
 
   def test_arv_ws_get_help
-    out, err = capture_subprocess_io do
+    _, err = capture_subprocess_io do
       system ('arv-ws -h')
     end
     assert_equal '', err
   end
 
   def test_arv_ws_such_option
-    out, err = capture_subprocess_io do
+    _, err = capture_subprocess_io do
       system ('arv-ws --junk')
     end
     refute_equal '', err

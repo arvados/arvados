@@ -61,7 +61,7 @@ class IntegrationTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         run_test_server.run()
-        run_test_server.run_keep(enforce_permissions=True, num_servers=2)
+        run_test_server.run_keep(blob_signing=True, num_servers=2)
 
     @classmethod
     def tearDownClass(cls):

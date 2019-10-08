@@ -33,8 +33,6 @@ steps:
     out: []
     hints:
       - class: arv:RunInSingleContainer
-      - class: ResourceRequirement
-        ramMin: $(96+inputs.count*32)
       - class: arv:APIRequirement
     scatter: count
     run:
@@ -53,9 +51,12 @@ steps:
           run:
             class: CommandLineTool
             id: subtool
+            hints:
+              - class: ResourceRequirement
+                ramMin: 32
             inputs:
               count:
                 type: int
               script: File
             outputs: []
-            arguments: [python, $(inputs.script), $(96+inputs.count * 32)]
+            arguments: [python, $(inputs.script), "128"]

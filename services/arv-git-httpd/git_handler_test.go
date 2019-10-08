@@ -12,6 +12,7 @@ import (
 
 	"git.curoverse.com/arvados.git/lib/config"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	check "gopkg.in/check.v1"
 )
 
@@ -22,7 +23,7 @@ type GitHandlerSuite struct {
 }
 
 func (s *GitHandlerSuite) SetUpTest(c *check.C) {
-	cfg, err := config.NewLoader(nil, nil).Load()
+	cfg, err := config.NewLoader(nil, ctxlog.TestLogger(c)).Load()
 	c.Assert(err, check.Equals, nil)
 	s.cluster, err = cfg.GetCluster("")
 	c.Assert(err, check.Equals, nil)

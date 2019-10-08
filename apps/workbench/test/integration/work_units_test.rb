@@ -145,7 +145,7 @@ class WorkUnitsTest < ActionDispatch::IntegrationTest
   ].each do |template_name, preview_txt, process_txt|
     test "run a process using template #{template_name} from dashboard" do
       visit page_with_token('admin')
-      assert_text 'Recent pipelines and processes' # seeing dashboard now
+      assert_text 'Recent processes' # seeing dashboard now
 
       within('.recent-processes-actions') do
         assert page.has_link?('All processes')

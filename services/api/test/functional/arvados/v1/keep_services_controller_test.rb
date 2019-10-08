@@ -36,4 +36,33 @@ class Arvados::V1::KeepServicesControllerTest < ActionController::TestCase
     end
   end
 
+  test "report configured servers if db is empty" do
+    KeepService.unscoped.all.delete_all
+    expect_rvz = {}
+    n = 0
+    Rails.configuration.Services.Keepstore.InternalURLs.each do |k,v|
+      n += 1
+      rvz = "%015x" % n
+      expect_rvz[k.to_s] = rvz
+      Rails.configuration.Services.Keepstore.InternalURLs[k].Rendezvous = rvz
+    end
+    expect_rvz[Rails.configuration.Services.Keepproxy.ExternalURL] = true
+    refute_empty expect_rvz
+    authorize_with :active
+    get :index,
+      params: {:format => :json},
+      headers: auth(:active)
+    assert_response :success
+    json_response['items'].each do |svc|
+      url = "#{svc['service_ssl_flag'] ? 'https' : 'http'}://#{svc['service_host']}:#{svc['service_port']}"
+      assert_equal true, expect_rvz.has_key?(url), "#{url} does not match any configured service: expecting #{expect_rvz}"
+      rvz = expect_rvz[url]
+      if rvz.is_a? String
+        assert_equal "zzzzz-bi6l4-#{rvz}", svc['uuid'], "exported service UUID should match InternalURLs.*.Rendezvous value"
+      end
+      expect_rvz.delete(url)
+    end
+    assert_equal({}, expect_rvz, "all configured Keepstore and Keepproxy services should be returned")
+  end
+
 end

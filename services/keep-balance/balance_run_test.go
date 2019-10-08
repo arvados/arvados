@@ -5,6 +5,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -16,8 +17,12 @@ import (
 	"sync"
 	"time"
 
+	"git.curoverse.com/arvados.git/lib/config"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"github.com/sirupsen/logrus"
+	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/common/expfmt"
 	check "gopkg.in/check.v1"
 )
 
@@ -303,41 +308,36 @@ func (s *stubServer) serveKeepstorePull() *reqTracker {
 
 type runSuite struct {
 	stub   stubServer
-	config Config
+	config *arvados.Cluster
+	client *arvados.Client
 }
 
-// make a log.Logger that writes to the current test's c.Log().
-func (s *runSuite) logger(c *check.C) *logrus.Logger {
-	r, w := io.Pipe()
-	go func() {
-		buf := make([]byte, 10000)
-		for {
-			n, err := r.Read(buf)
-			if n > 0 {
-				if buf[n-1] == '\n' {
-					n--
-				}
-				c.Log(string(buf[:n]))
-			}
-			if err != nil {
-				break
-			}
-		}
-	}()
-	logger := logrus.New()
-	logger.Out = w
-	return logger
+func (s *runSuite) newServer(options *RunOptions) *Server {
+	srv := &Server{
+		Cluster:    s.config,
+		ArvClient:  s.client,
+		RunOptions: *options,
+		Metrics:    newMetrics(prometheus.NewRegistry()),
+		Logger:     options.Logger,
+		Dumper:     options.Dumper,
+	}
+	return srv
 }
 
 func (s *runSuite) SetUpTest(c *check.C) {
-	s.config = Config{
-		Client: arvados.Client{
-			AuthToken: "xyzzy",
-			APIHost:   "zzzzz.arvadosapi.com",
-			Client:    s.stub.Start()},
-		KeepServiceTypes: []string{"disk"},
-		RunPeriod:        arvados.Duration(time.Second),
-	}
+	cfg, err := config.NewLoader(nil, ctxlog.TestLogger(c)).Load()
+	c.Assert(err, check.Equals, nil)
+	s.config, err = cfg.GetCluster("")
+	c.Assert(err, check.Equals, nil)
+
+	s.config.Collections.BalancePeriod = arvados.Duration(time.Second)
+	arvadostest.SetServiceURL(&s.config.Services.Keepbalance, "http://localhost:/")
+
+	s.client = &arvados.Client{
+		AuthToken: "xyzzy",
+		APIHost:   "zzzzz.arvadosapi.com",
+		Client:    s.stub.Start()}
+
 	s.stub.serveDiscoveryDoc()
 	s.stub.logf = c.Logf
 }
@@ -350,7 +350,7 @@ func (s *runSuite) TestRefuseZeroCollections(c *check.C) {
 	opts := RunOptions{
 		CommitPulls: true,
 		CommitTrash: true,
-		Logger:      s.logger(c),
+		Logger:      ctxlog.TestLogger(c),
 	}
 	s.stub.serveCurrentUserAdmin()
 	s.stub.serveZeroCollections()
@@ -359,40 +359,18 @@ func (s *runSuite) TestRefuseZeroCollections(c *check.C) {
 	s.stub.serveKeepstoreIndexFoo4Bar1()
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
-	srv, err := NewServer(s.config, opts)
-	c.Assert(err, check.IsNil)
-	_, err = srv.Run()
+	srv := s.newServer(&opts)
+	_, err := srv.runOnce()
 	c.Check(err, check.ErrorMatches, "received zero collections")
 	c.Check(trashReqs.Count(), check.Equals, 4)
 	c.Check(pullReqs.Count(), check.Equals, 0)
-}
-
-func (s *runSuite) TestServiceTypes(c *check.C) {
-	opts := RunOptions{
-		CommitPulls: true,
-		CommitTrash: true,
-		Logger:      s.logger(c),
-	}
-	s.config.KeepServiceTypes = []string{"unlisted-type"}
-	s.stub.serveCurrentUserAdmin()
-	s.stub.serveFooBarFileCollections()
-	s.stub.serveKeepServices(stubServices)
-	s.stub.serveKeepstoreMounts()
-	indexReqs := s.stub.serveKeepstoreIndexFoo4Bar1()
-	trashReqs := s.stub.serveKeepstoreTrash()
-	srv, err := NewServer(s.config, opts)
-	c.Assert(err, check.IsNil)
-	_, err = srv.Run()
-	c.Check(err, check.IsNil)
-	c.Check(indexReqs.Count(), check.Equals, 0)
-	c.Check(trashReqs.Count(), check.Equals, 0)
 }
 
 func (s *runSuite) TestRefuseNonAdmin(c *check.C) {
 	opts := RunOptions{
 		CommitPulls: true,
 		CommitTrash: true,
-		Logger:      s.logger(c),
+		Logger:      ctxlog.TestLogger(c),
 	}
 	s.stub.serveCurrentUserNotAdmin()
 	s.stub.serveZeroCollections()
@@ -400,9 +378,8 @@ func (s *runSuite) TestRefuseNonAdmin(c *check.C) {
 	s.stub.serveKeepstoreMounts()
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
-	srv, err := NewServer(s.config, opts)
-	c.Assert(err, check.IsNil)
-	_, err = srv.Run()
+	srv := s.newServer(&opts)
+	_, err := srv.runOnce()
 	c.Check(err, check.ErrorMatches, "current user .* is not .* admin user")
 	c.Check(trashReqs.Count(), check.Equals, 0)
 	c.Check(pullReqs.Count(), check.Equals, 0)
@@ -412,7 +389,7 @@ func (s *runSuite) TestDetectSkippedCollections(c *check.C) {
 	opts := RunOptions{
 		CommitPulls: true,
 		CommitTrash: true,
-		Logger:      s.logger(c),
+		Logger:      ctxlog.TestLogger(c),
 	}
 	s.stub.serveCurrentUserAdmin()
 	s.stub.serveCollectionsButSkipOne()
@@ -421,9 +398,8 @@ func (s *runSuite) TestDetectSkippedCollections(c *check.C) {
 	s.stub.serveKeepstoreIndexFoo4Bar1()
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
-	srv, err := NewServer(s.config, opts)
-	c.Assert(err, check.IsNil)
-	_, err = srv.Run()
+	srv := s.newServer(&opts)
+	_, err := srv.runOnce()
 	c.Check(err, check.ErrorMatches, `Retrieved 2 collections with modtime <= .* but server now reports there are 3 collections.*`)
 	c.Check(trashReqs.Count(), check.Equals, 4)
 	c.Check(pullReqs.Count(), check.Equals, 0)
@@ -432,12 +408,12 @@ func (s *runSuite) TestDetectSkippedCollections(c *check.C) {
 func (s *runSuite) TestWriteLostBlocks(c *check.C) {
 	lostf, err := ioutil.TempFile("", "keep-balance-lost-blocks-test-")
 	c.Assert(err, check.IsNil)
-	s.config.LostBlocksFile = lostf.Name()
+	s.config.Collections.BlobMissingReport = lostf.Name()
 	defer os.Remove(lostf.Name())
 	opts := RunOptions{
 		CommitPulls: true,
 		CommitTrash: true,
-		Logger:      s.logger(c),
+		Logger:      ctxlog.TestLogger(c),
 	}
 	s.stub.serveCurrentUserAdmin()
 	s.stub.serveFooBarFileCollections()
@@ -446,9 +422,9 @@ func (s *runSuite) TestWriteLostBlocks(c *check.C) {
 	s.stub.serveKeepstoreIndexFoo1()
 	s.stub.serveKeepstoreTrash()
 	s.stub.serveKeepstorePull()
-	srv, err := NewServer(s.config, opts)
+	srv := s.newServer(&opts)
 	c.Assert(err, check.IsNil)
-	_, err = srv.Run()
+	_, err = srv.runOnce()
 	c.Check(err, check.IsNil)
 	lost, err := ioutil.ReadFile(lostf.Name())
 	c.Assert(err, check.IsNil)
@@ -459,7 +435,7 @@ func (s *runSuite) TestDryRun(c *check.C) {
 	opts := RunOptions{
 		CommitPulls: false,
 		CommitTrash: false,
-		Logger:      s.logger(c),
+		Logger:      ctxlog.TestLogger(c),
 	}
 	s.stub.serveCurrentUserAdmin()
 	collReqs := s.stub.serveFooBarFileCollections()
@@ -468,9 +444,8 @@ func (s *runSuite) TestDryRun(c *check.C) {
 	s.stub.serveKeepstoreIndexFoo4Bar1()
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
-	srv, err := NewServer(s.config, opts)
-	c.Assert(err, check.IsNil)
-	bal, err := srv.Run()
+	srv := s.newServer(&opts)
+	bal, err := srv.runOnce()
 	c.Check(err, check.IsNil)
 	for _, req := range collReqs.reqs {
 		c.Check(req.Form.Get("include_trash"), check.Equals, "true")
@@ -486,16 +461,15 @@ func (s *runSuite) TestDryRun(c *check.C) {
 func (s *runSuite) TestCommit(c *check.C) {
 	lostf, err := ioutil.TempFile("", "keep-balance-lost-blocks-test-")
 	c.Assert(err, check.IsNil)
-	s.config.LostBlocksFile = lostf.Name()
+	s.config.Collections.BlobMissingReport = lostf.Name()
 	defer os.Remove(lostf.Name())
 
-	s.config.Listen = ":"
 	s.config.ManagementToken = "xyzzy"
 	opts := RunOptions{
 		CommitPulls: true,
 		CommitTrash: true,
-		Logger:      s.logger(c),
-		Dumper:      s.logger(c),
+		Logger:      ctxlog.TestLogger(c),
+		Dumper:      ctxlog.TestLogger(c),
 	}
 	s.stub.serveCurrentUserAdmin()
 	s.stub.serveFooBarFileCollections()
@@ -504,9 +478,8 @@ func (s *runSuite) TestCommit(c *check.C) {
 	s.stub.serveKeepstoreIndexFoo4Bar1()
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
-	srv, err := NewServer(s.config, opts)
-	c.Assert(err, check.IsNil)
-	bal, err := srv.Run()
+	srv := s.newServer(&opts)
+	bal, err := srv.runOnce()
 	c.Check(err, check.IsNil)
 	c.Check(trashReqs.Count(), check.Equals, 8)
 	c.Check(pullReqs.Count(), check.Equals, 4)
@@ -520,22 +493,22 @@ func (s *runSuite) TestCommit(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Check(string(lost), check.Equals, "")
 
-	metrics := s.getMetrics(c, srv)
-	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_total_bytes 15\n.*`)
-	c.Check(metrics, check.Matches, `(?ms).*\narvados_keepbalance_changeset_compute_seconds_sum [0-9\.]+\n.*`)
-	c.Check(metrics, check.Matches, `(?ms).*\narvados_keepbalance_changeset_compute_seconds_count 1\n.*`)
-	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_dedup_byte_ratio 1\.5\n.*`)
-	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_dedup_block_ratio 1\.5\n.*`)
+	buf, err := s.getMetrics(c, srv)
+	c.Check(err, check.IsNil)
+	c.Check(buf, check.Matches, `(?ms).*\narvados_keep_total_bytes 15\n.*`)
+	c.Check(buf, check.Matches, `(?ms).*\narvados_keepbalance_changeset_compute_seconds_sum [0-9\.]+\n.*`)
+	c.Check(buf, check.Matches, `(?ms).*\narvados_keepbalance_changeset_compute_seconds_count 1\n.*`)
+	c.Check(buf, check.Matches, `(?ms).*\narvados_keep_dedup_byte_ratio 1\.5\n.*`)
+	c.Check(buf, check.Matches, `(?ms).*\narvados_keep_dedup_block_ratio 1\.5\n.*`)
 }
 
 func (s *runSuite) TestRunForever(c *check.C) {
-	s.config.Listen = ":"
 	s.config.ManagementToken = "xyzzy"
 	opts := RunOptions{
 		CommitPulls: true,
 		CommitTrash: true,
-		Logger:      s.logger(c),
-		Dumper:      s.logger(c),
+		Logger:      ctxlog.TestLogger(c),
+		Dumper:      ctxlog.TestLogger(c),
 	}
 	s.stub.serveCurrentUserAdmin()
 	s.stub.serveFooBarFileCollections()
@@ -546,13 +519,12 @@ func (s *runSuite) TestRunForever(c *check.C) {
 	pullReqs := s.stub.serveKeepstorePull()
 
 	stop := make(chan interface{})
-	s.config.RunPeriod = arvados.Duration(time.Millisecond)
-	srv, err := NewServer(s.config, opts)
-	c.Assert(err, check.IsNil)
+	s.config.Collections.BalancePeriod = arvados.Duration(time.Millisecond)
+	srv := s.newServer(&opts)
 
 	done := make(chan bool)
 	go func() {
-		srv.RunForever(stop)
+		srv.runForever(stop)
 		close(done)
 	}()
 
@@ -567,18 +539,24 @@ func (s *runSuite) TestRunForever(c *check.C) {
 	<-done
 	c.Check(pullReqs.Count() >= 16, check.Equals, true)
 	c.Check(trashReqs.Count(), check.Equals, pullReqs.Count()+4)
-	c.Check(s.getMetrics(c, srv), check.Matches, `(?ms).*\narvados_keepbalance_changeset_compute_seconds_count `+fmt.Sprintf("%d", pullReqs.Count()/4)+`\n.*`)
+
+	buf, err := s.getMetrics(c, srv)
+	c.Check(err, check.IsNil)
+	c.Check(buf, check.Matches, `(?ms).*\narvados_keepbalance_changeset_compute_seconds_count `+fmt.Sprintf("%d", pullReqs.Count()/4)+`\n.*`)
 }
 
-func (s *runSuite) getMetrics(c *check.C, srv *Server) string {
-	resp, err := http.Get("http://" + srv.listening + "/metrics")
-	c.Assert(err, check.IsNil)
-	c.Check(resp.StatusCode, check.Equals, http.StatusUnauthorized)
+func (s *runSuite) getMetrics(c *check.C, srv *Server) (*bytes.Buffer, error) {
+	mfs, err := srv.Metrics.reg.Gather()
+	if err != nil {
+		return nil, err
+	}
 
-	resp, err = http.Get("http://" + srv.listening + "/metrics?api_token=xyzzy")
-	c.Assert(err, check.IsNil)
-	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
-	buf, err := ioutil.ReadAll(resp.Body)
-	c.Check(err, check.IsNil)
-	return string(buf)
+	var buf bytes.Buffer
+	for _, mf := range mfs {
+		if _, err := expfmt.MetricFamilyToText(&buf, mf); err != nil {
+			return nil, err
+		}
+	}
+
+	return &buf, nil
 }

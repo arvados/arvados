@@ -5,8 +5,10 @@
 package main
 
 import (
+	"context"
 	"time"
 
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	. "gopkg.in/check.v1"
 )
 
@@ -17,16 +19,16 @@ type BufferPoolSuite struct{}
 // Initialize a default-sized buffer pool for the benefit of test
 // suites that don't run main().
 func init() {
-	bufs = newBufferPool(theConfig.MaxBuffers, BlockSize)
+	bufs = newBufferPool(ctxlog.FromContext(context.Background()), 12, BlockSize)
 }
 
 // Restore sane default after bufferpool's own tests
 func (s *BufferPoolSuite) TearDownTest(c *C) {
-	bufs = newBufferPool(theConfig.MaxBuffers, BlockSize)
+	bufs = newBufferPool(ctxlog.FromContext(context.Background()), 12, BlockSize)
 }
 
 func (s *BufferPoolSuite) TestBufferPoolBufSize(c *C) {
-	bufs := newBufferPool(2, 10)
+	bufs := newBufferPool(ctxlog.TestLogger(c), 2, 10)
 	b1 := bufs.Get(1)
 	bufs.Get(2)
 	bufs.Put(b1)
@@ -35,14 +37,14 @@ func (s *BufferPoolSuite) TestBufferPoolBufSize(c *C) {
 }
 
 func (s *BufferPoolSuite) TestBufferPoolUnderLimit(c *C) {
-	bufs := newBufferPool(3, 10)
+	bufs := newBufferPool(ctxlog.TestLogger(c), 3, 10)
 	b1 := bufs.Get(10)
 	bufs.Get(10)
 	testBufferPoolRace(c, bufs, b1, "Get")
 }
 
 func (s *BufferPoolSuite) TestBufferPoolAtLimit(c *C) {
-	bufs := newBufferPool(2, 10)
+	bufs := newBufferPool(ctxlog.TestLogger(c), 2, 10)
 	b1 := bufs.Get(10)
 	bufs.Get(10)
 	testBufferPoolRace(c, bufs, b1, "Put")
@@ -66,7 +68,7 @@ func testBufferPoolRace(c *C, bufs *bufferPool, unused []byte, expectWin string)
 }
 
 func (s *BufferPoolSuite) TestBufferPoolReuse(c *C) {
-	bufs := newBufferPool(2, 10)
+	bufs := newBufferPool(ctxlog.TestLogger(c), 2, 10)
 	bufs.Get(10)
 	last := bufs.Get(10)
 	// The buffer pool is allowed to throw away unused buffers

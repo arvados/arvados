@@ -7,6 +7,7 @@ package config
 import (
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"strings"
 
@@ -102,12 +103,6 @@ func applyDeprecatedNodeProfile(hostname string, ssi systemServiceInstance, svc 
 	svc.InternalURLs[arvados.URL{Scheme: scheme, Host: host}] = arvados.ServiceInstance{}
 }
 
-const defaultKeepstoreConfigPath = "/etc/arvados/keepstore/keepstore.yml"
-
-type oldKeepstoreConfig struct {
-	Debug *bool
-}
-
 func (ldr *Loader) loadOldConfigHelper(component, path string, target interface{}) error {
 	if path == "" {
 		return nil
@@ -123,35 +118,6 @@ func (ldr *Loader) loadOldConfigHelper(component, path string, target interface{
 	if err != nil {
 		return fmt.Errorf("%s: %s", path, err)
 	}
-	return nil
-}
-
-// update config using values from an old-style keepstore config file.
-func (ldr *Loader) loadOldKeepstoreConfig(cfg *arvados.Config) error {
-	if ldr.KeepstorePath == "" {
-		return nil
-	}
-	var oc oldKeepstoreConfig
-	err := ldr.loadOldConfigHelper("keepstore", ldr.KeepstorePath, &oc)
-	if os.IsNotExist(err) && (ldr.KeepstorePath == defaultKeepstoreConfigPath) {
-		return nil
-	} else if err != nil {
-		return err
-	}
-
-	cluster, err := cfg.GetCluster("")
-	if err != nil {
-		return err
-	}
-
-	if v := oc.Debug; v == nil {
-	} else if *v && cluster.SystemLogs.LogLevel != "debug" {
-		cluster.SystemLogs.LogLevel = "debug"
-	} else if !*v && cluster.SystemLogs.LogLevel != "info" {
-		cluster.SystemLogs.LogLevel = "info"
-	}
-
-	cfg.Clusters[cluster.ClusterID] = *cluster
 	return nil
 }
 
@@ -506,6 +472,108 @@ func (ldr *Loader) loadOldGitHttpdConfig(cfg *arvados.Config) error {
 	cluster.Git.GitoliteHome = oc.GitoliteHome
 	cluster.Git.Repositories = oc.RepoRoot
 
+	cfg.Clusters[cluster.ClusterID] = *cluster
+	return nil
+}
+
+const defaultKeepBalanceConfigPath = "/etc/arvados/keep-balance/keep-balance.yml"
+
+type oldKeepBalanceConfig struct {
+	Client              *arvados.Client
+	Listen              *string
+	KeepServiceTypes    *[]string
+	KeepServiceList     *arvados.KeepServiceList
+	RunPeriod           *arvados.Duration
+	CollectionBatchSize *int
+	CollectionBuffers   *int
+	RequestTimeout      *arvados.Duration
+	LostBlocksFile      *string
+	ManagementToken     *string
+}
+
+func (ldr *Loader) loadOldKeepBalanceConfig(cfg *arvados.Config) error {
+	if ldr.KeepBalancePath == "" {
+		return nil
+	}
+	var oc oldKeepBalanceConfig
+	err := ldr.loadOldConfigHelper("keep-balance", ldr.KeepBalancePath, &oc)
+	if os.IsNotExist(err) && ldr.KeepBalancePath == defaultKeepBalanceConfigPath {
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	cluster, err := cfg.GetCluster("")
+	if err != nil {
+		return err
+	}
+
+	loadOldClientConfig(cluster, oc.Client)
+
+	if oc.Listen != nil {
+		cluster.Services.Keepbalance.InternalURLs[arvados.URL{Host: *oc.Listen}] = arvados.ServiceInstance{}
+	}
+	if oc.ManagementToken != nil {
+		cluster.ManagementToken = *oc.ManagementToken
+	}
+	if oc.RunPeriod != nil {
+		cluster.Collections.BalancePeriod = *oc.RunPeriod
+	}
+	if oc.LostBlocksFile != nil {
+		cluster.Collections.BlobMissingReport = *oc.LostBlocksFile
+	}
+	if oc.CollectionBatchSize != nil {
+		cluster.Collections.BalanceCollectionBatch = *oc.CollectionBatchSize
+	}
+	if oc.CollectionBuffers != nil {
+		cluster.Collections.BalanceCollectionBuffers = *oc.CollectionBuffers
+	}
+	if oc.RequestTimeout != nil {
+		cluster.API.KeepServiceRequestTimeout = *oc.RequestTimeout
+	}
+
+	msg := "The %s configuration option is no longer supported. Please remove it from your configuration file. See the keep-balance upgrade notes at https://doc.arvados.org/admin/upgrading.html for more details."
+
+	// If the keep service type provided is "disk" silently ignore it, since
+	// this is what ends up being done anyway.
+	if oc.KeepServiceTypes != nil {
+		numTypes := len(*oc.KeepServiceTypes)
+		if numTypes != 0 && !(numTypes == 1 && (*oc.KeepServiceTypes)[0] == "disk") {
+			return fmt.Errorf(msg, "KeepServiceType")
+		}
+	}
+
+	if oc.KeepServiceList != nil {
+		return fmt.Errorf(msg, "KeepServiceList")
+	}
+
+	cfg.Clusters[cluster.ClusterID] = *cluster
+	return nil
+}
+
+func (ldr *Loader) loadOldEnvironmentVariables(cfg *arvados.Config) error {
+	if os.Getenv("ARVADOS_API_TOKEN") == "" && os.Getenv("ARVADOS_API_HOST") == "" {
+		return nil
+	}
+	cluster, err := cfg.GetCluster("")
+	if err != nil {
+		return err
+	}
+	if tok := os.Getenv("ARVADOS_API_TOKEN"); tok != "" && cluster.SystemRootToken == "" {
+		ldr.Logger.Warn("SystemRootToken missing from cluster config, falling back to ARVADOS_API_TOKEN environment variable")
+		cluster.SystemRootToken = tok
+	}
+	if apihost := os.Getenv("ARVADOS_API_HOST"); apihost != "" && cluster.Services.Controller.ExternalURL.Host == "" {
+		ldr.Logger.Warn("Services.Controller.ExternalURL missing from cluster config, falling back to ARVADOS_API_HOST(_INSECURE) environment variables")
+		u, err := url.Parse("https://" + apihost)
+		if err != nil {
+			return fmt.Errorf("cannot parse ARVADOS_API_HOST: %s", err)
+		}
+		cluster.Services.Controller.ExternalURL = arvados.URL(*u)
+		if i := os.Getenv("ARVADOS_API_HOST_INSECURE"); i != "" && i != "0" {
+			cluster.TLS.Insecure = true
+		}
+	}
 	cfg.Clusters[cluster.ClusterID] = *cluster
 	return nil
 }

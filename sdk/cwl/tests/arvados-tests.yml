@@ -179,6 +179,12 @@
   tool: wf/runin-reqs-wf4.cwl
   doc: "RunInSingleContainer discovers static resource request in subworkflow steps"
 
+- job: null
+  output:
+    out: null
+  tool: wf/runin-reqs-wf5.cwl
+  doc: "RunInSingleContainer has minimum 128 MiB RAM"
+
 - job: secondaryFiles/inp3.yml
   output: {}
   tool: secondaryFiles/example1.cwl

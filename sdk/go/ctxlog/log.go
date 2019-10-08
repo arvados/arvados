@@ -11,7 +11,6 @@ import (
 	"os"
 
 	"github.com/sirupsen/logrus"
-	check "gopkg.in/check.v1"
 )
 
 var (
@@ -41,7 +40,7 @@ func FromContext(ctx context.Context) logrus.FieldLogger {
 
 // New returns a new logger with the indicated format and
 // level.
-func New(out io.Writer, format, level string) logrus.FieldLogger {
+func New(out io.Writer, format, level string) *logrus.Logger {
 	logger := logrus.New()
 	logger.Out = out
 	setFormat(logger, format)
@@ -49,7 +48,7 @@ func New(out io.Writer, format, level string) logrus.FieldLogger {
 	return logger
 }
 
-func TestLogger(c *check.C) logrus.FieldLogger {
+func TestLogger(c interface{ Log(...interface{}) }) *logrus.Logger {
 	logger := logrus.New()
 	logger.Out = &logWriter{c.Log}
 	setFormat(logger, "text")

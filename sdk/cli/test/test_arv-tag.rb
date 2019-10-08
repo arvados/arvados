@@ -20,7 +20,7 @@ class TestArvTag < Minitest::Test
       assert_equal false, arv_tag
     end
     assert_empty out
-    assert_match /^usage:/i, err
+    assert_match(/^usage:/i, err)
   end
 
   # Test adding and removing a single tag on a single object.

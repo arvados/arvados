@@ -20,7 +20,7 @@ class TestCollectionCreate < Minitest::Test
                    manifest_text: foo_manifest
                  }.to_json)
     end
-    assert /^([0-9a-z]{5}-4zz18-[0-9a-z]{15})?$/.match(out)
+    assert(/^([0-9a-z]{5}-4zz18-[0-9a-z]{15})?$/.match(out))
     assert_equal '', err
   end
 
@@ -33,7 +33,7 @@ class TestCollectionCreate < Minitest::Test
         assert_arv('--format', 'uuid',
                    'collection', 'create', '--collection', tempfile.path)
       end
-      assert /^([0-9a-z]{5}-4zz18-[0-9a-z]{15})?$/.match(out)
+      assert(/^([0-9a-z]{5}-4zz18-[0-9a-z]{15})?$/.match(out))
       assert_equal '', err
     ensure
       tempfile.unlink

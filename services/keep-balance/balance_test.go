@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	check "gopkg.in/check.v1"
 )
 
@@ -69,6 +70,7 @@ func (bal *balancerSuite) SetUpSuite(c *check.C) {
 	}
 
 	bal.signatureTTL = 3600
+	bal.Logger = ctxlog.TestLogger(c)
 }
 
 func (bal *balancerSuite) SetUpTest(c *check.C) {
@@ -524,7 +526,7 @@ func (bal *balancerSuite) TestChangeStorageClasses(c *check.C) {
 	bal.srvs[9].mounts = []*KeepMount{{
 		KeepMount: arvados.KeepMount{
 			Replication:    1,
-			StorageClasses: []string{"special"},
+			StorageClasses: map[string]bool{"special": true},
 			UUID:           "zzzzz-mount-special00000009",
 			DeviceID:       "9-special",
 		},
@@ -532,7 +534,7 @@ func (bal *balancerSuite) TestChangeStorageClasses(c *check.C) {
 	}, {
 		KeepMount: arvados.KeepMount{
 			Replication:    1,
-			StorageClasses: []string{"special", "special2"},
+			StorageClasses: map[string]bool{"special": true, "special2": true},
 			UUID:           "zzzzz-mount-special20000009",
 			DeviceID:       "9-special-and-special2",
 		},
@@ -544,7 +546,7 @@ func (bal *balancerSuite) TestChangeStorageClasses(c *check.C) {
 	bal.srvs[13].mounts = []*KeepMount{{
 		KeepMount: arvados.KeepMount{
 			Replication:    1,
-			StorageClasses: []string{"special2"},
+			StorageClasses: map[string]bool{"special2": true},
 			UUID:           "zzzzz-mount-special2000000d",
 			DeviceID:       "13-special2",
 		},
@@ -552,7 +554,7 @@ func (bal *balancerSuite) TestChangeStorageClasses(c *check.C) {
 	}, {
 		KeepMount: arvados.KeepMount{
 			Replication:    1,
-			StorageClasses: []string{"default"},
+			StorageClasses: map[string]bool{"default": true},
 			UUID:           "zzzzz-mount-00000000000000d",
 			DeviceID:       "13-default",
 		},

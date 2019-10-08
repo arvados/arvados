@@ -90,9 +90,6 @@ gem 'sshkey'
 # Deploy with Capistrano
 # gem 'capistrano'
 
-# To use debugger
-#gem 'byebug'
-
 gem 'passenger', :group => :production
 gem 'andand'
 gem 'RedCloth'

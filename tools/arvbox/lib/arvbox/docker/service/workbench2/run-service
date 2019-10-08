@@ -10,7 +10,7 @@ set -ex -o pipefail
 
 cd /usr/src/workbench2
 
-npm -d install --prefix /usr/local --global yarn
+npm -d install --prefix /usr/local --global yarn@1.17.3
 
 yarn install
 

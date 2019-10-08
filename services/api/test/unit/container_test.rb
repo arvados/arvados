@@ -980,6 +980,15 @@ class ContainerTest < ActiveSupport::TestCase
     end
   end
 
+  test "user cannot delete" do
+    set_user_from_auth :active
+    c, _ = minimal_new
+    assert_raises ArvadosModel::PermissionDeniedError do
+      c.destroy
+    end
+    assert Container.find_by_uuid(c.uuid)
+  end
+
   [
     {state: Container::Complete, exit_code: 0, output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'},
     {state: Container::Cancelled},

@@ -111,16 +111,16 @@ func StopAPI() {
 }
 
 // StartKeep starts the given number of keep servers,
-// optionally with -enforce-permissions enabled.
-// Use numKeepServers = 2 and enforcePermissions = false under all normal circumstances.
-func StartKeep(numKeepServers int, enforcePermissions bool) {
+// optionally with --keep-blob-signing enabled.
+// Use numKeepServers = 2 and blobSigning = false under all normal circumstances.
+func StartKeep(numKeepServers int, blobSigning bool) {
 	cwd, _ := os.Getwd()
 	defer os.Chdir(cwd)
 	chdirToPythonTests()
 
 	cmdArgs := []string{"run_test_server.py", "start_keep", "--num-keep-servers", strconv.Itoa(numKeepServers)}
-	if enforcePermissions {
-		cmdArgs = append(cmdArgs, "--keep-enforce-permissions")
+	if blobSigning {
+		cmdArgs = append(cmdArgs, "--keep-blob-signing")
 	}
 
 	bgRun(exec.Command("python", cmdArgs...))

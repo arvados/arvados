@@ -58,9 +58,13 @@ h2. crunch-dispatch-slurm
 
 Currently only reads @InstanceTypes@ from centralized configuration.  Still requires component-specific configuration file.
 
-h2. keepstore
+h2(#keepstore). keepstore
 
-Currently only reads @RemoteClusters@ from centralized configuration.  Still requires component-specific configuration file.
+The legacy keepstore config (loaded from @/etc/arvados/keepstore/keepstore.yml@ or a different location specified via -legacy-keepstore-config command line argument) takes precedence over the centralized config. After you migrate everything from the legacy config to the centralized config, you should delete @/etc/arvados/keepstore/keepstore.yml@ and stop using the -legacy-keepstore-config argument.
+
+To migrate a keepstore node's configuration, first install @arvados-server@. Run @arvados-server config-diff@, review and apply the recommended changes to @/etc/arvados/config.yml@, and run @arvados-server config-diff@ again to check for additional warnings and recommendations. When you are satisfied, delete the legacy config file, restart keepstore, and check its startup logs. Copy the updated centralized config file to your next keepstore server, and repeat the process there.
+
+After migrating and removing all legacy keepstore config files, make sure the @/etc/arvados/config.yml@ file is identical across all system nodes -- API server, keepstore, etc. -- and restart all services to make sure they are using the latest configuration.
 
 h2(#keepproxy). keepproxy
 
@@ -70,6 +74,9 @@ h2(#arv-git-httpd). arv-git-httpd
 
 The legacy arv-git-httpd config (loaded from @/etc/arvados/git-httpd/git-httpd.yml@ or a different location specified via -legacy-git-httpd-config command line argument) takes precedence over the centralized config. After you migrate everything from the legacy config to the centralized config, you should delete @/etc/arvados/git-httpd/git-httpd.yml@ and stop using the -legacy-git-httpd-config argument.
 
+h2(#keepbalance). keep-balance
+
+The legacy keep-balance config (loaded from @/etc/arvados/keep-balance/keep-balance.yml@ or a different location specified via -legacy-keepbalance-config command line argument) takes precedence over the centralized config. After you migrate everything from the legacy config to the centralized config, you should delete @/etc/arvados/keep-balance/keep-balance.yml@ and stop using the -legacy-keepbalance-config argument.
 
 h2. arvados-controller
 

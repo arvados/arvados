@@ -10,10 +10,11 @@ import (
 	"git.curoverse.com/arvados.git/lib/cmd"
 	"git.curoverse.com/arvados.git/lib/service"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 var Command cmd.Handler = service.Command(arvados.ServiceNameController, newHandler)
 
-func newHandler(_ context.Context, cluster *arvados.Cluster, _ string) service.Handler {
+func newHandler(_ context.Context, cluster *arvados.Cluster, _ string, _ *prometheus.Registry) service.Handler {
 	return &Handler{Cluster: cluster}
 }

@@ -13,6 +13,7 @@ import (
 	"git.curoverse.com/arvados.git/lib/config"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	check "gopkg.in/check.v1"
 	git_client "gopkg.in/src-d/go-git.v4/plumbing/transport/client"
 	git_http "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
@@ -205,7 +206,7 @@ func (s *GitMountSuite) checkTmpdirContents(c *check.C, expect []string) {
 func (*GitMountSuite) useTestGitServer(c *check.C) {
 	git_client.InstallProtocol("https", git_http.NewClient(arvados.InsecureHTTPClient))
 
-	loader := config.NewLoader(nil, nil)
+	loader := config.NewLoader(nil, ctxlog.TestLogger(c))
 	cfg, err := loader.Load()
 	c.Assert(err, check.IsNil)
 	cluster, err := cfg.GetCluster("")

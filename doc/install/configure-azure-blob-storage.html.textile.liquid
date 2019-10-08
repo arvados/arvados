@@ -17,9 +17,9 @@ Before starting the configuration of individual keepstore servers is good to hav
 
 Another decision is how many VMs should be running keepstore. For example there could be 8 VMs with one core each or one machine with 8 cores. Or anything in between. Assuming is the same cost for Cloud resources, there is always the benefit of distributing the risk of faulty VMs. The recommendation is to start with 2 VMs and expand in pairs. Having a minimum of 2 cores each. The total amount of VMs will be a function of the budget and the pipeline traffic to avoid saturation during periods of high usage. Standard D v3 family is a balanced choice, making Standard_D2_v3 the 2-core option
 
-There are many options for storage accounts. You can read details from Azure on their documentation https://docs.microsoft.com/en-us/azure/storage/common/storage-introduction. The type of storage and access tier will be a function of the budget and desired responsiveness. A balanced option is to have General-purpose Standard Storage account and use Blob storage, hot access tiers.
+There are many options for storage accounts. You can read details from Azure on their documentation "https://docs.microsoft.com/en-us/azure/storage/common/storage-introduction":https://docs.microsoft.com/en-us/azure/storage/common/storage-introduction. The type of storage and access tier will be a function of the budget and desired responsiveness. A balanced option is to have General-purpose Standard Storage account and use Blob storage, hot access tiers.
 
-Keepstore can be configure to reflect the level of underlaying redundancy the storage will have. This is call data replication option. For example LRS (Locally Redundant Storage) saves 3 copies of the data. There desired redundancy can be chosen at the keepstore layer or at the Storage Accunt layer. The decision where the redundancy will be done and the type of Storage Account data replication (LRS, ZRS, GRS and RA-GRS) has trade-offs. Please read more on https://docs.microsoft.com/en-us/azure/storage/common/storage-redundancy and decide what is best for your needs.
+Keepstore can be configure to reflect the level of underlaying redundancy the storage will have. This is call data replication option. For example LRS (Locally Redundant Storage) saves 3 copies of the data. There desired redundancy can be chosen at the keepstore layer or at the Storage Accunt layer. The decision where the redundancy will be done and the type of Storage Account data replication (LRS, ZRS, GRS and RA-GRS) has trade-offs. Please read more on "https://docs.microsoft.com/en-us/azure/storage/common/storage-redundancy":https://docs.microsoft.com/en-us/azure/storage/common/storage-redundancy and decide what is best for your needs.
 
 h2. Create a storage container
 
@@ -42,72 +42,88 @@ azure storage container create exampleContainerName</span>
 </code></pre>
 </notextile>
 
-Note that Keepstore services may be configued to use multiple Azure Storage accounts and multiple containers within a storage account.
+Note that Keepstore services may be configured to use multiple Azure Storage accounts and multiple containers within a storage account.
 
 h2. Configure keepstore
 
-Copy the primary storage account key to a file where it will be accessible to keepstore at startup time.
+Volumes are configured in the @Volumes@ section of the cluster configuration file.
 
-<notextile>
-<pre><code>~$ <span class="userinput">sudo sh -c 'cat &gt;/etc/arvados/keepstore/azure_storage_account_key.txt &lt;&lt;EOF'
-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz==
-EOF</span>
-~$ <span class="userinput">sudo chmod 0400 /etc/arvados/keepstore/azure_storage_account_key.txt</span>
-</code></pre>
-</notextile>
+{% include 'assign_volume_uuid' %}
 
-Next, edit the @Volumes@ section of the @keepstore.yml@ config file:
+<notextile><pre><code>Clusters:
+  <span class="userinput">uuid_prefix</span>:
+    Volumes:
+      <span class="userinput">uuid_prefix</span>-nyw5e-<span class="userinput">000000000000000</span>:
+        AccessViaHosts:
+          # This section determines which keepstore servers access the
+          # volume. In this example, keep0 has read/write access, and
+          # keep1 has read-only access.
+          #
+          # If the AccessViaHosts section is empty or omitted, all
+          # keepstore servers will have read/write access to the
+          # volume.
+          "http://<span class="userinput">keep0.uuid_prefix.example.com</span>:25107/": {}
+          "http://<span class="userinput">keep1.uuid_prefix.example.com</span>:25107/": {ReadOnly: true}
 
-<pre>
-Volumes:
-- # The volume type, this indicates Azure blob storage
-  Type: Azure
+        Driver: Azure
+        DriverParameters:
+          # Storage account name and secret key, used for
+          # authentication.
+          StorageAccountName: exampleStorageAccountName
+          StorageAccountKey: zzzzzzzzzzzzzzzzzzzzzzzzzz
 
-  # How much replication is performed by the underlying container.
-  # This is used to inform replication decisions at the Keep layer.
-  AzureReplication: 3
+          # The cloud environment to use,
+          # e.g. "core.chinacloudapi.cn". Defaults to
+          # "core.windows.net" if blank or omitted.
+          StorageBaseURL: ""
 
-  # The storage container to use for the backing store.
-  ContainerName: exampleContainerName
+          # Storage container name.
+          ContainerName: exampleContainerName
 
-  # If true, do not accept write or trash operations, only reads.
-  ReadOnly: false
+          # Time to wait for an upstream response before failing the
+          # request.
+          RequestTimeout: 10m
 
-  # Amount of time to wait for a response before failing the request
-  RequestTimeout: 2m0s
+          # Time to wait before retrying a failed "list blobs" Azure
+          # API call.
+          ListBlobsRetryDelay: 10s
 
-  # The storage account name, used for authentication
-  StorageAccountName: exampleStorageAccountName
+          # Maximum attempts at a "list blobs" Azure API call before
+          # giving up.
+          ListBlobsMaxAttempts: 12
 
-  # The storage account secret key, used for authentication
-  StorageAccountKeyFile: /etc/arvados/keepstore/azure_storage_account_key.txt
+          # If non-zero, use multiple concurrent requests (each
+          # requesting MaxGetBytes bytes) when retrieving data. If
+          # zero or omitted, get the entire blob with one request.
+          #
+          # Normally this is zero but if you find that 4 small
+          # requests complete faster than a single large request, for
+          # example, you might set this to 16777216 (64 MiB ÷ 4).
+          MaxGetBytes: 0
 
-  # The cloud environment to use.  If blank, use the default cloud
-  # environment.  See below for an example of an alternate cloud environment.
-  StorageBaseURL: ""
+          # Time to wait for an unexpectedly empty blob to become
+          # non-empty. Azure's create-and-write operation is not
+          # atomic. The default value typically allows concurrent GET
+          # and PUT requests to succeed despite the race window.
+          WriteRaceInterval: 15s
 
-  # Storage classes to associate with this volume.  See "Storage
-  # classes" in the "Admin" section of doc.arvados.org.
-  StorageClasses: null
+          # Time to wait between GET attempts while waiting for
+          # WriteRaceInterval to expire.
+          WriteRacePollTime: 1s
 
-- # Example configuration to use Azure China.
-  #
-  # The alternate cloud environment to use.
-  # Note that cloud environments are different from regions.  A
-  # cloud environment is an entirely separate instance of Azure with
-  # separate accounts, requiring separate credentials.
-  #
-  StorageBaseURL: core.chinacloudapi.cn
-  StorageAccountKeyFile: /etc/arvados/keepstore/azure_cn_storage_account_key.txt
-  StorageAccountName: cn-account-name
-  ContainerName: exampleChinaContainerName
+        # How much replication is provided by the underlying storage
+        # container.  This is used to inform replication decisions at
+        # the Keep layer.
+        Replication: 3
 
-  # The rest are the same as above
-  Type: Azure
-  AzureReplication: 3
-  ReadOnly: false
-  RequestTimeout: 10m0s
-  StorageClasses: null
-</pre>
+        # If true, do not accept write or trash operations, even if
+        # AccessViaHosts.*.ReadOnly is false.
+        #
+        # If false or omitted, enable write access (subject to
+        # AccessViaHosts.*.ReadOnly, where applicable).
+        ReadOnly: false
 
-Start (or restart) keepstore, and check its log file to confirm it is using the new configuration.
+        # Storage classes to associate with this volume.  See "Storage
+        # classes" in the "Admin" section of doc.arvados.org.
+        StorageClasses: null
+</code></pre></notextile>

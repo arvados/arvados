@@ -66,7 +66,7 @@ type Balancer struct {
 // Typical usage:
 //
 //   runOptions, err = (&Balancer{}).Run(config, runOptions)
-func (bal *Balancer) Run(config Config, runOptions RunOptions) (nextRunOptions RunOptions, err error) {
+func (bal *Balancer) Run(client *arvados.Client, cluster *arvados.Cluster, runOptions RunOptions) (nextRunOptions RunOptions, err error) {
 	nextRunOptions = runOptions
 
 	defer bal.time("sweep", "wall clock time to run one full sweep")()
@@ -95,24 +95,20 @@ func (bal *Balancer) Run(config Config, runOptions RunOptions) (nextRunOptions R
 		bal.lostBlocks = ioutil.Discard
 	}
 
-	if len(config.KeepServiceList.Items) > 0 {
-		err = bal.SetKeepServices(config.KeepServiceList)
-	} else {
-		err = bal.DiscoverKeepServices(&config.Client, config.KeepServiceTypes)
-	}
+	err = bal.DiscoverKeepServices(client)
 	if err != nil {
 		return
 	}
 
 	for _, srv := range bal.KeepServices {
-		err = srv.discoverMounts(&config.Client)
+		err = srv.discoverMounts(client)
 		if err != nil {
 			return
 		}
 	}
 	bal.cleanupMounts()
 
-	if err = bal.CheckSanityEarly(&config.Client); err != nil {
+	if err = bal.CheckSanityEarly(client); err != nil {
 		return
 	}
 	rs := bal.rendezvousState()
@@ -121,7 +117,7 @@ func (bal *Balancer) Run(config Config, runOptions RunOptions) (nextRunOptions R
 			bal.logf("notice: KeepServices list has changed since last run")
 		}
 		bal.logf("clearing existing trash lists, in case the new rendezvous order differs from previous run")
-		if err = bal.ClearTrashLists(&config.Client); err != nil {
+		if err = bal.ClearTrashLists(client); err != nil {
 			return
 		}
 		// The current rendezvous state becomes "safe" (i.e.,
@@ -130,7 +126,7 @@ func (bal *Balancer) Run(config Config, runOptions RunOptions) (nextRunOptions R
 		// succeed in clearing existing trash lists.
 		nextRunOptions.SafeRendezvousState = rs
 	}
-	if err = bal.GetCurrentState(&config.Client, config.CollectionBatchSize, config.CollectionBuffers); err != nil {
+	if err = bal.GetCurrentState(client, cluster.Collections.BalanceCollectionBatch, cluster.Collections.BalanceCollectionBuffers); err != nil {
 		return
 	}
 	bal.ComputeChangeSets()
@@ -150,14 +146,14 @@ func (bal *Balancer) Run(config Config, runOptions RunOptions) (nextRunOptions R
 		lbFile = nil
 	}
 	if runOptions.CommitPulls {
-		err = bal.CommitPulls(&config.Client)
+		err = bal.CommitPulls(client)
 		if err != nil {
 			// Skip trash if we can't pull. (Too cautious?)
 			return
 		}
 	}
 	if runOptions.CommitTrash {
-		err = bal.CommitTrash(&config.Client)
+		err = bal.CommitTrash(client)
 	}
 	return
 }
@@ -176,15 +172,11 @@ func (bal *Balancer) SetKeepServices(srvList arvados.KeepServiceList) error {
 
 // DiscoverKeepServices sets the list of KeepServices by calling the
 // API to get a list of all services, and selecting the ones whose
-// ServiceType is in okTypes.
-func (bal *Balancer) DiscoverKeepServices(c *arvados.Client, okTypes []string) error {
+// ServiceType is "disk"
+func (bal *Balancer) DiscoverKeepServices(c *arvados.Client) error {
 	bal.KeepServices = make(map[string]*KeepService)
-	ok := make(map[string]bool)
-	for _, t := range okTypes {
-		ok[t] = true
-	}
 	return c.EachKeepService(func(srv arvados.KeepService) error {
-		if ok[srv.ServiceType] {
+		if srv.ServiceType == "disk" {
 			bal.KeepServices[srv.UUID] = &KeepService{
 				KeepService: srv,
 				ChangeSet:   &ChangeSet{},
@@ -449,7 +441,7 @@ func (bal *Balancer) addCollection(coll arvados.Collection) error {
 	if coll.ReplicationDesired != nil {
 		repl = *coll.ReplicationDesired
 	}
-	debugf("%v: %d block x%d", coll.UUID, len(blkids), repl)
+	bal.Logger.Debugf("%v: %d block x%d", coll.UUID, len(blkids), repl)
 	// Pass pdh to IncreaseDesired only if LostBlocksFile is being
 	// written -- otherwise it's just a waste of memory.
 	pdh := ""
@@ -523,7 +515,7 @@ func (bal *Balancer) setupLookupTables() {
 				bal.mountsByClass["default"][mnt] = true
 				continue
 			}
-			for _, class := range mnt.StorageClasses {
+			for class := range mnt.StorageClasses {
 				if mbc := bal.mountsByClass[class]; mbc == nil {
 					bal.classes = append(bal.classes, class)
 					bal.mountsByClass[class] = map[*KeepMount]bool{mnt: true}
@@ -566,7 +558,7 @@ type balanceResult struct {
 // balanceBlock compares current state to desired state for a single
 // block, and makes the appropriate ChangeSet calls.
 func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) balanceResult {
-	debugf("balanceBlock: %v %+v", blkid, blk)
+	bal.Logger.Debugf("balanceBlock: %v %+v", blkid, blk)
 
 	type slot struct {
 		mnt  *KeepMount // never nil

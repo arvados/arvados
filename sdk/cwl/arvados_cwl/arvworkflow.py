@@ -295,6 +295,12 @@ class ArvadosWorkflow(Workflow):
         self.loadingContext.metadata = self.loadingContext.metadata.copy()
         self.loadingContext.metadata["http://commonwl.org/cwltool#original_cwlVersion"] = "v1.0"
 
+        if len(job_res_reqs) == 1:
+            # RAM request needs to be at least 128 MiB or the workflow
+            # runner itself won't run reliably.
+            if job_res_reqs[0].get("ramMin", 1024) < 128:
+                job_res_reqs[0]["ramMin"] = 128
+
         wf_runner = cmap({
             "class": "CommandLineTool",
             "baseCommand": "cwltool",

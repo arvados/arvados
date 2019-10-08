@@ -36,7 +36,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
 
 <%
   recent_procs_panel_width = 6
-  if !PipelineInstance.api_exists?(:index)
+  if !PipelineInstance.api_exists?(:create)
     recent_procs_title = 'Recent processes'
     run_proc_title = 'Choose a workflow to run:'
     show_node_status = false

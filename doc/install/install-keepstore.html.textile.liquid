@@ -11,6 +11,15 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 Keepstore provides access to underlying storage for reading and writing content-addressed blocks, with enforcement of Arvados permissions.  Keepstore supports a variety of cloud object storage and POSIX filesystems for its backing store.
 
+h3. Plan your storage layout
+
+In the steps below, you will configure a number of backend storage volumes (like local filesystems and S3 buckets) and specify which keepstore servers have read-only and read-write access to which volumes.
+
+It is possible to configure arbitrary server/volume layouts. However, in order to provide good performance and efficient use of storage resources, we strongly recommend using one of the following layouts:
+
+# Each volume is writable by exactly one server, and optionally readable by one or more other servers. The total capacity of all writable volumes is the same for each server.
+# Each volume is writable by all servers. Each volume has enough built-in redundancy to satisfy your requirements, i.e., you do not need Arvados to mirror data across multiple volumes.
+
 We recommend starting off with two Keepstore servers.  Exact server specifications will be site and workload specific, but in general keepstore will be I/O bound and should be set up to maximize aggregate bandwidth with compute nodes.  To increase capacity (either space or throughput) it is straightforward to add additional servers, or (in cloud environments) to increase the machine size of the existing servers.
 
 By convention, we use the following hostname pattern:
@@ -47,128 +56,32 @@ Verify that Keepstore is functional:
 </code></pre>
 </notextile>
 
-h3. Create config file
+h3. Create a superuser token
 
-By default, keepstore will look for its configuration file at @/etc/arvados/keepstore/keepstore.yml@
+If you haven't already done so, create a superuser token.
 
-You can override the configuration file location using the @-config@ command line option to keepstore.
+{% include 'create_superuser_token' %}
 
-The following is a sample configuration file:
+h3. Update cluster config file
 
-<pre>
-# Duration for which new permission signatures (returned in PUT
-# responses) will be valid.  This should be equal to the API
-# server's blob_signature_ttl configuration entry.
-BlobSignatureTTL: 336h0m0s
+Add or update the following sections of @/etc/arvados/config.yml@ as needed. Refer to the examples and comments in the "default config.yml file":{{site.baseurl}}/admin/config.html for more information.
 
-# Local file containing the secret blob signing key (used to generate
-# and verify blob signatures).  The contents of the key file must be
-# identical to the API server's blob_signing_key configuration entry.
-BlobSigningKeyFile: ""
+<notextile>
+<pre><code>Clusters:
+  <span class="userinput">uuid_prefix</span>:
+    SystemRootToken: zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
+    Services:
+      Keepstore:
+        InternalURLs:
+          "http://<span class="userinput">keep0.uuid_prefix.example.com</span>:25107/": {}
+    API:
+      MaxKeepBlobBuffers: 128
+</code></pre>
+</notextile>
 
-# Print extra debug logging
-Debug: false
+h3. Note on storage management
 
-# Maximum number of concurrent block deletion operations (per
-# volume) when emptying trash. Default is 1.
-EmptyTrashWorkers: 1
-
-# Enable trash and delete features. If false, trash lists will be
-# accepted but blocks will not be trashed or deleted.
-# Keepstore does not delete data on its own.  The keep-balance
-# service determines which blocks are candidates for deletion
-# and instructs the keepstore to move those blocks to the trash.
-EnableDelete: true
-
-# Local port to listen on. Can be 'address:port' or ':port', where
-# 'address' is a host IP address or name and 'port' is a port number
-# or name.
-Listen: :25107
-
-# Format of request/response and error logs: "json" or "text".
-LogFormat: json
-
-# The secret key that must be provided by monitoring services when
-# using the health check and metrics endpoints (/_health, /metrics).
-ManagementToken: xyzzy
-
-# Maximum RAM to use for data buffers, given in multiples of block
-# size (64 MiB). When this limit is reached, HTTP requests requiring
-# buffers (like GET and PUT) will wait for buffer space to be
-# released.
-#
-# It should be set such that MaxBuffers * 64MiB + 10% fits
-# comfortably in memory. On a host dedicated to running keepstore,
-# divide total memory by 88MiB to suggest a suitable value. For example,
-# if grep MemTotal /proc/meminfo reports MemTotal: 7125440 kB,
-# compute 7125440 / (88 * 1024)=79 and configure MaxBuffers: 79
-MaxBuffers: 128
-
-# Maximum concurrent requests. When this limit is reached, new
-# requests will receive 503 responses. Note: this limit does not
-# include idle connections from clients using HTTP keepalive, so it
-# does not strictly limit the number of concurrent connections. If
-# omitted or zero, the default is 2 * MaxBuffers.
-MaxRequests: 0
-
-# Path to write PID file during startup. This file is kept open and
-# locked with LOCK_EX until keepstore exits, so "fuser -k pidfile" is
-# one way to shut down. Exit immediately if there is an error
-# opening, locking, or writing the PID file.
-PIDFile: ""
-
-# Maximum number of concurrent pull operations. Default is 1, i.e.,
-# pull lists are processed serially.  A pull operation copies a block
-# from another keepstore server.
-PullWorkers: 1
-
-# Honor read requests only if a valid signature is provided.  This
-# should be true, except for development use and when migrating from
-# a very old version.
-RequireSignatures: true
-
-# Local file containing the Arvados API token used by keep-balance
-# or data manager.  Delete, trash, and index requests are honored
-# only for this token.
-SystemAuthTokenFile: ""
-
-# Path to server certificate file in X509 format. Enables TLS mode.
-#
-# Example: /var/lib/acme/live/keep0.example.com/fullchain
-TLSCertificateFile: ""
-
-# Path to server key file in X509 format. Enables TLS mode.
-#
-# The key pair is read from disk during startup, and whenever SIGHUP
-# is received.
-#
-# Example: /var/lib/acme/live/keep0.example.com/privkey
-TLSKeyFile: ""
-
-# How often to check for (and delete) trashed blocks whose
-# TrashLifetime has expired.
-TrashCheckInterval: 24h0m0s
-
-# Time duration after a block is trashed during which it can be
-# recovered using an /untrash request.
-TrashLifetime: 336h0m0s
-
-# Maximum number of concurrent trash operations (moving a block to the
-# trash, or permanently deleting it) . Default is 1, i.e., trash lists
-# are processed serially.  If individual trash operations have high
-# latency (eg some cloud platforms) you should increase this.
-TrashWorkers: 1
-</pre>
-
-h3. Notes on storage management
-
-On its own, a keepstore server never deletes data.  The "keep-balance":install-keep-balance.html service determines which blocks are candidates for deletion and instructs the keepstore to move those blocks to the trash.
-
-When a block is newly written, it is protected from deletion for the duration in @BlobSignatureTTL@.  During this time, it cannot be trashed.
-
-If keep-balance instructs keepstore to trash a block which is older than @BlobSignatureTTL@, and @EnableDelete@ is true, the block will be moved to "trash".  A block which is in the trash is no longer accessible by read requests, but has not yet been permanently deleted.  Blocks which are in the trash may be recovered using the "untrash" API endpoint.  Blocks are permanently deleted after they have been in the trash for the duration in @TrashLifetime@.
-
-Keep-balance is also responsible for balancing the distribution of blocks across keepstore servers by asking servers to pull blocks from other servers (as determined by their "storage class":{{site.baseurl}}/admin/storage-classes.html and "rendezvous hashing order":{{site.baseurl}}/api/storage.html).  Pulling a block makes a copy.  If a block is overreplicated (i.e. there are excess copies) after pulling, it will be subsequently trashed on the original server.
+On its own, a keepstore server never deletes data. Instead, the keep-balance service determines which blocks are candidates for deletion and instructs the keepstore to move those blocks to the trash. Please see the "Balancing Keep servers":{{site.baseurl}}/admin/keep-balance.html for more details.
 
 h3. Configure storage volumes
 
@@ -178,7 +91,30 @@ Available storage volume types include POSIX filesystems and cloud object storag
 * If you are using S3-compatible object storage (including Amazon S3, Google Cloud Storage, and Ceph RADOS), follow the setup instructions on "S3 Object Storage":configure-s3-object-storage.html
 * If you are using Azure Blob Storage, follow the setup instructions on "Azure Blob Storage":configure-azure-blob-storage.html
 
-h3. Run keepstore as a supervised service
+h2. Run keepstore as a supervised service
+
+h3. Start the service (option 1: systemd)
+
+If your system does not use systemd, skip this section and follow the "runit instructions":#runit instead.
+
+If your system uses systemd, the keepstore service should already be set up. Restart it to read the updated configuration, and check its status:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo systemctl restart keepstore</span>
+~$ <span class="userinput">sudo systemctl status keepstore</span>
+&#x25cf; keepstore.service - Arvados Keep Storage Daemon
+   Loaded: loaded (/etc/systemd/system/keepstore.service; enabled; vendor preset: enabled)
+   Active: active (running) since Tue 2019-09-10 14:16:29 UTC; 1s ago
+     Docs: https://doc.arvados.org/
+ Main PID: 25465 (keepstore)
+    Tasks: 9 (limit: 4915)
+   CGroup: /system.slice/keepstore.service
+           └─25465 /usr/bin/keepstore
+[...]
+</code></pre>
+</notextile>
+
+h3(#runit). Start the service (option 2: runit)
 
 Install runit to supervise the keepstore daemon.  {% include 'install_runit' %}
 
@@ -188,45 +124,23 @@ Install this script as the run script @/etc/sv/keepstore/run@ for the keepstore 
 <pre><code>#!/bin/sh
 
 exec 2>&1
-GOGC=10 exec keepstore -config /etc/arvados/keepstore/keepstore.yml
+GOGC=10 exec keepstore
 </code></pre>
 </notextile>
 
-h3. Set up additional servers
+h2. Set up additional servers
 
 Repeat the above sections to prepare volumes and bring up supervised services on each Keepstore server you are setting up.
 
-h3. Tell the API server about the Keepstore servers
+h2. Restart the API server and controller
 
-The API server needs to be informed about the presence of your Keepstore servers.
-
-First, if you don't already have an admin token, create a superuser token.
-
-{% include 'create_superuser_token' %}
-
-Configure your environment to run @arv@ using the output of create_superuser_token.rb:
+After adding all of your keepstore servers to the Services section, make sure the cluster config file is up to date on the API server host, and restart the API server and controller processes to ensure the changes are applied.
 
 <pre>
-export ARVADOS_API_HOST=zzzzz.example.com
-export ARVADOS_API_TOKEN=zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
+sudo systemctl restart nginx arvados-controller
 </pre>
 
-Use this command to register each keepstore server you have installed.  Make sure to update the @service_host@ value.
-
-<notextile>
-<pre><code>~$ <span class="userinput">uuid_prefix=`arv --format=uuid user current | cut -d- -f1`</span>
-~$ <span class="userinput">echo "Site prefix is '$uuid_prefix'"</span>
-~$ <span class="userinput">read -rd $'\000' keepservice &lt;&lt;EOF; arv keep_service create --keep-service "$keepservice"</span>
-<span class="userinput">{
- "service_host":"<strong>keep0.$uuid_prefix.your.domain</strong>",
- "service_port":25107,
- "service_ssl_flag":false,
- "service_type":"disk"
-}
-EOF</span>
-</code></pre></notextile>
-
-h3(#testing). Testing keep
+h2(#testing). Testing keep
 
 Install the "Python SDK":{{site.baseurl}}/sdk/python/sdk-python.html
 
