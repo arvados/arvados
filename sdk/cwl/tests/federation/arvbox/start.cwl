@@ -10,6 +10,7 @@ $namespaces:
 inputs:
   container_name: string
   arvbox_data: Directory
+  arvbox_bin: File
 outputs:
   cluster_id:
     type: string
@@ -66,7 +67,7 @@ requirements:
 arguments:
   - shellQuote: false
     valueFrom: |
-      set -e
-      arvbox start dev
-      arvbox status > status.txt
-      arvbox cat /var/lib/arvados/superuser_token > superuser_token.txt
+      set -ex
+      $(inputs.arvbox_bin.path) start dev
+      $(inputs.arvbox_bin.path) status > status.txt
+      $(inputs.arvbox_bin.path) cat /var/lib/arvados/superuser_token > superuser_token.txt

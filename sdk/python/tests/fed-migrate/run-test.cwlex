@@ -22,7 +22,8 @@ def workflow main(
       EnvVarRequirement {
         envDef: {
           ARVADOS_API_HOST: "$(inputs.host)",
-          ARVADOS_API_TOKEN: "$(inputs.token)"
+          ARVADOS_API_TOKEN: "$(inputs.token)",
+	  ARVADOS_API_HOST_INSECURE: "1"
 	}
       }
     }

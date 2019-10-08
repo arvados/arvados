@@ -3,6 +3,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+#
+# Migration tool for merging user accounts belonging to the same user
+# but on separate clusters to use a single user account managed by a
+# specific cluster.
+#
+# If you're working on this, see
+# arvados/sdk/python/tests/fed-migrate/README for information about
+# the testing infrastructure.
+
 import arvados
 import arvados.util
 import arvados.errors
@@ -67,7 +76,7 @@ def connect_clusters(args):
             continue
 
         if not cur["is_admin"]:
-            errors.append("Not admin of %s" % host)
+            errors.append("User %s is not admin on %s" % (cur["uuid"], arv._rootDesc["uuidPrefix"]))
             continue
 
         for r in clusters:

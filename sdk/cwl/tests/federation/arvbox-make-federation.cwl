@@ -22,6 +22,11 @@ inputs:
   insecure:
     type: boolean
     default: true
+  arvbox:
+    type: File
+    default:
+      class: File
+      location: ../../../../tools/arvbox/bin/arvbox
 outputs:
   arvados_api_token:
     type: string
@@ -44,6 +49,9 @@ outputs:
   arvbox_containers:
     type: string[]
     outputSource: containers
+  arvbox_bin:
+    type: File
+    outputSource: arvbox
 steps:
   mkdir:
     in:
@@ -55,6 +63,7 @@ steps:
     in:
       container_name: containers
       arvbox_data: mkdir/arvbox_data
+      arvbox_bin: arvbox
     out: [cluster_id, container_host, arvbox_data_out, superuser_token]
     scatter: [container_name, arvbox_data]
     scatterMethod: dotproduct
@@ -66,6 +75,7 @@ steps:
       cluster_ids: start/cluster_id
       cluster_hosts: start/container_host
       arvbox_data: start/arvbox_data_out
+      arvbox_bin: arvbox
     out: []
     scatter: [container_name, this_cluster_id, arvbox_data]
     scatterMethod: dotproduct

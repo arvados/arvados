@@ -18,6 +18,9 @@ outputs:
   arvbox_containers:
     type: string[]
     outputSource: start/arvbox_containers
+  arvbox_bin:
+    type: File
+    outputSource: start/arvbox_bin
 requirements:
   SubworkflowFeatureRequirement: {}
   cwltool:LoadListingRequirement:
@@ -26,5 +29,5 @@ steps:
   start:
     in:
       arvbox_base: arvbox_base
-    out: [arvados_api_hosts, arvados_cluster_ids, arvado_api_host_insecure, superuser_tokens, arvbox_containers]
+    out: [arvados_api_hosts, arvados_cluster_ids, arvado_api_host_insecure, superuser_tokens, arvbox_containers, arvbox_bin]
     run: ../../../cwl/tests/federation/arvbox-make-federation.cwl

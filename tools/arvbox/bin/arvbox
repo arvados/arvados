@@ -19,11 +19,13 @@ if ! which docker >/dev/null 2>/dev/null ; then
 fi
 
 if test -z "$ARVBOX_DOCKER" ; then
+    set +e
     if which greadlink >/dev/null 2>/dev/null ; then
         ARVBOX_DOCKER=$(greadlink -f $(dirname $0)/../lib/arvbox/docker)
     else
         ARVBOX_DOCKER=$(readlink -f $(dirname $0)/../lib/arvbox/docker)
     fi
+    set -e
 fi
 
 if test -z "$ARVBOX_CONTAINER" ; then

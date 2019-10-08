@@ -131,6 +131,7 @@ $graph:
             - class: EnvVarRequirement
               envDef:
                 ARVADOS_API_HOST: $(inputs.host)
+                ARVADOS_API_HOST_INSECURE: '1'
                 ARVADOS_API_TOKEN: $(inputs.token)
           steps:
             - id: main_2_embed_1
@@ -334,6 +335,11 @@ $graph:
       - default: arv-federation-migrate
         id: fed_migrate
         type: string
+      - id: arvbox_bin
+        type: File
+      - default: 15531-logincluster-migrate
+        id: refspec
+        type: string
     outputs:
       - id: supertok
         outputSource: main_2/supertok
@@ -369,6 +375,8 @@ $graph:
               type: string
       - id: main_2
         in:
+          arvbox_bin:
+            source: arvbox_bin
           cluster_id:
             source: arvados_cluster_ids
           container:
@@ -377,6 +385,8 @@ $graph:
             source: arvados_api_hosts
           logincluster:
             source: main_1/logincluster
+          refspec:
+            source: refspec
         out:
           - supertok
         run:
@@ -390,6 +400,10 @@ $graph:
             - id: host
               type: string
             - id: logincluster
+              type: string
+            - id: arvbox_bin
+              type: File
+            - id: refspec
               type: string
           outputs:
             - id: supertok
@@ -456,12 +470,16 @@ $graph:
                   InlineJavascriptRequirement: {}
             - id: main_2_embed_2
               in:
+                arvbox_bin:
+                  source: arvbox_bin
                 c:
                   source: main_2_embed_1/c
                 container:
                   source: container
                 host:
                   source: host
+                refspec:
+                  source: refspec
               out:
                 - d
               run:
@@ -475,7 +493,11 @@ $graph:
                     type: string
                   - id: host
                     type: string
+                  - id: arvbox_bin
+                    type: File
                   - id: c
+                    type: string
+                  - id: refspec
                     type: string
                 outputs:
                   - id: d
@@ -486,9 +508,21 @@ $graph:
                   InitialWorkDirRequirement:
                     listing:
                       - entry: >
-                          set -x
+                          set -xe
 
-                          arvbox hotreset
+                          $(inputs.arvbox_bin.path) pipe <<EOF
+
+                          cd /usr/src/arvados
+
+                          git fetch
+
+                          git checkout -f $(inputs.refspec)
+
+                          EOF
+
+
+                          $(inputs.arvbox_bin.path) hotreset
+
 
                           while ! curl --fail --insecure --silent
                           https://$(inputs.host)/discovery/v1/apis/arvados/v1/rest
@@ -496,13 +530,13 @@ $graph:
 
                           export ARVADOS_API_HOST=$(inputs.host)
 
-                          export ARVADOS_API_TOKEN=\$(arvbox cat
-                          /var/lib/arvados/superuser_token)
+                          export ARVADOS_API_TOKEN=\$($(inputs.arvbox_bin.path)
+                          cat /var/lib/arvados/superuser_token)
 
                           export ARVADOS_API_HOST_INSECURE=1
 
-                          ARVADOS_VIRTUAL_MACHINE_UUID=\$(arvbox cat
-                          /var/lib/arvados/vm-uuid)
+                          ARVADOS_VIRTUAL_MACHINE_UUID=\$($(inputs.arvbox_bin.path)
+                          cat /var/lib/arvados/vm-uuid)
 
                           while ! python -c "import arvados ;
                           arvados.api().virtual_machines().get(uuid='$ARVADOS_VIRTUAL_MACHINE_UUID').execute()"

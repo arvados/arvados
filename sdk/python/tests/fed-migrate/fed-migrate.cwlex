@@ -6,7 +6,9 @@ def workflow main(
   arvados_cluster_ids string[],
   superuser_tokens string[],
   arvbox_containers string[],
-  fed_migrate="arv-federation-migrate"
+  fed_migrate="arv-federation-migrate",
+  arvbox_bin File,
+  refspec="15531-logincluster-migrate"
 ) {
 
   logincluster = run expr (arvados_cluster_ids) string (inputs.arvados_cluster_ids[0])
@@ -14,7 +16,7 @@ def workflow main(
   scatter arvbox_containers as container,
           arvados_cluster_ids as cluster_id,
 	  arvados_api_hosts as host
-    do run workflow(logincluster)
+    do run workflow(logincluster, arvbox_bin, refspec)
   {
     requirements {
       EnvVarRequirement {
@@ -34,15 +36,22 @@ docker cp cluster_config.yml.override $(inputs.container):/var/lib/arvados
 >>>
       return container as c
     }
-    run tool(container, host, c) {
+    run tool(container, host, arvbox_bin, c, refspec) {
 sh <<<
-set -x
-arvbox hotreset
+set -xe
+$(inputs.arvbox_bin.path) pipe <<EOF
+cd /usr/src/arvados
+git fetch
+git checkout -f $(inputs.refspec)
+EOF
+
+$(inputs.arvbox_bin.path) hotreset
+
 while ! curl --fail --insecure --silent https://$(inputs.host)/discovery/v1/apis/arvados/v1/rest >/dev/null ; do sleep 3 ; done
 export ARVADOS_API_HOST=$(inputs.host)
-export ARVADOS_API_TOKEN=\$(arvbox cat /var/lib/arvados/superuser_token)
+export ARVADOS_API_TOKEN=\$($(inputs.arvbox_bin.path) cat /var/lib/arvados/superuser_token)
 export ARVADOS_API_HOST_INSECURE=1
-ARVADOS_VIRTUAL_MACHINE_UUID=\$(arvbox cat /var/lib/arvados/vm-uuid)
+ARVADOS_VIRTUAL_MACHINE_UUID=\$($(inputs.arvbox_bin.path) cat /var/lib/arvados/vm-uuid)
 while ! python -c "import arvados ; arvados.api().virtual_machines().get(uuid='$ARVADOS_VIRTUAL_MACHINE_UUID').execute()" 2>/dev/null ; do sleep 3; done
 >>>
       return c as d

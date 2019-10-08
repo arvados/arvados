@@ -13,6 +13,7 @@ inputs:
   cluster_ids: string[]
   cluster_hosts: string[]
   arvbox_data: Directory
+  arvbox_bin: File
 outputs:
   arvbox_data_out:
     type: Directory
@@ -60,7 +61,7 @@ arguments:
     valueFrom: |
       docker cp cluster_config.yml.override $(inputs.container_name):/var/lib/arvados
       docker cp application.yml.override $(inputs.container_name):/usr/src/arvados/services/api/config
-      arvbox sv restart api
-      arvbox sv restart controller
-      arvbox sv restart keepstore0
-      arvbox sv restart keepstore1
+      $(inputs.arvbox_bin.path) sv restart api
+      $(inputs.arvbox_bin.path) sv restart controller
+      $(inputs.arvbox_bin.path) sv restart keepstore0
+      $(inputs.arvbox_bin.path) sv restart keepstore1
