@@ -6,7 +6,7 @@
 exec 2>&1
 set -ex -o pipefail
 
-if [[ -s /etc/arvados/config.yml ]] ; then
+if [[ -s /etc/arvados/config.yml ]] && [[ /var/lib/arvados/cluster_config.yml.override -ot /etc/arvados/config.yml ]] ; then
    exit
 fi
 
