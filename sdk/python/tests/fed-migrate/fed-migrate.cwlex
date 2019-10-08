@@ -43,6 +43,8 @@ $(inputs.arvbox_bin.path) pipe <<EOF
 cd /usr/src/arvados
 git fetch
 git checkout -f $(inputs.refspec)
+git pull
+chown arvbox:arvbox -R .
 EOF
 
 $(inputs.arvbox_bin.path) hotreset

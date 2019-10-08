@@ -518,6 +518,10 @@ $graph:
 
                           git checkout -f $(inputs.refspec)
 
+                          git pull
+
+                          chown arvbox:arvbox -R .
+
                           EOF
 
 
