@@ -250,7 +250,11 @@ The 'jobs' API is no longer supported.
         activity statuses, for example in the RuntimeStatusLoggingHandler.
         """
         with self.workflow_eval_lock:
-            current = arvados_cwl.util.get_current_container(self.api, self.num_retries, logger)
+            current = None
+            try:
+                current = arvados_cwl.util.get_current_container(self.api, self.num_retries, logger)
+            except Exception as e:
+                logger.info("Couldn't get current container: %s", e)
             if current is None:
                 return
             runtime_status = current.get('runtime_status', {})
