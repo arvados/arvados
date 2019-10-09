@@ -70,7 +70,7 @@ def logtail(logcollection, logfunc, header, maxlen=25):
             logname = log[:-4]
             logt = deque([], maxlen)
             mergelogs[logname] = logt
-            with logcollection.open(log) as f:
+            with logcollection.open(log, encoding="utf-8") as f:
                 for l in f:
                     if containersapi:
                         g = timestamp_re.match(l)
