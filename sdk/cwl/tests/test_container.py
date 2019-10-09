@@ -534,6 +534,21 @@ class TestContainer(unittest.TestCase):
         except RuntimeError:
             self.fail("RuntimeStatusLoggingHandler should not be called recursively")
 
+
+    # Test to make sure that an exception raised from get_current_container doesn't
+    @mock.patch("arvados_cwl.util.get_current_container")
+    def test_runtime_status_get_current_container_exception(self, gcc_mock):
+        self.setup_and_test_container_executor_and_logging(gcc_mock)
+        root_logger = logging.getLogger('')
+
+        # get_current_container is invoked when we call runtime_status_update
+        # so try and log again!
+        gcc_mock.side_effect = Exception("Second Error")
+        try:
+            root_logger.error("First Error")
+        except RuntimeError:
+            self.fail("RuntimeStatusLoggingHandler should not be called recursively")
+
     @mock.patch("arvados_cwl.ArvCwlExecutor.runtime_status_update")
     @mock.patch("arvados_cwl.util.get_current_container")
     @mock.patch("arvados.collection.CollectionReader")
