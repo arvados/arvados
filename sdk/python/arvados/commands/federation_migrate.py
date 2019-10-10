@@ -21,6 +21,7 @@ import argparse
 import hmac
 import urllib.parse
 import os
+import hashlib
 from arvados._version import __version__
 
 EMAIL=0
@@ -236,9 +237,16 @@ def activate_remote_user(args, email, homearv, migratearv, old_user_uuid, new_us
         print("(%s) Could not create API token for %s: %s" % (email, new_user_uuid, e))
         return None
 
+    try:
+        olduser = migratearv.users().get(uuid=old_user_uuid).execute()
+    except arvados.errors.ApiError as e:
+        if e.resp.status != 404:
+            print("(%s) Could not retrieve user %s from %s, user may have already been migrated: %s" % (email, old_user_uuid, migratecluster, e))
+        return None
+
     salted = 'v2/' + newtok["uuid"] + '/' + hmac.new(newtok["api_token"].encode(),
                                                      msg=migratecluster.encode(),
-                                                     digestmod='sha1').hexdigest()
+                                                     digestmod=hashlib.sha1).hexdigest()
     try:
         ru = urllib.parse.urlparse(migratearv._rootDesc["rootUrl"])
         if not args.dry_run:
@@ -249,14 +257,7 @@ def activate_remote_user(args, email, homearv, migratearv, old_user_uuid, new_us
         print("(%s) Error getting user info for %s from %s: %s" % (email, new_user_uuid, migratecluster, e))
         return None
 
-    try:
-        olduser = migratearv.users().get(uuid=old_user_uuid).execute()
-    except arvados.errors.ApiError as e:
-        if e.resp.status != 404:
-            print("(%s) Could not retrieve user %s from %s, user may have already been migrated: %s" % (email, old_user_uuid, migratecluster, e))
-        return None
-
-    if not newuser["is_active"]:
+    if not newuser["is_active"] and olduser["is_active"]:
         print("(%s) Activating user %s on %s" % (email, new_user_uuid, migratecluster))
         try:
             if not args.dry_run:
