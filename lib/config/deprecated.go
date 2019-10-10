@@ -539,7 +539,7 @@ func (ldr *Loader) loadOldKeepBalanceConfig(cfg *arvados.Config) error {
 	if oc.KeepServiceTypes != nil {
 		numTypes := len(*oc.KeepServiceTypes)
 		if numTypes != 0 && !(numTypes == 1 && (*oc.KeepServiceTypes)[0] == "disk") {
-			return fmt.Errorf(msg, "KeepServiceType")
+			return fmt.Errorf(msg, "KeepServiceTypes")
 		}
 	}
 
