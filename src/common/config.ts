@@ -44,6 +44,7 @@ export interface ClusterConfigJSON {
         ArvadosDocsite: string;
         VocabularyURL: string;
         FileViewersConfigURL: string;
+        WelcomePageHTML: string;
     };
 }
 
@@ -60,6 +61,7 @@ export class Config {
     workbench2Url: string;
     vocabularyUrl: string;
     fileViewersConfigUrl: string;
+    clusterConfig: ClusterConfigJSON;
 }
 
 export const fetchConfig = () => {
@@ -111,6 +113,7 @@ remove the entire ${varName} entry from ${WORKBENCH_CONFIG_URL}`);
                 config.workbench2Url = clusterConfigJSON.Services.Workbench2.ExternalURL;
                 config.workbenchUrl = clusterConfigJSON.Services.Workbench1.ExternalURL;
                 config.keepWebServiceUrl = clusterConfigJSON.Services.WebDAV.ExternalURL;
+                config.clusterConfig = clusterConfigJSON;
                 mapRemoteHosts(clusterConfigJSON, config);
 
                 return { config, apiHost: workbenchConfig.API_HOST };
@@ -125,6 +128,25 @@ export const mapRemoteHosts = (clusterConfigJSON: ClusterConfigJSON, config: Con
     delete config.remoteHosts["*"];
 };
 
+export const mockClusterConfigJSON = (config: Partial<ClusterConfigJSON>): ClusterConfigJSON => ({
+    ClusterID: "",
+    RemoteClusters: {},
+    Services: {
+        Controller: { ExternalURL: "" },
+        Workbench1: { ExternalURL: "" },
+        Workbench2: { ExternalURL: "" },
+        Websocket: { ExternalURL: "" },
+        WebDAV: { ExternalURL: "" },
+    },
+    Workbench: {
+        ArvadosDocsite: "",
+        VocabularyURL: "",
+        FileViewersConfigURL: "",
+        WelcomePageHTML: "",
+    },
+    ...config
+});
+
 export const mockConfig = (config: Partial<Config>): Config => ({
     baseUrl: "",
     keepWebServiceUrl: "",
@@ -135,7 +157,9 @@ export const mockConfig = (config: Partial<Config>): Config => ({
     workbenchUrl: "",
     workbench2Url: "",
     vocabularyUrl: "",
-    fileViewersConfigUrl: ""
+    fileViewersConfigUrl: "",
+    clusterConfig: mockClusterConfigJSON({}),
+    ...config
 });
 
 const getDefaultConfig = (): WorkbenchConfig => {
