@@ -14,6 +14,11 @@ StartLimitInterval=0
 StartLimitIntervalSec=0
 
 [Service]
+# trigger Go garbage collection when the ratio of freshly allocated data to live data
+# remaining after the previous collection reaches 10% rather than the default 100%, so
+# that Keepstore's memory use is tightly coupled to the number of buffers it is
+# configured to use.
+Environment=GOGC=10
 Type=notify
 ExecStart=/usr/bin/keepstore
 Restart=always
