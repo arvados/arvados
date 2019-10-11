@@ -9,7 +9,6 @@ import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/st
 import { login, authActions } from '~/store/auth/auth-action';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { RootState } from '~/store/store';
-// import * as classNames from 'classnames';
 
 type CssRules = 'root' | 'container' | 'title' | 'content' | 'content__bolder' | 'button';
 
@@ -24,7 +23,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
             left: 0,
             bottom: 0,
             right: 0,
-            // background: 'url("arvados-logo-big.png") no-repeat center center',
             opacity: 0.2,
         }
     },
