@@ -272,43 +272,85 @@ class User < ArvadosModel
     end
   end
 
-  # Move this user's (i.e., self's) owned items into new_owner_uuid.
-  # Also redirect future uses of this account to
-  # redirect_to_user_uuid, i.e., when a caller authenticates to this
-  # account in the future, the account redirect_to_user_uuid account
-  # will be used instead.
+  # Move this user's (i.e., self's) owned items to new_owner_uuid and
+  # new_user_uuid (for things normally owned directly by the user).
+  #
+  # If redirect_auth is true, also reassign auth tokens and ssh keys,
+  # and redirect this account to redirect_to_user_uuid, i.e., when a
+  # caller authenticates to this account in the future, the account
+  # redirect_to_user_uuid account will be used instead.
   #
   # current_user must have admin privileges, i.e., the caller is
   # responsible for checking permission to do this.
-  def merge(new_owner_uuid:, redirect_to_user_uuid:)
+  def merge(new_owner_uuid:, new_user_uuid:, redirect_to_new_user:)
     raise PermissionDeniedError if !current_user.andand.is_admin
-    raise "not implemented" if !redirect_to_user_uuid
+    raise "Missing new_owner_uuid" if !new_owner_uuid
+    raise "Missing new_user_uuid" if !new_user_uuid
     transaction(requires_new: true) do
       reload
       raise "cannot merge an already merged user" if self.redirect_to_user_uuid
 
-      new_user = User.where(uuid: redirect_to_user_uuid).first
+      new_user = User.where(uuid: new_user_uuid).first
       raise "user does not exist" if !new_user
       raise "cannot merge to an already merged user" if new_user.redirect_to_user_uuid
 
-      # Existing API tokens are updated to authenticate to the new
-      # user.
-      ApiClientAuthorization.
-        where(user_id: id).
-        update_all(user_id: new_user.id)
+      # If 'self' is a remote user, don't transfer authorizations
+      # (i.e. ability to access the account) to the new user, because
+      # that gives the remote site the ability to access the 'new'
+      # user account that takes over the 'self' account.
+      #
+      # If 'self' is a local user, it is okay to transfer
+      # authorizations, even if the 'new' user is a remote account,
+      # because the remote site does not gain the ability to access an
+      # account it could not before.
+
+      if redirect_to_new_user and self.uuid[0..4] == Rails.configuration.ClusterID
+        # Existing API tokens and ssh keys are updated to authenticate
+        # to the new user.
+        ApiClientAuthorization.
+          where(user_id: id).
+          update_all(user_id: new_user.id)
+
+        user_updates = [
+          [AuthorizedKey, :owner_uuid],
+          [AuthorizedKey, :authorized_user_uuid],
+          [Link, :owner_uuid],
+          [Link, :tail_uuid],
+          [Link, :head_uuid],
+        ]
+      else
+        # Destroy API tokens and ssh keys associated with the old
+        # user.
+        ApiClientAuthorization.where(user_id: id).destroy_all
+        AuthorizedKey.where(owner_uuid: uuid).destroy_all
+        AuthorizedKey.where(authorized_user_uuid: uuid).destroy_all
+        user_updates = [
+          [Link, :owner_uuid],
+          [Link, :tail_uuid]
+        ]
+      end
 
       # References to the old user UUID in the context of a user ID
       # (rather than a "home project" in the project hierarchy) are
       # updated to point to the new user.
-      [
-        [AuthorizedKey, :owner_uuid],
-        [AuthorizedKey, :authorized_user_uuid],
-        [Repository, :owner_uuid],
-        [Link, :owner_uuid],
-        [Link, :tail_uuid],
-        [Link, :head_uuid],
-      ].each do |klass, column|
+      user_updates.each do |klass, column|
         klass.where(column => uuid).update_all(column => new_user.uuid)
+      end
+
+      # Need to update repository names to new username
+      if username
+        old_repo_name_re = /^#{Regexp.escape(username)}\//
+        Repository.where(:owner_uuid => uuid).each do |repo|
+          repo.owner_uuid = new_user.uuid
+          repo_name_sub = "#{new_user.username}/"
+          name = repo.name.sub(old_repo_name_re, repo_name_sub)
+          while (conflict = Repository.where(:name => name).first) != nil
+            repo_name_sub += "migrated"
+            name = repo.name.sub(old_repo_name_re, repo_name_sub)
+          end
+          repo.name = name
+          repo.save!
+        end
       end
 
       # References to the merged user's "home project" are updated to
@@ -323,7 +365,9 @@ class User < ArvadosModel
         klass.where(owner_uuid: uuid).update_all(owner_uuid: new_owner_uuid)
       end
 
-      update_attributes!(redirect_to_user_uuid: new_user.uuid)
+      if redirect_to_new_user
+        update_attributes!(redirect_to_user_uuid: new_user.uuid, username: nil)
+      end
       invalidate_permissions_cache
     end
   end

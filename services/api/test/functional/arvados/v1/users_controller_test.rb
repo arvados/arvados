@@ -817,14 +817,46 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     end
   end
 
-  test "refuse to merge with redirect_to_user_uuid=false (not yet supported)" do
+  test "merge with redirect_to_user_uuid=false" do
     authorize_with :project_viewer_trustedclient
+    tok = api_client_authorizations(:project_viewer).api_token
     post :merge, params: {
            new_user_token: api_client_authorizations(:active_trustedclient).api_token,
            new_owner_uuid: users(:active).uuid,
            redirect_to_new_user: false,
          }
-    assert_response(422)
+    assert_response(:success)
+    assert_nil(User.unscoped.find_by_uuid(users(:project_viewer).uuid).redirect_to_user_uuid)
+
+    # because redirect_to_new_user=false, token owned by
+    # project_viewer should be deleted
+    auth = ApiClientAuthorization.validate(token: tok)
+    assert_nil(auth)
+  end
+
+  test "merge remote to local as admin" do
+    authorize_with :admin
+
+    remoteuser = User.create!(uuid: "zbbbb-tpzed-remotremotremot")
+    tok = ApiClientAuthorization.create!(user: remoteuser, api_client: api_clients(:untrusted)).api_token
+
+    auth = ApiClientAuthorization.validate(token: tok)
+    assert_not_nil(auth)
+    assert_nil(remoteuser.redirect_to_user_uuid)
+
+    post :merge, params: {
+           new_user_uuid: users(:active).uuid,
+           old_user_uuid: remoteuser.uuid,
+           new_owner_uuid: users(:active).uuid,
+           redirect_to_new_user: true,
+         }
+    assert_response(:success)
+    remoteuser.reload
+    assert_equal(users(:active).uuid, remoteuser.redirect_to_user_uuid)
+
+    # token owned by remoteuser should be deleted
+    auth = ApiClientAuthorization.validate(token: tok)
+    assert_nil(auth)
   end
 
   test "refuse to merge user into self" do

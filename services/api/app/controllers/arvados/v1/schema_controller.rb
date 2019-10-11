@@ -33,7 +33,10 @@ class Arvados::V1::SchemaController < ApplicationController
         id: "arvados:v1",
         name: "arvados",
         version: "v1",
-        revision: "20131114",
+        # format is YYYYMMDD, must be fixed with (needs to be linearly
+        # sortable), updated manually, may be used by clients to
+        # determine availability of API server features.
+        revision: "20190926",
         source_version: AppVersion.hash,
         sourceVersion: AppVersion.hash, # source_version should be deprecated in the future
         packageVersion: AppVersion.package_version,
@@ -401,6 +404,28 @@ class Arvados::V1::SchemaController < ApplicationController
           end
         end
       end
+
+      discovery[:resources]['configs'] = {
+        methods: {
+          get: {
+            id: "arvados.configs.get",
+            path: "config",
+            httpMethod: "GET",
+            description: "Get public config",
+            parameters: {
+            },
+            parameterOrder: [
+            ],
+            response: {
+            },
+            scopes: [
+              "https://api.curoverse.com/auth/arvados",
+              "https://api.curoverse.com/auth/arvados.readonly"
+            ]
+          },
+        }
+      }
+
       Rails.configuration.API.DisabledAPIs.each do |method, _|
         ctrl, action = method.to_s.split('.', 2)
         discovery[:resources][ctrl][:methods].delete(action.to_sym)

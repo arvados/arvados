@@ -14,28 +14,11 @@ This page describes how to enable and configure federation capabilities between 
 
 An overview on how this feature works is discussed in the "architecture section":{{site.baseurl}}/architecture/federation.html
 
-h3. API Server configuration
+h2. Configuration
 
-To accept users from remote clusters, some settings need to be added to the @application.yml@ file. There are two ways in which a remote cluster can be identified: either explictly by listing its prefix-to-hostname mapping, or implicitly by assuming the given remote cluster is public and belongs to the @.arvadosapi.com@ subdomain.
+To enable a cluster to communicate with other clusters, some settings need to be added to the @config.yml@ file.  Federated clusters are identified by listing the cluster-to-hostname mapping in the @RemoteClusters@ section.
 
-For example, if you want to set up a private cluster federation, the following configuration will only allow access to users from @clsr2@ & @clsr3@:
-
-<pre>
-production:
-  remote_hosts:
-    clsr2: api.cluster2.com
-    clsr3: api.cluster3.com
-  remote_hosts_via_dns: false
-  auto_activate_users_from: []
-</pre>
-
-The additional @auto_activate_users_from@ setting can be used to allow users from the clusters in the federation to not only read but also create & update objects on the local cluster. This feature is covered in more detail in the "user activation section":{{site.baseurl}}/admin/activation.html. In the current example, only manually activated remote users would have full access to the local cluster.
-
-h3. Arvados controller & keepstores configuration
-
-Both @arvados-controller@ and @keepstore@ services also need to be configured, as they proxy requests to remote clusters when needed.
-
-Continuing the previous example, the necessary settings should be added to the @/etc/arvados/config.yml@ file as follows:
+Here is an example of the settings that should be added to the @/etc/arvados/config.yml@ file:
 
 <pre>
 Clusters:
@@ -44,14 +27,39 @@ Clusters:
       clsr2:
         Host: api.cluster2.com
         Proxy: true
+	ActivateUsers: true
       clsr3:
         Host: api.cluster3.com
         Proxy: true
+	ActivateUsers: false
 </pre>
 
 Similar settings should be added to @clsr2@ & @clsr3@ hosts, so that all clusters in the federation can talk to each other.
 
-h3. Testing
+The @ActivateUsers@ setting indicates whether users from a given cluster are automatically activated or they require manual activation.  User activation is covered in more detail in the "user activation section":{{site.baseurl}}/admin/activation.html.  In the current example, users from @clsr2@ would be automatically, activated, but users from @clsr3@ would require an admin to activate the account.
+
+h2(#LoginCluster). Federation user management
+
+A federation of clusters can be configured to use a separate user database per cluster, or delegate a central cluster to manage the database.
+
+If clusters belong to separate organizations, each cluster will have its own user database for the members of that organization.  Through federation, a user from one organization can be granted access to the cluster of another organization.  The admin of the seond cluster controls access on a individual basis by choosing to activate or deactivate accounts from other organizations (with the default policy the value of  @ActivateUsers@).
+
+On the other hand, if all clusters belong to the same organization, and users in that organization should have access to all the clusters, user management can be simplified by setting the @LoginCluster@ which manages the user database used by all other clusters in the federation.  To do this, choose one cluster in the federation which will be the 'login cluster'.  Set the the @Login.LoginCluster@ configuration value on all clusters in the federation to the cluster id of the login cluster.  After setting @LoginCluster@, restart arvados-api-server and arvados-controller.
+
+<pre>
+Clusters:
+  clsr2:
+    Login:
+      LoginCluster: clsr1
+</pre>
+
+The @LoginCluster@ configuration redirects all user logins to the LoginCluster, and the LoginCluster will issue API tokens which are valid on any cluster in the federation.  Users are activated or deactivated across the entire federation based on their status on the master cluster.
+
+Note: tokens issued by the master cluster need to be periodically re-validated when used on other clusters in the federation.  The period between revalidation attempts is configured with @Login.RemoteTokenRefresh@.  The default is 5 minutes.  A longer period reduces overhead from validating tokens, but means it will take longer for other clusters to notice when a token has been revoked or a user has changed status (being activated/deactivated, admin flag changed).
+
+To migrate users of existing clusters with separate user databases to use a single LoginCluster, use "arv-federation-migrate":merge-remote-account.html .
+
+h2. Testing
 
 Following the above example, let's suppose @clsr1@ is our "home cluster", that is to say, we use our @clsr1@ user account as our federated identity and both @clsr2@ and @clsr3@ remote clusters are set up to allow users from @clsr1@ and to auto-activate them. The first thing to do would be to log into a remote workbench using the local user token. This can be done following these steps:
 

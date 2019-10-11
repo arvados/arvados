@@ -92,7 +92,7 @@ class Repository < ArvadosModel
     end
     if not (/^#{prefix_match}[A-Za-z][A-Za-z0-9]*$/.match(name))
       errors.add(:name,
-                 "#{errmsg_start} a letter followed by alphanumerics")
+                 "#{errmsg_start} a letter followed by alphanumerics, expected pattern '#{prefix_match}[A-Za-z][A-Za-z0-9]*' but was '#{name}'")
       false
     end
   end

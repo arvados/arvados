@@ -176,17 +176,10 @@ class Arvados::V1::UsersController < ApplicationController
       return send_error("cannot move objects into supplied new_owner_uuid: new user does not have write permission", status: 403)
     end
 
-    redirect = params[:redirect_to_new_user]
-    if @object.uuid[0..4] != Rails.configuration.ClusterID && redirect
-      return send_error("cannot merge remote user to other with redirect_to_new_user=true", status: 422)
-    end
-
-    if !redirect
-      return send_error("merge with redirect_to_new_user=false is not yet supported", status: 422)
-    end
-
     act_as_system_user do
-      @object.merge(new_owner_uuid: params[:new_owner_uuid], redirect_to_user_uuid: redirect && new_user.uuid)
+      @object.merge(new_owner_uuid: params[:new_owner_uuid],
+                    new_user_uuid: new_user.uuid,
+                    redirect_to_new_user: params[:redirect_to_new_user])
     end
     show
   end
