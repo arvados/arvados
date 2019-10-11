@@ -15,6 +15,10 @@ class CollectionTest < Minitest::Test
      "./s1 #{TWO_BY_TWO_BLOCKS.last} 0:5:f1 5:4:f3\n"]
   TWO_BY_TWO_MANIFEST_S = TWO_BY_TWO_MANIFEST_A.join("")
 
+  def abcde_blocks
+    ["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+9", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+9", "cccccccccccccccccccccccccccccccc+9", "dddddddddddddddddddddddddddddddd+9", "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee+9"]
+  end
+
   ### .new
 
   def test_empty_construction
@@ -145,12 +149,12 @@ class CollectionTest < Minitest::Test
     test_normalization_file_spans_two_whole_blocks("2:3:f1 2:3:f1", 1)
   end
 
-  def test_normalization_dedups_locators
+  def test_normalization_handles_duplicate_locator
     blocks = random_blocks(2, 5)
     coll = Arv::Collection.new(". %s %s 1:8:f1 11:8:f1\n" %
                                [blocks.join(" "), blocks.reverse.join(" ")])
     coll.normalize
-    assert_equal(". #{blocks.join(' ')} 1:8:f1 6:4:f1 0:4:f1\n",
+    assert_equal(". #{blocks.join(' ')} #{blocks[0]} 1:8:f1 6:8:f1\n",
                  coll.manifest_text)
   end
 
@@ -393,6 +397,26 @@ class CollectionTest < Minitest::Test
     assert_equal(". %s 0:8:f1\n" %
                  [block],
                  dst_coll.manifest_text)
+  end
+
+  def test_copy_with_repeated_blocks
+    blocks = abcde_blocks
+    src_coll = Arv::Collection.new(". #{blocks[0]} #{blocks[1]} #{blocks[2]} #{blocks[0]} #{blocks[1]} #{blocks[2]} #{blocks[3]} #{blocks[4]} 27:27:f1\n")
+    dst_coll = Arv::Collection.new()
+    dst_coll.cp_r("f1", "./", src_coll)
+    toks = dst_coll.manifest_text.split(" ")
+    assert_equal(". #{blocks[0]} #{blocks[1]} #{blocks[2]} 0:27:f1\n", dst_coll.manifest_text, "mangled by cp_r")
+  end
+
+  def test_copy_with_repeated_split_blocks
+    blocks = abcde_blocks
+    src_coll = Arv::Collection.new(". #{blocks[0]} #{blocks[1]} #{blocks[2]} #{blocks[0]} #{blocks[1]} #{blocks[2]} #{blocks[3]} #{blocks[4]} 20:27:f1\n")
+    dst_coll = Arv::Collection.new()
+    src_coll.normalize
+    assert_equal(". #{blocks[2]} #{blocks[0]} #{blocks[1]} #{blocks[2]} 2:27:f1\n", src_coll.manifest_text, "mangled by normalize()")
+    dst_coll.cp_r("f1", "./", src_coll)
+    toks = dst_coll.manifest_text.split(" ")
+    assert_equal(". #{blocks[2]} #{blocks[0]} #{blocks[1]} #{blocks[2]} 2:27:f1\n", dst_coll.manifest_text, "mangled by cp_r")
   end
 
   def test_copy_empty_source_path_raises_ArgumentError(src="", dst="./s1")
