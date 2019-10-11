@@ -21,6 +21,8 @@ import {
 import { createTree } from '~/models/tree';
 import { getInitialResourceTypeFilters } from '~/store/resource-type-filters/resource-type-filters';
 import { SearchResultsPanelProps } from "./search-results-panel";
+import { Link } from 'react-router-dom';
+import { Routes } from '~/routes/routes';
 
 export enum SearchResultsPanelColumnNames {
     CLUSTER = "Cluster",
@@ -109,9 +111,11 @@ export const SearchResultsPanelView = (props: SearchResultsPanelProps) => {
         contextMenuColumn={false}
         hideSearchInput
         title={
-            (props.localCluster !== homeCluster && loggedIn.length === 1) ?
-                <div>Searching local cluster {props.localCluster} only.  To search multiple clusters, <a href={props.remoteHostsConfig[homeCluster] && props.remoteHostsConfig[homeCluster].workbench2Url}> start from your home Workbench.</a></div> :
-                <div>Searching clusters: {loggedIn.map((ss) => <span key={ss.clusterId}> {ss.clusterId}</span>)}</div>
+            <div>{(props.localCluster !== homeCluster && loggedIn.length === 1) ?
+                <span>Searching local cluster {props.localCluster} only.  To search multiple clusters, <a href={props.remoteHostsConfig[homeCluster] && props.remoteHostsConfig[homeCluster].workbench2Url}> start from your home Workbench.</a></span> :
+                <span>Searching clusters: {loggedIn.map((ss) => <span key={ss.clusterId}> {ss.clusterId}</span>)}</span>}
+                <Link to={Routes.SITE_MANAGER} style={{ marginLeft: "2em" }}>Site Manager</Link>
+            </div>
         }
     />;
 };
