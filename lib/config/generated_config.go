@@ -1063,6 +1063,24 @@ Clusters:
       VocabularyURL: ""
       FileViewersConfigURL: ""
 
+      # Workbench welcome screen, this is HTML text that will be
+      # incorporated directly onto the page.
+      WelcomePageHTML: |
+        <img src="arvados-logo-big.png" style="width: 20%; float: right; padding: 1em;" />
+        <h2>Please log in.</h2>
+
+        <p>The "Log in" button below will show you a sign-in
+        page. After you log in, you will be redirected back to
+        Arvados Workbench.</p>
+
+        <p>If you have never used Arvados Workbench before, logging in
+        for the first time will automatically create a new
+        account.</p>
+
+        <i>Arvados Workbench uses your name and email address only for
+        identification, and does not retrieve any other personal
+        information.</i>
+
     # Use experimental controller code (see https://dev.arvados.org/issues/14287)
     EnableBetaController14287: false
 `)
