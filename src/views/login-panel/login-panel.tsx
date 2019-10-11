@@ -66,7 +66,7 @@ export const LoginPanel = withStyles(styles)(
             style={{ marginTop: 56, overflowY: "auto", height: "100%" }}>
             <Grid item className={classes.container}>
                 <Typography>
-                    <div dangerouslySetInnerHTML={{ __html: welcomePage }} />
+                    <div dangerouslySetInnerHTML={{ __html: welcomePage }} style={{ margin: "1em" }} />
                 </Typography>
                 {Object.keys(remoteHosts).length > 1 &&
                     <Typography component="div" align="right">
