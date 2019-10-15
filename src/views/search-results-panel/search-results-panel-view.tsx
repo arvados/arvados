@@ -23,6 +23,8 @@ import { getInitialResourceTypeFilters } from '~/store/resource-type-filters/res
 import { SearchResultsPanelProps } from "./search-results-panel";
 import { Link } from 'react-router-dom';
 import { Routes } from '~/routes/routes';
+import { StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core';
+import { ArvadosTheme } from '~/common/custom-theme';
 
 export enum SearchResultsPanelColumnNames {
     CLUSTER = "Cluster",
@@ -34,6 +36,14 @@ export enum SearchResultsPanelColumnNames {
     FILE_SIZE = "File size",
     LAST_MODIFIED = "Last modified"
 }
+
+export type CssRules = 'siteManagerLink';
+
+const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+    siteManagerLink: {
+        marginLeft: theme.spacing.unit * 2
+    }
+});
 
 export interface WorkflowPanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
@@ -100,22 +110,23 @@ export const searchResultsPanelColumns: DataColumns<string> = [
     }
 ];
 
-export const SearchResultsPanelView = (props: SearchResultsPanelProps) => {
-    const homeCluster = props.user.uuid.substr(0, 5);
-    const loggedIn = props.sessions.filter((ss) => ss.loggedIn);
-    return <DataExplorer
-        id={SEARCH_RESULTS_PANEL_ID}
-        onRowClick={props.onItemClick}
-        onRowDoubleClick={props.onItemDoubleClick}
-        onContextMenu={props.onContextMenu}
-        contextMenuColumn={false}
-        hideSearchInput
-        title={
-            <div>{(props.localCluster !== homeCluster && loggedIn.length === 1) ?
-                <span>Searching local cluster {props.localCluster} only.  To search multiple clusters, <a href={props.remoteHostsConfig[homeCluster] && props.remoteHostsConfig[homeCluster].workbench2Url}> start from your home Workbench.</a></span> :
-                <span>Searching clusters: {loggedIn.map((ss) => <span key={ss.clusterId}> {ss.clusterId}</span>)}</span>}
-                <Link to={Routes.SITE_MANAGER} style={{ marginLeft: "2em" }}>Site Manager</Link>
-            </div>
-        }
-    />;
-};
+export const SearchResultsPanelView = withStyles(styles, { withTheme: true })(
+    (props: SearchResultsPanelProps & WithStyles<CssRules, true>) => {
+        const homeCluster = props.user.uuid.substr(0, 5);
+        const loggedIn = props.sessions.filter((ss) => ss.loggedIn);
+        return <DataExplorer
+            id={SEARCH_RESULTS_PANEL_ID}
+            onRowClick={props.onItemClick}
+            onRowDoubleClick={props.onItemDoubleClick}
+            onContextMenu={props.onContextMenu}
+            contextMenuColumn={false}
+            hideSearchInput
+            title={
+                <div>{(props.localCluster !== homeCluster && loggedIn.length === 1) ?
+                    <span>Searching local cluster {props.localCluster} only.  To search multiple clusters, <a href={props.remoteHostsConfig[homeCluster] && props.remoteHostsConfig[homeCluster].workbench2Url}> start from your home Workbench.</a></span> :
+                    <span>Searching clusters: {loggedIn.map((ss) => <span key={ss.clusterId}> {ss.clusterId}</span>)}</span>}
+                    <Link to={Routes.SITE_MANAGER} className={props.classes.siteManagerLink}>Site Manager</Link>
+                </div>
+            }
+        />;
+    });
