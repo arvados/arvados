@@ -76,8 +76,9 @@ func (h *limiterHandler) Max() int {
 func (h *limiterHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	if cap(h.requests) == 0 {
 		atomic.AddInt64(&h.count, 1)
+		defer atomic.AddInt64(&h.count, -1)
 		h.handler.ServeHTTP(resp, req)
-		atomic.AddInt64(&h.count, -1)
+		return
 	}
 	select {
 	case h.requests <- struct{}{}:
