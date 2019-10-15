@@ -143,10 +143,9 @@ window.Search = {
                                 loadFunc: function(filters) {
                                     // Apply additional type dependant filters
                                     filters = filters.concat(obj_type.filters)
-                                    var tsquery = to_tsquery(q)
-                                    if (tsquery) {
-                                        filters.push(['any', '@@', tsquery])
-                                    }
+                                    to_tsquery_filters(q).forEach(function(f) {
+                                        filters.push(f)
+                                    })
                                     return vnode.state.sessionDB.request(session, obj_type.api_path, {
                                         data: {
                                             filters: JSON.stringify(filters),

@@ -24,3 +24,23 @@ window.to_tsquery = function(q) {
         return null
     return q + ':*'
 }
+
+// to_tsquery_filters() converts a user-entered search query to a list of
+// filters using the newly added (as for arvados 1.5) trigram indexes.
+//
+// Examples:
+//
+// "foo"     => [["any", "ilike", "%foo%"]]
+// "foo.bar" => [["any", "ilike", "%foo.bar%"]]
+// "foo bar" => [["any", "ilike", "%foo%"], ["any", "ilike", "%bar%"]]
+// "foo|bar" => [["any", "ilike", "%foo%"], ["any", "ilike", "%bar%"]]
+// ""        => []
+// null      => []
+window.to_tsquery_filters = function(q) {
+    q = (q || '').replace(/[^-\w\.\/]+/g, ' ').trim()
+    if (q == '')
+        return []
+    return q.split(" ").map(function(term) {
+        return ["any", "ilike", "%"+term+"%"]
+    })
+}
