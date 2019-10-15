@@ -164,23 +164,26 @@ func getListenAddr(svcs arvados.Services, prog arvados.ServiceName, log logrus.F
 	if !ok {
 		return arvados.URL{}, fmt.Errorf("unknown service name %q", prog)
 	}
+	errors := []string{}
 	for url := range svc.InternalURLs {
-		if strings.HasPrefix(url.Host, "localhost:") {
-			return url, nil
-		}
 		listener, err := net.Listen("tcp", url.Host)
 		if err == nil {
 			listener.Close()
 			return url, nil
 		} else if strings.Contains(err.Error(), "cannot assign requested address") {
+			// If 'Host' specifies a different server than
+			// the current one, it'll resolve the hostname
+			// to IP address, and then fail because it
+			// can't bind an IP address it doesn't own.
 			continue
-		} else if strings.Contains(err.Error(), "address already in use") {
-			return url, err
 		} else {
-			log.Warn(err)
+			errors = append(errors, fmt.Sprintf("tried %v, got %v", url, err))
 		}
 	}
-	return arvados.URL{}, fmt.Errorf("configuration does not enable the %s service on this host", prog)
+	if len(errors) > 0 {
+		return arvados.URL{}, fmt.Errorf("could not enable the %q service on this host: %s", prog, strings.Join(errors, "; "))
+	}
+	return arvados.URL{}, fmt.Errorf("configuration does not enable the %q service on this host", prog)
 }
 
 type contextKeyURL struct{}
