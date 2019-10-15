@@ -404,7 +404,6 @@ class CollectionTest < Minitest::Test
     src_coll = Arv::Collection.new(". #{blocks[0]} #{blocks[1]} #{blocks[2]} #{blocks[0]} #{blocks[1]} #{blocks[2]} #{blocks[3]} #{blocks[4]} 27:27:f1\n")
     dst_coll = Arv::Collection.new()
     dst_coll.cp_r("f1", "./", src_coll)
-    toks = dst_coll.manifest_text.split(" ")
     assert_equal(". #{blocks[0]} #{blocks[1]} #{blocks[2]} 0:27:f1\n", dst_coll.manifest_text, "mangled by cp_r")
   end
 
@@ -415,7 +414,6 @@ class CollectionTest < Minitest::Test
     src_coll.normalize
     assert_equal(". #{blocks[2]} #{blocks[0]} #{blocks[1]} #{blocks[2]} 2:27:f1\n", src_coll.manifest_text, "mangled by normalize()")
     dst_coll.cp_r("f1", "./", src_coll)
-    toks = dst_coll.manifest_text.split(" ")
     assert_equal(". #{blocks[2]} #{blocks[0]} #{blocks[1]} #{blocks[2]} 2:27:f1\n", dst_coll.manifest_text, "mangled by cp_r")
   end
 

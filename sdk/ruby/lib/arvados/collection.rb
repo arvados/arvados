@@ -536,12 +536,10 @@ module Arv
         end
 
         segment_start = @loc_range_start
-        segment_end = segment_start
         segment.locators.each do |loc_s|
           r = LocatorRange.new(loc_s, @loc_range_start)
           @loc_ranges << r
           @loc_range_start = r.end
-          segment_end += (r.end - r.begin)
         end
         @file_specs << "#{segment.start_pos + segment_start}:#{segment.length}:#{escape_name(filename)}"
       end
