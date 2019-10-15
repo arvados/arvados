@@ -82,7 +82,18 @@ func (cp *copier) Copy() (string, error) {
 			return "", fmt.Errorf("error making directory %q in output collection: %v", d, err)
 		}
 	}
+	var lastparentdir string
 	for _, f := range cp.files {
+		// If a dir has just had its last file added, do a
+		// full Flush. Otherwise, do a partial Flush (write
+		// full-size blocks, but leave the last short block
+		// open so f's data can be packed with it).
+		dir, _ := filepath.Split(f.dst)
+		if err := fs.Flush(dir != lastparentdir); err != nil {
+			return "", fmt.Errorf("error flushing output collection file data: %v", err)
+		}
+		lastparentdir = dir
+
 		err = cp.copyFile(fs, f)
 		if err != nil {
 			return "", fmt.Errorf("error copying file %q into output collection: %v", f, err)

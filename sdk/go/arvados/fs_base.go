@@ -86,7 +86,17 @@ type FileSystem interface {
 	Remove(name string) error
 	RemoveAll(name string) error
 	Rename(oldname, newname string) error
+
+	// Write buffered data from memory to storage, returning when
+	// all updates have been saved to persistent storage.
 	Sync() error
+
+	// Write buffered data from memory to storage, but don't wait
+	// for all writes to finish before returning. If shortBlocks
+	// is true, flush everything; otherwise, if there's less than
+	// a full block of buffered data at the end of a stream, leave
+	// it buffered in memory in case more data can be appended.
+	Flush(shortBlocks bool) error
 }
 
 type inode interface {
@@ -557,6 +567,11 @@ func (fs *fileSystem) remove(name string, recursive bool) error {
 
 func (fs *fileSystem) Sync() error {
 	log.Printf("TODO: sync fileSystem")
+	return ErrInvalidOperation
+}
+
+func (fs *fileSystem) Flush(bool) error {
+	log.Printf("TODO: flush fileSystem")
 	return ErrInvalidOperation
 }
 

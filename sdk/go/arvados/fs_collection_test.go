@@ -535,7 +535,7 @@ func (s *CollectionFSSuite) TestConcurrentWriters(c *check.C) {
 	}
 
 	maxBlockSize = 8
-	defer func() { maxBlockSize = 2 << 26 }()
+	defer func() { maxBlockSize = 1 << 26 }()
 
 	var wg sync.WaitGroup
 	for n := 0; n < 128; n++ {
@@ -1039,7 +1039,7 @@ func (s *CollectionFSSuite) TestOpenFileFlags(c *check.C) {
 	c.Check(err, check.ErrorMatches, `invalid flag.*`)
 }
 
-func (s *CollectionFSSuite) TestFlushFullBlocks(c *check.C) {
+func (s *CollectionFSSuite) TestFlushFullBlocksWritingLongFile(c *check.C) {
 	defer func(wab, mbs int) {
 		writeAheadBlocks = wab
 		maxBlockSize = mbs
@@ -1103,6 +1103,91 @@ func (s *CollectionFSSuite) TestFlushFullBlocks(c *check.C) {
 	c.Check(m, check.Matches, `[^:]* 0:50000:50K\n`)
 	c.Check(err, check.IsNil)
 	c.Check(currentMemExtents(), check.HasLen, 0)
+}
+
+// Ensure blocks get flushed to disk if a lot of data is written to
+// small files/directories without calling sync().
+//
+// Write four 512KiB files into each of 256 top-level dirs (total
+// 512MiB), calling Flush() every 8 dirs. Ensure memory usage never
+// exceeds 24MiB (4 concurrentWriters * 2MiB + 8 unflushed dirs *
+// 2MiB).
+func (s *CollectionFSSuite) TestFlushAll(c *check.C) {
+	fs, err := (&Collection{}).FileSystem(s.client, s.kc)
+	c.Assert(err, check.IsNil)
+
+	s.kc.onPut = func([]byte) {
+		// discard flushed data -- otherwise the stub will use
+		// unlimited memory
+		time.Sleep(time.Millisecond)
+		s.kc.Lock()
+		defer s.kc.Unlock()
+		s.kc.blocks = map[string][]byte{}
+	}
+	for i := 0; i < 256; i++ {
+		buf := bytes.NewBuffer(make([]byte, 524288))
+		fmt.Fprintf(buf, "test file in dir%d", i)
+
+		dir := fmt.Sprintf("dir%d", i)
+		fs.Mkdir(dir, 0755)
+		for j := 0; j < 2; j++ {
+			f, err := fs.OpenFile(fmt.Sprintf("%s/file%d", dir, j), os.O_WRONLY|os.O_CREATE, 0)
+			c.Assert(err, check.IsNil)
+			defer f.Close()
+			_, err = io.Copy(f, buf)
+			c.Assert(err, check.IsNil)
+		}
+
+		if i%8 == 0 {
+			fs.Flush(true)
+		}
+
+		size := fs.memorySize()
+		if !c.Check(size <= 1<<24, check.Equals, true) {
+			c.Logf("at dir%d fs.memorySize()=%d", i, size)
+			return
+		}
+	}
+}
+
+// Ensure short blocks at the end of a stream don't get flushed by
+// Flush(false).
+//
+// Write 67x 1MiB files to each of 8 dirs, and check that 8 full 64MiB
+// blocks have been flushed while 8x 3MiB is still buffered in memory.
+func (s *CollectionFSSuite) TestFlushFullBlocksOnly(c *check.C) {
+	fs, err := (&Collection{}).FileSystem(s.client, s.kc)
+	c.Assert(err, check.IsNil)
+
+	var flushed int64
+	s.kc.onPut = func(p []byte) {
+		atomic.AddInt64(&flushed, int64(len(p)))
+	}
+
+	nDirs := 8
+	megabyte := make([]byte, 1<<20)
+	for i := 0; i < nDirs; i++ {
+		dir := fmt.Sprintf("dir%d", i)
+		fs.Mkdir(dir, 0755)
+		for j := 0; j < 67; j++ {
+			f, err := fs.OpenFile(fmt.Sprintf("%s/file%d", dir, j), os.O_WRONLY|os.O_CREATE, 0)
+			c.Assert(err, check.IsNil)
+			defer f.Close()
+			_, err = f.Write(megabyte)
+			c.Assert(err, check.IsNil)
+		}
+	}
+	c.Check(fs.memorySize(), check.Equals, int64(nDirs*67<<20))
+	c.Check(flushed, check.Equals, int64(0))
+
+	fs.Flush(false)
+	expectSize := int64(nDirs * 3 << 20)
+
+	// Wait for flush to finish
+	for deadline := time.Now().Add(5 * time.Second); fs.memorySize() > expectSize && time.Now().Before(deadline); time.Sleep(10 * time.Millisecond) {
+	}
+	c.Check(fs.memorySize(), check.Equals, expectSize)
+	c.Check(flushed, check.Equals, int64(nDirs*64<<20))
 }
 
 func (s *CollectionFSSuite) TestBrokenManifests(c *check.C) {
