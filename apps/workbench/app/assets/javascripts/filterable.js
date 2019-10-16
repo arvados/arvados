@@ -61,7 +61,7 @@
 function updateFilterableQueryNow($target) {
     var newquery = $target.data('filterable-query-new');
     var params = $target.data('infinite-content-params-filterable') || {};
-    params.filters = to_tsquery_filters(newquery);
+    params.filters = ilike_filters(newquery);
     $(".modal-dialog-preview-pane").html("");
     $target.data('infinite-content-params-filterable', params);
     $target.data('filterable-query', newquery);
