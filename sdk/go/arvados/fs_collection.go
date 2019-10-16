@@ -764,13 +764,13 @@ func (dn *dirnode) flush(ctx context.Context, throttle *throttle, names []string
 	for _, name := range names {
 		switch node := dn.inodes[name].(type) {
 		case *dirnode:
-			names := node.sortedNames()
-			for _, name := range names {
-				child := node.inodes[name]
-				child.Lock()
-				defer child.Unlock()
+			grandchildNames := node.sortedNames()
+			for _, grandchildName := range grandchildNames {
+				grandchild := node.inodes[grandchildName]
+				grandchild.Lock()
+				defer grandchild.Unlock()
 			}
-			cg.Go(func() error { return node.flush(cg.Context(), throttle, node.sortedNames(), opts) })
+			cg.Go(func() error { return node.flush(cg.Context(), throttle, grandchildNames, opts) })
 		case *filenode:
 			for idx, seg := range node.segments {
 				switch seg := seg.(type) {
