@@ -643,6 +643,7 @@ func (dn *dirnode) commitBlock(ctx context.Context, refs []fnSegmentRef, sync bo
 	done := make(chan struct{})
 	block := make([]byte, 0, maxBlockSize)
 	segs := make([]*memSegment, 0, len(refs))
+	offsets := make([]int, 0, len(refs)) // location of segment's data within block
 	for _, ref := range refs {
 		seg := ref.fn.segments[ref.idx].(*memSegment)
 		if seg.flushing != nil && !sync {
@@ -656,6 +657,7 @@ func (dn *dirnode) commitBlock(ctx context.Context, refs []fnSegmentRef, sync bo
 			// fn's lock until we finish our own writes.
 		}
 		seg.flushing = done
+		offsets = append(offsets, len(block))
 		block = append(block, seg.buf...)
 		segs = append(segs, seg)
 	}
@@ -687,7 +689,6 @@ func (dn *dirnode) commitBlock(ctx context.Context, refs []fnSegmentRef, sync bo
 			errs <- err
 			return
 		}
-		off := 0
 		for idx, ref := range refs {
 			if !sync {
 				// In async mode, fn's lock was
@@ -717,10 +718,9 @@ func (dn *dirnode) commitBlock(ctx context.Context, refs []fnSegmentRef, sync bo
 				kc:      dn.fs,
 				locator: locator,
 				size:    len(block),
-				offset:  off,
+				offset:  offsets[idx],
 				length:  len(data),
 			}
-			off += len(data)
 			ref.fn.memsize -= int64(len(data))
 		}
 	}()
