@@ -12,6 +12,7 @@
 // "foo"     => [["any", "ilike", "%foo%"]]
 // "foo.bar" => [["any", "ilike", "%foo.bar%"]]                         // "." is a word char in ilike queries
 // "foo/b-r" => [["any", "ilike", "%foo/b-r%"]]                         // "/" and "-", too
+// "foo_bar" => [["any", "ilike", "%foo\\_bar%"]                        // "_" should be escaped so it can be used as a literal
 // "foo bar" => [["any", "ilike", "%foo%"], ["any", "ilike", "%bar%"]]
 // "foo|bar" => [["any", "ilike", "%foo%"], ["any", "ilike", "%bar%"]]
 // " oo|bar" => [["any", "ilike", "%oo%"], ["any", "ilike", "%bar%"]]
@@ -19,7 +20,7 @@
 // " "       => []
 // null      => []
 window.ilike_filters = function(q) {
-    q = (q || '').replace(/[^-\w\.\/]+/g, ' ').trim()
+    q = (q || '').replace(/[^-\w\.\/]+/g, ' ').trim().replace(/_/g, '\\_')
     if (q == '')
         return []
     return q.split(" ").map(function(term) {
