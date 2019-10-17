@@ -95,8 +95,10 @@ type FileSystem interface {
 	// for all writes to finish before returning. If shortBlocks
 	// is true, flush everything; otherwise, if there's less than
 	// a full block of buffered data at the end of a stream, leave
-	// it buffered in memory in case more data can be appended.
-	Flush(shortBlocks bool) error
+	// it buffered in memory in case more data can be appended. If
+	// path is "", flush all dirs/streams; otherwise, flush only
+	// the specified dir/stream.
+	Flush(path string, shortBlocks bool) error
 }
 
 type inode interface {
@@ -570,7 +572,7 @@ func (fs *fileSystem) Sync() error {
 	return ErrInvalidOperation
 }
 
-func (fs *fileSystem) Flush(bool) error {
+func (fs *fileSystem) Flush(string, bool) error {
 	log.Printf("TODO: flush fileSystem")
 	return ErrInvalidOperation
 }

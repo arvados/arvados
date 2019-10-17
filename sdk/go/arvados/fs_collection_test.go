@@ -1139,7 +1139,7 @@ func (s *CollectionFSSuite) TestFlushAll(c *check.C) {
 		}
 
 		if i%8 == 0 {
-			fs.Flush(true)
+			fs.Flush("", true)
 		}
 
 		size := fs.memorySize()
@@ -1164,9 +1164,9 @@ func (s *CollectionFSSuite) TestFlushFullBlocksOnly(c *check.C) {
 		atomic.AddInt64(&flushed, int64(len(p)))
 	}
 
-	nDirs := 8
+	nDirs := int64(8)
 	megabyte := make([]byte, 1<<20)
-	for i := 0; i < nDirs; i++ {
+	for i := int64(0); i < nDirs; i++ {
 		dir := fmt.Sprintf("dir%d", i)
 		fs.Mkdir(dir, 0755)
 		for j := 0; j < 67; j++ {
@@ -1180,14 +1180,35 @@ func (s *CollectionFSSuite) TestFlushFullBlocksOnly(c *check.C) {
 	c.Check(fs.memorySize(), check.Equals, int64(nDirs*67<<20))
 	c.Check(flushed, check.Equals, int64(0))
 
-	fs.Flush(false)
-	expectSize := int64(nDirs * 3 << 20)
-
-	// Wait for flush to finish
-	for deadline := time.Now().Add(5 * time.Second); fs.memorySize() > expectSize && time.Now().Before(deadline); time.Sleep(10 * time.Millisecond) {
+	waitForFlush := func(expectUnflushed, expectFlushed int64) {
+		for deadline := time.Now().Add(5 * time.Second); fs.memorySize() > expectUnflushed && time.Now().Before(deadline); time.Sleep(10 * time.Millisecond) {
+		}
+		c.Check(fs.memorySize(), check.Equals, expectUnflushed)
+		c.Check(flushed, check.Equals, expectFlushed)
 	}
-	c.Check(fs.memorySize(), check.Equals, expectSize)
-	c.Check(flushed, check.Equals, int64(nDirs*64<<20))
+
+	// Nothing flushed yet
+	waitForFlush((nDirs*67)<<20, 0)
+
+	// Flushing a non-empty dir "/" is non-recursive and there are
+	// no top-level files, so this has no effect
+	fs.Flush("/", false)
+	waitForFlush((nDirs*67)<<20, 0)
+
+	// Flush the full block in dir0
+	fs.Flush("dir0", false)
+	waitForFlush((nDirs*67-64)<<20, 64<<20)
+
+	err = fs.Flush("dir-does-not-exist", false)
+	c.Check(err, check.NotNil)
+
+	// Flush full blocks in all dirs
+	fs.Flush("", false)
+	waitForFlush(nDirs*3<<20, nDirs*64<<20)
+
+	// Flush non-full blocks, too
+	fs.Flush("", true)
+	waitForFlush(0, nDirs*67<<20)
 }
 
 func (s *CollectionFSSuite) TestBrokenManifests(c *check.C) {

@@ -146,11 +146,31 @@ func (fs *collectionFileSystem) Sync() error {
 	return nil
 }
 
-func (fs *collectionFileSystem) Flush(shortBlocks bool) error {
-	fs.fileSystem.root.Lock()
-	defer fs.fileSystem.root.Unlock()
-	dn := fs.fileSystem.root.(*dirnode)
-	return dn.flush(context.TODO(), newThrottle(concurrentWriters), dn.sortedNames(), flushOpts{sync: false, shortBlocks: shortBlocks})
+func (fs *collectionFileSystem) Flush(path string, shortBlocks bool) error {
+	node, err := rlookup(fs.fileSystem.root, path)
+	if err != nil {
+		return err
+	}
+	dn, ok := node.(*dirnode)
+	if !ok {
+		return ErrNotADirectory
+	}
+	dn.Lock()
+	defer dn.Unlock()
+	names := dn.sortedNames()
+	if path != "" {
+		// Caller only wants to flush the specified dir,
+		// non-recursively.  Drop subdirs from the list of
+		// names.
+		var filenames []string
+		for _, name := range names {
+			if _, ok := dn.inodes[name].(*filenode); ok {
+				filenames = append(filenames, name)
+			}
+		}
+		names = filenames
+	}
+	return dn.flush(context.TODO(), newThrottle(concurrentWriters), names, flushOpts{sync: false, shortBlocks: shortBlocks})
 }
 
 func (fs *collectionFileSystem) memorySize() int64 {
