@@ -61,12 +61,7 @@
 function updateFilterableQueryNow($target) {
     var newquery = $target.data('filterable-query-new');
     var params = $target.data('infinite-content-params-filterable') || {};
-    var tsquery = to_tsquery(newquery);
-    if (tsquery == null) {
-        params.filters = [];
-    } else {
-        params.filters = [['any', '@@', tsquery]];
-    }
+    params.filters = ilike_filters(newquery);
     $(".modal-dialog-preview-pane").html("");
     $target.data('infinite-content-params-filterable', params);
     $target.data('filterable-query', newquery);
