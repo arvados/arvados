@@ -64,6 +64,7 @@ class RetryLoop(object):
         self.max_wait = max_wait
         self.next_start_time = 0
         self.results = deque(maxlen=save_results)
+        self._attempts = 0
         self._running = None
         self._success = None
 
@@ -101,6 +102,7 @@ class RetryLoop(object):
                 "recorded a loop result after the loop finished")
         self.results.append(result)
         self._success = self.check_result(result)
+        self._attempts += 1
 
     def success(self):
         """Return the loop's end state.
@@ -117,6 +119,19 @@ class RetryLoop(object):
         except IndexError:
             raise arvados.errors.AssertionError(
                 "queried loop results before any were recorded")
+
+    def attempts(self):
+        """Return the number of attempts that have been made.
+
+        Includes successes and failures."""
+        return self._attempts
+
+    def attempts_str(self):
+        """Human-readable attempts(): 'N attempts' or '1 attempt'"""
+        if self._attempts == 1:
+            return '1 attempt'
+        else:
+            return '{} attempts'.format(self._attempts)
 
 
 def check_http_response_success(status_code):

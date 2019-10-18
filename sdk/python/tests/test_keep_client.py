@@ -424,15 +424,16 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
     def check_errors_from_last_retry(self, verb, exc_class):
         api_client = self.mock_keep_services(count=2)
         req_mock = tutil.mock_keep_responses(
-            "retry error reporting test", 500, 500, 403, 403)
+            "retry error reporting test", 500, 500, 500, 500, 500, 500, 502, 502)
         with req_mock, tutil.skip_sleep, \
                 self.assertRaises(exc_class) as err_check:
             keep_client = arvados.KeepClient(api_client=api_client)
             getattr(keep_client, verb)('d41d8cd98f00b204e9800998ecf8427e+0',
                                        num_retries=3)
-        self.assertEqual([403, 403], [
+        self.assertEqual([502, 502], [
                 getattr(error, 'status_code', None)
                 for error in err_check.exception.request_errors().values()])
+        self.assertRegex(str(err_check.exception), r'failed to (read|write) .* after 4 attempts')
 
     def test_get_error_reflects_last_retry(self):
         self.check_errors_from_last_retry('get', arvados.errors.KeepReadError)
@@ -1031,7 +1032,9 @@ class KeepClientRetryTestMixin(object):
     def check_exception(self, error_class=None, *args, **kwargs):
         if error_class is None:
             error_class = self.DEFAULT_EXCEPTION
-        self.assertRaises(error_class, self.run_method, *args, **kwargs)
+        with self.assertRaises(error_class) as err:
+            self.run_method(*args, **kwargs)
+        return err
 
     def test_immediate_success(self):
         with self.TEST_PATCHER(self.DEFAULT_EXPECT, 200):
@@ -1055,7 +1058,8 @@ class KeepClientRetryTestMixin(object):
 
     def test_error_after_retries_exhausted(self):
         with self.TEST_PATCHER(self.DEFAULT_EXPECT, 500, 500, 200):
-            self.check_exception(num_retries=1)
+            err = self.check_exception(num_retries=1)
+        self.assertRegex(str(err.exception), r'failed to .* after 2 attempts')
 
     def test_num_retries_instance_fallback(self):
         self.client_kwargs['num_retries'] = 3
