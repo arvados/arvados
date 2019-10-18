@@ -4,7 +4,12 @@
 
 require 'current_api_client'
 
-include CurrentApiClient
+# This is needed instead of just including CurrentApiClient so that its
+# methods don't get imported as Object's class methods; this is a problem because
+# the methods would be imported only on test environment. See #15716 for more info.
+class CurrentApiClientHelper
+  extend CurrentApiClient
+end
 
 def has_symbols? x
   if x.is_a? Hash
@@ -83,7 +88,7 @@ namespace :symbols do
      Node, PipelineInstance, PipelineTemplate,
      Repository, Specimen, Trait, User, VirtualMachine,
      Workflow].each do |klass|
-      act_as_system_user do
+      CurrentApiClientHelper.act_as_system_user do
         klass.all.each do |c|
           check_for_serialized_symbols c
         end
@@ -99,7 +104,7 @@ namespace :symbols do
      Node, PipelineInstance, PipelineTemplate,
      Repository, Specimen, Trait, User, VirtualMachine,
      Workflow].each do |klass|
-      act_as_system_user do
+      CurrentApiClientHelper.act_as_system_user do
         klass.all.each do |c|
           stringify_serialized_symbols c
         end
