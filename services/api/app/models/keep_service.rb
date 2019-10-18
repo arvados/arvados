@@ -7,6 +7,7 @@ class KeepService < ArvadosModel
   include KindAndEtag
   include CommonApiTemplate
   extend DbCurrentTime
+  extend CurrentApiClient
 
   SERVER_START_TIME = db_current_time
 

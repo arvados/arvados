@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 module CommitsHelper
+  extend CurrentApiClient
 
   class GitError < RequestError
     def http_status
