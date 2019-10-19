@@ -207,7 +207,7 @@ module Arv
         loop do
           ii = (lo + hi) / 2
           range = @ranges[ii]
-          if range.include?(target) && (target < range.end || ii == hi)
+          if range.include?(target) && (target < range.end || ii == hi-1)
             return ii
           elsif ii == lo
             raise RangeError.new("%i not in segment" % target)
