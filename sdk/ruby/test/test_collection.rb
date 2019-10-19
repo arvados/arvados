@@ -36,6 +36,29 @@ class CollectionTest < Minitest::Test
     end
   end
 
+  def test_range_edge_cases
+    [
+      ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1\n",
+      ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2\n",
+      ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file1\n",
+      ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2 0:0:file1\n",
+      ". 0cc175b9c0f1b6a831c399e269772661+1 0:0:file1 1:0:file2 1:0:file1\n",
+    ].each do |txt|
+      coll = Arv::Collection.new(txt)
+      coll.normalize
+      assert_match(/ 0:0:file1/, coll.manifest_text)
+    end
+    [
+      ". d41d8cd98f00b204e9800998ecf8427e+0 1:0:file1\n",
+      ". 0cc175b9c0f1b6a831c399e269772661+1 0:0:file1 2:0:file2 1:0:file1\n",
+    ].each do |txt|
+      assert_raises(RangeError) do
+        coll = Arv::Collection.new(txt)
+        coll.normalize
+      end
+    end
+  end
+
   def test_non_manifest_construction_error
     ["word", ". abc def", ". #{random_block} 0:", ". / !"].each do |m_text|
       assert_raises(ArgumentError,
