@@ -111,3 +111,7 @@ gem 'logstash-event'
 gem 'safe_yaml'
 
 gem 'npm-rails'
+
+# arvados-google-api-client and googleauth (and thus arvados) gems
+# depend on signet, but signet 0.12 is incompatible with ruby 2.3.
+gem 'signet', '< 0.12'
