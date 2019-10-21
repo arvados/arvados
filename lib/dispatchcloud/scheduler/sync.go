@@ -61,6 +61,13 @@ func (sch *Scheduler) sync() {
 				// preparing to run a container that
 				// has already been unlocked/requeued.
 				go sch.kill(uuid, fmt.Sprintf("state=%s", ent.Container.State))
+			} else if ent.Container.Priority == 0 {
+				sch.logger.WithFields(logrus.Fields{
+					"ContainerUUID": uuid,
+					"State":         ent.Container.State,
+					"Priority":      ent.Container.Priority,
+				}).Info("container on hold")
+				sch.queue.Forget(uuid)
 			}
 		case arvados.ContainerStateLocked:
 			if running && !exited.IsZero() && qUpdated.After(exited) {
