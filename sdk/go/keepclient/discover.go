@@ -27,8 +27,9 @@ func RefreshServiceDiscovery() {
 	defer svcListCacheMtx.Unlock()
 	for _, ent := range svcListCache {
 		wg.Add(1)
+		clear := ent.clear
 		go func() {
-			ent.clear <- struct{}{}
+			clear <- struct{}{}
 			wg.Done()
 		}()
 	}
