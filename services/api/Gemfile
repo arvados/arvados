@@ -75,6 +75,10 @@ gem 'rails-controller-testing'
 
 gem 'sass-rails'
 
+# arvados-google-api-client and googleauth depend on signet, but
+# signet 0.12 is incompatible with ruby 2.3.
+gem 'signet', '< 0.12'
+
 # Install any plugin gems
 Dir.glob(File.join(File.dirname(__FILE__), 'lib', '**', "Gemfile")) do |f|
     eval(IO.read(f), binding)
