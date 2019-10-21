@@ -5,7 +5,7 @@
 source 'https://rubygems.org'
 
 gem 'rails', '~> 5.0.0'
-gem 'arvados', '>= 0.1.20150511150219'
+gem 'arvados', git: 'https://github.com/curoverse/arvados.git', glob: 'sdk/ruby/arvados.gemspec'
 
 gem 'activerecord-nulldb-adapter', git: 'https://github.com/curoverse/nulldb'
 gem 'multi_json'
