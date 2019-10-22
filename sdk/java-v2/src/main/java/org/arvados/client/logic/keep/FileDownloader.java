@@ -187,7 +187,7 @@ public class FileDownloader {
         // values for tracking file output streams and matching data chunks with initial files
         int currentDataChunkNumber;
         int bytesDownloadedFromChunk;
-        int bytesToDownload;
+        long bytesToDownload;
         byte[] currentDataChunk;
         boolean remainingDataInChunk;
         final List<KeepLocator> keepLocators;
@@ -199,11 +199,11 @@ public class FileDownloader {
             this.keepLocators = keepLocators;
         }
 
-        private int getBytesToDownload() {
+        private long getBytesToDownload() {
             return bytesToDownload;
         }
 
-        private void setBytesToDownload(int bytesToDownload) {
+        private void setBytesToDownload(long bytesToDownload) {
             this.bytesToDownload = bytesToDownload;
         }
 
@@ -244,7 +244,7 @@ public class FileDownloader {
 
         private void writeDownDataChunkPartially(FileOutputStream fos) throws IOException {
             //write all remaining bytes for this file from current chunk
-            fos.write(currentDataChunk, bytesDownloadedFromChunk, bytesToDownload);
+            fos.write(currentDataChunk, bytesDownloadedFromChunk, (int) bytesToDownload);
             // update number of bytes downloaded from this chunk
             bytesDownloadedFromChunk += bytesToDownload;
             // set remaining data in chunk to true
