@@ -170,6 +170,11 @@ func (fs *collectionFileSystem) Flush(path string, shortBlocks bool) error {
 		}
 		names = filenames
 	}
+	for _, name := range names {
+		child := dn.inodes[name]
+		child.Lock()
+		defer child.Unlock()
+	}
 	return dn.flush(context.TODO(), names, flushOpts{sync: false, shortBlocks: shortBlocks})
 }
 

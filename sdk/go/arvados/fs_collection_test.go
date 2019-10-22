@@ -1211,6 +1211,75 @@ func (s *CollectionFSSuite) TestFlushFullBlocksOnly(c *check.C) {
 	waitForFlush(0, nDirs*67<<20)
 }
 
+// Even when writing lots of files/dirs from different goroutines, as
+// long as Flush(dir,false) is called after writing each file,
+// unflushed data should be limited to one full block per
+// concurrentWriter, plus one nearly-full block at the end of each
+// dir/stream.
+func (s *CollectionFSSuite) TestMaxUnflushed(c *check.C) {
+	nDirs := int64(8)
+	maxUnflushed := (int64(concurrentWriters) + nDirs) << 26
+
+	fs, err := (&Collection{}).FileSystem(s.client, s.kc)
+	c.Assert(err, check.IsNil)
+
+	release := make(chan struct{})
+	timeout := make(chan struct{})
+	time.AfterFunc(10*time.Second, func() { close(timeout) })
+	var putCount, concurrency int64
+	var unflushed int64
+	s.kc.onPut = func(p []byte) {
+		defer atomic.AddInt64(&unflushed, -int64(len(p)))
+		cur := atomic.AddInt64(&concurrency, 1)
+		defer atomic.AddInt64(&concurrency, -1)
+		pc := atomic.AddInt64(&putCount, 1)
+		if pc < int64(concurrentWriters) {
+			// Block until we reach concurrentWriters, to
+			// make sure we're really accepting concurrent
+			// writes.
+			select {
+			case <-release:
+			case <-timeout:
+				c.Error("timeout")
+			}
+		} else if pc == int64(concurrentWriters) {
+			// Unblock the first N-1 PUT reqs.
+			close(release)
+		}
+		c.Assert(cur <= int64(concurrentWriters), check.Equals, true)
+		c.Assert(atomic.LoadInt64(&unflushed) <= maxUnflushed, check.Equals, true)
+	}
+
+	var owg sync.WaitGroup
+	megabyte := make([]byte, 1<<20)
+	for i := int64(0); i < nDirs; i++ {
+		dir := fmt.Sprintf("dir%d", i)
+		fs.Mkdir(dir, 0755)
+		owg.Add(1)
+		go func() {
+			defer owg.Done()
+			defer fs.Flush(dir, true)
+			var iwg sync.WaitGroup
+			defer iwg.Wait()
+			for j := 0; j < 67; j++ {
+				iwg.Add(1)
+				go func(j int) {
+					defer iwg.Done()
+					f, err := fs.OpenFile(fmt.Sprintf("%s/file%d", dir, j), os.O_WRONLY|os.O_CREATE, 0)
+					c.Assert(err, check.IsNil)
+					defer f.Close()
+					n, err := f.Write(megabyte)
+					c.Assert(err, check.IsNil)
+					atomic.AddInt64(&unflushed, int64(n))
+					fs.Flush(dir, false)
+				}(j)
+			}
+		}()
+	}
+	owg.Wait()
+	fs.Flush("", true)
+}
+
 func (s *CollectionFSSuite) TestBrokenManifests(c *check.C) {
 	for _, txt := range []string{
 		"\n",
