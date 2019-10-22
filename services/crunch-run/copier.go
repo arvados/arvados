@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
 )
 
@@ -90,7 +91,7 @@ func (cp *copier) Copy() (string, error) {
 		// full-size blocks, but leave the last short block
 		// open so f's data can be packed with it).
 		dir, _ := filepath.Split(f.dst)
-		if dir != lastparentdir || unflushed > 1<<26 {
+		if dir != lastparentdir || unflushed > keepclient.BLOCKSIZE {
 			if err := fs.Flush("/"+lastparentdir, dir != lastparentdir); err != nil {
 				return "", fmt.Errorf("error flushing output collection file data: %v", err)
 			}
