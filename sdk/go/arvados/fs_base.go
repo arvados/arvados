@@ -58,6 +58,9 @@ type FileSystem interface {
 	// while locking multiple inodes.
 	locker() sync.Locker
 
+	// throttle for limiting concurrent background writers
+	throttle() *throttle
+
 	// create a new node with nil parent.
 	newNode(name string, perm os.FileMode, modTime time.Time) (node inode, err error)
 
@@ -300,10 +303,15 @@ type fileSystem struct {
 	root inode
 	fsBackend
 	mutex sync.Mutex
+	thr   *throttle
 }
 
 func (fs *fileSystem) rootnode() inode {
 	return fs.root
+}
+
+func (fs *fileSystem) throttle() *throttle {
+	return fs.thr
 }
 
 func (fs *fileSystem) locker() sync.Locker {

@@ -1040,11 +1040,11 @@ func (s *CollectionFSSuite) TestOpenFileFlags(c *check.C) {
 }
 
 func (s *CollectionFSSuite) TestFlushFullBlocksWritingLongFile(c *check.C) {
-	defer func(wab, mbs int) {
-		writeAheadBlocks = wab
+	defer func(cw, mbs int) {
+		concurrentWriters = cw
 		maxBlockSize = mbs
-	}(writeAheadBlocks, maxBlockSize)
-	writeAheadBlocks = 2
+	}(concurrentWriters, maxBlockSize)
+	concurrentWriters = 2
 	maxBlockSize = 1024
 
 	proceed := make(chan struct{})
@@ -1069,7 +1069,7 @@ func (s *CollectionFSSuite) TestFlushFullBlocksWritingLongFile(c *check.C) {
 		default:
 			time.Sleep(time.Millisecond)
 		}
-		c.Check(atomic.AddInt32(&concurrent, -1) < int32(writeAheadBlocks), check.Equals, true)
+		c.Check(atomic.AddInt32(&concurrent, -1) < int32(concurrentWriters), check.Equals, true)
 	}
 
 	fs, err := (&Collection{}).FileSystem(s.client, s.kc)

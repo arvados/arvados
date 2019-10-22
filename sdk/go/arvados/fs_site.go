@@ -21,6 +21,7 @@ type CustomFileSystem interface {
 type customFileSystem struct {
 	fileSystem
 	root *vdirnode
+	thr  *throttle
 
 	staleThreshold time.Time
 	staleLock      sync.Mutex
@@ -33,6 +34,7 @@ func (c *Client) CustomFileSystem(kc keepClient) CustomFileSystem {
 		fileSystem: fileSystem{
 			fsBackend: keepBackend{apiClient: c, keepClient: kc},
 			root:      root,
+			thr:       newThrottle(concurrentWriters),
 		},
 	}
 	root.inode = &treenode{
