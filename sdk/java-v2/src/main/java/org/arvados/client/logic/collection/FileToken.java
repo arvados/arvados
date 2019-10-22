@@ -29,7 +29,7 @@ public class FileToken {
     private void splitFileTokenInfo(String fileTokenInfo) {
         String[] tokenPieces = fileTokenInfo.split(":");
         this.filePosition = Integer.parseInt(tokenPieces[0]);
-        this.fileSize = Integer.parseInt(tokenPieces[1]);
+        this.fileSize = Long.parseLong(tokenPieces[1]);
         this.fileName = tokenPieces[2].replace(Characters.SPACE, " ");
     }
 
