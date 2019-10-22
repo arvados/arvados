@@ -21,9 +21,9 @@ import {
 import { createTree } from '~/models/tree';
 import { getInitialResourceTypeFilters } from '~/store/resource-type-filters/resource-type-filters';
 import { SearchResultsPanelProps } from "./search-results-panel";
-import { Link } from 'react-router-dom';
 import { Routes } from '~/routes/routes';
-import { StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core';
+import { Link } from 'react-router-dom';
+import { StyleRulesCallback, withStyles, WithStyles, Button } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
 
 export enum SearchResultsPanelColumnNames {
@@ -41,7 +41,8 @@ export type CssRules = 'siteManagerLink';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     siteManagerLink: {
-        marginLeft: theme.spacing.unit * 2
+        marginRight: theme.spacing.unit * 2,
+        float: 'right'
     }
 });
 
@@ -125,7 +126,9 @@ export const SearchResultsPanelView = withStyles(styles, { withTheme: true })(
                 <div>{(props.localCluster !== homeCluster && loggedIn.length === 1) ?
                     <span>Searching local cluster {props.localCluster} only.  To search multiple clusters, <a href={props.remoteHostsConfig[homeCluster] && props.remoteHostsConfig[homeCluster].workbench2Url}> start from your home Workbench.</a></span> :
                     <span>Searching clusters: {loggedIn.map((ss) => <span key={ss.clusterId}> {ss.clusterId}</span>)}</span>}
-                    <Link to={Routes.SITE_MANAGER} className={props.classes.siteManagerLink}>Site Manager</Link>
+                    <Link to={Routes.SITE_MANAGER} >
+                        <Button className={props.classes.siteManagerLink} >Site Manager</Button>
+                    </Link>
                 </div>
             }
         />;
