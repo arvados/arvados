@@ -676,12 +676,14 @@ func (dn *dirnode) commitBlock(ctx context.Context, refs []fnSegmentRef, sync bo
 		block = append(block, seg.buf...)
 		segs = append(segs, seg)
 	}
+	dn.fs.throttle().Acquire()
 	errs := make(chan error, 1)
 	go func() {
 		defer close(done)
 		defer close(errs)
 		locked := map[*filenode]bool{}
 		locator, _, err := dn.fs.PutB(block)
+		dn.fs.throttle().Release()
 		{
 			if !sync {
 				for _, name := range dn.sortedNames() {
@@ -767,8 +769,6 @@ func (dn *dirnode) flush(ctx context.Context, names []string, opts flushOpts) er
 			return
 		}
 		cg.Go(func() error {
-			dn.fs.throttle().Acquire()
-			defer dn.fs.throttle().Release()
 			return dn.commitBlock(cg.Context(), refs, opts.sync)
 		})
 	}
