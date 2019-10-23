@@ -96,9 +96,9 @@ export const LoginPanel = withStyles(styles)(
                 <Typography component="div" align="right">
                     <Button variant="contained" color="primary" style={{ margin: "1em" }} className={classes.button}
                         onClick={() => dispatch(login(uuidPrefix, homeCluster, loginCluster, remoteHosts))}>
-                        Log in to {uuidPrefix}
+                        Log in
                         {uuidPrefix !== homeCluster && loginCluster !== homeCluster &&
-                            <span>&nbsp;with user from {homeCluster}</span>}
+                            <span>&nbsp;to {uuidPrefix} with user from {homeCluster}</span>}
                     </Button>
                 </Typography>
             </Grid>
