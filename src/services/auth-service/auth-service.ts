@@ -204,8 +204,8 @@ export class AuthService {
             } as Session;
         });
         const sessions = [currentSession]
-            .concat(localSessions)
             .concat(cfgSessions)
+            .concat(localSessions)
             .filter((r: Session) => r.clusterId !== "*");
 
         const uniqSessions = uniqBy(sessions, 'clusterId');

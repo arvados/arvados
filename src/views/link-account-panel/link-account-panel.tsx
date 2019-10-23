@@ -19,6 +19,7 @@ const mapStateToProps = (state: RootState): LinkAccountPanelRootDataProps => {
         hasRemoteHosts: Object.keys(state.auth.remoteHosts).length > 1 && state.auth.loginCluster === "",
         selectedCluster: state.linkAccountPanel.selectedCluster,
         localCluster: state.auth.localCluster,
+        loginCluster: state.auth.loginCluster,
         targetUser: state.linkAccountPanel.targetUser,
         userToLink: state.linkAccountPanel.userToLink,
         status: state.linkAccountPanel.status,

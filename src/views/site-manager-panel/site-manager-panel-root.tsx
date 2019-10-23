@@ -161,7 +161,7 @@ export const SiteManagerPanelRoot = compose(
                         <Grid item xs={12}>
                             <Typography paragraph={true} className={classes.remoteSiteInfo}>
                                 To add a remote Arvados site, paste the remote site's host here (see "ARVADOS_API_HOST" on the "current token" page).
-                        </Typography>
+                            </Typography>
                         </Grid>
                         <Grid item xs={8}>
                             <Field
