@@ -78,11 +78,15 @@ func logResponse(w *responseTimer, req *http.Request, lgr *logrus.Entry) {
 	if respCode == 0 {
 		respCode = http.StatusOK
 	}
-	lgr.WithFields(logrus.Fields{
+	fields := logrus.Fields{
 		"respStatusCode": respCode,
 		"respStatus":     http.StatusText(respCode),
 		"respBytes":      w.WroteBodyBytes(),
-	}).Info("response")
+	}
+	if respCode >= 400 {
+		fields["respBody"] = string(w.Sniffed())
+	}
+	lgr.WithFields(fields).Info("response")
 }
 
 type responseTimer struct {
