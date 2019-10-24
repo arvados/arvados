@@ -23,7 +23,7 @@ import { configureStore, RootStore } from "../store";
 import createBrowserHistory from "history/createBrowserHistory";
 import { mockConfig } from '~/common/config';
 import { ApiActions } from "~/services/api/api-actions";
-import { ACCOUNT_LINK_STATUS_KEY} from '~/services/link-account-service/link-account-service';
+import { ACCOUNT_LINK_STATUS_KEY } from '~/services/link-account-service/link-account-service';
 
 describe('auth-actions', () => {
     let reducer: (state: AuthState | undefined, action: AuthAction) => any;
@@ -67,7 +67,16 @@ describe('auth-actions', () => {
             sshKeys: [],
             homeCluster: "zzzzz",
             localCluster: "zzzzz",
-            remoteHostsConfig: {},
+            loginCluster: undefined,
+            remoteHostsConfig: {
+                "zzzzz": {
+                    "remoteHosts": {
+                        "xc59z": "xc59z.arvadosapi.com",
+                    },
+                    "rootUrl": "https://zzzzz.arvadosapi.com",
+                    "uuidPrefix": "zzzzz",
+                },
+            },
             remoteHosts: {
                 zzzzz: "zzzzz.arvadosapi.com",
                 xc59z: "xc59z.arvadosapi.com"
@@ -89,7 +98,7 @@ describe('auth-actions', () => {
                 "email": "",
                 "loggedIn": false,
                 "remoteHost": "xc59z.arvadosapi.com",
-                "status": 0,
+                "status": 1,
                 "token": "",
                 "username": ""
             }],
