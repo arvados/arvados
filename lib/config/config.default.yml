@@ -498,7 +498,7 @@ Clusters:
 
       # The cluster ID to delegate the user database.  When set,
       # logins on this cluster will be redirected to the login cluster
-      # (login cluster must appear in RemoteHosts with Proxy: true)
+      # (login cluster must appear in RemoteClusters with Proxy: true)
       LoginCluster: ""
 
       # How long a cached token belonging to a remote cluster will

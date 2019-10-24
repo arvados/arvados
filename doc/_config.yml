@@ -157,6 +157,7 @@ navbar:
     - Users and Groups:
       - install/cheat_sheet.html.textile.liquid
       - admin/activation.html.textile.liquid
+      - admin/reassign-ownership.html.textile.liquid
       - admin/merge-remote-account.html.textile.liquid
       - admin/migrating-providers.html.textile.liquid
       - user/topics/arvados-sync-groups.html.textile.liquid
