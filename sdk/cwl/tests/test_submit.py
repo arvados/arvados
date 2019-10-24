@@ -314,7 +314,7 @@ def stubs(func):
                 'vcpus': 1,
                 'ram': (1024+256)*1024*1024
             },
-            'use_existing': True,
+            'use_existing': False,
             'properties': {},
             'secret_mounts': {}
         }
@@ -690,7 +690,7 @@ class TestSubmit(unittest.TestCase):
                 'vcpus': 1,
                 'ram': 1342177280
             },
-            'use_existing': True,
+            'use_existing': False,
             'properties': {},
             'secret_mounts': {}
         }
@@ -785,7 +785,7 @@ class TestSubmit(unittest.TestCase):
                 'vcpus': 1,
                 'ram': 1342177280
             },
-            'use_existing': True,
+            'use_existing': False,
             'properties': {
                 "template_uuid": "962eh-7fd4e-gkbzl62qqtfig37"
             },
@@ -1180,7 +1180,7 @@ class TestSubmit(unittest.TestCase):
                 }
             },
             "state": "Committed",
-            "use_existing": True
+            "use_existing": False
         }
 
         stubs.api.container_requests().create.assert_called_with(
