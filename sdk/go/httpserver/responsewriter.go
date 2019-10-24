@@ -22,7 +22,7 @@ type ResponseWriter interface {
 // error.
 type responseWriter struct {
 	http.ResponseWriter
-	wroteStatus    int   // Last status given to WriteHeader()
+	wroteStatus    int   // First status given to WriteHeader()
 	wroteBodyBytes int   // Bytes successfully written
 	err            error // Last error returned from Write()
 	sniffed        []byte
@@ -40,7 +40,12 @@ func (w *responseWriter) CloseNotify() <-chan bool {
 }
 
 func (w *responseWriter) WriteHeader(s int) {
-	w.wroteStatus = s
+	if w.wroteStatus == 0 {
+		w.wroteStatus = s
+	}
+	// ...else it's too late to change the status seen by the
+	// client -- but we call the wrapped WriteHeader() anyway so
+	// it can log a warning.
 	w.ResponseWriter.WriteHeader(s)
 }
 
