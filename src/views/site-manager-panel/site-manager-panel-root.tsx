@@ -26,6 +26,7 @@ import { Field, FormErrors, InjectedFormProps, reduxForm, reset, stopSubmit } fr
 import { TextField } from "~/components/text-field/text-field";
 import { addSession } from "~/store/auth/auth-action-session";
 import { SITE_MANAGER_REMOTE_HOST_VALIDATION } from "~/validators/validators";
+import { Config } from '~/common/config';
 
 type CssRules = 'root' | 'link' | 'buttonContainer' | 'table' | 'tableRow' |
     'remoteSiteInfo' | 'buttonAdd' | 'buttonLoggedIn' | 'buttonLoggedOut' |
@@ -88,6 +89,7 @@ export interface SiteManagerPanelRootActionProps {
 
 export interface SiteManagerPanelRootDataProps {
     sessions: Session[];
+    remoteHostsConfig: { [key: string]: Config };
 }
 
 type SiteManagerPanelRootProps = SiteManagerPanelRootDataProps & SiteManagerPanelRootActionProps & WithStyles<CssRules> & InjectedFormProps;
@@ -114,14 +116,14 @@ export const SiteManagerPanelRoot = compose(
         }
     }),
     withStyles(styles))
-    (({ classes, sessions, handleSubmit, toggleSession }: SiteManagerPanelRootProps) =>
+    (({ classes, sessions, handleSubmit, toggleSession, remoteHostsConfig }: SiteManagerPanelRootProps) =>
         <Card className={classes.root}>
             <CardContent>
                 <Grid container direction="row">
                     <Grid item xs={12}>
                         <Typography paragraph={true} >
                             You can log in to multiple Arvados sites here, then use the multi-site search page to search collections and projects on all sites at once.
-                    </Typography>
+															  </Typography>
                     </Grid>
                 </Grid>
                 <Grid item xs={12}>
@@ -139,7 +141,7 @@ export const SiteManagerPanelRoot = compose(
                             {sessions.map((session, index) => {
                                 const validating = session.status === SessionStatus.BEING_VALIDATED;
                                 return <TableRow key={index} className={classes.tableRow}>
-                                    <TableCell>{session.clusterId}</TableCell>
+                                    <TableCell><a href={remoteHostsConfig[session.clusterId].workbench2Url}>{session.clusterId}</a></TableCell>
                                     <TableCell>{session.remoteHost}</TableCell>
                                     <TableCell>{validating ? <CircularProgress size={20} /> : session.username}</TableCell>
                                     <TableCell>{validating ? <CircularProgress size={20} /> : session.email}</TableCell>
@@ -161,7 +163,7 @@ export const SiteManagerPanelRoot = compose(
                         <Grid item xs={12}>
                             <Typography paragraph={true} className={classes.remoteSiteInfo}>
                                 To add a remote Arvados site, paste the remote site's host here (see "ARVADOS_API_HOST" on the "current token" page).
-                            </Typography>
+                        </Typography>
                         </Grid>
                         <Grid item xs={8}>
                             <Field

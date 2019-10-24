@@ -19,6 +19,7 @@ import { UserResource } from "~/models/user";
 import { LinkAccountType } from "~/models/link-account";
 import { formatDate } from "~/common/formatters";
 import { LinkAccountPanelStatus, LinkAccountPanelError } from "~/store/link-account-panel/link-account-panel-reducer";
+import { Config } from '~/common/config';
 
 type CssRules = 'root';
 
@@ -32,7 +33,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 export interface LinkAccountPanelRootDataProps {
     targetUser?: UserResource;
     userToLink?: UserResource;
-    remoteHosts: { [key: string]: string };
+    remoteHostsConfig: { [key: string]: Config };
     hasRemoteHosts: boolean;
     localCluster: string;
     loginCluster: string;
@@ -70,13 +71,13 @@ type LinkAccountPanelRootProps = LinkAccountPanelRootDataProps & LinkAccountPane
 
 export const LinkAccountPanelRoot = withStyles(styles)(
     ({ classes, targetUser, userToLink, status, isProcessing, error, startLinking, cancelLinking, linkAccount,
-        remoteHosts, hasRemoteHosts, selectedCluster, setSelectedCluster, localCluster, loginCluster }: LinkAccountPanelRootProps) => {
+        remoteHostsConfig, hasRemoteHosts, selectedCluster, setSelectedCluster, localCluster, loginCluster }: LinkAccountPanelRootProps) => {
         return <Card className={classes.root}>
             <CardContent>
                 {isProcessing && <Grid container item direction="column" alignContent="center" spacing={24}>
                     <Grid item>
                         Loading user info. Please wait.
-                       </Grid>
+		       </Grid>
                     <Grid item style={{ alignSelf: 'center' }}>
                         <CircularProgress />
                     </Grid>
@@ -89,29 +90,29 @@ export const LinkAccountPanelRoot = withStyles(styles)(
                             </Grid>
                             <Grid item>
                                 You can link Arvados accounts. After linking, either login will take you to the same account.
-                               </Grid >
+			</Grid >
                         </Grid>
                         <Grid container item direction="row" spacing={24}>
                             <Grid item>
                                 <Button disabled={!targetUser.isActive} color="primary" variant="contained" onClick={() => startLinking(LinkAccountType.ADD_OTHER_LOGIN)}>
                                     Add another login to this account
-				   </Button>
+			    </Button>
                             </Grid>
                             <Grid item>
                                 <Button color="primary" variant="contained" onClick={() => startLinking(LinkAccountType.ACCESS_OTHER_ACCOUNT)}>
                                     Use this login to access another account
-				   </Button>
+			    </Button>
                             </Grid>
                         </Grid>
                         {hasRemoteHosts && selectedCluster && <Grid container item direction="column" spacing={24}>
                             <Grid item>
                                 You can also link {displayUser(targetUser, false)} with an account from a remote cluster.
-                               </Grid>
+			</Grid>
                             <Grid item>
                                 Please select the cluster that hosts the account you want to link with:
-                                   <Select id="remoteHostsDropdown" native defaultValue={selectedCluster} style={{ marginLeft: "1em" }}
+                            <Select id="remoteHostsDropdown" native defaultValue={selectedCluster} style={{ marginLeft: "1em" }}
                                     onChange={(event) => setSelectedCluster(event.target.value)}>
-                                    {Object.keys(remoteHosts).map((k) => k !== localCluster ? <option key={k} value={k}>{k}</option> : null)}
+                                    {Object.keys(remoteHostsConfig).map((k) => k !== localCluster ? <option key={k} value={k}>{k}</option> : null)}
                                 </Select>
                             </Grid>
                             <Grid item>
@@ -129,17 +130,17 @@ export const LinkAccountPanelRoot = withStyles(styles)(
                                 {targetUser.isActive ? (loginCluster === "" ?
                                     <> <Grid item>
                                         This a remote account. You can link a local Arvados account to this one. After linking, you can access the local account's data by logging into the <b>{localCluster}</b> cluster as user <b>{targetUser.email}</b> from <b>{targetUser.uuid.substr(0, 5)}</b>.
-				     </Grid >
+						 </Grid >
                                         <Grid item>
                                             <Button color="primary" variant="contained" onClick={() => startLinking(LinkAccountType.ADD_LOCAL_TO_REMOTE)}>
                                                 Link an account from {localCluster} to this account
-					 </Button>
+						     </Button>
                                         </Grid> </>
-                                    : <Grid item>Must perform account linking on login cluster <b>{loginCluster}</b></Grid>
+                                    : <Grid item>Must perform account linking on login cluster <a href={remoteHostsConfig[loginCluster].workbench2Url + "/link_account"}>{loginCluster}</a></Grid>
                                 )
                                     : <Grid item>
                                         This an inactive remote account. An administrator must activate your account before you can proceed. After your accounts is activated, you can link a local Arvados account hosted by the <b>{localCluster}</b> cluster to this one.
-				 </Grid >}
+			  </Grid >}
                             </Grid>
                         </Grid>}
                 </div>}
