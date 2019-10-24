@@ -36,7 +36,7 @@ from .perf import Perf
 from ._version import __version__
 from .executor import ArvCwlExecutor
 
-# These arn't used directly in this file but
+# These aren't used directly in this file but
 # other code expects to import them from here
 from .arvcontainer import ArvadosContainer
 from .arvjob import ArvadosJob
