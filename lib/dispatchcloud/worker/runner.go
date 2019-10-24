@@ -11,7 +11,6 @@ import (
 	"syscall"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"github.com/sirupsen/logrus"
 )
 
@@ -20,7 +19,7 @@ import (
 type remoteRunner struct {
 	uuid          string
 	executor      Executor
-	arvClient     *arvados.Client
+	envJSON       json.RawMessage
 	remoteUser    string
 	timeoutTERM   time.Duration
 	timeoutSignal time.Duration
@@ -36,10 +35,33 @@ type remoteRunner struct {
 // newRemoteRunner returns a new remoteRunner. Caller should ensure
 // Close() is called to release resources.
 func newRemoteRunner(uuid string, wkr *worker) *remoteRunner {
+	// Early (<1.5) versions of crunch-run error out if they see
+	// non-string values in the env map -- so here we send the
+	// instance type record as a JSON doc. Once worker images are
+	// updated, we can skip the extra encoding, and just include
+	// {"InstanceType": wkr.instType} in the env map.
+	var instJSON bytes.Buffer
+	enc := json.NewEncoder(&instJSON)
+	enc.SetIndent("", "    ")
+	if err := enc.Encode(wkr.instType); err != nil {
+		panic(err)
+	}
+	env := map[string]string{
+		"ARVADOS_API_HOST":  wkr.wp.arvClient.APIHost,
+		"ARVADOS_API_TOKEN": wkr.wp.arvClient.AuthToken,
+		"InstanceType":      instJSON.String(),
+	}
+	if wkr.wp.arvClient.Insecure {
+		env["ARVADOS_API_HOST_INSECURE"] = "1"
+	}
+	envJSON, err := json.Marshal(env)
+	if err != nil {
+		panic(err)
+	}
 	rr := &remoteRunner{
 		uuid:          uuid,
 		executor:      wkr.executor,
-		arvClient:     wkr.wp.arvClient,
+		envJSON:       envJSON,
 		remoteUser:    wkr.instance.RemoteUser(),
 		timeoutTERM:   wkr.wp.timeoutTERM,
 		timeoutSignal: wkr.wp.timeoutSignal,
@@ -57,22 +79,11 @@ func newRemoteRunner(uuid string, wkr *worker) *remoteRunner {
 // assume the remote process _might_ have started, at least until it
 // probes the worker and finds otherwise.
 func (rr *remoteRunner) Start() {
-	env := map[string]string{
-		"ARVADOS_API_HOST":  rr.arvClient.APIHost,
-		"ARVADOS_API_TOKEN": rr.arvClient.AuthToken,
-	}
-	if rr.arvClient.Insecure {
-		env["ARVADOS_API_HOST_INSECURE"] = "1"
-	}
-	envJSON, err := json.Marshal(env)
-	if err != nil {
-		panic(err)
-	}
-	stdin := bytes.NewBuffer(envJSON)
 	cmd := "crunch-run --detach --stdin-env '" + rr.uuid + "'"
 	if rr.remoteUser != "root" {
 		cmd = "sudo " + cmd
 	}
+	stdin := bytes.NewBuffer(rr.envJSON)
 	stdout, stderr, err := rr.executor.Execute(nil, cmd, stdin)
 	if err != nil {
 		rr.logger.WithField("stdout", string(stdout)).

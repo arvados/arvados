@@ -95,7 +95,7 @@ type ContainerRunner struct {
 	Docker ThinDockerClient
 
 	// Dispatcher client is initialized with the Dispatcher token.
-	// This is a priviledged token used to manage container status
+	// This is a privileged token used to manage container status
 	// and logs.
 	//
 	// We have both dispatcherClient and DispatcherArvClient
@@ -115,6 +115,9 @@ type ContainerRunner struct {
 	containerClient     *arvados.Client
 	ContainerArvClient  IArvadosClient
 	ContainerKeepClient IKeepClient
+
+	// environment provided by arvados-dispatch-cloud
+	dispatchEnv map[string]interface{}
 
 	Container       arvados.Container
 	ContainerConfig dockercontainer.Config
@@ -850,21 +853,55 @@ func (runner *ContainerRunner) LogContainerRecord() error {
 	return err
 }
 
-// LogNodeRecord logs arvados#node record corresponding to the current host.
+// LogNodeRecord logs the current host's InstanceType config entry (or
+// the arvados#node record, if running via crunch-dispatch-slurm).
 func (runner *ContainerRunner) LogNodeRecord() error {
-	hostname := os.Getenv("SLURMD_NODENAME")
-	if hostname == "" {
-		hostname, _ = os.Hostname()
-	}
-	_, err := runner.logAPIResponse("node", "nodes", map[string]interface{}{"filters": [][]string{{"hostname", "=", hostname}}}, func(resp interface{}) {
-		// The "info" field has admin-only info when obtained
-		// with a privileged token, and should not be logged.
-		node, ok := resp.(map[string]interface{})
-		if ok {
-			delete(node, "info")
+	if it, ok := runner.dispatchEnv["InstanceType"]; ok {
+		// Dispatched via arvados-dispatch-cloud. Save
+		// InstanceType config fragment received from
+		// dispatcher on stdin.
+		w, err := runner.LogCollection.OpenFile("node.json", os.O_CREATE|os.O_WRONLY, 0666)
+		if err != nil {
+			return err
 		}
-	})
-	return err
+		defer w.Close()
+		if it, ok := it.(string); ok {
+			// dispatcher supplied JSON data (in order to
+			// stay compatible with old crunch-run
+			// versions)
+			_, err = io.WriteString(w, it)
+			if err != nil {
+				return err
+			}
+		} else {
+			// dispatcher supplied struct
+			enc := json.NewEncoder(w)
+			enc.SetIndent("", "    ")
+			err = enc.Encode(it)
+			if err != nil {
+				return err
+			}
+		}
+		return w.Close()
+	} else {
+		// Dispatched via crunch-dispatch-slurm. Look up
+		// apiserver's node record corresponding to
+		// $SLURMD_NODENAME.
+		hostname := os.Getenv("SLURMD_NODENAME")
+		if hostname == "" {
+			hostname, _ = os.Hostname()
+		}
+		_, err := runner.logAPIResponse("node", "nodes", map[string]interface{}{"filters": [][]string{{"hostname", "=", hostname}}}, func(resp interface{}) {
+			// The "info" field has admin-only info when
+			// obtained with a privileged token, and
+			// should not be logged.
+			node, ok := resp.(map[string]interface{})
+			if ok {
+				delete(node, "info")
+			}
+		})
+		return err
+	}
 }
 
 func (runner *ContainerRunner) logAPIResponse(label, path string, params map[string]interface{}, munge func(interface{})) (logged bool, err error) {
@@ -1774,11 +1811,12 @@ func main() {
 
 	flag.Parse()
 
+	var env map[string]interface{}
 	if *stdinEnv && !ignoreDetachFlag {
 		// Load env vars on stdin if asked (but not in a
 		// detached child process, in which case stdin is
 		// /dev/null).
-		loadEnv(os.Stdin)
+		env = loadEnv(os.Stdin)
 	}
 
 	switch {
@@ -1833,6 +1871,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	cr.dispatchEnv = env
+
 	parentTemp, tmperr := cr.MkTempDir("", "crunch-run."+containerId+".")
 	if tmperr != nil {
 		log.Fatalf("%s: %v", containerId, tmperr)
@@ -1872,20 +1912,23 @@ func main() {
 	}
 }
 
-func loadEnv(rdr io.Reader) {
+func loadEnv(rdr io.Reader) map[string]interface{} {
 	buf, err := ioutil.ReadAll(rdr)
 	if err != nil {
 		log.Fatalf("read stdin: %s", err)
 	}
-	var env map[string]string
+	var env map[string]interface{}
 	err = json.Unmarshal(buf, &env)
 	if err != nil {
 		log.Fatalf("decode stdin: %s", err)
 	}
 	for k, v := range env {
-		err = os.Setenv(k, v)
-		if err != nil {
-			log.Fatalf("setenv(%q): %s", k, err)
+		if v, ok := v.(string); ok {
+			err = os.Setenv(k, v)
+			if err != nil {
+				log.Fatalf("setenv(%q): %s", k, err)
+			}
 		}
 	}
+	return env
 }
