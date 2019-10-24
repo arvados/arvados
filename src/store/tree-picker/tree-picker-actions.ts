@@ -4,6 +4,7 @@
 
 import { unionize, ofType, UnionOf } from "~/common/unionize";
 import { TreeNode, initTreeNode, getNodeDescendants, TreeNodeStatus, getNode, TreePickerId, Tree } from '~/models/tree';
+import { createCollectionFilesTree } from "~/models/collection-file";
 import { Dispatch } from 'redux';
 import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
@@ -17,6 +18,8 @@ import { OrderBuilder } from '~/services/api/order-builder';
 import { ProjectResource } from '~/models/project';
 import { mapTree } from '../../models/tree';
 import { LinkResource, LinkClass } from "~/models/link";
+import { mapTreeValues } from "~/models/tree";
+import { sortFilesTree } from "~/services/collection-service/collection-service-files-response";
 
 export const treePickerActions = unionize({
     LOAD_TREE_PICKER_NODE: ofType<{ id: string, pickerId: string }>(),
@@ -139,7 +142,10 @@ export const loadCollection = (id: string, pickerId: string) =>
             const node = getNode(id)(picker);
             if (node && 'kind' in node.value && node.value.kind === ResourceKind.COLLECTION) {
 
-                const filesTree = await services.collectionService.files(node.value.portableDataHash);
+                const files = await services.collectionService.files(node.value.portableDataHash);
+                const tree = createCollectionFilesTree(files);
+                const sorted = sortFilesTree(tree);
+                const filesTree = mapTreeValues(services.collectionService.extendFileURL)(sorted);
 
                 dispatch(
                     treePickerActions.APPEND_TREE_PICKER_NODE_SUBTREE({

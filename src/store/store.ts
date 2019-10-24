@@ -43,7 +43,6 @@ import { appInfoReducer } from '~/store/app-info/app-info-reducer';
 import { searchBarReducer } from './search-bar/search-bar-reducer';
 import { SEARCH_RESULTS_PANEL_ID } from '~/store/search-results-panel/search-results-panel-actions';
 import { SearchResultsMiddlewareService } from './search-results-panel/search-results-middleware-service';
-import { resourcesDataReducer } from "~/store/resources-data/resources-data-reducer";
 import { virtualMachinesReducer } from "~/store/virtual-machines/virtual-machines-reducer";
 import { repositoriesReducer } from '~/store/repositories/repositories-reducer';
 import { keepServicesReducer } from '~/store/keep-services/keep-services-reducer';
@@ -161,7 +160,6 @@ const createRootReducer = (services: ServiceRepository) => combineReducers({
     processLogsPanel: processLogsPanelReducer,
     properties: propertiesReducer,
     resources: resourcesReducer,
-    resourcesData: resourcesDataReducer,
     router: routerReducer,
     snackbar: snackbarReducer,
     treePicker: treePickerReducer,

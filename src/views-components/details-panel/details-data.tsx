@@ -4,10 +4,9 @@
 
 import * as React from 'react';
 import { DetailsResource } from "~/models/details";
-import { ResourceData } from "~/store/resources-data/resources-data-reducer";
 
 export abstract class DetailsData<T extends DetailsResource = DetailsResource> {
-    constructor(protected item: T, protected data?: ResourceData) {}
+    constructor(protected item: T) { }
 
     getTitle(): string {
         return this.item.name || 'Projects';
@@ -17,6 +16,6 @@ export abstract class DetailsData<T extends DetailsResource = DetailsResource> {
     abstract getDetails(): React.ReactElement<any>;
 
     getActivity(): React.ReactElement<any> {
-        return <div/>;
+        return <div />;
     }
 }

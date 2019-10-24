@@ -27,8 +27,8 @@ export class CollectionDetails extends DetailsData<CollectionResource> {
             <DetailsAttribute label='Collection UUID' linkToUuid={this.item.uuid} value={this.item.uuid} />
             <DetailsAttribute label='Content address' linkToUuid={this.item.portableDataHash} value={this.item.portableDataHash} />
             {/* Missing attrs */}
-            <DetailsAttribute label='Number of files' value={this.data && this.data.fileCount} />
-            <DetailsAttribute label='Content size' value={formatFileSize(this.data && this.data.fileSize)} />
+            <DetailsAttribute label='Number of files' value={this.item.fileCount} />
+            <DetailsAttribute label='Content size' value={formatFileSize(this.item.fileSizeTotal)} />
         </div>;
     }
 }

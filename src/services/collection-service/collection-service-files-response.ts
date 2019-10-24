@@ -2,15 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { createCollectionFilesTree, CollectionDirectory, CollectionFile, CollectionFileType, createCollectionDirectory, createCollectionFile } from "../../models/collection-file";
+import { CollectionDirectory, CollectionFile, CollectionFileType, createCollectionDirectory, createCollectionFile } from "../../models/collection-file";
 import { getTagValue } from "~/common/xml";
 import { getNodeChildren, Tree, mapTree } from '~/models/tree';
-
-export const parseFilesResponse = (document: Document) => {
-    const files = extractFilesData(document);
-    const tree = createCollectionFilesTree(files);
-    return sortFilesTree(tree);
-};
 
 export const sortFilesTree = (tree: Tree<CollectionDirectory | CollectionFile>) => {
     return mapTree<CollectionDirectory | CollectionFile>(node => {
