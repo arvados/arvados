@@ -47,8 +47,9 @@ func (w *responseWriter) WriteHeader(s int) {
 func (w *responseWriter) Write(data []byte) (n int, err error) {
 	if w.wroteStatus == 0 {
 		w.WriteHeader(http.StatusOK)
+	} else if w.wroteStatus >= 400 {
+		w.sniff(data)
 	}
-	w.sniff(data)
 	n, err = w.ResponseWriter.Write(data)
 	w.wroteBodyBytes += n
 	w.err = err
