@@ -15,7 +15,7 @@ public class FileTokenTest {
 
     public static final String FILE_TOKEN_INFO = "0:1024:test-file1";
     public static final int FILE_POSITION = 0;
-    public static final int FILE_LENGTH = 1024;
+    public static final long FILE_LENGTH = 1024L;
     public static final String FILE_NAME = "test-file1";
     public static final String FILE_PATH = "c" + Characters.SLASH;
 
