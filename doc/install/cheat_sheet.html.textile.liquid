@@ -28,10 +28,30 @@ arv virtual_machine create --virtual-machine '{"hostname":"xxxxxxxchangeme.examp
 
 h3. CLI: Activate user
 
+Note this bypasses user agreements checks, and does not set up the user with a default git repository or VM login.
+
 <pre>
 user_uuid=xxxxxxxchangeme
 
 arv user update --uuid "$user_uuid" --user '{"is_active":true}'
+</pre>
+
+h3. CLI: Setup a user
+
+This creates a default git repository and VM login.
+
+<pre>
+user_uuid=xxxxxxxchangeme
+
+arv user setup --uuid "$user_uuid"
+</pre>
+
+h3. CLI: Deactivate user
+
+<pre>
+user_uuid=xxxxxxxchangeme
+
+arv user unsetup --uuid "$user_uuid"
 </pre>
 
 h3. User &rarr; VM

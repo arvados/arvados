@@ -114,6 +114,7 @@ navbar:
       - api/methods/authorized_keys.html.textile.liquid
       - api/methods/groups.html.textile.liquid
       - api/methods/users.html.textile.liquid
+      - api/methods/user_agreements.html.textile.liquid
     - System resources:
       - api/methods/keep_services.html.textile.liquid
       - api/methods/links.html.textile.liquid

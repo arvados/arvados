@@ -12,52 +12,44 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 This page describes how new users are created and activated.
 
-"Browser login and management of API tokens is described here.":{{site.baseurl}}/api/tokens.html
-
 h3. Authentication
 
-After completing the authentication process, a callback is made from the SSO server to the API server, providing a user record and @identity_url@ (despite the name, this is actually an Arvados user uuid).
+"Browser login and management of API tokens is described here.":{{site.baseurl}}/api/tokens.html
 
-The API server searches for a user record with the @identity_url@ supplied by the SSO.  If found, that user account will be used, unless the account has @redirect_to_user_uuid@ set, in which case it will use the user in @redirect_to_user_uuid@ instead (this is used for the "link account":{{site.baseurl}}/user/topics/link-accounts.html feature).
+After completing the log in and authentication process, the API server receives a user record from the upstream identity provider (Google OAuth, LDAP, etc) consisting of the user's name, email address, and unique identifier called the @identity_url@.
 
-Next, it searches by email address for a "pre-activated account.":#pre-activated
+The API server searches for a user record with the @identity_url@ supplied by the identity provider.  If found, that user account will be used, unless the account has @redirect_to_user_uuid@ set, in which case it will use the user in @redirect_to_user_uuid@ instead (this is used for the "link account":{{site.baseurl}}/user/topics/link-accounts.html feature).
+
+If no matching @identity_url@ is found, it searches by email address.  This allows for "provider migration":migrating-providers.html and a "pre-activated accounts.":#pre-activated
 
 If no existing user record is found, a new user object will be created.
 
-A federated user follows a slightly different flow, whereby a special token is presented and the API server verifies user's identity with the home cluster, however it also results in a user object (representing the remote user) being created.
-
-h3. User setup
-
-If @Users.AutoSetupNewUsers@ is true, as part of creating the new user object, the user is immediately set up with:
-
-* @can_login@ @permission@ link going (email address &rarr; user uuid) which records @identity_url_prefix@
-* Membership in the "All users" group (can read all users, all users can see new user)
-* A new git repo and @can_manage@ permission to that repo if @Users.AutoSetupNewUsersWithRepository@ is true
-* @can_login@ permission to a shell node if @Users.AutoSetupNewUsersWithVmUUID@ is set to the uuid of a vm
-
-Otherwise, an admin must explicitly invoke "setup" on the user via workbench or the API.
+A federated user follows a slightly different flow, whereby a special token is presented and the API server verifies user's identity with the home cluster.  This results in a user object (representing the remote user) being created on the local cluster.
 
 h3. User activation
 
-A newly created user is inactive (@is_active@ is false) unless explicitly set by the admin.
+A newly created user is inactive (@is_active@ is false) by default.
 
-An inactive user cannot create or update any object, but can read Arvados objects that the user account has permission to read.  As a result, when @Users.AutoSetupNewUsers@ is true, an user who has been set up but is not activate may still be able to do things, such as read things shared with "All users", clone and push to the git repository, or login to a VM.
+An inactive user cannot create or update any object, but can read Arvados objects that the user account has permission to read.
 
-{% comment %}
-Maybe these services should check is_active.
+There are three ways a user can be activated:
 
-I believe that when this was originally designed, being able to access git and VM required an ssh key, and an inactive user could not register an ssh key because that required creating a record.  However, it is now possible to authenticate to shell VMs and http+git with just an API token.
-{% endcomment %}
+# Self-activation.  When a user logs in to Workbench, checks for "user agreements":#user_agreements and Workbench automatically attempts to self-activate.
+# An admin can invoke the @activate@ method of the users controller using @arv user activate --uuid=...@ (this also checks for user agreements)
+# An admin can set the @is_active@ field directly (bypassing user agreements)
 
-There are three ways a user can be activated.
+A user which has already been set up (either @Users.AutoSetupNewUsers@ is true, or an admin has invoked @setup@) can self-activate.  The @activate@ method checks that the user has "signed" any user agreements, it will fail if they are not yet signed.
 
-# Self-activation by Workbench.  When an inactive user logs, Workbench attempts to self-activate.  Successful activation creates the git repo and vm login for the user.
-# An admin can invoke the @activate@ method of the users controller using @arv user activate --uuid=...@
-# An admin can set the @is_active@ field directly.  This runs @setup_on_activate@ which sets up oid_login_perm and group membership, but does not set repo or vm (even if if @Users.AutoSetupNewUsersWithRepository@ and/or @Users.AutoSetupNewUsersWithVmUUID@ are set).  The admin can invoke "setup" separately (or use the "Setup" button on Workbench).
+If the user has _not_ yet been set up (@Users.AutoSetupNewUsers@ is false) the user cannot self-activate, and requires an admin to either @setup@ the user (enabling self activation), or directly @activate@ the user.
+
+When a user is activated, some basic setup is done, but does not perform full "user setup":#setup .
+
+* @can_login@ @permission@ link going (email address &rarr; user uuid) which records @identity_url_prefix@
+* Adding membership to the "All users" group (can read all users, all users can see new user)
 
 h3(#deactivating_users). Deactivate a user
 
-Setting @is_active@ to @false@ is not sufficient to lock out a user.  The user may be able to use re-activate themself.  The correct way is to use @unsetup@.
+Setting @is_active@ to @false@ is *not* sufficient to lock out a user.  The user may be able to use re-activate themself.  The correct way is to use @unsetup@.
 
 Note: also make sure that @is_admin: false@.  If the user still has @is_admin: true@ the user may be able to re-activate themself.
 
@@ -77,7 +69,7 @@ Unsetup does not revoke API tokens.
 
 An "inactive" user with a valid API token can still read the database, but is barred from creating or modifying records.  User deactivation with "unsetup" should be done together with "ownership reassignment.":reassign-ownership.html
 
-h3(#user_agreements). User agreements
+h3(#user_agreements). User agreements and self-activation
 
 The @activate@ method of the users controller checks if the user @is_invited@ and whether the user has "signed" all the user agreements.
 
@@ -86,22 +78,22 @@ The @activate@ method of the users controller checks if the user @is_invited@ an
 * @Users.NewUsersAreActive@ is true
 * The user account has permission to view the membership of the "All Users" group.
 
-User agreements are accessed by getting a listing on the @user_agreements@ endpoint.  This returns a list of collection uuids.  This is executed as a system user, so it bypasses normal read permission checks.
+User agreements are accessed through the "user_agreements API":{{site.baseurl}}/api/methods/user_agreements.html .  This returns a list of collection records.  This is executed as a system user, so it bypasses normal read permission checks.
 
-The available user agreements are represented in the Links table as
+The user agreements that users are required to sign should be added to the @links@ table this way:
 
 <pre>
-{
+$ arv link create --link '{
   "link_class": "signature",
   "name": "require",
   "tail_uuid": "*system user uuid*",
   "head_uuid: "*collection uuid*"
-}
+}'
 </pre>
 
-The collection contains the user agreement text file.
+The collection contains a single HTML file with the user agreement text.
 
-On workbench, it checks @is_invited@.  If true, it displays the clickthrough agreements which the user can "sign".  If @is_invited@ is false, the user ends up at the "inactive user" page.
+Workbench checks @is_invited@.  If true, it displays the clickthrough agreements which the user can "sign".  If @is_invited@ is false, the user ends up at the "inactive user" page.
 
 The @user_agreements/sign@ endpoint creates a Link object:
 
@@ -114,9 +106,18 @@ The @user_agreements/sign@ endpoint creates a Link object:
 }
 </pre>
 
-This is executed as a system user, so it bypasses the restriction that inactive users cannot create objects.
-
 The @user_agreements/signatures@ endpoint returns the list of Link objects that represent signatures by the current user (created by @sign@).
+
+h3(#setup). User setup
+
+A user can be setup whether they are active or not.  Setting up an inactive user enables self-activation.  Setup does the following things:
+
+* @can_login@ @permission@ link going (email address &rarr; user uuid) which records @identity_url_prefix@
+* Adding membership to the "All users" group (can read all users, all users can see new user)
+* If @Users.AutoSetupNewUsersWithRepository@ is true, a new default git repo and @can_manage@ permission to that repo
+* if @Users.AutoSetupNewUsersWithVmUUID@ is set, @can_login@ permission to a shell node
+
+If the cluster configuration option @Users.AutoSetupNewUsers@ is true, new users are always setup immediately.  When @Users.AutoSetupNewUsers@ is true, an user who has been set up but is not activated may still be able to do things, such as read things shared with "All users", clone and push to the git repository, or login to a VM.
 
 h3. User profile
 

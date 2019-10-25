@@ -1,0 +1,47 @@
+---
+layout: default
+navsection: admin
+title: "Reassign ownership of a user's data to another user"
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+If a user leaves an organization and stops using their Arvados account, it may be desirable to reassign the data owned by that user to another user to maintain easy access.
+
+This is currently a command line based, admin-only feature.
+
+h3. Step 1: Determine user uuids
+
+User uuids can be determined by browsing workbench or using @arv user list@ at the command line.
+
+The "old user" is the user that is leaving the organization.
+
+The "new user" is the user that will gain ownership of the old user's data.  This includes collections, projects, container requests, workflows, and git repositories owned by the old user.  It also transfers any permissions granted to the old user, to the new user.
+
+In the example below, @x1u39-tpzed-3kz0nwtjehhl0u4@ is the old user and @x1u39-tpzed-fr97h9t4m5jffxs@ is the new user.
+
+h3. Step 2: Create a project
+
+Create a project owned by the new user that will hold the data from the old user.
+
+<pre>
+$ arv --format=uuid group create --group '{"group_class": "project", "name": "Data from old user", "owner_uuid": "x1u39-tpzed-fr97h9t4m5jffxs"}'
+x1u39-j7d0g-mczqiguhil13083
+</pre>
+
+h3. Step 3: Reassign data from the 'old user' to the new user and project
+
+The @user merge@ method reassigns data from the old user to the new user.
+
+<pre>
+$ arv user merge --old-user-uuid=x1u39-tpzed-3kz0nwtjehhl0u4 \
+  --new-user-uuid=x1u39-tpzed-fr97h9t4m5jffxs \
+  --new-owner-uuid=x1u39-j7d0g-mczqiguhil13083
+</pre>
+
+After reassigning data, use "unsetup to deactivate the old user's account.":activation.html#deactivating_users
+
+Note that authorization credentials (API tokens, ssh keys) are *not* transferred to the new user, as this would potentially give the old user access to the new user's account.
