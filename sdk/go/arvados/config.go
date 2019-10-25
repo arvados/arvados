@@ -208,6 +208,7 @@ type Cluster struct {
 		UserProfileFormMessage string
 		VocabularyURL          string
 		WelcomePageHTML        string
+		InactivePageHTML       string
 	}
 
 	EnableBetaController14287 bool
