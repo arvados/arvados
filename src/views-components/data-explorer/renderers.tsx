@@ -235,7 +235,7 @@ const clusterColors = [
 
 export const ResourceCluster = (props: { uuid: string }) => {
     const CLUSTER_ID_LENGTH = 5;
-    const pos = props.uuid.indexOf('-');
+    const pos = props.uuid.length > CLUSTER_ID_LENGTH ? props.uuid.indexOf('-') : 5;
     const clusterId = pos >= CLUSTER_ID_LENGTH ? props.uuid.substr(0, pos) : '';
     const ci = pos >= CLUSTER_ID_LENGTH ? (((((
         (props.uuid.charCodeAt(0) * props.uuid.charCodeAt(1))

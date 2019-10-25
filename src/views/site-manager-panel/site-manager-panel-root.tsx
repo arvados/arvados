@@ -143,7 +143,7 @@ export const SiteManagerPanelRoot = compose(
                                 const validating = session.status === SessionStatus.BEING_VALIDATED;
                                 return <TableRow key={index} className={classes.tableRow}>
                                     <TableCell>{remoteHostsConfig[session.clusterId] ?
-                                        <a href={remoteHostsConfig[session.clusterId].workbench2Url} style={{ textDecoration: 'none' }}> <ResourceCluster uuid={session.clusterId + "-"} /></a>
+                                        <a href={remoteHostsConfig[session.clusterId].workbench2Url} style={{ textDecoration: 'none' }}> <ResourceCluster uuid={session.clusterId} /></a>
                                         : session.clusterId}</TableCell>
                                     <TableCell>{session.remoteHost}</TableCell>
                                     <TableCell>{validating ? <CircularProgress size={20} /> : session.username}</TableCell>
