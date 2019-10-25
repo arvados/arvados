@@ -123,10 +123,14 @@ export const SearchResultsPanelView = withStyles(styles, { withTheme: true })(
             contextMenuColumn={false}
             hideSearchInput
             title={
-                <div>{(props.localCluster !== homeCluster && loggedIn.length === 1) ?
-                    <span>Searching local cluster {props.localCluster} only.  To search multiple clusters, <a href={props.remoteHostsConfig[homeCluster] && props.remoteHostsConfig[homeCluster].workbench2Url}> start from your home Workbench.</a></span> :
-                    <span>Searching clusters: {loggedIn.map((ss) => <span key={ss.clusterId}> <a href={props.remoteHostsConfig[ss.clusterId].workbench2Url}> {ss.clusterId}</a></span>)}</span>}
-                    <span style={{ marginLeft: "2em" }}>Use <Link to={Routes.SITE_MANAGER} >Site Manager</Link> to manage which clusters will be searched.</span>
+                <div>
+                    {loggedIn.length === 1 ?
+                        <span>Searching local cluster <ResourceCluster uuid={props.localCluster + "-"} /></span>
+                        : <span>Searching clusters: {loggedIn.map((ss) => <span key={ss.clusterId}>
+                            <a href={props.remoteHostsConfig[ss.clusterId].workbench2Url} style={{ textDecoration: 'none' }}> <ResourceCluster uuid={ss.clusterId + "-"} /></a></span>)}</span>}
+                    {loggedIn.length === 1 && props.localCluster !== homeCluster ?
+                        <span>To search multiple clusters, <a href={props.remoteHostsConfig[homeCluster] && props.remoteHostsConfig[homeCluster].workbench2Url}> start from your home Workbench.</a></span>
+                        : <span style={{ marginLeft: "2em" }}>Use <Link to={Routes.SITE_MANAGER} >Site Manager</Link> to manage which clusters will be searched.</span>}
                 </div >
             }
         />;

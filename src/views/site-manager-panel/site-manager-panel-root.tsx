@@ -27,6 +27,7 @@ import { TextField } from "~/components/text-field/text-field";
 import { addSession } from "~/store/auth/auth-action-session";
 import { SITE_MANAGER_REMOTE_HOST_VALIDATION } from "~/validators/validators";
 import { Config } from '~/common/config';
+import { ResourceCluster } from '~/views-components/data-explorer/renderers';
 
 type CssRules = 'root' | 'link' | 'buttonContainer' | 'table' | 'tableRow' |
     'remoteSiteInfo' | 'buttonAdd' | 'buttonLoggedIn' | 'buttonLoggedOut' |
@@ -123,7 +124,7 @@ export const SiteManagerPanelRoot = compose(
                     <Grid item xs={12}>
                         <Typography paragraph={true} >
                             You can log in to multiple Arvados sites here, then use the multi-site search page to search collections and projects on all sites at once.
-															     </Typography>
+		    </Typography>
                     </Grid>
                 </Grid>
                 <Grid item xs={12}>
@@ -142,7 +143,7 @@ export const SiteManagerPanelRoot = compose(
                                 const validating = session.status === SessionStatus.BEING_VALIDATED;
                                 return <TableRow key={index} className={classes.tableRow}>
                                     <TableCell>{remoteHostsConfig[session.clusterId] ?
-                                        <a href={remoteHostsConfig[session.clusterId].workbench2Url}>{session.clusterId}</a>
+                                        <a href={remoteHostsConfig[session.clusterId].workbench2Url} style={{ textDecoration: 'none' }}> <ResourceCluster uuid={session.clusterId + "-"} /></a>
                                         : session.clusterId}</TableCell>
                                     <TableCell>{session.remoteHost}</TableCell>
                                     <TableCell>{validating ? <CircularProgress size={20} /> : session.username}</TableCell>

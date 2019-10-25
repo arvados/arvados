@@ -237,15 +237,17 @@ export const ResourceCluster = (props: { uuid: string }) => {
     const CLUSTER_ID_LENGTH = 5;
     const pos = props.uuid.indexOf('-');
     const clusterId = pos >= CLUSTER_ID_LENGTH ? props.uuid.substr(0, pos) : '';
-    const ci = pos >= CLUSTER_ID_LENGTH ? (props.uuid.charCodeAt(0) + props.uuid.charCodeAt(1)) % clusterColors.length : 0;
-    return <Typography>
-        <span style={{
-            backgroundColor: clusterColors[ci][0],
-            color: clusterColors[ci][1],
-            padding: "2px 7px",
-            borderRadius: 3
-        }}>{clusterId}</span>
-    </Typography>;
+    const ci = pos >= CLUSTER_ID_LENGTH ? (((((
+        (props.uuid.charCodeAt(0) * props.uuid.charCodeAt(1))
+        + props.uuid.charCodeAt(2))
+        * props.uuid.charCodeAt(3))
+        + props.uuid.charCodeAt(4))) % clusterColors.length) : 0;
+    return <span style={{
+        backgroundColor: clusterColors[ci][0],
+        color: clusterColors[ci][1],
+        padding: "2px 7px",
+        borderRadius: 3
+    }}>{clusterId}</span>;
 };
 
 export const ComputeNodeInfo = withResourceData('info', renderNodeInfo);
