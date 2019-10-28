@@ -45,6 +45,8 @@ export interface ClusterConfigJSON {
         VocabularyURL: string;
         FileViewersConfigURL: string;
         WelcomePageHTML: string;
+        InactivePageHTML: string;
+        SiteName: string;
     };
     Login: {
         LoginCluster: string;
@@ -148,6 +150,8 @@ export const mockClusterConfigJSON = (config: Partial<ClusterConfigJSON>): Clust
         VocabularyURL: "",
         FileViewersConfigURL: "",
         WelcomePageHTML: "",
+        InactivePageHTML: "",
+        SiteName: "",
     },
     Login: {
         LoginCluster: "",

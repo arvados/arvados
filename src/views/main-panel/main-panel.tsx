@@ -18,7 +18,8 @@ const mapStateToProps = (state: RootState): MainPanelRootDataProps => {
         buildInfo: state.appInfo.buildInfo,
         uuidPrefix: state.auth.localCluster,
         isNotLinking: state.linkAccountPanel.status === LinkAccountPanelStatus.NONE || state.linkAccountPanel.status === LinkAccountPanelStatus.INITIAL,
-        isLinkingPath:  state.router.location ? matchLinkAccountRoute(state.router.location.pathname) !== null : false
+        isLinkingPath: state.router.location ? matchLinkAccountRoute(state.router.location.pathname) !== null : false,
+        siteBanner: state.config.clusterConfig.Workbench.SiteName
     };
 };
 

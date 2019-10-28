@@ -32,6 +32,7 @@ interface MainAppBarDataProps {
     buildInfo?: string;
     children?: ReactNode;
     uuidPrefix: string;
+    siteBanner: string;
 }
 
 export type MainAppBarProps = MainAppBarDataProps & WithStyles<CssRules>;
@@ -44,7 +45,7 @@ export const MainAppBar = withStyles(styles)(
                     <Grid container item xs={3} direction="column" justify="center">
                         <Typography variant='h6' color="inherit" noWrap>
                             <Link to={Routes.ROOT} className={props.classes.link}>
-                                arvados workbench ({props.uuidPrefix})
+                                <span dangerouslySetInnerHTML={{ __html: props.siteBanner }} /> ({props.uuidPrefix})
                             </Link>
                         </Typography>
                         <Typography variant="caption" color="inherit">{props.buildInfo}</Typography>
