@@ -733,7 +733,7 @@ func (h *handler) seeOtherWithCookie(w http.ResponseWriter, r *http.Request, loc
 			// into a cookie unless the current vhost
 			// (origin) serves only a single collection or
 			// we are in TrustAllContent mode.
-			w.WriteHeader(http.StatusBadRequest)
+			http.Error(w, "cannot serve inline content at this URL (possible configuration error; see https://doc.arvados.org/install/install-keep-web.html#dns)", http.StatusBadRequest)
 			return
 		}
 
