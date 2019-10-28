@@ -51,6 +51,7 @@ type LoginPanelProps = DispatchProp<any> & WithStyles<CssRules> & {
     remoteHosts: { [key: string]: string },
     homeCluster: string,
     uuidPrefix: string,
+    loginCluster: string,
     welcomePage: string
 };
 
@@ -59,8 +60,9 @@ export const LoginPanel = withStyles(styles)(
         remoteHosts: state.auth.remoteHosts,
         homeCluster: state.auth.homeCluster,
         uuidPrefix: state.auth.localCluster,
+        loginCluster: state.auth.loginCluster,
         welcomePage: state.config.clusterConfig.Workbench.WelcomePageHTML
-    }))(({ classes, dispatch, remoteHosts, homeCluster, uuidPrefix, welcomePage }: LoginPanelProps) =>
+    }))(({ classes, dispatch, remoteHosts, homeCluster, uuidPrefix, loginCluster, welcomePage }: LoginPanelProps) =>
         <Grid container justify="center" alignItems="center"
             className={classes.root}
             style={{ marginTop: 56, overflowY: "auto", height: "100%" }}>
@@ -68,7 +70,8 @@ export const LoginPanel = withStyles(styles)(
                 <Typography>
                     <div dangerouslySetInnerHTML={{ __html: welcomePage }} style={{ margin: "1em" }} />
                 </Typography>
-                {Object.keys(remoteHosts).length > 1 &&
+                {Object.keys(remoteHosts).length > 1 && loginCluster === "" &&
+
                     <Typography component="div" align="right">
                         <label>Please select the cluster that hosts your user account:</label>
                         <Select native value={homeCluster} style={{ margin: "1em" }}
@@ -79,10 +82,10 @@ export const LoginPanel = withStyles(styles)(
 
                 <Typography component="div" align="right">
                     <Button variant="contained" color="primary" style={{ margin: "1em" }} className={classes.button}
-                        onClick={() => dispatch(login(uuidPrefix, homeCluster, remoteHosts))}>
-                        Log in to {uuidPrefix}
-                        {uuidPrefix !== homeCluster &&
-                            <span>&nbsp;with user from {homeCluster}</span>}
+                        onClick={() => dispatch(login(uuidPrefix, homeCluster, loginCluster, remoteHosts))}>
+                        Log in
+			{uuidPrefix !== homeCluster && loginCluster !== homeCluster &&
+                            <span>&nbsp;to {uuidPrefix} with user from {homeCluster}</span>}
                     </Button>
                 </Typography>
             </Grid>

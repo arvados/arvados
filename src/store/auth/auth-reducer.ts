@@ -16,6 +16,7 @@ export interface AuthState {
     sessions: Session[];
     localCluster: string;
     homeCluster: string;
+    loginCluster: string;
     remoteHosts: { [key: string]: string };
     remoteHostsConfig: { [key: string]: Config };
 }
@@ -27,6 +28,7 @@ const initialState: AuthState = {
     sessions: [],
     localCluster: "",
     homeCluster: "",
+    loginCluster: "",
     remoteHosts: {},
     remoteHostsConfig: {}
 };
@@ -37,14 +39,16 @@ export const authReducer = (services: ServiceRepository) => (state = initialStat
             return { ...state, apiToken: token };
         },
         SAVE_USER: (user: UserResource) => {
-            return { ...state, user};
+            return { ...state, user };
         },
         CONFIG: ({ config }) => {
             return {
                 ...state,
                 localCluster: config.uuidPrefix,
                 remoteHosts: { ...config.remoteHosts, [config.uuidPrefix]: new URL(config.rootUrl).host },
-                homeCluster: config.uuidPrefix
+                homeCluster: config.loginCluster || config.uuidPrefix,
+                loginCluster: config.loginCluster,
+                remoteHostsConfig: { ...state.remoteHostsConfig, [config.uuidPrefix]: config }
             };
         },
         REMOTE_CLUSTER_CONFIG: ({ config }) => {

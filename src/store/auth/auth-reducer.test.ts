@@ -43,6 +43,7 @@ describe('auth-reducer', () => {
             sessions: [],
             homeCluster: "zzzzz",
             localCluster: "",
+            loginCluster: "",
             remoteHosts: {},
             remoteHostsConfig: {}
         });
@@ -59,6 +60,7 @@ describe('auth-reducer', () => {
             sessions: [],
             homeCluster: "",
             localCluster: "",
+            loginCluster: "",
             remoteHosts: {},
             remoteHostsConfig: {}
         });
@@ -86,6 +88,7 @@ describe('auth-reducer', () => {
             sessions: [],
             homeCluster: "",
             localCluster: "",
+            loginCluster: "",
             remoteHosts: {},
             remoteHostsConfig: {},
             user: {

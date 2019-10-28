@@ -19,22 +19,27 @@ import { WORKBENCH_LOADING_SCREEN } from '~/store/workbench/workbench-actions';
 
 export const linkAccountPanelActions = unionize({
     LINK_INIT: ofType<{
-        targetUser: UserResource | undefined }>(),
+        targetUser: UserResource | undefined
+    }>(),
     LINK_LOAD: ofType<{
         originatingUser: OriginatingUser | undefined,
         targetUser: UserResource | undefined,
         targetUserToken: string | undefined,
         userToLink: UserResource | undefined,
-        userToLinkToken: string | undefined }>(),
+        userToLinkToken: string | undefined
+    }>(),
     LINK_INVALID: ofType<{
         originatingUser: OriginatingUser | undefined,
         targetUser: UserResource | undefined,
         userToLink: UserResource | undefined,
-        error: LinkAccountPanelError }>(),
+        error: LinkAccountPanelError
+    }>(),
     SET_SELECTED_CLUSTER: ofType<{
-        selectedCluster: string }>(),
+        selectedCluster: string
+    }>(),
     SET_IS_PROCESSING: ofType<{
-        isProcessing: boolean}>(),
+        isProcessing: boolean
+    }>(),
     HAS_SESSION_DATA: {}
 });
 
@@ -119,7 +124,7 @@ export const loadLinkAccountPanel = () =>
             dispatch(checkForLinkStatus());
 
             // Continue loading the link account panel
-            dispatch(setBreadcrumbs([{ label: 'Link account'}]));
+            dispatch(setBreadcrumbs([{ label: 'Link account' }]));
             const curUser = getState().auth.user;
             const curToken = getState().auth.apiToken;
             if (curUser && curToken) {
@@ -170,7 +175,8 @@ export const loadLinkAccountPanel = () =>
                             originatingUser: params.originatingUser,
                             targetUser: params.targetUser,
                             userToLink: params.userToLink,
-                            error}));
+                            error
+                        }));
                         return;
                     }
                 }
@@ -192,18 +198,18 @@ export const loadLinkAccountPanel = () =>
 
 export const startLinking = (t: LinkAccountType) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        const accountToLink = {type: t, userUuid: services.authService.getUuid(), token: services.authService.getApiToken()} as AccountToLink;
+        const accountToLink = { type: t, userUuid: services.authService.getUuid(), token: services.authService.getApiToken() } as AccountToLink;
         services.linkAccountService.saveAccountToLink(accountToLink);
 
         const auth = getState().auth;
-        const isLocalUser = auth.user!.uuid.substring(0,5) === auth.localCluster;
+        const isLocalUser = auth.user!.uuid.substring(0, 5) === auth.localCluster;
         let homeCluster = auth.localCluster;
         if (isLocalUser && t === LinkAccountType.ACCESS_OTHER_REMOTE_ACCOUNT) {
             homeCluster = getState().linkAccountPanel.selectedCluster!;
         }
 
         dispatch(logout());
-        dispatch(login(auth.localCluster, homeCluster, auth.remoteHosts));
+        dispatch(login(auth.localCluster, homeCluster, auth.loginCluster, auth.remoteHosts));
     };
 
 export const getAccountLinkData = () =>
@@ -265,7 +271,7 @@ export const linkAccount = () =>
                 services.linkAccountService.saveLinkOpStatus(LinkAccountStatus.SUCCESS);
                 location.reload();
             }
-            catch(e) {
+            catch (e) {
                 // If the link operation fails, delete the previously made project
                 try {
                     setAuthorizationHeader(services, linkState.targetUserToken);
