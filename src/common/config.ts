@@ -46,6 +46,7 @@ export interface ClusterConfigJSON {
         FileViewersConfigURL: string;
         WelcomePageHTML: string;
         InactivePageHTML: string;
+        SiteName: string;
     };
 }
 
@@ -145,6 +146,7 @@ export const mockClusterConfigJSON = (config: Partial<ClusterConfigJSON>): Clust
         FileViewersConfigURL: "",
         WelcomePageHTML: "",
         InactivePageHTML: "",
+        SiteName: "",
     },
     ...config
 });
