@@ -765,7 +765,7 @@ func (h *handler) seeOtherWithCookie(w http.ResponseWriter, r *http.Request, loc
 	if location != "" {
 		newu, err := u.Parse(location)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			http.Error(w, "error resolving redirect target: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 		u = newu
