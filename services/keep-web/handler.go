@@ -6,7 +6,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"html"
 	"html/template"
 	"io"
@@ -22,10 +21,11 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/auth"
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"git.curoverse.com/arvados.git/sdk/go/health"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/net/webdav"
 )
 
@@ -102,6 +102,7 @@ func (h *handler) serveStatus(w http.ResponseWriter, r *http.Request) {
 // are ignored (all response writes return the update error).
 type updateOnSuccess struct {
 	httpserver.ResponseWriter
+	logger     logrus.FieldLogger
 	update     func() error
 	sentHeader bool
 	err        error
@@ -126,7 +127,7 @@ func (uos *updateOnSuccess) WriteHeader(code int) {
 				if err, ok := uos.err.(*arvados.TransactionError); ok {
 					code = err.StatusCode
 				}
-				log.Printf("update() changes response to HTTP %d: %T %q", code, uos.err, uos.err)
+				uos.logger.WithError(uos.err).Errorf("update() returned error type %T, changing response to HTTP %d", uos.err, code)
 				http.Error(uos.ResponseWriter, uos.err.Error(), code)
 				return
 			}
@@ -182,9 +183,6 @@ var (
 func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	h.setupOnce.Do(h.setup)
 
-	var statusCode = 0
-	var statusText string
-
 	remoteAddr := r.RemoteAddr
 	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
 		remoteAddr = xff + "," + remoteAddr
@@ -194,19 +192,6 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 
 	w := httpserver.WrapResponseWriter(wOrig)
-	defer func() {
-		if statusCode == 0 {
-			statusCode = w.WroteStatus()
-		} else if w.WroteStatus() == 0 {
-			w.WriteHeader(statusCode)
-		} else if w.WroteStatus() != statusCode {
-			log.WithField("RequestID", r.Header.Get("X-Request-Id")).Warn(
-				fmt.Sprintf("Our status changed from %d to %d after we sent headers", w.WroteStatus(), statusCode))
-		}
-		if statusText == "" {
-			statusText = http.StatusText(statusCode)
-		}
-	}()
 
 	if strings.HasPrefix(r.URL.Path, "/_health/") && r.Method == "GET" {
 		h.healthHandler.ServeHTTP(w, r)
@@ -215,19 +200,18 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 
 	if method := r.Header.Get("Access-Control-Request-Method"); method != "" && r.Method == "OPTIONS" {
 		if !browserMethod[method] && !webdavMethod[method] {
-			statusCode = http.StatusMethodNotAllowed
+			w.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
 		w.Header().Set("Access-Control-Allow-Headers", corsAllowHeadersHeader)
 		w.Header().Set("Access-Control-Allow-Methods", "COPY, DELETE, GET, LOCK, MKCOL, MOVE, OPTIONS, POST, PROPFIND, PROPPATCH, PUT, RMCOL, UNLOCK")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Max-Age", "86400")
-		statusCode = http.StatusOK
 		return
 	}
 
 	if !browserMethod[r.Method] && !webdavMethod[r.Method] {
-		statusCode, statusText = http.StatusMethodNotAllowed, r.Method
+		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -293,7 +277,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 
 	if collectionID == "" && !useSiteFS {
-		statusCode = http.StatusNotFound
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
@@ -368,7 +352,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 
 	arv := h.clientPool.Get()
 	if arv == nil {
-		statusCode, statusText = http.StatusInternalServerError, "Pool failed: "+h.clientPool.Err().Error()
+		http.Error(w, "client pool error: "+h.clientPool.Err().Error(), http.StatusInternalServerError)
 		return
 	}
 	defer h.clientPool.Put(arv)
@@ -392,7 +376,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			}
 		}
 		// Something more serious is wrong
-		statusCode, statusText = http.StatusInternalServerError, err.Error()
+		http.Error(w, "cache error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if collection == nil {
@@ -402,14 +386,14 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			// for additional credentials would just be
 			// confusing), or we don't even accept
 			// credentials at this path.
-			statusCode = http.StatusNotFound
+			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 		for _, t := range reqTokens {
 			if tokenResult[t] == 404 {
 				// The client provided valid token(s), but the
 				// collection was not found.
-				statusCode = http.StatusNotFound
+				w.WriteHeader(http.StatusNotFound)
 				return
 			}
 		}
@@ -423,13 +407,13 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		// data that has been deleted.  Allow a referrer to
 		// provide this context somehow?
 		w.Header().Add("WWW-Authenticate", "Basic realm=\"collections\"")
-		statusCode = http.StatusUnauthorized
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
 	kc, err := keepclient.MakeKeepClient(arv)
 	if err != nil {
-		statusCode, statusText = http.StatusInternalServerError, err.Error()
+		http.Error(w, "error setting up keep client: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	kc.RequestID = r.Header.Get("X-Request-Id")
@@ -448,14 +432,14 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 
 	fs, err := collection.FileSystem(client, kc)
 	if err != nil {
-		statusCode, statusText = http.StatusInternalServerError, err.Error()
+		http.Error(w, "error creating collection filesystem: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	writefs, writeOK := fs.(arvados.CollectionFileSystem)
 	targetIsPDH := arvadosclient.PDHMatch(collectionID)
 	if (targetIsPDH || !writeOK) && writeMethod[r.Method] {
-		statusCode, statusText = http.StatusMethodNotAllowed, errReadOnly.Error()
+		http.Error(w, errReadOnly.Error(), http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -467,6 +451,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			// collection can't be saved.
 			w = &updateOnSuccess{
 				ResponseWriter: w,
+				logger:         ctxlog.FromContext(r.Context()),
 				update: func() error {
 					return h.Config.Cache.Update(client, *collection, writefs)
 				}}
@@ -481,7 +466,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			LockSystem: h.webdavLS,
 			Logger: func(_ *http.Request, err error) {
 				if err != nil {
-					log.Printf("error from webdav handler: %q", err)
+					ctxlog.FromContext(r.Context()).WithError(err).Error("error reported by webdav handler")
 				}
 			},
 		}
@@ -492,13 +477,13 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	openPath := "/" + strings.Join(targetPath, "/")
 	if f, err := fs.Open(openPath); os.IsNotExist(err) {
 		// Requested non-existent path
-		statusCode = http.StatusNotFound
+		w.WriteHeader(http.StatusNotFound)
 	} else if err != nil {
 		// Some other (unexpected) error
-		statusCode, statusText = http.StatusInternalServerError, err.Error()
+		http.Error(w, "open: "+err.Error(), http.StatusInternalServerError)
 	} else if stat, err := f.Stat(); err != nil {
 		// Can't get Size/IsDir (shouldn't happen with a collectionFS!)
-		statusCode, statusText = http.StatusInternalServerError, err.Error()
+		http.Error(w, "stat: "+err.Error(), http.StatusInternalServerError)
 	} else if stat.IsDir() && !strings.HasSuffix(r.URL.Path, "/") {
 		// If client requests ".../dirname", redirect to
 		// ".../dirname/". This way, relative links in the
@@ -509,14 +494,14 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		h.serveDirectory(w, r, collection.Name, fs, openPath, true)
 	} else {
 		http.ServeContent(w, r, basename, stat.ModTime(), f)
-		if r.Header.Get("Range") == "" && int64(w.WroteBodyBytes()) != stat.Size() {
+		if wrote := int64(w.WroteBodyBytes()); wrote != stat.Size() && r.Header.Get("Range") == "" {
 			// If we wrote fewer bytes than expected, it's
 			// too late to change the real response code
 			// or send an error message to the client, but
 			// at least we can try to put some useful
 			// debugging info in the logs.
 			n, err := f.Read(make([]byte, 1024))
-			statusCode, statusText = http.StatusInternalServerError, fmt.Sprintf("f.Size()==%d but only wrote %d bytes; read(1024) returns %d, %s", stat.Size(), w.WroteBodyBytes(), n, err)
+			ctxlog.FromContext(r.Context()).Errorf("stat.Size()==%d but only wrote %d bytes; read(1024) returns %d, %s", stat.Size(), wrote, n, err)
 
 		}
 	}
@@ -542,7 +527,7 @@ func (h *handler) serveSiteFS(w http.ResponseWriter, r *http.Request, tokens []s
 
 	kc, err := keepclient.MakeKeepClient(arv)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "error setting up keep client: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	kc.RequestID = r.Header.Get("X-Request-Id")
@@ -583,7 +568,7 @@ func (h *handler) serveSiteFS(w http.ResponseWriter, r *http.Request, tokens []s
 		LockSystem: h.webdavLS,
 		Logger: func(_ *http.Request, err error) {
 			if err != nil {
-				log.Printf("error from webdav handler: %q", err)
+				ctxlog.FromContext(r.Context()).WithError(err).Error("error reported by webdav handler")
 			}
 		},
 	}
@@ -697,7 +682,7 @@ func (h *handler) serveDirectory(w http.ResponseWriter, r *http.Request, collect
 		return nil
 	}
 	if err := walk(""); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "error getting directory listing: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -708,7 +693,7 @@ func (h *handler) serveDirectory(w http.ResponseWriter, r *http.Request, collect
 	}
 	tmpl, err := template.New("dir").Funcs(funcs).Parse(dirListingTemplate)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "error parsing template: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	sort.Slice(files, func(i, j int) bool {
