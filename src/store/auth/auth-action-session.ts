@@ -203,6 +203,7 @@ export const initSessions = (authService: AuthService, config: Config, user: Use
         const sessions = authService.buildSessions(config, user);
         authService.saveSessions(sessions);
         dispatch(authActions.SET_SESSIONS(sessions));
+        dispatch(validateSessions());
     };
 
 export const loadSiteManagerPanel = () =>
