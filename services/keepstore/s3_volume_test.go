@@ -11,7 +11,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -499,11 +498,11 @@ func (s *StubbedS3Suite) newTestableVolume(c *check.C, cluster *arvados.Cluster,
 func (v *TestableS3Volume) PutRaw(loc string, block []byte) {
 	err := v.bucket.Bucket().Put(loc, block, "application/octet-stream", s3ACL, s3.Options{})
 	if err != nil {
-		log.Printf("PutRaw: %s: %+v", loc, err)
+		v.logger.Printf("PutRaw: %s: %+v", loc, err)
 	}
 	err = v.bucket.Bucket().Put("recent/"+loc, nil, "application/octet-stream", s3ACL, s3.Options{})
 	if err != nil {
-		log.Printf("PutRaw: recent/%s: %+v", loc, err)
+		v.logger.Printf("PutRaw: recent/%s: %+v", loc, err)
 	}
 }
 

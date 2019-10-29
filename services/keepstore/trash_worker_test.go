@@ -9,6 +9,7 @@ import (
 	"context"
 	"time"
 
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"github.com/prometheus/client_golang/prometheus"
 	check "gopkg.in/check.v1"
 )
@@ -291,7 +292,7 @@ func (s *HandlerSuite) performTrashWorkerTest(c *check.C, testData TrashWorkerTe
 			}
 		}
 	}
-	go RunTrashWorker(s.handler.volmgr, s.cluster, trashq)
+	go RunTrashWorker(s.handler.volmgr, ctxlog.TestLogger(c), s.cluster, trashq)
 
 	// Install gate so all local operations block until we say go
 	gate := make(chan struct{})

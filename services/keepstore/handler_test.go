@@ -892,10 +892,7 @@ func ExpectStatusCode(
 	testname string,
 	expectedStatus int,
 	response *httptest.ResponseRecorder) {
-	if response.Code != expectedStatus {
-		c.Errorf("%s: expected status %d, got %+v",
-			testname, expectedStatus, response)
-	}
+	c.Check(response.Code, check.Equals, expectedStatus, check.Commentf("%s", testname))
 }
 
 func ExpectBody(
@@ -1147,12 +1144,7 @@ func (s *HandlerSuite) TestUntrashHandler(c *check.C) {
 		"",
 		http.StatusOK,
 		response)
-	expected := "Successfully untrashed on: [MockVolume],[MockVolume]"
-	if response.Body.String() != expected {
-		c.Errorf(
-			"Untrash response mismatched: expected %s, got:\n%s",
-			expected, response.Body.String())
-	}
+	c.Check(response.Body.String(), check.Equals, "Successfully untrashed on: [MockVolume], [MockVolume]\n")
 }
 
 func (s *HandlerSuite) TestUntrashHandlerWithNoWritableVolumes(c *check.C) {
