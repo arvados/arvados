@@ -282,19 +282,15 @@ func (rtr *router) handleIndex(resp http.ResponseWriter, req *http.Request) {
 
 	for _, v := range vols {
 		if err := v.IndexTo(prefix, resp); err != nil {
-			// We can't send an error message to the
-			// client because we might have already sent
-			// headers and index content. All we can do is
-			// log the error in our own logs, and (in
-			// cases where headers haven't been sent yet)
-			// set a 500 status.
+			// We can't send an error status/message to
+			// the client because IndexTo() might have
+			// already written body content. All we can do
+			// is log the error in our own logs.
 			//
-			// If headers have already been sent, the
-			// client must notice the lack of trailing
+			// The client must notice the lack of trailing
 			// newline as an indication that the response
 			// is incomplete.
-			log.Printf("index error from volume %s: %s", v, err)
-			http.Error(resp, "", http.StatusInternalServerError)
+			ctxlog.FromContext(req.Context()).WithError(err).Errorf("truncating index response after error from volume %s", v)
 			return
 		}
 	}
