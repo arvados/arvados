@@ -349,7 +349,7 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenSingleOriginError(c *check
 		"",
 		"",
 		http.StatusBadRequest,
-		"",
+		"cannot serve inline content at this URL (possible configuration error; see https://doc.arvados.org/install/install-keep-web.html#dns)\n",
 	)
 }
 
@@ -424,7 +424,7 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenAttachmentOnlyHost(c *chec
 		"",
 		"",
 		http.StatusBadRequest,
-		"",
+		"cannot serve inline content at this URL (possible configuration error; see https://doc.arvados.org/install/install-keep-web.html#dns)\n",
 	)
 
 	resp := s.testVhostRedirectTokenToCookie(c, "GET",
