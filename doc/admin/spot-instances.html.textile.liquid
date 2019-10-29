@@ -14,7 +14,7 @@ This page describes how to set up crunch to take advantage of "Amazon's EC2 spot
 
 h2. Configuration
 
-To use spot instances, set @UsePreemptibleInstances: true@ and add entries to @InstanceTypes@ with @Preemptible: true@.  Typically you want to add both preemptible and non-preemptible entries for each cloud provider VM type.  The @Price@ for preemptible instances is the maximum bid price, the actual price paid is dynamic and may be lower.  For example:
+To use spot instances, set @UsePreemptibleInstances: true@ and add entries to @InstanceTypes@ with @Preemptible: true@ to @config.yml@.  Typically you want to add both preemptible and non-preemptible entries for each cloud provider VM type.  The @Price@ for preemptible instances is the maximum bid price, the actual price paid is dynamic and may be lower.  For example:
 
 <pre>
 Clusters:
