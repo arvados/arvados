@@ -116,9 +116,6 @@ type ContainerRunner struct {
 	ContainerArvClient  IArvadosClient
 	ContainerKeepClient IKeepClient
 
-	// environment provided by arvados-dispatch-cloud
-	dispatchEnv map[string]interface{}
-
 	Container       arvados.Container
 	ContainerConfig dockercontainer.Config
 	HostConfig      dockercontainer.HostConfig
@@ -856,7 +853,7 @@ func (runner *ContainerRunner) LogContainerRecord() error {
 // LogNodeRecord logs the current host's InstanceType config entry (or
 // the arvados#node record, if running via crunch-dispatch-slurm).
 func (runner *ContainerRunner) LogNodeRecord() error {
-	if it, ok := runner.dispatchEnv["InstanceType"]; ok {
+	if it := os.Getenv("InstanceType"); it != "" {
 		// Dispatched via arvados-dispatch-cloud. Save
 		// InstanceType config fragment received from
 		// dispatcher on stdin.
@@ -865,22 +862,9 @@ func (runner *ContainerRunner) LogNodeRecord() error {
 			return err
 		}
 		defer w.Close()
-		if it, ok := it.(string); ok {
-			// dispatcher supplied JSON data (in order to
-			// stay compatible with old crunch-run
-			// versions)
-			_, err = io.WriteString(w, it)
-			if err != nil {
-				return err
-			}
-		} else {
-			// dispatcher supplied struct
-			enc := json.NewEncoder(w)
-			enc.SetIndent("", "    ")
-			err = enc.Encode(it)
-			if err != nil {
-				return err
-			}
+		_, err = io.WriteString(w, it)
+		if err != nil {
+			return err
 		}
 		return w.Close()
 	} else {
@@ -1811,12 +1795,11 @@ func main() {
 
 	flag.Parse()
 
-	var env map[string]interface{}
 	if *stdinEnv && !ignoreDetachFlag {
 		// Load env vars on stdin if asked (but not in a
 		// detached child process, in which case stdin is
 		// /dev/null).
-		env = loadEnv(os.Stdin)
+		loadEnv(os.Stdin)
 	}
 
 	switch {
@@ -1871,8 +1854,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	cr.dispatchEnv = env
-
 	parentTemp, tmperr := cr.MkTempDir("", "crunch-run."+containerId+".")
 	if tmperr != nil {
 		log.Fatalf("%s: %v", containerId, tmperr)
@@ -1912,23 +1893,20 @@ func main() {
 	}
 }
 
-func loadEnv(rdr io.Reader) map[string]interface{} {
+func loadEnv(rdr io.Reader) {
 	buf, err := ioutil.ReadAll(rdr)
 	if err != nil {
 		log.Fatalf("read stdin: %s", err)
 	}
-	var env map[string]interface{}
+	var env map[string]string
 	err = json.Unmarshal(buf, &env)
 	if err != nil {
 		log.Fatalf("decode stdin: %s", err)
 	}
 	for k, v := range env {
-		if v, ok := v.(string); ok {
-			err = os.Setenv(k, v)
-			if err != nil {
-				log.Fatalf("setenv(%q): %s", k, err)
-			}
+		err = os.Setenv(k, v)
+		if err != nil {
+			log.Fatalf("setenv(%q): %s", k, err)
 		}
 	}
-	return env
 }

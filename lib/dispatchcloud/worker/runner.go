@@ -35,11 +35,8 @@ type remoteRunner struct {
 // newRemoteRunner returns a new remoteRunner. Caller should ensure
 // Close() is called to release resources.
 func newRemoteRunner(uuid string, wkr *worker) *remoteRunner {
-	// Early (<1.5) versions of crunch-run error out if they see
-	// non-string values in the env map -- so here we send the
-	// instance type record as a JSON doc. Once worker images are
-	// updated, we can skip the extra encoding, and just include
-	// {"InstanceType": wkr.instType} in the env map.
+	// Send the instance type record as a JSON doc so crunch-run
+	// can log it.
 	var instJSON bytes.Buffer
 	enc := json.NewEncoder(&instJSON)
 	enc.SetIndent("", "    ")
