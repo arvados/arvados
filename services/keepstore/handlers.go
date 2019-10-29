@@ -733,6 +733,8 @@ func GetBlock(ctx context.Context, volmgr *RRVolumeManager, hash string, buf []b
 //          provide as much detail as possible.
 //
 func PutBlock(ctx context.Context, volmgr *RRVolumeManager, block []byte, hash string) (int, error) {
+	log := ctxlog.FromContext(ctx)
+
 	// Check that BLOCK's checksum matches HASH.
 	blockhash := fmt.Sprintf("%x", md5.Sum(block))
 	if blockhash != hash {
@@ -762,7 +764,7 @@ func PutBlock(ctx context.Context, volmgr *RRVolumeManager, block []byte, hash s
 
 	writables := volmgr.AllWritable()
 	if len(writables) == 0 {
-		log.Print("No writable volumes.")
+		log.Error("no writable volumes")
 		return 0, FullError
 	}
 
@@ -780,12 +782,12 @@ func PutBlock(ctx context.Context, volmgr *RRVolumeManager, block []byte, hash s
 			// write did not succeed.  Report the
 			// error and continue trying.
 			allFull = false
-			log.Printf("%s: Write(%s): %s", vol, hash, err)
+			log.Errorf("%s: Write(%s): %s", vol, hash, err)
 		}
 	}
 
 	if allFull {
-		log.Print("All volumes are full.")
+		log.Error("all volumes are full")
 		return 0, FullError
 	}
 	// Already logged the non-full errors.
