@@ -10,6 +10,7 @@ import { Vocabulary } from '~/models/vocabulary';
 import { PROPERTY_KEY_FIELD_NAME } from '~/views-components/resource-properties-form/property-key-field';
 import { VocabularyProp, connectVocabulary, buildProps } from '~/views-components/resource-properties-form/property-field-common';
 import { TAG_VALUE_VALIDATION } from '~/validators/validators';
+import { escapeRegExp } from '~/common/regexp.ts';
 
 interface PropertyKeyProp {
     propertyKey: string;
@@ -48,8 +49,10 @@ const matchTagValues = ({ vocabulary, propertyKey }: PropertyValueFieldProps) =>
             ? undefined
             : 'Incorrect value';
 
-const getSuggestions = (value: string, tagName: string, vocabulary: Vocabulary) =>
-    getTagValues(tagName, vocabulary).filter(v => v.includes(value) && v !== value);
+const getSuggestions = (value: string, tagName: string, vocabulary: Vocabulary) => {
+    const re = new RegExp(escapeRegExp(value), "i");
+    return getTagValues(tagName, vocabulary).filter(v => re.test(v) && v !== value);
+};
 
 const isStrictTag = (tagName: string, vocabulary: Vocabulary) => {
     const tag = vocabulary.tags[tagName];

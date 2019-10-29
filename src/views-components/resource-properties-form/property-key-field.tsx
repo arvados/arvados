@@ -9,6 +9,7 @@ import { Autocomplete } from '~/components/autocomplete/autocomplete';
 import { Vocabulary } from '~/models/vocabulary';
 import { connectVocabulary, VocabularyProp, buildProps } from '~/views-components/resource-properties-form/property-field-common';
 import { TAG_KEY_VALIDATION } from '~/validators/validators';
+import { escapeRegExp } from '~/common/regexp.ts';
 
 export const PROPERTY_KEY_FIELD_NAME = 'key';
 
@@ -39,8 +40,10 @@ const matchTags = (vocabulary: Vocabulary) =>
             ? undefined
             : 'Incorrect key';
 
-const getSuggestions = (value: string, vocabulary: Vocabulary) =>
-    getTagsList(vocabulary).filter(tag => tag.includes(value) && tag !== value);
+const getSuggestions = (value: string, vocabulary: Vocabulary) => {
+    const re = new RegExp(escapeRegExp(value), "i");
+    return getTagsList(vocabulary).filter(tag => re.test(tag) && tag !== value);
+};
 
 const getTagsList = ({ tags }: Vocabulary) =>
     Object.keys(tags);
