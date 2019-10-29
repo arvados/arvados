@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: admin
-title: Using AWS Spot instances
+title: Using Preemptible instances
 ...
 
 {% comment %}
@@ -10,11 +10,13 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-This page describes how to set up crunch to take advantage of "Amazon's EC2 spot instances":https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-spot-instances.html.
+This page describes how to enable preemptible instances.  Preemptible instances typically offer lower cost computation with a tradeoff of lower service guarantees.  If a compute node is preempted, Arvados will restart the computation on a new instance.
+
+Currently Arvados supports preemptible instances using AWS spot instances.
 
 h2. Configuration
 
-To use spot instances, set @UsePreemptibleInstances: true@ and add entries to @InstanceTypes@ with @Preemptible: true@ to @config.yml@.  Typically you want to add both preemptible and non-preemptible entries for each cloud provider VM type.  The @Price@ for preemptible instances is the maximum bid price, the actual price paid is dynamic and may be lower.  For example:
+To use preemptible instances, set @UsePreemptibleInstances: true@ and add entries to @InstanceTypes@ with @Preemptible: true@ to @config.yml@.  Typically you want to add both preemptible and non-preemptible entries for each cloud provider VM type.  The @Price@ for preemptible instances is the maximum bid price, the actual price paid is dynamic and may be lower.  For example:
 
 <pre>
 Clusters:
@@ -38,13 +40,17 @@ Clusters:
         Price: 0.1
 </pre>
 
-When @UsePreemptibleInstances@ is enabled, child containers (workflow steps) will automatically be made preemptable.  If the instance running a step is preempted, it will be restarted on a new instance.  However, because preempting the workflow runner would cancel the entire workflow, the workflow runner runs in a reserved (nonpreemptable) instance.
+When @UsePreemptibleInstances@ is enabled, child containers (workflow steps) will automatically be made preemptible.  Note that because preempting the workflow runner would cancel the entire workflow, the workflow runner runs in a reserved (non-preemptible) instance.
 
 If you are using "crunch-dispatch-cloud":{{site.baseurl}}/install/install-dispatch-cloud.html no additional configuration is required.
 
 If you are using the legacy Nodemanager, "see below":#nodemanager .
 
-h3. AWS Permissions
+h2. Preemptible instances on AWS
+
+For general information, see "using Amazon EC2 spot instances":https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-spot-instances.html .
+
+h3. Permissions
 
 When requesting spot instances, Amazon's API may return an authorization error depending on how users and permissions are set on the account. If this is the case check logs for this error:
 
