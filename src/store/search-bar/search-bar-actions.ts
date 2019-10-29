@@ -72,16 +72,17 @@ export const searchData = (searchValue: string) =>
                 dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
                 dispatch(navigateToSearchResults(searchValue));
             }
-	}
+        }
     };
 
 export const searchAdvanceData = (data: SearchBarAdvanceFormData) =>
-    async (dispatch: Dispatch) => {
+    async (dispatch: Dispatch, getState: () => RootState) => {
         dispatch<any>(saveQuery(data));
+        const searchValue = getState().searchBar.searchValue;
         dispatch(searchResultsPanelActions.CLEAR());
         dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.BASIC));
         dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
-        dispatch(navigateToSearchResults(""));
+        dispatch(navigateToSearchResults(searchValue));
     };
 
 export const setSearchValueFromAdvancedData = (data: SearchBarAdvanceFormData, prevData?: SearchBarAdvanceFormData) =>
@@ -231,15 +232,15 @@ const buildQueryFromKeyMap = (data: any, keyMap: string[][], mode: 'rebuild' | '
 
         if (data.hasOwnProperty(key)) {
             const pattern = v === false
-                          ? `${field.replace(':', '\\:\\s*')}\\s*`
-                          : `${field.replace(':', '\\:\\s*')}\\:\\s*"[\\w|\\#|\\-|\\/]*"\\s*`;
+                ? `${field.replace(':', '\\:\\s*')}\\s*`
+                : `${field.replace(':', '\\:\\s*')}\\:\\s*"[\\w|\\#|\\-|\\/]*"\\s*`;
             value = value.replace(new RegExp(pattern), '');
         }
 
         if (v) {
             const nv = v === true
-                     ? `${field}`
-                     : `${field}:${v}`;
+                ? `${field}`
+                : `${field}:${v}`;
 
             if (mode === 'rebuild') {
                 value = value + ' ' + nv;
@@ -280,7 +281,7 @@ export const getQueryFromAdvancedData = (data: SearchBarAdvanceFormData, prevDat
         ['to', 'dateTo']
     ];
     _.union(data.properties, prevData ? prevData.properties : [])
-     .forEach(p => keyMap.push([`has:"${p.key}"`, `prop-"${p.key}"`]));
+        .forEach(p => keyMap.push([`has:"${p.key}"`, `prop-"${p.key}"`]));
 
     if (prevData) {
         const obj = getModifiedKeysValues(flatData(data), flatData(prevData));
