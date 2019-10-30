@@ -133,8 +133,8 @@ export const SiteManagerPanelRoot = compose(
                             <TableRow className={classes.tableRow}>
                                 <TableCell>Cluster ID</TableCell>
                                 <TableCell>Host</TableCell>
-                                <TableCell>Username</TableCell>
                                 <TableCell>Email</TableCell>
+                                <TableCell>UUID</TableCell>
                                 <TableCell>Status</TableCell>
                             </TableRow>
                         </TableHead>
@@ -146,8 +146,8 @@ export const SiteManagerPanelRoot = compose(
                                         <a href={remoteHostsConfig[session.clusterId].workbench2Url} style={{ textDecoration: 'none' }}> <ResourceCluster uuid={session.clusterId} /></a>
                                         : session.clusterId}</TableCell>
                                     <TableCell>{session.remoteHost}</TableCell>
-                                    <TableCell>{validating ? <CircularProgress size={20} /> : session.username}</TableCell>
                                     <TableCell>{validating ? <CircularProgress size={20} /> : session.email}</TableCell>
+                                    <TableCell>{validating ? <CircularProgress size={20} /> : session.uuid}</TableCell>
                                     <TableCell className={classes.statusCell}>
                                         <Button fullWidth
                                             disabled={validating || session.status === SessionStatus.INVALIDATED || session.active}

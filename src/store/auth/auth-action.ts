@@ -67,9 +67,12 @@ export const initAuth = (config: Config) => (dispatch: Dispatch, getState: () =>
 const init = (config: Config) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     const user = services.authService.getUser();
     const token = services.authService.getApiToken();
-    const homeCluster = services.authService.getHomeCluster();
+    let homeCluster = services.authService.getHomeCluster();
     if (token) {
         setAuthorizationHeader(services, token);
+    }
+    if (homeCluster && !config.remoteHosts[homeCluster]) {
+        homeCluster = undefined;
     }
     dispatch(authActions.CONFIG({ config }));
     dispatch(authActions.SET_HOME_CLUSTER(config.loginCluster || homeCluster || config.uuidPrefix));

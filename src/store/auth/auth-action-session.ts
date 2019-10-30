@@ -120,7 +120,8 @@ export const validateSession = (session: Session, activeSession: Session) =>
             session.baseUrl = baseUrl;
             session.token = token;
             session.email = user.email;
-            session.username = getUserFullname(user);
+            session.uuid = user.uuid;
+            session.name = getUserFullname(user);
             session.loggedIn = true;
         } catch {
             session.loggedIn = false;
@@ -163,7 +164,8 @@ export const addSession = (remoteHost: string) =>
                     status: SessionStatus.VALIDATED,
                     active: false,
                     email: user.email,
-                    username: getUserFullname(user),
+                    name: getUserFullname(user),
+                    uuid: user.uuid,
                     remoteHost,
                     baseUrl,
                     clusterId,

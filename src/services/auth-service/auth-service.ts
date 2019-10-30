@@ -176,11 +176,12 @@ export class AuthService {
             clusterId: cfg.uuidPrefix,
             remoteHost: cfg.rootUrl,
             baseUrl: cfg.baseUrl,
-            username: getUserFullname(user),
+            name: getUserFullname(user),
             email: user ? user.email : '',
             token: this.getApiToken(),
             loggedIn: true,
             active: true,
+            uuid: user ? user.uuid : '',
             status: SessionStatus.VALIDATED
         } as Session;
         const localSessions = this.getSessions().map(s => ({
@@ -195,11 +196,12 @@ export class AuthService {
                 clusterId,
                 remoteHost,
                 baseUrl: '',
-                username: '',
+                name: '',
                 email: '',
                 token: '',
                 loggedIn: false,
                 active: false,
+                uuid: '',
                 status: SessionStatus.INVALIDATED
             } as Session;
         });
