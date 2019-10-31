@@ -9,36 +9,65 @@ import { ServiceRepository } from "~/services/services";
 import Axios from "axios";
 import { getUserFullname, User } from "~/models/user";
 import { authActions } from "~/store/auth/auth-action";
-import { Config, ClusterConfigJSON, CLUSTER_CONFIG_URL, ARVADOS_API_PATH } from "~/common/config";
+import { Config, ClusterConfigJSON, CLUSTER_CONFIG_PATH, DISCOVERY_DOC_PATH, ARVADOS_API_PATH } from "~/common/config";
+import { normalizeURLPath } from "~/common/url";
 import { Session, SessionStatus } from "~/models/session";
 import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
 import { AuthService, UserDetailsResponse } from "~/services/auth-service/auth-service";
 import * as jsSHA from "jssha";
 
-const getRemoteHostBaseUrl = async (remoteHost: string): Promise<string | null> => {
+const getClusterInfo = async (origin: string): Promise<{ clusterId: string, baseURL: string } | null> => {
+    // Try the new public config endpoint
+    try {
+        const config = (await Axios.get<ClusterConfigJSON>(`${origin}/${CLUSTER_CONFIG_PATH}`)).data;
+        return {
+            clusterId: config.ClusterID,
+            baseURL: normalizeURLPath(`${config.Services.Controller.ExternalURL}/${ARVADOS_API_PATH}`)
+        };
+    } catch { }
+
+    // Fall back to discovery document
+    try {
+        const config = (await Axios.get<any>(`${origin}/${DISCOVERY_DOC_PATH}`)).data;
+        return {
+            clusterId: config.uuidPrefix,
+            baseURL: normalizeURLPath(config.baseUrl)
+        };
+    } catch { }
+
+    return null;
+};
+
+const getRemoteHostInfo = async (remoteHost: string): Promise<{ clusterId: string, baseURL: string } | null> => {
     let url = remoteHost;
     if (url.indexOf('://') < 0) {
         url = 'https://' + url;
     }
     const origin = new URL(url).origin;
-    let baseUrl: string | null = null;
 
+    // Maybe it is an API server URL, try fetching config and discovery doc
+    let r = getClusterInfo(origin);
+    if (r !== null) {
+        return r;
+    }
+
+    // Maybe it is a Workbench2 URL, try getting config.json
     try {
-        const resp = await Axios.get<ClusterConfigJSON>(`${origin}/${CLUSTER_CONFIG_URL}`);
-        baseUrl = `${resp.data.Services.Controller.ExternalURL}/${ARVADOS_API_PATH}`;
-    } catch (err) {
-        try {
-            const resp = await Axios.get<any>(`${origin}/status.json`);
-            baseUrl = resp.data.apiBaseURL;
-        } catch (err) {
+        r = getClusterInfo((await Axios.get<any>(`${origin}/config.json`)).data.API_HOST);
+        if (r !== null) {
+            return r;
         }
-    }
+    } catch { }
 
-    if (baseUrl && baseUrl[baseUrl.length - 1] === '/') {
-        baseUrl = baseUrl.substr(0, baseUrl.length - 1);
-    }
+    // Maybe it is a Workbench1 URL, try getting status.json
+    try {
+        r = getClusterInfo((await Axios.get<any>(`${origin}/status.json`)).data.apiBaseURL);
+        if (r !== null) {
+            return r;
+        }
+    } catch { }
 
-    return baseUrl;
+    return null;
 };
 
 const getUserDetails = async (baseUrl: string, token: string): Promise<UserDetailsResponse> => {
@@ -50,41 +79,34 @@ const getUserDetails = async (baseUrl: string, token: string): Promise<UserDetai
     return resp.data;
 };
 
-const getTokenUuid = async (baseUrl: string, token: string): Promise<string> => {
-    if (token.startsWith("v2/")) {
-        const uuid = token.split("/")[1];
-        return Promise.resolve(uuid);
-    }
-
-    const resp = await Axios.get(`${baseUrl}api_client_authorizations`, {
-        headers: {
-            Authorization: `OAuth2 ${token}`
-        },
-        data: {
-            filters: JSON.stringify([['api_token', '=', token]])
-        }
-    });
-
-    return resp.data.items[0].uuid;
-};
-
-export const getSaltedToken = (clusterId: string, tokenUuid: string, token: string) => {
+export const getSaltedToken = (clusterId: string, token: string) => {
     const shaObj = new jsSHA("SHA-1", "TEXT");
-    let secret = token;
-    if (token.startsWith("v2/")) {
-        secret = token.split("/")[2];
+    const [ver, uuid, secret] = token.split("/");
+    if (ver !== "v2") {
+        throw new Error("Must be a v2 token");
     }
-    shaObj.setHMACKey(secret, "TEXT");
-    shaObj.update(clusterId);
-    const hmac = shaObj.getHMAC("HEX");
-    return `v2/${tokenUuid}/${hmac}`;
+    let salted = secret;
+    if (uuid.substr(0, 5) !== clusterId) {
+        shaObj.setHMACKey(secret, "TEXT");
+        shaObj.update(clusterId);
+        salted = shaObj.getHMAC("HEX");
+    }
+    return `v2/${uuid}/${salted}`;
 };
 
-const clusterLogin = async (clusterId: string, baseUrl: string, activeSession: Session): Promise<{ user: User, token: string }> => {
-    const tokenUuid = await getTokenUuid(activeSession.baseUrl, activeSession.token);
-    const saltedToken = getSaltedToken(clusterId, tokenUuid, activeSession.token);
-    const user = await getUserDetails(baseUrl, saltedToken);
+export const getActiveSession = (sessions: Session[]): Session | undefined => sessions.find(s => s.active);
+
+export const validateCluster = async (remoteHost: string, useToken: string):
+    Promise<{ user: User; token: string, baseUrl: string, clusterId: string }> => {
+
+    const info = await getRemoteHostInfo(remoteHost);
+    if (!info) {
+        return Promise.reject(`Could not get config for ${remoteHost}`);
+    }
+    const saltedToken = getSaltedToken(info.clusterId, useToken);
+    const user = await getUserDetails(info.baseURL, saltedToken);
     return {
+        baseUrl: info.baseURL,
         user: {
             firstName: user.first_name,
             lastName: user.last_name,
@@ -96,39 +118,38 @@ const clusterLogin = async (clusterId: string, baseUrl: string, activeSession: S
             username: user.username,
             prefs: user.prefs
         },
-        token: saltedToken
+        token: saltedToken,
+        clusterId: info.clusterId
     };
-};
-
-export const getActiveSession = (sessions: Session[]): Session | undefined => sessions.find(s => s.active);
-
-export const validateCluster = async (remoteHost: string, clusterId: string, activeSession: Session): Promise<{ user: User; token: string, baseUrl: string }> => {
-    const baseUrl = await getRemoteHostBaseUrl(remoteHost);
-    if (!baseUrl) {
-        return Promise.reject(`Could not find base url for ${remoteHost}`);
-    }
-    const { user, token } = await clusterLogin(clusterId, baseUrl, activeSession);
-    return { baseUrl, user, token };
 };
 
 export const validateSession = (session: Session, activeSession: Session) =>
     async (dispatch: Dispatch): Promise<Session> => {
         dispatch(authActions.UPDATE_SESSION({ ...session, status: SessionStatus.BEING_VALIDATED }));
         session.loggedIn = false;
-        try {
-            const { baseUrl, user, token } = await validateCluster(session.remoteHost, session.clusterId, activeSession);
+
+        const setupSession = (baseUrl: string, user: User, token: string) => {
             session.baseUrl = baseUrl;
             session.token = token;
             session.email = user.email;
             session.uuid = user.uuid;
             session.name = getUserFullname(user);
             session.loggedIn = true;
+        };
+
+        try {
+            const { baseUrl, user, token } = await validateCluster(session.remoteHost, session.token);
+            setupSession(baseUrl, user, token);
         } catch {
-            session.loggedIn = false;
-        } finally {
-            session.status = SessionStatus.VALIDATED;
-            dispatch(authActions.UPDATE_SESSION(session));
+            try {
+                const { baseUrl, user, token } = await validateCluster(session.remoteHost, activeSession.token);
+                setupSession(baseUrl, user, token);
+            } catch { }
         }
+
+        session.status = SessionStatus.VALIDATED;
+        dispatch(authActions.UPDATE_SESSION(session));
+
         return session;
     };
 
@@ -148,17 +169,20 @@ export const validateSessions = () =>
         }
     };
 
-export const addSession = (remoteHost: string) =>
+export const addSession = (remoteHost: string, token?: string) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const sessions = getState().auth.sessions;
         const activeSession = getActiveSession(sessions);
-        if (activeSession) {
-            const clusterId = remoteHost.match(/^(\w+)\./)![1];
-            if (sessions.find(s => s.clusterId === clusterId)) {
-                return Promise.reject("Cluster already exists");
-            }
+        let useToken: string | null = null;
+        if (token) {
+            useToken = token;
+        } else if (activeSession) {
+            useToken = activeSession.token;
+        }
+
+        if (useToken) {
             try {
-                const { baseUrl, user, token } = await validateCluster(remoteHost, clusterId, activeSession);
+                const { baseUrl, user, token, clusterId } = await validateCluster(remoteHost, useToken);
                 const session = {
                     loggedIn: true,
                     status: SessionStatus.VALIDATED,
@@ -172,7 +196,11 @@ export const addSession = (remoteHost: string) =>
                     token
                 };
 
-                dispatch(authActions.ADD_SESSION(session));
+                if (sessions.find(s => s.clusterId === clusterId)) {
+                    dispatch(authActions.UPDATE_SESSION(session));
+                } else {
+                    dispatch(authActions.ADD_SESSION(session));
+                }
                 services.authService.saveSessions(getState().auth.sessions);
 
                 return session;

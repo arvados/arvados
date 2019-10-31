@@ -45,6 +45,7 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
         try {
             const params = getParams(dataExplorer, searchValue);
 
+            // TODO: if one of these fails, no results will be returned.
             const responses = await Promise.all(sessions.map(session =>
                 this.services.groupsService.contents('', params, session)
             ));

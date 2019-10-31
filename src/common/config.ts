@@ -193,5 +193,6 @@ const getDefaultConfig = (): WorkbenchConfig => {
 };
 
 export const ARVADOS_API_PATH = "arvados/v1";
-export const CLUSTER_CONFIG_URL = "arvados/v1/config";
-export const getClusterConfigURL = (apiHost: string) => `${window.location.protocol}//${apiHost}/${CLUSTER_CONFIG_URL}?nocache=${(new Date()).getTime()}`;
+export const CLUSTER_CONFIG_PATH = "arvados/v1/config";
+export const DISCOVERY_DOC_PATH = "discovery/v1/apis/arvados/v1/rest";
+export const getClusterConfigURL = (apiHost: string) => `${window.location.protocol}//${apiHost}/${CLUSTER_CONFIG_PATH}?nocache=${(new Date()).getTime()}`;
