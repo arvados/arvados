@@ -52,8 +52,15 @@ func applySelectParam(selectParam []string, orig map[string]interface{}) map[str
 	return selected
 }
 
-func (rtr *router) sendResponse(w http.ResponseWriter, resp interface{}, opts responseOptions) {
+func (rtr *router) sendResponse(w http.ResponseWriter, req *http.Request, resp interface{}, opts responseOptions) {
 	var tmp map[string]interface{}
+
+	if resp, ok := resp.(http.Handler); ok {
+		// resp knows how to write its own http response
+		// header and body.
+		resp.ServeHTTP(w, req)
+		return
+	}
 
 	err := rtr.transcode(resp, &tmp)
 	if err != nil {
@@ -121,7 +128,9 @@ func (rtr *router) sendResponse(w http.ResponseWriter, resp interface{}, opts re
 		}
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(tmp)
+	enc := json.NewEncoder(w)
+	enc.SetEscapeHTML(false)
+	enc.Encode(tmp)
 }
 
 func (rtr *router) sendError(w http.ResponseWriter, err error) {

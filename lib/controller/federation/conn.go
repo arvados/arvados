@@ -17,7 +17,7 @@ import (
 	"strings"
 
 	"git.curoverse.com/arvados.git/lib/config"
-	"git.curoverse.com/arvados.git/lib/controller/railsproxy"
+	"git.curoverse.com/arvados.git/lib/controller/localdb"
 	"git.curoverse.com/arvados.git/lib/controller/rpc"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/auth"
@@ -31,7 +31,7 @@ type Conn struct {
 }
 
 func New(cluster *arvados.Cluster) *Conn {
-	local := railsproxy.NewConn(cluster)
+	local := localdb.NewConn(cluster)
 	remotes := map[string]backend{}
 	for id, remote := range cluster.RemoteClusters {
 		if !remote.Proxy {
@@ -185,6 +185,30 @@ func (conn *Conn) ConfigGet(ctx context.Context) (json.RawMessage, error) {
 	return json.RawMessage(buf.Bytes()), err
 }
 
+func (conn *Conn) Login(ctx context.Context, options arvados.LoginOptions) (arvados.LoginResponse, error) {
+	if id := conn.cluster.Login.LoginCluster; id != "" && id != conn.cluster.ClusterID {
+		// defer entire login procedure to designated cluster
+		remote, ok := conn.remotes[id]
+		if !ok {
+			return arvados.LoginResponse{}, fmt.Errorf("configuration problem: designated login cluster %q is not defined", id)
+		}
+		baseURL := remote.BaseURL()
+		target, err := baseURL.Parse(arvados.EndpointLogin.Path)
+		if err != nil {
+			return arvados.LoginResponse{}, fmt.Errorf("internal error getting redirect target: %s", err)
+		}
+		target.RawQuery = url.Values{
+			"return_to": []string{options.ReturnTo},
+			"remote":    []string{options.Remote},
+		}.Encode()
+		return arvados.LoginResponse{
+			RedirectLocation: target.String(),
+		}, nil
+	} else {
+		return conn.local.Login(ctx, options)
+	}
+}
+
 func (conn *Conn) CollectionGet(ctx context.Context, options arvados.GetOptions) (arvados.Collection, error) {
 	if len(options.UUID) == 27 {
 		// UUID is really a UUID
@@ -291,7 +315,10 @@ func (conn *Conn) APIClientAuthorizationCurrent(ctx context.Context, options arv
 	return conn.chooseBackend(options.UUID).APIClientAuthorizationCurrent(ctx, options)
 }
 
-type backend interface{ arvados.API }
+type backend interface {
+	arvados.API
+	BaseURL() url.URL
+}
 
 type notFoundError struct{}
 

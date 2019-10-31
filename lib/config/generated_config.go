@@ -499,8 +499,21 @@ Clusters:
     Login:
       # These settings are provided by your OAuth2 provider (eg
       # Google) used to perform upstream authentication.
-      ProviderAppSecret: ""
       ProviderAppID: ""
+      ProviderAppSecret: ""
+
+      # (Experimental) Authenticate with Google, bypassing the
+      # SSO-provider gateway service. Use the Google Cloud console to
+      # generate the Client ID and secret (APIs and Services >
+      # Credentials > Create credentials > OAuth client ID > Web
+      # application) and add your controller's /login URL (e.g.,
+      # "https://zzzzz.example.com/login") as an authorized redirect
+      # URL.
+      #
+      # Requires EnableBetaController14287. ProviderAppID must be
+      # blank.
+      GoogleClientID: ""
+      GoogleClientSecret: ""
 
       # The cluster ID to delegate the user database.  When set,
       # logins on this cluster will be redirected to the login cluster

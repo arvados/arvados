@@ -17,10 +17,21 @@ class UserSessionsController < ApplicationController
       raise "Local login disabled when LoginCluster is set"
     end
 
-    omniauth = request.env['omniauth.auth']
+    if params[:provider] == 'controller'
+      if request.headers['Authorization'] != 'Bearer ' + Rails.configuration.SystemRootToken
+        return send_error('Invalid authorization header', status: 401)
+      end
+      # arvados-controller verified the user and is passing auth_info
+      # in request params.
+      authinfo = SafeJSON.load(params[:auth_info])
+    else
+      # omniauth middleware verified the user and is passing auth_info
+      # in request.env.
+      authinfo = request.env['omniauth.auth']['info'].with_indifferent_access
+    end
 
     begin
-      user = User.register omniauth['info']
+      user = User.register(authinfo)
     rescue => e
       Rails.logger.warn e
       return redirect_to login_failure_url
@@ -44,8 +55,6 @@ class UserSessionsController < ApplicationController
     Thread.current[:user] = user
 
     user.save or raise Exception.new(user.errors.messages)
-
-    omniauth.delete('extra')
 
     # Give the authenticated user a cookie for direct API access
     session[:user_id] = user.id

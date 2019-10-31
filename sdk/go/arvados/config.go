@@ -132,8 +132,10 @@ type Cluster struct {
 		Repositories string
 	}
 	Login struct {
-		ProviderAppSecret  string
+		GoogleClientID     string
+		GoogleClientSecret string
 		ProviderAppID      string
+		ProviderAppSecret  string
 		LoginCluster       string
 		RemoteTokenRefresh Duration
 	}

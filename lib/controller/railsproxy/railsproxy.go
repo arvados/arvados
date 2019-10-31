@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 
@@ -40,7 +41,12 @@ func NewConn(cluster *arvados.Cluster) *rpc.Conn {
 	if err != nil {
 		panic(err)
 	}
-	return rpc.NewConn(cluster.ClusterID, url, insecure, provideIncomingToken)
+	conn := rpc.NewConn(cluster.ClusterID, url, insecure, provideIncomingToken)
+	// If Rails is running with force_ssl=true, this
+	// "X-Forwarded-Proto: https" header prevents it from
+	// redirecting our internal request to an invalid https URL.
+	conn.SendHeader = http.Header{"X-Forwarded-Proto": []string{"https"}}
+	return conn
 }
 
 func provideIncomingToken(ctx context.Context) ([]string, error) {
