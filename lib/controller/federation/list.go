@@ -139,6 +139,13 @@ func (conn *Conn) splitListRequest(ctx context.Context, opts arvados.ListOptions
 		}
 	}
 
+	if matchAllFilters == nil {
+		// Not filtering by UUID at all; just query the local
+		// cluster.
+		_, err := fn(ctx, conn.cluster.ClusterID, conn.local, opts)
+		return err
+	}
+
 	// Collate UUIDs in matchAllFilters by remote cluster ID --
 	// e.g., todoByRemote["aaaaa"]["aaaaa-4zz18-000000000000000"]
 	// will be true -- and count the total number of UUIDs we're
