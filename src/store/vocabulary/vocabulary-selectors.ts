@@ -8,7 +8,7 @@ import { Vocabulary } from '~/models/vocabulary';
 export const VOCABULARY_PROPERTY_NAME = 'vocabulary';
 
 export const DEFAULT_VOCABULARY: Vocabulary = {
-    strict: false,
+    strict_tags: false,
     tags: {},
 };
 

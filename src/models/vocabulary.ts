@@ -5,18 +5,28 @@
 import { isObject, has, every } from 'lodash/fp';
 
 export interface Vocabulary {
-    strict: boolean;
+    strict_tags: boolean;
     tags: Record<string, Tag>;
+}
+
+export interface Label {
+    lang?: string;
+    label: string;
+}
+
+export interface TagValue {
+    labels: Label[];
 }
 
 export interface Tag {
     strict?: boolean;
-    values?: string[];
+    labels: Label[];
+    values?: Record<string, TagValue>;
 }
 
 const VOCABULARY_VALIDATORS = [
     isObject,
-    has('strict'),
+    has('strict_tags'),
     has('tags'),
 ];
 
