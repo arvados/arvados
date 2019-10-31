@@ -642,10 +642,11 @@ def create_collection_from(c, src, dst, args):
 #
 def copy_collection(obj_uuid, src, dst, args):
     if arvados.util.keep_locator_pattern.match(obj_uuid):
-        # If the obj_uuid is a portable data hash, it might not be uniquely
-        # identified with a particular collection.  As a result, it is
-        # ambigious as to what name to use for the copy.  Apply some heuristics
-        # to pick which collection to get the name from.
+        # If the obj_uuid is a portable data hash, it might not be
+        # uniquely identified with a particular collection.  As a
+        # result, it is ambiguous as to what name to use for the copy.
+        # Apply some heuristics to pick which collection to get the
+        # name from.
         srccol = src.collections().list(
             filters=[['portable_data_hash', '=', obj_uuid]],
             order="created_at asc"

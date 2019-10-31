@@ -426,7 +426,7 @@ class User < ArvadosModel
         if !primary_user
           primary_user = user.redirects_to
         elsif primary_user.uuid != user.redirects_to.uuid
-          raise "Ambigious email address, directs to both #{primary_user.uuid} and #{user.redirects_to.uuid}"
+          raise "Ambiguous email address, directs to both #{primary_user.uuid} and #{user.redirects_to.uuid}"
         end
       end
     end
