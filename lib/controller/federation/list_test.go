@@ -117,6 +117,9 @@ func (cl *collectionLister) CollectionList(ctx context.Context, options arvados.
 		if cl.MaxPageSize > 0 && len(resp.Items) >= cl.MaxPageSize {
 			break
 		}
+		if options.Limit >= 0 && len(resp.Items) >= options.Limit {
+			break
+		}
 		if cl.matchFilters(c, options.Filters) {
 			resp.Items = append(resp.Items, c)
 		}
@@ -171,6 +174,15 @@ type listTrial struct {
 	expectUUIDs  []string
 	expectCalls  []int // number of API calls to backends
 	expectStatus int
+}
+
+func (s *CollectionListSuite) TestCollectionListNoUUIDFilters(c *check.C) {
+	s.test(c, listTrial{
+		count:       "none",
+		limit:       1,
+		expectUUIDs: []string{s.uuids[0][0]},
+		expectCalls: []int{1, 0, 0},
+	})
 }
 
 func (s *CollectionListSuite) TestCollectionListOneLocal(c *check.C) {
@@ -433,6 +445,6 @@ func (s *CollectionListSuite) test(c *check.C, trial listTrial) {
 			continue
 		}
 		opts := calls[0].Options.(arvados.ListOptions)
-		c.Check(opts.Limit, check.Equals, -1)
+		c.Check(opts.Limit, check.Equals, trial.limit)
 	}
 }
