@@ -16,7 +16,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"regexp"
@@ -37,11 +36,12 @@ func init() {
 }
 
 func newS3Volume(cluster *arvados.Cluster, volume arvados.Volume, logger logrus.FieldLogger, metrics *volumeMetricsVecs) (Volume, error) {
-	v := &S3Volume{cluster: cluster, volume: volume, logger: logger, metrics: metrics}
+	v := &S3Volume{cluster: cluster, volume: volume, metrics: metrics}
 	err := json.Unmarshal(volume.DriverParameters, &v)
 	if err != nil {
 		return nil, err
 	}
+	v.logger = logger.WithField("Volume", v.String())
 	return v, v.check()
 }
 
@@ -340,7 +340,7 @@ func (v *S3Volume) getReader(loc string) (rdr io.ReadCloser, err error) {
 
 	rdr, err = v.bucket.GetReader(loc)
 	if err != nil {
-		log.Printf("warning: reading %s after successful fixRace: %s", loc, err)
+		v.logger.Warnf("reading %s after successful fixRace: %s", loc, err)
 		err = v.translateError(err)
 	}
 	return
@@ -465,7 +465,7 @@ func (v *S3Volume) Put(ctx context.Context, loc string, block []byte) error {
 	go func() {
 		defer func() {
 			if ctx.Err() != nil {
-				v.logger.Debugf("%s: abandoned PutReader goroutine finished with err: %s", v, err)
+				v.logger.Debugf("abandoned PutReader goroutine finished with err: %s", err)
 			}
 		}()
 		defer close(ready)
@@ -477,7 +477,7 @@ func (v *S3Volume) Put(ctx context.Context, loc string, block []byte) error {
 	}()
 	select {
 	case <-ctx.Done():
-		v.logger.Debugf("%s: taking PutReader's input away: %s", v, ctx.Err())
+		v.logger.Debugf("taking PutReader's input away: %s", ctx.Err())
 		// Our pipe might be stuck in Write(), waiting for
 		// PutReader() to read. If so, un-stick it. This means
 		// PutReader will get corrupt data, but that's OK: the
@@ -485,7 +485,7 @@ func (v *S3Volume) Put(ctx context.Context, loc string, block []byte) error {
 		go io.Copy(ioutil.Discard, bufr)
 		// CloseWithError() will return once pending I/O is done.
 		bufw.CloseWithError(ctx.Err())
-		v.logger.Debugf("%s: abandoning PutReader goroutine", v)
+		v.logger.Debugf("abandoning PutReader goroutine")
 		return ctx.Err()
 	case <-ready:
 		// Unblock pipe in case PutReader did not consume it.
@@ -523,13 +523,13 @@ func (v *S3Volume) Mtime(loc string) (time.Time, error) {
 		// The data object X exists, but recent/X is missing.
 		err = v.bucket.PutReader("recent/"+loc, nil, 0, "application/octet-stream", s3ACL, s3.Options{})
 		if err != nil {
-			log.Printf("error: creating %q: %s", "recent/"+loc, err)
+			v.logger.WithError(err).Errorf("error creating %q", "recent/"+loc)
 			return zeroTime, v.translateError(err)
 		}
-		log.Printf("info: created %q to migrate existing block to new storage scheme", "recent/"+loc)
+		v.logger.Infof("created %q to migrate existing block to new storage scheme", "recent/"+loc)
 		resp, err = v.bucket.Head("recent/"+loc, nil)
 		if err != nil {
-			log.Printf("error: created %q but HEAD failed: %s", "recent/"+loc, err)
+			v.logger.WithError(err).Errorf("HEAD failed after creating %q", "recent/"+loc)
 			return zeroTime, v.translateError(err)
 		}
 	} else if err != nil {
@@ -544,12 +544,14 @@ func (v *S3Volume) Mtime(loc string) (time.Time, error) {
 func (v *S3Volume) IndexTo(prefix string, writer io.Writer) error {
 	// Use a merge sort to find matching sets of X and recent/X.
 	dataL := s3Lister{
+		Logger:   v.logger,
 		Bucket:   v.bucket.Bucket(),
 		Prefix:   prefix,
 		PageSize: v.IndexPageSize,
 		Stats:    &v.bucket.stats,
 	}
 	recentL := s3Lister{
+		Logger:   v.logger,
 		Bucket:   v.bucket.Bucket(),
 		Prefix:   "recent/" + prefix,
 		PageSize: v.IndexPageSize,
@@ -744,24 +746,24 @@ func (v *S3Volume) fixRace(loc string) bool {
 	trash, err := v.bucket.Head("trash/"+loc, nil)
 	if err != nil {
 		if !os.IsNotExist(v.translateError(err)) {
-			log.Printf("error: fixRace: HEAD %q: %s", "trash/"+loc, err)
+			v.logger.WithError(err).Errorf("fixRace: HEAD %q failed", "trash/"+loc)
 		}
 		return false
 	}
 	trashTime, err := v.lastModified(trash)
 	if err != nil {
-		log.Printf("error: fixRace: parse %q: %s", trash.Header.Get("Last-Modified"), err)
+		v.logger.WithError(err).Errorf("fixRace: error parsing time %q", trash.Header.Get("Last-Modified"))
 		return false
 	}
 
 	recent, err := v.bucket.Head("recent/"+loc, nil)
 	if err != nil {
-		log.Printf("error: fixRace: HEAD %q: %s", "recent/"+loc, err)
+		v.logger.WithError(err).Errorf("fixRace: HEAD %q failed", "recent/"+loc)
 		return false
 	}
 	recentTime, err := v.lastModified(recent)
 	if err != nil {
-		log.Printf("error: fixRace: parse %q: %s", recent.Header.Get("Last-Modified"), err)
+		v.logger.WithError(err).Errorf("fixRace: error parsing time %q", recent.Header.Get("Last-Modified"))
 		return false
 	}
 
@@ -772,11 +774,11 @@ func (v *S3Volume) fixRace(loc string) bool {
 		return false
 	}
 
-	log.Printf("notice: fixRace: %q: trashed at %s but touched at %s (age when trashed = %s < %s)", loc, trashTime, recentTime, ageWhenTrashed, v.cluster.Collections.BlobSigningTTL)
-	log.Printf("notice: fixRace: copying %q to %q to recover from race between Put/Touch and Trash", "recent/"+loc, loc)
+	v.logger.Infof("fixRace: %q: trashed at %s but touched at %s (age when trashed = %s < %s)", loc, trashTime, recentTime, ageWhenTrashed, v.cluster.Collections.BlobSigningTTL)
+	v.logger.Infof("fixRace: copying %q to %q to recover from race between Put/Touch and Trash", "recent/"+loc, loc)
 	err = v.safeCopy(loc, "trash/"+loc)
 	if err != nil {
-		log.Printf("error: fixRace: %s", err)
+		v.logger.WithError(err).Error("fixRace: copy failed")
 		return false
 	}
 	return true
@@ -819,24 +821,24 @@ func (v *S3Volume) EmptyTrash() {
 
 		trashT, err := time.Parse(time.RFC3339, trash.LastModified)
 		if err != nil {
-			log.Printf("warning: %s: EmptyTrash: %q: parse %q: %s", v, trash.Key, trash.LastModified, err)
+			v.logger.Warnf("EmptyTrash: %q: parse %q: %s", trash.Key, trash.LastModified, err)
 			return
 		}
 		recent, err := v.bucket.Head("recent/"+loc, nil)
 		if err != nil && os.IsNotExist(v.translateError(err)) {
-			log.Printf("warning: %s: EmptyTrash: found trash marker %q but no %q (%s); calling Untrash", v, trash.Key, "recent/"+loc, err)
+			v.logger.Warnf("EmptyTrash: found trash marker %q but no %q (%s); calling Untrash", trash.Key, "recent/"+loc, err)
 			err = v.Untrash(loc)
 			if err != nil {
-				log.Printf("error: %s: EmptyTrash: Untrash(%q): %s", v, loc, err)
+				v.logger.WithError(err).Errorf("EmptyTrash: Untrash(%q) failed", loc)
 			}
 			return
 		} else if err != nil {
-			log.Printf("warning: %s: EmptyTrash: HEAD %q: %s", v, "recent/"+loc, err)
+			v.logger.WithError(err).Warnf("EmptyTrash: HEAD %q failed", "recent/"+loc)
 			return
 		}
 		recentT, err := v.lastModified(recent)
 		if err != nil {
-			log.Printf("warning: %s: EmptyTrash: %q: parse %q: %s", v, "recent/"+loc, recent.Header.Get("Last-Modified"), err)
+			v.logger.WithError(err).Warnf("EmptyTrash: %q: error parsing %q", "recent/"+loc, recent.Header.Get("Last-Modified"))
 			return
 		}
 		if trashT.Sub(recentT) < v.cluster.Collections.BlobSigningTTL.Duration() {
@@ -849,18 +851,18 @@ func (v *S3Volume) EmptyTrash() {
 				// Note this means (TrashSweepInterval
 				// < BlobSigningTTL - raceWindow) is
 				// necessary to avoid starvation.
-				log.Printf("notice: %s: EmptyTrash: detected old race for %q, calling fixRace + Touch", v, loc)
+				v.logger.Infof("EmptyTrash: detected old race for %q, calling fixRace + Touch", loc)
 				v.fixRace(loc)
 				v.Touch(loc)
 				return
 			}
 			_, err := v.bucket.Head(loc, nil)
 			if os.IsNotExist(err) {
-				log.Printf("notice: %s: EmptyTrash: detected recent race for %q, calling fixRace", v, loc)
+				v.logger.Infof("EmptyTrash: detected recent race for %q, calling fixRace", loc)
 				v.fixRace(loc)
 				return
 			} else if err != nil {
-				log.Printf("warning: %s: EmptyTrash: HEAD %q: %s", v, loc, err)
+				v.logger.WithError(err).Warnf("EmptyTrash: HEAD %q failed", loc)
 				return
 			}
 		}
@@ -869,7 +871,7 @@ func (v *S3Volume) EmptyTrash() {
 		}
 		err = v.bucket.Del(trash.Key)
 		if err != nil {
-			log.Printf("warning: %s: EmptyTrash: deleting %q: %s", v, trash.Key, err)
+			v.logger.WithError(err).Errorf("EmptyTrash: error deleting %q", trash.Key)
 			return
 		}
 		atomic.AddInt64(&bytesDeleted, trash.Size)
@@ -877,16 +879,16 @@ func (v *S3Volume) EmptyTrash() {
 
 		_, err = v.bucket.Head(loc, nil)
 		if err == nil {
-			log.Printf("warning: %s: EmptyTrash: HEAD %q succeeded immediately after deleting %q", v, loc, loc)
+			v.logger.Warnf("EmptyTrash: HEAD %q succeeded immediately after deleting %q", loc, loc)
 			return
 		}
 		if !os.IsNotExist(v.translateError(err)) {
-			log.Printf("warning: %s: EmptyTrash: HEAD %q: %s", v, loc, err)
+			v.logger.WithError(err).Warnf("EmptyTrash: HEAD %q failed", loc)
 			return
 		}
 		err = v.bucket.Del("recent/" + loc)
 		if err != nil {
-			log.Printf("warning: %s: EmptyTrash: deleting %q: %s", v, "recent/"+loc, err)
+			v.logger.WithError(err).Warnf("EmptyTrash: error deleting %q", "recent/"+loc)
 		}
 	}
 
@@ -903,6 +905,7 @@ func (v *S3Volume) EmptyTrash() {
 	}
 
 	trashL := s3Lister{
+		Logger:   v.logger,
 		Bucket:   v.bucket.Bucket(),
 		Prefix:   "trash/",
 		PageSize: v.IndexPageSize,
@@ -915,12 +918,13 @@ func (v *S3Volume) EmptyTrash() {
 	wg.Wait()
 
 	if err := trashL.Error(); err != nil {
-		log.Printf("error: %s: EmptyTrash: lister: %s", v, err)
+		v.logger.WithError(err).Error("EmptyTrash: lister failed")
 	}
-	log.Printf("EmptyTrash stats for %v: Deleted %v bytes in %v blocks. Remaining in trash: %v bytes in %v blocks.", v.String(), bytesDeleted, blocksDeleted, bytesInTrash-bytesDeleted, blocksInTrash-blocksDeleted)
+	v.logger.Infof("EmptyTrash stats for %v: Deleted %v bytes in %v blocks. Remaining in trash: %v bytes in %v blocks.", v.String(), bytesDeleted, blocksDeleted, bytesInTrash-bytesDeleted, blocksInTrash-blocksDeleted)
 }
 
 type s3Lister struct {
+	Logger     logrus.FieldLogger
 	Bucket     *s3.Bucket
 	Prefix     string
 	PageSize   int
@@ -967,7 +971,7 @@ func (lister *s3Lister) getPage() {
 	lister.buf = make([]s3.Key, 0, len(resp.Contents))
 	for _, key := range resp.Contents {
 		if !strings.HasPrefix(key.Key, lister.Prefix) {
-			log.Printf("warning: s3Lister: S3 Bucket.List(prefix=%q) returned key %q", lister.Prefix, key.Key)
+			lister.Logger.Warnf("s3Lister: S3 Bucket.List(prefix=%q) returned key %q", lister.Prefix, key.Key)
 			continue
 		}
 		lister.buf = append(lister.buf, key)

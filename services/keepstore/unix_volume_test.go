@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
@@ -90,6 +91,7 @@ func (s *UnixVolumeSuite) newTestableUnixVolume(c *check.C, cluster *arvados.Clu
 			Root:    d,
 			locker:  locker,
 			cluster: cluster,
+			logger:  ctxlog.TestLogger(c),
 			volume:  volume,
 			metrics: metrics,
 		},

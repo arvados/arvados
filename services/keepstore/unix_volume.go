@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -38,6 +37,7 @@ func newDirectoryVolume(cluster *arvados.Cluster, volume arvados.Volume, logger 
 	if err != nil {
 		return nil, err
 	}
+	v.logger = v.logger.WithField("Volume", v.String())
 	return v, v.check()
 }
 
@@ -84,7 +84,7 @@ type UnixVolume struct {
 // "fa0b6166-3b55-4994-bd3f-92f4e00a1bb0/keep".
 func (v *UnixVolume) GetDeviceID() string {
 	giveup := func(f string, args ...interface{}) string {
-		log.Printf(f+"; using blank DeviceID for volume %s", append(args, v)...)
+		v.logger.Infof(f+"; using blank DeviceID for volume %s", append(args, v)...)
 		return ""
 	}
 	buf, err := exec.Command("findmnt", "--noheadings", "--target", v.Root).CombinedOutput()
@@ -143,7 +143,7 @@ func (v *UnixVolume) GetDeviceID() string {
 		link := filepath.Join(udir, uuid)
 		fi, err = os.Stat(link)
 		if err != nil {
-			log.Printf("error: stat %q: %s", link, err)
+			v.logger.WithError(err).Errorf("stat(%q) failed", link)
 			continue
 		}
 		if fi.Sys().(*syscall.Stat_t).Ino == ino {
@@ -271,15 +271,12 @@ func (v *UnixVolume) WriteBlock(ctx context.Context, loc string, rdr io.Reader) 
 	}
 	bdir := v.blockDir(loc)
 	if err := os.MkdirAll(bdir, 0755); err != nil {
-		log.Printf("%s: could not create directory %s: %s",
-			loc, bdir, err)
-		return err
+		return fmt.Errorf("error creating directory %s: %s", bdir, err)
 	}
 
 	tmpfile, tmperr := v.os.TempFile(bdir, "tmp"+loc)
 	if tmperr != nil {
-		log.Printf("ioutil.TempFile(%s, tmp%s): %s", bdir, loc, tmperr)
-		return tmperr
+		return fmt.Errorf("TempFile(%s, tmp%s) failed: %s", bdir, loc, tmperr)
 	}
 
 	bpath := v.blockPath(loc)
@@ -291,19 +288,20 @@ func (v *UnixVolume) WriteBlock(ctx context.Context, loc string, rdr io.Reader) 
 	n, err := io.Copy(tmpfile, rdr)
 	v.os.stats.TickOutBytes(uint64(n))
 	if err != nil {
-		log.Printf("%s: writing to %s: %s", v, bpath, err)
+		err = fmt.Errorf("error writing %s: %s", bpath, err)
 		tmpfile.Close()
 		v.os.Remove(tmpfile.Name())
 		return err
 	}
 	if err := tmpfile.Close(); err != nil {
-		log.Printf("closing %s: %s", tmpfile.Name(), err)
+		err = fmt.Errorf("error closing %s: %s", tmpfile.Name(), err)
 		v.os.Remove(tmpfile.Name())
 		return err
 	}
 	if err := v.os.Rename(tmpfile.Name(), bpath); err != nil {
-		log.Printf("rename %s %s: %s", tmpfile.Name(), bpath, err)
-		return v.os.Remove(tmpfile.Name())
+		err = fmt.Errorf("error renaming %s to %s: %s", tmpfile.Name(), bpath, err)
+		v.os.Remove(tmpfile.Name())
+		return err
 	}
 	return nil
 }
@@ -314,14 +312,14 @@ func (v *UnixVolume) WriteBlock(ctx context.Context, loc string, rdr io.Reader) 
 func (v *UnixVolume) Status() *VolumeStatus {
 	fi, err := v.os.Stat(v.Root)
 	if err != nil {
-		log.Printf("%s: os.Stat: %s", v, err)
+		v.logger.WithError(err).Error("stat failed")
 		return nil
 	}
 	devnum := fi.Sys().(*syscall.Stat_t).Dev
 
 	var fs syscall.Statfs_t
 	if err := syscall.Statfs(v.Root, &fs); err != nil {
-		log.Printf("%s: statfs: %s", v, err)
+		v.logger.WithError(err).Error("statfs failed")
 		return nil
 	}
 	// These calculations match the way df calculates disk usage:
@@ -380,8 +378,8 @@ func (v *UnixVolume) IndexTo(prefix string, w io.Writer) error {
 		blockdirpath := filepath.Join(v.Root, names[0])
 		blockdir, err := v.os.Open(blockdirpath)
 		if err != nil {
-			log.Print("Error reading ", blockdirpath, ": ", err)
-			lastErr = err
+			v.logger.WithError(err).Errorf("error reading %q", blockdirpath)
+			lastErr = fmt.Errorf("error reading %q: %s", blockdirpath, err)
 			continue
 		}
 		v.os.stats.TickOps("readdir")
@@ -391,8 +389,8 @@ func (v *UnixVolume) IndexTo(prefix string, w io.Writer) error {
 			if err == io.EOF {
 				break
 			} else if err != nil {
-				log.Print("Error reading ", blockdirpath, ": ", err)
-				lastErr = err
+				v.logger.WithError(err).Errorf("error reading %q", blockdirpath)
+				lastErr = fmt.Errorf("error reading %q: %s", blockdirpath, err)
 				break
 			}
 			name := fileInfo[0].Name()
@@ -408,9 +406,8 @@ func (v *UnixVolume) IndexTo(prefix string, w io.Writer) error {
 				" ", fileInfo[0].ModTime().UnixNano(),
 				"\n")
 			if err != nil {
-				log.Print("Error writing : ", err)
-				lastErr = err
-				break
+				blockdir.Close()
+				return fmt.Errorf("error writing: %s", err)
 			}
 		}
 		blockdir.Close()
@@ -534,7 +531,7 @@ func (v *UnixVolume) IsFull() (isFull bool) {
 	if avail, err := v.FreeDiskSpace(); err == nil {
 		isFull = avail < MinFreeKilobytes
 	} else {
-		log.Printf("%s: FreeDiskSpace: %s", v, err)
+		v.logger.WithError(err).Errorf("%s: FreeDiskSpace failed", v)
 		isFull = false
 	}
 
@@ -584,7 +581,7 @@ func (v *UnixVolume) lock(ctx context.Context) error {
 	}()
 	select {
 	case <-ctx.Done():
-		log.Printf("%s: client hung up while waiting for Serialize lock (%s)", v, time.Since(t0))
+		v.logger.Infof("client hung up while waiting for Serialize lock (%s)", time.Since(t0))
 		go func() {
 			<-locked
 			v.locker.Unlock()
@@ -653,7 +650,7 @@ func (v *UnixVolume) EmptyTrash() {
 		}
 		deadline, err := strconv.ParseInt(matches[2], 10, 64)
 		if err != nil {
-			log.Printf("EmptyTrash: %v: ParseInt(%v): %v", path, matches[2], err)
+			v.logger.WithError(err).Errorf("EmptyTrash: %v: ParseInt(%q) failed", path, matches[2])
 			return
 		}
 		atomic.AddInt64(&bytesInTrash, info.Size())
@@ -663,7 +660,7 @@ func (v *UnixVolume) EmptyTrash() {
 		}
 		err = v.os.Remove(path)
 		if err != nil {
-			log.Printf("EmptyTrash: Remove %v: %v", path, err)
+			v.logger.WithError(err).Errorf("EmptyTrash: Remove(%q) failed", path)
 			return
 		}
 		atomic.AddInt64(&bytesDeleted, info.Size())
@@ -688,7 +685,7 @@ func (v *UnixVolume) EmptyTrash() {
 
 	err := filepath.Walk(v.Root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			log.Printf("EmptyTrash: filepath.Walk: %v: %v", path, err)
+			v.logger.WithError(err).Errorf("EmptyTrash: filepath.Walk(%q) failed", path)
 			return nil
 		}
 		todo <- dirent{path, info}
@@ -698,10 +695,10 @@ func (v *UnixVolume) EmptyTrash() {
 	wg.Wait()
 
 	if err != nil {
-		log.Printf("EmptyTrash error for %v: %v", v.String(), err)
+		v.logger.WithError(err).Error("EmptyTrash failed")
 	}
 
-	log.Printf("EmptyTrash stats for %v: Deleted %v bytes in %v blocks. Remaining in trash: %v bytes in %v blocks.", v.String(), bytesDeleted, blocksDeleted, bytesInTrash-bytesDeleted, blocksInTrash-blocksDeleted)
+	v.logger.Infof("EmptyTrash stats: Deleted %v bytes in %v blocks. Remaining in trash: %v bytes in %v blocks.", bytesDeleted, blocksDeleted, bytesInTrash-bytesDeleted, blocksInTrash-blocksDeleted)
 }
 
 type unixStats struct {
