@@ -98,7 +98,7 @@ const SITE_MANAGER_FORM_NAME = 'siteManagerForm';
 
 const submitSession = (remoteHost: string) =>
     (dispatch: Dispatch) => {
-        dispatch<any>(addSession(remoteHost)).then(() => {
+        dispatch<any>(addSession(remoteHost, undefined, true)).then(() => {
             dispatch(reset(SITE_MANAGER_FORM_NAME));
         }).catch((e: any) => {
             const errors = {

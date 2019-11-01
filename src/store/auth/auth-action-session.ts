@@ -16,13 +16,13 @@ import { progressIndicatorActions } from "~/store/progress-indicator/progress-in
 import { AuthService, UserDetailsResponse } from "~/services/auth-service/auth-service";
 import * as jsSHA from "jssha";
 
-const getClusterInfo = async (origin: string): Promise<{ clusterId: string, baseURL: string } | null> => {
+const getClusterInfo = async (origin: string): Promise<{ clusterId: string, baseUrl: string } | null> => {
     // Try the new public config endpoint
     try {
         const config = (await Axios.get<ClusterConfigJSON>(`${origin}/${CLUSTER_CONFIG_PATH}`)).data;
         return {
             clusterId: config.ClusterID,
-            baseURL: normalizeURLPath(`${config.Services.Controller.ExternalURL}/${ARVADOS_API_PATH}`)
+            baseUrl: normalizeURLPath(`${config.Services.Controller.ExternalURL}/${ARVADOS_API_PATH}`)
         };
     } catch { }
 
@@ -31,14 +31,19 @@ const getClusterInfo = async (origin: string): Promise<{ clusterId: string, base
         const config = (await Axios.get<any>(`${origin}/${DISCOVERY_DOC_PATH}`)).data;
         return {
             clusterId: config.uuidPrefix,
-            baseURL: normalizeURLPath(config.baseUrl)
+            baseUrl: normalizeURLPath(config.baseUrl)
         };
     } catch { }
 
     return null;
 };
 
-const getRemoteHostInfo = async (remoteHost: string): Promise<{ clusterId: string, baseURL: string } | null> => {
+interface RemoteHostInfo {
+    clusterId: string;
+    baseUrl: string;
+}
+
+const getRemoteHostInfo = async (remoteHost: string): Promise<RemoteHostInfo | null> => {
     let url = remoteHost;
     if (url.indexOf('://') < 0) {
         url = 'https://' + url;
@@ -96,17 +101,12 @@ export const getSaltedToken = (clusterId: string, token: string) => {
 
 export const getActiveSession = (sessions: Session[]): Session | undefined => sessions.find(s => s.active);
 
-export const validateCluster = async (remoteHost: string, useToken: string):
-    Promise<{ user: User; token: string, baseUrl: string, clusterId: string }> => {
+export const validateCluster = async (info: RemoteHostInfo, useToken: string):
+    Promise<{ user: User; token: string }> => {
 
-    const info = await getRemoteHostInfo(remoteHost);
-    if (!info) {
-        return Promise.reject(`Could not get config for ${remoteHost}`);
-    }
     const saltedToken = getSaltedToken(info.clusterId, useToken);
-    const user = await getUserDetails(info.baseURL, saltedToken);
+    const user = await getUserDetails(info.baseUrl, saltedToken);
     return {
-        baseUrl: info.baseURL,
         user: {
             firstName: user.first_name,
             lastName: user.last_name,
@@ -119,7 +119,6 @@ export const validateCluster = async (remoteHost: string, useToken: string):
             prefs: user.prefs
         },
         token: saltedToken,
-        clusterId: info.clusterId
     };
 };
 
@@ -137,13 +136,17 @@ export const validateSession = (session: Session, activeSession: Session) =>
             session.loggedIn = true;
         };
 
+        const info = await getRemoteHostInfo(session.remoteHost);
+        if (!info) {
+            throw new Error(`Could not get config for ${session.remoteHost}`);
+        }
         try {
-            const { baseUrl, user, token } = await validateCluster(session.remoteHost, session.token);
-            setupSession(baseUrl, user, token);
+            const { user, token } = await validateCluster(info, session.token);
+            setupSession(info.baseUrl, user, token);
         } catch {
             try {
-                const { baseUrl, user, token } = await validateCluster(session.remoteHost, activeSession.token);
-                setupSession(baseUrl, user, token);
+                const { user, token } = await validateCluster(info, activeSession.token);
+                setupSession(info.baseUrl, user, token);
             } catch { }
         }
 
@@ -169,7 +172,7 @@ export const validateSessions = () =>
         }
     };
 
-export const addSession = (remoteHost: string, token?: string) =>
+export const addSession = (remoteHost: string, token?: string, sendToLogin?: boolean) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const sessions = getState().auth.sessions;
         const activeSession = getActiveSession(sessions);
@@ -181,8 +184,13 @@ export const addSession = (remoteHost: string, token?: string) =>
         }
 
         if (useToken) {
+            const info = await getRemoteHostInfo(remoteHost);
+            if (!info) {
+                return Promise.reject(`Could not get config for ${remoteHost}`);
+            }
+
             try {
-                const { baseUrl, user, token, clusterId } = await validateCluster(remoteHost, useToken);
+                const { user, token } = await validateCluster(info, useToken);
                 const session = {
                     loggedIn: true,
                     status: SessionStatus.VALIDATED,
@@ -190,13 +198,13 @@ export const addSession = (remoteHost: string, token?: string) =>
                     email: user.email,
                     name: getUserFullname(user),
                     uuid: user.uuid,
+                    baseUrl: info.baseUrl,
+                    clusterId: info.clusterId,
                     remoteHost,
-                    baseUrl,
-                    clusterId,
                     token
                 };
 
-                if (sessions.find(s => s.clusterId === clusterId)) {
+                if (sessions.find(s => s.clusterId === info.clusterId)) {
                     dispatch(authActions.UPDATE_SESSION(session));
                 } else {
                     dispatch(authActions.ADD_SESSION(session));
@@ -204,7 +212,13 @@ export const addSession = (remoteHost: string, token?: string) =>
                 services.authService.saveSessions(getState().auth.sessions);
 
                 return session;
-            } catch (e) {
+            } catch {
+                if (sendToLogin) {
+                    const rootUrl = new URL(info.baseUrl);
+                    rootUrl.pathname = "";
+                    window.location.href = `${rootUrl.toString()}/login?return_to=` + encodeURI(`${window.location.protocol}//${window.location.host}/add-session?baseURL=` + encodeURI(rootUrl.toString()));
+                    return;
+                }
             }
         }
         return Promise.reject("Could not validate cluster");
