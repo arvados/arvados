@@ -113,11 +113,19 @@ export class CommonService<T> {
             filters: filters ? `[${filters}]` : undefined,
             order: order ? order : undefined
         };
+
+        // Using the POST special case to avoid URI length 414 errors.
+        // See https://doc.arvados.org/v1.4/api/requests.html
+        const formData = new FormData();
+        formData.append("_method", "GET");
+        Object.keys(params).map(key => {
+            if (params[key] !== undefined) {
+                formData.append(key, params[key]);
+            }
+        });
+
         return CommonService.defaultResponse(
-            this.serverApi
-                .get(this.resourceType, {
-                    params: CommonService.mapKeys(_.snakeCase)(params)
-                }),
+            this.serverApi.post(this.resourceType, formData),
             this.actions
         );
     }
