@@ -43,6 +43,7 @@ type LoginSuite struct {
 	// desired response from token endpoint
 	authEmail         string
 	authEmailVerified bool
+	authName          string
 }
 
 func (s *LoginSuite) SetUpTest(c *check.C) {
@@ -52,6 +53,7 @@ func (s *LoginSuite) SetUpTest(c *check.C) {
 
 	s.authEmail = "active-user@arvados.local"
 	s.authEmailVerified = true
+	s.authName = "Fake User Name"
 	s.fakeIssuer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		req.ParseForm()
 		c.Logf("fakeIssuer: got req: %s %s %s", req.Method, req.URL, req.Form)
@@ -79,6 +81,7 @@ func (s *LoginSuite) SetUpTest(c *check.C) {
 				"nonce":          "fake-nonce",
 				"email":          s.authEmail,
 				"email_verified": s.authEmailVerified,
+				"name":           s.authName,
 			})
 			json.NewEncoder(w).Encode(struct {
 				AccessToken  string `json:"access_token"`

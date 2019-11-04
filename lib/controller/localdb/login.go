@@ -107,6 +107,7 @@ func (ctrl *googleLoginController) Login(ctx context.Context, cluster *arvados.C
 			return ctrl.loginError(fmt.Errorf("error verifying ID token: %s", err))
 		}
 		var claims struct {
+			Name     string `json:"name"`
 			Email    string `json:"email"`
 			Verified bool   `json:"email_verified"`
 		}
@@ -116,11 +117,20 @@ func (ctrl *googleLoginController) Login(ctx context.Context, cluster *arvados.C
 		if !claims.Verified {
 			return ctrl.loginError(errors.New("cannot authenticate using an unverified email address"))
 		}
+
+		firstname, lastname := strings.TrimSpace(claims.Name), ""
+		if names := strings.Fields(firstname); len(names) > 1 {
+			firstname = strings.Join(names[0:len(names)-1], " ")
+			lastname = names[len(names)-1]
+		}
+
 		ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{cluster.SystemRootToken}})
 		return railsproxy.UserSessionCreate(ctxRoot, rpc.UserSessionCreateOptions{
 			ReturnTo: state.Remote + "," + state.ReturnTo,
 			AuthInfo: map[string]interface{}{
-				"email": claims.Email,
+				"email":      claims.Email,
+				"first_name": firstname,
+				"last_name":  lastname,
 			},
 		})
 	}
