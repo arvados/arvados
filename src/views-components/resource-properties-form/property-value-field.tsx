@@ -49,7 +49,7 @@ const matchTagValues = ({ vocabulary, propertyKey }: PropertyValueFieldProps) =>
             : 'Incorrect value';
 
 const getSuggestions = (value: string, tagKey: string, vocabulary: Vocabulary) =>
-    getTagValues(tagKey, vocabulary).filter(v => v.label.includes(value) && v.label !== value);
+    getTagValues(tagKey, vocabulary).filter(v => v.label.toLowerCase().includes(value.toLowerCase()));
 
 const isStrictTag = (tagKey: string, vocabulary: Vocabulary) => {
     const tag = vocabulary.tags[tagKey];

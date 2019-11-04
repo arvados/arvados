@@ -40,7 +40,7 @@ const matchTags = (vocabulary: Vocabulary) =>
             : 'Incorrect key';
 
 const getSuggestions = (value: string, vocabulary: Vocabulary) =>
-    getTagsList(vocabulary).filter(tag => tag.label.includes(value) && tag.label !== value);
+    getTagsList(vocabulary).filter(tag => tag.label.toLowerCase().includes(value.toLowerCase()));
 
 const getTagsList = ({ tags }: Vocabulary) => {
     const ret = tags && Object.keys(tags)
