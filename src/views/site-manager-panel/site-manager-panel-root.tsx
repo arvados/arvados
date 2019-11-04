@@ -8,6 +8,7 @@ import {
     CardContent,
     CircularProgress,
     Grid,
+    IconButton,
     StyleRulesCallback,
     Table,
     TableBody,
@@ -28,6 +29,7 @@ import { addSession } from "~/store/auth/auth-action-session";
 import { SITE_MANAGER_REMOTE_HOST_VALIDATION } from "~/validators/validators";
 import { Config } from '~/common/config';
 import { ResourceCluster } from '~/views-components/data-explorer/renderers';
+import { TrashIcon } from "~/components/icon/icon";
 
 type CssRules = 'root' | 'link' | 'buttonContainer' | 'table' | 'tableRow' |
     'remoteSiteInfo' | 'buttonAdd' | 'buttonLoggedIn' | 'buttonLoggedOut' |
@@ -86,6 +88,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 export interface SiteManagerPanelRootActionProps {
     toggleSession: (session: Session) => void;
+    removeSession: (session: Session) => void;
 }
 
 export interface SiteManagerPanelRootDataProps {
@@ -117,7 +120,7 @@ export const SiteManagerPanelRoot = compose(
         }
     }),
     withStyles(styles))
-    (({ classes, sessions, handleSubmit, toggleSession, remoteHostsConfig }: SiteManagerPanelRootProps) =>
+    (({ classes, sessions, handleSubmit, toggleSession, removeSession, remoteHostsConfig }: SiteManagerPanelRootProps) =>
         <Card className={classes.root}>
             <CardContent>
                 <Grid container direction="row">
@@ -136,6 +139,7 @@ export const SiteManagerPanelRoot = compose(
                                 <TableCell>Email</TableCell>
                                 <TableCell>UUID</TableCell>
                                 <TableCell>Status</TableCell>
+                                <TableCell>Actions</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -156,6 +160,9 @@ export const SiteManagerPanelRoot = compose(
                                             {validating ? "Validating" : (session.loggedIn ? "Logged in" : "Logged out")}
                                         </Button>
                                     </TableCell>
+                                    <IconButton onClick={() => removeSession(session)}>
+                                        <TrashIcon />
+                                    </IconButton>
                                 </TableRow>;
                             })}
                         </TableBody>

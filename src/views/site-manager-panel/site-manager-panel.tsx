@@ -10,7 +10,7 @@ import {
     SiteManagerPanelRootDataProps
 } from "~/views/site-manager-panel/site-manager-panel-root";
 import { Session } from "~/models/session";
-import { toggleSession } from "~/store/auth/auth-action-session";
+import { toggleSession, removeSession } from "~/store/auth/auth-action-session";
 
 const mapStateToProps = (state: RootState): SiteManagerPanelRootDataProps => {
     return {
@@ -22,7 +22,10 @@ const mapStateToProps = (state: RootState): SiteManagerPanelRootDataProps => {
 const mapDispatchToProps = (dispatch: Dispatch): SiteManagerPanelRootActionProps => ({
     toggleSession: (session: Session) => {
         dispatch<any>(toggleSession(session));
-    }
+    },
+    removeSession: (session: Session) => {
+        dispatch<any>(removeSession(session.clusterId));
+    },
 });
 
 export const SiteManagerPanel = connect(mapStateToProps, mapDispatchToProps)(SiteManagerPanelRoot);

@@ -139,28 +139,27 @@ export const validateSession = (session: Session, activeSession: Session) =>
             session.loggedIn = true;
         };
 
-        const info = await getRemoteHostInfo(session.remoteHost);
-        if (!info) {
-            throw new Error(`Could not get config for ${session.remoteHost}`);
-        }
-
         let fail: Error | null = null;
-        try {
-            const { user, token } = await validateCluster(info, session.token);
-            setupSession(info.baseUrl, user, token);
-        } catch (e) {
-            fail = new Error(`Getting current user for ${session.remoteHost}: ${e.message}`);
+        const info = await getRemoteHostInfo(session.remoteHost);
+        if (info !== null) {
             try {
-                const { user, token } = await validateCluster(info, activeSession.token);
+                const { user, token } = await validateCluster(info, session.token);
                 setupSession(info.baseUrl, user, token);
-                fail = null;
             } catch (e) {
-                if (e.message === invalidV2Token) {
-                    fail = new Error(`Getting current user for ${session.remoteHost}: ${e.message}`);
+                fail = new Error(`Getting current user for ${session.remoteHost}: ${e.message}`);
+                try {
+                    const { user, token } = await validateCluster(info, activeSession.token);
+                    setupSession(info.baseUrl, user, token);
+                    fail = null;
+                } catch (e2) {
+                    if (e.message === invalidV2Token) {
+                        fail = new Error(`Getting current user for ${session.remoteHost}: ${e2.message}`);
+                    }
                 }
             }
+        } else {
+            fail = new Error(`Could not get config for ${session.remoteHost}`);
         }
-
         session.status = SessionStatus.VALIDATED;
         dispatch(authActions.UPDATE_SESSION(session));
 
@@ -257,6 +256,13 @@ export const addSession = (remoteHost: string, token?: string, sendToLogin?: boo
             }
         }
         return Promise.reject(new Error("Could not validate cluster"));
+    };
+
+
+export const removeSession = (clusterId: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        await dispatch(authActions.REMOVE_SESSION(clusterId));
+        services.authService.saveSessions(getState().auth.sessions);
     };
 
 export const toggleSession = (session: Session) =>
