@@ -4,7 +4,6 @@
 
 import { connect } from 'react-redux';
 import { WrappedFieldMetaProps, WrappedFieldInputProps, WrappedFieldProps } from 'redux-form';
-import { identity } from 'lodash';
 import { Vocabulary } from '~/models/vocabulary';
 import { RootState } from '~/store/store';
 import { getVocabulary } from '~/store/vocabulary/vocabulary-selectors';
@@ -33,13 +32,26 @@ export const handleBlur = ({ onBlur, value }: WrappedFieldInputProps) =>
     () =>
         onBlur(value);
 
-export const buildProps = ({ input, meta }: WrappedFieldProps) => ({
-    value: input.value,
-    onChange: input.onChange,
-    onBlur: handleBlur(input),
-    items: ITEMS_PLACEHOLDER,
-    onSelect: input.onChange,
-    renderSuggestion: identity,
-    error: hasError(meta),
-    helperText: getErrorMsg(meta),
-});
+export const handleSelect = ({ onChange }: WrappedFieldInputProps) => {
+    return (item:PropFieldSuggestion) => {
+        onChange(item.id);
+    };
+};
+
+export const buildProps = ({ input, meta }: WrappedFieldProps) => {
+    return {
+        value: input.value,
+        onChange: input.onChange,
+        onBlur: handleBlur(input),
+        items: ITEMS_PLACEHOLDER,
+        onSelect: handleSelect(input),
+        renderSuggestion: (item:PropFieldSuggestion) => item.label,
+        error: hasError(meta),
+        helperText: getErrorMsg(meta),
+    };
+};
+
+export interface PropFieldSuggestion {
+    "id": string;
+    "label": string;
+}

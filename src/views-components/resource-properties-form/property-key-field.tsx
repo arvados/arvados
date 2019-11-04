@@ -29,18 +29,25 @@ export const PropertyKeyInput = ({ vocabulary, ...props }: WrappedFieldProps & V
 
 const getValidation = memoize(
     (vocabulary: Vocabulary) =>
-        vocabulary.strict
+        vocabulary.strict_tags
             ? [...TAG_KEY_VALIDATION, matchTags(vocabulary)]
             : TAG_KEY_VALIDATION);
 
 const matchTags = (vocabulary: Vocabulary) =>
     (value: string) =>
-        getTagsList(vocabulary).find(tag => tag.includes(value))
+        getTagsList(vocabulary).find(tag => tag.id.includes(value))
             ? undefined
             : 'Incorrect key';
 
 const getSuggestions = (value: string, vocabulary: Vocabulary) =>
-    getTagsList(vocabulary).filter(tag => tag.includes(value) && tag !== value);
+    getTagsList(vocabulary).filter(tag => tag.label.includes(value) && tag.label !== value);
 
-const getTagsList = ({ tags }: Vocabulary) =>
-    Object.keys(tags);
+const getTagsList = ({ tags }: Vocabulary) => {
+    const ret = tags && Object.keys(tags)
+        ? Object.keys(tags).map(
+            tagID => tags[tagID].labels
+                ? {"id": tagID, "label": tags[tagID].labels[0].label}
+                : {"id": tagID, "label": tagID})
+        : [];
+    return ret;
+};

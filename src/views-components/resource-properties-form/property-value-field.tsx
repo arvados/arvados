@@ -44,19 +44,25 @@ const getValidation = (props: PropertyValueFieldProps) =>
 
 const matchTagValues = ({ vocabulary, propertyKey }: PropertyValueFieldProps) =>
     (value: string) =>
-        getTagValues(propertyKey, vocabulary).find(v => v.includes(value))
+        getTagValues(propertyKey, vocabulary).find(v => v.id.includes(value))
             ? undefined
             : 'Incorrect value';
 
-const getSuggestions = (value: string, tagName: string, vocabulary: Vocabulary) =>
-    getTagValues(tagName, vocabulary).filter(v => v.includes(value) && v !== value);
+const getSuggestions = (value: string, tagKey: string, vocabulary: Vocabulary) =>
+    getTagValues(tagKey, vocabulary).filter(v => v.label.includes(value) && v.label !== value);
 
-const isStrictTag = (tagName: string, vocabulary: Vocabulary) => {
-    const tag = vocabulary.tags[tagName];
+const isStrictTag = (tagKey: string, vocabulary: Vocabulary) => {
+    const tag = vocabulary.tags[tagKey];
     return tag ? tag.strict : false;
 };
 
-const getTagValues = (tagName: string, vocabulary: Vocabulary) => {
-    const tag = vocabulary.tags[tagName];
-    return tag && tag.values ? tag.values : [];
+const getTagValues = (tagKey: string, vocabulary: Vocabulary) => {
+    const tag = vocabulary.tags[tagKey];
+    const ret = tag && tag.values
+        ? Object.keys(tag.values).map(
+            tagValueID => tag.values![tagValueID].labels
+                ? {"id": tagValueID, "label": tag.values![tagValueID].labels[0].label}
+                : {"id": tagValueID, "label": tagValueID})
+        : [];
+    return ret;
 };
