@@ -42,37 +42,29 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
             return;
         }
 
-        try {
-            const params = getParams(dataExplorer, searchValue);
+        const params = getParams(dataExplorer, searchValue);
 
-            // TODO: if one of these fails, no results will be returned.
-            const responses = await Promise.all(sessions.map(session =>
-                this.services.groupsService.contents('', params, session)
-            ));
+        const initial = {
+            itemsAvailable: 0,
+            items: [] as GroupContentsResource[],
+            kind: '',
+            offset: 0,
+            limit: 10
+        };
 
-            const initial = {
-                itemsAvailable: 0,
-                items: [] as GroupContentsResource[],
-                kind: '',
-                offset: 0,
-                limit: 10
-            };
-
-            const mergedResponse = responses.reduce((merged, current) => ({
-                ...merged,
-                itemsAvailable: merged.itemsAvailable + current.itemsAvailable,
-                items: merged.items.concat(current.items)
-            }), initial);
-
-            api.dispatch(updateResources(mergedResponse.items));
-
-            api.dispatch(criteriaChanged
-                ? setItems(mergedResponse)
-                : appendItems(mergedResponse));
-
-        } catch {
-            api.dispatch(couldNotFetchSearchResults());
+        if (criteriaChanged) {
+            api.dispatch(setItems(initial));
         }
+
+        sessions.map(session =>
+            this.services.groupsService.contents('', params, session)
+                .then((response) => {
+                    api.dispatch(updateResources(response.items));
+                    api.dispatch(appendItems(response));
+                }).catch(() => {
+                    api.dispatch(couldNotFetchSearchResults(session.clusterId));
+                })
+        );
     }
 }
 
@@ -118,8 +110,8 @@ export const appendItems = (listResults: ListResults<GroupContentsResource>) =>
         items: listResults.items.map(resource => resource.uuid),
     });
 
-const couldNotFetchSearchResults = () =>
+const couldNotFetchSearchResults = (cluster: string) =>
     snackbarActions.OPEN_SNACKBAR({
-        message: `Could not fetch search results for some sessions.`,
+        message: `Could not fetch search results from ${cluster}.`,
         kind: SnackbarKind.ERROR
     });

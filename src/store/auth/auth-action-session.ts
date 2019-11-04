@@ -14,6 +14,7 @@ import { normalizeURLPath } from "~/common/url";
 import { Session, SessionStatus } from "~/models/session";
 import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
 import { AuthService, UserDetailsResponse } from "~/services/auth-service/auth-service";
+import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
 import * as jsSHA from "jssha";
 
 const getClusterInfo = async (origin: string): Promise<{ clusterId: string, baseUrl: string } | null> => {
@@ -84,11 +85,13 @@ const getUserDetails = async (baseUrl: string, token: string): Promise<UserDetai
     return resp.data;
 };
 
+const invalidV2Token = "Must be a v2 token";
+
 export const getSaltedToken = (clusterId: string, token: string) => {
     const shaObj = new jsSHA("SHA-1", "TEXT");
     const [ver, uuid, secret] = token.split("/");
     if (ver !== "v2") {
-        throw new Error("Must be a v2 token");
+        throw new Error(invalidV2Token);
     }
     let salted = secret;
     if (uuid.substr(0, 5) !== clusterId) {
@@ -140,18 +143,30 @@ export const validateSession = (session: Session, activeSession: Session) =>
         if (!info) {
             throw new Error(`Could not get config for ${session.remoteHost}`);
         }
+
+        let fail: Error | null = null;
         try {
             const { user, token } = await validateCluster(info, session.token);
             setupSession(info.baseUrl, user, token);
-        } catch {
+        } catch (e) {
+            fail = new Error(`Getting current user for ${session.remoteHost}: ${e.message}`);
             try {
                 const { user, token } = await validateCluster(info, activeSession.token);
                 setupSession(info.baseUrl, user, token);
-            } catch { }
+                fail = null;
+            } catch (e) {
+                if (e.message === invalidV2Token) {
+                    fail = new Error(`Getting current user for ${session.remoteHost}: ${e.message}`);
+                }
+            }
         }
 
         session.status = SessionStatus.VALIDATED;
         dispatch(authActions.UPDATE_SESSION(session));
+
+        if (fail) {
+            throw fail;
+        }
 
         return session;
     };
@@ -164,7 +179,23 @@ export const validateSessions = () =>
             dispatch(progressIndicatorActions.START_WORKING("sessionsValidation"));
             for (const session of sessions) {
                 if (session.status === SessionStatus.INVALIDATED) {
-                    await dispatch(validateSession(session, activeSession));
+                    try {
+			/* Here we are dispatching a function, not an
+			   action.  This is legal (it calls the
+			   function with a 'Dispatch' object as the
+			   first parameter) but the typescript
+			   annotations don't understand this case, so
+			   we get an error from typescript unless
+			   override it using Dispatch<any>.  This
+			   pattern is used in a bunch of different
+			   places in Workbench2. */
+                        await dispatch(validateSession(session, activeSession));
+                    } catch (e) {
+                        dispatch(snackbarActions.OPEN_SNACKBAR({
+                            message: e.message,
+                            kind: SnackbarKind.ERROR
+                        }));
+                    }
                 }
             }
             services.authService.saveSessions(sessions);
@@ -186,7 +217,11 @@ export const addSession = (remoteHost: string, token?: string, sendToLogin?: boo
         if (useToken) {
             const info = await getRemoteHostInfo(remoteHost);
             if (!info) {
-                return Promise.reject(`Could not get config for ${remoteHost}`);
+                dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: `Could not get config for ${remoteHost}`,
+                    kind: SnackbarKind.ERROR
+                }));
+                return;
             }
 
             try {
@@ -221,24 +256,33 @@ export const addSession = (remoteHost: string, token?: string, sendToLogin?: boo
                 }
             }
         }
-        return Promise.reject("Could not validate cluster");
+        return Promise.reject(new Error("Could not validate cluster"));
     };
 
 export const toggleSession = (session: Session) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        let s = { ...session };
+    async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        const s: Session = { ...session };
 
         if (session.loggedIn) {
             s.loggedIn = false;
+            dispatch(authActions.UPDATE_SESSION(s));
         } else {
             const sessions = getState().auth.sessions;
             const activeSession = getActiveSession(sessions);
             if (activeSession) {
-                s = await dispatch<any>(validateSession(s, activeSession)) as Session;
+                try {
+                    await dispatch(validateSession(s, activeSession));
+                } catch (e) {
+                    dispatch(snackbarActions.OPEN_SNACKBAR({
+                        message: e.message,
+                        kind: SnackbarKind.ERROR
+                    }));
+                    s.loggedIn = false;
+                    dispatch(authActions.UPDATE_SESSION(s));
+                }
             }
         }
 
-        dispatch(authActions.UPDATE_SESSION(s));
         services.authService.saveSessions(getState().auth.sessions);
     };
 
