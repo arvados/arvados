@@ -5,6 +5,7 @@
 package localdb
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
@@ -13,11 +14,14 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
 	"git.curoverse.com/arvados.git/lib/config"
+	"git.curoverse.com/arvados.git/lib/controller/rpc"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/auth"
 	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	check "gopkg.in/check.v1"
@@ -35,6 +39,7 @@ type LoginSuite struct {
 	cluster    *arvados.Cluster
 	ctx        context.Context
 	localdb    *Conn
+	railsSpy   *arvadostest.Proxy
 	fakeIssuer *httptest.Server
 	issuerKey  *rsa.PrivateKey
 
@@ -119,6 +124,13 @@ func (s *LoginSuite) SetUpTest(c *check.C) {
 
 	s.localdb = NewConn(s.cluster)
 	s.localdb.googleLoginController.issuer = s.fakeIssuer.URL
+
+	s.railsSpy = arvadostest.NewProxy(c, s.cluster.Services.RailsAPI)
+	s.localdb.railsProxy = rpc.NewConn(s.cluster.ClusterID, s.railsSpy.URL, true, rpc.PassthroughTokenProvider)
+}
+
+func (s *LoginSuite) TearDownTest(c *check.C) {
+	s.railsSpy.Close()
 }
 
 func (s *LoginSuite) TestGoogleLoginStart_Bogus(c *check.C) {
@@ -191,6 +203,25 @@ func (s *LoginSuite) TestGoogleLoginSuccess(c *check.C) {
 	c.Check(target.Path, check.Equals, "/foo")
 	token := target.Query().Get("api_token")
 	c.Check(token, check.Matches, `v2/zzzzz-gj3su-.{15}/.{32,50}`)
+
+	foundCallback := false
+	for _, dump := range s.railsSpy.RequestDumps {
+		c.Logf("spied request: %q", dump)
+		split := bytes.Split(dump, []byte("\r\n\r\n"))
+		c.Assert(split, check.HasLen, 2)
+		hdr, body := string(split[0]), string(split[1])
+		if strings.Contains(hdr, "POST /auth/controller/callback") {
+			vs, err := url.ParseQuery(body)
+			var authinfo map[string]interface{}
+			c.Check(json.Unmarshal([]byte(vs.Get("auth_info")), &authinfo), check.IsNil)
+			c.Check(err, check.IsNil)
+			c.Check(authinfo["first_name"], check.Equals, "Fake User")
+			c.Check(authinfo["last_name"], check.Equals, "Name")
+			c.Check(authinfo["email"], check.Equals, "active-user@arvados.local")
+			foundCallback = true
+		}
+	}
+	c.Check(foundCallback, check.Equals, true)
 
 	// Try using the returned Arvados token.
 	c.Logf("trying an API call with new token %q", token)
