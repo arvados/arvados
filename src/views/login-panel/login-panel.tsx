@@ -67,7 +67,7 @@ export const LoginPanel = withStyles(styles)(
             className={classes.root}
             style={{ marginTop: 56, overflowY: "auto", height: "100%" }}>
             <Grid item className={classes.container}>
-                <Typography>
+                <Typography component="div">
                     <div dangerouslySetInnerHTML={{ __html: welcomePage }} style={{ margin: "1em" }} />
                 </Typography>
                 {Object.keys(remoteHosts).length > 1 && loginCluster === "" &&

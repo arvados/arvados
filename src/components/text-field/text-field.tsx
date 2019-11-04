@@ -30,7 +30,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
                 cursor: 'pointer',
                 textDecoration: 'underline'
             }
-        }     
+        }
     }
 });
 

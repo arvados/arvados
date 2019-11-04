@@ -71,9 +71,11 @@ export const themeOptions: ArvadosThemeOptions = {
             }
         },
         MuiTab: {
-            selected: {
-                fontWeight: 700,
-                color: arvadosPurple
+            root: {
+                '&$selected': {
+                    fontWeight: 700,
+                    color: arvadosPurple
+                }
             }
         },
         MuiList: {
@@ -121,11 +123,11 @@ export const themeOptions: ArvadosThemeOptions = {
         },
         MuiFormLabel: {
             root: {
-                fontSize: '0.875rem'
-            },
-            focused: {
-                "&$focused:not($error)": {
-                    color: arvadosPurple
+                fontSize: '0.875rem',
+                "&$focused": {
+                    "&$focused:not($error)": {
+                        color: arvadosPurple
+                    }
                 }
             }
         },
