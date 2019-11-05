@@ -85,16 +85,18 @@ const init = (config: Config) => (dispatch: Dispatch, getState: () => RootState,
             if (err.response) {
                 // Bad token
                 if (err.response.status === 401) {
-                    logout()(dispatch, getState, services);
+                    dispatch<any>(logout());
                 }
             }
         });
     }
     Object.keys(config.remoteHosts).map((k) => {
-        Axios.get<ClusterConfigJSON>(getClusterConfigURL(config.remoteHosts[k]))
-            .then(response => {
-                dispatch(authActions.REMOTE_CLUSTER_CONFIG({ config: buildConfig(response.data) }));
-            });
+        if (k !== config.uuidPrefix) {
+            Axios.get<ClusterConfigJSON>(getClusterConfigURL(config.remoteHosts[k]))
+                .then(response => {
+                    dispatch(authActions.REMOTE_CLUSTER_CONFIG({ config: buildConfig(response.data) }));
+                });
+        }
     });
 };
 
