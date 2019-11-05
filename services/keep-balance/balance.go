@@ -1026,7 +1026,7 @@ func (bal *Balancer) PrintStatistics() {
 }
 
 func (bal *Balancer) printHistogram(hashColumns int) {
-	bal.logf("Replication level distribution (counting N replicas on a single server as N):")
+	bal.logf("Replication level distribution:")
 	maxCount := 0
 	for _, count := range bal.stats.replHistogram {
 		if maxCount < count {
