@@ -10,11 +10,10 @@ import { ServiceRepository } from "~/services/services";
 import { SshKeyResource } from '~/models/ssh-key';
 import { User, UserResource } from "~/models/user";
 import { Session } from "~/models/session";
-import { getClusterConfigURL, Config, ClusterConfigJSON, buildConfig } from '~/common/config';
+import { Config } from '~/common/config';
 import { initSessions } from "~/store/auth/auth-action-session";
 import { cancelLinking } from '~/store/link-account-panel/link-account-panel-actions';
 import { matchTokenRoute, matchFedTokenRoute } from '~/routes/routes';
-import Axios from "axios";
 import { AxiosError } from "axios";
 
 export const authActions = unionize({
@@ -76,6 +75,7 @@ const init = (config: Config) => (dispatch: Dispatch, getState: () => RootState,
     }
     dispatch(authActions.CONFIG({ config }));
     dispatch(authActions.SET_HOME_CLUSTER(config.loginCluster || homeCluster || config.uuidPrefix));
+    document.title = `Arvados Workbench (${config.uuidPrefix})`;
     if (token && user) {
         dispatch(authActions.INIT({ user, token }));
         dispatch<any>(initSessions(services.authService, config, user));
@@ -90,14 +90,6 @@ const init = (config: Config) => (dispatch: Dispatch, getState: () => RootState,
             }
         });
     }
-    Object.keys(config.remoteHosts).map((k) => {
-        if (k !== config.uuidPrefix) {
-            Axios.get<ClusterConfigJSON>(getClusterConfigURL(config.remoteHosts[k]))
-                .then(response => {
-                    dispatch(authActions.REMOTE_CLUSTER_CONFIG({ config: buildConfig(response.data) }));
-                });
-        }
-    });
 };
 
 export const saveApiToken = (token: string) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {

@@ -9,7 +9,10 @@ import { ServiceRepository } from "~/services/services";
 import Axios from "axios";
 import { getUserFullname, User } from "~/models/user";
 import { authActions } from "~/store/auth/auth-action";
-import { Config, ClusterConfigJSON, CLUSTER_CONFIG_PATH, DISCOVERY_DOC_PATH, ARVADOS_API_PATH } from "~/common/config";
+import {
+    Config, ClusterConfigJSON, CLUSTER_CONFIG_PATH, DISCOVERY_DOC_PATH,
+    buildConfig, mockClusterConfigJSON
+} from "~/common/config";
 import { normalizeURLPath } from "~/common/url";
 import { Session, SessionStatus } from "~/models/session";
 import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
@@ -17,34 +20,36 @@ import { AuthService, UserDetailsResponse } from "~/services/auth-service/auth-s
 import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
 import * as jsSHA from "jssha";
 
-const getClusterInfo = async (origin: string): Promise<{ clusterId: string, baseUrl: string } | null> => {
+const getClusterConfig = async (origin: string): Promise<Config | null> => {
     // Try the new public config endpoint
     try {
         const config = (await Axios.get<ClusterConfigJSON>(`${origin}/${CLUSTER_CONFIG_PATH}`)).data;
-        return {
-            clusterId: config.ClusterID,
-            baseUrl: normalizeURLPath(`${config.Services.Controller.ExternalURL}/${ARVADOS_API_PATH}`)
-        };
+        return buildConfig(config);
     } catch { }
 
     // Fall back to discovery document
     try {
         const config = (await Axios.get<any>(`${origin}/${DISCOVERY_DOC_PATH}`)).data;
         return {
-            clusterId: config.uuidPrefix,
-            baseUrl: normalizeURLPath(config.baseUrl)
+            baseUrl: normalizeURLPath(config.baseUrl),
+            keepWebServiceUrl: config.keepWebServiceUrl,
+            remoteHosts: config.remoteHosts,
+            rootUrl: config.rootUrl,
+            uuidPrefix: config.uuidPrefix,
+            websocketUrl: config.websocketUrl,
+            workbenchUrl: config.workbenchUrl,
+            workbench2Url: config.workbench2Url,
+            loginCluster: "",
+            vocabularyUrl: "",
+            fileViewersConfigUrl: "",
+            clusterConfig: mockClusterConfigJSON({})
         };
     } catch { }
 
     return null;
 };
 
-interface RemoteHostInfo {
-    clusterId: string;
-    baseUrl: string;
-}
-
-const getRemoteHostInfo = async (remoteHost: string): Promise<RemoteHostInfo | null> => {
+const getRemoteHostConfig = async (remoteHost: string): Promise<Config | null> => {
     let url = remoteHost;
     if (url.indexOf('://') < 0) {
         url = 'https://' + url;
@@ -52,14 +57,14 @@ const getRemoteHostInfo = async (remoteHost: string): Promise<RemoteHostInfo | n
     const origin = new URL(url).origin;
 
     // Maybe it is an API server URL, try fetching config and discovery doc
-    let r = getClusterInfo(origin);
+    let r = await getClusterConfig(origin);
     if (r !== null) {
         return r;
     }
 
     // Maybe it is a Workbench2 URL, try getting config.json
     try {
-        r = getClusterInfo((await Axios.get<any>(`${origin}/config.json`)).data.API_HOST);
+        r = await getClusterConfig((await Axios.get<any>(`${origin}/config.json`)).data.API_HOST);
         if (r !== null) {
             return r;
         }
@@ -67,7 +72,7 @@ const getRemoteHostInfo = async (remoteHost: string): Promise<RemoteHostInfo | n
 
     // Maybe it is a Workbench1 URL, try getting status.json
     try {
-        r = getClusterInfo((await Axios.get<any>(`${origin}/status.json`)).data.apiBaseURL);
+        r = await getClusterConfig((await Axios.get<any>(`${origin}/status.json`)).data.apiBaseURL);
         if (r !== null) {
             return r;
         }
@@ -104,11 +109,11 @@ export const getSaltedToken = (clusterId: string, token: string) => {
 
 export const getActiveSession = (sessions: Session[]): Session | undefined => sessions.find(s => s.active);
 
-export const validateCluster = async (info: RemoteHostInfo, useToken: string):
+export const validateCluster = async (config: Config, useToken: string):
     Promise<{ user: User; token: string }> => {
 
-    const saltedToken = getSaltedToken(info.clusterId, useToken);
-    const user = await getUserDetails(info.baseUrl, saltedToken);
+    const saltedToken = getSaltedToken(config.uuidPrefix, useToken);
+    const user = await getUserDetails(config.baseUrl, saltedToken);
     return {
         user: {
             firstName: user.first_name,
@@ -140,16 +145,17 @@ export const validateSession = (session: Session, activeSession: Session) =>
         };
 
         let fail: Error | null = null;
-        const info = await getRemoteHostInfo(session.remoteHost);
-        if (info !== null) {
+        const config = await getRemoteHostConfig(session.remoteHost);
+        if (config !== null) {
+            dispatch(authActions.REMOTE_CLUSTER_CONFIG({ config }));
             try {
-                const { user, token } = await validateCluster(info, session.token);
-                setupSession(info.baseUrl, user, token);
+                const { user, token } = await validateCluster(config, session.token);
+                setupSession(config.baseUrl, user, token);
             } catch (e) {
                 fail = new Error(`Getting current user for ${session.remoteHost}: ${e.message}`);
                 try {
-                    const { user, token } = await validateCluster(info, activeSession.token);
-                    setupSession(info.baseUrl, user, token);
+                    const { user, token } = await validateCluster(config, activeSession.token);
+                    setupSession(config.baseUrl, user, token);
                     fail = null;
                 } catch (e2) {
                     if (e.message === invalidV2Token) {
@@ -214,8 +220,8 @@ export const addSession = (remoteHost: string, token?: string, sendToLogin?: boo
         }
 
         if (useToken) {
-            const info = await getRemoteHostInfo(remoteHost);
-            if (!info) {
+            const config = await getRemoteHostConfig(remoteHost);
+            if (!config) {
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: `Could not get config for ${remoteHost}`,
                     kind: SnackbarKind.ERROR
@@ -224,7 +230,8 @@ export const addSession = (remoteHost: string, token?: string, sendToLogin?: boo
             }
 
             try {
-                const { user, token } = await validateCluster(info, useToken);
+                dispatch(authActions.REMOTE_CLUSTER_CONFIG({ config }));
+                const { user, token } = await validateCluster(config, useToken);
                 const session = {
                     loggedIn: true,
                     status: SessionStatus.VALIDATED,
@@ -232,13 +239,13 @@ export const addSession = (remoteHost: string, token?: string, sendToLogin?: boo
                     email: user.email,
                     name: getUserFullname(user),
                     uuid: user.uuid,
-                    baseUrl: info.baseUrl,
-                    clusterId: info.clusterId,
+                    baseUrl: config.baseUrl,
+                    clusterId: config.uuidPrefix,
                     remoteHost,
                     token
                 };
 
-                if (sessions.find(s => s.clusterId === info.clusterId)) {
+                if (sessions.find(s => s.clusterId === config.uuidPrefix)) {
                     dispatch(authActions.UPDATE_SESSION(session));
                 } else {
                     dispatch(authActions.ADD_SESSION(session));
@@ -248,7 +255,7 @@ export const addSession = (remoteHost: string, token?: string, sendToLogin?: boo
                 return session;
             } catch {
                 if (sendToLogin) {
-                    const rootUrl = new URL(info.baseUrl);
+                    const rootUrl = new URL(config.baseUrl);
                     rootUrl.pathname = "";
                     window.location.href = `${rootUrl.toString()}/login?return_to=` + encodeURI(`${window.location.protocol}//${window.location.host}/add-session?baseURL=` + encodeURI(rootUrl.toString()));
                     return;
