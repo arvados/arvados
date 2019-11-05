@@ -103,4 +103,20 @@ class ResourceListTest < ActiveSupport::TestCase
     assert_nil c.items_available
     refute_empty c.results
   end
+
+  test 'cache results across each(&block) calls' do
+    use_token :admin
+    c = Collection.where(owner_uuid: 'zzzzz-j7d0g-0201collections').with_count('none')
+    c.each do |x|
+      x.description = 'foo'
+    end
+    found = 0
+    c.each do |x|
+      found += 1
+      # We should get the same objects we modified in the loop above
+      # -- not new objects built from another set of API responses.
+      assert_equal 'foo', x.description
+    end
+    assert_equal 201, found
+  end
 end
