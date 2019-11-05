@@ -85,7 +85,7 @@ end
 arvcfg = ConfigLoader.new
 arvcfg.declare_config "ClusterID", NonemptyString, :uuid_prefix
 arvcfg.declare_config "ManagementToken", String, :ManagementToken
-arvcfg.declare_config "SystemRootToken", String, :SystemRootToken
+arvcfg.declare_config "SystemRootToken", String
 arvcfg.declare_config "Git.Repositories", String, :git_repositories_dir
 arvcfg.declare_config "API.DisabledAPIs", Hash, :disable_api_methods, ->(cfg, k, v) { arrayToHash cfg, "API.DisabledAPIs", v }
 arvcfg.declare_config "API.MaxRequestSize", Integer, :max_request_size
