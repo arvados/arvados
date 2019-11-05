@@ -94,6 +94,7 @@ export interface SiteManagerPanelRootActionProps {
 export interface SiteManagerPanelRootDataProps {
     sessions: Session[];
     remoteHostsConfig: { [key: string]: Config };
+    localClusterConfig: Config;
 }
 
 type SiteManagerPanelRootProps = SiteManagerPanelRootDataProps & SiteManagerPanelRootActionProps & WithStyles<CssRules> & InjectedFormProps;
@@ -120,7 +121,7 @@ export const SiteManagerPanelRoot = compose(
         }
     }),
     withStyles(styles))
-    (({ classes, sessions, handleSubmit, toggleSession, removeSession, remoteHostsConfig }: SiteManagerPanelRootProps) =>
+    (({ classes, sessions, handleSubmit, toggleSession, removeSession, localClusterConfig, remoteHostsConfig }: SiteManagerPanelRootProps) =>
         <Card className={classes.root}>
             <CardContent>
                 <Grid container direction="row">
@@ -160,9 +161,13 @@ export const SiteManagerPanelRoot = compose(
                                             {validating ? "Validating" : (session.loggedIn ? "Logged in" : "Logged out")}
                                         </Button>
                                     </TableCell>
-                                    <IconButton onClick={() => removeSession(session)}>
-                                        <TrashIcon />
-                                    </IconButton>
+                                    <TableCell>
+                                        {session.clusterId !== localClusterConfig.uuidPrefix &&
+                                            !localClusterConfig.clusterConfig.RemoteClusters[session.clusterId] &&
+                                            <IconButton onClick={() => removeSession(session)}>
+                                                <TrashIcon />
+                                            </IconButton>}
+                                    </TableCell>
                                 </TableRow>;
                             })}
                         </TableBody>
