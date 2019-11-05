@@ -35,7 +35,7 @@ const getValidation = memoize(
 
 const matchTags = (vocabulary: Vocabulary) =>
     (value: string) =>
-        getTagsList(vocabulary).find(tag => tag.id.includes(value))
+        getTagsList(vocabulary).find(tag => tag.label === value)
             ? undefined
             : 'Incorrect key';
 

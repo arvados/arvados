@@ -34,7 +34,7 @@ export const handleBlur = ({ onBlur, value }: WrappedFieldInputProps) =>
 
 export const handleSelect = ({ onChange }: WrappedFieldInputProps) => {
     return (item:PropFieldSuggestion) => {
-        onChange(item.id);
+        onChange(item.label);
     };
 };
 
