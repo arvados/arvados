@@ -1,0 +1,93 @@
+---
+layout: default
+navsection: installguide
+title: Install Workbench2 (beta)
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Workbench2 is the web-based user interface for Arvados.
+
+{% include 'notebox_begin' %}
+Workbench2 is the replacement for Arvados Workbench. Workbench2 is currently in <i>beta</i>, it is not yet feature complete.
+{% include 'notebox_end' %}
+
+h2(#install_workbench). Install Workbench2 and dependencies
+
+Workbench2 does not require its own database. It is a set of html, javascript and css files that are served as static files from a web server like Nginx or Apache2.
+
+On a Debian-based system, install the following package:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo apt-get install arvados-workbench2</span>
+</code></pre>
+</notextile>
+
+On a Red Hat-based system, install the following package:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo yum install arvados-workbench2</span>
+</code></pre>
+</notextile>
+
+h2. Set up Web server
+
+For best performance, we recommend you use Nginx as your Web server to serve Workbench2. Workbench2 consists entirely of static files. To do that:
+
+<notextile>
+<ol>
+<li>Install Nginx</li>
+
+<li><p>Edit the http section of your Nginx configuration to serve Workbench2's files. You might add a block like the following, adding SSL and logging parameters to taste:</p>
+
+<pre><code>server {
+  listen       <span class="userinput">[your public IP address]</span>:443 ssl;
+  server_name  workbench2.<span class="userinput">uuid-prefix.your.domain</span>;
+
+  ssl on;
+  ssl_certificate     <span class="userinput">/YOUR/PATH/TO/cert.pem</span>;
+  ssl_certificate_key <span class="userinput">/YOUR/PATH/TO/cert.key</span>;
+
+  index  index.html;
+
+  # Workbench2 uses a call to /config.json to bootstrap itself and talk to the desired API server
+  location /config.json {
+    return 200 '{ "API_HOST": "<span class="userinput">uuid-prefix.your.domain</span>" }';
+  }
+
+  location / {
+    root      /var/www/arvados-workbench2/workbench2;
+    index     index.html;
+    try_files $uri $uri/ /index.html;
+    if (-f $document_root/maintenance.html) {
+      return 503;
+    }
+  }
+}
+</code></pre>
+</li>
+
+<li>Restart Nginx.</li>
+
+</ol>
+</notextile>
+
+h2. Trusted client setting
+
+Log in to Workbench2 once to ensure that the Arvados API server has a record of the Workbench2 client.
+
+In the <strong>API server</strong> project root, start the Rails console.  {% include 'install_rails_command' %}
+
+At the console, enter the following commands to locate the ApiClient record for your Workbench2 installation (typically, while you're setting this up, the @last@ one in the database is the one you want), then set the @is_trusted@ flag for the appropriate client record:
+
+<notextile><pre><code>irb(main):001:0&gt; <span class="userinput">wb = ApiClient.all.last; [wb.url_prefix, wb.created_at]</span>
+=&gt; ["https://workbench2.<span class="userinput">uuid_prefix.your.domain</span>/", Sat, 20 Apr 2019 01:23:45 UTC +00:00]
+irb(main):002:0&gt; <span class="userinput">include CurrentApiClient</span>
+=&gt; true
+irb(main):003:0&gt; <span class="userinput">act_as_system_user do wb.update_attributes!(is_trusted: true) end</span>
+=&gt; true
+</code></pre>
+</notextile>
