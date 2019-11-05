@@ -203,7 +203,7 @@ export const validateSessions = () =>
                     }
                 }
             }
-            services.authService.saveSessions(sessions);
+            services.authService.saveSessions(getState().auth.sessions);
             dispatch(progressIndicatorActions.STOP_WORKING("sessionsValidation"));
         }
     };
@@ -246,9 +246,9 @@ export const addSession = (remoteHost: string, token?: string, sendToLogin?: boo
                 };
 
                 if (sessions.find(s => s.clusterId === config.uuidPrefix)) {
-                    dispatch(authActions.UPDATE_SESSION(session));
+                    await dispatch(authActions.UPDATE_SESSION(session));
                 } else {
-                    dispatch(authActions.ADD_SESSION(session));
+                    await dispatch(authActions.ADD_SESSION(session));
                 }
                 services.authService.saveSessions(getState().auth.sessions);
 
@@ -302,7 +302,6 @@ export const toggleSession = (session: Session) =>
 export const initSessions = (authService: AuthService, config: Config, user: User) =>
     (dispatch: Dispatch<any>) => {
         const sessions = authService.buildSessions(config, user);
-        authService.saveSessions(sessions);
         dispatch(authActions.SET_SESSIONS(sessions));
         dispatch(validateSessions());
     };
