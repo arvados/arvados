@@ -19,6 +19,7 @@ export const Routes = {
     ROOT: '/',
     TOKEN: '/token',
     FED_LOGIN: '/fedtoken',
+    ADD_SESSION: '/add-session',
     PROJECTS: `/projects/:id(${RESOURCE_UUID_PATTERN})`,
     COLLECTIONS: `/collections/:id(${RESOURCE_UUID_PATTERN})`,
     PROCESSES: `/processes/:id(${RESOURCE_UUID_PATTERN})`,
@@ -72,7 +73,13 @@ export const getNavUrl = (uuid: string, config: FederationConfig) => {
     } else if (config.remoteHostsConfig[cls]) {
         let u: URL;
         if (config.remoteHostsConfig[cls].workbench2Url) {
-            u = new URL(config.remoteHostsConfig[cls].workbench2Url || "");
+	    /* NOTE: wb2 presently doesn't support passing api_token
+	       to arbitrary page to set credentials, only through
+	       api-token route.  So for navigation to work, user needs
+	       to already be logged in.  In the future we want to just
+	       request the records and display in the current
+	       workbench instance making this redirect unnecessary. */
+            u = new URL(config.remoteHostsConfig[cls].workbench2Url);
         } else {
             u = new URL(config.remoteHostsConfig[cls].workbenchUrl);
             u.search = "api_token=" + config.sessions.filter((s) => s.clusterId === cls)[0].token;
@@ -159,7 +166,7 @@ export const matchTokenRoute = (route: string) =>
     matchPath(route, { path: Routes.TOKEN });
 
 export const matchFedTokenRoute = (route: string) =>
-    matchPath(route, {path: Routes.FED_LOGIN});
+    matchPath(route, { path: Routes.FED_LOGIN });
 
 export const matchUsersRoute = (route: string) =>
     matchPath(route, { path: Routes.USERS });

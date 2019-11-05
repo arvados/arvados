@@ -70,6 +70,21 @@ export class Config {
     clusterConfig: ClusterConfigJSON;
 }
 
+export const buildConfig = (clusterConfigJSON: ClusterConfigJSON): Config => {
+    const config = new Config();
+    config.rootUrl = clusterConfigJSON.Services.Controller.ExternalURL;
+    config.baseUrl = `${config.rootUrl}/${ARVADOS_API_PATH}`;
+    config.uuidPrefix = clusterConfigJSON.ClusterID;
+    config.websocketUrl = clusterConfigJSON.Services.Websocket.ExternalURL;
+    config.workbench2Url = clusterConfigJSON.Services.Workbench2.ExternalURL;
+    config.workbenchUrl = clusterConfigJSON.Services.Workbench1.ExternalURL;
+    config.keepWebServiceUrl = clusterConfigJSON.Services.WebDAV.ExternalURL;
+    config.loginCluster = clusterConfigJSON.Login.LoginCluster;
+    config.clusterConfig = clusterConfigJSON;
+    mapRemoteHosts(clusterConfigJSON, config);
+    return config;
+};
+
 export const fetchConfig = () => {
     return Axios
         .get<WorkbenchConfig>(WORKBENCH_CONFIG_URL + "?nocache=" + (new Date()).getTime())
@@ -83,8 +98,8 @@ export const fetchConfig = () => {
                 throw new Error(`Unable to start Workbench. API_HOST is undefined in ${WORKBENCH_CONFIG_URL} or the environment.`);
             }
             return Axios.get<ClusterConfigJSON>(getClusterConfigURL(workbenchConfig.API_HOST)).then(response => {
-                const config = new Config();
                 const clusterConfigJSON = response.data;
+                const config = buildConfig(clusterConfigJSON);
                 const warnLocalConfig = (varName: string) => console.warn(
                     `A value for ${varName} was found in ${WORKBENCH_CONFIG_URL}. To use the Arvados centralized configuration instead, \
 remove the entire ${varName} entry from ${WORKBENCH_CONFIG_URL}`);
@@ -111,17 +126,6 @@ remove the entire ${varName} entry from ${WORKBENCH_CONFIG_URL}`);
                     vocabularyUrl = clusterConfigJSON.Workbench.VocabularyURL || "/vocabulary-example.json";
                 }
                 config.vocabularyUrl = vocabularyUrl;
-
-                config.rootUrl = clusterConfigJSON.Services.Controller.ExternalURL;
-                config.baseUrl = `${config.rootUrl}/${ARVADOS_API_PATH}`;
-                config.uuidPrefix = clusterConfigJSON.ClusterID;
-                config.websocketUrl = clusterConfigJSON.Services.Websocket.ExternalURL;
-                config.workbench2Url = clusterConfigJSON.Services.Workbench2.ExternalURL;
-                config.workbenchUrl = clusterConfigJSON.Services.Workbench1.ExternalURL;
-                config.keepWebServiceUrl = clusterConfigJSON.Services.WebDAV.ExternalURL;
-                config.loginCluster = clusterConfigJSON.Login.LoginCluster;
-                config.clusterConfig = clusterConfigJSON;
-                mapRemoteHosts(clusterConfigJSON, config);
 
                 return { config, apiHost: workbenchConfig.API_HOST };
             });
@@ -193,5 +197,6 @@ const getDefaultConfig = (): WorkbenchConfig => {
 };
 
 export const ARVADOS_API_PATH = "arvados/v1";
-export const CLUSTER_CONFIG_URL = "arvados/v1/config";
-export const getClusterConfigURL = (apiHost: string) => `${window.location.protocol}//${apiHost}/${CLUSTER_CONFIG_URL}?nocache=${(new Date()).getTime()}`;
+export const CLUSTER_CONFIG_PATH = "arvados/v1/config";
+export const DISCOVERY_DOC_PATH = "discovery/v1/apis/arvados/v1/rest";
+export const getClusterConfigURL = (apiHost: string) => `${window.location.protocol}//${apiHost}/${CLUSTER_CONFIG_PATH}?nocache=${(new Date()).getTime()}`;

@@ -10,11 +10,10 @@ import { ServiceRepository } from "~/services/services";
 import { SshKeyResource } from '~/models/ssh-key';
 import { User, UserResource } from "~/models/user";
 import { Session } from "~/models/session";
-import { getClusterConfigURL, Config, ClusterConfigJSON, mapRemoteHosts } from '~/common/config';
+import { Config } from '~/common/config';
 import { initSessions } from "~/store/auth/auth-action-session";
 import { cancelLinking } from '~/store/link-account-panel/link-account-panel-actions';
 import { matchTokenRoute, matchFedTokenRoute } from '~/routes/routes';
-import Axios from "axios";
 import { AxiosError } from "axios";
 
 export const authActions = unionize({
@@ -67,12 +66,16 @@ export const initAuth = (config: Config) => (dispatch: Dispatch, getState: () =>
 const init = (config: Config) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     const user = services.authService.getUser();
     const token = services.authService.getApiToken();
-    const homeCluster = services.authService.getHomeCluster();
+    let homeCluster = services.authService.getHomeCluster();
     if (token) {
         setAuthorizationHeader(services, token);
     }
+    if (homeCluster && !config.remoteHosts[homeCluster]) {
+        homeCluster = undefined;
+    }
     dispatch(authActions.CONFIG({ config }));
     dispatch(authActions.SET_HOME_CLUSTER(config.loginCluster || homeCluster || config.uuidPrefix));
+    document.title = `Arvados Workbench (${config.uuidPrefix})`;
     if (token && user) {
         dispatch(authActions.INIT({ user, token }));
         dispatch<any>(initSessions(services.authService, config, user));
@@ -82,22 +85,11 @@ const init = (config: Config) => (dispatch: Dispatch, getState: () => RootState,
             if (err.response) {
                 // Bad token
                 if (err.response.status === 401) {
-                    logout()(dispatch, getState, services);
+                    dispatch<any>(logout());
                 }
             }
         });
     }
-    Object.keys(config.remoteHosts).map((k) => {
-        Axios.get<ClusterConfigJSON>(getClusterConfigURL(config.remoteHosts[k]))
-            .then(response => {
-                const remoteConfig = new Config();
-                remoteConfig.uuidPrefix = response.data.ClusterID;
-                remoteConfig.workbench2Url = response.data.Services.Workbench2.ExternalURL;
-                remoteConfig.loginCluster = response.data.Login.LoginCluster;
-                mapRemoteHosts(response.data, remoteConfig);
-                dispatch(authActions.REMOTE_CLUSTER_CONFIG({ config: remoteConfig }));
-            });
-    });
 };
 
 export const saveApiToken = (token: string) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {

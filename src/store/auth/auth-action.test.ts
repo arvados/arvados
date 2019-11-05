@@ -90,7 +90,8 @@ describe('auth-actions', () => {
                 "remoteHost": "https://zzzzz.arvadosapi.com",
                 "status": 2,
                 "token": "token",
-                "username": "John Doe"
+                "name": "John Doe"
+		"uuid": "zzzzz-tpzed-abcefg",
             }, {
                 "active": false,
                 "baseUrl": "",
@@ -100,7 +101,8 @@ describe('auth-actions', () => {
                 "remoteHost": "xc59z.arvadosapi.com",
                 "status": 1,
                 "token": "",
-                "username": ""
+                "name": "",
+                "uuid": "",
             }],
             user: {
                 email: "test@test.com",

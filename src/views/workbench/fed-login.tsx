@@ -30,7 +30,6 @@ export const FedLogin = connect(mapStateToProps)(
             if (!apiToken || !user || !user.uuid.startsWith(localCluster)) {
                 return <></>;
             }
-            const [, tokenUuid, token] = apiToken.split("/");
             return <div id={"fedtoken-iframe-div"}>
                 {Object.keys(remoteHostsConfig)
                     .map((k) => {
@@ -42,7 +41,7 @@ export const FedLogin = connect(mapStateToProps)(
                             return;
                         }
                         const fedtoken = (remoteHostsConfig[k].loginCluster === localCluster)
-                            ? apiToken : getSaltedToken(k, tokenUuid, token);
+                            ? apiToken : getSaltedToken(k, apiToken);
                         return <iframe key={k} src={`${remoteHostsConfig[k].workbench2Url}/fedtoken?api_token=${fedtoken}`} style={{
                             height: 0,
                             width: 0,

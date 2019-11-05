@@ -12,9 +12,10 @@ export interface Session {
     clusterId: string;
     remoteHost: string;
     baseUrl: string;
-    username: string;
+    name: string;
     email: string;
     token: string;
+    uuid: string;
     loggedIn: boolean;
     status: SessionStatus;
     active: boolean;

@@ -8,6 +8,7 @@ import {
     CardContent,
     CircularProgress,
     Grid,
+    IconButton,
     StyleRulesCallback,
     Table,
     TableBody,
@@ -28,6 +29,7 @@ import { addSession } from "~/store/auth/auth-action-session";
 import { SITE_MANAGER_REMOTE_HOST_VALIDATION } from "~/validators/validators";
 import { Config } from '~/common/config';
 import { ResourceCluster } from '~/views-components/data-explorer/renderers';
+import { TrashIcon } from "~/components/icon/icon";
 
 type CssRules = 'root' | 'link' | 'buttonContainer' | 'table' | 'tableRow' |
     'remoteSiteInfo' | 'buttonAdd' | 'buttonLoggedIn' | 'buttonLoggedOut' |
@@ -86,11 +88,13 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 export interface SiteManagerPanelRootActionProps {
     toggleSession: (session: Session) => void;
+    removeSession: (session: Session) => void;
 }
 
 export interface SiteManagerPanelRootDataProps {
     sessions: Session[];
     remoteHostsConfig: { [key: string]: Config };
+    localClusterConfig: Config;
 }
 
 type SiteManagerPanelRootProps = SiteManagerPanelRootDataProps & SiteManagerPanelRootActionProps & WithStyles<CssRules> & InjectedFormProps;
@@ -98,7 +102,7 @@ const SITE_MANAGER_FORM_NAME = 'siteManagerForm';
 
 const submitSession = (remoteHost: string) =>
     (dispatch: Dispatch) => {
-        dispatch<any>(addSession(remoteHost)).then(() => {
+        dispatch<any>(addSession(remoteHost, undefined, true)).then(() => {
             dispatch(reset(SITE_MANAGER_FORM_NAME));
         }).catch((e: any) => {
             const errors = {
@@ -117,7 +121,7 @@ export const SiteManagerPanelRoot = compose(
         }
     }),
     withStyles(styles))
-    (({ classes, sessions, handleSubmit, toggleSession, remoteHostsConfig }: SiteManagerPanelRootProps) =>
+    (({ classes, sessions, handleSubmit, toggleSession, removeSession, localClusterConfig, remoteHostsConfig }: SiteManagerPanelRootProps) =>
         <Card className={classes.root}>
             <CardContent>
                 <Grid container direction="row">
@@ -133,9 +137,10 @@ export const SiteManagerPanelRoot = compose(
                             <TableRow className={classes.tableRow}>
                                 <TableCell>Cluster ID</TableCell>
                                 <TableCell>Host</TableCell>
-                                <TableCell>Username</TableCell>
                                 <TableCell>Email</TableCell>
+                                <TableCell>UUID</TableCell>
                                 <TableCell>Status</TableCell>
+                                <TableCell>Actions</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -146,8 +151,8 @@ export const SiteManagerPanelRoot = compose(
                                         <a href={remoteHostsConfig[session.clusterId].workbench2Url} style={{ textDecoration: 'none' }}> <ResourceCluster uuid={session.clusterId} /></a>
                                         : session.clusterId}</TableCell>
                                     <TableCell>{session.remoteHost}</TableCell>
-                                    <TableCell>{validating ? <CircularProgress size={20} /> : session.username}</TableCell>
                                     <TableCell>{validating ? <CircularProgress size={20} /> : session.email}</TableCell>
+                                    <TableCell>{validating ? <CircularProgress size={20} /> : session.uuid}</TableCell>
                                     <TableCell className={classes.statusCell}>
                                         <Button fullWidth
                                             disabled={validating || session.status === SessionStatus.INVALIDATED || session.active}
@@ -155,6 +160,13 @@ export const SiteManagerPanelRoot = compose(
                                             onClick={() => toggleSession(session)}>
                                             {validating ? "Validating" : (session.loggedIn ? "Logged in" : "Logged out")}
                                         </Button>
+                                    </TableCell>
+                                    <TableCell>
+                                        {session.clusterId !== localClusterConfig.uuidPrefix &&
+                                            !localClusterConfig.clusterConfig.RemoteClusters[session.clusterId] &&
+                                            <IconButton onClick={() => removeSession(session)}>
+                                                <TrashIcon />
+                                            </IconButton>}
                                     </TableCell>
                                 </TableRow>;
                             })}
