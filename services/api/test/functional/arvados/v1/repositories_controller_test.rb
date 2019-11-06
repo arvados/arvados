@@ -52,7 +52,7 @@ class Arvados::V1::RepositoriesControllerTest < ActionController::TestCase
     end
     act_as_system_user do
       u = users(:active)
-      u.is_active = false
+      u.unsetup
       u.save!
     end
     authorize_with :admin

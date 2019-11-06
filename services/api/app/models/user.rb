@@ -21,6 +21,7 @@ class User < ArvadosModel
             },
             uniqueness: true,
             allow_nil: true)
+  validate :must_unsetup_to_deactivate
   before_update :prevent_privilege_escalation
   before_update :prevent_inactive_admin
   before_update :verify_repositories_empty, :if => Proc.new { |user|
@@ -232,6 +233,23 @@ class User < ArvadosModel
     # mark the user as inactive
     self.is_active = false
     self.save!
+  end
+
+  def must_unsetup_to_deactivate
+    if self.is_active_changed? &&
+       self.is_active_was == true &&
+       self.is_active == false
+
+      group = Group.where(name: 'All users').select do |g|
+        g[:uuid].match(/-f+$/)
+      end.first
+      if Link.where(tail_uuid: self.uuid,
+                    head_uuid: group[:uuid],
+                    link_class: 'permission',
+                    name: 'can_read').any?
+        errors.add :is_active, "cannot be set to false directly, must use 'unsetup' (the 'Deactivate' button on the user 'Admin' section on Workbench)"
+      end
+    end
   end
 
   def set_initial_username(requested: false)

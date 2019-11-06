@@ -223,18 +223,13 @@ class ApiClientAuthorization < ArvadosModel
       if remote_user_prefix == Rails.configuration.Login.LoginCluster
         # Remote cluster controls our user database, copy both
         # 'is_active' and 'is_admin'
-        user.is_active = remote_user['is_active']
+        user.is_active = true if remote_user['is_active']
         user.is_admin = remote_user['is_admin']
       else
         if Rails.configuration.Users.NewUsersAreActive ||
            Rails.configuration.RemoteClusters[remote_user_prefix].andand["ActivateUsers"]
-          # Default policy is to activate users, so match activate
-          # with the remote record.
-          user.is_active = remote_user['is_active']
-        elsif !remote_user['is_active']
-          # Deactivate user if the remote is inactive, otherwise don't
-          # change 'is_active'.
-          user.is_active = false
+          # Default policy is to activate users
+          user.is_active = true if remote_user['is_active']
         end
       end
 
@@ -243,6 +238,10 @@ class ApiClientAuthorization < ArvadosModel
       end
 
       act_as_system_user do
+        if user.is_active && !remote_user['is_active']
+          user.unsetup
+        end
+
         user.save!
 
         # We will accept this token (and avoid reloading the user

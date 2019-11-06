@@ -143,6 +143,30 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     assert_equal 'blarney@example.com', json_response['email']
   end
 
+  test 'remote user is deactivated' do
+    Rails.configuration.RemoteClusters['zbbbb'].ActivateUsers = true
+    get '/arvados/v1/users/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
+    assert_response :success
+    assert_equal true, json_response['is_active']
+
+    # revoke original token
+    @stub_content[:is_active] = false
+
+    # simulate cache expiry
+    ApiClientAuthorization.where(
+      uuid: salted_active_token(remote: 'zbbbb').split('/')[1]).
+      update_all(expires_at: db_current_time - 1.minute)
+
+    # re-authorize after cache expires
+    get '/arvados/v1/users/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
+    assert_equal false, json_response['is_active']
+
+  end
+
   test 'authenticate with remote token, remote username conflicts with local' do
     @stub_content[:username] = 'active'
     get '/arvados/v1/users/current',

@@ -111,6 +111,7 @@ class UserSessionsApiTest < ActionDispatch::IntegrationTest
    ].each do |testcase|
     test "user auto-activate #{testcase.inspect}" do
       # Configure auto_setup behavior according to testcase[:cfg]
+      Rails.configuration.Users.NewUsersAreActive = false
       Rails.configuration.Users.AutoSetupNewUsers = testcase[:cfg][:auto]
       Rails.configuration.Users.AutoSetupNewUsersWithVmUUID =
         (testcase[:cfg][:vm] ? virtual_machines(:testvm).uuid : "")

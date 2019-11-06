@@ -339,4 +339,119 @@ class UsersTest < ActionDispatch::IntegrationTest
 
   end
 
+  test "cannot set is_activate to false directly" do
+    post('/arvados/v1/users',
+      params: {
+        user: {
+          email: "bob@example.com",
+          username: "bobby"
+        },
+      },
+      headers: auth(:admin))
+    assert_response(:success)
+    user = json_response
+    assert_equal false, user['is_active']
+
+    post("/arvados/v1/users/#{user['uuid']}/activate",
+      params: {},
+      headers: auth(:admin))
+    assert_response(:success)
+    user = json_response
+    assert_equal true, user['is_active']
+
+    put("/arvados/v1/users/#{user['uuid']}",
+         params: {
+           user: {is_active: false}
+         },
+         headers: auth(:admin))
+    assert_response 422
+  end
+
+  test "cannot self activate when AutoSetupNewUsers is false" do
+    Rails.configuration.Users.NewUsersAreActive = false
+    Rails.configuration.Users.AutoSetupNewUsers = false
+
+    user = nil
+    token = nil
+    act_as_system_user do
+      user = User.create!(email: "bob@example.com", username: "bobby")
+      ap = ApiClientAuthorization.create!(user: user, api_client: ApiClient.all.first)
+      token = ap.api_token
+    end
+
+    get("/arvados/v1/users/#{user['uuid']}",
+        params: {},
+        headers: {"HTTP_AUTHORIZATION" => "Bearer #{token}"})
+    assert_response(:success)
+    user = json_response
+    assert_equal false, user['is_active']
+
+    post("/arvados/v1/users/#{user['uuid']}/activate",
+        params: {},
+        headers: {"HTTP_AUTHORIZATION" => "Bearer #{token}"})
+    assert_response 422
+    assert_match(/Cannot activate without being invited/, json_response['errors'][0])
+  end
+
+
+  test "cannot self activate after unsetup" do
+    Rails.configuration.Users.NewUsersAreActive = false
+    Rails.configuration.Users.AutoSetupNewUsers = false
+
+    user = nil
+    token = nil
+    act_as_system_user do
+      user = User.create!(email: "bob@example.com", username: "bobby")
+      ap = ApiClientAuthorization.create!(user: user, api_client_id: 0)
+      token = ap.api_token
+    end
+
+    post("/arvados/v1/users/setup",
+        params: {uuid: user['uuid']},
+        headers: auth(:admin))
+    assert_response :success
+
+    post("/arvados/v1/users/#{user['uuid']}/activate",
+        params: {},
+        headers: {"HTTP_AUTHORIZATION" => "Bearer #{token}"})
+    assert_response 403
+    assert_match(/Cannot activate without user agreements/, json_response['errors'][0])
+
+    post("/arvados/v1/user_agreements/sign",
+        params: {uuid: 'zzzzz-4zz18-t68oksiu9m80s4y'},
+        headers: {"HTTP_AUTHORIZATION" => "Bearer #{token}"})
+    assert_response :success
+
+    post("/arvados/v1/users/#{user['uuid']}/activate",
+        params: {},
+        headers: {"HTTP_AUTHORIZATION" => "Bearer #{token}"})
+    assert_response :success
+
+    get("/arvados/v1/users/#{user['uuid']}",
+        params: {},
+        headers: {"HTTP_AUTHORIZATION" => "Bearer #{token}"})
+    assert_response(:success)
+    user = json_response
+    assert_equal true, user['is_active']
+
+    post("/arvados/v1/users/#{user['uuid']}/unsetup",
+        params: {},
+        headers: auth(:admin))
+    assert_response :success
+
+    get("/arvados/v1/users/#{user['uuid']}",
+        params: {},
+        headers: {"HTTP_AUTHORIZATION" => "Bearer #{token}"})
+    assert_response(:success)
+    user = json_response
+    assert_equal false, user['is_active']
+
+    post("/arvados/v1/users/#{user['uuid']}/activate",
+        params: {},
+        headers: {"HTTP_AUTHORIZATION" => "Bearer #{token}"})
+    assert_response 422
+    assert_match(/Cannot activate without being invited/, json_response['errors'][0])
+  end
+
+
 end
