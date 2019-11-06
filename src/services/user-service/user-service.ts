@@ -11,4 +11,12 @@ export class UserService extends CommonResourceService<UserResource> {
     constructor(serverApi: AxiosInstance, actions: ApiActions) {
         super(serverApi, "users", actions);
     }
+
+    unsetup(uuid: string) {
+        return CommonResourceService.defaultResponse(
+            this.serverApi
+                .post(this.resourceType + uuid + '/unsetup'),
+            this.actions
+        );
+    }
 }

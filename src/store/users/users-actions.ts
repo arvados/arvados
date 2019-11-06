@@ -109,7 +109,12 @@ export const toggleIsActive = (uuid: string) =>
         const { resources } = getState();
         const data = getResource<UserResource>(uuid)(resources);
         const isActive = data!.isActive;
-        const newActivity = await services.userService.update(uuid, { isActive: !isActive });
+        let newActivity;
+        if (isActive) {
+            newActivity = await services.userService.unsetup(uuid);
+        } else {
+            newActivity = await services.userService.update(uuid, { isActive: true });
+        }
         dispatch<any>(loadUsersPanel());
         return newActivity;
     };
