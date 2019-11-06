@@ -247,7 +247,7 @@ class User < ArvadosModel
                     head_uuid: group[:uuid],
                     link_class: 'permission',
                     name: 'can_read').any?
-        errors.add :is_active, "cannot be set to false directly, must use 'unsetup' (the 'Deactivate' button on the user 'Admin' section on Workbench)"
+        errors.add :is_active, "cannot be set to false directly, use the 'Deactivate' button on Workbench, or the 'unsetup' API call"
       end
     end
   end
