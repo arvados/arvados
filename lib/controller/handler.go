@@ -83,6 +83,7 @@ func (h *Handler) setup() {
 	if h.Cluster.EnableBetaController14287 {
 		mux.Handle("/arvados/v1/collections", rtr)
 		mux.Handle("/arvados/v1/collections/", rtr)
+		mux.Handle("/login", rtr)
 	}
 
 	hs := http.NotFoundHandler()

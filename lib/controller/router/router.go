@@ -48,6 +48,13 @@ func (rtr *router) addRoutes() {
 			},
 		},
 		{
+			arvados.EndpointLogin,
+			func() interface{} { return &arvados.LoginOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.Login(ctx, *opts.(*arvados.LoginOptions))
+			},
+		},
+		{
 			arvados.EndpointCollectionCreate,
 			func() interface{} { return &arvados.CreateOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
@@ -263,7 +270,7 @@ func (rtr *router) addRoute(endpoint arvados.APIEndpoint, defaultOpts func() int
 			rtr.sendError(w, err)
 			return
 		}
-		rtr.sendResponse(w, resp, respOpts)
+		rtr.sendResponse(w, req, resp, respOpts)
 	})
 }
 
