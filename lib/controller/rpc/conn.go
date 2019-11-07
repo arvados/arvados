@@ -315,9 +315,16 @@ func (conn *Conn) APIClientAuthorizationCurrent(ctx context.Context, options arv
 	return resp, err
 }
 
+type UserSessionAuthInfo struct {
+	Email           string   `json:"email"`
+	AlternateEmails []string `json:"alternate_emails"`
+	FirstName       string   `json:"first_name"`
+	LastName        string   `json:"last_name"`
+}
+
 type UserSessionCreateOptions struct {
-	AuthInfo map[string]interface{} `json:"auth_info"`
-	ReturnTo string                 `json:"return_to"`
+	AuthInfo UserSessionAuthInfo `json:"auth_info"`
+	ReturnTo string              `json:"return_to"`
 }
 
 func (conn *Conn) UserSessionCreate(ctx context.Context, options UserSessionCreateOptions) (arvados.LoginResponse, error) {

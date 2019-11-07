@@ -14,7 +14,7 @@ class DatabaseController < ApplicationController
     # use @example.com email addresses when creating user records, so
     # we can tell they're not valuable.
     user_uuids = User.
-      where('email is null or email not like ?', '%@example.com').
+      where('email is null or (email not like ? and email not like ?)', '%@example.com', '%.example.com').
       collect(&:uuid)
     fixture_uuids =
       YAML::load_file(File.expand_path('../../../test/fixtures/users.yml',
