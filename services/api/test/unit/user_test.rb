@@ -458,14 +458,6 @@ class UserTest < ActiveSupport::TestCase
     resp_user = find_obj_in_resp response, 'User'
     verify_user resp_user, email
 
-    oid_login_perm = find_obj_in_resp response, 'Link', 'arvados#user'
-
-    verify_link oid_login_perm, 'permission', 'can_login', resp_user[:email],
-        resp_user[:uuid]
-
-    assert_equal openid_prefix, oid_login_perm[:properties]['identity_url_prefix'],
-        'expected identity_url_prefix not found for oid_login_perm'
-
     group_perm = find_obj_in_resp response, 'Link', 'arvados#group'
     verify_link group_perm, 'permission', 'can_read', resp_user[:uuid], nil
 
@@ -503,14 +495,6 @@ class UserTest < ActiveSupport::TestCase
     resp_user = find_obj_in_resp response, 'User'
     verify_user resp_user, email
 
-    oid_login_perm = find_obj_in_resp response, 'Link', 'arvados#user'
-
-    verify_link oid_login_perm, 'permission', 'can_login', resp_user[:email],
-        resp_user[:uuid]
-
-    assert_equal openid_prefix, oid_login_perm[:properties]['identity_url_prefix'],
-        'expected identity_url_prefix not found for oid_login_perm'
-
     group_perm = find_obj_in_resp response, 'Link', 'arvados#group'
     verify_link group_perm, 'permission', 'can_read', resp_user[:uuid], nil
 
@@ -534,12 +518,6 @@ class UserTest < ActiveSupport::TestCase
 
     resp_user = find_obj_in_resp response, 'User'
     verify_user resp_user, email
-
-    oid_login_perm = find_obj_in_resp response, 'Link', 'arvados#user'
-    verify_link oid_login_perm, 'permission', 'can_login', resp_user[:email],
-        resp_user[:uuid]
-    assert_equal openid_prefix, oid_login_perm[:properties]['identity_url_prefix'],
-        'expected identity_url_prefix not found for oid_login_perm'
 
     group_perm = find_obj_in_resp response, 'Link', 'arvados#group'
     verify_link group_perm, 'permission', 'can_read', resp_user[:uuid], nil
@@ -646,9 +624,7 @@ class UserTest < ActiveSupport::TestCase
     verify_link_exists(Rails.configuration.Users.AutoSetupNewUsers || active,
                        groups(:all_users).uuid, user.uuid,
                        "permission", "can_read")
-    # Check for OID login link.
-    verify_link_exists(Rails.configuration.Users.AutoSetupNewUsers || active,
-                       user.uuid, user.email, "permission", "can_login")
+
     # Check for repository.
     if named_repo = (prior_repo or
                      Repository.where(name: expect_repo_name).first)

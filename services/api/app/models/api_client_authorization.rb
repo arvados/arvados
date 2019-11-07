@@ -221,8 +221,9 @@ class ApiClientAuthorization < ArvadosModel
 
       # Sync user record.
       if remote_user_prefix == Rails.configuration.Login.LoginCluster
-        # Remote cluster controls our user database, copy both
-        # 'is_active' and 'is_admin'
+        # Remote cluster controls our user database, set is_active if
+        # remote is active.  If remote is not active, user will be
+        # unsetup (see below).
         user.is_active = true if remote_user['is_active']
         user.is_admin = remote_user['is_admin']
       else

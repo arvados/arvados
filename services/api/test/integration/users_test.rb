@@ -36,9 +36,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     assert_not_nil created['email'], 'expected non-nil email'
     assert_nil created['identity_url'], 'expected no identity_url'
 
-    # arvados#user, repo link and link add user to 'All users' group
-    verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
-        created['uuid'], created['email'], 'arvados#user', false, 'arvados#user'
+    # repo link and link add user to 'All users' group
 
     verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
         'foo/usertestrepo', created['uuid'], 'arvados#repository', true, 'Repository'
@@ -117,9 +115,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     assert_not_nil created['email'], 'expected non-nil email'
     assert_equal created['email'], 'foo@example.com', 'expected input email'
 
-    # three new links: system_group, arvados#user, and 'All users' group.
-    verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
-        created['uuid'], created['email'], 'arvados#user', false, 'arvados#user'
+    # two new links: system_group, and 'All users' group.
 
     verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
@@ -196,9 +192,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     assert_not_nil created['uuid'], 'expected uuid for the new user'
     assert_equal created['email'], 'foo@example.com', 'expected given email'
 
-    # five extra links: system_group, login, group, repo and vm
-    verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
-        created['uuid'], created['email'], 'arvados#user', false, 'arvados#user'
+    # four extra links: system_group, login, group, repo and vm
 
     verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
