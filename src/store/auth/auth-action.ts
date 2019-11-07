@@ -81,6 +81,11 @@ const init = (config: Config) => (dispatch: Dispatch, getState: () => RootState,
         dispatch<any>(initSessions(services.authService, config, user));
         dispatch<any>(getUserDetails()).then((user: User) => {
             dispatch(authActions.INIT({ user, token }));
+            if (!user.isActive) {
+                services.userService.activate(user.uuid).then((user: User) => {
+                    dispatch(authActions.INIT({ user, token }));
+                });
+            }
         }).catch((err: AxiosError) => {
             if (err.response) {
                 // Bad token
