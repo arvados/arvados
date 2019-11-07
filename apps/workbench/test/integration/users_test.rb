@@ -77,6 +77,8 @@ class UsersTest < ActionDispatch::IntegrationTest
       find('a', text: 'Show').
       click
 
+    click_link 'Attributes'
+
     assert page.has_text? 'modified_by_user_uuid'
     page.within(:xpath, '//span[@data-name="is_active"]') do
       assert_equal "false", text, "Expected new user's is_active to be false"
@@ -103,9 +105,9 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     # Setup user
     click_link 'Admin'
-    assert page.has_text? 'As an admin, you can setup'
+    assert page.has_text? 'This button sets up an inactive user'
 
-    click_link 'Setup shell account for Active User'
+    click_link 'Setup account for Active User'
 
     within '.modal-content' do
       find 'label', text: 'Virtual Machine'
@@ -113,6 +115,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     end
 
     visit user_url
+    click_link 'Attributes'
     assert page.has_text? 'modified_by_client_uuid'
 
     click_link 'Advanced'
@@ -123,7 +126,7 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     # Click on Setup button again and this time also choose a VM
     click_link 'Admin'
-    click_link 'Setup shell account for Active User'
+    click_link 'Setup account for Active User'
 
     within '.modal-content' do
       select("testvm.shell", :from => 'vm_uuid')
@@ -132,12 +135,15 @@ class UsersTest < ActionDispatch::IntegrationTest
     end
 
     visit user_url
+    click_link 'Attributes'
     find '#Attributes', text: 'modified_by_client_uuid'
 
     click_link 'Advanced'
     click_link 'Metadata'
     assert page.has_text? 'VirtualMachine: testvm.shell'
     assert page.has_text? '["test group one", "test-group-two"]'
+    vm_links = all("a", text: "VirtualMachine:")
+    assert_equal(2, vm_links.size)
   end
 
   test "unsetup active user" do
@@ -155,7 +161,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     user_url = page.current_url
 
     # Verify that is_active is set
-    find('a,button', text: 'Attributes').click
+    click_link 'Attributes'
     assert page.has_text? 'modified_by_user_uuid'
     page.within(:xpath, '//span[@data-name="is_active"]') do
       assert_equal "true", text, "Expected user's is_active to be true"
@@ -176,6 +182,8 @@ class UsersTest < ActionDispatch::IntegrationTest
       # poltergeist returns true for confirm(), so we don't need to accept.
     end
 
+    click_link 'Attributes'
+
     # Should now be back in the Attributes tab for the user
     assert page.has_text? 'modified_by_user_uuid'
     page.within(:xpath, '//span[@data-name="is_active"]') do
@@ -188,7 +196,7 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     # setup user again and verify links present
     click_link 'Admin'
-    click_link 'Setup shell account for Active User'
+    click_link 'Setup account for Active User'
 
     within '.modal-content' do
       select("testvm.shell", :from => 'vm_uuid')
@@ -196,6 +204,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     end
 
     visit user_url
+    click_link 'Attributes'
     assert page.has_text? 'modified_by_client_uuid'
 
     click_link 'Advanced'
@@ -211,7 +220,7 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     # Setup user
     click_link 'Admin'
-    assert page.has_text? 'As an admin, you can setup'
+    assert page.has_text? 'This button sets up an inactive user'
 
     click_link 'Add new group'
 
