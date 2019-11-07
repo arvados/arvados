@@ -277,6 +277,18 @@ public class ArvadosFacade {
     }
 
     /**
+     * Gets project details by uuid.
+     *
+     * @param projectUuid uuid of project
+     * @return Group object containing information about project
+     */
+    public Group getProjectByUuid(String projectUuid) {
+        Group project = groupsApiClient.get(projectUuid);
+        log.debug("Retrieved " + project.getName() + " with UUID: " + project.getUuid());
+        return project;
+    }
+
+    /**
      * Creates new project that will be a subproject of "home" for current user.
      *
      * @param projectName name for the newly created project
