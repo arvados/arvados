@@ -21,8 +21,7 @@ import (
 
 var (
 	maxBlockSize      = 1 << 26
-	concurrentWriters = 4 // max goroutines writing to Keep during sync()
-	writeAheadBlocks  = 1 // max background jobs flushing to Keep before blocking writes
+	concurrentWriters = 4 // max goroutines writing to Keep in background and during flush()
 )
 
 // A CollectionFileSystem is a FileSystem that can be serialized as a
@@ -38,6 +37,9 @@ type CollectionFileSystem interface {
 
 	// Total data bytes in all files.
 	Size() int64
+
+	// Memory consumed by buffered file data.
+	memorySize() int64
 }
 
 type collectionFileSystem struct {
@@ -57,6 +59,7 @@ func (c *Collection) FileSystem(client apiClient, kc keepClient) (CollectionFile
 		uuid: c.UUID,
 		fileSystem: fileSystem{
 			fsBackend: keepBackend{apiClient: client, keepClient: kc},
+			thr:       newThrottle(concurrentWriters),
 		},
 	}
 	root := &dirnode{
@@ -143,10 +146,48 @@ func (fs *collectionFileSystem) Sync() error {
 	return nil
 }
 
+func (fs *collectionFileSystem) Flush(path string, shortBlocks bool) error {
+	node, err := rlookup(fs.fileSystem.root, path)
+	if err != nil {
+		return err
+	}
+	dn, ok := node.(*dirnode)
+	if !ok {
+		return ErrNotADirectory
+	}
+	dn.Lock()
+	defer dn.Unlock()
+	names := dn.sortedNames()
+	if path != "" {
+		// Caller only wants to flush the specified dir,
+		// non-recursively.  Drop subdirs from the list of
+		// names.
+		var filenames []string
+		for _, name := range names {
+			if _, ok := dn.inodes[name].(*filenode); ok {
+				filenames = append(filenames, name)
+			}
+		}
+		names = filenames
+	}
+	for _, name := range names {
+		child := dn.inodes[name]
+		child.Lock()
+		defer child.Unlock()
+	}
+	return dn.flush(context.TODO(), names, flushOpts{sync: false, shortBlocks: shortBlocks})
+}
+
+func (fs *collectionFileSystem) memorySize() int64 {
+	fs.fileSystem.root.Lock()
+	defer fs.fileSystem.root.Unlock()
+	return fs.fileSystem.root.(*dirnode).memorySize()
+}
+
 func (fs *collectionFileSystem) MarshalManifest(prefix string) (string, error) {
 	fs.fileSystem.root.Lock()
 	defer fs.fileSystem.root.Unlock()
-	return fs.fileSystem.root.(*dirnode).marshalManifest(context.TODO(), prefix, newThrottle(concurrentWriters))
+	return fs.fileSystem.root.(*dirnode).marshalManifest(context.TODO(), prefix)
 }
 
 func (fs *collectionFileSystem) Size() int64 {
@@ -238,7 +279,6 @@ type filenode struct {
 	memsize  int64 // bytes in memSegments
 	sync.RWMutex
 	nullnode
-	throttle *throttle
 }
 
 // caller must have lock
@@ -501,12 +541,8 @@ func (fn *filenode) Write(p []byte, startPtr filenodePtr) (n int, ptr filenodePt
 // Write some data out to disk to reduce memory use. Caller must have
 // write lock.
 func (fn *filenode) pruneMemSegments() {
-	// TODO: share code with (*dirnode)sync()
+	// TODO: share code with (*dirnode)flush()
 	// TODO: pack/flush small blocks too, when fragmented
-	if fn.throttle == nil {
-		// TODO: share a throttle with filesystem
-		fn.throttle = newThrottle(writeAheadBlocks)
-	}
 	for idx, seg := range fn.segments {
 		seg, ok := seg.(*memSegment)
 		if !ok || seg.Len() < maxBlockSize || seg.flushing != nil {
@@ -522,14 +558,14 @@ func (fn *filenode) pruneMemSegments() {
 		// progress, block here until one finishes, rather
 		// than pile up an unlimited number of buffered writes
 		// and network flush operations.
-		fn.throttle.Acquire()
+		fn.fs.throttle().Acquire()
 		go func() {
 			defer close(done)
 			locator, _, err := fn.FS().PutB(buf)
-			fn.throttle.Release()
+			fn.fs.throttle().Release()
 			fn.Lock()
 			defer fn.Unlock()
-			if curbuf := seg.buf[:1]; &curbuf[0] != &buf[0] {
+			if seg.flushing != done {
 				// A new seg.buf has been allocated.
 				return
 			}
@@ -556,8 +592,8 @@ func (fn *filenode) pruneMemSegments() {
 	}
 }
 
-// Block until all pending pruneMemSegments work is finished. Caller
-// must NOT have lock.
+// Block until all pending pruneMemSegments/flush work is
+// finished. Caller must NOT have lock.
 func (fn *filenode) waitPrune() {
 	var pending []<-chan struct{}
 	fn.Lock()
@@ -613,51 +649,141 @@ type fnSegmentRef struct {
 // storedSegments that reference the relevant portions of the new
 // block.
 //
+// bufsize is the total data size in refs. It is used to preallocate
+// the correct amount of memory when len(refs)>1.
+//
+// If sync is false, commitBlock returns right away, after starting a
+// goroutine to do the writes, reacquire the filenodes' locks, and
+// swap out the *memSegments. Some filenodes' segments might get
+// modified/rearranged in the meantime, in which case commitBlock
+// won't replace them.
+//
 // Caller must have write lock.
-func (dn *dirnode) commitBlock(ctx context.Context, throttle *throttle, refs []fnSegmentRef) error {
+func (dn *dirnode) commitBlock(ctx context.Context, refs []fnSegmentRef, bufsize int, sync bool) error {
 	if len(refs) == 0 {
 		return nil
 	}
-	throttle.Acquire()
-	defer throttle.Release()
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	block := make([]byte, 0, maxBlockSize)
+	done := make(chan struct{})
+	var block []byte
+	segs := make([]*memSegment, 0, len(refs))
+	offsets := make([]int, 0, len(refs)) // location of segment's data within block
 	for _, ref := range refs {
-		block = append(block, ref.fn.segments[ref.idx].(*memSegment).buf...)
-	}
-	locator, _, err := dn.fs.PutB(block)
-	if err != nil {
-		return err
-	}
-	off := 0
-	for _, ref := range refs {
-		data := ref.fn.segments[ref.idx].(*memSegment).buf
-		ref.fn.segments[ref.idx] = storedSegment{
-			kc:      dn.fs,
-			locator: locator,
-			size:    len(block),
-			offset:  off,
-			length:  len(data),
+		seg := ref.fn.segments[ref.idx].(*memSegment)
+		if seg.flushing != nil && !sync {
+			// Let the other flushing goroutine finish. If
+			// it fails, we'll try again next time.
+			return nil
+		} else {
+			// In sync mode, we proceed regardless of
+			// whether another flush is in progress: It
+			// can't finish before we do, because we hold
+			// fn's lock until we finish our own writes.
 		}
-		off += len(data)
-		ref.fn.memsize -= int64(len(data))
+		seg.flushing = done
+		offsets = append(offsets, len(block))
+		if len(refs) == 1 {
+			block = seg.buf
+		} else if block == nil {
+			block = append(make([]byte, 0, bufsize), seg.buf...)
+		} else {
+			block = append(block, seg.buf...)
+		}
+		segs = append(segs, seg)
 	}
-	return nil
+	dn.fs.throttle().Acquire()
+	errs := make(chan error, 1)
+	go func() {
+		defer close(done)
+		defer close(errs)
+		locked := map[*filenode]bool{}
+		locator, _, err := dn.fs.PutB(block)
+		dn.fs.throttle().Release()
+		{
+			if !sync {
+				for _, name := range dn.sortedNames() {
+					if fn, ok := dn.inodes[name].(*filenode); ok {
+						fn.Lock()
+						defer fn.Unlock()
+						locked[fn] = true
+					}
+				}
+			}
+			defer func() {
+				for _, seg := range segs {
+					if seg.flushing == done {
+						seg.flushing = nil
+					}
+				}
+			}()
+		}
+		if err != nil {
+			errs <- err
+			return
+		}
+		for idx, ref := range refs {
+			if !sync {
+				// In async mode, fn's lock was
+				// released while we were waiting for
+				// PutB(); lots of things might have
+				// changed.
+				if len(ref.fn.segments) <= ref.idx {
+					// file segments have
+					// rearranged or changed in
+					// some way
+					continue
+				} else if seg, ok := ref.fn.segments[ref.idx].(*memSegment); !ok || seg != segs[idx] {
+					// segment has been replaced
+					continue
+				} else if seg.flushing != done {
+					// seg.buf has been replaced
+					continue
+				} else if !locked[ref.fn] {
+					// file was renamed, moved, or
+					// deleted since we called
+					// PutB
+					continue
+				}
+			}
+			data := ref.fn.segments[ref.idx].(*memSegment).buf
+			ref.fn.segments[ref.idx] = storedSegment{
+				kc:      dn.fs,
+				locator: locator,
+				size:    len(block),
+				offset:  offsets[idx],
+				length:  len(data),
+			}
+			ref.fn.memsize -= int64(len(data))
+		}
+	}()
+	if sync {
+		return <-errs
+	} else {
+		return nil
+	}
 }
 
-// sync flushes in-memory data and remote block references (for the
+type flushOpts struct {
+	sync        bool
+	shortBlocks bool
+}
+
+// flush in-memory data and remote-cluster block references (for the
 // children with the given names, which must be children of dn) to
-// local persistent storage. Caller must have write lock on dn and the
-// named children.
-func (dn *dirnode) sync(ctx context.Context, throttle *throttle, names []string) error {
+// local-cluster persistent storage.
+//
+// Caller must have write lock on dn and the named children.
+//
+// If any children are dirs, they will be flushed recursively.
+func (dn *dirnode) flush(ctx context.Context, names []string, opts flushOpts) error {
 	cg := newContextGroup(ctx)
 	defer cg.Cancel()
 
-	goCommit := func(refs []fnSegmentRef) {
+	goCommit := func(refs []fnSegmentRef, bufsize int) {
 		cg.Go(func() error {
-			return dn.commitBlock(cg.Context(), throttle, refs)
+			return dn.commitBlock(cg.Context(), refs, bufsize, opts.sync)
 		})
 	}
 
@@ -665,47 +791,87 @@ func (dn *dirnode) sync(ctx context.Context, throttle *throttle, names []string)
 	var pendingLen int = 0
 	localLocator := map[string]string{}
 	for _, name := range names {
-		fn, ok := dn.inodes[name].(*filenode)
-		if !ok {
-			continue
-		}
-		for idx, seg := range fn.segments {
-			switch seg := seg.(type) {
-			case storedSegment:
-				loc, ok := localLocator[seg.locator]
-				if !ok {
-					var err error
-					loc, err = dn.fs.LocalLocator(seg.locator)
-					if err != nil {
-						return err
+		switch node := dn.inodes[name].(type) {
+		case *dirnode:
+			grandchildNames := node.sortedNames()
+			for _, grandchildName := range grandchildNames {
+				grandchild := node.inodes[grandchildName]
+				grandchild.Lock()
+				defer grandchild.Unlock()
+			}
+			cg.Go(func() error { return node.flush(cg.Context(), grandchildNames, opts) })
+		case *filenode:
+			for idx, seg := range node.segments {
+				switch seg := seg.(type) {
+				case storedSegment:
+					loc, ok := localLocator[seg.locator]
+					if !ok {
+						var err error
+						loc, err = dn.fs.LocalLocator(seg.locator)
+						if err != nil {
+							return err
+						}
+						localLocator[seg.locator] = loc
 					}
-					localLocator[seg.locator] = loc
+					seg.locator = loc
+					node.segments[idx] = seg
+				case *memSegment:
+					if seg.Len() > maxBlockSize/2 {
+						goCommit([]fnSegmentRef{{node, idx}}, seg.Len())
+						continue
+					}
+					if pendingLen+seg.Len() > maxBlockSize {
+						goCommit(pending, pendingLen)
+						pending = nil
+						pendingLen = 0
+					}
+					pending = append(pending, fnSegmentRef{node, idx})
+					pendingLen += seg.Len()
+				default:
+					panic(fmt.Sprintf("can't sync segment type %T", seg))
 				}
-				seg.locator = loc
-				fn.segments[idx] = seg
-			case *memSegment:
-				if seg.Len() > maxBlockSize/2 {
-					goCommit([]fnSegmentRef{{fn, idx}})
-					continue
-				}
-				if pendingLen+seg.Len() > maxBlockSize {
-					goCommit(pending)
-					pending = nil
-					pendingLen = 0
-				}
-				pending = append(pending, fnSegmentRef{fn, idx})
-				pendingLen += seg.Len()
-			default:
-				panic(fmt.Sprintf("can't sync segment type %T", seg))
 			}
 		}
 	}
-	goCommit(pending)
+	if opts.shortBlocks {
+		goCommit(pending, pendingLen)
+	}
 	return cg.Wait()
 }
 
 // caller must have write lock.
-func (dn *dirnode) marshalManifest(ctx context.Context, prefix string, throttle *throttle) (string, error) {
+func (dn *dirnode) memorySize() (size int64) {
+	for _, name := range dn.sortedNames() {
+		node := dn.inodes[name]
+		node.Lock()
+		defer node.Unlock()
+		switch node := node.(type) {
+		case *dirnode:
+			size += node.memorySize()
+		case *filenode:
+			for _, seg := range node.segments {
+				switch seg := seg.(type) {
+				case *memSegment:
+					size += int64(seg.Len())
+				}
+			}
+		}
+	}
+	return
+}
+
+// caller must have write lock.
+func (dn *dirnode) sortedNames() []string {
+	names := make([]string, 0, len(dn.inodes))
+	for name := range dn.inodes {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
+}
+
+// caller must have write lock.
+func (dn *dirnode) marshalManifest(ctx context.Context, prefix string) (string, error) {
 	cg := newContextGroup(ctx)
 	defer cg.Cancel()
 
@@ -720,11 +886,7 @@ func (dn *dirnode) marshalManifest(ctx context.Context, prefix string, throttle 
 		return manifestEscape(prefix) + " d41d8cd98f00b204e9800998ecf8427e+0 0:0:\\056\n", nil
 	}
 
-	names := make([]string, 0, len(dn.inodes))
-	for name := range dn.inodes {
-		names = append(names, name)
-	}
-	sort.Strings(names)
+	names := dn.sortedNames()
 
 	// Wait for children to finish any pending write operations
 	// before locking them.
@@ -756,7 +918,7 @@ func (dn *dirnode) marshalManifest(ctx context.Context, prefix string, throttle 
 	for i, name := range dirnames {
 		i, name := i, name
 		cg.Go(func() error {
-			txt, err := dn.inodes[name].(*dirnode).marshalManifest(cg.Context(), prefix+"/"+name, throttle)
+			txt, err := dn.inodes[name].(*dirnode).marshalManifest(cg.Context(), prefix+"/"+name)
 			subdirs[i] = txt
 			return err
 		})
@@ -772,7 +934,7 @@ func (dn *dirnode) marshalManifest(ctx context.Context, prefix string, throttle 
 
 		var fileparts []filepart
 		var blocks []string
-		if err := dn.sync(cg.Context(), throttle, names); err != nil {
+		if err := dn.flush(cg.Context(), filenames, flushOpts{sync: true, shortBlocks: true}); err != nil {
 			return err
 		}
 		for _, name := range filenames {
@@ -805,7 +967,7 @@ func (dn *dirnode) marshalManifest(ctx context.Context, prefix string, throttle 
 				default:
 					// This can't happen: we
 					// haven't unlocked since
-					// calling sync().
+					// calling flush(sync=true).
 					panic(fmt.Sprintf("can't marshal segment type %T", seg))
 				}
 			}

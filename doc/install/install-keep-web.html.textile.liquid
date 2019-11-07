@@ -100,7 +100,7 @@ server {
 If you restrict access to your Arvados services based on network topology -- for example, your proxy server is not reachable from the public internet -- additional proxy configuration might be needed to thwart cross-site scripting attacks that would circumvent your restrictions. Read the "'Intranet mode' section of the Keep-web documentation":https://godoc.org/github.com/curoverse/arvados/services/keep-web#hdr-Intranet_mode now.
 {% include 'notebox_end' %}
 
-h3. Configure DNS
+h3(#dns). Configure DNS
 
 Configure your DNS servers so the following names resolve to your Nginx proxy's public IP address.
 * @download.uuid_prefix.your.domain@

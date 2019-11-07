@@ -283,6 +283,10 @@ sanity_checks() {
       # needed for pkgdown, builds R SDK doc pages
       which pandoc || fatal "No pandoc. Try: apt-get install pandoc"
     fi
+    echo 'procs with /dev/fuse open:'
+    find /proc/*/fd -lname /dev/fuse 2>/dev/null | cut -d/ -f3 | xargs --no-run-if-empty ps -lywww
+    echo 'grep fuse /proc/self/mountinfo:'
+    grep fuse /proc/self/mountinfo
 }
 
 rotate_logfile() {

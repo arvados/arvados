@@ -8,10 +8,13 @@ import (
 	"net/http"
 )
 
+const sniffBytes = 1024
+
 type ResponseWriter interface {
 	http.ResponseWriter
 	WroteStatus() int
 	WroteBodyBytes() int
+	Sniffed() []byte
 }
 
 // responseWriter wraps http.ResponseWriter and exposes the status
@@ -19,9 +22,10 @@ type ResponseWriter interface {
 // error.
 type responseWriter struct {
 	http.ResponseWriter
-	wroteStatus    int   // Last status given to WriteHeader()
+	wroteStatus    int   // First status given to WriteHeader()
 	wroteBodyBytes int   // Bytes successfully written
 	err            error // Last error returned from Write()
+	sniffed        []byte
 }
 
 func WrapResponseWriter(orig http.ResponseWriter) ResponseWriter {
@@ -36,13 +40,20 @@ func (w *responseWriter) CloseNotify() <-chan bool {
 }
 
 func (w *responseWriter) WriteHeader(s int) {
-	w.wroteStatus = s
+	if w.wroteStatus == 0 {
+		w.wroteStatus = s
+	}
+	// ...else it's too late to change the status seen by the
+	// client -- but we call the wrapped WriteHeader() anyway so
+	// it can log a warning.
 	w.ResponseWriter.WriteHeader(s)
 }
 
 func (w *responseWriter) Write(data []byte) (n int, err error) {
 	if w.wroteStatus == 0 {
 		w.WriteHeader(http.StatusOK)
+	} else if w.wroteStatus >= 400 {
+		w.sniff(data)
 	}
 	n, err = w.ResponseWriter.Write(data)
 	w.wroteBodyBytes += n
@@ -60,4 +71,18 @@ func (w *responseWriter) WroteBodyBytes() int {
 
 func (w *responseWriter) Err() error {
 	return w.err
+}
+
+func (w *responseWriter) sniff(data []byte) {
+	max := sniffBytes - len(w.sniffed)
+	if max <= 0 {
+		return
+	} else if max < len(data) {
+		data = data[:max]
+	}
+	w.sniffed = append(w.sniffed, data...)
+}
+
+func (w *responseWriter) Sniffed() []byte {
+	return w.sniffed
 }

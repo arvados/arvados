@@ -34,6 +34,11 @@ if ! test -s /var/lib/arvados/management_token ; then
 fi
 management_token=$(cat /var/lib/arvados/management_token)
 
+if ! test -s /var/lib/arvados/system_root_token ; then
+    ruby -e 'puts rand(2**400).to_s(36)' > /var/lib/arvados/system_root_token
+fi
+system_root_token=$(cat /var/lib/arvados/system_root_token)
+
 if ! test -s /var/lib/arvados/sso_app_secret ; then
     ruby -e 'puts rand(2**400).to_s(36)' > /var/lib/arvados/sso_app_secret
 fi
@@ -68,6 +73,7 @@ fi
 cat >/var/lib/arvados/cluster_config.yml <<EOF
 Clusters:
   ${uuid_prefix}:
+    SystemRootToken: $system_root_token
     ManagementToken: $management_token
     Services:
       RailsAPI:

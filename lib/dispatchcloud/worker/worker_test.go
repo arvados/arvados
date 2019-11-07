@@ -25,6 +25,7 @@ func (suite *WorkerSuite) TestProbeAndUpdate(c *check.C) {
 	bootTimeout := time.Minute
 	probeTimeout := time.Second
 
+	ac := arvados.NewClientFromEnv()
 	is, err := (&test.StubDriver{}).InstanceSet(nil, "test-instance-set-id", nil, logger)
 	c.Assert(err, check.IsNil)
 	inst, err := is.Create(arvados.InstanceType{}, "", nil, "echo InitCommand", nil)
@@ -192,6 +193,7 @@ func (suite *WorkerSuite) TestProbeAndUpdate(c *check.C) {
 			"crunch-run --list": trial.respRun,
 		}
 		wp := &Pool{
+			arvClient:        ac,
 			newExecutor:      func(cloud.Instance) Executor { return exr },
 			bootProbeCommand: "bootprobe",
 			timeoutBooting:   bootTimeout,

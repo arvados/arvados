@@ -11,11 +11,12 @@ export npm_config_cache_min=Infinity
 export R_LIBS=/var/lib/Rlibs
 export HOME=$(getent passwd arvbox | cut -d: -f6)
 
+defaultdev=$(/sbin/ip route|awk '/default/ { print $5 }')
+containerip=$(ip addr show $defaultdev | grep 'inet ' | sed 's/ *inet \(.*\)\/.*/\1/')
 if test -s /var/run/localip_override ; then
     localip=$(cat /var/run/localip_override)
 else
-    defaultdev=$(/sbin/ip route|awk '/default/ { print $5 }')
-    localip=$(ip addr show $defaultdev | grep 'inet ' | sed 's/ *inet \(.*\)\/.*/\1/')
+    localip=$containerip
 fi
 
 root_cert=/var/lib/arvados/root-cert.pem

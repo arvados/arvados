@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/url"
 	"reflect"
 	"runtime"
 	"sync"
@@ -24,9 +25,17 @@ type APIStub struct {
 	mtx   sync.Mutex
 }
 
+// BaseURL implements federation.backend
+func (as *APIStub) BaseURL() url.URL {
+	return url.URL{Scheme: "https", Host: "apistub.example.com"}
+}
 func (as *APIStub) ConfigGet(ctx context.Context) (json.RawMessage, error) {
 	as.appendCall(as.ConfigGet, ctx, nil)
 	return nil, as.Error
+}
+func (as *APIStub) Login(ctx context.Context, options arvados.LoginOptions) (arvados.LoginResponse, error) {
+	as.appendCall(as.Login, ctx, options)
+	return arvados.LoginResponse{}, as.Error
 }
 func (as *APIStub) CollectionCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Collection, error) {
 	as.appendCall(as.CollectionCreate, ctx, options)

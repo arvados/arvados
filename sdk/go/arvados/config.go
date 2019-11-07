@@ -132,8 +132,10 @@ type Cluster struct {
 		Repositories string
 	}
 	Login struct {
-		ProviderAppSecret  string
+		GoogleClientID     string
+		GoogleClientSecret string
 		ProviderAppID      string
+		ProviderAppSecret  string
 		LoginCluster       string
 		RemoteTokenRefresh Duration
 	}
@@ -208,6 +210,7 @@ type Cluster struct {
 		UserProfileFormMessage string
 		VocabularyURL          string
 		WelcomePageHTML        string
+		InactivePageHTML       string
 	}
 
 	EnableBetaController14287 bool

@@ -59,14 +59,14 @@ func (s *FederationSuite) SetUpTest(c *check.C) {
 	s.fed = New(s.cluster)
 }
 
-func (s *FederationSuite) addDirectRemote(c *check.C, id string, backend arvados.API) {
+func (s *FederationSuite) addDirectRemote(c *check.C, id string, backend backend) {
 	s.cluster.RemoteClusters[id] = arvados.RemoteCluster{
 		Host: "in-process.local",
 	}
 	s.fed.remotes[id] = backend
 }
 
-func (s *FederationSuite) addHTTPRemote(c *check.C, id string, backend arvados.API) {
+func (s *FederationSuite) addHTTPRemote(c *check.C, id string, backend backend) {
 	srv := httpserver.Server{Addr: ":"}
 	srv.Handler = router.New(backend)
 	c.Check(srv.Start(), check.IsNil)
@@ -115,6 +115,9 @@ func (cl *collectionLister) CollectionList(ctx context.Context, options arvados.
 	cl.APIStub.CollectionList(ctx, options)
 	for _, c := range cl.ItemsToReturn {
 		if cl.MaxPageSize > 0 && len(resp.Items) >= cl.MaxPageSize {
+			break
+		}
+		if options.Limit >= 0 && len(resp.Items) >= options.Limit {
 			break
 		}
 		if cl.matchFilters(c, options.Filters) {
@@ -171,6 +174,15 @@ type listTrial struct {
 	expectUUIDs  []string
 	expectCalls  []int // number of API calls to backends
 	expectStatus int
+}
+
+func (s *CollectionListSuite) TestCollectionListNoUUIDFilters(c *check.C) {
+	s.test(c, listTrial{
+		count:       "none",
+		limit:       1,
+		expectUUIDs: []string{s.uuids[0][0]},
+		expectCalls: []int{1, 0, 0},
+	})
 }
 
 func (s *CollectionListSuite) TestCollectionListOneLocal(c *check.C) {
@@ -433,6 +445,6 @@ func (s *CollectionListSuite) test(c *check.C, trial listTrial) {
 			continue
 		}
 		opts := calls[0].Options.(arvados.ListOptions)
-		c.Check(opts.Limit, check.Equals, -1)
+		c.Check(opts.Limit, check.Equals, trial.limit)
 	}
 }

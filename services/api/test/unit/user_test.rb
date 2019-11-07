@@ -843,7 +843,7 @@ class UserTest < ActiveSupport::TestCase
     assert_equal "Baratheon", nbs.last_name
   end
 
-  test "fail when email address is ambigious" do
+  test "fail when email address is ambiguous" do
     User.register({"email" => "active-user@arvados.local"})
     u = User.register({"email" => "never-before-seen-user@arvados.local"})
     u.email = "active-user@arvados.local"

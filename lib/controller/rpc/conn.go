@@ -32,6 +32,7 @@ func PassthroughTokenProvider(ctx context.Context) ([]string, error) {
 }
 
 type Conn struct {
+	SendHeader    http.Header
 	clusterID     string
 	httpClient    http.Client
 	baseURL       url.URL
@@ -61,8 +62,11 @@ func NewConn(clusterID string, url *url.URL, insecure bool, tp TokenProvider) *C
 		}
 	}
 	return &Conn{
-		clusterID:     clusterID,
-		httpClient:    http.Client{Transport: transport},
+		clusterID: clusterID,
+		httpClient: http.Client{
+			CheckRedirect: func(req *http.Request, via []*http.Request) error { return http.ErrUseLastResponse },
+			Transport:     transport,
+		},
 		baseURL:       *url,
 		tokenProvider: tp,
 	}
@@ -70,9 +74,10 @@ func NewConn(clusterID string, url *url.URL, insecure bool, tp TokenProvider) *C
 
 func (conn *Conn) requestAndDecode(ctx context.Context, dst interface{}, ep arvados.APIEndpoint, body io.Reader, opts interface{}) error {
 	aClient := arvados.Client{
-		Client:  &conn.httpClient,
-		Scheme:  conn.baseURL.Scheme,
-		APIHost: conn.baseURL.Host,
+		Client:     &conn.httpClient,
+		Scheme:     conn.baseURL.Scheme,
+		APIHost:    conn.baseURL.Host,
+		SendHeader: conn.SendHeader,
 	}
 	tokens, err := conn.tokenProvider(ctx)
 	if err != nil {
@@ -121,11 +126,39 @@ func (conn *Conn) requestAndDecode(ctx context.Context, dst interface{}, ep arva
 	return aClient.RequestAndDecodeContext(ctx, dst, ep.Method, path, body, params)
 }
 
+func (conn *Conn) BaseURL() url.URL {
+	return conn.baseURL
+}
+
 func (conn *Conn) ConfigGet(ctx context.Context) (json.RawMessage, error) {
 	ep := arvados.EndpointConfigGet
 	var resp json.RawMessage
 	err := conn.requestAndDecode(ctx, &resp, ep, nil, nil)
 	return resp, err
+}
+
+func (conn *Conn) Login(ctx context.Context, options arvados.LoginOptions) (arvados.LoginResponse, error) {
+	ep := arvados.EndpointLogin
+	var resp arvados.LoginResponse
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	resp.RedirectLocation = conn.relativeToBaseURL(resp.RedirectLocation)
+	return resp, err
+}
+
+// If the given location is a valid URL and its origin is the same as
+// conn.baseURL, return it as a relative URL. Otherwise, return it
+// unmodified.
+func (conn *Conn) relativeToBaseURL(location string) string {
+	u, err := url.Parse(location)
+	if err == nil && u.Scheme == conn.baseURL.Scheme && strings.ToLower(u.Host) == strings.ToLower(conn.baseURL.Host) {
+		u.Opaque = ""
+		u.Scheme = ""
+		u.User = nil
+		u.Host = ""
+		return u.String()
+	} else {
+		return location
+	}
 }
 
 func (conn *Conn) CollectionCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Collection, error) {
@@ -278,6 +311,18 @@ func (conn *Conn) SpecimenDelete(ctx context.Context, options arvados.DeleteOpti
 func (conn *Conn) APIClientAuthorizationCurrent(ctx context.Context, options arvados.GetOptions) (arvados.APIClientAuthorization, error) {
 	ep := arvados.EndpointAPIClientAuthorizationCurrent
 	var resp arvados.APIClientAuthorization
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+type UserSessionCreateOptions struct {
+	AuthInfo map[string]interface{} `json:"auth_info"`
+	ReturnTo string                 `json:"return_to"`
+}
+
+func (conn *Conn) UserSessionCreate(ctx context.Context, options UserSessionCreateOptions) (arvados.LoginResponse, error) {
+	ep := arvados.APIEndpoint{Method: "POST", Path: "auth/controller/callback"}
+	var resp arvados.LoginResponse
 	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
 	return resp, err
 }

@@ -130,8 +130,10 @@ var whitelist = map[string]bool{
 	"InstanceTypes.*":                              true,
 	"InstanceTypes.*.*":                            true,
 	"Login":                                        true,
-	"Login.ProviderAppSecret":                      false,
+	"Login.GoogleClientID":                         false,
+	"Login.GoogleClientSecret":                     false,
 	"Login.ProviderAppID":                          false,
+	"Login.ProviderAppSecret":                      false,
 	"Login.LoginCluster":                           true,
 	"Login.RemoteTokenRefresh":                     true,
 	"Mail":                                         false,
@@ -208,6 +210,7 @@ var whitelist = map[string]bool{
 	"Workbench.UserProfileFormMessage":             true,
 	"Workbench.VocabularyURL":                      true,
 	"Workbench.WelcomePageHTML":                    true,
+	"Workbench.InactivePageHTML":                   true,
 }
 
 func redactUnsafe(m map[string]interface{}, mPrefix, lookupPrefix string) error {

@@ -493,8 +493,21 @@ Clusters:
     Login:
       # These settings are provided by your OAuth2 provider (eg
       # Google) used to perform upstream authentication.
-      ProviderAppSecret: ""
       ProviderAppID: ""
+      ProviderAppSecret: ""
+
+      # (Experimental) Authenticate with Google, bypassing the
+      # SSO-provider gateway service. Use the Google Cloud console to
+      # generate the Client ID and secret (APIs and Services >
+      # Credentials > Create credentials > OAuth client ID > Web
+      # application) and add your controller's /login URL (e.g.,
+      # "https://zzzzz.example.com/login") as an authorized redirect
+      # URL.
+      #
+      # Requires EnableBetaController14287. ProviderAppID must be
+      # blank.
+      GoogleClientID: ""
+      GoogleClientSecret: ""
 
       # The cluster ID to delegate the user database.  When set,
       # logins on this cluster will be redirected to the login cluster
@@ -1060,7 +1073,7 @@ Clusters:
       # Workbench welcome screen, this is HTML text that will be
       # incorporated directly onto the page.
       WelcomePageHTML: |
-        <img src="arvados-logo-big.png" style="width: 20%; float: right; padding: 1em;" />
+        <img src="/arvados-logo-big.png" style="width: 20%; float: right; padding: 1em;" />
         <h2>Please log in.</h2>
 
         <p>The "Log in" button below will show you a sign-in
@@ -1074,6 +1087,13 @@ Clusters:
         <i>Arvados Workbench uses your name and email address only for
         identification, and does not retrieve any other personal
         information.</i>
+
+      InactivePageHTML: |
+        <img src="/arvados-logo-big.png" style="width: 20%; float: right; padding: 1em;" />
+        <h3>Hi! You're logged in, but...</h3>
+        <p>Your account is inactive.</p>
+        <p>An administrator must activate your account before you can get
+        any further.</p>
 
     # Use experimental controller code (see https://dev.arvados.org/issues/14287)
     EnableBetaController14287: false

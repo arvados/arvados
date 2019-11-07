@@ -95,7 +95,7 @@ type ContainerRunner struct {
 	Docker ThinDockerClient
 
 	// Dispatcher client is initialized with the Dispatcher token.
-	// This is a priviledged token used to manage container status
+	// This is a privileged token used to manage container status
 	// and logs.
 	//
 	// We have both dispatcherClient and DispatcherArvClient
@@ -850,21 +850,42 @@ func (runner *ContainerRunner) LogContainerRecord() error {
 	return err
 }
 
-// LogNodeRecord logs arvados#node record corresponding to the current host.
+// LogNodeRecord logs the current host's InstanceType config entry (or
+// the arvados#node record, if running via crunch-dispatch-slurm).
 func (runner *ContainerRunner) LogNodeRecord() error {
-	hostname := os.Getenv("SLURMD_NODENAME")
-	if hostname == "" {
-		hostname, _ = os.Hostname()
-	}
-	_, err := runner.logAPIResponse("node", "nodes", map[string]interface{}{"filters": [][]string{{"hostname", "=", hostname}}}, func(resp interface{}) {
-		// The "info" field has admin-only info when obtained
-		// with a privileged token, and should not be logged.
-		node, ok := resp.(map[string]interface{})
-		if ok {
-			delete(node, "info")
+	if it := os.Getenv("InstanceType"); it != "" {
+		// Dispatched via arvados-dispatch-cloud. Save
+		// InstanceType config fragment received from
+		// dispatcher on stdin.
+		w, err := runner.LogCollection.OpenFile("node.json", os.O_CREATE|os.O_WRONLY, 0666)
+		if err != nil {
+			return err
 		}
-	})
-	return err
+		defer w.Close()
+		_, err = io.WriteString(w, it)
+		if err != nil {
+			return err
+		}
+		return w.Close()
+	} else {
+		// Dispatched via crunch-dispatch-slurm. Look up
+		// apiserver's node record corresponding to
+		// $SLURMD_NODENAME.
+		hostname := os.Getenv("SLURMD_NODENAME")
+		if hostname == "" {
+			hostname, _ = os.Hostname()
+		}
+		_, err := runner.logAPIResponse("node", "nodes", map[string]interface{}{"filters": [][]string{{"hostname", "=", hostname}}}, func(resp interface{}) {
+			// The "info" field has admin-only info when
+			// obtained with a privileged token, and
+			// should not be logged.
+			node, ok := resp.(map[string]interface{})
+			if ok {
+				delete(node, "info")
+			}
+		})
+		return err
+	}
 }
 
 func (runner *ContainerRunner) logAPIResponse(label, path string, params map[string]interface{}, munge func(interface{})) (logged bool, err error) {
