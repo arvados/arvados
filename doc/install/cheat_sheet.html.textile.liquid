@@ -9,52 +9,45 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-h3. Workbench: user management
-
-As an Admin user, use the gear icon on the top right to visit the Users page. From there, use the 'Add new user' button to create a new user. Alternatively, visit an existing user with the 'Show' button next to the user's name. Then use the 'Admin' tab and click the 'Setup' button to activate the user, and create a virtual machine login as well as git repository for them.
-
-h3. CLI setup
+Initial setup
 
 <pre>
 ARVADOS_API_HOST={{ site.arvados_api_host }}
 ARVADOS_API_TOKEN=1234567890qwertyuiopasdfghjklzxcvbnm1234567890zzzz
 </pre>
 
-h3. CLI: Create VM
+In these examples, @x1u39-tpzed-3kz0nwtjehhl0u4@ is the sample user account.  Replace with the uuid of the user you wish to manipulate.
+
+See "user management":{{site.baseurl}}/admin/activation.html for an overview of how to use these commands.
+
+h3. Setup a user
+
+This creates a default git repository and VM login.  Enables user to self-activate using Workbench.
 
 <pre>
-arv virtual_machine create --virtual-machine '{"hostname":"xxxxxxxchangeme.example.com"}'
+arv user setup --uuid x1u39-tpzed-3kz0nwtjehhl0u4
 </pre>
 
-h3. CLI: Activate user
+h3. Deactivate user
+
+<pre>
+arv user unsetup --uuid x1u39-tpzed-3kz0nwtjehhl0u4
+</pre>
+
+When deactivating a user, you may also want to "reassign ownership of their data":{{site.baseurl}}/admin/reassign-ownership.html .
+
+h3. Directly activate user
+
+<pre>
+arv user update --uuid "x1u39-tpzed-3kz0nwtjehhl0u4" --user '{"is_active":true}'
+</pre>
 
 Note this bypasses user agreements checks, and does not set up the user with a default git repository or VM login.
 
-<pre>
-user_uuid=xxxxxxxchangeme
 
-arv user update --uuid "$user_uuid" --user '{"is_active":true}'
-</pre>
+h2. Permissions
 
-h3. CLI: Setup a user
-
-This creates a default git repository and VM login.
-
-<pre>
-user_uuid=xxxxxxxchangeme
-
-arv user setup --uuid "$user_uuid"
-</pre>
-
-h3. CLI: Deactivate user
-
-<pre>
-user_uuid=xxxxxxxchangeme
-
-arv user unsetup --uuid "$user_uuid"
-</pre>
-
-h3. User &rarr; VM
+h3. VM login
 
 Give @$user_uuid@ permission to log in to @$vm_uuid@ as @$target_username@
 
@@ -74,7 +67,7 @@ read -rd $'\000' newlink <<EOF; arv link create --link "$newlink"
 EOF
 </pre>
 
-h3. CLI: User &rarr; repo
+h3. Git repository
 
 Give @$user_uuid@ permission to commit to @$repo_uuid@ as @$repo_username@
 

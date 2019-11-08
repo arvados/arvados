@@ -32,7 +32,7 @@ $ arv --format=uuid group create --group '{"group_class": "project", "name": "Da
 x1u39-j7d0g-mczqiguhil13083
 </pre>
 
-h3. Step 3: Reassign data from the 'old user' to the new user and project
+h3. Step 3: Reassign data from the old user to the new user and project
 
 The @user merge@ method reassigns data from the old user to the new user.
 
@@ -42,6 +42,10 @@ $ arv user merge --old-user-uuid=x1u39-tpzed-3kz0nwtjehhl0u4 \
   --new-owner-uuid=x1u39-j7d0g-mczqiguhil13083
 </pre>
 
-After reassigning data, use "unsetup to deactivate the old user's account.":activation.html#deactivating_users
+After reassigning data, use @unsetup@ to deactivate the old user's account.
+
+<pre>
+$ arv user unsetup --uuid=x1u39-tpzed-3kz0nwtjehhl0u4
+</pre>
 
 Note that authorization credentials (API tokens, ssh keys) are *not* transferred to the new user, as this would potentially give the old user access to the new user's account.
