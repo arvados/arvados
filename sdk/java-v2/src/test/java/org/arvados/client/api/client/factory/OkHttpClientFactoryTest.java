@@ -32,7 +32,7 @@ public class OkHttpClientFactoryTest extends ArvadosClientMockedWebServerTest {
     public void secureOkHttpClientIsCreated() throws Exception {
 
         // given
-        OkHttpClientFactory factory = OkHttpClientFactory.builder().build();
+        OkHttpClientFactory factory = OkHttpClientFactory.INSTANCE;
         // * configure HTTPS server
         SSLSocketFactory sf = getSSLSocketFactoryWithSelfSignedCertificate();
         server.useHttps(sf, false);
@@ -50,7 +50,7 @@ public class OkHttpClientFactoryTest extends ArvadosClientMockedWebServerTest {
     @Test
     public void insecureOkHttpClientIsCreated() throws Exception {
         // given
-        OkHttpClientFactory factory = OkHttpClientFactory.builder().build();
+        OkHttpClientFactory factory = OkHttpClientFactory.INSTANCE;
         // * configure HTTPS server
         SSLSocketFactory sf = getSSLSocketFactoryWithSelfSignedCertificate();
         server.useHttps(sf, false);
