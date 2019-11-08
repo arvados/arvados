@@ -16,6 +16,9 @@ task :generate => [ :realclean, 'sdk/python/arvados/index.html', 'sdk/R/arvados/
 end
 
 file "sdk/python/arvados/index.html" do |t|
+  if File.exists? "no-sdk"
+    next
+  end
   `which epydoc`
   if $? == 0
     STDERR.puts `epydoc --html --parse-only -o sdk/python/arvados ../sdk/python/arvados/ 2>&1`
@@ -26,6 +29,9 @@ file "sdk/python/arvados/index.html" do |t|
 end
 
 file "sdk/R/arvados/index.html" do |t|
+  if File.exists? "no-sdk"
+    next
+  end
   `which R`
   if $? == 0
     tgt = Dir.pwd
@@ -88,6 +94,9 @@ EOF
 end
 
 file "sdk/java-v2/javadoc/index.html" do |t|
+  if File.exists? "no-sdk"
+    next
+  end
   `which java`
   if $? == 0
     `which gradle`
