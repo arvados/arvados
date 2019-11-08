@@ -12,20 +12,24 @@ import { navigateTo, navigateToWorkflows } from '~/store/navigation/navigation-a
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
 import { SnackbarKind } from '../snackbar/snackbar-actions';
 import { showWorkflowDetails } from '~/store/workflow-panel/workflow-panel-actions';
+import { loadSubprocessPanel } from "../subprocess-panel/subprocess-panel-actions";
 
-export const procesPanelActions = unionize({
+export const processPanelActions = unionize({
+    SET_PROCESS_PANEL_CONTAINER_REQUEST_UUID: ofType<string>(),
     SET_PROCESS_PANEL_FILTERS: ofType<string[]>(),
     TOGGLE_PROCESS_PANEL_FILTER: ofType<string>(),
 });
 
-export type ProcessPanelAction = UnionOf<typeof procesPanelActions>;
+export type ProcessPanelAction = UnionOf<typeof processPanelActions>;
 
-export const toggleProcessPanelFilter = procesPanelActions.TOGGLE_PROCESS_PANEL_FILTER;
+export const toggleProcessPanelFilter = processPanelActions.TOGGLE_PROCESS_PANEL_FILTER;
 
 export const loadProcessPanel = (uuid: string) =>
     (dispatch: Dispatch) => {
+        dispatch<ProcessPanelAction>(processPanelActions.SET_PROCESS_PANEL_CONTAINER_REQUEST_UUID(uuid));
         dispatch<any>(loadProcess(uuid));
         dispatch(initProcessPanelFilters);
+        dispatch<any>(loadSubprocessPanel());
     };
 
 export const navigateToOutput = (uuid: string) =>
@@ -44,7 +48,7 @@ export const openWorkflow = (uuid: string) =>
         dispatch<any>(showWorkflowDetails(uuid));
     };
 
-export const initProcessPanelFilters = procesPanelActions.SET_PROCESS_PANEL_FILTERS([
+export const initProcessPanelFilters = processPanelActions.SET_PROCESS_PANEL_FILTERS([
     ProcessStatus.QUEUED,
     ProcessStatus.COMPLETED,
     ProcessStatus.FAILED,

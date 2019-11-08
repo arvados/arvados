@@ -6,8 +6,6 @@ import { Dispatch } from "redux";
 import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
 import { updateResources } from '~/store/resources/resources-actions';
-import { FilterBuilder } from '~/services/api/filter-builder';
-import { ContainerRequestResource } from '~/models/container-request';
 import { Process } from './process';
 import { dialogActions } from '~/store/dialog/dialog-actions';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
@@ -25,42 +23,16 @@ export const loadProcess = (containerRequestUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<Process> => {
         const response = await services.workflowService.list();
         dispatch(runProcessPanelActions.SET_WORKFLOWS(response.items));
+
         const containerRequest = await services.containerRequestService.get(containerRequestUuid);
         dispatch<any>(updateResources([containerRequest]));
+
         if (containerRequest.containerUuid) {
             const container = await services.containerService.get(containerRequest.containerUuid);
             dispatch<any>(updateResources([container]));
-            await dispatch<any>(loadSubprocesses(containerRequest.containerUuid));
             return { containerRequest, container };
         }
         return { containerRequest };
-    };
-
-export const loadSubprocesses = (containerUuid: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const containerRequests = await dispatch<any>(loadContainerRequests(
-            new FilterBuilder().addEqual('requesting_container_uuid', containerUuid).getFilters()
-        )) as ContainerRequestResource[];
-
-        const containerUuids: string[] = containerRequests.reduce((uuids, { containerUuid }) =>
-            containerUuid
-                ? [...uuids, containerUuid]
-                : uuids, []);
-
-        if (containerUuids.length > 0) {
-            await dispatch<any>(loadContainers(
-                new FilterBuilder().addIn('uuid', containerUuids).getFilters()
-            ));
-        }
-    };
-
-const MAX_AMOUNT_OF_SUBPROCESSES = 10000;
-
-export const loadContainerRequests = (filters: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const { items } = await services.containerRequestService.list({ filters, limit: MAX_AMOUNT_OF_SUBPROCESSES });
-        dispatch<any>(updateResources(items));
-        return items;
     };
 
 export const loadContainers = (filters: string) =>
@@ -125,7 +97,7 @@ const getInputs = (data: any) => {
                 default: data.mounts[MOUNT_PATH_CWL_INPUT].content[it.id],
                 doc: it.doc
             }
-    )
+        )
     ) : [];
 };
 

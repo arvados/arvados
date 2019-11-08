@@ -9,7 +9,7 @@ import { DefaultView } from '~/components/default-view/default-view';
 import { ProcessIcon } from '~/components/icon/icon';
 import { Process } from '~/store/processes/process';
 import { SubprocessesCard } from './subprocesses-card';
-import { ProcessSubprocesses } from '~/views/process-panel/process-subprocesses';
+import { SubprocessPanel } from '~/views/subprocess-panel/subprocess-panel';
 import { SubprocessFilterDataProps } from '~/components/subprocess-filter/subprocess-filter';
 
 export interface ProcessPanelRootDataProps {
@@ -41,7 +41,7 @@ export const ProcessPanelRoot = ({ process, ...props }: ProcessPanelRootProps) =
                     navigateToOutput={props.navigateToOutput}
                     openWorkflow={props.navigateToWorkflow}
                     cancelProcess={props.cancelProcess}
-            />
+                />
             </Grid>
             <Grid item sm={12} md={5}>
                 <SubprocessesCard
@@ -50,10 +50,8 @@ export const ProcessPanelRoot = ({ process, ...props }: ProcessPanelRootProps) =
                     onToggle={props.onToggle}
                 />
             </Grid>
-            <Grid item xs={12}>
-                <ProcessSubprocesses
-                    subprocesses={props.subprocesses}
-                    onContextMenu={props.onContextMenu} />
+            <Grid item sm={12} md={12}>
+                <SubprocessPanel />
             </Grid>
         </Grid>
         : <Grid container

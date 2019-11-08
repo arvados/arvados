@@ -445,7 +445,6 @@ export const ProcessStatus = compose(
         const status = props.process ? getProcessStatus(props.process) : "-";
         return <Typography
             noWrap
-            align="center"
             style={{ color: getProcessStatusColor(status, props.theme) }} >
             {status}
         </Typography>;
