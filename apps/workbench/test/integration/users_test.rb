@@ -86,7 +86,7 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     click_link 'Advanced'
     click_link 'Metadata'
-    assert page.has_text? 'can_login' # make sure page is rendered / ready
+    assert page.has_text? 'can_read' # make sure page is rendered / ready
     assert page.has_no_text? 'VirtualMachine:'
   end
 
@@ -105,7 +105,7 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     # Setup user
     click_link 'Admin'
-    assert page.has_text? 'This button sets up an inactive user'
+    assert page.has_text? 'This button sets up a user'
 
     click_link 'Setup account for Active User'
 
@@ -220,7 +220,7 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     # Setup user
     click_link 'Admin'
-    assert page.has_text? 'This button sets up an inactive user'
+    assert page.has_text? 'This button sets up a user'
 
     click_link 'Add new group'
 

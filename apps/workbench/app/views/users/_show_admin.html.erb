@@ -6,9 +6,10 @@ SPDX-License-Identifier: AGPL-3.0 %>
   <div class="col-md-6">
 
     <p>
-      This button sets up an inactive user.  After setup, they will be able to log in.
-      This dialog box also allows you to optionally setup a shell account for this user.
-      The login name is automatically generated from the user's e-mail address.
+      This button sets up a user.  After setup, they will be able use
+      Arvados.  This dialog box also allows you to optionally set up a
+      shell account for this user.  The login name is automatically
+      generated from the user's e-mail address.
     </p>
 
     <%= link_to "Setup account #{'for ' if @object.full_name.present?} #{@object.full_name}", setup_popup_user_url(id: @object.uuid),  {class: 'btn btn-primary', :remote => true, 'data-toggle' =>  "modal", 'data-target' => '#user-setup-modal-window'}  %>
