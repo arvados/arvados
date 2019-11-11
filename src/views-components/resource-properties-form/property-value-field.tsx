@@ -7,7 +7,7 @@ import { change, WrappedFieldProps, WrappedFieldMetaProps, WrappedFieldInputProp
 import { compose } from 'redux';
 import { Autocomplete } from '~/components/autocomplete/autocomplete';
 import { Vocabulary } from '~/models/vocabulary';
-import { PROPERTY_KEY_FIELD_NAME } from '~/views-components/resource-properties-form/property-key-field';
+import { PROPERTY_KEY_FIELD_ID } from '~/views-components/resource-properties-form/property-key-field';
 import { VocabularyProp, connectVocabulary, buildProps, PropFieldSuggestion } from '~/views-components/resource-properties-form/property-field-common';
 import { TAG_VALUE_VALIDATION } from '~/validators/validators';
 import { COLLECTION_TAG_FORM_NAME } from '~/store/collection-panel/collection-panel-action';
@@ -23,7 +23,7 @@ export const PROPERTY_VALUE_FIELD_ID = 'valueID';
 
 export const PropertyValueField = compose(
     connectVocabulary,
-    formValues({ propertyKey: PROPERTY_KEY_FIELD_NAME })
+    formValues({ propertyKey: PROPERTY_KEY_FIELD_ID })
 )(
     (props: PropertyValueFieldProps) =>
         <div>
@@ -62,17 +62,12 @@ const getSuggestions = (value: string, tagKey: string, vocabulary: Vocabulary) =
     getTagValues(tagKey, vocabulary).filter(v => v.label.toLowerCase().includes(value.toLowerCase()));
 
 const isStrictTag = (tagKey: string, vocabulary: Vocabulary) => {
-    const tag = vocabulary.tags[getTagID(tagKey, vocabulary)];
+    const tag = vocabulary.tags[tagKey];
     return tag ? tag.strict : false;
 };
 
-const getTagID = (tagKeyLabel:string, vocabulary: Vocabulary) =>
-    Object.keys(vocabulary.tags).find(
-        k => vocabulary.tags[k].labels.find(
-            l => l.label === tagKeyLabel) !== undefined) || tagKeyLabel;
-
 const getTagValues = (tagKey: string, vocabulary: Vocabulary) => {
-    const tag = vocabulary.tags[getTagID(tagKey, vocabulary)];
+    const tag = vocabulary.tags[tagKey];
     const ret = tag && tag.values
         ? Object.keys(tag.values).map(
             tagValueID => tag.values![tagValueID].labels
