@@ -45,6 +45,7 @@ export const PropertyValueInput = ({ vocabulary, propertyKey, ...props }: Wrappe
         suggestions={getSuggestions(props.input.value, propertyKey, vocabulary)}
         onSelect={handleSelect(props.input, props.meta)}
         {...buildProps(props)}
+        onBlur={handleBlur(props.meta, props.input, vocabulary, propertyKey)}
     />;
 
 const getValidation = (props: PropertyValueFieldProps) =>
@@ -77,6 +78,26 @@ const getTagValues = (tagKey: string, vocabulary: Vocabulary) => {
     return ret;
 };
 
+const getTagValueID = (tagKeyID:string, tagValueLabel:string, vocabulary: Vocabulary) =>
+    (tagKeyID && vocabulary.tags[tagKeyID] && vocabulary.tags[tagKeyID].values)
+    ? Object.keys(vocabulary.tags[tagKeyID].values!).find(
+        k => vocabulary.tags[tagKeyID].values![k].labels.find(
+            l => l.label === tagValueLabel) !== undefined) || ''
+    : '';
+
+// Attempts to match a manually typed value label with a value ID, when the user
+// doesn't select the value from the suggestions list.
+const handleBlur = (
+    { dispatch }: WrappedFieldMetaProps,
+    { onBlur, value }: WrappedFieldInputProps,
+    vocabulary: Vocabulary,
+    tagKeyID: string) =>
+    () => {
+        dispatch(change(COLLECTION_TAG_FORM_NAME, PROPERTY_VALUE_FIELD_ID, getTagValueID(tagKeyID, value, vocabulary)));
+        onBlur(value);
+    };
+
+// When selecting a property value, save its ID for later usage.
 const handleSelect = (
     { onChange }: WrappedFieldInputProps,
     { dispatch }: WrappedFieldMetaProps) => {

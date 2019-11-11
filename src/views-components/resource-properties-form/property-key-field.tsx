@@ -35,6 +35,7 @@ export const PropertyKeyInput = ({ vocabulary, ...props }: WrappedFieldProps & V
         suggestions={getSuggestions(props.input.value, vocabulary)}
         onSelect={handleSelect(props.input, props.meta)}
         {...buildProps(props)}
+        onBlur={handleBlur(props.meta, props.input, vocabulary)}
     />;
 
 const getValidation = memoize(
@@ -62,6 +63,23 @@ const getTagsList = ({ tags }: Vocabulary) => {
     return ret;
 };
 
+const getTagKeyID = (tagKeyLabel:string, vocabulary: Vocabulary) =>
+    Object.keys(vocabulary.tags).find(
+        k => vocabulary.tags[k].labels.find(
+            l => l.label === tagKeyLabel) !== undefined) || '';
+
+// Attempts to match a manually typed key label with a key ID, when the user
+// doesn't select the key from the suggestions list.
+const handleBlur = (
+    { dispatch }: WrappedFieldMetaProps,
+    { onBlur, value }: WrappedFieldInputProps,
+    vocabulary: Vocabulary) =>
+    () => {
+        dispatch(change(COLLECTION_TAG_FORM_NAME, PROPERTY_KEY_FIELD_ID, getTagKeyID(value, vocabulary)));
+        onBlur(value);
+    };
+
+// When selecting a property key, save its ID for later usage.
 const handleSelect = (
     { onChange }: WrappedFieldInputProps,
     { dispatch }: WrappedFieldMetaProps) => {
