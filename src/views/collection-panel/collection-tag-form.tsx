@@ -12,6 +12,7 @@ const Form = withStyles(({ spacing }) => ({ container: { marginBottom: spacing.u
 export const CollectionTagForm = reduxForm<ResourcePropertiesFormData>({
     form: COLLECTION_TAG_FORM_NAME,
     onSubmit: (data, dispatch) => {
+        console.log('FORM SUBMIT: ', data);
         dispatch<any>(createCollectionTag(data));
         dispatch(reset(COLLECTION_TAG_FORM_NAME));
     }

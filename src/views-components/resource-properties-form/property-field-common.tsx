@@ -32,19 +32,12 @@ export const handleBlur = ({ onBlur, value }: WrappedFieldInputProps) =>
     () =>
         onBlur(value);
 
-export const handleSelect = ({ onChange }: WrappedFieldInputProps) => {
-    return (item:PropFieldSuggestion) => {
-        onChange(item.label);
-    };
-};
-
 export const buildProps = ({ input, meta }: WrappedFieldProps) => {
     return {
         value: input.value,
         onChange: input.onChange,
         onBlur: handleBlur(input),
         items: ITEMS_PLACEHOLDER,
-        onSelect: handleSelect(input),
         renderSuggestion: (item:PropFieldSuggestion) => item.label,
         error: hasError(meta),
         helperText: getErrorMsg(meta),

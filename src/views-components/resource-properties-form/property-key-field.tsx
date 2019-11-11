@@ -3,27 +3,37 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { WrappedFieldProps, Field } from 'redux-form';
+import { change, WrappedFieldProps, WrappedFieldMetaProps, WrappedFieldInputProps, Field } from 'redux-form';
 import { memoize } from 'lodash';
 import { Autocomplete } from '~/components/autocomplete/autocomplete';
 import { Vocabulary } from '~/models/vocabulary';
-import { connectVocabulary, VocabularyProp, buildProps } from '~/views-components/resource-properties-form/property-field-common';
+import { connectVocabulary, VocabularyProp, buildProps, PropFieldSuggestion } from '~/views-components/resource-properties-form/property-field-common';
 import { TAG_KEY_VALIDATION } from '~/validators/validators';
+import { COLLECTION_TAG_FORM_NAME } from '~/store/collection-panel/collection-panel-action';
 
 export const PROPERTY_KEY_FIELD_NAME = 'key';
+export const PROPERTY_KEY_FIELD_ID = 'keyID';
 
 export const PropertyKeyField = connectVocabulary(
     ({ vocabulary }: VocabularyProp) =>
-        <Field
-            name={PROPERTY_KEY_FIELD_NAME}
-            component={PropertyKeyInput}
-            vocabulary={vocabulary}
-            validate={getValidation(vocabulary)} />);
+        <div>
+            <Field
+                name={PROPERTY_KEY_FIELD_NAME}
+                component={PropertyKeyInput}
+                vocabulary={vocabulary}
+                validate={getValidation(vocabulary)} />
+            <Field
+                name={PROPERTY_KEY_FIELD_ID}
+                type='hidden'
+                component='input' />
+        </div>
+);
 
 export const PropertyKeyInput = ({ vocabulary, ...props }: WrappedFieldProps & VocabularyProp) =>
     <Autocomplete
         label='Key'
         suggestions={getSuggestions(props.input.value, vocabulary)}
+        onSelect={handleSelect(props.input, props.meta)}
         {...buildProps(props)}
     />;
 
@@ -50,4 +60,13 @@ const getTagsList = ({ tags }: Vocabulary) => {
                 : {"id": tagID, "label": tagID})
         : [];
     return ret;
+};
+
+const handleSelect = (
+    { onChange }: WrappedFieldInputProps,
+    { dispatch }: WrappedFieldMetaProps) => {
+        return (item:PropFieldSuggestion) => {
+            onChange(item.label);
+            dispatch(change(COLLECTION_TAG_FORM_NAME, PROPERTY_KEY_FIELD_ID, item.id));
+    };
 };

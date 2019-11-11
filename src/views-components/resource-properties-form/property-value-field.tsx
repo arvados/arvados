@@ -3,13 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { WrappedFieldProps, Field, formValues } from 'redux-form';
+import { change, WrappedFieldProps, WrappedFieldMetaProps, WrappedFieldInputProps, Field, formValues } from 'redux-form';
 import { compose } from 'redux';
 import { Autocomplete } from '~/components/autocomplete/autocomplete';
 import { Vocabulary } from '~/models/vocabulary';
 import { PROPERTY_KEY_FIELD_NAME } from '~/views-components/resource-properties-form/property-key-field';
-import { VocabularyProp, connectVocabulary, buildProps } from '~/views-components/resource-properties-form/property-field-common';
+import { VocabularyProp, connectVocabulary, buildProps, PropFieldSuggestion } from '~/views-components/resource-properties-form/property-field-common';
 import { TAG_VALUE_VALIDATION } from '~/validators/validators';
+import { COLLECTION_TAG_FORM_NAME } from '~/store/collection-panel/collection-panel-action';
 
 interface PropertyKeyProp {
     propertyKey: string;
@@ -18,22 +19,31 @@ interface PropertyKeyProp {
 export type PropertyValueFieldProps = VocabularyProp & PropertyKeyProp;
 
 export const PROPERTY_VALUE_FIELD_NAME = 'value';
+export const PROPERTY_VALUE_FIELD_ID = 'valueID';
 
 export const PropertyValueField = compose(
     connectVocabulary,
     formValues({ propertyKey: PROPERTY_KEY_FIELD_NAME })
 )(
     (props: PropertyValueFieldProps) =>
-        <Field
-            name={PROPERTY_VALUE_FIELD_NAME}
-            component={PropertyValueInput}
-            validate={getValidation(props)}
-            {...props} />);
+        <div>
+            <Field
+                name={PROPERTY_VALUE_FIELD_NAME}
+                component={PropertyValueInput}
+                validate={getValidation(props)}
+                {...props} />
+            <Field
+                name={PROPERTY_VALUE_FIELD_ID}
+                type='hidden'
+                component='input' />
+        </div>
+);
 
 export const PropertyValueInput = ({ vocabulary, propertyKey, ...props }: WrappedFieldProps & PropertyValueFieldProps) =>
     <Autocomplete
         label='Value'
         suggestions={getSuggestions(props.input.value, propertyKey, vocabulary)}
+        onSelect={handleSelect(props.input, props.meta)}
         {...buildProps(props)}
     />;
 
@@ -70,4 +80,13 @@ const getTagValues = (tagKey: string, vocabulary: Vocabulary) => {
                 : {"id": tagValueID, "label": tagValueID})
         : [];
     return ret;
+};
+
+const handleSelect = (
+    { onChange }: WrappedFieldInputProps,
+    { dispatch }: WrappedFieldMetaProps) => {
+        return (item:PropFieldSuggestion) => {
+            onChange(item.label);
+            dispatch(change(COLLECTION_TAG_FORM_NAME, PROPERTY_VALUE_FIELD_ID, item.id));
+    };
 };
