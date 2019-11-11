@@ -49,11 +49,11 @@ export const createCollectionTag = (data: TagProperty) =>
                     uuid, {
                         properties: {
                             ...JSON.parse(JSON.stringify(item.properties)),
-                            [data.key]: data.value
+                            [data.keyID || data.key]: data.valueID || data.value
                         }
                     }
                 );
-                item.properties[data.key] = data.value;
+                item.properties = updatedCollection.properties;
                 dispatch(resourcesActions.SET_RESOURCES([updatedCollection]));
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Tag has been successfully added.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
                 return updatedCollection;
