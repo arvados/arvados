@@ -57,27 +57,32 @@
         "IDTAGANIMALS": {
             "strict": false,
             "labels": [
-                {"label": "Animal" }
+                {"label": "Animal" },
+                {"label": "Creature"}
             ],
             "values": {
                 "IDVALANIMALS1": {
                     "labels": [
-                        {"label": "Human"}
+                        {"label": "Human"},
+                        {"label": "Homo sapiens"}
                     ]
                 },
                 "IDVALANIMALS2": {
                     "labels": [
-                        {"label": "Dog"}
+                        {"label": "Dog"},
+                        {"label": "Canis lupus familiaris"}
                     ]
                 },
                 "IDVALANIMALS3": {
                     "labels": [
-                        {"label": "Elephant"}
+                        {"label": "Elephant"},
+                        {"label": "Loxodonta"}
                     ]
                 },
                 "IDVALANIMALS4": {
                     "labels": [
-                        {"label": "Eagle"}
+                        {"label": "Eagle"},
+                        {"label": "Haliaeetus leucocephalus"}
                     ]
                 }
             }

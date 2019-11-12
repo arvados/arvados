@@ -4,7 +4,7 @@
 
 import { connect } from 'react-redux';
 import { WrappedFieldMetaProps, WrappedFieldInputProps, WrappedFieldProps } from 'redux-form';
-import { Vocabulary } from '~/models/vocabulary';
+import { Vocabulary, PropFieldSuggestion } from '~/models/vocabulary';
 import { RootState } from '~/store/store';
 import { getVocabulary } from '~/store/vocabulary/vocabulary-selectors';
 
@@ -43,8 +43,3 @@ export const buildProps = ({ input, meta }: WrappedFieldProps) => {
         helperText: getErrorMsg(meta),
     };
 };
-
-export interface PropFieldSuggestion {
-    "id": string;
-    "label": string;
-}

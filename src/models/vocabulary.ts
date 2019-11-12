@@ -24,6 +24,11 @@ export interface Tag {
     values?: Record<string, TagValue>;
 }
 
+export interface PropFieldSuggestion {
+    "id": string;
+    "label": string;
+}
+
 const VOCABULARY_VALIDATORS = [
     isObject,
     has('strict_tags'),
@@ -32,3 +37,53 @@ const VOCABULARY_VALIDATORS = [
 
 export const isVocabulary = (value: any) =>
     every(validator => validator(value), VOCABULARY_VALIDATORS);
+
+export const isStrictTag = (tagKeyID: string, vocabulary: Vocabulary) => {
+    const tag = vocabulary.tags[tagKeyID];
+    return tag ? tag.strict : false;
+};
+
+export const getTagValueID = (tagKeyID:string, tagValueLabel:string, vocabulary: Vocabulary) =>
+    (tagKeyID && vocabulary.tags[tagKeyID] && vocabulary.tags[tagKeyID].values)
+    ? Object.keys(vocabulary.tags[tagKeyID].values!).find(
+        k => vocabulary.tags[tagKeyID].values![k].labels.find(
+            l => l.label === tagValueLabel) !== undefined) || ''
+    : '';
+
+const compare = (a: PropFieldSuggestion, b: PropFieldSuggestion) => {
+    if (a.label < b.label) {return -1;}
+    if (a.label > b.label) {return 1;}
+    return 0;
+};
+
+export const getTagValues = (tagKeyID: string, vocabulary: Vocabulary) => {
+    const tag = vocabulary.tags[tagKeyID];
+    const ret = tag && tag.values
+        ? Object.keys(tag.values).map(
+            tagValueID => tag.values![tagValueID].labels
+                ? tag.values![tagValueID].labels.map(
+                    lbl => Object.assign({}, {"id": tagValueID, "label": lbl.label}))
+                : [{"id": tagValueID, "label": tagValueID}])
+            .reduce((prev, curr) => [...prev, ...curr], [])
+            .sort(compare)
+        : [];
+    return ret;
+};
+
+export const getTags = ({ tags }: Vocabulary) => {
+    const ret = tags && Object.keys(tags)
+        ? Object.keys(tags).map(
+            tagID => tags[tagID].labels
+                ? tags[tagID].labels.map(
+                    lbl => Object.assign({}, {"id": tagID, "label": lbl.label}))
+                : [{"id": tagID, "label": tagID}])
+            .reduce((prev, curr) => [...prev, ...curr], [])
+            .sort(compare)
+        : [];
+    return ret;
+};
+
+export const getTagKeyID = (tagKeyLabel:string, vocabulary: Vocabulary) =>
+    Object.keys(vocabulary.tags).find(
+        k => vocabulary.tags[k].labels.find(
+            l => l.label === tagKeyLabel) !== undefined) || '';
