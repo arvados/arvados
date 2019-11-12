@@ -517,6 +517,12 @@ Clusters:
       GoogleClientID: ""
       GoogleClientSecret: ""
 
+      # Allow users to log in to existing accounts using any verified
+      # email address listed by their Google account. If true, the
+      # Google People API must be enabled in order for Google login to
+      # work. If false, only the primary email address will be used.
+      GoogleAlternateEmailAddresses: true
+
       # The cluster ID to delegate the user database.  When set,
       # logins on this cluster will be redirected to the login cluster
       # (login cluster must appear in RemoteHosts with Proxy: true)

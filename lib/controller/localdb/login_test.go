@@ -209,6 +209,39 @@ func (s *LoginSuite) TestGoogleLogin_InvalidState(c *check.C) {
 	c.Check(resp.HTML.String(), check.Matches, `(?ms).*invalid OAuth2 state.*`)
 }
 
+func (s *LoginSuite) setupPeopleAPIError(c *check.C) {
+	s.fakePeopleAPI = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprintln(w, `Error 403: accessNotConfigured`)
+	}))
+	s.localdb.googleLoginController.peopleAPIBasePath = s.fakePeopleAPI.URL
+}
+
+func (s *LoginSuite) TestGoogleLogin_PeopleAPIDisabled(c *check.C) {
+	s.cluster.Login.GoogleAlternateEmailAddresses = false
+	s.authEmail = "joe.smith@primary.example.com"
+	s.setupPeopleAPIError(c)
+	state := s.startLogin(c)
+	_, err := s.localdb.Login(context.Background(), arvados.LoginOptions{
+		Code:  s.validCode,
+		State: state,
+	})
+	c.Check(err, check.IsNil)
+	authinfo := s.getCallbackAuthInfo(c)
+	c.Check(authinfo.Email, check.Equals, "joe.smith@primary.example.com")
+}
+
+func (s *LoginSuite) TestGoogleLogin_PeopleAPIError(c *check.C) {
+	s.setupPeopleAPIError(c)
+	state := s.startLogin(c)
+	resp, err := s.localdb.Login(context.Background(), arvados.LoginOptions{
+		Code:  s.validCode,
+		State: state,
+	})
+	c.Check(err, check.IsNil)
+	c.Check(resp.RedirectLocation, check.Equals, "")
+}
+
 func (s *LoginSuite) TestGoogleLogin_Success(c *check.C) {
 	state := s.startLogin(c)
 	resp, err := s.localdb.Login(context.Background(), arvados.LoginOptions{

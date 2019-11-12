@@ -110,7 +110,7 @@ func (ctrl *googleLoginController) Login(ctx context.Context, cluster *arvados.C
 		if err != nil {
 			return ctrl.loginError(fmt.Errorf("error verifying ID token: %s", err))
 		}
-		authinfo, err := ctrl.getAuthInfo(ctx, conf, oauth2Token, idToken)
+		authinfo, err := ctrl.getAuthInfo(ctx, cluster, conf, oauth2Token, idToken)
 		if err != nil {
 			return ctrl.loginError(err)
 		}
@@ -126,7 +126,7 @@ func (ctrl *googleLoginController) Login(ctx context.Context, cluster *arvados.C
 // primary address at index 0. The provided defaultAddr is always
 // included in the returned slice, and is used as the primary if the
 // Google API does not indicate one.
-func (ctrl *googleLoginController) getAuthInfo(ctx context.Context, conf *oauth2.Config, token *oauth2.Token, idToken *oidc.IDToken) (*rpc.UserSessionAuthInfo, error) {
+func (ctrl *googleLoginController) getAuthInfo(ctx context.Context, cluster *arvados.Cluster, conf *oauth2.Config, token *oauth2.Token, idToken *oidc.IDToken) (*rpc.UserSessionAuthInfo, error) {
 	var ret rpc.UserSessionAuthInfo
 	defer ctxlog.FromContext(ctx).Infof("ret: %#v", &ret) // debug
 
@@ -149,6 +149,13 @@ func (ctrl *googleLoginController) getAuthInfo(ctx context.Context, conf *oauth2
 		ret.Email = claims.Email
 	}
 
+	if !cluster.Login.GoogleAlternateEmailAddresses {
+		if ret.Email == "" {
+			return nil, fmt.Errorf("cannot log in with unverified email address %q", claims.Email)
+		}
+		return &ret, nil
+	}
+
 	svc, err := people.NewService(ctx, option.WithTokenSource(conf.TokenSource(ctx, token)), option.WithScopes(people.UserEmailsReadScope))
 	if err != nil {
 		return nil, fmt.Errorf("error setting up People API: %s", err)
@@ -159,12 +166,12 @@ func (ctrl *googleLoginController) getAuthInfo(ctx context.Context, conf *oauth2
 	}
 	person, err := people.NewPeopleService(svc).Get("people/me").Fields("emailAddresses,names").Do()
 	if err != nil {
-		if strings.Contains(err.Error(), "Error 403") && strings.Contains(err.Error(), "accessNotConfigured") && ret.Email != "" {
-			// Fall back on the primary email from the OAuth2 token.
-			ctxlog.FromContext(ctx).WithError(err).WithField("email", ret.Email).Warn("cannot look up alternate email addresses because People API is not enabled")
-			return &ret, nil
+		if strings.Contains(err.Error(), "Error 403") && strings.Contains(err.Error(), "accessNotConfigured") {
+			// Log the original API error, but display
+			// only the "fix config" advice to the user.
+			ctxlog.FromContext(ctx).WithError(err).WithField("email", ret.Email).Error("People API is not enabled")
+			return nil, errors.New("configuration error: Login.GoogleAlternateEmailAddresses is true, but Google People API is not enabled")
 		} else {
-			// Unexpected error, or no email to fall back on.
 			return nil, fmt.Errorf("error getting profile info from People API: %s", err)
 		}
 	}
