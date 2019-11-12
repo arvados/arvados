@@ -631,26 +631,7 @@ initialize() {
 }
 
 install_env() {
-    (
-        set -e
-        mkdir -p "$GOPATH/src/git.curoverse.com"
-        if [[ ! -h "$GOPATH/src/git.curoverse.com/arvados.git" ]]; then
-            for d in \
-                "$GOPATH/src/git.curoverse.com/arvados.git/tmp/GOPATH" \
-                    "$GOPATH/src/git.curoverse.com/arvados.git/tmp" \
-                    "$GOPATH/src/git.curoverse.com/arvados.git/arvados" \
-                    "$GOPATH/src/git.curoverse.com/arvados.git"; do
-                [[ -h "$d" ]] && rm "$d"
-                [[ -d "$d" ]] && rmdir "$d"
-            done
-        fi
-        ln -vsfT "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
-        go get -v github.com/kardianos/govendor
-        cd "$GOPATH/src/git.curoverse.com/arvados.git"
-        go get -v -d ...
-        "$GOPATH/bin/govendor" sync
-        which goimports >/dev/null || go get golang.org/x/tools/cmd/goimports
-    ) || fatal "Go setup failed"
+    which goimports >/dev/null || go get golang.org/x/tools/cmd/goimports || fatal "Go setup failed"
 
     setup_virtualenv "$VENVDIR" --python python2.7
     . "$VENVDIR/bin/activate"
@@ -735,7 +716,7 @@ do_test() {
             stop_services
             check_arvados_config "$1"
             ;;
-        gofmt | govendor | doc | lib/cli | lib/cloud/azure | lib/cloud/ec2 | lib/cloud/cloudtest | lib/cmd | lib/dispatchcloud/ssh_executor | lib/dispatchcloud/worker)
+        gofmt | doc | lib/cli | lib/cloud/azure | lib/cloud/ec2 | lib/cloud/cloudtest | lib/cmd | lib/dispatchcloud/ssh_executor | lib/dispatchcloud/worker)
             check_arvados_config "$1"
             # don't care whether services are running
             ;;
@@ -776,7 +757,7 @@ do_test_once() {
         # mode makes Go show the wrong line numbers when reporting
         # compilation errors.
         go get -ldflags "$(go_ldflags)" -t "git.curoverse.com/arvados.git/$1" && \
-            cd "$GOPATH/src/git.curoverse.com/arvados.git/$1" && \
+            cd "$WORKSPACE/$1" && \
             if [[ -n "${testargs[$1]}" ]]
         then
             # "go test -check.vv giturl" doesn't work, but this
@@ -1037,27 +1018,6 @@ test_gofmt() {
     [[ -z "$(gofmt -e -d $dirs | tee -a /dev/stderr)" ]]
 }
 
-test_govendor() {
-    (
-        set -e
-        cd "$GOPATH/src/git.curoverse.com/arvados.git"
-        # Remove cached source dirs in workdir. Otherwise, they will
-        # not qualify as +missing or +external below, and we won't be
-        # able to detect that they're missing from vendor/vendor.json.
-        rm -rf vendor/*/
-        go get -v -d ...
-        "$GOPATH/bin/govendor" sync
-        if [[ -n $("$GOPATH/bin/govendor" list +unused +missing +external | tee /dev/stderr) ]]; then
-            echo >&2 "vendor/vendor.json has unused or missing dependencies -- try:
-
-(export GOPATH=\"${GOPATH}\"; cd \$GOPATH/src/git.curoverse.com/arvados.git && \$GOPATH/bin/govendor add +missing +external && \$GOPATH/bin/govendor remove +unused)
-
-"
-            return 1
-        fi
-    )
-}
-
 test_services/api() {
     rm -f "$WORKSPACE/services/api/git-commit.version"
     cd "$WORKSPACE/services/api" \
@@ -1183,7 +1143,6 @@ test_all() {
     fi
 
     do_test gofmt
-    do_test govendor
     do_test doc
     do_test sdk/ruby
     do_test sdk/R

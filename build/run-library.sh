@@ -110,11 +110,7 @@ calculate_go_package_version() {
   local -n __returnvar="$1"; shift
   local src_path="$1"; shift
 
-  mkdir -p "$GOPATH/src/git.curoverse.com"
-  ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
-  (cd "$GOPATH/src/git.curoverse.com/arvados.git" && "$GOPATH/bin/govendor" sync -v)
-
-  cd "$GOPATH/src/git.curoverse.com/arvados.git/$src_path"
+  cd "$WORKSPACE/$src_path"
   local version="$(version_from_git)"
   local timestamp="$(timestamp_from_git)"
 
@@ -126,7 +122,7 @@ calculate_go_package_version() {
       checkdirs+=(sdk/go lib)
   fi
   for dir in ${checkdirs[@]}; do
-      cd "$GOPATH/src/git.curoverse.com/arvados.git/$dir"
+      cd "$WORKSPACE/$dir"
       ts="$(timestamp_from_git)"
       if [[ "$ts" -gt "$timestamp" ]]; then
           version=$(version_from_git)
