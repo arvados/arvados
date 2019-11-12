@@ -370,27 +370,27 @@ const defaultKeepWebConfigPath = "/etc/arvados/keep-web/keep-web.yml"
 type oldKeepWebConfig struct {
 	Client *arvados.Client
 
-	Listen string
+	Listen *string
 
-	AnonymousTokens    []string
-	AttachmentOnlyHost string
-	TrustAllContent    bool
+	AnonymousTokens    *[]string
+	AttachmentOnlyHost *string
+	TrustAllContent    *bool
 
 	Cache struct {
-		TTL                  arvados.Duration
-		UUIDTTL              arvados.Duration
-		MaxCollectionEntries int
-		MaxCollectionBytes   int64
-		MaxPermissionEntries int
-		MaxUUIDEntries       int
+		TTL                  *arvados.Duration
+		UUIDTTL              *arvados.Duration
+		MaxCollectionEntries *int
+		MaxCollectionBytes   *int64
+		MaxPermissionEntries *int
+		MaxUUIDEntries       *int
 	}
 
 	// Hack to support old command line flag, which is a bool
 	// meaning "get actual token from environment".
-	deprecatedAllowAnonymous bool
+	deprecatedAllowAnonymous *bool
 
 	// Authorization token to be included in all health check requests.
-	ManagementToken string
+	ManagementToken *string
 }
 
 func (ldr *Loader) loadOldKeepWebConfig(cfg *arvados.Config) error {
@@ -412,22 +412,43 @@ func (ldr *Loader) loadOldKeepWebConfig(cfg *arvados.Config) error {
 
 	loadOldClientConfig(cluster, oc.Client)
 
-	cluster.Services.WebDAV.InternalURLs[arvados.URL{Host: oc.Listen}] = arvados.ServiceInstance{}
-	cluster.Services.WebDAVDownload.InternalURLs[arvados.URL{Host: oc.Listen}] = arvados.ServiceInstance{}
-	cluster.Services.WebDAVDownload.ExternalURL = arvados.URL{Host: oc.AttachmentOnlyHost}
-	cluster.TLS.Insecure = oc.Client.Insecure
-	cluster.ManagementToken = oc.ManagementToken
-	cluster.Collections.TrustAllContent = oc.TrustAllContent
-	cluster.Collections.WebDAVCache.TTL = oc.Cache.TTL
-	cluster.Collections.WebDAVCache.UUIDTTL = oc.Cache.UUIDTTL
-	cluster.Collections.WebDAVCache.MaxCollectionEntries = oc.Cache.MaxCollectionEntries
-	cluster.Collections.WebDAVCache.MaxCollectionBytes = oc.Cache.MaxCollectionBytes
-	cluster.Collections.WebDAVCache.MaxPermissionEntries = oc.Cache.MaxPermissionEntries
-	cluster.Collections.WebDAVCache.MaxUUIDEntries = oc.Cache.MaxUUIDEntries
-	if len(oc.AnonymousTokens) > 0 {
-		cluster.Users.AnonymousUserToken = oc.AnonymousTokens[0]
-		if len(oc.AnonymousTokens) > 1 {
-			ldr.Logger.Warn("More than 1 anonymous tokens configured, using only the first and discarding the rest.")
+	if oc.Listen != nil {
+		cluster.Services.WebDAV.InternalURLs[arvados.URL{Host: *oc.Listen}] = arvados.ServiceInstance{}
+		cluster.Services.WebDAVDownload.InternalURLs[arvados.URL{Host: *oc.Listen}] = arvados.ServiceInstance{}
+	}
+	if oc.AttachmentOnlyHost != nil {
+		cluster.Services.WebDAVDownload.ExternalURL = arvados.URL{Host: *oc.AttachmentOnlyHost}
+	}
+	if oc.ManagementToken != nil {
+		cluster.ManagementToken = *oc.ManagementToken
+	}
+	if oc.TrustAllContent != nil {
+		cluster.Collections.TrustAllContent = *oc.TrustAllContent
+	}
+	if oc.Cache.TTL != nil {
+		cluster.Collections.WebDAVCache.TTL = *oc.Cache.TTL
+	}
+	if oc.Cache.UUIDTTL != nil {
+		cluster.Collections.WebDAVCache.UUIDTTL = *oc.Cache.UUIDTTL
+	}
+	if oc.Cache.MaxCollectionEntries != nil {
+		cluster.Collections.WebDAVCache.MaxCollectionEntries = *oc.Cache.MaxCollectionEntries
+	}
+	if oc.Cache.MaxCollectionBytes != nil {
+		cluster.Collections.WebDAVCache.MaxCollectionBytes = *oc.Cache.MaxCollectionBytes
+	}
+	if oc.Cache.MaxPermissionEntries != nil {
+		cluster.Collections.WebDAVCache.MaxPermissionEntries = *oc.Cache.MaxPermissionEntries
+	}
+	if oc.Cache.MaxUUIDEntries != nil {
+		cluster.Collections.WebDAVCache.MaxUUIDEntries = *oc.Cache.MaxUUIDEntries
+	}
+	if oc.AnonymousTokens != nil {
+		if len(*oc.AnonymousTokens) > 0 {
+			cluster.Users.AnonymousUserToken = (*oc.AnonymousTokens)[0]
+			if len(*oc.AnonymousTokens) > 1 {
+				ldr.Logger.Warn("More than 1 anonymous tokens configured, using only the first and discarding the rest.")
+			}
 		}
 	}
 
@@ -439,11 +460,11 @@ const defaultGitHttpdConfigPath = "/etc/arvados/git-httpd/git-httpd.yml"
 
 type oldGitHttpdConfig struct {
 	Client          *arvados.Client
-	Listen          string
-	GitCommand      string
-	GitoliteHome    string
-	RepoRoot        string
-	ManagementToken string
+	Listen          *string
+	GitCommand      *string
+	GitoliteHome    *string
+	RepoRoot        *string
+	ManagementToken *string
 }
 
 func (ldr *Loader) loadOldGitHttpdConfig(cfg *arvados.Config) error {
@@ -465,12 +486,21 @@ func (ldr *Loader) loadOldGitHttpdConfig(cfg *arvados.Config) error {
 
 	loadOldClientConfig(cluster, oc.Client)
 
-	cluster.Services.GitHTTP.InternalURLs[arvados.URL{Host: oc.Listen}] = arvados.ServiceInstance{}
-	cluster.TLS.Insecure = oc.Client.Insecure
-	cluster.ManagementToken = oc.ManagementToken
-	cluster.Git.GitCommand = oc.GitCommand
-	cluster.Git.GitoliteHome = oc.GitoliteHome
-	cluster.Git.Repositories = oc.RepoRoot
+	if oc.Listen != nil {
+		cluster.Services.GitHTTP.InternalURLs[arvados.URL{Host: *oc.Listen}] = arvados.ServiceInstance{}
+	}
+	if oc.ManagementToken != nil {
+		cluster.ManagementToken = *oc.ManagementToken
+	}
+	if oc.GitCommand != nil {
+		cluster.Git.GitCommand = *oc.GitCommand
+	}
+	if oc.GitoliteHome != nil {
+		cluster.Git.GitoliteHome = *oc.GitoliteHome
+	}
+	if oc.RepoRoot != nil {
+		cluster.Git.Repositories = *oc.RepoRoot
+	}
 
 	cfg.Clusters[cluster.ClusterID] = *cluster
 	return nil
