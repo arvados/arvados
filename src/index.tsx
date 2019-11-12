@@ -13,6 +13,7 @@ import { History } from "history";
 import { configureStore, RootStore } from '~/store/store';
 import { ConnectedRouter } from "react-router-redux";
 import { ApiToken } from "~/views-components/api-token/api-token";
+import { AddSession } from "~/views-components/add-session/add-session";
 import { initAuth } from "~/store/auth/auth-action";
 import { createServices } from "~/services/services";
 import { MuiThemeProvider } from '@material-ui/core/styles';
@@ -112,6 +113,7 @@ fetchConfig()
         store.dispatch(loadFileViewersConfig);
 
         const TokenComponent = (props: any) => <ApiToken authService={services.authService} config={config} loadMainApp={true} {...props} />;
+        const AddSessionComponent = (props: any) => <AddSession {...props} />;
         const FedTokenComponent = (props: any) => <ApiToken authService={services.authService} config={config} loadMainApp={false} {...props} />;
         const MainPanelComponent = (props: any) => <MainPanel {...props} />;
 
@@ -123,6 +125,7 @@ fetchConfig()
                             <Switch>
                                 <Route path={Routes.TOKEN} component={TokenComponent} />
                                 <Route path={Routes.FED_LOGIN} component={FedTokenComponent} />
+                                <Route path={Routes.ADD_SESSION} component={AddSessionComponent} />
                                 <Route path={Routes.ROOT} component={MainPanelComponent} />
                             </Switch>
                         </ConnectedRouter>

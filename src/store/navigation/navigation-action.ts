@@ -69,7 +69,13 @@ export const navigateToSharedWithMe = push(Routes.SHARED_WITH_ME);
 
 export const navigateToRunProcess = push(Routes.RUN_PROCESS);
 
-export const navigateToSearchResults = push(Routes.SEARCH_RESULTS);
+export const navigateToSearchResults = (searchValue: string) => {
+    if (searchValue !== "") {
+        return push({ pathname: Routes.SEARCH_RESULTS, search: '?q=' + encodeURIComponent(searchValue) });
+    } else {
+        return push({ pathname: Routes.SEARCH_RESULTS });
+    }
+};
 
 export const navigateToUserVirtualMachines = push(Routes.VIRTUAL_MACHINES_USER);
 

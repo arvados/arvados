@@ -52,6 +52,7 @@ export class GroupsService<T extends GroupResource = GroupResource> extends Tras
         const cfg: AxiosRequestConfig = { params: CommonResourceService.mapKeys(_.snakeCase)(params) };
         if (session) {
             cfg.baseURL = session.baseUrl;
+            cfg.headers = { 'Authorization': 'Bearer ' + session.token };
         }
 
         const response = await CommonResourceService.defaultResponse(

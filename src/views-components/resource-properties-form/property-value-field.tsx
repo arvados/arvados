@@ -11,6 +11,7 @@ import { PROPERTY_KEY_FIELD_ID } from '~/views-components/resource-properties-fo
 import { VocabularyProp, connectVocabulary, buildProps } from '~/views-components/resource-properties-form/property-field-common';
 import { TAG_VALUE_VALIDATION } from '~/validators/validators';
 import { COLLECTION_TAG_FORM_NAME } from '~/store/collection-panel/collection-panel-action';
+import { escapeRegExp } from '~/common/regexp.ts';
 
 interface PropertyKeyProp {
     propertyKey: string;
@@ -59,8 +60,10 @@ const matchTagValues = ({ vocabulary, propertyKey }: PropertyValueFieldProps) =>
             ? undefined
             : 'Incorrect value';
 
-const getSuggestions = (value: string, tagKey: string, vocabulary: Vocabulary) =>
-    getTagValues(tagKey, vocabulary).filter(v => v.label.toLowerCase().includes(value.toLowerCase()));
+const getSuggestions = (value: string, tagName: string, vocabulary: Vocabulary) => {
+    const re = new RegExp(escapeRegExp(value), "i");
+    return getTagValues(tagName, vocabulary).filter(v => re.test(v.label) && v.label !== value);
+};
 
 // Attempts to match a manually typed value label with a value ID, when the user
 // doesn't select the value from the suggestions list.

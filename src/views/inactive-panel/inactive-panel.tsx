@@ -9,7 +9,7 @@ import { Grid, Typography, Button } from '@material-ui/core';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { navigateToLinkAccount } from '~/store/navigation/navigation-action';
-
+import { RootState } from '~/store/store';
 
 type CssRules = 'root' | 'ontop' | 'title';
 
@@ -47,31 +47,32 @@ const mapDispatchToProps = (dispatch: Dispatch): InactivePanelActionProps => ({
     }
 });
 
-type InactivePanelProps =  WithStyles<CssRules> & InactivePanelActionProps;
+export interface InactivePanelStateProps {
+    inactivePageText: string;
+}
 
-export const InactivePanel = connect(null, mapDispatchToProps)(withStyles(styles)((({ classes, startLinking }: InactivePanelProps) =>
-        <Grid container justify="center" alignItems="center" direction="column" spacing={24}
-            className={classes.root}
-            style={{ marginTop: 56, height: "100%" }}>
-            <Grid item>
-                <Typography variant='h6' align="center" className={classes.title}>
-                    Hi! You're logged in, but...
-                </Typography>
-            </Grid>
-            <Grid item>
-                <Typography align="center">
-                    Your account is inactive. An administrator must activate your account before you can get any further.
-                </Typography>
-            </Grid>
-            <Grid item>
-                <Typography align="center">
-                    If you would like to use this login to access another account click "Link Account".
-                </Typography>
-            </Grid>
-            <Grid item>
-                <Button className={classes.ontop} color="primary" variant="contained" onClick={() => startLinking()}>
-                    Link Account
-                </Button>
-            </Grid>
-        </Grid >
-    )));
+type InactivePanelProps = WithStyles<CssRules> & InactivePanelActionProps & InactivePanelStateProps;
+
+export const InactivePanel = connect((state: RootState) => ({
+    inactivePageText: state.config.clusterConfig.Workbench.InactivePageHTML
+}), mapDispatchToProps)(withStyles(styles)((({ classes, startLinking, inactivePageText }: InactivePanelProps) =>
+    <Grid container justify="center" alignItems="center" direction="column" spacing={24}
+        className={classes.root}
+        style={{ marginTop: 56, height: "100%" }}>
+        <Grid item>
+            <Typography>
+                <div dangerouslySetInnerHTML={{ __html: inactivePageText }} style={{ margin: "1em" }} />
+            </Typography>
+        </Grid>
+        <Grid item>
+            <Typography align="center">
+                If you would like to use this login to access another account click "Link Account".
+	    </Typography>
+        </Grid>
+        <Grid item>
+            <Button className={classes.ontop} color="primary" variant="contained" onClick={() => startLinking()}>
+                Link Account
+	    </Button>
+        </Grid>
+    </Grid >
+)));

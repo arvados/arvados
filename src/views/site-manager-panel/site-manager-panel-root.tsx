@@ -8,6 +8,7 @@ import {
     CardContent,
     CircularProgress,
     Grid,
+    IconButton,
     StyleRulesCallback,
     Table,
     TableBody,
@@ -26,6 +27,9 @@ import { Field, FormErrors, InjectedFormProps, reduxForm, reset, stopSubmit } fr
 import { TextField } from "~/components/text-field/text-field";
 import { addSession } from "~/store/auth/auth-action-session";
 import { SITE_MANAGER_REMOTE_HOST_VALIDATION } from "~/validators/validators";
+import { Config } from '~/common/config';
+import { ResourceCluster } from '~/views-components/data-explorer/renderers';
+import { TrashIcon } from "~/components/icon/icon";
 
 type CssRules = 'root' | 'link' | 'buttonContainer' | 'table' | 'tableRow' |
     'remoteSiteInfo' | 'buttonAdd' | 'buttonLoggedIn' | 'buttonLoggedOut' |
@@ -33,8 +37,8 @@ type CssRules = 'root' | 'link' | 'buttonContainer' | 'table' | 'tableRow' |
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
-       width: '100%',
-       overflow: 'auto'
+        width: '100%',
+        overflow: 'auto'
     },
     link: {
         color: theme.palette.primary.main,
@@ -84,10 +88,13 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 export interface SiteManagerPanelRootActionProps {
     toggleSession: (session: Session) => void;
+    removeSession: (session: Session) => void;
 }
 
 export interface SiteManagerPanelRootDataProps {
     sessions: Session[];
+    remoteHostsConfig: { [key: string]: Config };
+    localClusterConfig: Config;
 }
 
 type SiteManagerPanelRootProps = SiteManagerPanelRootDataProps & SiteManagerPanelRootActionProps & WithStyles<CssRules> & InjectedFormProps;
@@ -95,7 +102,7 @@ const SITE_MANAGER_FORM_NAME = 'siteManagerForm';
 
 const submitSession = (remoteHost: string) =>
     (dispatch: Dispatch) => {
-        dispatch<any>(addSession(remoteHost)).then(() => {
+        dispatch<any>(addSession(remoteHost, undefined, true)).then(() => {
             dispatch(reset(SITE_MANAGER_FORM_NAME));
         }).catch((e: any) => {
             const errors = {
@@ -106,7 +113,7 @@ const submitSession = (remoteHost: string) =>
     };
 
 export const SiteManagerPanelRoot = compose(
-    reduxForm<{remoteHost: string}>({
+    reduxForm<{ remoteHost: string }>({
         form: SITE_MANAGER_FORM_NAME,
         touchOnBlur: false,
         onSubmit: (data, dispatch) => {
@@ -114,14 +121,14 @@ export const SiteManagerPanelRoot = compose(
         }
     }),
     withStyles(styles))
-    (({ classes, sessions, handleSubmit, toggleSession }: SiteManagerPanelRootProps) =>
+    (({ classes, sessions, handleSubmit, toggleSession, removeSession, localClusterConfig, remoteHostsConfig }: SiteManagerPanelRootProps) =>
         <Card className={classes.root}>
             <CardContent>
                 <Grid container direction="row">
                     <Grid item xs={12}>
-                        <Typography  paragraph={true} >
+                        <Typography paragraph={true} >
                             You can log in to multiple Arvados sites here, then use the multi-site search page to search collections and projects on all sites at once.
-                        </Typography>
+		    </Typography>
                     </Grid>
                 </Grid>
                 <Grid item xs={12}>
@@ -129,18 +136,23 @@ export const SiteManagerPanelRoot = compose(
                         <TableHead>
                             <TableRow className={classes.tableRow}>
                                 <TableCell>Cluster ID</TableCell>
-                                <TableCell>Username</TableCell>
+                                <TableCell>Host</TableCell>
                                 <TableCell>Email</TableCell>
+                                <TableCell>UUID</TableCell>
                                 <TableCell>Status</TableCell>
+                                <TableCell>Actions</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {sessions.map((session, index) => {
                                 const validating = session.status === SessionStatus.BEING_VALIDATED;
                                 return <TableRow key={index} className={classes.tableRow}>
-                                    <TableCell>{session.clusterId}</TableCell>
-                                    <TableCell>{validating ? <CircularProgress size={20}/> : session.username}</TableCell>
-                                    <TableCell>{validating ? <CircularProgress size={20}/> : session.email}</TableCell>
+                                    <TableCell>{remoteHostsConfig[session.clusterId] ?
+                                        <a href={remoteHostsConfig[session.clusterId].workbench2Url} style={{ textDecoration: 'none' }}> <ResourceCluster uuid={session.clusterId} /></a>
+                                        : session.clusterId}</TableCell>
+                                    <TableCell>{session.remoteHost}</TableCell>
+                                    <TableCell>{validating ? <CircularProgress size={20} /> : session.email}</TableCell>
+                                    <TableCell>{validating ? <CircularProgress size={20} /> : session.uuid}</TableCell>
                                     <TableCell className={classes.statusCell}>
                                         <Button fullWidth
                                             disabled={validating || session.status === SessionStatus.INVALIDATED || session.active}
@@ -148,6 +160,13 @@ export const SiteManagerPanelRoot = compose(
                                             onClick={() => toggleSession(session)}>
                                             {validating ? "Validating" : (session.loggedIn ? "Logged in" : "Logged out")}
                                         </Button>
+                                    </TableCell>
+                                    <TableCell>
+                                        {session.clusterId !== localClusterConfig.uuidPrefix &&
+                                            !localClusterConfig.clusterConfig.RemoteClusters[session.clusterId] &&
+                                            <IconButton onClick={() => removeSession(session)}>
+                                                <TrashIcon />
+                                            </IconButton>}
                                     </TableCell>
                                 </TableRow>;
                             })}
@@ -157,9 +176,9 @@ export const SiteManagerPanelRoot = compose(
                 <form onSubmit={handleSubmit}>
                     <Grid container direction="row">
                         <Grid item xs={12}>
-                            <Typography  paragraph={true} className={classes.remoteSiteInfo}>
+                            <Typography paragraph={true} className={classes.remoteSiteInfo}>
                                 To add a remote Arvados site, paste the remote site's host here (see "ARVADOS_API_HOST" on the "current token" page).
-                            </Typography>
+                        </Typography>
                         </Grid>
                         <Grid item xs={8}>
                             <Field
@@ -169,7 +188,7 @@ export const SiteManagerPanelRoot = compose(
                                 placeholder="zzzz.arvadosapi.com"
                                 margin="normal"
                                 label="New cluster"
-                                autoFocus/>
+                                autoFocus />
                         </Grid>
                         <Grid item xs={3}>
                             <Button type="submit" variant="contained" color="primary"

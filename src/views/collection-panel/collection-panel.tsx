@@ -24,6 +24,8 @@ import { formatFileSize } from "~/common/formatters";
 import { getResourceData } from "~/store/resources-data/resources-data";
 import { ResourceData } from "~/store/resources-data/resources-data-reducer";
 import { openDetailsPanel } from '~/store/details-panel/details-panel-action';
+import * as CopyToClipboard from 'react-copy-to-clipboard';
+import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 
 type CssRules = 'card' | 'iconHeader' | 'tag' | 'label' | 'value' | 'link';
 
@@ -130,9 +132,12 @@ export const CollectionPanel = withStyles(styles)(
                                     <Grid item xs={12}>
                                         {
                                             Object.keys(item.properties).map(k => {
-                                                return <Chip key={k} className={classes.tag}
-                                                    onDelete={this.handleDelete(k)}
-                                                    label={`${k}: ${item.properties[k]}`} />;
+                                                const label = `${k}: ${item.properties[k]}`;
+                                                return <CopyToClipboard key={k} text={label} onCopy={() => this.onCopy("Copied")}>
+                                                    <Chip className={classes.tag}
+                                                        onDelete={this.handleDelete(k)}
+                                                        label={label} />
+                                                </CopyToClipboard>;
                                             })
                                         }
                                     </Grid>
@@ -160,6 +165,13 @@ export const CollectionPanel = withStyles(styles)(
                 };
                 this.props.dispatch<any>(openContextMenu(event, resource));
             }
+
+            onCopy = (message: string) =>
+                this.props.dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message,
+                    hideDuration: 2000,
+                    kind: SnackbarKind.SUCCESS
+                }))
 
             handleDelete = (key: string) => () => {
                 this.props.dispatch<any>(deleteCollectionTag(key));

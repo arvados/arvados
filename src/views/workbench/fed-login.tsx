@@ -30,7 +30,6 @@ export const FedLogin = connect(mapStateToProps)(
             if (!apiToken || !user || !user.uuid.startsWith(localCluster)) {
                 return <></>;
             }
-            const [, tokenUuid, token] = apiToken.split("/");
             return <div id={"fedtoken-iframe-div"}>
                 {Object.keys(remoteHostsConfig)
                     .map((k) => {
@@ -41,7 +40,9 @@ export const FedLogin = connect(mapStateToProps)(
                             console.log(`Cluster ${k} does not define workbench2Url.  Federated login / cross-site linking to ${k} is unavailable.  Tell the admin of ${k} to set Services->Workbench2->ExternalURL in config.yml.`);
                             return;
                         }
-                        return <iframe key={k} src={`${remoteHostsConfig[k].workbench2Url}/fedtoken?api_token=${getSaltedToken(k, tokenUuid, token)}`} style={{
+                        const fedtoken = (remoteHostsConfig[k].loginCluster === localCluster)
+                            ? apiToken : getSaltedToken(k, apiToken);
+                        return <iframe key={k} src={`${remoteHostsConfig[k].workbench2Url}/fedtoken?api_token=${fedtoken}`} style={{
                             height: 0,
                             width: 0,
                             visibility: "hidden"

@@ -70,18 +70,19 @@ export const searchData = (searchValue: string) =>
             dispatch<any>(searchGroups(searchValue, 5));
             if (currentView === SearchView.BASIC) {
                 dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
-                dispatch(navigateToSearchResults);
+                dispatch(navigateToSearchResults(searchValue));
             }
         }
     };
 
 export const searchAdvanceData = (data: SearchBarAdvanceFormData) =>
-    async (dispatch: Dispatch) => {
+    async (dispatch: Dispatch, getState: () => RootState) => {
         dispatch<any>(saveQuery(data));
+        const searchValue = getState().searchBar.searchValue;
         dispatch(searchResultsPanelActions.CLEAR());
         dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.BASIC));
         dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
-        dispatch(navigateToSearchResults);
+        dispatch(navigateToSearchResults(searchValue));
     };
 
 export const setSearchValueFromAdvancedData = (data: SearchBarAdvanceFormData, prevData?: SearchBarAdvanceFormData) =>
@@ -197,7 +198,7 @@ export const submitData = (event: React.FormEvent<HTMLFormElement>) =>
             dispatch(searchBarActions.SET_SEARCH_VALUE(searchValue));
             dispatch(searchBarActions.SET_SEARCH_RESULTS([]));
             dispatch(searchResultsPanelActions.CLEAR());
-            dispatch(navigateToSearchResults);
+            dispatch(navigateToSearchResults(searchValue));
         }
     };
 

@@ -10,6 +10,7 @@ import { Vocabulary, getTags, getTagKeyID, PropFieldSuggestion } from '~/models/
 import { connectVocabulary, VocabularyProp, buildProps } from '~/views-components/resource-properties-form/property-field-common';
 import { TAG_KEY_VALIDATION } from '~/validators/validators';
 import { COLLECTION_TAG_FORM_NAME } from '~/store/collection-panel/collection-panel-action';
+import { escapeRegExp } from '~/common/regexp.ts';
 
 export const PROPERTY_KEY_FIELD_NAME = 'key';
 export const PROPERTY_KEY_FIELD_ID = 'keyID';
@@ -50,8 +51,10 @@ const matchTags = (vocabulary: Vocabulary) =>
             ? undefined
             : 'Incorrect key';
 
-const getSuggestions = (value: string, vocabulary: Vocabulary) =>
-    getTags(vocabulary).filter(tag => tag.label.toLowerCase().includes(value.toLowerCase()));
+const getSuggestions = (value: string, vocabulary: Vocabulary) => {
+    const re = new RegExp(escapeRegExp(value), "i");
+    return getTags(vocabulary).filter(tag => re.test(tag.label) && tag.label !== value);
+};
 
 // Attempts to match a manually typed key label with a key ID, when the user
 // doesn't select the key from the suggestions list.

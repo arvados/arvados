@@ -114,10 +114,10 @@ export class AuthService {
         localStorage.removeItem(USER_PREFS);
     }
 
-    public login(uuidPrefix: string, homeCluster: string, remoteHosts: { [key: string]: string }) {
+    public login(uuidPrefix: string, homeCluster: string, loginCluster: string, remoteHosts: { [key: string]: string }) {
         const currentUrl = `${window.location.protocol}//${window.location.host}/token`;
         const homeClusterHost = remoteHosts[homeCluster];
-        window.location.assign(`https://${homeClusterHost}/login?${uuidPrefix !== homeCluster ? "remote=" + uuidPrefix + "&" : ""}return_to=${currentUrl}`);
+        window.location.assign(`https://${homeClusterHost}/login?${(uuidPrefix !== homeCluster && homeCluster !== loginCluster) ? "remote=" + uuidPrefix + "&" : ""}return_to=${currentUrl}`);
     }
 
     public logout() {
@@ -176,31 +176,39 @@ export class AuthService {
             clusterId: cfg.uuidPrefix,
             remoteHost: cfg.rootUrl,
             baseUrl: cfg.baseUrl,
-            username: getUserFullname(user),
+            name: getUserFullname(user),
             email: user ? user.email : '',
             token: this.getApiToken(),
             loggedIn: true,
             active: true,
+            uuid: user ? user.uuid : '',
             status: SessionStatus.VALIDATED
         } as Session;
-        const localSessions = this.getSessions();
+        const localSessions = this.getSessions().map(s => ({
+            ...s,
+            active: false,
+            status: SessionStatus.INVALIDATED
+        }));
+
         const cfgSessions = Object.keys(cfg.remoteHosts).map(clusterId => {
             const remoteHost = cfg.remoteHosts[clusterId];
             return {
                 clusterId,
                 remoteHost,
                 baseUrl: '',
-                username: '',
+                name: '',
                 email: '',
                 token: '',
                 loggedIn: false,
                 active: false,
+                uuid: '',
                 status: SessionStatus.INVALIDATED
             } as Session;
         });
         const sessions = [currentSession]
+            .concat(cfgSessions)
             .concat(localSessions)
-            .concat(cfgSessions);
+            .filter((r: Session) => r.clusterId !== "*");
 
         const uniqSessions = uniqBy(sessions, 'clusterId');
 
