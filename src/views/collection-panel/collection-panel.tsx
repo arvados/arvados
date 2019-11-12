@@ -7,6 +7,7 @@ import {
     StyleRulesCallback, WithStyles, withStyles, Card,
     CardHeader, IconButton, CardContent, Grid, Chip, Tooltip
 } from '@material-ui/core';
+import { compose } from "redux";
 import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from 'react-router';
 import { ArvadosTheme } from '~/common/custom-theme';
@@ -26,6 +27,8 @@ import { ResourceData } from "~/store/resources-data/resources-data-reducer";
 import { openDetailsPanel } from '~/store/details-panel/details-panel-action';
 import * as CopyToClipboard from 'react-copy-to-clipboard';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
+import { connectVocabulary, VocabularyProp } from '~/views-components/resource-properties-form/property-field-common';
+import { getTagValueLabel, getTagKeyLabel } from '~/models/vocabulary';
 
 type CssRules = 'card' | 'iconHeader' | 'tag' | 'label' | 'value' | 'link';
 
@@ -65,16 +68,19 @@ interface CollectionPanelDataProps {
 type CollectionPanelProps = CollectionPanelDataProps & DispatchProp
     & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
 
-export const CollectionPanel = withStyles(styles)(
-    connect((state: RootState, props: RouteComponentProps<{ id: string }>) => {
-        const item = getResource(props.match.params.id)(state.resources);
-        const data = getResourceData(props.match.params.id)(state.resourcesData);
-        return { item, data };
-    })(
-        class extends React.Component<CollectionPanelProps> {
+export const CollectionPanel = compose(
+    connectVocabulary,
+    withStyles(styles))(
+        connect((state: RootState, props: RouteComponentProps<{ id: string }> & VocabularyProp) => {
+            const item = getResource(props.match.params.id)(state.resources);
+            const data = getResourceData(props.match.params.id)(state.resourcesData);
+            const vocabulary = props.vocabulary;
+            return { item, data, vocabulary };
+        })(
+        class extends React.Component<CollectionPanelProps & VocabularyProp> {
 
             render() {
-                const { classes, item, data, dispatch } = this.props;
+                const { classes, item, data, dispatch, vocabulary } = this.props;
                 return item
                     ? <>
                         <Card className={classes.card}>
@@ -132,8 +138,9 @@ export const CollectionPanel = withStyles(styles)(
                                     <Grid item xs={12}>
                                         {
                                             Object.keys(item.properties).map(k => {
-                                                const label = `${k}: ${item.properties[k]}`;
-                                                return <CopyToClipboard key={k} text={label} onCopy={() => this.onCopy("Copied")}>
+                                                const ids = `${k}: ${item.properties[k]}`;
+                                                const label = `${getTagKeyLabel(k, vocabulary)}: ${getTagValueLabel(k, item.properties[k], vocabulary)}`;
+                                                return <CopyToClipboard key={k} text={ids} onCopy={() => this.onCopy("Copied")}>
                                                     <Chip className={classes.tag}
                                                         onDelete={this.handleDelete(k)}
                                                         label={label} />

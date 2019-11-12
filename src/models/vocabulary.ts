@@ -50,6 +50,14 @@ export const getTagValueID = (tagKeyID:string, tagValueLabel:string, vocabulary:
             l => l.label === tagValueLabel) !== undefined) || ''
     : '';
 
+export const getTagValueLabel = (tagKeyID:string, tagValueID:string, vocabulary: Vocabulary) =>
+    vocabulary.tags[tagKeyID] &&
+    vocabulary.tags[tagKeyID].values &&
+    vocabulary.tags[tagKeyID].values![tagValueID] &&
+    vocabulary.tags[tagKeyID].values![tagValueID].labels.length > 0
+        ? vocabulary.tags[tagKeyID].values![tagValueID].labels[0].label
+        : tagValueID;
+
 const compare = (a: PropFieldSuggestion, b: PropFieldSuggestion) => {
     if (a.label < b.label) {return -1;}
     if (a.label > b.label) {return 1;}
@@ -86,4 +94,10 @@ export const getTags = ({ tags }: Vocabulary) => {
 export const getTagKeyID = (tagKeyLabel:string, vocabulary: Vocabulary) =>
     Object.keys(vocabulary.tags).find(
         k => vocabulary.tags[k].labels.find(
-            l => l.label === tagKeyLabel) !== undefined) || '';
+            l => l.label === tagKeyLabel) !== undefined
+        ) || '';
+
+export const getTagKeyLabel = (tagKeyID:string, vocabulary: Vocabulary) =>
+    vocabulary.tags[tagKeyID] && vocabulary.tags[tagKeyID].labels.length > 0
+    ? vocabulary.tags[tagKeyID].labels[0].label
+    : tagKeyID;
