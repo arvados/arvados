@@ -3,13 +3,13 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { change, WrappedFieldProps, WrappedFieldMetaProps, WrappedFieldInputProps, Field } from 'redux-form';
+import { change, WrappedFieldProps, WrappedFieldMetaProps, WrappedFieldInputProps,
+    Field, FormName } from 'redux-form';
 import { memoize } from 'lodash';
 import { Autocomplete } from '~/components/autocomplete/autocomplete';
 import { Vocabulary, getTags, getTagKeyID, PropFieldSuggestion } from '~/models/vocabulary';
 import { connectVocabulary, VocabularyProp, buildProps } from '~/views-components/resource-properties-form/property-field-common';
 import { TAG_KEY_VALIDATION } from '~/validators/validators';
-import { COLLECTION_TAG_FORM_NAME } from '~/store/collection-panel/collection-panel-action';
 import { escapeRegExp } from '~/common/regexp.ts';
 
 export const PROPERTY_KEY_FIELD_NAME = 'key';
@@ -25,13 +25,15 @@ export const PropertyKeyField = connectVocabulary(
 );
 
 export const PropertyKeyInput = ({ vocabulary, ...props }: WrappedFieldProps & VocabularyProp) =>
-    <Autocomplete
-        label='Key'
-        suggestions={getSuggestions(props.input.value, vocabulary)}
-        onSelect={handleSelect(props.input, props.meta)}
-        {...buildProps(props)}
-        onBlur={handleBlur(props.meta, props.input, vocabulary)}
-    />;
+    <FormName children={data => (
+        <Autocomplete
+            label='Key'
+            suggestions={getSuggestions(props.input.value, vocabulary)}
+            onSelect={handleSelect(data.form, props.input, props.meta)}
+            {...buildProps(props)}
+            onBlur={handleBlur(data.form, props.meta, props.input, vocabulary)}
+        />
+    )}/>;
 
 const getValidation = memoize(
     (vocabulary: Vocabulary) =>
@@ -53,20 +55,22 @@ const getSuggestions = (value: string, vocabulary: Vocabulary) => {
 // Attempts to match a manually typed key label with a key ID, when the user
 // doesn't select the key from the suggestions list.
 const handleBlur = (
+    formName: string,
     { dispatch }: WrappedFieldMetaProps,
     { onBlur, value }: WrappedFieldInputProps,
     vocabulary: Vocabulary) =>
     () => {
-        dispatch(change(COLLECTION_TAG_FORM_NAME, PROPERTY_KEY_FIELD_ID, getTagKeyID(value, vocabulary)));
+        dispatch(change(formName, PROPERTY_KEY_FIELD_ID, getTagKeyID(value, vocabulary)));
         onBlur(value);
     };
 
 // When selecting a property key, save its ID for later usage.
 const handleSelect = (
+    formName: string,
     { onChange }: WrappedFieldInputProps,
     { dispatch }: WrappedFieldMetaProps) => {
         return (item:PropFieldSuggestion) => {
             onChange(item.label);
-            dispatch(change(COLLECTION_TAG_FORM_NAME, PROPERTY_KEY_FIELD_ID, item.id));
+            dispatch(change(formName, PROPERTY_KEY_FIELD_ID, item.id));
     };
 };
