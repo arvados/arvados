@@ -133,7 +133,7 @@ func (s *LoginSuite) SetUpTest(c *check.C) {
 		w.Header().Set("Content-Type", "application/json")
 		switch req.URL.Path {
 		case "/v1/people/me":
-			if f := req.Form.Get("fields"); f != "emailAddresses,names" {
+			if f := req.Form.Get("personFields"); f != "emailAddresses,names" {
 				w.WriteHeader(http.StatusBadRequest)
 				break
 			}

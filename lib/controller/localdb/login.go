@@ -164,7 +164,7 @@ func (ctrl *googleLoginController) getAuthInfo(ctx context.Context, cluster *arv
 		// Override normal API endpoint (for testing)
 		svc.BasePath = p
 	}
-	person, err := people.NewPeopleService(svc).Get("people/me").Fields("emailAddresses,names").Do()
+	person, err := people.NewPeopleService(svc).Get("people/me").PersonFields("emailAddresses,names").Do()
 	if err != nil {
 		if strings.Contains(err.Error(), "Error 403") && strings.Contains(err.Error(), "accessNotConfigured") {
 			// Log the original API error, but display
