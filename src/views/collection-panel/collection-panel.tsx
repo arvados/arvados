@@ -136,17 +136,14 @@ export const CollectionPanel = compose(
                                         <CollectionTagForm />
                                     </Grid>
                                     <Grid item xs={12}>
-                                        {
-                                            Object.keys(item.properties).map(k => {
-                                                const ids = `${k}: ${item.properties[k]}`;
-                                                const label = `${getTagKeyLabel(k, vocabulary)}: ${getTagValueLabel(k, item.properties[k], vocabulary)}`;
-                                                return <CopyToClipboard key={k} text={ids} onCopy={() => this.onCopy("Copied")}>
-                                                    <Chip className={classes.tag}
-                                                        onDelete={this.handleDelete(k)}
-                                                        label={label} />
-                                                </CopyToClipboard>;
-                                            })
-                                        }
+                                        {Object.keys(item.properties).map(k => {
+                                            const label = `${getTagKeyLabel(k, vocabulary)}: ${getTagValueLabel(k, item.properties[k], vocabulary)}`;
+                                            return <CopyToClipboard key={k} text={label} onCopy={() => this.onCopy("Copied")}>
+                                                <Chip className={classes.tag}
+                                                    onDelete={this.handleDelete(k)}
+                                                    label={label} />
+                                            </CopyToClipboard>;
+                                        })}
                                     </Grid>
                                 </Grid>
                             </CardContent>
