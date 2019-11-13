@@ -128,7 +128,7 @@ func (ctrl *googleLoginController) Login(ctx context.Context, cluster *arvados.C
 // Google API does not indicate one.
 func (ctrl *googleLoginController) getAuthInfo(ctx context.Context, cluster *arvados.Cluster, conf *oauth2.Config, token *oauth2.Token, idToken *oidc.IDToken) (*rpc.UserSessionAuthInfo, error) {
 	var ret rpc.UserSessionAuthInfo
-	defer ctxlog.FromContext(ctx).Infof("ret: %#v", &ret) // debug
+	defer ctxlog.FromContext(ctx).WithField("ret", &ret).Debug("getAuthInfo returned")
 
 	var claims struct {
 		Name     string `json:"name"`
@@ -176,8 +176,6 @@ func (ctrl *googleLoginController) getAuthInfo(ctx context.Context, cluster *arv
 		}
 	}
 
-	ctxlog.FromContext(ctx).Infof("people/me response: %#v", person) // debug
-
 	// The given/family names returned by the People API and
 	// flagged as "primary" (if any) take precedence over the
 	// split-by-whitespace result from above.
@@ -195,7 +193,7 @@ func (ctrl *googleLoginController) getAuthInfo(ctx context.Context, cluster *arv
 	}
 	for _, ea := range person.EmailAddresses {
 		if ea.Metadata == nil || !ea.Metadata.Verified {
-			ctxlog.FromContext(ctx).WithField("address", ea.Value).Debug("skipping unverified email address")
+			ctxlog.FromContext(ctx).WithField("address", ea.Value).Info("skipping unverified email address")
 			continue
 		}
 		altEmails[ea.Value] = true
