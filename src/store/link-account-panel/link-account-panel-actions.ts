@@ -58,6 +58,13 @@ function validateLink(userToLink: UserResource, targetUser: UserResource) {
     return LinkAccountPanelError.NONE;
 }
 
+const newServices = (dispatch: Dispatch<any>, token: string) => {
+    const config = dispatch<any>(getConfig);
+    const svc = createServices(config, { progressFn: () => { }, errorFn: () => { } });
+    setAuthorizationHeader(svc, token);
+    return svc;
+}
+
 export const checkForLinkStatus = () =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const status = services.linkAccountService.getLinkOpStatus();
@@ -137,9 +144,7 @@ export const loadLinkAccountPanel = () =>
 
                     // Use the token of the user we are getting data for. This avoids any admin/non-admin permissions
                     // issues since a user will always be able to query the api server for their own user data.
-                    const config = dispatch<any>(getConfig);
-                    const svc = createServices(config, { progressFn: () => { }, errorFn: () => { } });
-                    setAuthorizationHeader(svc, linkAccountData.token);
+                    const svc = newServices(dispatch, linkAccountData.token);
                     const savedUserResource = await svc.userService.get(linkAccountData.userUuid);
 
                     let params: any;
@@ -226,8 +231,8 @@ export const cancelLinking = (reload: boolean = false) =>
             const linkAccountData = services.linkAccountService.getAccountToLink();
             if (linkAccountData) {
                 services.linkAccountService.removeAccountToLink();
-                setAuthorizationHeader(services, linkAccountData.token);
-                user = await services.userService.get(linkAccountData.userUuid);
+                const svc = newServices(dispatch, linkAccountData.token);
+                user = await svc.userService.get(linkAccountData.userUuid);
                 dispatch(switchUser(user, linkAccountData.token));
                 services.linkAccountService.saveLinkOpStatus(LinkAccountStatus.CANCELLED);
             }
@@ -264,8 +269,8 @@ export const linkAccount = () =>
             try {
                 // The merge api links the user sending the request into the user
                 // specified in the request, so change the authorization header accordingly
-                setAuthorizationHeader(services, linkState.userToLinkToken);
-                await services.linkAccountService.linkAccounts(linkState.targetUserToken, newGroup.uuid);
+                const svc = newServices(dispatch, linkState.userToLinkToken);
+                await svc.linkAccountService.linkAccounts(linkState.targetUserToken, newGroup.uuid);
                 dispatch(switchUser(linkState.targetUser, linkState.targetUserToken));
                 services.linkAccountService.removeAccountToLink();
                 services.linkAccountService.saveLinkOpStatus(LinkAccountStatus.SUCCESS);
@@ -274,8 +279,8 @@ export const linkAccount = () =>
             catch (e) {
                 // If the link operation fails, delete the previously made project
                 try {
-                    setAuthorizationHeader(services, linkState.targetUserToken);
-                    await services.projectService.delete(newGroup.uuid);
+                    const svc = newServices(dispatch, linkState.targetUserToken);
+                    await svc.projectService.delete(newGroup.uuid);
                 }
                 finally {
                     dispatch(linkFailed());
