@@ -101,11 +101,19 @@ fetchConfig()
             },
             errorFn: (id, error) => {
                 console.error("Backend error:", error);
-                store.dispatch(snackbarActions.OPEN_SNACKBAR({
-                    message: `${error.errors[0]}`,
-                    kind: SnackbarKind.ERROR,
-                    hideDuration: 8000
-                }));
+                if (error.errors) {
+                    store.dispatch(snackbarActions.OPEN_SNACKBAR({
+                        message: `${error.errors[0]}`,
+                        kind: SnackbarKind.ERROR,
+                        hideDuration: 8000
+                    }));
+                } else {
+                    store.dispatch(snackbarActions.OPEN_SNACKBAR({
+                        message: `${error.message}`,
+                        kind: SnackbarKind.ERROR,
+                        hideDuration: 8000
+                    }));
+                }
             }
         });
         const store = configureStore(history, services);

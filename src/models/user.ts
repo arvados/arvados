@@ -30,15 +30,8 @@ export const getUserFullname = (user?: User) => {
     return user ? `${user.firstName} ${user.lastName}` : "";
 };
 
-export interface UserResource extends Resource {
+export interface UserResource extends Resource, User {
     kind: ResourceKind.USER;
-    email: string;
-    username: string;
-    firstName: string;
-    lastName: string;
-    isAdmin: boolean;
-    prefs: UserPrefs;
     defaultOwnerUuid: string;
-    isActive: boolean;
     writableBy: string[];
 }

@@ -4,21 +4,17 @@
 
 import { ofType, unionize, UnionOf } from '~/common/unionize';
 import { Dispatch } from "redux";
-import { AxiosInstance } from "axios";
 import { RootState } from "../store";
 import { ServiceRepository } from "~/services/services";
 import { SshKeyResource } from '~/models/ssh-key';
-import { User, UserResource } from "~/models/user";
+import { User } from "~/models/user";
 import { Session } from "~/models/session";
 import { Config } from '~/common/config';
-import { initSessions } from "~/store/auth/auth-action-session";
 import { cancelLinking } from '~/store/link-account-panel/link-account-panel-actions';
 import { matchTokenRoute, matchFedTokenRoute } from '~/routes/routes';
-import { AxiosError } from "axios";
+import { createServices, setAuthorizationHeader, removeAuthorizationHeader } from "~/services/services";
 
 export const authActions = unionize({
-    SAVE_API_TOKEN: ofType<string>(),
-    SAVE_USER: ofType<UserResource>(),
     LOGIN: {},
     LOGOUT: {},
     CONFIG: ofType<{ config: Config }>(),
@@ -36,19 +32,6 @@ export const authActions = unionize({
     REMOTE_CLUSTER_CONFIG: ofType<{ config: Config }>(),
 });
 
-export function setAuthorizationHeader(services: ServiceRepository, token: string) {
-    services.apiClient.defaults.headers.common = {
-        Authorization: `OAuth2 ${token}`
-    };
-    services.webdavClient.defaults.headers = {
-        Authorization: `OAuth2 ${token}`
-    };
-}
-
-function removeAuthorizationHeader(client: AxiosInstance) {
-    delete client.defaults.headers.common.Authorization;
-}
-
 export const initAuth = (config: Config) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     // Cancel any link account ops in progress unless the user has
     // just logged in or there has been a successful link operation
@@ -64,48 +47,31 @@ export const initAuth = (config: Config) => (dispatch: Dispatch, getState: () =>
 };
 
 const init = (config: Config) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    const user = services.authService.getUser();
     const token = services.authService.getApiToken();
     let homeCluster = services.authService.getHomeCluster();
-    if (token) {
-        setAuthorizationHeader(services, token);
-    }
     if (homeCluster && !config.remoteHosts[homeCluster]) {
         homeCluster = undefined;
     }
     dispatch(authActions.CONFIG({ config }));
     dispatch(authActions.SET_HOME_CLUSTER(config.loginCluster || homeCluster || config.uuidPrefix));
-    document.title = `Arvados Workbench (${config.uuidPrefix})`;
-    if (token && user) {
-        dispatch(authActions.INIT({ user, token }));
-        dispatch<any>(initSessions(services.authService, config, user));
-        dispatch<any>(getUserDetails()).then((user: User) => {
-            dispatch(authActions.INIT({ user, token }));
-            if (!user.isActive) {
-                services.userService.activate(user.uuid).then((user: User) => {
-                    dispatch(authActions.INIT({ user, token }));
-                });
-            }
-        }).catch((err: AxiosError) => {
-            if (err.response) {
-                // Bad token
-                if (err.response.status === 401) {
-                    dispatch<any>(logout());
-                }
-            }
-        });
+
+    if (token && token !== "undefined") {
+        dispatch<any>(saveApiToken(token));
     }
 };
 
-export const saveApiToken = (token: string) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    services.authService.saveApiToken(token);
-    setAuthorizationHeader(services, token);
-    dispatch(authActions.SAVE_API_TOKEN(token));
+export const getConfig = (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Config => {
+    const state = getState().auth;
+    return state.remoteHostsConfig[state.localCluster];
 };
 
-export const saveUser = (user: UserResource) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    services.authService.saveUser(user);
-    dispatch(authActions.SAVE_USER(user));
+export const saveApiToken = (token: string) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
+    const config = dispatch<any>(getConfig);
+    const svc = createServices(config, { progressFn: () => { }, errorFn: () => { } });
+    setAuthorizationHeader(svc, token);
+    return svc.authService.getUserDetails().then((user: User) => {
+        dispatch(authActions.INIT({ user, token }));
+    });
 };
 
 export const login = (uuidPrefix: string, homeCluster: string, loginCluster: string,
@@ -120,18 +86,9 @@ export const logout = (deleteLinkData: boolean = false) => (dispatch: Dispatch, 
     }
     services.authService.removeApiToken();
     services.authService.removeUser();
-    removeAuthorizationHeader(services.apiClient);
+    removeAuthorizationHeader(services);
     services.authService.logout();
     dispatch(authActions.LOGOUT());
-};
-
-export const getUserDetails = () => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<User> => {
-    dispatch(authActions.USER_DETAILS_REQUEST());
-    return services.authService.getUserDetails().then(user => {
-        services.authService.saveUser(user);
-        dispatch(authActions.USER_DETAILS_SUCCESS(user));
-        return user;
-    });
 };
 
 export type AuthAction = UnionOf<typeof authActions>;

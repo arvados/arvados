@@ -12,7 +12,7 @@ import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions
 import { UserResource } from "~/models/user";
 import { getResource } from '~/store/resources/resources';
 import { navigateTo, navigateToUsers, navigateToRootProject } from "~/store/navigation/navigation-action";
-import { saveApiToken } from '~/store/auth/auth-action';
+import { authActions } from '~/store/auth/auth-action';
 
 export const USERS_PANEL_ID = 'usersPanel';
 export const USER_ATTRIBUTES_DIALOG = 'userAttributesDialog';
@@ -53,13 +53,12 @@ export const loginAs = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const { resources } = getState();
         const data = getResource<UserResource>(uuid)(resources);
-        if (data) {
-            services.authService.saveUser(data);
-        }
         const client = await services.apiClientAuthorizationService.create({ ownerUuid: uuid });
-        dispatch<any>(saveApiToken(`v2/${client.uuid}/${client.apiToken}`));
-        location.reload();
-        dispatch<any>(navigateToRootProject);
+        if (data) {
+            dispatch<any>(authActions.INIT({ user: data, token: `v2/${client.uuid}/${client.apiToken}` }));
+            location.reload();
+            dispatch<any>(navigateToRootProject);
+        }	    
     };
 
 export const openUserCreateDialog = () =>

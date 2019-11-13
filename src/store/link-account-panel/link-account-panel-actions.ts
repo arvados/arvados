@@ -4,16 +4,16 @@
 
 import { Dispatch } from "redux";
 import { RootState } from "~/store/store";
-import { ServiceRepository } from "~/services/services";
+import { ServiceRepository, createServices, setAuthorizationHeader } from "~/services/services";
 import { setBreadcrumbs } from "~/store/breadcrumbs/breadcrumbs-actions";
 import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
 import { LinkAccountType, AccountToLink, LinkAccountStatus } from "~/models/link-account";
-import { saveApiToken, saveUser } from "~/store/auth/auth-action";
+import { authActions, getConfig } from "~/store/auth/auth-action";
 import { unionize, ofType, UnionOf } from '~/common/unionize';
 import { UserResource } from "~/models/user";
 import { GroupResource } from "~/models/group";
 import { LinkAccountPanelError, OriginatingUser } from "./link-account-panel-reducer";
-import { login, logout, setAuthorizationHeader } from "~/store/auth/auth-action";
+import { login, logout } from "~/store/auth/auth-action";
 import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
 import { WORKBENCH_LOADING_SCREEN } from '~/store/workbench/workbench-actions';
 
@@ -83,8 +83,7 @@ export const checkForLinkStatus = () =>
 
 export const switchUser = (user: UserResource, token: string) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(saveUser(user));
-        dispatch(saveApiToken(token));
+        dispatch(authActions.INIT({ user, token }));
     };
 
 export const linkFailed = () =>
@@ -138,9 +137,10 @@ export const loadLinkAccountPanel = () =>
 
                     // Use the token of the user we are getting data for. This avoids any admin/non-admin permissions
                     // issues since a user will always be able to query the api server for their own user data.
-                    setAuthorizationHeader(services, linkAccountData.token);
-                    const savedUserResource = await services.userService.get(linkAccountData.userUuid);
-                    setAuthorizationHeader(services, curToken);
+                    const config = dispatch<any>(getConfig);
+                    const svc = createServices(config, { progressFn: () => { }, errorFn: () => { } });
+                    setAuthorizationHeader(svc, linkAccountData.token);
+                    const savedUserResource = await svc.userService.get(linkAccountData.userUuid);
 
                     let params: any;
                     if (linkAccountData.type === LinkAccountType.ACCESS_OTHER_ACCOUNT || linkAccountData.type === LinkAccountType.ACCESS_OTHER_REMOTE_ACCOUNT) {

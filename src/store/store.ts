@@ -8,6 +8,7 @@ import thunkMiddleware from 'redux-thunk';
 import { History } from "history";
 
 import { authReducer } from "./auth/auth-reducer";
+import { authMiddleware } from "./auth/auth-middleware";
 import { configReducer } from "./config/config-reducer";
 import { dataExplorerReducer } from './data-explorer/data-explorer-reducer';
 import { detailsPanelReducer } from './details-panel/details-panel-reducer';
@@ -126,6 +127,7 @@ export function configureStore(history: History, services: ServiceRepository): R
     const middlewares: Middleware[] = [
         routerMiddleware(history),
         thunkMiddleware.withExtraArgument(services),
+        authMiddleware(services),
         projectPanelMiddleware,
         favoritePanelMiddleware,
         trashPanelMiddleware,

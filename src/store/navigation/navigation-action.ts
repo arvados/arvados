@@ -59,9 +59,9 @@ export const pushOrGoto = (url: string): AnyAction => {
 export const navigateToProcessLogs = compose(push, getProcessLogUrl);
 
 export const navigateToRootProject = (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    const rootProjectUuid = services.authService.getUuid();
-    if (rootProjectUuid) {
-        dispatch<any>(navigateTo(rootProjectUuid));
+    const usr = getState().auth.user;
+    if (usr) {
+        dispatch<any>(navigateTo(usr.uuid));
     }
 };
 

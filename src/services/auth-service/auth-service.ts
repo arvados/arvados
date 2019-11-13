@@ -151,7 +151,7 @@ export class AuthService {
                 throw e;
             });
     }
-
+    
     public getRootUuid() {
         const uuid = this.getOwnerUuid();
         const uuidParts = uuid ? uuid.split('-') : [];

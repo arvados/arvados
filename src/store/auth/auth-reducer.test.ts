@@ -49,23 +49,6 @@ describe('auth-reducer', () => {
         });
     });
 
-    it('should save api token', () => {
-        const initialState = undefined;
-
-        const state = reducer(initialState, authActions.SAVE_API_TOKEN("token"));
-        expect(state).toEqual({
-            apiToken: "token",
-            user: undefined,
-            sshKeys: [],
-            sessions: [],
-            homeCluster: "",
-            localCluster: "",
-            loginCluster: "",
-            remoteHosts: {},
-            remoteHostsConfig: {}
-        });
-    });
-
     it('should set user details on success fetch', () => {
         const initialState = undefined;
 

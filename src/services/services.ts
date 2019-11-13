@@ -35,8 +35,26 @@ import { LinkAccountService } from "./link-account-service/link-account-service"
 
 export type ServiceRepository = ReturnType<typeof createServices>;
 
+export function setAuthorizationHeader(services: ServiceRepository, token: string) {
+    services.apiClient.defaults.headers.common = {
+        Authorization: `Bearer ${token}`
+    };
+    services.webdavClient.defaults.headers = {
+        Authorization: `Bearer ${token}`
+    };
+}
+
+export function removeAuthorizationHeader(services: ServiceRepository) {
+    delete services.apiClient.defaults.headers.common;
+    delete services.webdavClient.defaults.headers.common;
+}
+
 export const createServices = (config: Config, actions: ApiActions) => {
-    const apiClient = Axios.create();
+    // Need to give empty 'headers' object or it will create an
+    // instance with a reference to the global default headers object,
+    // which is very bad because that means setAuthorizationHeader
+    // would update the global default instead of the instance default.
+    const apiClient = Axios.create({ headers: {} });
     apiClient.defaults.baseURL = config.baseUrl;
 
     const webdavClient = new WebDAV();
