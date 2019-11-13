@@ -4,6 +4,7 @@
 
 import * as React from 'react';
 import { connect } from 'react-redux';
+import { RootState } from '~/store/store';
 import { openProjectPropertiesDialog } from '~/store/details-panel/details-panel-action';
 import { ProjectIcon, RenameIcon } from '~/components/icon/icon';
 import { ProjectResource } from '~/models/project';
@@ -15,6 +16,11 @@ import { DetailsAttribute } from "~/components/details-attribute/details-attribu
 import { RichTextEditorLink } from '~/components/rich-text-editor-link/rich-text-editor-link';
 import { withStyles, StyleRulesCallback, Chip, WithStyles } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
+import * as CopyToClipboard from 'react-copy-to-clipboard';
+import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
+import { getTagValueLabel, getTagKeyLabel, Vocabulary } from '~/models/vocabulary';
+import { getVocabulary } from "~/store/vocabulary/vocabulary-selectors";
+import { Dispatch } from 'redux';
 
 export class ProjectDetails extends DetailsData<ProjectResource> {
     getIcon(className?: string) {
@@ -42,19 +48,32 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 interface ProjectDetailsComponentDataProps {
     project: ProjectResource;
+    vocabulary: Vocabulary;
 }
 
 interface ProjectDetailsComponentActionProps {
     onClick: () => void;
+    onCopy: (message: string) => void;
 }
 
-const mapDispatchToProps = ({ onClick: openProjectPropertiesDialog });
+const mapStateToProps = ({ properties }: RootState) => ({
+    vocabulary: getVocabulary(properties),
+});
+
+const mapDispatchToProps = (dispatch: Dispatch) => ({
+    onClick: () => dispatch<any>(openProjectPropertiesDialog()),
+    onCopy: (message: string) => dispatch(snackbarActions.OPEN_SNACKBAR({
+        message,
+        hideDuration: 2000,
+        kind: SnackbarKind.SUCCESS
+    }))
+});
 
 type ProjectDetailsComponentProps = ProjectDetailsComponentDataProps & ProjectDetailsComponentActionProps & WithStyles<CssRules>;
 
-const ProjectDetailsComponent = connect(null, mapDispatchToProps)(
+const ProjectDetailsComponent = connect(mapStateToProps, mapDispatchToProps)(
     withStyles(styles)(
-        ({ classes, project, onClick }: ProjectDetailsComponentProps) => <div>
+        ({ classes, project, onClick, vocabulary, onCopy }: ProjectDetailsComponentProps) => <div>
             <DetailsAttribute label='Type' value={resourceLabel(ResourceKind.PROJECT)} />
             {/* Missing attr */}
             <DetailsAttribute label='Size' value='---' />
@@ -80,7 +99,12 @@ const ProjectDetailsComponent = connect(null, mapDispatchToProps)(
             </DetailsAttribute>
             {
                 Object.keys(project.properties).map(k => {
-                    return <Chip key={k} className={classes.tag} label={`${k}: ${project.properties[k]}`} />;
+                    const label = `${getTagKeyLabel(k, vocabulary)}: ${getTagValueLabel(k, project.properties[k], vocabulary)}`;
+                    return (
+                        <CopyToClipboard key={k} text={label} onCopy={() => onCopy("Copied")}>
+                            <Chip key={k} className={classes.tag} label={label} />
+                        </CopyToClipboard>
+                    );
                 })
             }
         </div>
