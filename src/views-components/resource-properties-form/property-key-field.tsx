@@ -17,17 +17,11 @@ export const PROPERTY_KEY_FIELD_ID = 'keyID';
 
 export const PropertyKeyField = connectVocabulary(
     ({ vocabulary }: VocabularyProp) =>
-        <div>
-            <Field
-                name={PROPERTY_KEY_FIELD_NAME}
-                component={PropertyKeyInput}
-                vocabulary={vocabulary}
-                validate={getValidation(vocabulary)} />
-            <Field
-                name={PROPERTY_KEY_FIELD_ID}
-                type='hidden'
-                component='input' />
-        </div>
+        <Field
+            name={PROPERTY_KEY_FIELD_NAME}
+            component={PropertyKeyInput}
+            vocabulary={vocabulary}
+            validate={getValidation(vocabulary)} />
 );
 
 export const PropertyKeyInput = ({ vocabulary, ...props }: WrappedFieldProps & VocabularyProp) =>

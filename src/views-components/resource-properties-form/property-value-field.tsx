@@ -27,17 +27,11 @@ export const PropertyValueField = compose(
     formValues({ propertyKey: PROPERTY_KEY_FIELD_ID })
 )(
     (props: PropertyValueFieldProps) =>
-        <div>
-            <Field
-                name={PROPERTY_VALUE_FIELD_NAME}
-                component={PropertyValueInput}
-                validate={getValidation(props)}
-                {...props} />
-            <Field
-                name={PROPERTY_VALUE_FIELD_ID}
-                type='hidden'
-                component='input' />
-        </div>
+        <Field
+            name={PROPERTY_VALUE_FIELD_NAME}
+            component={PropertyValueInput}
+            validate={getValidation(props)}
+            {...props} />
 );
 
 export const PropertyValueInput = ({ vocabulary, propertyKey, ...props }: WrappedFieldProps & PropertyValueFieldProps) =>
