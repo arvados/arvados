@@ -205,6 +205,90 @@ func (rtr *router) addRoutes() {
 				return rtr.fed.SpecimenDelete(ctx, *opts.(*arvados.DeleteOptions))
 			},
 		},
+		{
+			arvados.EndpointUserCreate,
+			func() interface{} { return &arvados.CreateOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.UserCreate(ctx, *opts.(*arvados.CreateOptions))
+			},
+		},
+		{
+			arvados.EndpointUserMerge,
+			func() interface{} { return &arvados.UserMergeOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.UserMerge(ctx, *opts.(*arvados.UserMergeOptions))
+			},
+		},
+		{
+			arvados.EndpointUserActivate,
+			func() interface{} { return &arvados.UserActivateOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.UserActivate(ctx, *opts.(*arvados.UserActivateOptions))
+			},
+		},
+		{
+			arvados.EndpointUserSetup,
+			func() interface{} { return &arvados.UserSetupOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.UserSetup(ctx, *opts.(*arvados.UserSetupOptions))
+			},
+		},
+		{
+			arvados.EndpointUserUnsetup,
+			func() interface{} { return &arvados.GetOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.UserUnsetup(ctx, *opts.(*arvados.GetOptions))
+			},
+		},
+		{
+			arvados.EndpointUserGetCurrent,
+			func() interface{} { return &arvados.GetOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.UserGetCurrent(ctx, *opts.(*arvados.GetOptions))
+			},
+		},
+		{
+			arvados.EndpointUserGetSystem,
+			func() interface{} { return &arvados.GetOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.UserGetSystem(ctx, *opts.(*arvados.GetOptions))
+			},
+		},
+		{
+			arvados.EndpointUserGet,
+			func() interface{} { return &arvados.GetOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.UserGet(ctx, *opts.(*arvados.GetOptions))
+			},
+		},
+		{
+			arvados.EndpointUserUpdateUUID,
+			func() interface{} { return &arvados.UpdateUUIDOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.UserUpdateUUID(ctx, *opts.(*arvados.UpdateUUIDOptions))
+			},
+		},
+		{
+			arvados.EndpointUserUpdate,
+			func() interface{} { return &arvados.UpdateOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.UserUpdate(ctx, *opts.(*arvados.UpdateOptions))
+			},
+		},
+		{
+			arvados.EndpointUserList,
+			func() interface{} { return &arvados.ListOptions{Limit: -1} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.UserList(ctx, *opts.(*arvados.ListOptions))
+			},
+		},
+		{
+			arvados.EndpointUserDelete,
+			func() interface{} { return &arvados.DeleteOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.UserDelete(ctx, *opts.(*arvados.DeleteOptions))
+			},
+		},
 	} {
 		rtr.addRoute(route.endpoint, route.defaultOpts, route.exec)
 		if route.endpoint.Method == "PATCH" {
@@ -250,6 +334,11 @@ func (rtr *router) addRoute(endpoint arvados.APIEndpoint, defaultOpts func() int
 		}
 
 		creds := auth.CredentialsFromRequest(req)
+		err = creds.LoadTokensFromHTTPRequestBody(req)
+		if err != nil {
+			rtr.sendError(w, fmt.Errorf("error loading tokens from request body: %s", err))
+			return
+		}
 		if rt, _ := params["reader_tokens"].([]interface{}); len(rt) > 0 {
 			for _, t := range rt {
 				if t, ok := t.(string); ok {

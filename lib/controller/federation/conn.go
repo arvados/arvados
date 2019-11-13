@@ -251,6 +251,10 @@ func (conn *Conn) CollectionGet(ctx context.Context, options arvados.GetOptions)
 	}
 }
 
+func (conn *Conn) CollectionList(ctx context.Context, options arvados.ListOptions) (arvados.CollectionList, error) {
+	return conn.generated_CollectionList(ctx, options)
+}
+
 func (conn *Conn) CollectionProvenance(ctx context.Context, options arvados.GetOptions) (map[string]interface{}, error) {
 	return conn.chooseBackend(options.UUID).CollectionProvenance(ctx, options)
 }
@@ -269,6 +273,10 @@ func (conn *Conn) CollectionTrash(ctx context.Context, options arvados.DeleteOpt
 
 func (conn *Conn) CollectionUntrash(ctx context.Context, options arvados.UntrashOptions) (arvados.Collection, error) {
 	return conn.chooseBackend(options.UUID).CollectionUntrash(ctx, options)
+}
+
+func (conn *Conn) ContainerList(ctx context.Context, options arvados.ListOptions) (arvados.ContainerList, error) {
+	return conn.generated_ContainerList(ctx, options)
 }
 
 func (conn *Conn) ContainerCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Container, error) {
@@ -295,6 +303,10 @@ func (conn *Conn) ContainerUnlock(ctx context.Context, options arvados.GetOption
 	return conn.chooseBackend(options.UUID).ContainerUnlock(ctx, options)
 }
 
+func (conn *Conn) SpecimenList(ctx context.Context, options arvados.ListOptions) (arvados.SpecimenList, error) {
+	return conn.generated_SpecimenList(ctx, options)
+}
+
 func (conn *Conn) SpecimenCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Specimen, error) {
 	return conn.chooseBackend(options.ClusterID).SpecimenCreate(ctx, options)
 }
@@ -309,6 +321,54 @@ func (conn *Conn) SpecimenGet(ctx context.Context, options arvados.GetOptions) (
 
 func (conn *Conn) SpecimenDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.Specimen, error) {
 	return conn.chooseBackend(options.UUID).SpecimenDelete(ctx, options)
+}
+
+func (conn *Conn) UserList(ctx context.Context, options arvados.ListOptions) (arvados.UserList, error) {
+	return conn.generated_UserList(ctx, options)
+}
+
+func (conn *Conn) UserCreate(ctx context.Context, options arvados.CreateOptions) (arvados.User, error) {
+	return conn.chooseBackend(options.ClusterID).UserCreate(ctx, options)
+}
+
+func (conn *Conn) UserUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.User, error) {
+	return conn.chooseBackend(options.UUID).UserUpdate(ctx, options)
+}
+
+func (conn *Conn) UserUpdateUUID(ctx context.Context, options arvados.UpdateUUIDOptions) (arvados.User, error) {
+	return conn.chooseBackend(options.UUID).UserUpdateUUID(ctx, options)
+}
+
+func (conn *Conn) UserMerge(ctx context.Context, options arvados.UserMergeOptions) (arvados.User, error) {
+	return conn.chooseBackend(options.OldUserUUID).UserMerge(ctx, options)
+}
+
+func (conn *Conn) UserActivate(ctx context.Context, options arvados.UserActivateOptions) (arvados.User, error) {
+	return conn.chooseBackend(options.UUID).UserActivate(ctx, options)
+}
+
+func (conn *Conn) UserSetup(ctx context.Context, options arvados.UserSetupOptions) (map[string]interface{}, error) {
+	return conn.chooseBackend(options.UUID).UserSetup(ctx, options)
+}
+
+func (conn *Conn) UserUnsetup(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
+	return conn.chooseBackend(options.UUID).UserUnsetup(ctx, options)
+}
+
+func (conn *Conn) UserGet(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
+	return conn.chooseBackend(options.UUID).UserGet(ctx, options)
+}
+
+func (conn *Conn) UserGetCurrent(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
+	return conn.chooseBackend(options.UUID).UserGetCurrent(ctx, options)
+}
+
+func (conn *Conn) UserGetSystem(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
+	return conn.chooseBackend(options.UUID).UserGetSystem(ctx, options)
+}
+
+func (conn *Conn) UserDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.User, error) {
+	return conn.chooseBackend(options.UUID).UserDelete(ctx, options)
 }
 
 func (conn *Conn) APIClientAuthorizationCurrent(ctx context.Context, options arvados.GetOptions) (arvados.APIClientAuthorization, error) {

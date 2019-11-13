@@ -16,7 +16,7 @@ import (
 // -- this file is auto-generated -- do not edit -- edit list.go and run "go generate" instead --
 //
 
-func (conn *Conn) ContainerList(ctx context.Context, options arvados.ListOptions) (arvados.ContainerList, error) {
+func (conn *Conn) generated_ContainerList(ctx context.Context, options arvados.ListOptions) (arvados.ContainerList, error) {
 	var mtx sync.Mutex
 	var merged arvados.ContainerList
 	err := conn.splitListRequest(ctx, options, func(ctx context.Context, _ string, backend arvados.API, options arvados.ListOptions) ([]string, error) {
@@ -41,11 +41,36 @@ func (conn *Conn) ContainerList(ctx context.Context, options arvados.ListOptions
 	return merged, err
 }
 
-func (conn *Conn) SpecimenList(ctx context.Context, options arvados.ListOptions) (arvados.SpecimenList, error) {
+func (conn *Conn) generated_SpecimenList(ctx context.Context, options arvados.ListOptions) (arvados.SpecimenList, error) {
 	var mtx sync.Mutex
 	var merged arvados.SpecimenList
 	err := conn.splitListRequest(ctx, options, func(ctx context.Context, _ string, backend arvados.API, options arvados.ListOptions) ([]string, error) {
 		cl, err := backend.SpecimenList(ctx, options)
+		if err != nil {
+			return nil, err
+		}
+		mtx.Lock()
+		defer mtx.Unlock()
+		if len(merged.Items) == 0 {
+			merged = cl
+		} else {
+			merged.Items = append(merged.Items, cl.Items...)
+		}
+		uuids := make([]string, 0, len(cl.Items))
+		for _, item := range cl.Items {
+			uuids = append(uuids, item.UUID)
+		}
+		return uuids, nil
+	})
+	sort.Slice(merged.Items, func(i, j int) bool { return merged.Items[i].UUID < merged.Items[j].UUID })
+	return merged, err
+}
+
+func (conn *Conn) generated_UserList(ctx context.Context, options arvados.ListOptions) (arvados.UserList, error) {
+	var mtx sync.Mutex
+	var merged arvados.UserList
+	err := conn.splitListRequest(ctx, options, func(ctx context.Context, _ string, backend arvados.API, options arvados.ListOptions) ([]string, error) {
+		cl, err := backend.UserList(ctx, options)
 		if err != nil {
 			return nil, err
 		}

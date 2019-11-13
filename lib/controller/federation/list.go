@@ -20,7 +20,7 @@ import (
 // CollectionList is used as a template to auto-generate List()
 // methods for other types; see generate.go.
 
-func (conn *Conn) CollectionList(ctx context.Context, options arvados.ListOptions) (arvados.CollectionList, error) {
+func (conn *Conn) generated_CollectionList(ctx context.Context, options arvados.ListOptions) (arvados.CollectionList, error) {
 	var mtx sync.Mutex
 	var merged arvados.CollectionList
 	err := conn.splitListRequest(ctx, options, func(ctx context.Context, _ string, backend arvados.API, options arvados.ListOptions) ([]string, error) {

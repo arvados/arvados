@@ -31,7 +31,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	orig := regexp.MustCompile(`(?ms)\nfunc [^\n]*CollectionList\(.*?\n}\n`).Find(buf)
+	orig := regexp.MustCompile(`(?ms)\nfunc [^\n]*generated_CollectionList\(.*?\n}\n`).Find(buf)
 	if len(orig) == 0 {
 		panic("can't find CollectionList func")
 	}
@@ -52,7 +52,7 @@ func main() {
 		defer out.Close()
 		out.Write(regexp.MustCompile(`(?ms)^.*package .*?import.*?\n\)\n`).Find(buf))
 		io.WriteString(out, "//\n// -- this file is auto-generated -- do not edit -- edit list.go and run \"go generate\" instead --\n//\n\n")
-		for _, t := range []string{"Container", "Specimen"} {
+		for _, t := range []string{"Container", "Specimen", "User"} {
 			_, err := out.Write(bytes.ReplaceAll(orig, []byte("Collection"), []byte(t)))
 			if err != nil {
 				panic(err)

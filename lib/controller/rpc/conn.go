@@ -308,6 +308,79 @@ func (conn *Conn) SpecimenDelete(ctx context.Context, options arvados.DeleteOpti
 	return resp, err
 }
 
+func (conn *Conn) UserCreate(ctx context.Context, options arvados.CreateOptions) (arvados.User, error) {
+	ep := arvados.EndpointUserCreate
+	var resp arvados.User
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+func (conn *Conn) UserUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.User, error) {
+	ep := arvados.EndpointUserUpdate
+	var resp arvados.User
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+func (conn *Conn) UserUpdateUUID(ctx context.Context, options arvados.UpdateUUIDOptions) (arvados.User, error) {
+	ep := arvados.EndpointUserUpdateUUID
+	var resp arvados.User
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+func (conn *Conn) UserMerge(ctx context.Context, options arvados.UserMergeOptions) (arvados.User, error) {
+	ep := arvados.EndpointUserUpdateUUID
+	var resp arvados.User
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+func (conn *Conn) UserActivate(ctx context.Context, options arvados.UserActivateOptions) (arvados.User, error) {
+	ep := arvados.EndpointUserUpdateUUID
+	var resp arvados.User
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+func (conn *Conn) UserSetup(ctx context.Context, options arvados.UserSetupOptions) (map[string]interface{}, error) {
+	ep := arvados.EndpointUserUpdateUUID
+	var resp map[string]interface{}
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+func (conn *Conn) UserUnsetup(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
+	ep := arvados.EndpointUserUpdateUUID
+	var resp arvados.User
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+func (conn *Conn) UserGet(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
+	ep := arvados.EndpointUserGet
+	var resp arvados.User
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+func (conn *Conn) UserGetCurrent(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
+	ep := arvados.EndpointUserGetCurrent
+	var resp arvados.User
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+func (conn *Conn) UserGetSystem(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
+	ep := arvados.EndpointUserGetSystem
+	var resp arvados.User
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+func (conn *Conn) UserList(ctx context.Context, options arvados.ListOptions) (arvados.UserList, error) {
+	ep := arvados.EndpointUserList
+	var resp arvados.UserList
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+func (conn *Conn) UserDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.User, error) {
+	ep := arvados.EndpointUserDelete
+	var resp arvados.User
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
 func (conn *Conn) APIClientAuthorizationCurrent(ctx context.Context, options arvados.GetOptions) (arvados.APIClientAuthorization, error) {
 	ep := arvados.EndpointAPIClientAuthorizationCurrent
 	var resp arvados.APIClientAuthorization
