@@ -7,6 +7,11 @@ export GOPATH=/var/lib/gopath
 mkdir -p $GOPATH
 
 cd /usr/src/arvados
-flock /var/lib/gopath/gopath.lock go get -v -d ...
-flock /var/lib/gopath/gopath.lock go get -t ./cmd/arvados-server
+if [[ $UID = 0 ]] ; then
+    /usr/local/lib/arvbox/runsu.sh flock /var/lib/gopath/gopath.lock go mod download
+    /usr/local/lib/arvbox/runsu.sh flock /var/lib/gopath/gopath.lock go get ./cmd/arvados-server
+else
+    flock /var/lib/gopath/gopath.lock go mod download
+    flock /var/lib/gopath/gopath.lock go get ./cmd/arvados-server
+fi
 install $GOPATH/bin/arvados-server /usr/local/bin
