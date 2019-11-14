@@ -631,6 +631,7 @@ initialize() {
 }
 
 install_env() {
+    go mod download || fatal "Go deps failed"
     which goimports >/dev/null || go get golang.org/x/tools/cmd/goimports || fatal "Go setup failed"
 
     setup_virtualenv "$VENVDIR" --python python2.7
@@ -752,11 +753,11 @@ do_test_once() {
     then
         covername="coverage-$(echo "$1" | sed -e 's/\//_/g')"
         coverflags=("-covermode=count" "-coverprofile=$WORKSPACE/tmp/.$covername.tmp")
-        # We do "go get -t" here to catch compilation errors
+        # We do "go install" here to catch compilation errors
         # before trying "go test". Otherwise, coverage-reporting
         # mode makes Go show the wrong line numbers when reporting
         # compilation errors.
-        go get -ldflags "$(go_ldflags)" -t "git.curoverse.com/arvados.git/$1" && \
+        go install -ldflags "$(go_ldflags)" "$WORKSPACE/$1" && \
             cd "$WORKSPACE/$1" && \
             if [[ -n "${testargs[$1]}" ]]
         then
@@ -844,7 +845,7 @@ do_install_once() {
         result=1
     elif [[ "$2" == "go" ]]
     then
-        go get -ldflags "$(go_ldflags)" -t "git.curoverse.com/arvados.git/$1"
+        go install -ldflags "$(go_ldflags)" "$WORKSPACE/$1"
     elif [[ "$2" == "pip" ]]
     then
         # $3 can name a path directory for us to use, including trailing

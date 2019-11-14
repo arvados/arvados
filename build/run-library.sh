@@ -111,6 +111,7 @@ calculate_go_package_version() {
   local src_path="$1"; shift
 
   cd "$WORKSPACE/$src_path"
+  go mod download
   local version="$(version_from_git)"
   local timestamp="$(timestamp_from_git)"
 
