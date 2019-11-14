@@ -6,6 +6,7 @@ import { ServiceRepository } from '~/services/services';
 import { MiddlewareAPI, Dispatch } from 'redux';
 import { DataExplorerMiddlewareService } from '~/store/data-explorer/data-explorer-middleware-service';
 import { RootState } from '~/store/store';
+import { getUserUuid } from "~/common/getuser";
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { getDataExplorer } from '~/store/data-explorer/data-explorer-reducer';
 import { resourcesActions } from '~/store/resources/resources-actions';
@@ -48,7 +49,7 @@ export class CollectionsWithSameContentAddressMiddlewareService extends DataExpl
             }
             try {
                 api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
-                const userUuid = api.getState().auth.user!.uuid;
+                const userUuid = getUserUuid(api.getState());
                 const pathname = api.getState().router.location!.pathname;
                 const contentAddress = pathname.split('/')[2];
                 const response = await this.services.collectionService.list({
@@ -88,11 +89,11 @@ export class CollectionsWithSameContentAddressMiddlewareService extends DataExpl
                         .addIn('uuid', groupUuids)
                         .getFilters()
                 });
-                responseUsers.items.map(it=>{
-                    api.dispatch<any>(ownerNameActions.SET_OWNER_NAME({name: it.uuid === userUuid ? 'User: Me' : `User: ${it.firstName} ${it.lastName}`, uuid: it.uuid}));
+                responseUsers.items.map(it => {
+                    api.dispatch<any>(ownerNameActions.SET_OWNER_NAME({ name: it.uuid === userUuid ? 'User: Me' : `User: ${it.firstName} ${it.lastName}`, uuid: it.uuid }));
                 });
-                responseGroups.items.map(it=>{
-                    api.dispatch<any>(ownerNameActions.SET_OWNER_NAME({name: `Project: ${it.name}`, uuid: it.uuid}));
+                responseGroups.items.map(it => {
+                    api.dispatch<any>(ownerNameActions.SET_OWNER_NAME({ name: `Project: ${it.name}`, uuid: it.uuid }));
                 });
                 api.dispatch<any>(setBreadcrumbs([{ label: 'Projects', uuid: userUuid }]));
                 api.dispatch<any>(updateFavorites(response.items.map(item => item.uuid)));

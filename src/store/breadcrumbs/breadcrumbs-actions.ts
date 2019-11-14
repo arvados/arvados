@@ -4,6 +4,7 @@
 
 import { Dispatch } from 'redux';
 import { RootState } from '~/store/store';
+import { getUserUuid } from "~/common/getuser";
 import { Breadcrumb } from '~/components/breadcrumbs/breadcrumbs';
 import { getResource } from '~/store/resources/resources';
 import { TreePicker } from '../tree-picker/tree-picker';
@@ -47,7 +48,7 @@ export const setSidePanelBreadcrumbs = (uuid: string) =>
         const path = getState().router.location!.pathname;
         const currentUuid = path.split('/')[2];
         const uuidKind = extractUuidKind(currentUuid);
-        
+
         if (uuidKind === ResourceKind.COLLECTION) {
             const collectionItem = await services.collectionService.get(currentUuid);
             dispatch(setBreadcrumbs(breadcrumbs, collectionItem));
@@ -92,7 +93,7 @@ export const setCategoryBreadcrumbs = (uuid: string, category: SidePanelTreeCate
 export const setProjectBreadcrumbs = (uuid: string) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const ancestors = getSidePanelTreeNodeAncestorsIds(uuid)(getState().treePicker);
-        const rootUuid = services.authService.getUuid();
+        const rootUuid = getUserUuid(getState());
         if (uuid === rootUuid || ancestors.find(uuid => uuid === rootUuid)) {
             dispatch(setSidePanelBreadcrumbs(uuid));
         } else {

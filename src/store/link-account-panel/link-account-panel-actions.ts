@@ -4,6 +4,7 @@
 
 import { Dispatch } from "redux";
 import { RootState } from "~/store/store";
+import { getUserUuid } from "~/common/getuser";
 import { ServiceRepository, createServices, setAuthorizationHeader } from "~/services/services";
 import { setBreadcrumbs } from "~/store/breadcrumbs/breadcrumbs-actions";
 import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
@@ -63,7 +64,7 @@ const newServices = (dispatch: Dispatch<any>, token: string) => {
     const svc = createServices(config, { progressFn: () => { }, errorFn: () => { } });
     setAuthorizationHeader(svc, token);
     return svc;
-}
+};
 
 export const checkForLinkStatus = () =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
@@ -203,7 +204,7 @@ export const loadLinkAccountPanel = () =>
 
 export const startLinking = (t: LinkAccountType) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        const accountToLink = { type: t, userUuid: services.authService.getUuid(), token: services.authService.getApiToken() } as AccountToLink;
+        const accountToLink = { type: t, userUuid: getUserUuid(getState()), token: services.authService.getApiToken() } as AccountToLink;
         services.linkAccountService.saveAccountToLink(accountToLink);
 
         const auth = getState().auth;

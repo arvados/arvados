@@ -5,6 +5,7 @@
 import { Dispatch } from "redux";
 import { bindDataExplorerActions } from '~/store/data-explorer/data-explorer-action';
 import { RootState } from '~/store/store';
+import { getUserUuid } from "~/common/getuser";
 import { ServiceRepository } from "~/services/services";
 import { dialogActions } from '~/store/dialog/dialog-actions';
 import { startSubmit, reset } from "redux-form";
@@ -58,12 +59,12 @@ export const loginAs = (uuid: string) =>
             dispatch<any>(authActions.INIT({ user: data, token: `v2/${client.uuid}/${client.apiToken}` }));
             location.reload();
             dispatch<any>(navigateToRootProject);
-        }	    
+        }
     };
 
 export const openUserCreateDialog = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const userUuid = await services.authService.getUuid();
+        const userUuid = getUserUuid(getState());
         const user = await services.userService.get(userUuid!);
         const virtualMachines = await services.virtualMachineService.list();
         dispatch(reset(USER_CREATE_FORM_NAME));

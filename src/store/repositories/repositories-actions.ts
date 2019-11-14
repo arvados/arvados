@@ -5,6 +5,7 @@
 import { Dispatch } from "redux";
 import { bindDataExplorerActions } from '~/store/data-explorer/data-explorer-action';
 import { RootState } from '~/store/store';
+import { getUserUuid } from "~/common/getuser";
 import { ServiceRepository } from "~/services/services";
 import { navigateToRepositories } from "~/store/navigation/navigation-action";
 import { unionize, ofType, UnionOf } from "~/common/unionize";
@@ -40,7 +41,7 @@ export const openRepositoryAttributes = (uuid: string) =>
 
 export const openRepositoryCreateDialog = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const userUuid = await services.authService.getUuid();
+        const userUuid = getUserUuid(getState());
         const user = await services.userService.get(userUuid!);
         dispatch(reset(REPOSITORY_CREATE_FORM_NAME));
         dispatch(dialogActions.OPEN_DIALOG({ id: REPOSITORY_CREATE_FORM_NAME, data: { user } }));
@@ -48,7 +49,7 @@ export const openRepositoryCreateDialog = () =>
 
 export const createRepository = (repository: RepositoryResource) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const userUuid = await services.authService.getUuid();
+        const userUuid = getUserUuid(getState());
         const user = await services.userService.get(userUuid!);
         dispatch(startSubmit(REPOSITORY_CREATE_FORM_NAME));
         try {

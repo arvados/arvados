@@ -10,9 +10,9 @@ import { SshKeyResource } from '~/models/ssh-key';
 import { User } from "~/models/user";
 import { Session } from "~/models/session";
 import { Config } from '~/common/config';
-import { cancelLinking } from '~/store/link-account-panel/link-account-panel-actions';
 import { matchTokenRoute, matchFedTokenRoute } from '~/routes/routes';
-import { createServices, setAuthorizationHeader, removeAuthorizationHeader } from "~/services/services";
+import { createServices, setAuthorizationHeader } from "~/services/services";
+import { cancelLinking } from '~/store/link-account-panel/link-account-panel-actions';
 
 export const authActions = unionize({
     LOGIN: {},

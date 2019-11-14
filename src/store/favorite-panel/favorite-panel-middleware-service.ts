@@ -5,6 +5,7 @@
 import { DataExplorerMiddlewareService } from "~/store/data-explorer/data-explorer-middleware-service";
 import { FavoritePanelColumnNames } from "~/views/favorite-panel/favorite-panel";
 import { RootState } from "../store";
+import { getUserUuid } from "~/common/getuser";
 import { DataColumns } from "~/components/data-table/data-table";
 import { ServiceRepository } from "~/services/services";
 import { SortDirection } from "~/components/data-table/data-column";
@@ -59,7 +60,7 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
                 const responseLinks = await this.services.linkService.list({
                     filters: new FilterBuilder()
                         .addEqual("linkClass", 'star')
-                        .addEqual('tailUuid', this.services.authService.getUuid()!)
+                        .addEqual('tailUuid', getUserUuid(api.getState()))
                         .addEqual('tailKind', ResourceKind.USER)
                         .getFilters()
                 }).then(results => results);
@@ -94,7 +95,7 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
                     response.itemsAvailable++;
                     response.items.push(it);
                 });
-                
+
                 api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
                 api.dispatch(resourcesActions.SET_RESOURCES(response.items));
                 await api.dispatch<any>(loadMissingProcessesInformation(response.items));

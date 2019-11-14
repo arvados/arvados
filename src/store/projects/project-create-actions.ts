@@ -5,6 +5,7 @@
 import { Dispatch } from "redux";
 import { reset, startSubmit, stopSubmit, initialize, FormErrors, formValueSelector, change } from 'redux-form';
 import { RootState } from '~/store/store';
+import { getUserUuid } from "~/common/getuser";
 import { dialogActions } from "~/store/dialog/dialog-actions";
 import { getCommonResourceServiceError, CommonResourceServiceError } from '~/services/common-service/common-resource-service';
 import { ProjectResource } from '~/models/project';
@@ -38,7 +39,7 @@ export const isItemNotInProject = (properties: any) => {
     if (properties.breadcrumbs) {
         return Boolean(properties.breadcrumbs[0].label !== 'Projects');
     } else {
-        return ;
+        return;
     }
 };
 
@@ -47,7 +48,7 @@ export const openProjectCreateDialog = (ownerUuid: string) =>
         const router = getState();
         const properties = getState().properties;
         if (isItemNotInProject(properties) || !isProjectOrRunProcessRoute(router)) {
-            const userUuid = getState().auth.user!.uuid;
+            const userUuid = getUserUuid(getState());
             dispatch(initialize(PROJECT_CREATE_FORM_NAME, { userUuid }));
         } else {
             dispatch(initialize(PROJECT_CREATE_FORM_NAME, { ownerUuid }));
@@ -76,12 +77,12 @@ export const addPropertyToCreateProjectForm = (data: ResourcePropertiesFormData)
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const properties = { ...PROJECT_CREATE_FORM_SELECTOR(getState(), 'properties') };
         properties[data.key] = data.value;
-        dispatch(change(PROJECT_CREATE_FORM_NAME, 'properties', properties ));
+        dispatch(change(PROJECT_CREATE_FORM_NAME, 'properties', properties));
     };
 
 export const removePropertyFromCreateProjectForm = (key: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const properties = { ...PROJECT_CREATE_FORM_SELECTOR(getState(), 'properties') };
         delete properties[key];
-        dispatch(change(PROJECT_CREATE_FORM_NAME, 'properties', properties ));
+        dispatch(change(PROJECT_CREATE_FORM_NAME, 'properties', properties));
     };

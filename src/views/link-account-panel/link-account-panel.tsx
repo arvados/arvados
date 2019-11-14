@@ -5,7 +5,7 @@
 import { RootState } from '~/store/store';
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
-import { startLinking, cancelLinking, linkAccount, linkAccountPanelActions } from '~/store/link-account-panel/link-account-panel-actions';
+import { startLinking, linkAccount, linkAccountPanelActions, cancelLinking } from '~/store/link-account-panel/link-account-panel-actions';
 import { LinkAccountType } from '~/models/link-account';
 import {
     LinkAccountPanelRoot,

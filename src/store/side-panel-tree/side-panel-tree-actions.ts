@@ -5,6 +5,7 @@
 import { Dispatch } from 'redux';
 import { treePickerActions } from "~/store/tree-picker/tree-picker-actions";
 import { RootState } from '~/store/store';
+import { getUserUuid } from "~/common/getuser";
 import { ServiceRepository } from '~/services/services';
 import { FilterBuilder } from '~/services/api/filter-builder';
 import { resourcesActions } from '~/store/resources/resources-actions';
@@ -52,8 +53,11 @@ const SIDE_PANEL_CATEGORIES = [
 export const isSidePanelTreeCategory = (id: string) => SIDE_PANEL_CATEGORIES.some(category => category === id);
 
 export const initSidePanelTree = () =>
-    (dispatch: Dispatch, _: () => RootState, { authService }: ServiceRepository) => {
-        const rootProjectUuid = authService.getUuid() || '';
+    (dispatch: Dispatch, getState: () => RootState, { authService }: ServiceRepository) => {
+        const rootProjectUuid = getUserUuid(getState());
+        if (!rootProjectUuid) {
+            return;
+        }
         const nodes = SIDE_PANEL_CATEGORIES.map(id => initTreeNode({ id, value: id }));
         const projectsNode = initTreeNode({ id: rootProjectUuid, value: SidePanelTreeCategory.PROJECTS });
         const sharedNode = initTreeNode({ id: SidePanelTreeCategory.SHARED_WITH_ME, value: SidePanelTreeCategory.SHARED_WITH_ME });
@@ -155,9 +159,13 @@ export const activateSidePanelTreeProject = (id: string) =>
     };
 
 export const activateSidePanelTreeBranch = (id: string) =>
-    async (dispatch: Dispatch, _: void, services: ServiceRepository) => {
-        const ancestors = await services.ancestorsService.ancestors(id, services.authService.getUuid() || '');
-        const isShared = ancestors.every(({ uuid }) => uuid !== services.authService.getUuid());
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const userUuid = getUserUuid(getState());
+        if (!userUuid) {
+            return;
+        }
+        const ancestors = await services.ancestorsService.ancestors(id, userUuid);
+        const isShared = ancestors.every(({ uuid }) => uuid !== userUuid);
         if (isShared) {
             await dispatch<any>(loadSidePanelTreeProjects(SidePanelTreeCategory.SHARED_WITH_ME));
         }

@@ -4,6 +4,7 @@
 
 import { Dispatch } from 'redux';
 import { RootState } from "~/store/store";
+import { getUserUuid } from "~/common/getuser"; 
 import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { favoritePanelActions, loadFavoritePanel } from '~/store/favorite-panel/favorite-panel-action';
@@ -177,7 +178,7 @@ export const loadTrash = () =>
 export const loadProject = (uuid: string) =>
     handleFirstTimeLoad(
         async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-            const userUuid = services.authService.getUuid();
+            const userUuid = getUserUuid(getState());
             dispatch(setIsProjectPanelTrashed(false));
             if (userUuid) {
                 if (extractUuidKind(uuid) === ResourceKind.USER && userUuid !== uuid) {
@@ -260,7 +261,7 @@ export const updateProject = (data: projectUpdateActions.ProjectUpdateFormDialog
 export const loadCollection = (uuid: string) =>
     handleFirstTimeLoad(
         async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-            const userUuid = services.authService.getUuid();
+            const userUuid = getUserUuid(getState());
             if (userUuid) {
                 const match = await loadGroupContentsResource({ uuid, userUuid, services });
                 match({

@@ -61,7 +61,7 @@ export const authReducer = (services: ServiceRepository) => (state = initialStat
             return { ...state, apiToken: undefined };
         },
         USER_DETAILS_SUCCESS: (user: User) => {
-            return { ...state, user };
+            return { ...state, user, homeCluster: user.uuid.substr(0, 5) };
         },
         SET_SSH_KEYS: (sshKeys: SshKeyResource[]) => {
             return { ...state, sshKeys };
