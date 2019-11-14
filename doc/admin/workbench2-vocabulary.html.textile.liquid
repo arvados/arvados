@@ -1,0 +1,48 @@
+---
+layout: default
+navsection: admin
+title: Workbench2 Vocabulary Format
+...
+
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Many Arvados objects (like collections and projects) can store metadata as properties that in turn can be used in searches allowing a flexible way of organizing data inside the system.
+
+The Workbench2 user interface enables the site adminitrator to set up a properties vocabulary formal definition so that users can select from predefined key/value pairs of properties, offering the possibility to add different terms for the same concept.
+
+h2. Workbench2 configuration
+
+Workbench2 needs to know from where it can get the vocabulary definition as a JSON file. For that purpose, it will request to the API Server the cluster's configuration for the file's URL. This can be set up on the cluster config file:
+
+<notextile>
+<pre><code>Cluster:
+  zzzzz:
+    Workbench:
+      VocabularyURL: <span class="userinput">https://site.example.com/vocabulary.json</span>
+</code></pre>
+</notextile>
+
+h2. Vocabulary definition format
+
+The JSON file describes the available options on keys and values and if the user is allowed to enter other kind of text not covered on the vocabulary.
+
+Keys and values are indexed by identifiers that are ultimately the ones being saved to Arvados so the vocabulary terms can change by adding or removing entries but keeping the reference to the same concept. This is useful for vocabulary-based searches.
+
+The following is an example of a vocabulary definition:
+
+{% codeblock as json %}
+{% include 'wb2_vocabulary_example' %}
+{% endcodeblock %}
+
+If the @strict_tags@ flag at the root level is @true@, it will restrict the users from saving other property keys than the ones defined on the vocabulary. Take notice that this restriction is at the client level on Workbench2, it doesn't limit the user's ability to set any arbitrary property via other means (e.g.: Python SDK or CLI commands)
+
+Inside the @tags@ member, properties' key IDs are defined (@IDTAGANIMALS@, @IDTAGCOMMENT@, @IGTAGIMPORTANCES@) and they can have any format that the current application requires. Every key will declare at least a @labels@ list with zero or more label objects. Also @strict@ and @values@ members can be listed, being the former the equivalent of @strict_tags@ but at the property's value selection level, and the latter an optional list of value objects.
+
+As you can see on @IDTAGCOMMENT@, open-ended text properties can be allowed by only defining the property's key ID and labels and leaving out the @values@ member.
+
+When any key or value has more than one label option, Workbench2's user interface will allow the user to select any of the options, but because only the IDs are saved on the system, when they're displayed the label shown will be the first one of each group defined on the vocabulary file. For example, the user could select the property key @Species@ and @Homo sapiens@ as its value, but the user interface will display it as @Animal: Human@ because those labels are the first on the vocabulary definition.
+When doing property based searches, Workbench2 will do them by IDs so it doesn't really make a difference if the user searches by @Animal: Human@ or @Species: Homo sapiens@, both will return the same results.
