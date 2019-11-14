@@ -25,8 +25,8 @@ export interface Tag {
 }
 
 export interface PropFieldSuggestion {
-    "id": string;
-    "label": string;
+    id: string;
+    label: string;
 }
 
 const VOCABULARY_VALIDATORS = [
@@ -68,7 +68,7 @@ export const getTagValues = (tagKeyID: string, vocabulary: Vocabulary) => {
     const tag = vocabulary.tags[tagKeyID];
     const ret = tag && tag.values
         ? Object.keys(tag.values).map(
-            tagValueID => tag.values![tagValueID].labels
+            tagValueID => tag.values![tagValueID].labels && tag.values![tagValueID].labels.length > 0
                 ? tag.values![tagValueID].labels.map(
                     lbl => Object.assign({}, {"id": tagValueID, "label": lbl.label}))
                 : [{"id": tagValueID, "label": tagValueID}])
@@ -81,7 +81,7 @@ export const getTagValues = (tagKeyID: string, vocabulary: Vocabulary) => {
 export const getTags = ({ tags }: Vocabulary) => {
     const ret = tags && Object.keys(tags)
         ? Object.keys(tags).map(
-            tagID => tags[tagID].labels
+            tagID => tags[tagID].labels && tags[tagID].labels.length > 0
                 ? tags[tagID].labels.map(
                     lbl => Object.assign({}, {"id": tagID, "label": lbl.label}))
                 : [{"id": tagID, "label": tagID}])
