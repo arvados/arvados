@@ -8,6 +8,8 @@ import { ServiceRepository, setAuthorizationHeader, removeAuthorizationHeader } 
 import { initSessions } from "~/store/auth/auth-action-session";
 import { User } from "~/models/user";
 import { RootState } from '~/store/store';
+import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
+import { WORKBENCH_LOADING_SCREEN } from '~/store/workbench/workbench-actions';
 
 export const authMiddleware = (services: ServiceRepository): Middleware => store => next => action => {
     authActions.match(action, {
@@ -25,8 +27,12 @@ export const authMiddleware = (services: ServiceRepository): Middleware => store
 
             store.dispatch<any>(initSessions(services.authService, state.auth.remoteHostsConfig[state.auth.localCluster], user));
             if (!user.isActive) {
+                store.dispatch(progressIndicatorActions.START_WORKING(WORKBENCH_LOADING_SCREEN));
                 services.userService.activate(user.uuid).then((user: User) => {
-                    store.getState().dispatch(authActions.INIT({ user, token }));
+                    store.dispatch(authActions.INIT({ user, token }));
+                    store.dispatch(progressIndicatorActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
+                }).catch(() => {
+                    store.dispatch(progressIndicatorActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
                 });
             }
         },

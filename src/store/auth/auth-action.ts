@@ -13,6 +13,8 @@ import { Config } from '~/common/config';
 import { matchTokenRoute, matchFedTokenRoute } from '~/routes/routes';
 import { createServices, setAuthorizationHeader } from "~/services/services";
 import { cancelLinking } from '~/store/link-account-panel/link-account-panel-actions';
+import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
+import { WORKBENCH_LOADING_SCREEN } from '~/store/workbench/workbench-actions';
 
 export const authActions = unionize({
     LOGIN: {},
@@ -56,7 +58,10 @@ const init = (config: Config) => (dispatch: Dispatch, getState: () => RootState,
     dispatch(authActions.SET_HOME_CLUSTER(config.loginCluster || homeCluster || config.uuidPrefix));
 
     if (token && token !== "undefined") {
-        dispatch<any>(saveApiToken(token));
+        dispatch(progressIndicatorActions.START_WORKING(WORKBENCH_LOADING_SCREEN));
+        dispatch<any>(saveApiToken(token)).finally(() => {
+            dispatch(progressIndicatorActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
+        });
     }
 };
 
