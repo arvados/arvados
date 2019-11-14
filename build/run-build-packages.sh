@@ -281,7 +281,6 @@ debug_echo -e "\nPython packages\n"
 # Go binaries
 cd $WORKSPACE/packages/$TARGET
 export GOPATH=$(mktemp -d)
-go get github.com/kardianos/govendor
 package_go_binary cmd/arvados-client arvados-client \
     "Arvados command line tool (beta)"
 package_go_binary cmd/arvados-server arvados-server \
