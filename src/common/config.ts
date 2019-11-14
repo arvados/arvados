@@ -125,9 +125,6 @@ remove the entire ${varName} entry from ${WORKBENCH_CONFIG_URL}`);
                 else {
                     vocabularyUrl = clusterConfigJSON.Workbench.VocabularyURL || "/vocabulary-example.json";
                 }
-                // FIXME: The following line is for dev testing purposes
-                vocabularyUrl = "/vocabulary-example.json";
-
                 config.vocabularyUrl = vocabularyUrl;
 
                 return { config, apiHost: workbenchConfig.API_HOST };
