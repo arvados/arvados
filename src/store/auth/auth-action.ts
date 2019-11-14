@@ -16,7 +16,7 @@ import { createServices, setAuthorizationHeader, removeAuthorizationHeader } fro
 
 export const authActions = unionize({
     LOGIN: {},
-    LOGOUT: {},
+    LOGOUT: ofType<{ deleteLinkData: boolean }>(),
     CONFIG: ofType<{ config: Config }>(),
     INIT: ofType<{ user: User, token: string }>(),
     USER_DETAILS_REQUEST: {},
@@ -81,14 +81,7 @@ export const login = (uuidPrefix: string, homeCluster: string, loginCluster: str
     };
 
 export const logout = (deleteLinkData: boolean = false) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    if (deleteLinkData) {
-        services.linkAccountService.removeAccountToLink();
-    }
-    services.authService.removeApiToken();
-    services.authService.removeUser();
-    removeAuthorizationHeader(services);
-    services.authService.logout();
-    dispatch(authActions.LOGOUT());
+    dispatch(authActions.LOGOUT({ deleteLinkData }));
 };
 
 export type AuthAction = UnionOf<typeof authActions>;

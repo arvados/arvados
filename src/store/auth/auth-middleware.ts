@@ -38,6 +38,16 @@ export const authMiddleware = (services: ServiceRepository): Middleware => store
             document.title = `Arvados Workbench (${config.uuidPrefix})`;
             next(action);
         },
+	LOGOUT: ({deleteLinkData}) => {
+	    next(action)	    
+	    if (deleteLinkData) {
+		services.linkAccountService.removeAccountToLink();
+	    }
+	    services.authService.removeApiToken();
+	    services.authService.removeUser();
+	    removeAuthorizationHeader(services);
+	    services.authService.logout();	    
+	},
         default: () => next(action)
     });
 };
