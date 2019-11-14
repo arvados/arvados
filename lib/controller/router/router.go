@@ -14,18 +14,18 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/auth"
 	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
-	"github.com/julienschmidt/httprouter"
+	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
 
 type router struct {
-	mux *httprouter.Router
+	mux *mux.Router
 	fed arvados.API
 }
 
 func New(fed arvados.API) *router {
 	rtr := &router{
-		mux: httprouter.New(),
+		mux: mux.NewRouter(),
 		fed: fed,
 	}
 	rtr.addRoutes()
@@ -214,16 +214,16 @@ func (rtr *router) addRoutes() {
 			rtr.addRoute(endpointPUT, route.defaultOpts, route.exec)
 		}
 	}
-	rtr.mux.NotFound = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+	rtr.mux.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		httpserver.Errors(w, []string{"API endpoint not found"}, http.StatusNotFound)
 	})
-	rtr.mux.MethodNotAllowed = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+	rtr.mux.MethodNotAllowedHandler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		httpserver.Errors(w, []string{"API endpoint not found"}, http.StatusMethodNotAllowed)
 	})
 }
 
 func (rtr *router) addRoute(endpoint arvados.APIEndpoint, defaultOpts func() interface{}, exec routableFunc) {
-	rtr.mux.HandlerFunc(endpoint.Method, "/"+endpoint.Path, func(w http.ResponseWriter, req *http.Request) {
+	rtr.mux.Methods(endpoint.Method).Path("/" + endpoint.Path).HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		logger := ctxlog.FromContext(req.Context())
 		params, err := rtr.loadRequestParams(req, endpoint.AttrsKey)
 		if err != nil {

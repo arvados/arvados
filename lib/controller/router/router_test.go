@@ -19,7 +19,7 @@ import (
 	"git.curoverse.com/arvados.git/lib/controller/rpc"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
-	"github.com/julienschmidt/httprouter"
+	"github.com/gorilla/mux"
 	check "gopkg.in/check.v1"
 )
 
@@ -38,7 +38,7 @@ type RouterSuite struct {
 func (s *RouterSuite) SetUpTest(c *check.C) {
 	s.stub = arvadostest.APIStub{}
 	s.rtr = &router{
-		mux: httprouter.New(),
+		mux: mux.NewRouter(),
 		fed: &s.stub,
 	}
 	s.rtr.addRoutes()

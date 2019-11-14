@@ -118,9 +118,9 @@ func (conn *Conn) requestAndDecode(ctx context.Context, dst interface{}, ep arva
 		params["reader_tokens"] = tokens[1:]
 	}
 	path := ep.Path
-	if strings.Contains(ep.Path, "/:uuid") {
+	if strings.Contains(ep.Path, "/{uuid}") {
 		uuid, _ := params["uuid"].(string)
-		path = strings.Replace(path, "/:uuid", "/"+uuid, 1)
+		path = strings.Replace(path, "/{uuid}", "/"+uuid, 1)
 		delete(params, "uuid")
 	}
 	return aClient.RequestAndDecodeContext(ctx, dst, ep.Method, path, body, params)
