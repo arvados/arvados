@@ -18,41 +18,53 @@ import {
 } from "~/services/auth-service/auth-service";
 
 import 'jest-localstorage-mock';
-import { createServices } from "~/services/services";
+import { ServiceRepository, createServices } from "~/services/services";
 import { configureStore, RootStore } from "../store";
 import createBrowserHistory from "history/createBrowserHistory";
 import { mockConfig } from '~/common/config';
 import { ApiActions } from "~/services/api/api-actions";
 import { ACCOUNT_LINK_STATUS_KEY } from '~/services/link-account-service/link-account-service';
+import axios from "axios";
+import MockAdapter from "axios-mock-adapter";
 
 describe('auth-actions', () => {
+    const axiosMock = new MockAdapter(axios);
+
     let reducer: (state: AuthState | undefined, action: AuthAction) => any;
     let store: RootStore;
+    let services: ServiceRepository;
     const actions: ApiActions = {
         progressFn: (id: string, working: boolean) => { },
         errorFn: (id: string, message: string) => { }
     };
 
     beforeEach(() => {
-        store = configureStore(createBrowserHistory(), createServices(mockConfig({}), actions));
+        axiosMock.reset();
+        services = createServices(mockConfig({}), actions, axios);
+        store = configureStore(createBrowserHistory(), services);
         localStorage.clear();
-        reducer = authReducer(createServices(mockConfig({}), actions));
+        reducer = authReducer(services);
     });
 
     it('should initialise state with user and api token from local storage', () => {
 
+        axiosMock
+            .onGet("/users/current")
+            .reply(200, {
+                email: "test@test.com",
+                first_name: "John",
+                last_name: "Doe",
+                uuid: "zzzzz-tpzed-abcefg",
+                ownerUuid: "ownerUuid",
+                is_admin: false,
+                is_active: true,
+                username: "jdoe",
+                prefs: {}
+            });
+
         // Only test the case when a link account operation is not being cancelled
         sessionStorage.setItem(ACCOUNT_LINK_STATUS_KEY, "0");
         localStorage.setItem(API_TOKEN_KEY, "token");
-        localStorage.setItem(USER_EMAIL_KEY, "test@test.com");
-        localStorage.setItem(USER_FIRST_NAME_KEY, "John");
-        localStorage.setItem(USER_LAST_NAME_KEY, "Doe");
-        localStorage.setItem(USER_UUID_KEY, "zzzzz-tpzed-abcefg");
-        localStorage.setItem(USER_USERNAME, "username");
-        localStorage.setItem(USER_PREFS, JSON.stringify({}));
-        localStorage.setItem(USER_OWNER_UUID_KEY, "ownerUuid");
-        localStorage.setItem(USER_IS_ADMIN, JSON.stringify(false));
-        localStorage.setItem(USER_IS_ACTIVE, JSON.stringify(true));
 
         const config: any = {
             rootUrl: "https://zzzzz.arvadosapi.com",
@@ -110,7 +122,7 @@ describe('auth-actions', () => {
                 lastName: "Doe",
                 uuid: "zzzzz-tpzed-abcefg",
                 ownerUuid: "ownerUuid",
-                username: "username",
+                username: "jdoe",
                 prefs: {},
                 isAdmin: false,
                 isActive: true

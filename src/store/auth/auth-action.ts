@@ -59,7 +59,9 @@ const init = (config: Config) => (dispatch: Dispatch, getState: () => RootState,
 
     if (token && token !== "undefined") {
         dispatch(progressIndicatorActions.START_WORKING(WORKBENCH_LOADING_SCREEN));
-        dispatch<any>(saveApiToken(token)).finally(() => {
+        dispatch<any>(saveApiToken(token)).then(() => {
+            dispatch(progressIndicatorActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
+        }).catch(() => {
             dispatch(progressIndicatorActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
         });
     }

@@ -69,7 +69,7 @@ describe('auth-reducer', () => {
             apiToken: undefined,
             sshKeys: [],
             sessions: [],
-            homeCluster: "",
+            homeCluster: "uuid",
             localCluster: "",
             loginCluster: "",
             remoteHosts: {},

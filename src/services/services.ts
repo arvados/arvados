@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import Axios from "axios";
+import { AxiosInstance } from "axios";
 import { ApiClientAuthorizationService } from '~/services/api-client-authorization-service/api-client-authorization-service';
 import { AuthService } from "./auth-service/auth-service";
 import { GroupsService } from "./groups-service/groups-service";
@@ -49,12 +50,12 @@ export function removeAuthorizationHeader(services: ServiceRepository) {
     delete services.webdavClient.defaults.headers.common;
 }
 
-export const createServices = (config: Config, actions: ApiActions) => {
+export const createServices = (config: Config, actions: ApiActions, useApiClient?: AxiosInstance) => {
     // Need to give empty 'headers' object or it will create an
     // instance with a reference to the global default headers object,
     // which is very bad because that means setAuthorizationHeader
     // would update the global default instead of the instance default.
-    const apiClient = Axios.create({ headers: {} });
+    const apiClient = useApiClient || Axios.create({ headers: {} });
     apiClient.defaults.baseURL = config.baseUrl;
 
     const webdavClient = new WebDAV();
