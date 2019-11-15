@@ -40,7 +40,7 @@ The following is an example of a vocabulary definition:
 
 If the @strict_tags@ flag at the root level is @true@, it will restrict the users from saving property keys other than the ones defined in the vocabulary. Take notice that this restriction is at the client level on Workbench2, it doesn't limit the user's ability to set any arbitrary property via other means (e.g. Python SDK or CLI commands)
 
-Inside the @tags@ member, IDs are defined (IDTAGANIMALS, IDTAGCOMMENT, IGTAGIMPORTANCES) and can have any format that the current application requires. Every key will declare at least a @labels@ list with zero or more label objects.
+Inside the @tags@ member, IDs are defined (@IDTAGANIMALS@, @IDTAGCOMMENT@, @IDTAGIMPORTANCES@) and can have any format that the current application requires. Every key will declare at least a @labels@ list with zero or more label objects.
 
 The @strict@ flag inside a tag definition operates the same as the @strict_tags@ root member, but at the individual tag level. When @strict@ is @true@, a tag’s value options are limited to those defined by the vocabulary.
 
