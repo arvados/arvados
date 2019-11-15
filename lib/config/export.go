@@ -132,6 +132,7 @@ var whitelist = map[string]bool{
 	"Login":                                        true,
 	"Login.GoogleClientID":                         false,
 	"Login.GoogleClientSecret":                     false,
+	"Login.GoogleAlternateEmailAddresses":          false,
 	"Login.ProviderAppID":                          false,
 	"Login.ProviderAppSecret":                      false,
 	"Login.LoginCluster":                           true,

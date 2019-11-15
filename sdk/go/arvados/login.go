@@ -15,10 +15,12 @@ type LoginResponse struct {
 }
 
 func (resp LoginResponse) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Cache-Control", "no-store")
 	if resp.RedirectLocation != "" {
 		w.Header().Set("Location", resp.RedirectLocation)
 		w.WriteHeader(http.StatusFound)
 	} else {
+		w.Header().Set("Content-Type", "text/html")
 		w.Write(resp.HTML.Bytes())
 	}
 }

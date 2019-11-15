@@ -811,7 +811,12 @@ func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 		} else {
 			c.Check(resp.Code, check.Equals, http.StatusMultiStatus, comment)
 			for _, e := range trial.expect {
-				c.Check(resp.Body.String(), check.Matches, `(?ms).*<D:href>`+filepath.Join(u.Path, e)+`</D:href>.*`, comment)
+				if strings.HasSuffix(e, "/") {
+					e = filepath.Join(u.Path, e) + "/"
+				} else {
+					e = filepath.Join(u.Path, e)
+				}
+				c.Check(resp.Body.String(), check.Matches, `(?ms).*<D:href>`+e+`</D:href>.*`, comment)
 			}
 		}
 	}

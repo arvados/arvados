@@ -504,9 +504,11 @@ Clusters:
 
       # (Experimental) Authenticate with Google, bypassing the
       # SSO-provider gateway service. Use the Google Cloud console to
-      # generate the Client ID and secret (APIs and Services >
-      # Credentials > Create credentials > OAuth client ID > Web
-      # application) and add your controller's /login URL (e.g.,
+      # enable the People API (APIs and Services > Enable APIs and
+      # services > Google People API > Enable), generate a Client ID
+      # and secret (APIs and Services > Credentials > Create
+      # credentials > OAuth client ID > Web application) and add your
+      # controller's /login URL (e.g.,
       # "https://zzzzz.example.com/login") as an authorized redirect
       # URL.
       #
@@ -514,6 +516,12 @@ Clusters:
       # blank.
       GoogleClientID: ""
       GoogleClientSecret: ""
+
+      # Allow users to log in to existing accounts using any verified
+      # email address listed by their Google account. If true, the
+      # Google People API must be enabled in order for Google login to
+      # work. If false, only the primary email address will be used.
+      GoogleAlternateEmailAddresses: true
 
       # The cluster ID to delegate the user database.  When set,
       # logins on this cluster will be redirected to the login cluster
