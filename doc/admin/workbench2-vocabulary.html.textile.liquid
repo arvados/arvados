@@ -38,13 +38,14 @@ The following is an example of a vocabulary definition:
 {% include 'wb2_vocabulary_example' %}
 {% endcodeblock %}
 
-If the @strict_tags@ flag at the root level is @true@, it will restrict the users from saving other property keys than the ones defined on the vocabulary. Take notice that this restriction is at the client level on Workbench2, it doesn't limit the user's ability to set any arbitrary property via other means (e.g. Python SDK or CLI commands)
+If the @strict_tags@ flag at the root level is @true@, it will restrict the users from saving property keys other than the ones defined in the vocabulary. Take notice that this restriction is at the client level on Workbench2, it doesn't limit the user's ability to set any arbitrary property via other means (e.g. Python SDK or CLI commands)
 
-Inside the @tags@ member, properties' key IDs are defined (@IDTAGANIMALS@, @IDTAGCOMMENT@, @IGTAGIMPORTANCES@) and they can have any format that the current application requires. Every key will declare at least a @labels@ list with zero or more label objects.
+Inside the @tags@ member, IDs are defined (IDTAGANIMALS, IDTAGCOMMENT, IGTAGIMPORTANCES) and can have any format that the current application requires. Every key will declare at least a @labels@ list with zero or more label objects.
 
-The @strict@ flag inside a tag definition is the equivalent to @stict_tags@ of properties' keys: when @true@ it restricts the tag's value options to those defined on the vocabulary.
+The @strict@ flag inside a tag definition operates the same as the @strict_tags@ root member, but at the individual tag level. When @strict@ is @true@, a tag’s value options are limited to those defined by the vocabulary.
 
-The @values@ member is optional and it's used to define valid values key/label pairs when applicable. For example on @IDTAGCOMMENT@, open-ended text properties can be allowed by only defining the property's key ID and labels and leaving out @values@.
+The @values@ member is optional and is used to define valid key/label pairs when applicable. In the example above, @IDTAGCOMMENT@ allows open-ended text by only defining the tag's ID and labels and leaving out @values@.
 
-When any key or value has more than one label option, Workbench2's user interface will allow the user to select any of the options, but because only the IDs are saved on the system, when they're displayed the label shown will be the first one of each group defined in the vocabulary file. For example, the user could select the property key @Species@ and @Homo sapiens@ as its value, but the user interface will display it as @Animal: Human@ because those labels are the first in the vocabulary definition.
+When any key or value has more than one label option, Workbench2's user interface will allow the user to select any of the options. But because only the IDs are saved in the system, when the property is displayed in the user interface, the label shown will be the first of each group defined in the vocabulary file. For example, the user could select the property key @Species@ and @Homo sapiens@ as its value, but the user interface will display it as @Animal: Human@ because those labels are the first in the vocabulary definition.
+
 Internally, Workbench2 uses the IDs to do property based searches, so if the user searches by @Animal: Human@ or @Species: Homo sapiens@, both will return the same results.
