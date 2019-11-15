@@ -2,8 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { authReducer, AuthState } from "./auth-reducer";
-import { AuthAction, initAuth } from "./auth-action";
+import { initAuth } from "./auth-action";
 import { API_TOKEN_KEY } from "~/services/auth-service/auth-service";
 
 import 'jest-localstorage-mock';
@@ -13,13 +12,14 @@ import createBrowserHistory from "history/createBrowserHistory";
 import { mockConfig } from '~/common/config';
 import { ApiActions } from "~/services/api/api-actions";
 import { ACCOUNT_LINK_STATUS_KEY } from '~/services/link-account-service/link-account-service';
-import axios from "axios";
+import Axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { ImportMock } from 'ts-mock-imports';
 import * as servicesModule from "~/services/services";
 
 describe('auth-actions', () => {
-    const axiosMock = new MockAdapter(axios);
+    const axiosInst = Axios.create({ headers: {} });
+    const axiosMock = new MockAdapter(axiosInst);
 
     let store: RootStore;
     let services: ServiceRepository;
@@ -27,12 +27,18 @@ describe('auth-actions', () => {
         progressFn: (id: string, working: boolean) => { },
         errorFn: (id: string, message: string) => { }
     };
+    let importMocks: any[];
 
     beforeEach(() => {
         axiosMock.reset();
-        services = createServices(mockConfig({}), actions, axios);
+        services = createServices(mockConfig({}), actions, axiosInst);
         store = configureStore(createBrowserHistory(), services);
         localStorage.clear();
+        importMocks = [];
+    });
+
+    afterEach(() => {
+        importMocks.map(m => m.restore());
     });
 
     it('should initialise state with user and api token from local storage', (done) => {
@@ -51,7 +57,7 @@ describe('auth-actions', () => {
                 prefs: {}
             });
 
-        ImportMock.mockFunction(servicesModule, 'createServices', services);
+        importMocks.push(ImportMock.mockFunction(servicesModule, 'createServices', services));
 
         // Only test the case when a link account operation is not being cancelled
         sessionStorage.setItem(ACCOUNT_LINK_STATUS_KEY, "0");
@@ -70,7 +76,7 @@ describe('auth-actions', () => {
             if (auth.apiToken === "token" &&
                 auth.sessions.length === 2 &&
                 auth.sessions[0].status === 2 &&
-                auth.sessions[1].status === 2 
+                auth.sessions[1].status === 2
             ) {
                 try {
                     expect(auth).toEqual({
