@@ -8,7 +8,6 @@ package railsproxy
 
 import (
 	"fmt"
-	"net/http"
 	"net/url"
 	"strings"
 
@@ -38,10 +37,5 @@ func NewConn(cluster *arvados.Cluster) *rpc.Conn {
 	if err != nil {
 		panic(err)
 	}
-	conn := rpc.NewConn(cluster.ClusterID, url, insecure, rpc.PassthroughTokenProvider)
-	// If Rails is running with force_ssl=true, this
-	// "X-Forwarded-Proto: https" header prevents it from
-	// redirecting our internal request to an invalid https URL.
-	conn.SendHeader = http.Header{"X-Forwarded-Proto": []string{"https"}}
-	return conn
+	return rpc.NewConn(cluster.ClusterID, url, insecure, rpc.PassthroughTokenProvider)
 }

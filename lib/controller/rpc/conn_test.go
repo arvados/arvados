@@ -36,8 +36,19 @@ func (s *RPCSuite) SetUpTest(c *check.C) {
 	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
 	s.ctx = context.WithValue(ctx, contextKeyTestTokens, []string{arvadostest.ActiveToken})
 	s.conn = NewConn("zzzzz", &url.URL{Scheme: "https", Host: os.Getenv("ARVADOS_TEST_API_HOST")}, true, func(ctx context.Context) ([]string, error) {
-		return ctx.Value(contextKeyTestTokens).([]string), nil
+		tokens, _ := ctx.Value(contextKeyTestTokens).([]string)
+		return tokens, nil
 	})
+}
+
+func (s *RPCSuite) TestLogin(c *check.C) {
+	s.ctx = context.Background()
+	opts := arvados.LoginOptions{
+		ReturnTo: "https://foo.example.com/bar",
+	}
+	resp, err := s.conn.Login(s.ctx, opts)
+	c.Check(err, check.IsNil)
+	c.Check(resp.RedirectLocation, check.Equals, "/auth/joshid?return_to="+url.QueryEscape(","+opts.ReturnTo))
 }
 
 func (s *RPCSuite) TestCollectionCreate(c *check.C) {
