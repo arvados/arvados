@@ -281,6 +281,12 @@ Clusters:
       # in the directory where your API server is running.
       AnonymousUserToken: ""
 
+      # If a new user has an alternate email address (local@domain)
+      # with the domain given here, its local part becomes the new
+      # user's default username. Otherwise, the user's primary email
+      # address is used.
+      PreferDomainForUsername: ""
+
     AuditLogs:
       # Time to keep audit logs, in seconds. (An audit log is a row added
       # to the "logs" table in the PostgreSQL database each time an
