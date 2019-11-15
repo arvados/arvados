@@ -3,15 +3,16 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { WrappedFieldProps, Field } from 'redux-form';
+import { WrappedFieldProps, Field, FormName } from 'redux-form';
 import { memoize } from 'lodash';
 import { Autocomplete } from '~/components/autocomplete/autocomplete';
-import { Vocabulary } from '~/models/vocabulary';
-import { connectVocabulary, VocabularyProp, buildProps } from '~/views-components/resource-properties-form/property-field-common';
+import { Vocabulary, getTags, getTagKeyID } from '~/models/vocabulary';
+import { handleSelect, handleBlur, connectVocabulary, VocabularyProp, buildProps } from '~/views-components/resource-properties-form/property-field-common';
 import { TAG_KEY_VALIDATION } from '~/validators/validators';
 import { escapeRegExp } from '~/common/regexp.ts';
 
 export const PROPERTY_KEY_FIELD_NAME = 'key';
+export const PROPERTY_KEY_FIELD_ID = 'keyID';
 
 export const PropertyKeyField = connectVocabulary(
     ({ vocabulary }: VocabularyProp) =>
@@ -19,31 +20,33 @@ export const PropertyKeyField = connectVocabulary(
             name={PROPERTY_KEY_FIELD_NAME}
             component={PropertyKeyInput}
             vocabulary={vocabulary}
-            validate={getValidation(vocabulary)} />);
+            validate={getValidation(vocabulary)} />
+);
 
 export const PropertyKeyInput = ({ vocabulary, ...props }: WrappedFieldProps & VocabularyProp) =>
-    <Autocomplete
-        label='Key'
-        suggestions={getSuggestions(props.input.value, vocabulary)}
-        {...buildProps(props)}
-    />;
+    <FormName children={data => (
+        <Autocomplete
+            label='Key'
+            suggestions={getSuggestions(props.input.value, vocabulary)}
+            onSelect={handleSelect(PROPERTY_KEY_FIELD_ID, data.form, props.input, props.meta)}
+            onBlur={handleBlur(PROPERTY_KEY_FIELD_ID, data.form, props.meta, props.input, getTagKeyID(props.input.value, vocabulary))}
+            {...buildProps(props)}
+        />
+    )}/>;
 
 const getValidation = memoize(
     (vocabulary: Vocabulary) =>
-        vocabulary.strict
+        vocabulary.strict_tags
             ? [...TAG_KEY_VALIDATION, matchTags(vocabulary)]
             : TAG_KEY_VALIDATION);
 
 const matchTags = (vocabulary: Vocabulary) =>
     (value: string) =>
-        getTagsList(vocabulary).find(tag => tag.includes(value))
+        getTags(vocabulary).find(tag => tag.label === value)
             ? undefined
             : 'Incorrect key';
 
 const getSuggestions = (value: string, vocabulary: Vocabulary) => {
     const re = new RegExp(escapeRegExp(value), "i");
-    return getTagsList(vocabulary).filter(tag => re.test(tag) && tag !== value);
+    return getTags(vocabulary).filter(tag => re.test(tag.label) && tag.label !== value);
 };
-
-const getTagsList = ({ tags }: Vocabulary) =>
-    Object.keys(tags);

@@ -11,7 +11,9 @@ export interface TagResource extends LinkResource {
 
 export interface TagProperty {
     key: string;
+    keyID?: string;
     value: string;
+    valueID?: string;
 }
 
 export enum TagTailType {

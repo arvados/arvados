@@ -13,8 +13,10 @@ import { resourceLabel } from '~/common/labels';
 import { DetailsData } from "./details-data";
 import { DetailsAttribute } from "~/components/details-attribute/details-attribute";
 import { RichTextEditorLink } from '~/components/rich-text-editor-link/rich-text-editor-link';
-import { withStyles, StyleRulesCallback, Chip, WithStyles } from '@material-ui/core';
+import { withStyles, StyleRulesCallback, WithStyles } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
+import { Dispatch } from 'redux';
+import { PropertyChipComponent } from '../resource-properties-form/property-chip';
 
 export class ProjectDetails extends DetailsData<ProjectResource> {
     getIcon(className?: string) {
@@ -39,7 +41,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     }
 });
 
-
 interface ProjectDetailsComponentDataProps {
     project: ProjectResource;
 }
@@ -48,7 +49,9 @@ interface ProjectDetailsComponentActionProps {
     onClick: () => void;
 }
 
-const mapDispatchToProps = ({ onClick: openProjectPropertiesDialog });
+const mapDispatchToProps = (dispatch: Dispatch) => ({
+    onClick: () => dispatch<any>(openProjectPropertiesDialog()),
+});
 
 type ProjectDetailsComponentProps = ProjectDetailsComponentDataProps & ProjectDetailsComponentActionProps & WithStyles<CssRules>;
 
@@ -79,9 +82,11 @@ const ProjectDetailsComponent = connect(null, mapDispatchToProps)(
                 </div>
             </DetailsAttribute>
             {
-                Object.keys(project.properties).map(k => {
-                    return <Chip key={k} className={classes.tag} label={`${k}: ${project.properties[k]}`} />;
-                })
+                Object.keys(project.properties).map(k =>
+                    <PropertyChipComponent key={k}
+                        propKey={k} propValue={project.properties[k]}
+                        className={classes.tag} />
+                )
             }
         </div>
     ));
