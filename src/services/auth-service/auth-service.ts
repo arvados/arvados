@@ -43,7 +43,10 @@ export class AuthService {
 
     public saveApiToken(token: string) {
         localStorage.setItem(API_TOKEN_KEY, token);
-        localStorage.setItem(HOME_CLUSTER, token.split('/')[1].substr(0, 5));
+        const sp = token.split('/');
+        if (sp.length == 3) {
+            localStorage.setItem(HOME_CLUSTER, sp[1].substr(0, 5));
+        }
     }
 
     public removeApiToken() {

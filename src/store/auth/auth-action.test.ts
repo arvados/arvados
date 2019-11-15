@@ -4,18 +4,7 @@
 
 import { authReducer, AuthState } from "./auth-reducer";
 import { AuthAction, initAuth } from "./auth-action";
-import {
-    API_TOKEN_KEY,
-    USER_EMAIL_KEY,
-    USER_FIRST_NAME_KEY,
-    USER_LAST_NAME_KEY,
-    USER_OWNER_UUID_KEY,
-    USER_UUID_KEY,
-    USER_IS_ADMIN,
-    USER_IS_ACTIVE,
-    USER_USERNAME,
-    USER_PREFS
-} from "~/services/auth-service/auth-service";
+import { API_TOKEN_KEY } from "~/services/auth-service/auth-service";
 
 import 'jest-localstorage-mock';
 import { ServiceRepository, createServices } from "~/services/services";
@@ -26,11 +15,12 @@ import { ApiActions } from "~/services/api/api-actions";
 import { ACCOUNT_LINK_STATUS_KEY } from '~/services/link-account-service/link-account-service';
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
+import { ImportMock } from 'ts-mock-imports';
+import * as servicesModule from "~/services/services";
 
 describe('auth-actions', () => {
     const axiosMock = new MockAdapter(axios);
 
-    let reducer: (state: AuthState | undefined, action: AuthAction) => any;
     let store: RootStore;
     let services: ServiceRepository;
     const actions: ApiActions = {
@@ -43,10 +33,9 @@ describe('auth-actions', () => {
         services = createServices(mockConfig({}), actions, axios);
         store = configureStore(createBrowserHistory(), services);
         localStorage.clear();
-        reducer = authReducer(services);
     });
 
-    it('should initialise state with user and api token from local storage', () => {
+    it('should initialise state with user and api token from local storage', (done) => {
 
         axiosMock
             .onGet("/users/current")
@@ -55,12 +44,14 @@ describe('auth-actions', () => {
                 first_name: "John",
                 last_name: "Doe",
                 uuid: "zzzzz-tpzed-abcefg",
-                ownerUuid: "ownerUuid",
+                owner_uuid: "ownerUuid",
                 is_admin: false,
                 is_active: true,
                 username: "jdoe",
                 prefs: {}
             });
+
+        ImportMock.mockFunction(servicesModule, 'createServices', services);
 
         // Only test the case when a link account operation is not being cancelled
         sessionStorage.setItem(ACCOUNT_LINK_STATUS_KEY, "0");
@@ -74,61 +65,76 @@ describe('auth-actions', () => {
 
         store.dispatch(initAuth(config));
 
-        expect(store.getState().auth).toEqual({
-            apiToken: "token",
-            sshKeys: [],
-            homeCluster: "zzzzz",
-            localCluster: "zzzzz",
-            loginCluster: undefined,
-            remoteHostsConfig: {
-                "zzzzz": {
-                    "remoteHosts": {
-                        "xc59z": "xc59z.arvadosapi.com",
-                    },
-                    "rootUrl": "https://zzzzz.arvadosapi.com",
-                    "uuidPrefix": "zzzzz",
-                },
-            },
-            remoteHosts: {
-                zzzzz: "zzzzz.arvadosapi.com",
-                xc59z: "xc59z.arvadosapi.com"
-            },
-            sessions: [{
-                "active": true,
-                "baseUrl": undefined,
-                "clusterId": "zzzzz",
-                "email": "test@test.com",
-                "loggedIn": true,
-                "remoteHost": "https://zzzzz.arvadosapi.com",
-                "status": 2,
-                "token": "token",
-                "name": "John Doe"
-		"uuid": "zzzzz-tpzed-abcefg",
-            }, {
-                "active": false,
-                "baseUrl": "",
-                "clusterId": "xc59z",
-                "email": "",
-                "loggedIn": false,
-                "remoteHost": "xc59z.arvadosapi.com",
-                "status": 1,
-                "token": "",
-                "name": "",
-                "uuid": "",
-            }],
-            user: {
-                email: "test@test.com",
-                firstName: "John",
-                lastName: "Doe",
-                uuid: "zzzzz-tpzed-abcefg",
-                ownerUuid: "ownerUuid",
-                username: "jdoe",
-                prefs: {},
-                isAdmin: false,
-                isActive: true
+        store.subscribe(() => {
+            const auth = store.getState().auth;
+            if (auth.apiToken === "token" &&
+                auth.sessions.length === 2 &&
+                auth.sessions[0].status === 2 &&
+                auth.sessions[1].status === 2 
+            ) {
+                try {
+                    expect(auth).toEqual({
+                        apiToken: "token",
+                        sshKeys: [],
+                        homeCluster: "zzzzz",
+                        localCluster: "zzzzz",
+                        loginCluster: undefined,
+                        remoteHostsConfig: {
+                            "zzzzz": {
+                                "remoteHosts": {
+                                    "xc59z": "xc59z.arvadosapi.com",
+                                },
+                                "rootUrl": "https://zzzzz.arvadosapi.com",
+                                "uuidPrefix": "zzzzz",
+                            },
+                        },
+                        remoteHosts: {
+                            zzzzz: "zzzzz.arvadosapi.com",
+                            xc59z: "xc59z.arvadosapi.com"
+                        },
+                        sessions: [{
+                            "active": true,
+                            "baseUrl": undefined,
+                            "clusterId": "zzzzz",
+                            "email": "test@test.com",
+                            "loggedIn": true,
+                            "remoteHost": "https://zzzzz.arvadosapi.com",
+                            "status": 2,
+                            "token": "token",
+                            "name": "John Doe"
+		    "uuid": "zzzzz-tpzed-abcefg",
+                        }, {
+                            "active": false,
+                            "baseUrl": "",
+                            "clusterId": "xc59z",
+                            "email": "",
+                            "loggedIn": false,
+                            "remoteHost": "xc59z.arvadosapi.com",
+                            "status": 2,
+                            "token": "",
+                            "name": "",
+                            "uuid": "",
+                        }],
+                        user: {
+                            email: "test@test.com",
+                            firstName: "John",
+                            lastName: "Doe",
+                            uuid: "zzzzz-tpzed-abcefg",
+                            ownerUuid: "ownerUuid",
+                            username: "jdoe",
+                            prefs: { profile: {} },
+                            isAdmin: false,
+                            isActive: true
+                        }
+                    });
+                    done();
+                } catch (e) {
+                    console.log(e);
+                }
             }
         });
     });
+
 
     // TODO: Add remaining action tests
     /*

@@ -54,6 +54,8 @@
     "redux-thunk": "2.3.0",
     "reselect": "4.0.0",
     "shell-quote": "1.6.1",
+    "sinon": "7.3",
+    "ts-mock-imports": "1.2.6",
     "tslint-etc": "1.6.0",
     "unionize": "2.1.2",
     "uuid": "3.3.2",
