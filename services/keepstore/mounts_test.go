@@ -107,12 +107,8 @@ func (s *HandlerSuite) TestMetrics(c *check.C) {
 				Value string
 			}
 			Summary struct {
-				SampleCount string  `json:"sample_count"`
-				SampleSum   float64 `json:"sample_sum"`
-				Quantile    []struct {
-					Quantile float64
-					Value    float64
-				}
+				SampleCount string
+				SampleSum   float64
 			}
 		}
 	}
@@ -124,8 +120,6 @@ func (s *HandlerSuite) TestMetrics(c *check.C) {
 		for _, m := range g.Metric {
 			if len(m.Label) == 2 && m.Label[0].Name == "code" && m.Label[0].Value == "200" && m.Label[1].Name == "method" && m.Label[1].Value == "put" {
 				c.Check(m.Summary.SampleCount, check.Equals, "2")
-				c.Check(len(m.Summary.Quantile), check.Not(check.Equals), 0)
-				c.Check(m.Summary.Quantile[0].Value, check.Not(check.Equals), float64(0))
 				found[g.Name] = true
 			}
 		}
