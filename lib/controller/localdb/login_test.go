@@ -367,7 +367,7 @@ func (s *LoginSuite) TestGoogleLogin_AlternateEmailAddresses_Primary(c *check.C)
 			},
 			{
 				"metadata": map[string]interface{}{"verified": true},
-				"value":    "joe.smith@preferdomainforusername.example.com",
+				"value":    "jsmith+123@preferdomainforusername.example.com",
 			},
 		},
 	}
@@ -378,8 +378,8 @@ func (s *LoginSuite) TestGoogleLogin_AlternateEmailAddresses_Primary(c *check.C)
 	})
 	authinfo := s.getCallbackAuthInfo(c)
 	c.Check(authinfo.Email, check.Equals, "joe.smith@primary.example.com")
-	c.Check(authinfo.AlternateEmails, check.DeepEquals, []string{"joe.smith@alternate.example.com", "joe.smith@preferdomainforusername.example.com"})
-	c.Check(authinfo.Username, check.Equals, "joe.smith")
+	c.Check(authinfo.AlternateEmails, check.DeepEquals, []string{"joe.smith@alternate.example.com", "jsmith+123@preferdomainforusername.example.com"})
+	c.Check(authinfo.Username, check.Equals, "jsmith")
 }
 
 func (s *LoginSuite) TestGoogleLogin_NoPrimaryEmailAddress(c *check.C) {
