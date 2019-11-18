@@ -5,7 +5,7 @@
 import { ofType, unionize, UnionOf } from "~/common/unionize";
 import { GroupContentsResource, GroupContentsResourcePrefix } from '~/services/groups-service/groups-service';
 import { Dispatch } from 'redux';
-import { arrayPush, change, initialize } from 'redux-form';
+import { arrayPush, change, initialize, untouch } from 'redux-form';
 import { RootState } from '~/store/store';
 import { initUserProject, treePickerActions } from '~/store/tree-picker/tree-picker-actions';
 import { ServiceRepository } from '~/services/services';
@@ -268,7 +268,7 @@ export const getQueryFromAdvancedData = (data: SearchBarAdvanceFormData, prevDat
             dateFrom: data.dateFrom,
             dateTo: data.dateTo,
         };
-        (data.properties || []).forEach(p => fo[`prop-"${p.key}"`] = `"${p.value}"`);
+        (data.properties || []).forEach(p => fo[`prop-"${p.keyID || p.key}"`] = `"${p.valueID || p.value}"`);
         return fo;
     };
 
@@ -281,7 +281,7 @@ export const getQueryFromAdvancedData = (data: SearchBarAdvanceFormData, prevDat
         ['to', 'dateTo']
     ];
     _.union(data.properties, prevData ? prevData.properties : [])
-        .forEach(p => keyMap.push([`has:"${p.key}"`, `prop-"${p.key}"`]));
+        .forEach(p => keyMap.push([`has:"${p.keyID || p.key}"`, `prop-"${p.keyID || p.key}"`]));
 
     if (prevData) {
         const obj = getModifiedKeysValues(flatData(data), flatData(prevData));
@@ -366,9 +366,15 @@ export const initAdvanceFormProjectsTree = () =>
         dispatch<any>(initUserProject(SEARCH_BAR_ADVANCE_FORM_PICKER_ID));
     };
 
-export const changeAdvanceFormProperty = (property: string, value: PropertyValue[] | string = '') =>
+export const changeAdvanceFormProperty = (propertyField: string, value: PropertyValue[] | string = '') =>
     (dispatch: Dispatch) => {
-        dispatch(change(SEARCH_BAR_ADVANCE_FORM_NAME, property, value));
+        dispatch(change(SEARCH_BAR_ADVANCE_FORM_NAME, propertyField, value));
+    };
+
+export const resetAdvanceFormProperty = (propertyField: string) =>
+    (dispatch: Dispatch) => {
+        dispatch(change(SEARCH_BAR_ADVANCE_FORM_NAME, propertyField, null));
+        dispatch(untouch(SEARCH_BAR_ADVANCE_FORM_NAME, propertyField));
     };
 
 export const updateAdvanceFormProperties = (propertyValues: PropertyValue) =>

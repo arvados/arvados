@@ -11,6 +11,7 @@ import { RootState } from '~/store/store';
 import {
     SEARCH_BAR_ADVANCE_FORM_NAME,
     changeAdvanceFormProperty,
+    resetAdvanceFormProperty,
     updateAdvanceFormProperties
 } from '~/store/search-bar/search-bar-actions';
 import { PropertyValue } from '~/models/search-bar';
@@ -53,7 +54,7 @@ type SearchBarAdvancedPropertiesViewProps = SearchBarAdvancedPropertiesViewDataP
 const selector = formValueSelector(SEARCH_BAR_ADVANCE_FORM_NAME);
 const mapStateToProps = (state: RootState) => {
     return {
-        propertyValues: selector(state, 'key', 'value')
+        propertyValues: selector(state, 'key', 'value', 'keyID', 'valueID')
     };
 };
 
@@ -63,8 +64,10 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
     },
     addProp: (propertyValues: PropertyValue) => {
         dispatch<any>(updateAdvanceFormProperties(propertyValues));
-        dispatch<any>(changeAdvanceFormProperty('key'));
-        dispatch<any>(changeAdvanceFormProperty('value'));
+        dispatch<any>(resetAdvanceFormProperty('key'));
+        dispatch<any>(resetAdvanceFormProperty('value'));
+        dispatch<any>(resetAdvanceFormProperty('keyID'));
+        dispatch<any>(resetAdvanceFormProperty('valueID'));
     },
     getAllFields: (fields: any) => {
         return fields.getAll() || [];

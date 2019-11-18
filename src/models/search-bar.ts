@@ -19,5 +19,7 @@ export type SearchBarAdvanceFormData = {
 
 export interface PropertyValue {
     key: string;
+    keyID?: string;
     value: string;
+    valueID?: string;
 }
