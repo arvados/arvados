@@ -7,15 +7,12 @@
 package railsproxy
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"net/url"
 	"strings"
 
 	"git.curoverse.com/arvados.git/lib/controller/rpc"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/auth"
 )
 
 // For now, FindRailsAPI always uses the rails API running on this
@@ -40,13 +37,5 @@ func NewConn(cluster *arvados.Cluster) *rpc.Conn {
 	if err != nil {
 		panic(err)
 	}
-	return rpc.NewConn(cluster.ClusterID, url, insecure, provideIncomingToken)
-}
-
-func provideIncomingToken(ctx context.Context) ([]string, error) {
-	incoming, ok := auth.FromContext(ctx)
-	if !ok {
-		return nil, errors.New("no token provided")
-	}
-	return incoming.Tokens, nil
+	return rpc.NewConn(cluster.ClusterID, url, insecure, rpc.PassthroughTokenProvider)
 }

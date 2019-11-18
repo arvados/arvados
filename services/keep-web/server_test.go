@@ -342,12 +342,8 @@ func (s *IntegrationSuite) TestMetrics(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
 	type summary struct {
-		SampleCount string  `json:"sample_count"`
-		SampleSum   float64 `json:"sample_sum"`
-		Quantile    []struct {
-			Quantile float64
-			Value    float64
-		}
+		SampleCount string
+		SampleSum   float64
 	}
 	type counter struct {
 		Value int64

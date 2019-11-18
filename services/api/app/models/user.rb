@@ -433,8 +433,6 @@ class User < ArvadosModel
     #   alternate_emails
     #   identity_url
 
-    info = info.with_indifferent_access
-
     primary_user = nil
 
     # local database

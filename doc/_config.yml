@@ -178,6 +178,7 @@ navbar:
       - admin/troubleshooting.html.textile.liquid
       - install/migrate-docker19.html.textile.liquid
       - admin/upgrade-crunch2.html.textile.liquid
+      - admin/workbench2-vocabulary.html.textile.liquid
   installguide:
     - Overview:
       - install/index.html.textile.liquid

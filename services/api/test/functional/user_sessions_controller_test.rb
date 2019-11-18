@@ -64,4 +64,23 @@ class UserSessionsControllerTest < ActionController::TestCase
     assert_nil assigns(:api_client)
   end
 
+  test "controller cannot create session without SystemRootToken" do
+    get :create, params: {provider: 'controller', auth_info: {email: "foo@bar.com"}, return_to: ',https://app.example'}
+    assert_response 401
+  end
+
+  test "controller cannot create session with wrong SystemRootToken" do
+    @request.headers['Authorization'] = 'Bearer blah'
+    get :create, params: {provider: 'controller', auth_info: {email: "foo@bar.com"}, return_to: ',https://app.example'}
+    assert_response 401
+  end
+
+  test "controller can create session using SystemRootToken" do
+    @request.headers['Authorization'] = 'Bearer '+Rails.configuration.SystemRootToken
+    get :create, params: {provider: 'controller', auth_info: {email: "foo@bar.com"}, return_to: ',https://app.example'}
+    assert_response :redirect
+    api_client_auth = assigns(:api_client_auth)
+    assert_not_nil api_client_auth
+    assert_includes(@response.redirect_url, 'api_token='+api_client_auth.token)
+  end
 end

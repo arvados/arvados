@@ -15,6 +15,9 @@ import (
 	check "gopkg.in/check.v1"
 )
 
+// Configured at: sdk/python/tests/run_test_server.py
+const TestServerManagementToken = "e687950a23c3a9bceec28c6223a06c79"
+
 func testLoadLegacyConfig(content []byte, mungeFlag string, c *check.C) (*arvados.Cluster, error) {
 	tmpfile, err := ioutil.TempFile("", "example")
 	if err != nil {
@@ -133,6 +136,23 @@ func (s *LoadSuite) TestLegacyKeepWebConfig(c *check.C) {
 	c.Check(cluster.ManagementToken, check.Equals, "xyzzy")
 }
 
+// Tests fix for https://dev.arvados.org/issues/15642
+func (s *LoadSuite) TestLegacyKeepWebConfigDoesntDisableMissingItems(c *check.C) {
+	content := []byte(`
+{
+	"Client": {
+		"Scheme": "",
+		"APIHost": "example.com",
+		"AuthToken": "abcdefg",
+	}
+}
+`)
+	cluster, err := testLoadLegacyConfig(content, "-legacy-keepweb-config", c)
+	c.Check(err, check.IsNil)
+	// The resulting ManagementToken should be the one set up on the test server.
+	c.Check(cluster.ManagementToken, check.Equals, TestServerManagementToken)
+}
+
 func (s *LoadSuite) TestLegacyKeepproxyConfig(c *check.C) {
 	f := "-legacy-keepproxy-config"
 	content := []byte(fmtKeepproxyConfig("", true))
@@ -215,6 +235,23 @@ func (s *LoadSuite) TestLegacyArvGitHttpdConfig(c *check.C) {
 	c.Check(cluster.Git.GitoliteHome, check.Equals, "/test/gitolite")
 	c.Check(cluster.Git.Repositories, check.Equals, "/test/reporoot")
 	c.Check(cluster.Services.Keepproxy.InternalURLs[arvados.URL{Host: ":9000"}], check.Equals, arvados.ServiceInstance{})
+}
+
+// Tests fix for https://dev.arvados.org/issues/15642
+func (s *LoadSuite) TestLegacyArvGitHttpdConfigDoesntDisableMissingItems(c *check.C) {
+	content := []byte(`
+{
+	"Client": {
+		"Scheme": "",
+		"APIHost": "example.com",
+		"AuthToken": "abcdefg",
+	}
+}
+`)
+	cluster, err := testLoadLegacyConfig(content, "-legacy-git-httpd-config", c)
+	c.Check(err, check.IsNil)
+	// The resulting ManagementToken should be the one set up on the test server.
+	c.Check(cluster.ManagementToken, check.Equals, TestServerManagementToken)
 }
 
 func (s *LoadSuite) TestLegacyKeepBalanceConfig(c *check.C) {

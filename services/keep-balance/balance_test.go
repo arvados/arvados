@@ -50,7 +50,8 @@ type tester struct {
 	shouldPullMounts  []string
 	shouldTrashMounts []string
 
-	expectResult balanceResult
+	expectBlockState *balancedBlockState
+	expectClassState map[string]balancedBlockState
 }
 
 func (bal *balancerSuite) SetUpSuite(c *check.C) {
@@ -101,28 +102,42 @@ func (bal *balancerSuite) TestPerfect(c *check.C) {
 		desired:     map[string]int{"default": 2},
 		current:     slots{0, 1},
 		shouldPull:  nil,
-		shouldTrash: nil})
+		shouldTrash: nil,
+		expectBlockState: &balancedBlockState{
+			needed: 2,
+		}})
 }
 
 func (bal *balancerSuite) TestDecreaseRepl(c *check.C) {
 	bal.try(c, tester{
 		desired:     map[string]int{"default": 2},
 		current:     slots{0, 2, 1},
-		shouldTrash: slots{2}})
+		shouldTrash: slots{2},
+		expectBlockState: &balancedBlockState{
+			needed:   2,
+			unneeded: 1,
+		}})
 }
 
 func (bal *balancerSuite) TestDecreaseReplToZero(c *check.C) {
 	bal.try(c, tester{
 		desired:     map[string]int{"default": 0},
 		current:     slots{0, 1, 3},
-		shouldTrash: slots{0, 1, 3}})
+		shouldTrash: slots{0, 1, 3},
+		expectBlockState: &balancedBlockState{
+			unneeded: 3,
+		}})
 }
 
 func (bal *balancerSuite) TestIncreaseRepl(c *check.C) {
 	bal.try(c, tester{
 		desired:    map[string]int{"default": 4},
 		current:    slots{0, 1},
-		shouldPull: slots{2, 3}})
+		shouldPull: slots{2, 3},
+		expectBlockState: &balancedBlockState{
+			needed:  2,
+			pulling: 2,
+		}})
 }
 
 func (bal *balancerSuite) TestSkipReadonly(c *check.C) {
@@ -130,7 +145,11 @@ func (bal *balancerSuite) TestSkipReadonly(c *check.C) {
 	bal.try(c, tester{
 		desired:    map[string]int{"default": 4},
 		current:    slots{0, 1},
-		shouldPull: slots{2, 4}})
+		shouldPull: slots{2, 4},
+		expectBlockState: &balancedBlockState{
+			needed:  2,
+			pulling: 2,
+		}})
 }
 
 func (bal *balancerSuite) TestMultipleViewsReadOnly(c *check.C) {
@@ -310,13 +329,10 @@ func (bal *balancerSuite) TestDecreaseReplBlockTooNew(c *check.C) {
 		desired:    map[string]int{"default": 2},
 		current:    slots{0, 1, 2},
 		timestamps: []int64{oldTime, newTime, newTime + 1},
-		expectResult: balanceResult{
-			have: 3,
-			want: 2,
-			classState: map[string]balancedBlockState{"default": {
-				desired:      2,
-				surplus:      1,
-				unachievable: false}}}})
+		expectBlockState: &balancedBlockState{
+			needed:   2,
+			unneeded: 1,
+		}})
 	// The best replicas are too new to delete, but the excess
 	// replica is old enough.
 	bal.try(c, tester{
@@ -349,104 +365,121 @@ func (bal *balancerSuite) TestVolumeReplication(c *check.C) {
 		known:      0,
 		desired:    map[string]int{"default": 2},
 		current:    slots{1},
-		shouldPull: slots{0}})
+		shouldPull: slots{0},
+		expectBlockState: &balancedBlockState{
+			needed:  1,
+			pulling: 1,
+		}})
 	bal.try(c, tester{
 		known:      0,
 		desired:    map[string]int{"default": 2},
 		current:    slots{0, 1},
-		shouldPull: nil})
+		shouldPull: nil,
+		expectBlockState: &balancedBlockState{
+			needed: 2,
+		}})
 	bal.try(c, tester{
 		known:       0,
 		desired:     map[string]int{"default": 2},
 		current:     slots{0, 1, 2},
-		shouldTrash: slots{2}})
+		shouldTrash: slots{2},
+		expectBlockState: &balancedBlockState{
+			needed:   2,
+			unneeded: 1,
+		}})
 	bal.try(c, tester{
 		known:       0,
 		desired:     map[string]int{"default": 3},
 		current:     slots{0, 2, 3, 4},
 		shouldPull:  slots{1},
 		shouldTrash: slots{4},
-		expectResult: balanceResult{
-			have: 4,
-			want: 3,
-			classState: map[string]balancedBlockState{"default": {
-				desired:      3,
-				surplus:      1,
-				unachievable: false}}}})
+		expectBlockState: &balancedBlockState{
+			needed:   3,
+			unneeded: 1,
+			pulling:  1,
+		}})
 	bal.try(c, tester{
 		known:       0,
 		desired:     map[string]int{"default": 3},
 		current:     slots{0, 1, 2, 3, 4},
-		shouldTrash: slots{2, 3, 4}})
+		shouldTrash: slots{2, 3, 4},
+		expectBlockState: &balancedBlockState{
+			needed:   2,
+			unneeded: 3,
+		}})
 	bal.try(c, tester{
 		known:       0,
 		desired:     map[string]int{"default": 4},
 		current:     slots{0, 1, 2, 3, 4},
 		shouldTrash: slots{3, 4},
-		expectResult: balanceResult{
-			have: 6,
-			want: 4,
-			classState: map[string]balancedBlockState{"default": {
-				desired:      4,
-				surplus:      2,
-				unachievable: false}}}})
+		expectBlockState: &balancedBlockState{
+			needed:   3,
+			unneeded: 2,
+		}})
 	// block 1 rendezvous is 0,9,7 -- so slot 0 has repl=2
 	bal.try(c, tester{
 		known:   1,
 		desired: map[string]int{"default": 2},
 		current: slots{0},
-		expectResult: balanceResult{
-			have: 2,
-			want: 2,
-			classState: map[string]balancedBlockState{"default": {
-				desired:      2,
-				surplus:      0,
-				unachievable: false}}}})
+		expectBlockState: &balancedBlockState{
+			needed: 1,
+		}})
 	bal.try(c, tester{
 		known:      1,
 		desired:    map[string]int{"default": 3},
 		current:    slots{0},
-		shouldPull: slots{1}})
+		shouldPull: slots{1},
+		expectBlockState: &balancedBlockState{
+			needed:  1,
+			pulling: 1,
+		}})
 	bal.try(c, tester{
 		known:      1,
 		desired:    map[string]int{"default": 4},
 		current:    slots{0},
-		shouldPull: slots{1, 2}})
+		shouldPull: slots{1, 2},
+		expectBlockState: &balancedBlockState{
+			needed:  1,
+			pulling: 2,
+		}})
 	bal.try(c, tester{
 		known:      1,
 		desired:    map[string]int{"default": 4},
 		current:    slots{2},
-		shouldPull: slots{0, 1}})
+		shouldPull: slots{0, 1},
+		expectBlockState: &balancedBlockState{
+			needed:  1,
+			pulling: 2,
+		}})
 	bal.try(c, tester{
 		known:      1,
 		desired:    map[string]int{"default": 4},
 		current:    slots{7},
 		shouldPull: slots{0, 1, 2},
-		expectResult: balanceResult{
-			have: 1,
-			want: 4,
-			classState: map[string]balancedBlockState{"default": {
-				desired:      4,
-				surplus:      -3,
-				unachievable: false}}}})
+		expectBlockState: &balancedBlockState{
+			needed:  1,
+			pulling: 3,
+		}})
 	bal.try(c, tester{
 		known:       1,
 		desired:     map[string]int{"default": 2},
 		current:     slots{1, 2, 3, 4},
 		shouldPull:  slots{0},
-		shouldTrash: slots{3, 4}})
+		shouldTrash: slots{3, 4},
+		expectBlockState: &balancedBlockState{
+			needed:   2,
+			unneeded: 2,
+			pulling:  1,
+		}})
 	bal.try(c, tester{
 		known:       1,
 		desired:     map[string]int{"default": 2},
 		current:     slots{0, 1, 2},
 		shouldTrash: slots{1, 2},
-		expectResult: balanceResult{
-			have: 4,
-			want: 2,
-			classState: map[string]balancedBlockState{"default": {
-				desired:      2,
-				surplus:      2,
-				unachievable: false}}}})
+		expectBlockState: &balancedBlockState{
+			needed:   1,
+			unneeded: 2,
+		}})
 }
 
 func (bal *balancerSuite) TestDeviceRWMountedByMultipleServers(c *check.C) {
@@ -483,12 +516,10 @@ func (bal *balancerSuite) TestDeviceRWMountedByMultipleServers(c *check.C) {
 		desired:    map[string]int{"default": 2},
 		current:    slots{1, 9},
 		shouldPull: slots{0},
-		expectResult: balanceResult{
-			have: 1,
-			classState: map[string]balancedBlockState{"default": {
-				desired:      2,
-				surplus:      -1,
-				unachievable: false}}}})
+		expectBlockState: &balancedBlockState{
+			needed:  1,
+			pulling: 1,
+		}})
 	// block 0 is overreplicated, but the second and third
 	// replicas are the same replica according to DeviceID
 	// (despite different Mtimes). Don't trash the third replica.
@@ -496,12 +527,9 @@ func (bal *balancerSuite) TestDeviceRWMountedByMultipleServers(c *check.C) {
 		known:   0,
 		desired: map[string]int{"default": 2},
 		current: slots{0, 1, 9},
-		expectResult: balanceResult{
-			have: 2,
-			classState: map[string]balancedBlockState{"default": {
-				desired:      2,
-				surplus:      0,
-				unachievable: false}}}})
+		expectBlockState: &balancedBlockState{
+			needed: 2,
+		}})
 	// block 0 is overreplicated; the third and fifth replicas are
 	// extra, but the fourth is another view of the second and
 	// shouldn't be trashed.
@@ -510,12 +538,10 @@ func (bal *balancerSuite) TestDeviceRWMountedByMultipleServers(c *check.C) {
 		desired:     map[string]int{"default": 2},
 		current:     slots{0, 1, 5, 9, 12},
 		shouldTrash: slots{5, 12},
-		expectResult: balanceResult{
-			have: 4,
-			classState: map[string]balancedBlockState{"default": {
-				desired:      2,
-				surplus:      2,
-				unachievable: false}}}})
+		expectBlockState: &balancedBlockState{
+			needed:   2,
+			unneeded: 2,
+		}})
 }
 
 func (bal *balancerSuite) TestChangeStorageClasses(c *check.C) {
@@ -682,14 +708,11 @@ func (bal *balancerSuite) try(c *check.C, t tester) {
 		sort.Strings(didTrashMounts)
 		c.Check(didTrashMounts, check.DeepEquals, t.shouldTrashMounts)
 	}
-	if t.expectResult.have > 0 {
-		c.Check(result.have, check.Equals, t.expectResult.have)
+	if t.expectBlockState != nil {
+		c.Check(result.blockState, check.Equals, *t.expectBlockState)
 	}
-	if t.expectResult.want > 0 {
-		c.Check(result.want, check.Equals, t.expectResult.want)
-	}
-	if t.expectResult.classState != nil {
-		c.Check(result.classState, check.DeepEquals, t.expectResult.classState)
+	if t.expectClassState != nil {
+		c.Check(result.classState, check.DeepEquals, t.expectClassState)
 	}
 }
 

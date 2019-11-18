@@ -165,11 +165,18 @@ func (s *HandlerSuite) TestProxyNotFound(c *check.C) {
 }
 
 func (s *HandlerSuite) TestProxyRedirect(c *check.C) {
+	s.cluster.Login.ProviderAppID = "test"
+	s.cluster.Login.ProviderAppSecret = "test"
 	req := httptest.NewRequest("GET", "https://0.0.0.0:1/login?return_to=foo", nil)
 	resp := httptest.NewRecorder()
 	s.handler.ServeHTTP(resp, req)
-	c.Check(resp.Code, check.Equals, http.StatusFound)
-	c.Check(resp.Header().Get("Location"), check.Matches, `https://0.0.0.0:1/auth/joshid\?return_to=%2Cfoo&?`)
+	if !c.Check(resp.Code, check.Equals, http.StatusFound) {
+		c.Log(resp.Body.String())
+	}
+	// Old "proxy entire request" code path returns an absolute
+	// URL. New lib/controller/federation code path returns a
+	// relative URL.
+	c.Check(resp.Header().Get("Location"), check.Matches, `(https://0.0.0.0:1)?/auth/joshid\?return_to=%2Cfoo&?`)
 }
 
 func (s *HandlerSuite) TestValidateV1APIToken(c *check.C) {
