@@ -207,6 +207,9 @@ func (ctrl *googleLoginController) getAuthInfo(ctx context.Context, cluster *arv
 	for ae := range altEmails {
 		if ae != ret.Email {
 			ret.AlternateEmails = append(ret.AlternateEmails, ae)
+			if i := strings.Index(ae, "@"); i > 0 && strings.ToLower(ae[i+1:]) == strings.ToLower(cluster.Users.PreferDomainForUsername) {
+				ret.Username = strings.SplitN(ae[:i], "+", 2)[0]
+			}
 		}
 	}
 	return &ret, nil

@@ -435,7 +435,7 @@ class User < ArvadosModel
                               :is_admin => false,
                               :is_active => Rails.configuration.Users.NewUsersAreActive)
 
-      primary_user.set_initial_username(requested: info['username']) if info['username']
+      primary_user.set_initial_username(requested: info['username']) if info['username'] && !info['username'].blank?
       primary_user.identity_url = info['identity_url'] if identity_url
     end
 
