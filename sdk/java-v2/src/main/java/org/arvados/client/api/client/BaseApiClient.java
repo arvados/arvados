@@ -34,9 +34,7 @@ abstract class BaseApiClient {
 
     BaseApiClient(ConfigProvider config) {
         this.config = config;
-        client = OkHttpClientFactory.builder()
-                .build()
-                .create(config.isApiHostInsecure());
+        this.client = OkHttpClientFactory.INSTANCE.create(config.isApiHostInsecure());
     }
 
     Request.Builder getRequestBuilder() {

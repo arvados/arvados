@@ -18,6 +18,7 @@ type APIEndpoint struct {
 
 var (
 	EndpointConfigGet                     = APIEndpoint{"GET", "arvados/v1/config", ""}
+	EndpointLogin                         = APIEndpoint{"GET", "login", ""}
 	EndpointCollectionCreate              = APIEndpoint{"POST", "arvados/v1/collections", "collection"}
 	EndpointCollectionUpdate              = APIEndpoint{"PATCH", "arvados/v1/collections/:uuid", "collection"}
 	EndpointCollectionGet                 = APIEndpoint{"GET", "arvados/v1/collections/:uuid", ""}
@@ -83,8 +84,16 @@ type DeleteOptions struct {
 	UUID string `json:"uuid"`
 }
 
+type LoginOptions struct {
+	ReturnTo string `json:"return_to"`        // On success, redirect to this target with api_token=xxx query param
+	Remote   string `json:"remote,omitempty"` // Salt token for remote Cluster ID
+	Code     string `json:"code,omitempty"`   // OAuth2 callback code
+	State    string `json:"state,omitempty"`  // OAuth2 callback state
+}
+
 type API interface {
 	ConfigGet(ctx context.Context) (json.RawMessage, error)
+	Login(ctx context.Context, options LoginOptions) (LoginResponse, error)
 	CollectionCreate(ctx context.Context, options CreateOptions) (Collection, error)
 	CollectionUpdate(ctx context.Context, options UpdateOptions) (Collection, error)
 	CollectionGet(ctx context.Context, options GetOptions) (Collection, error)

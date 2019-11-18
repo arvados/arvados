@@ -59,14 +59,14 @@ func (s *FederationSuite) SetUpTest(c *check.C) {
 	s.fed = New(s.cluster)
 }
 
-func (s *FederationSuite) addDirectRemote(c *check.C, id string, backend arvados.API) {
+func (s *FederationSuite) addDirectRemote(c *check.C, id string, backend backend) {
 	s.cluster.RemoteClusters[id] = arvados.RemoteCluster{
 		Host: "in-process.local",
 	}
 	s.fed.remotes[id] = backend
 }
 
-func (s *FederationSuite) addHTTPRemote(c *check.C, id string, backend arvados.API) {
+func (s *FederationSuite) addHTTPRemote(c *check.C, id string, backend backend) {
 	srv := httpserver.Server{Addr: ":"}
 	srv.Handler = router.New(backend)
 	c.Check(srv.Start(), check.IsNil)

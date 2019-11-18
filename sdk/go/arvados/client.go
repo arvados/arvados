@@ -54,6 +54,9 @@ type Client struct {
 	// arvadosclient.ArvadosClient.)
 	KeepServiceURIs []string `json:",omitempty"`
 
+	// HTTP headers to add/override in outgoing requests.
+	SendHeader http.Header
+
 	dd *DiscoveryDocument
 
 	ctx context.Context
@@ -144,9 +147,22 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	return c.httpClient().Do(req)
 }
 
+func isRedirectStatus(code int) bool {
+	switch code {
+	case http.StatusMovedPermanently, http.StatusFound, http.StatusSeeOther, http.StatusTemporaryRedirect, http.StatusPermanentRedirect:
+		return true
+	default:
+		return false
+	}
+}
+
 // DoAndDecode performs req and unmarshals the response (which must be
 // JSON) into dst. Use this instead of RequestAndDecode if you need
 // more control of the http.Request object.
+//
+// If the response status indicates an HTTP redirect, the Location
+// header value is unmarshalled to dst as a RedirectLocation
+// key/field.
 func (c *Client) DoAndDecode(dst interface{}, req *http.Request) error {
 	resp, err := c.Do(req)
 	if err != nil {
@@ -157,13 +173,28 @@ func (c *Client) DoAndDecode(dst interface{}, req *http.Request) error {
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode != 200 {
+	switch {
+	case resp.StatusCode == http.StatusOK && dst == nil:
+		return nil
+	case resp.StatusCode == http.StatusOK:
+		return json.Unmarshal(buf, dst)
+
+	// If the caller uses a client with a custom CheckRedirect
+	// func, Do() might return the 3xx response instead of
+	// following it.
+	case isRedirectStatus(resp.StatusCode) && dst == nil:
+		return nil
+	case isRedirectStatus(resp.StatusCode):
+		// Copy the redirect target URL to dst.RedirectLocation.
+		buf, err := json.Marshal(map[string]string{"RedirectLocation": resp.Header.Get("Location")})
+		if err != nil {
+			return err
+		}
+		return json.Unmarshal(buf, dst)
+
+	default:
 		return newTransactionError(req, resp, buf)
 	}
-	if dst == nil {
-		return nil
-	}
-	return json.Unmarshal(buf, dst)
 }
 
 // Convert an arbitrary struct to url.Values. For example,
@@ -268,6 +299,9 @@ func (c *Client) RequestAndDecodeContext(ctx context.Context, dst interface{}, m
 	}
 	req = req.WithContext(ctx)
 	req.Header.Set("Content-type", "application/x-www-form-urlencoded")
+	for k, v := range c.SendHeader {
+		req.Header[k] = v
+	}
 	return c.DoAndDecode(dst, req)
 }
 
