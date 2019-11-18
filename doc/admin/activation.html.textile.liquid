@@ -10,6 +10,10 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
+{% comment %}
+TODO: Link to relevant workbench documentation when it gets written
+{% endcomment %}
+
 This page describes how user accounts are created, set up and activated.
 
 h2. Authentication
@@ -32,7 +36,7 @@ A federated user follows a slightly different flow.  The client presents a token
 
 h2. User activation
 
-Following authentication, a user record has been found or created.
+This section describes the different user account states.
 
 !(full-width){{site.baseurl}}/images/user-account-states.svg!
 
@@ -40,28 +44,28 @@ notextile. <div class="spaced-out">
 
 # A new user record is not set up, and not active.  An inactive user cannot create or update any object, but can read Arvados objects that the user account has permission to read (such as publicly available items readable by the "anonymous" user).
 # Using Workbench or the "command line":{{site.baseurl}}/install/cheat_sheet.html , the admin invokes @setup@ on the user.
-If @Users.AutoSetupNewUsers@ is true, this happens automatically during user creation, so in that case new users start at step (3).
+If "Users.AutoSetupNewUsers":config.html is true, this happens automatically during user creation, so in that case new users start at step (3).
 The setup method adds the user to the "All users" group.
-If @Users.AutoSetupNewUsersWithRepository@ is true, a new git repo is created for the user.
-If @Users.AutoSetupNewUsersWithVmUUID@ is set, the user is given login permission to the specified shell node
+If "Users.AutoSetupNewUsersWithRepository":config.html is true, a new git repo is created for the user.
+If "Users.AutoSetupNewUsersWithVmUUID":config.html is set, the user is given login permission to the specified shell node
 # User is set up, but still not yet active.  The browser presents "user agreements":#user_agreements (if any) and then invokes the user @activate@ method on the user's behalf.
 # The user @activate@ method checks that all "user agreements":#user_agreements are signed.  If so, or there are no user agreements, the user is activated.
 # The user is active.  User has normal access to the system.
 # From steps (1) and (3), an admin user can directly update the @is_active@ flag.  This bypasses enforcement that user agreements are signed.
 If the user was not yet set up (still in step (1)), it adds the user to the "All users", but bypasses creating default git repository and assigning default VM access.
-# An existing user can have their access revoked using @unsetup@ and "ownership reassignment.":reassign-ownership.html .
+# An existing user can have their access revoked using @unsetup@ and "ownership reassigned.":reassign-ownership.html .
 Unsetup removes the user from the "All users" group and makes them inactive, preventing them from re-activating themselves.
 "Ownership reassignment":reassign-ownership.html moves any objects or permission from the old user to a new user and deletes any credentials for the old user.
 
 notextile. </div>
 
-User management can be performed through the web Workbench or the command line.  See "user management at the CLI":{{site.baseurl}}/install/cheat_sheet.html for specific examples.
+User management can be performed through the web using Workbench or the command line.  See "user management at the CLI":{{site.baseurl}}/install/cheat_sheet.html for specific examples.
 
 h2(#user_agreements). User agreements and self-activation
 
-The @activate@ method of the users controller checks if the user user account is part of the "All Users" group and whether the user has "signed" all the user agreements.
+The @activate@ method of the users controller checks if the user account is part of the "All Users" group and whether the user has "signed" all the user agreements.
 
-User agreements are accessed through the "user_agreements API":{{site.baseurl}}/api/methods/user_agreements.html .  This returns a list of collection records.  This is executed as a system user, so it bypasses normal read permission checks.
+User agreements are accessed through the "user_agreements API":{{site.baseurl}}/api/methods/user_agreements.html .  This returns a list of collection records.
 
 The user agreements that users are required to sign should be added to the @links@ table this way:
 
@@ -99,12 +103,13 @@ The user profile is checked by workbench after checking if user agreements need 
 
 h2(#pre-activated). Pre-setup user by email address
 
-You may create a user account for a user that has not yet logged in, and identify the user by email address.  This will bypass
+You may create a user account for a user that has not yet logged in, and identify the user by email address.
 
 1. As an admin, create a user object:
 
 <pre>
-$ arv user create --user '{"email": "foo@example.com", "username": "foo"}'
+$ arv --format=uuid user create --user '{"email": "foo@example.com", "username": "foo"}'
+clsr1-tpzed-1234567890abcdf
 $ arv user setup --uuid clsr1-tpzed-1234567890abcdf
 </pre>
 
@@ -122,7 +127,7 @@ $ arv user create --user '{"uuid": "clsr2-tpzed-1234567890abcdf", "email": "foo@
 
 h2. Auto-setup federated users from trusted clusters
 
-In the API server config, set @ActivateUsers: true@ for each federated cluster in @RemoteClusters@ .  A federated user from one of the listed clusters which @is_active@ on the home cluster will be automatically set up and activated on this cluster.
+By setting @ActivateUsers: true@ for each federated cluster in @RemoteClusters@, a federated user from one of the listed clusters will be automatically set up and activated on this cluster.  See configuration example in "Federated instance":#federated .
 
 h2. Activation flows
 
@@ -144,7 +149,7 @@ Users:
 # On refreshing workbench, the user is able to self-activate after signing clickthrough agreements (if any).
 # Alternately, directly setting @is_active@ to true also sets up the user, but skips clickthrough agreements (because the user is already active).
 
-h3. Federated instance
+h3(#federated). Federated instance
 
 Policy: users from other clusters in the federation are activated, users from outside the federation must be manually approved.
 
