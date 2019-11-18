@@ -16,24 +16,30 @@ interface PropertyKeyProp {
     propertyKey: string;
 }
 
-export type PropertyValueFieldProps = VocabularyProp & PropertyKeyProp;
+interface ValidationProp {
+    skipValidation?: boolean;
+}
+
+type PropertyValueFieldProps = VocabularyProp & PropertyKeyProp;
 
 export const PROPERTY_VALUE_FIELD_NAME = 'value';
 export const PROPERTY_VALUE_FIELD_ID = 'valueID';
 
-export const PropertyValueField = compose(
+const connectVocabularyAndPropertyKey = compose<any>(
     connectVocabulary,
-    formValues({ propertyKey: PROPERTY_KEY_FIELD_ID })
-)(
-    (props: PropertyValueFieldProps) =>
+    formValues({ propertyKey: PROPERTY_KEY_FIELD_ID }),
+);
+
+export const PropertyValueField = connectVocabularyAndPropertyKey(
+    ({skipValidation, ...props}: PropertyValueFieldProps & ValidationProp) =>
         <Field
             name={PROPERTY_VALUE_FIELD_NAME}
             component={PropertyValueInput}
-            validate={getValidation(props)}
+            validate={skipValidation ? undefined : getValidation(props)}
             {...props} />
 );
 
-export const PropertyValueInput = ({ vocabulary, propertyKey, ...props }: WrappedFieldProps & PropertyValueFieldProps) =>
+const PropertyValueInput = ({ vocabulary, propertyKey, ...props }: WrappedFieldProps & PropertyValueFieldProps) =>
     <FormName children={data => (
         <Autocomplete
             label='Value'

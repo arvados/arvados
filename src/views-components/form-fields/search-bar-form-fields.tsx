@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from "react";
-import { Field, WrappedFieldProps, FieldArray, formValues } from 'redux-form';
+import { Field, WrappedFieldProps, FieldArray } from 'redux-form';
 import { TextField, DateTextField } from "~/components/text-field/text-field";
 import { CheckboxField } from '~/components/checkbox-field/checkbox-field';
 import { NativeSelectField } from '~/components/select-field/select-field';
@@ -13,10 +13,8 @@ import { SEARCH_BAR_ADVANCE_FORM_PICKER_ID } from '~/store/search-bar/search-bar
 import { SearchBarAdvancedPropertiesView } from '~/views-components/search-bar/search-bar-advanced-properties-view';
 import { TreeItem } from "~/components/tree/tree";
 import { ProjectsTreePickerItem } from "~/views-components/projects-tree-picker/generic-projects-tree-picker";
-import { PropertyKeyInput } from '~/views-components/resource-properties-form/property-key-field';
-import { PropertyValueInput, PropertyValueFieldProps } from '~/views-components/resource-properties-form/property-value-field';
-import { VocabularyProp, connectVocabulary } from '~/views-components/resource-properties-form/property-field-common';
-import { compose } from 'redux';
+import { PropertyKeyField, } from '~/views-components/resource-properties-form/property-key-field';
+import { PropertyValueField } from '~/views-components/resource-properties-form/property-value-field';
 import { connect } from "react-redux";
 import { RootState } from "~/store/store";
 
@@ -88,22 +86,11 @@ export const SearchBarPropertiesField = () =>
         name="properties"
         component={SearchBarAdvancedPropertiesView} />;
 
-export const SearchBarKeyField = connectVocabulary(
-    ({ vocabulary }: VocabularyProp) =>
-        <Field
-            name='key'
-            component={PropertyKeyInput}
-            vocabulary={vocabulary} />);
+export const SearchBarKeyField = () =>
+    <PropertyKeyField skipValidation={true} />;
 
-export const SearchBarValueField = compose(
-    connectVocabulary,
-    formValues({ propertyKey: 'key' })
-)(
-    (props: PropertyValueFieldProps) =>
-        <Field
-            name='value'
-            component={PropertyValueInput}
-            {...props} />);
+export const SearchBarValueField = () =>
+    <PropertyValueField skipValidation={true} />;
 
 export const SearchBarSaveSearchField = () =>
     <Field

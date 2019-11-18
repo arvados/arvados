@@ -14,16 +14,20 @@ import { escapeRegExp } from '~/common/regexp.ts';
 export const PROPERTY_KEY_FIELD_NAME = 'key';
 export const PROPERTY_KEY_FIELD_ID = 'keyID';
 
+interface PropertyKeyFieldProps {
+    skipValidation?: boolean;
+}
+
 export const PropertyKeyField = connectVocabulary(
-    ({ vocabulary }: VocabularyProp) =>
+    ({ vocabulary, skipValidation }: VocabularyProp & PropertyKeyFieldProps) =>
         <Field
             name={PROPERTY_KEY_FIELD_NAME}
             component={PropertyKeyInput}
             vocabulary={vocabulary}
-            validate={getValidation(vocabulary)} />
+            validate={skipValidation ? undefined : getValidation(vocabulary)} />
 );
 
-export const PropertyKeyInput = ({ vocabulary, ...props }: WrappedFieldProps & VocabularyProp) =>
+const PropertyKeyInput = ({ vocabulary, ...props }: WrappedFieldProps & VocabularyProp) =>
     <FormName children={data => (
         <Autocomplete
             label='Key'
