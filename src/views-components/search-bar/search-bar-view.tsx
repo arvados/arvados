@@ -132,13 +132,8 @@ const handleInputClick = (e: React.MouseEvent, props: SearchBarViewProps) => {
 
 const handleDropdownClick = (e: React.MouseEvent, props: SearchBarViewProps) => {
     e.stopPropagation();
-    if (props.isPopoverOpen) {
-        if (props.currentView === SearchView.ADVANCED) {
-            props.closeView();
-        } else {
-            props.setAdvancedDataFromSearchValue(props.searchValue);
-            props.onSetView(SearchView.ADVANCED);
-        }
+    if (props.isPopoverOpen && props.currentView === SearchView.ADVANCED) {
+        props.closeView();
     } else {
         props.setAdvancedDataFromSearchValue(props.searchValue);
         props.onSetView(SearchView.ADVANCED);
