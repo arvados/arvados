@@ -1,0 +1,88 @@
+---
+layout: default
+navsection: admin
+title: User management at the CLI
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Initial setup
+
+<pre>
+ARVADOS_API_HOST={{ site.arvados_api_host }}
+ARVADOS_API_TOKEN=1234567890qwertyuiopasdfghjklzxcvbnm1234567890zzzz
+</pre>
+
+In these examples, @x1u39-tpzed-3kz0nwtjehhl0u4@ is the sample user account.  Replace with the uuid of the user you wish to manipulate.
+
+See "user management":{{site.baseurl}}/admin/activation.html for an overview of how to use these commands.
+
+h3. Setup a user
+
+This creates a default git repository and VM login.  Enables user to self-activate using Workbench.
+
+<pre>
+arv user setup --uuid x1u39-tpzed-3kz0nwtjehhl0u4
+</pre>
+
+h3. Deactivate user
+
+<pre>
+arv user unsetup --uuid x1u39-tpzed-3kz0nwtjehhl0u4
+</pre>
+
+When deactivating a user, you may also want to "reassign ownership of their data":{{site.baseurl}}/admin/reassign-ownership.html .
+
+h3. Directly activate user
+
+<pre>
+arv user update --uuid "x1u39-tpzed-3kz0nwtjehhl0u4" --user '{"is_active":true}'
+</pre>
+
+Note this bypasses user agreements checks, and does not set up the user with a default git repository or VM login.
+
+
+h2. Permissions
+
+h3. VM login
+
+Give @$user_uuid@ permission to log in to @$vm_uuid@ as @$target_username@
+
+<pre>
+user_uuid=xxxxxxxchangeme
+vm_uuid=xxxxxxxchangeme
+target_username=xxxxxxxchangeme
+
+read -rd $'\000' newlink <<EOF; arv link create --link "$newlink"
+{
+"tail_uuid":"$user_uuid",
+"head_uuid":"$vm_uuid",
+"link_class":"permission",
+"name":"can_login",
+"properties":{"username":"$target_username"}
+}
+EOF
+</pre>
+
+h3. Git repository
+
+Give @$user_uuid@ permission to commit to @$repo_uuid@ as @$repo_username@
+
+<pre>
+user_uuid=xxxxxxxchangeme
+repo_uuid=xxxxxxxchangeme
+repo_username=xxxxxxxchangeme
+
+read -rd $'\000' newlink <<EOF; arv link create --link "$newlink"
+{
+"tail_uuid":"$user_uuid",
+"head_uuid":"$repo_uuid",
+"link_class":"permission",
+"name":"can_write",
+"properties":{"username":"$repo_username"}
+}
+EOF
+</pre>

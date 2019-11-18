@@ -3,6 +3,12 @@
 #
 # SPDX-License-Identifier: CC-BY-SA-3.0
 
+# As a convenience to the documentation writer, you can touch a file
+# called 'no-sdk' in the 'doc' directory and it will suppress
+# generating the documentation for the SDKs, which (the R docs
+# especially) take a fair bit of time and slow down the edit-preview
+# cycle.
+
 require "rubygems"
 require "colorize"
 

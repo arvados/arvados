@@ -156,15 +156,15 @@ navbar:
       - admin/upgrading.html.textile.liquid
       - admin/config-migration.html.textile.liquid
     - Users and Groups:
-      - admin/activation.html.textile.liquid
+      - admin/user-management.html.textile.liquid
       - admin/reassign-ownership.html.textile.liquid
-      - install/cheat_sheet.html.textile.liquid
+      - admin/user-management-cli.html.textile.liquid
       - admin/group-management.html.textile.liquid
       - admin/merge-remote-account.html.textile.liquid
       - admin/migrating-providers.html.textile.liquid
       - user/topics/arvados-sync-groups.html.textile.liquid
     - Monitoring:
-      - admin/troubleshooting.html.textile.liquid
+      - admin/logging.html.textile.liquid
       - admin/metrics.html.textile.liquid
       - admin/health-checks.html.textile.liquid
       - admin/management-token.html.textile.liquid
