@@ -55,7 +55,7 @@ func (s *HandlerSuite) TestMounts(c *check.C) {
 		c.Check(resp.Body.String(), check.Equals, "Unauthorized\n")
 	}
 
-	tok := arvadostest.DataManagerToken
+	tok := arvadostest.SystemRootToken
 
 	// Nonexistent mount UUID
 	resp = s.call("GET", "/mounts/X/blocks", tok, nil)

@@ -13,7 +13,13 @@ import (
 	check "gopkg.in/check.v1"
 )
 
-func (s *FederationSuite) TestDeferToLoginCluster(c *check.C) {
+var _ = check.Suite(&LoginSuite{})
+
+type LoginSuite struct {
+	FederationSuite
+}
+
+func (s *LoginSuite) TestDeferToLoginCluster(c *check.C) {
 	s.addHTTPRemote(c, "zhome", &arvadostest.APIStub{})
 	s.cluster.Login.LoginCluster = "zhome"
 

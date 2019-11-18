@@ -46,7 +46,7 @@ func testCluster(t TB) *arvados.Cluster {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cluster.SystemRootToken = arvadostest.DataManagerToken
+	cluster.SystemRootToken = arvadostest.SystemRootToken
 	cluster.ManagementToken = arvadostest.ManagementToken
 	cluster.Collections.BlobSigning = false
 	return cluster

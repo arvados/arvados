@@ -185,7 +185,6 @@ func (as *APIStub) Calls(method interface{}) []APIStubCall {
 	defer as.mtx.Unlock()
 	var calls []APIStubCall
 	for _, call := range as.calls {
-
 		if method == nil || (runtime.FuncForPC(reflect.ValueOf(call.Method).Pointer()).Name() ==
 			runtime.FuncForPC(reflect.ValueOf(method).Pointer()).Name()) {
 			calls = append(calls, call)

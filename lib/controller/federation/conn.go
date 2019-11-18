@@ -323,8 +323,82 @@ func (conn *Conn) SpecimenDelete(ctx context.Context, options arvados.DeleteOpti
 	return conn.chooseBackend(options.UUID).SpecimenDelete(ctx, options)
 }
 
+var userAttrsCachedFromLoginCluster = map[string]bool{
+	"created_at":              true,
+	"email":                   true,
+	"first_name":              true,
+	"is_active":               true,
+	"is_admin":                true,
+	"last_name":               true,
+	"modified_at":             true,
+	"modified_by_client_uuid": true,
+	"modified_by_user_uuid":   true,
+	"prefs":                   true,
+	"username":                true,
+
+	"full_name":    false,
+	"identity_url": false,
+	"is_invited":   false,
+	"owner_uuid":   false,
+	"uuid":         false,
+}
+
 func (conn *Conn) UserList(ctx context.Context, options arvados.ListOptions) (arvados.UserList, error) {
-	return conn.generated_UserList(ctx, options)
+	logger := ctxlog.FromContext(ctx)
+	if id := conn.cluster.Login.LoginCluster; id != "" && id != conn.cluster.ClusterID {
+		resp, err := conn.chooseBackend(id).UserList(ctx, options)
+		if err != nil {
+			return resp, err
+		}
+		ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{conn.cluster.SystemRootToken}})
+		for _, user := range resp.Items {
+			if !strings.HasPrefix(user.UUID, id) {
+				continue
+			}
+			logger.Debug("cache user info for uuid %q", user.UUID)
+			var allFields map[string]interface{}
+			buf, err := json.Marshal(user)
+			if err != nil {
+				return arvados.UserList{}, fmt.Errorf("error encoding user record from remote response: %s", err)
+			}
+			err = json.Unmarshal(buf, &allFields)
+			if err != nil {
+				return arvados.UserList{}, fmt.Errorf("error transcoding user record from remote response: %s", err)
+			}
+			updates := allFields
+			if len(options.Select) > 0 {
+				updates = map[string]interface{}{}
+				for _, k := range options.Select {
+					if v, ok := allFields[k]; ok && userAttrsCachedFromLoginCluster[k] {
+						updates[k] = v
+					}
+				}
+			} else {
+				for k := range updates {
+					if !userAttrsCachedFromLoginCluster[k] {
+						delete(updates, k)
+					}
+				}
+			}
+			_, err = conn.local.UserUpdate(ctxRoot, arvados.UpdateOptions{
+				UUID:  user.UUID,
+				Attrs: updates,
+			})
+			if errStatus(err) == http.StatusNotFound {
+				updates["uuid"] = user.UUID
+				_, err = conn.local.UserCreate(ctxRoot, arvados.CreateOptions{
+					Attrs: updates,
+				})
+			}
+			if err != nil {
+				logger.WithError(err).WithField("UUID", user.UUID).Error("error updating local user record")
+				return arvados.UserList{}, fmt.Errorf("error updating local user record: %s", err)
+			}
+		}
+		return resp, nil
+	} else {
+		return conn.generated_UserList(ctx, options)
+	}
 }
 
 func (conn *Conn) UserCreate(ctx context.Context, options arvados.CreateOptions) (arvados.User, error) {
