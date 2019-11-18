@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Dispatch } from 'redux';
+import { Dispatch, compose } from 'redux';
 import { connect } from 'react-redux';
 import { InjectedFormProps, formValueSelector } from 'redux-form';
 import { Grid, withStyles, StyleRulesCallback, WithStyles, Button } from '@material-ui/core';
@@ -19,6 +19,8 @@ import { ArvadosTheme } from '~/common/custom-theme';
 import { SearchBarKeyField, SearchBarValueField } from '~/views-components/form-fields/search-bar-form-fields';
 import { Chips } from '~/components/chips/chips';
 import { formatPropertyValue } from "~/common/formatters";
+import { Vocabulary } from '~/models/vocabulary';
+import { connectVocabulary } from '../resource-properties-form/property-field-common';
 
 type CssRules = 'label' | 'button';
 
@@ -39,6 +41,7 @@ interface SearchBarAdvancedPropertiesViewDataProps {
     pristine: boolean;
     propertyValues: PropertyValue;
     fields: PropertyValue[];
+    vocabulary: Vocabulary;
 }
 
 interface SearchBarAdvancedPropertiesViewActionProps {
@@ -74,9 +77,11 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
     }
 });
 
-export const SearchBarAdvancedPropertiesView = connect(mapStateToProps, mapDispatchToProps)(
+export const SearchBarAdvancedPropertiesView = compose(
+    connectVocabulary,
+    connect(mapStateToProps, mapDispatchToProps))(
     withStyles(styles)(
-        ({ classes, fields, propertyValues, setProps, addProp, getAllFields }: SearchBarAdvancedPropertiesViewProps) =>
+        ({ classes, fields, propertyValues, setProps, addProp, getAllFields, vocabulary }: SearchBarAdvancedPropertiesViewProps) =>
             <Grid container item xs={12} spacing={16}>
                 <Grid item xs={2} className={classes.label}>Properties</Grid>
                 <Grid item xs={4}>
@@ -99,7 +104,7 @@ export const SearchBarAdvancedPropertiesView = connect(mapStateToProps, mapDispa
                     <Chips values={getAllFields(fields)}
                         deletable
                         onChange={setProps}
-                        getLabel={(field: PropertyValue) => formatPropertyValue(field)} />
+                        getLabel={(field: PropertyValue) => formatPropertyValue(field, vocabulary)} />
                 </Grid>
             </Grid>
     )
