@@ -23,6 +23,7 @@ import { searchResultsPanelActions } from "~/store/search-results-panel/search-r
 import { ListResults } from "~/services/common-service/common-service";
 import * as parser from './search-query/arv-parser';
 import { Keywords } from './search-query/arv-parser';
+import { Vocabulary, getTagKeyLabel, getTagValueLabel } from "~/models/vocabulary";
 
 export const searchBarActions = unionize({
     SET_CURRENT_VIEW: ofType<string>(),
@@ -95,9 +96,9 @@ export const setSearchValueFromAdvancedData = (data: SearchBarAdvanceFormData, p
         dispatch(searchBarActions.SET_SEARCH_VALUE(value));
     };
 
-export const setAdvancedDataFromSearchValue = (search: string) =>
+export const setAdvancedDataFromSearchValue = (search: string, vocabulary: Vocabulary) =>
     async (dispatch: Dispatch) => {
-        const data = getAdvancedDataFromQuery(search);
+        const data = getAdvancedDataFromQuery(search, vocabulary);
         dispatch<any>(initialize(SEARCH_BAR_ADVANCE_FORM_NAME, data));
         if (data.projectUuid) {
             await dispatch<any>(activateSearchBarProject(data.projectUuid));
@@ -297,7 +298,7 @@ export const getQueryFromAdvancedData = (data: SearchBarAdvanceFormData, prevDat
     return value;
 };
 
-export const getAdvancedDataFromQuery = (query: string): SearchBarAdvanceFormData => {
+export const getAdvancedDataFromQuery = (query: string, vocabulary?: Vocabulary): SearchBarAdvanceFormData => {
     const { tokens, searchString } = parser.parseSearchQuery(query);
     const getValue = parser.getValue(tokens);
     return {
@@ -308,7 +309,17 @@ export const getAdvancedDataFromQuery = (query: string): SearchBarAdvanceFormDat
         inTrash: parser.isTrashed(tokens),
         dateFrom: getValue(Keywords.FROM) || '',
         dateTo: getValue(Keywords.TO) || '',
-        properties: parser.getProperties(tokens),
+        properties: vocabulary
+            ? parser.getProperties(tokens).map(
+                p => {
+                    return {
+                        keyID: p.key,
+                        key: getTagKeyLabel(p.key, vocabulary),
+                        valueID: p.value,
+                        value: getTagValueLabel(p.key, p.value, vocabulary),
+                    };
+                })
+            : parser.getProperties(tokens),
         saveQuery: false,
         queryName: ''
     };

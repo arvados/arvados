@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
+import { compose } from 'redux';
 import {
     IconButton,
     Paper,
@@ -33,6 +34,8 @@ import {
 } from '~/views-components/search-bar/search-bar-advanced-view';
 import { KEY_CODE_DOWN, KEY_CODE_ESC, KEY_CODE_UP, KEY_ENTER } from "~/common/codes";
 import { debounce } from 'debounce';
+import { Vocabulary } from '~/models/vocabulary';
+import { connectVocabulary } from '../resource-properties-form/property-field-common';
 
 type CssRules = 'container' | 'containerSearchViewOpened' | 'input' | 'view';
 
@@ -72,6 +75,7 @@ interface SearchBarViewDataProps {
     currentView: string;
     isPopoverOpen: boolean;
     debounce?: number;
+    vocabulary?: Vocabulary;
 }
 
 export type SearchBarActionProps = SearchBarViewActionProps
@@ -88,7 +92,7 @@ interface SearchBarViewActionProps {
     loadRecentQueries: () => string[];
     moveUp: () => void;
     moveDown: () => void;
-    setAdvancedDataFromSearchValue: (search: string) => void;
+    setAdvancedDataFromSearchValue: (search: string, vocabulary?: Vocabulary) => void;
 }
 
 type SearchBarViewProps = SearchBarDataProps & SearchBarActionProps & WithStyles<CssRules>;
@@ -135,12 +139,12 @@ const handleDropdownClick = (e: React.MouseEvent, props: SearchBarViewProps) => 
     if (props.isPopoverOpen && props.currentView === SearchView.ADVANCED) {
         props.closeView();
     } else {
-        props.setAdvancedDataFromSearchValue(props.searchValue);
+        props.setAdvancedDataFromSearchValue(props.searchValue, props.vocabulary);
         props.onSetView(SearchView.ADVANCED);
     }
 };
 
-export const SearchBarView = withStyles(styles)(
+export const SearchBarView = compose(connectVocabulary, withStyles(styles))(
     class extends React.Component<SearchBarViewProps> {
 
         debouncedSearch = debounce(() => {

@@ -20,6 +20,7 @@ import {
 } from '~/store/search-bar/search-bar-actions';
 import { SearchBarView, SearchBarActionProps, SearchBarDataProps } from '~/views-components/search-bar/search-bar-view';
 import { SearchBarAdvanceFormData } from '~/models/search-bar';
+import { Vocabulary } from '~/models/vocabulary';
 
 const mapStateToProps = ({ searchBar, form }: RootState): SearchBarDataProps => {
     return {
@@ -50,7 +51,7 @@ const mapDispatchToProps = (dispatch: Dispatch): SearchBarActionProps => ({
     editSavedQuery: (data: SearchBarAdvanceFormData) => dispatch<any>(editSavedQuery(data)),
     moveUp: () => dispatch<any>(moveUp()),
     moveDown: () => dispatch<any>(moveDown()),
-    setAdvancedDataFromSearchValue: (search: string) => dispatch<any>(setAdvancedDataFromSearchValue(search))
+    setAdvancedDataFromSearchValue: (search: string, vocabulary: Vocabulary) => dispatch<any>(setAdvancedDataFromSearchValue(search, vocabulary))
 });
 
 export const SearchBar = connect(mapStateToProps, mapDispatchToProps)(SearchBarView);
