@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: admin
-title: "Migrating account providers"
+title: Changing upstream login providers
 ...
 {% comment %}
 Copyright (C) The Arvados Authors. All rights reserved.
@@ -9,11 +9,11 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-This page describes how to enable users to use more than one provider to log into the same Arvados account.  This can be used to migrate account providers, for example, from LDAP to Google.  In order to do this, users must be able to log into both the "old" and "new" providers.
+This page describes how to enable users to use more than one upstream identity provider to log into the same Arvados account.  This can be used to migrate account providers, for example, from LDAP to Google.  In order to do this, users must be able to log into both the "old" and "new" providers.
 
-h2. Configure multiple providers in SSO
+h2. Configure multiple or alternate provider in SSO
 
-In @application.yml@ for the SSO server, enable both @google_oauth2@ and @ldap@ providers:
+In @application.yml@ for the SSO server, you can enable both @google_oauth2@ and @ldap@ providers:
 
 <pre>
 production:
@@ -32,9 +32,13 @@ production:
 
 Restart the SSO server after changing the configuration.
 
+h2. Matching on email address
+
+If the new account provider supplies an email address (primary or alternate) that matches an existing user account, the user will be logged into that account.  No further migration is necessary, and the old provider can be removed from the SSO configuration.
+
 h2. Link accounts
 
-Instruct users to go through the process of "linking accounts":{{site.baseurl}}/user/topics/link-accounts.html
+If the new provider cannot provide matching email addresses, users will have to migrate manually by "linking accounts":{{site.baseurl}}/user/topics/link-accounts.html
 
 After linking accounts, users can use the new provider to access their existing Arvados account.
 
