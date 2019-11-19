@@ -10,7 +10,7 @@ Syntax:
         WORKSPACE=/path/to/arvados $(basename $0) [options]
 
 --target <target>
-    Distribution to build packages for (default: debian9)
+    Distribution to build packages for (default: debian10)
 --command
     Build command to execute (default: use built-in Docker image command)
 --test-packages
@@ -21,6 +21,9 @@ Syntax:
     Build only a specific package
 --only-test <package>
     Test only a specific package
+--force-build
+    Build even if the package exists upstream or if it has already been
+    built locally
 --force-test
     Test even if there is no new untested package
 --build-version <string>
@@ -51,15 +54,16 @@ if ! [[ -d "$WORKSPACE" ]]; then
 fi
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,debug,test-packages,target:,command:,only-test:,force-test,only-build:,build-version: \
+    help,debug,test-packages,target:,command:,only-test:,force-test,only-build:,force-build,build-version: \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
 fi
 
-TARGET=debian9
+TARGET=debian10
+FORCE_BUILD=0
 COMMAND=
-DEBUG=
+DEBUG=${ARVADOS_DEBUG:-0}
 
 eval set -- "$PARSEDOPTS"
 while [ $# -gt 0 ]; do
@@ -79,6 +83,9 @@ while [ $# -gt 0 ]; do
             ;;
         --force-test)
             FORCE_TEST=true
+            ;;
+        --force-build)
+            FORCE_BUILD=1
             ;;
         --only-build)
             ONLY_BUILD="$2"; shift
@@ -269,6 +276,7 @@ else
         --env ARVADOS_BUILDING_ITERATION="$ARVADOS_BUILDING_ITERATION" \
         --env ARVADOS_DEBUG=$ARVADOS_DEBUG \
         --env "ONLY_BUILD=$ONLY_BUILD" \
+        --env "FORCE_BUILD=$FORCE_BUILD" \
         "$IMAGE" $COMMAND
     then
         echo
