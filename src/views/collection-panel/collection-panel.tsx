@@ -65,8 +65,7 @@ type CollectionPanelProps = CollectionPanelDataProps & DispatchProp
 export const CollectionPanel = withStyles(styles)(
     connect((state: RootState, props: RouteComponentProps<{ id: string }>) => {
         const item = getResource(props.match.params.id)(state.resources);
-        const data = getResourceData(props.match.params.id)(state.resourcesData);
-        return { item, data };
+        return { item };
     })(
         class extends React.Component<CollectionPanelProps> {
 
