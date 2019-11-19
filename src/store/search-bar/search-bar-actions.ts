@@ -388,11 +388,6 @@ export const resetAdvancedFormProperty = (propertyField: string) =>
         dispatch(untouch(SEARCH_BAR_ADVANCED_FORM_NAME, propertyField));
     };
 
-export const updateAdvancedFormProperties = (propertyValue: PropertyValue) =>
-    (dispatch: Dispatch) => {
-        dispatch(arrayPush(SEARCH_BAR_ADVANCED_FORM_NAME, 'properties', propertyValue));
-    };
-
 export const moveUp = () =>
     (dispatch: Dispatch) => {
         dispatch(searchBarActions.MOVE_UP());
