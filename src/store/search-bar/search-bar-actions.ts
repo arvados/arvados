@@ -5,7 +5,7 @@
 import { ofType, unionize, UnionOf } from "~/common/unionize";
 import { GroupContentsResource, GroupContentsResourcePrefix } from '~/services/groups-service/groups-service';
 import { Dispatch } from 'redux';
-import { arrayPush, change, initialize, untouch } from 'redux-form';
+import { change, initialize, untouch } from 'redux-form';
 import { RootState } from '~/store/store';
 import { initUserProject, treePickerActions } from '~/store/tree-picker/tree-picker-actions';
 import { ServiceRepository } from '~/services/services';
