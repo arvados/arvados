@@ -54,6 +54,7 @@ var (
 	EndpointUserUnsetup                   = APIEndpoint{"POST", "arvados/v1/users/{uuid}/unsetup", ""}
 	EndpointUserUpdate                    = APIEndpoint{"PATCH", "arvados/v1/users/{uuid}", "user"}
 	EndpointUserUpdateUUID                = APIEndpoint{"POST", "arvados/v1/users/{uuid}/update_uuid", ""}
+	EndpointUserBatchUpdate               = APIEndpoint{"PATCH", "arvados/v1/users/batch", ""}
 	EndpointAPIClientAuthorizationCurrent = APIEndpoint{"GET", "arvados/v1/api_client_authorizations/current", ""}
 )
 
@@ -119,6 +120,12 @@ type UserMergeOptions struct {
 	NewUserToken string `json:"new_user_token,omitempty"`
 }
 
+type UserBatchUpdateOptions struct {
+	Updates map[string]map[string]interface{} `json:"updates"`
+}
+
+type UserBatchUpdateResponse struct{}
+
 type DeleteOptions struct {
 	UUID string `json:"uuid"`
 }
@@ -166,5 +173,6 @@ type API interface {
 	UserGetSystem(ctx context.Context, options GetOptions) (User, error)
 	UserList(ctx context.Context, options ListOptions) (UserList, error)
 	UserDelete(ctx context.Context, options DeleteOptions) (User, error)
+	UserBatchUpdate(context.Context, UserBatchUpdateOptions) (UserList, error)
 	APIClientAuthorizationCurrent(ctx context.Context, options GetOptions) (APIClientAuthorization, error)
 }

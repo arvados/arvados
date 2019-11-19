@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
 
 	"git.curoverse.com/arvados.git/lib/config"
 	"git.curoverse.com/arvados.git/lib/controller/localdb"
@@ -350,12 +351,25 @@ func (conn *Conn) UserList(ctx context.Context, options arvados.ListOptions) (ar
 		if err != nil {
 			return resp, err
 		}
-		ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{conn.cluster.SystemRootToken}})
+		batchOpts := arvados.UserBatchUpdateOptions{Updates: map[string]map[string]interface{}{}}
 		for _, user := range resp.Items {
 			if !strings.HasPrefix(user.UUID, id) {
 				continue
 			}
-			logger.Debug("cache user info for uuid %q", user.UUID)
+			logger.Debugf("cache user info for uuid %q", user.UUID)
+
+			// If the remote cluster has null timestamps
+			// (e.g., test server with incomplete
+			// fixtures) use dummy timestamps (instead of
+			// the zero time, which causes a Rails API
+			// error "year too big to marshal: 1 UTC").
+			if user.ModifiedAt.IsZero() {
+				user.ModifiedAt = time.Now()
+			}
+			if user.CreatedAt.IsZero() {
+				user.CreatedAt = time.Now()
+			}
+
 			var allFields map[string]interface{}
 			buf, err := json.Marshal(user)
 			if err != nil {
@@ -380,19 +394,13 @@ func (conn *Conn) UserList(ctx context.Context, options arvados.ListOptions) (ar
 					}
 				}
 			}
-			_, err = conn.local.UserUpdate(ctxRoot, arvados.UpdateOptions{
-				UUID:  user.UUID,
-				Attrs: updates,
-			})
-			if errStatus(err) == http.StatusNotFound {
-				updates["uuid"] = user.UUID
-				_, err = conn.local.UserCreate(ctxRoot, arvados.CreateOptions{
-					Attrs: updates,
-				})
-			}
+			batchOpts.Updates[user.UUID] = updates
+		}
+		if len(batchOpts.Updates) > 0 {
+			ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{conn.cluster.SystemRootToken}})
+			_, err = conn.local.UserBatchUpdate(ctxRoot, batchOpts)
 			if err != nil {
-				logger.WithError(err).WithField("UUID", user.UUID).Error("error updating local user record")
-				return arvados.UserList{}, fmt.Errorf("error updating local user record: %s", err)
+				return arvados.UserList{}, fmt.Errorf("error updating local user records: %s", err)
 			}
 		}
 		return resp, nil
@@ -443,6 +451,10 @@ func (conn *Conn) UserGetSystem(ctx context.Context, options arvados.GetOptions)
 
 func (conn *Conn) UserDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.User, error) {
 	return conn.chooseBackend(options.UUID).UserDelete(ctx, options)
+}
+
+func (conn *Conn) UserBatchUpdate(ctx context.Context, options arvados.UserBatchUpdateOptions) (arvados.UserList, error) {
+	return conn.local.UserBatchUpdate(ctx, options)
 }
 
 func (conn *Conn) APIClientAuthorizationCurrent(ctx context.Context, options arvados.GetOptions) (arvados.APIClientAuthorization, error) {

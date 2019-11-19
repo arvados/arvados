@@ -283,6 +283,13 @@ func (rtr *router) addRoutes() {
 			},
 		},
 		{
+			arvados.EndpointUserBatchUpdate,
+			func() interface{} { return &arvados.UserBatchUpdateOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.UserBatchUpdate(ctx, *opts.(*arvados.UserBatchUpdateOptions))
+			},
+		},
+		{
 			arvados.EndpointUserDelete,
 			func() interface{} { return &arvados.DeleteOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {

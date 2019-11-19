@@ -53,7 +53,7 @@ func (s *UserSuite) TestLoginClusterUserList(c *check.C) {
 				c.Check(stub.Calls(nil), check.HasLen, 0)
 			} else if updateFail {
 				c.Logf("... err %#v", err)
-				calls := stub.Calls(stub.UserUpdate)
+				calls := stub.Calls(stub.UserBatchUpdate)
 				if c.Check(calls, check.HasLen, 1) {
 					c.Logf("... stub.UserUpdate called with options: %#v", calls[0].Options)
 					shouldUpdate := map[string]bool{
@@ -84,8 +84,11 @@ func (s *UserSuite) TestLoginClusterUserList(c *check.C) {
 							}
 						}
 					}
+					var uuid string
+					for uuid = range calls[0].Options.(arvados.UserBatchUpdateOptions).Updates {
+					}
 					for k, shouldFind := range shouldUpdate {
-						_, found := calls[0].Options.(arvados.UpdateOptions).Attrs[k]
+						_, found := calls[0].Options.(arvados.UserBatchUpdateOptions).Updates[uuid][k]
 						c.Check(found, check.Equals, shouldFind, check.Commentf("offending attr: %s", k))
 					}
 				}
@@ -93,13 +96,13 @@ func (s *UserSuite) TestLoginClusterUserList(c *check.C) {
 				updates := 0
 				for _, d := range spy.RequestDumps {
 					d := string(d)
-					if strings.Contains(d, "PATCH /arvados/v1/users/zzzzz-tpzed-") {
+					if strings.Contains(d, "PATCH /arvados/v1/users/batch") {
 						c.Check(d, check.Matches, `(?ms).*Authorization: Bearer `+arvadostest.SystemRootToken+`.*`)
 						updates++
 					}
 				}
 				c.Check(err, check.IsNil)
-				c.Check(updates, check.Equals, len(userlist.Items))
+				c.Check(updates, check.Equals, 1)
 				c.Logf("... response items %#v", userlist.Items)
 			}
 		}
