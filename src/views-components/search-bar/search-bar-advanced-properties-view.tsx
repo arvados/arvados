@@ -9,10 +9,10 @@ import { InjectedFormProps, formValueSelector } from 'redux-form';
 import { Grid, withStyles, StyleRulesCallback, WithStyles, Button } from '@material-ui/core';
 import { RootState } from '~/store/store';
 import {
-    SEARCH_BAR_ADVANCE_FORM_NAME,
-    changeAdvanceFormProperty,
-    resetAdvanceFormProperty,
-    updateAdvanceFormProperties
+    SEARCH_BAR_ADVANCED_FORM_NAME,
+    changeAdvancedFormProperty,
+    resetAdvancedFormProperty,
+    updateAdvancedFormProperties
 } from '~/store/search-bar/search-bar-actions';
 import { PropertyValue } from '~/models/search-bar';
 import { ArvadosTheme } from '~/common/custom-theme';
@@ -54,7 +54,7 @@ type SearchBarAdvancedPropertiesViewProps = SearchBarAdvancedPropertiesViewDataP
     & SearchBarAdvancedPropertiesViewActionProps
     & InjectedFormProps & WithStyles<CssRules>;
 
-const selector = formValueSelector(SEARCH_BAR_ADVANCE_FORM_NAME);
+const selector = formValueSelector(SEARCH_BAR_ADVANCED_FORM_NAME);
 const mapStateToProps = (state: RootState) => {
     return {
         propertyValues: selector(state, 'key', 'value', 'keyID', 'valueID')
@@ -63,14 +63,14 @@ const mapStateToProps = (state: RootState) => {
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
     setProps: (propertyValues: PropertyValue[]) => {
-        dispatch<any>(changeAdvanceFormProperty('properties', propertyValues));
+        dispatch<any>(changeAdvancedFormProperty('properties', propertyValues));
     },
-    addProp: (propertyValues: PropertyValue) => {
-        dispatch<any>(updateAdvanceFormProperties(propertyValues));
-        dispatch<any>(resetAdvanceFormProperty('key'));
-        dispatch<any>(resetAdvanceFormProperty('value'));
-        dispatch<any>(resetAdvanceFormProperty('keyID'));
-        dispatch<any>(resetAdvanceFormProperty('valueID'));
+    addProp: (propertyValue: PropertyValue) => {
+        dispatch<any>(updateAdvancedFormProperties(propertyValue));
+        dispatch<any>(resetAdvancedFormProperty('key'));
+        dispatch<any>(resetAdvancedFormProperty('value'));
+        dispatch<any>(resetAdvancedFormProperty('keyID'));
+        dispatch<any>(resetAdvancedFormProperty('valueID'));
     },
     getAllFields: (fields: any) => {
         return fields.getAll() || [];

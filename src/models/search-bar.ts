@@ -4,7 +4,7 @@
 
 import { ResourceKind } from '~/models/resource';
 
-export type SearchBarAdvanceFormData = {
+export type SearchBarAdvancedFormData = {
     type?: ResourceKind;
     cluster?: string;
     projectUuid?: string;

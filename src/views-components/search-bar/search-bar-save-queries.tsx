@@ -6,7 +6,7 @@ import * as React from 'react';
 import { withStyles, WithStyles, StyleRulesCallback, List, ListItem, ListItemText, ListItemSecondaryAction, Tooltip, IconButton } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { RemoveIcon, EditSavedQueryIcon } from '~/components/icon/icon';
-import { SearchBarAdvanceFormData } from '~/models/search-bar';
+import { SearchBarAdvancedFormData } from '~/models/search-bar';
 import { SearchBarSelectedItem } from "~/store/search-bar/search-bar-reducer";
 import { getQueryFromAdvancedData } from "~/store/search-bar/search-bar-actions";
 
@@ -31,14 +31,14 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 export interface SearchBarSavedQueriesDataProps {
-    savedQueries: SearchBarAdvanceFormData[];
+    savedQueries: SearchBarAdvancedFormData[];
     selectedItem: SearchBarSelectedItem;
 }
 
 export interface SearchBarSavedQueriesActionProps {
     onSearch: (searchValue: string) => void;
     deleteSavedQuery: (id: number) => void;
-    editSavedQuery: (data: SearchBarAdvanceFormData, id: number) => void;
+    editSavedQuery: (data: SearchBarAdvancedFormData, id: number) => void;
 }
 
 type SearchBarSavedQueriesProps = SearchBarSavedQueriesDataProps

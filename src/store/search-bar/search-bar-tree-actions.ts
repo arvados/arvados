@@ -12,10 +12,10 @@ import { FilterBuilder } from "~/services/api/filter-builder";
 import { OrderBuilder } from "~/services/api/order-builder";
 import { ProjectResource } from "~/models/project";
 import { resourcesActions } from "~/store/resources/resources-actions";
-import { SEARCH_BAR_ADVANCE_FORM_PICKER_ID } from "~/store/search-bar/search-bar-actions";
+import { SEARCH_BAR_ADVANCED_FORM_PICKER_ID } from "~/store/search-bar/search-bar-actions";
 
 const getSearchBarTreeNode = (id: string) => (treePicker: TreePicker) => {
-    const searchTree = getTreePicker(SEARCH_BAR_ADVANCE_FORM_PICKER_ID)(treePicker);
+    const searchTree = getTreePicker(SEARCH_BAR_ADVANCED_FORM_PICKER_ID)(treePicker);
     return searchTree
         ? getNode(id)(searchTree)
         : undefined;
@@ -23,7 +23,7 @@ const getSearchBarTreeNode = (id: string) => (treePicker: TreePicker) => {
 
 export const loadSearchBarTreeProjects = (projectUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState) => {
-        const treePicker = getTreePicker(SEARCH_BAR_ADVANCE_FORM_PICKER_ID)(getState().treePicker);
+        const treePicker = getTreePicker(SEARCH_BAR_ADVANCED_FORM_PICKER_ID)(getState().treePicker);
         const node = treePicker ? getNode(projectUuid)(treePicker) : undefined;
         if (node || projectUuid === '') {
             await dispatch<any>(loadSearchBarProject(projectUuid));
@@ -31,7 +31,7 @@ export const loadSearchBarTreeProjects = (projectUuid: string) =>
     };
 
 export const getSearchBarTreeNodeAncestorsIds = (id: string) => (treePicker: TreePicker) => {
-    const searchTree = getTreePicker(SEARCH_BAR_ADVANCE_FORM_PICKER_ID)(treePicker);
+    const searchTree = getTreePicker(SEARCH_BAR_ADVANCED_FORM_PICKER_ID)(treePicker);
     return searchTree
         ? getNodeAncestorsIds(id)(searchTree)
         : [];
@@ -49,16 +49,16 @@ export const activateSearchBarTreeBranch = (id: string) =>
                 ...[],
                 ...ancestors.map(ancestor => ancestor.uuid)
             ],
-            pickerId: SEARCH_BAR_ADVANCE_FORM_PICKER_ID
+            pickerId: SEARCH_BAR_ADVANCED_FORM_PICKER_ID
         }));
-        dispatch(treePickerActions.ACTIVATE_TREE_PICKER_NODE({ id, pickerId: SEARCH_BAR_ADVANCE_FORM_PICKER_ID }));
+        dispatch(treePickerActions.ACTIVATE_TREE_PICKER_NODE({ id, pickerId: SEARCH_BAR_ADVANCED_FORM_PICKER_ID }));
     };
 
 export const expandSearchBarTreeItem = (id: string) =>
     async (dispatch: Dispatch, getState: () => RootState) => {
         const node = getSearchBarTreeNode(id)(getState().treePicker);
         if (node && !node.expanded) {
-            dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ id, pickerId: SEARCH_BAR_ADVANCE_FORM_PICKER_ID }));
+            dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ id, pickerId: SEARCH_BAR_ADVANCED_FORM_PICKER_ID }));
         }
     };
 
@@ -73,7 +73,7 @@ export const activateSearchBarProject = (id: string) =>
         }
         dispatch(treePickerActions.EXPAND_TREE_PICKER_NODES({
             ids: getSearchBarTreeNodeAncestorsIds(id)(treePicker),
-            pickerId: SEARCH_BAR_ADVANCE_FORM_PICKER_ID
+            pickerId: SEARCH_BAR_ADVANCED_FORM_PICKER_ID
         }));
         dispatch<any>(expandSearchBarTreeItem(id));
     };
@@ -81,7 +81,7 @@ export const activateSearchBarProject = (id: string) =>
 
 const loadSearchBarProject = (projectUuid: string) =>
     async (dispatch: Dispatch, _: () => RootState, services: ServiceRepository) => {
-        dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id: projectUuid, pickerId: SEARCH_BAR_ADVANCE_FORM_PICKER_ID }));
+        dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id: projectUuid, pickerId: SEARCH_BAR_ADVANCED_FORM_PICKER_ID }));
         const params = {
             filters: new FilterBuilder()
                 .addEqual('ownerUuid', projectUuid)
@@ -93,7 +93,7 @@ const loadSearchBarProject = (projectUuid: string) =>
         const { items } = await services.projectService.list(params);
         dispatch(treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
             id: projectUuid,
-            pickerId: SEARCH_BAR_ADVANCE_FORM_PICKER_ID,
+            pickerId: SEARCH_BAR_ADVANCED_FORM_PICKER_ID,
             nodes: items.map(item => initTreeNode({ id: item.uuid, value: item })),
         }));
         dispatch(resourcesActions.SET_RESOURCES(items));

@@ -14,7 +14,7 @@ import { ResourceKind, RESOURCE_UUID_REGEX, COLLECTION_PDH_REGEX } from '~/model
 import { SearchView } from '~/store/search-bar/search-bar-reducer';
 import { navigateTo, navigateToSearchResults } from '~/store/navigation/navigation-action';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { PropertyValue, SearchBarAdvanceFormData } from '~/models/search-bar';
+import { PropertyValue, SearchBarAdvancedFormData } from '~/models/search-bar';
 import * as _ from "lodash";
 import { getModifiedKeysValues } from "~/common/objects";
 import { activateSearchBarProject } from "~/store/search-bar/search-bar-tree-actions";
@@ -31,9 +31,9 @@ export const searchBarActions = unionize({
     CLOSE_SEARCH_VIEW: ofType<{}>(),
     SET_SEARCH_RESULTS: ofType<GroupContentsResource[]>(),
     SET_SEARCH_VALUE: ofType<string>(),
-    SET_SAVED_QUERIES: ofType<SearchBarAdvanceFormData[]>(),
+    SET_SAVED_QUERIES: ofType<SearchBarAdvancedFormData[]>(),
     SET_RECENT_QUERIES: ofType<string[]>(),
-    UPDATE_SAVED_QUERY: ofType<SearchBarAdvanceFormData[]>(),
+    UPDATE_SAVED_QUERY: ofType<SearchBarAdvancedFormData[]>(),
     SET_SELECTED_ITEM: ofType<string>(),
     MOVE_UP: ofType<{}>(),
     MOVE_DOWN: ofType<{}>(),
@@ -42,9 +42,9 @@ export const searchBarActions = unionize({
 
 export type SearchBarActions = UnionOf<typeof searchBarActions>;
 
-export const SEARCH_BAR_ADVANCE_FORM_NAME = 'searchBarAdvanceFormName';
+export const SEARCH_BAR_ADVANCED_FORM_NAME = 'searchBarAdvancedFormName';
 
-export const SEARCH_BAR_ADVANCE_FORM_PICKER_ID = 'searchBarAdvanceFormPickerId';
+export const SEARCH_BAR_ADVANCED_FORM_PICKER_ID = 'searchBarAdvancedFormPickerId';
 
 export const DEFAULT_SEARCH_DEBOUNCE = 1000;
 
@@ -76,7 +76,7 @@ export const searchData = (searchValue: string) =>
         }
     };
 
-export const searchAdvanceData = (data: SearchBarAdvanceFormData) =>
+export const searchAdvancedData = (data: SearchBarAdvancedFormData) =>
     async (dispatch: Dispatch, getState: () => RootState) => {
         dispatch<any>(saveQuery(data));
         const searchValue = getState().searchBar.searchValue;
@@ -86,7 +86,7 @@ export const searchAdvanceData = (data: SearchBarAdvanceFormData) =>
         dispatch(navigateToSearchResults(searchValue));
     };
 
-export const setSearchValueFromAdvancedData = (data: SearchBarAdvanceFormData, prevData?: SearchBarAdvanceFormData) =>
+export const setSearchValueFromAdvancedData = (data: SearchBarAdvancedFormData, prevData?: SearchBarAdvancedFormData) =>
     (dispatch: Dispatch, getState: () => RootState) => {
         const searchValue = getState().searchBar.searchValue;
         const value = getQueryFromAdvancedData({
@@ -99,14 +99,14 @@ export const setSearchValueFromAdvancedData = (data: SearchBarAdvanceFormData, p
 export const setAdvancedDataFromSearchValue = (search: string, vocabulary: Vocabulary) =>
     async (dispatch: Dispatch) => {
         const data = getAdvancedDataFromQuery(search, vocabulary);
-        dispatch<any>(initialize(SEARCH_BAR_ADVANCE_FORM_NAME, data));
+        dispatch<any>(initialize(SEARCH_BAR_ADVANCED_FORM_NAME, data));
         if (data.projectUuid) {
             await dispatch<any>(activateSearchBarProject(data.projectUuid));
-            dispatch(treePickerActions.ACTIVATE_TREE_PICKER_NODE({ pickerId: SEARCH_BAR_ADVANCE_FORM_PICKER_ID, id: data.projectUuid }));
+            dispatch(treePickerActions.ACTIVATE_TREE_PICKER_NODE({ pickerId: SEARCH_BAR_ADVANCED_FORM_PICKER_ID, id: data.projectUuid }));
         }
     };
 
-const saveQuery = (data: SearchBarAdvanceFormData) =>
+const saveQuery = (data: SearchBarAdvancedFormData) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const savedQueries = services.searchService.getSavedQueries();
         if (data.saveQuery && data.queryName) {
@@ -132,11 +132,11 @@ export const deleteSavedQuery = (id: number) =>
         return savedSearchQueries || [];
     };
 
-export const editSavedQuery = (data: SearchBarAdvanceFormData) =>
+export const editSavedQuery = (data: SearchBarAdvancedFormData) =>
     (dispatch: Dispatch<any>) => {
         dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.ADVANCED));
         dispatch(searchBarActions.SET_SEARCH_VALUE(getQueryFromAdvancedData(data)));
-        dispatch<any>(initialize(SEARCH_BAR_ADVANCE_FORM_NAME, data));
+        dispatch<any>(initialize(SEARCH_BAR_ADVANCED_FORM_NAME, data));
     };
 
 export const openSearchView = () =>
@@ -157,7 +157,7 @@ export const closeSearchView = () =>
 export const closeAdvanceView = () =>
     (dispatch: Dispatch<any>) => {
         dispatch(searchBarActions.SET_SEARCH_VALUE(''));
-        dispatch(treePickerActions.DEACTIVATE_TREE_PICKER_NODE({ pickerId: SEARCH_BAR_ADVANCE_FORM_PICKER_ID }));
+        dispatch(treePickerActions.DEACTIVATE_TREE_PICKER_NODE({ pickerId: SEARCH_BAR_ADVANCED_FORM_PICKER_ID }));
         dispatch(searchBarActions.SET_CURRENT_VIEW(SearchView.BASIC));
     };
 
@@ -256,10 +256,10 @@ const buildQueryFromKeyMap = (data: any, keyMap: string[][], mode: 'rebuild' | '
     return value;
 };
 
-export const getQueryFromAdvancedData = (data: SearchBarAdvanceFormData, prevData?: SearchBarAdvanceFormData) => {
+export const getQueryFromAdvancedData = (data: SearchBarAdvancedFormData, prevData?: SearchBarAdvancedFormData) => {
     let value = '';
 
-    const flatData = (data: SearchBarAdvanceFormData) => {
+    const flatData = (data: SearchBarAdvancedFormData) => {
         const fo = {
             searchValue: data.searchValue,
             type: data.type,
@@ -289,7 +289,7 @@ export const getQueryFromAdvancedData = (data: SearchBarAdvanceFormData, prevDat
         value = buildQueryFromKeyMap({
             searchValue: data.searchValue,
             ...obj
-        } as SearchBarAdvanceFormData, keyMap, "reuse");
+        } as SearchBarAdvancedFormData, keyMap, "reuse");
     } else {
         value = buildQueryFromKeyMap(flatData(data), keyMap, "rebuild");
     }
@@ -298,7 +298,7 @@ export const getQueryFromAdvancedData = (data: SearchBarAdvanceFormData, prevDat
     return value;
 };
 
-export const getAdvancedDataFromQuery = (query: string, vocabulary?: Vocabulary): SearchBarAdvanceFormData => {
+export const getAdvancedDataFromQuery = (query: string, vocabulary?: Vocabulary): SearchBarAdvancedFormData => {
     const { tokens, searchString } = parser.parseSearchQuery(query);
     const getValue = parser.getValue(tokens);
     return {
@@ -372,25 +372,25 @@ const buildDateFilter = (date?: string): string => {
     return date ? date : '';
 };
 
-export const initAdvanceFormProjectsTree = () =>
+export const initAdvancedFormProjectsTree = () =>
     (dispatch: Dispatch) => {
-        dispatch<any>(initUserProject(SEARCH_BAR_ADVANCE_FORM_PICKER_ID));
+        dispatch<any>(initUserProject(SEARCH_BAR_ADVANCED_FORM_PICKER_ID));
     };
 
-export const changeAdvanceFormProperty = (propertyField: string, value: PropertyValue[] | string = '') =>
+export const changeAdvancedFormProperty = (propertyField: string, value: PropertyValue[] | string = '') =>
     (dispatch: Dispatch) => {
-        dispatch(change(SEARCH_BAR_ADVANCE_FORM_NAME, propertyField, value));
+        dispatch(change(SEARCH_BAR_ADVANCED_FORM_NAME, propertyField, value));
     };
 
-export const resetAdvanceFormProperty = (propertyField: string) =>
+export const resetAdvancedFormProperty = (propertyField: string) =>
     (dispatch: Dispatch) => {
-        dispatch(change(SEARCH_BAR_ADVANCE_FORM_NAME, propertyField, null));
-        dispatch(untouch(SEARCH_BAR_ADVANCE_FORM_NAME, propertyField));
+        dispatch(change(SEARCH_BAR_ADVANCED_FORM_NAME, propertyField, null));
+        dispatch(untouch(SEARCH_BAR_ADVANCED_FORM_NAME, propertyField));
     };
 
-export const updateAdvanceFormProperties = (propertyValues: PropertyValue) =>
+export const updateAdvancedFormProperties = (propertyValue: PropertyValue) =>
     (dispatch: Dispatch) => {
-        dispatch(arrayPush(SEARCH_BAR_ADVANCE_FORM_NAME, 'properties', propertyValues));
+        dispatch(arrayPush(SEARCH_BAR_ADVANCED_FORM_NAME, 'properties', propertyValue));
     };
 
 export const moveUp = () =>

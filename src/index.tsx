@@ -45,7 +45,7 @@ import { setBuildInfo } from '~/store/app-info/app-info-actions';
 import { getBuildInfo } from '~/common/app-info';
 import { DragDropContextProvider } from 'react-dnd';
 import HTML5Backend from 'react-dnd-html5-backend';
-import { initAdvanceFormProjectsTree } from '~/store/search-bar/search-bar-actions';
+import { initAdvancedFormProjectsTree } from '~/store/search-bar/search-bar-actions';
 import { repositoryActionSet } from '~/views-components/context-menu/action-sets/repository-action-set';
 import { sshKeyActionSet } from '~/views-components/context-menu/action-sets/ssh-key-action-set';
 import { keepServiceActionSet } from '~/views-components/context-menu/action-sets/keep-service-action-set';
@@ -149,7 +149,7 @@ const initListener = (history: History, store: RootStore, services: ServiceRepos
             await store.dispatch(loadWorkbench());
             addRouteChangeHandlers(history, store);
             // ToDo: move to searchBar component
-            store.dispatch(initAdvanceFormProjectsTree());
+            store.dispatch(initAdvancedFormProjectsTree());
         }
     };
 };

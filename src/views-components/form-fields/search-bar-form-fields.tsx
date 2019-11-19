@@ -9,7 +9,7 @@ import { CheckboxField } from '~/components/checkbox-field/checkbox-field';
 import { NativeSelectField } from '~/components/select-field/select-field';
 import { ResourceKind } from '~/models/resource';
 import { HomeTreePicker } from '~/views-components/projects-tree-picker/home-tree-picker';
-import { SEARCH_BAR_ADVANCE_FORM_PICKER_ID } from '~/store/search-bar/search-bar-actions';
+import { SEARCH_BAR_ADVANCED_FORM_PICKER_ID } from '~/store/search-bar/search-bar-actions';
 import { SearchBarAdvancedPropertiesView } from '~/views-components/search-bar/search-bar-advanced-properties-view';
 import { TreeItem } from "~/components/tree/tree";
 import { ProjectsTreePickerItem } from "~/views-components/projects-tree-picker/generic-projects-tree-picker";
@@ -57,7 +57,7 @@ export const SearchBarProjectField = () =>
 const ProjectsPicker = (props: WrappedFieldProps) =>
     <div style={{ height: '100px', display: 'flex', flexDirection: 'column', overflow: 'overlay' }}>
         <HomeTreePicker
-            pickerId={SEARCH_BAR_ADVANCE_FORM_PICKER_ID}
+            pickerId={SEARCH_BAR_ADVANCED_FORM_PICKER_ID}
             toggleItemActive={
                 (_: any, { id }: TreeItem<ProjectsTreePickerItem>) => {
                     props.input.onChange(id);
