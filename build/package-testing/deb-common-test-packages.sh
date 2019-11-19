@@ -23,7 +23,7 @@ export ARV_PACKAGES_DIR="/arvados/packages/$target"
 
 dpkg-query --show > "$ARV_PACKAGES_DIR/$1.before"
 
-apt-get $DASHQQ_UNLESS_DEBUG update
+apt-get $DASHQQ_UNLESS_DEBUG --allow-insecure-repositories update
 
 apt-get $DASHQQ_UNLESS_DEBUG -y --allow-unauthenticated install "$1" >"$STDOUT_IF_DEBUG" 2>"$STDERR_IF_DEBUG"
 
