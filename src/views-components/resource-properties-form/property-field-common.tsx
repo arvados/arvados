@@ -16,8 +16,8 @@ export interface ValidationProp {
     skipValidation?: boolean;
 }
 
-export const mapStateToProps = (state: RootState, validationProp: ValidationProp): VocabularyProp & ValidationProp => ({
-    skipValidation: validationProp.skipValidation,
+export const mapStateToProps = (state: RootState, ownProps: ValidationProp): VocabularyProp & ValidationProp => ({
+    skipValidation: ownProps.skipValidation,
     vocabulary: getVocabulary(state.properties),
 });
 
