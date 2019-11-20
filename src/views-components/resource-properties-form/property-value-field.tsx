@@ -8,7 +8,7 @@ import { compose } from 'redux';
 import { Autocomplete } from '~/components/autocomplete/autocomplete';
 import { Vocabulary, isStrictTag, getTagValues, getTagValueID } from '~/models/vocabulary';
 import { PROPERTY_KEY_FIELD_ID } from '~/views-components/resource-properties-form/property-key-field';
-import { handleSelect, handleBlur, VocabularyProp, connectVocabulary, buildProps } from '~/views-components/resource-properties-form/property-field-common';
+import { handleSelect, handleBlur, VocabularyProp, ValidationProp, connectVocabulary, buildProps } from '~/views-components/resource-properties-form/property-field-common';
 import { TAG_VALUE_VALIDATION } from '~/validators/validators';
 import { escapeRegExp } from '~/common/regexp.ts';
 
@@ -16,22 +16,18 @@ interface PropertyKeyProp {
     propertyKey: string;
 }
 
-interface ValidationProp {
-    skipValidation?: boolean;
-}
-
-type PropertyValueFieldProps = VocabularyProp & PropertyKeyProp;
+type PropertyValueFieldProps = VocabularyProp & PropertyKeyProp & ValidationProp;
 
 export const PROPERTY_VALUE_FIELD_NAME = 'value';
 export const PROPERTY_VALUE_FIELD_ID = 'valueID';
 
-const connectVocabularyAndPropertyKey = compose<any>(
+const connectVocabularyAndPropertyKey = compose(
     connectVocabulary,
     formValues({ propertyKey: PROPERTY_KEY_FIELD_ID }),
 );
 
 export const PropertyValueField = connectVocabularyAndPropertyKey(
-    ({skipValidation, ...props}: PropertyValueFieldProps & ValidationProp) =>
+    ({ skipValidation, ...props }: PropertyValueFieldProps) =>
         <Field
             name={PROPERTY_VALUE_FIELD_NAME}
             component={PropertyValueInput}
@@ -48,7 +44,7 @@ const PropertyValueInput = ({ vocabulary, propertyKey, ...props }: WrappedFieldP
             onBlur={handleBlur(PROPERTY_VALUE_FIELD_ID, data.form, props.meta, props.input, getTagValueID(propertyKey, props.input.value, vocabulary))}
             {...buildProps(props)}
         />
-    )}/>;
+    )} />;
 
 const getValidation = (props: PropertyValueFieldProps) =>
     isStrictTag(props.propertyKey, props.vocabulary)
@@ -65,4 +61,3 @@ const getSuggestions = (value: string, tagName: string, vocabulary: Vocabulary) 
     const re = new RegExp(escapeRegExp(value), "i");
     return getTagValues(tagName, vocabulary).filter(v => re.test(v.label) && v.label !== value);
 };
-

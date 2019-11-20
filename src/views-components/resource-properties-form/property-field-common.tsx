@@ -12,7 +12,12 @@ export interface VocabularyProp {
     vocabulary: Vocabulary;
 }
 
-export const mapStateToProps = (state: RootState): VocabularyProp => ({
+export interface ValidationProp {
+    skipValidation?: boolean;
+}
+
+export const mapStateToProps = (state: RootState, validationProp: ValidationProp): VocabularyProp & ValidationProp => ({
+    skipValidation: validationProp.skipValidation,
     vocabulary: getVocabulary(state.properties),
 });
 
@@ -33,7 +38,7 @@ export const buildProps = ({ input, meta }: WrappedFieldProps) => {
         value: input.value,
         onChange: input.onChange,
         items: ITEMS_PLACEHOLDER,
-        renderSuggestion: (item:PropFieldSuggestion) => item.label,
+        renderSuggestion: (item: PropFieldSuggestion) => item.label,
         error: hasError(meta),
         helperText: getErrorMsg(meta),
     };
@@ -47,20 +52,20 @@ export const handleBlur = (
     { dispatch }: WrappedFieldMetaProps,
     { onBlur, value }: WrappedFieldInputProps,
     fieldValue: string) =>
-        () => {
-            dispatch(change(formName, fieldName, fieldValue));
-            onBlur(value);
-        };
+    () => {
+        dispatch(change(formName, fieldName, fieldValue));
+        onBlur(value);
+    };
 
 // When selecting a property value, save its ID for later usage.
 export const handleSelect = (
     fieldName: string,
     formName: string,
     { onChange }: WrappedFieldInputProps,
-    { dispatch }: WrappedFieldMetaProps ) =>
-        (item:PropFieldSuggestion) => {
-            if (item) {
-                onChange(item.label);
-                dispatch(change(formName, fieldName, item.id));
-            }
-        };
+    { dispatch }: WrappedFieldMetaProps) =>
+    (item: PropFieldSuggestion) => {
+        if (item) {
+            onChange(item.label);
+            dispatch(change(formName, fieldName, item.id));
+        }
+    };
