@@ -457,6 +457,9 @@ class ArvadosModel < ApplicationRecord
     if not ft[:cond_out].any?
       return query
     end
+    ft[:joins].each do |t|
+      query = query.joins(t)
+    end
     query.where('(' + ft[:cond_out].join(') AND (') + ')',
                           *ft[:param_out])
   end
