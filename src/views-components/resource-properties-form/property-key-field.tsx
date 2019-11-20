@@ -7,7 +7,7 @@ import { WrappedFieldProps, Field, FormName } from 'redux-form';
 import { memoize } from 'lodash';
 import { Autocomplete } from '~/components/autocomplete/autocomplete';
 import { Vocabulary, getTags, getTagKeyID } from '~/models/vocabulary';
-import { handleSelect, handleBlur, connectVocabulary, VocabularyProp, buildProps } from '~/views-components/resource-properties-form/property-field-common';
+import { handleSelect, handleBlur, connectVocabulary, VocabularyProp, ValidationProp, buildProps } from '~/views-components/resource-properties-form/property-field-common';
 import { TAG_KEY_VALIDATION } from '~/validators/validators';
 import { escapeRegExp } from '~/common/regexp.ts';
 
@@ -15,15 +15,15 @@ export const PROPERTY_KEY_FIELD_NAME = 'key';
 export const PROPERTY_KEY_FIELD_ID = 'keyID';
 
 export const PropertyKeyField = connectVocabulary(
-    ({ vocabulary }: VocabularyProp) =>
+    ({ vocabulary, skipValidation }: VocabularyProp & ValidationProp) =>
         <Field
             name={PROPERTY_KEY_FIELD_NAME}
             component={PropertyKeyInput}
             vocabulary={vocabulary}
-            validate={getValidation(vocabulary)} />
+            validate={skipValidation ? undefined : getValidation(vocabulary)} />
 );
 
-export const PropertyKeyInput = ({ vocabulary, ...props }: WrappedFieldProps & VocabularyProp) =>
+const PropertyKeyInput = ({ vocabulary, ...props }: WrappedFieldProps & VocabularyProp) =>
     <FormName children={data => (
         <Autocomplete
             label='Key'
@@ -32,7 +32,7 @@ export const PropertyKeyInput = ({ vocabulary, ...props }: WrappedFieldProps & V
             onBlur={handleBlur(PROPERTY_KEY_FIELD_ID, data.form, props.meta, props.input, getTagKeyID(props.input.value, vocabulary))}
             {...buildProps(props)}
         />
-    )}/>;
+    )} />;
 
 const getValidation = memoize(
     (vocabulary: Vocabulary) =>

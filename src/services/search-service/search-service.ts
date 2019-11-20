@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { SearchBarAdvanceFormData } from '~/models/search-bar';
+import { SearchBarAdvancedFormData } from '~/models/search-bar';
 
 export class SearchService {
     private recentQueries = this.getRecentQueries();
-    private savedQueries: SearchBarAdvanceFormData[] = this.getSavedQueries();
+    private savedQueries: SearchBarAdvancedFormData[] = this.getSavedQueries();
 
     saveRecentQuery(query: string) {
         if (this.recentQueries.length >= MAX_NUMBER_OF_RECENT_QUERIES) {
@@ -20,19 +20,19 @@ export class SearchService {
         return JSON.parse(localStorage.getItem('recentQueries') || '[]');
     }
 
-    saveQuery(data: SearchBarAdvanceFormData) {
+    saveQuery(data: SearchBarAdvancedFormData) {
         this.savedQueries.push({...data});
         localStorage.setItem('savedQueries', JSON.stringify(this.savedQueries));
     }
 
-    editSavedQueries(data: SearchBarAdvanceFormData) {
+    editSavedQueries(data: SearchBarAdvancedFormData) {
         const itemIndex = this.savedQueries.findIndex(item => item.queryName === data.queryName);
         this.savedQueries[itemIndex] = {...data};
         localStorage.setItem('savedQueries', JSON.stringify(this.savedQueries));
     }
 
     getSavedQueries() {
-        return JSON.parse(localStorage.getItem('savedQueries') || '[]') as SearchBarAdvanceFormData[];
+        return JSON.parse(localStorage.getItem('savedQueries') || '[]') as SearchBarAdvancedFormData[];
     }
 
     deleteSavedQuery(id: number) {

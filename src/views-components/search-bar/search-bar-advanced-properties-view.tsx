@@ -3,21 +3,23 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Dispatch } from 'redux';
+import { Dispatch, compose } from 'redux';
 import { connect } from 'react-redux';
 import { InjectedFormProps, formValueSelector } from 'redux-form';
 import { Grid, withStyles, StyleRulesCallback, WithStyles, Button } from '@material-ui/core';
 import { RootState } from '~/store/store';
 import {
-    SEARCH_BAR_ADVANCE_FORM_NAME,
-    changeAdvanceFormProperty,
-    updateAdvanceFormProperties
+    SEARCH_BAR_ADVANCED_FORM_NAME,
+    changeAdvancedFormProperty,
+    resetAdvancedFormProperty
 } from '~/store/search-bar/search-bar-actions';
 import { PropertyValue } from '~/models/search-bar';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { SearchBarKeyField, SearchBarValueField } from '~/views-components/form-fields/search-bar-form-fields';
 import { Chips } from '~/components/chips/chips';
 import { formatPropertyValue } from "~/common/formatters";
+import { Vocabulary } from '~/models/vocabulary';
+import { connectVocabulary } from '../resource-properties-form/property-field-common';
 
 type CssRules = 'label' | 'button';
 
@@ -38,11 +40,12 @@ interface SearchBarAdvancedPropertiesViewDataProps {
     pristine: boolean;
     propertyValues: PropertyValue;
     fields: PropertyValue[];
+    vocabulary: Vocabulary;
 }
 
 interface SearchBarAdvancedPropertiesViewActionProps {
     setProps: () => void;
-    addProp: (propertyValues: PropertyValue) => void;
+    setProp: (propertyValues: PropertyValue, properties: PropertyValue[]) => void;
     getAllFields: (propertyValues: PropertyValue[]) => PropertyValue[] | [];
 }
 
@@ -50,30 +53,37 @@ type SearchBarAdvancedPropertiesViewProps = SearchBarAdvancedPropertiesViewDataP
     & SearchBarAdvancedPropertiesViewActionProps
     & InjectedFormProps & WithStyles<CssRules>;
 
-const selector = formValueSelector(SEARCH_BAR_ADVANCE_FORM_NAME);
+const selector = formValueSelector(SEARCH_BAR_ADVANCED_FORM_NAME);
 const mapStateToProps = (state: RootState) => {
     return {
-        propertyValues: selector(state, 'key', 'value')
+        propertyValues: selector(state, 'key', 'value', 'keyID', 'valueID')
     };
 };
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
     setProps: (propertyValues: PropertyValue[]) => {
-        dispatch<any>(changeAdvanceFormProperty('properties', propertyValues));
+        dispatch<any>(changeAdvancedFormProperty('properties', propertyValues));
     },
-    addProp: (propertyValues: PropertyValue) => {
-        dispatch<any>(updateAdvanceFormProperties(propertyValues));
-        dispatch<any>(changeAdvanceFormProperty('key'));
-        dispatch<any>(changeAdvanceFormProperty('value'));
+    setProp: (propertyValue: PropertyValue, properties: PropertyValue[]) => {
+        dispatch<any>(changeAdvancedFormProperty(
+            'properties',
+            [...properties.filter(e => e.keyID! !== propertyValue.keyID!), propertyValue]
+        ));
+        dispatch<any>(resetAdvancedFormProperty('key'));
+        dispatch<any>(resetAdvancedFormProperty('value'));
+        dispatch<any>(resetAdvancedFormProperty('keyID'));
+        dispatch<any>(resetAdvancedFormProperty('valueID'));
     },
     getAllFields: (fields: any) => {
         return fields.getAll() || [];
     }
 });
 
-export const SearchBarAdvancedPropertiesView = connect(mapStateToProps, mapDispatchToProps)(
+export const SearchBarAdvancedPropertiesView = compose(
+    connectVocabulary,
+    connect(mapStateToProps, mapDispatchToProps))(
     withStyles(styles)(
-        ({ classes, fields, propertyValues, setProps, addProp, getAllFields }: SearchBarAdvancedPropertiesViewProps) =>
+        ({ classes, fields, propertyValues, setProps, setProp, getAllFields, vocabulary }: SearchBarAdvancedPropertiesViewProps) =>
             <Grid container item xs={12} spacing={16}>
                 <Grid item xs={2} className={classes.label}>Properties</Grid>
                 <Grid item xs={4}>
@@ -83,7 +93,7 @@ export const SearchBarAdvancedPropertiesView = connect(mapStateToProps, mapDispa
                     <SearchBarValueField />
                 </Grid>
                 <Grid container item xs={2} justify='flex-end' alignItems="center">
-                    <Button className={classes.button} onClick={() => addProp(propertyValues)}
+                    <Button className={classes.button} onClick={() => setProp(propertyValues, getAllFields(fields))}
                         color="primary"
                         size='small'
                         variant="contained"
@@ -96,7 +106,7 @@ export const SearchBarAdvancedPropertiesView = connect(mapStateToProps, mapDispa
                     <Chips values={getAllFields(fields)}
                         deletable
                         onChange={setProps}
-                        getLabel={(field: PropertyValue) => formatPropertyValue(field)} />
+                        getLabel={(field: PropertyValue) => formatPropertyValue(field, vocabulary)} />
                 </Grid>
             </Grid>
     )

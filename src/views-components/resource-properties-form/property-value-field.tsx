@@ -8,7 +8,7 @@ import { compose } from 'redux';
 import { Autocomplete } from '~/components/autocomplete/autocomplete';
 import { Vocabulary, isStrictTag, getTagValues, getTagValueID } from '~/models/vocabulary';
 import { PROPERTY_KEY_FIELD_ID } from '~/views-components/resource-properties-form/property-key-field';
-import { handleSelect, handleBlur, VocabularyProp, connectVocabulary, buildProps } from '~/views-components/resource-properties-form/property-field-common';
+import { handleSelect, handleBlur, VocabularyProp, ValidationProp, connectVocabulary, buildProps } from '~/views-components/resource-properties-form/property-field-common';
 import { TAG_VALUE_VALIDATION } from '~/validators/validators';
 import { escapeRegExp } from '~/common/regexp.ts';
 
@@ -16,24 +16,26 @@ interface PropertyKeyProp {
     propertyKey: string;
 }
 
-export type PropertyValueFieldProps = VocabularyProp & PropertyKeyProp;
+type PropertyValueFieldProps = VocabularyProp & PropertyKeyProp & ValidationProp;
 
 export const PROPERTY_VALUE_FIELD_NAME = 'value';
 export const PROPERTY_VALUE_FIELD_ID = 'valueID';
 
-export const PropertyValueField = compose(
+const connectVocabularyAndPropertyKey = compose(
     connectVocabulary,
-    formValues({ propertyKey: PROPERTY_KEY_FIELD_ID })
-)(
-    (props: PropertyValueFieldProps) =>
+    formValues({ propertyKey: PROPERTY_KEY_FIELD_ID }),
+);
+
+export const PropertyValueField = connectVocabularyAndPropertyKey(
+    ({ skipValidation, ...props }: PropertyValueFieldProps) =>
         <Field
             name={PROPERTY_VALUE_FIELD_NAME}
             component={PropertyValueInput}
-            validate={getValidation(props)}
+            validate={skipValidation ? undefined : getValidation(props)}
             {...props} />
 );
 
-export const PropertyValueInput = ({ vocabulary, propertyKey, ...props }: WrappedFieldProps & PropertyValueFieldProps) =>
+const PropertyValueInput = ({ vocabulary, propertyKey, ...props }: WrappedFieldProps & PropertyValueFieldProps) =>
     <FormName children={data => (
         <Autocomplete
             label='Value'
@@ -42,7 +44,7 @@ export const PropertyValueInput = ({ vocabulary, propertyKey, ...props }: Wrappe
             onBlur={handleBlur(PROPERTY_VALUE_FIELD_ID, data.form, props.meta, props.input, getTagValueID(propertyKey, props.input.value, vocabulary))}
             {...buildProps(props)}
         />
-    )}/>;
+    )} />;
 
 const getValidation = (props: PropertyValueFieldProps) =>
     isStrictTag(props.propertyKey, props.vocabulary)
@@ -59,4 +61,3 @@ const getSuggestions = (value: string, tagName: string, vocabulary: Vocabulary) 
     const re = new RegExp(escapeRegExp(value), "i");
     return getTagValues(tagName, vocabulary).filter(v => re.test(v.label) && v.label !== value);
 };
-

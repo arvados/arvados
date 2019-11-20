@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { PropertyValue } from "~/models/search-bar";
+import { Vocabulary, getTagKeyLabel, getTagValueLabel } from "~/models/vocabulary";
 
 export const formatDate = (isoDate?: string | null, utc: boolean = false) => {
     if (isoDate) {
@@ -76,7 +77,10 @@ const FILE_SIZES = [
     }
 ];
 
-export const formatPropertyValue = (pv: PropertyValue) => {
+export const formatPropertyValue = (pv: PropertyValue, vocabulary?: Vocabulary) => {
+    if (vocabulary && pv.keyID && pv.valueID) {
+        return `${getTagKeyLabel(pv.keyID, vocabulary)}: ${getTagValueLabel(pv.keyID, pv.valueID!, vocabulary)}`;
+    }
     if (pv.key) {
         return pv.value
             ? `${pv.key}: ${pv.value}`

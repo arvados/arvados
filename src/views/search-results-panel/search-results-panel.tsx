@@ -10,13 +10,13 @@ import { navigateTo } from '~/store/navigation/navigation-action';
 import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { SearchResultsPanelView } from '~/views/search-results-panel/search-results-panel-view';
 import { RootState } from '~/store/store';
-import { SearchBarAdvanceFormData } from '~/models/search-bar';
+import { SearchBarAdvancedFormData } from '~/models/search-bar';
 import { User } from "~/models/user";
 import { Config } from '~/common/config';
 import { Session } from "~/models/session";
 
 export interface SearchResultsPanelDataProps {
-    data: SearchBarAdvanceFormData;
+    data: SearchBarAdvancedFormData;
     user: User;
     sessions: Session[];
     remoteHostsConfig: { [key: string]: Config };
