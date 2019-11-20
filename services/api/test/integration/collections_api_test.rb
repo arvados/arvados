@@ -15,6 +15,31 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
     assert_equal "arvados#collectionList", json_response['kind']
   end
 
+  test "should get index ordered by 'modified_at desc' by default" do
+    get "/arvados/v1/collections",
+      params: {:format => :json},
+      headers: auth(:active)
+    assert_response :success
+    modified_at_dates = json_response['items'].collect{ |x| DateTime.parse(x['modified_at']) }
+    assert modified_at_dates.first > modified_at_dates.last
+    assert_equal modified_at_dates, modified_at_dates.sort{|a, b| b <=> a}
+    oldest = json_response['items'].last
+
+    # Update oldest collection and re-request index
+    put "/arvados/v1/collections/#{oldest['uuid']}",
+      params: {
+        format: :json,
+        collection: { name: "a name" }
+      },
+      headers: auth(:admin)
+    assert_response :success
+    get "/arvados/v1/collections",
+      params: {:format => :json},
+      headers: auth(:active)
+    assert_response :success
+    assert_equal oldest['uuid'], json_response['items'].first['uuid']
+  end
+
   test "get index with filters= (empty string)" do
     get "/arvados/v1/collections",
       params: {:format => :json, :filters => ''},
