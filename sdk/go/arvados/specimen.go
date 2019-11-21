@@ -9,9 +9,8 @@ import "time"
 type Specimen struct {
 	UUID       string                 `json:"uuid"`
 	OwnerUUID  string                 `json:"owner_uuid"`
-	CreatedAt  time.Time              `json:"created_at"`
-	ModifiedAt time.Time              `json:"modified_at"`
-	UpdatedAt  time.Time              `json:"updated_at"`
+	CreatedAt  *time.Time             `json:"created_at"`
+	ModifiedAt *time.Time             `json:"modified_at"`
 	Properties map[string]interface{} `json:"properties"`
 }
 
