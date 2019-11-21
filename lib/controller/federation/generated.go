@@ -38,6 +38,12 @@ func (conn *Conn) ContainerList(ctx context.Context, options arvados.ListOptions
 		return uuids, nil
 	})
 	sort.Slice(merged.Items, func(i, j int) bool { return merged.Items[i].UUID < merged.Items[j].UUID })
+	if merged.Items == nil {
+		// Return empty results as [], not null
+		// (https://github.com/golang/go/issues/27589 might be
+		// a better solution in the future)
+		merged.Items = []arvados.Container{}
+	}
 	return merged, err
 }
 
@@ -63,5 +69,11 @@ func (conn *Conn) SpecimenList(ctx context.Context, options arvados.ListOptions)
 		return uuids, nil
 	})
 	sort.Slice(merged.Items, func(i, j int) bool { return merged.Items[i].UUID < merged.Items[j].UUID })
+	if merged.Items == nil {
+		// Return empty results as [], not null
+		// (https://github.com/golang/go/issues/27589 might be
+		// a better solution in the future)
+		merged.Items = []arvados.Specimen{}
+	}
 	return merged, err
 }
