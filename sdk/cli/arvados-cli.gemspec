@@ -30,7 +30,7 @@ Gem::Specification.new do |s|
   s.executables << "arv-crunch-job"
   s.executables << "arv-tag"
   s.required_ruby_version = '>= 2.1.0'
-  s.add_runtime_dependency 'arvados', '~> 1.3.0', '>= 1.3.0'
+  s.add_runtime_dependency 'arvados', '>= 1.4.1.20190320201707'
   # Our google-api-client dependency used to be < 0.9, but that could be
   # satisfied by the buggy 0.9.pre*.  https://dev.arvados.org/issues/9213
   s.add_runtime_dependency 'arvados-google-api-client', '~> 0.6', '>= 0.6.3', '<0.8.9'

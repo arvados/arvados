@@ -865,7 +865,7 @@ class BlockManagerTest(unittest.TestCase):
     def test_bufferblock_commit_pending(self):
         # Test for bug #7225
         mockkeep = mock.MagicMock()
-        mockkeep.put.side_effect = lambda x: time.sleep(1)
+        mockkeep.put.side_effect = lambda *args, **kwargs: time.sleep(1)
         with arvados.arvfile._BlockManager(mockkeep) as blockmanager:
             bufferblock = blockmanager.alloc_bufferblock()
             bufferblock.append("foo")

@@ -207,7 +207,7 @@ module Arv
         loop do
           ii = (lo + hi) / 2
           range = @ranges[ii]
-          if range.include?(target)
+          if range.include?(target) && (target < range.end || ii == hi-1)
             return ii
           elsif ii == lo
             raise RangeError.new("%i not in segment" % target)
@@ -481,14 +481,13 @@ module Arv
 
       def initialize(name)
         @name = name
-        @loc_ranges = {}
+        @loc_ranges = []
         @loc_range_start = 0
         @file_specs = []
       end
 
       def add_file(coll_file)
         coll_file.each_segment do |segment|
-          extend_locator_ranges(segment.locators)
           extend_file_specs(coll_file.name, segment)
         end
       end
@@ -498,60 +497,57 @@ module Arv
           ""
         else
           "%s %s %s\n" % [escape_name(@name),
-                          @loc_ranges.keys.join(" "),
+                          @loc_ranges.collect(&:locator).join(" "),
                           @file_specs.join(" ")]
         end
       end
 
       private
 
-      def extend_locator_ranges(locators)
-        locators.
-            select { |loc_s| not @loc_ranges.include?(loc_s) }.
-            each do |loc_s|
-          @loc_ranges[loc_s] = LocatorRange.new(loc_s, @loc_range_start)
-          @loc_range_start = @loc_ranges[loc_s].end
-        end
-      end
-
       def extend_file_specs(filename, segment)
-        # Given a filename and a LocatorSegment, add the smallest
-        # possible array of file spec strings to @file_specs that
-        # builds the file from available locators.
-        filename = escape_name(filename)
-        start_pos = segment.start_pos
-        length = segment.length
-        start_loc = segment.locators.first
-        prev_loc = start_loc
-        # Build a list of file specs by iterating through the segment's
-        # locators and preparing a file spec for each contiguous range.
-        segment.locators[1..-1].each do |loc_s|
-          range = @loc_ranges[loc_s]
-          if range.begin != @loc_ranges[prev_loc].end
-            range_start, range_length =
-              start_and_length_at(start_loc, prev_loc, start_pos, length)
-            @file_specs << "#{range_start}:#{range_length}:#{filename}"
-            start_pos = 0
-            length -= range_length
-            start_loc = loc_s
+        found_overlap = false
+        # Find the longest prefix of segment.locators that's a suffix
+        # of the existing @loc_ranges. If we find one, drop those
+        # locators (they'll be added back below, when we're handling
+        # the normal/no-overlap case).
+        (1..segment.locators.length).each do |overlap|
+          if @loc_ranges.length >= overlap && @loc_ranges[-overlap..-1].collect(&:locator) == segment.locators[0..overlap-1]
+            (1..overlap).each do
+              discarded = @loc_ranges.pop
+              @loc_range_start -= (discarded.end - discarded.begin)
+            end
+            found_overlap = true
+            break
           end
-          prev_loc = loc_s
         end
-        range_start, range_length =
-          start_and_length_at(start_loc, prev_loc, start_pos, length)
-        @file_specs << "#{range_start}:#{range_length}:#{filename}"
+
+        # If there was no overlap at the end of our existing
+        # @loc_ranges, check whether the full set of segment.locators
+        # appears earlier in @loc_ranges. If so, use those instead of
+        # appending the same locators again.
+        if !found_overlap && segment.locators.length < @loc_ranges.length
+          segment_start = 0
+          (0..@loc_ranges.length-1).each do |ri|
+            if @loc_ranges[ri..ri+segment.locators.length-1].collect(&:locator) == segment.locators
+              @file_specs << "#{segment.start_pos + @loc_ranges[ri].begin}:#{segment.length}:#{escape_name(filename)}"
+              return
+            end
+          end
+        end
+
+        segment_start = @loc_range_start
+        segment.locators.each do |loc_s|
+          r = LocatorRange.new(loc_s, @loc_range_start)
+          @loc_ranges << r
+          @loc_range_start = r.end
+        end
+        @file_specs << "#{segment.start_pos + segment_start}:#{segment.length}:#{escape_name(filename)}"
       end
 
       def escape_name(name)
         name.gsub(/\\/, "\\\\\\\\").gsub(/\s/) do |s|
           s.each_byte.map { |c| "\\%03o" % c }.join("")
         end
-      end
-
-      def start_and_length_at(start_key, end_key, start_pos, length)
-        range_begin = @loc_ranges[start_key].begin + start_pos
-        range_length = [@loc_ranges[end_key].end - range_begin, length].min
-        [range_begin, range_length]
       end
     end
   end

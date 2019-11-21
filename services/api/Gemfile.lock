@@ -1,4 +1,28 @@
 GIT
+  remote: https://github.com/curoverse/arvados.git
+  revision: dd9f2403f43bcb93da5908ddde57d8c0491bb4c2
+  glob: sdk/*/*.gemspec
+  specs:
+    arvados (1.4.1.20191019025325)
+      activesupport (>= 3)
+      andand (~> 1.3, >= 1.3.3)
+      arvados-google-api-client (>= 0.7, < 0.8.9)
+      faraday (< 0.16)
+      i18n (~> 0)
+      json (>= 1.7.7, < 3)
+      jwt (>= 0.1.5, < 2)
+    arvados-cli (1.4.1.20191017145711)
+      activesupport (>= 3.2.13, < 5.1)
+      andand (~> 1.3, >= 1.3.3)
+      arvados (>= 1.4.1.20190320201707)
+      arvados-google-api-client (~> 0.6, >= 0.6.3, < 0.8.9)
+      curb (~> 0.8)
+      faraday (< 0.16)
+      json (>= 1.7.7, < 3)
+      oj (~> 3.0)
+      optimist (~> 3.0)
+
+GIT
   remote: https://github.com/curoverse/themes_for_rails
   revision: ddf6e592b3b6493ea0c2de7b5d3faa120ed35be0
   specs:
@@ -49,27 +73,11 @@ GEM
       activemodel (>= 3.0.0)
       activesupport (>= 3.0.0)
       rack (>= 1.1.0)
-    addressable (2.6.0)
-      public_suffix (>= 2.0.2, < 4.0)
+    addressable (2.7.0)
+      public_suffix (>= 2.0.2, < 5.0)
     andand (1.3.3)
     arel (7.1.4)
-    arvados (1.3.1.20190320201707)
-      activesupport (>= 3)
-      andand (~> 1.3, >= 1.3.3)
-      arvados-google-api-client (>= 0.7, < 0.8.9)
-      i18n (~> 0)
-      json (>= 1.7.7, < 3)
-      jwt (>= 0.1.5, < 2)
-    arvados-cli (1.3.1.20190320201707)
-      activesupport (>= 3.2.13, < 5.1)
-      andand (~> 1.3, >= 1.3.3)
-      arvados (~> 1.3.0, >= 1.3.0)
-      arvados-google-api-client (~> 0.6, >= 0.6.3, < 0.8.9)
-      curb (~> 0.8)
-      json (>= 1.7.7, < 3)
-      oj (~> 3.0)
-      optimist (~> 3.0)
-    arvados-google-api-client (0.8.7.2)
+    arvados-google-api-client (0.8.7.3)
       activesupport (>= 3.2, < 5.1)
       addressable (~> 2.3)
       autoparse (~> 0.3)
@@ -94,7 +102,7 @@ GEM
       net-ssh-gateway (>= 1.1.0)
     concurrent-ruby (1.1.5)
     crass (1.0.4)
-    curb (0.9.9)
+    curb (0.9.10)
     database_cleaner (1.7.0)
     erubis (2.7.0)
     eventmachine (1.2.7)
@@ -113,7 +121,7 @@ GEM
     ffi (1.9.25)
     globalid (0.4.2)
       activesupport (>= 4.2.0)
-    googleauth (0.8.0)
+    googleauth (0.9.0)
       faraday (~> 0.12)
       jwt (>= 1.4, < 3.0)
       memoist (~> 0.16)
@@ -153,9 +161,9 @@ GEM
     minitest (5.10.3)
     mocha (1.8.0)
       metaclass (~> 0.0.1)
-    multi_json (1.13.1)
+    multi_json (1.14.1)
     multi_xml (0.6.0)
-    multipart-post (2.0.0)
+    multipart-post (2.1.1)
     net-scp (2.0.0)
       net-ssh (>= 2.6.5, < 6.0.0)
     net-sftp (2.1.2)
@@ -172,7 +180,7 @@ GEM
       multi_json (~> 1.3)
       multi_xml (~> 0.5)
       rack (>= 1.2, < 3)
-    oj (3.7.11)
+    oj (3.9.2)
     omniauth (1.4.3)
       hashie (>= 1.2, < 4)
       rack (>= 1.6.2, < 3)
@@ -180,13 +188,13 @@ GEM
       oauth2 (~> 1.1)
       omniauth (~> 1.2)
     optimist (3.0.0)
-    os (1.0.0)
+    os (1.0.1)
     passenger (6.0.2)
       rack
       rake (>= 0.8.1)
     pg (1.1.4)
     power_assert (1.1.4)
-    public_suffix (3.0.3)
+    public_suffix (4.0.1)
     rack (2.0.7)
     rack-test (0.6.3)
       rack (>= 1.0)
@@ -288,8 +296,8 @@ PLATFORMS
 DEPENDENCIES
   acts_as_api
   andand
-  arvados (>= 1.3.1.20190301212059)
-  arvados-cli
+  arvados!
+  arvados-cli!
   byebug
   database_cleaner
   factory_bot_rails
@@ -316,6 +324,7 @@ DEPENDENCIES
   rvm-capistrano
   safe_yaml
   sass-rails
+  signet (< 0.12)
   simplecov (~> 0.7.1)
   simplecov-rcov
   sshkey

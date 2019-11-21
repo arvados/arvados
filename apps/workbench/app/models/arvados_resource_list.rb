@@ -136,11 +136,16 @@ class ArvadosResourceList
     if not @results.nil?
       @results.each &block
     else
+      results = []
       self.each_page do |items|
         items.each do |i|
+          results << i
           block.call i
         end
       end
+      # Cache results only if all were retrieved (block didn't raise
+      # an exception).
+      @results = results
     end
     self
   end
