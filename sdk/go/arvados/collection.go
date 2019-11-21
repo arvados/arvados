@@ -22,15 +22,17 @@ type Collection struct {
 	ManifestText              string                 `json:"manifest_text"`
 	UnsignedManifestText      string                 `json:"unsigned_manifest_text"`
 	Name                      string                 `json:"name"`
-	CreatedAt                 *time.Time             `json:"created_at"`
-	ModifiedAt                *time.Time             `json:"modified_at"`
+	CreatedAt                 time.Time              `json:"created_at"`
+	ModifiedAt                time.Time              `json:"modified_at"`
+	ModifiedByClientUUID      string                 `json:"modified_by_client_uuid"`
+	ModifiedByUserUUID        string                 `json:"modified_by_user_uuid"`
 	PortableDataHash          string                 `json:"portable_data_hash"`
 	ReplicationConfirmed      *int                   `json:"replication_confirmed"`
 	ReplicationConfirmedAt    *time.Time             `json:"replication_confirmed_at"`
 	ReplicationDesired        *int                   `json:"replication_desired"`
 	StorageClassesDesired     []string               `json:"storage_classes_desired"`
 	StorageClassesConfirmed   []string               `json:"storage_classes_confirmed"`
-	StorageClassesConfirmedAt *time.Time             `json:"storage_classes_confirmed_at"`
+	StorageClassesConfirmedAt time.Time              `json:"storage_classes_confirmed_at"`
 	DeleteAt                  *time.Time             `json:"delete_at"`
 	IsTrashed                 bool                   `json:"is_trashed"`
 	Properties                map[string]interface{} `json:"properties"`
