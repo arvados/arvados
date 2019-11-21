@@ -9,10 +9,10 @@ import "time"
 // Container is an arvados#container resource.
 type Container struct {
 	UUID                 string                 `json:"uuid"`
-	CreatedAt            *time.Time             `json:"created_at"`
+	CreatedAt            time.Time              `json:"created_at"`
 	ModifiedByClientUUID string                 `json:"modified_by_client_uuid"`
 	ModifiedByUserUUID   string                 `json:"modified_by_user_uuid"`
-	ModifiedAt           *time.Time             `json:"modified_at"`
+	ModifiedAt           time.Time              `json:"modified_at"`
 	Command              []string               `json:"command"`
 	ContainerImage       string                 `json:"container_image"`
 	Cwd                  string                 `json:"cwd"`

@@ -12,10 +12,8 @@ import (
 )
 
 func deferredCollectionFS(fs FileSystem, parent inode, coll Collection) inode {
-	var modTime time.Time
-	if coll.ModifiedAt != nil {
-		modTime = *coll.ModifiedAt
-	} else {
+	modTime := coll.ModifiedAt
+	if modTime.IsZero() {
 		modTime = time.Now()
 	}
 	placeholder := &treenode{

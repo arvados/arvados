@@ -49,11 +49,7 @@ func (conn *Conn) CollectionList(ctx context.Context, options arvados.ListOption
 		// Apply the default/implied order, "modified_at desc"
 		sort.Slice(merged.Items, func(i, j int) bool {
 			mi, mj := merged.Items[i].ModifiedAt, merged.Items[j].ModifiedAt
-			if mi == nil || mj == nil {
-				return false
-			} else {
-				return mj.Before(*mi)
-			}
+			return mj.Before(mi)
 		})
 	}
 	return merged, err
