@@ -3,7 +3,7 @@ GIT
   revision: dd9f2403f43bcb93da5908ddde57d8c0491bb4c2
   glob: sdk/ruby/arvados.gemspec
   specs:
-    arvados (1.4.1.20191019025325)
+    arvados (1.4.2.20191019025325)
       activesupport (>= 3)
       andand (~> 1.3, >= 1.3.3)
       arvados-google-api-client (>= 0.7, < 0.8.9)
