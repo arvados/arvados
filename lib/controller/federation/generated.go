@@ -48,6 +48,12 @@ func (conn *Conn) ContainerList(ctx context.Context, options arvados.ListOptions
 			return mj.Before(mi)
 		})
 	}
+	if merged.Items == nil {
+		// Return empty results as [], not null
+		// (https://github.com/golang/go/issues/27589 might be
+		// a better solution in the future)
+		merged.Items = []arvados.Container{}
+	}
 	return merged, err
 }
 
@@ -81,6 +87,12 @@ func (conn *Conn) SpecimenList(ctx context.Context, options arvados.ListOptions)
 			mi, mj := merged.Items[i].ModifiedAt, merged.Items[j].ModifiedAt
 			return mj.Before(mi)
 		})
+	}
+	if merged.Items == nil {
+		// Return empty results as [], not null
+		// (https://github.com/golang/go/issues/27589 might be
+		// a better solution in the future)
+		merged.Items = []arvados.Specimen{}
 	}
 	return merged, err
 }

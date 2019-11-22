@@ -427,7 +427,7 @@ func (s *CollectionListSuite) test(c *check.C, trial listTrial) {
 		c.Logf("returned error string is %q", err)
 	} else {
 		c.Check(err, check.IsNil)
-		var expectItems []arvados.Collection
+		expectItems := []arvados.Collection{}
 		for _, uuid := range trial.expectUUIDs {
 			expectItems = append(expectItems, arvados.Collection{UUID: uuid})
 		}

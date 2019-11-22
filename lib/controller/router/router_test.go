@@ -225,6 +225,13 @@ func (s *RouterIntegrationSuite) TestContainerList(c *check.C) {
 	c.Check(rr.Code, check.Equals, http.StatusOK)
 	c.Check(jresp["items_available"], check.FitsTypeOf, float64(0))
 	c.Check(jresp["items_available"].(float64) > 2, check.Equals, true)
+	c.Check(jresp["items"], check.NotNil)
+	c.Check(jresp["items"], check.HasLen, 0)
+
+	_, rr, jresp = doRequest(c, s.rtr, token, "GET", `/arvados/v1/containers?filters=[["uuid","in",[]]]`, nil, nil)
+	c.Check(rr.Code, check.Equals, http.StatusOK)
+	c.Check(jresp["items_available"], check.Equals, float64(0))
+	c.Check(jresp["items"], check.NotNil)
 	c.Check(jresp["items"], check.HasLen, 0)
 
 	_, rr, jresp = doRequest(c, s.rtr, token, "GET", `/arvados/v1/containers?limit=2&select=["uuid","command"]`, nil, nil)

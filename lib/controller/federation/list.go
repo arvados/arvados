@@ -52,6 +52,12 @@ func (conn *Conn) CollectionList(ctx context.Context, options arvados.ListOption
 			return mj.Before(mi)
 		})
 	}
+	if merged.Items == nil {
+		// Return empty results as [], not null
+		// (https://github.com/golang/go/issues/27589 might be
+		// a better solution in the future)
+		merged.Items = []arvados.Collection{}
+	}
 	return merged, err
 }
 
