@@ -933,7 +933,8 @@ install_services/login-sync() {
 install_services/api() {
     stop_services
     cd "$WORKSPACE/services/api" \
-        && RAILS_ENV=test bundle_install_trylocal
+        && RAILS_ENV=test bundle_install_trylocal \
+            || return 1
 
     rm -f config/environments/test.rb
     cp config/environments/test.rb.example config/environments/test.rb
