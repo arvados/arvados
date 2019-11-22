@@ -546,8 +546,11 @@ setup_ruby_environment() {
         echo "Will install arvados gems to $tmpdir_gem_home"
         echo "Gem search path is GEM_PATH=$GEM_PATH"
     fi
-    bundle config || gem install bundler \
-        || fatal 'install bundler'
+    (
+        export HOME=$GEMHOME
+        ("$(gem env gempath | cut -f1 -d:)/bin/bundle" version | grep 2.0.2) \
+            || gem install --user bundler -v 2.0.2
+    ) || fatal 'install bundler'
 }
 
 with_test_gemset() {
@@ -933,7 +936,8 @@ install_services/login-sync() {
 install_services/api() {
     stop_services
     cd "$WORKSPACE/services/api" \
-        && RAILS_ENV=test bundle_install_trylocal
+        && RAILS_ENV=test bundle_install_trylocal \
+            || return 1
 
     rm -f config/environments/test.rb
     cp config/environments/test.rb.example config/environments/test.rb

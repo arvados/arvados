@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"sort"
 	"testing"
 
 	"git.curoverse.com/arvados.git/lib/controller/router"
@@ -430,6 +431,9 @@ func (s *CollectionListSuite) test(c *check.C, trial listTrial) {
 		for _, uuid := range trial.expectUUIDs {
 			expectItems = append(expectItems, arvados.Collection{UUID: uuid})
 		}
+		// expectItems is sorted by UUID, so sort resp.Items
+		// by UUID before checking DeepEquals.
+		sort.Slice(resp.Items, func(i, j int) bool { return resp.Items[i].UUID < resp.Items[j].UUID })
 		c.Check(resp, check.DeepEquals, arvados.CollectionList{
 			Items: expectItems,
 		})
