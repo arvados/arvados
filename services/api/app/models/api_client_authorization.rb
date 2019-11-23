@@ -108,9 +108,24 @@ class ApiClientAuthorization < ArvadosModel
     clnt
   end
 
+  def self.check_system_root_token token
+    if token == Rails.configuration.SystemRootToken
+      return ApiClientAuthorization.new(user: User.find_by_uuid(system_user_uuid),
+                                        api_token: token,
+                                        api_client: ApiClient.new(is_trusted: true, url_prefix: ""))
+    else
+      return nil
+    end
+  end
+
   def self.validate(token:, remote: nil)
-    return nil if !token
+    return nil if token.nil? or token.empty?
     remote ||= Rails.configuration.ClusterID
+
+    auth = self.check_system_root_token(token)
+    if !auth.nil?
+      return auth
+    end
 
     case token[0..2]
     when 'v2/'
