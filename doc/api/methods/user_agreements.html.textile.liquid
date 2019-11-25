@@ -1,0 +1,44 @@
+---
+layout: default
+navsection: api
+navmenu: API Methods
+title: "user_agreements"
+
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/user_agreements@
+
+h2. Resource
+
+This provides an API for inactive users to sign clickthrough agreements prior to being activated.
+
+h2. Methods
+
+Required arguments are displayed in %{background:#ccffcc}green%.
+
+h3. list
+
+List user agreements.  This is a list of collections which contain HTML files with the text of the clickthrough agreement(s) which can be rendered by Workbench.
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+
+h3. signatures
+
+List user agreements that have already been signed.  These are recorded as link objects of @{"link_class": "signature", "name": "click"}@.
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+
+h3. sign
+
+Sign a user agreement.
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string|The UUID of the user agreement collection.|path||

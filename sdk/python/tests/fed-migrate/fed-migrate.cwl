@@ -337,7 +337,7 @@ $graph:
         type: string
       - id: arvbox_bin
         type: File
-      - default: 15531-logincluster-migrate
+      - default: master
         id: refspec
         type: string
     outputs:
@@ -407,73 +407,15 @@ $graph:
               type: string
           outputs:
             - id: supertok
-              outputSource: superuser_tok_3/superuser_token
+              outputSource: superuser_tok_2/superuser_token
               type: string
           requirements:
-            - class: EnvVarRequirement
-              envDef:
-                ARVBOX_CONTAINER: $(inputs.container)
+            InlineJavascriptRequirement: {}
           steps:
             - id: main_2_embed_1
               in:
-                cluster_id:
-                  source: cluster_id
-                container:
-                  source: container
-                logincluster:
-                  source: logincluster
-                set_login:
-                  default:
-                    class: File
-                    location: set_login.py
-              out:
-                - c
-              run:
-                arguments:
-                  - sh
-                  - _script
-                class: CommandLineTool
-                id: main_2_embed_1_embed
-                inputs:
-                  - id: container
-                    type: string
-                  - id: cluster_id
-                    type: string
-                  - id: logincluster
-                    type: string
-                  - id: set_login
-                    type: File
-                outputs:
-                  - id: c
-                    outputBinding:
-                      outputEval: $(inputs.container)
-                    type: string
-                requirements:
-                  InitialWorkDirRequirement:
-                    listing:
-                      - entry: >
-                          set -x
-
-                          docker cp
-                          $(inputs.container):/var/lib/arvados/cluster_config.yml.override
-                          .
-
-                          chmod +w cluster_config.yml.override
-
-                          python $(inputs.set_login.path)
-                          cluster_config.yml.override $(inputs.cluster_id)
-                          $(inputs.logincluster)
-
-                          docker cp cluster_config.yml.override
-                          $(inputs.container):/var/lib/arvados
-                        entryname: _script
-                  InlineJavascriptRequirement: {}
-            - id: main_2_embed_2
-              in:
                 arvbox_bin:
                   source: arvbox_bin
-                c:
-                  source: main_2_embed_1/c
                 container:
                   source: container
                 host:
@@ -487,7 +429,7 @@ $graph:
                   - sh
                   - _script
                 class: CommandLineTool
-                id: main_2_embed_2_embed
+                id: main_2_embed_1_embed
                 inputs:
                   - id: container
                     type: string
@@ -495,20 +437,20 @@ $graph:
                     type: string
                   - id: arvbox_bin
                     type: File
-                  - id: c
-                    type: string
                   - id: refspec
                     type: string
                 outputs:
                   - id: d
                     outputBinding:
-                      outputEval: $(inputs.c)
+                      outputEval: $(inputs.container)
                     type: string
                 requirements:
                   InitialWorkDirRequirement:
                     listing:
-                      - entry: >
+                      - entry: >+
                           set -xe
+
+                          export ARVBOX_CONTAINER="$(inputs.container)"
 
                           $(inputs.arvbox_bin.path) pipe <<EOF
 
@@ -532,27 +474,26 @@ $graph:
                           https://$(inputs.host)/discovery/v1/apis/arvados/v1/rest
                           >/dev/null ; do sleep 3 ; done
 
-                          export ARVADOS_API_HOST=$(inputs.host)
-
-                          export ARVADOS_API_TOKEN=\$($(inputs.arvbox_bin.path)
-                          cat /var/lib/arvados/superuser_token)
-
-                          export ARVADOS_API_HOST_INSECURE=1
 
                           ARVADOS_VIRTUAL_MACHINE_UUID=\$($(inputs.arvbox_bin.path)
                           cat /var/lib/arvados/vm-uuid)
 
-                          while ! python -c "import arvados ;
-                          arvados.api().virtual_machines().get(uuid='$ARVADOS_VIRTUAL_MACHINE_UUID').execute()"
-                          2>/dev/null ; do sleep 3; done
+                          ARVADOS_API_TOKEN=\$($(inputs.arvbox_bin.path) cat
+                          /var/lib/arvados/superuser_token)
+
+                          while ! curl --fail --insecure --silent -H
+                          "Authorization: Bearer $ARVADOS_API_TOKEN"
+                          https://$(inputs.host)/arvados/v1/virtual_machines/$ARVADOS_VIRTUAL_MACHINE_UUID
+                          >/dev/null ; do sleep 3 ; done
+
                         entryname: _script
                   InlineJavascriptRequirement: {}
-            - id: superuser_tok_3
+            - id: superuser_tok_2
               in:
                 container:
                   source: container
                 d:
-                  source: main_2_embed_2/d
+                  source: main_2_embed_1/d
               out:
                 - superuser_token
               run: '#superuser_tok'

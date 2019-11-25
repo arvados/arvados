@@ -49,11 +49,9 @@ type collectionFileSystem struct {
 
 // FileSystem returns a CollectionFileSystem for the collection.
 func (c *Collection) FileSystem(client apiClient, kc keepClient) (CollectionFileSystem, error) {
-	var modTime time.Time
-	if c.ModifiedAt == nil {
+	modTime := c.ModifiedAt
+	if modTime.IsZero() {
 		modTime = time.Now()
-	} else {
-		modTime = *c.ModifiedAt
 	}
 	fs := &collectionFileSystem{
 		uuid: c.UUID,

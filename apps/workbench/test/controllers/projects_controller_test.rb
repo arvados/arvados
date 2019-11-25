@@ -151,7 +151,7 @@ class ProjectsControllerTest < ActionController::TestCase
   end
 
   ['', ' asc', ' desc'].each do |direction|
-    test "projects#show tab partial orders correctly by #{direction}" do
+    test "projects#show tab partial orders correctly by created_at#{direction}" do
       _test_tab_content_order direction
     end
   end

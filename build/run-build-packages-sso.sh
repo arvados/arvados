@@ -17,7 +17,7 @@ Options:
 --debug
     Output debug information (default: false)
 --target
-    Distribution to build packages for (default: debian9)
+    Distribution to build packages for (default: debian10)
 
 WORKSPACE=path         Path to the Arvados SSO source tree to build packages from
 
@@ -25,7 +25,7 @@ EOF
 
 EXITCODE=0
 DEBUG=${ARVADOS_DEBUG:-0}
-TARGET=debian9
+TARGET=debian10
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
     help,build-bundle-packages,debug,target: \

@@ -147,7 +147,6 @@ Clusters:
       AutoSetupNewUsers: true
       AutoSetupNewUsersWithVmUUID: $vm_uuid
       AutoSetupNewUsersWithRepository: true
-      AnonymousUserToken: $(cat /var/lib/arvados/superuser_token)
     Workbench:
       SecretKeyBase: $workbench_secret_key_base
       ArvadosDocsite: http://$localip:${services[doc]}/

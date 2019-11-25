@@ -96,7 +96,7 @@ table(table table-bordered table-condensed).
 |1|operator|string|Comparison operator|@>@, @>=@, @like@, @not in@|
 |2|operand|string, array, or null|Value to compare with the resource attribute|@"d00220fb%"@, @"1234"@, @["foo","bar"]@, @nil@|
 
-The following operators are available.
+The following operators are available.[1]
 
 table(table table-bordered table-condensed).
 |_. Operator|_. Operand type|_. Description|_. Example|
@@ -107,6 +107,7 @@ table(table table-bordered table-condensed).
 |@is_a@|string|Arvados object type|@["head_uuid","is_a","arvados#collection"]@|
 |@exists@|string|Test if a subproperty is present.|@["properties","exists","my_subproperty"]@|
 
+Note:
 
 h4(#substringsearchfilter). Filtering using substring search
 
@@ -168,3 +169,5 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |
 {background:#ccffcc}.|uuid|string|The UUID of the resource in question.|path||
 |{resource_type}|object||query||
+
+fn1^. NOTE: The filter operator for full-text search (@@) which previously worked (but was undocumented) is deprecated and will be removed in a future release.

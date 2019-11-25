@@ -148,6 +148,7 @@ func (s *LoginSuite) SetUpTest(c *check.C) {
 	s.cluster, err = cfg.GetCluster("")
 	s.cluster.Login.GoogleClientID = "test%client$id"
 	s.cluster.Login.GoogleClientSecret = "test#client/secret"
+	s.cluster.Users.PreferDomainForUsername = "PreferDomainForUsername.example.com"
 	c.Assert(err, check.IsNil)
 
 	s.localdb = NewConn(s.cluster)
@@ -364,6 +365,10 @@ func (s *LoginSuite) TestGoogleLogin_AlternateEmailAddresses_Primary(c *check.C)
 				"metadata": map[string]interface{}{"verified": true},
 				"value":    "joe.smith@alternate.example.com",
 			},
+			{
+				"metadata": map[string]interface{}{"verified": true},
+				"value":    "jsmith+123@preferdomainforusername.example.com",
+			},
 		},
 	}
 	state := s.startLogin(c)
@@ -373,7 +378,8 @@ func (s *LoginSuite) TestGoogleLogin_AlternateEmailAddresses_Primary(c *check.C)
 	})
 	authinfo := s.getCallbackAuthInfo(c)
 	c.Check(authinfo.Email, check.Equals, "joe.smith@primary.example.com")
-	c.Check(authinfo.AlternateEmails, check.DeepEquals, []string{"joe.smith@alternate.example.com"})
+	c.Check(authinfo.AlternateEmails, check.DeepEquals, []string{"joe.smith@alternate.example.com", "jsmith+123@preferdomainforusername.example.com"})
+	c.Check(authinfo.Username, check.Equals, "jsmith")
 }
 
 func (s *LoginSuite) TestGoogleLogin_NoPrimaryEmailAddress(c *check.C) {
@@ -400,6 +406,7 @@ func (s *LoginSuite) TestGoogleLogin_NoPrimaryEmailAddress(c *check.C) {
 	authinfo := s.getCallbackAuthInfo(c)
 	c.Check(authinfo.Email, check.Equals, "joe.smith@work.example.com") // first verified email in People response
 	c.Check(authinfo.AlternateEmails, check.DeepEquals, []string{"joe.smith@home.example.com"})
+	c.Check(authinfo.Username, check.Equals, "")
 }
 
 func (s *LoginSuite) getCallbackAuthInfo(c *check.C) (authinfo rpc.UserSessionAuthInfo) {

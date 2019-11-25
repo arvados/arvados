@@ -3,6 +3,12 @@
 #
 # SPDX-License-Identifier: CC-BY-SA-3.0
 
+# As a convenience to the documentation writer, you can touch a file
+# called 'no-sdk' in the 'doc' directory and it will suppress
+# generating the documentation for the SDKs, which (the R docs
+# especially) take a fair bit of time and slow down the edit-preview
+# cycle.
+
 require "rubygems"
 require "colorize"
 
@@ -16,6 +22,9 @@ task :generate => [ :realclean, 'sdk/python/arvados/index.html', 'sdk/R/arvados/
 end
 
 file "sdk/python/arvados/index.html" do |t|
+  if File.exists? "no-sdk"
+    next
+  end
   `which epydoc`
   if $? == 0
     STDERR.puts `epydoc --html --parse-only -o sdk/python/arvados ../sdk/python/arvados/ 2>&1`
@@ -26,6 +35,9 @@ file "sdk/python/arvados/index.html" do |t|
 end
 
 file "sdk/R/arvados/index.html" do |t|
+  if File.exists? "no-sdk"
+    next
+  end
   `which R`
   if $? == 0
     tgt = Dir.pwd
@@ -88,6 +100,9 @@ EOF
 end
 
 file "sdk/java-v2/javadoc/index.html" do |t|
+  if File.exists? "no-sdk"
+    next
+  end
   `which java`
   if $? == 0
     `which gradle`

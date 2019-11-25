@@ -316,7 +316,9 @@ test_package_presence() {
     # sure it gets picked up by the test and/or upload steps.
     # Get the list of packages from the repos
 
-    if [[ "$FORMAT" == "deb" ]]; then
+    if [[ "$FORCE_BUILD" == "1" ]]; then
+      echo "Package $full_pkgname build forced with --force-build, building"
+    elif [[ "$FORMAT" == "deb" ]]; then
       declare -A dd
       dd[debian9]=stretch
       dd[debian10]=buster

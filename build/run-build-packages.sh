@@ -19,9 +19,12 @@ Options:
 --debug
     Output debug information (default: false)
 --target <target>
-    Distribution to build packages for (default: debian9)
+    Distribution to build packages for (default: debian10)
 --only-build <package>
     Build only a specific package (or $ONLY_BUILD from environment)
+--force-build
+    Build even if the package exists upstream or if it has already been
+    built locally
 --command
     Build command to execute (defaults to the run command defined in the
     Docker image)
@@ -41,12 +44,13 @@ VENDOR="Veritas Genetics, Inc."
 # End of user configuration
 
 DEBUG=${ARVADOS_DEBUG:-0}
+FORCE_BUILD=${FORCE_BUILD:-0}
 EXITCODE=0
-TARGET=debian9
+TARGET=debian10
 COMMAND=
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,build-bundle-packages,debug,target:,only-build: \
+    help,build-bundle-packages,debug,target:,only-build:,force-build \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -65,6 +69,9 @@ while [ $# -gt 0 ]; do
             ;;
         --only-build)
             ONLY_BUILD="$2"; shift
+            ;;
+        --force-build)
+            FORCE_BUILD=1
             ;;
         --debug)
             DEBUG=1
@@ -155,14 +162,6 @@ if [[ "$?" != 0 ]]; then
   echo >&2 "Error: fpm not found"
   echo >&2
   exit 1
-fi
-
-PYTHON2_FPM_INSTALLER=(--python-easyinstall "$(find_python_program easy_install-$PYTHON2_VERSION easy_install)")
-install3=$(find_python_program easy_install-$PYTHON3_VERSION easy_install3 pip-$PYTHON3_VERSION pip3)
-if [[ $install3 =~ easy_ ]]; then
-    PYTHON3_FPM_INSTALLER=(--python-easyinstall "$install3")
-else
-    PYTHON3_FPM_INSTALLER=(--python-pip "$install3")
 fi
 
 RUN_BUILD_PACKAGES_PATH="`dirname \"$0\"`"

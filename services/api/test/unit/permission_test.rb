@@ -287,6 +287,12 @@ class PermissionTest < ActiveSupport::TestCase
     a = create :active_user, first_name: "A"
     b = create :active_user, first_name: "B"
     other = create :active_user, first_name: "OTHER"
+
+    assert_empty(User.readable_by(b).where(uuid: a.uuid),
+                     "#{b.first_name} should not be able to see 'a' in the user list")
+    assert_empty(User.readable_by(a).where(uuid: b.uuid),
+                     "#{a.first_name} should not be able to see 'b' in the user list")
+
     act_as_system_user do
       g = create :group
       [a,b].each do |u|
@@ -296,6 +302,12 @@ class PermissionTest < ActiveSupport::TestCase
                name: 'can_read', head_uuid: u.uuid, tail_uuid: g.uuid)
       end
     end
+
+    assert_not_empty(User.readable_by(b).where(uuid: a.uuid),
+                     "#{b.first_name} should be able to see 'a' in the user list")
+    assert_not_empty(User.readable_by(a).where(uuid: b.uuid),
+                     "#{a.first_name} should be able to see 'b' in the user list")
+
     a_specimen = act_as_user a do
       Specimen.create!
     end

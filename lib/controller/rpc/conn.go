@@ -393,6 +393,7 @@ type UserSessionAuthInfo struct {
 	AlternateEmails []string `json:"alternate_emails"`
 	FirstName       string   `json:"first_name"`
 	LastName        string   `json:"last_name"`
+	Username        string   `json:"username"`
 }
 
 type UserSessionCreateOptions struct {

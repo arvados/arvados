@@ -198,10 +198,13 @@ func (conn *Conn) Login(ctx context.Context, options arvados.LoginOptions) (arva
 		if err != nil {
 			return arvados.LoginResponse{}, fmt.Errorf("internal error getting redirect target: %s", err)
 		}
-		target.RawQuery = url.Values{
+		params := url.Values{
 			"return_to": []string{options.ReturnTo},
-			"remote":    []string{options.Remote},
-		}.Encode()
+		}
+		if options.Remote != "" {
+			params.Set("remote", options.Remote)
+		}
+		target.RawQuery = params.Encode()
 		return arvados.LoginResponse{
 			RedirectLocation: target.String(),
 		}, nil
