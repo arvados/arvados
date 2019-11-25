@@ -16,17 +16,6 @@ Services must have ManagementToken configured.  This is used to authorize access
 
 To access a monitoring endpoint, the requester must provide the HTTP header @Authorization: Bearer (ManagementToken)@.
 
-h2. API server
-
-Set @ManagementToken@ in the appropriate section of @application.yml@
-
-<pre>
-production:
-  # Token to be included in all healthcheck requests. Disabled by default.
-  # Server expects request header of the format "Authorization: Bearer xxx"
-  ManagementToken: xxx
-</pre>
-
 h2. Node Manager
 
 Set @port@ (the listen port) and @ManagementToken@ in the @Manage@ section of @node-manager.ini@.
@@ -45,12 +34,26 @@ Set @port@ (the listen port) and @ManagementToken@ in the @Manage@ section of @n
 ManagementToken = xxx
 </pre>
 
-h2. Other services
+h2. API server and other services
 
-The following services also support monitoring.  Set @ManagementToken@ in the respective yaml config file for each service.
+The following services also support monitoring.
 
+* API server
+* arv-git-httpd
+* controller
+* keep-balance
+* keepproxy
 * keepstore
 * keep-web
-* keepproxy
-* arv-git-httpd
 * websockets
+
+Set @ManagementToken@ in the appropriate section of @/etc/arvados/config.yml@.
+
+<notextile>
+<pre><code>Clusters:
+  <span class="userinput">uuid_prefix</span>:
+    # Token to be included in all healthcheck requests. Disabled by default.
+    # Server expects request header of the format "Authorization: Bearer xxx"
+    ManagementToken: xxx
+</code></pre>
+</notextile>
