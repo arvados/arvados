@@ -174,6 +174,7 @@ type Cluster struct {
 		NewUsersAreActive                     bool
 		UserNotifierEmailFrom                 string
 		UserProfileNotificationAddress        string
+		PreferDomainForUsername               string
 	}
 	Volumes   map[string]Volume
 	Workbench struct {

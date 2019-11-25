@@ -98,4 +98,48 @@ class Arvados::V1::ContainerRequestsControllerTest < ActionController::TestCase
     assert_equal api_client_authorizations(:spectator).token, req.runtime_token
   end
 
+  %w(Running Complete).each do |state|
+    test "filter on container.state = #{state}" do
+      authorize_with :active
+      get :index, params: {
+            filters: [['container.state', '=', state]],
+          }
+      assert_response :success
+      assert_operator json_response['items'].length, :>, 0
+      json_response['items'].each do |cr|
+        assert_equal state, Container.find_by_uuid(cr['container_uuid']).state
+      end
+    end
+  end
+
+  test "filter on container success" do
+    authorize_with :active
+    get :index, params: {
+          filters: [
+            ['container.state', '=', 'Complete'],
+            ['container.exit_code', '=', '0'],
+          ],
+        }
+    assert_response :success
+    assert_operator json_response['items'].length, :>, 0
+    json_response['items'].each do |cr|
+      assert_equal 'Complete', Container.find_by_uuid(cr['container_uuid']).state
+      assert_equal 0, Container.find_by_uuid(cr['container_uuid']).exit_code
+    end
+  end
+
+  test "filter on container subproperty runtime_status[foo] = bar" do
+    ctr = containers(:running)
+    act_as_system_user do
+      ctr.update_attributes!(runtime_status: {foo: 'bar'})
+    end
+    authorize_with :active
+    get :index, params: {
+          filters: [
+            ['container.runtime_status.foo', '=', 'bar'],
+          ],
+        }
+    assert_response :success
+    assert_equal [ctr.uuid], json_response['items'].collect { |cr| cr['container_uuid'] }.uniq
+  end
 end

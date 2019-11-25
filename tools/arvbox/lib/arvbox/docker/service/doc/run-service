@@ -8,11 +8,16 @@ set -ex -o pipefail
 
 . /usr/local/lib/arvbox/common.sh
 
+
 cd /usr/src/arvados/doc
 run_bundler --without=development
 
-cd /usr/src/arvados/sdk/R
-R --quiet --vanilla --file=install_deps.R
+# Generating the R docs is expensive, so for development if the file
+# "no-sdk" exists then skip the R stuff.
+if [[ ! -f /usr/src/arvados/doc/no-sdk ]] ; then
+    cd /usr/src/arvados/sdk/R
+    R --quiet --vanilla --file=install_deps.R
+fi
 
 if test "$1" = "--only-deps" ; then
     exit

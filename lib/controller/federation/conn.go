@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
 
 	"git.curoverse.com/arvados.git/lib/config"
 	"git.curoverse.com/arvados.git/lib/controller/localdb"
@@ -197,10 +198,13 @@ func (conn *Conn) Login(ctx context.Context, options arvados.LoginOptions) (arva
 		if err != nil {
 			return arvados.LoginResponse{}, fmt.Errorf("internal error getting redirect target: %s", err)
 		}
-		target.RawQuery = url.Values{
+		params := url.Values{
 			"return_to": []string{options.ReturnTo},
-			"remote":    []string{options.Remote},
-		}.Encode()
+		}
+		if options.Remote != "" {
+			params.Set("remote", options.Remote)
+		}
+		target.RawQuery = params.Encode()
 		return arvados.LoginResponse{
 			RedirectLocation: target.String(),
 		}, nil
@@ -251,6 +255,10 @@ func (conn *Conn) CollectionGet(ctx context.Context, options arvados.GetOptions)
 	}
 }
 
+func (conn *Conn) CollectionList(ctx context.Context, options arvados.ListOptions) (arvados.CollectionList, error) {
+	return conn.generated_CollectionList(ctx, options)
+}
+
 func (conn *Conn) CollectionProvenance(ctx context.Context, options arvados.GetOptions) (map[string]interface{}, error) {
 	return conn.chooseBackend(options.UUID).CollectionProvenance(ctx, options)
 }
@@ -269,6 +277,10 @@ func (conn *Conn) CollectionTrash(ctx context.Context, options arvados.DeleteOpt
 
 func (conn *Conn) CollectionUntrash(ctx context.Context, options arvados.UntrashOptions) (arvados.Collection, error) {
 	return conn.chooseBackend(options.UUID).CollectionUntrash(ctx, options)
+}
+
+func (conn *Conn) ContainerList(ctx context.Context, options arvados.ListOptions) (arvados.ContainerList, error) {
+	return conn.generated_ContainerList(ctx, options)
 }
 
 func (conn *Conn) ContainerCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Container, error) {
@@ -295,6 +307,10 @@ func (conn *Conn) ContainerUnlock(ctx context.Context, options arvados.GetOption
 	return conn.chooseBackend(options.UUID).ContainerUnlock(ctx, options)
 }
 
+func (conn *Conn) SpecimenList(ctx context.Context, options arvados.ListOptions) (arvados.SpecimenList, error) {
+	return conn.generated_SpecimenList(ctx, options)
+}
+
 func (conn *Conn) SpecimenCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Specimen, error) {
 	return conn.chooseBackend(options.ClusterID).SpecimenCreate(ctx, options)
 }
@@ -309,6 +325,139 @@ func (conn *Conn) SpecimenGet(ctx context.Context, options arvados.GetOptions) (
 
 func (conn *Conn) SpecimenDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.Specimen, error) {
 	return conn.chooseBackend(options.UUID).SpecimenDelete(ctx, options)
+}
+
+var userAttrsCachedFromLoginCluster = map[string]bool{
+	"created_at":              true,
+	"email":                   true,
+	"first_name":              true,
+	"is_active":               true,
+	"is_admin":                true,
+	"last_name":               true,
+	"modified_at":             true,
+	"modified_by_client_uuid": true,
+	"modified_by_user_uuid":   true,
+	"prefs":                   true,
+	"username":                true,
+
+	"full_name":    false,
+	"identity_url": false,
+	"is_invited":   false,
+	"owner_uuid":   false,
+	"uuid":         false,
+}
+
+func (conn *Conn) UserList(ctx context.Context, options arvados.ListOptions) (arvados.UserList, error) {
+	logger := ctxlog.FromContext(ctx)
+	if id := conn.cluster.Login.LoginCluster; id != "" && id != conn.cluster.ClusterID {
+		resp, err := conn.chooseBackend(id).UserList(ctx, options)
+		if err != nil {
+			return resp, err
+		}
+		batchOpts := arvados.UserBatchUpdateOptions{Updates: map[string]map[string]interface{}{}}
+		for _, user := range resp.Items {
+			if !strings.HasPrefix(user.UUID, id) {
+				continue
+			}
+			logger.Debugf("cache user info for uuid %q", user.UUID)
+
+			// If the remote cluster has null timestamps
+			// (e.g., test server with incomplete
+			// fixtures) use dummy timestamps (instead of
+			// the zero time, which causes a Rails API
+			// error "year too big to marshal: 1 UTC").
+			if user.ModifiedAt.IsZero() {
+				user.ModifiedAt = time.Now()
+			}
+			if user.CreatedAt.IsZero() {
+				user.CreatedAt = time.Now()
+			}
+
+			var allFields map[string]interface{}
+			buf, err := json.Marshal(user)
+			if err != nil {
+				return arvados.UserList{}, fmt.Errorf("error encoding user record from remote response: %s", err)
+			}
+			err = json.Unmarshal(buf, &allFields)
+			if err != nil {
+				return arvados.UserList{}, fmt.Errorf("error transcoding user record from remote response: %s", err)
+			}
+			updates := allFields
+			if len(options.Select) > 0 {
+				updates = map[string]interface{}{}
+				for _, k := range options.Select {
+					if v, ok := allFields[k]; ok && userAttrsCachedFromLoginCluster[k] {
+						updates[k] = v
+					}
+				}
+			} else {
+				for k := range updates {
+					if !userAttrsCachedFromLoginCluster[k] {
+						delete(updates, k)
+					}
+				}
+			}
+			batchOpts.Updates[user.UUID] = updates
+		}
+		if len(batchOpts.Updates) > 0 {
+			ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{conn.cluster.SystemRootToken}})
+			_, err = conn.local.UserBatchUpdate(ctxRoot, batchOpts)
+			if err != nil {
+				return arvados.UserList{}, fmt.Errorf("error updating local user records: %s", err)
+			}
+		}
+		return resp, nil
+	} else {
+		return conn.generated_UserList(ctx, options)
+	}
+}
+
+func (conn *Conn) UserCreate(ctx context.Context, options arvados.CreateOptions) (arvados.User, error) {
+	return conn.chooseBackend(options.ClusterID).UserCreate(ctx, options)
+}
+
+func (conn *Conn) UserUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.User, error) {
+	return conn.chooseBackend(options.UUID).UserUpdate(ctx, options)
+}
+
+func (conn *Conn) UserUpdateUUID(ctx context.Context, options arvados.UpdateUUIDOptions) (arvados.User, error) {
+	return conn.chooseBackend(options.UUID).UserUpdateUUID(ctx, options)
+}
+
+func (conn *Conn) UserMerge(ctx context.Context, options arvados.UserMergeOptions) (arvados.User, error) {
+	return conn.chooseBackend(options.OldUserUUID).UserMerge(ctx, options)
+}
+
+func (conn *Conn) UserActivate(ctx context.Context, options arvados.UserActivateOptions) (arvados.User, error) {
+	return conn.chooseBackend(options.UUID).UserActivate(ctx, options)
+}
+
+func (conn *Conn) UserSetup(ctx context.Context, options arvados.UserSetupOptions) (map[string]interface{}, error) {
+	return conn.chooseBackend(options.UUID).UserSetup(ctx, options)
+}
+
+func (conn *Conn) UserUnsetup(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
+	return conn.chooseBackend(options.UUID).UserUnsetup(ctx, options)
+}
+
+func (conn *Conn) UserGet(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
+	return conn.chooseBackend(options.UUID).UserGet(ctx, options)
+}
+
+func (conn *Conn) UserGetCurrent(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
+	return conn.chooseBackend(options.UUID).UserGetCurrent(ctx, options)
+}
+
+func (conn *Conn) UserGetSystem(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
+	return conn.chooseBackend(options.UUID).UserGetSystem(ctx, options)
+}
+
+func (conn *Conn) UserDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.User, error) {
+	return conn.chooseBackend(options.UUID).UserDelete(ctx, options)
+}
+
+func (conn *Conn) UserBatchUpdate(ctx context.Context, options arvados.UserBatchUpdateOptions) (arvados.UserList, error) {
+	return conn.local.UserBatchUpdate(ctx, options)
 }
 
 func (conn *Conn) APIClientAuthorizationCurrent(ctx context.Context, options arvados.GetOptions) (arvados.APIClientAuthorization, error) {

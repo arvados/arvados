@@ -14,18 +14,18 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/auth"
 	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
-	"github.com/julienschmidt/httprouter"
+	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
 
 type router struct {
-	mux *httprouter.Router
+	mux *mux.Router
 	fed arvados.API
 }
 
 func New(fed arvados.API) *router {
 	rtr := &router{
-		mux: httprouter.New(),
+		mux: mux.NewRouter(),
 		fed: fed,
 	}
 	rtr.addRoutes()
@@ -205,6 +205,97 @@ func (rtr *router) addRoutes() {
 				return rtr.fed.SpecimenDelete(ctx, *opts.(*arvados.DeleteOptions))
 			},
 		},
+		{
+			arvados.EndpointUserCreate,
+			func() interface{} { return &arvados.CreateOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.UserCreate(ctx, *opts.(*arvados.CreateOptions))
+			},
+		},
+		{
+			arvados.EndpointUserMerge,
+			func() interface{} { return &arvados.UserMergeOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.UserMerge(ctx, *opts.(*arvados.UserMergeOptions))
+			},
+		},
+		{
+			arvados.EndpointUserActivate,
+			func() interface{} { return &arvados.UserActivateOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.UserActivate(ctx, *opts.(*arvados.UserActivateOptions))
+			},
+		},
+		{
+			arvados.EndpointUserSetup,
+			func() interface{} { return &arvados.UserSetupOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.UserSetup(ctx, *opts.(*arvados.UserSetupOptions))
+			},
+		},
+		{
+			arvados.EndpointUserUnsetup,
+			func() interface{} { return &arvados.GetOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.UserUnsetup(ctx, *opts.(*arvados.GetOptions))
+			},
+		},
+		{
+			arvados.EndpointUserGetCurrent,
+			func() interface{} { return &arvados.GetOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.UserGetCurrent(ctx, *opts.(*arvados.GetOptions))
+			},
+		},
+		{
+			arvados.EndpointUserGetSystem,
+			func() interface{} { return &arvados.GetOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.UserGetSystem(ctx, *opts.(*arvados.GetOptions))
+			},
+		},
+		{
+			arvados.EndpointUserGet,
+			func() interface{} { return &arvados.GetOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.UserGet(ctx, *opts.(*arvados.GetOptions))
+			},
+		},
+		{
+			arvados.EndpointUserUpdateUUID,
+			func() interface{} { return &arvados.UpdateUUIDOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.UserUpdateUUID(ctx, *opts.(*arvados.UpdateUUIDOptions))
+			},
+		},
+		{
+			arvados.EndpointUserUpdate,
+			func() interface{} { return &arvados.UpdateOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.UserUpdate(ctx, *opts.(*arvados.UpdateOptions))
+			},
+		},
+		{
+			arvados.EndpointUserList,
+			func() interface{} { return &arvados.ListOptions{Limit: -1} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.UserList(ctx, *opts.(*arvados.ListOptions))
+			},
+		},
+		{
+			arvados.EndpointUserBatchUpdate,
+			func() interface{} { return &arvados.UserBatchUpdateOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.UserBatchUpdate(ctx, *opts.(*arvados.UserBatchUpdateOptions))
+			},
+		},
+		{
+			arvados.EndpointUserDelete,
+			func() interface{} { return &arvados.DeleteOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.UserDelete(ctx, *opts.(*arvados.DeleteOptions))
+			},
+		},
 	} {
 		rtr.addRoute(route.endpoint, route.defaultOpts, route.exec)
 		if route.endpoint.Method == "PATCH" {
@@ -214,16 +305,16 @@ func (rtr *router) addRoutes() {
 			rtr.addRoute(endpointPUT, route.defaultOpts, route.exec)
 		}
 	}
-	rtr.mux.NotFound = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+	rtr.mux.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		httpserver.Errors(w, []string{"API endpoint not found"}, http.StatusNotFound)
 	})
-	rtr.mux.MethodNotAllowed = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+	rtr.mux.MethodNotAllowedHandler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		httpserver.Errors(w, []string{"API endpoint not found"}, http.StatusMethodNotAllowed)
 	})
 }
 
 func (rtr *router) addRoute(endpoint arvados.APIEndpoint, defaultOpts func() interface{}, exec routableFunc) {
-	rtr.mux.HandlerFunc(endpoint.Method, "/"+endpoint.Path, func(w http.ResponseWriter, req *http.Request) {
+	rtr.mux.Methods(endpoint.Method).Path("/" + endpoint.Path).HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		logger := ctxlog.FromContext(req.Context())
 		params, err := rtr.loadRequestParams(req, endpoint.AttrsKey)
 		if err != nil {
@@ -250,6 +341,11 @@ func (rtr *router) addRoute(endpoint arvados.APIEndpoint, defaultOpts func() int
 		}
 
 		creds := auth.CredentialsFromRequest(req)
+		err = creds.LoadTokensFromHTTPRequestBody(req)
+		if err != nil {
+			rtr.sendError(w, fmt.Errorf("error loading tokens from request body: %s", err))
+			return
+		}
 		if rt, _ := params["reader_tokens"].([]interface{}); len(rt) > 0 {
 			for _, t := range rt {
 				if t, ok := t.(string); ok {

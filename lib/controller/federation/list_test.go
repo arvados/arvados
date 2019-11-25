@@ -8,74 +8,14 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/url"
-	"os"
-	"testing"
+	"sort"
 
-	"git.curoverse.com/arvados.git/lib/controller/router"
-	"git.curoverse.com/arvados.git/lib/controller/rpc"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
-	"git.curoverse.com/arvados.git/sdk/go/auth"
-	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
-	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	check "gopkg.in/check.v1"
 )
 
-// Gocheck boilerplate
-func Test(t *testing.T) {
-	check.TestingT(t)
-}
-
-var (
-	_ = check.Suite(&FederationSuite{})
-	_ = check.Suite(&CollectionListSuite{})
-)
-
-type FederationSuite struct {
-	cluster *arvados.Cluster
-	ctx     context.Context
-	fed     *Conn
-}
-
-func (s *FederationSuite) SetUpTest(c *check.C) {
-	s.cluster = &arvados.Cluster{
-		ClusterID: "aaaaa",
-		RemoteClusters: map[string]arvados.RemoteCluster{
-			"aaaaa": arvados.RemoteCluster{
-				Host: os.Getenv("ARVADOS_API_HOST"),
-			},
-		},
-	}
-	arvadostest.SetServiceURL(&s.cluster.Services.RailsAPI, "https://"+os.Getenv("ARVADOS_TEST_API_HOST"))
-	s.cluster.TLS.Insecure = true
-	s.cluster.API.MaxItemsPerResponse = 3
-
-	ctx := context.Background()
-	ctx = ctxlog.Context(ctx, ctxlog.TestLogger(c))
-	ctx = auth.NewContext(ctx, &auth.Credentials{Tokens: []string{arvadostest.ActiveTokenV2}})
-	s.ctx = ctx
-
-	s.fed = New(s.cluster)
-}
-
-func (s *FederationSuite) addDirectRemote(c *check.C, id string, backend backend) {
-	s.cluster.RemoteClusters[id] = arvados.RemoteCluster{
-		Host: "in-process.local",
-	}
-	s.fed.remotes[id] = backend
-}
-
-func (s *FederationSuite) addHTTPRemote(c *check.C, id string, backend backend) {
-	srv := httpserver.Server{Addr: ":"}
-	srv.Handler = router.New(backend)
-	c.Check(srv.Start(), check.IsNil)
-	s.cluster.RemoteClusters[id] = arvados.RemoteCluster{
-		Host:  srv.Addr,
-		Proxy: true,
-	}
-	s.fed.remotes[id] = rpc.NewConn(id, &url.URL{Scheme: "http", Host: srv.Addr}, true, saltedTokenProvider(s.fed.local, id))
-}
+var _ = check.Suite(&CollectionListSuite{})
 
 type collectionLister struct {
 	arvadostest.APIStub
@@ -426,10 +366,13 @@ func (s *CollectionListSuite) test(c *check.C, trial listTrial) {
 		c.Logf("returned error string is %q", err)
 	} else {
 		c.Check(err, check.IsNil)
-		var expectItems []arvados.Collection
+		expectItems := []arvados.Collection{}
 		for _, uuid := range trial.expectUUIDs {
 			expectItems = append(expectItems, arvados.Collection{UUID: uuid})
 		}
+		// expectItems is sorted by UUID, so sort resp.Items
+		// by UUID before checking DeepEquals.
+		sort.Slice(resp.Items, func(i, j int) bool { return resp.Items[i].UUID < resp.Items[j].UUID })
 		c.Check(resp, check.DeepEquals, arvados.CollectionList{
 			Items: expectItems,
 		})

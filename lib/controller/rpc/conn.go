@@ -118,9 +118,9 @@ func (conn *Conn) requestAndDecode(ctx context.Context, dst interface{}, ep arva
 		params["reader_tokens"] = tokens[1:]
 	}
 	path := ep.Path
-	if strings.Contains(ep.Path, "/:uuid") {
+	if strings.Contains(ep.Path, "/{uuid}") {
 		uuid, _ := params["uuid"].(string)
-		path = strings.Replace(path, "/:uuid", "/"+uuid, 1)
+		path = strings.Replace(path, "/{uuid}", "/"+uuid, 1)
 		delete(params, "uuid")
 	}
 	return aClient.RequestAndDecodeContext(ctx, dst, ep.Method, path, body, params)
@@ -308,6 +308,79 @@ func (conn *Conn) SpecimenDelete(ctx context.Context, options arvados.DeleteOpti
 	return resp, err
 }
 
+func (conn *Conn) UserCreate(ctx context.Context, options arvados.CreateOptions) (arvados.User, error) {
+	ep := arvados.EndpointUserCreate
+	var resp arvados.User
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+func (conn *Conn) UserUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.User, error) {
+	ep := arvados.EndpointUserUpdate
+	var resp arvados.User
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+func (conn *Conn) UserUpdateUUID(ctx context.Context, options arvados.UpdateUUIDOptions) (arvados.User, error) {
+	ep := arvados.EndpointUserUpdateUUID
+	var resp arvados.User
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+func (conn *Conn) UserMerge(ctx context.Context, options arvados.UserMergeOptions) (arvados.User, error) {
+	ep := arvados.EndpointUserUpdateUUID
+	var resp arvados.User
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+func (conn *Conn) UserActivate(ctx context.Context, options arvados.UserActivateOptions) (arvados.User, error) {
+	ep := arvados.EndpointUserUpdateUUID
+	var resp arvados.User
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+func (conn *Conn) UserSetup(ctx context.Context, options arvados.UserSetupOptions) (map[string]interface{}, error) {
+	ep := arvados.EndpointUserUpdateUUID
+	var resp map[string]interface{}
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+func (conn *Conn) UserUnsetup(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
+	ep := arvados.EndpointUserUpdateUUID
+	var resp arvados.User
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+func (conn *Conn) UserGet(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
+	ep := arvados.EndpointUserGet
+	var resp arvados.User
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+func (conn *Conn) UserGetCurrent(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
+	ep := arvados.EndpointUserGetCurrent
+	var resp arvados.User
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+func (conn *Conn) UserGetSystem(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
+	ep := arvados.EndpointUserGetSystem
+	var resp arvados.User
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+func (conn *Conn) UserList(ctx context.Context, options arvados.ListOptions) (arvados.UserList, error) {
+	ep := arvados.EndpointUserList
+	var resp arvados.UserList
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+func (conn *Conn) UserDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.User, error) {
+	ep := arvados.EndpointUserDelete
+	var resp arvados.User
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
 func (conn *Conn) APIClientAuthorizationCurrent(ctx context.Context, options arvados.GetOptions) (arvados.APIClientAuthorization, error) {
 	ep := arvados.EndpointAPIClientAuthorizationCurrent
 	var resp arvados.APIClientAuthorization
@@ -320,6 +393,7 @@ type UserSessionAuthInfo struct {
 	AlternateEmails []string `json:"alternate_emails"`
 	FirstName       string   `json:"first_name"`
 	LastName        string   `json:"last_name"`
+	Username        string   `json:"username"`
 }
 
 type UserSessionCreateOptions struct {
@@ -330,6 +404,13 @@ type UserSessionCreateOptions struct {
 func (conn *Conn) UserSessionCreate(ctx context.Context, options UserSessionCreateOptions) (arvados.LoginResponse, error) {
 	ep := arvados.APIEndpoint{Method: "POST", Path: "auth/controller/callback"}
 	var resp arvados.LoginResponse
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) UserBatchUpdate(ctx context.Context, options arvados.UserBatchUpdateOptions) (arvados.UserList, error) {
+	ep := arvados.APIEndpoint{Method: "PATCH", Path: "arvados/v1/users/batch_update"}
+	var resp arvados.UserList
 	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
 	return resp, err
 }

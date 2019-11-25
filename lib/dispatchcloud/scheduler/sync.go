@@ -51,7 +51,7 @@ func (sch *Scheduler) sync() {
 				sch.logger.WithFields(logrus.Fields{
 					"ContainerUUID": uuid,
 					"State":         ent.Container.State,
-				}).Info("container finished")
+				}).Info("container finished -- dropping from queue")
 				sch.queue.Forget(uuid)
 			}
 		case arvados.ContainerStateQueued:
@@ -66,7 +66,7 @@ func (sch *Scheduler) sync() {
 					"ContainerUUID": uuid,
 					"State":         ent.Container.State,
 					"Priority":      ent.Container.Priority,
-				}).Info("container on hold")
+				}).Info("container on hold -- dropping from queue")
 				sch.queue.Forget(uuid)
 			}
 		case arvados.ContainerStateLocked:

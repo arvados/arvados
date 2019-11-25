@@ -13,7 +13,13 @@ import (
 	check "gopkg.in/check.v1"
 )
 
-func (s *FederationSuite) TestDeferToLoginCluster(c *check.C) {
+var _ = check.Suite(&LoginSuite{})
+
+type LoginSuite struct {
+	FederationSuite
+}
+
+func (s *LoginSuite) TestDeferToLoginCluster(c *check.C) {
 	s.addHTTPRemote(c, "zhome", &arvadostest.APIStub{})
 	s.cluster.Login.LoginCluster = "zhome"
 
@@ -26,7 +32,9 @@ func (s *FederationSuite) TestDeferToLoginCluster(c *check.C) {
 		c.Check(err, check.IsNil)
 		c.Check(target.Host, check.Equals, s.cluster.RemoteClusters["zhome"].Host)
 		c.Check(target.Scheme, check.Equals, "http")
-		c.Check(target.Query().Get("remote"), check.Equals, remote)
 		c.Check(target.Query().Get("return_to"), check.Equals, returnTo)
+		c.Check(target.Query().Get("remote"), check.Equals, remote)
+		_, remotePresent := target.Query()["remote"]
+		c.Check(remotePresent, check.Equals, remote != "")
 	}
 }

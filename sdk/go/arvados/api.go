@@ -20,26 +20,41 @@ var (
 	EndpointConfigGet                     = APIEndpoint{"GET", "arvados/v1/config", ""}
 	EndpointLogin                         = APIEndpoint{"GET", "login", ""}
 	EndpointCollectionCreate              = APIEndpoint{"POST", "arvados/v1/collections", "collection"}
-	EndpointCollectionUpdate              = APIEndpoint{"PATCH", "arvados/v1/collections/:uuid", "collection"}
-	EndpointCollectionGet                 = APIEndpoint{"GET", "arvados/v1/collections/:uuid", ""}
+	EndpointCollectionUpdate              = APIEndpoint{"PATCH", "arvados/v1/collections/{uuid}", "collection"}
+	EndpointCollectionGet                 = APIEndpoint{"GET", "arvados/v1/collections/{uuid}", ""}
 	EndpointCollectionList                = APIEndpoint{"GET", "arvados/v1/collections", ""}
-	EndpointCollectionProvenance          = APIEndpoint{"GET", "arvados/v1/collections/:uuid/provenance", ""}
-	EndpointCollectionUsedBy              = APIEndpoint{"GET", "arvados/v1/collections/:uuid/used_by", ""}
-	EndpointCollectionDelete              = APIEndpoint{"DELETE", "arvados/v1/collections/:uuid", ""}
-	EndpointCollectionTrash               = APIEndpoint{"POST", "arvados/v1/collections/:uuid/trash", ""}
-	EndpointCollectionUntrash             = APIEndpoint{"POST", "arvados/v1/collections/:uuid/untrash", ""}
+	EndpointCollectionProvenance          = APIEndpoint{"GET", "arvados/v1/collections/{uuid}/provenance", ""}
+	EndpointCollectionUsedBy              = APIEndpoint{"GET", "arvados/v1/collections/{uuid}/used_by", ""}
+	EndpointCollectionDelete              = APIEndpoint{"DELETE", "arvados/v1/collections/{uuid}", ""}
+	EndpointCollectionTrash               = APIEndpoint{"POST", "arvados/v1/collections/{uuid}/trash", ""}
+	EndpointCollectionUntrash             = APIEndpoint{"POST", "arvados/v1/collections/{uuid}/untrash", ""}
 	EndpointSpecimenCreate                = APIEndpoint{"POST", "arvados/v1/specimens", "specimen"}
-	EndpointSpecimenUpdate                = APIEndpoint{"PATCH", "arvados/v1/specimens/:uuid", "specimen"}
-	EndpointSpecimenGet                   = APIEndpoint{"GET", "arvados/v1/specimens/:uuid", ""}
+	EndpointSpecimenUpdate                = APIEndpoint{"PATCH", "arvados/v1/specimens/{uuid}", "specimen"}
+	EndpointSpecimenGet                   = APIEndpoint{"GET", "arvados/v1/specimens/{uuid}", ""}
 	EndpointSpecimenList                  = APIEndpoint{"GET", "arvados/v1/specimens", ""}
-	EndpointSpecimenDelete                = APIEndpoint{"DELETE", "arvados/v1/specimens/:uuid", ""}
+	EndpointSpecimenDelete                = APIEndpoint{"DELETE", "arvados/v1/specimens/{uuid}", ""}
 	EndpointContainerCreate               = APIEndpoint{"POST", "arvados/v1/containers", "container"}
-	EndpointContainerUpdate               = APIEndpoint{"PATCH", "arvados/v1/containers/:uuid", "container"}
-	EndpointContainerGet                  = APIEndpoint{"GET", "arvados/v1/containers/:uuid", ""}
+	EndpointContainerUpdate               = APIEndpoint{"PATCH", "arvados/v1/containers/{uuid}", "container"}
+	EndpointContainerGet                  = APIEndpoint{"GET", "arvados/v1/containers/{uuid}", ""}
 	EndpointContainerList                 = APIEndpoint{"GET", "arvados/v1/containers", ""}
-	EndpointContainerDelete               = APIEndpoint{"DELETE", "arvados/v1/containers/:uuid", ""}
-	EndpointContainerLock                 = APIEndpoint{"POST", "arvados/v1/containers/:uuid/lock", ""}
-	EndpointContainerUnlock               = APIEndpoint{"POST", "arvados/v1/containers/:uuid/unlock", ""}
+	EndpointContainerDelete               = APIEndpoint{"DELETE", "arvados/v1/containers/{uuid}", ""}
+	EndpointContainerLock                 = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/lock", ""}
+	EndpointContainerUnlock               = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/unlock", ""}
+	EndpointUserActivate                  = APIEndpoint{"POST", "arvados/v1/users/{uuid}/activate", ""}
+	EndpointUserCreate                    = APIEndpoint{"POST", "arvados/v1/users", "user"}
+	EndpointUserCurrent                   = APIEndpoint{"GET", "arvados/v1/users/current", ""}
+	EndpointUserDelete                    = APIEndpoint{"DELETE", "arvados/v1/users/{uuid}", ""}
+	EndpointUserGet                       = APIEndpoint{"GET", "arvados/v1/users/{uuid}", ""}
+	EndpointUserGetCurrent                = APIEndpoint{"GET", "arvados/v1/users/current", ""}
+	EndpointUserGetSystem                 = APIEndpoint{"GET", "arvados/v1/users/system", ""}
+	EndpointUserList                      = APIEndpoint{"GET", "arvados/v1/users", ""}
+	EndpointUserMerge                     = APIEndpoint{"POST", "arvados/v1/users/merge", ""}
+	EndpointUserSetup                     = APIEndpoint{"POST", "arvados/v1/users/setup", ""}
+	EndpointUserSystem                    = APIEndpoint{"GET", "arvados/v1/users/system", ""}
+	EndpointUserUnsetup                   = APIEndpoint{"POST", "arvados/v1/users/{uuid}/unsetup", ""}
+	EndpointUserUpdate                    = APIEndpoint{"PATCH", "arvados/v1/users/{uuid}", "user"}
+	EndpointUserUpdateUUID                = APIEndpoint{"POST", "arvados/v1/users/{uuid}/update_uuid", ""}
+	EndpointUserBatchUpdate               = APIEndpoint{"PATCH", "arvados/v1/users/batch", ""}
 	EndpointAPIClientAuthorizationCurrent = APIEndpoint{"GET", "arvados/v1/api_client_authorizations/current", ""}
 )
 
@@ -80,6 +95,37 @@ type UpdateOptions struct {
 	Attrs map[string]interface{} `json:"attrs"`
 }
 
+type UpdateUUIDOptions struct {
+	UUID    string `json:"uuid"`
+	NewUUID string `json:"new_uuid"`
+}
+
+type UserActivateOptions struct {
+	UUID string `json:"uuid"`
+}
+
+type UserSetupOptions struct {
+	UUID                  string                 `json:"uuid"`
+	Email                 string                 `json:"email"`
+	OpenIDPrefix          string                 `json:"openid_prefix"`
+	RepoName              string                 `json:"repo_name"`
+	VMUUID                string                 `json:"vm_uuid"`
+	SendNotificationEmail bool                   `json:"send_notification_email"`
+	Attrs                 map[string]interface{} `json:"attrs"`
+}
+
+type UserMergeOptions struct {
+	NewUserUUID  string `json:"new_user_uuid,omitempty"`
+	OldUserUUID  string `json:"old_user_uuid,omitempty"`
+	NewUserToken string `json:"new_user_token,omitempty"`
+}
+
+type UserBatchUpdateOptions struct {
+	Updates map[string]map[string]interface{} `json:"updates"`
+}
+
+type UserBatchUpdateResponse struct{}
+
 type DeleteOptions struct {
 	UUID string `json:"uuid"`
 }
@@ -115,5 +161,18 @@ type API interface {
 	SpecimenGet(ctx context.Context, options GetOptions) (Specimen, error)
 	SpecimenList(ctx context.Context, options ListOptions) (SpecimenList, error)
 	SpecimenDelete(ctx context.Context, options DeleteOptions) (Specimen, error)
+	UserCreate(ctx context.Context, options CreateOptions) (User, error)
+	UserUpdate(ctx context.Context, options UpdateOptions) (User, error)
+	UserUpdateUUID(ctx context.Context, options UpdateUUIDOptions) (User, error)
+	UserMerge(ctx context.Context, options UserMergeOptions) (User, error)
+	UserActivate(ctx context.Context, options UserActivateOptions) (User, error)
+	UserSetup(ctx context.Context, options UserSetupOptions) (map[string]interface{}, error)
+	UserUnsetup(ctx context.Context, options GetOptions) (User, error)
+	UserGet(ctx context.Context, options GetOptions) (User, error)
+	UserGetCurrent(ctx context.Context, options GetOptions) (User, error)
+	UserGetSystem(ctx context.Context, options GetOptions) (User, error)
+	UserList(ctx context.Context, options ListOptions) (UserList, error)
+	UserDelete(ctx context.Context, options DeleteOptions) (User, error)
+	UserBatchUpdate(context.Context, UserBatchUpdateOptions) (UserList, error)
 	APIClientAuthorizationCurrent(ctx context.Context, options GetOptions) (APIClientAuthorization, error)
 }

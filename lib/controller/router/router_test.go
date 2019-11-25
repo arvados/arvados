@@ -19,7 +19,7 @@ import (
 	"git.curoverse.com/arvados.git/lib/controller/rpc"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
-	"github.com/julienschmidt/httprouter"
+	"github.com/gorilla/mux"
 	check "gopkg.in/check.v1"
 )
 
@@ -38,7 +38,7 @@ type RouterSuite struct {
 func (s *RouterSuite) SetUpTest(c *check.C) {
 	s.stub = arvadostest.APIStub{}
 	s.rtr = &router{
-		mux: httprouter.New(),
+		mux: mux.NewRouter(),
 		fed: &s.stub,
 	}
 	s.rtr.addRoutes()
@@ -225,6 +225,13 @@ func (s *RouterIntegrationSuite) TestContainerList(c *check.C) {
 	c.Check(rr.Code, check.Equals, http.StatusOK)
 	c.Check(jresp["items_available"], check.FitsTypeOf, float64(0))
 	c.Check(jresp["items_available"].(float64) > 2, check.Equals, true)
+	c.Check(jresp["items"], check.NotNil)
+	c.Check(jresp["items"], check.HasLen, 0)
+
+	_, rr, jresp = doRequest(c, s.rtr, token, "GET", `/arvados/v1/containers?filters=[["uuid","in",[]]]`, nil, nil)
+	c.Check(rr.Code, check.Equals, http.StatusOK)
+	c.Check(jresp["items_available"], check.Equals, float64(0))
+	c.Check(jresp["items"], check.NotNil)
 	c.Check(jresp["items"], check.HasLen, 0)
 
 	_, rr, jresp = doRequest(c, s.rtr, token, "GET", `/arvados/v1/containers?limit=2&select=["uuid","command"]`, nil, nil)

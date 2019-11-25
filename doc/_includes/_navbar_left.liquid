@@ -11,9 +11,9 @@ SPDX-License-Identifier: CC-BY-SA-3.0
       {% for entry in section %}
       <li><span class="nav-header">{{ entry[0] }}</span>
 	<ol class="nav nav-list">
-          {% for item in entry[1] %}        
+          {% for item in entry[1] %}
           {% assign p = site.pages[item] %}
-          <li {% if p.url == page.url %} class="active activesubnav" {% elsif p.title == page.subnavsection %} class="activesubnav" {% endif %}>
+          <li {% if p.url == page.url or p.title == page.title %} class="active activesubnav" {% elsif p.title == page.subnavsection %} class="activesubnav" {% endif %}>
             <a href="{{ site.baseurl }}{{ p.url }}">{{ p.title }}</a></li>
           {% endfor %}
         </ol>

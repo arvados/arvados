@@ -39,7 +39,7 @@ func (s *integrationSuite) SetUpSuite(c *check.C) {
 	arvadostest.StartKeep(4, true)
 
 	arv, err := arvadosclient.MakeArvadosClient()
-	arv.ApiToken = arvadostest.DataManagerToken
+	arv.ApiToken = arvadostest.SystemRootToken
 	c.Assert(err, check.IsNil)
 
 	s.keepClient, err = keepclient.MakeKeepClient(arv)
@@ -71,7 +71,7 @@ func (s *integrationSuite) SetUpTest(c *check.C) {
 
 	s.client = &arvados.Client{
 		APIHost:   os.Getenv("ARVADOS_API_HOST"),
-		AuthToken: arvadostest.DataManagerToken,
+		AuthToken: arvadostest.SystemRootToken,
 		Insecure:  true,
 	}
 }

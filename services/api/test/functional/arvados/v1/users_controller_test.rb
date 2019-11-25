@@ -1032,6 +1032,47 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_nil(users(:project_viewer).redirect_to_user_uuid)
   end
 
+  test "batch update fails for non-admin" do
+    authorize_with(:active)
+    patch(:batch_update, params: {updates: {}})
+    assert_response(403)
+  end
+
+  test "batch update" do
+    existinguuid = 'remot-tpzed-foobarbazwazqux'
+    newuuid = 'remot-tpzed-newnarnazwazqux'
+    act_as_system_user do
+      User.create!(uuid: existinguuid, email: 'root@existing.example.com')
+    end
+
+    authorize_with(:admin)
+    patch(:batch_update,
+          params: {
+            updates: {
+              existinguuid => {
+                'first_name' => 'root',
+                'email' => 'root@remot.example.com',
+                'is_active' => true,
+                'is_admin' => true,
+                'prefs' => {'foo' => 'bar'},
+              },
+              newuuid => {
+                'first_name' => 'noot',
+                'email' => 'root@remot.example.com',
+              },
+            }})
+    assert_response(:success)
+
+    assert_equal('root', User.find_by_uuid(existinguuid).first_name)
+    assert_equal('root@remot.example.com', User.find_by_uuid(existinguuid).email)
+    assert_equal(true, User.find_by_uuid(existinguuid).is_active)
+    assert_equal(true, User.find_by_uuid(existinguuid).is_admin)
+    assert_equal({'foo' => 'bar'}, User.find_by_uuid(existinguuid).prefs)
+
+    assert_equal('noot', User.find_by_uuid(newuuid).first_name)
+    assert_equal('root@remot.example.com', User.find_by_uuid(newuuid).email)
+  end
+
   NON_ADMIN_USER_DATA = ["uuid", "kind", "is_active", "email", "first_name",
                          "last_name", "username"].sort
 

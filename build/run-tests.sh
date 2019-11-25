@@ -520,6 +520,10 @@ setup_ruby_environment() {
             || fatal 'rvm gemset setup'
 
         rvm env
+        (bundle version | grep -q 2.0.2) || gem install bundler -v 2.0.2
+        bundle="$(which bundle)"
+        echo "$bundle"
+        "$bundle" version | grep 2.0.2 || fatal 'install bundler'
     else
         # When our "bundle install"s need to install new gems to
         # satisfy dependencies, we want them to go where "gem install
@@ -545,9 +549,14 @@ setup_ruby_environment() {
         echo "Will install dependencies to $(gem env gemdir)"
         echo "Will install arvados gems to $tmpdir_gem_home"
         echo "Gem search path is GEM_PATH=$GEM_PATH"
+        bundle="$(gem env gempath | cut -f1 -d:)/bin/bundle"
+        (
+            export HOME=$GEMHOME
+            ("$bundle" version | grep -q 2.0.2) \
+                || gem install --user bundler -v 2.0.2
+            "$bundle" version | grep 2.0.2
+        ) || fatal 'install bundler'
     fi
-    bundle config || gem install bundler \
-        || fatal 'install bundler'
 }
 
 with_test_gemset() {
@@ -664,11 +673,6 @@ install_env() {
 Warning: python3 could not be found. Python 3 tests will be skipped.
 
 EOF
-    fi
-
-    if ! which bundler >/dev/null
-    then
-        gem install --user-install bundler || fatal 'Could not install bundler'
     fi
 }
 
@@ -881,11 +885,11 @@ bundle_install_trylocal() {
     (
         set -e
         echo "(Running bundle install --local. 'could not find package' messages are OK.)"
-        if ! bundle install --local --no-deployment; then
+        if ! "$bundle" install --local --no-deployment; then
             echo "(Running bundle install again, without --local.)"
-            bundle install --no-deployment
+            "$bundle" install --no-deployment
         fi
-        bundle package --all
+        "$bundle" package --all
     )
 }
 
@@ -933,7 +937,8 @@ install_services/login-sync() {
 install_services/api() {
     stop_services
     cd "$WORKSPACE/services/api" \
-        && RAILS_ENV=test bundle_install_trylocal
+        && RAILS_ENV=test bundle_install_trylocal \
+            || return 1
 
     rm -f config/environments/test.rb
     cp config/environments/test.rb.example config/environments/test.rb
@@ -969,11 +974,11 @@ install_services/api() {
 
     (cd "$WORKSPACE/services/api"
      export RAILS_ENV=test
-     if bundle exec rails db:environment:set ; then
-        bundle exec rake db:drop
+     if "$bundle" exec rails db:environment:set ; then
+        "$bundle" exec rake db:drop
      fi
-     bundle exec rake db:setup \
-	 && bundle exec rake db:fixtures:load
+     "$bundle" exec rake db:setup \
+	 && "$bundle" exec rake db:fixtures:load
     )
 }
 
@@ -999,7 +1004,7 @@ install_apps/workbench() {
     cd "$WORKSPACE/apps/workbench" \
         && mkdir -p tmp/cache \
         && RAILS_ENV=test bundle_install_trylocal \
-        && RAILS_ENV=test RAILS_GROUPS=assets bundle exec rake npm:install
+        && RAILS_ENV=test RAILS_GROUPS=assets "$bundle" exec rake npm:install
 }
 
 test_doc() {
@@ -1009,7 +1014,7 @@ test_doc() {
         ARVADOS_API_HOST=qr1hi.arvadosapi.com
         # Make sure python-epydoc is installed or the next line won't
         # do much good!
-        PYTHONPATH=$WORKSPACE/sdk/python/ bundle exec rake linkchecker baseurl=file://$WORKSPACE/doc/.site/ arvados_workbench_host=https://workbench.$ARVADOS_API_HOST arvados_api_host=$ARVADOS_API_HOST
+        PYTHONPATH=$WORKSPACE/sdk/python/ "$bundle" exec rake linkchecker baseurl=file://$WORKSPACE/doc/.site/ arvados_workbench_host=https://workbench.$ARVADOS_API_HOST arvados_api_host=$ARVADOS_API_HOST
     )
 }
 
@@ -1022,12 +1027,12 @@ test_gofmt() {
 test_services/api() {
     rm -f "$WORKSPACE/services/api/git-commit.version"
     cd "$WORKSPACE/services/api" \
-        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test TESTOPTS=\'-v -d\' ${testargs[services/api]}
+        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} "$bundle" exec rake test TESTOPTS=\'-v -d\' ${testargs[services/api]}
 }
 
 test_sdk/ruby() {
     cd "$WORKSPACE/sdk/ruby" \
-        && bundle exec rake test TESTOPTS=-v ${testargs[sdk/ruby]}
+        && "$bundle" exec rake test TESTOPTS=-v ${testargs[sdk/ruby]}
 }
 
 test_sdk/R() {
@@ -1040,7 +1045,7 @@ test_sdk/R() {
 test_sdk/cli() {
     cd "$WORKSPACE/sdk/cli" \
         && mkdir -p /tmp/keep \
-        && KEEP_LOCAL_STORE=/tmp/keep bundle exec rake test TESTOPTS=-v ${testargs[sdk/cli]}
+        && KEEP_LOCAL_STORE=/tmp/keep "$bundle" exec rake test TESTOPTS=-v ${testargs[sdk/cli]}
 }
 
 test_sdk/java-v2() {
@@ -1049,7 +1054,7 @@ test_sdk/java-v2() {
 
 test_services/login-sync() {
     cd "$WORKSPACE/services/login-sync" \
-        && bundle exec rake test TESTOPTS=-v ${testargs[services/login-sync]}
+        && "$bundle" exec rake test TESTOPTS=-v ${testargs[services/login-sync]}
 }
 
 test_services/nodemanager_integration() {
@@ -1060,31 +1065,31 @@ test_services/nodemanager_integration() {
 test_apps/workbench_units() {
     local TASK="test:units"
     cd "$WORKSPACE/apps/workbench" \
-        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake ${TASK} TESTOPTS=\'-v -d\' ${testargs[apps/workbench]} ${testargs[apps/workbench_units]}
+        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} "$bundle" exec rake ${TASK} TESTOPTS=\'-v -d\' ${testargs[apps/workbench]} ${testargs[apps/workbench_units]}
 }
 
 test_apps/workbench_functionals() {
     local TASK="test:functionals"
     cd "$WORKSPACE/apps/workbench" \
-        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake ${TASK} TESTOPTS=\'-v -d\' ${testargs[apps/workbench]} ${testargs[apps/workbench_functionals]}
+        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} "$bundle" exec rake ${TASK} TESTOPTS=\'-v -d\' ${testargs[apps/workbench]} ${testargs[apps/workbench_functionals]}
 }
 
 test_apps/workbench_integration() {
     local TASK="test:integration"
     cd "$WORKSPACE/apps/workbench" \
-        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake ${TASK} TESTOPTS=\'-v -d\' ${testargs[apps/workbench]} ${testargs[apps/workbench_integration]} 
+        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} "$bundle" exec rake ${TASK} TESTOPTS=\'-v -d\' ${testargs[apps/workbench]} ${testargs[apps/workbench_integration]} 
 }
 
 test_apps/workbench_benchmark() {
     local TASK="test:benchmark"
     cd "$WORKSPACE/apps/workbench" \
-        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake ${TASK} ${testargs[apps/workbench_benchmark]}
+        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} "$bundle" exec rake ${TASK} ${testargs[apps/workbench_benchmark]}
 }
 
 test_apps/workbench_profile() {
     local TASK="test:profile"
     cd "$WORKSPACE/apps/workbench" \
-        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake ${TASK} ${testargs[apps/workbench_profile]}
+        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} "$bundle" exec rake ${TASK} ${testargs[apps/workbench_profile]}
 }
 
 install_deps() {

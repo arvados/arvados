@@ -27,6 +27,12 @@ inputs:
     default:
       class: File
       location: ../../../../tools/arvbox/bin/arvbox
+  branch:
+    type: string
+    default: master
+  logincluster:
+    type: boolean
+    default: false
 outputs:
   arvados_api_token:
     type: string
@@ -64,6 +70,7 @@ steps:
       container_name: containers
       arvbox_data: mkdir/arvbox_data
       arvbox_bin: arvbox
+      branch: branch
     out: [cluster_id, container_host, arvbox_data_out, superuser_token]
     scatter: [container_name, arvbox_data]
     scatterMethod: dotproduct
@@ -76,6 +83,7 @@ steps:
       cluster_hosts: start/container_host
       arvbox_data: start/arvbox_data_out
       arvbox_bin: arvbox
+      logincluster: logincluster
     out: []
     scatter: [container_name, this_cluster_id, arvbox_data]
     scatterMethod: dotproduct

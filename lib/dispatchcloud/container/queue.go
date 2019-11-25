@@ -133,7 +133,7 @@ func (cq *Queue) Forget(uuid string) {
 	cq.mtx.Lock()
 	defer cq.mtx.Unlock()
 	ctr := cq.current[uuid].Container
-	if ctr.State == arvados.ContainerStateComplete || ctr.State == arvados.ContainerStateCancelled {
+	if ctr.State == arvados.ContainerStateComplete || ctr.State == arvados.ContainerStateCancelled || (ctr.State == arvados.ContainerStateQueued && ctr.Priority == 0) {
 		cq.delEnt(uuid, ctr.State)
 	}
 }
