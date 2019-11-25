@@ -9,6 +9,20 @@ class SearchBoxTest < ActionDispatch::IntegrationTest
     need_javascript
   end
 
+  test "test multi site search" do
+    Rails.configuration.Workbench.MultiSiteSearch = 'true'
+    visit page_with_token('active')
+
+    within('.navbar-fixed-top') do
+      assert_selector('a', text: 'Multi-site search')
+      click_link('Multi-site search')
+    end
+
+    within('div[data-mount-mithril="Search"]') do
+      assert_selector('input#search.form-control', 'Expected to find the input search box')
+    end
+  end
+
   # test the search box
   def verify_search_box user
     if !user || !user['is_active']

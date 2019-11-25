@@ -37,6 +37,7 @@ end
 
 def poltergeist_opts
   {
+    # js_errors: false, # Ignore JS errors
     phantomjs_options: ['--ignore-ssl-errors=true'],
     port: available_port('poltergeist'),
     window_size: [1200, 800],
