@@ -4,12 +4,31 @@
 
 class Arvados::V1::UsersController < ApplicationController
   accept_attribute_as_json :prefs, Hash
+  accept_param_as_json :updates
 
   skip_before_action :find_object_by_uuid, only:
-    [:activate, :current, :system, :setup, :merge]
+    [:activate, :current, :system, :setup, :merge, :batch_update]
   skip_before_action :render_404_if_no_object, only:
-    [:activate, :current, :system, :setup, :merge]
-  before_action :admin_required, only: [:setup, :unsetup, :update_uuid]
+    [:activate, :current, :system, :setup, :merge, :batch_update]
+  before_action :admin_required, only: [:setup, :unsetup, :update_uuid, :batch_update]
+
+  # Internal API used by controller to update local cache of user
+  # records from LoginCluster.
+  def batch_update
+    @objects = []
+    params[:updates].andand.each do |uuid, attrs|
+      begin
+        u = User.find_or_create_by(uuid: uuid)
+      rescue ActiveRecord::RecordNotUnique
+        retry
+      end
+      u.update_attributes!(attrs)
+      @objects << u
+    end
+    @offset = 0
+    @limit = -1
+    render_list
+  end
 
   def current
     if current_user

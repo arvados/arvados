@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/julienschmidt/httprouter"
+	"github.com/gorilla/mux"
 )
 
 // Parse req as an Arvados V1 API request and return the request
@@ -109,9 +109,8 @@ func (rtr *router) loadRequestParams(req *http.Request, attrsKey string) (map[st
 		}
 	}
 
-	routeParams, _ := req.Context().Value(httprouter.ParamsKey).(httprouter.Params)
-	for _, p := range routeParams {
-		params[p.Key] = p.Value
+	for k, v := range mux.Vars(req) {
+		params[k] = v
 	}
 
 	if v, ok := params[attrsKey]; ok && attrsKey != "" {

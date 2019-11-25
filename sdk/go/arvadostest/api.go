@@ -121,6 +121,58 @@ func (as *APIStub) SpecimenDelete(ctx context.Context, options arvados.DeleteOpt
 	as.appendCall(as.SpecimenDelete, ctx, options)
 	return arvados.Specimen{}, as.Error
 }
+func (as *APIStub) UserCreate(ctx context.Context, options arvados.CreateOptions) (arvados.User, error) {
+	as.appendCall(as.UserCreate, ctx, options)
+	return arvados.User{}, as.Error
+}
+func (as *APIStub) UserUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.User, error) {
+	as.appendCall(as.UserUpdate, ctx, options)
+	return arvados.User{}, as.Error
+}
+func (as *APIStub) UserUpdateUUID(ctx context.Context, options arvados.UpdateUUIDOptions) (arvados.User, error) {
+	as.appendCall(as.UserUpdateUUID, ctx, options)
+	return arvados.User{}, as.Error
+}
+func (as *APIStub) UserActivate(ctx context.Context, options arvados.UserActivateOptions) (arvados.User, error) {
+	as.appendCall(as.UserActivate, ctx, options)
+	return arvados.User{}, as.Error
+}
+func (as *APIStub) UserSetup(ctx context.Context, options arvados.UserSetupOptions) (map[string]interface{}, error) {
+	as.appendCall(as.UserSetup, ctx, options)
+	return nil, as.Error
+}
+func (as *APIStub) UserUnsetup(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
+	as.appendCall(as.UserUnsetup, ctx, options)
+	return arvados.User{}, as.Error
+}
+func (as *APIStub) UserGet(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
+	as.appendCall(as.UserGet, ctx, options)
+	return arvados.User{}, as.Error
+}
+func (as *APIStub) UserGetCurrent(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
+	as.appendCall(as.UserGetCurrent, ctx, options)
+	return arvados.User{}, as.Error
+}
+func (as *APIStub) UserGetSystem(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
+	as.appendCall(as.UserGetSystem, ctx, options)
+	return arvados.User{}, as.Error
+}
+func (as *APIStub) UserList(ctx context.Context, options arvados.ListOptions) (arvados.UserList, error) {
+	as.appendCall(as.UserList, ctx, options)
+	return arvados.UserList{}, as.Error
+}
+func (as *APIStub) UserDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.User, error) {
+	as.appendCall(as.UserDelete, ctx, options)
+	return arvados.User{}, as.Error
+}
+func (as *APIStub) UserMerge(ctx context.Context, options arvados.UserMergeOptions) (arvados.User, error) {
+	as.appendCall(as.UserMerge, ctx, options)
+	return arvados.User{}, as.Error
+}
+func (as *APIStub) UserBatchUpdate(ctx context.Context, options arvados.UserBatchUpdateOptions) (arvados.UserList, error) {
+	as.appendCall(as.UserBatchUpdate, ctx, options)
+	return arvados.UserList{}, as.Error
+}
 func (as *APIStub) APIClientAuthorizationCurrent(ctx context.Context, options arvados.GetOptions) (arvados.APIClientAuthorization, error) {
 	as.appendCall(as.APIClientAuthorizationCurrent, ctx, options)
 	return arvados.APIClientAuthorization{}, as.Error
@@ -137,7 +189,6 @@ func (as *APIStub) Calls(method interface{}) []APIStubCall {
 	defer as.mtx.Unlock()
 	var calls []APIStubCall
 	for _, call := range as.calls {
-
 		if method == nil || (runtime.FuncForPC(reflect.ValueOf(call.Method).Pointer()).Name() ==
 			runtime.FuncForPC(reflect.ValueOf(method).Pointer()).Name()) {
 			calls = append(calls, call)

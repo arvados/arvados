@@ -719,7 +719,7 @@ def setup_config():
             "zzzzz": {
                 "EnableBetaController14287": ('14287' in os.environ.get('ARVADOS_EXPERIMENTAL', '')),
                 "ManagementToken": "e687950a23c3a9bceec28c6223a06c79",
-                "SystemRootToken": auth_token('data_manager'),
+                "SystemRootToken": auth_token('system_user'),
                 "API": {
                     "RequestTimeout": "30s",
                 },

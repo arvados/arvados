@@ -30,25 +30,27 @@ func (s *CommandSuite) SetUpSuite(c *check.C) {
 	os.Unsetenv("ARVADOS_API_TOKEN")
 }
 
-func (s *CommandSuite) TestBadArg(c *check.C) {
+func (s *CommandSuite) TestDump_BadArg(c *check.C) {
 	var stderr bytes.Buffer
 	code := DumpCommand.RunCommand("arvados config-dump", []string{"-badarg"}, bytes.NewBuffer(nil), bytes.NewBuffer(nil), &stderr)
 	c.Check(code, check.Equals, 2)
 	c.Check(stderr.String(), check.Matches, `(?ms)flag provided but not defined: -badarg\nUsage:\n.*`)
 }
 
-func (s *CommandSuite) TestEmptyInput(c *check.C) {
+func (s *CommandSuite) TestDump_EmptyInput(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	code := DumpCommand.RunCommand("arvados config-dump", []string{"-config", "-"}, &bytes.Buffer{}, &stdout, &stderr)
 	c.Check(code, check.Equals, 1)
 	c.Check(stderr.String(), check.Matches, `config does not define any clusters\n`)
 }
 
-func (s *CommandSuite) TestCheckNoDeprecatedKeys(c *check.C) {
+func (s *CommandSuite) TestCheck_NoWarnings(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	in := `
 Clusters:
  z1234:
+  ManagementToken: xyzzy
+  SystemRootToken: xyzzy
   API:
     MaxItemsPerResponse: 1234
   PostgreSQL:
@@ -73,7 +75,7 @@ Clusters:
 	c.Check(stderr.String(), check.Equals, "")
 }
 
-func (s *CommandSuite) TestCheckDeprecatedKeys(c *check.C) {
+func (s *CommandSuite) TestCheck_DeprecatedKeys(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	in := `
 Clusters:
@@ -86,7 +88,7 @@ Clusters:
 	c.Check(stdout.String(), check.Matches, `(?ms).*\n\- +.*MaxItemsPerResponse: 1000\n\+ +MaxItemsPerResponse: 1234\n.*`)
 }
 
-func (s *CommandSuite) TestCheckOldKeepstoreConfigFile(c *check.C) {
+func (s *CommandSuite) TestCheck_OldKeepstoreConfigFile(c *check.C) {
 	f, err := ioutil.TempFile("", "")
 	c.Assert(err, check.IsNil)
 	defer os.Remove(f.Name())
@@ -106,7 +108,7 @@ Clusters:
 	c.Check(stderr.String(), check.Matches, `(?ms).*you should remove the legacy keepstore config file.*\n`)
 }
 
-func (s *CommandSuite) TestCheckUnknownKey(c *check.C) {
+func (s *CommandSuite) TestCheck_UnknownKey(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	in := `
 Clusters:
@@ -130,7 +132,7 @@ Clusters:
 	c.Check(stderr.String(), check.Matches, `(?ms).*unexpected object in config entry: Clusters.z1234.PostgreSQL.ConnectionPool"\n.*`)
 }
 
-func (s *CommandSuite) TestDumpFormatting(c *check.C) {
+func (s *CommandSuite) TestDump_Formatting(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	in := `
 Clusters:
@@ -149,7 +151,7 @@ Clusters:
 	c.Check(stdout.String(), check.Matches, `(?ms).*http://localhost:12345: {}\n.*`)
 }
 
-func (s *CommandSuite) TestDumpUnknownKey(c *check.C) {
+func (s *CommandSuite) TestDump_UnknownKey(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	in := `
 Clusters:
