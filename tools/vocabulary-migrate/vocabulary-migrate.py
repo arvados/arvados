@@ -21,8 +21,8 @@ class VocabularyError(Exception):
     pass
 
 opts = argparse.ArgumentParser(add_help=False)
-opts.add_argument('--vocabulary-file', type=str, metavar='PATH', default=None,
-                  required=True, help="""
+opts.add_argument('--vocabulary-file', type=str, metavar='PATH', required=True,
+                  help="""
 Use vocabulary definition file at PATH for migration decisions.
 """)
 opts.add_argument('--dry-run', action='store_true', default=False,
