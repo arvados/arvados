@@ -7,8 +7,7 @@ import { AxiosInstance } from "axios";
 import { CollectionFile, CollectionDirectory } from "~/models/collection-file";
 import { WebDAV } from "~/common/webdav";
 import { AuthService } from "../auth-service/auth-service";
-import { mapTreeValues } from "~/models/tree";
-import { parseFilesResponse } from "./collection-service-files-response";
+import { extractFilesData } from "./collection-service-files-response";
 import { TrashableResourceService } from "~/services/common-service/trashable-resource-service";
 import { ApiActions } from "~/services/api/api-actions";
 
@@ -22,8 +21,7 @@ export class CollectionService extends TrashableResourceService<CollectionResour
     async files(uuid: string) {
         const request = await this.webdavClient.propfind(`c=${uuid}`);
         if (request.responseXML != null) {
-            const filesTree = parseFilesResponse(request.responseXML);
-            return mapTreeValues(this.extendFileURL)(filesTree);
+            return extractFilesData(request.responseXML);
         }
         return Promise.reject();
     }
@@ -53,7 +51,7 @@ export class CollectionService extends TrashableResourceService<CollectionResour
         );
     }
 
-    private extendFileURL = (file: CollectionDirectory | CollectionFile) => {
+    extendFileURL = (file: CollectionDirectory | CollectionFile) => {
         const baseUrl = this.webdavClient.defaults.baseURL.endsWith('/')
             ? this.webdavClient.defaults.baseURL.slice(0, -1)
             : this.webdavClient.defaults.baseURL;

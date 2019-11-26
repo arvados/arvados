@@ -21,8 +21,6 @@ import { getResource } from '~/store/resources/resources';
 import { openContextMenu } from '~/store/context-menu/context-menu-actions';
 import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
 import { formatFileSize } from "~/common/formatters";
-import { getResourceData } from "~/store/resources-data/resources-data";
-import { ResourceData } from "~/store/resources-data/resources-data-reducer";
 import { openDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { PropertyChipComponent } from '~/views-components/resource-properties-form/property-chip';
@@ -59,22 +57,20 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 interface CollectionPanelDataProps {
     item: CollectionResource;
-    data: ResourceData;
 }
 
 type CollectionPanelProps = CollectionPanelDataProps & DispatchProp
     & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
 
 export const CollectionPanel = withStyles(styles)(
-        connect((state: RootState, props: RouteComponentProps<{ id: string }>) => {
-            const item = getResource(props.match.params.id)(state.resources);
-            const data = getResourceData(props.match.params.id)(state.resourcesData);
-            return { item, data };
-        })(
+    connect((state: RootState, props: RouteComponentProps<{ id: string }>) => {
+        const item = getResource(props.match.params.id)(state.resources);
+        return { item };
+    })(
         class extends React.Component<CollectionPanelProps> {
 
             render() {
-                const { classes, item, data, dispatch } = this.props;
+                const { classes, item, dispatch } = this.props;
                 return item
                     ? <>
                         <Card className={classes.card}>
@@ -107,9 +103,9 @@ export const CollectionPanel = withStyles(styles)(
                                             label='Portable data hash'
                                             linkToUuid={item && item.portableDataHash} />
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                            label='Number of files' value={data && data.fileCount} />
+                                            label='Number of files' value={item && item.fileCount} />
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                            label='Content size' value={data && formatFileSize(data.fileSize)} />
+                                            label='Content size' value={item && formatFileSize(item.fileSizeTotal)} />
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                                             label='Owner' linkToUuid={item && item.ownerUuid} />
                                         {(item.properties.container_request || item.properties.containerRequest) &&

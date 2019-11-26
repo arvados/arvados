@@ -28,9 +28,6 @@ import { DataExplorer, getDataExplorer } from '~/store/data-explorer/data-explor
 import { ListResults } from '~/services/common-service/common-service';
 import { loadContainers } from '~/store/processes/processes-actions';
 import { ResourceKind } from '~/models/resource';
-import { getResource } from "~/store/resources/resources";
-import { CollectionResource } from "~/models/collection";
-import { resourcesDataActions } from "~/store/resources-data/resources-data-actions";
 import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
 import { serializeResourceTypeFilters } from '~/store/resource-type-filters/resource-type-filters';
 import { updatePublicFavorites } from '~/store/public-favorites/public-favorites-actions';
@@ -58,7 +55,6 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
                 api.dispatch<any>(updateFavorites(resourceUuids));
                 api.dispatch<any>(updatePublicFavorites(resourceUuids));
                 api.dispatch(updateResources(response.items));
-                api.dispatch<any>(updateResourceData(resourceUuids));
                 await api.dispatch<any>(loadMissingProcessesInformation(response.items));
                 api.dispatch(setItems(response));
             } catch (e) {
@@ -89,19 +85,6 @@ export const loadMissingProcessesInformation = (resources: GroupContentsResource
                 new FilterBuilder().addIn('uuid', containerUuids).getFilters()
             ));
         }
-    };
-
-export const updateResourceData = (resourceUuids: string[]) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        resourceUuids.map(async uuid => {
-            const resource = getResource<CollectionResource>(uuid)(getState().resources);
-            if (resource && resource.kind === ResourceKind.COLLECTION) {
-                const files = await services.collectionService.files(uuid);
-                if (files) {
-                    dispatch(resourcesDataActions.SET_FILES({ uuid, files }));
-                }
-            }
-        });
     };
 
 export const setItems = (listResults: ListResults<GroupContentsResource>) =>

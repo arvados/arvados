@@ -4,17 +4,16 @@
 
 import { unionize, ofType, UnionOf } from "~/common/unionize";
 import { Dispatch } from "redux";
-import { CollectionFilesTree, CollectionFileType } from "~/models/collection-file";
+import { CollectionFilesTree, CollectionFileType, createCollectionFilesTree } from "~/models/collection-file";
 import { ServiceRepository } from "~/services/services";
 import { RootState } from "../../store";
 import { snackbarActions, SnackbarKind } from "../../snackbar/snackbar-actions";
 import { dialogActions } from '../../dialog/dialog-actions';
-import { getNodeValue } from "~/models/tree";
+import { getNodeValue, mapTreeValues } from "~/models/tree";
 import { filterCollectionFilesBySelection } from './collection-panel-files-state';
 import { startSubmit, stopSubmit, initialize, FormErrors } from 'redux-form';
 import { getDialog } from "~/store/dialog/dialog-reducer";
-import { getFileFullPath } from "~/services/collection-service/collection-service-files-response";
-import { resourcesDataActions } from "~/store/resources-data/resources-data-actions";
+import { getFileFullPath, sortFilesTree } from "~/services/collection-service/collection-service-files-response";
 
 export const collectionPanelFilesAction = unionize({
     SET_COLLECTION_FILES: ofType<CollectionFilesTree>(),
@@ -29,8 +28,13 @@ export type CollectionPanelFilesAction = UnionOf<typeof collectionPanelFilesActi
 export const loadCollectionFiles = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const files = await services.collectionService.files(uuid);
-        dispatch(collectionPanelFilesAction.SET_COLLECTION_FILES(files));
-        dispatch(resourcesDataActions.SET_FILES({ uuid, files }));
+
+        // Given the array of directories and files, create the appropriate tree nodes,
+        // sort them, and add the complete url to each.
+        const tree = createCollectionFilesTree(files);
+        const sorted = sortFilesTree(tree);
+        const mapped = mapTreeValues(services.collectionService.extendFileURL)(sorted);
+        dispatch(collectionPanelFilesAction.SET_COLLECTION_FILES(mapped));
     };
 
 export const removeCollectionFiles = (filePaths: string[]) =>

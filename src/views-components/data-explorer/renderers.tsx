@@ -19,13 +19,13 @@ import { compose, Dispatch } from 'redux';
 import { WorkflowResource } from '~/models/workflow';
 import { ResourceStatus } from '~/views/workflow-panel/workflow-panel-view';
 import { getUuidPrefix, openRunProcess } from '~/store/workflow-panel/workflow-panel-actions';
-import { getResourceData } from "~/store/resources-data/resources-data";
 import { openSharingDialog } from '~/store/sharing-dialog/sharing-dialog-actions';
 import { UserResource } from '~/models/user';
 import { toggleIsActive, toggleIsAdmin } from '~/store/users/users-actions';
 import { LinkResource } from '~/models/link';
 import { navigateTo } from '~/store/navigation/navigation-action';
 import { withResourceData } from '~/views-components/data-explorer/with-resources';
+import { CollectionResource } from '~/models/collection';
 
 const renderName = (dispatch: Dispatch, item: { name: string; uuid: string, kind: string }) =>
     <Grid container alignItems="center" wrap="nowrap" spacing={16}>
@@ -398,8 +398,8 @@ export const renderFileSize = (fileSize?: number) =>
 
 export const ResourceFileSize = connect(
     (state: RootState, props: { uuid: string }) => {
-        const resource = getResourceData(props.uuid)(state.resourcesData);
-        return { fileSize: resource ? resource.fileSize : 0 };
+        const resource = getResource<CollectionResource>(props.uuid)(state.resources);
+        return { fileSize: resource ? resource.fileSizeTotal : 0 };
     })((props: { fileSize?: number }) => renderFileSize(props.fileSize));
 
 const renderOwner = (owner: string) =>

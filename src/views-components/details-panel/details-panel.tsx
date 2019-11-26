@@ -21,8 +21,6 @@ import { EmptyDetails } from "./empty-details";
 import { DetailsData } from "./details-data";
 import { DetailsResource } from "~/models/details";
 import { getResource } from '~/store/resources/resources';
-import { ResourceData } from "~/store/resources-data/resources-data-reducer";
-import { getResourceData } from "~/store/resources-data/resources-data";
 import { toggleDetailsPanel, SLIDE_TIMEOUT } from '~/store/details-panel/details-panel-action';
 import { FileDetails } from '~/views-components/details-panel/file-details';
 import { getNode } from '~/models/tree';
@@ -62,13 +60,13 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 const EMPTY_RESOURCE: EmptyResource = { kind: undefined, name: 'Projects' };
 
-const getItem = (res: DetailsResource, resourceData?: ResourceData): DetailsData => {
+const getItem = (res: DetailsResource): DetailsData => {
     if ('kind' in res) {
         switch (res.kind) {
             case ResourceKind.PROJECT:
                 return new ProjectDetails(res);
             case ResourceKind.COLLECTION:
-                return new CollectionDetails(res, resourceData);
+                return new CollectionDetails(res);
             case ResourceKind.PROCESS:
                 return new ProcessDetails(res);
             default:
@@ -79,13 +77,12 @@ const getItem = (res: DetailsResource, resourceData?: ResourceData): DetailsData
     }
 };
 
-const mapStateToProps = ({ detailsPanel, resources, resourcesData, collectionPanelFiles }: RootState) => {
+const mapStateToProps = ({ detailsPanel, resources, collectionPanelFiles }: RootState) => {
     const resource = getResource(detailsPanel.resourceUuid)(resources) as DetailsResource | undefined;
     const file = getNode(detailsPanel.resourceUuid)(collectionPanelFiles);
-    const resourceData = getResourceData(detailsPanel.resourceUuid)(resourcesData);
     return {
         isOpened: detailsPanel.isOpened,
-        item: getItem(resource || (file && file.value) || EMPTY_RESOURCE, resourceData),
+        item: getItem(resource || (file && file.value) || EMPTY_RESOURCE),
     };
 };
 
