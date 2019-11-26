@@ -8,7 +8,7 @@ import {
     SearchBarActions
 } from '~/store/search-bar/search-bar-actions';
 import { GroupContentsResource } from '~/services/groups-service/groups-service';
-import { SearchBarAdvanceFormData } from '~/models/search-bar';
+import { SearchBarAdvancedFormData } from '~/models/search-bar';
 
 type SearchResult = GroupContentsResource;
 export type SearchBarSelectedItem = {
@@ -21,7 +21,7 @@ interface SearchBar {
     open: boolean;
     searchResults: SearchResult[];
     searchValue: string;
-    savedQueries: SearchBarAdvanceFormData[];
+    savedQueries: SearchBarAdvancedFormData[];
     recentQueries: string[];
     selectedItem: SearchBarSelectedItem;
 }
@@ -47,7 +47,7 @@ const initialState: SearchBar = {
 
 const makeSelectedItem = (id: string, query?: string): SearchBarSelectedItem => ({ id, query: query ? query : id });
 
-const makeQueryList = (recentQueries: string[], savedQueries: SearchBarAdvanceFormData[]) => {
+const makeQueryList = (recentQueries: string[], savedQueries: SearchBarAdvancedFormData[]) => {
     const recentIds = recentQueries.map((q, idx) => makeSelectedItem(`RQ-${idx}-${q}`, q));
     const savedIds = savedQueries.map((q, idx) => makeSelectedItem(`SQ-${idx}-${q.queryName}`, getQueryFromAdvancedData(q)));
     return recentIds.concat(savedIds);

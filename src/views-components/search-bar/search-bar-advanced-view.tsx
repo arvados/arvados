@@ -7,13 +7,13 @@ import { reduxForm, InjectedFormProps, reset } from 'redux-form';
 import { compose, Dispatch } from 'redux';
 import { Paper, StyleRulesCallback, withStyles, WithStyles, Button, Grid, IconButton, CircularProgress } from '@material-ui/core';
 import {
-    SEARCH_BAR_ADVANCE_FORM_NAME, SEARCH_BAR_ADVANCE_FORM_PICKER_ID,
-    searchAdvanceData,
+    SEARCH_BAR_ADVANCED_FORM_NAME, SEARCH_BAR_ADVANCED_FORM_PICKER_ID,
+    searchAdvancedData,
     setSearchValueFromAdvancedData
 } from '~/store/search-bar/search-bar-actions';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { CloseIcon } from '~/components/icon/icon';
-import { SearchBarAdvanceFormData } from '~/models/search-bar';
+import { SearchBarAdvancedFormData } from '~/models/search-bar';
 import {
     SearchBarTypeField, SearchBarClusterField, SearchBarProjectField, SearchBarTrashField,
     SearchBarDateFromField, SearchBarDateToField, SearchBarPropertiesField,
@@ -100,15 +100,15 @@ const validate = (values: any) => {
 };
 
 export const SearchBarAdvancedView = compose(
-    reduxForm<SearchBarAdvanceFormData, SearchBarAdvancedViewProps>({
-        form: SEARCH_BAR_ADVANCE_FORM_NAME,
+    reduxForm<SearchBarAdvancedFormData, SearchBarAdvancedViewProps>({
+        form: SEARCH_BAR_ADVANCED_FORM_NAME,
         validate,
-        onSubmit: (data: SearchBarAdvanceFormData, dispatch: Dispatch) => {
-            dispatch<any>(searchAdvanceData(data));
-            dispatch(reset(SEARCH_BAR_ADVANCE_FORM_NAME));
-            dispatch(treePickerActions.DEACTIVATE_TREE_PICKER_NODE({ pickerId: SEARCH_BAR_ADVANCE_FORM_PICKER_ID }));
+        onSubmit: (data: SearchBarAdvancedFormData, dispatch: Dispatch) => {
+            dispatch<any>(searchAdvancedData(data));
+            dispatch(reset(SEARCH_BAR_ADVANCED_FORM_NAME));
+            dispatch(treePickerActions.DEACTIVATE_TREE_PICKER_NODE({ pickerId: SEARCH_BAR_ADVANCED_FORM_PICKER_ID }));
         },
-        onChange: (data: SearchBarAdvanceFormData, dispatch: Dispatch, props: any, prevData: SearchBarAdvanceFormData) => {
+        onChange: (data: SearchBarAdvancedFormData, dispatch: Dispatch, props: any, prevData: SearchBarAdvancedFormData) => {
             dispatch<any>(setSearchValueFromAdvancedData(data, prevData));
         },
     }),

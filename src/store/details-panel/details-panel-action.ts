@@ -60,8 +60,14 @@ export const createProjectProperty = (data: TagProperty) =>
         dispatch(startSubmit(PROJECT_PROPERTIES_FORM_NAME));
         try {
             if (project) {
-                project.properties[data.key] = data.value;
-                const updatedProject = await services.projectService.update(project.uuid, { properties: project.properties });
+                const updatedProject = await services.projectService.update(
+                    project.uuid, {
+                        properties: {
+                            ...JSON.parse(JSON.stringify(project.properties)),
+                            [data.keyID || data.key]: data.valueID || data.value
+                        }
+                    }
+                );
                 dispatch(resourcesActions.SET_RESOURCES([updatedProject]));
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Property has been successfully added.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
                 dispatch(stopSubmit(PROJECT_PROPERTIES_FORM_NAME));

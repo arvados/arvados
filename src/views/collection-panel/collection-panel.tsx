@@ -5,7 +5,7 @@
 import * as React from 'react';
 import {
     StyleRulesCallback, WithStyles, withStyles, Card,
-    CardHeader, IconButton, CardContent, Grid, Chip, Tooltip
+    CardHeader, IconButton, CardContent, Grid, Tooltip
 } from '@material-ui/core';
 import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from 'react-router';
@@ -24,8 +24,8 @@ import { formatFileSize } from "~/common/formatters";
 import { getResourceData } from "~/store/resources-data/resources-data";
 import { ResourceData } from "~/store/resources-data/resources-data-reducer";
 import { openDetailsPanel } from '~/store/details-panel/details-panel-action';
-import * as CopyToClipboard from 'react-copy-to-clipboard';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
+import { PropertyChipComponent } from '~/views-components/resource-properties-form/property-chip';
 
 type CssRules = 'card' | 'iconHeader' | 'tag' | 'label' | 'value' | 'link';
 
@@ -66,11 +66,11 @@ type CollectionPanelProps = CollectionPanelDataProps & DispatchProp
     & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
 
 export const CollectionPanel = withStyles(styles)(
-    connect((state: RootState, props: RouteComponentProps<{ id: string }>) => {
-        const item = getResource(props.match.params.id)(state.resources);
-        const data = getResourceData(props.match.params.id)(state.resourcesData);
-        return { item, data };
-    })(
+        connect((state: RootState, props: RouteComponentProps<{ id: string }>) => {
+            const item = getResource(props.match.params.id)(state.resources);
+            const data = getResourceData(props.match.params.id)(state.resourcesData);
+            return { item, data };
+        })(
         class extends React.Component<CollectionPanelProps> {
 
             render() {
@@ -130,16 +130,12 @@ export const CollectionPanel = withStyles(styles)(
                                         <CollectionTagForm />
                                     </Grid>
                                     <Grid item xs={12}>
-                                        {
-                                            Object.keys(item.properties).map(k => {
-                                                const label = `${k}: ${item.properties[k]}`;
-                                                return <CopyToClipboard key={k} text={label} onCopy={() => this.onCopy("Copied")}>
-                                                    <Chip className={classes.tag}
-                                                        onDelete={this.handleDelete(k)}
-                                                        label={label} />
-                                                </CopyToClipboard>;
-                                            })
-                                        }
+                                        {Object.keys(item.properties).map(k =>
+                                            <PropertyChipComponent
+                                                key={k} className={classes.tag}
+                                                onDelete={this.handleDelete(k)}
+                                                propKey={k} propValue={item.properties[k]} />
+                                        )}
                                     </Grid>
                                 </Grid>
                             </CardContent>

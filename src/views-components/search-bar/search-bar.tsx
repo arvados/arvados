@@ -16,10 +16,11 @@ import {
     navigateToItem,
     editSavedQuery,
     changeData,
-    submitData, moveUp, moveDown, setAdvancedDataFromSearchValue
+    submitData, moveUp, moveDown, setAdvancedDataFromSearchValue, SEARCH_BAR_ADVANCED_FORM_NAME
 } from '~/store/search-bar/search-bar-actions';
 import { SearchBarView, SearchBarActionProps, SearchBarDataProps } from '~/views-components/search-bar/search-bar-view';
-import { SearchBarAdvanceFormData } from '~/models/search-bar';
+import { SearchBarAdvancedFormData } from '~/models/search-bar';
+import { Vocabulary } from '~/models/vocabulary';
 
 const mapStateToProps = ({ searchBar, form }: RootState): SearchBarDataProps => {
     return {
@@ -29,10 +30,10 @@ const mapStateToProps = ({ searchBar, form }: RootState): SearchBarDataProps => 
         searchResults: searchBar.searchResults,
         selectedItem: searchBar.selectedItem,
         savedQueries: searchBar.savedQueries,
-        tags: form.searchBarAdvanceFormName,
-        saveQuery: form.searchBarAdvanceFormName &&
-            form.searchBarAdvanceFormName.values &&
-            form.searchBarAdvanceFormName.values.saveQuery
+        tags: form[SEARCH_BAR_ADVANCED_FORM_NAME],
+        saveQuery: form[SEARCH_BAR_ADVANCED_FORM_NAME] &&
+            form[SEARCH_BAR_ADVANCED_FORM_NAME].values &&
+            form[SEARCH_BAR_ADVANCED_FORM_NAME].values!.saveQuery
     };
 };
 
@@ -47,10 +48,10 @@ const mapDispatchToProps = (dispatch: Dispatch): SearchBarActionProps => ({
     deleteSavedQuery: (id: number) => dispatch<any>(deleteSavedQuery(id)),
     openSearchView: () => dispatch<any>(openSearchView()),
     navigateTo: (uuid: string) => dispatch<any>(navigateToItem(uuid)),
-    editSavedQuery: (data: SearchBarAdvanceFormData) => dispatch<any>(editSavedQuery(data)),
+    editSavedQuery: (data: SearchBarAdvancedFormData) => dispatch<any>(editSavedQuery(data)),
     moveUp: () => dispatch<any>(moveUp()),
     moveDown: () => dispatch<any>(moveDown()),
-    setAdvancedDataFromSearchValue: (search: string) => dispatch<any>(setAdvancedDataFromSearchValue(search))
+    setAdvancedDataFromSearchValue: (search: string, vocabulary: Vocabulary) => dispatch<any>(setAdvancedDataFromSearchValue(search, vocabulary))
 });
 
 export const SearchBar = connect(mapStateToProps, mapDispatchToProps)(SearchBarView);
