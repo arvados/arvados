@@ -111,8 +111,10 @@ def main(arguments=None):
                 if not args.dry_run and migrated_counter % 100 == 0:
                     logger.info('Migrating {} objects...'.format(migrated_counter))
 
-    if not args.dry_run:
-        logger.info('Done, total object migrated: {}.'.format(migrated_counter))
+    if args.dry_run and migrated_counter == 0:
+        logger.info('Nothing to do.')
+    elif not args.dry_run:
+        logger.info('Done, total objects migrated: {}.'.format(migrated_counter))
     return 0
 
 if __name__ == "__main__":
