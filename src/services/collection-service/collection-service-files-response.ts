@@ -35,16 +35,16 @@ export const extractFilesData = (document: Document) => {
                 .replace(collectionUrlPrefix, '')
                 .replace(nameSuffix, '');
 
-
+            const parentPath = directory.replace(/\/$/, '');
             const data = {
                 url,
                 id: [
                     collectionUuid ? collectionUuid : '',
-                    directory ? '/' + directory.replace(/^\//, '') : '',
+                    directory ? parentPath : '',
                     '/' + name
                 ].join(''),
                 name,
-                path: directory,
+                path: parentPath,
             };
 
             return getTagValue(element, 'D:resourcetype', '')
