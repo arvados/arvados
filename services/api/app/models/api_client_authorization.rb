@@ -111,6 +111,7 @@ class ApiClientAuthorization < ArvadosModel
   def self.check_system_root_token token
     if token == Rails.configuration.SystemRootToken
       return ApiClientAuthorization.new(user: User.find_by_uuid(system_user_uuid),
+                                        uuid: uuid_prefix+"-gj3su-000000000000000",
                                         api_token: token,
                                         api_client: ApiClient.new(is_trusted: true, url_prefix: ""))
     else
