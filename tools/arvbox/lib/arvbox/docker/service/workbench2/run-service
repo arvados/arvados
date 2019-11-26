@@ -21,8 +21,8 @@ fi
 cat <<EOF > /usr/src/workbench2/public/config.json
 {
   "API_HOST": "${localip}:${services[controller-ssl]}",
-  "VOCABULARY_URL": "vocabulary-example.json",
-  "FILE_VIEWERS_CONFIG_URL": "file-viewers-example.json"
+  "VOCABULARY_URL": "/vocabulary-example.json",
+  "FILE_VIEWERS_CONFIG_URL": "/file-viewers-example.json"
 }
 EOF
 
