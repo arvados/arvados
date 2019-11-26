@@ -49,7 +49,7 @@ module UsersTestHelper
                                  link_class: 'permission',
                                  name: 'can_login').where("head_uuid like ?", User.uuid_like_pattern)
 
-    # these don't get added any more!  they shouldn't be appear ever.
+    # these don't get added any more!  they shouldn't appear ever.
     assert !oid_login_perms.any?, "expected all oid_login_perms deleted"
 
     repo_perms = Link.where(tail_uuid: uuid,
