@@ -16,6 +16,45 @@ import (
 	"github.com/gorilla/mux"
 )
 
+func guessAndParse(k, v string) (interface{}, error) {
+	// All of these form values arrive as strings, so we need some
+	// type-guessing to accept non-string inputs:
+	//
+	// Values for parameters that take ints (limit=1) or bools
+	// (include_trash=1) are parsed accordingly.
+	//
+	// "null" and "" are nil.
+	//
+	// Values that look like JSON objects, arrays, or strings are
+	// parsed as JSON.
+	//
+	// The rest are left as strings.
+	switch {
+	case intParams[k]:
+		return strconv.ParseInt(v, 10, 64)
+	case boolParams[k]:
+		return stringToBool(v), nil
+	case v == "null" || v == "":
+		return nil, nil
+	case strings.HasPrefix(v, "["):
+		var j []interface{}
+		err := json.Unmarshal([]byte(v), &j)
+		return j, err
+	case strings.HasPrefix(v, "{"):
+		var j map[string]interface{}
+		err := json.Unmarshal([]byte(v), &j)
+		return j, err
+	case strings.HasPrefix(v, "\""):
+		var j string
+		err := json.Unmarshal([]byte(v), &j)
+		return j, err
+	default:
+		return v, nil
+	}
+	// TODO: Need to accept "?foo[]=bar&foo[]=baz" as
+	// foo=["bar","baz"]?
+}
+
 // Parse req as an Arvados V1 API request and return the request
 // parameters.
 //
@@ -33,56 +72,11 @@ func (rtr *router) loadRequestParams(req *http.Request, attrsKey string) (map[st
 	// Content-Type is application/x-www-form-urlencoded -- the
 	// request body.
 	for k, values := range req.Form {
-		// All of these form values arrive as strings, so we
-		// need some type-guessing to accept non-string
-		// inputs:
-		//
-		// Values for parameters that take ints (limit=1) or
-		// bools (include_trash=1) are parsed accordingly.
-		//
-		// "null" and "" are nil.
-		//
-		// Values that look like JSON objects, arrays, or
-		// strings are parsed as JSON.
-		//
-		// The rest are left as strings.
 		for _, v := range values {
-			switch {
-			case intParams[k]:
-				params[k], err = strconv.ParseInt(v, 10, 64)
-				if err != nil {
-					return nil, err
-				}
-			case boolParams[k]:
-				params[k] = stringToBool(v)
-			case v == "null" || v == "":
-				params[k] = nil
-			case strings.HasPrefix(v, "["):
-				var j []interface{}
-				err := json.Unmarshal([]byte(v), &j)
-				if err != nil {
-					return nil, err
-				}
-				params[k] = j
-			case strings.HasPrefix(v, "{"):
-				var j map[string]interface{}
-				err := json.Unmarshal([]byte(v), &j)
-				if err != nil {
-					return nil, err
-				}
-				params[k] = j
-			case strings.HasPrefix(v, "\""):
-				var j string
-				err := json.Unmarshal([]byte(v), &j)
-				if err != nil {
-					return nil, err
-				}
-				params[k] = j
-			default:
-				params[k] = v
+			params[k], err = guessAndParse(k, v)
+			if err != nil {
+				return nil, err
 			}
-			// TODO: Need to accept "?foo[]=bar&foo[]=baz"
-			// as foo=["bar","baz"]?
 		}
 	}
 
@@ -98,7 +92,20 @@ func (rtr *router) loadRequestParams(req *http.Request, attrsKey string) (map[st
 			return nil, httpError(http.StatusBadRequest, err)
 		}
 		for k, v := range jsonParams {
-			params[k] = v
+			switch v := v.(type) {
+			case string:
+				// The Ruby "arv" cli tool sends a
+				// JSON-encode params map with
+				// JSON-encoded values.
+				dec, err := guessAndParse(k, v)
+				if err != nil {
+					return nil, err
+				}
+				jsonParams[k] = dec
+				params[k] = dec
+			default:
+				params[k] = v
+			}
 		}
 		if attrsKey != "" && params[attrsKey] == nil {
 			// Copy top-level parameters from JSON request
