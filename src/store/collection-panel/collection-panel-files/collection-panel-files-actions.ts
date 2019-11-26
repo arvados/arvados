@@ -28,6 +28,9 @@ export type CollectionPanelFilesAction = UnionOf<typeof collectionPanelFilesActi
 export const loadCollectionFiles = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const files = await services.collectionService.files(uuid);
+
+        // Given the array of directories and files, create the appropriate tree nodes,
+        // sort them, and add the complete url to each.
         const tree = createCollectionFilesTree(files);
         const sorted = sortFilesTree(tree);
         const mapped = mapTreeValues(services.collectionService.extendFileURL)(sorted);
