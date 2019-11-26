@@ -7,7 +7,7 @@ import { memoize } from 'lodash/fp';
 import { InjectedFormProps, Field } from 'redux-form';
 import { WithDialogProps } from '~/store/dialog/with-dialog';
 import { FormDialog } from '~/components/form-dialog/form-dialog';
-import { ProjectTreePickerField } from '~/views-components/project-tree-picker/project-tree-picker';
+import { ProjectTreePickerField } from '~/views-components/projects-tree-picker/tree-picker-field';
 import { COPY_NAME_VALIDATION, COPY_FILE_VALIDATION } from '~/validators/validators';
 import { TextField } from "~/components/text-field/text-field";
 import { CopyFormDialogData } from '~/store/copy-dialog/copy-dialog';
@@ -34,6 +34,6 @@ const CopyDialogFields = memoize((pickerId: string) =>
             <Field
                 name="ownerUuid"
                 component={ProjectTreePickerField}
-                validate={COPY_FILE_VALIDATION} 
+                validate={COPY_FILE_VALIDATION}
                 pickerId={pickerId}/>
         </span>);
