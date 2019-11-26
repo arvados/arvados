@@ -143,6 +143,30 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     assert_equal 'blarney@example.com', json_response['email']
   end
 
+  test 'remote user is deactivated' do
+    Rails.configuration.RemoteClusters['zbbbb'].ActivateUsers = true
+    get '/arvados/v1/users/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
+    assert_response :success
+    assert_equal true, json_response['is_active']
+
+    # revoke original token
+    @stub_content[:is_active] = false
+
+    # simulate cache expiry
+    ApiClientAuthorization.where(
+      uuid: salted_active_token(remote: 'zbbbb').split('/')[1]).
+      update_all(expires_at: db_current_time - 1.minute)
+
+    # re-authorize after cache expires
+    get '/arvados/v1/users/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
+    assert_equal false, json_response['is_active']
+
+  end
+
   test 'authenticate with remote token, remote username conflicts with local' do
     @stub_content[:username] = 'active'
     get '/arvados/v1/users/current',
@@ -253,6 +277,24 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     assert_includes(group_uuids, groups(:aproject).uuid)
     refute_includes(group_uuids, groups(:trashed_project).uuid)
     refute_includes(group_uuids, groups(:testusergroup_admins).uuid)
+  end
+
+  test 'do not auto-activate user from untrusted cluster' do
+    Rails.configuration.RemoteClusters['zbbbb'].AutoSetupNewUsers = false
+    Rails.configuration.RemoteClusters['zbbbb'].ActivateUsers = false
+    get '/arvados/v1/users/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
+    assert_response :success
+    assert_equal 'zbbbb-tpzed-000000000000000', json_response['uuid']
+    assert_equal false, json_response['is_admin']
+    assert_equal false, json_response['is_active']
+    assert_equal 'foo@example.com', json_response['email']
+    assert_equal 'barney', json_response['username']
+    post '/arvados/v1/users/zbbbb-tpzed-000000000000000/activate',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
+    assert_response 422
   end
 
   test 'auto-activate user from trusted cluster' do

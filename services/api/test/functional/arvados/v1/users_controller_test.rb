@@ -113,11 +113,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_not_nil created['email'], 'expected non-nil email'
     assert_nil created['identity_url'], 'expected no identity_url'
 
-    # arvados#user, repo link and link add user to 'All users' group
-    verify_links_added 4
-
-    verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
-        created['uuid'], created['email'], 'arvados#user', false, 'User'
+    # repo link and link add user to 'All users' group
+    verify_links_added 3
 
     verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
         "foo/#{repo_name}", created['uuid'], 'arvados#repository', true, 'Repository'
@@ -255,8 +252,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_not_nil response_object['uuid'], 'expected uuid for the new user'
     assert_equal response_object['email'], 'foo@example.com', 'expected given email'
 
-    # four extra links; system_group, login, group and repo perms
-    verify_links_added 4
+    # three extra links; system_group, group and repo perms
+    verify_links_added 3
   end
 
   test "setup user with fake vm and expect error" do
@@ -292,8 +289,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_not_nil response_object['uuid'], 'expected uuid for the new user'
     assert_equal response_object['email'], 'foo@example.com', 'expected given email'
 
-    # five extra links; system_group, login, group, vm, repo
-    verify_links_added 5
+    # four extra links; system_group, group, vm, repo
+    verify_links_added 4
   end
 
   test "setup user with valid email, no vm and no repo as input" do
@@ -310,11 +307,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_not_nil response_object['uuid'], 'expected uuid for new user'
     assert_equal response_object['email'], 'foo@example.com', 'expected given email'
 
-    # three extra links; system_group, login, and group
-    verify_links_added 3
-
-    verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
-        response_object['uuid'], response_object['email'], 'arvados#user', false, 'User'
+    # two extra links; system_group, and group
+    verify_links_added 2
 
     verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
         'All users', response_object['uuid'], 'arvados#group', true, 'Group'
@@ -347,8 +341,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_equal 'test_first_name', response_object['first_name'],
         'expecting first name'
 
-    # five extra links; system_group, login, group, repo and vm
-    verify_links_added 5
+    # four extra links; system_group, group, repo and vm
+    verify_links_added 4
   end
 
   test "setup user with an existing user email and check different object is created" do
@@ -370,8 +364,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_not_equal response_object['uuid'], inactive_user['uuid'],
         'expected different uuid after create operation'
     assert_equal inactive_user['email'], response_object['email'], 'expected given email'
-    # system_group, openid, group, and repo. No vm link.
-    verify_links_added 4
+    # system_group, group, and repo. No vm link.
+    verify_links_added 3
   end
 
   test "setup user with openid prefix" do
@@ -398,11 +392,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_nil created['identity_url'], 'expected no identity_url'
 
     # verify links
-    # four new links: system_group, arvados#user, repo, and 'All users' group.
-    verify_links_added 4
-
-    verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
-        created['uuid'], created['email'], 'arvados#user', false, 'User'
+    # three new links: system_group, repo, and 'All users' group.
+    verify_links_added 3
 
     verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
         'foo/usertestrepo', created['uuid'], 'arvados#repository', true, 'Repository'
@@ -457,12 +448,10 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_not_nil created['email'], 'expected non-nil email'
     assert_nil created['identity_url'], 'expected no identity_url'
 
-    # five new links: system_group, arvados#user, repo, vm and 'All
-    # users' group link
-    verify_links_added 5
+    # four new links: system_group, repo, vm and 'All users' group link
+    verify_links_added 4
 
-    verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
-        created['uuid'], created['email'], 'arvados#user', false, 'User'
+    # system_group isn't part of the response.  See User#add_system_group_permission_link
 
     verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
         'foo/usertestrepo', created['uuid'], 'arvados#repository', true, 'Repository'

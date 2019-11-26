@@ -4,35 +4,36 @@ SPDX-License-Identifier: AGPL-3.0 %>
 
 <div class="row">
   <div class="col-md-6">
+
     <p>
+      This page enables you to <a href="https://doc.arvados.org/master/admin/user-management.html">manage users</a>.
+    </p>
+
+    <p>
+      This button sets up a user.  After setup, they will be able use
+      Arvados.  This dialog box also allows you to optionally set up a
+      shell account for this user.  The login name is automatically
+      generated from the user's e-mail address.
+    </p>
+
+    <%= link_to "Setup account #{'for ' if @object.full_name.present?} #{@object.full_name}", setup_popup_user_url(id: @object.uuid),  {class: 'btn btn-primary', :remote => true, 'data-toggle' =>  "modal", 'data-target' => '#user-setup-modal-window'}  %>
+
+    <p style="margin-top: 3em">
+      As an admin, you can deactivate and reset this user. This will
+      remove all repository/VM permissions for the user. If you
+      "setup" the user again, the user will have to sign the user
+      agreement again.  You may also want to <a href="https://doc.arvados.org/master/admin/reassign-ownership.html">reassign data ownership</a>.
+    </p>
+
+    <%= button_to "Deactivate #{@object.full_name}", unsetup_user_url(id: @object.uuid), class: 'btn btn-primary', data: {confirm: "Are you sure you want to deactivate #{@object.full_name}?"} %>
+
+    <p style="margin-top: 3em">
       As an admin, you can log in as this user. When you&rsquo;ve
       finished, you will need to log out and log in again with your
       own account.
     </p>
 
-    <blockquote>
-      <%= button_to "Log in as #{@object.full_name}", sudo_user_url(id: @object.uuid), class: 'btn btn-primary' %>
-    </blockquote>
-
-    <p>
-      As an admin, you can setup a shell account for this user.
-      The login name is automatically generated from the user's e-mail address.
-    </p>
-
-    <blockquote>
-      <%= link_to "Setup shell account #{'for ' if @object.full_name.present?} #{@object.full_name}", setup_popup_user_url(id: @object.uuid),  {class: 'btn btn-primary', :remote => true, 'data-toggle' =>  "modal", 'data-target' => '#user-setup-modal-window'}  %>
-    </blockquote>
-
-    <p>
-      As an admin, you can deactivate and reset this user. This will
-      remove all repository/VM permissions for the user. If you
-      "setup" the user again, the user will have to sign the user
-      agreement again.
-    </p>
-
-    <blockquote>
-      <%= button_to "Deactivate #{@object.full_name}", unsetup_user_url(id: @object.uuid), class: 'btn btn-primary', data: {confirm: "Are you sure you want to deactivate #{@object.full_name}?"} %>
-    </blockquote>
+    <%= button_to "Log in as #{@object.full_name}", sudo_user_url(id: @object.uuid), class: 'btn btn-primary' %>
   </div>
   <div class="col-md-6">
     <div class="panel panel-default">

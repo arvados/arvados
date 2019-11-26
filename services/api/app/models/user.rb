@@ -21,6 +21,7 @@ class User < ArvadosModel
             },
             uniqueness: true,
             allow_nil: true)
+  validate :must_unsetup_to_deactivate
   before_update :prevent_privilege_escalation
   before_update :prevent_inactive_admin
   before_update :verify_repositories_empty, :if => Proc.new { |user|
@@ -188,17 +189,19 @@ class User < ArvadosModel
 
   # create links
   def setup(openid_prefix:, repo_name: nil, vm_uuid: nil)
-    oid_login_perm = create_oid_login_perm openid_prefix
     repo_perm = create_user_repo_link repo_name
     vm_login_perm = create_vm_login_permission_link(vm_uuid, username) if vm_uuid
     group_perm = create_user_group_link
 
-    return [oid_login_perm, repo_perm, vm_login_perm, group_perm, self].compact
+    return [repo_perm, vm_login_perm, group_perm, self].compact
   end
 
   # delete user signatures, login, repo, and vm perms, and mark as inactive
   def unsetup
     # delete oid_login_perms for this user
+    #
+    # note: these permission links are obsolete, they have no effect
+    # on anything and they are not created for new users.
     Link.where(tail_uuid: self.email,
                      link_class: 'permission',
                      name: 'can_login').destroy_all
@@ -232,6 +235,37 @@ class User < ArvadosModel
     # mark the user as inactive
     self.is_active = false
     self.save!
+  end
+
+  def must_unsetup_to_deactivate
+    if self.is_active_changed? &&
+       self.is_active_was == true &&
+       !self.is_active
+
+      group = Group.where(name: 'All users').select do |g|
+        g[:uuid].match(/-f+$/)
+      end.first
+
+      # When a user is set up, they are added to the "All users"
+      # group.  A user that is part of the "All users" group is
+      # allowed to self-activate.
+      #
+      # It doesn't make sense to deactivate a user (set is_active =
+      # false) without first removing them from the "All users" group,
+      # because they would be able to immediately reactivate
+      # themselves.
+      #
+      # The 'unsetup' method removes the user from the "All users"
+      # group (and also sets is_active = false) so send a message
+      # explaining the correct way to deactivate a user.
+      #
+      if Link.where(tail_uuid: self.uuid,
+                    head_uuid: group[:uuid],
+                    link_class: 'permission',
+                    name: 'can_read').any?
+        errors.add :is_active, "cannot be set to false directly, use the 'Deactivate' button on Workbench, or the 'unsetup' API call"
+      end
+    end
   end
 
   def set_initial_username(requested: false)
@@ -575,30 +609,6 @@ class User < ArvadosModel
     end
     upstream_path.delete start
     merged
-  end
-
-  def create_oid_login_perm(openid_prefix)
-    # Check oid_login_perm
-    oid_login_perms = Link.where(tail_uuid: self.email,
-                                 head_uuid: self.uuid,
-                                 link_class: 'permission',
-                                 name: 'can_login')
-
-    if !oid_login_perms.any?
-      # create openid login permission
-      oid_login_perm = Link.create!(link_class: 'permission',
-                                   name: 'can_login',
-                                   tail_uuid: self.email,
-                                   head_uuid: self.uuid,
-                                   properties: {
-                                     "identity_url_prefix" => openid_prefix,
-                                   })
-      logger.info { "openid login permission: " + oid_login_perm[:uuid] }
-    else
-      oid_login_perm = oid_login_perms.first
-    end
-
-    return oid_login_perm
   end
 
   def create_user_repo_link(repo_name)
