@@ -21,6 +21,8 @@ export interface CollectionResource extends TrashableResource {
     version: number;
     preserveVersion: boolean;
     unsignedManifestText?: string;
+    fileCount: number;
+    fileSizeTotal: number;
 }
 
 export const getCollectionUrl = (uuid: string) => {
