@@ -25,7 +25,7 @@ ubuntu1804/generated: common-generated-all
 	test -d ubuntu1804/generated || mkdir ubuntu1804/generated
 	cp -rlt ubuntu1804/generated common-generated/*
 
-GOTARBALL=go1.12.7.linux-amd64.tar.gz
+GOTARBALL=go1.13.4.linux-amd64.tar.gz
 NODETARBALL=node-v6.11.2-linux-x64.tar.xz
 RVMKEY1=mpapis.asc
 RVMKEY2=pkuczynski.asc
