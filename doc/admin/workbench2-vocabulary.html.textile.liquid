@@ -60,6 +60,8 @@ This script will not run if the vocabulary file has duplicated labels for differ
 
 Please take into account that this script requires admin credentials. It also offers a @--dry-run@ flag that will report what changes are required without applying them, so it can be reviewed by an administrator.
 
+Also, take into consideration that this example script does case-sensitive matching on labels.
+
 {% codeblock as python %}
 {% include 'vocabulary_migrate_py' %}
 {% endcodeblock %}

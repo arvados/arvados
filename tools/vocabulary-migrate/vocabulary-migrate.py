@@ -1,9 +1,8 @@
 #!/usr/bin/env python
-{% comment %}
-Copyright (C) The Arvados Authors. All rights reserved.
-
-SPDX-License-Identifier: CC-BY-SA-3.0
-{% endcomment %}
+#
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: CC-BY-SA-3.0
 
 import argparse
 import copy
@@ -23,7 +22,7 @@ class VocabularyError(Exception):
 
 opts = argparse.ArgumentParser(add_help=False)
 opts.add_argument('--vocabulary-file', type=str, metavar='PATH', default=None,
-                  help="""
+                  required=True, help="""
 Use vocabulary definition file at PATH for migration decisions.
 """)
 opts.add_argument('--dry-run', action='store_true', default=False,
@@ -43,9 +42,7 @@ def parse_arguments(arguments):
     args = arg_parser.parse_args(arguments)
     if args.debug:
         logger.setLevel(logging.DEBUG)
-    if args.vocabulary_file is None:
-        arg_parser.error('Please specify the vocabulary file with --vocabulary-file')
-    elif not os.path.isfile(args.vocabulary_file):
+    if not os.path.isfile(args.vocabulary_file):
         arg_parser.error("{} doesn't exist or isn't a file.".format(args.vocabulary_file))
     return args
 
@@ -96,6 +93,7 @@ def main(arguments=None):
         for resource in [arv.collections(), arv.groups()]:
             objs = arvados.util.list_all(
                 resource.list,
+                order=['created_at'],
                 select=['uuid', 'properties'],
                 filters=[['properties', 'exists', key_label]]
             )
