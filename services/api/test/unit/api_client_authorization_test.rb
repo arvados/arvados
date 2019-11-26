@@ -26,4 +26,37 @@ class ApiClientAuthorizationTest < ActiveSupport::TestCase
     assert_empty ApiClientAuthorization.where(uuid: api_client_authorizations(:expired).uuid)
   end
 
+  test "accepts SystemRootToken" do
+    assert_nil ApiClientAuthorization.validate(token: "xxxSystemRootTokenxxx")
+
+    # will create a new ApiClientAuthorization record
+    Rails.configuration.SystemRootToken = "xxxSystemRootTokenxxx"
+
+    auth = ApiClientAuthorization.validate(token: "xxxSystemRootTokenxxx")
+    assert_equal "xxxSystemRootTokenxxx", auth.api_token
+    assert_equal User.find_by_uuid(system_user_uuid).id, auth.user_id
+    assert auth.api_client.is_trusted
+
+    # now change the token and try to use the old one first
+    Rails.configuration.SystemRootToken = "newxxxSystemRootTokenxxx"
+
+    # old token will fail
+    assert_nil ApiClientAuthorization.validate(token: "xxxSystemRootTokenxxx")
+    # new token will work
+    auth = ApiClientAuthorization.validate(token: "newxxxSystemRootTokenxxx")
+    assert_equal "newxxxSystemRootTokenxxx", auth.api_token
+    assert_equal User.find_by_uuid(system_user_uuid).id, auth.user_id
+
+    # now change the token again and use the new one first
+    Rails.configuration.SystemRootToken = "new2xxxSystemRootTokenxxx"
+
+    # new token will work
+    auth = ApiClientAuthorization.validate(token: "new2xxxSystemRootTokenxxx")
+    assert_equal "new2xxxSystemRootTokenxxx", auth.api_token
+    assert_equal User.find_by_uuid(system_user_uuid).id, auth.user_id
+    # old token will fail
+    assert_nil ApiClientAuthorization.validate(token: "newxxxSystemRootTokenxxx")
+  end
+
+
 end

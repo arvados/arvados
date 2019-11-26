@@ -111,7 +111,7 @@ arvcfg.declare_config "Login.ProviderAppID", String, :sso_app_id
 arvcfg.declare_config "Login.LoginCluster", String
 arvcfg.declare_config "Login.RemoteTokenRefresh", ActiveSupport::Duration
 arvcfg.declare_config "TLS.Insecure", Boolean, :sso_insecure
-arvcfg.declare_config "Services.SSO.ExternalURL", NonemptyString, :sso_provider_url
+arvcfg.declare_config "Services.SSO.ExternalURL", String, :sso_provider_url
 arvcfg.declare_config "AuditLogs.MaxAge", ActiveSupport::Duration, :max_audit_log_age
 arvcfg.declare_config "AuditLogs.MaxDeleteBatch", Integer, :max_audit_log_delete_batch
 arvcfg.declare_config "AuditLogs.UnloggedAttributes", Hash, :unlogged_attributes, ->(cfg, k, v) { arrayToHash cfg, "AuditLogs.UnloggedAttributes", v }
