@@ -485,7 +485,7 @@ func (s *ServerRequiredSuite) TestGetIndex(c *C) {
 	_, _, err = kc.PutB([]byte("some-more-index-data"))
 	c.Check(err, IsNil)
 
-	kc.Arvados.ApiToken = arvadostest.DataManagerToken
+	kc.Arvados.ApiToken = arvadostest.SystemRootToken
 
 	// Invoke GetIndex
 	for _, spec := range []struct {
