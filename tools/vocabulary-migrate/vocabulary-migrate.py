@@ -18,6 +18,9 @@ import arvados.util
 logger = logging.getLogger('arvados.vocabulary_migrate')
 logger.setLevel(logging.INFO)
 
+class VocabularyError(Exception):
+    pass
+
 opts = argparse.ArgumentParser(add_help=False)
 opts.add_argument('--vocabulary-file', type=str, metavar='PATH', default=None,
                   help="""
@@ -54,7 +57,7 @@ def _label_to_id_mappings(data, obj_name):
             if obj_lbl not in result:
                 result[obj_lbl] = obj_id
             else:
-                logger.warning('{} label "{}" for {} ID "{}" already seen at {} ID "{}". Skipping.'.format(obj_name, obj_lbl, obj_name, obj_id, obj_name, result[obj_lbl]))
+                raise VocabularyError('{} label "{}" for {} ID "{}" already seen at {} ID "{}".'.format(obj_name, obj_lbl, obj_name, obj_id, obj_name, result[obj_lbl]))
     return result
 
 def key_labels_to_ids(vocab):
