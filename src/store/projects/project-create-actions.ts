@@ -49,6 +49,7 @@ export const openProjectCreateDialog = (ownerUuid: string) =>
         const properties = getState().properties;
         if (isItemNotInProject(properties) || !isProjectOrRunProcessRoute(router)) {
             const userUuid = getUserUuid(getState());
+            if (!userUuid) { return; }
             dispatch(initialize(PROJECT_CREATE_FORM_NAME, { userUuid }));
         } else {
             dispatch(initialize(PROJECT_CREATE_FORM_NAME, { ownerUuid }));

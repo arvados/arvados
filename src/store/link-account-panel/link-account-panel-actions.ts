@@ -204,7 +204,9 @@ export const loadLinkAccountPanel = () =>
 
 export const startLinking = (t: LinkAccountType) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        const accountToLink = { type: t, userUuid: getUserUuid(getState()), token: services.authService.getApiToken() } as AccountToLink;
+        const userUuid = getUserUuid(getState());
+        if (!userUuid) { return; }
+        const accountToLink = { type: t, userUuid, token: services.authService.getApiToken() } as AccountToLink;
         services.linkAccountService.saveAccountToLink(accountToLink);
 
         const auth = getState().auth;

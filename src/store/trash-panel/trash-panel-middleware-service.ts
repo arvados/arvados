@@ -66,9 +66,7 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
         }
 
         const userUuid = getUserUuid(api.getState());
-        if (!userUuid) {
-            return;
-        }
+        if (!userUuid) { return; }
         try {
             api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
             const listResults = await this.services.groupsService

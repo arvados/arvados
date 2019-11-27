@@ -286,6 +286,11 @@
   version "1.6.0"
   resolved "https://registry.yarnpkg.com/@types/shell-quote/-/shell-quote-1.6.0.tgz#537b2949a2ebdcb0d353e448fee45b081021963f"
 
+"@types/sinon@7.5":
+  version "7.5.1"
+  resolved "https://registry.yarnpkg.com/@types/sinon/-/sinon-7.5.1.tgz#d27b81af0d1cfe1f9b24eebe7a24f74ae40f5b7c"
+  integrity sha512-EZQUP3hSZQyTQRfiLqelC9NMWd1kqLcmQE0dMiklxBkgi84T+cHOhnKpgk4NnOWpGX863yE6+IaGnOXUNFqDnQ==
+
 "@types/uuid@3.4.4":
   version "3.4.4"
   resolved "https://registry.yarnpkg.com/@types/uuid/-/uuid-3.4.4.tgz#7af69360fa65ef0decb41fd150bf4ca5c0cefdf5"

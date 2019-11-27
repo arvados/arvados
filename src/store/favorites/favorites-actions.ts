@@ -61,9 +61,7 @@ export const toggleFavorite = (resource: { uuid: string; name: string }) =>
 export const updateFavorites = (resourceUuids: string[]) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const userUuid = getUserUuid(getState());
-        if (!userUuid) {
-            return;
-        }
+        if (!userUuid) { return; }
         dispatch(favoritesActions.CHECK_PRESENCE_IN_FAVORITES(resourceUuids));
         services.favoriteService
             .checkPresenceInFavorites(userUuid, resourceUuids)

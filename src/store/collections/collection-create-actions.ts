@@ -30,6 +30,7 @@ export const openCollectionCreateDialog = (ownerUuid: string) =>
         const properties = getState().properties;
         if (isItemNotInProject(properties) || !isProjectOrRunProcessRoute(router)) {
             const userUuid = getUserUuid(getState());
+            if (!userUuid) { return; }
             dispatch(initialize(COLLECTION_CREATE_FORM_NAME, { userUuid }));
         } else {
             dispatch(initialize(COLLECTION_CREATE_FORM_NAME, { ownerUuid }));

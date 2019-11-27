@@ -28,9 +28,7 @@ export const openMoveProjectDialog = (resource: { name: string, uuid: string }) 
 export const moveProject = (resource: MoveToFormDialogData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const userUuid = getUserUuid(getState());
-        if (!userUuid) {
-            return;
-        }
+        if (!userUuid) { return; }
         dispatch(startSubmit(PROJECT_MOVE_FORM_NAME));
         try {
             const newProject = await services.projectService.update(resource.uuid, { ownerUuid: resource.ownerUuid });

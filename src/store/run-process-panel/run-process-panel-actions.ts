@@ -120,6 +120,7 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
     const inputsForm = getFormValues(RUN_PROCESS_INPUTS_FORM)(state) as WorkflowInputsData;
     const advancedForm = getFormValues(RUN_PROCESS_ADVANCED_FORM)(state) as RunProcessAdvancedFormData || DEFAULT_ADVANCED_FORM_VALUES;
     const userUuid = getUserUuid(getState());
+    if (!userUuid) { return; }
     const pathname = getState().runProcessPanel.processPathname;
     const { processOwnerUuid, selectedWorkflow } = state.runProcessPanel;
     if (selectedWorkflow) {

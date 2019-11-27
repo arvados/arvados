@@ -20,7 +20,7 @@ export const resetPickerProjectTree = () => (dispatch: Dispatch, getState: () =>
 
 export const initPickerProjectTree = () => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     const uuid = getUserUuid(getState());
-
+    if (!uuid) { return; }
     dispatch<any>(getPickerTreeProjects(uuid));
     dispatch<any>(getSharedWithMeProjectsPickerTree(uuid));
     dispatch<any>(getFavoritesProjectsPickerTree(uuid));

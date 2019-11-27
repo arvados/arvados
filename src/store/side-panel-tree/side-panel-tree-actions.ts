@@ -55,9 +55,7 @@ export const isSidePanelTreeCategory = (id: string) => SIDE_PANEL_CATEGORIES.som
 export const initSidePanelTree = () =>
     (dispatch: Dispatch, getState: () => RootState, { authService }: ServiceRepository) => {
         const rootProjectUuid = getUserUuid(getState());
-        if (!rootProjectUuid) {
-            return;
-        }
+        if (!rootProjectUuid) { return; }
         const nodes = SIDE_PANEL_CATEGORIES.map(id => initTreeNode({ id, value: id }));
         const projectsNode = initTreeNode({ id: rootProjectUuid, value: SidePanelTreeCategory.PROJECTS });
         const sharedNode = initTreeNode({ id: SidePanelTreeCategory.SHARED_WITH_ME, value: SidePanelTreeCategory.SHARED_WITH_ME });
@@ -161,9 +159,7 @@ export const activateSidePanelTreeProject = (id: string) =>
 export const activateSidePanelTreeBranch = (id: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const userUuid = getUserUuid(getState());
-        if (!userUuid) {
-            return;
-        }
+        if (!userUuid) { return; }
         const ancestors = await services.ancestorsService.ancestors(id, userUuid);
         const isShared = ancestors.every(({ uuid }) => uuid !== userUuid);
         if (isShared) {

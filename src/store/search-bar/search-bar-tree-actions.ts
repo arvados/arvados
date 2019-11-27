@@ -41,9 +41,7 @@ export const getSearchBarTreeNodeAncestorsIds = (id: string) => (treePicker: Tre
 export const activateSearchBarTreeBranch = (id: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const userUuid = getUserUuid(getState());
-        if (!userUuid) {
-            return;
-        }
+        if (!userUuid) { return; }
         const ancestors = await services.ancestorsService.ancestors(id, userUuid);
 
         for (const ancestor of ancestors) {

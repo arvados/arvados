@@ -235,7 +235,6 @@ export const loadFavoritesProject = (params: LoadFavoritesProjectParams) =>
         const { pickerId, includeCollections = false, includeFiles = false } = params;
         const uuid = getUserUuid(getState());
         if (uuid) {
-
             const filters = pipe(
                 (fb: FilterBuilder) => includeCollections
                     ? fb.addIsA('headUuid', [ResourceKind.PROJECT, ResourceKind.COLLECTION])

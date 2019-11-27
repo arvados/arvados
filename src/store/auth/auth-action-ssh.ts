@@ -62,6 +62,7 @@ export const removeSshKey = (uuid: string) =>
 export const createSshKey = (data: SshKeyCreateFormDialogData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const userUuid = getUserUuid(getState());
+        if (!userUuid) { return; }
         const { name, publicKey } = data;
         dispatch(startSubmit(SSH_KEY_CREATE_FORM_NAME));
         try {
