@@ -81,6 +81,13 @@ describe('auth-actions', () => {
                 try {
                     expect(auth).toEqual({
                         apiToken: "token",
+                        config: {
+                            remoteHosts: {
+                                "xc59z": "xc59z.arvadosapi.com",
+                            },
+                            rootUrl: "https://zzzzz.arvadosapi.com",
+                            uuidPrefix: "zzzzz",
+                        },
                         sshKeys: [],
                         homeCluster: "zzzzz",
                         localCluster: "zzzzz",

@@ -56,7 +56,7 @@ export const loginAs = (uuid: string) =>
         const data = getResource<UserResource>(uuid)(resources);
         const client = await services.apiClientAuthorizationService.create({ ownerUuid: uuid });
         if (data) {
-            dispatch<any>(authActions.INIT({ user: data, token: `v2/${client.uuid}/${client.apiToken}` }));
+            dispatch<any>(authActions.INIT_USER({ user: data, token: `v2/${client.uuid}/${client.apiToken}` }));
             location.reload();
             dispatch<any>(navigateToRootProject);
         }

@@ -264,7 +264,7 @@ export const loadFavoritesProject = (params: LoadFavoritesProjectParams) =>
 export const loadPublicFavoritesProject = (params: LoadFavoritesProjectParams) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const { pickerId, includeCollections = false, includeFiles = false } = params;
-        const uuidPrefix = getState().config.uuidPrefix;
+        const uuidPrefix = getState().auth.config.uuidPrefix;
         const uuid = `${uuidPrefix}-j7d0g-fffffffffffffff`;
         if (uuid) {
 

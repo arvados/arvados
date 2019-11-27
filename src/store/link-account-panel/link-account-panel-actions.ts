@@ -91,7 +91,7 @@ export const checkForLinkStatus = () =>
 
 export const switchUser = (user: UserResource, token: string) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(authActions.INIT({ user, token }));
+        dispatch(authActions.INIT_USER({ user, token }));
     };
 
 export const linkFailed = () =>

@@ -9,7 +9,6 @@ import { History } from "history";
 
 import { authReducer } from "./auth/auth-reducer";
 import { authMiddleware } from "./auth/auth-middleware";
-import { configReducer } from "./config/config-reducer";
 import { dataExplorerReducer } from './data-explorer/data-explorer-reducer';
 import { detailsPanelReducer } from './details-panel/details-panel-reducer';
 import { contextMenuReducer } from './context-menu/context-menu-reducer';
@@ -148,7 +147,6 @@ export function configureStore(history: History, services: ServiceRepository): R
 
 const createRootReducer = (services: ServiceRepository) => combineReducers({
     auth: authReducer(services),
-    config: configReducer,
     collectionPanel: collectionPanelReducer,
     collectionPanelFiles: collectionPanelFilesReducer,
     contextMenu: contextMenuReducer,

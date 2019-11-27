@@ -19,8 +19,8 @@ import { WORKBENCH_LOADING_SCREEN } from '~/store/workbench/workbench-actions';
 export const authActions = unionize({
     LOGIN: {},
     LOGOUT: ofType<{ deleteLinkData: boolean }>(),
-    CONFIG: ofType<{ config: Config }>(),
-    INIT: ofType<{ user: User, token: string }>(),
+    SET_CONFIG: ofType<{ config: Config }>(),
+    INIT_USER: ofType<{ user: User, token: string }>(),
     USER_DETAILS_REQUEST: {},
     USER_DETAILS_SUCCESS: ofType<User>(),
     SET_SSH_KEYS: ofType<SshKeyResource[]>(),
@@ -54,7 +54,7 @@ const init = (config: Config) => (dispatch: Dispatch, getState: () => RootState,
     if (homeCluster && !config.remoteHosts[homeCluster]) {
         homeCluster = undefined;
     }
-    dispatch(authActions.CONFIG({ config }));
+    dispatch(authActions.SET_CONFIG({ config }));
     dispatch(authActions.SET_HOME_CLUSTER(config.loginCluster || homeCluster || config.uuidPrefix));
 
     if (token && token !== "undefined") {
@@ -77,7 +77,7 @@ export const saveApiToken = (token: string) => (dispatch: Dispatch, getState: ()
     const svc = createServices(config, { progressFn: () => { }, errorFn: () => { } });
     setAuthorizationHeader(svc, token);
     return svc.authService.getUserDetails().then((user: User) => {
-        dispatch(authActions.INIT({ user, token }));
+        dispatch(authActions.INIT_USER({ user, token }));
     });
 };
 
