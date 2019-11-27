@@ -7,6 +7,7 @@ import { TreeNode, initTreeNode, getNodeDescendants, TreeNodeStatus, getNode, Tr
 import { createCollectionFilesTree } from "~/models/collection-file";
 import { Dispatch } from 'redux';
 import { RootState } from '~/store/store';
+import { getUserUuid } from "~/common/getuser";
 import { ServiceRepository } from '~/services/services';
 import { FilterBuilder } from '~/services/api/filter-builder';
 import { pipe, values } from 'lodash/fp';
@@ -162,7 +163,7 @@ export const loadCollection = (id: string, pickerId: string) =>
 
 export const initUserProject = (pickerId: string) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        const uuid = services.authService.getUuid();
+        const uuid = getUserUuid(getState());
         if (uuid) {
             dispatch(receiveTreePickerData({
                 id: '',
@@ -178,7 +179,7 @@ export const initUserProject = (pickerId: string) =>
     };
 export const loadUserProject = (pickerId: string, includeCollections = false, includeFiles = false) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        const uuid = services.authService.getUuid();
+        const uuid = getUserUuid(getState());
         if (uuid) {
             dispatch(loadProject({ id: uuid, pickerId, includeCollections, includeFiles }));
         }
@@ -238,9 +239,8 @@ interface LoadFavoritesProjectParams {
 export const loadFavoritesProject = (params: LoadFavoritesProjectParams) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const { pickerId, includeCollections = false, includeFiles = false } = params;
-        const uuid = services.authService.getUuid();
+        const uuid = getUserUuid(getState());
         if (uuid) {
-
             const filters = pipe(
                 (fb: FilterBuilder) => includeCollections
                     ? fb.addIsA('headUuid', [ResourceKind.PROJECT, ResourceKind.COLLECTION])
@@ -270,7 +270,7 @@ export const loadFavoritesProject = (params: LoadFavoritesProjectParams) =>
 export const loadPublicFavoritesProject = (params: LoadFavoritesProjectParams) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const { pickerId, includeCollections = false, includeFiles = false } = params;
-        const uuidPrefix = getState().config.uuidPrefix;
+        const uuidPrefix = getState().auth.config.uuidPrefix;
         const uuid = `${uuidPrefix}-j7d0g-fffffffffffffff`;
         if (uuid) {
 
@@ -319,7 +319,8 @@ export const loadProjectTreePickerProjects = (id: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id, pickerId: TreePickerId.PROJECTS }));
 
-        const ownerUuid = id.length === 0 ? services.authService.getUuid() || '' : id;
+
+        const ownerUuid = id.length === 0 ? getUserUuid(getState()) || '' : id;
         const { items } = await services.projectService.list(buildParams(ownerUuid));
 
         dispatch<any>(receiveTreePickerProjectsData(id, items, TreePickerId.PROJECTS));
@@ -327,7 +328,7 @@ export const loadProjectTreePickerProjects = (id: string) =>
 
 export const loadFavoriteTreePickerProjects = (id: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const parentId = services.authService.getUuid() || '';
+        const parentId = getUserUuid(getState()) || '';
 
         if (id === '') {
             dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id: parentId, pickerId: TreePickerId.FAVORITES }));
@@ -343,7 +344,7 @@ export const loadFavoriteTreePickerProjects = (id: string) =>
 
 export const loadPublicFavoriteTreePickerProjects = (id: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const parentId = services.authService.getUuid() || '';
+        const parentId = getUserUuid(getState()) || '';
 
         if (id === '') {
             dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id: parentId, pickerId: TreePickerId.PUBLIC_FAVORITES }));

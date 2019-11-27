@@ -61,7 +61,7 @@ export const LoginPanel = withStyles(styles)(
         homeCluster: state.auth.homeCluster,
         uuidPrefix: state.auth.localCluster,
         loginCluster: state.auth.loginCluster,
-        welcomePage: state.config.clusterConfig.Workbench.WelcomePageHTML
+        welcomePage: state.auth.config.clusterConfig.Workbench.WelcomePageHTML
     }))(({ classes, dispatch, remoteHosts, homeCluster, uuidPrefix, loginCluster, welcomePage }: LoginPanelProps) =>
         <Grid container justify="center" alignItems="center"
             className={classes.root}

@@ -5,6 +5,7 @@
 import { Dispatch } from "redux";
 import { bindDataExplorerActions } from '~/store/data-explorer/data-explorer-action';
 import { RootState } from '~/store/store';
+import { getUserUuid } from "~/common/getuser";
 import { ServiceRepository } from "~/services/services";
 import { dialogActions } from '~/store/dialog/dialog-actions';
 import { startSubmit, reset } from "redux-form";
@@ -12,7 +13,7 @@ import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions
 import { UserResource } from "~/models/user";
 import { getResource } from '~/store/resources/resources';
 import { navigateTo, navigateToUsers, navigateToRootProject } from "~/store/navigation/navigation-action";
-import { saveApiToken } from '~/store/auth/auth-action';
+import { authActions } from '~/store/auth/auth-action';
 
 export const USERS_PANEL_ID = 'usersPanel';
 export const USER_ATTRIBUTES_DIALOG = 'userAttributesDialog';
@@ -53,18 +54,18 @@ export const loginAs = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const { resources } = getState();
         const data = getResource<UserResource>(uuid)(resources);
-        if (data) {
-            services.authService.saveUser(data);
-        }
         const client = await services.apiClientAuthorizationService.create({ ownerUuid: uuid });
-        dispatch<any>(saveApiToken(`v2/${client.uuid}/${client.apiToken}`));
-        location.reload();
-        dispatch<any>(navigateToRootProject);
+        if (data) {
+            dispatch<any>(authActions.INIT_USER({ user: data, token: `v2/${client.uuid}/${client.apiToken}` }));
+            location.reload();
+            dispatch<any>(navigateToRootProject);
+        }
     };
 
 export const openUserCreateDialog = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const userUuid = await services.authService.getUuid();
+        const userUuid = getUserUuid(getState());
+        if (!userUuid) { return; }
         const user = await services.userService.get(userUuid!);
         const virtualMachines = await services.virtualMachineService.list();
         dispatch(reset(USER_CREATE_FORM_NAME));
@@ -109,7 +110,12 @@ export const toggleIsActive = (uuid: string) =>
         const { resources } = getState();
         const data = getResource<UserResource>(uuid)(resources);
         const isActive = data!.isActive;
-        const newActivity = await services.userService.update(uuid, { isActive: !isActive });
+        let newActivity;
+        if (isActive) {
+            newActivity = await services.userService.unsetup(uuid);
+        } else {
+            newActivity = await services.userService.update(uuid, { isActive: true });
+        }
         dispatch<any>(loadUsersPanel());
         return newActivity;
     };

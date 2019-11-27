@@ -5,8 +5,9 @@
 import { dialogActions } from "~/store/dialog/dialog-actions";
 import { Dispatch } from "redux";
 import { RootState } from "~/store/store";
+import { getUserUuid } from "~/common/getuser";
 import { ServiceRepository } from "~/services/services";
-import {snackbarActions, SnackbarKind} from "~/store/snackbar/snackbar-actions";
+import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
 import { FormErrors, reset, startSubmit, stopSubmit } from "redux-form";
 import { KeyType } from "~/models/ssh-key";
 import {
@@ -14,9 +15,7 @@ import {
     getAuthorizedKeysServiceError
 } from "~/services/authorized-keys-service/authorized-keys-service";
 import { setBreadcrumbs } from "~/store/breadcrumbs/breadcrumbs-actions";
-import {
-    authActions,
-} from "~/store/auth/auth-action";
+import { authActions } from "~/store/auth/auth-action";
 
 export const SSH_KEY_CREATE_FORM_NAME = 'sshKeyCreateFormName';
 export const SSH_KEY_PUBLIC_KEY_DIALOG = 'sshKeyPublicKeyDialog';
@@ -62,7 +61,8 @@ export const removeSshKey = (uuid: string) =>
 
 export const createSshKey = (data: SshKeyCreateFormDialogData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const userUuid = getState().auth.user!.uuid;
+        const userUuid = getUserUuid(getState());
+        if (!userUuid) { return; }
         const { name, publicKey } = data;
         dispatch(startSubmit(SSH_KEY_CREATE_FORM_NAME));
         try {
@@ -93,11 +93,10 @@ export const createSshKey = (data: SshKeyCreateFormDialogData) =>
 export const loadSshKeysPanel = () =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         try {
-            dispatch(setBreadcrumbs([{ label: 'SSH Keys'}]));
+            dispatch(setBreadcrumbs([{ label: 'SSH Keys' }]));
             const response = await services.authorizedKeysService.list();
             dispatch(authActions.SET_SSH_KEYS(response.items));
         } catch (e) {
             return;
         }
     };
-

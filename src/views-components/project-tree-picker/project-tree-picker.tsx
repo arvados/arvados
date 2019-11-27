@@ -13,6 +13,7 @@ import { treePickerActions, loadProjectTreePickerProjects, loadFavoriteTreePicke
 import { ListItemTextIcon } from "~/components/list-item-text-icon/list-item-text-icon";
 import { ProjectIcon, FavoriteIcon, ProjectsIcon, ShareMeIcon, PublicFavoriteIcon } from '~/components/icon/icon';
 import { RootState } from "~/store/store";
+import { getUserUuid } from "~/common/getuser";
 import { ServiceRepository } from "~/services/services";
 import { WrappedFieldProps } from 'redux-form';
 import { TreePickerId } from '~/models/tree';
@@ -45,9 +46,9 @@ const toggleItemOpen = (id: string, status: TreeItemStatus, pickerId: string) =>
             if (pickerId === TreePickerId.PROJECTS) {
                 dispatch<any>(loadProjectTreePickerProjects(id));
             } else if (pickerId === TreePickerId.FAVORITES) {
-                dispatch<any>(loadFavoriteTreePickerProjects(id === services.authService.getUuid() ? '' : id));
+                dispatch<any>(loadFavoriteTreePickerProjects(id === getUserUuid(getState()) ? '' : id));
             } else if (pickerId === TreePickerId.PUBLIC_FAVORITES) {
-                dispatch<any>(loadPublicFavoriteTreePickerProjects(id === services.authService.getUuid() ? '' : id));
+                dispatch<any>(loadPublicFavoriteTreePickerProjects(id === getUserUuid(getState()) ? '' : id));
                 // TODO: load sharedWithMe
             }
         } else {

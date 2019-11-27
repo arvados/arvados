@@ -8,7 +8,7 @@ import thunkMiddleware from 'redux-thunk';
 import { History } from "history";
 
 import { authReducer } from "./auth/auth-reducer";
-import { configReducer } from "./config/config-reducer";
+import { authMiddleware } from "./auth/auth-middleware";
 import { dataExplorerReducer } from './data-explorer/data-explorer-reducer';
 import { detailsPanelReducer } from './details-panel/details-panel-reducer';
 import { contextMenuReducer } from './context-menu/context-menu-reducer';
@@ -27,7 +27,6 @@ import { ServiceRepository } from "~/services/services";
 import { treePickerReducer } from './tree-picker/tree-picker-reducer';
 import { resourcesReducer } from '~/store/resources/resources-reducer';
 import { propertiesReducer } from './properties/properties-reducer';
-import { RootState } from './store';
 import { fileUploaderReducer } from './file-uploader/file-uploader-reducer';
 import { TrashPanelMiddlewareService } from "~/store/trash-panel/trash-panel-middleware-service";
 import { TRASH_PANEL_ID } from "~/store/trash-panel/trash-panel-action";
@@ -125,6 +124,7 @@ export function configureStore(history: History, services: ServiceRepository): R
     const middlewares: Middleware[] = [
         routerMiddleware(history),
         thunkMiddleware.withExtraArgument(services),
+        authMiddleware(services),
         projectPanelMiddleware,
         favoritePanelMiddleware,
         trashPanelMiddleware,
@@ -146,7 +146,6 @@ export function configureStore(history: History, services: ServiceRepository): R
 
 const createRootReducer = (services: ServiceRepository) => combineReducers({
     auth: authReducer(services),
-    config: configReducer,
     collectionPanel: collectionPanelReducer,
     collectionPanelFiles: collectionPanelFilesReducer,
     contextMenu: contextMenuReducer,

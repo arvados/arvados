@@ -5,6 +5,7 @@
 import { unionize, ofType, UnionOf } from "~/common/unionize";
 import { Dispatch } from "redux";
 import { RootState } from "../store";
+import { getUserUuid } from "~/common/getuser";
 import { checkFavorite } from "./favorites-reducer";
 import { snackbarActions, SnackbarKind } from "../snackbar/snackbar-actions";
 import { ServiceRepository } from "~/services/services";
@@ -20,8 +21,11 @@ export type FavoritesAction = UnionOf<typeof favoritesActions>;
 
 export const toggleFavorite = (resource: { uuid: string; name: string }) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
+        const userUuid = getUserUuid(getState());
+        if (!userUuid) {
+            return Promise.reject("No user");
+        }
         dispatch(progressIndicatorActions.START_WORKING("toggleFavorite"));
-        const userUuid = getState().auth.user!.uuid;
         dispatch(favoritesActions.TOGGLE_FAVORITE({ resourceUuid: resource.uuid }));
         const isFavorite = checkFavorite(resource.uuid, getState().favorites);
         dispatch(snackbarActions.OPEN_SNACKBAR({
@@ -56,7 +60,8 @@ export const toggleFavorite = (resource: { uuid: string; name: string }) =>
 
 export const updateFavorites = (resourceUuids: string[]) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const userUuid = getState().auth.user!.uuid;
+        const userUuid = getUserUuid(getState());
+        if (!userUuid) { return; }
         dispatch(favoritesActions.CHECK_PRESENCE_IN_FAVORITES(resourceUuids));
         services.favoriteService
             .checkPresenceInFavorites(userUuid, resourceUuids)

@@ -6,6 +6,7 @@ import { getTreePicker, TreePicker } from "~/store/tree-picker/tree-picker";
 import { getNode, getNodeAncestorsIds, initTreeNode, TreeNodeStatus } from "~/models/tree";
 import { Dispatch } from "redux";
 import { RootState } from "~/store/store";
+import { getUserUuid } from "~/common/getuser";
 import { ServiceRepository } from "~/services/services";
 import { treePickerActions } from "~/store/tree-picker/tree-picker-actions";
 import { FilterBuilder } from "~/services/api/filter-builder";
@@ -38,8 +39,10 @@ export const getSearchBarTreeNodeAncestorsIds = (id: string) => (treePicker: Tre
 };
 
 export const activateSearchBarTreeBranch = (id: string) =>
-    async (dispatch: Dispatch, _: void, services: ServiceRepository) => {
-        const ancestors = await services.ancestorsService.ancestors(id, services.authService.getUuid() || '');
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const userUuid = getUserUuid(getState());
+        if (!userUuid) { return; }
+        const ancestors = await services.ancestorsService.ancestors(id, userUuid);
 
         for (const ancestor of ancestors) {
             await dispatch<any>(loadSearchBarTreeProjects(ancestor.uuid));
@@ -98,4 +101,3 @@ const loadSearchBarProject = (projectUuid: string) =>
         }));
         dispatch(resourcesActions.SET_RESOURCES(items));
     };
-

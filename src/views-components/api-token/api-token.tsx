@@ -5,13 +5,11 @@
 import { RouteProps } from "react-router";
 import * as React from "react";
 import { connect, DispatchProp } from "react-redux";
-import { getUserDetails, saveApiToken } from "~/store/auth/auth-action";
+import { saveApiToken } from "~/store/auth/auth-action";
 import { getUrlParameter } from "~/common/url";
 import { AuthService } from "~/services/auth-service/auth-service";
 import { navigateToRootProject, navigateToLinkAccount } from "~/store/navigation/navigation-action";
-import { User } from "~/models/user";
 import { Config } from "~/common/config";
-import { initSessions } from "~/store/auth/auth-action-session";
 import { getAccountLinkData } from "~/store/link-account-panel/link-account-panel-actions";
 
 interface ApiTokenProps {
@@ -26,10 +24,7 @@ export const ApiToken = connect()(
             const search = this.props.location ? this.props.location.search : "";
             const apiToken = getUrlParameter(search, 'api_token');
             const loadMainApp = this.props.loadMainApp;
-            this.props.dispatch(saveApiToken(apiToken));
-            this.props.dispatch<any>(getUserDetails()).then((user: User) => {
-                this.props.dispatch(initSessions(this.props.authService, this.props.config, user));
-            }).finally(() => {
+            this.props.dispatch<any>(saveApiToken(apiToken)).finally(() => {
                 if (loadMainApp) {
                     if (this.props.dispatch(getAccountLinkData())) {
                         this.props.dispatch(navigateToLinkAccount);

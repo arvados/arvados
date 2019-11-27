@@ -4,16 +4,17 @@
 
 import { Dispatch } from "redux";
 import { RootState } from "~/store/store";
-import { ServiceRepository } from "~/services/services";
+import { getUserUuid } from "~/common/getuser";
+import { ServiceRepository, createServices, setAuthorizationHeader } from "~/services/services";
 import { setBreadcrumbs } from "~/store/breadcrumbs/breadcrumbs-actions";
 import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
 import { LinkAccountType, AccountToLink, LinkAccountStatus } from "~/models/link-account";
-import { saveApiToken, saveUser } from "~/store/auth/auth-action";
+import { authActions, getConfig } from "~/store/auth/auth-action";
 import { unionize, ofType, UnionOf } from '~/common/unionize';
 import { UserResource } from "~/models/user";
 import { GroupResource } from "~/models/group";
 import { LinkAccountPanelError, OriginatingUser } from "./link-account-panel-reducer";
-import { login, logout, setAuthorizationHeader } from "~/store/auth/auth-action";
+import { login, logout } from "~/store/auth/auth-action";
 import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
 import { WORKBENCH_LOADING_SCREEN } from '~/store/workbench/workbench-actions';
 
@@ -58,6 +59,13 @@ function validateLink(userToLink: UserResource, targetUser: UserResource) {
     return LinkAccountPanelError.NONE;
 }
 
+const newServices = (dispatch: Dispatch<any>, token: string) => {
+    const config = dispatch<any>(getConfig);
+    const svc = createServices(config, { progressFn: () => { }, errorFn: () => { } });
+    setAuthorizationHeader(svc, token);
+    return svc;
+};
+
 export const checkForLinkStatus = () =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const status = services.linkAccountService.getLinkOpStatus();
@@ -83,8 +91,7 @@ export const checkForLinkStatus = () =>
 
 export const switchUser = (user: UserResource, token: string) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(saveUser(user));
-        dispatch(saveApiToken(token));
+        dispatch(authActions.INIT_USER({ user, token }));
     };
 
 export const linkFailed = () =>
@@ -138,9 +145,8 @@ export const loadLinkAccountPanel = () =>
 
                     // Use the token of the user we are getting data for. This avoids any admin/non-admin permissions
                     // issues since a user will always be able to query the api server for their own user data.
-                    setAuthorizationHeader(services, linkAccountData.token);
-                    const savedUserResource = await services.userService.get(linkAccountData.userUuid);
-                    setAuthorizationHeader(services, curToken);
+                    const svc = newServices(dispatch, linkAccountData.token);
+                    const savedUserResource = await svc.userService.get(linkAccountData.userUuid);
 
                     let params: any;
                     if (linkAccountData.type === LinkAccountType.ACCESS_OTHER_ACCOUNT || linkAccountData.type === LinkAccountType.ACCESS_OTHER_REMOTE_ACCOUNT) {
@@ -198,7 +204,9 @@ export const loadLinkAccountPanel = () =>
 
 export const startLinking = (t: LinkAccountType) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        const accountToLink = { type: t, userUuid: services.authService.getUuid(), token: services.authService.getApiToken() } as AccountToLink;
+        const userUuid = getUserUuid(getState());
+        if (!userUuid) { return; }
+        const accountToLink = { type: t, userUuid, token: services.authService.getApiToken() } as AccountToLink;
         services.linkAccountService.saveAccountToLink(accountToLink);
 
         const auth = getState().auth;
@@ -226,8 +234,8 @@ export const cancelLinking = (reload: boolean = false) =>
             const linkAccountData = services.linkAccountService.getAccountToLink();
             if (linkAccountData) {
                 services.linkAccountService.removeAccountToLink();
-                setAuthorizationHeader(services, linkAccountData.token);
-                user = await services.userService.get(linkAccountData.userUuid);
+                const svc = newServices(dispatch, linkAccountData.token);
+                user = await svc.userService.get(linkAccountData.userUuid);
                 dispatch(switchUser(user, linkAccountData.token));
                 services.linkAccountService.saveLinkOpStatus(LinkAccountStatus.CANCELLED);
             }
@@ -264,8 +272,8 @@ export const linkAccount = () =>
             try {
                 // The merge api links the user sending the request into the user
                 // specified in the request, so change the authorization header accordingly
-                setAuthorizationHeader(services, linkState.userToLinkToken);
-                await services.linkAccountService.linkAccounts(linkState.targetUserToken, newGroup.uuid);
+                const svc = newServices(dispatch, linkState.userToLinkToken);
+                await svc.linkAccountService.linkAccounts(linkState.targetUserToken, newGroup.uuid);
                 dispatch(switchUser(linkState.targetUser, linkState.targetUserToken));
                 services.linkAccountService.removeAccountToLink();
                 services.linkAccountService.saveLinkOpStatus(LinkAccountStatus.SUCCESS);
@@ -274,8 +282,8 @@ export const linkAccount = () =>
             catch (e) {
                 // If the link operation fails, delete the previously made project
                 try {
-                    setAuthorizationHeader(services, linkState.targetUserToken);
-                    await services.projectService.delete(newGroup.uuid);
+                    const svc = newServices(dispatch, linkState.targetUserToken);
+                    await svc.projectService.delete(newGroup.uuid);
                 }
                 finally {
                     dispatch(linkFailed());

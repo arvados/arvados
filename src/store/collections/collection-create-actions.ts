@@ -5,6 +5,7 @@
 import { Dispatch } from "redux";
 import { reset, startSubmit, stopSubmit, initialize, FormErrors } from 'redux-form';
 import { RootState } from '~/store/store';
+import { getUserUuid } from "~/common/getuser";
 import { dialogActions } from "~/store/dialog/dialog-actions";
 import { ServiceRepository } from '~/services/services';
 import { getCommonResourceServiceError, CommonResourceServiceError } from "~/services/common-service/common-resource-service";
@@ -28,7 +29,8 @@ export const openCollectionCreateDialog = (ownerUuid: string) =>
         const router = getState();
         const properties = getState().properties;
         if (isItemNotInProject(properties) || !isProjectOrRunProcessRoute(router)) {
-            const userUuid = getState().auth.user!.uuid;
+            const userUuid = getUserUuid(getState());
+            if (!userUuid) { return; }
             dispatch(initialize(COLLECTION_CREATE_FORM_NAME, { userUuid }));
         } else {
             dispatch(initialize(COLLECTION_CREATE_FORM_NAME, { ownerUuid }));

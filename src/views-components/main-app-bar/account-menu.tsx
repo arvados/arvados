@@ -32,7 +32,7 @@ interface AccountMenuProps {
 const mapStateToProps = (state: RootState): AccountMenuProps => ({
     user: state.auth.user,
     currentRoute: state.router.location ? state.router.location.pathname : '',
-    workbenchURL: state.config.workbenchUrl,
+    workbenchURL: state.auth.config.workbenchUrl,
     apiToken: state.auth.apiToken,
     localCluster: state.auth.localCluster
 });

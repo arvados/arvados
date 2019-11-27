@@ -35,30 +35,14 @@ describe('auth-reducer', () => {
             isAdmin: false,
             isActive: true
         };
-        const state = reducer(initialState, authActions.INIT({ user, token: "token" }));
+        const state = reducer(initialState, authActions.INIT_USER({ user, token: "token" }));
         expect(state).toEqual({
             apiToken: "token",
+            config: mockConfig({}),
             user,
             sshKeys: [],
             sessions: [],
             homeCluster: "zzzzz",
-            localCluster: "",
-            loginCluster: "",
-            remoteHosts: {},
-            remoteHostsConfig: {}
-        });
-    });
-
-    it('should save api token', () => {
-        const initialState = undefined;
-
-        const state = reducer(initialState, authActions.SAVE_API_TOKEN("token"));
-        expect(state).toEqual({
-            apiToken: "token",
-            user: undefined,
-            sshKeys: [],
-            sessions: [],
-            homeCluster: "",
             localCluster: "",
             loginCluster: "",
             remoteHosts: {},
@@ -84,9 +68,10 @@ describe('auth-reducer', () => {
         const state = reducer(initialState, authActions.USER_DETAILS_SUCCESS(user));
         expect(state).toEqual({
             apiToken: undefined,
+            config: mockConfig({}),
             sshKeys: [],
             sessions: [],
-            homeCluster: "",
+            homeCluster: "uuid",
             localCluster: "",
             loginCluster: "",
             remoteHosts: {},

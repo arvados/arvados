@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { getUserFullname, User, UserPrefs, UserResource } from '~/models/user';
+import { getUserFullname, User, UserPrefs } from '~/models/user';
 import { AxiosInstance } from "axios";
 import { ApiActions } from "~/services/api/api-actions";
 import * as uuid from "uuid/v4";
@@ -43,7 +43,10 @@ export class AuthService {
 
     public saveApiToken(token: string) {
         localStorage.setItem(API_TOKEN_KEY, token);
-        localStorage.setItem(HOME_CLUSTER, token.split('/')[1].substr(0, 5));
+        const sp = token.split('/');
+        if (sp.length === 3) {
+            localStorage.setItem(HOME_CLUSTER, sp[1].substr(0, 5));
+        }
     }
 
     public removeApiToken() {
@@ -56,50 +59,6 @@ export class AuthService {
 
     public getHomeCluster() {
         return localStorage.getItem(HOME_CLUSTER) || undefined;
-    }
-
-    public getUuid() {
-        return localStorage.getItem(USER_UUID_KEY) || undefined;
-    }
-
-    public getOwnerUuid() {
-        return localStorage.getItem(USER_OWNER_UUID_KEY) || undefined;
-    }
-
-    public getIsAdmin(): boolean {
-        return localStorage.getItem(USER_IS_ADMIN) === 'true';
-    }
-
-    public getIsActive(): boolean {
-        return localStorage.getItem(USER_IS_ACTIVE) === 'true';
-    }
-
-    public getUser(): User | undefined {
-        const email = localStorage.getItem(USER_EMAIL_KEY);
-        const firstName = localStorage.getItem(USER_FIRST_NAME_KEY);
-        const lastName = localStorage.getItem(USER_LAST_NAME_KEY);
-        const uuid = this.getUuid();
-        const ownerUuid = this.getOwnerUuid();
-        const isAdmin = this.getIsAdmin();
-        const isActive = this.getIsActive();
-        const username = localStorage.getItem(USER_USERNAME);
-        const prefs = JSON.parse(localStorage.getItem(USER_PREFS) || '{"profile": {}}');
-
-        return email && firstName && lastName && uuid && ownerUuid && username && prefs
-            ? { email, firstName, lastName, uuid, ownerUuid, isAdmin, isActive, username, prefs }
-            : undefined;
-    }
-
-    public saveUser(user: User | UserResource) {
-        localStorage.setItem(USER_EMAIL_KEY, user.email);
-        localStorage.setItem(USER_FIRST_NAME_KEY, user.firstName);
-        localStorage.setItem(USER_LAST_NAME_KEY, user.lastName);
-        localStorage.setItem(USER_UUID_KEY, user.uuid);
-        localStorage.setItem(USER_OWNER_UUID_KEY, user.ownerUuid);
-        localStorage.setItem(USER_IS_ADMIN, JSON.stringify(user.isAdmin));
-        localStorage.setItem(USER_IS_ACTIVE, JSON.stringify(user.isActive));
-        localStorage.setItem(USER_USERNAME, user.username);
-        localStorage.setItem(USER_PREFS, JSON.stringify(user.prefs));
     }
 
     public removeUser() {
@@ -150,12 +109,6 @@ export class AuthService {
                 this.actions.errorFn(reqId, e);
                 throw e;
             });
-    }
-
-    public getRootUuid() {
-        const uuid = this.getOwnerUuid();
-        const uuidParts = uuid ? uuid.split('-') : [];
-        return uuidParts.length > 1 ? `${uuidParts[0]}-${uuidParts[1]}` : undefined;
     }
 
     public getSessions(): Session[] {

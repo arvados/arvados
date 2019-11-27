@@ -53,7 +53,7 @@ export class PublicFavoritesMiddlewareService extends DataExplorerMiddlewareServ
             }
             try {
                 api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
-                const uuidPrefix = api.getState().config.uuidPrefix;
+                const uuidPrefix = api.getState().auth.config.uuidPrefix;
                 const uuid = `${uuidPrefix}-j7d0g-fffffffffffffff`;
                 const responseLinks = await this.services.linkService.list({
                     limit: dataExplorer.rowsPerPage,

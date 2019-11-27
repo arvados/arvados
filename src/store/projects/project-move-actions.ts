@@ -7,6 +7,7 @@ import { dialogActions } from "~/store/dialog/dialog-actions";
 import { startSubmit, stopSubmit, initialize, FormErrors } from 'redux-form';
 import { ServiceRepository } from '~/services/services';
 import { RootState } from '~/store/store';
+import { getUserUuid } from "~/common/getuser";
 import { getCommonResourceServiceError, CommonResourceServiceError } from "~/services/common-service/common-resource-service";
 import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
 import { resetPickerProjectTree } from '~/store/project-tree-picker/project-tree-picker-actions';
@@ -26,7 +27,8 @@ export const openMoveProjectDialog = (resource: { name: string, uuid: string }) 
 
 export const moveProject = (resource: MoveToFormDialogData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const userUuid = getState().auth.user!.uuid;
+        const userUuid = getUserUuid(getState());
+        if (!userUuid) { return; }
         dispatch(startSubmit(PROJECT_MOVE_FORM_NAME));
         try {
             const newProject = await services.projectService.update(resource.uuid, { ownerUuid: resource.ownerUuid });
