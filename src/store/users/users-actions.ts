@@ -65,7 +65,7 @@ export const loginAs = (uuid: string) =>
 export const openUserCreateDialog = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const userUuid = getUserUuid(getState());
-	if (!userUuid) { return; }
+        if (!userUuid) { return; }
         const user = await services.userService.get(userUuid!);
         const virtualMachines = await services.virtualMachineService.list();
         dispatch(reset(USER_CREATE_FORM_NAME));

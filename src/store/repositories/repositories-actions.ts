@@ -42,7 +42,7 @@ export const openRepositoryAttributes = (uuid: string) =>
 export const openRepositoryCreateDialog = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const userUuid = getUserUuid(getState());
-	if (!userUuid) { return; }
+        if (!userUuid) { return; }
         const user = await services.userService.get(userUuid!);
         dispatch(reset(REPOSITORY_CREATE_FORM_NAME));
         dispatch(dialogActions.OPEN_DIALOG({ id: REPOSITORY_CREATE_FORM_NAME, data: { user } }));
@@ -51,7 +51,7 @@ export const openRepositoryCreateDialog = () =>
 export const createRepository = (repository: RepositoryResource) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const userUuid = getUserUuid(getState());
-	if (!userUuid) { return; }	
+        if (!userUuid) { return; }
         const user = await services.userService.get(userUuid!);
         dispatch(startSubmit(REPOSITORY_CREATE_FORM_NAME));
         try {
