@@ -219,7 +219,7 @@ rails_package_version() {
 	local arvados_server_version
 	calculate_go_package_version arvados_server_version cmd/arvados-server
 	cd $P
-	if [ $arvados_server_version > $version ] ; then
+	if [ $arvados_server_version -gt $version ] ; then
 	    version=$arvados_server_version
 	fi
     fi
