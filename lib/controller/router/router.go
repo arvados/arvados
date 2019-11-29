@@ -387,6 +387,10 @@ func (rtr *router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		r2 := *r
 		r = &r2
 		r.Method = m
+	} else if m = r.Header.Get("X-Http-Method-Override"); m != "" {
+		r2 := *r
+		r = &r2
+		r.Method = m
 	}
 	rtr.mux.ServeHTTP(w, r)
 }
