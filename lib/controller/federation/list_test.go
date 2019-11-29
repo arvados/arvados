@@ -338,7 +338,7 @@ func (s *CollectionListSuite) TestCollectionListRemoteUnknown(c *check.C) {
 }
 
 func (s *CollectionListSuite) TestCollectionListRemoteError(c *check.C) {
-	s.addDirectRemote(c, "bbbbb", &arvadostest.APIStub{})
+	s.addDirectRemote(c, "bbbbb", &arvadostest.APIStub{Error: fmt.Errorf("stub backend error")})
 	s.test(c, listTrial{
 		count: "none",
 		limit: -1,
@@ -359,8 +359,8 @@ func (s *CollectionListSuite) test(c *check.C, trial listTrial) {
 	})
 	if trial.expectStatus != 0 {
 		c.Assert(err, check.NotNil)
-		err, _ := err.(interface{ HTTPStatus() int })
-		c.Assert(err, check.NotNil) // err must implement HTTPStatus()
+		err, ok := err.(interface{ HTTPStatus() int })
+		c.Assert(ok, check.Equals, true) // err must implement interface{ HTTPStatus() int }
 		c.Check(err.HTTPStatus(), check.Equals, trial.expectStatus)
 		c.Logf("returned error is %#v", err)
 		c.Logf("returned error string is %q", err)
