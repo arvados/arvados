@@ -40,26 +40,23 @@ EOF
 
 format_last_commit_here() {
     local format="$1"; shift
-    TZ=UTC git log -n1 --first-parent "--format=format:$format" .
+    local dir="${1:-.}"; shift
+    TZ=UTC git log -n1 --first-parent "--format=format:$format" "$dir"
 }
 
 version_from_git() {
     # Output the version being built, or if we're building a
     # dev/prerelease, output a version number based on the git log for
-    # the current working directory.
+    # the given $subdir.
+    local minorversion="$1"; shift # unused
+    local subdir="$1"; shift
     if [[ -n "$ARVADOS_BUILDING_VERSION" ]]; then
         echo "$ARVADOS_BUILDING_VERSION"
         return
     fi
 
-    local git_ts git_hash prefix
-    if [[ -n "$1" ]] ; then
-        prefix="$1"
-    else
-        prefix="0.1"
-    fi
-
-    declare $(format_last_commit_here "git_ts=%ct git_hash=%h")
+    local git_ts git_hash
+    declare $(format_last_commit_here "git_ts=%ct git_hash=%h" "$subdir")
     ARVADOS_BUILDING_VERSION="$(git tag -l |sort -V -r |head -n1).$(date -ud "@$git_ts" +%Y%m%d%H%M%S)"
     echo "$ARVADOS_BUILDING_VERSION"
 }
@@ -73,7 +70,8 @@ nohash_version_from_git() {
 }
 
 timestamp_from_git() {
-    format_last_commit_here "%ct"
+    local subdir="$1"; shift
+    format_last_commit_here "%ct" "$subdir"
 }
 
 handle_python_package () {
@@ -108,29 +106,32 @@ calculate_go_package_version() {
   # to another variable that is passed in as the first argument to this function.
   # see https://www.gnu.org/software/bash/manual/html_node/Shell-Parameters.html
   local -n __returnvar="$1"; shift
-  local src_path="$1"; shift
+  local oldpwd="$PWD"
 
-  cd "$WORKSPACE/$src_path"
+  cd "$WORKSPACE"
   go mod download
-  local version="$(version_from_git)"
-  local timestamp="$(timestamp_from_git)"
 
   # Update the version number and build a new package if the vendor
   # bundle has changed, or the command imports anything from the
   # Arvados SDK and the SDK has changed.
-  declare -a checkdirs=(vendor)
+  declare -a checkdirs=(go.mod go.sum)
+  while [ -n "$1" ]; do
+      checkdirs+=("$1")
+      shift
+  done
   if grep -qr git.curoverse.com/arvados .; then
       checkdirs+=(sdk/go lib)
   fi
+  local timestamp=0
   for dir in ${checkdirs[@]}; do
-      cd "$WORKSPACE/$dir"
-      ts="$(timestamp_from_git)"
+      cd "$WORKSPACE"
+      ts="$(timestamp_from_git "$dir")"
       if [[ "$ts" -gt "$timestamp" ]]; then
-          version=$(version_from_git)
+          version=$(version_from_git "" "$dir")
           timestamp="$ts"
       fi
   done
-
+  cd "$oldpwd"
   __returnvar="$version"
 }
 
@@ -208,20 +209,14 @@ _build_rails_package_scripts() {
 
 rails_package_version() {
     local pkgname="$1"; shift
+    local srcdir="$1"; shift
     if [[ -n "$ARVADOS_BUILDING_VERSION" ]]; then
         echo "$ARVADOS_BUILDING_VERSION"
         return
     fi
     local version="$(version_from_git)"
     if [ $pkgname = "arvados-api-server" -o $pkgname = "arvados-workbench" ] ; then
-	local P="$PWD"
-	cd $WORKSPACE
-	local arvados_server_version
-	calculate_go_package_version arvados_server_version cmd/arvados-server
-	cd $P
-	if [ $arvados_server_version -gt $version ] ; then
-	    version=$arvados_server_version
-	fi
+	calculate_go_package_version version cmd/arvados-server "$srcdir"
     fi
     echo $version
 }
@@ -238,7 +233,7 @@ test_rails_package_presence() {
 
   cd $srcdir
 
-  local version="$(rails_package_version $pkgname)"
+  local version="$(rails_package_version "$pkgname" "$srcdir")"
 
   cd $tmppwd
 
@@ -372,7 +367,7 @@ handle_rails_package() {
     local srcdir="$1"; shift
     cd "$srcdir"
     local license_path="$1"; shift
-    local version="$(rails_package_version $pkgname)"
+    local version="$(rails_package_version "$pkgname" "$srcdir")"
     echo "$version" >package-build.version
     local scripts_dir="$(mktemp --tmpdir -d "$pkgname-XXXXXXXX.scripts")" && \
     (
