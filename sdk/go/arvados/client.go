@@ -281,9 +281,8 @@ func (c *Client) RequestAndDecodeContext(ctx context.Context, dst interface{}, m
 	}
 	if urlValues == nil {
 		// Nothing to send
-	} else if method == "GET" || method == "HEAD" || body != nil {
-		// Must send params in query part of URL (FIXME: what
-		// if resulting URL is too long?)
+	} else if body != nil || ((method == "GET" || method == "HEAD") && len(urlValues.Encode()) < 1000) {
+		// Send params in query part of URL
 		u, err := url.Parse(urlString)
 		if err != nil {
 			return err
@@ -296,6 +295,10 @@ func (c *Client) RequestAndDecodeContext(ctx context.Context, dst interface{}, m
 	req, err := http.NewRequest(method, urlString, body)
 	if err != nil {
 		return err
+	}
+	if (method == "GET" || method == "HEAD") && body != nil {
+		req.Header.Set("X-Http-Method-Override", method)
+		req.Method = "POST"
 	}
 	req = req.WithContext(ctx)
 	req.Header.Set("Content-type", "application/x-www-form-urlencoded")
