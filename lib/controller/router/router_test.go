@@ -364,7 +364,7 @@ func (s *RouterIntegrationSuite) TestCORS(c *check.C) {
 	for _, hdr := range []string{"Authorization", "Content-Type"} {
 		c.Check(rr.Result().Header.Get("Access-Control-Allow-Headers"), check.Matches, ".*"+hdr+".*")
 	}
-	for _, method := range []string{"GET", "HEAD", "PUT", "POST", "DELETE"} {
+	for _, method := range []string{"GET", "HEAD", "PUT", "POST", "PATCH", "DELETE"} {
 		c.Check(rr.Result().Header.Get("Access-Control-Allow-Methods"), check.Matches, ".*"+method+".*")
 	}
 
