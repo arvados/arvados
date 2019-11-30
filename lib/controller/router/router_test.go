@@ -107,6 +107,14 @@ func (s *RouterSuite) TestOptions(c *check.C) {
 		{
 			method:      "POST",
 			path:        "/arvados/v1/collections?limit=123",
+			body:        `{"offset":456,"include_trash":true,"include_old_versions":true}`,
+			header:      http.Header{"X-Http-Method-Override": {"GET"}, "Content-Type": {"application/json"}},
+			shouldCall:  "CollectionList",
+			withOptions: arvados.ListOptions{Limit: 123, Offset: 456, IncludeTrash: true, IncludeOldVersions: true},
+		},
+		{
+			method:      "POST",
+			path:        "/arvados/v1/collections?limit=123",
 			body:        "offset=456&include_trash=true&include_old_versions=1&_method=GET",
 			header:      http.Header{"Content-Type": {"application/x-www-form-urlencoded"}},
 			shouldCall:  "CollectionList",
