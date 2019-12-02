@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from "react";
-import { WarningIcon } from "~/components/icon/icon";
+import { ErrorIcon } from "~/components/icon/icon";
 import { Tooltip } from "@material-ui/core";
 
 interface WarningComponentProps {
@@ -15,8 +15,8 @@ interface WarningComponentProps {
 export const WarningComponent = ({ text, rules, message }: WarningComponentProps) =>
     rules.find(aRule => text.match(aRule) !== null)
     ? message
-        ? <Tooltip title={message}><WarningIcon /></Tooltip>
-        : <WarningIcon />
+        ? <Tooltip title={message}><ErrorIcon /></Tooltip>
+        : <ErrorIcon />
     : null;
 
 interface IllegalNamingWarningProps {
