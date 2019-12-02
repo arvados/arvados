@@ -14,6 +14,8 @@ import { WorkflowIcon } from '~/components/icon/icon';
 import { activateSidePanelTreeItem, toggleSidePanelTreeItemCollapse, SIDE_PANEL_TREE, SidePanelTreeCategory } from '~/store/side-panel-tree/side-panel-tree-actions';
 import { openSidePanelContextMenu } from '~/store/context-menu/context-menu-actions';
 import { noop } from 'lodash';
+import { ResourceKind } from "~/models/resource";
+import { IllegalNamingWarning } from "~/components/warning/warning";
 export interface SidePanelTreeProps {
     onItemActivation: (id: string) => void;
     sidePanelProgress?: boolean;
@@ -39,14 +41,20 @@ export const SidePanelTree = connect(undefined, mapDispatchToProps)(
     (props: SidePanelTreeActionProps) =>
         <TreePicker {...props} render={renderSidePanelItem} pickerId={SIDE_PANEL_TREE} />);
 
-const renderSidePanelItem = (item: TreeItem<ProjectResource>) =>
-    <ListItemTextIcon
+const renderSidePanelItem = (item: TreeItem<ProjectResource>) => {
+    const name = typeof item.data === 'string' ? item.data : item.data.name;
+    const warn = typeof item.data !== 'string' && item.data.kind === ResourceKind.PROJECT
+        ? <IllegalNamingWarning name={name} />
+        : undefined;
+    return <ListItemTextIcon
         icon={getProjectPickerIcon(item)}
-        name={typeof item.data === 'string' ? item.data : item.data.name}
+        name={name}
+        nameDecorator={warn}
         isActive={item.active}
         hasMargin={true}
         iconSize={1.25}
     />;
+};
 
 const getProjectPickerIcon = (item: TreeItem<ProjectResource | string>) =>
     typeof item.data === 'string'
