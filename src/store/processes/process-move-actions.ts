@@ -41,7 +41,7 @@ export const moveProcess = (resource: MoveToFormDialogData) =>
             return process;
         } catch (e) {
             const error = getCommonResourceServiceError(e);
-            if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {
+            if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
                 dispatch(stopSubmit(PROCESS_MOVE_FORM_NAME, { ownerUuid: 'A process with the same name already exists in the target project.' } as FormErrors));
             } else {
                 dispatch(dialogActions.CLOSE_DIALOG({ id: PROCESS_MOVE_FORM_NAME }));

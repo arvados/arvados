@@ -41,7 +41,7 @@ export const updateProcess = (resource: ProcessUpdateFormDialogData) =>
             return updatedProcess;
         } catch (e) {
             const error = getCommonResourceServiceError(e);
-            if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {
+            if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
                 dispatch(stopSubmit(PROCESS_UPDATE_FORM_NAME, { name: 'Process with the same name already exists.' } as FormErrors));
             } else {
                 dispatch(dialogActions.CLOSE_DIALOG({ id: PROCESS_UPDATE_FORM_NAME }));

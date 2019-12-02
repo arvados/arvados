@@ -65,7 +65,7 @@ export const createProject = (project: Partial<ProjectResource>) =>
             return newProject;
         } catch (e) {
             const error = getCommonResourceServiceError(e);
-            if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {
+            if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
                 dispatch(stopSubmit(PROJECT_CREATE_FORM_NAME, { name: 'Project with the same name already exists.' } as FormErrors));
             }
             return undefined;

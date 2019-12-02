@@ -38,7 +38,7 @@ export const moveCollection = (resource: MoveToFormDialogData) =>
             return collection;
         } catch (e) {
             const error = getCommonResourceServiceError(e);
-            if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {
+            if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
                 dispatch(stopSubmit(COLLECTION_MOVE_FORM_NAME, { ownerUuid: 'A collection with the same name already exists in the target project.' } as FormErrors));
             } else {
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_MOVE_FORM_NAME }));

@@ -38,7 +38,7 @@ export const copyCollection = (resource: CopyFormDialogData) =>
             return newCollection;
         } catch (e) {
             const error = getCommonResourceServiceError(e);
-            if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {
+            if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
                 dispatch(stopSubmit(
                     COLLECTION_COPY_FORM_NAME,
                     { ownerUuid: 'A collection with the same name already exists in the target project.' } as FormErrors

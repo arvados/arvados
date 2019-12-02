@@ -36,7 +36,7 @@ export const moveProject = (resource: MoveToFormDialogData) =>
             return newProject;
         } catch (e) {
             const error = getCommonResourceServiceError(e);
-            if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {
+            if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
                 dispatch(stopSubmit(PROJECT_MOVE_FORM_NAME, { ownerUuid: 'A project with the same name already exists in the target project.' } as FormErrors));
             } else if (error === CommonResourceServiceError.OWNERSHIP_CYCLE) {
                 dispatch(stopSubmit(PROJECT_MOVE_FORM_NAME, { ownerUuid: 'Cannot move a project into itself.' } as FormErrors));

@@ -51,7 +51,7 @@ export const createCollection = (data: CollectionCreateFormDialogData) =>
             return newCollection;
         } catch (e) {
             const error = getCommonResourceServiceError(e);
-            if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {
+            if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
                 dispatch(stopSubmit(COLLECTION_CREATE_FORM_NAME, { name: 'Collection with the same name already exists.' } as FormErrors));
             } else if (error === CommonResourceServiceError.NONE) {
                 dispatch(stopSubmit(COLLECTION_CREATE_FORM_NAME));
