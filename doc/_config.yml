@@ -191,7 +191,7 @@ navbar:
       - install/arvados-on-kubernetes.html.textile.liquid
     - Manual installation:
       - install/install-manual-prerequisites.html.textile.liquid
-      - install/install-components.html.textile.liquid
+      - install/config.html.textile.liquid
     - Core:
       - install/install-postgresql.html.textile.liquid
       - install/install-api-server.html.textile.liquid

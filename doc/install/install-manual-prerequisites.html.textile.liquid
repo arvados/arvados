@@ -14,6 +14,7 @@ Before attempting installation, you should begin by reviewing supported platform
 The Arvados storage subsystem is called "keep".  The compute subsystem is called "crunch".
 
 # "Supported GNU/Linux distributions":#supportedlinux
+# "Choosing which components to install":#components
 # "Identity provider":#identity
 # "Storage backend (Keep)":#storage
 # "Container compute scheduler (Crunch)":#scheduler
@@ -28,8 +29,8 @@ table(table table-bordered table-condensed).
 |CentOS 7|Supported|Latest|
 |Debian 10 ("buster")|Supported|Latest|
 |Debian 9 ("stretch")|Supported|Latest|
-|Ubuntu 16.04 ("xenial")|Supported|Latest|
 |Ubuntu 18.04 ("bionic")|Supported|Latest|
+|Ubuntu 16.04 ("xenial")|Supported|Latest|
 |Ubuntu 14.04 ("trusty")|EOL|5f943cd451acfbdcddd84e791738c3aa5926bfed (2019-07-10)|
 |Debian 8 ("jessie")|EOL|5f943cd451acfbdcddd84e791738c3aa5926bfed (2019-07-10)|
 |Ubuntu 12.04 ("precise")|EOL|8ed7b6dd5d4df93a3f37096afe6d6f81c2a7ef6e (2017-05-03)|
@@ -37,6 +38,31 @@ table(table table-bordered table-condensed).
 |CentOS 6 |EOL|997479d1408139e96ecdb42a60b4f727f814f6c9 (2016-12-28)|
 
 Arvados packages are published for current Debian releases (until the EOL date), current Ubuntu LTS releases (until the end of standard support), and the latest version of CentOS.
+
+h2(#components). Choosing which components to install
+
+Arvados consists of many components, some of which may be omitted (at the cost of reduced functionality.)  It may also be helpful to review the "Arvados Architecture":{{site.baseurl}}/architecture to understand how these components interact.
+
+table(table table-bordered table-condensed).
+|\3=. *Core*|
+|"Postgres database":install-postgresql.html |Stores data for the API server.|Required.|
+|"API server":install-api-server.html |Core Arvados logic for managing users, groups, collections, containers, and enforcing permissions.|Required.|
+|\3=. *Keep (storage)*|
+|"Keepstore":install-keepstore.html |Stores content-addressed blocks in a variety of backends (local filesystem, cloud object storage).|Required.|
+|"Keepproxy":install-keepproxy.html |Gateway service to access keep servers from external networks.|Required to be able to use arv-put, arv-get, or arv-mount outside the private Arvados network.|
+|"Keep-web":install-keep-web.html |Gateway service providing read/write HTTP and WebDAV support on top of Keep.|Required to be able to download files from Keep over plain HTTP in Workbench.|
+|"Keep-balance":install-keep-balance.html |Storage cluster maintenance daemon responsible for moving blocks to their optimal server location, adjusting block replication levels, and trashing unreferenced blocks.|Required to free deleted data from underlying storage, and to ensure proper replication and block distribution (including support for storage classes).|
+|\3=. *User interface*|
+|"Single Sign On server":install-sso.html |Web based login to Workbench.|Depends on identity provider.  Not required for Google.  Required for LDAP or standalone database.|
+|"Workbench":install-workbench-app.html, "Workbench2":install-workbench2-app.html |Primary graphical user interface for working with file collections and running containers.|Optional.  Depends on API server, SSO server, keep-web, websockets server.|
+|"Workflow Composer":install-composer.html |Graphical user interface for editing Common Workflow Language workflows.|Optional.  Depends on git server (arv-git-httpd).|
+|\3=. *Additional services*|
+|"Websockets server":install-ws.html |Event distribution server.|Required to view streaming container logs in Workbench.|
+|"Shell server":install-shell-server.html |Synchronize (create/delete/configure) Unix shell accounts with Arvados users.|Optional.|
+|"Git server":install-arv-git-httpd.html |Arvados-hosted git repositories, with Arvados-token based authentication.|Optional, but required by Workflow Composer.|
+|\3=. *Crunch (running containers)*|
+|"crunch-dispatch-slurm":crunch2-slurm/install-prerequisites.html |Run analysis workflows using Docker containers distributed across a SLURM cluster.|Optional if you wish to use Arvados for data management only.|
+|"Node Manager":install-nodemanager.html |Allocate and free cloud VM instances on demand based on workload.|Optional, not needed for a static SLURM cluster (such as on-premise HPC).|
 
 h2(#identity). Identity provider
 
@@ -68,7 +94,9 @@ Choose which backend you will use to schedule computation.
 
 h2(#machines). Hardware (or virtual machines)
 
-For a production installation, here is a suggested configuration:
+Choose how to allocate Arvados services to machines.  We recommend that each machine start with a clean installation of your preferred Linux distribution.
+
+For a production installation, this is a reasonable configuration:
 
 <div class="offset1">
 table(table table-bordered table-condensed).
@@ -103,23 +131,25 @@ You may also use a different method to pick the cluster identifier. The cluster 
 
 h2(#dnstls). DNS entries and TLS certificates
 
-The following services are normally public-facing and require DNS entries and corresponding TLS certificates.  Get certificates from your preferred TLS certificate provider.  We recommend using "Let's Encrypt":https://letsencrypt.org/ .  You can run several services on same node, but each distinct hostname requires its own TLS certificate.  A later part of this guide will describe how to set up Nginx virtual hosts.
+The following services are normally public-facing and require DNS entries and corresponding TLS certificates.  Get certificates from your preferred TLS certificate provider.  We recommend using "Let's Encrypt":https://letsencrypt.org/ .  You can run several services on same node, but each distinct hostname requires its own TLS certificate.
+
+This guide uses the following hostname conventions.  A later part of this guide will describe how to set up Nginx virtual hosts.
 
 <div class="offset1">
 table(table table-bordered table-condensed).
 |_. Function|_. Hostname|
-|Arvados API|@ClusterID@.your.domain|
-|Arvados Git server|git.@ClusterID@.your.domain|
-|Arvados Websockets endpoint|ws.@ClusterID@.your.domain|
-|Arvados SSO Server|auth.your.domain|
-|Arvados Workbench|workbench.@ClusterID@.your.domain|
-|Arvados Workbench 2|workbench2.@ClusterID@.your.domain|
-|Arvados Keepproxy server|keep.@ClusterID@.your.domain|
-|Arvados Keep-web server|download.@ClusterID@.your.domain
+|Arvados API|@ClusterID@.example.com|
+|Arvados Git server|git.@ClusterID@.example.com|
+|Arvados Websockets endpoint|ws.@ClusterID@.example.com|
+|Arvados SSO Server|auth.example.com|
+|Arvados Workbench|workbench.@ClusterID@.example.com|
+|Arvados Workbench 2|workbench2.@ClusterID@.example.com|
+|Arvados Keepproxy server|keep.@ClusterID@.example.com|
+|Arvados Keep-web server|download.@ClusterID@.example.com
 _and_
-*.collections.@ClusterID@.your.domain or
-*<notextile>--</notextile>collections.@ClusterID@.your.domain or
-collections.@ClusterID@.your.domain (see the "keep-web install docs":install-keep-web.html)|
+*.collections.@ClusterID@.example.com or
+*<notextile>--</notextile>collections.@ClusterID@.example.com or
+collections.@ClusterID@.example.com (see the "keep-web install docs":install-keep-web.html)|
 </div>
 
 {% include 'notebox_begin' %}
