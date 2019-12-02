@@ -31,19 +31,23 @@ export const updateCollection = (collection: Partial<CollectionResource>) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const uuid = collection.uuid || '';
         dispatch(startSubmit(COLLECTION_UPDATE_FORM_NAME));
+        dispatch(progressIndicatorActions.START_WORKING(COLLECTION_UPDATE_FORM_NAME));
         try {
-            dispatch(progressIndicatorActions.START_WORKING(COLLECTION_UPDATE_FORM_NAME));
             const updatedCollection = await services.collectionService.update(uuid, collection);
             dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item: updatedCollection as CollectionResource }));
             dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_UPDATE_FORM_NAME }));
             dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_UPDATE_FORM_NAME));
             return updatedCollection;
         } catch (e) {
+            dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_UPDATE_FORM_NAME));
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {
                 dispatch(stopSubmit(COLLECTION_UPDATE_FORM_NAME, { name: 'Collection with the same name already exists.' } as FormErrors));
+            } else {
+                // Unknown error, handling left to caller.
+                dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_UPDATE_FORM_NAME }));
+                throw(e);
             }
-            dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_UPDATE_FORM_NAME));
-            return;
         }
+        return;
     };

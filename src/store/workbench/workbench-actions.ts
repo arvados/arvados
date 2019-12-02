@@ -306,15 +306,19 @@ export const createCollection = (data: collectionCreateActions.CollectionCreateF
 
 export const updateCollection = (data: collectionUpdateActions.CollectionUpdateFormDialogData) =>
     async (dispatch: Dispatch) => {
-        const collection = await dispatch<any>(collectionUpdateActions.updateCollection(data));
-        if (collection) {
-            dispatch(snackbarActions.OPEN_SNACKBAR({
-                message: "Collection has been successfully updated.",
-                hideDuration: 2000,
-                kind: SnackbarKind.SUCCESS
-            }));
-            dispatch<any>(updateResources([collection]));
-            dispatch<any>(reloadProjectMatchingUuid([collection.ownerUuid]));
+        try {
+            const collection = await dispatch<any>(collectionUpdateActions.updateCollection(data));
+            if (collection) {
+                dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: "Collection has been successfully updated.",
+                    hideDuration: 2000,
+                    kind: SnackbarKind.SUCCESS
+                }));
+                dispatch<any>(updateResources([collection]));
+                dispatch<any>(reloadProjectMatchingUuid([collection.ownerUuid]));
+            }
+        } catch (e) {
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.errors.join(''), hideDuration: 2000, kind: SnackbarKind.ERROR }));
         }
     };
 
