@@ -6,6 +6,7 @@ import * as React from 'react';
 import { Button, Grid, StyleRulesCallback, WithStyles, Typography, Tooltip } from '@material-ui/core';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import { withStyles } from '@material-ui/core';
+import { IllegalNamingWarning } from '../warning/warning';
 
 export interface Breadcrumb {
     label: string;
@@ -37,8 +38,10 @@ export const Breadcrumbs = withStyles(styles)(
     {
         items.map((item, index) => {
             const isLastItem = index === items.length - 1;
+            const isFirstItem = index === 0;
             return (
                 <React.Fragment key={index}>
+                    {isFirstItem ? null : <IllegalNamingWarning name={item.label} />}
                     <Tooltip title={item.label}>
                         <Button
                             color="inherit"

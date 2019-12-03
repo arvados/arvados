@@ -26,6 +26,7 @@ import { LinkResource } from '~/models/link';
 import { navigateTo } from '~/store/navigation/navigation-action';
 import { withResourceData } from '~/views-components/data-explorer/with-resources';
 import { CollectionResource } from '~/models/collection';
+import { IllegalNamingWarning } from '~/components/warning/warning';
 
 const renderName = (dispatch: Dispatch, item: { name: string; uuid: string, kind: string }) =>
     <Grid container alignItems="center" wrap="nowrap" spacing={16}>
@@ -34,6 +35,9 @@ const renderName = (dispatch: Dispatch, item: { name: string; uuid: string, kind
         </Grid>
         <Grid item>
             <Typography color="primary" style={{ width: 'auto', cursor: 'pointer' }} onClick={() => dispatch<any>(navigateTo(item.uuid))}>
+                { item.kind === ResourceKind.PROJECT || item.kind === ResourceKind.COLLECTION
+                    ? <IllegalNamingWarning name={item.name} />
+                    : null }
                 {item.name}
             </Typography>
         </Grid>

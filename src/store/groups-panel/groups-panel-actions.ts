@@ -101,7 +101,7 @@ export const createGroup = ({ name, users = [] }: CreateGroupFormData) =>
         } catch (e) {
 
             const error = getCommonResourceServiceError(e);
-            if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {
+            if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
                 dispatch(stopSubmit(CREATE_GROUP_FORM, { name: 'Group with the same name already exists.' } as FormErrors));
             }
 
@@ -118,9 +118,9 @@ interface AddGroupMemberArgs {
 }
 
 /**
- * Group membership is determined by whether the group has can_read permission on an object. 
+ * Group membership is determined by whether the group has can_read permission on an object.
  * If a group G can_read an object A, then we say A is a member of G.
- * 
+ *
  * [Permission model docs](https://doc.arvados.org/api/permission-model.html)
  */
 export const addGroupMember = async ({ user, group, ...args }: AddGroupMemberArgs) => {

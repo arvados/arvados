@@ -33,6 +33,7 @@ export interface ListItemTextIconDataProps {
     isActive?: boolean;
     hasMargin?: boolean;
     iconSize?: number;
+    nameDecorator?: JSX.Element;
 }
 
 type ListItemTextIconProps = ListItemTextIconDataProps & WithStyles<CssRules>;
@@ -40,7 +41,7 @@ type ListItemTextIconProps = ListItemTextIconDataProps & WithStyles<CssRules>;
 export const ListItemTextIcon = withStyles(styles)(
     class extends React.Component<ListItemTextIconProps, {}> {
         render() {
-            const { classes, isActive, hasMargin, name, icon: Icon, iconSize } = this.props;
+            const { classes, isActive, hasMargin, name, icon: Icon, iconSize, nameDecorator } = this.props;
             return (
                 <Typography component='span' className={classes.root}>
                     <ListItemIcon className={classnames({
@@ -50,8 +51,9 @@ export const ListItemTextIcon = withStyles(styles)(
 
                         <Icon style={{ fontSize: `${iconSize}rem` }} />
                     </ListItemIcon>
+                    {nameDecorator || null}
                     <ListItemText primary={
-                        <Typography  className={classnames(classes.listItemText, {
+                        <Typography className={classnames(classes.listItemText, {
                                 [classes.active]: isActive
                             })}>
                             {name}

@@ -8,7 +8,7 @@ import { ApiActions } from "~/services/api/api-actions";
 import { CommonService } from "~/services/common-service/common-service";
 
 export enum CommonResourceServiceError {
-    UNIQUE_VIOLATION = 'UniqueViolation',
+    UNIQUE_NAME_VIOLATION = 'UniqueNameViolation',
     OWNERSHIP_CYCLE = 'OwnershipCycle',
     MODIFYING_CONTAINER_REQUEST_FINAL_STATE = 'ModifyingContainerRequestFinalState',
     NAME_HAS_ALREADY_BEEN_TAKEN = 'NameHasAlreadyBeenTaken',
@@ -27,7 +27,7 @@ export const getCommonResourceServiceError = (errorResponse: any) => {
         const error = errorResponse.errors.join('');
         switch (true) {
             case /UniqueViolation/.test(error):
-                return CommonResourceServiceError.UNIQUE_VIOLATION;
+                return CommonResourceServiceError.UNIQUE_NAME_VIOLATION;
             case /ownership cycle/.test(error):
                 return CommonResourceServiceError.OWNERSHIP_CYCLE;
             case /Mounts cannot be modified in state 'Final'/.test(error):

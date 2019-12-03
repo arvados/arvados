@@ -24,6 +24,7 @@ import { formatFileSize } from "~/common/formatters";
 import { openDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { PropertyChipComponent } from '~/views-components/resource-properties-form/property-chip';
+import { IllegalNamingWarning } from '~/components/warning/warning';
 
 type CssRules = 'card' | 'iconHeader' | 'tag' | 'label' | 'value' | 'link';
 
@@ -89,7 +90,7 @@ export const CollectionPanel = withStyles(styles)(
                                         </IconButton>
                                     </Tooltip>
                                 }
-                                title={item && item.name}
+                                title={item && <span><IllegalNamingWarning name={item.name}/>{item.name}</span>}
                                 titleTypographyProps={this.titleProps}
                                 subheader={item && item.description}
                                 subheaderTypographyProps={this.titleProps} />

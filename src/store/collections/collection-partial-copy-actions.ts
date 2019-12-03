@@ -72,7 +72,7 @@ export const copyCollectionPartial = ({ name, description, projectUuid }: Collec
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_COPY_FORM_NAME));
             } catch (e) {
                 const error = getCommonResourceServiceError(e);
-                if (error === CommonResourceServiceError.UNIQUE_VIOLATION) {
+                if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
                     dispatch(stopSubmit(COLLECTION_PARTIAL_COPY_FORM_NAME, { name: 'Collection with this name already exists.' } as FormErrors));
                 } else if (error === CommonResourceServiceError.UNKNOWN) {
                     dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_FORM_NAME }));
