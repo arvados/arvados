@@ -31,9 +31,14 @@ export const formatFileSize = (size?: number) => {
     return "";
 };
 
-export const formatTime = (time: number) => {
+export const formatTime = (time: number, seconds?: boolean) => {
     const minutes = Math.floor(time / (1000 * 60) % 60).toFixed(0);
     const hours = Math.floor(time / (1000 * 60 * 60)).toFixed(0);
+
+    if (seconds) {
+        const seconds = Math.floor(time / (1000) % 60).toFixed(0);
+        return hours + "h " + minutes + "m " + seconds + "s";
+    }
 
     return hours + "h " + minutes + "m";
 };

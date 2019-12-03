@@ -7,13 +7,13 @@ import { Grid, Typography, withStyles, Tooltip, IconButton, Checkbox } from '@ma
 import { FavoriteStar, PublicFavoriteStar } from '../favorite-star/favorite-star';
 import { ResourceKind, TrashableResource } from '~/models/resource';
 import { ProjectIcon, CollectionIcon, ProcessIcon, DefaultIcon, WorkflowIcon, ShareIcon } from '~/components/icon/icon';
-import { formatDate, formatFileSize } from '~/common/formatters';
+import { formatDate, formatFileSize, formatTime } from '~/common/formatters';
 import { resourceLabel } from '~/common/labels';
 import { connect, DispatchProp } from 'react-redux';
 import { RootState } from '~/store/store';
 import { getResource } from '~/store/resources/resources';
 import { GroupContentsResource } from '~/services/groups-service/groups-service';
-import { getProcess, Process, getProcessStatus, getProcessStatusColor } from '~/store/processes/process';
+import { getProcess, Process, getProcessStatus, getProcessStatusColor, getProcessRuntime } from '~/store/processes/process';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { compose, Dispatch } from 'redux';
 import { WorkflowResource } from '~/models/workflow';
@@ -383,6 +383,12 @@ export const ResourceLastModifiedDate = connect(
         return { date: resource ? resource.modifiedAt : '' };
     })((props: { date: string }) => renderDate(props.date));
 
+export const ResourceCreatedAtDate = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
+        return { date: resource ? resource.createdAt : '' };
+    })((props: { date: string }) => renderDate(props.date));
+
 export const ResourceTrashDate = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<TrashableResource>(props.uuid)(state.resources);
@@ -449,3 +455,14 @@ export const ProcessStatus = compose(
             {status}
         </Typography>;
     });
+
+export const renderRunTime = (time: number) =>
+    <Typography noWrap style={{ minWidth: '45px' }}>
+        {formatTime(time, true)}
+    </Typography>;
+
+export const ContainerRunTime = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const process = getProcess(props.uuid)(state.resources);
+        return { time: process ? getProcessRuntime(process) : 0 };
+    })((props: { time: number }) => renderRunTime(props.time));

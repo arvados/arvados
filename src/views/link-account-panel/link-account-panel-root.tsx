@@ -139,7 +139,7 @@ export const LinkAccountPanelRoot = withStyles(styles)(
                                             <Grid item>
                                                 <Button color="primary" variant="contained" onClick={() => startLinking(LinkAccountType.ADD_LOCAL_TO_REMOTE)}>
                                                     Link an account from {localCluster} to this account
-					                        </Button>
+					                            </Button>
                                             </Grid> </>
                                         : <Grid item>Please visit cluster
 				                        <a href={remoteHostsConfig[loginCluster].workbench2Url + "/link_account"}>{loginCluster}</a>
