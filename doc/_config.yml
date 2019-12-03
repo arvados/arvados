@@ -225,3 +225,4 @@ navbar:
     - External dependencies:
       - install/install-postgresql.html.textile.liquid
       - install/ruby.html.textile.liquid
+      - install/nginx.html.textile.liquid
