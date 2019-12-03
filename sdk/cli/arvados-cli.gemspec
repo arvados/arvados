@@ -7,14 +7,13 @@ if not File.exist?('/usr/bin/git') then
   exit
 end
 
-git_latest_tag = `git tag -l |sort -V -r |head -n1`
-git_latest_tag = git_latest_tag.encode('utf-8').strip
+version = `#{__dir__}/../../build/version-at-commit.sh HEAD`.encode('utf-8').strip
 git_timestamp, git_hash = `git log -n1 --first-parent --format=%ct:%H .`.chomp.split(":")
 git_timestamp = Time.at(git_timestamp.to_i).utc
 
 Gem::Specification.new do |s|
   s.name        = 'arvados-cli'
-  s.version     = "#{git_latest_tag}.#{git_timestamp.strftime('%Y%m%d%H%M%S')}"
+  s.version     = version
   s.date        = git_timestamp.strftime("%Y-%m-%d")
   s.summary     = "Arvados CLI tools"
   s.description = "Arvados command line tools, git commit #{git_hash}"
