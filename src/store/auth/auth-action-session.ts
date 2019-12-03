@@ -5,7 +5,7 @@
 import { Dispatch } from "redux";
 import { setBreadcrumbs } from "~/store/breadcrumbs/breadcrumbs-actions";
 import { RootState } from "~/store/store";
-import { ServiceRepository } from "~/services/services";
+import { ServiceRepository, createServices, setAuthorizationHeader } from "~/services/services";
 import Axios from "axios";
 import { getUserFullname, User } from "~/models/user";
 import { authActions } from "~/store/auth/auth-action";
@@ -16,7 +16,7 @@ import {
 import { normalizeURLPath } from "~/common/url";
 import { Session, SessionStatus } from "~/models/session";
 import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
-import { AuthService, UserDetailsResponse } from "~/services/auth-service/auth-service";
+import { AuthService } from "~/services/auth-service/auth-service";
 import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
 import * as jsSHA from "jssha";
 
@@ -81,15 +81,6 @@ const getRemoteHostConfig = async (remoteHost: string): Promise<Config | null> =
     return null;
 };
 
-const getUserDetails = async (baseUrl: string, token: string): Promise<UserDetailsResponse> => {
-    const resp = await Axios.get<UserDetailsResponse>(`${baseUrl}/users/current`, {
-        headers: {
-            Authorization: `OAuth2 ${token}`
-        }
-    });
-    return resp.data;
-};
-
 const invalidV2Token = "Must be a v2 token";
 
 export const getSaltedToken = (clusterId: string, token: string) => {
@@ -113,19 +104,13 @@ export const validateCluster = async (config: Config, useToken: string):
     Promise<{ user: User; token: string }> => {
 
     const saltedToken = getSaltedToken(config.uuidPrefix, useToken);
-    const user = await getUserDetails(config.baseUrl, saltedToken);
+
+    const svc = createServices(config, { progressFn: () => { }, errorFn: () => { } });
+    setAuthorizationHeader(svc, saltedToken);
+
+    const user = await svc.authService.getUserDetails();
     return {
-        user: {
-            firstName: user.first_name,
-            lastName: user.last_name,
-            uuid: user.uuid,
-            ownerUuid: user.owner_uuid,
-            email: user.email,
-            isAdmin: user.is_admin,
-            isActive: user.is_active,
-            username: user.username,
-            prefs: user.prefs
-        },
+        user,
         token: saltedToken,
     };
 };

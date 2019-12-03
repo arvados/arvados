@@ -61,6 +61,7 @@ import { loadFileViewersConfig } from '~/store/file-viewers/file-viewers-actions
 import { collectionAdminActionSet } from '~/views-components/context-menu/action-sets/collection-admin-action-set';
 import { processResourceAdminActionSet } from '~/views-components/context-menu/action-sets/process-resource-admin-action-set';
 import { projectAdminActionSet } from '~/views-components/context-menu/action-sets/project-admin-action-set';
+import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
 
 console.log(`Starting arvados [${getBuildInfo()}]`);
 
@@ -99,8 +100,20 @@ fetchConfig()
                 store.dispatch(progressIndicatorActions.TOGGLE_WORKING({ id, working }));
             },
             errorFn: (id, error) => {
-                // console.error("Backend error:", error);
-                // store.dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Backend error", kind: SnackbarKind.ERROR }));
+                console.error("Backend error:", error);
+                if (error.errors) {
+                    store.dispatch(snackbarActions.OPEN_SNACKBAR({
+                        message: `${error.errors[0]}`,
+                        kind: SnackbarKind.ERROR,
+                        hideDuration: 8000
+                    }));
+                } else {
+                    store.dispatch(snackbarActions.OPEN_SNACKBAR({
+                        message: `${error.message}`,
+                        kind: SnackbarKind.ERROR,
+                        hideDuration: 8000
+                    }));
+                }
             }
         });
         const store = configureStore(history, services);

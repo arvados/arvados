@@ -3,11 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { authActions, AuthAction } from "./auth-action";
-import { User, UserResource } from "~/models/user";
+import { User } from "~/models/user";
 import { ServiceRepository } from "~/services/services";
 import { SshKeyResource } from '~/models/ssh-key';
 import { Session } from "~/models/session";
-import { Config } from '~/common/config';
+import { Config, mockConfig } from '~/common/config';
 
 export interface AuthState {
     user?: User;
@@ -19,6 +19,7 @@ export interface AuthState {
     loginCluster: string;
     remoteHosts: { [key: string]: string };
     remoteHostsConfig: { [key: string]: Config };
+    config: Config;
 }
 
 const initialState: AuthState = {
@@ -30,20 +31,16 @@ const initialState: AuthState = {
     homeCluster: "",
     loginCluster: "",
     remoteHosts: {},
-    remoteHostsConfig: {}
+    remoteHostsConfig: {},
+    config: mockConfig({})
 };
 
 export const authReducer = (services: ServiceRepository) => (state = initialState, action: AuthAction) => {
     return authActions.match(action, {
-        SAVE_API_TOKEN: (token: string) => {
-            return { ...state, apiToken: token };
-        },
-        SAVE_USER: (user: UserResource) => {
-            return { ...state, user };
-        },
-        CONFIG: ({ config }) => {
+        SET_CONFIG: ({ config }) => {
             return {
                 ...state,
+                config,
                 localCluster: config.uuidPrefix,
                 remoteHosts: { ...config.remoteHosts, [config.uuidPrefix]: new URL(config.rootUrl).host },
                 homeCluster: config.loginCluster || config.uuidPrefix,
@@ -57,7 +54,7 @@ export const authReducer = (services: ServiceRepository) => (state = initialStat
                 remoteHostsConfig: { ...state.remoteHostsConfig, [config.uuidPrefix]: config },
             };
         },
-        INIT: ({ user, token }) => {
+        INIT_USER: ({ user, token }) => {
             return { ...state, user, apiToken: token, homeCluster: user.uuid.substr(0, 5) };
         },
         LOGIN: () => {
@@ -67,7 +64,7 @@ export const authReducer = (services: ServiceRepository) => (state = initialStat
             return { ...state, apiToken: undefined };
         },
         USER_DETAILS_SUCCESS: (user: User) => {
-            return { ...state, user };
+            return { ...state, user, homeCluster: user.uuid.substr(0, 5) };
         },
         SET_SSH_KEYS: (sshKeys: SshKeyResource[]) => {
             return { ...state, sshKeys };

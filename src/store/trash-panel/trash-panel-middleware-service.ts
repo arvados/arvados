@@ -7,6 +7,7 @@ import {
     listResultsToDataExplorerItemsMeta
 } from "../data-explorer/data-explorer-middleware-service";
 import { RootState } from "../store";
+import { getUserUuid } from "~/common/getuser";
 import { DataColumns } from "~/components/data-table/data-table";
 import { ServiceRepository } from "~/services/services";
 import { SortDirection } from "~/components/data-table/data-column";
@@ -64,9 +65,10 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
                 .addOrder(sortDirection, columnName, GroupContentsResourcePrefix.PROJECT);
         }
 
+        const userUuid = getUserUuid(api.getState());
+        if (!userUuid) { return; }
         try {
             api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
-            const userUuid = this.services.authService.getUuid()!;
             const listResults = await this.services.groupsService
                 .contents(userUuid, {
                     ...dataExplorerToListParams(dataExplorer),
@@ -104,4 +106,3 @@ const couldNotFetchTrashContents = () =>
         message: 'Could not fetch trash contents.',
         kind: SnackbarKind.ERROR
     });
-

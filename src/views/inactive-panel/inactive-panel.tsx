@@ -54,7 +54,7 @@ export interface InactivePanelStateProps {
 type InactivePanelProps = WithStyles<CssRules> & InactivePanelActionProps & InactivePanelStateProps;
 
 export const InactivePanel = connect((state: RootState) => ({
-    inactivePageText: state.config.clusterConfig.Workbench.InactivePageHTML
+    inactivePageText: state.auth.config.clusterConfig.Workbench.InactivePageHTML
 }), mapDispatchToProps)(withStyles(styles)((({ classes, startLinking, inactivePageText }: InactivePanelProps) =>
     <Grid container justify="center" alignItems="center" direction="column" spacing={24}
         className={classes.root}

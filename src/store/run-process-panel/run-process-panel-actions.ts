@@ -6,6 +6,7 @@ import { Dispatch } from 'redux';
 import { unionize, ofType, UnionOf } from "~/common/unionize";
 import { ServiceRepository } from "~/services/services";
 import { RootState } from '~/store/store';
+import { getUserUuid } from "~/common/getuser";
 import { WorkflowResource, getWorkflowInputs, parseWorkflowDefinition } from '~/models/workflow';
 import { getFormValues, initialize } from 'redux-form';
 import { RUN_PROCESS_BASIC_FORM, RunProcessBasicFormData } from '~/views/run-process-panel/run-process-basic-form';
@@ -118,7 +119,8 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
     const basicForm = getFormValues(RUN_PROCESS_BASIC_FORM)(state) as RunProcessBasicFormData;
     const inputsForm = getFormValues(RUN_PROCESS_INPUTS_FORM)(state) as WorkflowInputsData;
     const advancedForm = getFormValues(RUN_PROCESS_ADVANCED_FORM)(state) as RunProcessAdvancedFormData || DEFAULT_ADVANCED_FORM_VALUES;
-    const userUuid = getState().auth.user!.uuid;
+    const userUuid = getUserUuid(getState());
+    if (!userUuid) { return; }
     const pathname = getState().runProcessPanel.processPathname;
     const { processOwnerUuid, selectedWorkflow } = state.runProcessPanel;
     if (selectedWorkflow) {

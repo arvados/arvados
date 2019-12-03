@@ -238,6 +238,9 @@ const getRootNodeChildrenIds = <T>(tree: Tree<T>) =>
 
 
 const addChild = (parentId: string, childId: string) => <T>(tree: Tree<T>): Tree<T> => {
+    if (childId === "") {
+        return tree;
+    }
     const node = getNode(parentId)(tree);
     if (node) {
         const children = node.children.some(id => id === childId)
