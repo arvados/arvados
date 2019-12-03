@@ -38,14 +38,14 @@ Size suffixes are K=10 ^3^, Ki=2 ^10^ , M=10 ^6^, Mi=2 ^20^, G=10 ^9^, Gi=2 ^30^
 
 h3(#empty). Create empty configuration file
 
-<pre>
-export ClusterID=xxxxx
-mkdir -p /etc/arvados
-cat > /etc/arvados/config.yml <<EOF
+<notextile>
+<pre><code># <span class="userinput">export ClusterID=xxxxx</span>
+# <span class="userinput">mkdir -p /etc/arvados</span>
+# <span class="userinput">cat &gt; /etc/arvados/config.yml &lt;&lt;EOF
 Clusters:
   ${ClusterID}:
-EOF
-</pre>
+EOF</span></code></pre>
+</notextile>
 
 h2. Nginx configuration
 

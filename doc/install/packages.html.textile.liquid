@@ -37,14 +37,14 @@ First, register the Curoverse signing key in apt's database:
 
 {% include 'install_debian_key' %}
 
-Configure apt to retrieve packages from the Arvados package repository. This command depends on your OS vendor and version:
+As root, add the Arvados package repository to your sources.  This command depends on your OS vendor and version:
 
 table(table table-bordered table-condensed).
 |_. OS version|_. Command|
-|Debian 10 ("buster")|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/ buster main" &#x7c; sudo tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
-|Debian 9 ("stretch")|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/ stretch main" &#x7c; sudo tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
-|Ubuntu 18.04 ("bionic")[1]|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/ bionic main" &#x7c; sudo tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
-|Ubuntu 16.04 ("xenial")[1]|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/ xenial main" &#x7c; sudo tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
+|Debian 10 ("buster")|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/ buster main" &#x7c; tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
+|Debian 9 ("stretch")|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/ stretch main" &#x7c; tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
+|Ubuntu 18.04 ("bionic")[1]|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/ bionic main" &#x7c; tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
+|Ubuntu 16.04 ("xenial")[1]|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/ xenial main" &#x7c; tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
 
 
 {% include 'notebox_begin' %}
@@ -56,6 +56,6 @@ fn1. Arvados packages for Ubuntu may depend on third-party packages in Ubuntu's 
 Retrieve the package list:
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo apt-get update</span>
+<pre><code># <span class="userinput">apt-get update</span>
 </code></pre>
 </notextile>

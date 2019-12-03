@@ -10,10 +10,12 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
 # "Introduction":#introduction
+# "Install dependencies":#dependencies
 # "Set up database":#database-setup
 # "Update config.yml":#update-config
 # "Update nginx configuration":#update-nginx
-# "Install packages":#install-packages
+# "Install arvados-api-server and arvados-controller":#install-packages
+# "Confirm working installation":#confirm-working
 
 h2(#introduction). Introduction
 
@@ -23,9 +25,14 @@ Here is a simplified diagram showing the relationship between the core services.
 
 !(full-width){{site.baseurl}}/images/proxy-chain.svg!
 
-h2(#database-setup). Set up database
+h2(#dependencies). Install dependencies
 
-"On the node that will host the database, install PostgreSQL":install-postgresql.html .
+# "Install PostgreSQL":install-postgresql.html
+# "Install Ruby and Bundler":ruby.html
+# "Install nginx":nginx.html
+# "Install Phusion Passenger":https://www.phusionpassenger.com/library/walkthroughs/deploy/ruby/ownserver/nginx/oss/install_passenger_main.html
+
+h2(#database-setup). Set up database
 
 {% assign service_role = "arvados" %}
 {% assign service_database = "arvados_production" %}
@@ -43,6 +50,8 @@ h3. Tokens
     ManagementToken: <span class="userinput">"$management_token"</span>
     API:
       RailsSessionSecretToken: <span class="userinput">"$rails_secret_token"</span>
+    Collections:
+      BlobSigningKey: <span class="userinput">"blob_signing_key"</span>
 </code></pre>
 </notextile>
 
@@ -51,6 +60,8 @@ h3. Tokens
 @ManagementToken@ is used to authenticate access to system metrics.
 
 @API.RailsSessionSecretToken@ is required by the API server.
+
+@Collections.BlobSigningKey@ is used to control access to Keep blocks.
 
 You can generate a random token for each of these items at the command line like this:
 
@@ -94,11 +105,10 @@ The @Services@ section of the configuration helps Arvados components contact one
 
 h2(#update-nginx). Update nginx configuration
 
-Create a new file @/etc/nginx/conf.d/arvados-api-and-controller.conf@ . Configuration options that need attention are marked with "TODO".
+Use a text editor to create a new file @/etc/nginx/conf.d/arvados-api-and-controller.conf@ with the following configuration.  Options that need attention are marked with "TODO".
 
 <notextile>
-<pre><code>
-proxy_http_version 1.1;
+<pre><code>proxy_http_version 1.1;
 
 # When Keep clients request a list of Keep services from the API
 # server, use the origin IP address to determine if the request came
@@ -163,7 +173,9 @@ server {
   index  index.html index.htm index.php;
 
   passenger_enabled on;
-  # If you're using RVM, uncomment the line below.
+
+  # TODO: If you are using RVM, uncomment the line below.
+  # If you're using system ruby, leave it commented out.
   #passenger_ruby /usr/local/rvm/wrappers/default/ruby;
 
   # This value effectively limits the size of API objects users can
@@ -176,29 +188,23 @@ server {
 </code></pre>
 </notextile>
 
-h2(#install-packages). Install packages
-
-Step 1: "Install Ruby and Bundler":ruby.html
-
-Step 2: "Install Nginx and Phusion Passenger":https://www.phusionpassenger.com/library/walkthroughs/deploy/ruby/ownserver/nginx/oss/install_passenger_main.html.
-
-Step 3: Install arvados-api-server and arvados-controller
-
-h3. Debian and Ubuntu
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo apt-get install bison build-essential libcurl4-openssl-dev git arvados-api-server arvados-controller</span>
-</code></pre>
-</notextile>
+h2(#install-packages). Install arvados-api-server and arvados-controller
 
 h3. Centos 7
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo yum install bison make automake gcc gcc-c++ libcurl-devel git arvados-api-server arvados-controller</span>
+<pre><code># <span class="userinput">yum install bison make automake gcc gcc-c++ libcurl-devel git arvados-api-server arvados-controller</span>
 </code></pre>
 </notextile>
 
-h2. Confirm working installation
+h3. Debian and Ubuntu
+
+<notextile>
+<pre><code># <span class="userinput">apt-get --no-install-recommends install bison build-essential libcurl4-openssl-dev git zlib1g-dev arvados-api-server arvados-controller</span>
+</code></pre>
+</notextile>
+
+h2(#confirm-working). Confirm working installation
 
 Confirm working controller:
 
@@ -218,6 +224,6 @@ Confirm that you can use the system root token to act as the system root user:
 $ curl -H "Authorization: Bearer $system_root_token" https://xxxxx.example.com/arvados/v1/users/current
 </pre>
 
-h2. Troubleshooting
+h3. Troubleshooting
 
 See the admin page on "Logging":{{site.baseurl}}/admin/logging.html .

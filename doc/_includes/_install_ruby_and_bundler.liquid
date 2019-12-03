@@ -18,9 +18,9 @@ The Ruby version shipped with Centos 7 is too old.  Use "RVM.":#rvm
 
 h3. Debian and Ubuntu
 
-<pre>
-apt-get --no-install-recommends install bundler
-</pre>
+<notextile>
+<pre><code># <span class="userinput">apt-get --no-install-recommends install ruby-dev bundler</span></code></pre>
+</notextile>
 
 h2(#rvm). Option 2: Install with RVM
 
@@ -41,7 +41,7 @@ apt-get --no-install-recommends install gpg curl
 h3. Install RVM
 
 <notextile>
-<pre><code># <span class="userinput">gpg --keyserver keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3 7D2BAF1CF37B13E2069D6956105BD0E739499BDB
+<pre><code># <span class="userinput">gpg --keyserver pool.sks-keyservers.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3 7D2BAF1CF37B13E2069D6956105BD0E739499BDB
 \curl -sSL https://get.rvm.io | bash -s stable --ruby=2.5
 </span></code></pre></notextile>
 

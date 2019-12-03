@@ -11,7 +11,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 Keepstore provides access to underlying storage for reading and writing content-addressed blocks, with enforcement of Arvados permissions.  Keepstore supports a variety of cloud object storage and POSIX filesystems for its backing store.
 
-h3. Plan your storage layout
+h2. Plan your storage layout
 
 In the steps below, you will configure a number of backend storage volumes (like local filesystems and S3 buckets) and specify which keepstore servers have read-only and read-write access to which volumes.
 
@@ -27,61 +27,28 @@ By convention, we use the following hostname pattern:
 <div class="offset1">
 table(table table-bordered table-condensed).
 |_Hostname_|
-|keep0.@uuid_prefix@.your.domain|
-|keep1.@uuid_prefix@.your.domain|
+|keep0.@ClusterID@.example.com|
+|keep1.@ClusterID@.example.com|
 </div>
 
 Keepstore servers should not be directly accessible from the Internet (they are accessed via "keepproxy":install-keepproxy.html), so the hostnames only need to resolve on the private network.
 
-h2. Install Keepstore
+h2. Update cluster config
 
-On Debian-based systems:
+h3. List services
 
-<notextile>
-<pre><code>~$ <span class="userinput">sudo apt-get install keepstore</span>
-</code></pre>
-</notextile>
-
-On Red Hat-based systems:
+Add each keepstore server to @/etc/arvados/config.yml@ .
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo yum install keepstore</span>
-</code></pre>
-</notextile>
-
-Verify that Keepstore is functional:
-
-<notextile>
-<pre><code>~$ <span class="userinput">keepstore --version</span>
-</code></pre>
-</notextile>
-
-h3. Create a superuser token
-
-If you haven't already done so, create a superuser token.
-
-{% include 'create_superuser_token' %}
-
-h3. Update cluster config file
-
-Add or update the following sections of @/etc/arvados/config.yml@ as needed. Refer to the examples and comments in the "default config.yml file":{{site.baseurl}}/admin/config.html for more information.
-
-<notextile>
-<pre><code>Clusters:
-  <span class="userinput">uuid_prefix</span>:
-    SystemRootToken: zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
-    Services:
+<pre><code>    Services:
       Keepstore:
+        # No ExternalURL because they are only accessed by the internal subnet.
         InternalURLs:
-          "http://<span class="userinput">keep0.uuid_prefix.example.com</span>:25107/": {}
-    API:
-      MaxKeepBlobBuffers: 128
+          "http://<span class="userinput">keep0.ClusterID.example.com</span>:25107/": {}
+          "http://<span class="userinput">keep1.ClusterID.example.com</span>:25107/": {}
+	  # and so forth
 </code></pre>
 </notextile>
-
-h3. Note on storage management
-
-On its own, a keepstore server never deletes data. Instead, the keep-balance service determines which blocks are candidates for deletion and instructs the keepstore to move those blocks to the trash. Please see the "Balancing Keep servers":{{site.baseurl}}/admin/keep-balance.html for more details.
 
 h3. Configure storage volumes
 
@@ -91,54 +58,32 @@ Available storage volume types include POSIX filesystems and cloud object storag
 * If you are using S3-compatible object storage (including Amazon S3, Google Cloud Storage, and Ceph RADOS), follow the setup instructions on "S3 Object Storage":configure-s3-object-storage.html
 * If you are using Azure Blob Storage, follow the setup instructions on "Azure Blob Storage":configure-azure-blob-storage.html
 
-h2. Run keepstore as a supervised service
+h2. Install keepstore package
 
-h3. Start the service (option 1: systemd)
+On each host that will run keepstore, install the @keepstore@ package.
 
-If your system does not use systemd, skip this section and follow the "runit instructions":#runit instead.
-
-If your system uses systemd, the keepstore service should already be set up. Restart it to read the updated configuration, and check its status:
+h3. Centos 7
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo systemctl restart keepstore</span>
-~$ <span class="userinput">sudo systemctl status keepstore</span>
-&#x25cf; keepstore.service - Arvados Keep Storage Daemon
-   Loaded: loaded (/etc/systemd/system/keepstore.service; enabled; vendor preset: enabled)
-   Active: active (running) since Tue 2019-09-10 14:16:29 UTC; 1s ago
-     Docs: https://doc.arvados.org/
- Main PID: 25465 (keepstore)
-    Tasks: 9 (limit: 4915)
-   CGroup: /system.slice/keepstore.service
-           └─25465 /usr/bin/keepstore
-[...]
+<pre><code># <span class="userinput">yum install keepstore</span>
 </code></pre>
 </notextile>
 
-h3(#runit). Start the service (option 2: runit)
-
-Install runit to supervise the keepstore daemon.  {% include 'install_runit' %}
-
-Install this script as the run script @/etc/sv/keepstore/run@ for the keepstore service:
+h3. Debian and Ubuntu
 
 <notextile>
-<pre><code>#!/bin/sh
-
-exec 2>&1
-GOGC=10 exec keepstore
+<pre><code># <span class="userinput">apt-get install keepstore</span>
 </code></pre>
 </notextile>
-
-h2. Set up additional servers
-
-Repeat the above sections to prepare volumes and bring up supervised services on each Keepstore server you are setting up.
 
 h2. Restart the API server and controller
 
 After adding all of your keepstore servers to the Services section, make sure the cluster config file is up to date on the API server host, and restart the API server and controller processes to ensure the changes are applied.
 
-<pre>
-sudo systemctl restart nginx arvados-controller
-</pre>
+<notextile>
+<pre><code># <span class="userinput">systemctl restart nginx arvados-controller</span>
+</code></pre>
+</notextile>
 
 h2(#testing). Testing keep
 
@@ -161,3 +106,7 @@ $ arv-put --portable-data-hash hello.txt
 $ arv-get 59389a8f9ee9d399be35462a0f92541c+53/hello.txt
 hello world!
 </pre>
+
+h3. Note on storage management
+
+On its own, a keepstore server never deletes data. Instead, the keep-balance service determines which blocks are candidates for deletion and instructs the keepstore to move those blocks to the trash. Please see the "Balancing Keep servers":{{site.baseurl}}/admin/keep-balance.html for more details.
