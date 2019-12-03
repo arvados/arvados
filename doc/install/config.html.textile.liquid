@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: installguide
-title: Configuration file
+title: Configuration files
 ...
 {% comment %}
 Copyright (C) The Arvados Authors. All rights reserved.
@@ -9,16 +9,22 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-The configuration file is normally found at @/etc/arvados/config.yml@.  This configuration file should be kept in sync across every node in the cluster, except compute nodes (which usually do not require config.yml).  We recommend using a devops configuration management tool such as Puppet to synchronize the config file.
+h2. Arados /etc/arvados/config.yml
 
-h2. Syntax
+The configuration file is normally found at @/etc/arvados/config.yml@ and will be referred to as just @config.yml@ in this guide.  This configuration file should be kept in sync across every node in the cluster, except compute nodes (which usually do not require config.yml).  We recommend using a devops configuration management tool such as "Puppet":https://puppet.com/open-source/ to synchronize the config file.
 
-The configuration file is in "YAML":https://yaml.org/ format.  This is a block syntax where indentation is significant (similar to Python).  By convention we use two space indent.  The first line of the file is always "Clusters:", underneath it at the first indent level is the cluster id.  All the actual cluster configuration comes under the cluster id.  This means all configuration parameters are indented by at least two levels (four spaces).  Comments start with @#@ .  Example
+h3. Syntax
+
+The configuration file is in "YAML":https://yaml.org/ format.  This is a block syntax where indentation is significant (similar to Python).  By convention we use two space indent.  The first line of the file is always "Clusters:", underneath it at the first indent level is the Cluster ID.  All the actual cluster configuration come under the Cluster ID.  This means all configuration parameters are indented by at least two levels (four spaces).  Comments start with @#@ .
+
+We recommend a YAML-syntax plugin for your favorite text editor, such as @yaml-mode@ (Emacs) or @yaml-vim@.
+
+Example file:
 
 <pre>
 Clusters:                         # Clusters block, everything else is listed under this
-  abcde:                          # Cluster ID
-    ExampleConfigKey: "fghijk"    # An example configuration string for cluster 'abcde'
+  abcde:                          # Cluster ID, everything under it is configuration for this cluster
+    ExampleConfigKey: "fghijk"    # An example configuration key
     ExampleConfigGroup:           # A group of keys
       ExampleDurationConfig: 12s  # Example duration
       ExampleSizeConfig: 99KiB    # Example with a size suffix
@@ -30,57 +36,17 @@ Duration suffixes are s=seconds, m=minutes or h=hours.
 
 Size suffixes are K=10 ^3^, Ki=2 ^10^ , M=10 ^6^, Mi=2 ^20^, G=10 ^9^, Gi=2 ^30^, T=10 ^12^, Ti=2 ^40^, P=10 ^15^, Pi=2 ^50^, E=10 ^18^, Ei=2 ^60^.  You can optionally follow with a "B" (eg "MB" or "MiB") for readability (it does not affect the units.)
 
-h2. Essential Configuration
-
-@SystemRootToken@ is used by Arvados system services to authenticate as the system (root) user when communicating with the API server.
-
-@ManagementToken@ is used to authenticate access to system metrics.
-
-@API.RailsSessionSecretToken@ is required by the API server.
-
-@Collections.BlobSigningKey@ is used to construct blob signatures, as part of storage layer access control.
-
-You can generate a random token for each of these items at the command line like this:
-
-<notextile>
-<pre><code>~$ <span class="userinput">tr -dc 0-9a-zA-Z &lt;/dev/urandom | head -c40; echo</span>
-</code></pre>
-</notextile>
-
-Sample configuration file fragment.  Fill in each configuration item with the tokens you generate.
+h3(#empty). Create empty configuration file
 
 <pre>
+export ClusterID=xxxxx
+mkdir -p /etc/arvados
+cat > /etc/arvados/config.yml <<EOF
 Clusters:
-  abcde:
-    SystemRootToken: "$system_root_token"
-    ManagementToken: "$management_token"
-    API:
-      RailsSessionSecretToken: "$secret_token"
-    Collections:
-      BlobSigningKey: "$blob_signing_key"
+  ${ClusterID}:
+EOF
 </pre>
 
-h2. Services
+h2. Nginx configuration
 
-The @Services@ section of the configuration helps Arvados components contact one another.
-
-Each service has one or more @InternalURLs@ and an @ExternalURL@.
-
-The @InternalURLs@ describe where the service actually runs.
-
-The @ExternalURL@ is how clients contact the service.
-
-<pre>
-Clusters:
-  abcde:
-    Services:
-      Controller:
-        ExternalURL: "https://abcde.example.com"
-        InternalURLs:
-          "http://abcde.example.com:8000": {}
-      RailsAPI:
-        # Does not have an ExternalURL
-        InternalURLs:
-          "http://abcde.example.com:8001": {}
-
-</pre>
+This guide will also cover setting up "Nginx":https://www.nginx.com/ as a reverse proxy for Arvados services.  Nginx performs two main functions: TLS termination and virtual host routing.  The virtual host configuration for each component will go in its own file in @/etc/nginx/conf.d/@.

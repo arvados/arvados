@@ -4,12 +4,12 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-<ol>
+<ol class=>
 <li>Start a shell for the postgres user:
 <notextile><pre>~$ <span class="userinput">sudo -u postgres bash</span></pre></notextile>
 </li>
 <li>Generate a new database password:
-<notextile><pre>$ <span class="userinput">ruby -e 'puts rand(2**128).to_s(36)'</span>
+<notextile><pre>$ <span class="userinput"><span class="userinput">tr -dc 0-9a-zA-Z &lt;/dev/urandom | head -c25; echo</span>
 yourgeneratedpassword
 </pre></notextile> Record this.  You'll need it when you set up the Rails server later.
 </li>

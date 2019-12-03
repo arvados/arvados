@@ -191,11 +191,10 @@ navbar:
       - install/arvados-on-kubernetes.html.textile.liquid
     - Manual installation:
       - install/install-manual-prerequisites.html.textile.liquid
+      - install/packages.html.textile.liquid
       - install/config.html.textile.liquid
     - Core:
-      - install/install-postgresql.html.textile.liquid
       - install/install-api-server.html.textile.liquid
-      - install/install-controller.html.textile.liquid
     - Keep:
       - install/install-keepstore.html.textile.liquid
       - install/configure-fs-storage.html.textile.liquid
@@ -223,3 +222,6 @@ navbar:
       - install/install-compute-ping.html.textile.liquid
     - Containers API support on cloud (beta):
       - install/install-dispatch-cloud.html.textile.liquid
+    - External dependencies:
+      - install/install-postgresql.html.textile.liquid
+      - install/ruby.html.textile.liquid

@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: installguide
-title: Install the API server
+title: Install API server and Controller
 ...
 {% comment %}
 Copyright (C) The Arvados Authors. All rights reserved.
@@ -9,212 +9,154 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-h2. Install prerequisites
+# "Introduction":#introduction
+# "Set up database":#database-setup
+# "Update config.yml":#update-config
+# "Update nginx configuration":#update-nginx
+# "Install packages":#install-packages
 
-The Arvados package repository includes an API server package that can help automate much of the deployment.
+h2(#introduction). Introduction
 
-h3(#install_ruby_and_bundler). Install Ruby and Bundler
+The Arvados core API server consists of four services: PostgreSQL, Arvados Rails API, Arvados Controller, and Nginx.
 
-{% include 'install_ruby_and_bundler' %}
+Here is a simplified diagram showing the relationship between the core services.  Client requests arrive at the public-facing Nginx reverse proxy.  The request is forwarded to Arvados controller.  The controller is able handle some requests itself, the rest are forwarded to the Arvados Rails API.  The Rails API server implements the majority of business logic, communicating with the PostgreSQL database to fetch data and make transactional updates.  All services are stateless, except the PostgreSQL database.  This guide assumes all of these services will be installed on the same node, but it is possible to install these services across multiple nodes.
 
-h2(#install_apiserver). Install API server and dependencies
+!(full-width){{site.baseurl}}/images/proxy-chain.svg!
 
-On a Debian-based system, install the following packages:
+h2(#database-setup). Set up database
+
+"On the node that will host the database, install PostgreSQL":install-postgresql.html .
+
+{% assign service_role = "arvados" %}
+{% assign service_database = "arvados_production" %}
+{% assign use_contrib = true %}
+{% include 'install_postgres_database' %}
+
+h2(#update-config). Update config.yml
+
+Starting from an "empty config.yml file,":config.html#empty add the following configuration keys.
+
+h3. Tokens
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo apt-get install bison build-essential libcurl4-openssl-dev git arvados-api-server</span>
+<pre><code>    SystemRootToken: <span class="userinput">"$system_root_token"</span>
+    ManagementToken: <span class="userinput">"$management_token"</span>
+    API:
+      RailsSessionSecretToken: <span class="userinput">"$rails_secret_token"</span>
 </code></pre>
 </notextile>
 
-On a Red Hat-based system, install the following packages:
+@SystemRootToken@ is used by Arvados system services to authenticate as the system (root) user when communicating with the API server.
+
+@ManagementToken@ is used to authenticate access to system metrics.
+
+@API.RailsSessionSecretToken@ is required by the API server.
+
+You can generate a random token for each of these items at the command line like this:
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo yum install bison make automake gcc gcc-c++ libcurl-devel git arvados-api-server</span>
+<pre><code>~$ <span class="userinput">tr -dc 0-9a-zA-Z &lt;/dev/urandom | head -c50; echo</span>
 </code></pre>
 </notextile>
 
-{% include 'install_git' %}
-
-h2(#configure_application). Configure the API server
-
-Edit @/etc/arvados/config.yml@ to set the keys below.  Only the most important configuration options are listed here.  The example configuration fragments given below should be merged into a single configuration structure.  Correct indentation is important.  The full set of configuration options are listed in "config.yml":{{site.baseurl}}/admin/config.html
-
-h3(#uuid_prefix). ClusterID
-
-The @ClusterID@ is used for all database identifiers to identify the record as originating from this site.  It is the first key under @Clusters@ in @config.yml@.  It must be exactly 5 lowercase ASCII letters and digits.  All configuration items go under the cluster id key (replace @zzzzz@ with your cluster id in the examples below).
+h3. PostgreSQL.Connection
 
 <notextile>
-<pre><code>Clusters:
-  <span class="userinput">zzzzz</span>:
-    ...</code></pre>
-</notextile>
-
-h3(#configure). PostgreSQL.Connection
-
-Replace the @xxxxxxxx@ database password placeholder with the "password you generated during database setup":install-postgresql.html#api.
-
-<notextile>
-<pre><code>Clusters:
-  zzzzz:
-    PostgreSQL:
+<pre><code>    PostgreSQL:
       Connection:
         host: <span class="userinput">localhost</span>
         user: <span class="userinput">arvados</span>
-        password: <span class="userinput">xxxxxxxx</span>
+        password: <span class="userinput">$postgres_password</span>
         dbname: <span class="userinput">arvados_production</span>
-      </code></pre>
+</code></pre>
 </notextile>
 
-h3. API.RailsSessionSecretToken
+Replace the @$postgres_password@ placeholder with the password you generated during "database setup":#database-setup .
 
-The @API.RailsSessionSecretToken@ is used for for signing cookies.  IMPORTANT: This is a site secret. It should be at least 50 characters.  Generate a random value and set it in @config.yml@:
-
-<notextile>
-<pre><code>~$ <span class="userinput">ruby -e 'puts rand(2**400).to_s(36)'</span>
-yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-</code></pre></notextile>
-
-Example @config.yml@:
+h3. Services
 
 <notextile>
-<pre><code>Clusters:
-  zzzzz:
-    API:
-      RailsSessionSecretToken: <span class="userinput">yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy</span></code></pre>
+<pre><code>    Services:
+      Controller:
+        ExternalURL: <span class="userinput">"https://xxxxx.example.com"</span>
+        InternalURLs:
+          <span class="userinput">"http://xxxxx.example.com:8003": {}</span>
+      RailsAPI:
+        # Does not have an ExternalURL
+        InternalURLs:
+          <span class="userinput">"http://xxxxx.example.com:8004": {}</span>
+</code></pre>
 </notextile>
 
-h3(#blob_signing_key). Collections.BlobSigningKey
+Replace @xxxxx.example.com@ with the hostname that you previously selected for the API server.
 
-The @Collections.BlobSigningKey@ is used to enforce access control to Keep blocks.  This same key must be provided to the Keepstore daemons when "installing Keepstore servers.":install-keepstore.html  IMPORTANT: This is a site secret. It should be at least 50 characters.  Generate a random value and set it in @config.yml@:
+The @Services@ section of the configuration helps Arvados components contact one another (service discovery).  Each service has one or more @InternalURLs@ and an @ExternalURL@.  The @InternalURLs@ describe where the service runs, and how the Nginx reverse proxy will connect to it.  The @ExternalURL@ is how external clients contact the service.
 
-<notextile>
-<pre><code>~$ <span class="userinput">ruby -e 'puts rand(2**400).to_s(36)'</span>
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-</code></pre></notextile>
+h2(#update-nginx). Update nginx configuration
 
-Example @config.yml@:
-
-<notextile>
-<pre><code>Clusters:
-  zzzzz:
-    Collections:
-      BlobSigningKey: <span class="userinput">xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</span></code></pre>
-</notextile>
-
-h3(#omniauth). Login.ProviderAppID, Login.ProviderAppSecret, Services.SSO.ExternalURL
-
-The following settings enable the API server to communicate with the "Single Sign On (SSO) server":install-sso.html to authenticate user log in.
-
-Set @Services.SSO.ExternalURL@ to the base URL where your SSO server is installed.  This should be a URL consisting of the scheme and host (and optionally, port), without a trailing slash.
-
-Set @Login.ProviderAppID@ and @Login.ProviderAppSecret@ to the corresponding values for @app_id@ and @app_secret@ used in the "Create arvados-server client for Single Sign On (SSO)":install-sso.html#client step.
-
-Example @config.yml@:
-
-<notextile>
-<pre><code>Clusters:
-  zzzzz:
-    Services:
-      SSO:
-        ExternalURL: <span class="userinput">https://sso.example.com</span>
-    Login:
-      ProviderAppID: <span class="userinput">arvados-server</span>
-      ProviderAppSecret: <span class="userinput">wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww</span></code></pre>
-</notextile>
-
-h3. Services.Workbench1.ExternalURL
-
-Set @Services.Workbench1.ExternalURL@ to the URL of your workbench application after following "Install Workbench.":install-workbench-app.html
-
-Example @config.yml@:
-
-<notextile>
-<pre><code>Clusters:
-  zzzzz:
-    Services:
-      Workbench1:
-        ExternalURL: <span class="userinput">https://workbench.zzzzz.example.com</span></code></pre>
-</notextile>
-
-h3. Services.Websocket.ExternalURL
-
-Set @Services.Websocket.ExternalURL@ to the @wss://@ URL of the API server websocket endpoint after following "Install the websocket server":install-ws.html .
-
-Example @config.yml@:
-
-<notextile>
-<pre><code>Clusters:
-  zzzzz:
-    Services:
-      Websocket:
-        ExternalURL: <span class="userinput">wss://ws.zzzzz.example.com</span></code></pre>
-</notextile>
-
-h3(#git_repositories_dir). Git.Repositories
-
-The @Git.Repositories@ setting specifies the directory where user git repositories will be stored.
-
-The git server setup process is covered on "its own page":install-arv-git-httpd.html. For now, create an empty directory in the default location:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo mkdir -p /var/lib/arvados/git/repositories</span>
-</code></pre></notextile>
-
-If you intend to store your git repositories in a different location, specify that location in @config.yml@.  Example:
-
-<notextile>
-<pre><code>Clusters:
-  zzzzz:
-    Git:
-      Repositories: <span class="userinput">/var/lib/arvados/git/repositories</span></code></pre>
-</notextile>
-
-h3(#enable_legacy_jobs_api). Containers.JobsAPI.Enable
-
-Enable the legacy "Jobs API":install-crunch-dispatch.html .  Note: new installations should use the "Containers API":crunch2-slurm/install-prerequisites.html
-
-Disabling the jobs API means methods involving @jobs@, @job_tasks@, @pipeline_templates@ and @pipeline_instances@ are disabled.  This functionality is superceded by the containers API which consists of @container_requests@, @containers@ and @workflows@.  Arvados clients (such as @arvados-cwl-runner@) detect which APIs are available and adjust behavior accordingly.  Note the configuration value must be a quoted string.
-
-* 'auto' -- (default) enable the Jobs API only if it has been used before (i.e., there are job records in the database), otherwise disable jobs API .
-* 'true' -- enable the Jobs API even if there are no existing job records.
-* 'false' -- disable the Jobs API even in the presence of existing job records.
-
-<notextile>
-<pre><code>Clusters:
-  zzzzz:
-    Containers:
-      JobsAPI:
-        Enable: <span class="userinput">'auto'</span></code></pre>
-</notextile>
-
-h4(#git_internal_dir). Containers.JobsAPI.GitInternalDir
-
-Only required if the legacy "Jobs API" is enabled, otherwise you should skip this.
-
-The @Containers.JobsAPI.GitInternalDir@ setting specifies the location of Arvados' internal git repository.  By default this is @/var/lib/arvados/internal.git@.  This repository stores git commits that have been used to run Crunch jobs.  It should _not_ be a subdirectory of the directory in @Git.Repositories@.
-
-Example @config.yml@:
-
-<notextile>
-<pre><code>Clusters:
-  zzzzz:
-    Containers:
-      JobsAPI:
-        GitInternalDir: <span class="userinput">/var/lib/arvados/internal.git</span></code></pre>
-</notextile>
-
-h2(#set_up). Set up Nginx and Passenger
-
-The Nginx server will serve API requests using Passenger. It will also be used to proxy SSL requests to other services which are covered later in this guide.
-
-First, "Install Nginx and Phusion Passenger":https://www.phusionpassenger.com/library/walkthroughs/deploy/ruby/ownserver/nginx/oss/install_passenger_main.html.
-
-Edit the http section of your Nginx configuration to run the Passenger server. Add a block like the following, adding SSL and logging parameters to taste:
+Create a new file @/etc/nginx/conf.d/arvados-api-and-controller.conf@ . Configuration options that need attention are marked with "TODO".
 
 <notextile>
 <pre><code>
+proxy_http_version 1.1;
+
+# When Keep clients request a list of Keep services from the API
+# server, use the origin IP address to determine if the request came
+# from the internal subnet or it is an external client.  This sets the
+# $external_client variable which in turn is used to set the
+# X-External-Client header.
+#
+# The API server uses this header to choose whether to respond to a
+# "available keep services" request with either a list of internal keep
+# servers (0) or with the keepproxy (1).
+#
+# TODO: Following the example here, update the netmask to the
+# your internal subnet.
+
+geo $external_client {
+  default        1;
+  <span class="userinput">10.20.30.0/24</span>  0;
+}
+
+# This is the port where nginx expects to contact arvados-controller.
+upstream controller {
+  server     127.0.0.1:8003  fail_timeout=10s;
+}
+
 server {
-  listen 127.0.0.1:8000;
+  # This configures the public https port that clients will actually connect to,
+  # the request is reverse proxied to the upstream 'controller'
+
+  listen       <span class="userinput">[TODO: replace with your public IP address]</span>:443 ssl;
+  server_name  <span class="userinput">[TODO: replace with the api server hostname]</span>;
+
+  ssl on;
+  ssl_certificate     <span class="userinput">/TODO/YOUR/PATH/TO/cert.pem</span>;
+  ssl_certificate_key <span class="userinput">/TODO/YOUR/PATH/TO/cert.key</span>;
+
+  # Refer to the comment about this setting in the passenger (arvados
+  # api server) section of your Nginx configuration.
+  client_max_body_size 128m;
+
+  location / {
+    proxy_pass            http://controller;
+    proxy_redirect        off;
+    proxy_connect_timeout 90s;
+    proxy_read_timeout    300s;
+
+    proxy_set_header      X-Forwarded-Proto https;
+    proxy_set_header      Host $http_host;
+    proxy_set_header      X-External-Client $external_client;
+    proxy_set_header      X-Real-IP $remote_addr;
+    proxy_set_header      X-Forwarded-For $proxy_add_x_forwarded_for;
+  }
+}
+
+server {
+  # This configures the Arvados API server.  It is written using Ruby
+  # on Rails and uses the Passenger application server.
+
+  listen 127.0.0.1:8004;
   server_name localhost-api;
 
   root /var/www/arvados-api/current/public;
@@ -227,51 +169,55 @@ server {
   # This value effectively limits the size of API objects users can
   # create, especially collections.  If you change this, you should
   # also ensure the following settings match it:
-  # * `client_max_body_size` in the server section below
-  # * `client_max_body_size` in the Workbench Nginx configuration (twice)
+  # * `client_max_body_size` in the previous server section
   # * `API.MaxRequestSize` in config.yml
   client_max_body_size 128m;
 }
-
-upstream api {
-  server     127.0.0.1:8000  fail_timeout=10s;
-}
-
-proxy_http_version 1.1;
-
-# When Keep clients request a list of Keep services from the API server, the
-# server will automatically return the list of available proxies if
-# the request headers include X-External-Client: 1.  Following the example
-# here, at the end of this section, add a line for each netmask that has
-# direct access to Keep storage daemons to set this header value to 0.
-geo $external_client {
-  default        1;
-  <span class="userinput">10.20.30.0/24</span>  0;
-}
 </code></pre>
 </notextile>
 
-Restart Nginx to apply the new configuration.
+h2(#install-packages). Install packages
+
+Step 1: "Install Ruby and Bundler":ruby.html
+
+Step 2: "Install Nginx and Phusion Passenger":https://www.phusionpassenger.com/library/walkthroughs/deploy/ruby/ownserver/nginx/oss/install_passenger_main.html.
+
+Step 3: Install arvados-api-server and arvados-controller
+
+h3. Debian and Ubuntu
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo nginx -s reload</span>
+<pre><code>~$ <span class="userinput">sudo apt-get install bison build-essential libcurl4-openssl-dev git arvados-api-server arvados-controller</span>
 </code></pre>
 </notextile>
 
-h2. Prepare the API server deployment
+h3. Centos 7
 
-{% assign railspkg = "arvados-api-server" %}
-{% include 'install_rails_reconfigure' %}
+<notextile>
+<pre><code>~$ <span class="userinput">sudo yum install bison make automake gcc gcc-c++ libcurl-devel git arvados-api-server arvados-controller</span>
+</code></pre>
+</notextile>
 
-{% include 'notebox_begin' %}
-You can safely ignore the following messages if they appear while this command runs:
+h2. Confirm working installation
 
-<notextile><pre>Don't run Bundler as root. Bundler can ask for sudo if it is needed, and installing your bundle as root will
-break this application for all non-root users on this machine.</pre></notextile>
+Confirm working controller:
 
-<notextile><pre>fatal: Not a git repository (or any of the parent directories): .git</pre></notextile>
-{% include 'notebox_end' %}
+<pre>
+$ curl https://xxxxx.example.com/arvados/v1/config
+</pre>
+
+Confirm working Rails API server:
+
+<pre>
+$ curl https://xxxxx.example.com/discovery/v1/apis/arvados/v1/rest
+</pre>
+
+Confirm that you can use the system root token to act as the system root user:
+
+<pre>
+$ curl -H "Authorization: Bearer $system_root_token" https://xxxxx.example.com/arvados/v1/users/current
+</pre>
 
 h2. Troubleshooting
 
-Once you have the API Server up and running you may need to check it back if dealing with client related issues. Please read our "admin troubleshooting notes":{{site.baseurl}}/admin/troubleshooting.html on how requests can be tracked down between services.
+See the admin page on "Logging":{{site.baseurl}}/admin/logging.html .
