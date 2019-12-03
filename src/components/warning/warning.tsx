@@ -4,6 +4,7 @@
 
 import * as React from "react";
 import { ErrorIcon } from "~/components/icon/icon";
+import { invalidNamingRules } from "~/validators/valid-name";
 import { Tooltip } from "@material-ui/core";
 
 interface WarningComponentProps {
@@ -25,5 +26,5 @@ interface IllegalNamingWarningProps {
 
 export const IllegalNamingWarning = ({ name }: IllegalNamingWarningProps) =>
     <WarningComponent
-        text={name} rules={[/\//, /^\.{1,2}$/]}
+        text={name} rules={invalidNamingRules}
         message="Names being '.', '..' or including '/' cause issues with WebDAV, please edit it to something different." />;
