@@ -17,6 +17,9 @@ import { ProcessResource } from '~/models/process';
 import { SubprocessPanelColumnNames } from '~/views/subprocess-panel/subprocess-panel-root';
 import { FilterBuilder } from '~/services/api/filter-builder';
 import { subprocessPanelActions } from './subprocess-panel-actions';
+/* import { getProcessStatus } from '../processes/process';
+import { ContainerRequestResource } from '~/models/container-request';
+import { ContainerResource } from '~/models/container';*/
 
 export class SubprocessMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -28,47 +31,55 @@ export class SubprocessMiddlewareService extends DataExplorerMiddlewareService {
         const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
 
         try {
-            const crUuid = state.processPanel.containerRequestUuid;
-            if (crUuid !== "") {
-                const containerRequest = await this.services.containerRequestService.get(crUuid);
-                if (containerRequest.containerUuid) {
-                    const filters = new FilterBuilder().addEqual('requestingContainerUuid', containerRequest.containerUuid).getFilters();
-                    const containerRequests = await this.services.containerRequestService.list({ ...getParams(dataExplorer), filters });
-                    api.dispatch(updateResources(containerRequests.items));
-                    api.dispatch(setItems(containerRequests));
+            const parentContainerRequestUuid = state.processPanel.containerRequestUuid;
+            if (parentContainerRequestUuid === "") { return; }
 
-                    const containerUuids: string[] = containerRequests.items.reduce((uuids, { containerUuid }) =>
-                        containerUuid
-                            ? [...uuids, containerUuid]
-                            : uuids, []);
+            const parentContainerRequest = await this.services.containerRequestService.get(parentContainerRequestUuid);
+            if (!parentContainerRequest.containerUuid) { return; }
 
-                    if (containerUuids.length > 0) {
-                        const filters = new FilterBuilder().addIn('uuid', containerUuids).getFilters();
-                        const containers = await this.services.containerService.list({ filters });
-                        api.dispatch<any>(updateResources(containers.items));
+            // Get all the subprocess container requests and containers (not filtered based on the data explorer parameters).
+            // This lets us filter based on the combined status of the container request and its container, if it exists.
+            let filters = new FilterBuilder().addEqual('requestingContainerUuid', parentContainerRequest.containerUuid).getFilters();
+            const containerRequests = await this.services.containerRequestService.list({ filters });
+            if (containerRequests.items.length === 0) { return; }
+            console.log(containerRequests);
+
+            const containerUuids: string[] = containerRequests.items.reduce((uuids, { containerUuid }) =>
+                containerUuid
+                    ? [...uuids, containerUuid]
+                    : uuids, []);
+            filters = new FilterBuilder().addIn('uuid', containerUuids).getFilters();
+            // const containers = await this.services.containerService.list({ filters });
+
+            // Find a container requests corresponding container if it exists and check if it should be displayed
+            const filteredContainerRequestUuids: string[] = [];
+            const filteredContainerUuids: string[] = [];
+            /* containerRequests.items.forEach(
+                (cr: ContainerRequestResource) => {
+                    const c = containers.items.find((c: ContainerResource) => cr.containerUuid === c.uuid);
+                    const process = c ? { containerRequest: cr, container: c } : { containerRequest: cr };
+
+                    if (statusFilters === getProcessStatus(process)) {
+                        filteredContainerRequestUuids.push(process.containerRequest.uuid);
+                        if (process.container) { filteredContainerUuids.push(process.container.uuid); }
                     }
-                }
-            }
-            // TODO: set filters based on process panel state
+                });
+*/
+            // Requery with the data expolorer query paramaters to populate the actual user view
+            filters = new FilterBuilder().addIn('uuid', filteredContainerRequestUuids).getFilters();
+            const containerRequestResources = await this.services.containerRequestService.list({ ...getParams(dataExplorer), filters });
+            api.dispatch(updateResources(containerRequestResources.items));
 
+            filters = new FilterBuilder().addIn('uuid', filteredContainerUuids).getFilters();
+            const containerResources = await this.services.containerService.list({ ...getParams(dataExplorer), filters });
+            api.dispatch(updateResources(containerResources.items));
+
+            api.dispatch(setItems(containerRequestResources));
         } catch {
             api.dispatch(couldNotFetchSubprocesses());
         }
     }
 }
-
-/*export const getFilters = (processPanel: ProcessPanelState, processes: Process[]) => {
-    const grouppedProcesses = groupBy(processes, getProcessStatus);
-    return Object
-        .keys(processPanel.filters)
-        .map(filter => ({
-            label: filter,
-            value: (grouppedProcesses[filter] || []).length,
-            checked: processPanel.filters[filter],
-            key: filter,
-        }));
-    };
-*/
 
 export const getParams = (dataExplorer: DataExplorer) => ({
     ...dataExplorerToListParams(dataExplorer),

@@ -5,11 +5,12 @@
 import { Dispatch } from "redux";
 import { connect } from "react-redux";
 import { openContextMenu, resourceKindToContextMenuKind } from '~/store/context-menu/context-menu-actions';
-import { SubprocessPanelRoot, SubprocessActionProps } from '~/views/subprocess-panel/subprocess-panel-root';
+import { SubprocessPanelRoot, SubprocessPanelActionProps, SubprocessPanelDataProps } from '~/views/subprocess-panel/subprocess-panel-root';
 import { ResourceKind } from '~/models/resource';
+import { RootState } from "~/store/store";
 
-const mapDispatchToProps = (dispatch: Dispatch): SubprocessActionProps => ({
-    onContextMenu: (event, resourceUuid) => {
+const mapDispatchToProps = (dispatch: Dispatch): SubprocessPanelActionProps => ({
+    onContextMenu: (event, resourceUuid, isAdmin) => {
         const kind = resourceKindToContextMenuKind(resourceUuid);
         if (kind) {
             dispatch<any>(openContextMenu(event, {
@@ -25,4 +26,8 @@ const mapDispatchToProps = (dispatch: Dispatch): SubprocessActionProps => ({
     onItemDoubleClick: uuid => { return; }
 });
 
-export const SubprocessPanel = connect(mapDispatchToProps)(SubprocessPanelRoot);
+const mapStateToProps = (state: RootState): SubprocessPanelDataProps => ({
+    isAdmin: state.auth.user ? state.auth.user.isAdmin : false
+});
+
+export const SubprocessPanel = connect(mapStateToProps, mapDispatchToProps)(SubprocessPanelRoot);

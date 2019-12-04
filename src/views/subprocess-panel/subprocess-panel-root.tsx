@@ -9,17 +9,19 @@ import { DataTableFilterItem } from '~/components/data-table-filters/data-table-
 import { ContainerRequestState } from '~/models/container-request';
 import { SortDirection } from '~/components/data-table/data-column';
 import { ResourceKind } from '~/models/resource';
-import { ResourceLastModifiedDate, ProcessStatus } from '~/views-components/data-explorer/renderers';
+import { ResourceCreatedAtDate, ProcessStatus, ContainerRunTime } from '~/views-components/data-explorer/renderers';
 import { ProcessIcon } from '~/components/icon/icon';
 import { ResourceName } from '~/views-components/data-explorer/renderers';
 import { SUBPROCESS_PANEL_ID } from '~/store/subprocess-panel/subprocess-panel-actions';
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 import { createTree } from '~/models/tree';
+import { getInitialProcessStatusFilters } from '~/store/resource-type-filters/resource-type-filters';
 
 export enum SubprocessPanelColumnNames {
     NAME = "Name",
     STATUS = "Status",
-    LAST_MODIFIED = "Last modified"
+    CREATED_AT = "Created At",
+    RUNTIME = "Run Time"
 }
 
 export interface SubprocessPanelFilter extends DataTableFilterItem {
@@ -36,36 +38,49 @@ export const subprocessPanelColumns: DataColumns<string> = [
         render: uuid => <ResourceName uuid={uuid} />
     },
     {
-        name: "Status",
+        name: SubprocessPanelColumnNames.STATUS,
         selected: true,
         configurable: true,
-        filters: createTree(),
+        mutuallyExclusiveFilters: true,
+        filters: getInitialProcessStatusFilters(),
         render: uuid => <ProcessStatus uuid={uuid} />,
     },
     {
-        name: SubprocessPanelColumnNames.LAST_MODIFIED,
+        name: SubprocessPanelColumnNames.CREATED_AT,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.DESC,
         filters: createTree(),
-        render: uuid => <ResourceLastModifiedDate uuid={uuid} />
+        render: uuid => <ResourceCreatedAtDate uuid={uuid} />
+    },
+    {
+        name: SubprocessPanelColumnNames.RUNTIME,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ContainerRunTime uuid={uuid} />
     }
 ];
 
-export interface SubprocessActionProps {
+export interface SubprocessPanelDataProps {
+    isAdmin: boolean;
+}
+
+export interface SubprocessPanelActionProps {
     onItemClick: (item: string) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: string) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: string, isAdmin: boolean) => void;
     onItemDoubleClick: (item: string) => void;
 }
 
-export const SubprocessPanelRoot = (props: SubprocessActionProps) => {
+type SubprocessPanelProps = SubprocessPanelActionProps & SubprocessPanelDataProps;
+
+export const SubprocessPanelRoot = (props: SubprocessPanelProps) => {
     return <DataExplorer
         id={SUBPROCESS_PANEL_ID}
         onRowClick={props.onItemClick}
         onRowDoubleClick={props.onItemDoubleClick}
-        onContextMenu={props.onContextMenu}
+        onContextMenu={(event, item) => props.onContextMenu(event, item, props.isAdmin)}
         contextMenuColumn={true}
-        hideColumnSelector
         dataTableDefaultView={
             <DataTableDefaultView
                 icon={ProcessIcon}
