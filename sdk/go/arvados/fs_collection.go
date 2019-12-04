@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -691,6 +692,7 @@ func (dn *dirnode) commitBlock(ctx context.Context, refs []fnSegmentRef, bufsize
 		}
 		segs = append(segs, seg)
 	}
+	blocksize := len(block)
 	dn.fs.throttle().Acquire()
 	errs := make(chan error, 1)
 	go func() {
@@ -701,6 +703,8 @@ func (dn *dirnode) commitBlock(ctx context.Context, refs []fnSegmentRef, bufsize
 		dn.fs.throttle().Release()
 		{
 			if !sync {
+				dn.Lock()
+				defer dn.Unlock()
 				for _, name := range dn.sortedNames() {
 					if fn, ok := dn.inodes[name].(*filenode); ok {
 						fn.Lock()
@@ -749,11 +753,16 @@ func (dn *dirnode) commitBlock(ctx context.Context, refs []fnSegmentRef, bufsize
 			ref.fn.segments[ref.idx] = storedSegment{
 				kc:      dn.fs,
 				locator: locator,
-				size:    len(block),
+				size:    blocksize,
 				offset:  offsets[idx],
 				length:  len(data),
 			}
-			ref.fn.memsize -= int64(len(data))
+			// atomic is needed here despite caller having
+			// lock: caller might be running concurrent
+			// commitBlock() goroutines using the same
+			// lock, writing different segments from the
+			// same file.
+			atomic.AddInt64(&ref.fn.memsize, -int64(len(data)))
 		}
 	}()
 	if sync {
