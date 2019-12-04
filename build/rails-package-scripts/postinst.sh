@@ -186,10 +186,6 @@ configure_version() {
   setup_confdirs /etc/arvados "$CONFIG_PATH"
   setup_conffile environments/production.rb environments/production.rb.example \
       || true
-  setup_conffile application.yml application.yml.example || APPLICATION_READY=0
-  if [ -n "$RAILSPKG_DATABASE_LOAD_TASK" ]; then
-      setup_conffile database.yml database.yml.example || DATABASE_READY=0
-  fi
   setup_extra_conffiles
   echo "... done."
 
@@ -229,7 +225,7 @@ configure_version() {
   fi
 
   if [ 11 = "$RAILSPKG_SUPPORTS_CONFIG_CHECK$APPLICATION_READY" ]; then
-      run_and_report "Checking application.yml for completeness" \
+      run_and_report "Checking configuration for completeness" \
           $COMMAND_PREFIX bundle exec rake config:check || APPLICATION_READY=0
   fi
 
@@ -258,9 +254,9 @@ elif [ "$1" = "0" ] || [ "$1" = "1" ] || [ "$1" = "2" ]; then
   configure_version
 fi
 
-report_not_ready "$DATABASE_READY" "$CONFIG_PATH/database.yml"
 if printf '%s\n' "$CONFIG_PATH" | grep -Fqe "sso"; then
 	report_not_ready "$APPLICATION_READY" "$CONFIG_PATH/application.yml"
+	report_not_ready "$DATABASE_READY" "$CONFIG_PATH/database.yml"
 else
 	report_not_ready "$APPLICATION_READY" "/etc/arvados/config.yml"
 fi
