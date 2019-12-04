@@ -74,6 +74,11 @@ export interface DataTableFilterProps {
     onChange?: (filters: DataTableFilters) => void;
 
     /**
+     * When set to true, only one filter can be selected at a time.
+     */
+    mutuallyExclusive?: boolean;
+
+    /**
      * By default `all` filters selection means that label should be grayed out.
      * Use `none` when label is supposed to be grayed out when no filter is selected.
      */
@@ -110,7 +115,7 @@ export const DataTableFiltersPopover = withStyles(styles)(
                         onClick={this.open}
                         disableRipple>
                         {children}
-                        <IconButton component='span' classes={{root: classes.iconButton}} tabIndex={-1}>
+                        <IconButton component='span' classes={{ root: classes.iconButton }} tabIndex={-1}>
                             <i className={classnames(["fas fa-filter", classes.icon])}
                                 data-fa-transform="shrink-3"
                                 ref={this.icon} />
@@ -131,7 +136,10 @@ export const DataTableFiltersPopover = withStyles(styles)(
                         </CardContent>
                         <DataTableFiltersTree
                             filters={this.state.filters}
-                            onChange={filters => this.setState({ filters })} />
+                            mutuallyExclusive={this.props.mutuallyExclusive}
+                            onChange={filters => {
+                                this.setState({ filters });
+                            }} />
                         <CardActions>
                             <Button
                                 color="primary"
