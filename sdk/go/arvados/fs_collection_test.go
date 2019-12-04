@@ -1281,6 +1281,30 @@ func (s *CollectionFSSuite) TestMaxUnflushed(c *check.C) {
 	fs.Flush("", true)
 }
 
+func (s *CollectionFSSuite) TestFlushShort(c *check.C) {
+	s.kc.onPut = func([]byte) {
+		s.kc.Lock()
+		s.kc.blocks = map[string][]byte{}
+		s.kc.Unlock()
+	}
+	fs, err := (&Collection{}).FileSystem(s.client, s.kc)
+	c.Assert(err, check.IsNil)
+	for _, blocksize := range []int{8, 1000000} {
+		dir := fmt.Sprintf("dir%d", blocksize)
+		err = fs.Mkdir(dir, 0755)
+		c.Assert(err, check.IsNil)
+		data := make([]byte, blocksize)
+		for i := 0; i < 100; i++ {
+			f, err := fs.OpenFile(fmt.Sprintf("%s/file%d", dir, i), os.O_WRONLY|os.O_CREATE, 0)
+			c.Assert(err, check.IsNil)
+			_, err = f.Write(data)
+			c.Assert(err, check.IsNil)
+			f.Close()
+			fs.Flush(dir, false)
+		}
+	}
+}
+
 func (s *CollectionFSSuite) TestBrokenManifests(c *check.C) {
 	for _, txt := range []string{
 		"\n",
