@@ -9,8 +9,18 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
+# "Introduction":#introduction
+# "Update config.yml":#update-config
+# "Update nginx configuration":#update-nginx
+# "Install keepproxy package":#install-packages
+# "Start the service":#start-service
+# "Restart the API server and controller":#restart-api
+# "Confirm working installation":#confirm-working
+
+h2(#introduction). Introduction
+
 The Keepproxy server is a gateway into your Keep storage. Unlike the Keepstore servers, which are only accessible on the local LAN, Keepproxy is suitable for clients located elsewhere on the internet. Specifically, in contrast to Keepstore:
-* A client writing through Keepproxy generates less network traffic: the client sends a single copy of a data block, and Keepproxy sends copies to the appropriate Keepstore servers.
+* A client writing through Keepproxy sends a single copy of a data block, and Keepproxy distributes copies to the appropriate Keepstore servers.
 * A client can write through Keepproxy without precomputing content hashes. Notably, the browser-based upload feature in Workbench requires Keepproxy.
 * Keepproxy checks API token validity before processing requests. (Clients that can connect directly to Keepstore can use it as scratch space even without a valid API token.)
 
@@ -18,72 +28,38 @@ By convention, we use the following hostname for the Keepproxy server:
 
 <div class="offset1">
 table(table table-bordered table-condensed).
-|_Hostname_|
+|_. Hostname|
 |keep.@uuid_prefix@.your.domain|
 </div>
 
 This hostname should resolve from anywhere on the internet.
 
-h2. Install Keepproxy
+h2(#update-config). Update config.yml
 
-On Debian-based systems:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo apt-get install keepproxy</span>
-</code></pre>
-</notextile>
-
-On Red Hat-based systems:
+Edit the cluster config at @/etc/arvados/config.yml@ and set @Services.Keepproxy.ExternalURL@ and @Services.Keepproxy.InternalURLs@.
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo yum install keepproxy</span>
-</code></pre>
-</notextile>
-
-Verify that Keepproxy is functional:
-
-<notextile>
-<pre><code>~$ <span class="userinput">keepproxy -h</span>
-Usage of keepproxy:
-  -config file
-    	Site configuration file (default may be overridden by setting an ARVADOS_CONFIG environment variable) (default "/etc/arvados/config.yml")
-  -dump-config
-    	write current configuration to stdout and exit
-[...]
-  -version
-    	print version information and exit.
-</code></pre>
-</notextile>
-
-h3. Update the cluster config
-
-Edit the cluster config at @/etc/arvados/config.yml@ and set @Services.Keepproxy.ExternalURL@ and @Services.Keepproxy.InternalURLs@.  Replace @uuid_prefix@ with your cluster id.
-
-<notextile>
-<pre><code>Clusters:
-  <span class="userinput">uuid_prefix</span>:
-    Services:
+<pre><code>    Services:
       Keepproxy:
-        ExternalURL: <span class="userinput">https://keep.uuid_prefix.your.domain</span>
+        ExternalURL: <span class="userinput">https://keep.ClusterID.example.com</span>
         InternalURLs:
-	  <span class="userinput">"http://localhost:25107": {}</span>
+	  <span class="userinput">"http://keep.ClusterID.example.com:25107": {}</span>
 </span></code></pre>
 </notextile>
 
-h3. Set up a reverse proxy with SSL support
+h2(#update-nginx). Update Nginx configuration
 
-Because the Keepproxy is intended for access from anywhere on the internet, it is recommended to use SSL for transport encryption.
+Put a reverse proxy with SSL support in front of Keepproxy. Keepproxy itself runs on port 25107 by default; the reverse proxy runs on port 443 and forwards requests to Keepproxy on port 25107.
 
-This is best achieved by putting a reverse proxy with SSL support in front of Keepproxy. Keepproxy itself runs on port 25107 by default; your reverse proxy can run on port 443 and pass requests to Keepproxy on port 25107.
+Use a text editor to create a new file @/etc/nginx/conf.d/keepproxy.conf@ with the following configuration. Options that need attention are marked with “TODO”.
 
-<notextile><pre>
-upstream keepproxy {
+<notextile><pre><code>upstream keepproxy {
   server                127.0.0.1:<span class="userinput">25107</span>;
 }
 
 server {
-  listen                  <span class="userinput">[your public IP address]</span>:443 ssl;
-  server_name             keep.<span class="userinput">uuid_prefix</span>.your.domain;
+  listen                  <span class="userinput">[TODO your public IP address]</span>:443 ssl;
+  server_name             keep.<span class="userinput">ClusterID</span>.example.com;
 
   proxy_connect_timeout   90s;
   proxy_read_timeout      300s;
@@ -91,9 +67,9 @@ server {
   proxy_http_version      1.1;
   proxy_request_buffering off;
 
-  ssl                     on;
-  ssl_certificate         /etc/nginx/keep.<span class="userinput">uuid_prefix</span>.your.domain-ssl.crt;
-  ssl_certificate_key     /etc/nginx/keep.<span class="userinput">uuid_prefix</span>.your.domain-ssl.key;
+  ssl on;
+  ssl_certificate     <span class="userinput">/TODO/YOUR/PATH/TO/cert.pem</span>;
+  ssl_certificate_key <span class="userinput">/TODO/YOUR/PATH/TO/cert.key</span>;
 
   # Clients need to be able to upload blocks of data up to 64MiB in size.
   client_max_body_size    64m;
@@ -102,49 +78,35 @@ server {
     proxy_pass            http://keepproxy;
   }
 }
-</pre></notextile>
+</code></pre></notextile>
 
 Note: if the Web uploader is failing to upload data and there are no logs from keepproxy, be sure to check the nginx proxy logs.  In addition to "GET" and "PUT", The nginx proxy must pass "OPTIONS" requests to keepproxy, which should respond with appropriate Cross-origin resource sharing headers.  If the CORS headers are not present, brower security policy will cause the upload request to silently fail.  The CORS headers are generated by keepproxy and should not be set in nginx.
 
-h3. Tell the API server about the Keepproxy server
+h2(#install-packages). Install Keepproxy package
 
-The API server needs to be informed about the presence of your Keepproxy server.
-
-First, if you don't already have an admin token, create a superuser token.
-
-{% include 'create_superuser_token' %}
-
-Configure your environment to run @arv@ using the output of create_superuser_token.rb:
-
-<pre>
-export ARVADOS_API_HOST=zzzzz.example.com
-export ARVADOS_API_TOKEN=zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
-</pre>
+h3. Centos 7
 
 <notextile>
-<pre><code>~$ <span class="userinput">uuid_prefix=`arv --format=uuid user current | cut -d- -f1`</span>
-~$ <span class="userinput">echo "Site prefix is '$uuid_prefix'"</span>
-~$ <span class="userinput">read -rd $'\000' keepservice &lt;&lt;EOF; arv keep_service create --keep-service "$keepservice"</span>
-<span class="userinput">{
- "service_host":"<strong>keep.$uuid_prefix.your.domain</strong>",
- "service_port":443,
- "service_ssl_flag":true,
- "service_type":"proxy"
-}
-EOF</span>
-</code></pre></notextile>
+<pre><code># <span class="userinput">yum install keepproxy</span>
+</code></pre>
+</notextile>
 
-h2. Run Keepproxy
+h3. Debian and Ubuntu
 
-h3. Start the service (option 1: systemd)
+<notextile>
+<pre><code># <span class="userinput">apt-get install keepproxy</span>
+</code></pre>
+</notextile>
+
+h2(#start-service). Start the service
 
 If your system does not use systemd, skip this section and follow the "runit instructions":#runit instead.
 
 If your system uses systemd, the keepproxy service should already be set up. Start it and check its status:
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo systemctl restart keepproxy</span>
-~$ <span class="userinput">sudo systemctl status keepproxy</span>
+<pre><code># <span class="userinput">systemctl restart keepproxy</span>
+# <span class="userinput">systemctl status keepproxy</span>
 &#x25cf; keepproxy.service - Arvados Keep Proxy
    Loaded: loaded (/lib/systemd/system/keepproxy.service; enabled)
    Active: active (running) since Tue 2019-07-23 09:33:47 EDT; 3 weeks 1 days ago
@@ -156,13 +118,18 @@ If your system uses systemd, the keepproxy service should already be set up. Sta
 </code></pre>
 </notextile>
 
-h3(#runit). Start the service (option 2: runit)
+h2(#restart-api). Restart the API server and controller
 
-Install runit to supervise the Keep-web daemon.  {% include 'install_runit' %}
+After adding keeproxy to the Services section, make sure the cluster config file is up to date on the API server host, and restart the API server and controller processes to ensure the changes are applied.
 
-h3. Testing keepproxy
+<notextile>
+<pre><code># <span class="userinput">systemctl restart nginx arvados-controller</span>
+</code></pre>
+</notextile>
 
-Log into a host that is on an external network from your private Arvados network.  The host should be able to contact your keepproxy server (eg keep.$uuid_prefix.arvadosapi.com), but not your keepstore servers (eg keep[0-9].$uuid_prefix.arvadosapi.com).
+h2(#confirm-working). Confirm working installation
+
+Log into a host that is on a network external to your private Arvados network.  The host should be able to contact your keepproxy server (eg @keep.ClusterID.example.com@), but not your keepstore servers (eg keep[0-9].ClusterID.example.com).
 
 Install the "Python SDK":{{site.baseurl}}/sdk/python/sdk-python.html
 

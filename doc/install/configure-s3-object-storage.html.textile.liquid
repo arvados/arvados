@@ -15,10 +15,8 @@ Volumes are configured in the @Volumes@ section of the cluster configuration fil
 
 {% include 'assign_volume_uuid' %}
 
-<notextile><pre><code>Clusters:
-  <span class="userinput">uuid_prefix</span>:
-    Volumes:
-      <span class="userinput">uuid_prefix</span>-nyw5e-<span class="userinput">000000000000000</span>:
+<notextile><pre><code>    Volumes:
+      <span class="userinput">ClusterID</span>-nyw5e-<span class="userinput">000000000000000</span>:
         AccessViaHosts:
           # This section determines which keepstore servers access the
           # volume. In this example, keep0 has read/write access, and
@@ -30,36 +28,36 @@ Volumes are configured in the @Volumes@ section of the cluster configuration fil
           "http://<span class="userinput">keep0.uuid_prefix.example.com</span>:25107/": {}
           "http://<span class="userinput">keep1.uuid_prefix.example.com</span>:25107/": {ReadOnly: true}
 
-        Driver: S3
+        Driver: <span class="userinput">S3</span>
         DriverParameters:
+          # Bucket name.
+          Bucket: <span class="userinput">example-bucket-name</span>
+
           # IAM role name to use when retrieving credentials from
           # instance metadata. It can be omitted, in which case the
           # role name itself will be retrieved from instance metadata
           # -- but setting it explicitly may protect you from using
           # the wrong credentials in the event of an
           # installation/configuration error.
-          IAMRole: ""
+          IAMRole: <span class="userinput">""</span>
 
           # If you are not using an IAM role for authentication,
           # specify access credentials here instead.
-          AccessKey: ""
-          SecretKey: ""
+          AccessKey: <span class="userinput">""</span>
+          SecretKey: <span class="userinput">""</span>
+
+          # Storage provider region. For Google Cloud Storage, use ""
+          # or omit.
+          Region: <span class="userinput">us-east-1a</span>
 
           # Storage provider endpoint. For Amazon S3, use "" or
           # omit. For Google Cloud Storage, use
           # "https://storage.googleapis.com".
           Endpoint: ""
 
-          # Storage provider region. For Google Cloud Storage, use ""
-          # or omit.
-          Region: us-east-1a
-
           # Change to true if the region requires a LocationConstraint
           # declaration.
           LocationConstraint: false
-
-          # Bucket name.
-          Bucket: example-bucket-name
 
           # Requested page size for "list bucket contents" requests.
           IndexPageSize: 1000
@@ -74,13 +72,6 @@ Volumes are configured in the @Volumes@ section of the cluster configuration fil
 
           # Maximum eventual consistency latency
           RaceWindow: 24h
-
-          # Enable deletion (garbage collection) even when the
-          # configured BlobTrashLifetime is zero.  WARNING: eventual
-          # consistency may result in race conditions that can cause
-          # data loss.  Do not enable this unless you understand and
-          # accept the risk.
-          UnsafeDelete: false
 
         # How much replication is provided by the underlying bucket.
         # This is used to inform replication decisions at the Keep

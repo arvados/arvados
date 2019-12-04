@@ -9,9 +9,17 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
+# "Introduction":#introduction
+# "Update config.yml":#update-config
+# "Install keepstore package":#install-packages
+# "Restart the API server and controller":#restart-api
+# "Confirm working installation":#confirm-working
+
+h2. Introduction
+
 Keepstore provides access to underlying storage for reading and writing content-addressed blocks, with enforcement of Arvados permissions.  Keepstore supports a variety of cloud object storage and POSIX filesystems for its backing store.
 
-h2. Plan your storage layout
+h3. Plan your storage layout
 
 In the steps below, you will configure a number of backend storage volumes (like local filesystems and S3 buckets) and specify which keepstore servers have read-only and read-write access to which volumes.
 
@@ -26,18 +34,26 @@ By convention, we use the following hostname pattern:
 
 <div class="offset1">
 table(table table-bordered table-condensed).
-|_Hostname_|
+|_. Hostname|
 |keep0.@ClusterID@.example.com|
 |keep1.@ClusterID@.example.com|
 </div>
 
 Keepstore servers should not be directly accessible from the Internet (they are accessed via "keepproxy":install-keepproxy.html), so the hostnames only need to resolve on the private network.
 
-h2. Update cluster config
+h2(#update-config). Update cluster config
+
+h3. Configure storage volumes
+
+Fill in the @Volumes@ section of @config.yml@ for each storage volume.  Available storage volume types include POSIX filesystems and cloud object storage.  It is possible to have different volume types in the same cluster.
+
+* To use a POSIX filesystem, including both local filesystems (ext4, xfs) and network file system such as GPFS or Lustre, follow the setup instructions on "Filesystem storage":configure-fs-storage.html
+* If you are using S3-compatible object storage (including Amazon S3, Google Cloud Storage, and Ceph RADOS), follow the setup instructions on "S3 Object Storage":configure-s3-object-storage.html
+* If you are using Azure Blob Storage, follow the setup instructions on "Azure Blob Storage":configure-azure-blob-storage.html
 
 h3. List services
 
-Add each keepstore server to @/etc/arvados/config.yml@ .
+Add each keepstore server to the @Services.Keepstore@ section of @/etc/arvados/config.yml@ .
 
 <notextile>
 <pre><code>    Services:
@@ -50,15 +66,7 @@ Add each keepstore server to @/etc/arvados/config.yml@ .
 </code></pre>
 </notextile>
 
-h3. Configure storage volumes
-
-Available storage volume types include POSIX filesystems and cloud object storage.
-
-* To use a POSIX filesystem, including both local filesystems (ext4, xfs) and network file system such as GPFS or Lustre, follow the setup instructions on "Filesystem storage":configure-fs-storage.html
-* If you are using S3-compatible object storage (including Amazon S3, Google Cloud Storage, and Ceph RADOS), follow the setup instructions on "S3 Object Storage":configure-s3-object-storage.html
-* If you are using Azure Blob Storage, follow the setup instructions on "Azure Blob Storage":configure-azure-blob-storage.html
-
-h2. Install keepstore package
+h2(#install-packages). Install keepstore package
 
 On each host that will run keepstore, install the @keepstore@ package.
 
@@ -76,7 +84,7 @@ h3. Debian and Ubuntu
 </code></pre>
 </notextile>
 
-h2. Restart the API server and controller
+h2(#restart-api). Restart the API server and controller
 
 After adding all of your keepstore servers to the Services section, make sure the cluster config file is up to date on the API server host, and restart the API server and controller processes to ensure the changes are applied.
 
@@ -85,7 +93,7 @@ After adding all of your keepstore servers to the Services section, make sure th
 </code></pre>
 </notextile>
 
-h2(#testing). Testing keep
+h2(#confirm-working). Confirm working installation
 
 Install the "Python SDK":{{site.baseurl}}/sdk/python/sdk-python.html
 

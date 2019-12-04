@@ -50,10 +50,8 @@ Volumes are configured in the @Volumes@ section of the cluster configuration fil
 
 {% include 'assign_volume_uuid' %}
 
-<notextile><pre><code>Clusters:
-  <span class="userinput">uuid_prefix</span>:
-    Volumes:
-      <span class="userinput">uuid_prefix</span>-nyw5e-<span class="userinput">000000000000000</span>:
+<notextile><pre><code>    Volumes:
+      <span class="userinput">ClusterID</span>-nyw5e-<span class="userinput">000000000000000</span>:
         AccessViaHosts:
           # This section determines which keepstore servers access the
           # volume. In this example, keep0 has read/write access, and
@@ -65,20 +63,20 @@ Volumes are configured in the @Volumes@ section of the cluster configuration fil
           "http://<span class="userinput">keep0.uuid_prefix.example.com</span>:25107/": {}
           "http://<span class="userinput">keep1.uuid_prefix.example.com</span>:25107/": {ReadOnly: true}
 
-        Driver: Azure
+        Driver: <span class="userinput">Azure</span>
         DriverParameters:
           # Storage account name and secret key, used for
           # authentication.
-          StorageAccountName: exampleStorageAccountName
-          StorageAccountKey: zzzzzzzzzzzzzzzzzzzzzzzzzz
+          StorageAccountName: <span class="userinput">exampleStorageAccountName</span>
+          StorageAccountKey: <span class="userinput">zzzzzzzzzzzzzzzzzzzzzzzzzz</span>
+
+          # Storage container name.
+          ContainerName: <span class="userinput">exampleContainerName</span>
 
           # The cloud environment to use,
           # e.g. "core.chinacloudapi.cn". Defaults to
           # "core.windows.net" if blank or omitted.
           StorageBaseURL: ""
-
-          # Storage container name.
-          ContainerName: exampleContainerName
 
           # Time to wait for an upstream response before failing the
           # request.
