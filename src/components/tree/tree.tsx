@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { List, ListItem, ListItemIcon, Collapse, Checkbox } from "@material-ui/core";
+import { List, ListItem, ListItemIcon, Collapse, Checkbox, Radio } from "@material-ui/core";
 import { StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core/styles';
 import { ReactElement } from "react";
 import CircularProgress from '@material-ui/core/CircularProgress';
@@ -94,15 +94,28 @@ export interface TreeProps<T> {
     toggleItemActive: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
     toggleItemOpen: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
     toggleItemSelection?: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
+
+    /**
+     * When set to true  use radio buttons instead of checkboxes for item selection.
+     * This does not guarantee radio group behavior (i.e item mutual exclusivity).
+     * Any item selection logic must be done in the toggleItemRadioButton callback prop.
+     */
+    useRadioButtons?: boolean;
+
+    /**
+     * Called when selection of an item in the tree is toggled via a radio button.
+     * Use this callback prop to implement any selection logic (i.e item mutual exclusivity).
+     */
+    toggleItemRadioButton?: (item: TreeItem<T>) => void;
 }
 
 export const Tree = withStyles(styles)(
     class Component<T> extends React.Component<TreeProps<T> & WithStyles<CssRules>, {}> {
         render(): ReactElement<any> {
             const level = this.props.level ? this.props.level : 0;
-            const { classes, render, toggleItemOpen, items, toggleItemActive, onContextMenu, disableRipple, currentItemUuid } = this.props;
+            const { classes, render, toggleItemOpen, items, toggleItemActive, onContextMenu, disableRipple, currentItemUuid, useRadioButtons } = this.props;
             const { list, listItem, loader, toggableIconContainer, renderContainer } = classes;
-            const isCheckboxVisible = typeof this.props.showSelection === 'function'
+            const showSelection = typeof this.props.showSelection === 'function'
                 ? this.props.showSelection
                 : () => this.props.showSelection ? true : false;
 
@@ -118,7 +131,7 @@ export const Tree = withStyles(styles)(
                             }}
                             disableRipple={disableRipple}
                             onClick={event => toggleItemActive(event, it)}
-                            selected={isCheckboxVisible(it) && it.id === currentItemUuid}
+                            selected={showSelection(it) && it.id === currentItemUuid}
                             onContextMenu={this.handleRowContextMenu(it)}>
                             {it.status === TreeItemStatus.PENDING ?
                                 <CircularProgress size={10} className={loader} /> : null}
@@ -128,12 +141,18 @@ export const Tree = withStyles(styles)(
                                     {this.getProperArrowAnimation(it.status, it.items!)}
                                 </ListItemIcon>
                             </i>
-                            {isCheckboxVisible(it) &&
+                            {showSelection(it) && !useRadioButtons &&
                                 <Checkbox
                                     checked={it.selected}
                                     className={classes.checkbox}
                                     color="primary"
                                     onClick={this.handleCheckboxChange(it)} />}
+                            {showSelection(it) && useRadioButtons &&
+                                <Radio
+                                    checked={it.selected}
+                                    className={classes.checkbox}
+                                    color="primary"
+                                    onChange={this.handleRadioButtonChange(it)} />}
                             <div className={renderContainer}>
                                 {render(it, level)}
                             </div>
@@ -184,6 +203,16 @@ export const Tree = withStyles(styles)(
                 ? (event: React.MouseEvent<HTMLElement>) => {
                     event.stopPropagation();
                     toggleItemSelection(event, item);
+                }
+                : undefined;
+        }
+
+        handleRadioButtonChange = (item: TreeItem<T>) => {
+            const { toggleItemRadioButton } = this.props;
+            return toggleItemRadioButton
+                ? (event: React.ChangeEvent<HTMLInputElement>, checked: boolean) => {
+                    event.stopPropagation();
+                    toggleItemRadioButton(item);
                 }
                 : undefined;
         }
