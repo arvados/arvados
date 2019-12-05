@@ -1,0 +1,29 @@
+---
+layout: default
+navsection: installguide
+title: Set up web based login
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+# "Option 1: Google login through Arvados controller":#controller
+# "Option 2: Separate single-sign-on (SSO) server (Google, LDAP, local database)":#sso
+
+h2(#controller). Option 1: Google login through Arvados controller
+
+First, visit "Setting up Google auth.":google-auth.html
+
+Next, copy the values of *Client ID* and *Client secret* from the Google Developers Console into @Login.GoogleClientID@ and @Login.GoogleClientSecret@ of @config.yml@ :
+
+<pre>
+    Login:
+      GoogleClientID: ""
+      GoogleClientSecret: ""
+</pre>
+
+h2(#sso). Option 2: Separate single-sign-on (SSO) server (supports Google, LDAP, local database)
+
+See "Install the Single Sign On (SSO) server":#install-sso.html

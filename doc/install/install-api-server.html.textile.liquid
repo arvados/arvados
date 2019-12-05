@@ -130,15 +130,15 @@ geo $external_client {
 
 # This is the port where nginx expects to contact arvados-controller.
 upstream controller {
-  server     127.0.0.1:8003  fail_timeout=10s;
+  server     xxxxx.example.com:8003  fail_timeout=10s;
 }
 
 server {
   # This configures the public https port that clients will actually connect to,
   # the request is reverse proxied to the upstream 'controller'
 
-  listen       <span class="userinput">[TODO: replace with your public IP address]</span>:443 ssl;
-  server_name  <span class="userinput">[TODO: replace with the api server hostname]</span>;
+  listen       <span class="userinput">xxxxx.example.com</span>:443 ssl;
+  server_name  <span class="userinput">xxxxx.example.com</span>;
 
   ssl on;
   ssl_certificate     <span class="userinput">/TODO/YOUR/PATH/TO/cert.pem</span>;
@@ -166,7 +166,7 @@ server {
   # This configures the Arvados API server.  It is written using Ruby
   # on Rails and uses the Passenger application server.
 
-  listen 127.0.0.1:8004;
+  listen <span class="userinput">xxxxx.example.com:8004</span>;
   server_name localhost-api;
 
   root /var/www/arvados-api/current/public;
@@ -193,14 +193,14 @@ h2(#install-packages). Install arvados-api-server and arvados-controller
 h3. Centos 7
 
 <notextile>
-<pre><code># <span class="userinput">yum install bison make automake gcc gcc-c++ libcurl-devel git arvados-api-server arvados-controller</span>
+<pre><code># <span class="userinput">yum install arvados-api-server arvados-controller</span>
 </code></pre>
 </notextile>
 
 h3. Debian and Ubuntu
 
 <notextile>
-<pre><code># <span class="userinput">apt-get --no-install-recommends install bison build-essential libcurl4-openssl-dev git zlib1g-dev arvados-api-server arvados-controller</span>
+<pre><code># <span class="userinput">apt-get --no-install-recommends install arvados-api-server arvados-controller</span>
 </code></pre>
 </notextile>
 

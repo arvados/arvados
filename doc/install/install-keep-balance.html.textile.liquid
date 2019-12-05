@@ -9,6 +9,13 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
+# "Introduction":#introduction
+# "Update config.yml":#update-config
+# "Install keep-balance package":#install-packages
+# "Start the service":#start-service
+
+h2(#introduction). Introduction
+
 Keep-balance deletes unreferenced and overreplicated blocks from Keep servers, makes additional copies of underreplicated blocks, and moves blocks into optimal locations as needed (e.g., after adding new servers). See "Balancing Keep servers":{{site.baseurl}}/admin/keep-balance.html for usage details.
 
 {% include 'notebox_begin' %}
@@ -17,61 +24,49 @@ If you are installing keep-balance on an existing system with valuable data, you
 
 {% include 'notebox_end' %}
 
-h2. Install keep-balance
+h2(#update-config). Update the cluster config
+
+Edit the cluster config at @/etc/arvados/config.yml@ and set @Services.Keepbalance.InternalURLs@.  This port is only used to publish metrics.
+
+<notextile>
+<pre><code>    Services:
+      Keepbalance:
+        InternalURLs:
+          "http://keep.ClusterID.example.com:9005/": {}
+</code></pre>
+</notextile>
+
+Ensure your cluster configuration has @Collections.BlobTrash: true@ (this is the default).
+
+<notextile>
+<pre><code># arvados-server config-dump | grep BlobTrash:
+      BlobTrash: true
+</code></pre>
+</notextile>
+
+If BlobTrash is false, unneeded blocks will be counted and logged by keep-balance, but they will not be deleted.
+
+h2(#install-packages). Install keep-balance package
 
 Keep-balance can be installed anywhere with network access to Keep services. Typically it runs on the same host as keepproxy.
 
-*A cluster should have only one keep-balance process running at a time.*
+*A cluster should have only one instance of keep-balance running at a time.*
 
-On Debian-based systems:
+h3. Centos 7
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo apt-get install keep-balance</span>
+<pre><code># <span class="userinput">yum install keep-balance</span>
 </code></pre>
 </notextile>
 
-On Red Hat-based systems:
+h3. Debian and Ubuntu
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo yum install keep-balance</span>
+<pre><code># <span class="userinput">apt-get install keep-balance</span>
 </code></pre>
 </notextile>
 
-Verify that @keep-balance@ is functional:
-
-<notextile>
-<pre><code>~$ <span class="userinput">keep-balance -h</span>
-...
-Usage of ./keep-balance:
-  -commit-pulls
-    	send pull requests (make more replicas of blocks that are underreplicated or are not in optimal rendezvous probe order)
-  -commit-trash
-    	send trash requests (delete unreferenced old blocks, and excess replicas of overreplicated blocks)
-...
-</code></pre>
-</notextile>
-
-h3. Update the cluster config
-
-Edit the cluster config at @/etc/arvados/config.yml@ and set @Services.Keepbalance.InternalURLs@. Replace @uuid_prefix@ with your cluster id.
-
-<notextile>
-<pre><code>Clusters:
-  <span class="userinput">uuid_prefix</span>:
-    Services:
-      Keepbalance:
-        InternalURLs:
-          "http://localhost:9005/": {}
-    TLS:
-      Insecure: false
-</code></pre>
-</notextile>
-
-Set @TLS.Insecure: true@ if your API server’s TLS certificate is not signed by a recognized CA.
-
-h3. Start the service (option 1: systemd)
-
-If your system does not use systemd, skip this section and follow the "runit instructions":#runit instead.
+h2(#start-service). Start the service
 
 If your system uses systemd, the keep-balance service should already be set up. Start it and check its status:
 
@@ -92,46 +87,3 @@ Feb 14 18:56:01 zzzzz.arvadosapi.com keep-balance[541]: 2017/02/14 18:56:01 skip
 Feb 14 18:56:01 zzzzz.arvadosapi.com keep-balance[541]: 2017/02/14 18:56:01 clearing existing trash lists, in case the new rendezvous order differs from previous run
 </code></pre>
 </notextile>
-
-h3(#runit). Start the service (option 2: runit)
-
-Install runit to supervise the keep-balance daemon.  {% include 'install_runit' %}
-
-Create a supervised service.
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo mkdir /etc/service/keep-balance</span>
-~$ <span class="userinput">cd /etc/service/keep-balance</span>
-~$ <span class="userinput">sudo mkdir log log/main</span>
-~$ <span class="userinput">printf '#!/bin/sh\nexec keep-balance -commit-pulls -commit-trash 2>&1\n' | sudo tee run</span>
-~$ <span class="userinput">printf '#!/bin/sh\nexec svlogd main\n' | sudo tee log/run</span>
-~$ <span class="userinput">sudo chmod +x run log/run</span>
-~$ <span class="userinput">sudo sv exit .</span>
-~$ <span class="userinput">cd -</span>
-</code></pre>
-</notextile>
-
-Use @sv stat@ and check the log file to verify the service is running.
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo sv stat /etc/service/keep-balance</span>
-run: /etc/service/keep-balance: (pid 12520) 2s; run: log: (pid 12519) 2s
-~$ <span class="userinput">tail /etc/service/keep-balance/log/main/current</span>
-2017/02/14 18:46:01 starting up: will scan every 10m0s and on SIGUSR1
-2017/02/14 18:56:01 Run: start
-2017/02/14 18:56:01 skipping zzzzz-bi6l4-rbtrws2jxul6i4t with service type "proxy"
-2017/02/14 18:56:01 clearing existing trash lists, in case the new rendezvous order differs from previous run
-</code></pre>
-</notextile>
-
-h2. Enable garbage collection
-
-Ensure your cluster configuration has @Collections.BlobTrash: true@ (this is the default).
-
-<notextile>
-<pre><code>~$ arvados-server config-dump | grep BlobTrash:
-      BlobTrash: true
-</code></pre>
-</notextile>
-
-If BlobTrash is false, unneeded blocks will be counted and logged by keep-balance, but they will not be deleted.

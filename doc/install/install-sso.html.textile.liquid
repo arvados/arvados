@@ -9,63 +9,79 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-h2(#dependencies). Install prerequisites
+# "Install dependencies":#dependencies
+# "Set up database":#database-setup
+# "Update config.yml":#update-config
+# "Configure the SSO server":#create-application-yml
+# "Update Nginx configuration":#update-nginx
+# "Install arvados-sso-server":#install-packages
+# "Create arvados-server client record":#client
+# "Restart the API server and controller":#restart-api
 
-The Arvados package repository includes an SSO server package that can help automate much of the deployment.
+h2(#dependencies). Install dependencies
 
-h3(#install_ruby_and_bundler). Install Ruby and Bundler
+# "Install PostgreSQL":install-postgresql.html
+# "Install Ruby and Bundler":ruby.html  Important!  The Single Sign On server only supports Ruby 2.3, to avoid version conflicts we recommend installing it on a different server from the API server.  When installing Ruby, ensure that you get the right version by installing the "ruby2.3" package, or by using RVM with @--ruby=2.3@
+# "Install nginx":nginx.html
+# "Install Phusion Passenger":https://www.phusionpassenger.com/library/walkthroughs/deploy/ruby/ownserver/nginx/oss/install_passenger_main.html
 
-{% include 'install_ruby_and_bundler_sso' %}
+h2(#database-setup). Set up the database
 
-h3(#install_web_server). Set up a Web server
+{% assign service_role = "arvados_sso" %}
+{% assign service_database = "arvados_sso_production" %}
+{% assign use_contrib = false %}
+{% include 'install_postgres_database' %}
 
-For best performance, we recommend you use Nginx as your Web server frontend with a Passenger backend to serve the SSO server. The Passenger team provides "Nginx + Passenger installation instructions":https://www.phusionpassenger.com/library/walkthroughs/deploy/ruby/ownserver/nginx/oss/install_passenger_main.html.
+Now create @/etc/arvados/sso/database.yml@
 
-Follow the instructions until you see the section that says you are ready to deploy your Ruby application on the production server.
+<pre>
+production:
+  adapter: postgresql
+  encoding: utf8
+  database: arvados_sso_production
+  username: arvados_sso
+  password: $password
+  host: localhost
+  template: template0
+</pre>
 
-h2(#install). Install the SSO server
+h2(#update-config). Update config.yml
 
-On a Debian-based system, install the following package:
+<pre>
+    Services:
+      SSO:
+        ExternalURL: auth.ClusterID.example.com
+    Login:
+      ProviderAppID: "arvados-server"
+      ProviderAppSecret: $app_secret
+</pre>
+
+Generate @ProviderAppSecret@:
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo apt-get install arvados-sso-server</span>
-</code></pre>
-</notextile>
+<pre><code>~$ <span class="userinput">ruby -e 'puts rand(2**400).to_s(36)'</span>
+zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
+</code></pre></notextile>
 
-On a Red Hat-based system, install the following package:
+h2(#create-application-yml). Configure the SSO server
 
-<notextile>
-<pre><code>~$ <span class="userinput">sudo yum install arvados-sso-server</span>
-</code></pre>
-</notextile>
-
-h2(#configure). Configure the SSO server
-
-The package has installed three configuration files in @/etc/arvados/sso@:
-
-<notextile>
-<pre><code>/etc/arvados/sso/application.yml
-/etc/arvados/sso/database.yml
-/etc/arvados/sso/production.rb
-</code></pre>
-</notextile>
-
-The SSO server runs from the @/var/www/arvados-sso/current/@ directory. The files @/var/www/arvados-sso/current/config/application.yml@, @/var/www/arvados-sso/current/config/database.yml@ and @/var/www/arvados-sso/current/config/environments/production.rb@ are symlinked to the configuration files in @/etc/arvados/sso/@.
+The SSO server runs from the @/var/www/arvados-sso/current/@ directory. The files @/var/www/arvados-sso/current/config/application.yml@ and @/var/www/arvados-sso/current/config/database.yml@ will be symlinked to the configuration files in @/etc/arvados/sso/@.
 
 The SSO server reads the @config/application.yml@ file, as well as the @config/application.defaults.yml@ file. Values in @config/application.yml@ take precedence over the defaults that are defined in @config/application.defaults.yml@. The @config/application.yml.example@ file is not read by the SSO server and is provided for installation convenience only.
 
 Consult @config/application.default.yml@ for a full list of configuration options.  Local configuration goes in @/etc/arvados/sso/application.yml@, do not edit @config/application.default.yml@.
 
+Create @/etc/arvados/sso/application.yml@ and add these keys:
+
+<pre>
+production:
+  uuid_prefix: xxxxx
+  secret_token: zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
+</pre>
+
 h3(#uuid_prefix). uuid_prefix
 
-Generate a uuid prefix for the single sign on service.  This prefix is used to identify user records as originating from this site.  It must be exactly 5 lowercase ASCII letters and/or digits.  You may use the following snippet to generate a uuid prefix:
-
-<notextile>
-<pre><code>~$ <span class="userinput">ruby -e 'puts "#{rand(2**64).to_s(36)[0,5]}"'</span>
-abcde
-</code></pre></notextile>
-
-Edit @/etc/arvados/sso/application.yml@ and set @uuid_prefix@ in the "common" section.
+Most of the time, you want this to be the same as your @ClusterID@.  If not, generate a new one from the command line listed previously.
 
 h3(#secret_token). secret_token
 
@@ -76,97 +92,11 @@ Generate a new secret token for signing cookies:
 zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
 </code></pre></notextile>
 
-Edit @/etc/arvados/sso/application.yml@ and set @secret_token@ in the "common" section.
+h3(#authentication_methods). Authentication methods
 
-There are other configuration options in @/etc/arvados/sso/application.yml@. See the "Authentication methods":install-sso.html#authentication_methods section below for more details.
+Authentication methods are configured in @application.yml@.  Currently three authentication methods are supported: local accounts, LDAP, and Google.  If neither Google nor LDAP are enabled, the SSO server defaults to local user accounts.   Only one authentication mechanism should be in use at a time.  Choose your authentication method and add the listed configuration items to the @production@ section.
 
-h2(#database). Set up the database
-
-Configure the SSO server to connect to your database by updating @/etc/arvados/sso/database.yml@. Replace the @xxxxxxxx@ database password placeholder with the "password you generated during database setup":install-postgresql.html#sso. Be sure to update the @production@ section.
-
-<notextile>
-<pre><code>~$ <span class="userinput">editor /etc/arvados/sso/database.yml</span>
-</code></pre></notextile>
-
-h2(#reconfigure_package). Reconfigure the package
-
-{% assign railspkg = "arvados-sso-server" %}
-{% include 'install_rails_reconfigure' %}
-
-h2(#client). Create arvados-server client
-
-{% assign railshost = "" %}
-{% assign railsdir = "/var/www/arvados-sso/current" %}
-Use @rails console@ to create a @Client@ record that will be used by the Arvados API server.  {% include 'install_rails_command' %}
-
-Enter the following commands at the console.  The values that appear after you assign @app_id@ and @app_secret@ correspond to the values for @sso_app_id@ and @sso_app_secret@, respectively, in the "API server's SSO settings":install-api-server.html#omniauth.
-
-<notextile>
-<pre><code>:001 &gt; <span class="userinput">c = Client.new</span>
-:002 &gt; <span class="userinput">c.name = "joshid"</span>
-:003 &gt; <span class="userinput">c.app_id = "arvados-server"</span>
-:004 &gt; <span class="userinput">c.app_secret = rand(2**400).to_s(36)</span>
-=&gt; "<strong>save this string for your API server's sso_app_secret</strong>"
-:005 &gt; <span class="userinput">c.save!</span>
-:006 &gt; <span class="userinput">quit</span>
-</code></pre>
-</notextile>
-
-h2(#configure_web_server). Configure your web server
-
-Edit the http section of your Nginx configuration to run the Passenger server and act as a frontend for it. You might add a block like the following, adding SSL and logging parameters to taste:
-
-<notextile>
-<pre><code>server {
-  listen 127.0.0.1:8900;
-  server_name localhost-sso;
-
-  root   /var/www/arvados-sso/current/public;
-  index  index.html;
-
-  passenger_enabled on;
-  # If you're not using RVM, comment out the line below.
-  passenger_ruby /usr/local/rvm/wrappers/default/ruby;
-}
-
-upstream sso {
-  server     127.0.0.1:8900  fail_timeout=10s;
-}
-
-proxy_http_version 1.1;
-
-server {
-  listen       <span class="userinput">[your public IP address]</span>:443 ssl;
-  server_name  auth.<span class="userinput">your.domain</span>;
-
-  ssl on;
-  ssl_certificate     <span class="userinput">/YOUR/PATH/TO/cert.pem</span>;
-  ssl_certificate_key <span class="userinput">/YOUR/PATH/TO/cert.key</span>;
-
-  index  index.html;
-
-  location / {
-    proxy_pass            http://sso;
-    proxy_redirect        off;
-    proxy_connect_timeout 90s;
-    proxy_read_timeout    300s;
-
-    proxy_set_header      X-Forwarded-Proto https;
-    proxy_set_header      Host $http_host;
-    proxy_set_header      X-Real-IP $remote_addr;
-    proxy_set_header      X-Forwarded-For $proxy_add_x_forwarded_for;
-  }
-}
-</code></pre>
-</notextile>
-
-Finally, restart Nginx and your Arvados SSO server should be up and running. You can verify that by visiting the URL you configured your Nginx web server to listen on in the server section above (port 443). Read on if you want to configure your Arvados SSO server to use a different authentication backend.
-
-h2(#authentication_methods). Authentication methods
-
-Authentication methods are configured in @application.yml@.  Currently three authentication methods are supported: local accounts, LDAP, and Google+.  If neither Google+ nor LDAP are enabled, the SSO server defaults to local user accounts.   Only one authentication mechanism should be in use at a time.
-
-h3(#local_accounts). Local account authentication
+h4(#local_accounts). Local account authentication
 
 There are two configuration options for local accounts:
 
@@ -194,7 +124,7 @@ Enter the following commands at the console.
 </code></pre>
 </notextile>
 
-h3(#ldap). LDAP authentication
+h4(#ldap). LDAP authentication
 
 The following options are available to configure LDAP authentication.  Note that you must preserve the indentation of the fields listed under @use_ldap@.
 
@@ -223,25 +153,81 @@ table(table).
 |bind_dn|If required by server, username to log with in before performing directory lookup|
 |password|If required by server, password to log with before performing directory lookup|
 
-h3(#google). Google+ authentication
+h4(#google). Google authentication
 
-In order to use Google+ authentication, you must use the <a href="https://console.developers.google.com" target="_blank">Google Developers Console</a> to create a set of client credentials.
+First, visit "Setting up Google auth.":google-auth.html
 
-# Go to the <a href="https://console.developers.google.com" target="_blank">Google Developers Console</a> and select or create a project; this will take you to the project page.
-# On the sidebar, click on *APIs & auth* then select *APIs*.
-## Search for *Contacts API* and click on *Enable API*.
-## Search for *Google+ API* and click on *Enable API*.
-# On the sidebar, click on *Credentials*; under *OAuth* click on *Create new Client ID* to bring up the *Create Client ID* dialog box.
-# Under *Application type* select *Web application*.
-# If the authorization origins are not displayed, clicking on *Create Client ID* will take you to *Consent screen* settings.
-## On consent screen settings, enter the appropriate details and click on *Save*.
-## This will return you to the *Create Client ID* dialog box.
-# You must set the authorization origins.  Edit @auth.your.domain@ to the appropriate hostname that you will use to access the SSO service:
-## JavaScript origin should be @https://auth.your.domain/@
-## Redirect URI should be @https://auth.your.domain/users/auth/google_oauth2/callback@
-# Copy the values of *Client ID* and *Client secret* from the Google Developers Console into the Google section of @config/application.yml@, like this:
+Next, copy the values of *Client ID* and *Client secret* from the Google Developers Console into the Google section of @config/application.yml@, like this:
 
 <notextile>
 <pre><code>  # Google API tokens required for OAuth2 login.
   google_oauth2_client_id: <span class="userinput">"---YOUR---CLIENT---ID---HERE--"-</span>
   google_oauth2_client_secret: <span class="userinput">"---YOUR---CLIENT---SECRET---HERE--"-</span></code></pre></notextile>
+
+h2(#update-nginx). Update nginx configuration
+
+Use a text editor to create a new file @/etc/nginx/conf.d/arvados-sso.conf@ with the following configuration.  Options that need attention are marked with "TODO".
+
+<notextile>
+<pre><code>server {
+  listen       <span class="userinput">auth.ClusterID.example.com</span>:443 ssl;
+  server_name  <span class="userinput">auth.ClusterID.example.com</span>;
+
+  ssl on;
+  ssl_certificate     <span class="userinput">/TODO/YOUR/PATH/TO/cert.pem</span>;
+  ssl_certificate_key <span class="userinput">/TODO/YOUR/PATH/TO/cert.key</span>;
+
+  root   /var/www/arvados-sso/current/public;
+  index  index.html;
+
+  passenger_enabled on;
+
+  # TODO: If you are using RVM, uncomment the line below.
+  # If you're using system ruby, leave it commented out.
+  #passenger_ruby /usr/local/rvm/wrappers/default/ruby;
+}
+</code></pre>
+</notextile>
+
+h2(#install-packages). Install arvados-sso-server package
+
+h3. Centos 7
+
+<notextile>
+<pre><code># <span class="userinput">yum install arvados-sso-server</span>
+</code></pre>
+</notextile>
+
+h3. Debian and Ubuntu
+
+<notextile>
+<pre><code># <span class="userinput">apt-get --no-install-recommends arvados-sso-server</span>
+</code></pre>
+</notextile>
+
+h2(#client). Create arvados-server client record
+
+{% assign railshost = "" %}
+{% assign railsdir = "/var/www/arvados-sso/current" %}
+Use @rails console@ to create a @Client@ record that will be used by the Arvados API server.  {% include 'install_rails_command' %}
+
+Enter the following commands at the console.  The values that appear after you assign @app_id@ and @app_secret@ will be copied to  @Login.ProviderAppID@ and @Login.ProviderAppSecret@ in @config.yml@.
+
+<notextile>
+<pre><code>:001 &gt; <span class="userinput">c = Client.new</span>
+:002 &gt; <span class="userinput">c.name = "joshid"</span>
+:003 &gt; <span class="userinput">c.app_id = "arvados-server"</span>
+:004 &gt; <span class="userinput">c.app_secret = "the value of Login.ProviderAppSecret"</span>
+:005 &gt; <span class="userinput">c.save!</span>
+:006 &gt; <span class="userinput">quit</span>
+</code></pre>
+</notextile>
+
+h2(#restart-api). Restart the API server and controller
+
+After adding the SSO server to the Services section, make sure the cluster config file is up to date on the API server host, and restart the API server and controller processes to ensure the changes are applied.
+
+<notextile>
+<pre><code># <span class="userinput">systemctl restart nginx arvados-controller</span>
+</code></pre>
+</notextile>

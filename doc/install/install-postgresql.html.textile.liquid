@@ -42,13 +42,3 @@ Ubuntu 14.04 (Trusty) requires an updated PostgreSQL version, see "the PostgreSQ
   <notextile><pre># <span class="userinput">systemctl enable postgresql</span></pre></notextile>
 # Start PostgreSQL
   <notextile><pre># <span class="userinput">systemctl start postgresql</span></pre></notextile>
-
-{% comment %}
-h2(#sso). Set up SSO server credentials and database
-
-{% assign service_role = "arvados_sso" %}
-{% assign service_database = "arvados_sso_production" %}
-{% assign use_contrib = false %}
-{% include 'install_postgres_database' %}
-
-{% endcomment %}
