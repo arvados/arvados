@@ -16,7 +16,7 @@ fi
 
 . /usr/local/lib/arvbox/go-setup.sh
 
-flock /var/lib/gopath/gopath.lock go get -t "git.curoverse.com/arvados.git/services/ws"
+flock /var/lib/gopath/gopath.lock go install "git.curoverse.com/arvados.git/services/ws"
 install $GOPATH/bin/ws /usr/local/bin/arvados-ws
 
 if test "$1" = "--only-deps" ; then

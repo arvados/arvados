@@ -9,7 +9,7 @@ set -ex -o pipefail
 . /usr/local/lib/arvbox/common.sh
 . /usr/local/lib/arvbox/go-setup.sh
 
-flock /var/lib/gopath/gopath.lock go get -t "git.curoverse.com/arvados.git/services/keep-web"
+flock /var/lib/gopath/gopath.lock go install "git.curoverse.com/arvados.git/services/keep-web"
 install $GOPATH/bin/keep-web /usr/local/bin
 
 if test "$1" = "--only-deps" ; then
