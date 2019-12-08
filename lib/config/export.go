@@ -124,7 +124,7 @@ var whitelist = map[string]bool{
 	"Containers.SupportedDockerImageFormats":       true,
 	"Containers.SupportedDockerImageFormats.*":     true,
 	"Containers.UsePreemptibleInstances":           true,
-	"EnableBetaController14287":                    false,
+	"ForceLegacyAPI14":                             false,
 	"Git":                                          false,
 	"InstanceTypes":                                true,
 	"InstanceTypes.*":                              true,

@@ -215,7 +215,7 @@ type Cluster struct {
 		InactivePageHTML       string
 	}
 
-	EnableBetaController14287 bool
+	ForceLegacyAPI14 bool
 }
 
 type Volume struct {
