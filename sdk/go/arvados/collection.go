@@ -36,6 +36,7 @@ type Collection struct {
 	DeleteAt                  *time.Time             `json:"delete_at"`
 	IsTrashed                 bool                   `json:"is_trashed"`
 	Properties                map[string]interface{} `json:"properties"`
+	WritableBy                []string               `json:"writable_by,omitempty"`
 }
 
 func (c Collection) resourceName() string {
