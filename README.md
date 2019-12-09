@@ -42,9 +42,9 @@ doc/README.textile for instructions.
 
 ## Community
 
-[![Join the chat at https://gitter.im/curoverse/arvados](https://badges.gitter.im/curoverse/arvados.svg)](https://gitter.im/curoverse/arvados?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Join the chat at https://gitter.im/arvados/community](https://badges.gitter.im/arvados/community.svg)](https://gitter.im/arvados/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-The [curoverse/arvados channel](https://gitter.im/curoverse/arvados)
+The [arvados community channel](https://gitter.im/arvados/community)
 channel at [gitter.im](https://gitter.im) is available for live
 discussion and support.
 
