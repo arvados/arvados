@@ -329,6 +329,11 @@ func (s *RouterIntegrationSuite) TestSelectParam(c *check.C) {
 	}
 }
 
+func (s *RouterIntegrationSuite) TestHEAD(c *check.C) {
+	_, rr, _ := doRequest(c, s.rtr, arvadostest.ActiveTokenV2, "HEAD", "/arvados/v1/containers/"+arvadostest.QueuedContainerUUID, nil, nil)
+	c.Check(rr.Code, check.Equals, http.StatusOK)
+}
+
 func (s *RouterIntegrationSuite) TestRouteNotFound(c *check.C) {
 	token := arvadostest.ActiveTokenV2
 	req := (&testReq{
