@@ -141,7 +141,13 @@ h4. New configuration
 
 Arvados is migrating to a centralized configuration file for all components.  During the migration, legacy configuration files will continue to be loaded.  See "Migrating Configuration":config-migration.html for details.
 
-h3. v1.3.0 (2018-12-05)
+h3(#v1_3_3). v1.3.3 (2019-05-14)
+
+This release corrects a potential data loss issue, if you are running Arvados 1.3.0 or 1.3.1 we strongly recommended disabling @keep-balance@ until you can upgrade to 1.3.3 or 1.4.0. With keep-balance disabled, there is no chance of data loss.
+
+We've put together a "wiki page":https://dev.arvados.org/projects/arvados/wiki/Recovering_lost_data which outlines how to recover blocks which have been put in the trash, but not yet deleted, as well as how to identify any collections which have missing blocks so that they can be regenerated. The keep-balance component has been enhanced to provide a list of missing blocks and affected collections and we've provided a "utility script":https://github.com/arvados/arvados/blob/master/tools/keep-xref/keep-xref.py  which can be used to identify the workflows that generated those collections and who ran those workflows, so that they can be rerun.
+
+h3(#v1_3_0). v1.3.0 (2018-12-05)
 
 This release includes several database migrations, which will be executed automatically as part of the API server upgrade. On large Arvados installations, these migrations will take a while. We've seen the upgrade take 30 minutes or more on installations with a lot of collections.
 
