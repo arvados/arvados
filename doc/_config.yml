@@ -212,17 +212,15 @@ navbar:
     - Additional services:
       - install/install-ws.html.textile.liquid
       - install/install-arv-git-httpd.html.textile.liquid
-      - install/install-shell-server.html.textile.liquid      
+      - install/install-shell-server.html.textile.liquid
+    - Containers API support on cloud:
+      - install/install-dispatch-cloud.html.textile.liquid      
     - Containers API support on SLURM:
       - install/crunch2-slurm/install-prerequisites.html.textile.liquid
       - install/crunch2-slurm/install-slurm.html.textile.liquid
       - install/crunch2-slurm/install-compute-node.html.textile.liquid
       - install/crunch2-slurm/install-dispatch.html.textile.liquid
       - install/crunch2-slurm/install-test.html.textile.liquid
-      - install/install-nodemanager.html.textile.liquid
-      - install/install-compute-ping.html.textile.liquid
-    - Containers API support on cloud (beta):
-      - install/install-dispatch-cloud.html.textile.liquid
     - External dependencies:
       - install/install-postgresql.html.textile.liquid
       - install/ruby.html.textile.liquid

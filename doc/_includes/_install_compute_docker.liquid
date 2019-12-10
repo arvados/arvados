@@ -8,16 +8,13 @@ h2. Install Docker
 
 Compute nodes must have Docker installed to run containers.  This requires a relatively recent version of Linux (at least upstream version 3.10, or a distribution version with the appropriate patches backported).  Follow the "Docker Engine installation documentation":https://docs.docker.com/ for your distribution.
 
-For Debian-based systems, the Arvados package repository includes a backported @docker.io@ package with a known-good version you can install.
-
 h2(#configure_docker_daemon). Configure the Docker daemon
 
 Crunch runs Docker containers with relatively little configuration.  You may need to start the Docker daemon with specific options to make sure these jobs run smoothly in your environment.  This section highlights options that are useful to most installations.  Refer to the "Docker daemon reference":https://docs.docker.com/reference/commandline/daemon/ for complete information about all available options.
 
 The best way to configure these options varies by distribution.
 
-* If you're using our backported @docker.io@ package, you can list these options in the @DOCKER_OPTS@ setting in @/etc/default/docker.io@.
-* If you're using another Debian-based package, you can list these options in the @DOCKER_OPTS@ setting in @/etc/default/docker@.
+* If you're using the Debian package, you can list these options in the @DOCKER_OPTS@ setting in @/etc/default/docker@.
 * On Red Hat-based distributions, you can list these options in the @other_args@ setting in @/etc/sysconfig/docker@.
 
 h3. Default ulimits

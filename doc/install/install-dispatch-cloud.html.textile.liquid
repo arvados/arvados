@@ -2,7 +2,6 @@
 layout: default
 navsection: installguide
 title: Install the cloud dispatcher
-
 ...
 {% comment %}
 Copyright (C) The Arvados Authors. All rights reserved.
@@ -10,7 +9,11 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-The cloud dispatch service is an *experimental* service for running containers on cloud VMs. It eliminates the need for SLURM, Node Manager, and SLURM dispatcher. It works with Microsoft Azure and Amazon EC2; future versions will also support Google Compute Engine.
+# "Update config.yml":#update-config
+# "Install arvados-dispatch-cloud":#install-packages
+# "Confirm working installation":#confirm-working
+
+The cloud dispatch service is for running containers on cloud VMs. It works with Microsoft Azure and Amazon EC2; future versions will also support Google Compute Engine.
 
 The cloud dispatch service can run on any node that can connect to the Arvados API service, the cloud provider's API, and the SSH service on cloud VMs.  It is not resource-intensive, so you can run it on the API server node.
 
@@ -22,13 +25,9 @@ The cloud dispatch service can run on any node that can connect to the Arvados A
 </code></pre>
 </notextile>
 
-h2. Create a dispatcher token
+h2(#update-config). Update config.yml
 
-If you haven't already done so, create an Arvados superuser token to use as SystemRootToken in your cluster config file.
-
-{% include 'create_superuser_token' %}
-
-h2. Create a private key
+h3. Create a private key
 
 Generate an SSH private key with no passphrase. Save it in the cluster configuration file (see @PrivateKey@ in the example below).
 
@@ -57,18 +56,12 @@ You can delete the key files after you have copied the private key to your confi
 </code></pre>
 </notextile>
 
-h2. Configure the dispatcher
+h3. Configure CloudVMs
 
 Add or update the following portions of your cluster configuration file, @/etc/arvados/config.yml@. Refer to "config.defaults.yml":{{site.baseurl}}/admin/config.html for information about additional configuration options.
 
 <notextile>
-<pre><code>Clusters:
-  <span class="userinput">uuid_prefix</span>:
-    ManagementToken: xyzzy
-    SystemRootToken: <span class="userinput">zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz</span>
-    Services:
-      Controller:
-        ExternalURL: "https://<span class="userinput">uuid_prefix.arvadosapi.com</span>"
+<pre><code>    Services:
       DispatchCloud:
         InternalURLs:
           "http://localhost:9006": {}
@@ -109,9 +102,7 @@ Add or update the following portions of your cluster configuration file, @/etc/a
 Minimal configuration example for Amazon EC2:
 
 <notextile>
-<pre><code>Clusters:
-  <span class="userinput">uuid_prefix</span>:
-    Containers:
+<pre><code>    Containers:
       CloudVMs:
         ImageID: ami-01234567890abcdef
         Driver: ec2
@@ -130,9 +121,7 @@ Minimal configuration example for Amazon EC2:
 Minimal configuration example for Azure:
 
 <notextile>
-<pre><code>Clusters:
-  <span class="userinput">uuid_prefix</span>:
-    Containers:
+<pre><code>    Containers:
       CloudVMs:
         ImageID: "https://zzzzzzzz.blob.core.windows.net/system/Microsoft.Compute/Images/images/zzzzz-compute-osDisk.55555555-5555-5555-5555-555555555555.vhd"
         Driver: azure
@@ -153,25 +142,7 @@ Minimal configuration example for Azure:
 </code></pre>
 </notextile>
 
-h2. Test your configuration
-
-First, "add the appropriate package repository for your distribution":{{ site.baseurl }}/install/install-manual-prerequisites.html#repos.
-
-Next, install the arvados-server package.
-
-On Red Hat-based systems:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo yum install arvados-server</span>
-</code></pre>
-</notextile>
-
-On Debian-based systems:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo apt-get install arvados-server</span>
-</code></pre>
-</notextile>
+h3. Test your configuration
 
 Run the @cloudtest@ tool to verify that your configuration works. This creates a new cloud VM, confirms that it boots correctly and accepts your configured SSH private key, and shuts it down.
 
@@ -182,22 +153,7 @@ Run the @cloudtest@ tool to verify that your configuration works. This creates a
 
 Refer to the "cloudtest tool documentation":../admin/cloudtest.html for more information.
 
-h2. Install the dispatcher
-
-On Red Hat-based systems:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo yum install arvados-dispatch-cloud</span>
-~$ <span class="userinput">sudo systemctl enable arvados-dispatch-cloud</span>
-</code></pre>
-</notextile>
-
-On Debian-based systems:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo apt-get install arvados-dispatch-cloud</span>
-</code></pre>
-</notextile>
+h2. Install arvados-dispatch-cloud
 
 {% include 'notebox_begin' %}
 
@@ -205,9 +161,23 @@ The arvados-dispatch-cloud package includes configuration files for systemd. If 
 
 {% include 'notebox_end' %}
 
-h2. Verify the dispatcher is running
+h3. Centos 7
 
-Use your ManagementToken to test the dispatcher's metrics endpoint.
+<notextile>
+<pre><code># <span class="userinput">yum install arvados-dispatch-cloud</span>
+</code></pre>
+</notextile>
+
+h3. Debian and Ubuntu
+
+<notextile>
+<pre><code># <span class="userinput">apt-get --no-install-recommends install arvados-dispatch-cloud</span>
+</code></pre>
+</notextile>
+
+h2(#confirm-working). Confirm working installation
+
+Use your @ManagementToken@ to test the dispatcher's metrics endpoint.
 
 <notextile>
 <pre><code>~$ <span class="userinput">token="xyzzy"</span>

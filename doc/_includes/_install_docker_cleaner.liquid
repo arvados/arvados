@@ -6,7 +6,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 h2. Configure the Docker cleaner
 
-The arvados-docker-cleaner program removes least recently used Docker images as needed to keep disk usage below a configured limit.
+The @arvados-docker-cleaner@ program removes least recently used Docker images as needed to keep disk usage below a configured limit.
 
 {% include 'notebox_begin' %}
 This also removes all containers as soon as they exit, as if they were run with @docker run --rm@. If you need to debug or inspect containers after they stop, temporarily stop arvados-docker-cleaner or configure it with @"RemoveStoppedContainers":"never"@.

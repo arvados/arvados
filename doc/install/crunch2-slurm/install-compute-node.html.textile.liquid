@@ -11,11 +11,9 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 h2. Install dependencies
 
-First, "add the appropriate package repository for your distribution":{{ site.baseurl }}/install/install-manual-prerequisites.html#repos.
+h3. Centos 7
 
 {% include 'note_python_sc' %}
-
-On Red Hat-based systems:
 
 <notextile>
 <pre><code>~$ <span class="userinput">echo 'exclude=python2-llfuse' | sudo tee -a /etc/yum.conf</span>
@@ -23,7 +21,7 @@ On Red Hat-based systems:
 </code></pre>
 </notextile>
 
-On Debian-based systems:
+h3. Debian and Ubuntu
 
 <notextile>
 <pre><code>~$ <span class="userinput">sudo apt-get install python-arvados-fuse crunch-run arvados-docker-cleaner</span>
