@@ -12,7 +12,7 @@ import org.arvados.client.common.Characters;
 
 public class FileToken {
 
-    private int filePosition;
+    private long filePosition;
     private long fileSize;
     private String fileName;
     private String path;
@@ -28,7 +28,7 @@ public class FileToken {
 
     private void splitFileTokenInfo(String fileTokenInfo) {
         String[] tokenPieces = fileTokenInfo.split(":");
-        this.filePosition = Integer.parseInt(tokenPieces[0]);
+        this.filePosition = Long.parseLong(tokenPieces[0]);
         this.fileSize = Long.parseLong(tokenPieces[1]);
         this.fileName = tokenPieces[2].replace(Characters.SPACE, " ");
     }
@@ -42,7 +42,7 @@ public class FileToken {
         return Strings.isNullOrEmpty(path) ? fileName : path + fileName;
     }
 
-    public int getFilePosition() {
+    public long getFilePosition() {
         return this.filePosition;
     }
 
