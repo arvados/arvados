@@ -32,7 +32,7 @@ describe("CommonResourceService", () => {
 
     it("#create", async () => {
         axiosMock
-            .onPost("/resource/")
+            .onPost("/resource")
             .reply(200, { owner_uuid: "ownerUuidValue" });
 
         const commonResourceService = new CommonResourceService(axiosInstance, "resource", actions);
@@ -44,7 +44,7 @@ describe("CommonResourceService", () => {
         axiosInstance.post = jest.fn(() => Promise.resolve({data: {}}));
         const commonResourceService = new CommonResourceService(axiosInstance, "resource", actions);
         await commonResourceService.create({ ownerUuid: "ownerUuidValue" });
-        expect(axiosInstance.post).toHaveBeenCalledWith("/resource/", {owner_uuid: "ownerUuidValue"});
+        expect(axiosInstance.post).toHaveBeenCalledWith("/resource", {owner_uuid: "ownerUuidValue"});
     });
 
     it("#delete", async () => {
@@ -80,7 +80,7 @@ describe("CommonResourceService", () => {
 
     it("#list", async () => {
         axiosMock
-            .onGet("/resource/")
+            .onGet("/resource")
             .reply(200, {
                 kind: "kind",
                 offset: 2,

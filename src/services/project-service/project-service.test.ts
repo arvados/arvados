@@ -18,7 +18,7 @@ describe("CommonResourceService", () => {
         axiosInstance.post = jest.fn(() => Promise.resolve({ data: {} }));
         const projectService = new ProjectService(axiosInstance, actions);
         const resource = await projectService.create({ name: "nameValue" });
-        expect(axiosInstance.post).toHaveBeenCalledWith("/groups/", {
+        expect(axiosInstance.post).toHaveBeenCalledWith("/groups", {
             name: "nameValue",
             group_class: "project"
         });
@@ -28,7 +28,7 @@ describe("CommonResourceService", () => {
         axiosInstance.get = jest.fn(() => Promise.resolve({ data: {} }));
         const projectService = new ProjectService(axiosInstance, actions);
         const resource = await projectService.list();
-        expect(axiosInstance.get).toHaveBeenCalledWith("/groups/", {
+        expect(axiosInstance.get).toHaveBeenCalledWith("/groups", {
             params: {
                 filters: "[" + new FilterBuilder()
                     .addEqual("groupClass", "project")
