@@ -9,40 +9,34 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-h2. Install prerequisites
+# "Install dependencies":#dependencies
+# "Update config.yml":#update-config
+# "Update Nginx configuration":#update-nginx
+# "Install arvados-workbench":#install-packages
+# "Restart the API server and controller":#restart-api
+# "Confirm working installation":#confirm-working
+# "Trusted client setting":#trusted_client
 
-The Arvados package repository includes a Workbench server package that can help automate much of the deployment.
+h2(#dependencies). Install dependencies
 
-h3(#install_ruby_and_bundler). Install Ruby and Bundler
+# "Install Ruby and Bundler":ruby.html
+# "Install nginx":nginx.html
+# "Install Phusion Passenger":https://www.phusionpassenger.com/library/walkthroughs/deploy/ruby/ownserver/nginx/oss/install_passenger_main.html
 
-{% include 'install_ruby_and_bundler' %}
+h2(#configure). Update config.yml
 
-h2(#install_workbench). Install Workbench and dependencies
-
-Workbench doesn't need its own database, so it does not need to have PostgreSQL installed.
-
-{% assign rh_version = "7" %}
-{% include 'note_python_sc' %}
-
-On a Debian-based system, install the following packages:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo apt-get install bison build-essential graphviz git python-arvados-python-client arvados-workbench</span>
-</code></pre>
-</notextile>
-
-On a Red Hat-based system, install the following packages:
+Edit @/etc/arvados/config.yml@ to set the keys below.  The full set of configuration options are in the "Workbench section of config.yml":{{site.baseurl}}/admin/config.html
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo yum install bison make automake gcc gcc-c++ graphviz git python-arvados-python-client arvados-workbench</span>
+<pre><code>    Services:
+      Workbench:
+        ExternalURL: <span class="userinput">"https://workbench.ClustedID.example.com"</span>
+    Workbench:
+      SecretKeyBase: <span class="userinput">aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</span>
+    Users:
+      AutoAdminFirstUser: true
 </code></pre>
 </notextile>
-
-h2(#configure). Configure Workbench
-
-Edit @/etc/arvados/config.yml@ to set the keys below.  Only the most important configuration options are listed here.  The full set of configuration options are in the "Workbench section of config.yml":{{site.baseurl}}/admin/config.html
-
-h3. Workbench.SecretKeyBase
 
 This application needs a secret token. Generate a new secret:
 
@@ -54,72 +48,23 @@ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
 Then put that value in the @Workbench.SecretKeyBase@ field.
 
-<notextile>
-<pre><code>Cluster:
-  zzzzz:
-    Workbench:
-      SecretKeyBase: <span class="userinput">aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</span>
-</code></pre>
-</notextile>
+You probably want to enable @Users.AutoAdminFirstUser@ .  The first user to log in when no other admin user exists will automatically be made an admin.
 
-h3. Services.Controller.ExternalURL
+h2(#update-nginx). Update nginx configuration
 
-Ensure that @Services.Controller.ExternalURL@ is configured for "Arvados Controller":install-controller.html . For example like this:
+Use a text editor to create a new file @/etc/nginx/conf.d/arvados-workbench.conf@ with the following configuration.  Options that need attention are marked with "TODO".
 
 <notextile>
-<pre><code>Cluster:
-  zzzzz:
-    Services:
-      Controller:
-        ExternalURL: <span class="userinput">https://prefix_uuid.your.domain</span>
-</code></pre>
-</notextile>
-
-h3. Workbench.SiteName
-
-@Workbench.SiteName@ can be set to any arbitrary string. It is used to identify this Workbench to people visiting it.
-
-
-<notextile>
-<pre><code>Cluster:
-  zzzzz:
-    Workbench:
-      SiteName: <span class="userinput">My Arvados</span>
-</code></pre>
-</notextile>
-
-h3. TLS.Insecure
-
-For testing only.  Allows use of self-signed certificates.  If true, workbench will not verify the TLS certificate of Arvados Controller.
-
-<notextile>
-<pre><code>Cluster:
-  zzzzz:
-    TLS:
-      Insecure: <span class="userinput">false</span>
-</code></pre>
-</notextile>
-
-h2. Configure Piwik (optional)
-
-Piwik can be used to gather usage analytics.  In @/var/www/arvados-workbench/current/config@, copy @piwik.yml.example@ to @piwik.yml@ and edit to suit.
-
-h2. Set up Web server
-
-For best performance, we recommend you use Nginx as your Web server front-end, with a Passenger backend to serve Workbench.  To do that:
-
-<notextile>
-<ol>
-<li><a href="https://www.phusionpassenger.com/library/walkthroughs/deploy/ruby/ownserver/nginx/oss/install_passenger_main.html">Install Nginx and Phusion Passenger</a>.</li>
-
-<li><p>Edit the http section of your Nginx configuration to run the Passenger server, and act as a front-end for it.  You might add a block like the following, adding SSL and logging parameters to taste:</p>
-
 <pre><code>server {
-  listen 127.0.0.1:9000;
-  server_name localhost-workbench;
+  listen       <span class="userinput">[your public IP address]</span>:443 ssl;
+  server_name  workbench.<span class="userinput">ClusterID.example.com</span>;
+
+  ssl on;
+  ssl_certificate     <span class="userinput">/YOUR/PATH/TO/cert.pem</span>;
+  ssl_certificate_key <span class="userinput">/YOUR/PATH/TO/cert.key</span>;
 
   root /var/www/arvados-workbench/current/public;
-  index  index.html index.htm index.php;
+  index  index.html;
 
   passenger_enabled on;
   # If you're using RVM, uncomment the line below.
@@ -129,65 +74,39 @@ For best performance, we recommend you use Nginx as your Web server front-end, w
   # the API.MaxRequestSize and Controller's server's Nginx configuration.
   client_max_body_size 128m;
 }
-
-upstream workbench {
-  server     127.0.0.1:9000  fail_timeout=10s;
-}
-
-proxy_http_version 1.1;
-
-server {
-  listen       <span class="userinput">[your public IP address]</span>:443 ssl;
-  server_name  workbench.<span class="userinput">uuid-prefix.your.domain</span>;
-
-  ssl on;
-  ssl_certificate     <span class="userinput">/YOUR/PATH/TO/cert.pem</span>;
-  ssl_certificate_key <span class="userinput">/YOUR/PATH/TO/cert.key</span>;
-
-  index  index.html index.htm index.php;
-  # `client_max_body_size` should match the corresponding setting in
-  # the API.MaxRequestSize and Controller's server's Nginx configuration.
-  client_max_body_size 128m;
-
-  location / {
-    proxy_pass            http://workbench;
-    proxy_redirect        off;
-    proxy_connect_timeout 90s;
-    proxy_read_timeout    300s;
-
-    proxy_set_header      X-Forwarded-Proto https;
-    proxy_set_header      Host $http_host;
-    proxy_set_header      X-Real-IP $remote_addr;
-    proxy_set_header      X-Forwarded-For $proxy_add_x_forwarded_for;
-  }
-}
 </code></pre>
-</li>
-
-<li>Restart Nginx.</li>
-
-</ol>
 </notextile>
 
-h2. Prepare the Workbench deployment
+h2(#install-packages). Install arvados-workbench
 
-{% assign railspkg = "arvados-workbench" %}
-{% include 'install_rails_reconfigure' %}
+h3. Centos 7
 
-{% include 'notebox_begin' %}
-You can safely ignore the following error message you may see when Ruby Gems are installed:
 <notextile>
-<pre><code>themes_for_rails at /usr/local/rvm/gems/ruby-2.1.1/bundler/gems/themes_for_rails-1fd2d7897d75 did not have a valid gemspec.
-This prevents bundler from installing bins or native extensions, but that may not affect its functionality.
-The validation message from Rubygems was:
-  duplicate dependency on rails (= 3.0.11, development), (>= 3.0.0) use:
-    add_runtime_dependency 'rails', '= 3.0.11', '>= 3.0.0'
-Using themes_for_rails (0.5.1) from https://github.com/holtkampw/themes_for_rails (at 1fd2d78)
+<pre><code># <span class="userinput">yum install arvados-workbench</span>
 </code></pre>
 </notextile>
-{% include 'notebox_end' %}
 
-h2. Trusted client setting
+h3. Debian and Ubuntu
+
+<notextile>
+<pre><code># <span class="userinput">apt-get --no-install-recommends install arvados-workbench</span>
+</code></pre>
+</notextile>
+
+h2(#restart-api). Restart the API server and controller
+
+After adding Workbench to the Services section, make sure the cluster config file is up to date on the API server host, and restart the API server and controller processes to ensure the changes are applied.
+
+<notextile>
+<pre><code># <span class="userinput">systemctl restart nginx arvados-controller</span>
+</code></pre>
+</notextile>
+
+h2(#confirm-working). Confirm working installation
+
+Visit @https://workbench.ClusterID.example.com@ in a browser.  You should be able to log in using the login method you configured in the previous step.  If @Users.AutoAdminFirstUser@ is true, you will be an admin user.
+
+h2(#trusted_client). Trusted client flag
 
 Log in to Workbench once to ensure that the Arvados API server has a record of the Workbench client. (It's OK if Workbench says your account hasn't been activated yet. We'll deal with that next.)
 
@@ -204,17 +123,3 @@ irb(main):003:0&gt; <span class="userinput">act_as_system_user do wb.update_attr
 </code></pre>
 </notextile>
 
-h2(#admin-user). Add an admin user
-
-Next, we're going to use the Rails console on the <strong>API server</strong> to activate your account and give yourself admin privileges.  {% include 'install_rails_command' %}
-
-Enter the following commands at the console:
-
-<notextile>
-<pre><code>irb(main):001:0&gt; <span class="userinput">Thread.current[:user] = User.all.select(&:identity_url).last</span>
-irb(main):002:0&gt; <span class="userinput">Thread.current[:user].update_attributes is_admin: true, is_active: true</span>
-irb(main):003:0&gt; <span class="userinput">User.where(is_admin: true).collect &:email</span>
-=&gt; ["root", "<b>your_address@example.com</b>"]
-</code></pre></notextile>
-
-At this point, you should have a working Workbench login with administrator privileges. Revisit your Workbench URL in a browser and reload the page to access it.

@@ -211,8 +211,8 @@ navbar:
       - install/install-composer.html.textile.liquid
     - Additional services:
       - install/install-ws.html.textile.liquid
-      - install/install-shell-server.html.textile.liquid
       - install/install-arv-git-httpd.html.textile.liquid
+      - install/install-shell-server.html.textile.liquid      
     - Containers API support on SLURM:
       - install/crunch2-slurm/install-prerequisites.html.textile.liquid
       - install/crunch2-slurm/install-slurm.html.textile.liquid

@@ -45,13 +45,19 @@ h3. Install RVM
 \curl -sSL https://get.rvm.io | bash -s stable --ruby=2.5
 </span></code></pre></notextile>
 
-Either log out and log back in to activate RVM, or explicitly load it in all open shells like this:
+To use Ruby installed from RVM, load it in an open shell like this:
 
 <notextile>
 <pre><code><span class="userinput">. /usr/local/rvm/scripts/rvm
 </span></code></pre></notextile>
 
-Once RVM is activated in your shell, install Bundler:
+Alternately you can use @rvm-exec@ (the first parameter is the ruby version to use, or "default"), for example:
+
+<notextile>
+<pre><code><span class="userinput">rvm-exec default rails console
+</span></code></pre></notextile>
+
+Finally, install Bundler:
 
 <notextile>
 <pre><code>~$ <span class="userinput">gem install bundler</span>

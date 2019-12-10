@@ -9,63 +9,46 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-Arvados allows users to create their own private and public git repositories, and clone/push them using SSH and HTTPS.
+# "Introduction":#introduction
+# "Install dependencies":#dependencies
+# "Create "git" user and storage directory":#create
+# "Install gitolite":#gitolite
+# "Configure gitolite":#config-gitolite
+# "Configure git synchronization":#sync
+# "Update config.yml":#update-config
+# "Update nginx configuration":#update-nginx
+# "Install arvados-git-httpd package":#install-packages
+# "Restart the API server and controller":#restart-api
+# "Confirm working installation":#confirm-working
+
+h2(#introduction). Introduction
+
+Arvados support for git repository management enables using Arvados permissions to control access to git repositories.  Users can create their own private and public git repositories and share them with others.
 
 The git hosting setup involves three components.
 * The "arvados-git-sync.rb" script polls the API server for the current list of repositories, creates bare repositories, and updates the local permission cache used by gitolite.
-* Gitolite provides SSH access.
-* arvados-git-http provides HTTPS access.
+* Gitolite provides SSH access.  Users authenticate by SSH keys.
+* arvados-git-http provides HTTPS access.  Users authenticate by Arvados tokens.
 
-It is not strictly necessary to deploy _both_ SSH and HTTPS access, but we recommend deploying both:
-* SSH is a more appropriate way to authenticate from a user's workstation because it does not require managing tokens on the client side;
-* HTTPS is a more appropriate way to authenticate from a shell VM because it does not depend on SSH agent forwarding (SSH clients' agent forwarding features tend to behave as if the remote machine is fully trusted).
-* HTTPS is also used by Arvados Composer to access git repositories from the browser.
+Git services must be installed on the same host as the Arvados Rails API server.
 
-The HTTPS instructions given below will not work if you skip the SSH setup steps.
+h2(#dependencies). Install dependencies
 
-h2. Set up DNS
-
-By convention, we use the following hostname for the git service:
+h3. Centos 7
 
 <notextile>
-<pre><code>git.<span class="userinput">uuid_prefix</span>.your.domain
+<pre><code># <span class="userinput">yum install git perl-Data-Dumper openssh-server</span>
 </code></pre>
 </notextile>
 
-{% include 'notebox_begin' %}
-Here, we show how to install the git hosting services *on the same host as your API server.* Using a different host is not yet fully supported. On this page we will refer to it as your git server.
-{% include 'notebox_end' %}
-
-DNS and network configuration should be set up so port 443 reaches your HTTPS proxy, and port 22 reaches the OpenSSH service on your git server.
-
-h2. Generate an API token
-
-{% assign railshost = "gitserver" %}
-{% assign railscmd = "bundle exec ./script/create_superuser_token.rb" %}
-{% assign railsout = "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz" %}
-Use the following command to generate an API token.  {% include 'install_rails_command' %}
-
-Copy that token; you'll need it in a minute.
-
-h2. Install git and other dependencies
-
-On Debian-based systems:
+h3. Debian and Ubuntu
 
 <notextile>
-<pre><code>gitserver:~$ <span class="userinput">sudo apt-get install git openssh-server</span>
+<pre><code># <span class="userinput">apt-get --no-install-recommends install git openssh-server</span>
 </code></pre>
 </notextile>
 
-On Red Hat-based systems:
-
-<notextile>
-<pre><code>gitserver:~$ <span class="userinput">sudo yum install git perl-Data-Dumper openssh-server</span>
-</code></pre>
-</notextile>
-
-{% include 'install_git' %}
-
-h2. Create a "git" user and a storage directory
+h2(#create). Create "git" user and storage directory
 
 Gitolite and some additional scripts will be installed in @/var/lib/arvados/git@, which means hosted repository data will be stored in @/var/lib/arvados/git/repositories@. If you choose to install gitolite in a different location, make sure to update the @git_repositories_dir@ entry in your API server's @application.yml@ file accordingly: for example, if you install gitolite at @/data/gitolite@ then your @git_repositories_dir@ will be @/data/gitolite/repositories@.
 
@@ -93,15 +76,16 @@ git@gitserver:~$ <span class="userinput">rm .ssh/authorized_keys</span>
 </code></pre>
 </notextile>
 
-h2. Install gitolite
+h2(#gitolite). Install gitolite
 
 Check "https://github.com/sitaramc/gitolite/tags":https://github.com/sitaramc/gitolite/tags for the latest stable version. This guide was tested with @v3.6.4@. _Versions below 3.0 are missing some features needed by Arvados, and should not be used._
 
 Download and install the version you selected.
 
 <notextile>
-<pre><code>git@gitserver:~$ <span class="userinput">echo 'PATH=$HOME/bin:$PATH' &gt;.profile</span>
-git@gitserver:~$ <span class="userinput">source .profile</span>
+<pre><code># <span class="userinput">su git</span>
+git@gitserver:~$ <span class="userinput">echo 'PATH=$HOME/bin:$PATH' &gt;.profile</span>
+git@gitserver:~$ <span class="userinput">. .profile</span>
 git@gitserver:~$ <span class="userinput">git clone --branch <b>v3.6.4</b> https://github.com/sitaramc/gitolite</span>
 ...
 Note: checking out '5d24ae666bfd2fa9093d67c840eb8d686992083f'.
@@ -137,7 +121,7 @@ Everything up-to-date
 </code></pre>
 </notextile>
 
-h3. Configure gitolite
+h2(#config-gitolite). Configure gitolite
 
 Configure gitolite to look up a repository name like @username/reponame.git@ and find the appropriate bare repository storage directory.
 
@@ -175,17 +159,17 @@ Uncomment the 'Alias' line in the section that begins @ENABLE => [@:
 </span></code></pre>
 </notextile>
 
-h2. Configure git synchronization
+h2(#sync). Configure git synchronization
 
 Create a configuration file @/var/www/arvados-api/current/config/arvados-clients.yml@ using the following template, filling in the appropriate values for your system.
-* For @arvados_api_token@, use the token you generated above.
+* For @arvados_api_token@, use @SystemRootToken@
 * For @gitolite_arvados_git_user_key@, provide the public key you generated above, i.e., the contents of @~git/.ssh/id_rsa.pub@.
 
 <notextile>
 <pre><code>production:
   gitolite_url: /var/lib/arvados/git/repositories/gitolite-admin.git
   gitolite_tmp: /var/lib/arvados/git
-  arvados_api_host: <span class="userinput">uuid_prefix.example.com</span>
+  arvados_api_host: <span class="userinput">ClusterID.example.com</span>
   arvados_api_token: "<span class="userinput">zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz</span>"
   arvados_api_host_insecure: <span class="userinput">false</span>
   gitolite_arvados_git_user_key: "<span class="userinput">ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7aBIDAAgMQN16Pg6eHmvc+D+6TljwCGr4YGUBphSdVb25UyBCeAEgzqRiqy0IjQR2BLtSirXr+1SJAcQfBgI/jwR7FG+YIzJ4ND9JFEfcpq20FvWnMMQ6XD3y3xrZ1/h/RdBNwy4QCqjiXuxDpDB7VNP9/oeAzoATPZGhqjPfNS+RRVEQpC6BzZdsR+S838E53URguBOf9yrPwdHvosZn7VC0akeWQerHqaBIpSfDMtaM4+9s1Gdsz0iP85rtj/6U/K/XOuv2CZsuVZZ52nu3soHnEX2nx2IaXMS3L8Z+lfOXB2T6EaJgXF7Z9ME5K1tx9TSNTRcYCiKztXLNLSbp git@gitserver</span>"
@@ -196,115 +180,37 @@ h3. Enable the synchronization script
 
 The API server package includes a script that retrieves the current set of repository names and permissions from the API, writes them to @arvadosaliases.pl@ in a format usable by gitolite, and triggers gitolite hooks which create new empty repositories if needed. This script should run every 2 to 5 minutes.
 
-If you are using RVM, create @/etc/cron.d/arvados-git-sync@ with the following content:
-
-<notextile>
-<pre><code><span class="userinput">*/5 * * * * git cd /var/www/arvados-api/current && /usr/local/rvm/bin/rvm-exec default bundle exec script/arvados-git-sync.rb production</span>
-</code></pre>
-</notextile>
-
-Otherwise, create @/etc/cron.d/arvados-git-sync@ with the following content:
+Create @/etc/cron.d/arvados-git-sync@ with the following content:
 
 <notextile>
 <pre><code><span class="userinput">*/5 * * * * git cd /var/www/arvados-api/current && bundle exec script/arvados-git-sync.rb production</span>
 </code></pre>
 </notextile>
 
-h3. Configure the API server to advertise the correct SSH URLs
+h2(#update-config). Update config.yml
 
-Edit the cluster config at @/etc/arvados/config.yml@ and set @Services.GitSSH.ExternalURL@. Replace @uuid_prefix@ with your cluster id.
+Edit the cluster config at @/etc/arvados/config.yml@ .
 
 <notextile>
-<pre><code>Clusters:
-  <span class="userinput">uuid_prefix</span>:
-    Services:
+<pre><code>    Services:
       GitSSH:
-        ExternalURL: <span class="userinput">git@git.uuid_prefix.your.domain:</span>
-</code></pre>
-</notextile>
-
-Make sure to include the trailing colon.
-
-h2. Install the arvados-git-httpd package
-
-This is needed only for HTTPS access.
-
-The arvados-git-httpd package provides HTTP access, using Arvados authentication tokens instead of passwords. It is intended to be installed on the system where your git repositories are stored, and accessed through a web proxy that provides SSL support.
-
-On Debian-based systems:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo apt-get install git arvados-git-httpd</span>
-</code></pre>
-</notextile>
-
-On Red Hat-based systems:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo yum install git arvados-git-httpd</span>
-~$ <span class="userinput">sudo systemctl enable arvados-git-httpd</span>
-</code></pre>
-</notextile>
-
-Verify that @arvados-git-httpd@ and @git-http-backend@ can be run:
-
-<notextile>
-<pre><code>~$ <span class="userinput">arvados-git-httpd -h</span>
-[...]
-Usage: arvados-git-httpd [-config path/to/arvados/git-httpd.yml]
-[...]
-~$ <span class="userinput">git http-backend</span>
-Status: 500 Internal Server Error
-Expires: Fri, 01 Jan 1980 00:00:00 GMT
-Pragma: no-cache
-Cache-Control: no-cache, max-age=0, must-revalidate
-
-fatal: No REQUEST_METHOD from server
-</code></pre>
-</notextile>
-
-h3. Enable arvados-git-httpd
-
-{% include 'notebox_begin' %}
-
-The arvados-git-httpd package includes configuration files for systemd.  If you're using a different init system, you'll need to configure a service to start and stop an @arvados-git-httpd@ process as desired.
-
-{% include 'notebox_end' %}
-
-Edit the cluster config at @/etc/arvados/config.yml@ and set the following values. Replace @uuid_prefix@ with your cluster id.
-
-<notextile>
-<pre><code>Clusters:
-  <span class="userinput">uuid_prefix</span>:
-    Services:
+        ExternalURL: <span class="userinput">git@git.ClusterID.example.com:</span>
       GitHTTP:
-        ExternalURL: <span class="userinput">https://git.uuid_prefix.your.domain/</span>
+        ExternalURL: <span class="userinput">https://git.ClusterID.example.com/</span>
         InternalURLs:
-	  <span class="userinput">"http://localhost:9001": {}</span>
+	  <span class="userinput">"http://git.ClusterID.example.com:9001": {}</span>
     Git:
       GitCommand: <span class="userinput">/var/lib/arvados/git/gitolite/src/gitolite-shell</span>
       GitoliteHome: <span class="userinput">/var/lib/arvados/git</span>
-      Repositories: <span class="userinput">/var/lib/arvados/git/repositories</span>
+      Repositories: <span class="userinput">/var/lib/arvados/git/repositories</span>	
 </code></pre>
 </notextile>
 
-Make sure to include the trailing slash for @Services.GitHTTP.ExternalURL@.
+Make sure to include the trailing colon in @Services.GitSSH.ExternalURL@.
 
-Restart the systemd service to ensure the new configuration is used.
+h2(#update-nginx). Update nginx configuration
 
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo systemctl restart arvados-git-httpd</span>
-</code></pre>
-</notextile>
-
-h3. Set up a reverse proxy to provide SSL service
-
-The arvados-git-httpd service will be accessible from anywhere on the internet, so we recommend using SSL.
-
-This is best achieved by putting a reverse proxy with SSL support in front of arvados-git-httpd, running on port 443 and passing requests to @arvados-git-httpd@ on port 9001 (or whichever port you used in your run script).
-
-Add the following configuration to the @http@ section of your Nginx configuration:
+Use a text editor to create a new file @/etc/nginx/conf.d/arvados-git.conf@ with the following configuration.  Options that need attention are marked with "TODO".
 
 <notextile>
 <pre><code>
@@ -313,7 +219,7 @@ upstream arvados-git-httpd {
 }
 server {
   listen                  <span class="userinput">[your public IP address]</span>:443 ssl;
-  server_name             git.<span class="userinput">uuid_prefix.your.domain</span>;
+  server_name             git.<span class="userinput">ClusterID.example.com</span>;
   proxy_connect_timeout   90s;
   proxy_read_timeout      300s;
 
@@ -322,7 +228,7 @@ server {
   ssl_certificate_key     <span class="userinput">/YOUR/PATH/TO/cert.key</span>;
 
   # The server needs to accept potentially large refpacks from push clients.
-  client_max_body_size 50m;
+  client_max_body_size 128m;
 
   location  / {
     proxy_pass            http://arvados-git-httpd;
@@ -331,55 +237,55 @@ server {
 </code></pre>
 </notextile>
 
-h2. Restart Nginx
+h2(#install-packages). Install the arvados-git-httpd package
 
-Restart Nginx to make the Nginx and API server configuration changes take effect.
+The arvados-git-httpd package provides HTTP access, using Arvados authentication tokens instead of passwords. It must be installed on the system where your git repositories are stored.
+
+h3. Centos 7
 
 <notextile>
-<pre><code>gitserver:~$ <span class="userinput">sudo nginx -s reload</span>
+<pre><code># <span class="userinput">yum install arvados-git-httpd</span>
 </code></pre>
 </notextile>
 
-h2. Clone Arvados repository
-
-Here we create a repository object which will be used to set up a hosted clone of the arvados repository on this cluster.
+h3. Debian and Ubuntu
 
 <notextile>
-<pre><code>~$ <span class="userinput">uuid_prefix=`arv --format=uuid user current | cut -d- -f1`</span>
-~$ <span class="userinput">echo "Site prefix is '$uuid_prefix'"</span>
-~$ <span class="userinput">all_users_group_uuid="$uuid_prefix-j7d0g-fffffffffffffff"</span>
-~$ <span class="userinput">repo_uuid=`arv --format=uuid repository create --repository "{\"owner_uuid\":\"$uuid_prefix-tpzed-000000000000000\", \"name\":\"arvados\"}"`</span>
-~$ <span class="userinput">echo "Arvados repository uuid is '$repo_uuid'"</span>
-</code></pre></notextile>
-
-Create a link object to make the repository object readable by the "All users" group, and therefore by every active user. This makes it possible for users to run the bundled Crunch scripts by specifying @"script_version":"master","repository":"arvados"@ rather than pulling the Arvados source tree into their own repositories.
-
-<notextile>
-<pre><code>~$ <span class="userinput">read -rd $'\000' newlink &lt;&lt;EOF; arv link create --link "$newlink"</span>
-<span class="userinput">{
- "tail_uuid":"$all_users_group_uuid",
- "head_uuid":"$repo_uuid",
- "link_class":"permission",
- "name":"can_read"
-}
-EOF</span>
-</code></pre></notextile>
-
-In a couple of minutes, your arvados-git-sync cron job will create an empty repository on your git server. Seed it with the real arvados repository. If your git credential helpers were configured correctly when you "set up your shell server":install-shell-server.html, the "git push" command will use your API token instead of prompting you for a username and password.
-
-<notextile>
-<pre><code>~$ <span class="userinput">cd /tmp</span>
-/tmp$ <span class="userinput">git clone --bare https://github.com/curoverse/arvados.git</span>
-/tmp <span class="userinput">git --git-dir arvados.git push https://git.<b>uuid_prefix.your.domain</b>/arvados.git '*:*'</span>
+<pre><code># <span class="userinput">apt-get --no-install-recommends install arvados-git-httpd</span>
 </code></pre>
 </notextile>
 
-If you did not set up a HTTPS service, you can push to <code>git@git.uuid_prefix.your.domain:arvados.git</code> using your SSH key, or by logging in to your git server and using sudo.
+h2(#restart-api). Restart the API server and controller
+
+After adding Workbench to the Services section, make sure the cluster config file is up to date on the API server host, and restart the API server and controller processes to ensure the changes are applied.
 
 <notextile>
-<pre><code>gitserver:~$ <span class="userinput">sudo -u git -i bash</span>
-git@gitserver:~$ <span class="userinput">git clone --bare https://github.com/curoverse/arvados.git /tmp/arvados.git</span>
-git@gitserver:~$ <span class="userinput">cd /tmp/arvados.git</span>
-git@gitserver:/tmp/arvados.git$ <span class="userinput">gitolite push /var/lib/arvados/git/repositories/<b>your_arvados_repo_uuid</b>.git '*:*'</span>
+<pre><code># <span class="userinput">systemctl restart nginx arvados-controller</span>
+</code></pre>
+</notextile>
+
+h2(#confirm-working). Confirm working installation
+
+Create 'testrepo' in the Arvados database.
+
+<notextile>
+<pre><code>~$ <span class="userinput">arv --format=uuid repository create --repository '{"name":"testrepo"}'</span>
+</code></pre></notextile>
+
+The arvados-git-sync cron job will notice the new repository record and create a repository on disk.  Because it is on a timer (default 5 minutes) you may have to wait a minute or two for it to show up.
+
+h3. SSH
+
+<notextile>
+<pre><code>~$ <span class="userinput">git clone git@git.ClusterID.example.com:username/testrepo.git</span>
+</code></pre>
+</notextile>
+
+h3. HTTP
+
+Set up git credential helpers as described in "install shell server":install-shell-server.html for the "git push" command to use your API token instead of prompting you for a username and password.
+
+<notextile>
+<pre><code>~$ <span class="userinput">git clone https://git.ClusterID.example.com/username/testrepo.git</span>
 </code></pre>
 </notextile>
