@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
+	"git.arvados.org/arvados.git/sdk/go/blockdigest"
 )
 
 // Collection is an arvados#collection resource.

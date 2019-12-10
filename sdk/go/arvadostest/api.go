@@ -13,7 +13,7 @@ import (
 	"runtime"
 	"sync"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
 
 var ErrStubUnimplemented = errors.New("stub unimplemented")

@@ -7,7 +7,7 @@ package test
 import (
 	"fmt"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
 
 // ContainerUUID returns a fake container UUID.

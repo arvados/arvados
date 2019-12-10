@@ -11,7 +11,7 @@ import (
 	"net/http/cgi"
 	"os"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
 
 // gitHandler is an http.Handler that invokes git-http-backend (or

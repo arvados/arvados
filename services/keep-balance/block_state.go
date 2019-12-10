@@ -7,7 +7,7 @@ package main
 import (
 	"sync"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
 
 // Replica is a file on disk (or object in an S3 bucket, or blob in an

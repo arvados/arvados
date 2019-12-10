@@ -16,7 +16,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 
 	"golang.org/x/net/context"
 	"golang.org/x/net/webdav"

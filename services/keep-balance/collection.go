@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
 
 func countCollections(c *arvados.Client, params arvados.ResourceListParams) (int, error) {

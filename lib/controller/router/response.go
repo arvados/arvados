@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 )
 
 const rfc3339NanoFixed = "2006-01-02T15:04:05.000000000Z07:00"

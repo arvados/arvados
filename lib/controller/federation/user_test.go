@@ -11,9 +11,9 @@ import (
 	"os"
 	"strings"
 
-	"git.curoverse.com/arvados.git/lib/controller/rpc"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/lib/controller/rpc"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	check "gopkg.in/check.v1"
 )
 

@@ -16,9 +16,9 @@ import (
 	"testing"
 	"time"
 
-	"git.curoverse.com/arvados.git/lib/controller/rpc"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/lib/controller/rpc"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"github.com/gorilla/mux"
 	check "gopkg.in/check.v1"
 )

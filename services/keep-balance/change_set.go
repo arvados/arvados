@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"sync"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
 
 // Pull is a request to retrieve a block from a remote server, and

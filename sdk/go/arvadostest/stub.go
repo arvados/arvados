@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
 
 // StubResponse struct with response status and body

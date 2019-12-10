@@ -17,8 +17,8 @@ import (
 	"strings"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
+	"git.arvados.org/arvados.git/sdk/go/keepclient"
 )
 
 var version = "dev"

@@ -53,7 +53,7 @@ class CommitTest < ActiveSupport::TestCase
    '/bogus/repo',
    '/not/allowed/.git',
    'file:///not/allowed.git',
-   'git.curoverse.com/arvados.git',
+   'git.arvados.org/arvados.git',
    'github.com/curoverse/arvados.git',
   ].each do |url|
     test "find_commit_range skips fetch_remote_repository for #{url}" do

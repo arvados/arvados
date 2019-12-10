@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"git.curoverse.com/arvados.git/lib/dispatchcloud/test"
-	"git.curoverse.com/arvados.git/lib/dispatchcloud/worker"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/lib/dispatchcloud/test"
+	"git.arvados.org/arvados.git/lib/dispatchcloud/worker"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	check "gopkg.in/check.v1"
 )
 

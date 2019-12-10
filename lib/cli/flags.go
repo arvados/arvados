@@ -7,7 +7,7 @@ package cli
 import (
 	"flag"
 
-	"git.curoverse.com/arvados.git/lib/cmd"
+	"git.arvados.org/arvados.git/lib/cmd"
 	"rsc.io/getopt"
 )
 

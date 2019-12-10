@@ -16,7 +16,7 @@ import (
 	"syscall"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 )
 
 // ClearCache clears the Keep service discovery cache.

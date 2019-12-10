@@ -11,7 +11,7 @@ import (
 	"net/url"
 	"os"
 
-	"git.curoverse.com/arvados.git/sdk/go/config"
+	"git.arvados.org/arvados.git/sdk/go/config"
 )
 
 var DefaultConfigFile = func() string {

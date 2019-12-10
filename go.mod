@@ -1,4 +1,4 @@
-module git.curoverse.com/arvados.git
+module git.arvados.org/arvados.git
 
 go 1.13
 

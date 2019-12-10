@@ -8,9 +8,9 @@ import (
 	"context"
 	"errors"
 
-	"git.curoverse.com/arvados.git/lib/controller/railsproxy"
-	"git.curoverse.com/arvados.git/lib/controller/rpc"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/lib/controller/railsproxy"
+	"git.arvados.org/arvados.git/lib/controller/rpc"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
 
 type railsProxy = rpc.Conn

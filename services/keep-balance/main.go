@@ -11,10 +11,10 @@ import (
 	"io"
 	"os"
 
-	"git.curoverse.com/arvados.git/lib/config"
-	"git.curoverse.com/arvados.git/lib/service"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/lib/config"
+	"git.arvados.org/arvados.git/lib/service"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 )

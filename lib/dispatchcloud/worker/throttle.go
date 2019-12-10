@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"git.curoverse.com/arvados.git/lib/cloud"
+	"git.arvados.org/arvados.git/lib/cloud"
 	"github.com/sirupsen/logrus"
 )
 

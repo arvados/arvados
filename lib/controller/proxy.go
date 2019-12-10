@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 )
 
 type proxy struct {

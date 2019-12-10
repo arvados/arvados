@@ -17,8 +17,8 @@ import (
 	"strings"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/AdRoll/goamz/s3"
 	"github.com/AdRoll/goamz/s3/s3test"
 	"github.com/prometheus/client_golang/prometheus"

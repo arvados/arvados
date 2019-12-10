@@ -739,7 +739,7 @@ do_test() {
 
 go_ldflags() {
     version=${ARVADOS_VERSION:-$(git log -n1 --format=%H)-dev}
-    echo "-X git.curoverse.com/arvados.git/lib/cmd.version=${version} -X main.version=${version}"
+    echo "-X git.arvados.org/arvados.git/lib/cmd.version=${version} -X main.version=${version}"
 }
 
 do_test_once() {
@@ -771,7 +771,7 @@ do_test_once() {
         else
             # The above form gets verbose even when testargs is
             # empty, so use this form in such cases:
-            go test ${short:+-short} ${coverflags[@]} "git.curoverse.com/arvados.git/$1"
+            go test ${short:+-short} ${coverflags[@]} "git.arvados.org/arvados.git/$1"
         fi
         result=${result:-$?}
         if [[ -f "$WORKSPACE/tmp/.$covername.tmp" ]]

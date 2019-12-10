@@ -20,9 +20,9 @@ import (
 	"sync"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/sdk/go/asyncbuf"
-	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
+	"git.arvados.org/arvados.git/sdk/go/asyncbuf"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 )
 
 // A Keep "block" is 64MB.

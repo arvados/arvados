@@ -11,10 +11,10 @@ import (
 	"fmt"
 	"time"
 
-	"git.curoverse.com/arvados.git/lib/cloud"
-	"git.curoverse.com/arvados.git/lib/dispatchcloud/ssh_executor"
-	"git.curoverse.com/arvados.git/lib/dispatchcloud/worker"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/lib/cloud"
+	"git.arvados.org/arvados.git/lib/dispatchcloud/ssh_executor"
+	"git.arvados.org/arvados.git/lib/dispatchcloud/worker"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 )

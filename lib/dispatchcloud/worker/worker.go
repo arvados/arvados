@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"git.curoverse.com/arvados.git/lib/cloud"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/stats"
+	"git.arvados.org/arvados.git/lib/cloud"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/stats"
 	"github.com/sirupsen/logrus"
 )
 
