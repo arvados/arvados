@@ -340,6 +340,7 @@ var userAttrsCachedFromLoginCluster = map[string]bool{
 	"prefs":                   true,
 	"username":                true,
 
+	"etag":         false,
 	"full_name":    false,
 	"identity_url": false,
 	"is_invited":   false,
