@@ -321,6 +321,8 @@ func (s *RouterIntegrationSuite) TestSelectParam(c *check.C) {
 		c.Check(rr.Code, check.Equals, http.StatusOK)
 
 		c.Check(resp["kind"], check.Equals, "arvados#container")
+		c.Check(resp["etag"], check.FitsTypeOf, "")
+		c.Check(resp["etag"], check.Not(check.Equals), "")
 		c.Check(resp["uuid"], check.HasLen, 27)
 		c.Check(resp["command"], check.HasLen, 2)
 		c.Check(resp["mounts"], check.IsNil)

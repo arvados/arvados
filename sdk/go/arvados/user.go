@@ -9,6 +9,7 @@ import "time"
 // User is an arvados#user record
 type User struct {
 	UUID                 string                 `json:"uuid"`
+	Etag                 string                 `json:"etag"`
 	IsActive             bool                   `json:"is_active"`
 	IsAdmin              bool                   `json:"is_admin"`
 	Username             string                 `json:"username"`
