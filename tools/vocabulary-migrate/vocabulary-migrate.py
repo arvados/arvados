@@ -102,7 +102,7 @@ def main(arguments=None):
                 migrated_props = migrate_properties(props, key_label_to_id_map, vocab)
                 if not args.dry_run:
                     logger.debug('Migrating {}: {} -> {}'.format(o['uuid'], props, migrated_props))
-                    arv.collections().update(uuid=o['uuid'], body={
+                    resource.update(uuid=o['uuid'], body={
                         'properties': migrated_props
                     }).execute()
                 else:
