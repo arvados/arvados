@@ -193,6 +193,7 @@ run() {
             defaultdev=$(/sbin/ip route|awk '/default/ { print $5 }')
             localip=$(ip addr show $defaultdev | grep 'inet ' | sed 's/ *inet \(.*\)\/.*/\1/')
         fi
+	echo "Public arvbox will use address $localip"
         iptemp=$(tempfile)
         echo $localip > $iptemp
         chmod og+r $iptemp

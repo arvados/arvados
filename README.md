@@ -19,8 +19,6 @@ Arvados consists of:
 
 ## Quick start
 
-Veritas Genetics maintains a public installation of Arvados for evaluation and trial use, the [Arvados Playground](https://playground.arvados.org). A Google account is required to log in.
-
 To try out Arvados on your local workstation, you can use Arvbox, which
 provides Arvados components pre-installed in a Docker container (requires
 Docker 1.9+).  After cloning the Arvados git repository:
@@ -44,9 +42,9 @@ doc/README.textile for instructions.
 
 ## Community
 
-[![Join the chat at https://gitter.im/curoverse/arvados](https://badges.gitter.im/curoverse/arvados.svg)](https://gitter.im/curoverse/arvados?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Join the chat at https://gitter.im/arvados/community](https://badges.gitter.im/arvados/community.svg)](https://gitter.im/arvados/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-The [curoverse/arvados channel](https://gitter.im/curoverse/arvados)
+The [arvados community channel](https://gitter.im/arvados/community)
 channel at [gitter.im](https://gitter.im) is available for live
 discussion and support.
 
@@ -65,7 +63,7 @@ contributors to Arvados.
 
 The Arvados public bug tracker is located at https://dev.arvados.org/projects/arvados/issues
 
-Continuous integration is hosted at https://ci.curoverse.com/
+Continuous integration is hosted at https://ci.arvados.org/
 
 Instructions for setting up a development environment and working on specific
 components can be found on the

@@ -375,7 +375,7 @@ func (rtr *router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "login", "logout", "auth":
 	default:
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, PUT, POST, DELETE")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, PUT, POST, PATCH, DELETE")
 		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
 		w.Header().Set("Access-Control-Max-Age", "86486400")
 	}
@@ -384,6 +384,10 @@ func (rtr *router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	r.ParseForm()
 	if m := r.FormValue("_method"); m != "" {
+		r2 := *r
+		r = &r2
+		r.Method = m
+	} else if m = r.Header.Get("X-Http-Method-Override"); m != "" {
 		r2 := *r
 		r = &r2
 		r.Method = m

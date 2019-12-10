@@ -237,7 +237,7 @@ func (conn *Conn) splitListRequest(ctx context.Context, opts arvados.ListOptions
 
 				done, err := fn(ctx, clusterID, backend, remoteOpts)
 				if err != nil {
-					errs <- err
+					errs <- httpErrorf(http.StatusBadGateway, err.Error())
 					return
 				}
 				progress := false
@@ -247,8 +247,13 @@ func (conn *Conn) splitListRequest(ctx context.Context, opts arvados.ListOptions
 						delete(todo, uuid)
 					}
 				}
-				if !progress {
-					errs <- httpErrorf(http.StatusBadGateway, "cannot make progress in federated list query: cluster %q returned none of the requested UUIDs", clusterID)
+				if len(done) == 0 {
+					// Zero items == no more
+					// results exist, no need to
+					// get another page.
+					break
+				} else if !progress {
+					errs <- httpErrorf(http.StatusBadGateway, "cannot make progress in federated list query: cluster %q returned %d items but none had the requested UUIDs", clusterID, len(done))
 					return
 				}
 			}
