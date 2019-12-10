@@ -163,10 +163,12 @@ var intParams = map[string]bool{
 }
 
 var boolParams = map[string]bool{
-	"distinct":             true,
-	"ensure_unique_name":   true,
-	"include_trash":        true,
-	"include_old_versions": true,
+	"distinct":                true,
+	"ensure_unique_name":      true,
+	"include_trash":           true,
+	"include_old_versions":    true,
+	"redirect_to_new_user":    true,
+	"send_notification_email": true,
 }
 
 func stringToBool(s string) bool {
