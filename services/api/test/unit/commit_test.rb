@@ -35,9 +35,9 @@ class CommitTest < ActiveSupport::TestCase
   end
 
   [
-   'https://github.com/curoverse/arvados.git',
-   'http://github.com/curoverse/arvados.git',
-   'git://github.com/curoverse/arvados.git',
+   'https://github.com/arvados/arvados.git',
+   'http://github.com/arvados/arvados.git',
+   'git://github.com/arvados/arvados.git',
   ].each do |url|
     test "find_commit_range uses fetch_remote_repository to get #{url}" do
       fake_gitdir = repositories(:foo).server_path
@@ -54,7 +54,7 @@ class CommitTest < ActiveSupport::TestCase
    '/not/allowed/.git',
    'file:///not/allowed.git',
    'git.arvados.org/arvados.git',
-   'github.com/curoverse/arvados.git',
+   'github.com/arvados/arvados.git',
   ].each do |url|
     test "find_commit_range skips fetch_remote_repository for #{url}" do
       CommitsHelper::expects(:fetch_remote_repository).never

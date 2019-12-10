@@ -62,4 +62,4 @@ require (
 	rsc.io/getopt v0.0.0-20170811000552-20be20937449
 )
 
-replace github.com/AdRoll/goamz => github.com/curoverse/goamz v0.0.0-20190905141525-1bba09f407ef
+replace github.com/AdRoll/goamz => github.com/arvados/goamz v0.0.0-20190905141525-1bba09f407ef

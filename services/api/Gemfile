@@ -53,14 +53,14 @@ gem 'andand'
 gem 'optimist'
 gem 'faye-websocket'
 
-gem 'themes_for_rails', git: 'https://github.com/curoverse/themes_for_rails'
+gem 'themes_for_rails', git: 'https://github.com/arvados/themes_for_rails'
 
 # We need arvados-cli because of crunchv1. Note: bundler can't handle
 # two gems with the same "git" url but different "glob" values, hence
 # the use of a wildcard here instead of literal paths
 # (sdk/cli/arvados-cli.gem and sdk/ruby/arvados.gem).
-gem 'arvados-cli', git: 'https://github.com/curoverse/arvados.git', glob: 'sdk/*/*.gemspec'
-gem 'arvados', git: 'https://github.com/curoverse/arvados.git', glob: 'sdk/*/*.gemspec'
+gem 'arvados-cli', git: 'https://github.com/arvados/arvados.git', glob: 'sdk/*/*.gemspec'
+gem 'arvados', git: 'https://github.com/arvados/arvados.git', glob: 'sdk/*/*.gemspec'
 gem 'httpclient'
 
 gem 'sshkey'

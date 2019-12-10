@@ -9,7 +9,7 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-The Keep-web server provides read/write HTTP (WebDAV) access to files stored in Keep. It serves public data to unauthenticated clients, and serves private data to clients that supply Arvados API tokens. It can be installed anywhere with access to Keep services, typically behind a web proxy that provides TLS support. See the "godoc page":http://godoc.org/github.com/curoverse/arvados/services/keep-web for more detail.
+The Keep-web server provides read/write HTTP (WebDAV) access to files stored in Keep. It serves public data to unauthenticated clients, and serves private data to clients that supply Arvados API tokens. It can be installed anywhere with access to Keep services, typically behind a web proxy that provides TLS support. See the "godoc page":http://godoc.org/github.com/arvados/arvados/services/keep-web for more detail.
 
 By convention, we use the following hostnames for the Keep-web service:
 
@@ -97,7 +97,7 @@ server {
 </pre></notextile>
 
 {% include 'notebox_begin' %}
-If you restrict access to your Arvados services based on network topology -- for example, your proxy server is not reachable from the public internet -- additional proxy configuration might be needed to thwart cross-site scripting attacks that would circumvent your restrictions. Read the "'Intranet mode' section of the Keep-web documentation":https://godoc.org/github.com/curoverse/arvados/services/keep-web#hdr-Intranet_mode now.
+If you restrict access to your Arvados services based on network topology -- for example, your proxy server is not reachable from the public internet -- additional proxy configuration might be needed to thwart cross-site scripting attacks that would circumvent your restrictions. Read the "'Intranet mode' section of the Keep-web documentation":https://godoc.org/github.com/arvados/arvados/services/keep-web#hdr-Intranet_mode now.
 {% include 'notebox_end' %}
 
 h3(#dns). Configure DNS
@@ -110,7 +110,7 @@ Configure your DNS servers so the following names resolve to your Nginx proxy's 
 
 If neither of the above wildcard options is feasible, you have two choices:
 # Serve web content at @collections.uuid_prefix.your.domain@, but only for unauthenticated requests (public data and collection sharing links). Authenticated requests will always result in file downloads, using the @download@ name. For example, the Workbench "preview" button and the "view entire log file" link will invoke file downloads instead of displaying content in the browser window.
-# In the special case where you know you are immune to XSS exploits, you can enable the "trust all content" mode in Keep-web and Workbench (setting @Collections.TrustAllContent: true@ on the config file). With this enabled, inline web content can be served from a single @collections@ host name; no wildcard DNS or certificate is needed. Do not do this without understanding the security implications described in the "Keep-web documentation":http://godoc.org/github.com/curoverse/arvados/services/keep-web.
+# In the special case where you know you are immune to XSS exploits, you can enable the "trust all content" mode in Keep-web and Workbench (setting @Collections.TrustAllContent: true@ on the config file). With this enabled, inline web content can be served from a single @collections@ host name; no wildcard DNS or certificate is needed. Do not do this without understanding the security implications described in the "Keep-web documentation":http://godoc.org/github.com/arvados/arvados/services/keep-web.
 
 h2. Configure Keep-web
 
