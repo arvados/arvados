@@ -14,7 +14,9 @@ export const CreateCollectionDialog = compose(
     reduxForm<CollectionCreateFormDialogData>({
         form: COLLECTION_CREATE_FORM_NAME,
         onSubmit: (data, dispatch) => {
-            dispatch(createCollection(data));
+            // Somehow an extra field called 'files' gets added, copy
+            // the data object to get rid of it.
+            dispatch(createCollection({ ownerUuid: data.ownerUuid, name: data.name, description: data.description }));
         }
     })
 )(DialogCollectionCreate);
