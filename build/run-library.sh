@@ -119,7 +119,7 @@ calculate_go_package_version() {
       checkdirs+=("$1")
       shift
   done
-  if grep -qr git.curoverse.com/arvados .; then
+  if grep -qr git.arvados.org/arvados .; then
       checkdirs+=(sdk/go lib)
   fi
   local timestamp=0
@@ -162,7 +162,7 @@ package_go_binary() {
       return 1
     fi
 
-    go get -ldflags "-X git.curoverse.com/arvados.git/lib/cmd.version=${go_package_version} -X main.version=${go_package_version}" "git.curoverse.com/arvados.git/$src_path"
+    go get -ldflags "-X git.arvados.org/arvados.git/lib/cmd.version=${go_package_version} -X main.version=${go_package_version}" "git.arvados.org/arvados.git/$src_path"
 
     local -a switches=()
     systemd_unit="$WORKSPACE/${src_path}/${prog}.service"

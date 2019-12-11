@@ -27,11 +27,11 @@ import (
 	"syscall"
 	"time"
 
-	"git.curoverse.com/arvados.git/lib/crunchstat"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
-	"git.curoverse.com/arvados.git/sdk/go/manifest"
+	"git.arvados.org/arvados.git/lib/crunchstat"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
+	"git.arvados.org/arvados.git/sdk/go/keepclient"
+	"git.arvados.org/arvados.git/sdk/go/manifest"
 	"golang.org/x/net/context"
 
 	dockertypes "github.com/docker/docker/api/types"

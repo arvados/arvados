@@ -10,7 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"git.curoverse.com/arvados.git/lib/cmd"
+	"git.arvados.org/arvados.git/lib/cmd"
 	check "gopkg.in/check.v1"
 )
 

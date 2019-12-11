@@ -11,7 +11,7 @@ import (
 	"io/ioutil"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"git.arvados.org/arvados.git/sdk/go/keepclient"
 )
 
 // RunPullWorker receives PullRequests from pullq, invokes

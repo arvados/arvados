@@ -6,8 +6,8 @@ package manifest
 
 import (
 	"fmt"
-	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
-	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
+	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/blockdigest"
 	"io/ioutil"
 	"reflect"
 	"regexp"

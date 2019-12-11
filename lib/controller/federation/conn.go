@@ -17,12 +17,12 @@ import (
 	"strings"
 	"time"
 
-	"git.curoverse.com/arvados.git/lib/config"
-	"git.curoverse.com/arvados.git/lib/controller/localdb"
-	"git.curoverse.com/arvados.git/lib/controller/rpc"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/auth"
-	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/lib/config"
+	"git.arvados.org/arvados.git/lib/controller/localdb"
+	"git.arvados.org/arvados.git/lib/controller/rpc"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/auth"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 )
 
 type Conn struct {

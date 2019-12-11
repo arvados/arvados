@@ -17,8 +17,8 @@ import (
 	"regexp"
 	"strings"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/auth"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/auth"
 	"github.com/jmcvetta/randutil"
 )
 

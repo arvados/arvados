@@ -15,7 +15,7 @@ import (
 	"os"
 	"strings"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 )
 
 // Function used to emit debug messages. The easiest way to enable

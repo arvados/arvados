@@ -15,7 +15,7 @@ import (
 	"sync"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 )
 
 // Timestamper is the signature for a function that takes a timestamp and

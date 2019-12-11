@@ -369,7 +369,7 @@ In a couple of minutes, your arvados-git-sync cron job will create an empty repo
 
 <notextile>
 <pre><code>~$ <span class="userinput">cd /tmp</span>
-/tmp$ <span class="userinput">git clone --bare https://github.com/curoverse/arvados.git</span>
+/tmp$ <span class="userinput">git clone --bare https://github.com/arvados/arvados.git</span>
 /tmp <span class="userinput">git --git-dir arvados.git push https://git.<b>uuid_prefix.your.domain</b>/arvados.git '*:*'</span>
 </code></pre>
 </notextile>
@@ -378,7 +378,7 @@ If you did not set up a HTTPS service, you can push to <code>git@git.uuid_prefix
 
 <notextile>
 <pre><code>gitserver:~$ <span class="userinput">sudo -u git -i bash</span>
-git@gitserver:~$ <span class="userinput">git clone --bare https://github.com/curoverse/arvados.git /tmp/arvados.git</span>
+git@gitserver:~$ <span class="userinput">git clone --bare https://github.com/arvados/arvados.git /tmp/arvados.git</span>
 git@gitserver:~$ <span class="userinput">cd /tmp/arvados.git</span>
 git@gitserver:/tmp/arvados.git$ <span class="userinput">gitolite push /var/lib/arvados/git/repositories/<b>your_arvados_repo_uuid</b>.git '*:*'</span>
 </code></pre>

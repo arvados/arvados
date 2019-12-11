@@ -14,8 +14,8 @@ import (
 	"sync"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/auth"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/auth"
 )
 
 const defaultTimeout = arvados.Duration(2 * time.Second)

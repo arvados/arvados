@@ -10,7 +10,7 @@ import (
 	"sort"
 	"strconv"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
 
 var ErrInstanceTypesNotConfigured = errors.New("site configuration does not list any instance types")

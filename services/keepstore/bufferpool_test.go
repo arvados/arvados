@@ -8,7 +8,7 @@ import (
 	"context"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	. "gopkg.in/check.v1"
 )
 

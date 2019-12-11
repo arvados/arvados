@@ -10,13 +10,13 @@ import (
 	"os"
 	"testing"
 
-	"git.curoverse.com/arvados.git/lib/controller/router"
-	"git.curoverse.com/arvados.git/lib/controller/rpc"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
-	"git.curoverse.com/arvados.git/sdk/go/auth"
-	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
-	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	"git.arvados.org/arvados.git/lib/controller/router"
+	"git.arvados.org/arvados.git/lib/controller/rpc"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/auth"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	check "gopkg.in/check.v1"
 )
 

@@ -7,8 +7,8 @@ package scheduler
 import (
 	"time"
 
-	"git.curoverse.com/arvados.git/lib/dispatchcloud/worker"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/lib/dispatchcloud/worker"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
 
 // fixStaleLocks waits for any already-locked containers (i.e., locked

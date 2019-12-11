@@ -8,7 +8,7 @@ import (
 	"database/sql"
 	"errors"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
 
 // newSessionV1 returns a v1 session -- see

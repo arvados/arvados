@@ -24,7 +24,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"github.com/AdRoll/goamz/aws"
 	"github.com/AdRoll/goamz/s3"
 	"github.com/prometheus/client_golang/prometheus"

@@ -12,7 +12,7 @@ import (
 	"strings"
 	"testing"
 
-	"git.curoverse.com/arvados.git/lib/cmdtest"
+	"git.arvados.org/arvados.git/lib/cmdtest"
 	check "gopkg.in/check.v1"
 )
 

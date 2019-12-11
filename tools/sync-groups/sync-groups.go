@@ -16,7 +16,7 @@ import (
 	"os"
 	"strings"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
 
 var version = "dev"

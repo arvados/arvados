@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 )
 
 // A Client is an HTTP client with an API endpoint and a set of

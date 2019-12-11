@@ -13,8 +13,8 @@ import (
 	"net/http"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/prometheus/client_golang/prometheus"
 	. "gopkg.in/check.v1"
 	check "gopkg.in/check.v1"

@@ -5,7 +5,7 @@
 //
 // How to manually run individual tests against the real cloud:
 //
-// $ go test -v git.curoverse.com/arvados.git/lib/cloud/ec2 -live-ec2-cfg ec2config.yml -check.f=TestCreate
+// $ go test -v git.arvados.org/arvados.git/lib/cloud/ec2 -live-ec2-cfg ec2config.yml -check.f=TestCreate
 //
 // Tests should be run individually and in the order they are listed in the file:
 //
@@ -27,10 +27,10 @@ import (
 	"flag"
 	"testing"
 
-	"git.curoverse.com/arvados.git/lib/cloud"
-	"git.curoverse.com/arvados.git/lib/dispatchcloud/test"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/config"
+	"git.arvados.org/arvados.git/lib/cloud"
+	"git.arvados.org/arvados.git/lib/dispatchcloud/test"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/config"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/sirupsen/logrus"

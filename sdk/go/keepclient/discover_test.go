@@ -12,8 +12,8 @@ import (
 
 	"gopkg.in/check.v1"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
+	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 )
 
 func (s *ServerRequiredSuite) TestOverrideDiscovery(c *check.C) {

@@ -16,8 +16,8 @@ import (
 	"sync"
 	"time"
 
-	"git.curoverse.com/arvados.git/lib/cloud"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/lib/cloud"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-06-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-06-01/network"
 	storageacct "github.com/Azure/azure-sdk-for-go/services/storage/mgmt/2018-02-01/storage"

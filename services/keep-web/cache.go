@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"github.com/hashicorp/golang-lru"
 	"github.com/prometheus/client_golang/prometheus"
 )

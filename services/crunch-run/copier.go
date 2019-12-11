@@ -14,9 +14,9 @@ import (
 	"sort"
 	"strings"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
-	"git.curoverse.com/arvados.git/sdk/go/manifest"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/keepclient"
+	"git.arvados.org/arvados.git/sdk/go/manifest"
 )
 
 type printfer interface {

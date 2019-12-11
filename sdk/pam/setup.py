@@ -35,7 +35,7 @@ setup(name='arvados-pam',
       author='Arvados',
       author_email='info@arvados.org',
       url='https://arvados.org',
-      download_url='https://github.com/curoverse/arvados.git',
+      download_url='https://github.com/arvados/arvados.git',
       license='Apache 2.0',
       packages=[
           'arvados_pam',

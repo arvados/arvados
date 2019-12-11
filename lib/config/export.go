@@ -11,7 +11,7 @@ import (
 	"io"
 	"strings"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
 
 // ExportJSON writes a JSON object with the safe (non-secret) portions

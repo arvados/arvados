@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
-	"git.curoverse.com/arvados.git/sdk/go/stats"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/stats"
 	"github.com/sirupsen/logrus"
 )
 
