@@ -15,7 +15,7 @@ export class UserService extends CommonResourceService<UserResource> {
     activate(uuid: string) {
         return CommonResourceService.defaultResponse(
             this.serverApi
-                .post(this.resourceType + `${uuid}/activate`),
+                .post(this.resourceType + `/${uuid}/activate`),
             this.actions
         );
     }
@@ -23,7 +23,7 @@ export class UserService extends CommonResourceService<UserResource> {
     unsetup(uuid: string) {
         return CommonResourceService.defaultResponse(
             this.serverApi
-                .post(this.resourceType + uuid + '/unsetup'),
+                .post(this.resourceType + `/${uuid}/unsetup`),
             this.actions
         );
     }

@@ -49,7 +49,6 @@ export const createCollection = (data: CollectionCreateFormDialogData) =>
             await dispatch<any>(uploadCollectionFiles(newCollection.uuid));
             dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_CREATE_FORM_NAME }));
             dispatch(reset(COLLECTION_CREATE_FORM_NAME));
-            dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_CREATE_FORM_NAME));
             return newCollection;
         } catch (e) {
             const error = getCommonResourceServiceError(e);
@@ -65,7 +64,8 @@ export const createCollection = (data: CollectionCreateFormDialogData) =>
                 }));
                 await services.collectionService.delete(newCollection!.uuid);
             }
-            dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_CREATE_FORM_NAME));
             return;
+        } finally {
+            dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_CREATE_FORM_NAME));
         }
     };

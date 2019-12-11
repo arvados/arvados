@@ -17,7 +17,7 @@ export class TrashableResourceService<T extends TrashableResource> extends Commo
     trash(uuid: string): Promise<T> {
         return CommonResourceService.defaultResponse(
             this.serverApi
-                .post(this.resourceType + `${uuid}/trash`),
+                .post(this.resourceType + `/${uuid}/trash`),
             this.actions
         );
     }
@@ -28,7 +28,7 @@ export class TrashableResourceService<T extends TrashableResource> extends Commo
         };
         return CommonResourceService.defaultResponse(
             this.serverApi
-                .post(this.resourceType + `${uuid}/untrash`, {
+                .post(this.resourceType + `/${uuid}/untrash`, {
                     params: CommonResourceService.mapKeys(_.snakeCase)(params)
                 }),
             this.actions

@@ -38,7 +38,7 @@ export class CommonService<T> {
 
     constructor(serverApi: AxiosInstance, resourceType: string, actions: ApiActions) {
         this.serverApi = serverApi;
-        this.resourceType = '/' + resourceType + '/';
+        this.resourceType = '/' + resourceType;
         this.actions = actions;
     }
 
@@ -93,7 +93,7 @@ export class CommonService<T> {
     delete(uuid: string): Promise<T> {
         return CommonService.defaultResponse(
             this.serverApi
-                .delete(this.resourceType + uuid),
+                .delete(this.resourceType + '/' + uuid),
             this.actions
         );
     }
@@ -101,7 +101,7 @@ export class CommonService<T> {
     get(uuid: string) {
         return CommonService.defaultResponse(
             this.serverApi
-                .get<T>(this.resourceType + uuid),
+                .get<T>(this.resourceType + '/' + uuid),
             this.actions
         );
     }
@@ -125,7 +125,7 @@ export class CommonService<T> {
     update(uuid: string, data: Partial<T>) {
         return CommonService.defaultResponse(
             this.serverApi
-                .put<T>(this.resourceType + uuid, data && CommonService.mapKeys(_.snakeCase)(data)),
+                .put<T>(this.resourceType + '/' + uuid, data && CommonService.mapKeys(_.snakeCase)(data)),
             this.actions
         );
     }

@@ -49,7 +49,7 @@ export class LinkAccountService {
             redirect_to_new_user: true
         };
         return CommonService.defaultResponse(
-            this.serverApi.post('/users/merge/', params),
+            this.serverApi.post('/users/merge', params),
             this.actions,
             false
         );

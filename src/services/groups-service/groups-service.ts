@@ -46,8 +46,7 @@ export class GroupsService<T extends GroupResource = GroupResource> extends Tras
             filters: filters ? `[${filters}]` : undefined,
             order: order ? order : undefined
         };
-
-        const pathUrl = uuid ? `${uuid}/contents` : 'contents';
+        const pathUrl = uuid ? `/${uuid}/contents` : '/contents';
 
         const cfg: AxiosRequestConfig = { params: CommonResourceService.mapKeys(_.snakeCase)(params) };
         if (session) {
@@ -65,7 +64,7 @@ export class GroupsService<T extends GroupResource = GroupResource> extends Tras
     shared(params: SharedArguments = {}): Promise<ListResults<GroupContentsResource>> {
         return CommonResourceService.defaultResponse(
             this.serverApi
-                .get(this.resourceType + 'shared', { params }),
+                .get(this.resourceType + '/shared', { params }),
             this.actions
         );
     }
