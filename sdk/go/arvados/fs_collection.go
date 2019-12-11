@@ -698,21 +698,9 @@ func (dn *dirnode) commitBlock(ctx context.Context, refs []fnSegmentRef, bufsize
 	go func() {
 		defer close(done)
 		defer close(errs)
-		locked := map[*filenode]bool{}
 		locator, _, err := dn.fs.PutB(block)
 		dn.fs.throttle().Release()
 		{
-			if !sync {
-				dn.Lock()
-				defer dn.Unlock()
-				for _, name := range dn.sortedNames() {
-					if fn, ok := dn.inodes[name].(*filenode); ok {
-						fn.Lock()
-						defer fn.Unlock()
-						locked[fn] = true
-					}
-				}
-			}
 			defer func() {
 				for _, seg := range segs {
 					if seg.flushing == done {
@@ -727,6 +715,7 @@ func (dn *dirnode) commitBlock(ctx context.Context, refs []fnSegmentRef, bufsize
 		}
 		for idx, ref := range refs {
 			if !sync {
+				ref.fn.Lock()
 				// In async mode, fn's lock was
 				// released while we were waiting for
 				// PutB(); lots of things might have
@@ -735,17 +724,15 @@ func (dn *dirnode) commitBlock(ctx context.Context, refs []fnSegmentRef, bufsize
 					// file segments have
 					// rearranged or changed in
 					// some way
+					ref.fn.Unlock()
 					continue
 				} else if seg, ok := ref.fn.segments[ref.idx].(*memSegment); !ok || seg != segs[idx] {
 					// segment has been replaced
+					ref.fn.Unlock()
 					continue
 				} else if seg.flushing != done {
 					// seg.buf has been replaced
-					continue
-				} else if !locked[ref.fn] {
-					// file was renamed, moved, or
-					// deleted since we called
-					// PutB
+					ref.fn.Unlock()
 					continue
 				}
 			}
@@ -763,6 +750,9 @@ func (dn *dirnode) commitBlock(ctx context.Context, refs []fnSegmentRef, bufsize
 			// lock, writing different segments from the
 			// same file.
 			atomic.AddInt64(&ref.fn.memsize, -int64(len(data)))
+			if !sync {
+				ref.fn.Unlock()
+			}
 		}
 	}()
 	if sync {
