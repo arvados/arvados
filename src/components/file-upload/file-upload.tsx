@@ -98,7 +98,7 @@ interface FileUploadPropsData {
     files: UploadFile[];
     disabled: boolean;
     onDrop: (files: File[]) => void;
-    onDelete: (files: File[]) => void;
+    onDelete: (file: UploadFile) => void;
 }
 
 interface FileUploadState {
@@ -115,22 +115,22 @@ export const FileUpload = withStyles(styles)(
                 focused: false
             };
         }
-        onDelete = (event: React.MouseEvent<HTMLTableCellElement>, file: any): void => {
+        onDelete = (event: React.MouseEvent<HTMLTableCellElement>, file: UploadFile): void => {
             const { onDelete, disabled } = this.props;
 
             event.stopPropagation();
 
             if (!disabled) {
-                onDelete([file]);
+                onDelete(file);
             }
         }
         render() {
             const { classes, onDrop, disabled, files } = this.props;
             return <div className={"file-upload-dropzone " + classes.dropzoneWrapper}>
-                <div className={classnames(classes.dropzoneBorder, classes.dropzoneBorderLeft, { [classes.dropzoneBorderHorzActive]: this.state.focused })}/>
-                <div className={classnames(classes.dropzoneBorder, classes.dropzoneBorderRight, { [classes.dropzoneBorderHorzActive]: this.state.focused })}/>
-                <div className={classnames(classes.dropzoneBorder, classes.dropzoneBorderTop, { [classes.dropzoneBorderVertActive]: this.state.focused })}/>
-                <div className={classnames(classes.dropzoneBorder, classes.dropzoneBorderBottom, { [classes.dropzoneBorderVertActive]: this.state.focused })}/>
+                <div className={classnames(classes.dropzoneBorder, classes.dropzoneBorderLeft, { [classes.dropzoneBorderHorzActive]: this.state.focused })} />
+                <div className={classnames(classes.dropzoneBorder, classes.dropzoneBorderRight, { [classes.dropzoneBorderHorzActive]: this.state.focused })} />
+                <div className={classnames(classes.dropzoneBorder, classes.dropzoneBorderTop, { [classes.dropzoneBorderVertActive]: this.state.focused })} />
+                <div className={classnames(classes.dropzoneBorder, classes.dropzoneBorderBottom, { [classes.dropzoneBorderVertActive]: this.state.focused })} />
                 <Dropzone className={classes.dropzone}
                     onDrop={files => onDrop(files)}
                     onClick={() => {
@@ -152,7 +152,7 @@ export const FileUpload = withStyles(styles)(
                                 focused: false
                             });
                         }
-                }}>
+                    }}>
                     {files.length === 0 &&
                         <Grid container justify="center" alignItems="center" className={classes.container}>
                             <Grid item component={"span"}>
@@ -180,15 +180,15 @@ export const FileUpload = withStyles(styles)(
                                         <TableCell>{formatUploadSpeed(f.prevLoaded, f.loaded, f.prevTime, f.currentTime)}</TableCell>
                                         <TableCell>{formatProgress(f.loaded, f.total)}</TableCell>
                                         <TableCell>
-                                            <IconButton 
+                                            <IconButton
                                                 aria-label="Remove"
-                                                onClick={(event:    React.MouseEvent<HTMLTableCellElement>) => this.onDelete(event, f)}
+                                                onClick={(event: React.MouseEvent<HTMLTableCellElement>) => this.onDelete(event, f)}
                                                 className={disabled ? classnames(classes.deleteButtonDisabled, classes.deleteIcon) : classnames(classes.deleteButton, classes.deleteIcon)}
                                             >
                                                 <RemoveIcon />
                                             </IconButton>
                                         </TableCell>
-                                    </TableRow> 
+                                    </TableRow>
                                 )}
                             </TableBody>
                         </Table>

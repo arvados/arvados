@@ -42,7 +42,7 @@ export const openCollectionCreateDialog = (ownerUuid: string) =>
 export const createCollection = (data: CollectionCreateFormDialogData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(startSubmit(COLLECTION_CREATE_FORM_NAME));
-        let newCollection: CollectionResource;
+        let newCollection: CollectionResource | undefined;
         try {
             dispatch(progressIndicatorActions.START_WORKING(COLLECTION_CREATE_FORM_NAME));
             newCollection = await services.collectionService.create(data);
@@ -62,7 +62,7 @@ export const createCollection = (data: CollectionCreateFormDialogData) =>
                     hideDuration: 2000,
                     kind: SnackbarKind.ERROR
                 }));
-                await services.collectionService.delete(newCollection!.uuid);
+                if (newCollection) { await services.collectionService.delete(newCollection.uuid); }
             }
             return;
         } finally {

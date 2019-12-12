@@ -8,7 +8,7 @@ import { connect } from 'react-redux';
 import { RootState } from '~/store/store';
 import { FileUploadProps } from '../../components/file-upload/file-upload';
 import { Dispatch } from 'redux';
-import { fileUploaderActions, getFileUploaderState, FileWithId } from '~/store/file-uploader/file-uploader-actions';
+import { fileUploaderActions, getFileUploaderState } from '~/store/file-uploader/file-uploader-actions';
 import { WrappedFieldProps } from 'redux-form';
 import { Typography } from '@material-ui/core';
 
@@ -30,7 +30,7 @@ const mapDispatchToProps = (dispatch: Dispatch, { onDrop }: FileUploaderProps): 
             onDrop(files);
         }
     },
-    onDelete: files => dispatch(fileUploaderActions.DELETE_UPLOAD_FILE(files as FileWithId[])),
+    onDelete: file => dispatch(fileUploaderActions.DELETE_UPLOAD_FILE(file)),
 });
 
 export const FileUploader = connect(mapStateToProps, mapDispatchToProps)(FileUpload);
