@@ -45,9 +45,11 @@ func applySelectParam(selectParam []string, orig map[string]interface{}) map[str
 			selected[attr] = v
 		}
 	}
-	// Preserve "kind" even if not requested
-	if v, ok := orig["kind"]; ok {
-		selected["kind"] = v
+	// Some keys are always preserved, even if not requested
+	for _, k := range []string{"etag", "kind", "writable_by"} {
+		if v, ok := orig[k]; ok {
+			selected[k] = v
+		}
 	}
 	return selected
 }

@@ -298,12 +298,6 @@ func (rtr *router) addRoutes() {
 		},
 	} {
 		rtr.addRoute(route.endpoint, route.defaultOpts, route.exec)
-		if route.endpoint.Method == "PATCH" {
-			// Accept PUT as a synonym for PATCH.
-			endpointPUT := route.endpoint
-			endpointPUT.Method = "PUT"
-			rtr.addRoute(endpointPUT, route.defaultOpts, route.exec)
-		}
 	}
 	rtr.mux.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		httpserver.Errors(w, []string{"API endpoint not found"}, http.StatusNotFound)
@@ -313,8 +307,17 @@ func (rtr *router) addRoutes() {
 	})
 }
 
+var altMethod = map[string]string{
+	"PATCH": "PUT",  // Accept PUT as a synonym for PATCH
+	"GET":   "HEAD", // Accept HEAD at any GET route
+}
+
 func (rtr *router) addRoute(endpoint arvados.APIEndpoint, defaultOpts func() interface{}, exec routableFunc) {
-	rtr.mux.Methods(endpoint.Method).Path("/" + endpoint.Path).HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+	methods := []string{endpoint.Method}
+	if alt, ok := altMethod[endpoint.Method]; ok {
+		methods = append(methods, alt)
+	}
+	rtr.mux.Methods(methods...).Path("/" + endpoint.Path).HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		logger := ctxlog.FromContext(req.Context())
 		params, err := rtr.loadRequestParams(req, endpoint.AttrsKey)
 		if err != nil {

@@ -340,11 +340,13 @@ var userAttrsCachedFromLoginCluster = map[string]bool{
 	"prefs":                   true,
 	"username":                true,
 
+	"etag":         false,
 	"full_name":    false,
 	"identity_url": false,
 	"is_invited":   false,
 	"owner_uuid":   false,
 	"uuid":         false,
+	"writable_by":  false,
 }
 
 func (conn *Conn) UserList(ctx context.Context, options arvados.ListOptions) (arvados.UserList, error) {

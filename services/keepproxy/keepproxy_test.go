@@ -142,6 +142,7 @@ func (s *ServerRequiredSuite) TestResponseViaHeader(c *C) {
 	resp, err := (&http.Client{}).Do(req)
 	c.Assert(err, Equals, nil)
 	c.Check(resp.Header.Get("Via"), Equals, "HTTP/1.1 keepproxy")
+	c.Assert(resp.StatusCode, Equals, http.StatusOK)
 	locator, err := ioutil.ReadAll(resp.Body)
 	c.Assert(err, Equals, nil)
 	resp.Body.Close()

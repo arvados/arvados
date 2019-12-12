@@ -23,11 +23,11 @@ import (
 	check "gopkg.in/check.v1"
 )
 
-var enableBetaController14287 bool
+var forceLegacyAPI14 bool
 
 // Gocheck boilerplate
 func Test(t *testing.T) {
-	for _, enableBetaController14287 = range []bool{false, true} {
+	for _, forceLegacyAPI14 = range []bool{false, true} {
 		check.TestingT(t)
 	}
 }
@@ -45,10 +45,9 @@ func (s *HandlerSuite) SetUpTest(c *check.C) {
 	s.ctx, s.cancel = context.WithCancel(context.Background())
 	s.ctx = ctxlog.Context(s.ctx, ctxlog.New(os.Stderr, "json", "debug"))
 	s.cluster = &arvados.Cluster{
-		ClusterID:  "zzzzz",
-		PostgreSQL: integrationTestCluster().PostgreSQL,
-
-		EnableBetaController14287: enableBetaController14287,
+		ClusterID:        "zzzzz",
+		PostgreSQL:       integrationTestCluster().PostgreSQL,
+		ForceLegacyAPI14: forceLegacyAPI14,
 	}
 	s.cluster.TLS.Insecure = true
 	arvadostest.SetServiceURL(&s.cluster.Services.RailsAPI, "https://"+os.Getenv("ARVADOS_TEST_API_HOST"))

@@ -80,7 +80,7 @@ func (h *Handler) setup() {
 	rtr := router.New(federation.New(h.Cluster))
 	mux.Handle("/arvados/v1/config", rtr)
 
-	if h.Cluster.EnableBetaController14287 {
+	if !h.Cluster.ForceLegacyAPI14 {
 		mux.Handle("/arvados/v1/collections", rtr)
 		mux.Handle("/arvados/v1/collections/", rtr)
 		mux.Handle("/arvados/v1/users", rtr)

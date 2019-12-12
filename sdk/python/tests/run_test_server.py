@@ -717,7 +717,6 @@ def setup_config():
     config = {
         "Clusters": {
             "zzzzz": {
-                "EnableBetaController14287": ('14287' in os.environ.get('ARVADOS_EXPERIMENTAL', '')),
                 "ManagementToken": "e687950a23c3a9bceec28c6223a06c79",
                 "SystemRootToken": auth_token('system_user'),
                 "API": {

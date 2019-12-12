@@ -35,10 +35,9 @@ func newServerFromIntegrationTestEnv(c *check.C) *httpserver.Server {
 	log := ctxlog.TestLogger(c)
 
 	handler := &Handler{Cluster: &arvados.Cluster{
-		ClusterID:  "zzzzz",
-		PostgreSQL: integrationTestCluster().PostgreSQL,
-
-		EnableBetaController14287: enableBetaController14287,
+		ClusterID:        "zzzzz",
+		PostgreSQL:       integrationTestCluster().PostgreSQL,
+		ForceLegacyAPI14: forceLegacyAPI14,
 	}}
 	handler.Cluster.TLS.Insecure = true
 	arvadostest.SetServiceURL(&handler.Cluster.Services.RailsAPI, "https://"+os.Getenv("ARVADOS_TEST_API_HOST"))

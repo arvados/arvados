@@ -49,7 +49,7 @@ var (
 	EndpointUserGetSystem                 = APIEndpoint{"GET", "arvados/v1/users/system", ""}
 	EndpointUserList                      = APIEndpoint{"GET", "arvados/v1/users", ""}
 	EndpointUserMerge                     = APIEndpoint{"POST", "arvados/v1/users/merge", ""}
-	EndpointUserSetup                     = APIEndpoint{"POST", "arvados/v1/users/setup", ""}
+	EndpointUserSetup                     = APIEndpoint{"POST", "arvados/v1/users/setup", "user"}
 	EndpointUserSystem                    = APIEndpoint{"GET", "arvados/v1/users/system", ""}
 	EndpointUserUnsetup                   = APIEndpoint{"POST", "arvados/v1/users/{uuid}/unsetup", ""}
 	EndpointUserUpdate                    = APIEndpoint{"PATCH", "arvados/v1/users/{uuid}", "user"}
@@ -105,19 +105,21 @@ type UserActivateOptions struct {
 }
 
 type UserSetupOptions struct {
-	UUID                  string                 `json:"uuid"`
-	Email                 string                 `json:"email"`
-	OpenIDPrefix          string                 `json:"openid_prefix"`
-	RepoName              string                 `json:"repo_name"`
-	VMUUID                string                 `json:"vm_uuid"`
-	SendNotificationEmail bool                   `json:"send_notification_email"`
+	UUID                  string                 `json:"uuid,omitempty"`
+	Email                 string                 `json:"email,omitempty"`
+	OpenIDPrefix          string                 `json:"openid_prefix,omitempty"`
+	RepoName              string                 `json:"repo_name,omitempty"`
+	VMUUID                string                 `json:"vm_uuid,omitempty"`
+	SendNotificationEmail bool                   `json:"send_notification_email,omitempty"`
 	Attrs                 map[string]interface{} `json:"attrs"`
 }
 
 type UserMergeOptions struct {
-	NewUserUUID  string `json:"new_user_uuid,omitempty"`
-	OldUserUUID  string `json:"old_user_uuid,omitempty"`
-	NewUserToken string `json:"new_user_token,omitempty"`
+	NewUserUUID       string `json:"new_user_uuid,omitempty"`
+	OldUserUUID       string `json:"old_user_uuid,omitempty"`
+	NewOwnerUUID      string `json:"new_owner_uuid,omitempty"`
+	NewUserToken      string `json:"new_user_token,omitempty"`
+	RedirectToNewUser bool   `json:"redirect_to_new_user"`
 }
 
 type UserBatchUpdateOptions struct {
