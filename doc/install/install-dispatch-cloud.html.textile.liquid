@@ -10,6 +10,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
 # "Introduction":#introduction
+# "Create compute node VM image":#create-image
 # "Update config.yml":#update-config
 # "Install arvados-dispatch-cloud":#install-packages
 # "Start the service":#start-service
@@ -29,6 +30,10 @@ The cloud dispatch service can run on any node that can connect to the Arvados A
 ~$ <span class="userinput">sudo apt-get remove crunch-dispatch-slurm</span>
 </code></pre>
 </notextile>
+
+h2(#create-image). Create compute node VM image
+
+Create a VM image following the steps "to set up a compute node":crunch2-slurm/install-compute-node.html
 
 h2(#update-config). Update config.yml
 
