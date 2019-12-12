@@ -286,6 +286,12 @@ func (s *RouterIntegrationSuite) TestContainerLock(c *check.C) {
 	c.Check(jresp["uuid"], check.IsNil)
 }
 
+func (s *RouterIntegrationSuite) TestWritableBy(c *check.C) {
+	_, rr, jresp := doRequest(c, s.rtr, arvadostest.ActiveTokenV2, "GET", `/arvados/v1/users/`+arvadostest.ActiveUserUUID, nil, nil)
+	c.Check(rr.Code, check.Equals, http.StatusOK)
+	c.Check(jresp["writable_by"], check.DeepEquals, []interface{}{"zzzzz-tpzed-000000000000000", "zzzzz-tpzed-xurymjxw79nv3jz", "zzzzz-j7d0g-48foin4vonvc2at"})
+}
+
 func (s *RouterIntegrationSuite) TestFullTimestampsInResponse(c *check.C) {
 	uuid := arvadostest.CollectionReplicationDesired2Confirmed2UUID
 	token := arvadostest.ActiveTokenV2
