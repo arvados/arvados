@@ -18,6 +18,10 @@ h2(#introduction). Introduction
 
 Keep-balance deletes unreferenced and overreplicated blocks from Keep servers, makes additional copies of underreplicated blocks, and moves blocks into optimal locations as needed (e.g., after adding new servers). See "Balancing Keep servers":{{site.baseurl}}/admin/keep-balance.html for usage details.
 
+Keep-balance can be installed anywhere with network access to Keep services. Typically it runs on the same host as keepproxy.
+
+*A cluster should have only one instance of keep-balance running at a time.*
+
 {% include 'notebox_begin' %}
 
 If you are installing keep-balance on an existing system with valuable data, you can run keep-balance in "dry run" mode first and review its logs as a precaution. To do this, edit your keep-balance startup script to use the flags @-commit-pulls=false -commit-trash=false@.
@@ -46,44 +50,8 @@ Ensure your cluster configuration has @Collections.BlobTrash: true@ (this is the
 
 If BlobTrash is false, unneeded blocks will be counted and logged by keep-balance, but they will not be deleted.
 
-h2(#install-packages). Install keep-balance package
+{% assign arvados_component = 'keep-balance' %}
 
-Keep-balance can be installed anywhere with network access to Keep services. Typically it runs on the same host as keepproxy.
+{% include 'install_packages' %}
 
-*A cluster should have only one instance of keep-balance running at a time.*
-
-h3. Centos 7
-
-<notextile>
-<pre><code># <span class="userinput">yum install keep-balance</span>
-</code></pre>
-</notextile>
-
-h3. Debian and Ubuntu
-
-<notextile>
-<pre><code># <span class="userinput">apt-get install keep-balance</span>
-</code></pre>
-</notextile>
-
-h2(#start-service). Start the service
-
-If your system uses systemd, the keep-balance service should already be set up. Start it and check its status:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo systemctl restart keep-balance</span>
-~$ <span class="userinput">sudo systemctl status keep-balance</span>
-&#x25cf; keep-balance.service - Arvados Keep Balance
-   Loaded: loaded (/lib/systemd/system/keep-balance.service; enabled)
-   Active: active (running) since Sat 2017-02-14 18:46:01 UTC; 3 days ago
-     Docs: https://doc.arvados.org/
- Main PID: 541 (keep-balance)
-   CGroup: /system.slice/keep-balance.service
-           └─541 /usr/bin/keep-balance -commit-pulls -commit-trash
-
-Feb 14 18:46:01 zzzzz.arvadosapi.com keep-balance[541]: 2017/02/14 18:46:01 starting up: will scan every 10m0s and on SIGUSR1
-Feb 14 18:56:01 zzzzz.arvadosapi.com keep-balance[541]: 2017/02/14 18:56:01 Run: start
-Feb 14 18:56:01 zzzzz.arvadosapi.com keep-balance[541]: 2017/02/14 18:56:01 skipping zzzzz-bi6l4-rbtrws2jxul6i4t with service type "proxy"
-Feb 14 18:56:01 zzzzz.arvadosapi.com keep-balance[541]: 2017/02/14 18:56:01 clearing existing trash lists, in case the new rendezvous order differs from previous run
-</code></pre>
-</notextile>
+{% include 'start_service' %}

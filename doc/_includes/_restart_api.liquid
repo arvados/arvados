@@ -1,0 +1,8 @@
+h2(#restart-api). Restart the API server and controller
+
+*Make sure the cluster config file is up to date on the API server host* then restart the API server and controller processes to ensure the configuration changes are visible to the whole cluster.
+
+<notextile>
+<pre><code># <span class="userinput">systemctl restart nginx arvados-controller</span>
+</code></pre>
+</notextile>

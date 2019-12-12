@@ -188,34 +188,24 @@ server {
 </code></pre>
 </notextile>
 
-h2(#install-packages). Install arvados-api-server and arvados-controller
+{% assign arvados_component = 'arvados-api-server arvados-controller' %}
 
-h3. Centos 7
+{% include 'install_packages' %}
 
-<notextile>
-<pre><code># <span class="userinput">yum install arvados-api-server arvados-controller</span>
-</code></pre>
-</notextile>
-
-h3. Debian and Ubuntu
-
-<notextile>
-<pre><code># <span class="userinput">apt-get --no-install-recommends install arvados-api-server arvados-controller</span>
-</code></pre>
-</notextile>
+{% include 'start_service' %}
 
 h2(#confirm-working). Confirm working installation
 
 Confirm working controller:
 
 <pre>
-$ curl https://xxxxx.example.com/arvados/v1/config
+$ curl https://ClusterID.example.com/arvados/v1/config
 </pre>
 
 Confirm working Rails API server:
 
 <pre>
-$ curl https://xxxxx.example.com/discovery/v1/apis/arvados/v1/rest
+$ curl https://ClusterID.example.com/discovery/v1/apis/arvados/v1/rest
 </pre>
 
 Confirm that you can use the system root token to act as the system root user:

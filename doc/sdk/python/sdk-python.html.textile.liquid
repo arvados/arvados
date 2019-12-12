@@ -20,9 +20,19 @@ To use the Python SDK elsewhere, you can install from PyPI or a distribution pac
 
 The Python SDK supports Python 2.7 and 3.4+
 
-h3. Option 1: Install with pip
+h2. Option 1: Install from a distribution package
 
-This installation method is recommended to make the SDK available for use in your own Python programs. It can coexist with the system-wide installation method from a distribution package (option 2, below).
+This installation method is recommended to make the CLI tools available system-wide. It can coexist with the installation method described in option 2, below.
+
+First, configure the "Arvados package repositories":../../install/packages.html
+
+{% assign arvados_component = 'python-arvados-python-client' %}
+
+{% include 'install_packages' %}
+
+h2. Option 2: Install with pip
+
+This installation method is recommended to use the SDK in your own Python programs. It can coexist with the system-wide installation method from a distribution package (option 2, below).
 
 Run @pip install arvados-python-client@ in an appropriate installation environment, such as a @virtualenv@.
 
@@ -34,27 +44,7 @@ $ apt-get install git build-essential python3-dev libcurl4-openssl-dev libssl1.0
 
 If your version of @pip@ is 1.4 or newer, the @pip install@ command might give an error: "Could not find a version that satisfies the requirement arvados-python-client". If this happens, try @pip install --pre arvados-python-client@.
 
-h3. Option 2: Install from a distribution package
-
-This installation method is recommended to make the CLI tools available system-wide. It can coexist with the installation method described in option 1, above.
-
-First, "add the appropriate package repository for your distribution":{{ site.baseurl }}/install/install-manual-prerequisites.html#repos.
-
-On Red Hat-based systems:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo yum install python-arvados-python-client</code>
-</code></pre>
-</notextile>
-
-On Debian-based systems:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo apt-get install python-arvados-python-client</code>
-</code></pre>
-</notextile>
-
-h3. Test installation
+h2. Test installation
 
 If the SDK is installed and your @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ environment variables are set up correctly (see "api-tokens":{{site.baseurl}}/user/reference/api-tokens.html for details), @import arvados@ should produce no errors.
 
@@ -98,56 +88,9 @@ Type "help", "copyright", "credits" or "license" for more information.
 </pre>
 </notextile>
 
-h3. Examples
+h2. Usage
 
-Get the User object for the current user:
-
-<notextile>
-<pre><code class="userinput">current_user = arvados.api('v1').users().current().execute()
-</code></pre>
-</notextile>
-
-Get the UUID of an object that was retrieved using the SDK:
-
-<notextile>
-<pre><code class="userinput">my_uuid = current_user['uuid']
-</code></pre>
-</notextile>
-
-Retrieve an object by ID:
-
-<notextile>
-<pre><code class="userinput">some_user = arvados.api('v1').users().get(uuid=my_uuid).execute()
-</code></pre>
-</notextile>
-
-Create an object:
-
-<notextile>
-<pre><code class="userinput">test_link = arvados.api('v1').links().create(
-    body={'link_class':'test','name':'test'}).execute()
-</code></pre>
-</notextile>
-
-Update an object:
-
-<notextile>
-<pre><code class="userinput">arvados.api('v1').links().update(
-    uuid=test_link['uuid'],
-    body={'properties':{'foo':'bar'}}).execute()
-</code></pre>
-</notextile>
-
-Get a list of objects:
-
-<notextile>
-<pre><code class="userinput">repos = arvados.api('v1').repositories().list().execute()
-len(repos['items'])</code>
-2
-<code class="userinput">repos['items'][0]['uuid']</code>
-u'qr1hi-s0uqq-kg8cawglrf74bmw'
-</code></pre>
-</notextile>
+Check out the "examples":example.html and "cookbook":cookbook.html
 
 h3. Notes
 

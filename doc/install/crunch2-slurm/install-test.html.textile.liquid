@@ -29,7 +29,7 @@ On the dispatch node, start monitoring the crunch-dispatch-slurm logs:
 </code></pre>
 </notextile>
 
-*On your shell server*, submit a simple container request:
+Submit a simple container request:
 
 <notextile>
 <pre><code>shell:~$ <span class="userinput">arv container_request create --container-request '{
@@ -53,7 +53,7 @@ On the dispatch node, start monitoring the crunch-dispatch-slurm logs:
 </code></pre>
 </notextile>
 
-This command should return a record with a @container_uuid@ field.  Once crunch-dispatch-slurm polls the API server for new containers to run, you should see it dispatch that same container.  It will log messages like:
+This command should return a record with a @container_uuid@ field.  Once @crunch-dispatch-slurm@ polls the API server for new containers to run, you should see it dispatch that same container.  It will log messages like:
 
 <notextile>
 <pre><code>2016/08/05 13:52:54 Monitoring container zzzzz-dz642-hdp2vpu9nq14tx0 started
@@ -61,8 +61,6 @@ This command should return a record with a @container_uuid@ field.  Once crunch-
 2016/08/05 13:53:04 sbatch succeeded: Submitted batch job 8102
 </code></pre>
 </notextile>
-
-If you do not see crunch-dispatch-slurm try to dispatch the container, double-check that it is running and that the API hostname and token in @/etc/arvados/crunch-dispatch-slurm/crunch-dispatch-slurm.yml@ are correct.
 
 Before the container finishes, SLURM's @squeue@ command will show the new job in the list of queued and running jobs.  For example, you might see:
 
@@ -111,4 +109,4 @@ You can use standard Keep tools to view the container's output and logs from the
 </code></pre>
 </notextile>
 
-If the container does not dispatch successfully, refer to the crunch-dispatch-slurm logs for information about why it failed.
+If the container does not dispatch successfully, refer to the @crunch-dispatch-slurm@ logs for information about why it failed.

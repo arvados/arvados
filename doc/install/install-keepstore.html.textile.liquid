@@ -66,32 +66,13 @@ Add each keepstore server to the @Services.Keepstore@ section of @/etc/arvados/c
 </code></pre>
 </notextile>
 
-h2(#install-packages). Install keepstore package
+{% assign arvados_component = 'keepstore' %}
 
-On each host that will run keepstore, install the @keepstore@ package.
+{% include 'install_packages' %}
 
-h3. Centos 7
+{% include 'start_service' %}
 
-<notextile>
-<pre><code># <span class="userinput">yum install keepstore</span>
-</code></pre>
-</notextile>
-
-h3. Debian and Ubuntu
-
-<notextile>
-<pre><code># <span class="userinput">apt-get install keepstore</span>
-</code></pre>
-</notextile>
-
-h2(#restart-api). Restart the API server and controller
-
-After adding all of your keepstore servers to the Services section, make sure the cluster config file is up to date on the API server host, and restart the API server and controller processes to ensure the changes are applied.
-
-<notextile>
-<pre><code># <span class="userinput">systemctl restart nginx arvados-controller</span>
-</code></pre>
-</notextile>
+{% include 'restart_api' %}
 
 h2(#confirm-working). Confirm working installation
 

@@ -71,30 +71,11 @@ Use a text editor to create a new file @/etc/nginx/conf.d/arvados-workbench2.con
 </code></pre>
 </notextile>
 
-h2(#install-packages). Install arvados-workbench2
+{% assign arvados_component = 'arvados-workbench2' %}
 
-h3. Centos 7
+{% include 'install_packages' %}
 
-<notextile>
-<pre><code># <span class="userinput">yum install arvados-workbench2</span>
-</code></pre>
-</notextile>
-
-h3. Debian and Ubuntu
-
-<notextile>
-<pre><code># <span class="userinput">apt-get --no-install-recommends install arvados-workbench2</span>
-</code></pre>
-</notextile>
-
-h2(#restart-api). Restart the API server and controller
-
-After adding Workbench to the Services section, make sure the cluster config file is up to date on the API server host, and restart the API server and controller processes to ensure the changes are applied.
-
-<notextile>
-<pre><code># <span class="userinput">systemctl restart nginx arvados-controller</span>
-</code></pre>
-</notextile>
+{% include 'restart_api' %}
 
 h2(#confirm-working). Confirm working installation
 

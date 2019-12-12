@@ -26,7 +26,7 @@ Edit the cluster config at @/etc/arvados/config.yml@ and set @Services.Websocket
 <pre><code>    Services:
       Websocket:
         InternalURLs:
-	  <span class="userinput">"http://ws.ClusterID.example.com:8005"</span>: {}      
+	  <span class="userinput">"http://ws.ClusterID.example.com:8005"</span>: {}
         ExternalURL: <span class="userinput">wss://ws.ClusterID.example.com/websocket</span>
 </span></code></pre>
 </notextile>
@@ -63,55 +63,13 @@ server {
 }
 </pre></notextile>
 
-h2(#install-packages). Install arvados-ws
+{% assign arvados_component = 'arvados-ws' %}
 
-h3. Centos 7
+{% include 'install_packages' %}
 
-<notextile>
-<pre><code># <span class="userinput">yum install arvados-ws</span>
-</code></pre>
-</notextile>
+{% include 'start_service' %}
 
-h3. Debian and Ubuntu
-
-<notextile>
-<pre><code># <span class="userinput">apt-get --no-install-recommends install arvados-ws</span>
-</code></pre>
-</notextile>
-
-h3. Start the service
-
-If your system does not use systemd, skip this section and follow the "runit instructions":#runit instead.
-
-If your system uses systemd, the arvados-ws service should already be set up. Start it and check its status:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo systemctl restart arvados-ws</span>
-~$ <span class="userinput">sudo systemctl status arvados-ws</span>
-&#x25cf; arvados-ws.service - Arvados websocket server
-   Loaded: loaded (/lib/systemd/system/arvados-ws.service; enabled)
-   Active: active (running) since Tue 2016-12-06 11:20:48 EST; 10s ago
-     Docs: https://doc.arvados.org/
- Main PID: 9421 (arvados-ws)
-   CGroup: /system.slice/arvados-ws.service
-           └─9421 /usr/bin/arvados-ws
-
-Dec 06 11:20:48 zzzzz arvados-ws[9421]: {"level":"info","msg":"started","time":"2016-12-06T11:20:48.207617188-05:00"}
-Dec 06 11:20:48 zzzzz arvados-ws[9421]: {"Listen":":9003","level":"info","msg":"listening","time":"2016-12-06T11:20:48.244956506-05:00"}
-Dec 06 11:20:48 zzzzz systemd[1]: Started Arvados websocket server.
-</code></pre>
-</notextile>
-
-If it is not running, use @journalctl@ to check logs for errors:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo journalctl -n10 -u arvados-ws</span>
-...
-Dec 06 11:12:48 zzzzz systemd[1]: Starting Arvados websocket server...
-Dec 06 11:12:48 zzzzz arvados-ws[8918]: {"level":"info","msg":"started","time":"2016-12-06T11:12:48.030496636-05:00"}
-Dec 06 11:12:48 zzzzz arvados-ws[8918]: {"error":"pq: password authentication failed for user \"arvados\"","level":"fatal","msg":"db.Ping failed","time":"2016-12-06T11:12:48.058206400-05:00"}
-</code></pre>
-</notextile>
+{% include 'restart_api' %}
 
 h2(#restart-api). Restart the API server and controller
 
@@ -122,7 +80,7 @@ After adding the SSO server to the Services section, make sure the cluster confi
 </code></pre>
 </notextile>
 
-h3(#confirm). Confirm working installation
+h2(#confirm). Confirm working installation
 
 Confirm the service is listening on its assigned port and responding to requests.
 

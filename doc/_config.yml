@@ -88,9 +88,6 @@ navbar:
     - R:
       - sdk/R/index.html.md
       - sdk/R/arvados/index.html.textile.liquid
-    - Perl:
-      - sdk/perl/index.html.textile.liquid
-      - sdk/perl/example.html.textile.liquid
     - Ruby:
       - sdk/ruby/index.html.textile.liquid
       - sdk/ruby/example.html.textile.liquid
@@ -101,6 +98,9 @@ navbar:
     - Java v1:
       - sdk/java/index.html.textile.liquid
       - sdk/java/example.html.textile.liquid
+    - Perl:
+      - sdk/perl/index.html.textile.liquid
+      - sdk/perl/example.html.textile.liquid
   api:
     - Concepts:
       - api/index.html.textile.liquid
@@ -213,12 +213,10 @@ navbar:
       - install/install-ws.html.textile.liquid
       - install/install-arv-git-httpd.html.textile.liquid
       - install/install-shell-server.html.textile.liquid
-    - Containers API support on cloud:
-      - install/install-dispatch-cloud.html.textile.liquid      
-    - Containers API support on SLURM:
-      - install/crunch2-slurm/install-prerequisites.html.textile.liquid
-      - install/crunch2-slurm/install-slurm.html.textile.liquid
+    - Containers API:
       - install/crunch2-slurm/install-compute-node.html.textile.liquid
+      - install/install-jobs-image.html.textile.liquid
+      - install/install-dispatch-cloud.html.textile.liquid
       - install/crunch2-slurm/install-dispatch.html.textile.liquid
       - install/crunch2-slurm/install-test.html.textile.liquid
     - External dependencies:
@@ -226,3 +224,4 @@ navbar:
       - install/ruby.html.textile.liquid
       - install/nginx.html.textile.liquid
       - install/google-auth.html.textile.liquid
+      - install/install-docker.html.textile.liquid

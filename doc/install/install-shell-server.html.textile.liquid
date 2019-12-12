@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: installguide
-title: Install a shell node
+title: Set up a shell node
 ...
 {% comment %}
 Copyright (C) The Arvados Authors. All rights reserved.
@@ -9,31 +9,47 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-Arvados support for shell nodes enables using Arvados permissions to grant shell accounts to users.
+# "Introduction":#introduction
+# "Install Dependecies and SDKs":#dependencies
+# "Install git and curl":#install-packages
+# "Update Git Config":#config-git
+# "Create record for VM":#vm-record
+# "Create scoped token":#scoped-token
+# "Install arvados-login-sync":#arvados-login-sync
+# "Confirm working installation":#confirm-working
+
+h2(#introduction). Introduction
+
+Arvados support for shell nodes allows you to use Arvados permissions to grant Linux shell accounts to users.
 
 A shell node runs the @arvados-login-sync@ service, and has some additional configuration to make it convenient for users to use Arvados utilites and SDKs.  Users are allowed to log in and run arbitrary programs.  For optimal performance, the Arvados shell server should be on the same LAN as the Arvados cluster.
 
-h2. Install Dependecies and SDKs
+Because it _contains secrets_ shell nodes should *not* have a copy of the complete @config.yml@.  For example, if users have access to the @docker@ daemon, it is trival to gain *root* access to any file on the system.  Users sharing a shell node should be implicitly trusted, or not given access to Docker.  In more secure environments, the admin should allocate a separate VM for each user.
 
+h2(#dependencies). Install Dependecies and SDKs
+
+# "Install Ruby and Bundler":ruby.html
+# "Install the Python SDK":{{site.baseurl}}/sdk/python/sdk-python.html
 # "Install the CLI":{{site.baseurl}}/sdk/cli/install.html
-# "Install the R SDK":{{site.baseurl}}/sdk/R/index.html (optional)
+# "Install the R SDK":{{site.baseurl}}/sdk/R/install.html (optional)
+# "Install Docker":install-docker.html (optional)
 
-h2. Install Git and curl
+{% assign arvados_component = 'git curl' %}
 
-{% include 'install_git_curl' %}
+{% include 'install_packages' %}
 
-h2. Update Git Config
+h2(#config-git). Update Git Config
 
 Configure git to use the ARVADOS_API_TOKEN environment variable to authenticate to arv-git-httpd. We use the @--system@ flag so it takes effect for all current and future user accounts. It does not affect git's behavior when connecting to other git servers.
 
 <notextile>
 <pre>
-<code>~$ <span class="userinput">sudo git config --system 'credential.https://git.<b>uuid_prefix.your.domain</b>/.username' none</span></code>
-<code>~$ <span class="userinput">sudo git config --system 'credential.https://git.<b>uuid_prefix.your.domain</b>/.helper' '!cred(){ cat >/dev/null; if [ "$1" = get ]; then echo password=$ARVADOS_API_TOKEN; fi; };cred'</span></code>
+<code># <span class="userinput">git config --system 'credential.https://git.<b>ClusterID.example.com</b>/.username' none</span></code>
+<code># <span class="userinput">git config --system 'credential.https://git.<b>ClusterID.example.com</b>/.helper' '!cred(){ cat >/dev/null; if [ "$1" = get ]; then echo password=$ARVADOS_API_TOKEN; fi; };cred'</span></code>
 </pre>
 </notextile>
 
-h2. Create database entry for VM
+h2(#vm-record). Create record for VM
 
 This program makes it possible for Arvados users to log in to the shell server -- subject to permissions assigned by the Arvados administrator -- using the SSH keys they upload to Workbench. It sets up login accounts, updates group membership, and adds users' public keys to the appropriate @authorized_keys@ files.
 
@@ -46,9 +62,9 @@ zzzzz-2x53u-zzzzzzzzzzzzzzz</code>
 </pre>
 </notextile>
 
-h2. Create token
+h2(#scoped-token). Create scoped token
 
-As an admin arvados user (such as the system root user), create a token that is allowed to read login information for this VM.
+As an admin arvados user (such as the system root user), create a token that is restricted to only reading login information for this VM.
 
 <notextile>
 <pre>
@@ -63,9 +79,9 @@ As an admin arvados user (such as the system root user), create a token that is 
 
 Note the UUID and the API token output by the above commands: you will need them in a minute.
 
-h2. Install arvados-login-sync
+h2(#arvados-login-sync). Install arvados-login-sync
 
-Install the arvados-login-sync program.
+Install the arvados-login-sync program from RubyGems.
 
 <notextile>
 <pre>
@@ -78,7 +94,7 @@ Configure cron to run the @arvados-login-sync@ program every 2 minutes.
 <notextile>
 <pre>
 <code>shellserver:# <span class="userinput">umask 077; tee /etc/cron.d/arvados-login-sync &lt;&lt;EOF
-ARVADOS_API_HOST="<strong>uuid_prefix.your.domain</strong>"
+ARVADOS_API_HOST="<strong>ClusterID.example.com</strong>"
 ARVADOS_API_TOKEN="<strong>the_token_you_created_above</strong>"
 ARVADOS_VIRTUAL_MACHINE_UUID="<strong>zzzzz-2x53u-zzzzzzzzzzzzzzz</strong>"
 */2 * * * * root arvados-login-sync
@@ -86,9 +102,12 @@ EOF</span></code>
 </pre>
 </notextile>
 
+h2(#confirm-working). Confirm working installation
+
 A user should be able to log in to the shell server when the following conditions are satisfied:
-* The user has uploaded an SSH public key: Workbench &rarr; Account menu &rarr; "SSH keys" item &rarr; "Add new SSH key" button.
-* As an admin user, you have given the user permission to log in: Workbench &rarr; Admin menu &rarr; "Users" item &rarr; "Show" button &rarr; "Admin" tab &rarr; "Setup shell account" button.
-* Two minutes have elapsed since the above conditions were satisfied, and the cron job has had a chance to run.
 
+# The user has uploaded an SSH public key: Workbench &rarr; Account menu &rarr; "SSH keys" item &rarr; "Add new SSH key" button.
+# As an admin user, you have given the user permission to log in using the Workbench &rarr; Admin menu &rarr; "Users" item &rarr; "Show" button &rarr; "Admin" tab &rarr; "Setup account" button.
+# The cron job has run.
 
+See also "how to add a VM login permission link at the command line":admin/user-management-cli.html

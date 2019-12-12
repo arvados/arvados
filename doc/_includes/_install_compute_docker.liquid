@@ -4,73 +4,47 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-h2. Install Docker
-
-Compute nodes must have Docker installed to run containers.  This requires a relatively recent version of Linux (at least upstream version 3.10, or a distribution version with the appropriate patches backported).  Follow the "Docker Engine installation documentation":https://docs.docker.com/ for your distribution.
-
-h2(#configure_docker_daemon). Configure the Docker daemon
-
-Crunch runs Docker containers with relatively little configuration.  You may need to start the Docker daemon with specific options to make sure these jobs run smoothly in your environment.  This section highlights options that are useful to most installations.  Refer to the "Docker daemon reference":https://docs.docker.com/reference/commandline/daemon/ for complete information about all available options.
-
-The best way to configure these options varies by distribution.
-
-* If you're using the Debian package, you can list these options in the @DOCKER_OPTS@ setting in @/etc/default/docker@.
-* On Red Hat-based distributions, you can list these options in the @other_args@ setting in @/etc/sysconfig/docker@.
-
-h3. Default ulimits
-
-Docker containers inherit ulimits from the Docker daemon.  However, the ulimits for a single Unix daemon may not accommodate a long-running Crunch job.  You may want to increase default limits for compute containers by passing @--default-ulimit@ options to the Docker daemon.  For example, to allow containers to open 10,000 files, set @--default-ulimit nofile=10000:10000@.
-
-h3. DNS
-
-Your containers must be able to resolve the hostname of your API server and any hostnames returned in Keep service records.  If these names are not in public DNS records, you may need to specify a DNS resolver for the containers by setting the @--dns@ address to an IP address of an appropriate nameserver.  You may specify this option more than once to use multiple nameservers.
-
-h2. Configure Linux cgroups accounting
+h2(#cgroups). Configure Linux cgroups accounting
 
 Linux can report what compute resources are used by processes in a specific cgroup or Docker container.  Crunch can use these reports to share that information with users running compute work.  This can help pipeline authors debug and optimize their workflows.
 
 To enable cgroups accounting, you must boot Linux with the command line parameters @cgroup_enable=memory swapaccount=1@.
 
-On Debian-based systems, open the file @/etc/default/grub@ in an editor.  Find where the string @GRUB_CMDLINE_LINUX@ is set.  Add @cgroup_enable=memory swapaccount=1@ to that string.  Save the file and exit the editor.  Then run:
+After making changes, reboot the system to make these changes effective.
 
-<notextile>
-<pre><code>~$ <span class="userinput">sudo update-grub</span>
-</code></pre>
-</notextile>
-
-On Red Hat-based systems, run:
+h3. Red Hat and CentOS
 
 <notextile>
 <pre><code>~$ <span class="userinput">sudo grubby --update-kernel=ALL --args='cgroup_enable=memory swapaccount=1'</span>
 </code></pre>
 </notextile>
 
-Finally, reboot the system to make these changes effective.
+h3. Debian and Ubuntu
 
-h2. Create a project for Docker images
-
-Here we create a default project for the standard Arvados Docker images, and give all users read access to it. The project is owned by the system user.
+Open the file @/etc/default/grub@ in an editor.  Find where the string @GRUB_CMDLINE_LINUX@ is set.  Add @cgroup_enable=memory swapaccount=1@ to that string.  Save the file and exit the editor.  Then run:
 
 <notextile>
-<pre><code>~$ <span class="userinput">uuid_prefix=`arv --format=uuid user current | cut -d- -f1`</span>
-~$ <span class="userinput">project_uuid=`arv --format=uuid group create --group "{\"owner_uuid\":\"$uuid_prefix-tpzed-000000000000000\", \"group_class\":\"project\", \"name\":\"Arvados Standard Docker Images\"}"`</span>
-~$ <span class="userinput">echo "Arvados project uuid is '$project_uuid'"</span>
-~$ <span class="userinput">read -rd $'\000' newlink &lt;&lt;EOF; arv link create --link "$newlink"</span>
-<span class="userinput">{
- "tail_uuid":"$all_users_group_uuid",
- "head_uuid":"$project_uuid",
- "link_class":"permission",
- "name":"can_read"
-}
-EOF</span>
-</code></pre></notextile>
+<pre><code>~$ <span class="userinput">sudo update-grub</span>
+</code></pre>
+</notextile>
 
-h2. Download and tag the latest arvados/jobs docker image
+h2(#install_docker). Install Docker
 
-In order to start workflows from workbench, there needs to be Docker image tagged @arvados/jobs:latest@. The following command downloads the latest arvados/jobs image from Docker Hub, loads it into Keep, and tags it as 'latest'.  In this example @$project_uuid@ should be the UUID of the "Arvados Standard Docker Images" project.
+Compute nodes must have Docker installed to run containers.  This requires a relatively recent version of Linux (at least upstream version 3.10, or a distribution version with the appropriate patches backported).  Follow the "Docker Engine installation documentation":https://docs.docker.com/install/ for your distribution.
+
+Make sure Docker is enabled to start on boot:
 
 <notextile>
-<pre><code>~$ <span class="userinput">arv-keepdocker --pull arvados/jobs latest --project-uuid $project_uuid</span>
-</code></pre></notextile>
+<pre><code># <span class="userinput">systemctl enable --now docker</span>
+</code></pre>
+</notextile>
 
-If the image needs to be downloaded from Docker Hub, the command can take a few minutes to complete, depending on available network bandwidth.
+h2(#configure_docker_daemon). Configure the Docker daemon
+
+Depending on your anticipated workload or cluster configuration, you may need to tweak Docker options.
+
+For information about how to set configuration options for the Docker daemon, see https://docs.docker.com/config/daemon/systemd/
+
+h3. Changing ulimits
+
+Docker containers inherit ulimits from the Docker daemon.  However, the ulimits for a single Unix daemon may not accommodate a long-running Crunch job.  You may want to increase default limits for compute containers by passing @--default-ulimit@ options to the Docker daemon.  For example, to allow containers to open 10,000 files, set @--default-ulimit nofile=10000:10000@.
