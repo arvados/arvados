@@ -14,6 +14,7 @@ export interface FilesUploadDialogProps {
     uploading: boolean;
     onSubmit: () => void;
     onChange: (files: File[]) => void;
+    onDelete: (files: File[]) => void; 
 }
 
 export const FilesUploadDialog = (props: FilesUploadDialogProps & WithDialogProps<{}>) =>
@@ -28,6 +29,7 @@ export const FilesUploadDialog = (props: FilesUploadDialogProps & WithDialogProp
                 files={props.files}
                 disabled={props.uploading}
                 onDrop={props.onChange}
+                onDelete={props.onDelete}
             />
         </DialogContent>
         <DialogActions>
