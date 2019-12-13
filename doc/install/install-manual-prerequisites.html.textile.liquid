@@ -101,11 +101,10 @@ For a production installation, this is a reasonable configuration:
 <div class="offset1">
 table(table table-bordered table-condensed).
 |_. Function|_. Number of nodes|_. Recommended specs|
-|Postgres database, Arvados API server, Arvados controller, Git, Websockets|1|16+ GiB RAM, 4+ cores, fast disk for database|
+|Postgres database, Arvados API server, Arvados controller, Git, Websockets, Container dispatcher|1|16+ GiB RAM, 4+ cores, fast disk for database|
 |Single Sign-On (SSO) server ^1^|1|2 GiB RAM|
 |Workbench, Keepproxy, Keep-web, Keep-balance|1|8 GiB RAM, 2+ cores|
 |Keepstore servers ^2^|2+|4 GiB RAM|
-|Compute scheduler|1|2 GiB RAM|
 |Compute worker nodes ^2^|2+ |Depends on workload|
 |User shell nodes ^3^|0+|Depends on workload|
 </div>

@@ -235,7 +235,7 @@ h3(#v1_3_0). v1.3.0 (2018-12-05)
 
 This release includes several database migrations, which will be executed automatically as part of the API server upgrade. On large Arvados installations, these migrations will take a while. We've seen the upgrade take 30 minutes or more on installations with a lot of collections.
 
-The @arvados-controller@ component now requires the /etc/arvados/config.yml file to be present. See <a href="{{ site.baseurl }}/install/install-controller.html#configuration">the @arvados-controller@ installation instructions</a>.
+The @arvados-controller@ component now requires the /etc/arvados/config.yml file to be present.
 
 Support for the deprecated "jobs" API is broken in this release.  Users who rely on it should not upgrade.  This will be fixed in an upcoming 1.3.1 patch release, however users are "encouraged to migrate":upgrade-crunch2.html as support for the "jobs" API will be dropped in an upcoming release.  Users who are already using the "containers" API are not affected.
 
@@ -269,7 +269,7 @@ h4. New component: arvados-controller
 
 Commit "db5107dca":https://dev.arvados.org/projects/arvados/repository/revisions/db5107dca adds a new system service, arvados-controller. More detail is available in story "#13496":https://dev.arvados.org/issues/13497.
 
-To add the Arvados Controller to your system please refer to the "installation instructions":../install/install-controller.html after upgrading your system to 1.2.0.
+To add the Arvados Controller to your system please refer to the "installation instructions":../install/install-api-server.html after upgrading your system to 1.2.0.
 
 Verify your setup by confirming that API calls appear in the controller's logs (_e.g._, @journalctl -fu arvados-controller@) while loading a workbench page.
 
