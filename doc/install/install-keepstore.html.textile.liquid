@@ -14,6 +14,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 # "Install keepstore package":#install-packages
 # "Restart the API server and controller":#restart-api
 # "Confirm working installation":#confirm-working
+# "Note on storage management":#note
 
 h2. Introduction
 
@@ -62,7 +63,7 @@ Add each keepstore server to the @Services.Keepstore@ section of @/etc/arvados/c
         InternalURLs:
           "http://<span class="userinput">keep0.ClusterID.example.com</span>:25107/": {}
           "http://<span class="userinput">keep1.ClusterID.example.com</span>:25107/": {}
-	  # and so forth
+          # and so forth
 </code></pre>
 </notextile>
 
@@ -76,26 +77,33 @@ Add each keepstore server to the @Services.Keepstore@ section of @/etc/arvados/c
 
 h2(#confirm-working). Confirm working installation
 
-Install the "Python SDK":{{site.baseurl}}/sdk/python/sdk-python.html
+Log into a host that is on your private Arvados network.  The host should be able to contact your your keepstore servers (eg keep[0-9].ClusterID.example.com).
 
 @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ must be set in the environment.
 
-You should now be able to use @arv-put@ to upload collections and @arv-get@ to fetch collections:
+@ARVADOS_API_HOST@ should be the hostname of the API server.
 
-<pre>
-$ echo "hello world!" > hello.txt
+@ARVADOS_API_TOKEN@ should be the system root token.
 
-$ arv-put --portable-data-hash hello.txt
-2018-07-12 13:35:25 arvados.arv_put[28702] INFO: Creating new cache file at /home/example/.cache/arvados/arv-put/1571ec0adb397c6a18d5c74cc95b3a2a
-0M / 0M 100.0% 2018-07-12 13:35:27 arvados.arv_put[28702] INFO:
+Install the "Command line SDK":{{site.baseurl}}/sdk/cli/install.html
 
-2018-07-12 13:35:27 arvados.arv_put[28702] INFO: Collection saved as 'Saved at 2018-07-12 17:35:25 UTC by example@example'
-59389a8f9ee9d399be35462a0f92541c+53
+Check that the keepstore server is in the @keep_service@ "accessible" list:
 
-$ arv-get 59389a8f9ee9d399be35462a0f92541c+53/hello.txt
-hello world!
-</pre>
+<notextile>
+<pre><code>
+$ <span class="userinput">arv keep_service accessible</span>
+[...]
+</code></pre>
+</notextile>
 
-h3. Note on storage management
+If keepstore does not show up in the "accessible" list, and you are accessing it from within the private network, check that you have "properly configured the @geo@ block for the API server":install-api-server.html#update-nginx .
+
+Next, install the "Python SDK":{{site.baseurl}}/sdk/python/sdk-python.html
+
+You should now be able to use @arv-put@ to upload collections and @arv-get@ to fetch collections.  Be sure to execute this from _inside_ the cluster's private network.  You will be able to access keep from _outside_ the private network after setting up "keepproxy":install-keepproxy.html .
+
+{% include 'arv_put_example' %}
+
+h2(#note). Note on storage management
 
 On its own, a keepstore server never deletes data. Instead, the keep-balance service determines which blocks are candidates for deletion and instructs the keepstore to move those blocks to the trash. Please see the "Balancing Keep servers":{{site.baseurl}}/admin/keep-balance.html for more details.

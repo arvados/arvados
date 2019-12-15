@@ -56,7 +56,7 @@ Use a text editor to create a new file @/etc/nginx/conf.d/arvados-workbench.conf
 
 <notextile>
 <pre><code>server {
-  listen       <span class="userinput">[your public IP address]</span>:443 ssl;
+  listen       *:443 ssl;
   server_name  workbench.<span class="userinput">ClusterID.example.com</span>;
 
   ssl on;

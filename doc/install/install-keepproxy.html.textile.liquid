@@ -43,7 +43,7 @@ Edit the cluster config at @/etc/arvados/config.yml@ and set @Services.Keepproxy
       Keepproxy:
         ExternalURL: <span class="userinput">https://keep.ClusterID.example.com</span>
         InternalURLs:
-	  <span class="userinput">"http://keep.ClusterID.example.com:25107": {}</span>
+          <span class="userinput">"http://localhost:25107": {}</span>
 </span></code></pre>
 </notextile>
 
@@ -58,7 +58,7 @@ Use a text editor to create a new file @/etc/nginx/conf.d/keepproxy.conf@ with t
 }
 
 server {
-  listen                  <span class="userinput">[TODO your public IP address]</span>:443 ssl;
+  listen                  *:443 ssl;
   server_name             keep.<span class="userinput">ClusterID</span>.example.com;
 
   proxy_connect_timeout   90s;
@@ -94,8 +94,27 @@ h2(#confirm-working). Confirm working installation
 
 Log into a host that is on a network external to your private Arvados network.  The host should be able to contact your keepproxy server (eg @keep.ClusterID.example.com@), but not your keepstore servers (eg keep[0-9].ClusterID.example.com).
 
-Install the "Python SDK":{{site.baseurl}}/sdk/python/sdk-python.html
-
 @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ must be set in the environment.
 
-You should now be able to use @arv-put@ to upload collections and @arv-get@ to fetch collections, for an example see "Testing keep.":install-keepstore.html#testing on the keepstore install page.
+@ARVADOS_API_HOST@ should be the hostname of the API server.
+
+@ARVADOS_API_TOKEN@ should be the system root token.
+
+Install the "Command line SDK":{{site.baseurl}}/sdk/cli/install.html
+
+Check that the keepproxy server is in the @keep_service@ "accessible" list:
+
+<notextile>
+<pre><code>
+$ <span class="userinput">arv keep_service accessible</span>
+[...]
+</code></pre>
+</notextile>
+
+If keepstore does not show up in the "accessible" list, and you are accessing it from within the private network, check that you have "properly configured the @geo@ block for the API server":install-api-server.html#update-nginx .
+
+Install the "Python SDK":{{site.baseurl}}/sdk/python/sdk-python.html
+
+You should now be able to use @arv-put@ to upload collections and @arv-get@ to fetch collections.  Be sure to execute this from _outside_ the cluster's private network.
+
+{% include 'arv_put_example' %}

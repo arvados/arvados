@@ -25,10 +25,8 @@ h3(#centos7). CentOS 7
   <notextile><pre># <span class="userinput">postgresql-setup initdb</span></pre></notextile>
 # Configure the database to accept password connections
   <notextile><pre><code># <span class="userinput">sed -ri -e 's/^(host +all +all +(127\.0\.0\.1\/32|::1\/128) +)ident$/\1md5/' /var/lib/pgsql/data/pg_hba.conf</span></code></pre></notextile>
-# Configure the database to launch at boot
-  <notextile><pre># <span class="userinput">systemctl enable rh-postgresql95-postgresql</span></pre></notextile>
-# Start the database
-  <notextile><pre># <span class="userinput">systemctl start rh-postgresql95-postgresql</span></pre></notextile>
+# Configure the database to launch at boot and start now
+  <notextile><pre># <span class="userinput">systemctl enable --now rh-postgresql95-postgresql</span></pre></notextile>
 
 h3(#debian). Debian or Ubuntu
 
@@ -38,7 +36,5 @@ Ubuntu 14.04 (Trusty) requires an updated PostgreSQL version, see "the PostgreSQ
 
 # Install PostgreSQL
   <notextile><pre># <span class="userinput">apt-get --no-install-recommends install postgresql postgresql-contrib</span></pre></notextile>
-# Configure the database to launch at boot
-  <notextile><pre># <span class="userinput">systemctl enable postgresql</span></pre></notextile>
-# Start PostgreSQL
-  <notextile><pre># <span class="userinput">systemctl start postgresql</span></pre></notextile>
+# Configure the database to launch at boot and start now
+  <notextile><pre># <span class="userinput">systemctl enable --now postgresql</span></pre></notextile>

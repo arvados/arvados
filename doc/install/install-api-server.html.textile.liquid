@@ -91,11 +91,11 @@ h3. Services
       Controller:
         ExternalURL: <span class="userinput">"https://xxxxx.example.com"</span>
         InternalURLs:
-          <span class="userinput">"http://xxxxx.example.com:8003": {}</span>
+          <span class="userinput">"http://localhost:8003": {}</span>
       RailsAPI:
         # Does not have an ExternalURL
         InternalURLs:
-          <span class="userinput">"http://xxxxx.example.com:8004": {}</span>
+          <span class="userinput">"http://localhost:8004": {}</span>
 </code></pre>
 </notextile>
 
@@ -120,24 +120,29 @@ Use a text editor to create a new file @/etc/nginx/conf.d/arvados-api-and-contro
 # "available keep services" request with either a list of internal keep
 # servers (0) or with the keepproxy (1).
 #
-# TODO: Following the example here, update the netmask to the
-# your internal subnet.
+# TODO: Following the example here, update the 10.20.30.0/24 netmask
+# to match your private subnet.
+# TODO: Update 1.2.3.4 and add lines as necessary with the public IP
+# address of all servers that can also access the private network to
+# ensure they are not considered 'external'.
 
 geo $external_client {
   default        1;
+  127.0.0.0/24   0;
   <span class="userinput">10.20.30.0/24</span>  0;
+  <span class="userinput">1.2.3.4/32</span>     0;
 }
 
 # This is the port where nginx expects to contact arvados-controller.
 upstream controller {
-  server     xxxxx.example.com:8003  fail_timeout=10s;
+  server     localhost:8003  fail_timeout=10s;
 }
 
 server {
   # This configures the public https port that clients will actually connect to,
   # the request is reverse proxied to the upstream 'controller'
 
-  listen       <span class="userinput">xxxxx.example.com</span>:443 ssl;
+  listen       *:443 ssl;
   server_name  <span class="userinput">xxxxx.example.com</span>;
 
   ssl on;
@@ -166,7 +171,7 @@ server {
   # This configures the Arvados API server.  It is written using Ruby
   # on Rails and uses the Passenger application server.
 
-  listen <span class="userinput">xxxxx.example.com:8004</span>;
+  listen <span class="userinput">localhost:8004</span>;
   server_name localhost-api;
 
   root /var/www/arvados-api/current/public;
@@ -192,6 +197,8 @@ server {
 
 {% include 'install_packages' %}
 
+{% assign arvados_component = 'arvados-controller' %}
+
 {% include 'start_service' %}
 
 h2(#confirm-working). Confirm working installation
@@ -216,4 +223,8 @@ $ curl -H "Authorization: Bearer $system_root_token" https://xxxxx.example.com/a
 
 h3. Troubleshooting
 
-See the admin page on "Logging":{{site.baseurl}}/admin/logging.html .
+If you are getting TLS errors, make sure the @ssl_certificate@ directive in your nginx configuration has the "full certificate chain":http://nginx.org/en/docs/http/configuring_https_servers.html#chains
+
+Logs can be found in @/var/www/arvados-api/current/log/production.log@ and using @journalctl -u arvados-controller@.
+
+See also the admin page on "Logging":{{site.baseurl}}/admin/logging.html .

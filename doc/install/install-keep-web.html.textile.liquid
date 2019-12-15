@@ -39,11 +39,12 @@ If blank, serve links to WebDAV with @disposition=attachment@ query param.  Unli
 
 If @WebDAVDownload@ is blank, and @WebDAV@ has a single origin (not wildcard, see below), then Workbench will show an error page
 
-<pre>
-    Services:
+<notextile>
+<pre><code>    Services:
       WebDAVDownload:
-        ExternalURL: https://download.ClusterID.example.com
-</pre>
+        ExternalURL: <span class="userinput">https://download.ClusterID.example.com</span>
+</code></pre>
+</notextile>
 
 h3. Collections preview URL
 
@@ -53,31 +54,44 @@ h4. In their own subdomain
 
 Collections can be served from their own subdomain:
 
-<pre>
-    Services:
+<notextile>
+<pre><code>    Services:
       WebDAV:
-        ExternalURL: https://*.collections.ClusterID.example.com
-</pre>
+        ExternalURL: <span class="userinput">https://*.collections.ClusterID.example.com</span>
+</code></pre>
+</notextile>
 
 h4. Under the main domain
 
 Alternately, they can go under the main domain by including @--@:
 
-<pre>
-    Services:
+<notextile>
+<pre><code>    Services:
       WebDAV:
-        ExternalURL: https://*--collections.ClusterID.example.com
-</pre>
+        ExternalURL: <span class="userinput">https://*--collections.ClusterID.example.com</span>
+</code></pre>
+</notextile>
 
 h4. From a single domain
 
 Serve preview links from a single domain, setting uuid or pdh in the path (similar to downloads).  This configuration only allows previews of public data or collection-sharing links, because these use the anonymous user token or the token is already embedded in the URL.  Authenticated requests will always result in file downloads from @Services.WebDAVDownload.ExternalURL@.
 
-<pre>
-    Services:
+<notextile>
+<pre><code>    Services:
       WebDAV:
-        ExternalURL: https://collections.ClusterID.example.com
-</pre>
+        ExternalURL: <span class="userinput">https://collections.ClusterID.example.com</span>
+</code></pre>
+</notextile>
+
+h2. Set InternalURLs
+
+<notextile>
+<pre><code>    Services:
+      WebDAV:
+        InternalURLs:
+          <span class="userinput">"http://localhost:9002"</span>: {}
+</code></pre>
+</notextile>
 
 h2(#update-config). Configure anonymous user token
 
@@ -87,20 +101,11 @@ If you intend to use Keep-web to serve public data to anonymous clients, configu
 
 <notextile>
 <pre><code>    Users:
-      AnonymousUserToken: "{{railsout}}"
+      AnonymousUserToken: <span class="userinput">"{{railsout}}"</span>
 </code></pre>
 </notextile>
 
 Set @Users.AnonymousUserToken: ""@ (empty string) or leave it out if you do not want to serve public data.
-
-h2. Set InternalURL
-
-<pre>
-    Services:
-      WebDAV:
-        InternalURL:
-	  "http://collections.ClusterID.example.com:9002": {}
-</pre>
 
 h3. Update nginx configuration
 
@@ -114,7 +119,7 @@ upstream keep-web {
 }
 
 server {
-  listen                <span class="userinput">[TODO: your public IP address]</span>:443 ssl;
+  listen                *:443 ssl;
   server_name           download.<span class="userinput">ClusterID</span>.example.com
                         collections.<span class="userinput">ClusterID</span>.example.com
                         *.collections.<span class="userinput">ClusterID</span>.example.com
@@ -157,16 +162,18 @@ In such cases -- for example, a site which is not reachable from the internet, w
 
 h2(#confirm-working). Confirm working installation
 
-Adjust for your configuration.
-
 <pre>
 $ curl -H "Authorization: Bearer $system_root_token" https://download.ClusterID.example.com/c=59389a8f9ee9d399be35462a0f92541c-53/_/hello.txt
 </pre>
 
-<pre>
-$ curl -H "Authorization: Bearer $system_root_token" https://collections.ClusterID.example.com/c=59389a8f9ee9d399be35462a0f92541c-53/_/hello.txt
-</pre>
+If wildcard collections domains are configured:
 
 <pre>
 $ curl -H "Authorization: Bearer $system_root_token" https://59389a8f9ee9d399be35462a0f92541c-53.collections.ClusterID.example.com/hello.txt
+</pre>
+
+If using a single collections preview domain:
+
+<pre>
+$ curl https://collections.ClusterID.example.com/c=59389a8f9ee9d399be35462a0f92541c-53/t=$system_root_token/_/hello.txt
 </pre>
