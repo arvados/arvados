@@ -2,8 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as _ from "lodash";
-
 export function joinFilters(filters0?: string, filters1?: string) {
     return [filters0, filters1].filter(s => s).join(",");
 }
@@ -83,9 +81,7 @@ export class FilterBuilder {
                 ? resourcePrefix + "."
                 : "";
 
-            const fld = field.indexOf('properties.') < 0 ? _.snakeCase(field) : field;
-
-            this.filters += `${this.filters ? "," : ""}["${resPrefix}${fld}","${cond}",${value}]`;
+            this.filters += `${this.filters ? "," : ""}["${resPrefix}${field}","${cond}",${value}]`;
         }
         return this;
     }
