@@ -39,9 +39,9 @@ describe("FavoriteService", () => {
     it("unmarks resource as favorite", async () => {
         const list = jest.fn().mockReturnValue(Promise.resolve({ items: [{ uuid: "linkUuid" }] }));
         const filters = new FilterBuilder()
-            .addEqual('tailUuid', "userUuid")
-            .addEqual('headUuid', "resourceUuid")
-            .addEqual('linkClass', LinkClass.STAR);
+            .addEqual('tail_uuid', "userUuid")
+            .addEqual('head_uuid', "resourceUuid")
+            .addEqual('link_class', LinkClass.STAR);
         linkService.list = list;
         linkService.delete = jest.fn().mockReturnValue(Promise.resolve({ uuid: "linkUuid" }));
         const favoriteService = new FavoriteService(linkService, groupService);
@@ -56,8 +56,8 @@ describe("FavoriteService", () => {
     it("lists favorite resources", async () => {
         const list = jest.fn().mockReturnValue(Promise.resolve({ items: [{ headUuid: "headUuid" }] }));
         const listFilters = new FilterBuilder()
-            .addEqual('tailUuid', "userUuid")
-            .addEqual('linkClass', LinkClass.STAR);
+            .addEqual('tail_uuid', "userUuid")
+            .addEqual('link_class', LinkClass.STAR);
         const contents = jest.fn().mockReturnValue(Promise.resolve({ items: [{ uuid: "resourceUuid" }] }));
         const contentFilters = new FilterBuilder().addIn('uuid', ["headUuid"]);
         linkService.list = list;
@@ -75,9 +75,9 @@ describe("FavoriteService", () => {
     it("checks if resources are present in favorites", async () => {
         const list = jest.fn().mockReturnValue(Promise.resolve({ items: [{ headUuid: "foo" }] }));
         const listFilters = new FilterBuilder()
-            .addIn("headUuid", ["foo", "oof"])
-            .addEqual("tailUuid", "userUuid")
-            .addEqual("linkClass", LinkClass.STAR);
+            .addIn("head_uuid", ["foo", "oof"])
+            .addEqual("tail_uuid", "userUuid")
+            .addEqual("link_class", LinkClass.STAR);
         linkService.list = list;
         const favoriteService = new FavoriteService(linkService, groupService);
 

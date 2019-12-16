@@ -36,9 +36,9 @@ export class FavoriteService {
         return this.linkService
             .list({
                 filters: new FilterBuilder()
-                    .addEqual('tailUuid', data.userUuid)
-                    .addEqual('headUuid', data.resourceUuid)
-                    .addEqual('linkClass', LinkClass.STAR)
+                    .addEqual('tail_uuid', data.userUuid)
+                    .addEqual('head_uuid', data.resourceUuid)
+                    .addEqual('link_class', LinkClass.STAR)
                     .getFilters()
             })
             .then(results => Promise.all(
@@ -47,8 +47,8 @@ export class FavoriteService {
 
     list(userUuid: string, { filters, limit, offset, linkOrder, contentOrder }: FavoriteListArguments = {}): Promise<ListResults<GroupContentsResource>> {
         const listFilters = new FilterBuilder()
-            .addEqual('tailUuid', userUuid)
-            .addEqual('linkClass', LinkClass.STAR)
+            .addEqual('tail_uuid', userUuid)
+            .addEqual('link_class', LinkClass.STAR)
             .getFilters();
 
         return this.linkService
@@ -74,9 +74,9 @@ export class FavoriteService {
         return this.linkService
             .list({
                 filters: new FilterBuilder()
-                    .addIn("headUuid", resourceUuids)
-                    .addEqual("tailUuid", userUuid)
-                    .addEqual("linkClass", LinkClass.STAR)
+                    .addIn("head_uuid", resourceUuids)
+                    .addEqual("tail_uuid", userUuid)
+                    .addEqual("link_class", LinkClass.STAR)
                     .getFilters()
             })
             .then(({ items }) => resourceUuids.reduce((results, uuid) => {
