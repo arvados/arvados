@@ -96,7 +96,7 @@ export interface TreeProps<T> {
     toggleItemSelection?: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
 
     /**
-     * When set to true  use radio buttons instead of checkboxes for item selection.
+     * When set to true use radio buttons instead of checkboxes for item selection.
      * This does not guarantee radio group behavior (i.e item mutual exclusivity).
      * Any item selection logic must be done in the toggleItemRadioButton callback prop.
      */
