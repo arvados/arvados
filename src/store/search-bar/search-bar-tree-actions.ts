@@ -87,7 +87,7 @@ const loadSearchBarProject = (projectUuid: string) =>
         dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id: projectUuid, pickerId: SEARCH_BAR_ADVANCED_FORM_PICKER_ID }));
         const params = {
             filters: new FilterBuilder()
-                .addEqual('ownerUuid', projectUuid)
+                .addEqual('owner_uuid', projectUuid)
                 .getFilters(),
             order: new OrderBuilder<ProjectResource>()
                 .addAsc('name')

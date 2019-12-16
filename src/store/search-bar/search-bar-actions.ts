@@ -339,7 +339,7 @@ export const queryToFilters = (query: string) => {
     }
 
     if (data.projectUuid) {
-        filter.addEqual('ownerUuid', data.projectUuid);
+        filter.addEqual('owner_uuid', data.projectUuid);
     }
 
     if (data.dateFrom) {
