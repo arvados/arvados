@@ -117,7 +117,7 @@ export const PeopleSelect = connect()(
         requestSuggestions = async (_: void, __: void, { userService, groupsService }: ServiceRepository) => {
             const { value } = this.state;
             const filterGroups = new FilterBuilder()
-                .addNotIn('groupClass', [GroupClass.PROJECT])
+                .addNotIn('group_class', [GroupClass.PROJECT])
                 .addILike('name', value)
                 .getFilters();
             const groupItems = await groupsService.list({ filters: filterGroups, limit: 5 });

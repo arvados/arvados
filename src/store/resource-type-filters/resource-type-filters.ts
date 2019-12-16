@@ -113,7 +113,7 @@ const serializeCollectionTypeFilters = ({ fb, selectedFilters }: ReturnType<type
     () => getMatchingFilters(values(CollectionTypeFilter), selectedFilters),
     filters => filters.map(collectionTypeToPropertyValue),
     mappedFilters => ({
-        fb: buildCollectiomTypeFilters({ fb, filters: mappedFilters }),
+        fb: buildCollectionTypeFilters({ fb, filters: mappedFilters }),
         selectedFilters
     })
 )();
@@ -124,7 +124,7 @@ const NON_GENERAL_COLLECTION_TYPES = difference(COLLECTION_TYPES, [CollectionTyp
 
 const COLLECTION_PROPERTIES_PREFIX = `${GroupContentsResourcePrefix.COLLECTION}.properties`;
 
-const buildCollectiomTypeFilters = ({ fb, filters }: { fb: FilterBuilder, filters: CollectionType[] }) => {
+const buildCollectionTypeFilters = ({ fb, filters }: { fb: FilterBuilder, filters: CollectionType[] }) => {
     switch (true) {
         case filters.length === 0 || filters.length === COLLECTION_TYPES.length:
             return fb;

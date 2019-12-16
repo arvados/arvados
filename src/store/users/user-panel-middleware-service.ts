@@ -56,14 +56,14 @@ const getParamsLastName = (dataExplorer: DataExplorer) => ({
 
 const getFiltersFirstName = (dataExplorer: DataExplorer) => {
     const filters = new FilterBuilder()
-        .addILike("firstName", dataExplorer.searchValue)
+        .addILike("first_name", dataExplorer.searchValue)
         .getFilters();
     return filters;
 };
 
 const getFiltersLastName = (dataExplorer: DataExplorer) => {
     const filters = new FilterBuilder()
-        .addILike("lastName", dataExplorer.searchValue)
+        .addILike("last_name", dataExplorer.searchValue)
         .getFilters();
     return filters;
 };
