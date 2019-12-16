@@ -12,10 +12,10 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 # "Install dependencies":#dependencies
 # "Update config.yml":#update-config
 # "Update Nginx configuration":#update-nginx
+# "Trusted client flag":#trusted_client
 # "Install arvados-workbench":#install-packages
 # "Restart the API server and controller":#restart-api
 # "Confirm working installation":#confirm-working
-# "Trusted client setting":#trusted_client
 
 h2(#dependencies). Install dependencies
 
@@ -77,6 +77,19 @@ Use a text editor to create a new file @/etc/nginx/conf.d/arvados-workbench.conf
 </code></pre>
 </notextile>
 
+h2(#trusted_client). Trusted client flag
+
+In the <strong>API server</strong> project root, start the Rails console.  {% include 'install_rails_command' %}
+
+Create an ApiClient record for your Workbench installation with the @is_trusted@ flag set.
+
+<notextile><pre><code>irb(main):001:0&gt; <span class="userinput">include CurrentApiClient</span>
+=&gt; true
+irb(main):002:0&gt; <span class="userinput">act_as_system_user do ApiClient.create!(url_prefix: "https://workbench.ClusterID.example.com/", is_trusted: true) end</span>
+=&gt; #&lt;ApiClient id: 2, uuid: "...", owner_uuid: "...", modified_by_client_uuid: nil, modified_by_user_uuid: "...", modified_at: "2019-12-16 14:19:10", name: nil, url_prefix: "https://workbench.ClusterID.example.com/", created_at: "2019-12-16 14:19:10", updated_at: "2019-12-16 14:19:10", is_trusted: true&gt;
+</code></pre>
+</notextile>
+
 {% assign arvados_component = 'arvados-workbench' %}
 
 {% include 'install_packages' %}
@@ -86,20 +99,3 @@ Use a text editor to create a new file @/etc/nginx/conf.d/arvados-workbench.conf
 h2(#confirm-working). Confirm working installation
 
 Visit @https://workbench.ClusterID.example.com@ in a browser.  You should be able to log in using the login method you configured in the previous step.  If @Users.AutoAdminFirstUser@ is true, you will be an admin user.
-
-h2(#trusted_client). Trusted client flag
-
-Log in to Workbench once to ensure that the Arvados API server has a record of the Workbench client. (It's OK if Workbench says your account hasn't been activated yet. We'll deal with that next.)
-
-In the <strong>API server</strong> project root, start the Rails console.  {% include 'install_rails_command' %}
-
-At the console, enter the following commands to locate the ApiClient record for your Workbench installation (typically, while you're setting this up, the @last@ one in the database is the one you want), then set the @is_trusted@ flag for the appropriate client record:
-
-<notextile><pre><code>irb(main):001:0&gt; <span class="userinput">wb = ApiClient.all.last; [wb.url_prefix, wb.created_at]</span>
-=&gt; ["https://workbench.example.com/", Sat, 19 Apr 2014 03:35:12 UTC +00:00]
-irb(main):002:0&gt; <span class="userinput">include CurrentApiClient</span>
-=&gt; true
-irb(main):003:0&gt; <span class="userinput">act_as_system_user do wb.update_attributes!(is_trusted: true) end</span>
-=&gt; true
-</code></pre>
-</notextile>

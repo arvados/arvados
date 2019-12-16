@@ -26,7 +26,7 @@ Edit the cluster config at @/etc/arvados/config.yml@ and set @Services.Websocket
 <pre><code>    Services:
       Websocket:
         InternalURLs:
-	  <span class="userinput">"http://ws.ClusterID.example.com:8005"</span>: {}
+	  "http://localhost:8005"</span>: {}
         ExternalURL: <span class="userinput">wss://ws.ClusterID.example.com/websocket</span>
 </span></code></pre>
 </notextile>
@@ -43,15 +43,15 @@ upstream arvados-ws {
 }
 
 server {
-  listen                <span class="userinput">[your public IP address]</span>:443 ssl;
-  server_name           ws.<span class="userinput">uuid_prefix.your.domain</span>;
+  listen                *:443 ssl;
+  server_name           ws.<span class="userinput">ClusterID.example.com</span>;
 
   proxy_connect_timeout 90s;
   proxy_read_timeout    300s;
 
   ssl                   on;
-  ssl_certificate       <span class="userinput"/>YOUR/PATH/TO/cert.pem</span>;
-  ssl_certificate_key   <span class="userinput"/>YOUR/PATH/TO/cert.key</span>;
+  ssl_certificate       <span class="userinput">/TODO/YOUR/PATH/TO/cert.pem</span>;
+  ssl_certificate_key   <span class="userinput">/TODO/YOUR/PATH/TO/cert.key</span>;
 
   location / {
     proxy_pass          http://arvados-ws;
@@ -85,7 +85,7 @@ h2(#confirm). Confirm working installation
 Confirm the service is listening on its assigned port and responding to requests.
 
 <notextile>
-<pre><code>~$ <span class="userinput">curl http://0.0.0.0:<b>8005</b>/status.json</span>
+<pre><code>~$ <span class="userinput">curl https://ws.ClusterID.example.com/status.json</span>
 {"Clients":1}
 </code></pre>
 </notextile>

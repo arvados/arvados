@@ -36,16 +36,20 @@ h2(#update-nginx). Update nginx configuration
 
 Composer may be served from the same host as Workbench.  Composer communicates directly with the Arvados API server.  It does not require its own backend and should be served as a static file.
 
-Use a text editor to create a new file @/etc/nginx/conf.d/arvados-composer.conf@ with the following configuration.  Options that need attention are marked with "TODO".
+Add the following @location@ sections to @/etc/nginx/conf.d/arvados-workbench.conf@ .
 
 <notextile>
-<pre><code>location /composer {
-  root   /var/www/arvados-composer
-  index  index.html
-}
+<pre><code>server {
+  [...]
 
-location /composer.yml {
-  return 200 '{ "API_HOST": "<span class="userinput">ClusterID.example.com</span>" }';
+  location /composer {
+    root   /var/www/arvados-composer;
+    index  index.html;
+  }
+
+  location /composer/composer.yml {
+    return 200 '{ "API_HOST": "<span class="userinput">ClusterID.example.com</span>" }';
+  }
 }
 </code></pre>
 </notextile>
