@@ -225,7 +225,7 @@ export const openAdvancedTabDialog = (uuid: string) =>
                 const data = getResource<UserResource>(uuid)(resources);
                 const metadata = await services.linkService.list({
                     filters: new FilterBuilder()
-                        .addEqual('headUuid', uuid)
+                        .addEqual('head_uuid', uuid)
                         .getFilters()
                 });
                 const advanceDataUser = advancedTabData({
@@ -300,7 +300,7 @@ const getDataForAdvancedTab = (uuid: string) =>
         const data = getResource<any>(uuid)(resources);
         const metadata = await services.linkService.list({
             filters: new FilterBuilder()
-                .addEqual('headUuid', uuid)
+                .addEqual('head_uuid', uuid)
                 .getFilters()
         });
         const user = metadata.itemsAvailable && await services.userService.get(metadata.items[0].tailUuid || '');

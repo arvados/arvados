@@ -59,10 +59,10 @@ export class PublicFavoritesMiddlewareService extends DataExplorerMiddlewareServ
                     limit: dataExplorer.rowsPerPage,
                     offset: dataExplorer.page * dataExplorer.rowsPerPage,
                     filters: new FilterBuilder()
-                        .addEqual('linkClass', LinkClass.STAR)
+                        .addEqual('link_class', LinkClass.STAR)
                         .addILike("name", dataExplorer.searchValue)
-                        .addEqual('ownerUuid', uuid)
-                        .addIsA("headUuid", typeFilters)
+                        .addEqual('owner_uuid', uuid)
+                        .addIsA("head_uuid", typeFilters)
                         .getFilters()
                 });
                 const uuids = responseLinks.items.map(it => it.headUuid);
