@@ -194,8 +194,8 @@ export const deletePermission = async ({ head, tail, dispatch, permissionService
         const permissionsResponse = await permissionService.list({
 
             filters: new FilterBuilder()
-                .addEqual('tailUuid', tail.uuid)
-                .addEqual('headUuid', head.uuid)
+                .addEqual('tail_uuid', tail.uuid)
+                .addEqual('head_uuid', head.uuid)
                 .getFilters()
 
         });
