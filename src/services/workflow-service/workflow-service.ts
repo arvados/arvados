@@ -22,26 +22,21 @@ export class WorkflowService extends CommonResourceService<WorkflowResource> {
     async presets(workflowUuid: string) {
 
         const { items: presetLinks } = await this.linksService.list({
-
             filters: new FilterBuilder()
-                .addEqual('tailUuid', workflowUuid)
-                .addEqual('linkClass', LinkClass.PRESET)
+                .addEqual('tail_uuid', workflowUuid)
+                .addEqual('link_class', LinkClass.PRESET)
                 .getFilters()
-
         });
 
         const presetUuids = presetLinks.map(link => link.headUuid);
 
         return this.list({
-
             filters: new FilterBuilder()
                 .addIn('uuid', presetUuids)
                 .getFilters(),
-
             order: new OrderBuilder<WorkflowResource>()
                 .addAsc('name')
                 .getOrder(),
-
         });
 
     }
