@@ -35,8 +35,8 @@ export class GroupDetailsPanelMiddlewareService extends DataExplorerMiddlewareSe
                 const permissions = await this.services.permissionService.list({
 
                     filters: new FilterBuilder()
-                        .addEqual('tailUuid', groupUuid)
-                        .addEqual('linkClass', LinkClass.PERMISSION)
+                        .addEqual('tail_uuid', groupUuid)
+                        .addEqual('link_class', LinkClass.PERMISSION)
                         .getFilters()
 
                 });

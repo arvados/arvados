@@ -72,7 +72,7 @@ export const loadVirtualMachinesUserData = () =>
         const virtualMachinesUuids = virtualMachines.items.map(it => it.uuid);
         const links = await services.linkService.list({
             filters: new FilterBuilder()
-                .addIn("headUuid", virtualMachinesUuids)
+                .addIn("head_uuid", virtualMachinesUuids)
                 .getFilters()
         });
         dispatch(virtualMachinesActions.SET_VIRTUAL_MACHINES(virtualMachines));

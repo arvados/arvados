@@ -56,7 +56,7 @@ export class CollectionsWithSameContentAddressMiddlewareService extends DataExpl
                     limit: dataExplorer.rowsPerPage,
                     offset: dataExplorer.page * dataExplorer.rowsPerPage,
                     filters: new FilterBuilder()
-                        .addEqual('portableDataHash', contentAddress)
+                        .addEqual('portable_data_hash', contentAddress)
                         .addILike("name", dataExplorer.searchValue)
                         .getFilters()
                 });

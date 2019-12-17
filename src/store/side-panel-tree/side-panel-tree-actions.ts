@@ -89,7 +89,7 @@ const loadProject = (projectUuid: string) =>
         dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id: projectUuid, pickerId: SIDE_PANEL_TREE }));
         const params = {
             filters: new FilterBuilder()
-                .addEqual('ownerUuid', projectUuid)
+                .addEqual('owner_uuid', projectUuid)
                 .getFilters(),
             order: new OrderBuilder<ProjectResource>()
                 .addAsc('name')
@@ -110,7 +110,7 @@ const loadSharedRoot = async (dispatch: Dispatch, _: () => RootState, services: 
     const params = {
         filters: `[${new FilterBuilder()
             .addIsA('uuid', ResourceKind.PROJECT)
-            .addEqual('groupClass', GroupClass.PROJECT)
+            .addEqual('group_class', GroupClass.PROJECT)
             .getFilters()}]`,
         order: new OrderBuilder<ProjectResource>()
             .addAsc('name', GroupContentsResourcePrefix.PROJECT)

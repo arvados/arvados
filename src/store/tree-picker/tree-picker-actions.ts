@@ -243,8 +243,8 @@ export const loadFavoritesProject = (params: LoadFavoritesProjectParams) =>
         if (uuid) {
             const filters = pipe(
                 (fb: FilterBuilder) => includeCollections
-                    ? fb.addIsA('headUuid', [ResourceKind.PROJECT, ResourceKind.COLLECTION])
-                    : fb.addIsA('headUuid', [ResourceKind.PROJECT]),
+                    ? fb.addIsA('head_uuid', [ResourceKind.PROJECT, ResourceKind.COLLECTION])
+                    : fb.addIsA('head_uuid', [ResourceKind.PROJECT]),
                 fb => fb.getFilters(),
             )(new FilterBuilder());
 
@@ -276,11 +276,11 @@ export const loadPublicFavoritesProject = (params: LoadFavoritesProjectParams) =
 
             const filters = pipe(
                 (fb: FilterBuilder) => includeCollections
-                    ? fb.addIsA('headUuid', [ResourceKind.PROJECT, ResourceKind.COLLECTION])
-                    : fb.addIsA('headUuid', [ResourceKind.PROJECT]),
+                    ? fb.addIsA('head_uuid', [ResourceKind.PROJECT, ResourceKind.COLLECTION])
+                    : fb.addIsA('head_uuid', [ResourceKind.PROJECT]),
                 fb => fb
-                    .addEqual('linkClass', LinkClass.STAR)
-                    .addEqual('ownerUuid', uuid)
+                    .addEqual('link_class', LinkClass.STAR)
+                    .addEqual('owner_uuid', uuid)
                     .addLike('name', '')
                     .getFilters(),
             )(new FilterBuilder());
@@ -361,7 +361,7 @@ export const loadPublicFavoriteTreePickerProjects = (id: string) =>
 const buildParams = (ownerUuid: string) => {
     return {
         filters: new FilterBuilder()
-            .addEqual('ownerUuid', ownerUuid)
+            .addEqual('owner_uuid', ownerUuid)
             .getFilters(),
         order: new OrderBuilder<ProjectResource>()
             .addAsc('name')

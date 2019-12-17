@@ -68,8 +68,8 @@ export const addProcessLogsPanelItem = (message: ResourceEventMessage<{ text: st
 
 const loadContainerLogs = async (containerUuid: string, logService: LogService) => {
     const requestFilters = new FilterBuilder()
-        .addEqual('objectUuid', containerUuid)
-        .addIn('eventType', PROCESS_PANEL_LOG_EVENT_TYPES)
+        .addEqual('object_uuid', containerUuid)
+        .addIn('event_type', PROCESS_PANEL_LOG_EVENT_TYPES)
         .getFilters();
     const requestOrder = new OrderBuilder<LogResource>()
         .addAsc('eventAt')

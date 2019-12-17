@@ -59,9 +59,9 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
                 api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
                 const responseLinks = await this.services.linkService.list({
                     filters: new FilterBuilder()
-                        .addEqual("linkClass", 'star')
-                        .addEqual('tailUuid', getUserUuid(api.getState()))
-                        .addEqual('tailKind', ResourceKind.USER)
+                        .addEqual("link_class", 'star')
+                        .addEqual('tail_uuid', getUserUuid(api.getState()))
+                        .addEqual('tail_kind', ResourceKind.USER)
                         .getFilters()
                 }).then(results => results);
                 const uuids = responseLinks.items.map(it => it.headUuid);

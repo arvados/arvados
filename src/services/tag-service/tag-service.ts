@@ -26,9 +26,9 @@ export class TagService {
 
     list(uuid: string) {
         const filters = new FilterBuilder()
-            .addEqual("headUuid", uuid)
-            .addEqual("tailUuid", TagTailType.COLLECTION)
-            .addEqual("linkClass", LinkClass.TAG)
+            .addEqual("head_uuid", uuid)
+            .addEqual("tail_uuid", TagTailType.COLLECTION)
+            .addEqual("link_class", LinkClass.TAG)
             .getFilters();
 
         const order = new OrderBuilder<TagResource>()

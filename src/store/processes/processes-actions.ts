@@ -39,7 +39,7 @@ export const loadProcess = (containerRequestUuid: string) =>
 export const loadSubprocesses = (containerUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const containerRequests = await dispatch<any>(loadContainerRequests(
-            new FilterBuilder().addEqual('requestingContainerUuid', containerUuid).getFilters()
+            new FilterBuilder().addEqual('requesting_container_uuid', containerUuid).getFilters()
         )) as ContainerRequestResource[];
 
         const containerUuids: string[] = containerRequests.reduce((uuids, { containerUuid }) =>

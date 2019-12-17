@@ -46,7 +46,7 @@ export class GroupsPanelMiddlewareService extends DataExplorerMiddlewareService 
                 }
 
                 const filters = new FilterBuilder()
-                    .addNotIn('groupClass', [GroupClass.PROJECT])
+                    .addNotIn('group_class', [GroupClass.PROJECT])
                     .addILike('name', dataExplorer.searchValue)
                     .getFilters();
 
@@ -67,7 +67,7 @@ export class GroupsPanelMiddlewareService extends DataExplorerMiddlewareService 
                 const permissions = await this.services.permissionService.list({
 
                     filters: new FilterBuilder()
-                        .addIn('tailUuid', response.items.map(item => item.uuid))
+                        .addIn('tail_uuid', response.items.map(item => item.uuid))
                         .getFilters()
 
                 });
