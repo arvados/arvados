@@ -23,14 +23,6 @@ The cloud dispatch service is for running containers on cloud VMs. It works with
 
 The cloud dispatch service can run on any node that can connect to the Arvados API service, the cloud provider's API, and the SSH service on cloud VMs.  It is not resource-intensive, so you can run it on the API server node.
 
-*Only one dispatch process should be running at a time.* If you are migrating a system that currently runs @crunch-dispatch-slurm@, it is safest to remove the @crunch-dispatch-slurm@ service entirely before installing @arvados-dispatch-cloud@.
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo systemctl --now disable crunch-dispatch-slurm</span>
-~$ <span class="userinput">sudo apt-get remove crunch-dispatch-slurm</span>
-</code></pre>
-</notextile>
-
 h2(#create-image). Create compute node VM image
 
 Create a VM image following the steps "to set up a compute node":crunch2-slurm/install-compute-node.html

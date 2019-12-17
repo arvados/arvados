@@ -1,7 +1,7 @@
 ---
 layout: default
-navsection: admin
-title: Migrating Configuration
+navsection: installguide
+title: Migrating Configuration from v1.4 to v1.5
 ...
 
 {% comment %}
@@ -10,7 +10,9 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-Arvados is migrating to a centralized configuration file for all components.  The centralized Arvados configuration is @/etc/arvados/config.yml@.  Components that support the new centralized configuration are listed below.  Components not listed here do not yet support centralized configuration.  During the migration period, legacy configuration files will continue to be loaded and take precedence over the centralized configuration file.
+_New installations of Arvados 1.5+ can skip this section_
+
+Arvados 1.5 migrates to a centralized configuration file for all components.  The centralized Arvados configuration is @/etc/arvados/config.yml@.  Components that support the new centralized configuration are listed below.  During the migration period, legacy configuration files are still loaded and take precedence over the centralized configuration file.
 
 h2. API server
 
@@ -54,34 +56,33 @@ $ RAILS_ENV=production bundle exec rake config:diff
 
 This command will also report if no migrations are required.
 
-h2. crunch-dispatch-slurm
+h2. keepstore, keep-web, crunch-dispatch-slurm, arvados-ws, keepproxy, arv-git-httpd, keep-balance
 
-Currently only reads @InstanceTypes@ from centralized configuration.  Still requires component-specific configuration file.
+The legacy config for each component (loaded from @/etc/arvados/component/component.yml@ or a different location specified via -legacy-component-config command line argument) takes precedence over the centralized config. After you migrate everything from the legacy config to the centralized config, you should delete @/etc/arvados/component/component.yml@ and/or stop using the corresponding -legacy-component-config argument.
 
-h2(#keepstore). keepstore
+To migrate a component configuration, do this on each node that runs an Arvados service:
 
-The legacy keepstore config (loaded from @/etc/arvados/keepstore/keepstore.yml@ or a different location specified via -legacy-keepstore-config command line argument) takes precedence over the centralized config. After you migrate everything from the legacy config to the centralized config, you should delete @/etc/arvados/keepstore/keepstore.yml@ and stop using the -legacy-keepstore-config argument.
+# Ensure that the latest @config.yml@ is installed on the current node
+# Install @arvados-server@ using @apt-get@ or @yum@.
+# Run @arvados-server config-check@, review and apply the recommended changes to @/etc/arvados/config.yml@
+# After applying changes, re-run @arvados-server config-check@ again to check for additional warnings and recommendations.
+# When you are satisfied, delete the legacy config file, restart the service, and check its startup logs.
+# Copy the updated @config.yml@ file to your next node, and repeat the process there.
 
-To migrate a keepstore node's configuration, first install @arvados-server@. Run @arvados-server config-check@, review and apply the recommended changes to @/etc/arvados/config.yml@, and run @arvados-server config-check@ again to check for additional warnings and recommendations. When you are satisfied, delete the legacy config file, restart keepstore, and check its startup logs. Copy the updated centralized config file to your next keepstore server, and repeat the process there.
+After migrating and removing all legacy config files, make sure the @/etc/arvados/config.yml@ file is identical across all system nodes -- API server, keepstore, etc. -- and restart all services to make sure they are using the latest configuration.
 
-After migrating and removing all legacy keepstore config files, make sure the @/etc/arvados/config.yml@ file is identical across all system nodes -- API server, keepstore, etc. -- and restart all services to make sure they are using the latest configuration.
+h2. Node manager
 
-h2(#keepproxy). keepproxy
+Node manager is deprecated and replaced by @arvados-dispatch-cloud@.  No automated config migration is available.  Follow the instructions to "install the cloud dispatcher":../install/install-dispatch-cloud.html
 
-The legacy keepproxy config (loaded from @/etc/arvados/keepproxy/keepproxy.yml@ or a different location specified via -legacy-keepproxy-config command line argument) takes precedence over the centralized config. After you migrate everything from the legacy config to the centralized config, you should delete @/etc/arvados/keepproxy/keepproxy.yml@ and stop using the -legacy-keepproxy-config argument.
+*Only one dispatch process should be running at a time.* If you are migrating a system that currently runs Node manager and @crunch-dispatch-slurm@, it is safest to remove the @crunch-dispatch-slurm@ service entirely before installing @arvados-dispatch-cloud@.
 
-h2(#arv-git-httpd). arv-git-httpd
+<notextile>
+<pre><code>~$ <span class="userinput">sudo systemctl --now disable crunch-dispatch-slurm</span>
+~$ <span class="userinput">sudo apt-get remove crunch-dispatch-slurm</span>
+</code></pre>
+</notextile>
 
-The legacy arv-git-httpd config (loaded from @/etc/arvados/git-httpd/git-httpd.yml@ or a different location specified via -legacy-git-httpd-config command line argument) takes precedence over the centralized config. After you migrate everything from the legacy config to the centralized config, you should delete @/etc/arvados/git-httpd/git-httpd.yml@ and stop using the -legacy-git-httpd-config argument.
-
-h2(#keepbalance). keep-balance
-
-The legacy keep-balance config (loaded from @/etc/arvados/keep-balance/keep-balance.yml@ or a different location specified via -legacy-keepbalance-config command line argument) takes precedence over the centralized config. After you migrate everything from the legacy config to the centralized config, you should delete @/etc/arvados/keep-balance/keep-balance.yml@ and stop using the -legacy-keepbalance-config argument.
-
-h2. arvados-controller
-
-Already uses centralized config exclusively.  No migration needed.
-
-h2. arvados-dispatch-cloud
+h2. arvados-controller, arvados-dispatch-cloud
 
 Already uses centralized config exclusively.  No migration needed.

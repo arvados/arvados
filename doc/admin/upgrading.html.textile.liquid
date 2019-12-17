@@ -1,6 +1,6 @@
 ---
 layout: default
-navsection: admin
+navsection: installguide
 title: "Upgrading Arvados and Release notes"
 ...
 
@@ -30,7 +30,23 @@ Note to developers: Add new items at the top. Include the date, issue number, co
 TODO: extract this information based on git commit messages and generate changelogs / release notes automatically.
 {% endcomment %}
 
-h3(#master). development master (as of 2019-08-12)
+h3(#master). development master (as of 2019-12-17)
+
+h4. Migrating to centralized config.yml
+
+See "Migrating Configuration":config-migration.html for notes on migrating legacy per-component configuration files to the new centralized @/etc/arvados/config.yml@.  To ensure a smooth transition, the per-component config files continue to be read, and take precedence over the centralized configuration.
+
+h4. Node manager replaced by arvados-dispatch-cloud
+
+Node manager is deprecated and replaced by @arvados-dispatch-cloud@.  No automated config migration is available.  Follow the instructions to "install the cloud dispatcher":../install/install-dispatch-cloud.html
+
+*Only one dispatch process should be running at a time.* If you are migrating a system that currently runs Node manager and @crunch-dispatch-slurm@, it is safest to remove the @crunch-dispatch-slurm@ service entirely before installing @arvados-dispatch-cloud@.
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo systemctl --now disable crunch-dispatch-slurm</span>
+~$ <span class="userinput">sudo apt-get remove crunch-dispatch-slurm</span>
+</code></pre>
+</notextile>
 
 h4. Delete "keep_services" records
 
@@ -65,15 +81,15 @@ keep-web now supports the legacy @keep-web.yml@ config format (used by Arvados 1
 
 keepstore now supports the legacy @keepstore.yml@ config format (used by Arvados 1.4) and the new cluster config file format. Please check the "keepstore config migration notes":{{site.baseurl}}/admin/config-migration.html#keepstore and "keepstore install guide":{{site.baseurl}}/install/install-keepstore.html for more details.
 
-h4. Jobs API is read-only
-
-(task "#15133":https://dev.arvados.org/issues/15133 ) The legacy 'jobs' API is now read-only.  It has long been superceded by containers / container_requests (aka crunch v2).  Arvados installations since the end of 2017 (v1.1.0) have probably only used containers, and are unaffected by this change.
-
-So that older Arvados sites don't lose access to legacy records, the API has been converted to read-only.  Creating and updating jobs (and related types job_task, pipeline_template and pipeline_instance) is disabled and much of the business logic related has been removed, along with various other code specific to the jobs API.  Specifically, the following programs associated with the jobs API have been removed: @crunch-dispatch.rb@, @crunch-job@, @crunchrunner@, @arv-run-pipeline-instance@, @arv-run@.
-
 h4. Keepproxy configuration migration
 
 (feature "#14715":https://dev.arvados.org/issues/14715 ) Keepproxy can now be configured using the centralized config at @/etc/arvados/config.yml@. Configuration via individual command line arguments is no longer available and the @DisableGet@, @DisablePut@, and @PIDFile@ configuration options are no longer supported. If you are still using the legacy config and @DisableGet@ or @DisablePut@ are set to true or @PIDFile@ has a value, keepproxy will produce an error and fail to start. Please see "keepproxy's config migration guide":{{site.baseurl}}/admin/config-migration.html#keepproxy for more details.
+
+h4. Jobs API is read-only
+
+(task "#15133":https://dev.arvados.org/issues/15133 ) The legacy 'jobs' API is now read-only.  It has been superceded since Arvados 1.1 by containers / container_requests (aka crunch v2).  Arvados installations since the end of 2017 (v1.1.0) have probably only used containers, and are unaffected by this change.
+
+So that older Arvados sites don't lose access to legacy records, the API has been converted to read-only.  Creating and updating jobs (and related types job_task, pipeline_template and pipeline_instance) is disabled and much of the business logic related has been removed, along with various other code specific to the jobs API.  Specifically, the following programs associated with the jobs API have been removed: @crunch-dispatch.rb@, @crunch-job@, @crunchrunner@, @arv-run-pipeline-instance@, @arv-run@.
 
 h4. No longer stripping ':' from strings in serialized database columns
 
@@ -110,9 +126,6 @@ The "postgres-contrib package":https://www.postgresql.org/docs/10/contrib.html h
 
 Subsequently, the <code class="userinput">psql -d 'arvados_production' -c '\dx'</code> command will display the installed extensions for the arvados_production database. This list should now contain @pg_trgm@.
 
-h4. Migrating to centralized config.yml
-
-See "Migrating Configuration":config-migration.html for notes on migrating legacy per-component configuration files to the new centralized @/etc/arvados/config.yml@.  To ensure a smooth transition, the per-component config files continue to be read, and take precedence over the centralized configuration.
 
 h3(#v1_4_1). v1.4.1 (2019-09-20)
 

@@ -149,17 +149,12 @@ navbar:
   admin:
     - Topics:
       - admin/index.html.textile.liquid
-    - Configuration:
-      - admin/config.html.textile.liquid
-      - admin/federation.html.textile.liquid
-    - Upgrading and migrations:
-      - admin/upgrading.html.textile.liquid
-      - admin/config-migration.html.textile.liquid
     - Users and Groups:
       - admin/user-management.html.textile.liquid
       - admin/reassign-ownership.html.textile.liquid
       - admin/user-management-cli.html.textile.liquid
       - admin/group-management.html.textile.liquid
+      - admin/federation.html.textile.liquid
       - admin/merge-remote-account.html.textile.liquid
       - admin/migrating-providers.html.textile.liquid
       - user/topics/arvados-sync-groups.html.textile.liquid
@@ -192,7 +187,11 @@ navbar:
     - Manual installation:
       - install/install-manual-prerequisites.html.textile.liquid
       - install/packages.html.textile.liquid
+      - admin/upgrading.html.textile.liquid
+    - Configuration:
       - install/config.html.textile.liquid
+      - admin/config-migration.html.textile.liquid
+      - admin/config.html.textile.liquid
     - Core:
       - install/install-api-server.html.textile.liquid
     - Keep:
