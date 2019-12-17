@@ -101,7 +101,7 @@ Add or update the following portions of your cluster configuration file, @/etc/a
 </code></pre>
 </notextile>
 
-Minimal configuration example for Amazon EC2:
+h4. Minimal configuration example for Amazon EC2
 
 <notextile>
 <pre><code>    Containers:
@@ -109,18 +109,18 @@ Minimal configuration example for Amazon EC2:
         ImageID: ami-01234567890abcdef
         Driver: ec2
         DriverParameters:
-          AccessKeyID: EALMF21BJC7MKNF9FVVR
-          SecretAccessKey: yKJAPmoCQOMtYWzEUQ1tKTyrocTcbH60CRvGP3pM
+          AccessKeyID: XXXXXXXXXXXXXXXXXXXX
+          SecretAccessKey: YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY
           SecurityGroupIDs:
           - sg-0123abcd
           SubnetID: subnet-0123abcd
           Region: us-east-1
           EBSVolumeType: gp2
-          AdminUsername: debian
+          AdminUsername: arvados
 </code></pre>
 </notextile>
 
-Minimal configuration example for Azure:
+h4. Minimal configuration example for Azure
 
 <notextile>
 <pre><code>    Containers:
@@ -130,7 +130,7 @@ Minimal configuration example for Azure:
         DriverParameters:
           SubscriptionID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
           ClientID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
-          ClientSecret: 2WyXt0XFbEtutnf2hp528t6Wk9S5bOHWkRaaWwavKQo=
+          ClientSecret: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
           TenantID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
           CloudEnvironment: AzurePublicCloud
           ResourceGroup: zzzzz
@@ -143,6 +143,40 @@ Minimal configuration example for Azure:
           AdminUsername: arvados
 </code></pre>
 </notextile>
+
+Get the @SubscriptionID@ and @TenantID@:
+
+<pre>
+$ az account list
+[
+  {
+    "cloudName": "AzureCloud",
+    "id": "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXX",
+    "isDefault": true,
+    "name": "Your Subscription",
+    "state": "Enabled",
+    "tenantId": "YYYYYYYY-YYYY-YYYY-YYYYYYYY",
+    "user": {
+      "name": "you@example.com",
+      "type": "user"
+    }
+  }
+]
+</pre>
+
+You will need to create a "service principal" to use as a delegated authority for API access.
+
+<pre>
+$ az ad app create --display-name "Arvados Dispatch Cloud (ClusterID)" --homepage "https://arvados.org" --identifier-uris "https://ClusterID.example.com" --end-date 2299-12-31 --password <Your_Password>
+$ az ad sp create "<appId>"
+(appId is part of the response of the previous command)
+$ az role assignment create --assignee "<objectId>" --role Owner --scope /subscriptions/{subscriptionId}/
+(objectId is part of the response of the previous command)
+</pre>
+
+@ClientID@ is the 'appId' value.
+
+@ClientSecret@ is what was provided as <Your_Password>.
 
 h3. Test your configuration
 
