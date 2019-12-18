@@ -27,6 +27,12 @@ h2(#create-image). Create compute node VM image
 
 Create a VM image following the steps "to set up a compute node":crunch2-slurm/install-compute-node.html
 
+On the compute VM image, add the API server's internal IP address to @/etc/hosts@, this will ensure that it contacts the API server on the private network and not through the public interface.  For example:
+
+<pre>
+10.20.30.40     ClusterID.example.com
+</pre>
+
 h2(#update-config). Update config.yml
 
 h3. Create a private key

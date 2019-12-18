@@ -48,7 +48,7 @@ If @WebDAVDownload@ is blank, and @WebDAV@ has a single origin (not wildcard, se
 
 h3. Collections preview URL
 
-Collections will be served using the URL pattern in @Services.WebDAV.ExternalURL@ .  If blank, use @Services.WebDAVDownload.ExternalURL@ instead, and disable inline preview.  If both are empty, downloading collections from workbench will be impossible.
+Collections will be served using the URL pattern in @Services.WebDAV.ExternalURL@ .  If blank, use @Services.WebDAVDownload.ExternalURL@ instead, and disable inline preview.  If both are empty, downloading collections from workbench will be impossible.  When wildcard domains configured, credentials are still required to access non-public data.
 
 h4. In their own subdomain
 
@@ -57,7 +57,7 @@ Collections can be served from their own subdomain:
 <notextile>
 <pre><code>    Services:
       WebDAV:
-        ExternalURL: <span class="userinput">https://*.collections.ClusterID.example.com</span>
+        ExternalURL: <span class="userinput">https://*.collections.ClusterID.example.com/</span>
 </code></pre>
 </notextile>
 
@@ -68,13 +68,13 @@ Alternately, they can go under the main domain by including @--@:
 <notextile>
 <pre><code>    Services:
       WebDAV:
-        ExternalURL: <span class="userinput">https://*--collections.ClusterID.example.com</span>
+        ExternalURL: <span class="userinput">https://*--collections.ClusterID.example.com/</span>
 </code></pre>
 </notextile>
 
 h4. From a single domain
 
-Serve preview links from a single domain, setting uuid or pdh in the path (similar to downloads).  This configuration only allows previews of public data or collection-sharing links, because these use the anonymous user token or the token is already embedded in the URL.  Authenticated requests will always result in file downloads from @Services.WebDAVDownload.ExternalURL@.
+Serve preview links from a single domain, setting uuid or pdh in the path (similar to downloads).  This configuration only allows previews of public data (data accessible by the anonymous user) and collection-sharing links (where the token is already embedded in the URL); it will ignore authorization headers, so a request for non-public data may return "404 Not Found" even if normally valid credentials were provided.
 
 <notextile>
 <pre><code>    Services:
