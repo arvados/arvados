@@ -34,7 +34,7 @@ At container startup, the target path will have the source tree indicated by the
 }
 </code></pre>|
 |Temporary directory|@tmp@|@"capacity"@: capacity (in bytes) of the storage device.
-@"device_type"@ (optional, default "network"): one of @{"ram", "ssd", "disk", "network"}@ indicating the acceptable level of performance.
+@"device_type"@ (optional, default "network"): one of @{"ram", "ssd", "disk", "network"}@ indicating the acceptable level of performance. (*note: not yet implemented as of v1.5*)
 At container startup, the target path will be empty. When the container finishes, the content will be discarded. This will be backed by a storage mechanism no slower than the specified type.|<pre><code>{
  "kind":"tmp",
  "capacity":100000000000
