@@ -96,8 +96,6 @@ class Arvados::V1::UsersController < ApplicationController
       raise ArgumentError.new "Required uuid or user"
     elsif !params[:user]['email']
       raise ArgumentError.new "Require user email"
-    elsif !params[:openid_prefix]
-      raise ArgumentError.new "Required openid_prefix parameter is missing."
     else
       @object = model_class.create! resource_attrs
     end
@@ -119,8 +117,7 @@ class Arvados::V1::UsersController < ApplicationController
     end
 
     @response = @object.setup(repo_name: full_repo_name,
-                              vm_uuid: params[:vm_uuid],
-                              openid_prefix: params[:openid_prefix])
+                              vm_uuid: params[:vm_uuid])
 
     # setup succeeded. send email to user
     if params[:send_notification_email]
@@ -227,11 +224,11 @@ class Arvados::V1::UsersController < ApplicationController
 
   def self._setup_requires_parameters
     {
+      uuid: {
+        type: 'string', required: false
+      },
       user: {
         type: 'object', required: false
-      },
-      openid_prefix: {
-        type: 'string', required: false
       },
       repo_name: {
         type: 'string', required: false
