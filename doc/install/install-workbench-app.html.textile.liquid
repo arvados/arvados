@@ -29,8 +29,8 @@ Edit @/etc/arvados/config.yml@ to set the keys below.  The full set of configura
 
 <notextile>
 <pre><code>    Services:
-      Workbench:
-        ExternalURL: <span class="userinput">"https://workbench.ClustedID.example.com"</span>
+      Workbench1:
+        ExternalURL: <span class="userinput">"https://workbench.ClusterID.example.com"</span>
     Workbench:
       SecretKeyBase: <span class="userinput">aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</span>
     Users:
@@ -56,6 +56,12 @@ Use a text editor to create a new file @/etc/nginx/conf.d/arvados-workbench.conf
 
 <notextile>
 <pre><code>server {
+    listen       80;
+    server_name  workbench.<span class="userinput">ClusterID.example.com</span>;
+    return 301   https://workbench.<span class="userinput">ClusterID.example.com</span>$request_uri;
+}
+
+server {
   listen       *:443 ssl;
   server_name  workbench.<span class="userinput">ClusterID.example.com</span>;
 

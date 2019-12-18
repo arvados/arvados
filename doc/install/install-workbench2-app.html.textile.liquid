@@ -41,6 +41,12 @@ Use a text editor to create a new file @/etc/nginx/conf.d/arvados-workbench2.con
 
 <notextile>
 <pre><code>server {
+    listen       80;
+    server_name  workbench2.<span class="userinput">ClusterID.example.com</span>;
+    return 301   https://workbench2.<span class="userinput">ClusterID.example.com</span>$request_uri;
+}
+
+server {
   listen       *:443 ssl;
   server_name  workbench2.<span class="userinput">ClusterID.example.com</span>;
 
