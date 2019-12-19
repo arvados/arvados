@@ -121,10 +121,18 @@ func (suite *IntegrationSuite) TestCancelIfNoInstanceType(c *check.C) {
 	// will have state=Cancelled or just disappear from the queue.
 	suite.waitfor(c, time.Second, func() bool {
 		cq.Update()
+
+		// Container should never be added to queue
+		_, ok := cq.Get(arvadostest.QueuedContainerUUID)
+		c.Check(ok, check.Equals, false)
+
 		err := client.RequestAndDecode(&ctr, "GET", "arvados/v1/containers/"+arvadostest.QueuedContainerUUID, nil, nil)
 		return err == nil && ctr.State == arvados.ContainerStateCancelled
 	})
 	c.Check(ctr.RuntimeStatus["error"], check.Equals, `no suitable instance type`)
+
+	_, ok := cq.Get(arvadostest.QueuedContainerUUID)
+	c.Check(ok, check.Equals, false)
 }
 
 func (suite *IntegrationSuite) waitfor(c *check.C, timeout time.Duration, fn func() bool) {
