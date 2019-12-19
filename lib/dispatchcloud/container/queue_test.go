@@ -117,11 +117,10 @@ func (suite *IntegrationSuite) TestCancelIfNoInstanceType(c *check.C) {
 	c.Check(err, check.IsNil)
 	c.Check(ctr.State, check.Equals, arvados.ContainerStateQueued)
 
-	cq.Update()
-
 	// Wait for the cancel operation to take effect. Container
 	// will have state=Cancelled or just disappear from the queue.
 	suite.waitfor(c, time.Second, func() bool {
+		cq.Update()
 		err := client.RequestAndDecode(&ctr, "GET", "arvados/v1/containers/"+arvadostest.QueuedContainerUUID, nil, nil)
 		return err == nil && ctr.State == arvados.ContainerStateCancelled
 	})
