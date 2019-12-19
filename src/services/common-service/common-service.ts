@@ -6,6 +6,7 @@ import * as _ from "lodash";
 import { AxiosInstance, AxiosPromise } from "axios";
 import * as uuid from "uuid/v4";
 import { ApiActions } from "~/services/api/api-actions";
+import * as QueryString from "query-string";
 
 interface Errors {
     errors: string[];
@@ -114,20 +115,29 @@ export class CommonService<T> {
             order: order ? order : undefined
         };
 
-        // Using the POST special case to avoid URI length 414 errors.
-        // See https://doc.arvados.org/v1.4/api/requests.html
-        const formData = new FormData();
-        formData.append("_method", "GET");
-        Object.keys(params).map(key => {
-            if (params[key] !== undefined) {
-                formData.append(key, params[key]);
-            }
-        });
-
-        return CommonService.defaultResponse(
-            this.serverApi.post(this.resourceType, formData),
-            this.actions
-        );
+        if (QueryString.stringify(params).length <= 1500) {
+            return CommonService.defaultResponse(
+                this.serverApi.get(this.resourceType, { params }),
+                this.actions
+            );
+        } else {
+            // Using the POST special case to avoid URI length 414 errors.
+            const formData = new FormData();
+            formData.append("_method", "GET");
+            Object.keys(params).map(key => {
+                if (params[key] !== undefined) {
+                    formData.append(key, params[key]);
+                }
+            });
+            return CommonService.defaultResponse(
+                this.serverApi.post(this.resourceType, formData, {
+                    params: {
+                        _method: 'GET'
+                    }
+                }),
+                this.actions
+            );
+        }
     }
 
     update(uuid: string, data: Partial<T>) {

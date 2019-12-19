@@ -35,6 +35,7 @@
     "lodash.template": "4.5.0",
     "mem": "4.0.0",
     "prop-types": "15.7.2",
+    "query-string": "6.9.0",
     "react": "16.5.2",
     "react-copy-to-clipboard": "5.0.1",
     "react-dnd": "5.0.0",
