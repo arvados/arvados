@@ -12,7 +12,11 @@ module ApplicationHelper
   end
 
   def current_api_host
-    "#{Rails.configuration.Services.Controller.ExternalURL.hostname}:#{Rails.configuration.Services.Controller.ExternalURL.port}"
+    if Rails.configuration.Services.Controller.ExternalURL.port == 443
+      "#{Rails.configuration.Services.Controller.ExternalURL.hostname}"
+    else
+      "#{Rails.configuration.Services.Controller.ExternalURL.hostname}:#{Rails.configuration.Services.Controller.ExternalURL.port}"
+    end
   end
 
   def current_uuid_prefix
