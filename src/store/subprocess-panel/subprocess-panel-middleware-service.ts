@@ -37,11 +37,16 @@ export class SubprocessMiddlewareService extends DataExplorerMiddlewareService {
 
         try {
             const parentContainerRequestUuid = state.processPanel.containerRequestUuid;
-            if (parentContainerRequestUuid === "") { return; }
+            if (parentContainerRequestUuid === "") {
+                api.dispatch(subprocessPanelActions.CLEAR());
+                return;
+            }
 
             const parentContainerRequest = await this.services.containerRequestService.get(parentContainerRequestUuid);
-
-            if (!parentContainerRequest.containerUuid) { return; }
+            if (!parentContainerRequest.containerUuid) {
+                api.dispatch(subprocessPanelActions.CLEAR());
+                return;
+            }
 
             // Get all the subprocess' container requests and containers.
             const fb = new FilterBuilder().addEqual('requesting_container_uuid', parentContainerRequest.containerUuid);
@@ -50,7 +55,10 @@ export class SubprocessMiddlewareService extends DataExplorerMiddlewareService {
             }
             const containerRequests = await this.services.containerRequestService.list(
                 { ...getParams(dataExplorer), filters: fb.getFilters() });
-            if (containerRequests.items.length === 0) { return; }
+            if (containerRequests.items.length === 0) {
+                api.dispatch(subprocessPanelActions.CLEAR());
+                return;
+            }
             const containerUuids: string[] = containerRequests.items.reduce(
                 (uuids, { containerUuid }) =>
                     containerUuid
