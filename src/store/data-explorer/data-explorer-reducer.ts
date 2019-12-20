@@ -30,8 +30,8 @@ export const initialDataExplorer: DataExplorer = {
     items: [],
     itemsAvailable: 0,
     page: 0,
-    rowsPerPage: 10,
-    rowsPerPageOptions: [5, 10, 25, 50],
+    rowsPerPage: 50,
+    rowsPerPageOptions: [50, 100, 200, 500],
     searchValue: ""
 };
 
