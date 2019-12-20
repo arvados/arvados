@@ -17,10 +17,11 @@ import { ListResults } from '~/services/common-service/common-service';
 import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
 import { ProcessResource } from '~/models/process';
 import { SubprocessPanelColumnNames } from '~/views/subprocess-panel/subprocess-panel-root';
-import { FilterBuilder } from '~/services/api/filter-builder';
+import { FilterBuilder, joinFilters } from '~/services/api/filter-builder';
 import { subprocessPanelActions } from './subprocess-panel-actions';
 import { DataColumns } from '~/components/data-table/data-table';
 import { ProcessStatusFilter } from '../resource-type-filters/resource-type-filters';
+import { ContainerRequestResource } from '~/models/container-request';
 
 export class SubprocessMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -30,11 +31,6 @@ export class SubprocessMiddlewareService extends DataExplorerMiddlewareService {
     async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
         const state = api.getState();
         const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
-        const columns = dataExplorer.columns as DataColumns<string>;
-        const statusFilters = getDataExplorerColumnFilters(columns, 'Status');
-        const activeStatusFilter = Object.keys(statusFilters).find(
-            filterName => statusFilters[filterName].selected
-        );
 
         try {
             const parentContainerRequestUuid = state.processPanel.containerRequestUuid;
@@ -42,37 +38,13 @@ export class SubprocessMiddlewareService extends DataExplorerMiddlewareService {
                 api.dispatch(subprocessPanelActions.CLEAR());
                 return;
             }
-
             const parentContainerRequest = await this.services.containerRequestService.get(parentContainerRequestUuid);
             if (!parentContainerRequest.containerUuid) {
                 api.dispatch(subprocessPanelActions.CLEAR());
                 return;
             }
-
-            // Get all the subprocess' container requests and containers.
-            const fb = new FilterBuilder().addEqual('requesting_container_uuid', parentContainerRequest.containerUuid);
-            switch (activeStatusFilter) {
-                case ProcessStatusFilter.COMPLETED: {
-                    fb.addEqual('container.state', 'Complete');
-                    fb.addEqual('container.exit_code', '0');
-                    break;
-                }
-                case ProcessStatusFilter.FAILED: {
-                    fb.addEqual('container.state', 'Complete');
-                    fb.addDistinct('container.exit_code', '0');
-                    break;
-                }
-                case ProcessStatusFilter.CANCELLED:
-                case ProcessStatusFilter.FAILED:
-                case ProcessStatusFilter.LOCKED:
-                case ProcessStatusFilter.QUEUED:
-                case ProcessStatusFilter.RUNNING: {
-                    fb.addEqual('container.state', activeStatusFilter);
-                    break;
-                }
-            }
             const containerRequests = await this.services.containerRequestService.list(
-                { ...getParams(dataExplorer), filters: fb.getFilters() });
+                { ...getParams(dataExplorer, parentContainerRequest) });
             if (containerRequests.items.length === 0) {
                 api.dispatch(subprocessPanelActions.CLEAR());
                 return;
@@ -96,10 +68,13 @@ export class SubprocessMiddlewareService extends DataExplorerMiddlewareService {
     }
 }
 
-export const getParams = (dataExplorer: DataExplorer) => ({
-    ...dataExplorerToListParams(dataExplorer),
-    order: getOrder(dataExplorer)
-});
+export const getParams = (
+    dataExplorer: DataExplorer,
+    parentContainerRequest: ContainerRequestResource) => ({
+        ...dataExplorerToListParams(dataExplorer),
+        order: getOrder(dataExplorer),
+        filters: getFilters(dataExplorer, parentContainerRequest)
+    });
 
 const getOrder = (dataExplorer: DataExplorer) => {
     const sortColumn = getSortColumn(dataExplorer);
@@ -117,6 +92,51 @@ const getOrder = (dataExplorer: DataExplorer) => {
         return order.getOrder();
     }
 };
+
+export const getFilters = (
+    dataExplorer: DataExplorer,
+    parentContainerRequest: ContainerRequestResource) => {
+        const columns = dataExplorer.columns as DataColumns<string>;
+        const statusColumnFilters = getDataExplorerColumnFilters(columns, 'Status');
+        const activeStatusFilter = Object.keys(statusColumnFilters).find(
+            filterName => statusColumnFilters[filterName].selected
+        );
+
+        // Get all the subprocess' container requests and containers.
+        const fb = new FilterBuilder().addEqual('requesting_container_uuid', parentContainerRequest.containerUuid);
+        switch (activeStatusFilter) {
+            case ProcessStatusFilter.COMPLETED: {
+                fb.addEqual('container.state', 'Complete');
+                fb.addEqual('container.exit_code', '0');
+                break;
+            }
+            case ProcessStatusFilter.FAILED: {
+                fb.addEqual('container.state', 'Complete');
+                fb.addDistinct('container.exit_code', '0');
+                break;
+            }
+            case ProcessStatusFilter.CANCELLED:
+            case ProcessStatusFilter.FAILED:
+            case ProcessStatusFilter.LOCKED:
+            case ProcessStatusFilter.QUEUED:
+            case ProcessStatusFilter.RUNNING: {
+                fb.addEqual('container.state', activeStatusFilter);
+                break;
+            }
+        }
+        const statusFilters = fb.getFilters();
+
+        const nameFilters = dataExplorer.searchValue
+            ? new FilterBuilder()
+                .addILike("name", dataExplorer.searchValue)
+                .getFilters()
+            : '';
+
+        return joinFilters(
+            nameFilters,
+            statusFilters
+        );
+    };
 
 export const setItems = (listResults: ListResults<ProcessResource>) =>
     subprocessPanelActions.SET_ITEMS({
