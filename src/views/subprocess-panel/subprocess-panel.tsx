@@ -8,6 +8,8 @@ import { openContextMenu, resourceKindToContextMenuKind } from '~/store/context-
 import { SubprocessPanelRoot, SubprocessPanelActionProps, SubprocessPanelDataProps } from '~/views/subprocess-panel/subprocess-panel-root';
 import { ResourceKind } from '~/models/resource';
 import { RootState } from "~/store/store";
+import { navigateTo } from "~/store/navigation/navigation-action";
+import { loadDetailsPanel } from "~/store/details-panel/details-panel-action";
 
 const mapDispatchToProps = (dispatch: Dispatch): SubprocessPanelActionProps => ({
     onContextMenu: (event, resourceUuid, isAdmin) => {
@@ -22,8 +24,12 @@ const mapDispatchToProps = (dispatch: Dispatch): SubprocessPanelActionProps => (
             }));
         }
     },
-    onItemClick: (resourceUuid: string) => { return; },
-    onItemDoubleClick: uuid => { return; }
+    onItemClick: (uuid: string) => {
+        dispatch<any>(loadDetailsPanel(uuid));
+    },
+    onItemDoubleClick: uuid => {
+        dispatch<any>(navigateTo(uuid));
+    }
 });
 
 const mapStateToProps = (state: RootState): SubprocessPanelDataProps => ({
