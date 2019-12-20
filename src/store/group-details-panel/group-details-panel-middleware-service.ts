@@ -20,48 +20,31 @@ export class GroupDetailsPanelMiddlewareService extends DataExplorerMiddlewareSe
     }
 
     async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
-
         const dataExplorer = getDataExplorer(api.getState().dataExplorer, this.getId());
         const groupUuid = getCurrentGroupDetailsPanelUuid(api.getState().properties);
-
         if (!dataExplorer || !groupUuid) {
-
             api.dispatch(groupsDetailsPanelDataExplorerIsNotSet());
-
         } else {
-
             try {
-
                 const permissions = await this.services.permissionService.list({
-
                     filters: new FilterBuilder()
                         .addEqual('tail_uuid', groupUuid)
                         .addEqual('link_class', LinkClass.PERMISSION)
                         .getFilters()
-
                 });
-
                 api.dispatch(updateResources(permissions.items));
-
                 const users = await this.services.userService.list({
-
                     filters: new FilterBuilder()
                         .addIn('uuid', permissions.items.map(item => item.headUuid))
                         .getFilters()
-
                 });
-
                 api.dispatch(GroupDetailsPanelActions.SET_ITEMS({
                     ...listResultsToDataExplorerItemsMeta(permissions),
                     items: users.items.map(item => item.uuid),
                 }));
-
                 api.dispatch(updateResources(users.items));
-
             } catch (e) {
-
                 api.dispatch(couldNotFetchGroupDetailsContents());
-
             }
         }
     }

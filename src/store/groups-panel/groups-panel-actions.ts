@@ -70,24 +70,17 @@ export interface CreateGroupFormData {
 
 export const createGroup = ({ name, users = [] }: CreateGroupFormData) =>
     async (dispatch: Dispatch, _: {}, { groupsService, permissionService }: ServiceRepository) => {
-
         dispatch(startSubmit(CREATE_GROUP_FORM));
-
         try {
-
             const newGroup = await groupsService.create({ name });
-
             for (const user of users) {
-
                 await addGroupMember({
                     user,
                     group: newGroup,
                     dispatch,
                     permissionService,
                 });
-
             }
-
             dispatch(dialogActions.CLOSE_DIALOG({ id: CREATE_GROUP_DIALOG }));
             dispatch(reset(CREATE_GROUP_FORM));
             dispatch(loadGroupsPanel());
@@ -95,18 +88,13 @@ export const createGroup = ({ name, users = [] }: CreateGroupFormData) =>
                 message: `${newGroup.name} group has been created`,
                 kind: SnackbarKind.SUCCESS
             }));
-
             return newGroup;
-
         } catch (e) {
-
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
                 dispatch(stopSubmit(CREATE_GROUP_FORM, { name: 'Group with the same name already exists.' } as FormErrors));
             }
-
             return;
-
         }
     };
 
@@ -124,14 +112,12 @@ interface AddGroupMemberArgs {
  * [Permission model docs](https://doc.arvados.org/api/permission-model.html)
  */
 export const addGroupMember = async ({ user, group, ...args }: AddGroupMemberArgs) => {
-
     await createPermission({
         head: { ...user },
         tail: { ...group },
         permissionLevel: PermissionLevel.CAN_READ,
         ...args,
     });
-
 };
 
 interface CreatePermissionLinkArgs {
@@ -143,24 +129,18 @@ interface CreatePermissionLinkArgs {
 }
 
 const createPermission = async ({ head, tail, permissionLevel, dispatch, permissionService }: CreatePermissionLinkArgs) => {
-
     try {
-
         await permissionService.create({
             tailUuid: tail.uuid,
             headUuid: head.uuid,
             name: permissionLevel,
         });
-
     } catch (e) {
-
         dispatch(snackbarActions.OPEN_SNACKBAR({
             message: `Could not add ${tail.name} -> ${head.name} relation`,
             kind: SnackbarKind.ERROR,
         }));
-
     }
-
 };
 
 interface DeleteGroupMemberArgs {
@@ -171,13 +151,11 @@ interface DeleteGroupMemberArgs {
 }
 
 export const deleteGroupMember = async ({ user, group, ...args }: DeleteGroupMemberArgs) => {
-
     await deletePermission({
         tail: group,
         head: user,
         ...args,
     });
-
 };
 
 interface DeletePermissionLinkArgs {
@@ -188,38 +166,23 @@ interface DeletePermissionLinkArgs {
 }
 
 export const deletePermission = async ({ head, tail, dispatch, permissionService }: DeletePermissionLinkArgs) => {
-
     try {
-
         const permissionsResponse = await permissionService.list({
-
             filters: new FilterBuilder()
                 .addEqual('tail_uuid', tail.uuid)
                 .addEqual('head_uuid', head.uuid)
                 .getFilters()
-
         });
-
         const [permission] = permissionsResponse.items;
-
         if (permission) {
-
             await permissionService.delete(permission.uuid);
-
         } else {
-
             throw new Error('Permission not found');
-
         }
-
-
     } catch (e) {
-
         dispatch(snackbarActions.OPEN_SNACKBAR({
             message: `Could not delete ${tail.name} -> ${head.name} relation`,
             kind: SnackbarKind.ERROR,
         }));
-
     }
-
 };
