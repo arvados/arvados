@@ -7,7 +7,7 @@ import * as ReactDOM from 'react-dom';
 import { WorkbenchPanel } from './workbench';
 import { Provider } from "react-redux";
 import { configureStore } from "~/store/store";
-import createBrowserHistory from "history/createBrowserHistory";
+import { createBrowserHistory } from "history";
 import { ConnectedRouter } from "react-router-redux";
 import { MuiThemeProvider } from '@material-ui/core/styles';
 import { CustomTheme } from '~/common/custom-theme';
