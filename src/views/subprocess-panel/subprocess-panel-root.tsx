@@ -16,6 +16,7 @@ import { SUBPROCESS_PANEL_ID } from '~/store/subprocess-panel/subprocess-panel-a
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 import { createTree } from '~/models/tree';
 import { getInitialProcessStatusFilters } from '~/store/resource-type-filters/resource-type-filters';
+import { ResourcesState } from '~/store/resources/resources';
 
 export enum SubprocessPanelColumnNames {
     NAME = "Name",
@@ -63,12 +64,12 @@ export const subprocessPanelColumns: DataColumns<string> = [
 ];
 
 export interface SubprocessPanelDataProps {
-    isAdmin: boolean;
+    resources: ResourcesState;
 }
 
 export interface SubprocessPanelActionProps {
     onItemClick: (item: string) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: string, isAdmin: boolean) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: string, resources: ResourcesState) => void;
     onItemDoubleClick: (item: string) => void;
 }
 
@@ -84,7 +85,7 @@ export const SubprocessPanelRoot = (props: SubprocessPanelProps) => {
         id={SUBPROCESS_PANEL_ID}
         onRowClick={props.onItemClick}
         onRowDoubleClick={props.onItemDoubleClick}
-        onContextMenu={(event, item) => props.onContextMenu(event, item, props.isAdmin)}
+        onContextMenu={(event, item) => props.onContextMenu(event, item, props.resources)}
         contextMenuColumn={true}
         dataTableDefaultView={
             <DataTableDefaultView

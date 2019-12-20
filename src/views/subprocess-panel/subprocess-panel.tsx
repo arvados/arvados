@@ -4,26 +4,18 @@
 
 import { Dispatch } from "redux";
 import { connect } from "react-redux";
-import { openContextMenu, resourceKindToContextMenuKind } from '~/store/context-menu/context-menu-actions';
+import { openProcessContextMenu } from '~/store/context-menu/context-menu-actions';
 import { SubprocessPanelRoot, SubprocessPanelActionProps, SubprocessPanelDataProps } from '~/views/subprocess-panel/subprocess-panel-root';
-import { ResourceKind } from '~/models/resource';
 import { RootState } from "~/store/store";
 import { navigateTo } from "~/store/navigation/navigation-action";
 import { loadDetailsPanel } from "~/store/details-panel/details-panel-action";
 import { getProcess } from "~/store/processes/process";
 
 const mapDispatchToProps = (dispatch: Dispatch): SubprocessPanelActionProps => ({
-    onContextMenu: (event, resourceUuid, isAdmin) => {
-        const menuKind = resourceKindToContextMenuKind(resourceUuid, isAdmin);
-        const resource = getProcess(resourceUuid);
-        if (menuKind && resource) {
-            dispatch<any>(openContextMenu(event, {
-                name: resource.name,
-                uuid: resourceUuid,
-                ownerUuid: '',
-                kind: ResourceKind.PROCESS,
-                menuKind
-            }));
+    onContextMenu: (event, resourceUuid, resources) => {
+        const process = getProcess(resourceUuid)(resources);
+        if (process) {
+            dispatch<any>(openProcessContextMenu(event, process));
         }
     },
     onItemClick: (uuid: string) => {
@@ -35,7 +27,7 @@ const mapDispatchToProps = (dispatch: Dispatch): SubprocessPanelActionProps => (
 });
 
 const mapStateToProps = (state: RootState): SubprocessPanelDataProps => ({
-    isAdmin: state.auth.user ? state.auth.user.isAdmin : false
+    resources: state.resources
 });
 
 export const SubprocessPanel = connect(mapStateToProps, mapDispatchToProps)(SubprocessPanelRoot);
