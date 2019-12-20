@@ -22,6 +22,7 @@ import { subprocessPanelActions } from './subprocess-panel-actions';
 import { DataColumns } from '~/components/data-table/data-table';
 import { ProcessStatusFilter } from '../resource-type-filters/resource-type-filters';
 import { ContainerRequestResource } from '~/models/container-request';
+import { progressIndicatorActions } from '../progress-indicator/progress-indicator-actions';
 
 export class SubprocessMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -33,22 +34,11 @@ export class SubprocessMiddlewareService extends DataExplorerMiddlewareService {
         const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
 
         try {
+            api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
             const parentContainerRequestUuid = state.processPanel.containerRequestUuid;
-            if (parentContainerRequestUuid === "") {
-                api.dispatch(subprocessPanelActions.CLEAR());
-                return;
-            }
             const parentContainerRequest = await this.services.containerRequestService.get(parentContainerRequestUuid);
-            if (!parentContainerRequest.containerUuid) {
-                api.dispatch(subprocessPanelActions.CLEAR());
-                return;
-            }
             const containerRequests = await this.services.containerRequestService.list(
                 { ...getParams(dataExplorer, parentContainerRequest) });
-            if (containerRequests.items.length === 0) {
-                api.dispatch(subprocessPanelActions.CLEAR());
-                return;
-            }
             const containerUuids: string[] = containerRequests.items.reduce(
                 (uuids, { containerUuid }) =>
                     containerUuid
@@ -58,11 +48,13 @@ export class SubprocessMiddlewareService extends DataExplorerMiddlewareService {
                 filters: new FilterBuilder().addIn('uuid', containerUuids).getFilters()
             });
 
-            // Populate the actual user view
+            api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
             api.dispatch(updateResources(containerRequests.items));
             api.dispatch(updateResources(containers.items));
+            // Populate the actual user view
             api.dispatch(setItems(containerRequests));
         } catch {
+            api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
             api.dispatch(couldNotFetchSubprocesses());
         }
     }

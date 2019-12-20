@@ -74,6 +74,11 @@ export interface SubprocessPanelActionProps {
 
 type SubprocessPanelProps = SubprocessPanelActionProps & SubprocessPanelDataProps;
 
+const DEFAULT_VIEW_MESSAGES = [
+    'No subprocesses available for listing.',
+    'The current process may not have any or none matches current filtering.'
+];
+
 export const SubprocessPanelRoot = (props: SubprocessPanelProps) => {
     return <DataExplorer
         id={SUBPROCESS_PANEL_ID}
@@ -84,6 +89,6 @@ export const SubprocessPanelRoot = (props: SubprocessPanelProps) => {
         dataTableDefaultView={
             <DataTableDefaultView
                 icon={ProcessIcon}
-                messages={['This process has no subprocesses.']} />
+                messages={DEFAULT_VIEW_MESSAGES} />
         } />;
 };
