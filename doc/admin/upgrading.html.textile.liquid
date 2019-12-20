@@ -36,7 +36,7 @@ h4. Migrating to centralized config.yml
 
 See "Migrating Configuration":config-migration.html for notes on migrating legacy per-component configuration files to the new centralized @/etc/arvados/config.yml@.  To ensure a smooth transition, the per-component config files continue to be read, and take precedence over the centralized configuration.
 
-h4. Node manager replaced by arvados-dispatch-cloud
+h4. Cloud installations only: node manager replaced by arvados-dispatch-cloud
 
 Node manager is deprecated and replaced by @arvados-dispatch-cloud@.  No automated config migration is available.  Follow the instructions to "install the cloud dispatcher":../install/install-dispatch-cloud.html
 
@@ -557,8 +557,8 @@ h4. Recommended configuration change for keep-web (2015-11-11)
 
 Commit "1e2ace5":https://dev.arvados.org/projects/arvados/repository/revisions/1e2ace5 changes recommended config for keep-web (see "#5824":https://dev.arvados.org/issues/5824)
 
-* proxy/dns/ssl config should be updated to route "https://download.uuid_prefix.arvadosapi.com/" requests to keep-web (alongside the existing "collections" routing)
-* keep-web command line adds @-attachment-only-host download.uuid_prefix.arvadosapi.com@
+* proxy/dns/ssl config should be updated to route "https://download.ClusterID.example.com/" requests to keep-web (alongside the existing "collections" routing)
+* keep-web command line adds @-attachment-only-host download.ClusterID.example.com@
 * Workbench config adds @keep_web_download_url@
 * More info on the (still beta/non-TOC-linked) "keep-web doc page":http://doc.arvados.org/install/install-keep-web.html
 

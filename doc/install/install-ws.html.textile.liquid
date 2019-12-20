@@ -20,7 +20,7 @@ The arvados-ws server provides event notifications to websocket clients. It can 
 
 h2(#configure). Update config.yml
 
-Edit the cluster config at @/etc/arvados/config.yml@ and set @Services.Websocket.ExternalURL@ and @Services.Websocket.InternalURLs@.  Replace @zzzzz@ with your cluster id.
+Edit the cluster config at @config.yml@ and set @Services.Websocket.ExternalURL@ and @Services.Websocket.InternalURLs@.  Replace @zzzzz@ with your cluster id.
 
 <notextile>
 <pre><code>    Services:
@@ -35,7 +35,7 @@ h2(#update-nginx). Update Nginx configuration
 
 The arvados-ws service will be accessible from anywhere on the internet, so we recommend using SSL for transport encryption.
 
-Use a text editor to create a new file @/etc/nginx/conf.d/arvados-ws.conf@ with the following configuration.  Options that need attention are marked with "TODO".
+Use a text editor to create a new file @/etc/nginx/conf.d/arvados-ws.conf@ with the following configuration.  Options that need attention are marked in <span class="userinput">red</span>.
 
 <notextile><pre>
 upstream arvados-ws {
@@ -50,8 +50,8 @@ server {
   proxy_read_timeout    300s;
 
   ssl                   on;
-  ssl_certificate       <span class="userinput">/TODO/YOUR/PATH/TO/cert.pem</span>;
-  ssl_certificate_key   <span class="userinput">/TODO/YOUR/PATH/TO/cert.key</span>;
+  ssl_certificate       <span class="userinput">/YOUR/PATH/TO/cert.pem</span>;
+  ssl_certificate_key   <span class="userinput">/YOUR/PATH/TO/cert.key</span>;
 
   location / {
     proxy_pass          http://arvados-ws;
@@ -85,7 +85,7 @@ h2(#confirm). Confirm working installation
 Confirm the service is listening on its assigned port and responding to requests.
 
 <notextile>
-<pre><code>~$ <span class="userinput">curl https://ws.ClusterID.example.com/status.json</span>
+<pre><code>~$ <span class="userinput">curl https://<span class="userinput">ws.ClusterID.example.com</span>/status.json</span>
 {"Clients":1}
 </code></pre>
 </notextile>

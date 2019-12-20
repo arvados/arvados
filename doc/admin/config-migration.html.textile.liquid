@@ -10,7 +10,9 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
+{% include 'notebox_begin_warning' %}
 _New installations of Arvados 1.5+ can skip this section_
+{% include 'notebox_end' %}
 
 Arvados 1.5 migrates to a centralized configuration file for all components.  The centralized Arvados configuration is @/etc/arvados/config.yml@.  Components that support the new centralized configuration are listed below.  During the migration period, legacy configuration files are still loaded and take precedence over the centralized configuration file.
 
@@ -58,7 +60,7 @@ This command will also report if no migrations are required.
 
 h2. keepstore, keep-web, crunch-dispatch-slurm, arvados-ws, keepproxy, arv-git-httpd, keep-balance
 
-The legacy config for each component (loaded from @/etc/arvados/component/component.yml@ or a different location specified via -legacy-component-config command line argument) takes precedence over the centralized config. After you migrate everything from the legacy config to the centralized config, you should delete @/etc/arvados/component/component.yml@ and/or stop using the corresponding -legacy-component-config argument.
+The legacy config for each component (loaded from @/etc/arvados/component/component.yml@ or a different location specified via the -legacy-component-config command line argument) takes precedence over the centralized config. After you migrate everything from the legacy config to the centralized config, you should delete @/etc/arvados/component/component.yml@ and/or stop using the corresponding -legacy-component-config argument.
 
 To migrate a component configuration, do this on each node that runs an Arvados service:
 
@@ -71,7 +73,7 @@ To migrate a component configuration, do this on each node that runs an Arvados 
 
 After migrating and removing all legacy config files, make sure the @/etc/arvados/config.yml@ file is identical across all system nodes -- API server, keepstore, etc. -- and restart all services to make sure they are using the latest configuration.
 
-h2. Node manager
+h2. Cloud installations only: node manager
 
 Node manager is deprecated and replaced by @arvados-dispatch-cloud@.  No automated config migration is available.  Follow the instructions to "install the cloud dispatcher":../install/install-dispatch-cloud.html
 

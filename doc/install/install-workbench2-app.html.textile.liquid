@@ -24,7 +24,7 @@ Workbench2 is the replacement for Arvados Workbench. Workbench2 is currently in 
 
 h2(#configure). Update config.yml
 
-Edit @/etc/arvados/config.yml@ to set the keys below.  The full set of configuration options are in the "Workbench section of config.yml":{{site.baseurl}}/admin/config.html
+Edit @config.yml@ to set the keys below.  The full set of configuration options are in the "Workbench section of config.yml":{{site.baseurl}}/admin/config.html
 
 <notextile>
 <pre><code>    Services:
@@ -37,7 +37,7 @@ h2(#update-nginx). Update Nginx configuration
 
 Workbench2 does not require its own database. It is a set of html, javascript and css files that are served as static files from Nginx.
 
-Use a text editor to create a new file @/etc/nginx/conf.d/arvados-workbench2.conf@ with the following configuration.  Options that need attention are marked with "TODO".
+Use a text editor to create a new file @/etc/nginx/conf.d/arvados-workbench2.conf@ with the following configuration.  Options that need attention are marked in <span class="userinput">red</span>.
 
 <notextile>
 <pre><code>server {
@@ -51,13 +51,13 @@ server {
   server_name  workbench2.<span class="userinput">ClusterID.example.com</span>;
 
   ssl on;
-  ssl_certificate     <span class="userinput">/TODO/YOUR/PATH/TO/cert.pem</span>;
-  ssl_certificate_key <span class="userinput">/TODO/YOUR/PATH/TO/cert.key</span>;
+  ssl_certificate     <span class="userinput">/YOUR/PATH/TO/cert.pem</span>;
+  ssl_certificate_key <span class="userinput">/YOUR/PATH/TO/cert.key</span>;
 
   index  index.html;
 
-  # TODO: Workbench2 uses a call to /config.json to bootstrap itself
-  # and find out where to contact the API server.
+  # <span class="userinput">Workbench2 uses a call to /config.json to bootstrap itself</span>
+  # <span class="userinput">and find out where to contact the API server.</span>
   location /config.json {
     return 200 '{ "API_HOST": "<span class="userinput">ClusterID.example.com</span>" }';
   }

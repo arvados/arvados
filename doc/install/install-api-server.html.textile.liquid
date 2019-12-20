@@ -89,7 +89,7 @@ h3. Services
 <notextile>
 <pre><code>    Services:
       Controller:
-        ExternalURL: <span class="userinput">"https://xxxxx.example.com"</span>
+        ExternalURL: <span class="userinput">"https://ClusterID.example.com"</span>
         InternalURLs:
           <span class="userinput">"http://localhost:8003": {}</span>
       RailsAPI:
@@ -99,13 +99,13 @@ h3. Services
 </code></pre>
 </notextile>
 
-Replace @xxxxx.example.com@ with the hostname that you previously selected for the API server.
+Replace @ClusterID.example.com@ with the hostname that you previously selected for the API server.
 
 The @Services@ section of the configuration helps Arvados components contact one another (service discovery).  Each service has one or more @InternalURLs@ and an @ExternalURL@.  The @InternalURLs@ describe where the service runs, and how the Nginx reverse proxy will connect to it.  The @ExternalURL@ is how external clients contact the service.
 
 h2(#update-nginx). Update nginx configuration
 
-Use a text editor to create a new file @/etc/nginx/conf.d/arvados-api-and-controller.conf@ with the following configuration.  Options that need attention are marked with "TODO".
+Use a text editor to create a new file @/etc/nginx/conf.d/arvados-api-and-controller.conf@ with the following configuration.  Options that need attention are marked in <span class="userinput">red</span>.
 
 <notextile>
 <pre><code>proxy_http_version 1.1;
@@ -120,11 +120,11 @@ Use a text editor to create a new file @/etc/nginx/conf.d/arvados-api-and-contro
 # "available keep services" request with either a list of internal keep
 # servers (0) or with the keepproxy (1).
 #
-# TODO: Following the example here, update the 10.20.30.0/24 netmask
-# to match your private subnet.
-# TODO: Update 1.2.3.4 and add lines as necessary with the public IP
-# address of all servers that can also access the private network to
-# ensure they are not considered 'external'.
+# <span class="userinput">Following the example here, update the 10.20.30.0/24 netmask</span>
+# <span class="userinput">to match your private subnet.</span>
+# <span class="userinput">Update 1.2.3.4 and add lines as necessary with the public IP</span>
+# <span class="userinput">address of all servers that can also access the private network to</span>
+# <span class="userinput">ensure they are not considered 'external'.</span>
 
 geo $external_client {
   default        1;
@@ -146,8 +146,8 @@ server {
   server_name  <span class="userinput">xxxxx.example.com</span>;
 
   ssl on;
-  ssl_certificate     <span class="userinput">/TODO/YOUR/PATH/TO/cert.pem</span>;
-  ssl_certificate_key <span class="userinput">/TODO/YOUR/PATH/TO/cert.key</span>;
+  ssl_certificate     <span class="userinput">/YOUR/PATH/TO/cert.pem</span>;
+  ssl_certificate_key <span class="userinput">/YOUR/PATH/TO/cert.key</span>;
 
   # Refer to the comment about this setting in the passenger (arvados
   # api server) section of your Nginx configuration.
@@ -179,8 +179,8 @@ server {
 
   passenger_enabled on;
 
-  # TODO: If you are using RVM, uncomment the line below.
-  # If you're using system ruby, leave it commented out.
+  # <span class="userinput">If you are using RVM, uncomment the line below.</span>
+  # <span class="userinput">If you're using system ruby, leave it commented out.</span>
   #passenger_ruby /usr/local/rvm/wrappers/default/ruby;
 
   # This value effectively limits the size of API objects users can
@@ -205,21 +205,19 @@ h2(#confirm-working). Confirm working installation
 
 Confirm working controller:
 
-<pre>
-$ curl https://ClusterID.example.com/arvados/v1/config
-</pre>
+<notextile><pre><code>$ curl https://<span class="userinput">ClusterID.example.com</span>/arvados/v1/config
+</code></pre></notextile>
 
 Confirm working Rails API server:
 
-<pre>
-$ curl https://ClusterID.example.com/discovery/v1/apis/arvados/v1/rest
-</pre>
+<notextile><pre><code>$ curl https://<span class="userinput">ClusterID.example.com</span>/discovery/v1/apis/arvados/v1/rest
+</code></pre></notextile>
 
 Confirm that you can use the system root token to act as the system root user:
 
-<pre>
-$ curl -H "Authorization: Bearer $system_root_token" https://xxxxx.example.com/arvados/v1/users/current
-</pre>
+<notextile><pre><code>
+$ curl -H "Authorization: Bearer $system_root_token" https://<span class="userinput">ClusterID.example.com</span>/arvados/v1/users/current
+</code></pre></notextile>
 
 h3. Troubleshooting
 

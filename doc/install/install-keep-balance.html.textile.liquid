@@ -30,13 +30,13 @@ If you are installing keep-balance on an existing system with valuable data, you
 
 h2(#update-config). Update the cluster config
 
-Edit the cluster config at @/etc/arvados/config.yml@ and set @Services.Keepbalance.InternalURLs@.  This port is only used to publish metrics.
+Edit the cluster config at @config.yml@ and set @Services.Keepbalance.InternalURLs@.  This port is only used to publish metrics.
 
 <notextile>
 <pre><code>    Services:
       Keepbalance:
         InternalURLs:
-          "http://keep.ClusterID.example.com:9005/": {}
+          "http://<span class="userinput">keep.ClusterID.example.com</span>:9005/": {}
 </code></pre>
 </notextile>
 

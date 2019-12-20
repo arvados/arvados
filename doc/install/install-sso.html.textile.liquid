@@ -9,6 +9,10 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
+{% include 'notebox_begin_warning' %}
+Skip this section if you are using Google login via @arvados-controller@.
+{% include 'notebox_end' %}
+
 # "Install dependencies":#dependencies
 # "Set up database":#database-setup
 # "Update config.yml":#update-config
@@ -166,7 +170,7 @@ Next, copy the values of *Client ID* and *Client secret* from the Google Develop
 
 h2(#update-nginx). Update nginx configuration
 
-Use a text editor to create a new file @/etc/nginx/conf.d/arvados-sso.conf@ with the following configuration.  Options that need attention are marked with "TODO".
+Use a text editor to create a new file @/etc/nginx/conf.d/arvados-sso.conf@ with the following configuration.  Options that need attention are marked in <span class="userinput">red</span>.
 
 <notextile>
 <pre><code>server {
@@ -174,16 +178,16 @@ Use a text editor to create a new file @/etc/nginx/conf.d/arvados-sso.conf@ with
   server_name  <span class="userinput">auth.ClusterID.example.com</span>;
 
   ssl on;
-  ssl_certificate     <span class="userinput">/TODO/YOUR/PATH/TO/cert.pem</span>;
-  ssl_certificate_key <span class="userinput">/TODO/YOUR/PATH/TO/cert.key</span>;
+  ssl_certificate     <span class="userinput">/YOUR/PATH/TO/cert.pem</span>;
+  ssl_certificate_key <span class="userinput">/YOUR/PATH/TO/cert.key</span>;
 
   root   /var/www/arvados-sso/current/public;
   index  index.html;
 
   passenger_enabled on;
 
-  # TODO: If you are using RVM, uncomment the line below.
-  # If you're using system ruby, leave it commented out.
+  # <span class="userinput">If you are using RVM, uncomment the line below.</span>
+  # <span class="userinput">If you're using system ruby, leave it commented out.</span>
   #passenger_ruby /usr/local/rvm/wrappers/default/ruby;
 }
 </code></pre>

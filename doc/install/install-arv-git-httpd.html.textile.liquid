@@ -198,7 +198,7 @@ Create @/etc/cron.d/arvados-git-sync@ with the following content:
 
 h2(#update-config). Update config.yml
 
-Edit the cluster config at @/etc/arvados/config.yml@ .
+Edit the cluster config at @config.yml@ .
 
 <notextile>
 <pre><code>    Services:
@@ -217,7 +217,7 @@ Edit the cluster config at @/etc/arvados/config.yml@ .
 
 h2(#update-nginx). Update nginx configuration
 
-Use a text editor to create a new file @/etc/nginx/conf.d/arvados-git.conf@ with the following configuration.  Options that need attention are marked with "TODO".
+Use a text editor to create a new file @/etc/nginx/conf.d/arvados-git.conf@ with the following configuration.  Options that need attention are marked in <span class="userinput">red</span>.
 
 <notextile>
 <pre><code>upstream arvados-git-httpd {
@@ -230,8 +230,8 @@ server {
   proxy_read_timeout      300s;
 
   ssl on;
-  ssl_certificate         <span class="userinput">/TODO/YOUR/PATH/TO/cert.pem</span>;
-  ssl_certificate_key     <span class="userinput">/TODO/YOUR/PATH/TO/cert.key</span>;
+  ssl_certificate         <span class="userinput">/YOUR/PATH/TO/cert.pem</span>;
+  ssl_certificate_key     <span class="userinput">/YOUR/PATH/TO/cert.key</span>;
 
   # The server needs to accept potentially large refpacks from push clients.
   client_max_body_size 128m;

@@ -42,7 +42,7 @@ If @WebDAVDownload@ is blank, and @WebDAV@ has a single origin (not wildcard, se
 <notextile>
 <pre><code>    Services:
       WebDAVDownload:
-        ExternalURL: <span class="userinput">https://download.ClusterID.example.com</span>
+        ExternalURL: https://<span class="userinput">download.ClusterID.example.com</span>
 </code></pre>
 </notextile>
 
@@ -57,7 +57,7 @@ Collections can be served from their own subdomain:
 <notextile>
 <pre><code>    Services:
       WebDAV:
-        ExternalURL: <span class="userinput">https://*.collections.ClusterID.example.com/</span>
+        ExternalURL: https://<span class="userinput">*.collections.ClusterID.example.com/</span>
 </code></pre>
 </notextile>
 
@@ -68,7 +68,7 @@ Alternately, they can go under the main domain by including @--@:
 <notextile>
 <pre><code>    Services:
       WebDAV:
-        ExternalURL: <span class="userinput">https://*--collections.ClusterID.example.com/</span>
+        ExternalURL: https://<span class="userinput">*--collections.ClusterID.example.com/</span>
 </code></pre>
 </notextile>
 
@@ -79,7 +79,7 @@ Serve preview links from a single domain, setting uuid or pdh in the path (simil
 <notextile>
 <pre><code>    Services:
       WebDAV:
-        ExternalURL: <span class="userinput">https://collections.ClusterID.example.com/</span>
+        ExternalURL: https://<span class="userinput">collections.ClusterID.example.com/</span>
 </code></pre>
 </notextile>
 
@@ -91,7 +91,7 @@ h2. Set InternalURLs
 <pre><code>    Services:
       WebDAV:
         InternalURLs:
-          <span class="userinput">"http://localhost:9002"</span>: {}
+          http://"<span class="userinput">localhost:9002</span>": {}
 </code></pre>
 </notextile>
 
@@ -113,7 +113,7 @@ h3. Update nginx configuration
 
 Put a reverse proxy with SSL support in front of keep-web.  Keep-web itself runs on the port 25107 (or whatever is specified in @Services.Keepproxy.InternalURL@) the reverse proxy runs on port 443 and forwards requests to Keepproxy.
 
-Use a text editor to create a new file @/etc/nginx/conf.d/keep-web.conf@ with the following configuration. Options that need attention are marked with “TODO”.
+Use a text editor to create a new file @/etc/nginx/conf.d/keep-web.conf@ with the following configuration. Options that need attention are marked in <span class="userinput">red</span>.
 
 <notextile><pre>
 upstream keep-web {
@@ -122,17 +122,17 @@ upstream keep-web {
 
 server {
   listen                *:443 ssl;
-  server_name           download.<span class="userinput">ClusterID</span>.example.com
-                        collections.<span class="userinput">ClusterID</span>.example.com
-                        *.collections.<span class="userinput">ClusterID</span>.example.com
-                        ~.*--collections.<span class="userinput">ClusterID</span>.example.com;
+  server_name           <span class="userinput">download.ClusterID.example.com</span>
+                        <span class="userinput">collections.ClusterID.example.com</span>
+                        <span class="userinput">*.collections.ClusterID.example.com</span>
+                        <span class="userinput">~.*--collections.ClusterID.example.com</span>;
 
   proxy_connect_timeout 90s;
   proxy_read_timeout    300s;
 
   ssl                   on;
-  ssl_certificate       <span class="userinput">/TODO/YOUR/PATH/TO/cert.pem</span>;
-  ssl_certificate_key   <span class="userinput">/TODO/YOUR/PATH/TO/cert.key</span>;
+  ssl_certificate       <span class="userinput">/YOUR/PATH/TO/cert.pem</span>;
+  ssl_certificate_key   <span class="userinput">/YOUR/PATH/TO/cert.key</span>;
 
   location / {
     proxy_pass          http://keep-web;
@@ -164,18 +164,18 @@ In such cases -- for example, a site which is not reachable from the internet, w
 
 h2(#confirm-working). Confirm working installation
 
-<pre>
-$ curl -H "Authorization: Bearer $system_root_token" https://download.ClusterID.example.com/c=59389a8f9ee9d399be35462a0f92541c-53/_/hello.txt
-</pre>
+<notextile><code><pre>
+$ curl -H "Authorization: Bearer $system_root_token" https://<span class="userinput">download.ClusterID.example.com</span>/c=59389a8f9ee9d399be35462a0f92541c-53/_/hello.txt
+</code></pre></notextile>
 
 If wildcard collections domains are configured:
 
-<pre>
-$ curl -H "Authorization: Bearer $system_root_token" https://59389a8f9ee9d399be35462a0f92541c-53.collections.ClusterID.example.com/hello.txt
-</pre>
+<notextile><code><pre>
+$ curl -H "Authorization: Bearer $system_root_token" https://<span class="userinput">59389a8f9ee9d399be35462a0f92541c-53.collections.ClusterID.example.com</span>/hello.txt
+</code></pre></notextile>
 
 If using a single collections preview domain:
 
-<pre>
-$ curl https://collections.ClusterID.example.com/c=59389a8f9ee9d399be35462a0f92541c-53/t=$system_root_token/_/hello.txt
-</pre>
+<notextile><code><pre>
+$ curl https://<span class="userinput">collections.ClusterID.example.com</span>/c=59389a8f9ee9d399be35462a0f92541c-53/t=$system_root_token/_/hello.txt
+</code></pre></notextile>

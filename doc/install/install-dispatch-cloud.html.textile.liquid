@@ -9,6 +9,10 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
+{% include 'notebox_begin_warning' %}
+arvados-dispatch-cloud is only relevant for cloud installations. Skip this section if you are installing a on premise cluster that will spool jobs to Slurm.
+{% include 'notebox_end' %}
+
 # "Introduction":#introduction
 # "Create compute node VM image":#create-image
 # "Update config.yml":#update-config
@@ -29,9 +33,8 @@ Create a VM image following the steps "to set up a compute node":crunch2-slurm/i
 
 On the compute VM image, add the API server's internal IP address to @/etc/hosts@, this will ensure that it contacts the API server on the private network and not through the public interface.  For example:
 
-<pre>
-10.20.30.40     ClusterID.example.com
-</pre>
+<notextile><pre><code>10.20.30.40     <span class="userinput">ClusterID.example.com</span>
+</code></pre></notextile>
 
 h2(#update-config). Update config.yml
 
@@ -66,7 +69,7 @@ You can delete the key files after you have copied the private key to your confi
 
 h3. Configure CloudVMs
 
-Add or update the following portions of your cluster configuration file, @/etc/arvados/config.yml@. Refer to "config.defaults.yml":{{site.baseurl}}/admin/config.html for information about additional configuration options.
+Add or update the following portions of your cluster configuration file, @config.yml@. Refer to "config.defaults.yml":{{site.baseurl}}/admin/config.html for information about additional configuration options.
 
 <notextile>
 <pre><code>    Services:
@@ -172,17 +175,18 @@ $ az account list
 
 You will need to create a "service principal" to use as a delegated authority for API access.
 
-<pre>
-$ az ad app create --display-name "Arvados Dispatch Cloud (ClusterID)" --homepage "https://arvados.org" --identifier-uris "https://ClusterID.example.com" --end-date 2299-12-31 --password <Your_Password>
-$ az ad sp create "<appId>"
+<notextile><pre><code>$ az ad app create --display-name "Arvados Dispatch Cloud (<span class="userinput">ClusterID</span>)" --homepage "https://arvados.org" --identifier-uris "https://<span class="userinput">ClusterID.example.com</span>" --end-date 2299-12-31 --password <span class="userinput">Your_Password</span>
+$ az ad sp create "<span class="userinput">appId</span>"
 (appId is part of the response of the previous command)
-$ az role assignment create --assignee "<objectId>" --role Owner --scope /subscriptions/{subscriptionId}/
+$ az role assignment create --assignee "<span class="userinput">objectId</span>" --role Owner --scope /subscriptions/{subscriptionId}/
 (objectId is part of the response of the previous command)
-</pre>
+</code></pre></notextile>
+
+Now update your @config.yml@ file:
 
 @ClientID@ is the 'appId' value.
 
-@ClientSecret@ is what was provided as <Your_Password>.
+@ClientSecret@ is what was provided as <span class="userinput">Your_Password</span>.
 
 h3. Test your configuration
 

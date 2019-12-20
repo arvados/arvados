@@ -9,6 +9,10 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
+{% include 'notebox_begin_warning' %}
+crunch-dispatch-slurm is only relevant for on premise clusters that will spool jobs to Slurm. Skip this section if you are installing a cloud cluster.
+{% include 'notebox_end' %}
+
 h2. Test compute node setup
 
 You should now be able to submit SLURM jobs that run in Docker containers.  On the node where you're running the dispatcher, you can test this by running:

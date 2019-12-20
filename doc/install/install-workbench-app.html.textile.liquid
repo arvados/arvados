@@ -25,7 +25,7 @@ h2(#dependencies). Install dependencies
 
 h2(#configure). Update config.yml
 
-Edit @/etc/arvados/config.yml@ to set the keys below.  The full set of configuration options are in the "Workbench section of config.yml":{{site.baseurl}}/admin/config.html
+Edit @config.yml@ to set the keys below.  The full set of configuration options are in the "Workbench section of config.yml":{{site.baseurl}}/admin/config.html
 
 <notextile>
 <pre><code>    Services:
@@ -52,7 +52,7 @@ You probably want to enable @Users.AutoAdminFirstUser@ .  The first user to log 
 
 h2(#update-nginx). Update nginx configuration
 
-Use a text editor to create a new file @/etc/nginx/conf.d/arvados-workbench.conf@ with the following configuration.  Options that need attention are marked with "TODO".
+Use a text editor to create a new file @/etc/nginx/conf.d/arvados-workbench.conf@ with the following configuration.  Options that need attention are marked in <span class="userinput">red</span>.
 
 <notextile>
 <pre><code>server {

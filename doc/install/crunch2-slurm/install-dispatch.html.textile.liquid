@@ -10,6 +10,10 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
+{% include 'notebox_begin_warning' %}
+crunch-dispatch-slurm is only relevant for on premise clusters that will spool jobs to Slurm. Skip this section if you are installing a cloud cluster.
+{% include 'notebox_end' %}
+
 # "Introduction":#introduction
 # "Update config.yml":#update-config
 # "Install crunch-dispatch-slurm":#install-packages
@@ -18,13 +22,13 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 h2(#introduction). Introduction
 
-This assumes you already have a SLURM cluster, and have "set up all of your compute nodes":install-compute-node.html .  For information on installing SLURM, see https://slurm.schedmd.com/quickstart_admin.html
+This assumes you already have a SLURM cluster, and have "set up all of your compute nodes":install-compute-node.html .  For information on installing SLURM, see "this install guide":https://slurm.schedmd.com/quickstart_admin.html
 
 The Arvados SLURM dispatcher can run on any node that can submit requests to both the Arvados API server and the SLURM controller (via @sbatch@).  It is not resource-intensive, so you can run it on the API server node.
 
 h2(#update-config). Update config.yml (optional)
 
-Crunch-dispatch-slurm reads the common configuration file at @/etc/arvados/config.yml@.
+Crunch-dispatch-slurm reads the common configuration file at @config.yml@.
 
 The following configuration parameters are optional.
 

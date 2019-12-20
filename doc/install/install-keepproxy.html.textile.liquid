@@ -29,14 +29,14 @@ By convention, we use the following hostname for the Keepproxy server:
 <div class="offset1">
 table(table table-bordered table-condensed).
 |_. Hostname|
-|keep.@ClusterID@.your.domain|
+|@keep.ClusterID.example.com@|
 </div>
 
 This hostname should resolve from anywhere on the internet.
 
 h2(#update-config). Update config.yml
 
-Edit the cluster config at @/etc/arvados/config.yml@ and set @Services.Keepproxy.ExternalURL@ and @Services.Keepproxy.InternalURLs@.
+Edit the cluster config at @config.yml@ and set @Services.Keepproxy.ExternalURL@ and @Services.Keepproxy.InternalURLs@.
 
 <notextile>
 <pre><code>    Services:
@@ -51,7 +51,7 @@ h2(#update-nginx). Update Nginx configuration
 
 Put a reverse proxy with SSL support in front of Keepproxy. Keepproxy itself runs on the port 25107 (or whatever is specified in @Services.Keepproxy.InternalURL@) the reverse proxy runs on port 443 and forwards requests to Keepproxy.
 
-Use a text editor to create a new file @/etc/nginx/conf.d/keepproxy.conf@ with the following configuration. Options that need attention are marked with “TODO”.
+Use a text editor to create a new file @/etc/nginx/conf.d/keepproxy.conf@ with the following configuration. Options that need attention are marked in <span class="userinput">red</span>.
 
 <notextile><pre><code>upstream keepproxy {
   server                127.0.0.1:<span class="userinput">25107</span>;
@@ -59,7 +59,7 @@ Use a text editor to create a new file @/etc/nginx/conf.d/keepproxy.conf@ with t
 
 server {
   listen                  *:443 ssl;
-  server_name             keep.<span class="userinput">ClusterID</span>.example.com;
+  server_name             <span class="userinput">keep.ClusterID.example.com</span>;
 
   proxy_connect_timeout   90s;
   proxy_read_timeout      300s;
@@ -68,8 +68,8 @@ server {
   proxy_request_buffering off;
 
   ssl on;
-  ssl_certificate     <span class="userinput">/TODO/YOUR/PATH/TO/cert.pem</span>;
-  ssl_certificate_key <span class="userinput">/TODO/YOUR/PATH/TO/cert.key</span>;
+  ssl_certificate     <span class="userinput">/YOUR/PATH/TO/cert.pem</span>;
+  ssl_certificate_key <span class="userinput">/YOUR/PATH/TO/cert.key</span>;
 
   # Clients need to be able to upload blocks of data up to 64MiB in size.
   client_max_body_size    64m;

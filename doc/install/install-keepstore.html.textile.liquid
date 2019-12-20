@@ -36,8 +36,8 @@ By convention, we use the following hostname pattern:
 <div class="offset1">
 table(table table-bordered table-condensed).
 |_. Hostname|
-|keep0.@ClusterID@.example.com|
-|keep1.@ClusterID@.example.com|
+|@keep0.ClusterID.example.com@|
+|@keep1.ClusterID.example.com@|
 </div>
 
 Keepstore servers should not be directly accessible from the Internet (they are accessed via "keepproxy":install-keepproxy.html), so the hostnames only need to resolve on the private network.

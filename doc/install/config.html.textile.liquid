@@ -15,7 +15,7 @@ The configuration file is normally found at @/etc/arvados/config.yml@ and will b
 
 h3. Syntax
 
-The configuration file is in "YAML":https://yaml.org/ format.  This is a block syntax where indentation is significant (similar to Python).  By convention we use two space indent.  The first line of the file is always "Clusters:", underneath it at the first indent level is the Cluster ID.  All the actual cluster configuration come under the Cluster ID.  This means all configuration parameters are indented by at least two levels (four spaces).  Comments start with @#@ .
+The configuration file is in "YAML":https://yaml.org/ format.  This is a block syntax where indentation is significant (similar to Python).  By convention we use two space indent.  The first line of the file is always "Clusters:", underneath it at the first indent level is the Cluster ID.  All the actual cluster configuration follows under the Cluster ID.  This means all configuration parameters are indented by at least two levels (four spaces).  Comments start with @#@ .
 
 We recommend a YAML-syntax plugin for your favorite text editor, such as @yaml-mode@ (Emacs) or @yaml-vim@.
 
