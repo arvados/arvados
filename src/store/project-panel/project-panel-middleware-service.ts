@@ -29,7 +29,7 @@ import { ListResults } from '~/services/common-service/common-service';
 import { loadContainers } from '~/store/processes/processes-actions';
 import { ResourceKind } from '~/models/resource';
 import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
-import { serializeResourceTypeFilters } from '~/store/resource-type-filters/resource-type-filters';
+import { serializeResourceTypeFilters, ProcessStatusFilter } from '~/store/resource-type-filters/resource-type-filters';
 import { updatePublicFavorites } from '~/store/public-favorites/public-favorites-actions';
 
 export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService {
@@ -103,6 +103,10 @@ export const getParams = (dataExplorer: DataExplorer, isProjectTrashed: boolean)
 export const getFilters = (dataExplorer: DataExplorer) => {
     const columns = dataExplorer.columns as DataColumns<string>;
     const typeFilters = serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.TYPE));
+    const statusColumnFilters = getDataExplorerColumnFilters(columns, 'Status');
+    const activeStatusFilter = Object.keys(statusColumnFilters).find(
+        filterName => statusColumnFilters[filterName].selected
+    );
 
     // TODO: Extract group contents name filter
     const nameFilters = new FilterBuilder()
@@ -111,12 +115,35 @@ export const getFilters = (dataExplorer: DataExplorer) => {
         .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROJECT)
         .getFilters();
 
+    // Filter by container status
+    const fb = new FilterBuilder();
+    switch (activeStatusFilter) {
+        case ProcessStatusFilter.COMPLETED: {
+            fb.addEqual('container.state', 'Complete', GroupContentsResourcePrefix.PROCESS);
+            fb.addEqual('container.exit_code', '0', GroupContentsResourcePrefix.PROCESS);
+            break;
+        }
+        case ProcessStatusFilter.FAILED: {
+            fb.addEqual('container.state', 'Complete', GroupContentsResourcePrefix.PROCESS);
+            fb.addDistinct('container.exit_code', '0', GroupContentsResourcePrefix.PROCESS);
+            break;
+        }
+        case ProcessStatusFilter.CANCELLED:
+        case ProcessStatusFilter.FAILED:
+        case ProcessStatusFilter.LOCKED:
+        case ProcessStatusFilter.QUEUED:
+        case ProcessStatusFilter.RUNNING: {
+            fb.addEqual('container.state', activeStatusFilter, GroupContentsResourcePrefix.PROCESS);
+            break;
+        }
+    }
+    const statusFilters = fb.getFilters();
+
     return joinFilters(
+        statusFilters,
         typeFilters,
         nameFilters,
     );
-    // TODO: Restore process status filters
-    // const statusFilters = getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.STATUS);
 };
 
 export const getOrder = (dataExplorer: DataExplorer) => {
