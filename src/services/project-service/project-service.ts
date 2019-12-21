@@ -18,7 +18,7 @@ export class ProjectService extends GroupsService<ProjectResource> {
         return super.list({
             ...args,
             filters: joinFilters(
-                args.filters,
+                args.filters || '',
                 new FilterBuilder()
                     .addEqual("group_class", GroupClass.PROJECT)
                     .getFilters()

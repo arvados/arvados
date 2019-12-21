@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-export function joinFilters(filters0?: string, filters1?: string) {
-    return [filters0, filters1].filter(s => s).join(",");
+export function joinFilters(...filters: string[]) {
+    return filters.filter(s => s).join(",");
 }
 
 export class FilterBuilder {
