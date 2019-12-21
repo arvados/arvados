@@ -112,6 +112,23 @@ func (suite *IntegrationSuite) TestCancelIfNoInstanceType(c *check.C) {
 	client := arvados.NewClientFromEnv()
 	cq := NewQueue(logger(), nil, errorTypeChooser, client)
 
+	ch := cq.Subscribe()
+	go func() {
+		defer cq.Unsubscribe(ch)
+		for range ch {
+			// Container should never be added to
+			// queue. Note that polling the queue this way
+			// doesn't guarantee a bug (container being
+			// incorrectly added to the queue) will cause
+			// a test failure.
+			_, ok := cq.Get(arvadostest.QueuedContainerUUID)
+			if !c.Check(ok, check.Equals, false) {
+				// Don't spam the log with more failures
+				break
+			}
+		}
+	}()
+
 	var ctr arvados.Container
 	err := client.RequestAndDecode(&ctr, "GET", "arvados/v1/containers/"+arvadostest.QueuedContainerUUID, nil, nil)
 	c.Check(err, check.IsNil)
@@ -121,18 +138,10 @@ func (suite *IntegrationSuite) TestCancelIfNoInstanceType(c *check.C) {
 	// will have state=Cancelled or just disappear from the queue.
 	suite.waitfor(c, time.Second, func() bool {
 		cq.Update()
-
-		// Container should never be added to queue
-		_, ok := cq.Get(arvadostest.QueuedContainerUUID)
-		c.Check(ok, check.Equals, false)
-
 		err := client.RequestAndDecode(&ctr, "GET", "arvados/v1/containers/"+arvadostest.QueuedContainerUUID, nil, nil)
 		return err == nil && ctr.State == arvados.ContainerStateCancelled
 	})
 	c.Check(ctr.RuntimeStatus["error"], check.Equals, `no suitable instance type`)
-
-	_, ok := cq.Get(arvadostest.QueuedContainerUUID)
-	c.Check(ok, check.Equals, false)
 }
 
 func (suite *IntegrationSuite) waitfor(c *check.C, timeout time.Duration, fn func() bool) {
