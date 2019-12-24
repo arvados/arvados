@@ -57,27 +57,35 @@ export const getSimpleObjectTypeFilters = pipe(
     initFilter(ObjectTypeFilter.COLLECTION),
 );
 
+// Using pipe() with more tha 7 arguments makes the return type be 'any',
+// causing compile issues.
 export const getInitialResourceTypeFilters = pipe(
     (): DataTableFilters => createTree<DataTableFilterItem>(),
     initFilter(ObjectTypeFilter.PROJECT),
-    initFilter(ObjectTypeFilter.PROCESS),
-    initFilter(ProcessTypeFilter.MAIN_PROCESS, ObjectTypeFilter.PROCESS),
-    initFilter(ProcessTypeFilter.CHILD_PROCESS, ObjectTypeFilter.PROCESS),
-    initFilter(ObjectTypeFilter.COLLECTION),
-    initFilter(CollectionTypeFilter.GENERAL_COLLECTION, ObjectTypeFilter.COLLECTION),
-    initFilter(CollectionTypeFilter.OUTPUT_COLLECTION, ObjectTypeFilter.COLLECTION),
-    initFilter(CollectionTypeFilter.LOG_COLLECTION, ObjectTypeFilter.COLLECTION),
+    pipe(
+        initFilter(ObjectTypeFilter.PROCESS),
+        initFilter(ProcessTypeFilter.MAIN_PROCESS, ObjectTypeFilter.PROCESS),
+        initFilter(ProcessTypeFilter.CHILD_PROCESS, ObjectTypeFilter.PROCESS)
+    ),
+    pipe(
+        initFilter(ObjectTypeFilter.COLLECTION),
+        initFilter(CollectionTypeFilter.GENERAL_COLLECTION, ObjectTypeFilter.COLLECTION),
+        initFilter(CollectionTypeFilter.OUTPUT_COLLECTION, ObjectTypeFilter.COLLECTION),
+        initFilter(CollectionTypeFilter.LOG_COLLECTION, ObjectTypeFilter.COLLECTION),
+    ),
 );
 
 export const getInitialProcessStatusFilters = pipe(
     (): DataTableFilters => createTree<DataTableFilterItem>(),
-    initFilter(ProcessStatusFilter.ALL, '', true),
-    initFilter(ProcessStatusFilter.RUNNING, '', false),
-    initFilter(ProcessStatusFilter.FAILED, '', false),
-    initFilter(ProcessStatusFilter.COMPLETED, '', false),
-    initFilter(ProcessStatusFilter.CANCELLED, '', false),
-    initFilter(ProcessStatusFilter.QUEUED, '', false),
-    initFilter(ProcessStatusFilter.LOCKED, '', false),
+    pipe(
+        initFilter(ProcessStatusFilter.ALL, '', true),
+        initFilter(ProcessStatusFilter.RUNNING, '', false),
+        initFilter(ProcessStatusFilter.FAILED, '', false),
+        initFilter(ProcessStatusFilter.COMPLETED, '', false),
+        initFilter(ProcessStatusFilter.CANCELLED, '', false),
+        initFilter(ProcessStatusFilter.QUEUED, '', false),
+        initFilter(ProcessStatusFilter.LOCKED, '', false),
+    ),
 );
 
 export const getTrashPanelTypeFilters = pipe(

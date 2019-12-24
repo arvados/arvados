@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { getInitialResourceTypeFilters, serializeResourceTypeFilters, ObjectTypeFilter, CollectionTypeFilter } from './resource-type-filters';
+import { getInitialResourceTypeFilters, serializeResourceTypeFilters, ObjectTypeFilter, CollectionTypeFilter, ProcessTypeFilter } from './resource-type-filters';
 import { ResourceKind } from '~/models/resource';
 import { deselectNode } from '~/models/tree';
 import { pipe } from 'lodash/fp';
@@ -46,5 +46,31 @@ describe("serializeResourceTypeFilters", () => {
         const serializedFilters = serializeResourceTypeFilters(filters);
         expect(serializedFilters)
             .toEqual(`["uuid","is_a",["${ResourceKind.COLLECTION}"]],["collections.properties.type","not in",["output"]]`);
+    });
+
+    it("should serialize only main processes", () => {
+        const filters = pipe(
+            () => getInitialResourceTypeFilters(),
+            deselectNode(ObjectTypeFilter.PROJECT),
+            deselectNode(ProcessTypeFilter.CHILD_PROCESS),
+            deselectNode(ObjectTypeFilter.COLLECTION)
+        )();
+
+        const serializedFilters = serializeResourceTypeFilters(filters);
+        expect(serializedFilters)
+            .toEqual(`["uuid","is_a",["${ResourceKind.PROCESS}"]],["container_requests.requesting_container_uuid","=",null]`);
+    });
+
+    it("should serialize only child processes", () => {
+        const filters = pipe(
+            () => getInitialResourceTypeFilters(),
+            deselectNode(ObjectTypeFilter.PROJECT),
+            deselectNode(ProcessTypeFilter.MAIN_PROCESS),
+            deselectNode(ObjectTypeFilter.COLLECTION)
+        )();
+
+        const serializedFilters = serializeResourceTypeFilters(filters);
+        expect(serializedFilters)
+            .toEqual(`["uuid","is_a",["${ResourceKind.PROCESS}"]],["container_requests.requesting_container_uuid","!=",null]`);
     });
 });
