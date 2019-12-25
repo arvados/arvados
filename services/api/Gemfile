@@ -4,11 +4,11 @@
 
 source 'https://rubygems.org'
 
-gem 'rails', '~> 5.0.0'
-gem 'responders', '~> 2.0'
+gem 'rails', '~> 5.0.7', '>= 5.0.7.2'
+gem 'responders', '~> 2.4', '>= 2.4.1'
 
 group :test, :development do
-  gem 'factory_bot_rails'
+  gem 'factory_bot_rails', '>= 5.0.1'
   gem 'database_cleaner'
 
   # As of now (2019-03-27) There's an open issue about incompatibilities with
@@ -33,20 +33,20 @@ gem 'oj'
 gem 'therubyracer'
 gem 'uglifier', '~> 2.0'
 
-gem 'jquery-rails'
+gem 'jquery-rails', '>= 4.3.3'
 
 gem 'rvm-capistrano', :group => :test
 
-gem 'acts_as_api'
+gem 'acts_as_api', '>= 1.0.1'
 
-gem 'passenger'
+gem 'passenger', '>= 6.0.2'
 
 # Locking to 5.10.3 to workaround issue in 5.11.1 (https://github.com/seattlerb/minitest/issues/730)
 gem 'minitest', '5.10.3'
 
 # Restricted because omniauth >= 1.5.0 requires Ruby >= 2.1.9:
-gem 'omniauth', '~> 1.4.0'
-gem 'omniauth-oauth2', '~> 1.1'
+gem 'omniauth', '~> 1.4.3'
+gem 'omniauth-oauth2', '~> 1.5', '>= 1.5.0'
 
 gem 'andand'
 
@@ -65,15 +65,15 @@ gem 'httpclient'
 
 gem 'sshkey'
 gem 'safe_yaml'
-gem 'lograge'
+gem 'lograge', '>= 0.10.0'
 gem 'logstash-event'
 
 gem 'rails-observers'
 
 gem 'rails-perftest'
-gem 'rails-controller-testing'
+gem 'rails-controller-testing', '>= 1.0.4'
 
-gem 'sass-rails'
+gem 'sass-rails', '>= 5.0.7'
 
 # arvados-google-api-client and googleauth depend on signet, but
 # signet 0.12 is incompatible with ruby 2.3.
