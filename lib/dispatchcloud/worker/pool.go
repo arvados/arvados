@@ -102,6 +102,7 @@ func NewPool(logger logrus.FieldLogger, arvClient *arvados.Client, reg *promethe
 		instanceSet:        &throttledInstanceSet{InstanceSet: instanceSet},
 		newExecutor:        newExecutor,
 		bootProbeCommand:   cluster.Containers.CloudVMs.BootProbeCommand,
+		runnerSource:       cluster.Containers.CloudVMs.DeployRunnerBinary,
 		imageID:            cloud.ImageID(cluster.Containers.CloudVMs.ImageID),
 		instanceTypes:      cluster.InstanceTypes,
 		maxProbesPerSecond: cluster.Containers.CloudVMs.MaxProbesPerSecond,
