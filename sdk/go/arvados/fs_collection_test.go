@@ -17,6 +17,7 @@ import (
 	"os"
 	"regexp"
 	"runtime"
+	"runtime/pprof"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -1280,6 +1281,47 @@ func (s *CollectionFSSuite) TestMaxUnflushed(c *check.C) {
 	fs.Flush("", true)
 }
 
+func (s *CollectionFSSuite) TestFlushStress(c *check.C) {
+	done := false
+	defer func() { done = true }()
+	time.AfterFunc(10*time.Second, func() {
+		if !done {
+			pprof.Lookup("goroutine").WriteTo(os.Stderr, 1)
+			panic("timeout")
+		}
+	})
+
+	wrote := 0
+	s.kc.onPut = func(p []byte) {
+		s.kc.Lock()
+		s.kc.blocks = map[string][]byte{}
+		wrote++
+		defer c.Logf("wrote block %d, %d bytes", wrote, len(p))
+		s.kc.Unlock()
+		time.Sleep(20 * time.Millisecond)
+	}
+
+	fs, err := (&Collection{}).FileSystem(s.client, s.kc)
+	c.Assert(err, check.IsNil)
+
+	data := make([]byte, 1<<20)
+	for i := 0; i < 3; i++ {
+		dir := fmt.Sprintf("dir%d", i)
+		fs.Mkdir(dir, 0755)
+		for j := 0; j < 200; j++ {
+			data[0] = byte(j)
+			f, err := fs.OpenFile(fmt.Sprintf("%s/file%d", dir, j), os.O_WRONLY|os.O_CREATE, 0)
+			c.Assert(err, check.IsNil)
+			_, err = f.Write(data)
+			c.Assert(err, check.IsNil)
+			f.Close()
+			fs.Flush(dir, false)
+		}
+		_, err := fs.MarshalManifest(".")
+		c.Check(err, check.IsNil)
+	}
+}
+
 func (s *CollectionFSSuite) TestFlushShort(c *check.C) {
 	s.kc.onPut = func([]byte) {
 		s.kc.Lock()
@@ -1301,6 +1343,9 @@ func (s *CollectionFSSuite) TestFlushShort(c *check.C) {
 			f.Close()
 			fs.Flush(dir, false)
 		}
+		fs.Flush(dir, true)
+		_, err := fs.MarshalManifest(".")
+		c.Check(err, check.IsNil)
 	}
 }
 
