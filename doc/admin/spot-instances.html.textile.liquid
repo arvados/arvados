@@ -20,7 +20,7 @@ To use preemptible instances, set @UsePreemptibleInstances: true@ and add entrie
 
 <pre>
 Clusters:
-  uuid_prefix:
+  ClusterID: 
     Containers:
       UsePreemptibleInstances: true
     InstanceTypes:
@@ -42,7 +42,7 @@ Clusters:
 
 When @UsePreemptibleInstances@ is enabled, child containers (workflow steps) will automatically be made preemptible.  Note that because preempting the workflow runner would cancel the entire workflow, the workflow runner runs in a reserved (non-preemptible) instance.
 
-If you are using "crunch-dispatch-cloud":{{site.baseurl}}/install/install-dispatch-cloud.html no additional configuration is required.
+If you are using "arvados-dispatch-cloud":{{site.baseurl}}/install/install-dispatch-cloud.html no additional configuration is required.
 
 If you are using the legacy Nodemanager, "see below":#nodemanager .
 

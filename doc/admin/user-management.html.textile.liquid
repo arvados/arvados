@@ -100,6 +100,10 @@ The fields making up the user profile are described in @Workbench.UserProfileFor
 
 The user profile is checked by workbench after checking if user agreements need to be signed.  The values entered are stored in the @properties@ field on the user object.  Unlike user agreements, the requirement to fill out the user profile is not enforced by the API server.
 
+h2. User visibility
+
+Initially, a user is not part of any groups and will not be able to interact with other users on the system.  The admin should determine who the user is permited to interact with and use Workbench or the "command line":group-management.html#add to create and add the user to the appropriate group(s).
+
 h2(#pre-activated). Pre-setup user by email address
 
 You may create a user account for a user that has not yet logged in, and identify the user by email address.

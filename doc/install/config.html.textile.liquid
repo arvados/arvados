@@ -1,0 +1,68 @@
+---
+layout: default
+navsection: installguide
+title: Configuration files
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+h2. Arados /etc/arvados/config.yml
+
+The configuration file is normally found at @/etc/arvados/config.yml@ and will be referred to as just @config.yml@ in this guide.  This configuration file must be kept in sync across every service node in the cluster, but not shell and compute nodes (which do not require config.yml).
+
+h3. Syntax
+
+The configuration file is in "YAML":https://yaml.org/ format.  This is a block syntax where indentation is significant (similar to Python).  By convention we use two space indent.  The first line of the file is always "Clusters:", underneath it at the first indent level is the Cluster ID.  All the actual cluster configuration follows under the Cluster ID.  This means all configuration parameters are indented by at least two levels (four spaces).  Comments start with @#@ .
+
+We recommend a YAML-syntax plugin for your favorite text editor, such as @yaml-mode@ (Emacs) or @yaml-vim@.
+
+Example file:
+
+<pre>
+Clusters:                         # Clusters block, everything else is listed under this
+  abcde:                          # Cluster ID, everything under it is configuration for this cluster
+    ExampleConfigKey: "fghijk"    # An example configuration key
+    ExampleConfigGroup:           # A group of keys
+      ExampleDurationConfig: 12s  # Example duration
+      ExampleSizeConfig: 99KiB    # Example with a size suffix
+</pre>
+
+Each configuration group may only appear once.  When a configuration key is within a config group, it will be written with the group name leading, for example @ExampleConfigGroup.ExampleSizeConfig@.
+
+Duration suffixes are s=seconds, m=minutes or h=hours.
+
+Size suffixes are K=10 ^3^, Ki=2 ^10^ , M=10 ^6^, Mi=2 ^20^, G=10 ^9^, Gi=2 ^30^, T=10 ^12^, Ti=2 ^40^, P=10 ^15^, Pi=2 ^50^, E=10 ^18^, Ei=2 ^60^.  You can optionally follow with a "B" (eg "MB" or "MiB") for readability (it does not affect the units.)
+
+h3(#empty). Create empty configuration file
+
+Change @webserver-user@ to the user that runs your web server process.  This is @www-data@ on Debian-based systems, and @nginx@ on Red Hat-based systems.
+
+<notextile>
+<pre><code># <span class="userinput">export ClusterID=xxxxx</span>
+# <span class="userinput">umask 027</span>
+# <span class="userinput">mkdir -p /etc/arvados</span>
+# <span class="userinput">cat &gt; /etc/arvados/config.yml &lt;&lt;EOF
+Clusters:
+  ${ClusterID}:
+EOF</span>
+# <span class="userinput">chgrp webserver-user /etc/arvados /etc/arvados/config.yml</span>
+</span></code></pre>
+</notextile>
+
+h2. Nginx configuration
+
+This guide will also cover setting up "Nginx":https://www.nginx.com/ as a reverse proxy for Arvados services.  Nginx performs two main functions: TLS termination and virtual host routing.  The virtual host configuration for each component will go in its own file in @/etc/nginx/conf.d/@.
+
+h2. Synchronizing config file
+
+The Arvados configuration file must be kept in sync across every service node in the cluster.  We strongly recommend using a devops configuration management tool such as "Puppet":https://puppet.com/open-source/ to synchronize the config file.  Alternately, something like the following script to securely copy the configuration file to each node may be helpful.  Replace the @ssh@ targets with your nodes.
+
+<notextile>
+<pre><code>#!/bin/sh
+sudo cat /etc/arvados/config.yml | ssh <span class="userinput">10.0.0.2</span> sudo sh -c "'cat > /etc/arvados/config.yml'"
+sudo cat /etc/arvados/config.yml | ssh <span class="userinput">10.0.0.3</span> sudo sh -c "'cat > /etc/arvados/config.yml'"
+</code></pre>
+</notextile>

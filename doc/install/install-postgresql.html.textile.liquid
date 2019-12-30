@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: installguide
-title: Set up PostgreSQL databases
+title: Install PostgreSQL 9.4+
 ...
 {% comment %}
 Copyright (C) The Arvados Authors. All rights reserved.
@@ -9,35 +9,24 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-Two Arvados Rails servers store data in a PostgreSQL database: the SSO server, and the API server.  The API server requires at least version *9.4* of PostgreSQL.  Beyond that, you have the flexibility to deploy PostgreSQL any way that the Rails servers will be able to connect to it.  Our recommended deployment strategy is:
+Arvados requires at least version *9.4* of PostgreSQL.
 
-* Install PostgreSQL on the same host as the SSO server, and dedicate that install to hosting the SSO database.  This provides the best security for the SSO server, because the database does not have to accept any client connections over the network.  Typical load on the SSO server is light enough that deploying both it and its database on the same host does not compromise performance.
-* If you want to provide the most scalability for your Arvados cluster, install PostgreSQL for the API server on a dedicated host.  This gives you the most flexibility to avoid resource contention, and tune performance separately for the API server and its database.  If performance is less of a concern for your installation, you can install PostgreSQL on the API server host directly, as with the SSO server.
-
-Find the section for your distribution below, and follow it to install PostgreSQL on each host where you will deploy it.  Then follow the steps in the later section(s) to set up PostgreSQL for the Arvados service(s) that need it.
-
-It is important to make sure that autovacuum is enabled for the PostgreSQL database that backs the API server. Autovacuum is enabled by default since PostgreSQL 8.3.
-
-h2. Install PostgreSQL 9.4+
-
-The API server requires at least version *9.4* of PostgreSQL.
+* "CentOS 7":#centos7
+* "Debian or Ubuntu":#debian
 
 h3(#centos7). CentOS 7
 {% assign rh_version = "7" %}
 {% include 'note_python_sc' %}
 
-# Install PostgreSQL:
-  <notextile><pre>~$ <span class="userinput">sudo yum install rh-postgresql95 rh-postgresql95-postgresql-contrib</span>
+# Install PostgreSQL
+  <notextile><pre># <span class="userinput">yum install rh-postgresql95 rh-postgresql95-postgresql-contrib</span>
 ~$ <span class="userinput">scl enable rh-postgresql95 bash</span></pre></notextile>
-# Initialize the database:
-  <notextile><pre>~$ <span class="userinput">sudo postgresql-setup initdb</span></pre></notextile>
-# Configure the database to accept password connections:
-  <notextile><pre><code>~$ <span class="userinput">sudo sed -ri -e 's/^(host +all +all +(127\.0\.0\.1\/32|::1\/128) +)ident$/\1md5/' /var/lib/pgsql/data/pg_hba.conf</span></code></pre></notextile>
-# Configure the database to launch at boot:
-  <notextile><pre>~$ <span class="userinput">sudo systemctl enable rh-postgresql95-postgresql</span></pre></notextile>
-# Start the database:
-  <notextile><pre>~$ <span class="userinput">sudo systemctl start rh-postgresql95-postgresql</span></pre></notextile>
-# "Set up Arvados credentials and databases":#rails_setup for the services that will use this PostgreSQL install.
+# Initialize the database
+  <notextile><pre># <span class="userinput">postgresql-setup initdb</span></pre></notextile>
+# Configure the database to accept password connections
+  <notextile><pre><code># <span class="userinput">sed -ri -e 's/^(host +all +all +(127\.0\.0\.1\/32|::1\/128) +)ident$/\1md5/' /var/lib/pgsql/data/pg_hba.conf</span></code></pre></notextile>
+# Configure the database to launch at boot and start now
+  <notextile><pre># <span class="userinput">systemctl enable --now rh-postgresql95-postgresql</span></pre></notextile>
 
 h3(#debian). Debian or Ubuntu
 
@@ -45,22 +34,7 @@ Debian 8 (Jessie) and Ubuntu 16.04 (Xenial) and later versions include a suffici
 
 Ubuntu 14.04 (Trusty) requires an updated PostgreSQL version, see "the PostgreSQL ubuntu repository":https://www.postgresql.org/download/linux/ubuntu/
 
-# Install PostgreSQL:
-  <notextile><pre>~$ <span class="userinput">sudo apt-get install postgresql postgresql-contrib</span></pre></notextile>
-# "Set up Arvados credentials and databases":#rails_setup for the services that will use this PostgreSQL install.
-
-<a name="rails_setup"></a>
-
-h2(#sso). Set up SSO server credentials and database
-
-{% assign service_role = "arvados_sso" %}
-{% assign service_database = "arvados_sso_production" %}
-{% assign use_contrib = false %}
-{% include 'install_postgres_database' %}
-
-h2(#api). Set up API server credentials and database
-
-{% assign service_role = "arvados" %}
-{% assign service_database = "arvados_production" %}
-{% assign use_contrib = true %}
-{% include 'install_postgres_database' %}
+# Install PostgreSQL
+  <notextile><pre># <span class="userinput">apt-get --no-install-recommends install postgresql postgresql-contrib</span></pre></notextile>
+# Configure the database to launch at boot and start now
+  <notextile><pre># <span class="userinput">systemctl enable --now postgresql</span></pre></notextile>

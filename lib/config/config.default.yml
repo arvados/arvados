@@ -882,7 +882,6 @@ Clusters:
           SAMPLE: true
         Driver: s3
         DriverParameters:
-
           # for s3 driver -- see
           # https://doc.arvados.org/install/configure-s3-object-storage.html
           IAMRole: aaaaa
@@ -896,6 +895,15 @@ Clusters:
           ConnectTimeout: 1m
           ReadTimeout: 10m
           RaceWindow: 24h
+
+          # For S3 driver, potentially unsafe tuning parameter,
+          # intentionally excluded from main documentation.
+          #
+          # Enable deletion (garbage collection) even when the
+          # configured BlobTrashLifetime is zero.  WARNING: eventual
+          # consistency may result in race conditions that can cause
+          # data loss.  Do not enable this unless you understand and
+          # accept the risk.
           UnsafeDelete: false
 
           # for azure driver -- see
@@ -914,6 +922,21 @@ Clusters:
           # for local directory driver -- see
           # https://doc.arvados.org/install/configure-fs-storage.html
           Root: /var/lib/arvados/keep-data
+
+          # For local directory driver, potentially confusing tuning
+          # parameter, intentionally excluded from main documentation.
+          #
+          # When true, read and write operations (for whole 64MiB
+          # blocks) on an individual volume will queued and issued
+          # serially.  When false, read and write operations will be
+          # issued concurrently.
+          #
+          # May possibly improve throughput if you have physical spinning disks
+          # and experience contention when there are multiple requests
+          # to the same volume.
+          #
+          # Otherwise, when using SSDs, RAID, or a shared network filesystem, you
+          # should leave this alone.
           Serialize: false
 
     Mail:
