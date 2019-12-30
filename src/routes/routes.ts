@@ -47,6 +47,7 @@ export const Routes = {
     LINKS: '/links',
     PUBLIC_FAVORITES: '/public-favorites',
     COLLECTIONS_CONTENT_ADDRESS: '/collections/:id',
+    ALL_PROCESSES: '/all_processes',
 };
 
 export const getResourceUrl = (uuid: string) => {
