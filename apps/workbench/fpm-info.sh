@@ -4,9 +4,9 @@
 
 case "$TARGET" in
     centos*)
-        fpm_depends+=(git)
+        fpm_depends+=(git bison make automake gcc gcc-c++)
         ;;
     debian* | ubuntu*)
-        fpm_depends+=(git g++)
+        fpm_depends+=(git g++ bison zlib1g-dev make)
         ;;
 esac

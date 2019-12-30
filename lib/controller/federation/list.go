@@ -12,8 +12,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 )
 
 //go:generate go run generate.go

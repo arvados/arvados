@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 )
@@ -343,12 +343,19 @@ func (cq *Queue) updateWithResp(uuid string, resp arvados.Container) {
 	if cq.dontupdate != nil {
 		cq.dontupdate[uuid] = struct{}{}
 	}
-	if ent, ok := cq.current[uuid]; !ok {
-		cq.addEnt(uuid, resp)
-	} else {
-		ent.Container.State, ent.Container.Priority, ent.Container.LockedByUUID = resp.State, resp.Priority, resp.LockedByUUID
-		cq.current[uuid] = ent
+	ent, ok := cq.current[uuid]
+	if !ok {
+		// Container is not in queue (e.g., it was not added
+		// because there is no suitable instance type, and
+		// we're just locking/updating it in order to set an
+		// error message). No need to add it, and we don't
+		// necessarily have enough information to add it here
+		// anyway because lock/unlock responses don't include
+		// runtime_constraints.
+		return
 	}
+	ent.Container.State, ent.Container.Priority, ent.Container.LockedByUUID = resp.State, resp.Priority, resp.LockedByUUID
+	cq.current[uuid] = ent
 	cq.notify()
 }
 

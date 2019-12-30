@@ -12,7 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/stats"
+	"git.arvados.org/arvados.git/sdk/go/stats"
 	"github.com/lib/pq"
 )
 

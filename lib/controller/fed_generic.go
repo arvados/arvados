@@ -14,7 +14,7 @@ import (
 	"regexp"
 	"sync"
 
-	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 )
 
 type federatedRequestDelegate func(

@@ -9,6 +9,7 @@ import "time"
 // User is an arvados#user record
 type User struct {
 	UUID                 string                 `json:"uuid"`
+	Etag                 string                 `json:"etag"`
 	IsActive             bool                   `json:"is_active"`
 	IsAdmin              bool                   `json:"is_admin"`
 	Username             string                 `json:"username"`
@@ -24,6 +25,7 @@ type User struct {
 	ModifiedByUserUUID   string                 `json:"modified_by_user_uuid"`
 	ModifiedByClientUUID string                 `json:"modified_by_client_uuid"`
 	Prefs                map[string]interface{} `json:"prefs"`
+	WritableBy           []string               `json:"writable_by,omitempty"`
 }
 
 // UserList is an arvados#userList resource.

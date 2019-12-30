@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"gopkg.in/src-d/go-billy.v4/osfs"
 	git "gopkg.in/src-d/go-git.v4"
 	git_config "gopkg.in/src-d/go-git.v4/config"

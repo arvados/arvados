@@ -518,7 +518,7 @@ Clusters:
       # "https://zzzzz.example.com/login") as an authorized redirect
       # URL.
       #
-      # Requires EnableBetaController14287. ProviderAppID must be
+      # Incompatible with ForceLegacyAPI14. ProviderAppID must be
       # blank.
       GoogleClientID: ""
       GoogleClientSecret: ""
@@ -1115,6 +1115,10 @@ Clusters:
         <p>An administrator must activate your account before you can get
         any further.</p>
 
-    # Use experimental controller code (see https://dev.arvados.org/issues/14287)
-    EnableBetaController14287: false
+    # Bypass new (Arvados 1.5) API implementations, and hand off
+    # requests directly to Rails instead. This can provide a temporary
+    # workaround for clients that are incompatible with the new API
+    # implementation. Note that it also disables some new federation
+    # features and will be removed in a future release.
+    ForceLegacyAPI14: false
 `)

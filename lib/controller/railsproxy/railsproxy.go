@@ -11,8 +11,8 @@ import (
 	"net/url"
 	"strings"
 
-	"git.curoverse.com/arvados.git/lib/controller/rpc"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/lib/controller/rpc"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
 
 // For now, FindRailsAPI always uses the rails API running on this

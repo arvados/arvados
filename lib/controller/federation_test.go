@@ -18,11 +18,11 @@ import (
 	"strings"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
-	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
-	"git.curoverse.com/arvados.git/sdk/go/httpserver"
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
+	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
@@ -57,9 +57,9 @@ func (s *FederationSuite) SetUpTest(c *check.C) {
 	c.Assert(s.remoteMock.Start(), check.IsNil)
 
 	cluster := &arvados.Cluster{
-		ClusterID:                 "zhome",
-		PostgreSQL:                integrationTestCluster().PostgreSQL,
-		EnableBetaController14287: enableBetaController14287,
+		ClusterID:        "zhome",
+		PostgreSQL:       integrationTestCluster().PostgreSQL,
+		ForceLegacyAPI14: forceLegacyAPI14,
 	}
 	cluster.TLS.Insecure = true
 	cluster.API.MaxItemsPerResponse = 1000

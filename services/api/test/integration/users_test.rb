@@ -14,7 +14,6 @@ class UsersTest < ActionDispatch::IntegrationTest
     post "/arvados/v1/users/setup",
       params: {
         repo_name: repo_name,
-        openid_prefix: 'https://www.google.com/accounts/o8/id',
         user: {
           uuid: 'zzzzz-tpzed-abcdefghijklmno',
           first_name: "in_create_test_first_name",
@@ -54,7 +53,6 @@ class UsersTest < ActionDispatch::IntegrationTest
       params: {
         repo_name: repo_name,
         vm_uuid: virtual_machines(:testvm).uuid,
-        openid_prefix: 'https://www.google.com/accounts/o8/id',
         user: {
           uuid: 'zzzzz-tpzed-abcdefghijklmno',
           first_name: "in_create_test_first_name",
@@ -70,7 +68,6 @@ class UsersTest < ActionDispatch::IntegrationTest
       params: {
         repo_name: repo_name,
         vm_uuid: virtual_machines(:testvm).uuid,
-        openid_prefix: 'https://www.google.com/accounts/o8/id',
         uuid: 'zzzzz-tpzed-abcdefghijklmno',
       },
       headers: auth(:admin)
@@ -100,7 +97,6 @@ class UsersTest < ActionDispatch::IntegrationTest
   test "setup user in multiple steps and verify response" do
     post "/arvados/v1/users/setup",
       params: {
-        openid_prefix: 'http://www.example.com/account',
         user: {
           email: "foo@example.com"
         }
@@ -126,7 +122,6 @@ class UsersTest < ActionDispatch::IntegrationTest
    # invoke setup with a repository
     post "/arvados/v1/users/setup",
       params: {
-        openid_prefix: 'http://www.example.com/account',
         repo_name: 'newusertestrepo',
         uuid: created['uuid']
       },
@@ -153,7 +148,6 @@ class UsersTest < ActionDispatch::IntegrationTest
     post "/arvados/v1/users/setup",
       params: {
         vm_uuid: virtual_machines(:testvm).uuid,
-        openid_prefix: 'http://www.example.com/account',
         user: {
           email: 'junk_email'
         },
@@ -182,7 +176,6 @@ class UsersTest < ActionDispatch::IntegrationTest
         repo_name: 'newusertestrepo',
         vm_uuid: virtual_machines(:testvm).uuid,
         user: {email: 'foo@example.com'},
-        openid_prefix: 'https://www.google.com/accounts/o8/id'
       },
       headers: auth(:admin)
 

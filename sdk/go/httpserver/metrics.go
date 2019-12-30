@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/auth"
-	"git.curoverse.com/arvados.git/sdk/go/stats"
+	"git.arvados.org/arvados.git/sdk/go/auth"
+	"git.arvados.org/arvados.git/sdk/go/stats"
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"

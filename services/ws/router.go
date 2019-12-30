@@ -13,9 +13,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
-	"git.curoverse.com/arvados.git/sdk/go/health"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/health"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/websocket"
 )

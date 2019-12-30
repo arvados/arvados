@@ -7,11 +7,11 @@ package main
 import (
 	"os"
 
-	"git.curoverse.com/arvados.git/lib/cloud/cloudtest"
-	"git.curoverse.com/arvados.git/lib/cmd"
-	"git.curoverse.com/arvados.git/lib/config"
-	"git.curoverse.com/arvados.git/lib/controller"
-	"git.curoverse.com/arvados.git/lib/dispatchcloud"
+	"git.arvados.org/arvados.git/lib/cloud/cloudtest"
+	"git.arvados.org/arvados.git/lib/cmd"
+	"git.arvados.org/arvados.git/lib/config"
+	"git.arvados.org/arvados.git/lib/controller"
+	"git.arvados.org/arvados.git/lib/dispatchcloud"
 )
 
 var (

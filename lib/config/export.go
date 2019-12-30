@@ -11,7 +11,7 @@ import (
 	"io"
 	"strings"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
 
 // ExportJSON writes a JSON object with the safe (non-secret) portions
@@ -124,7 +124,7 @@ var whitelist = map[string]bool{
 	"Containers.SupportedDockerImageFormats":       true,
 	"Containers.SupportedDockerImageFormats.*":     true,
 	"Containers.UsePreemptibleInstances":           true,
-	"EnableBetaController14287":                    false,
+	"ForceLegacyAPI14":                             false,
 	"Git":                                          false,
 	"InstanceTypes":                                true,
 	"InstanceTypes.*":                              true,

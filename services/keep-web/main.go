@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"os"
 
-	"git.curoverse.com/arvados.git/lib/config"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/lib/config"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"github.com/coreos/go-systemd/daemon"
 	"github.com/ghodss/yaml"
 	log "github.com/sirupsen/logrus"

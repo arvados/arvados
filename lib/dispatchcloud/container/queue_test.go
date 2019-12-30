@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
@@ -112,16 +112,32 @@ func (suite *IntegrationSuite) TestCancelIfNoInstanceType(c *check.C) {
 	client := arvados.NewClientFromEnv()
 	cq := NewQueue(logger(), nil, errorTypeChooser, client)
 
+	ch := cq.Subscribe()
+	go func() {
+		defer cq.Unsubscribe(ch)
+		for range ch {
+			// Container should never be added to
+			// queue. Note that polling the queue this way
+			// doesn't guarantee a bug (container being
+			// incorrectly added to the queue) will cause
+			// a test failure.
+			_, ok := cq.Get(arvadostest.QueuedContainerUUID)
+			if !c.Check(ok, check.Equals, false) {
+				// Don't spam the log with more failures
+				break
+			}
+		}
+	}()
+
 	var ctr arvados.Container
 	err := client.RequestAndDecode(&ctr, "GET", "arvados/v1/containers/"+arvadostest.QueuedContainerUUID, nil, nil)
 	c.Check(err, check.IsNil)
 	c.Check(ctr.State, check.Equals, arvados.ContainerStateQueued)
 
-	cq.Update()
-
 	// Wait for the cancel operation to take effect. Container
 	// will have state=Cancelled or just disappear from the queue.
 	suite.waitfor(c, time.Second, func() bool {
+		cq.Update()
 		err := client.RequestAndDecode(&ctr, "GET", "arvados/v1/containers/"+arvadostest.QueuedContainerUUID, nil, nil)
 		return err == nil && ctr.State == arvados.ContainerStateCancelled
 	})

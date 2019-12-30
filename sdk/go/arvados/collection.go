@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
+	"git.arvados.org/arvados.git/sdk/go/blockdigest"
 )
 
 // Collection is an arvados#collection resource.
@@ -36,6 +36,7 @@ type Collection struct {
 	DeleteAt                  *time.Time             `json:"delete_at"`
 	IsTrashed                 bool                   `json:"is_trashed"`
 	Properties                map[string]interface{} `json:"properties"`
+	WritableBy                []string               `json:"writable_by,omitempty"`
 }
 
 func (c Collection) resourceName() string {

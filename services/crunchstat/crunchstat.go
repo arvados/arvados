@@ -16,7 +16,7 @@ import (
 	"syscall"
 	"time"
 
-	"git.curoverse.com/arvados.git/lib/crunchstat"
+	"git.arvados.org/arvados.git/lib/crunchstat"
 )
 
 const MaxLogLine = 1 << 14 // Child stderr lines >16KiB will be split

@@ -26,6 +26,9 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'arvados', '~> 1.3.0', '>= 1.3.0'
   # arvados-google-api-client 0.8.7.2 is incompatible with faraday 0.16.2
   s.add_dependency('faraday', '< 0.16')
+  # arvados-google-api-client (and thus arvados) gems
+  # depend on signet, but signet 0.12 is incompatible with ruby 2.3.
+  s.add_dependency('signet', '< 0.12')
   s.homepage    =
     'https://arvados.org'
 end

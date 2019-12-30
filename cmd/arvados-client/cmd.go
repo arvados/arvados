@@ -7,8 +7,8 @@ package main
 import (
 	"os"
 
-	"git.curoverse.com/arvados.git/lib/cli"
-	"git.curoverse.com/arvados.git/lib/cmd"
+	"git.arvados.org/arvados.git/lib/cli"
+	"git.arvados.org/arvados.git/lib/cmd"
 )
 
 var (

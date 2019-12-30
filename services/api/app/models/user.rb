@@ -188,7 +188,7 @@ class User < ArvadosModel
   end
 
   # create links
-  def setup(openid_prefix:, repo_name: nil, vm_uuid: nil)
+  def setup(repo_name: nil, vm_uuid: nil)
     repo_perm = create_user_repo_link repo_name
     vm_login_perm = create_vm_login_permission_link(vm_uuid, username) if vm_uuid
     group_perm = create_user_group_link
@@ -692,13 +692,13 @@ class User < ArvadosModel
   def setup_on_activate
     return if [system_user_uuid, anonymous_user_uuid].include?(self.uuid)
     if is_active && (new_record? || is_active_changed?)
-      setup(openid_prefix: Rails.configuration.default_openid_prefix)
+      setup
     end
   end
 
   # Automatically setup new user during creation
   def auto_setup_new_user
-    setup(openid_prefix: Rails.configuration.default_openid_prefix)
+    setup
     if username
       create_vm_login_permission_link(Rails.configuration.Users.AutoSetupNewUsersWithVmUUID,
                                       username)

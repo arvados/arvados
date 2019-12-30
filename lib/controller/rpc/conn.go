@@ -17,8 +17,8 @@ import (
 	"strings"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/auth"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/auth"
 )
 
 type TokenProvider func(context.Context) ([]string, error)
@@ -327,25 +327,25 @@ func (conn *Conn) UserUpdateUUID(ctx context.Context, options arvados.UpdateUUID
 	return resp, err
 }
 func (conn *Conn) UserMerge(ctx context.Context, options arvados.UserMergeOptions) (arvados.User, error) {
-	ep := arvados.EndpointUserUpdateUUID
+	ep := arvados.EndpointUserMerge
 	var resp arvados.User
 	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
 	return resp, err
 }
 func (conn *Conn) UserActivate(ctx context.Context, options arvados.UserActivateOptions) (arvados.User, error) {
-	ep := arvados.EndpointUserUpdateUUID
+	ep := arvados.EndpointUserActivate
 	var resp arvados.User
 	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
 	return resp, err
 }
 func (conn *Conn) UserSetup(ctx context.Context, options arvados.UserSetupOptions) (map[string]interface{}, error) {
-	ep := arvados.EndpointUserUpdateUUID
+	ep := arvados.EndpointUserSetup
 	var resp map[string]interface{}
 	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
 	return resp, err
 }
 func (conn *Conn) UserUnsetup(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
-	ep := arvados.EndpointUserUpdateUUID
+	ep := arvados.EndpointUserUnsetup
 	var resp arvados.User
 	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
 	return resp, err

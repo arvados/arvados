@@ -7,9 +7,9 @@ package main
 import (
 	"net/http"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/health"
-	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/health"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 )
 
 type server struct {

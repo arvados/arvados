@@ -12,8 +12,8 @@ import (
 	"net/http"
 	"strings"
 
-	"git.curoverse.com/arvados.git/sdk/go/auth"
-	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	"git.arvados.org/arvados.git/sdk/go/auth"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 )
 
 func remoteContainerRequestCreate(

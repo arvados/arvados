@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"git.curoverse.com/arvados.git/lib/dispatchcloud/test"
+	"git.arvados.org/arvados.git/lib/dispatchcloud/test"
 	"golang.org/x/crypto/ssh"
 	check "gopkg.in/check.v1"
 )
