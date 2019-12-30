@@ -790,7 +790,7 @@ func (wp *Pool) loadRunnerData() error {
 	}
 	wp.runnerData = buf
 	wp.runnerMD5 = md5.Sum(buf)
-	wp.runnerCmd = fmt.Sprintf("/var/run/arvados/crunch-run~%x", wp.runnerMD5)
+	wp.runnerCmd = fmt.Sprintf("/var/lib/arvados/crunch-run~%x", wp.runnerMD5)
 	return nil
 }
 

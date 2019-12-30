@@ -387,7 +387,7 @@ func (wkr *worker) copyRunnerData() (stdout, stderr []byte, err error) {
 	// Note touch+chmod come before writing data, to avoid the
 	// possibility of md5 being correct while file mode is
 	// incorrect.
-	cmd := `set -e; dstdir="` + dstdir + `"; dstfile="` + wkr.wp.runnerCmd + `"; mkdir -p "$dstdir"; touch "$dstfile"; chmod 0700 "$dstfile"; cat >"$dstfile"`
+	cmd := `set -e; dstdir="` + dstdir + `"; dstfile="` + wkr.wp.runnerCmd + `"; mkdir -p "$dstdir"; touch "$dstfile"; chmod 0755 "$dstdir" "$dstfile"; cat >"$dstfile"`
 	if wkr.instance.RemoteUser() != "root" {
 		cmd = `sudo sh -c '` + strings.Replace(cmd, "'", "'\\''", -1) + `'`
 	}
