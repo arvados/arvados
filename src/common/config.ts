@@ -38,6 +38,9 @@ export interface ClusterConfigJSON {
         }
         WebDAV: {
             ExternalURL: string
+        },
+        WebDAVDownload: {
+            ExternalURL: string
         }
     };
     Workbench: {
@@ -78,7 +81,7 @@ export const buildConfig = (clusterConfigJSON: ClusterConfigJSON): Config => {
     config.websocketUrl = clusterConfigJSON.Services.Websocket.ExternalURL;
     config.workbench2Url = clusterConfigJSON.Services.Workbench2.ExternalURL;
     config.workbenchUrl = clusterConfigJSON.Services.Workbench1.ExternalURL;
-    config.keepWebServiceUrl = clusterConfigJSON.Services.WebDAV.ExternalURL;
+    config.keepWebServiceUrl = clusterConfigJSON.Services.WebDAVDownload.ExternalURL;
     config.loginCluster = clusterConfigJSON.Login.LoginCluster;
     config.clusterConfig = clusterConfigJSON;
     mapRemoteHosts(clusterConfigJSON, config);
@@ -148,6 +151,7 @@ export const mockClusterConfigJSON = (config: Partial<ClusterConfigJSON>): Clust
         Workbench2: { ExternalURL: "" },
         Websocket: { ExternalURL: "" },
         WebDAV: { ExternalURL: "" },
+        WebDAVDownload: { ExternalURL: "" },
     },
     Workbench: {
         ArvadosDocsite: "",

@@ -42,7 +42,7 @@ RPM_FILE=$(APP_NAME)-$(VERSION)-$(ITERATION).x86_64.rpm
 
 export WORKSPACE?=$(shell pwd)
 
-.PHONY: help clean* yarn-install test build packages packages-with-version 
+.PHONY: help clean* yarn-install test build packages packages-with-version
 
 help:
 	@echo >&2
@@ -106,7 +106,8 @@ $(RPM_FILE): build
 	 $(WORKSPACE)/build/=$(DEST_DIR)
 
 copy: $(DEB_FILE) $(RPM_FILE)
-	for target in $(TARGETS); do \
+	mkdir packages
+	for target in $^ ; do \
 		if [[ $$target =~ ^centos ]]; then
 			cp -p $(RPM_FILE) packages/$$target ; \
 		else
