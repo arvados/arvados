@@ -369,7 +369,6 @@ func (wkr *worker) probeBooted() (ok bool, stderr []byte) {
 		wkr.logger.WithError(err).WithField("stderr", string(stderr2)).Warn("error copying runner binary")
 		return false, stderr2
 	} else {
-		wkr.logger.Info("runner binary OK")
 		stderr = append(stderr, stderr2...)
 	}
 	return true, stderr
@@ -378,9 +377,14 @@ func (wkr *worker) probeBooted() (ok bool, stderr []byte) {
 func (wkr *worker) copyRunnerData() (stdout, stderr []byte, err error) {
 	hash := fmt.Sprintf("%x", wkr.wp.runnerMD5)
 	dstdir, _ := filepath.Split(wkr.wp.runnerCmd)
+	logger := wkr.logger.WithFields(logrus.Fields{
+		"hash": hash,
+		"path": wkr.wp.runnerCmd,
+	})
 
 	stdout, stderr, err = wkr.executor.Execute(nil, `md5sum `+wkr.wp.runnerCmd, nil)
 	if err == nil && len(stderr) == 0 && bytes.Equal(stdout, []byte(hash+"  "+wkr.wp.runnerCmd+"\n")) {
+		logger.Info("runner binary already exists on worker, with correct hash")
 		return
 	}
 
@@ -391,6 +395,7 @@ func (wkr *worker) copyRunnerData() (stdout, stderr []byte, err error) {
 	if wkr.instance.RemoteUser() != "root" {
 		cmd = `sudo sh -c '` + strings.Replace(cmd, "'", "'\\''", -1) + `'`
 	}
+	logger.WithField("cmd", cmd).Info("installing runner binary on worker")
 	stdout, stderr, err = wkr.executor.Execute(nil, cmd, bytes.NewReader(wkr.wp.runnerData))
 	return
 }
