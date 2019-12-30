@@ -65,6 +65,11 @@ type Multi map[string]Handler
 
 func (m Multi) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	_, basename := filepath.Split(prog)
+	if i := strings.Index(basename, "~"); i >= 0 {
+		// drop "~anything" suffix (arvados-dispatch-cloud's
+		// DeployRunnerBinary feature relies on this)
+		basename = basename[:i]
+	}
 	cmd, ok := m[basename]
 	if !ok {
 		// "controller" command exists, and binary is named "arvados-controller"

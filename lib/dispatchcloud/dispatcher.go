@@ -37,6 +37,7 @@ const (
 
 type pool interface {
 	scheduler.WorkerPool
+	CheckHealth() error
 	Instances() []worker.InstanceView
 	SetIdleBehavior(cloud.InstanceID, worker.IdleBehavior) error
 	KillInstance(id cloud.InstanceID, reason string) error
@@ -78,7 +79,7 @@ func (disp *dispatcher) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // CheckHealth implements service.Handler.
 func (disp *dispatcher) CheckHealth() error {
 	disp.Start()
-	return nil
+	return disp.pool.CheckHealth()
 }
 
 // Stop dispatching containers and release resources. Typically used

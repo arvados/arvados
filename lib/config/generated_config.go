@@ -794,6 +794,16 @@ Clusters:
         # Worker VM image ID.
         ImageID: ""
 
+        # An executable file (located on the dispatcher host) to be
+        # copied to cloud instances at runtime and used as the
+        # container runner/supervisor. The default value is the
+        # dispatcher program itself.
+        #
+        # Use the empty string to disable this step: nothing will be
+        # copied, and cloud instances are assumed to have a suitable
+        # version of crunch-run installed.
+        DeployRunnerBinary: "/proc/self/exe"
+
         # Tags to add on all resources (VMs, NICs, disks) created by
         # the container dispatcher. (Arvados's own tags --
         # InstanceType, IdleBehavior, and InstanceSecret -- will also
