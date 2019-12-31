@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package crunchrun
 
 import (
 	"bytes"
@@ -27,6 +27,7 @@ import (
 	"syscall"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/crunchstat"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
@@ -40,7 +41,9 @@ import (
 	dockerclient "github.com/docker/docker/client"
 )
 
-var version = "dev"
+type command struct{}
+
+var Command = command{}
 
 // IArvadosClient is the minimal Arvados API methods used by crunch-run.
 type IArvadosClient interface {
@@ -1527,7 +1530,7 @@ func (runner *ContainerRunner) NewArvLogWriter(name string) (io.WriteCloser, err
 
 // Run the full container lifecycle.
 func (runner *ContainerRunner) Run() (err error) {
-	runner.CrunchLog.Printf("crunch-run %s started", version)
+	runner.CrunchLog.Printf("crunch-run %s started", cmd.Version.String())
 	runner.CrunchLog.Printf("Executing container '%s'", runner.Container.UUID)
 
 	hostname, hosterr := os.Hostname()
@@ -1758,69 +1761,77 @@ func NewContainerRunner(dispatcherClient *arvados.Client,
 	return cr, nil
 }
 
-func main() {
-	statInterval := flag.Duration("crunchstat-interval", 10*time.Second, "sampling period for periodic resource usage reporting")
-	cgroupRoot := flag.String("cgroup-root", "/sys/fs/cgroup", "path to sysfs cgroup tree")
-	cgroupParent := flag.String("cgroup-parent", "docker", "name of container's parent cgroup (ignored if -cgroup-parent-subsystem is used)")
-	cgroupParentSubsystem := flag.String("cgroup-parent-subsystem", "", "use current cgroup for given subsystem as parent cgroup for container")
-	caCertsPath := flag.String("ca-certs", "", "Path to TLS root certificates")
-	detach := flag.Bool("detach", false, "Detach from parent process and run in the background")
-	stdinEnv := flag.Bool("stdin-env", false, "Load environment variables from JSON message on stdin")
-	sleep := flag.Duration("sleep", 0, "Delay before starting (testing use only)")
-	kill := flag.Int("kill", -1, "Send signal to an existing crunch-run process for given UUID")
-	list := flag.Bool("list", false, "List UUIDs of existing crunch-run processes")
-	enableNetwork := flag.String("container-enable-networking", "default",
+func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
+	statInterval := flags.Duration("crunchstat-interval", 10*time.Second, "sampling period for periodic resource usage reporting")
+	cgroupRoot := flags.String("cgroup-root", "/sys/fs/cgroup", "path to sysfs cgroup tree")
+	cgroupParent := flags.String("cgroup-parent", "docker", "name of container's parent cgroup (ignored if -cgroup-parent-subsystem is used)")
+	cgroupParentSubsystem := flags.String("cgroup-parent-subsystem", "", "use current cgroup for given subsystem as parent cgroup for container")
+	caCertsPath := flags.String("ca-certs", "", "Path to TLS root certificates")
+	detach := flags.Bool("detach", false, "Detach from parent process and run in the background")
+	stdinEnv := flags.Bool("stdin-env", false, "Load environment variables from JSON message on stdin")
+	sleep := flags.Duration("sleep", 0, "Delay before starting (testing use only)")
+	kill := flags.Int("kill", -1, "Send signal to an existing crunch-run process for given UUID")
+	list := flags.Bool("list", false, "List UUIDs of existing crunch-run processes")
+	enableNetwork := flags.String("container-enable-networking", "default",
 		`Specify if networking should be enabled for container.  One of 'default', 'always':
     	default: only enable networking if container requests it.
     	always:  containers always have networking enabled
     	`)
-	networkMode := flag.String("container-network-mode", "default",
+	networkMode := flags.String("container-network-mode", "default",
 		`Set networking mode for container.  Corresponds to Docker network mode (--net).
     	`)
-	memprofile := flag.String("memprofile", "", "write memory profile to `file` after running container")
-	getVersion := flag.Bool("version", false, "Print version information and exit.")
-	flag.Duration("check-containerd", 0, "Ignored. Exists for compatibility with older versions.")
+	memprofile := flags.String("memprofile", "", "write memory profile to `file` after running container")
+	flags.Duration("check-containerd", 0, "Ignored. Exists for compatibility with older versions.")
 
 	ignoreDetachFlag := false
-	if len(os.Args) > 1 && os.Args[1] == "-no-detach" {
+	if len(args) > 0 && args[0] == "-no-detach" {
 		// This process was invoked by a parent process, which
 		// has passed along its own arguments, including
 		// -detach, after the leading -no-detach flag.  Strip
 		// the leading -no-detach flag (it's not recognized by
-		// flag.Parse()) and ignore the -detach flag that
+		// flags.Parse()) and ignore the -detach flag that
 		// comes later.
-		os.Args = append([]string{os.Args[0]}, os.Args[2:]...)
+		args = args[1:]
 		ignoreDetachFlag = true
 	}
 
-	flag.Parse()
+	if err := flags.Parse(args); err == flag.ErrHelp {
+		return 0
+	} else if err != nil {
+		log.Print(err)
+		return 1
+	}
 
 	if *stdinEnv && !ignoreDetachFlag {
 		// Load env vars on stdin if asked (but not in a
 		// detached child process, in which case stdin is
 		// /dev/null).
-		loadEnv(os.Stdin)
+		err := loadEnv(os.Stdin)
+		if err != nil {
+			log.Print(err)
+			return 1
+		}
 	}
+
+	containerId := flags.Arg(0)
 
 	switch {
 	case *detach && !ignoreDetachFlag:
-		os.Exit(Detach(flag.Arg(0), os.Args, os.Stdout, os.Stderr))
+		return Detach(containerId, prog, args, os.Stdout, os.Stderr)
 	case *kill >= 0:
-		os.Exit(KillProcess(flag.Arg(0), syscall.Signal(*kill), os.Stdout, os.Stderr))
+		return KillProcess(containerId, syscall.Signal(*kill), os.Stdout, os.Stderr)
 	case *list:
-		os.Exit(ListProcesses(os.Stdout, os.Stderr))
+		return ListProcesses(os.Stdout, os.Stderr)
 	}
 
-	// Print version information if requested
-	if *getVersion {
-		fmt.Printf("crunch-run %s\n", version)
-		return
+	if containerId == "" {
+		log.Printf("usage: %s [options] UUID", prog)
+		return 1
 	}
 
-	log.Printf("crunch-run %s started", version)
+	log.Printf("crunch-run %s started", cmd.Version.String())
 	time.Sleep(*sleep)
-
-	containerId := flag.Arg(0)
 
 	if *caCertsPath != "" {
 		arvadosclient.CertFiles = []string{*caCertsPath}
@@ -1828,13 +1839,15 @@ func main() {
 
 	api, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
-		log.Fatalf("%s: %v", containerId, err)
+		log.Printf("%s: %v", containerId, err)
+		return 1
 	}
 	api.Retries = 8
 
 	kc, kcerr := keepclient.MakeKeepClient(api)
 	if kcerr != nil {
-		log.Fatalf("%s: %v", containerId, kcerr)
+		log.Printf("%s: %v", containerId, kcerr)
+		return 1
 	}
 	kc.BlockCache = &keepclient.BlockCache{MaxBlocks: 2}
 	kc.Retries = 4
@@ -1845,18 +1858,20 @@ func main() {
 
 	cr, err := NewContainerRunner(arvados.NewClientFromEnv(), api, kc, docker, containerId)
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
+		return 1
 	}
 	if dockererr != nil {
 		cr.CrunchLog.Printf("%s: %v", containerId, dockererr)
 		cr.checkBrokenNode(dockererr)
 		cr.CrunchLog.Close()
-		os.Exit(1)
+		return 1
 	}
 
 	parentTemp, tmperr := cr.MkTempDir("", "crunch-run."+containerId+".")
 	if tmperr != nil {
-		log.Fatalf("%s: %v", containerId, tmperr)
+		log.Printf("%s: %v", containerId, tmperr)
+		return 1
 	}
 
 	cr.parentTemp = parentTemp
@@ -1889,24 +1904,27 @@ func main() {
 	}
 
 	if runerr != nil {
-		log.Fatalf("%s: %v", containerId, runerr)
+		log.Printf("%s: %v", containerId, runerr)
+		return 1
 	}
+	return 0
 }
 
-func loadEnv(rdr io.Reader) {
+func loadEnv(rdr io.Reader) error {
 	buf, err := ioutil.ReadAll(rdr)
 	if err != nil {
-		log.Fatalf("read stdin: %s", err)
+		return fmt.Errorf("read stdin: %s", err)
 	}
 	var env map[string]string
 	err = json.Unmarshal(buf, &env)
 	if err != nil {
-		log.Fatalf("decode stdin: %s", err)
+		return fmt.Errorf("decode stdin: %s", err)
 	}
 	for k, v := range env {
 		err = os.Setenv(k, v)
 		if err != nil {
-			log.Fatalf("setenv(%q): %s", k, err)
+			return fmt.Errorf("setenv(%q): %s", k, err)
 		}
 	}
+	return nil
 }

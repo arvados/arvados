@@ -37,6 +37,10 @@ var version = "dev"
 
 type versionCommand struct{}
 
+func (versionCommand) String() string {
+	return fmt.Sprintf("%s (%s)", version, runtime.Version())
+}
+
 func (versionCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	prog = regexp.MustCompile(` -*version$`).ReplaceAllLiteralString(prog, "")
 	fmt.Fprintf(stdout, "%s %s (%s)\n", prog, version, runtime.Version())
@@ -61,9 +65,21 @@ type Multi map[string]Handler
 
 func (m Multi) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	_, basename := filepath.Split(prog)
-	basename = strings.TrimPrefix(basename, "arvados-")
-	basename = strings.TrimPrefix(basename, "crunch-")
-	if cmd, ok := m[basename]; ok {
+	if i := strings.Index(basename, "~"); i >= 0 {
+		// drop "~anything" suffix (arvados-dispatch-cloud's
+		// DeployRunnerBinary feature relies on this)
+		basename = basename[:i]
+	}
+	cmd, ok := m[basename]
+	if !ok {
+		// "controller" command exists, and binary is named "arvados-controller"
+		cmd, ok = m[strings.TrimPrefix(basename, "arvados-")]
+	}
+	if !ok {
+		// "dispatch-slurm" command exists, and binary is named "crunch-dispatch-slurm"
+		cmd, ok = m[strings.TrimPrefix(basename, "crunch-")]
+	}
+	if ok {
 		return cmd.RunCommand(prog, args, stdin, stdout, stderr)
 	} else if len(args) < 1 {
 		fmt.Fprintf(stderr, "usage: %s command [args]\n", prog)

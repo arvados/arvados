@@ -11,6 +11,7 @@ import (
 	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/controller"
+	"git.arvados.org/arvados.git/lib/crunchrun"
 	"git.arvados.org/arvados.git/lib/dispatchcloud"
 )
 
@@ -25,6 +26,7 @@ var (
 		"config-dump":     config.DumpCommand,
 		"config-defaults": config.DumpDefaultsCommand,
 		"controller":      controller.Command,
+		"crunch-run":      crunchrun.Command,
 		"dispatch-cloud":  dispatchcloud.Command,
 	})
 )

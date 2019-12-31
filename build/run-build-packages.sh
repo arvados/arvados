@@ -294,7 +294,7 @@ package_go_binary services/crunch-dispatch-local crunch-dispatch-local \
     "Dispatch Crunch containers on the local system"
 package_go_binary services/crunch-dispatch-slurm crunch-dispatch-slurm \
     "Dispatch Crunch containers to a SLURM cluster"
-package_go_binary services/crunch-run crunch-run \
+package_go_binary cmd/arvados-server crunch-run \
     "Supervise a single Crunch container"
 package_go_binary services/crunchstat crunchstat \
     "Gather cpu/memory/network statistics of running Crunch jobs"

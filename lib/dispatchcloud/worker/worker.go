@@ -5,7 +5,9 @@
 package worker
 
 import (
+	"bytes"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -318,7 +320,7 @@ func (wkr *worker) probeAndUpdate() {
 }
 
 func (wkr *worker) probeRunning() (running []string, reportsBroken, ok bool) {
-	cmd := "crunch-run --list"
+	cmd := wkr.wp.runnerCmd + " --list"
 	if u := wkr.instance.RemoteUser(); u != "root" {
 		cmd = "sudo " + cmd
 	}
@@ -358,7 +360,44 @@ func (wkr *worker) probeBooted() (ok bool, stderr []byte) {
 		return false, stderr
 	}
 	logger.Info("boot probe succeeded")
+	if err = wkr.wp.loadRunnerData(); err != nil {
+		wkr.logger.WithError(err).Warn("cannot boot worker: error loading runner binary")
+		return false, stderr
+	} else if len(wkr.wp.runnerData) == 0 {
+		// Assume crunch-run is already installed
+	} else if _, stderr2, err := wkr.copyRunnerData(); err != nil {
+		wkr.logger.WithError(err).WithField("stderr", string(stderr2)).Warn("error copying runner binary")
+		return false, stderr2
+	} else {
+		stderr = append(stderr, stderr2...)
+	}
 	return true, stderr
+}
+
+func (wkr *worker) copyRunnerData() (stdout, stderr []byte, err error) {
+	hash := fmt.Sprintf("%x", wkr.wp.runnerMD5)
+	dstdir, _ := filepath.Split(wkr.wp.runnerCmd)
+	logger := wkr.logger.WithFields(logrus.Fields{
+		"hash": hash,
+		"path": wkr.wp.runnerCmd,
+	})
+
+	stdout, stderr, err = wkr.executor.Execute(nil, `md5sum `+wkr.wp.runnerCmd, nil)
+	if err == nil && len(stderr) == 0 && bytes.Equal(stdout, []byte(hash+"  "+wkr.wp.runnerCmd+"\n")) {
+		logger.Info("runner binary already exists on worker, with correct hash")
+		return
+	}
+
+	// Note touch+chmod come before writing data, to avoid the
+	// possibility of md5 being correct while file mode is
+	// incorrect.
+	cmd := `set -e; dstdir="` + dstdir + `"; dstfile="` + wkr.wp.runnerCmd + `"; mkdir -p "$dstdir"; touch "$dstfile"; chmod 0755 "$dstdir" "$dstfile"; cat >"$dstfile"`
+	if wkr.instance.RemoteUser() != "root" {
+		cmd = `sudo sh -c '` + strings.Replace(cmd, "'", "'\\''", -1) + `'`
+	}
+	logger.WithField("cmd", cmd).Info("installing runner binary on worker")
+	stdout, stderr, err = wkr.executor.Execute(nil, cmd, bytes.NewReader(wkr.wp.runnerData))
+	return
 }
 
 // caller must have lock.
