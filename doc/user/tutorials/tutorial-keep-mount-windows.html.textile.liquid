@@ -13,12 +13,12 @@ Windows users can browse Keep read-only via WebDAV. Specific collections can als
 
 h3. Browsing Keep (read-only)
 
-Use the 'Map network drive' functionality, and enter @https://collections.uuid_prefix.your.domain/@ in the Folder field. When prompted for credentials, you can fill in an arbitrary string for @Username@, it is ignored by Arvados. Windows will not accept an empty @Username@. Put a valid Arvados token in the @Password@ field.
+Use the 'Map network drive' functionality, and enter @https://collections.ClusterID.example.com/@ in the Folder field. When prompted for credentials, you can fill in an arbitrary string for @Username@, it is ignored by Arvados. Windows will not accept an empty @Username@. Put a valid Arvados token in the @Password@ field.
 
 This mount is read-only. Write support for the @/users/@ directory is planned for a future release.
 
 h3. Accessing a specific collection in Keep (read-write)
 
-Use the 'Map network drive' functionality, and enter @https://collections.uuid_prefix.your.domain/c=your-collection-uuid@ in the Folder field. When prompted for credentials, you can fill in an arbitrary string for @Username@, it is ignored by Arvados. Windows will not accept an empty @Username@. Put a valid token in the @Password@ field.
+Use the 'Map network drive' functionality, and enter @https://collections.ClusterID.example.com/c=your-collection-uuid@ in the Folder field. When prompted for credentials, you can fill in an arbitrary string for @Username@, it is ignored by Arvados. Windows will not accept an empty @Username@. Put a valid token in the @Password@ field.
 
 This collection is now accessible read/write.

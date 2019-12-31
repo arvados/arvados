@@ -70,7 +70,7 @@ func (suite *IntegrationSuite) TestGetLockUnlockCancel(c *check.C) {
 		c.Check(ctr.UUID, check.Equals, uuid)
 
 		wg.Add(1)
-		go func() {
+		go func(uuid string) {
 			defer wg.Done()
 			err := cq.Unlock(uuid)
 			c.Check(err, check.NotNil)
@@ -99,7 +99,7 @@ func (suite *IntegrationSuite) TestGetLockUnlockCancel(c *check.C) {
 			c.Check(ctr.State, check.Equals, arvados.ContainerStateCancelled)
 			err = cq.Lock(uuid)
 			c.Check(err, check.NotNil)
-		}()
+		}(uuid)
 	}
 	wg.Wait()
 }

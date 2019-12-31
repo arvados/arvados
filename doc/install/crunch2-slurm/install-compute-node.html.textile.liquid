@@ -9,35 +9,34 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-h2. Install dependencies
+# "Introduction":#introduction
+# "Set up Docker":#docker
+# "Update fuse.conf":#fuse
+# "Update docker-cleaner.json":#docker-cleaner
+# "Configure Linux cgroups accounting":#cgroups
+# "Install Docker":#install_docker
+# "Configure the Docker daemon":#configure_docker_daemon
+# "Install'python-arvados-fuse and crunch-run and arvados-docker-cleaner":#install-packages
 
-First, "add the appropriate package repository for your distribution":{{ site.baseurl }}/install/install-manual-prerequisites.html#repos.
+h2(#introduction). Introduction
 
-{% include 'note_python_sc' %}
+This page describes how to configure a compute node so that it can be used to run containers dispatched by Arvados.
 
-On Red Hat-based systems:
+* If you are using the cloud dispatcher, apply these step and then save a compute node virtual machine image.  The virtual machine image id will go in @config.yml@.
+* If you are using SLURM on a static custer, these steps must be duplicated on every compute node, preferrably using a devops tool such as Puppet.
 
-<notextile>
-<pre><code>~$ <span class="userinput">echo 'exclude=python2-llfuse' | sudo tee -a /etc/yum.conf</span>
-~$ <span class="userinput">sudo yum install python-arvados-fuse crunch-run arvados-docker-cleaner</span>
-</code></pre>
-</notextile>
+h2(#docker). Set up Docker
 
-On Debian-based systems:
+See "Set up Docker":../install-docker.html
 
-<notextile>
-<pre><code>~$ <span class="userinput">sudo apt-get install python-arvados-fuse crunch-run arvados-docker-cleaner</span>
-</code></pre>
-</notextile>
-
-{% include 'install_compute_docker' %}
+{% assign arvados_component = 'python-arvados-fuse crunch-run arvados-docker-cleaner' %}
 
 {% include 'install_compute_fuse' %}
 
 {% include 'install_docker_cleaner' %}
 
-h2. Set up SLURM
+{% include 'install_packages' %}
 
-Install SLURM on the compute node using the same process you used on the API server in the "previous step":install-slurm.html.
+{% assign arvados_component = 'arvados-docker-cleaner' %}
 
-The @slurm.conf@ and @/etc/munge/munge.key@ files must be identical on all SLURM nodes. Copy the files you created on the API server in the "previous step":install-slurm.html to each compute node.
+{% include 'start_service' %}

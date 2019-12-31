@@ -9,6 +9,11 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
+Containers can be dispatched to a SLURM cluster.  The dispatcher sends work to the cluster using SLURM's @sbatch@ command, so it works in a variety of SLURM configurations.
+
+In order to run containers, you must run the dispatcher as a user that has permission to set up FUSE mounts and run Docker containers on each compute node.  This install guide refers to this user as the @crunch@ user.  We recommend you create this user on each compute node with the same UID and GID, and add it to the @fuse@ and @docker@ system groups to grant it the necessary permissions.  However, you can run the dispatcher under any account with sufficient permissions across the cluster.
+
+
 On the API server, install SLURM and munge, and generate a munge key.
 
 On Debian-based systems:
@@ -29,8 +34,8 @@ On Red Hat-based systems:
 Now we need to give SLURM a configuration file.  On Debian-based systems, this is installed at @/etc/slurm-llnl/slurm.conf@.  On Red Hat-based systems, this is installed at @/etc/slurm/slurm.conf@.  Here's an example @slurm.conf@:
 
 <notextile>
-<pre>
-ControlMachine=uuid_prefix.your.domain
+<pre><code>
+ControlMachine=<span class="userinput">ClusterID.example.com</class>
 SlurmctldPort=6817
 SlurmdPort=6818
 AuthType=auth/munge
@@ -74,7 +79,7 @@ PartitionName=DEFAULT MaxTime=INFINITE State=UP
 
 NodeName=compute[0-255]
 PartitionName=compute Nodes=compute[0-255] Default=YES Shared=YES
-</pre>
+</code></pre>
 </notextile>
 
 h3. SLURM configuration essentials
@@ -92,11 +97,11 @@ Whenever you change this file, you will need to update the copy _on every comput
 Each hostname in @slurm.conf@ must also resolve correctly on all SLURM worker nodes as well as the controller itself. Furthermore, the hostnames used in the configuration file must match the hostnames reported by @hostname@ or @hostname -s@ on the nodes themselves. This applies to the ControlMachine as well as the worker nodes.
 
 For example:
-* In @slurm.conf@ on control and worker nodes: @ControlMachine=uuid_prefix.your.domain@
+* In @slurm.conf@ on control and worker nodes: @ControlMachine=ClusterID.example.com@
 * In @slurm.conf@ on control and worker nodes: @NodeName=compute[0-255]@
-* In @/etc/resolv.conf@ on control and worker nodes: @search uuid_prefix.your.domain@
-* On the control node: @hostname@ reports @uuid_prefix.your.domain@
-* On worker node 123: @hostname@ reports @compute123.uuid_prefix.your.domain@
+* In @/etc/resolv.conf@ on control and worker nodes: @search ClusterID.example.com@
+* On the control node: @hostname@ reports @ClusterID.example.com@
+* On worker node 123: @hostname@ reports @compute123.ClusterID.example.com@
 
 h3. Automatic hostname assignment
 

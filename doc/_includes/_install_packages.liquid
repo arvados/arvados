@@ -1,0 +1,24 @@
+{% comment %}
+packages_to_install should be a list
+fallback on arvados_component if not defined
+{% endcomment %}
+
+{% if package_to_install == nil %}
+  {% assign packages_to_install = arvados_component | split: " " %}
+{% endif %}
+
+h2(#install-packages). Install {{packages_to_install | join: " and " }}
+
+h3. Red Hat and Centos
+
+<notextile>
+<pre><code># <span class="userinput">yum install {{packages_to_install | join: " "}}</span>
+</code></pre>
+</notextile>
+
+h3. Debian and Ubuntu
+
+<notextile>
+<pre><code># <span class="userinput">apt-get install {{packages_to_install  | join " "}}</span>
+</code></pre>
+</notextile>

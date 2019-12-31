@@ -43,6 +43,8 @@ file "sdk/R/arvados/index.html" do |t|
     tgt = Dir.pwd
     Dir.mkdir("sdk/R")
     Dir.mkdir("sdk/R/arvados")
+    puts("tgt", tgt)
+    cp('css/R.css', 'sdk/R/arvados')
     docfiles = []
     Dir.chdir("../sdk/R/") do
       STDERR.puts `Rscript createDoc.R README.Rmd #{tgt}/sdk/R/README.md 2>&1`
@@ -113,6 +115,8 @@ file "sdk/java-v2/javadoc/index.html" do |t|
       docfiles = []
       Dir.chdir("../sdk/java-v2") do
         STDERR.puts `gradle javadoc 2>&1`
+        raise if $? != 0
+        puts `sed -i "s/@import.*dejavu.css.*//g" build/docs/javadoc/stylesheet.css`
         raise if $? != 0
       end
       cp_r("../sdk/java-v2/build/docs/javadoc", "sdk/java-v2")
