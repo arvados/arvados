@@ -586,6 +586,21 @@ func (s *FederationSuite) TestUpdateRemoteContainerRequest(c *check.C) {
 	setPri(1) // Reset fixture so side effect doesn't break other tests.
 }
 
+func (s *FederationSuite) TestCreateContainerRequestBadToken(c *check.C) {
+	defer s.localServiceReturns404(c).Close()
+	// pass cluster_id via query parameter, this allows arvados-controller
+	// to avoid parsing the body
+	req := httptest.NewRequest("POST", "/arvados/v1/container_requests?cluster_id=zzzzz",
+		strings.NewReader(`{"container_request":{}}`))
+	req.Header.Set("Authorization", "Bearer abcdefg")
+	req.Header.Set("Content-type", "application/json")
+	resp := s.testRequest(req).Result()
+	c.Check(resp.StatusCode, check.Equals, http.StatusForbidden)
+	var e map[string][]string
+	c.Check(json.NewDecoder(resp.Body).Decode(&e), check.IsNil)
+	c.Check(e["errors"], check.DeepEquals, []string{"invalid API token"})
+}
+
 func (s *FederationSuite) TestCreateRemoteContainerRequest(c *check.C) {
 	defer s.localServiceReturns404(c).Close()
 	// pass cluster_id via query parameter, this allows arvados-controller
