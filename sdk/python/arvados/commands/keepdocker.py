@@ -105,7 +105,7 @@ def docker_image_format(image_hash):
     cmd = popen_docker(['inspect', '--format={{.Id}}', image_hash],
                         stdout=subprocess.PIPE)
     try:
-        image_id = next(cmd.stdout).decode().strip()
+        image_id = next(cmd.stdout).decode('utf-8').strip()
         if image_id.startswith('sha256:'):
             return 'v2'
         elif ':' not in image_id:
@@ -136,7 +136,7 @@ def docker_images():
     next(list_output)  # Ignore the header line
     for line in list_output:
         words = line.split()
-        words = [word.decode() for word in words]
+        words = [word.decode('utf-8') for word in words]
         size_index = len(words) - 2
         repo, tag, imageid = words[:3]
         ctime = ' '.join(words[3:size_index])
@@ -513,7 +513,7 @@ def main(arguments=None, stdout=sys.stdout, install_sig_handlers=True, api=None)
         else:
             json_filename = raw_image_hash + '/json'
         json_file = image_tar.extractfile(image_tar.getmember(json_filename))
-        image_metadata = json.loads(json_file.read().decode())
+        image_metadata = json.loads(json_file.read().decode('utf-8'))
         json_file.close()
         image_tar.close()
         link_base = {'head_uuid': coll_uuid, 'properties': {}}
