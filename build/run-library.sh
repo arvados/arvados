@@ -435,8 +435,8 @@ fpm_build_virtualenv () {
 
   rm -rf dist/*
 
-  # Get the latest setuptools
-  if ! $pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U setuptools; then
+  # Get setuptools, but <44 because >=44 doesn't support python 3.4
+  if ! $pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<44'; then
     echo "Error, unable to upgrade setuptools with"
     echo "  $pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U setuptools"
     exit 1
