@@ -59,8 +59,8 @@ gem 'themes_for_rails', git: 'https://github.com/curoverse/themes_for_rails'
 # two gems with the same "git" url but different "glob" values, hence
 # the use of a wildcard here instead of literal paths
 # (sdk/cli/arvados-cli.gem and sdk/ruby/arvados.gem).
-gem 'arvados-cli', git: 'https://github.com/curoverse/arvados.git', glob: 'sdk/*/*.gemspec', branch: '15900-gem-version-142'
-gem 'arvados', git: 'https://github.com/curoverse/arvados.git', glob: 'sdk/*/*.gemspec', branch: '15900-gem-version-142'
+gem 'arvados-cli', git: 'https://github.com/arvados/arvados.git', glob: 'sdk/*/*.gemspec', branch: '15900-gem-version-143'
+gem 'arvados', git: 'https://github.com/arvados/arvados.git', glob: 'sdk/*/*.gemspec', branch: '15900-gem-version-143'
 gem 'httpclient'
 
 gem 'sshkey'

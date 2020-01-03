@@ -1,10 +1,10 @@
 GIT
-  remote: https://github.com/curoverse/arvados.git
-  revision: 2c952e4c3635e02b231019ed1bca2700c35a5682
-  branch: 15900-gem-version-142
+  remote: https://github.com/arvados/arvados.git
+  revision: 311443795cf368f62c984838d2ed385f6a95694c
+  branch: 15900-gem-version-143
   glob: sdk/ruby/arvados.gemspec
   specs:
-    arvados (1.4.3.pre20191203162527)
+    arvados (1.4.3.pre20200103202408)
       activesupport (>= 3)
       andand (~> 1.3, >= 1.3.3)
       arvados-google-api-client (>= 0.7, < 0.8.9)
