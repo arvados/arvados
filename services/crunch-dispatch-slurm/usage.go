@@ -10,21 +10,6 @@ import (
 	"os"
 )
 
-var exampleConfigFile = []byte(`
-    {
-	"Client": {
-	    "APIHost": "zzzzz.arvadosapi.com",
-	    "AuthToken": "xyzzy",
-	    "Insecure": false
-	    "KeepServiceURIs": [],
-	},
-	"CrunchRunCommand": ["crunch-run"],
-	"PollPeriod": "10s",
-	"SbatchArguments": ["--partition=foo", "--exclude=node13"],
-	"ReserveExtraRAM": 268435456,
-	"BatchSize": 10000
-    }`)
-
 func usage(fs *flag.FlagSet) {
 	fmt.Fprintf(os.Stderr, `
 crunch-dispatch-slurm runs queued Arvados containers by submitting
@@ -34,7 +19,7 @@ Options:
 `)
 	fs.PrintDefaults()
 	fmt.Fprintf(os.Stderr, `
-Example config file:
-%s
-`, exampleConfigFile)
+
+For configuration instructions see https://doc.arvados.org/install/crunch2-slurm/install-dispatch.html
+`)
 }
