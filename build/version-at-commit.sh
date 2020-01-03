@@ -12,6 +12,7 @@ if ! git describe --exact-match --match "$versionglob" "$commit" 2>/dev/null; th
         # x.y.(z+1).preTIMESTAMP, where x.y.z is the latest released ancestor of $commit
         v=$(git describe --abbrev=0 --match "$versionglob" "$commit" | perl -pe 's/(\d+)$/$1+1/e')
     fi
-    ts=$(TZ=UTC git log -n1 --format=%cd --date="format-local:%Y%m%d%H%M%S" "$commit")
+    isodate=$(TZ=UTC git log -n1 --format=%cd --date=iso "$commit")
+    ts=$(TZ=UTC date --date="$isodate" "+%Y%m%d%H%M%S")
     echo "$v.pre$ts"
 fi
