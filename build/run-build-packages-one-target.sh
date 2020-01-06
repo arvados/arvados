@@ -63,7 +63,7 @@ fi
 TARGET=debian10
 FORCE_BUILD=0
 COMMAND=
-DEBUG=${ARVADOS_DEBUG:-0}
+DEBUG=
 
 eval set -- "$PARSEDOPTS"
 while [ $# -gt 0 ]; do
