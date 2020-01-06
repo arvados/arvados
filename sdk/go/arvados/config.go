@@ -115,9 +115,10 @@ type Cluster struct {
 			Function  string
 			Protected bool
 		}
-		PreserveVersionIfIdle Duration
-		TrashSweepInterval    Duration
-		TrustAllContent       bool
+		PreserveVersionIfIdle        Duration
+		TrashSweepInterval           Duration
+		TrustAllContent              bool
+		ForwardSlashNameSubstitution string
 
 		BlobMissingReport        string
 		BalancePeriod            Duration

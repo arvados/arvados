@@ -28,6 +28,7 @@ class Collection < ArvadosModel
   before_validation :check_signatures
   before_validation :strip_signatures_and_update_replication_confirmed
   before_validation :name_null_if_empty
+  validate :ensure_filesystem_compatible_name
   validate :ensure_pdh_matches_manifest_text
   validate :ensure_storage_classes_desired_is_not_empty
   validate :ensure_storage_classes_contain_non_empty_strings

@@ -458,6 +458,24 @@ Clusters:
       # > 0s = auto-create a new version when older than the specified number of seconds.
       PreserveVersionIfIdle: -1s
 
+      # If non-empty, allow project and collection names to contain
+      # the "/" character (slash/stroke/solidus), and replace "/" with
+      # the given string in the filesystem hierarchy presented by
+      # WebDAV. Possible values include "%2f" and "{slash}". Names
+      # that contain the substitution string itself may result in
+      # confusing behavior.
+      #
+      # If the default empty value is used, names containing "/"
+      # cannot be used when creating or renaming a collection or
+      # project.
+      #
+      # If the value "/" is used, project and collection names
+      # containing "/" will be allowed, but they will not be
+      # accessible via WebDAV.
+      #
+      # Use of this feature is not recommended, if it can be avoided.
+      ForwardSlashNameSubstitution: ""
+
       # Managed collection properties. At creation time, if the client didn't
       # provide the listed keys, they will be automatically populated following
       # one of the following behaviors:
