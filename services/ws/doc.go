@@ -6,7 +6,7 @@
 // cache-invalidation event feed at "ws://.../websocket") to
 // websocket clients.
 //
-// Installation
+// Installation and configuration
 //
 // See https://doc.arvados.org/install/install-ws.html.
 //
@@ -16,25 +16,14 @@
 //
 // Usage
 //
-//     arvados-ws [-config /etc/arvados/ws/ws.yml] [-dump-config]
-//
-// Minimal configuration
-//
-//     Client:
-//       APIHost: localhost:443
-//     Listen: ":1234"
-//     Postgres:
-//       dbname: arvados_production
-//       host: localhost
-//       password: xyzzy
-//       user: arvados
+//     arvados-ws [-legacy-ws-config /etc/arvados/ws/ws.yml] [-dump-config]
 //
 // Options
 //
-// -config path
+// -legacy-ws-config path
 //
-// Load configuration from the given file instead of the default
-// /etc/arvados/ws/ws.yml
+// Load legacy configuration from the given file instead of the default
+// /etc/arvados/ws/ws.yml, legacy config overrides the clusterwide config.yml.
 //
 // -dump-config
 //

@@ -141,11 +141,19 @@ type CurrentUser struct {
 // checks it again api_client_authorizations table in the database,
 // and fills in the token scope and user UUID.  Does not handle remote
 // tokens unless they are already in the database and not expired.
-func (h *Handler) validateAPItoken(req *http.Request, token string) (*CurrentUser, error) {
+//
+// Return values are:
+//
+// nil, false, non-nil -- if there was an internal error
+//
+// nil, false, nil -- if the token is invalid
+//
+// non-nil, true, nil -- if the token is valid
+func (h *Handler) validateAPItoken(req *http.Request, token string) (*CurrentUser, bool, error) {
 	user := CurrentUser{Authorization: arvados.APIClientAuthorization{APIToken: token}}
 	db, err := h.db(req)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	var uuid string
@@ -157,17 +165,20 @@ func (h *Handler) validateAPItoken(req *http.Request, token string) (*CurrentUse
 	user.Authorization.APIToken = token
 	var scopes string
 	err = db.QueryRowContext(req.Context(), `SELECT api_client_authorizations.uuid, api_client_authorizations.scopes, users.uuid FROM api_client_authorizations JOIN users on api_client_authorizations.user_id=users.id WHERE api_token=$1 AND (expires_at IS NULL OR expires_at > current_timestamp) LIMIT 1`, token).Scan(&user.Authorization.UUID, &scopes, &user.UUID)
-	if err != nil {
-		return nil, err
+	if err == sql.ErrNoRows {
+		return nil, false, nil
+	} else if err != nil {
+		return nil, false, err
 	}
 	if uuid != "" && user.Authorization.UUID != uuid {
-		return nil, fmt.Errorf("UUID embedded in v2 token did not match record")
+		// secret part matches, but UUID doesn't -- somewhat surprising
+		return nil, false, nil
 	}
 	err = json.Unmarshal([]byte(scopes), &user.Authorization.Scopes)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	return &user, nil
+	return &user, true, nil
 }
 
 func (h *Handler) createAPItoken(req *http.Request, userUUID string, scopes []string) (*arvados.APIClientAuthorization, error) {
@@ -251,12 +262,12 @@ func (h *Handler) saltAuthToken(req *http.Request, remote string) (updatedReq *h
 		// If the token exists in our own database, salt it
 		// for the remote. Otherwise, assume it was issued by
 		// the remote, and pass it through unmodified.
-		currentUser, err := h.validateAPItoken(req, creds.Tokens[0])
-		if err == sql.ErrNoRows {
+		currentUser, ok, err := h.validateAPItoken(req, creds.Tokens[0])
+		if err != nil {
+			return nil, err
+		} else if !ok {
 			// Not ours; pass through unmodified.
 			token = creds.Tokens[0]
-		} else if err != nil {
-			return nil, err
 		} else {
 			// Found; make V2 version and salt it.
 			token, err = auth.SaltToken(currentUser.Authorization.TokenV2(), remote)

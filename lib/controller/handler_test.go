@@ -180,8 +180,9 @@ func (s *HandlerSuite) TestProxyRedirect(c *check.C) {
 
 func (s *HandlerSuite) TestValidateV1APIToken(c *check.C) {
 	req := httptest.NewRequest("GET", "/arvados/v1/users/current", nil)
-	user, err := s.handler.(*Handler).validateAPItoken(req, arvadostest.ActiveToken)
+	user, ok, err := s.handler.(*Handler).validateAPItoken(req, arvadostest.ActiveToken)
 	c.Assert(err, check.IsNil)
+	c.Check(ok, check.Equals, true)
 	c.Check(user.Authorization.UUID, check.Equals, arvadostest.ActiveTokenUUID)
 	c.Check(user.Authorization.APIToken, check.Equals, arvadostest.ActiveToken)
 	c.Check(user.Authorization.Scopes, check.DeepEquals, []string{"all"})
@@ -190,8 +191,9 @@ func (s *HandlerSuite) TestValidateV1APIToken(c *check.C) {
 
 func (s *HandlerSuite) TestValidateV2APIToken(c *check.C) {
 	req := httptest.NewRequest("GET", "/arvados/v1/users/current", nil)
-	user, err := s.handler.(*Handler).validateAPItoken(req, arvadostest.ActiveTokenV2)
+	user, ok, err := s.handler.(*Handler).validateAPItoken(req, arvadostest.ActiveTokenV2)
 	c.Assert(err, check.IsNil)
+	c.Check(ok, check.Equals, true)
 	c.Check(user.Authorization.UUID, check.Equals, arvadostest.ActiveTokenUUID)
 	c.Check(user.Authorization.APIToken, check.Equals, arvadostest.ActiveToken)
 	c.Check(user.Authorization.Scopes, check.DeepEquals, []string{"all"})
@@ -205,8 +207,9 @@ func (s *HandlerSuite) TestCreateAPIToken(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Check(auth.Scopes, check.DeepEquals, []string{"all"})
 
-	user, err := s.handler.(*Handler).validateAPItoken(req, auth.TokenV2())
+	user, ok, err := s.handler.(*Handler).validateAPItoken(req, auth.TokenV2())
 	c.Assert(err, check.IsNil)
+	c.Check(ok, check.Equals, true)
 	c.Check(user.Authorization.UUID, check.Equals, auth.UUID)
 	c.Check(user.Authorization.APIToken, check.Equals, auth.APIToken)
 	c.Check(user.Authorization.Scopes, check.DeepEquals, []string{"all"})
