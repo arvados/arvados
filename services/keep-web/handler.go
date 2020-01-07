@@ -537,6 +537,7 @@ func (h *handler) serveSiteFS(w http.ResponseWriter, r *http.Request, tokens []s
 		Insecure:  arv.ApiInsecure,
 	}).WithRequestID(r.Header.Get("X-Request-Id"))
 	fs := client.SiteFileSystem(kc)
+	fs.ForwardSlashNameSubstitution(h.Config.cluster.Collections.ForwardSlashNameSubstitution)
 	f, err := fs.Open(r.URL.Path)
 	if os.IsNotExist(err) {
 		http.Error(w, err.Error(), http.StatusNotFound)
