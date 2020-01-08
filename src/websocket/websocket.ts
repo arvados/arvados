@@ -8,12 +8,13 @@ import { Config } from '~/common/config';
 import { WebSocketService } from './websocket-service';
 import { ResourceEventMessage } from './resource-event-message';
 import { ResourceKind } from '~/models/resource';
-// import { loadProcess } from '~/store/processes/processes-actions';
+import { loadProcess } from '~/store/processes/processes-actions';
 // import { loadContainers } from '~/store/processes/processes-actions';
 import { LogEventType } from '~/models/log';
 import { addProcessLogsPanelItem } from '../store/process-logs-panel/process-logs-panel-actions';
 // import { FilterBuilder } from "~/services/api/filter-builder";
 import { subprocessPanelActions } from "~/store/subprocess-panel/subprocess-panel-actions";
+import { projectPanelActions } from "~/store/project-panel/project-panel-action";
 
 export const initWebSocket = (config: Config, authService: AuthService, store: RootStore) => {
     if (config.websocketUrl) {
@@ -29,12 +30,13 @@ const messageListener = (store: RootStore) => (message: ResourceEventMessage) =>
     if (message.eventType === LogEventType.CREATE || message.eventType === LogEventType.UPDATE) {
         switch (message.objectKind) {
             case ResourceKind.CONTAINER_REQUEST:
-            // return store.dispatch(loadProcess(message.objectUuid));
+                if (store.getState().processPanel.containerRequestUuid === message.objectUuid) {
+                    store.dispatch(loadProcess(message.objectUuid));
+                }
             case ResourceKind.CONTAINER:
-                // return store.dispatch(loadContainers(
-                //     new FilterBuilder().addIn('uuid', [message.objectUuid]).getFilters()
-                // ));
                 store.dispatch(subprocessPanelActions.REQUEST_ITEMS());
+                store.dispatch(projectPanelActions.REQUEST_ITEMS());
+                return;
             default:
                 return;
         }

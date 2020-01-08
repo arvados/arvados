@@ -21,9 +21,6 @@ import { getWorkflow, getWorkflowInputs } from "~/models/workflow";
 
 export const loadProcess = (containerRequestUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<Process> => {
-        const response = await services.workflowService.list();
-        dispatch(runProcessPanelActions.SET_WORKFLOWS(response.items));
-
         const containerRequest = await services.containerRequestService.get(containerRequestUuid);
         dispatch<any>(updateResources([containerRequest]));
 
