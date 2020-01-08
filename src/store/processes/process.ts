@@ -56,10 +56,20 @@ export const getSubprocesses = (uuid: string) => (resources: ResourcesState) => 
     return [];
 };
 
-export const getProcessRuntime = ({ container }: Process) =>
-    container
-        ? getTimeDiff(container.finishedAt || '', container.startedAt || '')
-        : 0;
+export const getProcessRuntime = ({ container }: Process) => {
+    if (container) {
+        if (container.startedAt === null) {
+            return 0;
+        }
+        if (container.finishedAt === null) {
+            // Count it from now
+            return new Date().getTime() - new Date(container.startedAt).getTime();
+        }
+        return getTimeDiff(container.finishedAt, container.startedAt);
+    } else {
+        return 0;
+    }
+};
 
 export const getProcessStatusColor = (status: string, { customs, palette }: ArvadosTheme) => {
     switch (status) {
