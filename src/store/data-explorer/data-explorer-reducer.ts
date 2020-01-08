@@ -8,7 +8,7 @@ import {
     SortDirection,
     toggleSortDirection
 } from "~/components/data-table/data-column";
-import { DataExplorerAction, dataExplorerActions } from "./data-explorer-action";
+import { DataExplorerAction, dataExplorerActions, DataTableRequestState } from "./data-explorer-action";
 import { DataColumns, DataTableFetchMode } from "~/components/data-table/data-table";
 import { DataTableFilters } from "~/components/data-table-filters/data-table-filters-tree";
 
@@ -22,6 +22,7 @@ export interface DataExplorer {
     rowsPerPageOptions: number[];
     searchValue: string;
     working?: boolean;
+    requestState: DataTableRequestState;
 }
 
 export const initialDataExplorer: DataExplorer = {
@@ -32,7 +33,8 @@ export const initialDataExplorer: DataExplorer = {
     page: 0,
     rowsPerPage: 50,
     rowsPerPageOptions: [50, 100, 200, 500],
-    searchValue: ""
+    searchValue: "",
+    requestState: DataTableRequestState.IDLE
 };
 
 export type DataExplorerState = Record<string, DataExplorer>;
@@ -74,6 +76,9 @@ export const dataExplorerReducer = (state: DataExplorerState = {}, action: DataE
 
         SET_EXPLORER_SEARCH_VALUE: ({ id, searchValue }) =>
             update(state, id, explorer => ({ ...explorer, searchValue })),
+
+        SET_REQUEST_STATE: ({ id, requestState }) =>
+            update(state, id, explorer => ({ ...explorer, requestState })),
 
         TOGGLE_SORT: ({ id, columnName }) =>
             update(state, id, mapColumns(toggleSort(columnName))),

@@ -3,8 +3,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+import { Dispatch } from 'redux';
+import { RootState } from '~/store/store';
+import { ServiceRepository } from '~/services/services';
 import { Middleware } from "redux";
-import { dataExplorerActions, bindDataExplorerActions } from "./data-explorer-action";
+import { dataExplorerActions, bindDataExplorerActions, DataTableRequestState } from "./data-explorer-action";
+import { getDataExplorer } from "./data-explorer-reducer";
 import { DataExplorerMiddlewareService } from "./data-explorer-middleware-service";
 
 export const dataExplorerMiddleware = (service: DataExplorerMiddlewareService): Middleware => api => next => {
@@ -37,7 +41,37 @@ export const dataExplorerMiddleware = (service: DataExplorerMiddlewareService): 
                 api.dispatch(actions.REQUEST_ITEMS(true));
             }),
             REQUEST_ITEMS: handleAction(({ criteriaChanged }) => {
-                service.requestItems(api, criteriaChanged);
+                api.dispatch<any>(async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+                    while (true) {
+                        let de = getDataExplorer(getState().dataExplorer, service.getId());
+                        switch (de.requestState) {
+                            case DataTableRequestState.IDLE:
+                                // Start a new request.
+                                try {
+                                    dispatch(actions.SET_REQUEST_STATE({ requestState: DataTableRequestState.PENDING }));
+                                    await service.requestItems(api, criteriaChanged);
+                                } catch {
+                                    dispatch(actions.SET_REQUEST_STATE({ requestState: DataTableRequestState.NEED_REFRESH }));
+                                }
+                                // Now check if the state is still PENDING, if it moved to NEED_REFRESH
+                                // then we need to reissue requestItems
+                                de = getDataExplorer(getState().dataExplorer, service.getId());
+                                const complete = (de.requestState === DataTableRequestState.PENDING);
+                                dispatch(actions.SET_REQUEST_STATE({ requestState: DataTableRequestState.IDLE }));
+                                if (complete) {
+                                    return;
+                                }
+                                break;
+                            case DataTableRequestState.PENDING:
+                                // State is PENDING, move it to NEED_REFRESH so that when the current request finishes it starts a new one.
+                                dispatch(actions.SET_REQUEST_STATE({ requestState: DataTableRequestState.NEED_REFRESH }));
+                                return;
+                            case DataTableRequestState.NEED_REFRESH:
+                                // Nothing to do right now.
+                                return;
+                        }
+                    }
+                });
             }),
             default: () => next(action)
         });

@@ -123,5 +123,3 @@ export const removeProcessPermanently = (uuid: string) =>
         dispatch(projectPanelActions.REQUEST_ITEMS());
         dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
     };
-
-
