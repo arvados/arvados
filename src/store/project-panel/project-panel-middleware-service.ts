@@ -17,7 +17,7 @@ import { OrderBuilder, OrderDirection } from "~/services/api/order-builder";
 import { FilterBuilder, joinFilters } from "~/services/api/filter-builder";
 import { GroupContentsResource, GroupContentsResourcePrefix } from "~/services/groups-service/groups-service";
 import { updateFavorites } from "~/store/favorites/favorites-actions";
-import { PROJECT_PANEL_CURRENT_UUID, IS_PROJECT_PANEL_TRASHED, projectPanelActions } from '~/store/project-panel/project-panel-action';
+import { IS_PROJECT_PANEL_TRASHED, projectPanelActions, getProjectPanelCurrentUuid } from '~/store/project-panel/project-panel-action';
 import { Dispatch, MiddlewareAPI } from "redux";
 import { ProjectResource } from "~/models/project";
 import { updateResources } from "~/store/resources/resources-actions";
@@ -40,7 +40,7 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
     async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
         const state = api.getState();
         const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
-        const projectUuid = getProperty<string>(PROJECT_PANEL_CURRENT_UUID)(state.properties);
+        const projectUuid = getProjectPanelCurrentUuid(state);
         const isProjectTrashed = getProperty<string>(IS_PROJECT_PANEL_TRASHED)(state.properties);
         if (!projectUuid) {
             api.dispatch(projectPanelCurrentUuidIsNotSet());

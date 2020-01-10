@@ -35,9 +35,9 @@ const renderName = (dispatch: Dispatch, item: { name: string; uuid: string, kind
         </Grid>
         <Grid item>
             <Typography color="primary" style={{ width: 'auto', cursor: 'pointer' }} onClick={() => dispatch<any>(navigateTo(item.uuid))}>
-                { item.kind === ResourceKind.PROJECT || item.kind === ResourceKind.COLLECTION
+                {item.kind === ResourceKind.PROJECT || item.kind === ResourceKind.COLLECTION
                     ? <IllegalNamingWarning name={item.name} />
-                    : null }
+                    : null}
                 {item.name}
             </Typography>
         </Grid>
@@ -461,8 +461,41 @@ export const renderRunTime = (time: number) =>
         {formatTime(time, true)}
     </Typography>;
 
-export const ContainerRunTime = connect(
-    (state: RootState, props: { uuid: string }) => {
-        const process = getProcess(props.uuid)(state.resources);
-        return { time: process ? getProcessRuntime(process) : 0 };
-    })((props: { time: number }) => renderRunTime(props.time));
+interface ContainerRunTimeProps {
+    process: Process;
+}
+
+interface ContainerRunTimeState {
+    runtime: number;
+}
+
+export const ContainerRunTime = connect((state: RootState, props: { uuid: string }) => {
+    return { process: getProcess(props.uuid)(state.resources) };
+})(class extends React.Component<ContainerRunTimeProps, ContainerRunTimeState> {
+    private timer: any;
+
+    constructor(props: ContainerRunTimeProps) {
+        super(props);
+        this.state = { runtime: this.getRuntime() };
+    }
+
+    getRuntime() {
+        return this.props.process ? getProcessRuntime(this.props.process) : 0;
+    }
+
+    updateRuntime() {
+        this.setState({ runtime: this.getRuntime() });
+    }
+
+    componentDidMount() {
+        this.timer = setInterval(this.updateRuntime.bind(this), 5000);
+    }
+
+    componentWillUnmount() {
+        clearInterval(this.timer);
+    }
+
+    render() {
+        return renderRunTime(this.state.runtime);
+    }
+});
