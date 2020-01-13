@@ -148,7 +148,7 @@ func (disp *dispatcher) initialize() {
 	} else {
 		mux := httprouter.New()
 		mux.HandlerFunc("GET", "/arvados/v1/dispatch/containers", disp.apiContainers)
-		mux.HandlerFunc("POST", "/arvados/v1/dispatch/containers/kill", disp.apiInstanceKill)
+		mux.HandlerFunc("POST", "/arvados/v1/dispatch/containers/kill", disp.apiContainerKill)
 		mux.HandlerFunc("GET", "/arvados/v1/dispatch/instances", disp.apiInstances)
 		mux.HandlerFunc("POST", "/arvados/v1/dispatch/instances/hold", disp.apiInstanceHold)
 		mux.HandlerFunc("POST", "/arvados/v1/dispatch/instances/drain", disp.apiInstanceDrain)
