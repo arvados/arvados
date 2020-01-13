@@ -21,6 +21,8 @@ Example:
 
 These APIs are not available via @arv@ CLI tool.
 
+Note: the term "instance" here refers to a virtual machine provided by a cloud computing service. The alternate terms "cloud VM" and "worker node" are sometimes used as well in config files and log messages.
+
 h3. List containers
 
 @GET /arvados/v1/dispatch/containers@
@@ -64,13 +66,13 @@ h3. Terminate a container
 
 @POST /arvados/v1/dispatch/containers/kill?container_uuid={uuid}&reason={string}@
 
-Make a single attempt to terminate the indicated container on the relevant cloud VM. (The caller can implement a delay-and-retry loop if needed.)
+Make a single attempt to terminate the indicated container on the relevant instance. (The caller can implement a delay-and-retry loop if needed.)
 
 A container terminated this way will end with state @Cancelled@ if its docker container had already started, or @Queued@ if it was terminated while setting up the runtime environment.
 
 The provided @reason@ string will appear in the dispatcher's log, but not in the user-visible container log.
 
-If the provided @container_uuid@ is not scheduled/running on a worker node, the response status will be 404.
+If the provided @container_uuid@ is not scheduled/running on an instance, the response status will be 404.
 
 h3. List instances
 
