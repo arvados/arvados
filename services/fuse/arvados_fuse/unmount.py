@@ -116,6 +116,7 @@ def unmount(path, subtype=None, timeout=10, recursive=False):
 
     was_mounted = False
     attempted = False
+    fusermount_output = b''
     if timeout is None:
         deadline = None
     else:
@@ -155,6 +156,10 @@ def unmount(path, subtype=None, timeout=10, recursive=False):
             return was_mounted
 
         if attempted:
+            # Report buffered stderr from previous call to fusermount,
+            # now that we know it didn't succeed.
+            sys.stderr.write(fusermount_output)
+
             delay = 1
             if deadline:
                 delay = min(delay, deadline - time.time())
@@ -172,6 +177,10 @@ def unmount(path, subtype=None, timeout=10, recursive=False):
 
         attempted = True
         try:
-            subprocess.check_call(["fusermount", "-u", "-z", path])
-        except subprocess.CalledProcessError:
-            pass
+            subprocess.check_output(
+                ["fusermount", "-u", "-z", path],
+                stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as e:
+            fusermount_output = e.output
+        else:
+            fusermount_output = b''
