@@ -22,7 +22,7 @@ task :generate => [ :realclean, 'sdk/python/arvados/index.html', 'sdk/R/arvados/
 end
 
 file "sdk/python/arvados/index.html" do |t|
-  if File.exists? "no-sdk"
+  if ENV['NO_SDK'] || File.exists?("no-sdk")
     next
   end
   `which epydoc`
@@ -35,7 +35,7 @@ file "sdk/python/arvados/index.html" do |t|
 end
 
 file "sdk/R/arvados/index.html" do |t|
-  if File.exists? "no-sdk"
+  if ENV['NO_SDK'] || File.exists?("no-sdk")
     next
   end
   `which R`
@@ -102,7 +102,7 @@ EOF
 end
 
 file "sdk/java-v2/javadoc/index.html" do |t|
-  if File.exists? "no-sdk"
+  if ENV['NO_SDK'] || File.exists?("no-sdk")
     next
   end
   `which java`
