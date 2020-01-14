@@ -1,7 +1,7 @@
 GIT
   remote: https://github.com/arvados/arvados.git
-  revision: 0503f58f3f9b78bd803d4fd7544ced9d79e26f1c
-  glob: sdk/*/*.gemspec
+  revision: 6c033bdbc06d0929cec24ea16d4dfb7977e72f78
+  glob: sdk/ruby/arvados.gemspec
   specs:
     arvados (1.5.0.pre20200114202620)
       activesupport (>= 3)
