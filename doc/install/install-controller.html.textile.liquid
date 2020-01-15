@@ -25,16 +25,6 @@ On Red Hat-based systems:
 </code></pre>
 </notextile>
 
-Verify the @arvados-controller@ program is functional:
-
-<notextile>
-<pre><code>~$ <span class="userinput">arvados-controller -h</span>
-Usage:
-  -config file
-[...]
-</code></pre>
-</notextile>
-
 h3. Configure Nginx to route requests to the controller
 
 Add @upstream@ and @server@ definitions inside the @http@ section of your Nginx configuration using the following template.
@@ -115,6 +105,18 @@ Create the host configuration file @/etc/arvados/environment@.
 <pre><code>ARVADOS_NODE_PROFILE=apiserver
 </code></pre>
 </notextile>
+
+Verify the @arvados-controller@ program is functional:
+
+<notextile>
+<pre><code>~$ <span class="userinput">. /etc/arvados/environment</span>
+~$ <span class="userinput">arvados-controller -h</span>
+Usage:
+  -config file
+[...]
+</code></pre>
+</notextile>
+
 
 h3. Start the service (option 1: systemd)
 
