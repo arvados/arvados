@@ -349,6 +349,8 @@ if [[ -e "$WORKSPACE/cwltest" ]]; then
 	rm -rf "$WORKSPACE/cwltest"
 fi
 git clone https://github.com/common-workflow-language/cwltest.git
+# last release to support python 2.7
+(cd cwltest && git checkout 1.0.20190906212748)
 # signal to our build script that we want a cwltest executable installed in /usr/bin/
 mkdir cwltest/bin && touch cwltest/bin/cwltest
 fpm_build_virtualenv "cwltest" "cwltest"
