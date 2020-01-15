@@ -9,9 +9,9 @@ set -ex -o pipefail
 . /usr/local/lib/arvbox/common.sh
 . /usr/local/lib/arvbox/go-setup.sh
 
-flock /var/lib/gopath/gopath.lock go install "git.arvados.org/arvados.git/services/crunch-run"
 flock /var/lib/gopath/gopath.lock go install "git.arvados.org/arvados.git/services/crunch-dispatch-local"
-install $GOPATH/bin/crunch-run $GOPATH/bin/crunch-dispatch-local /usr/local/bin
+install $GOPATH/bin/crunch-dispatch-local /usr/local/bin
+ln -sf arvados-server /usr/local/bin/crunch-run
 
 if test "$1" = "--only-deps" ; then
     exit
