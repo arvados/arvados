@@ -3,6 +3,7 @@
 set -e -o pipefail
 commit="$1"
 versionglob="[0-9].[0-9]*.[0-9]*"
+devsuffix=".dev"
 
 if ! git describe --exact-match --match "$versionglob" "$commit" 2>/dev/null; then
     if git merge-base --is-ancestor "$commit" origin/master; then
@@ -14,5 +15,5 @@ if ! git describe --exact-match --match "$versionglob" "$commit" 2>/dev/null; th
     fi
     isodate=$(TZ=UTC git log -n1 --format=%cd --date=iso "$commit")
     ts=$(TZ=UTC date --date="$isodate" "+%Y%m%d%H%M%S")
-    echo "$v.pre$ts"
+    echo "${v}${devsuffix}${ts}"
 fi
