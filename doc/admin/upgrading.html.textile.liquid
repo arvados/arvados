@@ -30,7 +30,11 @@ Note to developers: Add new items at the top. Include the date, issue number, co
 TODO: extract this information based on git commit messages and generate changelogs / release notes automatically.
 {% endcomment %}
 
-h3(#master). development master (as of 2019-12-17)
+h3(#master). development master (as of 2020-01-16)
+
+h4. "/" prohibited in collection and project names
+
+(issue "#15836":https://dev.arvados.org/issues/15836) By default, Arvados now rejects new names containing the @/@ character when creating or renaming collections and projects. Previously, these names were permitted, but the resulting objects were invisible in the WebDAV "home" tree. If you prefer, you can restore the previous behavior, and optionally configure a substitution string to make the affected objects accessible via WebDAV. See @ForwardSlashNameSubstitution@ in the "configuration reference":config.html.
 
 h4. Migrating to centralized config.yml
 
