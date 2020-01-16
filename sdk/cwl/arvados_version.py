@@ -7,8 +7,23 @@ import time
 import os
 import re
 
+SETUP_DIR = os.path.dirname(os.path.abspath(__file__))
+
+def choose_version_from():
+    sdk_ts = subprocess.check_output(
+        ['git', 'log', '--first-parent', '--max-count=1',
+         '--format=format:%ct', os.path.join(SETUP_DIR, "../python")]).strip()
+    cwl_ts = subprocess.check_output(
+        ['git', 'log', '--first-parent', '--max-count=1',
+         '--format=format:%ct', SETUP_DIR]).strip()
+    if int(sdk_ts) > int(cwl_ts):
+        getver = os.path.join(SETUP_DIR, "../python")
+    else:
+        getver = SETUP_DIR
+    return getver
+
 def git_version_at_commit():
-    curdir = os.path.dirname(os.path.abspath(__file__))
+    curdir = choose_version_from()
     myhash = subprocess.check_output(['git', 'log', '-n1', '--first-parent',
                                        '--format=%H', curdir]).strip()
     myversion = subprocess.check_output([curdir+'/../../build/version-at-commit.sh', myhash]).strip().decode()
