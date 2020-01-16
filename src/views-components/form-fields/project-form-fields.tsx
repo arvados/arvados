@@ -3,17 +3,38 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from "react";
-import { Field } from "redux-form";
+import { Field, Validator } from "redux-form";
 import { TextField, RichEditorTextField } from "~/components/text-field/text-field";
-import { PROJECT_NAME_VALIDATION } from "~/validators/validators";
+import { PROJECT_NAME_VALIDATION, PROJECT_NAME_VALIDATION_ALLOW_SLASH } from "~/validators/validators";
+import { connect } from "react-redux";
+import { RootState } from "~/store/store";
 
-export const ProjectNameField = () =>
-    <Field
-        name='name'
-        component={TextField}
-        validate={PROJECT_NAME_VALIDATION}
-        label="Project Name"
-        autoFocus={true} />;
+interface ProjectNameFieldProps {
+    validate: Validator[];
+}
+
+// Validation behavior depends on the value of ForwardSlashNameSubstitution.
+//
+// Redux form doesn't let you pass anonymous functions to 'validate'
+// -- it fails with a very confusing recursive-update-exceeded error.
+// So we can't construct the validation function on the fly.
+//
+// As a workaround, use ForwardSlashNameSubstitution to choose between one of two const-defined validators.
+
+export const ProjectNameField = connect(
+    (state: RootState) => {
+        return {
+            validate: (state.auth.config.clusterConfig.Collections.ForwardSlashNameSubstitution === "" ?
+                PROJECT_NAME_VALIDATION : PROJECT_NAME_VALIDATION_ALLOW_SLASH)
+        };
+    })((props: ProjectNameFieldProps) =>
+        <Field
+            name='name'
+            component={TextField}
+            validate={props.validate}
+            label="Project Name"
+            autoFocus={true} />
+    );
 
 export const ProjectDescriptionField = () =>
     <Field
