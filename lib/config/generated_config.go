@@ -461,13 +461,13 @@ Clusters:
       # If non-empty, allow project and collection names to contain
       # the "/" character (slash/stroke/solidus), and replace "/" with
       # the given string in the filesystem hierarchy presented by
-      # WebDAV. Possible values include "%2f" and "{slash}". Names
-      # that contain the substitution string itself may result in
-      # confusing behavior.
+      # WebDAV. Example values are "%2f" and "{slash}". Names that
+      # contain the substitution string itself may result in confusing
+      # behavior, so a value like "_" is not recommended.
       #
-      # If the default empty value is used, names containing "/"
-      # cannot be used when creating or renaming a collection or
-      # project.
+      # If the default empty value is used, the server will reject
+      # requests to create or rename a collection when the new name
+      # contains "/".
       #
       # If the value "/" is used, project and collection names
       # containing "/" will be allowed, but they will not be
