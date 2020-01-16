@@ -14,13 +14,19 @@ Arvados CLI tools are written in Ruby and Python.  To use the @arv@ command, you
 
 h2. Prerequisites
 
-# "Install Ruby and Bundler":../../install/ruby.html
+# "Install Ruby":../../install/ruby.html
 # "Install the Python SDK":../python/sdk-python.html
+
+The SDK uses @curl@ which depends on the @libcurl@ C library.  To build the module you may have to install additional packages.  On Debian 9 this is:
+
+<pre>
+$ apt-get install build-essential libcurl4-openssl-dev
+</pre>
 
 h2. Install from RubyGems
 
 <notextile>
 <pre>
-~$ <code class="userinput">sudo -i gem install arvados-cli</code>
+# <code class="userinput">gem install arvados-cli</code>
 </pre>
 </notextile>

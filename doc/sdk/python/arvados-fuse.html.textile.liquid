@@ -12,52 +12,37 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 The Arvados FUSE driver is a Python utility that allows you to see the Keep service as a normal filesystem, so that data can be accessed using standard tools. This driver requires the Python SDK installed in order to access Arvados services.
 
-h3. Installation
+h2. Installation
 
-If you are logged in to an Arvados VM, the @arv-mount@ utility should already be installed.
+If you are logged in to a managed Arvados VM, the @arv-mount@ utility should already be installed.
 
-To use the FUSE driver elsewhere, you can install from a distribution package, PyPI, or source.
+To use the FUSE driver elsewhere, you can install from a distribution package, or PyPI.
 
-{% include 'notebox_begin' %}
-The Arvados FUSE driver requires Python 2.7
-{% include 'notebox_end' %}
+h2. Option 1: Install from distribution packages
 
-h4. Option 1: Install from distribution packages
+First, "add the appropriate package repository for your distribution":{{ site.baseurl }}/install/packages.html
 
-First, "add the appropriate package repository for your distribution":{{ site.baseurl }}/install/install-manual-prerequisites.html#repos.
+{% assign arvados_component = 'python-arvados-fuse' %}
 
-{% assign rh_version = "6" %}
-{% include 'note_python_sc' %}
+{% include 'install_packages' %}
 
-On Red Hat-based systems:
-
-<notextile>
-<pre><code>~$ <span class="userinput">echo 'exclude=python2-llfuse' | sudo tee -a /etc/yum.conf</span>
-~$ <span class="userinput">sudo yum install python-arvados-fuse</code>
-</code></pre>
-</notextile>
-
-On Debian-based systems:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo apt-get install python-arvados-fuse</code>
-</code></pre>
-</notextile>
-
-h4. Option 2: Install with pip
+h2. Option 2: Install with pip
 
 Run @pip install arvados_fuse@ in an appropriate installation environment, such as a virtualenv.
 
-h4. Option 3: Install from source
+Note:
 
-Install the @python-setuptools@ package from your distribution.  Then run the following:
+The SDK uses @pycurl@ which depends on the @libcurl@ C library.  To build the module you may have to first install additional packages.  On Debian 9 this is:
 
-<notextile>
-<pre><code>~$ <span class="userinput">git clone https://github.com/arvados/arvados.git</span>
-~$ <span class="userinput">cd arvados/services/fuse</span>
-~/arvados/services/fuse$ <span class="userinput">python setup.py install</span>
-</code></pre>
-</notextile>
+<pre>
+$ apt-get install git build-essential python-dev libcurl4-openssl-dev libssl1.0-dev python-llfuse
+</pre>
+
+For Python 3 this is:
+
+<pre>
+$ apt-get install git build-essential python3-dev libcurl4-openssl-dev libssl1.0-dev python3-llfuse
+</pre>
 
 h3. Usage
 
