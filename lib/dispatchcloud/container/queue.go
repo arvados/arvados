@@ -240,19 +240,15 @@ func (cq *Queue) addEnt(uuid string, ctr arvados.Container) {
 		go func() {
 			if ctr.State == arvados.ContainerStateQueued {
 				// Can't set runtime error without
-				// locking first. If Lock() is
-				// successful, it will call addEnt()
-				// again itself, and we'll fall
-				// through to the
-				// setRuntimeError/Cancel code below.
+				// locking first.
 				err := cq.Lock(ctr.UUID)
 				if err != nil {
 					logger.WithError(err).Warn("lock failed")
+					return
 					// ...and try again on the
 					// next Update, if the problem
 					// still exists.
 				}
-				return
 			}
 			var err error
 			defer func() {

@@ -124,6 +124,7 @@ arvcfg.declare_config "Collections.TrashSweepInterval", ActiveSupport::Duration,
 arvcfg.declare_config "Collections.BlobSigningKey", NonemptyString, :blob_signing_key
 arvcfg.declare_config "Collections.BlobSigningTTL", ActiveSupport::Duration, :blob_signature_ttl
 arvcfg.declare_config "Collections.BlobSigning", Boolean, :permit_create_collection_with_unsigned_manifest, ->(cfg, k, v) { ConfigLoader.set_cfg cfg, "Collections.BlobSigning", !v }
+arvcfg.declare_config "Collections.ForwardSlashNameSubstitution", String
 arvcfg.declare_config "Containers.SupportedDockerImageFormats", Hash, :docker_image_formats, ->(cfg, k, v) { arrayToHash cfg, "Containers.SupportedDockerImageFormats", v }
 arvcfg.declare_config "Containers.LogReuseDecisions", Boolean, :log_reuse_decisions
 arvcfg.declare_config "Containers.DefaultKeepCacheRAM", Integer, :container_default_keep_cache_ram

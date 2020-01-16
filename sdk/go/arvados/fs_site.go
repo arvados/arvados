@@ -16,6 +16,7 @@ type CustomFileSystem interface {
 	MountByID(mount string)
 	MountProject(mount, uuid string)
 	MountUsers(mount string)
+	ForwardSlashNameSubstitution(string)
 }
 
 type customFileSystem struct {
@@ -25,6 +26,8 @@ type customFileSystem struct {
 
 	staleThreshold time.Time
 	staleLock      sync.Mutex
+
+	forwardSlashNameSubstitution string
 }
 
 func (c *Client) CustomFileSystem(kc keepClient) CustomFileSystem {
@@ -92,6 +95,10 @@ func (fs *customFileSystem) MountUsers(mount string) {
 			},
 		}, nil
 	})
+}
+
+func (fs *customFileSystem) ForwardSlashNameSubstitution(repl string) {
+	fs.forwardSlashNameSubstitution = repl
 }
 
 // SiteFileSystem returns a FileSystem that maps collections and other

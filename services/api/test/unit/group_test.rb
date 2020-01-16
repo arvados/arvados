@@ -232,4 +232,28 @@ class GroupTest < ActiveSupport::TestCase
     assert_equal cr_nr_was-1, ContainerRequest.all.length
     assert_equal job_nr_was-1, Job.all.length
   end
+
+  test "project names must be displayable in a filesystem" do
+    set_user_from_auth :active
+    ["", "{SOLIDUS}"].each do |subst|
+      Rails.configuration.Collections.ForwardSlashNameSubstitution = subst
+      g = Group.create
+      [[nil, true],
+       ["", true],
+       [".", false],
+       ["..", false],
+       ["...", true],
+       ["..z..", true],
+       ["foo/bar", subst != ""],
+       ["../..", subst != ""],
+       ["/", subst != ""],
+      ].each do |name, valid|
+        g.name = name
+        g.group_class = "role"
+        assert_equal true, g.valid?
+        g.group_class = "project"
+        assert_equal valid, g.valid?, "#{name.inspect} should be #{valid ? "valid" : "invalid"}"
+      end
+    end
+  end
 end
