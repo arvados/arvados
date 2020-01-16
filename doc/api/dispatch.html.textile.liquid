@@ -1,0 +1,138 @@
+---
+layout: default
+navsection: api
+navmenu: API Methods
+title: "cloud dispatcher"
+
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+The cloud dispatcher provides several management/diagnostic APIs, intended to be used by a system administrator.
+
+These APIs are not normally exposed to external clients. To use them, connect directly to the dispatcher's internal URL (see Services.DispatchCloud.InternalURLs in the cluster config file). All requests must include the cluster's management token (@ManagementToken@ in the cluster config file).
+
+Example:
+
+<notextile><pre><code>curl -H "Authorization: Bearer $management_token" http://localhost:9006/arvados/v1/dispatch/containers</code></pre></notextile>
+
+These APIs are not available via @arv@ CLI tool.
+
+Note: the term "instance" here refers to a virtual machine provided by a cloud computing service. The alternate terms "cloud VM", "compute node", and "worker node" are sometimes used as well in config files, documentation, and log messages.
+
+h3. List containers
+
+@GET /arvados/v1/dispatch/containers@
+
+Return a list of containers that are either ready to dispatch, or being started/monitored by the dispatcher.
+
+Each entry in the returned list of @items@ includes:
+* an @instance_type@ entry with the name and attributes of the instance type that will be used to schedule the container (chosen from the @InstanceTypes@ section of your cluster config file); and
+* a @container@ entry with selected attributes of the container itself, including @uuid@, @priority@, @runtime_constraints@, and @state@. Other fields of the container records are not loaded by the dispatcher, and will have empty/zero values here (e.g., @{...,"created_at":"0001-01-01T00:00:00Z","command":[],...}@).
+
+Example response:
+
+<notextile><pre>{
+  "items": [
+    {
+      "container": {
+        "uuid": "zzzzz-dz642-xz68ptr62m49au7",
+        ...
+        "priority": 562948375092493200,
+        ...
+        "state": "Locked",
+        ...
+      },
+      "instance_type": {
+        "Name": "Standard_E2s_v3",
+        "ProviderType": "Standard_E2s_v3",
+        "VCPUs": 2,
+        "RAM": 17179869184,
+        "Scratch": 32000000000,
+        "IncludedScratch": 32000000000,
+        "AddedScratch": 0,
+        "Price": 0.146,
+        "Preemptible": false
+      }
+    },
+    ...
+  ]
+}</pre></notextile>
+
+h3. Terminate a container
+
+@POST /arvados/v1/dispatch/containers/kill?container_uuid={uuid}&reason={string}@
+
+Make a single attempt to terminate the indicated container on the relevant instance. (The caller can implement a delay-and-retry loop if needed.)
+
+A container terminated this way will end with state @Cancelled@ if its docker container had already started, or @Queued@ if it was terminated while setting up the runtime environment.
+
+The provided @reason@ string will appear in the dispatcher's log, but not in the user-visible container log.
+
+If the provided @container_uuid@ is not scheduled/running on an instance, the response status will be 404.
+
+h3. List instances
+
+@GET /arvados/v1/dispatch/instances@
+
+Return a list of cloud instances.
+
+Example response:
+
+<notextile><pre>{
+  "items": [
+    {
+      "instance": "/subscriptions/abcdefab-abcd-abcd-abcd-abcdefabcdef/resourceGroups/zzzzz/providers/Microsoft.Compute/virtualMachines/compute-abcdef0123456789abcdef0123456789-abcdefghijklmno",
+      "address": "10.23.45.67",
+      "price": 0.073,
+      "arvados_instance_type": "Standard_DS1_v2",
+      "provider_instance_type": "Standard_DS1_v2",
+      "last_container_uuid": "zzzzz-dz642-vp7scm21telkadq",
+      "last_busy": "2020-01-13T15:20:21.775019617Z",
+      "worker_state": "running",
+      "idle_behavior": "run"
+    },
+    ...
+}</pre></notextile>
+
+The @instance@ value is the instance's identifier, assigned by the cloud provider. It can be used with the instance APIs below.
+
+The @worker_state@ value indicates the instance's capability to run containers.
+* @unknown@: instance was not created by this dispatcher, and a boot probe has not yet succeeded (this state typically appears briefly after the dispatcher restarts).
+* @booting@: cloud provider says the instance exists, but a boot probe has not yet succeeded.
+* @idle@: instance is idle and ready to run a container.
+* @running@: instance is running a container.
+* @shutdown@: cloud provider has been instructed to terminate the instance.
+
+The @idle_behavior@ value determines what the dispatcher will do with the instance when it is idle; see hold/drain/run APIs below.
+
+h3. Hold an instance
+
+@POST /arvados/v1/dispatch/instances/hold?instance_id={instance}@
+
+Set the indicated instance's idle behavior to @hold@. The instance will not be shut down automatically. If a container is currently running, it will be allowed to continue, but no new containers will be scheduled.
+
+h3. Drain an instance
+
+@POST /arvados/v1/dispatch/instances/drain?instance_id={instance}@
+
+Set the indicated instance's idle behavior to @drain@. If a container is currently running, it will be allowed to continue, but when the instance becomes idle, it will be shut down.
+
+h3. Resume an instance
+
+@POST /arvados/v1/dispatch/instances/run?instance_id={instance}@
+
+Set the indicated instance's idle behavior to @run@ (the normal behavior). When it becomes idle, it will be eligible to run new containers. It will be shut down automatically when the configured idle threshold is reached.
+
+h3. Shut down an instance
+
+@POST /arvados/v1/dispatch/instances/kill?instance_id={instance}&reason={string}@
+
+Terminate the indicated instance.
+
+If a container is running on the instance, it will be killed too; no effort is made to wait for it to end gracefully.
+
+The provided @reason@ string will appear in the dispatcher's log.

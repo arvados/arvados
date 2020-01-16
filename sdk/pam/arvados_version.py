@@ -7,23 +7,19 @@ import time
 import os
 import re
 
-def git_latest_tag():
-    gittags = subprocess.check_output(['git', 'tag', '-l']).split()
-    gittags.sort(key=lambda s: [int(u) for u in s.split(b'.')],reverse=True)
-    return str(next(iter(gittags)).decode('utf-8'))
-
-def git_timestamp_tag():
-    gitinfo = subprocess.check_output(
-        ['git', 'log', '--first-parent', '--max-count=1',
-         '--format=format:%ct', '.']).strip()
-    return str(time.strftime('.%Y%m%d%H%M%S', time.gmtime(int(gitinfo))))
+def git_version_at_commit():
+    curdir = os.path.dirname(os.path.abspath(__file__))
+    myhash = subprocess.check_output(['git', 'log', '-n1', '--first-parent',
+                                       '--format=%H', curdir]).strip()
+    myversion = subprocess.check_output([curdir+'/../../build/version-at-commit.sh', myhash]).strip().decode()
+    return myversion
 
 def save_version(setup_dir, module, v):
-  with open(os.path.join(setup_dir, module, "_version.py"), 'w') as fp:
+  with open(os.path.join(setup_dir, module, "_version.py"), 'wt') as fp:
       return fp.write("__version__ = '%s'\n" % v)
 
 def read_version(setup_dir, module):
-  with open(os.path.join(setup_dir, module, "_version.py"), 'r') as fp:
+  with open(os.path.join(setup_dir, module, "_version.py"), 'rt') as fp:
       return re.match("__version__ = '(.*)'$", fp.read()).groups()[0]
 
 def get_version(setup_dir, module):
@@ -33,8 +29,8 @@ def get_version(setup_dir, module):
         save_version(setup_dir, module, env_version)
     else:
         try:
-            save_version(setup_dir, module, git_latest_tag() + git_timestamp_tag())
-        except subprocess.CalledProcessError:
+            save_version(setup_dir, module, git_version_at_commit())
+        except (subprocess.CalledProcessError, OSError):
             pass
 
     return read_version(setup_dir, module)
