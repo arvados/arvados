@@ -550,8 +550,8 @@ func (s *IntegrationSuite) TestForwardSlashSubstitution(c *check.C) {
 
 	base := "http://download.example.com/by_id/" + coll.OwnerUUID + "/"
 	for tryURL, expectRegexp := range map[string]string{
-		base:                   `(?ms).*href="./` + nameShownEscaped + `/"\S+` + nameShown + `.*`,
-		base + nameShown + "/": `(?ms).*href="./filename"\S+filename.*`,
+		base:                          `(?ms).*href="./` + nameShownEscaped + `/"\S+` + nameShown + `.*`,
+		base + nameShownEscaped + "/": `(?ms).*href="./filename"\S+filename.*`,
 	} {
 		u, _ := url.Parse(tryURL)
 		req := &http.Request{
