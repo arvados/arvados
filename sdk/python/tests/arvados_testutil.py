@@ -93,7 +93,7 @@ class VersionChecker(object):
             # Python 2 writes version info on stderr.
             self.assertEqual(out.getvalue(), '')
             v = err.getvalue()
-        self.assertRegex(v, r"[0-9]+\.[0-9]+\.[0-9]+(\.pre[0-9]+)?$\n")
+        self.assertRegex(v, r"[0-9]+\.[0-9]+\.[0-9]+(\.dev[0-9]+)?$\n")
 
 
 class FakeCurl(object):
