@@ -90,6 +90,7 @@ lib/dispatchcloud/container
 lib/dispatchcloud/scheduler
 lib/dispatchcloud/ssh_executor
 lib/dispatchcloud/worker
+lib/mount
 lib/service
 services/api
 services/arv-git-httpd

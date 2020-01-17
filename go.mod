@@ -9,6 +9,7 @@ require (
 	github.com/Microsoft/go-winio v0.4.5 // indirect
 	github.com/alcortesm/tgz v0.0.0-20161220082320-9c5fe88206d7 // indirect
 	github.com/anmitsu/go-shlex v0.0.0-20161002113705-648efa622239 // indirect
+	github.com/arvados/cgofuse v1.0.4
 	github.com/aws/aws-sdk-go v1.25.30
 	github.com/coreos/go-oidc v2.1.0+incompatible
 	github.com/coreos/go-systemd v0.0.0-20180108085132-cc4f39464dc7
