@@ -64,7 +64,7 @@ describe("DataExplorerMiddleware", () => {
         const next = jest.fn();
         const middleware = dataExplorerMiddleware(service)(api)(next);
         middleware(dataExplorerActions.REQUEST_ITEMS({ id: "ServiceId" }));
-        expect(config.requestItems).toHaveBeenCalled();
+        expect(api.dispatch).toHaveBeenCalledTimes(1);
     });
 
     it("handles SET_PAGE action", () => {
