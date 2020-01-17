@@ -655,7 +655,7 @@ Clusters:
         # has been reached or crunch_log_seconds_between_events has elapsed since
         # the last flush.
         LogBytesPerEvent: 4096
-        LogSecondsBetweenEvents: 1
+        LogSecondsBetweenEvents: 5s
 
         # The sample period for throttling logs.
         LogThrottlePeriod: 60s
