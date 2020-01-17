@@ -362,7 +362,7 @@ type ContainersConfig struct {
 	Logging struct {
 		MaxAge                       Duration
 		LogBytesPerEvent             int
-		LogSecondsBetweenEvents      int
+		LogSecondsBetweenEvents      Duration
 		LogThrottlePeriod            Duration
 		LogThrottleBytes             int
 		LogThrottleLines             int
