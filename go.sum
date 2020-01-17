@@ -19,6 +19,8 @@ github.com/anmitsu/go-shlex v0.0.0-20161002113705-648efa622239 h1:kFOfPq6dUM1hTo
 github.com/anmitsu/go-shlex v0.0.0-20161002113705-648efa622239/go.mod h1:2FmKhYUyUczH0OGQWaF5ceTx0UBShxjsH6f8oGKYe2c=
 github.com/arvados/cgofuse v1.0.4 h1:FgxrUZMI4PQO7rZg/l8MXpKKr+1w4TEJaY3L9OGGbF8=
 github.com/arvados/cgofuse v1.0.4/go.mod h1:79WFV98hrkRHK9XPhh2IGGOwpFSjocsWubgxAs2KhRc=
+github.com/arvados/cgofuse v1.2.1-0.20200117191602-0a6595d3faa1 h1:rJ20nQahPEFL/f6v0a9dLVlkWs71qN7xGkmhzgGTCys=
+github.com/arvados/cgofuse v1.2.1-0.20200117191602-0a6595d3faa1/go.mod h1:79WFV98hrkRHK9XPhh2IGGOwpFSjocsWubgxAs2KhRc=
 github.com/arvados/goamz v0.0.0-20190905141525-1bba09f407ef h1:cl7DIRbiAYNqaVxg3CZY8qfZoBOKrj06H/x9SPGaxas=
 github.com/arvados/goamz v0.0.0-20190905141525-1bba09f407ef/go.mod h1:rCtgyMmBGEbjTm37fCuBYbNL0IhztiALzo3OB9HyiOM=
 github.com/aws/aws-sdk-go v1.25.30 h1:I9qj6zW3mMfsg91e+GMSN/INcaX9tTFvr/l/BAHKaIY=
