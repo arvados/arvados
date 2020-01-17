@@ -54,6 +54,9 @@ export interface ClusterConfigJSON {
     Login: {
         LoginCluster: string;
     };
+    Collections: {
+        ForwardSlashNameSubstitution: string;
+    };
 }
 
 export class Config {
@@ -163,6 +166,9 @@ export const mockClusterConfigJSON = (config: Partial<ClusterConfigJSON>): Clust
     },
     Login: {
         LoginCluster: "",
+    },
+    Collections: {
+        ForwardSlashNameSubstitution: "",
     },
     ...config
 });

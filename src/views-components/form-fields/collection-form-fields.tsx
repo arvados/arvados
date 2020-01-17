@@ -3,19 +3,37 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from "react";
-import { Field } from "redux-form";
+import { Field, Validator } from "redux-form";
 import { TextField } from "~/components/text-field/text-field";
-import { COLLECTION_NAME_VALIDATION, COLLECTION_DESCRIPTION_VALIDATION, COLLECTION_PROJECT_VALIDATION } from "~/validators/validators";
+import {
+    COLLECTION_NAME_VALIDATION, COLLECTION_NAME_VALIDATION_ALLOW_SLASH,
+    COLLECTION_DESCRIPTION_VALIDATION, COLLECTION_PROJECT_VALIDATION
+} from "~/validators/validators";
 import { ProjectTreePickerField, CollectionTreePickerField } from "~/views-components/projects-tree-picker/tree-picker-field";
 import { PickerIdProp } from '~/store/tree-picker/picker-id';
+import { connect } from "react-redux";
+import { RootState } from "~/store/store";
 
-export const CollectionNameField = () =>
-    <Field
-        name='name'
-        component={TextField}
-        validate={COLLECTION_NAME_VALIDATION}
-        label="Collection Name"
-        autoFocus={true} />;
+interface CollectionNameFieldProps {
+    validate: Validator[];
+}
+
+// See implementation note on declaration of ProjectNameField
+
+export const CollectionNameField = connect(
+    (state: RootState) => {
+        return {
+            validate: (state.auth.config.clusterConfig.Collections.ForwardSlashNameSubstitution === "" ?
+                COLLECTION_NAME_VALIDATION : COLLECTION_NAME_VALIDATION_ALLOW_SLASH)
+        };
+    })((props: CollectionNameFieldProps) =>
+        <Field
+            name='name'
+            component={TextField}
+            validate={props.validate}
+            label="Collection Name"
+            autoFocus={true} />
+    );
 
 export const CollectionDescriptionField = () =>
     <Field
