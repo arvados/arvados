@@ -4,8 +4,10 @@
 
 import * as React from "react";
 import { ErrorIcon } from "~/components/icon/icon";
-import { disallowSlash } from "~/validators/valid-name";
 import { Tooltip } from "@material-ui/core";
+import { disallowSlash } from "~/validators/valid-name";
+import { connect } from "react-redux";
+import { RootState } from "~/store/store";
 
 interface WarningComponentProps {
     text: string;
@@ -22,9 +24,17 @@ export const WarningComponent = ({ text, rules, message }: WarningComponentProps
 
 interface IllegalNamingWarningProps {
     name: string;
+    validate: RegExp[];
 }
 
-export const IllegalNamingWarning = ({ name }: IllegalNamingWarningProps) =>
-    <WarningComponent
-        text={name} rules={[disallowSlash]}
-        message="Names embedding '/' will be renamed or invisible to file system access (arv-mount or WebDAV)" />;
+
+export const IllegalNamingWarning = connect(
+    (state: RootState) => {
+        return {
+            validate: (state.auth.config.clusterConfig.Collections.ForwardSlashNameSubstitution === "" ?
+                [disallowSlash] : [])
+        };
+    })(({ name, validate }: IllegalNamingWarningProps) =>
+        <WarningComponent
+            text={name} rules={validate}
+            message="Names embedding '/' will be renamed or invisible to file system access (arv-mount or WebDAV)" />);
