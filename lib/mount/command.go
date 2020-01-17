@@ -38,6 +38,7 @@ func (c *cmd) RunCommand(prog string, args []string, stdin io.Reader, stdout, st
 	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
 	ro := flags.Bool("ro", false, "read-only")
 	experimental := flags.Bool("experimental", false, "acknowledge this is an experimental command, and should not be used in production (required)")
+	blockCache := flags.Int("block-cache", 4, "read cache size (number of 64MiB blocks)")
 	err := flags.Parse(args)
 	if err != nil {
 		logger.Print(err)
@@ -59,6 +60,7 @@ func (c *cmd) RunCommand(prog string, args []string, stdin io.Reader, stdout, st
 		logger.Print(err)
 		return 1
 	}
+	kc.BlockCache = &keepclient.BlockCache{MaxBlocks: *blockCache}
 	host := fuse.NewFileSystemHost(&keepFS{
 		Client:     client,
 		KeepClient: kc,
