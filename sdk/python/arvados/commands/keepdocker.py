@@ -405,7 +405,7 @@ def main(arguments=None, stdout=sys.stdout, install_sig_handlers=True, api=None)
 
     if args.name is None:
         if image_repo_tag:
-            collection_name = 'Docker image {} {}'.format(image_repo_tag, image_hash[0:12])
+            collection_name = 'Docker image {} {}'.format(image_repo_tag.replace("/", " "), image_hash[0:12])
         else:
             collection_name = 'Docker image {}'.format(image_hash[0:12])
     else:
@@ -463,7 +463,8 @@ def main(arguments=None, stdout=sys.stdout, install_sig_handlers=True, api=None)
                         coll_uuid = api.collections().create(
                             body={"manifest_text": collections[0]['manifest_text'],
                                   "name": collection_name,
-                                  "owner_uuid": parent_project_uuid},
+                                  "owner_uuid": parent_project_uuid,
+                                  "properties": {"docker-image-repo-tag": image_repo_tag}},
                             ensure_unique_name=True
                             ).execute(num_retries=args.retries)['uuid']
 
@@ -503,6 +504,8 @@ def main(arguments=None, stdout=sys.stdout, install_sig_handlers=True, api=None)
         coll_uuid = arv_put.main(
             put_args + ['--filename', outfile_name, image_file.name], stdout=stdout,
             install_sig_handlers=install_sig_handlers).strip()
+
+        api.collections().update(uuid=coll_uuid, body={"properties": {"docker-image-repo-tag": image_repo_tag}}).execute(num_retries=args.retries)
 
         # Read the image metadata and make Arvados links from it.
         image_file.seek(0)
