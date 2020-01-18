@@ -20,21 +20,22 @@ RUN apt-get update && \
     linkchecker python3-virtualenv python-virtualenv xvfb iceweasel \
     libgnutls28-dev python3-dev vim cadaver cython gnupg dirmngr \
     libsecret-1-dev r-base r-cran-testthat libxml2-dev pandoc \
-    python3-setuptools python3-pip openjdk-8-jdk bsdmainutils net-tools&& \
+    python3-setuptools python3-pip openjdk-8-jdk bsdmainutils net-tools \
+    ruby2.3 ruby-dev bundler && \
     apt-get clean
 
 ENV RUBYVERSION_MINOR 2.3
 ENV RUBYVERSION 2.3.5
 
 # Install Ruby from source
-RUN cd /tmp && \
- curl -f http://cache.ruby-lang.org/pub/ruby/${RUBYVERSION_MINOR}/ruby-${RUBYVERSION}.tar.gz | tar -xzf - && \
- cd ruby-${RUBYVERSION} && \
- ./configure --disable-install-doc && \
- make && \
- make install && \
- cd /tmp && \
- rm -rf ruby-${RUBYVERSION}
+# RUN cd /tmp && \
+#  curl -f http://cache.ruby-lang.org/pub/ruby/${RUBYVERSION_MINOR}/ruby-${RUBYVERSION}.tar.gz | tar -xzf - && \
+#  cd ruby-${RUBYVERSION} && \
+#  ./configure --disable-install-doc && \
+#  make && \
+#  make install && \
+#  cd /tmp && \
+#  rm -rf ruby-${RUBYVERSION}
 
 ENV GEM_HOME /var/lib/gems
 ENV GEM_PATH /var/lib/gems
