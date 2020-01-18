@@ -4,7 +4,7 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-Ruby 2.5 is recommended; Ruby 2.3 is also known to work.
+Minimum of Ruby 2.3 is required.  Ruby 2.5 is recommended.
 
 * "Option 1: Install from packages":#packages
 * "Option 2: Install with RVM":#rvm
@@ -12,14 +12,20 @@ Ruby 2.5 is recommended; Ruby 2.3 is also known to work.
 
 h2(#packages). Option 1: Install from packages
 
+{% include 'notebox_begin' %}
+Future versions of Arvados may require a newer version of Ruby than is packaged with your OS.  Using OS packages simplifies initial install, but may complicate upgrades that rely on a newer Ruby.  If this is a concern, we recommend using "RVM.":#rvm
+{% include 'notebox_end' %}
+
 h3. Centos 7
 
 The Ruby version shipped with Centos 7 is too old.  Use "RVM.":#rvm
 
 h3. Debian and Ubuntu
 
+Debian 9 (stretch) and Ubuntu 16.04 (xenial) ship Ruby 2.3, which is sufficient to run Arvados.  Later releases have newer versions of Ruby that can also run Arvados.
+
 <notextile>
-<pre><code># <span class="userinput">apt-get --no-install-recommends install ruby-dev bundler</span></code></pre>
+<pre><code># <span class="userinput">apt-get --no-install-recommends install ruby ruby-dev bundler</span></code></pre>
 </notextile>
 
 h2(#rvm). Option 2: Install with RVM
