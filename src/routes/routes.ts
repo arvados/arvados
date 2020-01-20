@@ -112,6 +112,9 @@ export const matchFavoritesRoute = (route: string) =>
 export const matchTrashRoute = (route: string) =>
     matchPath(route, { path: Routes.TRASH });
 
+export const matchAllProcessesRoute = (route: string) =>
+    matchPath(route, { path: Routes.ALL_PROCESSES });
+
 export const matchProjectRoute = (route: string) =>
     matchPath<ResourceRouteParams>(route, { path: Routes.PROJECTS });
 

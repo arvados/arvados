@@ -95,6 +95,7 @@ import { PublicFavoritePanel } from '~/views/public-favorites-panel/public-favor
 import { LinkAccountPanel } from '~/views/link-account-panel/link-account-panel';
 import { FedLogin } from './fed-login';
 import { CollectionsContentAddressPanel } from '~/views/collection-content-address-panel/collection-content-address-panel';
+import { AllProcessesPanel } from '../all-processes-panel/all-processes-panel';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -162,6 +163,7 @@ export const WorkbenchPanel =
                                 <Route path={Routes.PROJECTS} component={ProjectPanel} />
                                 <Route path={Routes.COLLECTIONS} component={CollectionPanel} />
                                 <Route path={Routes.FAVORITES} component={FavoritePanel} />
+                                <Route path={Routes.ALL_PROCESSES} component={AllProcessesPanel} />
                                 <Route path={Routes.PROCESSES} component={ProcessPanel} />
                                 <Route path={Routes.TRASH} component={TrashPanel} />
                                 <Route path={Routes.PROCESS_LOGS} component={ProcessLogPanel} />

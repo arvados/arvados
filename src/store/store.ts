@@ -21,6 +21,7 @@ import { FAVORITE_PANEL_ID } from "./favorite-panel/favorite-panel-action";
 import { PROJECT_PANEL_ID } from "./project-panel/project-panel-action";
 import { ProjectPanelMiddlewareService } from "./project-panel/project-panel-middleware-service";
 import { FavoritePanelMiddlewareService } from "./favorite-panel/favorite-panel-middleware-service";
+import { AllProcessesPanelMiddlewareService } from "./all-processes-panel/all-processes-panel-middleware-service";
 import { collectionPanelReducer } from './collection-panel/collection-panel-reducer';
 import { dialogReducer } from './dialog/dialog-reducer';
 import { ServiceRepository } from "~/services/services";
@@ -66,6 +67,7 @@ import { COLLECTIONS_CONTENT_ADDRESS_PANEL_ID } from '~/store/collections-conten
 import { ownerNameReducer } from '~/store/owner-name/owner-name-reducer';
 import { SubprocessMiddlewareService } from '~/store/subprocess-panel/subprocess-panel-middleware-service';
 import { SUBPROCESS_PANEL_ID } from '~/store/subprocess-panel/subprocess-panel-actions';
+import { ALL_PROCESSES_PANEL_ID } from './all-processes-panel/all-processes-panel-action';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -85,6 +87,9 @@ export function configureStore(history: History, services: ServiceRepository): R
     );
     const favoritePanelMiddleware = dataExplorerMiddleware(
         new FavoritePanelMiddlewareService(services, FAVORITE_PANEL_ID)
+    );
+    const allProcessessPanelMiddleware = dataExplorerMiddleware(
+        new AllProcessesPanelMiddlewareService(services, ALL_PROCESSES_PANEL_ID)
     );
     const trashPanelMiddleware = dataExplorerMiddleware(
         new TrashPanelMiddlewareService(services, TRASH_PANEL_ID)
@@ -132,6 +137,7 @@ export function configureStore(history: History, services: ServiceRepository): R
         authMiddleware(services),
         projectPanelMiddleware,
         favoritePanelMiddleware,
+        allProcessessPanelMiddleware,
         trashPanelMiddleware,
         searchResultsPanelMiddleware,
         sharedWithMePanelMiddleware,

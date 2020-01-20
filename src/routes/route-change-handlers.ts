@@ -47,6 +47,7 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
     const groupDetailsMatch = Routes.matchGroupDetailsRoute(pathname);
     const linksMatch = Routes.matchLinksRoute(pathname);
     const collectionsContentAddressMatch = Routes.matchCollectionsContentAddressRoute(pathname);
+    const allProcessesMatch = Routes.matchAllProcessesRoute(pathname);
 
     store.dispatch(dialogActions.CLOSE_ALL_DIALOGS());
     store.dispatch(contextMenuActions.CLOSE_CONTEXT_MENU());
@@ -108,5 +109,7 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
         store.dispatch(WorkbenchActions.loadLinks);
     } else if (collectionsContentAddressMatch) {
         store.dispatch(WorkbenchActions.loadCollectionContentAddress);
+    } else if (allProcessesMatch) {
+        store.dispatch(WorkbenchActions.loadAllProcesses());
     }
 };
