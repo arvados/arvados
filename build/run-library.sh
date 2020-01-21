@@ -10,8 +10,6 @@
 # older packages.
 LICENSE_PACKAGE_TS=20151208015500
 
-librarydir=`dirname "$(readlink -f "$0")"`
-
 if [[ -z "$ARVADOS_BUILDING_VERSION" ]]; then
     RAILS_PACKAGE_ITERATION=1
 else
@@ -59,7 +57,7 @@ version_from_git() {
 
     local git_ts git_hash
     declare $(format_last_commit_here "git_ts=%ct git_hash=%h" "$subdir")
-    ARVADOS_BUILDING_VERSION="$($librarydir/version-at-commit.sh $git_hash)"
+    ARVADOS_BUILDING_VERSION="$($WORKSPACE/build/version-at-commit.sh $git_hash)"
     echo "$ARVADOS_BUILDING_VERSION"
 }
 
