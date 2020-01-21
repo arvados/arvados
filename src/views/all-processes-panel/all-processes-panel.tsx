@@ -15,10 +15,10 @@ import { ArvadosTheme } from '~/common/custom-theme';
 import { ALL_PROCESSES_PANEL_ID } from '~/store/all-processes-panel/all-processes-panel-action';
 import {
     ProcessStatus,
-    ResourceLastModifiedDate,
     ResourceName,
     ResourceOwner,
-    ResourceType
+    ResourceType,
+    ResourceCreatedAtDate
 } from '~/views-components/data-explorer/renderers';
 import { ProcessIcon } from '~/components/icon/icon';
 import { openContextMenu, resourceKindToContextMenuKind } from '~/store/context-menu/context-menu-actions';
@@ -28,7 +28,7 @@ import { ContainerRequestState } from "~/models/container-request";
 import { RootState } from '~/store/store';
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 import { createTree } from '~/models/tree';
-import { getSimpleObjectTypeFilters, getInitialProcessStatusFilters } from '~/store/resource-type-filters/resource-type-filters';
+import { getInitialProcessStatusFilters, getInitialProcessTypeFilters } from '~/store/resource-type-filters/resource-type-filters';
 
 type CssRules = "toolbar" | "button";
 
@@ -47,7 +47,7 @@ export enum AllProcessesPanelColumnNames {
     STATUS = "Status",
     TYPE = "Type",
     OWNER = "Owner",
-    LAST_MODIFIED = "Last modified"
+    CREATED_AT = "Started at"
 }
 
 export interface AllProcessesPanelFilter extends DataTableFilterItem {
@@ -75,8 +75,7 @@ export const allProcessesPanelColumns: DataColumns<string> = [
         name: AllProcessesPanelColumnNames.TYPE,
         selected: true,
         configurable: true,
-        // TODO: Only filter by process type (main, subprocess)
-        filters: getSimpleObjectTypeFilters(),
+        filters: getInitialProcessTypeFilters(),
         render: uuid => <ResourceType uuid={uuid} />
     },
     {
@@ -87,12 +86,12 @@ export const allProcessesPanelColumns: DataColumns<string> = [
         render: uuid => <ResourceOwner uuid={uuid} />
     },
     {
-        name: AllProcessesPanelColumnNames.LAST_MODIFIED,
+        name: AllProcessesPanelColumnNames.CREATED_AT,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.DESC,
         filters: createTree(),
-        render: uuid => <ResourceLastModifiedDate uuid={uuid} />
+        render: uuid => <ResourceCreatedAtDate uuid={uuid} />
     }
 ];
 
@@ -147,7 +146,7 @@ export const AllProcessesPanel = withStyles(styles)(
                     dataTableDefaultView={
                         <DataTableDefaultView
                             icon={ProcessIcon}
-                            messages={['All Processes list empty.']}
+                            messages={['Processes list empty.']}
                             />
                     } />;
             }

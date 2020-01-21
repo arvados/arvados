@@ -57,7 +57,7 @@ export const getSimpleObjectTypeFilters = pipe(
     initFilter(ObjectTypeFilter.COLLECTION),
 );
 
-// Using pipe() with more tha 7 arguments makes the return type be 'any',
+// Using pipe() with more than 7 arguments makes the return type be 'any',
 // causing compile issues.
 export const getInitialResourceTypeFilters = pipe(
     (): DataTableFilters => createTree<DataTableFilterItem>(),
@@ -73,6 +73,12 @@ export const getInitialResourceTypeFilters = pipe(
         initFilter(CollectionTypeFilter.OUTPUT_COLLECTION, ObjectTypeFilter.COLLECTION),
         initFilter(CollectionTypeFilter.LOG_COLLECTION, ObjectTypeFilter.COLLECTION),
     ),
+);
+
+export const getInitialProcessTypeFilters = pipe(
+    (): DataTableFilters => createTree<DataTableFilterItem>(),
+    initFilter(ProcessTypeFilter.MAIN_PROCESS),
+    initFilter(ProcessTypeFilter.CHILD_PROCESS, '', false)
 );
 
 export const getInitialProcessStatusFilters = pipe(
@@ -179,7 +185,7 @@ const serializeProcessTypeFilters = ({ fb, selectedFilters }: ReturnType<typeof 
     () => getMatchingFilters(values(ProcessTypeFilter), selectedFilters),
     filters => filters,
     mappedFilters => ({
-        fb: buildProcessTypeFilters({ fb, filters: mappedFilters }),
+        fb: buildProcessTypeFilters({ fb, filters: mappedFilters, use_prefix: true }),
         selectedFilters
     })
 )();
@@ -187,14 +193,14 @@ const serializeProcessTypeFilters = ({ fb, selectedFilters }: ReturnType<typeof 
 const PROCESS_TYPES = values(ProcessTypeFilter);
 const PROCESS_PREFIX = GroupContentsResourcePrefix.PROCESS;
 
-const buildProcessTypeFilters = ({ fb, filters }: { fb: FilterBuilder, filters: string[] }) => {
+const buildProcessTypeFilters = ({ fb, filters, use_prefix }: { fb: FilterBuilder, filters: string[], use_prefix: boolean }) => {
     switch (true) {
         case filters.length === 0 || filters.length === PROCESS_TYPES.length:
             return fb;
         case includes(ProcessTypeFilter.MAIN_PROCESS, filters):
-            return fb.addEqual('requesting_container_uuid', null, PROCESS_PREFIX);
+            return fb.addEqual('requesting_container_uuid', null, use_prefix ? PROCESS_PREFIX : '');
         case includes(ProcessTypeFilter.CHILD_PROCESS, filters):
-            return fb.addDistinct('requesting_container_uuid', null, PROCESS_PREFIX);
+            return fb.addDistinct('requesting_container_uuid', null, use_prefix ? PROCESS_PREFIX : '');
         default:
             return fb;
     }
@@ -205,6 +211,19 @@ export const serializeResourceTypeFilters = pipe(
     serializeObjectTypeFilters,
     serializeCollectionTypeFilters,
     serializeProcessTypeFilters,
+    ({ fb }) => fb.getFilters(),
+);
+
+export const serializeOnlyProcessTypeFilters = pipe(
+    createFiltersBuilder,
+    ({ fb, selectedFilters }: ReturnType<typeof createFiltersBuilder>) => pipe(
+        () => getMatchingFilters(values(ProcessTypeFilter), selectedFilters),
+        filters => filters,
+        mappedFilters => ({
+            fb: buildProcessTypeFilters({ fb, filters: mappedFilters, use_prefix: false }),
+            selectedFilters
+        })
+    )(),
     ({ fb }) => fb.getFilters(),
 );
 

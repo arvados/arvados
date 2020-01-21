@@ -11,10 +11,18 @@ import { Dispatch, MiddlewareAPI } from "redux";
 import { resourcesActions } from "~/store/resources/resources-actions";
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions.ts';
-import { getDataExplorer, DataExplorer } from "~/store/data-explorer/data-explorer-reducer";
+import { getDataExplorer, DataExplorer, getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
 import { loadMissingProcessesInformation } from "~/store/project-panel/project-panel-middleware-service";
 import { DataColumns } from "~/components/data-table/data-table";
-import { ProcessStatusFilter, buildProcessStatusFilters } from "../resource-type-filters/resource-type-filters";
+import {
+    ProcessStatusFilter,
+    buildProcessStatusFilters,
+    serializeOnlyProcessTypeFilters
+} from "../resource-type-filters/resource-type-filters";
+import { AllProcessesPanelColumnNames } from "~/views/all-processes-panel/all-processes-panel";
+import { OrderBuilder, OrderDirection } from "~/services/api/order-builder";
+import { ProcessResource } from "~/models/process";
+import { SortDirection } from "~/components/data-table/data-column";
 
 export class AllProcessesPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -56,6 +64,7 @@ export class AllProcessesPanelMiddlewareService extends DataExplorerMiddlewareSe
 
 const getParams = ( dataExplorer: DataExplorer ) => ({
     ...dataExplorerToListParams(dataExplorer),
+    order: getOrder(dataExplorer),
     filters: getFilters(dataExplorer)
 });
 
@@ -68,11 +77,32 @@ const getFilters = ( dataExplorer: DataExplorer ) => {
 
     const nameFilter = new FilterBuilder().addILike("name", dataExplorer.searchValue).getFilters();
     const statusFilter = buildProcessStatusFilters(new FilterBuilder(), activeStatusFilter).getFilters();
+    const typeFilters = serializeOnlyProcessTypeFilters(getDataExplorerColumnFilters(columns, AllProcessesPanelColumnNames.TYPE));
 
     return joinFilters(
         nameFilter,
-        statusFilter
+        // TODO: When 15019 is merged, this won't be necessary
+        joinFilters(
+            statusFilter,
+            typeFilters)
     );
+};
+
+const getOrder = (dataExplorer: DataExplorer) => {
+    const sortColumn = getSortColumn(dataExplorer);
+    const order = new OrderBuilder<ProcessResource>();
+    if (sortColumn) {
+        const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.ASC
+            ? OrderDirection.ASC
+            : OrderDirection.DESC;
+
+        const columnName = sortColumn && sortColumn.name === AllProcessesPanelColumnNames.NAME ? "name" : "createdAt";
+        return order
+            .addOrder(sortDirection, columnName)
+            .getOrder();
+    } else {
+        return order.getOrder();
+    }
 };
 
 const allProcessesPanelDataExplorerIsNotSet = () =>
