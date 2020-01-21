@@ -64,7 +64,7 @@ describe("DataExplorerMiddleware", () => {
         const next = jest.fn();
         const middleware = dataExplorerMiddleware(service)(api)(next);
         middleware(dataExplorerActions.REQUEST_ITEMS({ id: "ServiceId" }));
-        expect(config.requestItems).toHaveBeenCalled();
+        expect(api.dispatch).toHaveBeenCalledTimes(1);
     });
 
     it("handles SET_PAGE action", () => {
@@ -202,7 +202,7 @@ class ServiceMock extends DataExplorerMiddlewareService {
     constructor(private config: {
         id: string,
         columns: DataColumns<any>,
-        requestItems: (api: MiddlewareAPI) => void
+        requestItems: (api: MiddlewareAPI) => Promise<void>
     }) {
         super(config.id);
     }
@@ -211,7 +211,8 @@ class ServiceMock extends DataExplorerMiddlewareService {
         return this.config.columns;
     }
 
-    requestItems(api: MiddlewareAPI) {
+    requestItems(api: MiddlewareAPI): Promise<void> {
         this.config.requestItems(api);
+        return Promise.resolve();
     }
 }

@@ -113,6 +113,7 @@ export const DataTable = withStyles(styles)(
                     countNodes(filters) > 0
                         ? <DataTableFiltersPopover
                             name={`${name} filters`}
+                            mutuallyExclusive={column.mutuallyExclusiveFilters}
                             onChange={filters =>
                                 onFiltersChange &&
                                 onFiltersChange(filters, column)}

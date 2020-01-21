@@ -23,11 +23,12 @@ export const mockResourceService = <R extends Resource, C extends CommonResource
 };
 
 describe("CommonResourceService", () => {
-    const axiosInstance = axios.create();
-    const axiosMock = new MockAdapter(axiosInstance);
+    let axiosInstance: AxiosInstance;
+    let axiosMock: MockAdapter;
 
     beforeEach(() => {
-        axiosMock.reset();
+        axiosInstance = axios.create();
+        axiosMock = new MockAdapter(axiosInstance);
     });
 
     it("#create", async () => {
@@ -109,5 +110,30 @@ describe("CommonResourceService", () => {
             }],
             itemsAvailable: 20
         });
+    });
+
+    it("#list using POST when query string is too big", async () => {
+        axiosMock
+            .onAny("/resource")
+            .reply(200);
+        const tooBig = 'x'.repeat(1500);
+        const commonResourceService = new CommonResourceService(axiosInstance, "resource", actions);
+        await commonResourceService.list({ filters: tooBig });
+        expect(axiosMock.history.get.length).toBe(0);
+        expect(axiosMock.history.post.length).toBe(1);
+        expect(axiosMock.history.post[0].data.get('filters')).toBe(`[${tooBig}]`);
+        expect(axiosMock.history.post[0].params._method).toBe('GET');
+    });
+
+    it("#list using GET when query string is not too big", async () => {
+        axiosMock
+            .onAny("/resource")
+            .reply(200);
+        const notTooBig = 'x'.repeat(1480);
+        const commonResourceService = new CommonResourceService(axiosInstance, "resource", actions);
+        await commonResourceService.list({ filters: notTooBig });
+        expect(axiosMock.history.post.length).toBe(0);
+        expect(axiosMock.history.get.length).toBe(1);
+        expect(axiosMock.history.get[0].params.filters).toBe(`[${notTooBig}]`);
     });
 });

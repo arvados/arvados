@@ -105,7 +105,7 @@ export const projectPanelColumns: DataColumns<string> = [
 
 export const PROJECT_PANEL_ID = "projectPanel";
 
-const DEFAUL_VIEW_MESSAGES = [
+const DEFAULT_VIEW_MESSAGES = [
     'Your project is empty.',
     'Please create a project or create a collection and upload a data.',
 ];
@@ -138,7 +138,7 @@ export const ProjectPanel = withStyles(styles)(
                         dataTableDefaultView={
                             <DataTableDefaultView
                                 icon={ProjectIcon}
-                                messages={DEFAUL_VIEW_MESSAGES} />
+                                messages={DEFAULT_VIEW_MESSAGES} />
                         } />
                 </div>;
             }

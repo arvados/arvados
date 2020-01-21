@@ -8,7 +8,7 @@ import { Provider } from "react-redux";
 import { MainPanel } from '~/views/main-panel/main-panel';
 import '~/index.css';
 import { Route, Switch } from 'react-router';
-import createBrowserHistory from "history/createBrowserHistory";
+import { createBrowserHistory } from "history";
 import { History } from "history";
 import { configureStore, RootStore } from '~/store/store';
 import { ConnectedRouter } from "react-router-redux";

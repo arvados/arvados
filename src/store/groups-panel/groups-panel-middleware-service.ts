@@ -17,23 +17,15 @@ import { SortDirection } from '~/components/data-table/data-column';
 import { GroupsPanelColumnNames } from '~/views/groups-panel/groups-panel';
 
 export class GroupsPanelMiddlewareService extends DataExplorerMiddlewareService {
-
     constructor(private services: ServiceRepository, id: string) {
         super(id);
     }
-
     async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
-
         const dataExplorer = getDataExplorer(api.getState().dataExplorer, this.getId());
-
         if (!dataExplorer) {
-
             api.dispatch(groupsPanelDataExplorerIsNotSet());
-
         } else {
-
             try {
-
                 const order = new OrderBuilder<GroupResource>();
                 const sortColumn = getSortColumn(dataExplorer);
                 if (sortColumn) {
@@ -41,44 +33,31 @@ export class GroupsPanelMiddlewareService extends DataExplorerMiddlewareService 
                         sortColumn.sortDirection === SortDirection.ASC && sortColumn.name === GroupsPanelColumnNames.GROUP
                             ? OrderDirection.ASC
                             : OrderDirection.DESC;
-
                     order.addOrder(direction, 'name');
                 }
-
                 const filters = new FilterBuilder()
                     .addNotIn('group_class', [GroupClass.PROJECT])
                     .addILike('name', dataExplorer.searchValue)
                     .getFilters();
-
                 const response = await this.services.groupsService
                     .list({
                         ...dataExplorerToListParams(dataExplorer),
                         filters,
                         order: order.getOrder(),
                     });
-
                 api.dispatch(updateResources(response.items));
-
                 api.dispatch(GroupsPanelActions.SET_ITEMS({
                     ...listResultsToDataExplorerItemsMeta(response),
                     items: response.items.map(item => item.uuid),
                 }));
-
                 const permissions = await this.services.permissionService.list({
-
                     filters: new FilterBuilder()
                         .addIn('tail_uuid', response.items.map(item => item.uuid))
                         .getFilters()
-
                 });
-
                 api.dispatch(updateResources(permissions.items));
-
-
             } catch (e) {
-
                 api.dispatch(couldNotFetchFavoritesContents());
-
             }
         }
     }

@@ -8,15 +8,13 @@ import { ProcessInformationCard } from './process-information-card';
 import { DefaultView } from '~/components/default-view/default-view';
 import { ProcessIcon } from '~/components/icon/icon';
 import { Process } from '~/store/processes/process';
-import { SubprocessesCard } from './subprocesses-card';
-import { ProcessSubprocesses } from '~/views/process-panel/process-subprocesses';
+import { SubprocessPanel } from '~/views/subprocess-panel/subprocess-panel';
 import { SubprocessFilterDataProps } from '~/components/subprocess-filter/subprocess-filter';
 
 export interface ProcessPanelRootDataProps {
     process?: Process;
     subprocesses: Array<Process>;
     filters: Array<SubprocessFilterDataProps>;
-    totalSubprocessesLength: number;
 }
 
 export interface ProcessPanelRootActionProps {
@@ -33,7 +31,7 @@ export type ProcessPanelRootProps = ProcessPanelRootDataProps & ProcessPanelRoot
 export const ProcessPanelRoot = ({ process, ...props }: ProcessPanelRootProps) =>
     process
         ? <Grid container spacing={16} alignItems="stretch">
-            <Grid item sm={12} md={7}>
+            <Grid item sm={12} md={12}>
                 <ProcessInformationCard
                     process={process}
                     onContextMenu={event => props.onContextMenu(event, process)}
@@ -41,19 +39,10 @@ export const ProcessPanelRoot = ({ process, ...props }: ProcessPanelRootProps) =
                     navigateToOutput={props.navigateToOutput}
                     openWorkflow={props.navigateToWorkflow}
                     cancelProcess={props.cancelProcess}
-            />
-            </Grid>
-            <Grid item sm={12} md={5}>
-                <SubprocessesCard
-                    subprocessesAmount={props.totalSubprocessesLength}
-                    filters={props.filters}
-                    onToggle={props.onToggle}
                 />
             </Grid>
-            <Grid item xs={12}>
-                <ProcessSubprocesses
-                    subprocesses={props.subprocesses}
-                    onContextMenu={props.onContextMenu} />
+            <Grid item sm={12} md={12}>
+                <SubprocessPanel />
             </Grid>
         </Grid>
         : <Grid container

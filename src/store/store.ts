@@ -64,6 +64,8 @@ import { linkAccountPanelReducer } from './link-account-panel/link-account-panel
 import { CollectionsWithSameContentAddressMiddlewareService } from '~/store/collections-content-address-panel/collections-content-address-middleware-service';
 import { COLLECTIONS_CONTENT_ADDRESS_PANEL_ID } from '~/store/collections-content-address-panel/collections-content-address-panel-actions';
 import { ownerNameReducer } from '~/store/owner-name/owner-name-reducer';
+import { SubprocessMiddlewareService } from '~/store/subprocess-panel/subprocess-panel-middleware-service';
+import { SUBPROCESS_PANEL_ID } from '~/store/subprocess-panel/subprocess-panel-actions';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -120,6 +122,9 @@ export function configureStore(history: History, services: ServiceRepository): R
     const collectionsContentAddress = dataExplorerMiddleware(
         new CollectionsWithSameContentAddressMiddlewareService(services, COLLECTIONS_CONTENT_ADDRESS_PANEL_ID)
     );
+    const subprocessMiddleware = dataExplorerMiddleware(
+        new SubprocessMiddlewareService(services, SUBPROCESS_PANEL_ID)
+    );
 
     const middlewares: Middleware[] = [
         routerMiddleware(history),
@@ -138,7 +143,8 @@ export function configureStore(history: History, services: ServiceRepository): R
         computeNodeMiddleware,
         apiClientAuthorizationMiddlewareService,
         publicFavoritesMiddleware,
-        collectionsContentAddress
+        collectionsContentAddress,
+        subprocessMiddleware
     ];
     const enhancer = composeEnhancers(applyMiddleware(...middlewares));
     return createStore(rootReducer, enhancer);

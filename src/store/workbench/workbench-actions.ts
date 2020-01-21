@@ -97,6 +97,8 @@ import { loadPublicFavoritePanel, publicFavoritePanelActions } from '~/store/pub
 import { publicFavoritePanelColumns } from '~/views/public-favorites-panel/public-favorites-panel';
 import { loadCollectionsContentAddressPanel, collectionsContentAddressActions } from '~/store/collections-content-address-panel/collections-content-address-panel-actions';
 import { collectionContentAddressPanelColumns } from '~/views/collection-content-address-panel/collection-content-address-panel';
+import { subprocessPanelActions } from '~/store/subprocess-panel/subprocess-panel-actions';
+import { subprocessPanelColumns } from '~/views/subprocess-panel/subprocess-panel-root';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -137,6 +139,7 @@ export const loadWorkbench = () =>
             dispatch(computeNodesActions.SET_COLUMNS({ columns: computeNodePanelColumns }));
             dispatch(apiClientAuthorizationsActions.SET_COLUMNS({ columns: apiClientAuthorizationPanelColumns }));
             dispatch(collectionsContentAddressActions.SET_COLUMNS({ columns: collectionContentAddressPanelColumns }));
+            dispatch(subprocessPanelActions.SET_COLUMNS({ columns: subprocessPanelColumns }));
 
             if (services.linkAccountService.getAccountToLink()) {
                 dispatch(linkAccountPanelActions.HAS_SESSION_DATA());

@@ -11,6 +11,12 @@ export interface DataColumn<T> {
     name: string;
     selected: boolean;
     configurable: boolean;
+
+    /**
+     * If set to true, filters on this column will be displayed in a
+     * radio group and only one filter can be selected at a time.
+     */
+    mutuallyExclusiveFilters?: boolean;
     sortDirection?: SortDirection;
     filters: DataTableFilters;
     render: (item: T) => React.ReactElement<any>;

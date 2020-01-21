@@ -11,6 +11,16 @@ import { getSelectedNodes } from '~/models/tree';
 import { CollectionType } from '~/models/collection';
 import { GroupContentsResourcePrefix } from '~/services/groups-service/groups-service';
 
+export enum ProcessStatusFilter {
+    ALL = 'All',
+    RUNNING = 'Running',
+    FAILED = 'Failed',
+    COMPLETED = 'Completed',
+    CANCELLED = 'Cancelled',
+    LOCKED = 'Locked',
+    QUEUED = 'Queued'
+}
+
 export enum ObjectTypeFilter {
     PROJECT = 'Project',
     PROCESS = 'Process',
@@ -23,14 +33,14 @@ export enum CollectionTypeFilter {
     LOG_COLLECTION = 'Log',
 }
 
-const initFilter = (name: string, parent = '') =>
+const initFilter = (name: string, parent = '', isSelected?: boolean) =>
     setNode<DataTableFilterItem>({
         id: name,
         value: { name },
         parent,
         children: [],
         active: false,
-        selected: true,
+        selected: isSelected !== undefined ? isSelected : true,
         expanded: false,
         status: TreeNodeStatus.LOADED,
     });
@@ -50,6 +60,17 @@ export const getInitialResourceTypeFilters = pipe(
     initFilter(CollectionTypeFilter.GENERAL_COLLECTION, ObjectTypeFilter.COLLECTION),
     initFilter(CollectionTypeFilter.OUTPUT_COLLECTION, ObjectTypeFilter.COLLECTION),
     initFilter(CollectionTypeFilter.LOG_COLLECTION, ObjectTypeFilter.COLLECTION),
+);
+
+export const getInitialProcessStatusFilters = pipe(
+    (): DataTableFilters => createTree<DataTableFilterItem>(),
+    initFilter(ProcessStatusFilter.ALL, '', true),
+    initFilter(ProcessStatusFilter.RUNNING, '', false),
+    initFilter(ProcessStatusFilter.FAILED, '', false),
+    initFilter(ProcessStatusFilter.COMPLETED, '', false),
+    initFilter(ProcessStatusFilter.CANCELLED, '', false),
+    initFilter(ProcessStatusFilter.QUEUED, '', false),
+    initFilter(ProcessStatusFilter.LOCKED, '', false),
 );
 
 export const getTrashPanelTypeFilters = pipe(

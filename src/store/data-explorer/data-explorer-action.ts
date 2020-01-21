@@ -6,10 +6,17 @@ import { unionize, ofType, UnionOf } from "~/common/unionize";
 import { DataColumns, DataTableFetchMode } from "~/components/data-table/data-table";
 import { DataTableFilters } from '~/components/data-table-filters/data-table-filters-tree';
 
+export enum DataTableRequestState {
+    IDLE,
+    PENDING,
+    NEED_REFRESH
+}
+
 export const dataExplorerActions = unionize({
     CLEAR: ofType<{ id: string }>(),
     RESET_PAGINATION: ofType<{ id: string }>(),
     REQUEST_ITEMS: ofType<{ id: string, criteriaChanged?: boolean }>(),
+    REQUEST_STATE: ofType<{ id: string, criteriaChanged?: boolean }>(),
     SET_FETCH_MODE: ofType<({ id: string, fetchMode: DataTableFetchMode })>(),
     SET_COLUMNS: ofType<{ id: string, columns: DataColumns<any> }>(),
     SET_FILTERS: ofType<{ id: string, columnName: string, filters: DataTableFilters }>(),
@@ -20,6 +27,7 @@ export const dataExplorerActions = unionize({
     TOGGLE_COLUMN: ofType<{ id: string, columnName: string }>(),
     TOGGLE_SORT: ofType<{ id: string, columnName: string }>(),
     SET_EXPLORER_SEARCH_VALUE: ofType<{ id: string, searchValue: string }>(),
+    SET_REQUEST_STATE: ofType<{ id: string, requestState: DataTableRequestState }>(),
 });
 
 export type DataExplorerAction = UnionOf<typeof dataExplorerActions>;
@@ -51,4 +59,6 @@ export const bindDataExplorerActions = (id: string) => ({
         dataExplorerActions.TOGGLE_SORT({ ...payload, id }),
     SET_EXPLORER_SEARCH_VALUE: (payload: { searchValue: string }) =>
         dataExplorerActions.SET_EXPLORER_SEARCH_VALUE({ ...payload, id }),
+    SET_REQUEST_STATE: (payload: { requestState: DataTableRequestState }) =>
+        dataExplorerActions.SET_REQUEST_STATE({ ...payload, id })
 });

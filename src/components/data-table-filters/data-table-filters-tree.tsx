@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from "react";
-import { Tree, toggleNodeSelection, getNode, initTreeNode, getNodeChildrenIds } from '~/models/tree';
+import { Tree, toggleNodeSelection, getNode, initTreeNode, getNodeChildrenIds, selectNode, deselectNodes } from '~/models/tree';
 import { Tree as TreeComponent, TreeItem, TreeItemStatus } from '~/components/tree/tree';
 import { noop, map } from "lodash/fp";
 import { toggleNodeCollapse } from '~/models/tree';
@@ -18,6 +18,11 @@ export type DataTableFilters = Tree<DataTableFilterItem>;
 export interface DataTableFilterProps {
     filters: DataTableFilters;
     onChange?: (filters: DataTableFilters) => void;
+
+    /**
+     * When set to true, only one filter can be selected at a time.
+     */
+    mutuallyExclusive?: boolean;
 }
 
 export class DataTableFiltersTree extends React.Component<DataTableFilterProps> {
@@ -31,12 +36,30 @@ export class DataTableFiltersTree extends React.Component<DataTableFilterProps> 
             items={filtersToTree(filters)}
             render={renderItem}
             showSelection
+            useRadioButtons={this.props.mutuallyExclusive}
+            toggleItemRadioButton={this.toggleRadioButtonFilter}
             disableRipple
             onContextMenu={noop}
             toggleItemActive={noop}
             toggleItemOpen={this.toggleOpen}
             toggleItemSelection={this.toggleFilter}
         />;
+    }
+
+    /**
+     * Handler for when a tree item is toggled via a radio button.
+     * Ensures mutual exclusivity among filter tree items.
+     */
+    toggleRadioButtonFilter = (item: TreeItem<DataTableFilterItem>) => {
+        const { onChange = noop } = this.props;
+
+        // If the filter is already selected, do nothing.
+        if (item.selected) { return; }
+
+        // Otherwise select this node and deselect the others
+        const filters = selectNode(item.id)(this.props.filters);
+        const toDeselect = Object.keys(this.props.filters).filter((id) => (id !== item.id));
+        onChange(deselectNodes(toDeselect)(filters));
     }
 
     toggleFilter = (_: React.MouseEvent, item: TreeItem<DataTableFilterItem>) => {

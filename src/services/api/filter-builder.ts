@@ -13,6 +13,10 @@ export class FilterBuilder {
         return this.addCondition(field, "=", value, "", "", resourcePrefix);
     }
 
+    public addDistinct(field: string, value?: string | boolean | null, resourcePrefix?: string) {
+        return this.addCondition(field, "!=", value, "", "", resourcePrefix);
+    }
+
     public addLike(field: string, value?: string, resourcePrefix?: string) {
         return this.addCondition(field, "like", value, "%", "%", resourcePrefix);
     }
