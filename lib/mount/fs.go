@@ -320,6 +320,16 @@ func (fs *keepFS) Read(path string, buf []byte, ofst int64, fh uint64) (n int) {
 		return fs.errCode(err)
 	}
 	n, err := f.Read(buf)
+	for err == nil && n < len(buf) {
+		// f is an io.Reader ("If some data is available but
+		// not len(p) bytes, Read conventionally returns what
+		// is available instead of waiting for more") -- but
+		// our caller requires us to either fill buf or reach
+		// EOF.
+		done := n
+		n, err = f.Read(buf[done:])
+		n += done
+	}
 	if err != nil && err != io.EOF {
 		log.Printf("error reading %q: %s", path, err)
 		return fs.errCode(err)
