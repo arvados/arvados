@@ -121,7 +121,11 @@ class Arvados::V1::UsersController < ApplicationController
 
     # setup succeeded. send email to user
     if params[:send_notification_email]
-      UserNotifier.account_is_setup(@object).deliver_now
+      begin
+        UserNotifier.account_is_setup(@object).deliver_now
+      rescue => e
+        logger.warn "Failed to send email to #{@object.email}: #{e}"
+      end
     end
 
     send_json kind: "arvados#HashList", items: @response.as_api_response(nil)
