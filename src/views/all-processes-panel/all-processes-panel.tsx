@@ -28,7 +28,7 @@ import { ContainerRequestState } from "~/models/container-request";
 import { RootState } from '~/store/store';
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 import { createTree } from '~/models/tree';
-import { getSimpleObjectTypeFilters } from '~/store/resource-type-filters/resource-type-filters';
+import { getSimpleObjectTypeFilters, getInitialProcessStatusFilters } from '~/store/resource-type-filters/resource-type-filters';
 
 type CssRules = "toolbar" | "button";
 
@@ -67,7 +67,8 @@ export const allProcessesPanelColumns: DataColumns<string> = [
         name: AllProcessesPanelColumnNames.STATUS,
         selected: true,
         configurable: true,
-        filters: createTree(),
+        mutuallyExclusiveFilters: true,
+        filters: getInitialProcessStatusFilters(),
         render: uuid => <ProcessStatus uuid={uuid} />
     },
     {

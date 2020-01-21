@@ -213,3 +213,27 @@ export const serializeSimpleObjectTypeFilters = (filters: Tree<DataTableFilterIt
         .map(f => f.id)
         .map(objectTypeToResourceKind);
 };
+
+export const buildProcessStatusFilters = ( fb:FilterBuilder, activeStatusFilter:string ): FilterBuilder => {
+    switch (activeStatusFilter) {
+        case ProcessStatusFilter.COMPLETED: {
+            fb.addEqual('container.state', 'Complete');
+            fb.addEqual('container.exit_code', '0');
+            break;
+        }
+        case ProcessStatusFilter.FAILED: {
+            fb.addEqual('container.state', 'Complete');
+            fb.addDistinct('container.exit_code', '0');
+            break;
+        }
+        case ProcessStatusFilter.CANCELLED:
+        case ProcessStatusFilter.FAILED:
+        case ProcessStatusFilter.LOCKED:
+        case ProcessStatusFilter.QUEUED:
+        case ProcessStatusFilter.RUNNING: {
+            fb.addEqual('container.state', activeStatusFilter);
+            break;
+        }
+    }
+    return fb;
+};
