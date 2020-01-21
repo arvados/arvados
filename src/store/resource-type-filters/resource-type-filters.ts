@@ -33,6 +33,11 @@ export enum CollectionTypeFilter {
     LOG_COLLECTION = 'Log',
 }
 
+export enum ProcessTypeFilter {
+    MAIN_PROCESS = 'Main',
+    CHILD_PROCESS = 'Child',
+}
+
 const initFilter = (name: string, parent = '', isSelected?: boolean) =>
     setNode<DataTableFilterItem>({
         id: name,
@@ -52,25 +57,35 @@ export const getSimpleObjectTypeFilters = pipe(
     initFilter(ObjectTypeFilter.COLLECTION),
 );
 
+// Using pipe() with more tha 7 arguments makes the return type be 'any',
+// causing compile issues.
 export const getInitialResourceTypeFilters = pipe(
     (): DataTableFilters => createTree<DataTableFilterItem>(),
     initFilter(ObjectTypeFilter.PROJECT),
-    initFilter(ObjectTypeFilter.PROCESS),
-    initFilter(ObjectTypeFilter.COLLECTION),
-    initFilter(CollectionTypeFilter.GENERAL_COLLECTION, ObjectTypeFilter.COLLECTION),
-    initFilter(CollectionTypeFilter.OUTPUT_COLLECTION, ObjectTypeFilter.COLLECTION),
-    initFilter(CollectionTypeFilter.LOG_COLLECTION, ObjectTypeFilter.COLLECTION),
+    pipe(
+        initFilter(ObjectTypeFilter.PROCESS),
+        initFilter(ProcessTypeFilter.MAIN_PROCESS, ObjectTypeFilter.PROCESS),
+        initFilter(ProcessTypeFilter.CHILD_PROCESS, ObjectTypeFilter.PROCESS)
+    ),
+    pipe(
+        initFilter(ObjectTypeFilter.COLLECTION),
+        initFilter(CollectionTypeFilter.GENERAL_COLLECTION, ObjectTypeFilter.COLLECTION),
+        initFilter(CollectionTypeFilter.OUTPUT_COLLECTION, ObjectTypeFilter.COLLECTION),
+        initFilter(CollectionTypeFilter.LOG_COLLECTION, ObjectTypeFilter.COLLECTION),
+    ),
 );
 
 export const getInitialProcessStatusFilters = pipe(
     (): DataTableFilters => createTree<DataTableFilterItem>(),
-    initFilter(ProcessStatusFilter.ALL, '', true),
-    initFilter(ProcessStatusFilter.RUNNING, '', false),
-    initFilter(ProcessStatusFilter.FAILED, '', false),
-    initFilter(ProcessStatusFilter.COMPLETED, '', false),
-    initFilter(ProcessStatusFilter.CANCELLED, '', false),
-    initFilter(ProcessStatusFilter.QUEUED, '', false),
-    initFilter(ProcessStatusFilter.LOCKED, '', false),
+    pipe(
+        initFilter(ProcessStatusFilter.ALL, '', true),
+        initFilter(ProcessStatusFilter.RUNNING, '', false),
+        initFilter(ProcessStatusFilter.FAILED, '', false),
+        initFilter(ProcessStatusFilter.COMPLETED, '', false),
+        initFilter(ProcessStatusFilter.CANCELLED, '', false),
+        initFilter(ProcessStatusFilter.QUEUED, '', false),
+        initFilter(ProcessStatusFilter.LOCKED, '', false),
+    ),
 );
 
 export const getTrashPanelTypeFilters = pipe(
@@ -103,10 +118,14 @@ const objectTypeToResourceKind = (type: ObjectTypeFilter) => {
 
 const serializeObjectTypeFilters = ({ fb, selectedFilters }: ReturnType<typeof createFiltersBuilder>) => {
     const collectionFilters = getMatchingFilters(values(CollectionTypeFilter), selectedFilters);
+    const processFilters = getMatchingFilters(values(ProcessTypeFilter), selectedFilters);
     const typeFilters = pipe(
         () => new Set(getMatchingFilters(values(ObjectTypeFilter), selectedFilters)),
         set => collectionFilters.length > 0
             ? set.add(ObjectTypeFilter.COLLECTION)
+            : set,
+        set => processFilters.length > 0
+            ? set.add(ObjectTypeFilter.PROCESS)
             : set,
         set => Array.from(set)
     )();
@@ -156,10 +175,36 @@ const buildCollectionTypeFilters = ({ fb, filters }: { fb: FilterBuilder, filter
     }
 };
 
+const serializeProcessTypeFilters = ({ fb, selectedFilters }: ReturnType<typeof createFiltersBuilder>) => pipe(
+    () => getMatchingFilters(values(ProcessTypeFilter), selectedFilters),
+    filters => filters,
+    mappedFilters => ({
+        fb: buildProcessTypeFilters({ fb, filters: mappedFilters }),
+        selectedFilters
+    })
+)();
+
+const PROCESS_TYPES = values(ProcessTypeFilter);
+const PROCESS_PREFIX = GroupContentsResourcePrefix.PROCESS;
+
+const buildProcessTypeFilters = ({ fb, filters }: { fb: FilterBuilder, filters: string[] }) => {
+    switch (true) {
+        case filters.length === 0 || filters.length === PROCESS_TYPES.length:
+            return fb;
+        case includes(ProcessTypeFilter.MAIN_PROCESS, filters):
+            return fb.addEqual('requesting_container_uuid', null, PROCESS_PREFIX);
+        case includes(ProcessTypeFilter.CHILD_PROCESS, filters):
+            return fb.addDistinct('requesting_container_uuid', null, PROCESS_PREFIX);
+        default:
+            return fb;
+    }
+};
+
 export const serializeResourceTypeFilters = pipe(
     createFiltersBuilder,
     serializeObjectTypeFilters,
     serializeCollectionTypeFilters,
+    serializeProcessTypeFilters,
     ({ fb }) => fb.getFilters(),
 );
 
