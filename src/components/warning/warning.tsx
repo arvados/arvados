@@ -4,8 +4,10 @@
 
 import * as React from "react";
 import { ErrorIcon } from "~/components/icon/icon";
-import { invalidNamingRules } from "~/validators/valid-name";
 import { Tooltip } from "@material-ui/core";
+import { disallowSlash } from "~/validators/valid-name";
+import { connect } from "react-redux";
+import { RootState } from "~/store/store";
 
 interface WarningComponentProps {
     text: string;
@@ -15,16 +17,24 @@ interface WarningComponentProps {
 
 export const WarningComponent = ({ text, rules, message }: WarningComponentProps) =>
     rules.find(aRule => text.match(aRule) !== null)
-    ? message
-        ? <Tooltip title={message}><ErrorIcon /></Tooltip>
-        : <ErrorIcon />
-    : null;
+        ? message
+            ? <Tooltip title={message}><ErrorIcon /></Tooltip>
+            : <ErrorIcon />
+        : null;
 
 interface IllegalNamingWarningProps {
     name: string;
+    validate: RegExp[];
 }
 
-export const IllegalNamingWarning = ({ name }: IllegalNamingWarningProps) =>
-    <WarningComponent
-        text={name} rules={invalidNamingRules}
-        message="Names being '.', '..' or including '/' cause issues with WebDAV, please edit it to something different." />;
+
+export const IllegalNamingWarning = connect(
+    (state: RootState) => {
+        return {
+            validate: (state.auth.config.clusterConfig.Collections.ForwardSlashNameSubstitution === "" ?
+                [disallowSlash] : [])
+        };
+    })(({ name, validate }: IllegalNamingWarningProps) =>
+        <WarningComponent
+            text={name} rules={validate}
+            message="Names embedding '/' will be renamed or invisible to file system access (arv-mount or WebDAV)" />);
