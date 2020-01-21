@@ -124,4 +124,16 @@ describe("CommonResourceService", () => {
         expect(axiosMock.history.post[0].data.get('filters')).toBe(`[${tooBig}]`);
         expect(axiosMock.history.post[0].params._method).toBe('GET');
     });
+
+    it("#list using GET when query string is not too big", async () => {
+        axiosMock
+            .onAny("/resource")
+            .reply(200);
+        const notTooBig = 'x'.repeat(1480);
+        const commonResourceService = new CommonResourceService(axiosInstance, "resource", actions);
+        await commonResourceService.list({ filters: notTooBig });
+        expect(axiosMock.history.post.length).toBe(0);
+        expect(axiosMock.history.get.length).toBe(1);
+        expect(axiosMock.history.get[0].params.filters).toBe(`[${notTooBig}]`);
+    });
 });
