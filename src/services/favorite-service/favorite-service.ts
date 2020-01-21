@@ -53,7 +53,7 @@ export class FavoriteService {
 
         return this.linkService
             .list({
-                filters: joinFilters(filters, listFilters),
+                filters: joinFilters(filters || '', listFilters),
                 limit,
                 offset,
                 order: linkOrder

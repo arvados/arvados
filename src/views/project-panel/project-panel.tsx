@@ -28,7 +28,7 @@ import { PROJECT_PANEL_CURRENT_UUID } from '~/store/project-panel/project-panel-
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 import { ArvadosTheme } from "~/common/custom-theme";
 import { createTree } from '~/models/tree';
-import { getInitialResourceTypeFilters } from '~/store/resource-type-filters/resource-type-filters';
+import { getInitialResourceTypeFilters, getInitialProcessStatusFilters } from '~/store/resource-type-filters/resource-type-filters';
 
 type CssRules = 'root' | "button";
 
@@ -69,7 +69,8 @@ export const projectPanelColumns: DataColumns<string> = [
         name: "Status",
         selected: true,
         configurable: true,
-        filters: createTree(),
+        mutuallyExclusiveFilters: true,
+        filters: getInitialProcessStatusFilters(),
         render: uuid => <ProcessStatus uuid={uuid} />,
     },
     {
