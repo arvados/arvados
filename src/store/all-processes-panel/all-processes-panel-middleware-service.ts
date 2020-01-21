@@ -81,10 +81,8 @@ const getFilters = ( dataExplorer: DataExplorer ) => {
 
     return joinFilters(
         nameFilter,
-        // TODO: When 15019 is merged, this won't be necessary
-        joinFilters(
-            statusFilter,
-            typeFilters)
+        statusFilter,
+        typeFilters
     );
 };
 
