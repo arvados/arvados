@@ -456,6 +456,12 @@ export const ProcessStatus = compose(
         </Typography>;
     });
 
+export const ProcessStartDate = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const process = getProcess(props.uuid)(state.resources);
+        return { date: ( process && process.container ) ? process.container.startedAt : '' };
+    })((props: { date: string }) => renderDate(props.date));
+
 export const renderRunTime = (time: number) =>
     <Typography noWrap style={{ minWidth: '45px' }}>
         {formatTime(time, true)}

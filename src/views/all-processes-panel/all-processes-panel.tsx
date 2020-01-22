@@ -18,6 +18,7 @@ import {
     ResourceName,
     ResourceOwner,
     ResourceType,
+    ContainerRunTime,
     ResourceCreatedAtDate
 } from '~/views-components/data-explorer/renderers';
 import { ProcessIcon } from '~/components/icon/icon';
@@ -47,7 +48,8 @@ export enum AllProcessesPanelColumnNames {
     STATUS = "Status",
     TYPE = "Type",
     OWNER = "Owner",
-    CREATED_AT = "Started at"
+    CREATED_AT = "Created at",
+    RUNTIME = "Run Time"
 }
 
 export interface AllProcessesPanelFilter extends DataTableFilterItem {
@@ -92,6 +94,13 @@ export const allProcessesPanelColumns: DataColumns<string> = [
         sortDirection: SortDirection.DESC,
         filters: createTree(),
         render: uuid => <ResourceCreatedAtDate uuid={uuid} />
+    },
+    {
+        name: AllProcessesPanelColumnNames.RUNTIME,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ContainerRunTime uuid={uuid} />
     }
 ];
 
