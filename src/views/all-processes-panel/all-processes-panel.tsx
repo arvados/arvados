@@ -22,7 +22,7 @@ import {
     ResourceCreatedAtDate
 } from '~/views-components/data-explorer/renderers';
 import { ProcessIcon } from '~/components/icon/icon';
-import { openContextMenu, resourceKindToContextMenuKind } from '~/store/context-menu/context-menu-actions';
+import { openProcessContextMenu } from '~/store/context-menu/context-menu-actions';
 import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { navigateTo } from '~/store/navigation/navigation-action';
 import { ContainerRequestState } from "~/models/container-request";
@@ -30,6 +30,8 @@ import { RootState } from '~/store/store';
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 import { createTree } from '~/models/tree';
 import { getInitialProcessStatusFilters, getInitialProcessTypeFilters } from '~/store/resource-type-filters/resource-type-filters';
+import { getProcess } from '~/store/processes/process';
+import { ResourcesState } from '~/store/resources/resources';
 
 type CssRules = "toolbar" | "button";
 
@@ -105,7 +107,7 @@ export const allProcessesPanelColumns: DataColumns<string> = [
 ];
 
 interface AllProcessesPanelDataProps {
-    isAdmin: boolean;
+    resources: ResourcesState;
 }
 
 interface AllProcessesPanelActionProps {
@@ -114,7 +116,7 @@ interface AllProcessesPanelActionProps {
     onItemDoubleClick: (item: string) => void;
 }
 const mapStateToProps = (state : RootState): AllProcessesPanelDataProps => ({
-    isAdmin: state.auth.user!.isAdmin
+    resources: state.resources
 });
 
 type AllProcessesPanelProps = AllProcessesPanelDataProps & AllProcessesPanelActionProps & DispatchProp
@@ -124,15 +126,9 @@ export const AllProcessesPanel = withStyles(styles)(
     connect(mapStateToProps)(
         class extends React.Component<AllProcessesPanelProps> {
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
-                const menuKind = resourceKindToContextMenuKind(resourceUuid, this.props.isAdmin);
-                if (menuKind) {
-                    this.props.dispatch<any>(openContextMenu(event, {
-                        name: '',
-                        uuid: resourceUuid,
-                        ownerUuid: '',
-                        kind: ResourceKind.NONE,
-                        menuKind
-                    }));
+                const process = getProcess(resourceUuid)(this.props.resources);
+                if (process) {
+                    this.props.dispatch<any>(openProcessContextMenu(event, process));
                 }
                 this.props.dispatch<any>(loadDetailsPanel(resourceUuid));
             }
