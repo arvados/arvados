@@ -10,6 +10,7 @@ import { FilterBuilder } from '~/services/api/filter-builder';
 import { getSelectedNodes } from '~/models/tree';
 import { CollectionType } from '~/models/collection';
 import { GroupContentsResourcePrefix } from '~/services/groups-service/groups-service';
+import { ContainerState } from '~/models/container';
 
 export enum ProcessStatusFilter {
     ALL = 'All',
@@ -236,19 +237,23 @@ export const serializeSimpleObjectTypeFilters = (filters: Tree<DataTableFilterIt
 export const buildProcessStatusFilters = ( fb:FilterBuilder, activeStatusFilter:string ): FilterBuilder => {
     switch (activeStatusFilter) {
         case ProcessStatusFilter.COMPLETED: {
-            fb.addEqual('container.state', 'Complete');
+            fb.addEqual('container.state', ContainerState.COMPLETE);
             fb.addEqual('container.exit_code', '0');
             break;
         }
         case ProcessStatusFilter.FAILED: {
-            fb.addEqual('container.state', 'Complete');
+            fb.addEqual('container.state', ContainerState.COMPLETE);
             fb.addDistinct('container.exit_code', '0');
+            break;
+        }
+        case ProcessStatusFilter.QUEUED: {
+            fb.addEqual('container.state', ContainerState.QUEUED);
+            fb.addDistinct('container.priority', '0');
             break;
         }
         case ProcessStatusFilter.CANCELLED:
         case ProcessStatusFilter.FAILED:
         case ProcessStatusFilter.LOCKED:
-        case ProcessStatusFilter.QUEUED:
         case ProcessStatusFilter.RUNNING: {
             fb.addEqual('container.state', activeStatusFilter);
             break;
