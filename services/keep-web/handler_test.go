@@ -520,6 +520,56 @@ func (s *IntegrationSuite) TestSpecialCharsInPath(c *check.C) {
 	c.Check(resp.Body.String(), check.Matches, `(?ms).*href="./https:%5c%22odd%27%20path%20chars"\S+https:\\&#34;odd&#39; path chars.*`)
 }
 
+func (s *IntegrationSuite) TestForwardSlashSubstitution(c *check.C) {
+	arv := arvados.NewClientFromEnv()
+	s.testServer.Config.cluster.Services.WebDAVDownload.ExternalURL.Host = "download.example.com"
+	s.testServer.Config.cluster.Collections.ForwardSlashNameSubstitution = "{SOLIDUS}"
+	name := "foo/bar/baz"
+	nameShown := strings.Replace(name, "/", "{SOLIDUS}", -1)
+	nameShownEscaped := strings.Replace(name, "/", "%7bSOLIDUS%7d", -1)
+
+	client := s.testServer.Config.Client
+	client.AuthToken = arvadostest.ActiveToken
+	fs, err := (&arvados.Collection{}).FileSystem(&client, nil)
+	c.Assert(err, check.IsNil)
+	f, err := fs.OpenFile("filename", os.O_CREATE, 0777)
+	c.Assert(err, check.IsNil)
+	f.Close()
+	mtxt, err := fs.MarshalManifest(".")
+	c.Assert(err, check.IsNil)
+	var coll arvados.Collection
+	err = client.RequestAndDecode(&coll, "POST", "arvados/v1/collections", nil, map[string]interface{}{
+		"collection": map[string]string{
+			"manifest_text": mtxt,
+			"name":          name,
+			"owner_uuid":    arvadostest.AProjectUUID,
+		},
+	})
+	c.Assert(err, check.IsNil)
+	defer arv.RequestAndDecode(&coll, "DELETE", "arvados/v1/collections/"+coll.UUID, nil, nil)
+
+	base := "http://download.example.com/by_id/" + coll.OwnerUUID + "/"
+	for tryURL, expectRegexp := range map[string]string{
+		base:                          `(?ms).*href="./` + nameShownEscaped + `/"\S+` + nameShown + `.*`,
+		base + nameShownEscaped + "/": `(?ms).*href="./filename"\S+filename.*`,
+	} {
+		u, _ := url.Parse(tryURL)
+		req := &http.Request{
+			Method:     "GET",
+			Host:       u.Host,
+			URL:        u,
+			RequestURI: u.RequestURI(),
+			Header: http.Header{
+				"Authorization": {"Bearer " + client.AuthToken},
+			},
+		}
+		resp := httptest.NewRecorder()
+		s.testServer.Handler.ServeHTTP(resp, req)
+		c.Check(resp.Code, check.Equals, http.StatusOK)
+		c.Check(resp.Body.String(), check.Matches, expectRegexp)
+	}
+}
+
 // XHRs can't follow redirect-with-cookie so they rely on method=POST
 // and disposition=attachment (telling us it's acceptable to respond
 // with content instead of a redirect) and an Origin header that gets

@@ -5,10 +5,12 @@
 package worker
 
 import (
+	"crypto/md5"
 	"crypto/rand"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"sort"
 	"strings"
 	"sync"
@@ -100,6 +102,7 @@ func NewPool(logger logrus.FieldLogger, arvClient *arvados.Client, reg *promethe
 		instanceSet:        &throttledInstanceSet{InstanceSet: instanceSet},
 		newExecutor:        newExecutor,
 		bootProbeCommand:   cluster.Containers.CloudVMs.BootProbeCommand,
+		runnerSource:       cluster.Containers.CloudVMs.DeployRunnerBinary,
 		imageID:            cloud.ImageID(cluster.Containers.CloudVMs.ImageID),
 		instanceTypes:      cluster.InstanceTypes,
 		maxProbesPerSecond: cluster.Containers.CloudVMs.MaxProbesPerSecond,
@@ -135,6 +138,7 @@ type Pool struct {
 	instanceSet        *throttledInstanceSet
 	newExecutor        func(cloud.Instance) Executor
 	bootProbeCommand   string
+	runnerSource       string
 	imageID            cloud.ImageID
 	instanceTypes      map[string]arvados.InstanceType
 	syncInterval       time.Duration
@@ -160,6 +164,9 @@ type Pool struct {
 	stop         chan bool
 	mtx          sync.RWMutex
 	setupOnce    sync.Once
+	runnerData   []byte
+	runnerMD5    [md5.Size]byte
+	runnerCmd    string
 
 	throttleCreate    throttle
 	throttleInstances throttle
@@ -175,6 +182,14 @@ type Pool struct {
 type createCall struct {
 	time         time.Time
 	instanceType arvados.InstanceType
+}
+
+func (wp *Pool) CheckHealth() error {
+	wp.setupOnce.Do(wp.setup)
+	if err := wp.loadRunnerData(); err != nil {
+		return fmt.Errorf("error loading runner binary: %s", err)
+	}
+	return nil
 }
 
 // Subscribe returns a buffered channel that becomes ready after any
@@ -276,6 +291,10 @@ func (wp *Pool) Unallocated() map[arvados.InstanceType]int {
 func (wp *Pool) Create(it arvados.InstanceType) bool {
 	logger := wp.logger.WithField("InstanceType", it.Name)
 	wp.setupOnce.Do(wp.setup)
+	if wp.loadRunnerData() != nil {
+		// Boot probe is certain to fail.
+		return false
+	}
 	wp.mtx.Lock()
 	defer wp.mtx.Unlock()
 	if time.Now().Before(wp.atQuotaUntil) || wp.throttleCreate.Error() != nil {
@@ -743,6 +762,36 @@ func (wp *Pool) setup() {
 	wp.exited = map[string]time.Time{}
 	wp.workers = map[cloud.InstanceID]*worker{}
 	wp.subscribers = map[<-chan struct{}]chan<- struct{}{}
+	wp.loadRunnerData()
+}
+
+// Load the runner program to be deployed on worker nodes into
+// wp.runnerData, if necessary. Errors are logged.
+//
+// If auto-deploy is disabled, len(wp.runnerData) will be 0.
+//
+// Caller must not have lock.
+func (wp *Pool) loadRunnerData() error {
+	wp.mtx.Lock()
+	defer wp.mtx.Unlock()
+	if wp.runnerData != nil {
+		return nil
+	} else if wp.runnerSource == "" {
+		wp.runnerCmd = "crunch-run"
+		wp.runnerData = []byte{}
+		return nil
+	}
+	logger := wp.logger.WithField("source", wp.runnerSource)
+	logger.Debug("loading runner")
+	buf, err := ioutil.ReadFile(wp.runnerSource)
+	if err != nil {
+		logger.WithError(err).Error("failed to load runner program")
+		return err
+	}
+	wp.runnerData = buf
+	wp.runnerMD5 = md5.Sum(buf)
+	wp.runnerCmd = fmt.Sprintf("/var/lib/arvados/crunch-run~%x", wp.runnerMD5)
+	return nil
 }
 
 func (wp *Pool) notify() {

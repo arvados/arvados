@@ -57,7 +57,7 @@ version_from_git() {
 
     local git_ts git_hash
     declare $(format_last_commit_here "git_ts=%ct git_hash=%h" "$subdir")
-    ARVADOS_BUILDING_VERSION="$(git tag -l |sort -V -r |head -n1).$(date -ud "@$git_ts" +%Y%m%d%H%M%S)"
+    ARVADOS_BUILDING_VERSION="$($WORKSPACE/build/version-at-commit.sh $git_hash)"
     echo "$ARVADOS_BUILDING_VERSION"
 }
 

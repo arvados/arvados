@@ -12,6 +12,12 @@
 require "rubygems"
 require "colorize"
 
+module Zenweb
+  class Site
+    @binary_files = %w[png jpg gif eot svg ttf woff2? ico pdf m4a t?gz xlsx]
+  end
+end
+
 task :generate => [ :realclean, 'sdk/python/arvados/index.html', 'sdk/R/arvados/index.html', 'sdk/java-v2/javadoc/index.html' ] do
   vars = ['baseurl', 'arvados_cluster_uuid', 'arvados_api_host', 'arvados_workbench_host']
   vars.each do |v|
@@ -21,8 +27,12 @@ task :generate => [ :realclean, 'sdk/python/arvados/index.html', 'sdk/R/arvados/
   end
 end
 
+file ["install/new_cluster_checklist_Azure.xlsx", "install/new_cluster_checklist_AWS.xlsx"] do |t|
+  cp(t, t)
+end
+
 file "sdk/python/arvados/index.html" do |t|
-  if File.exists? "no-sdk"
+  if ENV['NO_SDK'] || File.exists?("no-sdk")
     next
   end
   `which epydoc`
@@ -35,7 +45,7 @@ file "sdk/python/arvados/index.html" do |t|
 end
 
 file "sdk/R/arvados/index.html" do |t|
-  if File.exists? "no-sdk"
+  if ENV['NO_SDK'] || File.exists?("no-sdk")
     next
   end
   `which R`
@@ -43,6 +53,8 @@ file "sdk/R/arvados/index.html" do |t|
     tgt = Dir.pwd
     Dir.mkdir("sdk/R")
     Dir.mkdir("sdk/R/arvados")
+    puts("tgt", tgt)
+    cp('css/R.css', 'sdk/R/arvados')
     docfiles = []
     Dir.chdir("../sdk/R/") do
       STDERR.puts `Rscript createDoc.R README.Rmd #{tgt}/sdk/R/README.md 2>&1`
@@ -100,7 +112,7 @@ EOF
 end
 
 file "sdk/java-v2/javadoc/index.html" do |t|
-  if File.exists? "no-sdk"
+  if ENV['NO_SDK'] || File.exists?("no-sdk")
     next
   end
   `which java`
@@ -113,6 +125,8 @@ file "sdk/java-v2/javadoc/index.html" do |t|
       docfiles = []
       Dir.chdir("../sdk/java-v2") do
         STDERR.puts `gradle javadoc 2>&1`
+        raise if $? != 0
+        puts `sed -i "s/@import.*dejavu.css.*//g" build/docs/javadoc/stylesheet.css`
         raise if $? != 0
       end
       cp_r("../sdk/java-v2/build/docs/javadoc", "sdk/java-v2")
@@ -143,6 +157,7 @@ end
 require "zenweb/tasks"
 load "zenweb-textile.rb"
 load "zenweb-liquid.rb"
+load "zenweb-fix-body.rb"
 
 task :extra_wirings do
   $website.pages["sdk/python/python.html.textile.liquid"].depends_on("sdk/python/arvados/index.html")

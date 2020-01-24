@@ -12,6 +12,8 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 In these examples, the site prefix is @aaaaa@.
 
+See also the "cookbook":cookbook.html for more complex examples.
+
 h2.  Initialize SDK
 
 {% codeblock as python %}
@@ -53,4 +55,16 @@ h2. Get current user
 
 {% codeblock as python %}
 result = api.users().current().execute()
+{% endcodeblock %}
+
+h2. Get the User object for the current user
+
+{% codeblock as python %}
+current_user = arvados.api('v1').users().current().execute()
+{% endcodeblock %}
+
+h2. Get the UUID of an object that was retrieved using the SDK
+
+{% codeblock as python %}
+my_uuid = current_user['uuid']
 {% endcodeblock %}

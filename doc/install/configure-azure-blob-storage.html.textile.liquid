@@ -27,18 +27,25 @@ Using the Azure web portal or command line tool, create or choose a storage acco
 
 <notextile>
 <pre><code>~$ <span class="userinput">azure config mode arm</span>
-~$ <span class="userinput">azure login</span>
-~$ <span class="userinput">azure group create exampleGroupName eastus</span>
-~$ <span class="userinput">azure storage account create --type LRS --location eastus --resource-group exampleGroupName exampleStorageAccountName</span>
-~$ <span class="userinput">azure storage account keys list --resource-group exampleGroupName exampleStorageAccountName</span>
-info:    Executing command storage account keys list
-+ Getting storage account keys
-data:    Primary: zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz==
-data:    Secondary: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy==
-info:    storage account keys list command OK
+~$ <span class="userinput">az login</span>
+~$ <span class="userinput">az group create exampleGroupName eastus2</span>
+~$ <span class="userinput">az storage account create --sku Standard_LRS --kind BlobStorage --encryption-services blob --access-tier Hot --https-only true --location eastus2 --resource-group exampleGroupName --name exampleStorageAccountName</span>
+~$ <span class="userinput">az storage account keys list --resource-group exampleGroupName --account-name exampleStorageAccountName
+[
+  {
+    "keyName": "key1",
+    "permissions": "Full",
+    "value": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz=="
+  },
+  {
+    "keyName": "key2",
+    "permissions": "Full",
+    "value": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy=="
+  }
+]</span>
 ~$ <span class="userinput">AZURE_STORAGE_ACCOUNT="exampleStorageAccountName" \
 AZURE_STORAGE_ACCESS_KEY="zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz==" \
-azure storage container create exampleContainerName</span>
+azure storage container create --name exampleContainerName</span>
 </code></pre>
 </notextile>
 
@@ -50,10 +57,8 @@ Volumes are configured in the @Volumes@ section of the cluster configuration fil
 
 {% include 'assign_volume_uuid' %}
 
-<notextile><pre><code>Clusters:
-  <span class="userinput">uuid_prefix</span>:
-    Volumes:
-      <span class="userinput">uuid_prefix</span>-nyw5e-<span class="userinput">000000000000000</span>:
+<notextile><pre><code>    Volumes:
+      <span class="userinput">ClusterID</span>-nyw5e-<span class="userinput">000000000000000</span>:
         AccessViaHosts:
           # This section determines which keepstore servers access the
           # volume. In this example, keep0 has read/write access, and
@@ -62,23 +67,23 @@ Volumes are configured in the @Volumes@ section of the cluster configuration fil
           # If the AccessViaHosts section is empty or omitted, all
           # keepstore servers will have read/write access to the
           # volume.
-          "http://<span class="userinput">keep0.uuid_prefix.example.com</span>:25107/": {}
-          "http://<span class="userinput">keep1.uuid_prefix.example.com</span>:25107/": {ReadOnly: true}
+          "http://<span class="userinput">keep0.ClusterID.example.com</span>:25107/": {}
+          "http://<span class="userinput">keep1.ClusterID.example.com</span>:25107/": {ReadOnly: true}
 
-        Driver: Azure
+        Driver: <span class="userinput">Azure</span>
         DriverParameters:
           # Storage account name and secret key, used for
           # authentication.
-          StorageAccountName: exampleStorageAccountName
-          StorageAccountKey: zzzzzzzzzzzzzzzzzzzzzzzzzz
+          StorageAccountName: <span class="userinput">exampleStorageAccountName</span>
+          StorageAccountKey: <span class="userinput">zzzzzzzzzzzzzzzzzzzzzzzzzz</span>
+
+          # Storage container name.
+          ContainerName: <span class="userinput">exampleContainerName</span>
 
           # The cloud environment to use,
           # e.g. "core.chinacloudapi.cn". Defaults to
           # "core.windows.net" if blank or omitted.
           StorageBaseURL: ""
-
-          # Storage container name.
-          ContainerName: exampleContainerName
 
           # Time to wait for an upstream response before failing the
           # request.

@@ -28,17 +28,6 @@ This template recognizes four variables:
   {% assign railscmd = "bundle exec rails console" %}
 {% endunless %}
 
-Using RVM:
-
-<notextile>
-<pre><code>{{railshost}}~$ <span class="userinput">cd {{railsdir}}</span>
-{{railshost}}{{railsdir}}$ <span class="userinput">sudo -u <b>webserver-user</b> RAILS_ENV=production `which rvm-exec` default {{railscmd}}</span>
-{% if railsout %}{{railsout}}
-{% endif %}</code></pre>
-</notextile>
-
-Not using RVM:
-
 <notextile>
 <pre><code>{{railshost}}~$ <span class="userinput">cd {{railsdir}}</span>
 {{railshost}}{{railsdir}}$ <span class="userinput">sudo -u <b>webserver-user</b> RAILS_ENV=production {{railscmd}}</span>

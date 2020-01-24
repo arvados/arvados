@@ -458,6 +458,24 @@ Clusters:
       # > 0s = auto-create a new version when older than the specified number of seconds.
       PreserveVersionIfIdle: -1s
 
+      # If non-empty, allow project and collection names to contain
+      # the "/" character (slash/stroke/solidus), and replace "/" with
+      # the given string in the filesystem hierarchy presented by
+      # WebDAV. Example values are "%2f" and "{slash}". Names that
+      # contain the substitution string itself may result in confusing
+      # behavior, so a value like "_" is not recommended.
+      #
+      # If the default empty value is used, the server will reject
+      # requests to create or rename a collection when the new name
+      # contains "/".
+      #
+      # If the value "/" is used, project and collection names
+      # containing "/" will be allowed, but they will not be
+      # accessible via WebDAV.
+      #
+      # Use of this feature is not recommended, if it can be avoided.
+      ForwardSlashNameSubstitution: ""
+
       # Managed collection properties. At creation time, if the client didn't
       # provide the listed keys, they will be automatically populated following
       # one of the following behaviors:
@@ -643,7 +661,7 @@ Clusters:
         # has been reached or crunch_log_seconds_between_events has elapsed since
         # the last flush.
         LogBytesPerEvent: 4096
-        LogSecondsBetweenEvents: 1
+        LogSecondsBetweenEvents: 5s
 
         # The sample period for throttling logs.
         LogThrottlePeriod: 60s
@@ -794,6 +812,16 @@ Clusters:
         # Worker VM image ID.
         ImageID: ""
 
+        # An executable file (located on the dispatcher host) to be
+        # copied to cloud instances at runtime and used as the
+        # container runner/supervisor. The default value is the
+        # dispatcher program itself.
+        #
+        # Use the empty string to disable this step: nothing will be
+        # copied, and cloud instances are assumed to have a suitable
+        # version of crunch-run installed.
+        DeployRunnerBinary: "/proc/self/exe"
+
         # Tags to add on all resources (VMs, NICs, disks) created by
         # the container dispatcher. (Arvados's own tags --
         # InstanceType, IdleBehavior, and InstanceSecret -- will also
@@ -888,7 +916,6 @@ Clusters:
           SAMPLE: true
         Driver: s3
         DriverParameters:
-
           # for s3 driver -- see
           # https://doc.arvados.org/install/configure-s3-object-storage.html
           IAMRole: aaaaa
@@ -902,6 +929,15 @@ Clusters:
           ConnectTimeout: 1m
           ReadTimeout: 10m
           RaceWindow: 24h
+
+          # For S3 driver, potentially unsafe tuning parameter,
+          # intentionally excluded from main documentation.
+          #
+          # Enable deletion (garbage collection) even when the
+          # configured BlobTrashLifetime is zero.  WARNING: eventual
+          # consistency may result in race conditions that can cause
+          # data loss.  Do not enable this unless you understand and
+          # accept the risk.
           UnsafeDelete: false
 
           # for azure driver -- see
@@ -920,6 +956,21 @@ Clusters:
           # for local directory driver -- see
           # https://doc.arvados.org/install/configure-fs-storage.html
           Root: /var/lib/arvados/keep-data
+
+          # For local directory driver, potentially confusing tuning
+          # parameter, intentionally excluded from main documentation.
+          #
+          # When true, read and write operations (for whole 64MiB
+          # blocks) on an individual volume will queued and issued
+          # serially.  When false, read and write operations will be
+          # issued concurrently.
+          #
+          # May possibly improve throughput if you have physical spinning disks
+          # and experience contention when there are multiple requests
+          # to the same volume.
+          #
+          # Otherwise, when using SSDs, RAID, or a shared network filesystem, you
+          # should leave this alone.
           Serialize: false
 
     Mail:

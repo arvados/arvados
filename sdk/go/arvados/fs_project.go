@@ -30,16 +30,31 @@ func (fs *customFileSystem) projectsLoadOne(parent inode, uuid, name string) (in
 	}
 
 	var contents CollectionList
-	err = fs.RequestAndDecode(&contents, "GET", "arvados/v1/groups/"+uuid+"/contents", nil, ResourceListParams{
-		Count: "none",
-		Filters: []Filter{
-			{"name", "=", name},
-			{"uuid", "is_a", []string{"arvados#collection", "arvados#group"}},
-			{"groups.group_class", "=", "project"},
-		},
-	})
-	if err != nil {
-		return nil, err
+	for _, subst := range []string{"/", fs.forwardSlashNameSubstitution} {
+		contents = CollectionList{}
+		err = fs.RequestAndDecode(&contents, "GET", "arvados/v1/groups/"+uuid+"/contents", nil, ResourceListParams{
+			Count: "none",
+			Filters: []Filter{
+				{"name", "=", strings.Replace(name, subst, "/", -1)},
+				{"uuid", "is_a", []string{"arvados#collection", "arvados#group"}},
+				{"groups.group_class", "=", "project"},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+		if len(contents.Items) > 0 || fs.forwardSlashNameSubstitution == "/" || fs.forwardSlashNameSubstitution == "" || !strings.Contains(name, fs.forwardSlashNameSubstitution) {
+			break
+		}
+		// If the requested name contains the configured "/"
+		// replacement string and didn't match a
+		// project/collection exactly, we'll try again with
+		// "/" in its place, so a lookup of a munged name
+		// works regardless of whether the directory listing
+		// has been populated with escaped names.
+		//
+		// Note this doesn't handle items whose names contain
+		// both "/" and the substitution string.
 	}
 	if len(contents.Items) == 0 {
 		return nil, os.ErrNotExist
@@ -86,6 +101,9 @@ func (fs *customFileSystem) projectsLoadAll(parent inode, uuid string) ([]inode,
 		}
 		for _, i := range resp.Items {
 			coll := i
+			if fs.forwardSlashNameSubstitution != "" {
+				coll.Name = strings.Replace(coll.Name, "/", fs.forwardSlashNameSubstitution, -1)
+			}
 			if !permittedName(coll.Name) {
 				continue
 			}
@@ -106,6 +124,9 @@ func (fs *customFileSystem) projectsLoadAll(parent inode, uuid string) ([]inode,
 			break
 		}
 		for _, group := range resp.Items {
+			if fs.forwardSlashNameSubstitution != "" {
+				group.Name = strings.Replace(group.Name, "/", fs.forwardSlashNameSubstitution, -1)
+			}
 			if !permittedName(group.Name) {
 				continue
 			}

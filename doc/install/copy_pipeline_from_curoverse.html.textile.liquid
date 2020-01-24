@@ -42,7 +42,7 @@ Configure the source and destination clusters as described in the "*Using arv-co
 </code></pre>
 </notextile>
 
-You can now copy the pipeline template from *qr1hi* to *your cluster*. Replace *dst_cluster* with the *uuid_prefix* of your cluster.
+You can now copy the pipeline template from *qr1hi* to *your cluster*. Replace *dst_cluster* with the *ClusterID* of your cluster.
 
 <notextile>
 <pre><code>~$ <span class="userinput"> arv-copy --no-recursive --src qr1hi --dst dst_cluster qr1hi-p5p6p-9pkaxt6qjnkxhhu</span>
@@ -55,7 +55,7 @@ h4(#using-your-token). *Configuring source and destination setup files using per
 
 If you already have an account in the Arvados Playground, you can follow the instructions in the "*Using arv-copy*":http://doc.arvados.org/user/topics/arv-copy.html user guide to get your *Current token* for source and destination clusters, and use them to create the source *qr1hi.conf* and dst_cluster.conf configuration files.
 
-You can now copy the pipeline template from *qr1hi* to *your cluster* with or without recursion. Replace *dst_cluster* with the *uuid_prefix* of your cluster.
+You can now copy the pipeline template from *qr1hi* to *your cluster* with or without recursion. Replace *dst_cluster* with the *ClusterID* of your cluster.
 
 *Non-recursive copy:*
 <notextile>

@@ -147,6 +147,21 @@ func (s *SiteFSSuite) TestSlashInName(c *check.C) {
 		c.Logf("fi.Name() == %q", fi.Name())
 		c.Check(strings.Contains(fi.Name(), "/"), check.Equals, false)
 	}
+
+	// Make a new fs (otherwise content will still be cached from
+	// above) and enable "/" replacement string.
+	s.fs = s.client.SiteFileSystem(s.kc)
+	s.fs.ForwardSlashNameSubstitution("___")
+	dir, err = s.fs.Open("/users/active/A Project/bad___collection")
+	if c.Check(err, check.IsNil) {
+		_, err = dir.Readdir(-1)
+		c.Check(err, check.IsNil)
+	}
+	dir, err = s.fs.Open("/users/active/A Project/bad___project")
+	if c.Check(err, check.IsNil) {
+		_, err = dir.Readdir(-1)
+		c.Check(err, check.IsNil)
+	}
 }
 
 func (s *SiteFSSuite) TestProjectUpdatedByOther(c *check.C) {

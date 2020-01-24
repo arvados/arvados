@@ -81,6 +81,7 @@ lib/controller/railsproxy
 lib/controller/router
 lib/controller/rpc
 lib/crunchstat
+lib/crunch-run
 lib/cloud
 lib/cloud/azure
 lib/cloud/cloudtest
@@ -104,7 +105,6 @@ services/keep-balance
 services/login-sync
 services/nodemanager
 services/nodemanager_integration
-services/crunch-run
 services/crunch-dispatch-local
 services/crunch-dispatch-slurm
 services/ws

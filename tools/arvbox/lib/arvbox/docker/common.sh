@@ -62,16 +62,17 @@ run_bundler() {
     else
         frozen=""
     fi
-    if ! test -x /var/lib/gems/bin/bundler ; then
-        bundlergem=$(ls -r $GEM_HOME/cache/bundler-*.gem 2>/dev/null | head -n1 || true)
-        if test -n "$bundlergem" ; then
-            flock /var/lib/gems/gems.lock gem install --local --no-document $bundlergem
-        else
-            flock /var/lib/gems/gems.lock gem install --no-document bundler
-        fi
-    fi
-    if ! flock /var/lib/gems/gems.lock bundler install --path $GEM_HOME --local --no-deployment $frozen "$@" ; then
-        flock /var/lib/gems/gems.lock bundler install --path $GEM_HOME --no-deployment $frozen "$@"
+    # if ! test -x /var/lib/gems/bin/bundler ; then
+    # 	bundleversion=2.0.2
+    #     bundlergem=$(ls -r $GEM_HOME/cache/bundler-${bundleversion}.gem 2>/dev/null | head -n1 || true)
+    #     if test -n "$bundlergem" ; then
+    #         flock /var/lib/gems/gems.lock gem install --verbose --local --no-document $bundlergem
+    #     else
+    #         flock /var/lib/gems/gems.lock gem install --verbose --no-document bundler --version ${bundleversion}
+    #     fi
+    # fi
+    if ! flock /var/lib/gems/gems.lock bundler install --verbose --path $GEM_HOME --local --no-deployment $frozen "$@" ; then
+        flock /var/lib/gems/gems.lock bundler install --verbose --path $GEM_HOME --no-deployment $frozen "$@"
     fi
 }
 

@@ -1,0 +1,15 @@
+h2(#start-service). Start the service
+
+<notextile>
+<pre><code># <span class="userinput">systemctl enable --now {{arvados_component}}</span>
+# <span class="userinput">systemctl status {{arvados_component}}</span>
+[...]
+</code></pre>
+</notextile>
+
+If @systemctl status@ indicates it is not running, use @journalctl@ to check logs for errors:
+
+<notextile>
+<pre><code># <span class="userinput">journalctl -n12 --unit {{arvados_component}}</span>
+</code></pre>
+</notextile>

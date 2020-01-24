@@ -92,6 +92,7 @@ var whitelist = map[string]bool{
 	"Collections.CollectionVersioning":             false,
 	"Collections.DefaultReplication":               true,
 	"Collections.DefaultTrashLifetime":             true,
+	"Collections.ForwardSlashNameSubstitution":     true,
 	"Collections.ManagedProperties":                true,
 	"Collections.ManagedProperties.*":              true,
 	"Collections.ManagedProperties.*.*":            true,

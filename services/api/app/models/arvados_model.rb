@@ -738,6 +738,14 @@ class ArvadosModel < ApplicationRecord
     end
   end
 
+  def ensure_filesystem_compatible_name
+    if name == "." || name == ".."
+      errors.add(:name, "cannot be '.' or '..'")
+    elsif Rails.configuration.Collections.ForwardSlashNameSubstitution == "" && !name.nil? && name.index('/')
+      errors.add(:name, "cannot contain a '/' character")
+    end
+  end
+
   class Email
     def self.kind
       "email"

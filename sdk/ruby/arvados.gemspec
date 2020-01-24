@@ -7,9 +7,18 @@ if not File.exist?('/usr/bin/git') then
   exit
 end
 
-version = `#{__dir__}/../../build/version-at-commit.sh HEAD`.encode('utf-8').strip
-git_timestamp, git_hash = `git log -n1 --first-parent --format=%ct:%H .`.chomp.split(":")
-git_timestamp = Time.at(git_timestamp.to_i).utc
+git_dir = ENV["GIT_DIR"]
+git_work = ENV["GIT_WORK_TREE"]
+begin
+  ENV["GIT_DIR"] = File.expand_path "#{__dir__}/../../.git"
+  ENV["GIT_WORK_TREE"] = File.expand_path "#{__dir__}/../.."
+  git_timestamp, git_hash = `git log -n1 --first-parent --format=%ct:%H #{__dir__}`.chomp.split(":")
+  version = `#{__dir__}/../../build/version-at-commit.sh #{git_hash}`.encode('utf-8').strip
+  git_timestamp = Time.at(git_timestamp.to_i).utc
+ensure
+  ENV["GIT_DIR"] = git_dir
+  ENV["GIT_WORK_TREE"] = git_work
+end
 
 Gem::Specification.new do |s|
   s.name        = 'arvados'
