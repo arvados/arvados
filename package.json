@@ -103,5 +103,8 @@
     "moduleNameMapper": {
       "^~/(.*)$": "<rootDir>/src/$1"
     }
+  },
+  "resolutions": {
+    "react-scripts-ts/**/**/**/**/js-yaml": "^3.13.1"
   }
 }
