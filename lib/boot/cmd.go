@@ -232,13 +232,16 @@ func (boot *bootCommand) RunProgram(ctx context.Context, dir string, output io.W
 	}
 	go func() {
 		<-ctx.Done()
-		cmd.Process.Signal(syscall.SIGINT)
-		for range time.Tick(5 * time.Second) {
-			if cmd.ProcessState != nil {
-				break
+		log := ctxlog.FromContext(ctx).WithFields(logrus.Fields{"dir": dir, "cmdline": cmdline})
+		for cmd.ProcessState != nil {
+			if cmd.Process == nil {
+				log.Infof("waiting for child process to start")
+				time.Sleep(time.Second)
+			} else {
+				cmd.Process.Signal(syscall.SIGINT)
+				log.WithField("PID", cmd.Process.Pid).Infof("waiting for child process to exit after SIGINT")
+				time.Sleep(5 * time.Second)
 			}
-			ctxlog.FromContext(ctx).WithField("process", cmd.Process).Infof("waiting for child process to exit after SIGINT")
-			cmd.Process.Signal(syscall.SIGINT)
 		}
 	}()
 	err := cmd.Run()
