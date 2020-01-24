@@ -8,25 +8,16 @@ SHELL := /bin/bash
 
 APP_NAME?=arvados-workbench2
 
-# GIT_TAG is the last tagged stable release (i.e. 1.2.0)
-GIT_TAG?=$(shell git describe --abbrev=0)
-
-# TS_GIT is the timestamp in the current directory (i.e. 1528815021).
-# Note that it will only change if files change.
-TS_GIT?=$(shell git log -n1 --first-parent "--format=format:%ct" .)
-
-# DATE_FROM_TS_GIT is the human(ish)-readable version of TS_GIT
-# 1528815021 -> 20180612145021
-DATE_FROM_TS_GIT?=$(shell date -ud @$(TS_GIT) +%Y%m%d%H%M%S)
-
 # VERSION uses all the above to produce X.Y.Z.timestamp
 # something in the lines of 1.2.0.20180612145021, this will be the package version
 # it can be overwritten when invoking make as in make packages VERSION=1.2.0
-VERSION?=$(GIT_TAG).$(DATE_FROM_TS_GIT)
+VERSION?=$(shell ./version-at-commit.sh HEAD)
 
 # ITERATION is the package iteration, intended for manual change if anything non-code related
 # changes in the package. (i.e. example config files externally added
 ITERATION?=1
+
+TARGETS?="centos7 debian8 debian9 debian10 ubuntu1404 ubuntu1604 ubuntu1804"
 
 DESCRIPTION=Arvados Workbench2 - Arvados is a free and open source platform for big data science.
 MAINTAINER=Ward Vandewege <wvandewege@veritasgenetics.com>
@@ -106,8 +97,8 @@ $(RPM_FILE): build
 	 $(WORKSPACE)/build/=$(DEST_DIR)
 
 copy: $(DEB_FILE) $(RPM_FILE)
-	mkdir packages
-	for target in $^ ; do \
+	for target in $(TARGETS) ; do \
+	        mkdir -p packages/$$target
 		if [[ $$target =~ ^centos ]]; then
 			cp -p $(RPM_FILE) packages/$$target ; \
 		else
@@ -119,3 +110,6 @@ copy: $(DEB_FILE) $(RPM_FILE)
 
 # use FPM to create DEB and RPM
 packages: copy
+
+workbench2-build-image:
+	docker build -t workbench2-build .
