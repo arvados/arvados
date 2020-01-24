@@ -105,6 +105,7 @@
     }
   },
   "resolutions": {
+    "react-scripts-ts/webpack-dev-server": "^2.11.4",
     "react-scripts-ts/**/**/**/**/js-yaml": "^3.13.1"
   }
 }
