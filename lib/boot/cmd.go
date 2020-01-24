@@ -26,6 +26,7 @@ import (
 	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/controller"
+	"git.arvados.org/arvados.git/lib/dispatchcloud"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/sirupsen/logrus"
@@ -105,7 +106,10 @@ func (boot *bootCommand) RunCommand(prog string, args []string, stdin io.Reader,
 
 	// Fill in any missing config keys, and write the resulting
 	// config in the temp dir for child services to use.
-	autofillConfig(cfg, log)
+	err = boot.autofillConfig(cfg, log)
+	if err != nil {
+		return 1
+	}
 	conffile, err := os.OpenFile(filepath.Join(tempdir, "config.yml"), os.O_CREATE|os.O_WRONLY, 0777)
 	if err != nil {
 		return 1
@@ -165,9 +169,10 @@ func (boot *bootCommand) RunCommand(prog string, args []string, stdin io.Reader,
 
 	var wg sync.WaitGroup
 	for _, cmpt := range []component{
-		{name: "controller", svc: cluster.Services.Controller, cmdArgs: []string{"-config", conffile.Name()}, cmdHandler: controller.Command},
-		// {name: "dispatchcloud", cmdArgs: []string{"-config", conffile.Name()}, cmdHandler: dispatchcloud.Command},
-		{name: "railsAPI", svc: cluster.Services.RailsAPI, src: "services/api"},
+		{name: "controller", cmdArgs: []string{"-config", conffile.Name()}, cmdHandler: controller.Command},
+		{name: "dispatchcloud", cmdArgs: []string{"-config", conffile.Name()}, cmdHandler: dispatchcloud.Command, notIfTest: true},
+		{name: "keepproxy", goProg: "services/keepproxy"},
+		{name: "railsAPI", svc: cluster.Services.RailsAPI, railsApp: "services/api"},
 	} {
 		cmpt := cmpt
 		wg.Add(1)
@@ -248,10 +253,17 @@ type component struct {
 	svc        arvados.Service
 	cmdHandler cmd.Handler
 	cmdArgs    []string
-	src        string // source dir in arvados tree, e.g., "services/keepstore"
+	railsApp   string // source dir in arvados tree, e.g., "services/api"
+	goProg     string // source dir in arvados tree, e.g., "services/keepstore"
+	notIfTest  bool   // don't run this component on a test cluster
 }
 
 func (cmpt *component) Run(ctx context.Context, boot *bootCommand, stdout, stderr io.Writer) error {
+	if cmpt.notIfTest && boot.clusterType == "test" {
+		fmt.Fprintf(stderr, "skipping component %q\n", cmpt.name)
+		<-ctx.Done()
+		return nil
+	}
 	fmt.Fprintf(stderr, "starting component %q\n", cmpt.name)
 	if cmpt.cmdHandler != nil {
 		errs := make(chan error, 1)
@@ -272,7 +284,10 @@ func (cmpt *component) Run(ctx context.Context, boot *bootCommand, stdout, stder
 			return nil
 		}
 	}
-	if cmpt.src != "" {
+	if cmpt.goProg != "" {
+		return boot.RunProgram(ctx, cmpt.goProg, nil, nil, "go", "run", ".")
+	}
+	if cmpt.railsApp != "" {
 		port := "-"
 		for u := range cmpt.svc.InternalURLs {
 			if _, p, err := net.SplitHostPort(u.Host); err != nil {
@@ -295,36 +310,36 @@ func (cmpt *component) Run(ctx context.Context, boot *bootCommand, stdout, stder
 			return err
 		}
 		var buf bytes.Buffer
-		err = boot.RunProgram(ctx, cmpt.src, &buf, nil, "gem", "list", "--details", "bundler")
+		err = boot.RunProgram(ctx, cmpt.railsApp, &buf, nil, "gem", "list", "--details", "bundler")
 		if err != nil {
 			return err
 		}
 		for _, version := range []string{"1.11.0", "1.17.3", "2.0.2"} {
 			if !strings.Contains(buf.String(), "("+version+")") {
-				err = boot.RunProgram(ctx, cmpt.src, nil, nil, "gem", "install", "--user", "bundler:1.11", "bundler:1.17.3", "bundler:2.0.2")
+				err = boot.RunProgram(ctx, cmpt.railsApp, nil, nil, "gem", "install", "--user", "bundler:1.11", "bundler:1.17.3", "bundler:2.0.2")
 				if err != nil {
 					return err
 				}
 				break
 			}
 		}
-		err = boot.RunProgram(ctx, cmpt.src, nil, nil, "bundle", "install", "--jobs", "4", "--path", filepath.Join(os.Getenv("HOME"), ".gem"))
+		err = boot.RunProgram(ctx, cmpt.railsApp, nil, nil, "bundle", "install", "--jobs", "4", "--path", filepath.Join(os.Getenv("HOME"), ".gem"))
 		if err != nil {
 			return err
 		}
-		err = boot.RunProgram(ctx, cmpt.src, nil, nil, "bundle", "exec", "passenger-config", "build-native-support")
+		err = boot.RunProgram(ctx, cmpt.railsApp, nil, nil, "bundle", "exec", "passenger-config", "build-native-support")
 		if err != nil {
 			return err
 		}
-		err = boot.RunProgram(ctx, cmpt.src, nil, nil, "bundle", "exec", "passenger-config", "install-standalone-runtime")
+		err = boot.RunProgram(ctx, cmpt.railsApp, nil, nil, "bundle", "exec", "passenger-config", "install-standalone-runtime")
 		if err != nil {
 			return err
 		}
-		err = boot.RunProgram(ctx, cmpt.src, nil, nil, "bundle", "exec", "passenger-config", "validate-install")
+		err = boot.RunProgram(ctx, cmpt.railsApp, nil, nil, "bundle", "exec", "passenger-config", "validate-install")
 		if err != nil {
 			return err
 		}
-		err = boot.RunProgram(ctx, cmpt.src, nil, nil, "bundle", "exec", "passenger", "start", "-p", port)
+		err = boot.RunProgram(ctx, cmpt.railsApp, nil, nil, "bundle", "exec", "passenger", "start", "-p", port)
 		if err != nil {
 			return err
 		}
@@ -332,10 +347,10 @@ func (cmpt *component) Run(ctx context.Context, boot *bootCommand, stdout, stder
 	return fmt.Errorf("bug: component %q has nothing to run", cmpt.name)
 }
 
-func autofillConfig(cfg *arvados.Config, log logrus.FieldLogger) {
+func (boot *bootCommand) autofillConfig(cfg *arvados.Config, log logrus.FieldLogger) error {
 	cluster, err := cfg.GetCluster("")
 	if err != nil {
-		panic(err)
+		return err
 	}
 	port := 9000
 	for _, svc := range []*arvados.Service{
@@ -364,7 +379,15 @@ func autofillConfig(cfg *arvados.Config, log logrus.FieldLogger) {
 	if cluster.Collections.BlobSigningKey == "" {
 		cluster.Collections.BlobSigningKey = randomHexString(64)
 	}
+	if boot.clusterType != "production" && cluster.Containers.DispatchPrivateKey == "" {
+		buf, err := ioutil.ReadFile(filepath.Join(boot.sourcePath, "lib", "dispatchcloud", "test", "sshkey_dispatch"))
+		if err != nil {
+			return err
+		}
+		cluster.Containers.DispatchPrivateKey = string(buf)
+	}
 	cfg.Clusters[cluster.ClusterID] = *cluster
+	return nil
 }
 
 func randomHexString(chars int) string {
