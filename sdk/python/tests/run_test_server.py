@@ -616,7 +616,7 @@ def run_nginx():
     nginxconf['GITPORT'] = internal_port_from_config("GitHTTP")
     nginxconf['GITSSLPORT'] = external_port_from_config("GitHTTP")
     nginxconf['WSPORT'] = internal_port_from_config("Websocket")
-    nginxconf['WSSPORT'] = external_port_from_config("Websocket")
+    nginxconf['WSSSLPORT'] = external_port_from_config("Websocket")
     nginxconf['SSLCERT'] = os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'self-signed.pem')
     nginxconf['SSLKEY'] = os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'self-signed.key')
     nginxconf['ACCESSLOG'] = _logfilename('nginx_access')

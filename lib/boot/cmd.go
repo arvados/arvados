@@ -39,8 +39,11 @@ type bootCommand struct {
 	libPath     string // e.g., /var/lib/arvados
 	clusterType string // e.g., production
 
-	stdout io.Writer
-	stderr io.Writer
+	cluster *arvados.Cluster
+	stdout  io.Writer
+	stderr  io.Writer
+
+	tempdir string
 
 	setupRubyOnce sync.Once
 	setupRubyErr  error
@@ -98,11 +101,11 @@ func (boot *bootCommand) RunCommand(prog string, args []string, stdin io.Reader,
 		return 1
 	}
 
-	tempdir, err := ioutil.TempDir("", "arvados-server-boot-")
+	boot.tempdir, err = ioutil.TempDir("", "arvados-server-boot-")
 	if err != nil {
 		return 1
 	}
-	defer os.RemoveAll(tempdir)
+	defer os.RemoveAll(boot.tempdir)
 
 	// Fill in any missing config keys, and write the resulting
 	// config in the temp dir for child services to use.
@@ -110,7 +113,7 @@ func (boot *bootCommand) RunCommand(prog string, args []string, stdin io.Reader,
 	if err != nil {
 		return 1
 	}
-	conffile, err := os.OpenFile(filepath.Join(tempdir, "config.yml"), os.O_CREATE|os.O_WRONLY, 0777)
+	conffile, err := os.OpenFile(filepath.Join(boot.tempdir, "config.yml"), os.O_CREATE|os.O_WRONLY, 0777)
 	if err != nil {
 		return 1
 	}
@@ -124,16 +127,16 @@ func (boot *bootCommand) RunCommand(prog string, args []string, stdin io.Reader,
 		return 1
 	}
 	os.Setenv("ARVADOS_CONFIG", conffile.Name())
-
+	arvados.DefaultConfigFile = conffile.Name()
 	os.Setenv("RAILS_ENV", boot.clusterType)
 
 	// Now that we have the config, replace the bootstrap logger
 	// with a new one according to the logging config.
-	cluster, err := cfg.GetCluster("")
+	boot.cluster, err = cfg.GetCluster("")
 	if err != nil {
 		return 1
 	}
-	log = ctxlog.New(stderr, cluster.SystemLogs.Format, cluster.SystemLogs.LogLevel)
+	log = ctxlog.New(stderr, boot.cluster.SystemLogs.Format, boot.cluster.SystemLogs.LogLevel)
 	logger := log.WithFields(logrus.Fields{
 		"PID": os.Getpid(),
 	})
@@ -169,10 +172,15 @@ func (boot *bootCommand) RunCommand(prog string, args []string, stdin io.Reader,
 
 	var wg sync.WaitGroup
 	for _, cmpt := range []component{
+		{name: "nginx", runFunc: runNginx},
 		{name: "controller", cmdHandler: controller.Command},
 		{name: "dispatchcloud", cmdHandler: dispatchcloud.Command, notIfTest: true},
+		{name: "git-httpd", goProg: "services/arv-git-httpd"},
+		{name: "health", goProg: "services/health"},
+		{name: "keep-balance", goProg: "services/keep-balance", notIfTest: true},
 		{name: "keepproxy", goProg: "services/keepproxy"},
-		{name: "railsAPI", svc: cluster.Services.RailsAPI, railsApp: "services/api"},
+		{name: "keep-web", goProg: "services/keep-web"},
+		{name: "railsAPI", svc: boot.cluster.Services.RailsAPI, railsApp: "services/api"},
 	} {
 		cmpt := cmpt
 		wg.Add(1)
@@ -233,13 +241,13 @@ func (boot *bootCommand) RunProgram(ctx context.Context, dir string, output io.W
 	go func() {
 		<-ctx.Done()
 		log := ctxlog.FromContext(ctx).WithFields(logrus.Fields{"dir": dir, "cmdline": cmdline})
-		for cmd.ProcessState != nil {
+		for cmd.ProcessState == nil {
 			if cmd.Process == nil {
 				log.Infof("waiting for child process to start")
 				time.Sleep(time.Second)
 			} else {
-				cmd.Process.Signal(syscall.SIGINT)
-				log.WithField("PID", cmd.Process.Pid).Infof("waiting for child process to exit after SIGINT")
+				cmd.Process.Signal(syscall.SIGTERM)
+				log.WithField("PID", cmd.Process.Pid).Infof("waiting for child process to exit after SIGTERM")
 				time.Sleep(5 * time.Second)
 			}
 		}
@@ -255,6 +263,7 @@ type component struct {
 	name       string
 	svc        arvados.Service
 	cmdHandler cmd.Handler
+	runFunc    func(ctx context.Context, boot *bootCommand, stdout, stderr io.Writer) error
 	railsApp   string // source dir in arvados tree, e.g., "services/api"
 	goProg     string // source dir in arvados tree, e.g., "services/keepstore"
 	notIfTest  bool   // don't run this component on a test cluster
@@ -262,7 +271,7 @@ type component struct {
 
 func (cmpt *component) Run(ctx context.Context, boot *bootCommand, stdout, stderr io.Writer) error {
 	if cmpt.notIfTest && boot.clusterType == "test" {
-		fmt.Fprintf(stderr, "skipping component %q\n", cmpt.name)
+		fmt.Fprintf(stderr, "skipping component %q in %s mode\n", cmpt.name, boot.clusterType)
 		<-ctx.Done()
 		return nil
 	}
@@ -289,25 +298,15 @@ func (cmpt *component) Run(ctx context.Context, boot *bootCommand, stdout, stder
 	if cmpt.goProg != "" {
 		return boot.RunProgram(ctx, cmpt.goProg, nil, nil, "go", "run", ".")
 	}
+	if cmpt.runFunc != nil {
+		return cmpt.runFunc(ctx, boot, stdout, stderr)
+	}
 	if cmpt.railsApp != "" {
-		port := "-"
-		for u := range cmpt.svc.InternalURLs {
-			if _, p, err := net.SplitHostPort(u.Host); err != nil {
-				return err
-			} else if p != "" {
-				port = p
-			} else if u.Scheme == "https" {
-				port = "443"
-			} else {
-				port = "80"
-			}
-			break
-		}
-		if port == "-" {
+		port, err := internalPort(cmpt.svc)
+		if err != nil {
 			return fmt.Errorf("bug: no InternalURLs for component %q: %v", cmpt.name, cmpt.svc.InternalURLs)
 		}
-
-		err := boot.setupRubyEnv()
+		err = boot.setupRubyEnv()
 		if err != nil {
 			return err
 		}
@@ -358,7 +357,14 @@ func (boot *bootCommand) autofillConfig(cfg *arvados.Config, log logrus.FieldLog
 	for _, svc := range []*arvados.Service{
 		&cluster.Services.Controller,
 		&cluster.Services.DispatchCloud,
+		&cluster.Services.GitHTTP,
+		&cluster.Services.Health,
+		&cluster.Services.Keepproxy,
+		&cluster.Services.Keepstore,
 		&cluster.Services.RailsAPI,
+		&cluster.Services.WebDAV,
+		&cluster.Services.WebDAVDownload,
+		&cluster.Services.Websocket,
 	} {
 		if len(svc.InternalURLs) == 0 {
 			port++
@@ -366,14 +372,21 @@ func (boot *bootCommand) autofillConfig(cfg *arvados.Config, log logrus.FieldLog
 				arvados.URL{Scheme: "http", Host: fmt.Sprintf("localhost:%d", port)}: arvados.ServiceInstance{},
 			}
 		}
-	}
-	if cluster.Services.Controller.ExternalURL.Host == "" {
-		for k := range cluster.Services.Controller.InternalURLs {
-			cluster.Services.Controller.ExternalURL = k
+		if svc.ExternalURL.Host == "" && (svc == &cluster.Services.Controller ||
+			svc == &cluster.Services.GitHTTP ||
+			svc == &cluster.Services.Keepproxy ||
+			svc == &cluster.Services.WebDAV ||
+			svc == &cluster.Services.WebDAVDownload ||
+			svc == &cluster.Services.Websocket) {
+			port++
+			svc.ExternalURL = arvados.URL{Scheme: "https", Host: fmt.Sprintf("localhost:%d", port)}
 		}
 	}
 	if cluster.SystemRootToken == "" {
 		cluster.SystemRootToken = randomHexString(64)
+	}
+	if cluster.ManagementToken == "" {
+		cluster.ManagementToken = randomHexString(64)
 	}
 	if cluster.API.RailsSessionSecretToken == "" {
 		cluster.API.RailsSessionSecretToken = randomHexString(64)
@@ -388,6 +401,17 @@ func (boot *bootCommand) autofillConfig(cfg *arvados.Config, log logrus.FieldLog
 		}
 		cluster.Containers.DispatchPrivateKey = string(buf)
 	}
+	if boot.clusterType != "production" {
+		cluster.TLS.Insecure = true
+	}
+	if boot.clusterType == "test" && len(cluster.Volumes) == 0 {
+		cluster.Volumes = map[string]arvados.Volume{
+			"zzzzz-nyw5e-000000000000000": arvados.Volume{
+				Driver:           "Directory",
+				DriverParameters: json.RawMessage(fmt.Sprintf(`{"Root":%q}`, boot.tempdir+"/keep0")),
+			},
+		}
+	}
 	cfg.Clusters[cluster.ClusterID] = *cluster
 	return nil
 }
@@ -399,4 +423,31 @@ func randomHexString(chars int) string {
 		panic(err)
 	}
 	return fmt.Sprintf("%x", b)
+}
+
+func internalPort(svc arvados.Service) (string, error) {
+	for u := range svc.InternalURLs {
+		if _, p, err := net.SplitHostPort(u.Host); err != nil {
+			return "", err
+		} else if p != "" {
+			return p, nil
+		} else if u.Scheme == "https" {
+			return "443", nil
+		} else {
+			return "80", nil
+		}
+	}
+	return "", fmt.Errorf("service has no InternalURLs")
+}
+
+func externalPort(svc arvados.Service) (string, error) {
+	if _, p, err := net.SplitHostPort(svc.ExternalURL.Host); err != nil {
+		return "", err
+	} else if p != "" {
+		return p, nil
+	} else if svc.ExternalURL.Scheme == "https" {
+		return "443", nil
+	} else {
+		return "80", nil
+	}
 }
