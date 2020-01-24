@@ -169,8 +169,8 @@ func (boot *bootCommand) RunCommand(prog string, args []string, stdin io.Reader,
 
 	var wg sync.WaitGroup
 	for _, cmpt := range []component{
-		{name: "controller", cmdArgs: []string{"-config", conffile.Name()}, cmdHandler: controller.Command},
-		{name: "dispatchcloud", cmdArgs: []string{"-config", conffile.Name()}, cmdHandler: dispatchcloud.Command, notIfTest: true},
+		{name: "controller", cmdHandler: controller.Command},
+		{name: "dispatchcloud", cmdHandler: dispatchcloud.Command, notIfTest: true},
 		{name: "keepproxy", goProg: "services/keepproxy"},
 		{name: "railsAPI", svc: cluster.Services.RailsAPI, railsApp: "services/api"},
 	} {
@@ -255,7 +255,6 @@ type component struct {
 	name       string
 	svc        arvados.Service
 	cmdHandler cmd.Handler
-	cmdArgs    []string
 	railsApp   string // source dir in arvados tree, e.g., "services/api"
 	goProg     string // source dir in arvados tree, e.g., "services/keepstore"
 	notIfTest  bool   // don't run this component on a test cluster
@@ -272,7 +271,7 @@ func (cmpt *component) Run(ctx context.Context, boot *bootCommand, stdout, stder
 		errs := make(chan error, 1)
 		go func() {
 			defer close(errs)
-			exitcode := cmpt.cmdHandler.RunCommand(cmpt.name, cmpt.cmdArgs, bytes.NewBuffer(nil), stdout, stderr)
+			exitcode := cmpt.cmdHandler.RunCommand(cmpt.name, nil, bytes.NewBuffer(nil), stdout, stderr)
 			if exitcode != 0 {
 				errs <- fmt.Errorf("exit code %d", exitcode)
 			}
