@@ -1,0 +1,9 @@
+Clusters:
+  zzzzz:
+    PostgreSQL:
+      Connection:
+        client_encoding: utf8
+        host: localhost
+        dbname: arvados_test
+        user: arvados
+        password: insecure_arvados_test
