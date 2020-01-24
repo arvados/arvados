@@ -21,6 +21,7 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 
 	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/config"
@@ -161,22 +162,27 @@ func (boot *bootCommand) RunCommand(prog string, args []string, stdin io.Reader,
 	if err != nil {
 		return 1
 	}
+
+	var wg sync.WaitGroup
 	for _, cmpt := range []component{
 		{name: "controller", svc: cluster.Services.Controller, cmdArgs: []string{"-config", conffile.Name()}, cmdHandler: controller.Command},
 		// {name: "dispatchcloud", cmdArgs: []string{"-config", conffile.Name()}, cmdHandler: dispatchcloud.Command},
 		{name: "railsAPI", svc: cluster.Services.RailsAPI, src: "services/api"},
 	} {
 		cmpt := cmpt
+		wg.Add(1)
 		go func() {
+			defer wg.Done()
+			defer cancel()
 			logger.WithField("component", cmpt.name).Info("starting")
 			err := cmpt.Run(ctx, boot, stdout, stderr)
 			if err != nil {
 				logger.WithError(err).WithField("component", cmpt.name).Info("exited")
 			}
-			cancel()
 		}()
 	}
 	<-ctx.Done()
+	wg.Wait()
 	return 0
 }
 
@@ -222,6 +228,13 @@ func (boot *bootCommand) RunProgram(ctx context.Context, dir string, output io.W
 	go func() {
 		<-ctx.Done()
 		cmd.Process.Signal(syscall.SIGINT)
+		for range time.Tick(5 * time.Second) {
+			if cmd.ProcessState != nil {
+				break
+			}
+			ctxlog.FromContext(ctx).WithField("process", cmd.Process).Infof("waiting for child process to exit after SIGINT")
+			cmd.Process.Signal(syscall.SIGINT)
+		}
 	}()
 	err := cmd.Run()
 	if err != nil {
@@ -241,11 +254,23 @@ type component struct {
 func (cmpt *component) Run(ctx context.Context, boot *bootCommand, stdout, stderr io.Writer) error {
 	fmt.Fprintf(stderr, "starting component %q\n", cmpt.name)
 	if cmpt.cmdHandler != nil {
-		exitcode := cmpt.cmdHandler.RunCommand(cmpt.name, cmpt.cmdArgs, bytes.NewBuffer(nil), stdout, stderr)
-		if exitcode != 0 {
-			return fmt.Errorf("exit code %d", exitcode)
+		errs := make(chan error, 1)
+		go func() {
+			defer close(errs)
+			exitcode := cmpt.cmdHandler.RunCommand(cmpt.name, cmpt.cmdArgs, bytes.NewBuffer(nil), stdout, stderr)
+			if exitcode != 0 {
+				errs <- fmt.Errorf("exit code %d", exitcode)
+			}
+		}()
+		select {
+		case err := <-errs:
+			return err
+		case <-ctx.Done():
+			// cmpt.cmdHandler.RunCommand() doesn't have
+			// access to our context, so it won't shut
+			// down by itself. We just abandon it.
+			return nil
 		}
-		return nil
 	}
 	if cmpt.src != "" {
 		port := "-"
