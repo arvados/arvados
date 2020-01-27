@@ -62,11 +62,14 @@ func (agg *Aggregator) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 		sendErr(http.StatusUnauthorized, errUnauthorized)
 		return
 	}
-	if req.URL.Path != "/_health/all" {
+	if req.URL.Path == "/_health/all" {
+		json.NewEncoder(resp).Encode(agg.ClusterHealth())
+	} else if req.URL.Path == "/_health/ping" {
+		resp.Write(healthyBody)
+	} else {
 		sendErr(http.StatusNotFound, errNotFound)
 		return
 	}
-	json.NewEncoder(resp).Encode(agg.ClusterHealth())
 	if agg.Log != nil {
 		agg.Log(req, nil)
 	}
