@@ -247,8 +247,9 @@ func (boot *bootCommand) RunProgram(ctx context.Context, dir string, output io.W
 				log.Infof("waiting for child process to start")
 				time.Sleep(time.Second)
 			} else {
+				log.WithField("PID", cmd.Process.Pid).Info("sending SIGTERM")
 				cmd.Process.Signal(syscall.SIGTERM)
-				log.WithField("PID", cmd.Process.Pid).Infof("waiting for child process to exit after SIGTERM")
+				log.WithField("PID", cmd.Process.Pid).Info("waiting for child process to exit after SIGTERM")
 				time.Sleep(5 * time.Second)
 			}
 		}
@@ -297,6 +298,11 @@ func (cmpt *component) Run(ctx context.Context, boot *bootCommand, stdout, stder
 		}
 	}
 	if cmpt.goProg != "" {
+		boot.RunProgram(ctx, cmpt.goProg, nil, nil, "go", "install")
+		if ctx.Err() != nil {
+			return nil
+		}
+		_, basename := filepath.Split(cmpt.goProg)
 		if len(cmpt.svc.InternalURLs) > 0 {
 			// Run one for each URL
 			var wg sync.WaitGroup
@@ -305,14 +311,14 @@ func (cmpt *component) Run(ctx context.Context, boot *bootCommand, stdout, stder
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					boot.RunProgram(ctx, cmpt.goProg, nil, []string{"ARVADOS_SERVICE_INTERNAL_URL=" + u.String()}, "go", "run", ".")
+					boot.RunProgram(ctx, boot.tempdir, nil, []string{"ARVADOS_SERVICE_INTERNAL_URL=" + u.String()}, basename)
 				}()
 			}
 			wg.Wait()
 			return nil
 		} else {
 			// Just run one
-			return boot.RunProgram(ctx, cmpt.goProg, nil, nil, "go", "run", ".")
+			boot.RunProgram(ctx, boot.tempdir, nil, nil, basename)
 		}
 	}
 	if cmpt.runFunc != nil {
