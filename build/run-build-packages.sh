@@ -325,6 +325,9 @@ fpm_build_virtualenv "arvados-python-client" "sdk/python"
 # Arvados cwl runner
 fpm_build_virtualenv "arvados-cwl-runner" "sdk/cwl"
 
+# Arvados cwl runner - Python3 package
+fpm_build_virtualenv "arvados-cwl-runner" "sdk/cwl" "python3"
+
 # The PAM module
 fpm_build_virtualenv "libpam-arvados" "sdk/pam"
 
