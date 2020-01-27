@@ -131,10 +131,10 @@ export const ProcessInformationCard = withStyles(styles, { withTheme: true })(
                     <Grid item xs={6}>
                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                             label='From'
-                            value={process.container ? formatDate(startedAt) : 'N/A'} />
+                            value={startedAt} />
                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                             label='To'
-                            value={process.container ? formatDate(finishedAt) : 'N/A'} />
+                            value={finishedAt} />
                         {process.containerRequest.properties.workflowUuid &&
                             <span onClick={() => openWorkflow(process.containerRequest.properties.workflowUuid)}>
                                 <DetailsAttribute classLabel={classes.label} classValue={classNames(classes.value, classes.link)}
