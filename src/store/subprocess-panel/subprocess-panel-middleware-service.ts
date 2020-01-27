@@ -20,9 +20,10 @@ import { SubprocessPanelColumnNames } from '~/views/subprocess-panel/subprocess-
 import { FilterBuilder, joinFilters } from '~/services/api/filter-builder';
 import { subprocessPanelActions } from './subprocess-panel-actions';
 import { DataColumns } from '~/components/data-table/data-table';
-import { ProcessStatusFilter } from '../resource-type-filters/resource-type-filters';
+import { ProcessStatusFilter, buildProcessStatusFilters } from '../resource-type-filters/resource-type-filters';
 import { ContainerRequestResource } from '~/models/container-request';
 import { progressIndicatorActions } from '../progress-indicator/progress-indicator-actions';
+import { loadMissingProcessesInformation } from '../project-panel/project-panel-middleware-service';
 
 export class SubprocessMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -39,18 +40,10 @@ export class SubprocessMiddlewareService extends DataExplorerMiddlewareService {
             const parentContainerRequest = await this.services.containerRequestService.get(parentContainerRequestUuid);
             const containerRequests = await this.services.containerRequestService.list(
                 { ...getParams(dataExplorer, parentContainerRequest) });
-            const containerUuids: string[] = containerRequests.items.reduce(
-                (uuids, { containerUuid }) =>
-                    containerUuid
-                        ? [...uuids, containerUuid]
-                        : uuids, []);
-            const containers = await this.services.containerService.list({
-                filters: new FilterBuilder().addIn('uuid', containerUuids).getFilters()
-            });
 
             api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
             api.dispatch(updateResources(containerRequests.items));
-            api.dispatch(updateResources(containers.items));
+            await api.dispatch<any>(loadMissingProcessesInformation(containerRequests.items));
             // Populate the actual user view
             api.dispatch(setItems(containerRequests));
         } catch {
@@ -92,31 +85,11 @@ export const getFilters = (
         const statusColumnFilters = getDataExplorerColumnFilters(columns, 'Status');
         const activeStatusFilter = Object.keys(statusColumnFilters).find(
             filterName => statusColumnFilters[filterName].selected
-        );
+        ) || ProcessStatusFilter.ALL;
 
         // Get all the subprocess' container requests and containers.
         const fb = new FilterBuilder().addEqual('requesting_container_uuid', parentContainerRequest.containerUuid);
-        switch (activeStatusFilter) {
-            case ProcessStatusFilter.COMPLETED: {
-                fb.addEqual('container.state', 'Complete');
-                fb.addEqual('container.exit_code', '0');
-                break;
-            }
-            case ProcessStatusFilter.FAILED: {
-                fb.addEqual('container.state', 'Complete');
-                fb.addDistinct('container.exit_code', '0');
-                break;
-            }
-            case ProcessStatusFilter.CANCELLED:
-            case ProcessStatusFilter.FAILED:
-            case ProcessStatusFilter.LOCKED:
-            case ProcessStatusFilter.QUEUED:
-            case ProcessStatusFilter.RUNNING: {
-                fb.addEqual('container.state', activeStatusFilter);
-                break;
-            }
-        }
-        const statusFilters = fb.getFilters();
+        const statusFilters = buildProcessStatusFilters(fb, activeStatusFilter).getFilters();
 
         const nameFilters = dataExplorer.searchValue
             ? new FilterBuilder()

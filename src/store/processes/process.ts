@@ -90,6 +90,9 @@ export const getProcessStatus = ({ containerRequest, container }: Process): Proc
         case containerRequest.state === ContainerRequestState.UNCOMMITTED:
             return ProcessStatus.DRAFT;
 
+        case container && container.state === ContainerState.COMPLETE && container.exitCode === 0:
+            return ProcessStatus.COMPLETED;
+
         case containerRequest.priority === 0:
         case container && container.state === ContainerState.CANCELLED:
             return ProcessStatus.CANCELLED;
@@ -102,9 +105,6 @@ export const getProcessStatus = ({ containerRequest, container }: Process): Proc
 
         case container && container.state === ContainerState.RUNNING:
             return ProcessStatus.RUNNING;
-
-        case container && container.state === ContainerState.COMPLETE && container.exitCode === 0:
-            return ProcessStatus.COMPLETED;
 
         case container && container.state === ContainerState.COMPLETE && container.exitCode !== 0:
             return ProcessStatus.FAILED;

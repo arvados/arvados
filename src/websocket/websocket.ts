@@ -14,6 +14,7 @@ import { addProcessLogsPanelItem } from '../store/process-logs-panel/process-log
 import { subprocessPanelActions } from "~/store/subprocess-panel/subprocess-panel-actions";
 import { projectPanelActions } from "~/store/project-panel/project-panel-action";
 import { getProjectPanelCurrentUuid } from '~/store/project-panel/project-panel-action';
+import { allProcessesPanelActions } from '~/store/all-processes-panel/all-processes-panel-action';
 
 export const initWebSocket = (config: Config, authService: AuthService, store: RootStore) => {
     if (config.websocketUrl) {
@@ -35,6 +36,7 @@ const messageListener = (store: RootStore) => (message: ResourceEventMessage) =>
             // fall through, this will happen for container requests as well.
             case ResourceKind.CONTAINER:
                 store.dispatch(subprocessPanelActions.REQUEST_ITEMS());
+                store.dispatch(allProcessesPanelActions.REQUEST_ITEMS());
                 if (message.objectOwnerUuid === getProjectPanelCurrentUuid(store.getState())) {
                     store.dispatch(projectPanelActions.REQUEST_ITEMS());
                 }

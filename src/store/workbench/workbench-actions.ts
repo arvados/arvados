@@ -4,7 +4,7 @@
 
 import { Dispatch } from 'redux';
 import { RootState } from "~/store/store";
-import { getUserUuid } from "~/common/getuser"; 
+import { getUserUuid } from "~/common/getuser";
 import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { favoritePanelActions, loadFavoritePanel } from '~/store/favorite-panel/favorite-panel-action';
@@ -99,6 +99,8 @@ import { loadCollectionsContentAddressPanel, collectionsContentAddressActions } 
 import { collectionContentAddressPanelColumns } from '~/views/collection-content-address-panel/collection-content-address-panel';
 import { subprocessPanelActions } from '~/store/subprocess-panel/subprocess-panel-actions';
 import { subprocessPanelColumns } from '~/views/subprocess-panel/subprocess-panel-root';
+import { loadAllProcessesPanel, allProcessesPanelActions } from '../all-processes-panel/all-processes-panel-action';
+import { allProcessesPanelColumns } from '~/views/all-processes-panel/all-processes-panel';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -126,6 +128,7 @@ export const loadWorkbench = () =>
         if (user) {
             dispatch(projectPanelActions.SET_COLUMNS({ columns: projectPanelColumns }));
             dispatch(favoritePanelActions.SET_COLUMNS({ columns: favoritePanelColumns }));
+            dispatch(allProcessesPanelActions.SET_COLUMNS({ columns: allProcessesPanelColumns }));
             dispatch(publicFavoritePanelActions.SET_COLUMNS({ columns: publicFavoritePanelColumns }));
             dispatch(trashPanelActions.SET_COLUMNS({ columns: trashPanelColumns }));
             dispatch(sharedWithMePanelActions.SET_COLUMNS({ columns: projectPanelColumns }));
@@ -177,6 +180,15 @@ export const loadTrash = () =>
             dispatch<any>(loadTrashPanel());
             dispatch<any>(setSidePanelBreadcrumbs(SidePanelTreeCategory.TRASH));
         });
+
+export const loadAllProcesses = () =>
+    handleFirstTimeLoad(
+        (dispatch: Dispatch) => {
+            dispatch<any>(activateSidePanelTreeItem(SidePanelTreeCategory.ALL_PROCESSES));
+            dispatch<any>(loadAllProcessesPanel());
+            dispatch<any>(setSidePanelBreadcrumbs(SidePanelTreeCategory.ALL_PROCESSES));
+        }
+    );
 
 export const loadProject = (uuid: string) =>
     handleFirstTimeLoad(

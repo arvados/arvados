@@ -14,23 +14,41 @@ import { GROUPS_PANEL_LABEL } from '~/store/breadcrumbs/breadcrumbs-actions';
 export const navigateTo = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState) => {
         const kind = extractUuidKind(uuid);
-        if (kind === ResourceKind.PROJECT || kind === ResourceKind.USER || kind === ResourceKind.COLLECTION || kind === ResourceKind.CONTAINER_REQUEST) {
-            dispatch<any>(pushOrGoto(getNavUrl(uuid, getState().auth)));
-        } else if (kind === ResourceKind.VIRTUAL_MACHINE) {
-            dispatch<any>(navigateToAdminVirtualMachines);
+
+        switch (kind) {
+            case ResourceKind.PROJECT:
+            case ResourceKind.USER:
+            case ResourceKind.COLLECTION:
+            case ResourceKind.CONTAINER_REQUEST:
+                dispatch<any>(pushOrGoto(getNavUrl(uuid, getState().auth)));
+                return;
+            case ResourceKind.VIRTUAL_MACHINE:
+                dispatch<any>(navigateToAdminVirtualMachines);
+                return;
         }
-        if (uuid === SidePanelTreeCategory.FAVORITES) {
-            dispatch<any>(navigateToFavorites);
-        } else if (uuid === SidePanelTreeCategory.PUBLIC_FAVORITES) {
-            dispatch(navigateToPublicFavorites);
-        } else if (uuid === SidePanelTreeCategory.SHARED_WITH_ME) {
-            dispatch(navigateToSharedWithMe);
-        } else if (uuid === SidePanelTreeCategory.WORKFLOWS) {
-            dispatch(navigateToWorkflows);
-        } else if (uuid === SidePanelTreeCategory.TRASH) {
-            dispatch(navigateToTrash);
-        } else if (uuid === GROUPS_PANEL_LABEL) {
-            dispatch(navigateToGroups);
+
+        switch (uuid) {
+            case SidePanelTreeCategory.FAVORITES:
+                dispatch<any>(navigateToFavorites);
+                return;
+            case SidePanelTreeCategory.PUBLIC_FAVORITES:
+                dispatch(navigateToPublicFavorites);
+                return;
+            case SidePanelTreeCategory.SHARED_WITH_ME:
+                dispatch(navigateToSharedWithMe);
+                return;
+            case SidePanelTreeCategory.WORKFLOWS:
+                dispatch(navigateToWorkflows);
+                return;
+            case SidePanelTreeCategory.TRASH:
+                dispatch(navigateToTrash);
+                return;
+            case GROUPS_PANEL_LABEL:
+                dispatch(navigateToGroups);
+                return;
+            case SidePanelTreeCategory.ALL_PROCESSES:
+                dispatch(navigateToAllProcesses);
+                return;
         }
     };
 
@@ -108,3 +126,5 @@ export const navigateToGroupDetails = compose(push, getGroupUrl);
 export const navigateToLinks = push(Routes.LINKS);
 
 export const navigateToCollectionsContentAddress = push(Routes.COLLECTIONS_CONTENT_ADDRESS);
+
+export const navigateToAllProcesses = push(Routes.ALL_PROCESSES);
