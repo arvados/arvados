@@ -179,8 +179,10 @@ func (boot *bootCommand) RunCommand(prog string, args []string, stdin io.Reader,
 		{name: "health", goProg: "services/health"},
 		{name: "keep-balance", goProg: "services/keep-balance", notIfTest: true},
 		{name: "keepproxy", goProg: "services/keepproxy"},
+		{name: "keepstore", goProg: "services/keepstore", svc: boot.cluster.Services.Keepstore},
 		{name: "keep-web", goProg: "services/keep-web"},
 		{name: "railsAPI", svc: boot.cluster.Services.RailsAPI, railsApp: "services/api"},
+		{name: "ws", goProg: "services/ws"},
 	} {
 		cmpt := cmpt
 		wg.Add(1)
@@ -202,8 +204,7 @@ func (boot *bootCommand) RunCommand(prog string, args []string, stdin io.Reader,
 func (boot *bootCommand) installGoProgram(ctx context.Context, srcpath string) error {
 	boot.goMutex.Lock()
 	defer boot.goMutex.Unlock()
-	env := append([]string{"GOPATH=" + boot.libPath}, os.Environ()...)
-	return boot.RunProgram(ctx, filepath.Join(boot.sourcePath, srcpath), nil, env, "go", "install")
+	return boot.RunProgram(ctx, filepath.Join(boot.sourcePath, srcpath), nil, []string{"GOPATH=" + boot.libPath}, "go", "install")
 }
 
 func (boot *bootCommand) setupRubyEnv() error {
@@ -236,7 +237,7 @@ func (boot *bootCommand) RunProgram(ctx context.Context, dir string, output io.W
 		cmd.Dir = filepath.Join(boot.sourcePath, dir)
 	}
 	if env != nil {
-		cmd.Env = env
+		cmd.Env = append(env, os.Environ()...)
 	}
 	go func() {
 		<-ctx.Done()
@@ -296,7 +297,23 @@ func (cmpt *component) Run(ctx context.Context, boot *bootCommand, stdout, stder
 		}
 	}
 	if cmpt.goProg != "" {
-		return boot.RunProgram(ctx, cmpt.goProg, nil, nil, "go", "run", ".")
+		if len(cmpt.svc.InternalURLs) > 0 {
+			// Run one for each URL
+			var wg sync.WaitGroup
+			for u := range cmpt.svc.InternalURLs {
+				u := u
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					boot.RunProgram(ctx, cmpt.goProg, nil, []string{"ARVADOS_SERVICE_INTERNAL_URL=" + u.String()}, "go", "run", ".")
+				}()
+			}
+			wg.Wait()
+			return nil
+		} else {
+			// Just run one
+			return boot.RunProgram(ctx, cmpt.goProg, nil, nil, "go", "run", ".")
+		}
 	}
 	if cmpt.runFunc != nil {
 		return cmpt.runFunc(ctx, boot, stdout, stderr)
@@ -407,12 +424,29 @@ func (boot *bootCommand) autofillConfig(cfg *arvados.Config, log logrus.FieldLog
 	if boot.clusterType != "production" {
 		cluster.TLS.Insecure = true
 	}
-	if boot.clusterType == "test" && len(cluster.Volumes) == 0 {
-		cluster.Volumes = map[string]arvados.Volume{
-			"zzzzz-nyw5e-000000000000000": arvados.Volume{
-				Driver:           "Directory",
-				DriverParameters: json.RawMessage(fmt.Sprintf(`{"Root":%q}`, boot.tempdir+"/keep0")),
-			},
+	if boot.clusterType == "test" {
+		port++
+		cluster.Services.Keepstore.InternalURLs[arvados.URL{Scheme: "http", Host: fmt.Sprintf("localhost:%d", port)}] = arvados.ServiceInstance{}
+
+		n := -1
+		for url := range cluster.Services.Keepstore.InternalURLs {
+			n++
+			datadir := fmt.Sprintf("%s/keep%d.data", boot.tempdir, n)
+			if _, err = os.Stat(datadir + "/."); err == nil {
+			} else if !os.IsNotExist(err) {
+				return err
+			} else if err = os.Mkdir(datadir, 0777); err != nil {
+				return err
+			}
+			cluster.Volumes = map[string]arvados.Volume{
+				fmt.Sprintf("zzzzz-nyw5e-%015d", n): arvados.Volume{
+					Driver:           "Directory",
+					DriverParameters: json.RawMessage(fmt.Sprintf(`{"Root":%q}`, datadir)),
+					AccessViaHosts: map[arvados.URL]arvados.VolumeAccess{
+						url: {},
+					},
+				},
+			}
 		}
 	}
 	cfg.Clusters[cluster.ClusterID] = *cluster
