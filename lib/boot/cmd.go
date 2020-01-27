@@ -366,6 +366,9 @@ func (boot *bootCommand) autofillConfig(cfg *arvados.Config, log logrus.FieldLog
 		&cluster.Services.WebDAVDownload,
 		&cluster.Services.Websocket,
 	} {
+		if svc == &cluster.Services.DispatchCloud && boot.clusterType == "test" {
+			continue
+		}
 		if len(svc.InternalURLs) == 0 {
 			port++
 			svc.InternalURLs = map[arvados.URL]arvados.ServiceInstance{
