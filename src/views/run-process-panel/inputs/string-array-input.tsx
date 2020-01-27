@@ -30,7 +30,7 @@ const validationSelector = createSelector(
         : undefined
 );
 
-const required = (value: string[]) =>
+const required = (value: string[] = []) =>
     value.length > 0
         ? undefined
         : ERROR_MESSAGE;
