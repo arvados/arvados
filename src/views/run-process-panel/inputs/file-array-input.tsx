@@ -193,7 +193,7 @@ const FileArrayInputComponent = connect(mapStateToProps)(
 
         chipsInput = () =>
             <ChipsInput
-                value={this.props.input.value}
+                values={this.props.input.value}
                 disabled={this.props.commandInput.disabled}
                 onChange={noop}
                 createNewValue={identity}

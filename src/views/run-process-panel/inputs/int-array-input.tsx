@@ -46,7 +46,7 @@ class InputComponent extends React.PureComponent<GenericInputProps>{
             deletable={!commandInput.disabled}
             orderable={!commandInput.disabled}
             disabled={commandInput.disabled}
-            value={input.value}
+            values={input.value}
             onChange={this.handleChange}
             createNewValue={value => parseInt(value, 10)}
             inputComponent={IntInput}

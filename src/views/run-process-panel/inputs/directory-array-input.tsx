@@ -211,7 +211,7 @@ const DirectoryArrayInputComponent = connect(mapStateToProps)(
 
         chipsInput = () =>
             <ChipsInput
-                value={this.props.input.value}
+                values={this.props.input.value}
                 onChange={noop}
                 disabled={this.props.commandInput.disabled}
                 createNewValue={identity}

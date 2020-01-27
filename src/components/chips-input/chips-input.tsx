@@ -9,7 +9,7 @@ import { StyleRulesCallback } from '@material-ui/core/styles';
 import { InputProps } from '@material-ui/core/Input';
 
 interface ChipsInputProps<Value> {
-    value: Value[];
+    values: Value[];
     getLabel?: (value: Value) => string;
     onChange: (value: Value[]) => void;
     createNewValue: (value: string) => Value;
@@ -64,13 +64,13 @@ export const ChipsInput = withStyles(styles)(
             if (this.state.text) {
                 const newValue = this.props.createNewValue(this.state.text);
                 this.setState({ text: '' });
-                this.props.onChange([...this.props.value, newValue]);
+                this.props.onChange([...this.props.values, newValue]);
             }
         }
 
         deleteLastValue = () => {
-            if (this.state.text.length === 0 && this.props.value.length > 0) {
-                this.props.onChange(this.props.value.slice(0, -1));
+            if (this.state.text.length === 0 && this.props.values.length > 0) {
+                this.props.onChange(this.props.values.slice(0, -1));
             }
         }
 
@@ -103,12 +103,11 @@ export const ChipsInput = withStyles(styles)(
         }
 
         renderChips() {
-            const { classes, value, ...props } = this.props;
+            const { classes, ...props } = this.props;
             return <div className={classes.chips}>
                 <Chips
                     {...props}
                     clickable={!props.disabled}
-                    values={value}
                     filler={<div ref={this.filler} />}
                 />
             </div>;
@@ -132,7 +131,7 @@ export const ChipsInput = withStyles(styles)(
         }
 
         componentDidUpdate(prevProps: ChipsInputProps<Value>) {
-            if (prevProps.value !== this.props.value) {
+            if (prevProps.values !== this.props.values) {
                 this.updateCursorPosition();
             }
         }
