@@ -24,7 +24,6 @@
     "debounce": "1.2.0",
     "file-saver": "2.0.1",
     "fstream": "1.0.12",
-    "handlebars": "4.5.1",
     "is-image": "2.0.0",
     "js-yaml": "3.13.1",
     "jssha": "2.3.1",
@@ -104,5 +103,11 @@
     "moduleNameMapper": {
       "^~/(.*)$": "<rootDir>/src/$1"
     }
+  },
+  "resolutions": {
+    "react-scripts-ts/webpack-dev-server": "^2.11.4",
+    "react-scripts-ts/**/**/**/**/js-yaml": "^3.13.1",
+    "react-scripts-ts/uglifyjs-webpack-plugin/serialize-javascript": "^2.1.1",
+    "webpack/terser-webpack-plugin/serialize-javascript": "^2.1.1"
   }
 }
