@@ -388,11 +388,11 @@ func (cmpt *component) Run(ctx context.Context, boot *bootCommand, stdout, stder
 				}()
 			}
 			wg.Wait()
-			return nil
 		} else {
 			// Just run one
 			boot.RunProgram(ctx, boot.tempdir, nil, nil, basename)
 		}
+		return nil
 	}
 	if cmpt.runFunc != nil {
 		return cmpt.runFunc(ctx, boot, stdout, stderr)
