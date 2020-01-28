@@ -434,23 +434,23 @@ func (boot *bootCommand) autofillConfig(cfg *arvados.Config, log logrus.FieldLog
 		port++
 		cluster.Services.Keepstore.InternalURLs[arvados.URL{Scheme: "http", Host: fmt.Sprintf("localhost:%d", port)}] = arvados.ServiceInstance{}
 
-		n := -1
+		// Create a directory-backed volume for each keepstore
+		// process.
+		cluster.Volumes = map[string]arvados.Volume{}
 		for url := range cluster.Services.Keepstore.InternalURLs {
-			n++
-			datadir := fmt.Sprintf("%s/keep%d.data", boot.tempdir, n)
+			volnum := len(cluster.Volumes)
+			datadir := fmt.Sprintf("%s/keep%d.data", boot.tempdir, volnum)
 			if _, err = os.Stat(datadir + "/."); err == nil {
 			} else if !os.IsNotExist(err) {
 				return err
 			} else if err = os.Mkdir(datadir, 0777); err != nil {
 				return err
 			}
-			cluster.Volumes = map[string]arvados.Volume{
-				fmt.Sprintf("zzzzz-nyw5e-%015d", n): arvados.Volume{
-					Driver:           "Directory",
-					DriverParameters: json.RawMessage(fmt.Sprintf(`{"Root":%q}`, datadir)),
-					AccessViaHosts: map[arvados.URL]arvados.VolumeAccess{
-						url: {},
-					},
+			cluster.Volumes[fmt.Sprintf("zzzzz-nyw5e-%015d", volnum)] = arvados.Volume{
+				Driver:           "Directory",
+				DriverParameters: json.RawMessage(fmt.Sprintf(`{"Root":%q}`, datadir)),
+				AccessViaHosts: map[arvados.URL]arvados.VolumeAccess{
+					url: {},
 				},
 			}
 		}
