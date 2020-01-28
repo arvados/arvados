@@ -44,7 +44,9 @@ type bootCommand struct {
 	stdout  io.Writer
 	stderr  io.Writer
 
-	tempdir string
+	tempdir    string
+	configfile string
+	environ    []string // for child processes
 
 	setupRubyOnce sync.Once
 	setupRubyErr  error
@@ -127,9 +129,12 @@ func (boot *bootCommand) RunCommand(prog string, args []string, stdin io.Reader,
 	if err != nil {
 		return 1
 	}
-	os.Setenv("ARVADOS_CONFIG", conffile.Name())
-	arvados.DefaultConfigFile = conffile.Name()
-	os.Setenv("RAILS_ENV", boot.clusterType)
+	boot.configfile = conffile.Name()
+
+	boot.environ = os.Environ()
+	boot.setEnv("ARVADOS_CONFIG", boot.configfile)
+	boot.setEnv("RAILS_ENV", boot.clusterType)
+	boot.prependEnv("PATH", filepath.Join(boot.libPath, "bin")+":")
 
 	// Now that we have the config, replace the bootstrap logger
 	// with a new one according to the logging config.
@@ -146,7 +151,7 @@ func (boot *bootCommand) RunCommand(prog string, args []string, stdin io.Reader,
 	defer cancel()
 
 	ch := make(chan os.Signal)
-	signal.Notify(ch, syscall.SIGINT)
+	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		for sig := range ch {
 			logger.WithField("signal", sig).Info("caught signal")
@@ -164,9 +169,11 @@ func (boot *bootCommand) RunCommand(prog string, args []string, stdin io.Reader,
 			return 1
 		}
 	}
-	os.Setenv("PATH", filepath.Join(boot.libPath, "bin")+":"+os.Getenv("PATH"))
-
 	err = boot.installGoProgram(ctx, "cmd/arvados-server")
+	if err != nil {
+		return 1
+	}
+	err = boot.setupRubyEnv()
 	if err != nil {
 		return 1
 	}
@@ -228,6 +235,26 @@ func (boot *bootCommand) waitUntilReady(ctx context.Context) bool {
 	return true
 }
 
+func (boot *bootCommand) prependEnv(key, prepend string) {
+	for i, s := range boot.environ {
+		if strings.HasPrefix(s, key+"=") {
+			boot.environ[i] = key + "=" + prepend + s[len(key)+1:]
+			return
+		}
+	}
+	boot.environ = append(boot.environ, key+"="+prepend)
+}
+
+func (boot *bootCommand) setEnv(key, val string) {
+	for i, s := range boot.environ {
+		if strings.HasPrefix(s, key+"=") {
+			boot.environ[i] = key + "=" + val
+			return
+		}
+	}
+	boot.environ = append(boot.environ, key+"="+val)
+}
+
 func (boot *bootCommand) installGoProgram(ctx context.Context, srcpath string) error {
 	boot.goMutex.Lock()
 	defer boot.goMutex.Unlock()
@@ -235,17 +262,29 @@ func (boot *bootCommand) installGoProgram(ctx context.Context, srcpath string) e
 }
 
 func (boot *bootCommand) setupRubyEnv() error {
-	boot.setupRubyOnce.Do(func() {
-		buf, err := exec.Command("gem", "env", "gempath").Output() // /var/lib/arvados/.gem/ruby/2.5.0/bin:...
-		if err != nil || len(buf) == 0 {
-			boot.setupRubyErr = fmt.Errorf("gem env gempath: %v", err)
+	buf, err := exec.Command("gem", "env", "gempath").Output() // /var/lib/arvados/.gem/ruby/2.5.0/bin:...
+	if err != nil || len(buf) == 0 {
+		return fmt.Errorf("gem env gempath: %v", err)
+	}
+	gempath := string(bytes.Split(buf, []byte{':'})[0])
+	boot.prependEnv("PATH", gempath+"/bin:")
+	boot.setEnv("GEM_HOME", gempath)
+	boot.setEnv("GEM_PATH", gempath)
+	return nil
+}
+
+func (boot *bootCommand) lookPath(prog string) string {
+	for _, val := range boot.environ {
+		if strings.HasPrefix(val, "PATH=") {
+			for _, dir := range filepath.SplitList(val[5:]) {
+				path := filepath.Join(dir, prog)
+				if fi, err := os.Stat(path); err == nil && fi.Mode()&0111 != 0 {
+					return path
+				}
+			}
 		}
-		gempath := string(bytes.Split(buf, []byte{':'})[0])
-		os.Setenv("PATH", gempath+"/bin:"+os.Getenv("PATH"))
-		os.Setenv("GEM_HOME", gempath)
-		os.Setenv("GEM_PATH", gempath)
-	})
-	return boot.setupRubyErr
+	}
+	return prog
 }
 
 // Run prog with args, using dir as working directory. If ctx is
@@ -259,7 +298,7 @@ func (boot *bootCommand) setupRubyEnv() error {
 func (boot *bootCommand) RunProgram(ctx context.Context, dir string, output io.Writer, env []string, prog string, args ...string) error {
 	cmdline := fmt.Sprintf("%s", append([]string{prog}, args...))
 	fmt.Fprintf(boot.stderr, "%s executing in %s\n", cmdline, dir)
-	cmd := exec.Command(prog, args...)
+	cmd := exec.Command(boot.lookPath(prog), args...)
 	if output == nil {
 		cmd.Stdout = boot.stderr
 	} else {
@@ -271,9 +310,7 @@ func (boot *bootCommand) RunProgram(ctx context.Context, dir string, output io.W
 	} else {
 		cmd.Dir = filepath.Join(boot.sourcePath, dir)
 	}
-	if env != nil {
-		cmd.Env = append(env, os.Environ()...)
-	}
+	cmd.Env = append(env, boot.environ...)
 	go func() {
 		<-ctx.Done()
 		log := ctxlog.FromContext(ctx).WithFields(logrus.Fields{"dir": dir, "cmdline": cmdline})
@@ -318,7 +355,7 @@ func (cmpt *component) Run(ctx context.Context, boot *bootCommand, stdout, stder
 		errs := make(chan error, 1)
 		go func() {
 			defer close(errs)
-			exitcode := cmpt.cmdHandler.RunCommand(cmpt.name, nil, bytes.NewBuffer(nil), stdout, stderr)
+			exitcode := cmpt.cmdHandler.RunCommand(cmpt.name, []string{"-config", boot.configfile}, bytes.NewBuffer(nil), stdout, stderr)
 			if exitcode != 0 {
 				errs <- fmt.Errorf("exit code %d", exitcode)
 			}
@@ -364,10 +401,6 @@ func (cmpt *component) Run(ctx context.Context, boot *bootCommand, stdout, stder
 		port, err := internalPort(cmpt.svc)
 		if err != nil {
 			return fmt.Errorf("bug: no InternalURLs for component %q: %v", cmpt.name, cmpt.svc.InternalURLs)
-		}
-		err = boot.setupRubyEnv()
-		if err != nil {
-			return err
 		}
 		var buf bytes.Buffer
 		err = boot.RunProgram(ctx, cmpt.railsApp, &buf, nil, "gem", "list", "--details", "bundler")
