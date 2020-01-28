@@ -42,7 +42,7 @@ const getInputs = (data: any) => {
                 type: it.type,
                 id: it.id,
                 label: it.label,
-                value: data.mounts[MOUNT_PATH_CWL_INPUT].content[it.id.split('#main/')[1]] || [],
+                value: data.mounts[MOUNT_PATH_CWL_INPUT].content[it.id.split('/').pop()] || [],
                 disabled: true
             }))
         : [];
