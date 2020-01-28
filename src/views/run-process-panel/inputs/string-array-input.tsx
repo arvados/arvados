@@ -30,7 +30,7 @@ const validationSelector = createSelector(
         : undefined
 );
 
-const required = (value: string[]) =>
+const required = (value: string[] = []) =>
     value.length > 0
         ? undefined
         : ERROR_MESSAGE;
@@ -47,7 +47,7 @@ class InputComponent extends React.PureComponent<GenericInputProps>{
             deletable={!commandInput.disabled}
             orderable={!commandInput.disabled}
             disabled={commandInput.disabled}
-            value={input.value}
+            values={input.value}
             onChange={this.handleChange}
             createNewValue={identity}
             inputComponent={Input}

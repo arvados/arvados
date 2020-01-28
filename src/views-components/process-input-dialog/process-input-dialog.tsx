@@ -36,15 +36,14 @@ export const ProcessInputDialog = withDialog(PROCESS_INPUT_DIALOG_NAME)(
 const getInputs = (data: any) => {
     if (!data || !data.mounts || !data.mounts[MOUNT_PATH_CWL_WORKFLOW]) { return []; }
     const inputs = getWorkflowInputs(data.mounts[MOUNT_PATH_CWL_WORKFLOW].content);
-    return inputs ? inputs.map(
-        (it: any) => (
+    return inputs
+        ? inputs.map( (it: any) => (
             {
                 type: it.type,
                 id: it.id,
                 label: it.label,
-                value: data.mounts[MOUNT_PATH_CWL_INPUT].content[it.id],
+                value: data.mounts[MOUNT_PATH_CWL_INPUT].content[it.id.split('/').pop()] || [],
                 disabled: true
-            }
-        )
-    ) : [];
+            }))
+        : [];
 };

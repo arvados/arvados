@@ -28,7 +28,7 @@ export const openProcessInputDialog = (processUuid: string) =>
     };
 
 const getInputsFromWFMount = (process: Process) => {
-    if (!process || !process.containerRequest[MOUNT_PATH_CWL_WORKFLOW] ) { return undefined; }
+    if (!process || !process.containerRequest.mounts[MOUNT_PATH_CWL_WORKFLOW] ) { return undefined; }
     const mnt = process.containerRequest.mounts[MOUNT_PATH_CWL_WORKFLOW] as JSONMount;
     return getWorkflowInputs(mnt.content);
 };
