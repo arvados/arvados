@@ -29,7 +29,7 @@ class ContainerWorkUnit < ProxyWorkUnit
       my_child_containers = my_children.map(&:container_uuid).compact.uniq
       grandchildren = {}
       my_child_containers.each { |c| grandchildren[c] = []} if my_child_containers.any?
-      reqs = ContainerRequest.select(cols).where(requesting_container_uuid: my_child_containers).with_count("none").results if my_child_containers.any?
+      reqs = ContainerRequest.select(cols).where(requesting_container_uuid: my_child_containers).order(["requesting_container_uuid", "uuid"]).with_count("none").results if my_child_containers.any?
       reqs.each {|cr| grandchildren[cr.requesting_container_uuid] << cr} if reqs
 
       my_children.each do |cr|
