@@ -221,6 +221,14 @@ func (boot *bootCommand) setupRubyEnv() error {
 	return boot.setupRubyErr
 }
 
+// Run prog with args, using dir as working directory. If ctx is
+// cancelled while the child is running, RunProgram terminates the
+// child, waits for it to exit, then returns.
+//
+// Child's environment will have our env vars, plus any given in env.
+//
+// Child's stdout will be written to output if non-nil, otherwise the
+// boot command's stderr.
 func (boot *bootCommand) RunProgram(ctx context.Context, dir string, output io.Writer, env []string, prog string, args ...string) error {
 	cmdline := fmt.Sprintf("%s", append([]string{prog}, args...))
 	fmt.Fprintf(boot.stderr, "%s executing in %s\n", cmdline, dir)
@@ -243,6 +251,7 @@ func (boot *bootCommand) RunProgram(ctx context.Context, dir string, output io.W
 		<-ctx.Done()
 		log := ctxlog.FromContext(ctx).WithFields(logrus.Fields{"dir": dir, "cmdline": cmdline})
 		for cmd.ProcessState == nil {
+			// Child hasn't exited yet
 			if cmd.Process == nil {
 				log.Infof("waiting for child process to start")
 				time.Sleep(time.Second)
@@ -431,6 +440,7 @@ func (boot *bootCommand) autofillConfig(cfg *arvados.Config, log logrus.FieldLog
 		cluster.TLS.Insecure = true
 	}
 	if boot.clusterType == "test" {
+		// Add a second keepstore process.
 		port++
 		cluster.Services.Keepstore.InternalURLs[arvados.URL{Scheme: "http", Host: fmt.Sprintf("localhost:%d", port)}] = arvados.ServiceInstance{}
 
