@@ -106,6 +106,7 @@ type ServiceHealth struct {
 }
 
 func (agg *Aggregator) ClusterHealth() ClusterHealthResponse {
+	agg.setupOnce.Do(agg.setup)
 	resp := ClusterHealthResponse{
 		Health:   "OK",
 		Checks:   make(map[string]CheckResult),

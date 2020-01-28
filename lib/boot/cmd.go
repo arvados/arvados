@@ -29,6 +29,7 @@ import (
 	"git.arvados.org/arvados.git/lib/dispatchcloud"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/health"
 	"github.com/sirupsen/logrus"
 )
 
@@ -196,9 +197,35 @@ func (boot *bootCommand) RunCommand(prog string, args []string, stdin io.Reader,
 			}
 		}()
 	}
+	if boot.waitUntilReady(ctx) {
+		fmt.Fprintln(stdout, boot.cluster.Services.Controller.ExternalURL)
+	}
 	<-ctx.Done()
 	wg.Wait()
 	return 0
+}
+
+func (boot *bootCommand) waitUntilReady(ctx context.Context) bool {
+	agg := health.Aggregator{Cluster: boot.cluster}
+	for waiting := true; waiting; {
+		time.Sleep(time.Second)
+		if ctx.Err() != nil {
+			return false
+		}
+		resp := agg.ClusterHealth()
+		// The overall health check (resp.Health=="OK") might
+		// never pass due to missing components (like
+		// arvados-dispatch-cloud in a test cluster), so
+		// instead we wait for all configured components to
+		// pass.
+		waiting = false
+		for _, check := range resp.Checks {
+			if check.Health != "OK" {
+				waiting = true
+			}
+		}
+	}
+	return true
 }
 
 func (boot *bootCommand) installGoProgram(ctx context.Context, srcpath string) error {
